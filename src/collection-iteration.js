@@ -1,8 +1,8 @@
 ;(function($$){ 'use strict';
-  
+
   // Functions for iterating over collections
   ////////////////////////////////////////////////////////////////////////////////////////////////////
-  
+
   $$.fn.eles({
     each: function(fn){
       if( $$.is.fn(fn) ){
@@ -21,7 +21,7 @@
 
         for(var i = 0; i < this.length; i++){
           var ele = this[i];
-          var ret = fn.apply( thisArg, [ ele, i, this ] );
+          var ret = thisArg ? fn.apply( thisArg, [ ele, i, this ] ) : fn( ele, i, this );
 
           if( ret === false ){ break; } // exit each early on return false
         }
@@ -32,18 +32,18 @@
 
     toArray: function(){
       var array = [];
-      
+
       for(var i = 0; i < this.length; i++){
         array.push( this[i] );
       }
-      
+
       return array;
     },
 
     slice: function(start, end){
       var array = [];
       var thisSize = this.length;
-      
+
       if( end == null ){
         end = thisSize;
       }
@@ -51,7 +51,7 @@
       if( start == null ){
         start = 0;
       }
-      
+
       if( start < 0 ){
         start = thisSize + start;
       }
@@ -59,11 +59,11 @@
       if( end < 0 ){
         end = thisSize + end;
       }
-      
+
       for(var i = start; i >= 0 && i < end && i < thisSize; i++){
         array.push( this[i] );
       }
-      
+
       return new $$.Collection(this.cy(), array);
     },
 
@@ -96,7 +96,7 @@
         return this;
       }
 
-      var cy = this.cy();      
+      var cy = this.cy();
       var sorted = this.toArray().sort( sortFn );
 
       return new $$.Collection(cy, sorted);
@@ -110,18 +110,25 @@
       var ele = this[0];
       if( !ele ){ return undefined; }
 
+      // var cy = ele.cy();
       var _p = ele._private;
       var group = _p.group;
 
       if( group === 'nodes' ){
-        return _p.data.parent ? ele.parents().size() : 0;
+        var depth = _p.data.parent ? ele.parents().size() : 0;
+
+        if( !ele.isParent() ){
+          return Number.MAX_VALUE; // childless nodes always on top
+        }
+
+        return depth;
       } else {
         var src = _p.source;
         var tgt = _p.target;
-        var srcDepth = src._private.data.parent ? src.parents().size() : 0;
-        var tgtDepth = tgt._private.data.parent ? tgt.parents().size() : 0;
+        var srcDepth = src.zDepth();
+        var tgtDepth = tgt.zDepth();
 
-        return Math.max( srcDepth - 1, tgtDepth - 1, 0 ) + 0.5; // depth of deepest parent and just a bit above
+        return Math.max( srcDepth, tgtDepth, 0 ); // depth of deepest parent
       }
     }
   });
@@ -149,10 +156,10 @@
     var sameDepth = depthDiff === 0;
 
     if( sameDepth ){
-      
+
       if( aIsNode && bIsEdge ){
-        return 1; // 'a' is a node, it should be drawn later       
-      
+        return 1; // 'a' is a node, it should be drawn later
+
       } else if( aIsEdge && bIsNode ){
         return -1; // 'a' is an edge, it should be drawn first
 
@@ -163,12 +170,12 @@
           return zDiff;
         }
       }
-    
+
     // elements on different level
     } else {
       return depthDiff; // deeper element should be drawn later
     }
 
   };
-  
+
 })( cytoscape );

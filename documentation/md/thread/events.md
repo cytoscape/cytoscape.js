@@ -1,0 +1,1 @@
+<span class="important-indicator"></span> For events of `evt.type === 'message'`, the message itself can be found in `evt.message`.

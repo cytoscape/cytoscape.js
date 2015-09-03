@@ -211,4 +211,32 @@ describe('Collection building and filtering', function(){
     expect( eles[2] ).to.not.exist;
   });
 
+  it('eles.xor()', function(){
+    var a = cy.$('#n1, #n2');
+    var b = cy.$('#n2, #n3');
+    var xor = a.xor(b);
+    var expectedXor = cy.$('#n1, #n3');
+
+    expect( xor.same( expectedXor ) ).to.be.true;
+  });
+
+  it('eles.diff()', function(){
+    var a = cy.$('#n1, #n2');
+    var b = cy.$('#n2, #n3');
+    var diff = a.diff(b);
+    var exp = {
+      left: cy.$('#n1'),
+      right: cy.$('#n3'),
+      both: cy.$('#n2')
+    };
+
+    expect( diff.left.length ).to.equal(1);
+    expect( diff.right.length ).to.equal(1);
+    expect( diff.both.length ).to.equal(1);
+
+    expect( diff.left.same( exp.left ) ).to.be.true;
+    expect( diff.right.same( exp.right ) ).to.be.true;
+    expect( diff.both.same( exp.both ) ).to.be.true;
+  });
+
 });

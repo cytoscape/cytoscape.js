@@ -1,12 +1,12 @@
 ;(function($$){ 'use strict';
-  
+
   // Use this interface to define functions for collections/elements.
   // This interface is good, because it forces you to think in terms
   // of the collections case (more than 1 element), so we don't need
   // notification blocking nonsense everywhere.
   //
   // Other collection-*.js files depend on this being defined first.
-  // It's a trade off: It simplifies the code for Collection and 
+  // It's a trade off: It simplifies the code for Collection and
   // Element integration so much that it's worth it to create the
   // JS dependency.
   //
@@ -21,7 +21,7 @@
       $$.Collection.prototype[ name ] = fn;
     }
   };
-  
+
   // factory for generating edge ids when no id is specified for a new element
   var idFactory = {
     prefix: {
@@ -36,7 +36,7 @@
       var json = $$.is.element( element ) ? element._private : element;
       var group = json.group;
       var id = tryThisId != null ? tryThisId : this.prefix[group] + this.id[group];
-      
+
       if( cy.getElementById(id).empty() ){
         this.id[group]++; // we've used the current id, so move it up
       } else { // otherwise keep trying successive unused ids
@@ -44,14 +44,14 @@
           id = this.prefix[group] + ( ++this.id[group] );
         }
       }
-      
+
       return id;
     }
   };
-  
+
   // Element
   ////////////////////////////////////////////////////////////////////////////////////////////////////
-  
+
   // represents a node or an edge
   $$.Element = function(cy, params, restore){
     if( !(this instanceof $$.Element) ){
@@ -60,31 +60,30 @@
 
     var self = this;
     restore = (restore === undefined || restore ? true : false);
-    
+
     if( cy === undefined || params === undefined || !$$.is.core(cy) ){
       $$.util.error('An element must have a core reference and parameters set');
       return;
     }
-    
+
     // validate group
     if( params.group !== 'nodes' && params.group !== 'edges' ){
       $$.util.error('An element must be of type `nodes` or `edges`; you specified `' + params.group + '`');
       return;
     }
-    
+
     // make the element array-like, just like a collection
     this.length = 1;
     this[0] = this;
-    
+
     // NOTE: when something is added here, add also to ele.json()
     this._private = {
       cy: cy,
       single: true, // indicates this is an element
       data: params.data || {}, // data object
-      layoutData: {}, // place for layouts to put calculated stats etc for mappers
       position: params.position || {}, // (x, y) position pair
       autoWidth: undefined, // width and height of nodes calculated by the renderer when set to special 'auto' value
-      autoHeight: undefined, 
+      autoHeight: undefined,
       listeners: [], // array of bound listeners
       group: params.group, // string; 'nodes' or 'edges'
       style: {}, // properties as set by the style
@@ -103,11 +102,11 @@
         queue: []
       },
       rscratch: {}, // object in which the renderer can store information
-      scratch: {}, // scratch objects
+      scratch: params.scratch || {}, // scratch objects
       edges: [], // array of connected edges
       children: [] // array of children
     };
-    
+
     // renderedPosition overrides if specified
     if( params.renderedPosition ){
       var rpos = params.renderedPosition;
@@ -119,7 +118,7 @@
         y: (rpos.y - pan.y)/zoom
       };
     }
-    
+
     if( $$.is.string(params.classes) ){
       var classes = params.classes.split(/\s+/);
       for( var i = 0, l = classes.length; i < l; i++ ){
@@ -133,17 +132,17 @@
     if( params.css ){
       cy.style().applyBypass( this, params.css );
     }
-    
+
     if( restore === undefined || restore ){
       this.restore();
     }
-    
+
   };
 
-  
+
   // Collection
   ////////////////////////////////////////////////////////////////////////////////////////////////////
-  
+
   // represents a set of nodes, edges, or both together
   $$.Collection = function(cy, elements, options){
     if( !(this instanceof $$.Collection) ){
@@ -154,11 +153,11 @@
       $$.util.error('A collection must have a reference to the core');
       return;
     }
-    
+
     var ids = {};
     var indexes = {};
     var createdElements = false;
-    
+
     if( !elements ){
       elements = [];
     } else if( elements.length > 0 && $$.is.plainObject( elements[0] ) && !$$.is.element( elements[0] ) ){
@@ -174,7 +173,7 @@
         if( json.data == null ){
           json.data = {};
         }
-        
+
         var data = json.data;
 
         // make sure newly created elements have valid ids
@@ -191,15 +190,15 @@
 
       elements = eles;
     }
-    
+
     this.length = 0;
 
     for( var i = 0, l = elements.length; i < l; i++ ){
       var element = elements[i];
       if( !element ){  continue; }
-      
+
       var id = element._private.data.id;
-      
+
       if( !options || (options.unique && !ids[ id ] ) ){
         ids[ id ] = element;
         indexes[ id ] = this.length;
@@ -208,7 +207,7 @@
         this.length++;
       }
     }
-    
+
     this._private = {
       cy: cy,
       ids: ids,
@@ -220,11 +219,11 @@
       this.restore();
     }
   };
-  
-  
+
+
   // Functions
   ////////////////////////////////////////////////////////////////////////////////////////////////////
-  
+
   // keep the prototypes in sync (an element has the same functions as a collection)
   // and use $$.elefn and $$.elesfn as shorthands to the prototypes
   $$.elefn = $$.elesfn = $$.Element.prototype = $$.Collection.prototype;
@@ -232,11 +231,11 @@
   $$.elesfn.cy = function(){
     return this._private.cy;
   };
-  
+
   $$.elesfn.element = function(){
     return this[0];
   };
-  
+
   $$.elesfn.collection = function(){
     if( $$.is.collection(this) ){
       return this;
@@ -261,7 +260,7 @@
     if( ele == null ){ return undefined; }
 
     var p = ele._private;
-    
+
     var json = $$.util.copy({
       data: p.data,
       position: p.position,
@@ -275,19 +274,19 @@
       grabbable: p.grabbable,
       classes: ''
     });
-    
+
     var classes = [];
     for( var cls in p.classes ){
       if( p.classes[cls] ){
         classes.push(cls);
       }
     }
-    
+
     for( var i = 0; i < classes.length; i++ ){
       var cls = classes[i];
       json.classes += cls + ( i < classes.length - 1 ? ' ' : '' );
     }
-    
+
     return json;
   };
 
@@ -318,12 +317,13 @@
 
     return new $$.Collection( cy, elesArr );
   };
+  $$.elesfn.copy = $$.elesfn.clone;
 
   $$.elesfn.restore = function( notifyRenderer ){
     var self = this;
     var restored = [];
     var cy = self.cy();
-    
+
     if( notifyRenderer === undefined ){
       notifyRenderer = true;
     }
@@ -336,7 +336,7 @@
     var numEdges = 0;
     for( var i = 0, l = self.length; i < l; i++ ){
       var ele = self[i];
-      
+
       // keep nodes first in the array and edges after
       if( ele.isNode() ){ // put to front of array if node
         nodes.push( ele );
@@ -357,43 +357,51 @@
         // don't need to do anything
         continue;
       }
-      
+
       var _private = ele._private;
       var data = _private.data;
-      
+
       // set id and validate
       if( data.id === undefined ){
         data.id = idFactory.generate( cy, ele );
+
+      } else if( $$.is.number(data.id) ){
+        data.id = '' + data.id; // now it's a string
+
       } else if( $$.is.emptyString(data.id) || !$$.is.string(data.id) ){
         $$.util.error('Can not create element with invalid string ID `' + data.id + '`');
-        
+
         // can't create element if it has empty string as id or non-string id
         continue;
       } else if( cy.getElementById( data.id ).length !== 0 ){
         $$.util.error('Can not create second element with ID `' + data.id + '`');
-        
+
         // can't create element if one already has that id
         continue;
       }
 
       var id = data.id; // id is finalised, now let's keep a ref
-      
+
       if( ele.isEdge() ){ // extra checks for edges
-        
+
         var edge = ele;
         var fields = ['source', 'target'];
         var fieldsLength = fields.length;
         var badSourceOrTarget = false;
         for(var j = 0; j < fieldsLength; j++){
-          
+
           var field = fields[j];
           var val = data[field];
-          
+
+          if( $$.is.number(val) ){
+            val = data[field] = '' + data[field]; // now string
+          }
+
           if( val == null || val === '' ){
             // can't create if source or target is not defined properly
             $$.util.error('Can not create edge `' + id + '` with unspecified ' + field);
             badSourceOrTarget = true;
-          } else if( cy.getElementById(val).empty() ){ 
+          } else if( cy.getElementById(val).empty() ){
             // can't create edge if one of its nodes doesn't exist
             $$.util.error('Can not create edge `' + id + '` with nonexistant ' + field + ' `' + val + '`');
             badSourceOrTarget = true;
@@ -401,7 +409,7 @@
         }
 
         if( badSourceOrTarget ){ continue; } // can't create this
-        
+
         var src = cy.getElementById( data.source );
         var tgt = cy.getElementById( data.target );
 
@@ -412,23 +420,28 @@
         edge._private.target = tgt;
 
       } // if is edge
-       
+
       // create mock ids map for element so it can be used like collections
       _private.ids = {};
       _private.ids[ id ] = ele;
 
       _private.removed = false;
       cy.addToPool( ele );
-      
+
       restored.push( ele );
     } // for each element
 
     // do compound node sanity checks
-    for( var i = 0; i < numNodes; i++ ){ // each node 
+    for( var i = 0; i < numNodes; i++ ){ // each node
       var node = elements[i];
       var data = node._private.data;
 
-      var parentId = node._private.data.parent;
+      if( $$.is.number(data.parent) ){ // then automake string
+        data.parent = '' + data.parent;
+      }
+
+      var parentId = data.parent;
+
       var specifiedParent = parentId != null;
 
       if( specifiedParent ){
@@ -464,7 +477,7 @@
         } // else
       } // if specified parent
     } // for each node
-    
+
     restored = new $$.Collection( cy, restored );
     if( restored.length > 0 ){
 
@@ -477,10 +490,10 @@
         restored.trigger('add');
       }
     }
-    
+
     return self; // chainability
   };
-  
+
   $$.elesfn.removed = function(){
     var ele = this[0];
     return ele && ele._private.removed;
@@ -497,24 +510,24 @@
     var elesToRemove = [];
     var elesToRemoveIds = {};
     var cy = self._private.cy;
-    
+
     if( notifyRenderer === undefined ){
       notifyRenderer = true;
     }
-    
+
     // add connected edges
     function addConnectedEdges(node){
-      var edges = node._private.edges; 
+      var edges = node._private.edges;
       for( var i = 0; i < edges.length; i++ ){
         add( edges[i] );
       }
     }
-    
+
 
     // add descendant nodes
     function addChildren(node){
       var children = node._private.children;
-      
+
       for( var i = 0; i < children.length; i++ ){
         add( children[i] );
       }
@@ -546,12 +559,12 @@
 
       add( ele );
     }
-    
+
     function removeEdgeRef(node, edge){
       var connectedEdges = node._private.edges;
       for( var j = 0; j < connectedEdges.length; j++ ){
         var connectedEdge = connectedEdges[j];
-        
+
         if( edge === connectedEdge ){
           connectedEdges.splice( j, 1 );
           break;
@@ -591,7 +604,7 @@
         removeEdgeRef( src, ele );
         removeEdgeRef( tgt, ele );
 
-      } else { // remove reference to parent 
+      } else { // remove reference to parent
         var parent = ele.parent();
 
         if( parent.length !== 0 ){
@@ -615,14 +628,14 @@
     var removedElements = new $$.Collection( this.cy(), removed );
     if( removedElements.size() > 0 ){
       // must manually notify since trigger won't do this automatically once removed
-      
+
       if( notifyRenderer ){
         this.cy().notify({
           type: 'remove',
           collection: removedElements
         });
       }
-      
+
       removedElements.trigger('remove');
     }
 
@@ -671,11 +684,11 @@
 
         return cy.add( jsons );
       }
- 
+
     } else if( struct.parent !== undefined ){ // move node to new parent
       var parentId = struct.parent;
       var parentExists = parentId === null || cy.getElementById( parentId ).length > 0;
-    
+
       if( parentExists ){
         var jsons = this.jsons();
         var descs = this.descendants();
@@ -697,6 +710,5 @@
 
     return this; // if nothing done
   };
-  
-})( cytoscape );
 
+})( cytoscape );

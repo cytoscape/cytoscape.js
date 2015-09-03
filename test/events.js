@@ -4,6 +4,8 @@ var cytoscape = require('../build/cytoscape.js', cytoscape);
 describe('Events', function(){
 
   var cy;
+  var n1;
+  var triggers;
 
   // test setup
   beforeEach(function(done){
@@ -26,6 +28,8 @@ describe('Events', function(){
       },
       ready: function(){
         cy = this;
+        n1 = cy.$('#n1');
+        triggers = 0;
 
         done();
       }
@@ -36,16 +40,9 @@ describe('Events', function(){
 
   describe('Collection events triggered by functions', function(){
 
-    var triggers = 0;
-    var n1;
     var handler = function(){
       triggers++;
     }
-
-    beforeEach(function(){
-      triggers = 0;
-      n1 = cy.$('#n1');
-    });
 
     it('`add` for new element', function(){
       cy.on('add', handler);
@@ -799,6 +796,51 @@ describe('Events', function(){
         done();
       });
       n1.trigger('foo', ['bar', 'baz']);
+    });
+
+  });
+
+  describe('eles.promiseOn()', function(){
+
+    var n1;
+
+    beforeEach(function(){
+      n1 = cy.$('#n1');
+    });
+
+    it('should run a then() callback', function( next ){
+      n1.pon('foo').then(function(){
+        next();
+      });
+
+      n1.trigger('foo');
+    });
+
+    it('should receive event obj', function( next ){
+      n1.pon('foo').then(function( e ){
+        expect( e ).to.not.be.undefined;
+        expect( e.type ).to.equal('foo');
+
+        next();
+      });
+
+      n1.trigger('foo');
+    });
+
+    it('should run callback only once', function( next ){
+      var trigs = 0;
+
+      n1.pon('foo').then(function(){
+        trigs++;
+      });
+
+      n1.trigger('foo');
+      n1.trigger('foo');
+
+      setTimeout(function(){
+        expect( trigs ).to.equal(1);
+        next();
+      }, 50);
     });
 
   });

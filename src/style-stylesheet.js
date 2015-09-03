@@ -10,8 +10,10 @@
     this.length = 0;
   };
 
+  $$.sheetfn = $$.Stylesheet.prototype;
+
   // just store the selector to be parsed later
-  $$.Stylesheet.prototype.selector = function( selector ){
+  $$.sheetfn.selector = function( selector ){
     var i = this.length++;
 
     this[i] = {
@@ -23,7 +25,7 @@
   };
 
   // just store the property to be parsed later
-  $$.Stylesheet.prototype.css = function( name, value ){
+  $$.sheetfn.css = function( name, value ){
     var i = this.length - 1;
 
     if( $$.is.string(name) ){
@@ -57,8 +59,10 @@
     return this; // chaining
   };
 
+  $$.sheetfn.style = $$.sheetfn.css;
+
   // generate a real style object from the dummy stylesheet
-  $$.Stylesheet.prototype.generateStyle = function( cy ){
+  $$.sheetfn.generateStyle = function( cy ){
     var style = new $$.Style(cy);
 
     for( var i = 0; i < this.length; i++ ){

@@ -1,5 +1,5 @@
 ;(function($$){ 'use strict';
-  
+
   $$.fn.core({
 
     // get a collection
@@ -20,7 +20,7 @@
 
       return new $$.Collection( this );
     },
-    
+
     nodes: function( selector ){
       var nodes = this.$(function(){
         return this.isNode();
@@ -28,11 +28,11 @@
 
       if( selector ){
         return nodes.filter( selector );
-      } 
+      }
 
       return nodes;
     },
-    
+
     edges: function( selector ){
       var edges = this.$(function(){
         return this.isEdge();
@@ -44,7 +44,7 @@
 
       return edges;
     },
-      
+
     // search the graph like jQuery
     $: function( selector ){
       var eles = new $$.Collection( this, this._private.elements );
@@ -55,10 +55,10 @@
 
       return eles;
     }
-    
-  });  
+
+  });
 
   // aliases
-  $$.corefn.elements = $$.corefn.filter = $$.corefn.$;  
-  
+  $$.corefn.elements = $$.corefn.filter = $$.corefn.$;
+
 })( cytoscape );

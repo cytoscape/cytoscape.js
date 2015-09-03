@@ -1,5 +1,5 @@
 ;(function($$){ 'use strict';
-  
+
   var defaults = {
     fit: true, // whether to fit the viewport to the graph
     padding: 30, // the padding on fit
@@ -10,8 +10,8 @@
     avoidOverlap: true, // prevents node overlap, may overflow boundingBox if not enough space
     height: undefined, // height of layout area (overrides container height)
     width: undefined, // width of layout area (overrides container width)
-    concentric: function(){ // returns numeric value for each node, placing higher nodes in levels towards the centre
-      return this.degree();
+    concentric: function(node){ // returns numeric value for each node, placing higher nodes in levels towards the centre
+      return node.degree();
     },
     levelWidth: function(nodes){ // the variation of concentric values in each level
       return nodes.maxDegree() / 4;
@@ -21,20 +21,20 @@
     ready: undefined, // callback on layoutready
     stop: undefined // callback on layoutstop
   };
-  
+
   function ConcentricLayout( options ){
     this.options = $$.util.extend({}, defaults, options);
   }
-  
+
   ConcentricLayout.prototype.run = function(){
     var params = this.options;
     var options = params;
-    
+
     var cy = params.cy;
-    
+
     var eles = options.eles;
     var nodes = eles.nodes().not(':parent');
-    
+
     var bb = $$.util.makeBoundingBox( options.boundingBox ? options.boundingBox : {
       x1: 0, y1: 0, w: cy.width(), h: cy.height()
     } );
@@ -43,7 +43,7 @@
       x: bb.x1 + bb.w/2,
       y: bb.y1 + bb.h/2
     };
-    
+
     var nodeValues = []; // { node, value }
     var theta = options.startAngle;
     var maxNodeSize = 0;
@@ -51,16 +51,16 @@
     for( var i = 0; i < nodes.length; i++ ){
       var node = nodes[i];
       var value;
-      
+
       // calculate the node value
-      value = options.concentric.call(node);
+      value = options.concentric.apply(node, [ node ]);
       nodeValues.push({
         value: value,
         node: node
       });
 
       // for style mapping
-      node._private.layoutData.concentric = value;
+      node._private.scratch.concentric = value;
     }
 
     // in case we used the `concentric` in style
@@ -126,7 +126,7 @@
 
       for( var j = 0; j < level.length; j++ ){
         var val = level[j];
-        var theta = options.startAngle + (options.counterclockwise ? 1 : -1) * dTheta * j;
+        var theta = options.startAngle + (options.counterclockwise ? -1 : 1) * dTheta * j;
 
         var p = {
           x: center.x + r * Math.cos(theta),
@@ -137,8 +137,8 @@
       }
 
       r += minDist;
-      
-    } 
+
+    }
 
     // position the nodes
     nodes.layoutPositions(this, options, function(){
@@ -146,10 +146,10 @@
 
       return pos[id];
     });
-  
+
     return this; // chaining
   };
-  
+
   $$('layout', 'concentric', ConcentricLayout);
-  
+
 })( cytoscape );

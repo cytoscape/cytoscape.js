@@ -1,5 +1,5 @@
 ;(function($$){ 'use strict';
-  
+
   // shamelessly taken from jQuery
   // https://github.com/jquery/jquery/blob/master/src/event.js
 
@@ -36,6 +36,7 @@
       this.namespace = props.namespace;
       this.layout = props.layout;
       this.data = props.data;
+      this.message = props.message;
     }
 
     // Create a timestamp if incoming event doesn't have one
@@ -85,6 +86,6 @@
     isPropagationStopped: returnFalse,
     isImmediatePropagationStopped: returnFalse
   };
-  
-  
+
+
 })( cytoscape );

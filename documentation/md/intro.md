@@ -11,7 +11,9 @@
   * AMD/Require.js
   * jQuery
   * npm
-  * bower
+  * Bower
+  * spm
+  * Meteor/Atmosphere
  * Has a full suite of unit tests that can be run in the browser or the terminal
  * Documentation includes live code examples, doubling as an interactive requirements specification; example graphs may also be freely modified in your browser's JS console
  * Fully serialisable and deserialisable via JSON
@@ -42,6 +44,15 @@ Cytoscape.js is an open-source project, and anyone is free to contribute.  For m
 
 The library was developed at the [Donnelly Centre](http://thedonnellycentre.utoronto.ca) at the [University of Toronto](http://www.utoronto.ca/).  It is the successor of [Cytoscape Web](http://cytoscapeweb.cytoscape.org/).
 
+
+
+## Packages
+
+ * npm : `npm install cytoscape`
+ * bower : `bower install cytoscape`
+ * spm : `spm install cytoscape`
+ * jspm : `jspm install npm:cytoscape`
+ * meteor : `meteor add maxkfranz:cytoscape`
 
 
 ## Cytoscape.js & Cytoscape

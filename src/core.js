@@ -1,10 +1,8 @@
 ;(function($$, window){ 'use strict';
 
-  var isTouch = $$.is.touch();
-
   var defaults = {
   };
-  
+
   var origDefaults = $$.util.copy( defaults );
 
   $$.defaults = function( opts ){
@@ -17,7 +15,7 @@
       $$.Core.prototype[ name ] = fn;
     }
   };
-  
+
   $$.Core = function( opts ){
     if( !(this instanceof $$.Core) ){
       return new $$.Core(opts);
@@ -30,20 +28,20 @@
     var reg = container ? container._cyreg : null; // e.g. already registered some info (e.g. readies) via jquery
     reg = reg || {};
 
-    if( reg && reg.cy ){ 
+    if( reg && reg.cy ){
       if( container ){
         while( container.firstChild ){ // clean the container
           container.removeChild( container.firstChild );
         }
       }
-      
+
       reg.cy.notify({ type: 'destroy' }); // destroy the renderer
 
       reg = {}; // old instance => replace reg completely
     }
 
     var readies = reg.readies = reg.readies || [];
-    
+
     if( container ){ container._cyreg = reg; } // make sure container assoc'd reg points to this cy
     reg.cy = cy;
 
@@ -51,7 +49,7 @@
     var options = opts;
     options.layout = $$.util.extend( { name: head ? 'grid' : 'null' }, options.layout );
     options.renderer = $$.util.extend( { name: head ? 'canvas' : 'null' }, options.renderer );
-    
+
     var defVal = function( def, val, altVal ){
       if( val !== undefined ){
         return val;
@@ -70,6 +68,7 @@
       elements: [], // array of elements
       id2index: {}, // element id => index in elements array
       listeners: [], // list of listeners
+      onRenders: [], // rendering listeners
       aniEles: $$.Collection(this), // elements being animated
       scratch: {}, // scratch object for core
       layout: null,
@@ -104,11 +103,7 @@
     if( selType === undefined || (selType !== 'additive' && selType !== 'single') ){
       // then set default
 
-      if( isTouch ){
-        _p.selectionType = 'additive';
-      } else {
-        _p.selectionType = 'single';
-      }
+      _p.selectionType = 'single';
     } else {
       _p.selectionType = selType;
     }
@@ -123,53 +118,81 @@
       _p.maxZoom = options.maxZoom;
     }
 
-    // init style
-    if( _p.styleEnabled ){
-      this.setStyle( options.style );
-    }
+    var loadExtData = function( next ){
+      var anyIsPromise = false;
 
-    // create the renderer
-    cy.initRenderer( $$.util.extend({
-      hideEdgesOnViewport: options.hideEdgesOnViewport,
-      hideLabelsOnViewport: options.hideLabelsOnViewport,
-      textureOnViewport: options.textureOnViewport,
-      wheelSensitivity: $$.is.number(options.wheelSensitivity) && options.wheelSensitivity > 0 ? options.wheelSensitivity : 1,
-      motionBlur: options.motionBlur,
-      pixelRatio: $$.is.number(options.pixelRatio) && options.pixelRatio > 0 ? options.pixelRatio : (options.pixelRatio === 'auto' ? undefined : 1),
-      tapThreshold: defVal( $$.is.touch() ? 8 : 4, $$.is.touch() ? options.touchTapThreshold : options.desktopTapThreshold )
-    }, options.renderer) );
+      for( var i = 0; i < extData.length; i++ ){
+        var datum = extData[i];
 
-    // trigger the passed function for the `initrender` event
-    if( options.initrender ){
-      cy.on('initrender', options.initrender);
-      cy.on('initrender', function(){
-        cy._private.initrender = true;
-      });
-    }
-
-    // initial load
-    cy.load(options.elements, function(){ // onready
-      cy.startAnimationLoop();
-      cy._private.ready = true;
-
-      // if a ready callback is specified as an option, the bind it
-      if( $$.is.fn( options.ready ) ){
-        cy.on('ready', options.ready);
+        if( $$.is.promise(datum) ){
+          anyIsPromise = true;
+          break;
+        }
       }
 
-      // bind all the ready handlers registered before creating this instance
-      for( var i = 0; i < readies.length; i++ ){
-        var fn = readies[i];
-        cy.on('ready', fn);
+      if( anyIsPromise ){
+        return $$.Promise.all( extData ).then( next ); // load all data asynchronously, then exec rest of init
+      } else {
+        next( extData ); // exec synchronously for convenience
       }
-      if( reg ){ reg.readies = []; } // clear b/c we've bound them all and don't want to keep it around in case a new core uses the same div etc
-      
-      cy.trigger('ready');
-    }, options.done);
+    };
+
+    var extData = [ options.style, options.elements ];
+    loadExtData(function( thens ){
+      var initStyle = thens[0];
+      var initEles = thens[1];
+
+      // init style
+      if( _p.styleEnabled ){
+        cy.setStyle( initStyle );
+      }
+
+      // create the renderer
+      cy.initRenderer( $$.util.extend({
+        hideEdgesOnViewport: options.hideEdgesOnViewport,
+        hideLabelsOnViewport: options.hideLabelsOnViewport,
+        textureOnViewport: options.textureOnViewport,
+        wheelSensitivity: $$.is.number(options.wheelSensitivity) && options.wheelSensitivity > 0 ? options.wheelSensitivity : 1,
+        motionBlur: options.motionBlur === undefined ? true : options.motionBlur, // on by default
+        motionBlurOpacity: options.motionBlurOpacity === undefined ? 0.05 : options.motionBlurOpacity,
+        pixelRatio: $$.is.number(options.pixelRatio) && options.pixelRatio > 0 ? options.pixelRatio : (options.pixelRatio === 'auto' ? undefined : 1),
+        desktopTapThreshold: options.desktopTapThreshold === undefined ? 4 : options.desktopTapThreshold,
+        touchTapThreshold: options.touchTapThreshold === undefined ? 8 : options.touchTapThreshold
+      }, options.renderer) );
+
+      // trigger the passed function for the `initrender` event
+      if( options.initrender ){
+        cy.on('initrender', options.initrender);
+        cy.on('initrender', function(){
+          cy._private.initrender = true;
+        });
+      }
+
+      // initial load
+      cy.load(initEles, function(){ // onready
+        cy.startAnimationLoop();
+        cy._private.ready = true;
+
+        // if a ready callback is specified as an option, the bind it
+        if( $$.is.fn( options.ready ) ){
+          cy.on('ready', options.ready);
+        }
+
+        // bind all the ready handlers registered before creating this instance
+        for( var i = 0; i < readies.length; i++ ){
+          var fn = readies[i];
+          cy.on('ready', fn);
+        }
+        if( reg ){ reg.readies = []; } // clear b/c we've bound them all and don't want to keep it around in case a new core uses the same div etc
+
+        cy.trigger('ready');
+      }, options.done);
+
+    });
   };
 
   $$.corefn = $$.Core.prototype; // short alias
-  
+
 
   $$.fn.core({
     isReady: function(){
@@ -194,7 +217,11 @@
       var domEle = this.container();
       var parEle = domEle.parentNode;
       if( parEle ){
-        parEle.removeChild( domEle );
+        try{
+          parEle.removeChild( domEle );
+        } catch(e){
+          // ie10 issue #1014
+        }
       }
 
       return this;
@@ -276,19 +303,19 @@
     options: function(){
       return $$.util.copy( this._private.options );
     },
-    
+
     json: function(params){
       var json = {};
       var cy = this;
-      
+
       json.elements = {};
       cy.elements().each(function(i, ele){
         var group = ele.group();
-        
+
         if( !json.elements[group] ){
           json.elements[group] = [];
         }
-        
+
         json.elements[group].push( ele.json() );
       });
 
@@ -312,7 +339,7 @@
       json.textureOnViewport = cy._private.options.textureOnViewport;
       json.wheelSensitivity = cy._private.options.wheelSensitivity;
       json.motionBlur = cy._private.options.motionBlur;
-      
+
       return json;
     },
 
@@ -334,7 +361,7 @@
         }, 0);
       }
     }
-    
-  });  
-  
+
+  });
+
 })( cytoscape, typeof window === 'undefined' ? null : window );

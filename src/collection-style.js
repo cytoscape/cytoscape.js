@@ -81,7 +81,7 @@
     // read the calculated css style of the element or override the style (via a bypass)
     css: function( name, value ){
       var cy = this.cy();
-      
+
       if( !cy.styleEnabled() ){ return this; }
 
       var updateTransitions = false;
@@ -96,7 +96,7 @@
         toNotify.rtrigger('style'); // let the renderer know we've updated style
 
       } else if( $$.is.string(name) ){
-  
+
         if( value === undefined ){ // then get the property from the style
           var ele = this[0];
 
@@ -129,7 +129,7 @@
 
     removeCss: function( names ){
       var cy = this.cy();
-      
+
       if( !cy.styleEnabled() ){ return this; }
 
       var updateTransitions = false;
@@ -185,7 +185,7 @@
         ){
           return false;
         }
-        
+
         if( ele._private.group === 'nodes' ){
           if( !hasCompoundNodes ){ return true; }
 
@@ -237,7 +237,7 @@
         if( !hasCompoundNodes ){ return parentOpacity; }
 
         var parents = !_p.data.parent ? null : ele.parents();
-        
+
         if( parents ){
           for( var i = 0; i < parents.length; i++ ){
             var parent = parents[i];
@@ -252,6 +252,9 @@
     },
 
     transparent: function(){
+      var cy = this.cy();
+      if( !cy.styleEnabled() ){ return false; }
+
       var ele = this[0];
       var hasCompoundNodes = ele.cy().hasCompoundNodes();
 
@@ -276,13 +279,22 @@
 
         return ele.isParent() && autoW && autoH;
       }
+    },
+
+    backgrounding: function(){
+      var cy = this.cy();
+      if( !cy.styleEnabled() ){ return false; }
+
+      var ele = this[0];
+
+      return ele._private.backgrounding ? true : false;
     }
 
   });
 
 
-  $$.elesfn.style = $$.elesfn.css;
+  $$.elesfn.bypass = $$.elesfn.style = $$.elesfn.css;
   $$.elesfn.renderedStyle = $$.elesfn.renderedCss;
-  $$.elesfn.removeStyle = $$.elesfn.removeCss;
-  
+  $$.elesfn.removeBypass = $$.elesfn.removeStyle = $$.elesfn.removeCss;
+
 })( cytoscape );

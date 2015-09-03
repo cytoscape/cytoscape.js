@@ -1,16 +1,17 @@
 ;(function($$){ 'use strict';
 
   var CanvasRenderer = $$('renderer', 'canvas');
+  var CRp = CanvasRenderer.prototype;
 
-  CanvasRenderer.prototype.createBuffer = function(w, h) {
+  CRp.createBuffer = function(w, h) {
     var buffer = document.createElement('canvas');
     buffer.width = w;
     buffer.height = h;
-    
+
     return [buffer, buffer.getContext('2d')];
   };
 
-  CanvasRenderer.prototype.bufferCanvasImage = function( options ){
+  CRp.bufferCanvasImage = function( options ){
     var data = this.data;
     var cy = data.cy;
     var bb = cy.elements().boundingBox();
@@ -23,6 +24,22 @@
       height *= options.scale;
 
       scale = options.scale;
+    } else if( $$.is.number(options.maxWidth) || $$.is.number(options.maxHeight) ){
+      var maxScaleW = Infinity;
+      var maxScaleH = Infinity;
+
+      if( $$.is.number(options.maxWidth) ){
+        maxScaleW = scale * options.maxWidth / width;
+      }
+
+      if( $$.is.number(options.maxHeight) ){
+        maxScaleH = scale * options.maxHeight / height;
+      }
+
+      scale = Math.min( maxScaleW, maxScaleH );
+
+      width *= scale;
+      height *= scale;
     }
 
     var buffCanvas = document.createElement('canvas');
@@ -75,10 +92,14 @@
     }
 
     return buffCanvas;
-  }; 
+  };
 
-  CanvasRenderer.prototype.png = function( options ){
+  CRp.png = function( options ){
     return this.bufferCanvasImage( options ).toDataURL('image/png');
+  };
+
+  CRp.jpg = function( options ){
+    return this.bufferCanvasImage( options ).toDataURL('image/jpeg');
   };
 
 })( cytoscape );

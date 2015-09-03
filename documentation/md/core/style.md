@@ -5,7 +5,7 @@ You can use this function to gain access to the visual style (stylesheet) after 
 Sets a new style by reference:
 
 ```js
-// here a string stylesheet is used, but you could also use json or a cytoscape.Stylesheet object
+// here a string stylesheet is used, but you could also use json or a cytoscape.stylesheet() object
 var stringStylesheet = 'node { background-color: cyan; }';
 cy.style( stringStylesheet );
 ```
@@ -18,7 +18,7 @@ cy.style()
 
   // and then define new styles
   .selector('node')
-  	.css('background-color', 'magenta')
+  	.style('background-color', 'magenta')
 
   // ...
 
@@ -30,7 +30,7 @@ You can also add to the existing stylesheet:
 ```js
 cy.style()
   .selector('node')
-    .css({
+    .style({
       'background-color': 'yellow'
     })
 
@@ -45,7 +45,7 @@ cy.style()
   .fromJson([
     {
       selector: 'node',
-      css: {
+      style: {
         'background-color': 'red'
       }
     }
@@ -65,4 +65,11 @@ cy.style()
 
   .update() // update the elements in the graph with the new style
 ;
+```
+
+You can also get the current style as JSON:
+
+```js
+var styleJson = cy.style().json(); 
+var serializedJson = JSON.stringify( styleJson );
 ```

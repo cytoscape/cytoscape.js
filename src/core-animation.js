@@ -1,7 +1,7 @@
 ;(function($$, window){ 'use strict';
-  
+
   $$.fn.core({
-    
+
     // pull in animation functions
     animated: $$.define.animated(),
     clearQueue: $$.define.clearQueue(),
@@ -13,7 +13,7 @@
       var cy = this;
 
       if( !cy.styleEnabled() ){ return; } // save cycles when no style used
-      
+
       cy._private.aniEles.merge( eles );
     },
 
@@ -26,57 +26,61 @@
       if( !window ){
         return;
       }
-      
+
       function globalAnimationStep(){
         $$.util.requestAnimationFrame(function(now){
           handleElements(now);
           globalAnimationStep();
         });
       }
-      
+
       globalAnimationStep(); // first call
-      
+
       function handleElements(now){
         now = +new Date();
 
         var eles = cy._private.aniEles;
         var doneEles = [];
+        var startedSomeAniThisTick = false;
 
         function handleElement( ele, isCore ){
           var current = ele._private.animation.current;
           var queue = ele._private.animation.queue;
           var ranAnis = false;
-          
+
           // if nothing currently animating, get something from the queue
           if( current.length === 0 ){
             var next = queue.length > 0 ? queue.shift() : null;
-            
+
             if( next ){
               next.callTime = now; // was queued, so update call time
               current.push( next );
             }
           }
-          
+
           // step and remove if done
           var completes = [];
           for(var i = current.length - 1; i >= 0; i--){
             var ani = current[i];
 
             // start if need be
-            if( !ani.started ){ startAnimation( ele, ani ); }
-            
+            if( !ani.started ){
+              startAnimation( ele, ani );
+              startedSomeAniThisTick = true;
+            }
+
             step( ele, ani, now, isCore );
 
             if( ani.done ){
               completes.push( ani );
-              
+
               // remove current[i]
               current.splice(i, 1);
             }
 
             ranAnis = true;
           }
-          
+
           // call complete callbacks
           for( var i = 0; i < completes.length; i++ ){
             var ani = completes[i];
@@ -97,12 +101,12 @@
         // handle all eles
         for( var e = 0; e < eles.length; e++ ){
           var ele = eles[e];
-          
+
           handleElement( ele );
         } // each element
 
         var ranCoreAni = handleElement( cy, true );
-        
+
         // notify renderer
         if( eles.length > 0 || ranCoreAni ){
           var toNotify;
@@ -113,7 +117,7 @@
           }
 
           cy.notify({
-            type: 'draw',
+            type: startedSomeAniThisTick ? 'style' : 'draw',
             collection: toNotify
           });
         }
@@ -122,7 +126,7 @@
         eles.unmerge( doneEles );
 
       } // handleElements
-      
+
       function startAnimation( self, ani ){
         var isCore = $$.is.core( self );
         var isEles = !isCore;
@@ -163,7 +167,7 @@
         var startTime = animation.startTime;
         var percent;
         var isEles = !isCore;
-        
+
         if( animation.duration === 0 ){
           percent = 1;
         } else {
@@ -175,7 +179,7 @@
         } else if( percent > 1 ){
           percent = 1;
         }
-        
+
         if( properties.delay == null ){ // then update
 
           var startPos = animation.startPosition;
@@ -222,8 +226,8 @@
             self.trigger('viewport');
           }
 
-          if( properties.css && isEles ){
-            var props = properties.css;
+          var props = properties.style || properties.css;
+          if( props && isEles ){
 
             for( var i = 0; i < props.length; i++ ){
               var name = props[i].name;
@@ -232,38 +236,39 @@
 
               var start = animation.startStyle[ name ];
               var easedVal = ease( start, end, percent );
-              
+
               style.overrideBypass( self, name, easedVal );
             } // for props
-          } // if 
+
+          } // if
 
         }
-        
+
         if( $$.is.fn(params.step) ){
           params.step.apply( self, [ now ] );
         }
-        
+
         if( percent >= 1 ){
           animation.done = true;
         }
-        
+
         return percent;
       }
-      
+
       function valid(start, end){
         if( start == null || end == null ){
           return false;
         }
-        
+
         if( $$.is.number(start) && $$.is.number(end) ){
           return true;
         } else if( (start) && (end) ){
           return true;
         }
-        
+
         return false;
       }
-      
+
       function ease(startProp, endProp, percent){
         if( percent < 0 ){
           percent = 0;
@@ -297,23 +302,19 @@
             var min = ch1;
             return Math.round( percent * diff + min );
           };
-          
+
           var r = ch( c1[0], c2[0] );
           var g = ch( c1[1], c2[1] );
           var b = ch( c1[2], c2[2] );
-          
+
           return [r, g, b];
         }
-        
+
         return undefined;
       }
-      
+
     }
-    
+
   });
-  
+
 })( cytoscape, typeof window === 'undefined' ? null : window );
-
-
-  
-    

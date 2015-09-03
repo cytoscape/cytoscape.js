@@ -1,8 +1,8 @@
 ;(function($$){ 'use strict';
-  
+
   // Functions for layouts on nodes
   ////////////////////////////////////////////////////////////////////////////////////////////////////
-  
+
   $$.fn.eles({
 
     // using standard layout options, apply position function (w/ or w/o animation)
@@ -30,8 +30,8 @@
             duration: options.animationDuration,
             step: !lastNode ? undefined : function(){
               if( options.fit ){
-                cy.fit( options.padding );
-              } 
+                cy.fit( options.eles, options.padding );
+              }
             },
             complete: !lastNode ? undefined : function(){
               if( options.zoom != null ){
@@ -40,12 +40,12 @@
 
               if( options.pan ){
                 cy.pan( options.pan );
-              } 
+              }
 
               if( options.fit ){
-                cy.fit( options.padding );
-              } 
-              
+                cy.fit( options.eles, options.padding );
+              }
+
               layout.one('layoutstop', options.stop);
               layout.trigger({ type: 'layoutstop', layout: layout });
             }
@@ -58,7 +58,7 @@
         nodes.positions( fn );
 
         if( options.fit ){
-          cy.fit( options.padding );
+          cy.fit( options.eles, options.padding );
         }
 
         if( options.zoom != null ){
@@ -67,11 +67,11 @@
 
         if( options.pan ){
           cy.pan( options.pan );
-        } 
+        }
 
         layout.one('layoutready', options.ready);
         layout.trigger({ type: 'layoutready', layout: layout });
-        
+
         layout.one('layoutstop', options.stop);
         layout.trigger({ type: 'layoutstop', layout: layout });
       }
@@ -98,5 +98,8 @@
     }
 
   });
-  
+
+  // aliases:
+  $$.elesfn.createLayout = $$.elesfn.makeLayout;
+
 })( cytoscape );

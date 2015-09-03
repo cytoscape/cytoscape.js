@@ -1,5 +1,5 @@
 ;(function($$){ 'use strict';
-  
+
   var defaults = {
     animate: true, // whether to show the layout as it's running
     maxSimulationTime: 4000, // max length in ms to run the layout
@@ -9,7 +9,7 @@
     ungrabifyWhileSimulating: false, // so you can't drag nodes during layout
 
     // callbacks on layout events
-    ready: undefined, // callback on layoutready 
+    ready: undefined, // callback on layoutready
     stop: undefined, // callback on layoutstop
 
     // forces used by arbor (use arbor default on undefined)
@@ -23,7 +23,7 @@
     // static numbers or functions that dynamically return what these
     // values should be for each element
     // e.g. nodeMass: function(n){ return n.data('weight') }
-    nodeMass: undefined, 
+    nodeMass: undefined,
     edgeLength: undefined,
 
     stepSize: 0.1, // smoothing of arbor bounding box
@@ -31,20 +31,20 @@
     // function that returns true if the system is stable to indicate
     // that the layout can be stopped
     stableEnergy: function( energy ){
-      var e = energy; 
+      var e = energy;
       return (e.max <= 0.5) || (e.mean <= 0.3);
     },
 
     // infinite layout options
     infinite: false // overrides all other options for a forces-all-the-time mode
   };
-  
+
   function ArborLayout(options){
     this._private = {};
 
     this._private.options = $$.util.extend({}, defaults, options);
   }
-    
+
   ArborLayout.prototype.run = function(){
     var layout = this;
     var options = this._private.options;
@@ -67,13 +67,13 @@
         options.animate = options.liveUpdate;
       }
 
-      // arbor doesn't work with just 1 node 
-      if( cy.nodes().size() <= 1 ){
+      // arbor doesn't work with just 1 node
+      if( eles.nodes().size() <= 1 ){
         if( options.fit ){
           cy.reset();
         }
 
-        cy.nodes().position({
+        eles.nodes().position({
           x: Math.round( (bb.x1 + bb.x2)/2 ),
           y: Math.round( (bb.y1 + bb.y2)/2 )
         });
@@ -91,23 +91,23 @@
 
       sys.parameters({
         repulsion: options.repulsion,
-        stiffness: options.stiffness, 
-        friction: options.friction, 
-        gravity: options.gravity, 
-        fps: options.fps, 
-        dt: options.dt, 
+        stiffness: options.stiffness,
+        friction: options.friction,
+        gravity: options.gravity,
+        fps: options.fps,
+        dt: options.dt,
         precision: options.precision
       });
 
       if( options.animate && options.fit ){
         cy.fit( bb, options.padding );
       }
-      
+
       var doneTime = 250;
       var doneTimeout;
-      
+
       var ready = false;
-      
+
       var lastDraw = +new Date();
       var sysRenderer = {
         init: function(system){
@@ -125,13 +125,13 @@
             clearTimeout(doneTimeout);
             doneTimeout = setTimeout(doneHandler, doneTime);
           }
-          
+
           var movedNodes = cy.collection();
-          
-          sys.eachNode(function(n, point){ 
+
+          sys.eachNode(function(n, point){
             var data = n.data;
             var node = data.element;
-            
+
             if( node == null ){
               return;
             }
@@ -145,7 +145,7 @@
               movedNodes.merge( node );
             }
           });
-          
+
 
           if( options.animate && movedNodes.length > 0 ){
             simUpdatingPos = true;
@@ -160,14 +160,14 @@
             simUpdatingPos = false;
           }
 
-          
+
           if( !ready ){
             ready = true;
             layout.one('layoutready', options.ready);
             layout.trigger({ type: 'layoutready', layout: layout });
           }
         }
-        
+
       };
       sys.renderer = sysRenderer;
       sys.screenSize( bb.w, bb.h );
@@ -182,7 +182,7 @@
             nodes: nodes.length,
             edges: edges.length,
             element: element
-          }]); 
+          }]);
         } else {
           return value;
         }
@@ -205,7 +205,7 @@
         ){
           this.scratch().arbor.p = p;
         }
-        
+
         switch( e.type ){
         case 'grab':
           this.scratch().arbor.fixed = true;
@@ -221,7 +221,7 @@
       nodes.on('lock unlock', lockHandler = function(e){
         node.scratch().arbor.fixed = node.locked();
       });
-            
+
       var removeHandler;
       eles.on('remove', removeHandler = function(e){ return; // TODO enable when layout add/remove api added
         // var ele = this;
@@ -264,7 +264,7 @@
         var mass = calculateValueForElement(node, options.nodeMass);
         var locked = node._private.locked;
         var nPos = node.position();
-        
+
         var pos = sys.fromScreen({
           x: nPos.x,
           y: nPos.y
@@ -274,8 +274,8 @@
           element: node,
           mass: mass,
           fixed: locked,
-          x: locked ? pos.x : undefined,
-          y: locked ? pos.y : undefined
+          x: locked && pos ? pos.x : undefined,
+          y: locked && pos ? pos.y : undefined
         });
       }
 
@@ -283,26 +283,26 @@
         var src = edge.source().id();
         var tgt = edge.target().id();
         var length = calculateValueForElement(edge, options.edgeLength);
-        
+
         edge.scratch().arbor = sys.addEdge(src, tgt, {
           length: length
-        }); 
+        });
       }
 
       nodes.each(function(i, node){
         addNode( node );
       });
-      
+
       edges.each(function(i, edge){
         addEdge( edge );
       });
-      
+
       var grabbableNodes = nodes.filter(":grabbable");
       // disable grabbing if so set
       if( options.ungrabifyWhileSimulating ){
         grabbableNodes.ungrabify();
       }
-      
+
       var doneHandler = layout._private.doneHandler = function(){
         layout._private.doneHandler = null;
 
@@ -320,7 +320,7 @@
         eles.off('remove', removeHandler);
         cy.off('add', '*', addHandler);
         cy.off('resize', resizeHandler);
-        
+
         // enable back grabbing if so set
         if( options.ungrabifyWhileSimulating ){
           grabbableNodes.grabify();
@@ -329,14 +329,14 @@
         layout.one('layoutstop', options.stop);
         layout.trigger({ type: 'layoutstop', layout: layout });
       };
-      
+
       sys.start();
       if( !options.infinite && options.maxSimulationTime != null && options.maxSimulationTime > 0 && options.maxSimulationTime !== Infinity ){
         setTimeout(function(){
           layout.stop();
         }, options.maxSimulationTime);
       }
-    
+
     }); // require
 
     return this; // chaining
@@ -354,8 +354,8 @@
 
     return this; // chaining
   };
-  
+
   $$('layout', 'arbor', ArborLayout);
-  
-  
+
+
 })(cytoscape);

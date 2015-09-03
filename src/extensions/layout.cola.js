@@ -2,7 +2,7 @@
 
   // default layout options
   var defaults = {
-    animate: false, // whether to show the layout as it's running
+    animate: true, // whether to show the layout as it's running
     refresh: 1, // number of ticks per frame; higher is faster but more jerky
     maxSimulationTime: 4000, // max length in ms to run the layout
     ungrabifyWhileSimulating: false, // so you can't drag nodes during layout
@@ -40,13 +40,15 @@
   // constructor
   // options : object containing layout options
   function ColaLayout( options ){
-    this.options = $$.util.extend(true, {}, defaults, options); 
+    this.options = $$.util.extend(true, {}, defaults, options);
   }
 
   // runs the layout
   ColaLayout.prototype.run = function(){
     var layout = this;
     var options = this.options;
+
+    layout.manuallyStopped = false;
 
     $$.util.require('cola', function(cola){
 
@@ -55,7 +57,7 @@
       var nodes = eles.nodes();
       var edges = eles.edges();
       var ready = false;
-      
+
       var bb = $$.util.makeBoundingBox( options.boundingBox ? options.boundingBox : {
         x1: 0, y1: 0, w: cy.width(), h: cy.height()
       } );
@@ -82,6 +84,15 @@
 
           y.min = Math.min( y.min, scratch.y || 0 );
           y.max = Math.max( y.max, scratch.y || 0 );
+
+          // update node dims
+          if( !scratch.updatedDims ){
+            var nbb = node.boundingBox();
+            var padding = getOptVal( options.nodeSpacing, node );
+
+            scratch.width = nbb.w + 2*padding;
+            scratch.height = nbb.h + 2*padding;
+          }
         }
 
         nodes.positions(function(i, node){
@@ -115,8 +126,6 @@
       };
 
       var onDone = function(){
-        layout.manuallyStopped = false;
-
         if( options.ungrabifyWhileSimulating ){
           grabbableNodes.grabify();
         }
@@ -145,32 +154,43 @@
         ticksPerFrame = Math.max( 1, ticksPerFrame ); // at least 1
       }
 
-      var adaptor = cola.adaptor({
+      var adaptor = layout.adaptor = cola.adaptor({
         trigger: function( e ){ // on sim event
+          var TICK = cola.EventType ? cola.EventType.tick : null;
+          var END = cola.EventType ? cola.EventType.end : null;
+
           switch( e.type ){
             case 'tick':
+            case TICK:
               if( options.animate ){
                 updateNodePositions();
               }
               break;
 
-            case 'end': 
+            case 'end':
+            case END:
               updateNodePositions();
-              if( !options.infinite || layout.manuallyStopped ){ onDone(); }           
+              if( !options.infinite ){ onDone(); }
               break;
           }
         },
 
-        kick: function( tick ){ // kick off the simulation
+        kick: function(){ // kick off the simulation
           var skip = 0;
 
           var inftick = function(){
-            var ret = tick();
+            if( layout.manuallyStopped ){
+              onDone();
+
+              return true;
+            }
+
+            var ret = adaptor.tick();
 
             if( ret && options.infinite ){ // resume layout if done
               adaptor.resume(); // resume => new kick
             }
-            
+
             return ret; // allow regular finish b/c of new kick
           };
 
@@ -178,11 +198,11 @@
             var ret;
 
             // skip ticks to slow down layout for debugging
-            var thisSkip = skip;
-            skip = (skip + 1) % tickSkip;
-            if( thisSkip !== 0 ){
-              return false;
-            }
+            // var thisSkip = skip;
+            // skip = (skip + 1) % tickSkip;
+            // if( thisSkip !== 0 ){
+            //   return false;
+            // }
 
             for( var i = 0; i < ticksPerFrame && !ret; i++ ){
               ret = ret || inftick(); // pick up true ret vals => sim done
@@ -206,7 +226,7 @@
 
         on: function( type, listener ){}, // dummy; not needed
 
-        drag: function(){} // TODO
+        drag: function(){} // not needed for our case
       });
       layout.adaptor = adaptor;
 
@@ -223,15 +243,9 @@
         var scrCola = node._private.scratch.cola;
         var pos = node._private.position;
 
-        if( node.grabbed() ){
-          scrCola.x = pos.x - bb.x1;
-          scrCola.y = pos.y - bb.y1;
-
-          adaptor.dragstart( scrCola );
-        } else if( $$.is.number(scrCola.x) && $$.is.number(scrCola.y) ){
-          pos.x = scrCola.x + bb.x1;
-          pos.y = scrCola.y + bb.y1;
-        }
+        // update cola pos obj
+        scrCola.x = pos.x - bb.x1;
+        scrCola.y = pos.y - bb.y1;
 
         switch( e.type ){
           case 'grab':
@@ -242,14 +256,14 @@
             adaptor.dragend( scrCola );
             break;
         }
-        
+
       });
 
       var lockHandler;
       nodes.on('lock unlock', lockHandler = function(e){
         var node = this;
         var scrCola = node._private.scratch.cola;
-      
+
         if( node.locked() ){
           adaptor.dragstart( scrCola );
         } else {
@@ -265,12 +279,13 @@
       adaptor.nodes( nonparentNodes.map(function( node, i ){
         var padding = getOptVal( options.nodeSpacing, node );
         var pos = node.position();
+        var nbb = node.boundingBox();
 
         var struct = node._private.scratch.cola = {
-          x: options.randomize ? Math.round( Math.random() * bb.w ) : pos.x,
-          y: options.randomize ? Math.round( Math.random() * bb.h ) : pos.y,
-          width: node.outerWidth() + 2*padding,
-          height: node.outerHeight() + 2*padding,
+          x: options.randomize || pos.x === undefined ? Math.round( Math.random() * bb.w ) : pos.x,
+          y: options.randomize || pos.y === undefined ? Math.round( Math.random() * bb.h ) : pos.y,
+          width: nbb.w + 2*padding,
+          height: nbb.h + 2*padding,
           index: i
         };
 
@@ -322,7 +337,7 @@
             offsets: offsetsY
           });
         }
-        
+
         adaptor.constraints( constraints );
 
       }
@@ -331,8 +346,19 @@
       adaptor.groups( nodes.stdFilter(function( node ){
         return node.isParent();
       }).map(function( node, i ){ // add basic group incl leaf nodes
+        var style = node._private.style;
+
+        var optPadding = getOptVal( options.nodeSpacing, node );
+
+        var pleft = style['padding-left'].pxValue + optPadding;
+        var pright = style['padding-right'].pxValue + optPadding;
+        var ptop = style['padding-top'].pxValue + optPadding;
+        var pbottom = style['padding-bottom'].pxValue + optPadding;
+
         node._private.scratch.cola = {
           index: i,
+
+          padding: Math.max( pleft, pright, ptop, pbottom ),
 
           leaves: node.descendants().stdFilter(function( child ){
             return !child.isParent();
@@ -426,17 +452,19 @@
         adaptor.flowLayout( flow.axis , flow.minSeparation );
       }
 
+      layout.trigger({ type: 'layoutstart', layout: layout });
+
       adaptor
         .avoidOverlaps( options.avoidOverlap )
         .handleDisconnected( options.handleDisconnected )
         .start( options.unconstrIter, options.userConstIter, options.allConstIter)
       ;
 
-      layout.trigger({ type: 'layoutstart', layout: layout });
-
       if( !options.infinite ){
         setTimeout(function(){
-          adaptor.stop();
+          if( !layout.manuallyStopped ){
+            adaptor.stop();
+          }
         }, options.maxSimulationTime);
       }
 

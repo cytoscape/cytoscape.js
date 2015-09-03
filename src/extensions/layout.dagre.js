@@ -8,7 +8,8 @@
     rankSep: undefined, // the separation between adjacent nodes in the same rank
     rankDir: undefined, // 'TB' for top to bottom flow, 'LR' for left to right
     minLen: function( edge ){ return 1; }, // number of ranks to keep between the source and target of the edge
-    
+    edgeWeight: function( edge ){ return 1; }, // higher weight edges are generally made shorter and straighter than lower weight edges
+
     // general layout options
     fit: true, // whether to fit to viewport
     padding: 30, // fit padding
@@ -22,7 +23,7 @@
   // constructor
   // options : object containing layout options
   function DagreLayout( options ){
-    this.options = $$.util.extend(true, {}, defaults, options); 
+    this.options = $$.util.extend(true, {}, defaults, options);
   }
 
   // runs the layout
@@ -35,58 +36,84 @@
       var cy = options.cy; // cy is automatically populated for us in the constructor
       var eles = options.eles;
 
+      var getVal = function( ele, val ){
+        return $$.is.fn(val) ? val.apply( ele, [ ele ] ) : val;
+      };
+
       var bb = $$.util.makeBoundingBox( options.boundingBox ? options.boundingBox : {
         x1: 0, y1: 0, w: cy.width(), h: cy.height()
       } );
 
-      var g = new dagre.Digraph();
+      var g = new dagre.graphlib.Graph({
+        multigraph: true,
+        compound: true
+      });
+
+      var gObj = {};
+      var setGObj = function( name, val ){
+        if( val != null ){
+          gObj[ name ] = val;
+        }
+      };
+
+      setGObj( 'nodesep', options.nodeSep );
+      setGObj( 'edgesep', options.edgeSep );
+      setGObj( 'ranksep', options.rankSep );
+      setGObj( 'rankdir', options.rankDir );
+
+      g.setGraph( gObj );
+
+      g.setDefaultEdgeLabel(function() { return {}; });
+      g.setDefaultNodeLabel(function() { return {}; });
 
       // add nodes to dagre
-      var nodes = eles.nodes().not(':parent');
+      var nodes = eles.nodes();
       for( var i = 0; i < nodes.length; i++ ){
         var node = nodes[i];
 
-        g.addNode( node.id(), {
+        g.setNode( node.id(), {
           width: node.width(),
-          height: node.height()
+          height: node.height(),
+          name: node.id()
         } );
+
+        // console.log( g.node(node.id()) );
+      }
+
+      // set compound parents
+      for( var i = 0; i < nodes.length; i++ ){
+        var node = nodes[i];
+
+        if( node.isChild() ){
+          g.setParent( node.id(), node.parent().id() );
+        }
       }
 
       // add edges to dagre
-      var edges = eles.edges().stdFilter(function( e ){
-        return !e.source().is(':parent') && !e.target().is(':parent');
+      var edges = eles.edges().stdFilter(function( edge ){
+        return !edge.source().isParent() && !edge.target().isParent(); // dagre can't handle edges on compound nodes
       });
       for( var i = 0; i < edges.length; i++ ){
         var edge = edges[i];
 
-        g.addEdge( edge.id(), edge.source().id(), edge.target().id(), {
-          minLen: $$.is.fn(options.minLen) ? options.minLen.apply( edge, [ edge ] ) : options.minLen
-        } );
+        g.setEdge( edge.source().id(), edge.target().id(), {
+          minlen: getVal( edge, options.minLen ),
+          weight: getVal( edge, options.edgeWeight ),
+          name: edge.id()
+        }, edge.id() );
+
+        // console.log( g.edge(edge.source().id(), edge.target().id(), edge.id()) );
       }
 
-      var d = dagre.layout();
+      dagre.layout( g );
 
-      if( options.nodeSep ){
-        d.nodeSep( options.nodeSep );
-      }
+      var gNodeIds = g.nodes();
+      for( var i = 0; i < gNodeIds.length; i++ ){
+        var id = gNodeIds[i];
+        var n = g.node( id );
 
-      if( options.edgeSep ){
-        d.edgeSep( options.edgeSep );
-      }
-      
-      if( options.rankSep ){
-        d.rankSep( options.rankSep );
-      }
-
-      if( options.rankDir ){
-        d.rankDir( options.rankDir );
-      }
-        
-      d = d.run(g);
-
-      d.eachNode(function(id, n) {
         cy.getElementById(id).scratch().dagre = n;
-      });
+      }
 
       var dagreBB;
 

@@ -2,7 +2,7 @@
   "use strict";
 
   /*  Min and Max heap predefaults */
-  
+
   $$.Minheap = function (cy, eles, valueFn) {
     return new $$.Heap(cy, eles, $$.Heap.minHeapComparator, valueFn);
   };
@@ -10,12 +10,12 @@
   $$.Maxheap = function (cy, eles, valueFn) {
     return new $$.Heap(cy, eles, $$.Heap.maxHeapComparator, valueFn);
   };
-  
+
   $$.Heap = function (cy, eles, comparator, valueFn) {
     if (typeof comparator === "undefined" || typeof eles === "undefined") {
       return;
     }
-    
+
     if (typeof valueFn === "undefined") {
       valueFn = $$.Heap.idFn;
     }
@@ -35,11 +35,11 @@
       sourceHeap.push(valueFn.call(cy, eles[i], i, eles));
 
       id = eles[i].id();
-      
+
       if (pointers.hasOwnProperty(id)) {
         throw "ERROR: Multiple items with the same id found: " + id;
       }
-      
+
       pointers[id] = i;
       elements.push(id);
     }
@@ -169,7 +169,7 @@
       best,
       comparator,
       parent;
-    
+
     if (typeof rootToLeaf === "undefined") {
       rootToLeaf = true;
     }
@@ -185,17 +185,17 @@
         left = 2 * current + 1;
         right = left + 1;
         best = current;
-        
+
         if (left < treeLen && !comparator(array[left], array[best])) {
           best = left;
         }
-        
+
         if (right < treeLen && !comparator(array[right], array[best])) {
           best = right;
         }
-        
+
         condHeap = best === current;
-        
+
         if (!condHeap) {
           this.heapSwap(best, current);
           current = best;
@@ -251,7 +251,7 @@
       return this._private.heap[elementIndex];
     }
   };
-  
+
   $$.heapfn.contains = function (eles) {
     var elements = this.getArgumentAsCollection(eles);
 
@@ -265,7 +265,7 @@
 
     return true;
   };
-  
+
   $$.heapfn.top = function () {
     if (this._private.length > 0) {
 
@@ -313,15 +313,15 @@
   // only values in heap are updated. elements themselves are not!
   $$.heapfn.edit = function (eles, edit) {
     var elements = this.getArgumentAsCollection(eles);
-    
+
     for (var i = 0; i < elements.length; i += 1) {
       var elementId = elements[i].id(),
         elementIndex = this._private.pointers[elementId],
         elementValue = this._private.heap[elementIndex];
-      
+
       if ($$.is.number(edit)) {
         this._private.heap[elementIndex] = edit;
-        
+
       } else if ($$.is.fn(edit)) {
         this._private.heap[elementIndex] = edit.call(this._private.cy, elementValue, elementIndex);
       }
@@ -332,7 +332,7 @@
 
   $$.heapfn.remove = function (eles) {
     var elements = this.getArgumentAsCollection(eles);
-    
+
     for (var i = 0; i < elements.length; i += 1) {
       var elementId = elements[i].id(),
         elementIndex = this._private.pointers[elementId],

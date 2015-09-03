@@ -1,8 +1,10 @@
 ;(function($$){ 'use strict';
 
   var CanvasRenderer = $$('renderer', 'canvas');
+  var CR = CanvasRenderer;
+  var CRp = CR.prototype;
 
-  CanvasRenderer.prototype.registerBinding = function(target, event, handler, useCapture){
+  CRp.registerBinding = function(target, event, handler, useCapture){
     this.bindings.push({
       target: target,
       event: event,
@@ -13,7 +15,7 @@
     target.addEventListener(event, handler, useCapture);
   };
 
-  CanvasRenderer.prototype.nodeIsDraggable = function(node) {
+  CRp.nodeIsDraggable = function(node) {
     if (node._private.style['opacity'].value !== 0
       && node._private.style['visibility'].value == 'visible'
       && node._private.style['display'].value == 'element'
@@ -26,7 +28,7 @@
     return false;
   };
 
-  CanvasRenderer.prototype.load = function() {
+  CRp.load = function() {
     var r = this;
 
     var getDragListIds = function(opts){
@@ -115,6 +117,30 @@
       } );
     };
 
+    var freeDraggedElements = function( draggedElements ){
+      if( !draggedElements ){ return; }
+
+      for (var i=0; i < draggedElements.length; i++) {
+
+        var dEi_p = draggedElements[i]._private;
+
+        if(dEi_p.group === 'nodes') {
+          dEi_p.rscratch.inDragLayer = false;
+          dEi_p.grabbed = false;
+
+          var sEdges = dEi_p.edges;
+          for( var j = 0; j < sEdges.length; j++ ){ sEdges[j]._private.rscratch.inDragLayer = false; }
+
+          // for compound nodes, also remove related nodes and edges from the drag layer
+          updateAncestorsInDragLayer(draggedElements[i], { inDragLayer: false });
+
+        } else if( dEi_p.group === 'edges' ){
+          dEi_p.rscratch.inDragLayer = false;
+        }
+
+      }
+    };
+
     // helper function to determine which ancestor nodes and edges should go
     // to the drag layer (or should be removed from drag layer).
     var updateAncestorsInDragLayer = function(node, opts) {
@@ -137,11 +163,10 @@
         return;
       }
 
-      var nodes = parent
-        .descendants()
-        .add( parent )
-        .not( node )
-        .not( node.descendants() )
+      var nodes = parent.descendants()
+        .merge( parent )
+        .unmerge( node )
+        .unmerge( node.descendants() )
       ;
 
       var edges = nodes.connectedEdges();
@@ -197,7 +222,7 @@
       r.invalidateContainerClientCoordsCache();
 
       r.matchCanvasSize(r.data.container);
-      r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
+      r.data.canvasNeedsRedraw[CR.NODE] = true;
       r.redraw();
     }, 100 ) );
 
@@ -239,10 +264,12 @@
       var cy = r.data.cy;
       var pos = r.projectIntoViewport(e.clientX, e.clientY);
       var select = r.data.select;
-      var near = r.findNearestElement(pos[0], pos[1], true);
+      var near = r.findNearestElement(pos[0], pos[1], true, false);
       var draggedElements = r.dragData.possibleDragElements;
 
       r.hoverData.mdownPos = pos;
+
+      var needsRedraw = r.data.canvasNeedsRedraw;
 
       var checkForTaphold = function(){
         r.hoverData.tapholdCancelled = false;
@@ -336,8 +363,8 @@
                 near.trigger( grabEvent );
               }
 
-              r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
-              r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
+              needsRedraw[CR.NODE] = true;
+              needsRedraw[CR.DRAG] = true;
 
             }
 
@@ -381,7 +408,7 @@
         // Selection box
         if ( near == null || near.isEdge() ) {
           select[4] = 1;
-          var timeUntilActive = Math.max( 0, CanvasRenderer.panOrBoxSelectDelay - (+new Date() - r.hoverData.downTime) );
+          var timeUntilActive = Math.max( 0, CR.panOrBoxSelectDelay - (+new Date() - r.hoverData.downTime) );
 
           clearTimeout( r.bgActiveTimeout );
 
@@ -400,7 +427,7 @@
 
               //checkForTaphold();
 
-              r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
+              needsRedraw[CR.SELECT_BOX] = true;
 
               r.redraw();
             }, timeUntilActive);
@@ -414,7 +441,7 @@
 
             //checkForTaphold();
 
-            r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
+            needsRedraw[CR.SELECT_BOX] = true;
 
             r.redraw();
           }
@@ -468,10 +495,11 @@
       var zoom = cy.zoom();
       var pos = r.projectIntoViewport(e.clientX, e.clientY);
       var select = r.data.select;
+      var needsRedraw = r.data.canvasNeedsRedraw;
 
       var near = null;
       if( !r.hoverData.draggingEles ){
-        near = r.findNearestElement(pos[0], pos[1], true);
+        near = r.findNearestElement(pos[0], pos[1], true, false);
       }
       var last = r.hoverData.last;
       var down = r.hoverData.down;
@@ -616,10 +644,10 @@
       // Checks primary button down & out of time & mouse not moved much
       } else if(
           select[4] == 1 && (down == null || down.isEdge())
-          && ( !cy.boxSelectionEnabled() || (+new Date() - r.hoverData.downTime >= CanvasRenderer.panOrBoxSelectDelay) )
+          && ( !cy.boxSelectionEnabled() || (+new Date() - r.hoverData.downTime >= CR.panOrBoxSelectDelay) )
           //&& (Math.abs(select[3] - select[1]) + Math.abs(select[2] - select[0]) < 4)
           && !r.hoverData.selecting
-          && rdist2 >= r.tapThreshold2
+          && rdist2 >= r.desktopTapThreshold2
           && cy.panningEnabled() && cy.userPanningEnabled()
       ){
         r.hoverData.dragging = true;
@@ -634,7 +662,7 @@
           r.data.bgActivePosistion = undefined;
           r.hoverData.selecting = true;
 
-          r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
+          needsRedraw[CR.SELECT_BOX] = true;
           r.redraw();
         }
 
@@ -671,12 +699,12 @@
 
         if( down && down.isNode() && r.nodeIsDraggable(down) ){
 
-          if( rdist2 >= r.tapThreshold2 ){ // then drag
+          if( rdist2 >= r.desktopTapThreshold2 ){ // then drag
 
             var justStartedDrag = !r.dragData.didDrag;
 
             if( justStartedDrag ) {
-              r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
+              needsRedraw[CR.NODE] = true;
             }
 
             r.dragData.didDrag = true; // indicate that we actually did drag the node
@@ -721,7 +749,7 @@
             tcol.updateCompoundBounds();
             tcol.trigger('position drag');
 
-            r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
+            needsRedraw[CR.DRAG] = true;
             r.redraw();
 
           } else { // otherwise save drag delta for when we actually start dragging so the relative grab pos is constant
@@ -750,14 +778,17 @@
       r.hoverData.capture = false;
 
       var cy = r.data.cy; var pos = r.projectIntoViewport(e.clientX, e.clientY); var select = r.data.select;
-      var near = r.findNearestElement(pos[0], pos[1], true);
+      var near = r.findNearestElement(pos[0], pos[1], true, false);
       var draggedElements = r.dragData.possibleDragElements; var down = r.hoverData.down;
       var shiftDown = e.shiftKey;
+      var needsRedraw = r.data.canvasNeedsRedraw;
 
       if( r.data.bgActivePosistion ){
-        r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
+        needsRedraw[CR.SELECT_BOX] = true;
         r.redraw();
       }
+
+      r.hoverData.tapholdCancelled = true;
 
       r.data.bgActivePosistion = undefined; // not active bg now
       clearTimeout( r.bgActiveTimeout );
@@ -800,7 +831,7 @@
         // Deselect all elements if nothing is currently under the mouse cursor and we aren't dragging something
         if ( (down == null) // not mousedown on node
           && !r.dragData.didDrag // didn't move the node around
-          && !(Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) > 7 && select[4]) // not box selection
+          //&& !(Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) > 7 && select[4]) // not box selection
           && !r.hoverData.dragged // didn't pan
         ) {
 
@@ -809,7 +840,7 @@
           }).unselect();
 
           if (draggedElements.length > 0) {
-            r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
+            needsRedraw[CR.NODE] = true;
           }
 
           r.dragData.possibleDragElements = draggedElements = [];
@@ -858,8 +889,8 @@
           // console.log('trigger click et al');
 
           if(
-            Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) === 0
-            && !r.dragData.didDrag // didn't move a node around
+            //Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) === 0
+            !r.dragData.didDrag // didn't move a node around
             && !r.hoverData.dragged // didn't pan
           ){
             if (near != null) {
@@ -912,12 +943,12 @@
               }
             } else {
               if( !shiftDown ){
-                cy.$(':selected').not( near ).unselect();
+                cy.$(':selected').unmerge( near ).unselect();
                 near.select();
               }
             }
 
-            r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
+            needsRedraw[CR.NODE] = true;
 
           }
 
@@ -927,10 +958,10 @@
           var newlySelected = [];
           var box = r.getAllInBox( select[0], select[1], select[2], select[3] );
 
-          r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
+          needsRedraw[CR.SELECT_BOX] = true;
 
           if( box.length > 0 ) {
-            r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
+            needsRedraw[CR.NODE] = true;
           }
 
           for( var i = 0; i < box.length; i++ ){
@@ -945,7 +976,7 @@
             newlySelCol.select();
           } else {
             if( !shiftDown ){
-              cy.$(':selected').not( newlySelCol ).unselect();
+              cy.$(':selected').unmerge( newlySelCol ).unselect();
             }
 
             newlySelCol.select();
@@ -958,35 +989,21 @@
 
         // Cancel drag pan
         if( r.hoverData.dragging ){
-          r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
+          r.hoverData.dragging = false;
+
+          needsRedraw[CR.SELECT_BOX] = true;
+          needsRedraw[CR.NODE] = true;
+
           r.redraw();
         }
-
-        r.hoverData.dragging = false;
 
         if (!select[4]) {
           // console.log('free at end', draggedElements)
 
-          r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
-          r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
+          needsRedraw[CR.DRAG] = true;
+          needsRedraw[CR.NODE] = true;
 
-          for (var i=0; i < draggedElements.length; i++) {
-
-            if(draggedElements[i]._private.group === 'nodes') {
-              draggedElements[i]._private.rscratch.inDragLayer = false;
-              draggedElements[i]._private.grabbed = false;
-
-              var sEdges = draggedElements[i]._private.edges;
-              for( var j = 0; j < sEdges.length; j++ ){ sEdges[j]._private.rscratch.inDragLayer = false; }
-
-              // for compound nodes, also remove related nodes and edges from the drag layer
-              updateAncestorsInDragLayer(draggedElements[i], { inDragLayer: false });
-
-            } else if( draggedElements[i]._private.group === 'edges' ){
-              draggedElements[i]._private.rscratch.inDragLayer = false;
-            }
-
-          }
+          freeDraggedElements( draggedElements );
 
           if( down ){ down.trigger('free'); }
 
@@ -998,7 +1015,7 @@
 
       select[4] = 0; r.hoverData.down = null;
 
-      //r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
+      //r.data.canvasNeedsRedraw[CR.SELECT_BOX] = true;
 
 //      console.log('mu', pos[0], pos[1]);
 //      console.log('ss', select);
@@ -1033,7 +1050,7 @@
         r.data.wheelTimeout = setTimeout(function(){
           r.data.wheelZooming = false;
 
-          r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
+          r.data.canvasNeedsRedraw[CR.NODE] = true;
           r.redraw();
         }, 150);
 
@@ -1122,6 +1139,7 @@
       var edges = r.getCachedEdges();
       var now = r.touchData.now;
       var earlier = r.touchData.earlier;
+      var needsRedraw = r.data.canvasNeedsRedraw;
 
       if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].clientX, e.touches[0].clientY); now[0] = pos[0]; now[1] = pos[1]; }
       if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].clientX, e.touches[1].clientY); now[2] = pos[0]; now[3] = pos[1]; }
@@ -1177,8 +1195,8 @@
         var cxtDistThresholdSq = cxtDistThreshold * cxtDistThreshold;
         if( distance1Sq < cxtDistThresholdSq && !e.touches[2] ){
 
-          var near1 = r.findNearestElement(now[0], now[1], true);
-          var near2 = r.findNearestElement(now[2], now[3], true);
+          var near1 = r.findNearestElement(now[0], now[1], true, true);
+          var near2 = r.findNearestElement(now[2], now[3], true, true);
 
           //console.log(distance1)
 
@@ -1233,7 +1251,7 @@
       } else if (e.touches[1]) {
 
       } else if (e.touches[0]) {
-        var near = r.findNearestElement(now[0], now[1], true);
+        var near = r.findNearestElement(now[0], now[1], true, true);
 
         if (near != null) {
           near.activate();
@@ -1244,8 +1262,8 @@
 
             var draggedEles = r.dragData.touchDragEles = [];
 
-            r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
-            r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
+            needsRedraw[CR.NODE] = true;
+            needsRedraw[CR.DRAG] = true;
 
             if( near.selected() ){
               // reset drag elements, since near will be added again
@@ -1306,7 +1324,7 @@
             y: pos[1]
           };
 
-          r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
+          needsRedraw[CR.SELECT_BOX] = true;
           r.redraw();
         }
 
@@ -1367,6 +1385,8 @@
       var now = r.touchData.now; var earlier = r.touchData.earlier;
       var zoom = cy.zoom();
 
+      var needsRedraw = r.data.canvasNeedsRedraw;
+
       if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].clientX, e.touches[0].clientY); now[0] = pos[0]; now[1] = pos[1]; }
       if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].clientX, e.touches[1].clientY); now[2] = pos[0]; now[3] = pos[1]; }
       if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].clientX, e.touches[2].clientY); now[4] = pos[0]; now[5] = pos[1]; }
@@ -1400,7 +1420,7 @@
           r.touchData.cxt = false;
           if( r.touchData.start ){ r.touchData.start.unactivate(); r.touchData.start = null; }
           r.data.bgActivePosistion = undefined;
-          r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
+          needsRedraw[CR.SELECT_BOX] = true;
 
           var cxtEvt = new $$.Event(e, {
             type: 'cxttapend',
@@ -1421,7 +1441,7 @@
           cyPosition: { x: now[0], y: now[1] }
         });
         r.data.bgActivePosistion = undefined;
-        r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
+        needsRedraw[CR.SELECT_BOX] = true;
 
         if( r.touchData.start ){
           r.touchData.start.trigger( cxtEvt );
@@ -1434,7 +1454,7 @@
 
         //console.log('cxtdrag')
 
-        var near = r.findNearestElement(now[0], now[1], true);
+        var near = r.findNearestElement(now[0], now[1], true, true);
 
         if( !r.touchData.cxtOver || near !== r.touchData.cxtOver ){
 
@@ -1466,7 +1486,7 @@
         this.lastThreeTouch = +new Date();
         r.touchData.selecting = true;
 
-        r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
+        needsRedraw[CR.SELECT_BOX] = true;
 
         if( !select || select.length === 0 || select[0] === undefined ){
           select[0] = (now[0] + now[2] + now[4])/3;
@@ -1479,16 +1499,17 @@
         }
 
         select[4] = 1;
+        r.touchData.selecting = true;
 
         r.redraw();
 
       } else if ( capture && e.touches[1] && cy.zoomingEnabled() && cy.panningEnabled() && cy.userZoomingEnabled() && cy.userPanningEnabled() ) { // two fingers => pinch to zoom
         r.data.bgActivePosistion = undefined;
-        r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
+        needsRedraw[CR.SELECT_BOX] = true;
 
         var draggedEles = r.dragData.touchDragEles;
         if( draggedEles ){
-          r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
+          needsRedraw[CR.DRAG] = true;
 
           for( var i = 0; i < draggedEles.length; i++ ){
             draggedEles[i]._private.grabbed = false;
@@ -1562,15 +1583,18 @@
             var draggedEles = r.dragData.touchDragEles;
 
             if( draggedEles ){ for( var i = 0; i < draggedEles.length; i++ ){
-              draggedEles[i]._private.grabbed = false;
-              draggedEles[i]._private.rscratch.inDragLayer = false;
+              var dEi_p = draggedEles[i]._private;
+
+              dEi_p.grabbed = false;
+              dEi_p.rscratch.inDragLayer = false;
             } }
 
-            r.touchData.start._private.active = false;
-            r.touchData.start._private.grabbed = false;
-            r.touchData.start._private.rscratch.inDragLayer = false;
+            var start_p = r.touchData.start._private;
+            start_p.active = false;
+            start_p.grabbed = false;
+            start_p.rscratch.inDragLayer = false;
 
-            r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
+            needsRedraw[CR.DRAG] = true;
 
             r.touchData.start
               .trigger('free')
@@ -1601,11 +1625,11 @@
       } else if (e.touches[0]) {
         var start = r.touchData.start;
         var last = r.touchData.last;
-        var near = near || r.findNearestElement(now[0], now[1], true);
+        var near = near || r.findNearestElement(now[0], now[1], true, true);
 
         if( start != null && start._private.group == 'nodes' && r.nodeIsDraggable(start) ){
 
-          if( rdist2 >= r.tapThreshold2 ){ // then dragging can happen
+          if( rdist2 >= r.touchTapThreshold2 ){ // then dragging can happen
             var draggedEles = r.dragData.touchDragEles;
 
             for( var k = 0; k < draggedEles.length; k++ ){
@@ -1623,6 +1647,8 @@
 
                 if( justStartedDrag ){
                   addNodeToDrag( draggedEle, { inDragLayer: true } );
+
+                  needsRedraw[CR.NODE] = true;
 
                   var dragDelta = r.touchData.dragDelta;
 
@@ -1642,14 +1668,14 @@
 
             r.hoverData.draggingEles = true;
 
-            r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
+            needsRedraw[CR.DRAG] = true;
 
             if(
                  r.touchData.startPosition[0] == earlier[0]
               && r.touchData.startPosition[1] == earlier[1]
             ){
 
-              r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
+              needsRedraw[CR.NODE] = true;
             }
 
             r.redraw();
@@ -1753,7 +1779,7 @@
               y: disp[1] * zoom
             });
 
-          } else if( rdist2 >= r.tapThreshold2 ){
+          } else if( rdist2 >= r.touchTapThreshold2 ){
             r.swipePanning = true;
 
             cy.panBy({
@@ -1772,7 +1798,7 @@
               };
             }
 
-            r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
+            needsRedraw[CR.SELECT_BOX] = true;
 
             r.touchData.start = null;
           }
@@ -1819,6 +1845,8 @@
       var zoom = cy.zoom();
       var now = r.touchData.now;
       var earlier = r.touchData.earlier;
+
+      var needsRedraw = r.data.canvasNeedsRedraw;
 
       if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].clientX, e.touches[0].clientY); now[0] = pos[0]; now[1] = pos[1]; }
       if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].clientX, e.touches[1].clientY); now[2] = pos[0]; now[3] = pos[1]; }
@@ -1880,7 +1908,7 @@
           select[3] = undefined;
           select[4] = 0;
 
-          r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
+          needsRedraw[CR.SELECT_BOX] = true;
 
           // console.log(box);
           for( var i = 0; i< box.length; i++ ) {
@@ -1892,13 +1920,13 @@
           var newlySelCol = new $$.Collection( cy, newlySelected );
 
           if( cy.selectionType() === 'single' ){
-            cy.$(':selected').not( newlySelCol ).unselect();
+            cy.$(':selected').unmerge( newlySelCol ).unselect();
           }
 
           newlySelCol.select();
 
           if( newlySelCol.length > 0 ) {
-            r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
+            needsRedraw[CR.NODE] = true;
           } else {
             r.redraw();
           }
@@ -1916,7 +1944,7 @@
 
       if (e.touches[2]) {
         r.data.bgActivePosistion = undefined;
-        r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
+        needsRedraw[CR.SELECT_BOX] = true;
       } else if (e.touches[1]) {
 
       } else if (e.touches[0]) {
@@ -1925,40 +1953,22 @@
       } else if (!e.touches[0]) {
 
         r.data.bgActivePosistion = undefined;
-        r.data.canvasNeedsRedraw[CanvasRenderer.SELECT_BOX] = true;
+        needsRedraw[CR.SELECT_BOX] = true;
+
+        var draggedEles = r.dragData.touchDragEles;
 
         if (start != null ) {
 
-          if( start._private.grabbed ){
-            start._private.grabbed = false;
+          var startWasGrabbed = start._private.grabbed;
+
+          freeDraggedElements( draggedEles );
+
+          needsRedraw[CR.DRAG] = true;
+          needsRedraw[CR.NODE] = true;
+
+          if( startWasGrabbed ){
             start.trigger('free');
-            start._private.rscratch.inDragLayer = false;
           }
-
-          var sEdges = start._private.edges;
-          for (var j=0;j<sEdges.length;j++) { sEdges[j]._private.rscratch.inDragLayer = false; }
-          updateAncestorsInDragLayer(start, false);
-
-          if( start.selected() ){
-            var selectedNodes = cy.$('node:selected');
-
-            for( var k = 0; k < selectedNodes.length; k++ ){
-
-              var selectedNode = selectedNodes[k];
-              selectedNode._private.rscratch.inDragLayer = false;
-              selectedNode._private.grabbed = false;
-
-              var sEdges = selectedNode._private.edges;
-              for (var j=0; j<sEdges.length; j++) {
-                sEdges[j]._private.rscratch.inDragLayer = false;
-              }
-
-              updateAncestorsInDragLayer(selectedNode, false);
-            }
-          }
-
-          r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
-          r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
 
           start
             .trigger(new $$.Event(e, {
@@ -1980,7 +1990,7 @@
           r.touchData.start = null;
 
         } else {
-          var near = r.findNearestElement(now[0], now[1], true);
+          var near = r.findNearestElement(now[0], now[1], true, true);
 
           if (near != null) {
             near
@@ -2028,12 +2038,12 @@
         if (start != null
             && !r.dragData.didDrag // didn't drag nodes around
             && start._private.selectable
-            && rdist2 < r.tapThreshold2
+            && rdist2 < r.touchTapThreshold2
             && !r.pinching // pinch to zoom should not affect selection
         ) {
 
           if( cy.selectionType() === 'single' ){
-            cy.$(':selected').not( start ).unselect();
+            cy.$(':selected').unmerge( start ).unselect();
             start.select();
           } else {
             if( start.selected() ){
@@ -2046,7 +2056,7 @@
           updateStartStyle = true;
 
 
-          r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
+          needsRedraw[CR.NODE] = true;
         }
 
         // Tap event, roughly same as mouse click event for touch
@@ -2086,7 +2096,7 @@
 
       r.dragData.didDrag = false; // reset for next mousedown
 
-      if( e.touches[0] ){
+      if( e.touches.length === 0 ){
         r.touchData.dragDelta = [];
       }
 
@@ -2096,7 +2106,7 @@
 
       if( e.touches.length < 2 ){
         r.pinching = false;
-        r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
+        needsRedraw[CR.NODE] = true;
         r.redraw();
       }
 

@@ -1,8 +1,8 @@
 ;(function( $$ ){ 'use strict';
-  
+
   // Regular degree functions (works on single element)
   ////////////////////////////////////////////////////////////////////////////////////////////////////
-  
+
   function defineDegreeFunction(callback){
     return function( includeLoops ){
       var self = this;
@@ -10,7 +10,7 @@
       if( includeLoops === undefined ){
         includeLoops = true;
       }
-      
+
       if( self.length === 0 ){ return; }
 
       if( self.isNode() && !self.removed() ){
@@ -27,14 +27,14 @@
 
           degree += callback( node, edge );
         }
-        
+
         return degree;
       } else {
         return;
       }
     };
   }
-  
+
   $$.fn.eles({
     degree: defineDegreeFunction(function(node, edge){
       if( edge.source().same( edge.target() ) ){
@@ -60,11 +60,11 @@
       }
     })
   });
-  
-  
+
+
   // Collection degree stats
   ////////////////////////////////////////////////////////////////////////////////////////////////////
-  
+
   function defineDegreeBoundsFunction(degreeFn, callback){
     return function( includeLoops ){
       var ret;
@@ -77,11 +77,11 @@
           ret = degree;
         }
       }
-      
+
       return ret;
     };
   }
-  
+
   $$.fn.eles({
     minDegree: defineDegreeBoundsFunction('degree', function(degree, min){
       return degree < min;
@@ -107,7 +107,7 @@
       return degree > max;
     })
   });
-  
+
   $$.fn.eles({
     totalDegree: function( includeLoops ){
       var total = 0;
@@ -120,7 +120,5 @@
       return total;
     }
   });
-  
-})( cytoscape );
 
-  
+})( cytoscape );

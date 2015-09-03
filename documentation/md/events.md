@@ -72,6 +72,7 @@ These events are custom to Cytoscape.js.  You can bind to these events for colle
  * `free` : when an element is freed (i.e. let go from being grabbed)
  * `position` : when an element changes position
  * `data` : when an element's data is changed
+ * `scratch` : when an element's scratchpad data is changed
  * `style` : when an element's style is changed
 
 

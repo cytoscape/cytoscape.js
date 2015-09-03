@@ -1,8 +1,8 @@
 ;(function($$){ 'use strict';
-  
+
   // Functions for binding & triggering events
   ////////////////////////////////////////////////////////////////////////////////////////////////////
-  
+
   $$.fn.eles({
     on: $$.define.on(), // .on( events [, selector] [, data], handler)
     one: $$.define.on({ unbindSelfOnTrigger: true }),
@@ -18,14 +18,13 @@
         type: event,
         collection: this
       });
-      
+
       this.trigger(event, extraParams);
       return this;
     }
   });
 
-  // aliases for those folks who like old stuff:
-  $$.elesfn.bind = $$.elesfn.on;
-  $$.elesfn.unbind = $$.elesfn.off;
-  
+  // aliases:
+  $$.define.eventAliasesOn( $$.elesfn );
+
 })( cytoscape );

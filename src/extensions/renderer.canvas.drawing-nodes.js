@@ -1,15 +1,22 @@
 ;(function($$){ 'use strict';
 
   var CanvasRenderer = $$('renderer', 'canvas');
+  var CRp = CanvasRenderer.prototype;
 
   // Draw node
-  CanvasRenderer.prototype.drawNode = function(context, node, drawOverlayInstead) {
+  CRp.drawNode = function(context, node, drawOverlayInstead) {
 
     var r = this;
     var nodeWidth, nodeHeight;
     var style = node._private.style;
     var rs = node._private.rscratch;
-    
+    var _p = node._private;
+    var pos = _p.position;
+
+    if( pos.x === undefined || pos.y === undefined ){
+      return; // can't draw node with undefined position
+    }
+
     var usePaths = CanvasRenderer.usePaths();
     var canvasContext = context;
     var path;
@@ -28,10 +35,34 @@
 
     nodeWidth = this.getNodeWidth(node);
     nodeHeight = this.getNodeHeight(node);
-    
+
     context.lineWidth = style['border-width'].pxValue;
 
     if( drawOverlayInstead === undefined || !drawOverlayInstead ){
+
+      var url = style['background-image'].value[2] ||
+        style['background-image'].value[1];
+      var image;
+
+      if (url !== undefined) {
+
+        // get image, and if not loaded then ask to redraw when later loaded
+        image = this.getCachedImage(url, function(){
+          r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
+          r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
+
+          r.drawingImage = true;
+
+          r.redraw();
+        });
+
+        var prevBging = _p.backgrounding;
+        _p.backgrounding = !image.complete;
+
+        if( prevBging !== _p.backgrounding ){ // update style b/c :backgrounding state changed
+          node.updateStyle( false );
+        }
+      }
 
       // Node color & opacity
 
@@ -39,9 +70,17 @@
       var borderColor = style['border-color'].value;
       var borderStyle = style['border-style'].value;
 
-      this.fillStyle(context, bgColor[0], bgColor[1], bgColor[2], style['background-opacity'].value * style['opacity'].value * parentOpacity);
-      
-      this.strokeStyle(context, borderColor[0], borderColor[1], borderColor[2], style['border-opacity'].value * style['opacity'].value * parentOpacity);
+      this.fillStyle(context, bgColor[0], bgColor[1], bgColor[2], style['background-opacity'].value * parentOpacity);
+
+      this.strokeStyle(context, borderColor[0], borderColor[1], borderColor[2], style['border-opacity'].value * parentOpacity);
+
+      var shadowBlur = style['shadow-blur'].pxValue;
+      var shadowOpacity = style['shadow-opacity'].value;
+      var shadowColor = style['shadow-color'].value;
+      var shadowOffsetX = style['shadow-offset-x'].pxValue;
+      var shadowOffsetY = style['shadow-offset-y'].pxValue;
+
+      this.shadowStyle(context, shadowColor, shadowOpacity, shadowBlur, shadowOffsetX, shadowOffsetY);
 
       context.lineJoin = 'miter'; // so borders are square with the node shape
 
@@ -62,14 +101,8 @@
         }
       }
 
-      //var image = this.getCachedImage('url');
-      
-      var url = style['background-image'].value[2] ||
-        style['background-image'].value[1];
-      
-      var styleShape = style['shape'].strValue;
 
-      var pos = node._private.position;
+      var styleShape = style['shape'].strValue;
 
       if( usePaths ){
         var pathCacheKey = styleShape + '$' + nodeWidth +'$' + nodeHeight;
@@ -113,27 +146,19 @@
         context.fill();
       }
 
+      this.shadowStyle(context, 'transparent', 0); // reset for next guy
+
       if (url !== undefined) {
-        
-        // get image, and if not loaded then ask to redraw when later loaded
-        var image = this.getCachedImage(url, function(){
-          r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
-          r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
-          
-          r.redraw();
-        });
-        
         if( image.complete ){
           this.drawInscribedImage(context, image, node);
         }
-        
-      } 
-      
+      }
+
       var darkness = style['background-blacken'].value;
       var borderWidth = style['border-width'].pxValue;
 
       if( this.hasPie(node) ){
-        this.drawPie(context, node);
+        this.drawPie( context, node, parentOpacity );
 
         // redraw path for blacken and border
         if( darkness !== 0 || borderWidth !== 0 ){
@@ -157,10 +182,10 @@
         } else {
           context.fill();
         }
-        
+
       } else if( darkness < 0 ){
         this.fillStyle(context, 255, 255, 255, -darkness);
-        
+
         if( usePaths ){
           context.fill( path );
         } else {
@@ -224,20 +249,22 @@
   };
 
   // does the node have at least one pie piece?
-  CanvasRenderer.prototype.hasPie = function(node){
+  CRp.hasPie = function(node){
     node = node[0]; // ensure ele ref
-    
+
     return node._private.hasPie;
   };
 
-  CanvasRenderer.prototype.drawPie = function(context, node){
+  CRp.drawPie = function( context, node, nodeOpacity ){
     node = node[0]; // ensure ele ref
 
-    var pieSize = node._private.style['pie-size'];
+    var _p = node._private;
+    var style = _p.style;
+    var pieSize = style['pie-size'];
     var nodeW = this.getNodeWidth( node );
     var nodeH = this.getNodeHeight( node );
-    var x = node._private.position.x;
-    var y = node._private.position.y;
+    var x = _p.position.x;
+    var y = _p.position.y;
     var radius = Math.min( nodeW, nodeH ) / 2; // must fit in node
     var lastPercent = 0; // what % to continue drawing pie slices from on [0, 1]
     var usePaths = CanvasRenderer.usePaths();
@@ -254,10 +281,16 @@
     }
 
     for( var i = 1; i <= $$.style.pieBackgroundN; i++ ){ // 1..N
-      var size = node._private.style['pie-' + i + '-background-size'].value;
-      var color = node._private.style['pie-' + i + '-background-color'].value;
-      var opacity = node._private.style['pie-' + i + '-background-opacity'].value;
+      var size = style['pie-' + i + '-background-size'].value;
+      var color = style['pie-' + i + '-background-color'].value;
+      var opacity = style['pie-' + i + '-background-opacity'].value * nodeOpacity;
       var percent = size / 100; // map integer range [0, 100] to [0, 1]
+
+      // percent can't push beyond 1
+      if( percent + lastPercent > 1 ){
+        percent = 1 - lastPercent;
+      }
+
       var angleStart = 1.5 * Math.PI + 2 * Math.PI * lastPercent; // start at 12 o'clock and go clockwise
       var angleDelta = 2 * Math.PI * percent;
       var angleEnd = angleStart + angleDelta;
@@ -284,5 +317,5 @@
 
   };
 
-  
+
 })( cytoscape );

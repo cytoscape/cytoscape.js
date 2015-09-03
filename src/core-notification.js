@@ -1,5 +1,5 @@
 (function($$){ 'use strict';
-  
+
   $$.fn.core({
     notify: function( params ){
       if( this._private.batchingNotify ){
@@ -24,20 +24,20 @@
       if( !this._private.notificationsEnabled ){ return; } // exit on disabled
 
       var renderer = this.renderer();
-      
+
       renderer.notify(params);
     },
-    
+
     notifications: function( bool ){
       var p = this._private;
-      
+
       if( bool === undefined ){
         return p.notificationsEnabled;
       } else {
         p.notificationsEnabled = bool ? true : false;
       }
     },
-    
+
     noNotifications: function( callback ){
       this.notifications(false);
       callback();
@@ -92,11 +92,11 @@
         for( var id in map ){
           var data = map[id];
           var ele = cy.getElementById( id );
-          
+
           ele.data( data );
         }
       });
     }
   });
-  
+
 })( cytoscape );

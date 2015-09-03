@@ -21,14 +21,17 @@ You can get much better performance out of Cytoscape.js by tuning your options, 
  * If you can go without them or show them on tap/mouseover, you'll get better performance.
  * Consider not having labels for edges.
  * Consider setting `min-zoomed-font-size` in your style so that when labels are small &mdash; and hard to read anyway &mdash; they are not rendered.  When the labels are at least the size you set (i.e. the user zooms in), they will be visible.
+ * Adding background color and borders to your labels makes more shape to draw on the canvas so you might want to remove them
 * **Animations** : You will get better performance without animations.  If using animations anyway:
  * [`eles.flashClass()`](#collection/style/eles.flashClass) is a cheaper alternative than a smooth animation.
  * Try to limit the number of concurrent animating elements.
  * When using transition animations in the style, make sure `transition-property` is defined only for states that you want to animate.  If you have `transition-property` defined in a default state, the animation will try to run more often than if you limit it to particular states you actually want to animate.
-* **Simplify edge style** : Use solid edges.  Dotted and dashed edges are much more expensive to draw, so you will get increased performance by not using them.  Edge arrows are also expensive to render, so consider not using them if they do not have any semantic meaning in your graph.
+* **Functional style property values** : While convenient, functional style property values can be expensive.  Thus, it may be worthwhile to use caching if possible, such as by using the lodash [`_.memoize()`](https://lodash.com/docs#memoize) function.  If your style property value is a simple passthrough or linear mapping, consider using `data()` or `mapData()` instead.
+* **Simplify edge style** : Use solid edges.  Dotted and dashed edges are much more expensive to draw, so you will get increased performance by not using them.  Edge arrows are also expensive to render, so consider not using them if they do not have any semantic meaning in your graph.  Opaque edges with arrows are more than twice as fast as semitransparent edges with arrows.
 * **Simplify node style** : Keep your node styles simple to improve performance.  
  * Background images are very expensive in certain cases.  The most performant background images are non-repeating (`background-repeat: no-repeat`) and non-clipped (`background-clip: none`).  For simple node shapes like squares or circles, you can use `background-fit` for scaling and preclip your images to simulate software clipping (e.g. with [Gulp](https://github.com/scalableminds/gulp-image-resize) so it's automated).  In lieu of preclipping, you could make clever use of PNGs with transparent backgrounds.
  * Node borders can be slightly expensive, so you can experiment with removing them to see if it makes a noticeable difference for your use case.
+* **Set shadow-blur to 0** if you want shadow and offset them to view them since shadow-blur can rapidely decrease performance.
 * **Hide edges during interactivity** : Set `hideEdgesOnViewport` to `true` in your [initialisation options](#core/initialisation).  This makes interactivity a lot less expensive by hiding edges during pan, mouse wheel zoom, pinch-to-zoom, and node drag actions.
 * **Hide labels during interactivity** : Set `hideLabelsOnViewport` to `true` in your [initialisation options](#core/initialisation).  This works similarly to hiding edges on viewport operations.
 

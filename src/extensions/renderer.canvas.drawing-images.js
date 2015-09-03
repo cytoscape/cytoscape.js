@@ -1,25 +1,41 @@
 ;(function($$){ 'use strict';
 
   var CanvasRenderer = $$('renderer', 'canvas');
+  var CRp = CanvasRenderer.prototype;
 
-  CanvasRenderer.prototype.getCachedImage = function(url, onLoad) {
+  CRp.getCachedImage = function(url, onLoad) {
     var r = this;
     var imageCache = r.imageCache = r.imageCache || {};
 
     if( imageCache[url] && imageCache[url].image ){
       return imageCache[url].image;
     }
-    
+
     var cache = imageCache[url] = imageCache[url] || {};
 
     var image = cache.image = new Image();
     image.addEventListener('load', onLoad);
     image.src = url;
-    
+
     return image;
   };
-    
-  CanvasRenderer.prototype.drawInscribedImage = function(context, img, node) {
+
+  CRp.safeDrawImage = function( context, img, ix, iy, iw, ih, x, y, w, h ){
+    var r = this;
+
+    try {
+      context.drawImage( img, ix, iy, iw, ih, x, y, w, h );
+    } catch(e){
+      r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
+      r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
+
+      r.drawingImage = true;
+
+      r.redraw();
+    }
+  };
+
+  CRp.drawInscribedImage = function(context, img, node) {
     var r = this;
     var nodeX = node._private.position.x;
     var nodeY = node._private.position.y;
@@ -34,9 +50,31 @@
     var clip = style['background-clip'].value;
     var shouldClip = clip === 'node';
     var imgOpacity = style['background-image-opacity'].value;
-    
+
     var w = img.width;
     var h = img.height;
+
+    if( w === 0 || h === 0 ){
+      return; // no point in drawing empty image (and chrome is broken in this case)
+    }
+
+    var bgW = style['background-width'];
+    if( bgW.value !== 'auto' ){
+      if( bgW.units === '%' ){
+        w = bgW.value/100 * nodeW;
+      } else {
+        w = bgW.pxValue;
+      }
+    }
+
+    var bgH = style['background-height'];
+    if( bgH.value !== 'auto' ){
+      if( bgH.units === '%' ){
+        h = bgH.value/100 * nodeH;
+      } else {
+        h = bgH.pxValue;
+      }
+    }
 
     if( w === 0 || h === 0 ){
       return; // no point in drawing empty image (and chrome is broken in this case)
@@ -91,14 +129,15 @@
         } else {
           CanvasRenderer.nodeShapes[r.getNodeShape(node)].drawPath(
             context,
-            nodeX, nodeY, 
+            nodeX, nodeY,
             nodeW, nodeH);
 
           context.clip();
         }
       }
 
-      context.drawImage( img, 0, 0, img.width, img.height, x, y, w, h );
+      // context.drawImage( img, 0, 0, img.width, img.height, x, y, w, h );
+      r.safeDrawImage( context, img, 0, 0, img.width, img.height, x, y, w, h );
 
       if( shouldClip ){
         context.restore();
@@ -109,7 +148,7 @@
 
       CanvasRenderer.nodeShapes[r.getNodeShape(node)].drawPath(
           context,
-          nodeX, nodeY, 
+          nodeX, nodeY,
           nodeW, nodeH);
 
         context.translate(x, y);
@@ -118,8 +157,8 @@
     }
 
     context.globalAlpha = gAlpha;
-    
+
   };
 
-  
+
 })( cytoscape );

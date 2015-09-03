@@ -29,7 +29,7 @@
 
       directed = arguments.length === 2 && !$$.is.fn(fn) ? fn : directed;
       fn = $$.is.fn(fn) ? fn : function(){};
-      
+
       var cy = this._private.cy;
       var v = $$.is.string(roots) ? this.filter(roots) : roots;
       var Q = [];
@@ -46,7 +46,7 @@
       for( var i = 0; i < v.length; i++ ){
         if( v[i].isNode() ){
           Q.unshift( v[i] );
-          V[ v[i].id() ] = true; 
+          V[ v[i].id() ] = true;
 
           connectedNodes.push( v[i] );
           id2depth[ v[i].id() ] = 0;
@@ -92,7 +92,7 @@
             connectedBy[ w.id() ] = e;
           }
         }
-        
+
       }
 
       var connectedEles = [];
@@ -137,7 +137,7 @@
         std = options.std;
         thisArg = options.thisArg;
       }
-      
+
       directed = arguments.length === 2 && !$$.is.fn(fn) ? fn : directed;
       fn = $$.is.fn(fn) ? fn : function(){};
       var cy = this._private.cy;
@@ -189,7 +189,7 @@
           }
 
           var vwEdges = v.connectedEdges(directed ? function(){ return this.data('source') === v.id(); } : undefined).intersect( edges );
-          
+
           for( var i = 0; i < vwEdges.length; i++ ){
             var e = vwEdges[i];
             var w = e.connectedNodes(function(){ return this.id() !== v.id(); }).intersect( nodes );
@@ -291,10 +291,9 @@
       }
 
       var cy = this._private.cy;
-      directed = !$$.is.fn(weightFn) ? weightFn : directed;
       weightFn = $$.is.fn(weightFn) ? weightFn : function(){ return 1; }; // if not specified, assume each edge has equal weight (1)
 
-      var source = $$.is.string(root) ? this.filter(root).eq(0) : root.eq(0);
+      var source = $$.is.string(root) ? this.filter(root)[0] : root[0];
       var dist = {};
       var prev = {};
       var knownDist = {};
@@ -311,11 +310,11 @@
       var valueFn = function(node) {
         return dist[ node.id() ];
       };
-      
+
       Q = new $$.Collection(cy, Q);
-    
+
       var heap = $$.Minheap(cy, Q, valueFn);
-    
+
       var distBetween = function(u, v){
         var uvs = ( directed ? u.edgesTo(v) : u.edgesWith(v) ).intersect(edges);
         var smallestDistance = Infinity;
@@ -342,9 +341,9 @@
         smalletsDist = smallestEl.value,
         uid = smallestEl.id,
         u = cy.getElementById(uid);
-    
+
         knownDist[uid] = smalletsDist;
-      
+
         if( smalletsDist === Math.Infinite ){
           break;
         }
@@ -364,18 +363,18 @@
               edge: vDist.edge
             };
           }
-        } // for 
+        } // for
       } // while
 
       return {
         distanceTo: function(node){
-          var target = $$.is.string(node) ? nodes.filter(node).eq(0) : node.eq(0);
+          var target = $$.is.string(node) ? nodes.filter(node)[0] : node[0];
 
           return knownDist[ target.id() ];
         },
 
         pathTo: function(node){
-          var target = $$.is.string(node) ? nodes.filter(node).eq(0) : node.eq(0);
+          var target = $$.is.string(node) ? nodes.filter(node)[0] : node[0];
           var S = [];
           var u = target;
 
@@ -395,7 +394,7 @@
           return new $$.Collection( cy, S );
         }
       };
-    }  
+    }
   });
 
   // nice, short mathemathical alias
@@ -403,5 +402,5 @@
   $$.elesfn.dfs = $$.elesfn.depthFirstSearch;
   $$.elesfn.stdBfs = $$.elesfn.stdBreadthFirstSearch;
   $$.elesfn.stdDfs = $$.elesfn.stdDepthFirstSearch;
-  
+
 })( cytoscape );

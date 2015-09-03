@@ -151,16 +151,27 @@ $(function(){
 				cy.elements().unbind("click").css("*", "");
 			}
 		});
+
 		
 		test({
 			name: "labelWithWeight",
 			displayName: "Labels with weight",
-			description: "Show weight in node labels",
+			description: "Show weight in element labels",
 			setup: function(){
-				cy.elements().css("content", "data(weight)");
+				cy.style()
+					.selector('*')
+						.css({
+							'content': 'data(weight)'
+						})
+						
+					.update()
+				;
 			},
+
 			teardown: function(){
-				cy.elements().css("*" ,"");
+				var stylesheet = window.defaultSty;
+				
+				cy.style( stylesheet );
 			}
 		});
 
@@ -357,6 +368,43 @@ $(function(){
 				cy.nodes().removeCss();
 			}
 		});
+
+		test({
+			name: "bigRedOnClickE",
+			displayName: "Big & red edges",
+			description: "Click background to toggle",
+			setup: function(){
+				var on = false;
+				
+				cy.bind("click", function(){
+				
+
+					if( !on ){
+						cy.edges().stop().animate({
+							css: {
+								lineColor: "red",
+								targetArrowColor: "red",
+								sourceArrowColor: "red",
+								width: 10
+							}
+						},
+						{
+							duration: 2000
+						});
+						
+						on = true;
+					} else {
+						cy.edges().stop().removeCss();
+						on = false;
+					}
+					
+				});
+			},
+			teardown: function(){
+				cy.unbind("click");
+				cy.edges().removeCss();
+			}
+		});
 		
 		test({
 			name: "fancyStyle",
@@ -462,7 +510,7 @@ $(function(){
 			},
 
 			teardown: function(){
-				cy.off('click', 'node');
+				cy.off('mouseover', 'node');
 			}
 		});
 

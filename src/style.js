@@ -1,5 +1,5 @@
 ;(function($$){ 'use strict';
-  
+
   $$.Style = function( cy ){
 
     if( !(this instanceof $$.Style) ){
@@ -16,7 +16,7 @@
       coreStyle: {},
       newStyle: true
     };
-    
+
     this.length = 0;
 
     this.addDefaultStylesheet();
@@ -55,6 +55,7 @@
       number: { number: true },
       size: { number: true, min: 0 },
       bgSize: { number: true, min: 0, allowPercent: true },
+      bgWH: { number: true, min: 0, allowPercent: true, enums: ['auto'] },
       bgPos: { number: true, allowPercent: true },
       bgRepeat: { enums: ['repeat', 'repeat-x', 'repeat-y', 'no-repeat'] },
       bgFit: { enums: ['none', 'contain', 'cover'] },
@@ -63,13 +64,16 @@
       lineStyle: { enums: ['solid', 'dotted', 'dashed'] },
       borderStyle: { enums: ['solid', 'dotted', 'dashed', 'double'] },
       curveStyle: { enums: ['bezier', 'unbundled-bezier', 'haystack'] },
-      fontFamily: { regex: '^([\\w- ]+(?:\\s*,\\s*[\\w- ]+)*)$' },
+      fontFamily: { regex: '^([\\w- \\"]+(?:\\s*,\\s*[\\w- \\"]+)*)$' },
       fontVariant: { enums: ['small-caps', 'normal'] },
       fontStyle: { enums: ['italic', 'normal', 'oblique'] },
       fontWeight: { enums: ['normal', 'bold', 'bolder', 'lighter', '100', '200', '300', '400', '500', '600', '800', '900', 100, 200, 300, 400, 500, 600, 700, 800, 900] },
       textDecoration: { enums: ['none', 'underline', 'overline', 'line-through'] },
       textTransform: { enums: ['none', 'uppercase', 'lowercase'] },
-      nodeShape: { enums: ['rectangle', 'roundrectangle', 'ellipse', 'triangle', 'square', 'pentagon', 'hexagon', 'heptagon', 'octagon', 'star'] },
+      textWrap: { enums: ['none', 'wrap'] },
+      textBackgroundShape: { enums: ['rectangle', 'roundrectangle']},
+      nodeShape: { enums: ['rectangle', 'roundrectangle', 'ellipse', 'triangle', 'square', 'pentagon', 'hexagon', 'heptagon', 'octagon', 'star', 'diamond', 'vee', 'rhomboid'] },
+      compoundIncludeLabels: { enums: ['include', 'exclude'] },
       arrowShape: { enums: ['tee', 'triangle', 'triangle-tee', 'triangle-backcurve', 'half-triangle-overshot', 'square', 'circle', 'diamond', 'none'] },
       arrowFill: { enums: ['filled', 'hollow'] },
       display: { enums: ['element', 'none'] },
@@ -79,11 +83,15 @@
       text: { string: true },
       data: { mapping: true, regex: data('data') },
       layoutData: { mapping: true, regex: data('layoutData') },
+      scratch: { mapping: true, regex: data('scratch') },
       mapData: { mapping: true, regex: mapData('mapData') },
       mapLayoutData: { mapping: true, regex: mapData('mapLayoutData') },
+      mapScratch: { mapping: true, regex: mapData('mapScratch') },
+      fn: { mapping: true, fn: true },
       url: { regex: '^url\\s*\\(\\s*([^\\s]+)\\s*\\s*\\)|none|(.+)$' },
       propList: { propList: true },
-      angle: { number: true, units: 'deg|rad' }
+      angle: { number: true, units: 'deg|rad' },
+      textRotation: { enums: ['none', 'autorotate'] }
     };
 
     // define visual style properties
@@ -98,8 +106,18 @@
       { name: 'text-outline-width', type: t.size },
       { name: 'text-outline-opacity', type: t.zeroOneNumber },
       { name: 'text-opacity', type: t.zeroOneNumber },
+      { name: 'text-background-color', type: t.color },
+      { name: 'text-background-opacity', type: t.zeroOneNumber },
+      { name: 'text-border-opacity', type: t.zeroOneNumber },
+      { name: 'text-border-color', type: t.color },
+      { name: 'text-border-width', type: t.size },
+      { name: 'text-border-style', type: t.borderStyle },
+      { name: 'text-background-shape', type: t.textBackgroundShape},
       // { name: 'text-decoration', type: t.textDecoration }, // not supported in canvas
       { name: 'text-transform', type: t.textTransform },
+      { name: 'text-wrap', type: t.textWrap },
+      { name: 'text-max-width', type: t.size },
+
       // { name: 'text-rotation', type: t.angle }, // TODO disabled b/c rotation breaks bounding boxes
       { name: 'font-family', type: t.fontFamily },
       { name: 'font-style', type: t.fontStyle },
@@ -107,6 +125,7 @@
       { name: 'font-weight', type: t.fontWeight },
       { name: 'font-size', type: t.size },
       { name: 'min-zoomed-font-size', type: t.size },
+      { name: 'edge-text-rotation', type: t.textRotation },
 
       // visibility
       { name: 'display', type: t.display },
@@ -118,6 +137,20 @@
       { name: 'overlay-padding', type: t.size },
       { name: 'overlay-color', type: t.color },
       { name: 'overlay-opacity', type: t.zeroOneNumber },
+
+      // shadows
+      { name: 'shadow-blur', type: t.size },
+      { name: 'shadow-color', type: t.color },
+      { name: 'shadow-opacity', type: t.zeroOneNumber },
+      { name: 'shadow-offset-x', type: t.number },
+      { name: 'shadow-offset-y', type: t.number },
+
+      // label shadows
+      { name: 'text-shadow-blur', type: t.size },
+      { name: 'text-shadow-color', type: t.color },
+      { name: 'text-shadow-opacity', type: t.zeroOneNumber },
+      { name: 'text-shadow-offset-x', type: t.number },
+      { name: 'text-shadow-offset-y', type: t.number },
 
       // transition anis
       { name: 'transition-property', type: t.propList },
@@ -137,7 +170,7 @@
       { name: 'border-opacity', type: t.zeroOneNumber },
       { name: 'border-width', type: t.size },
       { name: 'border-style', type: t.borderStyle },
-      
+
       // node background images
       { name: 'background-image', type: t.url },
       { name: 'background-image-opacity', type: t.zeroOneNumber },
@@ -146,6 +179,8 @@
       { name: 'background-repeat', type: t.bgRepeat },
       { name: 'background-fit', type: t.bgFit },
       { name: 'background-clip', type: t.bgClip },
+      { name: 'background-width', type: t.bgWH },
+      { name: 'background-height', type: t.bgWH },
 
       // compound props
       { name: 'padding-left', type: t.size },
@@ -153,6 +188,7 @@
       { name: 'padding-top', type: t.size },
       { name: 'padding-bottom', type: t.size },
       { name: 'position', type: t.position },
+      { name: 'compound-sizing-wrt-labels', type: t.compoundIncludeLabels },
 
       // edge line
       { name: 'line-style', type: t.lineStyle },
@@ -201,7 +237,7 @@
     // allow access of properties by name ( e.g. $$.style.properties.height )
     for( var i = 0; i < props.length; i++ ){
       var prop = props[i];
-      
+
       props[ prop.name ] = prop; // allow lookup by name
     }
   })();
@@ -210,7 +246,7 @@
   $$.styfn.addDefaultStylesheet = function(){
     // to be nice, we build font related style properties from the core container
     // so that cytoscape matches the style of its container by default
-    // 
+    //
     // unfortunately, this doesn't seem work consistently and can grab the default stylesheet values
     // instead of the developer's values so let's just make it explicit for the dev for now
     //
@@ -222,6 +258,7 @@
     var color = '#000' || this.containerPropertyAsString('color') || '#000';
     var textTransform = 'none' || this.containerPropertyAsString('text-transform') || 'none';
     var fontSize = 16 || this.containerPropertyAsString('font-size') || 16;
+    var textMaxWidth = 9999 || this.containerPropertyAsString('text-max-width') || 9999;
 
     // fill the style with the default stylesheet
     this
@@ -236,12 +273,22 @@
           'text-opacity': 1,
           'text-decoration': 'none',
           'text-transform': textTransform,
+          'text-wrap': 'none',
+          'text-max-width': textMaxWidth,
+          'text-background-color': '#000',
+          'text-background-opacity': 0,
+          'text-border-opacity': 0,
+          'text-border-width': 0,
+          'text-border-style': 'solid',
+          'text-border-color':'#000',
+          'text-background-shape':'rectangle',
           'font-family': fontFamily,
           'font-style': fontStyle,
           // 'font-variant': fontVariant,
           'font-weight': fontWeight,
           'font-size': fontSize,
           'min-zoomed-font-size': 0,
+          'edge-text-rotation': 'none',
           'visibility': 'visible',
           'display': 'element',
           'opacity': 1,
@@ -250,6 +297,16 @@
           'overlay-opacity': 0,
           'overlay-color': '#000',
           'overlay-padding': 10,
+          'shadow-opacity': 0,
+          'shadow-color': '#000',
+          'shadow-blur': 10,
+          'shadow-offset-x': 0,
+          'shadow-offset-y': 0,
+          'text-shadow-opacity': 0,
+          'text-shadow-color': '#000',
+          'text-shadow-blur': 5,
+          'text-shadow-offset-x': 0,
+          'text-shadow-offset-y': 0,
           'transition-property': 'none',
           'transition-duration': 0,
           'transition-delay': 0,
@@ -265,6 +322,8 @@
           'background-repeat': 'no-repeat',
           'background-fit': 'none',
           'background-clip': 'node',
+          'background-width': 'auto',
+          'background-height': 'auto',
           'border-color': '#000',
           'border-opacity': 1,
           'border-width': 0,
@@ -279,7 +338,8 @@
           'padding-left': 0,
           'padding-right': 0,
           'position': 'origin',
-          
+          'compound-sizing-wrt-labels': 'include',
+
 
           // node pie bg
           'pie-size': '100%',
@@ -381,7 +441,7 @@
           'selection-box-border-width': 1,
           'active-bg-color': 'black',
           'active-bg-opacity': 0.15,
-          'active-bg-size': $$.is.touch() ? 40 : 15,
+          'active-bg-size': 30,
           'outside-texture-bg-color': '#000',
           'outside-texture-bg-opacity': 0.125
         })
@@ -413,18 +473,33 @@
     return this._private.coreStyle;
   };
 
+  // a caching layer for property parsing
+  $$.styfn.parse = function( name, value, propIsBypass, propIsFlat ){
+    var argHash = [ name, value, propIsBypass, propIsFlat ].join('$');
+    var propCache = this.propCache = this.propCache || {};
+    var ret;
+
+    if( !(ret = propCache[argHash]) ){
+      ret = propCache[argHash] = this.parseImpl( name, value, propIsBypass, propIsFlat );
+    }
+
+    // always need a copy since props are mutated later in their lifecycles
+    return $$.util.copy( ret );
+  };
+
   // parse a property; return null on invalid; return parsed property otherwise
   // fields :
   // - name : the name of the property
   // - value : the parsed, native-typed value of the property
   // - strValue : a string value that represents the property value in valid css
   // - bypass : true iff the property is a bypass property
-  $$.styfn.parse = function( name, value, propIsBypass, propIsFlat ){
-    
+  $$.styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
+
     name = $$.util.camel2dash( name ); // make sure the property name is in dash form (e.g. 'property-name' not 'propertyName')
     var property = $$.style.properties[ name ];
     var passedValue = value;
-    
+    var types = $$.style.types;
+
     if( !property ){ return null; } // return null on property of unknown name
     if( value === undefined || value === null ){ return null; } // can't assign null
 
@@ -446,38 +521,70 @@
       };
     }
 
+    var hasPie = name.match(/pie-(\d+)-background-size/);
+
+    // check if value is a function used as a mapper
+    if( $$.is.fn(value) ){
+      return {
+        name: name,
+        value: value,
+        strValue: 'fn',
+        mapped: types.fn,
+        bypass: propIsBypass,
+        hasPie: hasPie
+      };
+    }
+
     // check if value is mapped
-    var data, mapData, layoutData, mapLayoutData;
+    var data, mapData, layoutData, mapLayoutData, scratch, mapScratch;
     if( !valueIsString || propIsFlat ){
       // then don't bother to do the expensive regex checks
 
     } else if(
-      ( data = new RegExp( $$.style.types.data.regex ).exec( value ) ) ||
-      ( layoutData = new RegExp( $$.style.types.layoutData.regex ).exec( value ) )
+      ( data = new RegExp( types.data.regex ).exec( value ) ) ||
+      ( layoutData = new RegExp( types.layoutData.regex ).exec( value ) ) ||
+      ( scratch = new RegExp( types.scratch.regex ).exec( value ) )
     ){
       if( propIsBypass ){ return false; } // mappers not allowed in bypass
-      
-      var isLayout = layoutData !== undefined;
-      data = data || layoutData;
+
+      var mapped;
+      if( data ){
+        mapped = types.data;
+      } else if( layoutData ){
+        mapped = types.layoutData;
+      } else {
+        mapped = types.scratch;
+      }
+
+      data = data || layoutData || scratch;
 
       return {
         name: name,
         value: data,
         strValue: '' + value,
-        mapped: isLayout ? $$.style.types.layoutData : $$.style.types.data,
+        mapped: mapped,
         field: data[1],
         bypass: propIsBypass,
-        hasPie: name.match(/pie-(\d+)-background-size/)
+        hasPie: hasPie
       };
 
     } else if(
-      ( mapData = new RegExp( $$.style.types.mapData.regex ).exec( value ) ) ||
-      ( mapLayoutData = new RegExp( $$.style.types.mapLayoutData.regex ).exec( value ) )
+      ( mapData = new RegExp( types.mapData.regex ).exec( value ) ) ||
+      ( mapLayoutData = new RegExp( types.mapLayoutData.regex ).exec( value ) ) ||
+      ( mapScratch = new RegExp( types.mapScratch.regex ).exec( value ) )
     ){
       if( propIsBypass ){ return false; } // mappers not allowed in bypass
 
-      var isLayout = mapLayoutData !== undefined;
-      mapData = mapData || mapLayoutData;
+      var mapped;
+      if( mapData ){
+        mapped = types.mapData;
+      } else if( mapLayoutData ){
+        mapped = types.mapLayoutData;
+      } else {
+        mapped = types.mapScratch;
+      }
+
+      mapData = mapData || mapLayoutData || mapScratch;
 
       // we can map only if the type is a colour or a number
       if( !(type.color || type.number) ){ return false; }
@@ -491,11 +598,11 @@
       // check if valueMin and valueMax are the same
       if( valueMin.value === valueMax.value ){
         return false; // can't make much of a mapper without a range
-      
+
       } else if( type.color ){
         var c1 = valueMin.value;
         var c2 = valueMax.value;
-        
+
         var same = c1[0] === c2[0] // red
           && c1[1] === c2[1] // green
           && c1[2] === c2[2] // blue
@@ -516,19 +623,19 @@
         name: name,
         value: mapData,
         strValue: '' + value,
-        mapped: isLayout ? $$.style.types.mapLayoutData : $$.style.types.mapData,
+        mapped: mapped,
         field: mapData[1],
         fieldMin: parseFloat( mapData[2] ), // min & max are numeric
         fieldMax: parseFloat( mapData[3] ),
         valueMin: valueMin.value,
         valueMax: valueMax.value,
         bypass: propIsBypass,
-        hasPie: name.match(/pie-(\d+)-background-size/)
+        hasPie: hasPie
       };
     }
 
     // check the type and return the appropriate object
-    if( type.number ){ 
+    if( type.number ){
       var units;
       var implicitUnits = 'px'; // not set => px
 
@@ -543,14 +650,14 @@
       if( !type.unitless ){
         if( valueIsString ){
           var unitsRegex = 'px|em' + (type.allowPercent ? '|\\%' : '');
-          if( units ){ unitsRegex = units; } // only allow explicit units if so set 
+          if( units ){ unitsRegex = units; } // only allow explicit units if so set
           var match = value.match( '^(' + $$.util.regex.number + ')(' + unitsRegex + ')?' + '$' );
-          
+
           if( match ){
             value = match[1];
             units = match[2] || implicitUnits;
           }
-          
+
         } else if( !units || type.implicitUnits ) {
           units = implicitUnits; // implicitly px if unspecified
         }
@@ -590,7 +697,7 @@
       }
 
       // check value is within range
-      if( (type.min !== undefined && value < type.min) 
+      if( (type.min !== undefined && value < type.min)
       || (type.max !== undefined && value > type.max)
       ){
         return null;
@@ -602,7 +709,7 @@
         strValue: '' + value + (units ? units : ''),
         units: units,
         bypass: propIsBypass,
-        hasPie: name.match(/pie-(\d+)-background-size/) && value != null && value !== 0 && value !== ''
+        hasPie: hasPie && value != null && value !== 0 && value !== ''
       };
 
       // normalise value in pixels
@@ -622,8 +729,8 @@
     } else if( type.propList ) {
 
       var props = [];
-      var propsStr = '' + value;      
- 
+      var propsStr = '' + value;
+
       if( propsStr === 'none' ){
         // leave empty
 
@@ -756,9 +863,10 @@
 
     return this; // chaining
   };
+  $$.styfn.style = $$.styfn.css;
 
   // add a single css rule to the current context
-  $$.styfn.cssRule = function( name, value ){ 
+  $$.styfn.cssRule = function( name, value ){
     // name-value pair
     var property = this.parse( name, value );
 

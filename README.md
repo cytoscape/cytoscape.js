@@ -88,6 +88,8 @@ Run `gulp` in the console.  The main targets are:
 **Testing:**
  * `test` : run the Mocha unit tests
  * `lint` : lint the JS sources via jshint
+ * `benchmark` : run benchmark regression tests
+ * `benchmark-single` : run benchmarks only for the suite specified in `benchmark/single`
  * `watch` : update JS refs in HTML files (debug page, test page) automatically when JS files are added or deleted
 
 **Documentation:**
@@ -108,13 +110,7 @@ Run `gulp` in the console.  The main targets are:
  1. Confirm `VERSION` is picked up by gulp: `gulp version`
  1. Confirm JS files pass linting: `gulp lint`
  1. Confirm all tests passing: `gulp test`
- 1. Build and publish the release: `gulp pub`, and then...
-  1. Make sure all your changes are pushed.
-  1. Create a tag for this version in `git` (e.g. `gulp tag`)
-  1. Copy the docs in `documentation` to the `gh-pages` branch and push (e.g. `gulp docspush`)
-  1. Publish to npm (e.g. `gulp npm`)
-  1. Publish to spm (e.g. `gulp spm`)
-  1. Publish to meteor (e.g. `gulp meteor`)
+ 1. Build and publish the release: `gulp publish`
 
 
 
@@ -129,15 +125,13 @@ Mocha tests are found in the [test directory](https://github.com/cytoscape/cytos
 
 Funding for Cytoscape.js and Cytoscape is provided by NRNB (U.S. National Institutes of Health, National Center for Research Resources grant numbers P41 RR031228 and GM103504) and by NIH grants 2R01GM070743 and 1U41HG006623. The following organizations help develop Cytoscape:
 
-[ISB](http://www.systemsbiology.org) | 
-[UCSD](http://www.ucsd.edu) | 
-[MSKCC](http://cbio.mskcc.org) | 
-[Pasteur](http://www.pasteur.fr) | 
-[Agilent](http://www.agilent.com/) | 
+[ISB](http://www.systemsbiology.org) |
+[UCSD](http://www.ucsd.edu) |
+[MSKCC](http://cbio.mskcc.org) |
+[Pasteur](http://www.pasteur.fr) |
+[Agilent](http://www.agilent.com/) |
 [UCSF](http://www.ucsf.edu/) |
 [Unilever](http://www.unilever.com) |
 [Toronto](http://www.utoronto.ca) |
 [NCIBI](http://portal.ncibi.org/gateway/index.html) |
 [NRNB](http://nrnb.org)
-
-

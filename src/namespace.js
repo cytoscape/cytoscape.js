@@ -12,12 +12,12 @@ var cytoscape;
   };
 
   $$.version = '{{VERSION}}';
-  
+
   // allow functional access to cytoscape.js
   // e.g. var cyto = $.cytoscape({ selector: "#foo", ... });
   //      var nodes = cyto.nodes();
   $$.init = function( options ){
-    
+
     // if no options specified, use default
     if( options === undefined ){
       options = {};
@@ -26,8 +26,8 @@ var cytoscape;
     // create instance
     if( $$.is.plainObject( options ) ){
       return new $$.Core( options );
-    } 
-    
+    }
+
     // allow for registration of extensions
     // e.g. $.cytoscape('renderer', 'svg', SvgRenderer);
     // e.g. $.cytoscape('renderer', 'svg', 'nodeshape', 'ellipse', SvgEllipseNodeShape);
@@ -55,7 +55,7 @@ var cytoscape;
   if( window ){
     window.cytoscape = cytoscape;
   }
-  
+
 })( typeof window === 'undefined' ? null : window );
 
 // extra set to `this` is necessary for meteor

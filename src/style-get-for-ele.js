@@ -48,14 +48,13 @@
   };
 
   // gets the value style for an element (useful for things like animations)
-  $$.styfn.getValueStyle = function( ele, opts ){
-    opts = opts || {};
-
-    var rstyle = opts.array ? [] : {}; 
+  $$.styfn.getValueStyle = function( ele ){
+    var rstyle = {};
     var style;
+    var isEle = $$.is.element(ele);
 
-    if( $$.is.element(ele) ){
-      style = ele._private.style;    
+    if( isEle ){
+      style = ele._private.style;
     } else {
       style = ele; // just passed the style itself
     }
@@ -65,18 +64,36 @@
         var prop = $$.style.properties[i];
         var styleProp = style[ prop.name ] || style[ $$.util.dash2camel(prop.name) ];
 
-        if( styleProp !== undefined && !$$.is.plainObject( styleProp ) ){ // then make a prop of it
-          styleProp = this.parse(prop.name, styleProp);
+        if( styleProp !== undefined ){ // then make a prop of it
+          if( $$.is.plainObject( styleProp ) ){
+            styleProp = this.parse( prop.name, styleProp.strValue );
+          } else {
+            styleProp = this.parse( prop.name, styleProp );
+          }
         }
 
         if( styleProp ){
-          if( opts.array ){
-            rstyle.push( styleProp );
-          } else {
-            rstyle[ prop.name ] = styleProp;
-            rstyle[ $$.util.dash2camel(prop.name) ] = styleProp;
-          }
+          rstyle[ prop.name ] = styleProp;
+          rstyle[ $$.util.dash2camel(prop.name) ] = styleProp;
         }
+      }
+    }
+
+    return rstyle;
+  };
+
+  $$.styfn.getPropsList = function( propsObj ){
+    var rstyle = [];
+    var style = propsObj;
+    var props = $$.style.properties;
+
+    if( style ){
+      for( var name in style ){
+        var val = style[name];
+        var prop = props[name] || props[ $$.util.camel2dash(name) ];
+        var styleProp = this.parse( prop.name, val );
+
+        rstyle.push( styleProp );
       }
     }
 

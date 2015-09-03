@@ -1,5 +1,5 @@
 ;(function($$){ 'use strict';
-  
+
   var borderWidthMultiplier = 2 * 0.5;
   var borderWidthAdjustment = 0;
 
@@ -39,15 +39,22 @@
 
     scratch: $$.define.data({
       field: 'scratch',
-      allowBinding: false,
+      bindingEvent: 'scratch',
+      allowBinding: true,
       allowSetting: true,
-      settingTriggersEvent: false,
-      allowGetting: true
+      settingEvent: 'scratch',
+      settingTriggersEvent: true,
+      triggerFnName: 'trigger',
+      allowGetting: true,
+      updateStyle: true
     }),
 
     removeScratch: $$.define.removeData({
       field: 'scratch',
-      triggerEvent: false
+      event: 'scratch',
+      triggerFnName: 'trigger',
+      triggerEvent: true,
+      updateStyle: true
     }),
 
     rscratch: $$.define.data({
@@ -112,10 +119,10 @@
     positions: function( pos, silent ){
       if( $$.is.plainObject(pos) ){
         this.position(pos);
-        
+
       } else if( $$.is.fn(pos) ){
         var fn = pos;
-        
+
         for( var i = 0; i < this.length; i++ ){
           var ele = this[i];
 
@@ -155,7 +162,8 @@
       function update( parent ){
         var children = parent.children();
         var style = parent._private.style;
-        var bb = children.boundingBox({ includeLabels: false, includeEdges: false });
+        var includeLabels = style['compound-sizing-wrt-labels'].value === 'include';
+        var bb = children.boundingBox({ includeLabels: includeLabels, includeEdges: true });
         var padding = {
           top: style['padding-top'].pxValue,
           bottom: style['padding-bottom'].pxValue,
@@ -247,7 +255,7 @@
     },
 
     // get/set the position relative to the parent
-    parentPosition: function( dim, val ){
+    relativePosition: function( dim, val ){
       var ele = this[0];
       var cy = this.cy();
       var ppos = $$.is.plainObject( dim ) ? dim : undefined;
@@ -363,7 +371,7 @@
     },
 
     // convenience function to get a numerical value for the height of the node
-    height: function(){ 
+    height: function(){
       var ele = this[0];
       var cy = ele._private.cy;
       var styleEnabled = cy._private.styleEnabled;
@@ -462,12 +470,13 @@
       for( var i = 0; i < eles.length; i++ ){
         var ele = eles[i];
         var _p = ele._private;
+        var style = _p.style;
         var display = styleEnabled ? _p.style['display'].value : 'element';
         var isNode = _p.group === 'nodes';
         var ex1, ex2, ey1, ey2, x, y;
         var includedEle = false;
 
-        if( display === 'none' ){ continue; } // then ele doesn't take up space      
+        if( display === 'none' ){ continue; } // then ele doesn't take up space
 
         if( isNode && includeNodes ){
           includedEle = true;
@@ -493,16 +502,29 @@
           y1 = ey1 < y1 ? ey1 : y1;
           y2 = ey2 > y2 ? ey2 : y2;
 
-        } else if( ele.isEdge() && includeEdges ){ 
+        } else if( ele.isEdge() && includeEdges ){
           includedEle = true;
 
-          var n1pos = ele._private.source._private.position;
-          var n2pos = ele._private.target._private.position;
+          var n1 = _p.source;
+          var n1_p = n1._private;
+          var n1pos = n1_p.position;
+
+          var n2 = _p.target;
+          var n2_p = n2._private;
+          var n2pos = n2_p.position;
+
 
           // handle edge dimensions (rough box estimate)
           //////////////////////////////////////////////
 
-          var rstyle = ele._private.rstyle || {};
+          var rstyle = _p.rstyle || {};
+          var w = 0;
+          var wHalf = 0;
+
+          if( styleEnabled ){
+            w = style['width'].pxValue;
+            wHalf = w/2;
+          }
 
           ex1 = n1pos.x;
           ex2 = n2pos.x;
@@ -521,6 +543,12 @@
             ey2 = temp;
           }
 
+          // take into account edge width
+          ex1 -= wHalf;
+          ex2 += wHalf;
+          ey1 -= wHalf;
+          ey2 += wHalf;
+
           x1 = ex1 < x1 ? ex1 : x1;
           x2 = ex2 > x2 ? ex2 : x2;
           y1 = ey1 < y1 ? ey1 : y1;
@@ -531,9 +559,6 @@
 
           if( styleEnabled ){
             var bpts = rstyle.bezierPts || [];
-
-            var w = ele._private.style['width'].pxValue;
-            var wHalf = w/2;
 
             for( var j = 0; j < bpts.length; j++ ){
               var bpt = bpts[j];
@@ -550,7 +575,37 @@
             }
           }
 
+          // precise haystacks (sanity check)
+          ///////////////////////////////////
+
+          if( styleEnabled && style['curve-style'].strValue === 'haystack' ){
+            var hpts = _p.rscratch.haystackPts;
+
+            ex1 = hpts[0];
+            ey1 = hpts[1];
+            ex2 = hpts[2];
+            ey2 = hpts[3];
+
+            if( ex1 > ex2 ){
+              var temp = ex1;
+              ex1 = ex2;
+              ex2 = temp;
+            }
+
+            if( ey1 > ey2 ){
+              var temp = ey1;
+              ey1 = ey2;
+              ey2 = temp;
+            }
+
+            x1 = ex1 < x1 ? ex1 : x1;
+            x2 = ex2 > x2 ? ex2 : x2;
+            y1 = ey1 < y1 ? ey1 : y1;
+            y2 = ey2 > y2 ? ey2 : y2;
+          }
+
         } // edges
+
 
         // handle label dimensions
         //////////////////////////
@@ -622,6 +677,19 @@
         } // style enabled
       } // for
 
+      var noninf = function(x){
+        if( x === Infinity || x === -Infinity ){
+          return 0;
+        }
+
+        return x;
+      };
+
+      x1 = noninf(x1);
+      x2 = noninf(x2);
+      y1 = noninf(y1);
+      y2 = noninf(y2);
+
       return {
         x1: x1,
         x2: x2,
@@ -631,10 +699,17 @@
         h: y2 - y1
       };
     }
-  }); 
+  });
 
-  // in case some users want to be explicit
-  $$.elesfn.modelPosition = $$.elesfn.position;
-  $$.elesfn.modelPositions = $$.elesfn.positions;
-  
+  // aliases
+  var fn = $$.elesfn;
+  fn.attr = fn.data;
+  fn.removeAttr = fn.removeData;
+  fn.modelPosition = fn.point = fn.position;
+  fn.modelPositions = fn.points = fn.positions;
+  fn.renderedPoint = fn.renderedPosition;
+  fn.relativePoint = fn.relativePosition;
+  fn.boundingbox = fn.boundingBox;
+  fn.renderedBoundingbox = fn.renderedBoundingBox;
+
 })( cytoscape );

@@ -6,61 +6,66 @@
 
 (function($$) { 'use strict';
 
+  CanvasRenderer.CANVAS_LAYERS = 3;
+  //
+  CanvasRenderer.SELECT_BOX = 0;
+  CanvasRenderer.DRAG = 1;
+  CanvasRenderer.NODE = 2;
+
+  CanvasRenderer.BUFFER_COUNT = 3;
+  //
+  CanvasRenderer.TEXTURE_BUFFER = 0;
+  CanvasRenderer.MOTIONBLUR_BUFFER_NODE = 1;
+  CanvasRenderer.MOTIONBLUR_BUFFER_DRAG = 2;
+
   function CanvasRenderer(options) {
-    
-    CanvasRenderer.CANVAS_LAYERS = 5;
-    CanvasRenderer.SELECT_BOX = 0;
-    CanvasRenderer.DRAG = 2;
-    CanvasRenderer.NODE = 4;
-    CanvasRenderer.TEXTURE_BUFFER = 0;
-    CanvasRenderer.BUFFER_COUNT = 2;
 
     this.options = options;
 
     this.data = {
-        
-      select: [undefined, undefined, undefined, undefined, 0], // Coordinates for selection box, plus enabled flag 
+
+      select: [undefined, undefined, undefined, undefined, 0], // Coordinates for selection box, plus enabled flag
       renderer: this, cy: options.cy, container: options.cy.container(),
-      
+
       canvases: new Array(CanvasRenderer.CANVAS_LAYERS),
       contexts: new Array(CanvasRenderer.CANVAS_LAYERS),
       canvasNeedsRedraw: new Array(CanvasRenderer.CANVAS_LAYERS),
-      
+
       bufferCanvases: new Array(CanvasRenderer.BUFFER_COUNT),
       bufferContexts: new Array(CanvasRenderer.CANVAS_LAYERS)
 
     };
-    
+
     //--Pointer-related data
-    this.hoverData = {down: null, last: null, 
-        downTime: null, triggerMode: null, 
-        dragging: false, 
+    this.hoverData = {down: null, last: null,
+        downTime: null, triggerMode: null,
+        dragging: false,
         initialPan: [null, null], capture: false};
-    
+
     this.timeoutData = {panTimeout: null};
-    
+
     this.dragData = {possibleDragElements: []};
-    
+
     this.touchData = {start: null, capture: false,
         // These 3 fields related to tap, taphold events
         startPosition: [null, null, null, null, null, null],
         singleTouchStartTime: null,
         singleTouchMoved: true,
-        
-        
-        now: [null, null, null, null, null, null], 
+
+
+        now: [null, null, null, null, null, null],
         earlier: [null, null, null, null, null, null] };
     //--
-    
-    //--Wheel-related data 
+
+    //--Wheel-related data
     this.zoomData = {freeToZoom: false, lastPointerX: null};
     //--
-    
+
     this.redraws = 0;
     this.showFps = options.showFps;
 
     this.bindings = [];
-    
+
     this.data.canvasContainer = document.createElement('div');
     var containerStyle = this.data.canvasContainer.style;
     containerStyle.position = 'absolute';
@@ -76,7 +81,7 @@
       this.data.canvases[i].setAttribute('data-id', 'layer' + i);
       this.data.canvases[i].style.zIndex = String(CanvasRenderer.CANVAS_LAYERS - i);
       this.data.canvasContainer.appendChild(this.data.canvases[i]);
-      
+
       this.data.canvasNeedsRedraw[i] = false;
     }
     this.data.topCanvas = this.data.canvases[0];
@@ -84,7 +89,7 @@
     this.data.canvases[CanvasRenderer.NODE].setAttribute('data-id', 'layer' + CanvasRenderer.NODE + '-node');
     this.data.canvases[CanvasRenderer.SELECT_BOX].setAttribute('data-id', 'layer' + CanvasRenderer.SELECT_BOX + '-selectbox');
     this.data.canvases[CanvasRenderer.DRAG].setAttribute('data-id', 'layer' + CanvasRenderer.DRAG + '-drag');
-    
+
     for (var i = 0; i < CanvasRenderer.BUFFER_COUNT; i++) {
       this.data.bufferCanvases[i] = document.createElement('canvas');
       this.data.bufferContexts[i] = this.data.bufferCanvases[i].getContext('2d');
@@ -99,18 +104,26 @@
     this.hideLabelsOnViewport = options.hideLabelsOnViewport;
     this.textureOnViewport = options.textureOnViewport;
     this.wheelSensitivity = options.wheelSensitivity;
-    this.motionBlurEnabled = options.motionBlur === undefined ? true : options.motionBlur; // on by default
+    this.motionBlurEnabled = options.motionBlur; // on by default
     this.forcedPixelRatio = options.pixelRatio;
     this.motionBlur = true; // for initial kick off
-    this.tapThreshold = options.tapThreshold;
-    this.tapThreshold2 = options.tapThreshold * options.tapThreshold;
+    this.motionBlurOpacity = options.motionBlurOpacity;
+    this.motionBlurTransparency = 1 - this.motionBlurOpacity;
+    this.motionBlurPxRatio = 1;
+    this.mbPxRBlurry = 1; //0.8;
+    this.minMbLowQualFrames = 4;
+    this.fullQualityMb = false;
+    this.clearedForMotionBlur = [];
+    this.desktopTapThreshold = options.desktopTapThreshold;
+    this.desktopTapThreshold2 = options.desktopTapThreshold * options.desktopTapThreshold;
+    this.touchTapThreshold = options.touchTapThreshold;
+    this.touchTapThreshold2 = options.touchTapThreshold * options.touchTapThreshold;
     this.tapholdDuration = 500;
 
     this.load();
   }
 
   CanvasRenderer.panOrBoxSelectDelay = 400;
-  CanvasRenderer.isTouch = $$.is.touch();
 
   // whether to use Path2D caching for drawing
   var pathsImpld = typeof Path2D !== 'undefined';
@@ -157,7 +170,7 @@
         this.matchCanvasSize(this.data.container);
       }
     } // for
-    
+
     this.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
     this.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
 
@@ -179,11 +192,15 @@
     }
 
     if( this.labelCalcDiv ){
-      document.body.removeChild(this.labelCalcDiv);
+      try{
+        document.body.removeChild(this.labelCalcDiv);
+      } catch(e){
+        // ie10 issue #1014
+      }
     }
   };
 
-  
+
 
   // copy the math functions into the renderer prototype
   // unfortunately these functions are used interspersed t/o the code
@@ -192,8 +209,8 @@
   for( var fnName in $$.math ){
     CanvasRenderer.prototype[ fnName ] = $$.math[ fnName ];
   }
-  
-  
+
+
   $$('renderer', 'canvas', CanvasRenderer);
-  
+
 })( cytoscape );

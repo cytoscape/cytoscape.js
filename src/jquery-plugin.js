@@ -63,7 +63,7 @@
 
   $$.registerJquery( $ ); // try to register with global jquery for convenience
 
-  $$.util.require('jquery', function( $ ){
+  $$.util.require('jQuery', function( $ ){
     $$.registerJquery( $ ); // try to register with require()d jquery
   });
 

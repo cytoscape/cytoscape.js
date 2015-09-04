@@ -71,7 +71,6 @@ var execute = function (curr) {
 
 /*  execute particular set of handlers  */
 var execute_handlers = function (curr, name, value) {
-  /* global process: true */
   /* global setImmediate: true */
   /* global setTimeout: true */
 
@@ -88,9 +87,7 @@ var execute_handlers = function (curr, name, value) {
   };
 
   /*  execute procedure asynchronously  */                     /*  [Promises/A+ 2.2.4, 3.1]  */
-  if (typeof process === "object" && typeof process.nextTick === "function")
-    process.nextTick(func);
-  else if (typeof setImmediate === "function")
+  if (typeof setImmediate === "function")
     setImmediate(func);
   else
     setTimeout(func, 0);

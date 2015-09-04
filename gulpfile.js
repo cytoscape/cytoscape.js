@@ -36,6 +36,7 @@ var buffer = require('vinyl-buffer');
 var sourcemaps = require('gulp-sourcemaps');
 var livereload = require('gulp-livereload');
 var watchify = require('watchify');
+var derequire = require('gulp-derequire');
 
 var benchmarkVersion = '2.3.15'; // old version to test against for benchmarks
 var benchmarkVersionUrl = 'https://raw.githubusercontent.com/cytoscape/cytoscape.js/v' + benchmarkVersion + '/dist/cytoscape.js';
@@ -100,6 +101,15 @@ var paths = {
       'documentation/css/style.css'
     ]
   }
+};
+
+var browserifyOpts = {
+  entries: paths.sourceEntry,
+  debug: true,
+  builtins: [],
+  bundleExternal: false,
+  detectGlobals: false,
+  standalone: 'cytoscape'
 };
 
 // update these if you don't have a unix like env or these programmes aren't in your $PATH
@@ -172,31 +182,25 @@ gulp.task('clean', function(){
 
 
 gulp.task('concat', ['version', 'nodeworker'], function(){
-  return browserify({
-    entries: paths.sourceEntry,
-    debug: true,
-    standalone: 'cytoscape'
-  })
+  return browserify( browserifyOpts )
     .plugin( browserifyHeader, { file: paths.preamble } )
     .bundle()
     .pipe( source('cytoscape.js') )
     .pipe( buffer() )
+    .pipe( derequire() )
     .pipe( replace('{{VERSION}}', version) )
     .pipe( gulp.dest('build') )
   ;
 });
 
 gulp.task('build-unmin', ['version', 'nodeworker'], function(){
-  return browserify({
-    entries: paths.sourceEntry,
-    debug: true,
-    standalone: 'cytoscape'
-  })
-      .plugin( browserifyHeader, { file: paths.preamble } )
-      .bundle()
+  return browserify( browserifyOpts )
+    .plugin( browserifyHeader, { file: paths.preamble } )
+    .bundle()
     .pipe( source('cytoscape.js') )
     .pipe( buffer() )
     .pipe( sourcemaps.init({ loadMaps: true }) )
+    .pipe( derequire() )
     .pipe( replace('{{VERSION}}', version) )
     .pipe( sourcemaps.write('.') )
     .pipe( gulp.dest('build') )
@@ -204,12 +208,13 @@ gulp.task('build-unmin', ['version', 'nodeworker'], function(){
 });
 
 gulp.task('build-min', ['version', 'nodeworker'], function(){
-  return browserify({ entries: paths.sourceEntry, debug: true, expose: 'cytoscape' })
-      .plugin( browserifyHeader, { file: paths.preamble } )
-      .bundle()
+  return browserify( browserifyOpts )
+    .plugin( browserifyHeader, { file: paths.preamble } )
+    .bundle()
     .pipe( source('cytoscape.min.js') )
     .pipe( buffer() )
     .pipe( sourcemaps.init({ loadMaps: true }) )
+    .pipe( derequire() )
     .pipe( replace('{{VERSION}}', version) )
     .pipe( uglify({ mangle: true, preserveComments: 'some' }) )
     .pipe( sourcemaps.write('.') )
@@ -604,10 +609,12 @@ gulp.task('unstabledocspush', function(){
 
 // browserify debug build
 gulp.task('browserify', function(){
-  var b = browserify(paths.sourceEntry, { debug: true, hasExports: true, expose: 'cytoscape' });
+  var b = browserify( browserifyOpts );
 
   return b.bundle()
     .pipe( source('cytoscape.browserify.js') )
+    .pipe( buffer() )
+    .pipe( derequire() )
     .pipe( gulp.dest('build') )
   ;
 });
@@ -639,16 +646,13 @@ gulp.task('watch', function(next){
     })
   ;
 
-  var b = watchify( browserify({
-    entries: paths.sourceEntry,
-    debug: true,
-    expose: 'cytoscape'
-  }) );
+  var b = watchify( browserify( browserifyOpts ) );
 
   var rebuild = function(){
     return b.bundle()
       .pipe( source('cytoscape.js') )
       .pipe( buffer() )
+      .pipe( derequire() )
       .pipe( gulp.dest('build') )
       .pipe( livereload() )
     ;
@@ -663,7 +667,7 @@ gulp.task('watch', function(next){
 
 // http://www.jshint.com/docs/options/
 gulp.task('lint', function(){
-  return gulp.src( paths.sourceEntry )
+  return gulp.src( 'src/**' )
     .pipe( jshint({
       funcscope: true,
       laxbreak: true,

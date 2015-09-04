@@ -79,6 +79,7 @@
     "gulp-concat": "^2.6.0",
     "gulp-cssmin": "^0.1.4",
     "gulp-decompress": "^1.0.2",
+    "gulp-derequire": "^2.1.0",
     "gulp-download": "0.0.1",
     "gulp-htmlmin": "^0.1.2",
     "gulp-inject": "^0.4.1",

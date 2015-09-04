@@ -61,7 +61,7 @@ var is = {
   },
 
   core: function(obj){
-    return instanceStr(obj) === 'core' ;
+    return instanceStr(obj) === 'core';
   },
 
   style: function(obj){
@@ -69,19 +69,19 @@ var is = {
   },
 
   stylesheet: function(obj){
-    return instanceStr(obj) === 'stylesheet'
+    return instanceStr(obj) === 'stylesheet';
   },
 
   event: function(obj){
-    return instanceStr(obj) === 'event'
+    return instanceStr(obj) === 'event';
   },
 
   thread: function(obj){
-    return instanceStr(obj) === 'thread'
+    return instanceStr(obj) === 'thread';
   },
 
   fabric: function(obj){
-    return instanceStr(obj) === 'fabric'
+    return instanceStr(obj) === 'fabric';
   },
 
   emptyString: function(obj){

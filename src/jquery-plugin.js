@@ -63,8 +63,4 @@
 
   $$.registerJquery( $ ); // try to register with global jquery for convenience
 
-  $$.util.require('jquery', function( $ ){
-    $$.registerJquery( $ ); // try to register with require()d jquery
-  });
-
 })(typeof jQuery !== 'undefined' ? jQuery : null , cytoscape);

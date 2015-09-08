@@ -7,9 +7,9 @@ Modifications tracked on Github.
 var util = require('../../util');
 var math = require('../../math');
 var is = require('../../is');
+var Thread = require('../../thread');
 
 var DEBUG;
-var GRAVITY_DIST_THRESHOLD = 1.0;
 
 /**
  * @brief :  default layout options
@@ -25,7 +25,7 @@ var defaults = {
   animate             : true,
 
   // Number of iterations between consecutive screen positions update (0 -> only updated on the end)
-  refresh             : 4,
+  refresh             : 1,
 
   // Whether to fit the network view after when done
   fit                 : true,
@@ -38,9 +38,6 @@ var defaults = {
 
   // Whether to randomize node positions on the beginning
   randomize           : true,
-
-  // Whether to use the JS console to print debug messages
-  debug               : false,
 
   // Node repulsion (non overlapping) multiplier
   nodeRepulsion       : 400000,
@@ -80,6 +77,8 @@ var defaults = {
  */
 function CoseLayout(options) {
   this.options = util.extend({}, defaults, options);
+
+  this.options.layout = this;
 }
 
 
@@ -90,6 +89,26 @@ CoseLayout.prototype.run = function() {
   var options = this.options;
   var cy      = options.cy;
   var layout  = this;
+  var thread  = this.thread;
+
+  if( !thread || thread.stopped() ){
+    thread = this.thread = Thread();
+
+    var t = thread;
+
+    t.require( step, 'step' );
+    t.require( calculateNodeForces, 'calculateNodeForces' );
+    t.require( nodeRepulsion, 'nodeRepulsion' );
+    t.require( nodesOverlap, 'nodesOverlap' );
+    t.require( findClippingPoint, 'findClippingPoint' );
+    t.require( calculateNodeForces, 'calculateNodeForces' );
+    t.require( calculateEdgeForces, 'calculateEdgeForces' );
+    t.require( calculateGravityForces, 'calculateGravityForces' );
+    t.require( propagateForces, 'propagateForces' );
+    t.require( updatePositions, 'updatePositions' );
+    t.require( limitForce, 'limitForce' );
+    t.require( updateAncestryBoundaries, 'updateAncestryBoundaries' );
+  }
 
   layout.stopped = false;
 
@@ -118,36 +137,98 @@ CoseLayout.prototype.run = function() {
     randomizePositions(layoutInfo, cy);
   }
 
-  updatePositions(layoutInfo, cy, options);
+  updatePositions(layoutInfo, options);
 
-  var mainLoop = function(i){
-    if( layout.stopped ){
-      // logDebug("Layout manually stopped. Stopping computation in step " + i);
-      return false;
-    }
-
-    // Do one step in the phisical simulation
-    step(layoutInfo, cy, options, i);
-
-    // Update temperature
-    layoutInfo.temperature = layoutInfo.temperature * options.coolingFactor;
-    // logDebug("New temperature: " + layoutInfo.temperature);
-
-    if (layoutInfo.temperature < options.minTemp) {
-      // logDebug("Temperature drop below minimum threshold. Stopping computation in step " + i);
-      return false;
-    }
-
-    return true;
-  };
-
-  var done = function(){
+  var refresh = function(){
     refreshPositions(layoutInfo, cy, options);
 
     // Fit the graph if necessary
     if (true === options.fit) {
       cy.fit( options.padding );
     }
+  };
+
+  thread.on('message', function( e ){
+    var layoutNodes = e.message;
+
+    layoutInfo.layoutNodes = layoutNodes;
+    refresh();
+  });
+
+  thread.pass({
+    layoutInfo: layoutInfo,
+    options: {
+      animate: options.animate,
+      refresh: options.refresh,
+      nodeRepulsion: options.nodeRepulsion,
+      nodeOverlap: options.nodeOverlap,
+      idealEdgeLength: options.idealEdgeLength,
+      edgeElasticity: options.edgeElasticity,
+      nestingFactor: options.nestingFactor,
+      gravity: options.gravity,
+      numIter: options.numIter,
+      initialTemp: options.initialTemp,
+      coolingFactor: options.coolingFactor,
+      minTemp: options.minTemp
+    }
+  }).run(function( pass ){
+    var layoutInfo = pass.layoutInfo;
+    var options = pass.options;
+    var stopped = false;
+
+    var done = function(){ console.log('done') };
+
+    var mainLoop = function(i){
+      if( stopped ){
+        // logDebug("Layout manually stopped. Stopping computation in step " + i);
+        return false;
+      }
+
+      // Do one step in the phisical simulation
+      step(layoutInfo, options, i);
+
+      // Update temperature
+      layoutInfo.temperature = layoutInfo.temperature * options.coolingFactor;
+      // logDebug("New temperature: " + layoutInfo.temperature);
+
+      if (layoutInfo.temperature < options.minTemp) {
+        // logDebug("Temperature drop below minimum threshold. Stopping computation in step " + i);
+        return false;
+      }
+
+      return true;
+    };
+
+    var i = 0;
+    var loopRet;
+
+    do {
+      var f = 0;
+
+      while( f < options.refresh && i < options.numIter ){
+        var loopRet = mainLoop(i);
+        if( !loopRet ){ break; }
+
+        f++;
+        i++;
+      }
+
+      if( options.animate ){
+        broadcast( layoutInfo.layoutNodes );
+      }
+
+    } while ( loopRet && i + 1 < options.numIter );
+
+    return layoutInfo;
+  }).then(function( layoutInfoUpdated ){
+    layoutInfo.layoutNodes = layoutInfoUpdated.layoutNodes; // get the positions
+
+    thread.stop();
+    done();
+  });
+
+  var done = function(){
+    refresh();
 
     // Get end time
     var endTime = new Date();
@@ -159,41 +240,6 @@ CoseLayout.prototype.run = function() {
     layout.trigger({ type: 'layoutstop', layout: layout });
   };
 
-  if( options.animate ){
-    var i = 0;
-    var frame = function(){
-
-      var f = 0;
-      var loopRet;
-      while( f < options.refresh && i < options.numIter ){
-        var loopRet = mainLoop(i);
-        if( loopRet === false ){ break; }
-
-        f++;
-        i++;
-      }
-
-      refreshPositions(layoutInfo, cy, options);
-      if( options.fit ){
-        cy.fit( options.padding );
-      }
-
-      if ( loopRet !== false && i + 1 < options.numIter ) {
-        util.requestAnimationFrame( frame );
-      } else {
-        done();
-      }
-    };
-
-    util.requestAnimationFrame( frame );
-  } else {
-    for (var i = 0; i < options.numIter; i++) {
-      if( mainLoop(i) === false ){ break; }
-    }
-
-    done();
-  }
-
   return this; // chaining
 };
 
@@ -203,6 +249,18 @@ CoseLayout.prototype.run = function() {
  */
 CoseLayout.prototype.stop = function(){
   this.stopped = true;
+
+  if( this.thread ){
+    this.thread.stop();
+  }
+
+  return this; // chaining
+};
+
+CoseLayout.prototype.destroy = function(){
+  if( this.thread ){
+    this.thread.stop();
+  }
 
   return this; // chaining
 };
@@ -220,7 +278,6 @@ var createLayoutInfo = function(cy, layout, options) {
   var nodes = options.eles.nodes();
 
   var layoutInfo   = {
-    layout       : layout,
     layoutNodes  : [],
     idToIndex    : {},
     nodeSize     : nodes.size(),
@@ -545,7 +602,7 @@ var refreshPositions = function(layoutInfo, cy, options) {
   // var s = 'Refreshing positions';
   // logDebug(s);
 
-  var layout = layoutInfo.layout;
+  var layout = options.layout;
   var nodes = options.eles.nodes();
   var bb = layoutInfo.boundingBox;
   var coseBB = { x1: Infinity, x2: -Infinity, y1: Infinity, y2: -Infinity };
@@ -604,29 +661,29 @@ var refreshPositions = function(layoutInfo, cy, options) {
  * @arg cy         : Cytoscape object
  * @arg options    : Layout options
  */
-var step = function(layoutInfo, cy, options, step) {
+var step = function(layoutInfo, options, step) {
   // var s = "\n\n###############################";
   // s += "\nSTEP: " + step;
   // s += "\n###############################\n";
   // logDebug(s);
 
   // Calculate node repulsions
-  calculateNodeForces(layoutInfo, cy, options);
+  calculateNodeForces(layoutInfo, options);
   // Calculate edge forces
-  calculateEdgeForces(layoutInfo, cy, options);
+  calculateEdgeForces(layoutInfo, options);
   // Calculate gravity forces
-  calculateGravityForces(layoutInfo, cy, options);
+  calculateGravityForces(layoutInfo, options);
   // Propagate forces from parent to child
-  propagateForces(layoutInfo, cy, options);
+  propagateForces(layoutInfo, options);
   // Update positions based on calculated forces
-  updatePositions(layoutInfo, cy, options);
+  updatePositions(layoutInfo, options);
 };
 
 
 /**
  * @brief : Computes the node repulsion forces
  */
-var calculateNodeForces = function(layoutInfo, cy, options) {
+var calculateNodeForces = function(layoutInfo, options) {
   // Go through each of the graphs in graphSet
   // Nodes only repel each other if they belong to the same graph
   // var s = 'calculateNodeForces';
@@ -644,7 +701,7 @@ var calculateNodeForces = function(layoutInfo, cy, options) {
     var node1 = layoutInfo.layoutNodes[layoutInfo.idToIndex[graph[j]]];
     for (var k = j + 1; k < numNodes; k++) {
       var node2 = layoutInfo.layoutNodes[layoutInfo.idToIndex[graph[k]]];
-      nodeRepulsion(node1, node2, layoutInfo, cy, options);
+      nodeRepulsion(node1, node2, layoutInfo, options);
     }
     }
   }
@@ -654,7 +711,7 @@ var calculateNodeForces = function(layoutInfo, cy, options) {
 /**
  * @brief : Compute the node repulsion forces between a pair of nodes
  */
-var nodeRepulsion = function(node1, node2, layoutInfo, cy, options) {
+var nodeRepulsion = function(node1, node2, layoutInfo, options) {
   // var s = "Node repulsion. Node1: " + node1.id + " Node2: " + node2.id;
 
   // Get direction of line connecting both node centers
@@ -727,8 +784,8 @@ var findClippingPoint = function(node, dX, dY) {
   // Shorcuts
   var X = node.positionX;
   var Y = node.positionY;
-  var H = node.height;
-  var W = node.width;
+  var H = node.height || 1;
+  var W = node.width || 1;
   var dirSlope     = dY / dX;
   var nodeSlope    = H / W;
 
@@ -832,7 +889,7 @@ var nodesOverlap = function(node1, node2, dX, dY) {
 /**
  * @brief : Calculates all edge forces
  */
-var calculateEdgeForces = function(layoutInfo, cy, options) {
+var calculateEdgeForces = function(layoutInfo, options) {
   // Iterate over all edges
   for (var i = 0; i < layoutInfo.edgeSize; i++) {
     // Get edge, source & target nodes
@@ -887,7 +944,9 @@ var calculateEdgeForces = function(layoutInfo, cy, options) {
 /**
  * @brief : Computes gravity forces for all nodes
  */
-var calculateGravityForces = function(layoutInfo, cy, options) {
+var calculateGravityForces = function(layoutInfo, options) {
+  var distThreshold = 1;
+
   // var s = 'calculateGravityForces';
   // logDebug(s);
   for (var i = 0; i < layoutInfo.graphSet.length; i ++) {
@@ -918,7 +977,7 @@ var calculateGravityForces = function(layoutInfo, cy, options) {
       var dx = centerX - node.positionX;
       var dy = centerY - node.positionY;
       var d  = Math.sqrt(dx * dx + dy * dy);
-      if (d > GRAVITY_DIST_THRESHOLD) {
+      if (d > distThreshold) {
         var fx = options.gravity * dx / d;
         var fy = options.gravity * dy / d;
         node.offsetX += fx;
@@ -940,7 +999,7 @@ var calculateGravityForces = function(layoutInfo, cy, options) {
  * @arg cy         : cytoscape Object
  * @arg options    : Layout options
  */
-var propagateForces = function(layoutInfo, cy, options) {
+var propagateForces = function(layoutInfo, options) {
   // Inline implementation of a queue, used for traversing the graph in BFS order
   var queue = [];
   var start = 0;   // Points to the start the queue
@@ -992,7 +1051,7 @@ var propagateForces = function(layoutInfo, cy, options) {
  * @brief : Updates the layout model positions, based on
  *          the accumulated forces
  */
-var updatePositions = function(layoutInfo, cy, options) {
+var updatePositions = function(layoutInfo, options) {
   // var s = 'Updating positions';
   // logDebug(s);
 

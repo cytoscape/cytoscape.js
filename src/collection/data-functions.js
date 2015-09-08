@@ -95,7 +95,7 @@ var elesfn = fn = ({
       updatedEles.rtrigger('position');
     },
     canSet: function( ele ){
-      return !ele.locked();
+      return !ele.locked() && !ele.isParent();
     }
   }),
 
@@ -114,7 +114,7 @@ var elesfn = fn = ({
       eles.updateCompoundBounds();
     },
     canSet: function( ele ){
-      return !ele.locked();
+      return !ele.locked() && !ele.isParent();
     }
   }),
 
@@ -130,7 +130,7 @@ var elesfn = fn = ({
 
         var pos = fn.apply(ele, [i, ele]);
 
-        if( pos && !ele.locked() ){
+        if( pos && !ele.locked() && !ele.isParent() ){
           var elePos = ele._private.position;
           elePos.x = pos.x;
           elePos.y = pos.y;

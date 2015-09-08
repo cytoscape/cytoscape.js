@@ -127,10 +127,9 @@ $(function(){
       name: 'canvas',
       showFps: true
     },
-    // layout: {
-    //   name: 'arbor',
-    //   infinite: true
-    // },
+    layout: {
+      name: 'grid'
+    },
     style: defaultSty,
 
     elements: {

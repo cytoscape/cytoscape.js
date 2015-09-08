@@ -111,31 +111,7 @@ styfn.overrideBypass = function( eles, name, value ){
 };
 
 styfn.removeAllBypasses = function( eles, updateTransitions ){
-  var self = this;
-  var isBypass = true;
-
-  for( var j = 0; j < eles.length; j++ ){
-    var ele = eles[j];
-    var diffProps = {};
-    var style = ele._private.style;
-
-    for( var i = 0; i < self.properties.length; i++ ){
-      var prop = self.properties[i];
-      var name = prop.name;
-      var value = ''; // empty => remove bypass
-      var parsedProp = this.parse(name, value, true);
-      var prevProp = style[ prop.name ];
-      var diffProp = diffProps[ prop.name ] = { prev: prevProp };
-
-      this.applyParsedProperty(ele, parsedProp);
-
-      diffProp.next = style[ prop.name ];
-    } // for props
-
-    if( updateTransitions ){
-      this.updateTransitions( ele, diffProps, isBypass );
-    }
-  } // for eles
+  return this.removeBypasses( eles, this.propertyNames, updateTransitions );
 };
 
 styfn.removeBypasses = function( eles, props, updateTransitions ){

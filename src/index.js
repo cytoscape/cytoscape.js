@@ -6,6 +6,8 @@ var Core = require('./core');
 var extension = require('./extension');
 var regjq = require('./jquery-plugin');
 var Stylesheet = require('./stylesheet');
+var Thread = require('./thread');
+var Fabric = require('./fabric');
 
 // the object iteself is a function that init's an instance of cytoscape
 
@@ -55,6 +57,9 @@ regjq();
 
 // expose public apis
 cytoscape.stylesheet = cytoscape.Stylesheet = Stylesheet;
-cytoscape.is = is;
+cytoscape.thread = cytoscape.Thread = Thread;
+cytoscape.fabric = cytoscape.Fabric = Fabric;
+
+cytoscape.is = is; // TODO not public
 
 module.exports = cytoscape;

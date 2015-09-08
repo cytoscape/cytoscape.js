@@ -4,7 +4,7 @@ var window = require('./window');
 var is = require('./is');
 var Core = require('./core');
 var extension = require('./extension');
-var regjq = require('./jquery-plugin');
+var registerJquery = require('./jquery-plugin');
 var Stylesheet = require('./stylesheet');
 var Thread = require('./thread');
 var Fabric = require('./fabric');
@@ -53,7 +53,10 @@ if( window ){
 this.cytoscape = cytoscape;
 
 // try to register w/ jquery
-regjq();
+registerJquery( window.jQuery, cytoscape );
+cytoscape.registerJquery = function( jQuery ){
+  registerJquery( jQuery, cytoscape );
+};
 
 // expose public apis
 cytoscape.stylesheet = cytoscape.Stylesheet = Stylesheet;

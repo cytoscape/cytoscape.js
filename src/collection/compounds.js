@@ -14,7 +14,7 @@ var elesfn = ({
       }
     }
 
-    return this.spawn( cy, parents, { unique: true } ).filter( selector );
+    return this.spawn( parents, { unique: true } ).filter( selector );
   },
 
   parents: function( selector ){
@@ -30,7 +30,7 @@ var elesfn = ({
       eles = eles.parent();
     }
 
-    return this.spawn( this.cy(), parents, { unique: true } ).filter( selector );
+    return this.spawn( parents, { unique: true } ).filter( selector );
   },
 
   commonAncestors: function( selector ){
@@ -68,7 +68,7 @@ var elesfn = ({
       children = children.concat( ele._private.children );
     }
 
-    return this.spawn( this.cy(), children, { unique: true } ).filter( selector );
+    return this.spawn( children, { unique: true } ).filter( selector );
   },
 
   siblings: function( selector ){
@@ -108,7 +108,7 @@ var elesfn = ({
 
     add( this.children() );
 
-    return this.spawn( this.cy(), elements, { unique: true } ).filter( selector );
+    return this.spawn( elements, { unique: true } ).filter( selector );
   }
 });
 

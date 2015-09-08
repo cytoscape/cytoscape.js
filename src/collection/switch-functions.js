@@ -46,7 +46,7 @@ function defineSwitchFunction(params){
         }
       }
 
-      var changedColl = this.spawn( this.cy(), changedEles );
+      var changedColl = this.spawn( changedEles );
       changedColl.updateStyle(); // change of state => possible change of style
       changedColl.trigger( params.event );
     }

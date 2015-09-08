@@ -164,7 +164,7 @@ var elesfn = ({
         return {
           found : true,
           distance : gScore[cMin.id()],
-          path : eles.spawn(cy, rPath),
+          path : eles.spawn(rPath),
           steps : steps
         };
       }
@@ -645,7 +645,7 @@ var elesfn = ({
           res.reverse();
         }
 
-        return eles.spawn(cy, res);
+        return eles.spawn(res);
       },
 
       hasNegativeWeightCycle: false
@@ -834,8 +834,8 @@ var elesfn = ({
 
     var ret = {
       cut: eles.spawn(cy, resEdges),
-      partition1: eles.spawn(cy, partition1),
-      partition2: eles.spawn(cy, partition2)
+      partition1: eles.spawn(partition1),
+      partition2: eles.spawn(partition2)
     };
 
     return ret;

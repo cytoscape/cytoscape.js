@@ -3,7 +3,7 @@ var cytoscape = require('../build/cytoscape.js', cytoscape);
 var $$ = cytoscape;
 var isNode = typeof module !== 'undefined';
 
-describe('Fabric', function(){ return; // TODO enable once refactored
+describe('Fabric', function(){
 
   var fabric;
 
@@ -30,7 +30,7 @@ describe('Fabric', function(){ return; // TODO enable once refactored
   it('gets a random thread', function(){
     var t = fabric.random();
 
-    expect( $$.is.thread(t) ).to.be.true;
+    expect( t.instanceString() === 'thread' ).to.be.true;
   });
 
   it('runs on a random thread', function( next ){

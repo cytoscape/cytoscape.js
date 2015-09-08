@@ -2,10 +2,12 @@ var expect = require('chai').expect;
 var cytoscape = require('../build/cytoscape.js', cytoscape);
 var $$ = cytoscape;
 var isNode = typeof module !== 'undefined';
+var bluebird = require('bluebird');
+var Promise = bluebird;
 
-describe('Thread', function(){ return; // TODO enable once refactored
+describe('Thread', function(){
 
-  if( isNode ){ console.log('isNode')
+  if( isNode ){
     var cwd = process.cwd();
 
     before(function(){
@@ -78,7 +80,7 @@ describe('Thread', function(){ return; // TODO enable once refactored
     var t1 = $$.Thread();
     var t2 = $$.Thread();
 
-    $$.Promise.all([ // both threads done
+    Promise.all([ // both threads done
       t1.run(function(){
         resolve( 1 );
       }),
@@ -509,6 +511,80 @@ describe('Thread', function(){ return; // TODO enable once refactored
       t.stop();
       next();
     });
+  });
+
+  it('falls back to timout w/ no threads', function( next ){
+    var t = $$.Thread({
+      disabled: true
+    });
+
+    t.run(function(){
+      resolve( 3 );
+    }).then(function( val ){
+      expect( val ).to.equal(3);
+
+      t.stop();
+
+      next();
+    });
+  });
+
+  it('fallback thread hears a message and roundtrips back', function( next ){
+    var t = $$.Thread({ disabled: true });
+    var msg;
+
+    t.run(function(){
+      listen(function( m ){
+        message(m);
+      });
+    });
+
+    t.on('message', function(e){
+      expect( e.message ).to.equal('hello there');
+
+      t.stop();
+
+      next();
+    });
+
+    t.message('hello there');
+  });
+
+  it('fallback thread can use require()', function( next ){
+    var t = $$.Thread({ disabled: true });
+    var msg;
+
+    function foo(){ return 'bar'; }
+
+    t.require( foo ).promise(function(){
+      return foo();
+    }).then(function( ret ){
+      expect( ret ).to.equal('bar');
+
+      t.stop();
+      next();
+    });
+  });
+
+  it('can access required function in listener with threading disabled', function( next ){
+    var t = $$.thread({ disabled: true });
+
+    function foo(){
+      return 'bar';
+    }
+
+    t.require( foo ).promise(function(){
+      listen(function(m){
+        resolve( foo() );
+      });
+    }).then(function( bar ){
+      expect( bar ).to.equal('bar');
+
+      t.stop();
+      next();
+    });
+
+    t.message('triggerlistener');
   });
 
 });

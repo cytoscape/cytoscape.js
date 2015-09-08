@@ -3,7 +3,7 @@
 var util = require('../../util');
 var math = require('../../math');
 var is = require('../../is');
-var thread = require('../../thread');
+var Thread = require('../../thread');
 
 /*
  * This layout combines several algorithms:

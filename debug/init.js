@@ -62,7 +62,7 @@ $(function(){
           'padding-right': 10,
           'padding-top': 10,
           'padding-bottom': 10,
-          // 'background-opacity': 1
+          'background-opacity': 1
         })
       .selector('node[id="non-auto"]') // to init a non-auto sized compound
         .css({
@@ -72,22 +72,22 @@ $(function(){
           })
       .selector('edge')
         .css({
-          'line-color': '#bbb',
-          'source-arrow-color': '#bbb',
-          'mid-source-arrow-color': '#bbb',
-          'target-arrow-color': '#bbb',
-          'mid-target-arrow-color': '#bbb',
+          'line-color': '#ddd',
+          'source-arrow-color': '#ddd',
+          'mid-source-arrow-color': '#ddd',
+          'target-arrow-color': '#ddd',
+          'mid-target-arrow-color': '#ddd',
           // 'curve-style': 'unbundled-bezier',
           // 'control-point-distance': 100,
           'width': '3',
           // 'source-arrow-shape': 'triangle-backcurve',
-          'target-arrow-shape': 'triangle-backcurve',
+          'target-arrow-shape': 'triangle',
           // 'mid-target-arrow-shape': 'triangle',
           // 'mid-source-arrow-shape': 'triangle-backcurve',
           // 'target-arrow-fill': 'filled',
           // 'source-arrow-shape': 'data(srcShape)',
           // 'curve-style': 'haystack',
-          'opacity': 0.5
+          // 'opacity': 0.5
           //'content': 'data(weight)'
         })
       // .selector('[source="n1"]')

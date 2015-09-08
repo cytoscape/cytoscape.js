@@ -30,7 +30,7 @@ var elesfn = ({
         }
       }
 
-      return this.spawn(cy, elements);
+      return this.spawn(elements);
 
     } else if( is.string(filter) || is.elementOrCollection(filter) ){
       return Selector(filter).filter(this);
@@ -39,7 +39,7 @@ var elesfn = ({
       return this;
     }
 
-    return this.spawn( cy ); // if not handled by above, give 'em an empty collection
+    return this.spawn(); // if not handled by above, give 'em an empty collection
   },
 
   not: function( toRemove ){
@@ -64,7 +64,7 @@ var elesfn = ({
         }
       }
 
-      return this.spawn( cy, elements );
+      return this.spawn( elements );
     }
 
   },
@@ -101,7 +101,7 @@ var elesfn = ({
       }
     }
 
-    return this.spawn( cy, elements );
+    return this.spawn( elements );
   },
 
   xor: function( other ){
@@ -132,7 +132,7 @@ var elesfn = ({
     add( col1, col2 );
     add( col2, col1 );
 
-    return this.spawn( cy, elements );
+    return this.spawn( elements );
   },
 
   diff: function( other ){
@@ -168,9 +168,9 @@ var elesfn = ({
     add( col2, col1, right );
 
     return {
-      left: this.spawn( cy, left, { unique: true } ),
-      right: this.spawn( cy, right, { unique: true } ),
-      both: this.spawn( cy, both, { unique: true } )
+      left: this.spawn( left, { unique: true } ),
+      right: this.spawn( right, { unique: true } ),
+      both: this.spawn( both, { unique: true } )
     };
   },
 
@@ -200,7 +200,7 @@ var elesfn = ({
       }
     }
 
-    return this.spawn(cy, elements);
+    return this.spawn(elements);
   },
 
   // in place merge on calling collection
@@ -317,7 +317,7 @@ var elesfn = ({
       }
     }
 
-    return this.spawn( cy, filterEles );
+    return this.spawn( filterEles );
   },
 
   max: function( valFn, thisArg ){

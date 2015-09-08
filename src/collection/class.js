@@ -54,7 +54,7 @@ var elesfn = ({
 
     // trigger update style on those eles that had class changes
     if( changed.length > 0 ){
-      new this.spawn(this.cy(), changed)
+      this.spawn(changed)
         .updateStyle()
         .trigger('class')
       ;
@@ -108,7 +108,7 @@ var elesfn = ({
 
     // trigger update style on those eles that had class changes
     if( changed.length > 0 ){
-      new this.spawn(this.cy(), changed)
+      this.spawn(changed)
         .updateStyle()
         .trigger('class')
       ;

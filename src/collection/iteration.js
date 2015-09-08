@@ -64,7 +64,7 @@ var elesfn = ({
       array.push( this[i] );
     }
 
-    return this.spawn(this.cy(), array);
+    return this.spawn(array);
   },
 
   size: function(){
@@ -72,15 +72,15 @@ var elesfn = ({
   },
 
   eq: function(i){
-    return this[i] || this.spawn( this.cy() );
+    return this[i] || this.spawn();
   },
 
   first: function(){
-    return this[0] || this.spawn( this.cy() );
+    return this[0] || this.spawn();
   },
 
   last: function(){
-    return this[ this.length - 1 ] || this.spawn( this.cy() );
+    return this[ this.length - 1 ] || this.spawn();
   },
 
   empty: function(){
@@ -99,7 +99,7 @@ var elesfn = ({
     var cy = this.cy();
     var sorted = this.toArray().sort( sortFn );
 
-    return this.spawn(cy, sorted);
+    return this.spawn(sorted);
   },
 
   sortByZIndex: function(){

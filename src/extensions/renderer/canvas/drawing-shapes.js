@@ -49,12 +49,37 @@
     context.closePath();
   };
 
+  var sin0 = Math.sin(0);
+  var cos0 = Math.cos(0);
+
+  var sin = {};
+  var cos = {};
+
+  var ellipseStepSize = 0.1;
+
+  for (var i = 0 * Math.PI; i < 2 * Math.PI; i += ellipseStepSize ) {
+    sin[i] = Math.sin(i);
+    cos[i] = Math.cos(i);
+  }
+
   CRp.drawEllipsePath = function(context, centerX, centerY, width, height){
     if( context.beginPath ){ context.beginPath(); }
 
-    context.ellipse( centerX, centerY, width/2, height/2, 0, 0, 2*Math.PI );
+      var xPos, yPos;
+      var rw = width/2;
+      var rh = height/2;
+      for (var i = 0 * Math.PI; i < 2 * Math.PI; i += ellipseStepSize ) {
+        xPos = centerX - (rw * sin[i]) * sin0 + (rw * cos[i]) * cos0;
+        yPos = centerY + (rh * cos[i]) * sin0 + (rh * sin[i]) * cos0;
 
-    context.closePath();
+        if (i === 0) {
+          context.moveTo(xPos, yPos);
+        } else {
+          context.lineTo(xPos, yPos);
+        }
+      }
+
+      context.closePath();
   };
 
 module.exports = CRp;

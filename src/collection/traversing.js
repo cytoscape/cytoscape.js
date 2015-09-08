@@ -26,7 +26,7 @@ util.extend(elesfn, {
       }
     }
 
-    return this.spawn( this._private.cy, roots, { unique: true } ).filter( selector );
+    return this.spawn( roots, { unique: true } ).filter( selector );
   },
 
   // get the leaf nodes in the DAG
@@ -49,7 +49,7 @@ util.extend(elesfn, {
       }
     }
 
-    return this.spawn( this._private.cy, leaves, { unique: true } ).filter( selector );
+    return this.spawn( leaves, { unique: true } ).filter( selector );
   },
 
   // normally called children in graph theory
@@ -77,7 +77,7 @@ util.extend(elesfn, {
       }
     }
 
-    return this.spawn( this._private.cy, oEles, { unique: true } ).filter( selector );
+    return this.spawn( oEles, { unique: true } ).filter( selector );
   },
 
   // aka DAG descendants
@@ -108,7 +108,7 @@ util.extend(elesfn, {
       eles = outgoers;
     }
 
-    return this.spawn( this._private.cy, sEles, { unique: true } ).filter( selector );
+    return this.spawn( sEles, { unique: true } ).filter( selector );
   },
 
   // normally called parents in graph theory
@@ -136,7 +136,7 @@ util.extend(elesfn, {
       }
     }
 
-    return this.spawn( this._private.cy, oEles, { unique: true } ).filter( selector );
+    return this.spawn( oEles, { unique: true } ).filter( selector );
   },
 
   // aka DAG ancestors
@@ -167,7 +167,7 @@ util.extend(elesfn, {
       eles = incomers;
     }
 
-    return this.spawn( this._private.cy, pEles, { unique: true } ).filter( selector );
+    return this.spawn( pEles, { unique: true } ).filter( selector );
   }
 });
 
@@ -201,7 +201,7 @@ util.extend(elesfn, {
 
     }
 
-    return ( this.spawn( cy, elements, { unique: true } ) ).filter( selector );
+    return ( this.spawn( elements, { unique: true } ) ).filter( selector );
   },
 
   closedNeighborhood: function(selector){
@@ -268,7 +268,7 @@ function defineSourceFunction( params ){
       }
     }
 
-    return this.spawn( cy, sources, { unique: true } ).filter( selector );
+    return this.spawn( sources, { unique: true } ).filter( selector );
   };
 }
 
@@ -318,7 +318,7 @@ function defineEdgesWithFunction( params ){
       }
     }
 
-    return this.spawn( cy, elements, { unique: true } );
+    return this.spawn( elements, { unique: true } );
   };
 }
 
@@ -340,7 +340,7 @@ util.extend(elesfn, {
       }
     }
 
-    return this.spawn( cy, retEles, { unique: true } ).filter( selector );
+    return this.spawn( retEles, { unique: true } ).filter( selector );
   },
 
   connectedNodes: function( selector ){
@@ -356,7 +356,7 @@ util.extend(elesfn, {
       retEles.push( edge.target()[0] );
     }
 
-    return this.spawn( cy, retEles, { unique: true } ).filter( selector );
+    return this.spawn( retEles, { unique: true } ).filter( selector );
   },
 
   parallelEdges: defineParallelEdgesFunction(),
@@ -403,7 +403,7 @@ function defineParallelEdgesFunction(params){
       }
     }
 
-    return this.spawn( cy, elements, { unique: true } ).filter( selector );
+    return this.spawn( elements, { unique: true } ).filter( selector );
   };
 
 }

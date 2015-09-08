@@ -225,7 +225,7 @@ BRp.registerArrowShapes = function(){
     },
 
     draw: function( context, size, angle, translation ){
-      renderer.arrowShapeImpl[ this.name ]( context, translation.x, translation.y, this.radius * size );
+      renderer.arrowShapeImpl( this.name )( context, translation.x, translation.y, this.radius * size );
     },
 
     spacing: function( edge ){

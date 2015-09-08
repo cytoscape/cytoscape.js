@@ -37,6 +37,9 @@ var sourcemaps = require('gulp-sourcemaps');
 var livereload = require('gulp-livereload');
 var watchify = require('watchify');
 var derequire = require('gulp-derequire');
+var gutil = require('gulp-util');
+var notifier = require('node-notifier');
+var jscs = require('gulp-jscs');
 
 var benchmarkVersion = '2.3.15'; // old version to test against for benchmarks
 var benchmarkVersionUrl = 'https://raw.githubusercontent.com/cytoscape/cytoscape.js/v' + benchmarkVersion + '/dist/cytoscape.js';
@@ -112,6 +115,11 @@ var browserifyOpts = {
   standalone: 'cytoscape'
 };
 
+var logError = function( err ){
+  notifier.notify({ title: 'Cytoscape.js', message: 'Error: ' + err.message });
+  gutil.log( gutil.colors.red('Error in watch:'), gutil.colors.red(err) );
+};
+
 // update these if you don't have a unix like env or these programmes aren't in your $PATH
 var $GIT = 'git';
 var $RM = 'rm -rf';
@@ -179,12 +187,18 @@ gulp.task('clean', function(){
   ;
 });
 
-
+gulp.task('format', function(){
+  return gulp.src('src/**/*.js')
+    .pipe( jscs({ fix: true }) )
+    .pipe( gulp.dest('formatted') ) // TODO move to src after confirming .jscsrc
+  ;
+});
 
 gulp.task('concat', ['version', 'nodeworker'], function(){
   return browserify( browserifyOpts )
     .plugin( browserifyHeader, { file: paths.preamble } )
     .bundle()
+    .on( 'error', logError )
     .pipe( source('cytoscape.js') )
     .pipe( buffer() )
     .pipe( derequire() )
@@ -197,6 +211,7 @@ gulp.task('build-unmin', ['version', 'nodeworker'], function(){
   return browserify( browserifyOpts )
     .plugin( browserifyHeader, { file: paths.preamble } )
     .bundle()
+    .on( 'error', logError )
     .pipe( source('cytoscape.js') )
     .pipe( buffer() )
     .pipe( sourcemaps.init({ loadMaps: true }) )
@@ -211,6 +226,7 @@ gulp.task('build-min', ['version', 'nodeworker'], function(){
   return browserify( browserifyOpts )
     .plugin( browserifyHeader, { file: paths.preamble } )
     .bundle()
+    .on( 'error', logError )
     .pipe( source('cytoscape.min.js') )
     .pipe( buffer() )
     .pipe( sourcemaps.init({ loadMaps: true }) )
@@ -650,6 +666,7 @@ gulp.task('watch', function(next){
 
   var rebuild = function(){
     return b.bundle()
+      .on( 'error', logError )
       .pipe( source('cytoscape.js') )
       .pipe( buffer() )
       .pipe( derequire() )

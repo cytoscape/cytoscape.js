@@ -122,6 +122,12 @@ elesfn.instanceString = function(){
 };
 
 elesfn.spawn = function( cy, eles, opts ){
+  if( !is.core(cy) ){ // cy is optional
+    opts = eles;
+    eles = cy;
+    cy = this.cy();
+  }
+  
   return new Collection( cy, eles, opts );
 };
 

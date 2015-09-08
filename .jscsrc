@@ -1,0 +1,29 @@
+{
+  "disallowKeywords": [ "with" ],
+  "disallowMixedSpacesAndTabs": true,
+  "disallowNewlineBeforeBlockStatements": true,
+  "disallowSpaceAfterObjectKeys": true,
+  "disallowSpaceAfterPrefixUnaryOperators": true,
+  "disallowSpacesInFunction": true,
+  "disallowSpacesInFunctionDeclaration": true,
+  "disallowSpacesInsideParentheses": false,
+  "disallowTrailingWhitespace": true,
+  "requireCamelCaseOrUpperCaseIdentifiers": true,
+  "requireCapitalizedComments": false,
+  "requireCapitalizedConstructors": true,
+  "requireCurlyBraces": true,
+  "requireSemicolons": true,
+  "requireSpaceAfterKeywords": [
+    "return"
+  ],
+  "requireSpaceAfterLineComment": true,
+  "requireSpaceAfterBinaryOperators": true,
+  "requireSpaceBeforeBinaryOperators": true,
+  "requireSpaceBeforeBlockStatements": false,
+  "requireSpaceBeforeObjectValues": true,
+  "requireSpacesInsideParentheses": "all",
+  "validateIndentation": 2,
+  "validateLineBreaks": "LF",
+  "validateQuoteMarks": "'",
+  "validateParameterSeparator": ", "
+}

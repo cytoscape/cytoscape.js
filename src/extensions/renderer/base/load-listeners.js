@@ -719,13 +719,17 @@ BRp.load = function() {
               toTrigger.push( dEle );
 
               if( is.number(disp[0]) && is.number(disp[1]) ){
-                dPos.x += disp[0];
-                dPos.y += disp[1];
+                var updatePos = !dEle.isParent();
+
+                if( updatePos ){
+                  dPos.x += disp[0];
+                  dPos.y += disp[1];
+                }
 
                 if( justStartedDrag ){
                   var dragDelta = r.hoverData.dragDelta;
 
-                  if( is.number(dragDelta[0]) && is.number(dragDelta[1]) ){
+                  if( updatePos && is.number(dragDelta[0]) && is.number(dragDelta[1]) ){
                     dPos.x += dragDelta[0];
                     dPos.y += dragDelta[1];
                   }
@@ -1633,8 +1637,9 @@ BRp.load = function() {
               r.dragData.didDrag = true;
               var dPos = draggedEle._private.position;
               var justStartedDrag = !r.hoverData.draggingEles;
+              var updatePos = !draggedEle.isParent();
 
-              if( is.number(disp[0]) && is.number(disp[1]) ){
+              if( updatePos && is.number(disp[0]) && is.number(disp[1]) ){
                 dPos.x += disp[0];
                 dPos.y += disp[1];
               }
@@ -1646,7 +1651,7 @@ BRp.load = function() {
 
                 var dragDelta = r.touchData.dragDelta;
 
-                if( is.number(dragDelta[0]) && is.number(dragDelta[1]) ){
+                if( updatePos && is.number(dragDelta[0]) && is.number(dragDelta[1]) ){
                   dPos.x += dragDelta[0];
                   dPos.y += dragDelta[1];
                 }

@@ -846,7 +846,7 @@ util.dash2camel = util.memoize( function( str ){
 
 util.regex = {};
 
-util.regex.number = "(?:[-]?\\d*\\.\\d+|[-]?\\d+|[-]?\\d*\\.\\d+[eE]\\d+)";
+util.regex.number = "(?:[-+]?(?:(?:\\d+|\\d*\\.\\d+)(?:[Ee][+-]?\\d+)?))";
 
 util.regex.rgba = "rgb[a]?\\(("+ util.regex.number +"[%]?)\\s*,\\s*("+ util.regex.number +"[%]?)\\s*,\\s*("+ util.regex.number +"[%]?)(?:\\s*,\\s*("+ util.regex.number +"))?\\)";
 util.regex.rgbaNoBackRefs = "rgb[a]?\\((?:"+ util.regex.number +"[%]?)\\s*,\\s*(?:"+ util.regex.number +"[%]?)\\s*,\\s*(?:"+ util.regex.number +"[%]?)(?:\\s*,\\s*(?:"+ util.regex.number +"))?\\)";

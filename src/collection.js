@@ -382,6 +382,15 @@
 
       var id = data.id; // id is finalised, now let's keep a ref
 
+      if( ele.isNode() ){ // extra checks for nodes
+        var node = ele;
+        var pos = _private.position;
+
+        // make sure we have a defined position
+        if( pos.x == null ){ pos.x = 0; }
+        if( pos.y == null ){ pos.y = 0; }
+      }
+
       if( ele.isEdge() ){ // extra checks for edges
 
         var edge = ele;

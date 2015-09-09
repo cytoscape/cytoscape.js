@@ -124,7 +124,7 @@ styfn.removeBypasses = function( eles, props, updateTransitions ){
 
     for( var i = 0; i < props.length; i++ ){
       var name = props[i];
-      var prop = self.properties[ name ];
+      var prop = this.properties[ name ];
       var value = ''; // empty => remove bypass
       var parsedProp = this.parse(name, value, true);
       var prevProp = style[ prop.name ];

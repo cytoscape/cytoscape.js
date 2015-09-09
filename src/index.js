@@ -53,7 +53,11 @@ if( window ){
 this.cytoscape = cytoscape;
 
 // try to register w/ jquery
-registerJquery( window.jQuery, cytoscape );
+if( window && window.jQuery ){
+  registerJquery( window.jQuery, cytoscape );
+}
+
+// expose register api
 cytoscape.registerJquery = function( jQuery ){
   registerJquery( jQuery, cytoscape );
 };

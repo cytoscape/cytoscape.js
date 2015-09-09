@@ -2,6 +2,7 @@
 
 var window = require('../window');
 var is = require('../is');
+var math = require('../math');
 var performance = window ? window.performance : null;
 
 var util = {
@@ -791,6 +792,8 @@ var util = {
   }
 
 };
+
+util.makeBoundingBox = math.makeBoundingBox.bind( math );
 
 util._staticEmptyObject = {};
 

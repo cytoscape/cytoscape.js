@@ -2,6 +2,7 @@
 
 var window = require('./window');
 var is = require('./is');
+var util = require('./util');
 var Core = require('./core');
 var extension = require('./extension');
 var registerJquery = require('./jquery-plugin');
@@ -62,11 +63,11 @@ cytoscape.registerJquery = function( jQuery ){
   registerJquery( jQuery, cytoscape );
 };
 
-// expose public apis
+// expose public apis (mostly for extensions)
 cytoscape.stylesheet = cytoscape.Stylesheet = Stylesheet;
 cytoscape.thread = cytoscape.Thread = Thread;
 cytoscape.fabric = cytoscape.Fabric = Fabric;
-
-cytoscape.is = is; // TODO not public
+cytoscape.is = is;
+cytoscape.util = util;
 
 module.exports = cytoscape;

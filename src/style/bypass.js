@@ -96,9 +96,12 @@ styfn.applyBypass = function( eles, name, value, updateTransitions ){
 
 // only useful in specific cases like animation
 styfn.overrideBypass = function( eles, name, value ){
+  name = util.camel2dash(name);
+
   for( var i = 0; i < eles.length; i++ ){
     var ele = eles[i];
-    var prop = ele._private.style[ util.camel2dash(name) ];
+    var prop = ele._private.style[ name ];
+    var isColor = this.properties[ name ].type.color;
 
     if( !prop.bypass ){ // need a bypass if one doesn't exist
       this.applyBypass( ele, name, value );
@@ -106,7 +109,16 @@ styfn.overrideBypass = function( eles, name, value ){
     }
 
     prop.value = value;
-    prop.pxValue = value;
+
+    if( prop.pxValue != null ){
+      prop.pxValue = value;
+    }
+
+    if( isColor ){
+      prop.strValue = 'rgb(' + prop.value.join(',') + ')';
+    } else {
+      prop.strValue = '' + value;
+    }
   }
 };
 

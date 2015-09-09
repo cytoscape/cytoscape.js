@@ -46,11 +46,15 @@ BRp.findNearestElement = function(x, y, visibleElementsOnly, isTouch){
   var labelThreshold = (isTouch ? 8 : 2) / zoom;
 
   function checkNode(node){
+    var _p = node._private;
+
+    if( _p.style['events'].strValue === 'no' ){ return; }
+
     var width = node.outerWidth() + 2*nodeThreshold;
     var height = node.outerHeight() + 2*nodeThreshold;
     var hw = width/2;
     var hh = height/2;
-    var pos = node._private.position;
+    var pos = _p.position;
 
     if(
       pos.x - hw <= x && x <= pos.x + hw // bb check x
@@ -65,7 +69,7 @@ BRp.findNearestElement = function(x, y, visibleElementsOnly, isTouch){
       }
 
       var shape = r.nodeShapes[ self.getNodeShape(node) ];
-      var borderWO = node._private.style['border-width'].pxValue / 2;
+      var borderWO = _p.style['border-width'].pxValue / 2;
 
       if(
         shape.checkPoint(x, y, 0, width, height, pos.x, pos.y)
@@ -77,13 +81,17 @@ BRp.findNearestElement = function(x, y, visibleElementsOnly, isTouch){
   }
 
   function checkEdge(edge){
-    var rs = edge._private.rscratch;
-    var style = edge._private.style;
+    var _p = edge._private;
+
+    if( _p.style['events'].strValue === 'no' ){ return; }
+
+    var rs = _p.rscratch;
+    var style = _p.style;
     var width = style['width'].pxValue/2 + edgeThreshold; // more like a distance radius from centre
     var widthSq = width * width;
     var width2 = width * 2;
-    var src = edge._private.source;
-    var tgt = edge._private.target;
+    var src = _p.source;
+    var tgt = _p.target;
     var inEdgeBB = false;
     var sqDist;
 
@@ -174,8 +182,8 @@ BRp.findNearestElement = function(x, y, visibleElementsOnly, isTouch){
       var srcShape = r.arrowShapes[ style['source-arrow-shape'].value ];
       var tgtShape = r.arrowShapes[ style['target-arrow-shape'].value ];
 
-      var src = src || edge._private.source;
-      var tgt = tgt || edge._private.target;
+      var src = src || _p.source;
+      var tgt = tgt || _p.target;
 
       var tgtPos = tgt._private.position;
       var srcPos = src._private.position;
@@ -213,6 +221,8 @@ BRp.findNearestElement = function(x, y, visibleElementsOnly, isTouch){
   function checkLabel(ele){
     var _p = ele._private;
     var th = labelThreshold;
+
+    if( _p.style['text-events'].strValue === 'no' ){ return; }
 
     // adjust bb w/ angle
     if( _p.group === 'edges' && _p.style['edge-text-rotation'].strValue === 'autorotate' ){
@@ -286,9 +296,6 @@ BRp.findNearestElement = function(x, y, visibleElementsOnly, isTouch){
 
     if( near.length > 0 ){ break; } // since we check in z-order, first found is top and best result => exit early
 
-    // skip elements for which events are disabled
-    if( _p.style['events'].strValue !== 'yes' ){ continue; }
-
     if( _p.group === 'nodes' ){
       checkNode( ele );
 
@@ -296,9 +303,7 @@ BRp.findNearestElement = function(x, y, visibleElementsOnly, isTouch){
       checkEdge( ele );
     }
 
-    if( _p.style['text-events'].strValue === 'yes' ){
-      checkLabel( ele );
-    }
+    checkLabel( ele );
 
   }
 

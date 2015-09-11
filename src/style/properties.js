@@ -9,7 +9,10 @@ var styfn = {};
   var hex3 = util.regex.hex3;
   var hex6 = util.regex.hex6;
   var data = function( prefix ){ return '^' + prefix + '\\s*\\(\\s*([\\w\\.]+)\\s*\\)$'; };
-  var mapData = function( prefix ){ return '^' + prefix + '\\s*\\(([\\w\\.]+)\\s*\\,\\s*(' + number + ')\\s*\\,\\s*(' + number + ')\\s*,\\s*(' + number + '|\\w+|' + rgba + '|' + hsla + '|' + hex3 + '|' + hex6 + ')\\s*\\,\\s*(' + number + '|\\w+|' + rgba + '|' + hsla + '|' + hex3 + '|' + hex6 + ')\\)$'; };
+  var mapData = function( prefix ){
+    var mapArg = number + '|\\w+|' + rgba + '|' + hsla + '|' + hex3 + '|' + hex6;
+    return '^' + prefix + '\\s*\\(([\\w\\.]+)\\s*\\,\\s*(' + number + ')\\s*\\,\\s*(' + number + ')\\s*,\\s*(' + mapArg + ')\\s*\\,\\s*(' + mapArg + ')\\)$';
+  };
 
   // each visual style property has a type and needs to be validated according to it
   styfn.types = {
@@ -63,7 +66,10 @@ var styfn = {};
     textRotation: { enums: ['none', 'autorotate'] },
     polygonPointList: { numberList: true, evenNumberList: true, min: -1, max: 1 },
     easing: {
-      regex: '^(?:(spring)\\s*\\(\\s*(' + number + ')\\s*,\\s*(' + number + ')\\s*\\))',
+      regexes: [
+        '^(spring)\\s*\\(\\s*(' + number + ')\\s*,\\s*(' + number + ')\\s*\\)$',
+        '^(cubic-bezier)\\s*\\(\\s*(' + number + ')\\s*,\\s*(' + number + ')\\s*,\\s*(' + number + ')\\s*,\\s*(' + number + ')\\s*\\)$'
+      ],
       enums: [
         'linear',
         'ease', 'ease-in', 'ease-out', 'ease-in-out',

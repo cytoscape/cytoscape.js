@@ -337,24 +337,33 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
       bypass: propIsBypass
     };
 
-  } else if( type.regex ){
-    var regex = new RegExp( type.regex ); // make a regex from the type
-    var m = regex.exec( value );
+  } else if( type.regex || type.regexes ){
 
-    if( m ){ // regex matches
-      return {
-        name: name,
-        value: m,
-        strValue: '' + value,
-        bypass: propIsBypass
-      };
+    // first check enums
+    if( type.enums ){
+      var enumProp = checkEnums();
 
-    } else if( type.enums ){
-      return checkEnums();
-
-    } else { // regex & enums don't match
-      return null; // didn't match the regex so the value is bogus
+      if( enumProp ){ return enumProp; }
     }
+
+    var regexes = type.regexes ? type.regexes : [ type.regex ];
+
+    for( var i = 0; i < regexes.length; i++ ){
+      var regex = new RegExp( regexes[i] ); // make a regex from the type string
+      var m = regex.exec( value );
+
+      if( m ){ // regex matches
+        return {
+          name: name,
+          value: m,
+          strValue: '' + value,
+          bypass: propIsBypass
+        };
+
+      }
+    }
+
+    return null; // didn't match any
 
   } else if( type.string ){
     // just return

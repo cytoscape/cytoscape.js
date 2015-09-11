@@ -132,8 +132,10 @@ ConcentricLayout.prototype.run = function(){
       var dsin = Math.sin(dTheta) - Math.sin(0);
       var rMin = Math.sqrt( minDist * minDist / ( dcos*dcos + dsin*dsin ) ); // s.t. no nodes overlapping
 
-      level.r = r = Math.max( rMin, r );
+      r = Math.max( rMin, r );
     }
+
+    level.r = r;
 
     r += minDist;
   }

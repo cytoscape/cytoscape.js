@@ -11,6 +11,7 @@ var is = require('./is');
 var Selector = require('./selector');
 var Promise = require('./promise');
 var Event = require('./event');
+var Animation = require('./animation');
 
 var define = {
 
@@ -636,11 +637,29 @@ var define = {
     };
   }, // delay
 
-  animate: function( fnParams ){
+  delayAnimation: function( fnParams ){
     var defaults = {};
     fnParams = util.extend({}, defaults, fnParams);
 
-    return function animateImpl( properties, params ){
+    return function delayAnimationImpl( time, complete ){
+      var cy = this._private.cy || this;
+
+      if( !cy.styleEnabled() ){ return this; }
+
+      return this.animation({
+        delay: time
+      }, {
+        duration: time,
+        complete: complete
+      });
+    };
+  }, // delay
+
+  animation: function( fnParams ){
+    var defaults = {};
+    fnParams = util.extend({}, defaults, fnParams);
+
+    return function animationImpl( properties, params ){
       var self = this;
       var selfIsArrayLike = self.length !== undefined;
       var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
@@ -650,12 +669,11 @@ var define = {
 
       if( !cy.styleEnabled() ){ return this; }
 
-      var callTime = +new Date();
       var style = cy.style();
       var q;
 
       if( params === undefined ){
-        params = {};
+        params = properties;
       }
 
       if( params.duration === undefined ){
@@ -678,7 +696,7 @@ var define = {
       } }
 
       if( propertiesEmpty ){
-        return this; // nothing to animate
+        return new Animation( all[0], properties, params ); // nothing to animate
       }
 
       if( isEles ){
@@ -725,26 +743,55 @@ var define = {
         var fitVp = cy.getFitViewport( fit.eles || fit.boundingBox, fit.padding );
 
         if( fitVp ){
-          properties.pan = fitVp.pan; //{ x: fitVp.pan.x, y: fitVp.pan.y };
+          properties.pan = fitVp.pan;
           properties.zoom = fitVp.zoom;
         }
       }
 
+      if( properties === params ){
+        return new Animation( all[0], properties ); // for efficiency
+      } else {
+        return new Animation( all[0], properties, params );
+      }
+    };
+  }, // animate
+
+  animate: function( fnParams ){
+    var defaults = {};
+    fnParams = util.extend({}, defaults, fnParams);
+
+    return function animateImpl( properties, params ){
+      var self = this;
+      var selfIsArrayLike = self.length !== undefined;
+      var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
+      var cy = this._private.cy || this;
+      var isCore = !selfIsArrayLike;
+      var isEles = !isCore;
+
+      if( !cy.styleEnabled() ){ return this; }
+
+      if( params === undefined ){
+        params = properties;
+      }
+
+      var style = cy.style();
+      var q;
+
+      // manually hook and run the animation
       for( var i = 0; i < all.length; i++ ){
         var ele = all[i];
+        var _p = ele._private;
+        var ani = ele.animation( properties, params );
 
         if( ele.animated() && (params.queue === undefined || params.queue) ){
-          q = ele._private.animation.queue;
+          q = _p.animation.queue;
         } else {
-          q = ele._private.animation.current;
+          q = _p.animation.current;
         }
 
-        q.push({
-          properties: properties,
-          duration: params.duration,
-          params: params,
-          callTime: callTime
-        });
+        q.push( ani );
+
+        ani._private.playing = true;
       }
 
       if( isEles ){
@@ -763,20 +810,19 @@ var define = {
       var cy = this._private.cy || this;
       var self = this;
 
-      params = params || {};
-
       if( !cy.styleEnabled() ){ return Promise.resolve(); }
 
       return new Promise(function( resolve ){
-        var specifiedComplete = params.complete;
+        var options = util.extend( {}, properties, params );
+        var specifiedComplete = options.complete;
 
-        params.complete = function(){
+        options.complete = function(){
           if( specifiedComplete ){ specifiedComplete(); }
 
           resolve();
         };
 
-        self.animate( properties, params );
+        self.animate( options );
       });
     };
   }, // delay
@@ -795,24 +841,27 @@ var define = {
 
       for( var i = 0; i < all.length; i++ ){
         var ele = all[i];
-        var anis = ele._private.animation.current;
+        var _p = ele._private;
+        var anis = _p.animation.current;
 
         for( var j = 0; j < anis.length; j++ ){
-          var animation = anis[j];
+          var ani = anis[j];
+          var ani_p = ani._private;
+
           if( jumpToEnd ){
             // next iteration of the animation loop, the animation
             // will go straight to the end and be removed
-            animation.duration = 0;
+            ani_p.duration = 0;
           }
         }
 
         // clear the queue of future animations
         if( clearQueue ){
-          ele._private.animation.queue = [];
+          _p.animation.queue = [];
         }
 
         if( !jumpToEnd ){
-          ele._private.animation.current = [];
+          _p.animation.current = [];
         }
       }
 

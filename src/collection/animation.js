@@ -3,6 +3,7 @@
 var define = require('../define');
 
 var elesfn = ({
+  animation: define.animation(),
   animated: define.animated(),
   clearQueue: define.clearQueue(),
   delay: define.delay(),

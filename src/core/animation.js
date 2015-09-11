@@ -8,6 +8,7 @@ var window = require('../window');
 var corefn = ({
 
   // pull in animation functions
+  animation: define.animation(),
   animated: define.animated(),
   clearQueue: define.clearQueue(),
   delay: define.delay(),
@@ -51,16 +52,14 @@ var corefn = ({
 
     globalAnimationStep(); // first call
 
-    function handleElements(now){
-      now = +new Date();
-
+    function handleElements( now ){
       var eles = cy._private.aniEles;
       var doneEles = [];
-      var startedSomeAniThisTick = false;
 
       function handleElement( ele, isCore ){
-        var current = ele._private.animation.current;
-        var queue = ele._private.animation.queue;
+        var _p = ele._private;
+        var current = _p.animation.current;
+        var queue = _p.animation.queue;
         var ranAnis = false;
 
         // if nothing currently animating, get something from the queue
@@ -68,29 +67,41 @@ var corefn = ({
           var next = queue.length > 0 ? queue.shift() : null;
 
           if( next ){
-            next.callTime = now; // was queued, so update call time
             current.push( next );
           }
         }
 
         // step and remove if done
         var completes = [];
-        for(var i = current.length - 1; i >= 0; i--){
+        for( var i = current.length - 1; i >= 0; i-- ){
           var ani = current[i];
+          var ani_p = ani._private;
 
-          // start if need be
-          if( !ani.started ){
-            startAnimation( ele, ani );
-            startedSomeAniThisTick = true;
+          if( ani_p.stopped ){
+            current.splice(i, 1);
+
+            ani_p.hooked = false;
+            ani_p.playing = false;
+            ani_p.started = false;
+
+            continue;
+          }
+
+          if( !ani_p.playing ){ continue; }
+
+          if( !ani_p.started ){
+            startAnimation( ele, ani, now );
           }
 
           step( ele, ani, now, isCore );
 
-          if( ani.done ){
+          if( ani.complete() ){
             completes.push( ani );
-
-            // remove current[i]
             current.splice(i, 1);
+
+            ani_p.hooked = false;
+            ani_p.playing = false;
+            ani_p.started = false;
           }
 
           ranAnis = true;
@@ -99,7 +110,7 @@ var corefn = ({
         // call complete callbacks
         for( var i = 0; i < completes.length; i++ ){
           var ani = completes[i];
-          var complete = ani.params.complete;
+          var complete = ani._private.complete;
 
           if( is.fn(complete) ){
             complete.apply( ele, [ now ] );
@@ -114,16 +125,17 @@ var corefn = ({
       } // handleElements
 
       // handle all eles
+      var ranEleAni = false;
       for( var e = 0; e < eles.length; e++ ){
         var ele = eles[e];
 
-        handleElement( ele );
+        ranEleAni = ranEleAni || handleElement( ele );
       } // each element
 
       var ranCoreAni = handleElement( cy, true );
 
       // notify renderer
-      if( eles.length > 0 || ranCoreAni ){
+      if( ranEleAni || ranCoreAni ){
         var toNotify;
 
         if( eles.length > 0 ){
@@ -132,7 +144,7 @@ var corefn = ({
         }
 
         cy.notify({
-          type: startedSomeAniThisTick ? 'style' : 'draw',
+          type: 'draw',
           collection: toNotify
         });
       }
@@ -142,52 +154,51 @@ var corefn = ({
 
     } // handleElements
 
-    function startAnimation( self, ani ){
+    function startAnimation( self, ani, now ){
       var isCore = is.core( self );
       var isEles = !isCore;
       var ele = self;
       var style = cy._private.style;
+      var ani_p = ani._private;
 
       if( isEles ){
         var pos = ele._private.position;
-        var startPosition = {
+
+        ani_p.startPosition = ani_p.startPosition || {
           x: pos.x,
           y: pos.y
         };
-        var startStyle = style.getValueStyle( ele );
+
+        ani_p.startStyle = ani_p.startStyle || style.getValueStyle( ele );
       }
 
       if( isCore ){
         var pan = cy._private.pan;
-        var startPan = {
+
+        ani_p.startPan = ani_p.startPan || {
           x: pan.x,
           y: pan.y
         };
 
-        var startZoom = cy._private.zoom;
+        ani_p.startZoom = ani_p.startZoom != null ? ani_p.startZoom : cy._private.zoom;
       }
 
-      ani.started = true;
-      ani.startTime = Date.now();
-      ani.startPosition = startPosition;
-      ani.startStyle = startStyle;
-      ani.startPan = startPan;
-      ani.startZoom = startZoom;
+      ani_p.started = true;
+      ani_p.startTime = now - ani_p.progress * ani_p.duration;
     }
 
-    function step( self, animation, now, isCore ){
+    function step( self, ani, now, isCore ){
       var style = cy._private.style;
-      var properties = animation.properties;
-      var params = animation.params;
-      var startTime = animation.startTime;
       var isEles = !isCore;
-      var pEasing = params.easing;
       var _p = self._private;
+      var ani_p = ani._private;
+      var pEasing = ani_p.easing;
+      var startTime = ani_p.startTime;
 
-      if( !params.easingImpl ){
+      if( !ani_p.easingImpl ){
 
         if( pEasing == null ){ // use default
-          params.easingImpl = easings['linear'];
+          ani_p.easingImpl = easings['linear'];
 
         } else { // then define w/ name
           var easingVals;
@@ -212,21 +223,25 @@ var corefn = ({
           }
 
           if( args.length > 0 ){ // create with args
-            params.easingImpl = easings[ name ].apply( null, args );
+            if( name === 'spring' ){
+              args.push( ani_p.duration ); // need duration to generate spring
+            }
+
+            ani_p.easingImpl = easings[ name ].apply( null, args );
           } else { // static impl by name
-            params.easingImpl = easings[ name ];
+            ani_p.easingImpl = easings[ name ];
           }
         }
 
       }
 
-      var easing = params.easingImpl;
+      var easing = ani_p.easingImpl;
       var percent;
 
-      if( animation.duration === 0 ){
+      if( ani_p.duration === 0 ){
         percent = 1;
       } else {
-        percent = (now - startTime) / animation.duration;
+        percent = (now - startTime) / ani_p.duration;
       }
 
       if( percent < 0 ){
@@ -235,10 +250,10 @@ var corefn = ({
         percent = 1;
       }
 
-      if( properties.delay == null ){ // then update
+      if( ani_p.delay == null ){ // then update
 
-        var startPos = animation.startPosition;
-        var endPos = properties.position;
+        var startPos = ani_p.startPosition;
+        var endPos = ani_p.position;
         var pos = _p.position;
         if( endPos && isEles ){
           if( valid( startPos.x, endPos.x ) ){
@@ -250,8 +265,8 @@ var corefn = ({
           }
         }
 
-        var startPan = animation.startPan;
-        var endPan = properties.pan;
+        var startPan = ani_p.startPan;
+        var endPan = ani_p.pan;
         var pan = _p.pan;
         var animatingPan = endPan != null && isCore;
         if( animatingPan ){
@@ -266,8 +281,8 @@ var corefn = ({
           self.trigger('pan');
         }
 
-        var startZoom = animation.startZoom;
-        var endZoom = properties.zoom;
+        var startZoom = ani_p.startZoom;
+        var endZoom = ani_p.zoom;
         var animatingZoom = endZoom != null && isCore;
         if( animatingZoom ){
           if( valid( startZoom, endZoom ) ){
@@ -281,15 +296,15 @@ var corefn = ({
           self.trigger('viewport');
         }
 
-        var props = properties.style || properties.css;
+        var props = ani_p.style;
         if( props && isEles ){
 
           for( var i = 0; i < props.length; i++ ){
-            var name = props[i].name;
             var prop = props[i];
+            var name = prop.name;
             var end = prop;
 
-            var start = animation.startStyle[ name ];
+            var start = ani_p.startStyle[ name ];
             var easedVal = ease( start, end, percent, easing );
 
             style.overrideBypass( self, name, easedVal );
@@ -299,13 +314,11 @@ var corefn = ({
 
       }
 
-      if( is.fn(params.step) ){
-        params.step.apply( self, [ now ] );
+      if( is.fn(ani_p.step) ){
+        ani_p.step.apply( self, [ now ] );
       }
 
-      if( percent >= 1 ){
-        animation.done = true;
-      }
+      ani_p.progress = percent;
 
       return percent;
     }
@@ -474,8 +487,7 @@ var corefn = ({
 
       // user param easings...
 
-      'spring': function( tension, friction ){
-        var duration = 1000;
+      'spring': function( tension, friction, duration ){
         var spring = generateSpringRK4( tension, friction, duration );
 
         return function( start, end, percent ){

@@ -10,7 +10,7 @@ var stringStylesheet = 'node { background-color: cyan; }';
 cy.style( stringStylesheet );
 ```
 
-Set an entirely new style to the graph, specifying [selectors](#selectors) and [style properties](#style) functionally:
+Set an entirely new style to the graph, specifying [selectors](#selectors) and [style properties](#style) via function calls:
 
 ```js
 cy.style()
@@ -70,6 +70,6 @@ cy.style()
 You can also get the current style as JSON:
 
 ```js
-var styleJson = cy.style().json(); 
+var styleJson = cy.style().json();
 var serializedJson = JSON.stringify( styleJson );
 ```

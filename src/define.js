@@ -629,7 +629,7 @@ var define = {
 
       return new Promise(function( resolve ){
         self.delay( time, function(){
-          if( complete ){ complete(); }
+          if( is.fn(complete) ){ complete(); }
 
           resolve();
         } );

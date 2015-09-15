@@ -2,6 +2,7 @@
 
 var util = require('./util');
 var is = require('./is');
+var Promise = require('./promise');
 
 var Animation = function( target, opts1, opts2, opts3 ){
   if( !(this instanceof Animation) ){
@@ -18,6 +19,11 @@ var Animation = function( target, opts1, opts2, opts3 ){
   _p.style = _p.style || _p.css;
   _p.started = false;
   _p.progress = 0;
+  _p.completes = [];
+
+  if( _p.complete && is.fn(_p.complete) ){
+    _p.completes.push( _p.complete );
+  }
 
   // for future timeline/animations impl
   this.length = 1;
@@ -163,6 +169,16 @@ util.extend( anifn, {
     }
 
     return this;
+  },
+
+  promise: function(){
+    var _p = this._private;
+
+    return new Promise(function( resolve, reject ){
+      _p.completes.push(function(){
+        resolve();
+      });
+    });
   }
 
 } );

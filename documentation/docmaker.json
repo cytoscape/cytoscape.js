@@ -1,5 +1,5 @@
 {
-  "version": "2.4.7",
+  "version": "2.4.8",
 
   "fnArgLinks": {
     "selector": "#selectors",
@@ -836,7 +836,7 @@
               ],
               "md": "core/png"
             },
-            
+
             {
               "name": "cy.jpg",
               "pureAliases": ["cy.jpeg"],
@@ -1348,7 +1348,7 @@
               "descr": "Set the (model) positions of several nodes with a function.",
               "formats": [
                 {
-                  "descr": "Set the positions functionally.",
+                  "descr": "Set the positions via a function.",
                   "args": [
                     {
                       "name": "function(i, ele)",

@@ -28,7 +28,6 @@ var unzip = require('gulp-unzip');
 var request = require('request');
 var download = require("gulp-download");
 // var download = function(url){ return request.get(url); };
-var docmaker = require('./documentation/docmaker.json');
 
 var benchmarkVersion = '2.3.15'; // old version to test against for benchmarks
 var benchmarkVersionUrl = 'https://raw.githubusercontent.com/cytoscape/cytoscape.js/v' + benchmarkVersion + '/dist/cytoscape.js';
@@ -266,29 +265,29 @@ gulp.task('test', ['concat'], function(next){
 });
 
 gulp.task('weaver-src', function(){
-  
+
   return download( weaverSrc )
     .pipe( replace('weaver', 'cytoscape') )
     .pipe( gulp.dest('src') )
   ;
-  
+
 });
 
 gulp.task('weaver-test', function(){
-  
+
   return download( weaverTest )
     .pipe( replace('weaver', 'cytoscape') )
     .pipe( gulp.dest('test') )
   ;
-  
+
 });
 
 gulp.task('weaver-test-reqs', function(){
-  
+
   return download( weaverTestReqs )
     .pipe( gulp.dest('test/requires') )
   ;
-  
+
 });
 
 gulp.task('weaver', function(next){
@@ -359,7 +358,7 @@ gulp.task('snapshotpush', ['docsdl'], function(){
       '$GIT clone -b gh-pages https://github.com/cytoscape/cytoscape.js.git $TEMP_DIR/cytoscape.js',
       '$CP $DOC_DIR/$DL_DIR/* $TEMP_DIR/cytoscape.js/$DL_DIR',
     ]) ) )
-    
+
     .pipe( shell( replaceShellVars([
       '$GIT add -A',
       '$GIT commit -a -m "updating list of builds"',
@@ -460,7 +459,8 @@ gulp.task('docsdemoshots', function(next){ return next(); // disable for now sin
 });
 
 gulp.task('docsdemodl', function(){
-  
+  var docmaker = require('./documentation/docmaker.json');
+
   var demos = docmaker.sections.filter(function(s){
     return s.demos != null || s.demo != null;
   }).map(function( s ){
@@ -472,22 +472,22 @@ gulp.task('docsdemodl', function(){
   }).reduce(function(prevDs, currDs){
     return prevDs.concat( currDs );
   }, []);
-  
-  return download( demos )    
+
+  return download( demos )
     .pipe( unzip() )
-    
-    .pipe( rename(function( path ){  
+
+    .pipe( rename(function( path ){
       // console.log(path)
-      
+
       var match = path.dirname.match(/^(.+)\-master$/);
-      
+
       if( match ){
         path.dirname = match[1];
       }
     }) )
-    
+
     .pipe( replace(/".*cytoscape(\.min){0,1}\.js"/, '"../../js/cytoscape.min.js"') )
-    
+
     .pipe( gulp.dest('documentation/demos') )
   ;
 });
@@ -547,7 +547,7 @@ gulp.task('docspush', function(){
       '$GIT clone -b gh-pages https://github.com/cytoscape/cytoscape.js.git $TEMP_DIR/cytoscape.js',
       '$CP $DOC_DIR/* $TEMP_DIR/cytoscape.js',
     ]) ) )
-    
+
     .pipe( shell( replaceShellVars([
       '$GIT add -A',
       '$GIT commit -a -m "updating docs to $VERSION"',
@@ -563,7 +563,7 @@ gulp.task('unstabledocspush', function(){
       '$GIT clone -b gh-pages https://github.com/cytoscape/cytoscape.js.git $TEMP_DIR/cytoscape.js',
       '$CP $DOC_DIR/* $TEMP_DIR/cytoscape.js/unstable',
     ]) ) )
-    
+
     .pipe( shell( replaceShellVars([
       '$GIT add -A',
       '$GIT commit -a -m "updating unstable docs to $VERSION"',
@@ -612,7 +612,7 @@ gulp.task('watch', function(next){
   testWatcher.on('added deleted', function(event){
     console.log('File ' + event.path + ' was ' + event.type + ', updating test refs in pages...');
   });
-  
+
   var watcher = gulp.watch(paths.sources, ['concat']);
   watcher.on('change', function(event){
     console.log('File ' + event.path + ' was changed, building...');

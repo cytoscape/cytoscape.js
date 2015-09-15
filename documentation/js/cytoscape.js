@@ -1,5 +1,5 @@
 /*!
- * This file is part of Cytoscape.js 2.4.7.
+ * This file is part of Cytoscape.js 2.4.8.
  *
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -28,7 +28,7 @@ var cytoscape;
     return cytoscape.init.apply(cytoscape, arguments);
   };
 
-  $$.version = '2.4.7';
+  $$.version = '2.4.8';
 
   // allow functional access to cytoscape.js
   // e.g. var cyto = $.cytoscape({ selector: "#foo", ... });
@@ -1334,7 +1334,7 @@ this.cytoscape = cytoscape;
 
   $$.util.regex = {};
 
-  $$.util.regex.number = "(?:[-]?\\d*\\.\\d+|[-]?\\d+|[-]?\\d*\\.\\d+[eE]\\d+)";
+  $$.util.regex.number = "(?:[-+]?(?:(?:\\d+|\\d*\\.\\d+)(?:[Ee][+-]?\\d+)?))";
 
   $$.util.regex.rgba = "rgb[a]?\\(("+ $$.util.regex.number +"[%]?)\\s*,\\s*("+ $$.util.regex.number +"[%]?)\\s*,\\s*("+ $$.util.regex.number +"[%]?)(?:\\s*,\\s*("+ $$.util.regex.number +"))?\\)";
   $$.util.regex.rgbaNoBackRefs = "rgb[a]?\\((?:"+ $$.util.regex.number +"[%]?)\\s*,\\s*(?:"+ $$.util.regex.number +"[%]?)\\s*,\\s*(?:"+ $$.util.regex.number +"[%]?)(?:\\s*,\\s*(?:"+ $$.util.regex.number +"))?\\)";
@@ -3115,10 +3115,6 @@ this.cytoscape = cytoscape;
   };
 
   $$.registerJquery( $ ); // try to register with global jquery for convenience
-
-  $$.util.require('jquery', function( $ ){
-    $$.registerJquery( $ ); // try to register with require()d jquery
-  });
 
 })(typeof jQuery !== 'undefined' ? jQuery : null , cytoscape);
 
@@ -6480,9 +6476,12 @@ this.cytoscape = cytoscape;
 
   // only useful in specific cases like animation
   $$.styfn.overrideBypass = function( eles, name, value ){
+    name = $$.util.camel2dash(name);
+
     for( var i = 0; i < eles.length; i++ ){
       var ele = eles[i];
-      var prop = ele._private.style[ $$.util.camel2dash(name) ];
+      var prop = ele._private.style[ name ];
+      var isColor = $$.style.properties[ name ].type.color;
 
       if( !prop.bypass ){ // need a bypass if one doesn't exist
         this.applyBypass( ele, name, value );
@@ -6490,7 +6489,16 @@ this.cytoscape = cytoscape;
       }
 
       prop.value = value;
-      prop.pxValue = value;
+
+      if( prop.pxValue != null ){
+        prop.pxValue = value;
+      }
+
+      if( isColor ){
+        prop.strValue = 'rgb(' + prop.value.join(',') + ')';
+      } else {
+        prop.strValue = '' + value;
+      }
     }
   };
 
@@ -9926,6 +9934,15 @@ this.cytoscape = cytoscape;
       }
 
       var id = data.id; // id is finalised, now let's keep a ref
+
+      if( ele.isNode() ){ // extra checks for nodes
+        var node = ele;
+        var pos = _private.position;
+
+        // make sure we have a defined position
+        if( pos.x == null ){ pos.x = 0; }
+        if( pos.y == null ){ pos.y = 0; }
+      }
 
       if( ele.isEdge() ){ // extra checks for edges
 

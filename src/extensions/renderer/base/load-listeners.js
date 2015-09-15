@@ -34,6 +34,19 @@ BRp.nodeIsDraggable = function(node) {
 BRp.load = function() {
   var r = this;
 
+  var triggerEvents = function( target, names, e, props ){
+    if( target == null ){
+      target = r.cy;
+    }
+
+    for( var i = 0; i < names.length; i++ ){
+      var name = names[i];
+
+      var event = Event( e, util.extend({ type: name }, props) );
+      target.trigger( event );
+    }
+  };
+
   var isMultSelKeyDown = function( e ){
     return e.shiftKey || e.metaKey || e.ctrlKey; // maybe e.altKey
   };
@@ -275,8 +288,6 @@ BRp.load = function() {
 
     r.hoverData.mdownPos = pos;
 
-    var needsRedraw = r.data.canvasNeedsRedraw;
-
     var checkForTaphold = function(){
       r.hoverData.tapholdCancelled = false;
 
@@ -374,42 +385,15 @@ BRp.load = function() {
 
           }
 
-          near
-            .trigger(Event(e, {
-              type: 'mousedown',
-              cyPosition: { x: pos[0], y: pos[1] }
-            }))
-            .trigger(Event(e, {
-              type: 'tapstart',
-              cyPosition: { x: pos[0], y: pos[1] }
-            }))
-            .trigger(Event(e, {
-              type: 'vmousedown',
-              cyPosition: { x: pos[0], y: pos[1] }
-            }))
-          ;
-
-        } else if (near == null) {
-          cy
-            .trigger(Event(e, {
-              type: 'mousedown',
-              cyPosition: { x: pos[0], y: pos[1] }
-            }))
-            .trigger(Event(e, {
-              type: 'tapstart',
-              cyPosition: { x: pos[0], y: pos[1] }
-            }))
-            .trigger(Event(e, {
-              type: 'vmousedown',
-              cyPosition: { x: pos[0], y: pos[1] }
-            }))
-          ;
         }
 
         r.hoverData.down = near;
         r.hoverData.downTime = (new Date()).getTime();
-
       }
+
+      triggerEvents( near, ['mousedown', 'tapstart', 'vmousedown'], e, {
+        cyPosition: { x: pos[0], y: pos[1] }
+      } );
 
       if ( near == null ) {
         select[4] = 1;
@@ -418,10 +402,6 @@ BRp.load = function() {
           x: pos[0],
           y: pos[1]
         };
-
-        //r.hoverData.dragging = true;
-
-        //checkForTaphold();
 
         r.redrawHint('select', true);
 
@@ -477,7 +457,6 @@ BRp.load = function() {
     var zoom = cy.zoom();
     var pos = r.projectIntoViewport(e.clientX, e.clientY);
     var select = r.selection;
-    var needsRedraw = r.data.canvasNeedsRedraw;
 
     var near = null;
     if( !r.hoverData.draggingEles ){
@@ -516,42 +495,9 @@ BRp.load = function() {
 
     preventDefault = true;
 
-    // Mousemove event
-    {
-      if (near != null) {
-        near
-          .trigger(Event(e, {
-            type: 'mousemove',
-            cyPosition: { x: pos[0], y: pos[1] }
-          }))
-          .trigger(Event(e, {
-            type: 'vmousemove',
-            cyPosition: { x: pos[0], y: pos[1] }
-          }))
-          .trigger(Event(e, {
-            type: 'tapdrag',
-            cyPosition: { x: pos[0], y: pos[1] }
-          }))
-        ;
-
-      } else if (near == null) {
-        cy
-          .trigger(Event(e, {
-            type: 'mousemove',
-            cyPosition: { x: pos[0], y: pos[1] }
-          }))
-          .trigger(Event(e, {
-            type: 'vmousemove',
-            cyPosition: { x: pos[0], y: pos[1] }
-          }))
-          .trigger(Event(e, {
-            type: 'tapdrag',
-            cyPosition: { x: pos[0], y: pos[1] }
-          }))
-        ;
-      }
-
-    }
+    triggerEvents( near, ['mousemove', 'vmousemove', 'tapdrag'], e, {
+      cyPosition: { x: pos[0], y: pos[1] }
+    } );
 
     // trigger context drag if rmouse down
     if( r.hoverData.which === 3 ){
@@ -575,8 +521,6 @@ BRp.load = function() {
             type: 'cxtdragout',
             cyPosition: { x: pos[0], y: pos[1] }
           }) );
-
-          // console.log('cxtdragout ' + r.hoverData.cxtOver.id());
         }
 
         r.hoverData.cxtOver = near;
@@ -586,8 +530,6 @@ BRp.load = function() {
             type: 'cxtdragover',
             cyPosition: { x: pos[0], y: pos[1] }
           }) );
-
-          // console.log('cxtdragover ' + near.id());
         }
 
       }
@@ -633,9 +575,6 @@ BRp.load = function() {
       if( !r.hoverData.dragging && cy.boxSelectionEnabled() && multSelKeyDown ){
         r.data.bgActivePosistion = undefined;
         r.hoverData.selecting = true;
-        //select[4] = 0;
-
-        // console.log( 'select' );
 
         r.redrawHint('select', true);
         r.redraw();
@@ -652,8 +591,6 @@ BRp.load = function() {
 
         r.redrawHint('select', true);
         r.redraw();
-
-        // console.log( 'pan' );
       }
 
       if( down && down.isEdge() && down.active() ){ down.unactivate(); }
@@ -664,27 +601,15 @@ BRp.load = function() {
       if (near != last) {
 
         if (last) {
-          last.trigger( Event(e, {
-            type: 'mouseout',
+          triggerEvents( last, ['mouseout', 'tapdragout'], e, {
             cyPosition: { x: pos[0], y: pos[1] }
-          }) );
-
-          last.trigger( Event(e, {
-            type: 'tapdragout',
-            cyPosition: { x: pos[0], y: pos[1] }
-          }) );
+          } );
         }
 
         if (near) {
-          near.trigger( Event(e, {
-            type: 'mouseover',
+          triggerEvents( near, ['mouseover', 'tapdragover'], e, {
             cyPosition: { x: pos[0], y: pos[1] }
-          }) );
-
-          near.trigger( Event(e, {
-            type: 'tapdragover',
-            cyPosition: { x: pos[0], y: pos[1] }
-          }) );
+          } );
         }
 
         r.hoverData.last = near;
@@ -768,8 +693,6 @@ BRp.load = function() {
   }, 1000/30, { trailing: true }), false);
 
   r.registerBinding(window, 'mouseup', function(e) {
-    // console.log('--\nmouseup', e)
-
     var capture = r.hoverData.capture;
     if (!capture) { return; }
     r.hoverData.capture = false;
@@ -778,7 +701,6 @@ BRp.load = function() {
     var near = r.findNearestElement(pos[0], pos[1], true, false);
     var draggedElements = r.dragData.possibleDragElements; var down = r.hoverData.down;
     var multSelKeyDown = isMultSelKeyDown( e );
-    var needsRedraw = r.data.canvasNeedsRedraw;
 
     if( r.data.bgActivePosistion ){
       r.redrawHint('select', true);
@@ -827,7 +749,7 @@ BRp.load = function() {
       // Deselect all elements if nothing is currently under the mouse cursor and we aren't dragging something
       if ( (down == null) // not mousedown on node
         && !r.dragData.didDrag // didn't move the node around
-        //&& !(Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) > 7 && select[4]) // not box selection
+        && !r.hoverData.selecting // not box selection
         && !r.hoverData.dragged // didn't pan
       ) {
 
@@ -842,92 +764,22 @@ BRp.load = function() {
         r.dragData.possibleDragElements = draggedElements = [];
       }
 
+      triggerEvents( near, ['mouseup', 'tapend', 'vmouseup'], e, {
+        cyPosition: { x: pos[0], y: pos[1] }
+      } );
 
-      // Mouseup event
-      {
-        // console.log('trigger mouseup et al');
-
-        if (near != null) {
-          near
-            .trigger(Event(e, {
-              type: 'mouseup',
-              cyPosition: { x: pos[0], y: pos[1] }
-            }))
-            .trigger(Event(e, {
-              type: 'tapend',
-              cyPosition: { x: pos[0], y: pos[1] }
-            }))
-            .trigger(Event(e, {
-              type: 'vmouseup',
-              cyPosition: { x: pos[0], y: pos[1] }
-            }))
-          ;
-        } else if (near == null) {
-          cy
-            .trigger(Event(e, {
-              type: 'mouseup',
-              cyPosition: { x: pos[0], y: pos[1] }
-            }))
-            .trigger(Event(e, {
-              type: 'tapend',
-              cyPosition: { x: pos[0], y: pos[1] }
-            }))
-            .trigger(Event(e, {
-              type: 'vmouseup',
-              cyPosition: { x: pos[0], y: pos[1] }
-            }))
-          ;
-        }
-      }
-
-      // Click event
-      {
-        // console.log('trigger click et al');
-
-        if(
-          //Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) === 0
-          !r.dragData.didDrag // didn't move a node around
-          && !r.hoverData.dragged // didn't pan
-        ){
-          if (near != null) {
-            near
-              .trigger( Event(e, {
-                type: 'click',
-                cyPosition: { x: pos[0], y: pos[1] }
-              }) )
-              .trigger( Event(e, {
-                type: 'tap',
-                cyPosition: { x: pos[0], y: pos[1] }
-              }) )
-              .trigger( Event(e, {
-                type: 'vclick',
-                cyPosition: { x: pos[0], y: pos[1] }
-              }) )
-            ;
-          } else if (near == null) {
-            cy
-              .trigger( Event(e, {
-                type: 'click',
-                cyPosition: { x: pos[0], y: pos[1] }
-              }) )
-              .trigger( Event(e, {
-                type: 'tap',
-                cyPosition: { x: pos[0], y: pos[1] }
-              }) )
-              .trigger( Event(e, {
-                type: 'vclick',
-                cyPosition: { x: pos[0], y: pos[1] }
-              }) )
-            ;
-          }
-        }
+      if(
+        !r.dragData.didDrag // didn't move a node around
+        && !r.hoverData.dragged // didn't pan
+      ){
+        triggerEvents( near, ['click', 'tap', 'vclick'], e, {
+          cyPosition: { x: pos[0], y: pos[1] }
+        } );
       }
 
       // Single selection
-      if (near == down && !r.dragData.didDrag) {
-        if (near != null && near._private.selectable) {
-
-          // console.log('single selection')
+      if( near == down && !r.dragData.didDrag && !r.hoverData.selecting ){
+        if( near != null && near._private.selectable ){
 
           if( r.hoverData.dragging ){
             // if panning, don't change selection state
@@ -945,12 +797,10 @@ BRp.load = function() {
           }
 
           r.redrawHint('eles', true);
-
         }
-
       }
 
-      if ( r.hoverData.selecting && cy.boxSelectionEnabled() &&  Math.pow(select[2] - select[0], 2) + Math.pow(select[3] - select[1], 2) > 7 && select[4] ) {
+      if ( r.hoverData.selecting ) {
         var newlySelected = [];
         var box = r.getAllInBox( select[0], select[1], select[2], select[3] );
 
@@ -994,7 +844,7 @@ BRp.load = function() {
       }
 
       if (!select[4]) {
-        // console.log('free at end', draggedElements)
+
 
         r.redrawHint('drag', true);
         r.redrawHint('eles', true);
@@ -1002,17 +852,11 @@ BRp.load = function() {
         freeDraggedElements( draggedElements );
 
         if( down ){ down.trigger('free'); }
-
-//        draggedElements = r.dragData.possibleDragElements = [];
-
       }
 
     } // else not right mouse
 
     select[4] = 0; r.hoverData.down = null;
-
-//      console.log('mu', pos[0], pos[1]);
-//      console.log('ss', select);
 
     r.hoverData.cxtStarted = false;
     r.hoverData.draggingEles = false;
@@ -1024,7 +868,7 @@ BRp.load = function() {
   }, false);
 
   var wheelHandler = function(e) {
-    // console.log( 'wheelHandler' );
+
 
     if( r.scrollingPage ){ return; } // while scrolling, ignore wheel-to-zoom
 
@@ -1122,8 +966,6 @@ BRp.load = function() {
   var touchstartHandler;
   r.registerBinding(r.container, 'touchstart', touchstartHandler = function(e) {
 
-    clearTimeout( r.threeFingerSelectTimeout );
-
     if( e.target !== r.data.link ){
       e.preventDefault();
     }
@@ -1136,7 +978,6 @@ BRp.load = function() {
     var edges = r.getCachedEdges();
     var now = r.touchData.now;
     var earlier = r.touchData.earlier;
-    var needsRedraw = r.data.canvasNeedsRedraw;
 
     if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].clientX, e.touches[0].clientY); now[0] = pos[0]; now[1] = pos[1]; }
     if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].clientX, e.touches[1].clientY); now[2] = pos[0]; now[3] = pos[1]; }
@@ -1195,8 +1036,6 @@ BRp.load = function() {
         var near1 = r.findNearestElement(now[0], now[1], true, true);
         var near2 = r.findNearestElement(now[2], now[3], true, true);
 
-        //console.log(distance1)
-
         if( near1 && near1.isNode() ){
           near1.activate().trigger( Event(e, {
             type: 'cxttapstart',
@@ -1224,24 +1063,12 @@ BRp.load = function() {
         r.touchData.cxtDragged = false;
         r.data.bgActivePosistion = undefined;
 
-        //console.log('cxttapstart')
-
         r.redraw();
         return;
 
       }
 
-      // console.log(center1);
-      // console.log('touchstart ptz');
-      // console.log(offsetLeft, offsetTop);
-      // console.log(f1x1, f1y1);
-      // console.log(f2x1, f2y1);
-      // console.log(distance1);
-      // console.log(center1);
     }
-
-    // console.log('another tapstart')
-
 
     if (e.touches[2]) {
 
@@ -1285,37 +1112,13 @@ BRp.load = function() {
             cyPosition: { x: now[0], y: now[1] }
           }) );
         }
+      }
 
-        near
-          .trigger(Event(e, {
-            type: 'touchstart',
-            cyPosition: { x: now[0], y: now[1] }
-          }))
-          .trigger(Event(e, {
-            type: 'tapstart',
-            cyPosition: { x: now[0], y: now[1] }
-          }))
-          .trigger(Event(e, {
-            type: 'vmousdown',
-            cyPosition: { x: now[0], y: now[1] }
-          }))
-        ;
-      } if (near == null) {
-        cy
-          .trigger(Event(e, {
-            type: 'touchstart',
-            cyPosition: { x: now[0], y: now[1] }
-          }))
-          .trigger(Event(e, {
-            type: 'tapstart',
-            cyPosition: { x: now[0], y: now[1] }
-          }))
-          .trigger(Event(e, {
-            type: 'vmousedown',
-            cyPosition: { x: now[0], y: now[1] }
-          }))
-        ;
+      triggerEvents( near, ['touchstart', 'tapstart', 'vmousedown'], e, {
+        cyPosition: { x: now[0], y: now[1] }
+      } );
 
+      if (near == null) {
         r.data.bgActivePosistion = {
           x: pos[0],
           y: pos[1]
@@ -1342,48 +1145,31 @@ BRp.load = function() {
         if(
             r.touchData.singleTouchMoved === false
             && !r.pinching // if pinching, then taphold unselect shouldn't take effect
-
-            // This time double constraint prevents multiple quick taps
-            // followed by a taphold triggering multiple taphold events
-            //&& Date.now() - r.touchData.singleTouchStartTime > 250
         ){
-          if (r.touchData.start) {
-            r.touchData.start.trigger( Event(e, {
-              type: 'taphold',
-              cyPosition: { x: now[0], y: now[1] }
-            }) );
-          } else {
-            r.cy.trigger( Event(e, {
-              type: 'taphold',
-              cyPosition: { x: now[0], y: now[1] }
-            }) );
+          triggerEvents( r.touchData.start, ['taphold'], e, {
+            cyPosition: { x: now[0], y: now[1] }
+          } );
 
+          if (!r.touchData.start) {
             cy.$(':selected').unselect();
           }
 
-//            console.log('taphold');
         }
       }, r.tapholdDuration);
     }
 
-    //r.redraw();
-
   }, false);
-
-// console.log = function(m){ $('#console').append('<div>'+m+'</div>'); };
 
   var touchmoveHandler;
   r.registerBinding(window, 'touchmove', touchmoveHandler = util.throttle(function(e) {
 
     var select = r.selection;
-    var capture = r.touchData.capture; //if (!capture) { return; };
+    var capture = r.touchData.capture;
     if( capture ){ e.preventDefault(); }
 
     var cy = r.cy;
     var now = r.touchData.now; var earlier = r.touchData.earlier;
     var zoom = cy.zoom();
-
-    var needsRedraw = r.data.canvasNeedsRedraw;
 
     if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].clientX, e.touches[0].clientY); now[0] = pos[0]; now[1] = pos[1]; }
     if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].clientX, e.touches[1].clientY); now[2] = pos[0]; now[3] = pos[1]; }
@@ -1399,6 +1185,7 @@ BRp.load = function() {
     var dist2 = dx2 + dy2;
     var rdist2 = dist2 * zoom * zoom;
 
+    // context swipe cancelling
     if( capture && r.touchData.cxt ){
       var f1x2 = e.touches[0].clientX - offsetLeft, f1y2 = e.touches[0].clientY - offsetTop;
       var f2x2 = e.touches[1].clientX - offsetLeft, f2y2 = e.touches[1].clientY - offsetTop;
@@ -1410,8 +1197,6 @@ BRp.load = function() {
       var distThresholdSq = distThreshold * distThreshold;
       var factorThreshold = 1.5;
       var factorThresholdSq = factorThreshold * factorThreshold;
-
-      //console.log(factor, distance2)
 
       // cancel ctx gestures if the distance b/t the fingers increases
       if( factorSq >= factorThresholdSq || distance2Sq >= distThresholdSq ){
@@ -1433,6 +1218,7 @@ BRp.load = function() {
 
     }
 
+    // context swipe
     if( capture && r.touchData.cxt ){
       var cxtEvt = Event(e, {
         type: 'cxtdrag',
@@ -1450,8 +1236,6 @@ BRp.load = function() {
       if( r.touchData.start ){ r.touchData.start._private.grabbed = false; }
       r.touchData.cxtDragged = true;
 
-      //console.log('cxtdrag')
-
       var near = r.findNearestElement(now[0], now[1], true, true);
 
       if( !r.touchData.cxtOver || near !== r.touchData.cxtOver ){
@@ -1461,8 +1245,6 @@ BRp.load = function() {
             type: 'cxtdragout',
             cyPosition: { x: now[0], y: now[1] }
           }) );
-
-          // console.log('cxtdragout');
         }
 
         r.touchData.cxtOver = near;
@@ -1473,14 +1255,14 @@ BRp.load = function() {
             cyPosition: { x: now[0], y: now[1] }
           }) );
 
-          // console.log('cxtdragover');
         }
 
       }
 
+    // box selection
     } else if( capture && e.touches[2] && cy.boxSelectionEnabled() ){
       r.data.bgActivePosistion = undefined;
-      clearTimeout( this.threeFingerSelectTimeout );
+
       this.lastThreeTouch = +new Date();
       r.touchData.selecting = true;
 
@@ -1501,6 +1283,7 @@ BRp.load = function() {
 
       r.redraw();
 
+    // pinch to zoom
     } else if ( capture && e.touches[1] && cy.zoomingEnabled() && cy.panningEnabled() && cy.userZoomingEnabled() && cy.userPanningEnabled() ) { // two fingers => pinch to zoom
       r.data.bgActivePosistion = undefined;
       r.redrawHint('select', true);
@@ -1515,29 +1298,17 @@ BRp.load = function() {
         }
       }
 
-      // console.log('touchmove ptz');
-
       // (x2, y2) for fingers 1 and 2
       var f1x2 = e.touches[0].clientX - offsetLeft, f1y2 = e.touches[0].clientY - offsetTop;
       var f2x2 = e.touches[1].clientX - offsetLeft, f2y2 = e.touches[1].clientY - offsetTop;
 
-      // console.log( f1x2, f1y2 )
-      // console.log( f2x2, f2y2 )
 
       var distance2 = distance( f1x2, f1y2, f2x2, f2y2 );
       // var distance2Sq = distanceSq( f1x2, f1y2, f2x2, f2y2 );
       // var factor = Math.sqrt( distance2Sq ) / Math.sqrt( distance1Sq );
       var factor = distance2 / distance1;
 
-      // console.log(distance2)
-      // console.log(factor)
-
       if( factor != 1 && twoFingersStartInside){
-
-        // console.log(factor)
-        // console.log(distance2 + ' / ' + distance1);
-        // console.log('--');
-
         // delta finger1
         var df1x = f1x2 - f1x1;
         var df1y = f1y2 - f1y1;
@@ -1572,9 +1343,6 @@ BRp.load = function() {
           x: -zoom2/zoom1 * (ctrx - pan1.x - tx) + ctrx,
           y: -zoom2/zoom1 * (ctry - pan1.y - ty) + ctry
         };
-
-        // console.log(pan2);
-        // console.log(zoom2);
 
         // remove dragged eles
         if( r.touchData.start ){
@@ -1625,6 +1393,7 @@ BRp.load = function() {
       var last = r.touchData.last;
       var near = near || r.findNearestElement(now[0], now[1], true, true);
 
+      // dragging nodes
       if( start != null && start._private.group == 'nodes' && r.nodeIsDraggable(start) ){
 
         if( rdist2 >= r.touchTapThreshold2 ){ // then dragging can happen
@@ -1691,62 +1460,11 @@ BRp.load = function() {
         }
       }
 
-      // Touchmove event
+      // touchmove
       {
-
-        if (start != null) {
-          start.trigger( Event(e, {
-            type: 'touchmove',
-            cyPosition: { x: now[0], y: now[1] }
-          }) );
-
-          start.trigger( Event(e, {
-            type: 'tapdrag',
-            cyPosition: { x: now[0], y: now[1] }
-          }) );
-
-          start.trigger( Event(e, {
-            type: 'vmousemove',
-            cyPosition: { x: now[0], y: now[1] }
-          }) );
-        }
-
-        if (start == null) {
-
-          if (near != null) {
-            near.trigger( Event(e, {
-              type: 'touchmove',
-              cyPosition: { x: now[0], y: now[1] }
-            }) );
-
-            near.trigger( Event(e, {
-              type: 'tapdrag',
-              cyPosition: { x: now[0], y: now[1] }
-            }) );
-
-            near.trigger( Event(e, {
-              type: 'vmousemove',
-              cyPosition: { x: now[0], y: now[1] }
-            }) );
-          }
-
-          if (near == null) {
-            cy.trigger( Event(e, {
-              type: 'touchmove',
-              cyPosition: { x: now[0], y: now[1] }
-            }) );
-
-            cy.trigger( Event(e, {
-              type: 'tapdrag',
-              cyPosition: { x: now[0], y: now[1] }
-            }) );
-
-            cy.trigger( Event(e, {
-              type: 'vmousemove',
-              cyPosition: { x: now[0], y: now[1] }
-            }) );
-          }
-        }
+        triggerEvents( (start || near), ['touchmove', 'tapdrag', 'vmousemove'], e, {
+          cyPosition: { x: now[0], y: now[1] }
+        } );
 
         if (near != last) {
           if (last) { last.trigger(Event(e, { type: 'tapdragout', cyPosition: { x: now[0], y: now[1] } })); }
@@ -1756,7 +1474,7 @@ BRp.load = function() {
         r.touchData.last = near;
       }
 
-      // Check to cancel taphold
+      // check to cancel taphold
       for (var i=0;i<now.length;i++) {
         if (now[i]
           && r.touchData.startPosition[i]
@@ -1766,6 +1484,7 @@ BRp.load = function() {
         }
       }
 
+      // panning
       if(
           capture
           && ( start == null || start.isEdge() )
@@ -1847,8 +1566,6 @@ BRp.load = function() {
     var now = r.touchData.now;
     var earlier = r.touchData.earlier;
 
-    var needsRedraw = r.data.canvasNeedsRedraw;
-
     if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].clientX, e.touches[0].clientY); now[0] = pos[0]; now[1] = pos[1]; }
     if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].clientX, e.touches[1].clientY); now[2] = pos[0]; now[3] = pos[1]; }
     if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].clientX, e.touches[2].clientY); now[4] = pos[0]; now[5] = pos[1]; }
@@ -1870,8 +1587,6 @@ BRp.load = function() {
         cy.trigger( ctxTapend );
       }
 
-      //console.log('cxttapend')
-
       if( !r.touchData.cxtDragged ){
         var ctxTap = Event(e, {
           type: 'cxttap',
@@ -1884,7 +1599,6 @@ BRp.load = function() {
           cy.trigger( ctxTap );
         }
 
-        //console.log('cxttap')
       }
 
       if( r.touchData.start ){ r.touchData.start._private.grabbed = false; }
@@ -1898,41 +1612,33 @@ BRp.load = function() {
     // no more box selection if we don't have three fingers
     if( !e.touches[2] && cy.boxSelectionEnabled() && r.touchData.selecting ){
       r.touchData.selecting = false;
-      clearTimeout( this.threeFingerSelectTimeout );
-      //this.threeFingerSelectTimeout = setTimeout(function(){
-        var newlySelected = [];
-        var box = r.getAllInBox( select[0], select[1], select[2], select[3] );
 
-        select[0] = undefined;
-        select[1] = undefined;
-        select[2] = undefined;
-        select[3] = undefined;
-        select[4] = 0;
+      var newlySelected = [];
+      var box = r.getAllInBox( select[0], select[1], select[2], select[3] );
 
-        r.redrawHint('select', true);
+      select[0] = undefined;
+      select[1] = undefined;
+      select[2] = undefined;
+      select[3] = undefined;
+      select[4] = 0;
 
-        // console.log(box);
-        for( var i = 0; i< box.length; i++ ) {
-          if( box[i]._private.selectable ){
-            newlySelected.push( box[i] );
-          }
+      r.redrawHint('select', true);
+
+      for( var i = 0; i< box.length; i++ ) {
+        if( box[i]._private.selectable ){
+          newlySelected.push( box[i] );
         }
+      }
 
-        var newlySelCol = Collection( cy, newlySelected );
+      var newlySelCol = Collection( cy, newlySelected );
 
-        if( cy.selectionType() === 'single' ){
-          cy.$(':selected').unmerge( newlySelCol ).unselect();
-        }
+      newlySelCol.select();
 
-        newlySelCol.select();
-
-        if( newlySelCol.length > 0 ) {
-          r.redrawHint('eles', true);
-        } else {
-          r.redraw();
-        }
-
-      //}, 100);
+      if( newlySelCol.length > 0 ) {
+        r.redrawHint('eles', true);
+      } else {
+        r.redraw();
+      }
     }
 
     var updateStartStyle = false;
@@ -1971,20 +1677,9 @@ BRp.load = function() {
           start.trigger('free');
         }
 
-        start
-          .trigger(Event(e, {
-            type: 'touchend',
-            cyPosition: { x: now[0], y: now[1] }
-          }))
-          .trigger(Event(e, {
-            type: 'tapend',
-            cyPosition: { x: now[0], y: now[1] }
-          }))
-          .trigger(Event(e, {
-            type: 'vmouseup',
-            cyPosition: { x: now[0], y: now[1] }
-          }))
-        ;
+        triggerEvents( start, ['touchend', 'tapend', 'vmouseup'], e, {
+          cyPosition: { x: now[0], y: now[1] }
+        } );
 
         start.unactivate();
 
@@ -1993,39 +1688,10 @@ BRp.load = function() {
       } else {
         var near = r.findNearestElement(now[0], now[1], true, true);
 
-        if (near != null) {
-          near
-            .trigger(Event(e, {
-              type: 'touchend',
-              cyPosition: { x: now[0], y: now[1] }
-            }))
-            .trigger(Event(e, {
-              type: 'tapend',
-              cyPosition: { x: now[0], y: now[1] }
-            }))
-            .trigger(Event(e, {
-              type: 'vmouseup',
-              cyPosition: { x: now[0], y: now[1] }
-            }))
-          ;
-        }
+        triggerEvents( near, ['touchend', 'tapend', 'vmouseup'], e, {
+          cyPosition: { x: now[0], y: now[1] }
+        } );
 
-        if (near == null) {
-          cy
-            .trigger(Event(e, {
-              type: 'touchend',
-              cyPosition: { x: now[0], y: now[1] }
-            }))
-            .trigger(Event(e, {
-              type: 'tapend',
-              cyPosition: { x: now[0], y: now[1] }
-            }))
-            .trigger(Event(e, {
-              type: 'vmouseup',
-              cyPosition: { x: now[0], y: now[1] }
-            }))
-          ;
-        }
       }
 
       var dx = r.touchData.startPosition[0] - now[0];
@@ -2061,33 +1727,10 @@ BRp.load = function() {
       }
 
       // Tap event, roughly same as mouse click event for touch
-      if ( r.touchData.singleTouchMoved === false ) {
-
-        if (start) {
-          start
-            .trigger(Event(e, {
-              type: 'tap',
-              cyPosition: { x: now[0], y: now[1] }
-            }))
-            .trigger(Event(e, {
-              type: 'vclick',
-              cyPosition: { x: now[0], y: now[1] }
-            }))
-          ;
-        } else {
-          cy
-            .trigger(Event(e, {
-              type: 'tap',
-              cyPosition: { x: now[0], y: now[1] }
-            }))
-            .trigger(Event(e, {
-              type: 'vclick',
-              cyPosition: { x: now[0], y: now[1] }
-            }))
-          ;
-        }
-
-//          console.log('tap');
+      if( !r.touchData.singleTouchMoved ){
+        triggerEvents( start, ['tap', 'vclick'], e, {
+          cyPosition: { x: now[0], y: now[1] }
+        } );
       }
 
       r.touchData.singleTouchMoved = true;
@@ -2176,9 +1819,6 @@ BRp.load = function() {
     r.registerBinding(r.container, 'pointerdown', function(e){
       if( e.pointerType === 'mouse' ){ return; } // mouse already handled
 
-      // console.log('pdown')
-      // console.log(e)
-
       e.preventDefault();
 
       addPointer( e );
@@ -2190,9 +1830,6 @@ BRp.load = function() {
     r.registerBinding(r.container, 'pointerup', function(e){
       if( e.pointerType === 'mouse' ){ return; } // mouse already handled
 
-      // console.log('pup')
-      // console.log(e)
-
       removePointer( e );
 
       addTouchesToEvent( e );
@@ -2202,9 +1839,6 @@ BRp.load = function() {
     r.registerBinding(r.container, 'pointercancel', function(e){
       if( e.pointerType === 'mouse' ){ return; } // mouse already handled
 
-      // console.log('pcancel')
-      // console.log(e)
-
       removePointer( e );
 
       addTouchesToEvent( e );
@@ -2213,9 +1847,6 @@ BRp.load = function() {
 
     r.registerBinding(r.container, 'pointermove', function(e){
       if( e.pointerType === 'mouse' ){ return; } // mouse already handled
-
-      // console.log('pmove')
-      // console.log(e)
 
       e.preventDefault();
 

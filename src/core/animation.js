@@ -72,13 +72,13 @@ var corefn = ({
         }
 
         // step and remove if done
-        var completes = [];
+        var completeAnis = [];
         for( var i = current.length - 1; i >= 0; i-- ){
           var ani = current[i];
           var ani_p = ani._private;
 
           if( ani_p.stopped ){
-            current.splice(i, 1);
+            current.splice( i, 1 );
 
             ani_p.hooked = false;
             ani_p.playing = false;
@@ -96,7 +96,7 @@ var corefn = ({
           step( ele, ani, now, isCore );
 
           if( ani.complete() ){
-            completes.push( ani );
+            completeAnis.push( ani );
             current.splice(i, 1);
 
             ani_p.hooked = false;
@@ -108,11 +108,14 @@ var corefn = ({
         }
 
         // call complete callbacks
-        for( var i = 0; i < completes.length; i++ ){
-          var ani = completes[i];
-          var complete = ani._private.complete;
+        for( var i = 0; i < completeAnis.length; i++ ){
+          var ani = completeAnis[i];
+          var completes = ani._private.completes;
 
-          if( is.fn(complete) ){
+          for( var j = completes.length - 1; j >= 0; j-- ){
+            var complete = completes[j];
+
+            completes.splice( j, 1 );
             complete.apply( ele, [ now ] );
           }
         }

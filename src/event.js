@@ -40,17 +40,17 @@ var Event = function( src, props ) {
   }
 
   // Create a timestamp if incoming event doesn't have one
-  this.timeStamp = src && src.timeStamp || +new Date();
+  this.timeStamp = src && src.timeStamp || Date.now();
 };
 
 function returnFalse() {
   return false;
 }
+
 function returnTrue() {
   return true;
 }
 
-// jQuery.Event is based on DOM3 Events as specified by the ECMAScript Language Binding
 // http://www.w3.org/TR/2003/WD-DOM-Level-3-Events-20030331/ecma-script-binding.html
 Event.prototype = {
   instanceString: function(){
@@ -78,6 +78,7 @@ Event.prototype = {
     if ( !e ) {
       return;
     }
+
     // if stopPropagation exists run it on the original event
     if ( e.stopPropagation ) {
       e.stopPropagation();

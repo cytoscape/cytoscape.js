@@ -4,16 +4,16 @@ var util = require('./util');
 var is = require('./is');
 var Promise = require('./promise');
 
-var Animation = function( target, opts1, opts2, opts3 ){
+var Animation = function( target, opts ){
   if( !(this instanceof Animation) ){
-    return new Animation( target, opts1, opts2, opts3 );
+    return new Animation( target, opts );
   }
 
   var _p = this._private = util.extend( {
     duration: 1000,
     playing: false,
     hooked: false
-  }, opts1, opts2, opts3 );
+  }, opts );
 
   _p.target = target;
   _p.style = _p.style || _p.css;

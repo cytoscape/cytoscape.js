@@ -672,20 +672,18 @@ var define = {
       var style = cy.style();
       var q;
 
-      if( params === undefined ){
-        params = properties;
+      properties = util.extend( {}, properties, params );
+
+      if( properties.duration === undefined ){
+        properties.duration = 400;
       }
 
-      if( params.duration === undefined ){
-        params.duration = 400;
-      }
-
-      switch( params.duration ){
+      switch( properties.duration ){
       case 'slow':
-        params.duration = 600;
+        properties.duration = 600;
         break;
       case 'fast':
-        params.duration = 200;
+        properties.duration = 200;
         break;
       }
 
@@ -696,7 +694,7 @@ var define = {
       } }
 
       if( propertiesEmpty ){
-        return new Animation( all[0], properties, params ); // nothing to animate
+        return new Animation( all[0], properties ); // nothing to animate
       }
 
       if( isEles ){
@@ -748,11 +746,7 @@ var define = {
         }
       }
 
-      if( properties === params ){
-        return new Animation( all[0], properties ); // for efficiency
-      } else {
-        return new Animation( all[0], properties, params );
-      }
+      return new Animation( all[0], properties );
     };
   }, // animate
 
@@ -770,8 +764,8 @@ var define = {
 
       if( !cy.styleEnabled() ){ return this; }
 
-      if( params === undefined ){
-        params = properties;
+      if( params ){
+        properties = util.extend( {}, properties, params );
       }
 
       var style = cy.style();
@@ -781,9 +775,10 @@ var define = {
       for( var i = 0; i < all.length; i++ ){
         var ele = all[i];
         var _p = ele._private;
-        var ani = ele.animation( properties, params );
+        var ani = ele.animation( properties );
+        var ani_p = ani._private;
 
-        if( ele.animated() && (params.queue === undefined || params.queue) ){
+        if( ele.animated() && (properties.queue === undefined || properties.queue) ){
           q = _p.animation.queue;
         } else {
           q = _p.animation.current;
@@ -791,7 +786,8 @@ var define = {
 
         q.push( ani );
 
-        ani._private.playing = true;
+        ani_p.playing = true;
+        ani_p.hooked = true;
       }
 
       if( isEles ){

@@ -12,6 +12,8 @@ var elesfn = ({
 
     layout.trigger({ type: 'layoutstart', layout: layout });
 
+    layout.animations = [];
+
     if( options.animate ){
       for( var i = 0; i < nodes.length; i++ ){
         var node = nodes[i];
@@ -24,7 +26,7 @@ var elesfn = ({
           node.silentPosition({ x: 0, y: 0 });
         }
 
-        node.animate({
+        var ani = node.animation({
           position: newPos
         }, {
           duration: options.animationDuration,
@@ -50,6 +52,10 @@ var elesfn = ({
             layout.trigger({ type: 'layoutstop', layout: layout });
           }
         });
+
+        layout.animations.push( ani );
+
+        ani.play();
       }
 
       layout.one('layoutready', options.ready);

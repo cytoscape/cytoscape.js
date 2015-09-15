@@ -78,9 +78,13 @@ a:hover {
   z-index: 9999999;
 }
 
-.config-closed {
+.config-closed .config {
   opacity: 0;
   pointer-events: none;
+}
+
+.config-closed #cy {
+  right: 0;
 }
 
 @media (max-width: 600px){

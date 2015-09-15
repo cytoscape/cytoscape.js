@@ -12,8 +12,8 @@ $(function(){ // on dom ready
 
   var params = {
     name: 'cola',
-    nodeSpacing: 10,
-    edgeLengthVal: 35,
+    nodeSpacing: 5,
+    edgeLengthVal: 45,
     animate: true,
     randomize: false,
     maxSimulationTime: 1500
@@ -153,7 +153,9 @@ $(function(){ // on dom ready
   });
 
   $('#config-toggle').on('click', function(){
-    $('#config').toggleClass('config-closed');
+    $('body').toggleClass('config-closed');
+
+    cy.resize();
   });
 
 }); // on dom ready

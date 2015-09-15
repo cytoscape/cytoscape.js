@@ -30,30 +30,24 @@ var corefn = ({
     }
 
     var name = options.name;
-    var LayoutProto = extension('layout', name);
+    var Layout = extension('layout', name);
 
-    if( LayoutProto == null ){
+    if( Layout == null ){
       util.error('Can not apply layout: No such layout `' + name + '` found; did you include its JS file?');
       return;
     }
 
-    options.eles = options.eles != null ? options.eles : this.$();
-
+    var eles;
     if( is.string( options.eles ) ){
-      options.eles = this.$( options.eles );
+      eles = this.$( options.eles );
+    } else {
+      eles = options.eles != null ? options.eles : this.$();
     }
 
-    var layout = new LayoutProto( util.extend({}, options, {
-      cy: this
+    var layout = new Layout( util.extend({}, options, {
+      cy: this,
+      eles: eles
     }) );
-
-    // make sure layout has _private for use w/ std apis like .on()
-    if( !is.plainObject(layout._private) ){
-      layout._private = {};
-    }
-
-    layout._private.cy = this;
-    layout._private.listeners = [];
 
     return layout;
   }

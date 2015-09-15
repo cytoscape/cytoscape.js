@@ -5,6 +5,7 @@ var define = require('./define');
 var Core = require('./core');
 var Collection = require('./collection');
 var incExts = require('./extensions');
+var is = require('./is');
 
 // registered extensions to cytoscape, indexed by name
 var extensions = {};
@@ -14,6 +15,8 @@ var modules = {};
 
 function setExtension( type, name, registrant ){
 
+  var ext = registrant;
+
   switch( type ){
   case 'core':
   case 'collection':
@@ -22,7 +25,24 @@ function setExtension( type, name, registrant ){
 
   // fill in missing layout functions in the prototype
   if( type === 'layout' ){
-    var layoutProto = registrant.prototype;
+    var Layout = function( options ){
+      this.options = options;
+
+      registrant.call( this, options );
+
+      // make sure layout has _private for use w/ std apis like .on()
+      if( !is.plainObject(this._private) ){
+        this._private = {};
+      }
+
+      this._private.cy = options.cy;
+      this._private.listeners = [];
+    };
+
+    var layoutProto = Layout.prototype = Object.create( registrant.prototype );
+
+    //layoutProto.constructor = Layout;
+
     var optLayoutFns = [];
 
     for( var i = 0; i < optLayoutFns.length; i++ ){
@@ -43,7 +63,10 @@ function setExtension( type, name, registrant ){
         var opts = this.options;
 
         if( opts && opts.animate ){
-          opts.eles.stop();
+          var anis = this.animations;
+          for( var i = 0; i < anis.length; i++ ){
+            anis[i].stop();
+          }
         }
 
         return this;
@@ -63,6 +86,8 @@ function setExtension( type, name, registrant ){
     layoutProto.trigger = define.trigger({ layout: true });
 
     define.eventAliasesOn( layoutProto );
+
+    ext = Layout; // replace with our wrapped layout
 
   // user registered renderers inherit from base
   } else if( type === 'renderer' && name !== 'null' && name !== 'base' ){
@@ -92,7 +117,7 @@ function setExtension( type, name, registrant ){
   return util.setMap({
     map: extensions,
     keys: [ type, name ],
-    value: registrant
+    value: ext
   });
 }
 

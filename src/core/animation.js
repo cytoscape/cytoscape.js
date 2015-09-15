@@ -64,7 +64,7 @@ var corefn = ({
 
         // if nothing currently animating, get something from the queue
         if( current.length === 0 ){
-          var next = queue.length > 0 ? queue.shift() : null;
+          var next = queue.shift();
 
           if( next ){
             current.push( next );
@@ -131,8 +131,9 @@ var corefn = ({
       var ranEleAni = false;
       for( var e = 0; e < eles.length; e++ ){
         var ele = eles[e];
+        var handledThisEle = handleElement( ele );
 
-        ranEleAni = ranEleAni || handleElement( ele );
+        ranEleAni = ranEleAni || handledThisEle;
       } // each element
 
       var ranCoreAni = handleElement( cy, true );

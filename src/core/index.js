@@ -212,7 +212,7 @@ util.extend(corefn, {
     cy.notify({ type: 'destroy' }); // destroy the renderer
 
     var domEle = cy.container();
-    var parEle = domEle.parentNode;
+    var parEle = domEle ? domEle.parentNode : null;
     if( parEle ){
       try{
         parEle.removeChild( domEle );

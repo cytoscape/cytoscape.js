@@ -675,7 +675,7 @@
                 {
                   "args": [
                     {
-                      "name": "anis",
+                      "name": "options",
                       "descr": "An object containing the details of the animation.",
                       "fields": [
                         { "name": "zoom", "descr": "A zoom level to which the graph will be animated." },
@@ -695,14 +695,7 @@
                           "fields": [
                             { "name": "eles", "descr": "Elements or a selector to which the viewport will be centred." }
                           ]
-                        }
-                      ]
-                    },
-
-                    {
-                      "name": "options",
-                      "descr": "An object containing animation options.",
-                      "fields": [
+                        },
                         { "name": "duration", "descr": "The duration of the animation in milliseconds." },
                         { "name": "queue", "descr": "A boolean indicating whether to queue the animation." },
                         { "name": "complete", "descr": "A function to call when the animation is done." },
@@ -717,13 +710,13 @@
             },
 
             {
-              "name": "cy.animatePromise",
-              "descr": "Animate the viewport, and return a promise that is fulfilled upon completion.",
+              "name": "cy.animation",
+              "descr": "Get an [animation](#animations) of the viewport.",
               "formats": [
                 {
                   "args": [
                     {
-                      "name": "anis",
+                      "name": "options",
                       "descr": "An object containing the details of the animation.",
                       "fields": [
                         { "name": "zoom", "descr": "A zoom level to which the graph will be animated." },
@@ -743,18 +736,8 @@
                           "fields": [
                             { "name": "eles", "descr": "Elements or a selector to which the viewport will be centred." }
                           ]
-                        }
-                      ]
-                    },
-
-                    {
-                      "name": "options",
-                      "descr": "An object containing animation options.",
-                      "fields": [
-                        { "name": "duration", "descr": "The duration of the animation in milliseconds." },
-                        { "name": "queue", "descr": "A boolean indicating whether to queue the animation." },
-                        { "name": "complete", "descr": "A function to call when the animation is done." },
-                        { "name": "step", "descr": "A function to call each time the animation steps." }
+                        },
+                        { "name": "duration", "descr": "The duration of the animation in milliseconds." }
                       ]
                     }
                   ]
@@ -777,13 +760,12 @@
             },
 
             {
-              "name": "cy.delayPromise",
-              "descr": "Add a delay between animations for the viewport, and return a promise that is fulfilled when the delay finishes.",
+              "name": "cy.delayAnimation",
+              "descr": "Get a delay [animation](#animations) of the viewport.",
               "formats": [
                 {
                   "args": [
-                    { "name": "duration", "descr": "How long the delay should be in milliseconds." },
-                    { "name": "complete", "descr": "A function to call when the delay is complete." }
+                    { "name": "duration", "descr": "How long the delay should be in milliseconds." }
                   ]
                 }
               ]
@@ -1889,19 +1871,12 @@
                 {
                   "args": [
                     {
-                      "name": "anis",
+                      "name": "options",
                       "descr": "An object containing the details of the animation.",
                       "fields": [
                         { "name": "position", "descr": "A position to which the elements will be animated." },
                         { "name": "renderedPosition", "descr": "A rendered position to which the elements will be animated." },
-                        { "name": "style", "descr": "An object containing name-value pairs of style properties to animate." }
-                      ]
-                    },
-
-                    {
-                      "name": "options",
-                      "descr": "An object containing animation options.",
-                      "fields": [
+                        { "name": "style", "descr": "An object containing name-value pairs of style properties to animate." },
                         { "name": "duration", "descr": "The duration of the animation in milliseconds." },
                         { "name": "queue", "descr": "A boolean indicating whether to queue the animation." },
                         { "name": "complete", "descr": "A function to call when the animation is done." },
@@ -1916,29 +1891,19 @@
             },
 
             {
-              "name": "eles.animatePromise",
-              "descr": "Animate the elements, and return a promise that is fulfilled upon completion.",
+              "name": "ele.animation",
+              "descr": "Get an [animation](#animations) for the element.",
               "formats": [
                 {
                   "args": [
                     {
-                      "name": "anis",
+                      "name": "options",
                       "descr": "An object containing the details of the animation.",
                       "fields": [
                         { "name": "position", "descr": "A position to which the elements will be animated." },
                         { "name": "renderedPosition", "descr": "A rendered position to which the elements will be animated." },
-                        { "name": "style", "descr": "An object containing name-value pairs of style properties to animate." }
-                      ]
-                    },
-
-                    {
-                      "name": "options",
-                      "descr": "An object containing animation options.",
-                      "fields": [
-                        { "name": "duration", "descr": "The duration of the animation in milliseconds." },
-                        { "name": "queue", "descr": "A boolean indicating whether to queue the animation." },
-                        { "name": "complete", "descr": "A function to call when the animation is done." },
-                        { "name": "step", "descr": "A function to call each time the animation steps." }
+                        { "name": "style", "descr": "An object containing name-value pairs of style properties to animate." },
+                        { "name": "duration", "descr": "The duration of the animation in milliseconds." }
                       ]
                     }
                   ]
@@ -1961,13 +1926,12 @@
             },
 
             {
-              "name": "eles.delayPromise",
-              "descr": "Add a delay between animations for the elements, and return a promise that is fulfilled when the delay finishes.",
+              "name": "ele.delayAnimation",
+              "descr": "Get a delay [animation](#animations) for the element.",
               "formats": [
                 {
                   "args": [
-                    { "name": "duration", "descr": "How long the delay should be in milliseconds." },
-                    { "name": "complete", "descr": "A function to call when the delay is complete." }
+                    { "name": "duration", "descr": "How long the delay should be in milliseconds." }
                   ]
                 }
               ]
@@ -3219,44 +3183,9 @@
         },
 
         {
-          "md": "layouts/dagre",
-          "layout": {
-            "name": "dagre"
-          }
-        },
-
-        {
           "md": "layouts/cose",
           "layout": {
             "name": "cose"
-          }
-        },
-
-        {
-          "md": "layouts/cola",
-          "layout": {
-            "name": "cola"
-          }
-        },
-
-        {
-          "md": "layouts/spread",
-          "layout": {
-            "name": "spread"
-          }
-        },
-
-        {
-          "md": "layouts/arbor",
-          "layout": {
-            "name": "arbor"
-          }
-        },
-
-        {
-          "md": "layouts/springy",
-          "layout": {
-            "name": "springy"
           }
         },
 
@@ -3380,6 +3309,102 @@
           ]
         }
 
+      ]
+    },
+
+    {
+      "name": "Animations",
+      "md": "animations",
+      "sections": [
+        {
+          "name": "Animation manipulation",
+          "fns": [
+            {
+              "name": "ani.play",
+              "descr": "Requests that the animation be played, starting on the next frame.  If the animation is complete, it restarts from the beginning."
+            },
+
+            {
+              "name": "ani.playing",
+              "descr": "Get whether the animation is currently playing."
+            },
+
+            {
+              "name": "ani.progress",
+              "descr": "Get or set how far along the animation has progressed.",
+              "formats": [
+                {
+                  "name": "ani.progress",
+                  "descr": "Get the progress of the animation in percent."
+                },
+                {
+                  "name": "ani.progress",
+                  "descr": "Set the progress of the animation in percent.",
+                  "args": [
+                    { "name": "progress", "descr": "The progress in percent (i.e. between 0 and 1 inclusive) to set to the animation." }
+                  ]
+                },
+                {
+                  "name": "ani.time",
+                  "descr": "Get the progress of the animation in milliseconds."
+                },
+                {
+                  "name": "ani.time",
+                  "descr": "Set the progress of the animation in milliseconds.",
+                  "args": [
+                    { "name": "time", "descr": "The progress in milliseconds (i.e. between 0 and the duration inclusive) to set to the animation." }
+                  ]
+                },
+                {
+                  "name": "ani.rewind",
+                  "descr": "Rewind the animation to the beginning."
+                },
+                {
+                  "name": "ani.fastforward",
+                  "descr": "Fastforward the animation to the end."
+                }
+              ]
+            },
+
+            {
+              "name": "ani.pause",
+              "descr": "Pause the animation, maintaining the current progress."
+            },
+
+            {
+              "name": "ani.stop",
+              "descr": "Stop the animation, maintaining the current progress and removing the animation from any associated queues."
+            },
+
+            {
+              "name": "ani.completed",
+              "pureAliases": ["ani.complete"],
+              "descr": "Get whether the animation has progressed to the end."
+            },
+
+            {
+              "name": "ani.reverse",
+              "descr": "Reverse the animation such that its starting conditions and ending conditions are reversed."
+            },
+
+            {
+              "name": "ani.promise",
+              "descr": "Get a promise that is fulfilled for the specified animation event.",
+              "formats": [
+                {
+                  "descr": "Get a promise that is fulfilled when the animation completes."
+                },
+
+                {
+                  "descr": "Get a promise that is fulfilled for the specified animation event.",
+                  "args": [
+                    { "name": "animationEvent", "descr": "A string for the event name; `completed` or `complete` for completing the animation or `frame` for the next frame of the animation." }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
       ]
     },
 

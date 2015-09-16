@@ -6,8 +6,8 @@ describe('Collection style', function(){
   var cy;
 
   // test setup
-  beforeEach(function(done){
-    cytoscape({
+  beforeEach(function(){
+    cy = cytoscape({
       styleEnabled: true,
 
       elements: {
@@ -16,18 +16,17 @@ describe('Collection style', function(){
             { data: { id: 'n2' } },
             { data: { id: 'n3' } }
         ],
-        
+
         edges: [
             { data: { id: 'n1n2', source: 'n1', target: 'n2' } },
             { data: { id: 'n2n3', source: 'n2', target: 'n3' } }
         ]
-      },
-      ready: function(){
-        cy = this;
-
-        done();
       }
     });
+  });
+
+  afterEach(function(){
+    cy.destroy();
   });
 
 
@@ -177,6 +176,258 @@ describe('Collection style', function(){
 
       expect( n1.hasClass('foo') ).to.be.false;
       expect( n1.hasClass('bar') ).to.be.false;
+    });
+
+  });
+
+  describe('eles.animate() etc', function(){
+
+    var n1;
+    var n2;
+
+    beforeEach(function(){
+      n1 = cy.$('#n1');
+      n2 = cy.$('#n2');
+    });
+
+    it('ele.animate() results in end style', function( next ){
+      n1.animate({
+        style: { width: 200 },
+        complete: function(){
+          expect( parseFloat(n1.style().width) ).to.equal(200);
+          next();
+        },
+        duration: 100
+      });
+    });
+
+    it('eles.animate() results in end style', function( next ){
+      var c = 0;
+      function complete(){
+        c++;
+
+        if( c === 2 ){
+          expect( parseFloat(n1.style().width) ).to.equal(200);
+          expect( parseFloat(n2.style().width) ).to.equal(200);
+          next();
+        }
+      }
+
+      n1.add(n2).animate({
+        style: { width: 200 },
+        complete: complete,
+        duration: 100
+      });
+    });
+
+    it('ele.animation() results in end style', function( next ){
+      n1.animation({
+        style: { width: 200 },
+        duration: 100
+      }).play().promise().then(function(){
+        expect( parseFloat(n1.style().width) ).to.equal(200);
+        next();
+      });
+    });
+
+    it('ani.playing()', function(){
+      var ani = n1.animation({
+        style: { width: 200 },
+        duration: 100
+      });
+
+      expect( ani.playing() ).to.be.false;
+
+      ani.play();
+
+      expect( ani.playing() ).to.be.true;
+
+      return ani.promise().then(function(){
+        expect( ani.playing() ).to.be.false;
+      });
+    });
+
+    it('ani.pause()', function( next ){
+      var ani = n1.animation({
+        style: { width: 200 },
+        duration: 200
+      });
+
+      ani.play();
+
+      var w;
+
+      setTimeout(function(){
+        ani.pause();
+
+        w = n1.style('width');
+      }, 100);
+
+      setTimeout(function(){
+        expect( ani.playing() ).to.be.false;
+
+        expect( n1.style('width') ).to.equal(w);
+
+        next();
+      }, 200);
+    });
+
+    it('ani.pause() then ani.play()', function(next){
+      var ani = n1.animation({
+        style: { width: 200 },
+        duration: 200
+      });
+
+      setTimeout(function(){
+        ani.pause();
+      }, 100);
+
+      setTimeout(function(){
+        ani.play().promise().then( next );
+      }, 100);
+    });
+
+    it('ele.animation() x2 results in end style', function( next ){
+      var d = 0;
+      var done = function(){
+        d++;
+
+        if( d === 2 ){ next(); }
+      };
+
+      n1.animation({
+        style: { width: 200 },
+        duration: 100
+      }).play().promise().then(function(){
+        expect( parseFloat(n1.style().width) ).to.equal(200);
+
+        done();
+      });
+
+      n2.animation({
+        style: { width: 200 },
+        duration: 100
+      }).play().promise().then(function(){
+        expect( parseFloat(n2.style().width) ).to.equal(200);
+
+        done();
+      });
+    });
+
+    it('ani progresses from 0 to 1', function( next ){
+      var ani = n1.animation({
+        style: { width: 200 },
+        duration: 100
+      });
+
+      expect( ani.progress() ).to.equal(0);
+
+      ani.play().promise().then(function(){
+        expect( ani.progress() ).to.equal(1);
+
+        next();
+      });
+    });
+
+    it('ani.rewind() works', function( next ){
+      var ani = n1.style({
+        width: 100
+      }).animation({
+        style: { width: 200 },
+        duration: 100
+      });
+
+      ani.play().promise().then(function(){
+        expect( ani.progress() ).to.equal(1);
+        expect( parseFloat(n1.style().width) ).to.equal(200);
+
+        ani.rewind();
+
+        expect( ani.progress() ).to.equal(0);
+
+        next();
+      });
+    });
+
+    it('ani.rewind() plays again from start', function( next ){
+      var ani = n1.style({
+        width: 100
+      }).animation({
+        style: { width: 200 },
+        duration: 100
+      });
+
+      ani.play().promise().then(function(){
+        expect( ani.progress() ).to.equal(1);
+        expect( parseFloat(n1.style().width) ).to.equal(200);
+
+        ani.rewind();
+
+        expect( ani.progress() ).to.equal(0);
+
+        return ani.play().promise();
+      }).then(function(){
+        expect( ani.progress() ).to.equal(1);
+        expect( parseFloat(n1.style().width) ).to.equal(200);
+
+        next();
+      });
+    });
+
+    it('ani.reverse()', function(next){
+      var ani = n1.style({
+        width: 100
+      }).animation({
+        style: { width: 200 },
+        duration: 100
+      });
+
+      ani.play().promise().then(function(){
+        expect( ani.progress() ).to.equal(1);
+        expect( parseFloat(n1.style().width) ).to.equal(200);
+
+        ani.reverse();
+
+        return ani.play().promise();
+      }).then(function(){
+        expect( ani.progress() ).to.equal(1);
+        expect( parseFloat(n1.style().width) ).to.equal(100);
+
+         next();
+      });
+    });
+
+    it('ani.apply()', function(next){
+      var ani = n1.style({
+        width: 100
+      }).animation({
+        style: { width: 200 },
+        duration: 100
+      });
+
+      ani.progress(0.5).apply().promise('frame').then(function(){
+        expect( parseFloat(n1.style('width')) ).to.equal(150);
+
+        next();
+      });
+
+    });
+
+    it('ani.stop()', function( next ){
+      var ani = n1.animation({
+        style: { width: 200 },
+        duration: 200
+      });
+
+      ani.play();
+
+      setTimeout(function(){
+        ani.stop().promise('frame').then(function(){
+          expect( n1.animated() ).to.be.false;
+          next();
+        });
+      }, 100);
+
     });
 
   });

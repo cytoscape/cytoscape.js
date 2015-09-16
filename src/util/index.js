@@ -863,7 +863,13 @@ util.regex.hex6 = "\\#[0-9a-fA-F]{6}";
 var raf = !window ? null : ( window.requestAnimationFrame || window.mozRequestAnimationFrame ||
       window.webkitRequestAnimationFrame || window.msRequestAnimationFrame );
 
-raf = raf || function(fn){ if(fn){ setTimeout(fn, 1000/60); } };
+raf = raf || function( fn ){
+  if( fn ){
+    setTimeout(function(){
+      fn( pnow() );
+    }, 1000/60);
+  }
+};
 
 util.requestAnimationFrame = function(fn){
   raf( fn );

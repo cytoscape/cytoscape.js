@@ -4,22 +4,24 @@ var util = require('./util');
 var is = require('./is');
 var Promise = require('./promise');
 
-var Animation = function( target, opts ){
+var Animation = function( target, opts, opts2 ){
   if( !(this instanceof Animation) ){
-    return new Animation( target, opts );
+    return new Animation( target, opts, opts2 );
   }
 
   var _p = this._private = util.extend( {
-    duration: 1000,
-    playing: false,
-    hooked: false
-  }, opts );
+    duration: 1000
+  }, opts, opts2 );
 
   _p.target = target;
   _p.style = _p.style || _p.css;
   _p.started = false;
+  _p.playing = false;
+  _p.hooked = false;
+  _p.applying = false;
   _p.progress = 0;
   _p.completes = [];
+  _p.frames = [];
 
   if( _p.complete && is.fn(_p.complete) ){
     _p.completes.push( _p.complete );
@@ -36,6 +38,31 @@ util.extend( anifn, {
 
   instanceString: function(){ return 'animation'; },
 
+  hook: function(){
+    var _p = this._private;
+
+    if( !_p.hooked ){
+      // add to target's animation queue
+      var q;
+      var tAni = _p.target._private.animation;
+      if( _p.queue ){
+        q = tAni.queue;
+      } else {
+        q = tAni.current;
+      }
+      q.push( this );
+
+      // add to the animation loop pool
+      if( is.elementOrCollection( _p.target ) ){
+        _p.target.cy().addToAnimationPool( _p.target );
+      }
+
+      _p.hooked = true;
+    }
+
+    return this;
+  },
+
   play: function(){
     var _p = this._private;
 
@@ -48,17 +75,7 @@ util.extend( anifn, {
     _p.started = false; // needs to be started by animation loop
     _p.stopped = false;
 
-    if( !_p.hooked ){
-      // add to target's list of current animations
-      _p.target._private.animation.current.push( this );
-
-      // add to the animation loop pool
-      if( is.elementOrCollection( _p.target ) ){
-        _p.target.cy().addToAnimationPool( _p.target );
-      }
-
-      _p.hooked = true;
-    }
+    this.hook();
 
     // the animation loop will start the animation...
 
@@ -67,6 +84,24 @@ util.extend( anifn, {
 
   playing: function(){
     return this._private.playing;
+  },
+
+  apply: function(){
+    var _p = this._private;
+
+    _p.applying = true;
+    _p.started = false; // needs to be started by animation loop
+    _p.stopped = false;
+
+    this.hook();
+
+    // the animation loop will apply the animation at this progress
+
+    return this;
+  },
+
+  applying: function(){
+    return this._private.applying;
   },
 
   pause: function(){
@@ -128,7 +163,7 @@ util.extend( anifn, {
     return this;
   },
 
-  complete: function(){
+  completed: function(){
     return this._private.progress === 1;
   },
 
@@ -171,16 +206,30 @@ util.extend( anifn, {
     return this;
   },
 
-  promise: function(){
+  promise: function( type ){
     var _p = this._private;
 
+    var arr;
+
+    switch( type ){
+      case 'frame':
+        arr = _p.frames;
+        break;
+      case 'complete':
+      case 'completed':
+      default:
+        arr = _p.completes;
+    }
+
     return new Promise(function( resolve, reject ){
-      _p.completes.push(function(){
+      arr.push(function(){
         resolve();
       });
     });
   }
 
 } );
+
+anifn.complete = anifn.completed;
 
 module.exports = Animation;

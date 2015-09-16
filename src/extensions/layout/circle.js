@@ -16,6 +16,7 @@ var defaults = {
   sort: undefined, // a sorting function to order the nodes; e.g. function(a, b){ return a.data('weight') - b.data('weight') }
   animate: false, // whether to transition the node positions
   animationDuration: 500, // duration of animation in ms if enabled
+  animationEasing: undefined, // easing of animation if enabled
   ready: undefined, // callback on layoutready
   stop: undefined // callback on layoutstop
 };

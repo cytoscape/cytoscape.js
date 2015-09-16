@@ -44,7 +44,7 @@ try {
 
 function linkifyArg( arg ){
   var link = config.fnArgLinks[ arg.name ];
-  
+
   if( link ){
     arg.linkedName = '<a href="'+ link +'">' + arg.name + '</a>';
   } else {
@@ -78,7 +78,7 @@ function md2html( file ){
       }
 
       return ret;
-      
+
     },
 
     renderer: mdRend
@@ -211,11 +211,11 @@ function compileConfig( config ){
       var layout = section.layout;
 
       section.name = layout.name;
-      layout.code = fs.readFileSync( '../src/extensions/layout.' + layout.name + '.js', 'utf8' );
+      layout.code = fs.readFileSync( '../src/extensions/layout/' + layout.name + '.js', 'utf8' );
 
       try {
         layout.options = layout.code.match(/defaults\s*\=\s*(\{(?:.|\s)+?\}\;)/)[1];
-        
+
         var lopts = layout.options;
 
         // cleanup indent
@@ -224,7 +224,7 @@ function compileConfig( config ){
 
         // add name
         lopts = lopts.replace(/\{/, '{\n  name: \'' + layout.name + '\',\n');
-        
+
         // wrap w/ code
         lopts = 'var options = ' + lopts + '\n\ncy.layout( options );';
 
@@ -257,7 +257,10 @@ function compileConfig( config ){
       for( var j = 0; j < fns.length; j++ ){
         var fn = fns[j];
 
-        fn.id = section.id + '/' + fn.name;
+        fn.altIds = [];
+
+        fn.altIds.push( section.id + '/' + fn.name );
+        fn.id = fn.name;
         fn.bookmark = makeBookmark( fn.id );
         fn.descr = fn.descr ? marked( fn.descr ) : undefined;
 
@@ -271,6 +274,13 @@ function compileConfig( config ){
           fn.html = fn.html.replace(/\<\/h1\>/g, '</h3>');
         }
 
+        if( fn.pureAliases ){
+          fn.pureAliases.forEach(function( aId ){
+            fn.altIds.push( section.id + '/' + aId );
+            fn.altIds.push( aId );
+          });
+        }
+
         var formatsHaveDiffNames = false;
         if( fn.formats ){
           var formats = fn.formats;
@@ -280,6 +290,9 @@ function compileConfig( config ){
 
             format.name = format.name || fn.name; // copy name to format if not specified
             format.descr = marked( format.descr || '' );
+
+            fn.altIds.push( section.id + '/' + format.name );
+            fn.altIds.push( format.name );
 
             if( format.args ){
               for( var m = 0; m < format.args.length; m++ ){
@@ -307,7 +320,7 @@ function compileConfig( config ){
         }
 
         compileAliases( section, fn );
-        
+
       } // for
 
       // sort functions by name within a section

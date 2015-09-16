@@ -606,33 +606,10 @@ var define = {
 
       if( !cy.styleEnabled() ){ return this; }
 
-      this.animate({
-        delay: time
-      }, {
+      return this.animate({
+        delay: time,
         duration: time,
         complete: complete
-      });
-
-      return this;
-    };
-  }, // delay
-
-  delayPromise: function( fnParams ){
-    var defaults = {};
-    fnParams = util.extend({}, defaults, fnParams);
-
-    return function delayPromiseImpl( time, complete ){
-      var cy = this._private.cy || this;
-      var self = this;
-
-      if( !cy.styleEnabled() ){ return Promise.resolve(); }
-
-      return new Promise(function( resolve ){
-        self.delay( time, function(){
-          if( is.fn(complete) ){ complete(); }
-
-          resolve();
-        } );
       });
     };
   }, // delay
@@ -647,8 +624,7 @@ var define = {
       if( !cy.styleEnabled() ){ return this; }
 
       return this.animation({
-        delay: time
-      }, {
+        delay: time,
         duration: time,
         complete: complete
       });
@@ -775,53 +751,16 @@ var define = {
       for( var i = 0; i < all.length; i++ ){
         var ele = all[i];
         var _p = ele._private;
-        var ani = ele.animation( properties );
-        var ani_p = ani._private;
+        var queue = ele.animated() && (properties.queue === undefined || properties.queue);
 
-        if( ele.animated() && (properties.queue === undefined || properties.queue) ){
-          q = _p.animation.queue;
-        } else {
-          q = _p.animation.current;
-        }
+        var ani = ele.animation( properties, (queue ? { queue: true } : undefined) );
 
-        q.push( ani );
-
-        ani_p.playing = true;
-        ani_p.hooked = true;
-      }
-
-      if( isEles ){
-        cy.addToAnimationPool( this );
+        ani.play();
       }
 
       return this; // chaining
     };
   }, // animate
-
-  animatePromise: function( fnParams ){
-    var defaults = {};
-    fnParams = util.extend({}, defaults, fnParams);
-
-    return function animatePromiseImpl( properties, params ){
-      var cy = this._private.cy || this;
-      var self = this;
-
-      if( !cy.styleEnabled() ){ return Promise.resolve(); }
-
-      return new Promise(function( resolve ){
-        var options = util.extend( {}, properties, params );
-        var specifiedComplete = options.complete;
-
-        options.complete = function(){
-          if( specifiedComplete ){ specifiedComplete(); }
-
-          resolve();
-        };
-
-        self.animate( options );
-      });
-    };
-  }, // delay
 
   stop: function( fnParams ){
     var defaults = {};

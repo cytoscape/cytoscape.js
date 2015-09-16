@@ -23,6 +23,10 @@ describe('Core export', function(){
     });
   });
 
+  afterEach(function(){
+    cy.destroy();
+  });
+
   it('has all properties defined', function(){
     var json = cy.json();
 

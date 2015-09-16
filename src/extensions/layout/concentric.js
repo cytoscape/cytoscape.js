@@ -24,6 +24,7 @@ var defaults = {
   },
   animate: false, // whether to transition the node positions
   animationDuration: 500, // duration of animation in ms if enabled
+  animationEasing: undefined, // easing of animation if enabled
   ready: undefined, // callback on layoutready
   stop: undefined // callback on layoutstop
 };

@@ -27,9 +27,9 @@ var elesfn = ({
         }
 
         var ani = node.animation({
-          position: newPos
-        }, {
+          position: newPos,
           duration: options.animationDuration,
+          easing: options.animationEasing,
           step: !lastNode ? undefined : function(){
             if( options.fit ){
               cy.fit( options.eles, options.padding );

@@ -1,3 +1,5 @@
+/* jshint ignore:start */
+
 // normalised thread api functions for nodejs
 
 // expose message() for client code to use
@@ -37,3 +39,5 @@ process.on('message', function( m ){
     eval( m.$$eval );
   }
 });
+
+/* jshint ignore:end */

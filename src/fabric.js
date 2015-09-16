@@ -1,6 +1,5 @@
 'use strict';
 
-var window = require('./window');
 var is = require('./is');
 var util = require('./util');
 var Thread = require('./thread');
@@ -31,7 +30,7 @@ var Fabric = function( N ){
   } // TODO could use an estimation here but would the additional expense be worth it?
 
   for( var i = 0; i < N; i++ ){
-    this[i] = Thread();
+    this[i] = new Thread();
   }
 
   this.length = N;
@@ -164,15 +163,15 @@ util.extend(fabfn, {
 
     return self.spread(function( split ){
       var mapped = [];
-      var origResolve = resolve;
+      var origResolve = resolve; // jshint ignore:line
 
-      resolve = function( val ){
+      resolve = function( val ){ // jshint ignore:line
         mapped.push( val );
       };
 
       for( var i = 0; i < split.length; i++ ){
         var oldLen = mapped.length;
-        var ret = _$_$_fabmap( split[i] );
+        var ret = _$_$_fabmap( split[i] ); // jshint ignore:line
         var nothingInsdByResolve = oldLen === mapped.length;
 
         if( nothingInsdByResolve ){
@@ -180,7 +179,7 @@ util.extend(fabfn, {
         }
       }
 
-      resolve = origResolve;
+      resolve = origResolve; // jshint ignore:line
 
       return mapped;
     });
@@ -227,8 +226,8 @@ util.extend(fabfn, {
     self.require( cmp, '_$_$_cmp' );
 
     return self.spread(function( split ){ // sort each split normally
-      var sortedSplit = split.sort( _$_$_cmp );
-      resolve( sortedSplit );
+      var sortedSplit = split.sort( _$_$_cmp ); // jshint ignore:line
+      resolve( sortedSplit ); // jshint ignore:line
 
     }).then(function( joined ){
       // do all the merging in the main thread to minimise data transfer

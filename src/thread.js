@@ -69,7 +69,7 @@ var fnAsRequire = function( fn ){
   var protoreq = function( val, subname ){
     if( val.prototype ){
       var protoNonempty = false;
-      for( var prop in val.prototype ){ protoNonempty = true; break; }
+      for( var prop in val.prototype ){ protoNonempty = true; break; } // jshint ignore:line
 
       if( protoNonempty ){
         req += fnAsRequire( {
@@ -174,9 +174,9 @@ util.extend(thdfn, {
     }
 
     if( _p.running ){
-      return _p.queue = _p.queue.then(function(){ // inductive step
+      return ( _p.queue = _p.queue.then(function(){ // inductive step
         return self.run( fn, pass );
-      });
+      }) );
     }
 
     var useWW = window != null && !_p.disabled;
@@ -324,25 +324,26 @@ util.extend(thdfn, {
           listeners: [],
 
           exec: function(){
-            function broadcast(m){ return message(m); } // alias
+            function broadcast(m){ return message(m); } // jshint ignore:line
 
-            function message(m){
+            function message(m){ // jshint ignore:line
               self.trigger( new Event({}, { type: 'message', message: m }) );
             }
 
-            function listen(fn){
+            function listen(fn){ // jshint ignore:line
               timer.listeners.push( fn );
             }
 
-            function resolve(v){
+            function resolve(v){ // jshint ignore:line
               promiseResolve(v);
             }
 
-            function reject(v){
+            function reject(v){ // jshint ignore:line
               promiseReject(v);
             }
 
-            eval( fnStr ); // the .run() code
+            // the .run() code
+            eval( fnStr ); // jshint ignore:line
           },
 
           message: function( m ){

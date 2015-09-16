@@ -3,7 +3,7 @@ var cytoscape = require('../build/cytoscape.js', cytoscape);
 var $$ = cytoscape;
 var isNode = typeof module !== 'undefined';
 var bluebird = require('bluebird');
-var Promise = bluebird;
+var Promise = Promise || bluebird;
 
 describe('Thread', function(){
 

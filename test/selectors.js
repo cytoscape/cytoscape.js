@@ -10,7 +10,7 @@ describe('Selectors', function(){
   before(function(next){
     cytoscape({
       styleEnabled: true,
-      
+
       elements: {
         nodes: [
           { data: { id: 'n1', foo: 'one', weight: 1 }, classes: 'cls1 cls2' },
@@ -22,7 +22,7 @@ describe('Selectors', function(){
           { data: { id: 'n1n2', source: 'n1', target: 'n2', weight: 1, foo: false }, classes: 'cls2' },
           { data: { id: 'nparentLoop', source: 'nparent', target: 'nparent' } }
         ]
-      }, 
+      },
       ready: function(){
         cy = this;
         n1 = cy.getElementById('n1');
@@ -30,7 +30,7 @@ describe('Selectors', function(){
         nparent = cy.getElementById('nparent');
         n1n2 = cy.getElementById('n1n2');
         nparentLoop = cy.getElementById('nparentLoop');
-        
+
         n1.select();
         n2.unselectify();
         nparent.lock();
@@ -48,6 +48,10 @@ describe('Selectors', function(){
         next();
       }
     });
+  });
+
+  afterEach(function(){
+    cy.destroy();
   });
 
   //function next(){

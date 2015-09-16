@@ -16,6 +16,7 @@ var defaults = {
   maximalAdjustments: 0, // how many times to try to position the nodes in a maximal way (i.e. no backtracking)
   animate: false, // whether to transition the node positions
   animationDuration: 500, // duration of animation in ms if enabled
+  animationEasing: undefined, // easing of animation if enabled
   ready: undefined, // callback on layoutready
   stop: undefined // callback on layoutstop
 };

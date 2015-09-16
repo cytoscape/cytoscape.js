@@ -20,20 +20,20 @@
 		<link rel="stylesheet" href="css/highlight/github.css">
 		<link rel="stylesheet" href="css/style.css">
 		<!-- endinject -->
-		
+
 	</head>
 
 	<body>
 
 		<div id="content">
-			
+
 			<a id="open-navigation" class="activatable"><span class="icon-reorder"></span></a>
 			<div id="open-navigation-bg"></div>
 
 			<h1 id="top" class="title">Cytoscape.js</h1>
 			<div class="subtitle">
 				Graph theory (a.k.a. network) library for analysis and visualisation
-				(compatible with 
+				(compatible with
 				<a target="_blank" href="http://wiki.commonjs.org/wiki/CommonJS">CommonJS</a>/<a target="_blank" href="http://nodejs.org/">Node.js</a>/<a target="_blank" href="http://iojs.org/">io.js</a>,
 				<a target="_blank" href="http://requirejs.org">AMD/Require.js</a>,
 				<a target="_blank" href="http://jquery.com/">jQuery</a>,
@@ -44,7 +44,7 @@
 				<a target="_blank" href="https://www.meteor.com">Meteor/Atmosphere</a>,
 				and plain JS/JavaScript)
 			</div>
-			
+
 			<div class="buttons-subtitle">
 				<a class="button green" target="_blank" href="https://github.com/cytoscape/cytoscape.js"><span class="icon-github-alt"></span> GitHub</a>
 
@@ -67,11 +67,11 @@
 				<a target="_blank" href="https://twitter.com/intent/tweet?status=Cytoscape.js,%20a%20graph%20%28a.k.a.%20network%29%20library%20for%20analysis%20and%20visualisation%20js.cytoscape.org"><span class="icon-twitter"></span> Share it on Twitter</a> |
 				<a target="_blank" href="https://plus.google.com/share?url=js.cytoscape.org"><span class="icon-google-plus"></span> Share it on Google+</a>
 			</div>
-			
+
 			<div class="links likes">
-				Use Cytoscape.js? | <a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues/914"> <span class="icon-comments"></span> Let us know to be featured here</a> 
+				Use Cytoscape.js? | <a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues/914"> <span class="icon-comments"></span> Let us know to be featured here</a>
 			</div>
-			
+
 			<div class="links likes">
 				<span class="like-label">Want to participate in our student programme to help make improvements and add new features?</span>&nbsp;|&nbsp;<form action="http://nrnb.org/academy.html" method="get" target="_blank">
 					<button type="submit" class="link"><i class="icon-plus"></i> Join as a student</button>
@@ -80,7 +80,7 @@
 					<input name="hosted_button_id" value="UYUEWUL7FNZ3S" type="hidden" />
 					<button type="submit" class="link"><i class="icon-smile"></i> Donate to help fund a student</button>
 				</form>
-				
+
 				<div class="footnote">Donations are tax deductible to a 501(c)(3) nonprofit organization, The Cytoscape Consoritum, Tax ID: 20-4909879.</div>
 			</div>
 
@@ -102,7 +102,7 @@
 
 				{{#if demo}}
 
-					<div class="gallery-full-demo">			
+					<div class="gallery-full-demo">
 						<div class="gallery-full-padder"></div>
 
 						<a class="gallery-full-link" target="_blank" href="{{demo.viewUrl}}">
@@ -110,7 +110,7 @@
 						</a>
 
 						<button class="run"><span class="icon-play"></span></button>
-						
+
 					</div>
 
 					{{#if demo.name}}
@@ -126,7 +126,7 @@
 					<div class="gallery-demos">
 					{{#each demos}}
 						<div class="gallery-demo">
-						
+
 							<a class="gallery-link" target="_blank" href="{{viewUrl}}">
 								<span class="gallery-preview" style="background-image: url('{{imgUrl}}');"></span>
 							</a>
@@ -143,7 +143,7 @@
 									<a target="_blank" href="{{githubUrl}}"><span class="icon-github-alt"></span></a>
 								</span>
 							</div>
-							
+
 						</div>
 					{{/each}}
 					</div>
@@ -167,11 +167,11 @@
 										<div class="gallery-title">
 											<span class="gallery-name">{{name}}</span>
 										</div>
-										
+
 										<a class="gallery-link" target="_blank" href="{{srcUrl}}">
 											<span class="gallery-preview" style="background-image: url('{{imgUrl}}');"></span>
 										</a>
-										
+
 									</div>
 								{{/each}}
 							</div>
@@ -184,8 +184,11 @@
 
 					{{#each fns}}
 						<div class="function">
-							<div class="name" id="{{id}}"><span class="fn-name">{{name}}()</span> {{#if aliases}}et al{{/if}} {{{bookmark}}}</div>
-							
+							<div class="name" id="{{id}}">
+								<span class="fn-name">{{name}}()</span> {{#if aliases}}et al{{/if}} {{{bookmark}}}
+								{{#each altIds}}<span id="{{.}}">&nbsp;</span>{{/each}}
+							</div>
+
 							{{#if processedPureAliases}}
 							<div class="pure-aliases">
 								<span class="important-indicator"></span> Aliases:
@@ -197,7 +200,7 @@
 								{{/each}}
 							</div>
 							{{/if}}
-							
+
 							<div class="descr">{{{descr}}}</div>
 
 							{{#if formats}}
@@ -221,13 +224,13 @@
 											{{/each}}
 										</div>
 										{{/if}}
-										
+
 										<div class="descr">{{{descr}}}</div>
 										<ul class="args">
 											{{#each args}}
 												<li>
 													<span class="name">{{{linkedName}}}</span>
-													{{#if optional}}<span class="optional">[optional]</span>{{/if}} 
+													{{#if optional}}<span class="optional">[optional]</span>{{/if}}
 													<span class="descr">{{{descr}}}</span>
 
 													{{#if fields}}
@@ -235,7 +238,7 @@
 														{{#each fields}}
 															<li>
 																<span class="name">{{{linkedName}}}</span>
-																{{#if optional}}<span class="optional">[optional]</span>{{/if}} 
+																{{#if optional}}<span class="optional">[optional]</span>{{/if}}
 																<span class="descr">{{{descr}}}</span>
 															</li>
 
@@ -244,7 +247,7 @@
 																{{#each fields}}
 																<li>
 																	<span class="name">{{{linkedName}}}</span>
-																	{{#if optional}}<span class="optional">[optional]</span>{{/if}} 
+																	{{#if optional}}<span class="optional">[optional]</span>{{/if}}
 																	<span class="descr">{{{descr}}}</span>
 																</li>
 																{{/each}}
@@ -265,7 +268,7 @@
 								{{#if html}}
 									{{{html}}}
 								{{/if}}
-							</div>		
+							</div>
 						</div>
 					{{/each}}
 

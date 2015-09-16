@@ -4,8 +4,14 @@
   "disallowNewlineBeforeBlockStatements": true,
   "disallowSpaceAfterObjectKeys": true,
   "disallowSpaceAfterPrefixUnaryOperators": true,
-  "disallowSpacesInFunction": true,
-  "disallowSpacesInFunctionDeclaration": true,
+  "disallowSpacesInFunction": {
+    "beforeOpeningRoundBrace": true,
+    "beforeOpeningCurlyBrace": true
+  },
+  "disallowSpacesInFunctionDeclaration": {
+    "beforeOpeningRoundBrace": true,
+    "beforeOpeningCurlyBrace": true
+  },
   "disallowSpacesInsideParentheses": false,
   "disallowTrailingWhitespace": true,
   "requireCamelCaseOrUpperCaseIdentifiers": true,

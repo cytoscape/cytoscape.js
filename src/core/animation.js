@@ -8,13 +8,12 @@ var window = require('../window');
 var corefn = ({
 
   // pull in animation functions
+  animate: define.animate(),
   animation: define.animation(),
   animated: define.animated(),
   clearQueue: define.clearQueue(),
   delay: define.delay(),
-  delayPromise: define.delayPromise(),
-  animate: define.animate(),
-  animatePromise: define.animatePromise(),
+  delayAnimation: define.delayAnimation(),
   stop: define.stop(),
 
   addToAnimationPool: function( eles ){
@@ -36,10 +35,8 @@ var corefn = ({
 
     if( !cy.styleEnabled() ){ return; } // save cycles when no style used
 
-    // don't execute the animation loop in headless environments
-    if( !window ){
-      return;
-    }
+    // NB the animation loop will exec in headless environments if style enabled
+    // and explicit cy.destroy() is necessary to stop the loop
 
     function globalAnimationStep(){
       if( !cy._private.animationsRunning ){ return; }
@@ -71,6 +68,16 @@ var corefn = ({
           }
         }
 
+        var callbacks = function( callbacks ){
+          for( var j = callbacks.length - 1; j >= 0; j-- ){
+            var cb = callbacks[j];
+
+            cb();
+          }
+
+          callbacks.splice( 0, callbacks.length );
+        };
+
         // step and remove if done
         var completeAnis = [];
         for( var i = current.length - 1; i >= 0; i-- ){
@@ -84,10 +91,12 @@ var corefn = ({
             ani_p.playing = false;
             ani_p.started = false;
 
+            callbacks( ani_p.frames );
+
             continue;
           }
 
-          if( !ani_p.playing ){ continue; }
+          if( !ani_p.playing && !ani_p.applying ){ continue; }
 
           if( !ani_p.started ){
             startAnimation( ele, ani, now );
@@ -95,29 +104,23 @@ var corefn = ({
 
           step( ele, ani, now, isCore );
 
-          if( ani.complete() ){
-            completeAnis.push( ani );
+          if( ani_p.applying ){
+            ani_p.applying = false;
+          }
+
+          callbacks( ani_p.frames );
+
+          if( ani.completed() ){
             current.splice(i, 1);
 
             ani_p.hooked = false;
             ani_p.playing = false;
             ani_p.started = false;
+
+            callbacks( ani_p.completes );
           }
 
           ranAnis = true;
-        }
-
-        // call complete callbacks
-        for( var i = 0; i < completeAnis.length; i++ ){
-          var ani = completeAnis[i];
-          var completes = ani._private.completes;
-
-          for( var j = completes.length - 1; j >= 0; j-- ){
-            var complete = completes[j];
-
-            completes.splice( j, 1 );
-            complete.apply( ele, [ now ] );
-          }
         }
 
         if( !isCore && current.length === 0 && queue.length === 0 ){
@@ -125,7 +128,7 @@ var corefn = ({
         }
 
         return ranAnis;
-      } // handleElements
+      } // handleElement
 
       // handle all eles
       var ranEleAni = false;
@@ -246,6 +249,10 @@ var corefn = ({
         percent = 1;
       } else {
         percent = (now - startTime) / ani_p.duration;
+      }
+
+      if( ani_p.applying ){
+        percent = ani_p.progress;
       }
 
       if( percent < 0 ){

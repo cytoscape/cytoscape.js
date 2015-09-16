@@ -1,1 +1,0 @@
-Note that these demos use the performance enhancing motion blur effect by default.  You can turn that off [at initialisation](#core/initialisation) if you so choose (i.e. `initOptions.motionBlur: false`).

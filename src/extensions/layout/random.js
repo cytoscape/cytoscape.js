@@ -10,6 +10,7 @@ var defaults = {
   boundingBox: undefined, // constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
   animate: false, // whether to transition the node positions
   animationDuration: 500, // duration of animation in ms if enabled
+  animationEasing: undefined, // easing of animation if enabled
   ready: undefined, // callback on layoutready
   stop: undefined // callback on layoutstop
 };

@@ -3,14 +3,13 @@
 var define = require('../define');
 
 var elesfn = ({
+  animate: define.animate(),
   animation: define.animation(),
   animated: define.animated(),
   clearQueue: define.clearQueue(),
   delay: define.delay(),
-  delayPromise: define.delayPromise(),
-  animate: define.animate(),
-  animatePromise: define.animatePromise(),
-  stop: define.stop()
+  delayAnimation: define.delayAnimation(),
+  stop: define.stop(),
 });
 
 module.exports = elesfn;

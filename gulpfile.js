@@ -189,7 +189,10 @@ gulp.task('clean', function(){
 
 gulp.task('format', function(){
   return gulp.src('src/**/*.js')
-    .pipe( jscs({ fix: true }) )
+    .pipe( jscs({
+      fix: true,
+      configPath: '.jscsrc'
+    }) )
     .pipe( gulp.dest('formatted') ) // TODO move to src after confirming .jscsrc
   ;
 });

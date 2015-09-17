@@ -19,9 +19,7 @@ var cytoscape = function(){ // jshint ignore:line
 // replaced by build system
 cytoscape.version = '{{VERSION}}';
 
-// allow functional access to cytoscape.js
-// e.g. var cyto = $.cytoscape({ selector: "#foo", ... });
-//      var nodes = cyto.nodes();
+// get core instance
 cytoscape.init = function( options ){
 
   // if no options specified, use default
@@ -35,10 +33,6 @@ cytoscape.init = function( options ){
   }
 
   // allow for registration of extensions
-  // e.g. $.cytoscape('renderer', 'svg', SvgRenderer);
-  // e.g. $.cytoscape('renderer', 'svg', 'nodeshape', 'ellipse', SvgEllipseNodeShape);
-  // e.g. $.cytoscape('core', 'doSomething', function(){ /* doSomething code */ });
-  // e.g. $.cytoscape('collection', 'doSomething', function(){ /* doSomething code */ });
   else if( is.string( options ) ) {
     return extension.apply(extension, arguments);
   }

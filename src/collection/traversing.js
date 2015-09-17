@@ -178,7 +178,6 @@ util.extend(elesfn, {
 util.extend(elesfn, {
   neighborhood: function(selector){
     var elements = [];
-    var cy = this._private.cy;
     var nodes = this.nodes();
 
     for( var i = 0; i < nodes.length; i++ ){ // for all nodes
@@ -257,7 +256,6 @@ util.extend(elesfn, {
 function defineSourceFunction( params ){
   return function( selector ){
     var sources = [];
-    var cy = this._private.cy;
 
     for( var i = 0; i < this.length; i++ ){
       var ele = this[i];
@@ -300,7 +298,6 @@ function defineEdgesWithFunction( params ){
 
       for( var i = 0; i < edges.length; i++ ){
         var edge = edges[i];
-        var foundId;
         var edgeData = edge._private.data;
         var thisToOther = thisIds[ edgeData.source ] && otherIds[ edgeData.target ];
         var otherToThis = otherIds[ edgeData.source ] && thisIds[ edgeData.target ];
@@ -325,7 +322,6 @@ function defineEdgesWithFunction( params ){
 util.extend(elesfn, {
   connectedEdges: function( selector ){
     var retEles = [];
-    var cy = this._private.cy;
 
     var eles = this;
     for( var i = 0; i < eles.length; i++ ){
@@ -345,7 +341,6 @@ util.extend(elesfn, {
 
   connectedNodes: function( selector ){
     var retEles = [];
-    var cy = this._private.cy;
 
     var eles = this;
     for( var i = 0; i < eles.length; i++ ){
@@ -373,7 +368,6 @@ function defineParallelEdgesFunction(params){
   params = util.extend({}, defaults, params);
 
   return function( selector ){
-    var cy = this._private.cy;
     var elements = [];
     var edges = this.edges();
     var p = params;

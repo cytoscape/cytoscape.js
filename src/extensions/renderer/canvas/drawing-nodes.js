@@ -35,7 +35,7 @@ CRp.drawNode = function(context, node, drawOverlayInstead) {
   if( parentOpacity === 0 ){ return; }
 
   nodeWidth = node.width() + style['padding-left'].pxValue + style['padding-right'].pxValue;
-  nodeHeight = node.height() + style['padding-top'].pxValue + + style['padding-bottom'].pxValue;
+  nodeHeight = node.height() + style['padding-top'].pxValue + style['padding-bottom'].pxValue;
 
   context.lineWidth = style['border-width'].pxValue;
 
@@ -49,8 +49,8 @@ CRp.drawNode = function(context, node, drawOverlayInstead) {
 
       // get image, and if not loaded then ask to redraw when later loaded
       image = this.getCachedImage(url, function(){
-        r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
-        r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
+        r.data.canvasNeedsRedraw[r.NODE] = true;
+        r.data.canvasNeedsRedraw[r.DRAG] = true;
 
         r.drawingImage = true;
 
@@ -260,7 +260,7 @@ CRp.drawPie = function( context, node, nodeOpacity ){
   node = node[0]; // ensure ele ref
 
   var _p = node._private;
-  var style = node.cy().style();
+  var cyStyle = node.cy().style();
   var style = _p.style;
   var pieSize = style['pie-size'];
   var nodeW = node.width();

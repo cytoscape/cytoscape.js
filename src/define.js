@@ -646,7 +646,6 @@ var define = {
       if( !cy.styleEnabled() ){ return this; }
 
       var style = cy.style();
-      var q;
 
       properties = util.extend( {}, properties, params );
 
@@ -664,7 +663,7 @@ var define = {
       }
 
       var propertiesEmpty = true;
-      if( properties ){ for( var i in properties ){
+      if( properties ){ for( var i in properties ){ // jshint ignore:line
         propertiesEmpty = false;
         break;
       } }
@@ -735,8 +734,6 @@ var define = {
       var selfIsArrayLike = self.length !== undefined;
       var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
       var cy = this._private.cy || this;
-      var isCore = !selfIsArrayLike;
-      var isEles = !isCore;
 
       if( !cy.styleEnabled() ){ return this; }
 
@@ -744,13 +741,9 @@ var define = {
         properties = util.extend( {}, properties, params );
       }
 
-      var style = cy.style();
-      var q;
-
       // manually hook and run the animation
       for( var i = 0; i < all.length; i++ ){
         var ele = all[i];
-        var _p = ele._private;
         var queue = ele.animated() && (properties.queue === undefined || properties.queue);
 
         var ani = ele.animation( properties, (queue ? { queue: true } : undefined) );

@@ -7,28 +7,10 @@ var util = require('../util');
 var elesfn = ({
 
   // Implemented from pseudocode from wikipedia
-
-  // options => options object
-  //   root // starting node (either element or selector string)
-  //   weight: function( edge ){} // specifies weight to use for `edge`/`this`. If not present, it will be asumed a weight of 1 for all edges
-  //   heuristic: function( node ){} // specifies heuristic value for `node`/`this`
-  //   directed // default false
-  //   goal // target node (either element or selector string). Mandatory.
-
-  // retObj => returned object by function
-  //   found : true/false // whether a path from root to goal has been found
-  //   distance // Distance for the shortest path from root to goal
-  //   path // Array of ids of nodes in shortest path
   aStar: function(options) {
     var eles = this;
 
     options = options || {};
-
-    // var logDebug = function() {
-    //   if (debug) {
-    //     console.log.apply(console, arguments);
-    //   }
-    // };
 
     // Reconstructs the path from Start to End, acumulating the result in pathAcum
     var reconstructPath = function(start, end, cameFromMap, pathAcum) {
@@ -75,15 +57,6 @@ var elesfn = ({
       return minPos;
     };
 
-    // Parse options
-    // debug - optional
-    // if (options.debug != null) {
-    //   var debug = options.debug;
-    // } else {
-    //   var debug = false;
-    // }
-
-    // logDebug("Starting aStar...");
     var cy = this._private.cy;
 
     // root - mandatory!
@@ -92,7 +65,6 @@ var elesfn = ({
         // use it as a selector, e.g. "#rootID
         this.filter(options.root)[0] :
         options.root[0];
-      // logDebug("Source node: %s", source.id());
     } else {
       return undefined;
     }
@@ -103,7 +75,6 @@ var elesfn = ({
         // use it as a selector, e.g. "#goalID
         this.filter(options.goal)[0] :
         options.goal[0];
-      // logDebug("Target node: %s", target.id());
     } else {
       return undefined;
     }
@@ -152,15 +123,10 @@ var elesfn = ({
       var cMin = cy.getElementById( openSet[minPos] );
       steps++;
 
-      // logDebug("\nStep: %s", steps);
-      // logDebug("Processing node: %s, fScore = %s", cMin.id(), fScore[cMin.id()]);
-
       // If we've found our goal, then we are done
       if (cMin.id() == target.id()) {
-        // logDebug("Found goal node!");
         var rPath = reconstructPath(source.id(), target.id(), cameFrom, []);
         rPath.reverse();
-        // logDebug("Path: %s", rPath);
         return {
           found : true,
           distance : gScore[cMin.id()],
@@ -173,8 +139,6 @@ var elesfn = ({
       closedSet.push(cMin.id());
       // Remove cMin from boundary nodes
       openSet.splice(minPos, 1);
-      // logDebug("Added node to closedSet, removed from openSet.");
-      // logDebug("Processing neighbors...");
 
       // Update scores for neighbors of cMin
       // Take into account if graph is directed or not
@@ -186,16 +150,13 @@ var elesfn = ({
         var e = vwEdges[i];
         var w = e.connectedNodes().stdFilter(function(n){ return n.id() !== cMin.id(); }).intersect(nodes);
 
-        // logDebug("   processing neighbor: %s", w.id());
         // if node is in closedSet, ignore it
         if (closedSet.indexOf(w.id()) != -1) {
-          // logDebug("   already in closedSet, ignoring it.");
           continue;
         }
 
         // New tentative score for node w
         var tempScore = gScore[cMin.id()] + weightFn.apply(e, [e]);
-        // logDebug("   tentative gScore: %d", tempScore);
 
         // Update gScore for node w if:
         //   w not present in openSet
@@ -209,8 +170,6 @@ var elesfn = ({
           openSet.push(w.id()); // Add node to openSet
           cameFrom[w.id()] = cMin.id();
           cameFromEdge[w.id()] = e.id();
-          // logDebug("   not in openSet, adding it. ");
-          // logDebug("   fScore(%s) = %s", w.id(), tempScore);
           continue;
         }
         // w already in openSet, but with greater gScore
@@ -218,8 +177,6 @@ var elesfn = ({
           gScore[w.id()] = tempScore;
           fScore[w.id()] = tempScore + heuristic(w);
           cameFrom[w.id()] = cMin.id();
-          // logDebug("   better score, replacing gScore. ");
-          // logDebug("   fScore(%s) = %s", w.id(), tempScore);
         }
 
       } // End of neighbors update
@@ -227,7 +184,6 @@ var elesfn = ({
     } // End of main loop
 
     // If we've reached here, then we've not reached our goal
-    // logDebug("Reached end of computation without finding our goal");
     return {
       found : false,
       distance : undefined,
@@ -238,31 +194,8 @@ var elesfn = ({
 
 
   // Implemented from pseudocode from wikipedia
-  // options => options object
-  //   weight: function( edge ){} // specifies weight to use for `edge`/`this`. If not present, it will be asumed a weight of 1 for all edges
-  //   directed // default false
-  // retObj => returned object by function
-  //   pathTo : function(fromId, toId) // Returns the shortest path from node with ID "fromID" to node with ID "toId", as an array of node IDs
-  //   distanceTo: function(fromId, toId) // Returns the distance of the shortest path from node with ID "fromID" to node with ID "toId"
   floydWarshall: function(options) {
-    var eles = this;
-
     options = options || {};
-
-    // var logDebug = function() {
-    //   if (debug) {
-    //     console.log.apply(console, arguments);
-    //   }
-    // };
-
-    // Parse options
-    // debug - optional
-    // if (options.debug != null) {
-    //   var debug = options.debug;
-    // } else {
-    //   var debug = false;
-    // }
-    // logDebug("Starting floydWarshall...");
 
     var cy = this.cy();
 
@@ -447,33 +380,10 @@ var elesfn = ({
 
 
   // Implemented from pseudocode from wikipedia
-  // options => options object
-  //   root: starting node (either element or selector string)
-  //   weight: function( edge ){} // specifies weight to use for `edge`/`this`. If not present, it will be asumed a weight of 1 for all edges
-  //   directed // default false
-  // retObj => returned object by function
-  //   pathTo : function(toId) // Returns the shortest path from root node to node with ID "toId", as an array of node IDs
-  //   distanceTo: function(toId) // Returns the distance of the shortest path from root node to node with ID "toId"
-  //   hasNegativeWeightCycle: true/false (if true, pathTo and distanceTo will be undefined)
   bellmanFord: function(options) {
     var eles = this;
 
     options = options || {};
-
-    // var logDebug = function() {
-    //   if (debug) {
-    //     console.log.apply(console, arguments);
-    //   }
-    // };
-
-    // Parse options
-    // debug - optional
-    // if (options.debug != null) {
-    //   var debug = options.debug;
-    // } else {
-    //   var debug = false;
-    // }
-    // logDebug("Starting bellmanFord...");
 
     // Weight function - optional
     if (options.weight != null && is.fn(options.weight)) {
@@ -498,7 +408,6 @@ var elesfn = ({
       } else {
         var source = options.root[0];
       }
-      // logDebug("Source node: %s", source.id());
     } else {
       util.error("options.root required");
       return undefined;
@@ -658,22 +567,10 @@ var elesfn = ({
 
   // Computes the minimum cut of an undirected graph
   // Returns the correct answer with high probability
-  // options => options object
-  //
-  // retObj => returned object by function
-  //   cut : list of IDs of edges in the cut,
-  //   partition1: list of IDs of nodes in one partition
-  //   partition2: list of IDs of nodes in the other partition
   kargerStein: function(options) {
     var eles = this;
 
     options = options || {};
-
-    // var logDebug = function() {
-    //   if (debug) {
-    //     console.log.apply(console, arguments);
-    //   }
-    // };
 
     // Function which colapses 2 (meta) nodes into one
     // Updates the remaining edge lists
@@ -740,16 +637,6 @@ var elesfn = ({
                  size - 1,
                  sizeLimit);
     };
-
-
-    // Parse options
-    // debug - optional
-    // if (options != null && options.debug != null) {
-    //   var debug = options.debug;
-    // } else {
-    //   var debug = false;
-    // }
-    // logDebug("Starting kargerStein...");
 
     var cy = this._private.cy;
     var edges = this.edges().stdFilter(function(e){ return !e.isLoop(); });
@@ -841,14 +728,6 @@ var elesfn = ({
     return ret;
   },
 
-
-  //
-  // options => options object
-  //   dampingFactor: optional
-  //   precision: optional
-  //   iterations : optional
-  // retObj => returned object by function
-  //  rank : function that returns the pageRank of a given node (object or selector string)
   pageRank: function(options) {
     options = options || {};
 
@@ -866,22 +745,6 @@ var elesfn = ({
         vector[i] = vector[i] / total;
       }
     };
-
-    // var logDebug = function() {
-    //   if (debug) {
-    //     console.log.apply(console, arguments);
-    //   }
-    // };
-
-    // Parse options
-    // debug - optional
-    // if (options != null &&
-    //   options.debug != null) {
-    //   var debug = options.debug;
-    // } else {
-    //   var debug = false;
-    // }
-    // logDebug("Starting pageRank...");
 
     // dampingFactor - optional
     if (options != null &&
@@ -1015,12 +878,9 @@ var elesfn = ({
 
       // If difference is less than the desired threshold, stop iterating
       if (diff < epsilon) {
-        // logDebug("Stoped at iteration %s", iter);
         break;
       }
     }
-
-    // logDebug("Result:\n" + eigenvector);
 
     // Construct result
     var res = {
@@ -1040,32 +900,10 @@ var elesfn = ({
     return res;
   }, // pageRank
 
-
-  // options => options object
-  //   weight: function( edge ){} // specifies weight to use for `edge`/`this`. If not present, it will be asumed a weight of 1 for all edges
-  //   directed // default false
-  // retObj => returned object by function
-  // if directed
-  //   indegree : function(node) // Returns the normalized indegree of the given node
-  //   outdegree: function(node) // Returns the normalized outdegree of the given node
-  // if undirected
-  //   degree : function(node) // Returns the normalized degree of the given node
   degreeCentralityNormalized: function (options) {
     options = options || {};
 
-    // var logDebug = function () {
-    //   if (debug) {
-    //     console.log.apply(console, arguments);
-    //   }
-    // };
-
-    // Parse options
-    // debug - optional
-    // if (options.debug != null) {
-    //   var debug = options.debug;
-    // } else {
-    //   var debug = false;
-    // }
+    var cy = this.cy();
 
     // directed - optional
     if (options.directed != null) {
@@ -1074,7 +912,6 @@ var elesfn = ({
       var directed = false;
     }
 
-    // logDebug("Starting degree centrality...");
     var nodes = this.nodes();
     var numNodes = nodes.length;
 
@@ -1155,44 +992,17 @@ var elesfn = ({
 
   }, // degreeCentralityNormalized
 
-  // Implemented from the algorithm in Opsahl's paper "Node centrality in weighted networks: Generalizing degree and shortest paths" check the heading 2 "Degree"
-  // options => options object
-  //   node : focal node
-  //   weight: function( edge ){} // specifies weight to use for `edge`/`this`. If not present, it will be asumed a weight of 1 for all edges
-  //   alpha : alpha value for the algorithm (Benchmark values of alpha: 0 -> disregards the weights focuses on number of edges
-  //                                                                     1 -> disregards the number of edges focuses on total amount of weight
-  //   directed // default false
-  // retObj => returned object by function
-  // if directed
-  //   indegree : indegree of the given node
-  //   outdegree: outdegree of the given node
-  // if undirected
-  //   degree : degree of the given node
+  // Implemented from the algorithm in Opsahl's paper
+  // "Node centrality in weighted networks: Generalizing degree and shortest paths"
+  // check the heading 2 "Degree"
   degreeCentrality: function (options) {
     options = options || {};
 
     var callingEles = this;
 
-    // var logDebug = function () {
-    //   if (debug) {
-    //     console.log.apply(console, arguments);
-    //   }
-    // };
-
-    // Parse options
-    // debug - optional
-    // if (options.debug != null) {
-    //   var debug = options.debug;
-    // } else {
-    //   var debug = false;
-    // }
-
-    // logDebug("Starting degree centrality...");
-
     // root - mandatory!
     if (options != null && options.root != null) {
       var root = is.string(options.root) ? this.filter(options.root)[0] : options.root[0];
-      // logDebug("Source node: %s", root.id());
     } else {
       return undefined;
     }
@@ -1263,30 +1073,10 @@ var elesfn = ({
     }
   }, // degreeCentrality
 
-  // options => options object
-  //   weight: function( edge ){} // specifies weight to use for `edge`/`this`. If not present, it will be asumed a weight of 1 for all edges
-  //   directed // default false
-  //   harmonic // use harmonic mean instead of arithmetic mean
-  // retObj => returned object by function
-  //   closeness : function(node) // Returns the normalized closeness of the given node
   closenessCentralityNormalized: function (options) {
     options = options || {};
 
-    // var logDebug = function () {
-    //   if (debug) {
-    //     console.log.apply(console, arguments);
-    //   }
-    // };
-
-    // Parse options
-    // debug - optional
-    // if (options.debug != null) {
-    //   var debug = options.debug;
-    // } else {
-    //   var debug = false;
-    // }
-
-    // logDebug("Starting closeness centrality...");
+    var cy = this.cy();
 
     var harmonic = options.harmonic;
     if( harmonic === undefined ){
@@ -1339,29 +1129,9 @@ var elesfn = ({
     };
   },
   // Implemented from pseudocode from wikipedia
-  // options => options object
-  //   root : focal node
-  //   weight: function( edge ){} // specifies weight to use for `edge`/`this`. If not present, it will be asumed a weight of 1 for all edges
-  //   directed // default false
-  // closeness => returned value by the function. Closeness value of the given node.
+
   closenessCentrality: function (options) {
     options = options || {};
-
-    // var logDebug = function () {
-    //   if (debug) {
-    //     console.log.apply(console, arguments);
-    //   }
-    // };
-
-    // Parse options
-    // debug - optional
-    // if (options.debug != null) {
-    //   var debug = options.debug;
-    // } else {
-    //   var debug = false;
-    // }
-
-    // logDebug("Starting closeness centrality...");
 
     // root - mandatory!
     if (options.root != null) {
@@ -1371,7 +1141,6 @@ var elesfn = ({
       } else {
         var root = options.root[0];
       }
-      // logDebug("Source node: %s", root.id());
     } else {
       util.error("options.root required");
       return undefined;
@@ -1421,30 +1190,8 @@ var elesfn = ({
   }, // closenessCentrality
 
   // Implemented from the algorithm in the paper "On Variants of Shortest-Path Betweenness Centrality and their Generic Computation" by Ulrik Brandes
-  // options => options object
-  //   weight: function( edge ){} // specifies weight to use for `edge`/`this`. If not present, it will be asumed a weight of 1 for all edges
-  //   directed // default false
-  // retObj => returned object by function
-  //   betweenness : function(node) // Returns the betweenness centrality of the given node
-  //   betweennessNormalized : function(node) // Returns the normalized betweenness centrality of the given node
   betweennessCentrality: function (options) {
     options = options || {};
-
-    // var logDebug = function () {
-    //   if (debug) {
-    //     console.log.apply(console, arguments);
-    //   }
-    // };
-
-    // Parse options
-    // debug - optional
-    // if (options.debug != null) {
-    //   var debug = options.debug;
-    // } else {
-    //   var debug = false;
-    // }
-
-    // logDebug("Starting betweenness centrality...");
 
     // Weight - optional
     if (options.weight != null && is.fn(options.weight)) {

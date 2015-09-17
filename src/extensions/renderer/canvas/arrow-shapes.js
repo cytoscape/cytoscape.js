@@ -5,8 +5,6 @@ var CRp = {};
 var impl;
 
 CRp.arrowShapeImpl = function( name ){
-  var self = this;
-
   return ( impl || (impl = {
     'polygon': function( context, points ){
       for( var i = 0; i < points.length; i++ ){

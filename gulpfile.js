@@ -39,7 +39,8 @@ var watchify = require('watchify');
 var derequire = require('gulp-derequire');
 var gutil = require('gulp-util');
 var notifier = require('node-notifier');
-var jscs = require('gulp-jscs');
+// var jscs = require('gulp-jscs');
+var jscs = require('jscs');
 
 var benchmarkVersion = '2.3.15'; // old version to test against for benchmarks
 var benchmarkVersionUrl = 'https://raw.githubusercontent.com/cytoscape/cytoscape.js/v' + benchmarkVersion + '/dist/cytoscape.js';
@@ -187,15 +188,19 @@ gulp.task('clean', function(){
   ;
 });
 
-gulp.task('format', function(){
-  return gulp.src('src/**/*.js')
-    .pipe( jscs({
-      fix: true,
-      configPath: '.jscsrc'
-    }) )
-    .pipe( gulp.dest('formatted') ) // TODO move to src after confirming .jscsrc
-  ;
-});
+// gulp.task('format', function(){
+//   return gulp.src('src/**/*.js')
+//     .pipe( jscs({
+//       fix: true,
+//       configPath: '.jscsrc'
+//     }) )
+//     .pipe( gulp.dest('formatted') ) // TODO move to src after confirming .jscsrc
+//   ;
+// });
+
+gulp.task('format', shell.task([
+  './node_modules/jscs/bin/jscs src/** --fix'
+]));
 
 gulp.task('concat', ['version', 'nodeworker'], function(){
   return browserify( browserifyOpts )
@@ -689,15 +694,34 @@ gulp.task('watch', function(next){
 gulp.task('lint', function(){
   return gulp.src( 'src/**' )
     .pipe( jshint({
+      newcap: false,
       funcscope: true,
       laxbreak: true,
       loopfunc: true,
       strict: true,
+      globalstrict: true,
       unused: 'vars',
       eqnull: true,
       sub: true,
       shadow: true,
-      laxcomma: true
+      laxcomma: true,
+      globals: {
+        'Path2D': true,
+        'require': true,
+        'module': true,
+        'document': true,
+        'window': true,
+        'setTimeout': true,
+        'clearTimeout': true,
+        'MutationObserver': true,
+        '__dirname': true,
+        'Image': true,
+        'Blob': true,
+        'Worker': true,
+        'DocumentTouch': true,
+        'HTMLElement': true,
+        'navigator': true
+      }
     }) )
 
     .pipe( jshint.reporter(jshStylish) )

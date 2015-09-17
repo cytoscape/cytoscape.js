@@ -1777,18 +1777,18 @@ BRp.load = function() {
         screenY: e.screenY,
         target: e.target
       };
-    }
+    };
 
     var makePointer = function( e ){
       return {
         event: e,
         touch: makeTouch(e)
       };
-    }
+    };
 
     var addPointer = function( e ){
       pointers.push( makePointer(e) );
-    }
+    };
 
     var removePointer = function( e ){
       for( var i = 0; i < pointers.length; i++ ){
@@ -1799,7 +1799,7 @@ BRp.load = function() {
           return;
         }
       }
-    }
+    };
 
     var updatePointer = function( e ){
       var p = pointers.filter(function( p ){
@@ -1808,13 +1808,13 @@ BRp.load = function() {
 
       p.event = e;
       p.touch = makeTouch(e);
-    }
+    };
 
     var addTouchesToEvent = function( e ){
       e.touches = pointers.map(function( p ){
         return p.touch;
       });
-    }
+    };
 
     r.registerBinding(r.container, 'pointerdown', function(e){
       if( e.pointerType === 'mouse' ){ return; } // mouse already handled

@@ -4,7 +4,6 @@ var util = require('../util');
 var is = require('../is');
 
 var Element = require('./element');
-var zIndexSort = require('./zsort');
 
 // factory for generating edge ids when no id is specified for a new element
 var idFactory = {

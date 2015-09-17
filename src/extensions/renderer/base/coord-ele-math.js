@@ -2,8 +2,6 @@
 
 var math = require('../../../math');
 var is = require('../../../is');
-var util = require('../../../util');
-var Collection = require('../../../collection');
 var zIndexSort = require('../../../collection/zsort');
 
 var BRp = {};
@@ -69,7 +67,6 @@ BRp.findNearestElement = function(x, y, visibleElementsOnly, isTouch){
       }
 
       var shape = r.nodeShapes[ self.getNodeShape(node) ];
-      var borderWO = _p.style['border-width'].pxValue / 2;
 
       if(
         shape.checkPoint(x, y, 0, width, height, pos.x, pos.y)
@@ -440,7 +437,7 @@ BRp.getAllInBox = function(x1, y1, x2, y2) {
  * @return {String}     shape of the node
  */
 BRp.getNodeShape = function( node ){
-
+  var r = this;
   var style = node._private.style;
   var shape = style['shape'].value;
 
@@ -562,7 +559,7 @@ function pushBezierPts(edge, pts){
 BRp.projectBezier = function( edge ){
   var _p = edge._private;
   var rs = _p.rscratch;
-  var bpts = _p.rstyle.bezierPts = [];
+  var bpts = _p.rstyle.bezierPts = []; // jshint ignore:line
 
   if( rs.edgeType === 'self' ){
     pushBezierPts( edge, [rs.startX, rs.startY, rs.cp2ax, rs.cp2ay, rs.selfEdgeMidX, rs.selfEdgeMidY] );

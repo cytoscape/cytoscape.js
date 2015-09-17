@@ -2,7 +2,6 @@
 
 var window = require('./window');
 var is = require('./is');
-var util = require('./util');
 var Core = require('./core');
 var extension = require('./extension');
 var registerJquery = require('./jquery-plugin');
@@ -10,18 +9,7 @@ var Stylesheet = require('./stylesheet');
 var Thread = require('./thread');
 var Fabric = require('./fabric');
 
-// the object iteself is a function that init's an instance of cytoscape
-
-var cytoscape = function(){ // jshint ignore:line
-  return cytoscape.init.apply(cytoscape, arguments);
-};
-
-// replaced by build system
-cytoscape.version = '{{VERSION}}';
-
-// get core instance
-cytoscape.init = function( options ){
-
+var cytoscape = function( options ){ // jshint ignore:line
   // if no options specified, use default
   if( options === undefined ){
     options = {};
@@ -38,14 +26,8 @@ cytoscape.init = function( options ){
   }
 };
 
-// make sure we always register in the window just in case (e.g. w/ derbyjs)
-if( window ){
-  window.cytoscape = cytoscape;
-}
-
-// TODO this isn't same w/cjs
-// extra set to `this` is necessary for meteor
-this.cytoscape = cytoscape;
+// replaced by build system
+cytoscape.version = '{{VERSION}}';
 
 // try to register w/ jquery
 if( window && window.jQuery ){

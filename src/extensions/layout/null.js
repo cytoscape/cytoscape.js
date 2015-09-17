@@ -1,8 +1,6 @@
 'use strict';
 
 var util = require('../../util');
-var math = require('../../math');
-var is = require('../../is');
 
 // default layout options
 var defaults = {

@@ -13,7 +13,6 @@ CRp.createBuffer = function(w, h) {
 };
 
 CRp.bufferCanvasImage = function( options ){
-  var data = this.data;
   var cy = this.cy;
   var bb = cy.elements().boundingBox();
   var width = options.full ? Math.ceil(bb.w) : this.container.clientWidth;

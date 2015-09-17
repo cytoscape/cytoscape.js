@@ -134,7 +134,7 @@ util.extend( anifn, {
   time: function( t ){
     var _p = this._private;
 
-    if( t == undefined ){
+    if( t === undefined ){
       return _p.progress * _p.duration;
     } else {
       return this.progress( t / _p.duration );
@@ -215,9 +215,9 @@ util.extend( anifn, {
       case 'frame':
         arr = _p.frames;
         break;
+      default:
       case 'complete':
       case 'completed':
-      default:
         arr = _p.completes;
     }
 

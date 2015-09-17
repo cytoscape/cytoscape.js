@@ -3,9 +3,9 @@
 var define = require('../define');
 var is = require('../is');
 var util = require('../util');
+var fn, elesfn;
 
-var fn;
-var elesfn = fn = ({
+fn = elesfn = ({
 
   data: define.data({
     field: 'data',
@@ -693,7 +693,7 @@ var defineDimFns = function( opts ){
 
     if( ele ){
       var od = ele[ opts.outerName ]();
-      return owidth * this.cy().zoom();
+      return od * this.cy().zoom();
     }
   };
 };

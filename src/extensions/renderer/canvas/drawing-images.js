@@ -8,8 +8,8 @@ CRp.safeDrawImage = function( context, img, ix, iy, iw, ih, x, y, w, h ){
   try {
     context.drawImage( img, ix, iy, iw, ih, x, y, w, h );
   } catch(e){
-    r.data.canvasNeedsRedraw[CanvasRenderer.NODE] = true;
-    r.data.canvasNeedsRedraw[CanvasRenderer.DRAG] = true;
+    r.data.canvasNeedsRedraw[r.NODE] = true;
+    r.data.canvasNeedsRedraw[r.DRAG] = true;
 
     r.drawingImage = true;
 

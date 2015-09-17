@@ -1,7 +1,6 @@
 'use strict';
 
 var is = require('./is');
-var util = require('./util');
 
 var cyReg = function( $ele ){
   var d = $ele[0]._cyreg = $ele[0]._cyreg || {};

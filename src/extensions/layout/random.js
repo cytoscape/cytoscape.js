@@ -2,7 +2,6 @@
 
 var util = require('../../util');
 var math = require('../../math');
-var is = require('../../is');
 
 var defaults = {
   fit: true, // whether to fit to viewport

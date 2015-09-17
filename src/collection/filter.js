@@ -17,8 +17,6 @@ var elesfn = ({
   },
 
   filter: function( filter ){
-    var cy = this._private.cy;
-
     if( is.fn(filter) ){
       var elements = [];
 
@@ -43,8 +41,6 @@ var elesfn = ({
   },
 
   not: function( toRemove ){
-    var cy = this._private.cy;
-
     if( !toRemove ){
       return this;
     } else {
@@ -76,8 +72,6 @@ var elesfn = ({
   },
 
   intersect: function( other ){
-    var cy = this._private.cy;
-
     // if a selector is specified, then filter by it instead
     if( is.string(other) ){
       var selector = other;
@@ -306,7 +300,6 @@ var elesfn = ({
   stdFilter: function( fn, thisArg ){
     var filterEles = [];
     var eles = this;
-    var cy = this._private.cy;
 
     for( var i = 0; i < eles.length; i++ ){
       var ele = eles[i];

@@ -1,3 +1,5 @@
+'use strict';
+
 /*
 The CoSE layout was written by Gerardo Huck.
 
@@ -6,7 +8,6 @@ Modifications tracked on Github.
 
 var util = require('../../util');
 var math = require('../../math');
-var is = require('../../is');
 var Thread = require('../../thread');
 
 var DEBUG;
@@ -121,9 +122,6 @@ CoseLayout.prototype.run = function() {
     DEBUG = false;
   }
 
-  // Get start time
-  var startTime = new Date();
-
   // Initialize layout info
   var layoutInfo = createLayoutInfo(cy, layout, options);
 
@@ -176,8 +174,6 @@ CoseLayout.prototype.run = function() {
     var options = pass.options;
     var stopped = false;
 
-    var done = function(){ console.log('done') };
-
     var mainLoop = function(i){
       if( stopped ){
         // logDebug("Layout manually stopped. Stopping computation in step " + i);
@@ -214,7 +210,7 @@ CoseLayout.prototype.run = function() {
       }
 
       if( options.animate ){
-        broadcast( layoutInfo.layoutNodes );
+        broadcast( layoutInfo.layoutNodes ); // jshint ignore:line
       }
 
     } while ( loopRet && i + 1 < options.numIter );
@@ -229,11 +225,6 @@ CoseLayout.prototype.run = function() {
 
   var done = function(){
     refresh();
-
-    // Get end time
-    var endTime = new Date();
-
-    console.info('Layout took ' + (endTime - startTime) + ' ms');
 
     // Layout has finished
     layout.one('layoutstop', options.stop);
@@ -516,6 +507,8 @@ var findLCA_aux = function(node1, node2, graphIx, layoutInfo) {
  *         Only used for debbuging
  */
 var printLayoutInfo = function(layoutInfo) {
+  /* jshint ignore:start */
+
   if (!DEBUG) {
     return;
   }
@@ -571,6 +564,7 @@ var printLayoutInfo = function(layoutInfo) {
   console.debug(s);
 
   return;
+  /* jshint ignore:end */
 };
 
 

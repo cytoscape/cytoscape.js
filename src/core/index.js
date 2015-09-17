@@ -354,7 +354,7 @@ util.extend(corefn, {
       }
 
       if( obj.layout ){
-        cy.layout( obj.layout )
+        cy.layout( obj.layout );
       }
 
       if( obj.zoom != null && obj.zoom !== _p.zoom ){

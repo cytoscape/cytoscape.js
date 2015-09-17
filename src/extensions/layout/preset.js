@@ -1,7 +1,6 @@
 'use strict';
 
 var util = require('../../util');
-var math = require('../../math');
 var is = require('../../is');
 
 var defaults = {

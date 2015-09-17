@@ -96,7 +96,6 @@ var elesfn = ({
       return this;
     }
 
-    var cy = this.cy();
     var sorted = this.toArray().sort( sortFn );
 
     return this.spawn(sorted);

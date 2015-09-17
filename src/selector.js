@@ -32,16 +32,11 @@ var Selector = function( onlyThisGroup, selector ){
       self.length = 1;
     }
 
-  } else if( is.element( selector ) ){
-    var collection = new Collection(self.cy(), [ selector ]);
+  } else if( is.elementOrCollection( selector ) ){
+    var collection = selector.collection();
 
     self[0] = newQuery();
     self[0].collection = collection;
-    self.length = 1;
-
-  } else if( is.collection( selector ) ){
-    self[0] = newQuery();
-    self[0].collection = selector;
     self.length = 1;
 
   } else if( is.fn( selector ) ) {

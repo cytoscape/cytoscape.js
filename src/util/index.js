@@ -204,6 +204,7 @@ var util = {
     };
   },
 
+  /* jshint ignore:start */
   error: function( msg ){
     if( console.error ){
       console.error.apply( console, arguments );
@@ -215,6 +216,7 @@ var util = {
       if( console.trace ){ console.trace(); }
     }
   },
+  /* jshint ignore:end */
 
   clone: function( obj ){
     var target = {};

@@ -3,7 +3,6 @@
 var define = require('../define');
 var util = require('../util');
 var is = require('../is');
-var window = require('../window');
 
 var corefn = ({
 
@@ -79,7 +78,6 @@ var corefn = ({
         };
 
         // step and remove if done
-        var completeAnis = [];
         for( var i = current.length - 1; i >= 0; i-- ){
           var ani = current[i];
           var ani_p = ani._private;
@@ -354,7 +352,7 @@ var corefn = ({
       var tsq = t*t;
 
       return ( 3 * one_t * one_t * t * p1 ) + ( 3 * one_t * tsq * p2 ) + tsq * t;
-    };
+    }
 
     function cubicBezier( p1, p2 ){
       return function( start, end, percent ){

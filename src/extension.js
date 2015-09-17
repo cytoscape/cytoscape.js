@@ -19,8 +19,11 @@ function setExtension( type, name, registrant ){
 
   switch( type ){
   case 'core':
+    Core.prototype[ name ] = registrant;
+    break;
   case 'collection':
     Collection.prototype[ name ] = registrant;
+    break;
   }
 
   // fill in missing layout functions in the prototype

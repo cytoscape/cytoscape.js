@@ -700,7 +700,7 @@
                         { "name": "queue", "descr": "A boolean indicating whether to queue the animation." },
                         { "name": "complete", "descr": "A function to call when the animation is done." },
                         { "name": "step", "descr": "A function to call each time the animation steps." },
-                        { "name": "easing", "descr": "An easing style string that shapes the animation progress curve." }
+                        { "name": "easing", "descr": "A [`transition-timing-function`](#style/transition-animation) easing style string that shapes the animation progress curve." }
                       ]
                     }
                   ]
@@ -737,7 +737,8 @@
                             { "name": "eles", "descr": "Elements or a selector to which the viewport will be centred." }
                           ]
                         },
-                        { "name": "duration", "descr": "The duration of the animation in milliseconds." }
+                        { "name": "duration", "descr": "The duration of the animation in milliseconds." },
+                        { "name": "easing", "descr": "A [`transition-timing-function`](#style/transition-animation) easing style string that shapes the animation progress curve." }
                       ]
                     }
                   ]
@@ -1660,6 +1661,35 @@
                 }
               ],
               "md": "collection/makeLayout"
+            },
+
+            {
+              "name": "nodes.layoutPositions",
+              "descr": "Position the nodes for a discrete/synchronous layout.",
+              "extFn": true,
+              "formats": [
+                {
+                  "args": [
+                    {
+                      "name": "layout",
+                      "descr": "The layout."
+                    },
+                    {
+                      "name": "options",
+                      "descr": "The layout options object."
+                    },
+                    {
+                      "name": "function(i, ele)",
+                      "descr": "A function that returns the new position for the specified node.",
+                      "fields": [
+                        { "name": "i", "descr": "The index of the current node while iterating over the nodes in the layout." },
+                        { "name": "ele", "descr": "The node being iterated over for which the function should return a position to set." }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "md": "collection/layout"
             }
           ]
         },
@@ -1881,7 +1911,7 @@
                         { "name": "queue", "descr": "A boolean indicating whether to queue the animation." },
                         { "name": "complete", "descr": "A function to call when the animation is done." },
                         { "name": "step", "descr": "A function to call each time the animation steps." },
-                        { "name": "easing", "descr": "An easing style string that shapes the animation progress curve." }
+                        { "name": "easing", "descr": "A [`transition-timing-function`](#style/transition-animation) easing style string that shapes the animation progress curve." }
                       ]
                     }
                   ]
@@ -1903,7 +1933,8 @@
                         { "name": "position", "descr": "A position to which the elements will be animated." },
                         { "name": "renderedPosition", "descr": "A rendered position to which the elements will be animated." },
                         { "name": "style", "descr": "An object containing name-value pairs of style properties to animate." },
-                        { "name": "duration", "descr": "The duration of the animation in milliseconds." }
+                        { "name": "duration", "descr": "The duration of the animation in milliseconds." },
+                        { "name": "easing", "descr": "A [`transition-timing-function`](#style/transition-animation) easing style string that shapes the animation progress curve." }
                       ]
                     }
                   ]
@@ -3321,7 +3352,8 @@
           "fns": [
             {
               "name": "ani.play",
-              "descr": "Requests that the animation be played, starting on the next frame.  If the animation is complete, it restarts from the beginning."
+              "descr": "Requests that the animation be played, starting on the next frame.  If the animation is complete, it restarts from the beginning.",
+              "md": "animation/play"
             },
 
             {
@@ -3363,17 +3395,20 @@
                   "name": "ani.fastforward",
                   "descr": "Fastforward the animation to the end."
                 }
-              ]
+              ],
+              "md": "animation/progress"
             },
 
             {
               "name": "ani.pause",
-              "descr": "Pause the animation, maintaining the current progress."
+              "descr": "Pause the animation, maintaining the current progress.",
+              "md": "animation/pause"
             },
 
             {
               "name": "ani.stop",
-              "descr": "Stop the animation, maintaining the current progress and removing the animation from any associated queues."
+              "descr": "Stop the animation, maintaining the current progress and removing the animation from any associated queues.",
+              "md": "animation/stop"
             },
 
             {
@@ -3383,8 +3418,20 @@
             },
 
             {
+              "name": "ani.apply",
+              "descr": "Apply the animation at its current progress.",
+              "md": "animation/apply"
+            },
+
+            {
+              "name": "ani.appling",
+              "descr": "Get whether the animation is currently applying."
+            },
+
+            {
               "name": "ani.reverse",
-              "descr": "Reverse the animation such that its starting conditions and ending conditions are reversed."
+              "descr": "Reverse the animation such that its starting conditions and ending conditions are reversed.",
+              "md": "animation/reverse"
             },
 
             {
@@ -3401,7 +3448,8 @@
                     { "name": "animationEvent", "descr": "A string for the event name; `completed` or `complete` for completing the animation or `frame` for the next frame of the animation." }
                   ]
                 }
-              ]
+              ],
+              "md": "animation/promise"
             }
           ]
         }

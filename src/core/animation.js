@@ -96,6 +96,11 @@ var corefn = ({
 
           if( !ani_p.playing && !ani_p.applying ){ continue; }
 
+          // an apply() while playing shouldn't do anything
+          if( ani_p.playing && ani_p.applying ){
+            ani_p.applying = false;
+          }
+
           if( !ani_p.started ){
             startAnimation( ele, ani, now );
           }

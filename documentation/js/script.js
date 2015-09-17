@@ -1,10 +1,8 @@
-window.isTouchDevice = cytoscape.is.touch(); // for init docs
-
 $(function(){
 
-  setTimeout(function(){
-    cytoscape.defaults( window.options );
-  }, 100);
+  // setTimeout(function(){
+  //   cytoscape.defaults( window.options );
+  // }, 100);
 
   // fix for webkit
   $('#navigation').on('wheel mousewheel DOMMouseScroll MozMousePixelScroll scroll', function(e){
@@ -33,6 +31,64 @@ $(function(){
     }, 0);
   });
 
+  function debounce( fn, wait ){
+  	var timeout;
+
+  	return function(){
+  		var context = this;
+      var args = arguments;
+  		var callNow = !timeout;
+
+  		clearTimeout( timeout );
+  		timeout = setTimeout(function(){
+  			timeout = null;
+
+        fn.apply( context, args );
+  		}, wait );
+  	};
+  };
+
+  var $toclinks = $('.section > .toclink');
+  var $tocinput = $('#toc-input');
+  var $tocsections = $('#toc-sections');
+
+  $tocinput.on( 'keydown keyup keypress change', function(){
+    $tocsections.addClass('toc-sections-searching');
+  });
+
+  $tocinput.on( 'keydown keyup keypress change', debounce(function(){
+    txt = $tocinput.val().toLowerCase();
+
+    var $shown = txt === '' ? $toclinks : $toclinks.filter(function(i, ele){
+      return ele.text.toLowerCase().match( txt );
+    });
+
+    var $notShown = $toclinks.not( $shown );
+
+    $shown.show();
+    $notShown.hide();
+
+    $shown.parent().each(function(i, ele){
+      var $section = $(ele);
+
+      if( $section.hasClass('lvl3') ){
+        $section.prevAll('.lvl2:first').children('.toclink').show();
+        $section.prevAll('.lvl1:first').children('.toclink').show();
+      } else if( $section.hasClass('lvl2') ){
+        $section.prevAll('.lvl1:first').children('.toclink').show();
+        $section.nextUntil('.lvl2, .lvl1').children('.toclink').show();
+      } else if( $section.hasClass('lvl1') ){
+        $section.nextUntil('.lvl1').children('.toclink').show();
+      }
+    });
+
+    $tocsections.removeClass('toc-sections-searching');
+  }, 250) );
+
+  $('#toc-clear').on('click', function(){
+    $tocinput.val('').trigger('change');
+  });
+
   loadCy();
 
   $(document).on('click', '.gallery-refresh', function(){
@@ -49,7 +105,7 @@ $(function(){
   });
 
   $('body').on('mousedown click', '#cy-refresh', function(){
-    loadCy(); 
+    loadCy();
 
     $('#cy').attr('style', ''); // because some example fiddles w/ this
   });
@@ -96,14 +152,18 @@ $(function(){
 
     var $title = $('#cy-title');
     var $content = $title.find('.content');
-    
+
     $content.html( text );
     $title.show();
 
     $content.hide().fadeIn(100).delay(250).hide(200, function(){
       var ret = eval( text );
-      
-      if( ret && cytoscape.is.elementOrCollection( ret ) && ret.length > 0 ){
+
+      isEles = function(o){
+        o && o.isNode;
+      }
+
+      if( ret && isEles( ret ) && ret.length > 0 ){
         //console.log(ret)
 
         var css = {
@@ -120,19 +180,19 @@ $(function(){
           .stop( true )
 
           .animate({ css: css })
-          
+
           .delay(delay, function(){
             ret.removeCss();
           })
 
           .animate({ css: css })
-          
+
           .delay(delay, function(){
             ret.removeCss();
           })
 
           .animate({ css: css })
-          
+
           .delay(delay, function(){
             ret.removeCss();
             $title.hide();

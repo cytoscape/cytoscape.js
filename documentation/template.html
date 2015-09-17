@@ -27,7 +27,7 @@
 
 		<div id="content">
 
-			<a id="open-navigation" class="activatable"><span class="icon-reorder"></span></a>
+			<a id="open-navigation" class="activatable plain-link"><span class="icon-reorder"></span></a>
 			<div id="open-navigation-bg"></div>
 
 			<h1 id="top" class="title">Cytoscape.js</h1>
@@ -189,6 +189,12 @@
 								{{#each altIds}}<span id="{{.}}">&nbsp;</span>{{/each}}
 							</div>
 
+							{{#if extFn}}
+								<div class="ext-function-note">
+									<span class="icon-puzzle-piece important"></span> <a href="#extensions">Extension</a> function: This function is intended for use in extensions.
+								</div>
+							{{/if}}
+
 							{{#if processedPureAliases}}
 							<div class="pure-aliases">
 								<span class="important-indicator"></span> Aliases:
@@ -283,31 +289,39 @@
 
 
 		<div id="navigation">
-			<div class="toc">Table of contents (<a href="#top"><span class="icon-bookmark"></span> top</a>)</div>
+			<div class="toc">
+				<input id="toc-input" type="text" autofocus placeholder="&#61442; Find sections"></input>
+				<a id="toc-clear" class="plain-link"><span class="icon-remove"></span></a>
+				<a href="#top" class="plain-link"><span class="icon-arrow-up"></span></a>
+			</div>
 
-			{{#each sections}}
-				<div class="section lvl1">
-					{{#if sections}}<span class="expander">
-						<span class="icon-caret-down expanded-icon"></span>
-						<span class="icon-caret-right collapsed-icon"></span>
-					</span>{{/if}}
-					<a class="toclink" href="#{{id}}"><span class="icon-bookmark bookmark-icon"></span> {{& name}}</a>
-				</div>
+			<div id="toc-sections" class="toc-sections">
 
 				{{#each sections}}
-					<div class="section lvl2">
-						{{#if fns}}<span class="expander">
+					<div class="section lvl1">
+						{{#if sections}}<span class="expander">
 							<span class="icon-caret-down expanded-icon"></span>
 							<span class="icon-caret-right collapsed-icon"></span>
 						</span>{{/if}}
 						<a class="toclink" href="#{{id}}"><span class="icon-bookmark bookmark-icon"></span> {{& name}}</a>
 					</div>
 
-					{{#each fns}}
-						<div class="section lvl3"><a class="toclink" href="#{{id}}"><span class="icon-bookmark bookmark-icon"></span> {{name}}() {{#if aliases}}et al{{/if}}</a></div>
+					{{#each sections}}
+						<div class="section lvl2">
+							{{#if fns}}<span class="expander">
+								<span class="icon-caret-down expanded-icon"></span>
+								<span class="icon-caret-right collapsed-icon"></span>
+							</span>{{/if}}
+							<a class="toclink" href="#{{id}}"><span class="icon-bookmark bookmark-icon"></span> {{& name}}</a>
+						</div>
+
+						{{#each fns}}
+							<div class="section lvl3"><a class="toclink" href="#{{id}}"><span class="icon-bookmark bookmark-icon"></span> {{name}}() {{#if aliases}}et al{{/if}}</a></div>
+						{{/each}}
 					{{/each}}
 				{{/each}}
-			{{/each}}
+
+			</div>
 
 			<p><span class="icon-sign-blank"></span></p>
 		</div>
@@ -341,12 +355,6 @@
 		<script src="js/load.js"></script>
 		<script src="js/script.js"></script>
 		<!-- endinject -->
-
-		<script src="js/arbor.js"></script>
-		<script src="js/springy.js"></script>
-		<script src="js/cola.v3.min.js"></script>
-		<script src="js/cola.adaptor.js"></script>
-		<script src="js/dagre.js"></script>
 
 		<script type="text/javascript">
 

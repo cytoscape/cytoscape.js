@@ -118,6 +118,29 @@ BRp.notify = function(params) {
   this.redraw();
 };
 
+BRp.destroy = function(){
+  this.destroyed = true;
+
+  for( var i = 0; i < this.bindings.length; i++ ){
+    var binding = this.bindings[i];
+    var b = binding;
+
+    b.target.removeEventListener(b.event, b.handler, b.useCapture);
+  }
+
+  if( this.removeObserver ){
+    this.removeObserver.disconnect();
+  }
+
+  if( this.labelCalcDiv ){
+    try{
+      document.body.removeChild(this.labelCalcDiv);
+    } catch(e){
+      // ie10 issue #1014
+    }
+  }
+};
+
 [
   require('./arrow-shapes'),
   require('./cached-eles'),

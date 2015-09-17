@@ -61,7 +61,5 @@ cytoscape.registerJquery = function( jQuery ){
 cytoscape.stylesheet = cytoscape.Stylesheet = Stylesheet;
 cytoscape.thread = cytoscape.Thread = Thread;
 cytoscape.fabric = cytoscape.Fabric = Fabric;
-cytoscape.is = is;
-cytoscape.util = util;
 
 module.exports = cytoscape;

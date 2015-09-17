@@ -2,6 +2,14 @@ var expect = require('chai').expect;
 var cytoscape = require('../build/cytoscape.js', cytoscape);
 var $$ = cytoscape;
 
+var is = {
+  elementOrCollection: function(o){
+    return o != null && o.instanceString && o.instanceString() === 'collection';
+  },
+
+  number: function(o){ return typeof o === 'number'; }
+};
+
 describe('Collection comparison', function(){
 
   var cy;
@@ -15,7 +23,7 @@ describe('Collection comparison', function(){
             { data: { id: 'n2' } },
             { data: { id: 'n3' } }
         ],
-        
+
         edges: [
             { data: { id: 'n1n2', source: 'n1', target: 'n2' } },
             { data: { id: 'n2n3', source: 'n2', target: 'n3' } }
@@ -64,17 +72,17 @@ describe('Collection comparison', function(){
 
   it('eles.some()', function(){
     expect( cy.edges().some(function( ele, i, eles ){
-      expect( $$.is.elementOrCollection(ele) ).to.be.true;
-      expect( $$.is.elementOrCollection(eles) ).to.be.true;
-      expect( $$.is.number(i) ).to.be.true;
+      expect( is.elementOrCollection(ele) ).to.be.true;
+      expect( is.elementOrCollection(eles) ).to.be.true;
+      expect( is.number(i) ).to.be.true;
 
       return ele.data('source') === 'n1';
     }) ).to.be.true;
 
     expect( cy.edges().some(function( ele, i, eles ){
-      expect( $$.is.elementOrCollection(ele) ).to.be.true;
-      expect( $$.is.elementOrCollection(eles) ).to.be.true;
-      expect( $$.is.number(i) ).to.be.true;
+      expect( is.elementOrCollection(ele) ).to.be.true;
+      expect( is.elementOrCollection(eles) ).to.be.true;
+      expect( is.number(i) ).to.be.true;
 
       return ele.data('source') === 'no-way-this-id-exists';
     }) ).to.be.false;
@@ -82,17 +90,17 @@ describe('Collection comparison', function(){
 
   it('eles.every()', function(){
     expect( cy.edges().every(function( ele, i, eles ){
-      expect( $$.is.elementOrCollection(ele) ).to.be.true;
-      expect( $$.is.elementOrCollection(eles) ).to.be.true;
-      expect( $$.is.number(i) ).to.be.true;
+      expect( is.elementOrCollection(ele) ).to.be.true;
+      expect( is.elementOrCollection(eles) ).to.be.true;
+      expect( is.number(i) ).to.be.true;
 
       return ele.data('source') === 'n1';
     }) ).to.be.false;
 
     expect( cy.edges().every(function( ele, i, eles ){
-      expect( $$.is.elementOrCollection(ele) ).to.be.true;
-      expect( $$.is.elementOrCollection(eles) ).to.be.true;
-      expect( $$.is.number(i) ).to.be.true;
+      expect( is.elementOrCollection(ele) ).to.be.true;
+      expect( is.elementOrCollection(eles) ).to.be.true;
+      expect( is.number(i) ).to.be.true;
 
       return ele.isEdge();
     }) ).to.be.true;

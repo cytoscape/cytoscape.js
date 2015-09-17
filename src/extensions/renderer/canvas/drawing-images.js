@@ -33,8 +33,21 @@ CRp.drawInscribedImage = function(context, img, node) {
   var shouldClip = clip === 'node';
   var imgOpacity = style['background-image-opacity'].value;
 
-  var w = img.width;
-  var h = img.height;
+  var imgW = img.width || img.cachedW;
+  var imgH = img.height || img.cachedH;
+
+  // workaround for broken browsers like ie
+  if( (img.width === undefined || img.height === undefined) ){
+    document.body.appendChild( img );
+
+    imgW = img.cachedW = img.width;
+    imgW = img.cachedH = img.height;
+
+    document.body.removeChild( img );
+  }
+
+  var w = imgW;
+  var h = imgH;
 
   if( w === 0 || h === 0 ){
     return; // no point in drawing empty image (and chrome is broken in this case)
@@ -114,8 +127,7 @@ CRp.drawInscribedImage = function(context, img, node) {
       }
     }
 
-    // context.drawImage( img, 0, 0, img.width, img.height, x, y, w, h );
-    r.safeDrawImage( context, img, 0, 0, img.width, img.height, x, y, w, h );
+    r.safeDrawImage( context, img, 0, 0, imgW, imgH, x, y, w, h );
 
     if( shouldClip ){
       context.restore();

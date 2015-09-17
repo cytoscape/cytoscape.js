@@ -103,15 +103,6 @@ CRp.usePaths = function(){
   return pathsImpld && this.pathsEnabled;
 };
 
-
-// copy the math functions into the renderer prototype
-// unfortunately these functions are used interspersed t/o the code
-// and this makes sure things work just in case a ref was missed in refactoring
-// TODO remove this eventually
-// for( var fnName in $$.math ){
-//   CRp[ fnName ] = $$.math[ fnName ];
-// }
-
 [
   require('./arrow-shapes'),
   require('./drawing-edges'),

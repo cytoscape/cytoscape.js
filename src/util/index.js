@@ -258,7 +258,7 @@ var util = {
     var array = util.getMap(options);
 
     if( array == null ){ // if empty, put initial array
-      util.setMap( $.extend({}, options, {
+      util.setMap( util.extend({}, options, {
         value: [ options.value ]
       }) );
     } else {

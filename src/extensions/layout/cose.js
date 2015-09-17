@@ -402,14 +402,14 @@ var createLayoutInfo = function(cy, layout, options) {
 
     // Source depth
     var tempNode = layoutInfo.layoutNodes[sourceIx];
-    while (-1 === $.inArray(tempNode.id, lcaGraph)) {
+    while ( -1 === lcaGraph.indexOf(tempNode.id) ) {
       tempNode = layoutInfo.layoutNodes[layoutInfo.idToIndex[tempNode.parentId]];
       depth++;
     }
 
     // Target depth
     tempNode = layoutInfo.layoutNodes[targetIx];
-    while (-1 === $.inArray(tempNode.id, lcaGraph)) {
+    while ( -1 === lcaGraph.indexOf(tempNode.id) ) {
       tempNode = layoutInfo.layoutNodes[layoutInfo.idToIndex[tempNode.parentId]];
       depth++;
     }
@@ -473,7 +473,7 @@ var findLCA = function(node1, node2, layoutInfo) {
 var findLCA_aux = function(node1, node2, graphIx, layoutInfo) {
   var graph = layoutInfo.graphSet[graphIx];
   // If both nodes belongs to graphIx
-  if (-1 < $.inArray(node1, graph) && -1 < $.inArray(node2, graph)) {
+  if (-1 < graph.indexOf(node1) && -1 < graph.indexOf(node2)) {
     return {count:2, graph:graphIx};
   }
 

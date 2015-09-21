@@ -1,46 +1,20 @@
 var gulp = require('gulp');
+var $ = require('gulp-load-plugins')();
 var path = require('path');
-var tap = require('gulp-tap');
-var concat = require('gulp-concat');
-var uglify = require('gulp-uglify');
-var replace = require('gulp-replace');
-var inject = require('gulp-inject');
-var zip = require('gulp-zip');
-var mocha = require('gulp-mocha');
-var child_process = require('child_process');
-var fs = require('fs');
-var htmlmin = require('gulp-htmlmin');
-var cssmin = require('gulp-cssmin');
-var shell = require('gulp-shell');
-var jshint = require('gulp-jshint');
-var jshStylish = require('jshint-stylish');
 var exec = require('child_process').exec;
+var fs = require('fs');
 var runSequence = require('run-sequence');
-var browserify = require('browserify');
-var source = require('vinyl-source-stream'); // converts node streams into vinyl streams
-var benchmark = require('gulp-benchmark');
 var del = require('del');
 var vinylPaths = require('vinyl-paths');
 var clean = function(){ return vinylPaths(del) };
-var decompress = require('gulp-decompress');
-var rename = require("gulp-rename");
-var unzip = require('gulp-unzip');
-var request = require('request');
-var download = require("gulp-download");
-// var download = function(url){ return request.get(url); };
-var prompt = require('gulp-prompt');
-var browserifyHeader = require('browserify-header');
 var vfs = require('vinyl-fs');
 var transform = require('vinyl-transform');
 var buffer = require('vinyl-buffer');
-var sourcemaps = require('gulp-sourcemaps');
-var livereload = require('gulp-livereload');
-var watchify = require('watchify');
-var derequire = require('gulp-derequire');
-var gutil = require('gulp-util');
+var browserifyHeader = require('browserify-header');
 var notifier = require('node-notifier');
-// var jscs = require('gulp-jscs');
-var jscs = require('jscs');
+var watchify = require('watchify');
+var browserify = require('browserify');
+var source = require('vinyl-source-stream'); // converts node streams into vinyl streams
 
 var benchmarkVersion = '2.3.15'; // old version to test against for benchmarks
 var benchmarkVersionUrl = 'https://raw.githubusercontent.com/cytoscape/cytoscape.js/v' + benchmarkVersion + '/dist/cytoscape.js';
@@ -118,7 +92,7 @@ var browserifyOpts = {
 
 var logError = function( err ){
   notifier.notify({ title: 'Cytoscape.js', message: 'Error: ' + err.message });
-  gutil.log( gutil.colors.red('Error in watch:'), gutil.colors.red(err) );
+  $.util.log( $.util.colors.red('Error in watch:'), $.util.colors.red(err) );
 };
 
 // update these if you don't have a unix like env or these programmes aren't in your $PATH
@@ -178,7 +152,7 @@ gulp.task('version', function( next ){
 
 gulp.task('confver', ['version'], function(){
   return gulp.src('.')
-    .pipe( prompt.confirm({ message: 'Are you sure version `' + version + '` is OK to publish?' }) )
+    .pipe( $.prompt.confirm({ message: 'Are you sure version `' + version + '` is OK to publish?' }) )
   ;
 });
 
@@ -198,7 +172,7 @@ gulp.task('clean', function(){
 //   ;
 // });
 
-gulp.task('format', shell.task([
+gulp.task('format', $.shell.task([
   './node_modules/jscs/bin/jscs src/** --fix'
 ]));
 
@@ -209,8 +183,8 @@ gulp.task('concat', ['version', 'nodeworker'], function(){
     .on( 'error', logError )
     .pipe( source('cytoscape.js') )
     .pipe( buffer() )
-    .pipe( derequire() )
-    .pipe( replace('{{VERSION}}', version) )
+    .pipe( $.derequire() )
+    .pipe( $.replace('{{VERSION}}', version) )
     .pipe( gulp.dest('build') )
   ;
 });
@@ -222,10 +196,10 @@ gulp.task('build-unmin', ['version', 'nodeworker'], function(){
     .on( 'error', logError )
     .pipe( source('cytoscape.js') )
     .pipe( buffer() )
-    .pipe( sourcemaps.init({ loadMaps: true }) )
-    .pipe( derequire() )
-    .pipe( replace('{{VERSION}}', version) )
-    .pipe( sourcemaps.write('.') )
+    .pipe( $.sourcemaps.init({ loadMaps: true }) )
+    .pipe( $.derequire() )
+    .pipe( $.replace('{{VERSION}}', version) )
+    .pipe( $.sourcemaps.write('.') )
     .pipe( gulp.dest('build') )
   ;
 });
@@ -237,11 +211,11 @@ gulp.task('build-min', ['version', 'nodeworker'], function(){
     .on( 'error', logError )
     .pipe( source('cytoscape.min.js') )
     .pipe( buffer() )
-    .pipe( sourcemaps.init({ loadMaps: true }) )
-    .pipe( derequire() )
-    .pipe( replace('{{VERSION}}', version) )
-    .pipe( uglify({ mangle: true, preserveComments: 'some' }) )
-    .pipe( sourcemaps.write('.') )
+    .pipe( $.sourcemaps.init({ loadMaps: true }) )
+    .pipe( $.derequire() )
+    .pipe( $.replace('{{VERSION}}', version) )
+    .pipe( $.uglify({ mangle: true, preserveComments: 'some' }) )
+    .pipe( $.sourcemaps.write('.') )
     .pipe( gulp.dest('build') )
   ;
 });
@@ -252,9 +226,9 @@ gulp.task('build', ['build-unmin', 'build-min'], function( next ){
 
 gulp.task('nodeworker', ['version'], function(){
   return gulp.src( paths.nodethreadSrc )
-    .pipe( replace('{{VERSION}}', version) )
+    .pipe( $.replace('{{VERSION}}', version) )
 
-    .pipe( concat(paths.nodethreadName) )
+    .pipe( $.concat(paths.nodethreadName) )
 
     .pipe( gulp.dest('build') )
   ;
@@ -262,7 +236,7 @@ gulp.task('nodeworker', ['version'], function(){
 
 gulp.task('debugrefs', function(){
   return gulp.src('debug/index.html')
-    .pipe( inject( gulp.src(paths.debugFiles, { read: false }), {
+    .pipe( $.inject( gulp.src(paths.debugFiles, { read: false }), {
       addPrefix: '..',
       addRootSlash: false
     } ) )
@@ -273,7 +247,7 @@ gulp.task('debugrefs', function(){
 
 gulp.task('testrefs', function(){
   return gulp.src('test/index.html')
-    .pipe( inject( gulp.src(paths.testFiles, { read: false }), {
+    .pipe( $.inject( gulp.src(paths.testFiles, { read: false }), {
       addPrefix: '..',
       addRootSlash: false
     } ) )
@@ -284,7 +258,7 @@ gulp.task('testrefs', function(){
 
 gulp.task('testlist', function(){
   return gulp.src('test/index.html')
-    .pipe( inject( gulp.src('test/*.js', { read: false }), {
+    .pipe( $.inject( gulp.src('test/*.js', { read: false }), {
       addPrefix: '',
       ignorePath: 'test',
       addRootSlash: false,
@@ -308,7 +282,7 @@ gulp.task('zip', ['version', 'build'], function(){
     'LGPL-LICENSE.txt',
     'lib/*.js'
   ])
-    .pipe( zip('cytoscape.js-' + version + '.zip') )
+    .pipe( $.zip('cytoscape.js-' + version + '.zip') )
 
     .pipe( gulp.dest('build') )
   ;
@@ -316,7 +290,7 @@ gulp.task('zip', ['version', 'build'], function(){
 
 gulp.task('test', ['concat'], function(next){
   return gulp.src('test/*.js')
-    .pipe( mocha({
+    .pipe( $.mocha({
       reporter: 'spec'
     }) )
   ;
@@ -324,8 +298,8 @@ gulp.task('test', ['concat'], function(next){
 
 gulp.task('weaver-src', function(){
 
-  return download( weaverSrc )
-    .pipe( replace('weaver', 'cytoscape') )
+  return $.download( weaverSrc )
+    .pipe( $.replace('weaver', 'cytoscape') )
     .pipe( gulp.dest('src') )
   ;
 
@@ -333,8 +307,8 @@ gulp.task('weaver-src', function(){
 
 gulp.task('weaver-test', function(){
 
-  return download( weaverTest )
-    .pipe( replace('weaver', 'cytoscape') )
+  return $.download( weaverTest )
+    .pipe( $.replace('weaver', 'cytoscape') )
     .pipe( gulp.dest('test') )
   ;
 
@@ -342,7 +316,7 @@ gulp.task('weaver-test', function(){
 
 gulp.task('weaver-test-reqs', function(){
 
-  return download( weaverTestReqs )
+  return $.download( weaverTestReqs )
     .pipe( gulp.dest('test/requires') )
   ;
 
@@ -353,25 +327,25 @@ gulp.task('weaver', function(next){
 });
 
 gulp.task('benchmark-old-ver', function(){
-  return download( benchmarkVersionUrl )
+  return $.download( benchmarkVersionUrl )
     .pipe(gulp.dest("benchmark/CySuite"));
 });
 
 gulp.task('benchmark', ['concat', 'benchmark-old-ver'], function(next){
   gulp.src('benchmark/*.js')
-    .pipe( benchmark() )
+    .pipe( $.benchmark() )
   ;
 });
 
 gulp.task('benchmark-single', ['concat', 'benchmark-old-ver'], function(next){
   gulp.src('benchmark/single/index.js')
-    .pipe( benchmark() )
+    .pipe( $.benchmark() )
   ;
 });
 
 gulp.task('docsver', ['version'], function(){
   return gulp.src('documentation/docmaker.json')
-    .pipe( replace(/\"version\"\:\s*\".*?\"/, '"version": "' + version + '"') )
+    .pipe( $.replace(/\"version\"\:\s*\".*?\"/, '"version": "' + version + '"') )
 
     .pipe( gulp.dest('documentation') )
   ;
@@ -411,13 +385,13 @@ gulp.task('docsbuildlist', ['docsdl'], function(next){
 
 gulp.task('snapshotpush', ['docsdl'], function(){
   return gulp.src('')
-    .pipe( shell( replaceShellVars([
+    .pipe( $.shell( replaceShellVars([
       '$RM $TEMP_DIR/cytoscape.js',
       '$GIT clone -b gh-pages https://github.com/cytoscape/cytoscape.js.git $TEMP_DIR/cytoscape.js',
       '$CP $DOC_DIR/$DL_DIR/* $TEMP_DIR/cytoscape.js/$DL_DIR',
     ]) ) )
 
-    .pipe( shell( replaceShellVars([
+    .pipe( $.shell( replaceShellVars([
       '$GIT add -A',
       '$GIT commit -a -m "updating list of builds"',
       '$GIT push origin'
@@ -452,7 +426,7 @@ gulp.task('docsclean', function(next){
 
 gulp.task('docshtmlmin', function(){
   return gulp.src('documentation/index.html')
-    .pipe( htmlmin({
+    .pipe( $.htmlmin({
       collapseWhitespace: true,
       keepClosingSlash: true
     }) )
@@ -463,9 +437,9 @@ gulp.task('docshtmlmin', function(){
 
 gulp.task('docsjsmin', function(){
   return gulp.src( paths.docs.js )
-    .pipe( concat('all.min.js') )
+    .pipe( $.concat('all.min.js') )
 
-    .pipe( uglify({
+    .pipe( $.uglify({
       mangle: true
     }) )
 
@@ -475,9 +449,9 @@ gulp.task('docsjsmin', function(){
 
 gulp.task('docscssmin', function(){
   return gulp.src( paths.docs.css )
-    .pipe( concat('all.min.css') )
+    .pipe( $.concat('all.min.css') )
 
-    .pipe( cssmin() )
+    .pipe( $.cssmin() )
 
     .pipe( gulp.dest('documentation/css') )
   ;
@@ -485,7 +459,7 @@ gulp.task('docscssmin', function(){
 
 gulp.task('docsminrefs', ['docscssmin', 'docsjsmin'], function(){
   return gulp.src('documentation/index.html')
-    .pipe( inject( gulp.src([ 'documentation/js/all.min.js', 'documentation/css/all.min.css' ] ), {
+    .pipe( $.inject( gulp.src([ 'documentation/js/all.min.js', 'documentation/css/all.min.css' ] ), {
       addRootSlash: false,
       ignorePath: 'documentation'
     } ) )
@@ -496,7 +470,7 @@ gulp.task('docsminrefs', ['docscssmin', 'docsjsmin'], function(){
 
 gulp.task('docsrefs', function(){
   return gulp.src([ 'documentation/index.html', 'documentation/template.html' ])
-    .pipe( inject( gulp.src(paths.docs.js.concat( paths.docs.css ), { read: false }), {
+    .pipe( $.inject( gulp.src(paths.docs.js.$.concat( paths.docs.css ), { read: false }), {
       addRootSlash: false,
       ignorePath: 'documentation'
     } ) )
@@ -529,13 +503,13 @@ gulp.task('docsdemodl', function(){
       return 'https://gist.github.com/' + d.id + '/download';
     });
   }).reduce(function(prevDs, currDs){
-    return prevDs.concat( currDs );
+    return prevDs.$.concat( currDs );
   }, []);
 
-  return download( demos )
-    .pipe( unzip() )
+  return $.download( demos )
+    .pipe( un$.zip() )
 
-    .pipe( rename(function( path ){
+    .pipe( $.rename(function( path ){
       // console.log(path)
 
       var match = path.dirname.match(/^(.+)\-master$/);
@@ -545,7 +519,7 @@ gulp.task('docsdemodl', function(){
       }
     }) )
 
-    .pipe( replace(/".*cytoscape(\.min){0,1}\.js"/, '"../../js/cytoscape.min.js"') )
+    .pipe( $.replace(/".*cytoscape(\.min){0,1}\.js"/, '"../../js/cytoscape.min.js"') )
 
     .pipe( gulp.dest('documentation/demos') )
   ;
@@ -564,7 +538,7 @@ gulp.task('pkgver', ['version'], function(){
     'package.json',
     'bower.json'
   ])
-    .pipe( replace(/\"version\"\:\s*\".*?\"/, '"version": "' + version + '"') )
+    .pipe( $.replace(/\"version\"\:\s*\".*?\"/, '"version": "' + version + '"') )
 
     .pipe( gulp.dest('./') )
   ;
@@ -584,7 +558,7 @@ gulp.task('pubprep', function(next){
   runSequence('pkgver', 'dist', 'docspub', 'pubpush', next);
 });
 
-gulp.task('pubpush', shell.task( replaceShellVars([
+gulp.task('pubpush', $.shell.task( replaceShellVars([
   '$GIT add -A',
   '$GIT commit -m "preparing to publish $VERSION"',
   '$GIT push'
@@ -594,20 +568,20 @@ gulp.task('publish', ['pubprep'], function(next){
   runSequence('confver', 'tag', 'docspush', 'npm', 'spm', 'meteor', next);
 });
 
-gulp.task('tag', shell.task( replaceShellVars([
+gulp.task('tag', $.shell.task( replaceShellVars([
   '$GIT tag -a v$VERSION -m "v$VERSION"',
   '$GIT push origin v$VERSION'
 ]) ));
 
 gulp.task('docspush', function(){
   return gulp.src('')
-    .pipe( shell( replaceShellVars([
+    .pipe( $.shell( replaceShellVars([
       '$RM $TEMP_DIR/cytoscape.js',
       '$GIT clone -b gh-pages https://github.com/cytoscape/cytoscape.js.git $TEMP_DIR/cytoscape.js',
       '$CP $DOC_DIR/* $TEMP_DIR/cytoscape.js',
     ]) ) )
 
-    .pipe( shell( replaceShellVars([
+    .pipe( $.shell( replaceShellVars([
       '$GIT add -A',
       '$GIT commit -a -m "updating docs to $VERSION"',
       '$GIT push origin'
@@ -617,13 +591,13 @@ gulp.task('docspush', function(){
 
 gulp.task('unstabledocspush', function(){
   return gulp.src('')
-    .pipe( shell( replaceShellVars([
+    .pipe( $.shell( replaceShellVars([
       '$RM $TEMP_DIR/cytoscape.js',
       '$GIT clone -b gh-pages https://github.com/cytoscape/cytoscape.js.git $TEMP_DIR/cytoscape.js',
       '$CP $DOC_DIR/* $TEMP_DIR/cytoscape.js/unstable',
     ]) ) )
 
-    .pipe( shell( replaceShellVars([
+    .pipe( $.shell( replaceShellVars([
       '$GIT add -A',
       '$GIT commit -a -m "updating unstable docs to $VERSION"',
       '$GIT push origin'
@@ -638,31 +612,31 @@ gulp.task('browserify', function(){
   return b.bundle()
     .pipe( source('cytoscape.browserify.js') )
     .pipe( buffer() )
-    .pipe( derequire() )
+    .pipe( $.derequire() )
     .pipe( gulp.dest('build') )
   ;
 });
 
-gulp.task('sniper', ['browserify'], shell.task( replaceShellVars([
+gulp.task('sniper', ['browserify'], $.shell.task( replaceShellVars([
   '$NPM run sniper'
 ]) ));
 
-gulp.task('npm', shell.task( replaceShellVars([
+gulp.task('npm', $.shell.task( replaceShellVars([
   '$NPM publish .'
 ]) ));
 
-gulp.task('meteor', shell.task( replaceShellVars([
+gulp.task('meteor', $.shell.task( replaceShellVars([
   '$METEOR publish'
 ]) ));
 
-gulp.task('spm', shell.task( replaceShellVars([
+gulp.task('spm', $.shell.task( replaceShellVars([
   '$SPM publish'
 ]) ));
 
 
 
 gulp.task('watch', function(next){
-  livereload.listen();
+  $.livereload.listen();
 
   gulp.watch('test/*.js', ['testlist'])
     .on('added deleted', function( event ){
@@ -677,9 +651,9 @@ gulp.task('watch', function(next){
       .on( 'error', logError )
       .pipe( source('cytoscape.js') )
       .pipe( buffer() )
-      .pipe( derequire() )
+      .pipe( $.derequire() )
       .pipe( gulp.dest('build') )
-      .pipe( livereload() )
+      .pipe( $.livereload() )
     ;
   };
 
@@ -693,7 +667,7 @@ gulp.task('watch', function(next){
 // http://www.jshint.com/docs/options/
 gulp.task('lint', function(){
   return gulp.src( 'src/**' )
-    .pipe( jshint({
+    .pipe( $.jshint({
       newcap: false,
       funcscope: true,
       laxbreak: true,
@@ -724,6 +698,6 @@ gulp.task('lint', function(){
       }
     }) )
 
-    .pipe( jshint.reporter(jshStylish) )
+    .pipe( jshint.reporter( require('jshint-stylish') ) )
   ;
 });

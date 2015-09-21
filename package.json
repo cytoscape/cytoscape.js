@@ -86,6 +86,7 @@
     "gulp-jscs": "^2.0.0",
     "gulp-jshint": "^1.5.5",
     "gulp-livereload": "^3.8.0",
+    "gulp-load-plugins": "^0.10.0",
     "gulp-mocha": "^2.0.1",
     "gulp-prompt": "^0.1.2",
     "gulp-rename": "^1.2.2",

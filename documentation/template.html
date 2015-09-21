@@ -88,14 +88,6 @@
 			{{#each sections}}
 				<h1 id="{{id}}">{{name}} {{{bookmark}}}</h1>
 
-				{{#if extensions}}
-					<ul>
-					{{#each extensions}}
-						<li><a target="_blank" href="{{url}}"><code>{{name}}</code></a> : {{descr}}</li>
-					{{/each}}
-					</ul>
-				{{/if}}
-
 				{{#if html}}
 					{{{html}}}
 				{{/if}}
@@ -155,28 +147,19 @@
 				{{else}}
 					<h2 id="{{id}}">{{name}} {{{bookmark}}}</h2>
 
+					{{#if extensions}}
+						<ul>
+						{{#each extensions}}
+							<li><a target="_blank" href="{{url}}"><code>{{name}}</code></a> : {{descr}}</li>
+						{{/each}}
+						</ul>
+					{{/if}}
+
 					{{#if html}}
 						{{{html}}}
 					{{/if}}
 
 					{{#if layout}}
-						{{#if demos}}
-							<div class="gallery-demos">
-								{{#each demos}}
-									<div class="gallery-demo">
-										<div class="gallery-title">
-											<span class="gallery-name">{{name}}</span>
-										</div>
-
-										<a class="gallery-link" target="_blank" href="{{srcUrl}}">
-											<span class="gallery-preview" style="background-image: url('{{imgUrl}}');"></span>
-										</a>
-
-									</div>
-								{{/each}}
-							</div>
-						{{/if}}
-
 						<h3>Options</h3>
 						<pre><code class="lang-js">{{{layout.optionsFormatted}}}</code></pre>
 						<button class="run run-inline-code"><span class="icon-play"></span></button>

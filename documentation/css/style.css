@@ -251,7 +251,8 @@ button:active {
 	margin-top: 3em;
 
 	transition-property: opacity;
-	transition-duration: 250ms;
+	transition-duration: 125ms;
+	transition-timing-function: cubic-bezier(0.77, 0, 0.175, 1);
 	opacity: 1;
 }
 

@@ -31,32 +31,28 @@ $(function(){
     }, 0);
   });
 
-  function debounce( fn, wait ){
+  function debounce( fn, delay ){
   	var timeout;
 
   	return function(){
   		var context = this;
       var args = arguments;
-  		var callNow = !timeout;
 
   		clearTimeout( timeout );
   		timeout = setTimeout(function(){
   			timeout = null;
 
         fn.apply( context, args );
-  		}, wait );
+  		}, delay );
   	};
   };
 
   var $toclinks = $('.section > .toclink');
   var $tocinput = $('#toc-input');
   var $tocsections = $('#toc-sections');
+  var lastTxt;
 
-  $tocinput.on( 'keydown keyup keypress change', function(){
-    $tocsections.addClass('toc-sections-searching');
-  });
-
-  $tocinput.on( 'keydown keyup keypress change', debounce(function(){
+  var filterSections = debounce(function(){
     txt = $tocinput.val().toLowerCase();
 
     var $shown = txt === '' ? $toclinks : $toclinks.filter(function(i, ele){
@@ -83,7 +79,18 @@ $(function(){
     });
 
     $tocsections.removeClass('toc-sections-searching');
-  }, 250) );
+  }, 250);
+
+  $tocinput.on( 'keydown keyup keypress change', function(){
+    txt = $tocinput.val().toLowerCase();
+
+    if( txt === lastTxt ){ return; }
+    lastTxt = txt;
+
+    $tocsections.addClass('toc-sections-searching');
+
+    filterSections();
+  });
 
   $('#toc-clear').on('click', function(){
     $tocinput.val('').trigger('change');

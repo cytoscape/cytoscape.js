@@ -942,7 +942,7 @@
           "fns": [
             {
               "name": "eles.remove",
-              "descr": "Remove the elements from the graph.",
+              "descr": "Remove the elements from the graph, and return all elements removed by this call.",
               "md": "collection/remove"
             },
 

@@ -618,7 +618,7 @@ elesfn.remove = function( notifyRenderer ){
     }
   }
 
-  return this;
+  return new Collection( cy, removed );
 };
 
 elesfn.move = function( struct ){

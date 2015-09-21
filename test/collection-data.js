@@ -4,10 +4,11 @@ var cytoscape = require('../build/cytoscape.js', cytoscape);
 describe('Collection data', function(){
 
   var cy;
+  var n1;
 
   // test setup
-  beforeEach(function(done){
-    cytoscape({
+  beforeEach(function(){
+    cy = cytoscape({
       renderer: {
         name: 'null'
       },
@@ -26,13 +27,10 @@ describe('Collection data', function(){
             { data: { id: "n2n3", source: "n2", target: "n3", weight: 0.66 }, classes: "huh" },
             { data: { id: "n1n1", source: "n1", target: "n1" } }
         ]
-      },
-      ready: function(){
-        cy = this;
-
-        done();
       }
     });
+
+    n1 = cy.$('#n1');
   });
 
 
@@ -129,6 +127,98 @@ describe('Collection data', function(){
       expect( json ).to.have.property('classes');
       expect( json.classes === 'odd one' || json.classes === 'one odd' ).to.be.true;
 
+    });
+
+    it('sets data', function(){
+      var evts = 0;
+      n1.on('data', function(){ evts++; });
+
+      n1.json({ data: { foo: 'bar' } });
+
+      expect( n1.data('foo') ).to.equal('bar');
+      expect( evts ).to.equal(1);
+    });
+
+    it('sets classes', function(){
+      var evts = 0;
+      n1.on('class', function(){ evts++; });
+
+      n1.json({ classes: 'odd other' });
+
+      expect( n1.hasClass('odd') ).to.be.true;
+      expect( n1.hasClass('other') ).to.be.true;
+
+      expect( evts ).to.equal(1);
+    });
+
+    it('sets position', function(){
+      var evts = 0;
+      n1.on('position', function(){ evts++; });
+
+      n1.json({ position: { x: 100, y: 200 } });
+
+      expect( n1.position() ).to.deep.equal({ x: 100, y: 200 });
+
+      expect( evts ).to.equal(1);
+    });
+
+    it('sets selected', function(){
+      var evts = 0;
+      n1.on('select', function(){ evts++; });
+
+      n1.json({ selected: true });
+
+      expect( n1.selected() ).to.be.true;
+
+      expect( evts ).to.equal(1);
+    });
+
+    it('sets unselected', function(){
+      n1.select();
+
+      var evts = 0;
+      n1.on('unselect', function(){ evts++; });
+
+      n1.json({ selected: false });
+
+      expect( n1.selected() ).to.be.false;
+
+      expect( evts ).to.equal(1);
+    });
+
+    it('sets locked', function(){
+      var evts = 0;
+      n1.on('lock', function(){ evts++; });
+
+      n1.json({ locked: true });
+
+      expect( n1.locked() ).to.be.true;
+
+      expect( evts ).to.equal(1);
+    });
+
+    it('sets unlocked', function(){
+      n1.lock();
+
+      var evts = 0;
+      n1.on('lock', function(){ evts++; });
+
+      n1.json({ locked: false });
+
+      expect( n1.locked() ).to.be.false;
+
+      expect( evts ).to.equal(1);
+    });
+
+    it('sets grabbable', function(){
+      var evts = 0;
+      n1.on('grabify', function(){ evts++; });
+
+      n1.json({ grabbable: true });
+
+      expect( n1.grabbable() ).to.be.false;
+
+      expect( evts ).to.equal(1);
     });
 
   });

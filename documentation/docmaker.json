@@ -3464,61 +3464,6 @@
 
     {
       "name": "Extensions",
-      "extensions": [
-        {
-          "name": "cerebralweb",
-          "github": "silviafrias/cerebral-web",
-          "descr": "A plugin to enable fast and interactive visualisation of molecular interaction networks stratified based on subcellular localisation or other custom annotation."
-        },
-
-        {
-          "name": "cxtmenu",
-          "github": "cytoscape/cytoscape.js-cxtmenu",
-          "descr": "A circular context menu."
-        },
-
-        {
-          "name": "edgehandles",
-          "github": "cytoscape/cytoscape.js-edgehandles",
-          "descr": "UI for connecting nodes with edges."
-        },
-
-        {
-          "name": "navigator",
-          "github": "cytoscape/cytoscape.js-navigator",
-          "descr": "A bird's eye view widget of the graph."
-        },
-
-        {
-          "name": "noderesize",
-          "github": "curupaco/cytoscape.js-noderesize",
-          "descr": "A plugin that creates a node resize control."
-        },
-
-        {
-          "name": "panzoom",
-          "github": "cytoscape/cytoscape.js-panzoom",
-          "descr": "A panzoom UI widget."
-        },
-
-        {
-          "name": "qtip",
-          "github": "cytoscape/cytoscape.js-qtip",
-          "descr": "A wrapper that lets you use qTips on graph elements or the graph background."
-        },
-
-        {
-          "name": "supportimages",
-          "github": "curupaco/cytoscape.js-supportimages",
-          "descr": "A plugin that enables support images on Cytoscape.js"
-        },
-
-        {
-          "name": "toolbar",
-          "github": "bdparrish/cytoscape.js-toolbar",
-          "descr": "A plugin for Cytoscape.js that allows a user to create a custom toolbar to add next to a Cytoscape core instance."
-        }
-      ],
       "md": "extensions"
     },
 

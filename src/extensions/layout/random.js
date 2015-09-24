@@ -15,7 +15,7 @@ var defaults = {
 };
 
 function RandomLayout( options ){
-  this.options = util.extend(true, {}, defaults, options);
+  this.options = util.extend({}, defaults, options);
 }
 
 RandomLayout.prototype.run = function(){

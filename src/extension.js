@@ -44,8 +44,6 @@ function setExtension( type, name, registrant ){
 
     var layoutProto = Layout.prototype = Object.create( registrant.prototype );
 
-    //layoutProto.constructor = Layout;
-
     var optLayoutFns = [];
 
     for( var i = 0; i < optLayoutFns.length; i++ ){

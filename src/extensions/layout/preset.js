@@ -17,7 +17,7 @@ var defaults = {
 };
 
 function PresetLayout( options ){
-  this.options = util.extend(true, {}, defaults, options);
+  this.options = util.extend({}, defaults, options);
 }
 
 PresetLayout.prototype.run = function(){

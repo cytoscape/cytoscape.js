@@ -3,27 +3,36 @@ var cytoscape = require('../build/cytoscape.js', cytoscape);
 
 describe('Core graph manipulation', function(){
 
+  function OneLayout( options ){
+    this.options = options;
+  }
+
+  OneLayout.prototype.run = function(){
+    this.options.eles.layoutPositions(this, this.options, function(){
+      return { x: 1, y: 1 };
+    });
+  };
+
+  cytoscape('layout', 'one', OneLayout);
+
   var cy;
 
   // test setup
-  beforeEach(function(done){
-    cytoscape({
+  beforeEach(function(){
+    cy = cytoscape({
+      styleEnabled: true,
+
       elements: {
         nodes: [
             { data: { id: "n1", foo: "one", weight: 0.25 }, classes: "odd one" },
             { data: { id: "n2", foo: "two", weight: 0.5 }, classes: "even two" },
             { data: { id: "n3", foo: "three", weight: 0.75 }, classes: "odd three" }
         ],
-        
+
         edges: [
             { data: { id: "n1n2", source: "n1", target: "n2", weight: 0.33 }, classes: "uh" },
             { data: { id: "n2n3", source: "n2", target: "n3", weight: 0.66 }, classes: "huh" }
         ]
-      },
-      ready: function(){
-        cy = this;
-
-        done();
       }
     });
   });
@@ -82,11 +91,11 @@ describe('Core graph manipulation', function(){
 
     it('restores a node', function(){
       var n1 = cy.$('#n1');
-      
+
       n1.remove();
       expect( n1.removed() ).to.be.true;
       expect( cy.$('#n1') ).to.have.length(0);
-      
+
       n1.restore();
       expect( n1.removed() ).to.be.false;
       expect( cy.$('#n1') ).to.have.length(1);
@@ -101,7 +110,7 @@ describe('Core graph manipulation', function(){
       var n1 = cy.$('#n1');
 
       cy.remove(n1);
-      
+
       expect( cy.nodes() ).to.have.length(2);
       expect( cy.$('#n2') ).to.have.length(1);
       expect( cy.$('#n3') ).to.have.length(1);
@@ -112,7 +121,7 @@ describe('Core graph manipulation', function(){
 
     it('correctly removes an edge repeatedly', function(){
       var n1n2 = cy.$('#n1n2');
-      
+
       for( var i = 0; i < 10; i++ ){
         cy.remove( n1n2 );
 
@@ -139,10 +148,10 @@ describe('Core graph manipulation', function(){
       cy.remove('edge');
 
       expect( cy.edges() ).to.have.length(0);
-    }); 
+    });
 
   });
-  
+
   describe('cy.load()', function(){
 
     it('loads a single node graph on top of the current graph', function(done){
@@ -156,11 +165,11 @@ describe('Core graph manipulation', function(){
                 ]
       }, function(){
         // on ready
-        
+
         expect( cy.elements() ).to.have.length( 1 );
         expect( cy.nodes().data('id') ).to.equal('foo');
         expect( cy.$('#foo') ).to.have.length(1);
-        
+
         readyCalled = true;
       }, function(){
         // on done
@@ -205,11 +214,214 @@ describe('Core graph manipulation', function(){
     it('cy.filter() with selector', function(){
       expect( cy.filter('node#n1') ).to.have.length(1);
     });
-    
+
     it('cy.filter() with function', function(){
       expect( cy.filter(function(i, ele){
         return ele.id() === 'n1';
       }) ).to.have.length(1);
+    });
+
+  });
+
+  describe('cy.json()', function(){
+
+    it('cy.json() adds element', function(){
+      var cb = 0;
+      cy.on('add', function(){ cb++; });
+
+      cy.json({
+        elements: [
+          { group: 'nodes', data: { id: "n1", foo: "one", weight: 0.25 }, classes: "odd one" },
+          { group: 'nodes', data: { id: "n2", foo: "two", weight: 0.5 }, classes: "even two" },
+          { group: 'nodes', data: { id: "n3", foo: "three", weight: 0.75 }, classes: "odd three" },
+          { group: 'nodes', data: { id: "n4", foo: "four", weight: 1 }, classes: "even four" },
+          { group: 'edges', data: { id: "n1n2", source: "n1", target: "n2", weight: 0.33 }, classes: "uh" },
+          { group: 'edges', data: { id: "n2n3", source: "n2", target: "n3", weight: 0.66 }, classes: "huh" }
+        ]
+      });
+
+      expect( cy.$('#n1').length ).to.equal(1);
+      expect( cy.$('#n2').length ).to.equal(1);
+      expect( cy.$('#n3').length ).to.equal(1);
+      expect( cy.$('#n4').length ).to.equal(1);
+      expect( cy.$('#n1n2').length ).to.equal(1);
+      expect( cy.$('#n2n3').length ).to.equal(1);
+
+      expect( cy.$('#n1').data('foo') ).to.equal('one');
+
+      expect( cb ).to.equal(1);
+    });
+
+    it('cy.json() adds element via alt syntax', function(){
+      var cb = 0;
+      cy.on('add', function(){ cb++; });
+
+      cy.json({
+        elements: {
+          nodes: [
+              { data: { id: "n1", foo: "one", weight: 0.25 }, classes: "odd one" },
+              { data: { id: "n2", foo: "two", weight: 0.5 }, classes: "even two" },
+              { data: { id: "n3", foo: "three", weight: 0.75 }, classes: "odd three" },
+              { data: { id: "n4", foo: "four", weight: 1 }, classes: "even four" }
+          ],
+
+          edges: [
+              { data: { id: "n1n2", source: "n1", target: "n2", weight: 0.33 }, classes: "uh" },
+              { data: { id: "n2n3", source: "n2", target: "n3", weight: 0.66 }, classes: "huh" }
+          ]
+        }
+      });
+
+      expect( cy.$('#n1').length ).to.equal(1);
+      expect( cy.$('#n2').length ).to.equal(1);
+      expect( cy.$('#n3').length ).to.equal(1);
+      expect( cy.$('#n4').length ).to.equal(1);
+      expect( cy.$('#n1n2').length ).to.equal(1);
+      expect( cy.$('#n2n3').length ).to.equal(1);
+
+      expect( cy.$('#n1').data('foo') ).to.equal('one');
+
+      expect( cb ).to.equal(1);
+    });
+
+    it('cy.json() removes element', function(){
+      var cb = 0;
+      cy.on('remove', function(){ cb++; });
+
+      cy.json({
+        elements: [
+          { group: 'nodes', data: { id: "n1", foo: "one", weight: 0.25 }, classes: "odd one" },
+          { group: 'nodes', data: { id: "n2", foo: "two", weight: 0.5 }, classes: "even two" },
+          { group: 'edges', data: { id: "n1n2", source: "n1", target: "n2", weight: 0.33 }, classes: "uh" },
+          { group: 'edges', data: { id: "n2n3", source: "n2", target: "n3", weight: 0.66 }, classes: "huh" }
+        ]
+      });
+
+      expect( cy.$('#n1').length ).to.equal(1);
+      expect( cy.$('#n2').length ).to.equal(1);
+      expect( cy.$('#n3').length ).to.equal(0);
+      expect( cy.$('#n1n2').length ).to.equal(1);
+      expect( cy.$('#n2n3').length ).to.equal(0); // because connected
+
+      expect( cb ).to.equal(2);
+    });
+
+    it('cy.json() removes element via alt syntax', function(){
+      var cb = 0;
+      cy.on('remove', function(){ cb++; });
+
+      cy.json({
+        elements: {
+          nodes: [
+              { data: { id: "n1", foo: "one", weight: 0.25 }, classes: "odd one" },
+              { data: { id: "n2", foo: "two", weight: 0.5 }, classes: "even two" }
+          ],
+
+          edges: [
+              { data: { id: "n1n2", source: "n1", target: "n2", weight: 0.33 }, classes: "uh" },
+              { data: { id: "n2n3", source: "n2", target: "n3", weight: 0.66 }, classes: "huh" }
+          ]
+        }
+      });
+
+      expect( cy.$('#n1').length ).to.equal(1);
+      expect( cy.$('#n2').length ).to.equal(1);
+      expect( cy.$('#n3').length ).to.equal(0);
+      expect( cy.$('#n1n2').length ).to.equal(1);
+      expect( cy.$('#n2n3').length ).to.equal(0); // because connected
+
+      expect( cy.$('#n1').data('foo') ).to.equal('one');
+
+      expect( cb ).to.equal(2);
+    });
+
+    it('cy.json() updates style', function(){
+      cy.json({
+        style: [
+          {
+            selector: 'node',
+            style: {
+              'background-color': 'red'
+            }
+          }
+        ]
+      });
+
+      var styleColor = cy.$('#n1').style('background-color');
+
+      cy.$('#n1').style('background-color', 'red');
+
+      var bypassColor = cy.$('#n1').style('background-color');
+
+      expect( styleColor ).to.equal( bypassColor );
+    });
+
+    it('cy.json() updates layout', function(){
+      var cb = 0;
+      cy.on('layoutstop', function(){ cb++; });
+
+      cy.json({
+        layout: { name: 'one' }
+      });
+
+      cy.nodes().forEach(function(n){
+        expect( n.position() ).to.deep.equal({ x: 1, y: 1 });
+      });
+      expect( cb ).to.equal(1);
+    });
+
+    it('cy.json() sets zoom', function(){
+      var cb = 0;
+      cy.on('zoom', function(){ cb++; });
+
+      cy.json({
+        zoom: 3
+      });
+
+      expect( cy.zoom() ).to.equal(3);
+      expect( cb ).to.equal(1);
+    });
+
+    it('cy.json() sets pan', function(){
+      cy.json({
+        pan: { x: 100, y: 200 }
+      });
+
+      expect( cy.pan() ).to.deep.equal({ x: 100, y: 200 });
+    });
+
+    it('cy.json() sets one dim of pan', function(){
+      var cb = 0;
+      cy.on('pan', function(){ cb++; });
+
+      cy.json({
+        pan: { x: 100 }
+      });
+
+      expect( cy.pan().x ).to.equal(100);
+
+      cy.json({
+        pan: { y: 200 }
+      });
+
+      expect( cy.pan().x ).to.equal(100);
+      expect( cy.pan().y ).to.equal(200);
+
+      expect( cb ).to.equal(2);
+    });
+
+    it('cy.json() sets userPanningEnabled', function(){
+      cy.json({
+        userPanningEnabled: false
+      });
+
+      expect( cy.userPanningEnabled() ).to.equal( false );
+
+      cy.json({
+        userPanningEnabled: true
+      });
+
+      expect( cy.userPanningEnabled() ).to.equal( true );
     });
 
   });

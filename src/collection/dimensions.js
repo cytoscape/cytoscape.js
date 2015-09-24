@@ -7,79 +7,6 @@ var fn, elesfn;
 
 fn = elesfn = ({
 
-  data: define.data({
-    field: 'data',
-    bindingEvent: 'data',
-    allowBinding: true,
-    allowSetting: true,
-    settingEvent: 'data',
-    settingTriggersEvent: true,
-    triggerFnName: 'trigger',
-    allowGetting: true,
-    immutableKeys: {
-      'id': true,
-      'source': true,
-      'target': true,
-      'parent': true
-    },
-    updateStyle: true
-  }),
-
-  removeData: define.removeData({
-    field: 'data',
-    event: 'data',
-    triggerFnName: 'trigger',
-    triggerEvent: true,
-    immutableKeys: {
-      'id': true,
-      'source': true,
-      'target': true,
-      'parent': true
-    },
-    updateStyle: true
-  }),
-
-  scratch: define.data({
-    field: 'scratch',
-    bindingEvent: 'scratch',
-    allowBinding: true,
-    allowSetting: true,
-    settingEvent: 'scratch',
-    settingTriggersEvent: true,
-    triggerFnName: 'trigger',
-    allowGetting: true,
-    updateStyle: true
-  }),
-
-  removeScratch: define.removeData({
-    field: 'scratch',
-    event: 'scratch',
-    triggerFnName: 'trigger',
-    triggerEvent: true,
-    updateStyle: true
-  }),
-
-  rscratch: define.data({
-    field: 'rscratch',
-    allowBinding: false,
-    allowSetting: true,
-    settingTriggersEvent: false,
-    allowGetting: true
-  }),
-
-  removeRscratch: define.removeData({
-    field: 'rscratch',
-    triggerEvent: false
-  }),
-
-  id: function(){
-    var ele = this[0];
-
-    if( ele ){
-      return ele._private.data.id;
-    }
-  },
-
   position: define.data({
     field: 'position',
     bindingEvent: 'position',
@@ -152,63 +79,6 @@ fn = elesfn = ({
 
   silentPositions: function( pos ){
     return this.positions( pos, true );
-  },
-
-  updateCompoundBounds: function(){
-    var cy = this.cy();
-
-    if( !cy.styleEnabled() || !cy.hasCompoundNodes() ){ return cy.collection(); } // save cycles for non compound graphs or when style disabled
-
-    var updated = [];
-
-    function update( parent ){
-      var children = parent.children();
-      var style = parent._private.style;
-      var includeLabels = style['compound-sizing-wrt-labels'].value === 'include';
-      var bb = children.boundingBox({ includeLabels: includeLabels, includeEdges: true });
-      var padding = {
-        top: style['padding-top'].pxValue,
-        bottom: style['padding-bottom'].pxValue,
-        left: style['padding-left'].pxValue,
-        right: style['padding-right'].pxValue
-      };
-      var pos = parent._private.position;
-      var didUpdate = false;
-
-      if( style['width'].value === 'auto' ){
-        parent._private.autoWidth = bb.w;
-        pos.x = (bb.x1 + bb.x2 - padding.left + padding.right)/2;
-        didUpdate = true;
-      }
-
-      if( style['height'].value === 'auto' ){
-        parent._private.autoHeight = bb.h;
-        pos.y = (bb.y1 + bb.y2 - padding.top + padding.bottom)/2;
-        didUpdate = true;
-      }
-
-      if( didUpdate ){
-        updated.push( parent );
-      }
-    }
-
-    // go up, level by level
-    var eles = this.parent();
-    while( eles.nonempty() ){
-
-      // update each parent node in this level
-      for( var i = 0; i < eles.length; i++ ){
-        var ele = eles[i];
-
-        update( ele );
-      }
-
-      // next level
-      eles = eles.parent();
-    }
-
-    // return changed
-    return this.spawn( updated );
   },
 
   // get/set the rendered (i.e. on screen) positon of the element
@@ -339,6 +209,63 @@ fn = elesfn = ({
       w: x2 - x1,
       h: y2 - y1
     };
+  },
+
+  updateCompoundBounds: function(){
+    var cy = this.cy();
+
+    if( !cy.styleEnabled() || !cy.hasCompoundNodes() ){ return cy.collection(); } // save cycles for non compound graphs or when style disabled
+
+    var updated = [];
+
+    function update( parent ){
+      var children = parent.children();
+      var style = parent._private.style;
+      var includeLabels = style['compound-sizing-wrt-labels'].value === 'include';
+      var bb = children.boundingBox({ includeLabels: includeLabels, includeEdges: true });
+      var padding = {
+        top: style['padding-top'].pxValue,
+        bottom: style['padding-bottom'].pxValue,
+        left: style['padding-left'].pxValue,
+        right: style['padding-right'].pxValue
+      };
+      var pos = parent._private.position;
+      var didUpdate = false;
+
+      if( style['width'].value === 'auto' ){
+        parent._private.autoWidth = bb.w;
+        pos.x = (bb.x1 + bb.x2 - padding.left + padding.right)/2;
+        didUpdate = true;
+      }
+
+      if( style['height'].value === 'auto' ){
+        parent._private.autoHeight = bb.h;
+        pos.y = (bb.y1 + bb.y2 - padding.top + padding.bottom)/2;
+        didUpdate = true;
+      }
+
+      if( didUpdate ){
+        updated.push( parent );
+      }
+    }
+
+    // go up, level by level
+    var eles = this.parent();
+    while( eles.nonempty() ){
+
+      // update each parent node in this level
+      for( var i = 0; i < eles.length; i++ ){
+        var ele = eles[i];
+
+        update( ele );
+      }
+
+      // next level
+      eles = eles.parent();
+    }
+
+    // return changed
+    return this.spawn( updated );
   },
 
   // get the bounding box of the elements (in raw model position)
@@ -709,8 +636,6 @@ defineDimFns({
 });
 
 // aliases
-fn.attr = fn.data;
-fn.removeAttr = fn.removeData;
 fn.modelPosition = fn.point = fn.position;
 fn.modelPositions = fn.points = fn.positions;
 fn.renderedPoint = fn.renderedPosition;

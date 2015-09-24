@@ -19,13 +19,14 @@ var styfn = {};
   // each visual style property has a type and needs to be validated according to it
   styfn.types = {
     time: { number: true, min: 0, units: 's|ms', implicitUnits: 'ms' },
-    percent: { number: true, min: 0, max: 100, units: '%' },
+    percent: { number: true, min: 0, max: 100, units: '%', implicitUnits: '%' },
     zeroOneNumber: { number: true, min: 0, max: 1, unitless: true },
     nOneOneNumber: { number: true, min: -1, max: 1, unitless: true },
     nonNegativeInt: { number: true, min: 0, integer: true, unitless: true },
     position: { enums: ['parent', 'origin'] },
     nodeSize: { number: true, min: 0, enums: ['auto', 'label'] },
     number: { number: true },
+    numbers: { number: true, multiple: true },
     size: { number: true, min: 0 },
     bgSize: { number: true, min: 0, allowPercent: true },
     bgWH: { number: true, min: 0, allowPercent: true, enums: ['auto'] },
@@ -64,7 +65,7 @@ var styfn = {};
     fn: { mapping: true, fn: true },
     url: { regex: '^url\\s*\\(\\s*([^\\s]+)\\s*\\s*\\)|none|(.+)$' },
     propList: { propList: true },
-    angle: { number: true, units: 'deg|rad' },
+    angle: { number: true, units: 'deg|rad', implicitUnits: 'rad' },
     textRotation: { enums: ['none', 'autorotate'] },
     polygonPointList: { numberList: true, evenNumberList: true, min: -1, max: 1 },
     easing: {
@@ -191,11 +192,13 @@ var styfn = {};
     // edge line
     { name: 'line-style', type: t.lineStyle },
     { name: 'line-color', type: t.color },
-    { name: 'control-point-step-size', type: t.size },
-    { name: 'control-point-distance', type: t.number },
-    { name: 'control-point-weight', type: t.zeroOneNumber },
     { name: 'curve-style', type: t.curveStyle },
     { name: 'haystack-radius', type: t.zeroOneNumber },
+    { name: 'control-point-step-size', type: t.size },
+    { name: 'control-point-distance', type: t.number },
+    { name: 'control-point-distances', type: t.numbers },
+    { name: 'control-point-weight', type: t.number },
+    { name: 'control-point-weights', type: t.numbers },
 
     // these are just for the core
     { name: 'selection-box-color', type: t.color },

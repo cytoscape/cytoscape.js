@@ -84,7 +84,7 @@ BRp.findNearestElement = function(x, y, visibleElementsOnly, isTouch){
 
     var rs = _p.rscratch;
     var style = _p.style;
-    var width = style['width'].pxValue/2 + edgeThreshold; // more like a distance radius from centre
+    var width = style['width'].pfValue/2 + edgeThreshold; // more like a distance radius from centre
     var widthSq = width * width;
     var width2 = width * 2;
     var src = _p.source;
@@ -185,8 +185,8 @@ BRp.findNearestElement = function(x, y, visibleElementsOnly, isTouch){
       var tgtPos = tgt._private.position;
       var srcPos = src._private.position;
 
-      var srcArW = self.getArrowWidth( style['width'].pxValue );
-      var srcArH = self.getArrowHeight( style['width'].pxValue );
+      var srcArW = self.getArrowWidth( style['width'].pfValue );
+      var srcArH = self.getArrowHeight( style['width'].pfValue );
 
       var tgtArW = srcArW;
       var tgtArH = srcArH;
@@ -353,7 +353,7 @@ BRp.getAllInBox = function(x1, y1, x2, y2) {
     var _p = edge._private;
     var style = _p.style;
     var rs = _p.rscratch;
-    var width = style['width'].pxValue;
+    var width = style['width'].pfValue;
 
     if (rs.edgeType == 'self' || rs.edgeType == 'compound') {
       if ((heur = math.boxInBezierVicinity(x1, y1, x2, y2,
@@ -697,7 +697,7 @@ BRp.getLabelText = function( ele ){
     // console.log('wrap cache miss');
 
     var lines = text.split('\n');
-    var maxW = style['text-max-width'].pxValue;
+    var maxW = style['text-max-width'].pfValue;
     var wrappedLines = [];
 
     for( var l = 0; l < lines.length; l++ ){
@@ -746,7 +746,7 @@ BRp.calculateLabelDimensions = function( ele, text, extraKey ){
   var r = this;
   var style = ele._private.style;
   var fStyle = style['font-style'].strValue;
-  var size = style['font-size'].pxValue + 'px';
+  var size = style['font-size'].pfValue + 'px';
   var family = style['font-family'].strValue;
   // var variant = style['font-variant'].strValue;
   var weight = style['font-weight'].strValue;
@@ -825,8 +825,8 @@ BRp.recalculateRenderedStyle = function( eles ){
     if( _p.group === 'nodes' ){
       var pos = _p.position;
       var posSame = rstyle.nodeX != null && rstyle.nodeY != null && pos.x === rstyle.nodeX && pos.y === rstyle.nodeY;
-      var wSame = rstyle.nodeW != null && rstyle.nodeW === style['width'].pxValue;
-      var hSame = rstyle.nodeH != null && rstyle.nodeH === style['height'].pxValue;
+      var wSame = rstyle.nodeW != null && rstyle.nodeW === style['width'].pfValue;
+      var hSame = rstyle.nodeH != null && rstyle.nodeH === style['height'].pfValue;
 
       if( !posSame || !styleSame || !wSame || !hSame ){
         nodes.push( ele );
@@ -834,8 +834,8 @@ BRp.recalculateRenderedStyle = function( eles ){
 
       rstyle.nodeX = pos.x;
       rstyle.nodeY = pos.y;
-      rstyle.nodeW = style['width'].pxValue;
-      rstyle.nodeH = style['height'].pxValue;
+      rstyle.nodeW = style['width'].pfValue;
+      rstyle.nodeH = style['height'].pfValue;
     } else { // edges
 
       var srcPos = _p.source._private.position;
@@ -1079,8 +1079,8 @@ BRp.findEdgeControlPoints = function(edges) {
       var numEdges2 = pairEdges.length;
 
       var eStyle = edge_p.style;
-      var stepSize = eStyle['control-point-step-size'].pxValue;
-      var stepDist = eStyle['control-point-distance'] !== undefined ? eStyle['control-point-distance'].pxValue : undefined;
+      var stepSize = eStyle['control-point-step-size'].pfValue;
+      var stepDist = eStyle['control-point-distance'] !== undefined ? eStyle['control-point-distance'].pfValue : undefined;
       var stepWeight = eStyle['control-point-weight'].value;
       var edgeIsUnbundled = eStyle['curve-style'].value === 'unbundled-bezier';
 
@@ -1109,7 +1109,7 @@ BRp.findEdgeControlPoints = function(edges) {
       var tgtH2 = tgt.outerHeight();
 
       var width1 = rs.lastW;
-      var width2 = eStyle['control-point-step-size'].pxValue;
+      var width2 = eStyle['control-point-step-size'].pfValue;
 
       if( badBezier ){
         rs.badBezier = true;
@@ -1259,7 +1259,7 @@ BRp.findEdgeControlPoints = function(edges) {
       var badAEnd = !is.number( rs.arrowEndX ) || !is.number( rs.arrowEndY );
 
       var minCpADistFactor = 3;
-      var arrowW = this.getArrowWidth( eStyle['width'].pxValue ) * BRp.arrowShapeHeight;
+      var arrowW = this.getArrowWidth( eStyle['width'].pfValue ) * BRp.arrowShapeHeight;
       var minCpADist = minCpADistFactor * arrowW;
       var startACpDist = math.distance( { x: rs.cp2x, y: rs.cp2y }, { x: rs.startX, y: rs.startY } );
       var closeStartACp = startACpDist < minCpADist;

@@ -303,10 +303,10 @@ var createLayoutInfo = function(cy, layout, options) {
     tempNode.minX       = tempNode.positionX - tempNode.width  / 2;
     tempNode.maxY       = tempNode.positionY + tempNode.height / 2;
     tempNode.minY       = tempNode.positionY - tempNode.height / 2;
-    tempNode.padLeft    = n._private.style['padding-left'].pxValue;
-    tempNode.padRight   = n._private.style['padding-right'].pxValue;
-    tempNode.padTop     = n._private.style['padding-top'].pxValue;
-    tempNode.padBottom  = n._private.style['padding-bottom'].pxValue;
+    tempNode.padLeft    = parseFloat( n.style('padding-left') );
+    tempNode.padRight   = parseFloat( n.style('padding-right') );
+    tempNode.padTop     = parseFloat( n.style('padding-top') );
+    tempNode.padBottom  = parseFloat( n.style('padding-bottom') );
 
     // Add new node
     layoutInfo.layoutNodes.push(tempNode);

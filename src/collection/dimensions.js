@@ -224,10 +224,10 @@ fn = elesfn = ({
       var includeLabels = style['compound-sizing-wrt-labels'].value === 'include';
       var bb = children.boundingBox({ includeLabels: includeLabels, includeEdges: true });
       var padding = {
-        top: style['padding-top'].pxValue,
-        bottom: style['padding-bottom'].pxValue,
-        left: style['padding-left'].pxValue,
-        right: style['padding-right'].pxValue
+        top: style['padding-top'].pfValue,
+        bottom: style['padding-bottom'].pfValue,
+        left: style['padding-left'].pfValue,
+        right: style['padding-right'].pfValue
       };
       var pos = parent._private.position;
       var didUpdate = false;
@@ -347,7 +347,7 @@ fn = elesfn = ({
         var wHalf = 0;
 
         if( styleEnabled ){
-          w = style['width'].pxValue;
+          w = style['width'].pfValue;
           wHalf = w/2;
         }
 
@@ -578,7 +578,7 @@ var defineDimFns = function( opts ){
           case 'label':
             return _p.rstyle[ opts.labelName ] || 0;
           default:
-            return d.pxValue;
+            return d.pfValue;
         }
       } else {
         return 1;
@@ -596,8 +596,8 @@ var defineDimFns = function( opts ){
       if( styleEnabled ){
         var style = _p.style;
         var dim = ele[ opts.name ]();
-        var border = style['border-width'].pxValue;
-        var padding = style[ opts.paddings[0] ].pxValue + style[ opts.paddings[1] ].pxValue;
+        var border = style['border-width'].pfValue;
+        var padding = style[ opts.paddings[0] ].pfValue + style[ opts.paddings[1] ].pfValue;
 
         return dim + border + padding;
       } else {

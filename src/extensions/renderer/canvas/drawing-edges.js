@@ -14,11 +14,11 @@ CRp.drawEdge = function(context, edge, drawOverlayInstead) {
   var style = edge._private.style;
 
   // Edge line width
-  if (style['width'].pxValue <= 0) {
+  if (style['width'].pfValue <= 0) {
     return;
   }
 
-  var overlayPadding = style['overlay-padding'].pxValue;
+  var overlayPadding = style['overlay-padding'].pfValue;
   var overlayOpacity = style['overlay-opacity'].value;
   var overlayColor = style['overlay-color'].value;
 
@@ -56,15 +56,15 @@ CRp.drawEdge = function(context, edge, drawOverlayInstead) {
   // var sourceH = source.height();
 
 
-  var edgeWidth = style['width'].pxValue + (drawOverlayInstead ? 2 * overlayPadding : 0);
+  var edgeWidth = style['width'].pfValue + (drawOverlayInstead ? 2 * overlayPadding : 0);
   var lineStyle = drawOverlayInstead ? 'solid' : style['line-style'].value;
   context.lineWidth = edgeWidth;
 
-  var shadowBlur = style['shadow-blur'].pxValue;
+  var shadowBlur = style['shadow-blur'].pfValue;
   var shadowOpacity = style['shadow-opacity'].value;
   var shadowColor = style['shadow-color'].value;
-  var shadowOffsetX = style['shadow-offset-x'].pxValue;
-  var shadowOffsetY = style['shadow-offset-y'].pxValue;
+  var shadowOffsetX = style['shadow-offset-x'].pfValue;
+  var shadowOffsetY = style['shadow-offset-y'].pfValue;
 
   this.shadowStyle(context,  shadowColor, drawOverlayInstead ? 0 : shadowOpacity, shadowBlur, shadowOffsetX, shadowOffsetY);
 
@@ -269,7 +269,7 @@ CRp.drawArrowheads = function(context, edge, drawOverlayInstead) {
       self.strokeStyle(context, 255, 255, 255, 1);
 
       self.drawArrowShape( edge, prefix, context,
-        arrowClearFill, style['width'].pxValue, style[prefix + '-arrow-shape'].value,
+        arrowClearFill, style['width'].pfValue, style[prefix + '-arrow-shape'].value,
         x, y, dispX, dispY
       );
 
@@ -281,7 +281,7 @@ CRp.drawArrowheads = function(context, edge, drawOverlayInstead) {
     self.strokeStyle(context, color[0], color[1], color[2], style.opacity.value);
 
     self.drawArrowShape( edge, prefix, context,
-      arrowFill, style['width'].pxValue, style[prefix + '-arrow-shape'].value,
+      arrowFill, style['width'].pfValue, style[prefix + '-arrow-shape'].value,
       x, y, dispX, dispY
     );
   }

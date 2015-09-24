@@ -21,7 +21,7 @@ styfn.getRenderedStyle = function( ele ){
       var styleProp = style[ prop.name ];
 
       if( styleProp ){
-        var val = styleProp.unitless ? styleProp.strValue : (styleProp.pxValue * zoom) + 'px';
+        var val = styleProp.unitless ? styleProp.strValue : (styleProp.pfValue * zoom) + 'px';
         rstyle[ prop.name ] = val;
         rstyle[ util.dash2camel(prop.name) ] = val;
       }

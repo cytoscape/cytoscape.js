@@ -6,26 +6,21 @@ describe('Collection position & dimensions', function(){
   var cy;
 
   // test setup
-  beforeEach(function(done){
-    cytoscape({
+  beforeEach(function(){
+    cy = cytoscape({
       elements: {
         nodes: [
             { data: { id: 'n1' }, position: { x: 100, y: 200 } },
             { data: { id: 'n2' } },
             { data: { id: 'n3' } }
         ],
-        
+
         edges: [
             { data: { id: 'n1n2', source: 'n1', target: 'n2' } },
             { data: { id: 'n2n3', source: 'n2', target: 'n3' } }
         ]
       },
-      layout: { name: 'preset' },
-      ready: function(){
-        cy = this;
-
-        done();
-      }
+      layout: { name: 'preset' }
     });
   });
 
@@ -145,6 +140,40 @@ describe('Collection position & dimensions', function(){
       });
 
       n1.lock();
+    });
+
+  });
+
+  describe('Dimensions are nonzero', function(){
+
+    it('width', function(){
+      expect( cy.$('#n1').width() ).to.not.equal(0);
+      expect( cy.$('#n1').width() ).to.be.defined;
+    });
+
+    it('height', function(){
+      expect( cy.$('#n1').width() ).to.not.equal(0);
+      expect( cy.$('#n1').width() ).to.be.defined;
+    });
+
+    it('position', function(){
+      expect( cy.$('#n1').position().x ).to.be.defined;
+      expect( cy.$('#n1').position().y ).to.be.defined;
+    });
+
+    it('boundingbox', function(){
+      var bb = cy.$('#n1').boundingBox();
+
+      expect( bb.w ).to.be.defined;
+      expect( bb.w ).to.not.equal(0);
+
+      expect( bb.h ).to.be.defined;
+      expect( bb.h ).to.not.equal(0);
+
+      expect( bb.x1 ).to.be.defined;
+      expect( bb.x2 ).to.be.defined;
+      expect( bb.y1 ).to.be.defined;
+      expect( bb.y2 ).to.be.defined;
     });
 
   });

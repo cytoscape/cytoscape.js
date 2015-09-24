@@ -13,13 +13,7 @@ var elesfn = ({
     if( cy._private.batchingStyle ){
       var bEles = cy._private.batchStyleEles;
 
-      for( var i = 0; i < this.length; i++ ){
-        var ele = this[i];
-
-        if( !bEles.ids[ ele._private.id ] ){
-          bEles.push( ele );
-        }
-      }
+      bEles.merge( this );
 
       return this; // chaining and exit early when batching
     }

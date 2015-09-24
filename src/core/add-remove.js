@@ -6,6 +6,7 @@ var Collection = require('../collection');
 var Element = require('../collection/element');
 var window = require('../window');
 var document = window ? window.document : null;
+var NullRenderer = require('../extensions/renderer/null');
 
 function ready(f) {
   var fn = ( document && (document.readyState === 'interactive' || document.readyState === 'complete') )  ? f : ready;
@@ -58,8 +59,7 @@ var corefn = {
         if( is.array(elesArray) ){
 
           for( var j = 0, jl = elesArray.length; j < jl; j++ ){
-            var json = elesArray[j];
-            json.group = group;
+            var json = util.extend( { group: group }, elesArray[j] );
 
             jsons.push( json );
           }
@@ -130,7 +130,7 @@ var corefn = {
 
     }
 
-    if( window ){
+    if( window && !( cy.renderer() instanceof NullRenderer ) ){
       ready( callback );
     } else {
       callback();

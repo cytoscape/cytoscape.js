@@ -18,13 +18,13 @@ describe('Core initialisation', function(){
           { data: { id: 'n2', foo: 'two' } },
           { data: { id: 'n1', foo: 'what is this guy doing here' } }
         ]
-      }, 
+      },
       ready: function(){
         var cy = this;
 
         expect( cy.elements().size() ).to.equal(2);
         expect( cy.$('#n1').data('foo') ).to.equal('one');
-        
+
         done();
       }
     });
@@ -38,7 +38,7 @@ describe('Core initialisation', function(){
         var cy = this;
 
         expect( cy.elements().length ).to.equal(0);
-        
+
         done();
       }
     });
@@ -55,7 +55,7 @@ describe('Core initialisation', function(){
         var cy = this;
 
         expect( cy.elements().length ).to.equal(0);
-        
+
         done();
       }
     });
@@ -93,7 +93,7 @@ describe('Core initialisation', function(){
 
         expect( cy.edges().size() ).to.equal(1);
         expect( cy.nodes().size() ).to.equal(2);
-        
+
         done();
       }
     });
@@ -110,7 +110,7 @@ describe('Core initialisation', function(){
         var cy = this;
 
         expect( cy.$("#n1").parent().size() ).to.equal(0);
-        
+
         done();
       }
     });
@@ -169,17 +169,18 @@ describe('Core initialisation', function(){
             { data: { id: "n1" } },
             { data: { id: "n2" } }
           ]
-        },
-        ready: function(){
-          var cy = this;
-
-          expect( cy ).to.equal( gotCy );
-
-          done();
         }
       });
 
       var gotCy = $('#cy').cytoscape('get');
+
+      expect( gotCy ).to.be.defined;
+
+      $('#cy').cytoscape(function(){
+        expect( gotCy ).to.equal(this);
+
+        done();
+      });
     });
 
     it('overwrites old instance via jquery', function(done){
@@ -385,7 +386,7 @@ describe('Core initialisation', function(){
 
       $('#cy').cytoscape({
         headless: true,
-        
+
         elements: {
           nodes: [
             { data: { id: "n3" } },
@@ -412,6 +413,6 @@ describe('Core initialisation', function(){
 
   } // end browser only tests
 
-  
+
 
 });

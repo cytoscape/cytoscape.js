@@ -201,7 +201,7 @@ describe('Collection data', function(){
       n1.lock();
 
       var evts = 0;
-      n1.on('lock', function(){ evts++; });
+      n1.on('unlock', function(){ evts++; });
 
       n1.json({ locked: false });
 
@@ -211,10 +211,23 @@ describe('Collection data', function(){
     });
 
     it('sets grabbable', function(){
+      n1.ungrabify();
+
       var evts = 0;
       n1.on('grabify', function(){ evts++; });
 
       n1.json({ grabbable: true });
+
+      expect( n1.grabbable() ).to.be.true;
+
+      expect( evts ).to.equal(1);
+    });
+
+    it('sets ungrabbable', function(){
+      var evts = 0;
+      n1.on('ungrabify', function(){ evts++; });
+
+      n1.json({ grabbable: false });
 
       expect( n1.grabbable() ).to.be.false;
 
@@ -271,11 +284,10 @@ describe('Collection data', function(){
 
   });
 
-  describe('eles.batch()', function(){
+  describe('cy.batch()', function(){
 
     it('limits notifications to 1', function(){
       var numNots = cy.renderer().notifications;
-
       cy.batch(function(){
         cy.$('#n1')
           .addClass('foo')
@@ -284,13 +296,11 @@ describe('Collection data', function(){
           .select()
         ;
       });
-
       expect( cy.renderer().notifications ).to.equal( numNots + 1 );
     });
 
     it('can also be used async style', function(done){
       var numNots = cy.renderer().notifications;
-
       cy.startBatch();
 
       setTimeout(function(){
@@ -302,7 +312,6 @@ describe('Collection data', function(){
         ;
 
         cy.endBatch();
-
         expect( cy.renderer().notifications ).to.equal( numNots + 1 );
 
         done();

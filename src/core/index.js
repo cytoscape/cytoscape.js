@@ -305,7 +305,7 @@ util.extend(corefn, {
     var cy = this;
     var _p = cy._private;
 
-    if( obj ){ // set
+    if( is.plainObject(obj) ){ // set
 
       cy.startBatch();
 
@@ -323,7 +323,11 @@ util.extend(corefn, {
             if( ele.length !== 0 ){ // existing element should be updated
               ele.json( json );
             } else { // otherwise should be added
-              cy.add( json );
+              if( gr ){
+                cy.add( util.extend({ group: gr }, json) );
+              } else {
+                cy.add( json );
+              }
             }
           }
         };
@@ -385,7 +389,7 @@ util.extend(corefn, {
       cy.endBatch();
 
       return this; // chaining
-    } else { // get
+    } else if( obj === undefined ){ // get
       var json = {};
 
       json.elements = {};
@@ -429,7 +433,6 @@ util.extend(corefn, {
 [
   require('./add-remove'),
   require('./animation'),
-  require('./data-functions'),
   require('./events'),
   require('./export'),
   require('./layout'),

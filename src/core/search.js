@@ -17,7 +17,7 @@ var corefn = ({
     } else if( is.elementOrCollection( eles ) ){
       return eles.collection();
 
-    } else if( is.array( eles )  ){
+    } else if( is.array( eles ) ){
       return Collection( this, eles, opts );
     }
 

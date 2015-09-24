@@ -7,18 +7,16 @@ var extension = require('../extension');
 var corefn = ({
 
   layout: function( params ){
-    var layout = this._private.prevLayout = ( params == null ? this._private.prevLayout : this.initLayout( params ) );
+    var layout = this._private.prevLayout = ( params == null ? this._private.prevLayout : this.makeLayout( params ) );
 
     layout.run();
 
     return this; // chaining
   },
 
-  makeLayout: function( params ){
-    return this.initLayout( params );
-  },
+  makeLayout: function( options ){
+    var cy = this;
 
-  initLayout: function( options ){
     if( options == null ){
       util.error('Layout options must be specified to make a layout');
       return;
@@ -39,13 +37,13 @@ var corefn = ({
 
     var eles;
     if( is.string( options.eles ) ){
-      eles = this.$( options.eles );
+      eles = cy.$( options.eles );
     } else {
-      eles = options.eles != null ? options.eles : this.$();
+      eles = options.eles != null ? options.eles : cy.$();
     }
 
     var layout = new Layout( util.extend({}, options, {
-      cy: this,
+      cy: cy,
       eles: eles
     }) );
 

@@ -167,16 +167,16 @@ elesfn.json = function( obj ){
 
   var p = ele._private;
 
-  if( obj ){ // set
+  if( is.plainObject(obj) ){ // set
 
     cy.startBatch();
 
     if( obj.data ){
-      this.data( obj.data );
+      ele.data( obj.data );
     }
 
     if( obj.position ){
-      this.position( obj.position );
+      ele.position( obj.position );
     }
 
     // ignore group -- immutable
@@ -186,9 +186,9 @@ elesfn.json = function( obj ){
 
       if( obj_k != null && obj_k !== p[k] ){
         if( obj_k ){
-          this[ trueFnName ]();
+          ele[ trueFnName ]();
         } else {
-          this[ falseFnName ]();
+          ele[ falseFnName ]();
         }
       }
     };
@@ -204,14 +204,14 @@ elesfn.json = function( obj ){
     checkSwitch( 'grabbable', 'grabify', 'ungrabify' );
 
     if( obj.classes != null ){
-      this.classes( obj.classes );
+      ele.classes( obj.classes );
     }
 
     cy.endBatch();
 
     return this;
 
-  } else { // get
+  } else if( obj === undefined ){ // get
 
     var json = {
       data: util.copy( p.data ),

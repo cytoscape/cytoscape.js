@@ -4,17 +4,15 @@ var Collection = require('../collection');
 
 var corefn = ({
   notify: function( params ){
-    if( this._private.batchingNotify ){
-      var bEles = this._private.batchNotifyEles;
-      var bTypes = this._private.batchNotifyTypes;
+    var _p = this._private;
 
-      if( params.collection ){ for( var i = 0; i < params.collection.length; i++ ){
-        var ele = params.collection[i];
+    if( _p.batchingNotify ){
+      var bEles = _p.batchNotifyEles;
+      var bTypes = _p.batchNotifyTypes;
 
-        if( !bEles.ids[ ele._private.id ] ){
-          bEles.push( ele );
-        }
-      } }
+      if( params.collection ){
+        bEles.merge( params.collection );
+      }
 
       if( !bTypes.ids[ params.type ] ){
         bTypes.push( params.type );
@@ -23,7 +21,7 @@ var corefn = ({
       return; // notifications are disabled during batching
     }
 
-    if( !this._private.notificationsEnabled ){ return; } // exit on disabled
+    if( !_p.notificationsEnabled ){ return; } // exit on disabled
 
     var renderer = this.renderer();
 
@@ -55,12 +53,10 @@ var corefn = ({
 
     if( _p.batchCount === 0 ){
       _p.batchingStyle = _p.batchingNotify = true;
-      _p.batchStyleEles = [];
-      _p.batchNotifyEles = [];
+      _p.batchStyleEles = this.collection();
+      _p.batchNotifyEles = this.collection();
       _p.batchNotifyTypes = [];
 
-      _p.batchStyleEles.ids = {};
-      _p.batchNotifyEles.ids = {};
       _p.batchNotifyTypes.ids = {};
     }
 
@@ -77,7 +73,7 @@ var corefn = ({
     if( _p.batchCount === 0 ){
       // update style for dirty eles
       _p.batchingStyle = false;
-      new Collection(this, _p.batchStyleEles).updateStyle();
+      _p.batchStyleEles.updateStyle();
 
       // notify the renderer of queued eles and event types
       _p.batchingNotify = false;

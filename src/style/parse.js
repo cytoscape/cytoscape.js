@@ -61,8 +61,6 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
     };
   }
 
-  var hasPie = name.match(/pie-(\d+)-background-size/);
-
   // check if value is a function used as a mapper
   if( is.fn(value) ){
     return {
@@ -70,8 +68,7 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
       value: value,
       strValue: 'fn',
       mapped: types.fn,
-      bypass: propIsBypass,
-      hasPie: hasPie
+      bypass: propIsBypass
     };
   }
 
@@ -104,8 +101,7 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
       strValue: '' + value,
       mapped: mapped,
       field: data[1],
-      bypass: propIsBypass,
-      hasPie: hasPie
+      bypass: propIsBypass
     };
 
   } else if(
@@ -169,8 +165,7 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
       fieldMax: parseFloat( mapData[3] ),
       valueMin: valueMin.value,
       valueMax: valueMax.value,
-      bypass: propIsBypass,
-      hasPie: hasPie
+      bypass: propIsBypass
     };
   }
 
@@ -253,8 +248,7 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
       value: value,
       strValue: '' + value + (units ? units : ''),
       units: units,
-      bypass: propIsBypass,
-      hasPie: hasPie && value != null && value !== 0 && value !== ''
+      bypass: propIsBypass
     };
 
     // normalise value in pixels

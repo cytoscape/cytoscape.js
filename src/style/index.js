@@ -118,7 +118,7 @@ styfn.cssRule = function( name, value ){
     this[i].properties.push( property );
     this[i].properties[ property.name ] = property; // allow access by name as well
 
-    if( property.hasPie ){
+    if( property.name.match(/pie-(\d+)-background-size/) && property.value ){
       this._private.hasPie = true;
     }
 

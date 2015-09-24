@@ -23,7 +23,7 @@ CRp.drawNode = function(context, node, drawOverlayInstead) {
   var path;
   var pathCacheHit = false;
 
-  var overlayPadding = style['overlay-padding'].pxValue;
+  var overlayPadding = style['overlay-padding'].pfValue;
   var overlayOpacity = style['overlay-opacity'].value;
   var overlayColor = style['overlay-color'].value;
 
@@ -34,10 +34,10 @@ CRp.drawNode = function(context, node, drawOverlayInstead) {
   var parentOpacity = node.effectiveOpacity();
   if( parentOpacity === 0 ){ return; }
 
-  nodeWidth = node.width() + style['padding-left'].pxValue + style['padding-right'].pxValue;
-  nodeHeight = node.height() + style['padding-top'].pxValue + style['padding-bottom'].pxValue;
+  nodeWidth = node.width() + style['padding-left'].pfValue + style['padding-right'].pfValue;
+  nodeHeight = node.height() + style['padding-top'].pfValue + style['padding-bottom'].pfValue;
 
-  context.lineWidth = style['border-width'].pxValue;
+  context.lineWidth = style['border-width'].pfValue;
 
   if( drawOverlayInstead === undefined || !drawOverlayInstead ){
 
@@ -75,11 +75,11 @@ CRp.drawNode = function(context, node, drawOverlayInstead) {
 
     this.strokeStyle(context, borderColor[0], borderColor[1], borderColor[2], style['border-opacity'].value * parentOpacity);
 
-    var shadowBlur = style['shadow-blur'].pxValue;
+    var shadowBlur = style['shadow-blur'].pfValue;
     var shadowOpacity = style['shadow-opacity'].value;
     var shadowColor = style['shadow-color'].value;
-    var shadowOffsetX = style['shadow-offset-x'].pxValue;
-    var shadowOffsetY = style['shadow-offset-y'].pxValue;
+    var shadowOffsetX = style['shadow-offset-x'].pfValue;
+    var shadowOffsetY = style['shadow-offset-y'].pfValue;
 
     this.shadowStyle(context, shadowColor, shadowOpacity, shadowBlur, shadowOffsetX, shadowOffsetY);
 
@@ -156,7 +156,7 @@ CRp.drawNode = function(context, node, drawOverlayInstead) {
     }
 
     var darkness = style['background-blacken'].value;
-    var borderWidth = style['border-width'].pxValue;
+    var borderWidth = style['border-width'].pfValue;
 
     if( this.hasPie(node) ){
       this.drawPie( context, node, parentOpacity );
@@ -204,7 +204,7 @@ CRp.drawNode = function(context, node, drawOverlayInstead) {
       }
 
       if( borderStyle === 'double' ){
-        context.lineWidth = style['border-width'].pxValue/3;
+        context.lineWidth = style['border-width'].pfValue/3;
 
         var gco = context.globalCompositeOperation;
         context.globalCompositeOperation = 'destination-out';
@@ -278,8 +278,8 @@ CRp.drawPie = function( context, node, nodeOpacity ){
 
   if( pieSize.units === '%' ){
     radius = radius * pieSize.value / 100;
-  } else if( pieSize.pxValue !== undefined ){
-    radius = pieSize.pxValue / 2;
+  } else if( pieSize.pfValue !== undefined ){
+    radius = pieSize.pfValue / 2;
   }
 
   for( var i = 1; i <= cyStyle.pieBackgroundN; i++ ){ // 1..N

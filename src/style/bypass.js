@@ -101,7 +101,9 @@ styfn.overrideBypass = function( eles, name, value ){
   for( var i = 0; i < eles.length; i++ ){
     var ele = eles[i];
     var prop = ele._private.style[ name ];
-    var isColor = this.properties[ name ].type.color;
+    var type = this.properties[ name ].type;
+    var isColor = type.color;
+    var isMulti = type.mutiple;
 
     if( !prop.bypass ){ // need a bypass if one doesn't exist
       this.applyBypass( ele, name, value );
@@ -110,12 +112,14 @@ styfn.overrideBypass = function( eles, name, value ){
 
     prop.value = value;
 
-    if( prop.pxValue != null ){
-      prop.pxValue = value;
+    if( prop.pfValue != null ){
+      prop.pfValue = value;
     }
 
     if( isColor ){
-      prop.strValue = 'rgb(' + prop.value.join(',') + ')';
+      prop.strValue = 'rgb(' + value.join(',') + ')';
+    } else if( isMulti ){
+      prop.strValue = value.join(' ');
     } else {
       prop.strValue = '' + value;
     }

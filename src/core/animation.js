@@ -29,6 +29,7 @@ var corefn = ({
 
   startAnimationLoop: function(){
     var cy = this;
+    var style = cy.style;
 
     cy._private.animationsRunning = true;
 
@@ -523,14 +524,14 @@ var corefn = ({
 
       var start, end;
 
-      if( startProp.pxValue != null || startProp.value != null ){
-        start = startProp.pxValue != null ? startProp.pxValue : startProp.value;
+      if( startProp.pfValue != null || startProp.value != null ){
+        start = startProp.pfValue != null ? startProp.pfValue : startProp.value;
       } else {
         start = startProp;
       }
 
-      if( endProp.pxValue != null || endProp.value != null ){
-        end = endProp.pxValue != null ? endProp.pxValue : endProp.value;
+      if( endProp.pfValue != null || endProp.value != null ){
+        end = endProp.pfValue != null ? endProp.pfValue : endProp.value;
       } else {
         end = endProp;
       }
@@ -538,19 +539,25 @@ var corefn = ({
       if( is.number(start) && is.number(end) ){
         return easingFn( start, end, percent );
 
-      } else if( is.number(start[0]) && is.number(end[0]) ){ // then assume a colour
-        var c1 = start;
-        var c2 = end;
+      } else if( is.array(start) && is.array(end) ){
+        var easedArr = [];
 
-        var ch = function(ch1, ch2){
-          return Math.round( easingFn(ch1, ch2, percent) );
-        };
+        for( var i = 0; i < end.length; i++ ){
+          var si = start[i];
+          var ei = end[i];
 
-        var r = ch( c1[0], c2[0] );
-        var g = ch( c1[1], c2[1] );
-        var b = ch( c1[2], c2[2] );
+          if( si != null && ei != null ){
+            var val = easingFn(si, ei, percent);
 
-        return [r, g, b];
+            if( startProp.roundValue ){ val = Math.round( val ); }
+
+            easedArr.push( val );
+          } else {
+            easedArr.push( ei );
+          }
+        }
+
+        return easedArr;
       }
 
       return undefined;

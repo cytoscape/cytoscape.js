@@ -602,7 +602,7 @@ CRp.render = function( options ) {
         + coreStyle['active-bg-opacity'].value + ")";
 
       context.beginPath();
-      context.arc(pos.x, pos.y, coreStyle['active-bg-size'].pxValue / zoom, 0, 2 * Math.PI);
+      context.arc(pos.x, pos.y, coreStyle['active-bg-size'].pfValue / zoom, 0, 2 * Math.PI);
       context.fill();
     }
 

@@ -213,26 +213,26 @@ styfn.updateStyleHints = function(ele){
   var transform = style['text-transform'].strValue;
   var content = style['label'].strValue;
   var fStyle = style['font-style'].strValue;
-  var size = style['font-size'].pxValue + 'px';
+  var size = style['font-size'].pfValue + 'px';
   var family = style['font-family'].strValue;
   // var variant = style['font-variant'].strValue;
   var weight = style['font-weight'].strValue;
   var valign = style['text-valign'].strValue;
   var halign = style['text-valign'].strValue;
-  var oWidth = style['text-outline-width'].pxValue;
+  var oWidth = style['text-outline-width'].pfValue;
   var wrap = style['text-wrap'].strValue;
-  var wrapW = style['text-max-width'].pxValue;
+  var wrapW = style['text-max-width'].pfValue;
   _p.labelKey = fStyle +'$'+ size +'$'+ family +'$'+ weight +'$'+ content +'$'+ transform +'$'+ valign +'$'+ halign +'$'+ oWidth + '$' + wrap + '$' + wrapW;
   _p.fontKey = fStyle +'$'+ weight +'$'+ size +'$'+ family;
 
-  var width = style['width'].pxValue;
-  var height = style['height'].pxValue;
-  var borderW = style['border-width'].pxValue;
+  var width = style['width'].pfValue;
+  var height = style['height'].pfValue;
+  var borderW = style['border-width'].pfValue;
   _p.boundingBoxKey = width +'$'+ height +'$'+ borderW;
 
   if( ele._private.group === 'edges' ){
-    var cpss = style['control-point-step-size'].pxValue;
-    var cpd = style['control-point-distance'] ? style['control-point-distance'].pxValue : undefined;
+    var cpss = style['control-point-step-size'].pfValue;
+    var cpd = style['control-point-distance'] ? style['control-point-distance'].pfValue : undefined;
     var cpw = style['control-point-weight'].value;
     var curve = style['curve-style'].strValue;
 
@@ -492,8 +492,8 @@ styfn.updateTransitions = function( ele, diffProps, isBypass ){
   var _p = ele._private;
   var style = _p.style;
   var props = style['transition-property'].value;
-  var duration = style['transition-duration'].msValue;
-  var delay = style['transition-delay'].msValue;
+  var duration = style['transition-duration'].pfValue;
+  var delay = style['transition-delay'].pfValue;
   var css = {};
 
   if( props.length > 0 && duration > 0 ){
@@ -517,9 +517,9 @@ styfn.updateTransitions = function( ele, diffProps, isBypass ){
       if( !fromProp ){ continue; }
 
       // consider px values
-      if( is.number( fromProp.pxValue ) && is.number( toProp.pxValue ) ){
-        diff = toProp.pxValue - fromProp.pxValue; // nonzero is truthy
-        initVal = fromProp.pxValue + initDt * diff;
+      if( is.number( fromProp.pfValue ) && is.number( toProp.pfValue ) ){
+        diff = toProp.pfValue - fromProp.pfValue; // nonzero is truthy
+        initVal = fromProp.pfValue + initDt * diff;
 
       // consider numerical values
       } else if( is.number( fromProp.value ) && is.number( toProp.value ) ){

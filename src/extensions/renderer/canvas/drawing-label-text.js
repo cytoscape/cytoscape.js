@@ -14,8 +14,8 @@ CRp.drawEdgeText = function(context, edge) {
 
   if( this.hideEdgesOnViewport && (this.dragData.didDrag || this.pinching || this.hoverData.dragging || this.data.wheel || this.swipePanning) ){ return; } // save cycles on pinching
 
-  var computedSize = edge._private.style['font-size'].pxValue * edge.cy().zoom();
-  var minSize = edge._private.style['min-zoomed-font-size'].pxValue;
+  var computedSize = edge._private.style['font-size'].pfValue * edge.cy().zoom();
+  var minSize = edge._private.style['min-zoomed-font-size'].pfValue;
 
   if( computedSize < minSize ){
     return;
@@ -57,8 +57,8 @@ CRp.drawNodeText = function(context, node) {
     return;
   }
 
-  var computedSize = node._private.style['font-size'].pxValue * node.cy().zoom();
-  var minSize = node._private.style['min-zoomed-font-size'].pxValue;
+  var computedSize = node._private.style['font-size'].pfValue * node.cy().zoom();
+  var minSize = node._private.style['min-zoomed-font-size'].pfValue;
 
   if( computedSize < minSize ){
     return;
@@ -128,18 +128,18 @@ CRp.setupTextStyle = function( context, element ){
   var parentOpacity = element.effectiveOpacity();
   var style = element._private.style;
   var labelStyle = style['font-style'].strValue;
-  var labelSize = style['font-size'].pxValue + 'px';
+  var labelSize = style['font-size'].pfValue + 'px';
   var labelFamily = style['font-family'].strValue;
   var labelWeight = style['font-weight'].strValue;
   var opacity = style['text-opacity'].value * style['opacity'].value * parentOpacity;
   var outlineOpacity = style['text-outline-opacity'].value * opacity;
   var color = style['color'].value;
   var outlineColor = style['text-outline-color'].value;
-  var shadowBlur = style['text-shadow-blur'].pxValue;
+  var shadowBlur = style['text-shadow-blur'].pfValue;
   var shadowOpacity = style['text-shadow-opacity'].value;
   var shadowColor = style['text-shadow-color'].value;
-  var shadowOffsetX = style['text-shadow-offset-x'].pxValue;
-  var shadowOffsetY = style['text-shadow-offset-y'].pxValue;
+  var shadowOffsetX = style['text-shadow-offset-x'].pfValue;
+  var shadowOffsetY = style['text-shadow-offset-y'].pfValue;
 
   var fontCacheKey = element._private.fontKey;
   var cache = this.getFontCache(context);
@@ -201,10 +201,10 @@ CRp.drawText = function(context, element, textX, textY) {
   }
 
   if( element.isNode() ){
-    var pLeft = style['padding-left'].pxValue;
-    var pRight = style['padding-right'].pxValue;
-    var pTop = style['padding-top'].pxValue;
-    var pBottom = style['padding-bottom'].pxValue;
+    var pLeft = style['padding-left'].pfValue;
+    var pRight = style['padding-right'].pfValue;
+    var pTop = style['padding-top'].pfValue;
+    var pBottom = style['padding-bottom'].pfValue;
 
     textX += pLeft/2;
     textX -= pRight/2;
@@ -216,7 +216,7 @@ CRp.drawText = function(context, element, textX, textY) {
   if ( text != null && !isNaN(textX) && !isNaN(textY)) {
     var backgroundOpacity = style['text-background-opacity'].value;
     var borderOpacity = style['text-border-opacity'].value;
-    var textBorderWidth = style['text-border-width'].pxValue;
+    var textBorderWidth = style['text-border-width'].pfValue;
 
     if( backgroundOpacity > 0 || (textBorderWidth > 0 && borderOpacity > 0) ){
       var margin = 4 + textBorderWidth/2;
@@ -330,7 +330,7 @@ CRp.drawText = function(context, element, textX, textY) {
 
     }
 
-    var lineWidth = 2  * style['text-outline-width'].pxValue; // *2 b/c the stroke is drawn centred on the middle
+    var lineWidth = 2  * style['text-outline-width'].pfValue; // *2 b/c the stroke is drawn centred on the middle
 
     if( lineWidth > 0 ){
       context.lineWidth = lineWidth;
@@ -366,8 +366,8 @@ CRp.drawText = function(context, element, textX, textY) {
         textY += lineHeight;
       }
 
-      // var fontSize = style['font-size'].pxValue;
-      // wrapText(context, text, textX, textY, style['text-max-width'].pxValue, fontSize + 1);
+      // var fontSize = style['font-size'].pfValue;
+      // wrapText(context, text, textX, textY, style['text-max-width'].pfValue, fontSize + 1);
     } else {
       if( lineWidth > 0 ){
         context.strokeText( text, textX, textY );

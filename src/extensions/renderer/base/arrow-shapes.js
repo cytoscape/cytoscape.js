@@ -97,7 +97,7 @@ BRp.registerArrowShapes = function(){
       },
 
       gap: function( edge ){
-        return edge._private.style['width'].pxValue * 2;
+        return edge._private.style['width'].pfValue * 2;
       }
     }, defn );
   };
@@ -140,7 +140,7 @@ BRp.registerArrowShapes = function(){
     },
 
     gap: function( edge ){
-      return edge._private.style['width'].pxValue;
+      return edge._private.style['width'].pfValue;
     }
   } );
 
@@ -187,7 +187,7 @@ BRp.registerArrowShapes = function(){
     ],
 
     gap: function( edge ){
-      return edge._private.style['width'].pxValue;
+      return edge._private.style['width'].pfValue;
     }
   } );
 
@@ -229,7 +229,7 @@ BRp.registerArrowShapes = function(){
     },
 
     spacing: function( edge ){
-      return renderer.getArrowWidth(edge._private.style['width'].pxValue)
+      return renderer.getArrowWidth(edge._private.style['width'].pfValue)
         * this.radius;
     },
   } );
@@ -271,7 +271,7 @@ BRp.registerArrowShapes = function(){
     ],
 
     gap: function( edge ){
-      return edge._private.style['width'].pxValue;
+      return edge._private.style['width'].pfValue;
     }
   } );
 

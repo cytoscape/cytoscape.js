@@ -16,7 +16,11 @@ styfn.parse = function( name, value, propIsBypass, propIsFlat ){
   }
 
   // always need a copy since props are mutated later in their lifecycles
-  return util.copy( ret );
+  ret = util.copy( ret );
+
+  ret.value = util.copy( ret.value ); // because it could be an array, e.g. colour
+
+  return ret;
 };
 
 // parse a property; return null on invalid; return parsed property otherwise
@@ -110,6 +114,7 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
     ( mapScratch = new RegExp( types.mapScratch.regex ).exec( value ) )
   ){
     if( propIsBypass ){ return false; } // mappers not allowed in bypass
+    if( type.multiple ){ return false; } // impossible to map to num
 
     var mapped;
     if( mapData ){
@@ -125,10 +130,10 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
     // we can map only if the type is a colour or a number
     if( !(type.color || type.number) ){ return false; }
 
-    var valueMin = this.parse( name, mapData[4]); // parse to validate
+    var valueMin = this.parse( name, mapData[4] ); // parse to validate
     if( !valueMin || valueMin.mapped ){ return false; } // can't be invalid or mapped
 
-    var valueMax = this.parse( name, mapData[5]); // parse to validate
+    var valueMax = this.parse( name, mapData[5] ); // parse to validate
     if( !valueMax || valueMax.mapped ){ return false; } // can't be invalid or mapped
 
     // check if valueMin and valueMax are the same
@@ -166,6 +171,27 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
       valueMin: valueMin.value,
       valueMax: valueMax.value,
       bypass: propIsBypass
+    };
+  }
+
+  if( type.multiple && !propIsFlat ){
+    var vals = valueIsString ? value.split(/\s+/) : [ value ];
+    var valArr = vals.map(function( v ){
+      var p = self.parse( name, v, propIsBypass, true );
+
+      if( p.pfValue != null ){
+        return p.pfValue;
+      } else {
+        return p.value;
+      }
+    });
+
+    return {
+      name: name,
+      value: valArr,
+      strValue: valArr.join(' '),
+      bypass: propIsBypass,
+      units: type.number ? type.implicitUnits || 'px' : undefined
     };
   }
 
@@ -253,14 +279,19 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
 
     // normalise value in pixels
     if( type.unitless || (units !== 'px' && units !== 'em') ){
-      // then pxValue does not apply
+      // then pfValue does not apply
     } else {
-      ret.pxValue = ( units === 'px' || !units ? (value) : (this.getEmSizeInPixels() * value) );
+      ret.pfValue = ( units === 'px' || !units ? (value) : (this.getEmSizeInPixels() * value) );
     }
 
     // normalise value in ms
     if( units === 'ms' || units === 's' ){
-      ret.msValue = units === 'ms' ? value : 1000 * value;
+      ret.pfValue = units === 'ms' ? value : 1000 * value;
+    }
+
+    // normalise value in rad
+    if( units === 'deg' || units === 'rad' ){
+      ret.pfValue = units === 'rad' ? value : value * Math.PI/180;
     }
 
     return ret;
@@ -330,7 +361,8 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
       name: name,
       value: tuple,
       strValue: '' + value,
-      bypass: propIsBypass
+      bypass: propIsBypass,
+      roundValue: true
     };
 
   } else if( type.regex || type.regexes ){

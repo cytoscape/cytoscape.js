@@ -1080,8 +1080,8 @@ BRp.findEdgeControlPoints = function(edges) {
 
       var eStyle = edge_p.style;
       var stepSize = eStyle['control-point-step-size'].pfValue;
-      var stepDist = eStyle['control-point-distance'] !== undefined ? eStyle['control-point-distance'].pfValue : undefined;
-      var stepWeight = eStyle['control-point-weight'].value;
+      var stepDist = eStyle['control-point-distances'] !== undefined ? eStyle['control-point-distances'].pfValue[0] : undefined;
+      var stepWeight = eStyle['control-point-weights'].value[0];
       var edgeIsUnbundled = eStyle['curve-style'].value === 'unbundled-bezier';
 
       var swappedDirection = edge_p.source !== src;
@@ -1246,8 +1246,6 @@ BRp.findEdgeControlPoints = function(edges) {
 
         rs.cp2x = adjustedMidpt.x + vectorNormInverse.x * distanceFromMidpoint;
         rs.cp2y = adjustedMidpt.y + vectorNormInverse.y * distanceFromMidpoint;
-
-        // console.log(edge, midPointX, displacementX, distanceFromMidpoint);
       }
 
       // find endpts for edge

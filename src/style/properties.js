@@ -195,9 +195,7 @@ var styfn = {};
     { name: 'curve-style', type: t.curveStyle },
     { name: 'haystack-radius', type: t.zeroOneNumber },
     { name: 'control-point-step-size', type: t.size },
-    { name: 'control-point-distance', type: t.number },
     { name: 'control-point-distances', type: t.numbers },
-    { name: 'control-point-weight', type: t.number },
     { name: 'control-point-weights', type: t.numbers },
 
     // these are just for the core
@@ -214,7 +212,9 @@ var styfn = {};
 
   // define aliases
   var aliases = styfn.aliases = [
-    { name: 'content', pointsTo: 'label' }
+    { name: 'content', pointsTo: 'label' },
+    { name: 'control-point-distance', pointsTo: 'control-point-distances' },
+    { name: 'control-point-weight', pointsTo: 'control-point-weights' }
   ];
 
   // pie backgrounds for nodes
@@ -374,7 +374,7 @@ styfn.addDefaultStylesheet = function(){
         'line-style': 'solid',
         'line-color': '#ddd',
         'control-point-step-size': 40,
-        'control-point-weight': 0.5,
+        'control-point-weights': 0.5,
         'curve-style': 'bezier',
         'haystack-radius': 0.8
       }, [

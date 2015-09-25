@@ -23,12 +23,6 @@ CRp.getPixelRatio = function(){
     context.oBackingStorePixelRatio ||
     context.backingStorePixelRatio || 1;
 
-  //console.log(window.devicePixelRatio, backingStore);
-
-  // if( isFirefox ){ // because ff can't scale canvas properly
-  //   return 1;
-  // }
-
   return (window.devicePixelRatio || 1) / backingStore;
 };
 

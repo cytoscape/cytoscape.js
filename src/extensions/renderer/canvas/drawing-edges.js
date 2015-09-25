@@ -44,17 +44,10 @@ CRp.drawEdge = function(context, edge, drawOverlayInstead) {
     context.lineCap = 'butt';
   }
 
-  var startNode, endNode, source, target;
-  source = startNode = edge._private.source;
-  target = endNode = edge._private.target;
-
-  // var targetPos = target._private.position;
-  // var targetW = target.width();
-  // var targetH = target.height();
-  // var sourcePos = source._private.position;
-  // var sourceW = source.width();
-  // var sourceH = source.height();
-
+  var source = edge._private.source;
+  var target = edge._private.target;
+  var srcPos = source._private.position;
+  var tgtPos = target._private.position;
 
   var edgeWidth = style['width'].pfValue + (drawOverlayInstead ? 2 * overlayPadding : 0);
   var lineStyle = drawOverlayInstead ? 'solid' : style['line-style'].value;
@@ -68,14 +61,7 @@ CRp.drawEdge = function(context, edge, drawOverlayInstead) {
 
   this.shadowStyle(context,  shadowColor, drawOverlayInstead ? 0 : shadowOpacity, shadowBlur, shadowOffsetX, shadowOffsetY);
 
-  // if( rs.edgeType !== 'haystack' ){
-  //   this.findEndpoints(edge);
-  // }
-
   if( rs.edgeType === 'haystack' ){
-    // var radius = style['haystack-radius'].value;
-    // var halfRadius = radius/2; // b/c have to half width/height
-
     this.drawStyledEdge(
       edge,
       context,
@@ -83,20 +69,23 @@ CRp.drawEdge = function(context, edge, drawOverlayInstead) {
       lineStyle,
       edgeWidth
     );
-  } else if (rs.edgeType === 'self' || rs.edgeType === 'compound') {
+  } else if ( rs.edgeType === 'self' || rs.edgeType === 'compound' ){
 
-    var details = edge._private.rscratch;
-    var points = [details.startX, details.startY, details.cp2ax,
-      details.cp2ay, details.selfEdgeMidX, details.selfEdgeMidY,
-      details.selfEdgeMidX, details.selfEdgeMidY,
-      details.cp2cx, details.cp2cy, details.endX, details.endY];
+    var points = [
+      rs.startX, rs.startY,
+      rs.cp2ax, rs.cp2ay,
+      rs.selfEdgeMidX, rs.selfEdgeMidY,
+      rs.selfEdgeMidX, rs.selfEdgeMidY,
+      rs.cp2cx, rs.cp2cy,
+      rs.endX, rs.endY
+    ];
 
     this.drawStyledEdge(edge, context, points, lineStyle, edgeWidth);
 
-  } else if (rs.edgeType === 'straight') {
+  } else if ( rs.edgeType === 'straight' ){
 
-    var nodeDirectionX = endNode._private.position.x - startNode._private.position.x;
-    var nodeDirectionY = endNode._private.position.y - startNode._private.position.y;
+    var nodeDirectionX = tgtPos.x - srcPos.x;
+    var nodeDirectionY = tgtPos.y - srcPos.y;
 
     var edgeDirectionX = rs.endX - rs.startX;
     var edgeDirectionY = rs.endY - rs.startY;
@@ -107,23 +96,34 @@ CRp.drawEdge = function(context, edge, drawOverlayInstead) {
       rs.straightEdgeTooShort = true;
     } else {
 
-      var details = rs;
-      this.drawStyledEdge(edge, context, [details.startX, details.startY,
-                                    details.endX, details.endY],
-                                    lineStyle,
-                                    edgeWidth);
+      this.drawStyledEdge(
+        edge,
+        context,
+        [rs.startX, rs.startY, rs.endX, rs.endY],
+        lineStyle,
+        edgeWidth
+      );
 
       rs.straightEdgeTooShort = false;
     }
-  } else {
+  } else if( rs.edgeType === 'bezier' ){
 
-    var details = rs;
-
-    this.drawStyledEdge(edge, context, [details.startX, details.startY,
-      details.cp2x, details.cp2y, details.endX, details.endY],
+    this.drawStyledEdge(
+      edge,
+      context,
+      [rs.startX, rs.startY, rs.cp2x, rs.cp2y, rs.endX, rs.endY],
       lineStyle,
-      edgeWidth);
+      edgeWidth
+    );
 
+  } else if( rs.edgeType === 'multibezier' ){
+    this.drawStyledEdge(
+      edge,
+      context,
+      rs.allpts,
+      lineStyle,
+      edgeWidth
+    );
   }
 
   if( rs.edgeType === 'haystack' ){
@@ -137,8 +137,7 @@ CRp.drawEdge = function(context, edge, drawOverlayInstead) {
 };
 
 
-CRp.drawStyledEdge = function(
-    edge, context, pts, type, width) {
+CRp.drawStyledEdge = function(edge, context, pts, type, width) {
 
   // 3 points given -> assume Bezier
   // 2 -> assume straight
@@ -191,15 +190,22 @@ CRp.drawStyledEdge = function(
 
   if( !pathCacheHit ){
     if( context.beginPath ){ context.beginPath(); }
-    context.moveTo(pts[0], pts[1]);
+    context.moveTo( pts[0], pts[1] );
 
     if( pts.length === 6 && !rs.badBezier ){ // bezier
-      context.quadraticCurveTo(pts[2], pts[3], pts[4], pts[5]);
+      context.quadraticCurveTo( pts[2], pts[3], pts[4], pts[5] );
+
     } else if( pts.length === 12 && !rs.badBezier ){ // double bezier loop
-      context.quadraticCurveTo(pts[2], pts[3], pts[4], pts[5]);
-      context.quadraticCurveTo(pts[8], pts[9], pts[10], pts[11]);
+      context.quadraticCurveTo( pts[2], pts[3], pts[4], pts[5] );
+      context.quadraticCurveTo( pts[8], pts[9], pts[10], pts[11] );
+
     } else if( pts.length === 4 && !rs.badLine ){ // line
-      context.lineTo(pts[2], pts[3]);
+      context.lineTo( pts[2], pts[3] );
+
+    } else { // multibezier
+      for( var i = 2; i + 3 < pts.length; i += 4 ){
+        context.quadraticCurveTo( pts[i], pts[i+1], pts[i+2], pts[i+3] );
+      }
     }
   }
 

@@ -19,7 +19,9 @@ styfn.parse = function( name, value, propIsBypass, propIsFlat ){
   // always need a copy since props are mutated later in their lifecycles
   ret = util.copy( ret );
 
-  ret.value = util.copy( ret.value ); // because it could be an array, e.g. colour
+  if( ret ){
+    ret.value = util.copy( ret.value ); // because it could be an array, e.g. colour
+  }
 
   return ret;
 };

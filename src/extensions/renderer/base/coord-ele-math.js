@@ -114,24 +114,7 @@ BRp.findNearestElement = function(x, y, visibleElementsOnly, isTouch){
       return false;
     };
 
-    if (rs.edgeType === 'self' || rs.edgeType === 'compound') {
-      if(
-          (
-            (inEdgeBB = math.inBezierVicinity(x, y, rs.startX, rs.startY, rs.cp2ax, rs.cp2ay, rs.selfEdgeMidX, rs.selfEdgeMidY, widthSq))
-              && passesVisibilityCheck() &&
-            ( widthSq > (sqDist = math.sqDistanceToQuadraticBezier(x, y, rs.startX, rs.startY, rs.cp2ax, rs.cp2ay, rs.selfEdgeMidX, rs.selfEdgeMidY)) )
-          )
-            ||
-          (
-            (inEdgeBB = math.inBezierVicinity(x, y, rs.selfEdgeMidX, rs.selfEdgeMidY, rs.cp2cx, rs.cp2cy, rs.endX, rs.endY, widthSq))
-              && passesVisibilityCheck() &&
-            ( widthSq > (sqDist = math.sqDistanceToQuadraticBezier(x, y, rs.selfEdgeMidX, rs.selfEdgeMidY, rs.cp2cx, rs.cp2cy, rs.endX, rs.endY)) )
-          )
-      ){
-        near.push( edge );
-      }
-
-    } else if (rs.edgeType === 'haystack') {
+    if( rs.edgeType === 'haystack' ){
       var radius = style['haystack-radius'].value;
       var halfRadius = radius/2; // b/c have to half width/height
 
@@ -155,7 +138,7 @@ BRp.findNearestElement = function(x, y, visibleElementsOnly, isTouch){
         near.push( edge );
       }
 
-    } else if (rs.edgeType === 'straight') {
+    } else if( rs.edgeType === 'straight' ){
       if(
         (inEdgeBB = math.inLineVicinity(x, y, rs.startX, rs.startY, rs.endX, rs.endY, width2))
           && passesVisibilityCheck() &&
@@ -164,13 +147,16 @@ BRp.findNearestElement = function(x, y, visibleElementsOnly, isTouch){
         near.push( edge );
       }
 
-    } else if (rs.edgeType === 'bezier') {
-      if(
-        (inEdgeBB = math.inBezierVicinity(x, y, rs.startX, rs.startY, rs.cp2x, rs.cp2y, rs.endX, rs.endY, widthSq))
-          && passesVisibilityCheck() &&
-        (widthSq > (sqDist = math.sqDistanceToQuadraticBezier(x, y, rs.startX, rs.startY, rs.cp2x, rs.cp2y, rs.endX, rs.endY)) )
-      ){
-        near.push( edge );
+    } else if( rs.edgeType === 'bezier' || rs.edgeType === 'multibezier' || rs.edgeType === 'self' || rs.edgeType === 'compound' ){
+      var pts = rs.allpts;
+      for( var i = 0; i + 5 < rs.allpts.length; i += 4 ){
+        if(
+          (inEdgeBB = math.inBezierVicinity(x, y, pts[i], pts[i+1], pts[i+2], pts[i+3], pts[i+4], pts[i+5], widthSq))
+            && passesVisibilityCheck() &&
+          (widthSq > (sqDist = math.sqDistanceToQuadraticBezier(x, y, pts[i], pts[i+1], pts[i+2], pts[i+3], pts[i+4], pts[i+5])) )
+        ){
+          near.push( edge );
+        }
       }
     }
 
@@ -348,63 +334,41 @@ BRp.getAllInBox = function(x1, y1, x2, y2) {
     }
   }
 
-  for ( var i = 0; i < edges.length; i++ ){
-    var edge = edges[i];
+  for( var e = 0; e < edges.length; e++ ){
+    var edge = edges[e];
     var _p = edge._private;
     var style = _p.style;
     var rs = _p.rscratch;
     var width = style['width'].pfValue;
 
-    if (rs.edgeType == 'self' || rs.edgeType == 'compound') {
-      if ((heur = math.boxInBezierVicinity(x1, y1, x2, y2,
-          rs.startX, rs.startY,
-          rs.cp2ax, rs.cp2ay,
-          rs.endX, rs.endY, width))
-            &&
-          (heur == 2 || (heur == 1 && math.checkBezierInBox(x1, y1, x2, y2,
-            rs.startX, rs.startY,
-            rs.cp2ax, rs.cp2ay,
-            rs.endX, rs.endY, width)))
-              ||
-        (heur = math.boxInBezierVicinity(x1, y1, x2, y2,
-          rs.startX, rs.startY,
-          rs.cp2cx, rs.cp2cy,
-          rs.endX, rs.endY, width))
-            &&
-          (heur == 2 || (heur == 1 && math.checkBezierInBox(x1, y1, x2, y2,
-            rs.startX, rs.startY,
-            rs.cp2cx, rs.cp2cy,
-            rs.endX, rs.endY, width)))
-        )
-      { box.push(edge); }
-    }
+    if( rs.edgeType === 'bezier' || rs.edgeType === 'multibezier' || rs.edgeType === 'self' || rs.edgeType === 'compound' ){
 
-    if (rs.edgeType == 'bezier' &&
-      (heur = math.boxInBezierVicinity(x1, y1, x2, y2,
-          rs.startX, rs.startY,
-          rs.cp2x, rs.cp2y,
-          rs.endX, rs.endY, width))
-            &&
-          (heur == 2 || (heur == 1 && math.checkBezierInBox(x1, y1, x2, y2,
+      var pts = rs.allpts;
+      for( var i = 0; i + 6 < pts.length; i += 4 ){
+        if(
+          math.boxInBezierVicinity( x1, y1, x2, y2, pts[i], pts[i+1], pts[i+2], pts[i+3], pts[i+4], pts[i+5], width )
+          && math.checkBezierInBox( x1, y1, x2, y2, pts[i], pts[i+1], pts[i+2], pts[i+3], pts[i+4], pts[i+5], width )
+        ){
+          box.push(edge);
+        }
+      }
+
+    } else if( rs.edgeType === 'straight' ){
+
+      if( (heur = math.boxInBezierVicinity(x1, y1, x2, y2,
             rs.startX, rs.startY,
-            rs.cp2x, rs.cp2y,
-            rs.endX, rs.endY, width))))
-      { box.push(edge); }
+            rs.startX * 0.5 + rs.endX * 0.5,
+            rs.startY * 0.5 + rs.endY * 0.5,
+            rs.endX, rs.endY, width))
+              &&
+            (heur === 2 || (heur === 1 && math.checkStraightEdgeInBox(x1, y1, x2, y2,
+              rs.startX, rs.startY,
+              rs.endX, rs.endY, width)))
+      ){
+        box.push(edge);
+      }
 
-    if (rs.edgeType == 'straight' &&
-      (heur = math.boxInBezierVicinity(x1, y1, x2, y2,
-          rs.startX, rs.startY,
-          rs.startX * 0.5 + rs.endX * 0.5,
-          rs.startY * 0.5 + rs.endY * 0.5,
-          rs.endX, rs.endY, width))
-            && /* console.log('test', heur) == undefined && */
-          (heur == 2 || (heur == 1 && math.checkStraightEdgeInBox(x1, y1, x2, y2,
-            rs.startX, rs.startY,
-            rs.endX, rs.endY, width))))
-      { box.push(edge); }
-
-
-    if (rs.edgeType == 'haystack'){
+    } else if( rs.edgeType === 'haystack' ){
       var tgt = edge.target()[0];
       var tgtPos = tgt.position();
       var src = edge.source()[0];
@@ -561,14 +525,7 @@ BRp.projectBezier = function( edge ){
   var rs = _p.rscratch;
   var bpts = _p.rstyle.bezierPts = []; // jshint ignore:line
 
-  if( rs.edgeType === 'self' ){
-    pushBezierPts( edge, [rs.startX, rs.startY, rs.cp2ax, rs.cp2ay, rs.selfEdgeMidX, rs.selfEdgeMidY] );
-    pushBezierPts( edge, [rs.selfEdgeMidX, rs.selfEdgeMidY, rs.cp2cx, rs.cp2cy, rs.endX, rs.endY] );
-
-  } else if( rs.edgeType === 'bezier' ){
-    pushBezierPts( edge, [rs.startX, rs.startY, rs.cp2x, rs.cp2y, rs.endX, rs.endY] );
-
-  } else if( rs.edgeType === 'multibezier' ){
+  if( rs.edgeType === 'multibezier' || rs.edgeType === 'bezier' || rs.edgeType === 'self' || rs.edgeType === 'compound' ){
     for( var i = 0; i + 6 < rs.allpts.length; i += 4 ){
       pushBezierPts( edge, rs.allpts.slice(i, i+6) );
     }
@@ -633,20 +590,20 @@ BRp.recalculateEdgeLabelProjection = function( edge ){
   //var style = _p.style;
   var rstyle = _p.rstyle;
 
-  if (rs.edgeType == 'self') {
-    edgeCenterX = rs.selfEdgeMidX;
-    edgeCenterY = rs.selfEdgeMidY;
-  } else if (rs.edgeType == 'straight') {
+  if( rs.edgeType === 'self' || rs.edgeType === 'compound' ){
+    edgeCenterX = rs.allpts[4];
+    edgeCenterY = rs.allpts[5];
+  } else if (rs.edgeType === 'straight' ){
     edgeCenterX = (rs.startX + rs.endX) / 2;
     edgeCenterY = (rs.startY + rs.endY) / 2;
-  } else if (rs.edgeType == 'bezier') {
-    edgeCenterX = math.qbezierAt( rs.startX, rs.cp2x, rs.endX, 0.5 );
-    edgeCenterY = math.qbezierAt( rs.startY, rs.cp2y, rs.endY, 0.5 );
-  } else if (rs.edgeType == 'haystack') {
-    // var src = _p.source;
-    // var tgt = _p.target;
-    // var srcPos = src._private.position;
-    // var tgtPos = tgt._private.position;
+  } else if( rs.edgeType === 'bezier' ){
+    edgeCenterX = math.qbezierAt( rs.allpts[0], rs.allpts[2], rs.allpts[4], 0.5 );
+    edgeCenterY = math.qbezierAt( rs.allpts[1], rs.allpts[3], rs.allpts[5], 0.5 );
+  } else if( rs.edgeType === 'multibezier' ){
+    // TODO better placement
+    edgeCenterX = (rs.startX + rs.endX) / 2;
+    edgeCenterY = (rs.startY + rs.endY) / 2;
+  } else if( rs.edgeType === 'haystack' ){
     var pts = rs.haystackPts;
 
     edgeCenterX = ( pts[0] + pts[2] )/2;
@@ -851,9 +808,7 @@ BRp.recalculateRenderedStyle = function( eles ){
       var positionsSame = srcSame && tgtSame;
 
       if( !positionsSame || !styleSame ){
-        var curveType = _p.style['curve-style'].value;
-
-        if( curveType === 'bezier' ){
+        if( rs.edgeType === 'bezier' || rs.edgeType === 'straight' ){
           if( !handledEdge[ id ] ){
             edges.push( ele );
             handledEdge[ id ] = true;
@@ -1089,14 +1044,14 @@ BRp.findEdgeControlPoints = function(edges) {
       var ctrlptWs = eStyle['control-point-weights'];
       var bezierN = ctrlptDists && ctrlptWs ? Math.min( ctrlptDists.value.length, ctrlptWs.value.length ) : 1;
       var stepSize = eStyle['control-point-step-size'].pfValue;
-      var stepDist = ctrlptDists !== undefined ? ctrlptDists.pfValue[0] : undefined;
-      var stepWeight = ctrlptWs.value[0];
+      var ctrlptDist = ctrlptDists !== undefined ? ctrlptDists.pfValue[0] : undefined;
+      var ctrlptWeight = ctrlptWs.value[0];
       var edgeIsUnbundled = eStyle['curve-style'].value === 'unbundled-bezier';
 
       var swappedDirection = edge_p.source !== src;
 
       if( swappedDirection && edgeIsUnbundled ){
-        stepDist *= -1;
+        ctrlptDist *= -1;
       }
 
       var srcX1 = rs.lastSrcCtlPtX;
@@ -1157,18 +1112,16 @@ BRp.findEdgeControlPoints = function(edges) {
 
         if( edgeIsUnbundled ){
           j = 0;
-          loopDist = stepDist;
+          loopDist = ctrlptDist;
         }
 
-        // New -- fix for large nodes
-        rs.cp2ax = srcPos.x;
-        rs.cp2ay = srcPos.y - (1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1);
+        rs.ctrlpts = [
+          srcPos.x,
+          srcPos.y - (1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1),
 
-        rs.cp2cx = srcPos.x - (1 + Math.pow(srcW, 1.12) / 100) * loopDist * (j / 3 + 1);
-        rs.cp2cy = srcPos.y;
-
-        rs.selfEdgeMidX = (rs.cp2ax + rs.cp2cx) / 2.0;
-        rs.selfEdgeMidY = (rs.cp2ay + rs.cp2cy) / 2.0;
+          srcPos.x - (1 + Math.pow(srcW, 1.12) / 100) * loopDist * (j / 3 + 1),
+          srcPos.y
+        ];
 
       // Compound edge
       } else if(
@@ -1188,9 +1141,8 @@ BRp.findEdgeControlPoints = function(edges) {
 
         if( edgeIsUnbundled ){
           j = 0;
-          loopDist = stepDist;
+          loopDist = ctrlptDist;
         }
-
 
         var loopW = 50;
 
@@ -1204,45 +1156,60 @@ BRp.findEdgeControlPoints = function(edges) {
           y: tgtPos.y - tgtH/2
         };
 
+        // avoids cases with impossible beziers
         var minCompoundStretch = 1;
+        var compoundStretchA = Math.max( minCompoundStretch, Math.log(srcW * 0.01) );
+        var compoundStretchB = Math.max( minCompoundStretch, Math.log(tgtW * 0.01) );
 
-        rs.cp2ax = loopaPos.x;
-        rs.compoundStretchA = Math.max( minCompoundStretch, Math.log(srcW * 0.01) ); // avoids cases with impossible beziers
-        rs.cp2ay = loopaPos.y - (1 + Math.pow(loopW, 1.12) / 100) * loopDist * (j / 3 + 1) * rs.compoundStretchA;
+        rs.ctrlpts = [
+          loopaPos.x,
+          loopaPos.y - (1 + Math.pow(loopW, 1.12) / 100) * loopDist * (j / 3 + 1) * compoundStretchA,
 
-        rs.compoundStretchB = Math.max( minCompoundStretch, Math.log(tgtW * 0.01) ); // avoids cases with impossible beziers
-        rs.cp2cx = loopbPos.x - (1 + Math.pow(loopW, 1.12) / 100) * loopDist * (j / 3 + 1) * rs.compoundStretchB;
-        rs.cp2cy = loopbPos.y;
-
-        rs.selfEdgeMidX = (rs.cp2ax + rs.cp2cx) / 2.0;
-        rs.selfEdgeMidY = (rs.cp2ay + rs.cp2cy) / 2.0;
+          loopbPos.x - (1 + Math.pow(loopW, 1.12) / 100) * loopDist * (j / 3 + 1) * compoundStretchB,
+          loopbPos.y
+        ];
 
       // Straight edge
-      } else if (pairEdges.length % 2 === 1
+      } else if (
+        pairEdges.length % 2 === 1
         && i === Math.floor(pairEdges.length / 2)
-        && !edgeIsUnbundled ) {
+        && !edgeIsUnbundled
+      ){
 
         rs.edgeType = 'straight';
 
-      // Multibezier
-    } else if( bezierN > 1 && edgeIsUnbundled ) {
+      // (Multi)bezier
+      } else {
+        var multi = edgeIsUnbundled;
 
-        rs.edgeType = 'multibezier';
+        rs.edgeType = multi ? 'multibezier' : 'bezier';
         rs.ctrlpts = [];
 
         for( var b = 0; b < bezierN; b++ ){
-          var ctrlptD = ctrlptDists.pfValue[b];
-          var ctrlptW = ctrlptWs.value[b];
+          var normctrlptDist = (0.5 - pairEdges.length / 2 + i) * stepSize;
+          var manctrlptDist;
+          var sign = math.signum( normctrlptDist );
 
-          var distanceFromMidpoint = ctrlptD;
+          if( multi ){
+            ctrlptDist = ctrlptDists ? ctrlptDists.pfValue[b] : stepSize; // fall back on step size
+            ctrlptWeight = ctrlptWs.value[b];
+          }
 
-          var w1 = !swappedDirection ? (1 - ctrlptW) : ctrlptW;
-          var w2 = !swappedDirection ? ctrlptW : (1 - ctrlptW);
+          if( edgeIsUnbundled ){ // multi or single unbundled
+            manctrlptDist = ctrlptDist;
+          } else {
+            manctrlptDist = ctrlptDist !== undefined ? sign * ctrlptDist : undefined;
+          }
+
+          var distanceFromMidpoint = manctrlptDist !== undefined ? manctrlptDist : normctrlptDist;
+
+          var w1 = !swappedDirection ? (1 - ctrlptWeight) : ctrlptWeight;
+          var w2 = !swappedDirection ? ctrlptWeight : (1 - ctrlptWeight);
 
           var adjustedMidpt = {
-            x: midptSrcPts.x1 * w1 + midptSrcPts.x2 * w2,
-            y: midptSrcPts.y1 * w1 + midptSrcPts.y2 * w2
-          };
+           x: midptSrcPts.x1 * w1 + midptSrcPts.x2 * w2,
+           y: midptSrcPts.y1 * w1 + midptSrcPts.y2 * w2
+         };
 
           rs.ctrlpts.push(
             adjustedMidpt.x + vectorNormInverse.x * distanceFromMidpoint,
@@ -1250,40 +1217,12 @@ BRp.findEdgeControlPoints = function(edges) {
           );
         }
 
-      // Bezier edge
-      } else {
-
-        rs.edgeType = 'bezier';
-
-        var normStepDist = (0.5 - pairEdges.length / 2 + i) * stepSize;
-        var manStepDist;
-        var sign = math.signum( normStepDist );
-
-        if( edgeIsUnbundled ){
-          manStepDist = stepDist;
-        } else {
-          manStepDist = stepDist !== undefined ? sign * stepDist : undefined;
-        }
-
-        var distanceFromMidpoint = manStepDist !== undefined ? manStepDist : normStepDist;
-
-        var w1 = !swappedDirection ? (1 - stepWeight) : stepWeight;
-        var w2 = !swappedDirection ? stepWeight : (1 - stepWeight);
-
-        var adjustedMidpt = {
-          x: midptSrcPts.x1 * w1 + midptSrcPts.x2 * w2,
-          y: midptSrcPts.y1 * w1 + midptSrcPts.y2 * w2
-        };
-
-        rs.cp2x = adjustedMidpt.x + vectorNormInverse.x * distanceFromMidpoint;
-        rs.cp2y = adjustedMidpt.y + vectorNormInverse.y * distanceFromMidpoint;
-
       }
 
       // find endpts for edge
       this.findEndpoints( edge );
 
-      if( rs.edgeType === 'multibezier' ){
+      if( rs.edgeType === 'multibezier' || rs.edgeType === 'bezier' || rs.edgeType === 'self' || rs.edgeType === 'compound' ){
         rs.allpts = [];
 
         rs.allpts.push( rs.startX, rs.startY );
@@ -1311,9 +1250,9 @@ BRp.findEdgeControlPoints = function(edges) {
       var minCpADist = minCpADistFactor * arrowW;
 
       if( rs.edgeType === 'bezier' ){
-        var startACpDist = math.distance( { x: rs.cp2x, y: rs.cp2y }, { x: rs.startX, y: rs.startY } );
+        var startACpDist = math.distance( { x: rs.ctrlpts[0], y: rs.ctrlpts[1] }, { x: rs.startX, y: rs.startY } );
         var closeStartACp = startACpDist < minCpADist;
-        var endACpDist = math.distance( { x: rs.cp2x, y: rs.cp2y }, { x: rs.endX, y: rs.endY } );
+        var endACpDist = math.distance( { x: rs.ctrlpts[0], y: rs.ctrlpts[1] }, { x: rs.endX, y: rs.endY } );
         var closeEndACp = endACpDist < minCpADist;
 
         var overlapping = false;
@@ -1324,8 +1263,8 @@ BRp.findEdgeControlPoints = function(edges) {
           // project control point along line from src centre to outside the src shape
           // (otherwise intersection will yield nothing)
           var cpD = { // delta
-            x: rs.cp2x - srcPos.x,
-            y: rs.cp2y - srcPos.y
+            x: rs.ctrlpts[0] - srcPos.x,
+            y: rs.ctrlpts[1] - srcPos.y
           };
           var cpL = Math.sqrt( cpD.x*cpD.x + cpD.y*cpD.y ); // length of line
           var cpM = { // normalised delta
@@ -1334,8 +1273,8 @@ BRp.findEdgeControlPoints = function(edges) {
           };
           var radius = Math.max(srcW, srcH);
           var cpProj = { // *2 radius guarantees outside shape
-            x: rs.cp2x + cpM.x * 2 * radius,
-            y: rs.cp2y + cpM.y * 2 * radius
+            x: rs.ctrlpts[0] + cpM.x * 2 * radius,
+            y: rs.ctrlpts[1] + cpM.y * 2 * radius
           };
 
           var srcCtrlPtIntn = srcShape.intersectLine(
@@ -1349,11 +1288,11 @@ BRp.findEdgeControlPoints = function(edges) {
           );
 
           if( closeStartACp ){
-            rs.cp2x = rs.cp2x + cpM.x * (minCpADist - startACpDist);
-            rs.cp2y = rs.cp2y + cpM.y * (minCpADist - startACpDist);
+            rs.ctrlpts[0] = rs.ctrlpts[0] + cpM.x * (minCpADist - startACpDist);
+            rs.ctrlpts[1] = rs.ctrlpts[1] + cpM.y * (minCpADist - startACpDist);
           } else {
-            rs.cp2x = srcCtrlPtIntn[0] + cpM.x * minCpADist;
-            rs.cp2y = srcCtrlPtIntn[1] + cpM.y * minCpADist;
+            rs.ctrlpts[0] = srcCtrlPtIntn[0] + cpM.x * minCpADist;
+            rs.ctrlpts[1] = srcCtrlPtIntn[1] + cpM.y * minCpADist;
           }
         }
 
@@ -1363,8 +1302,8 @@ BRp.findEdgeControlPoints = function(edges) {
           // project control point along line from tgt centre to outside the tgt shape
           // (otherwise intersection will yield nothing)
           var cpD = { // delta
-            x: rs.cp2x - tgtPos.x,
-            y: rs.cp2y - tgtPos.y
+            x: rs.ctrlpts[0] - tgtPos.x,
+            y: rs.ctrlpts[1] - tgtPos.y
           };
           var cpL = Math.sqrt( cpD.x*cpD.x + cpD.y*cpD.y ); // length of line
           var cpM = { // normalised delta
@@ -1373,8 +1312,8 @@ BRp.findEdgeControlPoints = function(edges) {
           };
           var radius = Math.max(srcW, srcH);
           var cpProj = { // *2 radius guarantees outside shape
-            x: rs.cp2x + cpM.x * 2 * radius,
-            y: rs.cp2y + cpM.y * 2 * radius
+            x: rs.ctrlpts[0] + cpM.x * 2 * radius,
+            y: rs.ctrlpts[1] + cpM.y * 2 * radius
           };
 
           var tgtCtrlPtIntn = tgtShape.intersectLine(
@@ -1388,11 +1327,11 @@ BRp.findEdgeControlPoints = function(edges) {
           );
 
           if( closeEndACp ){
-            rs.cp2x = rs.cp2x + cpM.x * (minCpADist - endACpDist);
-            rs.cp2y = rs.cp2y + cpM.y * (minCpADist - endACpDist);
+            rs.ctrlpts[0] = rs.ctrlpts[0] + cpM.x * (minCpADist - endACpDist);
+            rs.ctrlpts[1] = rs.ctrlpts[1] + cpM.y * (minCpADist - endACpDist);
           } else {
-            rs.cp2x = tgtCtrlPtIntn[0] + cpM.x * minCpADist;
-            rs.cp2y = tgtCtrlPtIntn[1] + cpM.y * minCpADist;
+            rs.ctrlpts[0] = tgtCtrlPtIntn[0] + cpM.x * minCpADist;
+            rs.ctrlpts[1] = tgtCtrlPtIntn[1] + cpM.y * minCpADist;
           }
 
         }
@@ -1616,7 +1555,7 @@ BRp.findEndpoints = function( edge ){
 
   } else if ( rs.edgeType === 'bezier' || rs.edgeType === 'multibezier' ){
     var multi = rs.edgeType === 'multibezier';
-    var cpStart = multi ? [ rs.ctrlpts[0], rs.ctrlpts[1] ] : [ rs.cp2x, rs.cp2y ];
+    var cpStart = [ rs.ctrlpts[0], rs.ctrlpts[1] ];
     var cpEnd = multi ? [ rs.ctrlpts[rs.ctrlpts.length - 2], rs.ctrlpts[rs.ctrlpts.length - 1] ] : cpStart;
 
     intersect = r.nodeShapes[this.getNodeShape(target)].intersectLine(
@@ -1665,8 +1604,6 @@ BRp.findEndpoints = function( edge ){
     rs.arrowStartX = arrowStart[0];
     rs.arrowStartY = arrowStart[1];
 
-  } else if (rs.isArcEdge) {
-    return;
   }
 };
 

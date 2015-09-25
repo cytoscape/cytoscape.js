@@ -7,7 +7,7 @@ CRp.drawEdge = function(context, edge, drawOverlayInstead) {
   var usePaths = this.usePaths();
 
   // if bezier ctrl pts can not be calculated, then die
-  if( rs.badBezier || ( (rs.edgeType === 'bezier' || rs.edgeType === 'straight') && isNaN(rs.startX)) ){ // extra isNaN() for safari 7.1 b/c it mangles ctrlpt calcs
+  if( rs.badBezier || ( rs.edgeType !== 'haystack' && isNaN(rs.startX) ) ){ // extra isNaN() for safari 7.1 b/c it mangles ctrlpt calcs
     return;
   }
 
@@ -32,7 +32,7 @@ CRp.drawEdge = function(context, edge, drawOverlayInstead) {
     this.strokeStyle(context, overlayColor[0], overlayColor[1], overlayColor[2], overlayOpacity);
     context.lineCap = 'round';
 
-    if( edge._private.rscratch.edgeType == 'self' && !usePaths ){
+    if( rs.edgeType == 'self' && !usePaths ){
       context.lineCap = 'butt';
     }
 
@@ -69,18 +69,6 @@ CRp.drawEdge = function(context, edge, drawOverlayInstead) {
       lineStyle,
       edgeWidth
     );
-  } else if ( rs.edgeType === 'self' || rs.edgeType === 'compound' ){
-
-    var points = [
-      rs.startX, rs.startY,
-      rs.cp2ax, rs.cp2ay,
-      rs.selfEdgeMidX, rs.selfEdgeMidY,
-      rs.selfEdgeMidX, rs.selfEdgeMidY,
-      rs.cp2cx, rs.cp2cy,
-      rs.endX, rs.endY
-    ];
-
-    this.drawStyledEdge(edge, context, points, lineStyle, edgeWidth);
 
   } else if ( rs.edgeType === 'straight' ){
 
@@ -106,17 +94,8 @@ CRp.drawEdge = function(context, edge, drawOverlayInstead) {
 
       rs.straightEdgeTooShort = false;
     }
-  } else if( rs.edgeType === 'bezier' ){
 
-    this.drawStyledEdge(
-      edge,
-      context,
-      [rs.startX, rs.startY, rs.cp2x, rs.cp2y, rs.endX, rs.endY],
-      lineStyle,
-      edgeWidth
-    );
-
-  } else if( rs.edgeType === 'multibezier' ){
+  } else if( rs.edgeType === 'bezier' || rs.edgeType === 'multibezier' || rs.edgeType === 'self' || rs.edgeType === 'compound' ){
     this.drawStyledEdge(
       edge,
       context,

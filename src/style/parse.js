@@ -176,7 +176,16 @@ var parseImpl = function( name, value, propIsBypass, propIsFlat ){
   }
 
   if( type.multiple && !propIsFlat ){
-    var vals = valueIsString ? value.split(/\s+/) : [ value ];
+    var vals;
+
+    if( valueIsString ){
+      vals = value.split(/\s+/);
+    } else if( is.array(value) ){
+      vals = value;
+    } else {
+      vals = [ value ];
+    }
+
     var valArr = vals.map(function( v ){
       var p = self.parse( name, v, propIsBypass, true );
 

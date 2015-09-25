@@ -17,9 +17,20 @@ var Element = function(cy, params, restore){
     return;
   }
 
+  var group = params.group;
+
+  // try to automatically infer the group if unspecified
+  if( group == null ){
+    if( params.data.source != null && params.data.target != null ){
+      group = 'edges';
+    } else {
+      group = 'nodes';
+    }
+  }
+
   // validate group
-  if( params.group !== 'nodes' && params.group !== 'edges' ){
-    util.error('An element must be of type `nodes` or `edges`; you specified `' + params.group + '`');
+  if( group !== 'nodes' && group !== 'edges' ){
+    util.error('An element must be of type `nodes` or `edges`; you specified `' + group + '`');
     return;
   }
 
@@ -36,7 +47,7 @@ var Element = function(cy, params, restore){
     autoWidth: undefined, // width and height of nodes calculated by the renderer when set to special 'auto' value
     autoHeight: undefined,
     listeners: [], // array of bound listeners
-    group: params.group, // string; 'nodes' or 'edges'
+    group: group, // string; 'nodes' or 'edges'
     style: {}, // properties as set by the style
     rstyle: {}, // properties for style sent from the renderer to the core
     styleCxts: [], // applied style contexts from the styler

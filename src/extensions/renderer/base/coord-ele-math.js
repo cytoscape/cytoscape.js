@@ -564,8 +564,14 @@ BRp.projectBezier = function( edge ){
   if( rs.edgeType === 'self' ){
     pushBezierPts( edge, [rs.startX, rs.startY, rs.cp2ax, rs.cp2ay, rs.selfEdgeMidX, rs.selfEdgeMidY] );
     pushBezierPts( edge, [rs.selfEdgeMidX, rs.selfEdgeMidY, rs.cp2cx, rs.cp2cy, rs.endX, rs.endY] );
+
   } else if( rs.edgeType === 'bezier' ){
     pushBezierPts( edge, [rs.startX, rs.startY, rs.cp2x, rs.cp2y, rs.endX, rs.endY] );
+
+  } else if( rs.edgeType === 'multibezier' ){
+    for( var i = 0; i + 6 < rs.allpts.length; i += 4 ){
+      pushBezierPts( edge, rs.allpts.slice(i, i+6) );
+    }
   }
 };
 
@@ -1079,9 +1085,12 @@ BRp.findEdgeControlPoints = function(edges) {
       var numEdges2 = pairEdges.length;
 
       var eStyle = edge_p.style;
+      var ctrlptDists = eStyle['control-point-distances'];
+      var ctrlptWs = eStyle['control-point-weights'];
+      var bezierN = ctrlptDists && ctrlptWs ? Math.min( ctrlptDists.value.length, ctrlptWs.value.length ) : 1;
       var stepSize = eStyle['control-point-step-size'].pfValue;
-      var stepDist = eStyle['control-point-distances'] !== undefined ? eStyle['control-point-distances'].pfValue[0] : undefined;
-      var stepWeight = eStyle['control-point-weights'].value[0];
+      var stepDist = ctrlptDists !== undefined ? ctrlptDists.pfValue[0] : undefined;
+      var stepWeight = ctrlptWs.value[0];
       var edgeIsUnbundled = eStyle['curve-style'].value === 'unbundled-bezier';
 
       var swappedDirection = edge_p.source !== src;
@@ -1215,8 +1224,37 @@ BRp.findEdgeControlPoints = function(edges) {
 
         rs.edgeType = 'straight';
 
+      // Multibezier
+    } else if( bezierN > 1 && edgeIsUnbundled ) {
+
+        rs.edgeType = 'multibezier';
+        rs.ctrlpts = [];
+
+        for( var b = 0; b < bezierN; b++ ){
+          var ctrlptD = ctrlptDists.pfValue[b];
+          var ctrlptW = ctrlptWs.value[b];
+
+          var distanceFromMidpoint = ctrlptD;
+
+          var w1 = !swappedDirection ? (1 - ctrlptW) : ctrlptW;
+          var w2 = !swappedDirection ? ctrlptW : (1 - ctrlptW);
+
+          var adjustedMidpt = {
+            x: midptSrcPts.x1 * w1 + midptSrcPts.x2 * w2,
+            y: midptSrcPts.y1 * w1 + midptSrcPts.y2 * w2
+          };
+
+          rs.ctrlpts.push(
+            adjustedMidpt.x + vectorNormInverse.x * distanceFromMidpoint,
+            adjustedMidpt.y + vectorNormInverse.y * distanceFromMidpoint
+          );
+        }
+
       // Bezier edge
       } else {
+
+        rs.edgeType = 'bezier';
+
         var normStepDist = (0.5 - pairEdges.length / 2 + i) * stepSize;
         var manStepDist;
         var sign = math.signum( normStepDist );
@@ -1229,27 +1267,39 @@ BRp.findEdgeControlPoints = function(edges) {
 
         var distanceFromMidpoint = manStepDist !== undefined ? manStepDist : normStepDist;
 
-        var w1 = (1 - stepWeight);
-        var w2 = stepWeight;
-
-        if( swappedDirection ){
-          w1 = stepWeight;
-          w2 = (1 - stepWeight);
-        }
+        var w1 = !swappedDirection ? (1 - stepWeight) : stepWeight;
+        var w2 = !swappedDirection ? stepWeight : (1 - stepWeight);
 
         var adjustedMidpt = {
           x: midptSrcPts.x1 * w1 + midptSrcPts.x2 * w2,
           y: midptSrcPts.y1 * w1 + midptSrcPts.y2 * w2
         };
 
-        rs.edgeType = 'bezier';
-
         rs.cp2x = adjustedMidpt.x + vectorNormInverse.x * distanceFromMidpoint;
         rs.cp2y = adjustedMidpt.y + vectorNormInverse.y * distanceFromMidpoint;
+
       }
 
       // find endpts for edge
       this.findEndpoints( edge );
+
+      if( rs.edgeType === 'multibezier' ){
+        rs.allpts = [];
+
+        rs.allpts.push( rs.startX, rs.startY );
+
+        for( var b = 0; b+1 < rs.ctrlpts.length; b += 2 ){
+          // ctrl pt itself
+          rs.allpts.push( rs.ctrlpts[b], rs.ctrlpts[b+1] );
+
+          // the midpt between ctrlpts as intermediate destination pts
+          if( b + 3 < rs.ctrlpts.length ){
+            rs.allpts.push( (rs.ctrlpts[b] + rs.ctrlpts[b+2])/2, (rs.ctrlpts[b+1] + rs.ctrlpts[b+3])/2 );
+          }
+        }
+
+        rs.allpts.push( rs.endX, rs.endY );
+      }
 
       var badStart = !is.number( rs.startX ) || !is.number( rs.startY );
       var badAStart = !is.number( rs.arrowStartX ) || !is.number( rs.arrowStartY );
@@ -1257,14 +1307,15 @@ BRp.findEdgeControlPoints = function(edges) {
       var badAEnd = !is.number( rs.arrowEndX ) || !is.number( rs.arrowEndY );
 
       var minCpADistFactor = 3;
-      var arrowW = this.getArrowWidth( eStyle['width'].pfValue ) * BRp.arrowShapeHeight;
+      var arrowW = this.getArrowWidth( eStyle['width'].pfValue ) * this.arrowShapeHeight;
       var minCpADist = minCpADistFactor * arrowW;
-      var startACpDist = math.distance( { x: rs.cp2x, y: rs.cp2y }, { x: rs.startX, y: rs.startY } );
-      var closeStartACp = startACpDist < minCpADist;
-      var endACpDist = math.distance( { x: rs.cp2x, y: rs.cp2y }, { x: rs.endX, y: rs.endY } );
-      var closeEndACp = endACpDist < minCpADist;
 
       if( rs.edgeType === 'bezier' ){
+        var startACpDist = math.distance( { x: rs.cp2x, y: rs.cp2y }, { x: rs.startX, y: rs.startY } );
+        var closeStartACp = startACpDist < minCpADist;
+        var endACpDist = math.distance( { x: rs.cp2x, y: rs.cp2y }, { x: rs.endX, y: rs.endY } );
+        var closeEndACp = endACpDist < minCpADist;
+
         var overlapping = false;
 
         if( badStart || badAStart || closeStartACp ){
@@ -1350,9 +1401,11 @@ BRp.findEdgeControlPoints = function(edges) {
           // recalc endpts
           this.findEndpoints( edge );
         }
+
       } else if( rs.edgeType === 'straight' ){
         rs.midX = ( srcX2 + tgtX2 )/2;
         rs.midY = ( srcY2 + tgtY2 )/2;
+
       }
 
       // project the edge into rstyle
@@ -1448,7 +1501,7 @@ BRp.findEndpoints = function( edge ){
 
   var rs = edge._private.rscratch;
 
-  if (rs.edgeType == 'self' || rs.edgeType == 'compound') {
+  if( rs.edgeType == 'self' || rs.edgeType == 'compound' ){
 
     var cp = [rs.cp2cx, rs.cp2cy];
 
@@ -1480,8 +1533,8 @@ BRp.findEndpoints = function( edge ){
       srcPos.y,
       source.outerWidth(),
       source.outerHeight(),
-      cp[0], //halfPointX,
-      cp[1], //halfPointY
+      cp[0],
+      cp[1],
       0
     );
 
@@ -1497,7 +1550,7 @@ BRp.findEndpoints = function( edge ){
     rs.arrowStartX = arrowStart[0];
     rs.arrowStartY = arrowStart[1];
 
-  } else if (rs.edgeType == 'straight') {
+  } else if( rs.edgeType == 'straight' ){
 
     intersect = r.nodeShapes[this.getNodeShape(target)].intersectLine(
       tgtPos.x,
@@ -1510,7 +1563,6 @@ BRp.findEndpoints = function( edge ){
 
     if (intersect.length === 0) {
       rs.noArrowPlacement = true;
-      // return;
     } else {
       rs.noArrowPlacement = false;
     }
@@ -1539,16 +1591,10 @@ BRp.findEndpoints = function( edge ){
 
     if (intersect.length === 0) {
       rs.noArrowPlacement = true;
-     // return;
     } else {
       rs.noArrowPlacement = false;
     }
 
-    /*
-    console.log("1: "
-      + r.arrowShapes[srcArShape],
-        srcArShape);
-    */
     var arrowStart = math.shortenIntersection(intersect,
       [target.position().x, target.position().y],
       r.arrowShapes[srcArShape].spacing(edge));
@@ -1568,29 +1614,24 @@ BRp.findEndpoints = function( edge ){
       rs.badLine = false;
     }
 
-  } else if (rs.edgeType == 'bezier') {
-    // if( window.badArrow) debugger;
-    var cp = [rs.cp2x, rs.cp2y];
+  } else if ( rs.edgeType === 'bezier' || rs.edgeType === 'multibezier' ){
+    var multi = rs.edgeType === 'multibezier';
+    var cpStart = multi ? [ rs.ctrlpts[0], rs.ctrlpts[1] ] : [ rs.cp2x, rs.cp2y ];
+    var cpEnd = multi ? [ rs.ctrlpts[rs.ctrlpts.length - 2], rs.ctrlpts[rs.ctrlpts.length - 1] ] : cpStart;
 
-    intersect = r.nodeShapes[
-      this.getNodeShape(target)].intersectLine(
+    intersect = r.nodeShapes[this.getNodeShape(target)].intersectLine(
       tgtPos.x,
       tgtPos.y,
       target.outerWidth(),
       target.outerHeight(),
-      cp[0], //halfPointX,
-      cp[1], //halfPointY
+      cpEnd[0],
+      cpEnd[1],
       0
     );
 
-    /*
-    console.log("2: "
-      + r.arrowShapes[srcArShape],
-        srcArShape);
-    */
-    var arrowEnd = math.shortenIntersection(intersect, cp,
+    var arrowEnd = math.shortenIntersection(intersect, cpEnd,
       r.arrowShapes[tgtArShape].spacing(edge));
-    var edgeEnd = math.shortenIntersection(intersect, cp,
+    var edgeEnd = math.shortenIntersection(intersect, cpEnd,
       r.arrowShapes[tgtArShape].gap(edge));
 
     rs.endX = edgeEnd[0];
@@ -1599,25 +1640,22 @@ BRp.findEndpoints = function( edge ){
     rs.arrowEndX = arrowEnd[0];
     rs.arrowEndY = arrowEnd[1];
 
-    intersect = r.nodeShapes[
-      this.getNodeShape(source)].intersectLine(
+    intersect = r.nodeShapes[this.getNodeShape(source)].intersectLine(
       srcPos.x,
       srcPos.y,
       source.outerWidth(),
       source.outerHeight(),
-      cp[0], //halfPointX,
-      cp[1], //halfPointY
+      cpStart[0],
+      cpStart[1],
       0
     );
 
     var arrowStart = math.shortenIntersection(
-      intersect,
-      cp,
+      intersect, cpStart,
       r.arrowShapes[srcArShape].spacing(edge)
     );
     var edgeStart = math.shortenIntersection(
-      intersect,
-      cp,
+      intersect, cpStart,
       r.arrowShapes[srcArShape].gap(edge)
     );
 
@@ -1626,10 +1664,6 @@ BRp.findEndpoints = function( edge ){
 
     rs.arrowStartX = arrowStart[0];
     rs.arrowStartY = arrowStart[1];
-
-    // if( isNaN(rs.startX) || isNaN(rs.startY) ){
-    //   debugger;
-    // }
 
   } else if (rs.isArcEdge) {
     return;

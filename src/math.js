@@ -230,13 +230,7 @@ math.roundRectangleIntersectLine = function(
   return []; // if nothing
 };
 
-math.boxInBezierVicinity = function(
-  x1box, y1box, x2box, y2box, x1, y1, x2, y2, x3, y3, tolerance) {
-
-  // Return values:
-  // 0 - curve is not in box
-  // 1 - curve may be in box; needs precise check
-  // 2 - curve is in box
+math.boxInBezierVicinity = function( x1box, y1box, x2box, y2box, x1, y1, x2, y2, x3, y3, tolerance ){
 
   // midpoint
   var midX = 0.25 * x1 + 0.5 * x2 + 0.25 * x3;
@@ -261,14 +255,6 @@ math.boxInBezierVicinity = function(
   var curveMinY = Math.min(y1, midY, y3);
   var curveMaxX = Math.max(x1, midX, x3);
   var curveMaxY = Math.max(y1, midY, y3);
-
-  /*
-  console.log(curveMinX + ", " + curveMinY + ", " + curveMaxX
-    + ", " + curveMaxY);
-  if (curveMinX == undefined) {
-    console.log("undefined curveMinX: " + x1 + ", " + x2 + ", " + x3);
-  }
-  */
 
   if (curveMinX > boxMaxX
     || curveMaxX < boxMinX

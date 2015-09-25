@@ -59,8 +59,9 @@ cytoscape({
   elements: [
     { // node n1
       group: 'nodes', // 'nodes' for a node, 'edges' for an edge
+      // NB the group field can be automatically inferred for you
 
-      // NB: id fields must be strings
+      // NB: id fields must be strings or numbers
       data: { // element data (put dev data here)
         id: 'n1', // mandatory for each element, assigned automatically on undefined
         parent: 'nparent', // indicates the compound node parent id; not defined => no parent
@@ -91,26 +92,23 @@ cytoscape({
     },
 
     { // node n2
-      group: 'nodes',
       data: { id: 'n2' },
       renderedPosition: { x: 200, y: 200 } // can alternatively specify position in rendered on-screen pixels
     },
 
     { // node n3
-      group: 'nodes',
       data: { id: 'n3', parent: 'nparent' },
       position: { x: 123, y: 234 }
     },
 
     { // node nparent
-      group: 'nodes',
       data: { id: 'nparent', position: { x: 200, y: 100 } }
     },
 
     { // edge e1
-      group: 'edges',
       data: {
         id: 'e1',
+        // inferred as an edge because `source` and `target` are specified:
         source: 'n1', // the source node id (edge comes from this node)
         target: 'n2'  // the target node id (edge goes to this node)
       }
@@ -134,7 +132,7 @@ cytoscape({
 });
 ```
 
-You can alternatively specify separate arrays indexed in a object by the group names so you don't have to specify the `group` property over and over for each element:
+You can alternatively specify separate arrays indexed in a object by `nodes` and `edges`:
 
 ```js
 var cy = cytoscape({

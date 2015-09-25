@@ -51,6 +51,69 @@ describe('Core graph manipulation', function(){
 
     });
 
+    it('adds via single object (inferred node)', function(){
+
+      cy.add({
+        data: { id: 'new-node' }
+      });
+
+      expect( cy.$('#new-node') ).to.have.length(1);
+      expect( cy.nodes() ).to.have.length(4);
+      expect( cy.$('#new-node').isNode() ).to.be.true;
+
+    });
+
+    it('adds via single object (inferred node) with int id', function(){
+
+      cy.add({
+        data: { id: 0 }
+      });
+
+      expect( cy.$('#0') ).to.have.length(1);
+      expect( cy.nodes() ).to.have.length(4);
+      expect( cy.$('#0').isNode() ).to.be.true;
+
+    });
+
+    it('adds via single object (inferred edge) with int id', function(){
+
+      cy.add({
+        data: { id: 0 }
+      });
+
+      cy.add({
+        data: { id: 1 }
+      });
+
+      cy.add({
+        data: { id: 2, source: 0, target: 1 }
+      });
+
+      expect( cy.$('#0') ).to.have.length(1);
+      expect( cy.nodes() ).to.have.length(5);
+      expect( cy.$('#0').isNode() ).to.be.true;
+
+      expect( cy.$('#1') ).to.have.length(1);
+      expect( cy.nodes() ).to.have.length(5);
+      expect( cy.$('#1').isNode() ).to.be.true;
+
+      expect( cy.$('#2') ).to.have.length(1);
+      expect( cy.edges() ).to.have.length(3);
+      expect( cy.$('#2').isEdge() ).to.be.true;
+    });
+
+    it('adds via single object (inferred edge)', function(){
+
+      cy.add({
+        data: { id: 'new-edge', source: 'n1', target: 'n2' }
+      });
+
+      expect( cy.$('#new-edge') ).to.have.length(1);
+      expect( cy.edges() ).to.have.length(3);
+      expect( cy.$('#new-edge').isEdge() ).to.be.true;
+
+    });
+
     it('adds via array of objects', function(){
 
       cy.add([

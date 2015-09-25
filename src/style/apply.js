@@ -232,8 +232,8 @@ styfn.updateStyleHints = function(ele){
 
   if( ele._private.group === 'edges' ){
     var cpss = style['control-point-step-size'].pfValue;
-    var cpd = style['control-point-distance'] ? style['control-point-distance'].pfValue : undefined;
-    var cpw = style['control-point-weight'].value;
+    var cpd = style['control-point-distances'] ? style['control-point-distances'].pfValue.join('_') : undefined;
+    var cpw = style['control-point-weights'].value.join('_');
     var curve = style['curve-style'].strValue;
 
     _p.boundingBoxKey += '$'+ cpss +'$'+ cpd +'$'+ cpw +'$'+ curve;

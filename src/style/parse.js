@@ -10,9 +10,10 @@ styfn.parse = function( name, value, propIsBypass, propIsFlat ){
   var argHash = [ name, value, propIsBypass, propIsFlat ].join('$');
   var propCache = this.propCache = this.propCache || {};
   var ret;
+  var impl = parseImpl.bind( this );
 
   if( !(ret = propCache[argHash]) ){
-    ret = propCache[argHash] = this.parseImpl( name, value, propIsBypass, propIsFlat );
+    ret = propCache[argHash] = impl( name, value, propIsBypass, propIsFlat );
   }
 
   // always need a copy since props are mutated later in their lifecycles
@@ -29,7 +30,7 @@ styfn.parse = function( name, value, propIsBypass, propIsFlat ){
 // - value : the parsed, native-typed value of the property
 // - strValue : a string value that represents the property value in valid css
 // - bypass : true iff the property is a bypass property
-styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
+var parseImpl = function( name, value, propIsBypass, propIsFlat ){
   var self = this;
 
   name = util.camel2dash( name ); // make sure the property name is in dash form (e.g. 'property-name' not 'propertyName')
@@ -189,6 +190,7 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
     return {
       name: name,
       value: valArr,
+      pfValue: valArr,
       strValue: valArr.join(' '),
       bypass: propIsBypass,
       units: type.number ? type.implicitUnits || 'px' : undefined

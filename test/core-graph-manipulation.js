@@ -37,6 +37,10 @@ describe('Core graph manipulation', function(){
     });
   });
 
+  afterEach(function(){
+    cy.destroy();
+  });
+
   describe('cy.add()', function(){
 
     it('adds via single object', function(){

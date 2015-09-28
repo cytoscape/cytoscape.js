@@ -18,7 +18,7 @@ module.exports = {
     rgbaNoBackRefs: rgbaNoBackRefs,
     hsla: hsla,
     hslaNoBackRefs: hslaNoBackRefs,
-    hex3,
-    hex6
+    hex3: hex3,
+    hex6: hex6
   }
 };

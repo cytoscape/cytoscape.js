@@ -38,7 +38,7 @@ var styfn = {};
     bool: { enums: ['yes', 'no'] },
     lineStyle: { enums: ['solid', 'dotted', 'dashed'] },
     borderStyle: { enums: ['solid', 'dotted', 'dashed', 'double'] },
-    curveStyle: { enums: ['bezier', 'unbundled-bezier', 'haystack'] },
+    curveStyle: { enums: ['bezier', 'unbundled-bezier', 'haystack', 'segments'] },
     fontFamily: { regex: '^([\\w- \\"]+(?:\\s*,\\s*[\\w- \\"]+)*)$' },
     fontVariant: { enums: ['small-caps', 'normal'] },
     fontStyle: { enums: ['italic', 'normal', 'oblique'] },
@@ -197,6 +197,8 @@ var styfn = {};
     { name: 'control-point-step-size', type: t.size },
     { name: 'control-point-distances', type: t.numbers },
     { name: 'control-point-weights', type: t.numbers },
+    { name: 'segment-distances', type: t.numbers },
+    { name: 'segment-weights', type: t.numbers },
 
     // these are just for the core
     { name: 'selection-box-color', type: t.color },
@@ -375,6 +377,8 @@ styfn.addDefaultStylesheet = function(){
         'line-color': '#ddd',
         'control-point-step-size': 40,
         'control-point-weights': 0.5,
+        'segment-weights': 0.25,
+        'segment-distances': 20,
         'curve-style': 'bezier',
         'haystack-radius': 0.8
       }, [

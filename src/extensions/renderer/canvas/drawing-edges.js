@@ -7,7 +7,7 @@ CRp.drawEdge = function(context, edge, drawOverlayInstead) {
   var usePaths = this.usePaths();
 
   // if bezier ctrl pts can not be calculated, then die
-  if( rs.badBezier || ( rs.edgeType !== 'haystack' && isNaN(rs.startX) ) ){ // extra isNaN() for safari 7.1 b/c it mangles ctrlpt calcs
+  if( rs.badBezier || isNaN(rs.startX) ){ // iNaN in case edge is impossible and browser bugs (e.g. safari)
     return;
   }
 
@@ -61,49 +61,13 @@ CRp.drawEdge = function(context, edge, drawOverlayInstead) {
 
   this.shadowStyle(context,  shadowColor, drawOverlayInstead ? 0 : shadowOpacity, shadowBlur, shadowOffsetX, shadowOffsetY);
 
-  if( rs.edgeType === 'haystack' ){
-    this.drawStyledEdge(
-      edge,
-      context,
-      rs.haystackPts,
-      lineStyle,
-      edgeWidth
-    );
-
-  } else if ( rs.edgeType === 'straight' ){
-
-    var nodeDirectionX = tgtPos.x - srcPos.x;
-    var nodeDirectionY = tgtPos.y - srcPos.y;
-
-    var edgeDirectionX = rs.endX - rs.startX;
-    var edgeDirectionY = rs.endY - rs.startY;
-
-    if (nodeDirectionX * edgeDirectionX
-      + nodeDirectionY * edgeDirectionY < 0) {
-
-      rs.straightEdgeTooShort = true;
-    } else {
-
-      this.drawStyledEdge(
-        edge,
-        context,
-        [rs.startX, rs.startY, rs.endX, rs.endY],
-        lineStyle,
-        edgeWidth
-      );
-
-      rs.straightEdgeTooShort = false;
-    }
-
-  } else if( rs.edgeType === 'bezier' || rs.edgeType === 'multibezier' || rs.edgeType === 'self' || rs.edgeType === 'compound' ){
-    this.drawStyledEdge(
-      edge,
-      context,
-      rs.allpts,
-      lineStyle,
-      edgeWidth
-    );
-  }
+  this.drawStyledEdge(
+    edge,
+    context,
+    rs.allpts,
+    lineStyle,
+    edgeWidth
+  );
 
   if( rs.edgeType === 'haystack' ){
     this.drawArrowheads(context, edge, drawOverlayInstead);
@@ -171,19 +135,24 @@ CRp.drawStyledEdge = function(edge, context, pts, type, width) {
     if( context.beginPath ){ context.beginPath(); }
     context.moveTo( pts[0], pts[1] );
 
-    if( pts.length === 6 && !rs.badBezier ){ // bezier
+    if( rs.edgeType === 'bezier' && !rs.badBezier ){
       context.quadraticCurveTo( pts[2], pts[3], pts[4], pts[5] );
 
-    } else if( pts.length === 12 && !rs.badBezier ){ // double bezier loop
+    } else if( (rs.edgeType === 'self' || rs.edgeType === 'compound') && !rs.badBezier ){
       context.quadraticCurveTo( pts[2], pts[3], pts[4], pts[5] );
       context.quadraticCurveTo( pts[8], pts[9], pts[10], pts[11] );
 
-    } else if( pts.length === 4 && !rs.badLine ){ // line
+    } else if( rs.edgeType === 'straight' && !rs.badLine ){
       context.lineTo( pts[2], pts[3] );
 
-    } else { // multibezier
+    } else if( rs.edgeType === 'multibezier' ){
       for( var i = 2; i + 3 < pts.length; i += 4 ){
         context.quadraticCurveTo( pts[i], pts[i+1], pts[i+2], pts[i+3] );
+      }
+
+    } else if( rs.edgeType === 'segments' ){
+      for( var i = 2; i + 1 < pts.length; i += 2 ){
+        context.lineTo( pts[i], pts[i+1] );
       }
     }
   }
@@ -276,10 +245,6 @@ CRp.drawArrowheads = function(context, edge, drawOverlayInstead) {
 
   if( !isHaystack && !isNaN(startX) && !isNaN(startY) && !isNaN(dispX) && !isNaN(dispY) ){
     drawArrowhead( 'source', startX, startY, dispX, dispY );
-
-  } else {
-    // window.badArrow = true;
-    // debugger;
   }
 
   var midX = rs.midX;

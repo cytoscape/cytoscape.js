@@ -336,11 +336,9 @@ CRp.drawText = function(context, element, textX, textY) {
       context.lineWidth = lineWidth;
     }
 
-    if( style['text-wrap'].value === 'wrap' ){ //console.log('draw wrap');
+    if( style['text-wrap'].value === 'wrap' ){
       var lines = rscratch.labelWrapCachedLines;
       var lineHeight = rstyle.labelHeight / lines.length;
-
-      //console.log('lines', lines);
 
       switch( valign ){
         case 'top':
@@ -366,8 +364,6 @@ CRp.drawText = function(context, element, textX, textY) {
         textY += lineHeight;
       }
 
-      // var fontSize = style['font-size'].pfValue;
-      // wrapText(context, text, textX, textY, style['text-max-width'].pfValue, fontSize + 1);
     } else {
       if( lineWidth > 0 ){
         context.strokeText( text, textX, textY );

@@ -497,7 +497,7 @@ function pushBezierPts(edge, pts){
     x: qbezierAt( pts[0], pts[2], pts[4], 0.5 ),
     y: qbezierAt( pts[1], pts[3], pts[5], 0.5 )
   };
-console.log('bpts')
+
   bpts.push( mid );
 
   if( rs.edgeType === 'self' || rs.edgeType === 'compound' ){
@@ -524,7 +524,7 @@ console.log('bpts')
   });
 }
 
-BRp.projectBezier = function( edge ){ console.log('projectBezier');
+BRp.projectBezier = function( edge ){
   var _p = edge._private;
   var rs = _p.rscratch;
 

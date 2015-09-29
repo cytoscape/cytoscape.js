@@ -1,5 +1,5 @@
 /*!
- * This file is part of Cytoscape.js snapshot-57a7406097-1442521542482.
+ * This file is part of Cytoscape.js snapshot-7d48df0099-1443550294240.
  *
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -252,7 +252,7 @@ anifn.complete = anifn.completed;
 
 module.exports = Animation;
 
-},{"./is":69,"./promise":72,"./util":85}],2:[function(_dereq_,module,exports){
+},{"./is":69,"./promise":72,"./util":86}],2:[function(_dereq_,module,exports){
 'use strict';
 
 var is = _dereq_('../is');
@@ -673,7 +673,7 @@ elesfn.stdDfs = elesfn.stdDepthFirstSearch;
 
 module.exports = elesfn;
 
-},{"../heap":67,"../is":69,"../util":85}],3:[function(_dereq_,module,exports){
+},{"../heap":67,"../is":69,"../util":86}],3:[function(_dereq_,module,exports){
 'use strict';
 
 var is = _dereq_('../is');
@@ -2035,7 +2035,7 @@ elesfn.bc = elesfn.betweennessCentrality;
 
 module.exports = elesfn;
 
-},{"../is":69,"../util":85}],4:[function(_dereq_,module,exports){
+},{"../is":69,"../util":86}],4:[function(_dereq_,module,exports){
 'use strict';
 
 var define = _dereq_('../define');
@@ -2196,7 +2196,7 @@ var elesfn = ({
 
 module.exports = elesfn;
 
-},{"../util":85}],6:[function(_dereq_,module,exports){
+},{"../util":86}],6:[function(_dereq_,module,exports){
 'use strict';
 
 var elesfn = ({
@@ -2461,7 +2461,148 @@ fn = elesfn = ({
     if( ele ){
       return ele._private.data.id;
     }
-  },
+  }
+
+});
+
+// aliases
+fn.attr = fn.data;
+fn.removeAttr = fn.removeData;
+
+module.exports = elesfn;
+
+},{"../define":33,"../is":69,"../util":86}],9:[function(_dereq_,module,exports){
+'use strict';
+
+var util = _dereq_('../util');
+
+var elesfn = {};
+
+function defineDegreeFunction(callback){
+  return function( includeLoops ){
+    var self = this;
+
+    if( includeLoops === undefined ){
+      includeLoops = true;
+    }
+
+    if( self.length === 0 ){ return; }
+
+    if( self.isNode() && !self.removed() ){
+      var degree = 0;
+      var node = self[0];
+      var connectedEdges = node._private.edges;
+
+      for( var i = 0; i < connectedEdges.length; i++ ){
+        var edge = connectedEdges[i];
+
+        if( !includeLoops && edge.isLoop() ){
+          continue;
+        }
+
+        degree += callback( node, edge );
+      }
+
+      return degree;
+    } else {
+      return;
+    }
+  };
+}
+
+util.extend(elesfn, {
+  degree: defineDegreeFunction(function(node, edge){
+    if( edge.source().same( edge.target() ) ){
+      return 2;
+    } else {
+      return 1;
+    }
+  }),
+
+  indegree: defineDegreeFunction(function(node, edge){
+    if( edge.target().same(node) ){
+      return 1;
+    } else {
+      return 0;
+    }
+  }),
+
+  outdegree: defineDegreeFunction(function(node, edge){
+    if( edge.source().same(node) ){
+      return 1;
+    } else {
+      return 0;
+    }
+  })
+});
+
+function defineDegreeBoundsFunction(degreeFn, callback){
+  return function( includeLoops ){
+    var ret;
+    var nodes = this.nodes();
+
+    for( var i = 0; i < nodes.length; i++ ){
+      var ele = nodes[i];
+      var degree = ele[degreeFn]( includeLoops );
+      if( degree !== undefined && (ret === undefined || callback(degree, ret)) ){
+        ret = degree;
+      }
+    }
+
+    return ret;
+  };
+}
+
+util.extend(elesfn, {
+  minDegree: defineDegreeBoundsFunction('degree', function(degree, min){
+    return degree < min;
+  }),
+
+  maxDegree: defineDegreeBoundsFunction('degree', function(degree, max){
+    return degree > max;
+  }),
+
+  minIndegree: defineDegreeBoundsFunction('indegree', function(degree, min){
+    return degree < min;
+  }),
+
+  maxIndegree: defineDegreeBoundsFunction('indegree', function(degree, max){
+    return degree > max;
+  }),
+
+  minOutdegree: defineDegreeBoundsFunction('outdegree', function(degree, min){
+    return degree < min;
+  }),
+
+  maxOutdegree: defineDegreeBoundsFunction('outdegree', function(degree, max){
+    return degree > max;
+  })
+});
+
+util.extend(elesfn, {
+  totalDegree: function( includeLoops ){
+    var total = 0;
+    var nodes = this.nodes();
+
+    for( var i = 0; i < nodes.length; i++ ){
+      total += nodes[i].degree( includeLoops );
+    }
+
+    return total;
+  }
+});
+
+module.exports = elesfn;
+
+},{"../util":86}],10:[function(_dereq_,module,exports){
+'use strict';
+
+var define = _dereq_('../define');
+var is = _dereq_('../is');
+var util = _dereq_('../util');
+var fn, elesfn;
+
+fn = elesfn = ({
 
   position: define.data({
     field: 'position',
@@ -2535,63 +2676,6 @@ fn = elesfn = ({
 
   silentPositions: function( pos ){
     return this.positions( pos, true );
-  },
-
-  updateCompoundBounds: function(){
-    var cy = this.cy();
-
-    if( !cy.styleEnabled() || !cy.hasCompoundNodes() ){ return cy.collection(); } // save cycles for non compound graphs or when style disabled
-
-    var updated = [];
-
-    function update( parent ){
-      var children = parent.children();
-      var style = parent._private.style;
-      var includeLabels = style['compound-sizing-wrt-labels'].value === 'include';
-      var bb = children.boundingBox({ includeLabels: includeLabels, includeEdges: true });
-      var padding = {
-        top: style['padding-top'].pxValue,
-        bottom: style['padding-bottom'].pxValue,
-        left: style['padding-left'].pxValue,
-        right: style['padding-right'].pxValue
-      };
-      var pos = parent._private.position;
-      var didUpdate = false;
-
-      if( style['width'].value === 'auto' ){
-        parent._private.autoWidth = bb.w;
-        pos.x = (bb.x1 + bb.x2 - padding.left + padding.right)/2;
-        didUpdate = true;
-      }
-
-      if( style['height'].value === 'auto' ){
-        parent._private.autoHeight = bb.h;
-        pos.y = (bb.y1 + bb.y2 - padding.top + padding.bottom)/2;
-        didUpdate = true;
-      }
-
-      if( didUpdate ){
-        updated.push( parent );
-      }
-    }
-
-    // go up, level by level
-    var eles = this.parent();
-    while( eles.nonempty() ){
-
-      // update each parent node in this level
-      for( var i = 0; i < eles.length; i++ ){
-        var ele = eles[i];
-
-        update( ele );
-      }
-
-      // next level
-      eles = eles.parent();
-    }
-
-    // return changed
-    return this.spawn( updated );
   },
 
   // get/set the rendered (i.e. on screen) positon of the element
@@ -2724,6 +2808,63 @@ fn = elesfn = ({
     };
   },
 
+  updateCompoundBounds: function(){
+    var cy = this.cy();
+
+    if( !cy.styleEnabled() || !cy.hasCompoundNodes() ){ return cy.collection(); } // save cycles for non compound graphs or when style disabled
+
+    var updated = [];
+
+    function update( parent ){
+      var children = parent.children();
+      var style = parent._private.style;
+      var includeLabels = style['compound-sizing-wrt-labels'].value === 'include';
+      var bb = children.boundingBox({ includeLabels: includeLabels, includeEdges: true });
+      var padding = {
+        top: style['padding-top'].pfValue,
+        bottom: style['padding-bottom'].pfValue,
+        left: style['padding-left'].pfValue,
+        right: style['padding-right'].pfValue
+      };
+      var pos = parent._private.position;
+      var didUpdate = false;
+
+      if( style['width'].value === 'auto' ){
+        parent._private.autoWidth = bb.w;
+        pos.x = (bb.x1 + bb.x2 - padding.left + padding.right)/2;
+        didUpdate = true;
+      }
+
+      if( style['height'].value === 'auto' ){
+        parent._private.autoHeight = bb.h;
+        pos.y = (bb.y1 + bb.y2 - padding.top + padding.bottom)/2;
+        didUpdate = true;
+      }
+
+      if( didUpdate ){
+        updated.push( parent );
+      }
+    }
+
+    // go up, level by level
+    var eles = this.parent();
+    while( eles.nonempty() ){
+
+      // update each parent node in this level
+      for( var i = 0; i < eles.length; i++ ){
+        var ele = eles[i];
+
+        update( ele );
+      }
+
+      // next level
+      eles = eles.parent();
+    }
+
+    // return changed
+    return this.spawn( updated );
+  },
+
   // get the bounding box of the elements (in raw model position)
   boundingBox: function( options ){
     var eles = this;
@@ -2803,7 +2944,7 @@ fn = elesfn = ({
         var wHalf = 0;
 
         if( styleEnabled ){
-          w = style['width'].pxValue;
+          w = style['width'].pfValue;
           wHalf = w/2;
         }
 
@@ -3034,7 +3175,7 @@ var defineDimFns = function( opts ){
           case 'label':
             return _p.rstyle[ opts.labelName ] || 0;
           default:
-            return d.pxValue;
+            return d.pfValue;
         }
       } else {
         return 1;
@@ -3052,8 +3193,8 @@ var defineDimFns = function( opts ){
       if( styleEnabled ){
         var style = _p.style;
         var dim = ele[ opts.name ]();
-        var border = style['border-width'].pxValue;
-        var padding = style[ opts.paddings[0] ].pxValue + style[ opts.paddings[1] ].pxValue;
+        var border = style['border-width'].pfValue;
+        var padding = style[ opts.paddings[0] ].pfValue + style[ opts.paddings[1] ].pfValue;
 
         return dim + border + padding;
       } else {
@@ -3092,8 +3233,6 @@ defineDimFns({
 });
 
 // aliases
-fn.attr = fn.data;
-fn.removeAttr = fn.removeData;
 fn.modelPosition = fn.point = fn.position;
 fn.modelPositions = fn.points = fn.positions;
 fn.renderedPoint = fn.renderedPosition;
@@ -3103,130 +3242,7 @@ fn.renderedBoundingbox = fn.renderedBoundingBox;
 
 module.exports = elesfn;
 
-},{"../define":33,"../is":69,"../util":85}],9:[function(_dereq_,module,exports){
-'use strict';
-
-var util = _dereq_('../util');
-
-var elesfn = {};
-
-function defineDegreeFunction(callback){
-  return function( includeLoops ){
-    var self = this;
-
-    if( includeLoops === undefined ){
-      includeLoops = true;
-    }
-
-    if( self.length === 0 ){ return; }
-
-    if( self.isNode() && !self.removed() ){
-      var degree = 0;
-      var node = self[0];
-      var connectedEdges = node._private.edges;
-
-      for( var i = 0; i < connectedEdges.length; i++ ){
-        var edge = connectedEdges[i];
-
-        if( !includeLoops && edge.isLoop() ){
-          continue;
-        }
-
-        degree += callback( node, edge );
-      }
-
-      return degree;
-    } else {
-      return;
-    }
-  };
-}
-
-util.extend(elesfn, {
-  degree: defineDegreeFunction(function(node, edge){
-    if( edge.source().same( edge.target() ) ){
-      return 2;
-    } else {
-      return 1;
-    }
-  }),
-
-  indegree: defineDegreeFunction(function(node, edge){
-    if( edge.target().same(node) ){
-      return 1;
-    } else {
-      return 0;
-    }
-  }),
-
-  outdegree: defineDegreeFunction(function(node, edge){
-    if( edge.source().same(node) ){
-      return 1;
-    } else {
-      return 0;
-    }
-  })
-});
-
-function defineDegreeBoundsFunction(degreeFn, callback){
-  return function( includeLoops ){
-    var ret;
-    var nodes = this.nodes();
-
-    for( var i = 0; i < nodes.length; i++ ){
-      var ele = nodes[i];
-      var degree = ele[degreeFn]( includeLoops );
-      if( degree !== undefined && (ret === undefined || callback(degree, ret)) ){
-        ret = degree;
-      }
-    }
-
-    return ret;
-  };
-}
-
-util.extend(elesfn, {
-  minDegree: defineDegreeBoundsFunction('degree', function(degree, min){
-    return degree < min;
-  }),
-
-  maxDegree: defineDegreeBoundsFunction('degree', function(degree, max){
-    return degree > max;
-  }),
-
-  minIndegree: defineDegreeBoundsFunction('indegree', function(degree, min){
-    return degree < min;
-  }),
-
-  maxIndegree: defineDegreeBoundsFunction('indegree', function(degree, max){
-    return degree > max;
-  }),
-
-  minOutdegree: defineDegreeBoundsFunction('outdegree', function(degree, min){
-    return degree < min;
-  }),
-
-  maxOutdegree: defineDegreeBoundsFunction('outdegree', function(degree, max){
-    return degree > max;
-  })
-});
-
-util.extend(elesfn, {
-  totalDegree: function( includeLoops ){
-    var total = 0;
-    var nodes = this.nodes();
-
-    for( var i = 0; i < nodes.length; i++ ){
-      total += nodes[i].degree( includeLoops );
-    }
-
-    return total;
-  }
-});
-
-module.exports = elesfn;
-
-},{"../util":85}],10:[function(_dereq_,module,exports){
+},{"../define":33,"../is":69,"../util":86}],11:[function(_dereq_,module,exports){
 'use strict';
 
 var util = _dereq_('../util');
@@ -3246,9 +3262,20 @@ var Element = function(cy, params, restore){
     return;
   }
 
+  var group = params.group;
+
+  // try to automatically infer the group if unspecified
+  if( group == null ){
+    if( params.data.source != null && params.data.target != null ){
+      group = 'edges';
+    } else {
+      group = 'nodes';
+    }
+  }
+
   // validate group
-  if( params.group !== 'nodes' && params.group !== 'edges' ){
-    util.error('An element must be of type `nodes` or `edges`; you specified `' + params.group + '`');
+  if( group !== 'nodes' && group !== 'edges' ){
+    util.error('An element must be of type `nodes` or `edges`; you specified `' + group + '`');
     return;
   }
 
@@ -3265,7 +3292,7 @@ var Element = function(cy, params, restore){
     autoWidth: undefined, // width and height of nodes calculated by the renderer when set to special 'auto' value
     autoHeight: undefined,
     listeners: [], // array of bound listeners
-    group: params.group, // string; 'nodes' or 'edges'
+    group: group, // string; 'nodes' or 'edges'
     style: {}, // properties as set by the style
     rstyle: {}, // properties for style sent from the renderer to the core
     styleCxts: [], // applied style contexts from the styler
@@ -3321,7 +3348,7 @@ var Element = function(cy, params, restore){
 
 module.exports = Element;
 
-},{"../is":69,"../util":85}],11:[function(_dereq_,module,exports){
+},{"../is":69,"../util":86}],12:[function(_dereq_,module,exports){
 'use strict';
 
 var define = _dereq_('../define');
@@ -3352,7 +3379,7 @@ define.eventAliasesOn( elesfn );
 
 module.exports = elesfn;
 
-},{"../define":33}],12:[function(_dereq_,module,exports){
+},{"../define":33}],13:[function(_dereq_,module,exports){
 'use strict';
 
 var is = _dereq_('../is');
@@ -3722,7 +3749,7 @@ fn.complement = fn.abscomp = fn.absoluteComplement;
 
 module.exports = elesfn;
 
-},{"../is":69,"../selector":73}],13:[function(_dereq_,module,exports){
+},{"../is":69,"../selector":73}],14:[function(_dereq_,module,exports){
 'use strict';
 
 var elesfn = ({
@@ -3754,7 +3781,7 @@ var elesfn = ({
 
 module.exports = elesfn;
 
-},{}],14:[function(_dereq_,module,exports){
+},{}],15:[function(_dereq_,module,exports){
 'use strict';
 
 var util = _dereq_('../util');
@@ -3924,16 +3951,16 @@ elesfn.json = function( obj ){
 
   var p = ele._private;
 
-  if( obj ){ // set
+  if( is.plainObject(obj) ){ // set
 
     cy.startBatch();
 
     if( obj.data ){
-      this.data( obj.data );
+      ele.data( obj.data );
     }
 
     if( obj.position ){
-      this.position( obj.position );
+      ele.position( obj.position );
     }
 
     // ignore group -- immutable
@@ -3943,9 +3970,9 @@ elesfn.json = function( obj ){
 
       if( obj_k != null && obj_k !== p[k] ){
         if( obj_k ){
-          this[ trueFnName ]();
+          ele[ trueFnName ]();
         } else {
-          this[ falseFnName ]();
+          ele[ falseFnName ]();
         }
       }
     };
@@ -3961,14 +3988,14 @@ elesfn.json = function( obj ){
     checkSwitch( 'grabbable', 'grabify', 'ungrabify' );
 
     if( obj.classes != null ){
-      this.classes( obj.classes );
+      ele.classes( obj.classes );
     }
 
     cy.endBatch();
 
     return this;
 
-  } else { // get
+  } else if( obj === undefined ){ // get
 
     var json = {
       data: util.copy( p.data ),
@@ -4375,7 +4402,7 @@ elesfn.remove = function( notifyRenderer ){
     }
   }
 
-  return this;
+  return new Collection( cy, removed );
 };
 
 elesfn.move = function( struct ){
@@ -4437,8 +4464,9 @@ elesfn.move = function( struct ){
   _dereq_('./class'),
   _dereq_('./comparators'),
   _dereq_('./compounds'),
-  _dereq_('./data-functions'),
+  _dereq_('./data'),
   _dereq_('./degree'),
+  _dereq_('./dimensions'),
   _dereq_('./events'),
   _dereq_('./filter'),
   _dereq_('./group'),
@@ -4454,7 +4482,7 @@ elesfn.move = function( struct ){
 
 module.exports = Collection;
 
-},{"../is":69,"../util":85,"./algorithms":2,"./algorithms2":3,"./animation":4,"./class":5,"./comparators":6,"./compounds":7,"./data-functions":8,"./degree":9,"./element":10,"./events":11,"./filter":12,"./group":13,"./index":14,"./iteration":15,"./layout":16,"./style":17,"./switch-functions":18,"./traversing":19}],15:[function(_dereq_,module,exports){
+},{"../is":69,"../util":86,"./algorithms":2,"./algorithms2":3,"./animation":4,"./class":5,"./comparators":6,"./compounds":7,"./data":8,"./degree":9,"./dimensions":10,"./element":11,"./events":12,"./filter":13,"./group":14,"./index":15,"./iteration":16,"./layout":17,"./style":18,"./switch-functions":19,"./traversing":20}],16:[function(_dereq_,module,exports){
 'use strict';
 
 var is = _dereq_('../is');
@@ -4591,7 +4619,7 @@ var elesfn = ({
 
 module.exports = elesfn;
 
-},{"../is":69,"./zsort":20}],16:[function(_dereq_,module,exports){
+},{"../is":69,"./zsort":21}],17:[function(_dereq_,module,exports){
 'use strict';
 
 var is = _dereq_('../is');
@@ -4704,7 +4732,7 @@ elesfn.createLayout = elesfn.makeLayout;
 
 module.exports = elesfn;
 
-},{"../is":69,"../util":85}],17:[function(_dereq_,module,exports){
+},{"../is":69,"../util":86}],18:[function(_dereq_,module,exports){
 'use strict';
 
 var is = _dereq_('../is');
@@ -4720,13 +4748,7 @@ var elesfn = ({
     if( cy._private.batchingStyle ){
       var bEles = cy._private.batchStyleEles;
 
-      for( var i = 0; i < this.length; i++ ){
-        var ele = this[i];
-
-        if( !bEles.ids[ ele._private.id ] ){
-          bEles.push( ele );
-        }
-      }
+      bEles.merge( this );
 
       return this; // chaining and exit early when batching
     }
@@ -5008,7 +5030,7 @@ elesfn.removeBypass = elesfn.removeStyle = elesfn.removeCss;
 
 module.exports = elesfn;
 
-},{"../is":69}],18:[function(_dereq_,module,exports){
+},{"../is":69}],19:[function(_dereq_,module,exports){
 'use strict';
 
 var elesfn = {};
@@ -5161,7 +5183,7 @@ elesfn.inactive = function(){
 
 module.exports = elesfn;
 
-},{}],19:[function(_dereq_,module,exports){
+},{}],20:[function(_dereq_,module,exports){
 'use strict';
 
 var util = _dereq_('../util');
@@ -5569,7 +5591,7 @@ function defineParallelEdgesFunction(params){
 
 module.exports = elesfn;
 
-},{"../is":69,"../util":85}],20:[function(_dereq_,module,exports){
+},{"../is":69,"../util":86}],21:[function(_dereq_,module,exports){
 'use strict';
 
 var zIndexSort = function( a, b ){
@@ -5619,7 +5641,7 @@ var zIndexSort = function( a, b ){
 
 module.exports = zIndexSort;
 
-},{}],21:[function(_dereq_,module,exports){
+},{}],22:[function(_dereq_,module,exports){
 'use strict';
 
 var is = _dereq_('../is');
@@ -5628,6 +5650,7 @@ var Collection = _dereq_('../collection');
 var Element = _dereq_('../collection/element');
 var window = _dereq_('../window');
 var document = window ? window.document : null;
+var NullRenderer = _dereq_('../extensions/renderer/null');
 
 function ready(f) {
   var fn = ( document && (document.readyState === 'interactive' || document.readyState === 'complete') )  ? f : ready;
@@ -5680,8 +5703,7 @@ var corefn = {
         if( is.array(elesArray) ){
 
           for( var j = 0, jl = elesArray.length; j < jl; j++ ){
-            var json = elesArray[j];
-            json.group = group;
+            var json = util.extend( { group: group }, elesArray[j] );
 
             jsons.push( json );
           }
@@ -5752,7 +5774,7 @@ var corefn = {
 
     }
 
-    if( window ){
+    if( window && !( cy.renderer() instanceof NullRenderer ) ){
       ready( callback );
     } else {
       callback();
@@ -5764,7 +5786,7 @@ var corefn = {
 
 module.exports = corefn;
 
-},{"../collection":14,"../collection/element":10,"../is":69,"../util":85,"../window":86}],22:[function(_dereq_,module,exports){
+},{"../collection":15,"../collection/element":11,"../extensions/renderer/null":65,"../is":69,"../util":86,"../window":92}],23:[function(_dereq_,module,exports){
 'use strict';
 
 var define = _dereq_('../define');
@@ -5796,6 +5818,7 @@ var corefn = ({
 
   startAnimationLoop: function(){
     var cy = this;
+    var style = cy.style;
 
     cy._private.animationsRunning = true;
 
@@ -5862,6 +5885,11 @@ var corefn = ({
           }
 
           if( !ani_p.playing && !ani_p.applying ){ continue; }
+
+          // an apply() while playing shouldn't do anything
+          if( ani_p.playing && ani_p.applying ){
+            ani_p.applying = false;
+          }
 
           if( !ani_p.started ){
             startAnimation( ele, ani, now );
@@ -6285,14 +6313,14 @@ var corefn = ({
 
       var start, end;
 
-      if( startProp.pxValue != null || startProp.value != null ){
-        start = startProp.pxValue != null ? startProp.pxValue : startProp.value;
+      if( startProp.pfValue != null || startProp.value != null ){
+        start = startProp.pfValue != null ? startProp.pfValue : startProp.value;
       } else {
         start = startProp;
       }
 
-      if( endProp.pxValue != null || endProp.value != null ){
-        end = endProp.pxValue != null ? endProp.pxValue : endProp.value;
+      if( endProp.pfValue != null || endProp.value != null ){
+        end = endProp.pfValue != null ? endProp.pfValue : endProp.value;
       } else {
         end = endProp;
       }
@@ -6300,19 +6328,25 @@ var corefn = ({
       if( is.number(start) && is.number(end) ){
         return easingFn( start, end, percent );
 
-      } else if( is.number(start[0]) && is.number(end[0]) ){ // then assume a colour
-        var c1 = start;
-        var c2 = end;
+      } else if( is.array(start) && is.array(end) ){
+        var easedArr = [];
 
-        var ch = function(ch1, ch2){
-          return Math.round( easingFn(ch1, ch2, percent) );
-        };
+        for( var i = 0; i < end.length; i++ ){
+          var si = start[i];
+          var ei = end[i];
 
-        var r = ch( c1[0], c2[0] );
-        var g = ch( c1[1], c2[1] );
-        var b = ch( c1[2], c2[2] );
+          if( si != null && ei != null ){
+            var val = easingFn(si, ei, percent);
 
-        return [r, g, b];
+            if( startProp.roundValue ){ val = Math.round( val ); }
+
+            easedArr.push( val );
+          } else {
+            easedArr.push( ei );
+          }
+        }
+
+        return easedArr;
       }
 
       return undefined;
@@ -6324,47 +6358,7 @@ var corefn = ({
 
 module.exports = corefn;
 
-},{"../define":33,"../is":69,"../util":85}],23:[function(_dereq_,module,exports){
-'use strict';
-
-var define = _dereq_('../define');
-
-var corefn = ({
-  data: define.data({
-    field: 'data',
-    bindingEvent: 'data',
-    allowBinding: true,
-    allowSetting: true,
-    settingEvent: 'data',
-    settingTriggersEvent: true,
-    triggerFnName: 'trigger',
-    allowGetting: true
-  }),
-
-  removeData: define.removeData({
-    field: 'data',
-    event: 'data',
-    triggerFnName: 'trigger',
-    triggerEvent: true
-  }),
-
-  scratch: define.data({
-    field: 'scratch',
-    allowBinding: false,
-    allowSetting: true,
-    settingTriggersEvent: false,
-    allowGetting: true
-  }),
-
-  removeScratch: define.removeData({
-    field: 'scratch',
-    triggerEvent: false
-  })
-});
-
-module.exports = corefn;
-
-},{"../define":33}],24:[function(_dereq_,module,exports){
+},{"../define":33,"../is":69,"../util":86}],24:[function(_dereq_,module,exports){
 'use strict';
 
 var define = _dereq_('../define');
@@ -6716,7 +6710,7 @@ util.extend(corefn, {
     var cy = this;
     var _p = cy._private;
 
-    if( obj ){ // set
+    if( is.plainObject(obj) ){ // set
 
       cy.startBatch();
 
@@ -6734,7 +6728,11 @@ util.extend(corefn, {
             if( ele.length !== 0 ){ // existing element should be updated
               ele.json( json );
             } else { // otherwise should be added
-              cy.add( json );
+              if( gr ){
+                cy.add( util.extend({ group: gr }, json) );
+              } else {
+                cy.add( json );
+              }
             }
           }
         };
@@ -6796,7 +6794,7 @@ util.extend(corefn, {
       cy.endBatch();
 
       return this; // chaining
-    } else { // get
+    } else if( obj === undefined ){ // get
       var json = {};
 
       json.elements = {};
@@ -6840,7 +6838,6 @@ util.extend(corefn, {
 [
   _dereq_('./add-remove'),
   _dereq_('./animation'),
-  _dereq_('./data-functions'),
   _dereq_('./events'),
   _dereq_('./export'),
   _dereq_('./layout'),
@@ -6855,7 +6852,7 @@ util.extend(corefn, {
 
 module.exports = Core;
 
-},{"../collection":14,"../is":69,"../promise":72,"../util":85,"../window":86,"./add-remove":21,"./animation":22,"./data-functions":23,"./events":24,"./export":25,"./layout":27,"./notification":28,"./renderer":29,"./search":30,"./style":31,"./viewport":32}],27:[function(_dereq_,module,exports){
+},{"../collection":15,"../is":69,"../promise":72,"../util":86,"../window":92,"./add-remove":22,"./animation":23,"./events":24,"./export":25,"./layout":27,"./notification":28,"./renderer":29,"./search":30,"./style":31,"./viewport":32}],27:[function(_dereq_,module,exports){
 'use strict';
 
 var util = _dereq_('../util');
@@ -6865,18 +6862,16 @@ var extension = _dereq_('../extension');
 var corefn = ({
 
   layout: function( params ){
-    var layout = this._private.prevLayout = ( params == null ? this._private.prevLayout : this.initLayout( params ) );
+    var layout = this._private.prevLayout = ( params == null ? this._private.prevLayout : this.makeLayout( params ) );
 
     layout.run();
 
     return this; // chaining
   },
 
-  makeLayout: function( params ){
-    return this.initLayout( params );
-  },
+  makeLayout: function( options ){
+    var cy = this;
 
-  initLayout: function( options ){
     if( options == null ){
       util.error('Layout options must be specified to make a layout');
       return;
@@ -6897,13 +6892,13 @@ var corefn = ({
 
     var eles;
     if( is.string( options.eles ) ){
-      eles = this.$( options.eles );
+      eles = cy.$( options.eles );
     } else {
-      eles = options.eles != null ? options.eles : this.$();
+      eles = options.eles != null ? options.eles : cy.$();
     }
 
     var layout = new Layout( util.extend({}, options, {
-      cy: this,
+      cy: cy,
       eles: eles
     }) );
 
@@ -6916,24 +6911,22 @@ corefn.createLayout = corefn.makeLayout;
 
 module.exports = corefn;
 
-},{"../extension":35,"../is":69,"../util":85}],28:[function(_dereq_,module,exports){
+},{"../extension":35,"../is":69,"../util":86}],28:[function(_dereq_,module,exports){
 'use strict';
 
 var Collection = _dereq_('../collection');
 
 var corefn = ({
   notify: function( params ){
-    if( this._private.batchingNotify ){
-      var bEles = this._private.batchNotifyEles;
-      var bTypes = this._private.batchNotifyTypes;
+    var _p = this._private;
 
-      if( params.collection ){ for( var i = 0; i < params.collection.length; i++ ){
-        var ele = params.collection[i];
+    if( _p.batchingNotify ){
+      var bEles = _p.batchNotifyEles;
+      var bTypes = _p.batchNotifyTypes;
 
-        if( !bEles.ids[ ele._private.id ] ){
-          bEles.push( ele );
-        }
-      } }
+      if( params.collection ){
+        bEles.merge( params.collection );
+      }
 
       if( !bTypes.ids[ params.type ] ){
         bTypes.push( params.type );
@@ -6942,7 +6935,7 @@ var corefn = ({
       return; // notifications are disabled during batching
     }
 
-    if( !this._private.notificationsEnabled ){ return; } // exit on disabled
+    if( !_p.notificationsEnabled ){ return; } // exit on disabled
 
     var renderer = this.renderer();
 
@@ -6974,12 +6967,10 @@ var corefn = ({
 
     if( _p.batchCount === 0 ){
       _p.batchingStyle = _p.batchingNotify = true;
-      _p.batchStyleEles = [];
-      _p.batchNotifyEles = [];
+      _p.batchStyleEles = this.collection();
+      _p.batchNotifyEles = this.collection();
       _p.batchNotifyTypes = [];
 
-      _p.batchStyleEles.ids = {};
-      _p.batchNotifyEles.ids = {};
       _p.batchNotifyTypes.ids = {};
     }
 
@@ -6996,7 +6987,7 @@ var corefn = ({
     if( _p.batchCount === 0 ){
       // update style for dirty eles
       _p.batchingStyle = false;
-      new Collection(this, _p.batchStyleEles).updateStyle();
+      _p.batchStyleEles.updateStyle();
 
       // notify the renderer of queued eles and event types
       _p.batchingNotify = false;
@@ -7034,7 +7025,7 @@ var corefn = ({
 
 module.exports = corefn;
 
-},{"../collection":14}],29:[function(_dereq_,module,exports){
+},{"../collection":15}],29:[function(_dereq_,module,exports){
 'use strict';
 
 var extension = _dereq_('../extension');
@@ -7131,7 +7122,7 @@ var corefn = ({
 
 module.exports = corefn;
 
-},{"../extension":35,"../util":85}],30:[function(_dereq_,module,exports){
+},{"../extension":35,"../util":86}],30:[function(_dereq_,module,exports){
 'use strict';
 
 var is = _dereq_('../is');
@@ -7151,7 +7142,7 @@ var corefn = ({
     } else if( is.elementOrCollection( eles ) ){
       return eles.collection();
 
-    } else if( is.array( eles )  ){
+    } else if( is.array( eles ) ){
       return Collection( this, eles, opts );
     }
 
@@ -7200,7 +7191,7 @@ corefn.elements = corefn.filter = corefn.$;
 
 module.exports = corefn;
 
-},{"../collection":14,"../is":69}],31:[function(_dereq_,module,exports){
+},{"../collection":15,"../is":69}],31:[function(_dereq_,module,exports){
 'use strict';
 
 var is = _dereq_('../is');
@@ -8591,7 +8582,7 @@ var define = {
 
 module.exports = define;
 
-},{"./animation":1,"./event":34,"./is":69,"./promise":72,"./selector":73,"./util":85}],34:[function(_dereq_,module,exports){
+},{"./animation":1,"./event":34,"./is":69,"./promise":72,"./selector":73,"./util":86}],34:[function(_dereq_,module,exports){
 'use strict';
 
 // ref
@@ -8738,8 +8729,6 @@ function setExtension( type, name, registrant ){
 
     var layoutProto = Layout.prototype = Object.create( registrant.prototype );
 
-    //layoutProto.constructor = Layout;
-
     var optLayoutFns = [];
 
     for( var i = 0; i < optLayoutFns.length; i++ ){
@@ -8876,7 +8865,7 @@ incExts.forEach(function( group ){
 
 module.exports = extension;
 
-},{"./collection":14,"./core":26,"./define":33,"./extensions":36,"./is":69,"./util":85}],36:[function(_dereq_,module,exports){
+},{"./collection":15,"./core":26,"./define":33,"./extensions":36,"./is":69,"./util":86}],36:[function(_dereq_,module,exports){
 'use strict';
 
 module.exports = [
@@ -9326,7 +9315,7 @@ BreadthFirstLayout.prototype.run = function(){
 
 module.exports = BreadthFirstLayout;
 
-},{"../../is":69,"../../math":71,"../../util":85}],38:[function(_dereq_,module,exports){
+},{"../../is":69,"../../math":71,"../../util":86}],38:[function(_dereq_,module,exports){
 'use strict';
 
 var util = _dereq_('../../util');
@@ -9431,7 +9420,7 @@ CircleLayout.prototype.run = function(){
 
 module.exports = CircleLayout;
 
-},{"../../is":69,"../../math":71,"../../util":85}],39:[function(_dereq_,module,exports){
+},{"../../is":69,"../../math":71,"../../util":86}],39:[function(_dereq_,module,exports){
 'use strict';
 
 var util = _dereq_('../../util');
@@ -9631,7 +9620,7 @@ ConcentricLayout.prototype.run = function(){
 
 module.exports = ConcentricLayout;
 
-},{"../../math":71,"../../util":85}],40:[function(_dereq_,module,exports){
+},{"../../math":71,"../../util":86}],40:[function(_dereq_,module,exports){
 'use strict';
 
 /*
@@ -9937,10 +9926,10 @@ var createLayoutInfo = function(cy, layout, options) {
     tempNode.minX       = tempNode.positionX - tempNode.width  / 2;
     tempNode.maxY       = tempNode.positionY + tempNode.height / 2;
     tempNode.minY       = tempNode.positionY - tempNode.height / 2;
-    tempNode.padLeft    = n._private.style['padding-left'].pxValue;
-    tempNode.padRight   = n._private.style['padding-right'].pxValue;
-    tempNode.padTop     = n._private.style['padding-top'].pxValue;
-    tempNode.padBottom  = n._private.style['padding-bottom'].pxValue;
+    tempNode.padLeft    = parseFloat( n.style('padding-left') );
+    tempNode.padRight   = parseFloat( n.style('padding-right') );
+    tempNode.padTop     = parseFloat( n.style('padding-top') );
+    tempNode.padBottom  = parseFloat( n.style('padding-bottom') );
 
     // Add new node
     layoutInfo.layoutNodes.push(tempNode);
@@ -10837,7 +10826,7 @@ var updateAncestryBoundaries = function(node, layoutInfo) {
 
 module.exports = CoseLayout;
 
-},{"../../math":71,"../../thread":84,"../../util":85}],41:[function(_dereq_,module,exports){
+},{"../../math":71,"../../thread":84,"../../util":86}],41:[function(_dereq_,module,exports){
 'use strict';
 
 var util = _dereq_('../../util');
@@ -11081,7 +11070,7 @@ GridLayout.prototype.run = function(){
 
 module.exports = GridLayout;
 
-},{"../../math":71,"../../util":85}],42:[function(_dereq_,module,exports){
+},{"../../math":71,"../../util":86}],42:[function(_dereq_,module,exports){
 'use strict';
 
 module.exports = [
@@ -11109,7 +11098,7 @@ var defaults = {
 // constructor
 // options : object containing layout options
 function NullLayout( options ){
-  this.options = util.extend(true, {}, defaults, options);
+  this.options = util.extend({}, defaults, options);
 }
 
 // runs the layout
@@ -11149,7 +11138,7 @@ NullLayout.prototype.stop = function(){
 
 module.exports = NullLayout;
 
-},{"../../util":85}],44:[function(_dereq_,module,exports){
+},{"../../util":86}],44:[function(_dereq_,module,exports){
 'use strict';
 
 var util = _dereq_('../../util');
@@ -11169,7 +11158,7 @@ var defaults = {
 };
 
 function PresetLayout( options ){
-  this.options = util.extend(true, {}, defaults, options);
+  this.options = util.extend({}, defaults, options);
 }
 
 PresetLayout.prototype.run = function(){
@@ -11212,7 +11201,7 @@ PresetLayout.prototype.run = function(){
 
 module.exports = PresetLayout;
 
-},{"../../is":69,"../../util":85}],45:[function(_dereq_,module,exports){
+},{"../../is":69,"../../util":86}],45:[function(_dereq_,module,exports){
 'use strict';
 
 var util = _dereq_('../../util');
@@ -11230,7 +11219,7 @@ var defaults = {
 };
 
 function RandomLayout( options ){
-  this.options = util.extend(true, {}, defaults, options);
+  this.options = util.extend({}, defaults, options);
 }
 
 RandomLayout.prototype.run = function(){
@@ -11257,7 +11246,7 @@ RandomLayout.prototype.run = function(){
 
 module.exports = RandomLayout;
 
-},{"../../math":71,"../../util":85}],46:[function(_dereq_,module,exports){
+},{"../../math":71,"../../util":86}],46:[function(_dereq_,module,exports){
 'use strict';
 
 var math = _dereq_('../../../math');
@@ -11357,7 +11346,7 @@ BRp.registerArrowShapes = function(){
       },
 
       gap: function( edge ){
-        return edge._private.style['width'].pxValue * 2;
+        return edge._private.style['width'].pfValue * 2;
       }
     }, defn );
   };
@@ -11400,7 +11389,7 @@ BRp.registerArrowShapes = function(){
     },
 
     gap: function( edge ){
-      return edge._private.style['width'].pxValue;
+      return edge._private.style['width'].pfValue;
     }
   } );
 
@@ -11447,7 +11436,7 @@ BRp.registerArrowShapes = function(){
     ],
 
     gap: function( edge ){
-      return edge._private.style['width'].pxValue;
+      return edge._private.style['width'].pfValue;
     }
   } );
 
@@ -11489,7 +11478,7 @@ BRp.registerArrowShapes = function(){
     },
 
     spacing: function( edge ){
-      return renderer.getArrowWidth(edge._private.style['width'].pxValue)
+      return renderer.getArrowWidth(edge._private.style['width'].pfValue)
         * this.radius;
     },
   } );
@@ -11531,7 +11520,7 @@ BRp.registerArrowShapes = function(){
     ],
 
     gap: function( edge ){
-      return edge._private.style['width'].pxValue;
+      return edge._private.style['width'].pfValue;
     }
   } );
 
@@ -11539,7 +11528,7 @@ BRp.registerArrowShapes = function(){
 
 module.exports = BRp;
 
-},{"../../../is":69,"../../../math":71,"../../../util":85}],47:[function(_dereq_,module,exports){
+},{"../../../is":69,"../../../math":71,"../../../util":86}],47:[function(_dereq_,module,exports){
 'use strict';
 
 var BRp = {};
@@ -11668,7 +11657,7 @@ BRp.findNearestElement = function(x, y, visibleElementsOnly, isTouch){
 
     var rs = _p.rscratch;
     var style = _p.style;
-    var width = style['width'].pxValue/2 + edgeThreshold; // more like a distance radius from centre
+    var width = style['width'].pfValue/2 + edgeThreshold; // more like a distance radius from centre
     var widthSq = width * width;
     var width2 = width * 2;
     var src = _p.source;
@@ -11698,24 +11687,7 @@ BRp.findNearestElement = function(x, y, visibleElementsOnly, isTouch){
       return false;
     };
 
-    if (rs.edgeType === 'self' || rs.edgeType === 'compound') {
-      if(
-          (
-            (inEdgeBB = math.inBezierVicinity(x, y, rs.startX, rs.startY, rs.cp2ax, rs.cp2ay, rs.selfEdgeMidX, rs.selfEdgeMidY, widthSq))
-              && passesVisibilityCheck() &&
-            ( widthSq > (sqDist = math.sqDistanceToQuadraticBezier(x, y, rs.startX, rs.startY, rs.cp2ax, rs.cp2ay, rs.selfEdgeMidX, rs.selfEdgeMidY)) )
-          )
-            ||
-          (
-            (inEdgeBB = math.inBezierVicinity(x, y, rs.selfEdgeMidX, rs.selfEdgeMidY, rs.cp2cx, rs.cp2cy, rs.endX, rs.endY, widthSq))
-              && passesVisibilityCheck() &&
-            ( widthSq > (sqDist = math.sqDistanceToQuadraticBezier(x, y, rs.selfEdgeMidX, rs.selfEdgeMidY, rs.cp2cx, rs.cp2cy, rs.endX, rs.endY)) )
-          )
-      ){
-        near.push( edge );
-      }
-
-    } else if (rs.edgeType === 'haystack') {
+    if( rs.edgeType === 'haystack' ){
       var radius = style['haystack-radius'].value;
       var halfRadius = radius/2; // b/c have to half width/height
 
@@ -11739,22 +11711,29 @@ BRp.findNearestElement = function(x, y, visibleElementsOnly, isTouch){
         near.push( edge );
       }
 
-    } else if (rs.edgeType === 'straight') {
-      if(
-        (inEdgeBB = math.inLineVicinity(x, y, rs.startX, rs.startY, rs.endX, rs.endY, width2))
-          && passesVisibilityCheck() &&
-        widthSq > ( sqDist = math.sqDistanceToFiniteLine(x, y, rs.startX, rs.startY, rs.endX, rs.endY) )
-      ){
-        near.push( edge );
+    } else if( rs.edgeType === 'segments' || rs.edgeType === 'straight' ){
+      var pts = rs.allpts;
+
+      for( var i = 0; i + 3 < pts.length; i += 2 ){
+        if(
+          (inEdgeBB = math.inLineVicinity(x, y, pts[i], pts[i+1], pts[i+2], pts[i+3], width2))
+            && passesVisibilityCheck() &&
+          widthSq > ( sqDist = math.sqDistanceToFiniteLine(x, y, pts[i], pts[i+1], pts[i+2], pts[i+3]) )
+        ){
+          near.push( edge );
+        }
       }
 
-    } else if (rs.edgeType === 'bezier') {
-      if(
-        (inEdgeBB = math.inBezierVicinity(x, y, rs.startX, rs.startY, rs.cp2x, rs.cp2y, rs.endX, rs.endY, widthSq))
-          && passesVisibilityCheck() &&
-        (widthSq > (sqDist = math.sqDistanceToQuadraticBezier(x, y, rs.startX, rs.startY, rs.cp2x, rs.cp2y, rs.endX, rs.endY)) )
-      ){
-        near.push( edge );
+    } else if( rs.edgeType === 'bezier' || rs.edgeType === 'multibezier' || rs.edgeType === 'self' || rs.edgeType === 'compound' ){
+      var pts = rs.allpts;
+      for( var i = 0; i + 5 < rs.allpts.length; i += 4 ){
+        if(
+          (inEdgeBB = math.inBezierVicinity(x, y, pts[i], pts[i+1], pts[i+2], pts[i+3], pts[i+4], pts[i+5], widthSq))
+            && passesVisibilityCheck() &&
+          (widthSq > (sqDist = math.sqDistanceToQuadraticBezier(x, y, pts[i], pts[i+1], pts[i+2], pts[i+3], pts[i+4], pts[i+5])) )
+        ){
+          near.push( edge );
+        }
       }
     }
 
@@ -11769,8 +11748,8 @@ BRp.findNearestElement = function(x, y, visibleElementsOnly, isTouch){
       var tgtPos = tgt._private.position;
       var srcPos = src._private.position;
 
-      var srcArW = self.getArrowWidth( style['width'].pxValue );
-      var srcArH = self.getArrowHeight( style['width'].pxValue );
+      var srcArW = self.getArrowWidth( style['width'].pfValue );
+      var srcArH = self.getArrowHeight( style['width'].pfValue );
 
       var tgtArW = srcArW;
       var tgtArH = srcArH;
@@ -11932,63 +11911,41 @@ BRp.getAllInBox = function(x1, y1, x2, y2) {
     }
   }
 
-  for ( var i = 0; i < edges.length; i++ ){
-    var edge = edges[i];
+  for( var e = 0; e < edges.length; e++ ){
+    var edge = edges[e];
     var _p = edge._private;
     var style = _p.style;
     var rs = _p.rscratch;
-    var width = style['width'].pxValue;
+    var width = style['width'].pfValue;
 
-    if (rs.edgeType == 'self' || rs.edgeType == 'compound') {
-      if ((heur = math.boxInBezierVicinity(x1, y1, x2, y2,
-          rs.startX, rs.startY,
-          rs.cp2ax, rs.cp2ay,
-          rs.endX, rs.endY, width))
-            &&
-          (heur == 2 || (heur == 1 && math.checkBezierInBox(x1, y1, x2, y2,
+    if( rs.edgeType === 'bezier' || rs.edgeType === 'multibezier' || rs.edgeType === 'self' || rs.edgeType === 'compound' ){
+
+      var pts = rs.allpts;
+      for( var i = 0; i + 6 < pts.length; i += 4 ){
+        if(
+          math.boxInBezierVicinity( x1, y1, x2, y2, pts[i], pts[i+1], pts[i+2], pts[i+3], pts[i+4], pts[i+5], width )
+          && math.checkBezierInBox( x1, y1, x2, y2, pts[i], pts[i+1], pts[i+2], pts[i+3], pts[i+4], pts[i+5], width )
+        ){
+          box.push(edge);
+        }
+      }
+
+    } else if( rs.edgeType === 'straight' ){
+
+      if( (heur = math.boxInBezierVicinity(x1, y1, x2, y2,
             rs.startX, rs.startY,
-            rs.cp2ax, rs.cp2ay,
-            rs.endX, rs.endY, width)))
-              ||
-        (heur = math.boxInBezierVicinity(x1, y1, x2, y2,
-          rs.startX, rs.startY,
-          rs.cp2cx, rs.cp2cy,
-          rs.endX, rs.endY, width))
-            &&
-          (heur == 2 || (heur == 1 && math.checkBezierInBox(x1, y1, x2, y2,
-            rs.startX, rs.startY,
-            rs.cp2cx, rs.cp2cy,
-            rs.endX, rs.endY, width)))
-        )
-      { box.push(edge); }
-    }
+            rs.startX * 0.5 + rs.endX * 0.5,
+            rs.startY * 0.5 + rs.endY * 0.5,
+            rs.endX, rs.endY, width))
+              &&
+            (heur === 2 || (heur === 1 && math.checkStraightEdgeInBox(x1, y1, x2, y2,
+              rs.startX, rs.startY,
+              rs.endX, rs.endY, width)))
+      ){
+        box.push(edge);
+      }
 
-    if (rs.edgeType == 'bezier' &&
-      (heur = math.boxInBezierVicinity(x1, y1, x2, y2,
-          rs.startX, rs.startY,
-          rs.cp2x, rs.cp2y,
-          rs.endX, rs.endY, width))
-            &&
-          (heur == 2 || (heur == 1 && math.checkBezierInBox(x1, y1, x2, y2,
-            rs.startX, rs.startY,
-            rs.cp2x, rs.cp2y,
-            rs.endX, rs.endY, width))))
-      { box.push(edge); }
-
-    if (rs.edgeType == 'straight' &&
-      (heur = math.boxInBezierVicinity(x1, y1, x2, y2,
-          rs.startX, rs.startY,
-          rs.startX * 0.5 + rs.endX * 0.5,
-          rs.startY * 0.5 + rs.endY * 0.5,
-          rs.endX, rs.endY, width))
-            && /* console.log('test', heur) == undefined && */
-          (heur == 2 || (heur == 1 && math.checkStraightEdgeInBox(x1, y1, x2, y2,
-            rs.startX, rs.startY,
-            rs.endX, rs.endY, width))))
-      { box.push(edge); }
-
-
-    if (rs.edgeType == 'haystack'){
+    } else if( rs.edgeType === 'haystack' ){
       var tgt = edge.target()[0];
       var tgtPos = tgt.position();
       var src = edge.source()[0];
@@ -12143,13 +12100,13 @@ function pushBezierPts(edge, pts){
 BRp.projectBezier = function( edge ){
   var _p = edge._private;
   var rs = _p.rscratch;
-  var bpts = _p.rstyle.bezierPts = []; // jshint ignore:line
 
-  if( rs.edgeType === 'self' ){
-    pushBezierPts( edge, [rs.startX, rs.startY, rs.cp2ax, rs.cp2ay, rs.selfEdgeMidX, rs.selfEdgeMidY] );
-    pushBezierPts( edge, [rs.selfEdgeMidX, rs.selfEdgeMidY, rs.cp2cx, rs.cp2cy, rs.endX, rs.endY] );
-  } else if( rs.edgeType === 'bezier' ){
-    pushBezierPts( edge, [rs.startX, rs.startY, rs.cp2x, rs.cp2y, rs.endX, rs.endY] );
+  if( rs.edgeType === 'multibezier' || rs.edgeType === 'bezier' || rs.edgeType === 'self' || rs.edgeType === 'compound' ){
+    var bpts = _p.rstyle.bezierPts = []; // jshint ignore:line
+
+    for( var i = 0; i + 5 < rs.allpts.length; i += 4 ){
+      pushBezierPts( edge, rs.allpts.slice(i, i+6) );
+    }
   }
 };
 
@@ -12211,20 +12168,20 @@ BRp.recalculateEdgeLabelProjection = function( edge ){
   //var style = _p.style;
   var rstyle = _p.rstyle;
 
-  if (rs.edgeType == 'self') {
-    edgeCenterX = rs.selfEdgeMidX;
-    edgeCenterY = rs.selfEdgeMidY;
-  } else if (rs.edgeType == 'straight') {
+  if( rs.edgeType === 'self' || rs.edgeType === 'compound' ){
+    edgeCenterX = rs.allpts[4];
+    edgeCenterY = rs.allpts[5];
+  } else if (rs.edgeType === 'straight' ){
     edgeCenterX = (rs.startX + rs.endX) / 2;
     edgeCenterY = (rs.startY + rs.endY) / 2;
-  } else if (rs.edgeType == 'bezier') {
-    edgeCenterX = math.qbezierAt( rs.startX, rs.cp2x, rs.endX, 0.5 );
-    edgeCenterY = math.qbezierAt( rs.startY, rs.cp2y, rs.endY, 0.5 );
-  } else if (rs.edgeType == 'haystack') {
-    // var src = _p.source;
-    // var tgt = _p.target;
-    // var srcPos = src._private.position;
-    // var tgtPos = tgt._private.position;
+  } else if( rs.edgeType === 'bezier' ){
+    edgeCenterX = math.qbezierAt( rs.allpts[0], rs.allpts[2], rs.allpts[4], 0.5 );
+    edgeCenterY = math.qbezierAt( rs.allpts[1], rs.allpts[3], rs.allpts[5], 0.5 );
+  } else if( rs.edgeType === 'multibezier' ){
+    // TODO better placement
+    edgeCenterX = (rs.startX + rs.endX) / 2;
+    edgeCenterY = (rs.startY + rs.endY) / 2;
+  } else if( rs.edgeType === 'haystack' ){
     var pts = rs.haystackPts;
 
     edgeCenterX = ( pts[0] + pts[2] )/2;
@@ -12281,7 +12238,7 @@ BRp.getLabelText = function( ele ){
     // console.log('wrap cache miss');
 
     var lines = text.split('\n');
-    var maxW = style['text-max-width'].pxValue;
+    var maxW = style['text-max-width'].pfValue;
     var wrappedLines = [];
 
     for( var l = 0; l < lines.length; l++ ){
@@ -12330,7 +12287,7 @@ BRp.calculateLabelDimensions = function( ele, text, extraKey ){
   var r = this;
   var style = ele._private.style;
   var fStyle = style['font-style'].strValue;
-  var size = style['font-size'].pxValue + 'px';
+  var size = style['font-size'].pfValue + 'px';
   var family = style['font-family'].strValue;
   // var variant = style['font-variant'].strValue;
   var weight = style['font-weight'].strValue;
@@ -12409,8 +12366,8 @@ BRp.recalculateRenderedStyle = function( eles ){
     if( _p.group === 'nodes' ){
       var pos = _p.position;
       var posSame = rstyle.nodeX != null && rstyle.nodeY != null && pos.x === rstyle.nodeX && pos.y === rstyle.nodeY;
-      var wSame = rstyle.nodeW != null && rstyle.nodeW === style['width'].pxValue;
-      var hSame = rstyle.nodeH != null && rstyle.nodeH === style['height'].pxValue;
+      var wSame = rstyle.nodeW != null && rstyle.nodeW === style['width'].pfValue;
+      var hSame = rstyle.nodeH != null && rstyle.nodeH === style['height'].pfValue;
 
       if( !posSame || !styleSame || !wSame || !hSame ){
         nodes.push( ele );
@@ -12418,8 +12375,8 @@ BRp.recalculateRenderedStyle = function( eles ){
 
       rstyle.nodeX = pos.x;
       rstyle.nodeY = pos.y;
-      rstyle.nodeW = style['width'].pxValue;
-      rstyle.nodeH = style['height'].pxValue;
+      rstyle.nodeW = style['width'].pfValue;
+      rstyle.nodeH = style['height'].pfValue;
     } else { // edges
 
       var srcPos = _p.source._private.position;
@@ -12429,9 +12386,7 @@ BRp.recalculateRenderedStyle = function( eles ){
       var positionsSame = srcSame && tgtSame;
 
       if( !positionsSame || !styleSame ){
-        var curveType = _p.style['curve-style'].value;
-
-        if( curveType === 'bezier' ){
+        if( rs.edgeType === 'bezier' || rs.edgeType === 'straight' ){
           if( !handledEdge[ id ] ){
             edges.push( ele );
             handledEdge[ id ] = true;
@@ -12503,7 +12458,8 @@ BRp.findEdgeControlPoints = function(edges) {
     var _p = edge._private;
     var data = _p.data;
     var style = _p.style;
-    var edgeIsUnbundled = style['curve-style'].value === 'unbundled-bezier';
+    var curveStyle = style['curve-style'].value;
+    var edgeIsUnbundled = curveStyle === 'unbundled-bezier' || curveStyle === 'segments';
 
     // ignore edges who are not to be displayed
     // they shouldn't take up space
@@ -12515,7 +12471,7 @@ BRp.findEdgeControlPoints = function(edges) {
       autorotateEdges.push( edge );
     }
 
-    if( style['curve-style'].value === 'haystack' ){
+    if( curveStyle === 'haystack' ){
       haystackEdges.push( edge );
       continue;
     }
@@ -12524,11 +12480,11 @@ BRp.findEdgeControlPoints = function(edges) {
     var tgtId = data.target;
 
     pairId = srcId > tgtId ?
-      tgtId + '-' + srcId :
-      srcId + '-' + tgtId ;
+      tgtId + '$-$' + srcId :
+      srcId + '$-$' + tgtId ;
 
     if( edgeIsUnbundled ){
-      pairId = 'unbundled' + data.id;
+      pairId = 'unbundled' + '$-$' + data.id;
     }
 
     if( hashTable[pairId] == null ){
@@ -12636,6 +12592,7 @@ BRp.findEdgeControlPoints = function(edges) {
         y: vectorNorm.x
       };
 
+
       // if src intersection is inside tgt or tgt intersection is inside src, then no ctrl pts to draw
       if(
         tgtShape.checkPoint( srcOutside[0], srcOutside[1], 0, tgtW, tgtH, tgtPos.x, tgtPos.y )  ||
@@ -12662,16 +12619,20 @@ BRp.findEdgeControlPoints = function(edges) {
       var numEdges1 = rs.lastNumEdges;
       var numEdges2 = pairEdges.length;
 
-      var eStyle = edge_p.style;
-      var stepSize = eStyle['control-point-step-size'].pxValue;
-      var stepDist = eStyle['control-point-distance'] !== undefined ? eStyle['control-point-distance'].pxValue : undefined;
-      var stepWeight = eStyle['control-point-weight'].value;
-      var edgeIsUnbundled = eStyle['curve-style'].value === 'unbundled-bezier';
+      var eStyle = style = edge_p.style;
+      var curveStyle = eStyle['curve-style'].value;
+      var ctrlptDists = eStyle['control-point-distances'];
+      var ctrlptWs = eStyle['control-point-weights'];
+      var bezierN = ctrlptDists && ctrlptWs ? Math.min( ctrlptDists.value.length, ctrlptWs.value.length ) : 1;
+      var stepSize = eStyle['control-point-step-size'].pfValue;
+      var ctrlptDist = ctrlptDists !== undefined ? ctrlptDists.pfValue[0] : undefined;
+      var ctrlptWeight = ctrlptWs.value[0];
+      var edgeIsUnbundled = curveStyle === 'unbundled-bezier' || curveStyle === 'segments';
 
       var swappedDirection = edge_p.source !== src;
 
       if( swappedDirection && edgeIsUnbundled ){
-        stepDist *= -1;
+        ctrlptDist *= -1;
       }
 
       var srcX1 = rs.lastSrcCtlPtX;
@@ -12693,7 +12654,7 @@ BRp.findEdgeControlPoints = function(edges) {
       var tgtH2 = tgt.outerHeight();
 
       var width1 = rs.lastW;
-      var width2 = eStyle['control-point-step-size'].pxValue;
+      var width2 = eStyle['control-point-step-size'].pfValue;
 
       if( badBezier ){
         rs.badBezier = true;
@@ -12722,8 +12683,8 @@ BRp.findEdgeControlPoints = function(edges) {
         // console.log('edge ctrl pt cache MISS')
       }
 
-      // Self-edge
-      if ( src === tgt ) {
+      if( src === tgt ){
+        // Self-edge
 
         rs.edgeType = 'self';
 
@@ -12732,25 +12693,23 @@ BRp.findEdgeControlPoints = function(edges) {
 
         if( edgeIsUnbundled ){
           j = 0;
-          loopDist = stepDist;
+          loopDist = ctrlptDist;
         }
 
-        // New -- fix for large nodes
-        rs.cp2ax = srcPos.x;
-        rs.cp2ay = srcPos.y - (1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1);
+        rs.ctrlpts = [
+          srcPos.x,
+          srcPos.y - (1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1),
 
-        rs.cp2cx = srcPos.x - (1 + Math.pow(srcW, 1.12) / 100) * loopDist * (j / 3 + 1);
-        rs.cp2cy = srcPos.y;
+          srcPos.x - (1 + Math.pow(srcW, 1.12) / 100) * loopDist * (j / 3 + 1),
+          srcPos.y
+        ];
 
-        rs.selfEdgeMidX = (rs.cp2ax + rs.cp2cx) / 2.0;
-        rs.selfEdgeMidY = (rs.cp2ay + rs.cp2cy) / 2.0;
-
-      // Compound edge
       } else if(
         hasCompounds &&
         ( src.isParent() || src.isChild() || tgt.isParent() || tgt.isChild() ) &&
         ( src.parents().anySame(tgt) || tgt.parents().anySame(src) )
       ){
+        // Compound edge
 
         rs.edgeType = 'compound';
 
@@ -12763,9 +12722,8 @@ BRp.findEdgeControlPoints = function(edges) {
 
         if( edgeIsUnbundled ){
           j = 0;
-          loopDist = stepDist;
+          loopDist = ctrlptDist;
         }
-
 
         var loopW = 50;
 
@@ -12779,59 +12737,103 @@ BRp.findEdgeControlPoints = function(edges) {
           y: tgtPos.y - tgtH/2
         };
 
+        // avoids cases with impossible beziers
         var minCompoundStretch = 1;
+        var compoundStretchA = Math.max( minCompoundStretch, Math.log(srcW * 0.01) );
+        var compoundStretchB = Math.max( minCompoundStretch, Math.log(tgtW * 0.01) );
 
-        rs.cp2ax = loopaPos.x;
-        rs.compoundStretchA = Math.max( minCompoundStretch, Math.log(srcW * 0.01) ); // avoids cases with impossible beziers
-        rs.cp2ay = loopaPos.y - (1 + Math.pow(loopW, 1.12) / 100) * loopDist * (j / 3 + 1) * rs.compoundStretchA;
+        rs.ctrlpts = [
+          loopaPos.x,
+          loopaPos.y - (1 + Math.pow(loopW, 1.12) / 100) * loopDist * (j / 3 + 1) * compoundStretchA,
 
-        rs.compoundStretchB = Math.max( minCompoundStretch, Math.log(tgtW * 0.01) ); // avoids cases with impossible beziers
-        rs.cp2cx = loopbPos.x - (1 + Math.pow(loopW, 1.12) / 100) * loopDist * (j / 3 + 1) * rs.compoundStretchB;
-        rs.cp2cy = loopbPos.y;
+          loopbPos.x - (1 + Math.pow(loopW, 1.12) / 100) * loopDist * (j / 3 + 1) * compoundStretchB,
+          loopbPos.y
+        ];
 
-        rs.selfEdgeMidX = (rs.cp2ax + rs.cp2cx) / 2.0;
-        rs.selfEdgeMidY = (rs.cp2ay + rs.cp2cy) / 2.0;
+      } else if( curveStyle === 'segments' ){
+        // Segments (multiple straight lines)
+
+        rs.edgeType = 'segments';
+        rs.segpts = [];
+
+        var segmentWs = eStyle['segment-weights'].pfValue;
+        var segmentDs = eStyle['segment-distances'].pfValue;
+        var segmentsN = Math.min( segmentWs.length, segmentDs.length );
+
+        for( var s = 0; s < segmentsN; s++ ){
+          var w = segmentWs[s];
+          var d = segmentDs[s];
+
+          // d = swappedDirection ? -d : d;
+          //
+          // d = Math.abs(d);
+
+          // var w1 = !swappedDirection ? (1 - w) : w;
+          // var w2 = !swappedDirection ? w : (1 - w);
+
+          var w1 = (1 - w);
+          var w2 = w;
+
+          var adjustedMidpt = {
+            x: midptSrcPts.x1 * w1 + midptSrcPts.x2 * w2,
+            y: midptSrcPts.y1 * w1 + midptSrcPts.y2 * w2
+          };
+
+          rs.segpts.push(
+            adjustedMidpt.x + vectorNormInverse.x * d,
+            adjustedMidpt.y + vectorNormInverse.y * d
+          );
+        }
 
       // Straight edge
-      } else if (pairEdges.length % 2 === 1
+      } else if (
+        pairEdges.length % 2 === 1
         && i === Math.floor(pairEdges.length / 2)
-        && !edgeIsUnbundled ) {
+        && !edgeIsUnbundled
+      ){
 
         rs.edgeType = 'straight';
 
-      // Bezier edge
       } else {
-        var normStepDist = (0.5 - pairEdges.length / 2 + i) * stepSize;
-        var manStepDist;
-        var sign = math.signum( normStepDist );
+        // (Multi)bezier
 
-        if( edgeIsUnbundled ){
-          manStepDist = stepDist;
-        } else {
-          manStepDist = stepDist !== undefined ? sign * stepDist : undefined;
+        var multi = edgeIsUnbundled;
+
+        rs.edgeType = multi ? 'multibezier' : 'bezier';
+        rs.ctrlpts = [];
+
+        for( var b = 0; b < bezierN; b++ ){
+          var normctrlptDist = (0.5 - pairEdges.length / 2 + i) * stepSize;
+          var manctrlptDist;
+          var sign = math.signum( normctrlptDist );
+
+          if( multi ){
+            ctrlptDist = ctrlptDists ? ctrlptDists.pfValue[b] : stepSize; // fall back on step size
+            ctrlptWeight = ctrlptWs.value[b];
+          }
+
+          if( edgeIsUnbundled ){ // multi or single unbundled
+            manctrlptDist = ctrlptDist;
+          } else {
+            manctrlptDist = ctrlptDist !== undefined ? sign * ctrlptDist : undefined;
+          }
+
+          var distanceFromMidpoint = manctrlptDist !== undefined ? manctrlptDist : normctrlptDist;
+
+          var w1 = !swappedDirection || edgeIsUnbundled ? (1 - ctrlptWeight) : ctrlptWeight;
+          var w2 = !swappedDirection || edgeIsUnbundled ? ctrlptWeight : (1 - ctrlptWeight);
+
+          var adjustedMidpt = {
+            x: midptSrcPts.x1 * w1 + midptSrcPts.x2 * w2,
+            y: midptSrcPts.y1 * w1 + midptSrcPts.y2 * w2
+          };
+
+          rs.ctrlpts.push(
+            adjustedMidpt.x + vectorNormInverse.x * distanceFromMidpoint,
+            adjustedMidpt.y + vectorNormInverse.y * distanceFromMidpoint
+          );
         }
 
-        var distanceFromMidpoint = manStepDist !== undefined ? manStepDist : normStepDist;
-
-        var w1 = (1 - stepWeight);
-        var w2 = stepWeight;
-
-        if( swappedDirection ){
-          w1 = stepWeight;
-          w2 = (1 - stepWeight);
-        }
-
-        var adjustedMidpt = {
-          x: midptSrcPts.x1 * w1 + midptSrcPts.x2 * w2,
-          y: midptSrcPts.y1 * w1 + midptSrcPts.y2 * w2
-        };
-
-        rs.edgeType = 'bezier';
-
-        rs.cp2x = adjustedMidpt.x + vectorNormInverse.x * distanceFromMidpoint;
-        rs.cp2y = adjustedMidpt.y + vectorNormInverse.y * distanceFromMidpoint;
-
-        // console.log(edge, midPointX, displacementX, distanceFromMidpoint);
       }
 
       // find endpts for edge
@@ -12843,14 +12845,15 @@ BRp.findEdgeControlPoints = function(edges) {
       var badAEnd = !is.number( rs.arrowEndX ) || !is.number( rs.arrowEndY );
 
       var minCpADistFactor = 3;
-      var arrowW = this.getArrowWidth( eStyle['width'].pxValue ) * BRp.arrowShapeHeight;
+      var arrowW = this.getArrowWidth( eStyle['width'].pfValue ) * this.arrowShapeHeight;
       var minCpADist = minCpADistFactor * arrowW;
-      var startACpDist = math.distance( { x: rs.cp2x, y: rs.cp2y }, { x: rs.startX, y: rs.startY } );
-      var closeStartACp = startACpDist < minCpADist;
-      var endACpDist = math.distance( { x: rs.cp2x, y: rs.cp2y }, { x: rs.endX, y: rs.endY } );
-      var closeEndACp = endACpDist < minCpADist;
 
       if( rs.edgeType === 'bezier' ){
+        var startACpDist = math.distance( { x: rs.ctrlpts[0], y: rs.ctrlpts[1] }, { x: rs.startX, y: rs.startY } );
+        var closeStartACp = startACpDist < minCpADist;
+        var endACpDist = math.distance( { x: rs.ctrlpts[0], y: rs.ctrlpts[1] }, { x: rs.endX, y: rs.endY } );
+        var closeEndACp = endACpDist < minCpADist;
+
         var overlapping = false;
 
         if( badStart || badAStart || closeStartACp ){
@@ -12859,8 +12862,8 @@ BRp.findEdgeControlPoints = function(edges) {
           // project control point along line from src centre to outside the src shape
           // (otherwise intersection will yield nothing)
           var cpD = { // delta
-            x: rs.cp2x - srcPos.x,
-            y: rs.cp2y - srcPos.y
+            x: rs.ctrlpts[0] - srcPos.x,
+            y: rs.ctrlpts[1] - srcPos.y
           };
           var cpL = Math.sqrt( cpD.x*cpD.x + cpD.y*cpD.y ); // length of line
           var cpM = { // normalised delta
@@ -12869,8 +12872,8 @@ BRp.findEdgeControlPoints = function(edges) {
           };
           var radius = Math.max(srcW, srcH);
           var cpProj = { // *2 radius guarantees outside shape
-            x: rs.cp2x + cpM.x * 2 * radius,
-            y: rs.cp2y + cpM.y * 2 * radius
+            x: rs.ctrlpts[0] + cpM.x * 2 * radius,
+            y: rs.ctrlpts[1] + cpM.y * 2 * radius
           };
 
           var srcCtrlPtIntn = srcShape.intersectLine(
@@ -12884,11 +12887,11 @@ BRp.findEdgeControlPoints = function(edges) {
           );
 
           if( closeStartACp ){
-            rs.cp2x = rs.cp2x + cpM.x * (minCpADist - startACpDist);
-            rs.cp2y = rs.cp2y + cpM.y * (minCpADist - startACpDist);
+            rs.ctrlpts[0] = rs.ctrlpts[0] + cpM.x * (minCpADist - startACpDist);
+            rs.ctrlpts[1] = rs.ctrlpts[1] + cpM.y * (minCpADist - startACpDist);
           } else {
-            rs.cp2x = srcCtrlPtIntn[0] + cpM.x * minCpADist;
-            rs.cp2y = srcCtrlPtIntn[1] + cpM.y * minCpADist;
+            rs.ctrlpts[0] = srcCtrlPtIntn[0] + cpM.x * minCpADist;
+            rs.ctrlpts[1] = srcCtrlPtIntn[1] + cpM.y * minCpADist;
           }
         }
 
@@ -12898,8 +12901,8 @@ BRp.findEdgeControlPoints = function(edges) {
           // project control point along line from tgt centre to outside the tgt shape
           // (otherwise intersection will yield nothing)
           var cpD = { // delta
-            x: rs.cp2x - tgtPos.x,
-            y: rs.cp2y - tgtPos.y
+            x: rs.ctrlpts[0] - tgtPos.x,
+            y: rs.ctrlpts[1] - tgtPos.y
           };
           var cpL = Math.sqrt( cpD.x*cpD.x + cpD.y*cpD.y ); // length of line
           var cpM = { // normalised delta
@@ -12908,8 +12911,8 @@ BRp.findEdgeControlPoints = function(edges) {
           };
           var radius = Math.max(srcW, srcH);
           var cpProj = { // *2 radius guarantees outside shape
-            x: rs.cp2x + cpM.x * 2 * radius,
-            y: rs.cp2y + cpM.y * 2 * radius
+            x: rs.ctrlpts[0] + cpM.x * 2 * radius,
+            y: rs.ctrlpts[1] + cpM.y * 2 * radius
           };
 
           var tgtCtrlPtIntn = tgtShape.intersectLine(
@@ -12923,11 +12926,11 @@ BRp.findEdgeControlPoints = function(edges) {
           );
 
           if( closeEndACp ){
-            rs.cp2x = rs.cp2x + cpM.x * (minCpADist - endACpDist);
-            rs.cp2y = rs.cp2y + cpM.y * (minCpADist - endACpDist);
+            rs.ctrlpts[0] = rs.ctrlpts[0] + cpM.x * (minCpADist - endACpDist);
+            rs.ctrlpts[1] = rs.ctrlpts[1] + cpM.y * (minCpADist - endACpDist);
           } else {
-            rs.cp2x = tgtCtrlPtIntn[0] + cpM.x * minCpADist;
-            rs.cp2y = tgtCtrlPtIntn[1] + cpM.y * minCpADist;
+            rs.ctrlpts[0] = tgtCtrlPtIntn[0] + cpM.x * minCpADist;
+            rs.ctrlpts[1] = tgtCtrlPtIntn[1] + cpM.y * minCpADist;
           }
 
         }
@@ -12936,9 +12939,52 @@ BRp.findEdgeControlPoints = function(edges) {
           // recalc endpts
           this.findEndpoints( edge );
         }
+
+      }
+
+      if( rs.edgeType === 'multibezier' || rs.edgeType === 'bezier' || rs.edgeType === 'self' || rs.edgeType === 'compound' ){
+        rs.allpts = [];
+
+        rs.allpts.push( rs.startX, rs.startY );
+
+        for( var b = 0; b+1 < rs.ctrlpts.length; b += 2 ){
+          // ctrl pt itself
+          rs.allpts.push( rs.ctrlpts[b], rs.ctrlpts[b+1] );
+
+          // the midpt between ctrlpts as intermediate destination pts
+          if( b + 3 < rs.ctrlpts.length ){
+            rs.allpts.push( (rs.ctrlpts[b] + rs.ctrlpts[b+2])/2, (rs.ctrlpts[b+1] + rs.ctrlpts[b+3])/2 );
+          }
+        }
+
+        rs.allpts.push( rs.endX, rs.endY );
+
       } else if( rs.edgeType === 'straight' ){
+        // need to calc these after endpts
+        rs.allpts = [ rs.startX, rs.startY, rs.endX, rs.endY ];
+
+        // default midpt for labels etc
         rs.midX = ( srcX2 + tgtX2 )/2;
         rs.midY = ( srcY2 + tgtY2 )/2;
+
+      } else if( rs.edgeType === 'segments' ){
+        rs.allpts = [];
+        rs.allpts.push( rs.startX, rs.startY );
+        rs.allpts.push.apply( rs.allpts, rs.segpts );
+        rs.allpts.push( rs.endX, rs.endY );
+
+        if( rs.segpts.length % 4 === 0 ){
+          var i2 = rs.segpts.length / 2;
+          var i1 = i2 - 2;
+
+          rs.midX = ( rs.segpts[i1] + rs.segpts[i2] ) / 2;
+          rs.midY = ( rs.segpts[i1+1] + rs.segpts[i2+1] ) / 2;
+        } else {
+          var i1 = rs.segpts.length / 2 - 1;
+
+          rs.midX = rs.segpts[i1];
+          rs.midY = rs.segpts[i1+1];
+        }
       }
 
       // project the edge into rstyle
@@ -13034,7 +13080,7 @@ BRp.findEndpoints = function( edge ){
 
   var rs = edge._private.rscratch;
 
-  if (rs.edgeType == 'self' || rs.edgeType == 'compound') {
+  if( rs.edgeType === 'self' || rs.edgeType === 'compound' ){
 
     var cp = [rs.cp2cx, rs.cp2cy];
 
@@ -13066,8 +13112,8 @@ BRp.findEndpoints = function( edge ){
       srcPos.y,
       source.outerWidth(),
       source.outerHeight(),
-      cp[0], //halfPointX,
-      cp[1], //halfPointY
+      cp[0],
+      cp[1],
       0
     );
 
@@ -13083,29 +13129,26 @@ BRp.findEndpoints = function( edge ){
     rs.arrowStartX = arrowStart[0];
     rs.arrowStartY = arrowStart[1];
 
-  } else if (rs.edgeType == 'straight') {
+  } else if( rs.edgeType === 'straight' || rs.edgeType === 'segments' ){
 
-    intersect = r.nodeShapes[this.getNodeShape(target)].intersectLine(
+    var intersect1, intersect2;
+
+    var endArrowFromPt = rs.edgeType === 'straight' ? [ srcPos.x, srcPos.y ] : rs.segpts.slice( rs.segpts.length - 2 );
+
+    intersect = intersect1 = r.nodeShapes[this.getNodeShape(target)].intersectLine(
       tgtPos.x,
       tgtPos.y,
       target.outerWidth(),
       target.outerHeight(),
-      srcPos.x,
-      srcPos.y,
+      endArrowFromPt[0],
+      endArrowFromPt[1],
       0);
 
-    if (intersect.length === 0) {
-      rs.noArrowPlacement = true;
-      // return;
-    } else {
-      rs.noArrowPlacement = false;
-    }
-
     var arrowEnd = math.shortenIntersection(intersect,
-      [srcPos.x, srcPos.y],
+      endArrowFromPt,
       r.arrowShapes[tgtArShape].spacing(edge));
     var edgeEnd = math.shortenIntersection(intersect,
-      [srcPos.x, srcPos.y],
+      endArrowFromPt,
       r.arrowShapes[tgtArShape].gap(edge));
 
     rs.endX = edgeEnd[0];
@@ -13114,32 +13157,28 @@ BRp.findEndpoints = function( edge ){
     rs.arrowEndX = arrowEnd[0];
     rs.arrowEndY = arrowEnd[1];
 
-    intersect = r.nodeShapes[this.getNodeShape(source)].intersectLine(
+    var startArrowFromPt = rs.edgeType === 'straight' ? [ tgtPos.x, tgtPos.y ] : rs.segpts.slice( 0, 2 );
+
+    intersect = intersect2 = r.nodeShapes[this.getNodeShape(source)].intersectLine(
       srcPos.x,
       srcPos.y,
       source.outerWidth(),
       source.outerHeight(),
-      target.position().x,
-      target.position().y,
+      startArrowFromPt[0],
+      startArrowFromPt[1],
       0);
 
-    if (intersect.length === 0) {
+    if( intersect1.length === 0 || intersect2.length === 0 ){
       rs.noArrowPlacement = true;
-     // return;
     } else {
       rs.noArrowPlacement = false;
     }
 
-    /*
-    console.log("1: "
-      + r.arrowShapes[srcArShape],
-        srcArShape);
-    */
     var arrowStart = math.shortenIntersection(intersect,
-      [target.position().x, target.position().y],
+      startArrowFromPt,
       r.arrowShapes[srcArShape].spacing(edge));
     var edgeStart = math.shortenIntersection(intersect,
-      [target.position().x, target.position().y],
+      startArrowFromPt,
       r.arrowShapes[srcArShape].gap(edge));
 
     rs.startX = edgeStart[0];
@@ -13154,29 +13193,24 @@ BRp.findEndpoints = function( edge ){
       rs.badLine = false;
     }
 
-  } else if (rs.edgeType == 'bezier') {
-    // if( window.badArrow) debugger;
-    var cp = [rs.cp2x, rs.cp2y];
+  } else if ( rs.edgeType === 'bezier' || rs.edgeType === 'multibezier' ){
+    var multi = rs.edgeType === 'multibezier';
+    var cpStart = [ rs.ctrlpts[0], rs.ctrlpts[1] ];
+    var cpEnd = multi ? [ rs.ctrlpts[rs.ctrlpts.length - 2], rs.ctrlpts[rs.ctrlpts.length - 1] ] : cpStart;
 
-    intersect = r.nodeShapes[
-      this.getNodeShape(target)].intersectLine(
+    intersect = r.nodeShapes[this.getNodeShape(target)].intersectLine(
       tgtPos.x,
       tgtPos.y,
       target.outerWidth(),
       target.outerHeight(),
-      cp[0], //halfPointX,
-      cp[1], //halfPointY
+      cpEnd[0],
+      cpEnd[1],
       0
     );
 
-    /*
-    console.log("2: "
-      + r.arrowShapes[srcArShape],
-        srcArShape);
-    */
-    var arrowEnd = math.shortenIntersection(intersect, cp,
+    var arrowEnd = math.shortenIntersection(intersect, cpEnd,
       r.arrowShapes[tgtArShape].spacing(edge));
-    var edgeEnd = math.shortenIntersection(intersect, cp,
+    var edgeEnd = math.shortenIntersection(intersect, cpEnd,
       r.arrowShapes[tgtArShape].gap(edge));
 
     rs.endX = edgeEnd[0];
@@ -13185,25 +13219,22 @@ BRp.findEndpoints = function( edge ){
     rs.arrowEndX = arrowEnd[0];
     rs.arrowEndY = arrowEnd[1];
 
-    intersect = r.nodeShapes[
-      this.getNodeShape(source)].intersectLine(
+    intersect = r.nodeShapes[this.getNodeShape(source)].intersectLine(
       srcPos.x,
       srcPos.y,
       source.outerWidth(),
       source.outerHeight(),
-      cp[0], //halfPointX,
-      cp[1], //halfPointY
+      cpStart[0],
+      cpStart[1],
       0
     );
 
     var arrowStart = math.shortenIntersection(
-      intersect,
-      cp,
+      intersect, cpStart,
       r.arrowShapes[srcArShape].spacing(edge)
     );
     var edgeStart = math.shortenIntersection(
-      intersect,
-      cp,
+      intersect, cpStart,
       r.arrowShapes[srcArShape].gap(edge)
     );
 
@@ -13213,12 +13244,6 @@ BRp.findEndpoints = function( edge ){
     rs.arrowStartX = arrowStart[0];
     rs.arrowStartY = arrowStart[1];
 
-    // if( isNaN(rs.startX) || isNaN(rs.startY) ){
-    //   debugger;
-    // }
-
-  } else if (rs.isArcEdge) {
-    return;
   }
 };
 
@@ -13238,7 +13263,7 @@ BRp.getArrowWidth = BRp.getArrowHeight = function(edgeWidth) {
 
 module.exports = BRp;
 
-},{"../../../collection/zsort":20,"../../../is":69,"../../../math":71}],49:[function(_dereq_,module,exports){
+},{"../../../collection/zsort":21,"../../../is":69,"../../../math":71}],49:[function(_dereq_,module,exports){
 'use strict';
 
 var BRp = {};
@@ -13420,7 +13445,7 @@ BRp.destroy = function(){
 
 module.exports = BR;
 
-},{"../../../is":69,"../../../util":85,"./arrow-shapes":46,"./cached-eles":47,"./coord-ele-math":48,"./images":49,"./load-listeners":51,"./node-shapes":52,"./redraw":53}],51:[function(_dereq_,module,exports){
+},{"../../../is":69,"../../../util":86,"./arrow-shapes":46,"./cached-eles":47,"./coord-ele-math":48,"./images":49,"./load-listeners":51,"./node-shapes":52,"./redraw":53}],51:[function(_dereq_,module,exports){
 'use strict';
 
 var is = _dereq_('../../../is');
@@ -15284,7 +15309,7 @@ BRp.load = function() {
 
 module.exports = BRp;
 
-},{"../../../collection":14,"../../../event":34,"../../../is":69,"../../../util":85}],52:[function(_dereq_,module,exports){
+},{"../../../collection":15,"../../../event":34,"../../../is":69,"../../../util":86}],52:[function(_dereq_,module,exports){
 'use strict';
 
 var math = _dereq_('../../../math');
@@ -15628,7 +15653,7 @@ BRp.startRenderLoop = function(){
 
 module.exports = BRp;
 
-},{"../../../util":85}],54:[function(_dereq_,module,exports){
+},{"../../../util":86}],54:[function(_dereq_,module,exports){
 'use strict';
 
 var CRp = {};
@@ -15698,18 +15723,18 @@ CRp.drawEdge = function(context, edge, drawOverlayInstead) {
   var usePaths = this.usePaths();
 
   // if bezier ctrl pts can not be calculated, then die
-  if( rs.badBezier || ( (rs.edgeType === 'bezier' || rs.edgeType === 'straight') && isNaN(rs.startX)) ){ // extra isNaN() for safari 7.1 b/c it mangles ctrlpt calcs
+  if( rs.badBezier || isNaN(rs.startX) ){ // iNaN in case edge is impossible and browser bugs (e.g. safari)
     return;
   }
 
   var style = edge._private.style;
 
   // Edge line width
-  if (style['width'].pxValue <= 0) {
+  if (style['width'].pfValue <= 0) {
     return;
   }
 
-  var overlayPadding = style['overlay-padding'].pxValue;
+  var overlayPadding = style['overlay-padding'].pfValue;
   var overlayOpacity = style['overlay-opacity'].value;
   var overlayColor = style['overlay-color'].value;
 
@@ -15723,7 +15748,7 @@ CRp.drawEdge = function(context, edge, drawOverlayInstead) {
     this.strokeStyle(context, overlayColor[0], overlayColor[1], overlayColor[2], overlayOpacity);
     context.lineCap = 'round';
 
-    if( edge._private.rscratch.edgeType == 'self' && !usePaths ){
+    if( rs.edgeType == 'self' && !usePaths ){
       context.lineCap = 'butt';
     }
 
@@ -15735,87 +15760,30 @@ CRp.drawEdge = function(context, edge, drawOverlayInstead) {
     context.lineCap = 'butt';
   }
 
-  var startNode, endNode, source, target;
-  source = startNode = edge._private.source;
-  target = endNode = edge._private.target;
+  var source = edge._private.source;
+  var target = edge._private.target;
+  var srcPos = source._private.position;
+  var tgtPos = target._private.position;
 
-  // var targetPos = target._private.position;
-  // var targetW = target.width();
-  // var targetH = target.height();
-  // var sourcePos = source._private.position;
-  // var sourceW = source.width();
-  // var sourceH = source.height();
-
-
-  var edgeWidth = style['width'].pxValue + (drawOverlayInstead ? 2 * overlayPadding : 0);
+  var edgeWidth = style['width'].pfValue + (drawOverlayInstead ? 2 * overlayPadding : 0);
   var lineStyle = drawOverlayInstead ? 'solid' : style['line-style'].value;
   context.lineWidth = edgeWidth;
 
-  var shadowBlur = style['shadow-blur'].pxValue;
+  var shadowBlur = style['shadow-blur'].pfValue;
   var shadowOpacity = style['shadow-opacity'].value;
   var shadowColor = style['shadow-color'].value;
-  var shadowOffsetX = style['shadow-offset-x'].pxValue;
-  var shadowOffsetY = style['shadow-offset-y'].pxValue;
+  var shadowOffsetX = style['shadow-offset-x'].pfValue;
+  var shadowOffsetY = style['shadow-offset-y'].pfValue;
 
   this.shadowStyle(context,  shadowColor, drawOverlayInstead ? 0 : shadowOpacity, shadowBlur, shadowOffsetX, shadowOffsetY);
 
-  // if( rs.edgeType !== 'haystack' ){
-  //   this.findEndpoints(edge);
-  // }
-
-  if( rs.edgeType === 'haystack' ){
-    // var radius = style['haystack-radius'].value;
-    // var halfRadius = radius/2; // b/c have to half width/height
-
-    this.drawStyledEdge(
-      edge,
-      context,
-      rs.haystackPts,
-      lineStyle,
-      edgeWidth
-    );
-  } else if (rs.edgeType === 'self' || rs.edgeType === 'compound') {
-
-    var details = edge._private.rscratch;
-    var points = [details.startX, details.startY, details.cp2ax,
-      details.cp2ay, details.selfEdgeMidX, details.selfEdgeMidY,
-      details.selfEdgeMidX, details.selfEdgeMidY,
-      details.cp2cx, details.cp2cy, details.endX, details.endY];
-
-    this.drawStyledEdge(edge, context, points, lineStyle, edgeWidth);
-
-  } else if (rs.edgeType === 'straight') {
-
-    var nodeDirectionX = endNode._private.position.x - startNode._private.position.x;
-    var nodeDirectionY = endNode._private.position.y - startNode._private.position.y;
-
-    var edgeDirectionX = rs.endX - rs.startX;
-    var edgeDirectionY = rs.endY - rs.startY;
-
-    if (nodeDirectionX * edgeDirectionX
-      + nodeDirectionY * edgeDirectionY < 0) {
-
-      rs.straightEdgeTooShort = true;
-    } else {
-
-      var details = rs;
-      this.drawStyledEdge(edge, context, [details.startX, details.startY,
-                                    details.endX, details.endY],
-                                    lineStyle,
-                                    edgeWidth);
-
-      rs.straightEdgeTooShort = false;
-    }
-  } else {
-
-    var details = rs;
-
-    this.drawStyledEdge(edge, context, [details.startX, details.startY,
-      details.cp2x, details.cp2y, details.endX, details.endY],
-      lineStyle,
-      edgeWidth);
-
-  }
+  this.drawStyledEdge(
+    edge,
+    context,
+    rs.allpts,
+    lineStyle,
+    edgeWidth
+  );
 
   if( rs.edgeType === 'haystack' ){
     this.drawArrowheads(context, edge, drawOverlayInstead);
@@ -15828,8 +15796,7 @@ CRp.drawEdge = function(context, edge, drawOverlayInstead) {
 };
 
 
-CRp.drawStyledEdge = function(
-    edge, context, pts, type, width) {
+CRp.drawStyledEdge = function(edge, context, pts, type, width) {
 
   // 3 points given -> assume Bezier
   // 2 -> assume straight
@@ -15882,15 +15849,27 @@ CRp.drawStyledEdge = function(
 
   if( !pathCacheHit ){
     if( context.beginPath ){ context.beginPath(); }
-    context.moveTo(pts[0], pts[1]);
+    context.moveTo( pts[0], pts[1] );
 
-    if( pts.length === 6 && !rs.badBezier ){ // bezier
-      context.quadraticCurveTo(pts[2], pts[3], pts[4], pts[5]);
-    } else if( pts.length === 12 && !rs.badBezier ){ // double bezier loop
-      context.quadraticCurveTo(pts[2], pts[3], pts[4], pts[5]);
-      context.quadraticCurveTo(pts[8], pts[9], pts[10], pts[11]);
-    } else if( pts.length === 4 && !rs.badLine ){ // line
-      context.lineTo(pts[2], pts[3]);
+    if( rs.edgeType === 'bezier' && !rs.badBezier ){
+      context.quadraticCurveTo( pts[2], pts[3], pts[4], pts[5] );
+
+    } else if( (rs.edgeType === 'self' || rs.edgeType === 'compound') && !rs.badBezier ){
+      context.quadraticCurveTo( pts[2], pts[3], pts[4], pts[5] );
+      context.quadraticCurveTo( pts[8], pts[9], pts[10], pts[11] );
+
+    } else if( rs.edgeType === 'straight' && !rs.badLine ){
+      context.lineTo( pts[2], pts[3] );
+
+    } else if( rs.edgeType === 'multibezier' ){
+      for( var i = 2; i + 3 < pts.length; i += 4 ){
+        context.quadraticCurveTo( pts[i], pts[i+1], pts[i+2], pts[i+3] );
+      }
+
+    } else if( rs.edgeType === 'segments' ){
+      for( var i = 2; i + 1 < pts.length; i += 2 ){
+        context.lineTo( pts[i], pts[i+1] );
+      }
     }
   }
 
@@ -15960,7 +15939,7 @@ CRp.drawArrowheads = function(context, edge, drawOverlayInstead) {
       self.strokeStyle(context, 255, 255, 255, 1);
 
       self.drawArrowShape( edge, prefix, context,
-        arrowClearFill, style['width'].pxValue, style[prefix + '-arrow-shape'].value,
+        arrowClearFill, style['width'].pfValue, style[prefix + '-arrow-shape'].value,
         x, y, dispX, dispY
       );
 
@@ -15972,7 +15951,7 @@ CRp.drawArrowheads = function(context, edge, drawOverlayInstead) {
     self.strokeStyle(context, color[0], color[1], color[2], style.opacity.value);
 
     self.drawArrowShape( edge, prefix, context,
-      arrowFill, style['width'].pxValue, style[prefix + '-arrow-shape'].value,
+      arrowFill, style['width'].pfValue, style[prefix + '-arrow-shape'].value,
       x, y, dispX, dispY
     );
   }
@@ -15982,10 +15961,6 @@ CRp.drawArrowheads = function(context, edge, drawOverlayInstead) {
 
   if( !isHaystack && !isNaN(startX) && !isNaN(startY) && !isNaN(dispX) && !isNaN(dispY) ){
     drawArrowhead( 'source', startX, startY, dispX, dispY );
-
-  } else {
-    // window.badArrow = true;
-    // debugger;
   }
 
   var midX = rs.midX;
@@ -16157,7 +16132,7 @@ CRp.drawInscribedImage = function(context, img, node) {
     if( bgW.units === '%' ){
       w = bgW.value/100 * nodeW;
     } else {
-      w = bgW.pxValue;
+      w = bgW.pfValue;
     }
   }
 
@@ -16166,7 +16141,7 @@ CRp.drawInscribedImage = function(context, img, node) {
     if( bgH.units === '%' ){
       h = bgH.value/100 * nodeH;
     } else {
-      h = bgH.pxValue;
+      h = bgH.pfValue;
     }
   }
 
@@ -16187,14 +16162,14 @@ CRp.drawInscribedImage = function(context, img, node) {
   if( xPos.units === '%' ){
     x += (nodeW - w) * xPos.value/100;
   } else {
-    x += xPos.pxValue;
+    x += xPos.pfValue;
   }
 
   var y = (nodeY - nodeH/2); // top
   if( yPos.units === '%' ){
     y += (nodeH - h) * yPos.value/100;
   } else {
-    y += yPos.pxValue;
+    y += yPos.pfValue;
   }
 
   if( rs.pathCache ){
@@ -16268,8 +16243,8 @@ CRp.drawEdgeText = function(context, edge) {
 
   if( this.hideEdgesOnViewport && (this.dragData.didDrag || this.pinching || this.hoverData.dragging || this.data.wheel || this.swipePanning) ){ return; } // save cycles on pinching
 
-  var computedSize = edge._private.style['font-size'].pxValue * edge.cy().zoom();
-  var minSize = edge._private.style['min-zoomed-font-size'].pxValue;
+  var computedSize = edge._private.style['font-size'].pfValue * edge.cy().zoom();
+  var minSize = edge._private.style['min-zoomed-font-size'].pfValue;
 
   if( computedSize < minSize ){
     return;
@@ -16311,8 +16286,8 @@ CRp.drawNodeText = function(context, node) {
     return;
   }
 
-  var computedSize = node._private.style['font-size'].pxValue * node.cy().zoom();
-  var minSize = node._private.style['min-zoomed-font-size'].pxValue;
+  var computedSize = node._private.style['font-size'].pfValue * node.cy().zoom();
+  var minSize = node._private.style['min-zoomed-font-size'].pfValue;
 
   if( computedSize < minSize ){
     return;
@@ -16382,18 +16357,18 @@ CRp.setupTextStyle = function( context, element ){
   var parentOpacity = element.effectiveOpacity();
   var style = element._private.style;
   var labelStyle = style['font-style'].strValue;
-  var labelSize = style['font-size'].pxValue + 'px';
+  var labelSize = style['font-size'].pfValue + 'px';
   var labelFamily = style['font-family'].strValue;
   var labelWeight = style['font-weight'].strValue;
   var opacity = style['text-opacity'].value * style['opacity'].value * parentOpacity;
   var outlineOpacity = style['text-outline-opacity'].value * opacity;
   var color = style['color'].value;
   var outlineColor = style['text-outline-color'].value;
-  var shadowBlur = style['text-shadow-blur'].pxValue;
+  var shadowBlur = style['text-shadow-blur'].pfValue;
   var shadowOpacity = style['text-shadow-opacity'].value;
   var shadowColor = style['text-shadow-color'].value;
-  var shadowOffsetX = style['text-shadow-offset-x'].pxValue;
-  var shadowOffsetY = style['text-shadow-offset-y'].pxValue;
+  var shadowOffsetX = style['text-shadow-offset-x'].pfValue;
+  var shadowOffsetY = style['text-shadow-offset-y'].pfValue;
 
   var fontCacheKey = element._private.fontKey;
   var cache = this.getFontCache(context);
@@ -16455,10 +16430,10 @@ CRp.drawText = function(context, element, textX, textY) {
   }
 
   if( element.isNode() ){
-    var pLeft = style['padding-left'].pxValue;
-    var pRight = style['padding-right'].pxValue;
-    var pTop = style['padding-top'].pxValue;
-    var pBottom = style['padding-bottom'].pxValue;
+    var pLeft = style['padding-left'].pfValue;
+    var pRight = style['padding-right'].pfValue;
+    var pTop = style['padding-top'].pfValue;
+    var pBottom = style['padding-bottom'].pfValue;
 
     textX += pLeft/2;
     textX -= pRight/2;
@@ -16470,7 +16445,7 @@ CRp.drawText = function(context, element, textX, textY) {
   if ( text != null && !isNaN(textX) && !isNaN(textY)) {
     var backgroundOpacity = style['text-background-opacity'].value;
     var borderOpacity = style['text-border-opacity'].value;
-    var textBorderWidth = style['text-border-width'].pxValue;
+    var textBorderWidth = style['text-border-width'].pfValue;
 
     if( backgroundOpacity > 0 || (textBorderWidth > 0 && borderOpacity > 0) ){
       var margin = 4 + textBorderWidth/2;
@@ -16584,17 +16559,15 @@ CRp.drawText = function(context, element, textX, textY) {
 
     }
 
-    var lineWidth = 2  * style['text-outline-width'].pxValue; // *2 b/c the stroke is drawn centred on the middle
+    var lineWidth = 2  * style['text-outline-width'].pfValue; // *2 b/c the stroke is drawn centred on the middle
 
     if( lineWidth > 0 ){
       context.lineWidth = lineWidth;
     }
 
-    if( style['text-wrap'].value === 'wrap' ){ //console.log('draw wrap');
+    if( style['text-wrap'].value === 'wrap' ){
       var lines = rscratch.labelWrapCachedLines;
       var lineHeight = rstyle.labelHeight / lines.length;
-
-      //console.log('lines', lines);
 
       switch( valign ){
         case 'top':
@@ -16620,8 +16593,6 @@ CRp.drawText = function(context, element, textX, textY) {
         textY += lineHeight;
       }
 
-      // var fontSize = style['font-size'].pxValue;
-      // wrapText(context, text, textX, textY, style['text-max-width'].pxValue, fontSize + 1);
     } else {
       if( lineWidth > 0 ){
         context.strokeText( text, textX, textY );
@@ -16664,7 +16635,7 @@ CRp.drawNode = function(context, node, drawOverlayInstead) {
   var path;
   var pathCacheHit = false;
 
-  var overlayPadding = style['overlay-padding'].pxValue;
+  var overlayPadding = style['overlay-padding'].pfValue;
   var overlayOpacity = style['overlay-opacity'].value;
   var overlayColor = style['overlay-color'].value;
 
@@ -16675,10 +16646,10 @@ CRp.drawNode = function(context, node, drawOverlayInstead) {
   var parentOpacity = node.effectiveOpacity();
   if( parentOpacity === 0 ){ return; }
 
-  nodeWidth = node.width() + style['padding-left'].pxValue + style['padding-right'].pxValue;
-  nodeHeight = node.height() + style['padding-top'].pxValue + style['padding-bottom'].pxValue;
+  nodeWidth = node.width() + style['padding-left'].pfValue + style['padding-right'].pfValue;
+  nodeHeight = node.height() + style['padding-top'].pfValue + style['padding-bottom'].pfValue;
 
-  context.lineWidth = style['border-width'].pxValue;
+  context.lineWidth = style['border-width'].pfValue;
 
   if( drawOverlayInstead === undefined || !drawOverlayInstead ){
 
@@ -16716,11 +16687,11 @@ CRp.drawNode = function(context, node, drawOverlayInstead) {
 
     this.strokeStyle(context, borderColor[0], borderColor[1], borderColor[2], style['border-opacity'].value * parentOpacity);
 
-    var shadowBlur = style['shadow-blur'].pxValue;
+    var shadowBlur = style['shadow-blur'].pfValue;
     var shadowOpacity = style['shadow-opacity'].value;
     var shadowColor = style['shadow-color'].value;
-    var shadowOffsetX = style['shadow-offset-x'].pxValue;
-    var shadowOffsetY = style['shadow-offset-y'].pxValue;
+    var shadowOffsetX = style['shadow-offset-x'].pfValue;
+    var shadowOffsetY = style['shadow-offset-y'].pfValue;
 
     this.shadowStyle(context, shadowColor, shadowOpacity, shadowBlur, shadowOffsetX, shadowOffsetY);
 
@@ -16797,7 +16768,7 @@ CRp.drawNode = function(context, node, drawOverlayInstead) {
     }
 
     var darkness = style['background-blacken'].value;
-    var borderWidth = style['border-width'].pxValue;
+    var borderWidth = style['border-width'].pfValue;
 
     if( this.hasPie(node) ){
       this.drawPie( context, node, parentOpacity );
@@ -16845,7 +16816,7 @@ CRp.drawNode = function(context, node, drawOverlayInstead) {
       }
 
       if( borderStyle === 'double' ){
-        context.lineWidth = style['border-width'].pxValue/3;
+        context.lineWidth = style['border-width'].pfValue/3;
 
         var gco = context.globalCompositeOperation;
         context.globalCompositeOperation = 'destination-out';
@@ -16919,8 +16890,8 @@ CRp.drawPie = function( context, node, nodeOpacity ){
 
   if( pieSize.units === '%' ){
     radius = radius * pieSize.value / 100;
-  } else if( pieSize.pxValue !== undefined ){
-    radius = pieSize.pxValue / 2;
+  } else if( pieSize.pfValue !== undefined ){
+    radius = pieSize.pfValue / 2;
   }
 
   for( var i = 1; i <= cyStyle.pieBackgroundN; i++ ){ // 1..N
@@ -16988,12 +16959,6 @@ CRp.getPixelRatio = function(){
     context.msBackingStorePixelRatio ||
     context.oBackingStorePixelRatio ||
     context.backingStorePixelRatio || 1;
-
-  //console.log(window.devicePixelRatio, backingStore);
-
-  // if( isFirefox ){ // because ff can't scale canvas properly
-  //   return 1;
-  // }
 
   return (window.devicePixelRatio || 1) / backingStore;
 };
@@ -17568,7 +17533,7 @@ CRp.render = function( options ) {
         + coreStyle['active-bg-opacity'].value + ")";
 
       context.beginPath();
-      context.arc(pos.x, pos.y, coreStyle['active-bg-size'].pxValue / zoom, 0, 2 * Math.PI);
+      context.arc(pos.x, pos.y, coreStyle['active-bg-size'].pfValue / zoom, 0, 2 * Math.PI);
       context.fill();
     }
 
@@ -17685,7 +17650,7 @@ CRp.render = function( options ) {
 
 module.exports = CRp;
 
-},{"../../../math":71,"../../../util":85}],60:[function(_dereq_,module,exports){
+},{"../../../math":71,"../../../util":86}],60:[function(_dereq_,module,exports){
 'use strict';
 
   var math = _dereq_('../../../math');
@@ -18001,7 +17966,7 @@ CRp.usePaths = function(){
 
 module.exports = CR;
 
-},{"../../../util":85,"./arrow-shapes":54,"./drawing-edges":55,"./drawing-images":56,"./drawing-label-text":57,"./drawing-nodes":58,"./drawing-redraw":59,"./drawing-shapes":60,"./export-image":61,"./node-shapes":63}],63:[function(_dereq_,module,exports){
+},{"../../../util":86,"./arrow-shapes":54,"./drawing-edges":55,"./drawing-images":56,"./drawing-label-text":57,"./drawing-nodes":58,"./drawing-redraw":59,"./drawing-shapes":60,"./export-image":61,"./node-shapes":63}],63:[function(_dereq_,module,exports){
 'use strict';
 
 var CRp = {};
@@ -18378,7 +18343,7 @@ define.eventAliasesOn( fabfn );
 
 module.exports = Fabric;
 
-},{"./define":33,"./is":69,"./promise":72,"./thread":84,"./util":85,"os":undefined}],67:[function(_dereq_,module,exports){
+},{"./define":33,"./is":69,"./promise":72,"./thread":84,"./util":86,"os":undefined}],67:[function(_dereq_,module,exports){
 'use strict';
 /* jshint ignore:start */
 
@@ -18790,7 +18755,7 @@ var cytoscape = function( options ){ // jshint ignore:line
 };
 
 // replaced by build system
-cytoscape.version = 'snapshot-57a7406097-1442521542482';
+cytoscape.version = 'snapshot-7d48df0099-1443550294240';
 
 // try to register w/ jquery
 if( window && window.jQuery ){
@@ -18809,7 +18774,7 @@ cytoscape.fabric = cytoscape.Fabric = Fabric;
 
 module.exports = cytoscape;
 
-},{"./core":26,"./extension":35,"./fabric":66,"./is":69,"./jquery-plugin":70,"./stylesheet":83,"./thread":84,"./window":86}],69:[function(_dereq_,module,exports){
+},{"./core":26,"./extension":35,"./fabric":66,"./is":69,"./jquery-plugin":70,"./stylesheet":83,"./thread":84,"./window":92}],69:[function(_dereq_,module,exports){
 'use strict';
 
 var window = _dereq_('./window');
@@ -18982,7 +18947,7 @@ var is = {
 
 module.exports = is;
 
-},{"./window":86}],70:[function(_dereq_,module,exports){
+},{"./window":92}],70:[function(_dereq_,module,exports){
 'use strict';
 
 var is = _dereq_('./is');
@@ -19283,13 +19248,7 @@ math.roundRectangleIntersectLine = function(
   return []; // if nothing
 };
 
-math.boxInBezierVicinity = function(
-  x1box, y1box, x2box, y2box, x1, y1, x2, y2, x3, y3, tolerance) {
-
-  // Return values:
-  // 0 - curve is not in box
-  // 1 - curve may be in box; needs precise check
-  // 2 - curve is in box
+math.boxInBezierVicinity = function( x1box, y1box, x2box, y2box, x1, y1, x2, y2, x3, y3, tolerance ){
 
   // midpoint
   var midX = 0.25 * x1 + 0.5 * x2 + 0.25 * x3;
@@ -19314,14 +19273,6 @@ math.boxInBezierVicinity = function(
   var curveMinY = Math.min(y1, midY, y3);
   var curveMaxX = Math.max(x1, midX, x3);
   var curveMaxY = Math.max(y1, midY, y3);
-
-  /*
-  console.log(curveMinX + ", " + curveMinY + ", " + curveMaxX
-    + ", " + curveMaxY);
-  if (curveMinX == undefined) {
-    console.log("undefined curveMinX: " + x1 + ", " + x2 + ", " + x3);
-  }
-  */
 
   if (curveMinX > boxMaxX
     || curveMaxX < boxMinX
@@ -21156,7 +21107,7 @@ selfn.toString = selfn.selector = function(){
 
 module.exports = Selector;
 
-},{"./is":69,"./util":85}],74:[function(_dereq_,module,exports){
+},{"./is":69,"./util":86}],74:[function(_dereq_,module,exports){
 'use strict';
 
 var util = _dereq_('../util');
@@ -21372,27 +21323,27 @@ styfn.updateStyleHints = function(ele){
   var transform = style['text-transform'].strValue;
   var content = style['label'].strValue;
   var fStyle = style['font-style'].strValue;
-  var size = style['font-size'].pxValue + 'px';
+  var size = style['font-size'].pfValue + 'px';
   var family = style['font-family'].strValue;
   // var variant = style['font-variant'].strValue;
   var weight = style['font-weight'].strValue;
   var valign = style['text-valign'].strValue;
   var halign = style['text-valign'].strValue;
-  var oWidth = style['text-outline-width'].pxValue;
+  var oWidth = style['text-outline-width'].pfValue;
   var wrap = style['text-wrap'].strValue;
-  var wrapW = style['text-max-width'].pxValue;
+  var wrapW = style['text-max-width'].pfValue;
   _p.labelKey = fStyle +'$'+ size +'$'+ family +'$'+ weight +'$'+ content +'$'+ transform +'$'+ valign +'$'+ halign +'$'+ oWidth + '$' + wrap + '$' + wrapW;
   _p.fontKey = fStyle +'$'+ weight +'$'+ size +'$'+ family;
 
-  var width = style['width'].pxValue;
-  var height = style['height'].pxValue;
-  var borderW = style['border-width'].pxValue;
+  var width = style['width'].pfValue;
+  var height = style['height'].pfValue;
+  var borderW = style['border-width'].pfValue;
   _p.boundingBoxKey = width +'$'+ height +'$'+ borderW;
 
   if( ele._private.group === 'edges' ){
-    var cpss = style['control-point-step-size'].pxValue;
-    var cpd = style['control-point-distance'] ? style['control-point-distance'].pxValue : undefined;
-    var cpw = style['control-point-weight'].value;
+    var cpss = style['control-point-step-size'].pfValue;
+    var cpd = style['control-point-distances'] ? style['control-point-distances'].pfValue.join('_') : undefined;
+    var cpw = style['control-point-weights'].value.join('_');
     var curve = style['curve-style'].strValue;
 
     _p.boundingBoxKey += '$'+ cpss +'$'+ cpd +'$'+ cpw +'$'+ curve;
@@ -21651,8 +21602,8 @@ styfn.updateTransitions = function( ele, diffProps, isBypass ){
   var _p = ele._private;
   var style = _p.style;
   var props = style['transition-property'].value;
-  var duration = style['transition-duration'].msValue;
-  var delay = style['transition-delay'].msValue;
+  var duration = style['transition-duration'].pfValue;
+  var delay = style['transition-delay'].pfValue;
   var css = {};
 
   if( props.length > 0 && duration > 0 ){
@@ -21676,9 +21627,9 @@ styfn.updateTransitions = function( ele, diffProps, isBypass ){
       if( !fromProp ){ continue; }
 
       // consider px values
-      if( is.number( fromProp.pxValue ) && is.number( toProp.pxValue ) ){
-        diff = toProp.pxValue - fromProp.pxValue; // nonzero is truthy
-        initVal = fromProp.pxValue + initDt * diff;
+      if( is.number( fromProp.pfValue ) && is.number( toProp.pfValue ) ){
+        diff = toProp.pfValue - fromProp.pfValue; // nonzero is truthy
+        initVal = fromProp.pfValue + initDt * diff;
 
       // consider numerical values
       } else if( is.number( fromProp.value ) && is.number( toProp.value ) ){
@@ -21741,7 +21692,7 @@ styfn.updateTransitions = function( ele, diffProps, isBypass ){
 
 module.exports = styfn;
 
-},{"../is":69,"../util":85}],75:[function(_dereq_,module,exports){
+},{"../is":69,"../util":86}],75:[function(_dereq_,module,exports){
 'use strict';
 
 var is = _dereq_('../is');
@@ -21845,7 +21796,9 @@ styfn.overrideBypass = function( eles, name, value ){
   for( var i = 0; i < eles.length; i++ ){
     var ele = eles[i];
     var prop = ele._private.style[ name ];
-    var isColor = this.properties[ name ].type.color;
+    var type = this.properties[ name ].type;
+    var isColor = type.color;
+    var isMulti = type.mutiple;
 
     if( !prop.bypass ){ // need a bypass if one doesn't exist
       this.applyBypass( ele, name, value );
@@ -21854,12 +21807,14 @@ styfn.overrideBypass = function( eles, name, value ){
 
     prop.value = value;
 
-    if( prop.pxValue != null ){
-      prop.pxValue = value;
+    if( prop.pfValue != null ){
+      prop.pfValue = value;
     }
 
     if( isColor ){
-      prop.strValue = 'rgb(' + prop.value.join(',') + ')';
+      prop.strValue = 'rgb(' + value.join(',') + ')';
+    } else if( isMulti ){
+      prop.strValue = value.join(' ');
     } else {
       prop.strValue = '' + value;
     }
@@ -21899,7 +21854,7 @@ styfn.removeBypasses = function( eles, props, updateTransitions ){
 
 module.exports = styfn;
 
-},{"../is":69,"../util":85}],76:[function(_dereq_,module,exports){
+},{"../is":69,"../util":86}],76:[function(_dereq_,module,exports){
 'use strict';
 
 var window = _dereq_('../window');
@@ -21929,7 +21884,7 @@ styfn.containerCss = function( propName ){
 
 module.exports = styfn;
 
-},{"../window":86}],77:[function(_dereq_,module,exports){
+},{"../window":92}],77:[function(_dereq_,module,exports){
 'use strict';
 
 var util = _dereq_('../util');
@@ -21953,7 +21908,7 @@ styfn.getRenderedStyle = function( ele ){
       var styleProp = style[ prop.name ];
 
       if( styleProp ){
-        var val = styleProp.unitless ? styleProp.strValue : (styleProp.pxValue * zoom) + 'px';
+        var val = styleProp.unitless ? styleProp.strValue : (styleProp.pfValue * zoom) + 'px';
         rstyle[ prop.name ] = val;
         rstyle[ util.dash2camel(prop.name) ] = val;
       }
@@ -22043,7 +21998,7 @@ styfn.getPropsList = function( propsObj ){
 
 module.exports = styfn;
 
-},{"../is":69,"../util":85}],78:[function(_dereq_,module,exports){
+},{"../is":69,"../util":86}],78:[function(_dereq_,module,exports){
 'use strict';
 
 var is = _dereq_('../is');
@@ -22164,7 +22119,7 @@ styfn.cssRule = function( name, value ){
     this[i].properties.push( property );
     this[i].properties[ property.name ] = property; // allow access by name as well
 
-    if( property.hasPie ){
+    if( property.name.match(/pie-(\d+)-background-size/) && property.value ){
       this._private.hasPie = true;
     }
 
@@ -22214,7 +22169,7 @@ Style.properties = styfn.properties;
 
 module.exports = Style;
 
-},{"../is":69,"../selector":73,"../util":85,"./apply":74,"./bypass":75,"./container":76,"./get-for-ele":77,"./json":79,"./parse":80,"./properties":81,"./string-sheet":82}],79:[function(_dereq_,module,exports){
+},{"../is":69,"../selector":73,"../util":86,"./apply":74,"./bypass":75,"./container":76,"./get-for-ele":77,"./json":79,"./parse":80,"./properties":81,"./string-sheet":82}],79:[function(_dereq_,module,exports){
 'use strict';
 
 var styfn = {};
@@ -22288,13 +22243,20 @@ styfn.parse = function( name, value, propIsBypass, propIsFlat ){
   var argHash = [ name, value, propIsBypass, propIsFlat ].join('$');
   var propCache = this.propCache = this.propCache || {};
   var ret;
+  var impl = parseImpl.bind( this );
 
   if( !(ret = propCache[argHash]) ){
-    ret = propCache[argHash] = this.parseImpl( name, value, propIsBypass, propIsFlat );
+    ret = propCache[argHash] = impl( name, value, propIsBypass, propIsFlat );
   }
 
   // always need a copy since props are mutated later in their lifecycles
-  return util.copy( ret );
+  ret = util.copy( ret );
+
+  if( ret ){
+    ret.value = util.copy( ret.value ); // because it could be an array, e.g. colour
+  }
+
+  return ret;
 };
 
 // parse a property; return null on invalid; return parsed property otherwise
@@ -22303,7 +22265,7 @@ styfn.parse = function( name, value, propIsBypass, propIsFlat ){
 // - value : the parsed, native-typed value of the property
 // - strValue : a string value that represents the property value in valid css
 // - bypass : true iff the property is a bypass property
-styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
+var parseImpl = function( name, value, propIsBypass, propIsFlat ){
   var self = this;
 
   name = util.camel2dash( name ); // make sure the property name is in dash form (e.g. 'property-name' not 'propertyName')
@@ -22339,8 +22301,6 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
     };
   }
 
-  var hasPie = name.match(/pie-(\d+)-background-size/);
-
   // check if value is a function used as a mapper
   if( is.fn(value) ){
     return {
@@ -22348,8 +22308,7 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
       value: value,
       strValue: 'fn',
       mapped: types.fn,
-      bypass: propIsBypass,
-      hasPie: hasPie
+      bypass: propIsBypass
     };
   }
 
@@ -22382,8 +22341,7 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
       strValue: '' + value,
       mapped: mapped,
       field: data[1],
-      bypass: propIsBypass,
-      hasPie: hasPie
+      bypass: propIsBypass
     };
 
   } else if(
@@ -22392,6 +22350,7 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
     ( mapScratch = new RegExp( types.mapScratch.regex ).exec( value ) )
   ){
     if( propIsBypass ){ return false; } // mappers not allowed in bypass
+    if( type.multiple ){ return false; } // impossible to map to num
 
     var mapped;
     if( mapData ){
@@ -22407,10 +22366,10 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
     // we can map only if the type is a colour or a number
     if( !(type.color || type.number) ){ return false; }
 
-    var valueMin = this.parse( name, mapData[4]); // parse to validate
+    var valueMin = this.parse( name, mapData[4] ); // parse to validate
     if( !valueMin || valueMin.mapped ){ return false; } // can't be invalid or mapped
 
-    var valueMax = this.parse( name, mapData[5]); // parse to validate
+    var valueMax = this.parse( name, mapData[5] ); // parse to validate
     if( !valueMax || valueMax.mapped ){ return false; } // can't be invalid or mapped
 
     // check if valueMin and valueMax are the same
@@ -22447,8 +22406,38 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
       fieldMax: parseFloat( mapData[3] ),
       valueMin: valueMin.value,
       valueMax: valueMax.value,
+      bypass: propIsBypass
+    };
+  }
+
+  if( type.multiple && !propIsFlat ){
+    var vals;
+
+    if( valueIsString ){
+      vals = value.split(/\s+/);
+    } else if( is.array(value) ){
+      vals = value;
+    } else {
+      vals = [ value ];
+    }
+
+    var valArr = vals.map(function( v ){
+      var p = self.parse( name, v, propIsBypass, true );
+
+      if( p.pfValue != null ){
+        return p.pfValue;
+      } else {
+        return p.value;
+      }
+    });
+
+    return {
+      name: name,
+      value: valArr,
+      pfValue: valArr,
+      strValue: valArr.join(' '),
       bypass: propIsBypass,
-      hasPie: hasPie
+      units: type.number ? type.implicitUnits || 'px' : undefined
     };
   }
 
@@ -22531,20 +22520,24 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
       value: value,
       strValue: '' + value + (units ? units : ''),
       units: units,
-      bypass: propIsBypass,
-      hasPie: hasPie && value != null && value !== 0 && value !== ''
+      bypass: propIsBypass
     };
 
     // normalise value in pixels
     if( type.unitless || (units !== 'px' && units !== 'em') ){
-      // then pxValue does not apply
+      // then pfValue does not apply
     } else {
-      ret.pxValue = ( units === 'px' || !units ? (value) : (this.getEmSizeInPixels() * value) );
+      ret.pfValue = ( units === 'px' || !units ? (value) : (this.getEmSizeInPixels() * value) );
     }
 
     // normalise value in ms
     if( units === 'ms' || units === 's' ){
-      ret.msValue = units === 'ms' ? value : 1000 * value;
+      ret.pfValue = units === 'ms' ? value : 1000 * value;
+    }
+
+    // normalise value in rad
+    if( units === 'deg' || units === 'rad' ){
+      ret.pfValue = units === 'rad' ? value : value * Math.PI/180;
     }
 
     return ret;
@@ -22614,7 +22607,8 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
       name: name,
       value: tuple,
       strValue: '' + value,
-      bypass: propIsBypass
+      bypass: propIsBypass,
+      roundValue: true
     };
 
   } else if( type.regex || type.regexes ){
@@ -22665,7 +22659,7 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
 
 module.exports = styfn;
 
-},{"../is":69,"../util":85}],81:[function(_dereq_,module,exports){
+},{"../is":69,"../util":86}],81:[function(_dereq_,module,exports){
 'use strict';
 
 var util = _dereq_('../util');
@@ -22687,13 +22681,14 @@ var styfn = {};
   // each visual style property has a type and needs to be validated according to it
   styfn.types = {
     time: { number: true, min: 0, units: 's|ms', implicitUnits: 'ms' },
-    percent: { number: true, min: 0, max: 100, units: '%' },
+    percent: { number: true, min: 0, max: 100, units: '%', implicitUnits: '%' },
     zeroOneNumber: { number: true, min: 0, max: 1, unitless: true },
     nOneOneNumber: { number: true, min: -1, max: 1, unitless: true },
     nonNegativeInt: { number: true, min: 0, integer: true, unitless: true },
     position: { enums: ['parent', 'origin'] },
     nodeSize: { number: true, min: 0, enums: ['auto', 'label'] },
     number: { number: true },
+    numbers: { number: true, multiple: true },
     size: { number: true, min: 0 },
     bgSize: { number: true, min: 0, allowPercent: true },
     bgWH: { number: true, min: 0, allowPercent: true, enums: ['auto'] },
@@ -22705,7 +22700,7 @@ var styfn = {};
     bool: { enums: ['yes', 'no'] },
     lineStyle: { enums: ['solid', 'dotted', 'dashed'] },
     borderStyle: { enums: ['solid', 'dotted', 'dashed', 'double'] },
-    curveStyle: { enums: ['bezier', 'unbundled-bezier', 'haystack'] },
+    curveStyle: { enums: ['bezier', 'unbundled-bezier', 'haystack', 'segments'] },
     fontFamily: { regex: '^([\\w- \\"]+(?:\\s*,\\s*[\\w- \\"]+)*)$' },
     fontVariant: { enums: ['small-caps', 'normal'] },
     fontStyle: { enums: ['italic', 'normal', 'oblique'] },
@@ -22732,7 +22727,7 @@ var styfn = {};
     fn: { mapping: true, fn: true },
     url: { regex: '^url\\s*\\(\\s*([^\\s]+)\\s*\\s*\\)|none|(.+)$' },
     propList: { propList: true },
-    angle: { number: true, units: 'deg|rad' },
+    angle: { number: true, units: 'deg|rad', implicitUnits: 'rad' },
     textRotation: { enums: ['none', 'autorotate'] },
     polygonPointList: { numberList: true, evenNumberList: true, min: -1, max: 1 },
     easing: {
@@ -22859,11 +22854,13 @@ var styfn = {};
     // edge line
     { name: 'line-style', type: t.lineStyle },
     { name: 'line-color', type: t.color },
-    { name: 'control-point-step-size', type: t.size },
-    { name: 'control-point-distance', type: t.number },
-    { name: 'control-point-weight', type: t.zeroOneNumber },
     { name: 'curve-style', type: t.curveStyle },
     { name: 'haystack-radius', type: t.zeroOneNumber },
+    { name: 'control-point-step-size', type: t.size },
+    { name: 'control-point-distances', type: t.numbers },
+    { name: 'control-point-weights', type: t.numbers },
+    { name: 'segment-distances', type: t.numbers },
+    { name: 'segment-weights', type: t.numbers },
 
     // these are just for the core
     { name: 'selection-box-color', type: t.color },
@@ -22879,7 +22876,9 @@ var styfn = {};
 
   // define aliases
   var aliases = styfn.aliases = [
-    { name: 'content', pointsTo: 'label' }
+    { name: 'content', pointsTo: 'label' },
+    { name: 'control-point-distance', pointsTo: 'control-point-distances' },
+    { name: 'control-point-weight', pointsTo: 'control-point-weights' }
   ];
 
   // pie backgrounds for nodes
@@ -23039,7 +23038,9 @@ styfn.addDefaultStylesheet = function(){
         'line-style': 'solid',
         'line-color': '#ddd',
         'control-point-step-size': 40,
-        'control-point-weight': 0.5,
+        'control-point-weights': 0.5,
+        'segment-weights': 0.25,
+        'segment-distances': 20,
         'curve-style': 'bezier',
         'haystack-radius': 0.8
       }, [
@@ -23095,7 +23096,7 @@ styfn.addDefaultStylesheet = function(){
 
 module.exports = styfn;
 
-},{"../util":85}],82:[function(_dereq_,module,exports){
+},{"../util":86}],82:[function(_dereq_,module,exports){
 'use strict';
 
 var util = _dereq_('../util');
@@ -23235,7 +23236,7 @@ styfn.fromString = function( string ){
 
 module.exports = styfn;
 
-},{"../selector":73,"../util":85}],83:[function(_dereq_,module,exports){
+},{"../selector":73,"../util":86}],83:[function(_dereq_,module,exports){
 'use strict';
 
 var is = _dereq_('./is');
@@ -23330,7 +23331,7 @@ sheetfn.generateStyle = function( cy ){
 
 module.exports = Stylesheet;
 
-},{"./is":69,"./style":78,"./util":85}],84:[function(_dereq_,module,exports){
+},{"./is":69,"./style":78,"./util":86}],84:[function(_dereq_,module,exports){
 // cross-env thread/worker
 // NB : uses (heavyweight) processes on nodejs so best not to create too many threads
 
@@ -23814,370 +23815,12 @@ define.eventAliasesOn( thdfn );
 
 module.exports = Thread;
 
-},{"./define":33,"./event":34,"./is":69,"./promise":72,"./util":85,"./window":86,"child_process":undefined,"path":undefined}],85:[function(_dereq_,module,exports){
+},{"./define":33,"./event":34,"./is":69,"./promise":72,"./util":86,"./window":92,"child_process":undefined,"path":undefined}],85:[function(_dereq_,module,exports){
 'use strict';
 
-var window = _dereq_('../window');
 var is = _dereq_('../is');
-var math = _dereq_('../math');
-var performance = window ? window.performance : null;
 
-var util = {
-
-  falsify: function(){ return false; },
-
-  zeroify: function(){ return 0; },
-
-  noop: function(){},
-
-  // the jquery extend() function
-  // NB: modified to use is etc since we can't use jquery functions
-  extend: function() {
-    var options, name, src, copy, copyIsArray, clone,
-      target = arguments[0] || {},
-      i = 1,
-      length = arguments.length,
-      deep = false;
-
-    // Handle a deep copy situation
-    if ( typeof target === 'boolean' ) {
-      deep = target;
-      target = arguments[1] || {};
-      // skip the boolean and the target
-      i = 2;
-    }
-
-    // Handle case when target is a string or something (possible in deep copy)
-    if ( typeof target !== 'object' && !is.fn(target) ) {
-      target = {};
-    }
-
-    // extend jQuery itself if only one argument is passed
-    if ( length === i ) {
-      target = this;
-      --i;
-    }
-
-    for ( ; i < length; i++ ) {
-      // Only deal with non-null/undefined values
-      if ( (options = arguments[ i ]) != null ) {
-        // Extend the base object
-        for ( name in options ) {
-          src = target[ name ];
-          copy = options[ name ];
-
-          // Prevent never-ending loop
-          if ( target === copy ) {
-            continue;
-          }
-
-          // Recurse if we're merging plain objects or arrays
-          if ( deep && copy && ( is.plainObject(copy) || (copyIsArray = is.array(copy)) ) ) {
-            if ( copyIsArray ) {
-              copyIsArray = false;
-              clone = src && is.array(src) ? src : [];
-
-            } else {
-              clone = src && is.plainObject(src) ? src : {};
-            }
-
-            // Never move original objects, clone them
-            target[ name ] = util.extend( deep, clone, copy );
-
-          // Don't bring in undefined values
-          } else if ( copy !== undefined ) {
-            target[ name ] = copy;
-          }
-        }
-      }
-    }
-
-    // Return the modified object
-    return target;
-  },
-
-  // ported lodash throttle function
-  throttle: function(func, wait, options) {
-    var leading = true,
-        trailing = true;
-
-    if (options === false) {
-      leading = false;
-    } else if (is.plainObject(options)) {
-      leading = 'leading' in options ? options.leading : leading;
-      trailing = 'trailing' in options ? options.trailing : trailing;
-    }
-    options = options || {};
-    options.leading = leading;
-    options.maxWait = wait;
-    options.trailing = trailing;
-
-    return util.debounce(func, wait, options);
-  },
-
-  now: function(){
-    return Date.now();
-  },
-
-  // ported lodash debounce function
-  debounce: function(func, wait, options) {
-    var args,
-        maxTimeoutId,
-        result,
-        stamp,
-        thisArg,
-        timeoutId,
-        trailingCall,
-        lastCalled = 0,
-        maxWait = false,
-        trailing = true;
-
-    if (!is.fn(func)) {
-      return;
-    }
-    wait = Math.max(0, wait) || 0;
-    if (options === true) {
-      var leading = true;
-      trailing = false;
-    } else if (is.plainObject(options)) {
-      leading = options.leading;
-      maxWait = 'maxWait' in options && (Math.max(wait, options.maxWait) || 0);
-      trailing = 'trailing' in options ? options.trailing : trailing;
-    }
-    var delayed = function() {
-      var remaining = wait - (util.now() - stamp);
-      if (remaining <= 0) {
-        if (maxTimeoutId) {
-          clearTimeout(maxTimeoutId);
-        }
-        var isCalled = trailingCall;
-        maxTimeoutId = timeoutId = trailingCall = undefined;
-        if (isCalled) {
-          lastCalled = util.now();
-          result = func.apply(thisArg, args);
-          if (!timeoutId && !maxTimeoutId) {
-            args = thisArg = null;
-          }
-        }
-      } else {
-        timeoutId = setTimeout(delayed, remaining);
-      }
-    };
-
-    var maxDelayed = function() {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-      maxTimeoutId = timeoutId = trailingCall = undefined;
-      if (trailing || (maxWait !== wait)) {
-        lastCalled = util.now();
-        result = func.apply(thisArg, args);
-        if (!timeoutId && !maxTimeoutId) {
-          args = thisArg = null;
-        }
-      }
-    };
-
-    return function() {
-      args = arguments;
-      stamp = util.now();
-      thisArg = this;
-      trailingCall = trailing && (timeoutId || !leading);
-
-      if (maxWait === false) {
-        var leadingCall = leading && !timeoutId;
-      } else {
-        if (!maxTimeoutId && !leading) {
-          lastCalled = stamp;
-        }
-        var remaining = maxWait - (stamp - lastCalled),
-            isCalled = remaining <= 0;
-
-        if (isCalled) {
-          if (maxTimeoutId) {
-            maxTimeoutId = clearTimeout(maxTimeoutId);
-          }
-          lastCalled = stamp;
-          result = func.apply(thisArg, args);
-        }
-        else if (!maxTimeoutId) {
-          maxTimeoutId = setTimeout(maxDelayed, remaining);
-        }
-      }
-      if (isCalled && timeoutId) {
-        timeoutId = clearTimeout(timeoutId);
-      }
-      else if (!timeoutId && wait !== maxWait) {
-        timeoutId = setTimeout(delayed, wait);
-      }
-      if (leadingCall) {
-        isCalled = true;
-        result = func.apply(thisArg, args);
-      }
-      if (isCalled && !timeoutId && !maxTimeoutId) {
-        args = thisArg = null;
-      }
-      return result;
-    };
-  },
-
-  /* jshint ignore:start */
-  error: function( msg ){
-    if( console.error ){
-      console.error.apply( console, arguments );
-
-      if( console.trace ){ console.trace(); }
-    } else {
-      console.log.apply( console, arguments );
-
-      if( console.trace ){ console.trace(); }
-    }
-  },
-  /* jshint ignore:end */
-
-  clone: function( obj ){
-    var target = {};
-
-    for (var i in obj) {
-      target[i] = obj[i];
-    }
-
-    return target;
-  },
-
-  // gets a shallow copy of the argument
-  copy: function( obj ){
-    if( obj == null ){
-      return obj;
-    } if( is.array(obj) ){
-      return obj.slice();
-    } else if( is.plainObject(obj) ){
-      return util.clone( obj );
-    } else {
-      return obj;
-    }
-  },
-
-  // has anything been set in the map
-  mapEmpty: function( map ){
-    var empty = true;
-
-    if( map != null ){
-      for(var i in map){ // jshint ignore:line
-        empty = false;
-        break;
-      }
-    }
-
-    return empty;
-  },
-
-  // pushes to the array at the end of a map (map may not be built)
-  pushMap: function( options ){
-    var array = util.getMap(options);
-
-    if( array == null ){ // if empty, put initial array
-      util.setMap( util.extend({}, options, {
-        value: [ options.value ]
-      }) );
-    } else {
-      array.push( options.value );
-    }
-  },
-
-  // sets the value in a map (map may not be built)
-  setMap: function( options ){
-    var obj = options.map;
-    var key;
-    var keys = options.keys;
-    var l = keys.length;
-
-    for(var i = 0; i < l; i++){
-      var key = keys[i];
-
-      if( is.plainObject( key ) ){
-        util.error('Tried to set map with object key');
-      }
-
-      if( i < keys.length - 1 ){
-
-        // extend the map if necessary
-        if( obj[key] == null ){
-          obj[key] = {};
-        }
-
-        obj = obj[key];
-      } else {
-        // set the value
-        obj[key] = options.value;
-      }
-    }
-  },
-
-  // gets the value in a map even if it's not built in places
-  getMap: function( options ){
-    var obj = options.map;
-    var keys = options.keys;
-    var l = keys.length;
-
-    for(var i = 0; i < l; i++){
-      var key = keys[i];
-
-      if( is.plainObject( key ) ){
-        util.error('Tried to get map with object key');
-      }
-
-      obj = obj[key];
-
-      if( obj == null ){
-        return obj;
-      }
-    }
-
-    return obj;
-  },
-
-  // deletes the entry in the map
-  deleteMap: function( options ){
-    var obj = options.map;
-    var keys = options.keys;
-    var l = keys.length;
-    var keepChildren = options.keepChildren;
-
-    for(var i = 0; i < l; i++){
-      var key = keys[i];
-
-      if( is.plainObject( key ) ){
-        util.error('Tried to delete map with object key');
-      }
-
-      var lastKey = i === options.keys.length - 1;
-      if( lastKey ){
-
-        if( keepChildren ){ // then only delete child fields not in keepChildren
-          for( var child in obj ){
-            if( !keepChildren[child] ){
-              obj[child] = undefined;
-            }
-          }
-        } else {
-          obj[key] = undefined;
-        }
-
-      } else {
-        obj = obj[key];
-      }
-    }
-  },
-
-  capitalize: function(str){
-    if( is.emptyString(str) ){
-      return str;
-    }
-
-    return str.charAt(0).toUpperCase() + str.substring(1);
-  },
-
+module.exports = {
   // get [r, g, b] from #abc or #aabbcc
   hex2tuple: function( hex ){
     if( !(hex.length === 4 || hex.length === 7) || hex[0] !== "#" ){ return; }
@@ -24212,7 +23855,7 @@ var util = {
       return p;
     }
 
-    var m = new RegExp("^" + util.regex.hsla + "$").exec(hsl);
+    var m = new RegExp("^" + this.regex.hsla + "$").exec(hsl);
     if( m ){
 
       // get hue
@@ -24261,7 +23904,7 @@ var util = {
   rgb2tuple: function( rgb ){
     var ret;
 
-    var m = new RegExp("^" + util.regex.rgba + "$").exec(rgb);
+    var m = new RegExp("^" + this.regex.rgba + "$").exec(rgb);
     if( m ){
       ret = [];
 
@@ -24301,33 +23944,15 @@ var util = {
   },
 
   colorname2tuple: function( color ){
-    return util.colors[ color.toLowerCase() ];
+    return this.colors[ color.toLowerCase() ];
   },
 
   color2tuple: function( color ){
     return ( is.array(color) ? color : null )
-      || util.colorname2tuple(color)
-      || util.hex2tuple(color)
-      || util.rgb2tuple(color)
-      || util.hsl2tuple(color);
-  },
-
-  tuple2hex: function( tuple ){
-    var r = tuple[0];
-    var g = tuple[1];
-    var b = tuple[2];
-
-    function ch2hex( ch ){
-      var hex = ch.toString(16);
-
-      if( hex.length === 1 ){
-        hex = '0' + hex;
-      }
-
-      return hex;
-    }
-
-    return '#' + ch2hex(r) + ch2hex(g) + ch2hex(b);
+      || this.colorname2tuple(color)
+      || this.hex2tuple(color)
+      || this.rgb2tuple(color)
+      || this.hsl2tuple(color);
   },
 
   colors: {
@@ -24482,39 +24107,52 @@ var util = {
     whitesmoke: [245, 245, 245],
     yellow: [255, 255, 0],
     yellowgreen: [154, 205, 50]
+  }
+};
+
+},{"../is":69}],86:[function(_dereq_,module,exports){
+'use strict';
+
+var is = _dereq_('../is');
+var math = _dereq_('../math');
+
+var util = {
+
+  falsify: function(){ return false; },
+
+  zeroify: function(){ return 0; },
+
+  noop: function(){},
+
+  /* jshint ignore:start */
+  error: function( msg ){
+    if( console.error ){
+      console.error.apply( console, arguments );
+
+      if( console.trace ){ console.trace(); }
+    } else {
+      console.log.apply( console, arguments );
+
+      if( console.trace ){ console.trace(); }
+    }
+  },
+  /* jshint ignore:end */
+
+  clone: function( obj ){
+    return this.extend( {}, obj );
   },
 
-  memoize: function( fn, keyFn ){
-    var self = this;
-    var cache = {};
-
-    if( !keyFn ){
-      keyFn = function(){
-        if( arguments.length === 1 ){
-          return arguments[0];
-        }
-
-        var args = [];
-
-        for( var i = 0; i < arguments.length; i++ ){
-          args.push( arguments[i] );
-        }
-
-        return args.join('$');
-      };
+  // gets a shallow copy of the argument
+  copy: function( obj ){
+    if( obj == null ){
+      return obj;
+    } if( is.array(obj) ){
+      return obj.slice();
+    } else if( is.plainObject(obj) ){
+      return this.clone( obj );
+    } else {
+      return obj;
     }
-
-    return function memoizedFn(){
-      var args = arguments;
-      var ret;
-      var k = keyFn.apply( self, args );
-
-      if( !(ret = cache[k]) ){
-        ret = cache[k] = fn.apply( self, args );
-      }
-
-      return ret;
-    };
   }
 
 };
@@ -24527,64 +24165,286 @@ util.staticEmptyObject = function(){
   return util._staticEmptyObject;
 };
 
-util.camel2dash = util.memoize( function( str ){
-  var ret = [];
+util.extend = Object.assign != null ? Object.assign : function( tgt ){
+  var args = arguments;
 
-  for( var i = 0; i < str.length; i++ ){
-    var ch = str[i];
-    var chLowerCase = ch.toLowerCase();
-    var isUpperCase = ch !== chLowerCase;
+  for( var i = 0; i < args.length; i++ ){
+    var obj = args[i];
 
-    if( isUpperCase ){
-      ret.push( '-' );
-      ret.push( chLowerCase );
-    } else {
-      ret.push( ch );
+    for( var k in obj ){
+      tgt[k] = obj[k];
     }
   }
 
-  var noUpperCases = ret.length === str.length;
-  if( noUpperCases ){ return str; } // cheaper than .join()
+  return tgt;
+};
 
-  return ret.join('');
-} );
+[
+  _dereq_('./colors'),
+  _dereq_('./maps'),
+  { memoize: _dereq_('./memoize') },
+  _dereq_('./regex'),
+  _dereq_('./strings'),
+  _dereq_('./timing')
+].forEach(function( req ){
+  util.extend( util, req );
+});
 
-util.dash2camel = util.memoize( function( str ){
-  var ret = [];
-  var nextIsUpper = false;
+module.exports = util;
 
-  for( var i = 0; i < str.length; i++ ){
-    var ch = str[i];
-    var isDash = ch === '-';
+},{"../is":69,"../math":71,"./colors":85,"./maps":87,"./memoize":88,"./regex":89,"./strings":90,"./timing":91}],87:[function(_dereq_,module,exports){
+'use strict';
 
-    if( isDash ){
-      nextIsUpper = true;
+var is = _dereq_('../is');
+
+module.exports = {
+  // has anything been set in the map
+  mapEmpty: function( map ){
+    var empty = true;
+
+    if( map != null ){
+      for(var i in map){ // jshint ignore:line
+        empty = false;
+        break;
+      }
+    }
+
+    return empty;
+  },
+
+  // pushes to the array at the end of a map (map may not be built)
+  pushMap: function( options ){
+    var array = this.getMap(options);
+
+    if( array == null ){ // if empty, put initial array
+      this.setMap( this.extend({}, options, {
+        value: [ options.value ]
+      }) );
     } else {
-      if( nextIsUpper ){
-        ret.push( ch.toUpperCase() );
+      array.push( options.value );
+    }
+  },
+
+  // sets the value in a map (map may not be built)
+  setMap: function( options ){
+    var obj = options.map;
+    var key;
+    var keys = options.keys;
+    var l = keys.length;
+
+    for(var i = 0; i < l; i++){
+      var key = keys[i];
+
+      if( is.plainObject( key ) ){
+        this.error('Tried to set map with object key');
+      }
+
+      if( i < keys.length - 1 ){
+
+        // extend the map if necessary
+        if( obj[key] == null ){
+          obj[key] = {};
+        }
+
+        obj = obj[key];
+      } else {
+        // set the value
+        obj[key] = options.value;
+      }
+    }
+  },
+
+  // gets the value in a map even if it's not built in places
+  getMap: function( options ){
+    var obj = options.map;
+    var keys = options.keys;
+    var l = keys.length;
+
+    for(var i = 0; i < l; i++){
+      var key = keys[i];
+
+      if( is.plainObject( key ) ){
+        this.error('Tried to get map with object key');
+      }
+
+      obj = obj[key];
+
+      if( obj == null ){
+        return obj;
+      }
+    }
+
+    return obj;
+  },
+
+  // deletes the entry in the map
+  deleteMap: function( options ){
+    var obj = options.map;
+    var keys = options.keys;
+    var l = keys.length;
+    var keepChildren = options.keepChildren;
+
+    for(var i = 0; i < l; i++){
+      var key = keys[i];
+
+      if( is.plainObject( key ) ){
+        this.error('Tried to delete map with object key');
+      }
+
+      var lastKey = i === options.keys.length - 1;
+      if( lastKey ){
+
+        if( keepChildren ){ // then only delete child fields not in keepChildren
+          for( var child in obj ){
+            if( !keepChildren[child] ){
+              obj[child] = undefined;
+            }
+          }
+        } else {
+          obj[key] = undefined;
+        }
+
+      } else {
+        obj = obj[key];
+      }
+    }
+  }
+};
+
+},{"../is":69}],88:[function(_dereq_,module,exports){
+'use strict';
+
+module.exports = function memoize( fn, keyFn ){
+  var self = this;
+  var cache = {};
+
+  if( !keyFn ){
+    keyFn = function(){
+      if( arguments.length === 1 ){
+        return arguments[0];
+      }
+
+      var args = [];
+
+      for( var i = 0; i < arguments.length; i++ ){
+        args.push( arguments[i] );
+      }
+
+      return args.join('$');
+    };
+  }
+
+  return function memoizedFn(){
+    var args = arguments;
+    var ret;
+    var k = keyFn.apply( self, args );
+
+    if( !(ret = cache[k]) ){
+      ret = cache[k] = fn.apply( self, args );
+    }
+
+    return ret;
+  };
+};
+
+},{}],89:[function(_dereq_,module,exports){
+'use strict';
+
+var number = "(?:[-+]?(?:(?:\\d+|\\d*\\.\\d+)(?:[Ee][+-]?\\d+)?))";
+
+var rgba = "rgb[a]?\\(("+ number +"[%]?)\\s*,\\s*("+ number +"[%]?)\\s*,\\s*("+ number +"[%]?)(?:\\s*,\\s*("+ number +"))?\\)";
+var rgbaNoBackRefs = "rgb[a]?\\((?:"+ number +"[%]?)\\s*,\\s*(?:"+ number +"[%]?)\\s*,\\s*(?:"+ number +"[%]?)(?:\\s*,\\s*(?:"+ number +"))?\\)";
+
+var hsla = "hsl[a]?\\(("+ number +")\\s*,\\s*("+ number +"[%])\\s*,\\s*("+ number +"[%])(?:\\s*,\\s*("+ number +"))?\\)";
+var hslaNoBackRefs = "hsl[a]?\\((?:"+ number +")\\s*,\\s*(?:"+ number +"[%])\\s*,\\s*(?:"+ number +"[%])(?:\\s*,\\s*(?:"+ number +"))?\\)";
+
+var hex3 = "\\#[0-9a-fA-F]{3}";
+var hex6 = "\\#[0-9a-fA-F]{6}";
+
+module.exports = {
+  regex: {
+    number: number,
+    rgba: rgba,
+    rgbaNoBackRefs: rgbaNoBackRefs,
+    hsla: hsla,
+    hslaNoBackRefs: hslaNoBackRefs,
+    hex3: hex3,
+    hex6: hex6
+  }
+};
+
+},{}],90:[function(_dereq_,module,exports){
+'use strict';
+
+var memoize = _dereq_('./memoize');
+var is = _dereq_('../is');
+
+module.exports = {
+
+  camel2dash: memoize( function( str ){
+    var ret = [];
+
+    for( var i = 0; i < str.length; i++ ){
+      var ch = str[i];
+      var chLowerCase = ch.toLowerCase();
+      var isUpperCase = ch !== chLowerCase;
+
+      if( isUpperCase ){
+        ret.push( '-' );
+        ret.push( chLowerCase );
       } else {
         ret.push( ch );
       }
-
-      nextIsUpper = false;
     }
+
+    var noUpperCases = ret.length === str.length;
+    if( noUpperCases ){ return str; } // cheaper than .join()
+
+    return ret.join('');
+  } ),
+
+  dash2camel: memoize( function( str ){
+    var ret = [];
+    var nextIsUpper = false;
+
+    for( var i = 0; i < str.length; i++ ){
+      var ch = str[i];
+      var isDash = ch === '-';
+
+      if( isDash ){
+        nextIsUpper = true;
+      } else {
+        if( nextIsUpper ){
+          ret.push( ch.toUpperCase() );
+        } else {
+          ret.push( ch );
+        }
+
+        nextIsUpper = false;
+      }
+    }
+
+    return ret.join('');
+  } ),
+
+  capitalize: function(str){
+    if( is.emptyString(str) ){
+      return str;
+    }
+
+    return str.charAt(0).toUpperCase() + str.substring(1);
   }
 
-  return ret.join('');
-} );
+}
 
-util.regex = {};
+},{"../is":69,"./memoize":88}],91:[function(_dereq_,module,exports){
+'use strict';
 
-util.regex.number = "(?:[-+]?(?:(?:\\d+|\\d*\\.\\d+)(?:[Ee][+-]?\\d+)?))";
+var window = _dereq_('../window');
+var is = _dereq_('../is');
+var performance = window ? window.performance : null;
 
-util.regex.rgba = "rgb[a]?\\(("+ util.regex.number +"[%]?)\\s*,\\s*("+ util.regex.number +"[%]?)\\s*,\\s*("+ util.regex.number +"[%]?)(?:\\s*,\\s*("+ util.regex.number +"))?\\)";
-util.regex.rgbaNoBackRefs = "rgb[a]?\\((?:"+ util.regex.number +"[%]?)\\s*,\\s*(?:"+ util.regex.number +"[%]?)\\s*,\\s*(?:"+ util.regex.number +"[%]?)(?:\\s*,\\s*(?:"+ util.regex.number +"))?\\)";
-
-util.regex.hsla = "hsl[a]?\\(("+ util.regex.number +")\\s*,\\s*("+ util.regex.number +"[%])\\s*,\\s*("+ util.regex.number +"[%])(?:\\s*,\\s*("+ util.regex.number +"))?\\)";
-util.regex.hslaNoBackRefs = "hsl[a]?\\((?:"+ util.regex.number +")\\s*,\\s*(?:"+ util.regex.number +"[%])\\s*,\\s*(?:"+ util.regex.number +"[%])(?:\\s*,\\s*(?:"+ util.regex.number +"))?\\)";
-
-util.regex.hex3 = "\\#[0-9a-fA-F]{3}";
-util.regex.hex6 = "\\#[0-9a-fA-F]{6}";
+var util = {};
 
 var raf = !window ? null : ( window.requestAnimationFrame || window.mozRequestAnimationFrame ||
       window.webkitRequestAnimationFrame || window.msRequestAnimationFrame );
@@ -24605,9 +24465,134 @@ var pnow = performance && performance.now ? function(){ return performance.now()
 
 util.performanceNow = pnow;
 
+// ported lodash throttle function
+util.throttle = function(func, wait, options) {
+  var leading = true,
+      trailing = true;
+
+  if (options === false) {
+    leading = false;
+  } else if (is.plainObject(options)) {
+    leading = 'leading' in options ? options.leading : leading;
+    trailing = 'trailing' in options ? options.trailing : trailing;
+  }
+  options = options || {};
+  options.leading = leading;
+  options.maxWait = wait;
+  options.trailing = trailing;
+
+  return util.debounce(func, wait, options);
+};
+
+util.now = function(){
+  return Date.now();
+};
+
+util.debounce = function(func, wait, options) { // ported lodash debounce function
+  var util = this;
+  var args,
+      maxTimeoutId,
+      result,
+      stamp,
+      thisArg,
+      timeoutId,
+      trailingCall,
+      lastCalled = 0,
+      maxWait = false,
+      trailing = true;
+
+  if (!is.fn(func)) {
+    return;
+  }
+  wait = Math.max(0, wait) || 0;
+  if (options === true) {
+    var leading = true;
+    trailing = false;
+  } else if (is.plainObject(options)) {
+    leading = options.leading;
+    maxWait = 'maxWait' in options && (Math.max(wait, options.maxWait) || 0);
+    trailing = 'trailing' in options ? options.trailing : trailing;
+  }
+  var delayed = function() {
+    var remaining = wait - (util.now() - stamp);
+    if (remaining <= 0) {
+      if (maxTimeoutId) {
+        clearTimeout(maxTimeoutId);
+      }
+      var isCalled = trailingCall;
+      maxTimeoutId = timeoutId = trailingCall = undefined;
+      if (isCalled) {
+        lastCalled = util.now();
+        result = func.apply(thisArg, args);
+        if (!timeoutId && !maxTimeoutId) {
+          args = thisArg = null;
+        }
+      }
+    } else {
+      timeoutId = setTimeout(delayed, remaining);
+    }
+  };
+
+  var maxDelayed = function() {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+    maxTimeoutId = timeoutId = trailingCall = undefined;
+    if (trailing || (maxWait !== wait)) {
+      lastCalled = util.now();
+      result = func.apply(thisArg, args);
+      if (!timeoutId && !maxTimeoutId) {
+        args = thisArg = null;
+      }
+    }
+  };
+
+  return function() {
+    args = arguments;
+    stamp = util.now();
+    thisArg = this;
+    trailingCall = trailing && (timeoutId || !leading);
+
+    if (maxWait === false) {
+      var leadingCall = leading && !timeoutId;
+    } else {
+      if (!maxTimeoutId && !leading) {
+        lastCalled = stamp;
+      }
+      var remaining = maxWait - (stamp - lastCalled),
+          isCalled = remaining <= 0;
+
+      if (isCalled) {
+        if (maxTimeoutId) {
+          maxTimeoutId = clearTimeout(maxTimeoutId);
+        }
+        lastCalled = stamp;
+        result = func.apply(thisArg, args);
+      }
+      else if (!maxTimeoutId) {
+        maxTimeoutId = setTimeout(maxDelayed, remaining);
+      }
+    }
+    if (isCalled && timeoutId) {
+      timeoutId = clearTimeout(timeoutId);
+    }
+    else if (!timeoutId && wait !== maxWait) {
+      timeoutId = setTimeout(delayed, wait);
+    }
+    if (leadingCall) {
+      isCalled = true;
+      result = func.apply(thisArg, args);
+    }
+    if (isCalled && !timeoutId && !maxTimeoutId) {
+      args = thisArg = null;
+    }
+    return result;
+  };
+};
+
 module.exports = util;
 
-},{"../is":69,"../math":71,"../window":86}],86:[function(_dereq_,module,exports){
+},{"../is":69,"../window":92}],92:[function(_dereq_,module,exports){
 module.exports = ( typeof window === 'undefined' ? null : window );
 
 },{}]},{},[68])(68)

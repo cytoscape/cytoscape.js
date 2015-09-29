@@ -1,5 +1,5 @@
 {
-  "version": "2.5.0-pre",
+  "version": "2.5.0-unstable",
 
   "fnArgLinks": {
     "selector": "#selectors",
@@ -53,6 +53,8 @@
     { "name": "Introduction", "md": "intro" },
 
     { "name": "Notation", "md": "notation" },
+
+    { "name": "Getting started", "md": "getting-started" },
 
     {
       "name": "Core",

@@ -48,7 +48,7 @@
 			<div class="buttons-subtitle">
 				<a class="button green" target="_blank" href="https://github.com/cytoscape/cytoscape.js"><span class="icon-github-alt"></span> GitHub</a>
 
-				<a id="download-button" class="button green" href="download/cytoscape.js-2.5.0-pre.zip"><span class="icon-download-alt"></span> Download 2.5.0-pre</a>
+				<a id="download-button" class="button green" href="download/cytoscape.js-2.5.0-unstable.zip"><span class="icon-download-alt"></span> Download 2.5.0-unstable</a>
 			</div>
 
 			<div class="links">
@@ -583,8 +583,9 @@
   elements: [
     { <span class="hljs-comment">// node n1</span>
       group: <span class="hljs-string">'nodes'</span>, <span class="hljs-comment">// 'nodes' for a node, 'edges' for an edge</span>
+      <span class="hljs-comment">// NB the group field can be automatically inferred for you</span>
 
-      <span class="hljs-comment">// NB: id fields must be strings</span>
+      <span class="hljs-comment">// NB: id fields must be strings or numbers</span>
       data: { <span class="hljs-comment">// element data (put dev data here)</span>
         id: <span class="hljs-string">'n1'</span>, <span class="hljs-comment">// mandatory for each element, assigned automatically on undefined</span>
         parent: <span class="hljs-string">'nparent'</span>, <span class="hljs-comment">// indicates the compound node parent id; not defined =&gt; no parent</span>
@@ -615,26 +616,23 @@
     },
 
     { <span class="hljs-comment">// node n2</span>
-      group: <span class="hljs-string">'nodes'</span>,
       data: { id: <span class="hljs-string">'n2'</span> },
       renderedPosition: { x: <span class="hljs-number">200</span>, y: <span class="hljs-number">200</span> } <span class="hljs-comment">// can alternatively specify position in rendered on-screen pixels</span>
     },
 
     { <span class="hljs-comment">// node n3</span>
-      group: <span class="hljs-string">'nodes'</span>,
       data: { id: <span class="hljs-string">'n3'</span>, parent: <span class="hljs-string">'nparent'</span> },
       position: { x: <span class="hljs-number">123</span>, y: <span class="hljs-number">234</span> }
     },
 
     { <span class="hljs-comment">// node nparent</span>
-      group: <span class="hljs-string">'nodes'</span>,
       data: { id: <span class="hljs-string">'nparent'</span>, position: { x: <span class="hljs-number">200</span>, y: <span class="hljs-number">100</span> } }
     },
 
     { <span class="hljs-comment">// edge e1</span>
-      group: <span class="hljs-string">'edges'</span>,
       data: {
         id: <span class="hljs-string">'e1'</span>,
+        <span class="hljs-comment">// inferred as an edge because `source` and `target` are specified:</span>
         source: <span class="hljs-string">'n1'</span>, <span class="hljs-comment">// the source node id (edge comes from this node)</span>
         target: <span class="hljs-string">'n2'</span>  <span class="hljs-comment">// the target node id (edge goes to this node)</span>
       }
@@ -657,7 +655,7 @@
 
 });
 </code></pre>
-<button class="run run-inline-code"><span class="icon-play"></span></button><p>You can alternatively specify separate arrays indexed in a object by the group names so you don&#39;t have to specify the <code>group</code> property over and over for each element:</p>
+<button class="run run-inline-code"><span class="icon-play"></span></button><p>You can alternatively specify separate arrays indexed in a object by <code>nodes</code> and <code>edges</code>:</p>
 <pre><code class="lang-js"><span class="hljs-keyword">var</span> cy = cytoscape({
   <span class="hljs-comment">/* ... */</span>
 
@@ -733,6 +731,124 @@
 				
 				
 			
+				<h1 id="getting-started">Getting started <a href="#getting-started"><span class="icon-bookmark"></span></a></h1>
+
+				
+					<p>This section will familiarise you with the basic steps necessary to start using Cytoscape.js.</p>
+<h2 id="getting-started/including-cytoscape.js">Including Cytoscape.js <a href="#getting-started/including-cytoscape.js"><span class="icon-bookmark"></span></a></h2>
+<p>If you are using a HTML environment, then include Cytoscape.js in a <code>&lt;script&gt;</code> tag, e.g.:</p>
+<pre><code class="lang-html"><span class="hljs-tag">&lt;<span class="hljs-title">script</span> <span class="hljs-attribute">src</span>=<span class="hljs-value">"cytoscape.js"</span>&gt;</span><span class="undefined"></span><span class="hljs-tag">&lt;/<span class="hljs-title">script</span>&gt;</span>
+</code></pre>
+<p><span class="important-indicator"></span> Note that Cytoscape.js uses the dimensions of your HTML DOM element container for layouts and rendering at initialisation.  Thus, it is very important to place your CSS stylesheets in the <code>&lt;head&gt;</code> before any Cytoscape.js-related code.  Otherwise, dimensions may be sporadically reported incorrectly, resulting in undesired behaviour.</p>
+<p>Your stylesheet may include something like this (assuming a DOM element with ID <code>cy</code> is used as the container):</p>
+<pre><code class="lang-css"><span class="hljs-id">#cy</span> <span class="hljs-rules">{
+  <span class="hljs-rule"><span class="hljs-attribute">width</span>:<span class="hljs-value"> <span class="hljs-number">300px</span></span></span>;
+  <span class="hljs-rule"><span class="hljs-attribute">height</span>:<span class="hljs-value"> <span class="hljs-number">300px</span></span></span>;
+  <span class="hljs-rule"><span class="hljs-attribute">display</span>:<span class="hljs-value"> block</span></span>;
+}</span>
+</code></pre>
+<p><span class="important-indicator"></span> Also note that you should call <a href="#core/viewport-manipulation/cy.resize"><code>cy.resize()</code></a> when your code resizes the viewport.</p>
+<p>To install Cytoscape.js via npm:</p>
+<pre><code class="lang-bash">npm install cytoscape
+</code></pre>
+<p>To use Cytoscape.js in a CommonJS environment like Node.js:</p>
+<pre><code class="lang-js"><span class="hljs-keyword">var</span> cytoscape = <span class="hljs-built_in">require</span>(<span class="hljs-string">'cytoscape'</span>);
+</code></pre>
+<button class="run run-inline-code"><span class="icon-play"></span></button><p>To use Cytoscape.js with AMD/Require.js:</p>
+<pre><code class="lang-js"><span class="hljs-built_in">require</span>([<span class="hljs-string">'cytoscape'</span>], <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">cytoscape</span>)</span>{
+  <span class="hljs-comment">// ...</span>
+});
+</code></pre>
+<button class="run run-inline-code"><span class="icon-play"></span></button><p>To install Cytoscape.js via Bower (in the terminal):</p>
+<pre><code class="lang-bash">bower install cytoscape
+</code></pre>
+<p>To install Cytoscape.js via spm (in the terminal):</p>
+<pre><code class="lang-bash">spm install cytoscape
+</code></pre>
+<p>To install Cytoscape.js via Meteor/Atmosphere (in the terminal):</p>
+<pre><code class="lang-bash">meteor add maxkfranz:cytoscape
+</code></pre>
+<h2 id="getting-started/initialisation">Initialisation <a href="#getting-started/initialisation"><span class="icon-bookmark"></span></a></h2>
+<p>An instance of Cytoscape.js corresponds to a graph.  You can create an instance as follows:</p>
+<pre><code class="lang-js"><span class="hljs-keyword">var</span> cy = cytoscape({
+  container: <span class="hljs-built_in">document</span>.getElementById(<span class="hljs-string">'cy'</span>) <span class="hljs-comment">// container to render in</span>
+});
+</code></pre>
+<button class="run run-inline-code"><span class="icon-play"></span></button><p>If you are running Cytoscape.js in Node.js or otherwise running it headlessly, you will not specify the <code>container</code> option.  When running Cytoscape.js headlessly in the browser, you should specify <code>options.renderer.name</code> as <code>&#39;null&#39;</code> so that the default canvas renderer is not used to draw the graph.  Outside of the browser (e.g. in Node.js) or if the convenience option <code>options.headless</code> is <code>true</code>, the null renderer is used by default.</p>
+<h2 id="getting-started/specifying-basic-options">Specifying basic options <a href="#getting-started/specifying-basic-options"><span class="icon-bookmark"></span></a></h2>
+<p>For visualisation, the <code>container</code>, <a href="#notation/elements-json"><code>elements</code></a>, <a href="#style"><code>style</code></a>, and <a href="#layouts"><code>layout</code></a> options usually should be set:</p>
+<pre><code class="lang-js"><span class="hljs-keyword">var</span> cy = cytoscape({
+
+  container: <span class="hljs-built_in">document</span>.getElementById(<span class="hljs-string">'cy'</span>), <span class="hljs-comment">// container to render in</span>
+
+  elements: [ <span class="hljs-comment">// list of graph elements to start with</span>
+    { <span class="hljs-comment">// node a</span>
+      data: { id: <span class="hljs-string">'a'</span> }
+    },
+    { <span class="hljs-comment">// node b</span>
+      data: { id: <span class="hljs-string">'b'</span> }
+    },
+    { <span class="hljs-comment">// edge ab</span>
+      data: { id: <span class="hljs-string">'ab'</span>, source: <span class="hljs-string">'a'</span>, target: <span class="hljs-string">'b'</span> }
+    }
+  ],
+
+  style: [ <span class="hljs-comment">// the stylesheet for the graph</span>
+    {
+      selector: <span class="hljs-string">'node'</span>,
+      style: {
+        <span class="hljs-string">'background-color'</span>: <span class="hljs-string">'#666'</span>,
+        <span class="hljs-string">'label'</span>: <span class="hljs-string">'data(id)'</span>
+      }
+    },
+
+    {
+      selector: <span class="hljs-string">'edge'</span>,
+      style: {
+        <span class="hljs-string">'width'</span>: <span class="hljs-number">3</span>,
+        <span class="hljs-string">'line-color'</span>: <span class="hljs-string">'#ccc'</span>,
+        <span class="hljs-string">'target-arrow-color'</span>: <span class="hljs-string">'#ccc'</span>,
+        <span class="hljs-string">'target-arrow-shape'</span>: <span class="hljs-string">'triangle'</span>
+      }
+    }
+  ],
+
+  layout: {
+    name: <span class="hljs-string">'grid'</span>,
+    rows: <span class="hljs-number">1</span>
+  }
+
+});
+</code></pre>
+<button class="run run-inline-code"><span class="icon-play"></span></button><h2 id="getting-started/the-ready-callback">The ready callback <a href="#getting-started/the-ready-callback"><span class="icon-bookmark"></span></a></h2>
+<p><span class="important-indicator"></span> Part of initialising Cytoscape.js is synchronous and part may be asynchronous.  The potentially asynchronous part is the initial layout, which may be used for setting the initial positions of nodes.  If you use an asynchronous (a.k.a. continuous) layout at initialisation, you may want to use <code>ready</code>.  You can guarantee that the initial layout takes no time if you specify all node positions manually in the <a href="#notation/elements-json">elements JSON</a> and use the <code>preset</code> layout &mdash; which does nothing by default.</p>
+<h2 id="getting-started/next-steps">Next steps <a href="#getting-started/next-steps"><span class="icon-bookmark"></span></a></h2>
+<p>Now that you have a core (graph) instance with basic options, explore the <a href="#core">core API</a>.  It&#39;s your entry point to all the features in Cytoscape.js.</p>
+<p>If you have code questions about Cytoscape.js, please feel free to <a href="http://stackoverflow.com/questions/ask?tags=cytoscape.js">post your question to Stackoverflow</a>.</p>
+
+				
+
+				
+
+				
+
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+			
 				<h1 id="core">Core <a href="#core"><span class="icon-bookmark"></span></a></h1>
 
 				
@@ -751,72 +867,25 @@
 					
 
 					
-						<h3 id="script-includes">Script includes</h3>
-<p>To use Cytoscape.js in your HTML document:</p>
-<pre><code class="lang-html"><span class="hljs-tag">&lt;<span class="hljs-title">script</span> <span class="hljs-attribute">src</span>=<span class="hljs-value">"cytoscape.js"</span>&gt;</span><span class="undefined"></span><span class="hljs-tag">&lt;/<span class="hljs-title">script</span>&gt;</span>
-</code></pre>
-<p><span class="important-indicator"></span> Note that Cytoscape.js uses the dimensions of your HTML DOM element container for layouts and rendering at initialisation.  Thus, it is very important to place your CSS stylesheets in the <code>&lt;head&gt;</code> before any Cytoscape.js-related code.  Otherwise, dimensions may be sporadically reported incorrectly, resulting in undesired behaviour.</p>
-<p><span class="important-indicator"></span> Also note that you should call <a href="#core/viewport-manipulation/cy.resize"><code>cy.resize()</code></a> when your code resizes the viewport.</p>
-<p>To install Cytoscape.js via npm:</p>
-<pre><code class="lang-bash">npm install cytoscape
-</code></pre>
-<p>To use Cytoscape.js in a CommonJS environment like Node.js:</p>
-<pre><code><span class="hljs-keyword">var</span> cytoscape = <span class="hljs-built_in">require</span>(<span class="hljs-string">'cytoscape'</span>);
-</code></pre><p>To use Cytoscape.js with AMD/Require.js:</p>
-<pre><code><span class="hljs-built_in">require</span>([<span class="hljs-string">'cytoscape'</span>], <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">cytoscape</span>)</span>{
-  <span class="hljs-comment">// ...</span>
-});
-</code></pre><p>To install Cytoscape.js via Bower (in the terminal):</p>
-<pre><code class="lang-bash">bower install cytoscape
-</code></pre>
-<p>To install Cytoscape.js via spm (in the terminal):</p>
-<pre><code class="lang-bash">spm install cytoscape
-</code></pre>
-<p>To install Cytoscape.js via Meteor/Atmosphere (in the terminal):</p>
-<pre><code class="lang-bash">meteor add maxkfranz:cytoscape
-</code></pre>
-<h3 id="getting-started">Getting started</h3>
-<p>An instance of Cytoscape.js correponds to a graph.  You can create an instance as follows:</p>
+						<h3 id="initialisation">Initialisation</h3>
+<p>A graph can be created as follows:</p>
+<pre><code><span class="hljs-variable"><span class="hljs-keyword">var</span> cy</span> = cytoscape({ <span class="hljs-comment">/* options */</span> });
+</code></pre><p>You can initialise the core without any options.  If you want to use Cytoscape as a visualisation, then a <code>container</code> DOM element is required, e.g.:</p>
 <pre><code class="lang-js"><span class="hljs-keyword">var</span> cy = cytoscape({
-  container: <span class="hljs-built_in">document</span>.getElementById(<span class="hljs-string">'cy'</span>),
-  ready: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>)</span>{ <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'ready'</span>) }
+  container: <span class="hljs-built_in">document</span>.getElementById(<span class="hljs-string">'cy'</span>)
 });
 </code></pre>
-<button class="run run-inline-code"><span class="icon-play"></span></button><p>If you are running Cytoscape.js in Node.js or otherwise running it headlessly, you will not specify the <code>container</code> option.  When running Cytoscape.js headlessly in the browser, you should specify <code>options.renderer.name</code> as <code>&#39;null&#39;</code> so that the default canvas renderer is not used to draw the graph.  Outside of the browser (e.g. in Node.js) or if the convenience option <code>options.headless</code> is <code>true</code>, the null renderer is used by default.</p>
-<p>You can alternatively initialise Cytoscape.js on a HTML DOM element using jQuery:</p>
-<pre><code class="lang-js">$(<span class="hljs-string">'#cy'</span>).cytoscape({ <span class="hljs-comment">// for some div with id 'cy'</span>
-  ready: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>)</span>{
-    <span class="hljs-comment">// you can access the core object API through cy</span>
-
-    <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'ready'</span>);
-  }
-
-  <span class="hljs-comment">// , ...</span>
-});
-</code></pre>
-<button class="run run-inline-code"><span class="icon-play"></span></button><p>The jQuery Cytoscape.js plugin is automatically registered for you on the global <code>jQuery</code> instance.  If that&#39;s unavailable, you can manually register via <code>cytoscape.registerJquery( jQuery )</code>.</p>
-<p>This initialises Cytoscape.js and returns back to you your instance of jQuery.  You can continue using jQuery functions, as usual for a jQuery plugin.</p>
-<p>For example,</p>
-<pre><code class="lang-js">$(<span class="hljs-string">'#cy'</span>).cytoscape(options)
-  .css(<span class="hljs-string">'background'</span>, <span class="hljs-string">'red'</span>)
-  .css(<span class="hljs-string">'border-color'</span>, <span class="hljs-string">'black'</span>); <span class="hljs-comment">// can use jquery functions on 'cy' div</span>
-</code></pre>
-<button class="run run-inline-code"><span class="icon-play"></span></button><p>Because this style doesn&#39;t give you access to the <code>cy</code> object outside of the callback function, there is an option to get the <code>cy</code> object from a jQuery selector.</p>
-<pre><code class="lang-js">$(<span class="hljs-string">'#cy'</span>).cytoscape(options);
-<span class="hljs-keyword">var</span> cy = $(<span class="hljs-string">'#cy'</span>).cytoscape(<span class="hljs-string">'get'</span>); <span class="hljs-comment">// now we have a global reference to `cy`</span>
-</code></pre>
-<button class="run run-inline-code"><span class="icon-play"></span></button><h3 id="the-ready-callback">The ready callback</h3>
-<p><span class="important-indicator"></span> Part of initialising Cytoscape.js is synchronous and part may be asynchronous.  The potentially asynchronous part is the initial layout, which may be used for setting the initial positions of nodes.  If you use an asynchronous (a.k.a. continuous) layout at initialisation, you may want to use <code>ready</code>.  You can guarantee that the initial layout takes no time if you specify all node positions manually in the <a href="#notation/elements-json">elements JSON</a> and use the <code>preset</code> layout &mdash; which does nothing by default.</p>
+<button class="run run-inline-code"><span class="icon-play"></span></button><p>The following sections go over the options in more detail.</p>
 <h3 id="initialisation-options">Initialisation options</h3>
 <p>An instance of Cytoscape.js has a number of options that can be set on initialisation.  They are outlined below with their default values.</p>
 <p><span class="important-indicator"></span> Note that everything is optional.  By default, you get an empty graph with the default stylesheet.  Environments outside the browser (e.g. Node.js) are automatically set as headless for convenience.</p>
-<pre><code class="lang-js"><span class="hljs-keyword">var</span> cy = cytoscape({
+<pre><code><span class="hljs-keyword">var</span> cy = cytoscape({
   <span class="hljs-comment">// very commonly used options:</span>
   container: <span class="hljs-literal">undefined</span>,
   elements: [ <span class="hljs-comment">/* ... */</span> ],
   style: [ <span class="hljs-comment">/* ... */</span> ],
   layout: { name: <span class="hljs-string">'grid'</span> <span class="hljs-comment">/* , ... */</span> },
-  ready: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">evt</span>)</span>{ <span class="hljs-comment">/* ... */</span> },
+  ready: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(evt)</span></span>{ <span class="hljs-comment">/* ... */</span> },
 
   <span class="hljs-comment">// initial viewport state:</span>
   zoom: <span class="hljs-number">1</span>,
@@ -847,11 +916,10 @@
   motionBlurOpacity: <span class="hljs-number">0.2</span>,
   wheelSensitivity: <span class="hljs-number">1</span>,
   pixelRatio: <span class="hljs-number">1</span>,
-  initrender: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">evt</span>)</span>{ <span class="hljs-comment">/* ... */</span> },
+  initrender: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(evt)</span></span>{ <span class="hljs-comment">/* ... */</span> },
   renderer: { <span class="hljs-comment">/* ... */</span> }
 });
-</code></pre>
-<button class="run run-inline-code"><span class="icon-play"></span></button><h3 id="very-commonly-used-options">Very commonly used options</h3>
+</code></pre><h3 id="very-commonly-used-options">Very commonly used options</h3>
 <p><strong><code>container</code></strong> : A HTML DOM element in which the graph should be rendered.  This is optional if Cytoscape.js is run headlessly or if you initialise using jQuery (in which case your jQuery object already has an associated DOM element).</p>
 <p><strong><code>elements</code></strong> : An array of <a href="#notation/elements-json">elements specified as plain objects</a>.  For convenience, this option can alternatively be specified as a promise that resolves to the elements JSON.</p>
 <p><strong><code>style</code></strong> : The <a href="#style">stylesheet</a> used to style the graph.  For convenience, this option can alternatively be specified as a promise that resolves to the stylesheet.</p>
@@ -1090,6 +1158,7 @@
 							<div class="details">
 								
 									<h3 id="details">Details</h3>
+<p><span class="important-indicator"></span> Note that removing a node necessarily removes its connected edges.</p>
 <p>Though the elements specified to this function are removed from the graph, they may still exist in memory.  However, almost all functions will not work on removed elements.  For example, the <code>eles.neighborhood()</code> function will fail for a removed element:  An element outside of the context of the graph can not have a neighbourhood defined.  In effect, removed elements just exist so you can restore them back to the originating core instance or to a new instance.</p>
 <h3 id="examples">Examples</h3>
 <p>Remove an element:</p>
@@ -4935,7 +5004,7 @@ $(<span class="hljs-string">'#jpg-eg'</span>).attr(<span class="hljs-string">'sr
 
 							
 
-							<div class="descr"><p>Remove the elements from the graph.</p>
+							<div class="descr"><p>Remove the elements from the graph, and return all elements removed by this call.</p>
 </div>
 
 							
@@ -16645,16 +16714,6 @@ jAni.play().promise().then(<span class="hljs-function"><span class="hljs-keyword
 <li><a href="https://github.com/cytoscape/cytoscape.js-spread"><code>spread</code></a> : The speedy Spread physics simulation layout for Cytoscape.js.</li>
 <li><a href="https://github.com/cytoscape/cytoscape.js-springy"><code>springy</code></a> : The Springy physics simulation layout for Cytoscape.js.</li>
 </ul>
-<h2 id="extensions/api">API <a href="#extensions/api"><span class="icon-bookmark"></span></a></h2>
-<p>The API makes it very easy to write an extension, following this format: <code>cytoscape( type, name, extension );</code></p>
-<p>The value of <code>type</code> can take on the following values:</p>
-<ul>
-<li><code>&#39;core&#39;</code> : The extension adds a core function.</li>
-<li><code>&#39;collection&#39;</code> : The extension adds a collection function.</li>
-<li><code>&#39;layout&#39;</code> : The extension registers a layout prototype.</li>
-<li><code>&#39;renderer&#39;</code> : The extension registers a renderer prototype.</li>
-</ul>
-<p>The <code>name</code> argument indicates the name of the extension, which should be a single word in lower case.</p>
 <h2 id="extensions/autoscaffolding">Autoscaffolding <a href="#extensions/autoscaffolding"><span class="icon-bookmark"></span></a></h2>
 <p>There exists <a href="https://github.com/cytoscape/slush-cytoscape-extension">a Slush project for Cytoscape.js</a> such that the full project scaffolding for a new extension is automatically generated for you.  By following the included instructions, you can easily create Cytoscape.js extensions that are well organised, easily maintained, and published to npm, bower, spm, and meteor.</p>
 <h2 id="extensions/multitasking">Multitasking <a href="#extensions/multitasking"><span class="icon-bookmark"></span></a></h2>
@@ -16666,9 +16725,6 @@ jAni.play().promise().then(<span class="hljs-function"><span class="hljs-keyword
 
 				
 
-				
-				
-				
 				
 				
 				
@@ -16858,6 +16914,51 @@ jAni.play().promise().then(<span class="hljs-function"><span class="hljs-keyword
 						<div class="section lvl2">
 							
 							<a class="toclink" href="#notation/compound-nodes"><span class="icon-bookmark bookmark-icon"></span> Compound nodes</a>
+						</div>
+
+						
+					
+				
+					<div class="section lvl1">
+						<span class="expander">
+							<span class="icon-caret-down expanded-icon"></span>
+							<span class="icon-caret-right collapsed-icon"></span>
+						</span>
+						<a class="toclink" href="#getting-started"><span class="icon-bookmark bookmark-icon"></span> Getting started</a>
+					</div>
+
+					
+						<div class="section lvl2">
+							
+							<a class="toclink" href="#getting-started/including-cytoscape.js"><span class="icon-bookmark bookmark-icon"></span> Including Cytoscape.js</a>
+						</div>
+
+						
+					
+						<div class="section lvl2">
+							
+							<a class="toclink" href="#getting-started/initialisation"><span class="icon-bookmark bookmark-icon"></span> Initialisation</a>
+						</div>
+
+						
+					
+						<div class="section lvl2">
+							
+							<a class="toclink" href="#getting-started/specifying-basic-options"><span class="icon-bookmark bookmark-icon"></span> Specifying basic options</a>
+						</div>
+
+						
+					
+						<div class="section lvl2">
+							
+							<a class="toclink" href="#getting-started/the-ready-callback"><span class="icon-bookmark bookmark-icon"></span> The ready callback</a>
+						</div>
+
+						
+					
+						<div class="section lvl2">
+							
+							<a class="toclink" href="#getting-started/next-steps"><span class="icon-bookmark bookmark-icon"></span> Next steps</a>
 						</div>
 
 						
@@ -17851,13 +17952,6 @@ jAni.play().promise().then(<span class="hljs-function"><span class="hljs-keyword
 						<div class="section lvl2">
 							
 							<a class="toclink" href="#extensions/layout-extensions"><span class="icon-bookmark bookmark-icon"></span> Layout extensions</a>
-						</div>
-
-						
-					
-						<div class="section lvl2">
-							
-							<a class="toclink" href="#extensions/api"><span class="icon-bookmark bookmark-icon"></span> API</a>
 						</div>
 
 						

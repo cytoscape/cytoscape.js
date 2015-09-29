@@ -1,108 +1,20 @@
-### Script includes
+### Initialisation
 
-To use Cytoscape.js in your HTML document:
-
-```html
-<script src="cytoscape.js"></script>
-```
-
-<span class="important-indicator"></span> Note that Cytoscape.js uses the dimensions of your HTML DOM element container for layouts and rendering at initialisation.  Thus, it is very important to place your CSS stylesheets in the `<head>` before any Cytoscape.js-related code.  Otherwise, dimensions may be sporadically reported incorrectly, resulting in undesired behaviour.
-
-<span class="important-indicator"></span> Also note that you should call [`cy.resize()`](#core/viewport-manipulation/cy.resize) when your code resizes the viewport.
-
-To install Cytoscape.js via npm:
-
-```bash
-npm install cytoscape
-```
-
-To use Cytoscape.js in a CommonJS environment like Node.js:
+A graph can be created as follows:
 
 ```
-var cytoscape = require('cytoscape');
+var cy = cytoscape({ /* options */ });
 ```
 
-To use Cytoscape.js with AMD/Require.js:
-
-```
-require(['cytoscape'], function(cytoscape){
-  // ...
-});
-```
-
-To install Cytoscape.js via Bower (in the terminal):
-
-```bash
-bower install cytoscape
-```
-
-To install Cytoscape.js via spm (in the terminal):
-
-```bash
-spm install cytoscape
-```
-
-To install Cytoscape.js via Meteor/Atmosphere (in the terminal):
-
-```bash
-meteor add maxkfranz:cytoscape
-```
-
-### Getting started
-
-An instance of Cytoscape.js correponds to a graph.  You can create an instance as follows:
+You can initialise the core without any options.  If you want to use Cytoscape as a visualisation, then a `container` DOM element is required, e.g.:
 
 ```js
 var cy = cytoscape({
-  container: document.getElementById('cy'),
-  ready: function(){ console.log('ready') }
+  container: document.getElementById('cy')
 });
 ```
 
-If you are running Cytoscape.js in Node.js or otherwise running it headlessly, you will not specify the `container` option.  When running Cytoscape.js headlessly in the browser, you should specify `options.renderer.name` as `'null'` so that the default canvas renderer is not used to draw the graph.  Outside of the browser (e.g. in Node.js) or if the convenience option `options.headless` is `true`, the null renderer is used by default.
-
-You can alternatively initialise Cytoscape.js on a HTML DOM element using jQuery:
-
-```js
-$('#cy').cytoscape({ // for some div with id 'cy'
-  ready: function(){
-    // you can access the core object API through cy
-
-    console.log('ready');
-  }
-
-  // , ...
-});
-```
-
-The jQuery Cytoscape.js plugin is automatically registered for you on the global `jQuery` instance.  If that's unavailable, you can manually register via `cytoscape.registerJquery( jQuery )`.
-
-This initialises Cytoscape.js and returns back to you your instance of jQuery.  You can continue using jQuery functions, as usual for a jQuery plugin.
-
-For example,
-
-```js
-$('#cy').cytoscape(options)
-  .css('background', 'red')
-  .css('border-color', 'black'); // can use jquery functions on 'cy' div
-```
-
-Because this style doesn't give you access to the `cy` object outside of the callback function, there is an option to get the `cy` object from a jQuery selector.
-
-```js
-$('#cy').cytoscape(options);
-var cy = $('#cy').cytoscape('get'); // now we have a global reference to `cy`
-```
-
-
-
-
-
-### The ready callback
-
-<span class="important-indicator"></span> Part of initialising Cytoscape.js is synchronous and part may be asynchronous.  The potentially asynchronous part is the initial layout, which may be used for setting the initial positions of nodes.  If you use an asynchronous (a.k.a. continuous) layout at initialisation, you may want to use `ready`.  You can guarantee that the initial layout takes no time if you specify all node positions manually in the [elements JSON](#notation/elements-json) and use the `preset` layout &mdash; which does nothing by default.
-
-
+The following sections go over the options in more detail.
 
 
 ### Initialisation options
@@ -111,7 +23,7 @@ An instance of Cytoscape.js has a number of options that can be set on initialis
 
 <span class="important-indicator"></span> Note that everything is optional.  By default, you get an empty graph with the default stylesheet.  Environments outside the browser (e.g. Node.js) are automatically set as headless for convenience.
 
-```js
+```
 var cy = cytoscape({
   // very commonly used options:
   container: undefined,

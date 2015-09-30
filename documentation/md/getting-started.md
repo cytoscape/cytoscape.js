@@ -74,6 +74,14 @@ var cy = cytoscape({
 });
 ```
 
+You can pass a jQuery instance as the `container` for convenience:
+
+```js
+var cy = cytoscape({
+  container: $('#cy')
+});
+```
+
 If you are running Cytoscape.js in Node.js or otherwise running it headlessly, you will not specify the `container` option.  When running Cytoscape.js headlessly in the browser, you should specify `options.renderer.name` as `'null'` so that the default canvas renderer is not used to draw the graph.  Outside of the browser (e.g. in Node.js) or if the convenience option `options.headless` is `true`, the null renderer is used by default.
 
 

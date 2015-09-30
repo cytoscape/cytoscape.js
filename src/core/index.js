@@ -15,17 +15,18 @@ var Core = function( opts ){
   opts = util.extend({}, opts);
 
   var container = opts.container;
+
+  // allow for passing a wrapped jquery object
+  // e.g. cytoscape({ container: $('#cy') })
+  if( container && !is.htmlElement( container ) && is.htmlElement( container[0] ) ){
+    container = container[0];
+  }
+
   var reg = container ? container._cyreg : null; // e.g. already registered some info (e.g. readies) via jquery
   reg = reg || {};
 
   if( reg && reg.cy ){
-    if( container ){
-      while( container.firstChild ){ // clean the container
-        container.removeChild( container.firstChild );
-      }
-    }
-
-    reg.cy.notify({ type: 'destroy' }); // destroy the renderer
+    reg.cy.destroy();
 
     reg = {}; // old instance => replace reg completely
   }
@@ -51,7 +52,7 @@ var Core = function( opts ){
   };
 
   var _p = this._private = {
-    container: options.container, // html dom ele container
+    container: container, // html dom ele container
     ready: false, // whether ready has been triggered
     initrender: false, // has initrender has been triggered
     options: options, // cached options
@@ -212,12 +213,9 @@ util.extend(corefn, {
     cy.notify({ type: 'destroy' }); // destroy the renderer
 
     var domEle = cy.container();
-    var parEle = domEle ? domEle.parentNode : null;
-    if( parEle ){
-      try{
-        parEle.removeChild( domEle );
-      } catch(e){
-        // ie10 issue #1014
+    if( domEle ){
+      while( domEle.firstChild ){ // clean the container
+        domEle.removeChild( domEle.firstChild );
       }
     }
 

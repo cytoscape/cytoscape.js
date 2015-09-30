@@ -231,7 +231,9 @@ $(function(){
   var $container = $('#cytoscape');
   var $container2 = $('#cytoscape2');
 
-  $container.cy(options).cy(function(){
+  options.container = $container;
+
+  window.cy = cytoscape(options).ready(function(){
 
     height = $container.height();
     width = $container.width();
@@ -325,7 +327,9 @@ $(function(){
   var init2;
   $('#init2').on('click', init2 = function(){
     // compound graph in the second instance
-    $container2.cy({
+    window.cy2 = cytoscape({
+      container: $container2,
+
       renderer: {
         name: 'canvas',
         showFps: true
@@ -359,7 +363,7 @@ $(function(){
              console.log('%o', node);
          });
       }
-    }).cy(function(){
+    }).ready(function(){
       $('#compound-remove-selected-button').click(function(){
         cy2.elements(':selected').remove();
       });

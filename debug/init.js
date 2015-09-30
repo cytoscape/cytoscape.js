@@ -33,7 +33,7 @@ $(function(){
           //'border-style': 'dashed'
           //'background-position-x': '5',
           //'background-position-y': '5',
-          // 'background-image': 'images/gnu.png',
+          //'background-image': 'images/gnu.svg',
           // 'background-image-opacity': 0.5,
           // 'background-fit': 'contain',
           // 'background-repeat': 'no-repeat',
@@ -72,18 +72,18 @@ $(function(){
           })
       .selector('edge')
         .css({
-          'line-color': '#ddd',
-          'source-arrow-color': '#ddd',
-          'mid-source-arrow-color': '#ddd',
-          'target-arrow-color': '#ddd',
-          'mid-target-arrow-color': '#ddd',
+          'line-color': '#ccc',
+          'source-arrow-color': '#ccc',
+          'mid-source-arrow-color': '#ccc',
+          'target-arrow-color': '#ccc',
+          'mid-target-arrow-color': '#ccc',
           // 'curve-style': 'unbundled-bezier',
           // 'control-point-distance': 100,
           'width': '3',
-          // 'source-arrow-shape': 'triangle-backcurve',
+          'source-arrow-shape': 'tee',
           'target-arrow-shape': 'triangle',
-          // 'mid-target-arrow-shape': 'triangle',
-          // 'mid-source-arrow-shape': 'triangle-backcurve',
+          'mid-target-arrow-shape': 'triangle',
+          'mid-source-arrow-shape': 'tee',
           // 'target-arrow-fill': 'filled',
           // 'source-arrow-shape': 'data(srcShape)',
           // 'curve-style': 'haystack',
@@ -108,11 +108,25 @@ $(function(){
         .css({
           'width': 15
         })
-      // .selector('#ae')
-      //   .css({
-      //     'curve-style': 'unbundled-bezier',
-      //     'control-point-distance': 100
-      //   })
+      .selector('#ab')
+        .css({
+          'curve-style': 'unbundled-bezier',
+          'control-point-distances': [ 100, -100, 100, ],
+          'control-point-weights': [ 0.25, 0.5, 0.75 ],
+          'label': 'hello world',
+          'edge-text-rotation': 'autorotate'
+        })
+      .selector('#bc')
+        .css({
+          'curve-style': 'segments',
+          'segment-distances': [ 20, -80, 30 ],
+          'segment-weights': [ 0.25, 0.5, 0.75 ],
+          'label': 'hello world'
+        })
+      .selector('[source = "c"][target = "e"]')
+        .css({
+          'curve-style': 'haystack'
+        })
   ;
 
   window.options = {
@@ -143,12 +157,20 @@ $(function(){
 
       edges: [
         { data: { id: 'ae', weight: 1, source: 'a', target: 'e' } },
+        { data: { id: 'aa', weight: 2, source: 'a', target: 'a' } },
+        { data: { id: 'aa2', weight: 2, source: 'a', target: 'a' } },
+        { data: { id: 'aa3', weight: 2, source: 'a', target: 'a' } },
         { data: { id: 'ab', weight: 3, source: 'a', target: 'b' } },
         { data: { id: 'be', weight: 4, source: 'b', target: 'e' } },
         { data: { id: 'bc', weight: 5, source: 'b', target: 'c' } },
         { data: { id: 'ce', weight: 6, source: 'c', target: 'e' } },
+        { data: { id: 'ce2', weight: 6, source: 'c', target: 'e' } },
         { data: { id: 'cd', weight: 2, source: 'c', target: 'd' } },
-        { data: { id: 'de', weight: 7, source: 'd', target: 'e' } }
+        { data: { id: 'de', weight: 7, source: 'd', target: 'e' } },
+        { data: { id: 'de2', weight: 7, source: 'd', target: 'e' } },
+        { data: { id: 'de3', weight: 7, source: 'd', target: 'e' } },
+        { data: { id: 'de4', weight: 7, source: 'd', target: 'e' } },
+        { data: { id: 'de5', weight: 7, source: 'd', target: 'e' } }
       ]
     },
     ready: function(){
@@ -352,7 +374,12 @@ $(function(){
              { data: { id: 'e4', source: 'node-really-long-name-6', target: 'n9' } },
              { data: { id: 'e5', source: 'n8', target: 'n9' } },
              { data: { id: 'e6', source: 'n5', target: 'n8' } },
-             { data: { id: 'e7', source: 'n2', target: 'n4' } }]
+             { data: { id: 'e7', source: 'n2', target: 'n4' } },
+             { data: { id: 'e8', source: 'n8', target: 'n8' } },
+             { data: { id: 'e9', source: 'n1', target: 'n1' } },
+             { data: { id: 'e10', source: 'n1', target: 'n9' } },
+             { data: { id: 'e11', source: 'n4', target: 'n1' } }
+          ]
       },
       style: defaultSty,
 

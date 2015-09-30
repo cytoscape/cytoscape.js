@@ -493,20 +493,10 @@ function pushBezierPts(edge, pts){
     y: qbezierAt( pts[1], pts[3], pts[5], 0.4 )
   });
 
-  var mid = {
+  bpts.push({
     x: qbezierAt( pts[0], pts[2], pts[4], 0.5 ),
     y: qbezierAt( pts[1], pts[3], pts[5], 0.5 )
-  };
-
-  bpts.push( mid );
-
-  if( rs.edgeType === 'self' || rs.edgeType === 'compound' ){
-    rs.midX = rs.selfEdgeMidX;
-    rs.midY = rs.selfEdgeMidY;
-  } else {
-    rs.midX = mid.x;
-    rs.midY = mid.y;
-  }
+  })
 
   bpts.push({
     x: qbezierAt( pts[0], pts[2], pts[4], 0.6 ),
@@ -1455,7 +1445,7 @@ BRp.findEdgeControlPoints = function(edges) {
     var radius = style['haystack-radius'].value;
     var halfRadius = radius/2; // b/c have to half width/height
 
-    rs.haystackPts = [
+    rs.haystackPts = rs.allpts = [
       rs.source.x * srcW * halfRadius + srcPos.x,
       rs.source.y * srcH * halfRadius + srcPos.y,
       rs.target.x * tgtW * halfRadius + tgtPos.x,
@@ -1507,170 +1497,80 @@ BRp.findEndpoints = function( edge ){
 
   var rs = edge._private.rscratch;
 
-  if( rs.edgeType === 'self' || rs.edgeType === 'compound' ){
+  var et = rs.edgeType;
+  var bezier = et === 'bezier' || et === 'multibezier' || et === 'self' || et === 'compound';
+  var multi = et !== 'bezier';
+  var lines = et === 'straight' || et === 'segments';
+  var segments = et === 'segments';
 
-    var cp = [rs.cp2cx, rs.cp2cy];
+  var p1, p2;
 
-    intersect = r.nodeShapes[this.getNodeShape(target)].intersectLine(
-      tgtPos.x,
-      tgtPos.y,
-      target.outerWidth(),
-      target.outerHeight(),
-      cp[0],
-      cp[1],
-      0
-    );
+  if( bezier ){
+    var cpStart = [ rs.ctrlpts[0], rs.ctrlpts[1] ];
+    var cpEnd = multi ? [ rs.ctrlpts[rs.ctrlpts.length - 2], rs.ctrlpts[rs.ctrlpts.length - 1] ] : cpStart;
 
-    var arrowEnd = math.shortenIntersection(intersect, cp,
-      r.arrowShapes[tgtArShape].spacing(edge));
-    var edgeEnd = math.shortenIntersection(intersect, cp,
-      r.arrowShapes[tgtArShape].gap(edge));
+    p1 = cpEnd;
+    p2 = cpStart;
+  } else if( lines ){
+    var srcArrowFromPt = !segments ? [ tgtPos.x, tgtPos.y ] : rs.segpts.slice( 0, 2 );
+    var tgtArrowFromPt = !segments ? [ srcPos.x, srcPos.y ] : rs.segpts.slice( rs.segpts.length - 2 );
 
-    rs.endX = edgeEnd[0];
-    rs.endY = edgeEnd[1];
+    p1 = tgtArrowFromPt;
+    p2 = srcArrowFromPt;
+  }
 
-    rs.arrowEndX = arrowEnd[0];
-    rs.arrowEndY = arrowEnd[1];
+  intersect = r.nodeShapes[this.getNodeShape(target)].intersectLine(
+    tgtPos.x,
+    tgtPos.y,
+    target.outerWidth(),
+    target.outerHeight(),
+    p1[0],
+    p1[1],
+    0
+  );
 
-    var cp = [rs.cp2ax, rs.cp2ay];
+  var arrowEnd = math.shortenIntersection(intersect, p1,
+    r.arrowShapes[tgtArShape].spacing(edge));
+  var edgeEnd = math.shortenIntersection(intersect, p1,
+    r.arrowShapes[tgtArShape].gap(edge));
 
-    intersect = r.nodeShapes[this.getNodeShape(source)].intersectLine(
-      srcPos.x,
-      srcPos.y,
-      source.outerWidth(),
-      source.outerHeight(),
-      cp[0],
-      cp[1],
-      0
-    );
+  rs.endX = edgeEnd[0];
+  rs.endY = edgeEnd[1];
 
-    var arrowStart = math.shortenIntersection(intersect, cp,
-      r.arrowShapes[srcArShape].spacing(edge));
-    var edgeStart = math.shortenIntersection(intersect, cp,
-      r.arrowShapes[srcArShape].gap(edge));
+  rs.arrowEndX = arrowEnd[0];
+  rs.arrowEndY = arrowEnd[1];
 
-    rs.startX = edgeStart[0];
-    rs.startY = edgeStart[1];
+  intersect = r.nodeShapes[this.getNodeShape(source)].intersectLine(
+    srcPos.x,
+    srcPos.y,
+    source.outerWidth(),
+    source.outerHeight(),
+    p2[0],
+    p2[1],
+    0
+  );
 
+  var arrowStart = math.shortenIntersection(
+    intersect, p2,
+    r.arrowShapes[srcArShape].spacing(edge)
+  );
+  var edgeStart = math.shortenIntersection(
+    intersect, p2,
+    r.arrowShapes[srcArShape].gap(edge)
+  );
 
-    rs.arrowStartX = arrowStart[0];
-    rs.arrowStartY = arrowStart[1];
+  rs.startX = edgeStart[0];
+  rs.startY = edgeStart[1];
 
-  } else if( rs.edgeType === 'straight' || rs.edgeType === 'segments' ){
+  rs.arrowStartX = arrowStart[0];
+  rs.arrowStartY = arrowStart[1];
 
-    var intersect1, intersect2;
-
-    var endArrowFromPt = rs.edgeType === 'straight' ? [ srcPos.x, srcPos.y ] : rs.segpts.slice( rs.segpts.length - 2 );
-
-    intersect = intersect1 = r.nodeShapes[this.getNodeShape(target)].intersectLine(
-      tgtPos.x,
-      tgtPos.y,
-      target.outerWidth(),
-      target.outerHeight(),
-      endArrowFromPt[0],
-      endArrowFromPt[1],
-      0);
-
-    var arrowEnd = math.shortenIntersection(intersect,
-      endArrowFromPt,
-      r.arrowShapes[tgtArShape].spacing(edge));
-    var edgeEnd = math.shortenIntersection(intersect,
-      endArrowFromPt,
-      r.arrowShapes[tgtArShape].gap(edge));
-
-    rs.endX = edgeEnd[0];
-    rs.endY = edgeEnd[1];
-
-    rs.arrowEndX = arrowEnd[0];
-    rs.arrowEndY = arrowEnd[1];
-
-    var startArrowFromPt = rs.edgeType === 'straight' ? [ tgtPos.x, tgtPos.y ] : rs.segpts.slice( 0, 2 );
-
-    intersect = intersect2 = r.nodeShapes[this.getNodeShape(source)].intersectLine(
-      srcPos.x,
-      srcPos.y,
-      source.outerWidth(),
-      source.outerHeight(),
-      startArrowFromPt[0],
-      startArrowFromPt[1],
-      0);
-
-    if( intersect1.length === 0 || intersect2.length === 0 ){
-      rs.noArrowPlacement = true;
-    } else {
-      rs.noArrowPlacement = false;
-    }
-
-    var arrowStart = math.shortenIntersection(intersect,
-      startArrowFromPt,
-      r.arrowShapes[srcArShape].spacing(edge));
-    var edgeStart = math.shortenIntersection(intersect,
-      startArrowFromPt,
-      r.arrowShapes[srcArShape].gap(edge));
-
-    rs.startX = edgeStart[0];
-    rs.startY = edgeStart[1];
-
-    rs.arrowStartX = arrowStart[0];
-    rs.arrowStartY = arrowStart[1];
-
+  if( lines ){
     if( !is.number(rs.startX) || !is.number(rs.startY) || !is.number(rs.endX) || !is.number(rs.endY) ){
       rs.badLine = true;
     } else {
       rs.badLine = false;
     }
-
-  } else if ( rs.edgeType === 'bezier' || rs.edgeType === 'multibezier' ){
-    var multi = rs.edgeType === 'multibezier';
-    var cpStart = [ rs.ctrlpts[0], rs.ctrlpts[1] ];
-    var cpEnd = multi ? [ rs.ctrlpts[rs.ctrlpts.length - 2], rs.ctrlpts[rs.ctrlpts.length - 1] ] : cpStart;
-
-    intersect = r.nodeShapes[this.getNodeShape(target)].intersectLine(
-      tgtPos.x,
-      tgtPos.y,
-      target.outerWidth(),
-      target.outerHeight(),
-      cpEnd[0],
-      cpEnd[1],
-      0
-    );
-
-    var arrowEnd = math.shortenIntersection(intersect, cpEnd,
-      r.arrowShapes[tgtArShape].spacing(edge));
-    var edgeEnd = math.shortenIntersection(intersect, cpEnd,
-      r.arrowShapes[tgtArShape].gap(edge));
-
-    rs.endX = edgeEnd[0];
-    rs.endY = edgeEnd[1];
-
-    rs.arrowEndX = arrowEnd[0];
-    rs.arrowEndY = arrowEnd[1];
-
-    intersect = r.nodeShapes[this.getNodeShape(source)].intersectLine(
-      srcPos.x,
-      srcPos.y,
-      source.outerWidth(),
-      source.outerHeight(),
-      cpStart[0],
-      cpStart[1],
-      0
-    );
-
-    var arrowStart = math.shortenIntersection(
-      intersect, cpStart,
-      r.arrowShapes[srcArShape].spacing(edge)
-    );
-    var edgeStart = math.shortenIntersection(
-      intersect, cpStart,
-      r.arrowShapes[srcArShape].gap(edge)
-    );
-
-    rs.startX = edgeStart[0];
-    rs.startY = edgeStart[1];
-
-    rs.arrowStartX = arrowStart[0];
-    rs.arrowStartY = arrowStart[1];
-
   }
 };
 

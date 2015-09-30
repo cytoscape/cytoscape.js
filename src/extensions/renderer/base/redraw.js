@@ -14,14 +14,8 @@ var maxRedrawLimit = 1000;  // don't cap max b/c it's more important to be respo
 BRp.redraw = function( options ){
   options = options || util.staticEmptyObject();
 
-  // console.log('redraw()')
-
   var r = this;
   var forcedContext = options.forcedContext;
-
-  if( !forcedContext && r.motionBlurTimeout ){
-    clearTimeout( r.motionBlurTimeout );
-  }
 
   if( r.averageRedrawTime === undefined ){ r.averageRedrawTime = 0; }
   if( r.lastRedrawTime === undefined ){ r.lastRedrawTime = 0; }
@@ -30,24 +24,18 @@ BRp.redraw = function( options ){
   redrawLimit = minRedrawLimit > redrawLimit ? minRedrawLimit : redrawLimit;
   redrawLimit = redrawLimit < maxRedrawLimit ? redrawLimit : maxRedrawLimit;
 
-  //console.log('--\nideal: %i; effective: %i', this.averageRedrawTime, redrawLimit);
-
   if( r.lastDrawTime === undefined ){ r.lastDrawTime = 0; }
 
   var nowTime = Date.now();
   var timeElapsed = nowTime - r.lastDrawTime;
   var callAfterLimit = timeElapsed >= redrawLimit;
 
-  if( !forcedContext && !r.clearingMotionBlur ){
+  if( !forcedContext ){
     if( !callAfterLimit || r.currentlyDrawing ){
-      // console.log('-- skip frame', redrawLimit);
-
       r.skipFrame = true;
       return;
     }
   }
-
-  // console.log('-- render next frame', redrawLimit);
 
   r.requestedFrame = true;
   r.currentlyDrawing = true;
@@ -88,7 +76,6 @@ BRp.startRenderLoop = function(){
 
       // use a weighted average with a bias from the previous average so we don't spike so easily
       r.averageRedrawTime = r.averageRedrawTime/2 + duration/2;
-      // console.log('actual: %i, average: %i', endTime - startTime, r.averageRedrawTime);
 
       r.requestedFrame = false;
     }

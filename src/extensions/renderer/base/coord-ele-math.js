@@ -1376,13 +1376,32 @@ BRp.findEdgeControlPoints = function(edges) {
 
         rs.allpts.push( rs.endX, rs.endY );
 
+        var m, mt;
+        if( rs.edgeType === 'bezier' ){
+          rs.midX = math.qbezierAt( rs.arrowStartX, rs.ctrlpts[0], rs.arrowEndX, 0.5 );
+          rs.midY = math.qbezierAt( rs.arrowStartY, rs.ctrlpts[1], rs.arrowEndY, 0.5 );
+        } else if( rs.ctrlpts.length/2 % 2 === 0 ){
+          m = rs.allpts.length/2 - 1;
+
+          rs.midX = rs.allpts[m];
+          rs.midY = rs.allpts[m+1];
+        } else {
+          m = rs.allpts.length/2 - 3;
+          mt = 0.5;
+
+          rs.midX = math.qbezierAt( rs.allpts[m], rs.allpts[m+2], rs.allpts[m+4], mt );
+          rs.midY = math.qbezierAt( rs.allpts[m+1], rs.allpts[m+3], rs.allpts[m+5], mt );
+        }
+
+        this.projectBezier( edge );
+
       } else if( rs.edgeType === 'straight' ){
         // need to calc these after endpts
         rs.allpts = [ rs.startX, rs.startY, rs.endX, rs.endY ];
 
         // default midpt for labels etc
-        rs.midX = ( srcX2 + tgtX2 )/2;
-        rs.midY = ( srcY2 + tgtY2 )/2;
+        rs.midX = ( rs.arrowStartX + rs.arrowEndX )/2;
+        rs.midY = ( rs.arrowStartY + rs.arrowEndY )/2;
 
       } else if( rs.edgeType === 'segments' ){
         rs.allpts = [];
@@ -1404,8 +1423,7 @@ BRp.findEdgeControlPoints = function(edges) {
         }
       }
 
-      // project the edge into rstyle
-      this.projectBezier( edge );
+      this.calculateArrowAngles( edge );
       this.recalculateEdgeLabelProjection( edge );
 
     }
@@ -1457,6 +1475,7 @@ BRp.findEdgeControlPoints = function(edges) {
     rscratch.haystack = true;
 
     this.recalculateEdgeLabelProjection( edge );
+    this.calculateArrowAngles( edge );
   }
 
   for( var i = 0 ; i < autorotateEdges.length; i++ ){
@@ -1478,6 +1497,126 @@ BRp.findEdgeControlPoints = function(edges) {
 
   return hashTable;
 };
+
+var getAngleFromDisp = function( dispX, dispY ){
+  // Negative of the angle
+  var angle = Math.asin(dispY / (Math.sqrt(dispX * dispX + dispY * dispY)));
+
+  if (dispX < 0) {
+    angle = angle + Math.PI / 2;
+  } else {
+    angle = - (Math.PI / 2 + angle);
+  }
+
+  return angle;
+};
+
+BRp.calculateArrowAngles = function( edge ){
+  var rs = edge._private.rscratch;
+  var self = this;
+  var isHaystack = rs.edgeType === 'haystack';
+  var isMultibezier = rs.edgeType === 'multibezier';
+  var isSegments = rs.edgeType === 'segments';
+
+  // Displacement gives direction for arrowhead orientation
+  var dispX, dispY;
+  var startX, startY, endX, endY;
+
+  var srcPos = edge.source().position();
+  var tgtPos = edge.target().position();
+
+  if( isHaystack ){
+    startX = rs.haystackPts[0];
+    startY = rs.haystackPts[1];
+    endX = rs.haystackPts[2];
+    endY = rs.haystackPts[3];
+  } else {
+    startX = rs.arrowStartX;
+    startY = rs.arrowStartY;
+    endX = rs.arrowEndX;
+    endY = rs.arrowEndY;
+  }
+
+  var style = edge._private.style;
+
+  // source
+  //
+
+  dispX = startX - srcPos.x;
+  dispY = startY - srcPos.y;
+
+  rs.srcArrowAngle = getAngleFromDisp( dispX, dispY );
+
+  // mid target
+  //
+
+  var midX = rs.midX;
+  var midY = rs.midY;
+
+  if( isHaystack ){
+    midX = ( startX + endX )/2;
+    midY = ( startY + endY )/2;
+  }
+
+  dispX = startX - endX;
+  dispY = startY - endY;
+
+  if( rs.edgeType === 'self' ){
+    dispX = 1;
+    dispY = -1;
+  } else if( rs.edgeType === 'segments' ){
+    var pts = rs.allpts;
+
+    if( pts.length / 2 % 2 === 0 ){
+      var i2 = pts.length / 2;
+      var i1 = i2 - 2;
+
+      dispX = -( pts[i2] - pts[i1] );
+      dispY = -( pts[i2+1] - pts[i1+1] );
+    } else {
+      var i2 = pts.length / 2 - 1;
+      var i1 = i2 - 2;
+      var i3 = i2 + 2;
+
+      dispX = -( pts[i2] - pts[i1] );
+      dispY = -( pts[i2+1] - pts[i1+1] );
+    }
+  }
+
+  rs.midtgtArrowAngle = getAngleFromDisp( dispX, dispY );
+
+  // mid source
+  //
+
+  dispX *= -1;
+  dispY *= -1;
+
+  if( rs.edgeType === 'segments' ){
+    var pts = rs.allpts;
+
+    if( pts.length / 2 % 2 === 0 ){
+      // already ok
+    } else {
+      var i2 = pts.length / 2 - 1;
+      var i1 = i2 - 2;
+      var i3 = i2 + 2;
+
+      dispX = -( pts[i3] - pts[i2] );
+      dispY = -( pts[i3+1] - pts[i2+1] );
+    }
+  }
+
+  rs.midsrcArrowAngle = getAngleFromDisp( dispX, dispY );
+
+  // target
+  //
+
+  dispX = endX - tgtPos.x;
+  dispY = endY - tgtPos.y;
+
+  rs.tgtArrowAngle = getAngleFromDisp( dispX, dispY );
+};
+
 
 BRp.findEndpoints = function( edge ){
   var r = this;

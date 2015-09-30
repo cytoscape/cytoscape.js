@@ -33,7 +33,7 @@ $(function(){
           //'border-style': 'dashed'
           //'background-position-x': '5',
           //'background-position-y': '5',
-          //'background-image': 'images/gnu.svg',
+          'background-image': 'images/gnu.svg',
           // 'background-image-opacity': 0.5,
           // 'background-fit': 'contain',
           // 'background-repeat': 'no-repeat',
@@ -111,17 +111,17 @@ $(function(){
       .selector('#ab')
         .css({
           'curve-style': 'unbundled-bezier',
-          'control-point-distances': [ 100, -100, 100, ],
+          'control-point-distances': [ 100, -100, 100 ],
           'control-point-weights': [ 0.25, 0.5, 0.75 ],
-          'label': 'hello world',
-          'edge-text-rotation': 'autorotate'
+          // 'label': 'hello world',
+          // 'edge-text-rotation': 'autorotate'
         })
       .selector('#bc')
         .css({
           'curve-style': 'segments',
-          'segment-distances': [ 20, -80, 30 ],
-          'segment-weights': [ 0.25, 0.5, 0.75 ],
-          'label': 'hello world'
+          'segment-distances': [ 20, -80 ],
+          'segment-weights': [ 0.25, 0.5 ],
+          // 'label': 'hello world'
         })
       .selector('[source = "c"][target = "e"]')
         .css({

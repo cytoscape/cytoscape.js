@@ -7,7 +7,7 @@ CRp.drawEdge = function(context, edge, drawOverlayInstead) {
   var usePaths = this.usePaths();
 
   // if bezier ctrl pts can not be calculated, then die
-  if( rs.badBezier || isNaN(rs.startX) ){ // iNaN in case edge is impossible and browser bugs (e.g. safari)
+  if( rs.badBezier || rs.badLine || isNaN( rs.allpts[0] ) ){ // iNaN in case edge is impossible and browser bugs (e.g. safari)
     return;
   }
 
@@ -81,28 +81,15 @@ CRp.drawEdge = function(context, edge, drawOverlayInstead) {
 
 
 CRp.drawStyledEdge = function(edge, context, pts, type, width) {
-
-  // 3 points given -> assume Bezier
-  // 2 -> assume straight
-
   var rs = edge._private.rscratch;
   var canvasCxt = context;
   var path;
   var pathCacheHit = false;
   var usePaths = this.usePaths();
 
-
   if( usePaths ){
-
-    var pathCacheKey = pts;
-    var keyLengthMatches = rs.pathCacheKey && pathCacheKey.length === rs.pathCacheKey.length;
-    var keyMatches = keyLengthMatches;
-
-    for( var i = 0; keyMatches && i < pathCacheKey.length; i++ ){
-      if( rs.pathCacheKey[i] !== pathCacheKey[i] ){
-        keyMatches = false;
-      }
-    }
+    var pathCacheKey = pts.join('$');
+    var keyMatches = rs.pathCacheKey && rs.pathCacheKey === pathCacheKey;
 
     if( keyMatches ){
       path = context = rs.pathCache;
@@ -112,7 +99,6 @@ CRp.drawStyledEdge = function(edge, context, pts, type, width) {
       rs.pathCacheKey = pathCacheKey;
       rs.pathCache = path;
     }
-
   }
 
   if( canvasCxt.setLineDash ){ // for very outofdate browsers
@@ -135,25 +121,27 @@ CRp.drawStyledEdge = function(edge, context, pts, type, width) {
     if( context.beginPath ){ context.beginPath(); }
     context.moveTo( pts[0], pts[1] );
 
-    if( rs.edgeType === 'bezier' && !rs.badBezier ){
-      context.quadraticCurveTo( pts[2], pts[3], pts[4], pts[5] );
+    switch( rs.edgeType ){
+      case 'bezier':
+      case 'self':
+      case 'compound':
+      case 'multibezier':
+        if( !rs.badBezier ){
+          for( var i = 2; i + 3 < pts.length; i += 4 ){
+            context.quadraticCurveTo( pts[i], pts[i+1], pts[i+2], pts[i+3] );
+          }
+        }
+        break;
 
-    } else if( (rs.edgeType === 'self' || rs.edgeType === 'compound') && !rs.badBezier ){
-      context.quadraticCurveTo( pts[2], pts[3], pts[4], pts[5] );
-      context.quadraticCurveTo( pts[8], pts[9], pts[10], pts[11] );
-
-    } else if( rs.edgeType === 'straight' && !rs.badLine ){
-      context.lineTo( pts[2], pts[3] );
-
-    } else if( rs.edgeType === 'multibezier' ){
-      for( var i = 2; i + 3 < pts.length; i += 4 ){
-        context.quadraticCurveTo( pts[i], pts[i+1], pts[i+2], pts[i+3] );
-      }
-
-    } else if( rs.edgeType === 'segments' ){
-      for( var i = 2; i + 1 < pts.length; i += 2 ){
-        context.lineTo( pts[i], pts[i+1] );
-      }
+      case 'straight':
+      case 'segments':
+      case 'haystack':
+        if( !rs.badLine ){
+          for( var i = 2; i + 1 < pts.length; i += 2 ){
+            context.lineTo( pts[i], pts[i+1] );
+          }
+        }
+        break;
     }
   }
 
@@ -177,6 +165,8 @@ CRp.drawArrowheads = function(context, edge, drawOverlayInstead) {
   var rs = edge._private.rscratch;
   var self = this;
   var isHaystack = rs.edgeType === 'haystack';
+  var isMultibezier = rs.edgeType === 'multibezier';
+  var isSegments = rs.edgeType === 'segments';
 
   // Displacement gives direction for arrowhead orientation
   var dispX, dispY;
@@ -255,8 +245,16 @@ CRp.drawArrowheads = function(context, edge, drawOverlayInstead) {
     midY = ( startY + endY )/2;
   }
 
-  dispX = startX - endX;
-  dispY = startY - endY;
+  // if( isSegments ){
+  //   if( rs.segpts.length % 2 === 0 ){
+  //
+  //   } else {
+  //
+  //   }
+  // } else {
+    dispX = startX - endX;
+    dispY = startY - endY;
+  // }
 
   if( rs.edgeType === 'self' ){
     dispX = 1;

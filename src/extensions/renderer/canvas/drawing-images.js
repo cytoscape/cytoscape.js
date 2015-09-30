@@ -37,21 +37,17 @@ CRp.drawInscribedImage = function(context, img, node) {
   var imgH = img.height || img.cachedH;
 
   // workaround for broken browsers like ie
-  if( (img.width === undefined || img.height === undefined) ){
+  if( null == imgW || null == imgH ){
     document.body.appendChild( img );
 
-    imgW = img.cachedW = img.width;
-    imgW = img.cachedH = img.height;
+    imgW = img.cachedW = img.width || img.offsetWidth;
+    imgH = img.cachedH = img.height || img.offsetHeight;
 
     document.body.removeChild( img );
   }
 
   var w = imgW;
   var h = imgH;
-
-  if( w === 0 || h === 0 ){
-    return; // no point in drawing empty image (and chrome is broken in this case)
-  }
 
   var bgW = style['background-width'];
   if( bgW.value !== 'auto' ){
@@ -69,6 +65,10 @@ CRp.drawInscribedImage = function(context, img, node) {
     } else {
       h = bgH.pfValue;
     }
+  }
+
+  if( w === 0 || h === 0 ){
+    return; // no point in drawing empty image (and chrome is broken in this case)
   }
 
   if( fit === 'contain' ){

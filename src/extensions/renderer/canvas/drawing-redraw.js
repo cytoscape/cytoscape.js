@@ -186,8 +186,6 @@ CRp.renderTo = function( cxt, zoom, pan, pxRatio ){
 CRp.render = function( options ) {
   options = options || util.staticEmptyObject();
 
-  // console.log('render()');
-
   var forcedContext = options.forcedContext;
   var drawAllLayers = options.drawAllLayers;
   var drawOnlyNodeLayer = options.drawOnlyNodeLayer;
@@ -206,7 +204,9 @@ CRp.render = function( options ) {
   motionBlur = motionBlur && !forcedContext && r.motionBlurEnabled && !inBoxSelection;
   var motionBlurFadeEffect = motionBlur;
 
-  // console.log('textureDraw?', textureDraw);
+  if( !forcedContext && r.motionBlurTimeout ){
+    clearTimeout( r.motionBlurTimeout );
+  }
 
   if( motionBlur ){
     if( r.mbFrames == null ){
@@ -228,19 +228,9 @@ CRp.render = function( options ) {
     }
   }
 
-  // console.log('mb: %s, N: %s, q: %s', motionBlur, r.mbFrames, r.motionBlurPxRatio);
-
   if( r.clearingMotionBlur ){
-    //r.fullQualityMb = true; // disabled b/c scaling canvas dynamically on mobile is expensive (can cause crashes etc)
-
     r.motionBlurPxRatio = 1;
   }
-
-
-  // console.log('-- redraw --')
-
-  // var startTime = Date.now();
-  // console.profile('draw' + startTime)
 
   // b/c drawToContext() may be async w.r.t. redraw(), keep track of last texture frame
   // because a rogue async texture frame would clear needDraw
@@ -248,9 +238,6 @@ CRp.render = function( options ) {
     needDraw[r.NODE] = true;
     needDraw[r.SELECT_BOX] = true;
   }
-
-  // console.log('drawToContext()');
-  // console.log( 'needDraw', needDraw[r.NODE], needDraw[r.DRAG], needDraw[r.SELECT_BOX] );
 
   var edges = r.getCachedEdges();
   var coreStyle = cy.style()._private.coreStyle;
@@ -314,7 +301,7 @@ CRp.render = function( options ) {
   function setContextTransform(context, clear){
     var ePan, eZoom, w, h;
 
-    if( /*!r.fullQualityMb &&*/ !r.clearingMotionBlur && (context === data.bufferContexts[r.MOTIONBLUR_BUFFER_NODE] || context === data.bufferContexts[r.MOTIONBLUR_BUFFER_DRAG]) ){
+    if( !r.clearingMotionBlur && (context === data.bufferContexts[r.MOTIONBLUR_BUFFER_NODE] || context === data.bufferContexts[r.MOTIONBLUR_BUFFER_DRAG]) ){
       ePan = {
         x: pan.x * mbPxRatio,
         y: pan.y * mbPxRatio
@@ -357,8 +344,6 @@ CRp.render = function( options ) {
   }
 
   if( textureDraw ){
-    // console.log('textureDraw')
-
     r.textureDrawLastFrame = true;
 
     var bb;
@@ -432,7 +417,7 @@ CRp.render = function( options ) {
   var hideLabels = r.hideLabelsOnViewport && vpManip;
 
   if (needDraw[r.DRAG] || needDraw[r.NODE] || drawAllLayers || drawOnlyNodeLayer) {
-    //NB : VERY EXPENSIVE
+    // NB : VERY EXPENSIVE
 
     if( hideEdges ){
     } else {
@@ -499,30 +484,10 @@ CRp.render = function( options ) {
   needMbClear[r.DRAG] = !needDraw[r.DRAG] && motionBlur && !r.clearedForMotionBlur[r.DRAG] || r.clearingMotionBlur;
   if( needMbClear[r.DRAG] ){ r.clearedForMotionBlur[r.DRAG] = true; }
 
-  // console.log('--');
-
-  // if( needDraw[r.DRAG] && motionBlur && needDraw[r.NODE] && inNodeDragGesture ){
-  //   console.log('NODE blurclean');
-  //
-  //   var context = data.contexts[r.NODE];
-  //
-  //   setContextTransform( context, true );
-  //   drawElements(eles.nondrag, context);
-  //
-  //   needDraw[r.NODE] = false;
-  //   needMbClear[r.NODE] = false;
-  //
-  // } else
   if( needDraw[r.NODE] || drawAllLayers || drawOnlyNodeLayer || needMbClear[r.NODE] ){
-    // console.log('NODE', needDraw[r.NODE], needMbClear[r.NODE]);
-
     var useBuffer = motionBlur && !needMbClear[r.NODE] && mbPxRatio !== 1;
     var context = forcedContext || ( useBuffer ? r.data.bufferContexts[ r.MOTIONBLUR_BUFFER_NODE ] : data.contexts[r.NODE] );
     var clear = motionBlur && !useBuffer ? 'motionBlur' : undefined;
-
-    // if( needDraw[r.DRAG] && needDraw[r.NODE] ){
-    //   clear = true;
-    // }
 
     setContextTransform( context, clear );
     drawElements(eles.nondrag, context);
@@ -533,8 +498,6 @@ CRp.render = function( options ) {
   }
 
   if ( !drawOnlyNodeLayer && (needDraw[r.DRAG] || drawAllLayers || needMbClear[r.DRAG]) ) {
-    // console.log('DRAG');
-
     var useBuffer = motionBlur && !needMbClear[r.DRAG] && mbPxRatio !== 1;
     var context = forcedContext || ( useBuffer ? r.data.bufferContexts[ r.MOTIONBLUR_BUFFER_DRAG ] : data.contexts[r.DRAG] );
 
@@ -547,8 +510,6 @@ CRp.render = function( options ) {
   }
 
   if( r.showFps || (!drawOnlyNodeLayer && (needDraw[r.SELECT_BOX] && !drawAllLayers)) ) {
-    // console.log('redrawing selection box');
-
     var context = forcedContext || data.contexts[r.SELECT_BOX];
 
     setContextTransform( context );
@@ -607,7 +568,6 @@ CRp.render = function( options ) {
 
       context.setTransform(1, 0, 0, 1, 0, 0);
 
-      //context.font = '20px helvetica';
       context.fillStyle = 'rgba(255, 0, 0, 0.75)';
       context.strokeStyle = 'rgba(255, 0, 0, 0.75)';
       context.lineWidth = 1;
@@ -640,7 +600,7 @@ CRp.render = function( options ) {
         mbclear( cxt, 0, 0, r.canvasWidth, r.canvasHeight );
       }
 
-      var pxr = /*r.fullQualityMb ? 1 :*/ mbPxRatio;
+      var pxr = mbPxRatio;
 
       cxt.drawImage(
         txt, // img
@@ -652,26 +612,19 @@ CRp.render = function( options ) {
     };
 
     if( needDraw[r.NODE] || needMbClear[r.NODE] ){
-      // console.log('mb NODE', needMbClear[r.NODE]);
-
       drawMotionBlur( cxtNode, txtNode, needMbClear[r.NODE] );
       needDraw[r.NODE] = false;
     }
 
     if( needDraw[r.DRAG] || needMbClear[r.DRAG] ){
-      // console.log('mb DRAG');
-
       drawMotionBlur( cxtDrag, txtDrag, needMbClear[r.DRAG] );
       needDraw[r.DRAG] = false;
-      //needMbClear[r.NODE] = true;
     }
   }
 
   r.currentlyDrawing = false;
 
   r.prevViewport = vp;
-
-  // console.profileEnd('draw' + startTime)
 
   if( r.clearingMotionBlur ){
     r.clearingMotionBlur = false;
@@ -682,7 +635,6 @@ CRp.render = function( options ) {
   if( motionBlur ){
     r.motionBlurTimeout = setTimeout(function(){
       r.motionBlurTimeout = null;
-      // console.log('mb CLEAR');
 
       r.clearedForMotionBlur[r.NODE] = false;
       r.clearedForMotionBlur[r.DRAG] = false;

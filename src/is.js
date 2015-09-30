@@ -6,6 +6,7 @@ var navigator = window ? window.navigator : null;
 var typeofstr = typeof '';
 var typeofobj = typeof {};
 var typeoffn = typeof function(){};
+var typeofhtmlele = typeof HTMLElement;
 
 var instanceStr = function( obj ){
   return obj && obj.instanceString && is.fn( obj.instanceString ) ? obj.instanceString() : null;
@@ -46,6 +47,14 @@ var is = {
 
   bool: function(obj){
     return obj != null && typeof obj === typeof true;
+  },
+
+  htmlElement: function(obj){
+    if( 'undefined' === typeofhtmlele ){
+      return undefined;
+    } else {
+      return null != obj && obj instanceof HTMLElement;
+    }
   },
 
   elementOrCollection: function(obj){

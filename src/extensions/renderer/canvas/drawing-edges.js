@@ -61,7 +61,7 @@ CRp.drawEdge = function(context, edge, drawOverlayInstead) {
 
   this.shadowStyle(context,  shadowColor, drawOverlayInstead ? 0 : shadowOpacity, shadowBlur, shadowOffsetX, shadowOffsetY);
 
-  this.drawStyledEdge(
+  this.drawEdgePath(
     edge,
     context,
     rs.allpts,
@@ -80,7 +80,7 @@ CRp.drawEdge = function(context, edge, drawOverlayInstead) {
 };
 
 
-CRp.drawStyledEdge = function(edge, context, pts, type, width) {
+CRp.drawEdgePath = function(edge, context, pts, type, width) {
   var rs = edge._private.rscratch;
   var canvasCxt = context;
   var path;
@@ -163,125 +163,67 @@ CRp.drawArrowheads = function(context, edge, drawOverlayInstead) {
   if( drawOverlayInstead ){ return; } // don't do anything for overlays
 
   var rs = edge._private.rscratch;
-  var self = this;
   var isHaystack = rs.edgeType === 'haystack';
-  var isMultibezier = rs.edgeType === 'multibezier';
-  var isSegments = rs.edgeType === 'segments';
 
-  // Displacement gives direction for arrowhead orientation
-  var dispX, dispY;
-  var startX, startY, endX, endY;
-
-  var srcPos = edge.source().position();
-  var tgtPos = edge.target().position();
-
-  if( isHaystack ){
-    startX = rs.haystackPts[0];
-    startY = rs.haystackPts[1];
-    endX = rs.haystackPts[2];
-    endY = rs.haystackPts[3];
-  } else {
-    startX = rs.arrowStartX;
-    startY = rs.arrowStartY;
-    endX = rs.arrowEndX;
-    endY = rs.arrowEndY;
+  if( !isHaystack ){
+    this.drawArrowhead( context, edge, 'source', rs.arrowStartX, rs.arrowStartY, rs.tgtArrowAngle );
   }
 
-  var style = edge._private.style;
+  this.drawArrowhead( context, edge, 'mid-target', rs.midX, rs.midY, rs.midtgtArrowAngle );
 
-  function drawArrowhead( prefix, x, y, dispX, dispY ){
-    var arrowShape = style[prefix + '-arrow-shape'].value;
+  this.drawArrowhead( context, edge, 'mid-source', rs.midX, rs.midY, rs.midsrcArrowAngle );
 
-    if( arrowShape === 'none' ){
-      return;
-    }
-
-    var gco = context.globalCompositeOperation;
-
-    var arrowClearFill = style[prefix + '-arrow-fill'].value === 'hollow' ? 'both' : 'filled';
-    var arrowFill = style[prefix + '-arrow-fill'].value;
-
-    if( arrowShape === 'half-triangle-overshot' ){
-      arrowFill = 'hollow';
-      arrowClearFill = 'hollow';
-    }
-
-    if( style.opacity.value !== 1 || arrowFill === 'hollow' ){ // then extra clear is needed
-      context.globalCompositeOperation = 'destination-out';
-
-      self.fillStyle(context, 255, 255, 255, 1);
-      self.strokeStyle(context, 255, 255, 255, 1);
-
-      self.drawArrowShape( edge, prefix, context,
-        arrowClearFill, style['width'].pfValue, style[prefix + '-arrow-shape'].value,
-        x, y, dispX, dispY
-      );
-
-      context.globalCompositeOperation = gco;
-    } // otherwise, the opaque arrow clears it for free :)
-
-    var color = style[prefix + '-arrow-color'].value;
-    self.fillStyle(context, color[0], color[1], color[2], style.opacity.value);
-    self.strokeStyle(context, color[0], color[1], color[2], style.opacity.value);
-
-    self.drawArrowShape( edge, prefix, context,
-      arrowFill, style['width'].pfValue, style[prefix + '-arrow-shape'].value,
-      x, y, dispX, dispY
-    );
-  }
-
-  dispX = startX - srcPos.x;
-  dispY = startY - srcPos.y;
-
-  if( !isHaystack && !isNaN(startX) && !isNaN(startY) && !isNaN(dispX) && !isNaN(dispY) ){
-    drawArrowhead( 'source', startX, startY, dispX, dispY );
-  }
-
-  var midX = rs.midX;
-  var midY = rs.midY;
-
-  if( isHaystack ){
-    midX = ( startX + endX )/2;
-    midY = ( startY + endY )/2;
-  }
-
-  // if( isSegments ){
-  //   if( rs.segpts.length % 2 === 0 ){
-  //
-  //   } else {
-  //
-  //   }
-  // } else {
-    dispX = startX - endX;
-    dispY = startY - endY;
-  // }
-
-  if( rs.edgeType === 'self' ){
-    dispX = 1;
-    dispY = -1;
-  }
-
-  if( !isNaN(midX) && !isNaN(midY) ){
-    drawArrowhead( 'mid-target', midX, midY, dispX, dispY );
-  }
-
-  dispX *= -1;
-  dispY *= -1;
-
-  if( !isNaN(midX) && !isNaN(midY) ){
-    drawArrowhead( 'mid-source', midX, midY, dispX, dispY );
-  }
-
-  dispX = endX - tgtPos.x;
-  dispY = endY - tgtPos.y;
-
-  if( !isHaystack && !isNaN(endX) && !isNaN(endY) && !isNaN(dispX) && !isNaN(dispY) ){
-    drawArrowhead( 'target', endX, endY, dispX, dispY );
+  if( !isHaystack ){
+    this.drawArrowhead( context, edge, 'target', rs.arrowEndX, rs.arrowEndY, rs.tgtArrowAngle );
   }
 };
 
-// Draw arrowshape
-CRp.drawArrowShape = function(edge, arrowType, context, fill, edgeWidth, shape, x, y, dispX, dispY) {
+CRp.drawArrowhead = function( context, edge, prefix, x, y, angle ){
+  if( isNaN(x) || isNaN(y) || isNaN(angle) ){ return; }
+
+  var self = this;
+  var style = edge._private.style;
+  var arrowShape = style[prefix + '-arrow-shape'].value;
+
+  if( arrowShape === 'none' ){
+    return;
+  }
+
+  var gco = context.globalCompositeOperation;
+
+  var arrowClearFill = style[prefix + '-arrow-fill'].value === 'hollow' ? 'both' : 'filled';
+  var arrowFill = style[prefix + '-arrow-fill'].value;
+
+  if( arrowShape === 'half-triangle-overshot' ){
+    arrowFill = 'hollow';
+    arrowClearFill = 'hollow';
+  }
+
+  if( style.opacity.value !== 1 || arrowFill === 'hollow' ){ // then extra clear is needed
+    context.globalCompositeOperation = 'destination-out';
+
+    self.fillStyle(context, 255, 255, 255, 1);
+    self.strokeStyle(context, 255, 255, 255, 1);
+
+    self.drawArrowShape( edge, prefix, context,
+      arrowClearFill, style['width'].pfValue, style[prefix + '-arrow-shape'].value,
+      x, y, angle
+    );
+
+    context.globalCompositeOperation = gco;
+  } // otherwise, the opaque arrow clears it for free :)
+
+  var color = style[prefix + '-arrow-color'].value;
+  self.fillStyle(context, color[0], color[1], color[2], style.opacity.value);
+  self.strokeStyle(context, color[0], color[1], color[2], style.opacity.value);
+
+  self.drawArrowShape( edge, prefix, context,
+    arrowFill, style['width'].pfValue, style[prefix + '-arrow-shape'].value,
+    x, y, angle
+  );
+};
+
+CRp.drawArrowShape = function(edge, arrowType, context, fill, edgeWidth, shape, x, y, angle) {
   var r = this;
   var usePaths = this.usePaths();
   var rs = edge._private.rscratch;
@@ -289,16 +231,6 @@ CRp.drawArrowShape = function(edge, arrowType, context, fill, edgeWidth, shape, 
   var path;
   var canvasContext = context;
   var translation = { x: x, y: y };
-
-  // Negative of the angle
-  var angle = Math.asin(dispY / (Math.sqrt(dispX * dispX + dispY * dispY)));
-
-  if (dispX < 0) {
-    angle = angle + Math.PI / 2;
-  } else {
-    angle = - (Math.PI / 2 + angle);
-  }
-
   var size = this.getArrowWidth( edgeWidth );
   var shapeImpl = r.arrowShapes[shape];
 

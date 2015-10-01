@@ -33,7 +33,7 @@ $(function(){
           //'border-style': 'dashed'
           //'background-position-x': '5',
           //'background-position-y': '5',
-          'background-image': 'images/gnu.svg',
+          // 'background-image': 'images/gnu.svg',
           // 'background-image-opacity': 0.5,
           // 'background-fit': 'contain',
           // 'background-repeat': 'no-repeat',

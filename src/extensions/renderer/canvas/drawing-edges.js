@@ -166,7 +166,7 @@ CRp.drawArrowheads = function(context, edge, drawOverlayInstead) {
   var isHaystack = rs.edgeType === 'haystack';
 
   if( !isHaystack ){
-    this.drawArrowhead( context, edge, 'source', rs.arrowStartX, rs.arrowStartY, rs.tgtArrowAngle );
+    this.drawArrowhead( context, edge, 'source', rs.arrowStartX, rs.arrowStartY, rs.srcArrowAngle );
   }
 
   this.drawArrowhead( context, edge, 'mid-target', rs.midX, rs.midY, rs.midtgtArrowAngle );

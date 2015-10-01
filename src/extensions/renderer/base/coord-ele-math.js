@@ -585,28 +585,8 @@ BRp.recalculateEdgeLabelProjection = function( edge ){
   //var style = _p.style;
   var rstyle = _p.rstyle;
 
-  if( rs.edgeType === 'self' || rs.edgeType === 'compound' ){
-    edgeCenterX = rs.allpts[4];
-    edgeCenterY = rs.allpts[5];
-  } else if (rs.edgeType === 'straight' ){
-    edgeCenterX = (rs.startX + rs.endX) / 2;
-    edgeCenterY = (rs.startY + rs.endY) / 2;
-  } else if( rs.edgeType === 'bezier' ){
-    edgeCenterX = math.qbezierAt( rs.allpts[0], rs.allpts[2], rs.allpts[4], 0.5 );
-    edgeCenterY = math.qbezierAt( rs.allpts[1], rs.allpts[3], rs.allpts[5], 0.5 );
-  } else if( rs.edgeType === 'multibezier' ){
-    // TODO better placement
-    edgeCenterX = (rs.startX + rs.endX) / 2;
-    edgeCenterY = (rs.startY + rs.endY) / 2;
-  } else if( rs.edgeType === 'haystack' ){
-    var pts = rs.haystackPts;
-
-    edgeCenterX = ( pts[0] + pts[2] )/2;
-    edgeCenterY = ( pts[1] + pts[3] )/2;
-  }
-
-  textX = edgeCenterX;
-  textY = edgeCenterY;
+  textX = rs.midX;
+  textY = rs.midY;
 
   // add center point to style so bounding box calculations can use it
   rs.labelX = textX;
@@ -1470,6 +1450,9 @@ BRp.findEdgeControlPoints = function(edges) {
       rs.target.y * tgtH * halfRadius + tgtPos.y
     ];
 
+    rs.midX = (rs.allpts[0] + rs.allpts[2])/2;
+    rs.midY = (rs.allpts[1] + rs.allpts[3])/2;
+
     // always override as haystack in case set to different type previously
     rscratch.edgeType = 'haystack';
     rscratch.haystack = true;
@@ -1482,17 +1465,7 @@ BRp.findEdgeControlPoints = function(edges) {
     var edge = autorotateEdges[i];
     var rs = edge._private.rscratch;
 
-    switch( rs.edgeType ){
-      case 'haystack':
-        dx = rs.haystackPts[2] - rs.haystackPts[0];
-        dy = rs.haystackPts[3] - rs.haystackPts[1];
-        break;
-      default:
-        dx = rs.endX - rs.startX;
-        dy = rs.endY - rs.startY;
-    }
-
-    rs.labelAngle = Math.atan( dy / dx );
+    rs.labelAngle = Math.atan( rs.midDispY / rs.midDispX );
   }
 
   return hashTable;
@@ -1578,12 +1551,45 @@ BRp.calculateArrowAngles = function( edge ){
       var i1 = i2 - 2;
       var i3 = i2 + 2;
 
-      dispX = -( pts[i2] - pts[i1] );
-      dispY = -( pts[i2+1] - pts[i1+1] );
+      dispX = ( pts[i2] - pts[i1] );
+      dispY = ( pts[i2+1] - pts[i1+1] );
     }
+  } else if( rs.edgeType === 'multibezier' ){
+    var pts = rs.allpts;
+    var cpts = rs.ctrlpts;
+    var bp0x, bp0y;
+    var bp1x, bp1y;
+
+    if( cpts.length / 2 % 2 === 0 ){
+      var p0 = pts.length / 2 - 1; // startpt
+      var ic = p0 + 2;
+      var p1 = ic + 2;
+
+      bp0x = math.qbezierAt( pts[p0], pts[ic], pts[p1], 0.0 );
+      bp0y = math.qbezierAt( pts[p0+1], pts[ic+1], pts[p1+1], 0.0 );
+
+      bp1x = math.qbezierAt( pts[p0], pts[ic], pts[p1], 0.0001 );
+      bp1y = math.qbezierAt( pts[p0+1], pts[ic+1], pts[p1+1], 0.0001 );
+    } else {
+      var ic = pts.length / 2 - 1; // ctrpt
+      var p0 = ic - 2; // startpt
+      var p1 = ic + 2; // endpt
+
+      bp0x = math.qbezierAt( pts[p0], pts[ic], pts[p1], 0.4999 );
+      bp0y = math.qbezierAt( pts[p0+1], pts[ic+1], pts[p1+1], 0.4999 );
+
+      bp1x = math.qbezierAt( pts[p0], pts[ic], pts[p1], 0.5 );
+      bp1y = math.qbezierAt( pts[p0+1], pts[ic+1], pts[p1+1], 0.5 );
+    }
+
+    dispX = -( bp1x - bp0x );
+    dispY = -( bp1y - bp0y );
   }
 
   rs.midtgtArrowAngle = getAngleFromDisp( dispX, dispY );
+
+  rs.midDispX = dispX;
+  rs.midDispY = dispY;
 
   // mid source
   //

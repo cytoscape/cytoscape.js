@@ -383,15 +383,15 @@ fn = elesfn = ({
         //////////////////////////////////////////
 
         if( styleEnabled ){
-          var bpts = rstyle.bezierPts || [];
+          var pts = rstyle.bezierPts || rstyle.linePts || [];
 
-          for( var j = 0; j < bpts.length; j++ ){
-            var bpt = bpts[j];
+          for( var j = 0; j < pts.length; j++ ){
+            var pt = pts[j];
 
-            ex1 = bpt.x - wHalf;
-            ex2 = bpt.x + wHalf;
-            ey1 = bpt.y - wHalf;
-            ey2 = bpt.y + wHalf;
+            ex1 = pt.x - wHalf;
+            ex2 = pt.x + wHalf;
+            ey1 = pt.y - wHalf;
+            ey2 = pt.y + wHalf;
 
             x1 = ex1 < x1 ? ex1 : x1;
             x2 = ex2 > x2 ? ex2 : x2;

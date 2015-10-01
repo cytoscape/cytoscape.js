@@ -514,18 +514,30 @@ function pushBezierPts(edge, pts){
   });
 }
 
-BRp.projectBezier = function( edge ){
+BRp.projectLines = function( edge ){
   var _p = edge._private;
   var rs = _p.rscratch;
+  var et = rs.edgeType;
 
-  if( rs.edgeType === 'multibezier' || rs.edgeType === 'bezier' || rs.edgeType === 'self' || rs.edgeType === 'compound' ){
+  if(  et === 'multibezier' ||  et === 'bezier' ||  et === 'self' ||  et === 'compound' ){
     var bpts = _p.rstyle.bezierPts = []; // jshint ignore:line
 
     for( var i = 0; i + 5 < rs.allpts.length; i += 4 ){
       pushBezierPts( edge, rs.allpts.slice(i, i+6) );
     }
+  } else if(  et === 'segments' ){
+    var lpts = _p.rstyle.linePts = [];
+
+    for( var i = 0; i + 1 < rs.allpts.length; i += 2 ){
+      lpts.push({
+        x: rs.allpts[i],
+        y: rs.allpts[i+1]
+      });
+    }
   }
 };
+
+BRp.projectBezier = BRp.projectLines;
 
 BRp.recalculateNodeLabelProjection = function( node ){
   var content = node._private.style['label'].strValue;
@@ -1373,8 +1385,6 @@ BRp.findEdgeControlPoints = function(edges) {
           rs.midY = math.qbezierAt( rs.allpts[m+1], rs.allpts[m+3], rs.allpts[m+5], mt );
         }
 
-        this.projectBezier( edge );
-
       } else if( rs.edgeType === 'straight' ){
         // need to calc these after endpts
         rs.allpts = [ rs.startX, rs.startY, rs.endX, rs.endY ];
@@ -1401,8 +1411,11 @@ BRp.findEdgeControlPoints = function(edges) {
           rs.midX = rs.segpts[i1];
           rs.midY = rs.segpts[i1+1];
         }
+
+
       }
 
+      this.projectLines( edge );
       this.calculateArrowAngles( edge );
       this.recalculateEdgeLabelProjection( edge );
 

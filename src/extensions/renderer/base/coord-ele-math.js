@@ -783,7 +783,7 @@ BRp.recalculateRenderedStyle = function( eles ){
       var positionsSame = srcSame && tgtSame;
 
       if( !positionsSame || !styleSame ){
-        if( rs.edgeType === 'bezier' || rs.edgeType === 'straight' ){
+        if( rs.edgeType === 'bezier' || rs.edgeType === 'straight' || rs.edgeType === 'self' || rs.edgeType === 'compound' ){
           if( !handledEdge[ id ] ){
             edges.push( ele );
             handledEdge[ id ] = true;

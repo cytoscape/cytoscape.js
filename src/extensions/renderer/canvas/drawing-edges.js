@@ -69,11 +69,7 @@ CRp.drawEdge = function(context, edge, drawOverlayInstead) {
     edgeWidth
   );
 
-  if( rs.edgeType === 'haystack' ){
-    this.drawArrowheads(context, edge, drawOverlayInstead);
-  } else if ( rs.noArrowPlacement !== true && rs.startX !== undefined ){
-    this.drawArrowheads(context, edge, drawOverlayInstead);
-  }
+  this.drawArrowheads(context, edge, drawOverlayInstead);
 
   this.shadowStyle(context, 'transparent', 0); // reset for next guy
 
@@ -179,7 +175,7 @@ CRp.drawArrowheads = function(context, edge, drawOverlayInstead) {
 };
 
 CRp.drawArrowhead = function( context, edge, prefix, x, y, angle ){
-  if( isNaN(x) || isNaN(y) || isNaN(angle) ){ return; }
+  if( isNaN(x) || x == null || isNaN(y) || y == null || isNaN(angle) || angle == null ){ return; }
 
   var self = this;
   var style = edge._private.style;

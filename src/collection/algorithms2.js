@@ -748,7 +748,7 @@ var elesfn = ({
 
     // dampingFactor - optional
     if (options != null &&
-      options.dampingfactor != null) {
+      options.dampingFactor != null) {
       var dampingFactor = options.dampingFactor;
     } else {
       var dampingFactor = 0.8; // Default damping factor

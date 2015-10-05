@@ -148,7 +148,7 @@ These properties affect the style of a node's body:
  * **`width`** : The width of the node's body.  This property can take on the special value `label` so the width is automatically based on the node's label.
  * **`height`** : The height of the node's body.  This property can take on the special value `label` so the height is automatically based on the node's label.
  * **`shape`** : The shape of the node's body; may be `rectangle`, `roundrectangle`, `ellipse`, `triangle`, `pentagon`, `hexagon`, `heptagon`, `octagon`, `star`, `diamond`, `vee`, `rhomboid`, or `polygon` (custom polygon specified via `shape-polygon-points`).  Note that each shape fits within the specified `width` and `height`, and so you may have to adjust `width` and `height` if you desire an equilateral shape (i.e. `width !== height` for several equilateral shapes).
- * **`shape-polygon-points`** : A comma-separated list of numbers ranging on [-1, 1], representing alternating x and y values (i.e. `x1, y1,   x2, y2,   x3, y3 ...`).  This represents the points in the polygon for the node's shape.  The bounding box of the node is given by (-1, -1), (1, -1), (1, 1), (-1, 1).
+ * **`shape-polygon-points`** : A space-separated list of numbers ranging on [-1, 1], representing alternating x and y values (i.e. `x1 y1   x2 y2,   x3 y3 ...`).  This represents the points in the polygon for the node's shape.  The bounding box of the node is given by (-1, -1), (1, -1), (1, 1), (-1, 1).
  * **`background-color`** : The colour of the node's body.
  * **`background-blacken`** : Blackens the node's body for values from 0 to 1; whitens the node's body for values from 0 to -1.
  * **`background-opacity`** : The opacity level of the node's background colour.
@@ -204,14 +204,41 @@ You may find it useful to reserve a number to a particular colour for all nodes 
 These properties affect the styling of an edge's line:
 
  * **`width`** : The width of an edge's line.
- * **`curve-style`** : The curving method used to separate two or more edges between two nodes; may be `bezier` (default, bundled curved edges), `unbundled-bezier` (curved edges for use with manual control points), or `haystack` (very fast, bundled straight edges for which loops are unsupported).  Note that `haystack` edges work best with `ellipse`, `rectangle`, or similar nodes.  Smaller node shapes, like `triangle`, will not be as aesthetically pleasing.  Also note that edge arrows are unsupported for `haystack` edges.
- * **`haystack-radius`** : A value between 0 and 1 inclusive that indicates the relative radius used to position haystack edges on their connected nodes.  The outside of the node is at 1, and the centre of the node is at 0.
- * **`control-point-step-size`** : From the line perpendicular from source to target, this value specifies the distance between successive bezier edges.
- * **`control-point-distance`** : Overrides `control-point-step-size` with a manual value.  Because it overrides the step size, bezier edges with the same value will overlap.  Thus, it's best to use this as a one-off value for particular edges if need be.
- * **`control-point-weight`** : Weights control points along the line from source to target.  This value ranges on [0, 1], with 0 towards the source node and 1 towards the target node.
+ * **`curve-style`** : The curving method used to separate two or more edges between two nodes; may be [`bezier`](#style/bezier-edges) (default, bundled curved edges), [`unbundled-bezier`](#style/unbundled-bezier-edges) (curved edges for use with manual control points), [`haystack`](#style/haystack-edges) (very fast, bundled straight edges for which loops are unsupported), or [`segments`](#style/segments-edges) (a series of straight lines).  Note that `haystack` edges work best with `ellipse`, `rectangle`, or similar nodes.  Smaller node shapes, like `triangle`, will not be as aesthetically pleasing.  Also note that edge arrows are unsupported for `haystack` edges.
  * **`line-color`** : The colour of the edge's line.
  * **`line-style`** : The style of the edge's line; may be `solid`, `dotted`, or `dashed`.
 
+
+## Bezier edges
+
+For automatic, bundled bezier edges (`curve-style: bezier`):
+
+ * **`control-point-step-size`** : From the line perpendicular from source to target, this value specifies the distance between successive bezier edges.
+ * **`control-point-distances`** : A single value that overrides `control-point-step-size` with a manual value.  Because it overrides the step size, bezier edges with the same value will overlap.  Thus, it's best to use this as a one-off value for particular edges if need be.
+ * **`control-point-weights`** : A single value that weights control points along the line from source to target.  The value usually ranges on [0, 1], with 0 towards the source node and 1 towards the target node &mdash; but larger or smaller values can also be used.
+
+
+## Unbundled bezier edges
+
+For bezier edges with manual control points (`curve-style: unbundled-bezier`):
+
+* **`control-point-distances`** : A series of values that specify for each control point the distance perpendicular to a line formed from source to target, e.g. `-20 20 -20`.
+* **`control-point-weights`** : A series of values that weights control points along a line from source to target, e.g. `0.25 0.5 0.75`.  A value usually ranges on [0, 1], with 0 towards the source node and 1 towards the target node &mdash; but larger or smaller values can also be used.
+
+
+## Haystack edges
+
+For fast, straight line edges (`curve-style: haystack`):
+
+* **`haystack-radius`** : A value between 0 and 1 inclusive that indicates the relative radius used to position haystack edges on their connected nodes.  The outside of the node is at 1, and the centre of the node is at 0.
+
+
+## Segments edges
+
+For edges made of several straight lines (`curve-style: segments`):
+
+* **`segment-distances`** : A series of values that specify for each segment point the distance perpendicular to a line formed from source to target, e.g. `-20 20 -20`.
+* **`segment-weights`** : A series of values that weights segment points along a line from source to target, e.g. `0.25 0.5 0.75`.  A value usually ranges on [0, 1], with 0 towards the source node and 1 towards the target node &mdash; but larger or smaller values can also be used.
 
 
 ## Edge arrow

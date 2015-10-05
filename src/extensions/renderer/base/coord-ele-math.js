@@ -1146,17 +1146,22 @@ BRp.findEdgeControlPoints = function(edges) {
           y: tgtPos.y - tgtH/2
         };
 
+        var loopPos = {
+          x: Math.min( loopaPos.x, loopbPos.x ),
+          y: Math.min( loopaPos.y, loopbPos.y )
+        };
+
         // avoids cases with impossible beziers
-        var minCompoundStretch = 1;
+        var minCompoundStretch = 0.5;
         var compoundStretchA = Math.max( minCompoundStretch, Math.log(srcW * 0.01) );
         var compoundStretchB = Math.max( minCompoundStretch, Math.log(tgtW * 0.01) );
 
         rs.ctrlpts = [
-          loopaPos.x,
-          loopaPos.y - (1 + Math.pow(loopW, 1.12) / 100) * loopDist * (j / 3 + 1) * compoundStretchA,
+          loopPos.x,
+          loopPos.y - (1 + Math.pow(loopW, 1.12) / 100) * loopDist * (j / 3 + 1) * compoundStretchA,
 
-          loopbPos.x - (1 + Math.pow(loopW, 1.12) / 100) * loopDist * (j / 3 + 1) * compoundStretchB,
-          loopbPos.y
+          loopPos.x - (1 + Math.pow(loopW, 1.12) / 100) * loopDist * (j / 3 + 1) * compoundStretchB,
+          loopPos.y
         ];
 
       } else if( curveStyle === 'segments' ){
@@ -1567,7 +1572,7 @@ BRp.calculateArrowAngles = function( edge ){
       dispX = ( pts[i2] - pts[i1] );
       dispY = ( pts[i2+1] - pts[i1+1] );
     }
-  } else if( rs.edgeType === 'multibezier' ){
+  } else if( rs.edgeType === 'multibezier' || rs.edgeType === 'compound' ){
     var pts = rs.allpts;
     var cpts = rs.ctrlpts;
     var bp0x, bp0y;

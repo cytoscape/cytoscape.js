@@ -166,35 +166,34 @@ BRp.findNearestElement = function(x, y, visibleElementsOnly, isTouch){
 
     // if we're close to the edge but didn't hit it, maybe we hit its arrows
     if( inEdgeBB && passesVisibilityCheck() && near.length === 0 || near[near.length - 1] !== edge ){
-      var srcShape = r.arrowShapes[ style['source-arrow-shape'].value ];
-      var tgtShape = r.arrowShapes[ style['target-arrow-shape'].value ];
-
       var src = src || _p.source;
       var tgt = tgt || _p.target;
 
       var tgtPos = tgt._private.position;
       var srcPos = src._private.position;
 
-      var srcArW = self.getArrowWidth( style['width'].pfValue );
-      var srcArH = self.getArrowHeight( style['width'].pfValue );
+      var eWidth = style['width'].pfValue;
+      var arSize = self.getArrowWidth( eWidth );
 
-      var tgtArW = srcArW;
-      var tgtArH = srcArH;
+      var arrows = [
+        { name: 'source', x: rs.arrowStartX, y: rs.arrowStartY, angle: rs.srcArrowAngle },
+        { name: 'target', x: rs.arrowEndX, y: rs.arrowEndY, angle: rs.tgtArrowAngle },
+        { name: 'mid-source', x: rs.midX, y: rs.midY, angle: rs.midsrcArrowAngle },
+        { name: 'mid-target', x: rs.midX, y: rs.midY, angle: rs.midtgtArrowAngle }
+      ];
 
-      if(
-        (
-          srcShape.roughCollide(x, y, rs.arrowStartX, rs.arrowStartY, srcArW, srcArH, [rs.arrowStartX - srcPos.x, rs.arrowStartY - srcPos.y], edgeThreshold)
-            &&
-          srcShape.collide(x, y, rs.arrowStartX, rs.arrowStartY, srcArW, srcArH, [rs.arrowStartX - srcPos.x, rs.arrowStartY - srcPos.y], edgeThreshold)
-        )
-          ||
-        (
-          tgtShape.roughCollide(x, y, rs.arrowEndX, rs.arrowEndY, tgtArW, tgtArH, [rs.arrowEndX - tgtPos.x, rs.arrowEndY - tgtPos.y], edgeThreshold)
-            &&
-          tgtShape.collide(x, y, rs.arrowEndX, rs.arrowEndY, tgtArW, tgtArH, [rs.arrowEndX - tgtPos.x, rs.arrowEndY - tgtPos.y], edgeThreshold)
-        )
-      ){
-        near.push( edge );
+      for( var i = 0; i < arrows.length; i++ ){
+        var ar = arrows[i];
+        var shape = r.arrowShapes[ style[ar.name+'-arrow-shape'].value ];
+
+        if(
+          shape.roughCollide(x, y, arSize, ar.angle, { x: ar.x, y: ar.y }, edgeThreshold)
+           &&
+          shape.collide(x, y, arSize, ar.angle, { x: ar.x, y: ar.y }, edgeThreshold)
+        ){
+          near.push( edge );
+          break;
+        }
       }
     }
 
@@ -1490,16 +1489,7 @@ BRp.findEdgeControlPoints = function(edges) {
 };
 
 var getAngleFromDisp = function( dispX, dispY ){
-  // Negative of the angle
-  var angle = Math.asin(dispY / (Math.sqrt(dispX * dispX + dispY * dispY)));
-
-  if (dispX < 0) {
-    angle = angle + Math.PI / 2;
-  } else {
-    angle = - (Math.PI / 2 + angle);
-  }
-
-  return angle;
+  return Math.atan2( dispY, dispX ) - Math.PI/2;
 };
 
 BRp.calculateArrowAngles = function( edge ){
@@ -1533,8 +1523,8 @@ BRp.calculateArrowAngles = function( edge ){
   // source
   //
 
-  dispX = startX - srcPos.x;
-  dispY = startY - srcPos.y;
+  dispX = srcPos.x - startX;
+  dispY = srcPos.y - startY;
 
   rs.srcArrowAngle = getAngleFromDisp( dispX, dispY );
 
@@ -1549,12 +1539,12 @@ BRp.calculateArrowAngles = function( edge ){
     midY = ( startY + endY )/2;
   }
 
-  dispX = startX - endX;
-  dispY = startY - endY;
+  dispX = endX - startX;
+  dispY = endY - startY;
 
   if( rs.edgeType === 'self' ){
-    dispX = 1;
-    dispY = -1;
+    dispX = -1;
+    dispY = 1;
   } else if( rs.edgeType === 'segments' ){
     var pts = rs.allpts;
 
@@ -1562,15 +1552,15 @@ BRp.calculateArrowAngles = function( edge ){
       var i2 = pts.length / 2;
       var i1 = i2 - 2;
 
-      dispX = -( pts[i2] - pts[i1] );
-      dispY = -( pts[i2+1] - pts[i1+1] );
+      dispX = ( pts[i2] - pts[i1] );
+      dispY = ( pts[i2+1] - pts[i1+1] );
     } else {
       var i2 = pts.length / 2 - 1;
       var i1 = i2 - 2;
       var i3 = i2 + 2;
 
-      dispX = ( pts[i2] - pts[i1] );
-      dispY = ( pts[i2+1] - pts[i1+1] );
+      dispX = -( pts[i2] - pts[i1] );
+      dispY = -( pts[i2+1] - pts[i1+1] );
     }
   } else if( rs.edgeType === 'multibezier' || rs.edgeType === 'compound' ){
     var pts = rs.allpts;
@@ -1600,8 +1590,8 @@ BRp.calculateArrowAngles = function( edge ){
       bp1y = math.qbezierAt( pts[p0+1], pts[ic+1], pts[p1+1], 0.5 );
     }
 
-    dispX = -( bp1x - bp0x );
-    dispY = -( bp1y - bp0y );
+    dispX = ( bp1x - bp0x );
+    dispY = ( bp1y - bp0y );
   }
 
   rs.midtgtArrowAngle = getAngleFromDisp( dispX, dispY );
@@ -1625,8 +1615,8 @@ BRp.calculateArrowAngles = function( edge ){
       var i1 = i2 - 2;
       var i3 = i2 + 2;
 
-      dispX = -( pts[i3] - pts[i2] );
-      dispY = -( pts[i3+1] - pts[i2+1] );
+      dispX = ( pts[i3] - pts[i2] );
+      dispY = ( pts[i3+1] - pts[i2+1] );
     }
   }
 
@@ -1635,8 +1625,8 @@ BRp.calculateArrowAngles = function( edge ){
   // target
   //
 
-  dispX = endX - tgtPos.x;
-  dispY = endY - tgtPos.y;
+  dispX = tgtPos.x - endX;
+  dispY = tgtPos.y - endY;
 
   rs.tgtArrowAngle = getAngleFromDisp( dispX, dispY );
 };

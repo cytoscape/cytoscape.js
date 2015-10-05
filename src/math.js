@@ -560,12 +560,18 @@ math.pointInsidePolygon = function(
   var transformedPoints = new Array(basePoints.length);
 
   // Gives negative angle
-  var angle = Math.atan(direction[1] / direction[0]);
+  var angle;
 
-  if (direction[0] < 0) {
-    angle = angle + Math.PI / 2;
+  if( direction[0] != null ){
+    angle = Math.atan(direction[1] / direction[0]);
+
+    if (direction[0] < 0) {
+      angle = angle + Math.PI / 2;
+    } else {
+      angle = -angle - Math.PI / 2;
+    }
   } else {
-    angle = -angle - Math.PI / 2;
+    angle = direction;
   }
 
   var cos = Math.cos(-angle);

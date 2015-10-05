@@ -24,18 +24,18 @@ BRp.registerArrowShapes = function(){
   // spacing: dist(arrowTip, nodeBoundary)
   // gap: dist(edgeTip, nodeBoundary), edgeTip may != arrowTip
 
-  var bbCollide = function( x, y, centerX, centerY, width, height, direction, padding ){
-    var x1 = centerX - width/2;
-    var x2 = centerX + width/2;
-    var y1 = centerY - height/2;
-    var y2 = centerY + height/2;
+  var bbCollide = function( x, y, size, angle, translation, padding ){
+    var x1 = translation.x - size/2 - padding;
+    var x2 = translation.x + size/2 + padding;
+    var y1 = translation.y - size/2 - padding;
+    var y2 = translation.y + size/2 + padding;
 
-    return (x1 <= x && x <= x2) && (y1 <= y && y <= y2);
+    var inside = (x1 <= x && x <= x2) && (y1 <= y && y <= y2);
+
+    return inside;
   };
 
   var transform = function( x, y, size, angle, translation ){
-    angle = -angle; // b/c of notation used in arrow draw fn
-
     var xRotated = x * Math.cos(angle) - y * Math.sin(angle);
     var yRotated = x * Math.sin(angle) + y * Math.cos(angle);
 
@@ -64,6 +64,18 @@ BRp.registerArrowShapes = function(){
     return retPts;
   };
 
+  var pointsToArr = function( pts ){
+    var ret = [];
+
+    for( var i = 0; i < pts.length; i++ ){
+      var p = pts[i];
+
+      ret.push( p.x, p.y );
+    }
+
+    return ret;
+  };
+
   var defineArrowShape = function( name, defn ){
     if( is.string(defn) ){
       defn = arrowShapes[ defn ];
@@ -79,9 +91,11 @@ BRp.registerArrowShapes = function(){
         -0.15, 0.3
       ],
 
-      collide: function( x, y, centerX, centerY, width, height, direction, padding ){
-        return math.pointInsidePolygon(
-          x, y, this.points, centerX, centerY, width, height, direction, padding);
+      collide: function( x, y, size, angle, translation, padding ){
+        var points = pointsToArr( transformPoints( this.points, size + 2*padding, angle, translation ) );
+        var inside = math.pointInsidePolygonPoints( x, y, points );
+
+        return inside;
       },
 
       roughCollide: bbCollide,
@@ -160,12 +174,11 @@ BRp.registerArrowShapes = function(){
       0.15, -0.4
     ],
 
-    collide: function( x, y, centerX, centerY, width, height, direction, padding ){
-      var triPts = this.points;
-      var teePts = this.pointsTee;
+    collide: function( x, y, size, angle, translation, padding ){
+      var triPts = pointsToArr( transformPoints( this.points, size + 2*padding, angle, translation ) );
+      var teePts = pointsToArr( transformPoints( this.pointsTee, size + 2*padding, angle, translation ) );
 
-      var inside = math.pointInsidePolygon(x, y, teePts, centerX, centerY, width, height, direction, padding)
-        || math.pointInsidePolygon(x, y, triPts, centerX, centerY, width, height, direction, padding);
+      var inside = math.pointInsidePolygonPoints( x, y, triPts ) || math.pointInsidePolygonPoints( x, y, teePts );
 
       return inside;
     },
@@ -206,22 +219,11 @@ BRp.registerArrowShapes = function(){
   defineArrowShape( 'circle', {
     radius: 0.15,
 
-    collide: function( x, y, centerX, centerY, width, height, direction, padding ){
-      // Transform x, y to get non-rotated ellipse
+    collide: function( x, y, size, angle, translation, padding ){
+      var t = translation;
+      var inside = ( Math.pow(t.x - x, 2) + Math.pow(t.y - y, 2) <= Math.pow((size + 2*padding) * this.radius, 2) );
 
-      if (width != height ){
-        var aspectRatio = (height + padding) / (width + padding);
-        y /= aspectRatio;
-        centerY /= aspectRatio;
-
-        return (Math.pow(centerX - x, 2)
-          + Math.pow(centerY - y, 2) <= Math.pow((width + padding)
-            * this.radius, 2));
-      } else {
-        return (Math.pow(centerX - x, 2)
-          + Math.pow(centerY - y, 2) <= Math.pow((width + padding)
-            * this.radius, 2));
-      }
+      return inside;
     },
 
     draw: function( context, size, angle, translation ){

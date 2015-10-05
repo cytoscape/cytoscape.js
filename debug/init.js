@@ -25,6 +25,8 @@ $(function(){
           'background-color': '#DDD',
           'border-color': '#555',
           'shape': 'ellipse',
+          // 'shape': 'polygon',
+          // 'shape-polygon-points': [ 0, -1,   1, 1,   -1, 1 ],
           //'shape': 'data(shape)',
           'width': 'mapData(weight, 0, 100, 15, 50)',
           'height': 'mapData(weight, 0, 100, 15, 50)',

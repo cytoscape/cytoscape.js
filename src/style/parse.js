@@ -188,6 +188,8 @@ var parseImpl = function( name, value, propIsBypass, propIsFlat ){
       vals = [ value ];
     }
 
+    if( type.evenMultiple && vals.length % 2 !== 0 ){ return null; };
+
     var valArr = vals.map(function( v ){
       var p = self.parse( name, v, propIsBypass, true );
 
@@ -204,7 +206,7 @@ var parseImpl = function( name, value, propIsBypass, propIsFlat ){
       pfValue: valArr,
       strValue: valArr.join(' '),
       bypass: propIsBypass,
-      units: type.number ? type.implicitUnits || 'px' : undefined
+      units: type.number && !type.unitless ? type.implicitUnits || 'px' : undefined
     };
   }
 
@@ -335,33 +337,6 @@ var parseImpl = function( name, value, propIsBypass, propIsFlat ){
       name: name,
       value: props,
       strValue: props.length === 0 ? 'none' : props.join(', '),
-      bypass: propIsBypass
-    };
-
-  } else if( type.numberList ){
-    var nums = value.split(',');
-    var parsedNums = [];
-
-    if( type.evenNumberList && nums.length % 2 !== 0 ){
-      return null;
-    }
-
-    for( var i = 0; i < nums.length; i++ ){
-      var num = parseFloat( nums[i].trim() );
-
-      if( isNaN(num) ){ return null; }
-
-      if( type.min !== undefined && num < type.min ){ return null; }
-
-      if( type.max !== undefined && num > type.max ){ return null; }
-
-      parsedNums.push( num );
-    }
-
-    return {
-      name: name,
-      value: parsedNums,
-      strValue: parsedNums.join(', '),
       bypass: propIsBypass
     };
 

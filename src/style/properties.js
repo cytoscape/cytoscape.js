@@ -67,7 +67,7 @@ var styfn = {};
     propList: { propList: true },
     angle: { number: true, units: 'deg|rad', implicitUnits: 'rad' },
     textRotation: { enums: ['none', 'autorotate'] },
-    polygonPointList: { numberList: true, evenNumberList: true, min: -1, max: 1 },
+    polygonPointList: { number: true, multiple: true, evenMultiple: true, min: -1, max: 1, unitless: true },
     easing: {
       regexes: [
         '^(spring)\\s*\\(\\s*(' + number + ')\\s*,\\s*(' + number + ')\\s*\\)$',

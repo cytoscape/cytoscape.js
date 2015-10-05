@@ -26,7 +26,7 @@ var defaults = {
   animate             : true,
 
   // Number of iterations between consecutive screen positions update (0 -> only updated on the end)
-  refresh             : 1,
+  refresh             : 5,
 
   // Whether to fit the network view after when done
   fit                 : true,
@@ -135,16 +135,28 @@ CoseLayout.prototype.run = function() {
     randomizePositions(layoutInfo, cy);
   }
 
-  updatePositions(layoutInfo, options);
-
+  var refreshRequested = false;
   var refresh = function(){
-    refreshPositions(layoutInfo, cy, options);
-
-    // Fit the graph if necessary
-    if (true === options.fit) {
-      cy.fit( options.padding );
+    if( refreshRequested ){
+      return;
     }
+
+    refreshRequested = true;
+
+    util.requestAnimationFrame(function(){
+      refreshPositions(layoutInfo, cy, options);
+
+      // Fit the graph if necessary
+      if (true === options.fit) {
+        cy.fit( options.padding );
+      }
+
+      refreshRequested = false;
+    });
   };
+
+  updatePositions(layoutInfo, options);
+  refresh();
 
   thread.on('message', function( e ){
     var layoutNodes = e.message;

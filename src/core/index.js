@@ -5,6 +5,7 @@ var util = require('../util');
 var Collection = require('../collection');
 var is = require('../is');
 var Promise = require('../promise');
+var define = require('../define');
 
 var Core = function( opts ){
   if( !(this instanceof Core) ){
@@ -424,7 +425,25 @@ util.extend(corefn, {
 
       return json;
     }
-  }
+  },
+
+  scratch: define.data({
+    field: 'scratch',
+    bindingEvent: 'scratch',
+    allowBinding: true,
+    allowSetting: true,
+    settingEvent: 'scratch',
+    settingTriggersEvent: true,
+    triggerFnName: 'trigger',
+    allowGetting: true
+  }),
+
+  removeScratch: define.removeData({
+    field: 'scratch',
+    event: 'scratch',
+    triggerFnName: 'trigger',
+    triggerEvent: true
+  })
 
 });
 

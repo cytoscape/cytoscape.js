@@ -237,7 +237,7 @@ button:active {
 	display: inline-block;
 	width: 11.5em;
 	font: inherit;
-	font-family: Helvetica Neue, Helvetica, Adobe Helvetica, DejaVu Sans, Arial, sans-serif, FontAwesome;
+	font-family: FontAwesome, Helvetica Neue, Helvetica, Adobe Helvetica, DejaVu Sans, Arial, sans-serif;
 	border: 0;
 	padding: 0;
 	margin: 0;

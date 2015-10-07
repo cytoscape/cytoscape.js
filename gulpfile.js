@@ -503,11 +503,11 @@ gulp.task('docsdemodl', function(){
       return 'https://gist.github.com/' + d.id + '/download';
     });
   }).reduce(function(prevDs, currDs){
-    return prevDs.$.concat( currDs );
+    return prevDs.concat( currDs );
   }, []);
 
   return $.download( demos )
-    .pipe( un$.zip() )
+    .pipe( $.unzip() )
 
     .pipe( $.rename(function( path ){
       // console.log(path)

@@ -1,6 +1,5 @@
 'use strict';
 
-var extension = require('../extension');
 var util = require('../util');
 
 var corefn = ({
@@ -37,7 +36,7 @@ var corefn = ({
   initRenderer: function( options ){
     var cy = this;
 
-    var RendererProto = extension('renderer', options.name);
+    var RendererProto = cy.extension('renderer', options.name);
     if( RendererProto == null ){
       util.error('Can not initialise: No such renderer `%s` found; did you include its JS file?', options.name);
       return;

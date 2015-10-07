@@ -2,8 +2,8 @@
 
 var util = require('./util');
 var define = require('./define');
-var Core = require('./core');
 var Collection = require('./collection');
+var Core = require('./core');
 var incExts = require('./extensions');
 var is = require('./is');
 
@@ -17,17 +17,15 @@ function setExtension( type, name, registrant ){
 
   var ext = registrant;
 
-  switch( type ){
-  case 'core':
+  if( type === 'core' ){
     Core.prototype[ name ] = registrant;
-    break;
-  case 'collection':
-    Collection.prototype[ name ] = registrant;
-    break;
-  }
 
-  // fill in missing layout functions in the prototype
-  if( type === 'layout' ){
+  } else if( type === 'collection' ){
+    Collection.prototype[ name ] = registrant;
+
+  } else if( type === 'layout' ){
+    // fill in missing layout functions in the prototype
+
     var Layout = function( options ){
       this.options = options;
 
@@ -90,8 +88,9 @@ function setExtension( type, name, registrant ){
 
     ext = Layout; // replace with our wrapped layout
 
-  // user registered renderers inherit from base
   } else if( type === 'renderer' && name !== 'null' && name !== 'base' ){
+    // user registered renderers inherit from base
+
     var bProto = getExtension( 'renderer', 'base' ).prototype;
     var rProto = registrant.prototype;
 
@@ -146,23 +145,23 @@ function getModule(type, name, moduleType, moduleName){
 
 var extension = function(){
   // e.g. extension('renderer', 'svg')
-  if( arguments.length == 2 ){
-    return getExtension.apply(this, arguments);
+  if( arguments.length === 2 ){
+    return getExtension.apply(null, arguments);
   }
 
   // e.g. extension('renderer', 'svg', { ... })
-  else if( arguments.length == 3 ){
-    return setExtension.apply(this, arguments);
+  else if( arguments.length === 3 ){
+    return setExtension.apply(null, arguments);
   }
 
   // e.g. extension('renderer', 'svg', 'nodeShape', 'ellipse')
-  else if( arguments.length == 4 ){
-    return getModule.apply(this, arguments);
+  else if( arguments.length === 4 ){
+    return getModule.apply(null, arguments);
   }
 
   // e.g. extension('renderer', 'svg', 'nodeShape', 'ellipse', { ... })
-  else if( arguments.length == 5 ){
-    return setModule.apply(this, arguments);
+  else if( arguments.length === 5 ){
+    return setModule.apply(null, arguments);
   }
 
   else {
@@ -170,6 +169,9 @@ var extension = function(){
   }
 
 };
+
+// allows a core instance to access extensions internally
+Core.prototype.extension = extension;
 
 // included extensions
 incExts.forEach(function( group ){

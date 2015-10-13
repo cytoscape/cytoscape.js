@@ -124,8 +124,9 @@ var Selector = function( onlyThisGroup, selector ){
     // - the current query is stored in self[i] --- you can use the reference to `this` in the populate function;
     // - you need to check the query objects in Selector.filter() for it actually filter properly, but that's pretty straight forward
     // - when you add something here, also add to Selector.toString()
-    var exprs = {
-      group: {
+    var exprs = [
+      {
+        name: 'group',
         query: true,
         regex: '(node|edge|\\*)',
         populate: function( group ){
@@ -133,7 +134,8 @@ var Selector = function( onlyThisGroup, selector ){
         }
       },
 
-      state: {
+      {
+        name: 'state',
         query: true,
         // NB: if one colon selector is a substring of another from its start, place the longer one first
         // e.g. :foobar|:foo
@@ -143,7 +145,8 @@ var Selector = function( onlyThisGroup, selector ){
         }
       },
 
-      id: {
+      {
+        name: 'id',
         query: true,
         regex: '\\#('+ tokens.id +')',
         populate: function( id ){
@@ -151,7 +154,8 @@ var Selector = function( onlyThisGroup, selector ){
         }
       },
 
-      className: {
+      {
+        name: 'className',
         query: true,
         regex: '\\.('+ tokens.className +')',
         populate: function( className ){
@@ -159,7 +163,8 @@ var Selector = function( onlyThisGroup, selector ){
         }
       },
 
-      dataExists: {
+      {
+        name: 'dataExists',
         query: true,
         regex: '\\[\\s*('+ tokens.variable +')\\s*\\]',
         populate: function( variable ){
@@ -169,7 +174,8 @@ var Selector = function( onlyThisGroup, selector ){
         }
       },
 
-      dataCompare: {
+      {
+        name: 'dataCompare',
         query: true,
         regex: '\\[\\s*('+ tokens.variable +')\\s*('+ tokens.comparatorOp +')\\s*('+ tokens.value +')\\s*\\]',
         populate: function( variable, comparatorOp, value ){
@@ -189,7 +195,8 @@ var Selector = function( onlyThisGroup, selector ){
         }
       },
 
-      dataBool: {
+      {
+        name: 'dataBool',
         query: true,
         regex: '\\[\\s*('+ tokens.boolOp +')\\s*('+ tokens.variable +')\\s*\\]',
         populate: function( boolOp, variable ){
@@ -200,7 +207,8 @@ var Selector = function( onlyThisGroup, selector ){
         }
       },
 
-      metaCompare: {
+      {
+        name: 'metaCompare',
         query: true,
         regex: '\\[\\[\\s*('+ tokens.meta +')\\s*('+ tokens.comparatorOp +')\\s*('+ tokens.number +')\\s*\\]\\]',
         populate: function( meta, comparatorOp, number ){
@@ -212,7 +220,8 @@ var Selector = function( onlyThisGroup, selector ){
         }
       },
 
-      nextQuery: {
+      {
+        name: 'nextQuery',
         separator: true,
         regex: tokens.separator,
         populate: function(){
@@ -222,7 +231,8 @@ var Selector = function( onlyThisGroup, selector ){
         }
       },
 
-      child: {
+      {
+        name: 'child',
         separator: true,
         regex: tokens.child,
         populate: function(){
@@ -236,7 +246,8 @@ var Selector = function( onlyThisGroup, selector ){
         }
       },
 
-      descendant: {
+      {
+        name: 'descendant',
         separator: true,
         regex: tokens.descendant,
         populate: function(){
@@ -250,7 +261,8 @@ var Selector = function( onlyThisGroup, selector ){
         }
       },
 
-      subject: {
+      {
+        name: 'subject',
         modifier: true,
         regex: tokens.subject,
         populate: function(){
@@ -264,16 +276,7 @@ var Selector = function( onlyThisGroup, selector ){
         }
 
       }
-    };
-
-    var j = 0;
-    for( var name in exprs ){
-      exprs[j] = exprs[name];
-      exprs[j].name = name;
-
-      j++;
-    }
-    exprs.length = j;
+    ];
 
     self._private.selectorText = selector;
     var remaining = selector;

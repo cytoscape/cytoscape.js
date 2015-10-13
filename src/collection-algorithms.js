@@ -1,24 +1,19 @@
 ;(function($$){ 'use strict';
 
-  // search, spanning trees, etc
-  $$.fn.eles({
+  var is = $$.is;
 
-    // std functional ele first callback style
-    stdBreadthFirstSearch: function( options ){
-      options = $$.util.extend( {}, options, {
-        std: true
-      } );
+  var defineSearch = function( params ){
+    params = {
+      bfs: params.bfs || !params.dfs,
+      dfs: params.dfs || !params.bfs
+    };
 
-      return this.breadthFirstSearch( options );
-    },
-
-    // do a breadth first search from the nodes in the collection
     // from pseudocode on wikipedia
-    breadthFirstSearch: function( roots, fn, directed ){
+    return function searchFn( roots, fn, directed ){
       var options;
       var std;
       var thisArg;
-      if( $$.is.plainObject(roots) && !$$.is.elementOrCollection(roots) ){
+      if( is.plainObject(roots) && !is.elementOrCollection(roots) ){
         options = roots;
         roots = options.roots;
         fn = options.visit;
@@ -27,11 +22,11 @@
         thisArg = options.thisArg;
       }
 
-      directed = arguments.length === 2 && !$$.is.fn(fn) ? fn : directed;
-      fn = $$.is.fn(fn) ? fn : function(){};
+      directed = arguments.length === 2 && !is.fn(fn) ? fn : directed;
+      fn = is.fn(fn) ? fn : function(){};
 
       var cy = this._private.cy;
-      var v = $$.is.string(roots) ? this.filter(roots) : roots;
+      var v = roots = is.string(roots) ? this.filter(roots) : roots;
       var Q = [];
       var connectedNodes = [];
       var connectedBy = {};
@@ -46,15 +41,28 @@
       for( var i = 0; i < v.length; i++ ){
         if( v[i].isNode() ){
           Q.unshift( v[i] );
-          V[ v[i].id() ] = true;
 
-          connectedNodes.push( v[i] );
+          if( params.bfs ){
+            V[ v[i].id() ] = true;
+
+            connectedNodes.push( v[i] );
+          }
+
           id2depth[ v[i].id() ] = 0;
         }
       }
 
       while( Q.length !== 0 ){
-        var v = Q.shift();
+        var v = params.bfs ? Q.shift() : Q.pop();
+
+        if( params.dfs ){
+          if( V[ v.id() ] ){ continue; }
+
+          V[ v.id() ] = true;
+
+          connectedNodes.push( v );
+        }
+
         var depth = id2depth[ v.id() ];
         var prevEdge = connectedBy[ v.id() ];
         var prevNode = prevEdge == null ? undefined : prevEdge.connectedNodes().not( v )[0];
@@ -84,128 +92,19 @@
             w = w[0];
 
             Q.push( w );
-            V[ w.id() ] = true;
 
-            id2depth[ w.id() ] = id2depth[ v.id() ] + 1;
-
-            connectedNodes.push( w );
-            connectedBy[ w.id() ] = e;
-          }
-        }
-
-      }
-
-      var connectedEles = [];
-
-      for( var i = 0; i < connectedNodes.length; i++ ){
-        var node = connectedNodes[i];
-        var edge = connectedBy[ node.id() ];
-
-        if( edge ){
-          connectedEles.push( edge );
-        }
-
-        connectedEles.push( node );
-      }
-
-      return {
-        path: new $$.Collection( cy, connectedEles, { unique: true } ),
-        found: new $$.Collection( cy, found, { unique: true } )
-      };
-    },
-
-    // std functional ele first callback style
-    stdDepthFirstSearch: function( options ){
-      options = $$.util.extend( {}, options, {
-        std: true
-      } );
-
-      return this.depthFirstSearch( options );
-    },
-
-    // do a depth first search on the nodes in the collection
-    // from pseudocode on wikipedia (iterative impl)
-    depthFirstSearch: function( roots, fn, directed ){
-      var options;
-      var std;
-      var thisArg;
-      if( $$.is.plainObject(roots) && !$$.is.elementOrCollection(roots) ){
-        options = roots;
-        roots = options.roots;
-        fn = options.visit;
-        directed = options.directed;
-        std = options.std;
-        thisArg = options.thisArg;
-      }
-
-      directed = arguments.length === 2 && !$$.is.fn(fn) ? fn : directed;
-      fn = $$.is.fn(fn) ? fn : function(){};
-      var cy = this._private.cy;
-      var v = $$.is.string(roots) ? this.filter(roots) : roots;
-      var S = [];
-      var connectedNodes = [];
-      var connectedBy = {};
-      var id2depth = {};
-      var discovered = {};
-      var j = 0;
-      var found;
-      var edges = this.edges();
-      var nodes = this.nodes();
-
-      // push v
-      for( var i = 0; i < v.length; i++ ){
-        if( v[i].isNode() ){
-          S.push( v[i] );
-
-          connectedNodes.push( v[i] );
-          id2depth[ v[i].id() ] = 0;
-        }
-      }
-
-      while( S.length !== 0 ){
-        var v = S.pop();
-
-        if( !discovered[ v.id() ] ){
-          discovered[ v.id() ] = true;
-
-          var depth = id2depth[ v.id() ];
-          var prevEdge = connectedBy[ v.id() ];
-          var prevNode = prevEdge == null ? undefined : prevEdge.connectedNodes().not( v )[0];
-          var ret;
-
-          if( std ){
-            ret = fn.call(thisArg, v, prevEdge, prevNode, j++, depth);
-          } else {
-            ret = fn.call(v, j++, depth, v, prevEdge, prevNode);
-          }
-
-          if( ret === true ){
-            found = v;
-            break;
-          }
-
-          if( ret === false ){
-            break;
-          }
-
-          var vwEdges = v.connectedEdges(directed ? function(){ return this.data('source') === v.id(); } : undefined).intersect( edges );
-
-          for( var i = 0; i < vwEdges.length; i++ ){
-            var e = vwEdges[i];
-            var w = e.connectedNodes(function(){ return this.id() !== v.id(); }).intersect( nodes );
-
-            if( w.length !== 0 && !discovered[ w.id() ] ){
-              w = w[0];
-
-              S.push( w );
-
-              id2depth[ w.id() ] = id2depth[ v.id() ] + 1;
+            if( params.bfs ){
+              V[ w.id() ] = true;
 
               connectedNodes.push( w );
-              connectedBy[ w.id() ] = e;
             }
+
+            connectedBy[ w.id() ] = e;
+
+            id2depth[ w.id() ] = id2depth[ v.id() ] + 1;
           }
         }
+
       }
 
       var connectedEles = [];
@@ -222,10 +121,17 @@
       }
 
       return {
-        path: new $$.Collection( cy, connectedEles, { unique: true } ),
-        found: new $$.Collection( cy, found, { unique: true } )
+        path: cy.collection( connectedEles, { unique: true } ),
+        found: cy.collection( found )
       };
-    },
+    };
+  };
+
+  // search, spanning trees, etc
+  $$.fn.eles({
+
+    breadthFirstSearch: defineSearch({ bfs: true }),
+    depthFirstSearch: defineSearch({ dfs: true }),
 
     // kruskal's algorithm (finds min spanning tree, assuming undirected graph)
     // implemented from pseudocode from wikipedia

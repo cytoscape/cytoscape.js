@@ -59,7 +59,7 @@ spm install cytoscape
 To install Cytoscape.js via Meteor/Atmosphere (in the terminal):
 
 ```bash
-meteor add maxkfranz:cytoscape
+meteor add cytoscape:cytoscape
 ```
 
 

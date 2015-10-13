@@ -365,7 +365,7 @@
       self.length = i + 1;
 
       // adjust references for subject
-      for(j = 0; j < self.length; j++){
+      for(var j = 0; j < self.length; j++){
         var query = self[j];
 
         if( query.subject != null ){

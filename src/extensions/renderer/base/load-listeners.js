@@ -965,10 +965,7 @@ BRp.load = function() {
 
   var touchstartHandler;
   r.registerBinding(r.container, 'touchstart', touchstartHandler = function(e) {
-
-    if( e.target !== r.data.link ){
-      e.preventDefault();
-    }
+    e.preventDefault();
 
     r.touchData.capture = true;
     r.data.bgActivePosistion = undefined;
@@ -1758,7 +1755,7 @@ BRp.load = function() {
 
   }, false);
 
-  // compatibility layer for ms pointer events
+  // fallback compatibility layer for ms pointer events
   if( typeof TouchEvent === 'undefined' ){
 
     var pointers = [];

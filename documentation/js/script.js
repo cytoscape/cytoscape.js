@@ -211,10 +211,29 @@ $(function(){
 
   });
 
+  var gp = function( type, category, action ){
+    return $.ajax({
+      url: 'http://webservice.baderlab.org/gp',
+      type: 'POST',
+      data: {
+        v: '1',
+        tid: 'UA-155159-11',
+        cid: 555,
+        t: type,
+        ec: category,
+        ea: action
+      }
+    });
+  };
+
+  gp('event', 'Actions', 'Pageview');
+
   $('#download-button').on('click', function(){
     if( _gaq ){
       _gaq.push(['_trackEvent', 'Actions', 'Download']);
     }
+
+    gp('event', 'Actions', 'Download');
   });
 
 });

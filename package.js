@@ -1,7 +1,7 @@
 var packageJson = JSON.parse(Npm.require("fs").readFileSync('package.json'));
 
 Package.describe({
-  name: 'maxkfranz:cytoscape',
+  name: 'cytoscape:cytoscape',
   version: packageJson.version,
   summary: packageJson.description,
   git: packageJson.repository.url,
@@ -18,7 +18,7 @@ Package.onUse(function(api) {
 });
 
 Package.onTest(function(api) {
-  api.use('maxkfranz:cytoscape');
+  api.use('cytoscape:cytoscape');
   api.use('tinytest');
   api.addFiles('test-meteor.js');
 });

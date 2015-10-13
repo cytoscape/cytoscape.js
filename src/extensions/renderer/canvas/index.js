@@ -44,12 +44,13 @@ function CanvasRenderer(options) {
   options.cy.container().appendChild( r.data.canvasContainer );
 
   for (var i = 0; i < CRp.CANVAS_LAYERS; i++) {
-    r.data.canvases[i] = document.createElement('canvas');
-    r.data.contexts[i] = r.data.canvases[i].getContext('2d');
-    r.data.canvases[i].style.position = 'absolute';
-    r.data.canvases[i].setAttribute('data-id', 'layer' + i);
-    r.data.canvases[i].style.zIndex = String(CRp.CANVAS_LAYERS - i);
-    r.data.canvasContainer.appendChild(r.data.canvases[i]);
+    var canvas = r.data.canvases[i] = document.createElement('canvas');
+    r.data.contexts[i] = canvas.getContext('2d');
+    canvas.setAttribute('style', '-ms-touch-action: none; touch-action: none;');
+    canvas.style.position = 'absolute';
+    canvas.setAttribute('data-id', 'layer' + i);
+    canvas.style.zIndex = String(CRp.CANVAS_LAYERS - i);
+    r.data.canvasContainer.appendChild(canvas);
 
     r.data.canvasNeedsRedraw[i] = false;
   }

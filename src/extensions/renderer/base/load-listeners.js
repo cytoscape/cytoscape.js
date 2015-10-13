@@ -1473,9 +1473,9 @@ BRp.load = function() {
 
       // check to cancel taphold
       for (var i=0;i<now.length;i++) {
-        if (now[i]
+        if( now[i]
           && r.touchData.startPosition[i]
-          && Math.abs(now[i] - r.touchData.startPosition[i]) > 4) {
+          && rdist2 > r.touchTapThreshold2 ){
 
           r.touchData.singleTouchMoved = true;
         }
@@ -1486,6 +1486,7 @@ BRp.load = function() {
           capture
           && ( start == null || start.isEdge() )
           && cy.panningEnabled() && cy.userPanningEnabled()
+          && rdist2 > r.touchTapThreshold2
       ){
 
         if( r.swipePanning ){

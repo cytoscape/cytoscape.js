@@ -409,7 +409,6 @@ var elesfn = ({
         var source = options.root[0];
       }
     } else {
-      util.error("options.root required");
       return undefined;
     }
 
@@ -480,7 +479,7 @@ var elesfn = ({
         var weight = weightFn.apply(edges[e], [edges[e]]);
 
         if (cost[sourceIndex] + weight < cost[targetIndex]) {
-          util.error("Error: graph contains a negative weigth cycle!");
+          util.error("Graph contains a negative weight cycle for Bellman-Ford");
           return { pathTo: undefined,
                distanceTo: undefined,
                hasNegativeWeightCycle: true};
@@ -647,7 +646,7 @@ var elesfn = ({
     var stopSize = Math.floor(numNodes / Math.sqrt(2));
 
     if (numNodes < 2) {
-      util.error("At least 2 nodes are required for KargerSteing algorithm!");
+      util.error("At least 2 nodes are required for Karger-Stein algorithm");
       return undefined;
     }
 
@@ -1142,7 +1141,6 @@ var elesfn = ({
         var root = options.root[0];
       }
     } else {
-      util.error("options.root required");
       return undefined;
     }
 

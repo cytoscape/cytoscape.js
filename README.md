@@ -1,5 +1,7 @@
 # Cytoscape.js
 
+Graph theory (a.k.a. network) library for analysis and visualisation : [http://js.cytoscape.org](http://js.cytoscape.org)
+
 
 
 ## Test status

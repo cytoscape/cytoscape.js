@@ -55,7 +55,7 @@
   var sin = {};
   var cos = {};
 
-  var ellipseStepSize = 0.1;
+  var ellipseStepSize = Math.PI / 40;
 
   for (var i = 0 * Math.PI; i < 2 * Math.PI; i += ellipseStepSize ) {
     sin[i] = Math.sin(i);
@@ -65,6 +65,9 @@
   CRp.drawEllipsePath = function(context, centerX, centerY, width, height){
     if( context.beginPath ){ context.beginPath(); }
 
+    if( context.ellipse ){
+      context.ellipse( centerX, centerY, width/2, height/2, 0, 0, 2*Math.PI );
+    } else {
       var xPos, yPos;
       var rw = width/2;
       var rh = height/2;
@@ -78,8 +81,9 @@
           context.lineTo(xPos, yPos);
         }
       }
+    }
 
-      context.closePath();
+    context.closePath();
   };
 
 module.exports = CRp;

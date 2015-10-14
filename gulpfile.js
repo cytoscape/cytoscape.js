@@ -87,7 +87,9 @@ var browserifyOpts = {
   builtins: [],
   bundleExternal: false,
   detectGlobals: false,
-  standalone: 'cytoscape'
+  standalone: 'cytoscape',
+  cache: {}, // for watchify
+  packageCache: {} // for watchify
 };
 
 var logError = function( err ){
@@ -644,7 +646,7 @@ gulp.task('watch', function(next){
     })
   ;
 
-  var b = watchify( browserify( browserifyOpts ) );
+  var b = watchify( browserify( browserifyOpts ), { poll: true } );
 
   var rebuild = function(){
     return b.bundle()

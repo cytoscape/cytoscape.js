@@ -1,5 +1,5 @@
 /*!
- * This file is part of Cytoscape.js 2.4.8.
+ * This file is part of Cytoscape.js 2.4.9.
  *
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -28,7 +28,7 @@ var cytoscape;
     return cytoscape.init.apply(cytoscape, arguments);
   };
 
-  $$.version = '2.4.8';
+  $$.version = '2.4.9';
 
   // allow functional access to cytoscape.js
   // e.g. var cyto = $.cytoscape({ selector: "#foo", ... });
@@ -4129,8 +4129,9 @@ this.cytoscape = cytoscape;
       // - the current query is stored in self[i] --- you can use the reference to `this` in the populate function;
       // - you need to check the query objects in Selector.filter() for it actually filter properly, but that's pretty straight forward
       // - when you add something here, also add to Selector.toString()
-      var exprs = {
-        group: {
+      var exprs = [
+        {
+          name: 'group',
           query: true,
           regex: '(node|edge|\\*)',
           populate: function( group ){
@@ -4138,7 +4139,8 @@ this.cytoscape = cytoscape;
           }
         },
 
-        state: {
+        {
+          name: 'state',
           query: true,
           // NB: if one colon selector is a substring of another from its start, place the longer one first
           // e.g. :foobar|:foo
@@ -4148,7 +4150,8 @@ this.cytoscape = cytoscape;
           }
         },
 
-        id: {
+        {
+          name: 'id',
           query: true,
           regex: '\\#('+ tokens.id +')',
           populate: function( id ){
@@ -4156,7 +4159,8 @@ this.cytoscape = cytoscape;
           }
         },
 
-        className: {
+        {
+          name: 'className',
           query: true,
           regex: '\\.('+ tokens.className +')',
           populate: function( className ){
@@ -4164,7 +4168,8 @@ this.cytoscape = cytoscape;
           }
         },
 
-        dataExists: {
+        {
+          name: 'dataExists',
           query: true,
           regex: '\\[\\s*('+ tokens.variable +')\\s*\\]',
           populate: function( variable ){
@@ -4174,7 +4179,8 @@ this.cytoscape = cytoscape;
           }
         },
 
-        dataCompare: {
+        {
+          name: 'dataCompare',
           query: true,
           regex: '\\[\\s*('+ tokens.variable +')\\s*('+ tokens.comparatorOp +')\\s*('+ tokens.value +')\\s*\\]',
           populate: function( variable, comparatorOp, value ){
@@ -4194,7 +4200,8 @@ this.cytoscape = cytoscape;
           }
         },
 
-        dataBool: {
+        {
+          name: 'dataBool',
           query: true,
           regex: '\\[\\s*('+ tokens.boolOp +')\\s*('+ tokens.variable +')\\s*\\]',
           populate: function( boolOp, variable ){
@@ -4205,7 +4212,8 @@ this.cytoscape = cytoscape;
           }
         },
 
-        metaCompare: {
+        {
+          name: 'metaCompare',
           query: true,
           regex: '\\[\\[\\s*('+ tokens.meta +')\\s*('+ tokens.comparatorOp +')\\s*('+ tokens.number +')\\s*\\]\\]',
           populate: function( meta, comparatorOp, number ){
@@ -4217,7 +4225,8 @@ this.cytoscape = cytoscape;
           }
         },
 
-        nextQuery: {
+        {
+          name: 'nextQuery',
           separator: true,
           regex: tokens.separator,
           populate: function(){
@@ -4227,7 +4236,8 @@ this.cytoscape = cytoscape;
           }
         },
 
-        child: {
+        {
+          name: 'child',
           separator: true,
           regex: tokens.child,
           populate: function(){
@@ -4241,7 +4251,8 @@ this.cytoscape = cytoscape;
           }
         },
 
-        descendant: {
+        {
+          name: 'descendant',
           separator: true,
           regex: tokens.descendant,
           populate: function(){
@@ -4255,7 +4266,8 @@ this.cytoscape = cytoscape;
           }
         },
 
-        subject: {
+        {
+          name: 'subject',
           modifier: true,
           regex: tokens.subject,
           populate: function(){
@@ -4269,16 +4281,7 @@ this.cytoscape = cytoscape;
           }
 
         }
-      };
-
-      var j = 0;
-      for( var name in exprs ){
-        exprs[j] = exprs[name];
-        exprs[j].name = name;
-
-        j++;
-      }
-      exprs.length = j;
+      ];
 
       self._private.selectorText = selector;
       var remaining = selector;
@@ -4358,7 +4361,7 @@ this.cytoscape = cytoscape;
       self.length = i + 1;
 
       // adjust references for subject
-      for(j = 0; j < self.length; j++){
+      for(var j = 0; j < self.length; j++){
         var query = self[j];
 
         if( query.subject != null ){
@@ -10277,25 +10280,20 @@ this.cytoscape = cytoscape;
 
 ;(function($$){ 'use strict';
 
-  // search, spanning trees, etc
-  $$.fn.eles({
+  var is = $$.is;
 
-    // std functional ele first callback style
-    stdBreadthFirstSearch: function( options ){
-      options = $$.util.extend( {}, options, {
-        std: true
-      } );
+  var defineSearch = function( params ){
+    params = {
+      bfs: params.bfs || !params.dfs,
+      dfs: params.dfs || !params.bfs
+    };
 
-      return this.breadthFirstSearch( options );
-    },
-
-    // do a breadth first search from the nodes in the collection
     // from pseudocode on wikipedia
-    breadthFirstSearch: function( roots, fn, directed ){
+    return function searchFn( roots, fn, directed ){
       var options;
       var std;
       var thisArg;
-      if( $$.is.plainObject(roots) && !$$.is.elementOrCollection(roots) ){
+      if( is.plainObject(roots) && !is.elementOrCollection(roots) ){
         options = roots;
         roots = options.roots;
         fn = options.visit;
@@ -10304,11 +10302,11 @@ this.cytoscape = cytoscape;
         thisArg = options.thisArg;
       }
 
-      directed = arguments.length === 2 && !$$.is.fn(fn) ? fn : directed;
-      fn = $$.is.fn(fn) ? fn : function(){};
+      directed = arguments.length === 2 && !is.fn(fn) ? fn : directed;
+      fn = is.fn(fn) ? fn : function(){};
 
       var cy = this._private.cy;
-      var v = $$.is.string(roots) ? this.filter(roots) : roots;
+      var v = roots = is.string(roots) ? this.filter(roots) : roots;
       var Q = [];
       var connectedNodes = [];
       var connectedBy = {};
@@ -10323,15 +10321,28 @@ this.cytoscape = cytoscape;
       for( var i = 0; i < v.length; i++ ){
         if( v[i].isNode() ){
           Q.unshift( v[i] );
-          V[ v[i].id() ] = true;
 
-          connectedNodes.push( v[i] );
+          if( params.bfs ){
+            V[ v[i].id() ] = true;
+
+            connectedNodes.push( v[i] );
+          }
+
           id2depth[ v[i].id() ] = 0;
         }
       }
 
       while( Q.length !== 0 ){
-        var v = Q.shift();
+        var v = params.bfs ? Q.shift() : Q.pop();
+
+        if( params.dfs ){
+          if( V[ v.id() ] ){ continue; }
+
+          V[ v.id() ] = true;
+
+          connectedNodes.push( v );
+        }
+
         var depth = id2depth[ v.id() ];
         var prevEdge = connectedBy[ v.id() ];
         var prevNode = prevEdge == null ? undefined : prevEdge.connectedNodes().not( v )[0];
@@ -10361,128 +10372,19 @@ this.cytoscape = cytoscape;
             w = w[0];
 
             Q.push( w );
-            V[ w.id() ] = true;
 
-            id2depth[ w.id() ] = id2depth[ v.id() ] + 1;
-
-            connectedNodes.push( w );
-            connectedBy[ w.id() ] = e;
-          }
-        }
-
-      }
-
-      var connectedEles = [];
-
-      for( var i = 0; i < connectedNodes.length; i++ ){
-        var node = connectedNodes[i];
-        var edge = connectedBy[ node.id() ];
-
-        if( edge ){
-          connectedEles.push( edge );
-        }
-
-        connectedEles.push( node );
-      }
-
-      return {
-        path: new $$.Collection( cy, connectedEles, { unique: true } ),
-        found: new $$.Collection( cy, found, { unique: true } )
-      };
-    },
-
-    // std functional ele first callback style
-    stdDepthFirstSearch: function( options ){
-      options = $$.util.extend( {}, options, {
-        std: true
-      } );
-
-      return this.depthFirstSearch( options );
-    },
-
-    // do a depth first search on the nodes in the collection
-    // from pseudocode on wikipedia (iterative impl)
-    depthFirstSearch: function( roots, fn, directed ){
-      var options;
-      var std;
-      var thisArg;
-      if( $$.is.plainObject(roots) && !$$.is.elementOrCollection(roots) ){
-        options = roots;
-        roots = options.roots;
-        fn = options.visit;
-        directed = options.directed;
-        std = options.std;
-        thisArg = options.thisArg;
-      }
-
-      directed = arguments.length === 2 && !$$.is.fn(fn) ? fn : directed;
-      fn = $$.is.fn(fn) ? fn : function(){};
-      var cy = this._private.cy;
-      var v = $$.is.string(roots) ? this.filter(roots) : roots;
-      var S = [];
-      var connectedNodes = [];
-      var connectedBy = {};
-      var id2depth = {};
-      var discovered = {};
-      var j = 0;
-      var found;
-      var edges = this.edges();
-      var nodes = this.nodes();
-
-      // push v
-      for( var i = 0; i < v.length; i++ ){
-        if( v[i].isNode() ){
-          S.push( v[i] );
-
-          connectedNodes.push( v[i] );
-          id2depth[ v[i].id() ] = 0;
-        }
-      }
-
-      while( S.length !== 0 ){
-        var v = S.pop();
-
-        if( !discovered[ v.id() ] ){
-          discovered[ v.id() ] = true;
-
-          var depth = id2depth[ v.id() ];
-          var prevEdge = connectedBy[ v.id() ];
-          var prevNode = prevEdge == null ? undefined : prevEdge.connectedNodes().not( v )[0];
-          var ret;
-
-          if( std ){
-            ret = fn.call(thisArg, v, prevEdge, prevNode, j++, depth);
-          } else {
-            ret = fn.call(v, j++, depth, v, prevEdge, prevNode);
-          }
-
-          if( ret === true ){
-            found = v;
-            break;
-          }
-
-          if( ret === false ){
-            break;
-          }
-
-          var vwEdges = v.connectedEdges(directed ? function(){ return this.data('source') === v.id(); } : undefined).intersect( edges );
-
-          for( var i = 0; i < vwEdges.length; i++ ){
-            var e = vwEdges[i];
-            var w = e.connectedNodes(function(){ return this.id() !== v.id(); }).intersect( nodes );
-
-            if( w.length !== 0 && !discovered[ w.id() ] ){
-              w = w[0];
-
-              S.push( w );
-
-              id2depth[ w.id() ] = id2depth[ v.id() ] + 1;
+            if( params.bfs ){
+              V[ w.id() ] = true;
 
               connectedNodes.push( w );
-              connectedBy[ w.id() ] = e;
             }
+
+            connectedBy[ w.id() ] = e;
+
+            id2depth[ w.id() ] = id2depth[ v.id() ] + 1;
           }
         }
+
       }
 
       var connectedEles = [];
@@ -10499,10 +10401,17 @@ this.cytoscape = cytoscape;
       }
 
       return {
-        path: new $$.Collection( cy, connectedEles, { unique: true } ),
-        found: new $$.Collection( cy, found, { unique: true } )
+        path: cy.collection( connectedEles, { unique: true } ),
+        found: cy.collection( found )
       };
-    },
+    };
+  };
+
+  // search, spanning trees, etc
+  $$.fn.eles({
+
+    breadthFirstSearch: defineSearch({ bfs: true }),
+    depthFirstSearch: defineSearch({ dfs: true }),
 
     // kruskal's algorithm (finds min spanning tree, assuming undirected graph)
     // implemented from pseudocode from wikipedia
@@ -10682,7 +10591,7 @@ this.cytoscape = cytoscape;
 
 })( cytoscape );
 
-;(function($$) { 
+;(function($$) {
   'use strict';
 
   // Additional graph analysis algorithms
@@ -11561,7 +11470,7 @@ this.cytoscape = cytoscape;
 
       // dampingFactor - optional
       if (options != null &&
-        options.dampingfactor != null) {
+        options.dampingFactor != null) {
         var dampingFactor = options.dampingFactor;
       } else {
         var dampingFactor = 0.8; // Default damping factor

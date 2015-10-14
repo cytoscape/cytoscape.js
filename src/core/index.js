@@ -129,6 +129,19 @@ var Core = function( opts ){
     }
   };
 
+  // create the renderer
+  cy.initRenderer( util.extend({
+    hideEdgesOnViewport: options.hideEdgesOnViewport,
+    hideLabelsOnViewport: options.hideLabelsOnViewport,
+    textureOnViewport: options.textureOnViewport,
+    wheelSensitivity: is.number(options.wheelSensitivity) && options.wheelSensitivity > 0 ? options.wheelSensitivity : 1,
+    motionBlur: options.motionBlur === undefined ? true : options.motionBlur, // on by default
+    motionBlurOpacity: options.motionBlurOpacity === undefined ? 0.05 : options.motionBlurOpacity,
+    pixelRatio: is.number(options.pixelRatio) && options.pixelRatio > 0 ? options.pixelRatio : (options.pixelRatio === 'auto' ? undefined : 1),
+    desktopTapThreshold: options.desktopTapThreshold === undefined ? 4 : options.desktopTapThreshold,
+    touchTapThreshold: options.touchTapThreshold === undefined ? 8 : options.touchTapThreshold
+  }, options.renderer) );
+
   var extData = [ options.style, options.elements ];
   loadExtData(function( thens ){
     var initStyle = thens[0];
@@ -138,19 +151,6 @@ var Core = function( opts ){
     if( _p.styleEnabled ){
       cy.setStyle( initStyle );
     }
-
-    // create the renderer
-    cy.initRenderer( util.extend({
-      hideEdgesOnViewport: options.hideEdgesOnViewport,
-      hideLabelsOnViewport: options.hideLabelsOnViewport,
-      textureOnViewport: options.textureOnViewport,
-      wheelSensitivity: is.number(options.wheelSensitivity) && options.wheelSensitivity > 0 ? options.wheelSensitivity : 1,
-      motionBlur: options.motionBlur === undefined ? true : options.motionBlur, // on by default
-      motionBlurOpacity: options.motionBlurOpacity === undefined ? 0.05 : options.motionBlurOpacity,
-      pixelRatio: is.number(options.pixelRatio) && options.pixelRatio > 0 ? options.pixelRatio : (options.pixelRatio === 'auto' ? undefined : 1),
-      desktopTapThreshold: options.desktopTapThreshold === undefined ? 4 : options.desktopTapThreshold,
-      touchTapThreshold: options.touchTapThreshold === undefined ? 8 : options.touchTapThreshold
-    }, options.renderer) );
 
     // trigger the passed function for the `initrender` event
     if( options.initrender ){

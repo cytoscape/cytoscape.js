@@ -351,7 +351,7 @@
 
             {
               "name": "cy.ready",
-              "descr": "Run a callback as soon as the graph becomes ready.  If the graph is already ready, then the callback is called immediately.",
+              "descr": "Run a callback as soon as the graph becomes ready (i.e. data loaded and initial layout completed).  If the graph is already ready, then the callback is called immediately.",
               "formats": [
                 {
                   "args": [

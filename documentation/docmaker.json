@@ -660,6 +660,7 @@
 
             {
               "name": "cy.resize",
+              "pureAliases": ["cy.invalidateDimensions"],
               "descr": "Force the renderer to recalculate the viewport bounds.",
               "md": "core/resize"
             }

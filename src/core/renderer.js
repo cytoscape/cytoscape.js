@@ -91,4 +91,6 @@ var corefn = ({
 
 });
 
+corefn.invalidateDimensions = corefn.resize;
+
 module.exports = corefn;

@@ -187,7 +187,9 @@ util.extend(elesfn, {
       // for each connected edge, add the edge and the other node
       for( var j = 0; j < connectedEdges.length; j++ ){
         var edge = connectedEdges[j];
-        var otherNode = edge.connectedNodes().not(node);
+        var src = edge._private.source;
+        var tgt = edge._private.target;
+        var otherNode = node === src ? tgt : src;
 
         // need check in case of loop
         if( otherNode.length > 0 ){
@@ -216,7 +218,6 @@ util.extend(elesfn, {
 elesfn.neighbourhood = elesfn.neighborhood;
 elesfn.closedNeighbourhood = elesfn.closedNeighborhood;
 elesfn.openNeighbourhood = elesfn.openNeighborhood;
-
 
 // Edge functions
 /////////////////

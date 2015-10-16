@@ -26,8 +26,13 @@ var defaults = {
   // Whether to animate while running the layout
   animate             : true,
 
-  // Number of iterations between consecutive screen positions update (0 -> only updated on the end)
-  refresh             : 5,
+  // The layout animates only after this many milliseconds
+  // (prevents flashing on fast runs)
+  animationThreshold  : 250,
+
+  // Number of iterations between consecutive screen positions update
+  // (0 -> only updated on the end)
+  refresh             : 20,
 
   // Whether to fit the network view after when done
   fit                 : true,
@@ -37,9 +42,6 @@ var defaults = {
 
   // Constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
   boundingBox         : undefined,
-
-  // Whether to randomize node positions on the beginning
-  randomize           : true,
 
   // Extra spacing between components in non-compound graphs
   componentSpacing    : 100,
@@ -63,7 +65,7 @@ var defaults = {
   gravity             : 80,
 
   // Maximum number of iterations to perform
-  numIter             : 100,
+  numIter             : 1000,
 
   // Initial temperature (maximum node displacement)
   initialTemp         : 200,
@@ -72,7 +74,10 @@ var defaults = {
   coolingFactor       : 0.95,
 
   // Lower temperature threshold (below this point the layout will end)
-  minTemp             : 1.0
+  minTemp             : 1.0,
+
+  // Whether to use threading to speed up the layout
+  useMultitasking     : true
 };
 
 
@@ -97,7 +102,7 @@ CoseLayout.prototype.run = function() {
   var thread  = this.thread;
 
   if( !thread || thread.stopped() ){
-    thread = this.thread = Thread();
+    thread = this.thread = Thread({ disabled: !options.useMultitasking });
   }
 
   layout.stopped = false;
@@ -120,13 +125,20 @@ CoseLayout.prototype.run = function() {
   }
 
   // If required, randomize node positions
-  if (true === options.randomize) {
+  // if (true === options.randomize) {
     randomizePositions(layoutInfo, cy);
-  }
+  // }
 
+  var startTime = Date.now();
   var refreshRequested = false;
-  var refresh = function(){
+  var refresh = function( rOpts ){
+    rOpts = rOpts || {};
+
     if( refreshRequested ){
+      return;
+    }
+
+    if( !rOpts.force && Date.now() - startTime < options.animationThreshold ){
       return;
     }
 
@@ -831,7 +843,7 @@ CoseLayout.prototype.run = function() {
   });
 
   var done = function(){
-    refresh();
+    refresh({ force: true });
 
     // Layout has finished
     layout.one('layoutstop', options.stop);

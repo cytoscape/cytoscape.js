@@ -2542,6 +2542,11 @@
             },
 
             {
+              "name": "eles.components",
+              "descr": "Get the connected components in the calling collection.  An array of collections is returned, with each collection representing a component."
+            },
+
+            {
               "name": "nodes.edgesWith",
               "descr": "Get the edges connecting the collection to another collection.  Direction of the edges does not matter.",
               "formats": [

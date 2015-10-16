@@ -403,5 +403,43 @@ function defineParallelEdgesFunction(params){
 
 }
 
+// Misc functions
+/////////////////
+
+util.extend(elesfn, {
+  components: function(){
+    var cy = this.cy();
+    var visited = cy.collection();
+    var unvisited = this.nodes();
+    var components = [];
+
+    var visitInComponent = function( node, component ){
+      visited.merge( node );
+      unvisited.unmerge( node );
+      component.merge( node );
+    };
+
+    do {
+      var component = cy.collection();
+      components.push( component );
+
+      var root = unvisited[0];
+      visitInComponent( root, component );
+
+      this.bfs({
+        directed: false,
+        roots: root,
+        visit: function( i, depth, v, e, u ){
+          visitInComponent( v, component );
+        }
+      });
+
+    } while( unvisited.length > 0 );
+
+    return components.map(function( component ){
+      return component.closedNeighborhood(); // add the edges
+    });
+  }
+});
 
 module.exports = elesfn;

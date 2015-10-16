@@ -9,6 +9,7 @@ Modifications tracked on Github.
 var util = require('../../util');
 var math = require('../../math');
 var Thread = require('../../thread');
+var is = require('../../is');
 
 var DEBUG;
 
@@ -40,23 +41,26 @@ var defaults = {
   // Whether to randomize node positions on the beginning
   randomize           : true,
 
+  // Extra spacing between components in non-compound graphs
+  componentSpacing    : 100,
+
   // Node repulsion (non overlapping) multiplier
-  nodeRepulsion       : 400000,
+  nodeRepulsion       : function( node ){ return 400000; },
 
   // Node repulsion (overlapping) multiplier
   nodeOverlap         : 10,
 
   // Ideal edge (non nested) length
-  idealEdgeLength     : 10,
+  idealEdgeLength     : function( edge ){ return 10; },
 
   // Divisor to compute edge forces
-  edgeElasticity      : 100,
+  edgeElasticity      : function( edge ){ return 100; },
 
   // Nesting factor (multiplier) to compute ideal edge length for nested edges
   nestingFactor       : 5,
 
   // Gravity force (constant)
-  gravity             : 250,
+  gravity             : 80,
 
   // Maximum number of iterations to perform
   numIter             : 100,
@@ -152,10 +156,8 @@ CoseLayout.prototype.run = function() {
     options: {
       animate: options.animate,
       refresh: options.refresh,
-      nodeRepulsion: options.nodeRepulsion,
+      componentSpacing: options.componentSpacing,
       nodeOverlap: options.nodeOverlap,
-      idealEdgeLength: options.idealEdgeLength,
-      edgeElasticity: options.edgeElasticity,
       nestingFactor: options.nestingFactor,
       gravity: options.gravity,
       numIter: options.numIter,
@@ -210,11 +212,13 @@ CoseLayout.prototype.run = function() {
         // Now get all the pairs of nodes
         // Only get each pair once, (A, B) = (B, A)
         for (var j = 0; j < numNodes; j++) {
-        var node1 = layoutInfo.layoutNodes[layoutInfo.idToIndex[graph[j]]];
-        for (var k = j + 1; k < numNodes; k++) {
-          var node2 = layoutInfo.layoutNodes[layoutInfo.idToIndex[graph[k]]];
-          nodeRepulsion(node1, node2, layoutInfo, options);
-        }
+          var node1 = layoutInfo.layoutNodes[layoutInfo.idToIndex[graph[j]]];
+
+          for (var k = j + 1; k < numNodes; k++) {
+            var node2 = layoutInfo.layoutNodes[layoutInfo.idToIndex[graph[k]]];
+
+            nodeRepulsion(node1, node2, layoutInfo, options);
+          }
         }
       }
     };
@@ -224,6 +228,11 @@ CoseLayout.prototype.run = function() {
      */
     var nodeRepulsion = function(node1, node2, layoutInfo, options) {
       // var s = "Node repulsion. Node1: " + node1.id + " Node2: " + node2.id;
+
+      var cmptId1 = node1.cmptId;
+      var cmptId2 = node2.cmptId;
+
+      if( cmptId1 !== cmptId2 && !layoutInfo.isCompound ){ return; }
 
       // Get direction of line connecting both node centers
       var directionX = node2.positionX - node1.positionX;
@@ -268,7 +277,7 @@ CoseLayout.prototype.run = function() {
         // s += "\nDistance: " + distance;
 
         // Compute the module and components of the force vector
-        var force  = options.nodeRepulsion / distanceSqr;
+        var force  = ( node1.nodeRepulsion + node2.nodeRepulsion ) / distanceSqr;
         var forceX = force * distanceX / distance;
         var forceY = force * distanceY / distance;
       }
@@ -426,7 +435,7 @@ CoseLayout.prototype.run = function() {
         var ly = point2.y - point1.y;
         var l  = Math.sqrt(lx * lx + ly * ly);
 
-        var force  = Math.pow(edge.idealLength - l, 2) / options.edgeElasticity;
+        var force  = Math.pow(edge.idealLength - l, 2) / edge.elasticity;
 
         if (0 !== l) {
           var forceX = force * lx / l;
@@ -700,6 +709,76 @@ CoseLayout.prototype.run = function() {
       return;
     };
 
+    var separateComponents = function(layutInfo, options){
+      var nodes = layoutInfo.layoutNodes;
+      var components = [];
+
+      for( var i = 0; i < nodes.length; i++ ){
+        var node = nodes[i];
+        var cid = node.cmptId;
+        var component = components[ cid ] = components[ cid ] || [];
+
+        component.push( node );
+      }
+
+      var totalW = 0;
+      var totalH = 0;
+
+      for( var i = 0; i < components.length; i++ ){
+        var c = components[i];
+        c.x1 = Infinity;
+        c.x2 = -Infinity;
+        c.y1 = Infinity;
+        c.y2 = -Infinity;
+
+        for( var j = 0; j < c.length; j++ ){
+          var n = c[j];
+
+          c.x1 = Math.min( c.x1, n.positionX - n.width/2 );
+          c.x2 = Math.max( c.x2, n.positionX + n.width/2 );
+          c.y1 = Math.min( c.y1, n.positionY - n.height/2 );
+          c.y2 = Math.max( c.y2, n.positionY + n.height/2 );
+        }
+
+        c.w = c.x2 - c.x1;
+        c.h = c.y2 - c.y1;
+
+        totalW += c.w;
+        totalH += c.h;
+      }
+
+      components.sort(function( c1, c2 ){
+        return c2.w*c2.h - c1.w*c1.h;
+      });
+
+      var x = 0;
+      var y = 0;
+      var usedW = 0;
+      var rowH = 0;
+
+      for( var i = 0; i < components.length; i++ ){
+        var c = components[i];
+
+        for( var j = 0; j < c.length; j++ ){
+          var n = c[j];
+
+          n.positionX += x;
+          n.positionY += y;
+        }
+
+        x += c.w + options.componentSpacing;
+        usedW += c.w + options.componentSpacing;
+        rowH = Math.max( rowH, c.h );
+
+        if( usedW > (totalW + options.componentSpacing*components.length)/2 ){
+          y += rowH + options.componentSpacing;
+          x = 0;
+          usedW = 0;
+          rowH = 0;
+        }
+      }
+    };
+
     var mainLoop = function(i){
       if( stopped ){
         // logDebug("Layout manually stopped. Stopping computation in step " + i);
@@ -740,6 +819,8 @@ CoseLayout.prototype.run = function() {
       }
 
     } while ( loopRet && i + 1 < options.numIter );
+
+    separateComponents( layoutInfo, options );
 
     return layoutInfo;
   }).then(function( layoutInfoUpdated ){
@@ -795,6 +876,7 @@ var createLayoutInfo = function(cy, layout, options) {
   var nodes = options.eles.nodes();
 
   var layoutInfo   = {
+    isCompound   : cy.hasCompoundNodes(),
     layoutNodes  : [],
     idToIndex    : {},
     nodeSize     : nodes.size(),
@@ -810,6 +892,19 @@ var createLayoutInfo = function(cy, layout, options) {
                    } )
   };
 
+  var components = options.eles.components();
+  var id2cmptId = {};
+
+  for( var i = 0; i < components.length; i++ ){
+    var component = components[i];
+
+    for( var j = 0; j < component.length; j++ ){
+      var node = component[j];
+
+      id2cmptId[ node.id() ] = i;
+    }
+  }
+
   // Iterate over all nodes, creating layout nodes
   for (var i = 0; i < layoutInfo.nodeSize; i++) {
     var n = nodes[i];
@@ -818,6 +913,7 @@ var createLayoutInfo = function(cy, layout, options) {
     var tempNode        = {};
     tempNode.id         = n.data('id');
     tempNode.parentId   = n.data('parent');
+    tempNode.cmptId     = id2cmptId[ n.id() ];
     tempNode.children   = [];
     tempNode.positionX  = n.position('x');
     tempNode.positionY  = n.position('y');
@@ -833,6 +929,9 @@ var createLayoutInfo = function(cy, layout, options) {
     tempNode.padRight   = parseFloat( n.style('padding-right') );
     tempNode.padTop     = parseFloat( n.style('padding-top') );
     tempNode.padBottom  = parseFloat( n.style('padding-bottom') );
+
+    // forces
+    tempNode.nodeRepulsion = is.fn( options.nodeRepulsion ) ? options.nodeRepulsion.call( n, n ) : options.nodeRepulsion;
 
     // Add new node
     layoutInfo.layoutNodes.push(tempNode);
@@ -901,7 +1000,8 @@ var createLayoutInfo = function(cy, layout, options) {
     tempEdge.targetId = e.data('target');
 
     // Compute ideal length
-    var idealLength = options.idealEdgeLength;
+    var idealLength = is.fn( options.idealEdgeLength ) ? options.idealEdgeLength.call( e, e ) : options.idealEdgeLength;
+    var elasticity = is.fn( options.edgeElasticity ) ? options.edgeElasticity.call( e, e ) : options.edgeElasticity;
 
     // Check if it's an inter graph edge
     var sourceIx    = layoutInfo.idToIndex[tempEdge.sourceId];
@@ -910,36 +1010,37 @@ var createLayoutInfo = function(cy, layout, options) {
     var targetGraph = layoutInfo.indexToGraph[targetIx];
 
     if (sourceGraph != targetGraph) {
-    // Find lowest common graph ancestor
-    var lca = findLCA(tempEdge.sourceId, tempEdge.targetId, layoutInfo);
+      // Find lowest common graph ancestor
+      var lca = findLCA(tempEdge.sourceId, tempEdge.targetId, layoutInfo);
 
-    // Compute sum of node depths, relative to lca graph
-    var lcaGraph = layoutInfo.graphSet[lca];
-    var depth    = 0;
+      // Compute sum of node depths, relative to lca graph
+      var lcaGraph = layoutInfo.graphSet[lca];
+      var depth    = 0;
 
-    // Source depth
-    var tempNode = layoutInfo.layoutNodes[sourceIx];
-    while ( -1 === lcaGraph.indexOf(tempNode.id) ) {
-      tempNode = layoutInfo.layoutNodes[layoutInfo.idToIndex[tempNode.parentId]];
-      depth++;
-    }
+      // Source depth
+      var tempNode = layoutInfo.layoutNodes[sourceIx];
+      while ( -1 === lcaGraph.indexOf(tempNode.id) ) {
+        tempNode = layoutInfo.layoutNodes[layoutInfo.idToIndex[tempNode.parentId]];
+        depth++;
+      }
 
-    // Target depth
-    tempNode = layoutInfo.layoutNodes[targetIx];
-    while ( -1 === lcaGraph.indexOf(tempNode.id) ) {
-      tempNode = layoutInfo.layoutNodes[layoutInfo.idToIndex[tempNode.parentId]];
-      depth++;
-    }
+      // Target depth
+      tempNode = layoutInfo.layoutNodes[targetIx];
+      while ( -1 === lcaGraph.indexOf(tempNode.id) ) {
+        tempNode = layoutInfo.layoutNodes[layoutInfo.idToIndex[tempNode.parentId]];
+        depth++;
+      }
 
-    // logDebug('LCA of nodes ' + tempEdge.sourceId + ' and ' + tempEdge.targetId +
-      //  ". Index: " + lca + " Contents: " + lcaGraph.toString() +
-      //  ". Depth: " + depth);
+      // logDebug('LCA of nodes ' + tempEdge.sourceId + ' and ' + tempEdge.targetId +
+        //  ". Index: " + lca + " Contents: " + lcaGraph.toString() +
+        //  ". Depth: " + depth);
 
-    // Update idealLength
-    idealLength *= depth * options.nestingFactor;
+      // Update idealLength
+      idealLength *= depth * options.nestingFactor;
     }
 
     tempEdge.idealLength = idealLength;
+    tempEdge.elasticity = elasticity;
 
     layoutInfo.layoutEdges.push(tempEdge);
   }

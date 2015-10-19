@@ -213,7 +213,7 @@ $(function(){
 
   var gp = function( type, category, action ){
     return $.ajax({
-      url: 'http://webservice.baderlab.org/gp',
+      url: 'http://webservice.baderlab.org/gp/',
       type: 'POST',
       data: {
         v: '1',

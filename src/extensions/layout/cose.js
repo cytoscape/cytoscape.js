@@ -2,6 +2,10 @@
 
 /*
 The CoSE layout was written by Gerardo Huck.
+https://www.linkedin.com/in/gerardohuck/
+
+Based on the following article:
+http://dl.acm.org/citation.cfm?id=1498047
 
 Modifications tracked on Github.
 */

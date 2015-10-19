@@ -6,9 +6,9 @@ Graph theory (a.k.a. network) library for analysis and visualisation : [http://j
 
 ## Test status
 
-Master : [![Build Status](https://travis-ci.org/cytoscape/cytoscape.js.svg?branch=master)](https://travis-ci.org/cytoscape/cytoscape.js)
+[![Build Status](https://travis-ci.org/cytoscape/cytoscape.js.svg?branch=master)](https://travis-ci.org/cytoscape/cytoscape.js) : `master`
 
-Unstable : [![Build Status](https://travis-ci.org/cytoscape/cytoscape.js.svg?branch=unstable)](https://travis-ci.org/cytoscape/cytoscape.js)
+[![Build Status](https://travis-ci.org/cytoscape/cytoscape.js.svg?branch=unstable)](https://travis-ci.org/cytoscape/cytoscape.js) : `unstable`
 
 
 
@@ -16,76 +16,46 @@ Unstable : [![Build Status](https://travis-ci.org/cytoscape/cytoscape.js.svg?bra
 
 You can find the documentation and downloads on the [project website](http://js.cytoscape.org).
 
-If you're looking to get an old version of the library, you can build off the associated tag or you can [browse the list of old builds](http://cytoscape.github.io/cytoscape.js/download/).  We very strongly recommend you use the latest version.  If you run into a bug on the latest version, report it on [the issue tracker](https://github.com/cytoscape/cytoscape.js/issues).  We'll try to fix the bug as soon as possible, and we'll give you a snapshot build that includes the fix for you to use until the next official bugfix release.
-
 
 
 
 ## Contributing to Cytoscape.js
 
-Cytoscape.js is an open source project, and anyone interested is encouraged to contribute to Cytoscape.js.  We gladly accept pull requests.  If you are interested in regular contributions to Cytoscape.js, then we can arrange granting you permission to the repository by [contacting us](mailto:cytoscape-discuss@googlegroups.com?subject=Granting permission to Cytoscape.js repository).
-
-If your pull request is a bugfix, please make changes to the master branch.  Otherwise, please make changes to the next version's branch (i.e. unstable).
-
-
-
-## Authors
-
-The list of all code contributions to Cytoscape.js can be found in the [Contributors](https://github.com/cytoscape/cytoscape.js/graphs/contributors) section on GitHub.
-
-
-## Acknowledgements
-
-CoSE is a layout in Cytoscape.js.  It's one of the best force-directed layouts in Cytoscape.js in its own right, and it's excellent at arranging compound graphs.  CoSE was implemented by [Gerardo Huck](http://linkedin.com/in/gerardohuck/) and based on an article, ["A layout algorithm for undirected compound graphs"](http://dl.acm.org/citation.cfm?id=1498047&CFID=429377863&CFTOKEN=94691144).
-
-Cola.js is a layout in Cytoscape.js, and it is one of the best force-directed layouts in Cytoscape.js.  [Cola.js](http://marvl.infotech.monash.edu/webcola/) is the work of [Tim Dwyer](http://www.csse.monash.edu.au/~tdwyer/) at the [Monash Adaptive Visualisation Lab](http://marvl.infotech.monash.edu/).
-
-Dagre is a layout in Cytoscape.js, and it's an excellent way to arrange trees and DAGs.  [Dagre](https://github.com/cpettitt/dagre) is the work of [Chris Pettitt](https://www.linkedin.com/in/chrismpettitt).
-
-Arbor is used in one of Cytoscape.js' included layouts.  We made some modifications to the library, written by Samizdat Drafting Co., so that it would work with multiple instances of Cytoscape.js and that it would work on lesser browsers, like IE.  Information about this library can be found at the [Arbor website](http://arborjs.org/) and on [GitHub](https://github.com/maxkfranz/arbor) where the original code was forked.
-
-Springy.js is a layout in Cytoscape.js.  [Springy.js](http://getspringy.com) is the work of [Dennis Hotson](http://dhotson.tumblr.com/).
-
-Note: Cytoscape.js does not include any of these libraries directly but allows use of them as layouts if they are included in your app.
-
+Please refer to [CONTRIBUTING.md](CONTRIBUTING.md).
 
 
 
 
 ## Build dependencies
 
-Install `npm` and `gulp`.  Of course, `npm install` before using `gulp`.
+Install `node`, `npm` and `gulp`.  Of course, `npm install` before using `gulp`.
 
 
 
 
 ## Build instructions
 
-Run `gulp` in the console.  The main targets are:
+Run `gulp <target>` in the console.  The main targets are:
 
 **Building:**
- * `build` : build the library
- * `zip` : build the release ZIP
+
+ * `build` (default) : build the library
  * `clean` : clean the `build` directory
+ * `watch` : automatically build lib and tests for debugging
+ * `zip` : build the release ZIP
  * `dist` : update the distribution JS for npm, bower, etc.
 
-**File references:**
- * `refs` : update all refs
-  * `testrefs` : update JS lib file refs in the tests page
-  * `testlist` : update list of test JS files in tests page
-  * `debugrefs` : update JS lib file refs in debug page
-
 **Testing:**
+
  * `test` : run the Mocha unit tests
  * `lint` : lint the JS sources via jshint
  * `benchmark` : run benchmark regression tests
  * `benchmark-single` : run benchmarks only for the suite specified in `benchmark/single`
- * `watch` : automatically build lib and tests for debugging
+ * `sniper` : runs a BioJS sniper server that hosts demos
 
 **Documentation:**
+
  * `docs` : build the documentation template
- * `docsdemoshots` : get snapshots of demos referenced in the docs (requires PhantomJS, e.g. `brew update && brew install phantomjs`)
- * `sniper` : runs a BioJS sniper server that hosts demos
  * `docsmin` : build the documentation template with all resources minified
  * `docspub` : build the documentation for publishing (ZIPs, JS refs, etc.)
  * `docspush` : push the built documentation to [js.cytoscape.org](http://js.cytoscape.org)

@@ -1,8 +1,8 @@
 'use strict';
 
-var is = require('../is');
-var util = require('../util');
-var Heap = require('../heap');
+var is = require('../../is');
+var util = require('../../util');
+var Heap = require('../../heap');
 
 var defineSearch = function( params ){
   params = {
@@ -317,7 +317,5 @@ var elesfn = ({
 // nice, short mathemathical alias
 elesfn.bfs = elesfn.breadthFirstSearch;
 elesfn.dfs = elesfn.depthFirstSearch;
-elesfn.stdBfs = elesfn.stdBreadthFirstSearch;
-elesfn.stdDfs = elesfn.stdDepthFirstSearch;
 
 module.exports = elesfn;

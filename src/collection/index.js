@@ -675,7 +675,6 @@ elesfn.move = function( struct ){
 
 [
   require('./algorithms'),
-  require('./algorithms2'),
   require('./animation'),
   require('./class'),
   require('./comparators'),

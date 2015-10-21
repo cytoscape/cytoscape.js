@@ -18,10 +18,10 @@ This is not a problem for a handful of operations on a handful of elements, but 
 
 Thus, this function is useful for making many changes to elements at once.  When the specified callback function is complete, only elements that require it have their style updated and the renderer makes at most a single redraw.
 
-This makes for very efficient modifications to elements, but it has some caveats.  While inside the batch callback, 
+This makes for very efficient modifications to elements, but it has some caveats.  While inside the batch callback,
 
 * you can not reliably read element style or dimensions (it may have changed, or computed values may be out of date),
-* you probably do not want to use `eles.style()`, `eles.show()`, et cetera because they force a style bypass rather than a recalculation.
+* you probably do not want to use `eles.style()` et cetera because they force a style bypass rather than a recalculation.
 
 
 ## Examples

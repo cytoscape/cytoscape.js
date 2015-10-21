@@ -743,14 +743,14 @@ BRp.load = function() {
       r.hoverData.cxtDragged = false;
       r.hoverData.which = null;
 
-    // if not right mouse
-    } else {
+    } else if( r.hoverData.which === 1 ) {
 
       // Deselect all elements if nothing is currently under the mouse cursor and we aren't dragging something
       if ( (down == null) // not mousedown on node
         && !r.dragData.didDrag // didn't move the node around
         && !r.hoverData.selecting // not box selection
         && !r.hoverData.dragged // didn't pan
+        && !isMultSelKeyDown( e )
       ) {
 
         cy.$(function(){

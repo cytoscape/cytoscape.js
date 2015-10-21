@@ -340,54 +340,31 @@ BRp.getAllInBox = function(x1, y1, x2, y2) {
   for( var e = 0; e < edges.length; e++ ){
     var edge = edges[e];
     var _p = edge._private;
-    var style = _p.style;
     var rs = _p.rscratch;
-    var width = style['width'].pfValue;
+    var src = _p.source;
+    var tgt = _p.target;
 
-    if( rs.edgeType === 'bezier' || rs.edgeType === 'multibezier' || rs.edgeType === 'self' || rs.edgeType === 'compound' ){
+    if( rs.startX != null && rs.startY != null && !math.inBoundingBox( boxBb, rs.startX, rs.startY ) ){ continue; }
+    if( rs.endX != null && rs.endY != null && !math.inBoundingBox( boxBb, rs.endX, rs.endY ) ){ continue; }
 
-      var pts = rs.allpts;
-      for( var i = 0; i + 6 < pts.length; i += 4 ){
-        if(
-          math.boxInBezierVicinity( x1, y1, x2, y2, pts[i], pts[i+1], pts[i+2], pts[i+3], pts[i+4], pts[i+5], width )
-          && math.checkBezierInBox( x1, y1, x2, y2, pts[i], pts[i+1], pts[i+2], pts[i+3], pts[i+4], pts[i+5], width )
-        ){
-          box.push(edge);
+    if( rs.edgeType === 'bezier' || rs.edgeType === 'multibezier' || rs.edgeType === 'self' || rs.edgeType === 'compound' || rs.edgeType === 'segments' || rs.edgeType === 'haystack' ){
+
+      var pts = _p.rstyle.bezierPts || _p.rstyle.linePts || _p.rstyle.haystackPts;
+      var allInside = true;
+
+      for( var i = 0; i < pts.length; i++ ){
+        if( !math.pointInBoundingBox( boxBb, pts[i] ) ){
+          allInside = false;
+          break;
         }
       }
 
-    } else if( rs.edgeType === 'straight' ){
-
-      if( (heur = math.boxInBezierVicinity(x1, y1, x2, y2,
-            rs.startX, rs.startY,
-            rs.startX * 0.5 + rs.endX * 0.5,
-            rs.startY * 0.5 + rs.endY * 0.5,
-            rs.endX, rs.endY, width))
-              &&
-            (heur === 2 || (heur === 1 && math.checkStraightEdgeInBox(x1, y1, x2, y2,
-              rs.startX, rs.startY,
-              rs.endX, rs.endY, width)))
-      ){
-        box.push(edge);
-      }
-
-    } else if( rs.edgeType === 'haystack' ){
-      var tgt = edge.target()[0];
-      var tgtPos = tgt.position();
-      var src = edge.source()[0];
-      var srcPos = src.position();
-
-      var startX = srcPos.x + rs.source.x;
-      var startY = srcPos.y + rs.source.y;
-      var endX = tgtPos.x + rs.target.x;
-      var endY = tgtPos.y + rs.target.y;
-
-      var startInBox = (x1 <= startX && startX <= x2) && (y1 <= startY && startY <= y2);
-      var endInBox = (x1 <= endX && endX <= x2) && (y1 <= endY && endY <= y2);
-
-      if( startInBox && endInBox ){
+      if( allInside ){
         box.push( edge );
       }
+
+    } else if( rs.edgeType === 'haystack' || rs.edgeType === 'straight' ){
+      box.push( edge );
     }
 
   }
@@ -518,7 +495,7 @@ BRp.projectLines = function( edge ){
   var rs = _p.rscratch;
   var et = rs.edgeType;
 
-  if(  et === 'multibezier' ||  et === 'bezier' ||  et === 'self' ||  et === 'compound' ){
+  if( et === 'multibezier' ||  et === 'bezier' ||  et === 'self' ||  et === 'compound' ){
     var bpts = _p.rstyle.bezierPts = []; // jshint ignore:line
 
     for( var i = 0; i + 5 < rs.allpts.length; i += 4 ){
@@ -533,6 +510,13 @@ BRp.projectLines = function( edge ){
         y: rs.allpts[i+1]
       });
     }
+  } else if( et === 'haystack' ){
+    var hpts = rs.haystackPts;
+
+    _p.rstyle.haystackPts = [
+      { x: hpts[0], y: hpts[1] },
+      { x: hpts[2], y: hpts[3] }
+    ];
   }
 };
 
@@ -1474,8 +1458,9 @@ BRp.findEdgeControlPoints = function(edges) {
     rscratch.edgeType = 'haystack';
     rscratch.haystack = true;
 
-    this.recalculateEdgeLabelProjection( edge );
+    this.projectLines( edge );
     this.calculateArrowAngles( edge );
+    this.recalculateEdgeLabelProjection( edge );
   }
 
   for( var i = 0 ; i < autorotateEdges.length; i++ ){

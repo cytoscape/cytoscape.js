@@ -404,12 +404,12 @@ fn = elesfn = ({
         ///////////////////////////////////
 
         if( styleEnabled && style['curve-style'].strValue === 'haystack' ){
-          var hpts = _p.rscratch.haystackPts;
+          var hpts = rstyle.haystackPts;
 
-          ex1 = hpts[0];
-          ey1 = hpts[1];
-          ex2 = hpts[2];
-          ey2 = hpts[3];
+          ex1 = hpts[0].x;
+          ey1 = hpts[0].y;
+          ex2 = hpts[1].x;
+          ey2 = hpts[1].y;
 
           if( ex1 > ex2 ){
             var temp = ex1;

@@ -359,7 +359,7 @@ var elesfn = ({
 // aliases
 var fn = elesfn;
 fn['u'] = fn['|'] = fn['+'] = fn.union = fn.or = fn.add;
-fn['\\'] = fn['!'] = fn['-'] = fn.difference = fn.relativeComplement = fn.not;
+fn['\\'] = fn['!'] = fn['-'] = fn.difference = fn.relativeComplement = fn.subtract = fn.not;
 fn['n'] = fn['&'] = fn['.'] = fn.and = fn.intersection = fn.intersect;
 fn['^'] = fn['(+)'] = fn['(-)'] = fn.symmetricDifference = fn.symdiff = fn.xor;
 fn.fnFilter = fn.filterFn = fn.stdFilter;

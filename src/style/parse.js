@@ -323,7 +323,7 @@ var parseImpl = function( name, value, propIsBypass, propIsFlat ){
 
       var propsSplit = propsStr.split(',');
       for( var i = 0; i < propsSplit.length; i++ ){
-        var propName = util.trim( propsSplit[i] );
+        var propName = propsSplit[i].trim();
 
         if( self.properties[propName] ){
           props.push( propName );

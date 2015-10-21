@@ -1,7 +1,9 @@
 ## Details
 
-The `cy.destroy()` function is not necessary but can be convenient in some cases.  It is equivalent to removing the container DOM element from the document and removing any bound listeners from the renderer.
+The `cy.destroy()` function is not necessary but can be convenient in some cases.  It cleans up references and rendering loops such that the memory used by an instance can be garbage collected.
 
-Calling `cy.destroy()` is unnecessary if the container DOM element is removed from the document manually.  In that case, listeners are cleaned up automatically.
+If you remove the container DOM element from the page, then the instance is cleaned up automatically.  Similarly, calling `cy.destroy()` does this cleanup and removes the container from the page.
+
+When running Cytoscape.js headlessly, using `cy.destroy()` is necessary only if you've explicitly enabled style functionality.
 
 To drop the memory used by an instance, it is necessary to drop all of your own references to that instance so it can be garbage collected.

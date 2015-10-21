@@ -230,75 +230,6 @@ math.roundRectangleIntersectLine = function(
   return []; // if nothing
 };
 
-math.boxInBezierVicinity = function( x1box, y1box, x2box, y2box, x1, y1, x2, y2, x3, y3, tolerance ){
-
-  // midpoint
-  var midX = 0.25 * x1 + 0.5 * x2 + 0.25 * x3;
-  var midY = 0.25 * y1 + 0.5 * y2 + 0.25 * y3;
-
-  var boxMinX = Math.min(x1box, x2box) - tolerance;
-  var boxMinY = Math.min(y1box, y2box) - tolerance;
-  var boxMaxX = Math.max(x1box, x2box) + tolerance;
-  var boxMaxY = Math.max(y1box, y2box) + tolerance;
-
-  if (x1 >= boxMinX && x1 <= boxMaxX && y1 >= boxMinY && y1 <= boxMaxY) { // (x1, y1) in box
-    return 1;
-  } else if (x3 >= boxMinX && x3 <= boxMaxX && y3 >= boxMinY && y3 <= boxMaxY) { // (x3, y3) in box
-    return 1;
-  } else if (midX >= boxMinX && midX <= boxMaxX && midY >= boxMinY && midY <= boxMaxY) { // (midX, midY) in box
-    return 1;
-  } else if (x2 >= boxMinX && x2 <= boxMaxX && y2 >= boxMinY && y2 <= boxMaxY) { // ctrl pt in box
-    return 1;
-  }
-
-  var curveMinX = Math.min(x1, midX, x3);
-  var curveMinY = Math.min(y1, midY, y3);
-  var curveMaxX = Math.max(x1, midX, x3);
-  var curveMaxY = Math.max(y1, midY, y3);
-
-  if (curveMinX > boxMaxX
-    || curveMaxX < boxMinX
-    || curveMinY > boxMaxY
-    || curveMaxY < boxMinY) {
-
-    return 0;
-  }
-
-  return 1;
-};
-
-math.checkBezierInBox = function(
-  x1box, y1box, x2box, y2box, x1, y1, x2, y2, x3, y3, tolerance) {
-
-  function sampleInBox(t){
-    var x = math.qbezierAt(x1, x2, x3, t);
-    var y = math.qbezierAt(y1, y2, y3, t);
-
-    return x1box <= x && x <= x2box
-      && y1box <= y && y <= y2box
-    ;
-  }
-
-  for( var t = 0; t <= 1; t += 0.25 ){
-    if( !sampleInBox(t) ){
-      return false;
-    }
-  }
-
-  return true;
-};
-
-math.checkStraightEdgeInBox = function(
-  x1box, y1box, x2box, y2box, x1, y1, x2, y2, tolerance) {
-
-  return x1box <= x1 && x1 <= x2box
-    && x1box <= x2 && x2 <= x2box
-    && y1box <= y1 && y1 <= y2box
-    && y1box <= y2 && y2 <= y2box
-  ;
-};
-
-
 math.inLineVicinity = function(x, y, lx1, ly1, lx2, ly2, tolerance){
   var t = tolerance;
 
@@ -458,29 +389,6 @@ math.sqDistanceToQuadraticBezier = function(
     }
   }
 
-  /*
-  debugStats.clickX = x;
-  debugStats.clickY = y;
-
-  debugStats.closestX = Math.pow(1.0 - closestParam, 2.0) * x1
-      + 2.0 * (1.0 - closestParam) * closestParam * x2
-      + closestParam * closestParam * x3;
-
-  debugStats.closestY = Math.pow(1.0 - closestParam, 2.0) * y1
-      + 2.0 * (1.0 - closestParam) * closestParam * y2
-      + closestParam * closestParam * y3;
-  */
-
-  // debug("given: "
-  //   + "( " + x + ", " + y + "), "
-  //   + "( " + x1 + ", " + y1 + "), "
-  //   + "( " + x2 + ", " + y2 + "), "
-  //   + "( " + x3 + ", " + y3 + ")");
-
-
-  // debug("roots: " + roots);
-  // debug("params: " + params);
-  // debug("closest param: " + closestParam);
   return minDistanceSquared;
 };
 

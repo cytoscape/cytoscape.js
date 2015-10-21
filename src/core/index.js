@@ -215,9 +215,9 @@ util.extend(corefn, {
 
     var domEle = cy.container();
     if( domEle ){
-      while( domEle.firstChild ){ // clean the container
-        domEle.removeChild( domEle.firstChild );
-      }
+      domEle._cyreg = null;
+
+      domEle.parentNode.removeChild( domEle );
     }
 
     return cy;

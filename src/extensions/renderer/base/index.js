@@ -121,6 +121,8 @@ BRp.notify = function(params) {
 BRp.destroy = function(){
   this.destroyed = true;
 
+  this.cy.stopAnimationLoop();
+
   for( var i = 0; i < this.bindings.length; i++ ){
     var binding = this.bindings[i];
     var b = binding;

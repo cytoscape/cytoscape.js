@@ -55,7 +55,7 @@ util.staticEmptyObject = function(){
 util.extend = Object.assign != null ? Object.assign : function( tgt ){
   var args = arguments;
 
-  for( var i = 0; i < args.length; i++ ){
+  for( var i = 1; i < args.length; i++ ){
     var obj = args[i];
 
     for( var k in obj ){

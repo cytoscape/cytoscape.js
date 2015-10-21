@@ -24,9 +24,27 @@ The extensions below are a curated list.  To add your extension, [please submit 
  * [`springy`](https://github.com/cytoscape/cytoscape.js-springy) : The Springy physics simulation layout for Cytoscape.js.
 
 
+## API
+
+## API
+
+To register an extension, make the following call: `cytoscape( type, name, extension );`
+
+The value of `type` can take on the following values:
+
+ * `'core'` : The extension adds a core function.
+ * `'collection'` : The extension adds a collection function.
+ * `'layout'` : The extension registers a layout prototype.
+ * `'renderer'` : The extension registers a renderer prototype.
+
+The `name` argument indicates the name of the extension.  For example, `cytoscape( 'collection', 'fooBar', function(){ return 'baz'; } )` registers `eles.fooBar()`.
+
+
+
 ## Autoscaffolding
 
 There exists [a Slush project for Cytoscape.js](https://github.com/cytoscape/slush-cytoscape-extension) such that the full project scaffolding for a new extension is automatically generated for you.  By following the included instructions, you can easily create Cytoscape.js extensions that are well organised, easily maintained, and published to npm, bower, spm, and meteor.
+
 
 
 ## Multitasking

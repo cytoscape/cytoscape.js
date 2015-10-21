@@ -23,3 +23,4 @@ jAni.play();
 setTimeout(function(){
   jAni.stop();
 }, 500);
+```

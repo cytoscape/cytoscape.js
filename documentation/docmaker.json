@@ -1,11 +1,10 @@
 {
-  "version": "2.5.0-unstable",
+  "version": "2.5.0-unstable4",
 
   "fnArgLinks": {
     "selector": "#selectors",
     "event": "#events",
     "events": "#events",
-    "eventsMap": "#events",
     "eleObj": "#notation/elements-json",
     "eleObjs": "#notation/elements-json",
     "elesArray": "#notation/elements-json",
@@ -207,6 +206,45 @@
               "name": "cy.destroy",
               "descr": "A convenience function to explicitly destroy the instance.",
               "md": "core/destroy"
+            },
+
+            {
+              "name": "cy.scratch",
+              "extFn": true,
+              "descr": "Set or get scratchpad data, where temporary or non-JSON data can be stored.  App-level scratchpad data should use namespaces prefixed with underscore, like `'_foo'`.  This is analogous to the more common [`ele.scratch()`](#ele.scratch) but for graph global data.",
+              "formats": [
+                {
+                  "descr": "Get the entire scratchpad object for the core."
+                },
+
+                {
+                  "descr": "Get the scratchpad at a particular namespace.",
+                  "args": [
+                    { "name": "namespace", "descr": "A namespace string." }
+                  ]
+                },
+
+                {
+                  "descr": "Set the scratchpad at a particular namespace.",
+                  "args": [
+                    { "name": "namespace", "descr": "A namespace string." },
+                    { "name": "value", "descr": "The value to set at the specified namespace." }
+                  ]
+                }
+              ]
+            },
+
+            {
+              "name": "cy.removeScratch",
+              "descr": "Remove scratchpad data.  You should remove scratchpad data only at your own namespaces.  This is analogous to the more common [`ele.removeScratch()`](#ele.removeScratch) but for graph global data.",
+              "formats": [
+                {
+                  "descr": "Remove the scratchpad data at a particular namespace.",
+                  "args": [
+                    { "name": "namespace", "descr": "A namespace string." }
+                  ]
+                }
+              ]
             }
           ]
         },
@@ -226,14 +264,6 @@
                     { "name": "selector", "descr": "A selector to specify elements for which the handler is triggered.", "optional": true },
                     { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true },
                     { "name": "function(evt)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "evt", "descr": "The event object." } ] }
-                  ]
-                },
-
-                {
-                  "args": [
-                    { "name": "eventsMap", "descr": "A map of event names to handler functions." },
-                    { "name": "selector", "descr": "A selector to specify elements for which the handler is triggered.", "optional": true },
-                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true }
                   ]
                 }
               ],
@@ -266,14 +296,6 @@
                     { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true },
                     { "name": "function(evt)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "evt", "descr": "The event object." } ] }
                   ]
-                },
-
-                {
-                  "args": [
-                    { "name": "eventsMap", "descr": "A map of event names to handler functions." },
-                    { "name": "selector", "descr": "A selector to specify elements for which the handler is triggered.", "optional": true },
-                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true }
-                  ]
                 }
               ],
               "md": "core/one"
@@ -289,13 +311,6 @@
                     { "name": "events", "descr": "A space separated list of event names." },
                     { "name": "selector", "descr": "The same selector used to bind to the events.", "optional": true },
                     { "name": "handler", "descr": "A reference to the handler function to remove.", "optional": true }
-                  ]
-                },
-
-                {
-                  "args": [
-                    { "name": "eventsMap", "descr": "A map of event names to handler functions to remove." },
-                    { "name": "selector", "descr": "The same selector used to bind to the events.", "optional": true }
                   ]
                 }
               ],
@@ -319,7 +334,7 @@
 
             {
               "name": "cy.initrender",
-              "descr": "Get whether the initial render event has occurred (useful for plugins etc).",
+              "descr": "Get whether the initial render event has occurred (useful for extensions etc).",
               "md": "core/initrender"
             },
 
@@ -371,6 +386,7 @@
           "fns": [
             {
               "name": "cy.center",
+              "pureAliases": ["cy.centre"],
               "descr": "Pan the graph to the centre of a collection.",
               "formats": [
                 { "descr": "Centre on all elements in the graph." },
@@ -422,7 +438,7 @@
 
             {
               "name": "cy.panningEnabled",
-              "descr": "Get or set whether panning is enabled.  If `cy.boxSelectionEnabled() === true`, then the user must taphold to initiate panning.",
+              "descr": "Get or set whether panning is enabled.",
               "formats": [
                 {
                   "descr": "Get whether panning is enabled."
@@ -440,7 +456,7 @@
 
             {
               "name": "cy.userPanningEnabled",
-              "descr": "Get or set whether panning by user events (e.g. dragging the graph background) is enabled.  If `cy.boxSelectionEnabled() === true`, then the user must taphold to initiate panning.",
+              "descr": "Get or set whether panning by user events (e.g. dragging the graph background) is enabled.",
               "formats": [
                 {
                   "descr": "Get whether user panning is enabled."
@@ -566,7 +582,7 @@
 
             {
               "name": "cy.boxSelectionEnabled",
-              "descr": "Get or set whether box selection is enabled.   If enabled, the user must hold left-click to initiate panning.",
+              "descr": "Get or set whether box selection is enabled.   If enabled along with panning, the user must hold one of shift, control, meta, or alt down to initiate box selection.",
               "formats": [
                 {
                   "descr": "Get whether box selection is enabled."
@@ -1025,14 +1041,6 @@
                     { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true },
                     { "name": "function(evt)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "evt", "descr": "The event object." } ] }
                   ]
-                },
-
-                {
-                  "args": [
-                    { "name": "eventsMap", "descr": "A map of event names to handler functions." },
-                    { "name": "selector", "descr": "A delegate selector to specify child elements for which the handler is triggered.", "optional": true },
-                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true }
-                  ]
                 }
               ],
               "md": "collection/on"
@@ -1064,14 +1072,6 @@
                     { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true },
                     { "name": "function(evt)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "evt", "descr": "The event object." } ] }
                   ]
-                },
-
-                {
-                  "args": [
-                    { "name": "eventsMap", "descr": "A map of event names to handler functions." },
-                    { "name": "selector", "descr": "A delegate selector to specify child elements for which the handler is triggered.", "optional": true },
-                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true }
-                  ]
                 }
               ],
               "md": "collection/one"
@@ -1088,14 +1088,6 @@
                     { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true },
                     { "name": "function(evt)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "evt", "descr": "The event object." } ] }
                   ]
-                },
-
-                {
-                  "args": [
-                    { "name": "eventsMap", "descr": "A map of event names to handler functions." },
-                    { "name": "selector", "descr": "A delegate selector to specify child elements for which the handler is triggered.", "optional": true },
-                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true }
-                  ]
                 }
               ],
               "md": "collection/once"
@@ -1111,13 +1103,6 @@
                     { "name": "events", "descr": "A space separated list of event names." },
                     { "name": "selector", "descr": "The same delegate selector used to bind to the events.", "optional": true },
                     { "name": "handler", "descr": "A reference to the handler function to remove.", "optional": true }
-                  ]
-                },
-
-                {
-                  "args": [
-                    { "name": "eventsMap", "descr": "A map of event names to handler functions to remove." },
-                    { "name": "selector", "descr": "The same delegate selector used to bind to the events.", "optional": true }
                   ]
                 }
               ],
@@ -1199,6 +1184,7 @@
 
             {
               "name": "ele.scratch",
+              "extFn": true,
               "descr": "Set or get scratchpad data, where temporary or non-JSON data can be stored.  App-level scratchpad data should use namespaces prefixed with underscore, like `'_foo'`.",
               "formats": [
                 {
@@ -2253,7 +2239,7 @@
 
             {
               "name": "eles.difference",
-              "pureAliases": [ "eles.not", "eles.relativeComplement", "eles['\\\\']", "eles['!']", "eles['-']" ],
+              "pureAliases": [ "eles.not", "eles.subtract", "eles.relativeComplement", "eles['\\\\']", "eles['!']", "eles['-']" ],
               "descr": "Get a new collection, resulting from the collection without some specified elements.",
               "formats": [
                 {
@@ -2777,7 +2763,7 @@
                 {
                   "args": [
                     { "name": "options", "fields": [
-                      { "name": "roots", "descr": "The root nodes (selector or collection) to start the search from." },
+                      { "name": "root", "descr": "The root nodes (selector or collection) to start the search from." },
                       { "name": "visit: function(i, depth, v, e, u)", "descr": "A handler function that is called when a node is visited in the search.  The handler returns `true` when it finds the desired node, and it returns `false` to cancel the search.", "optional": true, "fields": [
                         { "name": "i", "descr": "The index indicating this node is the ith visited node." },
                         { "name": "depth", "descr": "How many edge hops away this node is from the root nodes." },
@@ -2787,19 +2773,6 @@
                       ] },
                       { "name": "directed", "descr": "A boolean indicating whether the algorithm should only go along edges from source to target (default `false`).", "optional": true }
                     ] }
-                  ]
-                },
-                {
-                  "args": [
-                    { "name": "roots", "descr": "The root nodes (selector or collection) to start the search from." },
-                    { "name": "function(i, depth, v, e, u)", "descr": "A handler function that is called when a node is visited in the search.  The handler returns `true` when it finds the desired node, and it returns `false` to cancel the search.", "optional": true, "fields": [
-                      { "name": "i", "descr": "The index indicating this node is the ith visited node." },
-                      { "name": "depth", "descr": "How many edge hops away this node is from the root nodes." },
-                      { "name": "v", "descr": "The current node." },
-                      { "name": "e", "descr": "The edge connecting the previous node to the current node." },
-                      { "name": "u", "descr": "The previous node." }
-                    ] },
-                    { "name": "directed", "descr": "A boolean indicating whether the search should only go along edges from source to target (default `false`).", "optional": true }
                   ]
                 }
               ],
@@ -2814,7 +2787,7 @@
                 {
                   "args": [
                     { "name": "options", "fields": [
-                      { "name": "roots", "descr": "The root nodes (selector or collection) to start the search from." },
+                      { "name": "root", "descr": "The root nodes (selector or collection) to start the search from." },
                       { "name": "visit: function(i, depth, v, e, u)", "descr": "A handler function that is called when a node is visited in the search.  The handler returns `true` when it finds the desired node, and it returns `false` to cancel the search.", "optional": true, "fields": [
                         { "name": "i", "descr": "The index indicating this node is the ith visited node." },
                         { "name": "depth", "descr": "How many edge hops away this node is from the root nodes." },
@@ -2824,19 +2797,6 @@
                       ] },
                       { "name": "directed", "descr": "A boolean indicating whether the algorithm should only go along edges from source to target (default `false`).", "optional": true }
                     ] }
-                  ]
-                },
-                {
-                  "args": [
-                    { "name": "roots", "descr": "The root nodes (selector or collection) to start the search from." },
-                    { "name": "function(i, depth, v, e, u)", "descr": "A handler function that is called when a node is visited in the search.  The handler returns `true` when it finds the desired node, and it returns `false` to cancel the search.", "optional": true, "fields": [
-                      { "name": "i", "descr": "The index indicating this node is the ith visited node." },
-                      { "name": "depth", "descr": "How many edge hops away this node is from the root nodes." },
-                      { "name": "v", "descr": "The current node." },
-                      { "name": "e", "descr": "The edge connecting the previous node to the current node." },
-                      { "name": "u", "descr": "The previous node." }
-                    ] },
-                    { "name": "directed", "descr": "A boolean indicating whether the search should only go along edges from source to target (default `false`).", "optional": true }
                   ]
                 }
               ],
@@ -2854,13 +2814,6 @@
                       { "name": "weight: function(edge)", "descr": "A function that returns the positive numeric weight for `this` edge.", "optional": true },
                       { "name": "directed", "descr": "A boolean indicating whether the algorithm should only go along edges from source to target (default `false`).", "optional": true }
                     ] }
-                  ]
-                },
-                {
-                  "args": [
-                    { "name": "root", "descr": "The root node (selector or collection) where the algorithm starts." },
-                    { "name": "function(edge)", "descr": "A function that returns the positive numeric weight for `this` edge.", "optional": true },
-                    { "name": "directed", "descr": "A boolean indicating whether the algorithm should only go along edges from source to target (default `false`).", "optional": true }
                   ]
                 }
               ],
@@ -3267,13 +3220,6 @@
                     { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true },
                     { "name": "function(evt)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "evt", "descr": "The event object." } ] }
                   ]
-                },
-
-                {
-                  "args": [
-                    { "name": "eventsMap", "descr": "A map of event names to handler functions." },
-                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true }
-                  ]
                 }
               ],
               "md": "layout/on"
@@ -3303,13 +3249,6 @@
                     { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true },
                     { "name": "function(evt)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "evt", "descr": "The event object." } ] }
                   ]
-                },
-
-                {
-                  "args": [
-                    { "name": "eventsMap", "descr": "A map of event names to handler functions." },
-                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true }
-                  ]
                 }
               ],
               "md": "layout/one"
@@ -3324,12 +3263,6 @@
                   "args": [
                     { "name": "events", "descr": "A space separated list of event names." },
                     { "name": "handler", "descr": "A reference to the handler function to remove.", "optional": true }
-                  ]
-                },
-
-                {
-                  "args": [
-                    { "name": "eventsMap", "descr": "A map of event names to handler functions to remove." }
                   ]
                 }
               ],

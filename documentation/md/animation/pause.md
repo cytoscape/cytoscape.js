@@ -16,3 +16,4 @@ jAni.play();
 setTimeout(function(){
   jAni.pause();
 }, 500);
+```

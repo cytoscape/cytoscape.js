@@ -17,7 +17,7 @@ var defineSearch = function( params ){
     var thisArg;
     if( is.plainObject(roots) && !is.elementOrCollection(roots) ){
       options = roots;
-      roots = options.roots;
+      roots = options.roots || options.root;
       fn = options.visit;
       directed = options.directed;
       std = options.std;

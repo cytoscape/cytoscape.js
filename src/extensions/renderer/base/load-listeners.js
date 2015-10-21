@@ -572,7 +572,7 @@ BRp.load = function() {
         select[4] == 1 && (down == null || down.isEdge())
     ){
 
-      if( !r.hoverData.dragging && cy.boxSelectionEnabled() && multSelKeyDown ){
+      if( !r.hoverData.dragging && cy.boxSelectionEnabled() && ( multSelKeyDown || !cy.panningEnabled() || !cy.userPanningEnabled() ) ){
         r.data.bgActivePosistion = undefined;
         r.hoverData.selecting = true;
 

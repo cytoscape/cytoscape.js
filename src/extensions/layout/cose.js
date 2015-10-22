@@ -737,8 +737,7 @@ CoseLayout.prototype.run = function() {
         component.push( node );
       }
 
-      var totalW = 0;
-      var totalH = 0;
+      var totalA = 0;
 
       for( var i = 0; i < components.length; i++ ){
         var c = components[i];
@@ -759,8 +758,7 @@ CoseLayout.prototype.run = function() {
         c.w = c.x2 - c.x1;
         c.h = c.y2 - c.y1;
 
-        totalW += c.w;
-        totalH += c.h;
+        totalA += c.w * c.h;
       }
 
       components.sort(function( c1, c2 ){
@@ -771,6 +769,7 @@ CoseLayout.prototype.run = function() {
       var y = 0;
       var usedW = 0;
       var rowH = 0;
+      var maxRowW = Math.sqrt( totalA ) * layoutInfo.clientWidth / layoutInfo.clientHeight;
 
       for( var i = 0; i < components.length; i++ ){
         var c = components[i];
@@ -786,7 +785,7 @@ CoseLayout.prototype.run = function() {
         usedW += c.w + options.componentSpacing;
         rowH = Math.max( rowH, c.h );
 
-        if( usedW > (totalW + options.componentSpacing*components.length)/2 ){
+        if( usedW > maxRowW ){
           y += rowH + options.componentSpacing;
           x = 0;
           usedW = 0;

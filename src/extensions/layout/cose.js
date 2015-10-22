@@ -868,6 +868,8 @@ CoseLayout.prototype.stop = function(){
     this.thread.stop();
   }
 
+  this.trigger('layoutstop');
+
   return this; // chaining
 };
 

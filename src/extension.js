@@ -68,6 +68,8 @@ function setExtension( type, name, registrant ){
           }
         }
 
+        this.trigger('layoutstop');
+
         return this;
       };
     }

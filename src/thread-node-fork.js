@@ -36,6 +36,10 @@ function reject( v ){
 
 process.on('message', function( m ){
   if( typeof m === 'object' && m.$$eval ){
+    function _ref_( o ){
+      return eval( o );
+    }
+
     eval( m.$$eval );
   }
 });

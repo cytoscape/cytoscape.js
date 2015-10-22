@@ -102,7 +102,7 @@ util.extend(fabfn, {
     if( is.array(data) ){
       pass.push( data );
     } else {
-      util.error('Only arrays or collections may be used with fabric.pass()');
+      throw 'Only arrays may be used with fabric.pass()';
     }
 
     return this; // chaining

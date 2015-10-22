@@ -214,6 +214,25 @@ describe('Thread', function(){
     });
   });
 
+  it('requires a function with a specified name using _ref_()', function( next ){
+    var t = $$.Thread();
+
+    t.require( function(){
+      return 'bar';
+    }, 'bar' );
+
+    t.run(function(){
+      var fn = _ref_('bar');
+
+      resolve( fn() );
+    }).then(function( ret ){
+      expect( ret ).to.equal('bar');
+
+      t.stop();
+      next();
+    });
+  });
+
   it('requires an external file', function( next ){
     var t = $$.Thread();
 

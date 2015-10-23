@@ -243,13 +243,13 @@ math.inLineVicinity = function(x, y, lx1, ly1, lx2, ly2, tolerance){
 };
 
 math.inBezierVicinity = function(
-  x, y, x1, y1, x2, y2, x3, y3, toleranceSquared) {
+  x, y, x1, y1, x2, y2, x3, y3, tolerance) {
 
   var bb = {
-    x1: Math.min( x1, x3, x2 ),
-    x2: Math.max( x1, x3, x2 ),
-    y1: Math.min( y1, y3, y2 ),
-    y2: Math.max( y1, y3, y2 )
+    x1: Math.min( x1, x3, x2 ) - tolerance,
+    x2: Math.max( x1, x3, x2 ) + tolerance,
+    y1: Math.min( y1, y3, y2 ) - tolerance,
+    y2: Math.max( y1, y3, y2 ) + tolerance
   };
 
   // if outside the rough bounding box for the bezier, then it can't be a hit

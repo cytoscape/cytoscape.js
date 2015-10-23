@@ -299,10 +299,15 @@ CoseLayout.prototype.run = function() {
       }
 
       // Apply force
-      node1.offsetX -= forceX;
-      node1.offsetY -= forceY;
-      node2.offsetX += forceX;
-      node2.offsetY += forceY;
+      if( !node1.isLocked ){
+        node1.offsetX -= forceX;
+        node1.offsetY -= forceY;
+      }
+
+      if( !node2.isLocked ){
+        node2.offsetX += forceX;
+        node2.offsetY += forceY;
+      }
 
       // s += "\nForceX: " + forceX + " ForceY: " + forceY;
       // logDebug(s);
@@ -462,10 +467,15 @@ CoseLayout.prototype.run = function() {
         }
 
         // Add this force to target and source nodes
-        source.offsetX += forceX;
-        source.offsetY += forceY;
-        target.offsetX -= forceX;
-        target.offsetY -= forceY;
+        if( !source.isLocked ){
+          source.offsetX += forceX;
+          source.offsetY += forceY;
+        }
+
+        if( !target.isLocked ){
+          target.offsetX -= forceX;
+          target.offsetY -= forceY;
+        }
 
         // var s = 'Edge force between nodes ' + source.id + ' and ' + target.id;
         // s += "\nDistance: " + l + " Force: (" + forceX + ", " + forceY + ")";
@@ -506,6 +516,9 @@ CoseLayout.prototype.run = function() {
         for (var j = 0; j < numNodes; j++) {
           var node = layoutInfo.layoutNodes[layoutInfo.idToIndex[graph[j]]];
           // s = "Node: " + node.id;
+
+          if( node.isLocked ){ continue; }
+
           var dx = centerX - node.positionX;
           var dy = centerY - node.positionY;
           var d  = Math.sqrt(dx * dx + dy * dy);
@@ -551,27 +564,27 @@ CoseLayout.prototype.run = function() {
         var children  = node.children;
 
         // We only need to process the node if it's compound
-        if (0 < children.length) {
-        var offX = node.offsetX;
-        var offY = node.offsetY;
+        if (0 < children.length && !node.isLocked) {
+          var offX = node.offsetX;
+          var offY = node.offsetY;
 
-        // var s = "Propagating offset from parent node : " + node.id +
-        //   ". OffsetX: " + offX + ". OffsetY: " + offY;
-        // s += "\n Children: " + children.toString();
-        // logDebug(s);
+          // var s = "Propagating offset from parent node : " + node.id +
+          //   ". OffsetX: " + offX + ". OffsetY: " + offY;
+          // s += "\n Children: " + children.toString();
+          // logDebug(s);
 
-        for (var i = 0; i < children.length; i++) {
-          var childNode = layoutInfo.layoutNodes[layoutInfo.idToIndex[children[i]]];
-          // Propagate offset
-          childNode.offsetX += offX;
-          childNode.offsetY += offY;
-          // Add children to queue to be visited
-          queue[++end] = children[i];
-        }
+          for (var i = 0; i < children.length; i++) {
+            var childNode = layoutInfo.layoutNodes[layoutInfo.idToIndex[children[i]]];
+            // Propagate offset
+            childNode.offsetX += offX;
+            childNode.offsetY += offY;
+            // Add children to queue to be visited
+            queue[++end] = children[i];
+          }
 
-        // Reset parent offsets
-        node.offsetX = 0;
-        node.offsetY = 0;
+          // Reset parent offsets
+          node.offsetX = 0;
+          node.offsetY = 0;
         }
 
       }
@@ -599,8 +612,8 @@ CoseLayout.prototype.run = function() {
 
       for (var i = 0; i < layoutInfo.nodeSize; i++) {
         var n = layoutInfo.layoutNodes[i];
-        if (0 < n.children.length) {
-          // No need to set compound node position
+        if (0 < n.children.length || n.isLocked) {
+          // No need to set compound or locked node position
           // logDebug("Skipping position update of node: " + n.id);
           continue;
         }
@@ -627,7 +640,7 @@ CoseLayout.prototype.run = function() {
       // Update size, position of compund nodes
       for (var i = 0; i < layoutInfo.nodeSize; i++) {
         var n = layoutInfo.layoutNodes[i];
-        if (0 < n.children.length) {
+        if ( 0 < n.children.length && !n.isLocked ) {
           n.positionX = (n.maxX + n.minX) / 2;
           n.positionY = (n.maxY + n.minY) / 2;
           n.width     = n.maxX - n.minX;
@@ -777,8 +790,10 @@ CoseLayout.prototype.run = function() {
         for( var j = 0; j < c.length; j++ ){
           var n = c[j];
 
-          n.positionX += x;
-          n.positionY += y;
+          if( !n.isLocked ){
+            n.positionX += x;
+            n.positionY += y;
+          }
         }
 
         x += c.w + options.componentSpacing;
@@ -893,6 +908,7 @@ var createLayoutInfo = function(cy, layout, options) {
   var nodes = options.eles.nodes();
 
   var layoutInfo   = {
+    isLocked     : node.locked(),
     isCompound   : cy.hasCompoundNodes(),
     layoutNodes  : [],
     idToIndex    : {},
@@ -1221,8 +1237,9 @@ var randomizePositions = function(layoutInfo, cy) {
 
   for (var i = 0; i < layoutInfo.nodeSize; i++) {
     var n = layoutInfo.layoutNodes[i];
-    // No need to randomize compound nodes
-    if (true || 0 === n.children.length) {
+
+    // No need to randomize compound nodes or locked nodes
+    if ( 0 === n.children.length && !n.isLocked ) {
       n.positionX = Math.random() * width;
       n.positionY = Math.random() * height;
     }

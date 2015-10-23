@@ -155,7 +155,7 @@ BRp.findNearestElement = function(x, y, visibleElementsOnly, isTouch){
       var pts = rs.allpts;
       for( var i = 0; i + 5 < rs.allpts.length; i += 4 ){
         if(
-          (inEdgeBB = math.inBezierVicinity(x, y, pts[i], pts[i+1], pts[i+2], pts[i+3], pts[i+4], pts[i+5], widthSq))
+          (inEdgeBB = math.inBezierVicinity(x, y, pts[i], pts[i+1], pts[i+2], pts[i+3], pts[i+4], pts[i+5], width2))
             && passesVisibilityCheck() &&
           (widthSq > (sqDist = math.sqDistanceToQuadraticBezier(x, y, pts[i], pts[i+1], pts[i+2], pts[i+3], pts[i+4], pts[i+5])) )
         ){

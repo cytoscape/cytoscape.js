@@ -114,31 +114,7 @@ BRp.findNearestElement = function(x, y, visibleElementsOnly, isTouch){
       return false;
     };
 
-    if( rs.edgeType === 'haystack' ){
-      var radius = style['haystack-radius'].value;
-      var halfRadius = radius/2; // b/c have to half width/height
-
-      var tgtPos = tgt._private.position;
-      var tgtW = tgt.width();
-      var tgtH = tgt.height();
-      var srcPos = src._private.position;
-      var srcW = src.width();
-      var srcH = src.height();
-
-      var startX = srcPos.x + rs.source.x * srcW * halfRadius;
-      var startY = srcPos.y + rs.source.y * srcH * halfRadius;
-      var endX = tgtPos.x + rs.target.x * tgtW * halfRadius;
-      var endY = tgtPos.y + rs.target.y * tgtH * halfRadius;
-
-      if(
-        (inEdgeBB = math.inLineVicinity(x, y, startX, startY, endX, endY, width2))
-          && passesVisibilityCheck() &&
-        widthSq > ( sqDist = math.sqDistanceToFiniteLine( x, y, startX, startY, endX, endY ) )
-      ){
-        near.push( edge );
-      }
-
-    } else if( rs.edgeType === 'segments' || rs.edgeType === 'straight' ){
+    if( rs.edgeType === 'segments' || rs.edgeType === 'straight' || rs.edgeType === 'haystack' ){
       var pts = rs.allpts;
 
       for( var i = 0; i + 3 < pts.length; i += 2 ){
@@ -1413,6 +1389,7 @@ BRp.findEdgeControlPoints = function(edges) {
   for( var i = 0; i < haystackEdges.length; i++ ){
     var edge = haystackEdges[i];
     var _p = edge._private;
+    var style = _p.style;
     var rscratch = _p.rscratch;
     var rs = rscratch;
 

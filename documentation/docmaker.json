@@ -1,5 +1,5 @@
 {
-  "version": "2.5.0-unstable4",
+  "version": "2.5.0-unstable6",
 
   "fnArgLinks": {
     "selector": "#selectors",
@@ -45,6 +45,8 @@
         { "name": "Spread layout", "id": "0365589fdb70b58af282" },
         { "name": "Images & breadthfirst layout", "id": "aedff159b0df05ccfaa5" },
         { "name": "Animated BFS", "id": "7e2f4d29ff7ef1a1bba5" },
+        { "name": "Edge types", "id": "18504640d9a03c178fff" },
+        { "name": "Labels", "id": "2abfc41c86c1e3cb0700" },
         { "name": "Compound nodes", "id": "5b192c88616af2f75344" },
         { "name": "Linkout example", "id": "eb861f83fb741628342f" },
         { "name": "Pie style", "id": "173313aba1f31cae49a5" },
@@ -236,6 +238,7 @@
 
             {
               "name": "cy.removeScratch",
+              "extFn": true,
               "descr": "Remove scratchpad data.  You should remove scratchpad data only at your own namespaces.  This is analogous to the more common [`ele.removeScratch()`](#ele.removeScratch) but for graph global data.",
               "formats": [
                 {
@@ -334,6 +337,7 @@
 
             {
               "name": "cy.initrender",
+              "extFn": true,
               "descr": "Get whether the initial render event has occurred (useful for extensions etc).",
               "md": "core/initrender"
             },
@@ -1211,6 +1215,7 @@
 
             {
               "name": "ele.removeScratch",
+              "extFn": true,
               "descr": "Remove scratchpad data.  You should remove scratchpad data only at your own namespaces.",
               "formats": [
                 {

@@ -281,7 +281,7 @@ Towards the target node, positioned in the middle of the edge:
 ## Labels
 
  * **`color`** :  The colour of the element's label.
- * **`content`** : The text to display for an element's label.
+ * **`label`** : The text to display for an element's label.
  * **`font-family`** : A [comma-separated list of font names](https://developer.mozilla.org/en-US/docs/Web/CSS/font-family) to use on the label text.
  * **`font-size`** : The size of the label text.
  * **`font-style`** : A [CSS font style](https://developer.mozilla.org/en-US/docs/Web/CSS/font-style) to be applied to the label text.
@@ -294,18 +294,18 @@ Towards the target node, positioned in the middle of the edge:
  * **`text-outline-color`** : The colour of the outline around the element's label text.
  * **`text-outline-opacity`** : The opacity of the outline on label text.
  * **`text-outline-width`** : The size of the outline on label text.
- * **`text-shadow-blur`** : The shadow blur, note that when greater than 0, this could affect performance. Default to 5.
+ * **`text-shadow-blur`** : The shadow blur distance.
  * **`text-shadow-color`** : The colour of the shadow.
  * **`text-shadow-offset-x`** : The x offset relative to the text where the shadow will be displayed, can be negative. If you set blur to 0, add an offset to view your shadow.
  * **`text-shadow-offset-y`** : The y offset relative to the text where the shadow will be displayed, can be negative. If you set blur to 0, add an offset to view your shadow.
- * **`text-shadow-opacity`** : The opacity of the shadow.
- * **`text-background-color`** : A color to apply on the text background.
- * **`text-background-opacity`** : The opacity of the label background; the background is disabled for `0`.
- * **`text-background-shape`** : The shape to use for the label background, can be rectangle or roundrectangle.
- * **`text-border-opacity`** : The opacity of the text border.
- * **`text-border-width`** : The border width to put around the label.
+ * **`text-shadow-opacity`** : The opacity of the shadow on the text; the shadow is disabled for `0` (default value).
+ * **`text-background-color`** : A colour to apply on the text background.
+ * **`text-background-opacity`** : The opacity of the label background; the background is disabled for `0` (default value).
+ * **`text-background-shape`** : The shape to use for the label background, can be `rectangle` or `roundrectangle`.
+ * **`text-border-opacity`** : The width of the border around the label; the border is disabled for `0` (default value).
+ * **`text-border-width`** : The width of the border around the label.
  * **`text-border-style`** : The style of the border around the label; may be `solid`, `dotted`, `dashed`, or `double`.
- * **`text-border-color`** : The color of the border around the label.
+ * **`text-border-color`** : The colour of the border around the label.
  * **`min-zoomed-font-size`** : If zooming makes the effective font size of the label smaller than this, then no label is shown.
  * **`text-events`** : Whether events should occur on an element if the label receives an event; may be `yes` or `no`.  You may want a style applied to the text on `:active` so you know the text is activatable.
 

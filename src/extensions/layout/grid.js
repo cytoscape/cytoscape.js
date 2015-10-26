@@ -11,7 +11,7 @@ var defaults = {
   avoidOverlapPadding: 10, // extra spacing around nodes when avoidOverlap: true
   condense: false, // uses all available space on false, uses minimal space on true
   rows: undefined, // force num of rows in the grid
-  columns: undefined, // force num of cols in the grid
+  cols: undefined, // force num of columns in the grid
   position: function( node ){}, // returns { row, col } for element
   sort: undefined, // a sorting function to order the nodes; e.g. function(a, b){ return a.data('weight') - b.data('weight') }
   animate: false, // whether to transition the node positions
@@ -80,15 +80,18 @@ GridLayout.prototype.run = function(){
       }
     };
 
+    var oRows = options.rows;
+    var oCols = options.cols != null ? options.cols : options.columns;
+
     // if rows or columns were set in options, use those values
-    if( options.rows != null && options.columns != null ){
-      rows = options.rows;
-      cols = options.columns;
-    } else if( options.rows != null && options.columns == null ){
-      rows = options.rows;
+    if( oRows != null && oCols != null ){
+      rows = oRows;
+      cols = oCols;
+    } else if( oRows != null && oCols == null ){
+      rows = oRows;
       cols = Math.ceil( cells / rows );
-    } else if( options.rows == null && options.columns != null ){
-      cols = options.columns;
+    } else if( oRows == null && oCols != null ){
+      cols = oCols;
       rows = Math.ceil( cells / cols );
     }
 

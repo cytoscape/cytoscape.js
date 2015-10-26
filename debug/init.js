@@ -127,7 +127,8 @@ $(function(){
         })
       .selector('[source = "c"][target = "e"]')
         .css({
-          'curve-style': 'haystack'
+          'curve-style': 'haystack',
+          'haystack-radius': 0.5
         })
   ;
 

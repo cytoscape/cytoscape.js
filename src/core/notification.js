@@ -1,7 +1,5 @@
 'use strict';
 
-var Collection = require('../collection');
-
 var corefn = ({
   notify: function( params ){
     var _p = this._private;

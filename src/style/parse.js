@@ -188,7 +188,7 @@ var parseImpl = function( name, value, propIsBypass, propIsFlat ){
       vals = [ value ];
     }
 
-    if( type.evenMultiple && vals.length % 2 !== 0 ){ return null; };
+    if( type.evenMultiple && vals.length % 2 !== 0 ){ return null; }
 
     var valArr = vals.map(function( v ){
       var p = self.parse( name, v, propIsBypass, true );

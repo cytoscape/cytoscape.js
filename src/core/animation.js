@@ -29,7 +29,6 @@ var corefn = ({
 
   startAnimationLoop: function(){
     var cy = this;
-    var style = cy.style;
 
     cy._private.animationsRunning = true;
 

@@ -44,11 +44,6 @@ CRp.drawEdge = function(context, edge, drawOverlayInstead) {
     context.lineCap = 'butt';
   }
 
-  var source = edge._private.source;
-  var target = edge._private.target;
-  var srcPos = source._private.position;
-  var tgtPos = target._private.position;
-
   var edgeWidth = style['width'].pfValue + (drawOverlayInstead ? 2 * overlayPadding : 0);
   var lineStyle = drawOverlayInstead ? 'solid' : style['line-style'].value;
   context.lineWidth = edgeWidth;

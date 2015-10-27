@@ -1,6 +1,5 @@
 'use strict';
 
-var is = require('../../is');
 var util = require('../../util');
 
 var elesfn = ({

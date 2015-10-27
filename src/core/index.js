@@ -217,7 +217,9 @@ util.extend(corefn, {
     if( domEle ){
       domEle._cyreg = null;
 
-      domEle.parentNode.removeChild( domEle );
+      while( domEle.childNodes.length > 0 ){
+        domEle.removeChild( domEle.childNodes[0] );
+      }
     }
 
     return cy;

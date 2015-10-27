@@ -227,7 +227,9 @@ BRp.load = function() {
       }
     });
 
-    r.removeObserver.observe( r.container.parentNode, { childList: true } );
+    if( r.container.parentNode ){
+      r.removeObserver.observe( r.container.parentNode, { childList: true } );
+    }
   } else {
     r.registerBinding(r.container, 'DOMNodeRemoved', function(e){
       r.destroy();

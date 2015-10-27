@@ -700,6 +700,6 @@ gulp.task('lint', function(){
       }
     }) )
 
-    .pipe( jshint.reporter( require('jshint-stylish') ) )
+    .pipe( $.jshint.reporter( require('jshint-stylish') ) )
   ;
 });

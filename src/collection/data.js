@@ -1,8 +1,6 @@
 'use strict';
 
 var define = require('../define');
-var is = require('../is');
-var util = require('../util');
 var fn, elesfn;
 
 fn = elesfn = ({

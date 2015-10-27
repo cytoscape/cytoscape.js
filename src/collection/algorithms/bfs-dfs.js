@@ -1,7 +1,6 @@
 'use strict';
 
 var is = require('../../is');
-var util = require('../../util');
 var Heap = require('../../heap');
 
 var defineSearch = function( params ){

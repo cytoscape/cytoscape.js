@@ -145,9 +145,6 @@ BRp.findNearestElement = function(x, y, visibleElementsOnly, isTouch){
       var src = src || _p.source;
       var tgt = tgt || _p.target;
 
-      var tgtPos = tgt._private.position;
-      var srcPos = src._private.position;
-
       var eWidth = style['width'].pfValue;
       var arSize = self.getArrowWidth( eWidth );
 
@@ -298,8 +295,6 @@ BRp.getAllInBox = function(x1, y1, x2, y2) {
     x2: x2, y2: y2
   });
 
-  var heur;
-
   for ( var i = 0; i < nodes.length; i++ ){
     var node = nodes[i];
     var nodeBb = node.boundingBox({
@@ -317,8 +312,6 @@ BRp.getAllInBox = function(x1, y1, x2, y2) {
     var edge = edges[e];
     var _p = edge._private;
     var rs = _p.rscratch;
-    var src = _p.source;
-    var tgt = _p.target;
 
     if( rs.startX != null && rs.startY != null && !math.inBoundingBox( boxBb, rs.startX, rs.startY ) ){ continue; }
     if( rs.endX != null && rs.endY != null && !math.inBoundingBox( boxBb, rs.endX, rs.endY ) ){ continue; }
@@ -427,7 +420,6 @@ BRp.getCachedZSortedEles = function( forceRecalc ){
 function pushBezierPts(edge, pts){
   var qbezierAt = function( p1, p2, p3, t ){ return math.qbezierAt(p1, p2, p3, t); };
   var _p = edge._private;
-  var rs = _p.rscratch;
   var bpts = _p.rstyle.bezierPts;
 
   bpts.push({
@@ -448,7 +440,7 @@ function pushBezierPts(edge, pts){
   bpts.push({
     x: qbezierAt( pts[0], pts[2], pts[4], 0.5 ),
     y: qbezierAt( pts[1], pts[3], pts[5], 0.5 )
-  })
+  });
 
   bpts.push({
     x: qbezierAt( pts[0], pts[2], pts[4], 0.6 ),
@@ -550,7 +542,6 @@ BRp.recalculateEdgeLabelProjection = function( edge ){
   if( !content || content.match(/^\s+$/) ){ return; }
 
   var textX, textY;
-  var edgeCenterX, edgeCenterY;
   var _p = edge._private;
   var rs = _p.rscratch;
   //var style = _p.style;
@@ -987,7 +978,8 @@ BRp.findEdgeControlPoints = function(edges) {
       var numEdges1 = rs.lastNumEdges;
       var numEdges2 = pairEdges.length;
 
-      var eStyle = style = edge_p.style;
+      var eStyle = edge_p.style;
+      var style = eStyle;
       var curveStyle = eStyle['curve-style'].value;
       var ctrlptDists = eStyle['control-point-distances'];
       var ctrlptWs = eStyle['control-point-weights'];
@@ -1456,10 +1448,11 @@ var getAngleFromDisp = function( dispX, dispY ){
 
 BRp.calculateArrowAngles = function( edge ){
   var rs = edge._private.rscratch;
-  var self = this;
   var isHaystack = rs.edgeType === 'haystack';
   var isMultibezier = rs.edgeType === 'multibezier';
   var isSegments = rs.edgeType === 'segments';
+  var isCompound = rs.edgeType === 'compound';
+  var isSelf = rs.edgeType === 'self';
 
   // Displacement gives direction for arrowhead orientation
   var dispX, dispY;
@@ -1479,8 +1472,6 @@ BRp.calculateArrowAngles = function( edge ){
     endX = rs.arrowEndX;
     endY = rs.arrowEndY;
   }
-
-  var style = edge._private.style;
 
   // source
   //
@@ -1504,10 +1495,10 @@ BRp.calculateArrowAngles = function( edge ){
   dispX = endX - startX;
   dispY = endY - startY;
 
-  if( rs.edgeType === 'self' ){
+  if( isSelf ){
     dispX = -1;
     dispY = 1;
-  } else if( rs.edgeType === 'segments' ){
+  } else if( isSegments ){
     var pts = rs.allpts;
 
     if( pts.length / 2 % 2 === 0 ){
@@ -1524,7 +1515,7 @@ BRp.calculateArrowAngles = function( edge ){
       dispX = -( pts[i2] - pts[i1] );
       dispY = -( pts[i2+1] - pts[i1+1] );
     }
-  } else if( rs.edgeType === 'multibezier' || rs.edgeType === 'compound' ){
+  } else if( isMultibezier || isCompound ){
     var pts = rs.allpts;
     var cpts = rs.ctrlpts;
     var bp0x, bp0y;
@@ -1567,14 +1558,13 @@ BRp.calculateArrowAngles = function( edge ){
   dispX *= -1;
   dispY *= -1;
 
-  if( rs.edgeType === 'segments' ){
+  if( isSegments ){
     var pts = rs.allpts;
 
     if( pts.length / 2 % 2 === 0 ){
       // already ok
     } else {
       var i2 = pts.length / 2 - 1;
-      var i1 = i2 - 2;
       var i3 = i2 + 2;
 
       dispX = ( pts[i3] - pts[i2] );

@@ -1,7 +1,6 @@
 'use strict';
 
 var is = require('../../is');
-var util = require('../../util');
 
 var elesfn = ({
 
@@ -164,7 +163,7 @@ var elesfn = ({
 
     return ret;
   } // betweennessCentrality
-  
+
 }); // elesfn
 
 // nice, short mathemathical alias

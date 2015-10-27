@@ -1512,8 +1512,8 @@ BRp.calculateArrowAngles = function( edge ){
       var i1 = i2 - 2;
       var i3 = i2 + 2;
 
-      dispX = -( pts[i2] - pts[i1] );
-      dispY = -( pts[i2+1] - pts[i1+1] );
+      dispX = ( pts[i2] - pts[i1] );
+      dispY = ( pts[i2+1] - pts[i1+1] );
     }
   } else if( isMultibezier || isCompound ){
     var pts = rs.allpts;
@@ -1567,8 +1567,8 @@ BRp.calculateArrowAngles = function( edge ){
       var i2 = pts.length / 2 - 1;
       var i3 = i2 + 2;
 
-      dispX = ( pts[i3] - pts[i2] );
-      dispY = ( pts[i3+1] - pts[i2+1] );
+      dispX = -( pts[i3] - pts[i2] );
+      dispY = -( pts[i3+1] - pts[i2+1] );
     }
   }
 

@@ -417,8 +417,6 @@ CRp.render = function( options ) {
   var hideLabels = r.hideLabelsOnViewport && vpManip;
 
   if (needDraw[r.DRAG] || needDraw[r.NODE] || drawAllLayers || drawOnlyNodeLayer) {
-    // NB : VERY EXPENSIVE
-
     if( hideEdges ){
     } else {
       r.findEdgeControlPoints(edges);

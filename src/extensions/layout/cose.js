@@ -908,7 +908,6 @@ var createLayoutInfo = function(cy, layout, options) {
   var nodes = options.eles.nodes();
 
   var layoutInfo   = {
-    isLocked     : node.locked(),
     isCompound   : cy.hasCompoundNodes(),
     layoutNodes  : [],
     idToIndex    : {},
@@ -944,6 +943,7 @@ var createLayoutInfo = function(cy, layout, options) {
     var nbb = n.boundingBox();
 
     var tempNode        = {};
+    tempNode.isLocked   = n.locked();
     tempNode.id         = n.data('id');
     tempNode.parentId   = n.data('parent');
     tempNode.cmptId     = id2cmptId[ n.id() ];

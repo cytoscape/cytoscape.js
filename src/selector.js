@@ -859,7 +859,7 @@ selfn.toString = selfn.selector = function(){
     }
 
     for(var j = 0; j < query.classes.length; j++){
-      var sel = '.' + query.classes[i];
+      var sel = '.' + query.classes[j];
       str += sel;
     }
 

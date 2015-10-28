@@ -1397,14 +1397,18 @@ BRp.load = function() {
 
         if( rdist2 >= r.touchTapThreshold2 ){ // then dragging can happen
           var draggedEles = r.dragData.touchDragEles;
+          var justStartedDrag = !r.dragData.didDrag;
 
           for( var k = 0; k < draggedEles.length; k++ ){
             var draggedEle = draggedEles[k];
 
+            if( justStartedDrag ){
+              addNodeToDrag( draggedEle, { inDragLayer: true } );
+            }
+
             if( r.nodeIsDraggable(draggedEle) && draggedEle.isNode() && draggedEle.grabbed() ){
               r.dragData.didDrag = true;
               var dPos = draggedEle._private.position;
-              var justStartedDrag = !r.hoverData.draggingEles;
               var updatePos = !draggedEle.isParent();
 
               if( updatePos && is.number(disp[0]) && is.number(disp[1]) ){
@@ -1413,8 +1417,6 @@ BRp.load = function() {
               }
 
               if( justStartedDrag ){
-                addNodeToDrag( draggedEle, { inDragLayer: true } );
-
                 r.redrawHint('eles', true);
 
                 var dragDelta = r.touchData.dragDelta;
@@ -1428,7 +1430,7 @@ BRp.load = function() {
             }
           }
 
-          var tcol = Collection(cy, draggedEle);
+          var tcol = Collection(cy, draggedEles);
 
           tcol.updateCompoundBounds();
           tcol.trigger('position drag');

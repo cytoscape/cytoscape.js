@@ -1,6 +1,9 @@
 $(function(){ // on dom ready
 
-$('#cy').cytoscape({
+var cy = cytoscape({
+  boxSelectionEnabled: false,
+  autounselectify: true,
+  
   style: cytoscape.stylesheet()
     .selector('node')
       .css({
@@ -50,29 +53,20 @@ $('#cy').cytoscape({
   layout: {
     name: 'grid',
     padding: 10
-  },
+  }
+});
+
+cy.on('tap', 'node', function(e){
+  var node = e.cyTarget; 
+  var neighborhood = node.neighborhood().add(node);
   
-  // on graph initial layout done (could be async depending on layout...)
-  ready: function(){
-    window.cy = this;
-    
-    // giddy up...
-    
-    cy.elements().unselectify();
-    
-    cy.on('tap', 'node', function(e){
-      var node = e.cyTarget; 
-      var neighborhood = node.neighborhood().add(node);
-      
-      cy.elements().addClass('faded');
-      neighborhood.removeClass('faded');
-    });
-    
-    cy.on('tap', function(e){
-      if( e.cyTarget === cy ){
-        cy.elements().removeClass('faded');
-      }
-    });
+  cy.elements().addClass('faded');
+  neighborhood.removeClass('faded');
+});
+
+cy.on('tap', function(e){
+  if( e.cyTarget === cy ){
+    cy.elements().removeClass('faded');
   }
 });
 

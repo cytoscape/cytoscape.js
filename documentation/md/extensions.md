@@ -26,8 +26,6 @@ The extensions below are a curated list.  To add your extension, [please submit 
 
 ## API
 
-## API
-
 To register an extension, make the following call: `cytoscape( type, name, extension );`
 
 The value of `type` can take on the following values:

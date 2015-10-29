@@ -91,8 +91,8 @@ var Element = function(cy, params, restore){
     }
   }
 
-  if( params.css ){
-    cy.style().applyBypass( this, params.css );
+  if( params.style || params.css ){
+    cy.style().applyBypass( this, params.style || params.css );
   }
 
   if( restore === undefined || restore ){

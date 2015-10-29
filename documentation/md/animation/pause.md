@@ -4,7 +4,8 @@
 var j = cy.$('#j');
 var jAni = j.animation({
   style: {
-    'background-color': 'red'
+    'background-color': 'red',
+    'width': 75
   },
   duration: 1000
 });

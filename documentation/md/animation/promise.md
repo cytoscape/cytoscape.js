@@ -5,7 +5,8 @@ When `ani.apply()` has updated the element style:
 ```js
 var jAni = cy.$('#j').animation({
   style: {
-    'background-color': 'red'
+    'background-color': 'red',
+    'width': 75
   },
   duration: 1000
 });

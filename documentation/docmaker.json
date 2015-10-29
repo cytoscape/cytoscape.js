@@ -1,5 +1,5 @@
 {
-  "version": "snapshot-6e80e8ff63-1446133100934",
+  "version": "2.5.0",
 
   "fnArgLinks": {
     "selector": "#selectors",
@@ -276,7 +276,7 @@
             {
               "name": "cy.promiseOn",
               "pureAliases": ["cy.pon"],
-              "descr": "Get a promise that is resolved when the first of any of the specified events is triggered on the graph.",
+              "descr": "Get a promise that is resolved with the first of any of the specified events triggered on the graph.",
               "formats": [
                 {
                   "args": [
@@ -1053,7 +1053,7 @@
             {
               "name": "eles.promiseOn",
               "pureAliases": ["eles.pon"],
-              "descr": "Get a promise that is resolved when the first of any of the specified events is triggered on any of the elements in the collection.",
+              "descr": "Get a promise that is resolved with the first of any of the specified events triggered on any of the elements in the collection.",
               "formats": [
                 {
                   "args": [
@@ -3244,7 +3244,7 @@
             {
               "name": "layout.promiseOn",
               "pureAliases": ["layout.pon"],
-              "descr": "Get a promise that is resolved when the first of any of the specified events is triggered on the layout.",
+              "descr": "Get a promise that is resolved with the first of any of the specified events triggered on the layout.",
               "formats": [
                 {
                   "args": [
@@ -3386,7 +3386,7 @@
             },
 
             {
-              "name": "ani.appling",
+              "name": "ani.applying",
               "descr": "Get whether the animation is currently applying."
             },
 
@@ -3398,14 +3398,14 @@
 
             {
               "name": "ani.promise",
-              "descr": "Get a promise that is fulfilled for the specified animation event.",
+              "descr": "Get a promise that is fulfilled with the specified animation event.",
               "formats": [
                 {
-                  "descr": "Get a promise that is fulfilled when the animation completes."
+                  "descr": "Get a promise that is fulfilled with the next `completed` event."
                 },
 
                 {
-                  "descr": "Get a promise that is fulfilled for the specified animation event.",
+                  "descr": "Get a promise that is fulfilled with the specified animation event.",
                   "args": [
                     { "name": "animationEvent", "descr": "A string for the event name; `completed` or `complete` for completing the animation or `frame` for the next frame of the animation." }
                   ]

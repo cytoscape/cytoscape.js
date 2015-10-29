@@ -1,0 +1,40 @@
+{
+  "disallowKeywords": [ "with" ],
+  "disallowMixedSpacesAndTabs": true,
+  "disallowNewlineBeforeBlockStatements": false,
+  "disallowSpaceAfterObjectKeys": true,
+  "disallowSpaceAfterPrefixUnaryOperators": true,
+  "disallowSpacesInFunction": {
+    "beforeOpeningRoundBrace": true,
+    "beforeOpeningCurlyBrace": true
+  },
+  "disallowSpacesInFunctionDeclaration": {
+    "beforeOpeningRoundBrace": true,
+    "beforeOpeningCurlyBrace": true
+  },
+  "disallowSpacesInsideParentheses": false,
+  "disallowTrailingWhitespace": true,
+  "requireCamelCaseOrUpperCaseIdentifiers": false,
+  "requireCapitalizedComments": false,
+  "requireCapitalizedConstructors": false,
+  "requireSemicolons": true,
+  "requireSpaceAfterKeywords": [
+    "return"
+  ],
+  "requireSpaceAfterLineComment": false,
+  "requireSpaceAfterBinaryOperators": true,
+  "requireSpaceBeforeBinaryOperators": true,
+  "requireSpaceBeforeBlockStatements": false,
+  "requireSpaceBeforeObjectValues": true,
+  "requireSpacesInsideParentheses": {
+    "all": true,
+    "except": ["(", ")"]
+  },
+  "validateIndentation": 2,
+  "validateLineBreaks": "LF",
+  "validateQuoteMarks": {
+    "mark": "'",
+    "escape": true
+  },
+  "validateParameterSeparator": ", "
+}

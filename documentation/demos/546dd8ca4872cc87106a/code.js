@@ -4,6 +4,9 @@ var cy = cytoscape({
   
   container: document.getElementById('cy'),
   
+  boxSelectionEnabled: false,
+  autounselectify: true,
+  
   elements: {
     nodes: [
       { data: { id: 'n', label: 'Tap me' } }

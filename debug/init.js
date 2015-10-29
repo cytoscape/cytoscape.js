@@ -20,20 +20,22 @@ $(function(){
 
       .selector('node')
         .css({
-          'content': 'data(id)',
+          'label': 'data(id)',
           'border-width': 3,
           'background-color': '#DDD',
           'border-color': '#555',
           'shape': 'ellipse',
+          // 'shape': 'polygon',
+          // 'shape-polygon-points': [ 0, -1,   1, 1,   -1, 1 ],
           //'shape': 'data(shape)',
-          // 'width': 'mapData(weight, 0, 100, 5, 15)',
-          // 'height': 'mapData(weight, 0, 100, 5, 15)',
+          'width': 'mapData(weight, 0, 100, 15, 50)',
+          'height': 'mapData(weight, 0, 100, 15, 50)',
           //'width': 'mapLayoutData(concentric, 0, 10, 10, 50)',
           //'height': 'mapLayoutData(concentric, 0, 10, 10, 50)',
           //'border-style': 'dashed'
           //'background-position-x': '5',
           //'background-position-y': '5',
-          // 'background-image': 'images/gnu.png',
+          // 'background-image': 'images/gnu.svg',
           // 'background-image-opacity': 0.5,
           // 'background-fit': 'contain',
           // 'background-repeat': 'no-repeat',
@@ -62,7 +64,7 @@ $(function(){
           'padding-right': 10,
           'padding-top': 10,
           'padding-bottom': 10,
-          // 'background-opacity': 1
+          'background-opacity': 1
         })
       .selector('node[id="non-auto"]') // to init a non-auto sized compound
         .css({
@@ -72,22 +74,22 @@ $(function(){
           })
       .selector('edge')
         .css({
-          'line-color': '#bbb',
-          'source-arrow-color': '#bbb',
-          'mid-source-arrow-color': '#bbb',
-          'target-arrow-color': '#bbb',
-          'mid-target-arrow-color': '#bbb',
+          'line-color': '#ccc',
+          'source-arrow-color': '#ccc',
+          'mid-source-arrow-color': '#ccc',
+          'target-arrow-color': '#ccc',
+          'mid-target-arrow-color': '#ccc',
           // 'curve-style': 'unbundled-bezier',
           // 'control-point-distance': 100,
           'width': '3',
-          // 'source-arrow-shape': 'triangle-backcurve',
+          'source-arrow-shape': 'triangle-backcurve',
           'target-arrow-shape': 'triangle',
-          // 'mid-target-arrow-shape': 'triangle',
-          // 'mid-source-arrow-shape': 'triangle-backcurve',
+          'mid-target-arrow-shape': 'triangle',
+          'mid-source-arrow-shape': 'triangle-backcurve',
           // 'target-arrow-fill': 'filled',
           // 'source-arrow-shape': 'data(srcShape)',
           // 'curve-style': 'haystack',
-          'opacity': 0.5
+          // 'opacity': 0.5
           //'content': 'data(weight)'
         })
       // .selector('[source="n1"]')
@@ -108,11 +110,26 @@ $(function(){
         .css({
           'width': 15
         })
-      // .selector('#ae')
-      //   .css({
-      //     'curve-style': 'unbundled-bezier',
-      //     'control-point-distance': 100
-      //   })
+      .selector('#ab')
+        .css({
+          'curve-style': 'unbundled-bezier',
+          'control-point-distances': [ 100, -100, 100 ],
+          'control-point-weights': [ 0.25, 0.5, 0.75 ],
+          // 'label': 'hello world',
+          // 'edge-text-rotation': 'autorotate'
+        })
+      .selector('#bc')
+        .css({
+          'curve-style': 'segments',
+          'segment-distances': [ 20, -80 ],
+          'segment-weights': [ 0.25, 0.5 ],
+          // 'label': 'hello world'
+        })
+      .selector('[source = "c"][target = "e"]')
+        .css({
+          'curve-style': 'haystack',
+          'haystack-radius': 0.5
+        })
   ;
 
   window.options = {
@@ -127,10 +144,9 @@ $(function(){
       name: 'canvas',
       showFps: true
     },
-    // layout: {
-    //   name: 'arbor',
-    //   infinite: true
-    // },
+    layout: {
+      name: 'grid'
+    },
     style: defaultSty,
 
     elements: {
@@ -144,12 +160,20 @@ $(function(){
 
       edges: [
         { data: { id: 'ae', weight: 1, source: 'a', target: 'e' } },
+        { data: { id: 'aa', weight: 2, source: 'a', target: 'a' } },
+        { data: { id: 'aa2', weight: 2, source: 'a', target: 'a' } },
+        { data: { id: 'aa3', weight: 2, source: 'a', target: 'a' } },
         { data: { id: 'ab', weight: 3, source: 'a', target: 'b' } },
         { data: { id: 'be', weight: 4, source: 'b', target: 'e' } },
         { data: { id: 'bc', weight: 5, source: 'b', target: 'c' } },
         { data: { id: 'ce', weight: 6, source: 'c', target: 'e' } },
+        { data: { id: 'ce2', weight: 6, source: 'c', target: 'e' } },
         { data: { id: 'cd', weight: 2, source: 'c', target: 'd' } },
-        { data: { id: 'de', weight: 7, source: 'd', target: 'e' } }
+        { data: { id: 'de', weight: 7, source: 'd', target: 'e' } },
+        { data: { id: 'de2', weight: 7, source: 'd', target: 'e' } },
+        { data: { id: 'de3', weight: 7, source: 'd', target: 'e' } },
+        { data: { id: 'de4', weight: 7, source: 'd', target: 'e' } },
+        { data: { id: 'de5', weight: 7, source: 'd', target: 'e' } }
       ]
     },
     ready: function(){
@@ -232,7 +256,9 @@ $(function(){
   var $container = $('#cytoscape');
   var $container2 = $('#cytoscape2');
 
-  $container.cy(options).cy(function(){
+  options.container = $container;
+
+  window.cy = cytoscape(options).ready(function(){
 
     height = $container.height();
     width = $container.width();
@@ -326,7 +352,9 @@ $(function(){
   var init2;
   $('#init2').on('click', init2 = function(){
     // compound graph in the second instance
-    $container2.cy({
+    window.cy2 = cytoscape({
+      container: $container2,
+
       renderer: {
         name: 'canvas',
         showFps: true
@@ -349,7 +377,12 @@ $(function(){
              { data: { id: 'e4', source: 'node-really-long-name-6', target: 'n9' } },
              { data: { id: 'e5', source: 'n8', target: 'n9' } },
              { data: { id: 'e6', source: 'n5', target: 'n8' } },
-             { data: { id: 'e7', source: 'n2', target: 'n4' } }]
+             { data: { id: 'e7', source: 'n2', target: 'n4' } },
+             { data: { id: 'e8', source: 'n8', target: 'n8' } },
+             { data: { id: 'e9', source: 'n1', target: 'n1' } },
+             { data: { id: 'e10', source: 'n1', target: 'n9' } },
+             { data: { id: 'e11', source: 'n4', target: 'n1' } }
+          ]
       },
       style: defaultSty,
 
@@ -360,7 +393,7 @@ $(function(){
              console.log('%o', node);
          });
       }
-    }).cy(function(){
+    }).ready(function(){
       $('#compound-remove-selected-button').click(function(){
         cy2.elements(':selected').remove();
       });

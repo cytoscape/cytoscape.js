@@ -8,107 +8,18 @@
 		<link rel="stylesheet" href="font-awesome.css" />
 		<link rel="stylesheet" href="jquery.gritter.css" />
 		<link rel="stylesheet" href="style.css" />
-		
+
 		<!--<script type="text/javascript" src="require.js"></script>-->
 		<script type="text/javascript" src="jquery-2.1.1.js"></script>
 
-			<!-- library dependencies -->
-			<script type="text/javascript" src="../lib/arbor.js"></script>
-			<script type="text/javascript" src="../lib/springy.js"></script>
-			<script type="text/javascript" src="../lib/cola.v3.min.js"></script>
-			<script type="text/javascript" src="../lib/dagre.js"></script>
-
-			<!-- new spread deps; TODO -->
-<!--			<script type="text/javascript" src="../lib/parallel.js"></script> -->
-<!--			<script type="text/javascript" src="../lib/eval.js"></script> -->
-			<script type="text/javascript" src="../lib/foograph.js"></script>
-			<script type="text/javascript" src="../lib/rhill-voronoi-core.js"></script>
-
+		<script src="livereload.js"></script>
 
 			<!-- cy.js injected scripts (run `gulp debugrefs` to update) -->
 
 			<!-- inject:js -->
-			<script src="../src/preamble.js"></script>
-			<script src="../src/namespace.js"></script>
-			<script src="../src/promise.js"></script>
-			<script src="../src/is.js"></script>
-			<script src="../src/util.js"></script>
-			<script src="../src/math.js"></script>
-			<script src="../src/extension.js"></script>
-			<script src="../src/jquery-plugin.js"></script>
-			<script src="../src/event.js"></script>
-			<script src="../src/define.js"></script>
-			<script src="../src/selector.js"></script>
-			<script src="../src/style.js"></script>
-			<script src="../src/style-apply.js"></script>
-			<script src="../src/style-bypass.js"></script>
-			<script src="../src/style-container.js"></script>
-			<script src="../src/style-get-for-ele.js"></script>
-			<script src="../src/style-json.js"></script>
-			<script src="../src/style-string-sheet.js"></script>
-			<script src="../src/style-stylesheet.js"></script>
-			<script src="../src/thread.js"></script>
-			<script src="../src/fabric.js"></script>
-			<script src="../src/core.js"></script>
-			<script src="../src/core-add-remove.js"></script>
-			<script src="../src/core-animation.js"></script>
-			<script src="../src/core-data-functions.js"></script>
-			<script src="../src/core-events.js"></script>
-			<script src="../src/core-export.js"></script>
-			<script src="../src/core-layout.js"></script>
-			<script src="../src/core-notification.js"></script>
-			<script src="../src/core-renderer.js"></script>
-			<script src="../src/core-search.js"></script>
-			<script src="../src/core-style.js"></script>
-			<script src="../src/core-viewport.js"></script>
-			<script src="../src/collection.js"></script>
-			<script src="../src/collection-algorithms.js"></script>
-			<script src="../src/collection-algorithms2.js"></script>
-			<script src="../src/collection-animation.js"></script>
-			<script src="../src/collection-class.js"></script>
-			<script src="../src/collection-comparators.js"></script>
-			<script src="../src/collection-compounds.js"></script>
-			<script src="../src/collection-data-functions.js"></script>
-			<script src="../src/collection-degree.js"></script>
-			<script src="../src/collection-events.js"></script>
-			<script src="../src/collection-filter.js"></script>
-			<script src="../src/collection-group.js"></script>
-			<script src="../src/collection-iteration.js"></script>
-			<script src="../src/collection-layout.js"></script>
-			<script src="../src/collection-style.js"></script>
-			<script src="../src/collection-switch-functions.js"></script>
-			<script src="../src/collection-traversing.js"></script>
-			<script src="../src/collection-viewport.js"></script>
-			<script src="../src/heap.js"></script>
-			<script src="../src/extensions/renderer.canvas.define-and-init-etc.js"></script>
-			<script src="../src/extensions/renderer.canvas.arrow-shapes.js"></script>
-			<script src="../src/extensions/renderer.canvas.cached-eles.js"></script>
-			<script src="../src/extensions/renderer.canvas.coord-ele-math.js"></script>
-			<script src="../src/extensions/renderer.canvas.drawing-edges.js"></script>
-			<script src="../src/extensions/renderer.canvas.drawing-images.js"></script>
-			<script src="../src/extensions/renderer.canvas.drawing-label-text.js"></script>
-			<script src="../src/extensions/renderer.canvas.drawing-nodes.js"></script>
-			<script src="../src/extensions/renderer.canvas.drawing-redraw.js"></script>
-			<script src="../src/extensions/renderer.canvas.drawing-shapes.js"></script>
-			<script src="../src/extensions/renderer.canvas.export-image.js"></script>
-			<script src="../src/extensions/renderer.canvas.load-and-listeners.js"></script>
-			<script src="../src/extensions/renderer.canvas.node-shapes.js"></script>
-			<script src="../src/extensions/layout.arbor.js"></script>
-			<script src="../src/extensions/layout.breadthfirst.js"></script>
-			<script src="../src/extensions/layout.circle.js"></script>
-			<script src="../src/extensions/layout.cola.js"></script>
-			<script src="../src/extensions/layout.concentric.js"></script>
-			<script src="../src/extensions/layout.cose.js"></script>
-			<script src="../src/extensions/layout.dagre.js"></script>
-			<script src="../src/extensions/layout.grid.js"></script>
-			<script src="../src/extensions/layout.null.js"></script>
-			<script src="../src/extensions/layout.preset.js"></script>
-			<script src="../src/extensions/layout.random.js"></script>
-			<script src="../src/extensions/layout.spread.js"></script>
-			<script src="../src/extensions/layout.springy.js"></script>
-			<script src="../src/extensions/renderer.null.js"></script>
+			<script src="../build/cytoscape.js"></script>
 			<!-- endinject -->
-		
+
 		<script type="text/javascript" src="jquery.gritter.js"></script>
 		<script type="text/javascript" src="bind.js"></script>
 		<script type="text/javascript" src="data.js"></script>
@@ -121,19 +32,16 @@
 		<script type="text/javascript" src="style.js"></script>
 		<script type="text/javascript" src="init.js"></script>
 		<script type="text/javascript" src="profile.js"></script>
-	
-		
+
 		<title>cytoscape.js debug page</title>
 	</head>
 
 	<body>
-    
+
     	<button id="goto-cy2">\ down /</button>
 	    <div id="cytoscape">
 	    	<div id="bb"></div>
 	    </div>
-
-	    <!-- <div id="overlay-tester" style="position: absolute; left: 0; top: 0; width: 300px; height: 300px; background: rgba(255, 0, 0, 0.5);"></div> -->
 
 	    <!-- <div id="overlay-tester" style="position: absolute; left: 0; top: 0; width: 300px; height: 300px; background: rgba(255, 0, 0, 0.5);"></div> -->
 
@@ -143,24 +51,24 @@
 	    <canvas style="border: 1px solid red;" width="600" height="600" id="dummy-canvas"></canvas>
 -->
 
-	    <div><button id="goto-cy">/ up \</button> Second instance: <button id="init2">init</button></div> 
-	    
+	    <div><button id="goto-cy">/ up \</button> Second instance: <button id="init2">init</button></div>
+
 	    <div id="cytoscape2"></div>
 
 	    <div id="console"></div>
-	    
+
 	    <div id="commands-show-area">
 	    	<button id="show-commands">+</button>
 		</div>
 
 	    <div id="commands">
-	    	
+
 	    	<button id="hide-commands">-</button>
 
 	    	<h2>Testing</h2>
 	    	<select id="test-type-select">
 	    	</select>
-	    		
+
 	    	<h2>View</h2>
 	    	<button id="zoom-pan-button">No zoom & no pan</button>
 	    	<button id="fit-button">View to fit</button> <br />
@@ -197,7 +105,7 @@
 	    	Selected BB:
 	    	<button id="show-bb">show</button>
 	    	<button id="hide-bb">hide</button>
-	    		    	
+
 	    	<h2>Layout</h2>
 	    	<select id="layout-select">
 	    		<option value="null">Null</option>
@@ -207,28 +115,17 @@
 	    		<option value="breadthfirst">Breadthfirst</option>
 	    		<option value="concentric">Concentric</option>
 	    		<option value="cose">CoSE</option>
-	    		<option value="arbor">Arbor</option>
-	    		<option value="springy">Springy</option>
-	    		<option value="dagre">Dagre</option>
-	    		<option value="cola">Cola</option>
-	    		<option value="spread">Spread</option>
 	    	</select>
 	    	<button id="layout-button">Apply</button>
 	    	<small>Time taken: <span id="layout-time">&nbsp;</span></small> <br />
-	    	
+
 	    	<h2>Add & remove elements</h2>
-	    	<label for="add-edge-type-select">Edge handle type</label>
-	    	<select id="add-edge-type-select">
-	    		<option value="flat">Flat edges</option>
-	    		<option value="node">Edges with intermediate node</option>
-	    		<option>Don't add anything</option>
-	    	</select><br /><br />
 	    	<label for="nodes-number">Nodes</label> <input type="text" id="nodes-number" />
 	    	<label for="edges-number">Edges</label> <input type="text" id="edges-number" />
 	    	<button id="add-elements-button">Add</button>
 	    	<button id="remove-selected-button">Remove selected</button> <br />
 	    	<small>Time taken: <span id="add-remove-time">&nbsp;</span></small> <br />
-	    	
+
 	    	<h2>Element binding</h2>
 	    	<select id="bind-type-select">
 	    		<option value="bind">.bind()</option>
@@ -278,7 +175,7 @@
 	    	with delegate<br />
 	    	<label for="bind-delegate">Selector</label> <input type="text" id="bind-delegate" />
 	    	<button id="bind-button">Apply</button>
-	    	
+
 	    	<h2>Core binding</h2>
 	    	<select id="core-bind-type-select">
 	    		<option value="bind">.bind()</option>
@@ -324,7 +221,7 @@
 	    	<button class="toggler">selectify</button> <button class="toggler">unselectify</button><br />
 	    	<button class="toggler">lock</button> <button class="toggler">unlock</button><br />
 	    	<button class="toggler">grabify</button> <button class="toggler">ungrabify</button>
-	    	
+
 	    	<h2>Filtering</h2>
 	    	<label for="filter-selector">Selector</label> <input type="text" id="filter-selector" />
 	    	<button id="filter-button">Select matches</button>

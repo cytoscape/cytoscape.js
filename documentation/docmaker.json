@@ -1,14 +1,15 @@
 {
-  "version": "2.4.9",
+  "version": "2.5.0",
 
   "fnArgLinks": {
     "selector": "#selectors",
     "event": "#events",
     "events": "#events",
-    "eventsMap": "#events",
     "eleObj": "#notation/elements-json",
     "eleObjs": "#notation/elements-json",
     "elesArray": "#notation/elements-json",
+    "elesJson": "#notation/elements-json",
+    "eleJson": "#notation/elements-json",
     "ele": "#collection",
     "eles": "#collection",
     "root": "#collection",
@@ -20,7 +21,9 @@
     "panBy": "#notation/position",
     "css": "#style",
     "style": "#style",
-    "stylesheet": "#style"
+    "stylesheet": "#style",
+    "easing": "#style/transition-animation",
+    "cyJson": "#core/initialisation"
   },
 
   "sections": [
@@ -33,14 +36,21 @@
         { "name": "Wine & cheese", "id": "cde4db55e581d10405f5" },
         { "name": "Performance tuning", "id": "57e7cc43342193d9d21a" },
         { "name": "qTip extension", "id": "546dd8ca4872cc87106a" },
+        { "name": "Circle layout", "id": "04030586763520be8d7a" },
+        { "name": "Concentric layout", "id": "444dc95703caa319c147" },
+        { "name": "Grid layout", "id": "f70c9e45c43f40f7dfe1" },
+        { "name": "CoSE layout", "id": "7b511e1f48ffd044ad66" },
+        { "name": "CoSE Bilkent layout", "id": "6c9907e7896f8ae23f9f" },
+        { "name": "Dagre layout", "id": "e52c2fbc0b09edd6ec46" },
+        { "name": "Spread layout", "id": "0365589fdb70b58af282" },
+        { "name": "Images & breadthfirst layout", "id": "aedff159b0df05ccfaa5" },
         { "name": "Animated BFS", "id": "7e2f4d29ff7ef1a1bba5" },
+        { "name": "Edge types", "id": "18504640d9a03c178fff" },
+        { "name": "Labels", "id": "2abfc41c86c1e3cb0700" },
         { "name": "Compound nodes", "id": "5b192c88616af2f75344" },
-        { "name": "Images", "id": "aedff159b0df05ccfaa5" },
-        { "name": "GeneMANIA export", "id": "29419ca0e6430a7185a5" },
         { "name": "Linkout example", "id": "eb861f83fb741628342f" },
         { "name": "Pie style", "id": "173313aba1f31cae49a5" },
         { "name": "Multiple instances", "id": "310dca83ba6970812dd0" },
-        { "name": "AngularJS example", "id": "a1aea574f0e248b2b38e" },
         { "name": "Visual style", "id": "b7c65115947d9e0e8ec8" },
         { "name": "Initialisation", "id": "621d51ea7de19608127e" }
       ]
@@ -49,6 +59,8 @@
     { "name": "Introduction", "md": "intro" },
 
     { "name": "Notation", "md": "notation" },
+
+    { "name": "Getting started", "md": "getting-started" },
 
     {
       "name": "Core",
@@ -196,6 +208,46 @@
               "name": "cy.destroy",
               "descr": "A convenience function to explicitly destroy the instance.",
               "md": "core/destroy"
+            },
+
+            {
+              "name": "cy.scratch",
+              "extFn": true,
+              "descr": "Set or get scratchpad data, where temporary or non-JSON data can be stored.  App-level scratchpad data should use namespaces prefixed with underscore, like `'_foo'`.  This is analogous to the more common [`ele.scratch()`](#ele.scratch) but for graph global data.",
+              "formats": [
+                {
+                  "descr": "Get the entire scratchpad object for the core."
+                },
+
+                {
+                  "descr": "Get the scratchpad at a particular namespace.",
+                  "args": [
+                    { "name": "namespace", "descr": "A namespace string." }
+                  ]
+                },
+
+                {
+                  "descr": "Set the scratchpad at a particular namespace.",
+                  "args": [
+                    { "name": "namespace", "descr": "A namespace string." },
+                    { "name": "value", "descr": "The value to set at the specified namespace." }
+                  ]
+                }
+              ]
+            },
+
+            {
+              "name": "cy.removeScratch",
+              "extFn": true,
+              "descr": "Remove scratchpad data.  You should remove scratchpad data only at your own namespaces.  This is analogous to the more common [`ele.removeScratch()`](#ele.removeScratch) but for graph global data.",
+              "formats": [
+                {
+                  "descr": "Remove the scratchpad data at a particular namespace.",
+                  "args": [
+                    { "name": "namespace", "descr": "A namespace string." }
+                  ]
+                }
+              ]
             }
           ]
         },
@@ -216,14 +268,6 @@
                     { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true },
                     { "name": "function(evt)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "evt", "descr": "The event object." } ] }
                   ]
-                },
-
-                {
-                  "args": [
-                    { "name": "eventsMap", "descr": "A map of event names to handler functions." },
-                    { "name": "selector", "descr": "A selector to specify elements for which the handler is triggered.", "optional": true },
-                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true }
-                  ]
                 }
               ],
               "md": "core/on"
@@ -232,7 +276,7 @@
             {
               "name": "cy.promiseOn",
               "pureAliases": ["cy.pon"],
-              "descr": "Get a promise that is resolved when the first of any of the specified events is triggered on the graph.",
+              "descr": "Get a promise that is resolved with the first of any of the specified events triggered on the graph.",
               "formats": [
                 {
                   "args": [
@@ -255,14 +299,6 @@
                     { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true },
                     { "name": "function(evt)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "evt", "descr": "The event object." } ] }
                   ]
-                },
-
-                {
-                  "args": [
-                    { "name": "eventsMap", "descr": "A map of event names to handler functions." },
-                    { "name": "selector", "descr": "A selector to specify elements for which the handler is triggered.", "optional": true },
-                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true }
-                  ]
                 }
               ],
               "md": "core/one"
@@ -278,13 +314,6 @@
                     { "name": "events", "descr": "A space separated list of event names." },
                     { "name": "selector", "descr": "The same selector used to bind to the events.", "optional": true },
                     { "name": "handler", "descr": "A reference to the handler function to remove.", "optional": true }
-                  ]
-                },
-
-                {
-                  "args": [
-                    { "name": "eventsMap", "descr": "A map of event names to handler functions to remove." },
-                    { "name": "selector", "descr": "The same selector used to bind to the events.", "optional": true }
                   ]
                 }
               ],
@@ -308,7 +337,8 @@
 
             {
               "name": "cy.initrender",
-              "descr": "Get whether the initial render event has occurred (useful for plugins etc).",
+              "extFn": true,
+              "descr": "Get whether the initial render event has occurred (useful for extensions etc).",
               "md": "core/initrender"
             },
 
@@ -340,7 +370,7 @@
 
             {
               "name": "cy.ready",
-              "descr": "Run a callback as soon as the graph becomes ready.  If the graph is already ready, then the callback is called immediately.",
+              "descr": "Run a callback as soon as the graph becomes ready (i.e. data loaded and initial layout completed).  If the graph is already ready, then the callback is called immediately.",
               "formats": [
                 {
                   "args": [
@@ -360,6 +390,7 @@
           "fns": [
             {
               "name": "cy.center",
+              "pureAliases": ["cy.centre"],
               "descr": "Pan the graph to the centre of a collection.",
               "formats": [
                 { "descr": "Centre on all elements in the graph." },
@@ -411,7 +442,7 @@
 
             {
               "name": "cy.panningEnabled",
-              "descr": "Get or set whether panning is enabled.  If `cy.boxSelectionEnabled() === true`, then the user must taphold to initiate panning.",
+              "descr": "Get or set whether panning is enabled.",
               "formats": [
                 {
                   "descr": "Get whether panning is enabled."
@@ -429,7 +460,7 @@
 
             {
               "name": "cy.userPanningEnabled",
-              "descr": "Get or set whether panning by user events (e.g. dragging the graph background) is enabled.  If `cy.boxSelectionEnabled() === true`, then the user must taphold to initiate panning.",
+              "descr": "Get or set whether panning by user events (e.g. dragging the graph background) is enabled.",
               "formats": [
                 {
                   "descr": "Get whether user panning is enabled."
@@ -555,7 +586,7 @@
 
             {
               "name": "cy.boxSelectionEnabled",
-              "descr": "Get or set whether box selection is enabled.   If enabled, the user must hold left-click to initiate panning.",
+              "descr": "Get or set whether box selection is enabled.   If enabled along with panning, the user must hold one of shift, control, meta, or alt down to initiate box selection.",
               "formats": [
                 {
                   "descr": "Get whether box selection is enabled."
@@ -649,6 +680,7 @@
 
             {
               "name": "cy.resize",
+              "pureAliases": ["cy.invalidateDimensions"],
               "descr": "Force the renderer to recalculate the viewport bounds.",
               "md": "core/resize"
             }
@@ -671,7 +703,7 @@
                 {
                   "args": [
                     {
-                      "name": "anis",
+                      "name": "options",
                       "descr": "An object containing the details of the animation.",
                       "fields": [
                         { "name": "zoom", "descr": "A zoom level to which the graph will be animated." },
@@ -691,24 +723,55 @@
                           "fields": [
                             { "name": "eles", "descr": "Elements or a selector to which the viewport will be centred." }
                           ]
-                        }
-                      ]
-                    },
-
-                    {
-                      "name": "options",
-                      "descr": "An object containing animation options.",
-                      "fields": [
+                        },
                         { "name": "duration", "descr": "The duration of the animation in milliseconds." },
                         { "name": "queue", "descr": "A boolean indicating whether to queue the animation." },
                         { "name": "complete", "descr": "A function to call when the animation is done." },
-                        { "name": "step", "descr": "A function to call each time the animation steps." }
+                        { "name": "step", "descr": "A function to call each time the animation steps." },
+                        { "name": "easing", "descr": "A [`transition-timing-function`](#style/transition-animation) easing style string that shapes the animation progress curve." }
                       ]
                     }
                   ]
                 }
               ],
               "md": "core/animate"
+            },
+
+            {
+              "name": "cy.animation",
+              "descr": "Get an [animation](#animations) of the viewport.",
+              "formats": [
+                {
+                  "args": [
+                    {
+                      "name": "options",
+                      "descr": "An object containing the details of the animation.",
+                      "fields": [
+                        { "name": "zoom", "descr": "A zoom level to which the graph will be animated." },
+                        { "name": "pan", "descr": "A panning position to which the graph will be animated." },
+                        { "name": "panBy", "descr": "A relative panning position to which the graph will be animated." },
+                        {
+                          "name": "fit",
+                          "descr": "An object containing fitting options from which the graph will be animated.",
+                          "fields": [
+                            { "name": "eles", "descr": "Elements or a selector to which the viewport will be fitted." },
+                            { "name": "padding", "descr": "Padding to use with the fitting." }
+                          ]
+                        },
+                        {
+                          "name": "center",
+                          "descr": "An object containing centring options from which the graph will be animated.",
+                          "fields": [
+                            { "name": "eles", "descr": "Elements or a selector to which the viewport will be centred." }
+                          ]
+                        },
+                        { "name": "duration", "descr": "The duration of the animation in milliseconds." },
+                        { "name": "easing", "descr": "A [`transition-timing-function`](#style/transition-animation) easing style string that shapes the animation progress curve." }
+                      ]
+                    }
+                  ]
+                }
+              ]
             },
 
             {
@@ -723,6 +786,18 @@
                 }
               ],
               "md": "core/delay"
+            },
+
+            {
+              "name": "cy.delayAnimation",
+              "descr": "Get a delay [animation](#animations) of the viewport.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "duration", "descr": "How long the delay should be in milliseconds." }
+                  ]
+                }
+              ]
             },
 
             {
@@ -863,7 +938,20 @@
 
             {
               "name": "cy.json",
-              "descr": "Export the graph as JSON, the same format used at initialisation.",
+              "descr": "Import or export the graph in the same JSON format used at initialisation.",
+              "formats": [
+                {
+                  "descr": "Export the graph as JSON.",
+                  "args": []
+                },
+
+                {
+                  "descr": "Import the graph as JSON, updating only the fields specified.",
+                  "args": [
+                    { "name": "cyJson", "descr": "The object with the fields corresponding to the states that should be changed." }
+                  ]
+                }
+              ],
               "md": "core/json"
             }
           ]
@@ -882,7 +970,7 @@
           "fns": [
             {
               "name": "eles.remove",
-              "descr": "Remove the elements from the graph.",
+              "descr": "Remove the elements from the graph, and return all elements removed by this call.",
               "md": "collection/remove"
             },
 
@@ -957,14 +1045,6 @@
                     { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true },
                     { "name": "function(evt)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "evt", "descr": "The event object." } ] }
                   ]
-                },
-
-                {
-                  "args": [
-                    { "name": "eventsMap", "descr": "A map of event names to handler functions." },
-                    { "name": "selector", "descr": "A delegate selector to specify child elements for which the handler is triggered.", "optional": true },
-                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true }
-                  ]
                 }
               ],
               "md": "collection/on"
@@ -973,7 +1053,7 @@
             {
               "name": "eles.promiseOn",
               "pureAliases": ["eles.pon"],
-              "descr": "Get a promise that is resolved when the first of any of the specified events is triggered on any of the elements in the collection.",
+              "descr": "Get a promise that is resolved with the first of any of the specified events triggered on any of the elements in the collection.",
               "formats": [
                 {
                   "args": [
@@ -996,14 +1076,6 @@
                     { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true },
                     { "name": "function(evt)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "evt", "descr": "The event object." } ] }
                   ]
-                },
-
-                {
-                  "args": [
-                    { "name": "eventsMap", "descr": "A map of event names to handler functions." },
-                    { "name": "selector", "descr": "A delegate selector to specify child elements for which the handler is triggered.", "optional": true },
-                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true }
-                  ]
                 }
               ],
               "md": "collection/one"
@@ -1020,14 +1092,6 @@
                     { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true },
                     { "name": "function(evt)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "evt", "descr": "The event object." } ] }
                   ]
-                },
-
-                {
-                  "args": [
-                    { "name": "eventsMap", "descr": "A map of event names to handler functions." },
-                    { "name": "selector", "descr": "A delegate selector to specify child elements for which the handler is triggered.", "optional": true },
-                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true }
-                  ]
                 }
               ],
               "md": "collection/once"
@@ -1043,13 +1107,6 @@
                     { "name": "events", "descr": "A space separated list of event names." },
                     { "name": "selector", "descr": "The same delegate selector used to bind to the events.", "optional": true },
                     { "name": "handler", "descr": "A reference to the handler function to remove.", "optional": true }
-                  ]
-                },
-
-                {
-                  "args": [
-                    { "name": "eventsMap", "descr": "A map of event names to handler functions to remove." },
-                    { "name": "selector", "descr": "The same delegate selector used to bind to the events.", "optional": true }
                   ]
                 }
               ],
@@ -1131,6 +1188,7 @@
 
             {
               "name": "ele.scratch",
+              "extFn": true,
               "descr": "Set or get scratchpad data, where temporary or non-JSON data can be stored.  App-level scratchpad data should use namespaces prefixed with underscore, like `'_foo'`.",
               "formats": [
                 {
@@ -1157,6 +1215,7 @@
 
             {
               "name": "ele.removeScratch",
+              "extFn": true,
               "descr": "Remove scratchpad data.  You should remove scratchpad data only at your own namespaces.",
               "formats": [
                 {
@@ -1175,7 +1234,20 @@
 
             {
               "name": "ele.json",
-              "descr": "Get the element's plain JavaScript object representation.",
+              "descr": "Get or mutate the element's plain JavaScript object representation.",
+              "formats": [
+                {
+                  "descr": "Get the element's JSON.",
+                  "args": []
+                },
+
+                {
+                  "descr": "Mutate the element's state as specified.",
+                  "args": [
+                    { "name": "eleJson", "descr": "For each field in the object, the element's state is mutated as specified." }
+                  ]
+                }
+              ],
               "md": "collection/json"
             },
 
@@ -1348,7 +1420,7 @@
               "descr": "Set the (model) positions of several nodes with a function.",
               "formats": [
                 {
-                  "descr": "Set the positions via a function.",
+                  "descr": "Set the positions functionally.",
                   "args": [
                     {
                       "name": "function(i, ele)",
@@ -1588,6 +1660,35 @@
                 }
               ],
               "md": "collection/makeLayout"
+            },
+
+            {
+              "name": "nodes.layoutPositions",
+              "descr": "Position the nodes for a discrete/synchronous layout.",
+              "extFn": true,
+              "formats": [
+                {
+                  "args": [
+                    {
+                      "name": "layout",
+                      "descr": "The layout."
+                    },
+                    {
+                      "name": "options",
+                      "descr": "The layout options object."
+                    },
+                    {
+                      "name": "function(i, ele)",
+                      "descr": "A function that returns the new position for the specified node.",
+                      "fields": [
+                        { "name": "i", "descr": "The index of the current node while iterating over the nodes in the layout." },
+                        { "name": "ele", "descr": "The node being iterated over for which the function should return a position to set." }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "md": "collection/layout"
             }
           ]
         },
@@ -1669,6 +1770,17 @@
                 }
               ],
               "md": "collection/toggleClass"
+            },
+
+            {
+              "name": "eles.classes",
+              "descr": "Replace the current list of classes on the elements with the specified list.",
+              "formats": [
+                {
+                  "args": [ { "name": "classes", "descr": "A space-separated list of class names that replaces the current class list." } ]
+                }
+              ],
+              "md": "collection/classes"
             },
 
             {
@@ -1799,29 +1911,45 @@
                 {
                   "args": [
                     {
-                      "name": "anis",
+                      "name": "options",
                       "descr": "An object containing the details of the animation.",
                       "fields": [
                         { "name": "position", "descr": "A position to which the elements will be animated." },
                         { "name": "renderedPosition", "descr": "A rendered position to which the elements will be animated." },
-                        { "name": "style", "descr": "An object containing name-value pairs of style properties to animate." }
-                      ]
-                    },
-
-                    {
-                      "name": "options",
-                      "descr": "An object containing animation options.",
-                      "fields": [
+                        { "name": "style", "descr": "An object containing name-value pairs of style properties to animate." },
                         { "name": "duration", "descr": "The duration of the animation in milliseconds." },
                         { "name": "queue", "descr": "A boolean indicating whether to queue the animation." },
                         { "name": "complete", "descr": "A function to call when the animation is done." },
-                        { "name": "step", "descr": "A function to call each time the animation steps." }
+                        { "name": "step", "descr": "A function to call each time the animation steps." },
+                        { "name": "easing", "descr": "A [`transition-timing-function`](#style/transition-animation) easing style string that shapes the animation progress curve." }
                       ]
                     }
                   ]
                 }
               ],
               "md": "collection/animate"
+            },
+
+            {
+              "name": "ele.animation",
+              "descr": "Get an [animation](#animations) for the element.",
+              "formats": [
+                {
+                  "args": [
+                    {
+                      "name": "options",
+                      "descr": "An object containing the details of the animation.",
+                      "fields": [
+                        { "name": "position", "descr": "A position to which the elements will be animated." },
+                        { "name": "renderedPosition", "descr": "A rendered position to which the elements will be animated." },
+                        { "name": "style", "descr": "An object containing name-value pairs of style properties to animate." },
+                        { "name": "duration", "descr": "The duration of the animation in milliseconds." },
+                        { "name": "easing", "descr": "A [`transition-timing-function`](#style/transition-animation) easing style string that shapes the animation progress curve." }
+                      ]
+                    }
+                  ]
+                }
+              ]
             },
 
             {
@@ -1836,6 +1964,18 @@
                 }
               ],
               "md": "collection/delay"
+            },
+
+            {
+              "name": "ele.delayAnimation",
+              "descr": "Get a delay [animation](#animations) for the element.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "duration", "descr": "How long the delay should be in milliseconds." }
+                  ]
+                }
+              ]
             },
 
             {
@@ -2115,7 +2255,7 @@
 
             {
               "name": "eles.difference",
-              "pureAliases": [ "eles.not", "eles.relativeComplement", "eles['\\\\']", "eles['!']", "eles['-']" ],
+              "pureAliases": [ "eles.not", "eles.subtract", "eles.relativeComplement", "eles['\\\\']", "eles['!']", "eles['-']" ],
               "descr": "Get a new collection, resulting from the collection without some specified elements.",
               "formats": [
                 {
@@ -2404,6 +2544,11 @@
             },
 
             {
+              "name": "eles.components",
+              "descr": "Get the connected components in the calling collection.  An array of collections is returned, with each collection representing a component."
+            },
+
+            {
               "name": "nodes.edgesWith",
               "descr": "Get the edges connecting the collection to another collection.  Direction of the edges does not matter.",
               "formats": [
@@ -2634,7 +2779,7 @@
                 {
                   "args": [
                     { "name": "options", "fields": [
-                      { "name": "roots", "descr": "The root nodes (selector or collection) to start the search from." },
+                      { "name": "root", "descr": "The root nodes (selector or collection) to start the search from." },
                       { "name": "visit: function(i, depth, v, e, u)", "descr": "A handler function that is called when a node is visited in the search.  The handler returns `true` when it finds the desired node, and it returns `false` to cancel the search.", "optional": true, "fields": [
                         { "name": "i", "descr": "The index indicating this node is the ith visited node." },
                         { "name": "depth", "descr": "How many edge hops away this node is from the root nodes." },
@@ -2644,19 +2789,6 @@
                       ] },
                       { "name": "directed", "descr": "A boolean indicating whether the algorithm should only go along edges from source to target (default `false`).", "optional": true }
                     ] }
-                  ]
-                },
-                {
-                  "args": [
-                    { "name": "roots", "descr": "The root nodes (selector or collection) to start the search from." },
-                    { "name": "function(i, depth, v, e, u)", "descr": "A handler function that is called when a node is visited in the search.  The handler returns `true` when it finds the desired node, and it returns `false` to cancel the search.", "optional": true, "fields": [
-                      { "name": "i", "descr": "The index indicating this node is the ith visited node." },
-                      { "name": "depth", "descr": "How many edge hops away this node is from the root nodes." },
-                      { "name": "v", "descr": "The current node." },
-                      { "name": "e", "descr": "The edge connecting the previous node to the current node." },
-                      { "name": "u", "descr": "The previous node." }
-                    ] },
-                    { "name": "directed", "descr": "A boolean indicating whether the search should only go along edges from source to target (default `false`).", "optional": true }
                   ]
                 }
               ],
@@ -2671,7 +2803,7 @@
                 {
                   "args": [
                     { "name": "options", "fields": [
-                      { "name": "roots", "descr": "The root nodes (selector or collection) to start the search from." },
+                      { "name": "root", "descr": "The root nodes (selector or collection) to start the search from." },
                       { "name": "visit: function(i, depth, v, e, u)", "descr": "A handler function that is called when a node is visited in the search.  The handler returns `true` when it finds the desired node, and it returns `false` to cancel the search.", "optional": true, "fields": [
                         { "name": "i", "descr": "The index indicating this node is the ith visited node." },
                         { "name": "depth", "descr": "How many edge hops away this node is from the root nodes." },
@@ -2681,19 +2813,6 @@
                       ] },
                       { "name": "directed", "descr": "A boolean indicating whether the algorithm should only go along edges from source to target (default `false`).", "optional": true }
                     ] }
-                  ]
-                },
-                {
-                  "args": [
-                    { "name": "roots", "descr": "The root nodes (selector or collection) to start the search from." },
-                    { "name": "function(i, depth, v, e, u)", "descr": "A handler function that is called when a node is visited in the search.  The handler returns `true` when it finds the desired node, and it returns `false` to cancel the search.", "optional": true, "fields": [
-                      { "name": "i", "descr": "The index indicating this node is the ith visited node." },
-                      { "name": "depth", "descr": "How many edge hops away this node is from the root nodes." },
-                      { "name": "v", "descr": "The current node." },
-                      { "name": "e", "descr": "The edge connecting the previous node to the current node." },
-                      { "name": "u", "descr": "The previous node." }
-                    ] },
-                    { "name": "directed", "descr": "A boolean indicating whether the search should only go along edges from source to target (default `false`).", "optional": true }
                   ]
                 }
               ],
@@ -2711,13 +2830,6 @@
                       { "name": "weight: function(edge)", "descr": "A function that returns the positive numeric weight for `this` edge.", "optional": true },
                       { "name": "directed", "descr": "A boolean indicating whether the algorithm should only go along edges from source to target (default `false`).", "optional": true }
                     ] }
-                  ]
-                },
-                {
-                  "args": [
-                    { "name": "root", "descr": "The root node (selector or collection) where the algorithm starts." },
-                    { "name": "function(edge)", "descr": "A function that returns the positive numeric weight for `this` edge.", "optional": true },
-                    { "name": "directed", "descr": "A boolean indicating whether the algorithm should only go along edges from source to target (default `false`).", "optional": true }
                   ]
                 }
               ],
@@ -3084,44 +3196,9 @@
         },
 
         {
-          "md": "layouts/dagre",
-          "layout": {
-            "name": "dagre"
-          }
-        },
-
-        {
           "md": "layouts/cose",
           "layout": {
             "name": "cose"
-          }
-        },
-
-        {
-          "md": "layouts/cola",
-          "layout": {
-            "name": "cola"
-          }
-        },
-
-        {
-          "md": "layouts/spread",
-          "layout": {
-            "name": "spread"
-          }
-        },
-
-        {
-          "md": "layouts/arbor",
-          "layout": {
-            "name": "arbor"
-          }
-        },
-
-        {
-          "md": "layouts/springy",
-          "layout": {
-            "name": "springy"
           }
         },
 
@@ -3159,13 +3236,6 @@
                     { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true },
                     { "name": "function(evt)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "evt", "descr": "The event object." } ] }
                   ]
-                },
-
-                {
-                  "args": [
-                    { "name": "eventsMap", "descr": "A map of event names to handler functions." },
-                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true }
-                  ]
                 }
               ],
               "md": "layout/on"
@@ -3174,7 +3244,7 @@
             {
               "name": "layout.promiseOn",
               "pureAliases": ["layout.pon"],
-              "descr": "Get a promise that is resolved when the first of any of the specified events is triggered on the layout.",
+              "descr": "Get a promise that is resolved with the first of any of the specified events triggered on the layout.",
               "formats": [
                 {
                   "args": [
@@ -3195,13 +3265,6 @@
                     { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true },
                     { "name": "function(evt)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "evt", "descr": "The event object." } ] }
                   ]
-                },
-
-                {
-                  "args": [
-                    { "name": "eventsMap", "descr": "A map of event names to handler functions." },
-                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true }
-                  ]
                 }
               ],
               "md": "layout/one"
@@ -3216,12 +3279,6 @@
                   "args": [
                     { "name": "events", "descr": "A space separated list of event names." },
                     { "name": "handler", "descr": "A reference to the handler function to remove.", "optional": true }
-                  ]
-                },
-
-                {
-                  "args": [
-                    { "name": "eventsMap", "descr": "A map of event names to handler functions to remove." }
                   ]
                 }
               ],
@@ -3249,6 +3306,119 @@
     },
 
     {
+      "name": "Animations",
+      "md": "animations",
+      "sections": [
+        {
+          "name": "Animation manipulation",
+          "fns": [
+            {
+              "name": "ani.play",
+              "descr": "Requests that the animation be played, starting on the next frame.  If the animation is complete, it restarts from the beginning.",
+              "md": "animation/play"
+            },
+
+            {
+              "name": "ani.playing",
+              "descr": "Get whether the animation is currently playing."
+            },
+
+            {
+              "name": "ani.progress",
+              "descr": "Get or set how far along the animation has progressed.",
+              "formats": [
+                {
+                  "name": "ani.progress",
+                  "descr": "Get the progress of the animation in percent."
+                },
+                {
+                  "name": "ani.progress",
+                  "descr": "Set the progress of the animation in percent.",
+                  "args": [
+                    { "name": "progress", "descr": "The progress in percent (i.e. between 0 and 1 inclusive) to set to the animation." }
+                  ]
+                },
+                {
+                  "name": "ani.time",
+                  "descr": "Get the progress of the animation in milliseconds."
+                },
+                {
+                  "name": "ani.time",
+                  "descr": "Set the progress of the animation in milliseconds.",
+                  "args": [
+                    { "name": "time", "descr": "The progress in milliseconds (i.e. between 0 and the duration inclusive) to set to the animation." }
+                  ]
+                },
+                {
+                  "name": "ani.rewind",
+                  "descr": "Rewind the animation to the beginning."
+                },
+                {
+                  "name": "ani.fastforward",
+                  "descr": "Fastforward the animation to the end."
+                }
+              ],
+              "md": "animation/progress"
+            },
+
+            {
+              "name": "ani.pause",
+              "descr": "Pause the animation, maintaining the current progress.",
+              "md": "animation/pause"
+            },
+
+            {
+              "name": "ani.stop",
+              "descr": "Stop the animation, maintaining the current progress and removing the animation from any associated queues.",
+              "md": "animation/stop"
+            },
+
+            {
+              "name": "ani.completed",
+              "pureAliases": ["ani.complete"],
+              "descr": "Get whether the animation has progressed to the end."
+            },
+
+            {
+              "name": "ani.apply",
+              "descr": "Apply the animation at its current progress.",
+              "md": "animation/apply"
+            },
+
+            {
+              "name": "ani.applying",
+              "descr": "Get whether the animation is currently applying."
+            },
+
+            {
+              "name": "ani.reverse",
+              "descr": "Reverse the animation such that its starting conditions and ending conditions are reversed.",
+              "md": "animation/reverse"
+            },
+
+            {
+              "name": "ani.promise",
+              "descr": "Get a promise that is fulfilled with the specified animation event.",
+              "formats": [
+                {
+                  "descr": "Get a promise that is fulfilled with the next `completed` event."
+                },
+
+                {
+                  "descr": "Get a promise that is fulfilled with the specified animation event.",
+                  "args": [
+                    { "name": "animationEvent", "descr": "A string for the event name; `completed` or `complete` for completing the animation or `frame` for the next frame of the animation." }
+                  ]
+                }
+              ],
+              "md": "animation/promise"
+            }
+          ]
+        }
+      ]
+    },
+
+    {
       "name": "Architecture",
       "md": "architecture",
       "demo": { "id": "689efca4fcb0fd05671b", "name": "A diagramme of the architecture of Cytoscape.js, made using Cytoscape.js" }
@@ -3256,61 +3426,6 @@
 
     {
       "name": "Extensions",
-      "extensions": [
-        {
-          "name": "cerebralweb",
-          "github": "silviafrias/cerebral-web",
-          "descr": "A plugin to enable fast and interactive visualisation of molecular interaction networks stratified based on subcellular localisation or other custom annotation."
-        },
-
-        {
-          "name": "cxtmenu",
-          "github": "cytoscape/cytoscape.js-cxtmenu",
-          "descr": "A circular context menu."
-        },
-
-        {
-          "name": "edgehandles",
-          "github": "cytoscape/cytoscape.js-edgehandles",
-          "descr": "UI for connecting nodes with edges."
-        },
-
-        {
-          "name": "navigator",
-          "github": "cytoscape/cytoscape.js-navigator",
-          "descr": "A bird's eye view widget of the graph."
-        },
-
-        {
-          "name": "noderesize",
-          "github": "curupaco/cytoscape.js-noderesize",
-          "descr": "A plugin that creates a node resize control."
-        },
-
-        {
-          "name": "panzoom",
-          "github": "cytoscape/cytoscape.js-panzoom",
-          "descr": "A panzoom UI widget."
-        },
-
-        {
-          "name": "qtip",
-          "github": "cytoscape/cytoscape.js-qtip",
-          "descr": "A wrapper that lets you use qTips on graph elements or the graph background."
-        },
-
-        {
-          "name": "supportimages",
-          "github": "curupaco/cytoscape.js-supportimages",
-          "descr": "A plugin that enables support images on Cytoscape.js"
-        },
-
-        {
-          "name": "toolbar",
-          "github": "bdparrish/cytoscape.js-toolbar",
-          "descr": "A plugin for Cytoscape.js that allows a user to create a custom toolbar to add next to a Cytoscape core instance."
-        }
-      ],
       "md": "extensions"
     },
 

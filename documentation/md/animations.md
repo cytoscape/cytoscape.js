@@ -1,0 +1,1 @@
+An animation represents a visible change in state over a duration of time for a single element.  Animations can be generated via [`cy.animation()`](#cy.animation) (for animations on the viewport) and [`ele.animation()`](#ele.animation) (for animations on graph elements).

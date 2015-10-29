@@ -1,5 +1,5 @@
 /*!
- * This file is part of Cytoscape.js 2.4.9.
+ * This file is part of Cytoscape.js 2.5.0.
  *
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -14,6 +14,8 @@
  * You should have received a copy of the GNU Lesser General Public License along with
  * Cytoscape.js. If not, see <http://www.gnu.org/licenses/>.
  */
+
+/* jshint ignore:start */
 
 // normalised thread api functions for nodejs
 
@@ -51,6 +53,12 @@ function reject( v ){
 
 process.on('message', function( m ){
   if( typeof m === 'object' && m.$$eval ){
+    function _ref_( o ){
+      return eval( o );
+    }
+
     eval( m.$$eval );
   }
 });
+
+/* jshint ignore:end */

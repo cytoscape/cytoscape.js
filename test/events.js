@@ -11,7 +11,7 @@ describe('Events', function(){
   beforeEach(function(done){
     cytoscape({
       styleEnabled: true,
-      
+
       elements: {
         nodes: [
             { data: { id: "n1", foo: "one", } },
@@ -20,7 +20,7 @@ describe('Events', function(){
             { data: { id: "n4" } },
             { data: { id: "n5", parent: 'n4' } },
         ],
-        
+
         edges: [
             { data: { id: "n1n2", source: "n1", target: "n2", weight: 0.33 }, classes: "uh" },
             { data: { id: "n2n3", source: "n2", target: "n3", weight: 0.66 }, classes: "huh" }
@@ -34,6 +34,10 @@ describe('Events', function(){
         done();
       }
     });
+  });
+
+  afterEach(function(){
+    cy.destroy();
   });
 
 
@@ -142,7 +146,7 @@ describe('Events', function(){
 
 
   describe('Graph events triggered by functions', function(){
-    
+
     var triggers = 0;
     var handler = function(){
       triggers++;
@@ -212,7 +216,7 @@ describe('Events', function(){
 
   });
 
-  
+
   describe('Event bubbling', function(){
 
     it('should bubble from child to parent node', function(){
@@ -302,7 +306,7 @@ describe('Events', function(){
 
       cy
         .on('foo bar', function(e){
-          
+
           if( e.type === 'foo' ){
             triggeredFoo = true;
           } else if( e.type === 'bar' ){
@@ -367,7 +371,7 @@ describe('Events', function(){
 
       cy
         .on('foo.bar', function(e){
-          
+
           expect( e ).to.be.ok;
           expect( e ).to.have.property('type', 'foo');
           expect( e ).to.have.property('cy', cy);

@@ -1,10 +1,8 @@
-window.isTouchDevice = cytoscape.is.touch(); // for init docs
-
 $(function(){
 
-  setTimeout(function(){
-    cytoscape.defaults( window.options );
-  }, 100);
+  // setTimeout(function(){
+  //   cytoscape.defaults( window.options );
+  // }, 100);
 
   // fix for webkit
   $('#navigation').on('wheel mousewheel DOMMouseScroll MozMousePixelScroll scroll', function(e){
@@ -33,6 +31,71 @@ $(function(){
     }, 0);
   });
 
+  function debounce( fn, delay ){
+  	var timeout;
+
+  	return function(){
+  		var context = this;
+      var args = arguments;
+
+  		clearTimeout( timeout );
+  		timeout = setTimeout(function(){
+  			timeout = null;
+
+        fn.apply( context, args );
+  		}, delay );
+  	};
+  };
+
+  var $toclinks = $('.section > .toclink');
+  var $tocinput = $('#toc-input');
+  var $tocsections = $('#toc-sections');
+  var lastTxt;
+
+  var filterSections = debounce(function(){
+    txt = $tocinput.val().toLowerCase();
+
+    var $shown = txt === '' ? $toclinks : $toclinks.filter(function(i, ele){
+      return ele.text.toLowerCase().match( txt );
+    });
+
+    var $notShown = $toclinks.not( $shown );
+
+    $shown.show();
+    $notShown.hide();
+
+    $shown.parent().each(function(i, ele){
+      var $section = $(ele);
+
+      if( $section.hasClass('lvl3') ){
+        $section.prevAll('.lvl2:first').children('.toclink').show();
+        $section.prevAll('.lvl1:first').children('.toclink').show();
+      } else if( $section.hasClass('lvl2') ){
+        $section.prevAll('.lvl1:first').children('.toclink').show();
+        $section.nextUntil('.lvl2, .lvl1').children('.toclink').show();
+      } else if( $section.hasClass('lvl1') ){
+        $section.nextUntil('.lvl1').children('.toclink').show();
+      }
+    });
+
+    $tocsections.removeClass('toc-sections-searching');
+  }, 250);
+
+  $tocinput.on( 'keydown keyup keypress change', function(){
+    txt = $tocinput.val().toLowerCase();
+
+    if( txt === lastTxt ){ return; }
+    lastTxt = txt;
+
+    $tocsections.addClass('toc-sections-searching');
+
+    filterSections();
+  });
+
+  $('#toc-clear').on('click', function(){
+    $tocinput.val('').trigger('change');
+  });
+
   loadCy();
 
   $(document).on('click', '.gallery-refresh', function(){
@@ -49,7 +112,7 @@ $(function(){
   });
 
   $('body').on('mousedown click', '#cy-refresh', function(){
-    loadCy(); 
+    loadCy();
 
     $('#cy').attr('style', ''); // because some example fiddles w/ this
   });
@@ -96,14 +159,18 @@ $(function(){
 
     var $title = $('#cy-title');
     var $content = $title.find('.content');
-    
+
     $content.html( text );
     $title.show();
 
     $content.hide().fadeIn(100).delay(250).hide(200, function(){
       var ret = eval( text );
-      
-      if( ret && cytoscape.is.elementOrCollection( ret ) && ret.length > 0 ){
+
+      isEles = function(o){
+        o && o.isNode;
+      }
+
+      if( ret && isEles( ret ) && ret.length > 0 ){
         //console.log(ret)
 
         var css = {
@@ -120,19 +187,19 @@ $(function(){
           .stop( true )
 
           .animate({ css: css })
-          
+
           .delay(delay, function(){
             ret.removeCss();
           })
 
           .animate({ css: css })
-          
+
           .delay(delay, function(){
             ret.removeCss();
           })
 
           .animate({ css: css })
-          
+
           .delay(delay, function(){
             ret.removeCss();
             $title.hide();
@@ -144,10 +211,29 @@ $(function(){
 
   });
 
+  var gp = function( type, category, action ){
+    return $.ajax({
+      url: 'http://webservice.baderlab.org/gp/',
+      type: 'POST',
+      data: {
+        v: '1',
+        tid: 'UA-155159-11',
+        cid: 555,
+        t: type,
+        ec: category,
+        ea: action
+      }
+    });
+  };
+
+  gp('event', 'Actions', 'Pageview');
+
   $('#download-button').on('click', function(){
     if( _gaq ){
       _gaq.push(['_trackEvent', 'Actions', 'Download']);
     }
+
+    gp('event', 'Actions', 'Download');
   });
 
 });

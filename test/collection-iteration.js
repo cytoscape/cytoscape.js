@@ -1,6 +1,14 @@
 var expect = require('chai').expect;
 var cytoscape = require('../build/cytoscape.js', cytoscape);
 
+var is = {
+  elementOrCollection: function(o){
+    return o != null && o.instanceString && o.instanceString() === 'collection';
+  },
+
+  number: function(o){ return typeof o === 'number'; }
+};
+
 describe('Collection iteration', function(){
 
   var cy;
@@ -14,7 +22,7 @@ describe('Collection iteration', function(){
             { data: { id: 'n2' } },
             { data: { id: 'n3' } }
         ],
-        
+
         edges: [
             { data: { id: 'n1n2', source: 'n1', target: 'n2' } },
             { data: { id: 'n2n3', source: 'n2', target: 'n3' } }
@@ -46,8 +54,8 @@ describe('Collection iteration', function(){
     var count = 0;
 
     cy.nodes().each(function( i, ele ){
-      expect( cytoscape.is.elementOrCollection(this) ).to.be.true;
-      expect( cytoscape.is.elementOrCollection(ele) ).to.be.true;
+      expect( is.elementOrCollection(this) ).to.be.true;
+      expect( is.elementOrCollection(ele) ).to.be.true;
       expect( i ).to.equal( count );
 
       count++;
@@ -60,8 +68,8 @@ describe('Collection iteration', function(){
     var count = 0;
 
     cy.nodes().forEach(function( ele, i, eles ){
-      expect( cytoscape.is.elementOrCollection(ele) ).to.be.true;
-      expect( cytoscape.is.elementOrCollection(eles) ).to.be.true;
+      expect( is.elementOrCollection(ele) ).to.be.true;
+      expect( is.elementOrCollection(eles) ).to.be.true;
       expect( i ).to.equal( count );
 
       count++;

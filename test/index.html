@@ -7,89 +7,12 @@
 
   <script src="lib/chai.js"></script>
   <script src="lib/jquery.js"></script>
+  <script src="lib/livereload.js"></script>
 
   <!-- `gulp testrefs` updates these scripts -->
 
   <!-- inject:js -->
-  <script src="../src/preamble.js"></script>
-  <script src="../src/namespace.js"></script>
-  <script src="../src/promise.js"></script>
-  <script src="../src/is.js"></script>
-  <script src="../src/util.js"></script>
-  <script src="../src/math.js"></script>
-  <script src="../src/extension.js"></script>
-  <script src="../src/jquery-plugin.js"></script>
-  <script src="../src/event.js"></script>
-  <script src="../src/define.js"></script>
-  <script src="../src/selector.js"></script>
-  <script src="../src/style.js"></script>
-  <script src="../src/style-apply.js"></script>
-  <script src="../src/style-bypass.js"></script>
-  <script src="../src/style-container.js"></script>
-  <script src="../src/style-get-for-ele.js"></script>
-  <script src="../src/style-json.js"></script>
-  <script src="../src/style-string-sheet.js"></script>
-  <script src="../src/style-stylesheet.js"></script>
-  <script src="../src/thread.js"></script>
-  <script src="../src/fabric.js"></script>
-  <script src="../src/core.js"></script>
-  <script src="../src/core-add-remove.js"></script>
-  <script src="../src/core-animation.js"></script>
-  <script src="../src/core-data-functions.js"></script>
-  <script src="../src/core-events.js"></script>
-  <script src="../src/core-export.js"></script>
-  <script src="../src/core-layout.js"></script>
-  <script src="../src/core-notification.js"></script>
-  <script src="../src/core-renderer.js"></script>
-  <script src="../src/core-search.js"></script>
-  <script src="../src/core-style.js"></script>
-  <script src="../src/core-viewport.js"></script>
-  <script src="../src/collection.js"></script>
-  <script src="../src/collection-algorithms.js"></script>
-  <script src="../src/collection-algorithms2.js"></script>
-  <script src="../src/collection-animation.js"></script>
-  <script src="../src/collection-class.js"></script>
-  <script src="../src/collection-comparators.js"></script>
-  <script src="../src/collection-compounds.js"></script>
-  <script src="../src/collection-data-functions.js"></script>
-  <script src="../src/collection-degree.js"></script>
-  <script src="../src/collection-events.js"></script>
-  <script src="../src/collection-filter.js"></script>
-  <script src="../src/collection-group.js"></script>
-  <script src="../src/collection-iteration.js"></script>
-  <script src="../src/collection-layout.js"></script>
-  <script src="../src/collection-style.js"></script>
-  <script src="../src/collection-switch-functions.js"></script>
-  <script src="../src/collection-traversing.js"></script>
-  <script src="../src/collection-viewport.js"></script>
-  <script src="../src/heap.js"></script>
-  <script src="../src/extensions/renderer.canvas.define-and-init-etc.js"></script>
-  <script src="../src/extensions/renderer.canvas.arrow-shapes.js"></script>
-  <script src="../src/extensions/renderer.canvas.cached-eles.js"></script>
-  <script src="../src/extensions/renderer.canvas.coord-ele-math.js"></script>
-  <script src="../src/extensions/renderer.canvas.drawing-edges.js"></script>
-  <script src="../src/extensions/renderer.canvas.drawing-images.js"></script>
-  <script src="../src/extensions/renderer.canvas.drawing-label-text.js"></script>
-  <script src="../src/extensions/renderer.canvas.drawing-nodes.js"></script>
-  <script src="../src/extensions/renderer.canvas.drawing-redraw.js"></script>
-  <script src="../src/extensions/renderer.canvas.drawing-shapes.js"></script>
-  <script src="../src/extensions/renderer.canvas.export-image.js"></script>
-  <script src="../src/extensions/renderer.canvas.load-and-listeners.js"></script>
-  <script src="../src/extensions/renderer.canvas.node-shapes.js"></script>
-  <script src="../src/extensions/layout.arbor.js"></script>
-  <script src="../src/extensions/layout.breadthfirst.js"></script>
-  <script src="../src/extensions/layout.circle.js"></script>
-  <script src="../src/extensions/layout.cola.js"></script>
-  <script src="../src/extensions/layout.concentric.js"></script>
-  <script src="../src/extensions/layout.cose.js"></script>
-  <script src="../src/extensions/layout.dagre.js"></script>
-  <script src="../src/extensions/layout.grid.js"></script>
-  <script src="../src/extensions/layout.null.js"></script>
-  <script src="../src/extensions/layout.preset.js"></script>
-  <script src="../src/extensions/layout.random.js"></script>
-  <script src="../src/extensions/layout.spread.js"></script>
-  <script src="../src/extensions/layout.springy.js"></script>
-  <script src="../src/extensions/renderer.null.js"></script>
+  <script src="../build/cytoscape.js"></script>
   <!-- endinject -->
 
   <script>
@@ -127,14 +50,12 @@
     <script src="core-init.js"></script>
     <script src="events.js"></script>
     <script src="fabric.js"></script>
-    <script src="heap.js"></script>
+    <script src="foo.js"></script>
     <script src="selectors.js"></script>
     <script src="thread.js"></script>
     <!-- endinject -->
-  
-    <script>mocha.checkLeaks(); mocha.run();</script>
 
-    <div id="cy"></div>
+    <script>mocha.run();</script>
 
     <div id="cy"></div>
 

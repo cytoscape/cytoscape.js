@@ -358,10 +358,6 @@ util.extend(corefn, {
         cy.style( obj.style );
       }
 
-      if( obj.layout ){
-        cy.layout( obj.layout );
-      }
-
       if( obj.zoom != null && obj.zoom !== _p.zoom ){
         cy.zoom( obj.zoom );
       }
@@ -415,10 +411,9 @@ util.extend(corefn, {
       json.maxZoom = cy._private.maxZoom;
       json.panningEnabled = cy._private.panningEnabled;
       json.userPanningEnabled = cy._private.userPanningEnabled;
-      json.pan = cy._private.pan;
+      json.pan = util.copy( cy._private.pan );
       json.boxSelectionEnabled = cy._private.boxSelectionEnabled;
-      json.layout = cy._private.options.layout;
-      json.renderer = cy._private.options.renderer;
+      json.renderer = util.copy( cy._private.options.renderer );
       json.hideEdgesOnViewport = cy._private.options.hideEdgesOnViewport;
       json.hideLabelsOnViewport = cy._private.options.hideLabelsOnViewport;
       json.textureOnViewport = cy._private.options.textureOnViewport;

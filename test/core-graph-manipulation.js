@@ -423,20 +423,6 @@ describe('Core graph manipulation', function(){
       expect( styleColor ).to.equal( bypassColor );
     });
 
-    it('cy.json() updates layout', function(){
-      var cb = 0;
-      cy.on('layoutstop', function(){ cb++; });
-
-      cy.json({
-        layout: { name: 'one' }
-      });
-
-      cy.nodes().forEach(function(n){
-        expect( n.position() ).to.deep.equal({ x: 1, y: 1 });
-      });
-      expect( cb ).to.equal(1);
-    });
-
     it('cy.json() sets zoom', function(){
       var cb = 0;
       cy.on('zoom', function(){ cb++; });

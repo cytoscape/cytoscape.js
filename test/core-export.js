@@ -31,7 +31,6 @@ describe('Core export', function(){
     var json = cy.json();
 
     expect( json ).to.have.property('elements');
-    expect( json ).to.have.property('layout');
     expect( json ).to.have.property('renderer');
     expect( json ).to.have.property('minZoom').that.equals( cy.minZoom() );
     expect( json ).to.have.property('maxZoom').that.equals( cy.maxZoom() );

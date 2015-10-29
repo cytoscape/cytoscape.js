@@ -3,6 +3,9 @@ $(function(){ // on dom ready
 var cy = cytoscape({
   container: $('#cy')[0],
   
+  boxSelectionEnabled: false,
+  autounselectify: true,
+  
   style: cytoscape.stylesheet()
     .selector('node')
       .css({

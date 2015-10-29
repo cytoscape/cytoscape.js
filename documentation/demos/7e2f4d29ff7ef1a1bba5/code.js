@@ -2,7 +2,10 @@ $(function(){ // on dom ready
 
 var cy = cytoscape({
   container: document.getElementById('cy'),
-  
+
+  boxSelectionEnabled: false,
+  autounselectify: true,
+
   style: cytoscape.stylesheet()
     .selector('node')
       .css({
@@ -56,9 +59,9 @@ var bfs = cy.elements().bfs('#a', function(){}, true);
 
 var i = 0;
 var highlightNextEle = function(){
-  bfs.path[i].addClass('highlighted');
-  
   if( i < bfs.path.length ){
+    bfs.path[i].addClass('highlighted');
+  
     i++;
     setTimeout(highlightNextEle, 1000);
   }

@@ -7,8 +7,7 @@ This function allows you to step directly to a particular progress of the animat
 ```js
 var jAni = cy.$('#j').animation({
   style: {
-    width: 100,
-    height: 200
+    'background-color': 'red'
   },
   duration: 1000
 });

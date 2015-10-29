@@ -86,6 +86,10 @@ styfn.applyBypass = function( eles, name, value, updateTransitions ){
 
     } // for props
 
+    if( ret ){
+      this.updateStyleHints( ele );
+    }
+
     if( updateTransitions ){
       this.updateTransitions( ele, diffProps, isBypass );
     }
@@ -150,6 +154,8 @@ styfn.removeBypasses = function( eles, props, updateTransitions ){
 
       diffProp.next = style[ prop.name ];
     } // for props
+
+    this.updateStyleHints( ele );
 
     if( updateTransitions ){
       this.updateTransitions( ele, diffProps, isBypass );

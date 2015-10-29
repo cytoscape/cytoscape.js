@@ -131,7 +131,8 @@ $(function(){
       elements: elements,
       motionBlur: true,
       selectionType: 'single',
-      boxSelectionEnabled: false
+      boxSelectionEnabled: false,
+      autoungrabify: true
     });
     
     cy.on('free', 'node', function( e ){

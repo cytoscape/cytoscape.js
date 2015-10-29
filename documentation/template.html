@@ -4,7 +4,7 @@
 		<meta charset="UTF-8">
 		<meta http-equiv="content-type" content="text/html;charset=UTF-8">
 		<link rel="canonical" href="http://js.cytoscape.org" />
-		<meta name="description" content="Graph theory library for analysis and visualisation (compatible with CommonJS/Node.js/io.js, AMD/Require.js, npm, Bower, spm, jspm, Meteor/Atmosphere, jQuery, and plain JS/JavaScript)">
+		<meta name="description" content="Graph theory library for analysis and visualisation (compatible with CommonJS/Node.js, AMD/Require.js, npm, Bower, spm, jspm, Meteor/Atmosphere, jQuery, and plain JS/JavaScript)">
 		<meta name="author" content="Max Franz">
 		<meta name="robots" content="all" />
 		<meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimal-ui">
@@ -20,21 +20,21 @@
 		<link rel="stylesheet" href="css/highlight/github.css">
 		<link rel="stylesheet" href="css/style.css">
 		<!-- endinject -->
-		
+
 	</head>
 
 	<body>
 
 		<div id="content">
-			
-			<a id="open-navigation" class="activatable"><span class="icon-reorder"></span></a>
+
+			<a id="open-navigation" class="activatable plain-link"><span class="icon-reorder"></span></a>
 			<div id="open-navigation-bg"></div>
 
 			<h1 id="top" class="title">Cytoscape.js</h1>
 			<div class="subtitle">
 				Graph theory (a.k.a. network) library for analysis and visualisation
-				(compatible with 
-				<a target="_blank" href="http://wiki.commonjs.org/wiki/CommonJS">CommonJS</a>/<a target="_blank" href="http://nodejs.org/">Node.js</a>/<a target="_blank" href="http://iojs.org/">io.js</a>,
+				(compatible with
+				<a target="_blank" href="http://wiki.commonjs.org/wiki/CommonJS">CommonJS</a>/<a target="_blank" href="http://nodejs.org/">Node.js</a>,
 				<a target="_blank" href="http://requirejs.org">AMD/Require.js</a>,
 				<a target="_blank" href="http://jquery.com/">jQuery</a>,
 				<a target="_blank" href="http://npmjs.org">npm</a>,
@@ -44,7 +44,7 @@
 				<a target="_blank" href="https://www.meteor.com">Meteor/Atmosphere</a>,
 				and plain JS/JavaScript)
 			</div>
-			
+
 			<div class="buttons-subtitle">
 				<a class="button green" target="_blank" href="https://github.com/cytoscape/cytoscape.js"><span class="icon-github-alt"></span> GitHub</a>
 
@@ -54,7 +54,7 @@
 			<div class="links">
 				<a href="#extensions"><span class="icon-puzzle-piece"></span> Extensions</a> |
 				<a target="_blank" href="https://twitter.com/cytoscape"><span class="icon-twitter"></span> Twitter</a> |
-				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues/new"><span class="icon-bug"></span> File an issue or request a feature</a> |
+				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues/new"><span class="icon-bug"></span> File an issue or request a feature via GitHub</a> or <a href="mailto:cytoscapejs.issues@gmail.com">via email to GitHub</a> |
 				<a target="_blank" href="http://stackoverflow.com/questions/tagged/cytoscape.js"><span class="icon-question"></span> Previous questions</a> |
 				<a target="_blank" href="http://stackoverflow.com/questions/ask?tags=cytoscape.js"><span class="icon-comments"></span> Ask a code help question</a> |
 				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/milestones"><span class="icon-calendar"></span> Version milestones/changelogs</a> |
@@ -67,11 +67,11 @@
 				<a target="_blank" href="https://twitter.com/intent/tweet?status=Cytoscape.js,%20a%20graph%20%28a.k.a.%20network%29%20library%20for%20analysis%20and%20visualisation%20js.cytoscape.org"><span class="icon-twitter"></span> Share it on Twitter</a> |
 				<a target="_blank" href="https://plus.google.com/share?url=js.cytoscape.org"><span class="icon-google-plus"></span> Share it on Google+</a>
 			</div>
-			
+
 			<div class="links likes">
-				Use Cytoscape.js? | <a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues/914"> <span class="icon-comments"></span> Let us know to be featured here</a> 
+				Use Cytoscape.js? | <a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues/914"> <span class="icon-comments"></span> Let us know to be featured here</a>
 			</div>
-			
+
 			<div class="links likes">
 				<span class="like-label">Want to participate in our student programme to help make improvements and add new features?</span>&nbsp;|&nbsp;<form action="http://nrnb.org/academy.html" method="get" target="_blank">
 					<button type="submit" class="link"><i class="icon-plus"></i> Join as a student</button>
@@ -80,7 +80,7 @@
 					<input name="hosted_button_id" value="UYUEWUL7FNZ3S" type="hidden" />
 					<button type="submit" class="link"><i class="icon-smile"></i> Donate to help fund a student</button>
 				</form>
-				
+
 				<div class="footnote">Donations are tax deductible to a 501(c)(3) nonprofit organization, The Cytoscape Consoritum, Tax ID: 20-4909879.</div>
 			</div>
 
@@ -88,21 +88,13 @@
 			{{#each sections}}
 				<h1 id="{{id}}">{{name}} {{{bookmark}}}</h1>
 
-				{{#if extensions}}
-					<ul>
-					{{#each extensions}}
-						<li><a target="_blank" href="{{url}}"><code>{{name}}</code></a> : {{descr}}</li>
-					{{/each}}
-					</ul>
-				{{/if}}
-
 				{{#if html}}
 					{{{html}}}
 				{{/if}}
 
 				{{#if demo}}
 
-					<div class="gallery-full-demo">			
+					<div class="gallery-full-demo">
 						<div class="gallery-full-padder"></div>
 
 						<a class="gallery-full-link" target="_blank" href="{{demo.viewUrl}}">
@@ -110,7 +102,7 @@
 						</a>
 
 						<button class="run"><span class="icon-play"></span></button>
-						
+
 					</div>
 
 					{{#if demo.name}}
@@ -126,7 +118,7 @@
 					<div class="gallery-demos">
 					{{#each demos}}
 						<div class="gallery-demo">
-						
+
 							<a class="gallery-link" target="_blank" href="{{viewUrl}}">
 								<span class="gallery-preview" style="background-image: url('{{imgUrl}}');"></span>
 							</a>
@@ -143,7 +135,7 @@
 									<a target="_blank" href="{{githubUrl}}"><span class="icon-github-alt"></span></a>
 								</span>
 							</div>
-							
+
 						</div>
 					{{/each}}
 					</div>
@@ -155,28 +147,19 @@
 				{{else}}
 					<h2 id="{{id}}">{{name}} {{{bookmark}}}</h2>
 
+					{{#if extensions}}
+						<ul>
+						{{#each extensions}}
+							<li><a target="_blank" href="{{url}}"><code>{{name}}</code></a> : {{descr}}</li>
+						{{/each}}
+						</ul>
+					{{/if}}
+
 					{{#if html}}
 						{{{html}}}
 					{{/if}}
 
 					{{#if layout}}
-						{{#if demos}}
-							<div class="gallery-demos">
-								{{#each demos}}
-									<div class="gallery-demo">
-										<div class="gallery-title">
-											<span class="gallery-name">{{name}}</span>
-										</div>
-										
-										<a class="gallery-link" target="_blank" href="{{srcUrl}}">
-											<span class="gallery-preview" style="background-image: url('{{imgUrl}}');"></span>
-										</a>
-										
-									</div>
-								{{/each}}
-							</div>
-						{{/if}}
-
 						<h3>Options</h3>
 						<pre><code class="lang-js">{{{layout.optionsFormatted}}}</code></pre>
 						<button class="run run-inline-code"><span class="icon-play"></span></button>
@@ -184,8 +167,17 @@
 
 					{{#each fns}}
 						<div class="function">
-							<div class="name" id="{{id}}"><span class="fn-name">{{name}}()</span> {{#if aliases}}et al{{/if}} {{{bookmark}}}</div>
-							
+							<div class="name" id="{{id}}">
+								<span class="fn-name">{{name}}()</span> {{#if aliases}}et al{{/if}} {{{bookmark}}}
+								{{#each altIds}}<span id="{{.}}">&nbsp;</span>{{/each}}
+							</div>
+
+							{{#if extFn}}
+								<div class="ext-function-note">
+									<span class="icon-puzzle-piece important"></span> <a href="#extensions">Extension</a> function: This function is intended for use in extensions.
+								</div>
+							{{/if}}
+
 							{{#if processedPureAliases}}
 							<div class="pure-aliases">
 								<span class="important-indicator"></span> Aliases:
@@ -197,7 +189,7 @@
 								{{/each}}
 							</div>
 							{{/if}}
-							
+
 							<div class="descr">{{{descr}}}</div>
 
 							{{#if formats}}
@@ -221,13 +213,13 @@
 											{{/each}}
 										</div>
 										{{/if}}
-										
+
 										<div class="descr">{{{descr}}}</div>
 										<ul class="args">
 											{{#each args}}
 												<li>
 													<span class="name">{{{linkedName}}}</span>
-													{{#if optional}}<span class="optional">[optional]</span>{{/if}} 
+													{{#if optional}}<span class="optional">[optional]</span>{{/if}}
 													<span class="descr">{{{descr}}}</span>
 
 													{{#if fields}}
@@ -235,7 +227,7 @@
 														{{#each fields}}
 															<li>
 																<span class="name">{{{linkedName}}}</span>
-																{{#if optional}}<span class="optional">[optional]</span>{{/if}} 
+																{{#if optional}}<span class="optional">[optional]</span>{{/if}}
 																<span class="descr">{{{descr}}}</span>
 															</li>
 
@@ -244,7 +236,7 @@
 																{{#each fields}}
 																<li>
 																	<span class="name">{{{linkedName}}}</span>
-																	{{#if optional}}<span class="optional">[optional]</span>{{/if}} 
+																	{{#if optional}}<span class="optional">[optional]</span>{{/if}}
 																	<span class="descr">{{{descr}}}</span>
 																</li>
 																{{/each}}
@@ -265,7 +257,7 @@
 								{{#if html}}
 									{{{html}}}
 								{{/if}}
-							</div>		
+							</div>
 						</div>
 					{{/each}}
 
@@ -280,31 +272,39 @@
 
 
 		<div id="navigation">
-			<div class="toc">Table of contents (<a href="#top"><span class="icon-bookmark"></span> top</a>)</div>
+			<div class="toc">
+				<input id="toc-input" type="text" autofocus placeholder="&#61442; Find sections"></input>
+				<a id="toc-clear" class="plain-link"><span class="icon-remove"></span></a>
+				<a href="#top" class="plain-link"><span class="icon-arrow-up"></span></a>
+			</div>
 
-			{{#each sections}}
-				<div class="section lvl1">
-					{{#if sections}}<span class="expander">
-						<span class="icon-caret-down expanded-icon"></span>
-						<span class="icon-caret-right collapsed-icon"></span>
-					</span>{{/if}}
-					<a class="toclink" href="#{{id}}"><span class="icon-bookmark bookmark-icon"></span> {{& name}}</a>
-				</div>
+			<div id="toc-sections" class="toc-sections">
 
 				{{#each sections}}
-					<div class="section lvl2">
-						{{#if fns}}<span class="expander">
+					<div class="section lvl1">
+						{{#if sections}}<span class="expander">
 							<span class="icon-caret-down expanded-icon"></span>
 							<span class="icon-caret-right collapsed-icon"></span>
 						</span>{{/if}}
 						<a class="toclink" href="#{{id}}"><span class="icon-bookmark bookmark-icon"></span> {{& name}}</a>
 					</div>
 
-					{{#each fns}}
-						<div class="section lvl3"><a class="toclink" href="#{{id}}"><span class="icon-bookmark bookmark-icon"></span> {{name}}() {{#if aliases}}et al{{/if}}</a></div>
+					{{#each sections}}
+						<div class="section lvl2">
+							{{#if fns}}<span class="expander">
+								<span class="icon-caret-down expanded-icon"></span>
+								<span class="icon-caret-right collapsed-icon"></span>
+							</span>{{/if}}
+							<a class="toclink" href="#{{id}}"><span class="icon-bookmark bookmark-icon"></span> {{& name}}</a>
+						</div>
+
+						{{#each fns}}
+							<div class="section lvl3"><a class="toclink" href="#{{id}}"><span class="icon-bookmark bookmark-icon"></span> {{name}}() {{#if aliases}}et al{{/if}}</a></div>
+						{{/each}}
 					{{/each}}
 				{{/each}}
-			{{/each}}
+
+			</div>
 
 			<p><span class="icon-sign-blank"></span></p>
 		</div>
@@ -338,12 +338,6 @@
 		<script src="js/load.js"></script>
 		<script src="js/script.js"></script>
 		<!-- endinject -->
-
-		<script src="js/arbor.js"></script>
-		<script src="js/springy.js"></script>
-		<script src="js/cola.v3.min.js"></script>
-		<script src="js/cola.adaptor.js"></script>
-		<script src="js/dagre.js"></script>
 
 		<script type="text/javascript">
 

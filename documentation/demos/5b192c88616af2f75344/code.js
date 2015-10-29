@@ -3,6 +3,9 @@ $(function(){ // on dom ready
 var cy = cytoscape({
   container: document.getElementById('cy'),
   
+  boxSelectionEnabled: false,
+  autounselectify: true,
+  
   style: [
     {
       selector: 'node',
@@ -20,7 +23,8 @@ var cy = cytoscape({
         'padding-bottom': '10px',
         'padding-right': '10px',
         'text-valign': 'top',
-        'text-halign': 'center'
+        'text-halign': 'center',
+        'background-color': '#bbb'
       }
     },
     {
@@ -42,12 +46,12 @@ var cy = cytoscape({
   
   elements: {
     nodes: [
-      { data: { id: 'a', parent: 'b' } },
+      { data: { id: 'a', parent: 'b' }, position: { x: 215, y: 85 } },
       { data: { id: 'b' } },
-      { data: { id: 'c', parent: 'b' } },
-      { data: { id: 'd' } },
+      { data: { id: 'c', parent: 'b' }, position: { x: 300, y: 85 } },
+      { data: { id: 'd' }, position: { x: 215, y: 175 } },
       { data: { id: 'e' } },
-      { data: { id: 'f', parent: 'e' } }
+      { data: { id: 'f', parent: 'e' }, position: { x: 300, y: 175 } }
     ],
     edges: [
       { data: { id: 'ad', source: 'a', target: 'd' } },
@@ -57,7 +61,7 @@ var cy = cytoscape({
   },
   
   layout: {
-    name: 'cose',
+    name: 'preset',
     padding: 5
   }
 });

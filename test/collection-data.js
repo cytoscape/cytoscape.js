@@ -1,29 +1,16 @@
 var expect = require('chai').expect;
 var cytoscape = require('../build/cytoscape.js', cytoscape);
 
-function MockRenderer(){
-  this.notifications = 0;
-}
-
-MockRenderer.prototype.notify = function(){
-  this.notifications++;
-};
-
-MockRenderer.prototype.numNotifications = function(){
-  return this.notifications;
-};
-
-cytoscape('renderer', 'mock', MockRenderer);
-
 describe('Collection data', function(){
 
   var cy;
+  var n1;
 
   // test setup
-  beforeEach(function(done){
-    cytoscape({
+  beforeEach(function(){
+    cy = cytoscape({
       renderer: {
-        name: 'mock'
+        name: 'null'
       },
 
       elements: {
@@ -34,19 +21,16 @@ describe('Collection data', function(){
             { data: { id: "n4", parent: "n5", foo: "bar" } },
             { data: { id: "n5" } }
         ],
-        
+
         edges: [
             { data: { id: "n1n2", source: "n1", target: "n2", weight: 0.33 }, classes: "uh" },
             { data: { id: "n2n3", source: "n2", target: "n3", weight: 0.66 }, classes: "huh" },
             { data: { id: "n1n1", source: "n1", target: "n1" } }
         ]
-      },
-      ready: function(){
-        cy = this;
-
-        done();
       }
     });
+
+    n1 = cy.$('#n1');
   });
 
 
@@ -71,7 +55,7 @@ describe('Collection data', function(){
 
       var nodes = cy.nodes().data('foo', 'bar');
       for( var i = 0; i < nodes.length; i++ ){
-        expect( nodes[i].data('foo') ).to.equal('bar'); 
+        expect( nodes[i].data('foo') ).to.equal('bar');
       }
     });
 
@@ -145,6 +129,111 @@ describe('Collection data', function(){
 
     });
 
+    it('sets data', function(){
+      var evts = 0;
+      n1.on('data', function(){ evts++; });
+
+      n1.json({ data: { foo: 'bar' } });
+
+      expect( n1.data('foo') ).to.equal('bar');
+      expect( evts ).to.equal(1);
+    });
+
+    it('sets classes', function(){
+      var evts = 0;
+      n1.on('class', function(){ evts++; });
+
+      n1.json({ classes: 'odd other' });
+
+      expect( n1.hasClass('odd') ).to.be.true;
+      expect( n1.hasClass('other') ).to.be.true;
+
+      expect( evts ).to.equal(1);
+    });
+
+    it('sets position', function(){
+      var evts = 0;
+      n1.on('position', function(){ evts++; });
+
+      n1.json({ position: { x: 100, y: 200 } });
+
+      expect( n1.position() ).to.deep.equal({ x: 100, y: 200 });
+
+      expect( evts ).to.equal(1);
+    });
+
+    it('sets selected', function(){
+      var evts = 0;
+      n1.on('select', function(){ evts++; });
+
+      n1.json({ selected: true });
+
+      expect( n1.selected() ).to.be.true;
+
+      expect( evts ).to.equal(1);
+    });
+
+    it('sets unselected', function(){
+      n1.select();
+
+      var evts = 0;
+      n1.on('unselect', function(){ evts++; });
+
+      n1.json({ selected: false });
+
+      expect( n1.selected() ).to.be.false;
+
+      expect( evts ).to.equal(1);
+    });
+
+    it('sets locked', function(){
+      var evts = 0;
+      n1.on('lock', function(){ evts++; });
+
+      n1.json({ locked: true });
+
+      expect( n1.locked() ).to.be.true;
+
+      expect( evts ).to.equal(1);
+    });
+
+    it('sets unlocked', function(){
+      n1.lock();
+
+      var evts = 0;
+      n1.on('unlock', function(){ evts++; });
+
+      n1.json({ locked: false });
+
+      expect( n1.locked() ).to.be.false;
+
+      expect( evts ).to.equal(1);
+    });
+
+    it('sets grabbable', function(){
+      n1.ungrabify();
+
+      var evts = 0;
+      n1.on('grabify', function(){ evts++; });
+
+      n1.json({ grabbable: true });
+
+      expect( n1.grabbable() ).to.be.true;
+
+      expect( evts ).to.equal(1);
+    });
+
+    it('sets ungrabbable', function(){
+      var evts = 0;
+      n1.on('ungrabify', function(){ evts++; });
+
+      n1.json({ grabbable: false });
+
+      expect( n1.grabbable() ).to.be.false;
+
+      expect( evts ).to.equal(1);
+    });
+
   });
 
   describe('eles.group()', function(){
@@ -195,11 +284,10 @@ describe('Collection data', function(){
 
   });
 
-  describe('eles.batch()', function(){
+  describe('cy.batch()', function(){
 
     it('limits notifications to 1', function(){
-      var numNots = cy.renderer().numNotifications();
-
+      var numNots = cy.renderer().notifications;
       cy.batch(function(){
         cy.$('#n1')
           .addClass('foo')
@@ -208,13 +296,11 @@ describe('Collection data', function(){
           .select()
         ;
       });
-
-      expect( cy.renderer().numNotifications() ).to.equal( numNots + 1 );
+      expect( cy.renderer().notifications ).to.equal( numNots + 1 );
     });
 
     it('can also be used async style', function(done){
-      var numNots = cy.renderer().numNotifications();
-
+      var numNots = cy.renderer().notifications;
       cy.startBatch();
 
       setTimeout(function(){
@@ -224,10 +310,9 @@ describe('Collection data', function(){
           .data('foo', 'bar')
           .select()
         ;
-        
-        cy.endBatch();
 
-        expect( cy.renderer().numNotifications() ).to.equal( numNots + 1 );
+        cy.endBatch();
+        expect( cy.renderer().notifications ).to.equal( numNots + 1 );
 
         done();
       }, 10);

@@ -145,9 +145,10 @@ In addition to specifying the value of a property outright, the developer may al
 
 These properties affect the style of a node's body:
 
- * **`width`** : The width of the node's body.
- * **`height`** : The height of the node's body.
- * **`shape`** : The shape of the node's body; may be `rectangle`, `roundrectangle`, `ellipse`, `triangle`, `pentagon`, `hexagon`, `heptagon`, `octagon`, `star`, `diamond`, `vee`, or `rhomboid`.  Note that each shape fits within the specified `width` and `height`, and so you may have to adjust `width` and `height` if you desire an equilateral shape (i.e. `width !== height` for several equilateral shapes).
+ * **`width`** : The width of the node's body.  This property can take on the special value `label` so the width is automatically based on the node's label.
+ * **`height`** : The height of the node's body.  This property can take on the special value `label` so the height is automatically based on the node's label.
+ * **`shape`** : The shape of the node's body; may be `rectangle`, `roundrectangle`, `ellipse`, `triangle`, `pentagon`, `hexagon`, `heptagon`, `octagon`, `star`, `diamond`, `vee`, `rhomboid`, or `polygon` (custom polygon specified via `shape-polygon-points`).  Note that each shape fits within the specified `width` and `height`, and so you may have to adjust `width` and `height` if you desire an equilateral shape (i.e. `width !== height` for several equilateral shapes).
+ * **`shape-polygon-points`** : A space-separated list of numbers ranging on [-1, 1], representing alternating x and y values (i.e. `x1 y1   x2 y2,   x3 y3 ...`).  This represents the points in the polygon for the node's shape.  The bounding box of the node is given by (-1, -1), (1, -1), (1, 1), (-1, 1).
  * **`background-color`** : The colour of the node's body.
  * **`background-blacken`** : Blackens the node's body for values from 0 to 1; whitens the node's body for values from 0 to -1.
  * **`background-opacity`** : The opacity level of the node's background colour.
@@ -156,12 +157,15 @@ These properties affect the style of a node's body:
  * **`border-color`** : The colour of the node's border.
  * **`border-opacity`** : The opacity of the node's border.
 
+These are padding properties.  A padding defines an addition to a node's dimension.  For example, `padding-left` adds to a node's outer (i.e. total) width.  This can be used to add spacing around the label of `width: label; height: label;` nodes, or it can be used to add spacing between a compound node parent and its children.
+
+* **`padding-left`** : The amount of left padding.
+* **`padding-right`** : The amount of right padding.
+* **`padding-top`** : The amount of top padding.
+* **`padding-bottom`** : The amount of bottom padding.
+
 These node body properties only apply to compound nodes (i.e. nodes who have embedded children):
 
- * **`padding-left`** : The size of the area on the left of the compound node that can not be occupied by child nodes.
- * **`padding-right`** : The size of the area on the right of the compound node that can not be occupied by child nodes.
- * **`padding-top`** : The size of the area on the top of the compound node that can not be occupied by child nodes.
- * **`padding-bottom`** : The size of the area on the bottom of the compound node that can not be occupied by child nodes.
  * **`compound-sizing-wrt-labels`** : Whether to include labels of descendants in sizing a compound node; may be `include` or `exclude`.
 
 
@@ -200,14 +204,41 @@ You may find it useful to reserve a number to a particular colour for all nodes 
 These properties affect the styling of an edge's line:
 
  * **`width`** : The width of an edge's line.
- * **`curve-style`** : The curving method used to separate two or more edges between two nodes; may be `bezier` (default, bundled curved edges), `unbundled-bezier` (curved edges for use with manual control points), or `haystack` (very fast, bundled straight edges for which loops are unsupported).  Note that `haystack` edges work best with `ellipse`, `rectangle`, or similar nodes.  Smaller node shapes, like `triangle`, will not be as aesthetically pleasing.  Also note that edge arrows are unsupported for `haystack` edges.
- * **`haystack-radius`** : A value between 0 and 1 inclusive that indicates the relative radius used to position haystack edges on their connected nodes.  The outside of the node is at 1, and the centre of the node is at 0.
- * **`control-point-step-size`** : From the line perpendicular from source to target, this value specifies the distance between successive bezier edges.
- * **`control-point-distance`** : Overrides `control-point-step-size` with a manual value.  Because it overrides the step size, bezier edges with the same value will overlap.  Thus, it's best to use this as a one-off value for particular edges if need be.
- * **`control-point-weight`** : Weights control points along the line from source to target.  This value ranges on [0, 1], with 0 towards the source node and 1 towards the target node.
+ * **`curve-style`** : The curving method used to separate two or more edges between two nodes; may be [`bezier`](#style/bezier-edges) (default, bundled curved edges), [`unbundled-bezier`](#style/unbundled-bezier-edges) (curved edges for use with manual control points), [`haystack`](#style/haystack-edges) (very fast, bundled straight edges for which loops are unsupported), or [`segments`](#style/segments-edges) (a series of straight lines).  Note that `haystack` edges work best with `ellipse`, `rectangle`, or similar nodes.  Smaller node shapes, like `triangle`, will not be as aesthetically pleasing.  Also note that edge arrows are unsupported for `haystack` edges.
  * **`line-color`** : The colour of the edge's line.
  * **`line-style`** : The style of the edge's line; may be `solid`, `dotted`, or `dashed`.
 
+
+## Bezier edges
+
+For automatic, bundled bezier edges (`curve-style: bezier`):
+
+ * **`control-point-step-size`** : From the line perpendicular from source to target, this value specifies the distance between successive bezier edges.
+ * **`control-point-distances`** : A single value that overrides `control-point-step-size` with a manual value.  Because it overrides the step size, bezier edges with the same value will overlap.  Thus, it's best to use this as a one-off value for particular edges if need be.
+ * **`control-point-weights`** : A single value that weights control points along the line from source to target.  The value usually ranges on [0, 1], with 0 towards the source node and 1 towards the target node &mdash; but larger or smaller values can also be used.
+
+
+## Unbundled bezier edges
+
+For bezier edges with manual control points (`curve-style: unbundled-bezier`):
+
+* **`control-point-distances`** : A series of values that specify for each control point the distance perpendicular to a line formed from source to target, e.g. `-20 20 -20`.
+* **`control-point-weights`** : A series of values that weights control points along a line from source to target, e.g. `0.25 0.5 0.75`.  A value usually ranges on [0, 1], with 0 towards the source node and 1 towards the target node &mdash; but larger or smaller values can also be used.
+
+
+## Haystack edges
+
+For fast, straight line edges (`curve-style: haystack`):
+
+* **`haystack-radius`** : A value between 0 and 1 inclusive that indicates the relative radius used to position haystack edges on their connected nodes.  The outside of the node is at 1, and the centre of the node is at 0.
+
+
+## Segments edges
+
+For edges made of several straight lines (`curve-style: segments`):
+
+* **`segment-distances`** : A series of values that specify for each segment point the distance perpendicular to a line formed from source to target, e.g. `-20 20 -20`.
+* **`segment-weights`** : A series of values that weights segment points along a line from source to target, e.g. `0.25 0.5 0.75`.  A value usually ranges on [0, 1], with 0 towards the source node and 1 towards the target node &mdash; but larger or smaller values can also be used.
 
 
 ## Edge arrow
@@ -250,7 +281,7 @@ Towards the target node, positioned in the middle of the edge:
 ## Labels
 
  * **`color`** :  The colour of the element's label.
- * **`content`** : The text to display for an element's label.
+ * **`label`** : The text to display for an element's label.
  * **`font-family`** : A [comma-separated list of font names](https://developer.mozilla.org/en-US/docs/Web/CSS/font-family) to use on the label text.
  * **`font-size`** : The size of the label text.
  * **`font-style`** : A [CSS font style](https://developer.mozilla.org/en-US/docs/Web/CSS/font-style) to be applied to the label text.
@@ -263,25 +294,31 @@ Towards the target node, positioned in the middle of the edge:
  * **`text-outline-color`** : The colour of the outline around the element's label text.
  * **`text-outline-opacity`** : The opacity of the outline on label text.
  * **`text-outline-width`** : The size of the outline on label text.
- * **`text-shadow-blur`** : The shadow blur, note that when greater than 0, this could affect performance. Default to 5.
+ * **`text-shadow-blur`** : The shadow blur distance.
  * **`text-shadow-color`** : The colour of the shadow.
  * **`text-shadow-offset-x`** : The x offset relative to the text where the shadow will be displayed, can be negative. If you set blur to 0, add an offset to view your shadow.
  * **`text-shadow-offset-y`** : The y offset relative to the text where the shadow will be displayed, can be negative. If you set blur to 0, add an offset to view your shadow.
- * **`text-shadow-opacity`** : The opacity of the shadow.
- * **`text-background-color`** : A color to apply on the text background.
- * **`text-background-opacity`** : The opacity of the label background; the background is disabled for `0`.
- * **`text-background-shape`** : The shape to use for the label background, can be rectangle or roundrectangle.
- * **`text-border-opacity`** : The opacity of the text border.
- * **`text-border-width`** : The border width to put around the label.
+ * **`text-shadow-opacity`** : The opacity of the shadow on the text; the shadow is disabled for `0` (default value).
+ * **`text-background-color`** : A colour to apply on the text background.
+ * **`text-background-opacity`** : The opacity of the label background; the background is disabled for `0` (default value).
+ * **`text-background-shape`** : The shape to use for the label background, can be `rectangle` or `roundrectangle`.
+ * **`text-border-opacity`** : The width of the border around the label; the border is disabled for `0` (default value).
+ * **`text-border-width`** : The width of the border around the label.
  * **`text-border-style`** : The style of the border around the label; may be `solid`, `dotted`, `dashed`, or `double`.
- * **`text-border-color`** : The color of the border around the label.
+ * **`text-border-color`** : The colour of the border around the label.
  * **`min-zoomed-font-size`** : If zooming makes the effective font size of the label smaller than this, then no label is shown.
+ * **`text-events`** : Whether events should occur on an element if the label receives an event; may be `yes` or `no`.  You may want a style applied to the text on `:active` so you know the text is activatable.
 
 These properties can only be used on node labels:
 
  * **`text-halign`** : The vertical alignment of a label; may have value `left`, `center`, or `right`.
  * **`text-valign`** : The vertical alignment of a label; may have value `top`, `center`, or `bottom`.
 
+
+## Events
+
+ * **`events`** : Whether events should occur on an element (e.g. `tap`, `mouseover`, etc.); may be `yes` or `no`.  For `no`, the element receives no events and events simply pass through to the core/viewport.
+ * **`text-events`** : Whether events should occur on an element if the label receives an event; may be `yes` or `no`.  You may want a style applied to the text on `:active` so you know the text is activatable.
 
 
 ## Overlay
@@ -307,7 +344,7 @@ These properties allow for the creation of shadows on top of nodes or edges. Not
  * **`transition-property`** : A comma separated list of style properties to animate in this state.
  * **`transition-duration`** : The length of the transition in seconds (e.g. `0.5s`).
  * **`transition-delay`** : The length of the delay in seconds before the transition occurs (e.g. `250ms`).
-
+ * **`transition-timing-function`** : An easing function that controls the animation progress curve; may be `linear` (default), `spring( tension, friction )` (the [demo](http://codepen.io/anon/pen/ZbzbbZ) has details for parameter values), `cubic-bezier( x1, y1, x2, y2 )` (the [demo](http://cubic-bezier.com) has details for parameter values), `ease`, `ease-in`, `ease-out`, `ease-in-out`, `ease-in-sine`, `ease-out-sine`, `ease-in-out-sine`, `ease-in-quad`, `ease-out-quad`, `ease-in-out-quad`,  `ease-in-cubic`, `ease-out-cubic`, `ease-in-out-cubic`,  `ease-in-quart`, `ease-out-quart`, `ease-in-out-quart`,  `ease-in-quint`, `ease-out-quint`, `ease-in-out-quint`,  `ease-in-expo`, `ease-out-expo`, `ease-in-out-expo`,  `ease-in-circ`, `ease-out-circ`, `ease-in-out-circ` (a [visualisation](http://easings.net/) of easings serves as a reference).
 
 
 ## Core

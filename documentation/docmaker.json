@@ -1,5 +1,5 @@
 {
-  "version": "2.5.0-unstable6",
+  "version": "snapshot-6e80e8ff63-1446133100934",
 
   "fnArgLinks": {
     "selector": "#selectors",
@@ -1770,6 +1770,17 @@
                 }
               ],
               "md": "collection/toggleClass"
+            },
+
+            {
+              "name": "eles.classes",
+              "descr": "Replace the current list of classes on the elements with the specified list.",
+              "formats": [
+                {
+                  "args": [ { "name": "classes", "descr": "A space-separated list of class names that replaces the current class list." } ]
+                }
+              ],
+              "md": "collection/classes"
             },
 
             {

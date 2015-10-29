@@ -195,6 +195,8 @@ styfn.updateStyleHints = function(ele){
   var self = this;
   var style = _p.style;
 
+  if( ele.removed() ){ return; }
+
   // set whether has pie or not; for greater efficiency
   var hasPie = false;
   if( _p.group === 'nodes' && self._private.hasPie ){

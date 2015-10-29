@@ -549,7 +549,9 @@ gulp.task('pkgver', ['version'], function(){
 gulp.task('dist', ['build'], function(){
   return gulp.src([
     'build/cytoscape.js',
+    'build/cytoscape.js.map',
     'build/cytoscape.min.js',
+    'build/cytoscape.min.js.map',
     'build/' + paths.nodethreadName
   ])
     .pipe( gulp.dest('dist') )

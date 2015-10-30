@@ -1,6 +1,8 @@
-$(function(){ // on dom ready
+document.addEventListener('DOMContentLoaded', function(){ // on dom ready
 
 var cy = cytoscape({
+  container: document.querySelector('#cy'),
+    
   boxSelectionEnabled: false,
   autounselectify: true,
   

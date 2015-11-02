@@ -209,8 +209,6 @@ button:active {
 	background: #fff;
 	z-index: 999999;
 	opacity: 1;
-
-	transition: opacity ease-out 150ms;
 }
 
 #navigation .toc {
@@ -897,8 +895,6 @@ and (orientation:portrait) {
 	z-index: 9999;
 	opacity: 0;
 	pointer-events: none;
-
-	transition: opacity ease-out 150ms;
 }
 
 .navigation-open #open-navigation-bg,

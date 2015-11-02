@@ -8,6 +8,8 @@ Cytoscape.js is an open source project, and anyone interested is encouraged to c
 
 Submit issues or feature requests to the [issue tracker](https://github.com/cytoscape/cytoscape.js/issues).  If your issue pertains to an extension, you should file the issue on that extension's issue tracker instead.
 
+Before submitting an issue, you should ensure that the issue still exists in the latest version of the library.  Because we follow semver, you can safely upgrade patch releases (x.y.**z**) and feature releases (x.**y**) without worry of breaking API changes.
+
 Clearly describe your issue.  List the steps necessary to reproduce your issue along with the corresponding code (either an inline snippet or a live one like JSBin).
 
 Make certain to mention the version of the library you are using and version of the browser/environment you are using.

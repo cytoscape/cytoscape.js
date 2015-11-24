@@ -294,7 +294,7 @@ var parseImpl = function( name, value, propIsBypass, propIsFlat ){
 
     // normalise value in pixels
     if( type.unitless || (units !== 'px' && units !== 'em') ){
-      // then pfValue does not apply
+      ret.pfValue = value;
     } else {
       ret.pfValue = ( units === 'px' || !units ? (value) : (this.getEmSizeInPixels() * value) );
     }

@@ -7,21 +7,22 @@ var styfn = {};
 
 // gets the rendered style for an element
 styfn.getRenderedStyle = function( ele ){
+  return this.getRawStyle( ele, true );
+};
+
+// gets the raw style for an element
+styfn.getRawStyle = function( ele, isRenderedVal ){
   var self = this;
   var ele = ele[0]; // insure it's an element
 
   if( ele ){
     var rstyle = {};
-    var style = ele._private.style;
-    var cy = this._private.cy;
-    var zoom = cy.zoom();
 
     for( var i = 0; i < self.properties.length; i++ ){
       var prop = self.properties[i];
-      var styleProp = style[ prop.name ];
+      var val = self.getStylePropertyValue( ele, prop.name, isRenderedVal );
 
-      if( styleProp ){
-        var val = styleProp.unitless ? styleProp.strValue : (styleProp.pfValue * zoom) + 'px';
+      if( val ){
         rstyle[ prop.name ] = val;
         rstyle[ util.dash2camel(prop.name) ] = val;
       }
@@ -31,26 +32,25 @@ styfn.getRenderedStyle = function( ele ){
   }
 };
 
-// gets the raw style for an element
-styfn.getRawStyle = function( ele ){
+styfn.getStylePropertyValue = function( ele, propName, isRenderedVal ){
   var self = this;
   var ele = ele[0]; // insure it's an element
 
   if( ele ){
-    var rstyle = {};
     var style = ele._private.style;
+    var prop = self.properties[ propName ];
+    var type = prop.type;
+    var styleProp = style[ prop.name ];
+    var zoom = ele.cy().zoom();
 
-    for( var i = 0; i < self.properties.length; i++ ){
-      var prop = self.properties[i];
-      var styleProp = style[ prop.name ];
+    if( styleProp ){
+      var units = styleProp.units ? type.implicitUnits || 'px' : null;
+      var val = units ? [].concat( styleProp.pfValue ).map(function( pfValue ){
+        return ( pfValue * (isRenderedVal ? zoom : 1) ) + units;
+      }).join(' ') : styleProp.strValue;
 
-      if( styleProp ){
-        rstyle[ prop.name ] = styleProp.strValue;
-        rstyle[ util.dash2camel(prop.name) ] = styleProp.strValue;
-      }
+      return val;
     }
-
-    return rstyle;
   }
 };
 

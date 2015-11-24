@@ -97,7 +97,7 @@ var elesfn = ({
         var ele = this[0];
 
         if( ele ){
-          return ele._private.style[ name ].strValue;
+          return style.getStylePropertyValue( ele, name );
         } else { // empty collection => can't get any value
           return;
         }

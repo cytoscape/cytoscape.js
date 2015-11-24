@@ -25,9 +25,11 @@ var styfn = {};
     nonNegativeInt: { number: true, min: 0, integer: true, unitless: true },
     position: { enums: ['parent', 'origin'] },
     nodeSize: { number: true, min: 0, enums: ['auto', 'label'] },
-    number: { number: true },
-    numbers: { number: true, multiple: true },
+    number: { number: true, unitless: true },
+    numbers: { number: true, unitless: true, multiple: true },
     size: { number: true, min: 0 },
+    bidirectionalSize: { number: true }, // allows negative
+    bidirectionalSizes: { number: true, multiple: true }, // allows negative
     bgSize: { number: true, min: 0, allowPercent: true },
     bgWH: { number: true, min: 0, allowPercent: true, enums: ['auto'] },
     bgPos: { number: true, allowPercent: true },
@@ -139,15 +141,15 @@ var styfn = {};
     { name: 'shadow-blur', type: t.size },
     { name: 'shadow-color', type: t.color },
     { name: 'shadow-opacity', type: t.zeroOneNumber },
-    { name: 'shadow-offset-x', type: t.number },
-    { name: 'shadow-offset-y', type: t.number },
+    { name: 'shadow-offset-x', type: t.bidirectionalSize },
+    { name: 'shadow-offset-y', type: t.bidirectionalSize },
 
     // label shadows
     { name: 'text-shadow-blur', type: t.size },
     { name: 'text-shadow-color', type: t.color },
     { name: 'text-shadow-opacity', type: t.zeroOneNumber },
-    { name: 'text-shadow-offset-x', type: t.number },
-    { name: 'text-shadow-offset-y', type: t.number },
+    { name: 'text-shadow-offset-x', type: t.bidirectionalSize },
+    { name: 'text-shadow-offset-y', type: t.bidirectionalSize },
 
     // transition anis
     { name: 'transition-property', type: t.propList },
@@ -195,9 +197,9 @@ var styfn = {};
     { name: 'curve-style', type: t.curveStyle },
     { name: 'haystack-radius', type: t.zeroOneNumber },
     { name: 'control-point-step-size', type: t.size },
-    { name: 'control-point-distances', type: t.numbers },
+    { name: 'control-point-distances', type: t.bidirectionalSizes },
     { name: 'control-point-weights', type: t.numbers },
-    { name: 'segment-distances', type: t.numbers },
+    { name: 'segment-distances', type: t.bidirectionalSizes },
     { name: 'segment-weights', type: t.numbers },
 
     // these are just for the core

@@ -8,12 +8,6 @@ var window = require('../window');
 var document = window ? window.document : null;
 var NullRenderer = require('../extensions/renderer/null');
 
-function ready(f) {
-  var fn = ( document && (document.readyState === 'interactive' || document.readyState === 'complete') )  ? f : ready;
-
-  setTimeout(fn, 9, f);
-}
-
 var corefn = {
   add: function(opts){
 
@@ -106,35 +100,26 @@ var corefn = {
       }
     }
 
-    function callback(){
-      cy.one('layoutready', function(e){
-        cy.notifications(true);
-        cy.trigger(e); // we missed this event by turning notifications off, so pass it on
+    cy.one('layoutready', function(e){
+      cy.notifications(true);
+      cy.trigger(e); // we missed this event by turning notifications off, so pass it on
 
-        cy.notify({
-          type: 'load',
-          collection: cy.elements()
-        });
-
-        cy.one('load', onload);
-        cy.trigger('load');
-      }).one('layoutstop', function(){
-        cy.one('done', ondone);
-        cy.trigger('done');
+      cy.notify({
+        type: 'load',
+        collection: cy.elements()
       });
 
-      var layoutOpts = util.extend({}, cy._private.options.layout);
-      layoutOpts.eles = cy.$();
+      cy.one('load', onload);
+      cy.trigger('load');
+    }).one('layoutstop', function(){
+      cy.one('done', ondone);
+      cy.trigger('done');
+    });
 
-      cy.layout( layoutOpts );
+    var layoutOpts = util.extend({}, cy._private.options.layout);
+    layoutOpts.eles = cy.$();
 
-    }
-
-    if( window && !( cy.renderer() instanceof NullRenderer ) ){
-      ready( callback );
-    } else {
-      callback();
-    }
+    cy.layout( layoutOpts );
 
     return this;
   }

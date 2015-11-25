@@ -156,8 +156,8 @@ var is = {
     return is.khtml() || is.webkit() || is.chromium();
   },
 
-  trident: function(){
-     return typeof ActiveXObject !== 'undefined' || /*@cc_on!@*/false;
+  ms: function(){
+     return navigator && navigator.userAgent.match(/msie|trident|edge/i); // probably a better way to detect this...
   },
 
   windows: function(){

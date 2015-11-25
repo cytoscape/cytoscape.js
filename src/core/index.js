@@ -200,6 +200,8 @@ util.extend(corefn, {
     } else {
       this.on('ready', fn);
     }
+
+    return this;
   },
 
   initrender: function(){

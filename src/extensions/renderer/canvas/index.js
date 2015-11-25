@@ -37,7 +37,7 @@ function CanvasRenderer(options) {
 
   r.data.canvasContainer = document.createElement('div');
   var containerStyle = r.data.canvasContainer.style;
-  containerStyle.position = 'absolute';
+  containerStyle.position = 'relative';
   containerStyle.zIndex = '0';
   containerStyle.overflow = 'hidden';
 

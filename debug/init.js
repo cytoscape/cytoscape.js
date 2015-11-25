@@ -258,7 +258,9 @@ $(function(){
 
   options.container = $container;
 
-  window.cy = cytoscape(options).ready(function(){
+  window.cy = cytoscape(options);
+
+  cy.ready(function(){
 
     height = $container.height();
     width = $container.width();
@@ -348,6 +350,8 @@ $(function(){
     });
 
   });
+
+  cy.layout({ name: 'circle' });
 
   var init2;
   $('#init2').on('click', init2 = function(){

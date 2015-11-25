@@ -422,7 +422,7 @@ util.extend(thdfn, {
 // turns a stringified function into a (re)named function
 var fnAs = function( fn, name ){
   var fnStr = fn.toString();
-  fnStr = fnStr.replace(/function\s*\S*\s*\(/, 'function ' + name + '(');
+  fnStr = fnStr.replace(/function\s*?\S*?\s*?\(/, 'function ' + name + '(');
 
   return fnStr;
 };

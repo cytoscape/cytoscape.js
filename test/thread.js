@@ -145,6 +145,86 @@ describe('Thread', function(){
     });
   });
 
+  it('requires a named function without spacing (greedy test)', function( next ){
+    var t = $$.Thread();
+
+    function foo(){if(true){return 'bar';}}
+
+    t.require( foo );
+
+    t.run(function(){
+      message( foo() );
+    });
+
+    t.on('message', function(e){
+      expect( e.message ).to.equal('bar');
+
+      t.stop();
+
+      next();
+    });
+  });
+
+  it('requires a named function with spacing (greedy test)', function( next ){
+    var t = $$.Thread();
+
+    function foo() { if ( true ) { return 'bar' ; } }
+
+    t.require( foo );
+
+    t.run(function(){
+      message( foo() );
+    });
+
+    t.on('message', function(e){
+      expect( e.message ).to.equal('bar');
+
+      t.stop();
+
+      next();
+    });
+  });
+
+  it('requires an unnamed function without spacing (greedy test)', function( next ){
+    var t = $$.Thread();
+
+    var foo = function(){if(true){return 'bar';}};
+
+    t.require( foo, 'foo' );
+
+    t.run(function(){
+      message( foo() );
+    });
+
+    t.on('message', function(e){
+      expect( e.message ).to.equal('bar');
+
+      t.stop();
+
+      next();
+    });
+  });
+
+  it('requires an unnamed function with spacing (greedy test)', function( next ){
+    var t = $$.Thread();
+
+    var foo = function () { if ( true ) { return 'bar' ; } };
+
+    t.require( foo, 'foo' );
+
+    t.run(function(){
+      message( foo() );
+    });
+
+    t.on('message', function(e){
+      expect( e.message ).to.equal('bar');
+
+      t.stop();
+
+      next();
+    });
+  });
+
   it('requires a function with a prototype', function( next ){
     var t = $$.Thread();
 

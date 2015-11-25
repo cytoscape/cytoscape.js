@@ -351,8 +351,6 @@ $(function(){
 
   });
 
-  cy.layout({ name: 'circle' });
-
   var init2;
   $('#init2').on('click', init2 = function(){
     // compound graph in the second instance

@@ -422,7 +422,7 @@ BRp.load = function() {
 
   }, false);
 
-  r.registerBinding(window, 'mousemove', util.throttle( function(e) {
+  r.registerBinding(window, 'mousemove', function(e) {
     var preventDefault = false;
     var capture = r.hoverData.capture;
 
@@ -692,7 +692,7 @@ BRp.load = function() {
         if(e.preventDefault) e.preventDefault();
         return false;
       }
-  }, 1000/30, { trailing: true }), false);
+  }, false);
 
   r.registerBinding(window, 'mouseup', function(e) {
     var capture = r.hoverData.capture;
@@ -967,8 +967,6 @@ BRp.load = function() {
 
   var touchstartHandler;
   r.registerBinding(r.container, 'touchstart', touchstartHandler = function(e) {
-    e.preventDefault();
-
     r.touchData.capture = true;
     r.data.bgActivePosistion = undefined;
 
@@ -1160,12 +1158,10 @@ BRp.load = function() {
   }, false);
 
   var touchmoveHandler;
-  r.registerBinding(window, 'touchmove', touchmoveHandler = util.throttle(function(e) {
+  r.registerBinding(window, 'touchmove', touchmoveHandler = function(e) {
 
     var select = r.selection;
     var capture = r.touchData.capture;
-    if( capture ){ e.preventDefault(); }
-
     var cy = r.cy;
     var now = r.touchData.now; var earlier = r.touchData.earlier;
     var zoom = cy.zoom();
@@ -1173,10 +1169,9 @@ BRp.load = function() {
     if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].clientX, e.touches[0].clientY); now[0] = pos[0]; now[1] = pos[1]; }
     if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].clientX, e.touches[1].clientY); now[2] = pos[0]; now[3] = pos[1]; }
     if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].clientX, e.touches[2].clientY); now[4] = pos[0]; now[5] = pos[1]; }
+
     var disp = []; for (var j=0;j<now.length;j++) { disp[j] = now[j] - earlier[j]; }
-
     var startPos = r.touchData.startPosition;
-
     var dx = now[0] - startPos[0];
     var dx2 = dx * dx;
     var dy = now[1] - startPos[1];
@@ -1186,6 +1181,8 @@ BRp.load = function() {
 
     // context swipe cancelling
     if( capture && r.touchData.cxt ){
+      e.preventDefault();
+
       var f1x2 = e.touches[0].clientX - offsetLeft, f1y2 = e.touches[0].clientY - offsetTop;
       var f2x2 = e.touches[1].clientX - offsetLeft, f2y2 = e.touches[1].clientY - offsetTop;
       // var distance2 = distance( f1x2, f1y2, f2x2, f2y2 );
@@ -1260,6 +1257,8 @@ BRp.load = function() {
 
     // box selection
     } else if( capture && e.touches[2] && cy.boxSelectionEnabled() ){
+      e.preventDefault();
+
       r.data.bgActivePosistion = undefined;
 
       this.lastThreeTouch = +new Date();
@@ -1284,6 +1283,8 @@ BRp.load = function() {
 
     // pinch to zoom
     } else if ( capture && e.touches[1] && cy.zoomingEnabled() && cy.panningEnabled() && cy.userZoomingEnabled() && cy.userPanningEnabled() ) { // two fingers => pinch to zoom
+      e.preventDefault();
+
       r.data.bgActivePosistion = undefined;
       r.redrawHint('select', true);
 
@@ -1392,6 +1393,10 @@ BRp.load = function() {
       var last = r.touchData.last;
       var near = near || r.findNearestElement(now[0], now[1], true, true);
 
+      if( start != null ){
+        e.preventDefault();
+      }
+
       // dragging nodes
       if( start != null && start._private.group == 'nodes' && r.nodeIsDraggable(start) ){
 
@@ -1490,8 +1495,9 @@ BRp.load = function() {
           capture
           && ( start == null || start.isEdge() )
           && cy.panningEnabled() && cy.userPanningEnabled()
-          && rdist2 > r.touchTapThreshold2
       ){
+
+        e.preventDefault();
 
         if( r.swipePanning ){
           cy.panBy({
@@ -1506,21 +1512,21 @@ BRp.load = function() {
             x: dx * zoom,
             y: dy * zoom
           });
-        }
 
-        if( start ){
-          start.unactivate();
+          if( start ){
+            start.unactivate();
 
-          if( !r.data.bgActivePosistion ){
-            r.data.bgActivePosistion = {
-              x: now[0],
-              y: now[1]
-            };
+            if( !r.data.bgActivePosistion ){
+              r.data.bgActivePosistion = {
+                x: now[0],
+                y: now[1]
+              };
+            }
+
+            r.redrawHint('select', true);
+
+            r.touchData.start = null;
           }
-
-          r.redrawHint('select', true);
-
-          r.touchData.start = null;
         }
 
         // Re-project
@@ -1532,7 +1538,7 @@ BRp.load = function() {
     for (var j=0; j<now.length; j++) { earlier[j] = now[j]; }
     //r.redraw();
 
-  }, 1000/30, { trailing: true }), false);
+  }, false);
 
   var touchcancelHandler;
   r.registerBinding(window, 'touchcancel', touchcancelHandler = function(e) {
@@ -1553,11 +1559,12 @@ BRp.load = function() {
 
     if( capture ){
       r.touchData.capture = false;
+
+      e.preventDefault();
     } else {
       return;
     }
 
-    e.preventDefault();
     var select = r.selection;
 
     r.swipePanning = false;

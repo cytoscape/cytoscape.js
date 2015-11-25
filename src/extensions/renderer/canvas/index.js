@@ -37,16 +37,19 @@ function CanvasRenderer(options) {
 
   r.data.canvasContainer = document.createElement('div');
   var containerStyle = r.data.canvasContainer.style;
+  r.data.canvasContainer.setAttribute('style', '-webkit-tap-highlight-color: rgba(0,0,0,0);');
   containerStyle.position = 'relative';
   containerStyle.zIndex = '0';
   containerStyle.overflow = 'hidden';
 
-  options.cy.container().appendChild( r.data.canvasContainer );
+  var container = options.cy.container();
+  container.appendChild( r.data.canvasContainer );
+  container.setAttribute('style', ( container.getAttribute('style') || '' ) + '-webkit-tap-highlight-color: rgba(0,0,0,0);');
 
   for (var i = 0; i < CRp.CANVAS_LAYERS; i++) {
     var canvas = r.data.canvases[i] = document.createElement('canvas');
     r.data.contexts[i] = canvas.getContext('2d');
-    canvas.setAttribute('style', '-ms-touch-action: none; touch-action: none;');
+    canvas.setAttribute('style', '/*-ms-touch-action: none; touch-action: none;*/ -webkit-user-select: none; -moz-user-select: -moz-none; user-select: none; -webkit-tap-highlight-color: rgba(0,0,0,0); outline-style: none;');
     canvas.style.position = 'absolute';
     canvas.setAttribute('data-id', 'layer' + i);
     canvas.style.zIndex = String(CRp.CANVAS_LAYERS - i);

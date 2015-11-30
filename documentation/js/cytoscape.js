@@ -1,5 +1,5 @@
 /*!
- * This file is part of Cytoscape.js 2.5.0.
+ * This file is part of Cytoscape.js 2.5.1.
  *
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -4824,7 +4824,7 @@ var elesfn = ({
         var ele = this[0];
 
         if( ele ){
-          return ele._private.style[ name ].strValue;
+          return style.getStylePropertyValue( ele, name );
         } else { // empty collection => can't get any value
           return;
         }
@@ -5683,12 +5683,6 @@ var window = _dereq_('../window');
 var document = window ? window.document : null;
 var NullRenderer = _dereq_('../extensions/renderer/null');
 
-function ready(f) {
-  var fn = ( document && (document.readyState === 'interactive' || document.readyState === 'complete') )  ? f : ready;
-
-  setTimeout(fn, 9, f);
-}
-
 var corefn = {
   add: function(opts){
 
@@ -5781,35 +5775,26 @@ var corefn = {
       }
     }
 
-    function callback(){
-      cy.one('layoutready', function(e){
-        cy.notifications(true);
-        cy.trigger(e); // we missed this event by turning notifications off, so pass it on
+    cy.one('layoutready', function(e){
+      cy.notifications(true);
+      cy.trigger(e); // we missed this event by turning notifications off, so pass it on
 
-        cy.notify({
-          type: 'load',
-          collection: cy.elements()
-        });
-
-        cy.one('load', onload);
-        cy.trigger('load');
-      }).one('layoutstop', function(){
-        cy.one('done', ondone);
-        cy.trigger('done');
+      cy.notify({
+        type: 'load',
+        collection: cy.elements()
       });
 
-      var layoutOpts = util.extend({}, cy._private.options.layout);
-      layoutOpts.eles = cy.$();
+      cy.one('load', onload);
+      cy.trigger('load');
+    }).one('layoutstop', function(){
+      cy.one('done', ondone);
+      cy.trigger('done');
+    });
 
-      cy.layout( layoutOpts );
+    var layoutOpts = util.extend({}, cy._private.options.layout);
+    layoutOpts.eles = cy.$();
 
-    }
-
-    if( window && !( cy.renderer() instanceof NullRenderer ) ){
-      ready( callback );
-    } else {
-      callback();
-    }
+    cy.layout( layoutOpts );
 
     return this;
   }
@@ -6635,6 +6620,8 @@ util.extend(corefn, {
     } else {
       this.on('ready', fn);
     }
+
+    return this;
   },
 
   initrender: function(){
@@ -14045,7 +14032,7 @@ BRp.load = function() {
 
   }, false);
 
-  r.registerBinding(window, 'mousemove', util.throttle( function(e) {
+  r.registerBinding(window, 'mousemove', function(e) {
     var preventDefault = false;
     var capture = r.hoverData.capture;
 
@@ -14315,7 +14302,7 @@ BRp.load = function() {
         if(e.preventDefault) e.preventDefault();
         return false;
       }
-  }, 1000/30, { trailing: true }), false);
+  }, false);
 
   r.registerBinding(window, 'mouseup', function(e) {
     var capture = r.hoverData.capture;
@@ -14590,8 +14577,6 @@ BRp.load = function() {
 
   var touchstartHandler;
   r.registerBinding(r.container, 'touchstart', touchstartHandler = function(e) {
-    e.preventDefault();
-
     r.touchData.capture = true;
     r.data.bgActivePosistion = undefined;
 
@@ -14783,12 +14768,10 @@ BRp.load = function() {
   }, false);
 
   var touchmoveHandler;
-  r.registerBinding(window, 'touchmove', touchmoveHandler = util.throttle(function(e) {
+  r.registerBinding(window, 'touchmove', touchmoveHandler = function(e) {
 
     var select = r.selection;
     var capture = r.touchData.capture;
-    if( capture ){ e.preventDefault(); }
-
     var cy = r.cy;
     var now = r.touchData.now; var earlier = r.touchData.earlier;
     var zoom = cy.zoom();
@@ -14796,10 +14779,9 @@ BRp.load = function() {
     if (e.touches[0]) { var pos = r.projectIntoViewport(e.touches[0].clientX, e.touches[0].clientY); now[0] = pos[0]; now[1] = pos[1]; }
     if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].clientX, e.touches[1].clientY); now[2] = pos[0]; now[3] = pos[1]; }
     if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].clientX, e.touches[2].clientY); now[4] = pos[0]; now[5] = pos[1]; }
+
     var disp = []; for (var j=0;j<now.length;j++) { disp[j] = now[j] - earlier[j]; }
-
     var startPos = r.touchData.startPosition;
-
     var dx = now[0] - startPos[0];
     var dx2 = dx * dx;
     var dy = now[1] - startPos[1];
@@ -14809,6 +14791,8 @@ BRp.load = function() {
 
     // context swipe cancelling
     if( capture && r.touchData.cxt ){
+      e.preventDefault();
+
       var f1x2 = e.touches[0].clientX - offsetLeft, f1y2 = e.touches[0].clientY - offsetTop;
       var f2x2 = e.touches[1].clientX - offsetLeft, f2y2 = e.touches[1].clientY - offsetTop;
       // var distance2 = distance( f1x2, f1y2, f2x2, f2y2 );
@@ -14883,6 +14867,8 @@ BRp.load = function() {
 
     // box selection
     } else if( capture && e.touches[2] && cy.boxSelectionEnabled() ){
+      e.preventDefault();
+
       r.data.bgActivePosistion = undefined;
 
       this.lastThreeTouch = +new Date();
@@ -14907,6 +14893,8 @@ BRp.load = function() {
 
     // pinch to zoom
     } else if ( capture && e.touches[1] && cy.zoomingEnabled() && cy.panningEnabled() && cy.userZoomingEnabled() && cy.userPanningEnabled() ) { // two fingers => pinch to zoom
+      e.preventDefault();
+
       r.data.bgActivePosistion = undefined;
       r.redrawHint('select', true);
 
@@ -15015,6 +15003,10 @@ BRp.load = function() {
       var last = r.touchData.last;
       var near = near || r.findNearestElement(now[0], now[1], true, true);
 
+      if( start != null ){
+        e.preventDefault();
+      }
+
       // dragging nodes
       if( start != null && start._private.group == 'nodes' && r.nodeIsDraggable(start) ){
 
@@ -15113,8 +15105,9 @@ BRp.load = function() {
           capture
           && ( start == null || start.isEdge() )
           && cy.panningEnabled() && cy.userPanningEnabled()
-          && rdist2 > r.touchTapThreshold2
       ){
+
+        e.preventDefault();
 
         if( r.swipePanning ){
           cy.panBy({
@@ -15129,21 +15122,21 @@ BRp.load = function() {
             x: dx * zoom,
             y: dy * zoom
           });
-        }
 
-        if( start ){
-          start.unactivate();
+          if( start ){
+            start.unactivate();
 
-          if( !r.data.bgActivePosistion ){
-            r.data.bgActivePosistion = {
-              x: now[0],
-              y: now[1]
-            };
+            if( !r.data.bgActivePosistion ){
+              r.data.bgActivePosistion = {
+                x: now[0],
+                y: now[1]
+              };
+            }
+
+            r.redrawHint('select', true);
+
+            r.touchData.start = null;
           }
-
-          r.redrawHint('select', true);
-
-          r.touchData.start = null;
         }
 
         // Re-project
@@ -15155,7 +15148,7 @@ BRp.load = function() {
     for (var j=0; j<now.length; j++) { earlier[j] = now[j]; }
     //r.redraw();
 
-  }, 1000/30, { trailing: true }), false);
+  }, false);
 
   var touchcancelHandler;
   r.registerBinding(window, 'touchcancel', touchcancelHandler = function(e) {
@@ -15176,11 +15169,12 @@ BRp.load = function() {
 
     if( capture ){
       r.touchData.capture = false;
+
+      e.preventDefault();
     } else {
       return;
     }
 
-    e.preventDefault();
     var select = r.selection;
 
     r.swipePanning = false;
@@ -17893,6 +17887,7 @@ Modifications tracked on Github.
 'use strict';
 
 var util = _dereq_('../../../util');
+var is = _dereq_('../../../is');
 
 var CR = CanvasRenderer;
 var CRp = CanvasRenderer.prototype;
@@ -17923,16 +17918,19 @@ function CanvasRenderer(options) {
 
   r.data.canvasContainer = document.createElement('div');
   var containerStyle = r.data.canvasContainer.style;
-  containerStyle.position = 'absolute';
+  r.data.canvasContainer.setAttribute('style', '-webkit-tap-highlight-color: rgba(0,0,0,0);');
+  containerStyle.position = 'relative';
   containerStyle.zIndex = '0';
   containerStyle.overflow = 'hidden';
 
-  options.cy.container().appendChild( r.data.canvasContainer );
+  var container = options.cy.container();
+  container.appendChild( r.data.canvasContainer );
+  container.setAttribute('style', ( container.getAttribute('style') || '' ) + '-webkit-tap-highlight-color: rgba(0,0,0,0);');
 
   for (var i = 0; i < CRp.CANVAS_LAYERS; i++) {
     var canvas = r.data.canvases[i] = document.createElement('canvas');
     r.data.contexts[i] = canvas.getContext('2d');
-    canvas.setAttribute('style', '-ms-touch-action: none; touch-action: none;');
+    canvas.setAttribute( 'style', '-webkit-user-select: none; -moz-user-select: -moz-none; user-select: none; -webkit-tap-highlight-color: rgba(0,0,0,0); outline-style: none;' + ( is.ms() ? ' -ms-touch-action: none; touch-action: none; ' : '' ) );
     canvas.style.position = 'absolute';
     canvas.setAttribute('data-id', 'layer' + i);
     canvas.style.zIndex = String(CRp.CANVAS_LAYERS - i);
@@ -18006,7 +18004,7 @@ CRp.usePaths = function(){
 
 module.exports = CR;
 
-},{"../../../util":94,"./arrow-shapes":62,"./drawing-edges":63,"./drawing-images":64,"./drawing-label-text":65,"./drawing-nodes":66,"./drawing-redraw":67,"./drawing-shapes":68,"./export-image":69,"./node-shapes":71}],71:[function(_dereq_,module,exports){
+},{"../../../is":77,"../../../util":94,"./arrow-shapes":62,"./drawing-edges":63,"./drawing-images":64,"./drawing-label-text":65,"./drawing-nodes":66,"./drawing-redraw":67,"./drawing-shapes":68,"./export-image":69,"./node-shapes":71}],71:[function(_dereq_,module,exports){
 'use strict';
 
 var CRp = {};
@@ -18795,7 +18793,7 @@ var cytoscape = function( options ){ // jshint ignore:line
 };
 
 // replaced by build system
-cytoscape.version = '2.5.0';
+cytoscape.version = '2.5.1';
 
 // try to register w/ jquery
 if( window && window.jQuery ){
@@ -18973,8 +18971,8 @@ var is = {
     return is.khtml() || is.webkit() || is.chromium();
   },
 
-  trident: function(){
-     return typeof ActiveXObject !== 'undefined' || /*@cc_on!@*/false;
+  ms: function(){
+     return navigator && navigator.userAgent.match(/msie|trident|edge/i); // probably a better way to detect this...
   },
 
   windows: function(){
@@ -21868,21 +21866,22 @@ var styfn = {};
 
 // gets the rendered style for an element
 styfn.getRenderedStyle = function( ele ){
+  return this.getRawStyle( ele, true );
+};
+
+// gets the raw style for an element
+styfn.getRawStyle = function( ele, isRenderedVal ){
   var self = this;
   var ele = ele[0]; // insure it's an element
 
   if( ele ){
     var rstyle = {};
-    var style = ele._private.style;
-    var cy = this._private.cy;
-    var zoom = cy.zoom();
 
     for( var i = 0; i < self.properties.length; i++ ){
       var prop = self.properties[i];
-      var styleProp = style[ prop.name ];
+      var val = self.getStylePropertyValue( ele, prop.name, isRenderedVal );
 
-      if( styleProp ){
-        var val = styleProp.unitless ? styleProp.strValue : (styleProp.pfValue * zoom) + 'px';
+      if( val ){
         rstyle[ prop.name ] = val;
         rstyle[ util.dash2camel(prop.name) ] = val;
       }
@@ -21892,26 +21891,25 @@ styfn.getRenderedStyle = function( ele ){
   }
 };
 
-// gets the raw style for an element
-styfn.getRawStyle = function( ele ){
+styfn.getStylePropertyValue = function( ele, propName, isRenderedVal ){
   var self = this;
   var ele = ele[0]; // insure it's an element
 
   if( ele ){
-    var rstyle = {};
     var style = ele._private.style;
+    var prop = self.properties[ propName ];
+    var type = prop.type;
+    var styleProp = style[ prop.name ];
+    var zoom = ele.cy().zoom();
 
-    for( var i = 0; i < self.properties.length; i++ ){
-      var prop = self.properties[i];
-      var styleProp = style[ prop.name ];
+    if( styleProp ){
+      var units = styleProp.units ? type.implicitUnits || 'px' : null;
+      var val = units ? [].concat( styleProp.pfValue ).map(function( pfValue ){
+        return ( pfValue * (isRenderedVal ? zoom : 1) ) + units;
+      }).join(' ') : styleProp.strValue;
 
-      if( styleProp ){
-        rstyle[ prop.name ] = styleProp.strValue;
-        rstyle[ util.dash2camel(prop.name) ] = styleProp.strValue;
-      }
+      return val;
     }
-
-    return rstyle;
   }
 };
 
@@ -22501,7 +22499,7 @@ var parseImpl = function( name, value, propIsBypass, propIsFlat ){
 
     // normalise value in pixels
     if( type.unitless || (units !== 'px' && units !== 'em') ){
-      // then pfValue does not apply
+      ret.pfValue = value;
     } else {
       ret.pfValue = ( units === 'px' || !units ? (value) : (this.getEmSizeInPixels() * value) );
     }
@@ -22636,9 +22634,11 @@ var styfn = {};
     nonNegativeInt: { number: true, min: 0, integer: true, unitless: true },
     position: { enums: ['parent', 'origin'] },
     nodeSize: { number: true, min: 0, enums: ['auto', 'label'] },
-    number: { number: true },
-    numbers: { number: true, multiple: true },
+    number: { number: true, unitless: true },
+    numbers: { number: true, unitless: true, multiple: true },
     size: { number: true, min: 0 },
+    bidirectionalSize: { number: true }, // allows negative
+    bidirectionalSizes: { number: true, multiple: true }, // allows negative
     bgSize: { number: true, min: 0, allowPercent: true },
     bgWH: { number: true, min: 0, allowPercent: true, enums: ['auto'] },
     bgPos: { number: true, allowPercent: true },
@@ -22750,15 +22750,15 @@ var styfn = {};
     { name: 'shadow-blur', type: t.size },
     { name: 'shadow-color', type: t.color },
     { name: 'shadow-opacity', type: t.zeroOneNumber },
-    { name: 'shadow-offset-x', type: t.number },
-    { name: 'shadow-offset-y', type: t.number },
+    { name: 'shadow-offset-x', type: t.bidirectionalSize },
+    { name: 'shadow-offset-y', type: t.bidirectionalSize },
 
     // label shadows
     { name: 'text-shadow-blur', type: t.size },
     { name: 'text-shadow-color', type: t.color },
     { name: 'text-shadow-opacity', type: t.zeroOneNumber },
-    { name: 'text-shadow-offset-x', type: t.number },
-    { name: 'text-shadow-offset-y', type: t.number },
+    { name: 'text-shadow-offset-x', type: t.bidirectionalSize },
+    { name: 'text-shadow-offset-y', type: t.bidirectionalSize },
 
     // transition anis
     { name: 'transition-property', type: t.propList },
@@ -22806,9 +22806,9 @@ var styfn = {};
     { name: 'curve-style', type: t.curveStyle },
     { name: 'haystack-radius', type: t.zeroOneNumber },
     { name: 'control-point-step-size', type: t.size },
-    { name: 'control-point-distances', type: t.numbers },
+    { name: 'control-point-distances', type: t.bidirectionalSizes },
     { name: 'control-point-weights', type: t.numbers },
-    { name: 'segment-distances', type: t.numbers },
+    { name: 'segment-distances', type: t.bidirectionalSizes },
     { name: 'segment-weights', type: t.numbers },
 
     // these are just for the core
@@ -23705,7 +23705,7 @@ util.extend(thdfn, {
 // turns a stringified function into a (re)named function
 var fnAs = function( fn, name ){
   var fnStr = fn.toString();
-  fnStr = fnStr.replace(/function\s*\S*\s*\(/, 'function ' + name + '(');
+  fnStr = fnStr.replace(/function\s*?\S*?\s*?\(/, 'function ' + name + '(');
 
   return fnStr;
 };

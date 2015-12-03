@@ -177,7 +177,7 @@ var parseImpl = function( name, value, propIsBypass, propIsFlat ){
     };
   }
 
-  if( type.multiple && !propIsFlat ){
+  if( type.multiple && propIsFlat !== 'multiple' ){
     var vals;
 
     if( valueIsString ){
@@ -191,7 +191,7 @@ var parseImpl = function( name, value, propIsBypass, propIsFlat ){
     if( type.evenMultiple && vals.length % 2 !== 0 ){ return null; }
 
     var valArr = vals.map(function( v ){
-      var p = self.parse( name, v, propIsBypass, true );
+      var p = self.parse( name, v, propIsBypass, 'multiple' );
 
       if( p.pfValue != null ){
         return p.pfValue;

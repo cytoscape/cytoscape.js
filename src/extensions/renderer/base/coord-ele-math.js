@@ -553,47 +553,72 @@ BRp.recalculateNodeLabelProjection = function( node ){
   this.applyLabelDimensions( node );
 };
 
-BRp.recalculateEdgeLabelProjection = function( edge ){
+BRp.recalculateEdgeLabelProjections = function( edge ){
   var content = edge._private.style['label'].strValue;
   if( !content || content.match(/^\s+$/) ){ return; }
 
   var textX, textY;
   var _p = edge._private;
-  var rs = _p.rscratch;
-  //var style = _p.style;
-  var rstyle = _p.rstyle;
+  var style = _p.style;
+  var rs = function( propName, prefix, value ){
+    util.setPrefixedProperty( _p.rscratch, propName, prefix, value );
+    util.setPrefixedProperty( _p.rstyle, propName, prefix, value );
+  };
 
-  textX = rs.midX;
-  textY = rs.midY;
+  textX = _p.rscratch.midX;
+  textY = _p.rscratch.midY;
 
   // add center point to style so bounding box calculations can use it
-  rs.labelX = textX;
-  rs.labelY = textY;
-  rstyle.labelX = textX;
-  rstyle.labelY = textY;
+  rs( 'labelX', null, textX );
+  rs( 'labelY', null, textY );
+
+  // TODO #382 source case, considering offset
+  rs( 'labelX', 'source', 0 );
+  rs( 'labelY', 'source', 0 );
+
+  // TODO #382 target case, considering offset
+  rs( 'labelX', 'target', 0 );
+  rs( 'labelY', 'target', 0 );
 
   this.applyLabelDimensions( edge );
 };
 
 BRp.applyLabelDimensions = function( ele ){
-  var rs = ele._private.rscratch;
-  var rstyle = ele._private.rstyle;
+  this.applyPrefixedLabelDimensions( ele );
 
-  var text = this.getLabelText( ele );
-  var labelDims = this.calculateLabelDimensions( ele, text );
-
-  rstyle.labelWidth = labelDims.width;
-  rs.labelWidth = labelDims.width;
-
-  rstyle.labelHeight = labelDims.height;
-  rs.labelHeight = labelDims.height;
+  if( ele.isEdge() ){
+    this.applyPrefixedLabelDimensions( ele, 'source' );
+    this.applyPrefixedLabelDimensions( ele, 'target' );
+  }
 };
 
-BRp.getLabelText = function( ele ){
-  var style = ele._private.style;
-  var text = ele._private.style['label'].strValue;
+BRp.applyPrefixedLabelDimensions = function( ele, prefix ){
+  var _p = ele._private;
+
+  var text = this.getLabelText( ele, prefix );
+  var labelDims = this.calculateLabelDimensions( ele, text );
+
+  util.setPrefixedProperty( _p.rstyle,   'labelWidth', prefix, labelDims.width );
+  util.setPrefixedProperty( _p.rscratch, 'labelWidth', prefix, labelDims.width );
+
+  util.setPrefixedProperty( _p.rstyle,   'labelHeight', prefix, labelDims.height );
+  util.setPrefixedProperty( _p.rscratch, 'labelHeight', prefix, labelDims.height );
+};
+
+BRp.getLabelText = function( ele, prefix ){
+  var _p = ele._private;
+  var pfd = prefix ? prefix + '-' : '';
+  var style = _p.style;
+  var text = _p.style[pfd + 'label'].strValue;
   var textTransform = style['text-transform'].value;
-  var rscratch = ele._private.rscratch;
+  var rscratch = function( propName, value ){
+    if( value ){
+      util.setPrefixedProperty( _p.rscratch, propName, prefix, value );
+      return value;
+    } else {
+      return util.getPrefixedProperty( _p.rscratch, propName, prefix );
+    }
+  };
 
   if (textTransform == 'none') {
   } else if (textTransform == 'uppercase') {
@@ -606,9 +631,9 @@ BRp.getLabelText = function( ele ){
     //console.log('wrap');
 
     // save recalc if the label is the same as before
-    if( rscratch.labelWrapKey === rscratch.labelKey ){
+    if( rscratch('labelWrapKey') === rscratch('labelKey') ){
       // console.log('wrap cache hit');
-      return rscratch.labelWrapCachedText;
+      return rscratch('labelWrapCachedText');
     }
     // console.log('wrap cache miss');
 
@@ -648,9 +673,9 @@ BRp.getLabelText = function( ele ){
       }
     } // for
 
-    rscratch.labelWrapCachedLines = wrappedLines;
-    rscratch.labelWrapCachedText = text = wrappedLines.join('\n');
-    rscratch.labelWrapKey = rscratch.labelKey;
+    rscratch('labelWrapCachedLines', wrappedLines);
+    text = rscratch( 'labelWrapCachedText', wrappedLines.join('\n') );
+    rscratch( 'labelWrapKey', rscratch.labelKey );
 
     // console.log(text)
   } // if wrap
@@ -805,7 +830,7 @@ BRp.recalculateLabelProjections = function( nodes, edges ){
   }
 
   for( var i = 0; i < edges.length; i++ ){
-    this.recalculateEdgeLabelProjection( edges[i] );
+    this.recalculateEdgeLabelProjections( edges[i] );
   }
 };
 
@@ -824,7 +849,6 @@ BRp.findEdgeControlPoints = function(edges) {
   var hashTable = {};
   var pairIds = [];
   var haystackEdges = [];
-  var autorotateEdges = [];
 
   // create a table of edge (src, tgt) => list of edges between them
   var pairId;
@@ -840,10 +864,6 @@ BRp.findEdgeControlPoints = function(edges) {
     // they shouldn't take up space
     if( style.display.value === 'none' ){
       continue;
-    }
-
-    if( style['text-rotation'].strValue === 'autorotate' ){
-      autorotateEdges.push( edge );
     }
 
     if( curveStyle === 'haystack' ){
@@ -1389,7 +1409,8 @@ BRp.findEdgeControlPoints = function(edges) {
 
       this.projectLines( edge );
       this.calculateArrowAngles( edge );
-      this.recalculateEdgeLabelProjection( edge );
+      this.calculateLabelAngles( edge );
+      this.recalculateEdgeLabelProjections( edge );
 
     }
   }
@@ -1445,14 +1466,8 @@ BRp.findEdgeControlPoints = function(edges) {
 
     this.projectLines( edge );
     this.calculateArrowAngles( edge );
-    this.recalculateEdgeLabelProjection( edge );
-  }
-
-  for( var i = 0 ; i < autorotateEdges.length; i++ ){
-    var edge = autorotateEdges[i];
-    var rs = edge._private.rscratch;
-
-    rs.labelAngle = Math.atan( rs.midDispY / rs.midDispX );
+    this.calculateLabelAngles( edge );
+    this.recalculateEdgeLabelProjections( edge );
   }
 
   return hashTable;
@@ -1597,6 +1612,32 @@ BRp.calculateArrowAngles = function( edge ){
   dispY = tgtPos.y - endY;
 
   rs.tgtArrowAngle = getAngleFromDisp( dispX, dispY );
+};
+
+BRp.calculateLabelAngles = function( ele ){
+  var _p = ele._private;
+  var rs = _p.rscratch;
+  var style = _p.style;
+  var isEdge = ele.isEdge();
+
+  var rot = style['text-rotation'];
+  var rotStr = rot.strValue;
+
+  if( rotStr === 'none' ){
+    rs.labelAngle = 0;
+  } else if( isEdge && rotStr === 'autorotate' ){
+    rs.labelAngle = Math.atan( rs.midDispY / rs.midDispX );
+  } else if( rotStr === 'autorotate' ){
+    rs.labelAngle = 0;
+  } else {
+    rs.labelAngle = rot.pfValue;
+  }
+
+  if( isEdge ){
+    // TODO #382 source and target cases
+    rs.sourceLabelAngle = 0;
+    rs.targetLabelAngle = 0;
+  }
 };
 
 

@@ -525,7 +525,7 @@ fn = elesfn = ({
         }
 
         if( ( isEdge && rotation.strValue === 'autorotate' ) || ( rotation.pfValue != null && rotation.pfValue !== 0 ) ){
-          var theta = _p.rscratch.labelAngle;
+          var theta = prefixedProperty( _p.rscratch, 'labelAngle', prefix );
           var cos = Math.cos( theta );
           var sin = Math.sin( theta );
 

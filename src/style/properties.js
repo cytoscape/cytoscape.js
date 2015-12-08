@@ -379,7 +379,7 @@ styfn.addDefaultStylesheet = function(){
         'line-color': '#ddd',
         'control-point-step-size': 40,
         'control-point-weights': 0.5,
-        'segment-weights': 0.25,
+        'segment-weights': 0.5,
         'segment-distances': 20,
         'curve-style': 'bezier',
         'haystack-radius': 0.8

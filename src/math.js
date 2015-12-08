@@ -2,6 +2,10 @@
 
 var math = {};
 
+math.deg2rad = function( deg ){
+  return Math.PI * deg / 180;
+};
+
 math.signum = function(x){
   if( x > 0 ){
     return 1;

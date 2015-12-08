@@ -306,7 +306,7 @@ var parseImpl = function( name, value, propIsBypass, propIsFlat ){
 
     // normalise value in rad
     if( units === 'deg' || units === 'rad' ){
-      ret.pfValue = units === 'rad' ? value : value * Math.PI/180;
+      ret.pfValue = units === 'rad' ? value : math.deg2rad( value );
     }
 
     return ret;

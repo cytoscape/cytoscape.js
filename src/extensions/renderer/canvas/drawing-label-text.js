@@ -1,104 +1,84 @@
 'use strict';
 
 var is = require('../../../is');
+var util = require('../../../util');
 
 var CRp = {};
 
-// Draw edge text
-CRp.drawEdgeText = function(context, edge) {
-  var text = edge._private.style['label'].strValue;
+CRp.drawElementText = function( context, ele ){
+  var _p = ele._private;
+  var style = _p.style;
+  var emptyText = is.emptyString( style['label'].strValue );
+  var emptySource = is.emptyString( style['source-label'].strValue );
+  var emptyTarget = is.emptyString( style['target-label'].strValue );
 
-  if( !text || text.match(/^\s+$/) ){
+  if( emptyText && emptySource && emptyTarget ){
     return;
   }
 
-  if( this.hideEdgesOnViewport && (this.dragData.didDrag || this.pinching || this.hoverData.dragging || this.data.wheel || this.swipePanning) ){ return; } // save cycles on pinching
-
-  var computedSize = edge._private.style['font-size'].pfValue * edge.cy().zoom();
-  var minSize = edge._private.style['min-zoomed-font-size'].pfValue;
+  var computedSize = style['font-size'].pfValue * ele.cy().zoom();
+  var minSize = style['min-zoomed-font-size'].pfValue;
 
   if( computedSize < minSize ){
     return;
   }
 
-  // Calculate text draw position
+  var rs = _p.rscratch;
 
-  context.textAlign = 'center';
-  context.textBaseline = 'middle';
-
-  var rs = edge._private.rscratch;
   if( !is.number( rs.labelX ) || !is.number( rs.labelY ) ){ return; } // no pos => label can't be rendered
 
-  var style = edge._private.style;
-  var autorotate = style['text-rotation'].strValue === 'autorotate';
-  var theta;
+  var isNode = ele.isNode();
 
-  if( autorotate ){
-    theta = rs.labelAngle;
+  if( ele.isNode() ){
+    var textHalign = style['text-halign'].strValue;
+    var textValign = style['text-valign'].strValue;
 
-    context.translate(rs.labelX, rs.labelY);
-    context.rotate(theta);
+    switch( textHalign ){
+      case 'left':
+        context.textAlign = 'right';
+        break;
 
-    this.drawText(context, edge, 0, 0);
+      case 'right':
+        context.textAlign = 'left';
+        break;
 
-    context.rotate(-theta);
-    context.translate(-rs.labelX, -rs.labelY);
+      default: // e.g. center
+        context.textAlign = 'center';
+    }
+
+    switch( textValign ){
+      case 'top':
+        context.textBaseline = 'bottom';
+        break;
+
+      case 'bottom':
+        context.textBaseline = 'top';
+        break;
+
+      default: // e.g. center
+        context.textBaseline = 'middle';
+    }
   } else {
-    this.drawText(context, edge, rs.labelX, rs.labelY);
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
   }
 
+  if( !emptyText ){
+    this.drawText( context, ele );
+  }
+
+  if( ele.isEdge() ){
+    if( !emptySource ){
+      this.drawText( context, ele, 'source' );
+    }
+
+    if( !emptyTarget ){
+      this.drawText( context, ele, 'target' );
+    }
+  }
 };
 
-// Draw node text
-CRp.drawNodeText = function(context, node) {
-  var text = node._private.style['label'].strValue;
-
-  if ( !text || text.match(/^\s+$/) ) {
-    return;
-  }
-
-  var computedSize = node._private.style['font-size'].pfValue * node.cy().zoom();
-  var minSize = node._private.style['min-zoomed-font-size'].pfValue;
-
-  if( computedSize < minSize ){
-    return;
-  }
-
-  // this.recalculateNodeLabelProjection( node );
-
-  var textHalign = node._private.style['text-halign'].strValue;
-  var textValign = node._private.style['text-valign'].strValue;
-  var rs = node._private.rscratch;
-  if( !is.number( rs.labelX ) || !is.number( rs.labelY ) ){ return; } // no pos => label can't be rendered
-
-  switch( textHalign ){
-    case 'left':
-      context.textAlign = 'right';
-      break;
-
-    case 'right':
-      context.textAlign = 'left';
-      break;
-
-    default: // e.g. center
-      context.textAlign = 'center';
-  }
-
-  switch( textValign ){
-    case 'top':
-      context.textBaseline = 'bottom';
-      break;
-
-    case 'bottom':
-      context.textBaseline = 'top';
-      break;
-
-    default: // e.g. center
-      context.textBaseline = 'middle';
-  }
-
-  this.drawText(context, node, rs.labelX, rs.labelY);
-};
+CRp.drawNodeText = CRp.drawEdgeText = CRp.drawElementText;
 
 CRp.getFontCache = function(context){
   var cache;
@@ -150,8 +130,6 @@ CRp.setupTextStyle = function( context, element ){
     cache.key = fontCacheKey;
   }
 
-  var text = this.getLabelText( element );
-
   // Calculate text draw position based on text alignment
 
   // so text outlines aren't jagged
@@ -162,8 +140,6 @@ CRp.setupTextStyle = function( context, element ){
   this.strokeStyle(context, outlineColor[0], outlineColor[1], outlineColor[2], outlineOpacity);
 
   this.shadowStyle(context, shadowColor, shadowOpacity, shadowBlur, shadowOffsetX, shadowOffsetY);
-
-  return text;
 };
 
 function roundRect(ctx, x, y, width, height, radius) {
@@ -183,7 +159,7 @@ function roundRect(ctx, x, y, width, height, radius) {
 }
 
 // Draw text
-CRp.drawText = function(context, element, textX, textY) {
+CRp.drawText = function(context, element, prefix) {
   var _p = element._private;
   var style = _p.style;
   var rstyle = _p.rstyle;
@@ -191,29 +167,58 @@ CRp.drawText = function(context, element, textX, textY) {
   var parentOpacity = element.effectiveOpacity();
   if( parentOpacity === 0 || style['text-opacity'].value === 0){ return; }
 
-  var text = this.setupTextStyle( context, element );
-  var halign = style['text-halign'].value;
-  var valign = style['text-valign'].value;
+  var textX = util.getPrefixedProperty( rscratch, 'labelX', prefix );
+  var textY = util.getPrefixedProperty( rscratch, 'labelY', prefix );
+  var text = this.getLabelText( element, prefix );
 
-  if( element.isEdge() ){
-    halign = 'center';
-    valign = 'center';
-  }
-
-  if( element.isNode() ){
-    var pLeft = style['padding-left'].pfValue;
-    var pRight = style['padding-right'].pfValue;
-    var pTop = style['padding-top'].pfValue;
-    var pBottom = style['padding-bottom'].pfValue;
-
-    textX += pLeft/2;
-    textX -= pRight/2;
-
-    textY += pTop/2;
-    textY -= pBottom/2;
-  }
+  this.setupTextStyle( context, element );
 
   if ( text != null && !isNaN(textX) && !isNaN(textY)) {
+    var isEdge = element.isEdge();
+    var isNode = element.isNode();
+    var orgTextX = textX;
+    var orgTextY = textY;
+
+    var rotation = style['text-rotation'];
+    var theta;
+
+    if( rotation.strValue === 'autorotate' ){
+      theta = isEdge ? rscratch.labelAngle : 0;
+    } else if( rotation.strValue === 'none' ){
+      theta = 0;
+    } else {
+      theta = rotation.pfValue;
+    }
+
+    if( theta !== 0 ){
+      context.translate(textX, textY);
+      context.rotate(theta);
+
+      textX = 0;
+      textY = 0;
+    }
+
+    var halign = style['text-halign'].value;
+    var valign = style['text-valign'].value;
+
+    if( isEdge ){
+      halign = 'center';
+      valign = 'center';
+    }
+
+    if( isNode ){
+      var pLeft = style['padding-left'].pfValue;
+      var pRight = style['padding-right'].pfValue;
+      var pTop = style['padding-top'].pfValue;
+      var pBottom = style['padding-bottom'].pfValue;
+
+      textX += pLeft/2;
+      textX -= pRight/2;
+
+      textY += pTop/2;
+      textY -= pBottom/2;
+    }
+
     var backgroundOpacity = style['text-background-opacity'].value;
     var borderOpacity = style['text-border-opacity'].value;
     var textBorderWidth = style['text-border-width'].pfValue;
@@ -221,7 +226,7 @@ CRp.drawText = function(context, element, textX, textY) {
     if( backgroundOpacity > 0 || (textBorderWidth > 0 && borderOpacity > 0) ){
       var margin = 4 + textBorderWidth/2;
 
-      if (element.isNode()) {
+      if (isNode) {
         //Move textX, textY to include the background margins
         if (valign === 'top') {
           textY -= margin;
@@ -249,7 +254,7 @@ CRp.drawText = function(context, element, textX, textY) {
 
       var bgY = textY;
 
-      if (element.isNode()) {
+      if (isNode) {
         if (valign == 'top') {
            bgY = bgY - bgHeight;
         } else if (valign == 'center') {
@@ -259,6 +264,7 @@ CRp.drawText = function(context, element, textX, textY) {
         bgY = bgY - bgHeight / 2;
       }
 
+      // TODO #382 strongly suspect this is not needed
       if (style['text-rotation'].strValue === 'autorotate') {
         textY = 0;
         bgWidth += 4;
@@ -372,6 +378,10 @@ CRp.drawText = function(context, element, textX, textY) {
       context.fillText( text, textX, textY );
     }
 
+    if( theta !== 0 ){
+      context.rotate(-theta);
+      context.translate(-orgTextX, -orgTextY);
+    }
 
     this.shadowStyle(context, 'transparent', 0); // reset for next guy
   }

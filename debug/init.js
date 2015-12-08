@@ -51,6 +51,7 @@ $(function(){
           // 'pie-4-background-size': '15%',
           // 'pie-4-background-color': 'yellow',
           // 'pie-4-background-opacity': 0.5
+          // 'text-rotation': Math.PI/2
         })
       .selector('$node > node') // compound (parent) nodes
         .css({
@@ -90,7 +91,8 @@ $(function(){
           // 'source-arrow-shape': 'data(srcShape)',
           // 'curve-style': 'haystack',
           // 'opacity': 0.5
-          //'content': 'data(weight)'
+          'content': 'data(weight)',
+          'text-rotation': 'autorotate'
         })
       // .selector('[source="n1"]')
       //   .css({

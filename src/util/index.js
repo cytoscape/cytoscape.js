@@ -74,6 +74,14 @@ util.getPrefixedProperty = function( obj, propName, prefix ){
   return obj[ propName ];
 };
 
+util.setPrefixedProperty = function( obj, propName, prefix, value ){
+  if( prefix ){
+    propName = prefix + propName.toUpperCase(); // e.g. (labelWidth, source) => sourceLabelWidth
+  }
+
+  obj[ propName ] = value;
+};
+
 [
   require('./colors'),
   require('./maps'),

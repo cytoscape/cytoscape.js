@@ -184,7 +184,7 @@ BRp.findNearestElement = function(x, y, visibleElementsOnly, isTouch){
     if( _p.style['text-events'].strValue === 'no' ){ return; }
 
     // adjust bb w/ angle
-    if( _p.group === 'edges' && _p.style['edge-text-rotation'].strValue === 'autorotate' ){
+    if( _p.group === 'edges' && _p.style['text-rotation'].strValue === 'autorotate' ){
 
       var rstyle = _p.rstyle;
       var lw = rstyle.labelWidth + 2*th;
@@ -826,7 +826,7 @@ BRp.findEdgeControlPoints = function(edges) {
       continue;
     }
 
-    if( style['edge-text-rotation'].strValue === 'autorotate' ){
+    if( style['text-rotation'].strValue === 'autorotate' ){
       autorotateEdges.push( edge );
     }
 

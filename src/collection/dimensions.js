@@ -449,7 +449,7 @@ fn = elesfn = ({
         var labelX = rstyle.labelX;
         var labelY = rstyle.labelY;
         var isEdge = ele.isEdge();
-        var autorotate = style['edge-text-rotation'].strValue === 'autorotate';
+        var autorotate = style['text-rotation'].strValue === 'autorotate';
 
         if( includeLabels && label && fontSize && labelHeight != null && labelWidth != null && labelX != null && labelY != null && halign && valign ){
           var lh = labelHeight;

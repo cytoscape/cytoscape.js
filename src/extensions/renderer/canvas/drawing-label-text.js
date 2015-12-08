@@ -30,7 +30,7 @@ CRp.drawEdgeText = function(context, edge) {
   if( !is.number( rs.labelX ) || !is.number( rs.labelY ) ){ return; } // no pos => label can't be rendered
 
   var style = edge._private.style;
-  var autorotate = style['edge-text-rotation'].strValue === 'autorotate';
+  var autorotate = style['text-rotation'].strValue === 'autorotate';
   var theta;
 
   if( autorotate ){
@@ -259,7 +259,7 @@ CRp.drawText = function(context, element, textX, textY) {
         bgY = bgY - bgHeight / 2;
       }
 
-      if (style['edge-text-rotation'].strValue === 'autorotate') {
+      if (style['text-rotation'].strValue === 'autorotate') {
         textY = 0;
         bgWidth += 4;
         bgX = textX - bgWidth / 2;

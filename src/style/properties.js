@@ -68,7 +68,7 @@ var styfn = {};
     url: { regex: '^url\\s*\\(\\s*([^\\s]+)\\s*\\s*\\)|none|(.+)$' },
     propList: { propList: true },
     angle: { number: true, units: 'deg|rad', implicitUnits: 'rad' },
-    textRotation: { enums: ['none', 'autorotate'] },
+    textRotation: { number: true, units: 'deg|rad', implicitUnits: 'rad', enums: ['none', 'autorotate'] },
     polygonPointList: { number: true, multiple: true, evenMultiple: true, min: -1, max: 1, unitless: true },
     easing: {
       regexes: [
@@ -97,6 +97,8 @@ var styfn = {};
     { name: 'text-halign', type: t.halign },
     { name: 'color', type: t.color },
     { name: 'label', type: t.text },
+    { name: 'source-label', type: t.text },
+    { name: 'target-label', type: t.text },
     { name: 'text-outline-color', type: t.color },
     { name: 'text-outline-width', type: t.size },
     { name: 'text-outline-opacity', type: t.zeroOneNumber },
@@ -113,15 +115,17 @@ var styfn = {};
     { name: 'text-wrap', type: t.textWrap },
     { name: 'text-max-width', type: t.size },
     { name: 'text-events', type: t.bool },
-
-    // { name: 'text-rotation', type: t.angle }, // TODO disabled b/c rotation breaks bounding boxes
+    { name: 'text-rotation', type: t.textRotation },
+    { name: 'source-text-rotation', type: t.textRotation },
+    { name: 'source-text-offset', type: t.size },
+    { name: 'target-text-rotation', type: t.textRotation },
+    { name: 'target-text-offset', type: t.size },
     { name: 'font-family', type: t.fontFamily },
     { name: 'font-style', type: t.fontStyle },
     // { name: 'font-variant', type: t.fontVariant }, // not useful
     { name: 'font-weight', type: t.fontWeight },
     { name: 'font-size', type: t.size },
     { name: 'min-zoomed-font-size', type: t.size },
-    { name: 'edge-text-rotation', type: t.textRotation },
 
     // behaviour
     { name: 'events', type: t.bool },
@@ -218,7 +222,8 @@ var styfn = {};
   var aliases = styfn.aliases = [
     { name: 'content', pointsTo: 'label' },
     { name: 'control-point-distance', pointsTo: 'control-point-distances' },
-    { name: 'control-point-weight', pointsTo: 'control-point-weights' }
+    { name: 'control-point-weight', pointsTo: 'control-point-weights' },
+    { name: 'edge-text-rotation', pointsTo: 'text-rotation' }
   ];
 
   // pie backgrounds for nodes
@@ -304,12 +309,18 @@ styfn.addDefaultStylesheet = function(){
         'font-weight': 'normal',
         'font-size': 16,
         'min-zoomed-font-size': 0,
-        'edge-text-rotation': 'none',
+        'text-rotation': 'none',
+        'source-text-rotation': 'none',
+        'target-text-rotation': 'none',
         'visibility': 'visible',
         'display': 'element',
         'opacity': 1,
         'z-index': 0,
         'label': '',
+        'source-label': '',
+        'source-text-offset': 0,
+        'target-label': '',
+        'target-label-offset': 0,
         'overlay-opacity': 0,
         'overlay-color': '#000',
         'overlay-padding': 10,

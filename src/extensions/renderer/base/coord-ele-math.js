@@ -2,6 +2,7 @@
 
 var math = require('../../../math');
 var is = require('../../../is');
+var util = require('../../../util');
 var zIndexSort = require('../../../collection/zsort');
 
 var BRp = {};
@@ -177,22 +178,33 @@ BRp.findNearestElement = function(x, y, visibleElementsOnly, isTouch){
     }
   }
 
-  function checkLabel(ele){
+  function checkLabel(ele, prefix){
     var _p = ele._private;
     var th = labelThreshold;
 
+    var prefixDash;
+    if( prefix ){
+      prefixDash = prefix + '-';
+    } else {
+      prefixDash = prefix;
+    }
+
+    var preprop = util.getPrefixedProperty.bind( util );
+
     if( _p.style['text-events'].strValue === 'no' ){ return; }
 
+    var rotation = _p.style[prefixDash + 'text-rotation'];
+
     // adjust bb w/ angle
-    if( _p.group === 'edges' && _p.style['text-rotation'].strValue === 'autorotate' ){
+    if( rotation.strValue === 'autorotate' || rotation.pfValue !== 0 ){
 
       var rstyle = _p.rstyle;
-      var lw = rstyle.labelWidth + 2*th;
-      var lh = rstyle.labelHeight + 2*th;
-      var lx = rstyle.labelX;
-      var ly = rstyle.labelY;
+      var lw = preprop( rstyle, 'labelWidth', prefix ) + 2*th;
+      var lh = preprop( rstyle, 'labelHeight', prefix ) + 2*th;
+      var lx = preprop( rstyle, 'labelX', prefix );
+      var ly = preprop( rstyle, 'labelY', prefix );
 
-      var theta = _p.rscratch.labelAngle;
+      var theta = preprop( _p.rscratch, 'labelAngle', prefix );
       var cos = Math.cos( theta );
       var sin = Math.sin( theta );
 
@@ -258,11 +270,15 @@ BRp.findNearestElement = function(x, y, visibleElementsOnly, isTouch){
     if( _p.group === 'nodes' ){
       checkNode( ele );
 
+      checkLabel( ele );
+
     } else  { // then edge
       checkEdge( ele );
-    }
 
-    checkLabel( ele );
+      checkLabel( ele );
+      checkLabel( ele, 'source' );
+      checkLabel( ele, 'target' );
+    }
 
   }
 

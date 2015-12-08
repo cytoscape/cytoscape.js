@@ -66,6 +66,14 @@ util.extend = Object.assign != null ? Object.assign : function( tgt ){
   return tgt;
 };
 
+util.getPrefixedProperty = function( obj, propName, prefix ){
+  if( prefix ){
+    propName = prefix + propName.toUpperCase(); // e.g. (labelWidth, source) => sourceLabelWidth
+  }
+
+  return obj[ propName ];
+};
+
 [
   require('./colors'),
   require('./maps'),

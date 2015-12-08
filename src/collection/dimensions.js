@@ -447,14 +447,6 @@ fn = elesfn = ({
       } // style enabled for labels
     } // for
 
-    function prefixedProperty( obj, propName, prefix ){
-      if( prefix ){
-        propName = prefix + propName.toUpperCase(); // e.g. sourceLabelWidth
-      }
-
-      return obj[ propName ];
-    }
-
     function checkLabel( ele, prefix ){
       var prefixDash;
 
@@ -463,6 +455,8 @@ fn = elesfn = ({
       } else {
         prefixDash = '';
       }
+
+      var prefixedProperty = util.getPrefixedProperty.bind( util );
 
       var _p = ele._private;
       var style = _p.style;

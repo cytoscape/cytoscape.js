@@ -214,6 +214,8 @@ styfn.updateStyleHints = function(ele){
 
   var transform = style['text-transform'].strValue;
   var content = style['label'].strValue;
+  var srcContent = style['source-label'].strValue;
+  var tgtContent = style['target-label'].strValue;
   var fStyle = style['font-style'].strValue;
   var size = style['font-size'].pfValue + 'px';
   var family = style['font-family'].strValue;
@@ -224,7 +226,10 @@ styfn.updateStyleHints = function(ele){
   var oWidth = style['text-outline-width'].pfValue;
   var wrap = style['text-wrap'].strValue;
   var wrapW = style['text-max-width'].pfValue;
-  _p.labelKey = fStyle +'$'+ size +'$'+ family +'$'+ weight +'$'+ content +'$'+ transform +'$'+ valign +'$'+ halign +'$'+ oWidth + '$' + wrap + '$' + wrapW;
+  var labelStyleKey = fStyle +'$'+ size +'$'+ family +'$'+ weight +'$'+ transform +'$'+ valign +'$'+ halign +'$'+ oWidth + '$' + wrap + '$' + wrapW;
+  _p.sourceLabelKey = labelStyleKey + '$' + srcContent;
+  _p.targetLabelKey = labelStyleKey + '$' + tgtContent;
+  _p.labelKey = labelStyleKey + '$' + content;
   _p.fontKey = fStyle +'$'+ weight +'$'+ size +'$'+ family;
 
   var width = style['width'].pfValue;

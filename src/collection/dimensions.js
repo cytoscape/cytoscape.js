@@ -437,99 +437,125 @@ fn = elesfn = ({
 
       if( styleEnabled ){
 
-        var _p = ele._private;
-        var style = _p.style;
-        var rstyle = _p.rstyle;
-        var label = style['label'].strValue;
-        var fontSize = style['font-size'];
-        var halign = style['text-halign'];
-        var valign = style['text-valign'];
-        var labelWidth = rstyle.labelWidth;
-        var labelHeight = rstyle.labelHeight;
-        var labelX = rstyle.labelX;
-        var labelY = rstyle.labelY;
-        var isEdge = ele.isEdge();
-        var rotation = style['text-rotation'];
+        checkLabel( ele );
 
-        if( includeLabels && label && fontSize && labelHeight != null && labelWidth != null && labelX != null && labelY != null && halign && valign ){
-          var lh = labelHeight;
-          var lw = labelWidth;
-          var lx1, lx2, ly1, ly2;
-
-          if( isEdge ){
-            lx1 = labelX - lw/2;
-            lx2 = labelX + lw/2;
-            ly1 = labelY - lh/2;
-            ly2 = labelY + lh/2;
-          } else {
-            switch( halign.value ){
-              case 'left':
-                lx1 = labelX - lw;
-                lx2 = labelX;
-                break;
-
-              case 'center':
-                lx1 = labelX - lw/2;
-                lx2 = labelX + lw/2;
-                break;
-
-              case 'right':
-                lx1 = labelX;
-                lx2 = labelX + lw;
-                break;
-            }
-
-            switch( valign.value ){
-              case 'top':
-                ly1 = labelY - lh;
-                ly2 = labelY;
-                break;
-
-              case 'center':
-                ly1 = labelY - lh/2;
-                ly2 = labelY + lh/2;
-                break;
-
-              case 'bottom':
-                ly1 = labelY;
-                ly2 = labelY + lh;
-                break;
-            }
-          }
-
-          if( ( isEdge && rotation.strValue === 'autorotate' ) || ( rotation.pfValue != null && rotation.pfValue !== 0 ) ){
-            var theta = _p.rscratch.labelAngle;
-            var cos = Math.cos( theta );
-            var sin = Math.sin( theta );
-
-            var rotate = function( x, y ){
-              x = x - labelX;
-              y = y - labelY;
-
-              return {
-                x: x*cos - y*sin + labelX,
-                y: x*sin + y*cos + labelY
-              };
-            };
-
-            var px1y1 = rotate( lx1, ly1 );
-            var px1y2 = rotate( lx1, ly2 );
-            var px2y1 = rotate( lx2, ly1 );
-            var px2y2 = rotate( lx2, ly2 );
-
-            lx1 = Math.min( px1y1.x, px1y2.x, px2y1.x, px2y2.x );
-            lx2 = Math.max( px1y1.x, px1y2.x, px2y1.x, px2y2.x );
-            ly1 = Math.min( px1y1.y, px1y2.y, px2y1.y, px2y2.y );
-            ly2 = Math.max( px1y1.y, px1y2.y, px2y1.y, px2y2.y );
-          }
-
-          x1 = lx1 < x1 ? lx1 : x1;
-          x2 = lx2 > x2 ? lx2 : x2;
-          y1 = ly1 < y1 ? ly1 : y1;
-          y2 = ly2 > y2 ? ly2 : y2;
+        if( ele.isEdge() ){
+          checkLabel( ele, 'source' );
+          checkLabel( ele, 'source' );
         }
+
       } // style enabled for labels
     } // for
+
+    function prefixedProperty( obj, propName, prefix ){
+      if( prefix ){
+        propName = prefix + propName.toUpperCase(); // e.g. sourceLabelWidth
+      }
+
+      return obj[ propName ];
+    }
+
+    function checkLabel( ele, prefix ){
+      var prefixDash;
+
+      if( prefix ){
+        prefixDash = prefix + '-';
+      } else {
+        prefixDash = '';
+      }
+
+      var _p = ele._private;
+      var style = _p.style;
+      var rstyle = _p.rstyle;
+      var label = style[ prefixDash + 'label' ].strValue;
+      var fontSize = style['font-size'];
+      var halign = style['text-halign'];
+      var valign = style['text-valign'];
+      var labelWidth = prefixedProperty( rstyle, 'labelWidth', prefix );
+      var labelHeight = prefixedProperty( rstyle, 'labelHeight', prefix );
+      var labelX = prefixedProperty( rstyle, 'labelX', prefix );
+      var labelY = prefixedProperty( rstyle, 'labelY', prefix );
+      var isEdge = ele.isEdge();
+      var rotation = style[ prefixDash + 'text-rotation' ];
+
+      if( includeLabels && label && fontSize && labelHeight != null && labelWidth != null && labelX != null && labelY != null && halign && valign ){
+        var lh = labelHeight;
+        var lw = labelWidth;
+        var lx1, lx2, ly1, ly2;
+
+        if( isEdge ){
+          lx1 = labelX - lw/2;
+          lx2 = labelX + lw/2;
+          ly1 = labelY - lh/2;
+          ly2 = labelY + lh/2;
+        } else {
+          switch( halign.value ){
+            case 'left':
+              lx1 = labelX - lw;
+              lx2 = labelX;
+              break;
+
+            case 'center':
+              lx1 = labelX - lw/2;
+              lx2 = labelX + lw/2;
+              break;
+
+            case 'right':
+              lx1 = labelX;
+              lx2 = labelX + lw;
+              break;
+          }
+
+          switch( valign.value ){
+            case 'top':
+              ly1 = labelY - lh;
+              ly2 = labelY;
+              break;
+
+            case 'center':
+              ly1 = labelY - lh/2;
+              ly2 = labelY + lh/2;
+              break;
+
+            case 'bottom':
+              ly1 = labelY;
+              ly2 = labelY + lh;
+              break;
+          }
+        }
+
+        if( ( isEdge && rotation.strValue === 'autorotate' ) || ( rotation.pfValue != null && rotation.pfValue !== 0 ) ){
+          var theta = _p.rscratch.labelAngle;
+          var cos = Math.cos( theta );
+          var sin = Math.sin( theta );
+
+          var rotate = function( x, y ){
+            x = x - labelX;
+            y = y - labelY;
+
+            return {
+              x: x*cos - y*sin + labelX,
+              y: x*sin + y*cos + labelY
+            };
+          };
+
+          var px1y1 = rotate( lx1, ly1 );
+          var px1y2 = rotate( lx1, ly2 );
+          var px2y1 = rotate( lx2, ly1 );
+          var px2y2 = rotate( lx2, ly2 );
+
+          lx1 = Math.min( px1y1.x, px1y2.x, px2y1.x, px2y2.x );
+          lx2 = Math.max( px1y1.x, px1y2.x, px2y1.x, px2y2.x );
+          ly1 = Math.min( px1y1.y, px1y2.y, px2y1.y, px2y2.y );
+          ly2 = Math.max( px1y1.y, px1y2.y, px2y1.y, px2y2.y );
+        }
+
+        x1 = lx1 < x1 ? lx1 : x1;
+        x2 = lx2 > x2 ? lx2 : x2;
+        y1 = ly1 < y1 ? ly1 : y1;
+        y2 = ly2 > y2 ? ly2 : y2;
+      }
+    }
 
     var noninf = function(x){
       if( x === Infinity || x === -Infinity ){

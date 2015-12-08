@@ -237,8 +237,10 @@ styfn.updateStyleHints = function(ele){
     var cpd = style['control-point-distances'] ? style['control-point-distances'].pfValue.join('_') : undefined;
     var cpw = style['control-point-weights'].value.join('_');
     var curve = style['curve-style'].strValue;
+    var sd = style['segment-distances'] ? style['segment-distances'].pfValue.join('_') : undefined;
+    var sw = style['segment-weights'].value.join('_');
 
-    _p.boundingBoxKey += '$'+ cpss +'$'+ cpd +'$'+ cpw +'$'+ curve;
+    _p.boundingBoxKey += '$'+ cpss +'$'+ cpd +'$'+ cpw +'$'+ sd +'$'+ sw +'$'+ curve;
   }
 
   _p.styleKey = Date.now();

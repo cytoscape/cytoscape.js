@@ -1,5 +1,5 @@
 /*!
- * This file is part of Cytoscape.js 2.5.1.
+ * This file is part of Cytoscape.js 2.5.2.
  *
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -6557,7 +6557,7 @@ var Core = function( opts ){
     wheelSensitivity: is.number(options.wheelSensitivity) && options.wheelSensitivity > 0 ? options.wheelSensitivity : 1,
     motionBlur: options.motionBlur === undefined ? true : options.motionBlur, // on by default
     motionBlurOpacity: options.motionBlurOpacity === undefined ? 0.05 : options.motionBlurOpacity,
-    pixelRatio: is.number(options.pixelRatio) && options.pixelRatio > 0 ? options.pixelRatio : (options.pixelRatio === 'auto' ? undefined : 1),
+    pixelRatio: is.number(options.pixelRatio) && options.pixelRatio > 0 ? options.pixelRatio : undefined,
     desktopTapThreshold: options.desktopTapThreshold === undefined ? 4 : options.desktopTapThreshold,
     touchTapThreshold: options.touchTapThreshold === undefined ? 8 : options.touchTapThreshold
   }, options.renderer) );
@@ -18793,7 +18793,7 @@ var cytoscape = function( options ){ // jshint ignore:line
 };
 
 // replaced by build system
-cytoscape.version = '2.5.1';
+cytoscape.version = '2.5.2';
 
 // try to register w/ jquery
 if( window && window.jQuery ){
@@ -21311,8 +21311,10 @@ styfn.updateStyleHints = function(ele){
     var cpd = style['control-point-distances'] ? style['control-point-distances'].pfValue.join('_') : undefined;
     var cpw = style['control-point-weights'].value.join('_');
     var curve = style['curve-style'].strValue;
+    var sd = style['segment-distances'] ? style['segment-distances'].pfValue.join('_') : undefined;
+    var sw = style['segment-weights'].value.join('_');
 
-    _p.boundingBoxKey += '$'+ cpss +'$'+ cpd +'$'+ cpw +'$'+ curve;
+    _p.boundingBoxKey += '$'+ cpss +'$'+ cpd +'$'+ cpw +'$'+ sd +'$'+ sw +'$'+ curve;
   }
 
   _p.styleKey = Date.now();
@@ -22382,7 +22384,7 @@ var parseImpl = function( name, value, propIsBypass, propIsFlat ){
     };
   }
 
-  if( type.multiple && !propIsFlat ){
+  if( type.multiple && propIsFlat !== 'multiple' ){
     var vals;
 
     if( valueIsString ){
@@ -22396,7 +22398,7 @@ var parseImpl = function( name, value, propIsBypass, propIsFlat ){
     if( type.evenMultiple && vals.length % 2 !== 0 ){ return null; }
 
     var valArr = vals.map(function( v ){
-      var p = self.parse( name, v, propIsBypass, true );
+      var p = self.parse( name, v, propIsBypass, 'multiple' );
 
       if( p.pfValue != null ){
         return p.pfValue;
@@ -22988,7 +22990,7 @@ styfn.addDefaultStylesheet = function(){
         'line-color': '#ddd',
         'control-point-step-size': 40,
         'control-point-weights': 0.5,
-        'segment-weights': 0.25,
+        'segment-weights': 0.5,
         'segment-distances': 20,
         'curve-style': 'bezier',
         'haystack-radius': 0.8

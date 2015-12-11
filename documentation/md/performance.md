@@ -15,7 +15,6 @@ You can get much better performance out of Cytoscape.js by tuning your options, 
 
 * **Haystacks make fast edges** : Set your edges `curve-style` to `haystack` in your stylesheet.  Haystack edges are straight lines, which are much less expensive to render than `bezier` edges.
 * **Batch element modifications** : Use [`cy.batch()`](#core/graph-manipulation/cy.batch) to modify many elements at once.
-* The pixel ratio is set for you to `1.0` by default.  If you want crisper rendering at the expense of performance, you can set `initOptions.pixelRatio: 'auto'`.  If you want even greater performance, you can experiment with pixel ratios less than `1.0`, e.g. `initOptions.pixelRatio: 0.666`.
 * **Use textured zoom & pan** : Set `textureOnViewport` to `true` in your [initialisation options](#core/initialisation).  Rather than rerendering the entire scene, this makes a texture cache of the viewport at the start of pan and zoom operations, and manipulates that instead.  Makes panning and zooming much smoother for large graphs.
 * **Labels** : Drawing labels is expensive.
  * If you can go without them or show them on tap/mouseover, you'll get better performance.

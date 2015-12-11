@@ -60,7 +60,7 @@ var cy = cytoscape({
   motionBlur: false,
   motionBlurOpacity: 0.2,
   wheelSensitivity: 1,
-  pixelRatio: 1,
+  pixelRatio: 'auto',
   initrender: function(evt){ /* ... */ },
   renderer: { /* ... */ }
 });
@@ -132,7 +132,7 @@ var cy = cytoscape({
 
 **`wheelSensitivity`** : Changes the scroll wheel sensitivity when zooming.  This is a multiplicative modifier.  So, a value between 0 and 1 reduces the sensitivity (zooms slower), and a value greater than 1 increases the sensitivity (zooms faster).
 
-**`pixelRatio`** : Overrides the screen pixel ratio with a manually set value (`1.0` or `0.666` recommended, if set).  This can be used to increase performance on high density displays by reducing the effective area that needs to be rendered.  If you want to use the hardware's actual pixel ratio at the expense of performance, you can set `pixelRatio: 'auto'`.
+**`pixelRatio`** : Overrides the screen pixel ratio with a manually set value (`1.0` recommended, if set).  This can be used to increase performance on high density displays by reducing the effective area that needs to be rendered, though this is much less necessary on more recent browser releases.  If you want to use the hardware's actual pixel ratio, you can set `pixelRatio: 'auto'` (default).
 
 **`initrender`** : A callback function that is called when Cytoscape.js has rendered its first frame.  This is useful for grabbing screenshots etc after initialision, but in general you should use `ready` instead.
 

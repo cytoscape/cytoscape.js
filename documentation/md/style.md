@@ -1,12 +1,12 @@
 Style in Cytoscape.js follows CSS conventions as closely as possible.  In most cases, a property has the same name and behaviour as its corresponding CSS namesake.  However, the properties in CSS are not sufficient to specify the style of some parts of the graph.  In that case, additional properties are introduced that are unique to Cytoscape.js.
 
-It is important to note that in your stylesheet, [specificity rules](http://www.w3.org/TR/css3-selectors/#specificity) are completely ignored.  In CSS, specificity often makes stylesheets behave in ways contrary to the developer's natural mental model.  This is terrible, because it wastes time and overcomplicates things.  Thus, there is no analogue of CSS specificity in Cytoscape.js stylesheets.  For a given style property for a given element, the last matching selector wins.  In general, you should be using something along the lines of [OOCSS](http://oocss.org) principles, anyway &mdash; making specificity essentially irrelevant.
+For simplicity and ease of use, [specificity rules](http://www.w3.org/TR/css3-selectors/#specificity) are completely ignored in stylesheets.  For a given style property for a given element, the last matching selector wins.
 
 
 
 ## Format
 
-The style specified at [initialisation](#core/initialisation) can be in a function format, in a plain JSON format, or in a string format &mdash; the plain JSON format and string formats being more useful if you want to pull down the style from the server.  If you pull the style from the server, you probably should initialise Cytoscape.js after the style has been loaded.  (Though you could altenatively modify the existing style or reassign a new style to an existing core instance.)
+The style specified at [initialisation](#core/initialisation) can be in a function format, in a plain JSON format, or in a string format &mdash; the plain JSON format and string formats being more useful if you want to pull down the style from the server.
 
 
 
@@ -88,7 +88,7 @@ You may alternatively use `css` in place of `style`, e.g. `.selector( ... ).css(
 
 In the JSON or function stylesheet formats, it is possible to specify a function as the value for a style property.  In this manner, the style value can be specified via a function on a per-element basis.
 
-<span class="important-indicator"></span> Note that if using the JSON stylesheet format, it will not be possible to serialise and deserialise your stylesheet to JSON proper.
+<span class="important-indicator"></span> Note that if using functions as style values, it will not be possible to serialise and deserialise your stylesheet to JSON proper.
 
 Example:
 
@@ -136,35 +136,43 @@ In addition to specifying the value of a property outright, the developer may al
 
 * **`data()`** specifies a direct mapping to an element's data field.  For example, `data(descr)` would map a property to the value in an element's `descr` field in its data (i.e. `ele.data("descr")`).  This is useful for mapping to properties like label text content (the `content` property).
 * **`mapData()`** specifies a linear mapping to an element's data field.  For example, `mapData(weight, 0, 100, blue, red)` maps an element's weight to gradients between blue and red for weights between 0 and 100.  An element with `ele.data("weight") === 0` would  be mapped to blue, for instance.  Elements whose values fall outside of the specified range are mapped to the extremity values.  In the previous example, an element with `ele.data("weight") === -1` would be mapped to blue.
-* **`function( ele ){ ... }`** A function may be passed as the value of a style property.  The function has a single `ele` argument which specifies the element for which the style property value is being calculated.  The function must specify a valid value for the corresponding style property for all elements that its corresponding selector block applies.  <span class="important-indicator"></span> Note that while convenient, these functions ought to be inexpensive to execute:  The functions are called more often than if the developer writes data by `data()` or `scratch()` &mdash; where `data()` or `scratch()` would provide an automatic caching mechanism.
+* **`function( ele ){ ... }`** A function may be passed as the value of a style property.  The function has a single `ele` argument which specifies the element for which the style property value is being calculated.  The function must specify a valid value for the corresponding style property for all elements that its corresponding selector block applies.  <span class="important-indicator"></span> Note that while convenient, these functions ought to be inexpensive to execute, ideally cached with something like lodash's [`_.memoize()`](https://lodash.com/docs#memoize).
 
 
 
 
 ## Node body
 
-These properties affect the style of a node's body:
+Shape:
 
  * **`width`** : The width of the node's body.  This property can take on the special value `label` so the width is automatically based on the node's label.
  * **`height`** : The height of the node's body.  This property can take on the special value `label` so the height is automatically based on the node's label.
  * **`shape`** : The shape of the node's body; may be `rectangle`, `roundrectangle`, `ellipse`, `triangle`, `pentagon`, `hexagon`, `heptagon`, `octagon`, `star`, `diamond`, `vee`, `rhomboid`, or `polygon` (custom polygon specified via `shape-polygon-points`).  Note that each shape fits within the specified `width` and `height`, and so you may have to adjust `width` and `height` if you desire an equilateral shape (i.e. `width !== height` for several equilateral shapes).
  * **`shape-polygon-points`** : A space-separated list of numbers ranging on [-1, 1], representing alternating x and y values (i.e. `x1 y1   x2 y2,   x3 y3 ...`).  This represents the points in the polygon for the node's shape.  The bounding box of the node is given by (-1, -1), (1, -1), (1, 1), (-1, 1).
+
+Background:
+
  * **`background-color`** : The colour of the node's body.
  * **`background-blacken`** : Blackens the node's body for values from 0 to 1; whitens the node's body for values from 0 to -1.
  * **`background-opacity`** : The opacity level of the node's background colour.
+
+Border:
+
  * **`border-width`** : The size of the node's border.
  * **`border-style`** : The style of the node's border; may be `solid`, `dotted`, `dashed`, or `double`.
  * **`border-color`** : The colour of the node's border.
  * **`border-opacity`** : The opacity of the node's border.
 
-These are padding properties.  A padding defines an addition to a node's dimension.  For example, `padding-left` adds to a node's outer (i.e. total) width.  This can be used to add spacing around the label of `width: label; height: label;` nodes, or it can be used to add spacing between a compound node parent and its children.
+Padding:
+
+A padding defines an addition to a node's dimension.  For example, `padding-left` adds to a node's outer (i.e. total) width.  This can be used to add spacing around the label of `width: label; height: label;` nodes, or it can be used to add spacing between a compound node parent and its children.
 
 * **`padding-left`** : The amount of left padding.
 * **`padding-right`** : The amount of right padding.
 * **`padding-top`** : The amount of top padding.
 * **`padding-bottom`** : The amount of bottom padding.
 
-These node body properties only apply to compound nodes (i.e. nodes who have embedded children):
+Compound parent:
 
  * **`compound-sizing-wrt-labels`** : Whether to include labels of descendants in sizing a compound node; may be `include` or `exclude`.
 
@@ -243,30 +251,18 @@ For edges made of several straight lines (`curve-style: segments`):
 
 ## Edge arrow
 
-Towards the source node:
+ * **`<pos>-arrow-color`** : The colour of the edge's source arrow.
+ * **`<pos>-arrow-shape`** : The shape of the edge's source arrow; may be `tee`, `triangle`, `triangle-tee`, `triangle-backcurve`, `square`, `circle`, `diamond`, or `none`.
+ * **`<pos>-arrow-fill`** : The fill state of the edge's source arrow; may be `filled` or `hollow`.
 
- * **`source-arrow-color`** : The colour of the edge's source arrow.
- * **`source-arrow-shape`** : The shape of the edge's source arrow; may be `tee`, `triangle`, `triangle-tee`, `triangle-backcurve`, `square`, `circle`, `diamond`, or `none`.
- * **`source-arrow-fill`** : The fill state of the edge's source arrow; may be `filled` or `hollow`.
+For each edge arrow property above, replace `<pos>` with one of
 
-Towards the source node, positioned in the middle of the edge:
+  * `source` : Pointing towards the source node, at the end of the edge.
+  * `mid-source` : Pointing towards the source node, at the middle of the edge.
+  * `target` : Pointing towards the target node, at the end of the edge.
+  * `mid-target`: Pointing towards the target node, at the middle of the edge.
 
- * **`mid-source-arrow-color`** : The colour of the edge's mid source arrow.
- * **`mid-source-arrow-shape`** : The shape of the edge's mid source arrow; may be `tee`, `triangle`, `triangle-tee`, `triangle-backcurve`, `square`, `circle`, `diamond`, or `none`.
- * **`mid-source-arrow-fill`** : The fill state of the edge's mid source arrow; may be `filled` or `hollow`.
-
-Towards the target node:
-
- * **`target-arrow-color`** : The colour of the edge's target arrow.
- * **`target-arrow-shape`** : The shape of the edge's target arrow; may be `tee`, `triangle`, `triangle-tee`, `triangle-backcurve`, `square`, `circle`, `diamond`, or `none`.
- * **`target-arrow-fill`** : The fill state of the edge's target arrow; may be `filled` or `hollow`.
-
-Towards the target node, positioned in the middle of the edge:
-
- * **`mid-target-arrow-color`** : The colour of the edge's target arrow.
- * **`mid-target-arrow-shape`** : The shape of the edge's target arrow; may be `tee`, `triangle`, `triangle-tee`, `triangle-backcurve`, `square`, `circle`, `diamond`, or `none`.
- * **`mid-target-arrow-fill`** : The fill state of the edge's target arrow; may be `filled` or `hollow`.
-
+Only mid arrows are supported on haystack edges.
 
 
 ## Visibility
@@ -280,39 +276,63 @@ Towards the target node, positioned in the middle of the edge:
 
 ## Labels
 
+Basic font styling:
+
  * **`color`** :  The colour of the element's label.
  * **`label`** : The text to display for an element's label.
+ * **`text-opacity`** : The opacity of the label text, including its outline.
  * **`font-family`** : A [comma-separated list of font names](https://developer.mozilla.org/en-US/docs/Web/CSS/font-family) to use on the label text.
  * **`font-size`** : The size of the label text.
  * **`font-style`** : A [CSS font style](https://developer.mozilla.org/en-US/docs/Web/CSS/font-style) to be applied to the label text.
  * **`font-weight`** : A [CSS font weight](https://developer.mozilla.org/en-US/docs/Web/CSS/font-weight) to be applied to the label text.
  * **`text-transform`** : A transformation to apply to the label text; may be `none`, `uppercase`, or `lowercase`.
+
+Wrapping text:
+
  * **`text-wrap`** : A wrapping style to apply to the label text; may be `none` for no wrapping (including manual newlines: `\n`) or `wrap` for manual and/or autowrapping.
  * **`text-max-width`** : The maximum width for wrapped text, applied when `text-wrap` is set to `wrap`.  For only manual newlines (i.e. `\n`), set a very large value like `1000px` such that only your newline characters would apply.
+
+Node label alignment:
+
+ * **`text-halign`** : The vertical alignment of a node's label; may have value `left`, `center`, or `right`.
+ * **`text-valign`** : The vertical alignment of a node's label; may have value `top`, `center`, or `bottom`.
+
+Rotating text:
+
  * **`edge-text-rotation`** : Whether to rotate edge labels as the relative angle of an edge changes; may be `none` for page-aligned labels or `autorotate` for edge-aligned labels.  This works best with left-to-right text.
- * **`text-opacity`** : The opacity of the label text, including its outline.
+
+Outline:
+
  * **`text-outline-color`** : The colour of the outline around the element's label text.
  * **`text-outline-opacity`** : The opacity of the outline on label text.
  * **`text-outline-width`** : The size of the outline on label text.
+
+Shadow:
+
  * **`text-shadow-blur`** : The shadow blur distance.
  * **`text-shadow-color`** : The colour of the shadow.
  * **`text-shadow-offset-x`** : The x offset relative to the text where the shadow will be displayed, can be negative. If you set blur to 0, add an offset to view your shadow.
  * **`text-shadow-offset-y`** : The y offset relative to the text where the shadow will be displayed, can be negative. If you set blur to 0, add an offset to view your shadow.
  * **`text-shadow-opacity`** : The opacity of the shadow on the text; the shadow is disabled for `0` (default value).
+
+Background:
+
  * **`text-background-color`** : A colour to apply on the text background.
  * **`text-background-opacity`** : The opacity of the label background; the background is disabled for `0` (default value).
  * **`text-background-shape`** : The shape to use for the label background, can be `rectangle` or `roundrectangle`.
+
+Border:
+
  * **`text-border-opacity`** : The width of the border around the label; the border is disabled for `0` (default value).
  * **`text-border-width`** : The width of the border around the label.
  * **`text-border-style`** : The style of the border around the label; may be `solid`, `dotted`, `dashed`, or `double`.
  * **`text-border-color`** : The colour of the border around the label.
+
+Interactivity:
+
  * **`min-zoomed-font-size`** : If zooming makes the effective font size of the label smaller than this, then no label is shown.
  * **`text-events`** : Whether events should occur on an element if the label receives an event; may be `yes` or `no`.  You may want a style applied to the text on `:active` so you know the text is activatable.
 
-These properties can only be used on node labels:
-
- * **`text-halign`** : The vertical alignment of a label; may have value `left`, `center`, or `right`.
- * **`text-valign`** : The vertical alignment of a label; may have value `top`, `center`, or `bottom`.
 
 
 ## Events
@@ -331,7 +351,7 @@ These properties allow for the creation of overlays on top of nodes or edges, an
 
 ## Shadow
 
-These properties allow for the creation of shadows on top of nodes or edges. Note that shadow-blur could seriously impact performance on large graph.
+These properties allow for the creation of shadows on nodes or edges. Note that shadow-blur could seriously impact performance on large graph.
 
  * **`shadow-blur`** :The shadow blur, note that if greater than 0, this could impact performance.
  * **`shadow-color`** : The colour of the shadow.
@@ -351,12 +371,20 @@ These properties allow for the creation of shadows on top of nodes or edges. Not
 
 These properties affect UI global to the graph, and apply only to the core.  You can use the special `core` selector string to set these properties.
 
+Indicator:
+
  * **`active-bg-color`** : The colour of the indicator shown when the background is grabbed by the user.
  * **`active-bg-opacity`** : The opacity of the active background indicator.
  * **`active-bg-size`** : The size of the active background indicator.
+
+Selection box:
+
  * **`selection-box-color`** : The background colour of the selection box used for drag selection.
  * **`selection-box-border-color`** : The colour of the border on the selection box.
  * **`selection-box-border-width`** : The size of the border on the selection box.
  * **`selection-box-opacity`** : The opacity of the selection box.
+
+Texture during viewport gestures:
+
  * **`outside-texture-bg-color`** : The colour of the area outside the viewport texture when `initOptions.textureOnViewport === true`.
  * **`outside-texture-bg-opacity`** : The opacity of the area outside the viewport texture.

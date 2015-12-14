@@ -94,7 +94,7 @@ var elesfn = ({
             changed.push( ele );
             changedEle = true;
           }
-        } else{ // then remove
+        } else { // then remove
           eleClasses[ cls ] = false;
 
           if( hasClass && !changedEle ){

@@ -73,7 +73,7 @@ CRp.bufferCanvasImage = function( options ){
         forcedPan: { x: -bb.x1 * scale, y: -bb.y1 * scale },
         forcedPxRatio: 1
       } );
-    } else{ // draw the current view
+    } else { // draw the current view
       var cyPan = cy.pan();
       var pan = {
         x: cyPan.x * scale,

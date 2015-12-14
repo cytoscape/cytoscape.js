@@ -20,7 +20,7 @@ styfn.applyFromString = function( string ){
     // remove the parsed selector and block from the remaining text to parse
     if( remaining.length > selAndBlockStr.length ){
       remaining = remaining.substr( selAndBlockStr.length );
-    } else{
+    } else {
       remaining = '';
     }
   }
@@ -29,7 +29,7 @@ styfn.applyFromString = function( string ){
     // remove the parsed property and value from the remaining block text to parse
     if( blockRem.length > propAndValStr.length ){
       blockRem = blockRem.substr( propAndValStr.length );
-    } else{
+    } else {
       blockRem = '';
     }
   }

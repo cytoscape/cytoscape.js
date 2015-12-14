@@ -153,7 +153,7 @@ var elesfn = ({
       var partitionId = minCut[1][ i ];
       if( partitionId === witnessNodePartition ){
         partition1.push( nodes[ i ] );
-      } else{
+      } else {
         partition2.push( nodes[ i ] );
       }
     }

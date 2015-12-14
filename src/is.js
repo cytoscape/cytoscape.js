@@ -52,7 +52,7 @@ var is = {
   htmlElement: function( obj ){
     if( 'undefined' === typeofhtmlele ){
       return undefined;
-    } else{
+    } else {
       return null != obj && obj instanceof HTMLElement;
     }
   },
@@ -116,7 +116,7 @@ var is = {
   domElement: function( obj ){
     if( typeof HTMLElement === 'undefined' ){
       return false; // we're not in a browser so it doesn't matter
-    } else{
+    } else {
       return obj instanceof HTMLElement;
     }
   },

@@ -10,7 +10,7 @@ styfn.getEmSizeInPixels = function(){
 
   if( px != null ){
     return parseFloat( px );
-  } else{
+  } else {
     return 1; // for headless
   }
 };

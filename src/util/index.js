@@ -17,7 +17,7 @@ var util = {
       console.error.apply( console, arguments );
 
       if( console.trace ){ console.trace(); }
-    } else{
+    } else {
       console.log.apply( console, arguments );
 
       if( console.trace ){ console.trace(); }
@@ -37,7 +37,7 @@ var util = {
       return obj.slice();
     } else if( is.plainObject( obj ) ){
       return this.clone( obj );
-    } else{
+    } else {
       return obj;
     }
   }

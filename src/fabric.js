@@ -21,8 +21,8 @@ var Fabric = function( N ){
     // then use the specified number of threads
   } if( typeof navigator !== 'undefined' && navigator.hardwareConcurrency != null ){
     N = navigator.hardwareConcurrency;
-  } else{
-    try {
+  } else {
+    try{
       N = require( 'os' ).cpus().length;
     } catch( err ){
       N = defN;
@@ -101,7 +101,7 @@ util.extend( fabfn, {
 
     if( is.array( data ) ){
       pass.push( data );
-    } else{
+    } else {
       throw 'Only arrays may be used with fabric.pass()';
     }
 
@@ -254,7 +254,7 @@ util.extend( fabfn, {
           if( i < r && ( j >= max || cmp( eleI, eleJ ) <= 0 ) ){
             sorted.push( eleI );
             i++;
-          } else{
+          } else {
             sorted.push( eleJ );
             j++;
           }

@@ -43,7 +43,7 @@ var elesfn = ({
   not: function( toRemove ){
     if( !toRemove ){
       return this;
-    } else{
+    } else {
 
       if( is.string( toRemove ) ){
         toRemove = this.filter( toRemove );
@@ -151,7 +151,7 @@ var elesfn = ({
 
         if( inOther ){
           both.push( ele );
-        } else{
+        } else {
           retEles.push( ele );
         }
       }

@@ -15,7 +15,7 @@ module.exports = {
       r = parseInt( hex[1] + hex[1], base );
       g = parseInt( hex[2] + hex[2], base );
       b = parseInt( hex[3] + hex[3], base );
-    } else{
+    } else {
       r = parseInt( hex[1] + hex[2], base );
       g = parseInt( hex[3] + hex[4], base );
       b = parseInt( hex[5] + hex[6], base );
@@ -68,7 +68,7 @@ module.exports = {
       // code from http://mjijackson.com/2008/02/rgb-to-hsl-and-rgb-to-hsv-color-model-conversion-algorithms-in-javascript
       if( s === 0 ){
         r = g = b = Math.round( l * 255 ); // achromatic
-      } else{
+      } else {
         var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
         var p = 2 * l - q;
         r = Math.round( 255 * hue2rgb( p, q, h + 1 / 3 ) );

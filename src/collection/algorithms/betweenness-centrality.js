@@ -12,14 +12,14 @@ var elesfn = ({
     if( options.weight != null && is.fn( options.weight ) ){
       var weightFn = options.weight;
       var weighted = true;
-    } else{
+    } else {
       var weighted = false;
     }
 
     // Directed - default false
     if( options.directed != null && is.bool( options.directed ) ){
       var directed = options.directed;
-    } else{
+    } else {
       var directed = false;
     }
 
@@ -43,7 +43,7 @@ var elesfn = ({
     for( var i = 0; i < V.length; i++ ){
       if( directed ){
         A[ V[ i ].id() ] = V[ i ].outgoers( 'node' ); // get outgoers of every node
-      } else{
+      } else {
         A[ V[ i ].id() ] = V[ i ].openNeighborhood( 'node' ); // get neighbors of every node
       }
     }
@@ -79,7 +79,7 @@ var elesfn = ({
           A[ v ].forEach( function( w ){
             if( cy.$( '#' + v ).edgesTo( w ).length > 0 ){
               var edge = cy.$( '#' + v ).edgesTo( w )[0];
-            } else{
+            } else {
               var edge = w.edgesTo( '#' + v )[0];
             }
 
@@ -89,7 +89,7 @@ var elesfn = ({
               d[ w.id() ] = d[ v ] + edgeWeight;
               if( Q.indexOf( w.id() ) < 0 ){ //if w is not in Q
                 priorityInsert( Q, w.id() );
-              } else{ // update position if w is in Q
+              } else { // update position if w is in Q
                 Q.splice( Q.indexOf( w.id() ), 1 );
                 priorityInsert( Q, w.id() );
               }
@@ -101,7 +101,7 @@ var elesfn = ({
               P[ w.id() ].push( v );
             }
           } );
-        } else{
+        } else {
           A[ v ].forEach( function( w ){
             if( d[ w.id() ] == Number.POSITIVE_INFINITY ){
               Q.unshift( w.id() );
@@ -140,7 +140,7 @@ var elesfn = ({
       betweenness: function( node ){
         if( is.string( node ) ){
           var node = (cy.filter( node )[0]).id();
-        } else{
+        } else {
           var node = node.id();
         }
 
@@ -150,7 +150,7 @@ var elesfn = ({
       betweennessNormalized: function( node ){
         if( is.string( node ) ){
           var node = (cy.filter( node )[0]).id();
-        } else{
+        } else {
           var node = node.id();
         }
 

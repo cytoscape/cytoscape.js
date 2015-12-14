@@ -27,7 +27,7 @@ var corefn = ({
     } else if( is.string( style ) ){
       _p.style = Style.fromString( this, style );
 
-    } else{
+    } else {
       _p.style = Style( this );
     }
 

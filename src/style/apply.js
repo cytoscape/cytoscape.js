@@ -111,7 +111,7 @@ styfn.getContextMeta = function( ele ){
 
     if( contextSelectorMatches ){
       cxtKey += 't';
-    } else{
+    } else {
       cxtKey += 'f';
     }
   } // for context
@@ -301,7 +301,7 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
       style[ prop.name ] = currentProp.bypassed;
       return true;
 
-    } else{
+    } else {
       return false; // we're unsuccessful deleting the bypass
     }
   }
@@ -325,7 +325,7 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
 
     if( isScratch || isLayout ){
       fieldVal = _p.scratch;
-    } else{
+    } else {
       fieldVal = _p.data;
     }
 
@@ -337,7 +337,7 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
     var percent;
     if( !is.number( fieldVal ) ){ // then keep the mapping but assume 0% for now
       percent = 0;
-    } else{
+    } else {
       percent = (fieldVal - prop.fieldMin) / (prop.fieldMax - prop.fieldMin);
     }
 
@@ -376,7 +376,7 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
       var calcValue = prop.valueMin + (prop.valueMax - prop.valueMin) * percent;
       flatProp = this.parse( prop.name, calcValue, prop.bypass, true );
 
-    } else{
+    } else {
       return false; // can only map to colours and numbers
     }
 
@@ -403,7 +403,7 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
 
     if( isScratch || isLayout ){
       fieldVal = _p.scratch;
-    } else{
+    } else {
       fieldVal = _p.data;
     }
 
@@ -447,16 +447,16 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
   if( propIsBypass ){
     if( origPropIsBypass ){ // then this bypass overrides the existing one
       prop.bypassed = origProp.bypassed; // steal bypassed prop from old bypass
-    } else{ // then link the orig prop to the new bypass
+    } else { // then link the orig prop to the new bypass
       prop.bypassed = origProp;
     }
 
     style[ prop.name ] = prop; // and set
 
-  } else{ // prop is not bypass
+  } else { // prop is not bypass
     if( origPropIsBypass ){ // then keep the orig prop (since it's a bypass) and link to the new prop
       origProp.bypassed = prop;
-    } else{ // then just replace the old prop with the new one
+    } else { // then just replace the old prop with the new one
       style[ prop.name ] = prop;
     }
   }

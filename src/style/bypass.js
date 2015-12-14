@@ -55,7 +55,7 @@ styfn.applyBypass = function( eles, name, value, updateTransitions ){
         }
       }
     }
-  } else{ // can't do anything without well defined properties
+  } else { // can't do anything without well defined properties
     return false;
   }
 
@@ -124,7 +124,7 @@ styfn.overrideBypass = function( eles, name, value ){
       prop.strValue = 'rgb(' + value.join( ',' ) + ')';
     } else if( isMulti ){
       prop.strValue = value.join( ' ' );
-    } else{
+    } else {
       prop.strValue = '' + value;
     }
   }

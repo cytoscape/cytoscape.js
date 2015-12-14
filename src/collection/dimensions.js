@@ -69,7 +69,7 @@ fn = elesfn = ({
 
       if( silent ){
         toTrigger.trigger( 'position' );
-      } else{
+      } else {
         toTrigger.rtrigger( 'position' );
       }
     }
@@ -106,7 +106,7 @@ fn = elesfn = ({
         }
 
         this.rtrigger( 'position' );
-      } else{ // getting
+      } else { // getting
         var pos = ele._private.position;
         rpos = {
           x: pos.x * zoom + pan.x,
@@ -115,7 +115,7 @@ fn = elesfn = ({
 
         if( dim === undefined ){ // then return the whole rendered position
           return rpos;
-        } else{ // then return the specified dimension
+        } else { // then return the specified dimension
           return rpos[ dim ];
         }
       }
@@ -160,7 +160,7 @@ fn = elesfn = ({
 
         this.rtrigger( 'position' );
 
-      } else{ // getting
+      } else { // getting
         var pos = ele._private.position;
         var parent = hasCompoundNodes ? ele.parent() : null;
         var hasParent = parent && parent.length > 0;
@@ -179,7 +179,7 @@ fn = elesfn = ({
 
         if( dim === undefined ){ // then return the whole rendered position
           return ppos;
-        } else{ // then return the specified dimension
+        } else { // then return the specified dimension
           return ppos[ dim ];
         }
       }
@@ -452,7 +452,7 @@ fn = elesfn = ({
 
       if( prefix ){
         prefixDash = prefix + '-';
-      } else{
+      } else {
         prefixDash = '';
       }
 
@@ -482,7 +482,7 @@ fn = elesfn = ({
           lx2 = labelX + lw / 2;
           ly1 = labelY - lh / 2;
           ly2 = labelY + lh / 2;
-        } else{
+        } else {
           switch( halign.value ){
             case 'left':
               lx1 = labelX - lw;
@@ -600,7 +600,7 @@ var defineDimFns = function( opts ){
           default:
             return d.pfValue;
         }
-      } else{
+      } else {
         return 1;
       }
     }
@@ -620,7 +620,7 @@ var defineDimFns = function( opts ){
         var padding = style[ opts.paddings[0] ].pfValue + style[ opts.paddings[1] ].pfValue;
 
         return dim + border + padding;
-      } else{
+      } else {
         return 1;
       }
     }

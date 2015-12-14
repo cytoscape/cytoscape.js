@@ -67,7 +67,7 @@ CRp.drawEllipsePath = function( context, centerX, centerY, width, height ){
 
     if( context.ellipse ){
       context.ellipse( centerX, centerY, width / 2, height / 2, 0, 0, 2 * Math.PI );
-    } else{
+    } else {
       var xPos, yPos;
       var rw = width / 2;
       var rh = height / 2;
@@ -77,7 +77,7 @@ CRp.drawEllipsePath = function( context, centerX, centerY, width, height ){
 
         if( i === 0 ){
           context.moveTo( xPos, yPos );
-        } else{
+        } else {
           context.lineTo( xPos, yPos );
         }
       }

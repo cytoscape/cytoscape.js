@@ -26,7 +26,7 @@ var elesfn = ({
     if( options != null &&
       options.dampingFactor != null ){
       var dampingFactor = options.dampingFactor;
-    } else{
+    } else {
       var dampingFactor = 0.8; // Default damping factor
     }
 
@@ -34,7 +34,7 @@ var elesfn = ({
     if( options != null &&
       options.precision != null ){
       var epsilon = options.precision;
-    } else{
+    } else {
       var epsilon = 0.000001; // Default precision
     }
 
@@ -42,7 +42,7 @@ var elesfn = ({
     if( options != null &&
       options.iterations != null ){
       var numIter = options.iterations;
-    } else{
+    } else {
       var numIter = 200; // Default number of iterations
     }
 
@@ -51,7 +51,7 @@ var elesfn = ({
       options.weight != null &&
       is.fn( options.weight ) ){
       var weightFn = options.weight;
-    } else{
+    } else {
       // If not specified, assume each edge has equal weight (1)
       var weightFn = function( e ){return 1;};
     }
@@ -111,7 +111,7 @@ var elesfn = ({
         for( var i = 0; i < numNodes; i++ ){
           matrix[ i ][ j ] = p;
         }
-      } else{
+      } else {
         // Node jth has outgoing link, compute normalized probabilities
         for( var i = 0; i < numNodes; i++ ){
           matrix[ i ][ j ] = matrix[ i ][ j ] / columnSum[ j ] + additionalProb;
@@ -164,7 +164,7 @@ var elesfn = ({
         if( is.string( node ) ){
           // is a selector string
           var nodeId = (cy.filter( node )[0]).id();
-        } else{
+        } else {
           // is a node object
           var nodeId = node.id();
         }

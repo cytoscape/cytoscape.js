@@ -19,7 +19,7 @@ var Event = function( src, props ){
     this.isDefaultPrevented = ( src.defaultPrevented ) ? returnTrue : returnFalse;
 
   // Event type
-  } else{
+  } else {
     this.type = src;
   }
 

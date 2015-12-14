@@ -71,7 +71,7 @@ var defineSearch = function( params ){
 
       if( std ){
         ret = fn.call( thisArg, v, prevEdge, prevNode, j++, depth );
-      } else{
+      } else {
         ret = fn.call( v, j++, depth, v, prevEdge, prevNode );
       }
 

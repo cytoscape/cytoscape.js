@@ -60,7 +60,7 @@ var elesfn = ({
 
       layout.one( 'layoutready', options.ready );
       layout.trigger( { type: 'layoutready', layout: layout } );
-    } else{
+    } else {
       nodes.positions( fn );
 
       if( options.fit ){

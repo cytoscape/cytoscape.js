@@ -47,7 +47,7 @@ var Core = function( opts ){
       return val;
     } else if( altVal !== undefined ){
       return altVal;
-    } else{
+    } else {
       return def;
     }
   };
@@ -96,7 +96,7 @@ var Core = function( opts ){
     // then set default
 
     _p.selectionType = 'single';
-  } else{
+  } else {
     _p.selectionType = selType;
   }
 
@@ -124,7 +124,7 @@ var Core = function( opts ){
 
     if( anyIsPromise ){
       return Promise.all( extData ).then( next ); // load all data asynchronously, then exec rest of init
-    } else{
+    } else {
       next( extData ); // exec synchronously for convenience
     }
   };
@@ -197,7 +197,7 @@ util.extend( corefn, {
   ready: function( fn ){
     if( this.isReady() ){
       this.trigger( 'ready', [], fn ); // just calls fn as though triggered via ready event
-    } else{
+    } else {
       this.on( 'ready', fn );
     }
 
@@ -325,10 +325,10 @@ util.extend( corefn, {
 
             if( ele.length !== 0 ){ // existing element should be updated
               ele.json( json );
-            } else{ // otherwise should be added
+            } else { // otherwise should be added
               if( gr ){
                 cy.add( util.extend( { group: gr }, json ) );
-              } else{
+              } else {
                 cy.add( json );
               }
             }
@@ -338,7 +338,7 @@ util.extend( corefn, {
         if( is.array( obj.elements ) ){ // elements: []
           updateEles( obj.elements );
 
-        } else{ // elements: { nodes: [], edges: [] }
+        } else { // elements: { nodes: [], edges: [] }
           var grs = [ 'nodes', 'edges' ];
           for( var i = 0; i < grs.length; i++ ){
             var gr = grs[ i ];

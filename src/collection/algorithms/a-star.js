@@ -63,7 +63,7 @@ var elesfn = ({
         // use it as a selector, e.g. "#rootID
         this.filter( options.root )[0] :
         options.root[0];
-    } else{
+    } else {
       return undefined;
     }
 
@@ -73,21 +73,21 @@ var elesfn = ({
         // use it as a selector, e.g. "#goalID
         this.filter( options.goal )[0] :
         options.goal[0];
-    } else{
+    } else {
       return undefined;
     }
 
     // Heuristic function - optional
     if( options.heuristic != null && is.fn( options.heuristic ) ){
       var heuristic = options.heuristic;
-    } else{
+    } else {
       var heuristic = function(){ return 0; }; // use constant if unspecified
     }
 
     // Weight function - optional
     if( options.weight != null && is.fn( options.weight ) ){
       var weightFn = options.weight;
-    } else{
+    } else {
       // If not specified, assume each edge has equal weight (1)
       var weightFn = function( e ){return 1;};
     }
@@ -95,7 +95,7 @@ var elesfn = ({
     // directed - optional
     if( options.directed != null ){
       var directed = options.directed;
-    } else{
+    } else {
       var directed = false;
     }
 

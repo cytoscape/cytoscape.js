@@ -13,7 +13,7 @@ var elesfn = ({
     // directed - optional
     if( options.directed != null ){
       var directed = options.directed;
-    } else{
+    } else {
       var directed = false;
     }
 
@@ -39,7 +39,7 @@ var elesfn = ({
           if( is.string( node ) ){
             // from is a selector string
             var node = (cy.filter( node )[0]).id();
-          } else{
+          } else {
             // from is a node
             var node = node.id();
           }
@@ -47,7 +47,7 @@ var elesfn = ({
           return degrees[ node ] / maxDegree;
         }
       };
-    } else{
+    } else {
       var indegrees = {};
       var outdegrees = {};
       var maxIndegree = 0;
@@ -73,7 +73,7 @@ var elesfn = ({
           if( is.string( node ) ){
             // from is a selector string
             var node = (cy.filter( node )[0]).id();
-          } else{
+          } else {
             // from is a node
             var node = node.id();
           }
@@ -84,7 +84,7 @@ var elesfn = ({
           if( is.string( node ) ){
             // from is a selector string
             var node = (cy.filter( node )[0]).id();
-          } else{
+          } else {
             // from is a node
             var node = node.id();
           }
@@ -108,14 +108,14 @@ var elesfn = ({
     // root - mandatory!
     if( options != null && options.root != null ){
       var root = is.string( options.root ) ? this.filter( options.root )[0] : options.root[0];
-    } else{
+    } else {
       return undefined;
     }
 
     // weight - optional
     if( options.weight != null && is.fn( options.weight ) ){
       var weightFn = options.weight;
-    } else{
+    } else {
       // If not specified, assume each edge has equal weight (1)
       var weightFn = function( e ){
         return 1;
@@ -125,14 +125,14 @@ var elesfn = ({
     // directed - optional
     if( options.directed != null ){
       var directed = options.directed;
-    } else{
+    } else {
       var directed = false;
     }
 
     // alpha - optional
     if( options.alpha != null && is.number( options.alpha ) ){
       var alpha = options.alpha;
-    } else{
+    } else {
       alpha = 0;
     }
 
@@ -151,7 +151,7 @@ var elesfn = ({
       return {
         degree: Math.pow( k, 1 - alpha ) * Math.pow( s, alpha )
       };
-    } else{
+    } else {
       var incoming = root.connectedEdges( 'edge[target = "' + root.id() + '"]' ).intersection( callingEles );
       var outgoing = root.connectedEdges( 'edge[source = "' + root.id() + '"]' ).intersection( callingEles );
       var k_in = incoming.length;

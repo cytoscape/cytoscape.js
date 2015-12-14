@@ -63,7 +63,7 @@ styfn.getValueStyle = function( ele ){
 
   if( isEle ){
     style = ele._private.style;
-  } else{
+  } else {
     style = ele; // just passed the style itself
   }
 
@@ -75,7 +75,7 @@ styfn.getValueStyle = function( ele ){
       if( styleProp !== undefined ){ // then make a prop of it
         if( is.plainObject( styleProp ) ){
           styleProp = this.parse( prop.name, styleProp.strValue );
-        } else{
+        } else {
           styleProp = this.parse( prop.name, styleProp );
         }
       }

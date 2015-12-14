@@ -37,7 +37,7 @@ var corefn = ({
     var eles;
     if( is.string( options.eles ) ){
       eles = cy.$( options.eles );
-    } else{
+    } else {
       eles = options.eles != null ? options.eles : cy.$();
     }
 

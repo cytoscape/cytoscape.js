@@ -30,16 +30,16 @@ var zIndexSort = function( a, b ){
     } else if( aIsEdge && bIsNode ){
       return -1; // 'a' is an edge, it should be drawn first
 
-    } else{ // both nodes or both edges
+    } else { // both nodes or both edges
       if( zDiff === 0 ){ // same z-index => compare indices in the core (order added to graph w/ last on top)
         return a_p.index - b_p.index;
-      } else{
+      } else {
         return zDiff;
       }
     }
 
   // elements on different level
-  } else{
+  } else {
     return depthDiff; // deeper element should be drawn later
   }
 

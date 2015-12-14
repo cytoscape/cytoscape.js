@@ -7,7 +7,7 @@ var corefn = ({
   autolock: function( bool ){
     if( bool !== undefined ){
       this._private.autolock = bool ? true : false;
-    } else{
+    } else {
       return this._private.autolock;
     }
 
@@ -17,7 +17,7 @@ var corefn = ({
   autoungrabify: function( bool ){
     if( bool !== undefined ){
       this._private.autoungrabify = bool ? true : false;
-    } else{
+    } else {
       return this._private.autoungrabify;
     }
 
@@ -27,7 +27,7 @@ var corefn = ({
   autounselectify: function( bool ){
     if( bool !== undefined ){
       this._private.autounselectify = bool ? true : false;
-    } else{
+    } else {
       return this._private.autounselectify;
     }
 
@@ -37,7 +37,7 @@ var corefn = ({
   panningEnabled: function( bool ){
     if( bool !== undefined ){
       this._private.panningEnabled = bool ? true : false;
-    } else{
+    } else {
       return this._private.panningEnabled;
     }
 
@@ -47,7 +47,7 @@ var corefn = ({
   userPanningEnabled: function( bool ){
     if( bool !== undefined ){
       this._private.userPanningEnabled = bool ? true : false;
-    } else{
+    } else {
       return this._private.userPanningEnabled;
     }
 
@@ -57,7 +57,7 @@ var corefn = ({
   zoomingEnabled: function( bool ){
     if( bool !== undefined ){
       this._private.zoomingEnabled = bool ? true : false;
-    } else{
+    } else {
       return this._private.zoomingEnabled;
     }
 
@@ -67,7 +67,7 @@ var corefn = ({
   userZoomingEnabled: function( bool ){
     if( bool !== undefined ){
       this._private.userZoomingEnabled = bool ? true : false;
-    } else{
+    } else {
       return this._private.userZoomingEnabled;
     }
 
@@ -77,7 +77,7 @@ var corefn = ({
   boxSelectionEnabled: function( bool ){
     if( bool !== undefined ){
       this._private.boxSelectionEnabled = bool ? true : false;
-    } else{
+    } else {
       return this._private.boxSelectionEnabled;
     }
 
@@ -354,7 +354,7 @@ var corefn = ({
       var posChanged = pan1.x !== pan2.x || pan1.y !== pan2.y;
       this.trigger( ' zoom ' + (posChanged ? ' pan ' : '') + ' viewport ' );
 
-    } else{ // just set the zoom
+    } else { // just set the zoom
       this._private.zoom = zoom;
       this.trigger( 'zoom viewport' );
     }
@@ -385,7 +385,7 @@ var corefn = ({
       if( z < _p.minZoom || z > _p.maxZoom || !_p.zoomingEnabled ){
         zoomFailed = true;
 
-      } else{
+      } else {
         _p.zoom = z;
 
         events.push( 'zoom' );

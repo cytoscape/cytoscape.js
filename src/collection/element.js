@@ -23,7 +23,7 @@ var Element = function( cy, params, restore ){
   if( group == null ){
     if( params.data.source != null && params.data.target != null ){
       group = 'edges';
-    } else{
+    } else {
       group = 'nodes';
     }
   }

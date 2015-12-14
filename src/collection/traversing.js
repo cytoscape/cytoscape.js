@@ -419,7 +419,7 @@ util.extend( elesfn, {
       component.merge( node );
     };
 
-    do{
+    do {
       var component = cy.collection();
       components.push( component );
 

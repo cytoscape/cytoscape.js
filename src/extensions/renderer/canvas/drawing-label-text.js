@@ -60,7 +60,7 @@ CRp.drawElementText = function( context, ele ){
       default: // e.g. center
         context.textBaseline = 'middle';
     }
-  } else{
+  } else {
     context.textAlign = 'center';
     context.textBaseline = 'middle';
   }
@@ -190,7 +190,7 @@ CRp.drawText = function( context, element, prefix ){
       theta = isEdge ? rscratch.labelAngle : 0;
     } else if( rotation.strValue === 'none' ){
       theta = 0;
-    } else{
+    } else {
       theta = rotation.pfValue;
     }
 
@@ -264,7 +264,7 @@ CRp.drawText = function( context, element, prefix ){
         } else if( valign == 'center' ){
           bgY = bgY - bgHeight / 2;
         }
-      } else{
+      } else {
         bgY = bgY - bgHeight / 2;
       }
 
@@ -274,7 +274,7 @@ CRp.drawText = function( context, element, prefix ){
         bgWidth += 4;
         bgX = textX - bgWidth / 2;
         bgY = textY - bgHeight / 2;
-      } else{
+      } else {
         // Adjust with border width & margin
         bgX -= margin;
         bgY -= margin;
@@ -290,7 +290,7 @@ CRp.drawText = function( context, element, prefix ){
         var styleShape = style[ 'text-background-shape' ].strValue;
         if( styleShape == 'roundrectangle' ){
           roundRect( context, bgX, bgY, bgWidth, bgHeight, 2 );
-        } else{
+        } else {
           context.fillRect( bgX, bgY, bgWidth, bgHeight );
         }
         context.fillStyle = textFill;
@@ -374,7 +374,7 @@ CRp.drawText = function( context, element, prefix ){
         textY += lineHeight;
       }
 
-    } else{
+    } else {
       if( lineWidth > 0 ){
         context.strokeText( text, textX, textY );
       }

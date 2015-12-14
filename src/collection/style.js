@@ -28,7 +28,7 @@ var elesfn = ({
 
     if( notifyRenderer ){
       toNotify.rtrigger( 'style' ); // let renderer know we changed style
-    } else{
+    } else {
       toNotify.trigger( 'style' ); // just fire the event
     }
     return this; // chaining
@@ -49,7 +49,7 @@ var elesfn = ({
 
     if( notifyRenderer ){
       toNotify.rtrigger( 'style' ); // let renderer know we changed style
-    } else{
+    } else {
       toNotify.trigger( 'style' ); // just fire the event
     }
     return this; // chaining
@@ -68,7 +68,7 @@ var elesfn = ({
 
       if( property === undefined ){
         return renstyle;
-      } else{
+      } else {
         return renstyle[ property ];
       }
     }
@@ -98,11 +98,11 @@ var elesfn = ({
 
         if( ele ){
           return style.getStylePropertyValue( ele, name );
-        } else{ // empty collection => can't get any value
+        } else { // empty collection => can't get any value
           return;
         }
 
-      } else{ // then set the bypass with the property value
+      } else { // then set the bypass with the property value
         style.applyBypass( this, name, value, updateTransitions );
 
         var updatedCompounds = this.updateCompoundBounds();
@@ -115,7 +115,7 @@ var elesfn = ({
 
       if( ele ){
         return style.getRawStyle( ele );
-      } else{ // empty collection => can't get any value
+      } else { // empty collection => can't get any value
         return;
       }
     }
@@ -138,7 +138,7 @@ var elesfn = ({
 
         style.removeAllBypasses( ele, updateTransitions );
       }
-    } else{
+    } else {
       names = names.split( /\s+/ );
 
       for( var i = 0; i < eles.length; i++ ){
@@ -201,7 +201,7 @@ var elesfn = ({
         }
 
         return true;
-      } else{
+      } else {
         var src = ele._private.source;
         var tgt = ele._private.target;
 
@@ -257,7 +257,7 @@ var elesfn = ({
     if( ele ){
       if( !hasCompoundNodes ){
         return ele._private.style.opacity.value === 0;
-      } else{
+      } else {
         return ele.effectiveOpacity() === 0;
       }
     }

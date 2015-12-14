@@ -109,7 +109,7 @@ CRp.drawNode = function( context, node, drawLabel ){
     if( rs.pathCacheKey === pathCacheKey ){
       path = rs.pathCache;
       pathCacheHit = true;
-    } else {
+    } else{
       path = new Path2D();
       rs.pathCacheKey = pathCacheKey;
       rs.pathCache = path;
@@ -137,7 +137,7 @@ CRp.drawNode = function( context, node, drawLabel ){
 
   if( usePaths ){
     context.fill( path );
-  } else {
+  } else{
     context.fill();
   }
 
@@ -183,7 +183,7 @@ CRp.drawNode = function( context, node, drawLabel ){
 
     if( usePaths ){
       context.fill( path );
-    } else {
+    } else{
       context.fill();
     }
 
@@ -192,7 +192,7 @@ CRp.drawNode = function( context, node, drawLabel ){
 
     if( usePaths ){
       context.fill( path );
-    } else {
+    } else{
       context.fill();
     }
   }
@@ -204,7 +204,7 @@ CRp.drawNode = function( context, node, drawLabel ){
 
     if( usePaths ){
       context.stroke( path );
-    } else {
+    } else{
       context.stroke();
     }
 
@@ -216,7 +216,7 @@ CRp.drawNode = function( context, node, drawLabel ){
 
       if( usePaths ){
         context.stroke( path );
-      } else {
+      } else{
         context.stroke();
       }
 

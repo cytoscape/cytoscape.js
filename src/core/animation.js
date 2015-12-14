@@ -210,7 +210,7 @@ var corefn = ({
         if( pEasing == null ){ // use default
           ani_p.easingImpl = easings[ 'linear' ];
 
-        } else{ // then define w/ name
+        } else { // then define w/ name
           var easingVals;
 
           if( is.string( pEasing ) ){
@@ -218,7 +218,7 @@ var corefn = ({
 
             easingVals = easingProp.value;
 
-          } else{ // then assume preparsed array
+          } else { // then assume preparsed array
             easingVals = pEasing;
           }
 
@@ -227,7 +227,7 @@ var corefn = ({
           if( is.string( easingVals ) ){
             name = easingVals;
             args = [];
-          } else{
+          } else {
             name = easingVals[1];
             args = easingVals.slice( 2 ).map( function( n ){ return +n; } );
           }
@@ -238,7 +238,7 @@ var corefn = ({
             }
 
             ani_p.easingImpl = easings[ name ].apply( null, args );
-          } else{ // static impl by name
+          } else { // static impl by name
             ani_p.easingImpl = easings[ name ];
           }
         }
@@ -250,7 +250,7 @@ var corefn = ({
 
       if( ani_p.duration === 0 ){
         percent = 1;
-      } else{
+      } else {
         percent = (now - startTime) / ani_p.duration;
       }
 
@@ -430,7 +430,7 @@ var corefn = ({
           time_lapsed = springRK4Factory( tension, friction );
           /* Compute the adjusted time delta. */
           dt = time_lapsed / duration * DT;
-        } else{
+        } else {
           dt = DT;
         }
 
@@ -525,13 +525,13 @@ var corefn = ({
 
       if( startProp.pfValue != null || startProp.value != null ){
         start = startProp.pfValue != null ? startProp.pfValue : startProp.value;
-      } else{
+      } else {
         start = startProp;
       }
 
       if( endProp.pfValue != null || endProp.value != null ){
         end = endProp.pfValue != null ? endProp.pfValue : endProp.value;
-      } else{
+      } else {
         end = endProp;
       }
 
@@ -551,7 +551,7 @@ var corefn = ({
             if( startProp.roundValue ){ val = Math.round( val ); }
 
             easedArr.push( val );
-          } else{
+          } else {
             easedArr.push( ei );
           }
         }

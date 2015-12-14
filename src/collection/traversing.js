@@ -228,7 +228,7 @@ util.extend( elesfn, {
     var src;
 
     if( ele ){
-      src = ele._private.source;
+      src = ele._private.source || ele.cy().collection();
     }
 
     return src && selector ? src.filter( selector ) : src;
@@ -239,7 +239,7 @@ util.extend( elesfn, {
     var tgt;
 
     if( ele ){
-      tgt = ele._private.target;
+      tgt = ele._private.target || ele.cy().collection();
     }
 
     return tgt && selector ? tgt.filter( selector ) : tgt;

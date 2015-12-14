@@ -7,6 +7,45 @@ var zIndexSort = require( '../../../collection/zsort' );
 
 var BRp = {};
 
+BRp.registerCalculationListeners = function(){
+  var cy = this.cy;
+  var elesToUpdate = cy.collection();
+  var r = this;
+
+  cy.on('position', 'node', function( e ){
+    var node = e.cyTarget;
+
+    elesToUpdate
+      .merge( node )
+      .merge( node.connectedEdges() )
+    ;
+
+    if( cy.hasCompoundNodes() ){
+      var parents = node.parents();
+
+      elesToUpdate
+        .merge( parents )
+        .merge( parents.connectedEdges() )
+      ;
+    }
+  });
+
+  cy.on('add remove', 'edge', function( e ){
+    var edge = e.cyTarget;
+
+    elesToUpdate.merge( edge.parallelEdges() );
+  });
+
+  var updateEles = function(){
+    r.recalculateRenderedStyle( elesToUpdate );
+    elesToUpdate = cy.collection();
+
+    util.requestAnimationFrame( updateEles );
+  };
+
+  util.requestAnimationFrame( updateEles );
+};
+
 // Project mouse
 BRp.projectIntoViewport = function( clientX, clientY ){
   var offsets = this.findContainerClientCoords();
@@ -554,9 +593,6 @@ BRp.recalculateNodeLabelProjection = function( node ){
 };
 
 BRp.recalculateEdgeLabelProjections = function( edge ){
-  var content = edge._private.style[ 'label' ].strValue;
-  if( !content || content.match( /^\s+$/ ) ){ return; }
-
   var textX, textY;
   var _p = edge._private;
   var style = _p.style;
@@ -685,12 +721,6 @@ BRp.getLabelText = function( ele, prefix ){
 
 BRp.calculateLabelDimensions = function( ele, text, extraKey ){
   var r = this;
-  var style = ele._private.style;
-  var fStyle = style[ 'font-style' ].strValue;
-  var size = style[ 'font-size' ].pfValue + 'px';
-  var family = style[ 'font-family' ].strValue;
-  // var variant = style['font-variant'].strValue;
-  var weight = style[ 'font-weight' ].strValue;
 
   var cacheKey = ele._private.labelKey;
 
@@ -703,6 +733,13 @@ BRp.calculateLabelDimensions = function( ele, text, extraKey ){
   if( cache[ cacheKey ] ){
     return cache[ cacheKey ];
   }
+
+  var style = ele._private.style;
+  var fStyle = style[ 'font-style' ].strValue;
+  var size = style[ 'font-size' ].pfValue + 'px';
+  var family = style[ 'font-family' ].strValue;
+  // var variant = style['font-variant'].strValue;
+  var weight = style[ 'font-weight' ].strValue;
 
   var div = this.labelCalcDiv;
 
@@ -750,28 +787,18 @@ BRp.calculateLabelDimensions = function( ele, text, extraKey ){
 BRp.recalculateRenderedStyle = function( eles ){
   var edges = [];
   var nodes = [];
-  var handledEdge = {};
 
   for( var i = 0; i < eles.length; i++ ){
     var ele = eles[ i ];
     var _p = ele._private;
     var style = _p.style;
-    var rs = _p.rscratch;
     var rstyle = _p.rstyle;
     var id = _p.data.id;
-    var bbStyleSame = rs.boundingBoxKey != null && _p.boundingBoxKey === rs.boundingBoxKey;
-    var labelStyleSame = rs.labelKey != null && _p.labelKey === rs.labelKey;
-    var styleSame = bbStyleSame && labelStyleSame;
 
     if( _p.group === 'nodes' ){
       var pos = _p.position;
-      var posSame = rstyle.nodeX != null && rstyle.nodeY != null && pos.x === rstyle.nodeX && pos.y === rstyle.nodeY;
-      var wSame = rstyle.nodeW != null && rstyle.nodeW === style[ 'width' ].pfValue;
-      var hSame = rstyle.nodeH != null && rstyle.nodeH === style[ 'height' ].pfValue;
 
-      if( !posSame || !styleSame || !wSame || !hSame ){
-        nodes.push( ele );
-      }
+      nodes.push( ele );
 
       rstyle.nodeX = pos.x;
       rstyle.nodeY = pos.y;
@@ -781,32 +808,8 @@ BRp.recalculateRenderedStyle = function( eles ){
 
       var srcPos = _p.source._private.position;
       var tgtPos = _p.target._private.position;
-      var srcSame = rstyle.srcX != null && rstyle.srcY != null && srcPos.x === rstyle.srcX && srcPos.y === rstyle.srcY;
-      var tgtSame = rstyle.tgtX != null && rstyle.tgtY != null && tgtPos.x === rstyle.tgtX && tgtPos.y === rstyle.tgtY;
-      var positionsSame = srcSame && tgtSame;
 
-      if( !positionsSame || !styleSame ){
-        if( rs.edgeType === 'bezier' || rs.edgeType === 'straight' || rs.edgeType === 'self' || rs.edgeType === 'compound' ){
-          if( !handledEdge[ id ] ){
-            edges.push( ele );
-            handledEdge[ id ] = true;
-
-            var parallelEdges = ele.parallelEdges();
-            for( var i = 0; i < parallelEdges.length; i++ ){
-              var pEdge = parallelEdges[ i ];
-              var pId = pEdge._private.data.id;
-
-              if( !handledEdge[ pId ] ){
-                edges.push( pEdge );
-                handledEdge[ pId ] = true;
-              }
-
-            }
-          }
-        } else {
-          edges.push( ele );
-        }
-      } // if positions diff
+      edges.push( ele );
 
       // update rstyle positions
       rstyle.srcX = srcPos.x;
@@ -815,9 +818,6 @@ BRp.recalculateRenderedStyle = function( eles ){
       rstyle.tgtY = tgtPos.y;
 
     } // if edges
-
-    rs.boundingBoxKey = _p.boundingBoxKey;
-    rs.labelKey = _p.labelKey;
   }
 
   this.recalculateEdgeProjections( edges );

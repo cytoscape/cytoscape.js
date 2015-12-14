@@ -54,10 +54,10 @@ BreadthFirstLayout.prototype.run = function(){
   } else if( is.string( options.roots ) ){
     roots = cy.$( options.roots );
 
-  } else{
+  } else {
     if( options.directed ){
       roots = nodes.roots();
-    } else{
+    } else {
       var components = [];
       var unhandledNodes = nodes;
 
@@ -132,7 +132,7 @@ BreadthFirstLayout.prototype.run = function(){
 
     if( foundByBfs[ ele.id() ] ){
       continue;
-    } else{
+    } else {
       orphanNodes.push( ele );
     }
   }
@@ -387,7 +387,7 @@ BreadthFirstLayout.prototype.run = function(){
 
       return epos;
 
-    } else{
+    } else {
       if( options.circle ){
         var radius = radiusStepSize * depth + radiusStepSize - (depths.length > 0 && depths[0].length <= 3 ? radiusStepSize / 2 : 0);
         var theta = 2 * Math.PI / depths[ depth ].length * index;
@@ -401,7 +401,7 @@ BreadthFirstLayout.prototype.run = function(){
           y: center.y + radius * Math.sin( theta )
         };
 
-      } else{
+      } else {
         return {
           x: center.x + (index + 1 - (depthSize + 1) / 2) * distanceX,
           y: (depth + 1) * distanceY

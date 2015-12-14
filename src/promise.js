@@ -98,9 +98,9 @@ var resolver = function( cb, next, method ){
   return function( value ){
     if( typeof cb !== 'function' )                            /*  [Promises/A+ 2.2.1, 2.2.7.3, 2.2.7.4]  */
       next[ method ].call( next, value );                      /*  [Promises/A+ 2.2.7.3, 2.2.7.4]  */
-    else{
+    else {
       var result;
-      try{ result = cb( value ); }                          /*  [Promises/A+ 2.2.2.1, 2.2.3.1, 2.2.5, 3.2]  */
+      try { result = cb( value ); }                          /*  [Promises/A+ 2.2.2.1, 2.2.3.1, 2.2.5, 3.2]  */
       catch( e ){
         next.reject( e );                                  /*  [Promises/A+ 2.2.7.2]  */
         return;
@@ -122,7 +122,7 @@ var resolve = function( promise, x ){
     (mainly to just call the "getter" of "then" only once)  */
   var then;
   if( (typeof x === 'object' && x !== null) || typeof x === 'function' ){
-    try{ then = x.then; }                                   /*  [Promises/A+ 2.3.3.1, 3.5]  */
+    try { then = x.then; }                                   /*  [Promises/A+ 2.3.3.1, 3.5]  */
     catch( e ){
       promise.reject( e );                                   /*  [Promises/A+ 2.3.3.2]  */
       return;
@@ -133,7 +133,7 @@ var resolve = function( promise, x ){
     and similar "thenables" [Promises/A+ 2.3.3]  */
   if( typeof then === 'function' ){
     var resolved = false;
-    try{
+    try {
       /*  call retrieved "then" method */                  /*  [Promises/A+ 2.3.3.3]  */
       then.call( x,
         /*  resolvePromise  */                           /*  [Promises/A+ 2.3.3.3.1]  */
@@ -192,7 +192,7 @@ Promise.all = Promise.all || function( ps ){
           }, function( err ){
             rejectAll( err );
           } );
-        } else{
+        } else {
           var val = p;
           fulfill( i, val );
         }

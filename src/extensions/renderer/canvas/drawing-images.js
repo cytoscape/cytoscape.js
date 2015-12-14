@@ -5,7 +5,7 @@ var CRp = {};
 CRp.safeDrawImage = function( context, img, ix, iy, iw, ih, x, y, w, h ){
   var r = this;
 
-  try{
+  try {
     context.drawImage( img, ix, iy, iw, ih, x, y, w, h );
   } catch( e ){
     r.data.canvasNeedsRedraw[ r.NODE ] = true;
@@ -53,7 +53,7 @@ CRp.drawInscribedImage = function( context, img, node ){
   if( bgW.value !== 'auto' ){
     if( bgW.units === '%' ){
       w = bgW.value / 100 * nodeW;
-    } else{
+    } else {
       w = bgW.pfValue;
     }
   }
@@ -62,7 +62,7 @@ CRp.drawInscribedImage = function( context, img, node ){
   if( bgH.value !== 'auto' ){
     if( bgH.units === '%' ){
       h = bgH.value / 100 * nodeH;
-    } else{
+    } else {
       h = bgH.pfValue;
     }
   }
@@ -87,14 +87,14 @@ CRp.drawInscribedImage = function( context, img, node ){
   var x = (nodeX - nodeW / 2); // left
   if( xPos.units === '%' ){
     x += (nodeW - w) * xPos.value / 100;
-  } else{
+  } else {
     x += xPos.pfValue;
   }
 
   var y = (nodeY - nodeH / 2); // top
   if( yPos.units === '%' ){
     y += (nodeH - h) * yPos.value / 100;
-  } else{
+  } else {
     y += yPos.pfValue;
   }
 
@@ -117,7 +117,7 @@ CRp.drawInscribedImage = function( context, img, node ){
 
       if( rs.pathCache ){
         context.clip( rs.pathCache );
-      } else{
+      } else {
         r.nodeShapes[ r.getNodeShape( node ) ].draw(
           context,
           nodeX, nodeY,
@@ -132,7 +132,7 @@ CRp.drawInscribedImage = function( context, img, node ){
     if( shouldClip ){
       context.restore();
     }
-  } else{
+  } else {
     var pattern = context.createPattern( img, repeat );
     context.fillStyle = pattern;
 

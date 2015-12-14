@@ -47,7 +47,7 @@ util.extend( anifn, {
       var tAni = _p.target._private.animation;
       if( _p.queue ){
         q = tAni.queue;
-      } else{
+      } else {
         q = tAni.current;
       }
       q.push( this );
@@ -136,7 +136,7 @@ util.extend( anifn, {
 
     if( t === undefined ){
       return _p.progress * _p.duration;
-    } else{
+    } else {
       return this.progress( t / _p.duration );
     }
   },
@@ -147,7 +147,7 @@ util.extend( anifn, {
 
     if( p === undefined ){
       return _p.progress;
-    } else{
+    } else {
       if( wasPlaying ){
         this.pause();
       }

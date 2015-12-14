@@ -185,7 +185,7 @@ BRp.findNearestElement = function( x, y, visibleElementsOnly, isTouch ){
     var prefixDash;
     if( prefix ){
       prefixDash = prefix + '-';
-    } else{
+    } else {
       prefixDash = prefix;
     }
 
@@ -239,7 +239,7 @@ BRp.findNearestElement = function( x, y, visibleElementsOnly, isTouch ){
         near.push( ele );
       }
 
-    } else{
+    } else {
       var bb = ele.boundingBox( {
         includeLabels: true,
         includeNodes: false,
@@ -272,7 +272,7 @@ BRp.findNearestElement = function( x, y, visibleElementsOnly, isTouch ){
 
       checkLabel( ele );
 
-    } else { // then edge
+    } else{ // then edge
       checkEdge( ele );
 
       checkLabel( ele );
@@ -285,7 +285,7 @@ BRp.findNearestElement = function( x, y, visibleElementsOnly, isTouch ){
 
   if( near.length > 0 ){
     return near[ near.length - 1 ];
-  } else{
+  } else {
     return null;
   }
 };
@@ -373,7 +373,7 @@ BRp.getNodeShape = function( node ){
   if( node.isParent() ){
     if( shape === 'rectangle' || shape === 'roundrectangle' ){
       return shape;
-    } else{
+    } else {
       return 'rectangle';
     }
   }
@@ -422,7 +422,7 @@ BRp.getCachedZSortedEles = function( forceRecalc ){
     //console.log('make cache')
 
     //console.timeEnd('cachezorder')
-  } else{
+  } else {
     eles = this.cachedZSortedEles;
     //console.log('read cache')
   }
@@ -615,7 +615,7 @@ BRp.getLabelText = function( ele, prefix ){
     if( value ){
       util.setPrefixedProperty( _p.rscratch, propName, prefix, value );
       return value;
-    } else{
+    } else {
       return util.getPrefixedProperty( _p.rscratch, propName, prefix );
     }
   };
@@ -658,7 +658,7 @@ BRp.getLabelText = function( ele, prefix ){
 
           if( testW <= maxW ){ // word fits on current line
             subline += word + ' ';
-          } else{ // word starts new line
+          } else { // word starts new line
             wrappedLines.push( subline );
             subline = word + ' ';
           }
@@ -668,7 +668,7 @@ BRp.getLabelText = function( ele, prefix ){
         if( !subline.match( /^\s+$/ ) ){
           wrappedLines.push( subline );
         }
-      } else{ // line is already short enough
+      } else { // line is already short enough
         wrappedLines.push( line );
       }
     } // for
@@ -732,7 +732,7 @@ BRp.calculateLabelDimensions = function( ele, text, extraKey ){
 
   if( style[ 'text-wrap' ].value === 'wrap' ){
     ds.whiteSpace = 'pre'; // so newlines are taken into account
-  } else{
+  } else {
     ds.whiteSpace = 'normal';
   }
 
@@ -777,7 +777,7 @@ BRp.recalculateRenderedStyle = function( eles ){
       rstyle.nodeY = pos.y;
       rstyle.nodeW = style[ 'width' ].pfValue;
       rstyle.nodeH = style[ 'height' ].pfValue;
-    } else{ // edges
+    } else { // edges
 
       var srcPos = _p.source._private.position;
       var tgtPos = _p.target._private.position;
@@ -803,7 +803,7 @@ BRp.recalculateRenderedStyle = function( eles ){
 
             }
           }
-        } else{
+        } else {
           edges.push( ele );
         }
       } // if positions diff
@@ -1054,7 +1054,7 @@ BRp.findEdgeControlPoints = function( edges ){
 
       if( badBezier ){
         rs.badBezier = true;
-      } else{
+      } else {
         rs.badBezier = false;
       }
 
@@ -1064,7 +1064,7 @@ BRp.findEdgeControlPoints = function( edges ){
       &&  ((edgeIndex1 === edgeIndex2 && numEdges1 === numEdges2) || edgeIsUnbundled) ){
         // console.log('edge ctrl pt cache HIT')
         continue; // then the control points haven't changed and we can skip calculating them
-      } else{
+      } else {
         rs.lastSrcCtlPtX = srcX2;
         rs.lastSrcCtlPtY = srcY2;
         rs.lastSrcCtlPtW = srcW2;
@@ -1195,7 +1195,7 @@ BRp.findEdgeControlPoints = function( edges ){
 
         rs.edgeType = 'straight';
 
-      } else{
+      } else {
         // (Multi)bezier
 
         var multi = edgeIsUnbundled;
@@ -1215,7 +1215,7 @@ BRp.findEdgeControlPoints = function( edges ){
 
           if( edgeIsUnbundled ){ // multi or single unbundled
             manctrlptDist = ctrlptDist;
-          } else{
+          } else {
             manctrlptDist = ctrlptDist !== undefined ? sign * ctrlptDist : undefined;
           }
 
@@ -1290,7 +1290,7 @@ BRp.findEdgeControlPoints = function( edges ){
           if( closeStartACp ){
             rs.ctrlpts[0] = rs.ctrlpts[0] + cpM.x * (minCpADist - startACpDist);
             rs.ctrlpts[1] = rs.ctrlpts[1] + cpM.y * (minCpADist - startACpDist);
-          } else{
+          } else {
             rs.ctrlpts[0] = srcCtrlPtIntn[0] + cpM.x * minCpADist;
             rs.ctrlpts[1] = srcCtrlPtIntn[1] + cpM.y * minCpADist;
           }
@@ -1329,7 +1329,7 @@ BRp.findEdgeControlPoints = function( edges ){
           if( closeEndACp ){
             rs.ctrlpts[0] = rs.ctrlpts[0] + cpM.x * (minCpADist - endACpDist);
             rs.ctrlpts[1] = rs.ctrlpts[1] + cpM.y * (minCpADist - endACpDist);
-          } else{
+          } else {
             rs.ctrlpts[0] = tgtCtrlPtIntn[0] + cpM.x * minCpADist;
             rs.ctrlpts[1] = tgtCtrlPtIntn[1] + cpM.y * minCpADist;
           }
@@ -1369,7 +1369,7 @@ BRp.findEdgeControlPoints = function( edges ){
 
           rs.midX = rs.allpts[ m ];
           rs.midY = rs.allpts[ m + 1];
-        } else{
+        } else {
           m = rs.allpts.length / 2 - 3;
           mt = 0.5;
 
@@ -1397,7 +1397,7 @@ BRp.findEdgeControlPoints = function( edges ){
 
           rs.midX = ( rs.segpts[ i1 ] + rs.segpts[ i2 ] ) / 2;
           rs.midY = ( rs.segpts[ i1 + 1] + rs.segpts[ i2 + 1] ) / 2;
-        } else{
+        } else {
           var i1 = rs.segpts.length / 2 - 1;
 
           rs.midX = rs.segpts[ i1 ];
@@ -1497,7 +1497,7 @@ BRp.calculateArrowAngles = function( edge ){
     startY = rs.haystackPts[1];
     endX = rs.haystackPts[2];
     endY = rs.haystackPts[3];
-  } else{
+  } else {
     startX = rs.arrowStartX;
     startY = rs.arrowStartY;
     endX = rs.arrowEndX;
@@ -1538,7 +1538,7 @@ BRp.calculateArrowAngles = function( edge ){
 
       dispX = ( pts[ i2 ] - pts[ i1 ] );
       dispY = ( pts[ i2 + 1] - pts[ i1 + 1] );
-    } else{
+    } else {
       var i2 = pts.length / 2 - 1;
       var i1 = i2 - 2;
       var i3 = i2 + 2;
@@ -1562,7 +1562,7 @@ BRp.calculateArrowAngles = function( edge ){
 
       bp1x = math.qbezierAt( pts[ p0 ], pts[ ic ], pts[ p1 ], 0.0001 );
       bp1y = math.qbezierAt( pts[ p0 + 1], pts[ ic + 1], pts[ p1 + 1], 0.0001 );
-    } else{
+    } else {
       var ic = pts.length / 2 - 1; // ctrpt
       var p0 = ic - 2; // startpt
       var p1 = ic + 2; // endpt
@@ -1594,7 +1594,7 @@ BRp.calculateArrowAngles = function( edge ){
 
     if( pts.length / 2 % 2 === 0 ){
       // already ok
-    } else{
+    } else {
       var i2 = pts.length / 2 - 1;
       var i3 = i2 + 2;
 
@@ -1629,7 +1629,7 @@ BRp.calculateLabelAngles = function( ele ){
     rs.labelAngle = Math.atan( rs.midDispY / rs.midDispX );
   } else if( rotStr === 'autorotate' ){
     rs.labelAngle = 0;
-  } else{
+  } else {
     rs.labelAngle = rot.pfValue;
   }
 
@@ -1730,7 +1730,7 @@ BRp.findEndpoints = function( edge ){
   if( lines ){
     if( !is.number( rs.startX ) || !is.number( rs.startY ) || !is.number( rs.endX ) || !is.number( rs.endY ) ){
       rs.badLine = true;
-    } else{
+    } else {
       rs.badLine = false;
     }
   }

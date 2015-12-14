@@ -25,7 +25,7 @@ module.exports = {
       this.setMap( this.extend( {}, options, {
         value: [ options.value ]
       } ) );
-    } else{
+    } else {
       array.push( options.value );
     }
   },
@@ -52,7 +52,7 @@ module.exports = {
         }
 
         obj = obj[ key ];
-      } else{
+      } else {
         // set the value
         obj[ key ] = options.value;
       }
@@ -105,11 +105,11 @@ module.exports = {
               obj[ child ] = undefined;
             }
           }
-        } else{
+        } else {
           obj[ key ] = undefined;
         }
 
-      } else{
+      } else {
         obj = obj[ key ];
       }
     }

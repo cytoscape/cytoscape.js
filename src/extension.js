@@ -166,7 +166,7 @@ var extension = function(){
     return setModule.apply( null, arguments );
   }
 
-  else{
+  else {
     util.error( 'Invalid extension access syntax' );
   }
 

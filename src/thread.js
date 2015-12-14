@@ -56,7 +56,7 @@ var fnAsRequire = function( fn ){
   } else if( is.object( fn ) ){ // plain object
     if( fn.proto ){
       req = '';
-    } else{
+    } else {
       req = fn.name + ' = {};';
     }
 
@@ -144,10 +144,10 @@ util.extend( thdfn, {
     if( as ){
       if( is.fn( fn ) ){
         fn = { name: as, fn: fn };
-      } else{
+      } else {
         fn = { name: as, obj: fn };
       }
-    } else{
+    } else {
       if( is.fn( fn ) ){
         if( !fn.name ){
           throw 'The function name could not be automatically determined.  Use thread.require( someFunction, "someFunction" )';
@@ -213,7 +213,7 @@ util.extend( thdfn, {
           return 'importScripts("' + wwifyFile( f ) + '");';
         } else if( useNode ){
           return 'eval( require("fs").readFileSync("' + f + '", { encoding: "utf8" }) );';
-        } else{
+        } else {
           throw 'External file `' + f + '` can not be required without any threading technology.';
         }
       } ) ).concat( [
@@ -280,7 +280,7 @@ util.extend( thdfn, {
             ww.removeEventListener( 'message', cb ); // done listening b/c reject()
 
             reject( m.data.$$reject );
-          } else{
+          } else {
             self.trigger( new Event( m, { type: 'message', message: m.data } ) );
           }
         }, false );
@@ -309,7 +309,7 @@ util.extend( thdfn, {
             child.removeListener( 'message', cb ); // done listening b/c reject()
 
             reject( m.$$reject );
-          } else{
+          } else {
             self.trigger( new Event( {}, { type: 'message', message: m } ) );
           }
         } );
@@ -319,7 +319,7 @@ util.extend( thdfn, {
           $$eval: fnStr
         } );
 
-      } else{ // use a fallback mechanism using a timeout
+      } else { // use a fallback mechanism using a timeout
 
         var promiseResolve = resolve;
         var promiseReject = reject;

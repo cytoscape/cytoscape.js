@@ -46,7 +46,7 @@ GridLayout.prototype.run = function(){
       return { x: bb.x1, y: bb.y1 };
     } );
 
-  } else{
+  } else {
 
     // width/height * splits^2 = cells where splits is number of times to split width
     var cells = nodes.size();
@@ -57,11 +57,11 @@ GridLayout.prototype.run = function(){
     var small = function( val ){
       if( val == null ){
         return Math.min( rows, cols );
-      } else{
+      } else {
         var min = Math.min( rows, cols );
         if( min == rows ){
           rows = val;
-        } else{
+        } else {
           cols = val;
         }
       }
@@ -70,11 +70,11 @@ GridLayout.prototype.run = function(){
     var large = function( val ){
       if( val == null ){
         return Math.max( rows, cols );
-      } else{
+      } else {
         var max = Math.max( rows, cols );
         if( max == rows ){
           rows = val;
-        } else{
+        } else {
           cols = val;
         }
       }
@@ -108,7 +108,7 @@ GridLayout.prototype.run = function(){
       } else if( (lg - 1) * sm >= cells ){
         large( lg - 1 );
       }
-    } else{
+    } else {
 
       // if rounding was too low, add rows or columns
       while( cols * rows < cells ){
@@ -118,7 +118,7 @@ GridLayout.prototype.run = function(){
         // try to add to larger side first (adds less in multiplication)
         if( (lg + 1) * sm >= cells ){
           large( lg + 1 );
-        } else{
+        } else {
           small( sm + 1 );
         }
       }
@@ -218,7 +218,7 @@ GridLayout.prototype.run = function(){
         x = rcPos.col * cellWidth + cellWidth / 2 + bb.x1;
         y = rcPos.row * cellHeight + cellHeight / 2 + bb.y1;
 
-      } else{ // otherwise set automatically
+      } else { // otherwise set automatically
 
         while( used( row, col ) ){
           moveToNextCell();

@@ -30,7 +30,7 @@ function defineDegreeFunction( callback ){
       }
 
       return degree;
-    } else{
+    } else {
       return;
     }
   };
@@ -40,7 +40,7 @@ util.extend( elesfn, {
   degree: defineDegreeFunction( function( node, edge ){
     if( edge.source().same( edge.target() ) ){
       return 2;
-    } else{
+    } else {
       return 1;
     }
   } ),
@@ -48,7 +48,7 @@ util.extend( elesfn, {
   indegree: defineDegreeFunction( function( node, edge ){
     if( edge.target().same( node ) ){
       return 1;
-    } else{
+    } else {
       return 0;
     }
   } ),
@@ -56,7 +56,7 @@ util.extend( elesfn, {
   outdegree: defineDegreeFunction( function( node, edge ){
     if( edge.source().same( node ) ){
       return 1;
-    } else{
+    } else {
       return 0;
     }
   } )

@@ -21,7 +21,7 @@ var corefn = {
       if( eles._private.cy === cy ){ // same instance => just restore
         elements = eles.restore();
 
-      } else{ // otherwise, copy from json
+      } else { // otherwise, copy from json
         var jsons = [];
 
         for( var i = 0; i < eles.length; i++ ){
@@ -64,7 +64,7 @@ var corefn = {
     }
 
     // specify options for one element
-    else{
+    else {
       var json = opts;
       elements = (new Element( cy, json )).collection();
     }

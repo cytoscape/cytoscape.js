@@ -16,7 +16,7 @@ function listen( fn ){
   process.on( 'message', function( m ){
     if( typeof m === 'object' && m.$$eval ){
       return;
-    } else{
+    } else {
       fn( m );
     }
   } );

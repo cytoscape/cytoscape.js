@@ -121,7 +121,7 @@ var elesfn = ({
       }
 
       return depth;
-    } else{
+    } else {
       var src = _p.source;
       var tgt = _p.target;
       var srcDepth = src.zDepth();

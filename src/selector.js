@@ -26,7 +26,7 @@ var Selector = function( onlyThisGroup, selector ){
     if( onlyThisGroup == null ){
       // ignore
       self.length = 0;
-    } else{
+    } else {
       self[0] = newQuery();
       self[0].group = onlyThisGroup;
       self.length = 1;
@@ -183,7 +183,7 @@ var Selector = function( onlyThisGroup, selector ){
 
           if( valueIsString ){
             value = value.substring( 1, value.length - 1 );
-          } else{
+          } else {
             value = parseFloat( value );
           }
 
@@ -335,7 +335,7 @@ var Selector = function( onlyThisGroup, selector ){
       if( check.expr == null ){
         util.error( 'The selector `' + selector + '`is invalid' );
         return;
-      } else{
+      } else {
         var args = [];
         for( var j = 1; j < check.match.length; j++ ){
           args.push( check.match[ j ] );
@@ -380,7 +380,7 @@ var Selector = function( onlyThisGroup, selector ){
             ancestor.descendant = descendant;
 
             query = ancestor; // go up the tree
-          } else{
+          } else {
             util.error( 'When adjusting references for the selector `' + query + '`, neither parent nor ancestor was found' );
             break;
           }
@@ -402,7 +402,7 @@ var Selector = function( onlyThisGroup, selector ){
       }
     }
 
-  } else{
+  } else {
     util.error( 'A selector must be created from a string; found ' + selector );
     return;
   }
@@ -634,7 +634,7 @@ var queryMatches = function( query, element ){
           matches = params.fieldUndefined( field );
           break;
         }
-      } else{
+      } else {
         matches = !params.fieldUndefined( field );
       }
 
@@ -735,7 +735,7 @@ var queryMatches = function( query, element ){
       }
 
       return matches;
-    } else{
+    } else {
       return true;
     }
   };
@@ -838,7 +838,7 @@ selfn.toString = selfn.selector = function(){
 
       if( data.value ){
         str += '[' + data.field + clean( data.operator ) + clean( data.value, true ) + ']';
-      } else{
+      } else {
         str += '[' + clean( data.operator ) + data.field + ']';
       }
     }

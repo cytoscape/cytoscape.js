@@ -96,7 +96,7 @@ var parseImpl = function( name, value, propIsBypass, propIsFlat ){
       mapped = types.data;
     } else if( layoutData ){
       mapped = types.layoutData;
-    } else{
+    } else {
       mapped = types.scratch;
     }
 
@@ -124,7 +124,7 @@ var parseImpl = function( name, value, propIsBypass, propIsFlat ){
       mapped = types.mapData;
     } else if( mapLayoutData ){
       mapped = types.mapLayoutData;
-    } else{
+    } else {
       mapped = types.mapScratch;
     }
 
@@ -184,7 +184,7 @@ var parseImpl = function( name, value, propIsBypass, propIsFlat ){
       vals = value.split( /\s+/ );
     } else if( is.array( value ) ){
       vals = value;
-    } else{
+    } else {
       vals = [ value ];
     }
 
@@ -195,7 +195,7 @@ var parseImpl = function( name, value, propIsBypass, propIsFlat ){
 
       if( p.pfValue != null ){
         return p.pfValue;
-      } else{
+      } else {
         return p.value;
       }
     } );
@@ -295,7 +295,7 @@ var parseImpl = function( name, value, propIsBypass, propIsFlat ){
     // normalise value in pixels
     if( type.unitless || (units !== 'px' && units !== 'em') ){
       ret.pfValue = value;
-    } else{
+    } else {
       ret.pfValue = ( units === 'px' || !units ? (value) : (this.getEmSizeInPixels() * value) );
     }
 
@@ -319,7 +319,7 @@ var parseImpl = function( name, value, propIsBypass, propIsFlat ){
     if( propsStr === 'none' ){
       // leave empty
 
-    } else{ // go over each prop
+    } else { // go over each prop
 
       var propsSplit = propsStr.split( ',' );
       for( var i = 0; i < propsSplit.length; i++ ){
@@ -393,7 +393,7 @@ var parseImpl = function( name, value, propIsBypass, propIsFlat ){
   } else if( type.enums ){ // check enums last because it's a combo type in others
     return checkEnums();
 
-  } else{
+  } else {
     return null; // not a type we can handle
   }
 

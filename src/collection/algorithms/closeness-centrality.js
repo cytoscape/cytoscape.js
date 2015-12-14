@@ -28,7 +28,7 @@ var elesfn = ({
 
           if( harmonic ){
             currCloseness += 1 / d;
-          } else{
+          } else {
             currCloseness += d;
           }
         }
@@ -50,7 +50,7 @@ var elesfn = ({
         if( is.string( node ) ){
           // from is a selector string
           var node = (cy.filter( node )[0]).id();
-        } else{
+        } else {
           // from is a node
           var node = node.id();
         }
@@ -69,24 +69,24 @@ var elesfn = ({
       if( is.string( options.root ) ){
         // use it as a selector, e.g. "#rootID
         var root = this.filter( options.root )[0];
-      } else{
+      } else {
         var root = options.root[0];
       }
-    } else{
+    } else {
       return undefined;
     }
 
     // weight - optional
     if( options.weight != null && is.fn( options.weight ) ){
       var weight = options.weight;
-    } else{
+    } else {
       var weight = function(){return 1;};
     }
 
     // directed - optional
     if( options.directed != null && is.bool( options.directed ) ){
       var directed = options.directed;
-    } else{
+    } else {
       var directed = false;
     }
 
@@ -110,7 +110,7 @@ var elesfn = ({
 
         if( harmonic ){
           totalDistance += 1 / d;
-        } else{
+        } else {
           totalDistance += d;
         }
       }

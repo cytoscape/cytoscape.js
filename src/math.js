@@ -11,7 +11,7 @@ math.signum = function( x ){
     return 1;
   } else if( x < 0 ){
     return -1;
-  } else{
+  } else {
     return 0;
   }
 };
@@ -260,7 +260,7 @@ math.inBezierVicinity = function(
   if( x < bb.x1 || x > bb.x2 || y < bb.y1 || y > bb.y2 ){
     // console.log('bezier out of rough bb')
     return false;
-  } else{
+  } else {
     // console.log('do more expensive check');
     return true;
   }
@@ -387,7 +387,7 @@ math.sqDistanceToQuadraticBezier = function(
         minDistanceSquared = distSquared;
         closestParam = params[ i ];
       }
-    } else{
+    } else {
       minDistanceSquared = distSquared;
       closestParam = params[ i ];
     }
@@ -432,7 +432,7 @@ math.pointInsidePolygonPoints = function( x, y, points ){
     if( i + 1 < points.length / 2 ){
       x2 = points[ (i + 1) * 2];
       y2 = points[ (i + 1) * 2 + 1];
-    } else{
+    } else {
       x2 = points[ (i + 1 - points.length / 2) * 2];
       y2 = points[ (i + 1 - points.length / 2) * 2 + 1];
     }
@@ -452,7 +452,7 @@ math.pointInsidePolygonPoints = function( x, y, points ){
         down++;
       }
 
-    } else{
+    } else {
       continue;
     }
 
@@ -460,7 +460,7 @@ math.pointInsidePolygonPoints = function( x, y, points ){
 
   if( up % 2 === 0 ){
     return false;
-  } else{
+  } else {
     return true;
   }
 };
@@ -479,10 +479,10 @@ math.pointInsidePolygon = function(
 
     if( direction[0] < 0 ){
       angle = angle + Math.PI / 2;
-    } else{
+    } else {
       angle = -angle - Math.PI / 2;
     }
-  } else{
+  } else {
     angle = direction;
   }
 
@@ -511,7 +511,7 @@ math.pointInsidePolygon = function(
       -padding );
 
     points = this.joinLines( expandedLineSet );
-  } else{
+  } else {
     points = transformedPoints;
   }
 
@@ -536,7 +536,7 @@ math.joinLines = function( lineSet ){
       nextLineStartY = lineSet[ (i + 1) * 4 + 1];
       nextLineEndX = lineSet[ (i + 1) * 4 + 2];
       nextLineEndY = lineSet[ (i + 1) * 4 + 3];
-    } else{
+    } else {
       nextLineStartX = lineSet[0];
       nextLineStartY = lineSet[1];
       nextLineEndX = lineSet[2];
@@ -570,7 +570,7 @@ math.expandPolygon = function( points, pad ){
     if( i < points.length / 2 - 1 ){
       nextPointX = points[ (i + 1) * 2];
       nextPointY = points[ (i + 1) * 2 + 1];
-    } else{
+    } else {
       nextPointX = points[0];
       nextPointY = points[1];
     }
@@ -663,7 +663,7 @@ math.intersectLineCircle = function(
 
     if( inRangeParams[0] == inRangeParams[1] ){
       return [ nearIntersectionX, nearIntersectionY ];
-    } else{
+    } else {
 
       var farIntersectionX = inRangeParams[1] * d[0] + x1;
       var farIntersectionY = inRangeParams[1] * d[1] + y1;
@@ -671,7 +671,7 @@ math.intersectLineCircle = function(
       return [ nearIntersectionX, nearIntersectionY, farIntersectionX, farIntersectionY ];
     }
 
-  } else{
+  } else {
     return [ nearIntersectionX, nearIntersectionY ];
   }
 
@@ -723,14 +723,14 @@ math.finiteLinesIntersect = function(
     if( 0 <= ua && ua <= 1 && 0 <= ub && ub <= 1 ){
       return [ x1 + ua * (x2 - x1), y1 + ua * (y2 - y1) ];
 
-    } else{
+    } else {
       if( !infiniteLines ){
         return [];
-      } else{
+      } else {
         return [ x1 + ua * (x2 - x1), y1 + ua * (y2 - y1) ];
       }
     }
-  } else{
+  } else {
     if( ua_t === 0 || ub_t === 0 ){
 
       // Parallel, coincident lines. Check if overlap
@@ -751,7 +751,7 @@ math.finiteLinesIntersect = function(
       }
 
       return [];
-    } else{
+    } else {
 
       // Parallel, non-coincident
       return [];
@@ -780,7 +780,7 @@ math.polygonIntersectLine = function(
       -padding );
 
     points = math.joinLines( expandedLineSet );
-  } else{
+  } else {
     points = transformedPoints;
   }
   // var points = transformedPoints;
@@ -795,7 +795,7 @@ math.polygonIntersectLine = function(
     if( i < points.length / 2 - 1 ){
       nextX = points[ (i + 1) * 2];
       nextY = points[ (i + 1) * 2 + 1];
-    } else{
+    } else {
       nextX = points[0];
       nextY = points[1];
     }

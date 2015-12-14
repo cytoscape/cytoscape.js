@@ -116,7 +116,7 @@ CoseLayout.prototype.run = function(){
   // Set DEBUG - Global variable
   if( true === options.debug ){
     DEBUG = true;
-  } else{
+  } else {
     DEBUG = false;
   }
 
@@ -276,7 +276,7 @@ CoseLayout.prototype.run = function(){
         var forceX   = force * directionX / distance;
         var forceY   = force * directionY / distance;
 
-      } else{
+      } else {
         // s += "\nNodes do NOT overlap.";
         // If there's no overlap, force is inversely proportional
         // to squared distance
@@ -323,19 +323,19 @@ CoseLayout.prototype.run = function(){
 
       if( dX > 0 ){
         var overlapX = node1.maxX - node2.minX;
-      } else{
+      } else {
         var overlapX = node2.maxX - node1.minX;
       }
 
       if( dY > 0 ){
         var overlapY = node1.maxY - node2.minY;
-      } else{
+      } else {
         var overlapY = node2.maxY - node1.minY;
       }
 
       if( overlapX >= 0 && overlapY >= 0 ){
         return Math.sqrt( overlapX * overlapX + overlapY * overlapY );
-      } else{
+      } else {
         return 0;
       }
     };
@@ -360,7 +360,7 @@ CoseLayout.prototype.run = function(){
       //
       // Compute intersection
       var res = {};
-      do{
+      do {
         // Case: Vertical direction (up)
         if( 0 === dX && 0 < dY ){
           res.x = X;
@@ -461,7 +461,7 @@ CoseLayout.prototype.run = function(){
         if( 0 !== l ){
           var forceX = force * lx / l;
           var forceY = force * ly / l;
-        } else{
+        } else {
           var forceX = 0;
           var forceY = 0;
         }
@@ -502,7 +502,7 @@ CoseLayout.prototype.run = function(){
         if( 0 === i ){
           var centerX   = layoutInfo.clientHeight / 2;
           var centerY   = layoutInfo.clientWidth  / 2;
-        } else{
+        } else {
           // Get Parent node for this graph, and use its position as center
           var temp    = layoutInfo.layoutNodes[ layoutInfo.idToIndex[ graph[0] ] ];
           var parent  = layoutInfo.layoutNodes[ layoutInfo.idToIndex[ temp.parentId ] ];
@@ -528,7 +528,7 @@ CoseLayout.prototype.run = function(){
             node.offsetX += fx;
             node.offsetY += fy;
             // s += ": Applied force: " + fx + ", " + fy;
-          } else{
+          } else {
             // s += ": skypped since it's too close to center";
           }
           // logDebug(s);
@@ -668,7 +668,7 @@ CoseLayout.prototype.run = function(){
           y: max * forceY / force
         };
 
-      } else{
+      } else {
         var res = {
           x: forceX,
           y: forceY
@@ -833,7 +833,7 @@ CoseLayout.prototype.run = function(){
     var i = 0;
     var loopRet;
 
-    do{
+    do {
       var f = 0;
 
       while( f < options.refresh && i < options.numIter ){
@@ -988,7 +988,7 @@ var createLayoutInfo = function( cy, layout, options ){
     if( null != p_id ){
       // Add node Id to parent's list of children
       layoutInfo.layoutNodes[ layoutInfo.idToIndex[ p_id ] ].children.push( n.id );
-    } else{
+    } else {
       // If a node doesn't have a parent, then it's in the root graph
       queue[ ++end ] = n.id;
       tempGraph.push( n.id );
@@ -1101,7 +1101,7 @@ var findLCA = function( node1, node2, layoutInfo ){
     // If aux function couldn't find the common ancester,
     // then it is the root graph
     return 0;
-  } else{
+  } else {
     return res.graph;
   }
 };
@@ -1152,7 +1152,7 @@ var findLCA_aux = function( node1, node2, graphIx, layoutInfo ){
         // We've already found both nodes, no need to keep searching
         break;
       }
-    } else{
+    } else {
       // Both nodes are present in this subgraph
       return result;
     }
@@ -1291,7 +1291,7 @@ var refreshPositions = function( layoutInfo, cy, options ){
         x: bb.x1 + pctX * bb.w,
         y: bb.y1 + pctY * bb.h
       };
-    } else{
+    } else {
       return {
         x: lnode.positionX,
         y: lnode.positionY

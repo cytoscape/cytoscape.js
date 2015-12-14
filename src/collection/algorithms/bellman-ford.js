@@ -14,7 +14,7 @@ var elesfn = ({
     // Weight function - optional
     if( options.weight != null && is.fn( options.weight ) ){
       var weightFn = options.weight;
-    } else{
+    } else {
       // If not specified, assume each edge has equal weight (1)
       var weightFn = function( e ){return 1;};
     }
@@ -22,7 +22,7 @@ var elesfn = ({
     // directed - optional
     if( options.directed != null ){
       var directed = options.directed;
-    } else{
+    } else {
       var directed = false;
     }
 
@@ -31,10 +31,10 @@ var elesfn = ({
       if( is.string( options.root ) ){
         // use it as a selector, e.g. "#rootID
         var source = this.filter( options.root )[0];
-      } else{
+      } else {
         var source = options.root[0];
       }
-    } else{
+    } else {
       return undefined;
     }
 
@@ -57,7 +57,7 @@ var elesfn = ({
     for( var i = 0; i < numNodes; i++ ){
       if( nodes[ i ].id() === source.id() ){
         cost[ i ] = 0;
-      } else{
+      } else {
         cost[ i ] = Infinity;
       }
       predecessor[ i ] = undefined;
@@ -125,7 +125,7 @@ var elesfn = ({
         if( is.string( to ) ){
           // to is a selector string
           var toId = (cy.filter( to )[0]).id();
-        } else{
+        } else {
           // to is a node
           var toId = to.id();
         }
@@ -160,7 +160,7 @@ var elesfn = ({
         if( is.string( to ) ){
           // to is a selector string
           var toId = (cy.filter( to )[0]).id();
-        } else{
+        } else {
           // to is a node
           var toId = to.id();
         }

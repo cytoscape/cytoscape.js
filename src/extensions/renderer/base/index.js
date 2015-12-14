@@ -77,7 +77,7 @@ BRp.notify = function( params ){
   if( is.array( params.type ) ){
     types = params.type;
 
-  } else{
+  } else {
     types = [ params.type ];
   }
 
@@ -135,7 +135,7 @@ BRp.destroy = function(){
   }
 
   if( this.labelCalcDiv ){
-    try {
+    try{
       document.body.removeChild( this.labelCalcDiv );
     } catch( e ){
       // ie10 issue #1014

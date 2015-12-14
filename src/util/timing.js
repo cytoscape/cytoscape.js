@@ -88,7 +88,7 @@ util.debounce = function( func, wait, options ){ // ported lodash debounce funct
           args = thisArg = null;
         }
       }
-    } else{
+    } else {
       timeoutId = setTimeout( delayed, remaining );
     }
   };
@@ -115,7 +115,7 @@ util.debounce = function( func, wait, options ){ // ported lodash debounce funct
 
     if( maxWait === false ){
       var leadingCall = leading && !timeoutId;
-    } else{
+    } else {
       if( !maxTimeoutId && !leading ){
         lastCalled = stamp;
       }

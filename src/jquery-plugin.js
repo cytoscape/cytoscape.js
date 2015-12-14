@@ -32,7 +32,7 @@ var registerJquery = function( $, cytoscape ){
       if( cy && cy.isReady() ){ // already ready so just trigger now
         cy.trigger( 'ready', [], ready );
 
-      } else{ // not yet ready, so add to readies list
+      } else { // not yet ready, so add to readies list
         var data = cyReg( $this );
         var readies = data.readies = data.readies || [];
 

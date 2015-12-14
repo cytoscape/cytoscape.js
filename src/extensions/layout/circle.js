@@ -68,7 +68,7 @@ CircleLayout.prototype.run = function(){
     r = options.radius;
   } else if( nodes.length <= 1 ){
     r = 0;
-  } else{
+  } else {
     r = Math.min( bb.h, bb.w ) / 2 - minDistance;
   }
 

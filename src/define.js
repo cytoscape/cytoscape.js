@@ -419,7 +419,7 @@ var define = {
         if( !is.array( extraParams ) ){ // make sure extra params are in an array if specified
           extraParams = [ extraParams ];
         }
-      } else{ // otherwise, we've got nothing
+      } else { // otherwise, we've got nothing
         extraParams = [];
       }
 
@@ -441,7 +441,7 @@ var define = {
             evt.cyTarget = evt.cyTarget || triggerer;
             evt.cy = evt.cy || cy;
 
-          } else{ // then we have to make one
+          } else { // then we have to make one
             evt = new Event( evtObj, {
               cyTarget: triggerer,
               cy: cy,
@@ -492,7 +492,7 @@ var define = {
 
               if( lis.data ){ // add on data plugged into binding
                 evt.data = lis.data;
-              } else{ // or clear it in case the event obj is reused
+              } else { // or clear it in case the event obj is reused
                 evt.data = undefined;
               }
 
@@ -544,7 +544,7 @@ var define = {
             if( hasParent ){ // then bubble up to parent
               parent = parent[0];
               parent.trigger( evt );
-            } else{ // otherwise, bubble up to the core
+            } else { // otherwise, bubble up to the core
               cy.trigger( evt );
             }
           }

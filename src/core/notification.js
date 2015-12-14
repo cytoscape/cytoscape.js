@@ -31,7 +31,7 @@ var corefn = ({
 
     if( bool === undefined ){
       return p.notificationsEnabled;
-    } else{
+    } else {
       p.notificationsEnabled = bool ? true : false;
     }
   },

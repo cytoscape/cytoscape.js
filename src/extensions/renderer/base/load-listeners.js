@@ -230,7 +230,7 @@ BRp.load = function(){
     if( r.container.parentNode ){
       r.removeObserver.observe( r.container.parentNode, { childList: true } );
     }
-  } else{
+  } else {
     r.registerBinding( r.container, 'DOMNodeRemoved', function( e ){
       r.destroy();
     } );
@@ -261,7 +261,7 @@ BRp.load = function(){
 
     if( bbCtnr.parentNode ){
       bbCtnr = bbCtnr.parentNode;
-    } else{
+    } else {
       break;
     }
 
@@ -299,7 +299,7 @@ BRp.load = function(){
 
         if( r.hoverData.tapholdCancelled ){
           return;
-        } else{
+        } else {
           var ele = r.hoverData.down;
 
           if( ele ){
@@ -307,7 +307,7 @@ BRp.load = function(){
               type: 'taphold',
               cyPosition: { x: pos[0], y: pos[1] }
             } ) );
-          } else{
+          } else {
             cy.trigger( Event( e, {
               type: 'taphold',
               cyPosition: { x: pos[0], y: pos[1] }
@@ -333,7 +333,7 @@ BRp.load = function(){
         near.trigger( cxtEvt );
 
         r.hoverData.down = near;
-      } else{
+      } else {
         cy.trigger( cxtEvt );
       }
 
@@ -434,7 +434,7 @@ BRp.load = function(){
         && e.clientY > containerPageCoords[1] && e.clientY < containerPageCoords[1] + r.canvasHeight
       ){
         // inside container bounds so OK
-      } else{
+      } else {
         return;
       }
 
@@ -488,7 +488,7 @@ BRp.load = function(){
       if( dragDelta.length === 0 ){
         dragDelta.push( disp[0] );
         dragDelta.push( disp[1] );
-      } else{
+      } else {
         dragDelta[0] += disp[0];
         dragDelta[1] += disp[1];
       }
@@ -510,7 +510,7 @@ BRp.load = function(){
 
       if( down ){
         down.trigger( cxtEvt );
-      } else{
+      } else {
         cy.trigger( cxtEvt );
       }
 
@@ -553,7 +553,7 @@ BRp.load = function(){
 
           r.hoverData.justStartedPan = false;
 
-        } else{
+        } else {
           deltaP = {
             x: disp[0] * zoom,
             y: disp[1] * zoom
@@ -597,7 +597,7 @@ BRp.load = function(){
 
       if( down && down.isEdge() && down.active() ){ down.unactivate(); }
 
-    } else{
+    } else {
       if( down && down.isEdge() && down.active() ){ down.unactivate(); }
 
       if( near != last ){
@@ -676,7 +676,7 @@ BRp.load = function(){
           r.redrawHint( 'drag', true );
           r.redraw();
 
-        } else{ // otherwise save drag delta for when we actually start dragging so the relative grab pos is constant
+        } else { // otherwise save drag delta for when we actually start dragging so the relative grab pos is constant
           updateDragDelta();
         }
       }
@@ -725,7 +725,7 @@ BRp.load = function(){
 
       if( down ){
         down.trigger( cxtEvt );
-      } else{
+      } else {
         cy.trigger( cxtEvt );
       }
 
@@ -737,7 +737,7 @@ BRp.load = function(){
 
         if( down ){
           down.trigger( cxtTap );
-        } else{
+        } else {
           cy.trigger( cxtTap );
         }
       }
@@ -788,10 +788,10 @@ BRp.load = function(){
           } else if( cy.selectionType() === 'additive' || multSelKeyDown ){
             if( near.selected() ){
               near.unselect();
-            } else{
+            } else {
               near.select();
             }
-          } else{
+          } else {
             if( !multSelKeyDown ){
               cy.$( ':selected' ).unmerge( near ).unselect();
               near.select();
@@ -822,7 +822,7 @@ BRp.load = function(){
 
         if( cy.selectionType() === 'additive' ){
           newlySelCol.select();
-        } else{
+        } else {
           if( !multSelKeyDown ){
             cy.$( ':selected' ).unmerge( newlySelCol ).unselect();
           }
@@ -1047,7 +1047,7 @@ BRp.load = function(){
           } ) );
           r.touchData.start = near2;
 
-        } else{
+        } else {
           cy.trigger( Event( e, {
             type: 'cxttapstart',
             cyPosition: { x: now[0], y: now[1] }
@@ -1100,7 +1100,7 @@ BRp.load = function(){
                 addNodeToDrag( selectedNode, { addToList: draggedEles } );
               }
             }
-          } else{
+          } else {
             addNodeToDrag( near, { addToList: draggedEles } );
           }
 
@@ -1207,7 +1207,7 @@ BRp.load = function(){
         } );
         if( r.touchData.start ){
           r.touchData.start.trigger( cxtEvt );
-        } else{
+        } else {
           cy.trigger( cxtEvt );
         }
       }
@@ -1225,7 +1225,7 @@ BRp.load = function(){
 
       if( r.touchData.start ){
         r.touchData.start.trigger( cxtEvt );
-      } else{
+      } else {
         cy.trigger( cxtEvt );
       }
 
@@ -1271,7 +1271,7 @@ BRp.load = function(){
         select[1] = (now[1] + now[3] + now[5]) / 3;
         select[2] = (now[0] + now[2] + now[4]) / 3 + 1;
         select[3] = (now[1] + now[3] + now[5]) / 3 + 1;
-      } else{
+      } else {
         select[2] = (now[0] + now[2] + now[4]) / 3;
         select[3] = (now[1] + now[3] + now[5]) / 3;
       }
@@ -1453,13 +1453,13 @@ BRp.load = function(){
           }
 
           r.redraw();
-        } else{ // otherise keep track of drag delta for later
+        } else { // otherise keep track of drag delta for later
           var dragDelta = r.touchData.dragDelta = r.touchData.dragDelta || [];
 
           if( dragDelta.length === 0 ){
             dragDelta.push( disp[0] );
             dragDelta.push( disp[1] );
-          } else{
+          } else {
             dragDelta[0] += disp[0];
             dragDelta[1] += disp[1];
           }
@@ -1561,7 +1561,7 @@ BRp.load = function(){
       r.touchData.capture = false;
 
       e.preventDefault();
-    } else{
+    } else {
       return;
     }
 
@@ -1592,7 +1592,7 @@ BRp.load = function(){
 
       if( start ){
         start.trigger( ctxTapend );
-      } else{
+      } else {
         cy.trigger( ctxTapend );
       }
 
@@ -1604,7 +1604,7 @@ BRp.load = function(){
 
         if( start ){
           start.trigger( ctxTap );
-        } else{
+        } else {
           cy.trigger( ctxTap );
         }
 
@@ -1645,7 +1645,7 @@ BRp.load = function(){
 
       if( newlySelCol.length > 0 ){
         r.redrawHint( 'eles', true );
-      } else{
+      } else {
         r.redraw();
       }
     }
@@ -1694,7 +1694,7 @@ BRp.load = function(){
 
         r.touchData.start = null;
 
-      } else{
+      } else {
         var near = r.findNearestElement( now[0], now[1], true, true );
 
         triggerEvents( near, [ 'touchend', 'tapend', 'vmouseup' ], e, {
@@ -1721,10 +1721,10 @@ BRp.load = function(){
         if( cy.selectionType() === 'single' ){
           cy.$( ':selected' ).unmerge( start ).unselect();
           start.select();
-        } else{
+        } else {
           if( start.selected() ){
             start.unselect();
-          } else{
+          } else {
             start.select();
           }
         }

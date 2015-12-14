@@ -15,7 +15,7 @@ var idFactory = {
 
     if( cy.getElementById( id ).empty() ){
       this.id++; // we've used the current id, so move it up
-    } else{ // otherwise keep trying successive unused ids
+    } else { // otherwise keep trying successive unused ids
       while( !cy.getElementById( id ).empty() ){
         id = this.prefix + ( ++this.id );
       }
@@ -134,7 +134,7 @@ elesfn.element = function(){
 elesfn.collection = function(){
   if( is.collection( this ) ){
     return this;
-  } else{ // an element
+  } else { // an element
     return new Collection( this._private.cy, [ this ] );
   }
 };
@@ -180,7 +180,7 @@ elesfn.json = function( obj ){
       if( obj_k != null && obj_k !== p[ k ] ){
         if( obj_k ){
           ele[ trueFnName ]();
-        } else{
+        } else {
           ele[ falseFnName ]();
         }
       }
@@ -281,7 +281,7 @@ elesfn.restore = function( notifyRenderer ){
     if( ele.isNode() ){ // put to front of array if node
       nodes.push( ele );
       numNodes++;
-    } else{ // put to end of array if edge
+    } else { // put to end of array if edge
       edges.push( ele );
       numEdges++;
     }
@@ -405,7 +405,7 @@ elesfn.restore = function( notifyRenderer ){
       if( parent.empty() ){
         // non-existant parent; just remove it
         data.parent = undefined;
-      } else{
+      } else {
         var selfAsParent = false;
         var ancestor = parent;
         while( !ancestor.empty() ){
@@ -441,7 +441,7 @@ elesfn.restore = function( notifyRenderer ){
 
     if( notifyRenderer ){
       restored.rtrigger( 'add' );
-    } else{
+    } else {
       restored.trigger( 'add' );
     }
   }
@@ -492,7 +492,7 @@ elesfn.remove = function( notifyRenderer ){
     var alreadyAdded =  elesToRemoveIds[ ele.id() ];
     if( alreadyAdded ){
       return;
-    } else{
+    } else {
       elesToRemoveIds[ ele.id() ] = true;
     }
 
@@ -501,7 +501,7 @@ elesfn.remove = function( notifyRenderer ){
 
       addConnectedEdges( ele );
       addChildren( ele );
-    } else{
+    } else {
       elesToRemove.unshift( ele ); // edges are removed first
     }
   }
@@ -559,7 +559,7 @@ elesfn.remove = function( notifyRenderer ){
       removeEdgeRef( src, ele );
       removeEdgeRef( tgt, ele );
 
-    } else{ // remove reference to parent
+    } else { // remove reference to parent
       var parent = ele.parent();
 
       if( parent.length !== 0 ){

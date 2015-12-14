@@ -50,7 +50,7 @@
       mid = floor( (lo + hi) / 2 );
       if( cmp( x, a[ mid ] ) < 0 ){
         hi = mid;
-      } else{
+      } else {
         lo = mid + 1;
       }
     }
@@ -85,7 +85,7 @@
       returnitem = array[0];
       array[0] = lastelt;
       _siftup( array, 0, cmp );
-    } else{
+    } else {
       returnitem = lastelt;
     }
     return returnitem;
@@ -368,7 +368,7 @@
       return define( [], factory );
     } else if( typeof exports === 'object' ){
       return module.exports = factory();
-    } else{
+    } else {
       return root.Heap = factory();
     }
   })( this, function(){

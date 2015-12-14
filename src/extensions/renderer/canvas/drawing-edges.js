@@ -2,7 +2,7 @@
 
 var CRp = {};
 
-CRp.drawEdge = function( context, edge, drawOverlayInstead ){
+CRp.drawEdge = function( context, edge, drawLabel, drawOverlayInstead ){
   var rs = edge._private.rscratch;
   var usePaths = this.usePaths();
 
@@ -36,7 +36,7 @@ CRp.drawEdge = function( context, edge, drawOverlayInstead ){
       context.lineCap = 'butt';
     }
 
-  } else{
+  } else {
     var lineColor = style[ 'line-color' ].value;
 
     this.strokeStyle( context, lineColor[0], lineColor[1], lineColor[2], style.opacity.value );
@@ -68,6 +68,13 @@ CRp.drawEdge = function( context, edge, drawOverlayInstead ){
 
   this.shadowStyle( context, 'transparent', 0 ); // reset for next guy
 
+  if( !drawOverlayInstead ){
+    this.drawEdge( context, edge, drawLabel, true );
+  }
+
+  if( drawLabel ){
+    this.drawElementText( context, edge );
+  }
 };
 
 
@@ -85,7 +92,7 @@ CRp.drawEdgePath = function( edge, context, pts, type, width ){
     if( keyMatches ){
       path = context = rs.pathCache;
       pathCacheHit = true;
-    } else{
+    } else {
       path = context = new Path2D();
       rs.pathCacheKey = pathCacheKey;
       rs.pathCache = path;
@@ -139,7 +146,7 @@ CRp.drawEdgePath = function( edge, context, pts, type, width ){
   context = canvasCxt;
   if( usePaths ){
     context.stroke( path );
-  } else{
+  } else {
     context.stroke();
   }
 
@@ -234,7 +241,7 @@ CRp.drawArrowShape = function( edge, arrowType, context, fill, edgeWidth, shape,
     if( alreadyCached ){
       path = context = rs.arrowPathCache[ arrowType ];
       pathCacheHit = true;
-    } else{
+    } else {
       path = context = new Path2D();
       rs.arrowPathCacheKey[ arrowType ] = pathCacheKey;
       rs.arrowPathCache[ arrowType ] = path;
@@ -256,7 +263,7 @@ CRp.drawArrowShape = function( edge, arrowType, context, fill, edgeWidth, shape,
   if( fill === 'filled' || fill === 'both' ){
     if( usePaths ){
       context.fill( path );
-    } else{
+    } else {
       context.fill();
     }
   }
@@ -267,7 +274,7 @@ CRp.drawArrowShape = function( edge, arrowType, context, fill, edgeWidth, shape,
 
     if( usePaths ){
       context.stroke( path );
-    } else{
+    } else {
       context.stroke();
     }
 

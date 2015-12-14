@@ -95,7 +95,7 @@ CRp.shadowStyle = function( context, color, opacity, blur, offsetX, offsetY ){
     context.shadowColor = 'rgba(' + color[0] + ',' + color[1] + ',' + color[2] + ',' + opacity + ')';
     context.shadowOffsetX = offsetX * zoom;
     context.shadowOffsetY = offsetY * zoom;
-  } else{
+  } else {
     context.shadowBlur = 0;
     context.shadowColor = 'transparent';
   }
@@ -311,7 +311,7 @@ CRp.render = function( options ){
 
       w = r.canvasWidth * mbPxRatio;
       h = r.canvasHeight * mbPxRatio;
-    } else{
+    } else {
       ePan = effectivePan;
       eZoom = effectiveZoom;
 
@@ -392,7 +392,7 @@ CRp.render = function( options ){
 
     if( motionBlur ){
       mbclear( context, 0, 0, vp.width, vp.height );
-    } else{
+    } else {
       context.clearRect( 0, 0, vp.width, vp.height );
     }
 
@@ -418,7 +418,7 @@ CRp.render = function( options ){
 
   if( needDraw[ r.DRAG ] || needDraw[ r.NODE ] || drawAllLayers || drawOnlyNodeLayer ){
     if( hideEdges ){
-    } else{
+    } else {
       r.findEdgeControlPoints( edges );
     }
 
@@ -435,7 +435,7 @@ CRp.render = function( options ){
 
       if( ele._private.rscratch.inDragLayer ){
         list = eles.drag;
-      } else{
+      } else {
         list = eles.nondrag;
       }
 
@@ -452,26 +452,11 @@ CRp.render = function( options ){
       var ele = eles[ i ];
 
       if( ele.isNode() ){
-        r.drawNode( context, ele );
-
-        if( !hideLabels ){
-          r.drawNodeText( context, ele );
-        }
-
-        r.drawNode( context, ele, true );
+        r.drawNode( context, ele, !hideLabels );
       } else if( !hideEdges ){
-        r.drawEdge( context, ele );
-
-        if( !hideLabels ){
-          r.drawEdgeText( context, ele );
-        }
-
-        r.drawEdge( context, ele, true );
+        r.drawEdge( context, ele, !hideLabels );
       }
-
-
     }
-
   }
 
   var needMbClear = [];
@@ -594,7 +579,7 @@ CRp.render = function( options ){
 
       if( needClear || !motionBlurFadeEffect ){
         cxt.clearRect( 0, 0, r.canvasWidth, r.canvasHeight );
-      } else{
+      } else {
         mbclear( cxt, 0, 0, r.canvasWidth, r.canvasHeight );
       }
 

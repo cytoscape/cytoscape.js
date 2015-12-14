@@ -74,6 +74,9 @@ function CanvasRenderer( options ){
     //r.data.canvasContainer.appendChild(r.data.bufferCanvases[i]);
   }
 
+  r.data.textureCanvas = document.createElement( 'canvas' );
+  r.data.textureContext = r.data.textureCanvas.getContext( '2d' );
+
   r.pathsEnabled = true;
 }
 

@@ -12,14 +12,26 @@
     "beforeOpeningRoundBrace": true,
     "beforeOpeningCurlyBrace": true
   },
+  "disallowSpaceAfterKeywords": [
+    "if",
+    "for",
+    "while",
+    "switch",
+    "catch"
+  ],
   "disallowSpacesInsideParentheses": false,
+  "disallowSpaceBeforeBlockStatements": true,
   "disallowTrailingWhitespace": true,
+  "disallowTrailingComma": true,
   "requireCamelCaseOrUpperCaseIdentifiers": false,
   "requireCapitalizedComments": false,
   "requireCapitalizedConstructors": false,
   "requireSemicolons": true,
   "requireSpaceAfterKeywords": [
-    "return"
+    "return",
+    "else",
+    "do",
+    "try"
   ],
   "requireSpaceAfterLineComment": false,
   "requireSpaceAfterBinaryOperators": true,
@@ -28,7 +40,11 @@
   "requireSpaceBeforeObjectValues": true,
   "requireSpacesInsideParentheses": {
     "all": true,
-    "except": ["(", ")"]
+    "ignoreParenthesizedExpression": true,
+    "except": [""]
+  },
+  "requireSpacesInsideBrackets": {
+    "allExcept": [ "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "'", "\"" ]
   },
   "validateIndentation": 2,
   "validateLineBreaks": "LF",

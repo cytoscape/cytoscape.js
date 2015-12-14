@@ -67,6 +67,7 @@ BRp.init = function( options ){
 
   r.registerNodeShapes();
   r.registerArrowShapes();
+  r.registerCalculationListeners();
   r.load();
 };
 

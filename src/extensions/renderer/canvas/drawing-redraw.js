@@ -239,7 +239,6 @@ CRp.render = function( options ){
     needDraw[ r.SELECT_BOX ] = true;
   }
 
-  var edges = r.getCachedEdges();
   var coreStyle = cy.style()._private.coreStyle;
 
   var zoom = cy.zoom();
@@ -417,21 +416,11 @@ CRp.render = function( options ){
   var hideLabels = r.hideLabelsOnViewport && vpManip;
 
   if( needDraw[ r.DRAG ] || needDraw[ r.NODE ] || drawAllLayers || drawOnlyNodeLayer ){
-    if( hideEdges ){
-    } else {
-      r.findEdgeControlPoints( edges );
-    }
-
     var zEles = r.getCachedZSortedEles();
-    var extent = cy.extent();
 
     for( var i = 0; i < zEles.length; i++ ){
       var ele = zEles[ i ];
       var list;
-      var bb = forcedContext ? null : ele.boundingBox();
-      var insideExtent = forcedContext ? true : math.boundingBoxesIntersect( extent, bb );
-
-      if( !insideExtent ){ continue; } // no need to render
 
       if( ele._private.rscratch.inDragLayer ){
         list = eles.drag;

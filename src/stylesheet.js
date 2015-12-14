@@ -1,8 +1,8 @@
 'use strict';
 
-var is = require('./is');
-var util = require('./util');
-var Style = require('./style');
+var is = require( './is' );
+var util = require( './util' );
+var Style = require( './style' );
 
 // a dummy stylesheet object that doesn't need a reference to the core
 // (useful for init)
@@ -24,7 +24,7 @@ sheetfn.instanceString = function(){
 sheetfn.selector = function( selector ){
   var i = this.length++;
 
-  this[i] = {
+  this[ i ] = {
     selector: selector,
     properties: []
   };
@@ -36,30 +36,30 @@ sheetfn.selector = function( selector ){
 sheetfn.css = function( name, value ){
   var i = this.length - 1;
 
-  if( is.string(name) ){
-    this[i].properties.push({
+  if( is.string( name ) ){
+    this[ i ].properties.push( {
       name: name,
       value: value
-    });
-  } else if( is.plainObject(name) ){
+    } );
+  } else if( is.plainObject( name ) ){
     var map = name;
 
     for( var j = 0; j < Style.properties.length; j++ ){
-      var prop = Style.properties[j];
+      var prop = Style.properties[ j ];
       var mapVal = map[ prop.name ];
 
       if( mapVal === undefined ){ // also try camel case name
-        mapVal = map[ util.dash2camel(prop.name) ];
+        mapVal = map[ util.dash2camel( prop.name ) ];
       }
 
       if( mapVal !== undefined ){
         var name = prop.name;
         var value = mapVal;
 
-        this[i].properties.push({
+        this[ i ].properties.push( {
           name: name,
           value: value
-        });
+        } );
       }
     }
   }
@@ -71,17 +71,17 @@ sheetfn.style = sheetfn.css;
 
 // generate a real style object from the dummy stylesheet
 sheetfn.generateStyle = function( cy ){
-  var style = new Style(cy);
+  var style = new Style( cy );
 
   for( var i = 0; i < this.length; i++ ){
-    var context = this[i];
+    var context = this[ i ];
     var selector = context.selector;
     var props = context.properties;
 
-    style.selector(selector); // apply selector
+    style.selector( selector ); // apply selector
 
     for( var j = 0; j < props.length; j++ ){
-      var prop = props[j];
+      var prop = props[ j ];
 
       style.css( prop.name, prop.value ); // apply property
     }

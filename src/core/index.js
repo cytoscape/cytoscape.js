@@ -1,19 +1,19 @@
 'use strict';
 
-var window = require('../window');
-var util = require('../util');
-var Collection = require('../collection');
-var is = require('../is');
-var Promise = require('../promise');
-var define = require('../define');
+var window = require( '../window' );
+var util = require( '../util' );
+var Collection = require( '../collection' );
+var is = require( '../is' );
+var Promise = require( '../promise' );
+var define = require( '../define' );
 
 var Core = function( opts ){
   if( !(this instanceof Core) ){
-    return new Core(opts);
+    return new Core( opts );
   }
   var cy = this;
 
-  opts = util.extend({}, opts);
+  opts = util.extend( {}, opts );
 
   var container = opts.container;
 
@@ -47,7 +47,7 @@ var Core = function( opts ){
       return val;
     } else if( altVal !== undefined ){
       return altVal;
-    } else {
+    } else{
       return def;
     }
   };
@@ -61,26 +61,26 @@ var Core = function( opts ){
     id2index: {}, // element id => index in elements array
     listeners: [], // list of listeners
     onRenders: [], // rendering listeners
-    aniEles: Collection(this), // elements being animated
+    aniEles: Collection( this ), // elements being animated
     scratch: {}, // scratch object for core
     layout: null,
     renderer: null,
     notificationsEnabled: true, // whether notifications are sent to the renderer
     minZoom: 1e-50,
     maxZoom: 1e50,
-    zoomingEnabled: defVal(true, options.zoomingEnabled),
-    userZoomingEnabled: defVal(true, options.userZoomingEnabled),
-    panningEnabled: defVal(true, options.panningEnabled),
-    userPanningEnabled: defVal(true, options.userPanningEnabled),
-    boxSelectionEnabled: defVal(true, options.boxSelectionEnabled),
-    autolock: defVal(false, options.autolock, options.autolockNodes),
-    autoungrabify: defVal(false, options.autoungrabify, options.autoungrabifyNodes),
-    autounselectify: defVal(false, options.autounselectify),
+    zoomingEnabled: defVal( true, options.zoomingEnabled ),
+    userZoomingEnabled: defVal( true, options.userZoomingEnabled ),
+    panningEnabled: defVal( true, options.panningEnabled ),
+    userPanningEnabled: defVal( true, options.userPanningEnabled ),
+    boxSelectionEnabled: defVal( true, options.boxSelectionEnabled ),
+    autolock: defVal( false, options.autolock, options.autolockNodes ),
+    autoungrabify: defVal( false, options.autoungrabify, options.autoungrabifyNodes ),
+    autounselectify: defVal( false, options.autounselectify ),
     styleEnabled: options.styleEnabled === undefined ? head : options.styleEnabled,
-    zoom: is.number(options.zoom) ? options.zoom : 1,
+    zoom: is.number( options.zoom ) ? options.zoom : 1,
     pan: {
-      x: is.plainObject(options.pan) && is.number(options.pan.x) ? options.pan.x : 0,
-      y: is.plainObject(options.pan) && is.number(options.pan.y) ? options.pan.y : 0
+      x: is.plainObject( options.pan ) && is.number( options.pan.x ) ? options.pan.x : 0,
+      y: is.plainObject( options.pan ) && is.number( options.pan.y ) ? options.pan.y : 0
     },
     animation: { // object for currently-running animations
       current: [],
@@ -96,17 +96,17 @@ var Core = function( opts ){
     // then set default
 
     _p.selectionType = 'single';
-  } else {
+  } else{
     _p.selectionType = selType;
   }
 
   // init zoom bounds
-  if( is.number(options.minZoom) && is.number(options.maxZoom) && options.minZoom < options.maxZoom ){
+  if( is.number( options.minZoom ) && is.number( options.maxZoom ) && options.minZoom < options.maxZoom ){
     _p.minZoom = options.minZoom;
     _p.maxZoom = options.maxZoom;
-  } else if( is.number(options.minZoom) && options.maxZoom === undefined ){
+  } else if( is.number( options.minZoom ) && options.maxZoom === undefined ){
     _p.minZoom = options.minZoom;
-  } else if( is.number(options.maxZoom) && options.minZoom === undefined ){
+  } else if( is.number( options.maxZoom ) && options.minZoom === undefined ){
     _p.maxZoom = options.maxZoom;
   }
 
@@ -114,9 +114,9 @@ var Core = function( opts ){
     var anyIsPromise = false;
 
     for( var i = 0; i < extData.length; i++ ){
-      var datum = extData[i];
+      var datum = extData[ i ];
 
-      if( is.promise(datum) ){
+      if( is.promise( datum ) ){
         anyIsPromise = true;
         break;
       }
@@ -124,26 +124,26 @@ var Core = function( opts ){
 
     if( anyIsPromise ){
       return Promise.all( extData ).then( next ); // load all data asynchronously, then exec rest of init
-    } else {
+    } else{
       next( extData ); // exec synchronously for convenience
     }
   };
 
   // create the renderer
-  cy.initRenderer( util.extend({
+  cy.initRenderer( util.extend( {
     hideEdgesOnViewport: options.hideEdgesOnViewport,
     hideLabelsOnViewport: options.hideLabelsOnViewport,
     textureOnViewport: options.textureOnViewport,
-    wheelSensitivity: is.number(options.wheelSensitivity) && options.wheelSensitivity > 0 ? options.wheelSensitivity : 1,
+    wheelSensitivity: is.number( options.wheelSensitivity ) && options.wheelSensitivity > 0 ? options.wheelSensitivity : 1,
     motionBlur: options.motionBlur === undefined ? true : options.motionBlur, // on by default
     motionBlurOpacity: options.motionBlurOpacity === undefined ? 0.05 : options.motionBlurOpacity,
-    pixelRatio: is.number(options.pixelRatio) && options.pixelRatio > 0 ? options.pixelRatio : undefined,
+    pixelRatio: is.number( options.pixelRatio ) && options.pixelRatio > 0 ? options.pixelRatio : undefined,
     desktopTapThreshold: options.desktopTapThreshold === undefined ? 4 : options.desktopTapThreshold,
     touchTapThreshold: options.touchTapThreshold === undefined ? 8 : options.touchTapThreshold
-  }, options.renderer) );
+  }, options.renderer ) );
 
   var extData = [ options.style, options.elements ];
-  loadExtData(function( thens ){
+  loadExtData( function( thens ){
     var initStyle = thens[0];
     var initEles = thens[1];
 
@@ -154,38 +154,38 @@ var Core = function( opts ){
 
     // trigger the passed function for the `initrender` event
     if( options.initrender ){
-      cy.on('initrender', options.initrender);
-      cy.on('initrender', function(){
+      cy.on( 'initrender', options.initrender );
+      cy.on( 'initrender', function(){
         _p.initrender = true;
-      });
+      } );
     }
 
     // initial load
-    cy.load(initEles, function(){ // onready
+    cy.load( initEles, function(){ // onready
       cy.startAnimationLoop();
       _p.ready = true;
 
       // if a ready callback is specified as an option, the bind it
       if( is.fn( options.ready ) ){
-        cy.on('ready', options.ready);
+        cy.on( 'ready', options.ready );
       }
 
       // bind all the ready handlers registered before creating this instance
       for( var i = 0; i < readies.length; i++ ){
-        var fn = readies[i];
-        cy.on('ready', fn);
+        var fn = readies[ i ];
+        cy.on( 'ready', fn );
       }
       if( reg ){ reg.readies = []; } // clear b/c we've bound them all and don't want to keep it around in case a new core uses the same div etc
 
-      cy.trigger('ready');
-    }, options.done);
+      cy.trigger( 'ready' );
+    }, options.done );
 
-  });
+  } );
 };
 
 var corefn = Core.prototype; // short alias
 
-util.extend(corefn, {
+util.extend( corefn, {
   instanceString: function(){
     return 'core';
   },
@@ -196,9 +196,9 @@ util.extend(corefn, {
 
   ready: function( fn ){
     if( this.isReady() ){
-      this.trigger('ready', [], fn); // just calls fn as though triggered via ready event
-    } else {
-      this.on('ready', fn);
+      this.trigger( 'ready', [], fn ); // just calls fn as though triggered via ready event
+    } else{
+      this.on( 'ready', fn );
     }
 
     return this;
@@ -213,7 +213,7 @@ util.extend(corefn, {
 
     cy.stopAnimationLoop();
 
-    cy.notify({ type: 'destroy' }); // destroy the renderer
+    cy.notify( { type: 'destroy' } ); // destroy the renderer
 
     var domEle = cy.container();
     if( domEle ){
@@ -254,7 +254,7 @@ util.extend(corefn, {
     var id2index = this._private.id2index;
 
     for( var i = 0; i < eles.length; i++ ){
-      var ele = eles[i];
+      var ele = eles[ i ];
 
       var id = ele._private.data.id;
       var index = id2index[ id ];
@@ -276,7 +276,7 @@ util.extend(corefn, {
     var id2index = this._private.id2index;
 
     for( var i = 0; i < eles.length; i++ ){
-      var ele = eles[i];
+      var ele = eles[ i ];
 
       var id = ele._private.data.id;
       var index = id2index[ id ];
@@ -284,13 +284,13 @@ util.extend(corefn, {
 
       if( inPool ){
         this._private.id2index[ id ] = undefined;
-        elements.splice(index, 1);
+        elements.splice( index, 1 );
 
         // adjust the index of all elements past this index
         for( var j = index; j < elements.length; j++ ){
-          var jid = elements[j]._private.data.id;
+          var jid = elements[ j ]._private.data.id;
           id2index[ jid ]--;
-          elements[j]._private.index--;
+          elements[ j ]._private.index--;
         }
       }
     }
@@ -308,7 +308,7 @@ util.extend(corefn, {
     var cy = this;
     var _p = cy._private;
 
-    if( is.plainObject(obj) ){ // set
+    if( is.plainObject( obj ) ){ // set
 
       cy.startBatch();
 
@@ -317,7 +317,7 @@ util.extend(corefn, {
 
         var updateEles = function( jsons, gr ){
           for( var i = 0; i < jsons.length; i++ ){
-            var json = jsons[i];
+            var json = jsons[ i ];
             var id = json.data.id;
             var ele = cy.getElementById( id );
 
@@ -325,35 +325,35 @@ util.extend(corefn, {
 
             if( ele.length !== 0 ){ // existing element should be updated
               ele.json( json );
-            } else { // otherwise should be added
+            } else{ // otherwise should be added
               if( gr ){
-                cy.add( util.extend({ group: gr }, json) );
-              } else {
+                cy.add( util.extend( { group: gr }, json ) );
+              } else{
                 cy.add( json );
               }
             }
           }
         };
 
-        if( is.array(obj.elements) ){ // elements: []
+        if( is.array( obj.elements ) ){ // elements: []
           updateEles( obj.elements );
 
-        } else { // elements: { nodes: [], edges: [] }
-          var grs = ['nodes', 'edges'];
+        } else{ // elements: { nodes: [], edges: [] }
+          var grs = [ 'nodes', 'edges' ];
           for( var i = 0; i < grs.length; i++ ){
-            var gr = grs[i];
+            var gr = grs[ i ];
             var elements = obj.elements[ gr ];
 
-            if( is.array(elements) ){
+            if( is.array( elements ) ){
               updateEles( elements, gr );
             }
           }
         }
 
         // elements not specified in json should be removed
-        cy.elements().stdFilter(function( ele ){
+        cy.elements().stdFilter( function( ele ){
           return !idInJson[ ele.id() ];
-        }).remove();
+        } ).remove();
       }
 
       if( obj.style ){
@@ -378,10 +378,10 @@ util.extend(corefn, {
       ];
 
       for( var i = 0; i < fields.length; i++ ){
-        var f = fields[i];
+        var f = fields[ i ];
 
-        if( obj[f] != null ){
-          cy[f]( obj[f] );
+        if( obj[ f ] != null ){
+          cy[ f ]( obj[ f ] );
         }
       }
 
@@ -392,15 +392,15 @@ util.extend(corefn, {
       var json = {};
 
       json.elements = {};
-      cy.elements().each(function(i, ele){
+      cy.elements().each( function( i, ele ){
         var group = ele.group();
 
-        if( !json.elements[group] ){
-          json.elements[group] = [];
+        if( !json.elements[ group ] ){
+          json.elements[ group ] = [];
         }
 
-        json.elements[group].push( ele.json() );
-      });
+        json.elements[ group ].push( ele.json() );
+      } );
 
       if( this._private.styleEnabled ){
         json.style = cy.style().json();
@@ -426,7 +426,7 @@ util.extend(corefn, {
     }
   },
 
-  scratch: define.data({
+  scratch: define.data( {
     field: 'scratch',
     bindingEvent: 'scratch',
     allowBinding: true,
@@ -435,30 +435,30 @@ util.extend(corefn, {
     settingTriggersEvent: true,
     triggerFnName: 'trigger',
     allowGetting: true
-  }),
+  } ),
 
-  removeScratch: define.removeData({
+  removeScratch: define.removeData( {
     field: 'scratch',
     event: 'scratch',
     triggerFnName: 'trigger',
     triggerEvent: true
-  })
+  } )
 
-});
+} );
 
 [
-  require('./add-remove'),
-  require('./animation'),
-  require('./events'),
-  require('./export'),
-  require('./layout'),
-  require('./notification'),
-  require('./renderer'),
-  require('./search'),
-  require('./style'),
-  require('./viewport')
-].forEach(function( props ){
+  require( './add-remove' ),
+  require( './animation' ),
+  require( './events' ),
+  require( './export' ),
+  require( './layout' ),
+  require( './notification' ),
+  require( './renderer' ),
+  require( './search' ),
+  require( './style' ),
+  require( './viewport' )
+].forEach( function( props ){
   util.extend( corefn, props );
-});
+} );
 
 module.exports = Core;

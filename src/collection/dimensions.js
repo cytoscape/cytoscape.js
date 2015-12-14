@@ -1,13 +1,13 @@
 'use strict';
 
-var define = require('../define');
-var is = require('../is');
-var util = require('../util');
+var define = require( '../define' );
+var is = require( '../is' );
+var util = require( '../util' );
 var fn, elesfn;
 
 fn = elesfn = ({
 
-  position: define.data({
+  position: define.data( {
     field: 'position',
     bindingEvent: 'position',
     allowBinding: true,
@@ -16,18 +16,18 @@ fn = elesfn = ({
     settingTriggersEvent: true,
     triggerFnName: 'rtrigger',
     allowGetting: true,
-    validKeys: ['x', 'y'],
+    validKeys: [ 'x', 'y' ],
     onSet: function( eles ){
       var updatedEles = eles.updateCompoundBounds();
-      updatedEles.rtrigger('position');
+      updatedEles.rtrigger( 'position' );
     },
     canSet: function( ele ){
       return !ele.locked() && !ele.isParent();
     }
-  }),
+  } ),
 
   // position but no notification to renderer
-  silentPosition: define.data({
+  silentPosition: define.data( {
     field: 'position',
     bindingEvent: 'position',
     allowBinding: false,
@@ -36,26 +36,26 @@ fn = elesfn = ({
     settingTriggersEvent: false,
     triggerFnName: 'trigger',
     allowGetting: true,
-    validKeys: ['x', 'y'],
+    validKeys: [ 'x', 'y' ],
     onSet: function( eles ){
       eles.updateCompoundBounds();
     },
     canSet: function( ele ){
       return !ele.locked() && !ele.isParent();
     }
-  }),
+  } ),
 
   positions: function( pos, silent ){
-    if( is.plainObject(pos) ){
-      this.position(pos);
+    if( is.plainObject( pos ) ){
+      this.position( pos );
 
-    } else if( is.fn(pos) ){
+    } else if( is.fn( pos ) ){
       var fn = pos;
 
       for( var i = 0; i < this.length; i++ ){
-        var ele = this[i];
+        var ele = this[ i ];
 
-        var pos = fn.apply(ele, [i, ele]);
+        var pos = fn.apply( ele, [ i, ele ] );
 
         if( pos && !ele.locked() && !ele.isParent() ){
           var elePos = ele._private.position;
@@ -68,9 +68,9 @@ fn = elesfn = ({
       var toTrigger = updatedEles.length > 0 ? this.add( updatedEles ) : this;
 
       if( silent ){
-        toTrigger.trigger('position');
-      } else {
-        toTrigger.rtrigger('position');
+        toTrigger.trigger( 'position' );
+      } else{
+        toTrigger.rtrigger( 'position' );
       }
     }
 
@@ -88,25 +88,25 @@ fn = elesfn = ({
     var zoom = cy.zoom();
     var pan = cy.pan();
     var rpos = is.plainObject( dim ) ? dim : undefined;
-    var setting = rpos !== undefined || ( val !== undefined && is.string(dim) );
+    var setting = rpos !== undefined || ( val !== undefined && is.string( dim ) );
 
     if( ele && ele.isNode() ){ // must have an element and must be a node to return position
       if( setting ){
         for( var i = 0; i < this.length; i++ ){
-          var ele = this[i];
+          var ele = this[ i ];
 
           if( val !== undefined ){ // set one dimension
-            ele._private.position[dim] = ( val - pan[dim] )/zoom;
+            ele._private.position[ dim ] = ( val - pan[ dim ] ) / zoom;
           } else if( rpos !== undefined ){ // set whole position
             ele._private.position = {
-              x: ( rpos.x - pan.x ) /zoom,
-              y: ( rpos.y - pan.y ) /zoom
+              x: ( rpos.x - pan.x ) / zoom,
+              y: ( rpos.y - pan.y ) / zoom
             };
           }
         }
 
-        this.rtrigger('position');
-      } else { // getting
+        this.rtrigger( 'position' );
+      } else{ // getting
         var pos = ele._private.position;
         rpos = {
           x: pos.x * zoom + pan.x,
@@ -115,7 +115,7 @@ fn = elesfn = ({
 
         if( dim === undefined ){ // then return the whole rendered position
           return rpos;
-        } else { // then return the specified dimension
+        } else{ // then return the specified dimension
           return rpos[ dim ];
         }
       }
@@ -131,13 +131,13 @@ fn = elesfn = ({
     var ele = this[0];
     var cy = this.cy();
     var ppos = is.plainObject( dim ) ? dim : undefined;
-    var setting = ppos !== undefined || ( val !== undefined && is.string(dim) );
+    var setting = ppos !== undefined || ( val !== undefined && is.string( dim ) );
     var hasCompoundNodes = cy.hasCompoundNodes();
 
     if( ele && ele.isNode() ){ // must have an element and must be a node to return position
       if( setting ){
         for( var i = 0; i < this.length; i++ ){
-          var ele = this[i];
+          var ele = this[ i ];
           var parent = hasCompoundNodes ? ele.parent() : null;
           var hasParent = parent && parent.length > 0;
           var relativeToParent = hasParent;
@@ -149,18 +149,18 @@ fn = elesfn = ({
           var origin = relativeToParent ? parent._private.position : { x: 0, y: 0 };
 
           if( val !== undefined ){ // set one dimension
-            ele._private.position[dim] = val + origin[dim];
+            ele._private.position[ dim ] = val + origin[ dim ];
           } else if( ppos !== undefined ){ // set whole position
             ele._private.position = {
               x: ppos.x + origin.x,
-              y: ppos.y + origin.y,
+              y: ppos.y + origin.y
             };
           }
         }
 
-        this.rtrigger('position');
+        this.rtrigger( 'position' );
 
-      } else { // getting
+      } else{ // getting
         var pos = ele._private.position;
         var parent = hasCompoundNodes ? ele.parent() : null;
         var hasParent = parent && parent.length > 0;
@@ -179,7 +179,7 @@ fn = elesfn = ({
 
         if( dim === undefined ){ // then return the whole rendered position
           return ppos;
-        } else { // then return the specified dimension
+        } else{ // then return the specified dimension
           return ppos[ dim ];
         }
       }
@@ -221,26 +221,26 @@ fn = elesfn = ({
     function update( parent ){
       var children = parent.children();
       var style = parent._private.style;
-      var includeLabels = style['compound-sizing-wrt-labels'].value === 'include';
-      var bb = children.boundingBox({ includeLabels: includeLabels, includeEdges: true });
+      var includeLabels = style[ 'compound-sizing-wrt-labels' ].value === 'include';
+      var bb = children.boundingBox( { includeLabels: includeLabels, includeEdges: true } );
       var padding = {
-        top: style['padding-top'].pfValue,
-        bottom: style['padding-bottom'].pfValue,
-        left: style['padding-left'].pfValue,
-        right: style['padding-right'].pfValue
+        top: style[ 'padding-top' ].pfValue,
+        bottom: style[ 'padding-bottom' ].pfValue,
+        left: style[ 'padding-left' ].pfValue,
+        right: style[ 'padding-right' ].pfValue
       };
       var pos = parent._private.position;
       var didUpdate = false;
 
-      if( style['width'].value === 'auto' ){
+      if( style[ 'width' ].value === 'auto' ){
         parent._private.autoWidth = bb.w;
-        pos.x = (bb.x1 + bb.x2 - padding.left + padding.right)/2;
+        pos.x = (bb.x1 + bb.x2 - padding.left + padding.right) / 2;
         didUpdate = true;
       }
 
-      if( style['height'].value === 'auto' ){
+      if( style[ 'height' ].value === 'auto' ){
         parent._private.autoHeight = bb.h;
-        pos.y = (bb.y1 + bb.y2 - padding.top + padding.bottom)/2;
+        pos.y = (bb.y1 + bb.y2 - padding.top + padding.bottom) / 2;
         didUpdate = true;
       }
 
@@ -255,7 +255,7 @@ fn = elesfn = ({
 
       // update each parent node in this level
       for( var i = 0; i < eles.length; i++ ){
-        var ele = eles[i];
+        var ele = eles[ i ];
 
         update( ele );
       }
@@ -293,10 +293,10 @@ fn = elesfn = ({
 
     // find bounds of elements
     for( var i = 0; i < eles.length; i++ ){
-      var ele = eles[i];
+      var ele = eles[ i ];
       var _p = ele._private;
       var style = _p.style;
-      var display = styleEnabled ? _p.style['display'].value : 'element';
+      var display = styleEnabled ? _p.style[ 'display' ].value : 'element';
       var isNode = _p.group === 'nodes';
       var ex1, ex2, ey1, ey2, x, y;
       var includedEle = false;
@@ -310,9 +310,9 @@ fn = elesfn = ({
         x = pos.x;
         y = pos.y;
         var w = ele.outerWidth();
-        var halfW = w/2;
+        var halfW = w / 2;
         var h = ele.outerHeight();
-        var halfH = h/2;
+        var halfH = h / 2;
 
         // handle node dimensions
         /////////////////////////
@@ -347,8 +347,8 @@ fn = elesfn = ({
         var wHalf = 0;
 
         if( styleEnabled ){
-          w = style['width'].pfValue;
-          wHalf = w/2;
+          w = style[ 'width' ].pfValue;
+          wHalf = w / 2;
         }
 
         ex1 = n1pos.x;
@@ -386,7 +386,7 @@ fn = elesfn = ({
           var pts = rstyle.bezierPts || rstyle.linePts || [];
 
           for( var j = 0; j < pts.length; j++ ){
-            var pt = pts[j];
+            var pt = pts[ j ];
 
             ex1 = pt.x - wHalf;
             ex2 = pt.x + wHalf;
@@ -403,7 +403,7 @@ fn = elesfn = ({
         // precise haystacks (sanity check)
         ///////////////////////////////////
 
-        if( styleEnabled && style['curve-style'].strValue === 'haystack' ){
+        if( styleEnabled && style[ 'curve-style' ].strValue === 'haystack' ){
           var hpts = rstyle.haystackPts;
 
           ex1 = hpts[0].x;
@@ -452,7 +452,7 @@ fn = elesfn = ({
 
       if( prefix ){
         prefixDash = prefix + '-';
-      } else {
+      } else{
         prefixDash = '';
       }
 
@@ -462,9 +462,9 @@ fn = elesfn = ({
       var style = _p.style;
       var rstyle = _p.rstyle;
       var label = style[ prefixDash + 'label' ].strValue;
-      var fontSize = style['font-size'];
-      var halign = style['text-halign'];
-      var valign = style['text-valign'];
+      var fontSize = style[ 'font-size' ];
+      var halign = style[ 'text-halign' ];
+      var valign = style[ 'text-valign' ];
       var labelWidth = prefixedProperty( rstyle, 'labelWidth', prefix );
       var labelHeight = prefixedProperty( rstyle, 'labelHeight', prefix );
       var labelX = prefixedProperty( rstyle, 'labelX', prefix );
@@ -478,11 +478,11 @@ fn = elesfn = ({
         var lx1, lx2, ly1, ly2;
 
         if( isEdge ){
-          lx1 = labelX - lw/2;
-          lx2 = labelX + lw/2;
-          ly1 = labelY - lh/2;
-          ly2 = labelY + lh/2;
-        } else {
+          lx1 = labelX - lw / 2;
+          lx2 = labelX + lw / 2;
+          ly1 = labelY - lh / 2;
+          ly2 = labelY + lh / 2;
+        } else{
           switch( halign.value ){
             case 'left':
               lx1 = labelX - lw;
@@ -490,8 +490,8 @@ fn = elesfn = ({
               break;
 
             case 'center':
-              lx1 = labelX - lw/2;
-              lx2 = labelX + lw/2;
+              lx1 = labelX - lw / 2;
+              lx2 = labelX + lw / 2;
               break;
 
             case 'right':
@@ -507,8 +507,8 @@ fn = elesfn = ({
               break;
 
             case 'center':
-              ly1 = labelY - lh/2;
-              ly2 = labelY + lh/2;
+              ly1 = labelY - lh / 2;
+              ly2 = labelY + lh / 2;
               break;
 
             case 'bottom':
@@ -528,8 +528,8 @@ fn = elesfn = ({
             y = y - labelY;
 
             return {
-              x: x*cos - y*sin + labelX,
-              y: x*sin + y*cos + labelY
+              x: x * cos - y * sin + labelX,
+              y: x * sin + y * cos + labelY
             };
           };
 
@@ -551,7 +551,7 @@ fn = elesfn = ({
       }
     }
 
-    var noninf = function(x){
+    var noninf = function( x ){
       if( x === Infinity || x === -Infinity ){
         return 0;
       }
@@ -559,10 +559,10 @@ fn = elesfn = ({
       return x;
     };
 
-    x1 = noninf(x1);
-    x2 = noninf(x2);
-    y1 = noninf(y1);
-    y2 = noninf(y2);
+    x1 = noninf( x1 );
+    x2 = noninf( x2 );
+    y1 = noninf( y1 );
+    y2 = noninf( y2 );
 
     return {
       x1: x1,
@@ -600,7 +600,7 @@ var defineDimFns = function( opts ){
           default:
             return d.pfValue;
         }
-      } else {
+      } else{
         return 1;
       }
     }
@@ -616,11 +616,11 @@ var defineDimFns = function( opts ){
       if( styleEnabled ){
         var style = _p.style;
         var dim = ele[ opts.name ]();
-        var border = style['border-width'].pfValue;
+        var border = style[ 'border-width' ].pfValue;
         var padding = style[ opts.paddings[0] ].pfValue + style[ opts.paddings[1] ].pfValue;
 
         return dim + border + padding;
-      } else {
+      } else{
         return 1;
       }
     }
@@ -645,15 +645,15 @@ var defineDimFns = function( opts ){
   };
 };
 
-defineDimFns({
+defineDimFns( {
   name: 'width',
-  paddings: ['padding-left', 'padding-right']
-});
+  paddings: [ 'padding-left', 'padding-right' ]
+} );
 
-defineDimFns({
+defineDimFns( {
   name: 'height',
-  paddings: ['padding-top', 'padding-bottom']
-});
+  paddings: [ 'padding-top', 'padding-bottom' ]
+} );
 
 // aliases
 fn.modelPosition = fn.point = fn.position;

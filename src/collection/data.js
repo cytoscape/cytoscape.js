@@ -1,11 +1,11 @@
 'use strict';
 
-var define = require('../define');
+var define = require( '../define' );
 var fn, elesfn;
 
 fn = elesfn = ({
 
-  data: define.data({
+  data: define.data( {
     field: 'data',
     bindingEvent: 'data',
     allowBinding: true,
@@ -21,9 +21,9 @@ fn = elesfn = ({
       'parent': true
     },
     updateStyle: true
-  }),
+  } ),
 
-  removeData: define.removeData({
+  removeData: define.removeData( {
     field: 'data',
     event: 'data',
     triggerFnName: 'trigger',
@@ -35,9 +35,9 @@ fn = elesfn = ({
       'parent': true
     },
     updateStyle: true
-  }),
+  } ),
 
-  scratch: define.data({
+  scratch: define.data( {
     field: 'scratch',
     bindingEvent: 'scratch',
     allowBinding: true,
@@ -47,28 +47,28 @@ fn = elesfn = ({
     triggerFnName: 'trigger',
     allowGetting: true,
     updateStyle: true
-  }),
+  } ),
 
-  removeScratch: define.removeData({
+  removeScratch: define.removeData( {
     field: 'scratch',
     event: 'scratch',
     triggerFnName: 'trigger',
     triggerEvent: true,
     updateStyle: true
-  }),
+  } ),
 
-  rscratch: define.data({
+  rscratch: define.data( {
     field: 'rscratch',
     allowBinding: false,
     allowSetting: true,
     settingTriggersEvent: false,
     allowGetting: true
-  }),
+  } ),
 
-  removeRscratch: define.removeData({
+  removeRscratch: define.removeData( {
     field: 'rscratch',
     triggerEvent: false
-  }),
+  } ),
 
   id: function(){
     var ele = this[0];

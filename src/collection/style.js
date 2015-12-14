@@ -1,6 +1,6 @@
 'use strict';
 
-var is = require('../is');
+var is = require( '../is' );
 
 var elesfn = ({
 
@@ -27,9 +27,9 @@ var elesfn = ({
     var toNotify = updatedCompounds.length > 0 ? this.add( updatedCompounds ) : this;
 
     if( notifyRenderer ){
-      toNotify.rtrigger('style'); // let renderer know we changed style
-    } else {
-      toNotify.trigger('style'); // just fire the event
+      toNotify.rtrigger( 'style' ); // let renderer know we changed style
+    } else{
+      toNotify.trigger( 'style' ); // just fire the event
     }
     return this; // chaining
   },
@@ -48,9 +48,9 @@ var elesfn = ({
     var toNotify = updatedCompounds.length > 0 ? this.add( updatedCompounds ) : this;
 
     if( notifyRenderer ){
-      toNotify.rtrigger('style'); // let renderer know we changed style
-    } else {
-      toNotify.trigger('style'); // just fire the event
+      toNotify.rtrigger( 'style' ); // let renderer know we changed style
+    } else{
+      toNotify.trigger( 'style' ); // just fire the event
     }
     return this; // chaining
   },
@@ -68,7 +68,7 @@ var elesfn = ({
 
       if( property === undefined ){
         return renstyle;
-      } else {
+      } else{
         return renstyle[ property ];
       }
     }
@@ -83,31 +83,31 @@ var elesfn = ({
     var updateTransitions = false;
     var style = cy.style();
 
-    if( is.plainObject(name) ){ // then extend the bypass
+    if( is.plainObject( name ) ){ // then extend the bypass
       var props = name;
       style.applyBypass( this, props, updateTransitions );
 
       var updatedCompounds = this.updateCompoundBounds();
       var toNotify = updatedCompounds.length > 0 ? this.add( updatedCompounds ) : this;
-      toNotify.rtrigger('style'); // let the renderer know we've updated style
+      toNotify.rtrigger( 'style' ); // let the renderer know we've updated style
 
-    } else if( is.string(name) ){
+    } else if( is.string( name ) ){
 
       if( value === undefined ){ // then get the property from the style
         var ele = this[0];
 
         if( ele ){
           return style.getStylePropertyValue( ele, name );
-        } else { // empty collection => can't get any value
+        } else{ // empty collection => can't get any value
           return;
         }
 
-      } else { // then set the bypass with the property value
+      } else{ // then set the bypass with the property value
         style.applyBypass( this, name, value, updateTransitions );
 
         var updatedCompounds = this.updateCompoundBounds();
         var toNotify = updatedCompounds.length > 0 ? this.add( updatedCompounds ) : this;
-        toNotify.rtrigger('style'); // let the renderer know we've updated style
+        toNotify.rtrigger( 'style' ); // let the renderer know we've updated style
       }
 
     } else if( name === undefined ){
@@ -115,7 +115,7 @@ var elesfn = ({
 
       if( ele ){
         return style.getRawStyle( ele );
-      } else { // empty collection => can't get any value
+      } else{ // empty collection => can't get any value
         return;
       }
     }
@@ -134,15 +134,15 @@ var elesfn = ({
 
     if( names === undefined ){
       for( var i = 0; i < eles.length; i++ ){
-        var ele = eles[i];
+        var ele = eles[ i ];
 
         style.removeAllBypasses( ele, updateTransitions );
       }
-    } else {
-      names = names.split(/\s+/);
+    } else{
+      names = names.split( /\s+/ );
 
       for( var i = 0; i < eles.length; i++ ){
-        var ele = eles[i];
+        var ele = eles[ i ];
 
         style.removeBypasses( ele, names, updateTransitions );
       }
@@ -150,18 +150,18 @@ var elesfn = ({
 
     var updatedCompounds = this.updateCompoundBounds();
     var toNotify = updatedCompounds.length > 0 ? this.add( updatedCompounds ) : this;
-    toNotify.rtrigger('style'); // let the renderer know we've updated style
+    toNotify.rtrigger( 'style' ); // let the renderer know we've updated style
 
     return this; // chaining
   },
 
   show: function(){
-    this.css('display', 'element');
+    this.css( 'display', 'element' );
     return this; // chaining
   },
 
   hide: function(){
-    this.css('display', 'none');
+    this.css( 'display', 'none' );
     return this; // chaining
   },
 
@@ -176,8 +176,8 @@ var elesfn = ({
       var style = ele._private.style;
 
       if(
-        style['visibility'].value !== 'visible'
-        || style['display'].value !== 'element'
+        style[ 'visibility' ].value !== 'visible'
+        || style[ 'display' ].value !== 'element'
       ){
         return false;
       }
@@ -189,10 +189,10 @@ var elesfn = ({
 
         if( parents ){
           for( var i = 0; i < parents.length; i++ ){
-            var parent = parents[i];
+            var parent = parents[ i ];
             var pStyle = parent._private.style;
-            var pVis = pStyle['visibility'].value;
-            var pDis = pStyle['display'].value;
+            var pVis = pStyle[ 'visibility' ].value;
+            var pDis = pStyle[ 'display' ].value;
 
             if( pVis !== 'visible' || pDis !== 'element' ){
               return false;
@@ -201,7 +201,7 @@ var elesfn = ({
         }
 
         return true;
-      } else {
+      } else{
         var src = ele._private.source;
         var tgt = ele._private.target;
 
@@ -236,7 +236,7 @@ var elesfn = ({
 
       if( parents ){
         for( var i = 0; i < parents.length; i++ ){
-          var parent = parents[i];
+          var parent = parents[ i ];
           var opacity = parent._private.style.opacity.value;
 
           parentOpacity = opacity * parentOpacity;
@@ -257,7 +257,7 @@ var elesfn = ({
     if( ele ){
       if( !hasCompoundNodes ){
         return ele._private.style.opacity.value === 0;
-      } else {
+      } else{
         return ele.effectiveOpacity() === 0;
       }
     }
@@ -270,8 +270,8 @@ var elesfn = ({
     var ele = this[0];
 
     if( ele ){
-      var autoW = ele._private.style['width'].value === 'auto';
-      var autoH = ele._private.style['height'].value === 'auto';
+      var autoW = ele._private.style[ 'width' ].value === 'auto';
+      var autoH = ele._private.style[ 'height' ].value === 'auto';
 
       return ele.isParent() && autoW && autoH;
     }

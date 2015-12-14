@@ -1,6 +1,6 @@
 'use strict';
 
-var define = require('../define');
+var define = require( '../define' );
 
 var elesfn = ({
   animate: define.animate(),
@@ -9,7 +9,7 @@ var elesfn = ({
   clearQueue: define.clearQueue(),
   delay: define.delay(),
   delayAnimation: define.delayAnimation(),
-  stop: define.stop(),
+  stop: define.stop()
 });
 
 module.exports = elesfn;

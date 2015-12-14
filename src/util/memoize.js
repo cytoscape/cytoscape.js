@@ -13,10 +13,10 @@ module.exports = function memoize( fn, keyFn ){
       var args = [];
 
       for( var i = 0; i < arguments.length; i++ ){
-        args.push( arguments[i] );
+        args.push( arguments[ i ] );
       }
 
-      return args.join('$');
+      return args.join( '$' );
     };
   }
 
@@ -25,8 +25,8 @@ module.exports = function memoize( fn, keyFn ){
     var ret;
     var k = keyFn.apply( self, args );
 
-    if( !(ret = cache[k]) ){
-      ret = cache[k] = fn.apply( self, args );
+    if( !(ret = cache[ k ]) ){
+      ret = cache[ k ] = fn.apply( self, args );
     }
 
     return ret;

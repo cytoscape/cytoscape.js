@@ -1,7 +1,7 @@
 'use strict';
 
-var is = require('../is');
-var math = require('../math');
+var is = require( '../is' );
+var math = require( '../math' );
 
 var util = {
 
@@ -17,7 +17,7 @@ var util = {
       console.error.apply( console, arguments );
 
       if( console.trace ){ console.trace(); }
-    } else {
+    } else{
       console.log.apply( console, arguments );
 
       if( console.trace ){ console.trace(); }
@@ -33,11 +33,11 @@ var util = {
   copy: function( obj ){
     if( obj == null ){
       return obj;
-    } if( is.array(obj) ){
+    } if( is.array( obj ) ){
       return obj.slice();
-    } else if( is.plainObject(obj) ){
+    } else if( is.plainObject( obj ) ){
       return this.clone( obj );
-    } else {
+    } else{
       return obj;
     }
   }
@@ -56,10 +56,10 @@ util.extend = Object.assign != null ? Object.assign : function( tgt ){
   var args = arguments;
 
   for( var i = 1; i < args.length; i++ ){
-    var obj = args[i];
+    var obj = args[ i ];
 
     for( var k in obj ){
-      tgt[k] = obj[k];
+      tgt[ k ] = obj[ k ];
     }
   }
 
@@ -83,14 +83,14 @@ util.setPrefixedProperty = function( obj, propName, prefix, value ){
 };
 
 [
-  require('./colors'),
-  require('./maps'),
-  { memoize: require('./memoize') },
-  require('./regex'),
-  require('./strings'),
-  require('./timing')
-].forEach(function( req ){
+  require( './colors' ),
+  require( './maps' ),
+  { memoize: require( './memoize' ) },
+  require( './regex' ),
+  require( './strings' ),
+  require( './timing' )
+].forEach( function( req ){
   util.extend( util, req );
-});
+} );
 
 module.exports = util;

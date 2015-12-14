@@ -1,7 +1,7 @@
 'use strict';
 
-var is = require('../../../is');
-var util = require('../../../util');
+var is = require( '../../../is' );
+var util = require( '../../../util' );
 
 var BaseRenderer = function(){};
 var BR = BaseRenderer;
@@ -18,26 +18,26 @@ BRp.init = function( options ){
 
   r.container = options.cy.container();
 
-  r.selection = [undefined, undefined, undefined, undefined, 0]; // Coordinates for selection box, plus enabled flag
+  r.selection = [ undefined, undefined, undefined, undefined, 0]; // Coordinates for selection box, plus enabled flag
 
   //--Pointer-related data
   r.hoverData = {down: null, last: null,
       downTime: null, triggerMode: null,
       dragging: false,
-      initialPan: [null, null], capture: false};
+      initialPan: [ null, null ], capture: false};
 
   r.dragData = {possibleDragElements: []};
 
   r.touchData = {
-      start: null, capture: false,
+    start: null, capture: false,
 
-      // These 3 fields related to tap, taphold events
-      startPosition: [null, null, null, null, null, null],
-      singleTouchStartTime: null,
-      singleTouchMoved: true,
+    // These 3 fields related to tap, taphold events
+    startPosition: [ null, null, null, null, null, null ],
+    singleTouchStartTime: null,
+    singleTouchMoved: true,
 
-      now: [null, null, null, null, null, null],
-      earlier: [null, null, null, null, null, null]
+    now: [ null, null, null, null, null, null ],
+    earlier: [ null, null, null, null, null, null ]
   };
 
   r.redraws = 0;
@@ -70,19 +70,19 @@ BRp.init = function( options ){
   r.load();
 };
 
-BRp.notify = function(params) {
+BRp.notify = function( params ){
   var types;
   var r = this;
 
   if( is.array( params.type ) ){
     types = params.type;
 
-  } else {
+  } else{
     types = [ params.type ];
   }
 
   for( var i = 0; i < types.length; i++ ){
-    var type = types[i];
+    var type = types[ i ];
 
     switch( type ){
       case 'destroy':
@@ -96,7 +96,7 @@ BRp.notify = function(params) {
         break;
 
       case 'viewport':
-        r.redrawHint('select', true);
+        r.redrawHint( 'select', true );
         break;
 
       case 'style':
@@ -106,12 +106,12 @@ BRp.notify = function(params) {
 
     if( type === 'load' || type === 'resize' ){
       r.invalidateContainerClientCoordsCache();
-      r.matchCanvasSize(r.container);
+      r.matchCanvasSize( r.container );
     }
   } // for
 
-  r.redrawHint('eles', true);
-  r.redrawHint('drag', true);
+  r.redrawHint( 'eles', true );
+  r.redrawHint( 'drag', true );
 
   this.startRenderLoop();
 
@@ -124,10 +124,10 @@ BRp.destroy = function(){
   this.cy.stopAnimationLoop();
 
   for( var i = 0; i < this.bindings.length; i++ ){
-    var binding = this.bindings[i];
+    var binding = this.bindings[ i ];
     var b = binding;
 
-    b.target.removeEventListener(b.event, b.handler, b.useCapture);
+    b.target.removeEventListener( b.event, b.handler, b.useCapture );
   }
 
   if( this.removeObserver ){
@@ -135,24 +135,24 @@ BRp.destroy = function(){
   }
 
   if( this.labelCalcDiv ){
-    try{
-      document.body.removeChild(this.labelCalcDiv);
-    } catch(e){
+    try {
+      document.body.removeChild( this.labelCalcDiv );
+    } catch( e ){
       // ie10 issue #1014
     }
   }
 };
 
 [
-  require('./arrow-shapes'),
-  require('./cached-eles'),
-  require('./coord-ele-math'),
-  require('./images'),
-  require('./load-listeners'),
-  require('./node-shapes'),
-  require('./redraw')
-].forEach(function( props ){
+  require( './arrow-shapes' ),
+  require( './cached-eles' ),
+  require( './coord-ele-math' ),
+  require( './images' ),
+  require( './load-listeners' ),
+  require( './node-shapes' ),
+  require( './redraw' )
+].forEach( function( props ){
   util.extend( BRp, props );
-});
+} );
 
 module.exports = BR;

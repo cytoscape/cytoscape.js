@@ -1810,8 +1810,8 @@
 
             {
               "name": "eles.style",
-              "pureAliases": [ "eles.css", "eles.bypass" ],
-              "descr": "Get the style of the element, or override the style of the elements.",
+              "pureAliases": [ "eles.css" ],
+              "descr": "Get the style of the element.",
               "formatsSameFn": true,
               "formats": [
                 {
@@ -1823,40 +1823,9 @@
                   "name": "ele.style",
                   "descr": "Get a particular style property value.",
                   "args": [ { "name": "name", "descr": "The name of the visual style property to get." } ]
-                },
-
-                {
-                  "name": "eles.style",
-                  "descr": "Set the specified visual style property for the elements.",
-                  "args": [
-                    { "name": "name", "descr": "The name of the property to set." },
-                    { "name": "value", "descr": "The value to set to the visual style property." }
-                  ]
-                },
-
-                {
-                  "name": "eles.style",
-                  "descr": "Set several visual style properties at once for the elements.",
-                  "args": [ { "name": "props", "descr": "An object with name-value pairs representing properties to set on the elements." } ]
                 }
               ],
               "md": "collection/style"
-            },
-
-            {
-              "name": "eles.removeStyle",
-              "pureAliases": [ "eles.removeCss", "eles.removeBypass" ],
-              "descr": "Removes overridden style of the elements.",
-              "formats": [
-                {
-                  "descr": "Removes all overridden style of the elements."
-                },
-
-                {
-                  "descr": "Removes particular overridden style properties of the elements.",
-                  "args": [ { "name": "names", "descr": "A space-separated list of property names for which overridden styles will be removed." } ]
-                }
-              ]
             },
 
             {

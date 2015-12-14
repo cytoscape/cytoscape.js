@@ -22,7 +22,7 @@ var Fabric = function( N ){
   } if( typeof navigator !== 'undefined' && navigator.hardwareConcurrency != null ){
     N = navigator.hardwareConcurrency;
   } else {
-    try{
+    try {
       N = require( 'os' ).cpus().length;
     } catch( err ){
       N = defN;

@@ -111,10 +111,10 @@ CRp.drawNode = function( context, node, drawOverlayInstead ){
       context.translate( pos.x, pos.y );
 
       if( rs.pathCacheKey === pathCacheKey ){
-        path = context = rs.pathCache;
+        path = rs.pathCache;
         pathCacheHit = true;
       } else{
-        path = context = new Path2D();
+        path = new Path2D();
         rs.pathCacheKey = pathCacheKey;
         rs.pathCache = path;
       }
@@ -132,14 +132,12 @@ CRp.drawNode = function( context, node, drawOverlayInstead ){
       }
 
       r.nodeShapes[ this.getNodeShape( node ) ].draw(
-            context,
+            ( path || context ),
             npos.x,
             npos.y,
             nodeWidth,
             nodeHeight );
     }
-
-    context = canvasContext;
 
     if( usePaths ){
       context.fill( path );

@@ -266,95 +266,259 @@ fn = elesfn = ({
 
     // return changed
     return this.spawn( updated );
-  },
+  }
+});
 
-  // get the bounding box of the elements (in raw model position)
-  boundingBox: function( options ){
-    var eles = this;
-    var cy = eles._private.cy;
-    var cy_p = cy._private;
-    var styleEnabled = cy_p.styleEnabled;
+var noninf = function( x ){
+  if( x === Infinity || x === -Infinity ){
+    return 0;
+  }
 
-    options = options || util.staticEmptyObject();
+  return x;
+};
 
-    var includeNodes = options.includeNodes === undefined ? true : options.includeNodes;
-    var includeEdges = options.includeEdges === undefined ? true : options.includeEdges;
-    var includeLabels = options.includeLabels === undefined ? true : options.includeLabels;
+var updateBounds = function( b, x1, y1, x2, y2 ){
+  b.x1 = x1 < b.x1 ? x1 : b.x1;
+  b.x2 = x2 > b.x2 ? x2 : b.x2;
+  b.y1 = y1 < b.y1 ? y1 : b.y1;
+  b.y2 = y2 > b.y2 ? y2 : b.y2;
+};
 
-    // recalculate projections etc
-    if( styleEnabled ){
-      cy_p.renderer.recalculateRenderedStyle( this );
+var updateBoundsFromBox = function( b, b2 ){
+  return updateBounds( b, b2.x1, b2.y1, b2.x2, b2.y2 );
+};
+
+var getLabelBounds = function( ele, prefix ){
+  var prefixDash;
+
+  if( prefix ){
+    prefixDash = prefix + '-';
+  } else {
+    prefixDash = '';
+  }
+
+  var prefixedProperty = util.getPrefixedProperty.bind( util );
+
+  var bounds = {
+    x1: Infinity,
+    y1: Infinity,
+    x2: -Infinity,
+    y2: -Infinity
+  };
+
+  var _p = ele._private;
+  var style = _p.style;
+  var rstyle = _p.rstyle;
+  var label = style[ prefixDash + 'label' ].strValue;
+  var fontSize = style[ 'font-size' ];
+  var halign = style[ 'text-halign' ];
+  var valign = style[ 'text-valign' ];
+  var labelWidth = prefixedProperty( rstyle, 'labelWidth', prefix );
+  var labelHeight = prefixedProperty( rstyle, 'labelHeight', prefix );
+  var labelX = prefixedProperty( rstyle, 'labelX', prefix );
+  var labelY = prefixedProperty( rstyle, 'labelY', prefix );
+  var isEdge = ele.isEdge();
+  var rotation = style[ prefixDash + 'text-rotation' ];
+
+  if( label && fontSize && labelHeight != null && labelWidth != null && labelX != null && labelY != null && halign && valign ){
+    var lh = labelHeight;
+    var lw = labelWidth;
+    var lx1, lx2, ly1, ly2;
+
+    if( isEdge ){
+      lx1 = labelX - lw / 2;
+      lx2 = labelX + lw / 2;
+      ly1 = labelY - lh / 2;
+      ly2 = labelY + lh / 2;
+    } else {
+      switch( halign.value ){
+        case 'left':
+          lx1 = labelX - lw;
+          lx2 = labelX;
+          break;
+
+        case 'center':
+          lx1 = labelX - lw / 2;
+          lx2 = labelX + lw / 2;
+          break;
+
+        case 'right':
+          lx1 = labelX;
+          lx2 = labelX + lw;
+          break;
+      }
+
+      switch( valign.value ){
+        case 'top':
+          ly1 = labelY - lh;
+          ly2 = labelY;
+          break;
+
+        case 'center':
+          ly1 = labelY - lh / 2;
+          ly2 = labelY + lh / 2;
+          break;
+
+        case 'bottom':
+          ly1 = labelY;
+          ly2 = labelY + lh;
+          break;
+      }
     }
 
-    var x1 = Infinity;
-    var x2 = -Infinity;
-    var y1 = Infinity;
-    var y2 = -Infinity;
+    if( ( isEdge && rotation.strValue === 'autorotate' ) || ( rotation.pfValue != null && rotation.pfValue !== 0 ) ){
+      var theta = prefixedProperty( _p.rscratch, 'labelAngle', prefix );
+      var cos = Math.cos( theta );
+      var sin = Math.sin( theta );
 
-    // find bounds of elements
-    for( var i = 0; i < eles.length; i++ ){
-      var ele = eles[ i ];
-      var _p = ele._private;
-      var style = _p.style;
-      var display = styleEnabled ? _p.style[ 'display' ].value : 'element';
-      var isNode = _p.group === 'nodes';
-      var ex1, ex2, ey1, ey2, x, y;
-      var includedEle = false;
+      var rotate = function( x, y ){
+        x = x - labelX;
+        y = y - labelY;
 
-      if( display === 'none' ){ continue; } // then ele doesn't take up space
+        return {
+          x: x * cos - y * sin + labelX,
+          y: x * sin + y * cos + labelY
+        };
+      };
 
-      if( isNode && includeNodes ){
-        includedEle = true;
+      var px1y1 = rotate( lx1, ly1 );
+      var px1y2 = rotate( lx1, ly2 );
+      var px2y1 = rotate( lx2, ly1 );
+      var px2y2 = rotate( lx2, ly2 );
 
-        var pos = _p.position;
-        x = pos.x;
-        y = pos.y;
-        var w = ele.outerWidth();
-        var halfW = w / 2;
-        var h = ele.outerHeight();
-        var halfH = h / 2;
+      lx1 = Math.min( px1y1.x, px1y2.x, px2y1.x, px2y2.x );
+      lx2 = Math.max( px1y1.x, px1y2.x, px2y1.x, px2y2.x );
+      ly1 = Math.min( px1y1.y, px1y2.y, px2y1.y, px2y2.y );
+      ly2 = Math.max( px1y1.y, px1y2.y, px2y1.y, px2y2.y );
+    }
 
-        // handle node dimensions
-        /////////////////////////
+    updateBounds( bounds, lx1, ly1, lx2, ly2 );
+  }
 
-        ex1 = x - halfW;
-        ex2 = x + halfW;
-        ey1 = y - halfH;
-        ey2 = y + halfH;
+  return bounds;
+};
 
-        x1 = ex1 < x1 ? ex1 : x1;
-        x2 = ex2 > x2 ? ex2 : x2;
-        y1 = ey1 < y1 ? ey1 : y1;
-        y2 = ey2 > y2 ? ey2 : y2;
+// get the bounding box of the elements (in raw model position)
+var boundingBoxImpl = function( ele, options ){
+  var cy = ele._private.cy;
+  var cy_p = cy._private;
+  var styleEnabled = cy_p.styleEnabled;
 
-      } else if( ele.isEdge() && includeEdges ){
-        includedEle = true;
+  // recalculate projections etc
+  if( styleEnabled ){
+    cy_p.renderer.recalculateRenderedStyle( ele );
+  }
 
-        var n1 = _p.source;
-        var n1_p = n1._private;
-        var n1pos = n1_p.position;
+  var bounds = {
+    x1: Infinity,
+    y1: Infinity,
+    x2: -Infinity,
+    y2: -Infinity
+  };
 
-        var n2 = _p.target;
-        var n2_p = n2._private;
-        var n2pos = n2_p.position;
+  var _p = ele._private;
+  var style = _p.style;
+  var display = styleEnabled ? _p.style[ 'display' ].value : 'element';
+  var isNode = ele.isNode();
+  var isEdge = ele.isEdge();
+  var ex1, ex2, ey1, ey2, x, y;
+  var displayed = display !== 'none';
+
+  if( displayed ){
+    if( isNode && options.includeNodes ){
+      var pos = _p.position;
+      x = pos.x;
+      y = pos.y;
+      var w = ele.outerWidth();
+      var halfW = w / 2;
+      var h = ele.outerHeight();
+      var halfH = h / 2;
+
+      // handle node dimensions
+      /////////////////////////
+
+      ex1 = x - halfW;
+      ex2 = x + halfW;
+      ey1 = y - halfH;
+      ey2 = y + halfH;
+
+      updateBounds( bounds, ex1, ey1, ex2, ey2 );
+
+    } else if( isEdge && options.includeEdges ){
+      var n1 = _p.source;
+      var n1_p = n1._private;
+      var n1pos = n1_p.position;
+
+      var n2 = _p.target;
+      var n2_p = n2._private;
+      var n2pos = n2_p.position;
 
 
-        // handle edge dimensions (rough box estimate)
-        //////////////////////////////////////////////
+      // handle edge dimensions (rough box estimate)
+      //////////////////////////////////////////////
 
-        var rstyle = _p.rstyle || {};
-        var w = 0;
-        var wHalf = 0;
+      var rstyle = _p.rstyle || {};
+      var w = 0;
+      var wHalf = 0;
 
-        if( styleEnabled ){
-          w = style[ 'width' ].pfValue;
-          wHalf = w / 2;
+      if( styleEnabled ){
+        w = style[ 'width' ].pfValue;
+        wHalf = w / 2;
+      }
+
+      ex1 = n1pos.x;
+      ex2 = n2pos.x;
+      ey1 = n1pos.y;
+      ey2 = n2pos.y;
+
+      if( ex1 > ex2 ){
+        var temp = ex1;
+        ex1 = ex2;
+        ex2 = temp;
+      }
+
+      if( ey1 > ey2 ){
+        var temp = ey1;
+        ey1 = ey2;
+        ey2 = temp;
+      }
+
+      // take into account edge width
+      ex1 -= wHalf;
+      ex2 += wHalf;
+      ey1 -= wHalf;
+      ey2 += wHalf;
+
+      updateBounds( bounds, ex1, ey1, ex2, ey2 );
+
+      // handle points along edge (sanity check)
+      //////////////////////////////////////////
+
+      if( styleEnabled ){
+        var pts = rstyle.bezierPts || rstyle.linePts || [];
+
+        for( var j = 0; j < pts.length; j++ ){
+          var pt = pts[ j ];
+
+          ex1 = pt.x - wHalf;
+          ex2 = pt.x + wHalf;
+          ey1 = pt.y - wHalf;
+          ey2 = pt.y + wHalf;
+
+          updateBounds( bounds, ex1, ey1, ex2, ey2 );
         }
+      }
 
-        ex1 = n1pos.x;
-        ex2 = n2pos.x;
-        ey1 = n1pos.y;
-        ey2 = n2pos.y;
+      // precise haystacks (sanity check)
+      ///////////////////////////////////
+
+      if( styleEnabled && style[ 'curve-style' ].strValue === 'haystack' ){
+        var hpts = rstyle.haystackPts;
+
+        ex1 = hpts[0].x;
+        ey1 = hpts[0].y;
+        ex2 = hpts[1].x;
+        ey2 = hpts[1].y;
 
         if( ex1 > ex2 ){
           var temp = ex1;
@@ -368,212 +532,70 @@ fn = elesfn = ({
           ey2 = temp;
         }
 
-        // take into account edge width
-        ex1 -= wHalf;
-        ex2 += wHalf;
-        ey1 -= wHalf;
-        ey2 += wHalf;
-
-        x1 = ex1 < x1 ? ex1 : x1;
-        x2 = ex2 > x2 ? ex2 : x2;
-        y1 = ey1 < y1 ? ey1 : y1;
-        y2 = ey2 > y2 ? ey2 : y2;
-
-        // handle points along edge (sanity check)
-        //////////////////////////////////////////
-
-        if( styleEnabled ){
-          var pts = rstyle.bezierPts || rstyle.linePts || [];
-
-          for( var j = 0; j < pts.length; j++ ){
-            var pt = pts[ j ];
-
-            ex1 = pt.x - wHalf;
-            ex2 = pt.x + wHalf;
-            ey1 = pt.y - wHalf;
-            ey2 = pt.y + wHalf;
-
-            x1 = ex1 < x1 ? ex1 : x1;
-            x2 = ex2 > x2 ? ex2 : x2;
-            y1 = ey1 < y1 ? ey1 : y1;
-            y2 = ey2 > y2 ? ey2 : y2;
-          }
-        }
-
-        // precise haystacks (sanity check)
-        ///////////////////////////////////
-
-        if( styleEnabled && style[ 'curve-style' ].strValue === 'haystack' ){
-          var hpts = rstyle.haystackPts;
-
-          ex1 = hpts[0].x;
-          ey1 = hpts[0].y;
-          ex2 = hpts[1].x;
-          ey2 = hpts[1].y;
-
-          if( ex1 > ex2 ){
-            var temp = ex1;
-            ex1 = ex2;
-            ex2 = temp;
-          }
-
-          if( ey1 > ey2 ){
-            var temp = ey1;
-            ey1 = ey2;
-            ey2 = temp;
-          }
-
-          x1 = ex1 < x1 ? ex1 : x1;
-          x2 = ex2 > x2 ? ex2 : x2;
-          y1 = ey1 < y1 ? ey1 : y1;
-          y2 = ey2 > y2 ? ey2 : y2;
-        }
-
-      } // edges
-
-
-      // handle label dimensions
-      //////////////////////////
-
-      if( styleEnabled ){
-
-        checkLabel( ele );
-
-        if( ele.isEdge() ){
-          checkLabel( ele, 'source' );
-          checkLabel( ele, 'source' );
-        }
-
-      } // style enabled for labels
-    } // for
-
-    function checkLabel( ele, prefix ){
-      var prefixDash;
-
-      if( prefix ){
-        prefixDash = prefix + '-';
-      } else {
-        prefixDash = '';
+        updateBounds( bounds, ex1, ey1, ex2, ey2 );
       }
 
-      var prefixedProperty = util.getPrefixedProperty.bind( util );
+    } // edges
 
-      var _p = ele._private;
-      var style = _p.style;
-      var rstyle = _p.rstyle;
-      var label = style[ prefixDash + 'label' ].strValue;
-      var fontSize = style[ 'font-size' ];
-      var halign = style[ 'text-halign' ];
-      var valign = style[ 'text-valign' ];
-      var labelWidth = prefixedProperty( rstyle, 'labelWidth', prefix );
-      var labelHeight = prefixedProperty( rstyle, 'labelHeight', prefix );
-      var labelX = prefixedProperty( rstyle, 'labelX', prefix );
-      var labelY = prefixedProperty( rstyle, 'labelY', prefix );
-      var isEdge = ele.isEdge();
-      var rotation = style[ prefixDash + 'text-rotation' ];
 
-      if( includeLabels && label && fontSize && labelHeight != null && labelWidth != null && labelX != null && labelY != null && halign && valign ){
-        var lh = labelHeight;
-        var lw = labelWidth;
-        var lx1, lx2, ly1, ly2;
+    // handle label dimensions
+    //////////////////////////
 
-        if( isEdge ){
-          lx1 = labelX - lw / 2;
-          lx2 = labelX + lw / 2;
-          ly1 = labelY - lh / 2;
-          ly2 = labelY + lh / 2;
-        } else {
-          switch( halign.value ){
-            case 'left':
-              lx1 = labelX - lw;
-              lx2 = labelX;
-              break;
+    if( styleEnabled && options.includeLabels ){
 
-            case 'center':
-              lx1 = labelX - lw / 2;
-              lx2 = labelX + lw / 2;
-              break;
+      updateBounds( getLabelBounds( ele ) );
 
-            case 'right':
-              lx1 = labelX;
-              lx2 = labelX + lw;
-              break;
-          }
-
-          switch( valign.value ){
-            case 'top':
-              ly1 = labelY - lh;
-              ly2 = labelY;
-              break;
-
-            case 'center':
-              ly1 = labelY - lh / 2;
-              ly2 = labelY + lh / 2;
-              break;
-
-            case 'bottom':
-              ly1 = labelY;
-              ly2 = labelY + lh;
-              break;
-          }
-        }
-
-        if( ( isEdge && rotation.strValue === 'autorotate' ) || ( rotation.pfValue != null && rotation.pfValue !== 0 ) ){
-          var theta = prefixedProperty( _p.rscratch, 'labelAngle', prefix );
-          var cos = Math.cos( theta );
-          var sin = Math.sin( theta );
-
-          var rotate = function( x, y ){
-            x = x - labelX;
-            y = y - labelY;
-
-            return {
-              x: x * cos - y * sin + labelX,
-              y: x * sin + y * cos + labelY
-            };
-          };
-
-          var px1y1 = rotate( lx1, ly1 );
-          var px1y2 = rotate( lx1, ly2 );
-          var px2y1 = rotate( lx2, ly1 );
-          var px2y2 = rotate( lx2, ly2 );
-
-          lx1 = Math.min( px1y1.x, px1y2.x, px2y1.x, px2y2.x );
-          lx2 = Math.max( px1y1.x, px1y2.x, px2y1.x, px2y2.x );
-          ly1 = Math.min( px1y1.y, px1y2.y, px2y1.y, px2y2.y );
-          ly2 = Math.max( px1y1.y, px1y2.y, px2y1.y, px2y2.y );
-        }
-
-        x1 = lx1 < x1 ? lx1 : x1;
-        x2 = lx2 > x2 ? lx2 : x2;
-        y1 = ly1 < y1 ? ly1 : y1;
-        y2 = ly2 > y2 ? ly2 : y2;
-      }
-    }
-
-    var noninf = function( x ){
-      if( x === Infinity || x === -Infinity ){
-        return 0;
+      if( isEdge ){
+        updateBounds( getLabelBounds( ele, 'source' ) );
+        updateBounds( getLabelBounds( ele, 'target' ) );
       }
 
-      return x;
-    };
+    } // style enabled for labels
+  } // if displayed
 
-    x1 = noninf( x1 );
-    x2 = noninf( x2 );
-    y1 = noninf( y1 );
-    y2 = noninf( y2 );
+  return bounds;
+};
 
-    return {
-      x1: x1,
-      x2: x2,
-      y1: y1,
-      y2: y2,
-      w: x2 - x1,
-      h: y2 - y1
-    };
+var cachedBoundingBoxImpl = util.memoize( boundingBoxImpl, function boundingBoxCacheKey( ele, opts ){
+  var _p = ele._private;
+  var rstyle = _p.rstyle;
+
+  return 'TODO'; // TODO use an appropriate key
+} );
+
+elesfn.boundingBox = function( options ){
+  var bounds = {
+    x1: Infinity,
+    y1: Infinity,
+    x2: -Infinity,
+    y2: -Infinity
+  };
+
+  options = options || util.staticEmptyObject();
+
+  var opts = {
+    includeNodes: options.includeNodes === undefined ? true : options.includeNodes,
+    includeEdges: options.includeEdges === undefined ? true : options.includeEdges,
+    includeLabels: options.includeLabels === undefined ? true : options.includeLabels
+  };
+
+  var eles = this;
+
+  for( var i = 0; i < eles.length; i++ ){
+    var ele = eles[i];
+
+    updateBoundsFromBox( bounds, boundingBoxImpl( ele, opts ) );
   }
-});
+
+  bounds.x1 = noninf( bounds.x1 );
+  bounds.y1 = noninf( bounds.y1 );
+  bounds.x2 = noninf( bounds.x2 );
+  bounds.y2 = noninf( bounds.y2 );
+  bounds.w = noninf( bounds.x2 - bounds.x1 );
+  bounds.h = noninf( bounds.y2 - bounds.y1 );
+
+  return bounds;
+};
 
 var defineDimFns = function( opts ){
   opts.uppercaseName = util.capitalize( opts.name );

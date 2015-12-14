@@ -135,7 +135,7 @@ BRp.destroy = function(){
   }
 
   if( this.labelCalcDiv ){
-    try{
+    try {
       document.body.removeChild( this.labelCalcDiv );
     } catch( e ){
       // ie10 issue #1014

@@ -272,7 +272,7 @@ BRp.findNearestElement = function( x, y, visibleElementsOnly, isTouch ){
 
       checkLabel( ele );
 
-    } else{ // then edge
+    } else { // then edge
       checkEdge( ele );
 
       checkLabel( ele );

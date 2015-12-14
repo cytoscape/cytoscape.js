@@ -23,7 +23,7 @@ var corefn = ({
 
     var renderer = this.renderer();
 
-    renderer.notify(params);
+    renderer.notify( params );
   },
 
   notifications: function( bool ){
@@ -31,15 +31,15 @@ var corefn = ({
 
     if( bool === undefined ){
       return p.notificationsEnabled;
-    } else {
+    } else{
       p.notificationsEnabled = bool ? true : false;
     }
   },
 
   noNotifications: function( callback ){
-    this.notifications(false);
+    this.notifications( false );
     callback();
-    this.notifications(true);
+    this.notifications( true );
   },
 
   startBatch: function(){
@@ -75,10 +75,10 @@ var corefn = ({
 
       // notify the renderer of queued eles and event types
       _p.batchingNotify = false;
-      this.notify({
+      this.notify( {
         type: _p.batchNotifyTypes,
         collection: _p.batchNotifyEles
-      });
+      } );
     }
 
     return this;
@@ -96,14 +96,14 @@ var corefn = ({
   batchData: function( map ){
     var cy = this;
 
-    return this.batch(function(){
+    return this.batch( function(){
       for( var id in map ){
-        var data = map[id];
+        var data = map[ id ];
         var ele = cy.getElementById( id );
 
         ele.data( data );
       }
-    });
+    } );
   }
 });
 

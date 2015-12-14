@@ -1,6 +1,6 @@
 'use strict';
 
-var util = require('../util');
+var util = require( '../util' );
 
 var corefn = ({
 
@@ -16,19 +16,19 @@ var corefn = ({
   },
 
   forceRender: function(){
-    this.notify({
+    this.notify( {
       type: 'draw'
-    });
+    } );
 
     return this;
   },
 
   resize: function(){
-    this.notify({
+    this.notify( {
       type: 'resize'
-    });
+    } );
 
-    this.trigger('resize');
+    this.trigger( 'resize' );
 
     return this;
   },
@@ -36,15 +36,15 @@ var corefn = ({
   initRenderer: function( options ){
     var cy = this;
 
-    var RendererProto = cy.extension('renderer', options.name);
+    var RendererProto = cy.extension( 'renderer', options.name );
     if( RendererProto == null ){
-      util.error('Can not initialise: No such renderer `%s` found; did you include its JS file?', options.name);
+      util.error( 'Can not initialise: No such renderer `%s` found; did you include its JS file?', options.name );
       return;
     }
 
-    var rOpts = util.extend({}, options, {
+    var rOpts = util.extend( {}, options, {
       cy: cy
-    });
+    } );
     var renderer = cy._private.renderer = new RendererProto( rOpts );
 
     renderer.init( rOpts );
@@ -55,7 +55,7 @@ var corefn = ({
     var cbs = this._private.onRenders;
 
     for( var i = 0; i < cbs.length; i++ ){
-      var cb = cbs[i];
+      var cb = cbs[ i ];
 
       cb();
     }
@@ -78,7 +78,7 @@ var corefn = ({
     }
 
     for( var i = 0; i < cbs.length; i++ ){ // unbind specified
-      var cb = cbs[i];
+      var cb = cbs[ i ];
 
       if( fn === cb ){
         cbs.splice( i, 1 );

@@ -1,8 +1,8 @@
 'use strict';
 
-var define = require('../define');
-var util = require('../util');
-var is = require('../is');
+var define = require( '../define' );
+var util = require( '../util' );
+var is = require( '../is' );
 
 var corefn = ({
 
@@ -40,10 +40,10 @@ var corefn = ({
     function globalAnimationStep(){
       if( !cy._private.animationsRunning ){ return; }
 
-      util.requestAnimationFrame(function(now){
-        handleElements(now);
+      util.requestAnimationFrame( function( now ){
+        handleElements( now );
         globalAnimationStep();
-      });
+      } );
     }
 
     globalAnimationStep(); // first call
@@ -69,7 +69,7 @@ var corefn = ({
 
         var callbacks = function( callbacks ){
           for( var j = callbacks.length - 1; j >= 0; j-- ){
-            var cb = callbacks[j];
+            var cb = callbacks[ j ];
 
             cb();
           }
@@ -79,7 +79,7 @@ var corefn = ({
 
         // step and remove if done
         for( var i = current.length - 1; i >= 0; i-- ){
-          var ani = current[i];
+          var ani = current[ i ];
           var ani_p = ani._private;
 
           if( ani_p.stopped ){
@@ -114,7 +114,7 @@ var corefn = ({
           callbacks( ani_p.frames );
 
           if( ani.completed() ){
-            current.splice(i, 1);
+            current.splice( i, 1 );
 
             ani_p.hooked = false;
             ani_p.playing = false;
@@ -136,7 +136,7 @@ var corefn = ({
       // handle all eles
       var ranEleAni = false;
       for( var e = 0; e < eles.length; e++ ){
-        var ele = eles[e];
+        var ele = eles[ e ];
         var handledThisEle = handleElement( ele );
 
         ranEleAni = ranEleAni || handledThisEle;
@@ -153,10 +153,10 @@ var corefn = ({
           toNotify = updatedEles.length > 0 ? eles.add( updatedEles ) : eles;
         }
 
-        cy.notify({
+        cy.notify( {
           type: 'draw',
           collection: toNotify
-        });
+        } );
       }
 
       // remove elements from list of currently animating if its queues are empty
@@ -208,17 +208,17 @@ var corefn = ({
       if( !ani_p.easingImpl ){
 
         if( pEasing == null ){ // use default
-          ani_p.easingImpl = easings['linear'];
+          ani_p.easingImpl = easings[ 'linear' ];
 
-        } else { // then define w/ name
+        } else{ // then define w/ name
           var easingVals;
 
           if( is.string( pEasing ) ){
-            var easingProp = style.parse('transition-timing-function', pEasing);
+            var easingProp = style.parse( 'transition-timing-function', pEasing );
 
             easingVals = easingProp.value;
 
-          } else { // then assume preparsed array
+          } else{ // then assume preparsed array
             easingVals = pEasing;
           }
 
@@ -227,9 +227,9 @@ var corefn = ({
           if( is.string( easingVals ) ){
             name = easingVals;
             args = [];
-          } else {
+          } else{
             name = easingVals[1];
-            args = easingVals.slice(2).map(function(n){ return +n; });
+            args = easingVals.slice( 2 ).map( function( n ){ return +n; } );
           }
 
           if( args.length > 0 ){ // create with args
@@ -238,7 +238,7 @@ var corefn = ({
             }
 
             ani_p.easingImpl = easings[ name ].apply( null, args );
-          } else { // static impl by name
+          } else{ // static impl by name
             ani_p.easingImpl = easings[ name ];
           }
         }
@@ -250,7 +250,7 @@ var corefn = ({
 
       if( ani_p.duration === 0 ){
         percent = 1;
-      } else {
+      } else{
         percent = (now - startTime) / ani_p.duration;
       }
 
@@ -292,7 +292,7 @@ var corefn = ({
             pan.y = ease( startPan.y, endPan.y, percent, easing );
           }
 
-          self.trigger('pan');
+          self.trigger( 'pan' );
         }
 
         var startZoom = ani_p.startZoom;
@@ -303,18 +303,18 @@ var corefn = ({
             _p.zoom = ease( startZoom, endZoom, percent, easing );
           }
 
-          self.trigger('zoom');
+          self.trigger( 'zoom' );
         }
 
         if( animatingPan || animatingZoom ){
-          self.trigger('viewport');
+          self.trigger( 'viewport' );
         }
 
         var props = ani_p.style;
         if( props && isEles ){
 
           for( var i = 0; i < props.length; i++ ){
-            var prop = props[i];
+            var prop = props[ i ];
             var name = prop.name;
             var end = prop;
 
@@ -328,7 +328,7 @@ var corefn = ({
 
       }
 
-      if( is.fn(ani_p.step) ){
+      if( is.fn( ani_p.step ) ){
         ani_p.step.apply( self, [ now ] );
       }
 
@@ -337,12 +337,12 @@ var corefn = ({
       return percent;
     }
 
-    function valid(start, end){
+    function valid( start, end ){
       if( start == null || end == null ){
         return false;
       }
 
-      if( is.number(start) && is.number(end) ){
+      if( is.number( start ) && is.number( end ) ){
         return true;
       } else if( (start) && (end) ){
         return true;
@@ -354,7 +354,7 @@ var corefn = ({
     // assumes p0 = 0, p3 = 1
     function evalCubicBezier( p1, p2, t ){
       var one_t = 1 - t;
-      var tsq = t*t;
+      var tsq = t * t;
 
       return ( 3 * one_t * one_t * t * p1 ) + ( 3 * one_t * tsq * p2 ) + tsq * t;
     }
@@ -368,88 +368,88 @@ var corefn = ({
     /* Runge-Kutta spring physics function generator. Adapted from Framer.js, copyright Koen Bok. MIT License: http://en.wikipedia.org/wiki/MIT_License */
     /* Given a tension, friction, and duration, a simulation at 60FPS will first run without a defined duration in order to calculate the full path. A second pass
        then adjusts the time delta -- using the relation between actual time and duration -- to calculate the path for the duration-constrained animation. */
-    var generateSpringRK4 = (function () {
-        function springAccelerationForState (state) {
-            return (-state.tension * state.x) - (state.friction * state.v);
-        }
+    var generateSpringRK4 = (function(){
+      function springAccelerationForState( state ){
+        return (-state.tension * state.x) - (state.friction * state.v);
+      }
 
-        function springEvaluateStateWithDerivative (initialState, dt, derivative) {
-            var state = {
-                x: initialState.x + derivative.dx * dt,
-                v: initialState.v + derivative.dv * dt,
-                tension: initialState.tension,
-                friction: initialState.friction
-            };
-
-            return { dx: state.v, dv: springAccelerationForState(state) };
-        }
-
-        function springIntegrateState (state, dt) {
-            var a = {
-                    dx: state.v,
-                    dv: springAccelerationForState(state)
-                },
-                b = springEvaluateStateWithDerivative(state, dt * 0.5, a),
-                c = springEvaluateStateWithDerivative(state, dt * 0.5, b),
-                d = springEvaluateStateWithDerivative(state, dt, c),
-                dxdt = 1.0 / 6.0 * (a.dx + 2.0 * (b.dx + c.dx) + d.dx),
-                dvdt = 1.0 / 6.0 * (a.dv + 2.0 * (b.dv + c.dv) + d.dv);
-
-            state.x = state.x + dxdt * dt;
-            state.v = state.v + dvdt * dt;
-
-            return state;
-        }
-
-        return function springRK4Factory (tension, friction, duration) {
-
-            var initState = {
-                    x: -1,
-                    v: 0,
-                    tension: null,
-                    friction: null
-                },
-                path = [0],
-                time_lapsed = 0,
-                tolerance = 1 / 10000,
-                DT = 16 / 1000,
-                have_duration, dt, last_state;
-
-            tension = parseFloat(tension) || 500;
-            friction = parseFloat(friction) || 20;
-            duration = duration || null;
-
-            initState.tension = tension;
-            initState.friction = friction;
-
-            have_duration = duration !== null;
-
-            /* Calculate the actual time it takes for this animation to complete with the provided conditions. */
-            if (have_duration) {
-                /* Run the simulation without a duration. */
-                time_lapsed = springRK4Factory(tension, friction);
-                /* Compute the adjusted time delta. */
-                dt = time_lapsed / duration * DT;
-            } else {
-                dt = DT;
-            }
-
-            while (true) {
-                /* Next/step function .*/
-                last_state = springIntegrateState(last_state || initState, dt);
-                /* Store the position. */
-                path.push(1 + last_state.x);
-                time_lapsed += 16;
-                /* If the change threshold is reached, break. */
-                if (!(Math.abs(last_state.x) > tolerance && Math.abs(last_state.v) > tolerance)) {
-                    break;
-                }
-            }
-
-            /* If duration is not defined, return the actual time required for completing this animation. Otherwise, return a closure that holds the
-               computed path and returns a snapshot of the position according to a given percentComplete. */
-            return !have_duration ? time_lapsed : function(percentComplete) { return path[ (percentComplete * (path.length - 1)) | 0 ]; };
+      function springEvaluateStateWithDerivative( initialState, dt, derivative ){
+        var state = {
+          x: initialState.x + derivative.dx * dt,
+          v: initialState.v + derivative.dv * dt,
+          tension: initialState.tension,
+          friction: initialState.friction
         };
+
+        return { dx: state.v, dv: springAccelerationForState( state ) };
+      }
+
+      function springIntegrateState( state, dt ){
+        var a = {
+          dx: state.v,
+          dv: springAccelerationForState( state )
+        },
+        b = springEvaluateStateWithDerivative( state, dt * 0.5, a ),
+        c = springEvaluateStateWithDerivative( state, dt * 0.5, b ),
+        d = springEvaluateStateWithDerivative( state, dt, c ),
+        dxdt = 1.0 / 6.0 * (a.dx + 2.0 * (b.dx + c.dx) + d.dx),
+        dvdt = 1.0 / 6.0 * (a.dv + 2.0 * (b.dv + c.dv) + d.dv);
+
+        state.x = state.x + dxdt * dt;
+        state.v = state.v + dvdt * dt;
+
+        return state;
+      }
+
+      return function springRK4Factory( tension, friction, duration ){
+
+        var initState = {
+          x: -1,
+          v: 0,
+          tension: null,
+          friction: null
+        },
+        path = [0],
+        time_lapsed = 0,
+        tolerance = 1 / 10000,
+        DT = 16 / 1000,
+        have_duration, dt, last_state;
+
+        tension = parseFloat( tension ) || 500;
+        friction = parseFloat( friction ) || 20;
+        duration = duration || null;
+
+        initState.tension = tension;
+        initState.friction = friction;
+
+        have_duration = duration !== null;
+
+        /* Calculate the actual time it takes for this animation to complete with the provided conditions. */
+        if( have_duration ){
+          /* Run the simulation without a duration. */
+          time_lapsed = springRK4Factory( tension, friction );
+          /* Compute the adjusted time delta. */
+          dt = time_lapsed / duration * DT;
+        } else{
+          dt = DT;
+        }
+
+        while( true ){
+          /* Next/step function .*/
+          last_state = springIntegrateState( last_state || initState, dt );
+          /* Store the position. */
+          path.push( 1 + last_state.x );
+          time_lapsed += 16;
+          /* If the change threshold is reached, break. */
+          if( !(Math.abs( last_state.x ) > tolerance && Math.abs( last_state.v ) > tolerance) ){
+            break;
+          }
+        }
+
+        /* If duration is not defined, return the actual time required for completing this animation. Otherwise, return a closure that holds the
+           computed path and returns a snapshot of the position according to a given percentComplete. */
+        return !have_duration ? time_lapsed : function( percentComplete ){ return path[ (percentComplete * (path.length - 1)) | 0 ]; };
+      };
     }());
 
     var easings = {
@@ -525,33 +525,33 @@ var corefn = ({
 
       if( startProp.pfValue != null || startProp.value != null ){
         start = startProp.pfValue != null ? startProp.pfValue : startProp.value;
-      } else {
+      } else{
         start = startProp;
       }
 
       if( endProp.pfValue != null || endProp.value != null ){
         end = endProp.pfValue != null ? endProp.pfValue : endProp.value;
-      } else {
+      } else{
         end = endProp;
       }
 
-      if( is.number(start) && is.number(end) ){
+      if( is.number( start ) && is.number( end ) ){
         return easingFn( start, end, percent );
 
-      } else if( is.array(start) && is.array(end) ){
+      } else if( is.array( start ) && is.array( end ) ){
         var easedArr = [];
 
         for( var i = 0; i < end.length; i++ ){
-          var si = start[i];
-          var ei = end[i];
+          var si = start[ i ];
+          var ei = end[ i ];
 
           if( si != null && ei != null ){
-            var val = easingFn(si, ei, percent);
+            var val = easingFn( si, ei, percent );
 
             if( startProp.roundValue ){ val = Math.round( val ); }
 
             easedArr.push( val );
-          } else {
+          } else{
             easedArr.push( ei );
           }
         }

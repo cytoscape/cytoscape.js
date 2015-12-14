@@ -1,7 +1,7 @@
 'use strict';
 
-var is = require('../is');
-var Collection = require('../collection');
+var is = require( '../is' );
+var Collection = require( '../collection' );
 
 var corefn = ({
 
@@ -25,9 +25,9 @@ var corefn = ({
   },
 
   nodes: function( selector ){
-    var nodes = this.$(function(){
+    var nodes = this.$( function(){
       return this.isNode();
-    });
+    } );
 
     if( selector ){
       return nodes.filter( selector );
@@ -37,9 +37,9 @@ var corefn = ({
   },
 
   edges: function( selector ){
-    var edges = this.$(function(){
+    var edges = this.$( function(){
       return this.isEdge();
-    });
+    } );
 
     if( selector ){
       return edges.filter( selector );

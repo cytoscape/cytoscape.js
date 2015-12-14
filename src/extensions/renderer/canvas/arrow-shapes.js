@@ -8,7 +8,7 @@ CRp.arrowShapeImpl = function( name ){
   return ( impl || (impl = {
     'polygon': function( context, points ){
       for( var i = 0; i < points.length; i++ ){
-        var pt = points[i];
+        var pt = points[ i ];
 
         context.lineTo( pt.x, pt.y );
       }
@@ -18,7 +18,7 @@ CRp.arrowShapeImpl = function( name ){
       var firstPt;
 
       for( var i = 0; i < points.length; i++ ){
-        var pt = points[i];
+        var pt = points[ i ];
 
         if( i === 0 ){
           firstPt = pt;
@@ -33,7 +33,7 @@ CRp.arrowShapeImpl = function( name ){
     'triangle-tee': function( context, trianglePoints, teePoints ){
       var triPts = trianglePoints;
       for( var i = 0; i < triPts.length; i++ ){
-        var pt = triPts[i];
+        var pt = triPts[ i ];
 
         context.lineTo( pt.x, pt.y );
       }
@@ -43,14 +43,14 @@ CRp.arrowShapeImpl = function( name ){
       context.moveTo( firstTeePt.x, firstTeePt.y );
 
       for( var i = 0; i < teePts.length; i++ ){
-        var pt = teePts[i];
+        var pt = teePts[ i ];
 
         context.lineTo( pt.x, pt.y );
       }
     },
 
     'circle': function( context, rx, ry, r ){
-      context.arc(rx, ry, r, 0, Math.PI * 2, false);
+      context.arc( rx, ry, r, 0, Math.PI * 2, false );
     }
   }) )[ name ];
 };

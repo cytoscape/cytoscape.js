@@ -1,6 +1,6 @@
 'use strict';
 
-var util = require('../../../util');
+var util = require( '../../../util' );
 
 var BRp = {};
 
@@ -8,7 +8,7 @@ BRp.timeToRender = function(){
   return this.redrawTotalTime / this.redrawCount;
 };
 
-var minRedrawLimit = 1000/60; // people can't see much better than 60fps
+var minRedrawLimit = 1000 / 60; // people can't see much better than 60fps
 var maxRedrawLimit = 1000;  // don't cap max b/c it's more important to be responsive than smooth
 
 BRp.redraw = function( options ){
@@ -75,7 +75,7 @@ BRp.startRenderLoop = function(){
       r.lastRedrawTime = duration;
 
       // use a weighted average with a bias from the previous average so we don't spike so easily
-      r.averageRedrawTime = r.averageRedrawTime/2 + duration/2;
+      r.averageRedrawTime = r.averageRedrawTime / 2 + duration / 2;
 
       r.requestedFrame = false;
     }

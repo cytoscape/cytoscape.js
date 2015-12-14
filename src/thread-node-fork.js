@@ -13,28 +13,28 @@ function broadcast( m ){
 
 // expose listen() for client message binding
 function listen( fn ){
-  process.on('message', function( m ){
+  process.on( 'message', function( m ){
     if( typeof m === 'object' && m.$$eval ){
       return;
-    } else {
+    } else{
       fn( m );
     }
-  });
+  } );
 }
 
 function resolve( v ){
-  process.send({
+  process.send( {
     $$resolve: v
-  });
+  } );
 }
 
 function reject( v ){
-  process.send({
+  process.send( {
     $$reject: v
-  });
+  } );
 }
 
-process.on('message', function( m ){
+process.on( 'message', function( m ){
   if( typeof m === 'object' && m.$$eval ){
     function _ref_( o ){
       return eval( o );
@@ -42,6 +42,6 @@ process.on('message', function( m ){
 
     eval( m.$$eval );
   }
-});
+} );
 
 /* jshint ignore:end */

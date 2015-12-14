@@ -6,7 +6,7 @@ var elesfn = ({
     var cy = this._private.cy;
 
     for( var i = 0; i < this.length; i++ ){
-      var ele = this[i];
+      var ele = this[ i ];
       var parent = cy.getElementById( ele._private.data.parent );
 
       if( parent.size() > 0 ){
@@ -23,7 +23,7 @@ var elesfn = ({
     var eles = this.parent();
     while( eles.nonempty() ){
       for( var i = 0; i < eles.length; i++ ){
-        var ele = eles[i];
+        var ele = eles[ i ];
         parents.push( ele );
       }
 
@@ -37,7 +37,7 @@ var elesfn = ({
     var ancestors;
 
     for( var i = 0; i < this.length; i++ ){
-      var ele = this[i];
+      var ele = this[ i ];
       var parents = ele.parents();
 
       ancestors = ancestors || parents;
@@ -49,22 +49,22 @@ var elesfn = ({
   },
 
   orphans: function( selector ){
-    return this.stdFilter(function( ele ){
+    return this.stdFilter( function( ele ){
       return ele.isNode() && ele.parent().empty();
-    }).filter( selector );
+    } ).filter( selector );
   },
 
   nonorphans: function( selector ){
-    return this.stdFilter(function( ele ){
+    return this.stdFilter( function( ele ){
       return ele.isNode() && ele.parent().nonempty();
-    }).filter( selector );
+    } ).filter( selector );
   },
 
   children: function( selector ){
     var children = [];
 
     for( var i = 0; i < this.length; i++ ){
-      var ele = this[i];
+      var ele = this[ i ];
       children = children.concat( ele._private.children );
     }
 
@@ -96,7 +96,7 @@ var elesfn = ({
 
     function add( eles ){
       for( var i = 0; i < eles.length; i++ ){
-        var ele = eles[i];
+        var ele = eles[ i ];
 
         elements.push( ele );
 

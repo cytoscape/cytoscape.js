@@ -1,6 +1,6 @@
 'use strict';
 
-var util = require('../util');
+var util = require( '../util' );
 
 var styfn = {};
 
@@ -23,52 +23,52 @@ var styfn = {};
     zeroOneNumber: { number: true, min: 0, max: 1, unitless: true },
     nOneOneNumber: { number: true, min: -1, max: 1, unitless: true },
     nonNegativeInt: { number: true, min: 0, integer: true, unitless: true },
-    position: { enums: ['parent', 'origin'] },
-    nodeSize: { number: true, min: 0, enums: ['auto', 'label'] },
+    position: { enums: [ 'parent', 'origin' ] },
+    nodeSize: { number: true, min: 0, enums: [ 'auto', 'label' ] },
     number: { number: true, unitless: true },
     numbers: { number: true, unitless: true, multiple: true },
     size: { number: true, min: 0 },
     bidirectionalSize: { number: true }, // allows negative
     bidirectionalSizes: { number: true, multiple: true }, // allows negative
     bgSize: { number: true, min: 0, allowPercent: true },
-    bgWH: { number: true, min: 0, allowPercent: true, enums: ['auto'] },
+    bgWH: { number: true, min: 0, allowPercent: true, enums: [ 'auto' ] },
     bgPos: { number: true, allowPercent: true },
-    bgRepeat: { enums: ['repeat', 'repeat-x', 'repeat-y', 'no-repeat'] },
-    bgFit: { enums: ['none', 'contain', 'cover'] },
-    bgClip: { enums: ['none', 'node'] },
+    bgRepeat: { enums: [ 'repeat', 'repeat-x', 'repeat-y', 'no-repeat' ] },
+    bgFit: { enums: [ 'none', 'contain', 'cover' ] },
+    bgClip: { enums: [ 'none', 'node' ] },
     color: { color: true },
-    bool: { enums: ['yes', 'no'] },
-    lineStyle: { enums: ['solid', 'dotted', 'dashed'] },
-    borderStyle: { enums: ['solid', 'dotted', 'dashed', 'double'] },
-    curveStyle: { enums: ['bezier', 'unbundled-bezier', 'haystack', 'segments'] },
+    bool: { enums: [ 'yes', 'no' ] },
+    lineStyle: { enums: [ 'solid', 'dotted', 'dashed' ] },
+    borderStyle: { enums: [ 'solid', 'dotted', 'dashed', 'double' ] },
+    curveStyle: { enums: [ 'bezier', 'unbundled-bezier', 'haystack', 'segments' ] },
     fontFamily: { regex: '^([\\w- \\"]+(?:\\s*,\\s*[\\w- \\"]+)*)$' },
-    fontVariant: { enums: ['small-caps', 'normal'] },
-    fontStyle: { enums: ['italic', 'normal', 'oblique'] },
-    fontWeight: { enums: ['normal', 'bold', 'bolder', 'lighter', '100', '200', '300', '400', '500', '600', '800', '900', 100, 200, 300, 400, 500, 600, 700, 800, 900] },
-    textDecoration: { enums: ['none', 'underline', 'overline', 'line-through'] },
-    textTransform: { enums: ['none', 'uppercase', 'lowercase'] },
-    textWrap: { enums: ['none', 'wrap'] },
-    textBackgroundShape: { enums: ['rectangle', 'roundrectangle']},
-    nodeShape: { enums: ['rectangle', 'roundrectangle', 'ellipse', 'triangle', 'square', 'pentagon', 'hexagon', 'heptagon', 'octagon', 'star', 'diamond', 'vee', 'rhomboid', 'polygon'] },
-    compoundIncludeLabels: { enums: ['include', 'exclude'] },
-    arrowShape: { enums: ['tee', 'triangle', 'triangle-tee', 'triangle-backcurve', 'half-triangle-overshot', 'vee', 'square', 'circle', 'diamond', 'none'] },
-    arrowFill: { enums: ['filled', 'hollow'] },
-    display: { enums: ['element', 'none'] },
-    visibility: { enums: ['hidden', 'visible'] },
-    valign: { enums: ['top', 'center', 'bottom'] },
-    halign: { enums: ['left', 'center', 'right'] },
+    fontVariant: { enums: [ 'small-caps', 'normal' ] },
+    fontStyle: { enums: [ 'italic', 'normal', 'oblique' ] },
+    fontWeight: { enums: [ 'normal', 'bold', 'bolder', 'lighter', '100', '200', '300', '400', '500', '600', '800', '900', 100, 200, 300, 400, 500, 600, 700, 800, 900 ] },
+    textDecoration: { enums: [ 'none', 'underline', 'overline', 'line-through' ] },
+    textTransform: { enums: [ 'none', 'uppercase', 'lowercase' ] },
+    textWrap: { enums: [ 'none', 'wrap' ] },
+    textBackgroundShape: { enums: [ 'rectangle', 'roundrectangle' ]},
+    nodeShape: { enums: [ 'rectangle', 'roundrectangle', 'ellipse', 'triangle', 'square', 'pentagon', 'hexagon', 'heptagon', 'octagon', 'star', 'diamond', 'vee', 'rhomboid', 'polygon' ] },
+    compoundIncludeLabels: { enums: [ 'include', 'exclude' ] },
+    arrowShape: { enums: [ 'tee', 'triangle', 'triangle-tee', 'triangle-backcurve', 'half-triangle-overshot', 'vee', 'square', 'circle', 'diamond', 'none' ] },
+    arrowFill: { enums: [ 'filled', 'hollow' ] },
+    display: { enums: [ 'element', 'none' ] },
+    visibility: { enums: [ 'hidden', 'visible' ] },
+    valign: { enums: [ 'top', 'center', 'bottom' ] },
+    halign: { enums: [ 'left', 'center', 'right' ] },
     text: { string: true },
-    data: { mapping: true, regex: data('data') },
-    layoutData: { mapping: true, regex: data('layoutData') },
-    scratch: { mapping: true, regex: data('scratch') },
-    mapData: { mapping: true, regex: mapData('mapData') },
-    mapLayoutData: { mapping: true, regex: mapData('mapLayoutData') },
-    mapScratch: { mapping: true, regex: mapData('mapScratch') },
+    data: { mapping: true, regex: data( 'data' ) },
+    layoutData: { mapping: true, regex: data( 'layoutData' ) },
+    scratch: { mapping: true, regex: data( 'scratch' ) },
+    mapData: { mapping: true, regex: mapData( 'mapData' ) },
+    mapLayoutData: { mapping: true, regex: mapData( 'mapLayoutData' ) },
+    mapScratch: { mapping: true, regex: mapData( 'mapScratch' ) },
     fn: { mapping: true, fn: true },
     url: { regex: '^url\\s*\\(\\s*([^\\s]+)\\s*\\s*\\)|none|(.+)$' },
     propList: { propList: true },
     angle: { number: true, units: 'deg|rad', implicitUnits: 'rad' },
-    textRotation: { number: true, units: 'deg|rad', implicitUnits: 'rad', enums: ['none', 'autorotate'] },
+    textRotation: { number: true, units: 'deg|rad', implicitUnits: 'rad', enums: [ 'none', 'autorotate' ] },
     polygonPointList: { number: true, multiple: true, evenMultiple: true, min: -1, max: 1, unitless: true },
     easing: {
       regexes: [
@@ -228,41 +228,41 @@ var styfn = {};
 
   // pie backgrounds for nodes
   styfn.pieBackgroundN = 16; // because the pie properties are numbered, give access to a constant N (for renderer use)
-  props.push({ name: 'pie-size', type: t.bgSize });
+  props.push( { name: 'pie-size', type: t.bgSize } );
   for( var i = 1; i <= styfn.pieBackgroundN; i++ ){
-    props.push({ name: 'pie-'+i+'-background-color', type: t.color });
-    props.push({ name: 'pie-'+i+'-background-size', type: t.percent });
-    props.push({ name: 'pie-'+i+'-background-opacity', type: t.zeroOneNumber });
+    props.push( { name: 'pie-' + i + '-background-color', type: t.color } );
+    props.push( { name: 'pie-' + i + '-background-size', type: t.percent } );
+    props.push( { name: 'pie-' + i + '-background-opacity', type: t.zeroOneNumber } );
   }
 
   // edge arrows
-  var arrowPrefixes = styfn.arrowPrefixes = ['source', 'mid-source', 'target', 'mid-target'];
+  var arrowPrefixes = styfn.arrowPrefixes = [ 'source', 'mid-source', 'target', 'mid-target' ];
   [
     { name: 'arrow-shape', type: t.arrowShape },
     { name: 'arrow-color', type: t.color },
     { name: 'arrow-fill', type: t.arrowFill }
-  ].forEach(function( prop ){
-    arrowPrefixes.forEach(function( prefix ){
+  ].forEach( function( prop ){
+    arrowPrefixes.forEach( function( prefix ){
       var name = prefix + '-' + prop.name;
       var type = prop.type;
 
-      props.push({ name: name, type: type });
-    });
-  }, {});
+      props.push( { name: name, type: type } );
+    } );
+  }, {} );
 
   // list of property names
-  styfn.propertyNames = props.map(function(p){ return p.name; });
+  styfn.propertyNames = props.map( function( p ){ return p.name; } );
 
   // allow access of properties by name ( e.g. style.properties.height )
   for( var i = 0; i < props.length; i++ ){
-    var prop = props[i];
+    var prop = props[ i ];
 
     props[ prop.name ] = prop; // allow lookup by name
   }
 
   // map aliases
   for( var i = 0; i < aliases.length; i++ ){
-    var alias = aliases[i];
+    var alias = aliases[ i ];
     var pointsToProp = props[ alias.pointsTo ];
     var aliasProp = {
       name: alias.name,
@@ -281,7 +281,7 @@ var styfn = {};
 styfn.addDefaultStylesheet = function(){
   // fill the style with the default stylesheet
   this
-    .selector('node, edge') // common properties
+    .selector( 'node, edge' ) // common properties
       .css( util.extend( {
         'events': 'yes',
         'text-events': 'no',
@@ -301,8 +301,8 @@ styfn.addDefaultStylesheet = function(){
         'text-border-opacity': 0,
         'text-border-width': 0,
         'text-border-style': 'solid',
-        'text-border-color':'#000',
-        'text-background-shape':'rectangle',
+        'text-border-color': '#000',
+        'text-background-shape': 'rectangle',
         'font-family': 'Helvetica Neue, Helvetica, sans-serif',
         'font-style': 'normal',
         // 'font-variant': fontVariant,
@@ -367,7 +367,7 @@ styfn.addDefaultStylesheet = function(){
         'padding-left': 0,
         'padding-right': 0,
         'position': 'origin',
-        'compound-sizing-wrt-labels': 'include',
+        'compound-sizing-wrt-labels': 'include'
       }, {
         // node pie bg
         'pie-size': '100%'
@@ -375,16 +375,16 @@ styfn.addDefaultStylesheet = function(){
         { name: 'pie-{{i}}-background-color', value: 'black' },
         { name: 'pie-{{i}}-background-size', value: '0%' },
         { name: 'pie-{{i}}-background-opacity', value: 1 }
-      ].reduce(function( css, prop ){
+      ].reduce( function( css, prop ){
         for( var i = 1; i <= styfn.pieBackgroundN; i++ ){
-          var name = prop.name.replace('{{i}}', i);
+          var name = prop.name.replace( '{{i}}', i );
           var val = prop.value;
 
           css[ name ] = val;
         }
 
         return css;
-      }, {}), {
+      }, {} ), {
         // edge props
         'line-style': 'solid',
         'line-color': '#ddd',
@@ -398,18 +398,18 @@ styfn.addDefaultStylesheet = function(){
         { name: 'arrow-shape', value: 'none' },
         { name: 'arrow-color', value: '#ddd' },
         { name: 'arrow-fill', value: 'filled' }
-      ].reduce(function( css, prop ){
-        styfn.arrowPrefixes.forEach(function( prefix ){
+      ].reduce( function( css, prop ){
+        styfn.arrowPrefixes.forEach( function( prefix ){
           var name = prefix + '-' + prop.name;
           var val = prop.value;
 
           css[ name ] = val;
-        });
+        } );
 
         return css;
-      }, {}) ) )
-    .selector('$node > node') // compound (parent) node properties
-      .css({
+      }, {} ) ) )
+    .selector( '$node > node' ) // compound (parent) node properties
+      .css( {
         'width': 'auto',
         'height': 'auto',
         'shape': 'rectangle',
@@ -417,19 +417,19 @@ styfn.addDefaultStylesheet = function(){
         'padding-right': 10,
         'padding-left': 10,
         'padding-bottom': 10
-      })
-    .selector('edge') // just edge properties
-      .css({
+      } )
+    .selector( 'edge' ) // just edge properties
+      .css( {
         'width': 1
-      })
-    .selector(':active')
-      .css({
+      } )
+    .selector( ':active' )
+      .css( {
         'overlay-color': 'black',
         'overlay-padding': 10,
         'overlay-opacity': 0.25
-      })
-    .selector('core') // just core properties
-      .css({
+      } )
+    .selector( 'core' ) // just core properties
+      .css( {
         'selection-box-color': '#ddd',
         'selection-box-opacity': 0.65,
         'selection-box-border-color': '#aaa',
@@ -439,7 +439,7 @@ styfn.addDefaultStylesheet = function(){
         'active-bg-size': 30,
         'outside-texture-bg-color': '#000',
         'outside-texture-bg-opacity': 0.125
-      })
+      } )
   ;
 
   this.defaultLength = this.length;

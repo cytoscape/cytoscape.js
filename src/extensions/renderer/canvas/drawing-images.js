@@ -5,11 +5,11 @@ var CRp = {};
 CRp.safeDrawImage = function( context, img, ix, iy, iw, ih, x, y, w, h ){
   var r = this;
 
-  try {
+  try{
     context.drawImage( img, ix, iy, iw, ih, x, y, w, h );
-  } catch(e){
-    r.data.canvasNeedsRedraw[r.NODE] = true;
-    r.data.canvasNeedsRedraw[r.DRAG] = true;
+  } catch( e ){
+    r.data.canvasNeedsRedraw[ r.NODE ] = true;
+    r.data.canvasNeedsRedraw[ r.DRAG ] = true;
 
     r.drawingImage = true;
 
@@ -17,21 +17,21 @@ CRp.safeDrawImage = function( context, img, ix, iy, iw, ih, x, y, w, h ){
   }
 };
 
-CRp.drawInscribedImage = function(context, img, node) {
+CRp.drawInscribedImage = function( context, img, node ){
   var r = this;
   var nodeX = node._private.position.x;
   var nodeY = node._private.position.y;
   var style = node._private.style;
-  var fit = style['background-fit'].value;
-  var xPos = style['background-position-x'];
-  var yPos = style['background-position-y'];
-  var repeat = style['background-repeat'].value;
+  var fit = style[ 'background-fit' ].value;
+  var xPos = style[ 'background-position-x' ];
+  var yPos = style[ 'background-position-y' ];
+  var repeat = style[ 'background-repeat' ].value;
   var nodeW = node.width();
   var nodeH = node.height();
   var rs = node._private.rscratch;
-  var clip = style['background-clip'].value;
+  var clip = style[ 'background-clip' ].value;
   var shouldClip = clip === 'node';
-  var imgOpacity = style['background-image-opacity'].value;
+  var imgOpacity = style[ 'background-image-opacity' ].value;
 
   var imgW = img.width || img.cachedW;
   var imgH = img.height || img.cachedH;
@@ -49,20 +49,20 @@ CRp.drawInscribedImage = function(context, img, node) {
   var w = imgW;
   var h = imgH;
 
-  var bgW = style['background-width'];
+  var bgW = style[ 'background-width' ];
   if( bgW.value !== 'auto' ){
     if( bgW.units === '%' ){
-      w = bgW.value/100 * nodeW;
-    } else {
+      w = bgW.value / 100 * nodeW;
+    } else{
       w = bgW.pfValue;
     }
   }
 
-  var bgH = style['background-height'];
+  var bgH = style[ 'background-height' ];
   if( bgH.value !== 'auto' ){
     if( bgH.units === '%' ){
-      h = bgH.value/100 * nodeH;
-    } else {
+      h = bgH.value / 100 * nodeH;
+    } else{
       h = bgH.pfValue;
     }
   }
@@ -72,29 +72,29 @@ CRp.drawInscribedImage = function(context, img, node) {
   }
 
   if( fit === 'contain' ){
-    var scale = Math.min( nodeW/w, nodeH/h );
+    var scale = Math.min( nodeW / w, nodeH / h );
 
     w *= scale;
     h *= scale;
 
   } else if( fit === 'cover' ){
-    var scale = Math.max( nodeW/w, nodeH/h );
+    var scale = Math.max( nodeW / w, nodeH / h );
 
     w *= scale;
     h *= scale;
   }
 
-  var x = (nodeX - nodeW/2); // left
+  var x = (nodeX - nodeW / 2); // left
   if( xPos.units === '%' ){
-    x += (nodeW - w) * xPos.value/100;
-  } else {
+    x += (nodeW - w) * xPos.value / 100;
+  } else{
     x += xPos.pfValue;
   }
 
-  var y = (nodeY - nodeH/2); // top
+  var y = (nodeY - nodeH / 2); // top
   if( yPos.units === '%' ){
-    y += (nodeH - h) * yPos.value/100;
-  } else {
+    y += (nodeH - h) * yPos.value / 100;
+  } else{
     y += yPos.pfValue;
   }
 
@@ -117,11 +117,11 @@ CRp.drawInscribedImage = function(context, img, node) {
 
       if( rs.pathCache ){
         context.clip( rs.pathCache );
-      } else {
-        r.nodeShapes[r.getNodeShape(node)].draw(
+      } else{
+        r.nodeShapes[ r.getNodeShape( node ) ].draw(
           context,
           nodeX, nodeY,
-          nodeW, nodeH);
+          nodeW, nodeH );
 
         context.clip();
       }
@@ -132,18 +132,18 @@ CRp.drawInscribedImage = function(context, img, node) {
     if( shouldClip ){
       context.restore();
     }
-  } else {
+  } else{
     var pattern = context.createPattern( img, repeat );
     context.fillStyle = pattern;
 
-    r.nodeShapes[r.getNodeShape(node)].draw(
+    r.nodeShapes[ r.getNodeShape( node ) ].draw(
         context,
         nodeX, nodeY,
-        nodeW, nodeH);
+        nodeW, nodeH );
 
-      context.translate(x, y);
-      context.fill();
-      context.translate(-x, -y);
+    context.translate( x, y );
+    context.fill();
+    context.translate( -x, -y );
   }
 
   context.globalAlpha = gAlpha;

@@ -1,19 +1,19 @@
 'use strict';
 
-var util = require('../util');
-var is = require('../is');
+var util = require( '../util' );
+var is = require( '../is' );
 
 var styfn = {};
 
 // a caching layer for property parsing
 styfn.parse = function( name, value, propIsBypass, propIsFlat ){
-  var argHash = [ name, value, propIsBypass, propIsFlat ].join('$');
+  var argHash = [ name, value, propIsBypass, propIsFlat ].join( '$' );
   var propCache = this.propCache = this.propCache || {};
   var ret;
   var impl = parseImpl.bind( this );
 
-  if( !(ret = propCache[argHash]) ){
-    ret = propCache[argHash] = impl( name, value, propIsBypass, propIsFlat );
+  if( !(ret = propCache[ argHash ]) ){
+    ret = propCache[ argHash ] = impl( name, value, propIsBypass, propIsFlat );
   }
 
   // always need a copy since props are mutated later in their lifecycles
@@ -50,7 +50,7 @@ var parseImpl = function( name, value, propIsBypass, propIsFlat ){
     name = property.name;
   }
 
-  var valueIsString = is.string(value);
+  var valueIsString = is.string( value );
   if( valueIsString ){ // trim the value to make parsing easier
     value = value.trim();
   }
@@ -69,7 +69,7 @@ var parseImpl = function( name, value, propIsBypass, propIsFlat ){
   }
 
   // check if value is a function used as a mapper
-  if( is.fn(value) ){
+  if( is.fn( value ) ){
     return {
       name: name,
       value: value,
@@ -96,7 +96,7 @@ var parseImpl = function( name, value, propIsBypass, propIsFlat ){
       mapped = types.data;
     } else if( layoutData ){
       mapped = types.layoutData;
-    } else {
+    } else{
       mapped = types.scratch;
     }
 
@@ -124,7 +124,7 @@ var parseImpl = function( name, value, propIsBypass, propIsFlat ){
       mapped = types.mapData;
     } else if( mapLayoutData ){
       mapped = types.mapLayoutData;
-    } else {
+    } else{
       mapped = types.mapScratch;
     }
 
@@ -181,30 +181,30 @@ var parseImpl = function( name, value, propIsBypass, propIsFlat ){
     var vals;
 
     if( valueIsString ){
-      vals = value.split(/\s+/);
-    } else if( is.array(value) ){
+      vals = value.split( /\s+/ );
+    } else if( is.array( value ) ){
       vals = value;
-    } else {
+    } else{
       vals = [ value ];
     }
 
     if( type.evenMultiple && vals.length % 2 !== 0 ){ return null; }
 
-    var valArr = vals.map(function( v ){
+    var valArr = vals.map( function( v ){
       var p = self.parse( name, v, propIsBypass, 'multiple' );
 
       if( p.pfValue != null ){
         return p.pfValue;
-      } else {
+      } else{
         return p.value;
       }
-    });
+    } );
 
     return {
       name: name,
       value: valArr,
       pfValue: valArr,
-      strValue: valArr.join(' '),
+      strValue: valArr.join( ' ' ),
       bypass: propIsBypass,
       units: type.number && !type.unitless ? type.implicitUnits || 'px' : undefined
     };
@@ -213,7 +213,7 @@ var parseImpl = function( name, value, propIsBypass, propIsFlat ){
   // several types also allow enums
   var checkEnums = function(){
     for( var i = 0; i < type.enums.length; i++ ){
-      var en = type.enums[i];
+      var en = type.enums[ i ];
 
       if( en === value ){
         return {
@@ -252,7 +252,7 @@ var parseImpl = function( name, value, propIsBypass, propIsFlat ){
           units = match[2] || implicitUnits;
         }
 
-      } else if( !units || type.implicitUnits ) {
+      } else if( !units || type.implicitUnits ){
         units = implicitUnits; // implicitly px if unspecified
       }
     }
@@ -260,20 +260,20 @@ var parseImpl = function( name, value, propIsBypass, propIsFlat ){
     value = parseFloat( value );
 
     // if not a number and enums not allowed, then the value is invalid
-    if( isNaN(value) && type.enums === undefined ){
+    if( isNaN( value ) && type.enums === undefined ){
       return null;
     }
 
     // check if this number type also accepts special keywords in place of numbers
     // (i.e. `left`, `auto`, etc)
-    if( isNaN(value) && type.enums !== undefined ){
+    if( isNaN( value ) && type.enums !== undefined ){
       value = passedValue;
 
       return checkEnums();
     }
 
     // check if value must be an integer
-    if( type.integer && !is.integer(value) ){
+    if( type.integer && !is.integer( value ) ){
       return null;
     }
 
@@ -295,7 +295,7 @@ var parseImpl = function( name, value, propIsBypass, propIsFlat ){
     // normalise value in pixels
     if( type.unitless || (units !== 'px' && units !== 'em') ){
       ret.pfValue = value;
-    } else {
+    } else{
       ret.pfValue = ( units === 'px' || !units ? (value) : (this.getEmSizeInPixels() * value) );
     }
 
@@ -311,7 +311,7 @@ var parseImpl = function( name, value, propIsBypass, propIsFlat ){
 
     return ret;
 
-  } else if( type.propList ) {
+  } else if( type.propList ){
 
     var props = [];
     var propsStr = '' + value;
@@ -319,13 +319,13 @@ var parseImpl = function( name, value, propIsBypass, propIsFlat ){
     if( propsStr === 'none' ){
       // leave empty
 
-    } else { // go over each prop
+    } else{ // go over each prop
 
-      var propsSplit = propsStr.split(',');
+      var propsSplit = propsStr.split( ',' );
       for( var i = 0; i < propsSplit.length; i++ ){
-        var propName = propsSplit[i].trim();
+        var propName = propsSplit[ i ].trim();
 
-        if( self.properties[propName] ){
+        if( self.properties[ propName ] ){
           props.push( propName );
         }
       }
@@ -336,7 +336,7 @@ var parseImpl = function( name, value, propIsBypass, propIsFlat ){
     return {
       name: name,
       value: props,
-      strValue: props.length === 0 ? 'none' : props.join(', '),
+      strValue: props.length === 0 ? 'none' : props.join( ', ' ),
       bypass: propIsBypass
     };
 
@@ -365,7 +365,7 @@ var parseImpl = function( name, value, propIsBypass, propIsFlat ){
     var regexes = type.regexes ? type.regexes : [ type.regex ];
 
     for( var i = 0; i < regexes.length; i++ ){
-      var regex = new RegExp( regexes[i] ); // make a regex from the type string
+      var regex = new RegExp( regexes[ i ] ); // make a regex from the type string
       var m = regex.exec( value );
 
       if( m ){ // regex matches
@@ -393,7 +393,7 @@ var parseImpl = function( name, value, propIsBypass, propIsFlat ){
   } else if( type.enums ){ // check enums last because it's a combo type in others
     return checkEnums();
 
-  } else {
+  } else{
     return null; // not a type we can handle
   }
 

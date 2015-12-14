@@ -1,22 +1,22 @@
 'use strict';
 
-var util = require('../util');
-var is = require('../is');
+var util = require( '../util' );
+var is = require( '../is' );
 
-var Element = require('./element');
+var Element = require( './element' );
 
 // factory for generating edge ids when no id is specified for a new element
 var idFactory = {
   prefix: 'ele',
   id: 0,
-  generate: function(cy, element, tryThisId){
+  generate: function( cy, element, tryThisId ){
     var json = is.element( element ) ? element._private : element;
     var id = tryThisId != null ? tryThisId : this.prefix + this.id;
 
-    if( cy.getElementById(id).empty() ){
+    if( cy.getElementById( id ).empty() ){
       this.id++; // we've used the current id, so move it up
-    } else { // otherwise keep trying successive unused ids
-      while( !cy.getElementById(id).empty() ){
+    } else{ // otherwise keep trying successive unused ids
+      while( !cy.getElementById( id ).empty() ){
         id = this.prefix + ( ++this.id );
       }
     }
@@ -26,13 +26,13 @@ var idFactory = {
 };
 
 // represents a set of nodes, edges, or both together
-var Collection = function(cy, elements, options){
+var Collection = function( cy, elements, options ){
   if( !(this instanceof Collection) ){
-    return new Collection(cy, elements, options);
+    return new Collection( cy, elements, options );
   }
 
-  if( cy === undefined || !is.core(cy) ){
-    util.error('A collection must have a reference to the core');
+  if( cy === undefined || !is.core( cy ) ){
+    util.error( 'A collection must have a reference to the core' );
     return;
   }
 
@@ -50,7 +50,7 @@ var Collection = function(cy, elements, options){
     var elesIds = {};
 
     for( var i = 0, l = elements.length; i < l; i++ ){
-      var json = elements[i];
+      var json = elements[ i ];
 
       if( json.data == null ){
         json.data = {};
@@ -76,7 +76,7 @@ var Collection = function(cy, elements, options){
   this.length = 0;
 
   for( var i = 0, l = elements.length; i < l; i++ ){
-    var element = elements[i];
+    var element = elements[ i ];
     if( !element ){  continue; }
 
     var id = element._private.data.id;
@@ -114,7 +114,7 @@ elesfn.instanceString = function(){
 };
 
 elesfn.spawn = function( cy, eles, opts ){
-  if( !is.core(cy) ){ // cy is optional
+  if( !is.core( cy ) ){ // cy is optional
     opts = eles;
     eles = cy;
     cy = this.cy();
@@ -132,10 +132,10 @@ elesfn.element = function(){
 };
 
 elesfn.collection = function(){
-  if( is.collection(this) ){
+  if( is.collection( this ) ){
     return this;
-  } else { // an element
-    return new Collection( this._private.cy, [this] );
+  } else{ // an element
+    return new Collection( this._private.cy, [ this ] );
   }
 };
 
@@ -147,7 +147,7 @@ elesfn.getElementById = function( id ){
   var cy = this._private.cy;
   var ele = this._private.ids[ id ];
 
-  return ele ? ele : new Collection(cy); // get ele or empty collection
+  return ele ? ele : new Collection( cy ); // get ele or empty collection
 };
 
 elesfn.json = function( obj ){
@@ -160,7 +160,7 @@ elesfn.json = function( obj ){
 
   var p = ele._private;
 
-  if( is.plainObject(obj) ){ // set
+  if( is.plainObject( obj ) ){ // set
 
     cy.startBatch();
 
@@ -175,12 +175,12 @@ elesfn.json = function( obj ){
     // ignore group -- immutable
 
     var checkSwitch = function( k, trueFnName, falseFnName ){
-      var obj_k = obj[k];
+      var obj_k = obj[ k ];
 
-      if( obj_k != null && obj_k !== p[k] ){
+      if( obj_k != null && obj_k !== p[ k ] ){
         if( obj_k ){
           ele[ trueFnName ]();
-        } else {
+        } else{
           ele[ falseFnName ]();
         }
       }
@@ -220,11 +220,11 @@ elesfn.json = function( obj ){
 
     var classes = [];
     for( var cls in p.classes ){
-      if( p.classes[cls] ){
-        classes.push(cls);
+      if( p.classes[ cls ] ){
+        classes.push( cls );
       }
     }
-    json.classes = classes.join(' ');
+    json.classes = classes.join( ' ' );
 
     return json;
   }
@@ -234,7 +234,7 @@ elesfn.jsons = function(){
   var jsons = [];
 
   for( var i = 0; i < this.length; i++ ){
-    var ele = this[i];
+    var ele = this[ i ];
     var json = ele.json();
 
     jsons.push( json );
@@ -248,9 +248,9 @@ elesfn.clone = function(){
   var elesArr = [];
 
   for( var i = 0; i < this.length; i++ ){
-    var ele = this[i];
+    var ele = this[ i ];
     var json = ele.json();
-    var clone = new Element(cy, json, false); // NB no restore
+    var clone = new Element( cy, json, false ); // NB no restore
 
     elesArr.push( clone );
   }
@@ -275,13 +275,13 @@ elesfn.restore = function( notifyRenderer ){
   var numNodes = 0;
   var numEdges = 0;
   for( var i = 0, l = self.length; i < l; i++ ){
-    var ele = self[i];
+    var ele = self[ i ];
 
     // keep nodes first in the array and edges after
     if( ele.isNode() ){ // put to front of array if node
       nodes.push( ele );
       numNodes++;
-    } else { // put to end of array if edge
+    } else{ // put to end of array if edge
       edges.push( ele );
       numEdges++;
     }
@@ -291,7 +291,7 @@ elesfn.restore = function( notifyRenderer ){
 
   // now, restore each element
   for( var i = 0, l = elements.length; i < l; i++ ){
-    var ele = elements[i];
+    var ele = elements[ i ];
 
     if( !ele.removed() ){
       // don't need to do anything
@@ -305,16 +305,16 @@ elesfn.restore = function( notifyRenderer ){
     if( data.id === undefined ){
       data.id = idFactory.generate( cy, ele );
 
-    } else if( is.number(data.id) ){
+    } else if( is.number( data.id ) ){
       data.id = '' + data.id; // now it's a string
 
-    } else if( is.emptyString(data.id) || !is.string(data.id) ){
-      util.error('Can not create element with invalid string ID `' + data.id + '`');
+    } else if( is.emptyString( data.id ) || !is.string( data.id ) ){
+      util.error( 'Can not create element with invalid string ID `' + data.id + '`' );
 
       // can't create element if it has empty string as id or non-string id
       continue;
     } else if( cy.getElementById( data.id ).length !== 0 ){
-      util.error('Can not create second element with ID `' + data.id + '`');
+      util.error( 'Can not create second element with ID `' + data.id + '`' );
 
       // can't create element if one already has that id
       continue;
@@ -340,25 +340,25 @@ elesfn.restore = function( notifyRenderer ){
     if( ele.isEdge() ){ // extra checks for edges
 
       var edge = ele;
-      var fields = ['source', 'target'];
+      var fields = [ 'source', 'target' ];
       var fieldsLength = fields.length;
       var badSourceOrTarget = false;
-      for(var j = 0; j < fieldsLength; j++){
+      for( var j = 0; j < fieldsLength; j++ ){
 
-        var field = fields[j];
-        var val = data[field];
+        var field = fields[ j ];
+        var val = data[ field ];
 
-        if( is.number(val) ){
-          val = data[field] = '' + data[field]; // now string
+        if( is.number( val ) ){
+          val = data[ field ] = '' + data[ field ]; // now string
         }
 
         if( val == null || val === '' ){
           // can't create if source or target is not defined properly
-          util.error('Can not create edge `' + id + '` with unspecified ' + field);
+          util.error( 'Can not create edge `' + id + '` with unspecified ' + field );
           badSourceOrTarget = true;
-        } else if( cy.getElementById(val).empty() ){
+        } else if( cy.getElementById( val ).empty() ){
           // can't create edge if one of its nodes doesn't exist
-          util.error('Can not create edge `' + id + '` with nonexistant ' + field + ' `' + val + '`');
+          util.error( 'Can not create edge `' + id + '` with nonexistant ' + field + ' `' + val + '`' );
           badSourceOrTarget = true;
         }
       }
@@ -388,10 +388,10 @@ elesfn.restore = function( notifyRenderer ){
 
   // do compound node sanity checks
   for( var i = 0; i < numNodes; i++ ){ // each node
-    var node = elements[i];
+    var node = elements[ i ];
     var data = node._private.data;
 
-    if( is.number(data.parent) ){ // then automake string
+    if( is.number( data.parent ) ){ // then automake string
       data.parent = '' + data.parent;
     }
 
@@ -405,11 +405,11 @@ elesfn.restore = function( notifyRenderer ){
       if( parent.empty() ){
         // non-existant parent; just remove it
         data.parent = undefined;
-      } else {
+      } else{
         var selfAsParent = false;
         var ancestor = parent;
         while( !ancestor.empty() ){
-          if( node.same(ancestor) ){
+          if( node.same( ancestor ) ){
             // mark self as parent and remove from data
             selfAsParent = true;
             data.parent = undefined; // remove parent reference
@@ -440,9 +440,9 @@ elesfn.restore = function( notifyRenderer ){
     toUpdateStyle.updateStyle( notifyRenderer );
 
     if( notifyRenderer ){
-      restored.rtrigger('add');
-    } else {
-      restored.trigger('add');
+      restored.rtrigger( 'add' );
+    } else{
+      restored.trigger( 'add' );
     }
   }
 
@@ -471,20 +471,20 @@ elesfn.remove = function( notifyRenderer ){
   }
 
   // add connected edges
-  function addConnectedEdges(node){
+  function addConnectedEdges( node ){
     var edges = node._private.edges;
     for( var i = 0; i < edges.length; i++ ){
-      add( edges[i] );
+      add( edges[ i ] );
     }
   }
 
 
   // add descendant nodes
-  function addChildren(node){
+  function addChildren( node ){
     var children = node._private.children;
 
     for( var i = 0; i < children.length; i++ ){
-      add( children[i] );
+      add( children[ i ] );
     }
   }
 
@@ -492,7 +492,7 @@ elesfn.remove = function( notifyRenderer ){
     var alreadyAdded =  elesToRemoveIds[ ele.id() ];
     if( alreadyAdded ){
       return;
-    } else {
+    } else{
       elesToRemoveIds[ ele.id() ] = true;
     }
 
@@ -501,7 +501,7 @@ elesfn.remove = function( notifyRenderer ){
 
       addConnectedEdges( ele );
       addChildren( ele );
-    } else {
+    } else{
       elesToRemove.unshift( ele ); // edges are removed first
     }
   }
@@ -510,15 +510,15 @@ elesfn.remove = function( notifyRenderer ){
   // (may be removing more than specified due to connected edges etc)
 
   for( var i = 0, l = self.length; i < l; i++ ){
-    var ele = self[i];
+    var ele = self[ i ];
 
     add( ele );
   }
 
-  function removeEdgeRef(node, edge){
+  function removeEdgeRef( node, edge ){
     var connectedEdges = node._private.edges;
     for( var j = 0; j < connectedEdges.length; j++ ){
-      var connectedEdge = connectedEdges[j];
+      var connectedEdge = connectedEdges[ j ];
 
       if( edge === connectedEdge ){
         connectedEdges.splice( j, 1 );
@@ -527,21 +527,21 @@ elesfn.remove = function( notifyRenderer ){
     }
   }
 
-  function removeChildRef(parent, ele){
+  function removeChildRef( parent, ele ){
     ele = ele[0];
     parent = parent[0];
     var children = parent._private.children;
 
     for( var j = 0; j < children.length; j++ ){
-      if( children[j][0] === ele[0] ){
-        children.splice(j, 1);
+      if( children[ j ][0] === ele[0] ){
+        children.splice( j, 1 );
         break;
       }
     }
   }
 
   for( var i = 0; i < elesToRemove.length; i++ ){
-    var ele = elesToRemove[i];
+    var ele = elesToRemove[ i ];
 
     // mark as removed
     ele._private.removed = true;
@@ -559,11 +559,11 @@ elesfn.remove = function( notifyRenderer ){
       removeEdgeRef( src, ele );
       removeEdgeRef( tgt, ele );
 
-    } else { // remove reference to parent
+    } else{ // remove reference to parent
       var parent = ele.parent();
 
       if( parent.length !== 0 ){
-        removeChildRef(parent, ele);
+        removeChildRef( parent, ele );
       }
     }
   }
@@ -572,7 +572,7 @@ elesfn.remove = function( notifyRenderer ){
   var elesStillInside = cy._private.elements;
   cy._private.hasCompoundNodes = false;
   for( var i = 0; i < elesStillInside.length; i++ ){
-    var ele = elesStillInside[i];
+    var ele = elesStillInside[ i ];
 
     if( ele.isParent() ){
       cy._private.hasCompoundNodes = true;
@@ -585,19 +585,19 @@ elesfn.remove = function( notifyRenderer ){
     // must manually notify since trigger won't do this automatically once removed
 
     if( notifyRenderer ){
-      this.cy().notify({
+      this.cy().notify( {
         type: 'remove',
         collection: removedElements
-      });
+      } );
     }
 
-    removedElements.trigger('remove');
+    removedElements.trigger( 'remove' );
   }
 
   // check for empty remaining parent nodes
   var checkedParentId = {};
   for( var i = 0; i < elesToRemove.length; i++ ){
-    var ele = elesToRemove[i];
+    var ele = elesToRemove[ i ];
     var isNode = ele._private.group === 'nodes';
     var parentId = ele._private.data.parent;
 
@@ -629,7 +629,7 @@ elesfn.move = function( struct ){
       this.remove();
 
       for( var i = 0; i < jsons.length; i++ ){
-        var json = jsons[i];
+        var json = jsons[ i ];
 
         if( json.group === 'edges' ){
           if( srcExists ){ json.data.source = srcId; }
@@ -647,12 +647,12 @@ elesfn.move = function( struct ){
     if( parentExists ){
       var jsons = this.jsons();
       var descs = this.descendants();
-      var descsEtc = descs.merge( descs.add(this).connectedEdges() );
+      var descsEtc = descs.merge( descs.add( this ).connectedEdges() );
 
       this.remove(); // NB: also removes descendants and their connected edges
 
       for( var i = 0; i < this.length; i++ ){
-        var json = jsons[i];
+        var json = jsons[ i ];
 
         if( json.group === 'nodes' ){
           json.data.parent = parentId === null ? undefined : parentId;
@@ -667,25 +667,25 @@ elesfn.move = function( struct ){
 };
 
 [
-  require('./algorithms'),
-  require('./animation'),
-  require('./class'),
-  require('./comparators'),
-  require('./compounds'),
-  require('./data'),
-  require('./degree'),
-  require('./dimensions'),
-  require('./events'),
-  require('./filter'),
-  require('./group'),
-  require('./index'),
-  require('./iteration'),
-  require('./layout'),
-  require('./style'),
-  require('./switch-functions'),
-  require('./traversing')
-].forEach(function( props ){
+  require( './algorithms' ),
+  require( './animation' ),
+  require( './class' ),
+  require( './comparators' ),
+  require( './compounds' ),
+  require( './data' ),
+  require( './degree' ),
+  require( './dimensions' ),
+  require( './events' ),
+  require( './filter' ),
+  require( './group' ),
+  require( './index' ),
+  require( './iteration' ),
+  require( './layout' ),
+  require( './style' ),
+  require( './switch-functions' ),
+  require( './traversing' )
+].forEach( function( props ){
   util.extend( elesfn, props );
-});
+} );
 
 module.exports = Collection;

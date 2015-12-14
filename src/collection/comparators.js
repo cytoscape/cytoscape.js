@@ -2,16 +2,16 @@
 
 var elesfn = ({
   allAre: function( selector ){
-    return this.filter(selector).length === this.length;
+    return this.filter( selector ).length === this.length;
   },
 
   is: function( selector ){
-    return this.filter(selector).length > 0;
+    return this.filter( selector ).length > 0;
   },
 
   some: function( fn, thisArg ){
     for( var i = 0; i < this.length; i++ ){
-      var ret = !thisArg ? fn( this[i], i, this ) : fn.apply( thisArg, [ this[i], i, this ] );
+      var ret = !thisArg ? fn( this[ i ], i, this ) : fn.apply( thisArg, [ this[ i ], i, this ] );
 
       if( ret ){
         return true;
@@ -23,7 +23,7 @@ var elesfn = ({
 
   every: function( fn, thisArg ){
     for( var i = 0; i < this.length; i++ ){
-      var ret = !thisArg ? fn( this[i], i, this ) : fn.apply( thisArg, [ this[i], i, this ] );
+      var ret = !thisArg ? fn( this[ i ], i, this ) : fn.apply( thisArg, [ this[ i ], i, this ] );
 
       if( !ret ){
         return false;

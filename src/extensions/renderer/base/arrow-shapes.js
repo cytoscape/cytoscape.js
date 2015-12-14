@@ -1,8 +1,8 @@
 'use strict';
 
-var math = require('../../../math');
-var is = require('../../../is');
-var util = require('../../../util');
+var math = require( '../../../math' );
+var is = require( '../../../is' );
+var util = require( '../../../util' );
 
 var BRp = {};
 
@@ -25,10 +25,10 @@ BRp.registerArrowShapes = function(){
   // gap: dist(edgeTip, nodeBoundary), edgeTip may != arrowTip
 
   var bbCollide = function( x, y, size, angle, translation, padding ){
-    var x1 = translation.x - size/2 - padding;
-    var x2 = translation.x + size/2 + padding;
-    var y1 = translation.y - size/2 - padding;
-    var y2 = translation.y + size/2 + padding;
+    var x1 = translation.x - size / 2 - padding;
+    var x2 = translation.x + size / 2 + padding;
+    var y1 = translation.y - size / 2 - padding;
+    var y2 = translation.y + size / 2 + padding;
 
     var inside = (x1 <= x && x <= x2) && (y1 <= y && y <= y2);
 
@@ -36,8 +36,8 @@ BRp.registerArrowShapes = function(){
   };
 
   var transform = function( x, y, size, angle, translation ){
-    var xRotated = x * Math.cos(angle) - y * Math.sin(angle);
-    var yRotated = x * Math.sin(angle) + y * Math.cos(angle);
+    var xRotated = x * Math.cos( angle ) - y * Math.sin( angle );
+    var yRotated = x * Math.sin( angle ) + y * Math.cos( angle );
 
     var xScaled = xRotated * size;
     var yScaled = yRotated * size;
@@ -55,10 +55,10 @@ BRp.registerArrowShapes = function(){
     var retPts = [];
 
     for( var i = 0; i < pts.length; i += 2 ){
-      var x = pts[i];
-      var y = pts[i + 1];
+      var x = pts[ i ];
+      var y = pts[ i + 1];
 
-      retPts.push( transform(x, y, size, angle, translation) );
+      retPts.push( transform( x, y, size, angle, translation ) );
     }
 
     return retPts;
@@ -68,7 +68,7 @@ BRp.registerArrowShapes = function(){
     var ret = [];
 
     for( var i = 0; i < pts.length; i++ ){
-      var p = pts[i];
+      var p = pts[ i ];
 
       ret.push( p.x, p.y );
     }
@@ -77,7 +77,7 @@ BRp.registerArrowShapes = function(){
   };
 
   var defineArrowShape = function( name, defn ){
-    if( is.string(defn) ){
+    if( is.string( defn ) ){
       defn = arrowShapes[ defn ];
     }
 
@@ -92,7 +92,7 @@ BRp.registerArrowShapes = function(){
       ],
 
       collide: function( x, y, size, angle, translation, padding ){
-        var points = pointsToArr( transformPoints( this.points, size + 2*padding, angle, translation ) );
+        var points = pointsToArr( transformPoints( this.points, size + 2 * padding, angle, translation ) );
         var inside = math.pointInsidePolygonPoints( x, y, points );
 
         return inside;
@@ -103,7 +103,7 @@ BRp.registerArrowShapes = function(){
       draw: function( context, size, angle, translation ){
         var points = transformPoints( this.points, size, angle, translation );
 
-        renderer.arrowShapeImpl('polygon')( context, points );
+        renderer.arrowShapeImpl( 'polygon' )( context, points );
       },
 
       spacing: function( edge ){
@@ -111,7 +111,7 @@ BRp.registerArrowShapes = function(){
       },
 
       gap: function( edge ){
-        return edge._private.style['width'].pfValue * 2;
+        return edge._private.style[ 'width' ].pfValue * 2;
       }
     }, defn );
   };
@@ -139,7 +139,7 @@ BRp.registerArrowShapes = function(){
   defineArrowShape( 'arrow', 'triangle' );
 
   defineArrowShape( 'triangle-backcurve', {
-    points: arrowShapes['triangle'].points,
+    points: arrowShapes[ 'triangle' ].points,
 
     controlPoint: [ 0, -0.15 ],
 
@@ -154,7 +154,7 @@ BRp.registerArrowShapes = function(){
     },
 
     gap: function( edge ){
-      return edge._private.style['width'].pfValue;
+      return edge._private.style[ 'width' ].pfValue;
     }
   } );
 
@@ -175,8 +175,8 @@ BRp.registerArrowShapes = function(){
     ],
 
     collide: function( x, y, size, angle, translation, padding ){
-      var triPts = pointsToArr( transformPoints( this.points, size + 2*padding, angle, translation ) );
-      var teePts = pointsToArr( transformPoints( this.pointsTee, size + 2*padding, angle, translation ) );
+      var triPts = pointsToArr( transformPoints( this.points, size + 2 * padding, angle, translation ) );
+      var teePts = pointsToArr( transformPoints( this.pointsTee, size + 2 * padding, angle, translation ) );
 
       var inside = math.pointInsidePolygonPoints( x, y, triPts ) || math.pointInsidePolygonPoints( x, y, teePts );
 
@@ -196,11 +196,11 @@ BRp.registerArrowShapes = function(){
       -0.15, -0.3,
       0, 0,
       0.15, -0.3,
-      0, -0.15,
+      0, -0.15
     ],
 
     gap: function( edge ){
-      return edge._private.style['width'].pfValue;
+      return edge._private.style[ 'width' ].pfValue;
     }
   } );
 
@@ -221,7 +221,7 @@ BRp.registerArrowShapes = function(){
 
     collide: function( x, y, size, angle, translation, padding ){
       var t = translation;
-      var inside = ( Math.pow(t.x - x, 2) + Math.pow(t.y - y, 2) <= Math.pow((size + 2*padding) * this.radius, 2) );
+      var inside = ( Math.pow( t.x - x, 2 ) + Math.pow( t.y - y, 2 ) <= Math.pow( (size + 2 * padding) * this.radius, 2 ) );
 
       return inside;
     },
@@ -231,9 +231,9 @@ BRp.registerArrowShapes = function(){
     },
 
     spacing: function( edge ){
-      return renderer.getArrowWidth(edge._private.style['width'].pfValue)
+      return renderer.getArrowWidth( edge._private.style[ 'width' ].pfValue )
         * this.radius;
-    },
+    }
   } );
 
   defineArrowShape( 'inhibitor', {
@@ -273,7 +273,7 @@ BRp.registerArrowShapes = function(){
     ],
 
     gap: function( edge ){
-      return edge._private.style['width'].pfValue;
+      return edge._private.style[ 'width' ].pfValue;
     }
   } );
 

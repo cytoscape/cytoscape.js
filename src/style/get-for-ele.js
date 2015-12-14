@@ -1,7 +1,7 @@
 'use strict';
 
-var util = require('../util');
-var is = require('../is');
+var util = require( '../util' );
+var is = require( '../is' );
 
 var styfn = {};
 
@@ -19,12 +19,12 @@ styfn.getRawStyle = function( ele, isRenderedVal ){
     var rstyle = {};
 
     for( var i = 0; i < self.properties.length; i++ ){
-      var prop = self.properties[i];
+      var prop = self.properties[ i ];
       var val = self.getStylePropertyValue( ele, prop.name, isRenderedVal );
 
       if( val ){
         rstyle[ prop.name ] = val;
-        rstyle[ util.dash2camel(prop.name) ] = val;
+        rstyle[ util.dash2camel( prop.name ) ] = val;
       }
     }
 
@@ -45,9 +45,9 @@ styfn.getStylePropertyValue = function( ele, propName, isRenderedVal ){
 
     if( styleProp ){
       var units = styleProp.units ? type.implicitUnits || 'px' : null;
-      var val = units ? [].concat( styleProp.pfValue ).map(function( pfValue ){
+      var val = units ? [].concat( styleProp.pfValue ).map( function( pfValue ){
         return ( pfValue * (isRenderedVal ? zoom : 1) ) + units;
-      }).join(' ') : styleProp.strValue;
+      } ).join( ' ' ) : styleProp.strValue;
 
       return val;
     }
@@ -59,30 +59,30 @@ styfn.getValueStyle = function( ele ){
   var self = this;
   var rstyle = {};
   var style;
-  var isEle = is.element(ele);
+  var isEle = is.element( ele );
 
   if( isEle ){
     style = ele._private.style;
-  } else {
+  } else{
     style = ele; // just passed the style itself
   }
 
   if( style ){
     for( var i = 0; i < self.properties.length; i++ ){
-      var prop = self.properties[i];
-      var styleProp = style[ prop.name ] || style[ util.dash2camel(prop.name) ];
+      var prop = self.properties[ i ];
+      var styleProp = style[ prop.name ] || style[ util.dash2camel( prop.name ) ];
 
       if( styleProp !== undefined ){ // then make a prop of it
         if( is.plainObject( styleProp ) ){
           styleProp = this.parse( prop.name, styleProp.strValue );
-        } else {
+        } else{
           styleProp = this.parse( prop.name, styleProp );
         }
       }
 
       if( styleProp ){
         rstyle[ prop.name ] = styleProp;
-        rstyle[ util.dash2camel(prop.name) ] = styleProp;
+        rstyle[ util.dash2camel( prop.name ) ] = styleProp;
       }
     }
   }
@@ -98,8 +98,8 @@ styfn.getPropsList = function( propsObj ){
 
   if( style ){
     for( var name in style ){
-      var val = style[name];
-      var prop = props[name] || props[ util.camel2dash(name) ];
+      var val = style[ name ];
+      var prop = props[ name ] || props[ util.camel2dash( name ) ];
       var styleProp = this.parse( prop.name, val );
 
       rstyle.push( styleProp );

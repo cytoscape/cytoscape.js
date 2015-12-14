@@ -1,23 +1,23 @@
 'use strict';
 
-var is = require('../../../is');
-var util = require('../../../util');
+var is = require( '../../../is' );
+var util = require( '../../../util' );
 
 var CRp = {};
 
 CRp.drawElementText = function( context, ele ){
   var _p = ele._private;
   var style = _p.style;
-  var emptyText = is.emptyString( style['label'].strValue );
-  var emptySource = is.emptyString( style['source-label'].strValue );
-  var emptyTarget = is.emptyString( style['target-label'].strValue );
+  var emptyText = is.emptyString( style[ 'label' ].strValue );
+  var emptySource = is.emptyString( style[ 'source-label' ].strValue );
+  var emptyTarget = is.emptyString( style[ 'target-label' ].strValue );
 
   if( emptyText && emptySource && emptyTarget ){
     return;
   }
 
-  var computedSize = style['font-size'].pfValue * ele.cy().zoom();
-  var minSize = style['min-zoomed-font-size'].pfValue;
+  var computedSize = style[ 'font-size' ].pfValue * ele.cy().zoom();
+  var minSize = style[ 'min-zoomed-font-size' ].pfValue;
 
   if( computedSize < minSize ){
     return;
@@ -25,13 +25,15 @@ CRp.drawElementText = function( context, ele ){
 
   var rs = _p.rscratch;
 
-  if( !is.number( rs.labelX ) || !is.number( rs.labelY ) ){ return; } // no pos => label can't be rendered
+  if( !is.number( rs.labelX ) || !is.number( rs.labelY ) ){
+    return;
+  } // no pos => label can't be rendered
 
   var isNode = ele.isNode();
 
   if( ele.isNode() ){
-    var textHalign = style['text-halign'].strValue;
-    var textValign = style['text-valign'].strValue;
+    var textHalign = style[ 'text-halign' ].strValue;
+    var textValign = style[ 'text-valign' ].strValue;
 
     switch( textHalign ){
       case 'left':
@@ -80,13 +82,13 @@ CRp.drawElementText = function( context, ele ){
 
 CRp.drawNodeText = CRp.drawEdgeText = CRp.drawElementText;
 
-CRp.getFontCache = function(context){
+CRp.getFontCache = function( context ){
   var cache;
 
   this.fontCaches = this.fontCaches || [];
 
   for( var i = 0; i < this.fontCaches.length; i++ ){
-    cache = this.fontCaches[i];
+    cache = this.fontCaches[ i ];
 
     if( cache.context === context ){
       return cache;
@@ -96,7 +98,7 @@ CRp.getFontCache = function(context){
   cache = {
     context: context
   };
-  this.fontCaches.push(cache);
+  this.fontCaches.push( cache );
 
   return cache;
 };
@@ -107,22 +109,22 @@ CRp.setupTextStyle = function( context, element ){
   // Font style
   var parentOpacity = element.effectiveOpacity();
   var style = element._private.style;
-  var labelStyle = style['font-style'].strValue;
-  var labelSize = style['font-size'].pfValue + 'px';
-  var labelFamily = style['font-family'].strValue;
-  var labelWeight = style['font-weight'].strValue;
-  var opacity = style['text-opacity'].value * style['opacity'].value * parentOpacity;
-  var outlineOpacity = style['text-outline-opacity'].value * opacity;
-  var color = style['color'].value;
-  var outlineColor = style['text-outline-color'].value;
-  var shadowBlur = style['text-shadow-blur'].pfValue;
-  var shadowOpacity = style['text-shadow-opacity'].value;
-  var shadowColor = style['text-shadow-color'].value;
-  var shadowOffsetX = style['text-shadow-offset-x'].pfValue;
-  var shadowOffsetY = style['text-shadow-offset-y'].pfValue;
+  var labelStyle = style[ 'font-style' ].strValue;
+  var labelSize = style[ 'font-size' ].pfValue + 'px';
+  var labelFamily = style[ 'font-family' ].strValue;
+  var labelWeight = style[ 'font-weight' ].strValue;
+  var opacity = style[ 'text-opacity' ].value * style[ 'opacity' ].value * parentOpacity;
+  var outlineOpacity = style[ 'text-outline-opacity' ].value * opacity;
+  var color = style[ 'color' ].value;
+  var outlineColor = style[ 'text-outline-color' ].value;
+  var shadowBlur = style[ 'text-shadow-blur' ].pfValue;
+  var shadowOpacity = style[ 'text-shadow-opacity' ].value;
+  var shadowColor = style[ 'text-shadow-color' ].value;
+  var shadowOffsetX = style[ 'text-shadow-offset-x' ].pfValue;
+  var shadowOffsetY = style[ 'text-shadow-offset-y' ].pfValue;
 
   var fontCacheKey = element._private.fontKey;
-  var cache = this.getFontCache(context);
+  var cache = this.getFontCache( context );
 
   if( cache.key !== fontCacheKey ){
     context.font = labelStyle + ' ' + labelWeight + ' ' + labelSize + ' ' + labelFamily;
@@ -135,37 +137,39 @@ CRp.setupTextStyle = function( context, element ){
   // so text outlines aren't jagged
   context.lineJoin = 'round';
 
-  this.fillStyle(context, color[0], color[1], color[2], opacity);
+  this.fillStyle( context, color[ 0 ], color[ 1 ], color[ 2 ], opacity );
 
-  this.strokeStyle(context, outlineColor[0], outlineColor[1], outlineColor[2], outlineOpacity);
+  this.strokeStyle( context, outlineColor[ 0 ], outlineColor[ 1 ], outlineColor[ 2 ], outlineOpacity );
 
-  this.shadowStyle(context, shadowColor, shadowOpacity, shadowBlur, shadowOffsetX, shadowOffsetY);
+  this.shadowStyle( context, shadowColor, shadowOpacity, shadowBlur, shadowOffsetX, shadowOffsetY );
 };
 
-function roundRect(ctx, x, y, width, height, radius) {
+function roundRect( ctx, x, y, width, height, radius ){
   var radius = radius || 5;
   ctx.beginPath();
-  ctx.moveTo(x + radius, y);
-  ctx.lineTo(x + width - radius, y);
-  ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
-  ctx.lineTo(x + width, y + height - radius);
-  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-  ctx.lineTo(x + radius, y + height);
-  ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
-  ctx.lineTo(x, y + radius);
-  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.moveTo( x + radius, y );
+  ctx.lineTo( x + width - radius, y );
+  ctx.quadraticCurveTo( x + width, y, x + width, y + radius );
+  ctx.lineTo( x + width, y + height - radius );
+  ctx.quadraticCurveTo( x + width, y + height, x + width - radius, y + height );
+  ctx.lineTo( x + radius, y + height );
+  ctx.quadraticCurveTo( x, y + height, x, y + height - radius );
+  ctx.lineTo( x, y + radius );
+  ctx.quadraticCurveTo( x, y, x + radius, y );
   ctx.closePath();
   ctx.fill();
 }
 
 // Draw text
-CRp.drawText = function(context, element, prefix) {
+CRp.drawText = function( context, element, prefix ){
   var _p = element._private;
   var style = _p.style;
   var rstyle = _p.rstyle;
   var rscratch = _p.rscratch;
   var parentOpacity = element.effectiveOpacity();
-  if( parentOpacity === 0 || style['text-opacity'].value === 0){ return; }
+  if( parentOpacity === 0 || style[ 'text-opacity' ].value === 0 ){
+    return;
+  }
 
   var textX = util.getPrefixedProperty( rscratch, 'labelX', prefix );
   var textY = util.getPrefixedProperty( rscratch, 'labelY', prefix );
@@ -173,13 +177,13 @@ CRp.drawText = function(context, element, prefix) {
 
   this.setupTextStyle( context, element );
 
-  if ( text != null && !isNaN(textX) && !isNaN(textY)) {
+  if( text != null && !isNaN( textX ) && !isNaN( textY ) ){
     var isEdge = element.isEdge();
     var isNode = element.isNode();
     var orgTextX = textX;
     var orgTextY = textY;
 
-    var rotation = style['text-rotation'];
+    var rotation = style[ 'text-rotation' ];
     var theta;
 
     if( rotation.strValue === 'autorotate' ){
@@ -191,15 +195,15 @@ CRp.drawText = function(context, element, prefix) {
     }
 
     if( theta !== 0 ){
-      context.translate(textX, textY);
-      context.rotate(theta);
+      context.translate( textX, textY );
+      context.rotate( theta );
 
       textX = 0;
       textY = 0;
     }
 
-    var halign = style['text-halign'].value;
-    var valign = style['text-valign'].value;
+    var halign = style[ 'text-halign' ].value;
+    var valign = style[ 'text-valign' ].value;
 
     if( isEdge ){
       halign = 'center';
@@ -207,35 +211,35 @@ CRp.drawText = function(context, element, prefix) {
     }
 
     if( isNode ){
-      var pLeft = style['padding-left'].pfValue;
-      var pRight = style['padding-right'].pfValue;
-      var pTop = style['padding-top'].pfValue;
-      var pBottom = style['padding-bottom'].pfValue;
+      var pLeft = style[ 'padding-left' ].pfValue;
+      var pRight = style[ 'padding-right' ].pfValue;
+      var pTop = style[ 'padding-top' ].pfValue;
+      var pBottom = style[ 'padding-bottom' ].pfValue;
 
-      textX += pLeft/2;
-      textX -= pRight/2;
+      textX += pLeft / 2;
+      textX -= pRight / 2;
 
-      textY += pTop/2;
-      textY -= pBottom/2;
+      textY += pTop / 2;
+      textY -= pBottom / 2;
     }
 
-    var backgroundOpacity = style['text-background-opacity'].value;
-    var borderOpacity = style['text-border-opacity'].value;
-    var textBorderWidth = style['text-border-width'].pfValue;
+    var backgroundOpacity = style[ 'text-background-opacity' ].value;
+    var borderOpacity = style[ 'text-border-opacity' ].value;
+    var textBorderWidth = style[ 'text-border-width' ].pfValue;
 
-    if( backgroundOpacity > 0 || (textBorderWidth > 0 && borderOpacity > 0) ){
-      var margin = 4 + textBorderWidth/2;
+    if( backgroundOpacity > 0 || ( textBorderWidth > 0 && borderOpacity > 0 ) ){
+      var margin = 4 + textBorderWidth / 2;
 
-      if (isNode) {
+      if( isNode ){
         //Move textX, textY to include the background margins
-        if (valign === 'top') {
+        if( valign === 'top' ){
           textY -= margin;
-        } else if (valign === 'bottom') {
+        } else if( valign === 'bottom' ){
           textY += margin;
         }
-        if (halign === 'left') {
+        if( halign === 'left' ){
           textX -= margin;
-        } else if (halign === 'right') {
+        } else if( halign === 'right' ){
           textX += margin;
         }
       }
@@ -244,28 +248,28 @@ CRp.drawText = function(context, element, prefix) {
       var bgHeight = rstyle.labelHeight;
       var bgX = textX;
 
-      if (halign) {
-        if (halign == 'center') {
+      if( halign ){
+        if( halign == 'center' ){
           bgX = bgX - bgWidth / 2;
-        } else if (halign == 'left') {
-          bgX = bgX- bgWidth;
+        } else if( halign == 'left' ){
+          bgX = bgX - bgWidth;
         }
       }
 
       var bgY = textY;
 
-      if (isNode) {
-        if (valign == 'top') {
-           bgY = bgY - bgHeight;
-        } else if (valign == 'center') {
-          bgY = bgY- bgHeight / 2;
+      if( isNode ){
+        if( valign == 'top' ){
+          bgY = bgY - bgHeight;
+        } else if( valign == 'center' ){
+          bgY = bgY - bgHeight / 2;
         }
       } else {
         bgY = bgY - bgHeight / 2;
       }
 
       // TODO #382 strongly suspect this is not needed
-      if (style['text-rotation'].strValue === 'autorotate') {
+      if( style[ 'text-rotation' ].strValue === 'autorotate' ){
         textY = 0;
         bgWidth += 4;
         bgX = textX - bgWidth / 2;
@@ -274,20 +278,20 @@ CRp.drawText = function(context, element, prefix) {
         // Adjust with border width & margin
         bgX -= margin;
         bgY -= margin;
-        bgHeight += margin*2;
-        bgWidth += margin*2;
+        bgHeight += margin * 2;
+        bgWidth += margin * 2;
       }
 
       if( backgroundOpacity > 0 ){
         var textFill = context.fillStyle;
-        var textBackgroundColor = style['text-background-color'].value;
+        var textBackgroundColor = style[ 'text-background-color' ].value;
 
-        context.fillStyle = 'rgba(' + textBackgroundColor[0] + ',' + textBackgroundColor[1] + ',' + textBackgroundColor[2] + ',' + backgroundOpacity * parentOpacity + ')';
-        var styleShape = style['text-background-shape'].strValue;
-        if (styleShape == 'roundrectangle') {
-          roundRect(context, bgX, bgY, bgWidth, bgHeight, 2);
+        context.fillStyle = 'rgba(' + textBackgroundColor[ 0 ] + ',' + textBackgroundColor[ 1 ] + ',' + textBackgroundColor[ 2 ] + ',' + backgroundOpacity * parentOpacity + ')';
+        var styleShape = style[ 'text-background-shape' ].strValue;
+        if( styleShape == 'roundrectangle' ){
+          roundRect( context, bgX, bgY, bgWidth, bgHeight, 2 );
         } else {
-          context.fillRect(bgX,bgY,bgWidth,bgHeight);
+          context.fillRect( bgX, bgY, bgWidth, bgHeight );
         }
         context.fillStyle = textFill;
       }
@@ -295,40 +299,40 @@ CRp.drawText = function(context, element, prefix) {
       if( textBorderWidth > 0 && borderOpacity > 0 ){
         var textStroke = context.strokeStyle;
         var textLineWidth = context.lineWidth;
-        var textBorderColor = style['text-border-color'].value;
-        var textBorderStyle = style['text-border-style'].value;
+        var textBorderColor = style[ 'text-border-color' ].value;
+        var textBorderStyle = style[ 'text-border-style' ].value;
 
-        context.strokeStyle = 'rgba(' + textBorderColor[0] + ',' + textBorderColor[1] + ',' + textBorderColor[2] + ',' + borderOpacity * parentOpacity + ')';
+        context.strokeStyle = 'rgba(' + textBorderColor[ 0 ] + ',' + textBorderColor[ 1 ] + ',' + textBorderColor[ 2 ] + ',' + borderOpacity * parentOpacity + ')';
         context.lineWidth = textBorderWidth;
 
         if( context.setLineDash ){ // for very outofdate browsers
           switch( textBorderStyle ){
             case 'dotted':
-              context.setLineDash([ 1, 1 ]);
+              context.setLineDash( [ 1, 1 ] );
               break;
             case 'dashed':
-              context.setLineDash([ 4, 2 ]);
+              context.setLineDash( [ 4, 2 ] );
               break;
             case 'double':
-              context.lineWidth = textBorderWidth/4; // 50% reserved for white between the two borders
-              context.setLineDash([ ]);
+              context.lineWidth = textBorderWidth / 4; // 50% reserved for white between the two borders
+              context.setLineDash( [] );
               break;
             case 'solid':
-              context.setLineDash([ ]);
+              context.setLineDash( [] );
               break;
           }
         }
 
-        context.strokeRect(bgX,bgY,bgWidth,bgHeight);
+        context.strokeRect( bgX, bgY, bgWidth, bgHeight );
 
         if( textBorderStyle === 'double' ){
-          var whiteWidth = textBorderWidth/2;
+          var whiteWidth = textBorderWidth / 2;
 
-          context.strokeRect(bgX+whiteWidth,bgY+whiteWidth,bgWidth-whiteWidth*2,bgHeight-whiteWidth*2);
+          context.strokeRect( bgX + whiteWidth, bgY + whiteWidth, bgWidth - whiteWidth * 2, bgHeight - whiteWidth * 2 );
         }
 
         if( context.setLineDash ){ // for very outofdate browsers
-          context.setLineDash([ ]);
+          context.setLineDash( [] );
         }
         context.lineWidth = textLineWidth;
         context.strokeStyle = textStroke;
@@ -336,19 +340,19 @@ CRp.drawText = function(context, element, prefix) {
 
     }
 
-    var lineWidth = 2  * style['text-outline-width'].pfValue; // *2 b/c the stroke is drawn centred on the middle
+    var lineWidth = 2 * style[ 'text-outline-width' ].pfValue; // *2 b/c the stroke is drawn centred on the middle
 
     if( lineWidth > 0 ){
       context.lineWidth = lineWidth;
     }
 
-    if( style['text-wrap'].value === 'wrap' ){
+    if( style[ 'text-wrap' ].value === 'wrap' ){
       var lines = rscratch.labelWrapCachedLines;
       var lineHeight = rstyle.labelHeight / lines.length;
 
       switch( valign ){
         case 'top':
-          textY -= (lines.length - 1) * lineHeight;
+          textY -= ( lines.length - 1 ) * lineHeight;
           break;
 
         case 'bottom':
@@ -357,15 +361,15 @@ CRp.drawText = function(context, element, prefix) {
 
         default:
         case 'center':
-          textY -= (lines.length - 1) * lineHeight / 2;
+          textY -= ( lines.length - 1 ) * lineHeight / 2;
       }
 
       for( var l = 0; l < lines.length; l++ ){
         if( lineWidth > 0 ){
-          context.strokeText( lines[l], textX, textY );
+          context.strokeText( lines[ l ], textX, textY );
         }
 
-        context.fillText( lines[l], textX, textY );
+        context.fillText( lines[ l ], textX, textY );
 
         textY += lineHeight;
       }
@@ -379,11 +383,11 @@ CRp.drawText = function(context, element, prefix) {
     }
 
     if( theta !== 0 ){
-      context.rotate(-theta);
-      context.translate(-orgTextX, -orgTextY);
+      context.rotate( -theta );
+      context.translate( -orgTextX, -orgTextY );
     }
 
-    this.shadowStyle(context, 'transparent', 0); // reset for next guy
+    this.shadowStyle( context, 'transparent', 0 ); // reset for next guy
   }
 };
 

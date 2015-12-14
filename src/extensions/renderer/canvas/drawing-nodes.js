@@ -5,7 +5,7 @@ var is = require( '../../../is' );
 var CRp = {};
 
 // Draw node
-CRp.drawNode = function( context, node, drawOverlayInstead ){
+CRp.drawNode = function( context, node, drawLabel ){
 
   var r = this;
   var nodeWidth, nodeHeight;
@@ -23,14 +23,6 @@ CRp.drawNode = function( context, node, drawOverlayInstead ){
   var path;
   var pathCacheHit = false;
 
-  var overlayPadding = style[ 'overlay-padding' ].pfValue;
-  var overlayOpacity = style[ 'overlay-opacity' ].value;
-  var overlayColor = style[ 'overlay-color' ].value;
-
-  if( drawOverlayInstead && overlayOpacity === 0 ){ // exit early if drawing overlay but none to draw
-    return;
-  }
-
   var parentOpacity = node.effectiveOpacity();
   if( parentOpacity === 0 ){ return; }
 
@@ -39,211 +31,237 @@ CRp.drawNode = function( context, node, drawOverlayInstead ){
 
   context.lineWidth = style[ 'border-width' ].pfValue;
 
-  if( drawOverlayInstead === undefined || !drawOverlayInstead ){
+  //
+  // load bg image
 
-    var url = style[ 'background-image' ].value[2] ||
-      style[ 'background-image' ].value[1];
-    var image;
+  var url = style[ 'background-image' ].value[2] || style[ 'background-image' ].value[1];
+  var image;
 
-    if( url !== undefined ){
+  if( url !== undefined ){
 
-      // get image, and if not loaded then ask to redraw when later loaded
-      image = this.getCachedImage( url, function(){
-        r.data.canvasNeedsRedraw[ r.NODE ] = true;
-        r.data.canvasNeedsRedraw[ r.DRAG ] = true;
+    // get image, and if not loaded then ask to redraw when later loaded
+    image = this.getCachedImage( url, function(){
+      r.data.canvasNeedsRedraw[ r.NODE ] = true;
+      r.data.canvasNeedsRedraw[ r.DRAG ] = true;
 
-        r.drawingImage = true;
+      r.drawingImage = true;
 
-        r.redraw();
-      } );
+      r.redraw();
+    } );
 
-      var prevBging = _p.backgrounding;
-      _p.backgrounding = !image.complete;
+    var prevBging = _p.backgrounding;
+    _p.backgrounding = !image.complete;
 
-      if( prevBging !== _p.backgrounding ){ // update style b/c :backgrounding state changed
-        node.updateStyle( false );
-      }
+    if( prevBging !== _p.backgrounding ){ // update style b/c :backgrounding state changed
+      node.updateStyle( false );
     }
+  }
 
-    // Node color & opacity
+  //
+  // setup styles
 
-    var bgColor = style[ 'background-color' ].value;
-    var borderColor = style[ 'border-color' ].value;
-    var borderStyle = style[ 'border-style' ].value;
+  var bgColor = style[ 'background-color' ].value;
+  var borderColor = style[ 'border-color' ].value;
+  var borderStyle = style[ 'border-style' ].value;
 
-    this.fillStyle( context, bgColor[0], bgColor[1], bgColor[2], style[ 'background-opacity' ].value * parentOpacity );
+  this.fillStyle( context, bgColor[0], bgColor[1], bgColor[2], style[ 'background-opacity' ].value * parentOpacity );
 
-    this.strokeStyle( context, borderColor[0], borderColor[1], borderColor[2], style[ 'border-opacity' ].value * parentOpacity );
+  this.strokeStyle( context, borderColor[0], borderColor[1], borderColor[2], style[ 'border-opacity' ].value * parentOpacity );
 
-    var shadowBlur = style[ 'shadow-blur' ].pfValue;
-    var shadowOpacity = style[ 'shadow-opacity' ].value;
-    var shadowColor = style[ 'shadow-color' ].value;
-    var shadowOffsetX = style[ 'shadow-offset-x' ].pfValue;
-    var shadowOffsetY = style[ 'shadow-offset-y' ].pfValue;
+  var shadowBlur = style[ 'shadow-blur' ].pfValue;
+  var shadowOpacity = style[ 'shadow-opacity' ].value;
+  var shadowColor = style[ 'shadow-color' ].value;
+  var shadowOffsetX = style[ 'shadow-offset-x' ].pfValue;
+  var shadowOffsetY = style[ 'shadow-offset-y' ].pfValue;
 
-    this.shadowStyle( context, shadowColor, shadowOpacity, shadowBlur, shadowOffsetX, shadowOffsetY );
+  this.shadowStyle( context, shadowColor, shadowOpacity, shadowBlur, shadowOffsetX, shadowOffsetY );
 
-    context.lineJoin = 'miter'; // so borders are square with the node shape
+  context.lineJoin = 'miter'; // so borders are square with the node shape
 
-    if( context.setLineDash ){ // for very outofdate browsers
-      switch( borderStyle ){
-        case 'dotted':
-          context.setLineDash( [ 1, 1 ] );
-          break;
+  if( context.setLineDash ){ // for very outofdate browsers
+    switch( borderStyle ){
+      case 'dotted':
+        context.setLineDash( [ 1, 1 ] );
+        break;
 
-        case 'dashed':
-          context.setLineDash( [ 4, 2 ] );
-          break;
+      case 'dashed':
+        context.setLineDash( [ 4, 2 ] );
+        break;
 
-        case 'solid':
-        case 'double':
-          context.setLineDash( [ ] );
-          break;
-      }
+      case 'solid':
+      case 'double':
+        context.setLineDash( [ ] );
+        break;
     }
+  }
 
 
-    var styleShape = style[ 'shape' ].strValue;
+  //
+  // draw shape
+
+  var styleShape = style[ 'shape' ].strValue;
+
+  if( usePaths ){
+    var pathCacheKey = styleShape + '$' + nodeWidth + '$' + nodeHeight;
+
+    context.translate( pos.x, pos.y );
+
+    if( rs.pathCacheKey === pathCacheKey ){
+      path = rs.pathCache;
+      pathCacheHit = true;
+    } else {
+      path = new Path2D();
+      rs.pathCacheKey = pathCacheKey;
+      rs.pathCache = path;
+    }
+  }
+
+  if( !pathCacheHit ){
+
+    var npos = pos;
 
     if( usePaths ){
-      var pathCacheKey = styleShape + '$' + nodeWidth + '$' + nodeHeight;
-
-      context.translate( pos.x, pos.y );
-
-      if( rs.pathCacheKey === pathCacheKey ){
-        path = rs.pathCache;
-        pathCacheHit = true;
-      } else{
-        path = new Path2D();
-        rs.pathCacheKey = pathCacheKey;
-        rs.pathCache = path;
-      }
+      npos = {
+        x: 0,
+        y: 0
+      };
     }
 
-    if( !pathCacheHit ){
+    r.nodeShapes[ this.getNodeShape( node ) ].draw(
+          ( path || context ),
+          npos.x,
+          npos.y,
+          nodeWidth,
+          nodeHeight );
+  }
 
-      var npos = pos;
+  if( usePaths ){
+    context.fill( path );
+  } else {
+    context.fill();
+  }
 
-      if( usePaths ){
-        npos = {
-          x: 0,
-          y: 0
-        };
-      }
+  this.shadowStyle( context, 'transparent', 0 ); // reset for next guy
 
-      r.nodeShapes[ this.getNodeShape( node ) ].draw(
-            ( path || context ),
-            npos.x,
-            npos.y,
+  //
+  // bg image
+
+  if( url !== undefined ){
+    if( image.complete ){
+      this.drawInscribedImage( context, image, node );
+    }
+  }
+
+  //
+  // pie
+
+  var darkness = style[ 'background-blacken' ].value;
+  var borderWidth = style[ 'border-width' ].pfValue;
+
+  if( this.hasPie( node ) ){
+    this.drawPie( context, node, parentOpacity );
+
+    // redraw path for blacken and border
+    if( darkness !== 0 || borderWidth !== 0 ){
+
+      if( !usePaths ){
+        r.nodeShapes[ this.getNodeShape( node ) ].draw(
+            context,
+            pos.x,
+            pos.y,
             nodeWidth,
             nodeHeight );
+      }
     }
+  }
+
+  //
+  // darken/lighten
+
+  if( darkness > 0 ){
+    this.fillStyle( context, 0, 0, 0, darkness );
 
     if( usePaths ){
       context.fill( path );
-    } else{
+    } else {
       context.fill();
     }
 
-    this.shadowStyle( context, 'transparent', 0 ); // reset for next guy
-
-    if( url !== undefined ){
-      if( image.complete ){
-        this.drawInscribedImage( context, image, node );
-      }
-    }
-
-    var darkness = style[ 'background-blacken' ].value;
-    var borderWidth = style[ 'border-width' ].pfValue;
-
-    if( this.hasPie( node ) ){
-      this.drawPie( context, node, parentOpacity );
-
-      // redraw path for blacken and border
-      if( darkness !== 0 || borderWidth !== 0 ){
-
-        if( !usePaths ){
-          r.nodeShapes[ this.getNodeShape( node ) ].draw(
-              context,
-              pos.x,
-              pos.y,
-              nodeWidth,
-              nodeHeight );
-        }
-      }
-    }
-
-    if( darkness > 0 ){
-      this.fillStyle( context, 0, 0, 0, darkness );
-
-      if( usePaths ){
-        context.fill( path );
-      } else{
-        context.fill();
-      }
-
-    } else if( darkness < 0 ){
-      this.fillStyle( context, 255, 255, 255, -darkness );
-
-      if( usePaths ){
-        context.fill( path );
-      } else{
-        context.fill();
-      }
-    }
-
-    // Border width, draw border
-    if( borderWidth > 0 ){
-
-      if( usePaths ){
-        context.stroke( path );
-      } else{
-        context.stroke();
-      }
-
-      if( borderStyle === 'double' ){
-        context.lineWidth = style[ 'border-width' ].pfValue / 3;
-
-        var gco = context.globalCompositeOperation;
-        context.globalCompositeOperation = 'destination-out';
-
-        if( usePaths ){
-          context.stroke( path );
-        } else{
-          context.stroke();
-        }
-
-        context.globalCompositeOperation = gco;
-      }
-
-    }
+  } else if( darkness < 0 ){
+    this.fillStyle( context, 255, 255, 255, -darkness );
 
     if( usePaths ){
-      context.translate( -pos.x, -pos.y );
-    }
-
-    // reset in case we changed the border style
-    if( context.setLineDash ){ // for very outofdate browsers
-      context.setLineDash( [ ] );
-    }
-
-  // draw the overlay
-  } else{
-
-    if( overlayOpacity > 0 ){
-      this.fillStyle( context, overlayColor[0], overlayColor[1], overlayColor[2], overlayOpacity );
-
-      r.nodeShapes[ 'roundrectangle' ].draw(
-        context,
-        node._private.position.x,
-        node._private.position.y,
-        nodeWidth + overlayPadding * 2,
-        nodeHeight + overlayPadding * 2
-      );
-
+      context.fill( path );
+    } else {
       context.fill();
     }
   }
+
+  //
+  // border
+
+  if( borderWidth > 0 ){
+
+    if( usePaths ){
+      context.stroke( path );
+    } else {
+      context.stroke();
+    }
+
+    if( borderStyle === 'double' ){
+      context.lineWidth = style[ 'border-width' ].pfValue / 3;
+
+      var gco = context.globalCompositeOperation;
+      context.globalCompositeOperation = 'destination-out';
+
+      if( usePaths ){
+        context.stroke( path );
+      } else {
+        context.stroke();
+      }
+
+      context.globalCompositeOperation = gco;
+    }
+
+  }
+
+  if( usePaths ){
+    context.translate( -pos.x, -pos.y );
+  }
+
+  // reset in case we changed the border style
+  if( context.setLineDash ){ // for very outofdate browsers
+    context.setLineDash( [ ] );
+  }
+
+  //
+  // label
+
+  if( drawLabel ){
+    r.drawElementText( context, node );
+  }
+
+  //
+  // overlay
+
+  var overlayPadding = style[ 'overlay-padding' ].pfValue;
+  var overlayOpacity = style[ 'overlay-opacity' ].value;
+  var overlayColor = style[ 'overlay-color' ].value;
+
+  if( overlayOpacity > 0 ){
+    this.fillStyle( context, overlayColor[0], overlayColor[1], overlayColor[2], overlayOpacity );
+
+    r.nodeShapes[ 'roundrectangle' ].draw(
+      context,
+      node._private.position.x,
+      node._private.position.y,
+      nodeWidth + overlayPadding * 2,
+      nodeHeight + overlayPadding * 2
+    );
+
+    context.fill();
+  }
+
 
 };
 

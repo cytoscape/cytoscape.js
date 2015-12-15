@@ -17,6 +17,12 @@ module.exports = {
     } );
   } ),
 
+  prependCamel: memoize( function( prefix, str ){
+    return prefix + str[0].toUpperCase() + str.substring(1);
+  }, function( prefix, str ){
+    return prefix + '$' + str;
+  } ),
+
   capitalize: function( str ){
     if( is.emptyString( str ) ){
       return str;

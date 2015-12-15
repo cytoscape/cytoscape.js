@@ -214,7 +214,8 @@ fn = elesfn = ({
   updateCompoundBounds: function(){
     var cy = this.cy();
 
-    if( !cy.styleEnabled() || !cy.hasCompoundNodes() ){ return cy.collection(); } // save cycles for non compound graphs or when style disabled
+    // save cycles for non compound graphs or when style disabled
+    if( !cy.styleEnabled() || !cy.hasCompoundNodes() ){ return cy.collection(); }
 
     var updated = [];
 
@@ -222,7 +223,13 @@ fn = elesfn = ({
       var children = parent.children();
       var style = parent._private.style;
       var includeLabels = style[ 'compound-sizing-wrt-labels' ].value === 'include';
-      var bb = children.boundingBox( { includeLabels: includeLabels, includeEdges: true } );
+      var bb = children.boundingBox( {
+        includeLabels: includeLabels,
+
+        // updating the compound bounds happens outside of the regular
+        // cache cycle (i.e. before fired events)
+        useCache: false
+      } );
       var padding = {
         top: style[ 'padding-top' ].pfValue,
         bottom: style[ 'padding-bottom' ].pfValue,
@@ -404,11 +411,6 @@ var boundingBoxImpl = function( ele, options ){
   var cy_p = cy._private;
   var styleEnabled = cy_p.styleEnabled;
 
-  // recalculate projections etc
-  if( styleEnabled ){
-    cy_p.renderer.recalculateRenderedStyle( ele );
-  }
-
   var bounds = {
     x1: Infinity,
     y1: Infinity,
@@ -556,12 +558,18 @@ var boundingBoxImpl = function( ele, options ){
   return bounds;
 };
 
-var cachedBoundingBoxImpl = util.memoize( boundingBoxImpl, function boundingBoxCacheKey( ele, opts ){
+var cachedBoundingBoxImpl = function( ele, opts ){
   var _p = ele._private;
-  var rstyle = _p.rstyle;
+  var bb;
 
-  return 'TODO'; // TODO use an appropriate key
-} );
+  if( !_p.bbCache || !opts.useCache ){
+    bb = _p.bbCache = boundingBoxImpl( ele, opts );
+  } else {
+    bb = _p.bbCache;
+  }
+
+  return bb;
+};
 
 elesfn.boundingBox = function( options ){
   var bounds = {
@@ -576,15 +584,23 @@ elesfn.boundingBox = function( options ){
   var opts = {
     includeNodes: options.includeNodes === undefined ? true : options.includeNodes,
     includeEdges: options.includeEdges === undefined ? true : options.includeEdges,
-    includeLabels: options.includeLabels === undefined ? true : options.includeLabels
+    includeLabels: options.includeLabels === undefined ? true : options.includeLabels,
+    useCache: options.useCache === undefined ? true : options.useCache
   };
 
   var eles = this;
 
+  // recalculate projections etc
+  var cy_p = eles.cy()._private;
+  var styleEnabled = cy_p.styleEnabled;
+  if( styleEnabled ){
+    cy_p.renderer.recalculateRenderedStyle( eles.union( eles.parallelEdges() ) );
+  }
+
   for( var i = 0; i < eles.length; i++ ){
     var ele = eles[i];
 
-    updateBoundsFromBox( bounds, boundingBoxImpl( ele, opts ) );
+    updateBoundsFromBox( bounds, cachedBoundingBoxImpl( ele, opts ) );
   }
 
   bounds.x1 = noninf( bounds.x1 );

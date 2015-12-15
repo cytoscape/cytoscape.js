@@ -12,38 +12,97 @@ BRp.registerCalculationListeners = function(){
   var elesToUpdate = cy.collection();
   var r = this;
 
-  cy.on('position', 'node', function( e ){
+  var enqueue = function( eles ){
+    elesToUpdate.merge( eles );
+
+    for( var i = 0; i < eles.length; i++ ){
+      var ele = eles[i];
+      var _p = ele._private;
+      var rstyle = _p.rstyle;
+
+      rstyle.clean = false;
+      _p.bbCache = null;
+    }
+  };
+
+  cy.on('position.* style.*', 'node', function( e ){
     var node = e.cyTarget;
 
-    elesToUpdate
-      .merge( node )
-      .merge( node.connectedEdges() )
-    ;
+    enqueue( node );
+    enqueue( node.connectedEdges() );
 
     if( cy.hasCompoundNodes() ){
       var parents = node.parents();
 
-      elesToUpdate
-        .merge( parents )
-        .merge( parents.connectedEdges() )
-      ;
+      enqueue( parents )
+      enqueue( parents.connectedEdges() );
     }
   });
 
-  cy.on('add remove', 'edge', function( e ){
+  cy.on('add.* remove.* style.*', 'edge', function( e ){
     var edge = e.cyTarget;
 
-    elesToUpdate.merge( edge.parallelEdges() );
+    enqueue( edge );
+    enqueue( edge.parallelEdges() );
+  });
+
+  cy.on('add.*', 'node', function( e ){
+    var ele = e.cyTarget;
+
+    enqueue( ele );
   });
 
   var updateEles = function(){
     r.recalculateRenderedStyle( elesToUpdate );
     elesToUpdate = cy.collection();
-
-    util.requestAnimationFrame( updateEles );
   };
 
-  util.requestAnimationFrame( updateEles );
+  this.beforeRender( updateEles );
+};
+
+BRp.recalculateRenderedStyle = function( eles ){
+  var edges = [];
+  var nodes = [];
+
+  for( var i = 0; i < eles.length; i++ ){
+    var ele = eles[ i ];
+    var _p = ele._private;
+    var style = _p.style;
+    var rstyle = _p.rstyle;
+    var id = _p.data.id;
+
+    // only update if dirty
+    if( rstyle.clean ){ continue; }
+
+    if( _p.group === 'nodes' ){
+      var pos = _p.position;
+
+      nodes.push( ele );
+
+      rstyle.nodeX = pos.x;
+      rstyle.nodeY = pos.y;
+      rstyle.nodeW = style[ 'width' ].pfValue;
+      rstyle.nodeH = style[ 'height' ].pfValue;
+    } else { // edges
+
+      var srcPos = _p.source._private.position;
+      var tgtPos = _p.target._private.position;
+
+      edges.push( ele );
+
+      // update rstyle positions
+      rstyle.srcX = srcPos.x;
+      rstyle.srcY = srcPos.y;
+      rstyle.tgtX = tgtPos.x;
+      rstyle.tgtY = tgtPos.y;
+
+    } // if edges
+
+    rstyle.clean = true;
+  }
+
+  this.recalculateEdgeProjections( edges );
+  this.recalculateLabelProjections( nodes, edges );
 };
 
 // Project mouse
@@ -784,46 +843,6 @@ BRp.calculateLabelDimensions = function( ele, text, extraKey ){
   return cache[ cacheKey ];
 };
 
-BRp.recalculateRenderedStyle = function( eles ){
-  var edges = [];
-  var nodes = [];
-
-  for( var i = 0; i < eles.length; i++ ){
-    var ele = eles[ i ];
-    var _p = ele._private;
-    var style = _p.style;
-    var rstyle = _p.rstyle;
-    var id = _p.data.id;
-
-    if( _p.group === 'nodes' ){
-      var pos = _p.position;
-
-      nodes.push( ele );
-
-      rstyle.nodeX = pos.x;
-      rstyle.nodeY = pos.y;
-      rstyle.nodeW = style[ 'width' ].pfValue;
-      rstyle.nodeH = style[ 'height' ].pfValue;
-    } else { // edges
-
-      var srcPos = _p.source._private.position;
-      var tgtPos = _p.target._private.position;
-
-      edges.push( ele );
-
-      // update rstyle positions
-      rstyle.srcX = srcPos.x;
-      rstyle.srcY = srcPos.y;
-      rstyle.tgtX = tgtPos.x;
-      rstyle.tgtY = tgtPos.y;
-
-    } // if edges
-  }
-
-  this.recalculateEdgeProjections( edges );
-  this.recalculateLabelProjections( nodes, edges );
-};
-
 BRp.recalculateLabelProjections = function( nodes, edges ){
   for( var i = 0; i < nodes.length; i++ ){
     this.recalculateNodeLabelProjection( nodes[ i ] );
@@ -1412,8 +1431,8 @@ BRp.findEdgeControlPoints = function( edges ){
       this.calculateLabelAngles( edge );
       this.recalculateEdgeLabelProjections( edge );
 
-    }
-  }
+    } // for pair edges
+  } // for pair ids
 
   for( var i = 0; i < haystackEdges.length; i++ ){
     var edge = haystackEdges[ i ];

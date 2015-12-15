@@ -64,6 +64,7 @@ BRp.init = function( options ){
   r.tapholdDuration = 500;
 
   r.bindings = [];
+  r.beforeRenderCallbacks = [];
 
   r.registerNodeShapes();
   r.registerArrowShapes();

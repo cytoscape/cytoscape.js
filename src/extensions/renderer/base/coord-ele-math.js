@@ -60,7 +60,7 @@ BRp.registerCalculationListeners = function(){
   this.beforeRender( updateEles );
 };
 
-BRp.recalculateRenderedStyle = function( eles ){
+BRp.recalculateRenderedStyle = function( eles, bypassCache ){
   var edges = [];
   var nodes = [];
 
@@ -72,7 +72,7 @@ BRp.recalculateRenderedStyle = function( eles ){
     var id = _p.data.id;
 
     // only update if dirty
-    if( rstyle.clean ){ continue; }
+    if( !bypassCache && rstyle.clean ){ continue; }
 
     if( _p.group === 'nodes' ){
       var pos = _p.position;

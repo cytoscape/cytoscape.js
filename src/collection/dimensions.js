@@ -544,14 +544,12 @@ var boundingBoxImpl = function( ele, options ){
     //////////////////////////
 
     if( styleEnabled && options.includeLabels ){
-
-      updateBounds( getLabelBounds( ele ) );
+      updateBoundsFromBox( bounds, getLabelBounds( ele ) );
 
       if( isEdge ){
-        updateBounds( getLabelBounds( ele, 'source' ) );
-        updateBounds( getLabelBounds( ele, 'target' ) );
+        updateBoundsFromBox( bounds, getLabelBounds( ele, 'source' ) );
+        updateBoundsFromBox( bounds, getLabelBounds( ele, 'target' ) );
       }
-
     } // style enabled for labels
   } // if displayed
 
@@ -594,7 +592,7 @@ elesfn.boundingBox = function( options ){
   var cy_p = eles.cy()._private;
   var styleEnabled = cy_p.styleEnabled;
   if( styleEnabled ){
-    cy_p.renderer.recalculateRenderedStyle( eles.union( eles.parallelEdges() ) );
+    cy_p.renderer.recalculateRenderedStyle( eles.union( eles.parallelEdges() ), !opts.useCache );
   }
 
   for( var i = 0; i < eles.length; i++ ){

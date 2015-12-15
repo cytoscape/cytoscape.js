@@ -6,6 +6,8 @@ var elesfn = {};
 
 [
   require( './bfs-dfs' ),
+  require( './dijkstra' ),
+  require( './kruskal' ),
   require( './a-star' ),
   require( './floyd-warshall' ),
   require( './bellman-ford' ),

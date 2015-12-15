@@ -2,19 +2,19 @@ $(function(){
 
 	$("#cytoscape").cy(function(e){
 		var cy = this;
-		
+
 		$("#zoom-pan-button").click(function(){
 			cy.reset();
 		});
-		
+
 		$("#fit-button").click(function(){
 			cy.fit();
 		});
-		
+
 		$("#fit-selected-button").click(function(){
 			cy.fit( cy.elements(":selected") );
 		});
-		
+
 		$("#center-selected-button").click(function(){
 			cy.center( cy.elements(":selected") );
 		});
@@ -87,10 +87,11 @@ $(function(){
 
 		cytoscape('collection', 'showBB', function(){
 			var bb = this.renderedBoundingBox();
+			var os = $('#cytoscape').offset();
 
 			$('#bb').css({
-				left: bb.x1,
-				top: bb.y1,
+				left: bb.x1 + os.left + 1,
+				top: bb.y1 + os.top + 1,
 				width: bb.x2 - bb.x1,
 				height: bb.y2 - bb.y1
 			}).show();
@@ -101,7 +102,7 @@ $(function(){
 		$("#hide-bb").click(function(){
 			$('#bb').hide();
 		});
-		
+
 	});
 
 });

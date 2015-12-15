@@ -2,21 +2,21 @@ var Benchmark = require('benchmark');
 var newCytoscape = require('../../build/cytoscape.js');
 var oldCytoscape = require('./cytoscape.js');
 
-function CySuite( name, opts ){
+function Suite( name, opts ){
   var suite = new Benchmark.Suite( name, opts );
   var suiteAdd = suite.add;
   var oldCy, newCy;
 
   opts = opts || {};
 
-  if( opts.oldCy ){
-    oldCy = opts.oldCy( oldCytoscape );
+  if( opts.setup ){
+    oldCy = opts.setup( oldCytoscape );
   } else {
     oldCy = oldCytoscape();
   }
 
-  if( opts.newCy ){
-    newCy = opts.newCy( newCytoscape );
+  if( opts.setup ){
+    newCy = opts.setup( newCytoscape );
   } else {
     newCy = newCytoscape();
   }
@@ -32,4 +32,4 @@ function CySuite( name, opts ){
   return suite;
 }
 
-module.exports = CySuite;
+module.exports = Suite;

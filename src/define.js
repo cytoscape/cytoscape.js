@@ -184,8 +184,9 @@ var define = {
 
   // event function reusable stuff
   event: {
-    regex: /(\w+)(\.\w+)?/, // regex for matching event strings (e.g. "click.namespace")
-    optionalTypeRegex: /(\w+)?(\.\w+)?/,
+    regex: /(\w+)(\.(?:\w+|\*))?/, // regex for matching event strings (e.g. "click.namespace")
+    universalNamespace: '.*', // matches as if no namespace specified and prevents users from unbinding accidentally
+    optionalTypeRegex: /(\w+)?(\.(?:\w+|\*))?/,
     falseCallback: function(){ return false; }
   },
 
@@ -481,7 +482,7 @@ var define = {
 
           for( var k = 0; k < listeners.length; k++ ){ // check each listener
             var lis = listeners[ k ];
-            var nsMatches = !lis.namespace || lis.namespace === evt.namespace;
+            var nsMatches = !lis.namespace || lis.namespace === evt.namespace || lis.namespace === define.event.universalNamespace;
             var typeMatches = lis.type === evt.type;
             var targetMatches = lis.delegated ? ( triggerer !== evt.cyTarget && is.element( evt.cyTarget ) && lis.selObj.matches( evt.cyTarget ) ) : (true); // we're not going to validate the hierarchy; that's too expensive
             var listenerMatches = nsMatches && typeMatches && targetMatches;

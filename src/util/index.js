@@ -68,7 +68,7 @@ util.extend = Object.assign != null ? Object.assign : function( tgt ){
 
 util.getPrefixedProperty = function( obj, propName, prefix ){
   if( prefix ){
-    propName = prefix + propName.toUpperCase(); // e.g. (labelWidth, source) => sourceLabelWidth
+    propName = this.prependCamel( prefix, propName ); // e.g. (labelWidth, source) => sourceLabelWidth
   }
 
   return obj[ propName ];
@@ -76,7 +76,7 @@ util.getPrefixedProperty = function( obj, propName, prefix ){
 
 util.setPrefixedProperty = function( obj, propName, prefix, value ){
   if( prefix ){
-    propName = prefix + propName.toUpperCase(); // e.g. (labelWidth, source) => sourceLabelWidth
+    propName = this.prependCamel( prefix, propName ); // e.g. (labelWidth, source) => sourceLabelWidth
   }
 
   obj[ propName ] = value;

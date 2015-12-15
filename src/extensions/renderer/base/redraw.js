@@ -42,6 +42,10 @@ BRp.redraw = function( options ){
   r.renderOptions = options;
 };
 
+BRp.beforeRender = function( fn ){
+  this.beforeRenderCallbacks.push( fn );
+};
+
 BRp.startRenderLoop = function(){
   var r = this;
 
@@ -50,6 +54,9 @@ BRp.startRenderLoop = function(){
 
     if( r.requestedFrame && !r.skipFrame ){
       var startTime = util.performanceNow();
+
+      var cbs = r.beforeRenderCallbacks;
+      for( var i = 0; i < cbs.length; i++ ){ cbs[i](); }
 
       r.render( r.renderOptions );
 

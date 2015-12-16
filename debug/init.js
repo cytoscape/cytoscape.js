@@ -12,24 +12,24 @@ $(function(){
   var numEdges = 120;
 
   var defaultSty = window.defaultSty = cytoscape.stylesheet()
-      // .selector('node, edge')
-      //   .css({
-      //     'transition-property': 'background-color, line-color, source-arrow-color, target-arrow-color',
-      //     'transition-duration': '0.25s'
-      //   })
+      .selector('node, edge')
+        .css({
+          // 'transition-property': 'background-color, line-color, source-arrow-color, target-arrow-color',
+          // 'transition-duration': '0.25s'
+        })
 
       .selector('node')
         .css({
-          'label': 'data(id)',
-          'border-width': 3,
-          'background-color': '#DDD',
-          'border-color': '#555',
-          'shape': 'ellipse',
+          // 'label': 'data(id)',
+          // 'border-width': 3,
+          // 'background-color': '#888',
+          // 'border-color': '#555',
+          // 'shape': 'ellipse',
           // 'shape': 'polygon',
           // 'shape-polygon-points': [ 0, -1,   1, 1,   -1, 1 ],
           //'shape': 'data(shape)',
-          'width': 'mapData(weight, 0, 100, 15, 50)',
-          'height': 'mapData(weight, 0, 100, 15, 50)',
+          // 'width': 'mapData(weight, 0, 100, 15, 50)',
+          // 'height': 'mapData(weight, 0, 100, 15, 50)',
           //'width': 'mapLayoutData(concentric, 0, 10, 10, 50)',
           //'height': 'mapLayoutData(concentric, 0, 10, 10, 50)',
           //'border-style': 'dashed'
@@ -55,82 +55,82 @@ $(function(){
         })
       .selector('$node > node') // compound (parent) nodes
         .css({
-          'width': 'auto',
-          'height': 'auto',
-          'textValign': 'bottom',
-          'font-weight': 'bold',
-          'font-style': 'italic',
-          'background-color': '#B7E1ED',
-          'padding-left': 10,
-          'padding-right': 10,
-          'padding-top': 10,
-          'padding-bottom': 10,
-          'background-opacity': 1
+          // 'width': 'auto',
+          // 'height': 'auto',
+          // 'textValign': 'bottom',
+          // 'font-weight': 'bold',
+          // 'font-style': 'italic',
+          // 'background-color': '#B7E1ED',
+          // 'padding-left': 10,
+          // 'padding-right': 10,
+          // 'padding-top': 10,
+          // 'padding-bottom': 10,
+          // 'background-opacity': 1
         })
       .selector('node[id="non-auto"]') // to init a non-auto sized compound
         .css({
-          'width': 10,
-          'height': 10,
-          'shape': 'triangle'
+          // 'width': 10,
+          // 'height': 10,
+          // 'shape': 'triangle'
           })
       .selector('edge')
         .css({
-          'line-color': '#ccc',
-          'source-arrow-color': '#ccc',
-          'mid-source-arrow-color': '#ccc',
-          'target-arrow-color': '#ccc',
-          'mid-target-arrow-color': '#ccc',
+          // 'line-color': '#e0e0e0',
+          // 'source-arrow-color': '#ccc',
+          // 'mid-source-arrow-color': '#ccc',
+          // 'target-arrow-color': '#ccc',
+          // 'mid-target-arrow-color': '#ccc',
           // 'curve-style': 'unbundled-bezier',
           // 'control-point-distance': 100,
-          'width': '3',
-          'source-arrow-shape': 'triangle-backcurve',
-          'target-arrow-shape': 'triangle',
-          'mid-target-arrow-shape': 'triangle',
-          'mid-source-arrow-shape': 'triangle-backcurve',
+          // 'width': '3',
+          // 'source-arrow-shape': 'triangle-backcurve',
+          // 'target-arrow-shape': 'triangle',
+          // 'mid-target-arrow-shape': 'triangle',
+          // 'mid-source-arrow-shape': 'triangle-backcurve',
           // 'target-arrow-fill': 'filled',
           // 'source-arrow-shape': 'data(srcShape)',
           // 'curve-style': 'haystack',
           // 'opacity': 0.5
-          'content': 'data(weight)',
-          'text-rotation': 'autorotate'
+          // 'content': 'data(weight)',
+          // 'text-rotation': 'autorotate'
         })
-      // .selector('[source="n1"]')
-      //   .css({
-      //     'control-point-distance': 200,
-      //     'control-point-weight': 0
-      //   })
+      .selector('[source="n1"]')
+        .css({
+          // 'control-point-distance': 200,
+          // 'control-point-weight': 0
+        })
       .selector(':selected')
         .css({
-          'background-color': '#000',
-          'line-color': '#000',
-          'source-arrow-color': '#000',
-          'target-arrow-color': '#000',
-          'mid-source-arrow-color': '#000',
-          'mid-target-arrow-color': '#000'
+          // 'background-color': '#000',
+          // 'line-color': '#000',
+          // 'source-arrow-color': '#000',
+          // 'target-arrow-color': '#000',
+          // 'mid-source-arrow-color': '#000',
+          // 'mid-target-arrow-color': '#000'
         })
       .selector('.foo')
         .css({
-          'width': 15
+          // 'width': 15
         })
       .selector('#ab')
         .css({
-          'curve-style': 'unbundled-bezier',
-          'control-point-distances': [ 100, -100, 100 ],
-          'control-point-weights': [ 0.25, 0.5, 0.75 ],
+          // 'curve-style': 'unbundled-bezier',
+          // 'control-point-distances': [ 100, -100, 100 ],
+          // 'control-point-weights': [ 0.25, 0.5, 0.75 ],
           // 'label': 'hello world',
           // 'edge-text-rotation': 'autorotate'
         })
       .selector('#bc')
         .css({
-          'curve-style': 'segments',
-          'segment-distances': [ 20, -80 ],
-          'segment-weights': [ 0.25, 0.5 ],
+          // 'curve-style': 'segments',
+          // 'segment-distances': [ 20, -80 ],
+          // 'segment-weights': [ 0.25, 0.5 ],
           // 'label': 'hello world'
         })
       .selector('[source = "c"][target = "e"]')
         .css({
-          'curve-style': 'haystack',
-          'haystack-radius': 0.5
+          // 'curve-style': 'haystack',
+          // 'haystack-radius': 0.5
         })
   ;
 

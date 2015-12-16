@@ -341,7 +341,7 @@ styfn.addDefaultStylesheet = function(){
 
         // node props
         'background-blacken': 0,
-        'background-color': '#888',
+        'background-color': '#999',
         'background-opacity': 1,
         'background-image': 'none',
         'background-image-opacity': 1,
@@ -387,7 +387,7 @@ styfn.addDefaultStylesheet = function(){
       }, {} ), {
         // edge props
         'line-style': 'solid',
-        'line-color': '#ddd',
+        'line-color': '#999',
         'control-point-step-size': 40,
         'control-point-weights': 0.5,
         'segment-weights': 0.5,
@@ -396,7 +396,7 @@ styfn.addDefaultStylesheet = function(){
         'haystack-radius': 0.8
       }, [
         { name: 'arrow-shape', value: 'none' },
-        { name: 'arrow-color', value: '#ddd' },
+        { name: 'arrow-color', value: '#000' },
         { name: 'arrow-fill', value: 'filled' }
       ].reduce( function( css, prop ){
         styfn.arrowPrefixes.forEach( function( prefix ){
@@ -416,11 +416,28 @@ styfn.addDefaultStylesheet = function(){
         'padding-top': 10,
         'padding-right': 10,
         'padding-left': 10,
-        'padding-bottom': 10
+        'padding-bottom': 10,
+        'background-color': '#eee',
+        'border-color': '#ccc',
+        'border-width': 1
       } )
     .selector( 'edge' ) // just edge properties
       .css( {
-        'width': 1
+        'width': 3
+      } )
+    .selector( ':selected' )
+      .css( {
+        'background-color': '#0169D9',
+        'line-color': '#0169D9',
+        'source-arrow-color': '#0169D9',
+        'target-arrow-color': '#0169D9',
+        'mid-source-arrow-color': '#0169D9',
+        'mid-target-arrow-color': '#0169D9'
+      } )
+    .selector( '$node:selected node' )
+      .css( {
+        'background-color': '#CCE1F9',
+        'border-color': '#aec8e5'
       } )
     .selector( ':active' )
       .css( {

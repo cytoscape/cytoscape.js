@@ -128,8 +128,9 @@ BRp.destroy = function(){
   for( var i = 0; i < this.bindings.length; i++ ){
     var binding = this.bindings[ i ];
     var b = binding;
+    var tgt = b.target;
 
-    b.target.removeEventListener( b.event, b.handler, b.useCapture );
+    ( tgt.off || tgt.removeEventListener ).apply( tgt, b.args );
   }
 
   if( this.removeObserver ){

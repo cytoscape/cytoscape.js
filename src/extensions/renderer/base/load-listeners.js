@@ -8,20 +8,42 @@ var Collection = require( '../../../collection' );
 var BRp = {};
 
 BRp.registerBinding = function( target, event, handler, useCapture ){
-  this.bindings.push( {
-    target: target,
-    event: event,
-    handler: handler,
-    useCapture: useCapture
-  } );
+  var args = Array.prototype.slice.apply( arguments, [1] ); // copy
+  var b = this.binder( target );
 
-  target.addEventListener( event, handler, useCapture );
+  return b.on.apply( b, args );
+};
+
+BRp.binder = function( tgt ){
+  var r = this;
+
+  var on = function(){
+    var args = arguments;
+
+    r.bindings.push({
+      target: tgt,
+      args: args
+    });
+
+    ( tgt.on || tgt.addEventListener ).apply( tgt, args );
+
+    return this;
+  };
+
+  return {
+    on: on,
+    addEventListener: on,
+    addListener: on,
+    bind: on
+  };
 };
 
 BRp.nodeIsDraggable = function( node ){
-  if( node._private.style[ 'opacity' ].value !== 0
-    && node._private.style[ 'visibility' ].value == 'visible'
-    && node._private.style[ 'display' ].value == 'element'
+  var style = node._private.style;
+
+  if( style[ 'opacity' ].value !== 0
+    && style[ 'visibility' ].value == 'visible'
+    && style[ 'display' ].value == 'element'
     && !node.locked()
     && node.grabbable() ){
 

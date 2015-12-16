@@ -151,12 +151,11 @@ var corefn = ({
         if( eles.length > 0 ){
           var updatedEles = eles.updateCompoundBounds();
           toNotify = updatedEles.length > 0 ? eles.add( updatedEles ) : eles;
+        } else {
+          toNotify = cy;
         }
 
-        cy.notify( {
-          type: 'draw',
-          collection: toNotify
-        } );
+        toNotify.rtrigger('style');
       }
 
       // remove elements from list of currently animating if its queues are empty

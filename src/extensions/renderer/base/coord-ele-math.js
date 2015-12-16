@@ -25,32 +25,38 @@ BRp.registerCalculationListeners = function(){
     }
   };
 
-  cy.on('position.* style.*', 'node', function( e ){
-    var node = e.cyTarget;
+  r.binder( cy )
+    // nodes
 
-    enqueue( node );
-    enqueue( node.connectedEdges() );
+    .on('position.* style.*', 'node', function( e ){
+      var node = e.cyTarget;
 
-    if( cy.hasCompoundNodes() ){
-      var parents = node.parents();
+      enqueue( node );
+      enqueue( node.connectedEdges() );
 
-      enqueue( parents )
-      enqueue( parents.connectedEdges() );
-    }
-  });
+      if( cy.hasCompoundNodes() ){
+        var parents = node.parents();
 
-  cy.on('add.* remove.* style.*', 'edge', function( e ){
-    var edge = e.cyTarget;
+        enqueue( parents )
+        enqueue( parents.connectedEdges() );
+      }
+    })
 
-    enqueue( edge );
-    enqueue( edge.parallelEdges() );
-  });
+    .on('add.* ', 'node', function( e ){
+      var ele = e.cyTarget;
 
-  cy.on('add.*', 'node', function( e ){
-    var ele = e.cyTarget;
+      enqueue( ele );
+    })
 
-    enqueue( ele );
-  });
+    // edges
+
+    .on('add.* remove.* style.*', 'edge', function( e ){
+      var edge = e.cyTarget;
+
+      enqueue( edge );
+      enqueue( edge.parallelEdges() );
+    })
+  ;
 
   var updateEles = function(){
     r.recalculateRenderedStyle( elesToUpdate );

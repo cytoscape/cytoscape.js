@@ -505,7 +505,7 @@ var corefn = ({
       x1: ( rb.x1 - pan.x )/zoom,
       x2: ( rb.x2 - pan.x )/zoom,
       y1: ( rb.y1 - pan.y )/zoom,
-      y2: ( rb.y2 - pan.y )/zoom,
+      y2: ( rb.y2 - pan.y )/zoom
     };
 
     b.w = b.x2 - b.x1;

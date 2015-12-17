@@ -9,7 +9,7 @@ var elesfn = ({
   clearQueue: define.clearQueue(),
   delay: define.delay(),
   delayAnimation: define.delayAnimation(),
-  stop: define.stop(),
+  stop: define.stop()
 });
 
 module.exports = elesfn;

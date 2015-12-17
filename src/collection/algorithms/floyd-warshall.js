@@ -182,7 +182,7 @@ var elesfn = ({
                       edgeNext);
 
         return cy.collection( pathArr );
-      },
+      }
     };
 
     return res;

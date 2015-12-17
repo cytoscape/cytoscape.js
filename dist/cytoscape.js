@@ -1,5 +1,5 @@
 /*!
- * This file is part of Cytoscape.js 2.5.2.
+ * This file is part of Cytoscape.js 2.5.3.
  *
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -1646,7 +1646,7 @@ var elesfn = ({
                       edgeNext);
 
         return cy.collection( pathArr );
-      },
+      }
     };
 
     return res;
@@ -2049,7 +2049,7 @@ var elesfn = ({
   clearQueue: define.clearQueue(),
   delay: define.delay(),
   delayAnimation: define.delayAnimation(),
-  stop: define.stop(),
+  stop: define.stop()
 });
 
 module.exports = elesfn;
@@ -2750,7 +2750,7 @@ fn = elesfn = ({
           } else if( ppos !== undefined ){ // set whole position
             ele._private.position = {
               x: ppos.x + origin.x,
-              y: ppos.y + origin.y,
+              y: ppos.y + origin.y
             };
           }
         }
@@ -7768,7 +7768,7 @@ var corefn = ({
       x1: ( rb.x1 - pan.x )/zoom,
       x2: ( rb.x2 - pan.x )/zoom,
       y1: ( rb.y1 - pan.y )/zoom,
-      y2: ( rb.y2 - pan.y )/zoom,
+      y2: ( rb.y2 - pan.y )/zoom
     };
 
     b.w = b.x2 - b.x1;
@@ -11598,7 +11598,7 @@ BRp.registerArrowShapes = function(){
       -0.15, -0.3,
       0, 0,
       0.15, -0.3,
-      0, -0.15,
+      0, -0.15
     ],
 
     gap: function( edge ){
@@ -11635,7 +11635,7 @@ BRp.registerArrowShapes = function(){
     spacing: function( edge ){
       return renderer.getArrowWidth(edge._private.style['width'].pfValue)
         * this.radius;
-    },
+    }
   } );
 
   defineArrowShape( 'inhibitor', {
@@ -18793,7 +18793,7 @@ var cytoscape = function( options ){ // jshint ignore:line
 };
 
 // replaced by build system
-cytoscape.version = '2.5.2';
+cytoscape.version = '2.5.3';
 
 // try to register w/ jquery
 if( window && window.jQuery ){
@@ -22967,7 +22967,7 @@ styfn.addDefaultStylesheet = function(){
         'padding-left': 0,
         'padding-right': 0,
         'position': 'origin',
-        'compound-sizing-wrt-labels': 'include',
+        'compound-sizing-wrt-labels': 'include'
       }, {
         // node pie bg
         'pie-size': '100%'

@@ -281,7 +281,7 @@ gulp.task('zip', ['version', 'build'], function(){
     'build/cytoscape.js.map',
     'build/cytoscape.min.js',
     'build/cytoscape.min.js.map',
-    'LGPL-LICENSE.txt',
+    'LICENSE',
     'lib/*.js'
   ])
     .pipe( $.zip('cytoscape.js-' + version + '.zip') )

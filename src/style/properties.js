@@ -356,7 +356,7 @@ styfn.addDefaultStylesheet = function(){
         'padding-left': 0,
         'padding-right': 0,
         'position': 'origin',
-        'compound-sizing-wrt-labels': 'include',
+        'compound-sizing-wrt-labels': 'include'
       }, {
         // node pie bg
         'pie-size': '100%'

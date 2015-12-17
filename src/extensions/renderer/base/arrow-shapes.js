@@ -196,7 +196,7 @@ BRp.registerArrowShapes = function(){
       -0.15, -0.3,
       0, 0,
       0.15, -0.3,
-      0, -0.15,
+      0, -0.15
     ],
 
     gap: function( edge ){
@@ -233,7 +233,7 @@ BRp.registerArrowShapes = function(){
     spacing: function( edge ){
       return renderer.getArrowWidth(edge._private.style['width'].pfValue)
         * this.radius;
-    },
+    }
   } );
 
   defineArrowShape( 'inhibitor', {

@@ -153,7 +153,7 @@ fn = elesfn = ({
           } else if( ppos !== undefined ){ // set whole position
             ele._private.position = {
               x: ppos.x + origin.x,
-              y: ppos.y + origin.y,
+              y: ppos.y + origin.y
             };
           }
         }

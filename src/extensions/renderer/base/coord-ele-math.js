@@ -731,8 +731,10 @@ BRp.getLabelText = function( ele, prefix ){
   if( style[ 'text-wrap' ].value === 'wrap' ){
     //console.log('wrap');
 
+    var labelKey = rscratch( 'labelKey' );
+
     // save recalc if the label is the same as before
-    if( rscratch( 'labelWrapKey' ) === rscratch( 'labelKey' ) ){
+    if( labelKey && rscratch( 'labelWrapKey' ) === labelKey ){
       // console.log('wrap cache hit');
       return rscratch( 'labelWrapCachedText' );
     }
@@ -776,7 +778,7 @@ BRp.getLabelText = function( ele, prefix ){
 
     rscratch( 'labelWrapCachedLines', wrappedLines );
     text = rscratch( 'labelWrapCachedText', wrappedLines.join( '\n' ) );
-    rscratch( 'labelWrapKey', rscratch.labelKey );
+    rscratch( 'labelWrapKey', labelKey );
 
     // console.log(text)
   } // if wrap

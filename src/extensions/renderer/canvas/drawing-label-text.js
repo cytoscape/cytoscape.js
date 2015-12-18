@@ -8,13 +8,6 @@ var CRp = {};
 CRp.drawElementText = function( context, ele ){
   var _p = ele._private;
   var style = _p.style;
-  var emptyText = is.emptyString( style[ 'label' ].strValue );
-  var emptySource = is.emptyString( style[ 'source-label' ].strValue );
-  var emptyTarget = is.emptyString( style[ 'target-label' ].strValue );
-
-  if( emptyText && emptySource && emptyTarget ){
-    return;
-  }
 
   var computedSize = style[ 'font-size' ].pfValue * ele.cy().zoom();
   var minSize = style[ 'min-zoomed-font-size' ].pfValue;
@@ -24,12 +17,6 @@ CRp.drawElementText = function( context, ele ){
   }
 
   var rs = _p.rscratch;
-
-  if( !is.number( rs.labelX ) || !is.number( rs.labelY ) ){
-    return;
-  } // no pos => label can't be rendered
-
-  var isNode = ele.isNode();
 
   if( ele.isNode() ){
     var textHalign = style[ 'text-halign' ].strValue;
@@ -65,18 +52,13 @@ CRp.drawElementText = function( context, ele ){
     context.textBaseline = 'middle';
   }
 
-  if( !emptyText ){
-    this.drawText( context, ele );
-  }
+
+  this.drawText( context, ele );
 
   if( ele.isEdge() ){
-    if( !emptySource ){
-      this.drawText( context, ele, 'source' );
-    }
+    this.drawText( context, ele, 'source' );
 
-    if( !emptyTarget ){
-      this.drawText( context, ele, 'target' );
-    }
+    this.drawText( context, ele, 'target' );
   }
 };
 
@@ -173,6 +155,9 @@ CRp.drawText = function( context, element, prefix ){
 
   var textX = util.getPrefixedProperty( rscratch, 'labelX', prefix );
   var textY = util.getPrefixedProperty( rscratch, 'labelY', prefix );
+  var textW = util.getPrefixedProperty( rscratch, 'labelWidth', prefix );
+  var textH = util.getPrefixedProperty( rscratch, 'labelHeight', prefix );
+  var textAngle = util.getPrefixedProperty( rscratch, 'labelAngle', prefix );
   var text = this.getLabelText( element, prefix );
 
   this.setupTextStyle( context, element );
@@ -180,27 +165,6 @@ CRp.drawText = function( context, element, prefix ){
   if( text != null && !isNaN( textX ) && !isNaN( textY ) ){
     var isEdge = element.isEdge();
     var isNode = element.isNode();
-    var orgTextX = textX;
-    var orgTextY = textY;
-
-    var rotation = style[ 'text-rotation' ];
-    var theta;
-
-    if( rotation.strValue === 'autorotate' ){
-      theta = isEdge ? rscratch.labelAngle : 0;
-    } else if( rotation.strValue === 'none' ){
-      theta = 0;
-    } else {
-      theta = rotation.pfValue;
-    }
-
-    if( theta !== 0 ){
-      context.translate( textX, textY );
-      context.rotate( theta );
-
-      textX = 0;
-      textY = 0;
-    }
 
     var halign = style[ 'text-halign' ].value;
     var valign = style[ 'text-valign' ].value;
@@ -208,6 +172,28 @@ CRp.drawText = function( context, element, prefix ){
     if( isEdge ){
       halign = 'center';
       valign = 'center';
+    }
+
+    var rotation = style[ 'text-rotation' ];
+    var theta;
+
+    if( rotation.strValue === 'autorotate' ){
+      theta = isEdge ? textAngle : 0;
+    } else if( rotation.strValue === 'none' ){
+      theta = 0;
+    } else {
+      theta = rotation.pfValue;
+    }
+
+    if( theta !== 0 ){
+      var orgTextX = textX;
+      var orgTextY = textY;
+
+      context.translate( orgTextX, orgTextY );
+      context.rotate( theta );
+
+      textX = 0;
+      textY = 0;
     }
 
     if( isNode ){
@@ -244,8 +230,8 @@ CRp.drawText = function( context, element, prefix ){
         }
       }
 
-      var bgWidth = rstyle.labelWidth;
-      var bgHeight = rstyle.labelHeight;
+      var bgWidth = textW;
+      var bgHeight = textH;
       var bgX = textX;
 
       if( halign ){
@@ -348,7 +334,7 @@ CRp.drawText = function( context, element, prefix ){
 
     if( style[ 'text-wrap' ].value === 'wrap' ){
       var lines = rscratch.labelWrapCachedLines;
-      var lineHeight = rstyle.labelHeight / lines.length;
+      var lineHeight = textH / lines.length;
 
       switch( valign ){
         case 'top':

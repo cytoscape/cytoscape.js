@@ -92,13 +92,30 @@ var styfn = {};
   // define visual style properties
   var t = styfn.types;
   var props = styfn.properties = [
-    // labels
+    // main label
+    { name: 'label', type: t.text },
+    { name: 'text-rotation', type: t.textRotation },
+    { name: 'text-margin-x', type: t.bidirectionalSize },
+    { name: 'text-margin-y', type: t.bidirectionalSize },
+
+    // source label
+    { name: 'source-label', type: t.text },
+    { name: 'source-text-rotation', type: t.textRotation },
+    { name: 'source-text-margin-x', type: t.bidirectionalSize },
+    { name: 'source-text-margin-y', type: t.bidirectionalSize },
+    { name: 'source-text-offset', type: t.size },
+
+    // target label
+    { name: 'target-label', type: t.text },
+    { name: 'target-text-rotation', type: t.textRotation },
+    { name: 'target-text-margin-x', type: t.bidirectionalSize },
+    { name: 'target-text-margin-y', type: t.bidirectionalSize },
+    { name: 'target-text-offset', type: t.size },
+
+    // common label style
     { name: 'text-valign', type: t.valign },
     { name: 'text-halign', type: t.halign },
     { name: 'color', type: t.color },
-    { name: 'label', type: t.text },
-    { name: 'source-label', type: t.text },
-    { name: 'target-label', type: t.text },
     { name: 'text-outline-color', type: t.color },
     { name: 'text-outline-width', type: t.size },
     { name: 'text-outline-opacity', type: t.zeroOneNumber },
@@ -115,11 +132,6 @@ var styfn = {};
     { name: 'text-wrap', type: t.textWrap },
     { name: 'text-max-width', type: t.size },
     { name: 'text-events', type: t.bool },
-    { name: 'text-rotation', type: t.textRotation },
-    { name: 'source-text-rotation', type: t.textRotation },
-    { name: 'source-text-offset', type: t.size },
-    { name: 'target-text-rotation', type: t.textRotation },
-    { name: 'target-text-offset', type: t.size },
     { name: 'font-family', type: t.fontFamily },
     { name: 'font-style', type: t.fontStyle },
     // { name: 'font-variant', type: t.fontVariant }, // not useful
@@ -317,10 +329,16 @@ styfn.addDefaultStylesheet = function(){
         'opacity': 1,
         'z-index': 0,
         'label': '',
+        'text-margin-x': 0,
+        'text-margin-y': 0,
         'source-label': '',
         'source-text-offset': 0,
+        'source-text-margin-x': 0,
+        'source-text-margin-y': 0,
         'target-label': '',
-        'target-label-offset': 0,
+        'target-text-offset': 0,
+        'target-text-margin-x': 0,
+        'target-text-margin-y': 0,
         'overlay-opacity': 0,
         'overlay-color': '#000',
         'overlay-padding': 10,

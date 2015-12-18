@@ -153,11 +153,14 @@ CRp.drawText = function( context, element, prefix ){
     return;
   }
 
+  var pdash = prefix ? prefix + '-' : '';
   var textX = util.getPrefixedProperty( rscratch, 'labelX', prefix );
   var textY = util.getPrefixedProperty( rscratch, 'labelY', prefix );
   var textW = util.getPrefixedProperty( rscratch, 'labelWidth', prefix );
   var textH = util.getPrefixedProperty( rscratch, 'labelHeight', prefix );
   var textAngle = util.getPrefixedProperty( rscratch, 'labelAngle', prefix );
+  var marginX = style[ pdash + 'text-margin-x' ].pfValue;
+  var marginY = style[ pdash + 'text-margin-y' ].pfValue;
   var text = this.getLabelText( element, prefix );
 
   this.setupTextStyle( context, element );
@@ -173,6 +176,9 @@ CRp.drawText = function( context, element, prefix ){
       halign = 'center';
       valign = 'center';
     }
+
+    textX += marginX;
+    textY += marginY;
 
     var rotation = style[ 'text-rotation' ];
     var theta;

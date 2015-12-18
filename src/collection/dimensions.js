@@ -325,6 +325,8 @@ var getLabelBounds = function( ele, prefix ){
   var labelHeight = prefixedProperty( rstyle, 'labelHeight', prefix );
   var labelX = prefixedProperty( rstyle, 'labelX', prefix );
   var labelY = prefixedProperty( rstyle, 'labelY', prefix );
+  var marginX = style[ prefixDash + 'text-margin-x' ].pfValue;
+  var marginY = style[ prefixDash + 'text-margin-y' ].pfValue;
   var isEdge = ele.isEdge();
   var rotation = style[ prefixDash + 'text-rotation' ];
 
@@ -402,6 +404,11 @@ var getLabelBounds = function( ele, prefix ){
       ly1 = Math.min( px1y1.y, px1y2.y, px2y1.y, px2y2.y );
       ly2 = Math.max( px1y1.y, px1y2.y, px2y1.y, px2y2.y );
     }
+
+    lx1 += marginX;
+    lx2 += marginX;
+    ly1 += marginY;
+    ly2 += marginY;
 
     updateBounds( bounds, lx1, ly1, lx2, ly2 );
   }

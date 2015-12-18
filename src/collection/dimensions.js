@@ -220,8 +220,9 @@ fn = elesfn = ({
     var updated = [];
 
     function update( parent ){
+      var _p = parent._private;
       var children = parent.children();
-      var style = parent._private.style;
+      var style = _p.style;
       var includeLabels = style[ 'compound-sizing-wrt-labels' ].value === 'include';
       var bb = children.boundingBox( {
         includeLabels: includeLabels,
@@ -236,17 +237,17 @@ fn = elesfn = ({
         left: style[ 'padding-left' ].pfValue,
         right: style[ 'padding-right' ].pfValue
       };
-      var pos = parent._private.position;
+      var pos = _p.position;
       var didUpdate = false;
 
       if( style[ 'width' ].value === 'auto' ){
-        parent._private.autoWidth = bb.w;
+        _p.autoWidth = bb.w;
         pos.x = (bb.x1 + bb.x2 - padding.left + padding.right) / 2;
         didUpdate = true;
       }
 
       if( style[ 'height' ].value === 'auto' ){
-        parent._private.autoHeight = bb.h;
+        _p.autoHeight = bb.h;
         pos.y = (bb.y1 + bb.y2 - padding.top + padding.bottom) / 2;
         didUpdate = true;
       }

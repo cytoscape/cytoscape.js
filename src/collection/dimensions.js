@@ -374,8 +374,11 @@ var getLabelBounds = function( ele, prefix ){
       }
     }
 
-    if( ( isEdge && rotation.strValue === 'autorotate' ) || ( rotation.pfValue != null && rotation.pfValue !== 0 ) ){
-      var theta = prefixedProperty( _p.rscratch, 'labelAngle', prefix );
+    var isAutorotate = ( isEdge && rotation.strValue === 'autorotate' );
+    var isPfValue = ( rotation.pfValue != null && rotation.pfValue !== 0 );
+
+    if( isAutorotate || isPfValue ){
+      var theta = isAutorotate ? prefixedProperty( _p.rstyle, 'labelAngle', prefix ) : rotation.pfValue;
       var cos = Math.cos( theta );
       var sin = Math.sin( theta );
 

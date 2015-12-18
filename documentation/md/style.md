@@ -125,6 +125,7 @@ cytoscape({
  * Values requiring a number, such as a length, can be specified in pixel values (e.g. `24px`), unitless values that are implicitly in pixels (`24`), or em values (e.g. `2em`).
  * Opacity values are specified as numbers ranging on `0 <= opacity <= 1`.
  * Time is measured in units of ms or s.
+ * Angles are measured in radians (e.g. `3.14rad`) or degrees (e.g. `180deg`).
 
 
 
@@ -276,25 +277,21 @@ Only mid arrows are supported on haystack edges.
 
 ## Labels
 
+Label text:
+
+ * **`label`** : The text to display for an element's label.
+ * **`source-label`** : The text to display for an edge's source label.
+ * **`target-label`** : The text to display for an edge's target label.
+
 Basic font styling:
 
  * **`color`** :  The colour of the element's label.
- * **`label`** : The text to display for an element's label.
  * **`text-opacity`** : The opacity of the label text, including its outline.
  * **`font-family`** : A [comma-separated list of font names](https://developer.mozilla.org/en-US/docs/Web/CSS/font-family) to use on the label text.
  * **`font-size`** : The size of the label text.
  * **`font-style`** : A [CSS font style](https://developer.mozilla.org/en-US/docs/Web/CSS/font-style) to be applied to the label text.
  * **`font-weight`** : A [CSS font weight](https://developer.mozilla.org/en-US/docs/Web/CSS/font-weight) to be applied to the label text.
  * **`text-transform`** : A transformation to apply to the label text; may be `none`, `uppercase`, or `lowercase`.
-
-Margins:
-
- * **`text-margin-x`** : For the regular label, a margin that shifts the label along the x-axis.
- * **`text-margin-y`** : For the regular label, a margin that shifts the label along the y-axis.
- * **`source-text-margin-x`** : For the source label of an edge, a margin that shifts the label along the x-axis.
- * **`source-text-margin-y`** : For the source label of an edge, a margin that shifts the label along the y-axis.
- * **`target-text-margin-x`** : For the target label of an edge, a margin that shifts the label along the x-axis.
- * **`target-text-margin-y`** : For the target label of an edge, a margin that shifts the label along the y-axis.
 
 Wrapping text:
 
@@ -306,9 +303,29 @@ Node label alignment:
  * **`text-halign`** : The vertical alignment of a node's label; may have value `left`, `center`, or `right`.
  * **`text-valign`** : The vertical alignment of a node's label; may have value `top`, `center`, or `bottom`.
 
+Edge label alignment:
+
+ * **`source-text-offset`** : For the source label of an edge, how far from the source node the label should be placed.
+ * **`target-text-offset`** : For the target label of an edge, how far from the target node the label should be placed.
+
+Margins:
+
+ * **`text-margin-x`** : A margin that shifts the label along the x-axis.
+ * **`text-margin-y`** : A margin that shifts the label along the y-axis.
+ * **`source-text-margin-x`** : (For the source label of an edge.)
+ * **`source-text-margin-y`** : (For the source label of an edge.)
+ * **`target-text-margin-x`** : (For the target label of an edge.)
+ * **`target-text-margin-y`** : (For the target label of an edge.)
+
 Rotating text:
 
- * **`edge-text-rotation`** : Whether to rotate edge labels as the relative angle of an edge changes; may be `none` for page-aligned labels or `autorotate` for edge-aligned labels.  This works best with left-to-right text.
+ * **`text-rotation`** : A rotation angle that is applied to the label.
+  * For edges, the special value `autorotate` can be used to align the label to the edge.
+  * For nodes, the label is rotated along its anchor point on the node, so a label margin may help for some usecases.
+  * The special value `none` can be used to denote `0deg`.
+  * Rotations works best with left-to-right text.
+ * **`source-text-rotation`** : (For the source label of an edge.)
+ * **`target-text-rotation`** : (For the target label of an edge.)
 
 Outline:
 

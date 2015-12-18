@@ -57,8 +57,7 @@ var Core = function( opts ){
     ready: false, // whether ready has been triggered
     initrender: false, // has initrender has been triggered
     options: options, // cached options
-    elements: [], // array of elements
-    id2index: {}, // element id => index in elements array
+    elements: Collection( this ), // elements in the graph
     listeners: [], // list of listeners
     onRenders: [], // rendering listeners
     aniEles: Collection( this ), // elements being animated
@@ -86,8 +85,7 @@ var Core = function( opts ){
       current: [],
       queue: []
     },
-    hasCompoundNodes: false,
-    deferredExecQueue: []
+    hasCompoundNodes: false
   };
 
   // set selection type
@@ -228,13 +226,7 @@ util.extend( corefn, {
   },
 
   getElementById: function( id ){
-    var index = this._private.id2index[ id ];
-    if( index !== undefined ){
-      return this._private.elements[ index ];
-    }
-
-    // worst case, return an empty collection
-    return Collection( this );
+    return this._private.elements.getElementById( id );
   },
 
   selectionType: function(){
@@ -250,50 +242,15 @@ util.extend( corefn, {
   },
 
   addToPool: function( eles ){
-    var elements = this._private.elements;
-    var id2index = this._private.id2index;
-
-    for( var i = 0; i < eles.length; i++ ){
-      var ele = eles[ i ];
-
-      var id = ele._private.data.id;
-      var index = id2index[ id ];
-      var alreadyInPool = index !== undefined;
-
-      if( !alreadyInPool ){
-        index = elements.length;
-        elements.push( ele );
-        id2index[ id ] = index;
-        ele._private.index = index;
-      }
-    }
+    this._private.elements.merge( eles );
 
     return this; // chaining
   },
 
   removeFromPool: function( eles ){
-    var elements = this._private.elements;
-    var id2index = this._private.id2index;
+    this._private.elements.unmerge( eles );
 
-    for( var i = 0; i < eles.length; i++ ){
-      var ele = eles[ i ];
-
-      var id = ele._private.data.id;
-      var index = id2index[ id ];
-      var inPool = index !== undefined;
-
-      if( inPool ){
-        this._private.id2index[ id ] = undefined;
-        elements.splice( index, 1 );
-
-        // adjust the index of all elements past this index
-        for( var j = index; j < elements.length; j++ ){
-          var jid = elements[ j ]._private.data.id;
-          id2index[ jid ]--;
-          elements[ j ]._private.index--;
-        }
-      }
-    }
+    return this;
   },
 
   container: function(){

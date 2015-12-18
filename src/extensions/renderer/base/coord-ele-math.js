@@ -931,7 +931,7 @@ BRp.findEdgeControlPoints = function( edges ){
 
     // for each pair id, the edges should be sorted by index
     pairEdges.sort( function( edge1, edge2 ){
-      return edge1._private.index - edge2._private.index;
+      return edge1.poolIndex() - edge2.poolIndex();
     } );
 
     src = pairEdges[0]._private.source;

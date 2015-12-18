@@ -16,7 +16,7 @@ var watchify = require('watchify');
 var browserify = require('browserify');
 var source = require('vinyl-source-stream'); // converts node streams into vinyl streams
 
-var benchmarkVersion = '2.4.9'; // old version to test against for benchmarks
+var benchmarkVersion = '2.5.3'; // old version to test against for benchmarks
 var benchmarkVersionUrl = 'https://raw.githubusercontent.com/cytoscape/cytoscape.js/v' + benchmarkVersion + '/dist/cytoscape.js';
 
 var weaverVersion = 'master';

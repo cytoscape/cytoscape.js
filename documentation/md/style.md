@@ -287,6 +287,15 @@ Basic font styling:
  * **`font-weight`** : A [CSS font weight](https://developer.mozilla.org/en-US/docs/Web/CSS/font-weight) to be applied to the label text.
  * **`text-transform`** : A transformation to apply to the label text; may be `none`, `uppercase`, or `lowercase`.
 
+Margins:
+
+ * **`text-margin-x`** : For the regular label, a margin that shifts the label along the x-axis.
+ * **`text-margin-y`** : For the regular label, a margin that shifts the label along the y-axis.
+ * **`source-text-margin-x`** : For the source label of an edge, a margin that shifts the label along the x-axis.
+ * **`source-text-margin-y`** : For the source label of an edge, a margin that shifts the label along the y-axis.
+ * **`target-text-margin-x`** : For the target label of an edge, a margin that shifts the label along the x-axis.
+ * **`target-text-margin-y`** : For the target label of an edge, a margin that shifts the label along the y-axis.
+
 Wrapping text:
 
  * **`text-wrap`** : A wrapping style to apply to the label text; may be `none` for no wrapping (including manual newlines: `\n`) or `wrap` for manual and/or autowrapping.

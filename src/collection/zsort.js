@@ -32,7 +32,7 @@ var zIndexSort = function( a, b ){
 
     } else { // both nodes or both edges
       if( zDiff === 0 ){ // same z-index => compare indices in the core (order added to graph w/ last on top)
-        return a_p.index - b_p.index;
+        return a.poolIndex() - b.poolIndex();
       } else {
         return zDiff;
       }

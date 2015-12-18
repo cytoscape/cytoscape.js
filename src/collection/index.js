@@ -150,6 +150,14 @@ elesfn.getElementById = function( id ){
   return ele ? ele : new Collection( cy ); // get ele or empty collection
 };
 
+elesfn.poolIndex = function(){
+  var cy = this._private.cy;
+  var eles = cy._private.elements;
+  var id = this._private.data.id;
+
+  return eles._private.indexes[ id ];
+},
+
 elesfn.json = function( obj ){
   var ele = this.element();
   var cy = this.cy();
@@ -540,14 +548,14 @@ elesfn.remove = function( notifyRenderer ){
     }
   }
 
+  // remove from core pool
+  cy.removeFromPool( elesToRemove );
+
   for( var i = 0; i < elesToRemove.length; i++ ){
     var ele = elesToRemove[ i ];
 
     // mark as removed
     ele._private.removed = true;
-
-    // remove from core pool
-    cy.removeFromPool( ele );
 
     // add to list of removed elements
     removed.push( ele );

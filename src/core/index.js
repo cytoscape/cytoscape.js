@@ -225,6 +225,10 @@ util.extend( corefn, {
     return cy;
   },
 
+  hasElementWithId: function( id ){
+    return this._private.elements.hasElementWithId( id );
+  },
+
   getElementById: function( id ){
     return this._private.elements.getElementById( id );
   },

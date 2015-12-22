@@ -73,7 +73,6 @@ BRp.recalculateRenderedStyle = function( eles, bypassCache ){
   for( var i = 0; i < eles.length; i++ ){
     var ele = eles[ i ];
     var _p = ele._private;
-    var style = _p.style;
     var rstyle = _p.rstyle;
     var id = _p.data.id;
 
@@ -87,8 +86,8 @@ BRp.recalculateRenderedStyle = function( eles, bypassCache ){
 
       rstyle.nodeX = pos.x;
       rstyle.nodeY = pos.y;
-      rstyle.nodeW = style[ 'width' ].pfValue;
-      rstyle.nodeH = style[ 'height' ].pfValue;
+      rstyle.nodeW = ele.pstyle( 'width' ).pfValue;
+      rstyle.nodeH = ele.pstyle( 'height' ).pfValue;
     } else { // edges
 
       var srcPos = _p.source._private.position;
@@ -151,7 +150,7 @@ BRp.findNearestElement = function( x, y, visibleElementsOnly, isTouch ){
   function checkNode( node ){
     var _p = node._private;
 
-    if( _p.style[ 'events' ].strValue === 'no' ){ return; }
+    if( node.pstyle( 'events' ).strValue === 'no' ){ return; }
 
     var width = node.outerWidth() + 2 * nodeThreshold;
     var height = node.outerHeight() + 2 * nodeThreshold;
@@ -185,11 +184,10 @@ BRp.findNearestElement = function( x, y, visibleElementsOnly, isTouch ){
   function checkEdge( edge ){
     var _p = edge._private;
 
-    if( _p.style[ 'events' ].strValue === 'no' ){ return; }
+    if( edge.pstyle('events').strValue === 'no' ){ return; }
 
     var rs = _p.rscratch;
-    var style = _p.style;
-    var width = style[ 'width' ].pfValue / 2 + edgeThreshold; // more like a distance radius from centre
+    var width = edge.pstyle( 'width' ).pfValue / 2 + edgeThreshold; // more like a distance radius from centre
     var widthSq = width * width;
     var width2 = width * 2;
     var src = _p.source;
@@ -250,7 +248,7 @@ BRp.findNearestElement = function( x, y, visibleElementsOnly, isTouch ){
       var src = src || _p.source;
       var tgt = tgt || _p.target;
 
-      var eWidth = style[ 'width' ].pfValue;
+      var eWidth = edge.pstyle( 'width' ).pfValue;
       var arSize = self.getArrowWidth( eWidth );
 
       var arrows = [
@@ -262,7 +260,7 @@ BRp.findNearestElement = function( x, y, visibleElementsOnly, isTouch ){
 
       for( var i = 0; i < arrows.length; i++ ){
         var ar = arrows[ i ];
-        var shape = r.arrowShapes[ style[ ar.name + '-arrow-shape' ].value ];
+        var shape = r.arrowShapes[ edge.pstyle( ar.name + '-arrow-shape' ).value ];
 
         if(
           shape.roughCollide( x, y, arSize, ar.angle, { x: ar.x, y: ar.y }, edgeThreshold )
@@ -282,6 +280,10 @@ BRp.findNearestElement = function( x, y, visibleElementsOnly, isTouch ){
     }
   }
 
+  function preprop( obj, name, pre ){
+    return util.getPrefixedProperty( obj, name, pre );
+  }
+
   function checkLabel( ele, prefix ){
     var _p = ele._private;
     var th = labelThreshold;
@@ -293,11 +295,9 @@ BRp.findNearestElement = function( x, y, visibleElementsOnly, isTouch ){
       prefixDash = prefix;
     }
 
-    var preprop = util.getPrefixedProperty.bind( util );
+    if( ele.pstyle( 'text-events' ).strValue === 'no' ){ return; }
 
-    if( _p.style[ 'text-events' ].strValue === 'no' ){ return; }
-
-    var rotation = _p.style[ prefixDash + 'text-rotation' ];
+    var rotation = ele.pstyle( prefixDash + 'text-rotation' );
 
     // adjust bb w/ angle
     if( rotation.strValue === 'autorotate' || rotation.pfValue !== 0 ){
@@ -471,8 +471,7 @@ BRp.getAllInBox = function( x1, y1, x2, y2 ){
  */
 BRp.getNodeShape = function( node ){
   var r = this;
-  var style = node._private.style;
-  var shape = style[ 'shape' ].value;
+  var shape = node.pstyle( 'shape' ).value;
 
   if( node.isParent() ){
     if( shape === 'rectangle' || shape === 'roundrectangle' ){
@@ -483,7 +482,7 @@ BRp.getNodeShape = function( node ){
   }
 
   if( shape === 'polygon' ){
-    var points = style[ 'shape-polygon-points' ].value;
+    var points = node.pstyle( 'shape-polygon-points' ).value;
 
     return r.nodeShapes.makePolygon( points ).name;
   }
@@ -611,15 +610,15 @@ BRp.projectLines = function( edge ){
 BRp.projectBezier = BRp.projectLines;
 
 BRp.recalculateNodeLabelProjection = function( node ){
-  var content = node._private.style[ 'label' ].strValue;
+  var content = node.pstyle( 'label' ).strValue;
   if( !content || content.match( /^\s+$/ ) ){ return; }
 
   var textX, textY;
   var nodeWidth = node.outerWidth();
   var nodeHeight = node.outerHeight();
   var nodePos = node._private.position;
-  var textHalign = node._private.style[ 'text-halign' ].strValue;
-  var textValign = node._private.style[ 'text-valign' ].strValue;
+  var textHalign = node.pstyle( 'text-halign' ).strValue;
+  var textValign = node.pstyle( 'text-valign' ).strValue;
   var rs = node._private.rscratch;
   var rstyle = node._private.rstyle;
 
@@ -660,7 +659,6 @@ BRp.recalculateNodeLabelProjection = function( node ){
 BRp.recalculateEdgeLabelProjections = function( edge ){
   var textX, textY;
   var _p = edge._private;
-  var style = _p.style;
   var rs = function( propName, prefix, value ){
     util.setPrefixedProperty( _p.rscratch, propName, prefix, value );
     util.setPrefixedProperty( _p.rstyle, propName, prefix, value );
@@ -709,9 +707,8 @@ BRp.applyPrefixedLabelDimensions = function( ele, prefix ){
 BRp.getLabelText = function( ele, prefix ){
   var _p = ele._private;
   var pfd = prefix ? prefix + '-' : '';
-  var style = _p.style;
-  var text = _p.style[ pfd + 'label' ].strValue;
-  var textTransform = style[ 'text-transform' ].value;
+  var text = ele.pstyle( pfd + 'label' ).strValue;
+  var textTransform = ele.pstyle( 'text-transform' ).value;
   var rscratch = function( propName, value ){
     if( value ){
       util.setPrefixedProperty( _p.rscratch, propName, prefix, value );
@@ -728,7 +725,7 @@ BRp.getLabelText = function( ele, prefix ){
     text = text.toLowerCase();
   }
 
-  if( style[ 'text-wrap' ].value === 'wrap' ){
+  if( ele.pstyle( 'text-wrap' ).value === 'wrap' ){
     //console.log('wrap');
 
     var labelKey = rscratch( 'labelKey' );
@@ -741,7 +738,7 @@ BRp.getLabelText = function( ele, prefix ){
     // console.log('wrap cache miss');
 
     var lines = text.split( '\n' );
-    var maxW = style[ 'text-max-width' ].pfValue;
+    var maxW = ele.pstyle( 'text-max-width' ).pfValue;
     var wrappedLines = [];
 
     for( var l = 0; l < lines.length; l++ ){
@@ -801,12 +798,10 @@ BRp.calculateLabelDimensions = function( ele, text, extraKey ){
     return cache[ cacheKey ];
   }
 
-  var style = ele._private.style;
-  var fStyle = style[ 'font-style' ].strValue;
-  var size = style[ 'font-size' ].pfValue + 'px';
-  var family = style[ 'font-family' ].strValue;
-  // var variant = style['font-variant'].strValue;
-  var weight = style[ 'font-weight' ].strValue;
+  var fStyle = ele.pstyle( 'font-style' ).strValue;
+  var size = ele.pstyle( 'font-size' ).pfValue + 'px';
+  var family = ele.pstyle( 'font-family' ).strValue;
+  var weight = ele.pstyle( 'font-weight' ).strValue;
 
   var div = this.labelCalcDiv;
 
@@ -821,7 +816,6 @@ BRp.calculateLabelDimensions = function( ele, text, extraKey ){
   ds.fontFamily = family;
   ds.fontStyle = fStyle;
   ds.fontSize = size;
-  // ds.fontVariant = variant;
   ds.fontWeight = weight;
 
   // forced style
@@ -834,7 +828,7 @@ BRp.calculateLabelDimensions = function( ele, text, extraKey ){
   ds.padding = '0';
   ds.lineHeight = '1';
 
-  if( style[ 'text-wrap' ].value === 'wrap' ){
+  if( ele.pstyle( 'text-wrap' ).value === 'wrap' ){
     ds.whiteSpace = 'pre'; // so newlines are taken into account
   } else {
     ds.whiteSpace = 'normal';
@@ -883,13 +877,12 @@ BRp.findEdgeControlPoints = function( edges ){
     var edge = edges[ i ];
     var _p = edge._private;
     var data = _p.data;
-    var style = _p.style;
-    var curveStyle = style[ 'curve-style' ].value;
+    var curveStyle = edge.pstyle( 'curve-style' ).value;
     var edgeIsUnbundled = curveStyle === 'unbundled-bezier' || curveStyle === 'segments';
 
     // ignore edges who are not to be displayed
     // they shouldn't take up space
-    if( style.display.value === 'none' ){
+    if( edge.pstyle( 'display').value === 'none' ){
       continue;
     }
 
@@ -1041,14 +1034,12 @@ BRp.findEdgeControlPoints = function( edges ){
       var numEdges1 = rs.lastNumEdges;
       var numEdges2 = pairEdges.length;
 
-      var eStyle = edge_p.style;
-      var style = eStyle;
-      var curveStyle = eStyle[ 'curve-style' ].value;
-      var ctrlptDists = eStyle[ 'control-point-distances' ];
-      var ctrlptWs = eStyle[ 'control-point-weights' ];
+      var curveStyle = edge.pstyle( 'curve-style' ).value;
+      var ctrlptDists = edge.pstyle( 'control-point-distances' );
+      var ctrlptWs = edge.pstyle( 'control-point-weights' );
       var bezierN = ctrlptDists && ctrlptWs ? Math.min( ctrlptDists.value.length, ctrlptWs.value.length ) : 1;
-      var stepSize = eStyle[ 'control-point-step-size' ].pfValue;
-      var ctrlptDist = ctrlptDists !== undefined ? ctrlptDists.pfValue[0] : undefined;
+      var stepSize = edge.pstyle( 'control-point-step-size' ).pfValue;
+      var ctrlptDist = ctrlptDists ? ctrlptDists.pfValue[0] : undefined;
       var ctrlptWeight = ctrlptWs.value[0];
       var edgeIsUnbundled = curveStyle === 'unbundled-bezier' || curveStyle === 'segments';
 
@@ -1077,7 +1068,7 @@ BRp.findEdgeControlPoints = function( edges ){
       var tgtH2 = tgt.outerHeight();
 
       var width1 = rs.lastW;
-      var width2 = eStyle[ 'control-point-step-size' ].pfValue;
+      var width2 = edge.pstyle( 'control-point-step-size' ).pfValue;
 
       if( badBezier ){
         rs.badBezier = true;
@@ -1184,8 +1175,8 @@ BRp.findEdgeControlPoints = function( edges ){
         rs.edgeType = 'segments';
         rs.segpts = [];
 
-        var segmentWs = eStyle[ 'segment-weights' ].pfValue;
-        var segmentDs = eStyle[ 'segment-distances' ].pfValue;
+        var segmentWs = edge.pstyle( 'segment-weights' ).pfValue;
+        var segmentDs = edge.pstyle( 'segment-distances' ).pfValue;
         var segmentsN = Math.min( segmentWs.length, segmentDs.length );
 
         for( var s = 0; s < segmentsN; s++ ){
@@ -1273,7 +1264,7 @@ BRp.findEdgeControlPoints = function( edges ){
       var badAEnd = !is.number( rs.arrowEndX ) || !is.number( rs.arrowEndY );
 
       var minCpADistFactor = 3;
-      var arrowW = this.getArrowWidth( eStyle[ 'width' ].pfValue ) * this.arrowShapeHeight;
+      var arrowW = this.getArrowWidth( edge.pstyle( 'width' ).pfValue ) * this.arrowShapeHeight;
       var minCpADist = minCpADistFactor * arrowW;
 
       if( rs.edgeType === 'bezier' ){
@@ -1445,7 +1436,6 @@ BRp.findEdgeControlPoints = function( edges ){
   for( var i = 0; i < haystackEdges.length; i++ ){
     var edge = haystackEdges[ i ];
     var _p = edge._private;
-    var style = _p.style;
     var rscratch = _p.rscratch;
     var rs = rscratch;
 
@@ -1474,7 +1464,7 @@ BRp.findEdgeControlPoints = function( edges ){
     var tgtW = tgt.width();
     var srcH = src.height();
     var tgtH = tgt.height();
-    var radius = style[ 'haystack-radius' ].value;
+    var radius = edge.pstyle( 'haystack-radius' ).value;
     var halfRadius = radius / 2; // b/c have to half width/height
 
     rs.haystackPts = rs.allpts = [
@@ -1644,10 +1634,8 @@ BRp.calculateArrowAngles = function( edge ){
 BRp.calculateLabelAngles = function( ele ){
   var _p = ele._private;
   var rs = _p.rscratch;
-  var style = _p.style;
   var isEdge = ele.isEdge();
-
-  var rot = style[ 'text-rotation' ];
+  var rot = ele.pstyle( 'text-rotation' );
   var rotStr = rot.strValue;
 
   if( rotStr === 'none' ){
@@ -1681,8 +1669,8 @@ BRp.findEndpoints = function( edge ){
   var srcPos = src_p.position;
   var tgtPos = tgt_p.position;
 
-  var tgtArShape = edge._private.style[ 'target-arrow-shape' ].value;
-  var srcArShape = edge._private.style[ 'source-arrow-shape' ].value;
+  var tgtArShape = edge.pstyle( 'target-arrow-shape' ).value;
+  var srcArShape = edge.pstyle( 'source-arrow-shape' ).value;
 
   var rs = edge._private.rscratch;
 

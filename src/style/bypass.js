@@ -66,7 +66,6 @@ styfn.applyBypass = function( eles, name, value, updateTransitions ){
   var ret = false; // return true if at least one succesful bypass applied
   for( var i = 0; i < eles.length; i++ ){ // for each ele
     var ele = eles[ i ];
-    var style = ele._private.style;
     var diffProps = {};
     var diffProp;
 
@@ -74,14 +73,14 @@ styfn.applyBypass = function( eles, name, value, updateTransitions ){
       var prop = props[ j ];
 
       if( updateTransitions ){
-        var prevProp = style[ prop.name ];
+        var prevProp = ele.pstyle( prop.name );
         diffProp = diffProps[ prop.name ] = { prev: prevProp };
       }
 
       ret = this.applyParsedProperty( ele, prop ) || ret;
 
       if( updateTransitions ){
-        diffProp.next = style[ prop.name ];
+        diffProp.next = ele.pstyle( prop.name );
       }
 
     } // for props
@@ -109,7 +108,7 @@ styfn.overrideBypass = function( eles, name, value ){
     var isColor = type.color;
     var isMulti = type.mutiple;
 
-    if( !prop.bypass ){ // need a bypass if one doesn't exist
+    if( !prop || !prop.bypass ){ // need a bypass if one doesn't exist
       this.applyBypass( ele, name, value );
       continue;
     }
@@ -140,19 +139,24 @@ styfn.removeBypasses = function( eles, props, updateTransitions ){
   for( var j = 0; j < eles.length; j++ ){
     var ele = eles[ j ];
     var diffProps = {};
-    var style = ele._private.style;
 
     for( var i = 0; i < props.length; i++ ){
       var name = props[ i ];
       var prop = this.properties[ name ];
+      var prevProp = ele.pstyle( prop.name );
+
+      if( !prevProp || !prevProp.bypass ){
+        // if a bypass doesn't exist for the prop, nothing needs to be removed
+        continue;
+      }
+
       var value = ''; // empty => remove bypass
       var parsedProp = this.parse( name, value, true );
-      var prevProp = style[ prop.name ];
       var diffProp = diffProps[ prop.name ] = { prev: prevProp };
 
       this.applyParsedProperty( ele, parsedProp );
 
-      diffProp.next = style[ prop.name ];
+      diffProp.next = ele.pstyle( prop.name );
     } // for props
 
     this.updateStyleHints( ele );

@@ -39,11 +39,9 @@ BRp.binder = function( tgt ){
 };
 
 BRp.nodeIsDraggable = function( node ){
-  var style = node._private.style;
-
-  if( style[ 'opacity' ].value !== 0
-    && style[ 'visibility' ].value == 'visible'
-    && style[ 'display' ].value == 'element'
+  if( node.pstyle( 'opacity' ).value !== 0
+    && node.pstyle( 'visibility' ).value == 'visible'
+    && node.pstyle( 'display' ).value == 'element'
     && !node.locked()
     && node.grabbable() ){
 

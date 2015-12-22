@@ -178,7 +178,7 @@ var corefn = ({
           y: pos.y
         };
 
-        ani_p.startStyle = ani_p.startStyle || style.getValueStyle( ele );
+        ani_p.startStyle = ani_p.startStyle || style.getAnimationStartStyle( ele, ani_p.style );
       }
 
       if( isCore ){

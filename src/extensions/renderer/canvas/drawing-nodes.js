@@ -9,7 +9,6 @@ CRp.drawNode = function( context, node, drawLabel ){
 
   var r = this;
   var nodeWidth, nodeHeight;
-  var style = node._private.style;
   var rs = node._private.rscratch;
   var _p = node._private;
   var pos = _p.position;
@@ -26,15 +25,16 @@ CRp.drawNode = function( context, node, drawLabel ){
   var parentOpacity = node.effectiveOpacity();
   if( parentOpacity === 0 ){ return; }
 
-  nodeWidth = node.width() + style[ 'padding-left' ].pfValue + style[ 'padding-right' ].pfValue;
-  nodeHeight = node.height() + style[ 'padding-top' ].pfValue + style[ 'padding-bottom' ].pfValue;
+  nodeWidth = node.width() + node.pstyle( 'padding-left' ).pfValue + node.pstyle( 'padding-right' ).pfValue;
+  nodeHeight = node.height() + node.pstyle( 'padding-top' ).pfValue + node.pstyle( 'padding-bottom' ).pfValue;
 
-  context.lineWidth = style[ 'border-width' ].pfValue;
+  context.lineWidth = node.pstyle( 'border-width' ).pfValue;
 
   //
   // load bg image
 
-  var url = style[ 'background-image' ].value[2] || style[ 'background-image' ].value[1];
+  var bgImgProp = node.pstyle( 'background-image' );
+  var url = bgImgProp.value[2] || bgImgProp.value[1];
   var image;
 
   if( url !== undefined ){
@@ -60,19 +60,19 @@ CRp.drawNode = function( context, node, drawLabel ){
   //
   // setup styles
 
-  var bgColor = style[ 'background-color' ].value;
-  var borderColor = style[ 'border-color' ].value;
-  var borderStyle = style[ 'border-style' ].value;
+  var bgColor = node.pstyle( 'background-color' ).value;
+  var borderColor = node.pstyle( 'border-color' ).value;
+  var borderStyle = node.pstyle( 'border-style' ).value;
 
-  this.fillStyle( context, bgColor[0], bgColor[1], bgColor[2], style[ 'background-opacity' ].value * parentOpacity );
+  this.fillStyle( context, bgColor[0], bgColor[1], bgColor[2], node.pstyle( 'background-opacity' ).value * parentOpacity );
 
-  this.strokeStyle( context, borderColor[0], borderColor[1], borderColor[2], style[ 'border-opacity' ].value * parentOpacity );
+  this.strokeStyle( context, borderColor[0], borderColor[1], borderColor[2], node.pstyle( 'border-opacity' ).value * parentOpacity );
 
-  var shadowBlur = style[ 'shadow-blur' ].pfValue;
-  var shadowOpacity = style[ 'shadow-opacity' ].value;
-  var shadowColor = style[ 'shadow-color' ].value;
-  var shadowOffsetX = style[ 'shadow-offset-x' ].pfValue;
-  var shadowOffsetY = style[ 'shadow-offset-y' ].pfValue;
+  var shadowBlur = node.pstyle( 'shadow-blur' ).pfValue;
+  var shadowOpacity = node.pstyle( 'shadow-opacity' ).value;
+  var shadowColor = node.pstyle( 'shadow-color' ).value;
+  var shadowOffsetX = node.pstyle( 'shadow-offset-x' ).pfValue;
+  var shadowOffsetY = node.pstyle( 'shadow-offset-y' ).pfValue;
 
   this.shadowStyle( context, shadowColor, shadowOpacity, shadowBlur, shadowOffsetX, shadowOffsetY );
 
@@ -99,7 +99,7 @@ CRp.drawNode = function( context, node, drawLabel ){
   //
   // draw shape
 
-  var styleShape = style[ 'shape' ].strValue;
+  var styleShape = node.pstyle( 'shape' ).strValue;
 
   if( usePaths ){
     var pathCacheKey = styleShape + '$' + nodeWidth + '$' + nodeHeight;
@@ -155,8 +155,8 @@ CRp.drawNode = function( context, node, drawLabel ){
   //
   // pie
 
-  var darkness = style[ 'background-blacken' ].value;
-  var borderWidth = style[ 'border-width' ].pfValue;
+  var darkness = node.pstyle( 'background-blacken' ).value;
+  var borderWidth = node.pstyle( 'border-width' ).pfValue;
 
   if( this.hasPie( node ) ){
     this.drawPie( context, node, parentOpacity );
@@ -209,7 +209,7 @@ CRp.drawNode = function( context, node, drawLabel ){
     }
 
     if( borderStyle === 'double' ){
-      context.lineWidth = style[ 'border-width' ].pfValue / 3;
+      context.lineWidth = node.pstyle( 'border-width' ).pfValue / 3;
 
       var gco = context.globalCompositeOperation;
       context.globalCompositeOperation = 'destination-out';
@@ -244,9 +244,9 @@ CRp.drawNode = function( context, node, drawLabel ){
   //
   // overlay
 
-  var overlayPadding = style[ 'overlay-padding' ].pfValue;
-  var overlayOpacity = style[ 'overlay-opacity' ].value;
-  var overlayColor = style[ 'overlay-color' ].value;
+  var overlayPadding = node.pstyle( 'overlay-padding' ).pfValue;
+  var overlayOpacity = node.pstyle( 'overlay-opacity' ).value;
+  var overlayColor = node.pstyle( 'overlay-color' ).value;
 
   if( overlayOpacity > 0 ){
     this.fillStyle( context, overlayColor[0], overlayColor[1], overlayColor[2], overlayOpacity );
@@ -277,8 +277,7 @@ CRp.drawPie = function( context, node, nodeOpacity ){
 
   var _p = node._private;
   var cyStyle = node.cy().style();
-  var style = _p.style;
-  var pieSize = style[ 'pie-size' ];
+  var pieSize = node.pstyle( 'pie-size' );
   var nodeW = node.width();
   var nodeH = node.height();
   var x = _p.position.x;
@@ -299,9 +298,9 @@ CRp.drawPie = function( context, node, nodeOpacity ){
   }
 
   for( var i = 1; i <= cyStyle.pieBackgroundN; i++ ){ // 1..N
-    var size = style[ 'pie-' + i + '-background-size' ].value;
-    var color = style[ 'pie-' + i + '-background-color' ].value;
-    var opacity = style[ 'pie-' + i + '-background-opacity' ].value * nodeOpacity;
+    var size = node.pstyle( 'pie-' + i + '-background-size' ).value;
+    var color = node.pstyle( 'pie-' + i + '-background-color' ).value;
+    var opacity = node.pstyle( 'pie-' + i + '-background-opacity' ).value * nodeOpacity;
     var percent = size / 100; // map integer range [0, 100] to [0, 1]
 
     // percent can't push beyond 1

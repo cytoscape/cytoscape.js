@@ -222,8 +222,7 @@ fn = elesfn = ({
     function update( parent ){
       var _p = parent._private;
       var children = parent.children();
-      var style = _p.style;
-      var includeLabels = style[ 'compound-sizing-wrt-labels' ].value === 'include';
+      var includeLabels = parent.pstyle( 'compound-sizing-wrt-labels' ).value === 'include';
       var bb = children.boundingBox( {
         includeLabels: includeLabels,
 
@@ -232,21 +231,21 @@ fn = elesfn = ({
         useCache: false
       } );
       var padding = {
-        top: style[ 'padding-top' ].pfValue,
-        bottom: style[ 'padding-bottom' ].pfValue,
-        left: style[ 'padding-left' ].pfValue,
-        right: style[ 'padding-right' ].pfValue
+        top: parent.pstyle( 'padding-top' ).pfValue,
+        bottom: parent.pstyle( 'padding-bottom' ).pfValue,
+        left: parent.pstyle( 'padding-left' ).pfValue,
+        right: parent.pstyle( 'padding-right' ).pfValue
       };
       var pos = _p.position;
       var didUpdate = false;
 
-      if( style[ 'width' ].value === 'auto' ){
+      if( parent.pstyle( 'width' ).value === 'auto' ){
         _p.autoWidth = bb.w;
         pos.x = (bb.x1 + bb.x2 - padding.left + padding.right) / 2;
         didUpdate = true;
       }
 
-      if( style[ 'height' ].value === 'auto' ){
+      if( parent.pstyle( 'height' ).value === 'auto' ){
         _p.autoHeight = bb.h;
         pos.y = (bb.y1 + bb.y2 - padding.top + padding.bottom) / 2;
         didUpdate = true;
@@ -296,6 +295,10 @@ var updateBoundsFromBox = function( b, b2 ){
   return updateBounds( b, b2.x1, b2.y1, b2.x2, b2.y2 );
 };
 
+var prefixedProperty = function( obj, field, prefix ){
+  return util.getPrefixedProperty( obj, field, prefix );
+};
+
 var getLabelBounds = function( ele, prefix ){
   var prefixDash;
 
@@ -305,8 +308,6 @@ var getLabelBounds = function( ele, prefix ){
     prefixDash = '';
   }
 
-  var prefixedProperty = util.getPrefixedProperty.bind( util );
-
   var bounds = {
     x1: Infinity,
     y1: Infinity,
@@ -315,20 +316,19 @@ var getLabelBounds = function( ele, prefix ){
   };
 
   var _p = ele._private;
-  var style = _p.style;
   var rstyle = _p.rstyle;
-  var label = style[ prefixDash + 'label' ].strValue;
-  var fontSize = style[ 'font-size' ];
-  var halign = style[ 'text-halign' ];
-  var valign = style[ 'text-valign' ];
+  var label = ele.pstyle( prefixDash + 'label' ).strValue;
+  var fontSize = ele.pstyle( 'font-size' );
+  var halign = ele.pstyle( 'text-halign' );
+  var valign = ele.pstyle( 'text-valign' );
   var labelWidth = prefixedProperty( rstyle, 'labelWidth', prefix );
   var labelHeight = prefixedProperty( rstyle, 'labelHeight', prefix );
   var labelX = prefixedProperty( rstyle, 'labelX', prefix );
   var labelY = prefixedProperty( rstyle, 'labelY', prefix );
-  var marginX = style[ prefixDash + 'text-margin-x' ].pfValue;
-  var marginY = style[ prefixDash + 'text-margin-y' ].pfValue;
+  var marginX = ele.pstyle( prefixDash + 'text-margin-x' ).pfValue;
+  var marginY = ele.pstyle( prefixDash + 'text-margin-y' ).pfValue;
   var isEdge = ele.isEdge();
-  var rotation = style[ prefixDash + 'text-rotation' ];
+  var rotation = ele.pstyle( prefixDash + 'text-rotation' );
 
   if( label && fontSize && labelHeight != null && labelWidth != null && labelX != null && labelY != null && halign && valign ){
     var lh = labelHeight;
@@ -430,8 +430,7 @@ var boundingBoxImpl = function( ele, options ){
   };
 
   var _p = ele._private;
-  var style = _p.style;
-  var display = styleEnabled ? _p.style[ 'display' ].value : 'element';
+  var display = styleEnabled ? ele.pstyle( 'display' ).value : 'element';
   var isNode = ele.isNode();
   var isEdge = ele.isEdge();
   var ex1, ex2, ey1, ey2, x, y;
@@ -475,7 +474,7 @@ var boundingBoxImpl = function( ele, options ){
       var wHalf = 0;
 
       if( styleEnabled ){
-        w = style[ 'width' ].pfValue;
+        w = ele.pstyle( 'width' ).pfValue;
         wHalf = w / 2;
       }
 
@@ -525,7 +524,7 @@ var boundingBoxImpl = function( ele, options ){
       // precise haystacks (sanity check)
       ///////////////////////////////////
 
-      if( styleEnabled && style[ 'curve-style' ].strValue === 'haystack' ){
+      if( styleEnabled && ele.pstyle( 'curve-style' ).strValue === 'haystack' ){
         var hpts = rstyle.haystackPts;
 
         ex1 = hpts[0].x;
@@ -637,7 +636,7 @@ var defineDimFns = function( opts ){
 
     if( ele ){
       if( styleEnabled ){
-        var d = _p.style[ opts.name ];
+        var d = ele.pstyle( opts.name );
 
         switch( d.strValue ){
           case 'auto':
@@ -661,10 +660,9 @@ var defineDimFns = function( opts ){
 
     if( ele ){
       if( styleEnabled ){
-        var style = _p.style;
         var dim = ele[ opts.name ]();
-        var border = style[ 'border-width' ].pfValue;
-        var padding = style[ opts.paddings[0] ].pfValue + style[ opts.paddings[1] ].pfValue;
+        var border = ele.pstyle( 'border-width' ).pfValue;
+        var padding = ele.pstyle( opts.paddings[0] ).pfValue + ele.pstyle( opts.paddings[1] ).pfValue;
 
         return dim + border + padding;
       } else {

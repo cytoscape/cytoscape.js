@@ -11,16 +11,14 @@ CRp.drawEdge = function( context, edge, drawLabel, drawOverlayInstead ){
     return;
   }
 
-  var style = edge._private.style;
-
   // Edge line width
-  if( style[ 'width' ].pfValue <= 0 ){
+  if( edge.pstyle( 'width' ).pfValue <= 0 ){
     return;
   }
 
-  var overlayPadding = style[ 'overlay-padding' ].pfValue;
-  var overlayOpacity = style[ 'overlay-opacity' ].value;
-  var overlayColor = style[ 'overlay-color' ].value;
+  var overlayPadding = edge.pstyle( 'overlay-padding' ).pfValue;
+  var overlayOpacity = edge.pstyle( 'overlay-opacity' ).value;
+  var overlayColor = edge.pstyle( 'overlay-color' ).value;
 
   // Edge color & opacity
   if( drawOverlayInstead ){
@@ -37,22 +35,22 @@ CRp.drawEdge = function( context, edge, drawLabel, drawOverlayInstead ){
     }
 
   } else {
-    var lineColor = style[ 'line-color' ].value;
+    var lineColor = edge.pstyle( 'line-color' ).value;
 
-    this.strokeStyle( context, lineColor[0], lineColor[1], lineColor[2], style.opacity.value );
+    this.strokeStyle( context, lineColor[0], lineColor[1], lineColor[2], edge.pstyle( 'opacity' ).value );
 
     context.lineCap = 'butt';
   }
 
-  var edgeWidth = style[ 'width' ].pfValue + (drawOverlayInstead ? 2 * overlayPadding : 0);
-  var lineStyle = drawOverlayInstead ? 'solid' : style[ 'line-style' ].value;
+  var edgeWidth = edge.pstyle( 'width' ).pfValue + (drawOverlayInstead ? 2 * overlayPadding : 0);
+  var lineStyle = drawOverlayInstead ? 'solid' : edge.pstyle( 'line-style' ).value;
   context.lineWidth = edgeWidth;
 
-  var shadowBlur = style[ 'shadow-blur' ].pfValue;
-  var shadowOpacity = style[ 'shadow-opacity' ].value;
-  var shadowColor = style[ 'shadow-color' ].value;
-  var shadowOffsetX = style[ 'shadow-offset-x' ].pfValue;
-  var shadowOffsetY = style[ 'shadow-offset-y' ].pfValue;
+  var shadowBlur = edge.pstyle( 'shadow-blur' ).pfValue;
+  var shadowOpacity = edge.pstyle( 'shadow-opacity' ).value;
+  var shadowColor = edge.pstyle( 'shadow-color' ).value;
+  var shadowOffsetX = edge.pstyle( 'shadow-offset-x' ).pfValue;
+  var shadowOffsetY = edge.pstyle( 'shadow-offset-y' ).pfValue;
 
   this.shadowStyle( context,  shadowColor, drawOverlayInstead ? 0 : shadowOpacity, shadowBlur, shadowOffsetX, shadowOffsetY );
 
@@ -180,8 +178,7 @@ CRp.drawArrowhead = function( context, edge, prefix, x, y, angle ){
   if( isNaN( x ) || x == null || isNaN( y ) || y == null || isNaN( angle ) || angle == null ){ return; }
 
   var self = this;
-  var style = edge._private.style;
-  var arrowShape = style[ prefix + '-arrow-shape' ].value;
+  var arrowShape = edge.pstyle( prefix + '-arrow-shape' ).value;
 
   if( arrowShape === 'none' ){
     return;
@@ -189,34 +186,35 @@ CRp.drawArrowhead = function( context, edge, prefix, x, y, angle ){
 
   var gco = context.globalCompositeOperation;
 
-  var arrowClearFill = style[ prefix + '-arrow-fill' ].value === 'hollow' ? 'both' : 'filled';
-  var arrowFill = style[ prefix + '-arrow-fill' ].value;
+  var arrowClearFill = edge.pstyle( prefix + '-arrow-fill' ).value === 'hollow' ? 'both' : 'filled';
+  var arrowFill = edge.pstyle( prefix + '-arrow-fill' ).value;
+  var opacity = edge.pstyle( 'opacity' ).value;
 
   if( arrowShape === 'half-triangle-overshot' ){
     arrowFill = 'hollow';
     arrowClearFill = 'hollow';
   }
 
-  if( style.opacity.value !== 1 || arrowFill === 'hollow' ){ // then extra clear is needed
+  if( opacity !== 1 || arrowFill === 'hollow' ){ // then extra clear is needed
     context.globalCompositeOperation = 'destination-out';
 
     self.fillStyle( context, 255, 255, 255, 1 );
     self.strokeStyle( context, 255, 255, 255, 1 );
 
     self.drawArrowShape( edge, prefix, context,
-      arrowClearFill, style[ 'width' ].pfValue, style[ prefix + '-arrow-shape' ].value,
+      arrowClearFill, edge.pstyle( 'width' ).pfValue, edge.pstyle( prefix + '-arrow-shape' ).value,
       x, y, angle
     );
 
     context.globalCompositeOperation = gco;
   } // otherwise, the opaque arrow clears it for free :)
 
-  var color = style[ prefix + '-arrow-color' ].value;
-  self.fillStyle( context, color[0], color[1], color[2], style.opacity.value );
-  self.strokeStyle( context, color[0], color[1], color[2], style.opacity.value );
+  var color = edge.pstyle( prefix + '-arrow-color' ).value;
+  self.fillStyle( context, color[0], color[1], color[2], opacity );
+  self.strokeStyle( context, color[0], color[1], color[2], opacity );
 
   self.drawArrowShape( edge, prefix, context,
-    arrowFill, style[ 'width' ].pfValue, style[ prefix + '-arrow-shape' ].value,
+    arrowFill, edge.pstyle( 'width' ).pfValue, edge.pstyle( prefix + '-arrow-shape' ).value,
     x, y, angle
   );
 };

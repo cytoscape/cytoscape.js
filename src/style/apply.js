@@ -163,15 +163,14 @@ styfn.applyContextStyle = function( cxtMeta, cxtStyle, ele ){
   var self = this;
   var diffProps = cxtMeta.diffPropNames;
   var retDiffProps = {};
-  var eleStyle = ele._private.style;
 
   for( var i = 0; i < diffProps.length; i++ ){
     var diffPropName = diffProps[ i ];
-    var cxtProp = cxtStyle[ diffPropName ];
-    var eleProp = eleStyle[ diffPropName ];
+    var cxtProp = cxtStyle[ diffPropName ] || { name: diffPropName, delete: true };
+    var eleProp = ele.pstyle( diffPropName );
 
     // save cycles when the context prop doesn't need to be applied
-    if( !cxtProp || eleProp === cxtProp ){ continue; }
+    if( eleProp === cxtProp ){ continue; }
 
     var retDiffProp = retDiffProps[ diffPropName ] = {
       prev: eleProp
@@ -179,7 +178,7 @@ styfn.applyContextStyle = function( cxtMeta, cxtStyle, ele ){
 
     self.applyParsedProperty( ele, cxtProp );
 
-    retDiffProp.next = eleStyle[ diffPropName ];
+    retDiffProp.next = ele.pstyle( diffPropName );
 
     if( retDiffProp.next && retDiffProp.next.bypass ){
       retDiffProp.next = retDiffProp.next.bypassed;
@@ -194,15 +193,14 @@ styfn.applyContextStyle = function( cxtMeta, cxtStyle, ele ){
 styfn.updateStyleHints = function( ele ){
   var _p = ele._private;
   var self = this;
-  var style = _p.style;
 
   if( ele.removed() ){ return; }
 
   // set whether has pie or not; for greater efficiency
   var hasPie = false;
-  if( _p.group === 'nodes' && self._private.hasPie ){
+  if( _p.group === 'nodes' ){
     for( var i = 1; i <= self.pieBackgroundN; i++ ){ // 1..N
-      var size = _p.style[ 'pie-' + i + '-background-size' ].value;
+      var size = ele.pstyle( 'pie-' + i + '-background-size' ).value;
 
       if( size > 0 ){
         hasPie = true;
@@ -213,38 +211,38 @@ styfn.updateStyleHints = function( ele ){
 
   _p.hasPie = hasPie;
 
-  var transform = style[ 'text-transform' ].strValue;
-  var content = style[ 'label' ].strValue;
-  var srcContent = style[ 'source-label' ].strValue;
-  var tgtContent = style[ 'target-label' ].strValue;
-  var fStyle = style[ 'font-style' ].strValue;
-  var size = style[ 'font-size' ].pfValue + 'px';
-  var family = style[ 'font-family' ].strValue;
+  var transform = ele.pstyle( 'text-transform' ).strValue;
+  var content = ele.pstyle( 'label' ).strValue;
+  var srcContent = ele.pstyle( 'source-label' ).strValue;
+  var tgtContent = ele.pstyle( 'target-label' ).strValue;
+  var fStyle = ele.pstyle( 'font-style' ).strValue;
+  var size = ele.pstyle( 'font-size' ).pfValue + 'px';
+  var family = ele.pstyle( 'font-family' ).strValue;
   // var variant = style['font-variant'].strValue;
-  var weight = style[ 'font-weight' ].strValue;
-  var valign = style[ 'text-valign' ].strValue;
-  var halign = style[ 'text-valign' ].strValue;
-  var oWidth = style[ 'text-outline-width' ].pfValue;
-  var wrap = style[ 'text-wrap' ].strValue;
-  var wrapW = style[ 'text-max-width' ].pfValue;
+  var weight = ele.pstyle( 'font-weight' ).strValue;
+  var valign = ele.pstyle( 'text-valign' ).strValue;
+  var halign = ele.pstyle( 'text-valign' ).strValue;
+  var oWidth = ele.pstyle( 'text-outline-width' ).pfValue;
+  var wrap = ele.pstyle( 'text-wrap' ).strValue;
+  var wrapW = ele.pstyle( 'text-max-width' ).pfValue;
   var labelStyleKey = fStyle + '$' + size + '$' + family + '$' + weight + '$' + transform + '$' + valign + '$' + halign + '$' + oWidth + '$' + wrap + '$' + wrapW;
   _p.sourceLabelKey = labelStyleKey + '$' + srcContent;
   _p.targetLabelKey = labelStyleKey + '$' + tgtContent;
   _p.labelKey = labelStyleKey + '$' + content;
   _p.fontKey = fStyle + '$' + weight + '$' + size + '$' + family;
 
-  var width = style[ 'width' ].pfValue;
-  var height = style[ 'height' ].pfValue;
-  var borderW = style[ 'border-width' ].pfValue;
+  var width = ele.pstyle( 'width' ).pfValue;
+  var height = ele.pstyle( 'height' ).pfValue;
+  var borderW = ele.pstyle( 'border-width' ).pfValue;
   _p.boundingBoxKey = width + '$' + height + '$' + borderW;
 
   if( ele._private.group === 'edges' ){
-    var cpss = style[ 'control-point-step-size' ].pfValue;
-    var cpd = style[ 'control-point-distances' ] ? style[ 'control-point-distances' ].pfValue.join( '_' ) : undefined;
-    var cpw = style[ 'control-point-weights' ].value.join( '_' );
-    var curve = style[ 'curve-style' ].strValue;
-    var sd = style[ 'segment-distances' ] ? style[ 'segment-distances' ].pfValue.join( '_' ) : undefined;
-    var sw = style[ 'segment-weights' ].value.join( '_' );
+    var cpss = ele.pstyle( 'control-point-step-size' ).pfValue;
+    var cpd = ele.pstyle( 'control-point-distances' ) ? ele.pstyle( 'control-point-distances' ).pfValue.join( '_' ) : undefined;
+    var cpw = ele.pstyle( 'control-point-weights' ).value.join( '_' );
+    var curve = ele.pstyle( 'curve-style' ).strValue;
+    var sd = ele.pstyle( 'segment-distances' ) ? ele.pstyle( 'segment-distances' ).pfValue.join( '_' ) : undefined;
+    var sw = ele.pstyle( 'segment-weights' ).value.join( '_' );
 
     _p.boundingBoxKey += '$' + cpss + '$' + cpd + '$' + cpw + '$' + sd + '$' + sw + '$' + curve;
   }
@@ -289,15 +287,21 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
     }
   }
 
+  if( prop.delete ){ // delete the property and use the default value on falsey value
+    style[ prop.name ] = undefined;
+
+    return true;
+  }
+
   // check if we need to delete the current bypass
   if( propIsBypass && prop.deleteBypass ){ // then this property is just here to indicate we need to delete
     var currentProp = style[ prop.name ];
 
-    // can only delete if the current prop is a bypass and it points to the property it was overriding
+    // can only delete if the current prop is a bypass
     if( !currentProp ){
       return true; // property is already not defined
-    } else if( currentProp.bypass && currentProp.bypassed ){ // then replace the bypass property with the original
 
+    } else if( currentProp.bypass ){ // then replace the bypass property with the original
       // because the bypassed property was already applied (and therefore parsed), we can just replace it (no reapplying necessary)
       style[ prop.name ] = currentProp.bypassed;
       return true;
@@ -500,10 +504,9 @@ styfn.updateMappers = function( eles ){
 styfn.updateTransitions = function( ele, diffProps, isBypass ){
   var self = this;
   var _p = ele._private;
-  var style = _p.style;
-  var props = style[ 'transition-property' ].value;
-  var duration = style[ 'transition-duration' ].pfValue;
-  var delay = style[ 'transition-delay' ].pfValue;
+  var props = ele.pstyle( 'transition-property' ).value;
+  var duration = ele.pstyle( 'transition-duration' ).pfValue;
+  var delay = ele.pstyle( 'transition-delay' ).pfValue;
   var css = {};
 
   if( props.length > 0 && duration > 0 ){
@@ -512,7 +515,7 @@ styfn.updateTransitions = function( ele, diffProps, isBypass ){
     var anyPrev = false;
     for( var i = 0; i < props.length; i++ ){
       var prop = props[ i ];
-      var styProp = style[ prop ];
+      var styProp = ele.pstyle( prop );
       var diffProp = diffProps[ prop ];
 
       if( !diffProp ){ continue; }
@@ -570,7 +573,7 @@ styfn.updateTransitions = function( ele, diffProps, isBypass ){
       css: css
     }, {
       duration: duration,
-      easing: style[ 'transition-timing-function' ].value,
+      easing: ele.pstyle( 'transition-timing-function' ).value,
       queue: false,
       complete: function(){
         if( !isBypass ){

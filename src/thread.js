@@ -34,7 +34,7 @@ var Thread = function( opts ){
 var thdfn = Thread.prototype; // short alias
 
 var stringifyFieldVal = function( val ){
-  var valStr = is.fn( val ) ? val.toString() : 'JSON.parse("' + JSON.stringify(val) + '")';
+  var valStr = is.fn( val ) ? val.toString() : "JSON.parse('" + JSON.stringify(val) + "')";
 
   return valStr;
 };

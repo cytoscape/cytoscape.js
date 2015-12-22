@@ -313,6 +313,21 @@ describe('Thread', function(){
     });
   });
 
+  it('requires an object with a string field', function( next ){
+    var t = $$.Thread();
+
+    t.require( { foo: 'bar' }, 'foo' );
+
+    t.run(function(){
+      resolve( foo );
+    }).then(function( ret ){
+      expect( ret ).to.deep.equal({ foo: 'bar' });
+
+      t.stop();
+      next();
+    });
+  });
+
   it('requires an external file', function( next ){
     var t = $$.Thread();
 

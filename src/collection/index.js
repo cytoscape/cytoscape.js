@@ -13,10 +13,10 @@ var idFactory = {
     var json = is.element( element ) ? element._private : element;
     var id = tryThisId != null ? tryThisId : this.prefix + this.id;
 
-    if( cy.getElementById( id ).empty() ){
+    if( !cy.hasElementWithId( id ) ){
       this.id++; // we've used the current id, so move it up
     } else { // otherwise keep trying successive unused ids
-      while( !cy.getElementById( id ).empty() ){
+      while( cy.hasElementWithId( id ) ){
         id = this.prefix + ( ++this.id );
       }
     }
@@ -61,7 +61,7 @@ var Collection = function( cy, elements, options ){
       // make sure newly created elements have valid ids
       if( data.id == null ){
         data.id = idFactory.generate( cy, json );
-      } else if( cy.getElementById( data.id ).length !== 0 || elesIds[ data.id ] ){
+      } else if( cy.hasElementWithId( data.id ) || elesIds[ data.id ] ){
         continue; // can't create element if prior id already exists
       }
 
@@ -141,6 +141,10 @@ elesfn.collection = function(){
 
 elesfn.unique = function(){
   return new Collection( this._private.cy, this, { unique: true } );
+};
+
+elesfn.hasElementWithId = function( id ){
+  return !!this._private.ids[ id ];
 };
 
 elesfn.getElementById = function( id ){
@@ -321,7 +325,7 @@ elesfn.restore = function( notifyRenderer ){
 
       // can't create element if it has empty string as id or non-string id
       continue;
-    } else if( cy.getElementById( data.id ).length !== 0 ){
+    } else if( cy.hasElementWithId( data.id ) ){
       util.error( 'Can not create second element with ID `' + data.id + '`' );
 
       // can't create element if one already has that id
@@ -364,7 +368,7 @@ elesfn.restore = function( notifyRenderer ){
           // can't create if source or target is not defined properly
           util.error( 'Can not create edge `' + id + '` with unspecified ' + field );
           badSourceOrTarget = true;
-        } else if( cy.getElementById( val ).empty() ){
+        } else if( !cy.hasElementWithId( val ) ){
           // can't create edge if one of its nodes doesn't exist
           util.error( 'Can not create edge `' + id + '` with nonexistant ' + field + ' `' + val + '`' );
           badSourceOrTarget = true;
@@ -384,9 +388,11 @@ elesfn.restore = function( notifyRenderer ){
 
     } // if is edge
 
-    // create mock ids map for element so it can be used like collections
+    // create mock ids / indexes maps for element so it can be used like collections
     _private.ids = {};
     _private.ids[ id ] = ele;
+    _private.indexes = {};
+    _private.indexes[ id ] = ele;
 
     _private.removed = false;
     cy.addToPool( ele );
@@ -628,8 +634,8 @@ elesfn.move = function( struct ){
   if( struct.source !== undefined || struct.target !== undefined ){
     var srcId = struct.source;
     var tgtId = struct.target;
-    var srcExists = cy.getElementById( srcId ).length > 0;
-    var tgtExists = cy.getElementById( tgtId ).length > 0;
+    var srcExists = cy.hasElementWithId( srcId );
+    var tgtExists = cy.hasElementWithId( tgtId );
 
     if( srcExists || tgtExists ){
       var jsons = this.jsons();
@@ -650,7 +656,7 @@ elesfn.move = function( struct ){
 
   } else if( struct.parent !== undefined ){ // move node to new parent
     var parentId = struct.parent;
-    var parentExists = parentId === null || cy.getElementById( parentId ).length > 0;
+    var parentExists = parentId === null || cy.hasElementWithId( parentId );
 
     if( parentExists ){
       var jsons = this.jsons();

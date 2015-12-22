@@ -3,15 +3,10 @@
 var is = require( './is' );
 var util = require( './util' );
 
-var Selector = function( onlyThisGroup, selector ){
+var Selector = function( selector ){
 
   if( !(this instanceof Selector) ){
-    return new Selector( onlyThisGroup, selector );
-  }
-
-  if( selector === undefined && onlyThisGroup !== undefined ){
-    selector = onlyThisGroup;
-    onlyThisGroup = undefined;
+    return new Selector( selector );
   }
 
   var self = this;
@@ -23,16 +18,10 @@ var Selector = function( onlyThisGroup, selector ){
 
   if( !selector || ( is.string( selector ) && selector.match( /^\s*$/ ) ) ){
 
-    if( onlyThisGroup == null ){
-      // ignore
-      self.length = 0;
-    } else {
-      self[0] = newQuery();
-      self[0].group = onlyThisGroup;
-      self.length = 1;
-    }
+    self.length = 0;
 
   } else if( is.elementOrCollection( selector ) ){
+
     var collection = selector.collection();
 
     self[0] = newQuery();
@@ -40,6 +29,7 @@ var Selector = function( onlyThisGroup, selector ){
     self.length = 1;
 
   } else if( is.fn( selector ) ){
+
     self[0] = newQuery();
     self[0].filter = selector;
     self.length = 1;
@@ -390,18 +380,6 @@ var Selector = function( onlyThisGroup, selector ){
       } // if
     } // for
 
-    // make sure for each query that the subject group matches the implicit group if any
-    if( onlyThisGroup != null ){
-      for( var j = 0; j < self.length; j++ ){
-        if( self[ j ].group != null && self[ j ].group != onlyThisGroup ){
-          util.error( 'Group `' + self[ j ].group + '` conflicts with implicit group `' + onlyThisGroup + '` in selector `' + selector + '`' );
-          return;
-        }
-
-        self[ j ].group = onlyThisGroup; // set to implicit group
-      }
-    }
-
   } else {
     util.error( 'A selector must be created from a string; found ' + selector );
     return;
@@ -421,13 +399,15 @@ selfn.eq = function( i ){
   return this[ i ];
 };
 
-var queryMatches = function( query, element ){
+var queryMatches = function( query, ele ){
+  var ele_p = ele._private;
+
   // check group
-  if( query.group != null && query.group != '*' && query.group != element._private.group ){
+  if( query.group != null && query.group != '*' && query.group != ele_p.group ){
     return false;
   }
 
-  var cy = element.cy();
+  var cy = ele.cy();
 
   // check colon selectors
   var allColonSelectorsMatch = true;
@@ -435,88 +415,88 @@ var queryMatches = function( query, element ){
     var sel = query.colonSelectors[ k ];
 
     switch( sel ){
-    case ':selected':
-      allColonSelectorsMatch = element.selected();
-      break;
-    case ':unselected':
-      allColonSelectorsMatch = !element.selected();
-      break;
-    case ':selectable':
-      allColonSelectorsMatch = element.selectable();
-      break;
-    case ':unselectable':
-      allColonSelectorsMatch = !element.selectable();
-      break;
-    case ':locked':
-      allColonSelectorsMatch = element.locked();
-      break;
-    case ':unlocked':
-      allColonSelectorsMatch = !element.locked();
-      break;
-    case ':visible':
-      allColonSelectorsMatch = element.visible();
-      break;
-    case ':hidden':
-      allColonSelectorsMatch = !element.visible();
-      break;
-    case ':transparent':
-      allColonSelectorsMatch = element.transparent();
-      break;
-    case ':grabbed':
-      allColonSelectorsMatch = element.grabbed();
-      break;
-    case ':free':
-      allColonSelectorsMatch = !element.grabbed();
-      break;
-    case ':removed':
-      allColonSelectorsMatch = element.removed();
-      break;
-    case ':inside':
-      allColonSelectorsMatch = !element.removed();
-      break;
-    case ':grabbable':
-      allColonSelectorsMatch = element.grabbable();
-      break;
-    case ':ungrabbable':
-      allColonSelectorsMatch = !element.grabbable();
-      break;
-    case ':animated':
-      allColonSelectorsMatch = element.animated();
-      break;
-    case ':unanimated':
-      allColonSelectorsMatch = !element.animated();
-      break;
-    case ':parent':
-      allColonSelectorsMatch = element.isNode() && element.children().nonempty();
-      break;
-    case ':child':
-    case ':nonorphan':
-      allColonSelectorsMatch = element.isNode() && element.parent().nonempty();
-      break;
-    case ':orphan':
-      allColonSelectorsMatch = element.isNode() && element.parent().empty();
-      break;
-    case ':loop':
-      allColonSelectorsMatch = element.isEdge() && element.data( 'source' ) === element.data( 'target' );
-      break;
-    case ':simple':
-      allColonSelectorsMatch = element.isEdge() && element.data( 'source' ) !== element.data( 'target' );
-      break;
-    case ':active':
-      allColonSelectorsMatch = element.active();
-      break;
-    case ':inactive':
-      allColonSelectorsMatch = !element.active();
-      break;
-    case ':touch':
-      allColonSelectorsMatch = is.touch();
-      break;
-    case ':backgrounding':
-      allColonSelectorsMatch = element.backgrounding();
-      break;
-    case ':nonbackgrounding':
-      allColonSelectorsMatch = !element.backgrounding();
-      break;
+      case ':selected':
+        allColonSelectorsMatch = ele.selected();
+        break;
+      case ':unselected':
+        allColonSelectorsMatch = !ele.selected();
+        break;
+      case ':selectable':
+        allColonSelectorsMatch = ele.selectable();
+        break;
+      case ':unselectable':
+        allColonSelectorsMatch = !ele.selectable();
+        break;
+      case ':locked':
+        allColonSelectorsMatch = ele.locked();
+        break;
+      case ':unlocked':
+        allColonSelectorsMatch = !ele.locked();
+        break;
+      case ':visible':
+        allColonSelectorsMatch = ele.visible();
+        break;
+      case ':hidden':
+        allColonSelectorsMatch = !ele.visible();
+        break;
+      case ':transparent':
+        allColonSelectorsMatch = ele.transparent();
+        break;
+      case ':grabbed':
+        allColonSelectorsMatch = ele.grabbed();
+        break;
+      case ':free':
+        allColonSelectorsMatch = !ele.grabbed();
+        break;
+      case ':removed':
+        allColonSelectorsMatch = ele.removed();
+        break;
+      case ':inside':
+        allColonSelectorsMatch = !ele.removed();
+        break;
+      case ':grabbable':
+        allColonSelectorsMatch = ele.grabbable();
+        break;
+      case ':ungrabbable':
+        allColonSelectorsMatch = !ele.grabbable();
+        break;
+      case ':animated':
+        allColonSelectorsMatch = ele.animated();
+        break;
+      case ':unanimated':
+        allColonSelectorsMatch = !ele.animated();
+        break;
+      case ':parent':
+        allColonSelectorsMatch = ele.isNode() && ele.children().nonempty();
+        break;
+      case ':child':
+      case ':nonorphan':
+        allColonSelectorsMatch = ele.isNode() && ele.parent().nonempty();
+        break;
+      case ':orphan':
+        allColonSelectorsMatch = ele.isNode() && ele.parent().empty();
+        break;
+      case ':loop':
+        allColonSelectorsMatch = ele.isEdge() && ele.data( 'source' ) === ele.data( 'target' );
+        break;
+      case ':simple':
+        allColonSelectorsMatch = ele.isEdge() && ele.data( 'source' ) !== ele.data( 'target' );
+        break;
+      case ':active':
+        allColonSelectorsMatch = ele.active();
+        break;
+      case ':inactive':
+        allColonSelectorsMatch = !ele.active();
+        break;
+      case ':touch':
+        allColonSelectorsMatch = is.touch();
+        break;
+      case ':backgrounding':
+        allColonSelectorsMatch = ele.backgrounding();
+        break;
+      case ':nonbackgrounding':
+        allColonSelectorsMatch = !ele.backgrounding();
+        break;
     }
 
     if( !allColonSelectorsMatch ) break;
@@ -527,7 +507,7 @@ var queryMatches = function( query, element ){
   var allIdsMatch = true;
   for( var k = 0; k < query.ids.length; k++ ){
     var id = query.ids[ k ];
-    var actualId = element._private.data.id;
+    var actualId = ele_p.data.id;
 
     allIdsMatch = allIdsMatch && (id == actualId);
 
@@ -540,7 +520,7 @@ var queryMatches = function( query, element ){
   for( var k = 0; k < query.classes.length; k++ ){
     var cls = query.classes[ k ];
 
-    allClassesMatch = allClassesMatch && element.hasClass( cls );
+    allClassesMatch = allClassesMatch && ele.hasClass( cls );
 
     if( !allClassesMatch ) break;
   }
@@ -656,16 +636,13 @@ var queryMatches = function( query, element ){
   var allDataMatches = operandsMatch( {
     name: 'data',
     fieldValue: function( field ){
-      return element._private.data[ field ];
-    },
-    fieldRef: function( field ){
-      return 'element._private.data.' + field;
+      return ele_p.data[ field ];
     },
     fieldUndefined: function( field ){
-      return element._private.data[ field ] === undefined;
+      return ele_p.data[ field ] === undefined;
     },
     fieldTruthy: function( field ){
-      if( element._private.data[ field ] ){
+      if( ele_p.data[ field ] ){
         return true;
       }
       return false;
@@ -680,16 +657,13 @@ var queryMatches = function( query, element ){
   var allMetaMatches = operandsMatch( {
     name: 'meta',
     fieldValue: function( field ){
-      return element[ field ]();
-    },
-    fieldRef: function( field ){
-      return 'element.' + field + '()';
+      return ele[ field ]();
     },
     fieldUndefined: function( field ){
-      return element[ field ]() == null;
+      return ele[ field ]() == null;
     },
     fieldTruthy: function( field ){
-      if( element[ field ]() ){
+      if( ele[ field ]() ){
         return true;
       }
       return false;
@@ -702,7 +676,7 @@ var queryMatches = function( query, element ){
 
   // check collection
   if( query.collection != null ){
-    var matchesAny = query.collection._private.ids[ element.id() ] != null;
+    var matchesAny = query.collection.hasElementWithId( ele.id() );
 
     if( !matchesAny ){
       return false;
@@ -710,13 +684,12 @@ var queryMatches = function( query, element ){
   }
 
   // check filter function
-  if( query.filter != null && element.collection().filter( query.filter ).size() === 0 ){
+  if( query.filter != null && ele.collection().filter( query.filter ).size() === 0 ){
     return false;
   }
 
-
   // check parent/child relations
-  var confirmRelations = function( query, elements ){
+  var confirmRelations = function( query, eles ){
     if( query != null ){
       var matches = false;
 
@@ -724,11 +697,11 @@ var queryMatches = function( query, element ){
         return false;
       }
 
-      elements = elements(); // make elements functional so we save cycles if query == null
+      eles = eles(); // save cycles if query == null
 
       // query must match for at least one element (may be recursive)
-      for( var i = 0; i < elements.length; i++ ){
-        if( queryMatches( query, elements[ i ] ) ){
+      for( var i = 0; i < eles.length; i++ ){
+        if( queryMatches( query, eles[ i ] ) ){
           matches = true;
           break;
         }
@@ -741,19 +714,19 @@ var queryMatches = function( query, element ){
   };
 
   if( !confirmRelations( query.parent, function(){
-    return element.parent();
+    return ele.parent();
   } ) ){ return false; }
 
   if( !confirmRelations( query.ancestor, function(){
-    return element.parents();
+    return ele.parents();
   } ) ){ return false; }
 
   if( !confirmRelations( query.child, function(){
-    return element.children();
+    return ele.children();
   } ) ){ return false; }
 
   if( !confirmRelations( query.descendant, function(){
-    return element.descendants();
+    return ele.descendants();
   } ) ){ return false; }
 
   // we've reached the end, so we've matched everything for this query

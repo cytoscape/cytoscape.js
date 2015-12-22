@@ -1,5 +1,5 @@
 /*!
- * This file is part of Cytoscape.js 2.5.3.
+ * This file is part of Cytoscape.js 2.5.4.
  *
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -15435,8 +15435,12 @@ BRp.load = function() {
       });
     };
 
+    var pointerIsMouse = function( e ){
+      return e.pointerType === 'mouse' || e.pointerType === 4;
+    };
+
     r.registerBinding(r.container, 'pointerdown', function(e){
-      if( e.pointerType === 'mouse' ){ return; } // mouse already handled
+      if( pointerIsMouse(e) ){ return; } // mouse already handled
 
       e.preventDefault();
 
@@ -15447,7 +15451,7 @@ BRp.load = function() {
     });
 
     r.registerBinding(r.container, 'pointerup', function(e){
-      if( e.pointerType === 'mouse' ){ return; } // mouse already handled
+      if( pointerIsMouse(e) ){ return; } // mouse already handled
 
       removePointer( e );
 
@@ -15456,7 +15460,7 @@ BRp.load = function() {
     });
 
     r.registerBinding(r.container, 'pointercancel', function(e){
-      if( e.pointerType === 'mouse' ){ return; } // mouse already handled
+      if( pointerIsMouse(e) ){ return; } // mouse already handled
 
       removePointer( e );
 
@@ -15465,7 +15469,7 @@ BRp.load = function() {
     });
 
     r.registerBinding(r.container, 'pointermove', function(e){
-      if( e.pointerType === 'mouse' ){ return; } // mouse already handled
+      if( pointerIsMouse(e) ){ return; } // mouse already handled
 
       e.preventDefault();
 
@@ -18793,7 +18797,7 @@ var cytoscape = function( options ){ // jshint ignore:line
 };
 
 // replaced by build system
-cytoscape.version = '2.5.3';
+cytoscape.version = '2.5.4';
 
 // try to register w/ jquery
 if( window && window.jQuery ){
@@ -23319,7 +23323,7 @@ var Thread = function( opts ){
 var thdfn = Thread.prototype; // short alias
 
 var stringifyFieldVal = function( val ){
-  var valStr = is.fn( val ) ? val.toString() : 'JSON.parse("' + JSON.stringify(val) + '")';
+  var valStr = is.fn( val ) ? val.toString() : "JSON.parse('" + JSON.stringify(val) + "')";
 
   return valStr;
 };

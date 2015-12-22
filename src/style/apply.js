@@ -163,11 +163,12 @@ styfn.applyContextStyle = function( cxtMeta, cxtStyle, ele ){
   var self = this;
   var diffProps = cxtMeta.diffPropNames;
   var retDiffProps = {};
+  var eleStyle = ele._private.style;
 
   for( var i = 0; i < diffProps.length; i++ ){
     var diffPropName = diffProps[ i ];
     var cxtProp = cxtStyle[ diffPropName ];
-    var eleProp = ele._private.style[ diffPropName ];
+    var eleProp = eleStyle[ diffPropName ];
 
     // save cycles when the context prop doesn't need to be applied
     if( !cxtProp || eleProp === cxtProp ){ continue; }
@@ -178,7 +179,7 @@ styfn.applyContextStyle = function( cxtMeta, cxtStyle, ele ){
 
     self.applyParsedProperty( ele, cxtProp );
 
-    retDiffProp.next = ele._private.style[ diffPropName ];
+    retDiffProp.next = eleStyle[ diffPropName ];
 
     if( retDiffProp.next && retDiffProp.next.bypass ){
       retDiffProp.next = retDiffProp.next.bypassed;

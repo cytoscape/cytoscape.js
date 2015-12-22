@@ -222,8 +222,8 @@ These properties affect the styling of an edge's line:
 For automatic, bundled bezier edges (`curve-style: bezier`):
 
  * **`control-point-step-size`** : From the line perpendicular from source to target, this value specifies the distance between successive bezier edges.
- * **`control-point-distances`** : A single value that overrides `control-point-step-size` with a manual value.  Because it overrides the step size, bezier edges with the same value will overlap.  Thus, it's best to use this as a one-off value for particular edges if need be.
- * **`control-point-weights`** : A single value that weights control points along the line from source to target.  The value usually ranges on [0, 1], with 0 towards the source node and 1 towards the target node &mdash; but larger or smaller values can also be used.
+ * **`control-point-distance`** : A single value that overrides `control-point-step-size` with a manual value.  Because it overrides the step size, bezier edges with the same value will overlap.  Thus, it's best to use this as a one-off value for particular edges if need be.
+ * **`control-point-weight`** : A single value that weights control points along the line from source to target.  The value usually ranges on [0, 1], with 0 towards the source node and 1 towards the target node &mdash; but larger or smaller values can also be used.
 
 
 ## Unbundled bezier edges

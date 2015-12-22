@@ -2,29 +2,43 @@ var Benchmark = require('benchmark');
 var newCytoscape = require('../../build/cytoscape.js');
 var oldCytoscape = require('./cytoscape.js');
 
-function Suite( name, opts ){
-  var suite = new Benchmark.Suite( name, opts );
+global.newCytoscape = newCytoscape;
+global.oldCytoscape = oldCytoscape;
+
+function Suite( name, suiteOpts ){
+  var suite = new Benchmark.Suite( name, suiteOpts );
   var suiteAdd = suite.add;
-  var oldCy, newCy;
 
-  opts = opts || {};
+  suite.add = function( fn, opts ){
+    var opts = global.opts = opts || {};
 
-  if( opts.setup ){
-    oldCy = opts.setup( oldCytoscape );
-  } else {
-    oldCy = oldCytoscape();
-  }
+    global.setup = opts.setup || function( cytoscape ){
+      return oldCytoscape();
+    };
 
-  if( opts.setup ){
-    newCy = opts.setup( newCytoscape );
-  } else {
-    newCy = newCytoscape();
-  }
+    global.teardown = opts.teardown || function( cy ){
+      if( cy.destroy ){ cy.destroy(); }
+    };
 
-  suite.add = function( fn, addOpts ){
-    suiteAdd.apply( suite, [name + '::old', function(){ return fn(oldCy); }, addOpts ] );
+    global.fn = fn;
 
-    suiteAdd.apply( suite, [name + '::new', function(){ return fn(newCy); }, addOpts ] );
+    suiteAdd.apply( suite, [ name + '::old', function(){ return fn( cy ); }, {
+      setup: function(){
+        global.cy = setup( oldCytoscape );
+      },
+      teardown: function(){
+        teardown( cy );
+      }
+    } ] );
+
+    suiteAdd.apply( suite, [ name + '::new', function(){ return fn( cy ); }, {
+      setup: function(){
+        global.cy = setup( newCytoscape );
+      },
+      teardown: function(){
+        teardown( cy );
+      }
+    } ] );
 
     return this; // chaining
   };

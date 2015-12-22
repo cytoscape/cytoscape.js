@@ -10,3 +10,5 @@ label { position: absolute; margin-top: -0.25em; font-size: 0.65em; margin-left:
 #commands-show-area { position: absolute; right: 0; top: 0; font-size: 0.75em; }
 #show-commands {  }
 #bb { position: absolute; left: 0; top: 0; background: rgba(0, 255, 255, 0.333); z-index: 999999999; pointer-events: none; }
+#note { cursor: pointer; display: none; position: fixed; right: 0; top: 0; margin: 1em; padding: 1em; width: 15em; background: rgba(0,0,0,0.8); color: #fff; border-radius: 1em; font-size: 0.8em; }
+#note-descr { margin-top: 0.5em; font-size: 0.8em; }

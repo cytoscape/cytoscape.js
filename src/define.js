@@ -105,7 +105,7 @@ var define = {
       // .data(function(){ ... })
       } else if( p.allowBinding && is.fn( name ) ){ // bind to event
         var fn = name;
-        self.bind( p.bindingEvent, fn );
+        self.on( p.bindingEvent, fn );
 
       // .data()
       } else if( p.allowGetting && name === undefined ){ // get whole object

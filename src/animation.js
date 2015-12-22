@@ -195,7 +195,7 @@ util.extend( anifn, {
       var name = prop.name;
       var startStyleProp = _p.startStyle[ name ];
 
-      _p.startStyle[ name ] = _p.startStyle[ util.dash2camel( name ) ] = prop;
+      _p.startStyle[ name ] = prop;
       _p.style[ i ] = startStyleProp;
     }
 

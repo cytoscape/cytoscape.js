@@ -7,13 +7,13 @@ var styfn = {};
 
 // a caching layer for property parsing
 styfn.parse = function( name, value, propIsBypass, propIsFlat ){
+  var self = this;
   var argHash = [ name, value, propIsBypass, propIsFlat ].join( '$' );
-  var propCache = this.propCache = this.propCache || {};
+  var propCache = self.propCache = self.propCache || {};
   var ret;
-  var impl = parseImpl.bind( this );
 
   if( !(ret = propCache[ argHash ]) ){
-    ret = propCache[ argHash ] = impl( name, value, propIsBypass, propIsFlat );
+    ret = propCache[ argHash ] = self.parseImpl( name, value, propIsBypass, propIsFlat );
   }
 
   // always need a copy since props are mutated later in their lifecycles
@@ -398,5 +398,6 @@ var parseImpl = function( name, value, propIsBypass, propIsFlat ){
   }
 
 };
+styfn.parseImpl = parseImpl;
 
 module.exports = styfn;

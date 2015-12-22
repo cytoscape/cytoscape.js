@@ -289,143 +289,167 @@ var styfn = {};
   }
 })();
 
-// adds the default stylesheet to the current style
+styfn.getDefaultProperty = function( name ){
+  return this.getDefaultProperties()[ name ];
+};
+
+styfn.getDefaultProperties = function(){
+  var cachedProps = this._private.defaultPropertiesCache;
+
+  if( cachedProps ){ return cachedProps; }
+
+  var rawProps = util.extend( {
+    'events': 'yes',
+    'text-events': 'no',
+    'text-valign': 'top',
+    'text-halign': 'center',
+    'color': '#000',
+    'text-outline-color': '#000',
+    'text-outline-width': 0,
+    'text-outline-opacity': 1,
+    'text-opacity': 1,
+    'text-decoration': 'none',
+    'text-transform': 'none',
+    'text-wrap': 'none',
+    'text-max-width': 9999,
+    'text-background-color': '#000',
+    'text-background-opacity': 0,
+    'text-border-opacity': 0,
+    'text-border-width': 0,
+    'text-border-style': 'solid',
+    'text-border-color': '#000',
+    'text-background-shape': 'rectangle',
+    'font-family': 'Helvetica Neue, Helvetica, sans-serif',
+    'font-style': 'normal',
+    // 'font-variant': fontVariant,
+    'font-weight': 'normal',
+    'font-size': 16,
+    'min-zoomed-font-size': 0,
+    'text-rotation': 'none',
+    'source-text-rotation': 'none',
+    'target-text-rotation': 'none',
+    'visibility': 'visible',
+    'display': 'element',
+    'opacity': 1,
+    'z-index': 0,
+    'label': '',
+    'text-margin-x': 0,
+    'text-margin-y': 0,
+    'source-label': '',
+    'source-text-offset': 0,
+    'source-text-margin-x': 0,
+    'source-text-margin-y': 0,
+    'target-label': '',
+    'target-text-offset': 0,
+    'target-text-margin-x': 0,
+    'target-text-margin-y': 0,
+    'overlay-opacity': 0,
+    'overlay-color': '#000',
+    'overlay-padding': 10,
+    'shadow-opacity': 0,
+    'shadow-color': '#000',
+    'shadow-blur': 10,
+    'shadow-offset-x': 0,
+    'shadow-offset-y': 0,
+    'text-shadow-opacity': 0,
+    'text-shadow-color': '#000',
+    'text-shadow-blur': 5,
+    'text-shadow-offset-x': 0,
+    'text-shadow-offset-y': 0,
+    'transition-property': 'none',
+    'transition-duration': 0,
+    'transition-delay': 0,
+    'transition-timing-function': 'linear',
+
+    // node props
+    'background-blacken': 0,
+    'background-color': '#999',
+    'background-opacity': 1,
+    'background-image': 'none',
+    'background-image-opacity': 1,
+    'background-position-x': '50%',
+    'background-position-y': '50%',
+    'background-repeat': 'no-repeat',
+    'background-fit': 'none',
+    'background-clip': 'node',
+    'background-width': 'auto',
+    'background-height': 'auto',
+    'border-color': '#000',
+    'border-opacity': 1,
+    'border-width': 0,
+    'border-style': 'solid',
+    'height': 30,
+    'width': 30,
+    'shape': 'ellipse',
+    'shape-polygon-points': '-1, -1,   1, -1,   1, 1,   -1, 1',
+
+    // compound props
+    'padding-top': 0,
+    'padding-bottom': 0,
+    'padding-left': 0,
+    'padding-right': 0,
+    'position': 'origin',
+    'compound-sizing-wrt-labels': 'include'
+  }, {
+    // node pie bg
+    'pie-size': '100%'
+  }, [
+    { name: 'pie-{{i}}-background-color', value: 'black' },
+    { name: 'pie-{{i}}-background-size', value: '0%' },
+    { name: 'pie-{{i}}-background-opacity', value: 1 }
+  ].reduce( function( css, prop ){
+    for( var i = 1; i <= styfn.pieBackgroundN; i++ ){
+      var name = prop.name.replace( '{{i}}', i );
+      var val = prop.value;
+
+      css[ name ] = val;
+    }
+
+    return css;
+  }, {} ), {
+    // edge props
+    'line-style': 'solid',
+    'line-color': '#999',
+    'control-point-step-size': 40,
+    'control-point-weights': 0.5,
+    'segment-weights': 0.5,
+    'segment-distances': 20,
+    'curve-style': 'bezier',
+    'haystack-radius': 0.8
+  }, [
+    { name: 'arrow-shape', value: 'none' },
+    { name: 'arrow-color', value: '#000' },
+    { name: 'arrow-fill', value: 'filled' }
+  ].reduce( function( css, prop ){
+    styfn.arrowPrefixes.forEach( function( prefix ){
+      var name = prefix + '-' + prop.name;
+      var val = prop.value;
+
+      css[ name ] = val;
+    } );
+
+    return css;
+  }, {} ) );
+
+  var parsedProps = this._private.defaultPropertiesCache = {};
+
+  for( var i = 0; i < this.properties.length; i++ ){
+    var prop = this.properties[i];
+
+    if( prop.pointsTo ){ continue; }
+
+    var name = prop.name;
+    var val = rawProps[ name ];
+    var parsedProp = this.parse( name, val );
+
+    parsedProps[ name ] = parsedProp;
+  }
+
+  return parsedProps;
+};
+
 styfn.addDefaultStylesheet = function(){
-  // fill the style with the default stylesheet
   this
-    .selector( 'node, edge' ) // common properties
-      .css( util.extend( {
-        'events': 'yes',
-        'text-events': 'no',
-        'text-valign': 'top',
-        'text-halign': 'center',
-        'color': '#000',
-        'text-outline-color': '#000',
-        'text-outline-width': 0,
-        'text-outline-opacity': 1,
-        'text-opacity': 1,
-        'text-decoration': 'none',
-        'text-transform': 'none',
-        'text-wrap': 'none',
-        'text-max-width': 9999,
-        'text-background-color': '#000',
-        'text-background-opacity': 0,
-        'text-border-opacity': 0,
-        'text-border-width': 0,
-        'text-border-style': 'solid',
-        'text-border-color': '#000',
-        'text-background-shape': 'rectangle',
-        'font-family': 'Helvetica Neue, Helvetica, sans-serif',
-        'font-style': 'normal',
-        // 'font-variant': fontVariant,
-        'font-weight': 'normal',
-        'font-size': 16,
-        'min-zoomed-font-size': 0,
-        'text-rotation': 'none',
-        'source-text-rotation': 'none',
-        'target-text-rotation': 'none',
-        'visibility': 'visible',
-        'display': 'element',
-        'opacity': 1,
-        'z-index': 0,
-        'label': '',
-        'text-margin-x': 0,
-        'text-margin-y': 0,
-        'source-label': '',
-        'source-text-offset': 0,
-        'source-text-margin-x': 0,
-        'source-text-margin-y': 0,
-        'target-label': '',
-        'target-text-offset': 0,
-        'target-text-margin-x': 0,
-        'target-text-margin-y': 0,
-        'overlay-opacity': 0,
-        'overlay-color': '#000',
-        'overlay-padding': 10,
-        'shadow-opacity': 0,
-        'shadow-color': '#000',
-        'shadow-blur': 10,
-        'shadow-offset-x': 0,
-        'shadow-offset-y': 0,
-        'text-shadow-opacity': 0,
-        'text-shadow-color': '#000',
-        'text-shadow-blur': 5,
-        'text-shadow-offset-x': 0,
-        'text-shadow-offset-y': 0,
-        'transition-property': 'none',
-        'transition-duration': 0,
-        'transition-delay': 0,
-        'transition-timing-function': 'linear',
-
-        // node props
-        'background-blacken': 0,
-        'background-color': '#999',
-        'background-opacity': 1,
-        'background-image': 'none',
-        'background-image-opacity': 1,
-        'background-position-x': '50%',
-        'background-position-y': '50%',
-        'background-repeat': 'no-repeat',
-        'background-fit': 'none',
-        'background-clip': 'node',
-        'background-width': 'auto',
-        'background-height': 'auto',
-        'border-color': '#000',
-        'border-opacity': 1,
-        'border-width': 0,
-        'border-style': 'solid',
-        'height': 30,
-        'width': 30,
-        'shape': 'ellipse',
-        'shape-polygon-points': '-1, -1,   1, -1,   1, 1,   -1, 1',
-
-        // compound props
-        'padding-top': 0,
-        'padding-bottom': 0,
-        'padding-left': 0,
-        'padding-right': 0,
-        'position': 'origin',
-        'compound-sizing-wrt-labels': 'include'
-      }, {
-        // node pie bg
-        'pie-size': '100%'
-      }, [
-        { name: 'pie-{{i}}-background-color', value: 'black' },
-        { name: 'pie-{{i}}-background-size', value: '0%' },
-        { name: 'pie-{{i}}-background-opacity', value: 1 }
-      ].reduce( function( css, prop ){
-        for( var i = 1; i <= styfn.pieBackgroundN; i++ ){
-          var name = prop.name.replace( '{{i}}', i );
-          var val = prop.value;
-
-          css[ name ] = val;
-        }
-
-        return css;
-      }, {} ), {
-        // edge props
-        'line-style': 'solid',
-        'line-color': '#999',
-        'control-point-step-size': 40,
-        'control-point-weights': 0.5,
-        'segment-weights': 0.5,
-        'segment-distances': 20,
-        'curve-style': 'bezier',
-        'haystack-radius': 0.8
-      }, [
-        { name: 'arrow-shape', value: 'none' },
-        { name: 'arrow-color', value: '#000' },
-        { name: 'arrow-fill', value: 'filled' }
-      ].reduce( function( css, prop ){
-        styfn.arrowPrefixes.forEach( function( prefix ){
-          var name = prefix + '-' + prop.name;
-          var val = prop.value;
-
-          css[ name ] = val;
-        } );
-
-        return css;
-      }, {} ) ) )
     .selector( '$node > node' ) // compound (parent) node properties
       .css( {
         'width': 'auto',

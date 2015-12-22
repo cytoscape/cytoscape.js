@@ -11,13 +11,13 @@ function defineSwitchFunction( params ){
     if( args.length === 2 ){
       var data = args[0];
       var handler = args[1];
-      this.bind( params.event, data, handler );
+      this.on( params.event, data, handler );
     }
 
     // e.g. cy.nodes().select( handler )
     else if( args.length === 1 ){
       var handler = args[0];
-      this.bind( params.event, handler );
+      this.on( params.event, handler );
     }
 
     // e.g. cy.nodes().select()

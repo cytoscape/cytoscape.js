@@ -54,36 +54,26 @@ styfn.getStylePropertyValue = function( ele, propName, isRenderedVal ){
   }
 };
 
-// gets the value style for an element (useful for things like animations)
-styfn.getValueStyle = function( ele ){
+styfn.getAnimationStartStyle = function( ele, aniProps ){
   var self = this;
   var rstyle = {};
-  var style;
-  var isEle = is.element( ele );
 
-  if( isEle ){
-    style = ele._private.style;
-  } else {
-    style = ele; // just passed the style itself
-  }
+  for( var i = 0; i < aniProps.length; i++ ){
+    var aniProp = aniProps[ i ];
+    var name = aniProp.name;
 
-  if( style ){
-    for( var i = 0; i < self.properties.length; i++ ){
-      var prop = self.properties[ i ];
-      var styleProp = style[ prop.name ] || style[ util.dash2camel( prop.name ) ];
+    var styleProp = ele.pstyle( name );
 
-      if( styleProp !== undefined ){ // then make a prop of it
-        if( is.plainObject( styleProp ) ){
-          styleProp = this.parse( prop.name, styleProp.strValue );
-        } else {
-          styleProp = this.parse( prop.name, styleProp );
-        }
+    if( styleProp !== undefined ){ // then make a prop of it
+      if( is.plainObject( styleProp ) ){
+        styleProp = this.parse( name, styleProp.strValue );
+      } else {
+        styleProp = this.parse( name, styleProp );
       }
+    }
 
-      if( styleProp ){
-        rstyle[ prop.name ] = styleProp;
-        rstyle[ util.dash2camel( prop.name ) ] = styleProp;
-      }
+    if( styleProp ){
+      rstyle[ name ] = styleProp;
     }
   }
 

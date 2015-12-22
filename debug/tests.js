@@ -29,16 +29,25 @@ $(function(){
 			break;
 		}
 
+		$('#note').on('click', function(){
+			$('#note').hide();
+		});
+
 		$("#test-type-select").change(function(){
 			currentTest.teardown();
 
 			var name = $("#test-type-select").val();
 			currentTest = tests[name];
 
-			$.gritter.add({
-				title: currentTest.displayName,
-				text: currentTest.description
-			});
+			$('#note-name').html( currentTest.displayName );
+			$('#note-descr').html( currentTest.description );
+
+			$('#note').show();
+
+			setTimeout( function(){
+				$('#note').hide();
+			}, 3000 );
+
 			currentTest.setup();
 		});
 

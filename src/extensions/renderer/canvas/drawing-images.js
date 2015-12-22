@@ -21,17 +21,16 @@ CRp.drawInscribedImage = function( context, img, node ){
   var r = this;
   var nodeX = node._private.position.x;
   var nodeY = node._private.position.y;
-  var style = node._private.style;
-  var fit = style[ 'background-fit' ].value;
-  var xPos = style[ 'background-position-x' ];
-  var yPos = style[ 'background-position-y' ];
-  var repeat = style[ 'background-repeat' ].value;
+  var fit = node.pstyle( 'background-fit' ).value;
+  var xPos = node.pstyle( 'background-position-x' );
+  var yPos = node.pstyle( 'background-position-y' );
+  var repeat = node.pstyle( 'background-repeat' ).value;
   var nodeW = node.width();
   var nodeH = node.height();
   var rs = node._private.rscratch;
-  var clip = style[ 'background-clip' ].value;
+  var clip = node.pstyle( 'background-clip' ).value;
   var shouldClip = clip === 'node';
-  var imgOpacity = style[ 'background-image-opacity' ].value;
+  var imgOpacity = node.pstyle( 'background-image-opacity' ).value;
 
   var imgW = img.width || img.cachedW;
   var imgH = img.height || img.cachedH;
@@ -49,7 +48,7 @@ CRp.drawInscribedImage = function( context, img, node ){
   var w = imgW;
   var h = imgH;
 
-  var bgW = style[ 'background-width' ];
+  var bgW = node.pstyle( 'background-width' );
   if( bgW.value !== 'auto' ){
     if( bgW.units === '%' ){
       w = bgW.value / 100 * nodeW;
@@ -58,7 +57,7 @@ CRp.drawInscribedImage = function( context, img, node ){
     }
   }
 
-  var bgH = style[ 'background-height' ];
+  var bgH = node.pstyle( 'background-height' );
   if( bgH.value !== 'auto' ){
     if( bgH.units === '%' ){
       h = bgH.value / 100 * nodeH;

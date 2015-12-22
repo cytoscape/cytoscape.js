@@ -7,10 +7,9 @@ var CRp = {};
 
 CRp.drawElementText = function( context, ele ){
   var _p = ele._private;
-  var style = _p.style;
 
-  var computedSize = style[ 'font-size' ].pfValue * ele.cy().zoom();
-  var minSize = style[ 'min-zoomed-font-size' ].pfValue;
+  var computedSize = ele.pstyle( 'font-size' ).pfValue * ele.cy().zoom();
+  var minSize = ele.pstyle( 'min-zoomed-font-size' ).pfValue;
 
   if( computedSize < minSize ){
     return;
@@ -19,8 +18,8 @@ CRp.drawElementText = function( context, ele ){
   var rs = _p.rscratch;
 
   if( ele.isNode() ){
-    var textHalign = style[ 'text-halign' ].strValue;
-    var textValign = style[ 'text-valign' ].strValue;
+    var textHalign = ele.pstyle( 'text-halign' ).strValue;
+    var textValign = ele.pstyle( 'text-valign' ).strValue;
 
     switch( textHalign ){
       case 'left':
@@ -87,25 +86,24 @@ CRp.getFontCache = function( context ){
 
 // set up canvas context with font
 // returns transformed text string
-CRp.setupTextStyle = function( context, element ){
+CRp.setupTextStyle = function( context, ele ){
   // Font style
-  var parentOpacity = element.effectiveOpacity();
-  var style = element._private.style;
-  var labelStyle = style[ 'font-style' ].strValue;
-  var labelSize = style[ 'font-size' ].pfValue + 'px';
-  var labelFamily = style[ 'font-family' ].strValue;
-  var labelWeight = style[ 'font-weight' ].strValue;
-  var opacity = style[ 'text-opacity' ].value * style[ 'opacity' ].value * parentOpacity;
-  var outlineOpacity = style[ 'text-outline-opacity' ].value * opacity;
-  var color = style[ 'color' ].value;
-  var outlineColor = style[ 'text-outline-color' ].value;
-  var shadowBlur = style[ 'text-shadow-blur' ].pfValue;
-  var shadowOpacity = style[ 'text-shadow-opacity' ].value;
-  var shadowColor = style[ 'text-shadow-color' ].value;
-  var shadowOffsetX = style[ 'text-shadow-offset-x' ].pfValue;
-  var shadowOffsetY = style[ 'text-shadow-offset-y' ].pfValue;
+  var parentOpacity = ele.effectiveOpacity();
+  var labelStyle = ele.pstyle( 'font-style' ).strValue;
+  var labelSize = ele.pstyle( 'font-size' ).pfValue + 'px';
+  var labelFamily = ele.pstyle( 'font-family' ).strValue;
+  var labelWeight = ele.pstyle( 'font-weight' ).strValue;
+  var opacity = ele.pstyle( 'text-opacity' ).value * ele.pstyle( 'opacity' ).value * parentOpacity;
+  var outlineOpacity = ele.pstyle( 'text-outline-opacity' ).value * opacity;
+  var color = ele.pstyle( 'color' ).value;
+  var outlineColor = ele.pstyle( 'text-outline-color' ).value;
+  var shadowBlur = ele.pstyle( 'text-shadow-blur' ).pfValue;
+  var shadowOpacity = ele.pstyle( 'text-shadow-opacity' ).value;
+  var shadowColor = ele.pstyle( 'text-shadow-color' ).value;
+  var shadowOffsetX = ele.pstyle( 'text-shadow-offset-x' ).pfValue;
+  var shadowOffsetY = ele.pstyle( 'text-shadow-offset-y' ).pfValue;
 
-  var fontCacheKey = element._private.fontKey;
+  var fontCacheKey = ele._private.fontKey;
   var cache = this.getFontCache( context );
 
   if( cache.key !== fontCacheKey ){
@@ -143,13 +141,12 @@ function roundRect( ctx, x, y, width, height, radius ){
 }
 
 // Draw text
-CRp.drawText = function( context, element, prefix ){
-  var _p = element._private;
-  var style = _p.style;
+CRp.drawText = function( context, ele, prefix ){
+  var _p = ele._private;
   var rstyle = _p.rstyle;
   var rscratch = _p.rscratch;
-  var parentOpacity = element.effectiveOpacity();
-  if( parentOpacity === 0 || style[ 'text-opacity' ].value === 0 ){
+  var parentOpacity = ele.effectiveOpacity();
+  if( parentOpacity === 0 || ele.pstyle( 'text-opacity' ).value === 0 ){
     return;
   }
 
@@ -159,18 +156,18 @@ CRp.drawText = function( context, element, prefix ){
   var textW = util.getPrefixedProperty( rscratch, 'labelWidth', prefix );
   var textH = util.getPrefixedProperty( rscratch, 'labelHeight', prefix );
   var textAngle = util.getPrefixedProperty( rscratch, 'labelAngle', prefix );
-  var marginX = style[ pdash + 'text-margin-x' ].pfValue;
-  var marginY = style[ pdash + 'text-margin-y' ].pfValue;
-  var text = this.getLabelText( element, prefix );
+  var marginX = ele.pstyle( pdash + 'text-margin-x' ).pfValue;
+  var marginY = ele.pstyle( pdash + 'text-margin-y' ).pfValue;
+  var text = this.getLabelText( ele, prefix );
 
-  this.setupTextStyle( context, element );
+  this.setupTextStyle( context, ele );
 
   if( text != null && !isNaN( textX ) && !isNaN( textY ) ){
-    var isEdge = element.isEdge();
-    var isNode = element.isNode();
+    var isEdge = ele.isEdge();
+    var isNode = ele.isNode();
 
-    var halign = style[ 'text-halign' ].value;
-    var valign = style[ 'text-valign' ].value;
+    var halign = ele.pstyle( 'text-halign' ).value;
+    var valign = ele.pstyle( 'text-valign' ).value;
 
     if( isEdge ){
       halign = 'center';
@@ -180,7 +177,7 @@ CRp.drawText = function( context, element, prefix ){
     textX += marginX;
     textY += marginY;
 
-    var rotation = style[ 'text-rotation' ];
+    var rotation = ele.pstyle( 'text-rotation' );
     var theta;
 
     if( rotation.strValue === 'autorotate' ){
@@ -203,10 +200,10 @@ CRp.drawText = function( context, element, prefix ){
     }
 
     if( isNode ){
-      var pLeft = style[ 'padding-left' ].pfValue;
-      var pRight = style[ 'padding-right' ].pfValue;
-      var pTop = style[ 'padding-top' ].pfValue;
-      var pBottom = style[ 'padding-bottom' ].pfValue;
+      var pLeft = ele.pstyle( 'padding-left' ).pfValue;
+      var pRight = ele.pstyle( 'padding-right' ).pfValue;
+      var pTop = ele.pstyle( 'padding-top' ).pfValue;
+      var pBottom = ele.pstyle( 'padding-bottom' ).pfValue;
 
       textX += pLeft / 2;
       textX -= pRight / 2;
@@ -215,9 +212,9 @@ CRp.drawText = function( context, element, prefix ){
       textY -= pBottom / 2;
     }
 
-    var backgroundOpacity = style[ 'text-background-opacity' ].value;
-    var borderOpacity = style[ 'text-border-opacity' ].value;
-    var textBorderWidth = style[ 'text-border-width' ].pfValue;
+    var backgroundOpacity = ele.pstyle( 'text-background-opacity' ).value;
+    var borderOpacity = ele.pstyle( 'text-border-opacity' ).value;
+    var textBorderWidth = ele.pstyle( 'text-border-width' ).pfValue;
 
     if( backgroundOpacity > 0 || ( textBorderWidth > 0 && borderOpacity > 0 ) ){
       var margin = 4 + textBorderWidth / 2;
@@ -261,7 +258,7 @@ CRp.drawText = function( context, element, prefix ){
       }
 
       // TODO #382 strongly suspect this is not needed
-      if( style[ 'text-rotation' ].strValue === 'autorotate' ){
+      if( ele.pstyle( 'text-rotation' ).strValue === 'autorotate' ){
         textY = 0;
         bgWidth += 4;
         bgX = textX - bgWidth / 2;
@@ -276,10 +273,10 @@ CRp.drawText = function( context, element, prefix ){
 
       if( backgroundOpacity > 0 ){
         var textFill = context.fillStyle;
-        var textBackgroundColor = style[ 'text-background-color' ].value;
+        var textBackgroundColor = ele.pstyle( 'text-background-color' ).value;
 
         context.fillStyle = 'rgba(' + textBackgroundColor[ 0 ] + ',' + textBackgroundColor[ 1 ] + ',' + textBackgroundColor[ 2 ] + ',' + backgroundOpacity * parentOpacity + ')';
-        var styleShape = style[ 'text-background-shape' ].strValue;
+        var styleShape = ele.pstyle( 'text-background-shape' ).strValue;
         if( styleShape == 'roundrectangle' ){
           roundRect( context, bgX, bgY, bgWidth, bgHeight, 2 );
         } else {
@@ -291,8 +288,8 @@ CRp.drawText = function( context, element, prefix ){
       if( textBorderWidth > 0 && borderOpacity > 0 ){
         var textStroke = context.strokeStyle;
         var textLineWidth = context.lineWidth;
-        var textBorderColor = style[ 'text-border-color' ].value;
-        var textBorderStyle = style[ 'text-border-style' ].value;
+        var textBorderColor = ele.pstyle( 'text-border-color' ).value;
+        var textBorderStyle = ele.pstyle( 'text-border-style' ).value;
 
         context.strokeStyle = 'rgba(' + textBorderColor[ 0 ] + ',' + textBorderColor[ 1 ] + ',' + textBorderColor[ 2 ] + ',' + borderOpacity * parentOpacity + ')';
         context.lineWidth = textBorderWidth;
@@ -332,13 +329,13 @@ CRp.drawText = function( context, element, prefix ){
 
     }
 
-    var lineWidth = 2 * style[ 'text-outline-width' ].pfValue; // *2 b/c the stroke is drawn centred on the middle
+    var lineWidth = 2 * ele.pstyle( 'text-outline-width' ).pfValue; // *2 b/c the stroke is drawn centred on the middle
 
     if( lineWidth > 0 ){
       context.lineWidth = lineWidth;
     }
 
-    if( style[ 'text-wrap' ].value === 'wrap' ){
+    if( ele.pstyle( 'text-wrap' ).value === 'wrap' ){
       var lines = rscratch.labelWrapCachedLines;
       var lineHeight = textH / lines.length;
 
@@ -382,6 +379,5 @@ CRp.drawText = function( context, element, prefix ){
     this.shadowStyle( context, 'transparent', 0 ); // reset for next guy
   }
 };
-
 
 module.exports = CRp;

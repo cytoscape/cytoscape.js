@@ -1,7 +1,12 @@
 'use strict';
 
-// ref
-// https://github.com/jquery/jquery/blob/master/src/event.js
+/*!
+Event object based on jQuery events, MIT license
+
+https://jquery.org/license/
+https://tldrlegal.com/license/mit-license
+https://github.com/jquery/jquery/blob/master/src/event.js
+*/
 
 var Event = function( src, props ) {
   // Allow instantiation without the 'new' keyword

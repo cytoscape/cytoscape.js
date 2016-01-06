@@ -1,5 +1,5 @@
 /*!
-Ported by Xueqiao Xu &lt;xueqiaoxu@gmail.com&gt;
+Ported by Xueqiao Xu <xueqiaoxu@gmail.com>;
 
 PSF LICENSE AGREEMENT FOR PYTHON 2.7.2
 

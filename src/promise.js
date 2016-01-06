@@ -1,5 +1,8 @@
-// internal, minimal Promise impl s.t. apis can return promises in old envs
-// based on thenable (http://github.com/rse/thenable)
+/*!
+Embeddable Minimum Strictly-Compliant Promises/A+ 1.1.1 Thenable
+Copyright (c) 2013-2014 Ralf S. Engelschall (http://engelschall.com)
+Licensed under The MIT License (http://opensource.org/licenses/MIT)
+*/
 
 'use strict';
 

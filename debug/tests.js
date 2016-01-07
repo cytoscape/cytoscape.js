@@ -39,14 +39,7 @@ $(function(){
 			var name = $("#test-type-select").val();
 			currentTest = tests[name];
 
-			$('#note-name').html( currentTest.displayName );
-			$('#note-descr').html( currentTest.description );
-
-			$('#note').show();
-
-			setTimeout( function(){
-				$('#note').hide();
-			}, 3000 );
+			notify( currentTest.displayName, currentTest.description );
 
 			currentTest.setup();
 		});

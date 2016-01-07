@@ -596,6 +596,11 @@ BRp.load = function(){
 
       if( !r.hoverData.dragging && cy.boxSelectionEnabled() && ( multSelKeyDown || !cy.panningEnabled() || !cy.userPanningEnabled() ) ){
         r.data.bgActivePosistion = undefined;
+
+        if( !r.hoverData.selecting ){
+          cy.trigger('boxstart');
+        }
+
         r.hoverData.selecting = true;
 
         r.redrawHint( 'select', true );
@@ -823,8 +828,7 @@ BRp.load = function(){
       }
 
       if( r.hoverData.selecting ){
-        var newlySelected = [];
-        var box = r.getAllInBox( select[0], select[1], select[2], select[3] );
+        var box = Collection( cy, r.getAllInBox( select[0], select[1], select[2], select[3] ) );
 
         r.redrawHint( 'select', true );
 
@@ -832,22 +836,28 @@ BRp.load = function(){
           r.redrawHint( 'eles', true );
         }
 
-        for( var i = 0; i < box.length; i++ ){
-          if( box[ i ]._private.selectable ){
-            newlySelected.push( box[ i ] );
-          }
-        }
+        cy.trigger('boxend');
 
-        var newlySelCol = Collection( cy, newlySelected );
+        var eleWouldBeSelected = function( ele ){ return ele.selectable() && !ele.selected(); };
 
         if( cy.selectionType() === 'additive' ){
-          newlySelCol.select();
+          box
+            .trigger('box')
+            .stdFilter( eleWouldBeSelected )
+              .select()
+              .trigger('boxselect')
+          ;
         } else {
           if( !multSelKeyDown ){
             cy.$( ':selected' ).unmerge( newlySelCol ).unselect();
           }
 
-          newlySelCol.select();
+          box
+            .trigger('box')
+            .stdFilter( eleWouldBeSelected )
+              .select()
+              .trigger('boxselect')
+          ;
         }
 
         // always need redraw in case eles unselectable

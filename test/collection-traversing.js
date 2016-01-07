@@ -235,7 +235,7 @@ describe('Collection traversing', function(){
     expect( cs[1].length ).to.equal(4);
 
     expect( cs[0].same('#n1, #n2, #n1n2') );
-    expect( cs[1].same('#n3, #n4, #n3n4, $n4n3') );
+    expect( cs[1].same('#n3, #n4, #n3n4, #n4n3') );
   });
 
 });

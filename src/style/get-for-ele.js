@@ -37,10 +37,9 @@ styfn.getStylePropertyValue = function( ele, propName, isRenderedVal ){
   var ele = ele[0]; // insure it's an element
 
   if( ele ){
-    var style = ele._private.style;
     var prop = self.properties[ propName ];
     var type = prop.type;
-    var styleProp = style[ prop.name ];
+    var styleProp = ele.pstyle( prop.name );
     var zoom = ele.cy().zoom();
 
     if( styleProp ){

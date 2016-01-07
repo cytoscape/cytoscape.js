@@ -31,6 +31,19 @@
 		<script type="text/javascript" src="init.js"></script>
 		<script type="text/javascript" src="profile.js"></script>
 
+		<script>
+			notify = function( name, descr ){
+				$('#note-name').html( name );
+				$('#note-descr').html( descr );
+
+				$('#note').show();
+
+				setTimeout( function(){
+					$('#note').hide();
+				}, 3000 );
+			};
+		</script>
+
 		<title>cytoscape.js debug page</title>
 	</head>
 
@@ -168,6 +181,8 @@
 	    		<option value="ungrabify">ungrabify</option>
 	    		<option value="selectify">selectify</option>
 	    		<option value="unselectify">unselectify</option>
+					<option value="box">box</option>
+					<option value="boxselect">boxselect</option>
 	    		<option value="">null (unbind all)</option>
 	    	</select>
 	    	with delegate<br />
@@ -209,6 +224,10 @@
 	    		<option value="layoutstop">layoutstop</option>
 	    		<option value="pan">pan</option>
 	    		<option value="zoom">zoom</option>
+					<option value="boxstart">boxstart</option>
+					<option value="boxend">boxend</option>
+					<option value="box">box</option>
+					<option value="boxselect">boxselect</option>
 	    		<option value="">null (unbind all)</option>
 	    	</select>
 	    	with delegate<br />

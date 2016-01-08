@@ -1172,6 +1172,7 @@ BRp.load = function(){
         if(
             r.touchData.singleTouchMoved === false
             && !r.pinching // if pinching, then taphold unselect shouldn't take effect
+            && !r.touchData.selecting // box selection shouldn't allow taphold through
         ){
           triggerEvents( r.touchData.start, [ 'taphold' ], e, {
             cyPosition: { x: now[0], y: now[1] }

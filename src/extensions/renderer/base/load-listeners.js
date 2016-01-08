@@ -1293,6 +1293,11 @@ BRp.load = function(){
       r.data.bgActivePosistion = undefined;
 
       this.lastThreeTouch = +new Date();
+
+      if( !r.touchData.selecting ){
+        cy.trigger('boxstart');
+      }
+
       r.touchData.selecting = true;
 
       r.redrawHint( 'select', true );
@@ -1653,8 +1658,7 @@ BRp.load = function(){
     if( !e.touches[2] && cy.boxSelectionEnabled() && r.touchData.selecting ){
       r.touchData.selecting = false;
 
-      var newlySelected = [];
-      var box = r.getAllInBox( select[0], select[1], select[2], select[3] );
+      var box = Collection( cy, r.getAllInBox( select[0], select[1], select[2], select[3] ) );
 
       select[0] = undefined;
       select[1] = undefined;
@@ -1664,21 +1668,22 @@ BRp.load = function(){
 
       r.redrawHint( 'select', true );
 
-      for( var i = 0; i < box.length; i++ ){
-        if( box[ i ]._private.selectable ){
-          newlySelected.push( box[ i ] );
-        }
-      }
+      cy.trigger('boxend');
 
-      var newlySelCol = Collection( cy, newlySelected );
+      var eleWouldBeSelected = function( ele ){ return ele.selectable() && !ele.selected(); };
 
-      newlySelCol.select();
+      box
+        .trigger('box')
+        .stdFilter( eleWouldBeSelected )
+          .select()
+          .trigger('boxselect')
+      ;
 
-      if( newlySelCol.length > 0 ){
+      if( box.nonempty() ){
         r.redrawHint( 'eles', true );
-      } else {
-        r.redraw();
       }
+
+      r.redraw();
     }
 
     var updateStartStyle = false;

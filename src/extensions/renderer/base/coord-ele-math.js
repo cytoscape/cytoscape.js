@@ -135,17 +135,54 @@ BRp.invalidateContainerClientCoordsCache = function(){
   this.containerBB = null;
 };
 
-// Find nearest element
 BRp.findNearestElement = function( x, y, visibleElementsOnly, isTouch ){
+  return this.findNearestElements( x, y, visibleElementsOnly, isTouch )[0];
+};
+
+BRp.findNearestElements = function( x, y, visibleElementsOnly, isTouch ){
   var self = this;
   var r = this;
   var eles = r.getCachedZSortedEles();
-  var near = [];
+  var near = []; // 1 node max, 1 edge max
   var zoom = r.cy.zoom();
   var hasCompounds = r.cy.hasCompoundNodes();
   var edgeThreshold = (isTouch ? 24 : 8) / zoom;
   var nodeThreshold = (isTouch ? 8 : 2) / zoom;
   var labelThreshold = (isTouch ? 8 : 2) / zoom;
+  var minSqDist = Infinity;
+  var nearEdge;
+  var nearNode;
+
+  function addEle( ele, sqDist ){
+    if( ele.isNode() ){
+      if( nearNode ){
+        return; // can't replace node
+      } else {
+        nearNode = ele;
+        near.push( ele );
+      }
+    }
+
+    if( ele.isEdge() && ( sqDist == null || sqDist < minSqDist ) ){
+      if( nearEdge ){ // then replace existing edge
+        // can replace only if same z-index
+        if( nearEdge.pstyle( 'z-index' ).value === ele.pstyle('z-index').value ){
+          for( var i = 0; i < near.length; i++ ){
+            if( near[i].isEdge() ){
+              near[i] = ele;
+              nearEdge = ele;
+              minSqDist = sqDist != null ? sqDist : minSqDist;
+              break;
+            }
+          }
+        }
+      } else {
+        near.push( ele );
+        nearEdge = ele;
+        minSqDist = sqDist != null ? sqDist : minSqDist;
+      }
+    }
+  }
 
   function checkNode( node ){
     var _p = node._private;
@@ -175,7 +212,7 @@ BRp.findNearestElement = function( x, y, visibleElementsOnly, isTouch ){
       if(
         shape.checkPoint( x, y, 0, width, height, pos.x, pos.y )
       ){
-        near.push( node );
+        addEle( node, 0 );
       }
 
     }
@@ -226,7 +263,7 @@ BRp.findNearestElement = function( x, y, visibleElementsOnly, isTouch ){
             && passesVisibilityCheck() &&
           widthSq > ( sqDist = math.sqDistanceToFiniteLine( x, y, pts[ i ], pts[ i + 1], pts[ i + 2], pts[ i + 3] ) )
         ){
-          near.push( edge );
+          addEle( edge, sqDist );
         }
       }
 
@@ -238,13 +275,13 @@ BRp.findNearestElement = function( x, y, visibleElementsOnly, isTouch ){
             && passesVisibilityCheck() &&
           (widthSq > (sqDist = math.sqDistanceToQuadraticBezier( x, y, pts[ i ], pts[ i + 1], pts[ i + 2], pts[ i + 3], pts[ i + 4], pts[ i + 5] )) )
         ){
-          near.push( edge );
+          addEle( edge, sqDist );
         }
       }
     }
 
     // if we're close to the edge but didn't hit it, maybe we hit its arrows
-    if( inEdgeBB && passesVisibilityCheck() && near.length === 0 || near[ near.length - 1] !== edge ){
+    if( inEdgeBB && passesVisibilityCheck() ){
       var src = src || _p.source;
       var tgt = tgt || _p.target;
 
@@ -267,14 +304,14 @@ BRp.findNearestElement = function( x, y, visibleElementsOnly, isTouch ){
            &&
           shape.collide( x, y, arSize, ar.angle, { x: ar.x, y: ar.y }, edgeThreshold )
         ){
-          near.push( edge );
+          addEle( edge );
           break;
         }
       }
     }
 
     // for compound graphs, hitting edge may actually want a connected node instead (b/c edge may have greater z-index precedence)
-    if( hasCompounds &&  near.length > 0 && near[ near.length - 1 ] === edge ){
+    if( hasCompounds && near.length > 0 ){
       checkNode( src );
       checkNode( tgt );
     }
@@ -340,7 +377,7 @@ BRp.findNearestElement = function( x, y, visibleElementsOnly, isTouch ){
       ];
 
       if( math.pointInsidePolygonPoints( x, y, points ) ){
-        near.push( ele );
+        addEle( ele );
       }
 
     } else {
@@ -359,7 +396,7 @@ BRp.findNearestElement = function( x, y, visibleElementsOnly, isTouch ){
       bb.h = bb.y2 - bb.y1;
 
       if( math.inBoundingBox( bb, x, y ) ){
-        near.push( ele );
+        addEle( ele );
       }
     }
 
@@ -367,11 +404,8 @@ BRp.findNearestElement = function( x, y, visibleElementsOnly, isTouch ){
 
   for( var i = eles.length - 1; i >= 0; i-- ){ // reverse order for precedence
     var ele = eles[ i ];
-    var _p = ele._private;
 
-    if( near.length > 0 ){ break; } // since we check in z-order, first found is top and best result => exit early
-
-    if( _p.group === 'nodes' ){
+    if( ele.isNode() ){
       checkNode( ele );
 
       checkLabel( ele );
@@ -383,15 +417,9 @@ BRp.findNearestElement = function( x, y, visibleElementsOnly, isTouch ){
       checkLabel( ele, 'source' );
       checkLabel( ele, 'target' );
     }
-
   }
 
-
-  if( near.length > 0 ){
-    return near[ near.length - 1 ];
-  } else {
-    return null;
-  }
+  return near;
 };
 
 // 'Give me everything from this box'

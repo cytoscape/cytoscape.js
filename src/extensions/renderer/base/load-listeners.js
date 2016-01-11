@@ -71,6 +71,26 @@ BRp.load = function(){
     return e.shiftKey || e.metaKey || e.ctrlKey; // maybe e.altKey
   };
 
+  var allowPanningPassthrough = function( down, downs ){
+    var allowPassthrough = true;
+
+    if( r.cy.hasCompoundNodes() && down && down.isEdge() ){
+      // a compound node below the edge => no passthrough panning
+      for( var i = 0; downs && i < downs.length; i++ ){
+        var down = downs[i];
+
+        if( down.isNode() && down.isParent() ){
+          allowPassthrough = false;
+          break;
+        }
+      }
+    } else {
+      allowPassthrough = true;
+    }
+
+    return allowPassthrough;
+  };
+
   var getDragListIds = function( opts ){
     var listHasId;
 
@@ -305,7 +325,8 @@ BRp.load = function(){
     var cy = r.cy;
     var pos = r.projectIntoViewport( e.clientX, e.clientY );
     var select = r.selection;
-    var near = r.findNearestElement( pos[0], pos[1], true, false );
+    var nears = r.findNearestElements( pos[0], pos[1], true, false );
+    var near = nears[0];
     var draggedElements = r.dragData.possibleDragElements;
 
     r.hoverData.mdownPos = pos;
@@ -410,6 +431,7 @@ BRp.load = function(){
         }
 
         r.hoverData.down = near;
+        r.hoverData.downs = nears;
         r.hoverData.downTime = (new Date()).getTime();
       }
 
@@ -607,17 +629,21 @@ BRp.load = function(){
         r.redraw();
 
       } else if( !r.hoverData.selecting && cy.panningEnabled() && cy.userPanningEnabled() ){
-        r.hoverData.dragging = true;
-        r.hoverData.justStartedPan = true;
-        select[4] = 0;
+        var allowPassthrough = allowPanningPassthrough( down, r.hoverData.downs );
 
-        r.data.bgActivePosistion = {
-          x: pos[0],
-          y: pos[1]
-        };
+        if( allowPassthrough ){
+          r.hoverData.dragging = true;
+          r.hoverData.justStartedPan = true;
+          select[4] = 0;
 
-        r.redrawHint( 'select', true );
-        r.redraw();
+          r.data.bgActivePosistion = {
+            x: pos[0],
+            y: pos[1]
+          };
+
+          r.redrawHint( 'select', true );
+          r.redraw();
+        }
       }
 
       if( down && down.isEdge() && down.active() ){ down.unactivate(); }
@@ -1102,12 +1128,14 @@ BRp.load = function(){
     } else if( e.touches[1] ){
 
     } else if( e.touches[0] ){
-      var near = r.findNearestElement( now[0], now[1], true, true );
+      var nears = r.findNearestElements( now[0], now[1], true, true );
+      var near = nears[0]
 
       if( near != null ){
         near.activate();
 
         r.touchData.start = near;
+        r.touchData.starts = nears;
 
         if( near.isNode() && r.nodeIsDraggable( near ) ){
 
@@ -1533,36 +1561,41 @@ BRp.load = function(){
           && cy.panningEnabled() && cy.userPanningEnabled()
       ){
 
-        e.preventDefault();
+        var allowPassthrough = allowPanningPassthrough( start, r.touchData.starts );
 
-        if( r.swipePanning ){
-          cy.panBy( {
-            x: disp[0] * zoom,
-            y: disp[1] * zoom
-          } );
+        if( allowPassthrough ){
+          e.preventDefault();
 
-        } else if( rdist2 >= r.touchTapThreshold2 ){
-          r.swipePanning = true;
+          if( r.swipePanning ){
+            cy.panBy( {
+              x: disp[0] * zoom,
+              y: disp[1] * zoom
+            } );
 
-          cy.panBy( {
-            x: dx * zoom,
-            y: dy * zoom
-          } );
+          } else if( rdist2 >= r.touchTapThreshold2 ){
+            r.swipePanning = true;
 
-          if( start ){
-            start.unactivate();
+            cy.panBy( {
+              x: dx * zoom,
+              y: dy * zoom
+            } );
 
-            if( !r.data.bgActivePosistion ){
-              r.data.bgActivePosistion = {
-                x: now[0],
-                y: now[1]
-              };
+            if( start ){
+              start.unactivate();
+
+              if( !r.data.bgActivePosistion ){
+                r.data.bgActivePosistion = {
+                  x: now[0],
+                  y: now[1]
+                };
+              }
+
+              r.redrawHint( 'select', true );
+
+              r.touchData.start = null;
             }
-
-            r.redrawHint( 'select', true );
-
-            r.touchData.start = null;
           }
+
         }
 
         // Re-project

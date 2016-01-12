@@ -55,6 +55,10 @@ There are also some higher level events that you can use so you don't have to bi
  * `cxtdrag` : normalised mousemove or two-finger drag after `cxttapstart` but before `cxttapend`
  * `cxtdragover` : when going over a node via `cxtdrag`
  * `cxtdragout` : when going off a node via `cxtdrag`
+ * `boxstart` : when starting box selection
+ * `boxend` : when ending box selection
+ * `boxselect` : triggered on elements when selected by box selection
+ * `box` : triggered on elements when inside the box on `boxend`
 
 
 ## Collection events
@@ -89,4 +93,3 @@ These events are custom to Cytoscape.js, and they occur on the core.
  * `done` : when a new instance of Cytoscape.js is ready to be interacted with and its initial layout has finished running
  * `pan` : when the viewport is panned
  * `zoom` : when the viewport is zoomed
-

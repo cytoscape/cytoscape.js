@@ -261,7 +261,7 @@ BRp.findNearestElements = function( x, y, visibleElementsOnly, isTouch ){
         if(
           (inEdgeBB = math.inLineVicinity( x, y, pts[ i ], pts[ i + 1], pts[ i + 2], pts[ i + 3], width2 ))
             && passesVisibilityCheck() &&
-          widthSq > ( sqDist = math.sqDistanceToFiniteLine( x, y, pts[ i ], pts[ i + 1], pts[ i + 2], pts[ i + 3] ) )
+          widthSq > ( sqDist = math.sqdistToFiniteLine( x, y, pts[ i ], pts[ i + 1], pts[ i + 2], pts[ i + 3] ) )
         ){
           addEle( edge, sqDist );
         }
@@ -273,7 +273,7 @@ BRp.findNearestElements = function( x, y, visibleElementsOnly, isTouch ){
         if(
           (inEdgeBB = math.inBezierVicinity( x, y, pts[ i ], pts[ i + 1], pts[ i + 2], pts[ i + 3], pts[ i + 4], pts[ i + 5], width2 ))
             && passesVisibilityCheck() &&
-          (widthSq > (sqDist = math.sqDistanceToQuadraticBezier( x, y, pts[ i ], pts[ i + 1], pts[ i + 2], pts[ i + 3], pts[ i + 4], pts[ i + 5] )) )
+          (widthSq > (sqDist = math.sqdistToQuadraticBezier( x, y, pts[ i ], pts[ i + 1], pts[ i + 2], pts[ i + 3], pts[ i + 4], pts[ i + 5] )) )
         ){
           addEle( edge, sqDist );
         }
@@ -685,27 +685,87 @@ BRp.recalculateNodeLabelProjection = function( node ){
 };
 
 BRp.recalculateEdgeLabelProjections = function( edge ){
-  var textX, textY;
+  var offset, p;
   var _p = edge._private;
-  var rs = function( propName, prefix, value ){
+  var setRs = function( propName, prefix, value ){
     util.setPrefixedProperty( _p.rscratch, propName, prefix, value );
     util.setPrefixedProperty( _p.rstyle, propName, prefix, value );
   };
-
-  textX = _p.rscratch.midX;
-  textY = _p.rscratch.midY;
+  var rs = _p.rscratch;
 
   // add center point to style so bounding box calculations can use it
-  rs( 'labelX', null, textX );
-  rs( 'labelY', null, textY );
+  //
+  p = {
+    x: rs.midX,
+    y: rs.midY
+  };
 
-  // TODO #382 source case, considering offset
-  rs( 'labelX', 'source', 0 );
-  rs( 'labelY', 'source', 0 );
+  setRs( 'labelX', null, p.x );
+  setRs( 'labelY', null, p.y );
+
+  // source case, considering offset
+  //
+  offset = edge.pstyle('source-text-offset').pfValue;
+  var offsetSq = offset * offset;
+
+  var befMin = 0.7, befMult = -0.3; // bezier estimate adjustment constants
+
+  switch( rs.edgeType ){
+    case 'self':
+    case 'compound':
+    case 'bezier':
+    case 'multibezier':
+      var dSq = 0;
+      var i, p0, p1, p2, p1b, t, diSq, di, f, theta;
+
+      for( i = 0; i + 5 < rs.allpts.length; i += 3 ){
+        p0 = { x: rs.allpts[i], y: rs.allpts[i+1] };
+        p1 = { x: rs.allpts[i+2], y: rs.allpts[i+3] }; // ctrlpt
+        p2 = { x: rs.allpts[i+4], y: rs.allpts[i+5] };
+        p1b = math.qbezierPtAt( p0, p1, p2, 0.5 ); // pt on bezier @ ctrlpt
+
+        diSq = math.sqdist( p0, p1b ) + math.sqdist( p1b, p2 ); // linear dist approx
+
+        if( dSq + diSq >= offsetSq ){ break; }
+
+        dSq += diSq;
+      }
+
+      theta = math.triangleAngle( p1b, p0, p2 );
+
+      f = theta / Math.PI;
+      di = Math.sqrt(diSq);
+      // f = Math.min( 1, 1/Math.log(di) );
+      t = ( befMin + befMult*f ) * ( offset - Math.sqrt(dSq) ) / di;
+      p = math.qbezierPtAt( p0, p1, p2, t );
+      break;
+
+    case 'straight':
+    case 'segments':
+      var dSq = 0;
+      var i, p0, p1, diSq;
+
+      for( i = 0; i + 3 < rs.allpts.length; i += 2 ){
+        p0 = { x: rs.allpts[i], y: rs.allpts[i+1] };
+        p1 = { x: rs.allpts[i+2], y: rs.allpts[i+3] };
+
+        diSq = math.sqdist( p0, p1 );
+
+        if( dSq + diSq >= offsetSq ){ break; }
+
+        dSq += diSq;
+      }
+
+      p = math.lineAtDist( p0, p1, offset - Math.sqrt(dSq) );
+  }
+
+  setRs( 'labelX', 'source', p.x );
+  setRs( 'labelY', 'source', p.y );
 
   // TODO #382 target case, considering offset
-  rs( 'labelX', 'target', 0 );
-  rs( 'labelY', 'target', 0 );
+  //
+  setRs( 'labelX', 'target', 0 );
+  setRs( 'labelY', 'target', 0 );
 
   this.applyLabelDimensions( edge );
 };
@@ -1296,9 +1356,9 @@ BRp.findEdgeControlPoints = function( edges ){
       var minCpADist = minCpADistFactor * arrowW;
 
       if( rs.edgeType === 'bezier' ){
-        var startACpDist = math.distance( { x: rs.ctrlpts[0], y: rs.ctrlpts[1] }, { x: rs.startX, y: rs.startY } );
+        var startACpDist = math.dist( { x: rs.ctrlpts[0], y: rs.ctrlpts[1] }, { x: rs.startX, y: rs.startY } );
         var closeStartACp = startACpDist < minCpADist;
-        var endACpDist = math.distance( { x: rs.ctrlpts[0], y: rs.ctrlpts[1] }, { x: rs.endX, y: rs.endY } );
+        var endACpDist = math.dist( { x: rs.ctrlpts[0], y: rs.ctrlpts[1] }, { x: rs.endX, y: rs.endY } );
         var closeEndACp = endACpDist < minCpADist;
 
         var overlapping = false;

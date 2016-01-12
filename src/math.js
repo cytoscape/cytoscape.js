@@ -16,11 +16,11 @@ math.signum = function( x ){
   }
 };
 
-math.distance = function( p1, p2 ){
-  return Math.sqrt( math.sqDistance( p1, p2 ) );
+math.dist = function( p1, p2 ){
+  return Math.sqrt( math.sqdist( p1, p2 ) );
 };
 
-math.sqDistance = function( p1, p2 ){
+math.sqdist = function( p1, p2 ){
   var dx = p2.x - p1.x;
   var dy = p2.y - p1.y;
 
@@ -37,6 +37,42 @@ math.qbezierPtAt = function( p0, p1, p2, t ){
     x: math.qbezierAt( p0.x, p1.x, p2.x, t ),
     y: math.qbezierAt( p0.y, p1.y, p2.y, t )
   };
+};
+
+math.lineAt = function( p0, p1, t, d ){
+  var vec = {
+    x: p1.x - p0.x,
+    y: p1.y - p0.y
+  };
+
+  var vecDist = math.dist( p0, p1 );
+
+  var normVec = {
+    x: vec.x / vecDist,
+    y: vec.y / vecDist
+  };
+
+  t = t == null ? 0 : t;
+
+  var d = d != null ? d : t * vecDist;
+
+  return {
+    x: p0.x + normVec.x * d,
+    y: p0.y + normVec.y * d
+  };
+};
+
+math.lineAtDist = function( p0, p1, d ){
+  return math.lineAt( p0, p1, undefined, d );
+};
+
+// get angle at A via cosine law
+math.triangleAngle = function( A, B, C ){
+  var a = math.dist( B, C );
+  var b = math.dist( A, C );
+  var c = math.dist( A, B );
+  
+  return Math.acos( (a*a + b*b - c*c)/(2*a*b) );
 };
 
 // makes a full bb (x1, y1, x2, y2, w, h) from implicit params
@@ -323,7 +359,7 @@ math.solveCubic = function( a, b, c, d, result ){
   return;
 };
 
-math.sqDistanceToQuadraticBezier = function(
+math.sqdistToQuadraticBezier = function(
   x, y, x1, y1, x2, y2, x3, y3 ){
 
   // Find minimum distance by using the minimum of the distance
@@ -396,7 +432,7 @@ math.sqDistanceToQuadraticBezier = function(
   return minDistanceSquared;
 };
 
-math.sqDistanceToFiniteLine = function( x, y, x1, y1, x2, y2 ){
+math.sqdistToFiniteLine = function( x, y, x1, y1, x2, y2 ){
   var offset = [ x - x1, y - y1 ];
   var line = [ x2 - x1, y2 - y1 ];
 

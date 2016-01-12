@@ -20,7 +20,7 @@ $(function(){
 
       .selector('node')
         .css({
-          // 'label': 'data(id)',
+          'label': 'data(id)',
           // 'border-width': 3,
           // 'background-color': '#888',
           // 'border-color': '#555',
@@ -92,7 +92,11 @@ $(function(){
           // 'curve-style': 'haystack',
           // 'opacity': 0.5
           // 'content': 'data(weight)',
-          // 'text-rotation': 'autorotate'
+          // 'text-rotation': 'autorotate',
+          'label': 'e',
+          'source-label': 's',
+          'source-text-offset': 25,
+          'target-label': 't'
         })
       .selector('[source="n1"]')
         .css({
@@ -114,17 +118,17 @@ $(function(){
         })
       .selector('#ab')
         .css({
-          // 'curve-style': 'unbundled-bezier',
-          // 'control-point-distances': [ 100, -100, 100 ],
-          // 'control-point-weights': [ 0.25, 0.5, 0.75 ],
+          'curve-style': 'unbundled-bezier',
+          'control-point-distances': [ 500, -100, 100 ],
+          'control-point-weights': [ 0.25, 0.5, 0.75 ],
           // 'label': 'hello world',
           // 'edge-text-rotation': 'autorotate'
         })
       .selector('#bc')
         .css({
-          // 'curve-style': 'segments',
-          // 'segment-distances': [ 20, -80 ],
-          // 'segment-weights': [ 0.25, 0.5 ],
+          'curve-style': 'segments',
+          'segment-distances': [ 20, -80 ],
+          'segment-weights': [ 0.25, 0.5 ],
           // 'label': 'hello world'
         })
       .selector('[source = "c"][target = "e"]')

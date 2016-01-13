@@ -707,8 +707,11 @@ BRp.recalculateEdgeLabelProjections = function( edge ){
   //
   offset = edge.pstyle('source-text-offset').pfValue;
   var offsetSq = offset * offset;
+  var nDist = math.dist( edge.source().position(), edge.target().position() );
 
-  var befMin = 0.7, befMult = -0.3; // bezier estimate adjustment constants
+  // bezier estimate adjustment constants
+  var befMin = 0.7, befMult = -0.6, befDistMult = -0.0025, befDistMax = 200;
+  var maxF = 0.5;
 
   switch( rs.edgeType ){
     case 'self':
@@ -718,7 +721,7 @@ BRp.recalculateEdgeLabelProjections = function( edge ){
       var dSq = 0;
       var i, p0, p1, p2, p1b, t, diSq, di, f, theta;
 
-      for( i = 0; i + 5 < rs.allpts.length; i += 3 ){
+      for( i = 0; i + 5 < rs.allpts.length; i += 4 ){
         p0 = { x: rs.allpts[i], y: rs.allpts[i+1] };
         p1 = { x: rs.allpts[i+2], y: rs.allpts[i+3] }; // ctrlpt
         p2 = { x: rs.allpts[i+4], y: rs.allpts[i+5] };
@@ -733,10 +736,10 @@ BRp.recalculateEdgeLabelProjections = function( edge ){
 
       theta = math.triangleAngle( p1b, p0, p2 );
 
-      f = theta / Math.PI;
+      f = Math.min( maxF, theta / Math.PI );
+      // f = theta / Math.PI;
       di = Math.sqrt(diSq);
-      // f = Math.min( 1, 1/Math.log(di) );
-      t = ( befMin + befMult*f ) * ( offset - Math.sqrt(dSq) ) / di;
+      t = ( befMin + befMult*f + befDistMult*Math.min(nDist, befDistMax)/offset ) * ( offset - Math.sqrt(dSq) ) / di;
       p = math.qbezierPtAt( p0, p1, p2, t );
       break;
 

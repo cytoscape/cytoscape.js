@@ -119,8 +119,8 @@ $(function(){
       .selector('#ab')
         .css({
           'curve-style': 'unbundled-bezier',
-          'control-point-distances': [ 500, -100, 100 ],
-          'control-point-weights': [ 0.25, 0.5, 0.75 ],
+          'control-point-distances': [ 100, -100, 100 ],
+          'control-point-weights': [ 0.05, 0.1, 0.75 ],
           // 'label': 'hello world',
           // 'edge-text-rotation': 'autorotate'
         })

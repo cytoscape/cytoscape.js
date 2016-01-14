@@ -94,10 +94,10 @@ $(function(){
           // 'opacity': 0.5
           // 'content': 'data(weight)',
           // 'text-rotation': 'autorotate',
-          'label': 'e',
+          // 'label': 'e',
           'source-label': 's',
-          'source-text-offset': 20,
-          'target-label': 't'
+          'source-text-offset': 40,
+          // 'target-label': 't'
         })
       .selector('[source="n1"]')
         .css({
@@ -120,8 +120,8 @@ $(function(){
       .selector('#ab')
         .css({
           'curve-style': 'unbundled-bezier',
-          'control-point-distances': [ 100, -100 ],
-          'control-point-weights': [ 0.25, 0.75 ],
+          'control-point-distances': [ 600, -100 ],
+          'control-point-weights': [ 0.15, 0.75 ],
           // 'label': 'hello world',
           // 'edge-text-rotation': 'autorotate'
         })

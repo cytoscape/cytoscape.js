@@ -564,45 +564,19 @@ BRp.getCachedZSortedEles = function( forceRecalc ){
   return eles;
 };
 
-function pushBezierPts( edge, pts ){
+function pushBezierPts( r, edge, pts ){
   var qbezierAt = function( p1, p2, p3, t ){ return math.qbezierAt( p1, p2, p3, t ); };
   var _p = edge._private;
   var bpts = _p.rstyle.bezierPts;
 
-  bpts.push( {
-    x: qbezierAt( pts[0], pts[2], pts[4], 0.05 ),
-    y: qbezierAt( pts[1], pts[3], pts[5], 0.05 )
-  } );
+  for( var i = 0; i < r.bezierProjPcts.length; i++ ){
+    var p = r.bezierProjPcts[i];
 
-  bpts.push( {
-    x: qbezierAt( pts[0], pts[2], pts[4], 0.25 ),
-    y: qbezierAt( pts[1], pts[3], pts[5], 0.25 )
-  } );
-
-  bpts.push( {
-    x: qbezierAt( pts[0], pts[2], pts[4], 0.4 ),
-    y: qbezierAt( pts[1], pts[3], pts[5], 0.4 )
-  } );
-
-  bpts.push( {
-    x: qbezierAt( pts[0], pts[2], pts[4], 0.5 ),
-    y: qbezierAt( pts[1], pts[3], pts[5], 0.5 )
-  } );
-
-  bpts.push( {
-    x: qbezierAt( pts[0], pts[2], pts[4], 0.6 ),
-    y: qbezierAt( pts[1], pts[3], pts[5], 0.6 )
-  } );
-
-  bpts.push( {
-    x: qbezierAt( pts[0], pts[2], pts[4], 0.75 ),
-    y: qbezierAt( pts[1], pts[3], pts[5], 0.75 )
-  } );
-
-  bpts.push( {
-    x: qbezierAt( pts[0], pts[2], pts[4], 0.95 ),
-    y: qbezierAt( pts[1], pts[3], pts[5], 0.95 )
-  } );
+    bpts.push( {
+      x: qbezierAt( pts[0], pts[2], pts[4], p ),
+      y: qbezierAt( pts[1], pts[3], pts[5], p )
+    } );
+  }
 }
 
 BRp.projectLines = function( edge ){
@@ -614,7 +588,7 @@ BRp.projectLines = function( edge ){
     var bpts = _p.rstyle.bezierPts = []; // jshint ignore:line
 
     for( var i = 0; i + 5 < rs.allpts.length; i += 4 ){
-      pushBezierPts( edge, rs.allpts.slice( i, i + 6 ) );
+      pushBezierPts( this, edge, rs.allpts.slice( i, i + 6 ) );
     }
   } else if(  et === 'segments' ){
     var lpts = _p.rstyle.linePts = [];
@@ -692,6 +666,7 @@ BRp.recalculateEdgeLabelProjections = function( edge ){
     util.setPrefixedProperty( _p.rstyle, propName, prefix, value );
   };
   var rs = _p.rscratch;
+  var r = this;
 
   // add center point to style so bounding box calculations can use it
   //
@@ -714,31 +689,81 @@ BRp.recalculateEdgeLabelProjections = function( edge ){
     case 'compound':
     case 'bezier':
     case 'multibezier':
-      var d = 0, d0, di;
-      var p0, p1, p2, p1b;
+      var ctrlpts = [];
 
+      // store each ctrlpt info
       for( var i = 0; i + 5 < rs.allpts.length; i += 4 ){
-        p0 = { x: rs.allpts[i], y: rs.allpts[i+1] };
-        p1 = { x: rs.allpts[i+2], y: rs.allpts[i+3] }; // ctrlpt
-        p2 = { x: rs.allpts[i+4], y: rs.allpts[i+5] };
+        var p0 = { x: rs.allpts[i], y: rs.allpts[i+1] };
+        var p1 = { x: rs.allpts[i+2], y: rs.allpts[i+3] }; // ctrlpt
+        var p2 = { x: rs.allpts[i+4], y: rs.allpts[i+5] };
 
-        p1b = math.qbezierPtAt( p0, p1, p2, 0.5 ); // pt on bezier @ ctrlpt
+        ctrlpts.push({ p0: p0, p1: p1, p2: p2, d: 0 });
+      }
 
-        var theta = math.triangleAngle( p1b, p0, p2 );
-        var f = theta / Math.PI;
+      var bpts = _p.rstyle.bezierPts;
+      var p0;
+      var nProjs = r.bezierProjPcts.length;
+      var d = 0;
 
-        di = math.dist( p0, p1b ) + math.dist( p1b, p2 ); // linear dist approx
-        // di *= ( 1 + 0.1 * (1-f) ); // TODO adjust the approximation so it's more accurate
-        d0 = d;
-        d += di;
+      // calculate the distance on each bezier
+      for( var j = 0; j < bpts.length; j++ ){
+        var p = bpts[j];
+        var i = Math.floor( j / nProjs );
+        var cp = ctrlpts[i];
+        var t0;
+        var t1 = r.bezierProjPcts[ j % nProjs ];
 
-        if( d0 <= offset && offset <= d ){
-          break;
+        // make sure we have p0 for the first interpolated bezier pt for each ctrlpt
+        var firstInterpolatedPt = j % nProjs === 0;
+        if( firstInterpolatedPt ){
+          t0 = 0;
+          p0 = cp.p0;
+        }
+
+        cp.d += math.dist( p0, p );
+        d += cp.d;
+
+        if( d >= offset && offset <= d + di )
+
+        p0 = p; // for the next point
+
+        // add the end segment of the current ctrlpt when we reach the end of the inter'd pts
+        var lastInterpolatedPt = j % nProjs === nProjs - 1;
+        if( lastInterpolatedPt ){
+          p = cp.p2;
+          cp.d += math.dist( p0, p );
+          d += cp.d;
+          t0 = t1;
+          t1 = 1;
+
+          p0 = p;
         }
       }
-      var t = ( offset - d0 ) / di;
+
+// if( edge.id() == 'ab' ) debugger;
+
+      // locate which bezier we're on
+      // var d0 = 0;
+      // var di = 0;
+      // var d = 0;
+      // var cp;
+      // for( var i = 0; i < ctrlpts.length; i++ ){
+      //   cp = ctrlpts[i];
+      //
+      //   if( edge.id() == 'ab' ) console.log( cp.d );
+      //
+      //   di = cp.d;
+      //   d += di;
+      //
+      //   if( d >= offset && offset <= d + di ){
+      //     break;
+      //   }
+      //
+      //   d0 += di;
+      // }
+
       t = math.bound( 0, t, 1 );
-      p = math.qbezierPtAt( p0, p1, p2, t );
+      p = math.qbezierPtAt( cp.p0, cp.p1, cp.p2, t );
 
       break;
 

@@ -82,6 +82,7 @@ $(function(){
           // 'mid-target-arrow-color': '#ccc',
           // 'curve-style': 'unbundled-bezier',
           // 'control-point-distance': 100,
+          // 'control-point-step-size': 100,
           // 'width': '3',
           // 'source-arrow-shape': 'triangle-backcurve',
           // 'target-arrow-shape': 'triangle',
@@ -95,7 +96,7 @@ $(function(){
           // 'text-rotation': 'autorotate',
           'label': 'e',
           'source-label': 's',
-          'source-text-offset': 25,
+          'source-text-offset': 20,
           'target-label': 't'
         })
       .selector('[source="n1"]')
@@ -119,8 +120,8 @@ $(function(){
       .selector('#ab')
         .css({
           'curve-style': 'unbundled-bezier',
-          'control-point-distances': [ 100, -100, 100 ],
-          'control-point-weights': [ 0.05, 0.1, 0.75 ],
+          'control-point-distances': [ 100, -100 ],
+          'control-point-weights': [ 0.25, 0.75 ],
           // 'label': 'hello world',
           // 'edge-text-rotation': 'autorotate'
         })
@@ -133,7 +134,7 @@ $(function(){
         })
       .selector('[source = "c"][target = "e"]')
         .css({
-          // 'curve-style': 'haystack',
+          'curve-style': 'haystack',
           // 'haystack-radius': 0.5
         })
   ;

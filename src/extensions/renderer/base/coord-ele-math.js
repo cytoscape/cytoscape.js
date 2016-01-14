@@ -709,57 +709,64 @@ BRp.recalculateEdgeLabelProjections = function( edge ){
   var offsetSq = offset * offset;
   var nDist = math.dist( edge.source().position(), edge.target().position() );
 
-  // bezier estimate adjustment constants
-  var befMin = 0.7, befMult = -0.6, befDistMult = -0.0025, befDistMax = 200;
-  var maxF = 0.5;
-
   switch( rs.edgeType ){
     case 'self':
     case 'compound':
     case 'bezier':
     case 'multibezier':
-      var dSq = 0;
-      var i, p0, p1, p2, p1b, t, diSq, di, f, theta;
+      var d = 0, d0, di;
+      var p0, p1, p2, p1b;
 
-      for( i = 0; i + 5 < rs.allpts.length; i += 4 ){
+      for( var i = 0; i + 5 < rs.allpts.length; i += 4 ){
         p0 = { x: rs.allpts[i], y: rs.allpts[i+1] };
         p1 = { x: rs.allpts[i+2], y: rs.allpts[i+3] }; // ctrlpt
         p2 = { x: rs.allpts[i+4], y: rs.allpts[i+5] };
+
         p1b = math.qbezierPtAt( p0, p1, p2, 0.5 ); // pt on bezier @ ctrlpt
 
-        diSq = math.sqdist( p0, p1b ) + math.sqdist( p1b, p2 ); // linear dist approx
+        var theta = math.triangleAngle( p1b, p0, p2 );
+        var f = theta / Math.PI;
 
-        if( dSq + diSq >= offsetSq ){ break; }
+        di = math.dist( p0, p1b ) + math.dist( p1b, p2 ); // linear dist approx
+        // di *= ( 1 + 0.1 * (1-f) ); // TODO adjust the approximation so it's more accurate
+        d0 = d;
+        d += di;
 
-        dSq += diSq;
+        if( d0 <= offset && offset <= d ){
+          break;
+        }
       }
-
-      theta = math.triangleAngle( p1b, p0, p2 );
-
-      f = Math.min( maxF, theta / Math.PI );
-      // f = theta / Math.PI;
-      di = Math.sqrt(diSq);
-      t = ( befMin + befMult*f + befDistMult*Math.min(nDist, befDistMax)/offset ) * ( offset - Math.sqrt(dSq) ) / di;
+      var t = ( offset - d0 ) / di;
+      t = math.bound( 0, t, 1 );
       p = math.qbezierPtAt( p0, p1, p2, t );
+
       break;
 
     case 'straight':
     case 'segments':
-      var dSq = 0;
-      var i, p0, p1, diSq;
+    case 'haystack':
+      var d = 0, di, d0;
+      var p0, p1;
 
-      for( i = 0; i + 3 < rs.allpts.length; i += 2 ){
+      for( var i = 0; i + 3 < rs.allpts.length; i += 2 ){
         p0 = { x: rs.allpts[i], y: rs.allpts[i+1] };
         p1 = { x: rs.allpts[i+2], y: rs.allpts[i+3] };
 
-        diSq = math.sqdist( p0, p1 );
+        di = math.dist( p0, p1 );
+        d0 = d;
+        d += di;
 
-        if( dSq + diSq >= offsetSq ){ break; }
-
-        dSq += diSq;
+        if( d >= offset ){ break; }
       }
 
-      p = math.lineAtDist( p0, p1, offset - Math.sqrt(dSq) );
+      var pD = offset - d0;
+      var t = pD / di;
+
+      t  = math.bound( 0, t, 1 );
+
+      p = math.lineAt( p0, p1, t );
+
+      break;
   }
 
   setRs( 'labelX', 'source', p.x );

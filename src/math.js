@@ -71,8 +71,12 @@ math.triangleAngle = function( A, B, C ){
   var a = math.dist( B, C );
   var b = math.dist( A, C );
   var c = math.dist( A, B );
-  
+
   return Math.acos( (a*a + b*b - c*c)/(2*a*b) );
+};
+
+math.bound = function( min, val, max ){
+  return Math.max( min, Math.min( max, val ) );
 };
 
 // makes a full bb (x1, y1, x2, y2, w, h) from implicit params

@@ -96,7 +96,7 @@ $(function(){
           // 'text-rotation': 'autorotate',
           // 'label': 'e',
           'source-label': 's',
-          'source-text-offset': 40,
+          'source-text-offset': 50,
           // 'target-label': 't'
         })
       .selector('[source="n1"]')
@@ -120,8 +120,8 @@ $(function(){
       .selector('#ab')
         .css({
           'curve-style': 'unbundled-bezier',
-          'control-point-distances': [ 600, -100 ],
-          'control-point-weights': [ 0.15, 0.75 ],
+          'control-point-distances': [ 20, -100, 100 ],
+          'control-point-weights': [ 0.15, 0.5, 0.75 ],
           // 'label': 'hello world',
           // 'edge-text-rotation': 'autorotate'
         })

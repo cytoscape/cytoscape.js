@@ -691,76 +691,91 @@ BRp.recalculateEdgeLabelProjections = function( edge ){
     case 'multibezier':
       var ctrlpts = [];
 
-      // store each ctrlpt info
+      // store each ctrlpt info init
       for( var i = 0; i + 5 < rs.allpts.length; i += 4 ){
         var p0 = { x: rs.allpts[i], y: rs.allpts[i+1] };
         var p1 = { x: rs.allpts[i+2], y: rs.allpts[i+3] }; // ctrlpt
         var p2 = { x: rs.allpts[i+4], y: rs.allpts[i+5] };
 
-        ctrlpts.push({ p0: p0, p1: p1, p2: p2, d: 0 });
+        ctrlpts.push({
+          p0: p0,
+          p1: p1,
+          p2: p2,
+          startDist: 0,
+          length: 0,
+          segments: []
+        });
       }
 
       var bpts = _p.rstyle.bezierPts;
-      var p0;
       var nProjs = r.bezierProjPcts.length;
-      var d = 0;
 
-      // calculate the distance on each bezier
-      for( var j = 0; j < bpts.length; j++ ){
-        var p = bpts[j];
-        var i = Math.floor( j / nProjs );
-        var cp = ctrlpts[i];
-        var t0;
-        var t1 = r.bezierProjPcts[ j % nProjs ];
+      var selected;
 
-        // make sure we have p0 for the first interpolated bezier pt for each ctrlpt
-        var firstInterpolatedPt = j % nProjs === 0;
-        if( firstInterpolatedPt ){
-          t0 = 0;
-          p0 = cp.p0;
-        }
+      function addSegment( cp, p0, p1, t0, t1, isLast ){
+        var length = math.dist( p0, p1 );
+        var prevSegment = cp.segments[ cp.segments.length - 1 ];
+        var segment = {
+          p0: p0,
+          p1: p1,
+          t0: t0,
+          t1: t1,
+          startDist: prevSegment ? prevSegment.startDist + prevSegment.length : 0,
+          length: length
+        };
 
-        cp.d += math.dist( p0, p );
-        d += cp.d;
+        cp.segments.push( segment );
 
-        if( d >= offset && offset <= d + di )
+        cp.length += length;
 
-        p0 = p; // for the next point
-
-        // add the end segment of the current ctrlpt when we reach the end of the inter'd pts
-        var lastInterpolatedPt = j % nProjs === nProjs - 1;
-        if( lastInterpolatedPt ){
-          p = cp.p2;
-          cp.d += math.dist( p0, p );
-          d += cp.d;
-          t0 = t1;
-          t1 = 1;
-
-          p0 = p;
+        if( !selected && ( segment.startDist + segment.length >= offset || isLast ) ){
+          selected = {
+            cp: cp,
+            segment: segment
+          };
         }
       }
 
-// if( edge.id() == 'ab' ) debugger;
+      // update each ctrlpt with segment info
+      for( var i = 0; i < ctrlpts.length; i++ ){
+        var cp = ctrlpts[i];
+        var prevCp = ctrlpts[i - 1];
+        var isLastCp = i === ctrlpts.length - 1;
 
-      // locate which bezier we're on
-      // var d0 = 0;
-      // var di = 0;
-      // var d = 0;
-      // var cp;
-      // for( var i = 0; i < ctrlpts.length; i++ ){
-      //   cp = ctrlpts[i];
-      //
-      //   if( edge.id() == 'ab' ) console.log( cp.d );
-      //
-      //   di = cp.d;
-      //   d += di;
-      //
-      //   if( d >= offset && offset <= d + di ){
-      //     break;
-      //   }
-      //
-      //   d0 += di;
-      // }
+        if( prevCp ){
+          cp.startDist = prevCp.startDist + prevCp.length;
+        }
+
+        addSegment(
+          cp,
+          cp.p0,   bpts[ i * nProjs ],
+          0,       r.bezierProjPcts[ 0 ]
+        ); // first
+
+        for( var j = 0; j < nProjs - 1; j++ ){
+          addSegment(
+            cp,
+            bpts[ i * nProjs + j ],   bpts[ i * nProjs + j + 1 ],
+            r.bezierProjPcts[ j ],    r.bezierProjPcts[ j + 1 ]
+          );
+        }
+
+        addSegment(
+          cp,
+          bpts[ i * nProjs + nProjs - 1 ],   cp.p2,
+          r.bezierProjPcts[ nProjs - 1 ],    1,
+          isLastCp
+        ); // last
+
+        if( selected ){
+          break; // we don't need to consider later ctrlpts then
+        }
+      }
+
+      var cp = selected.cp;
+      var seg = selected.segment;
+      var tSegment = ( offset - seg.startDist ) / ( seg.length );
+      var t = seg.t0 + ( seg.t1 - seg.t0 ) * tSegment;
 
       t = math.bound( 0, t, 1 );
       p = math.qbezierPtAt( cp.p0, cp.p1, cp.p2, t );

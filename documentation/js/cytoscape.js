@@ -1,5 +1,5 @@
 /*!
- * This file is part of Cytoscape.js 2.5.4.
+ * This file is part of Cytoscape.js 2.5.5.
  *
  * Cytoscape.js is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by the Free
@@ -6170,7 +6170,7 @@ var corefn = ({
       };
     }
 
-    /* Runge-Kutta spring physics function generator. Adapted from Framer.js, copyright Koen Bok. MIT License: http://en.wikipedia.org/wiki/MIT_License */
+    /*! Runge-Kutta spring physics function generator. Adapted from Framer.js, copyright Koen Bok. MIT License: http://en.wikipedia.org/wiki/MIT_License */
     /* Given a tension, friction, and duration, a simulation at 60FPS will first run without a defined duration in order to calculate the full path. A second pass
        then adjusts the time delta -- using the relation between actual time and duration -- to calculate the path for the duration-constrained animation. */
     var generateSpringRK4 = (function () {
@@ -8614,8 +8614,13 @@ module.exports = define;
 },{"./animation":1,"./event":42,"./is":77,"./promise":80,"./selector":81,"./util":94}],42:[function(_dereq_,module,exports){
 'use strict';
 
-// ref
-// https://github.com/jquery/jquery/blob/master/src/event.js
+/*!
+Event object based on jQuery events, MIT license
+
+https://jquery.org/license/
+https://tldrlegal.com/license/mit-license
+https://github.com/jquery/jquery/blob/master/src/event.js
+*/
 
 var Event = function( src, props ) {
   // Allow instantiation without the 'new' keyword
@@ -9813,6 +9818,8 @@ CoseLayout.prototype.run = function() {
       }
 
       refreshRequested = false;
+
+      if( rOpts.next ){ rOpts.next(); }
     });
   };
 
@@ -10517,11 +10524,14 @@ CoseLayout.prototype.run = function() {
   });
 
   var done = function(){
-    refresh({ force: true });
-
-    // Layout has finished
-    layout.one('layoutstop', options.stop);
-    layout.trigger({ type: 'layoutstop', layout: layout });
+    refresh({ 
+      force: true,
+      next: function(){
+        // Layout has finished
+        layout.one('layoutstop', options.stop);
+        layout.trigger({ type: 'layoutstop', layout: layout });
+      }
+    });
   };
 
   return this; // chaining
@@ -14752,6 +14762,7 @@ BRp.load = function() {
         if(
             r.touchData.singleTouchMoved === false
             && !r.pinching // if pinching, then taphold unselect shouldn't take effect
+            && !r.touchData.selecting // box selection shouldn't allow taphold through
         ){
           triggerEvents( r.touchData.start, ['taphold'], e, {
             cyPosition: { x: now[0], y: now[1] }
@@ -18386,6 +18397,21 @@ define.eventAliasesOn( fabfn );
 module.exports = Fabric;
 
 },{"./define":41,"./is":77,"./promise":80,"./thread":92,"./util":94,"os":undefined}],75:[function(_dereq_,module,exports){
+/*!
+Ported by Xueqiao Xu <xueqiaoxu@gmail.com>;
+
+PSF LICENSE AGREEMENT FOR PYTHON 2.7.2
+
+1. This LICENSE AGREEMENT is between the Python Software Foundation (“PSF”), and the Individual or Organization (“Licensee”) accessing and otherwise using Python 2.7.2 software in source or binary form and its associated documentation.
+2. Subject to the terms and conditions of this License Agreement, PSF hereby grants Licensee a nonexclusive, royalty-free, world-wide license to reproduce, analyze, test, perform and/or display publicly, prepare derivative works, distribute, and otherwise use Python 2.7.2 alone or in any derivative version, provided, however, that PSF’s License Agreement and PSF’s notice of copyright, i.e., “Copyright © 2001-2012 Python Software Foundation; All Rights Reserved” are retained in Python 2.7.2 alone or in any derivative version prepared by Licensee.
+3. In the event Licensee prepares a derivative work that is based on or incorporates Python 2.7.2 or any part thereof, and wants to make the derivative work available to others as provided herein, then Licensee hereby agrees to include in any such work a brief summary of the changes made to Python 2.7.2.
+4. PSF is making Python 2.7.2 available to Licensee on an “AS IS” basis. PSF MAKES NO REPRESENTATIONS OR WARRANTIES, EXPRESS OR IMPLIED. BY WAY OF EXAMPLE, BUT NOT LIMITATION, PSF MAKES NO AND DISCLAIMS ANY REPRESENTATION OR WARRANTY OF MERCHANTABILITY OR FITNESS FOR ANY PARTICULAR PURPOSE OR THAT THE USE OF PYTHON 2.7.2 WILL NOT INFRINGE ANY THIRD PARTY RIGHTS.
+5. PSF SHALL NOT BE LIABLE TO LICENSEE OR ANY OTHER USERS OF PYTHON 2.7.2 FOR ANY INCIDENTAL, SPECIAL, OR CONSEQUENTIAL DAMAGES OR LOSS AS A RESULT OF MODIFYING, DISTRIBUTING, OR OTHERWISE USING PYTHON 2.7.2, OR ANY DERIVATIVE THEREOF, EVEN IF ADVISED OF THE POSSIBILITY THEREOF.
+6. This License Agreement will automatically terminate upon a material breach of its terms and conditions.
+7. Nothing in this License Agreement shall be deemed to create any relationship of agency, partnership, or joint venture between PSF and Licensee. This License Agreement does not grant permission to use PSF trademarks or trade name in a trademark sense to endorse or promote products or services of Licensee, or any third party.
+8. By copying, installing or otherwise using Python 2.7.2, Licensee agrees to be bound by the terms and conditions of this License Agreement.
+*/
+
 'use strict';
 /* jshint ignore:start */
 
@@ -18797,7 +18823,7 @@ var cytoscape = function( options ){ // jshint ignore:line
 };
 
 // replaced by build system
-cytoscape.version = '2.5.4';
+cytoscape.version = '2.5.5';
 
 // try to register w/ jquery
 if( window && window.jQuery ){
@@ -19969,8 +19995,11 @@ math.getRoundRectangleRadius = function(width, height) {
 module.exports = math;
 
 },{}],80:[function(_dereq_,module,exports){
-// internal, minimal Promise impl s.t. apis can return promises in old envs
-// based on thenable (http://github.com/rse/thenable)
+/*!
+Embeddable Minimum Strictly-Compliant Promises/A+ 1.1.1 Thenable
+Copyright (c) 2013-2014 Ralf S. Engelschall (http://engelschall.com)
+Licensed under The MIT License (http://opensource.org/licenses/MIT)
+*/
 
 'use strict';
 

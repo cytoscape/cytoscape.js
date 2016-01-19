@@ -74,27 +74,28 @@ CRp.drawEdge = function( context, edge, drawLabel, drawOverlayInstead ){
     this.drawElementText( context, edge );
   }
 
-  var bpts = edge._private.rstyle.bezierPts;
-
-  for( var i = 0; bpts && i < bpts.length; i++ ){
-    var p = bpts[i];
-
-    if( i === 0 ){
-        context.fillStyle = 'red';
-    } else {
-        context.fillStyle = 'blue';
-    }
-
-
-    context.fillRect( p.x, p.y, 3, 3 );
-  }
-
-  var pts = edge._private.rscratch.allpts; 
-
-  for( var i = 0; i+1 < pts.length; i+=2 ){
-    context.fillStyle = 'green';
-    context.fillRect( pts[i], pts[i+1], 3, 3 );
-  }
+  // TODO #382 remove
+  // var bpts = edge._private.rstyle.bezierPts;
+  //
+  // for( var i = 0; bpts && i < bpts.length; i++ ){
+  //   var p = bpts[i];
+  //
+  //   if( i === 0 ){
+  //       context.fillStyle = 'red';
+  //   } else {
+  //       context.fillStyle = 'blue';
+  //   }
+  //
+  //
+  //   context.fillRect( p.x, p.y, 3, 3 );
+  // }
+  //
+  // var pts = edge._private.rscratch.allpts;
+  //
+  // for( var i = 0; i+1 < pts.length; i+=2 ){
+  //   context.fillStyle = 'green';
+  //   context.fillRect( pts[i], pts[i+1], 3, 3 );
+  // }
 };
 
 

@@ -659,7 +659,7 @@ BRp.recalculateNodeLabelProjection = function( node ){
 };
 
 BRp.recalculateEdgeLabelProjections = function( edge ){
-  var offset, p;
+  var p;
   var _p = edge._private;
   var setRs = function( propName, prefix, value ){
     util.setPrefixedProperty( _p.rscratch, propName, prefix, value );
@@ -678,144 +678,189 @@ BRp.recalculateEdgeLabelProjections = function( edge ){
   setRs( 'labelX', null, p.x );
   setRs( 'labelY', null, p.y );
 
+  var createControlPointInfo = function(){
+    if( createControlPointInfo.cache ){ return createControlPointInfo.cache; } // use cache so only 1x per edge
+
+    var ctrlpts = [];
+
+    // store each ctrlpt info init
+    for( var i = 0; i + 5 < rs.allpts.length; i += 4 ){
+      var p0 = { x: rs.allpts[i], y: rs.allpts[i+1] };
+      var p1 = { x: rs.allpts[i+2], y: rs.allpts[i+3] }; // ctrlpt
+      var p2 = { x: rs.allpts[i+4], y: rs.allpts[i+5] };
+
+      ctrlpts.push({
+        p0: p0,
+        p1: p1,
+        p2: p2,
+        startDist: 0,
+        length: 0,
+        segments: []
+      });
+    }
+
+    var bpts = _p.rstyle.bezierPts;
+    var nProjs = r.bezierProjPcts.length;
+
+    function addSegment( cp, p0, p1, t0, t1 ){
+      var length = math.dist( p0, p1 );
+      var prevSegment = cp.segments[ cp.segments.length - 1 ];
+      var segment = {
+        p0: p0,
+        p1: p1,
+        t0: t0,
+        t1: t1,
+        startDist: prevSegment ? prevSegment.startDist + prevSegment.length : 0,
+        length: length
+      };
+
+      cp.segments.push( segment );
+
+      cp.length += length;
+    }
+
+    // update each ctrlpt with segment info
+    for( var i = 0; i < ctrlpts.length; i++ ){
+      var cp = ctrlpts[i];
+      var prevCp = ctrlpts[i - 1];
+
+      if( prevCp ){
+        cp.startDist = prevCp.startDist + prevCp.length;
+      }
+
+      addSegment(
+        cp,
+        cp.p0,   bpts[ i * nProjs ],
+        0,       r.bezierProjPcts[ 0 ]
+      ); // first
+
+      for( var j = 0; j < nProjs - 1; j++ ){
+        addSegment(
+          cp,
+          bpts[ i * nProjs + j ],   bpts[ i * nProjs + j + 1 ],
+          r.bezierProjPcts[ j ],    r.bezierProjPcts[ j + 1 ]
+        );
+      }
+
+      addSegment(
+        cp,
+        bpts[ i * nProjs + nProjs - 1 ],   cp.p2,
+        r.bezierProjPcts[ nProjs - 1 ],    1
+      ); // last
+    }
+
+    return createControlPointInfo.cache = ctrlpts;
+  };
+
+  var calculateEndProjection = function( prefix ){
+    var angle;
+    var isSrc = prefix === 'source';
+    var offset = edge.pstyle(prefix+'-text-offset').pfValue;
+
+    var lineAngle = function( p0, p1 ){
+      var dx = p1.x - p0.x;
+      var dy = p1.y - p0.y;
+
+      return Math.atan( dy / dx );
+    };
+
+    var bezierAngle = function( p0, p1, p2, t ){
+      var t0 = math.bound( 0, t - 0.001, 1 );
+      var t1 = math.bound( 0, t + 0.001, 1 );
+
+      var lp0 = math.qbezierPtAt( p0, p1, p2, t0 );
+      var lp1 = math.qbezierPtAt( p0, p1, p2, t1 );
+
+      return lineAngle( lp0, lp1 );
+    };
+
+    switch( rs.edgeType ){
+      case 'self':
+      case 'compound':
+      case 'bezier':
+      case 'multibezier':
+        var cps = createControlPointInfo();
+        var selected;
+        var startDist = 0;
+        var totalDist = 0;
+
+        // find the segment we're on
+        for( var i = 0; i < cps.length; i++ ){
+          var cp = cps[ isSrc ? i : cps.length - 1 - i ];
+
+          for( var j = 0; j < cp.segments.length; j++ ){
+            var seg = cp.segments[ isSrc ? j : cp.segments.length - 1 - j ];
+            var lastSeg = i === cps.length - 1 && j === cp.segments.length - 1;
+
+            startDist = totalDist;
+            totalDist += seg.length;
+
+            if( totalDist >= offset || lastSeg ){
+              selected = { cp: cp, segment: seg };
+              break;
+            }
+          }
+
+          if( selected ){ break; }
+        }
+
+        var cp = selected.cp;
+        var seg = selected.segment;
+        var tSegment = ( offset - startDist ) / ( seg.length );
+        var segDt = seg.t1 - seg.t0;
+        var t = isSrc ? seg.t0 + segDt * tSegment : seg.t1 - segDt * tSegment;
+
+        t = math.bound( 0, t, 1 );
+        p = math.qbezierPtAt( cp.p0, cp.p1, cp.p2, t );
+        angle = bezierAngle( cp.p0, cp.p1, cp.p2, t, p );
+
+        break;
+
+      case 'straight':
+      case 'segments':
+      case 'haystack':
+        var d = 0, di, d0;
+        var p0, p1;
+        var l = rs.allpts.length;
+
+        for( var i = 0; i + 3 < l; i += 2 ){
+          if( isSrc ){
+            p0 = { x: rs.allpts[i],     y: rs.allpts[i+1] };
+            p1 = { x: rs.allpts[i+2],   y: rs.allpts[i+3] };
+          } else {
+            p0 = { x: rs.allpts[l-2-i], y: rs.allpts[l-1-i] };
+            p1 = { x: rs.allpts[l-4-i], y: rs.allpts[l-3-i] };
+          }
+
+          di = math.dist( p0, p1 );
+          d0 = d;
+          d += di;
+
+          if( d >= offset ){ break; }
+        }
+
+        var pD = offset - d0;
+        var t = pD / di;
+
+        t  = math.bound( 0, t, 1 );
+        p = math.lineAt( p0, p1, t );
+        angle = lineAngle( p0, p1 );
+
+        break;
+    }
+
+    setRs( 'labelX', prefix, p.x );
+    setRs( 'labelY', prefix, p.y );
+    setRs( 'labelAutoAngle', prefix, angle );
+  };
+
   // source case, considering offset
   //
-  offset = edge.pstyle('source-text-offset').pfValue;
-  var offsetSq = offset * offset;
-  var nDist = math.dist( edge.source().position(), edge.target().position() );
-
-  switch( rs.edgeType ){
-    case 'self':
-    case 'compound':
-    case 'bezier':
-    case 'multibezier':
-      var ctrlpts = [];
-
-      // store each ctrlpt info init
-      for( var i = 0; i + 5 < rs.allpts.length; i += 4 ){
-        var p0 = { x: rs.allpts[i], y: rs.allpts[i+1] };
-        var p1 = { x: rs.allpts[i+2], y: rs.allpts[i+3] }; // ctrlpt
-        var p2 = { x: rs.allpts[i+4], y: rs.allpts[i+5] };
-
-        ctrlpts.push({
-          p0: p0,
-          p1: p1,
-          p2: p2,
-          startDist: 0,
-          length: 0,
-          segments: []
-        });
-      }
-
-      var bpts = _p.rstyle.bezierPts;
-      var nProjs = r.bezierProjPcts.length;
-
-      var selected;
-
-      function addSegment( cp, p0, p1, t0, t1, isLast ){
-        var length = math.dist( p0, p1 );
-        var prevSegment = cp.segments[ cp.segments.length - 1 ];
-        var segment = {
-          p0: p0,
-          p1: p1,
-          t0: t0,
-          t1: t1,
-          startDist: prevSegment ? prevSegment.startDist + prevSegment.length : 0,
-          length: length
-        };
-
-        cp.segments.push( segment );
-
-        cp.length += length;
-
-        if( !selected && ( segment.startDist + segment.length >= offset || isLast ) ){
-          selected = {
-            cp: cp,
-            segment: segment
-          };
-        }
-      }
-
-      // update each ctrlpt with segment info
-      for( var i = 0; i < ctrlpts.length; i++ ){
-        var cp = ctrlpts[i];
-        var prevCp = ctrlpts[i - 1];
-        var isLastCp = i === ctrlpts.length - 1;
-
-        if( prevCp ){
-          cp.startDist = prevCp.startDist + prevCp.length;
-        }
-
-        addSegment(
-          cp,
-          cp.p0,   bpts[ i * nProjs ],
-          0,       r.bezierProjPcts[ 0 ]
-        ); // first
-
-        for( var j = 0; j < nProjs - 1; j++ ){
-          addSegment(
-            cp,
-            bpts[ i * nProjs + j ],   bpts[ i * nProjs + j + 1 ],
-            r.bezierProjPcts[ j ],    r.bezierProjPcts[ j + 1 ]
-          );
-        }
-
-        addSegment(
-          cp,
-          bpts[ i * nProjs + nProjs - 1 ],   cp.p2,
-          r.bezierProjPcts[ nProjs - 1 ],    1,
-          isLastCp
-        ); // last
-
-        if( selected ){
-          break; // we don't need to consider later ctrlpts then
-        }
-      }
-
-      var cp = selected.cp;
-      var seg = selected.segment;
-      var tSegment = ( offset - seg.startDist ) / ( seg.length );
-      var t = seg.t0 + ( seg.t1 - seg.t0 ) * tSegment;
-
-      t = math.bound( 0, t, 1 );
-      p = math.qbezierPtAt( cp.p0, cp.p1, cp.p2, t );
-
-      break;
-
-    case 'straight':
-    case 'segments':
-    case 'haystack':
-      var d = 0, di, d0;
-      var p0, p1;
-
-      for( var i = 0; i + 3 < rs.allpts.length; i += 2 ){
-        p0 = { x: rs.allpts[i], y: rs.allpts[i+1] };
-        p1 = { x: rs.allpts[i+2], y: rs.allpts[i+3] };
-
-        di = math.dist( p0, p1 );
-        d0 = d;
-        d += di;
-
-        if( d >= offset ){ break; }
-      }
-
-      var pD = offset - d0;
-      var t = pD / di;
-
-      t  = math.bound( 0, t, 1 );
-
-      p = math.lineAt( p0, p1, t );
-
-      break;
-  }
-
-  setRs( 'labelX', 'source', p.x );
-  setRs( 'labelY', 'source', p.y );
+  calculateEndProjection( 'source' );
 
   // TODO #382 target case, considering offset
   //
-  setRs( 'labelX', 'target', 0 );
-  setRs( 'labelY', 'target', 0 );
+  calculateEndProjection( 'target' );
 
   this.applyLabelDimensions( edge );
 };
@@ -1565,8 +1610,8 @@ BRp.findEdgeControlPoints = function( edges ){
 
       this.projectLines( edge );
       this.calculateArrowAngles( edge );
-      this.calculateLabelAngles( edge );
       this.recalculateEdgeLabelProjections( edge );
+      this.calculateLabelAngles( edge );
 
     } // for pair edges
   } // for pair ids
@@ -1621,8 +1666,8 @@ BRp.findEdgeControlPoints = function( edges ){
 
     this.projectLines( edge );
     this.calculateArrowAngles( edge );
-    this.calculateLabelAngles( edge );
     this.recalculateEdgeLabelProjections( edge );
+    this.calculateLabelAngles( edge );
   }
 
   return hashTable;
@@ -1777,19 +1822,15 @@ BRp.calculateLabelAngles = function( ele ){
   var rotStr = rot.strValue;
 
   if( rotStr === 'none' ){
-    rs.labelAngle = 0;
+    rs.labelAngle = rs.sourceLabelAngle = rs.targetLabelAngle = 0;
   } else if( isEdge && rotStr === 'autorotate' ){
     rs.labelAngle = Math.atan( rs.midDispY / rs.midDispX );
+    rs.sourceLabelAngle = rs.sourceLabelAutoAngle;
+    rs.targetLabelAngle = rs.targetLabelAutoAngle;
   } else if( rotStr === 'autorotate' ){
-    rs.labelAngle = 0;
+    rs.labelAngle = rs.sourceLabelAngle = rs.targetLabelAngle = 0;
   } else {
-    rs.labelAngle = rot.pfValue;
-  }
-
-  if( isEdge ){
-    // TODO #382 source and target cases
-    rs.sourceLabelAngle = 0;
-    rs.targetLabelAngle = 0;
+    rs.labelAngle = rs.sourceLabelAngle = rs.targetLabelAngle = rot.pfValue;
   }
 };
 

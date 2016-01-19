@@ -93,11 +93,12 @@ $(function(){
           // 'curve-style': 'haystack',
           // 'opacity': 0.5
           // 'content': 'data(weight)',
-          // 'text-rotation': 'autorotate',
-          // 'label': 'e',
-          'source-label': 's',
-          'source-text-offset': 50,
-          // 'target-label': 't'
+          'text-rotation': 'autorotate',
+          'label': 'edge',
+          'source-label': 'src',
+          'source-text-offset': 25,
+          'target-label': 'tgt',
+          'target-text-offset': 25,
         })
       .selector('[source="n1"]')
         .css({
@@ -120,8 +121,8 @@ $(function(){
       .selector('#ab')
         .css({
           'curve-style': 'unbundled-bezier',
-          'control-point-distances': [ 20, -100, 100 ],
-          'control-point-weights': [ 0.15, 0.5, 0.75 ],
+          'control-point-distances': [ 20, -100, 20 ],
+          'control-point-weights': [ 0.25, 0.5, 0.75 ],
           // 'label': 'hello world',
           // 'edge-text-rotation': 'autorotate'
         })

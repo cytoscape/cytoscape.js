@@ -329,7 +329,7 @@ BRp.findNearestElements = function( x, y, visibleElementsOnly, isTouch ){
     if( prefix ){
       prefixDash = prefix + '-';
     } else {
-      prefixDash = prefix;
+      prefixDash = '';
     }
 
     if( ele.pstyle( 'text-events' ).strValue === 'no' ){ return; }
@@ -340,8 +340,9 @@ BRp.findNearestElements = function( x, y, visibleElementsOnly, isTouch ){
     if( rotation.strValue === 'autorotate' || rotation.pfValue !== 0 ){
 
       var rstyle = _p.rstyle;
-      var lw = preprop( rstyle, 'labelWidth', prefix ) + 2 * th;
-      var lh = preprop( rstyle, 'labelHeight', prefix ) + 2 * th;
+      var bw = ele.pstyle('text-border-width').pfValue;
+      var lw = preprop( rstyle, 'labelWidth', prefix ) + bw/2 + 2*th;
+      var lh = preprop( rstyle, 'labelHeight', prefix ) + bw/2 + 2*th;
       var lx = preprop( rstyle, 'labelX', prefix );
       var ly = preprop( rstyle, 'labelY', prefix );
 

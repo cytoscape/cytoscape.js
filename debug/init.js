@@ -93,12 +93,15 @@ $(function(){
           // 'curve-style': 'haystack',
           // 'opacity': 0.5
           // 'content': 'data(weight)',
-          'text-rotation': 'autorotate',
-          'label': 'edge',
-          'source-label': 'src',
-          'source-text-offset': 25,
-          'target-label': 'tgt',
-          'target-text-offset': 25,
+          // 'text-rotation': 'autorotate',
+          // 'label': 'edge',
+          // 'source-label': 'src',
+          // 'source-text-offset': 25,
+          // 'target-label': 'tgt',
+          // 'target-text-offset': 25,
+          // 'text-border-opacity': 1,
+          // 'text-border-width': 2,
+          // 'text-border-color': 'red'
         })
       .selector('[source="n1"]')
         .css({

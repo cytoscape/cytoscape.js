@@ -217,22 +217,6 @@ CRp.drawText = function( context, ele, prefix ){
     var textBorderWidth = ele.pstyle( 'text-border-width' ).pfValue;
 
     if( backgroundOpacity > 0 || ( textBorderWidth > 0 && borderOpacity > 0 ) ){
-      var margin = 4 + textBorderWidth / 2;
-
-      if( isNode ){
-        //Move textX, textY to include the background margins
-        if( valign === 'top' ){
-          textY -= margin;
-        } else if( valign === 'bottom' ){
-          textY += margin;
-        }
-        if( halign === 'left' ){
-          textX -= margin;
-        } else if( halign === 'right' ){
-          textX += margin;
-        }
-      }
-
       var bgWidth = textW;
       var bgHeight = textH;
       var bgX = textX;
@@ -255,18 +239,6 @@ CRp.drawText = function( context, ele, prefix ){
         }
       } else {
         bgY = bgY - bgHeight / 2;
-      }
-
-      if( ele.pstyle( 'text-rotation' ).strValue === 'autorotate' ){
-        textY = 0;
-        bgX = textX - bgWidth / 2;
-        bgY = textY - bgHeight / 2;
-      } else {
-        // Adjust with border width & margin
-        bgX -= margin;
-        bgY -= margin;
-        bgHeight += margin * 2;
-        bgWidth += margin * 2;
       }
 
       if( backgroundOpacity > 0 ){

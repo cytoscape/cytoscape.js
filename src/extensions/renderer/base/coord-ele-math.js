@@ -854,12 +854,7 @@ BRp.recalculateEdgeLabelProjections = function( edge ){
     setRs( 'labelAutoAngle', prefix, angle );
   };
 
-  // source case, considering offset
-  //
   calculateEndProjection( 'source' );
-
-  // TODO #382 target case, considering offset
-  //
   calculateEndProjection( 'target' );
 
   this.applyLabelDimensions( edge );

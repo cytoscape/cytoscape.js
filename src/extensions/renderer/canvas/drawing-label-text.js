@@ -259,7 +259,6 @@ CRp.drawText = function( context, ele, prefix ){
 
       if( ele.pstyle( 'text-rotation' ).strValue === 'autorotate' ){
         textY = 0;
-        // bgWidth += 4; // TODO #382 strongly suspect this is not needed
         bgX = textX - bgWidth / 2;
         bgY = textY - bgHeight / 2;
       } else {

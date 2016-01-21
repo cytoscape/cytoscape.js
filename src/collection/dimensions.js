@@ -225,6 +225,7 @@ fn = elesfn = ({
       var includeLabels = parent.pstyle( 'compound-sizing-wrt-labels' ).value === 'include';
       var bb = children.boundingBox( {
         includeLabels: includeLabels,
+        includeShadows: false,
 
         // updating the compound bounds happens outside of the regular
         // cache cycle (i.e. before fired events)
@@ -299,7 +300,7 @@ var prefixedProperty = function( obj, field, prefix ){
   return util.getPrefixedProperty( obj, field, prefix );
 };
 
-var getLabelBounds = function( ele, prefix ){
+var getLabelBounds = function( ele, prefix, options ){
   var prefixDash;
 
   if( prefix ){
@@ -318,19 +319,23 @@ var getLabelBounds = function( ele, prefix ){
   var _p = ele._private;
   var rstyle = _p.rstyle;
   var label = ele.pstyle( prefixDash + 'label' ).strValue;
-  var fontSize = ele.pstyle( 'font-size' );
-  var halign = ele.pstyle( 'text-halign' );
-  var valign = ele.pstyle( 'text-valign' );
-  var labelWidth = prefixedProperty( rstyle, 'labelWidth', prefix );
-  var labelHeight = prefixedProperty( rstyle, 'labelHeight', prefix );
-  var labelX = prefixedProperty( rstyle, 'labelX', prefix );
-  var labelY = prefixedProperty( rstyle, 'labelY', prefix );
-  var marginX = ele.pstyle( prefixDash + 'text-margin-x' ).pfValue;
-  var marginY = ele.pstyle( prefixDash + 'text-margin-y' ).pfValue;
-  var isEdge = ele.isEdge();
-  var rotation = ele.pstyle( prefixDash + 'text-rotation' );
 
-  if( label && fontSize && labelHeight != null && labelWidth != null && labelX != null && labelY != null && halign && valign ){
+  if( label ){
+    var fontSize = ele.pstyle( 'font-size' );
+    var halign = ele.pstyle( 'text-halign' );
+    var valign = ele.pstyle( 'text-valign' );
+    var labelWidth = prefixedProperty( rstyle, 'labelWidth', prefix );
+    var labelHeight = prefixedProperty( rstyle, 'labelHeight', prefix );
+    var labelX = prefixedProperty( rstyle, 'labelX', prefix );
+    var labelY = prefixedProperty( rstyle, 'labelY', prefix );
+    var marginX = ele.pstyle( prefixDash + 'text-margin-x' ).pfValue;
+    var marginY = ele.pstyle( prefixDash + 'text-margin-y' ).pfValue;
+    var isEdge = ele.isEdge();
+    var rotation = ele.pstyle( prefixDash + 'text-rotation' );
+    var shadowR = ele.pstyle( 'text-shadow-blur' ).pfValue / 2;
+    var shadowX = ele.pstyle( 'text-shadow-offset-x' ).pfValue;
+    var shadowY = ele.pstyle( 'text-shadow-offset-y' ).pfValue;
+
     var lh = labelHeight;
     var lw = labelWidth;
     var lx1, lx2, ly1, ly2;
@@ -411,6 +416,15 @@ var getLabelBounds = function( ele, prefix ){
     ly2 += marginY;
 
     updateBounds( bounds, lx1, ly1, lx2, ly2 );
+
+    if( options.includeShadows ){
+      lx1 += - shadowR + shadowX;
+      lx2 += + shadowR + shadowX;
+      ly1 += - shadowR + shadowY;
+      ly2 += + shadowR + shadowY;
+
+      updateBounds( bounds, lx1, ly1, lx2, ly2 );
+    }
   }
 
   return bounds;
@@ -549,16 +563,23 @@ var boundingBoxImpl = function( ele, options ){
 
     } // edges
 
+    if( styleEnabled && options.includeShadows ){
+      var r = ele.pstyle('shadow-blur').pfValue / 2;
+      var ox = ele.pstyle('shadow-offset-x').pfValue;
+      var oy = ele.pstyle('shadow-offset-y').pfValue;
+
+      updateBounds( bounds, bounds.x1 - r + ox, bounds.y1 - r + oy, bounds.x2 + r + ox, bounds.y2 + r + oy );
+    }
 
     // handle label dimensions
     //////////////////////////
 
     if( styleEnabled && options.includeLabels ){
-      updateBoundsFromBox( bounds, getLabelBounds( ele ) );
+      updateBoundsFromBox( bounds, getLabelBounds( ele, null, options ) );
 
       if( isEdge ){
-        updateBoundsFromBox( bounds, getLabelBounds( ele, 'source' ) );
-        updateBoundsFromBox( bounds, getLabelBounds( ele, 'target' ) );
+        updateBoundsFromBox( bounds, getLabelBounds( ele, 'source', options ) );
+        updateBoundsFromBox( bounds, getLabelBounds( ele, 'target', options ) );
       }
     } // style enabled for labels
   } // if displayed
@@ -589,12 +610,13 @@ elesfn.boundingBox = function( options ){
 
   options = options || util.staticEmptyObject();
 
-  var opts = {
-    includeNodes: options.includeNodes === undefined ? true : options.includeNodes,
-    includeEdges: options.includeEdges === undefined ? true : options.includeEdges,
-    includeLabels: options.includeLabels === undefined ? true : options.includeLabels,
-    useCache: options.useCache === undefined ? true : options.useCache
-  };
+  var opts = util.extend( {
+    includeNodes: true,
+    includeEdges: true,
+    includeLabels: true,
+    includeShadows: true,
+    useCache: true
+  }, options );
 
   var eles = this;
 

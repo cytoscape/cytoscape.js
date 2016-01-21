@@ -335,6 +335,7 @@ var getLabelBounds = function( ele, prefix, options ){
     var shadowR = ele.pstyle( 'text-shadow-blur' ).pfValue / 2;
     var shadowX = ele.pstyle( 'text-shadow-offset-x' ).pfValue;
     var shadowY = ele.pstyle( 'text-shadow-offset-y' ).pfValue;
+    var shadowOpacity = ele.pstyle( 'text-shadow-opacity' ).value;
 
     var lh = labelHeight;
     var lw = labelWidth;
@@ -417,7 +418,7 @@ var getLabelBounds = function( ele, prefix, options ){
 
     updateBounds( bounds, lx1, ly1, lx2, ly2 );
 
-    if( options.includeShadows ){
+    if( options.includeShadows && shadowOpacity > 0 ){
       lx1 += - shadowR + shadowX;
       lx2 += + shadowR + shadowX;
       ly1 += - shadowR + shadowY;
@@ -563,7 +564,9 @@ var boundingBoxImpl = function( ele, options ){
 
     } // edges
 
-    if( styleEnabled && options.includeShadows ){
+    var shadowOpacity = ele.pstyle('shadow-opacity').value;
+
+    if( styleEnabled && options.includeShadows && shadowOpacity > 0 ){
       var r = ele.pstyle('shadow-blur').pfValue / 2;
       var ox = ele.pstyle('shadow-offset-x').pfValue;
       var oy = ele.pstyle('shadow-offset-y').pfValue;

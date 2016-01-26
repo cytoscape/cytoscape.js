@@ -1,3 +1,5 @@
+/*! Weaver licensed under MIT (https://tldrlegal.com/license/mit-license), copyright Max Franz */
+
 // cross-env thread/worker
 // NB : uses (heavyweight) processes on nodejs so best not to create too many threads
 

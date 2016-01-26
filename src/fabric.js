@@ -1,3 +1,5 @@
+/*! Weaver licensed under MIT (https://tldrlegal.com/license/mit-license), copyright Max Franz */
+
 'use strict';
 
 var is = require('./is');

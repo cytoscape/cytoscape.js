@@ -437,7 +437,11 @@ util.extend(elesfn, {
     } while( unvisited.length > 0 );
 
     return components.map(function( component ){
-      return component.closedNeighborhood(); // add the edges
+      var connectedEdges = component.connectedEdges().stdFilter(function( edge ){
+        return component.anySame( edge.source() ) && component.anySame( edge.target() );
+      });
+
+      return component.union( connectedEdges );
     });
   }
 });

@@ -234,8 +234,68 @@ describe('Collection traversing', function(){
     expect( cs[0].length ).to.equal(3);
     expect( cs[1].length ).to.equal(4);
 
-    expect( cs[0].same('#n1, #n2, #n1n2') );
-    expect( cs[1].same('#n3, #n4, #n3n4, $n4n3') );
+    expect( cs[0].same('#n1, #n2, #n1n2') ).to.be.true;
+    expect( cs[1].same('#n3, #n4, #n3n4, #n4n3') ).to.be.true;
+  });
+
+  it('eles.components() of subgraph', function(){
+    var cy = cytoscape({
+      elements: [
+        { data: { id: 'n1' } },
+        { data: { id: 'n2' } },
+        { data: { id: 'n1n2', source: 'n1', target: 'n2' } },
+
+        { data: { id: 'n3' } },
+        { data: { id: 'n4' } },
+        { data: { id: 'n3n4', source: 'n3', target: 'n4' } },
+
+        { data: { id: 'n5' } },
+        { data: { id: 'n6' } },
+        { data: { id: 'n5n6', source: 'n5', target: 'n6' } }
+      ]
+    });
+
+    var components = cy.$('#n1,#n2,#n1n2, #n3').components();
+
+    expect( components.length ).to.equal(2);
+
+    var cs = components.sort(function( c1, c2 ){
+      return c1.length - c2.length;
+    });
+
+    expect( cs.length ).to.equal(2);
+
+    expect( cs[0].length ).to.equal(1);
+    expect( cs[1].length ).to.equal(3);
+
+    expect( cs[0].same('#n3') ).to.be.true;
+    expect( cs[1].same('#n1, #n2, #n1n2') ).to.be.true;
+  });
+
+  it('eles.components() of connected subgraph', function(){
+    var cy = cytoscape({
+      elements: [
+        { data: { id: 'n1' } },
+        { data: { id: 'n2' } },
+        { data: { id: 'n1n2', source: 'n1', target: 'n2' } }
+      ]
+    });
+
+    var components = cy.$('#n1, #n2').components();
+    var cs = components;
+
+    expect( cs.length ).to.equal(2);
+
+    expect( cs[0].length ).to.equal(1);
+    expect( cs[1].length ).to.equal(1);
+
+    if( cs[0].same('#n1') ){
+      expect( cs[1].same('#n2') ).to.be.true;
+    } else if( cs[0].same('#n2') ){
+      expect( cs[1].same('#n1') ).to.be.true;
+    } else {
+      throw 'Not #n1 or #n2';
+    }
   });
 
 });

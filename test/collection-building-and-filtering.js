@@ -14,7 +14,7 @@ describe('Collection building and filtering', function(){
             { data: { id: 'n2', val: 2, sortVal: 1 } },
             { data: { id: 'n3', val: 3, sortVal: 3 } }
         ],
-        
+
         edges: [
             { data: { id: 'n1n2', source: 'n1', target: 'n2' } },
             { data: { id: 'n2n3', source: 'n2', target: 'n3' } }
@@ -45,6 +45,10 @@ describe('Collection building and filtering', function(){
 
   it('eles.intersect()', function(){
     expect( cy.$('#n1, #n2').intersect(n1).same(n1) ).to.be.true;
+  });
+
+  it('eles.intersect() empty case', function(){
+    expect( cy.$('#n1, #n2').intersect( cy.collection() ).empty() ).to.be.true;
   });
 
   it('eles.filter() etc', function(){
@@ -94,14 +98,14 @@ describe('Collection building and filtering', function(){
 
   it('eles.max()', function(){
     var max = cy.nodes().max(function( ele ){ return ele.data('val'); });
-    
+
     expect( max.value ).to.equal( 3 );
     expect( max.ele.same(n3) ).to.be.true;
   });
 
   it('eles.min()', function(){
     var min = cy.nodes().min(function( ele ){ return ele.data('val'); });
-    
+
     expect( min.value ).to.equal( 1 );
     expect( min.ele.same(n1) ).to.be.true;
   });

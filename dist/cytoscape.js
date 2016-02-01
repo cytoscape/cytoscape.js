@@ -5620,7 +5620,11 @@ util.extend(elesfn, {
     } while( unvisited.length > 0 );
 
     return components.map(function( component ){
-      return component.closedNeighborhood(); // add the edges
+      var connectedEdges = component.connectedEdges().stdFilter(function( edge ){
+        return component.anySame( edge.source() ) && component.anySame( edge.target() );
+      });
+
+      return component.union( connectedEdges );
     });
   }
 });
@@ -18830,7 +18834,7 @@ var cytoscape = function( options ){ // jshint ignore:line
 };
 
 // replaced by build system
-cytoscape.version = '2.6.0';
+cytoscape.version = '2.6.1';
 
 // try to register w/ jquery
 if( window && window.jQuery ){

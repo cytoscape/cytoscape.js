@@ -30,7 +30,7 @@ var cy = cytoscape({
   elements: [ /* ... */ ],
   style: [ /* ... */ ],
   layout: { name: 'grid' /* , ... */ },
-  ready: function(evt){ /* ... */ },
+  ready: function(event){ /* ... */ },
 
   // initial viewport state:
   zoom: 1,
@@ -61,7 +61,7 @@ var cy = cytoscape({
   motionBlurOpacity: 0.2,
   wheelSensitivity: 1,
   pixelRatio: 'auto',
-  initrender: function(evt){ /* ... */ },
+  initrender: function(event){ /* ... */ },
   renderer: { /* ... */ }
 });
 ```
@@ -77,7 +77,7 @@ var cy = cytoscape({
 
 **`layout`** : A plain object that specifies layout options.  Which layout is initially run is specified by the `name` field.  Refer to a [layout's documentation](#layouts) for the options it supports.  If you want to specify your node positions yourself in your elements JSON, you can use the `preset` layout &mdash; by default it does not set any positions, leaving your nodes in their current positions (e.g. specified in `options.elements` at initialisation time).
 
-**`ready`** : A callback function that is called when Cytoscape.js has loaded the graph and the layout has specified initial positions of the nodes.  After this point, rendering can happen, the user can interact with the graph, et cetera.
+**`ready`** : A callback function (`function(event){ /* ... */ }`) that is called when Cytoscape.js has loaded the graph and the layout has specified initial positions of the nodes.  After this point, rendering can happen, the user can interact with the graph, et cetera.
 
 
 ### Initial viewport state

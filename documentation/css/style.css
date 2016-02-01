@@ -155,6 +155,12 @@ button:active {
 	box-shadow: 0 0 0 8px rgba(0, 0, 0, 0.5);
 }
 
+button.outline {
+	border: 1px solid #4183C4;
+	color: #4183C4;
+	background: transparent;
+}
+
 .run {
 	margin: 0 2em;
 	margin-top: -2.25em;
@@ -193,10 +199,30 @@ button:active {
 	color: #BD1A1D;
 }
 
+*::-webkit-input-placeholder {
+  color: #888;
+	opacity: 1;
+}
+*:-moz-placeholder {
+    /* FF 4-18 */
+  color: #888;
+	opacity: 1;
+}
+*::-moz-placeholder {
+    /* FF 19+ */
+  color: #888;
+	opacity: 1;
+}
+*:-ms-input-placeholder {
+    /* IE 10+ */
+  color: #888;
+	opacity: 1;
+}
+
 #navigation {
 	position: fixed;
 	left: 0;
-	top: 0;
+	top: 2.5em;
 	bottom: 0;
 	width: 14em;
 	/*border-right: 1px solid #eee;*/
@@ -211,43 +237,48 @@ button:active {
 	opacity: 1;
 }
 
-#navigation .toc {
+.toc-search {
 	font-weight: 200;
 	margin: 0;
 	position: fixed;
-	width: 15em;
 	top: 0;
 	left: 0;
-	background: #fff;
+	width: 15em;
 	z-index: 9999;
-	padding: 0.5em 0;
+	padding-top: 0.5em;
+	background: #fff;
+	height: 2em;
 }
 
-.toc-top {
+#toc-top {
+	position: absolute;
+	right: 0.333em;
+	color: #888;
 }
 
 #toc-clear {
 	position: absolute;
-	margin-left: -1.5em;
+	right: 2.25em;
+	color: #888;
 }
 
 #toc-input {
 	display: inline-block;
-	width: 11.5em;
+	width: 11em;
+	position: absolute;
+	left: 0.25em;
+	right: 0;
 	font: inherit;
 	font-family: FontAwesome, Helvetica Neue, Helvetica, Adobe Helvetica, DejaVu Sans, Arial, sans-serif;
-	border: 0;
-	padding: 0;
 	margin: 0;
-	margin-left: 0.5em;
 	padding: 0 0.5em;
+	padding-right: 1.4em;
 	border-radius: 1em;
 	background: #f5f5f5;
+	border: 1px solid #e0e0e0;
 }
 
 .toc-sections {
-	margin-top: 3em;
-
 	transition-property: opacity;
 	transition-duration: 125ms;
 	transition-timing-function: cubic-bezier(0.77, 0, 0.175, 1);
@@ -556,7 +587,7 @@ button:active {
 }
 
 .links a {
-	/*white-space: nowrap;*/
+	white-space: nowrap;
 }
 
 .likes {
@@ -569,7 +600,7 @@ button:active {
 }
 
 .buttons-subtitle {
-	margin: 0.5em 0;
+	margin: 1em 0;
 	font-size: 1em;
 }
 
@@ -661,6 +692,12 @@ a.toclink {
 
 .button.green {
 	background: #41C483;
+}
+
+.button.green-outline {
+	border: 1px solid #41C483;
+	color: #41C483;
+	background-color: transparent;
 }
 
 a:active,
@@ -840,7 +877,7 @@ and (max-width : 800px) {
 		font-size: 1.25em;
 	}
 
-	#navigation {
+	#navigation, .toc-search {
 		opacity: 0;
 		pointer-events: none;
 	}
@@ -859,7 +896,7 @@ and (max-width : 800px) {
 and (max-width : 800px)
 and (orientation:landscape) {
 
-	#navigation {
+	#navigation, .toc-search {
 		opacity: 1;
 		pointer-events: auto;
 	}
@@ -898,7 +935,8 @@ and (orientation:portrait) {
 }
 
 .navigation-open #open-navigation-bg,
-.navigation-open #navigation {
+.navigation-open #navigation,
+.navigation-open .toc-search {
 	opacity: 1;
 	pointer-events: auto;
 }

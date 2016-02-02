@@ -2,7 +2,7 @@
 
 var CRp = {};
 
-CRp.drawEdge = function( context, edge, drawLabel, drawOverlayInstead ){
+CRp.drawEdge = function( context, edge, shiftToOrigin, drawOverlayInstead ){
   var rs = edge._private.rscratch;
   var usePaths = this.usePaths();
 
@@ -14,6 +14,13 @@ CRp.drawEdge = function( context, edge, drawLabel, drawOverlayInstead ){
   // Edge line width
   if( edge.pstyle( 'width' ).pfValue <= 0 ){
     return;
+  }
+
+  var bb;
+  if( shiftToOrigin ){
+    bb = edge.boundingBox();
+
+    context.translate( -bb.x1, -bb.y1 );
   }
 
   var overlayPadding = edge.pstyle( 'overlay-padding' ).pfValue;
@@ -67,11 +74,13 @@ CRp.drawEdge = function( context, edge, drawLabel, drawOverlayInstead ){
   this.shadowStyle( context, 'transparent', 0 ); // reset for next guy
 
   if( !drawOverlayInstead ){
-    this.drawEdge( context, edge, drawLabel, true );
+    this.drawEdge( context, edge, false, true );
   }
 
-  if( drawLabel ){
-    this.drawElementText( context, edge );
+  this.drawElementText( context, edge );
+
+  if( shiftToOrigin ){
+    context.translate( bb.x1, bb.y1 );
   }
 };
 

@@ -110,6 +110,7 @@ CRp.usePaths = function(){
 
 [
   require( './arrow-shapes' ),
+  require( './drawing-caches' ),
   require( './drawing-edges' ),
   require( './drawing-images' ),
   require( './drawing-label-text' ),

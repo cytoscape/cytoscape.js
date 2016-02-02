@@ -411,6 +411,7 @@ CRp.render = function( options ){
     r.textureCache = null;
   }
 
+  var extent = cy.extent();
   var vpManip = (r.pinching || r.hoverData.dragging || r.swipePanning || r.data.wheelZooming || r.hoverData.draggingEles);
   var hideEdges = r.hideEdgesOnViewport && vpManip;
 
@@ -439,7 +440,7 @@ CRp.render = function( options ){
     for( var i = 0; i < eles.length; i++ ){
       var ele = eles[ i ];
 
-      r.drawCachedElement( context, ele );
+      r.drawCachedElement( context, ele, pixelRatio, extent );
     }
   }
 

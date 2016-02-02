@@ -627,7 +627,7 @@ elesfn.boundingBox = function( options ){
   var cy_p = eles.cy()._private;
   var styleEnabled = cy_p.styleEnabled;
   if( styleEnabled ){
-    cy_p.renderer.recalculateRenderedStyle( eles.union( eles.parallelEdges() ), !opts.useCache );
+    cy_p.renderer.recalculateRenderedStyle( eles.parallelEdges().merge( eles ), !opts.useCache );
   }
 
   for( var i = 0; i < eles.length; i++ ){

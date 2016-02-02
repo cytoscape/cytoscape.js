@@ -5,10 +5,21 @@ var is = require( '../../../is' );
 var CRp = {};
 
 CRp.drawCachedNode = function( context, node ){
-  
+  var r = this;
+  var _p = node._private;
+  var caches = _p.rscratch.imgCaches = _p.rscratch.imgCaches || {};
+  var canvas = r.data.eleCacheCanvas;
+  var context = r.data.eleCacheContext;
+  var bb = node.boundingBox();
+  var pos = node.position();
+
+  canvas.width = bb.w;
+  canvas.height = bb.h;
+
+  r.drawNode( context, node, true );
 };
 
-CRp.drawNode = function( context, node, pos ){
+CRp.drawNode = function( context, node, shiftToOrigin ){
   var r = this;
   var nodeWidth, nodeHeight;
   var rs = node._private.rscratch;
@@ -31,6 +42,16 @@ CRp.drawNode = function( context, node, pos ){
   nodeHeight = node.height() + node.pstyle( 'padding-top' ).pfValue + node.pstyle( 'padding-bottom' ).pfValue;
 
   context.lineWidth = node.pstyle( 'border-width' ).pfValue;
+
+  //
+  // setup shift
+
+  var bb;
+  if( shiftToOrigin ){
+    bb = node.boundingBox();
+
+    context.translate( -bb.x1, -bb.y1 );
+  }
 
   //
   // load bg image
@@ -262,6 +283,12 @@ CRp.drawNode = function( context, node, pos ){
     context.fill();
   }
 
+  //
+  // clean up shift
+
+  if( shiftToOrigin ){
+    context.translate( bb.x1, bb.y1 );
+  }
 
 };
 

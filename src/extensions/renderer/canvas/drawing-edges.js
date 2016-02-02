@@ -2,7 +2,7 @@
 
 var CRp = {};
 
-CRp.drawEdge = function( context, edge, shiftToOrigin, drawOverlayInstead ){
+CRp.drawEdge = function( context, edge, shiftToOriginWithBb, drawOverlayInstead ){
   var rs = edge._private.rscratch;
   var usePaths = this.usePaths();
 
@@ -17,8 +17,8 @@ CRp.drawEdge = function( context, edge, shiftToOrigin, drawOverlayInstead ){
   }
 
   var bb;
-  if( shiftToOrigin ){
-    bb = edge.boundingBox();
+  if( shiftToOriginWithBb ){
+    bb = shiftToOriginWithBb;
 
     context.translate( -bb.x1, -bb.y1 );
   }
@@ -79,7 +79,7 @@ CRp.drawEdge = function( context, edge, shiftToOrigin, drawOverlayInstead ){
 
   this.drawElementText( context, edge );
 
-  if( shiftToOrigin ){
+  if( shiftToOriginWithBb ){
     context.translate( bb.x1, bb.y1 );
   }
 };

@@ -1,10 +1,11 @@
 'use strict';
 
+var math = require( '../../../math' );
+
 var CRp = {};
 
-CRp.drawCachedElement = function( context, ele ){
+CRp.drawCachedElement = function( context, ele, pxRatio, extent ){
   var r = this;
-  var pxRatio = r.getPixelRatio();
   var _p = ele._private;
   var rs = _p.rscratch;
   var caches = rs.imgCaches = rs.imgCaches || {};
@@ -24,23 +25,28 @@ CRp.drawCachedElement = function( context, ele ){
 
     lvlContext.scale( scale, scale );
 
-    r.drawElement( lvlContext, ele, true );
+    r.drawElement( lvlContext, ele, bb );
 
     lvlContext.scale( 1/scale, 1/scale );
 
-    cache = caches[lvl] = { canvas: lvlCanvas, context: lvlContext };
+    cache = caches[lvl] = {
+      canvas: lvlCanvas,
+      context: lvlContext
+    };
   }
 
-  context.drawImage( cache.canvas, bb.x1, bb.y1, bb.w, bb.h );
+  if( math.boundingBoxesIntersect( bb, extent ) ){
+    context.drawImage( cache.canvas, bb.x1, bb.y1, bb.w, bb.h );
+  }
 };
 
-CRp.drawElement = function( context, ele, shiftToOrigin ){
+CRp.drawElement = function( context, ele, shiftToOriginWithBb ){
   var r = this;
 
   if( ele.isNode() ){
-    r.drawNode( context, ele, shiftToOrigin );
+    r.drawNode( context, ele, shiftToOriginWithBb );
   } else {
-    r.drawEdge( context, ele, shiftToOrigin );
+    r.drawEdge( context, ele, shiftToOriginWithBb );
   }
 };
 

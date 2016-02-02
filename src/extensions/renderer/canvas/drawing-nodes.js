@@ -4,7 +4,7 @@ var is = require( '../../../is' );
 
 var CRp = {};
 
-CRp.drawNode = function( context, node, shiftToOrigin ){
+CRp.drawNode = function( context, node, shiftToOriginWithBb ){
   var r = this;
   var nodeWidth, nodeHeight;
   var rs = node._private.rscratch;
@@ -32,8 +32,8 @@ CRp.drawNode = function( context, node, shiftToOrigin ){
   // setup shift
 
   var bb;
-  if( shiftToOrigin ){
-    bb = node.boundingBox();
+  if( shiftToOriginWithBb ){
+    bb = shiftToOriginWithBb;
 
     context.translate( -bb.x1, -bb.y1 );
   }
@@ -271,7 +271,7 @@ CRp.drawNode = function( context, node, shiftToOrigin ){
   //
   // clean up shift
 
-  if( shiftToOrigin ){
+  if( shiftToOriginWithBb ){
     context.translate( bb.x1, bb.y1 );
   }
 

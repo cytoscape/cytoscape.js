@@ -8,15 +8,22 @@ CRp.drawCachedNode = function( context, node ){
   var r = this;
   var _p = node._private;
   var caches = _p.rscratch.imgCaches = _p.rscratch.imgCaches || {};
-  var canvas = r.data.eleCacheCanvas;
-  var context = r.data.eleCacheContext;
+  var lvl = 0;
   var bb = node.boundingBox();
-  var pos = node.position();
 
-  canvas.width = bb.w;
-  canvas.height = bb.h;
+  if( !caches[lvl] ){
+    var canvas = document.createElement('canvas');
+    var context = canvas.getContext('2d');
 
-  r.drawNode( context, node, true );
+    canvas.width = bb.w;
+    canvas.height = bb.h;
+
+    r.drawNode( context, node, true );
+
+    caches[lvl] = { canvas: canvas, context: context };
+  }
+
+  context.drawImage( caches[lvl].canvas, bb.x1, bb.y1 );
 };
 
 CRp.drawNode = function( context, node, shiftToOrigin ){

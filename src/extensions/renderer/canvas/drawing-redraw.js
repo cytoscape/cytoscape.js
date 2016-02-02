@@ -440,7 +440,7 @@ CRp.render = function( options ){
       var ele = eles[ i ];
 
       if( ele.isNode() ){
-        r.drawNode( context, ele );
+        r.drawCachedNode( context, ele );
       } else if( !hideEdges ){
         r.drawEdge( context, ele );
       }

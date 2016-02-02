@@ -9,23 +9,29 @@ CRp.drawCachedNode = function( context, node ){
   var _p = node._private;
   var rs = _p.rscratch;
   var caches = rs.imgCaches = rs.imgCaches || {};
-  var lvl = 0;
   var bb = node.boundingBox();
+  var zoom = r.cy.zoom();
+  var lvl = Math.ceil( Math.log2( zoom ) );
+  var cacheZoom = Math.pow( 2, lvl );
   var cache = caches[lvl];
 
   if( !cache ){
     var lvlCanvas = document.createElement('canvas');
     var lvlContext = lvlCanvas.getContext('2d');
 
-    lvlCanvas.width = bb.w;
-    lvlCanvas.height = bb.h;
+    lvlCanvas.width = cacheZoom * bb.w;
+    lvlCanvas.height = cacheZoom * bb.h;
+
+    lvlContext.scale( cacheZoom, cacheZoom );
 
     r.drawNode( lvlContext, node, true );
+
+    lvlContext.scale( 1/cacheZoom, 1/cacheZoom );
 
     cache = caches[lvl] = { canvas: lvlCanvas, context: lvlContext };
   }
 
-  context.drawImage( cache.canvas, bb.x1, bb.y1 );
+  context.drawImage( cache.canvas, bb.x1, bb.y1, bb.w, bb.h );
 };
 
 CRp.drawNode = function( context, node, shiftToOrigin ){

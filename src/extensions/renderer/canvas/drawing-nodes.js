@@ -7,23 +7,25 @@ var CRp = {};
 CRp.drawCachedNode = function( context, node ){
   var r = this;
   var _p = node._private;
-  var caches = _p.rscratch.imgCaches = _p.rscratch.imgCaches || {};
+  var rs = _p.rscratch;
+  var caches = rs.imgCaches = rs.imgCaches || {};
   var lvl = 0;
   var bb = node.boundingBox();
+  var cache = caches[lvl];
 
-  if( !caches[lvl] ){
-    var canvas = document.createElement('canvas');
-    var context = canvas.getContext('2d');
+  if( !cache ){
+    var lvlCanvas = document.createElement('canvas');
+    var lvlContext = lvlCanvas.getContext('2d');
 
-    canvas.width = bb.w;
-    canvas.height = bb.h;
+    lvlCanvas.width = bb.w;
+    lvlCanvas.height = bb.h;
 
-    r.drawNode( context, node, true );
+    r.drawNode( lvlContext, node, true );
 
-    caches[lvl] = { canvas: canvas, context: context };
+    cache = caches[lvl] = { canvas: lvlCanvas, context: lvlContext };
   }
 
-  context.drawImage( caches[lvl].canvas, bb.x1, bb.y1 );
+  context.drawImage( cache.canvas, bb.x1, bb.y1 );
 };
 
 CRp.drawNode = function( context, node, shiftToOrigin ){

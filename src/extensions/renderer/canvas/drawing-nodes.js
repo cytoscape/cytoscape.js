@@ -4,14 +4,16 @@ var is = require( '../../../is' );
 
 var CRp = {};
 
-// Draw node
-CRp.drawNode = function( context, node, drawLabel ){
+CRp.drawCachedNode = function( context, node ){
+  
+};
 
+CRp.drawNode = function( context, node, pos ){
   var r = this;
   var nodeWidth, nodeHeight;
   var rs = node._private.rscratch;
   var _p = node._private;
-  var pos = _p.position;
+  var pos = pos || _p.position;
 
   if( !is.number( pos.x ) || !is.number( pos.y ) ){
     return; // can't draw node with undefined position
@@ -237,9 +239,7 @@ CRp.drawNode = function( context, node, drawLabel ){
   //
   // label
 
-  if( drawLabel ){
-    r.drawElementText( context, node );
-  }
+  r.drawElementText( context, node );
 
   //
   // overlay
@@ -272,7 +272,7 @@ CRp.hasPie = function( node ){
   return node._private.hasPie;
 };
 
-CRp.drawPie = function( context, node, nodeOpacity ){
+CRp.drawPie = function( context, node, nodeOpacity, pos ){
   node = node[0]; // ensure ele ref
 
   var _p = node._private;
@@ -280,8 +280,9 @@ CRp.drawPie = function( context, node, nodeOpacity ){
   var pieSize = node.pstyle( 'pie-size' );
   var nodeW = node.width();
   var nodeH = node.height();
-  var x = _p.position.x;
-  var y = _p.position.y;
+  var pos = pos || _p.position;
+  var x = pos.x;
+  var y = pos.y;
   var radius = Math.min( nodeW, nodeH ) / 2; // must fit in node
   var lastPercent = 0; // what % to continue drawing pie slices from on [0, 1]
   var usePaths = this.usePaths();

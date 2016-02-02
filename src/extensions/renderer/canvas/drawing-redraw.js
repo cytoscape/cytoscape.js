@@ -413,7 +413,6 @@ CRp.render = function( options ){
 
   var vpManip = (r.pinching || r.hoverData.dragging || r.swipePanning || r.data.wheelZooming || r.hoverData.draggingEles);
   var hideEdges = r.hideEdgesOnViewport && vpManip;
-  var hideLabels = r.hideLabelsOnViewport && vpManip;
 
   if( needDraw[ r.DRAG ] || needDraw[ r.NODE ] || drawAllLayers || drawOnlyNodeLayer ){
     var zEles = r.getCachedZSortedEles();
@@ -441,9 +440,9 @@ CRp.render = function( options ){
       var ele = eles[ i ];
 
       if( ele.isNode() ){
-        r.drawNode( context, ele, !hideLabels );
+        r.drawNode( context, ele );
       } else if( !hideEdges ){
-        r.drawEdge( context, ele, !hideLabels );
+        r.drawEdge( context, ele );
       }
     }
   }

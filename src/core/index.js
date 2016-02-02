@@ -130,7 +130,6 @@ var Core = function( opts ){
   // create the renderer
   cy.initRenderer( util.extend( {
     hideEdgesOnViewport: options.hideEdgesOnViewport,
-    hideLabelsOnViewport: options.hideLabelsOnViewport,
     textureOnViewport: options.textureOnViewport,
     wheelSensitivity: is.number( options.wheelSensitivity ) && options.wheelSensitivity > 0 ? options.wheelSensitivity : 1,
     motionBlur: options.motionBlur === undefined ? false : options.motionBlur, // off by default
@@ -378,7 +377,6 @@ util.extend( corefn, {
       json.boxSelectionEnabled = cy._private.boxSelectionEnabled;
       json.renderer = util.copy( cy._private.options.renderer );
       json.hideEdgesOnViewport = cy._private.options.hideEdgesOnViewport;
-      json.hideLabelsOnViewport = cy._private.options.hideLabelsOnViewport;
       json.textureOnViewport = cy._private.options.textureOnViewport;
       json.wheelSensitivity = cy._private.options.wheelSensitivity;
       json.motionBlur = cy._private.options.motionBlur;

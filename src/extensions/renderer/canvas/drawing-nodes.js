@@ -6,6 +6,7 @@ var CRp = {};
 
 CRp.drawCachedNode = function( context, node ){
   var r = this;
+  var pxRatio = r.getPixelRatio();
   var _p = node._private;
   var rs = _p.rscratch;
   var caches = rs.imgCaches = rs.imgCaches || {};
@@ -18,15 +19,16 @@ CRp.drawCachedNode = function( context, node ){
   if( !cache ){
     var lvlCanvas = document.createElement('canvas');
     var lvlContext = lvlCanvas.getContext('2d');
+    var scale = pxRatio * cacheZoom;
 
-    lvlCanvas.width = cacheZoom * bb.w;
-    lvlCanvas.height = cacheZoom * bb.h;
+    lvlCanvas.width = scale * bb.w;
+    lvlCanvas.height = scale * bb.h;
 
-    lvlContext.scale( cacheZoom, cacheZoom );
+    lvlContext.scale( scale, scale );
 
     r.drawNode( lvlContext, node, true );
 
-    lvlContext.scale( 1/cacheZoom, 1/cacheZoom );
+    lvlContext.scale( 1/scale, 1/scale );
 
     cache = caches[lvl] = { canvas: lvlCanvas, context: lvlContext };
   }

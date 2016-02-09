@@ -45,6 +45,12 @@ BRp.redraw = function( options ){
 BRp.startRenderLoop = function(){
   var r = this;
 
+  if( r.renderLoopStarted ){
+    return;
+  } else {
+    r.renderLoopStarted = true;
+  }
+
   var renderFn = function(){
     if( r.destroyed ){ return; }
 

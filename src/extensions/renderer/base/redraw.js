@@ -26,13 +26,14 @@ BRp.redraw = function( options ){
 
   if( r.lastDrawTime === undefined ){ r.lastDrawTime = 0; }
 
-  var nowTime = Date.now();
+  var nowTime = util.performanceNow();
   var timeElapsed = nowTime - r.lastDrawTime;
   var callAfterLimit = timeElapsed >= redrawLimit;
 
   if( !forcedContext ){
     if( !callAfterLimit ){
-      r.skipFrame = true;
+      // disable frameskipping and allow browser to handle it
+      // r.skipFrame = true;
       return;
     }
   }
@@ -65,7 +66,7 @@ BRp.startRenderLoop = function(){
 
       r.render( r.renderOptions );
 
-      var endTime = r.lastRedrawTime = util.performanceNow();
+      var endTime = r.lastDrawTime = util.performanceNow();
 
       if( r.averageRedrawTime === undefined ){
         r.averageRedrawTime = endTime - startTime;

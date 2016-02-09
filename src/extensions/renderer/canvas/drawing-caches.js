@@ -4,6 +4,10 @@ var math = require( '../../../math' );
 
 var CRp = {};
 
+var minLvl = -2; // -2 => 0.25 scale ; when scaling smaller than that we don't need to re-render
+var maxLvl = 3; // 3 => 8 scale ; when larger than this scale just render directly (caching is not helpful)
+var maxZoom = 4; // TODO this value may need tweaking/optimising
+
 CRp.getElementTextureCache = function( ele, bb, pxRatio ){
   var r = this;
   var rs = ele._private.rscratch;
@@ -14,16 +18,16 @@ CRp.getElementTextureCache = function( ele, bb, pxRatio ){
   var zoom = r.cy.zoom();
   var lvl = Math.ceil( Math.log2( zoom * pxRatio ) );
 
-  if( lvl < -2 ){
-    lvl = -2; // -2 => 0.25 scale ; when scaling smaller than that we don't need to re-render
-  } else if( zoom >= 4 ){ // TODO this value may need tweaking/optimising
-    return null; // when larger than this scale just render directly (caching is not helpful)
+  if( lvl < minLvl ){
+    lvl = minLvl;
+  } else if( zoom >= maxZoom || lvl > maxLvl ){
+    return null;
   }
 
   var scale = Math.pow( 2, lvl );
   var eleScaledH = bb.h * scale;
   var eleScaledW = bb.w * scale;
-  var caches = rs.imgCaches = rs.imgCaches || [];
+  var caches = rs.imgCaches = rs.imgCaches || {};
   var eleCache = caches[lvl];
 
   if( eleCache ){
@@ -48,9 +52,12 @@ CRp.getElementTextureCache = function( ele, bb, pxRatio ){
 
     txrQ.push( txr );
 
+    txr.queue = txrQ;
+
     txr.height = txrH;
     txr.width = Math.max( 1000, eleScaledW ); // TODO this size needs optimising!!
     txr.usedWidth = 0;
+    txr.invalidatedWidth = 0;
 
     txr.canvas = document.createElement('canvas');
     txr.canvas.width = txr.width;
@@ -98,18 +105,33 @@ CRp.getElementTextureCache = function( ele, bb, pxRatio ){
   return eleCache;
 };
 
-CRp.invalidateElementTextureCache = function( ele ){
-  // TODO
-
-  // for each cache the ele has
-
-    // decrement used width in cache
-
-    // invalidate all entries in the cache if the cache size is small
-
-    // remove the cache references from the element
+CRp.invalidateElementTextureCaches = function( eles ){
+  if( eles ){
+    for( var i = 0; i < eles.length; i++ ){
+      this.invalidateElementTextureCache( eles[i] );
+    }
+  }
 };
 
+CRp.invalidateElementTextureCache = function( ele ){
+  var caches = ele._private.rscratch.imgCaches;
+
+  if( caches ){
+    for( var lvl = minLvl; lvl <= maxLvl; lvl++ ){
+      var cache = caches[ lvl ];
+
+      if( cache ){
+        // remove space from the texture it belongs to
+        cache.texture.invalidatedWidth += cache.width;
+
+        // remove refs from the element
+        caches[ lvl ] = null;
+
+        // TODO invalidate all entries in the cache if the cache size is small
+      }
+    }
+  }
+};
 
 CRp.drawCachedElementShared = function( context, ele, pxRatio, extent ){
   var r = this;

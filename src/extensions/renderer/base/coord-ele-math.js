@@ -22,6 +22,8 @@ BRp.registerCalculationListeners = function(){
 
       rstyle.clean = false;
       _p.bbCache = null;
+
+      r.invalidateElementTextureCache( ele );
     }
   };
 

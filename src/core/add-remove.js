@@ -106,7 +106,7 @@ var corefn = {
 
       cy.notify( {
         type: 'load',
-        collection: cy.elements()
+        eles: cy.elements()
       } );
 
       cy.one( 'load', onload );

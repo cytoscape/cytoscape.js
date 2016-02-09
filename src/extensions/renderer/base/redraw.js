@@ -31,14 +31,13 @@ BRp.redraw = function( options ){
   var callAfterLimit = timeElapsed >= redrawLimit;
 
   if( !forcedContext ){
-    if( !callAfterLimit || r.currentlyDrawing ){
+    if( !callAfterLimit ){
       r.skipFrame = true;
       return;
     }
   }
 
   r.requestedFrame = true;
-  r.currentlyDrawing = true;
   r.renderOptions = options;
 };
 

@@ -240,6 +240,10 @@ util.extend( corefn, {
     return this._private.hasCompoundNodes;
   },
 
+  headless: function(){
+    return this._private.options.renderer.name === 'null';
+  },
+
   styleEnabled: function(){
     return this._private.styleEnabled;
   },

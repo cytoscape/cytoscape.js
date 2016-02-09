@@ -796,7 +796,7 @@ var define = {
 
       // we have to notify (the animation loop doesn't do it for us on `stop`)
       cy.notify( {
-        collection: this,
+        eles: this,
         type: 'draw'
       } );
 

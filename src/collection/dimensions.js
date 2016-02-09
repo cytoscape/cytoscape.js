@@ -452,6 +452,17 @@ var boundingBoxImpl = function( ele, options ){
   var displayed = display !== 'none';
 
   if( displayed ){
+    var overlayOpacity = 0;
+    var overlayPadding = 0;
+
+    if( styleEnabled && options.includeOverlays ){
+      overlayOpacity = ele.pstyle( 'overlay-opacity' ).value;
+
+      if( overlayOpacity !== 0 ){
+        overlayPadding = ele.pstyle( 'overlay-padding' ).value;
+      }
+    }
+
     if( isNode && options.includeNodes ){
       var pos = _p.position;
       x = pos.x;
@@ -464,10 +475,10 @@ var boundingBoxImpl = function( ele, options ){
       // handle node dimensions
       /////////////////////////
 
-      ex1 = x - halfW;
-      ex2 = x + halfW;
-      ey1 = y - halfH;
-      ey2 = y + halfH;
+      ex1 = x - halfW - overlayPadding;
+      ex2 = x + halfW + overlayPadding;
+      ey1 = y - halfH - overlayPadding;
+      ey2 = y + halfH + overlayPadding;
 
       updateBounds( bounds, ex1, ey1, ex2, ey2 );
 
@@ -510,7 +521,7 @@ var boundingBoxImpl = function( ele, options ){
         ey2 = temp;
       }
 
-      // take into account edge width
+      // take into account edge width and overlay
       ex1 -= wHalf;
       ex2 += wHalf;
       ey1 -= wHalf;
@@ -564,14 +575,25 @@ var boundingBoxImpl = function( ele, options ){
 
     } // edges
 
-    var shadowOpacity = ele.pstyle('shadow-opacity').value;
+    // shadow and overlay
+    /////////////////////
 
-    if( styleEnabled && options.includeShadows && shadowOpacity > 0 ){
-      var r = ele.pstyle('shadow-blur').pfValue / 2;
-      var ox = ele.pstyle('shadow-offset-x').pfValue;
-      var oy = ele.pstyle('shadow-offset-y').pfValue;
+    if( styleEnabled ){
 
-      updateBounds( bounds, bounds.x1 - r + ox, bounds.y1 - r + oy, bounds.x2 + r + ox, bounds.y2 + r + oy );
+      ex1 = bounds.x1;
+      ex2 = bounds.x2;
+      ey1 = bounds.y1;
+      ey2 = bounds.y2;
+
+      if( options.includeShadows && ele.pstyle('shadow-opacity').value > 0 ){
+        var r = ele.pstyle('shadow-blur').pfValue / 2;
+        var ox = ele.pstyle('shadow-offset-x').pfValue;
+        var oy = ele.pstyle('shadow-offset-y').pfValue;
+
+        updateBounds( bounds, ex1 - r + ox, ey1 - r + oy, ex2 + r + ox, ey2 + r + oy );
+      }
+
+      updateBounds( bounds, ex1 - overlayPadding, ey1 - overlayPadding, ex2 + overlayPadding, ey2 + overlayPadding );
     }
 
     // handle label dimensions
@@ -593,8 +615,9 @@ var boundingBoxImpl = function( ele, options ){
 var cachedBoundingBoxImpl = function( ele, opts ){
   var _p = ele._private;
   var bb;
+  var headless = ele.cy().headless();
 
-  if( !_p.bbCache || !opts.useCache ){
+  if( headless || !_p.bbCache || !opts.useCache ){
     bb = _p.bbCache = boundingBoxImpl( ele, opts );
   } else {
     bb = _p.bbCache;
@@ -618,6 +641,7 @@ elesfn.boundingBox = function( options ){
     includeEdges: true,
     includeLabels: true,
     includeShadows: true,
+    includeOverlays: true,
     useCache: true
   }, options );
 
@@ -627,7 +651,9 @@ elesfn.boundingBox = function( options ){
   var cy_p = eles.cy()._private;
   var styleEnabled = cy_p.styleEnabled;
   if( styleEnabled ){
-    cy_p.renderer.recalculateRenderedStyle( eles.parallelEdges().merge( eles ), !opts.useCache );
+    var pEdges = eles.parallelEdges();
+
+    cy_p.renderer.recalculateRenderedStyle( pEdges.nonempty() ? pEdges.merge( eles ) : eles, !opts.useCache );
   }
 
   for( var i = 0; i < eles.length; i++ ){

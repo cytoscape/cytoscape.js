@@ -601,7 +601,7 @@ elesfn.remove = function( notifyRenderer ){
     if( notifyRenderer ){
       this.cy().notify( {
         type: 'remove',
-        collection: removedElements
+        eles: removedElements
       } );
     }
 

@@ -7,6 +7,7 @@ var CRp = {};
 var minLvl = -2; // -2 => 0.25 scale ; when scaling smaller than that we don't need to re-render
 var maxLvl = 3; // 3 => 8 scale ; when larger than this scale just render directly (caching is not helpful)
 var maxZoom = 4; // TODO this value may need tweaking/optimising
+var eleTxrSpacing = 1; // spacing between elements on textures to avoid blitting overlaps (only need 1 b/c of rounding)
 
 CRp.getElementTextureCache = function( ele, bb, pxRatio ){
   var r = this;
@@ -100,7 +101,7 @@ CRp.getElementTextureCache = function( ele, bb, pxRatio ){
     height: eleScaledH
   };
 
-  txr.usedWidth += eleScaledW;
+  txr.usedWidth += eleScaledW + eleTxrSpacing;
 
   return eleCache;
 };

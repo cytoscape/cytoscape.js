@@ -15789,6 +15789,12 @@ BRp.redraw = function( options ){
 BRp.startRenderLoop = function(){
   var r = this;
 
+  if( r.renderLoopStarted ){
+    return;
+  } else {
+    r.renderLoopStarted = true;
+  }
+
   var renderFn = function(){
     if( r.destroyed ){ return; }
 
@@ -18834,7 +18840,7 @@ var cytoscape = function( options ){ // jshint ignore:line
 };
 
 // replaced by build system
-cytoscape.version = '2.6.1';
+cytoscape.version = '2.6.2';
 
 // try to register w/ jquery
 if( window && window.jQuery ){

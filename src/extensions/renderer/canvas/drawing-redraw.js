@@ -594,8 +594,6 @@ CRp.render = function( options ){
     }
   }
 
-  r.currentlyDrawing = false;
-
   r.prevViewport = vp;
 
   if( r.clearingMotionBlur ){

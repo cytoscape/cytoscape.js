@@ -15775,14 +15775,13 @@ BRp.redraw = function( options ){
   var callAfterLimit = timeElapsed >= redrawLimit;
 
   if( !forcedContext ){
-    if( !callAfterLimit || r.currentlyDrawing ){
+    if( !callAfterLimit ){
       r.skipFrame = true;
       return;
     }
   }
 
   r.requestedFrame = true;
-  r.currentlyDrawing = true;
   r.renderOptions = options;
 };
 
@@ -17666,8 +17665,6 @@ CRp.render = function( options ) {
     }
   }
 
-  r.currentlyDrawing = false;
-
   r.prevViewport = vp;
 
   if( r.clearingMotionBlur ){
@@ -18840,7 +18837,7 @@ var cytoscape = function( options ){ // jshint ignore:line
 };
 
 // replaced by build system
-cytoscape.version = '2.6.2';
+cytoscape.version = '2.6.3';
 
 // try to register w/ jquery
 if( window && window.jQuery ){

@@ -531,14 +531,8 @@ elesfn.remove = function( notifyRenderer ){
 
   function removeEdgeRef( node, edge ){
     var connectedEdges = node._private.edges;
-    for( var j = 0; j < connectedEdges.length; j++ ){
-      var connectedEdge = connectedEdges[ j ];
 
-      if( edge === connectedEdge ){
-        connectedEdges.splice( j, 1 );
-        break;
-      }
-    }
+    util.removeFromArray( connectedEdges, edge );
   }
 
   function removeChildRef( parent, ele ){
@@ -546,12 +540,7 @@ elesfn.remove = function( notifyRenderer ){
     parent = parent[0];
     var children = parent._private.children;
 
-    for( var j = 0; j < children.length; j++ ){
-      if( children[ j ][0] === ele[0] ){
-        children.splice( j, 1 );
-        break;
-      }
-    }
+    util.removeFromArray( children, ele );
   }
 
   // remove from core pool

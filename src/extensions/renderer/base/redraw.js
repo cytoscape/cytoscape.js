@@ -30,13 +30,13 @@ BRp.redraw = function( options ){
   var timeElapsed = nowTime - r.lastDrawTime;
   var callAfterLimit = timeElapsed >= redrawLimit;
 
-  if( !forcedContext ){
-    if( !callAfterLimit ){
-      // disable frameskipping and allow browser to handle it
-      // r.skipFrame = true;
-      return;
-    }
-  }
+  // disable frameskipping and allow browser to handle it
+  // if( !forcedContext ){
+  //   if( !callAfterLimit ){
+  //     r.skipFrame = true;
+  //     return;
+  //   }
+  // }
 
   r.requestedFrame = true;
   r.renderOptions = options;

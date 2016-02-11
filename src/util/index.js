@@ -66,6 +66,20 @@ util.extend = Object.assign != null ? Object.assign : function( tgt ){
   return tgt;
 };
 
+util.removeFromArray = function( arr, ele, manyCopies ){
+  for( var i = arr.length; i >= 0; i-- ){
+    if( arr[i] === ele ){
+      arr.splice( i, 1 );
+
+      if( !manyCopies ){ break; }
+    }
+  }
+};
+
+util.clearArray = function( arr ){
+  arr.splice( 0, arr.length );
+};
+
 util.getPrefixedProperty = function( obj, propName, prefix ){
   if( prefix ){
     propName = this.prependCamel( prefix, propName ); // e.g. (labelWidth, source) => sourceLabelWidth

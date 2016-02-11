@@ -1,15 +1,18 @@
 'use strict';
 
 var math = require( '../../../math' );
+var util = require( '../../../util' );
 
 var CRp = {};
 
 var minLvl = -2; // -2 => 0.25 scale ; when scaling smaller than that we don't need to re-render
 var maxLvl = 3; // 3 => 8 scale ; when larger than this scale just render directly (caching is not helpful)
 var maxZoom = 4; // TODO this value may need tweaking/optimising
-var eleTxrSpacing = 1; // spacing between elements on textures to avoid blitting overlaps (only need 1 b/c of rounding)
+var eleTxrSpacing = 4; // spacing between elements on textures to avoid blitting overlaps
+var defTxrWidth = 3000; // TODO this size needs optimising!!
+var minUtility = 0.5; // TODO may need to optimise this value
 
-CRp.getElementTextureCache = function( ele, bb, pxRatio ){
+CRp.getElementTexture = function( ele, bb, pxRatio ){
   var r = this;
   var rs = ele._private.rscratch;
   var minTxrH = 50; // the size of the texture cache for small height eles (special case)
@@ -49,24 +52,7 @@ CRp.getElementTextureCache = function( ele, bb, pxRatio ){
   var txr = txrQ[ txrQ.length - 2 ];
 
   var addNewTxr = function(){
-    var txr = {};
-
-    txrQ.push( txr );
-
-    txr.queue = txrQ;
-
-    txr.height = txrH;
-    txr.width = Math.max( 1000, eleScaledW ); // TODO this size needs optimising!!
-    txr.usedWidth = 0;
-    txr.invalidatedWidth = 0;
-
-    txr.canvas = document.createElement('canvas');
-    txr.canvas.width = txr.width;
-    txr.canvas.height = txr.height;
-
-    txr.context = txr.canvas.getContext('2d');
-
-    return txr;
+    return r.recycleTexture( txrH, eleScaledW ) || r.addTexture( txrH, eleScaledW );
   };
 
   // try the last one if there is no second last one
@@ -93,6 +79,7 @@ CRp.getElementTextureCache = function( ele, bb, pxRatio ){
   txr.context.translate( -txr.usedWidth, 0 );
 
   eleCache = caches[lvl] = {
+    ele: ele,
     x: txr.usedWidth,
     texture: txr,
     level: lvl,
@@ -103,18 +90,15 @@ CRp.getElementTextureCache = function( ele, bb, pxRatio ){
 
   txr.usedWidth += eleScaledW + eleTxrSpacing;
 
+  txr.eleCaches.push( eleCache );
+
+  r.checkTextureFullness( txr );
+
   return eleCache;
 };
 
-CRp.invalidateElementTextureCaches = function( eles ){
-  if( eles ){
-    for( var i = 0; i < eles.length; i++ ){
-      this.invalidateElementTextureCache( eles[i] );
-    }
-  }
-};
-
-CRp.invalidateElementTextureCache = function( ele ){
+CRp.invalidateElementInTexture = function( ele ){
+  var r = this;
   var caches = ele._private.rscratch.imgCaches;
 
   if( caches ){
@@ -122,14 +106,113 @@ CRp.invalidateElementTextureCache = function( ele ){
       var cache = caches[ lvl ];
 
       if( cache ){
+        var txr = cache.texture;
+
         // remove space from the texture it belongs to
-        cache.texture.invalidatedWidth += cache.width;
+        txr.invalidatedWidth += cache.width;
 
-        // remove refs from the element
+        // remove refs with the element
         caches[ lvl ] = null;
+        util.removeFromArray( txr.eleCaches, cache );
 
-        // TODO invalidate all entries in the cache if the cache size is small
+        // might have to remove the entire texture if it's not efficiently using its space
+        r.checkTextureUtility( txr );
       }
+    }
+  }
+};
+
+CRp.checkTextureUtility = function( txr ){
+  // invalidate all entries in the cache if the cache size is small
+  if( txr.invalidatedWidth >= minUtility * txr.width ){
+    this.retireTexture( txr );
+  }
+};
+
+CRp.checkTextureFullness = function( txr ){
+  // TODO if texture has been mostly filled and passed over several times, remove
+  // it from the queue so we don't need to waste time looking at it to put new things
+};
+
+CRp.retireTexture = function( txr ){
+  var r = this;
+  var txrH = txr.height;
+  var txrQ = r.data.eleImgCaches[ txrH ] = r.data.eleImgCaches[ txrH ] || [];
+
+  // retire the texture from the active / searchable queue:
+
+  util.removeFromArray( txrQ, txr );
+
+  // remove the refs from the eles to the caches:
+
+  var eleCaches = txr.eleCaches;
+  for( var i = 0; i < eleCaches.length; i++ ){
+    var eleCache = eleCaches[i];
+    var ele = eleCache.ele;
+    var lvl = eleCache.level;
+    var imgCaches = ele._private.rscratch.imgCaches;
+
+    if( imgCaches ){
+      imgCaches[ lvl ] = null;
+    }
+  }
+
+  // TODO remove
+  // we should never be drawing from a retired texture
+  txr.context.fillStyle = 'rgba(255, 0, 0, 0.25)';
+  txr.context.fillRect( 0, 0, txr.width, txr.height );
+
+  // add the texture to a retired queue so it can be recycled in future:
+
+  var rtxtrQs = r.data.eleImgCaches.retired = r.data.eleImgCaches.retired || {};
+  var rtxtrQ = r.data.eleImgCaches.retired[ txrH ] = r.data.eleImgCaches.retired[ txrH ] || [];
+
+  rtxtrQ.push( txr );
+};
+
+CRp.addTexture = function( txrH, minW ){
+  var r = this;
+  var txrQ = r.data.eleImgCaches[ txrH ] = r.data.eleImgCaches[ txrH ] || [];
+  var txr = {};
+
+  txrQ.push( txr );
+
+  txr.eleCaches = [];
+
+  txr.height = txrH;
+  txr.width = Math.max( defTxrWidth, minW );
+  txr.usedWidth = 0;
+  txr.invalidatedWidth = 0;
+
+  txr.canvas = document.createElement('canvas');
+  txr.canvas.width = txr.width;
+  txr.canvas.height = txr.height;
+
+  txr.context = txr.canvas.getContext('2d');
+
+  return txr;
+};
+
+CRp.recycleTexture = function( txrH, minW ){
+  var r = this;
+  var txrQ = r.data.eleImgCaches[ txrH ] = r.data.eleImgCaches[ txrH ] || [];
+  var rtxtrQs = r.data.eleImgCaches.retired = r.data.eleImgCaches.retired || {};
+  var rtxtrQ = r.data.eleImgCaches.retired[ txrH ] = r.data.eleImgCaches.retired[ txrH ] || [];
+
+  for( var i = 0; i < rtxtrQ.length; i++ ){
+    var txr = rtxtrQ[i];
+
+    if( txr.width >= minW ){
+      txrQ.push( txr );
+
+      txr.usedWidth = 0;
+      txr.invalidatedWidth = 0;
+      
+      util.clearArray( txr.eleCaches );
+
+      txr.context.clearRect( 0, 0, txr.width, txr.height );
+
+      return txr;
     }
   }
 };
@@ -141,7 +224,7 @@ CRp.drawCachedElementShared = function( context, ele, pxRatio, extent ){
   var bb = ele.boundingBox();
 
   if( math.boundingBoxesIntersect( bb, extent ) ){
-    var cache = r.getElementTextureCache( ele, bb, pxRatio );
+    var cache = r.getElementTexture( ele, bb, pxRatio );
 
     if( cache ){
       context.drawImage( cache.texture.canvas, cache.x, 0, cache.width, cache.height, bb.x1, bb.y1, bb.w, bb.h );

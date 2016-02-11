@@ -8,8 +8,8 @@ var corefn = ({
       var bEles = _p.batchNotifyEles;
       var bTypes = _p.batchNotifyTypes;
 
-      if( params.collection ){
-        bEles.merge( params.collection );
+      if( params.eles ){
+        bEles.merge( params.eles );
       }
 
       if( !bTypes.ids[ params.type ] ){
@@ -77,7 +77,7 @@ var corefn = ({
       _p.batchingNotify = false;
       this.notify( {
         type: _p.batchNotifyTypes,
-        collection: _p.batchNotifyEles
+        eles: _p.batchNotifyEles
       } );
     }
 

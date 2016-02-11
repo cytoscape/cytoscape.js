@@ -15,7 +15,7 @@ var elesfn = ({
     // notify renderer
     this.cy().notify( {
       type: event,
-      collection: this
+      eles: this
     } );
 
     this.trigger( event, extraParams );

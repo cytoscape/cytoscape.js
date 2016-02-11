@@ -33,7 +33,7 @@ function CanvasRenderer( options ){
     canvasNeedsRedraw: new Array( CRp.CANVAS_LAYERS ),
 
     bufferCanvases: new Array( CRp.BUFFER_COUNT ),
-    bufferContexts: new Array( CRp.CANVAS_LAYERS )
+    bufferContexts: new Array( CRp.CANVAS_LAYERS ),
   };
 
   r.data.canvasContainer = document.createElement( 'div' );
@@ -74,8 +74,7 @@ function CanvasRenderer( options ){
     //r.data.canvasContainer.appendChild(r.data.bufferCanvases[i]);
   }
 
-  r.data.textureCanvas = document.createElement( 'canvas' );
-  r.data.textureContext = r.data.textureCanvas.getContext( '2d' );
+  r.data.eleImgCaches = {};
 
   r.pathsEnabled = true;
 }
@@ -113,6 +112,7 @@ CRp.usePaths = function(){
 
 [
   require( './arrow-shapes' ),
+  require( './drawing-caches' ),
   require( './drawing-edges' ),
   require( './drawing-images' ),
   require( './drawing-label-text' ),

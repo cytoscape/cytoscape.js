@@ -58,6 +58,7 @@ var elesfn = ({
   // get the internal parsed style object for the specified property
   parsedStyle: function( property ){
     var ele = this[0];
+    if( !ele.cy().styleEnabled() ){ return; }
 
     if( ele ){
       return ele._private.style[ property ] || ele.cy().style().getDefaultProperty( property );

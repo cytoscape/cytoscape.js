@@ -411,9 +411,9 @@ CRp.render = function( options ){
     r.textureCache = null;
   }
 
+  var extent = cy.extent();
   var vpManip = (r.pinching || r.hoverData.dragging || r.swipePanning || r.data.wheelZooming || r.hoverData.draggingEles);
   var hideEdges = r.hideEdgesOnViewport && vpManip;
-  var hideLabels = r.hideLabelsOnViewport && vpManip;
 
   if( needDraw[ r.DRAG ] || needDraw[ r.NODE ] || drawAllLayers || drawOnlyNodeLayer ){
     var zEles = r.getCachedZSortedEles();
@@ -440,11 +440,7 @@ CRp.render = function( options ){
     for( var i = 0; i < eles.length; i++ ){
       var ele = eles[ i ];
 
-      if( ele.isNode() ){
-        r.drawNode( context, ele, !hideLabels );
-      } else if( !hideEdges ){
-        r.drawEdge( context, ele, !hideLabels );
-      }
+      r.drawCachedElement( context, ele, pixelRatio, extent );
     }
   }
 

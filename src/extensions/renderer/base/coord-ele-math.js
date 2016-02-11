@@ -12,7 +12,7 @@ BRp.registerCalculationListeners = function(){
   var elesToUpdate = cy.collection();
   var r = this;
 
-  var enqueue = function( eles ){
+  var enqueue = function( eles, invalTxrCache ){
     elesToUpdate.merge( eles );
 
     for( var i = 0; i < eles.length; i++ ){
@@ -22,6 +22,10 @@ BRp.registerCalculationListeners = function(){
 
       rstyle.clean = false;
       _p.bbCache = null;
+
+      if( invalTxrCache === undefined || invalTxrCache ){
+        r.invalidateElementInTexture( ele );
+      }
     }
   };
 
@@ -31,7 +35,7 @@ BRp.registerCalculationListeners = function(){
     .on('position.* style.*', 'node', function( e ){
       var node = e.cyTarget;
 
-      enqueue( node );
+      enqueue( node, e.type === 'style' );
       enqueue( node.connectedEdges() );
 
       if( cy.hasCompoundNodes() ){

@@ -3,7 +3,7 @@
 A selector functions similar to a CSS selector on DOM elements, but selectors in Cytoscape.js instead work on collections of graph elements.  Note that wherever a selector may be specified as the argument to a function, a [`eles.filter()`](#collection/building--filtering/eles.filter)-style filter function may be used in place of the selector.  For example:
 
 ```js
-var neighborhoodEdges = cy.neighborhood(function(){
+cy.$('#j').neighborhood(function(){
   return this.isEdge();
 });
 ```
@@ -12,7 +12,7 @@ The selectors can be combined together to make powerful queries in Cytoscape.js,
 
 ```js
 // get all nodes with weight more than 50 and height strictly less than 180
-cy.elements("node[weight >= 50][height < 180]"); 
+cy.elements("node[weight >= 50][height < 180]");
 ```
 
 Selectors can be joined together (effectively creating a logical OR) with commas:
@@ -27,7 +27,7 @@ It is important to note that strings need to be enclosed by quotation marks:
 ```js
 //cy.filter('node[name = Jerry]'); // this doesn't work
 cy.filter('node[name = "Jerry"]'); // but this does
-``` 
+```
 
 Note that metacharacters ( ^ $ \ / ( ) | ? + * [ ] { } , . ) need to be escaped:
 

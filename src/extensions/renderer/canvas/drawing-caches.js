@@ -5,7 +5,9 @@ var util = require( '../../../util' );
 
 var CRp = {};
 
-var minLvl = -2; // -2 => 0.25 scale ; when scaling smaller than that we don't need to re-render
+var minTxrH = 25; // the size of the texture cache for small height eles (special case)
+var txrStepH = 50; // the min size of the regular cache, and the size it increases with each step up
+var minLvl = -4; // -4 => 0.00625 scale ; when scaling smaller than that we don't need to re-render
 var maxLvl = 3; // 3 => 8 scale ; when larger than this scale just render directly (caching is not helpful)
 var maxZoom = 4; // TODO optimise; beyond this zoom level, textures are not used
 var eleTxrSpacing = 4; // spacing between elements on textures to avoid blitting overlaps
@@ -25,15 +27,12 @@ var getRetiredTextureQueue = function( r, txrH ){
   return rtxtrQ;
 };
 
-CRp.getElementTextureCache = function( ele, bb, pxRatio ){
+CRp.getElementTextureCache = function( ele, bb, pxRatio, lvl ){
   var r = this;
   var rs = ele._private.rscratch;
-  var minTxrH = 50; // the size of the texture cache for small height eles (special case)
-  var txrStepH = 100; // the min size of the regular cache, and the size it increases with each step up
-  var txrH; // which texture height this ele belongs to
-  var maxA = 1e6; // the max area each texture should support
   var zoom = r.cy.zoom();
-  var lvl = Math.ceil( Math.log2( zoom * pxRatio ) );
+
+  lvl = lvl != null ? lvl : Math.ceil( Math.log2( zoom * pxRatio ) );
 
   if( lvl < minLvl ){
     lvl = minLvl;
@@ -50,6 +49,8 @@ CRp.getElementTextureCache = function( ele, bb, pxRatio ){
   if( eleCache ){
     return eleCache;
   }
+
+  var txrH; // which texture height this ele belongs to
 
   if( eleScaledH <= minTxrH ){
     txrH = minTxrH;
@@ -83,13 +84,38 @@ CRp.getElementTextureCache = function( ele, bb, pxRatio ){
     txr = addNewTxr();
   }
 
-  txr.context.translate( txr.usedWidth, 0 );
-  txr.context.scale( scale, scale );
+  var higherCache; // the nearest cache with a higher level
+  for( var l = lvl + 1; l <= maxLvl; l++ ){
+    var c = caches[l];
 
-  r.drawElement( txr.context, ele, bb );
+    if( c ){ higherCache = c; break; }
+  }
 
-  txr.context.scale( 1/scale, 1/scale );
-  txr.context.translate( -txr.usedWidth, 0 );
+  var oneUpCache = higherCache && higherCache.level === lvl + 1 ? higherCache : null;
+  if( higherCache ){
+    // fill in the levels in between
+    for( var l = higherCache.level - 1; l > lvl; l-- ){
+      oneUpCache = r.getElementTextureCache( ele, bb, pxRatio, l );
+    }
+  }
+
+  if( oneUpCache ){
+    txr.context.drawImage(
+      oneUpCache.texture.canvas,
+      oneUpCache.x, 0,
+      oneUpCache.width, oneUpCache.height,
+      txr.usedWidth, 0,
+      eleScaledW, eleScaledH
+    );
+  } else {
+    txr.context.translate( txr.usedWidth, 0 );
+    txr.context.scale( scale, scale );
+
+    r.drawElement( txr.context, ele, bb );
+
+    txr.context.scale( 1/scale, 1/scale );
+    txr.context.translate( -txr.usedWidth, 0 );
+  }
 
   eleCache = caches[lvl] = {
     ele: ele,

@@ -210,11 +210,6 @@ CRp.retireTexture = function( txr ){
 
   util.clearArray( eleCaches );
 
-  // TODO remove
-  // we should never be drawing from a retired texture
-  txr.context.fillStyle = 'rgba(255, 0, 0, 0.25)';
-  txr.context.fillRect( 0, 0, txr.width, txr.height );
-
   // add the texture to a retired queue so it can be recycled in future:
 
   var rtxtrQ = getRetiredTextureQueue( r, txrH );

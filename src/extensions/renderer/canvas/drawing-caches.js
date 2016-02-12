@@ -7,10 +7,12 @@ var CRp = {};
 
 var minLvl = -2; // -2 => 0.25 scale ; when scaling smaller than that we don't need to re-render
 var maxLvl = 3; // 3 => 8 scale ; when larger than this scale just render directly (caching is not helpful)
-var maxZoom = 4; // TODO this value may need tweaking/optimising
+var maxZoom = 4; // TODO optimise; beyond this zoom level, textures are not used
 var eleTxrSpacing = 4; // spacing between elements on textures to avoid blitting overlaps
-var defTxrWidth = 3000; // TODO this size needs optimising!!
-var minUtility = 0.5; // TODO may need to optimise this value
+var defTxrWidth = 3000; // TODO optimise; default/minimum texture width
+var minUtility = 0.5; // TODO optimise; if usage of texture is less than this, it is retired
+var maxFullness = 0.8; // TODO optimise; fullness of texture after which queue removal is checked
+var maxFullnessChecks = 10; // TODO optimise; dequeued after this many checks
 
 var getTextureQueue = function( r, txrH ){
   return r.data.eleImgCaches[ txrH ] = r.data.eleImgCaches[ txrH ] || [];
@@ -141,8 +143,17 @@ CRp.checkTextureUtility = function( txr ){
 };
 
 CRp.checkTextureFullness = function( txr ){
-  // TODO if texture has been mostly filled and passed over several times, remove
+  // if texture has been mostly filled and passed over several times, remove
   // it from the queue so we don't need to waste time looking at it to put new things
+
+  var r = this;
+  var txrQ = getTextureQueue( r, txr.height );
+
+  if( txr.usedWidth / txr.width > maxFullness && txr.fullnessChecks >= maxFullnessChecks ){
+    util.removeFromArray( txrQ, txr );
+  } else {
+    txr.fullnessChecks++;
+  }
 };
 
 CRp.retireTexture = function( txr ){
@@ -198,6 +209,7 @@ CRp.addTexture = function( txrH, minW ){
   txr.width = Math.max( defTxrWidth, minW );
   txr.usedWidth = 0;
   txr.invalidatedWidth = 0;
+  txr.fullnessChecks = 0;
 
   txr.canvas = document.createElement('canvas');
   txr.canvas.width = txr.width;
@@ -221,6 +233,7 @@ CRp.recycleTexture = function( txrH, minW ){
 
       txr.usedWidth = 0;
       txr.invalidatedWidth = 0;
+      txr.fullnessChecks = 0;
 
       util.clearArray( txr.eleCaches );
 

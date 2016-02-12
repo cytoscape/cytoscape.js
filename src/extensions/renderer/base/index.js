@@ -20,7 +20,7 @@ BRp.init = function( options ){
 
   r.selection = [ undefined, undefined, undefined, undefined, 0]; // Coordinates for selection box, plus enabled flag
 
-  r.bezierProjPcts = [ 0.05, 0.25, 0.4, 0.5, 0.6, 0.75, 0.95 ];
+  r.bezierProjPcts = [ 0.05, 0.225, 0.4, 0.5, 0.6, 0.775, 0.95 ];
 
   //--Pointer-related data
   r.hoverData = {down: null, last: null,

@@ -226,6 +226,7 @@ fn = elesfn = ({
       var bb = children.boundingBox( {
         includeLabels: includeLabels,
         includeShadows: false,
+        includeOverlays: false,
 
         // updating the compound bounds happens outside of the regular
         // cache cycle (i.e. before fired events)

@@ -99,6 +99,8 @@ form {
 
 #cy-label code {
 	font-size: 0.8em;
+	background: #fff;
+	border-color: #ccc;
 }
 
 #cy-title .content {

@@ -21,8 +21,7 @@ When `ani.play()` is done:
 ```js
 var jAni = cy.$('#j').animation({
   style: {
-    width: 100,
-    height: 200
+    height: 60
   },
   duration: 1000
 });

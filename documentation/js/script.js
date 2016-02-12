@@ -166,12 +166,11 @@ $(function(){
     $content.hide().fadeIn(100).delay(250).hide(200, function(){
       var ret = eval( text );
 
-      isEles = function(o){
-        o && o.isNode;
+      var isEles = function(o){
+        return o != null && o.isNode != null;
       }
 
-      if( ret && isEles( ret ) && ret.length > 0 ){
-        //console.log(ret)
+      if( isEles( ret ) && ret.length > 0 ){
 
         var css = {
           'text-outline-color': '#4183C4',

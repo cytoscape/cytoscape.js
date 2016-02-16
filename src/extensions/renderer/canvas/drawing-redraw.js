@@ -627,6 +627,10 @@ CRp.render = function( options ){
     cy.triggerOnRender();
   }
 
+  if( r.dequeueElementCaches( pixelRatio, extent ) ){
+    r.redraw();
+  }
+
 };
 
 module.exports = CRp;

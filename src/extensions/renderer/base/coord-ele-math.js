@@ -31,17 +31,29 @@ BRp.invalidateContainerClientCoordsCache = function(){
   this.containerBB = null;
 };
 
+BRp.getEdgeThreshold = function(isTouch, zoom) {
+	return (isTouch ? 24 : 8) / zoom;
+}
+
+BRp.getNodeThreshold = function(isTouch, zoom) {
+	return (isTouch ? 8 : 2) / zoom;
+}
+
+BRp.getLabelThreshold = function(isTouch, zoom) {
+	return (isTouch ? 8 : 2) / zoom;
+}
+
 // Find nearest element
 BRp.findNearestElement = function(x, y, visibleElementsOnly, isTouch){
   var self = this;
   var r = this;
   var eles = r.getCachedZSortedEles();
   var near = [];
-  var zoom = r.cy.zoom();
   var hasCompounds = r.cy.hasCompoundNodes();
-  var edgeThreshold = (isTouch ? 24 : 8) / zoom;
-  var nodeThreshold = (isTouch ? 8 : 2) / zoom;
-  var labelThreshold = (isTouch ? 8 : 2) / zoom;
+  var zoom = r.cy.zoom();
+  var edgeThreshold = r.getEdgeThreshold(isTouch, zoom);
+  var nodeThreshold = r.getNodeThreshold(isTouch, zoom);
+  var labelThreshold = r.getLabelThreshold(isTouch, zoom);
 
   function checkNode(node){
     var _p = node._private;

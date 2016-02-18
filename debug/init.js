@@ -4,12 +4,12 @@
 
 $(function(){
 
-  var addRandomEles = false;
+  var addRandomEles = true;
   var height, width;
 
-  var cliques = 2;
-  var numNodes = 40;
-  var numEdges = 120;
+  var cliques = 4;
+  var numNodes = 500;
+  var numEdges = 1000;
 
   var defaultSty = window.defaultSty = cytoscape.stylesheet()
       .selector('node, edge')
@@ -148,9 +148,9 @@ $(function(){
     // hideEdgesOnViewport: true,
     // hideLabelsOnViewport: true,
     // textureOnViewport: true,
-    // motionBlur: false,
+    // motionBlur: true,
     // pixelRatio: 'auto',
-    // motionBlurOpacity: 0.5,
+    // motionBlurOpacity: 0.125,
     renderer: {
       name: 'canvas',
       showFps: true

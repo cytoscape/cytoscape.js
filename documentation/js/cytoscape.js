@@ -17249,6 +17249,18 @@ CRp.render = function( options ) {
   motionBlur = motionBlur && !forcedContext && r.motionBlurEnabled && !inBoxSelection;
   var motionBlurFadeEffect = motionBlur;
 
+  if( !forcedContext ){
+    if( r.prevPxRatio !== pixelRatio ){
+      r.invalidateContainerClientCoordsCache();
+      r.matchCanvasSize( r.container );
+
+      r.redrawHint('eles', true);
+      r.redrawHint('drag', true);
+    }
+
+    r.prevPxRatio = pixelRatio;
+  }
+
   if( !forcedContext && r.motionBlurTimeout ){
     clearTimeout( r.motionBlurTimeout );
   }
@@ -18837,7 +18849,7 @@ var cytoscape = function( options ){ // jshint ignore:line
 };
 
 // replaced by build system
-cytoscape.version = '2.6.3';
+cytoscape.version = '2.6.4';
 
 // try to register w/ jquery
 if( window && window.jQuery ){

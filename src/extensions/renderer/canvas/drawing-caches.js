@@ -6,17 +6,23 @@ var Heap = require( '../../../heap' );
 
 var CRp = {};
 
+// TODO optimise these values
+
+CRp.dequeueElementCachesCost = 0.2; // % of add'l rendering cost allowed for dequeuing ele caches each frame
+CRp.dequeueElementCachesAverageCost = 0.1; // % of add'l rendering cost compared to average overall redraw time
+
 var minTxrH = 25; // the size of the texture cache for small height eles (special case)
 var txrStepH = 50; // the min size of the regular cache, and the size it increases with each step up
 var minLvl = -4; // -4 => 0.00625 scale ; when scaling smaller than that we don't need to re-render
-var maxLvl = 10; // 3 => 8 scale ; when larger than this scale just render directly (caching is not helpful)
-var maxZoom = 50; // TODO optimise; beyond this zoom level, textures are not used
+var maxLvl = 3; // 3 => 8 scale ; when larger than this scale just render directly (caching is not helpful)
+var maxZoom = 3.99; // beyond this zoom level, textures are not used
 var eleTxrSpacing = 4; // spacing between elements on textures to avoid blitting overlaps
-var defTxrWidth = 3000; // TODO optimise; default/minimum texture width
-var minUtility = 0.5; // TODO optimise; if usage of texture is less than this, it is retired
-var maxFullness = 0.8; // TODO optimise; fullness of texture after which queue removal is checked
-var maxFullnessChecks = 10; // TODO optimise; dequeued after this many checks
-var maxDeqSize = 10; // TODO optimise; number of eles to dequeue and render at higher texture
+var defTxrWidth = 12000; // default/minimum texture width
+var minUtility = 0.5; // if usage of texture is less than this, it is retired
+var maxFullness = 0.8; // fullness of texture after which queue removal is checked
+var maxFullnessChecks = 10; // dequeued after this many checks
+var maxDeqSize = 10; // number of eles to dequeue and render at higher texture in each batch
+
 var getTxrReasons = {
   dequeue: 'dequeue',
   downscale: 'downscale'
@@ -24,6 +30,8 @@ var getTxrReasons = {
 
 // the list of textures in which new subtextures for elements can be placed
 var getTextureQueue = function( r, txrH ){
+  window.qs = r.data.eleImgCaches;
+
   return r.data.eleImgCaches[ txrH ] = r.data.eleImgCaches[ txrH ] || [];
 };
 
@@ -110,6 +118,8 @@ CRp.getElementTextureCache = function( ele, bb, pxRatio, lvl, reason ){
     txr = addNewTxr();
   }
 
+  var deqing = reason && reason === getTxrReasons.dequeue;
+
   var higherCache; // the nearest cache with a higher level
   for( var l = lvl + 1; l <= maxLvl; l++ ){
     var c = caches[l];
@@ -118,14 +128,10 @@ CRp.getElementTextureCache = function( ele, bb, pxRatio, lvl, reason ){
   }
 
   var oneUpCache = higherCache && higherCache.level === lvl + 1 ? higherCache : null;
-  if( higherCache ){
-    // fill in the levels in between
-    for( var l = higherCache.level - 1; l > lvl; l-- ){
-      oneUpCache = r.getElementTextureCache( ele, bb, pxRatio, l, getTxrReasons.downscale );
-    }
-  }
 
-  if( oneUpCache ){
+  if( oneUpCache && deqing ){
+    // then we can relatively cheaply rescale the existing image w/o rerendering
+
     txr.context.drawImage(
       oneUpCache.texture.canvas,
       oneUpCache.x, 0,
@@ -133,8 +139,14 @@ CRp.getElementTextureCache = function( ele, bb, pxRatio, lvl, reason ){
       txr.usedWidth, 0,
       eleScaledW, eleScaledH
     );
+  } else if( higherCache ){
+    // then use the higher cache for now and queue the next level down
+    // to cheaply scale towards the smaller level
+
+    r.queueElementCache( ele, higherCache.level - 1 );
+
+    return higherCache;
   } else {
-    var deqing = reason && reason === getTxrReasons.dequeue;
 
     var lowerCache; // the nearest cache with a lower level
     if( !deqing ){
@@ -342,14 +354,18 @@ CRp.dequeueElementCaches = function( pxRatio, extent ){
   var r = this;
   var q = getEleCacheQueue( r );
   var id2q = getEleIdToCacheQueue( r );
-  var dequeued = false;
+  var dequeued = [];
 
   for( var i = 0; i < maxDeqSize; i++ ){
     if( q.size() > 0 ){
       var req = q.pop();
 
-      dequeued = true;
-      r.getElementTextureCache( req.ele, req.ele.boundingBox(), pxRatio, req.lvl, getTxrReasons.dequeue );
+      req.bb = req.ele.boundingBox();
+
+      id2q[ req.ele.id() ] = null;
+
+      dequeued.push( req );
+      r.getElementTextureCache( req.ele, req.bb, pxRatio, req.lvl, getTxrReasons.dequeue );
     } else {
       break;
     }

@@ -186,6 +186,8 @@ CRp.renderTo = function( cxt, zoom, pan, pxRatio ){
 CRp.render = function( options ){
   options = options || util.staticEmptyObject();
 
+  var startTime = util.performanceNow();
+
   var forcedContext = options.forcedContext;
   var drawAllLayers = options.drawAllLayers;
   var drawOnlyNodeLayer = options.drawOnlyNodeLayer;
@@ -452,6 +454,7 @@ CRp.render = function( options ){
     for( var i = 0; i < eles.length; i++ ){
       var ele = eles[ i ];
 
+      // r.drawElement( context, ele );
       r.drawCachedElement( context, ele, pixelRatio, extent );
     }
   }
@@ -639,8 +642,52 @@ CRp.render = function( options ){
     cy.triggerOnRender();
   }
 
-  if( r.dequeueElementCaches( pixelRatio, extent ) ){
-    r.redraw();
+  var renderTime = util.performanceNow() - startTime;
+  var avgRenderTime = r.averageRedrawTime;
+  var deqd = [];
+
+  while( true ){
+    var duration = util.performanceNow() - startTime;
+
+    if(
+         duration > (1 + r.dequeueElementCachesCost) * renderTime
+      || duration > (1 + r.dequeueElementCachesAverageCost) * avgRenderTime
+    ){
+      break;
+    }
+
+    var thisDeqd = r.dequeueElementCaches( pixelRatio, extent );
+
+    if( thisDeqd.length > 0 ){
+      for( var i = 0; i < thisDeqd.length; i++ ){
+        deqd.push( thisDeqd[i] );
+      }
+    } else {
+      break;
+    }
+  }
+
+  if( deqd.length > 0 ){
+    setTimeout(function(){
+      var anyDeqdInViewport = false;
+
+      for( var i = 0; i < deqd.length; i++ ){
+        var bb = deqd[i].bb;
+
+        if( math.boundingBoxesIntersect( bb, extent ) ){
+          anyDeqdInViewport = true;
+          break;
+        }
+      }
+
+      if( anyDeqdInViewport ){
+        r.redrawHint( 'eles', true );
+        r.redrawHint( 'drag', true );
+
+        r.redraw();
+      }
+
+    }, 0);
   }
 
 };

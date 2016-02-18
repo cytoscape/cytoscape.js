@@ -204,6 +204,18 @@ CRp.render = function( options ){
   motionBlur = motionBlur && !forcedContext && r.motionBlurEnabled && !inBoxSelection;
   var motionBlurFadeEffect = motionBlur;
 
+  if( !forcedContext ){
+    if( r.prevPxRatio !== pixelRatio ){
+      r.invalidateContainerClientCoordsCache();
+      r.matchCanvasSize( r.container );
+
+      r.redrawHint('eles', true);
+      r.redrawHint('drag', true);
+    }
+
+    r.prevPxRatio = pixelRatio;
+  }
+
   if( !forcedContext && r.motionBlurTimeout ){
     clearTimeout( r.motionBlurTimeout );
   }

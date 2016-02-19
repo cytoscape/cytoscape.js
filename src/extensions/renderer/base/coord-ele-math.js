@@ -62,12 +62,14 @@ BRp.registerCalculationListeners = function(){
     })
   ;
 
-  var updateEles = function(){
-    r.recalculateRenderedStyle( elesToUpdate );
-    elesToUpdate = cy.collection();
+  var updateEleCalcs = function( willDraw ){
+    if( willDraw ){
+      r.recalculateRenderedStyle( elesToUpdate );
+      elesToUpdate = cy.collection();
+    }
   };
 
-  this.beforeRender( updateEles );
+  this.beforeRender( updateEleCalcs );
 };
 
 BRp.recalculateRenderedStyle = function( eles, bypassCache ){

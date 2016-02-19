@@ -610,24 +610,77 @@ var boundingBoxImpl = function( ele, options ){
     } // style enabled for labels
   } // if displayed
 
+  bounds.x1 = noninf( bounds.x1 );
+  bounds.y1 = noninf( bounds.y1 );
+  bounds.x2 = noninf( bounds.x2 );
+  bounds.y2 = noninf( bounds.y2 );
+  bounds.w = noninf( bounds.x2 - bounds.x1 );
+  bounds.h = noninf( bounds.y2 - bounds.y1 );
+
   return bounds;
+};
+
+var getKey = function( args ){
+  var key = '';
+
+  for( var i = 0; i < args.length; i++ ){
+    if( args[i] ){
+      key += 't';
+    } else {
+      key += 'f';
+    }
+  }
+
+  return key;
 };
 
 var cachedBoundingBoxImpl = function( ele, opts ){
   var _p = ele._private;
   var bb;
   var headless = ele.cy().headless();
+  var key = getKey([
+    opts.incudeNodes,
+    opts.includeEdges,
+    opts.includeLabels,
+    opts.includeShadows,
+    opts.includeOverlays
+  ]);
 
-  if( headless || !_p.bbCache || !opts.useCache ){
-    bb = _p.bbCache = boundingBoxImpl( ele, opts );
+  if( !opts.useCache || headless || !_p.bbCache || !_p.bbCache[key] ){
+    bb = boundingBoxImpl( ele, opts );
+
+    if( !headless ){
+      _p.bbCache = _p.bbCache || {};
+      _p.bbCache[key] = bb;
+    }
   } else {
-    bb = _p.bbCache;
+    bb = _p.bbCache[key];
   }
 
   return bb;
 };
 
+var defBbOpts = {
+  includeNodes: true,
+  includeEdges: true,
+  includeLabels: true,
+  includeShadows: true,
+  includeOverlays: true,
+  useCache: true
+};
+
 elesfn.boundingBox = function( options ){
+  // the main usecase is ele.boundingBox() for a single element with no/def options
+  // specified s.t. the cache is used, so check for this case to make it faster by
+  // avoiding the overhead of the rest of the function
+  if( this.length === 1 && this[0]._private.bbCache && (options === undefined || options.useCache === undefined || options.useCache === true) ){
+    if( options === undefined ){
+      options = defBbOpts;
+    }
+
+    return cachedBoundingBoxImpl( this[0], options );
+  };
+
   var bounds = {
     x1: Infinity,
     y1: Infinity,
@@ -637,24 +690,42 @@ elesfn.boundingBox = function( options ){
 
   options = options || util.staticEmptyObject();
 
-  var opts = util.extend( {
-    includeNodes: true,
-    includeEdges: true,
-    includeLabels: true,
-    includeShadows: true,
-    includeOverlays: true,
-    useCache: true
-  }, options );
+  var opts = {
+    includeNodes: util.default( options.includeNodes, defBbOpts.includeNodes ),
+    includeEdges: util.default( options.includeEdges, defBbOpts.includeEdges ),
+    includeLabels: util.default( options.includeLabels, defBbOpts.includeLabels ),
+    includeShadows: util.default( options.includeShadows, defBbOpts.includeShadows ),
+    includeOverlays: util.default( options.includeOverlays, defBbOpts.includeOverlays ),
+    useCache: util.default( options.useCache, defBbOpts.useCache )
+  };
 
   var eles = this;
+  var headless = eles.cy().headless();
+  var hasEdges = false;
+  var hasDirtyEles = false;
+
+  for( var i = 0; i < eles.length; i++ ){
+    var _p = eles[i]._private;
+
+    if( _p.group === 'edges' ){
+      hasEdges = true;
+    }
+
+    if( headless || !_p.bbCache || !opts.useCache || !_p.rstyle.clean ){
+      hasDirtyEles = true;
+    }
+
+    if( hasEdges && hasDirtyEles ){ break; }
+  }
 
   // recalculate projections etc
   var cy_p = eles.cy()._private;
   var styleEnabled = cy_p.styleEnabled;
-  if( styleEnabled ){
-    var pEdges = eles.parallelEdges();
 
-    cy_p.renderer.recalculateRenderedStyle( pEdges.nonempty() ? pEdges.merge( eles ) : eles, !opts.useCache );
+  if( styleEnabled && hasDirtyEles ){
+    var pEdges = hasEdges ? eles.parallelEdges() : null;
+
+    cy_p.renderer.recalculateRenderedStyle( pEdges && pEdges.nonempty() ? pEdges.merge( eles ) : eles, !opts.useCache );
   }
 
   for( var i = 0; i < eles.length; i++ ){

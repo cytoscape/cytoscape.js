@@ -8,8 +8,8 @@ $(function(){
   var height, width;
 
   var cliques = 4;
-  var numNodes = 500;
-  var numEdges = 1000;
+  var numNodes = 20;
+  var numEdges = 600;
 
   var defaultSty = window.defaultSty = cytoscape.stylesheet()
       .selector('node, edge')
@@ -90,7 +90,7 @@ $(function(){
           // 'mid-source-arrow-shape': 'triangle-backcurve',
           // 'target-arrow-fill': 'filled',
           // 'source-arrow-shape': 'data(srcShape)',
-          // 'curve-style': 'haystack',
+          'curve-style': 'haystack',
           // 'opacity': 0.5
           // 'content': 'data(weight)',
           // 'text-rotation': 'autorotate',

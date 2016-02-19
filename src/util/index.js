@@ -66,6 +66,14 @@ util.extend = Object.assign != null ? Object.assign : function( tgt ){
   return tgt;
 };
 
+util.default = function( val, def ){
+  if( val === undefined ){
+    return def;
+  } else {
+    return val;
+  }
+};
+
 util.removeFromArray = function( arr, ele, manyCopies ){
   for( var i = arr.length; i >= 0; i-- ){
     if( arr[i] === ele ){

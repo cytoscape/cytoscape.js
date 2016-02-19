@@ -146,16 +146,18 @@ var corefn = ({
 
       // notify renderer
       if( ranEleAni || ranCoreAni ){
-        var toNotify;
-
         if( eles.length > 0 ){
-          var updatedEles = eles.updateCompoundBounds();
-          toNotify = updatedEles.length > 0 ? eles.add( updatedEles ) : eles;
-        } else {
-          toNotify = cy;
-        }
+          var updatedEles = eles.updateCompoundBounds().merge( eles );
 
-        toNotify.rtrigger('style');
+          cy.notify({
+            type: 'draw',
+            eles: eles
+          });
+        } else {
+          cy.notify({
+            type: 'draw'
+          });
+        }
       }
 
       // remove elements from list of currently animating if its queues are empty
@@ -276,6 +278,8 @@ var corefn = ({
           if( valid( startPos.y, endPos.y ) ){
             pos.y = ease( startPos.y, endPos.y, percent, easing );
           }
+
+          self.trigger('position');
         }
 
         var startPan = ani_p.startPan;
@@ -322,6 +326,8 @@ var corefn = ({
 
             style.overrideBypass( self, name, easedVal );
           } // for props
+
+          self.trigger('style');
 
         } // if
 

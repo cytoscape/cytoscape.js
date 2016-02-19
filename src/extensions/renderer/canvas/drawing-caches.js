@@ -9,19 +9,20 @@ var CRp = {};
 // TODO optimise these values
 
 CRp.dequeueElementCachesCost = 0.2; // % of add'l rendering cost allowed for dequeuing ele caches each frame
-CRp.dequeueElementCachesAverageCost = 0.1; // % of add'l rendering cost compared to average overall redraw time
+CRp.dequeueElementCachesAverageCost = 0.2; // % of add'l rendering cost compared to average overall redraw time
 
 var minTxrH = 25; // the size of the texture cache for small height eles (special case)
 var txrStepH = 50; // the min size of the regular cache, and the size it increases with each step up
 var minLvl = -4; // -4 => 0.00625 scale ; when scaling smaller than that we don't need to re-render
-var maxLvl = 3; // 3 => 8 scale ; when larger than this scale just render directly (caching is not helpful)
+var maxLvl = 2; // 2 => 4 scale ; when larger than this scale just render directly (caching is not helpful)
 var maxZoom = 3.99; // beyond this zoom level, textures are not used
 var eleTxrSpacing = 4; // spacing between elements on textures to avoid blitting overlaps
-var defTxrWidth = 12000; // default/minimum texture width
+var defTxrWidth = 8192; //4096; // default/minimum texture width
 var minUtility = 0.5; // if usage of texture is less than this, it is retired
 var maxFullness = 0.8; // fullness of texture after which queue removal is checked
 var maxFullnessChecks = 10; // dequeued after this many checks
 var maxDeqSize = 10; // number of eles to dequeue and render at higher texture in each batch
+var deqRedrawThreshold = 100; // time to batch redraws together from dequeueing to allow more dequeueing calcs to happen in the meanwhile
 
 var getTxrReasons = {
   dequeue: 'dequeue',
@@ -143,7 +144,7 @@ CRp.getElementTextureCache = function( ele, bb, pxRatio, lvl, reason ){
     // then use the higher cache for now and queue the next level down
     // to cheaply scale towards the smaller level
 
-    r.queueElementCache( ele, higherCache.level - 1 );
+    r.queueElementCache( ele, bb, higherCache.level - 1 );
 
     return higherCache;
   } else {
@@ -160,7 +161,7 @@ CRp.getElementTextureCache = function( ele, bb, pxRatio, lvl, reason ){
     if( lowerCache ){
       // then use the lower quality cache for now and queue the better one for later
 
-      r.queueElementCache( ele, lvl );
+      r.queueElementCache( ele, bb, lvl );
 
       return lowerCache;
     }
@@ -325,7 +326,7 @@ CRp.recycleTexture = function( txrH, minW ){
   }
 };
 
-CRp.queueElementCache = function( ele, lvl ){
+CRp.queueElementCache = function( ele, bb, lvl ){
   var r = this;
   var q = getEleCacheQueue( r );
   var id2q = getEleIdToCacheQueue( r );
@@ -340,6 +341,7 @@ CRp.queueElementCache = function( ele, lvl ){
   } else {
     var req = {
       ele: ele,
+      bb: bb,
       lvl: lvl,
       reqs: 1
     };
@@ -360,8 +362,6 @@ CRp.dequeueElementCaches = function( pxRatio, extent ){
     if( q.size() > 0 ){
       var req = q.pop();
 
-      req.bb = req.ele.boundingBox();
-
       id2q[ req.ele.id() ] = null;
 
       dequeued.push( req );
@@ -372,6 +372,72 @@ CRp.dequeueElementCaches = function( pxRatio, extent ){
   }
 
   return dequeued;
+};
+
+CRp.setupElementCacheDequeueing = function(){
+  var r = this;
+
+  if( r.data.eleCacheDeqSetup ){
+    return;
+  } else {
+    r.data.eleCacheDeqSetup = true;
+  }
+
+  var queueRedraw = util.debounce( function(){
+    r.redrawHint( 'eles', true );
+    r.redrawHint( 'drag', true );
+
+    r.redraw();
+  }, deqRedrawThreshold );
+
+  var dequeue = function( willDraw ){
+    var startTime = util.performanceNow();
+    var avgRenderTime = r.averageRedrawTime;
+    var renderTime = r.lastRedrawTime;
+    var deqd = [];
+    var extent = r.cy.extent();
+    var pixelRatio = r.getPixelRatio();
+
+    while( true ){
+      var duration = util.performanceNow() - startTime;
+
+      if(
+           duration > r.dequeueElementCachesCost * renderTime
+        || duration > r.dequeueElementCachesAverageCost * avgRenderTime
+      ){
+        break;
+      }
+
+      var thisDeqd = r.dequeueElementCaches( pixelRatio, extent );
+
+      if( thisDeqd.length > 0 ){
+        for( var i = 0; i < thisDeqd.length; i++ ){
+          deqd.push( thisDeqd[i] );
+        }
+      } else {
+        break;
+      }
+    }
+
+    if( !willDraw && deqd.length > 0 ){
+      var anyDeqdInViewport = false;
+
+      for( var i = 0; i < deqd.length; i++ ){
+        var bb = deqd[i].bb;
+
+        if( math.boundingBoxesIntersect( bb, extent ) ){
+          anyDeqdInViewport = true;
+          break;
+        }
+      }
+
+      if( anyDeqdInViewport ){
+        queueRedraw();
+      }
+    }
+  };
+
+  r.beforeRender( dequeue );
 };
 
 CRp.drawCachedElement = function( context, ele, pxRatio, extent ){

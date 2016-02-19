@@ -40,7 +40,7 @@ var corefn = ({
     function globalAnimationStep(){
       if( !cy._private.animationsRunning ){ return; }
 
-      util.requestAnimationFrame( function( now ){
+      util.requestAnimationFrame( function animationStep( now ){
         handleElements( now );
         globalAnimationStep();
       } );

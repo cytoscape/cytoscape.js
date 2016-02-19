@@ -24,7 +24,19 @@ BRp.registerCalculationListeners = function(){
       _p.bbCache = null;
 
       if( invalTxrCache === undefined || invalTxrCache ){
-        r.invalidateElementInTexture( ele );
+        _p.rscratch.invalTxrCache = true;
+      }
+    }
+  };
+
+  // an optimised way of enqueuing connected edges since it's called a lot
+  var enqueueConnectedEdges = function( eles ){
+    for( var i = 0; i < eles.length; i++ ){
+      var ele = eles[i];
+      var edges = ele._private.edges;
+
+      for( var j = 0; j < edges.length; j++ ){
+        enqueue( edges[j] );
       }
     }
   };
@@ -36,13 +48,13 @@ BRp.registerCalculationListeners = function(){
       var node = e.cyTarget;
 
       enqueue( node, e.type === 'style' );
-      enqueue( node.connectedEdges() );
+      enqueueConnectedEdges( node );
 
       if( cy.hasCompoundNodes() ){
         var parents = node.parents();
 
         enqueue( parents )
-        enqueue( parents.connectedEdges() );
+        enqueueConnectedEdges( parents );
       }
     })
 
@@ -64,6 +76,16 @@ BRp.registerCalculationListeners = function(){
 
   var updateEleCalcs = function( willDraw ){
     if( willDraw ){
+      for( var i = 0; i < elesToUpdate.length; i++ ){
+        var ele = elesToUpdate[i];
+        var rs = ele._private.rscratch;
+
+        if( rs.invalTxrCache ){
+          rs.invalTxrCache = false;
+          r.invalidateElementInTexture( ele );
+        }
+      }
+
       r.recalculateRenderedStyle( elesToUpdate );
       elesToUpdate = cy.collection();
     }
@@ -621,7 +643,8 @@ BRp.projectBezier = BRp.projectLines;
 
 BRp.recalculateNodeLabelProjection = function( node ){
   var content = node.pstyle( 'label' ).strValue;
-  if( !content || content.match( /^\s+$/ ) ){ return; }
+  
+  if( is.emptyString(content) ){ return; }
 
   var textX, textY;
   var nodeWidth = node.outerWidth();
@@ -669,18 +692,32 @@ BRp.recalculateNodeLabelProjection = function( node ){
 BRp.recalculateEdgeLabelProjections = function( edge ){
   var p;
   var _p = edge._private;
-  var setRs = function( propName, prefix, value ){
-    util.setPrefixedProperty( _p.rscratch, propName, prefix, value );
-    util.setPrefixedProperty( _p.rstyle, propName, prefix, value );
-  };
   var rs = _p.rscratch;
   var r = this;
+  var content = {
+    mid: edge.pstyle('label').strValue,
+    source: edge.pstyle('source-label').strValue,
+    target: edge.pstyle('target-label').strValue
+  };
+
+  if(
+    is.emptyString( content.mid )
+    && is.emptyString( content.source )
+    && is.emptyString( content.target )
+  ){
+    return; //
+  }
 
   // add center point to style so bounding box calculations can use it
   //
   p = {
     x: rs.midX,
     y: rs.midY
+  };
+
+  var setRs = function( propName, prefix, value ){
+    util.setPrefixedProperty( _p.rscratch, propName, prefix, value );
+    util.setPrefixedProperty( _p.rstyle, propName, prefix, value );
   };
 
   setRs( 'labelX', null, p.x );
@@ -763,6 +800,9 @@ BRp.recalculateEdgeLabelProjections = function( edge ){
   var calculateEndProjection = function( prefix ){
     var angle;
     var isSrc = prefix === 'source';
+
+    if( is.emptyString( content[ prefix ] ) ){ return; }
+
     var offset = edge.pstyle(prefix+'-text-offset').pfValue;
 
     var lineAngle = function( p0, p1 ){

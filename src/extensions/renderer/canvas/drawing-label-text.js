@@ -150,19 +150,20 @@ CRp.drawText = function( context, ele, prefix ){
     return;
   }
 
-  var pdash = prefix ? prefix + '-' : '';
   var textX = util.getPrefixedProperty( rscratch, 'labelX', prefix );
   var textY = util.getPrefixedProperty( rscratch, 'labelY', prefix );
-  var textW = util.getPrefixedProperty( rscratch, 'labelWidth', prefix );
-  var textH = util.getPrefixedProperty( rscratch, 'labelHeight', prefix );
-  var textAngle = util.getPrefixedProperty( rscratch, 'labelAngle', prefix );
-  var marginX = ele.pstyle( pdash + 'text-margin-x' ).pfValue;
-  var marginY = ele.pstyle( pdash + 'text-margin-y' ).pfValue;
   var text = this.getLabelText( ele, prefix );
 
-  this.setupTextStyle( context, ele );
+  if( text != null && text != '' && !isNaN( textX ) && !isNaN( textY ) ){
+    this.setupTextStyle( context, ele );
 
-  if( text != null && !isNaN( textX ) && !isNaN( textY ) ){
+    var pdash = prefix ? prefix + '-' : '';
+    var textW = util.getPrefixedProperty( rscratch, 'labelWidth', prefix );
+    var textH = util.getPrefixedProperty( rscratch, 'labelHeight', prefix );
+    var textAngle = util.getPrefixedProperty( rscratch, 'labelAngle', prefix );
+    var marginX = ele.pstyle( pdash + 'text-margin-x' ).pfValue;
+    var marginY = ele.pstyle( pdash + 'text-margin-y' ).pfValue;
+
     var isEdge = ele.isEdge();
     var isNode = ele.isNode();
 

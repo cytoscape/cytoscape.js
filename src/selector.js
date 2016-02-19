@@ -16,6 +16,32 @@ var Selector = function( selector ){
     invalid: true
   };
 
+  // storage for parsed queries
+  var newQuery = function(){
+    return {
+      classes: [],
+      colonSelectors: [],
+      data: [],
+      group: null,
+      ids: [],
+      meta: [],
+
+      // fake selectors
+      collection: null, // a collection to match against
+      filter: null, // filter function
+
+      // these are defined in the upward direction rather than down (e.g. child)
+      // because we need to go up in Selector.filter()
+      parent: null, // parent query obj
+      ancestor: null, // ancestor query obj
+      subject: null, // defines subject in compound query (subject query obj; points to self if subject)
+
+      // use these only when subject has been defined
+      child: null,
+      descendant: null
+    };
+  };
+
   if( !selector || ( is.string( selector ) && selector.match( /^\s*$/ ) ) ){
 
     self.length = 0;
@@ -34,36 +60,19 @@ var Selector = function( selector ){
     self[0].filter = selector;
     self.length = 1;
 
+  } else if( selector === '*' || selector === 'edge' || selector === 'node' ){
+
+    // make single, group-only selectors cheap to make and cheap to filter
+
+    self[0] = newQuery();
+    self[0].group = selector === '*' ? selector : selector + 's';
+    self[0].groupOnly = true;
+    self.length = 1;
+
   } else if( is.string( selector ) ){
 
     // the current subject in the query
     var currentSubject = null;
-
-    // storage for parsed queries
-    var newQuery = function(){
-      return {
-        classes: [],
-        colonSelectors: [],
-        data: [],
-        group: null,
-        ids: [],
-        meta: [],
-
-        // fake selectors
-        collection: null, // a collection to match against
-        filter: null, // filter function
-
-        // these are defined in the upward direction rather than down (e.g. child)
-        // because we need to go up in Selector.filter()
-        parent: null, // parent query obj
-        ancestor: null, // ancestor query obj
-        subject: null, // defines subject in compound query (subject query obj; points to self if subject)
-
-        // use these only when subject has been defined
-        child: null,
-        descendant: null
-      };
-    };
 
     // tokens in the query language
     var tokens = {
@@ -401,6 +410,11 @@ selfn.eq = function( i ){
 
 var queryMatches = function( query, ele ){
   var ele_p = ele._private;
+
+  // make single group-only selectors really cheap to check since they're the most common ones
+  if( query.groupOnly ){
+    return query.group === '*' || query.group === ele_p.group;
+  }
 
   // check group
   if( query.group != null && query.group != '*' && query.group != ele_p.group ){

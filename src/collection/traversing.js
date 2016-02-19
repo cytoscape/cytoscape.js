@@ -368,7 +368,7 @@ function defineParallelEdgesFunction( params ){
   };
   params = util.extend( {}, defaults, params );
 
-  return function( selector ){
+  return function parallelEdgesImpl( selector ){
     var elements = [];
     var edges = this.edges();
     var p = params;

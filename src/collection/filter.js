@@ -17,7 +17,11 @@ var elesfn = ({
   },
 
   filter: function( filter ){
-    if( is.fn( filter ) ){
+    if( filter === undefined ){ // check this first b/c it's the most common/performant case
+      return this;
+    } else if( is.string( filter ) || is.elementOrCollection( filter ) ){
+      return Selector( filter ).filter( this );
+    } else if( is.fn( filter ) ){
       var elements = [];
 
       for( var i = 0; i < this.length; i++ ){
@@ -29,12 +33,6 @@ var elesfn = ({
       }
 
       return this.spawn( elements );
-
-    } else if( is.string( filter ) || is.elementOrCollection( filter ) ){
-      return Selector( filter ).filter( this );
-
-    } else if( filter === undefined ){
-      return this;
     }
 
     return this.spawn(); // if not handled by above, give 'em an empty collection

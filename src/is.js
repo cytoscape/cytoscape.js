@@ -94,12 +94,10 @@ var is = {
   },
 
   emptyString: function( obj ){
-    if( !obj ){ // null is empty
+    if( obj === undefined || obj === null ){ // null is empty
       return true;
-    } else if( is.string( obj ) ){
-      if( obj === '' || obj.match( /^\s+$/ ) ){
-        return true; // empty string is empty
-      }
+    } else if( obj === '' || obj.match( /^\s+$/ ) ){
+      return true; // empty string is empty
     }
 
     return false; // otherwise, we don't know what we've got

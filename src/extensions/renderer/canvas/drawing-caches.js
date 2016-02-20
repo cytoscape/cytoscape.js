@@ -8,8 +8,9 @@ var CRp = {};
 
 // TODO optimise these values
 
-CRp.dequeueElementCachesCost = 0.2; // % of add'l rendering cost allowed for dequeuing ele caches each frame
-CRp.dequeueElementCachesAverageCost = 0.2; // % of add'l rendering cost compared to average overall redraw time
+var deqEleCost = 0.2; // % of add'l rendering cost allowed for dequeuing ele caches each frame
+var deqEleAvgCost = 0.1; // % of add'l rendering cost compared to average overall redraw time
+var deqEleNoDrawCost = 0.5; // % of avg frame time that can be used for dequeueing when not drawing
 
 var minTxrH = 25; // the size of the texture cache for small height eles (special case)
 var txrStepH = 50; // the min size of the regular cache, and the size it increases with each step up
@@ -401,10 +402,14 @@ CRp.setupElementCacheDequeueing = function(){
     while( true ){
       var duration = util.performanceNow() - startTime;
 
-      if(
-           duration > r.dequeueElementCachesCost * renderTime
-        || duration > r.dequeueElementCachesAverageCost * avgRenderTime
-      ){
+      if( willDraw ){
+        if(
+             duration > deqEleCost * renderTime
+          || duration > deqEleAvgCost * avgRenderTime
+        ){
+          break;
+        }
+      } else if( duration > deqEleNoDrawCost * avgRenderTime ){
         break;
       }
 

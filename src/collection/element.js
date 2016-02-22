@@ -66,7 +66,8 @@ var Element = function( cy, params, restore ){
     rscratch: {}, // object in which the renderer can store information
     scratch: params.scratch || {}, // scratch objects
     edges: [], // array of connected edges
-    children: [] // array of children
+    children: [], // array of children
+    traversalCache: {} // cache of output of traversal functions
   };
 
   // renderedPosition overrides if specified

@@ -679,7 +679,7 @@ elesfn.boundingBox = function( options ){
     }
 
     return cachedBoundingBoxImpl( this[0], options );
-  };
+  }
 
   var bounds = {
     x1: Infinity,
@@ -700,36 +700,20 @@ elesfn.boundingBox = function( options ){
   };
 
   var eles = this;
-  var headless = eles.cy().headless();
-  var hasEdges = false;
-  var hasDirtyEles = false;
+  var cy = eles.cy();
+  var renderer = eles.cy().renderer();
+  var styleEnabled = cy.styleEnabled();
 
-  for( var i = 0; i < eles.length; i++ ){
-    var _p = eles[i]._private;
-
-    if( _p.group === 'edges' ){
-      hasEdges = true;
-    }
-
-    if( headless || !_p.bbCache || !opts.useCache || !_p.rstyle.clean ){
-      hasDirtyEles = true;
-    }
-
-    if( hasEdges && hasDirtyEles ){ break; }
-  }
-
-  // recalculate projections etc
-  var cy_p = eles.cy()._private;
-  var styleEnabled = cy_p.styleEnabled;
-
-  if( styleEnabled && hasDirtyEles ){
-    var pEdges = hasEdges ? eles.parallelEdges() : null;
-
-    cy_p.renderer.recalculateRenderedStyle( pEdges && pEdges.nonempty() ? pEdges.merge( eles ) : eles, !opts.useCache );
+  if( styleEnabled ){
+    renderer.recalculateRenderedStyle( eles, !opts.useCache );
   }
 
   for( var i = 0; i < eles.length; i++ ){
     var ele = eles[i];
+
+    if( styleEnabled && ele.isEdge() && ele.pstyle('curve-style').strValue === 'bezier' ){
+      renderer.recalculateRenderedStyle( ele.parallelEdges(), !opts.useCache ); // n.b. ele.parallelEdges() single is cached
+    }
 
     updateBoundsFromBox( bounds, cachedBoundingBoxImpl( ele, opts ) );
   }

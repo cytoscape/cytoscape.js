@@ -8,6 +8,7 @@ Modifications tracked on Github.
 
 var util = require( '../../../util' );
 var is = require( '../../../is' );
+var ElementTextureCache = require('./ele-texture-cache');
 
 var CR = CanvasRenderer;
 var CRp = CanvasRenderer.prototype;
@@ -74,7 +75,7 @@ function CanvasRenderer( options ){
     //r.data.canvasContainer.appendChild(r.data.bufferCanvases[i]);
   }
 
-  r.data.eleImgCaches = {};
+  r.data.eleTxrCache = new ElementTextureCache( r );
 
   r.pathsEnabled = true;
 }
@@ -112,7 +113,7 @@ CRp.usePaths = function(){
 
 [
   require( './arrow-shapes' ),
-  require( './drawing-caches' ),
+  require( './drawing-elements' ),
   require( './drawing-edges' ),
   require( './drawing-images' ),
   require( './drawing-label-text' ),

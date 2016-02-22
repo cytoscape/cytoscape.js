@@ -123,6 +123,10 @@ elesfn.spawn = function( cy, eles, opts ){
   return new Collection( cy, eles, opts );
 };
 
+elesfn.spawnSelf = function(){
+  return this.spawn( this );
+};
+
 elesfn.cy = function(){
   return this._private.cy;
 };
@@ -275,6 +279,7 @@ elesfn.restore = function( notifyRenderer ){
   var self = this;
   var restored = [];
   var cy = self.cy();
+  var cy_p = cy._private;
 
   if( notifyRenderer === undefined ){
     notifyRenderer = true;
@@ -284,8 +289,7 @@ elesfn.restore = function( notifyRenderer ){
   // restore the nodes first
   var elements = [];
   var nodes = [], edges = [];
-  var numNodes = 0;
-  var numEdges = 0;
+  var numNodes = 0, numEdges = 0;
   for( var i = 0, l = self.length; i < l; i++ ){
     var ele = self[ i ];
 
@@ -385,7 +389,6 @@ elesfn.restore = function( notifyRenderer ){
 
       edge._private.source = src;
       edge._private.target = tgt;
-
     } // if is edge
 
     // create mock ids / indexes maps for element so it can be used like collections
@@ -450,6 +453,22 @@ elesfn.restore = function( notifyRenderer ){
   restored = new Collection( cy, restored );
   if( restored.length > 0 ){
 
+    for( var i = 0; i < restored.length; i++ ){
+      var ele = restored[i];
+
+      if( ele.isNode() ){ continue; }
+
+      // adding an edge invalidates the traversal caches for the parallel edges
+      var pedges = ele.parallelEdges();
+      for( var j = 0; i < pedges.length; j++ ){
+        pedges[j]._private.traversalCache = null;
+      }
+
+      // adding an edge invalidates the traversal cache for the connected nodes
+      ele.source()[0]._private.traversalCache = null;
+      ele.target()[0]._private.traversalCache = null;
+    }
+
     var toUpdateStyle = restored.add( restored.connectedNodes() ).add( restored.parent() );
     toUpdateStyle.updateStyle( notifyRenderer );
 
@@ -479,6 +498,7 @@ elesfn.remove = function( notifyRenderer ){
   var elesToRemove = [];
   var elesToRemoveIds = {};
   var cy = self._private.cy;
+  var cy_p = cy._private;
 
   if( notifyRenderer === undefined ){
     notifyRenderer = true;
@@ -533,6 +553,18 @@ elesfn.remove = function( notifyRenderer ){
     var connectedEdges = node._private.edges;
 
     util.removeFromArray( connectedEdges, edge );
+
+    // removing an edges invalidates the traversal cache for its nodes
+    node._private.traversalCache = null;
+  }
+
+  var removedParallelRefs = {};
+  function removeParallelRefs( edge ){
+    // removing an edge invalidates the traversal caches for the parallel edges
+    var pedges = edge.parallelEdges();
+    for( var j = 0; i < pedges.length; j++ ){
+      pedges[j]._private.traversalCache = null;
+    }
   }
 
   function removeChildRef( parent, ele ){
@@ -561,6 +593,7 @@ elesfn.remove = function( notifyRenderer ){
 
       removeEdgeRef( src, ele );
       removeEdgeRef( tgt, ele );
+      removeParallelRefs( ele );
 
     } else { // remove reference to parent
       var parent = ele.parent();
@@ -650,7 +683,7 @@ elesfn.move = function( struct ){
     if( parentExists ){
       var jsons = this.jsons();
       var descs = this.descendants();
-      var descsEtc = descs.merge( descs.add( this ).connectedEdges() );
+      var descsEtc = descs.union( descs.union( this ).connectedEdges() );
 
       this.remove(); // NB: also removes descendants and their connected edges
 
@@ -663,7 +696,7 @@ elesfn.move = function( struct ){
       }
     }
 
-    return cy.add( jsons ).merge( descsEtc.restore() );
+    return cy.add( jsons ).union( descsEtc.restore() );
   }
 
   return this; // if nothing done

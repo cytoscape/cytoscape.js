@@ -222,7 +222,7 @@ BRp.load = function(){
       return;
     }
 
-    var nodes = parent.descendants()
+    var nodes = parent.descendants().clone()
       .merge( parent )
       .unmerge( node )
       .unmerge( node.descendants() )
@@ -317,7 +317,7 @@ BRp.load = function(){
   };
 
   // Primary key
-  r.registerBinding( r.container, 'mousedown', function( e ){
+  r.registerBinding( r.container, 'mousedown', function mousedownHandler( e ){
     e.preventDefault();
     r.hoverData.capture = true;
     r.hoverData.which = e.which;
@@ -464,7 +464,7 @@ BRp.load = function(){
 
   }, false );
 
-  r.registerBinding( window, 'mousemove', function( e ){
+  r.registerBinding( window, 'mousemove', function mousemoveHandler( e ){
     var preventDefault = false;
     var capture = r.hoverData.capture;
 
@@ -745,7 +745,7 @@ BRp.load = function(){
     }
   }, false );
 
-  r.registerBinding( window, 'mouseup', function( e ){
+  r.registerBinding( window, 'mouseup', function mouseupHandler( e ){
     var capture = r.hoverData.capture;
     if( !capture ){ return; }
     r.hoverData.capture = false;
@@ -977,7 +977,7 @@ BRp.load = function(){
   // r.registerBinding(r.container, 'DOMMouseScroll', wheelHandler, true);
   // r.registerBinding(r.container, 'MozMousePixelScroll', wheelHandler, true); // older firefox
 
-  r.registerBinding( window, 'scroll', function( e ){
+  r.registerBinding( window, 'scroll', function scrollHandler( e ){
     r.scrollingPage = true;
 
     clearTimeout( r.scrollingPageTimeout );
@@ -988,7 +988,7 @@ BRp.load = function(){
 
   // Functions to help with handling mouseout/mouseover on the Cytoscape container
   // Handle mouseout on Cytoscape container
-  r.registerBinding( r.container, 'mouseout', function( e ){
+  r.registerBinding( r.container, 'mouseout', function mouseOutHandler( e ){
     var pos = r.projectIntoViewport( e.clientX, e.clientY );
 
     r.cy.trigger( Event( e, {
@@ -997,7 +997,7 @@ BRp.load = function(){
     } ) );
   }, false );
 
-  r.registerBinding( r.container, 'mouseover', function( e ){
+  r.registerBinding( r.container, 'mouseover', function mouseOverHandler( e ){
     var pos = r.projectIntoViewport( e.clientX, e.clientY );
 
     r.cy.trigger( Event( e, {

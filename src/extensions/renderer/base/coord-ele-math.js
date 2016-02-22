@@ -12,6 +12,8 @@ BRp.registerCalculationListeners = function(){
   var elesToUpdate = cy.collection();
   var r = this;
 
+  var emptyObj = {};
+
   var enqueue = function( eles, invalTxrCache ){
     elesToUpdate.merge( eles );
 
@@ -29,36 +31,24 @@ BRp.registerCalculationListeners = function(){
     }
   };
 
-  // an optimised way of enqueuing connected edges since it's called a lot
-  var enqueueConnectedEdges = function( eles ){
-    for( var i = 0; i < eles.length; i++ ){
-      var ele = eles[i];
-      var edges = ele._private.edges;
-
-      for( var j = 0; j < edges.length; j++ ){
-        enqueue( edges[j] );
-      }
-    }
-  };
-
   r.binder( cy )
     // nodes
 
-    .on('position.* style.*', 'node', function( e ){
+    .on('position.* style.*', 'node', function onDirtyModNode( e ){
       var node = e.cyTarget;
 
-      enqueue( node, e.type === 'style' );
-      enqueueConnectedEdges( node );
+      enqueue( node, true );
+      enqueue( node.connectedEdges() );
 
       if( cy.hasCompoundNodes() ){
         var parents = node.parents();
 
         enqueue( parents )
-        enqueueConnectedEdges( parents );
+        enqueue( parents.connectedEdges() );
       }
     })
 
-    .on('add.* ', 'node', function( e ){
+    .on('add.* ', 'node', function onDirtyAddNode( e ){
       var ele = e.cyTarget;
 
       enqueue( ele );
@@ -66,7 +56,7 @@ BRp.registerCalculationListeners = function(){
 
     // edges
 
-    .on('add.* remove.* style.*', 'edge', function( e ){
+    .on('add.* remove.* style.*', 'edge', function onDirtyEdge( e ){
       var edge = e.cyTarget;
 
       enqueue( edge );
@@ -80,13 +70,15 @@ BRp.registerCalculationListeners = function(){
         var ele = elesToUpdate[i];
         var rs = ele._private.rscratch;
 
+        // TODO refactor so we don't reference canvas renderer stuff
         if( rs.invalTxrCache ){
           rs.invalTxrCache = false;
-          r.invalidateElementInTexture( ele );
+          r.data.eleTxrCache.invalidateElement( ele );
         }
       }
 
       r.recalculateRenderedStyle( elesToUpdate );
+
       elesToUpdate = cy.collection();
     }
   };
@@ -643,7 +635,7 @@ BRp.projectBezier = BRp.projectLines;
 
 BRp.recalculateNodeLabelProjection = function( node ){
   var content = node.pstyle( 'label' ).strValue;
-  
+
   if( is.emptyString(content) ){ return; }
 
   var textX, textY;

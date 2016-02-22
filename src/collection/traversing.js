@@ -5,11 +5,34 @@ var is = require( '../is' );
 
 var elesfn = {};
 
-util.extend( elesfn, {
-  // get the root nodes in the DAG
-  roots: function( selector ){
+var cache = function( fn, name ){ console.log(name)
+  return function traversalCache( selector ){
+    var args = arguments;
     var eles = this;
-    var roots = [];
+
+    if( eles.length === 1 && selector == null ){
+      var _p = eles[0]._private;
+      var ch = _p.traversalCache = _p.traversalCache || {};
+      var cacheHit = ch[ name ];
+
+      if( cacheHit ){
+        return cacheHit;
+      } else {
+        return ch[ name ] = fn.call( eles );
+      }
+    } else {
+      return fn.call( eles );
+    }
+  };
+};
+
+// DAG functions
+////////////////
+
+var defineDagExtremity = function( params ){
+  return function dagExtremityImpl( selector ){
+    var eles = this;
+    var ret = [];
 
     for( var i = 0; i < eles.length; i++ ){
       var ele = eles[ i ];
@@ -17,44 +40,34 @@ util.extend( elesfn, {
         continue;
       }
 
-      var hasEdgesPointingIn = ele.connectedEdges( function(){
-        return this.data( 'target' ) === ele.id() && this.data( 'source' ) !== ele.id();
-      } ).length > 0;
+      var disqualified = false;
+      var edges = ele.connectedEdges();
 
-      if( !hasEdgesPointingIn ){
-        roots.push( ele );
+      for( var j = 0; j < edges.length; j++ ){
+        var edge = edges[j];
+        var src = edge.source();
+        var tgt = edge.target();
+
+        if(
+             ( params.noIncomingEdges && tgt === ele && src !== ele )
+          || ( params.noOutgoingEdges && src === ele && tgt !== ele )
+        ){
+          disqualified = true;
+          break;
+        }
+      }
+
+      if( !disqualified ){
+        ret.push( ele );
       }
     }
 
-    return this.spawn( roots, { unique: true } ).filter( selector );
-  },
+    return this.spawn( ret, { unique: true } ).filter( selector );
+  };
+};
 
-  // get the leaf nodes in the DAG
-  leaves: function( selector ){
-    var eles = this;
-    var leaves = [];
-
-    for( var i = 0; i < eles.length; i++ ){
-      var ele = eles[ i ];
-      if( !ele.isNode() ){
-        continue;
-      }
-
-      var hasEdgesPointingOut = ele.connectedEdges( function(){
-        return this.data( 'source' ) === ele.id() && this.data( 'target' ) !== ele.id();
-      } ).length > 0;
-
-      if( !hasEdgesPointingOut ){
-        leaves.push( ele );
-      }
-    }
-
-    return this.spawn( leaves, { unique: true } ).filter( selector );
-  },
-
-  // normally called children in graph theory
-  // these nodes =edges=> outgoing nodes
-  outgoers: function( selector ){
+var defineDagOneHop = function( params ){
+  return function( selector ){
     var eles = this;
     var oEles = [];
 
@@ -64,111 +77,78 @@ util.extend( elesfn, {
 
       if( !ele.isNode() ){ continue; }
 
-      var edges = ele._private.edges;
+      var edges = ele.connectedEdges();
       for( var j = 0; j < edges.length; j++ ){
         var edge = edges[ j ];
-        var srcId = edge._private.data.source;
-        var tgtId = edge._private.data.target;
+        var src = edge.source();
+        var tgt = edge.target();
 
-        if( srcId === eleId && tgtId !== eleId ){
+        if( params.outgoing && src === ele && tgt !== ele ){
           oEles.push( edge );
-          oEles.push( edge.target()[0] );
+          oEles.push( tgt );
+        } else if( params.incoming && tgt === ele && src !== ele ){
+          oEles.push( edge );
+          oEles.push( src );
         }
       }
     }
 
     return this.spawn( oEles, { unique: true } ).filter( selector );
-  },
+  };
+};
 
-  // aka DAG descendants
-  successors: function( selector ){
+var defineDagAllHops = function( params ){
+  return function( selector ){
     var eles = this;
     var sEles = [];
     var sElesIds = {};
 
     for( ;; ){
-      var outgoers = eles.outgoers();
+      var next = params.outgoing ? eles.outgoers() : eles.incomers();
 
-      if( outgoers.length === 0 ){ break; } // done if no outgoers left
+      if( next.length === 0 ){ break; } // done if none left
 
-      var newOutgoers = false;
-      for( var i = 0; i < outgoers.length; i++ ){
-        var outgoer = outgoers[ i ];
-        var outgoerId = outgoer.id();
+      var newNext = false;
+      for( var i = 0; i < next.length; i++ ){
+        var n = next[ i ];
+        var nid = n.id();
 
-        if( !sElesIds[ outgoerId ] ){
-          sElesIds[ outgoerId ] = true;
-          sEles.push( outgoer );
-          newOutgoers = true;
+        if( !sElesIds[ nid ] ){
+          sElesIds[ nid ] = true;
+          sEles.push( n );
+          newNext = true;
         }
       }
 
-      if( !newOutgoers ){ break; } // done if touched all outgoers already
+      if( !newNext ){ break; } // done if touched all outgoers already
 
-      eles = outgoers;
+      eles = next;
     }
 
     return this.spawn( sEles, { unique: true } ).filter( selector );
-  },
+  };
+};
+
+util.extend( elesfn, {
+  // get the root nodes in the DAG
+  roots: defineDagExtremity({ noIncomingEdges: true }),
+
+  // get the leaf nodes in the DAG
+  leaves: defineDagExtremity({ noOutgoingEdges: true }),
+
+  // normally called children in graph theory
+  // these nodes =edges=> outgoing nodes
+  outgoers: cache( defineDagOneHop({ outgoing: true }) , 'outgoers' ),
+
+  // aka DAG descendants
+  successors: defineDagAllHops({ outgoing: true }),
 
   // normally called parents in graph theory
   // these nodes <=edges= incoming nodes
-  incomers: function( selector ){
-    var eles = this;
-    var oEles = [];
-
-    for( var i = 0; i < eles.length; i++ ){
-      var ele = eles[ i ];
-      var eleId = ele.id();
-
-      if( !ele.isNode() ){ continue; }
-
-      var edges = ele._private.edges;
-      for( var j = 0; j < edges.length; j++ ){
-        var edge = edges[ j ];
-        var srcId = edge._private.data.source;
-        var tgtId = edge._private.data.target;
-
-        if( tgtId === eleId && srcId !== eleId ){
-          oEles.push( edge );
-          oEles.push( edge.source()[0] );
-        }
-      }
-    }
-
-    return this.spawn( oEles, { unique: true } ).filter( selector );
-  },
+  incomers: cache( defineDagOneHop({ incoming: true }), 'incomers' ),
 
   // aka DAG ancestors
-  predecessors: function( selector ){
-    var eles = this;
-    var pEles = [];
-    var pElesIds = {};
-
-    for( ;; ){
-      var incomers = eles.incomers();
-
-      if( incomers.length === 0 ){ break; } // done if no incomers left
-
-      var newIncomers = false;
-      for( var i = 0; i < incomers.length; i++ ){
-        var incomer = incomers[ i ];
-        var incomerId = incomer.id();
-
-        if( !pElesIds[ incomerId ] ){
-          pElesIds[ incomerId ] = true;
-          pEles.push( incomer );
-          newIncomers = true;
-        }
-      }
-
-      if( !newIncomers ){ break; } // done if touched all incomers already
-
-      eles = incomers;
-    }
-
-    return this.spawn( pEles, { unique: true } ).filter( selector );
-  }
+  predecessors: defineDagAllHops({ incoming: true })
 } );
 
 
@@ -176,7 +156,7 @@ util.extend( elesfn, {
 //////////////////////////
 
 util.extend( elesfn, {
-  neighborhood: function( selector ){
+  neighborhood: cache(function( selector ){
     var elements = [];
     var nodes = this.nodes();
 
@@ -187,8 +167,8 @@ util.extend( elesfn, {
       // for each connected edge, add the edge and the other node
       for( var j = 0; j < connectedEdges.length; j++ ){
         var edge = connectedEdges[ j ];
-        var src = edge._private.source;
-        var tgt = edge._private.target;
+        var src = edge.source();
+        var tgt = edge.target();
         var otherNode = node === src ? tgt : src;
 
         // need check in case of loop
@@ -203,7 +183,7 @@ util.extend( elesfn, {
     }
 
     return ( this.spawn( elements, { unique: true } ) ).filter( selector );
-  },
+  }, 'neighborhood'),
 
   closedNeighborhood: function( selector ){
     return this.neighborhood().add( this ).filter( selector );
@@ -223,7 +203,7 @@ elesfn.openNeighbourhood = elesfn.openNeighborhood;
 /////////////////
 
 util.extend( elesfn, {
-  source: function( selector ){
+  source: cache(function sourceImpl( selector ){
     var ele = this[0];
     var src;
 
@@ -232,9 +212,9 @@ util.extend( elesfn, {
     }
 
     return src && selector ? src.filter( selector ) : src;
-  },
+  }, 'source'),
 
-  target: function( selector ){
+  target: cache(function targetImpl( selector ){
     var ele = this[0];
     var tgt;
 
@@ -243,7 +223,7 @@ util.extend( elesfn, {
     }
 
     return tgt && selector ? tgt.filter( selector ) : tgt;
-  },
+  }, 'target'),
 
   sources: defineSourceFunction( {
     attr: 'source'
@@ -255,7 +235,7 @@ util.extend( elesfn, {
 } );
 
 function defineSourceFunction( params ){
-  return function( selector ){
+  return function sourceImpl( selector ){
     var sources = [];
 
     for( var i = 0; i < this.length; i++ ){
@@ -272,11 +252,11 @@ function defineSourceFunction( params ){
 }
 
 util.extend( elesfn, {
-  edgesWith: defineEdgesWithFunction(),
+  edgesWith: cache( defineEdgesWithFunction(), 'edgesWith' ),
 
-  edgesTo: defineEdgesWithFunction( {
-    thisIs: 'source'
-  } )
+  edgesTo: cache( defineEdgesWithFunction( {
+    thisIsSrc: true
+  } ), 'edgesTo' )
 } );
 
 function defineEdgesWithFunction( params ){
@@ -306,10 +286,10 @@ function defineEdgesWithFunction( params ){
 
         if( !edgeConnectsThisAndOther ){ continue; }
 
-        if( p.thisIs ){
-          if( p.thisIs === 'source' && !thisToOther ){ continue; }
+        if( p.thisIsSrc || p.thisIsTgt ){
+          if( p.thisIsSrc && !thisToOther ){ continue; }
 
-          if( p.thisIs === 'target' && !otherToThis ){ continue; }
+          if( p.thisIsTgt && !otherToThis ){ continue; }
         }
 
         elements.push( edge );
@@ -321,7 +301,7 @@ function defineEdgesWithFunction( params ){
 }
 
 util.extend( elesfn, {
-  connectedEdges: function( selector ){
+  connectedEdges: cache(function( selector ){
     var retEles = [];
 
     var eles = this;
@@ -338,9 +318,9 @@ util.extend( elesfn, {
     }
 
     return this.spawn( retEles, { unique: true } ).filter( selector );
-  },
+  }, 'connectedEdges'),
 
-  connectedNodes: function( selector ){
+  connectedNodes: cache(function( selector ){
     var retEles = [];
 
     var eles = this;
@@ -353,13 +333,13 @@ util.extend( elesfn, {
     }
 
     return this.spawn( retEles, { unique: true } ).filter( selector );
-  },
+  }, 'connectedNodes'),
 
-  parallelEdges: defineParallelEdgesFunction(),
+  parallelEdges: cache( defineParallelEdgesFunction(), 'parallelEdges' ),
 
-  codirectedEdges: defineParallelEdgesFunction( {
+  codirectedEdges: cache( defineParallelEdgesFunction( {
     codirected: true
-  } )
+  } ), 'codirectedEdges' )
 } );
 
 function defineParallelEdgesFunction( params ){
@@ -368,7 +348,7 @@ function defineParallelEdgesFunction( params ){
   };
   params = util.extend( {}, defaults, params );
 
-  return function parallelEdgesImpl( selector ){
+  return function parallelEdgesImpl( selector ){ // micro-optimised for renderer
     var elements = [];
     var edges = this.edges();
     var p = params;
@@ -376,10 +356,10 @@ function defineParallelEdgesFunction( params ){
     // look at all the edges in the collection
     for( var i = 0; i < edges.length; i++ ){
       var edge1 = edges[ i ];
-      var src1 = edge1.source()[0];
-      var srcid1 = src1.id();
-      var tgt1 = edge1.target()[0];
-      var tgtid1 = tgt1.id();
+      var edge1_p = edge1._private;
+      var src1 = edge1_p.source;
+      var srcid1 = src1._private.data.id;
+      var tgtid1 = edge1_p.data.target;
       var srcEdges1 = src1._private.edges;
 
       // look at edges connected to the src node of this edge
@@ -410,7 +390,7 @@ util.extend( elesfn, {
   components: function(){
     var cy = this.cy();
     var visited = cy.collection();
-    var unvisited = this.nodes();
+    var unvisited = this.nodes().spawnSelf();
     var components = [];
 
     var visitInComponent = function( node, component ){

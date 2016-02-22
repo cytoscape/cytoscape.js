@@ -635,7 +635,7 @@ CRp.render = function( options ){
     r.initrender = true;
     cy.trigger( 'initrender' );
 
-    r.setupElementCacheDequeueing();
+    r.data.eleTxrCache.setupDequeueing();
   }
 
   if( !forcedContext ){

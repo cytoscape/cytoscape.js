@@ -46,6 +46,17 @@ var Selector = function( selector ){
 
     self.length = 0;
 
+  } else if( selector === '*' || selector === 'edge' || selector === 'node' ){
+
+    // make single, group-only selectors cheap to make and cheap to filter
+
+    self[0] = newQuery();
+    self[0].group = selector === '*' ? selector : selector + 's';
+    self[0].groupOnly = true;
+    self._private.invalid = false;
+    self._private.selectorText = selector;
+    self.length = 1;
+
   } else if( is.elementOrCollection( selector ) ){
 
     var collection = selector.collection();
@@ -58,15 +69,6 @@ var Selector = function( selector ){
 
     self[0] = newQuery();
     self[0].filter = selector;
-    self.length = 1;
-
-  } else if( selector === '*' || selector === 'edge' || selector === 'node' ){
-
-    // make single, group-only selectors cheap to make and cheap to filter
-
-    self[0] = newQuery();
-    self[0].group = selector === '*' ? selector : selector + 's';
-    self[0].groupOnly = true;
     self.length = 1;
 
   } else if( is.string( selector ) ){
@@ -129,7 +131,7 @@ var Selector = function( selector ){
         query: true,
         regex: '(node|edge|\\*)',
         populate: function( group ){
-          this.group = group == '*' ? group : group + 's';
+          this.group = group === '*' ? group : group + 's';
         }
       },
 

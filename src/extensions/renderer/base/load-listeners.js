@@ -280,6 +280,7 @@ BRp.load = function(){
 
   // auto resize
   r.registerBinding( window, 'resize', util.debounce( function( e ){
+    r.cy.invalidateSize();
     r.invalidateContainerClientCoordsCache();
 
     r.matchCanvasSize( r.container );

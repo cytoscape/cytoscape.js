@@ -31,4 +31,15 @@ CRp.drawElement = function( context, ele, shiftToOriginWithBb ){
   }
 };
 
+CRp.drawElements = function( context, eles, pxRatio, extent ){
+  var r = this;
+
+  for( var i = 0; i < eles.length; i++ ){
+    var ele = eles[ i ];
+
+    // r.drawElement( context, ele );
+    r.drawCachedElement( context, ele, pxRatio, extent );
+  }
+};
+
 module.exports = CRp;

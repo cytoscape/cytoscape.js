@@ -447,14 +447,7 @@ CRp.render = function( options ){
 
 
   function drawElements( list, context ){
-    var eles = list.eles;
-
-    for( var i = 0; i < eles.length; i++ ){
-      var ele = eles[ i ];
-
-      // r.drawElement( context, ele );
-      r.drawCachedElement( context, ele, pixelRatio, extent );
-    }
+    r.drawElements( context, list.eles, pixelRatio, extent );
   }
 
   var needMbClear = [];

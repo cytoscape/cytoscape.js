@@ -8,8 +8,8 @@ $(function(){
   var height, width;
 
   var cliques = 4;
-  var numNodes = 20;
-  var numEdges = 600;
+  var numNodes = 100;
+  var numEdges = 1000;
 
   var defaultSty = window.defaultSty = cytoscape.stylesheet()
       .selector('node, edge')

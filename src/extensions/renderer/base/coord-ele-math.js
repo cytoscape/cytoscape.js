@@ -590,7 +590,7 @@ BRp.getLabelText = function( ele ){
     //console.log('wrap');
 
     // save recalc if the label is the same as before
-    if( rscratch.labelWrapKey !== undefined && rscratch.labelWrapKey === rscratch.labelKey ){
+    if( rscratch.labelWrapKey && rscratch.labelWrapKey === rscratch.labelKey ){
       // console.log('wrap cache hit');
       return rscratch.labelWrapCachedText;
     }

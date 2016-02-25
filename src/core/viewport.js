@@ -476,24 +476,29 @@ var corefn = ({
     return this; // chaining
   },
 
+  invalidateSize: function(){
+    this._private.sizeCache = null;
+  },
+
+  size: function(){
+    var _p = this._private;
+    var container = _p.container;
+
+    return _p.sizeCache = _p.sizeCache || ( container ? {
+      width: container.clientWidth,
+      height: container.clientHeight
+    } : { // fallback if no container (not 0 b/c can be used for dividing etc)
+      width: 1,
+      height: 1
+    } );
+  },
+
   width: function(){
-    var container = this._private.container;
-
-    if( container ){
-      return container.clientWidth;
-    }
-
-    return 1; // fallback if no container (not 0 b/c can be used for dividing etc)
+    return this.size().width;
   },
 
   height: function(){
-    var container = this._private.container;
-
-    if( container ){
-      return container.clientHeight;
-    }
-
-    return 1; // fallback if no container (not 0 b/c can be used for dividing etc)
+    return this.size().height;
   },
 
   extent: function(){

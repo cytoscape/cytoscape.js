@@ -24,6 +24,8 @@ var corefn = ({
   },
 
   resize: function(){
+    this.invalidateSize();
+
     this.notify( {
       type: 'resize'
     } );

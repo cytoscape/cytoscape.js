@@ -29,7 +29,26 @@
  * Animatable graph elements and viewport
  * Fully extendable (and extensions can be autoscaffolded for you)
  * Well maintained, with only a sliver of active bug time (i.e. minimised time to bugfix)
-
+ * Used by
+  * [Aras](http://www.aras.com/)
+  * [BioGRID](http://thebiogrid.org/)
+  * [Cray Inc.](http://www.cray.com)
+  * [CyNetShare](http://cynetshare.ucsd.edu/)
+  * [DARPA XDATA](http://www.darpa.mil/opencatalog/xdata.html) / [Sotera Defense Solutions, Inc.](http://sotera.github.io/graphene/)
+  * [dSysMap](http://dsysmap.irbbarcelona.org)
+  * [Elsevier](https://www.elsevier.com)
+  * [Excel](https://products.office.com/en-us/excel) : [GIGRAPH](https://gigraph.io)
+  * [Ganister](http://www.ganister.eu/)
+  * [GeneMANIA](http://genemania.org)
+  * [InfoTrack](http://www.infotrack.com.au/)
+  * [Kartoteka](http://www.kartoteka.ru/vizual/)
+  * [NDex](http://home.ndexbio.org/)
+  * [Pathway Commons](http://www.pathwaycommons.org)
+  * [py2cytoscape](https://github.com/idekerlab/py2cytoscape)
+  * [Sainsbury Laboratory](http://www.tsl.ac.uk/) : [PINet](http://pinet.tsl.ac.uk/)
+  * [University of Cambridge](http://www.cam.ac.uk/) : [Intermine](http://intermine.org/)
+  * [Visual Interaction GmbH](http://www.mygaze.com/)
+  
 
 
 ## About

@@ -16,12 +16,15 @@ var minLvl = -4; // -4 => 0.00625 scale ; when scaling smaller than that we don'
 var maxLvl = 2; // 2 => 4 scale ; when larger than this scale just render directly (caching is not helpful)
 var maxZoom = 3.99; // beyond this zoom level, textures are not used
 var eleTxrSpacing = 8; // spacing between elements on textures to avoid blitting overlaps
-var defTxrWidth = 8192; //4096; // default/minimum texture width
+var defTxrWidth = 1024; // default/minimum texture width
+var maxTxrW = 1024; // the maximum width of a texture
+var maxTxrH = 1024;  // the maximum height of a texture
 var minUtility = 0.5; // if usage of texture is less than this, it is retired
 var maxFullness = 0.8; // fullness of texture after which queue removal is checked
 var maxFullnessChecks = 10; // dequeued after this many checks
 var maxDeqSize = 10; // number of eles to dequeue and render at higher texture in each batch
 var deqRedrawThreshold = 100; // time to batch redraws together from dequeueing to allow more dequeueing calcs to happen in the meanwhile
+var allowEdgeTxrCaching = true; // whether edges can be caches as textures
 
 var getTxrReasons = {
   dequeue: 'dequeue',
@@ -106,6 +109,10 @@ ETCp.getElement = function( ele, bb, pxRatio, lvl, reason ){
     txrH = txrStepH;
   } else {
     txrH = Math.ceil( eleScaledH / txrStepH ) * txrStepH;
+  }
+
+  if( eleScaledH > maxTxrH || eleScaledW > maxTxrW || ( !allowEdgeTxrCaching && ele.isEdge() ) ){
+    return null; // caching large elements is not efficient
   }
 
   var txrQ = self.getTextureQueue( txrH );

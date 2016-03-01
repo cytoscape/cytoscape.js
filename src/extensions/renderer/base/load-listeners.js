@@ -1187,6 +1187,8 @@ BRp.load = function() {
     var dist2 = dx2 + dy2;
     var rdist2 = dist2 * zoom * zoom;
 
+    var isOverThresholdDrag = rdist2 >= r.touchTapThreshold2;
+
     // context swipe cancelling
     if( capture && r.touchData.cxt ){
       e.preventDefault();
@@ -1408,7 +1410,7 @@ BRp.load = function() {
       // dragging nodes
       if( start != null && start._private.group == 'nodes' && r.nodeIsDraggable(start) ){
 
-        if( rdist2 >= r.touchTapThreshold2 ){ // then dragging can happen
+        if( isOverThresholdDrag ){ // then dragging can happen
           var draggedEles = r.dragData.touchDragEles;
           var justStartedDrag = !r.dragData.didDrag;
 
@@ -1492,7 +1494,7 @@ BRp.load = function() {
       for (var i=0;i<now.length;i++) {
         if( now[i]
           && r.touchData.startPosition[i]
-          && rdist2 > r.touchTapThreshold2 ){
+          && isOverThresholdDrag ){
 
           r.touchData.singleTouchMoved = true;
         }
@@ -1513,7 +1515,7 @@ BRp.load = function() {
             y: disp[1] * zoom
           });
 
-        } else if( rdist2 >= r.touchTapThreshold2 ){
+        } else if( isOverThresholdDrag ){
           r.swipePanning = true;
 
           cy.panBy({

@@ -502,6 +502,10 @@ var corefn = ({
       // user param easings...
 
       'spring': function( tension, friction, duration ){
+        if( duration === 0 ){ // can't get a spring w/ duration 0
+          return easings.linear; // duration 0 => jump to end so impl doesn't matter
+        }
+
         var spring = generateSpringRK4( tension, friction, duration );
 
         return function( start, end, percent ){

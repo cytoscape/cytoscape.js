@@ -55,6 +55,23 @@ The library was developed at the [Donnelly Centre](http://thedonnellycentre.utor
  * meteor : `meteor add cytoscape:cytoscape`
 
 
+
+## Citation
+
+To cite Cytoscape.js in a paper, please cite the Oxford Bioinformatics issue:
+
+*Cytoscape.js: a graph theory library for visualisation and analysis*
+
+Franz M, Lopes CT, Huck G, Dong Y, Sumer O, Bader GD
+
+[Bioinformatics (2016) 32 (2): 309-311 first published online September 28, 2015 doi:10.1093/bioinformatics/btv557](http://bioinformatics.oxfordjournals.org/content/32/2/309) ([PDF](http://bioinformatics.oxfordjournals.org/content/32/2/309.full.pdf))
+
+[PubMed abstract](http://www.ncbi.nlm.nih.gov/pubmed/26415722)
+
+
+
+
+
 ## Cytoscape.js & Cytoscape
 
 Though Cytoscape.js shares its name with [Cytoscape](http://www.cytoscape.org/), Cytoscape.js is not exactly the same as Cytoscape desktop.  Cytoscape.js is a JavaScript library for _programmers_.  It is not an app for end-users, and developers need to write code around Cytoscape.js to build graphcentric apps.

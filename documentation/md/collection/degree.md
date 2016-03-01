@@ -6,4 +6,4 @@
 
 *Outdegree* : For a node, the outdegree is the number of outgoing edge connections it has.  Each time a node is referred to as `source` of an edge in the graph, that counts as an outgoing edge connection.
 
-*Total degree* : For a set of nodes, the the total degree is the total number of edge connections to nodes in the set.
+*Total degree* : For a set of nodes, the total degree is the total number of edge connections to nodes in the set.

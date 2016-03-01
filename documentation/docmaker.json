@@ -1460,14 +1460,14 @@
                 },
 
                 {
-                  "descr": "Get the value of a specified rendered posisition dimension.",
+                  "descr": "Get the value of a specified rendered position dimension.",
                   "args": [
                     { "name": "dimension", "descr": "The position dimension to get." }
                   ]
                 },
 
                 {
-                  "descr": "Set the value of a specified rendered posisition dimension.",
+                  "descr": "Set the value of a specified rendered position dimension.",
                   "args": [
                     { "name": "dimension", "descr": "The position dimension to set." },
                     { "name": "value", "descr": "The value to set to the dimension." }
@@ -1493,14 +1493,14 @@
                 },
 
                 {
-                  "descr": "Get the value of a specified relative posisition dimension.",
+                  "descr": "Get the value of a specified relative position dimension.",
                   "args": [
                     { "name": "dimension", "descr": "The position dimension to get." }
                   ]
                 },
 
                 {
-                  "descr": "Set the value of a specified relative posisition dimension.",
+                  "descr": "Set the value of a specified relative position dimension.",
                   "args": [
                     { "name": "dimension", "descr": "The position dimension to set." },
                     { "name": "value", "descr": "The value to set to the dimension." }

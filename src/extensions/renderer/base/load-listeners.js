@@ -523,7 +523,11 @@ BRp.load = function(){
 
     var multSelKeyDown = isMultSelKeyDown( e );
 
-    r.hoverData.tapholdCancelled = true;
+    var isOverThresholdDrag = rdist2 >= r.desktopTapThreshold2;
+
+    if (isOverThresholdDrag) {
+      r.hoverData.tapholdCancelled = true;
+    }
 
     var updateDragDelta = function(){
       var dragDelta = r.hoverData.dragDelta = r.hoverData.dragDelta || [];
@@ -546,37 +550,40 @@ BRp.load = function(){
 
     // trigger context drag if rmouse down
     if( r.hoverData.which === 3 ){
-      var cxtEvt = Event( e, {
-        type: 'cxtdrag',
-        cyPosition: { x: pos[0], y: pos[1] }
-      } );
+      // but only if over threshold
+      if( isOverThresholdDrag ){
+        var cxtEvt = Event( e, {
+          type: 'cxtdrag',
+          cyPosition: { x: pos[0], y: pos[1] }
+        } );
 
-      if( down ){
-        down.trigger( cxtEvt );
-      } else {
-        cy.trigger( cxtEvt );
-      }
-
-      r.hoverData.cxtDragged = true;
-
-      if( !r.hoverData.cxtOver || near !== r.hoverData.cxtOver ){
-
-        if( r.hoverData.cxtOver ){
-          r.hoverData.cxtOver.trigger( Event( e, {
-            type: 'cxtdragout',
-            cyPosition: { x: pos[0], y: pos[1] }
-          } ) );
+        if( down ){
+          down.trigger( cxtEvt );
+        } else {
+          cy.trigger( cxtEvt );
         }
 
-        r.hoverData.cxtOver = near;
+        r.hoverData.cxtDragged = true;
 
-        if( near ){
-          near.trigger( Event( e, {
-            type: 'cxtdragover',
-            cyPosition: { x: pos[0], y: pos[1] }
-          } ) );
+        if( !r.hoverData.cxtOver || near !== r.hoverData.cxtOver ){
+
+          if( r.hoverData.cxtOver ){
+            r.hoverData.cxtOver.trigger( Event( e, {
+              type: 'cxtdragout',
+              cyPosition: { x: pos[0], y: pos[1] }
+            } ) );
+          }
+
+          r.hoverData.cxtOver = near;
+
+          if( near ){
+            near.trigger( Event( e, {
+              type: 'cxtdragover',
+              cyPosition: { x: pos[0], y: pos[1] }
+            } ) );
+          }
+
         }
-
       }
 
     // Check if we are drag panning the entire graph
@@ -671,7 +678,7 @@ BRp.load = function(){
 
       if( down && down.isNode() && r.nodeIsDraggable( down ) ){
 
-        if( rdist2 >= r.desktopTapThreshold2 ){ // then drag
+        if( isOverThresholdDrag ){ // then drag
 
           var justStartedDrag = !r.dragData.didDrag;
 

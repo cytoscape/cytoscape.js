@@ -17,12 +17,12 @@ The extensions below are a curated list.  To add your extension, [please submit 
 
 ## Layout extensions
 
- * [`arbor`](https://github.com/cytoscape/cytoscape.js-arbor) : The Arbor physics simulation layout for Cytoscape.js.
- * [`cola`](https://github.com/cytoscape/cytoscape.js-cola) : The Cola.js physics simulation layout for Cytoscape.js.
- * [`cose-bilkent`](https://github.com/cytoscape/cytoscape.js-cose-bilkent) : The CoSE layout for Cytoscape.js by Bilkent with enhanced compound node placement.
- * [`dagre`](https://github.com/cytoscape/cytoscape.js-dagre) : The Dagre layout for DAGs and trees for Cytoscape.js.
- * [`spread`](https://github.com/cytoscape/cytoscape.js-spread) : The speedy Spread physics simulation layout for Cytoscape.js.
- * [`springy`](https://github.com/cytoscape/cytoscape.js-springy) : The Springy physics simulation layout for Cytoscape.js.
+ * [`arbor`](https://github.com/cytoscape/cytoscape.js-arbor) : The Arbor physics simulation layout.  It's a basic physics layout.
+ * [`cola`](https://github.com/cytoscape/cytoscape.js-cola) : The Cola.js physics simulation layout.  Cola makes beautiful layout results, it animates very smoothly, and it has great options for controlling the layout.  If you want the classic always animating graph, you should use `cola`.
+ * [`cose-bilkent`](https://github.com/cytoscape/cytoscape.js-cose-bilkent) : The CoSE layout by Bilkent with enhanced compound node placement.  CoSE Bilkent gives near-perfect end results.  However, it's more expensive than the version of CoSE directly included with Cytoscape.js.
+ * [`dagre`](https://github.com/cytoscape/cytoscape.js-dagre) : The Dagre layout for DAGs and trees.
+ * [`spread`](https://github.com/cytoscape/cytoscape.js-spread) : The speedy Spread physics simulation layout.  It tries to use all the viewport space, but it can be configured to produce a tigher result.
+ * [`springy`](https://github.com/cytoscape/cytoscape.js-springy) : The Springy physics simulation layout.  It's a basic physics layout.
 
 
 ## API

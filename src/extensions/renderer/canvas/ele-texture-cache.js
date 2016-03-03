@@ -12,9 +12,9 @@ var deqEleNoDrawCost = 0.5; // % of avg frame time that can be used for dequeuei
 
 var minTxrH = 25; // the size of the texture cache for small height eles (special case)
 var txrStepH = 50; // the min size of the regular cache, and the size it increases with each step up
-var minLvl = -4; // -4 => 0.00625 scale ; when scaling smaller than that we don't need to re-render
-var maxLvl = 2; // 2 => 4 scale ; when larger than this scale just render directly (caching is not helpful)
-var maxZoom = 3.99; // beyond this zoom level, textures are not used
+var minLvl = -4; // when scaling smaller than that we don't need to re-render
+var maxLvl = 2; // when larger than this scale just render directly (caching is not helpful)
+var maxZoom = 3.99; // beyond this zoom level, layered textures are not used
 var eleTxrSpacing = 8; // spacing between elements on textures to avoid blitting overlaps
 var defTxrWidth = 1024; // default/minimum texture width
 var maxTxrW = 1024; // the maximum width of a texture
@@ -24,7 +24,7 @@ var maxFullness = 0.8; // fullness of texture after which queue removal is check
 var maxFullnessChecks = 10; // dequeued after this many checks
 var maxDeqSize = 10; // number of eles to dequeue and render at higher texture in each batch
 var deqRedrawThreshold = 100; // time to batch redraws together from dequeueing to allow more dequeueing calcs to happen in the meanwhile
-var allowEdgeTxrCaching = true; // whether edges can be caches as textures
+var allowEdgeTxrCaching = false; // whether edges can be cached as textures (TODO maybe better on if webgl supported?)
 
 var getTxrReasons = {
   dequeue: 'dequeue',
@@ -360,7 +360,7 @@ ETCp.queueElement = function( ele, bb, lvl ){
   var existingReq = id2q[ id ];
 
   if( existingReq ){ // use the max lvl b/c in between lvls are cheap to make
-    existingReq.lvl = Math.max( existingReq.lvl, lvl );
+    existingReq.level = Math.max( existingReq.level, lvl );
     existingReq.reqs++;
 
     q.updateItem( existingReq );
@@ -368,7 +368,7 @@ ETCp.queueElement = function( ele, bb, lvl ){
     var req = {
       ele: ele,
       bb: bb,
-      lvl: lvl,
+      level: lvl,
       reqs: 1
     };
 
@@ -392,7 +392,7 @@ ETCp.dequeueElements = function( pxRatio, extent ){
       id2q[ req.ele.id() ] = null;
 
       dequeued.push( req );
-      self.getElement( req.ele, req.bb, pxRatio, req.lvl, getTxrReasons.dequeue );
+      self.getElement( req.ele, req.bb, pxRatio, req.level, getTxrReasons.dequeue );
     } else {
       break;
     }

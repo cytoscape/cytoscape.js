@@ -447,7 +447,7 @@ CRp.render = function( options ){
 
 
   function drawElements( list, context ){
-    r.drawElements( context, list.eles, pixelRatio, extent );
+    r.drawLayeredElements( context, list.eles, pixelRatio, extent );
   }
 
   var needMbClear = [];

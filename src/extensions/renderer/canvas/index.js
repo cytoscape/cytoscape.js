@@ -9,6 +9,7 @@ Modifications tracked on Github.
 var util = require( '../../../util' );
 var is = require( '../../../is' );
 var ElementTextureCache = require('./ele-texture-cache');
+var LayeredTextureCache = require('./layered-texture-cache');
 
 var CR = CanvasRenderer;
 var CRp = CanvasRenderer.prototype;
@@ -76,6 +77,7 @@ function CanvasRenderer( options ){
   }
 
   r.data.eleTxrCache = new ElementTextureCache( r );
+  r.data.lyrTxrCache = new LayeredTextureCache( r );
 
   r.pathsEnabled = true;
 }

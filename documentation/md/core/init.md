@@ -30,7 +30,6 @@ var cy = cytoscape({
   elements: [ /* ... */ ],
   style: [ /* ... */ ],
   layout: { name: 'grid' /* , ... */ },
-  ready: function(event){ /* ... */ },
 
   // initial viewport state:
   zoom: 1,
@@ -61,7 +60,6 @@ var cy = cytoscape({
   motionBlurOpacity: 0.2,
   wheelSensitivity: 1,
   pixelRatio: 'auto',
-  initrender: function(event){ /* ... */ },
   renderer: { /* ... */ }
 });
 ```
@@ -76,8 +74,6 @@ var cy = cytoscape({
 **`style`** : The [stylesheet](#style) used to style the graph.  For convenience, this option can alternatively be specified as a promise that resolves to the stylesheet.
 
 **`layout`** : A plain object that specifies layout options.  Which layout is initially run is specified by the `name` field.  Refer to a [layout's documentation](#layouts) for the options it supports.  If you want to specify your node positions yourself in your elements JSON, you can use the `preset` layout &mdash; by default it does not set any positions, leaving your nodes in their current positions (e.g. specified in `options.elements` at initialisation time).
-
-**`ready`** : A callback function (`function(event){ /* ... */ }`) that is called when Cytoscape.js has loaded the graph and the layout has specified initial positions of the nodes.  After this point, rendering can happen, the user can interact with the graph, et cetera.
 
 
 ### Initial viewport state
@@ -133,8 +129,6 @@ var cy = cytoscape({
 **`wheelSensitivity`** : Changes the scroll wheel sensitivity when zooming.  This is a multiplicative modifier.  So, a value between 0 and 1 reduces the sensitivity (zooms slower), and a value greater than 1 increases the sensitivity (zooms faster).
 
 **`pixelRatio`** : Overrides the screen pixel ratio with a manually set value (`1.0` recommended, if set).  This can be used to increase performance on high density displays by reducing the effective area that needs to be rendered, though this is much less necessary on more recent browser releases.  If you want to use the hardware's actual pixel ratio, you can set `pixelRatio: 'auto'` (default).
-
-**`initrender`** : A callback function that is called when Cytoscape.js has rendered its first frame.  This is useful for grabbing screenshots etc after initialision, but in general you should use `ready` instead.
 
 **`renderer`** : A plain object containing options for the renderer to be used.  The `options.renderer.name` field specifies which renderer is used.  You need not specify anything for the `renderer` option, unless you want to specify one of the rendering options below:
 

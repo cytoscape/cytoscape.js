@@ -136,10 +136,6 @@ var cy = cytoscape({
 ```
 
 
-## The ready callback
-
-<span class="important-indicator"></span> Part of initialising Cytoscape.js is synchronous and part may be asynchronous.  The potentially asynchronous parts are (1) loading data via promises and (2) the initial layout, which may be used for setting the initial positions of nodes.  If you use an asynchronous (a.k.a. continuous) layout at initialisation or you load data via promises, you may want to use `ready`.  You can guarantee that the initial layout takes no time if you specify all node positions manually in the [elements JSON](#notation/elements-json) and use the `preset` layout &mdash; which does nothing by default.
-
 
 ## Next steps
 

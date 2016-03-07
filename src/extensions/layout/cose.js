@@ -138,7 +138,7 @@ CoseLayout.prototype.run = function() {
   var refresh = function( rOpts ){
     rOpts = rOpts || {};
 
-    if( refreshRequested ){
+    if( refreshRequested && !rOpts.next ){
       return;
     }
 

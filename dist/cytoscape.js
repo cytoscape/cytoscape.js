@@ -9812,7 +9812,7 @@ CoseLayout.prototype.run = function() {
   var refresh = function( rOpts ){
     rOpts = rOpts || {};
 
-    if( refreshRequested ){
+    if( refreshRequested && !rOpts.next ){
       return;
     }
 
@@ -18862,7 +18862,7 @@ var cytoscape = function( options ){ // jshint ignore:line
 };
 
 // replaced by build system
-cytoscape.version = '2.6.5';
+cytoscape.version = '2.6.6';
 
 // try to register w/ jquery
 if( window && window.jQuery ){

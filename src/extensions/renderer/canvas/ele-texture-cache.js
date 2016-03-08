@@ -91,6 +91,8 @@ ETCp.getElement = function( ele, bb, pxRatio, lvl, reason ){
     }
   }
 
+  // TODO increase bb by some threshold if not dequeuing (to avoid eles getting cut off due to antialiasing, bezier approx'ns etc.)
+
   var scale = Math.pow( 2, lvl );
   var eleScaledH = bb.h * scale;
   var eleScaledW = bb.w * scale;

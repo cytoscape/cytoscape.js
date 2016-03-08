@@ -4,7 +4,7 @@
 
 $(function(){
 
-  var addRandomEles = true;
+  var addRandomEles = false;
   var height, width;
 
   var cliques = 4;
@@ -75,7 +75,7 @@ $(function(){
           })
       .selector('edge')
         .css({
-          // 'line-color': '#e0e0e0',
+          'line-color': 'red',
           // 'source-arrow-color': '#ccc',
           // 'mid-source-arrow-color': '#ccc',
           // 'target-arrow-color': '#ccc',
@@ -90,7 +90,7 @@ $(function(){
           // 'mid-source-arrow-shape': 'triangle-backcurve',
           // 'target-arrow-fill': 'filled',
           // 'source-arrow-shape': 'data(srcShape)',
-          'curve-style': 'haystack',
+          // 'curve-style': 'haystack',
           // 'opacity': 0.5
           // 'content': 'data(weight)',
           // 'text-rotation': 'autorotate',

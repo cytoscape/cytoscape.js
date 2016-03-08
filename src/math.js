@@ -133,6 +133,13 @@ math.pointInBoundingBox = function( bb, pt ){
   return this.inBoundingBox( bb, pt.x, pt.y );
 };
 
+math.boundingBoxInBoundingBox = function( bb1, bb2 ){
+  return (
+       math.inBoundingBox( bb1, bb2.x1, bb2.y1 )
+    && math.inBoundingBox( bb1, bb2.x2, bb2.y2 )
+  );
+};
+
 math.roundRectangleIntersectLine = function(
   x, y, nodeX, nodeY, width, height, padding ){
 

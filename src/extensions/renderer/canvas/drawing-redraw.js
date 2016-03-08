@@ -287,16 +287,8 @@ CRp.render = function( options ){
   effectivePan.y *= pixelRatio;
 
   var eles = {
-    drag: {
-      nodes: [],
-      edges: [],
-      eles: []
-    },
-    nondrag: {
-      nodes: [],
-      edges: [],
-      eles: []
-    }
+    drag: [],
+    nondrag: []
   };
 
   function mbclear( context, x, y, w, h ){
@@ -440,14 +432,9 @@ CRp.render = function( options ){
         list = eles.nondrag;
       }
 
-      list.eles.push( ele );
+      list.push( ele );
     }
 
-  }
-
-
-  function drawElements( list, context ){
-    r.drawLayeredElements( context, list.eles, pixelRatio, extent );
   }
 
   var needMbClear = [];
@@ -464,7 +451,7 @@ CRp.render = function( options ){
     var clear = motionBlur && !useBuffer ? 'motionBlur' : undefined;
 
     setContextTransform( context, clear );
-    drawElements( eles.nondrag, context );
+    r.drawLayeredElements( context, eles.nondrag, pixelRatio, extent );
 
     if( !drawAllLayers && !motionBlur ){
       needDraw[ r.NODE ] = false;
@@ -476,7 +463,7 @@ CRp.render = function( options ){
     var context = forcedContext || ( useBuffer ? r.data.bufferContexts[ r.MOTIONBLUR_BUFFER_DRAG ] : data.contexts[ r.DRAG ] );
 
     setContextTransform( context, motionBlur && !useBuffer ? 'motionBlur' : undefined );
-    drawElements( eles.drag, context );
+    r.drawCachedElements( context, eles.drag, pixelRatio, extent );
 
     if( !drawAllLayers && !motionBlur ){
       needDraw[ r.DRAG ] = false;

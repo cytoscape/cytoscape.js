@@ -14,7 +14,7 @@ BRp.registerCalculationListeners = function(){
 
   var emptyObj = {};
 
-  var enqueue = function( eles, invalTxrCache ){
+  var enqueue = function( eles, invalTxrCache, invalLyrCache ){
     elesToUpdate.merge( eles );
 
     for( var i = 0; i < eles.length; i++ ){
@@ -28,16 +28,20 @@ BRp.registerCalculationListeners = function(){
       if( invalTxrCache === undefined || invalTxrCache ){
         _p.rscratch.invalTxrCache = true;
       }
+
+      if( invalLyrCache === undefined || invalLyrCache ){
+        _p.rscratch.invalLyrCache = true;
+      }
     }
   };
 
   r.binder( cy )
     // nodes
 
-    .on('position.* style.*', 'node', function onDirtyModNode( e ){
+    .on('position.* style.* free.*', 'node', function onDirtyModNode( e ){
       var node = e.cyTarget;
 
-      enqueue( node, true );
+      enqueue( node, e.type !== 'position' );
       enqueue( node.connectedEdges() );
 
       if( cy.hasCompoundNodes() ){
@@ -75,6 +79,11 @@ BRp.registerCalculationListeners = function(){
           rs.invalTxrCache = false;
           r.data.eleTxrCache.invalidateElement( ele );
         }
+
+        if( rs.invalLyrCache ){
+          rs.invalLyrCache = false;
+          r.data.lyrTxrCache.invalidateElements( ele );
+        }
       }
 
       r.recalculateRenderedStyle( elesToUpdate );
@@ -86,7 +95,7 @@ BRp.registerCalculationListeners = function(){
   this.beforeRender( updateEleCalcs );
 };
 
-BRp.recalculateRenderedStyle = function( eles, bypassCache ){
+BRp.recalculateRenderedStyle = function( eles, useCache ){
   var edges = [];
   var nodes = [];
 
@@ -97,7 +106,7 @@ BRp.recalculateRenderedStyle = function( eles, bypassCache ){
     var id = _p.data.id;
 
     // only update if dirty
-    if( !bypassCache && rstyle.clean ){ continue; }
+    if( useCache && rstyle.clean ){ continue; }
 
     if( _p.group === 'nodes' ){
       var pos = _p.position;

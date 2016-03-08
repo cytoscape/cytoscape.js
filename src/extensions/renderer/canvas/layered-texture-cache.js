@@ -1,6 +1,7 @@
 'use strict';
 
 var util = require( '../../../util' );
+var math = require( '../../../math' );
 
 // TODO optimise these values
 
@@ -13,6 +14,8 @@ var allowEdgeTxrCaching = true; // whether edges can be cached as textures (TODO
 var LayeredTextureCache = function( renderer ){
   this.renderer = renderer;
   this.layersByLevel = {}; // e.g. 2 => [ layer1, layer2, ..., layerN ]
+
+  window.cache = this; // TODO remove this debugging line
 };
 
 var LTCp = LayeredTextureCache.prototype;
@@ -36,7 +39,11 @@ LTCp.getLayers = function( eles, pxRatio, lvl ){
   var layers = this.layersByLevel[ lvl ] = this.layersByLevel[ lvl ] || [];
   var bb;
 
-  var makeLayer = function( oldLayer ){
+  var makeLayer = function( opts ){
+    opts = opts || {};
+
+    var after = opts.after;
+
     bb = bb || cy.collection( eles ).boundingBox();
 
     var w = bb.w * scale;
@@ -65,60 +72,138 @@ LTCp.getLayers = function( eles, pxRatio, lvl ){
     cxt.scale( scale, scale );
     cxt.translate( dx, dy );
 
-    if( oldLayer != null ){ // put after old layer
-      var index = layers.indexOf( oldLayer ) + 1;
+    if( after != null ){
+      var index = layers.indexOf( after ) + 1;
 
       layers.splice( index, 0, layer );
-    } else {
-      layers.push( layer );
+    } else if( opts.insert === undefined || opts.insert ){
+      // no after specified => first layer made so put at start
+      layers.unshift( layer );
     }
 
     return layer;
   };
 
+  // console.log( eles.map(function(ele){ return ele.id() }).join(' ') ); // TODO remove
+
   var layer;
   var maxElesPerLayer = eles.length / defNumLayers;
-  var needFreshLayerNextMiss = false;
+
+  this.validateLayersElesOrdering( lvl, eles );
 
   for( var i = 0; i < eles.length; i++ ){
     var ele = eles[i];
     var rs = ele._private.rscratch;
     var caches = rs.imgLayerCaches = rs.imgLayerCaches || {};
 
-    if( !caches[ lvl ] ){
-      if( !layer || needFreshLayerNextMiss || layer.eles.length >= maxElesPerLayer ){
-        layer = makeLayer( layer );
-        needFreshLayerNextMiss = false;
-      }
+    var existingLayer = caches[ lvl ];
 
-      // r.drawElement( layer.context, ele, pxRatio );
-      // TODO invalidate when fresh ele caches are available
-      r.drawCachedElement( layer.context, ele, pxRatio );
-
-      layer.eles.merge( ele );
-
-      caches[ lvl ] = layer;
-    } else {
-      // if we have (ele not in cached layer) then (ele in cached layer), then we
-      // need to generate a fresh layer the next time we get another (ele not in cached layer)
-      layer = caches[ lvl ];
-      needFreshLayerNextMiss = true;
+    if( existingLayer ){
+      // reuse layer for later eles
+      layer = existingLayer;
+      continue;
     }
+
+    if(
+      !layer
+      || layer.eles.length >= maxElesPerLayer
+      || !math.boundingBoxInBoundingBox( layer.bb, ele.boundingBox() )
+    ){
+      // console.log('make layer for', ele.id()) // TODO remove
+      layer = makeLayer({ insert: true, after: layer });
+    }
+
+    // TODO invalidate when fresh ele caches are available
+    r.drawCachedElement( layer.context, ele, pxRatio );
+
+    layer.eles.merge( ele );
+
+    caches[ lvl ] = layer;
   }
 
   return layers;
 };
 
-LTCp.invalidateElement = function(){
-  // TODO
+LTCp.validateLayersElesOrdering = function( lvl, eles ){
+  var layers = this.layersByLevel[ lvl ];
+
+  // if in a layer the eles are not in the same order, then the layer is invalid
+  // (i.e. there is an ele in between the eles in the layer)
+
+  for( var i = 0; i < layers.length; i++ ){
+    var layer = layers[i];
+    var offset = -1;
+
+    // find the offset
+    for( var j = 0; j < eles.length; j++ ){
+      if( layer.eles[0] === eles[j] ){
+        offset = j;
+        break;
+      }
+    }
+
+    // the eles in the layer must be in the same continuous order, else the layer is invalid
+    for( var j = 0; j < layer.eles.length; j++ ){
+      if( layer.eles[ j ] !== eles[ offset + j ] ){
+        this.invalidateLayer( layer );
+        break;
+      }
+    }
+  }
 };
 
-// maybe not needed? (simpler w/o)
-LTCp.retireTexture = function(){};
-LTCp.recycleTexture = function(){};
-LTCp.addTexture = function(){};
-LTCp.dequeueLayers = function(){};
-LTCp.setupDequeueing = function(){};
+LTCp.invalidateElements = function( eles ){
+  var r = this.renderer;
+  var cy = r.cy;
+  var invals = cy.collection();
 
+  // collect invalid elements (cascaded from the layers) and invalidate each
+  // layer itself along the way
+  for( var i = 0; i < eles.length; i++ ){
+    var ele = eles[i];
+    var rs = ele._private.rscratch;
+    var caches = rs.imgLayerCaches = rs.imgLayerCaches || {};
+
+    for( var l = minLvl; l <= maxLvl; l++ ){
+      var layer = caches[l];
+
+      if( !layer ){ continue; }
+
+      invals.merge( layer.eles );
+
+      if( !layer.invalid ){
+        util.removeFromArray( this.layersByLevel[l], layer );
+
+        layer.invalid = true;
+      }
+    }
+  }
+
+  // clear the caches of invalid elements
+  for( var i = 0; i < invals.length; i++ ){
+    var ele = invals[i];
+
+    ele._private.rscratch.imgLayerCaches = null;
+  }
+};
+
+LTCp.invalidateLayer = function( layer ){
+  var lvl = layer.level;
+  var eles = layer.eles;
+
+  // console.log('invalidate layer', layer)
+
+  util.removeFromArray( this.layersByLevel[ lvl ], layer );
+
+  layer.invalid = true;
+
+  for( var i = 0; i < eles.length; i++ ){
+    var caches = eles[i]._private.rscratch.imgLayerCaches;
+
+    if( caches ){
+      caches[ lvl ] = null;
+    }
+  }
+};
 
 module.exports = LayeredTextureCache;

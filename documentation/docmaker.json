@@ -2218,12 +2218,6 @@
 
                 {
                   "args": [
-                    { "name": "elesArray", "descr": "An array of elements to add." }
-                  ]
-                },
-
-                {
-                  "args": [
                     { "name": "selector", "descr": "Elements in the graph matching this selector are added." }
                   ]
                 }

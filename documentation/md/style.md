@@ -213,7 +213,7 @@ You may find it useful to reserve a number to a particular colour for all nodes 
 These properties affect the styling of an edge's line:
 
  * **`width`** : The width of an edge's line.
- * **`curve-style`** : The curving method used to separate two or more edges between two nodes; may be [`bezier`](#style/bezier-edges) (default, bundled curved edges), [`unbundled-bezier`](#style/unbundled-bezier-edges) (curved edges for use with manual control points), [`haystack`](#style/haystack-edges) (very fast, bundled straight edges for which loops are unsupported), or [`segments`](#style/segments-edges) (a series of straight lines).  Note that `haystack` edges work best with `ellipse`, `rectangle`, or similar nodes.  Smaller node shapes, like `triangle`, will not be as aesthetically pleasing.  Also note that edge arrows are unsupported for `haystack` edges.
+ * **`curve-style`** : The curving method used to separate two or more edges between two nodes; may be [`bezier`](#style/bezier-edges) (default, bundled curved edges), [`unbundled-bezier`](#style/unbundled-bezier-edges) (curved edges for use with manual control points), [`haystack`](#style/haystack-edges) (very fast, bundled straight edges for which loops and compounds are unsupported), or [`segments`](#style/segments-edges) (a series of straight lines).  Note that `haystack` edges work best with `ellipse`, `rectangle`, or similar nodes.  Smaller node shapes, like `triangle`, will not be as aesthetically pleasing.  Also note that edge arrows are unsupported for `haystack` edges.
  * **`line-color`** : The colour of the edge's line.
  * **`line-style`** : The style of the edge's line; may be `solid`, `dotted`, or `dashed`.
 
@@ -236,6 +236,8 @@ For bezier edges with manual control points (`curve-style: unbundled-bezier`):
 
 
 ## Haystack edges
+
+<span class="important-indicator"></span> Loop edges and compound parent nodes are not supported by haystack edges.  Haystack edges are a more performant replacement for plain, straight line edges.
 
 For fast, straight line edges (`curve-style: haystack`):
 

@@ -111,97 +111,96 @@ BRp.load = function(){
     return listHasId || {};
   };
 
+  var setGrabbed = function( ele ){
+    ele[0]._private.grabbed = true;
+  };
+
+  var setFreed = function( ele ){
+    ele[0]._private.grabbed = false;
+  };
+
+  var setInDragLayer = function( ele ){
+    ele[0]._private.rscratch.inDragLayer = true;
+  };
+
+  var setOutDragLayer = function( ele ){
+    ele[0]._private.rscratch.inDragLayer = false;
+  };
+
+  var addToDragList = function( ele, opts ){
+    var listHasId = getDragListIds( opts );
+
+    if( !listHasId[ ele.id() ] ){
+      opts.addToList.push( ele );
+      listHasId[ ele.id() ] = true;
+
+      setGrabbed( ele );
+    }
+  };
+
   // helper function to determine which child nodes and inner edges
   // of a compound node to be dragged as well as the grabbed and selected nodes
   var addDescendantsToDrag = function( node, opts ){
-    if( !node._private.cy.hasCompoundNodes() ){
+    if( !node.cy().hasCompoundNodes() ){
       return;
     }
 
     if( opts.inDragLayer == null && opts.addToList == null ){ return; } // nothing to do
 
-    var listHasId = getDragListIds( opts );
-
     var innerNodes = node.descendants();
 
-    for( var i = 0; i < innerNodes.size(); i++ ){
-      var iNode = innerNodes[ i ];
-      var _p = iNode._private;
+    if( opts.inDragLayer ){
+      innerNodes.forEach( setInDragLayer );
+      innerNodes.connectedEdges().forEach( setInDragLayer );
+    }
 
-      if( opts.inDragLayer ){
-        _p.rscratch.inDragLayer = true;
-      }
-
-      if( opts.addToList && !listHasId[ iNode.id() ] ){
-        opts.addToList.push( iNode );
-        listHasId[ iNode.id() ] = true;
-
-        _p.grabbed = true;
-      }
-
-      var edges = _p.edges;
-      for( var j = 0; opts.inDragLayer && j < edges.length; j++ ){
-        edges[ j ]._private.rscratch.inDragLayer = true;
-      }
+    if( opts.addToList ){
+      innerNodes.forEach(function( ele ){
+        addToDragList( ele, opts );
+      });
     }
   };
 
-  // adds the given nodes, and its edges to the drag layer
-  var addNodeToDrag = function( node, opts ){
+  // adds the given nodes and its neighbourhood to the drag layer
+  var addNodesToDrag = function( nodes, opts ){
+    opts = opts || {};
 
-    var _p = node._private;
+    var hasCompoundNodes = nodes.cy().hasCompoundNodes();
     var listHasId = getDragListIds( opts );
 
     if( opts.inDragLayer ){
-      _p.rscratch.inDragLayer = true;
+      setInDragLayer( nodes );
 
-      var connectedEles = node.neighborhood();
-      for( var i = 0; i < connectedEles.length; i++ ){
-        var ele = connectedEles[ i ];
-
-        if( ele.isEdge() || ( ele.isNode() && !ele.isParent() ) ){
-          ele._private.rscratch.inDragLayer = true;
-        }
-      }
+      nodes.neighborhood().stdFilter(function( ele ){
+        return !hasCompoundNodes || ele.isEdge();
+      }).forEach( setInDragLayer );
     }
 
-    if( opts.addToList && !listHasId[ node.id() ] ){
-      opts.addToList.push( node );
-      listHasId[ node.id() ] = true;
-
-      _p.grabbed = true;
+    if( opts.addToList ){
+      nodes.forEach(function( ele ){
+        addToDragList( ele, opts );
+      });
     }
 
-    addDescendantsToDrag( node, opts ); // always add to drag
+    addDescendantsToDrag( nodes, opts ); // always add to drag
 
     // also add nodes and edges related to the topmost ancestor
-    updateAncestorsInDragLayer( node, {
+    updateAncestorsInDragLayer( nodes, {
       inDragLayer: opts.inDragLayer
     } );
   };
 
-  var freeDraggedElements = function( draggedElements ){
-    if( !draggedElements ){ return; }
+  var addNodeToDrag = addNodesToDrag;
 
-    for( var i = 0; i < draggedElements.length; i++ ){
+  var freeDraggedElements = function( grabbedEles ){
+    if( !grabbedEles ){ return; }
 
-      var dEi_p = draggedElements[ i ]._private;
+    grabbedEles.hasId = {}; // clear the id list
 
-      if( dEi_p.group === 'nodes' ){
-        dEi_p.rscratch.inDragLayer = false;
-        dEi_p.grabbed = false;
+    grabbedEles.forEach( setFreed );
 
-        var sEdges = dEi_p.edges;
-        for( var j = 0; j < sEdges.length; j++ ){ sEdges[ j ]._private.rscratch.inDragLayer = false; }
-
-        // for compound nodes, also remove related nodes and edges from the drag layer
-        updateAncestorsInDragLayer( draggedElements[ i ], { inDragLayer: false } );
-
-      } else if( dEi_p.group === 'edges' ){
-        dEi_p.rscratch.inDragLayer = false;
-      }
-
-    }
+    // just go over all elements rather than doing a bunch of (possibly expensive) traversals
+    r.getCachedZSortedEles().forEach( setOutDragLayer );
   };
 
   // helper function to determine which ancestor nodes and edges should go
@@ -210,23 +209,19 @@ BRp.load = function(){
 
     if( opts.inDragLayer == null && opts.addToList == null ){ return; } // nothing to do
 
-    // find top-level parent
-    var parent = node;
-
-    if( !node._private.cy.hasCompoundNodes() ){
+    if( !node.cy().hasCompoundNodes() ){
       return;
     }
 
-    while( parent.parent().nonempty() ){
-      parent = parent.parent()[0];
-    }
+    // find top-level parent
+    var parent = node.ancestors().orphans();
 
     // no parent node: no nodes to add to the drag layer
-    if( parent == node ){
+    if( parent.same( node ) ){
       return;
     }
 
-    var nodes = parent.descendants().clone()
+    var nodes = parent.descendants().spawnSelf()
       .merge( parent )
       .unmerge( node )
       .unmerge( node.descendants() )
@@ -234,23 +229,15 @@ BRp.load = function(){
 
     var edges = nodes.connectedEdges();
 
-    var listHasId = getDragListIds( opts );
-
-    for( var i = 0; i < nodes.size(); i++ ){
-      if( opts.inDragLayer !== undefined ){
-        nodes[ i ]._private.rscratch.inDragLayer = opts.inDragLayer;
-      }
-
-      if( opts.addToList && !listHasId[ nodes[ i ].id() ] ){
-        opts.addToList.push( nodes[ i ] );
-        listHasId[ nodes[ i ].id() ] = true;
-
-        nodes[ i ]._private.grabbed = true;
-      }
+    if( opts.inDragLayer ){
+      edges.forEach( setInDragLayer );
+      nodes.forEach( setInDragLayer );
     }
 
-    for( var j = 0; opts.inDragLayer !== undefined && j < edges.length; j++ ){
-      edges[ j ]._private.rscratch.inDragLayer = opts.inDragLayer;
+    if( opts.addToList ){
+      nodes.forEach(function( ele ){
+        addToDragList( ele, opts );
+      });
     }
   };
 
@@ -415,15 +402,9 @@ BRp.load = function(){
             } else if( near.isNode() && near.selected() ){
               draggedElements = r.dragData.possibleDragElements = [  ];
 
-              var selectedNodes = cy.$( function(){ return this.isNode() && this.selected(); } );
+              var selectedNodes = cy.$( function(){ return this.isNode() && this.selected() && r.nodeIsDraggable( this ); } );
 
-              for( var i = 0; i < selectedNodes.length; i++ ){
-
-                // Only add this selected node to drag if it is draggable, eg. has nonzero opacity
-                if( r.nodeIsDraggable( selectedNodes[ i ] ) ){
-                  addNodeToDrag( selectedNodes[ i ], { addToList: draggedElements } );
-                }
-              }
+              addNodesToDrag( selectedNodes, { addToList: draggedElements } );
 
               near.trigger( grabEvent );
             }
@@ -694,13 +675,13 @@ BRp.load = function(){
 
           var toTrigger = [];
 
+          // now, add the elements to the drag layer if not done already
+          if( !r.hoverData.draggingEles ){
+            addNodesToDrag( cy.collection( draggedElements ), { inDragLayer: true } );
+          }
+
           for( var i = 0; i < draggedElements.length; i++ ){
             var dEle = draggedElements[ i ];
-
-            // now, add the elements to the drag layer if not done already
-            if( !r.hoverData.draggingEles ){
-              addNodeToDrag( dEle, { inDragLayer: true } );
-            }
 
             // Locked nodes not draggable, as well as non-visible nodes
             if( dEle.isNode() && r.nodeIsDraggable( dEle ) && dEle.grabbed() ){
@@ -1160,16 +1141,10 @@ BRp.load = function(){
             // reset drag elements, since near will be added again
 
             var selectedNodes = cy.$( function(){
-              return this.isNode() && this.selected();
+              return this.isNode() && this.selected() && r.nodeIsDraggable( this );
             } );
 
-            for( var k = 0; k < selectedNodes.length; k++ ){
-              var selectedNode = selectedNodes[ k ];
-
-              if( r.nodeIsDraggable( selectedNode ) ){
-                addNodeToDrag( selectedNode, { addToList: draggedEles } );
-              }
-            }
+            addNodesToDrag( selectedNodes, { addToList: draggedEles } );
           } else {
             addNodeToDrag( near, { addToList: draggedEles } );
           }
@@ -1482,12 +1457,12 @@ BRp.load = function(){
           var draggedEles = r.dragData.touchDragEles;
           var justStartedDrag = !r.dragData.didDrag;
 
+          if( justStartedDrag ){
+            addNodesToDrag( cy.collection( draggedEles ), { inDragLayer: true } );
+          }
+
           for( var k = 0; k < draggedEles.length; k++ ){
             var draggedEle = draggedEles[ k ];
-
-            if( justStartedDrag ){
-              addNodeToDrag( draggedEle, { inDragLayer: true } );
-            }
 
             if( r.nodeIsDraggable( draggedEle ) && draggedEle.isNode() && draggedEle.grabbed() ){
               r.dragData.didDrag = true;

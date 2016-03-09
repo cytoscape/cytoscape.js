@@ -154,6 +154,15 @@ BRp.load = function(){
 
     if( opts.inDragLayer ){
       _p.rscratch.inDragLayer = true;
+
+      var connectedEles = node.neighborhood();
+      for( var i = 0; i < connectedEles.length; i++ ){
+        var ele = connectedEles[ i ];
+
+        if( ele.isEdge() || ( ele.isNode() && !ele.isParent() ) ){
+          ele._private.rscratch.inDragLayer = true;
+        }
+      }
     }
 
     if( opts.addToList && !listHasId[ node.id() ] ){
@@ -161,11 +170,6 @@ BRp.load = function(){
       listHasId[ node.id() ] = true;
 
       _p.grabbed = true;
-    }
-
-    var edges = _p.edges;
-    for( var i = 0; opts.inDragLayer && i < edges.length; i++ ){
-      edges[ i ]._private.rscratch.inDragLayer = true;
     }
 
     addDescendantsToDrag( node, opts ); // always add to drag

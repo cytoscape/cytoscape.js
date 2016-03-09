@@ -3017,8 +3017,8 @@
             },
 
             {
-              "name": "nodes.parents",
-              "pureAliases": ["nodes.ancestors"],
+              "name": "nodes.ancestors",
+              "pureAliases": ["nodes.parents"],
               "descr": "Get all compound ancestor nodes (i.e. parents, parents' parents, etc.) of each node in the collection.",
               "formats": [
                 {

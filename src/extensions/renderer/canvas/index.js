@@ -79,6 +79,26 @@ function CanvasRenderer( options ){
   r.data.eleTxrCache = new ElementTextureCache( r );
   r.data.lyrTxrCache = new LayeredTextureCache( r );
 
+  var deqdEles = [];
+
+  var invalElesInLayers = util.debounce( function(){
+    r.data.lyrTxrCache.invalidateElements( deqdEles );
+
+    deqdEles = [];
+
+    r.redrawHint( 'eles', true );
+    r.redrawHint( 'drag', true );
+    r.redraw();
+  }, 50 );
+
+  r.data.eleTxrCache.onDequeue(function( reqs ){
+    for( var i = 0; i < reqs.length; i++ ){
+      deqdEles.push( reqs[i].ele );
+    }
+
+    invalElesInLayers();
+  });
+
   r.pathsEnabled = true;
 }
 

@@ -9,13 +9,12 @@ var defNumLayers = 1; // default number of layers to use
 var minLvl = -4; // when scaling smaller than that we don't need to re-render
 var maxLvl = 2; // when larger than this scale just render directly (caching is not helpful)
 var maxZoom = 1.99; // beyond this zoom level, layered textures are not used
-var allowEdgeTxrCaching = true; // whether edges can be cached as textures (TODO maybe better on if webgl supported?)
+var minPxRatioForEleCache = 2; // increase the pixel ratio used in the ele cache for low density displays to avoid blurriness
+var pxRatioMultForEleCache = 2; // multiplier for px ratio on low density displays to avoid blurriness
 
 var LayeredTextureCache = function( renderer ){
   this.renderer = renderer;
   this.layersByLevel = {}; // e.g. 2 => [ layer1, layer2, ..., layerN ]
-
-  window.cache = this; // TODO remove this debugging line
 };
 
 var LTCp = LayeredTextureCache.prototype;
@@ -84,8 +83,6 @@ LTCp.getLayers = function( eles, pxRatio, lvl ){
     return layer;
   };
 
-  // console.log( eles.map(function(ele){ return ele.id() }).join(' ') ); // TODO remove
-
   var layer;
   var maxElesPerLayer = eles.length / defNumLayers;
 
@@ -109,12 +106,12 @@ LTCp.getLayers = function( eles, pxRatio, lvl ){
       || layer.eles.length >= maxElesPerLayer
       || !math.boundingBoxInBoundingBox( layer.bb, ele.boundingBox() )
     ){
-      // console.log('make layer for', ele.id()) // TODO remove
       layer = makeLayer({ insert: true, after: layer });
     }
 
-    // TODO invalidate when fresh ele caches are available
-    r.drawCachedElement( layer.context, ele, pxRatio );
+    var pxRatioForCache = pxRatio < minPxRatioForEleCache ? pxRatioMultForEleCache * pxRatio : pxRatio;
+
+    r.drawCachedElement( layer.context, ele, pxRatioForCache );
 
     layer.eles.merge( ele );
 

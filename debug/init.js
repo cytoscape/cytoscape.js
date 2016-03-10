@@ -4,7 +4,7 @@
 
 $(function(){
 
-  var addRandomEles = false;
+  var addRandomEles = true;
   var height, width;
 
   var cliques = 4;

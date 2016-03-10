@@ -33,6 +33,7 @@ var getTxrReasons = {
 
 var ElementTextureCache = function( renderer ){
   this.renderer = renderer;
+  this.onDequeues = [];
 };
 
 var ETCp = ElementTextureCache.prototype;
@@ -401,6 +402,9 @@ ETCp.dequeueElements = function( pxRatio, extent ){
   return dequeued;
 };
 
+ETCp.onDequeue = function( fn ){ this.onDequeues.push( fn ); };
+ETCp.offDequeue = function( fn ){ util.removeFromArray( this.onDequeues, fn ); };
+
 ETCp.setupDequeueing = function(){
   var self = this;
   var r = this.renderer;
@@ -448,6 +452,15 @@ ETCp.setupDequeueing = function(){
         }
       } else {
         break;
+      }
+    }
+
+    // callbacks on dequeue
+    if( deqd.length > 0 ){
+      for( var i = 0; i < self.onDequeues.length; i++ ){
+        var fn = self.onDequeues[i];
+
+        fn( deqd );
       }
     }
 

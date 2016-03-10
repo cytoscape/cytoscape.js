@@ -265,7 +265,7 @@ var define = {
             };
 
             for( var j = 0; j < all.length; j++ ){
-              var _p = all[ j ]._private;
+              var _p = all[ j ]._private = all[ j ]._private || {};
 
               _p.listeners = _p.listeners || [];
               _p.listeners.push( listener );
@@ -319,7 +319,9 @@ var define = {
       if( arguments.length === 0 ){ // then unbind all
 
         for( var i = 0; i < all.length; i++ ){
-          all[ i ]._private.listeners = [];
+          all[ i ]._private = all[ i ]._private || {};
+
+          _p.listeners = [];
         }
 
         return self; // maintain chaining
@@ -354,7 +356,8 @@ var define = {
             var namespace = match[2] ? match[2] : undefined;
 
             for( var i = 0; i < all.length; i++ ){ //
-              var listeners = all[ i ]._private.listeners = all[ i ]._private.listeners || [];
+              var _p = all[ i ]._private = all[ i ]._private || {};
+              var listeners = _p.listeners = _p.listeners || [];
 
               for( var j = 0; j < listeners.length; j++ ){
                 var listener = listeners[ j ];
@@ -390,7 +393,8 @@ var define = {
       var eventsIsString = is.string( events );
       var eventsIsObject = is.plainObject( events );
       var eventsIsEvent = is.event( events );
-      var cy = this._private.cy || ( is.core( this ) ? this : null );
+      var _p = this._private = this._private || {};
+      var cy = _p.cy || ( is.core( this ) ? this : null );
       var hasCompounds = cy ? cy.hasCompoundNodes() : false;
 
       if( eventsIsString ){ // then make a plain event object for each event name
@@ -429,7 +433,8 @@ var define = {
 
         for( var j = 0; j < all.length; j++ ){ // for each
           var triggerer = all[ j ];
-          var listeners = triggerer._private.listeners = triggerer._private.listeners || [];
+          var _p = triggerer._private = triggerer._private || {};
+          var listeners = _p.listeners = _p.listeners || [];
           var triggererIsElement = is.element( triggerer );
           var bubbleUp = triggererIsElement || params.layout;
 

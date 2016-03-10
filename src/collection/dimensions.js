@@ -3,6 +3,7 @@
 var define = require( '../define' );
 var is = require( '../is' );
 var util = require( '../util' );
+var math = require( '../math' );
 var fn, elesfn;
 
 fn = elesfn = ({
@@ -616,6 +617,9 @@ var boundingBoxImpl = function( ele, options ){
   bounds.y2 = noninf( bounds.y2 );
   bounds.w = noninf( bounds.x2 - bounds.x1 );
   bounds.h = noninf( bounds.y2 - bounds.y1 );
+
+  // expand bounds by 1 because antialiasing can increase the visual/effective size by 1 on all sides
+  math.expandBoundingBox( bounds, 1 );
 
   return bounds;
 };

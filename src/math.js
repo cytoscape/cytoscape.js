@@ -104,6 +104,17 @@ math.makeBoundingBox = function( bb ){
   }
 };
 
+math.expandBoundingBox = function( bb, padding ){
+  bb.x1 -= padding;
+  bb.x2 += padding;
+  bb.y1 -= padding;
+  bb.y2 += padding;
+  bb.w = bb.x2 - bb.x1;
+  bb.h = bb.y2 - bb.y1;
+
+  return bb;
+};
+
 math.boundingBoxesIntersect = function( bb1, bb2 ){
   // case: one bb to right of other
   if( bb1.x1 > bb2.x2 ){ return false; }

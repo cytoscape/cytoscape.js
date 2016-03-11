@@ -614,8 +614,6 @@ CRp.render = function( options ){
   if( !forcedContext && !r.initrender ){
     r.initrender = true;
     cy.trigger( 'initrender' );
-
-    r.data.eleTxrCache.setupDequeueing();
   }
 
   if( !forcedContext ){

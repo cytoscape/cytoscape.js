@@ -93,8 +93,17 @@ function setExtension( type, name, registrant ){
   } else if( type === 'renderer' && name !== 'null' && name !== 'base' ){
     // user registered renderers inherit from base
 
-    var bProto = getExtension( 'renderer', 'base' ).prototype;
+    var BaseRenderer = getExtension( 'renderer', 'base' );
+    var bProto = BaseRenderer.prototype;
+    var RegistrantRenderer = registrant;
     var rProto = registrant.prototype;
+
+    var Renderer = function(){
+      BaseRenderer.apply( this, arguments );
+      RegistrantRenderer.apply( this, arguments );
+    };
+
+    var proto = Renderer.prototype;
 
     for( var pName in bProto ){
       var pVal = bProto[ pName ];
@@ -105,14 +114,20 @@ function setExtension( type, name, registrant ){
         return;
       }
 
-      rProto[ pName ] = pVal; // take impl from base
+      proto[ pName ] = pVal; // take impl from base
+    }
+
+    for( var pName in rProto ){
+      proto[ pName ] = rProto[ pName ]; // take impl from registrant
     }
 
     bProto.clientFunctions.forEach( function( name ){
-      rProto[ name ] = rProto[ name ] || function(){
+      proto[ name ] = proto[ name ] || function(){
         util.error( 'Renderer does not implement `renderer.' + name + '()` on its prototype' );
       };
     } );
+
+    ext = Renderer;
 
   }
 

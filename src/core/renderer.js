@@ -49,8 +49,6 @@ var corefn = ({
     } );
     var renderer = cy._private.renderer = new RendererProto( rOpts );
 
-    renderer.init( rOpts );
-
   },
 
   triggerOnRender: function(){

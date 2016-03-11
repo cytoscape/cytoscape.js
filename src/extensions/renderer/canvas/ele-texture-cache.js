@@ -3,12 +3,9 @@
 var math = require( '../../../math' );
 var util = require( '../../../util' );
 var Heap = require( '../../../heap' );
+var defs = require( './texture-cache-defs' );
 
 // TODO optimise these values
-
-var deqEleCost = 0.2; // % of add'l rendering cost allowed for dequeuing ele caches each frame
-var deqEleAvgCost = 0.1; // % of add'l rendering cost compared to average overall redraw time
-var deqEleNoDrawCost = 0.5; // % of avg frame time that can be used for dequeueing when not drawing
 
 var minTxrH = 25; // the size of the texture cache for small height eles (special case)
 var txrStepH = 50; // the min size of the regular cache, and the size it increases with each step up
@@ -22,9 +19,13 @@ var maxTxrH = 1024;  // the maximum height of a texture
 var minUtility = 0.5; // if usage of texture is less than this, it is retired
 var maxFullness = 0.8; // fullness of texture after which queue removal is checked
 var maxFullnessChecks = 10; // dequeued after this many checks
-var maxDeqSize = 10; // number of eles to dequeue and render at higher texture in each batch
-var deqRedrawThreshold = 100; // time to batch redraws together from dequeueing to allow more dequeueing calcs to happen in the meanwhile
 var allowEdgeTxrCaching = false; // whether edges can be cached as textures (TODO maybe better on if webgl supported?)
+var deqCost = 0.2; // % of add'l rendering cost allowed for dequeuing ele caches each frame
+var deqAvgCost = 0.1; // % of add'l rendering cost compared to average overall redraw time
+var deqNoDrawCost = 0.5; // % of avg frame time that can be used for dequeueing when not drawing
+var deqFastCost = 0.5; // % of frame time to be used when >60fps
+var deqRedrawThreshold = 100; // time to batch redraws together from dequeueing to allow more dequeueing calcs to happen in the meanwhile
+var maxDeqSize = 10; // number of eles to dequeue and render at higher texture in each batch
 
 var getTxrReasons = {
   dequeue: 'dequeue',
@@ -32,8 +33,12 @@ var getTxrReasons = {
 };
 
 var ElementTextureCache = function( renderer ){
-  this.renderer = renderer;
-  this.onDequeues = [];
+  var self = this;
+
+  self.renderer = renderer;
+  self.onDequeues = [];
+
+  self.setupDequeueing();
 };
 
 var ETCp = ElementTextureCache.prototype;
@@ -379,7 +384,7 @@ ETCp.queueElement = function( ele, bb, lvl ){
   }
 };
 
-ETCp.dequeueElements = function( pxRatio, extent ){
+ETCp.dequeue = function( pxRatio, extent ){
   var self = this;
   var r = this.renderer;
   var q = self.getElementQueue();
@@ -405,84 +410,33 @@ ETCp.dequeueElements = function( pxRatio, extent ){
 ETCp.onDequeue = function( fn ){ this.onDequeues.push( fn ); };
 ETCp.offDequeue = function( fn ){ util.removeFromArray( this.onDequeues, fn ); };
 
-ETCp.setupDequeueing = function(){
-  var self = this;
-  var r = this.renderer;
+ETCp.setupDequeueing = defs.setupDequeueing({
+  deqRedrawThreshold: deqRedrawThreshold,
+  deqCost: deqCost,
+  deqAvgCost: deqAvgCost,
+  deqNoDrawCost: deqNoDrawCost,
+  deqFastCost: deqFastCost,
+  deq: function( self, pxRatio, extent ){
+    return self.dequeue( pxRatio, extent );
+  },
+  onDeqd: function( self, deqd ){
+    for( var i = 0; i < self.onDequeues.length; i++ ){
+      var fn = self.onDequeues[i];
 
-  if( self.eleCacheDeqSetup ){
-    return;
-  } else {
-    self.eleCacheDeqSetup = true;
+      fn( deqd );
+    }
+  },
+  shouldRedraw: function( self, deqd, pxRatio, extent ){
+    for( var i = 0; i < deqd.length; i++ ){
+      var bb = deqd[i].bb;
+
+      if( math.boundingBoxesIntersect( bb, extent ) ){
+        return true;
+      }
+    }
+
+    return false;
   }
-
-  var queueRedraw = util.debounce( function(){
-    r.redrawHint( 'eles', true );
-    r.redrawHint( 'drag', true );
-
-    r.redraw();
-  }, deqRedrawThreshold );
-
-  var dequeue = function( willDraw ){
-    var startTime = util.performanceNow();
-    var avgRenderTime = r.averageRedrawTime;
-    var renderTime = r.lastRedrawTime;
-    var deqd = [];
-    var extent = r.cy.extent();
-    var pixelRatio = r.getPixelRatio();
-
-    while( true ){
-      var duration = util.performanceNow() - startTime;
-
-      if( willDraw ){
-        if(
-             duration > deqEleCost * renderTime
-          || duration > deqEleAvgCost * avgRenderTime
-        ){
-          break;
-        }
-      } else if( duration > deqEleNoDrawCost * avgRenderTime ){
-        break;
-      }
-
-      var thisDeqd = self.dequeueElements( pixelRatio, extent );
-
-      if( thisDeqd.length > 0 ){
-        for( var i = 0; i < thisDeqd.length; i++ ){
-          deqd.push( thisDeqd[i] );
-        }
-      } else {
-        break;
-      }
-    }
-
-    // callbacks on dequeue
-    if( deqd.length > 0 ){
-      for( var i = 0; i < self.onDequeues.length; i++ ){
-        var fn = self.onDequeues[i];
-
-        fn( deqd );
-      }
-    }
-
-    if( !willDraw && deqd.length > 0 ){
-      var anyDeqdInViewport = false;
-
-      for( var i = 0; i < deqd.length; i++ ){
-        var bb = deqd[i].bb;
-
-        if( math.boundingBoxesIntersect( bb, extent ) ){
-          anyDeqdInViewport = true;
-          break;
-        }
-      }
-
-      if( anyDeqdInViewport ){
-        queueRedraw();
-      }
-    }
-  };
-
-  r.beforeRender( dequeue );
-};
+});
 
 module.exports = ElementTextureCache;

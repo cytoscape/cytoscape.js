@@ -5,6 +5,8 @@ var math = require( '../math' );
 
 var util = {
 
+  trueify: function(){ return true; },
+
   falsify: function(){ return false; },
 
   zeroify: function(){ return 0; },

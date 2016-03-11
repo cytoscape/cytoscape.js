@@ -3,7 +3,7 @@
 var is = require( '../../../is' );
 var util = require( '../../../util' );
 
-var BaseRenderer = function(){};
+var BaseRenderer = function( options ){ this.init( options ); };
 var BR = BaseRenderer;
 var BRp = BR.prototype;
 

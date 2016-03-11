@@ -25,6 +25,7 @@ BRp.registerCalculationListeners = function(){
       rstyle.clean = false;
       _p.bbCache = null;
 
+      // TODO this is canvas renderer specific and should be moved...
       if( invalTxrCache === undefined || invalTxrCache ){
         _p.rscratch.invalTxrCache = true;
       }
@@ -70,21 +71,13 @@ BRp.registerCalculationListeners = function(){
 
   var updateEleCalcs = function( willDraw ){
     if( willDraw ){
-      for( var i = 0; i < elesToUpdate.length; i++ ){
-        var ele = elesToUpdate[i];
-        var rs = ele._private.rscratch;
+      var fns = r.onUpdateEleCalcsFns;
 
-        // TODO refactor so we don't reference canvas renderer stuff
-        if( rs.invalTxrCache ){
-          rs.invalTxrCache = false;
-          r.data.eleTxrCache.invalidateElement( ele );
-        }
+      if( fns ){ for( var i = 0; i < fns.length; i++ ){
+        var fn = fns[i];
 
-        if( rs.invalLyrCache ){
-          rs.invalLyrCache = false;
-          r.data.lyrTxrCache.invalidateElements( ele );
-        }
-      }
+        fn( willDraw, elesToUpdate );
+      } }
 
       r.recalculateRenderedStyle( elesToUpdate );
 
@@ -93,6 +86,12 @@ BRp.registerCalculationListeners = function(){
   };
 
   this.beforeRender( updateEleCalcs );
+};
+
+BRp.onUpdateEleCalcs = function( fn ){
+  var fns = this.onUpdateEleCalcsFns = this.onUpdateEleCalcsFns || [];
+
+  fns.push( fn );
 };
 
 BRp.recalculateRenderedStyle = function( eles, useCache ){

@@ -77,29 +77,26 @@ function CanvasRenderer( options ){
   }
 
   r.data.eleTxrCache = new ElementTextureCache( r );
-  r.data.lyrTxrCache = new LayeredTextureCache( r );
-
-  var deqdEles = [];
-
-  var invalElesInLayers = util.debounce( function(){
-    r.data.lyrTxrCache.invalidateElements( deqdEles );
-
-    deqdEles = [];
-
-    r.redrawHint( 'eles', true );
-    r.redrawHint( 'drag', true );
-    r.redraw();
-  }, 50 );
-
-  r.data.eleTxrCache.onDequeue(function( reqs ){
-    for( var i = 0; i < reqs.length; i++ ){
-      deqdEles.push( reqs[i].ele );
-    }
-
-    invalElesInLayers();
-  });
+  r.data.lyrTxrCache = new LayeredTextureCache( r, r.data.eleTxrCache );
 
   r.pathsEnabled = true;
+
+  r.onUpdateEleCalcs(function( willDraw, eles ){
+    for( var i = 0; i < eles.length; i++ ){
+      var ele = eles[i];
+      var rs = ele._private.rscratch;
+
+      if( rs.invalTxrCache ){
+        rs.invalTxrCache = false;
+        r.data.eleTxrCache.invalidateElement( ele );
+      }
+
+      if( rs.invalLyrCache ){
+        rs.invalLyrCache = false;
+        r.data.lyrTxrCache.invalidateElements( ele );
+      }
+    }
+  });
 }
 
 CRp.redrawHint = function( group, bool ){

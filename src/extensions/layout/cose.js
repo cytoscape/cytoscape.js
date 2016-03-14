@@ -756,6 +756,9 @@ CoseLayout.prototype.run = function(){
 
       for( var i = 0; i < components.length; i++ ){
         var c = components[ i ];
+
+        if( !c ){ continue; }
+
         c.x1 = Infinity;
         c.x2 = -Infinity;
         c.y1 = Infinity;
@@ -788,6 +791,8 @@ CoseLayout.prototype.run = function(){
 
       for( var i = 0; i < components.length; i++ ){
         var c = components[ i ];
+
+        if( !c ){ continue; }
 
         for( var j = 0; j < c.length; j++ ){
           var n = c[ j ];
@@ -863,7 +868,7 @@ CoseLayout.prototype.run = function(){
   } );
 
   var done = function(){
-    refresh({ 
+    refresh({
       force: true,
       next: function(){
         // Layout has finished

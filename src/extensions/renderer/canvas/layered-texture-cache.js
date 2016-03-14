@@ -8,9 +8,9 @@ var defs = require( './texture-cache-defs' );
 
 // TODO optimise these values
 
-var defNumLayers = 1; // default number of layers to use
+var defNumLayers = 2; // default number of layers to use
 var minLvl = -4; // when scaling smaller than that we don't need to re-render
-var maxLvl = 3; // when larger than this scale just render directly (caching is not helpful)
+var maxLvl = 2; // when larger than this scale just render directly (caching is not helpful)
 var maxZoom = 4; // beyond this zoom level, layered textures are not used
 var minPxRatioForEleCache = 2; // increase the pixel ratio used in the ele cache for low density displays to avoid blurriness
 var pxRatioMultForEleCache = 2; // multiplier for px ratio on low density displays to avoid blurriness
@@ -59,6 +59,8 @@ LTCp.getLayers = function( eles, pxRatio, lvl ){
       return null;
     }
   }
+
+  self.validateLayersElesOrdering( lvl, eles );
 
   var layersByLvl = self.layersByLevel;
   var scale = Math.pow( 2, lvl );
@@ -149,8 +151,6 @@ LTCp.getLayers = function( eles, pxRatio, lvl ){
   var layer;
   var maxElesPerLayer = eles.length / defNumLayers;
 
-  self.validateLayersElesOrdering( lvl, eles );
-
   for( var i = 0; i < eles.length; i++ ){
     var ele = eles[i];
     var rs = ele._private.rscratch;
@@ -175,7 +175,6 @@ LTCp.getLayers = function( eles, pxRatio, lvl ){
     if( tmpLayers ){
       self.queueLayer( layer, ele );
     } else {
-      // console.log('drawdirect')
       self.drawEleInLayer( layer, ele, lvl, pxRatio );
     }
 
@@ -239,8 +238,14 @@ LTCp.levelIsComplete = function( lvl ){
   return true;
 };
 
+// TODO fix invalidation case where node is dragged and N_layers > 1
+
+// TODO fix invalidation case with ele texture invalidation causes multiple layer refreshes
+
 LTCp.validateLayersElesOrdering = function( lvl, eles ){
   var layers = this.layersByLevel[ lvl ];
+
+  if( !layers ){ return; }
 
   // if in a layer the eles are not in the same order, then the layer is invalid
   // (i.e. there is an ele in between the eles in the layer)
@@ -258,8 +263,9 @@ LTCp.validateLayersElesOrdering = function( lvl, eles ){
     }
 
     // the eles in the layer must be in the same continuous order, else the layer is invalid
+    var o = offset;
     for( var j = 0; j < layer.eles.length; j++ ){
-      if( layer.eles[ j ] !== eles[ offset + j ] ){
+      if( layer.eles[j] !== eles[o+j] ){
         this.invalidateLayer( layer );
         break;
       }
@@ -292,16 +298,7 @@ LTCp.invalidateElements = function( eles ){
         continue;
       }
 
-      // clear the caches of invalid elements
-      for( var i = 0; i < layer.eles.length; i++ ){
-        layer.eles[i]._private.rscratch.imgLayerCaches = null;
-      }
-
-      if( !layer.invalid ){
-        util.removeFromArray( self.layersByLevel[l], layer );
-
-        layer.invalid = true;
-      }
+      self.invalidateLayer( layer );
     }
   }
 };
@@ -357,15 +354,12 @@ LTCp.queueLayer = function( layer, ele ){
 
   if( ele ){
     if( hasId[ ele.id() ] ){
-      // console.log('hasid');
       return;
     }
 
     elesQ.push( ele );
     hasId[ ele.id() ] = true;
   }
-
-  // console.log('qlayer');
 
   if( layer.reqs ){
     layer.reqs++;
@@ -390,8 +384,6 @@ LTCp.dequeue = function( pxRatio ){
 
     var layer = q.peek();
     var ele = layer.elesQueue.shift();
-
-    // console.log('deq');
 
     self.drawEleInLayer( layer, ele, layer.level, pxRatio );
 

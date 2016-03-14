@@ -14,7 +14,7 @@ BRp.registerCalculationListeners = function(){
 
   var emptyObj = {};
 
-  var enqueue = function( eles, invalTxrCache, invalLyrCache ){
+  var enqueue = function( eles, e ){
     elesToUpdate.merge( eles );
 
     for( var i = 0; i < eles.length; i++ ){
@@ -25,13 +25,11 @@ BRp.registerCalculationListeners = function(){
       rstyle.clean = false;
       _p.bbCache = null;
 
-      // TODO this is canvas renderer specific and should be moved...
-      if( invalTxrCache === undefined || invalTxrCache ){
-        _p.rscratch.invalTxrCache = true;
-      }
+      var evts = rstyle.dirtyEvents = rstyle.dirtyEvents || { length: 0 };
 
-      if( invalLyrCache === undefined || invalLyrCache ){
-        _p.rscratch.invalLyrCache = true;
+      if( !evts[ e.type ] ){
+        evts[ e.type ] = true;
+        evts.length++;
       }
     }
   };
@@ -42,21 +40,21 @@ BRp.registerCalculationListeners = function(){
     .on('position.* style.* free.*', 'node', function onDirtyModNode( e ){
       var node = e.cyTarget;
 
-      enqueue( node, e.type !== 'position' );
-      enqueue( node.connectedEdges() );
+      enqueue( node, e );
+      enqueue( node.connectedEdges(), e );
 
       if( cy.hasCompoundNodes() ){
         var parents = node.parents();
 
-        enqueue( parents )
-        enqueue( parents.connectedEdges() );
+        enqueue( parents, e )
+        enqueue( parents.connectedEdges(), e );
       }
     })
 
     .on('add.* ', 'node', function onDirtyAddNode( e ){
       var ele = e.cyTarget;
 
-      enqueue( ele );
+      enqueue( ele, e );
     })
 
     // edges
@@ -64,8 +62,8 @@ BRp.registerCalculationListeners = function(){
     .on('add.* remove.* style.*', 'edge', function onDirtyEdge( e ){
       var edge = e.cyTarget;
 
-      enqueue( edge );
-      enqueue( edge.parallelEdges() );
+      enqueue( edge, e );
+      enqueue( edge.parallelEdges(), e );
     })
   ;
 
@@ -132,6 +130,7 @@ BRp.recalculateRenderedStyle = function( eles, useCache ){
     } // if edges
 
     rstyle.clean = true;
+    rstyle.dirtyEvents = null;
   }
 
   this.recalculateEdgeProjections( edges );

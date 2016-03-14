@@ -85,16 +85,15 @@ function CanvasRenderer( options ){
     for( var i = 0; i < eles.length; i++ ){
       var ele = eles[i];
       var rs = ele._private.rscratch;
+      var de = rs.dirtyEvents;
 
-      if( rs.invalTxrCache ){
-        rs.invalTxrCache = false;
+      if( ele.isNode() && de && de.length === 1 && de['position'] ){
+        // then keep cached ele texture
+      } else {
         r.data.eleTxrCache.invalidateElement( ele );
       }
 
-      if( rs.invalLyrCache ){
-        rs.invalLyrCache = false;
-        r.data.lyrTxrCache.invalidateElements( ele );
-      }
+      r.data.lyrTxrCache.invalidateElements( ele );
     }
   });
 }

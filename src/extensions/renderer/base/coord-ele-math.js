@@ -1214,6 +1214,13 @@ BRp.findEdgeControlPoints = function( edges ){
         y2: tgtOutside[1]
       };
 
+      var posPts = {
+        x1: srcPos.x,
+        x2: tgtPos.x,
+        y1: srcPos.y,
+        y2: tgtPos.y
+      };
+
       var dy = ( tgtOutside[1] - srcOutside[1] );
       var dx = ( tgtOutside[0] - srcOutside[0] );
       var l = Math.sqrt( dx * dx + dy * dy );
@@ -1294,6 +1301,8 @@ BRp.findEdgeControlPoints = function( edges ){
 
       var width1 = rs.lastW;
       var width2 = edge.pstyle( 'control-point-step-size' ).pfValue;
+
+      var edgeDistances = edge.pstyle('edge-distances').value;
 
       if( badBezier ){
         rs.badBezier = true;
@@ -1418,9 +1427,11 @@ BRp.findEdgeControlPoints = function( edges ){
           var w1 = (1 - w);
           var w2 = w;
 
+          var midptPts = edgeDistances === 'node-position' ? posPts : midptSrcPts;
+
           var adjustedMidpt = {
-            x: midptSrcPts.x1 * w1 + midptSrcPts.x2 * w2,
-            y: midptSrcPts.y1 * w1 + midptSrcPts.y2 * w2
+            x: midptPts.x1 * w1 + midptPts.x2 * w2,
+            y: midptPts.y1 * w1 + midptPts.y2 * w2
           };
 
           rs.segpts.push(
@@ -1467,9 +1478,11 @@ BRp.findEdgeControlPoints = function( edges ){
           var w1 = !swappedDirection || edgeIsUnbundled ? (1 - ctrlptWeight) : ctrlptWeight;
           var w2 = !swappedDirection || edgeIsUnbundled ? ctrlptWeight : (1 - ctrlptWeight);
 
+          var midptPts = edgeDistances === 'node-position' ? posPts : midptSrcPts;
+
           var adjustedMidpt = {
-            x: midptSrcPts.x1 * w1 + midptSrcPts.x2 * w2,
-            y: midptSrcPts.y1 * w1 + midptSrcPts.y2 * w2
+            x: midptPts.x1 * w1 + midptPts.x2 * w2,
+            y: midptPts.y1 * w1 + midptPts.y2 * w2
           };
 
           rs.ctrlpts.push(

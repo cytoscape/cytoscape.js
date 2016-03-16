@@ -5,23 +5,31 @@ var is = require( '../is' );
 
 var elesfn = {};
 
-var cache = function( fn, name ){ return fn;
-  return function traversalCache( selector ){
+var cache = function( fn, name, cacheWithArgs ){
+  return function traversalCache( selectorOrEles ){
     var args = arguments;
     var eles = this;
+    var key;
 
-    if( eles.length === 1 && selector == null ){
+    if( selectorOrEles == null ){
+      key = 'null';
+    } else if( is.elementOrCollection( selectorOrEles ) && selectorOrEles.length === 1 ){
+      key = '#' + selectorOrEles.id();
+    }
+
+    if( eles.length === 1 && key ){
       var _p = eles[0]._private;
-      var ch = _p.traversalCache = _p.traversalCache || {};
-      var cacheHit = ch[ name ];
+      var tch = _p.traversalCache = _p.traversalCache || {};
+      var ch = tch[ name ] = tch[ name ] || {};
+      var cacheHit = ch[ key ];
 
       if( cacheHit ){
         return cacheHit;
       } else {
-        return ch[ name ] = fn.call( eles );
+        return ch[ key ] = fn.apply( eles, args );
       }
     } else {
-      return fn.call( eles );
+      return fn.apply( eles, args );
     }
   };
 };

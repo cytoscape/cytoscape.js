@@ -83,10 +83,10 @@ var defineDagOneHop = function( params ){
         var src = edge.source();
         var tgt = edge.target();
 
-        if( params.outgoing && src === ele && tgt !== ele ){
+        if( params.outgoing && src === ele ){
           oEles.push( edge );
           oEles.push( tgt );
-        } else if( params.incoming && tgt === ele && src !== ele ){
+        } else if( params.incoming && tgt === ele ){
           oEles.push( edge );
           oEles.push( src );
         }

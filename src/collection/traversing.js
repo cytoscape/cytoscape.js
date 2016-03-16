@@ -260,11 +260,11 @@ function defineSourceFunction( params ){
 }
 
 util.extend( elesfn, {
-  edgesWith: cache( defineEdgesWithFunction(), 'edgesWith' ),
+  edgesWith: cache( defineEdgesWithFunction(), 'edgesWith', true ),
 
   edgesTo: cache( defineEdgesWithFunction( {
     thisIsSrc: true
-  } ), 'edgesTo' )
+  } ), 'edgesTo', true )
 } );
 
 function defineEdgesWithFunction( params ){

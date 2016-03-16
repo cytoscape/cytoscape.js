@@ -70,7 +70,7 @@ util.extend(elesfn, {
         var srcId = edge._private.data.source;
         var tgtId = edge._private.data.target;
 
-        if( srcId === eleId && tgtId !== eleId ){
+        if( srcId === eleId ){
           oEles.push( edge );
           oEles.push( edge.target()[0] );
         }
@@ -129,7 +129,7 @@ util.extend(elesfn, {
         var srcId = edge._private.data.source;
         var tgtId = edge._private.data.target;
 
-        if( tgtId === eleId && srcId !== eleId ){
+        if( tgtId === eleId ){
           oEles.push( edge );
           oEles.push( edge.source()[0] );
         }

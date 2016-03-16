@@ -4,7 +4,7 @@
 
 $(function(){
 
-  var addRandomEles = true;
+  var addRandomEles = false;
   var height, width;
 
   var cliques = 4;
@@ -76,6 +76,7 @@ $(function(){
       .selector('edge')
         .css({
           'line-color': 'red',
+          // 'edge-distances': 'node-position',
           // 'source-arrow-color': '#ccc',
           // 'mid-source-arrow-color': '#ccc',
           // 'target-arrow-color': '#ccc',

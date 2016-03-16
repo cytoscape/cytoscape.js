@@ -70,6 +70,7 @@ var styfn = {};
     angle: { number: true, units: 'deg|rad', implicitUnits: 'rad' },
     textRotation: { number: true, units: 'deg|rad', implicitUnits: 'rad', enums: [ 'none', 'autorotate' ] },
     polygonPointList: { number: true, multiple: true, evenMultiple: true, min: -1, max: 1, unitless: true },
+    edgeDistances: { enums: ['intersection', 'node-position'] },
     easing: {
       regexes: [
         '^(spring)\\s*\\(\\s*(' + number + ')\\s*,\\s*(' + number + ')\\s*\\)$',
@@ -218,6 +219,7 @@ var styfn = {};
     { name: 'control-point-weights', type: t.numbers },
     { name: 'segment-distances', type: t.bidirectionalSizes },
     { name: 'segment-weights', type: t.numbers },
+    { name: 'edge-distances', type: t.edgeDistances },
 
     // these are just for the core
     { name: 'selection-box-color', type: t.color },
@@ -416,6 +418,7 @@ styfn.getDefaultProperties = function(){
     'control-point-weights': 0.5,
     'segment-weights': 0.5,
     'segment-distances': 20,
+    'edge-distances': 'intersection',
     'curve-style': 'bezier',
     'haystack-radius': 0.8
   }, [

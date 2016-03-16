@@ -460,7 +460,7 @@ elesfn.restore = function( notifyRenderer ){
 
       // adding an edge invalidates the traversal caches for the parallel edges
       var pedges = ele.parallelEdges();
-      for( var j = 0; i < pedges.length; j++ ){
+      for( var j = 0; j < pedges.length; j++ ){
         pedges[j]._private.traversalCache = null;
       }
 

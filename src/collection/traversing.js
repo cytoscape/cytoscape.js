@@ -5,7 +5,7 @@ var is = require( '../is' );
 
 var elesfn = {};
 
-var cache = function( fn, name ){
+var cache = function( fn, name ){ return fn;
   return function traversalCache( selector ){
     var args = arguments;
     var eles = this;

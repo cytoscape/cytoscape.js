@@ -241,7 +241,10 @@ BRp.load = function(){
     }
   };
 
-  if( typeof MutationObserver !== 'undefined' ){
+  var haveMutationsApi = typeof MutationObserver !== 'undefined';
+
+  // watch for when the cy container is removed from the dom
+  if( haveMutationsApi ){
     r.removeObserver = new MutationObserver( function( mutns ){
       for( var i = 0; i < mutns.length; i++ ){
         var mutn = mutns[ i ];
@@ -267,17 +270,24 @@ BRp.load = function(){
     } );
   }
 
-
-
-  // auto resize
-  r.registerBinding( window, 'resize', util.debounce( function( e ){
+  var onResize = util.debounce( function(){
     r.cy.invalidateSize();
     r.invalidateContainerClientCoordsCache();
 
     r.matchCanvasSize( r.container );
     r.redrawHint( 'eles', true );
+    r.redrawHint( 'drag', true );
     r.redraw();
-  }, 100 ) );
+  }, 100 );
+
+  if( haveMutationsApi ){
+    r.styleObserver = new MutationObserver( onResize );
+
+    r.styleObserver.observe( r.container, { attributes: true } );
+  }
+
+  // auto resize
+  r.registerBinding( window, 'resize', onResize );
 
   var invalCtnrBBOnScroll = function( domEle ){
     r.registerBinding( domEle, 'scroll', function( e ){

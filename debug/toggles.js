@@ -25,12 +25,12 @@ $(function(){
 
 	$(document).on("click", "#full-cy", function(){
     $("#cytoscape").addClass('full');
-		cy.resize();
+		// cy.resize();
   });
 
   $(document).on("click", "#defsize-cy", function(){
     $("#cytoscape").removeClass('full');
-		cy.resize();
+		// cy.resize();
   });
 
 });

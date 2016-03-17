@@ -123,25 +123,31 @@ BRp.notify = function( params ){
 };
 
 BRp.destroy = function(){
-  this.destroyed = true;
+  var r = this;
 
-  this.cy.stopAnimationLoop();
+  r.destroyed = true;
 
-  for( var i = 0; i < this.bindings.length; i++ ){
-    var binding = this.bindings[ i ];
+  r.cy.stopAnimationLoop();
+
+  for( var i = 0; i < r.bindings.length; i++ ){
+    var binding = r.bindings[ i ];
     var b = binding;
     var tgt = b.target;
 
     ( tgt.off || tgt.removeEventListener ).apply( tgt, b.args );
   }
 
-  if( this.removeObserver ){
-    this.removeObserver.disconnect();
+  if( r.removeObserver ){
+    r.removeObserver.disconnect();
   }
 
-  if( this.labelCalcDiv ){
+  if( r.styleObserver ){
+    r.styleObserver.disconnect();
+  }
+
+  if( r.labelCalcDiv ){
     try {
-      document.body.removeChild( this.labelCalcDiv );
+      document.body.removeChild( r.labelCalcDiv );
     } catch( e ){
       // ie10 issue #1014
     }

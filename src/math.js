@@ -81,7 +81,16 @@ math.bound = function( min, val, max ){
 
 // makes a full bb (x1, y1, x2, y2, w, h) from implicit params
 math.makeBoundingBox = function( bb ){
-  if( bb.x1 != null && bb.y1 != null ){
+  if( bb == null ){
+    return {
+      x1: 0,
+      y1: 0,
+      x2: 0,
+      y2: 0,
+      w: 0,
+      h: 0
+    };
+  } else if( bb.x1 != null && bb.y1 != null ){
     if( bb.x2 != null && bb.y2 != null && bb.x2 >= bb.x1 && bb.y2 >= bb.y1 ){
       return {
         x1: bb.x1,
@@ -102,6 +111,18 @@ math.makeBoundingBox = function( bb ){
       };
     }
   }
+};
+
+math.updateBoundingBox = function( bb1, bb2 ){
+  // update bb1 with bb2 bounds
+
+  bb1.x1 = Math.min( bb1.x1, bb2.x1 );
+  bb1.x2 = Math.max( bb1.x2, bb2.x2 );
+  bb1.w = bb1.x2 - bb1.x1;
+
+  bb1.y1 = Math.min( bb1.y1, bb2.y1 );
+  bb1.y2 = Math.max( bb1.y2, bb2.y2 );
+  bb1.h = bb1.y2 - bb1.y1;
 };
 
 math.expandBoundingBox = function( bb, padding ){

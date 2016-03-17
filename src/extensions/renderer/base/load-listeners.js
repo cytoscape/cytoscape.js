@@ -499,7 +499,7 @@ BRp.load = function(){
     var select = r.selection;
 
     var near = null;
-    if( !r.hoverData.draggingEles ){
+    if( !r.hoverData.draggingEles && !r.hoverData.dragging && !r.hoverData.selecting ){
       near = r.findNearestElement( pos[0], pos[1], true, false );
     }
     var last = r.hoverData.last;
@@ -1454,7 +1454,11 @@ BRp.load = function(){
     } else if( e.touches[0] ){
       var start = r.touchData.start;
       var last = r.touchData.last;
-      var near = near || r.findNearestElement( now[0], now[1], true, true );
+      var near;
+
+      if( !r.hoverData.draggingEles && !r.swipePanning ){
+        near = r.findNearestElement( now[0], now[1], true, true );
+      }
 
       if( start != null ){
         e.preventDefault();

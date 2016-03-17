@@ -186,8 +186,8 @@ Promise.all = Promise.all || function( ps ){
 
     for( var i = 0; i < ps.length; i++ ){
       (function( i ){
-        var p = ps[ i ];
-        var isPromise = p.then != null;
+        var p = ps[i];
+        var isPromise = p != null && p.then != null;
 
         if( isPromise ){
           p.then( function( val ){
@@ -203,6 +203,14 @@ Promise.all = Promise.all || function( ps ){
     }
 
   } );
+};
+
+Promise.resolve = Promise.resolve || function( val ){
+  return new Promise(function( resolve, reject ){ resolve( val ); });
+};
+
+Promise.reject = Promise.reject || function( val ){
+  return new Promise(function( resolve, reject ){ reject( val ); });
 };
 
 module.exports = Promise;

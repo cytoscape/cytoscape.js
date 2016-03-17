@@ -54,7 +54,6 @@ CRp.drawCachedElements = function( context, eles, pxRatio, extent ){
 CRp.drawLayeredElements = function( context, eles, pxRatio, extent ){
   var r = this;
   var cy = r.cy;
-  var pan = cy.pan();
 
   var layers = r.data.lyrTxrCache.getLayers( eles, pxRatio );
 
@@ -63,7 +62,7 @@ CRp.drawLayeredElements = function( context, eles, pxRatio, extent ){
       var layer = layers[i];
       var bb = layer.bb;
 
-      context.drawImage( layer.canvas, 0, 0, layer.width, layer.height, bb.x1, bb.y1, bb.w, bb.h );
+      context.drawImage( layer.canvas, bb.x1, bb.y1, bb.w, bb.h );
     }
   } else { // fall back on plain caching if no layers
     r.drawCachedElements( context, eles, pxRatio, extent );

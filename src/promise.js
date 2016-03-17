@@ -167,8 +167,8 @@ var resolve = function (promise, x) {
 };
 
 // so we always have Promise.all()
-api.all = api.all || function( ps ){
-  return new Promise(function( resolveAll, rejectAll ){
+api.all = function( ps ){
+  return new api(function( resolveAll, rejectAll ){
     var vals = new Array( ps.length );
     var doneCount = 0;
 
@@ -202,12 +202,12 @@ api.all = api.all || function( ps ){
   });
 };
 
-api.resolve = api.resolve || function( val ){
-  return new Promise(function( resolve, reject ){ resolve( val ); });
+api.resolve = function( val ){
+  return new api(function( resolve, reject ){ resolve( val ); });
 };
 
-api.reject = api.reject || function( val ){
-  return new Promise(function( resolve, reject ){ reject( val ); });
+api.reject = function( val ){
+  return new api(function( resolve, reject ){ reject( val ); });
 };
 
 module.exports = typeof Promise !== 'undefined' ? Promise : api;

@@ -157,6 +157,7 @@ describe('Core initialisation', function(){
     cy.ready(function(){
       expect( parseInt( cy.nodes()[0].style('width') ) ).to.equal( 1000 );
 
+      cy.destroy();
       done();
     });
   });
@@ -172,6 +173,7 @@ describe('Core initialisation', function(){
     cy.ready(function(){
       expect( cy.nodes().length ).to.equal( 1 );
 
+      cy.destroy();
       done();
     });
   });
@@ -197,6 +199,7 @@ describe('Core initialisation', function(){
       expect( cy.nodes().length ).to.equal( 1 );
       expect( parseInt( cy.nodes()[0].style('width') ) ).to.equal( 1000 );
 
+      cy.destroy();
       done();
     });
   });
@@ -219,6 +222,7 @@ describe('Core initialisation', function(){
     });
 
     cy.ready(function(){
+      cy.destroy();
       done();
     });
   });

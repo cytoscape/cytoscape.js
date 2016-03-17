@@ -231,22 +231,6 @@ styfn.updateStyleHints = function( ele ){
   _p.labelKey = labelStyleKey + '$' + content;
   _p.fontKey = fStyle + '$' + weight + '$' + size + '$' + family;
 
-  var width = ele.pstyle( 'width' ).pfValue;
-  var height = ele.pstyle( 'height' ).pfValue;
-  var borderW = ele.pstyle( 'border-width' ).pfValue;
-  _p.boundingBoxKey = width + '$' + height + '$' + borderW;
-
-  if( ele._private.group === 'edges' ){
-    var cpss = ele.pstyle( 'control-point-step-size' ).pfValue;
-    var cpd = ele.pstyle( 'control-point-distances' ) ? ele.pstyle( 'control-point-distances' ).pfValue.join( '_' ) : undefined;
-    var cpw = ele.pstyle( 'control-point-weights' ).value.join( '_' );
-    var curve = ele.pstyle( 'curve-style' ).strValue;
-    var sd = ele.pstyle( 'segment-distances' ) ? ele.pstyle( 'segment-distances' ).pfValue.join( '_' ) : undefined;
-    var sw = ele.pstyle( 'segment-weights' ).value.join( '_' );
-
-    _p.boundingBoxKey += '$' + cpss + '$' + cpd + '$' + cpw + '$' + sd + '$' + sw + '$' + curve;
-  }
-
   _p.styleKey = Date.now();
 };
 

@@ -1,5 +1,6 @@
 var expect = require('chai').expect;
 var cytoscape = require('../build/cytoscape.js', cytoscape);
+var Promise = Promise || require('bluebird');
 var $;
 
 try {
@@ -133,6 +134,92 @@ describe('Core initialisation', function(){
 
         done();
       }
+    });
+  });
+
+  it('loads style via promise', function(done){
+    var cy = cytoscape({
+      headless: true,
+      styleEnabled: true,
+      elements: [
+        { group: 'nodes' } // node
+      ],
+      style: Promise.resolve([
+        {
+          selector: 'node',
+          style: {
+            'width': 1000
+          }
+        }
+      ])
+    });
+
+    cy.ready(function(){
+      expect( parseInt( cy.nodes()[0].style('width') ) ).to.equal( 1000 );
+
+      done();
+    });
+  });
+
+  it('loads elements via promise', function(done){
+    var cy = cytoscape({
+      headless: true,
+      elements: Promise.resolve([
+        { group: 'nodes' }
+      ])
+    });
+
+    cy.ready(function(){
+      expect( cy.nodes().length ).to.equal( 1 );
+
+      done();
+    });
+  });
+
+  it('loads elements and style via promises', function(done){
+    var cy = cytoscape({
+      headless: true,
+      styleEnabled: true,
+      elements: Promise.resolve([
+        { group: 'nodes' }
+      ]),
+      style: Promise.resolve([
+        {
+          selector: 'node',
+          style: {
+            'width': 1000
+          }
+        }
+      ])
+    });
+
+    cy.ready(function(){
+      expect( cy.nodes().length ).to.equal( 1 );
+      expect( parseInt( cy.nodes()[0].style('width') ) ).to.equal( 1000 );
+
+      done();
+    });
+  });
+
+  it('loads elements and style via promises with style off', function(done){
+    var cy = cytoscape({
+      headless: true,
+      styleEnabled: false,
+      elements: Promise.resolve([
+        { group: 'nodes' }
+      ]),
+      style: Promise.resolve([
+        {
+          selector: 'node',
+          style: {
+            'width': 1000
+          }
+        }
+      ])
+    });
+
+    cy.ready(function(){
+      done();
     });
   });
 

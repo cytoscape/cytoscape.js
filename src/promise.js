@@ -166,12 +166,9 @@ var resolve = function( promise, x ){
   promise.fulfill( x );                                          /*  [Promises/A+ 2.3.4, 2.3.3.4]  */
 };
 
-// use native promises where possible
-var Promise = typeof Promise === 'undefined' ? api : Promise;
-
 // so we always have Promise.all()
-Promise.all = Promise.all || function( ps ){
-  return new Promise( function( resolveAll, rejectAll ){
+api.all = api.all || function( ps ){
+  return new Promise(function( resolveAll, rejectAll ){
     var vals = new Array( ps.length );
     var doneCount = 0;
 
@@ -205,12 +202,12 @@ Promise.all = Promise.all || function( ps ){
   } );
 };
 
-Promise.resolve = Promise.resolve || function( val ){
+api.resolve = api.resolve || function( val ){
   return new Promise(function( resolve, reject ){ resolve( val ); });
 };
 
-Promise.reject = Promise.reject || function( val ){
+api.reject = api.reject || function( val ){
   return new Promise(function( resolve, reject ){ reject( val ); });
 };
 
-module.exports = Promise;
+module.exports = typeof Promise !== 'undefined' ? Promise : api;

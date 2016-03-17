@@ -55,7 +55,6 @@ CRp.drawLayeredElements = function( context, eles, pxRatio, extent ){
   var r = this;
   var cy = r.cy;
   var pan = cy.pan();
-  var eles = cy.collection( eles );
 
   var layers = r.data.lyrTxrCache.getLayers( eles, pxRatio );
 

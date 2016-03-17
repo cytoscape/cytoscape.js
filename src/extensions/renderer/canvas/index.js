@@ -76,10 +76,10 @@ function CanvasRenderer( options ){
     //r.data.canvasContainer.appendChild(r.data.bufferCanvases[i]);
   }
 
+  r.pathsEnabled = true;
+
   r.data.eleTxrCache = new ElementTextureCache( r );
   r.data.lyrTxrCache = new LayeredTextureCache( r, r.data.eleTxrCache );
-
-  r.pathsEnabled = true;
 
   r.onUpdateEleCalcs(function( willDraw, eles ){
     for( var i = 0; i < eles.length; i++ ){

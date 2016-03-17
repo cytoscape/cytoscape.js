@@ -110,17 +110,8 @@ var Core = function( opts ){
     _p.maxZoom = options.maxZoom;
   }
 
-  var loadExtData = function( next ){
-    var anyIsPromise = false;
-
-    for( var i = 0; i < extData.length; i++ ){
-      var datum = extData[i];
-
-      if( is.promise(datum) ){
-        anyIsPromise = true;
-        break;
-      }
-    }
+  var loadExtData = function( extData, next ){
+    var anyIsPromise = extData.some( is.promise );
 
     if( anyIsPromise ){
       return Promise.all( extData ).then( next ); // load all data asynchronously, then exec rest of init
@@ -142,8 +133,7 @@ var Core = function( opts ){
     touchTapThreshold: options.touchTapThreshold === undefined ? 8 : options.touchTapThreshold
   }, options.renderer) );
 
-  var extData = [ options.style, options.elements ];
-  loadExtData(function( thens ){
+  loadExtData([ options.style, options.elements ], function( thens ){
     var initStyle = thens[0];
     var initEles = thens[1];
 

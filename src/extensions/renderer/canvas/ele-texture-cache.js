@@ -5,6 +5,8 @@ var util = require( '../../../util' );
 var Heap = require( '../../../heap' );
 var defs = require( './texture-cache-defs' );
 
+// TODO round textures so that they always have integer sizes
+
 // TODO optimise these values
 
 var minTxrH = 25; // the size of the texture cache for small height eles (special case)

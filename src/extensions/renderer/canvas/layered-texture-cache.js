@@ -21,8 +21,8 @@ var deqRedrawThreshold = 50; // time to batch redraws together from dequeueing t
 var refineEleDebounceTime = 50; // time to debounce sharper ele texture updates
 var deqCost = 0.2; // % of add'l rendering cost allowed for dequeuing ele caches each frame
 var deqAvgCost = 0.1; // % of add'l rendering cost compared to average overall redraw time
-var deqNoDrawCost = 0.66; // % of avg frame time that can be used for dequeueing when not drawing
-var deqFastCost = 0.66; // % of frame time to be used when >60fps
+var deqNoDrawCost = 1; // % of avg frame time that can be used for dequeueing when not drawing
+var deqFastCost = 1; // % of frame time to be used when >60fps
 var maxDeqSize = 3; // number of eles to dequeue and render at higher texture in each batch
 
 var useEleTxrCaching = true; // whether to use individual ele texture caching underneath this cache

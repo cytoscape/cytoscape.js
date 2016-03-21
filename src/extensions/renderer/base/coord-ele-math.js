@@ -561,23 +561,37 @@ BRp.getCachedZSortedEles = function( forceRecalc ){
   if( forceRecalc || !lastNodes || !lastEdges || lastNodes !== nodes || lastEdges !== edges ){
     //console.time('cachezorder')
 
-    for( var i = 0; i < nodes.length; i++ ){
-      var n = nodes[ i ];
+    var eles = [];
 
-      if( n.animated() || (n.visible() && !n.transparent()) ){
-        eles.push( n );
+    eles.drag = [];
+    eles.nondrag = [];
+
+    var add = function( ele ){
+      if( ele.animated() || (ele.visible() && !ele.transparent()) ){
+        eles.push( ele );
       }
+    };
+
+    for( var i = 0; i < nodes.length; i++ ){
+      add( nodes[i] );
     }
 
     for( var i = 0; i < edges.length; i++ ){
-      var e = edges[ i ];
-
-      if( e.animated() || (e.visible() && !e.transparent()) ){
-        eles.push( e );
-      }
+      add( edges[i] );
     }
 
     eles.sort( zIndexSort );
+
+    for( var i = 0; i < eles.length; i++ ){
+      var ele = eles[i];
+
+      if( ele._private.rscratch.inDragLayer ){
+        eles.drag.push( ele );
+      } else {
+        eles.nondrag.push( ele );
+      }
+    }
+
     this.cachedZSortedEles = eles;
     //console.log('make cache')
 

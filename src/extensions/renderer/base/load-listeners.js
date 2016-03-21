@@ -188,6 +188,8 @@ BRp.load = function(){
     updateAncestorsInDragLayer( nodes, {
       inDragLayer: opts.inDragLayer
     } );
+
+    r.updateCachedZSortedEles();
   };
 
   var addNodeToDrag = addNodesToDrag;
@@ -198,6 +200,8 @@ BRp.load = function(){
     grabbedEles.hasId = {}; // clear the id list
 
     grabbedEles.forEach( setFreed );
+
+    r.updateCachedZSortedEles();
 
     // just go over all elements rather than doing a bunch of (possibly expensive) traversals
     r.getCachedZSortedEles().forEach( setOutDragLayer );
@@ -1411,17 +1415,7 @@ BRp.load = function(){
         if( r.touchData.start ){
           var draggedEles = r.dragData.touchDragEles;
 
-          if( draggedEles ){ for( var i = 0; i < draggedEles.length; i++ ){
-            var dEi_p = draggedEles[ i ]._private;
-
-            dEi_p.grabbed = false;
-            dEi_p.rscratch.inDragLayer = false;
-          } }
-
-          var start_p = r.touchData.start._private;
-          start_p.active = false;
-          start_p.grabbed = false;
-          start_p.rscratch.inDragLayer = false;
+          freeDraggedElements( draggedEles );
 
           r.redrawHint( 'drag', true );
 

@@ -97,6 +97,7 @@ BRp.notify = function( params ){
       case 'remove':
       case 'load':
         r.updateElementsCache();
+        r.updateCachedZSortedEles();
         break;
 
       case 'viewport':

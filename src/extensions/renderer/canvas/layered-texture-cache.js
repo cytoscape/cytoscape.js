@@ -8,6 +8,8 @@ var defs = require( './texture-cache-defs' );
 
 // TODO fix invalidation case where node is dragged and N_layers > 1
 
+// TODO round layers so that they always have integer pixel sizes
+
 // TODO optimise these values
 
 var defNumLayers = 1; // default number of layers to use
@@ -15,7 +17,8 @@ var minLvl = -4; // when scaling smaller than that we don't need to re-render
 var maxLvl = 2; // when larger than this scale just render directly (caching is not helpful)
 var maxZoom = 4; // beyond this zoom level, layered textures are not used
 var minPxRatioForEleCache = 2; // increase the pixel ratio used in the ele cache for low density displays to avoid blurriness
-var deqRedrawThreshold = 200; // time to batch redraws together from dequeueing to allow more dequeueing calcs to happen in the meanwhile
+var deqRedrawThreshold = 50; // time to batch redraws together from dequeueing to allow more dequeueing calcs to happen in the meanwhile
+var refineEleDebounceTime = 50; // time to debounce sharper ele texture updates
 var deqCost = 0.2; // % of add'l rendering cost allowed for dequeuing ele caches each frame
 var deqAvgCost = 0.1; // % of add'l rendering cost compared to average overall redraw time
 var deqNoDrawCost = 0.5; // % of avg frame time that can be used for dequeueing when not drawing
@@ -29,7 +32,7 @@ var LayeredTextureCache = function( renderer, eleTxrCache ){
 
   var r = self.renderer = renderer;
 
-  self.layersByLevel = {}; // e.g. 2 => [ layer1, layer2, ..., layerN ]
+  window.cache = self.layersByLevel = {}; // e.g. 2 => [ layer1, layer2, ..., layerN ]
 
   self.layersQueue = new Heap(function(a, b){
     return b.reqs - a.reqs;
@@ -112,8 +115,10 @@ LTCp.getLayers = function( eles, pxRatio, lvl ){
     // and later queue the current layerset so we can get the proper quality level soon
 
     var canUseAsTmpLvl = function( l ){
-      if( self.levelIsComplete( l ) ){
-        tmpLayers = layersByLvl[ l ];
+      self.validateLayersElesOrdering( l, eles );
+
+      if( self.levelIsComplete(l) ){
+        tmpLayers = layersByLvl[l];
         return true;
       }
     };
@@ -291,7 +296,7 @@ LTCp.updateElementsInLayers = function( eles, update ){
   var self = this;
   var r = self.renderer;
   var cy = r.cy;
-  var isEles = is.elementOrCollection( eles );
+  var isEles = is.element( eles[0] );
 
   // collect udpated elements (cascaded from the layers) and update each
   // layer itself along the way
@@ -353,7 +358,9 @@ LTCp.refineElementTextures = function( eles ){
     if( !rLyr ){
       rLyr = layer.replacement = self.makeLayer( layer.bb, layer.level );
       rLyr.replaces = layer;
-      rLyr.eles = layer.eles.slice();
+      rLyr.eles = layer.eles.concat( layer.elesQueue );
+
+      console.log('make replacement layer', rLyr.id, rLyr.level);
     }
 
     if( !rLyr.reqs ){
@@ -377,7 +384,7 @@ LTCp.setupEleCacheInvalidation = function(){
     self.refineElementTextures( eleDeqs );
 
     eleDeqs = [];
-  }, 100 );
+  }, refineEleDebounceTime );
 
   self.eleTxrCache.onDequeue(function( reqs ){
     for( var i = 0; i < reqs.length; i++ ){
@@ -393,6 +400,9 @@ LTCp.queueLayer = function( layer, ele ){
   var q = self.layersQueue;
   var elesQ = layer.elesQueue;
   var hasId = elesQ.hasId = elesQ.hasId || {};
+
+  // if a layer is going to be replaced, queuing is a waste of time
+  if( layer.replacement ){ return }
 
   if( ele ){
     if( hasId[ ele.id() ] ){
@@ -425,6 +435,19 @@ LTCp.dequeue = function( pxRatio ){
     if( q.size() === 0 ){ break; }
 
     var layer = q.peek();
+
+    // if a layer has been or will be replaced, then don't waste time with it
+    if( layer.replacement ){
+      q.pop();
+      continue;
+    }
+
+    // if this is a replacement layer that has been superceded, then forget it
+    if( layer.replaces && layer.replaces !== layer.replaces.replacement ){
+      q.pop();
+      continue;
+    }
+
     var ele = layer.elesQueue.shift();
 
     self.drawEleInLayer( layer, ele, layer.level, pxRatio );
@@ -458,8 +481,6 @@ LTCp.applyLayerReplacement = function( layer ){
   var replaced = layer.replaces;
   var index = layersInLevel.indexOf( replaced );
 
-  replaced.reqs = 0; // a replaced layer should never be dequeued
-
   // if the replaced layer is not in the active list for the level, then replacing
   // refs would be a mistake (i.e. overwriting the true active layer)
   if( index < 0 ){
@@ -472,7 +493,7 @@ LTCp.applyLayerReplacement = function( layer ){
   // replace refs in eles
   for( var i = 0; i < layer.eles.length; i++ ){
     var _p = layer.eles[i]._private;
-    var cache = layer.eles[i]._private.imgLayerCaches;
+    var cache = _p.imgLayerCaches = _p.imgLayerCaches || {};
 
     if( cache ){
       cache[ layer.level ] = layer;

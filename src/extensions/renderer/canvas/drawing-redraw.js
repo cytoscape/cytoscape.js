@@ -286,10 +286,7 @@ CRp.render = function( options ){
   effectivePan.x *= pixelRatio;
   effectivePan.y *= pixelRatio;
 
-  var eles = {
-    drag: [],
-    nondrag: []
-  };
+  var eles = r.getCachedZSortedEles();
 
   function mbclear( context, x, y, w, h ){
     var gco = context.globalCompositeOperation;
@@ -418,24 +415,6 @@ CRp.render = function( options ){
   var extent = cy.extent();
   var vpManip = (r.pinching || r.hoverData.dragging || r.swipePanning || r.data.wheelZooming || r.hoverData.draggingEles);
   var hideEdges = r.hideEdgesOnViewport && vpManip;
-
-  if( needDraw[ r.DRAG ] || needDraw[ r.NODE ] || drawAllLayers || drawOnlyNodeLayer ){
-    var zEles = r.getCachedZSortedEles();
-
-    for( var i = 0; i < zEles.length; i++ ){
-      var ele = zEles[ i ];
-      var list;
-
-      if( ele._private.rscratch.inDragLayer ){
-        list = eles.drag;
-      } else {
-        list = eles.nondrag;
-      }
-
-      list.push( ele );
-    }
-
-  }
 
   var needMbClear = [];
 

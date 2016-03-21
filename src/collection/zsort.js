@@ -2,16 +2,16 @@
 
 var zIndexSort = function( a, b ){
   var cy = a.cy();
-  var a_p = a._private;
-  var b_p = b._private;
   var zDiff = a.pstyle( 'z-index' ).value - b.pstyle( 'z-index' ).value;
   var depthA = 0;
   var depthB = 0;
   var hasCompoundNodes = cy.hasCompoundNodes();
-  var aIsNode = a_p.group === 'nodes';
-  var aIsEdge = a_p.group === 'edges';
-  var bIsNode = b_p.group === 'nodes';
-  var bIsEdge = b_p.group === 'edges';
+  var aIsNode = a.isNode();
+  var aIsEdge = !aIsNode;
+  var bIsNode = b.isNode();
+  var bIsEdge = !bIsNode;
+  var aIsGrabbed = a.grabbed();
+  var bIsGrabbed = b.grabbed();
 
   // no need to calculate element depth if there is no compound node
   if( hasCompoundNodes ){
@@ -24,7 +24,13 @@ var zIndexSort = function( a, b ){
 
   if( sameDepth ){
 
-    if( aIsNode && bIsEdge ){
+    if( aIsGrabbed && !bIsGrabbed ){
+      return 1; // draw a later because it's grabbed
+
+    } else if( !aIsGrabbed && bIsGrabbed ){
+      return -1; // draw a first because b is grabbed
+
+    } else if( aIsNode && bIsEdge ){
       return 1; // 'a' is a node, it should be drawn later
 
     } else if( aIsEdge && bIsNode ){

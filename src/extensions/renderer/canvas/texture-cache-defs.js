@@ -23,7 +23,7 @@ module.exports = {
         r.redraw();
       }, opts.deqRedrawThreshold );
 
-      var dequeue = function( willDraw ){
+      var dequeue = function( willDraw, frameStartTime ){
         var startTime = util.performanceNow();
         var avgRenderTime = r.averageRedrawTime;
         var renderTime = r.lastRedrawTime;
@@ -32,24 +32,28 @@ module.exports = {
         var pixelRatio = r.getPixelRatio();
 
         while( true ){
-          var duration = util.performanceNow() - startTime;
+          var now = util.performanceNow();
+          var duration = now - startTime;
+          var frameDuration = now - frameStartTime;
 
-          if( avgRenderTime < fullFpsTime ){
+          if( renderTime < fullFpsTime ){
             // if we're rendering faster than the ideal fps, then do dequeueing
             // during all of the remaining frame time
 
-            if( duration >= opts.deqFastCost * (fullFpsTime - avgRenderTime) ){
+            var timeAvailable = fullFpsTime - ( willDraw ? renderTime : 0 );
+
+            if( frameDuration >= opts.deqFastCost * timeAvailable ){
               break;
             }
           } else {
             if( willDraw ){
               if(
-                   duration > opts.deqCost * renderTime
-                || duration > opts.deqAvgCost * avgRenderTime
+                   duration >= opts.deqCost * renderTime
+                || duration >= opts.deqAvgCost * avgRenderTime
               ){
                 break;
               }
-            } else if( duration > opts.deqNoDrawCost * avgRenderTime ){
+            } else if( frameDuration >= opts.deqNoDrawCost * fullFpsTime ){
               break;
             }
           }

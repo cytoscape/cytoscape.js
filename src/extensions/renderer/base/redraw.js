@@ -55,18 +55,18 @@ BRp.startRenderLoop = function(){
     r.renderLoopStarted = true;
   }
 
-  var beforeRenderCallbacks = function( willDraw ){
+  var beforeRenderCallbacks = function( willDraw, startTime ){
     var cbs = r.beforeRenderCallbacks;
-    for( var i = 0; i < cbs.length; i++ ){ cbs[i]( willDraw ); }
+    for( var i = 0; i < cbs.length; i++ ){ cbs[i]( willDraw, startTime ); }
   };
 
   var renderFn = function(){
     if( r.destroyed ){ return; }
 
-    if( r.requestedFrame && !r.skipFrame ){
-      beforeRenderCallbacks( true );
+    var startTime = util.performanceNow();
 
-      var startTime = util.performanceNow();
+    if( r.requestedFrame && !r.skipFrame ){
+      beforeRenderCallbacks( true, startTime );
 
       r.render( r.renderOptions );
 
@@ -96,7 +96,7 @@ BRp.startRenderLoop = function(){
 
       r.requestedFrame = false;
     } else {
-      beforeRenderCallbacks( false );
+      beforeRenderCallbacks( false, startTime );
     }
 
     r.skipFrame = false;

@@ -5253,7 +5253,7 @@ util.extend(elesfn, {
         var srcId = edge._private.data.source;
         var tgtId = edge._private.data.target;
 
-        if( srcId === eleId && tgtId !== eleId ){
+        if( srcId === eleId ){
           oEles.push( edge );
           oEles.push( edge.target()[0] );
         }
@@ -5312,7 +5312,7 @@ util.extend(elesfn, {
         var srcId = edge._private.data.source;
         var tgtId = edge._private.data.target;
 
-        if( tgtId === eleId && srcId !== eleId ){
+        if( tgtId === eleId ){
           oEles.push( edge );
           oEles.push( edge.source()[0] );
         }
@@ -5591,9 +5591,10 @@ function defineParallelEdgesFunction(params){
 
 util.extend(elesfn, {
   components: function(){
-    var cy = this.cy();
-    var visited = cy.collection();
-    var unvisited = this.nodes();
+    var self = this;
+    var cy = self.cy();
+    var visited = self.spawn();
+    var unvisited = self.nodes();
     var components = [];
 
     var visitInComponent = function( node, component ){
@@ -5602,6 +5603,8 @@ util.extend(elesfn, {
       component.merge( node );
     };
 
+    if( unvisited.empty() ){ return self.spawn(); }
+
     do {
       var component = cy.collection();
       components.push( component );
@@ -5609,7 +5612,7 @@ util.extend(elesfn, {
       var root = unvisited[0];
       visitInComponent( root, component );
 
-      this.bfs({
+      self.bfs({
         directed: false,
         roots: root,
         visit: function( i, depth, v, e, u ){
@@ -6543,17 +6546,8 @@ var Core = function( opts ){
     _p.maxZoom = options.maxZoom;
   }
 
-  var loadExtData = function( next ){
-    var anyIsPromise = false;
-
-    for( var i = 0; i < extData.length; i++ ){
-      var datum = extData[i];
-
-      if( is.promise(datum) ){
-        anyIsPromise = true;
-        break;
-      }
-    }
+  var loadExtData = function( extData, next ){
+    var anyIsPromise = extData.some( is.promise );
 
     if( anyIsPromise ){
       return Promise.all( extData ).then( next ); // load all data asynchronously, then exec rest of init
@@ -6575,8 +6569,7 @@ var Core = function( opts ){
     touchTapThreshold: options.touchTapThreshold === undefined ? 8 : options.touchTapThreshold
   }, options.renderer) );
 
-  var extData = [ options.style, options.elements ];
-  loadExtData(function( thens ){
+  loadExtData([ options.style, options.elements ], function( thens ){
     var initStyle = thens[0];
     var initEles = thens[1];
 
@@ -18862,7 +18855,7 @@ var cytoscape = function( options ){ // jshint ignore:line
 };
 
 // replaced by build system
-cytoscape.version = '2.6.6';
+cytoscape.version = '2.6.7';
 
 // try to register w/ jquery
 if( window && window.jQuery ){
@@ -20202,12 +20195,9 @@ var resolve = function (promise, x) {
   promise.fulfill(x);                                          /*  [Promises/A+ 2.3.4, 2.3.3.4]  */
 };
 
-// use native promises where possible
-var Promise = typeof Promise === 'undefined' ? api : Promise;
-
 // so we always have Promise.all()
-Promise.all = Promise.all || function( ps ){
-  return new Promise(function( resolveAll, rejectAll ){
+api.all = function( ps ){
+  return new api(function( resolveAll, rejectAll ){
     var vals = new Array( ps.length );
     var doneCount = 0;
 
@@ -20223,7 +20213,7 @@ Promise.all = Promise.all || function( ps ){
     for( var i = 0; i < ps.length; i++ ){
       (function( i ){
         var p = ps[i];
-        var isPromise = p.then != null;
+        var isPromise = p != null && p.then != null;
 
         if( isPromise ){
           p.then(function( val ){
@@ -20241,7 +20231,15 @@ Promise.all = Promise.all || function( ps ){
   });
 };
 
-module.exports = Promise;
+api.resolve = function( val ){
+  return new api(function( resolve, reject ){ resolve( val ); });
+};
+
+api.reject = function( val ){
+  return new api(function( resolve, reject ){ reject( val ); });
+};
+
+module.exports = typeof Promise !== 'undefined' ? Promise : api;
 
 },{}],81:[function(_dereq_,module,exports){
 'use strict';

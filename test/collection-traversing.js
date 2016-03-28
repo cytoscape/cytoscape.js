@@ -304,4 +304,13 @@ describe('Collection traversing', function(){
     }
   });
 
+  it('eles.components() of empty graph', function(){
+    var cy = cytoscape();
+
+    var components = cy.elements().components();
+    var cs = components;
+
+    expect( cs.length ).to.equal(0);
+  });
+
 });

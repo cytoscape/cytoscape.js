@@ -396,9 +396,10 @@ function defineParallelEdgesFunction( params ){
 
 util.extend( elesfn, {
   components: function(){
-    var cy = this.cy();
-    var visited = cy.collection();
-    var unvisited = this.nodes().spawnSelf();
+    var self = this;
+    var cy = self.cy();
+    var visited = self.spawn();
+    var unvisited = self.nodes().spawnSelf();
     var components = [];
 
     var visitInComponent = function( node, component ){
@@ -407,6 +408,8 @@ util.extend( elesfn, {
       component.merge( node );
     };
 
+    if( unvisited.empty() ){ return self.spawn(); }
+
     do {
       var component = cy.collection();
       components.push( component );
@@ -414,7 +417,7 @@ util.extend( elesfn, {
       var root = unvisited[0];
       visitInComponent( root, component );
 
-      this.bfs( {
+      self.bfs({
         directed: false,
         roots: root,
         visit: function( i, depth, v, e, u ){

@@ -227,6 +227,52 @@ describe('Core initialisation', function(){
     });
   });
 
+  it('loads only style via promise', function(done){
+    var cy = cytoscape({
+      headless: true,
+      styleEnabled: true,
+      elements: undefined,
+      style: Promise.resolve([
+        {
+          selector: 'node',
+          style: {
+            'width': 1000
+          }
+        }
+      ])
+    });
+
+    cy.ready(function(){
+      cy.destroy();
+      done();
+    });
+  });
+
+  it('loads empty graph', function(done){
+    var cy = cytoscape({
+      headless: true,
+      styleEnabled: true
+    });
+
+    cy.ready(function(){
+      cy.destroy();
+      done();
+    });
+  });
+
+  it('loads empty elements object', function(done){
+    var cy = cytoscape({
+      headless: true,
+      styleEnabled: true,
+      elements: { nodes: [], edges: [] }
+    });
+
+    cy.ready(function(){
+      cy.destroy();
+      done();
+    });
+  });
+
   // browser only tests
   if( typeof window !== 'undefined' && $ ){
 

@@ -24,8 +24,8 @@ var maxFullnessChecks = 10; // dequeued after this many checks
 var allowEdgeTxrCaching = false; // whether edges can be cached as textures (TODO maybe better on if webgl supported?)
 var deqCost = 0.3; // % of add'l rendering cost allowed for dequeuing ele caches each frame
 var deqAvgCost = 0.2; // % of add'l rendering cost compared to average overall redraw time
-var deqNoDrawCost = 1; // % of avg frame time that can be used for dequeueing when not drawing
-var deqFastCost = 1; // % of frame time to be used when >60fps
+var deqNoDrawCost = 0.95; // % of avg frame time that can be used for dequeueing when not drawing
+var deqFastCost = 0.95; // % of frame time to be used when >60fps
 var deqRedrawThreshold = 100; // time to batch redraws together from dequeueing to allow more dequeueing calcs to happen in the meanwhile
 var maxDeqSize = 10; // number of eles to dequeue and render at higher texture in each batch
 

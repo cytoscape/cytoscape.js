@@ -33,12 +33,17 @@
 
 		<script>
 			notify = function( name, descr ){
+				console.log( name );
+				console.log( descr );
+
 				$('#note-name').html( name );
 				$('#note-descr').html( descr );
 
 				$('#note').show();
 
-				setTimeout( function(){
+				clearTimeout( notify.timeout );
+
+				notify.timeout = setTimeout( function(){
 					$('#note').hide();
 				}, 3000 );
 			};

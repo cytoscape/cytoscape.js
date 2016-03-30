@@ -40,7 +40,7 @@ module.exports = {
             // if we're rendering faster than the ideal fps, then do dequeueing
             // during all of the remaining frame time
 
-            var timeAvailable = fullFpsTime - ( willDraw ? renderTime : 0 );
+            var timeAvailable = fullFpsTime - ( willDraw ? avgRenderTime : 0 );
 
             if( frameDuration >= opts.deqFastCost * timeAvailable ){
               break;

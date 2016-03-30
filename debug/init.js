@@ -189,14 +189,8 @@ $(function(){
       ]
     },
     ready: function(){
-      console.log('cy ready');
-
       window.cy = this;
       window.$$ = cytoscape;
-    },
-    initrender: function(){
-      console.log('initrender');
-      console.log(arguments);
     }
   };
 

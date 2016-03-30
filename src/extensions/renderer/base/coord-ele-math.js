@@ -59,11 +59,24 @@ BRp.registerCalculationListeners = function(){
 
     // edges
 
-    .on('add.* remove.* style.*', 'edge', function onDirtyEdge( e ){
+    .on('add.* style.*', 'edge', function onDirtyEdge( e ){
       var edge = e.cyTarget;
 
       enqueue( edge, e );
       enqueue( edge.parallelEdges(), e );
+    })
+
+    .on('remove.*', 'edge', function onDirtyRemoveEdge( e ){
+      var edge = e.cyTarget;
+      var pEdges = edge.parallelEdges();
+
+      for( var i = 0; i < pEdges.length; i++ ){
+        var pEdge = pEdges[i];
+
+        if( !pEdge.removed() ){
+          enqueue( pEdge, e );
+        }
+      }
     })
   ;
 

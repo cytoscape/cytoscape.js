@@ -4,7 +4,7 @@
 
 $(function(){
 
-  var addRandomEles = true;
+  var addRandomEles = false;
   var height, width;
 
   var cliques = 4;
@@ -75,7 +75,7 @@ $(function(){
           })
       .selector('edge')
         .css({
-          'line-color': 'red',
+          // 'line-color': 'red',
           // 'edge-distances': 'node-position',
           // 'source-arrow-color': '#ccc',
           // 'mid-source-arrow-color': '#ccc',
@@ -91,7 +91,7 @@ $(function(){
           // 'mid-source-arrow-shape': 'triangle-backcurve',
           // 'target-arrow-fill': 'filled',
           // 'source-arrow-shape': 'data(srcShape)',
-          'curve-style': 'haystack',
+          // 'curve-style': 'haystack',
           // 'opacity': 0.5
           // 'content': 'data(weight)',
           // 'text-rotation': 'autorotate',
@@ -454,7 +454,7 @@ $(function(){
     });
   });
 
-  // init2();
+  init2();
 
 
 });

@@ -199,12 +199,13 @@ BRp.load = function(){
 
     grabbedEles.hasId = {}; // clear the id list
 
-    grabbedEles.forEach( setFreed );
+    // just go over all elements rather than doing a bunch of (possibly expensive) traversals
+    r.getCachedZSortedEles().forEach(function( ele ){
+      setFreed( ele );
+      setOutDragLayer( ele );
+    });
 
     r.updateCachedZSortedEles();
-
-    // just go over all elements rather than doing a bunch of (possibly expensive) traversals
-    r.getCachedZSortedEles().forEach( setOutDragLayer );
   };
 
   // helper function to determine which ancestor nodes and edges should go

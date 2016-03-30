@@ -3,10 +3,6 @@ $(function(){
 	$("#cytoscape").cy(function(){
 		var cy = this;
 
-		console.log('ready');
-
-		console.log(cy);
-
 		var tests = {}; // name => setup
 		function test(options){
 			$("#test-type-select").append('<option value="'+ options.name +'">'+ options.displayName +'</option>');

@@ -515,9 +515,10 @@ styfn.updateTransitions = function( ele, diffProps, isBypass ){
   var props = ele.pstyle( 'transition-property' ).value;
   var duration = ele.pstyle( 'transition-duration' ).pfValue;
   var delay = ele.pstyle( 'transition-delay' ).pfValue;
-  var css = {};
 
   if( props.length > 0 && duration > 0 ){
+
+    var css = {};
 
     // build up the style to animate towards
     var anyPrev = false;

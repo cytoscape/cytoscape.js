@@ -65,15 +65,15 @@ $(function(){
 		test({
 			name: "bypassOnClick",
 			displayName: "Bypass on click",
-			description: "Set nodes to red and edges to blue on click",
+			description: "Set nodes to red and edges to orange on click",
 			setup: function(){
 				cy.elements().bind("click", function(){
 					this.css("background-color", "red");
 
 					this.css({
-						lineColor: "blue",
-						targetArrowColor: "blue",
-						sourceArrowColor: "blue"
+						lineColor: "orange",
+						targetArrowColor: "orange",
+						sourceArrowColor: "orange"
 					});
 				});
 			},

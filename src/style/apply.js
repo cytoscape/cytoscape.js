@@ -11,14 +11,20 @@ var styfn = {};
 // - what selectors match it
 styfn.apply = function( eles ){
   var self = this;
+  var _p = self._private;
 
   if( self._private.newStyle ){ // clear style caches
-    this._private.contextStyles = {};
-    this._private.propDiffs = {};
+    _p.contextStyles = {};
+    _p.propDiffs = {};
   }
 
   for( var ie = 0; ie < eles.length; ie++ ){
     var ele = eles[ ie ];
+
+    if( self._private.newStyle ){ // clear style from old sheets
+      ele._private.style = {};
+    }
+
     var cxtMeta = self.getContextMeta( ele );
     var cxtStyle = self.getContextStyle( cxtMeta );
     var app = self.applyContextStyle( cxtMeta, cxtStyle, ele );
@@ -28,7 +34,7 @@ styfn.apply = function( eles ){
 
   } // for elements
 
-  self._private.newStyle = false;
+  _p.newStyle = false;
 };
 
 styfn.getPropertiesDiff = function( oldCxtKey, newCxtKey ){

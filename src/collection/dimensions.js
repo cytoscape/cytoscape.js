@@ -389,8 +389,6 @@ var updateBoundsFromLabel = function( bounds, ele, prefix, options ){
         x = x - labelX;
         y = y - labelY;
 
-        console.log('rotate')
-
         return {
           x: x * cos - y * sin + labelX,
           y: x * sin + y * cos + labelY

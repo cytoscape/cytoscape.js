@@ -302,7 +302,7 @@ var prefixedProperty = function( obj, field, prefix ){
   return util.getPrefixedProperty( obj, field, prefix );
 };
 
-var getLabelBounds = function( ele, prefix, options ){
+var updateBoundsFromLabel = function( bounds, ele, prefix, options ){
   var prefixDash;
 
   if( prefix ){
@@ -310,13 +310,6 @@ var getLabelBounds = function( ele, prefix, options ){
   } else {
     prefixDash = '';
   }
-
-  var bounds = {
-    x1: Infinity,
-    y1: Infinity,
-    x2: -Infinity,
-    y2: -Infinity
-  };
 
   var _p = ele._private;
   var rstyle = _p.rstyle;
@@ -395,6 +388,8 @@ var getLabelBounds = function( ele, prefix, options ){
       var rotate = function( x, y ){
         x = x - labelX;
         y = y - labelY;
+
+        console.log('rotate')
 
         return {
           x: x * cos - y * sin + labelX,
@@ -602,11 +597,11 @@ var boundingBoxImpl = function( ele, options ){
     //////////////////////////
 
     if( styleEnabled && options.includeLabels ){
-      updateBoundsFromBox( bounds, getLabelBounds( ele, null, options ) );
+      updateBoundsFromLabel( bounds, ele, null, options );
 
       if( isEdge ){
-        updateBoundsFromBox( bounds, getLabelBounds( ele, 'source', options ) );
-        updateBoundsFromBox( bounds, getLabelBounds( ele, 'target', options ) );
+        updateBoundsFromLabel( bounds, ele, 'source', options );
+        updateBoundsFromLabel( bounds, ele, 'target', options );
       }
     } // style enabled for labels
   } // if displayed

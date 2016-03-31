@@ -81,14 +81,14 @@ CRp.strokeStyle = function( context, r, g, b, a ){
 CRp.shadowStyle = function( context, color, opacity, blur, offsetX, offsetY ){
   var zoom = this.cy.zoom();
 
-  var cache = this.paintCache( context );
-
-  // don't make expensive changes to the shadow style if it's not used
-  if( cache.shadowOpacity === 0 && opacity === 0 ){
-    return;
-  }
-
-  cache.shadowOpacity = opacity;
+  // var cache = this.paintCache( context );
+  // 
+  // // don't make expensive changes to the shadow style if it's not used
+  // if( cache.shadowOpacity === 0 && opacity === 0 ){
+  //   return;
+  // }
+  //
+  // cache.shadowOpacity = opacity;
 
   if( opacity > 0 ){
     context.shadowBlur = blur * zoom;

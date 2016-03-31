@@ -109,6 +109,9 @@ BRp.recalculateRenderedStyle = function( eles, useCache ){
   var edges = [];
   var nodes = [];
 
+  // use cache by default for perf
+  if( useCache === undefined ){ useCache = true; }
+
   for( var i = 0; i < eles.length; i++ ){
     var ele = eles[ i ];
     var _p = ele._private;

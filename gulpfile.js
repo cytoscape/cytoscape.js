@@ -568,8 +568,8 @@ gulp.task('pubpush', $.shell.task( replaceShellVars([
   '$GIT push'
 ]) ));
 
-gulp.task('publish', ['pubprep'], function(next){
-  runSequence('confver', 'tag', 'docspush', 'npm', 'spm', 'meteor', next);
+gulp.task('publish', function(next){
+  runSequence('confver', 'pubprep', 'tag', 'docspush', 'npm', 'spm', 'meteor', next);
 });
 
 gulp.task('tag', $.shell.task( replaceShellVars([

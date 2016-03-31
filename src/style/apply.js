@@ -166,8 +166,16 @@ styfn.applyContextStyle = function( cxtMeta, cxtStyle, ele ){
 
   for( var i = 0; i < diffProps.length; i++ ){
     var diffPropName = diffProps[ i ];
-    var cxtProp = cxtStyle[ diffPropName ] || { name: diffPropName, delete: true };
+    var cxtProp = cxtStyle[ diffPropName ];
     var eleProp = ele.pstyle( diffPropName );
+
+    if( !cxtProp ){ // no context prop means delete
+      if( eleProp.bypass ){
+        cxtProp = { name: diffPropName, deleteBypassed: true };
+      } else {
+        cxtProp = { name: diffPropName, delete: true };
+      }
+    }
 
     // save cycles when the context prop doesn't need to be applied
     if( eleProp === cxtProp ){ continue; }
@@ -277,17 +285,27 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
     return true;
   }
 
-  // check if we need to delete the current bypass
-  if( propIsBypass && prop.deleteBypass ){ // then this property is just here to indicate we need to delete
-    var currentProp = style[ prop.name ];
+  if( prop.deleteBypassed ){ // delete the property that the
+    if( !origProp ){
+      return true; // can't delete if no prop
 
-    // can only delete if the current prop is a bypass
-    if( !currentProp ){
+    } else if( origProp.bypass ){ // delete bypassed
+      origProp.bypassed = undefined;
+      return true;
+
+    } else {
+      return false; // we're unsuccessful deleting the bypassed
+    }
+  }
+
+  // check if we need to delete the current bypass
+  if( prop.deleteBypass ){ // then this property is just here to indicate we need to delete
+    if( !origProp ){
       return true; // property is already not defined
 
-    } else if( currentProp.bypass ){ // then replace the bypass property with the original
+    } else if( origProp.bypass ){ // then replace the bypass property with the original
       // because the bypassed property was already applied (and therefore parsed), we can just replace it (no reapplying necessary)
-      style[ prop.name ] = currentProp.bypassed;
+      style[ prop.name ] = origProp.bypassed;
       return true;
 
     } else {

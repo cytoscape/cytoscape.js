@@ -18,6 +18,10 @@ CRp.drawElementText = function( context, ele ){
   var rs = _p.rscratch;
 
   if( ele.isNode() ){
+    var label = ele.pstyle( 'label' );
+
+    if( !label || !label.value ){ return; }
+
     var textHalign = ele.pstyle( 'text-halign' ).strValue;
     var textValign = ele.pstyle( 'text-valign' ).strValue;
 
@@ -47,6 +51,18 @@ CRp.drawElementText = function( context, ele ){
         context.textBaseline = 'middle';
     }
   } else {
+    var label = ele.pstyle( 'label' );
+    var srcLabel = ele.pstyle( 'source-label' );
+    var tgtLabel = ele.pstyle( 'target-label' );
+
+    if(
+      ( !label || !label.value )
+      && ( !srcLabel || !srcLabel.value )
+      && ( !tgtLabel || !tgtLabel.value )
+    ){
+      return;
+    }
+
     context.textAlign = 'center';
     context.textBaseline = 'middle';
   }

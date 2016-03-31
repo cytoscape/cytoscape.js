@@ -26,7 +26,6 @@ var maxDeqSize = 1; // number of eles to dequeue and render at higher texture in
 var useEleTxrCaching = false; // whether to use individual ele texture caching underneath this cache
 
 var log = function(){ console.log.apply( console, arguments ); };
-log = function(){};
 
 var LayeredTextureCache = function( renderer, eleTxrCache ){
   var self = this;
@@ -284,6 +283,8 @@ LTCp.levelIsComplete = function( lvl, eles ){
 
   if( !layers || layers.length === 0 ){ return false; }
 
+  var numElesInLayers = 0;
+
   for( var i = 0; i < layers.length; i++ ){
     var layer = layers[i];
 
@@ -292,7 +293,12 @@ LTCp.levelIsComplete = function( lvl, eles ){
 
     // if the layer is invalid, the level is not complete
     if( layer.invalid ){ return false; }
+
+    numElesInLayers += layer.eles.length;
   }
+
+  // we should have exactly the number of eles passed in to be complete
+  if( numElesInLayers !== eles.length ){ return false; }
 
   return true;
 };
@@ -317,6 +323,11 @@ LTCp.validateLayersElesOrdering = function( lvl, eles ){
       }
     }
 
+    if( offset < 0 ){
+      // then the layer has nonexistant elements and is invalid
+      this.invalidateLayer( layer );
+      break;
+    }
 
     // the eles in the layer must be in the same continuous order, else the layer is invalid
 

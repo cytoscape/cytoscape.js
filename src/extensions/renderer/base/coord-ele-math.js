@@ -735,12 +735,10 @@ BRp.recalculateEdgeLabelProjections = function( edge ){
     target: edge.pstyle('target-label').strValue
   };
 
-  if(
-    is.emptyString( content.mid )
-    && is.emptyString( content.source )
-    && is.emptyString( content.target )
-  ){
-    return; //
+  if( content.mid || content.source || content.target ){
+    // then we have to calculate...
+  } else {
+    return; // no labels => no calcs
   }
 
   // add center point to style so bounding box calculations can use it
@@ -836,7 +834,7 @@ BRp.recalculateEdgeLabelProjections = function( edge ){
     var angle;
     var isSrc = prefix === 'source';
 
-    if( is.emptyString( content[ prefix ] ) ){ return; }
+    if( !content[ prefix ] ){ return; }
 
     var offset = edge.pstyle(prefix+'-text-offset').pfValue;
 
@@ -1780,8 +1778,8 @@ BRp.calculateArrowAngles = function( edge ){
   var dispX, dispY;
   var startX, startY, endX, endY;
 
-  var srcPos = edge.source().position();
-  var tgtPos = edge.target().position();
+  var srcPos = edge._private.source._private.position;
+  var tgtPos = edge._private.target._private.position;
 
   if( isHaystack ){
     startX = rs.haystackPts[0];

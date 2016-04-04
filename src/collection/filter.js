@@ -204,14 +204,14 @@ var elesfn = ({
       return this;
     }
 
-    if( is.string( toAdd ) ){
+    if( toAdd && is.string( toAdd ) ){
       var selector = toAdd;
       toAdd = cy.elements( selector );
     }
 
     for( var i = 0; i < toAdd.length; i++ ){
       var toAddEle = toAdd[ i ];
-      var id = toAddEle.id();
+      var id = toAddEle._private.data.id;
       var add = !_p.ids[ id ];
 
       if( add ){
@@ -231,7 +231,7 @@ var elesfn = ({
     ele = ele[0];
 
     var _p = this._private;
-    var id = ele.id();
+    var id = ele._private.data.id;
     var i = _p.indexes[ id ];
 
     if( i == null ){
@@ -249,10 +249,11 @@ var elesfn = ({
     if( this.length > 1 && !unmergedLastEle ){
       var lastEleI = this.length - 1;
       var lastEle = this[ lastEleI ];
+      var lastEleId = lastEle._private.data.id;
 
       this[ lastEleI ] = undefined;
       this[ i ] = lastEle;
-      _p.indexes[ lastEle.id() ] = i;
+      _p.indexes[ lastEleId ] = i;
     }
 
     // the collection is now 1 ele smaller
@@ -269,7 +270,7 @@ var elesfn = ({
       return this;
     }
 
-    if( is.string( toRemove ) ){
+    if( toRemove && is.string( toRemove ) ){
       var selector = toRemove;
       toRemove = cy.elements( selector );
     }

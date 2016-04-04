@@ -81,10 +81,10 @@ function CanvasRenderer( options ){
   r.data.eleTxrCache = new ElementTextureCache( r );
   r.data.lyrTxrCache = new LayeredTextureCache( r, r.data.eleTxrCache );
 
-  r.onUpdateEleCalcs(function( willDraw, eles ){
+  r.onUpdateEleCalcs(function invalidateTextureCaches( willDraw, eles ){
     for( var i = 0; i < eles.length; i++ ){
       var ele = eles[i];
-      var rs = ele._private.rscratch;
+      var rs = ele._private.rstyle;
       var de = rs.dirtyEvents;
 
       if( ele.isNode() && de && de.length === 1 && de['position'] ){

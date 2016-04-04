@@ -30,6 +30,8 @@ BRp.registerCalculationListeners = function(){
       if( !evts[ e.type ] ){
         evts[ e.type ] = true;
         evts.length++;
+//
+        // elesToUpdate.merge( ele );
       }
     }
   };
@@ -92,6 +94,10 @@ BRp.registerCalculationListeners = function(){
 
       r.recalculateRenderedStyle( elesToUpdate );
 
+      for( var i = 0; i < elesToUpdate.length; i++ ){
+        elesToUpdate[i]._private.rstyle.dirtyEvents = null;
+      }
+
       elesToUpdate = cy.collection();
     }
   };
@@ -146,7 +152,7 @@ BRp.recalculateRenderedStyle = function( eles, useCache ){
     } // if edges
 
     rstyle.clean = true;
-    rstyle.dirtyEvents = null;
+    // rstyle.dirtyEvents = null;
   }
 
   this.recalculateEdgeProjections( edges );

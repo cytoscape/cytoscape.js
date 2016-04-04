@@ -22,8 +22,10 @@ var deqAvgCost = 0.1; // % of add'l rendering cost compared to average overall r
 var deqNoDrawCost = 0.95; // % of avg frame time that can be used for dequeueing when not drawing
 var deqFastCost = 0.95; // % of frame time to be used when >60fps
 var maxDeqSize = 1; // number of eles to dequeue and render at higher texture in each batch
+var invalidThreshold = 250; // time threshold for disabling b/c of invalidations
+var maxInvalidationsPerThreshold = 3; // if more than this number of invalidations within the time threshold, then disable layers
 
-var useEleTxrCaching = false; // whether to use individual ele texture caching underneath this cache
+var useEleTxrCaching = true; // whether to use individual ele texture caching underneath this cache
 
 var log = function(){ console.log.apply( console, arguments ); };
 
@@ -34,9 +36,33 @@ var LayeredTextureCache = function( renderer, eleTxrCache ){
 
   window.cache = self.layersByLevel = {}; // e.g. 2 => [ layer1, layer2, ..., layerN ]
 
-  self.layersQueue = new Heap(function(a, b){
-    return b.reqs - a.reqs;
+  self.lastInvalidationTime = 0;
+
+  self.skipping = false;
+
+  r.beforeRender(function( willDraw, now ){
+    if( now - self.lastInvalidationTime <= invalidThreshold ){
+      self.skipping = true;
+    } else {
+      self.skipping = false;
+    }
   });
+
+  var qSort = function(a, b){
+    return b.reqs - a.reqs;
+  };
+
+  // self.layersQueue = new Heap( qSort );
+
+  // naive but fast queue impl for small number of layers
+  self.layersQueue = {
+    q: [],
+    pop: function(){ return this.q.shift(); },
+    push: function( o ){ this.q.push( o ); this.q.sort( qSort ); },
+    peek: function(){ return this.q[0]; },
+    updateItem: defNumLayers > 1 ? function(){ this.q.sort(); } : util.noop,
+    size: function(){ return this.q.length; }
+  };
 
   self.eleTxrCache = eleTxrCache;
 
@@ -93,6 +119,13 @@ LTCp.getLayers = function( eles, pxRatio, lvl ){
 
   //log('--\nget layers with %s eles', eles.length);
   //log( eles.map(function(ele){ return ele.id() }) );
+
+  if( this.skipping ){
+    // log('skip layers');
+    return null;
+  }
+
+  // log('do layers');
 
   if( lvl == null ){
     lvl = Math.ceil( Math.log2( zoom * pxRatio ) );
@@ -215,7 +248,7 @@ LTCp.getLayers = function( eles, pxRatio, lvl ){
     if(
       !layer
       || layer.eles.length >= maxElesPerLayer
-      || !math.boundingBoxInBoundingBox( layer.bb, ele.boundingBox() )
+      || ( defNumLayers > 1 && !math.boundingBoxInBoundingBox( layer.bb, ele.boundingBox() ) )
     ){
       //log('make new layer for ele %s', ele.id());
 
@@ -377,12 +410,20 @@ LTCp.updateElementsInLayers = function( eles, update ){
 LTCp.invalidateElements = function( eles ){
   var self = this;
 
-  self.updateElementsInLayers( eles, function( layer, ele, req ){
+  this.lastInvalidationTime = util.performanceNow();
+
+  // log('update invalidate layer time from eles');
+
+  self.updateElementsInLayers( eles, function invalAssocLayers( layer, ele, req ){
     self.invalidateLayer( layer );
   } );
 };
 
 LTCp.invalidateLayer = function( layer ){
+  this.lastInvalidationTime = util.performanceNow();
+
+  // log('update invalidate layer time');
+
   if( layer.invalid ){ return } // save cycles
 
   var lvl = layer.level;
@@ -412,7 +453,7 @@ LTCp.refineElementTextures = function( eles ){
 
   //log('refine', eles.length);
 
-  self.updateElementsInLayers( eles, function( layer, ele, req ){
+  self.updateElementsInLayers( eles, function refineEachEle( layer, ele, req ){
     var rLyr = layer.replacement;
 
     if( !rLyr ){

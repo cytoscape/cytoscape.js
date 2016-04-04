@@ -46,7 +46,15 @@ var corefn = ({
       } );
     }
 
-    globalAnimationStep(); // first call
+    var renderer = cy.renderer();
+
+    if( renderer && renderer.beforeRender ){ // let the renderer schedule animations
+      renderer.beforeRender(function rendererAnimationStep( willDraw, now ){
+        handleElements( now );
+      });
+    } else { // manage the animation loop ourselves
+      globalAnimationStep(); // first call
+    }
 
     function handleElements( now ){
       var eles = cy._private.aniEles;
@@ -314,8 +322,7 @@ var corefn = ({
         }
 
         var props = ani_p.style;
-        if( props && isEles ){
-
+        if( props && props.length > 0 && isEles ){
           for( var i = 0; i < props.length; i++ ){
             var prop = props[ i ];
             var name = prop.name;

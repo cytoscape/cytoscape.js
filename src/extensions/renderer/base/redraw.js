@@ -60,13 +60,13 @@ BRp.startRenderLoop = function(){
     for( var i = 0; i < cbs.length; i++ ){ cbs[i]( willDraw, startTime ); }
   };
 
-  var renderFn = function(){
+  var renderFn = function( requestTime ){
     if( r.destroyed ){ return; }
 
-    var startTime = util.performanceNow();
-
     if( r.requestedFrame && !r.skipFrame ){
-      beforeRenderCallbacks( true, startTime );
+      beforeRenderCallbacks( true, requestTime );
+
+      var startTime = util.performanceNow();
 
       r.render( r.renderOptions );
 
@@ -96,7 +96,7 @@ BRp.startRenderLoop = function(){
 
       r.requestedFrame = false;
     } else {
-      beforeRenderCallbacks( false, startTime );
+      beforeRenderCallbacks( false, requestTime );
     }
 
     r.skipFrame = false;

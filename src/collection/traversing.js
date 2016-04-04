@@ -5,9 +5,9 @@ var is = require( '../is' );
 
 var elesfn = {};
 
-var cache = function( fn, name, cacheWithArgs ){
-  return function traversalCache( selectorOrEles ){
-    var args = arguments;
+var cache = function( fn, name ){
+  return function traversalCache( arg1, arg2, arg3, arg4 ){
+    var selectorOrEles = arg1;
     var eles = this;
     var key;
 
@@ -26,10 +26,10 @@ var cache = function( fn, name, cacheWithArgs ){
       if( cacheHit ){
         return cacheHit;
       } else {
-        return ch[ key ] = fn.apply( eles, args );
+        return ch[ key ] = fn.call( eles, arg1, arg2, arg3, arg4 );
       }
     } else {
-      return fn.apply( eles, args );
+      return fn.call( eles, arg1, arg2, arg3, arg4 );
     }
   };
 };

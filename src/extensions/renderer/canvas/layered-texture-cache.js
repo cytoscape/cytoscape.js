@@ -24,6 +24,7 @@ var deqFastCost = 0.95; // % of frame time to be used when >60fps
 var maxDeqSize = 1; // number of eles to dequeue and render at higher texture in each batch
 var invalidThreshold = 250; // time threshold for disabling b/c of invalidations
 var maxInvalidationsPerThreshold = 3; // if more than this number of invalidations within the time threshold, then disable layers
+var maxLayerArea = 10000 * 10000; // layers can't be bigger than this
 
 var useEleTxrCaching = true; // whether to use individual ele texture caching underneath this cache
 
@@ -208,6 +209,12 @@ LTCp.getLayers = function( eles, pxRatio, lvl ){
 
     getBb();
 
+    var area = ( bb.w * scale ) * ( bb.h * scale );
+
+    if( area > maxLayerArea ){
+      return null;
+    }
+
     var layer = self.makeLayer( bb, lvl );
 
     if( after != null ){
@@ -253,6 +260,9 @@ LTCp.getLayers = function( eles, pxRatio, lvl ){
       //log('make new layer for ele %s', ele.id());
 
       layer = makeLayer({ insert: true, after: layer });
+
+      // if now layer can be built then we can't use layers at this level
+      if( !layer ){ return null; }
 
       //log('new layer with id %s', layer.id);
     }

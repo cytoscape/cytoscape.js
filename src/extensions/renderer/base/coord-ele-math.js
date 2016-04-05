@@ -53,7 +53,7 @@ BRp.registerCalculationListeners = function(){
       }
     })
 
-    .on('add.* ', 'node', function onDirtyAddNode( e ){
+    .on('add.* background.*', 'node', function onDirtyAddNode( e ){
       var ele = e.cyTarget;
 
       enqueue( ele, e );

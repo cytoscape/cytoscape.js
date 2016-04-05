@@ -83,10 +83,10 @@ math.bound = function( min, val, max ){
 math.makeBoundingBox = function( bb ){
   if( bb == null ){
     return {
-      x1: 0,
-      y1: 0,
-      x2: 0,
-      y2: 0,
+      x1: Infinity,
+      y1: Infinity,
+      x2: -Infinity,
+      y2: -Infinity,
       w: 0,
       h: 0
     };

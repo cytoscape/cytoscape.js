@@ -14,6 +14,7 @@ var corefn = ({
 
       if( !bTypes.ids[ params.type ] ){
         bTypes.push( params.type );
+        bTypes.ids[ params.type ] = true;
       }
 
       return; // notifications are disabled during batching
@@ -54,7 +55,6 @@ var corefn = ({
       _p.batchStyleEles = this.collection();
       _p.batchNotifyEles = this.collection();
       _p.batchNotifyTypes = [];
-
       _p.batchNotifyTypes.ids = {};
     }
 

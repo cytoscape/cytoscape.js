@@ -85,35 +85,30 @@ BRp.notify = function( params ){
     types = [ params.type ];
   }
 
+  var has = {};
   for( var i = 0; i < types.length; i++ ){
     var type = types[ i ];
 
-    switch( type ){
-      case 'destroy':
-        r.destroy();
-        return;
-
-      case 'add':
-      case 'remove':
-      case 'load':
-        r.updateElementsCache();
-        r.updateCachedZSortedEles();
-        break;
-
-      case 'viewport':
-        r.redrawHint( 'select', true );
-        break;
-
-      case 'style':
-        r.updateCachedZSortedEles();
-        break;
-    }
-
-    if( type === 'load' || type === 'resize' ){
-      r.invalidateContainerClientCoordsCache();
-      r.matchCanvasSize( r.container );
-    }
+    has[ type ] = true;
   } // for
+
+  if( has['destroy'] ){
+    r.destroy();
+    return;
+  }
+
+  if( has['add'] || has['remove'] || has['load'] || has['style'] ){
+    r.updateCachedZSortedEles();
+  }
+
+  if( has['viewport'] ){
+    r.redrawHint( 'select', true );
+  }
+
+  if( has['load'] || has['resize'] ){
+    r.invalidateContainerClientCoordsCache();
+    r.matchCanvasSize( r.container );
+  }
 
   r.redrawHint( 'eles', true );
   r.redrawHint( 'drag', true );
@@ -157,7 +152,6 @@ BRp.destroy = function(){
 
 [
   require( './arrow-shapes' ),
-  require( './cached-eles' ),
   require( './coord-ele-math' ),
   require( './images' ),
   require( './load-listeners' ),

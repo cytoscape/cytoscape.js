@@ -474,8 +474,7 @@ BRp.findNearestElements = function( x, y, visibleElementsOnly, isTouch ){
 
 // 'Give me everything from this box'
 BRp.getAllInBox = function( x1, y1, x2, y2 ){
-  var nodes = this.getCachedNodes();
-  var edges = this.getCachedEdges();
+  var nodes = this.getCachedZSortedEles().nodes;
   var box = [];
 
   var x1c = Math.min( x1, x2 );
@@ -570,36 +569,30 @@ BRp.getNodeShape = function( node ){
 };
 
 BRp.updateCachedZSortedEles = function(){
+  console.log('updateCachedZSortedEles');
   this.getCachedZSortedEles( true );
 };
 
 BRp.getCachedZSortedEles = function( forceRecalc ){
-  var lastNodes = this.lastZOrderCachedNodes;
-  var lastEdges = this.lastZOrderCachedEdges;
-  var nodes = this.getCachedNodes();
-  var edges = this.getCachedEdges();
+  var cyEles = this.cy.elements();
   var eles = [];
 
-  if( forceRecalc || !lastNodes || !lastEdges || lastNodes !== nodes || lastEdges !== edges ){
+  if( forceRecalc || !this.cachedZSortedEles ){
     //console.time('cachezorder')
 
     var eles = [];
 
     eles.drag = [];
     eles.nondrag = [];
+    eles.nodes = [];
+    eles.edges = [];
 
-    var add = function( ele ){
+    for( var i = 0; i < cyEles.length; i++ ){
+      var ele = cyEles[i];
+
       if( ele.animated() || (ele.visible() && !ele.transparent()) ){
         eles.push( ele );
       }
-    };
-
-    for( var i = 0; i < nodes.length; i++ ){
-      add( nodes[i] );
-    }
-
-    for( var i = 0; i < edges.length; i++ ){
-      add( edges[i] );
     }
 
     eles.sort( zIndexSort );
@@ -612,6 +605,12 @@ BRp.getCachedZSortedEles = function( forceRecalc ){
       } else {
         eles.nondrag.push( ele );
       }
+
+      if( ele.isNode() ){
+        eles.nodes.push( ele );
+      } else {
+        eles.edges.push( ele );
+      }
     }
 
     this.cachedZSortedEles = eles;
@@ -622,9 +621,6 @@ BRp.getCachedZSortedEles = function( forceRecalc ){
     eles = this.cachedZSortedEles;
     //console.log('read cache')
   }
-
-  this.lastZOrderCachedNodes = nodes;
-  this.lastZOrderCachedEdges = edges;
 
   return eles;
 };

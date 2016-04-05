@@ -50,7 +50,7 @@ var corefn = ({
 
   // search the graph like jQuery
   $: function( selector ){
-    var eles = this.collection( this._private.elements );
+    var eles = this._private.elements;
 
     if( selector ){
       return eles.filter( selector );

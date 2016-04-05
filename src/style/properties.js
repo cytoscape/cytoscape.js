@@ -296,11 +296,7 @@ styfn.getDefaultProperty = function( name ){
   return this.getDefaultProperties()[ name ];
 };
 
-styfn.getDefaultProperties = function(){
-  var cachedProps = this._private.defaultPropertiesCache;
-
-  if( cachedProps ){ return cachedProps; }
-
+styfn.getDefaultProperties = util.memoize( function(){
   var rawProps = util.extend( {
     'events': 'yes',
     'text-events': 'no',
@@ -436,7 +432,7 @@ styfn.getDefaultProperties = function(){
     return css;
   }, {} ) );
 
-  var parsedProps = this._private.defaultPropertiesCache = {};
+  var parsedProps = {};
 
   for( var i = 0; i < this.properties.length; i++ ){
     var prop = this.properties[i];
@@ -451,7 +447,7 @@ styfn.getDefaultProperties = function(){
   }
 
   return parsedProps;
-};
+} );
 
 styfn.addDefaultStylesheet = function(){
   this

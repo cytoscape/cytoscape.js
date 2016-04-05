@@ -24,8 +24,8 @@ var maxFullnessChecks = 10; // dequeued after this many checks
 var allowEdgeTxrCaching = false; // whether edges can be cached as textures (TODO maybe better on if webgl supported?)
 var deqCost = 0.15; // % of add'l rendering cost allowed for dequeuing ele caches each frame
 var deqAvgCost = 0.1; // % of add'l rendering cost compared to average overall redraw time
-var deqNoDrawCost = 0.95; // % of avg frame time that can be used for dequeueing when not drawing
-var deqFastCost = 0.95; // % of frame time to be used when >60fps
+var deqNoDrawCost = 0.8; // % of avg frame time that can be used for dequeueing when not drawing
+var deqFastCost = 0.8; // % of frame time to be used when >60fps
 var deqRedrawThreshold = 100; // time to batch redraws together from dequeueing to allow more dequeueing calcs to happen in the meanwhile
 var maxDeqSize = 1; // number of eles to dequeue and render at higher texture in each batch
 
@@ -96,6 +96,11 @@ ETCp.getElement = function( ele, bb, pxRatio, lvl, reason ){
   if( lvl < minLvl ){
     lvl = minLvl;
   } else if( zoom >= maxZoom || lvl > maxLvl ){
+    return null;
+  }
+
+  // if the visibility of labels changes with zoom, then we can't cache
+  if( ele.pstyle('min-zoomed-font-size').pfValue !== 0 ){
     return null;
   }
 

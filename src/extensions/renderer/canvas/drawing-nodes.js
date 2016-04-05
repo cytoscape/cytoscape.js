@@ -49,6 +49,8 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb ){
 
     // get image, and if not loaded then ask to redraw when later loaded
     image = this.getCachedImage( url, function(){
+      node.trigger('background');
+
       r.redrawHint( 'eles', true );
       r.redrawHint( 'drag', true );
 

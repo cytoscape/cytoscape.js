@@ -569,7 +569,6 @@ BRp.getNodeShape = function( node ){
 };
 
 BRp.updateCachedZSortedEles = function(){
-  console.log('updateCachedZSortedEles');
   this.getCachedZSortedEles( true );
 };
 

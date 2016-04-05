@@ -1,4 +1,8 @@
 /*!
+Cytoscape.js {{VERSION}}
+
+--------------------------------------------------------------------------------
+
 The MIT License
 
 Copyright (c) The Cytoscape Consortium

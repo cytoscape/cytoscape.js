@@ -1035,8 +1035,6 @@ BRp.load = function(){
     r.data.bgActivePosistion = undefined;
 
     var cy = r.cy;
-    var nodes = r.getCachedNodes();
-    var edges = r.getCachedEdges();
     var now = r.touchData.now;
     var earlier = r.touchData.earlier;
 
@@ -1048,16 +1046,7 @@ BRp.load = function(){
     // record starting points for pinch-to-zoom
     if( e.touches[1] ){
 
-      // anything in the set of dragged eles should be released
-      var release = function( eles ){
-        for( var i = 0; i < eles.length; i++ ){
-          eles[ i ]._private.grabbed = false;
-          eles[ i ]._private.rscratch.inDragLayer = false;
-          if( eles[ i ].active() ){ eles[ i ].unactivate(); }
-        }
-      };
-      release( nodes );
-      release( edges );
+      freeDraggedElements( r.dragData.touchDragEles );
 
       var offsets = r.findContainerClientCoords();
       offsetLeft = offsets[0];

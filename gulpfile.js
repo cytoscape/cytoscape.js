@@ -1,14 +1,10 @@
 var gulp = require('gulp');
 var $ = require('gulp-load-plugins')();
-var path = require('path');
 var exec = require('child_process').exec;
-var fs = require('fs');
 var runSequence = require('run-sequence');
 var del = require('del');
 var vinylPaths = require('vinyl-paths');
-var clean = function(){ return vinylPaths(del) };
-var vfs = require('vinyl-fs');
-var transform = require('vinyl-transform');
+var clean = function(){ return vinylPaths(del); };
 var buffer = require('vinyl-buffer');
 var browserifyHeader = require('browserify-header');
 var notifier = require('node-notifier');
@@ -671,36 +667,7 @@ gulp.task('watch', function(next){
 // http://www.jshint.com/docs/options/
 gulp.task('lint', function(){
   return gulp.src( 'src/**' )
-    .pipe( $.jshint({
-      newcap: false,
-      funcscope: true,
-      laxbreak: true,
-      loopfunc: true,
-      strict: true,
-      globalstrict: true,
-      unused: 'vars',
-      eqnull: true,
-      sub: true,
-      shadow: true,
-      laxcomma: true,
-      globals: {
-        'Path2D': true,
-        'require': true,
-        'module': true,
-        'document': true,
-        'window': true,
-        'setTimeout': true,
-        'clearTimeout': true,
-        'MutationObserver': true,
-        '__dirname': true,
-        'Image': true,
-        'Blob': true,
-        'Worker': true,
-        'DocumentTouch': true,
-        'HTMLElement': true,
-        'navigator': true
-      }
-    }) )
+    .pipe( $.jshint( require('.jshintrc') ) )
 
     .pipe( $.jshint.reporter( require('jshint-stylish') ) )
   ;

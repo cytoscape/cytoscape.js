@@ -40,7 +40,7 @@ var LayeredTextureCache = function( renderer, eleTxrCache ){
 
   self.layersByLevel = {}; // e.g. 2 => [ layer1, layer2, ..., layerN ]
 
-  self.lastInvalidationTime = 0;
+  self.lastInvalidationTime = -1e10;
 
   self.skipping = false;
 
@@ -430,8 +430,6 @@ LTCp.updateElementsInLayers = function( eles, update ){
 LTCp.invalidateElements = function( eles ){
   var self = this;
 
-  this.lastInvalidationTime = util.performanceNow();
-
   // log('update invalidate layer time from eles');
 
   self.updateElementsInLayers( eles, function invalAssocLayers( layer, ele, req ){
@@ -440,11 +438,11 @@ LTCp.invalidateElements = function( eles ){
 };
 
 LTCp.invalidateLayer = function( layer ){
-  this.lastInvalidationTime = util.performanceNow();
-
   // log('update invalidate layer time');
 
   if( layer.invalid ){ return } // save cycles
+
+  this.lastInvalidationTime = util.performanceNow();
 
   var lvl = layer.level;
   var eles = layer.eles;

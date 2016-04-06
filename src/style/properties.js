@@ -415,8 +415,8 @@ styfn.getDefaultProperties = util.memoize( function(){
     'segment-weights': 0.5,
     'segment-distances': 20,
     'edge-distances': 'intersection',
-    'curve-style': 'bezier',
-    'haystack-radius': 0.8
+    'curve-style': 'haystack',
+    'haystack-radius': 0
   }, [
     { name: 'arrow-shape', value: 'none' },
     { name: 'arrow-color', value: '#000' },

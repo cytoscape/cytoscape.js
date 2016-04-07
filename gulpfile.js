@@ -1,16 +1,20 @@
 var gulp = require('gulp');
 var $ = require('gulp-load-plugins')();
+var fs = require('fs');
 var exec = require('child_process').exec;
 var runSequence = require('run-sequence');
 var del = require('del');
 var vinylPaths = require('vinyl-paths');
 var clean = function(){ return vinylPaths(del); };
 var buffer = require('vinyl-buffer');
-var browserifyHeader = require('browserify-header');
 var notifier = require('node-notifier');
 var watchify = require('watchify');
 var browserify = require('browserify');
 var source = require('vinyl-source-stream'); // converts node streams into vinyl streams
+var assign = function( a, b ){
+  if( b ){ for( var i in b ){ a[i] = b[i]; } }
+  return a;
+};
 
 var benchmarkVersion = '2.5.3'; // old version to test against for benchmarks
 var benchmarkVersionUrl = 'https://raw.githubusercontent.com/cytoscape/cytoscape.js/v' + benchmarkVersion + '/dist/cytoscape.js';
@@ -78,7 +82,7 @@ var paths = {
 };
 
 var browserifyOpts = {
-  entries: paths.sourceEntry,
+  entries: [ paths.sourceEntry ],
   debug: true,
   builtins: [],
   bundleExternal: false,
@@ -90,7 +94,7 @@ var browserifyOpts = {
 
 var logError = function( err ){
   notifier.notify({ title: 'Cytoscape.js', message: 'Error: ' + err.message });
-  $.util.log( $.util.colors.red('Error in watch:'), $.util.colors.red(err) );
+  $.util.log( $.util.colors.red('Error in build:'), $.util.colors.red(err) );
 };
 
 // update these if you don't have a unix like env or these programmes aren't in your $PATH
@@ -160,60 +164,89 @@ gulp.task('clean', function(){
   ;
 });
 
-// gulp.task('format', function(){
-//   return gulp.src('src/**/*.js')
-//     .pipe( jscs({
-//       fix: true,
-//       configPath: '.jscsrc'
-//     }) )
-//     .pipe( gulp.dest('formatted') ) // TODO move to src after confirming .jscsrc
-//   ;
-// });
-
 gulp.task('format', $.shell.task([
   './node_modules/jscs/bin/jscs src/** --fix'
 ]));
 
+var getBrowserify = function( opts ){
+  opts = assign({
+    file: 'cytoscape.js',
+    sourceMaps: false,
+    minify: false,
+    handleErrors: true,
+    bundle: true,
+    preamble: false
+  }, opts);
+
+  var b = opts.stream || browserify( browserifyOpts );
+
+  if( opts.bundle ){
+    b = b.bundle();
+  }
+
+  if( opts.handleErrors ){
+    b = b.on( 'error', logError );
+  }
+
+  var pipe = function( fn ){
+    b = b.pipe( fn );
+  };
+
+  if( opts.file ){
+    pipe( source( opts.file ) );
+    pipe( buffer() );
+  }
+
+  //if( opts.sourceMaps ){
+    pipe( $.sourcemaps.init({ loadMaps: true }) );
+  //}
+
+  if( opts.preamble ){
+    pipe( $.insert.prepend( fs.readFileSync( paths.preamble ) ) );
+  }
+
+  pipe( $.derequire() );
+  pipe( $.replace('{{VERSION}}', version) );
+
+  if( opts.minify ){
+    pipe( $.uglify({ mangle: true, preserveComments: 'some' }) );
+  }
+
+  if( opts.preamble && opts.sourceMaps ){
+    logError('Specified conflicting preamble and sourcemaps options in build');
+  }
+
+  if( opts.sourceMaps === true ){
+    pipe( $.sourcemaps.write() );
+  } else if( opts.sourceMaps ){
+    pipe( $.sourcemaps.write( opts.sourceMaps ) );
+  }
+
+  return b;
+};
+
 gulp.task('concat', ['version', 'nodeworker'], function(){
-  return browserify( browserifyOpts )
-    .plugin( browserifyHeader, { file: paths.preamble } )
-    .bundle()
-    .on( 'error', logError )
-    .pipe( source('cytoscape.js') )
-    .pipe( buffer() )
-    .pipe( $.derequire() )
-    .pipe( $.replace('{{VERSION}}', version) )
+  return getBrowserify({
+    sourceMaps: true
+  })
     .pipe( gulp.dest('build') )
   ;
 });
 
 gulp.task('build-unmin', ['version', 'nodeworker'], function(){
-  return browserify( browserifyOpts )
-    .plugin( browserifyHeader, { file: paths.preamble } )
-    .bundle()
-    .on( 'error', logError )
-    .pipe( source('cytoscape.js') )
-    .pipe( buffer() )
-    .pipe( $.sourcemaps.init({ loadMaps: true }) )
-    .pipe( $.derequire() )
-    .pipe( $.replace('{{VERSION}}', version) )
-    .pipe( $.sourcemaps.write('.') )
+  return getBrowserify({
+    preamble: true
+  })
     .pipe( gulp.dest('build') )
   ;
 });
 
 gulp.task('build-min', ['version', 'nodeworker'], function(){
-  return browserify( browserifyOpts )
-    .plugin( browserifyHeader, { file: paths.preamble } )
-    .bundle()
-    .on( 'error', logError )
-    .pipe( source('cytoscape.min.js') )
-    .pipe( buffer() )
-    .pipe( $.sourcemaps.init({ loadMaps: true }) )
-    .pipe( $.derequire() )
-    .pipe( $.replace('{{VERSION}}', version) )
-    .pipe( $.uglify({ mangle: true, preserveComments: 'some' }) )
-    .pipe( $.sourcemaps.write('.') )
+  return getBrowserify({
+    file: 'cytoscape.min.js',
+    preamble: true,
+    minify: true
+  })
     .pipe( gulp.dest('build') )
   ;
 });
@@ -329,13 +362,13 @@ gulp.task('benchmark-old-ver', function(){
     .pipe(gulp.dest("benchmark/suite"));
 });
 
-gulp.task('benchmark', ['concat', 'benchmark-old-ver'], function(next){
+gulp.task('benchmark', ['benchmark-old-ver'], function(next){
   gulp.src('benchmark/*.js')
     .pipe( $.benchmark() )
   ;
 });
 
-gulp.task('benchmark-single', ['concat', 'benchmark-old-ver'], function(next){
+gulp.task('benchmark-single', ['benchmark-old-ver'], function(next){
   gulp.src('benchmark/single/index.js')
     .pipe( $.benchmark() )
   ;
@@ -605,19 +638,7 @@ gulp.task('unstabledocspush', function(){
   ;
 });
 
-// browserify debug build
-gulp.task('browserify', function(){
-  var b = browserify( browserifyOpts );
-
-  return b.bundle()
-    .pipe( source('cytoscape.browserify.js') )
-    .pipe( buffer() )
-    .pipe( $.derequire() )
-    .pipe( gulp.dest('build') )
-  ;
-});
-
-gulp.task('sniper', ['browserify'], $.shell.task( replaceShellVars([
+gulp.task('sniper', ['build-min'], $.shell.task( replaceShellVars([
   '$NPM run sniper'
 ]) ));
 
@@ -647,11 +668,10 @@ gulp.task('watch', function(next){
   var b = watchify( browserify( browserifyOpts ), { poll: true } );
 
   var rebuild = function(){
-    return b.bundle()
-      .on( 'error', logError )
-      .pipe( source('cytoscape.js') )
-      .pipe( buffer() )
-      .pipe( $.derequire() )
+    getBrowserify({
+      stream: b,
+      sourceMaps: true
+    })
       .pipe( gulp.dest('build') )
       .pipe( $.livereload() )
     ;

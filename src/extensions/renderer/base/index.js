@@ -81,34 +81,30 @@ BRp.notify = function(params) {
     types = [ params.type ];
   }
 
+  var has = {};
   for( var i = 0; i < types.length; i++ ){
     var type = types[i];
 
-    switch( type ){
-      case 'destroy':
-        r.destroy();
-        return;
+    has[ type ] = true;
+  }
 
-      case 'add':
-      case 'remove':
-      case 'load':
-        r.updateElementsCache();
-        break;
+  if( has.destroy ){
+    r.destroy();
+    return;
+  }
 
-      case 'viewport':
-        r.redrawHint('select', true);
-        break;
+  if( has.add || has.remove || has.load ){
+    r.updateElementsCache();
+  }
 
-      case 'style':
-        r.updateCachedZSortedEles();
-        break;
-    }
+  if( has.viewport ){
+    r.redrawHint('select', true);
+  }
 
-    if( type === 'load' || type === 'resize' ){
-      r.invalidateContainerClientCoordsCache();
-      r.matchCanvasSize(r.container);
-    }
-  } // for
+  if( has.load || has.resize ){
+    r.invalidateContainerClientCoordsCache();
+    r.matchCanvasSize(r.container);
+  }
 
   r.redrawHint('eles', true);
   r.redrawHint('drag', true);

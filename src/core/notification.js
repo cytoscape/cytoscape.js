@@ -14,6 +14,7 @@ var corefn = ({
 
       if( !bTypes.ids[ params.type ] ){
         bTypes.push( params.type );
+        bTypes.ids[ params.type ] = true;
       }
 
       return; // notifications are disabled during batching

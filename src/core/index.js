@@ -57,10 +57,10 @@ var Core = function( opts ){
     ready: false, // whether ready has been triggered
     initrender: false, // has initrender has been triggered
     options: options, // cached options
-    elements: Collection( this ), // elements in the graph
+    elements: new Collection( this ), // elements in the graph
     listeners: [], // list of listeners
     onRenders: [], // rendering listeners
-    aniEles: Collection( this ), // elements being animated
+    aniEles: new Collection( this ), // elements being animated
     scratch: {}, // scratch object for core
     layout: null,
     renderer: null,

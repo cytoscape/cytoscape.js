@@ -727,7 +727,7 @@ BRp.load = function(){
 
           r.hoverData.draggingEles = true;
 
-          var tcol = (Collection( cy, toTrigger ));
+          var tcol = cy.collection( toTrigger );
 
           tcol.updateCompoundBounds();
           tcol.trigger( 'position drag' );
@@ -862,7 +862,7 @@ BRp.load = function(){
       }
 
       if( r.hoverData.selecting ){
-        var box = Collection( cy, r.getAllInBox( select[0], select[1], select[2], select[3] ) );
+        var box = cy.collection( r.getAllInBox( select[0], select[1], select[2], select[3] ) );
 
         r.redrawHint( 'select', true );
 
@@ -1486,7 +1486,7 @@ BRp.load = function(){
             }
           }
 
-          var tcol = Collection( cy, draggedEles );
+          var tcol = cy.collection( draggedEles );
 
           tcol.updateCompoundBounds();
           tcol.trigger( 'position drag' );
@@ -1678,7 +1678,7 @@ BRp.load = function(){
     if( !e.touches[2] && cy.boxSelectionEnabled() && r.touchData.selecting ){
       r.touchData.selecting = false;
 
-      var box = Collection( cy, r.getAllInBox( select[0], select[1], select[2], select[3] ) );
+      var box = cy.collection( r.getAllInBox( select[0], select[1], select[2], select[3] ) );
 
       select[0] = undefined;
       select[1] = undefined;

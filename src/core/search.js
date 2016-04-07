@@ -18,10 +18,10 @@ var corefn = ({
       return eles.collection();
 
     } else if( is.array( eles ) ){
-      return Collection( this, eles, opts );
+      return new Collection( this, eles, opts );
     }
 
-    return Collection( this );
+    return new Collection( this );
   },
 
   nodes: function( selector ){

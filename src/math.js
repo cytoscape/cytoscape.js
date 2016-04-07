@@ -6,6 +6,10 @@ math.deg2rad = function( deg ){
   return Math.PI * deg / 180;
 };
 
+math.log2 = Math.log2 || function( n ){
+  return Math.log( n ) / Math.log( 2 );
+};
+
 math.signum = function( x ){
   if( x > 0 ){
     return 1;

@@ -90,7 +90,7 @@ ETCp.getElement = function( ele, bb, pxRatio, lvl, reason ){
   var zoom = r.cy.zoom();
 
   if( lvl == null ){
-    lvl = Math.ceil( Math.log2( zoom * pxRatio ) );
+    lvl = Math.ceil( math.log2( zoom * pxRatio ) );
   }
 
   if( lvl < minLvl ){

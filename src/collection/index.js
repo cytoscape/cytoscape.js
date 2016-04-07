@@ -267,7 +267,6 @@ elesfn.copy = elesfn.clone;
 
 elesfn.restore = function( notifyRenderer ){
   var self = this;
-  var restored = [];
   var cy = self.cy();
   var cy_p = cy._private;
 
@@ -277,19 +276,22 @@ elesfn.restore = function( notifyRenderer ){
 
   // create arrays of nodes and edges, since we need to
   // restore the nodes first
-  var elements = [];
-  var nodes = [], edges = [];
-  var numNodes = 0, numEdges = 0;
+  var nodes = [];
+  var edges = [];
+  var elements;
   for( var i = 0, l = self.length; i < l; i++ ){
     var ele = self[ i ];
+
+    if( !ele.removed() ){
+      // don't need to handle this ele
+      continue;
+    }
 
     // keep nodes first in the array and edges after
     if( ele.isNode() ){ // put to front of array if node
       nodes.push( ele );
-      numNodes++;
     } else { // put to end of array if edge
       edges.push( ele );
-      numEdges++;
     }
   }
 
@@ -298,11 +300,6 @@ elesfn.restore = function( notifyRenderer ){
   // now, restore each element
   for( var i = 0, l = elements.length; i < l; i++ ){
     var ele = elements[ i ];
-
-    if( !ele.removed() ){
-      // don't need to do anything
-      continue;
-    }
 
     var _private = ele._private;
     var data = _private.data;
@@ -389,13 +386,11 @@ elesfn.restore = function( notifyRenderer ){
 
     _private.removed = false;
     cy.addToPool( ele );
-
-    restored.push( ele );
   } // for each element
 
   // do compound node sanity checks
-  for( var i = 0; i < numNodes; i++ ){ // each node
-    var node = elements[ i ];
+  for( var i = 0; i < nodes.length; i++ ){ // each node
+    var node = nodes[ i ];
     var data = node._private.data;
 
     if( is.number( data.parent ) ){ // then automake string
@@ -434,13 +429,13 @@ elesfn.restore = function( notifyRenderer ){
           node._private.parent = parent[0];
 
           // let the core know we have a compound graph
-          cy._private.hasCompoundNodes = true;
+          cy_p.hasCompoundNodes = true;
         }
       } // else
     } // if specified parent
   } // for each node
 
-  restored = new Collection( cy, restored );
+  var restored = new Collection( cy, elements );
   if( restored.length > 0 ){
 
     for( var i = 0; i < restored.length; i++ ){
@@ -459,7 +454,14 @@ elesfn.restore = function( notifyRenderer ){
       ele.target()[0]._private.traversalCache = null;
     }
 
-    var toUpdateStyle = restored.add( restored.connectedNodes() ).add( restored.parent() );
+    var toUpdateStyle;
+
+    if( cy_p.hasCompoundNodes ){
+      toUpdateStyle = restored.add( restored.connectedNodes() ).add( restored.parent() );
+    } else {
+      toUpdateStyle = restored;
+    }
+
     toUpdateStyle.updateStyle( notifyRenderer );
 
     if( notifyRenderer ){

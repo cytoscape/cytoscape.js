@@ -21,10 +21,6 @@ var idFactory = {
 
 // represents a set of nodes, edges, or both together
 var Collection = function( cy, elements, options ){
-  if( !(this instanceof Collection) ){
-    return new Collection( cy, elements, options );
-  }
-
   if( cy === undefined || !is.core( cy ) ){
     util.error( 'A collection must have a reference to the core' );
     return;

@@ -5,10 +5,6 @@ var is = require( '../is' );
 
 // represents a node or an edge
 var Element = function( cy, params, restore ){
-  if( !(this instanceof Element) ){
-    return new Element( cy, params, restore );
-  }
-
   var self = this;
   restore = (restore === undefined || restore ? true : false);
 

@@ -1,5 +1,7 @@
 'use strict';
 
+require('./-preamble');
+
 var window = require( './window' );
 var is = require( './is' );
 var Core = require( './core' );
@@ -27,7 +29,7 @@ var cytoscape = function( options ){ // jshint ignore:line
 };
 
 // replaced by build system
-cytoscape.version = '{{VERSION}}';
+cytoscape.version = require('./version');
 
 // try to register w/ jquery
 if( window && window.jQuery ){

@@ -1,3 +1,5 @@
+'use strict';
+
 var gulp = require('gulp');
 var $ = require('gulp-load-plugins')();
 var fs = require('fs');
@@ -47,11 +49,11 @@ var version; // used for marking builds w/ version etc
 var paths = {
   sourceEntry: 'src/index.js',
 
-  preamble: 'src/preamble.js',
+  preamble: 'src/-preamble.js',
 
   nodethreadName: 'thread-node-fork.js',
   nodethreadSrc: [
-    'src/preamble.js',
+    'src/-preamble.js',
     'src/thread-node-fork.js'
   ],
 
@@ -98,16 +100,6 @@ var logError = function( err ){
 };
 
 // update these if you don't have a unix like env or these programmes aren't in your $PATH
-var $GIT = 'git';
-var $RM = 'rm -rf';
-var $CP = 'cp -R';
-var $TEMP_DIR = '/tmp';
-var $DOC_DIR = 'documentation';
-var $DL_DIR  = 'download';
-var $NPM = 'npm';
-var $METEOR = 'meteor';
-var $SPM = 'spm';
-
 var replaceShellVars = function( cmds ){
   return cmds.map(function( cmd ){
     return cmd
@@ -147,6 +139,8 @@ gulp.task('version', function( next ){
   function done(){
     console.log('Using version number `%s` for building', version);
 
+    fs.writeFileSync('./src/version.json', '"'+ version +'"');
+
     next();
   }
 
@@ -174,8 +168,7 @@ var getBrowserify = function( opts ){
     sourceMaps: false,
     minify: false,
     handleErrors: true,
-    bundle: true,
-    preamble: false
+    bundle: true
   }, opts);
 
   var b = opts.stream || browserify( browserifyOpts );
@@ -201,19 +194,11 @@ var getBrowserify = function( opts ){
     pipe( $.sourcemaps.init({ loadMaps: true }) );
   //}
 
-  if( opts.preamble ){
-    pipe( $.insert.prepend( fs.readFileSync( paths.preamble ) ) );
-  }
-
   pipe( $.derequire() );
   pipe( $.replace('{{VERSION}}', version) );
 
   if( opts.minify ){
-    pipe( $.uglify({ mangle: true, preserveComments: 'some' }) );
-  }
-
-  if( opts.preamble && opts.sourceMaps ){
-    logError('Specified conflicting preamble and sourcemaps options in build');
+    pipe( $.uglify({ mangle: true, preserveComments: 'license' }) );
   }
 
   if( opts.sourceMaps === true ){
@@ -234,9 +219,7 @@ gulp.task('concat', ['version', 'nodeworker'], function(){
 });
 
 gulp.task('build-unmin', ['version', 'nodeworker'], function(){
-  return getBrowserify({
-    preamble: true
-  })
+  return getBrowserify()
     .pipe( gulp.dest('build') )
   ;
 });
@@ -257,9 +240,9 @@ gulp.task('build', ['build-unmin', 'build-min'], function( next ){
 
 gulp.task('nodeworker', ['version'], function(){
   return gulp.src( paths.nodethreadSrc )
-    .pipe( $.replace('{{VERSION}}', version) )
-
     .pipe( $.concat(paths.nodethreadName) )
+
+    .pipe( $.replace('{{VERSION}}', version) )
 
     .pipe( gulp.dest('build') )
   ;
@@ -319,8 +302,16 @@ gulp.task('zip', ['version', 'build'], function(){
   ;
 });
 
-gulp.task('test', ['concat'], function(next){
+gulp.task('test', function(next){
   return gulp.src('test/*.js')
+    .pipe( $.mocha({
+      reporter: 'spec'
+    }) )
+  ;
+});
+
+gulp.task('test-browserify', ['concat'], function(next){
+  return gulp.src('test/browserify/*.js')
     .pipe( $.mocha({
       reporter: 'spec'
     }) )

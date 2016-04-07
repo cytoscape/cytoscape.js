@@ -1,5 +1,5 @@
 var expect = require('chai').expect;
-var cytoscape = require('../build/cytoscape.js', cytoscape);
+var cytoscape = require('../src', cytoscape);
 
 describe('Collection graph manipulation', function(){
 
@@ -15,7 +15,7 @@ describe('Collection graph manipulation', function(){
             { data: { id: "n3", foo: "three", weight: 0.75 }, classes: "odd three" },
             { data: { id: "child", parent: 'n3' } }
         ],
-        
+
         edges: [
             { data: { id: "n1n2", source: "n1", target: "n2", weight: 0.33 }, classes: "uh" },
             { data: { id: "n2n3", source: "n2", target: "n3", weight: 0.66 }, classes: "huh" }
@@ -108,7 +108,7 @@ describe('Collection graph manipulation', function(){
 
     it('should move edge target', function(){
       cy.$('#n1n2').move({ target: 'n3' });
-      
+
       expect( cy.$('#n1n2').source().id() ).to.equal('n1');
       expect( cy.$('#n1n2').target().id() ).to.equal('n3');
     });
@@ -122,14 +122,14 @@ describe('Collection graph manipulation', function(){
 
     it('should move node parent', function(){
       cy.$('#child').move({ parent: 'n1' });
-      
+
       expect( cy.$('#child').parent().id() ).to.equal('n1');
       expect( cy.$('#n1').children().id() ).to.equal('child');
     });
 
     it('should move to no parent', function(){
       cy.$('#child').move({ parent: null });
-      
+
       expect( cy.$('#child').parent().length ).to.equal(0);
     });
 
@@ -142,8 +142,8 @@ describe('Collection graph manipulation', function(){
             { data: { id: 'c'} },
             { data: { id: 'd', parent: 'c' } },
             { data: { id: 'e' } }
-          ], 
-          
+          ],
+
           edges: [
             { data: { id: 'ae', weight: 1, source: 'a', target: 'e' } },
             { data: { id: 'ab', weight: 3, source: 'a', target: 'b' } },

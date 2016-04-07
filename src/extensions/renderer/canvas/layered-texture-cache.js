@@ -135,7 +135,7 @@ LTCp.getLayers = function( eles, pxRatio, lvl ){
   // log('do layers');
 
   if( lvl == null ){
-    lvl = Math.ceil( Math.log2( zoom * pxRatio ) );
+    lvl = Math.ceil( math.log2( zoom * pxRatio ) );
 
     if( lvl < minLvl ){
       lvl = minLvl;

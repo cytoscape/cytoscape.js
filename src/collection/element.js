@@ -21,7 +21,7 @@ var Element = function( cy, params, restore ){
 
   // try to automatically infer the group if unspecified
   if( group == null ){
-    if( params.data.source != null && params.data.target != null ){
+    if( params.data && params.data.source != null && params.data.target != null ){
       group = 'edges';
     } else {
       group = 'nodes';

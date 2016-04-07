@@ -8,9 +8,6 @@ var Promise = require( '../promise' );
 var define = require( '../define' );
 
 var Core = function( opts ){
-  if( !(this instanceof Core) ){
-    return new Core( opts );
-  }
   var cy = this;
 
   opts = util.extend( {}, opts );

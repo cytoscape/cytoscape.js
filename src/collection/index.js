@@ -7,18 +7,12 @@ var Element = require( './element' );
 
 // factory for generating edge ids when no id is specified for a new element
 var idFactory = {
-  prefix: 'ele',
-  id: 0,
   generate: function( cy, element, tryThisId ){
     var json = is.element( element ) ? element._private : element;
-    var id = tryThisId != null ? tryThisId : this.prefix + this.id;
+    var id = tryThisId != null ? tryThisId : util.uuid();
 
-    if( !cy.hasElementWithId( id ) ){
-      this.id++; // we've used the current id, so move it up
-    } else { // otherwise keep trying successive unused ids
-      while( cy.hasElementWithId( id ) ){
-        id = this.prefix + ( ++this.id );
-      }
+    while( cy.hasElementWithId( id ) ){
+      id = util.uuid();
     }
 
     return id;

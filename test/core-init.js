@@ -1,5 +1,5 @@
 var expect = require('chai').expect;
-var cytoscape = require('../build/cytoscape.js', cytoscape);
+var cytoscape = require('../src', cytoscape);
 var Promise = Promise || require('bluebird');
 var $;
 

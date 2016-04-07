@@ -297,8 +297,14 @@ elesfn.restore = function( notifyRenderer ){
 
   elements = nodes.concat( edges );
 
+  var i;
+  var removeFromElements = function(i){
+    elements.splice( i, 1 );
+    i--;
+  };
+
   // now, restore each element
-  for( var i = 0, l = elements.length; i < l; i++ ){
+  for( i = 0, l = elements.length; i < l; i++ ){
     var ele = elements[ i ];
 
     var _private = ele._private;
@@ -315,11 +321,13 @@ elesfn.restore = function( notifyRenderer ){
       util.error( 'Can not create element with invalid string ID `' + data.id + '`' );
 
       // can't create element if it has empty string as id or non-string id
+      removeFromElements(i);
       continue;
     } else if( cy.hasElementWithId( data.id ) ){
       util.error( 'Can not create second element with ID `' + data.id + '`' );
 
       // can't create element if one already has that id
+      removeFromElements(i);
       continue;
     }
 
@@ -366,7 +374,7 @@ elesfn.restore = function( notifyRenderer ){
         }
       }
 
-      if( badSourceOrTarget ){ continue; } // can't create this
+      if( badSourceOrTarget ){ removeFromElements(i); continue; } // can't create this
 
       var src = cy.getElementById( data.source );
       var tgt = cy.getElementById( data.target );
@@ -435,8 +443,8 @@ elesfn.restore = function( notifyRenderer ){
     } // if specified parent
   } // for each node
 
-  var restored = new Collection( cy, elements );
-  if( restored.length > 0 ){
+  if( elements.length > 0 ){
+    var restored = new Collection( cy, elements );
 
     for( var i = 0; i < restored.length; i++ ){
       var ele = restored[i];

@@ -832,8 +832,9 @@ BRp.load = function(){
       if(
         !r.dragData.didDrag // didn't move a node around
         && !r.hoverData.dragged // didn't pan
+        && !r.hoverData.selecting // not box selection
       ){
-        triggerEvents( near, [ 'click', 'tap', 'vclick' ], e, {
+        triggerEvents( down, ['click', 'tap', 'vclick'], e, {
           cyPosition: { x: pos[0], y: pos[1] }
         } );
       }

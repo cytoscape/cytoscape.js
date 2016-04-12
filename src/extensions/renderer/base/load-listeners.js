@@ -852,15 +852,15 @@ BRp.load = function() {
         r.redraw();
       }
 
-      if (!select[4]) {
-
-
+      if( !select[4] ) {
         r.redrawHint('drag', true);
         r.redrawHint('eles', true);
 
+        var downWasGrabbed = down && down.grabbed();
+
         freeDraggedElements( draggedElements );
 
-        if( down ){ down.trigger('free'); }
+        if( downWasGrabbed ){ down.trigger('free'); }
       }
 
     } // else not right mouse

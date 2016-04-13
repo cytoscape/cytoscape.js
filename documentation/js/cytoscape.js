@@ -6964,6 +6964,7 @@ var corefn = ({
 
       if( !bTypes.ids[ params.type ] ){
         bTypes.push( params.type );
+        bTypes.ids[ params.type ] = true;
       }
 
       return; // notifications are disabled during batching
@@ -13547,34 +13548,30 @@ BRp.notify = function(params) {
     types = [ params.type ];
   }
 
+  var has = {};
   for( var i = 0; i < types.length; i++ ){
     var type = types[i];
 
-    switch( type ){
-      case 'destroy':
-        r.destroy();
-        return;
+    has[ type ] = true;
+  }
 
-      case 'add':
-      case 'remove':
-      case 'load':
-        r.updateElementsCache();
-        break;
+  if( has.destroy ){
+    r.destroy();
+    return;
+  }
 
-      case 'viewport':
-        r.redrawHint('select', true);
-        break;
+  if( has.add || has.remove || has.load ){
+    r.updateElementsCache();
+  }
 
-      case 'style':
-        r.updateCachedZSortedEles();
-        break;
-    }
+  if( has.viewport ){
+    r.redrawHint('select', true);
+  }
 
-    if( type === 'load' || type === 'resize' ){
-      r.invalidateContainerClientCoordsCache();
-      r.matchCanvasSize(r.container);
-    }
-  } // for
+  if( has.load || has.resize ){
+    r.invalidateContainerClientCoordsCache();
+    r.matchCanvasSize(r.container);
+  }
 
   r.redrawHint('eles', true);
   r.redrawHint('drag', true);
@@ -14406,8 +14403,9 @@ BRp.load = function() {
       if(
         !r.dragData.didDrag // didn't move a node around
         && !r.hoverData.dragged // didn't pan
+        && !r.hoverData.selecting // not box selection
       ){
-        triggerEvents( near, ['click', 'tap', 'vclick'], e, {
+        triggerEvents( down, ['click', 'tap', 'vclick'], e, {
           cyPosition: { x: pos[0], y: pos[1] }
         } );
       }
@@ -14478,15 +14476,15 @@ BRp.load = function() {
         r.redraw();
       }
 
-      if (!select[4]) {
-
-
+      if( !select[4] ) {
         r.redrawHint('drag', true);
         r.redrawHint('eles', true);
 
+        var downWasGrabbed = down && down.grabbed();
+
         freeDraggedElements( draggedElements );
 
-        if( down ){ down.trigger('free'); }
+        if( downWasGrabbed ){ down.trigger('free'); }
       }
 
     } // else not right mouse
@@ -18855,7 +18853,7 @@ var cytoscape = function( options ){ // jshint ignore:line
 };
 
 // replaced by build system
-cytoscape.version = '2.6.7';
+cytoscape.version = '2.6.8';
 
 // try to register w/ jquery
 if( window && window.jQuery ){

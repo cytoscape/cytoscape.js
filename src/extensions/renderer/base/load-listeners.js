@@ -330,13 +330,15 @@ BRp.load = function(){
     r.hoverData.which = e.which;
 
     var cy = r.cy;
-    var pos = r.projectIntoViewport( e.clientX, e.clientY );
+    var gpos = [ e.clientX, e.clientY ];
+    var pos = r.projectIntoViewport( gpos[0], gpos[1] );
     var select = r.selection;
     var nears = r.findNearestElements( pos[0], pos[1], true, false );
     var near = nears[0];
     var draggedElements = r.dragData.possibleDragElements;
 
     r.hoverData.mdownPos = pos;
+    r.hoverData.mdownGPos = gpos;
 
     var checkForTaphold = function(){
       r.hoverData.tapholdCancelled = false;
@@ -500,7 +502,10 @@ BRp.load = function(){
 
     var cy = r.cy;
     var zoom = cy.zoom();
-    var pos = r.projectIntoViewport( e.clientX, e.clientY );
+    var gpos = [ e.clientX, e.clientY ];
+    var pos = r.projectIntoViewport( gpos[0], gpos[1] );
+    var mdownPos = r.hoverData.mdownPos;
+    var mdownGPos = r.hoverData.mdownGPos;
     var select = r.selection;
 
     var near = null;
@@ -514,16 +519,19 @@ BRp.load = function(){
 
     var draggedElements = r.dragData.possibleDragElements;
 
-    var dx = select[2] - select[0];
-    var dx2 = dx * dx;
-    var dy = select[3] - select[1];
-    var dy2 = dy * dy;
-    var dist2 = dx2 + dy2;
-    var rdist2 = dist2 * zoom * zoom;
+    var isOverThresholdDrag;
+
+    if( mdownGPos ){
+      var dx = gpos[0] - mdownGPos[0];
+      var dx2 = dx * dx;
+      var dy = gpos[1] - mdownGPos[1];
+      var dy2 = dy * dy;
+      var dist2 = dx2 + dy2;
+
+      isOverThresholdDrag = dist2 >= r.desktopTapThreshold2;
+    }
 
     var multSelKeyDown = isMultSelKeyDown( e );
-
-    var isOverThresholdDrag = rdist2 >= r.desktopTapThreshold2;
 
     if (isOverThresholdDrag) {
       r.hoverData.tapholdCancelled = true;
@@ -931,6 +939,8 @@ BRp.load = function(){
     r.dragData.didDrag = false;
     r.hoverData.dragged = false;
     r.hoverData.dragDelta = [];
+    r.hoverData.mdownPos = null;
+    r.hoverData.mdownGPos = null;
 
   }, false );
 
@@ -1042,7 +1052,6 @@ BRp.load = function(){
     if( e.touches[0] ){ var pos = r.projectIntoViewport( e.touches[0].clientX, e.touches[0].clientY ); now[0] = pos[0]; now[1] = pos[1]; }
     if( e.touches[1] ){ var pos = r.projectIntoViewport( e.touches[1].clientX, e.touches[1].clientY ); now[2] = pos[0]; now[3] = pos[1]; }
     if( e.touches[2] ){ var pos = r.projectIntoViewport( e.touches[2].clientX, e.touches[2].clientY ); now[4] = pos[0]; now[5] = pos[1]; }
-
 
     // record starting points for pinch-to-zoom
     if( e.touches[1] ){
@@ -1179,10 +1188,13 @@ BRp.load = function(){
       // Tap, taphold
       // -----
 
-      for( var i = 0; i < now.length; i++ ){
-        earlier[ i ] = now[ i ];
-        r.touchData.startPosition[ i ] = now[ i ];
+      r.touchData.startPosition = [];
+      for (var i=0; i<now.length; i++) {
+        earlier[i] = now[i];
+        r.touchData.startPosition[i] = now[i];
       }
+
+      r.touchData.startGPosition = [ e.touches[0].clientX, e.touches[0].clientY ];
 
       r.touchData.singleTouchMoved = false;
       r.touchData.singleTouchStartTime = +new Date();
@@ -1209,28 +1221,31 @@ BRp.load = function(){
   }, false );
 
   var touchmoveHandler;
-  r.registerBinding( window, 'touchmove', touchmoveHandler = function( e ){
-
+  r.registerBinding(window, 'touchmove', touchmoveHandler = function(e) {
     var select = r.selection;
     var capture = r.touchData.capture;
     var cy = r.cy;
-    var now = r.touchData.now; var earlier = r.touchData.earlier;
+    var now = r.touchData.now;
+    var earlier = r.touchData.earlier;
     var zoom = cy.zoom();
 
     if( e.touches[0] ){ var pos = r.projectIntoViewport( e.touches[0].clientX, e.touches[0].clientY ); now[0] = pos[0]; now[1] = pos[1]; }
     if( e.touches[1] ){ var pos = r.projectIntoViewport( e.touches[1].clientX, e.touches[1].clientY ); now[2] = pos[0]; now[3] = pos[1]; }
     if( e.touches[2] ){ var pos = r.projectIntoViewport( e.touches[2].clientX, e.touches[2].clientY ); now[4] = pos[0]; now[5] = pos[1]; }
 
-    var disp = []; for( var j = 0;j < now.length;j++ ){ disp[ j ] = now[ j ] - earlier[ j ]; }
-    var startPos = r.touchData.startPosition;
-    var dx = now[0] - startPos[0];
-    var dx2 = dx * dx;
-    var dy = now[1] - startPos[1];
-    var dy2 = dy * dy;
-    var dist2 = dx2 + dy2;
-    var rdist2 = dist2 * zoom * zoom;
+    var isOverThresholdDrag;
 
-    var isOverThresholdDrag = rdist2 >= r.touchTapThreshold2;
+    if( capture && e.touches[0] ){
+      var disp = []; for (var j=0;j<now.length;j++) { disp[j] = now[j] - earlier[j]; }
+      var startGPos = r.touchData.startGPosition;
+      var dx = e.touches[0].clientX - startGPos[0];
+      var dx2 = dx * dx;
+      var dy = e.touches[0].clientY - startGPos[1];
+      var dy2 = dy * dy;
+      var dist2 = dx2 + dy2;
+
+      isOverThresholdDrag = dist2 >= r.touchTapThreshold2;
+    }
 
     // context swipe cancelling
     if( capture && r.touchData.cxt ){
@@ -1808,6 +1823,8 @@ BRp.load = function(){
 
     if( e.touches.length === 0 ){
       r.touchData.dragDelta = [];
+      r.touchData.startPosition = null;
+      r.touchData.startGPosition = null;
     }
 
     if( updateStartStyle && start ){

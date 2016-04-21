@@ -12,8 +12,6 @@ BRp.registerCalculationListeners = function(){
   var elesToUpdate = cy.collection();
   var r = this;
 
-  var emptyObj = {};
-
   var enqueue = function( eles, e ){
     elesToUpdate.merge( eles );
 
@@ -48,7 +46,7 @@ BRp.registerCalculationListeners = function(){
       if( cy.hasCompoundNodes() ){
         var parents = node.parents();
 
-        enqueue( parents, e )
+        enqueue( parents, e );
         enqueue( parents.connectedEdges(), e );
       }
     })
@@ -122,7 +120,6 @@ BRp.recalculateRenderedStyle = function( eles, useCache ){
     var ele = eles[ i ];
     var _p = ele._private;
     var rstyle = _p.rstyle;
-    var id = _p.data.id;
 
     // only update if dirty
     if( useCache && rstyle.clean ){ continue; }
@@ -474,7 +471,9 @@ BRp.findNearestElements = function( x, y, visibleElementsOnly, isTouch ){
 
 // 'Give me everything from this box'
 BRp.getAllInBox = function( x1, y1, x2, y2 ){
-  var nodes = this.getCachedZSortedEles().nodes;
+  var eles = this.getCachedZSortedEles();
+  var nodes = eles.nodes;
+  var edges = eles.edges;
   var box = [];
 
   var x1c = Math.min( x1, x2 );
@@ -822,7 +821,7 @@ BRp.recalculateEdgeLabelProjections = function( edge ){
       ); // last
     }
 
-    return createControlPointInfo.cache = ctrlpts;
+    return ( createControlPointInfo.cache = ctrlpts );
   };
 
   var calculateEndProjection = function( prefix ){

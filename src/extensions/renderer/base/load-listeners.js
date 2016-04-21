@@ -3,7 +3,6 @@
 var is = require( '../../../is' );
 var util = require( '../../../util' );
 var Event = require( '../../../event' );
-var Collection = require( '../../../collection' );
 
 var BRp = {};
 
@@ -166,7 +165,6 @@ BRp.load = function(){
     opts = opts || {};
 
     var hasCompoundNodes = nodes.cy().hasCompoundNodes();
-    var listHasId = getDragListIds( opts );
 
     if( opts.inDragLayer ){
       setInDragLayer( nodes );
@@ -892,7 +890,7 @@ BRp.load = function(){
           ;
         } else {
           if( !multSelKeyDown ){
-            cy.$( ':selected' ).unmerge( newlySelCol ).unselect();
+            cy.$( ':selected' ).unmerge( box ).unselect();
           }
 
           box
@@ -1136,7 +1134,7 @@ BRp.load = function(){
 
     } else if( e.touches[0] ){
       var nears = r.findNearestElements( now[0], now[1], true, true );
-      var near = nears[0]
+      var near = nears[0];
 
       if( near != null ){
         near.activate();

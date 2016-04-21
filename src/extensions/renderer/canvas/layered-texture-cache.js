@@ -307,10 +307,12 @@ LTCp.drawEleInLayer = function( layer, ele, lvl, pxRatio ){
   var r = this.renderer;
   var context = layer.context;
   var bb = ele.boundingBox();
+  var eleCache = self.eleTxrCache;
+  var reason = eleCache.reasons.highQuality;
 
   lvl = self.getEleLevelForLayerLevel( lvl, pxRatio );
 
-  var cache = useEleTxrCaching ? self.eleTxrCache.getElement( ele, bb, null, lvl ) : null;
+  var cache = useEleTxrCaching ? eleCache.getElement( ele, bb, null, lvl, reason ) : null;
 
   if( cache ){
     context.drawImage( cache.texture.canvas, cache.x, 0, cache.width, cache.height, bb.x1, bb.y1, bb.w, bb.h );
@@ -437,7 +439,7 @@ LTCp.invalidateLayer = function( layer ){
 
    // log('invalidate layer', layer.id );
 
-  // util.removeFromArray( layers, layer );
+  util.removeFromArray( layers, layer );
   // layer.eles = [];
 
   layer.elesQueue = [];

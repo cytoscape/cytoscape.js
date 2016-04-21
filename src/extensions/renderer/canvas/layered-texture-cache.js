@@ -291,14 +291,6 @@ LTCp.getLayers = function( eles, pxRatio, lvl ){
 // a layer may want to use an ele cache of a higher level to avoid blurriness
 // so the layer level might not equal the ele level
 LTCp.getEleLevelForLayerLevel = function( lvl, pxRatio ){
-  if( pxRatio === undefined ){
-    pxRatio = this.renderer.getPixelRatio();
-  }
-
-  if( pxRatio != null && pxRatio < minPxRatioForEleCache ){
-    lvl += 1;
-  }
-
   return lvl;
 };
 

@@ -10,8 +10,6 @@ var zIndexSort = function( a, b ){
   var aIsEdge = !aIsNode;
   var bIsNode = b.isNode();
   var bIsEdge = !bIsNode;
-  var aIsGrabbed = a.grabbed();
-  var bIsGrabbed = b.grabbed();
 
   // no need to calculate element depth if there is no compound node
   if( hasCompoundNodes ){
@@ -24,13 +22,7 @@ var zIndexSort = function( a, b ){
 
   if( sameDepth ){
 
-    if( aIsGrabbed && !bIsGrabbed ){
-      return 1; // draw a later because it's grabbed
-
-    } else if( !aIsGrabbed && bIsGrabbed ){
-      return -1; // draw a first because b is grabbed
-
-    } else if( aIsNode && bIsEdge ){
+    if( aIsNode && bIsEdge ){
       return 1; // 'a' is a node, it should be drawn later
 
     } else if( aIsEdge && bIsNode ){

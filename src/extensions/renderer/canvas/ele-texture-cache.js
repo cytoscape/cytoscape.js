@@ -157,6 +157,7 @@ ETCp.getElement = function( ele, bb, pxRatio, lvl, reason ){
 
   var deqing = reason && reason === getTxrReasons.dequeue;
   var highQualityReq = reason && reason === getTxrReasons.highQuality;
+  var downscaleReq = reason && reason === getTxrReasons.downscale;
 
   var higherCache; // the nearest cache with a higher level
   for( var l = lvl + 1; l <= maxLvl; l++ ){
@@ -187,7 +188,7 @@ ETCp.getElement = function( ele, bb, pxRatio, lvl, reason ){
 
     if( highQualityReq ){
       for( var l = higherCache.level; l > lvl; l-- ){
-        oneUpCache = self.getElement( ele, bb, l, reason );
+        oneUpCache = self.getElement( ele, bb, pxRatio, l, getTxrReasons.downscale );
       }
 
       downscale();
@@ -200,7 +201,7 @@ ETCp.getElement = function( ele, bb, pxRatio, lvl, reason ){
   } else {
 
     var lowerCache; // the nearest cache with a lower level
-    if( !deqing && !highQualityReq ){
+    if( !deqing && !highQualityReq && !downscaleReq ){
       for( var l = lvl - 1; l >= minLvl; l-- ){
         var c = caches[l];
 

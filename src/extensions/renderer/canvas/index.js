@@ -92,8 +92,10 @@ function CanvasRenderer( options ){
       } else {
         r.data.eleTxrCache.invalidateElement( ele );
       }
+    }
 
-      r.data.lyrTxrCache.invalidateElements( ele );
+    if( eles.length > 0 ){
+      r.data.lyrTxrCache.invalidateElements( eles );
     }
   });
 }

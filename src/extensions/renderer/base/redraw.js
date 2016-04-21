@@ -8,35 +8,14 @@ BRp.timeToRender = function(){
   return this.redrawTotalTime / this.redrawCount;
 };
 
-var minRedrawLimit = 1000 / 60; // people can't see much better than 60fps
-var maxRedrawLimit = 1000;  // don't cap max b/c it's more important to be responsive than smooth
-
 BRp.redraw = function( options ){
   options = options || util.staticEmptyObject();
 
   var r = this;
-  var forcedContext = options.forcedContext;
 
   if( r.averageRedrawTime === undefined ){ r.averageRedrawTime = 0; }
   if( r.lastRedrawTime === undefined ){ r.lastRedrawTime = 0; }
-
-  var redrawLimit = r.lastRedrawTime; // estimate the ideal redraw limit based on how fast we can draw
-  redrawLimit = minRedrawLimit > redrawLimit ? minRedrawLimit : redrawLimit;
-  redrawLimit = redrawLimit < maxRedrawLimit ? redrawLimit : maxRedrawLimit;
-
   if( r.lastDrawTime === undefined ){ r.lastDrawTime = 0; }
-
-  var nowTime = util.performanceNow();
-  var timeElapsed = nowTime - r.lastDrawTime;
-  var callAfterLimit = timeElapsed >= redrawLimit;
-
-  // disable frameskipping and allow browser to handle it
-  // if( !forcedContext ){
-  //   if( !callAfterLimit ){
-  //     r.skipFrame = true;
-  //     return;
-  //   }
-  // }
 
   r.requestedFrame = true;
   r.renderOptions = options;

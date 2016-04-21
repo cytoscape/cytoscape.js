@@ -19,11 +19,11 @@ var deqRedrawThreshold = 50; // time to batch redraws together from dequeueing t
 var refineEleDebounceTime = 50; // time to debounce sharper ele texture updates
 var deqCost = 0.15; // % of add'l rendering cost allowed for dequeuing ele caches each frame
 var deqAvgCost = 0.1; // % of add'l rendering cost compared to average overall redraw time
-var deqNoDrawCost = 0.8; // % of avg frame time that can be used for dequeueing when not drawing
-var deqFastCost = 0.8; // % of frame time to be used when >60fps
+var deqNoDrawCost = 0.9; // % of avg frame time that can be used for dequeueing when not drawing
+var deqFastCost = 0.9; // % of frame time to be used when >60fps
 var maxDeqSize = 1; // number of eles to dequeue and render at higher texture in each batch
 var invalidThreshold = 250; // time threshold for disabling b/c of invalidations
-var maxLayerArea = 10000 * 10000; // layers can't be bigger than this
+var maxLayerArea = 4000 * 4000; // layers can't be bigger than this
 var alwaysQueue = false; // never draw all the layers in a level on a frame; draw directly until all dequeued
 
 var useEleTxrCaching = true; // whether to use individual ele texture caching underneath this cache
@@ -57,17 +57,6 @@ var LayeredTextureCache = function( renderer, eleTxrCache ){
   };
 
   self.layersQueue = new Heap( qSort );
-
-  // naive but fast queue impl for small number of layers
-  // self.layersQueue = {
-  //   q: [],
-  //   pop: function(){ return this.q.shift(); },
-  //   push: function( o ){ this.q.push( o ); this.sort(); },
-  //   peek: function(){ return this.q[0]; },
-  //   updateItem: function(){ return this.sort(); },
-  //   sort: function(){ return this.q.sort( qSort ); },
-  //   size: function(){ return this.q.length; }
-  // };
 
   self.eleTxrCache = eleTxrCache;
 
@@ -399,8 +388,6 @@ LTCp.validateLayersElesOrdering = function( lvl, eles ){
 
 LTCp.updateElementsInLayers = function( eles, update ){
   var self = this;
-  var r = self.renderer;
-  var cy = r.cy;
   var isEles = is.element( eles[0] );
 
   // collect udpated elements (cascaded from the layers) and update each
@@ -440,7 +427,7 @@ LTCp.invalidateElements = function( eles ){
 LTCp.invalidateLayer = function( layer ){
   // log('update invalidate layer time');
 
-  if( layer.invalid ){ return } // save cycles
+  if( layer.invalid ){ return; } // save cycles
 
   this.lastInvalidationTime = util.performanceNow();
 
@@ -498,7 +485,6 @@ LTCp.refineElementTextures = function( eles ){
 
 LTCp.setupEleCacheInvalidation = function(){
   var self = this;
-  var r = self.renderer;
   var eleDeqs = [];
 
   if( !useEleTxrCaching ){ return; }
@@ -525,7 +511,7 @@ LTCp.queueLayer = function( layer, ele ){
   var hasId = elesQ.hasId = elesQ.hasId || {};
 
   // if a layer is going to be replaced, queuing is a waste of time
-  if( layer.replacement ){ return }
+  if( layer.replacement ){ return; }
 
   if( ele ){
     if( hasId[ ele.id() ] ){
@@ -549,7 +535,6 @@ LTCp.queueLayer = function( layer, ele ){
 
 LTCp.dequeue = function( pxRatio ){
   var self = this;
-  var r = self.renderer;
   var q = self.layersQueue;
   var deqd = [];
   var eleDeqs = 0;
@@ -627,7 +612,7 @@ LTCp.applyLayerReplacement = function( layer ){
     return;
   }
 
-  layersInLevel[ index ] = layer // replace level ref
+  layersInLevel[ index ] = layer; // replace level ref
 
   // replace refs in eles
   for( var i = 0; i < layer.eles.length; i++ ){

@@ -71,17 +71,6 @@ Franz M, Lopes CT, Huck G, Dong Y, Sumer O, Bader GD
 
 
 
-
-## Cytoscape.js & Cytoscape
-
-Though Cytoscape.js shares its name with [Cytoscape](http://www.cytoscape.org/), Cytoscape.js is not exactly the same as Cytoscape desktop.  Cytoscape.js is a JavaScript library for _programmers_.  It is not an app for end-users, and developers need to write code around Cytoscape.js to build graphcentric apps.
-
-Cytoscape.js is a JavaScript library:  It gives you a reusable graph widget that you can integrate with the rest of your app with your own JavaScript code.  The keen members of the audience will point out that this means that Cytoscape plugins/apps &mdash; written in Java &mdash; will obviously not work in Cytoscape.js &mdash; written in Java_Script_.  However, Cytoscape.js supports its own ecosystem of extensions.
-
-We are trying to make the two projects intercompatible as possible, and we do share philosophies with Cytoscape:  Graph style and data should be separate, the library should provide core functionality with extensions adding functionality on top of the library, and so on.
-
-
-
 ## Funding
 
 Funding for Cytoscape.js and Cytoscape is provided by NRNB (U.S. National Institutes of Health, National Center for Research Resources grant numbers P41 RR031228 and GM103504) and by NIH grants 2R01GM070743 and 1U41HG006623. The following organizations help develop Cytoscape:

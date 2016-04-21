@@ -408,10 +408,30 @@ LTCp.updateElementsInLayers = function( eles, update ){
   }
 };
 
+LTCp.haveLayers = function(){
+  var self = this;
+  var haveLayers = false;
+
+  for( var l = minLvl; l <= maxLvl; l++ ){
+    var layers = self.layersByLevel[l];
+
+    if( layers && layers.length > 0 ){
+      haveLayers = true;
+      break;
+    }
+  }
+
+  return haveLayers;
+};
+
 LTCp.invalidateElements = function( eles ){
   var self = this;
 
+  self.lastInvalidationTime = util.performanceNow();
+
   // log('update invalidate layer time from eles');
+
+  if( eles.length === 0 || !self.haveLayers() ){ return; }
 
   self.updateElementsInLayers( eles, function invalAssocLayers( layer, ele, req ){
     self.invalidateLayer( layer );
@@ -421,9 +441,9 @@ LTCp.invalidateElements = function( eles ){
 LTCp.invalidateLayer = function( layer ){
   // log('update invalidate layer time');
 
-  if( layer.invalid ){ return; } // save cycles
-
   this.lastInvalidationTime = util.performanceNow();
+
+  if( layer.invalid ){ return; } // save cycles
 
   var lvl = layer.level;
   var eles = layer.eles;

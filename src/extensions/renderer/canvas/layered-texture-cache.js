@@ -17,6 +17,7 @@ var maxZoom = 3.99; // beyond this zoom level, layered textures are not used
 var minPxRatioForEleCache = 2; // increase the pixel ratio used in the ele cache for low density displays to avoid blurriness
 var deqRedrawThreshold = 50; // time to batch redraws together from dequeueing to allow more dequeueing calcs to happen in the meanwhile
 var refineEleDebounceTime = 50; // time to debounce sharper ele texture updates
+var disableEleImgSmoothing = true; // when drawing eles on layers from an ele cache ; crisper and more performant when true
 var deqCost = 0.15; // % of add'l rendering cost allowed for dequeuing ele caches each frame
 var deqAvgCost = 0.1; // % of add'l rendering cost compared to average overall redraw time
 var deqNoDrawCost = 0.9; // % of avg frame time that can be used for dequeueing when not drawing
@@ -25,6 +26,7 @@ var maxDeqSize = 1; // number of eles to dequeue and render at higher texture in
 var invalidThreshold = 250; // time threshold for disabling b/c of invalidations
 var maxLayerArea = 4000 * 4000; // layers can't be bigger than this
 var alwaysQueue = false; // never draw all the layers in a level on a frame; draw directly until all dequeued
+var useHighQualityEleTxrReqs = true; // whether to use high quality ele txr requests (generally faster and cheaper in the longterm)
 
 var useEleTxrCaching = true; // whether to use individual ele texture caching underneath this cache
 
@@ -294,20 +296,34 @@ LTCp.getEleLevelForLayerLevel = function( lvl, pxRatio ){
   return lvl;
 };
 
+function imgSmoothing( context, bool ){
+  if( context.imageSmoothingEnabled != null ){
+    context.imageSmoothingEnabled = bool;
+  } else {
+    context.webkitImageSmoothingEnabled = bool;
+    context.mozImageSmoothingEnabled = bool;
+    context.msImageSmoothingEnabled = bool;
+  }
+}
+
 LTCp.drawEleInLayer = function( layer, ele, lvl, pxRatio ){
   var self = this;
   var r = this.renderer;
   var context = layer.context;
   var bb = ele.boundingBox();
   var eleCache = self.eleTxrCache;
-  var reason = eleCache.reasons.highQuality;
+  var reason = useHighQualityEleTxrReqs ? eleCache.reasons.highQuality : undefined;
 
   lvl = self.getEleLevelForLayerLevel( lvl, pxRatio );
 
   var cache = useEleTxrCaching ? eleCache.getElement( ele, bb, null, lvl, reason ) : null;
 
   if( cache ){
+    if( disableEleImgSmoothing ){ imgSmoothing( context, false ); }
+
     context.drawImage( cache.texture.canvas, cache.x, 0, cache.width, cache.height, bb.x1, bb.y1, bb.w, bb.h );
+
+    if( disableEleImgSmoothing ){ imgSmoothing( context, true ); }
   } else { // if the element is not cacheable, then draw directly
     r.drawElement( context, ele );
   }

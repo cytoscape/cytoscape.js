@@ -362,7 +362,7 @@ LTCp.validateLayersElesOrdering = function( lvl, eles ){
     if( offset < 0 ){
       // then the layer has nonexistant elements and is invalid
       this.invalidateLayer( layer );
-      break;
+      continue;
     }
 
     // the eles in the layer must be in the same continuous order, else the layer is invalid

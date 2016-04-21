@@ -40,7 +40,7 @@ var LayeredTextureCache = function( renderer, eleTxrCache ){
 
   self.layersByLevel = {}; // e.g. 2 => [ layer1, layer2, ..., layerN ]
 
-  self.lastInvalidationTime = -1e10;
+  self.lastInvalidationTime = util.performanceNow() - 2*invalidThreshold;
 
   self.skipping = false;
 

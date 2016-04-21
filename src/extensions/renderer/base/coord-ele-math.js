@@ -571,6 +571,29 @@ BRp.updateCachedZSortedEles = function(){
   this.getCachedZSortedEles( true );
 };
 
+BRp.updateCachedGrabbedEles = function(){
+  var eles = this.cachedZSortedEles;
+
+  eles.drag = [];
+  eles.nondrag = [];
+
+  for( var i = 0; i < eles.length; i++ ){
+    var ele = eles[i];
+
+    if( ele._private.rscratch.inDragLayer ){
+      eles.drag.push( ele );
+    } else {
+      eles.nondrag.push( ele );
+    }
+
+    if( ele.isNode() ){
+      eles.nodes.push( ele );
+    } else {
+      eles.edges.push( ele );
+    }
+  }
+};
+
 BRp.getCachedZSortedEles = function( forceRecalc ){
   var cyEles = this.cy.elements();
   var eles = [];
@@ -580,8 +603,6 @@ BRp.getCachedZSortedEles = function( forceRecalc ){
 
     var eles = [];
 
-    eles.drag = [];
-    eles.nondrag = [];
     eles.nodes = [];
     eles.edges = [];
 
@@ -595,23 +616,10 @@ BRp.getCachedZSortedEles = function( forceRecalc ){
 
     eles.sort( zIndexSort );
 
-    for( var i = 0; i < eles.length; i++ ){
-      var ele = eles[i];
-
-      if( ele._private.rscratch.inDragLayer ){
-        eles.drag.push( ele );
-      } else {
-        eles.nondrag.push( ele );
-      }
-
-      if( ele.isNode() ){
-        eles.nodes.push( ele );
-      } else {
-        eles.edges.push( ele );
-      }
-    }
-
     this.cachedZSortedEles = eles;
+
+    this.updateCachedGrabbedEles();
+
     //console.log('make cache')
 
     //console.timeEnd('cachezorder')

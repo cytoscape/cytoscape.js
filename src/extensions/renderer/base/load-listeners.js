@@ -187,7 +187,7 @@ BRp.load = function(){
       inDragLayer: opts.inDragLayer
     } );
 
-    r.updateCachedZSortedEles();
+    r.updateCachedGrabbedEles();
   };
 
   var addNodeToDrag = addNodesToDrag;
@@ -203,7 +203,7 @@ BRp.load = function(){
       setOutDragLayer( ele );
     });
 
-    r.updateCachedZSortedEles();
+    r.updateCachedGrabbedEles();
   };
 
   // helper function to determine which ancestor nodes and edges should go

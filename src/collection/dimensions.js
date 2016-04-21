@@ -617,16 +617,22 @@ var boundingBoxImpl = function( ele, options ){
   return bounds;
 };
 
-var getKey = function( args ){
+var appendTfStr = function( str, val ){
+  if( val ){
+    str += 't';
+  } else {
+    str += 'f';
+  }
+};
+
+var getKey = function( opts ){
   var key = '';
 
-  for( var i = 0; i < args.length; i++ ){
-    if( args[i] ){
-      key += 't';
-    } else {
-      key += 'f';
-    }
-  }
+  appendTfStr( key, opts.incudeNodes );
+  appendTfStr( key, opts.includeEdges );
+  appendTfStr( key, opts.includeLabels );
+  appendTfStr( key, opts.includeShadows );
+  appendTfStr( key, opts.includeOverlays );
 
   return key;
 };
@@ -635,13 +641,7 @@ var cachedBoundingBoxImpl = function( ele, opts ){
   var _p = ele._private;
   var bb;
   var headless = ele.cy().headless();
-  var key = getKey([
-    opts.incudeNodes,
-    opts.includeEdges,
-    opts.includeLabels,
-    opts.includeShadows,
-    opts.includeOverlays
-  ]);
+  var key = opts === defBbOpts ? defBbOptsKey : getKey( opts );
 
   if( !opts.useCache || headless || !_p.bbCache || !_p.bbCache[key] ){
     bb = boundingBoxImpl( ele, opts );
@@ -665,6 +665,8 @@ var defBbOpts = {
   includeOverlays: true,
   useCache: true
 };
+
+var defBbOptsKey = getKey( defBbOpts );
 
 elesfn.boundingBox = function( options ){
   // the main usecase is ele.boundingBox() for a single element with no/def options

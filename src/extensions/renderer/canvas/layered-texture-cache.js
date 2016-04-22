@@ -25,7 +25,7 @@ var deqFastCost = 0.9; // % of frame time to be used when >60fps
 var maxDeqSize = 1; // number of eles to dequeue and render at higher texture in each batch
 var invalidThreshold = 250; // time threshold for disabling b/c of invalidations
 var maxLayerArea = 4000 * 4000; // layers can't be bigger than this
-var alwaysQueue = false; // never draw all the layers in a level on a frame; draw directly until all dequeued
+var alwaysQueue = true; // never draw all the layers in a level on a frame; draw directly until all dequeued
 var useHighQualityEleTxrReqs = true; // whether to use high quality ele txr requests (generally faster and cheaper in the longterm)
 
 var useEleTxrCaching = true; // whether to use individual ele texture caching underneath this cache

@@ -1426,10 +1426,11 @@ BRp.load = function(){
           freeDraggedElements( draggedEles );
 
           r.redrawHint( 'drag', true );
+          r.redrawHint( 'eles', true );
 
           r.touchData.start
             .trigger( 'free' )
-            .trigger( 'unactivate' )
+            .unactivate()
           ;
         }
 

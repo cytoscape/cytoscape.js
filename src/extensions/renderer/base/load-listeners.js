@@ -630,37 +630,41 @@ BRp.load = function(){
         select[4] == 1 && (down == null || down.isEdge())
     ){
 
-      if( !r.hoverData.dragging && cy.boxSelectionEnabled() && ( multSelKeyDown || !cy.panningEnabled() || !cy.userPanningEnabled() ) ){
-        r.data.bgActivePosistion = undefined;
+      if( isOverThresholdDrag ){
 
-        if( !r.hoverData.selecting ){
-          cy.trigger('boxstart');
-        }
+        if( !r.hoverData.dragging && cy.boxSelectionEnabled() && ( multSelKeyDown || !cy.panningEnabled() || !cy.userPanningEnabled() ) ){
+          r.data.bgActivePosistion = undefined;
 
-        r.hoverData.selecting = true;
+          if( !r.hoverData.selecting ){
+            cy.trigger('boxstart');
+          }
 
-        r.redrawHint( 'select', true );
-        r.redraw();
-
-      } else if( !r.hoverData.selecting && cy.panningEnabled() && cy.userPanningEnabled() ){
-        var allowPassthrough = allowPanningPassthrough( down, r.hoverData.downs );
-
-        if( allowPassthrough ){
-          r.hoverData.dragging = true;
-          r.hoverData.justStartedPan = true;
-          select[4] = 0;
-
-          r.data.bgActivePosistion = {
-            x: pos[0],
-            y: pos[1]
-          };
+          r.hoverData.selecting = true;
 
           r.redrawHint( 'select', true );
           r.redraw();
-        }
-      }
 
-      if( down && down.isEdge() && down.active() ){ down.unactivate(); }
+        } else if( !r.hoverData.selecting && cy.panningEnabled() && cy.userPanningEnabled() ){
+          var allowPassthrough = allowPanningPassthrough( down, r.hoverData.downs );
+
+          if( allowPassthrough ){
+            r.hoverData.dragging = true;
+            r.hoverData.justStartedPan = true;
+            select[4] = 0;
+
+            r.data.bgActivePosistion = {
+              x: pos[0],
+              y: pos[1]
+            };
+
+            r.redrawHint( 'select', true );
+            r.redraw();
+          }
+        }
+
+        if( down && down.isEdge() && down.active() ){ down.unactivate(); }
+
+      }
 
     } else {
       if( down && down.isEdge() && down.active() ){ down.unactivate(); }

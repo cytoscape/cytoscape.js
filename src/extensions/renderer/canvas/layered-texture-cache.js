@@ -42,6 +42,8 @@ var LayeredTextureCache = function( renderer, eleTxrCache ){
 
   self.layersByLevel = {}; // e.g. 2 => [ layer1, layer2, ..., layerN ]
 
+  self.firstGet = true;
+
   self.lastInvalidationTime = util.performanceNow() - 2*invalidThreshold;
 
   self.skipping = false;
@@ -114,6 +116,9 @@ LTCp.getLayers = function( eles, pxRatio, lvl ){
   var r = self.renderer;
   var cy = r.cy;
   var zoom = cy.zoom();
+  var firstGet = self.firstGet;
+
+  self.firstGet = false;
 
   // log('--\nget layers with %s eles', eles.length);
   //log eles.map(function(ele){ return ele.id() }) );
@@ -232,6 +237,7 @@ LTCp.getLayers = function( eles, pxRatio, lvl ){
 
   var layer = null;
   var maxElesPerLayer = eles.length / defNumLayers;
+  var allowLazyQueueing = alwaysQueue && !firstGet;
 
   for( var i = 0; i < eles.length; i++ ){
     var ele = eles[i];
@@ -264,7 +270,7 @@ LTCp.getLayers = function( eles, pxRatio, lvl ){
       // log('new layer with id %s', layer.id);
     }
 
-    if( tmpLayers || alwaysQueue ){
+    if( tmpLayers || allowLazyQueueing ){
       // log('queue ele %s in layer %s', ele.id(), layer.id);
       self.queueLayer( layer, ele );
     } else {
@@ -283,7 +289,8 @@ LTCp.getLayers = function( eles, pxRatio, lvl ){
     return tmpLayers;
   }
 
-  if( alwaysQueue ){
+  if( allowLazyQueueing ){
+    // log('lazy queue level', lvl);
     return null;
   }
 

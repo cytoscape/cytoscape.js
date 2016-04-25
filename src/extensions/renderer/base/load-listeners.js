@@ -589,28 +589,32 @@ BRp.load = function() {
         select[4] == 1 && (down == null || down.isEdge())
     ){
 
-      if( !r.hoverData.dragging && cy.boxSelectionEnabled() && ( multSelKeyDown || !cy.panningEnabled() || !cy.userPanningEnabled() ) ){
-        r.data.bgActivePosistion = undefined;
-        r.hoverData.selecting = true;
+      if( isOverThresholdDrag ){
 
-        r.redrawHint('select', true);
-        r.redraw();
+        if( !r.hoverData.dragging && cy.boxSelectionEnabled() && ( multSelKeyDown || !cy.panningEnabled() || !cy.userPanningEnabled() ) ){
+          r.data.bgActivePosistion = undefined;
+          r.hoverData.selecting = true;
 
-      } else if( !r.hoverData.selecting && cy.panningEnabled() && cy.userPanningEnabled() ){
-        r.hoverData.dragging = true;
-        r.hoverData.justStartedPan = true;
-        select[4] = 0;
+          r.redrawHint('select', true);
+          r.redraw();
 
-        r.data.bgActivePosistion = {
-          x: pos[0],
-          y: pos[1]
-        };
+        } else if( !r.hoverData.selecting && cy.panningEnabled() && cy.userPanningEnabled() ){
+          r.hoverData.dragging = true;
+          r.hoverData.justStartedPan = true;
+          select[4] = 0;
 
-        r.redrawHint('select', true);
-        r.redraw();
+          r.data.bgActivePosistion = {
+            x: pos[0],
+            y: pos[1]
+          };
+
+          r.redrawHint('select', true);
+          r.redraw();
+        }
+
+        if( down && down.isEdge() && down.active() ){ down.unactivate(); }
+
       }
-
-      if( down && down.isEdge() && down.active() ){ down.unactivate(); }
 
     } else {
       if( down && down.isEdge() && down.active() ){ down.unactivate(); }

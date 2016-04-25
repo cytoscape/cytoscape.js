@@ -22,6 +22,7 @@ var minUtility = 0.5; // if usage of texture is less than this, it is retired
 var maxFullness = 0.8; // fullness of texture after which queue removal is checked
 var maxFullnessChecks = 10; // dequeued after this many checks
 var allowEdgeTxrCaching = false; // whether edges can be cached as textures (TODO maybe better on if webgl supported?)
+var allowParentTxrCaching = false; // whether parent nodes can be cached as textures (TODO maybe better on if webgl supported?)
 var deqCost = 0.15; // % of add'l rendering cost allowed for dequeuing ele caches each frame
 var deqAvgCost = 0.1; // % of add'l rendering cost compared to average overall redraw time
 var deqNoDrawCost = 0.9; // % of avg frame time that can be used for dequeueing when not drawing
@@ -127,7 +128,12 @@ ETCp.getElement = function( ele, bb, pxRatio, lvl, reason ){
     txrH = Math.ceil( eleScaledH / txrStepH ) * txrStepH;
   }
 
-  if( eleScaledH > maxTxrH || eleScaledW > maxTxrW || ( !allowEdgeTxrCaching && ele.isEdge() ) ){
+  if(
+    eleScaledH > maxTxrH
+    || eleScaledW > maxTxrW
+    || ( !allowEdgeTxrCaching && ele.isEdge() )
+    || ( !allowParentTxrCaching && ele.isParent() )
+  ){
     return null; // caching large elements is not efficient
   }
 

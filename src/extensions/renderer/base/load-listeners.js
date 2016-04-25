@@ -1725,11 +1725,7 @@ BRp.load = function(){
       r.redraw();
     }
 
-    var updateStartStyle = false;
-
     if( start != null ){
-      start._private.active = false;
-      updateStartStyle = true;
       start.unactivate();
     }
 
@@ -1804,9 +1800,6 @@ BRp.load = function(){
           }
         }
 
-        updateStartStyle = true;
-
-
         r.redrawHint( 'eles', true );
       }
 
@@ -1828,10 +1821,6 @@ BRp.load = function(){
       r.touchData.dragDelta = [];
       r.touchData.startPosition = null;
       r.touchData.startGPosition = null;
-    }
-
-    if( updateStartStyle && start ){
-      start.updateStyle( false );
     }
 
     if( e.touches.length < 2 ){

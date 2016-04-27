@@ -481,7 +481,7 @@ styfn.addDefaultStylesheet = function(){
         'mid-source-arrow-color': '#0169D9',
         'mid-target-arrow-color': '#0169D9'
       } )
-    .selector( '$node:selected node' )
+    .selector( 'node:parent:selected' )
       .css( {
         'background-color': '#CCE1F9',
         'border-color': '#aec8e5'

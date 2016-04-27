@@ -12,7 +12,6 @@
   * jQuery
   * npm
   * Bower
-  * spm
   * Meteor/Atmosphere
  * Has a full suite of unit tests that can be run in the browser or the terminal
  * Documentation includes live code examples, doubling as an interactive requirements specification; example graphs may also be freely modified in your browser's JS console
@@ -48,7 +47,7 @@
   * [Sainsbury Laboratory](http://www.tsl.ac.uk/) : [PINet](http://pinet.tsl.ac.uk/)
   * [University of Cambridge](http://www.cam.ac.uk/) : [Intermine](http://intermine.org/)
   * [Visual Interaction GmbH](http://www.mygaze.com/)
-  
+
 
 
 ## About

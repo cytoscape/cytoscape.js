@@ -68,7 +68,6 @@ The library was developed at the [Donnelly Centre](http://thedonnellycentre.utor
 
  * npm : `npm install cytoscape`
  * bower : `bower install cytoscape`
- * spm : `spm install cytoscape`
  * jspm : `jspm install npm:cytoscape`
  * meteor : `npm install cytoscape`
 

@@ -70,7 +70,7 @@ The library was developed at the [Donnelly Centre](http://thedonnellycentre.utor
  * bower : `bower install cytoscape`
  * spm : `spm install cytoscape`
  * jspm : `jspm install npm:cytoscape`
- * meteor : `meteor add cytoscape:cytoscape`
+ * meteor : `npm install cytoscape`
 
 
 

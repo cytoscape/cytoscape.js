@@ -111,7 +111,6 @@ var replaceShellVars = function( cmds ){
       .replace(/\$DOC_DIR/g, 'documentation')
       .replace(/\$DL_DIR/g, 'download')
       .replace(/\$NPM/g, 'npm')
-      .replace(/\$METEOR/g, 'meteor')
     ;
   });
 };
@@ -588,7 +587,7 @@ gulp.task('pubpush', $.shell.task( replaceShellVars([
 ]) ));
 
 gulp.task('publish', function(next){
-  runSequence('confver', 'pubprep', 'tag', 'docspush', 'npm', 'meteor', next);
+  runSequence('confver', 'pubprep', 'tag', 'docspush', 'npm', next);
 });
 
 gulp.task('tag', $.shell.task( replaceShellVars([
@@ -634,10 +633,6 @@ gulp.task('sniper', ['build-min'], $.shell.task( replaceShellVars([
 
 gulp.task('npm', $.shell.task( replaceShellVars([
   '$NPM publish .'
-]) ));
-
-gulp.task('meteor', $.shell.task( replaceShellVars([
-  '$METEOR publish'
 ]) ));
 
 

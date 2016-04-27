@@ -53,7 +53,7 @@ bower install cytoscape
 To install Cytoscape.js via Meteor/Atmosphere (in the terminal):
 
 ```bash
-meteor add cytoscape:cytoscape
+npm install cytoscape
 ```
 
 

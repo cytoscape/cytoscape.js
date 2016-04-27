@@ -112,9 +112,6 @@
     ],
     "first": "images"
   },
-  "spm": {
-    "main": "dist/cytoscape.js"
-  },
   "browser": {
     "child_process": false
   }

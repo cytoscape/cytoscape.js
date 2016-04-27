@@ -50,12 +50,6 @@ To install Cytoscape.js via Bower (in the terminal):
 bower install cytoscape
 ```
 
-To install Cytoscape.js via spm (in the terminal):
-
-```bash
-spm install cytoscape
-```
-
 To install Cytoscape.js via Meteor/Atmosphere (in the terminal):
 
 ```bash

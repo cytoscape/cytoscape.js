@@ -112,7 +112,6 @@ var replaceShellVars = function( cmds ){
       .replace(/\$DL_DIR/g, 'download')
       .replace(/\$NPM/g, 'npm')
       .replace(/\$METEOR/g, 'meteor')
-      .replace(/\$SPM/g, 'spm')
     ;
   });
 };
@@ -589,7 +588,7 @@ gulp.task('pubpush', $.shell.task( replaceShellVars([
 ]) ));
 
 gulp.task('publish', function(next){
-  runSequence('confver', 'pubprep', 'tag', 'docspush', 'npm', 'spm', 'meteor', next);
+  runSequence('confver', 'pubprep', 'tag', 'docspush', 'npm', 'meteor', next);
 });
 
 gulp.task('tag', $.shell.task( replaceShellVars([
@@ -640,11 +639,6 @@ gulp.task('npm', $.shell.task( replaceShellVars([
 gulp.task('meteor', $.shell.task( replaceShellVars([
   '$METEOR publish'
 ]) ));
-
-gulp.task('spm', $.shell.task( replaceShellVars([
-  '$SPM publish'
-]) ));
-
 
 
 gulp.task('watch', function(next){

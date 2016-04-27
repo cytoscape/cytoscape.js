@@ -468,6 +468,10 @@ styfn.addDefaultStylesheet = function(){
       .css( {
         'width': 3
       } )
+    .selector( ':loop' )
+      .css( {
+        'curve-style': 'bezier' // make loops beziers for convenience
+      } )
     .selector( ':selected' )
       .css( {
         'background-color': '#0169D9',

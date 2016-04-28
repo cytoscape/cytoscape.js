@@ -6,15 +6,10 @@ var Heap = require( '../../../heap' );
 var is = require( '../../../is' );
 var defs = require( './texture-cache-defs' );
 
-// TODO round layers so that they always have integer pixel sizes
-
-// TODO optimise these values
-
 var defNumLayers = 1; // default number of layers to use
 var minLvl = -4; // when scaling smaller than that we don't need to re-render
 var maxLvl = 2; // when larger than this scale just render directly (caching is not helpful)
 var maxZoom = 3.99; // beyond this zoom level, layered textures are not used
-var minPxRatioForEleCache = 2; // increase the pixel ratio used in the ele cache for low density displays to avoid blurriness
 var deqRedrawThreshold = 50; // time to batch redraws together from dequeueing to allow more dequeueing calcs to happen in the meanwhile
 var refineEleDebounceTime = 50; // time to debounce sharper ele texture updates
 var disableEleImgSmoothing = true; // when drawing eles on layers from an ele cache ; crisper and more performant when true

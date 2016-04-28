@@ -5,10 +5,6 @@ var util = require( '../../../util' );
 var Heap = require( '../../../heap' );
 var defs = require( './texture-cache-defs' );
 
-// TODO round textures so that they always have integer sizes
-
-// TODO optimise these values
-
 var minTxrH = 25; // the size of the texture cache for small height eles (special case)
 var txrStepH = 50; // the min size of the regular cache, and the size it increases with each step up
 var minLvl = -4; // when scaling smaller than that we don't need to re-render

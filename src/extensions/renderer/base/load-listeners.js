@@ -167,7 +167,7 @@ BRp.load = function(){
     var hasCompoundNodes = nodes.cy().hasCompoundNodes();
 
     if( opts.inDragLayer ){
-      setInDragLayer( nodes );
+      nodes.forEach( setInDragLayer );
 
       nodes.neighborhood().stdFilter(function( ele ){
         return !hasCompoundNodes || ele.isEdge();

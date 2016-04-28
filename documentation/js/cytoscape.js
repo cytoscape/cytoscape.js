@@ -13564,6 +13564,10 @@ BRp.notify = function(params) {
     r.updateElementsCache();
   }
 
+  if( has.style ){
+    r.updateCachedZSortedEles();
+  }
+
   if( has.viewport ){
     r.redrawHint('select', true);
   }
@@ -14212,28 +14216,32 @@ BRp.load = function() {
         select[4] == 1 && (down == null || down.isEdge())
     ){
 
-      if( !r.hoverData.dragging && cy.boxSelectionEnabled() && ( multSelKeyDown || !cy.panningEnabled() || !cy.userPanningEnabled() ) ){
-        r.data.bgActivePosistion = undefined;
-        r.hoverData.selecting = true;
+      if( isOverThresholdDrag ){
 
-        r.redrawHint('select', true);
-        r.redraw();
+        if( !r.hoverData.dragging && cy.boxSelectionEnabled() && ( multSelKeyDown || !cy.panningEnabled() || !cy.userPanningEnabled() ) ){
+          r.data.bgActivePosistion = undefined;
+          r.hoverData.selecting = true;
 
-      } else if( !r.hoverData.selecting && cy.panningEnabled() && cy.userPanningEnabled() ){
-        r.hoverData.dragging = true;
-        r.hoverData.justStartedPan = true;
-        select[4] = 0;
+          r.redrawHint('select', true);
+          r.redraw();
 
-        r.data.bgActivePosistion = {
-          x: pos[0],
-          y: pos[1]
-        };
+        } else if( !r.hoverData.selecting && cy.panningEnabled() && cy.userPanningEnabled() ){
+          r.hoverData.dragging = true;
+          r.hoverData.justStartedPan = true;
+          select[4] = 0;
 
-        r.redrawHint('select', true);
-        r.redraw();
+          r.data.bgActivePosistion = {
+            x: pos[0],
+            y: pos[1]
+          };
+
+          r.redrawHint('select', true);
+          r.redraw();
+        }
+
+        if( down && down.isEdge() && down.active() ){ down.unactivate(); }
+
       }
-
-      if( down && down.isEdge() && down.active() ){ down.unactivate(); }
 
     } else {
       if( down && down.isEdge() && down.active() ){ down.unactivate(); }
@@ -14294,7 +14302,7 @@ BRp.load = function() {
                 if( justStartedDrag ){
                   var dragDelta = r.hoverData.dragDelta;
 
-                  if( updatePos && is.number(dragDelta[0]) && is.number(dragDelta[1]) ){
+                  if( updatePos && dragDelta && is.number(dragDelta[0]) && is.number(dragDelta[1]) ){
                     dPos.x += dragDelta[0];
                     dPos.y += dragDelta[1];
                   }
@@ -18870,7 +18878,7 @@ var cytoscape = function( options ){ // jshint ignore:line
 };
 
 // replaced by build system
-cytoscape.version = '2.6.9';
+cytoscape.version = '2.6.10';
 
 // try to register w/ jquery
 if( window && window.jQuery ){

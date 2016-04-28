@@ -83,10 +83,6 @@ These events are custom to Cytoscape.js, and they occur on the core.
  * `layoutstart` : when a layout starts running
  * `layoutready` : when a layout has set initial positions for all the nodes (but perhaps not final positions)
  * `layoutstop` : when a layout has finished running completely or otherwise stopped running
- * `load` : when a new graph is loaded via initialisation or `cy.load()`
  * `ready` : when a new instance of Cytoscape.js is ready to be interacted with
- * `initrender` : when the first frame is drawn by the renderer (useful for synchronising with image exports etc)
- * `done` : when a new instance of Cytoscape.js is ready to be interacted with and its initial layout has finished running
  * `pan` : when the viewport is panned
  * `zoom` : when the viewport is zoomed
-

@@ -56,7 +56,6 @@ var Core = function( opts ){
     options: options, // cached options
     elements: new Collection( this ), // elements in the graph
     listeners: [], // list of listeners
-    onRenders: [], // rendering listeners
     aniEles: new Collection( this ), // elements being animated
     scratch: {}, // scratch object for core
     layout: null,

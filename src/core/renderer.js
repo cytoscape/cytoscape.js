@@ -1,6 +1,7 @@
 'use strict';
 
 var util = require( '../util' );
+var Event = require('../event');
 
 var corefn = ({
 
@@ -51,42 +52,12 @@ var corefn = ({
 
   },
 
-  triggerOnRender: function(){
-    var cbs = this._private.onRenders;
-
-    for( var i = 0; i < cbs.length; i++ ){
-      var cb = cbs[ i ];
-
-      cb();
-    }
-
-    return this;
-  },
-
-  onRender: function( cb ){
-    this._private.onRenders.push( cb );
-
-    return this;
+  onRender: function( fn ){
+    return this.on('render', fn);
   },
 
   offRender: function( fn ){
-    var cbs = this._private.onRenders;
-
-    if( fn == null ){ // unbind all
-      this._private.onRenders = [];
-      return this;
-    }
-
-    for( var i = 0; i < cbs.length; i++ ){ // unbind specified
-      var cb = cbs[ i ];
-
-      if( fn === cb ){
-        cbs.splice( i, 1 );
-        break;
-      }
-    }
-
-    return this;
+    return this.off('render', fn);
   }
 
 });

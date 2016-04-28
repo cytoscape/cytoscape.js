@@ -598,7 +598,7 @@ CRp.render = function( options ){
   }
 
   if( !forcedContext ){
-    cy.triggerOnRender();
+    cy.trigger('render');
   }
 
 };

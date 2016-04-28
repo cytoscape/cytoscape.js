@@ -337,13 +337,6 @@
             },
 
             {
-              "name": "cy.initrender",
-              "extFn": true,
-              "descr": "Get whether the initial render event has occurred (useful for extensions etc).",
-              "md": "core/initrender"
-            },
-
-            {
               "name": "cy.onRender",
               "descr": "Run a handler function every time a frame is rendered.",
               "formats": [

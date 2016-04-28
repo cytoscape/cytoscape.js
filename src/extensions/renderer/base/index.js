@@ -97,6 +97,10 @@ BRp.notify = function(params) {
     r.updateElementsCache();
   }
 
+  if( has.style ){
+    r.updateCachedZSortedEles();
+  }
+
   if( has.viewport ){
     r.redrawHint('select', true);
   }

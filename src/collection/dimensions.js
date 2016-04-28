@@ -617,22 +617,22 @@ var boundingBoxImpl = function( ele, options ){
   return bounds;
 };
 
-var appendTfStr = function( str, val ){
+var tf = function( val ){
   if( val ){
-    str += 't';
+    return 't';
   } else {
-    str += 'f';
+    return 'f';
   }
 };
 
 var getKey = function( opts ){
   var key = '';
 
-  appendTfStr( key, opts.incudeNodes );
-  appendTfStr( key, opts.includeEdges );
-  appendTfStr( key, opts.includeLabels );
-  appendTfStr( key, opts.includeShadows );
-  appendTfStr( key, opts.includeOverlays );
+  key += tf( opts.incudeNodes );
+  key += tf( opts.includeEdges );
+  key += tf( opts.includeLabels );
+  key += tf( opts.includeShadows );
+  key += tf( opts.includeOverlays );
 
   return key;
 };

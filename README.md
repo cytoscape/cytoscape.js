@@ -1,7 +1,5 @@
 # Cytoscape.js
 
-**This is a temporary branch for testing the element cache feature : [Cache element textures/bitmaps #593](https://github.com/cytoscape/cytoscape.js/issues/593) **
-
 Graph theory (a.k.a. network) library for analysis and visualisation : [http://js.cytoscape.org](http://js.cytoscape.org)
 
 

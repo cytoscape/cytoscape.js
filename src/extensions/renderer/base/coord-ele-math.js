@@ -577,20 +577,24 @@ BRp.updateCachedGrabbedEles = function(){
   eles.drag = [];
   eles.nondrag = [];
 
+  var grabTarget;
+
   for( var i = 0; i < eles.length; i++ ){
     var ele = eles[i];
+    var rs = ele._private.rscratch;
 
-    if( ele._private.rscratch.inDragLayer ){
+    if( rs.isGrabTarget ){
+      grabTarget = ele;
+    } else if( rs.inDragLayer ){
       eles.drag.push( ele );
     } else {
       eles.nondrag.push( ele );
     }
+  }
 
-    if( ele.isNode() ){
-      eles.nodes.push( ele );
-    } else {
-      eles.edges.push( ele );
-    }
+  // put the grab target node last so it's on top of its neighbourhood
+  if( grabTarget ){
+    eles.drag.push( grabTarget );
   }
 };
 
@@ -611,6 +615,12 @@ BRp.getCachedZSortedEles = function( forceRecalc ){
 
       if( ele.animated() || (ele.visible() && !ele.transparent()) ){
         eles.push( ele );
+
+        if( ele.isNode() ){
+          eles.nodes.push( ele );
+        } else {
+          eles.edges.push( ele );
+        }
       }
     }
 

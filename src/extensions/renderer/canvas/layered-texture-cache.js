@@ -118,13 +118,6 @@ LTCp.getLayers = function( eles, pxRatio, lvl ){
   // log('--\nget layers with %s eles', eles.length);
   //log eles.map(function(ele){ return ele.id() }) );
 
-  if( this.skipping ){
-    // log('skip layers');
-    return null;
-  }
-
-  // log('do layers');
-
   if( lvl == null ){
     lvl = Math.ceil( math.log2( zoom * pxRatio ) );
 
@@ -229,6 +222,13 @@ LTCp.getLayers = function( eles, pxRatio, lvl ){
 
     return layer;
   };
+
+  if( self.skipping && !firstGet ){
+    // log('skip layers');
+    return null;
+  }
+
+  // log('do layers');
 
   var layer = null;
   var maxElesPerLayer = eles.length / defNumLayers;

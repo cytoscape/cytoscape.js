@@ -99,11 +99,6 @@ ETCp.getElement = function( ele, bb, pxRatio, lvl, reason ){
     return null;
   }
 
-  // if the visibility of labels changes with zoom, then we can't cache
-  if( ele.pstyle('min-zoomed-font-size').pfValue !== 0 ){
-    return null;
-  }
-
   var scale = Math.pow( 2, lvl );
   var eleScaledH = bb.h * scale;
   var eleScaledW = bb.w * scale;
@@ -157,6 +152,14 @@ ETCp.getElement = function( ele, bb, pxRatio, lvl, reason ){
     txr = addNewTxr();
   }
 
+  var minFontSize = ele.pstyle('min-zoomed-font-size').pfValue;
+  var autohideLabels = minFontSize !== 0;
+  var labelFontSize = ele.pstyle('font-size').pfValue;
+  var scaledLabelShown = autohideLabels && labelFontSize * scale >= minFontSize;
+  var scalableFrom = function( otherCache ){
+    return otherCache && otherCache.scaledLabelShown === scaledLabelShown;
+  };
+
   var deqing = reason && reason === getTxrReasons.dequeue;
   var highQualityReq = reason && reason === getTxrReasons.highQuality;
   var downscaleReq = reason && reason === getTxrReasons.downscale;
@@ -180,11 +183,11 @@ ETCp.getElement = function( ele, bb, pxRatio, lvl, reason ){
     );
   };
 
-  if( oneUpCache ){
+  if( scalableFrom(oneUpCache) ){
     // then we can relatively cheaply rescale the existing image w/o rerendering
     downscale();
 
-  } else if( higherCache ){
+  } else if( scalableFrom(higherCache) ){
     // then use the higher cache for now and queue the next level down
     // to cheaply scale towards the smaller level
 
@@ -211,7 +214,7 @@ ETCp.getElement = function( ele, bb, pxRatio, lvl, reason ){
       }
     }
 
-    if( lowerCache ){
+    if( scalableFrom(lowerCache) ){
       // then use the lower quality cache for now and queue the better one for later
 
       self.queueElement( ele, bb, lvl );
@@ -235,7 +238,8 @@ ETCp.getElement = function( ele, bb, pxRatio, lvl, reason ){
     level: lvl,
     scale: scale,
     width: eleScaledW,
-    height: eleScaledH
+    height: eleScaledH,
+    scaledLabelShown: scaledLabelShown
   };
 
   txr.usedWidth += Math.ceil( eleScaledW + eleTxrSpacing );

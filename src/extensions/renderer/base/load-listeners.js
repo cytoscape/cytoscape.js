@@ -38,7 +38,8 @@ BRp.binder = function( tgt ){
 };
 
 BRp.nodeIsDraggable = function( node ){
-  if( node.pstyle( 'opacity' ).value !== 0
+  if( node && node.isNode()
+    && node.pstyle( 'opacity' ).value !== 0
     && node.pstyle( 'visibility' ).value == 'visible'
     && node.pstyle( 'display' ).value == 'element'
     && !node.locked()
@@ -126,6 +127,14 @@ BRp.load = function(){
     ele[0]._private.rscratch.inDragLayer = false;
   };
 
+  var setGrabTarget = function( ele ){
+    ele[0]._private.rscratch.isGrabTarget = true;
+  };
+
+  var removeGrabTarget = function( ele ){
+    ele[0]._private.rscratch.isGrabTarget = false;
+  };
+
   var addToDragList = function( ele, opts ){
     var listHasId = getDragListIds( opts );
 
@@ -201,6 +210,7 @@ BRp.load = function(){
     r.getCachedZSortedEles().forEach(function( ele ){
       setFreed( ele );
       setOutDragLayer( ele );
+      removeGrabTarget( ele );
     });
 
     r.updateCachedGrabbedEles();
@@ -407,14 +417,16 @@ BRp.load = function(){
               cyPosition: { x: pos[0], y: pos[1] }
             } );
 
-            if( near.isNode() && !near.selected() ){
+            setGrabTarget( near );
+
+            if( !near.selected() ){
 
               draggedElements = r.dragData.possibleDragElements = [];
               addNodeToDrag( near, { addToList: draggedElements } );
 
               near.trigger( grabEvent );
 
-            } else if( near.isNode() && near.selected() ){
+            } else if( near.selected() ){
               draggedElements = r.dragData.possibleDragElements = [  ];
 
               var selectedNodes = cy.$( function(){ return this.isNode() && this.selected() && r.nodeIsDraggable( this ); } );
@@ -686,7 +698,7 @@ BRp.load = function(){
         r.hoverData.last = near;
       }
 
-      if( down && down.isNode() && r.nodeIsDraggable( down ) ){
+      if( down && r.nodeIsDraggable( down ) ){
 
         if( isOverThresholdDrag ){ // then drag
 
@@ -709,7 +721,7 @@ BRp.load = function(){
             var dEle = draggedElements[ i ];
 
             // Locked nodes not draggable, as well as non-visible nodes
-            if( dEle.isNode() && r.nodeIsDraggable( dEle ) && dEle.grabbed() ){
+            if( r.nodeIsDraggable( dEle ) && dEle.grabbed() ){
               var dPos = dEle._private.position;
 
               toTrigger.push( dEle );
@@ -1146,7 +1158,7 @@ BRp.load = function(){
         r.touchData.start = near;
         r.touchData.starts = nears;
 
-        if( near.isNode() && r.nodeIsDraggable( near ) ){
+        if( r.nodeIsDraggable( near ) ){
 
           var draggedEles = r.dragData.touchDragEles = [];
 
@@ -1157,13 +1169,15 @@ BRp.load = function(){
             // reset drag elements, since near will be added again
 
             var selectedNodes = cy.$( function(){
-              return this.isNode() && this.selected() && r.nodeIsDraggable( this );
+              return this.selected() && r.nodeIsDraggable( this );
             } );
 
             addNodesToDrag( selectedNodes, { addToList: draggedEles } );
           } else {
             addNodeToDrag( near, { addToList: draggedEles } );
           }
+
+          setGrabTarget( near );
 
           near.trigger( new Event( e, {
             type: 'grab',
@@ -1468,7 +1482,7 @@ BRp.load = function(){
       }
 
       // dragging nodes
-      if( start != null && start._private.group == 'nodes' && r.nodeIsDraggable( start ) ){
+      if( start != null && r.nodeIsDraggable( start ) ){
 
         if( isOverThresholdDrag ){ // then dragging can happen
           var draggedEles = r.dragData.touchDragEles;
@@ -1481,7 +1495,7 @@ BRp.load = function(){
           for( var k = 0; k < draggedEles.length; k++ ){
             var draggedEle = draggedEles[ k ];
 
-            if( r.nodeIsDraggable( draggedEle ) && draggedEle.isNode() && draggedEle.grabbed() ){
+            if( r.nodeIsDraggable( draggedEle ) && draggedEle.grabbed() ){
               r.dragData.didDrag = true;
               var dPos = draggedEle._private.position;
               var updatePos = !draggedEle.isParent();

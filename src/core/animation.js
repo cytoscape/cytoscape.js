@@ -49,9 +49,9 @@ var corefn = ({
     var renderer = cy.renderer();
 
     if( renderer && renderer.beforeRender ){ // let the renderer schedule animations
-      renderer.beforeRender(function rendererAnimationStep( willDraw, now ){
+      renderer.beforeRender( function rendererAnimationStep( willDraw, now ){
         handleElements( now );
-      });
+      }, renderer.beforeRenderPriorities.animations );
     } else { // manage the animation loop ourselves
       globalAnimationStep(); // first call
     }

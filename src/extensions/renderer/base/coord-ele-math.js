@@ -100,7 +100,7 @@ BRp.registerCalculationListeners = function(){
     }
   };
 
-  this.beforeRender( updateEleCalcs );
+  r.beforeRender( updateEleCalcs, r.beforeRenderPriorities.eleCalcs );
 };
 
 BRp.onUpdateEleCalcs = function( fn ){

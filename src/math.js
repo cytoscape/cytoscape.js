@@ -2,6 +2,13 @@
 
 var math = {};
 
+math.array2point = function( arr ){
+  return {
+    x: arr[0],
+    y: arr[1]
+  };
+};
+
 math.deg2rad = function( deg ){
   return Math.PI * deg / 180;
 };

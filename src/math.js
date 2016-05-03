@@ -2,6 +2,13 @@
 
 var math = {};
 
+math.array2point = function( arr ){
+  return {
+    x: arr[0],
+    y: arr[1]
+  };
+};
+
 math.signum = function(x){
   if( x > 0 ){
     return 1;

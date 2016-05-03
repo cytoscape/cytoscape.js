@@ -415,7 +415,7 @@ styfn.getDefaultProperties = util.memoize( function(){
     'segment-weights': 0.5,
     'segment-distances': 20,
     'edge-distances': 'intersection',
-    'curve-style': 'haystack',
+    'curve-style': 'bezier',
     'haystack-radius': 0
   }, [
     { name: 'arrow-shape', value: 'none' },
@@ -466,11 +466,8 @@ styfn.addDefaultStylesheet = function(){
       } )
     .selector( 'edge' ) // just edge properties
       .css( {
-        'width': 3
-      } )
-    .selector( ':loop' )
-      .css( {
-        'curve-style': 'bezier' // make loops beziers for convenience
+        'width': 3,
+        'curve-style': 'haystack'
       } )
     .selector( ':selected' )
       .css( {

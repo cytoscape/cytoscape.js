@@ -419,7 +419,7 @@ styfn.getDefaultProperties = util.memoize( function(){
     'haystack-radius': 0
   }, [
     { name: 'arrow-shape', value: 'none' },
-    { name: 'arrow-color', value: '#000' },
+    { name: 'arrow-color', value: '#999' },
     { name: 'arrow-fill', value: 'filled' }
   ].reduce( function( css, prop ){
     styfn.arrowPrefixes.forEach( function( prefix ){

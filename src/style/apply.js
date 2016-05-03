@@ -285,6 +285,16 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
     }
   }
 
+  // edges connected to compound nodes can not be haystacks
+  if(
+    parsedProp.name === 'curve-style'
+    && parsedProp.value === 'haystack'
+    && ele.isEdge()
+    && ( ele.isLoop() || ele.source().isParent() || ele.target().isParent() )
+  ){
+    prop = parsedProp = this.parse( parsedProp.name, 'bezier', propIsBypass );
+  }
+
   if( prop.delete ){ // delete the property and use the default value on falsey value
     style[ prop.name ] = undefined;
 

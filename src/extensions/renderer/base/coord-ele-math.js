@@ -583,7 +583,7 @@ BRp.updateCachedGrabbedEles = function(){
     var ele = eles[i];
     var rs = ele._private.rscratch;
 
-    if( rs.isGrabTarget ){
+    if( rs.isGrabTarget && !ele.isParent() ){
       grabTarget = ele;
     } else if( rs.inDragLayer ){
       eles.drag.push( ele );

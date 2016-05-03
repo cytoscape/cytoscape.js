@@ -4,12 +4,12 @@
 
 $(function(){
 
-  var addRandomEles = true;
+  var addRandomEles = false;
   var height, width;
 
   var cliques = 4;
-  var numNodes = 1000;
-  var numEdges = 4000;
+  var numNodes = 100;
+  var numEdges = 1000;
 
   var defaultSty = window.defaultSty = cytoscape.stylesheet()
       .selector('node, edge')
@@ -21,6 +21,7 @@ $(function(){
       .selector('node')
         .css({
           'label': 'data(id)',
+          // 'min-zoomed-font-size': 10,
           // 'border-width': 3,
           // 'background-color': '#888',
           // 'border-color': '#555',
@@ -85,14 +86,14 @@ $(function(){
           // 'control-point-distance': 100,
           // 'control-point-step-size': 100,
           // 'width': '3',
-          // 'source-arrow-shape': 'triangle-backcurve',
-          // 'target-arrow-shape': 'triangle',
-          // 'mid-target-arrow-shape': 'triangle',
-          // 'mid-source-arrow-shape': 'triangle-backcurve',
+          'source-arrow-shape': 'triangle-backcurve',
+          'target-arrow-shape': 'triangle',
+          'mid-target-arrow-shape': 'triangle',
+          'mid-source-arrow-shape': 'triangle-backcurve',
           // 'target-arrow-fill': 'filled',
           // 'source-arrow-shape': 'data(srcShape)',
-          'curve-style': 'haystack',
-          'haystack-radius': 0.5,
+          // 'curve-style': 'haystack',
+          // 'haystack-radius': 0.5,
           // 'opacity': 0.5
           // 'content': 'data(weight)',
           // 'text-rotation': 'autorotate',
@@ -141,7 +142,11 @@ $(function(){
       .selector('[source = "c"][target = "e"]')
         .css({
           'curve-style': 'haystack',
-          // 'haystack-radius': 0.5
+          'haystack-radius': 0.5
+        })
+      .selector('[source = "d"][target = "e"]')
+        .css({
+          'curve-style': 'bezier'
         })
   ;
 
@@ -449,7 +454,7 @@ $(function(){
     });
   });
 
-  // init2();
+  init2();
 
 
 });

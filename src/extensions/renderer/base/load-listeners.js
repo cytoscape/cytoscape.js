@@ -2,6 +2,7 @@
 
 var is = require( '../../../is' );
 var util = require( '../../../util' );
+var math = require( '../../../math' );
 var Event = require( '../../../event' );
 
 var BRp = {};
@@ -664,10 +665,7 @@ BRp.load = function(){
             r.hoverData.justStartedPan = true;
             select[4] = 0;
 
-            r.data.bgActivePosistion = {
-              x: pos[0],
-              y: pos[1]
-            };
+            r.data.bgActivePosistion = math.array2point( mdownPos );
 
             r.redrawHint( 'select', true );
             r.redraw();
@@ -1604,10 +1602,7 @@ BRp.load = function(){
               start.unactivate();
 
               if( !r.data.bgActivePosistion ){
-                r.data.bgActivePosistion = {
-                  x: now[0],
-                  y: now[1]
-                };
+                r.data.bgActivePosistion = math.array2point( r.touchData.startPosition );
               }
 
               r.redrawHint( 'select', true );

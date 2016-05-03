@@ -67,6 +67,10 @@ BRp.init = function( options ){
 
   r.bindings = [];
   r.beforeRenderCallbacks = [];
+  r.beforeRenderPriorities = { // higher priority execs before lower one
+    animations: 101,
+    eleCalcs: 100
+  };
 
   r.registerNodeShapes();
   r.registerArrowShapes();

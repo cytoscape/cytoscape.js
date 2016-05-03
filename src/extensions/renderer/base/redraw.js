@@ -21,8 +21,15 @@ BRp.redraw = function( options ){
   r.renderOptions = options;
 };
 
-BRp.beforeRender = function( fn ){
-  this.beforeRenderCallbacks.push( fn );
+BRp.beforeRender = function( fn, priority ){
+  priority = priority || 0;
+
+  var cbs = this.beforeRenderCallbacks;
+
+  cbs.push({ fn: fn, priority: priority });
+
+  // higher priority callbacks executed first
+  cbs.sort(function( a, b ){ return b.priority - a.priority; });
 };
 
 BRp.startRenderLoop = function(){
@@ -36,7 +43,10 @@ BRp.startRenderLoop = function(){
 
   var beforeRenderCallbacks = function( willDraw, startTime ){
     var cbs = r.beforeRenderCallbacks;
-    for( var i = 0; i < cbs.length; i++ ){ cbs[i]( willDraw, startTime ); }
+
+    for( var i = 0; i < cbs.length; i++ ){
+      cbs[i].fn( willDraw, startTime );
+    }
   };
 
   var renderFn = function( requestTime ){

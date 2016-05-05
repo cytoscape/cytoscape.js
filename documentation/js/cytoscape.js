@@ -12240,21 +12240,27 @@ BRp.recalculateNodeLabelProjection = function( node ){
   if( !content || content.match(/^\s+$/) ){ return; }
 
   var textX, textY;
-  var nodeWidth = node.outerWidth();
-  var nodeHeight = node.outerHeight();
-  var nodePos = node._private.position;
-  var textHalign = node._private.style['text-halign'].strValue;
-  var textValign = node._private.style['text-valign'].strValue;
-  var rs = node._private.rscratch;
-  var rstyle = node._private.rstyle;
+  var _p = node._private;
+  var style = node._private.style;
+  var nodeWidth = node.width();
+  var nodeHeight = node.height();
+  var paddingLeft = style['padding-left'].pfValue;
+  var paddingRight = style['padding-right'].pfValue;
+  var paddingTop = style['padding-top'].pfValue;
+  var paddingBottom = style['padding-bottom'].pfValue;
+  var nodePos = _p.position;
+  var textHalign = style['text-halign'].strValue;
+  var textValign = style['text-valign'].strValue;
+  var rs = _p.rscratch;
+  var rstyle = _p.rstyle;
 
   switch( textHalign ){
     case 'left':
-      textX = nodePos.x - nodeWidth / 2;
+      textX = nodePos.x - nodeWidth / 2 - paddingLeft;
       break;
 
     case 'right':
-      textX = nodePos.x + nodeWidth / 2;
+      textX = nodePos.x + nodeWidth / 2 + paddingRight;
       break;
 
     default: // e.g. center
@@ -12263,11 +12269,11 @@ BRp.recalculateNodeLabelProjection = function( node ){
 
   switch( textValign ){
     case 'top':
-      textY = nodePos.y - nodeHeight / 2;
+      textY = nodePos.y - nodeHeight / 2 - paddingTop;
       break;
 
     case 'bottom':
-      textY = nodePos.y + nodeHeight / 2;
+      textY = nodePos.y + nodeHeight / 2 + paddingBottom;
       break;
 
     default: // e.g. middle
@@ -13627,9 +13633,10 @@ module.exports = BR;
 },{"../../../is":77,"../../../util":94,"./arrow-shapes":54,"./cached-eles":55,"./coord-ele-math":56,"./images":57,"./load-listeners":59,"./node-shapes":60,"./redraw":61}],59:[function(_dereq_,module,exports){
 'use strict';
 
-var is = _dereq_('../../../is');
-var util = _dereq_('../../../util');
-var Event = _dereq_('../../../event');
+var is = _dereq_( '../../../is' );
+var util = _dereq_( '../../../util' );
+var math = _dereq_( '../../../math' );
+var Event = _dereq_( '../../../event' );
 var Collection = _dereq_('../../../collection');
 
 var BRp = {};
@@ -14230,10 +14237,7 @@ BRp.load = function() {
           r.hoverData.justStartedPan = true;
           select[4] = 0;
 
-          r.data.bgActivePosistion = {
-            x: pos[0],
-            y: pos[1]
-          };
+          r.data.bgActivePosistion = math.array2point( mdownPos );
 
           r.redrawHint('select', true);
           r.redraw();
@@ -15045,7 +15049,7 @@ BRp.load = function() {
       if (e.touches[1]) { var pos = r.projectIntoViewport(e.touches[1].clientX, e.touches[1].clientY); now[2] = pos[0]; now[3] = pos[1]; }
       if (e.touches[2]) { var pos = r.projectIntoViewport(e.touches[2].clientX, e.touches[2].clientY); now[4] = pos[0]; now[5] = pos[1]; }
 
-    } else if (e.touches[0]) {
+    } else if ( capture && e.touches[0] ){
       var start = r.touchData.start;
       var last = r.touchData.last;
       var near = near || r.findNearestElement(now[0], now[1], true, true);
@@ -15174,10 +15178,7 @@ BRp.load = function() {
             start.unactivate();
 
             if( !r.data.bgActivePosistion ){
-              r.data.bgActivePosistion = {
-                x: now[0],
-                y: now[1]
-              };
+              r.data.bgActivePosistion = math.array2point( r.touchData.startPosition );
             }
 
             r.redrawHint('select', true);
@@ -15533,7 +15534,7 @@ BRp.load = function() {
 
 module.exports = BRp;
 
-},{"../../../collection":23,"../../../event":42,"../../../is":77,"../../../util":94}],60:[function(_dereq_,module,exports){
+},{"../../../collection":23,"../../../event":42,"../../../is":77,"../../../math":79,"../../../util":94}],60:[function(_dereq_,module,exports){
 'use strict';
 
 var math = _dereq_('../../../math');
@@ -18878,7 +18879,7 @@ var cytoscape = function( options ){ // jshint ignore:line
 };
 
 // replaced by build system
-cytoscape.version = '2.6.10';
+cytoscape.version = '2.6.11';
 
 // try to register w/ jquery
 if( window && window.jQuery ){
@@ -19151,6 +19152,13 @@ module.exports = registerJquery;
 'use strict';
 
 var math = {};
+
+math.array2point = function( arr ){
+  return {
+    x: arr[0],
+    y: arr[1]
+  };
+};
 
 math.signum = function(x){
   if( x > 0 ){

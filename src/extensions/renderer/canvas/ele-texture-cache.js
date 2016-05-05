@@ -399,9 +399,17 @@ ETCp.queueElement = function( ele, bb, lvl ){
     var req = {
       ele: ele,
       bb: bb,
+      position: math.copyPosition( ele.position() ),
       level: lvl,
       reqs: 1
     };
+
+    if( ele.isEdge() ){
+      req.positions = {
+        source: math.copyPosition( ele.source().position() ),
+        target: math.copyPosition( ele.target().position() )
+      };
+    }
 
     q.push( req );
 
@@ -422,7 +430,25 @@ ETCp.dequeue = function( pxRatio, extent ){
       id2q[ req.ele.id() ] = null;
 
       dequeued.push( req );
-      self.getElement( req.ele, req.bb, pxRatio, req.level, getTxrReasons.dequeue );
+
+      var ele = req.ele;
+      var bb;
+
+      if(
+        ( ele.isEdge()
+          && (
+            !math.arePositionsSame( ele.source().position(), req.positions.source )
+            || !math.arePositionsSame( ele.target().position(), req.positions.target )
+          )
+        )
+        || ( !math.arePositionsSame( ele.position(), req.position ) )
+      ){
+        bb = ele.boundingBox();
+      } else {
+        bb = req.bb;
+      }
+
+      self.getElement( req.ele, bb, pxRatio, req.level, getTxrReasons.dequeue );
     } else {
       break;
     }

@@ -331,6 +331,7 @@ var updateBoundsFromLabel = function( bounds, ele, prefix, options ){
     var shadowX = ele.pstyle( 'text-shadow-offset-x' ).pfValue;
     var shadowY = ele.pstyle( 'text-shadow-offset-y' ).pfValue;
     var shadowOpacity = ele.pstyle( 'text-shadow-opacity' ).value;
+    var outlineWidth = ele.pstyle( 'text-outline-width' ).pfValue;
 
     var lh = labelHeight;
     var lw = labelWidth;
@@ -406,10 +407,10 @@ var updateBoundsFromLabel = function( bounds, ele, prefix, options ){
       ly2 = Math.max( px1y1.y, px1y2.y, px2y1.y, px2y2.y );
     }
 
-    lx1 += marginX;
-    lx2 += marginX;
-    ly1 += marginY;
-    ly2 += marginY;
+    lx1 += marginX - outlineWidth;
+    lx2 += marginX + outlineWidth;
+    ly1 += marginY - outlineWidth;
+    ly2 += marginY + outlineWidth;
 
     updateBounds( bounds, lx1, ly1, lx2, ly2 );
 

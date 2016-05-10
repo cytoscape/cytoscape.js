@@ -14,6 +14,7 @@ BRp.getCachedImage = function(url, onLoad) {
 
   var image = cache.image = new Image();
   image.addEventListener('load', onLoad);
+  image.crossOrigin = 'Anonymous'; // prevent tainted canvas
   image.src = url;
 
   return image;

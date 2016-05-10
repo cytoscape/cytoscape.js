@@ -39,7 +39,7 @@ var styfn = {};
     color: { color: true },
     bool: { enums: ['yes', 'no'] },
     lineStyle: { enums: ['solid', 'dotted', 'dashed'] },
-    borderStyle: { enums: ['solid', 'dotted', 'dashed', 'double'] },
+    borderStyle: { enums: ['solid', 'dotted', 'dashed', 'double', 'progress'] },
     curveStyle: { enums: ['bezier', 'unbundled-bezier', 'haystack', 'segments'] },
     fontFamily: { regex: '^([\\w- \\"]+(?:\\s*,\\s*[\\w- \\"]+)*)$' },
     fontVariant: { enums: ['small-caps', 'normal'] },
@@ -175,6 +175,10 @@ var styfn = {};
     { name: 'border-opacity', type: t.zeroOneNumber },
     { name: 'border-width', type: t.size },
     { name: 'border-style', type: t.borderStyle },
+    { name: 'border-progress', type: t.zeroOneNumber },
+    { name: 'border-progress-color', type: t.color },
+    { name: 'border-progress-background', type: t.color },
+    { name: 'border-hovered', type: t.bool },
 
     // node background images
     { name: 'background-image', type: t.url },

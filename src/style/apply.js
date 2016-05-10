@@ -29,6 +29,7 @@ styfn.apply = function( eles ){
     var cxtStyle = self.getContextStyle( cxtMeta );
     var app = self.applyContextStyle( cxtMeta, cxtStyle, ele );
 
+    self.enforceCompoundSizing( ele );
     self.updateTransitions( ele, app.diffProps );
     self.updateStyleHints( ele );
 
@@ -204,7 +205,18 @@ styfn.applyContextStyle = function( cxtMeta, cxtStyle, ele ){
   };
 };
 
-styfn.updateStyleHints = function( ele ){
+// because a node can become and unbecome a parent, it's safer to enforce auto sizing manually
+// (i.e. the style context diff could be empty, meaning the autosizing is stale)
+styfn.enforceCompoundSizing = function(ele){
+  var self = this;
+
+  if( ele.isParent() ){
+    self.applyParsedProperty( ele, self.parse('width', 'auto') );
+    self.applyParsedProperty( ele, self.parse('height', 'auto') );
+  }
+};
+
+styfn.updateStyleHints = function(ele){
   var _p = ele._private;
   var self = this;
 

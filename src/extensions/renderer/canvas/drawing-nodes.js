@@ -6,7 +6,6 @@ var CRp = {};
 
 // Draw node
 CRp.drawNode = function(context, node, drawOverlayInstead) {
-
   var r = this;
   var nodeWidth, nodeHeight;
   var style = node._private.style;
@@ -19,6 +18,7 @@ CRp.drawNode = function(context, node, drawOverlayInstead) {
   }
 
   var usePaths = this.usePaths();
+
   var canvasContext = context;
   var path;
   var pathCacheHit = false;
@@ -70,6 +70,10 @@ CRp.drawNode = function(context, node, drawOverlayInstead) {
     var bgColor = style['background-color'].value;
     var borderColor = style['border-color'].value;
     var borderStyle = style['border-style'].value;
+    var borderHovered = (style['border-hovered']) ? style['border-hovered'].value : 'no';
+
+    var initialDrawingPoint = 1.5;
+    var fullCircleLength = 2;
 
     this.fillStyle(context, bgColor[0], bgColor[1], bgColor[2], style['background-opacity'].value * parentOpacity);
 
@@ -141,7 +145,7 @@ CRp.drawNode = function(context, node, drawOverlayInstead) {
 
     context = canvasContext;
 
-    if( usePaths ){
+    if( usePaths ) {
       context.fill( path );
     } else {
       context.fill();
@@ -193,23 +197,27 @@ CRp.drawNode = function(context, node, drawOverlayInstead) {
         context.fill();
       }
     }
-
     // Border width, draw border
     if (borderWidth > 0) {
-
-      if( usePaths ){
+      if (borderStyle === 'progress') {
+        drawArcs(initialDrawingPoint, fullCircleLength, context, false);
+      }
+      else if( usePaths ) {
         context.stroke( path );
+        if (borderHovered === 'yes') {
+          drawArcs(initialDrawingPoint, fullCircleLength, context, true);
+        }
       } else {
         context.stroke();
       }
 
-      if( borderStyle === 'double' ){
+      if ( borderStyle === 'double' ) {
         context.lineWidth = style['border-width'].pfValue/3;
 
         var gco = context.globalCompositeOperation;
         context.globalCompositeOperation = 'destination-out';
 
-        if( usePaths ){
+        if ( usePaths ) {
           context.stroke( path );
         } else {
           context.stroke();
@@ -217,7 +225,6 @@ CRp.drawNode = function(context, node, drawOverlayInstead) {
 
         context.globalCompositeOperation = gco;
       }
-
     }
 
     if( usePaths ){
@@ -246,7 +253,25 @@ CRp.drawNode = function(context, node, drawOverlayInstead) {
       context.fill();
     }
   }
+  function drawArcs(initialDrawingPoint, fullCircleLength, context, isHover) {
+    var radius = (isHover) ? 2.62 : 2;
+    var borderProgress = (style['border-progress']) ? style['border-progress'].value : 0;
+    var startDrawingPoint = initialDrawingPoint - (borderProgress * fullCircleLength);
 
+    context.lineWidth = (isHover) ? 9 : 3;
+
+    var hoveredPath = new Path2D();
+    hoveredPath.arc(0,0,nodeWidth / radius, startDrawingPoint * Math.PI, initialDrawingPoint * Math.PI);
+    context.strokeStyle = 'red';
+    context.stroke(hoveredPath);
+
+    if (borderProgress < 1) {
+      var hoveredPath2 = new Path2D();
+      hoveredPath2.arc(0, 0, nodeWidth / radius, initialDrawingPoint * Math.PI, startDrawingPoint * Math.PI);
+      context.strokeStyle = 'white';
+      context.stroke(hoveredPath2);
+    }
+  }
 };
 
 // does the node have at least one pie piece?

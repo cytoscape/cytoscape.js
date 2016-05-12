@@ -79,7 +79,9 @@ module.exports = {
         }
       };
 
-      r.beforeRender( dequeue );
+      var priority = opts.priority || util.noop;
+
+      r.beforeRender( dequeue, priority( self ) );
     };
   }
 };

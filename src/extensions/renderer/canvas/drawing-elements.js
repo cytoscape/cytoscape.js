@@ -4,20 +4,18 @@ var math = require( '../../../math' );
 
 var CRp = {};
 
-CRp.drawElement = function( context, ele, shiftToOriginWithBb ){
+CRp.drawElement = function( context, ele, shiftToOriginWithBb, showLabel ){
   var r = this;
 
   if( ele.isNode() ){
-    r.drawNode( context, ele, shiftToOriginWithBb );
+    r.drawNode( context, ele, shiftToOriginWithBb, showLabel );
   } else {
-    r.drawEdge( context, ele, shiftToOriginWithBb );
+    r.drawEdge( context, ele, shiftToOriginWithBb, showLabel );
   }
 };
 
 CRp.drawCachedElement = function( context, ele, pxRatio, extent ){
   var r = this;
-  var _p = ele._private;
-  var rs = _p.rscratch;
   var bb = ele.boundingBox();
 
   if( !extent || math.boundingBoxesIntersect( bb, extent ) ){
@@ -53,7 +51,6 @@ CRp.drawCachedElements = function( context, eles, pxRatio, extent ){
 
 CRp.drawLayeredElements = function( context, eles, pxRatio, extent ){
   var r = this;
-  var cy = r.cy;
 
   var layers = r.data.lyrTxrCache.getLayers( eles, pxRatio );
 

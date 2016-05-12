@@ -4,7 +4,7 @@ var is = require( '../../../is' );
 
 var CRp = {};
 
-CRp.drawNode = function( context, node, shiftToOriginWithBb ){
+CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
   var r = this;
   var nodeWidth, nodeHeight;
   var rs = node._private.rscratch;
@@ -247,7 +247,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb ){
   //
   // label
 
-  r.drawElementText( context, node );
+  r.drawElementText( context, node, drawLabel );
 
   //
   // overlay

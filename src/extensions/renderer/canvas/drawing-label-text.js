@@ -1,21 +1,37 @@
 'use strict';
 
-var is = require( '../../../is' );
 var util = require( '../../../util' );
+var math = require( '../../../math' );
 
 var CRp = {};
 
-CRp.drawElementText = function( context, ele ){
-  var _p = ele._private;
+CRp.eleTextBiggerThanMin = function( ele, scale ){
+  if( !scale ){
+    var zoom = ele.cy().zoom();
+    var pxRatio = this.getPixelRatio();
+    var lvl = Math.ceil( math.log2( zoom * pxRatio ) ); // the effective texture level
 
-  var computedSize = ele.pstyle( 'font-size' ).pfValue * ele.cy().zoom();
+    scale = Math.pow( 2, lvl );
+  }
+
+  var computedSize = ele.pstyle( 'font-size' ).pfValue * scale;
   var minSize = ele.pstyle( 'min-zoomed-font-size' ).pfValue;
 
   if( computedSize < minSize ){
-    return;
+    return false;
   }
 
-  var rs = _p.rscratch;
+  return true;
+};
+
+CRp.drawElementText = function( context, ele, force ){
+  var r = this;
+
+  if( force === undefined ){
+    if( !r.eleTextBiggerThanMin( ele ) ){ return; }
+  } else {
+    if( !force ){ return; }
+  }
 
   if( ele.isNode() ){
     var label = ele.pstyle( 'label' );
@@ -68,12 +84,12 @@ CRp.drawElementText = function( context, ele ){
   }
 
 
-  this.drawText( context, ele );
+  r.drawText( context, ele );
 
   if( ele.isEdge() ){
-    this.drawText( context, ele, 'source' );
+    r.drawText( context, ele, 'source' );
 
-    this.drawText( context, ele, 'target' );
+    r.drawText( context, ele, 'target' );
   }
 };
 

@@ -152,10 +152,7 @@ ETCp.getElement = function( ele, bb, pxRatio, lvl, reason ){
     txr = addNewTxr();
   }
 
-  var minFontSize = ele.pstyle('min-zoomed-font-size').pfValue;
-  var autohideLabels = minFontSize !== 0;
-  var labelFontSize = ele.pstyle('font-size').pfValue;
-  var scaledLabelShown = autohideLabels && labelFontSize * scale >= minFontSize;
+  var scaledLabelShown = r.eleTextBiggerThanMin( ele, scale );
   var scalableFrom = function( otherCache ){
     return otherCache && otherCache.scaledLabelShown === scaledLabelShown;
   };
@@ -225,7 +222,7 @@ ETCp.getElement = function( ele, bb, pxRatio, lvl, reason ){
     txr.context.translate( txr.usedWidth, 0 );
     txr.context.scale( scale, scale );
 
-    r.drawElement( txr.context, ele, bb );
+    r.drawElement( txr.context, ele, bb, scaledLabelShown );
 
     txr.context.scale( 1/scale, 1/scale );
     txr.context.translate( -txr.usedWidth, 0 );
@@ -486,6 +483,9 @@ ETCp.setupDequeueing = defs.setupDequeueing({
     }
 
     return false;
+  },
+  priority: function( self ){
+    return self.renderer.beforeRenderPriorities.eleTxrDeq;
   }
 });
 

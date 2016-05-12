@@ -679,7 +679,10 @@ LTCp.setupDequeueing = defs.setupDequeueing({
     return self.dequeue( pxRatio );
   },
   onDeqd: util.noop,
-  shouldRedraw: util.trueify
+  shouldRedraw: util.trueify,
+  priority: function( self ){
+    return self.renderer.beforeRenderPriorities.lyrTxrDeq;
+  }
 });
 
 module.exports = LayeredTextureCache;

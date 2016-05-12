@@ -2,7 +2,7 @@
 
 var CRp = {};
 
-CRp.drawEdge = function( context, edge, shiftToOriginWithBb, drawOverlayInstead ){
+CRp.drawEdge = function( context, edge, shiftToOriginWithBb, drawLabel, drawOverlayInstead ){
   var rs = edge._private.rscratch;
   var usePaths = this.usePaths();
 
@@ -74,10 +74,10 @@ CRp.drawEdge = function( context, edge, shiftToOriginWithBb, drawOverlayInstead 
   this.shadowStyle( context, 'transparent', 0 ); // reset for next guy
 
   if( !drawOverlayInstead ){
-    this.drawEdge( context, edge, false, true );
+    this.drawEdge( context, edge, false, drawLabel, true );
   }
 
-  this.drawElementText( context, edge );
+  this.drawElementText( context, edge, drawLabel );
 
   if( shiftToOriginWithBb ){
     context.translate( bb.x1, bb.y1 );

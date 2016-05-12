@@ -100,6 +100,7 @@ var logError = function( err ){
 };
 
 // update these if you don't have a unix like env or these programmes aren't in your $PATH
+var $TEMP_DIR = '/tmp';
 var replaceShellVars = function( cmds ){
   return cmds.map(function( cmd ){
     return cmd
@@ -107,7 +108,7 @@ var replaceShellVars = function( cmds ){
       .replace(/\$GIT/g, 'git')
       .replace(/\$RM/g, 'rm -rf')
       .replace(/\$CP/g, 'cp -R')
-      .replace(/\$TEMP_DIR/g, '/tmp')
+      .replace(/\$TEMP_DIR/g, $TEMP_DIR)
       .replace(/\$DOC_DIR/g, 'documentation')
       .replace(/\$DL_DIR/g, 'download')
       .replace(/\$NPM/g, 'npm')
@@ -499,17 +500,6 @@ gulp.task('docsrefs', function(){
   ;
 });
 
-gulp.task('docsdemoshots', function(next){ return next(); // disable for now since phantomjs doesn't work for this usecase
-  var cwd = process.cwd();
-
-  process.chdir('./documentation');
-  require('./documentation/demoshots')( function(){
-    process.chdir( cwd );
-
-    next();
-  } );
-});
-
 gulp.task('docsdemodl', function(){
 
   var docmaker = require('./documentation/docmaker.json');
@@ -546,7 +536,7 @@ gulp.task('docsdemodl', function(){
 });
 
 gulp.task('docspub', function(next){
-  runSequence( 'version', 'docsver', 'docsjs', 'docsbuildlist', 'docsdemoshots', 'docsdemodl', 'docsmin', next );
+  runSequence( 'version', 'docsver', 'docsjs', 'docsbuildlist', 'docsdemodl', 'docsmin', next );
 });
 
 gulp.task('docsrebuild', function(next){

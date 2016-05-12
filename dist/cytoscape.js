@@ -13463,6 +13463,7 @@ BRp.getCachedImage = function(url, onLoad) {
 
   var image = cache.image = new Image();
   image.addEventListener('load', onLoad);
+  image.crossOrigin = 'Anonymous'; // prevent tainted canvas
   image.src = url;
 
   return image;
@@ -18879,7 +18880,7 @@ var cytoscape = function( options ){ // jshint ignore:line
 };
 
 // replaced by build system
-cytoscape.version = '2.6.11';
+cytoscape.version = '2.6.12';
 
 // try to register w/ jquery
 if( window && window.jQuery ){
@@ -21198,6 +21199,7 @@ styfn.apply = function( eles ){
     var cxtStyle = self.getContextStyle( cxtMeta );
     var app = self.applyContextStyle( cxtMeta, cxtStyle, ele );
 
+    self.enforceCompoundSizing( ele );
     self.updateTransitions( ele, app.diffProps );
     self.updateStyleHints( ele );
 
@@ -21363,6 +21365,17 @@ styfn.applyContextStyle = function( cxtMeta, cxtStyle, ele ){
   return {
     diffProps: retDiffProps
   };
+};
+
+// because a node can become and unbecome a parent, it's safer to enforce auto sizing manually
+// (i.e. the style context diff could be empty, meaning the autosizing is stale)
+styfn.enforceCompoundSizing = function(ele){
+  var self = this;
+
+  if( ele.isParent() ){
+    self.applyParsedProperty( ele, self.parse('width', 'auto') );
+    self.applyParsedProperty( ele, self.parse('height', 'auto') );
+  }
 };
 
 styfn.updateStyleHints = function(ele){

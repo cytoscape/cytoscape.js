@@ -49,6 +49,18 @@ CRp.drawCachedElements = function( context, eles, pxRatio, extent ){
   }
 };
 
+CRp.drawCachedNodes = function( context, eles, pxRatio, extent ){
+  var r = this;
+
+  for( var i = 0; i < eles.length; i++ ){
+    var ele = eles[ i ];
+
+    if( !ele.isNode() ){ continue; }
+
+    r.drawCachedElement( context, ele, pxRatio, extent );
+  }
+};
+
 CRp.drawLayeredElements = function( context, eles, pxRatio, extent ){
   var r = this;
 

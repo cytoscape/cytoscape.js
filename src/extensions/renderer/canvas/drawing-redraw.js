@@ -432,7 +432,12 @@ CRp.render = function( options ){
     var clear = motionBlur && !useBuffer ? 'motionBlur' : undefined;
 
     setContextTransform( context, clear );
-    r.drawLayeredElements( context, eles.nondrag, pixelRatio, extent );
+
+    if( hideEdges ){
+      r.drawCachedNodes( context, eles.nondrag, pixelRatio, extent );
+    } else {
+      r.drawLayeredElements( context, eles.nondrag, pixelRatio, extent );
+    }
 
     if( !drawAllLayers && !motionBlur ){
       needDraw[ r.NODE ] = false;
@@ -444,7 +449,12 @@ CRp.render = function( options ){
     var context = forcedContext || ( useBuffer ? r.data.bufferContexts[ r.MOTIONBLUR_BUFFER_DRAG ] : data.contexts[ r.DRAG ] );
 
     setContextTransform( context, motionBlur && !useBuffer ? 'motionBlur' : undefined );
-    r.drawCachedElements( context, eles.drag, pixelRatio, extent );
+
+    if( hideEdges ){
+      r.drawCachedNodes( context, eles.drag, pixelRatio, extent );
+    } else {
+      r.drawCachedElements( context, eles.drag, pixelRatio, extent );
+    }
 
     if( !drawAllLayers && !motionBlur ){
       needDraw[ r.DRAG ] = false;

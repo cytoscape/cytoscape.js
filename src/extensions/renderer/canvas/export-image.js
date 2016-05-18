@@ -14,9 +14,12 @@ CRp.createBuffer = function( w, h ){
 
 CRp.bufferCanvasImage = function( options ){
   var cy = this.cy;
-  var bb = cy.elements().boundingBox();
+  var eles = cy.elements();
+  var bb = eles.boundingBox();
   var width = options.full ? Math.ceil( bb.w ) : this.container.clientWidth;
   var height = options.full ? Math.ceil( bb.h ) : this.container.clientHeight;
+  var specdMaxDims = is.number( options.maxWidth ) || is.number( options.maxHeight );
+  var pxRatio = this.getPixelRatio();
   var scale = 1;
 
   if( options.scale !== undefined ){
@@ -24,7 +27,7 @@ CRp.bufferCanvasImage = function( options ){
     height *= options.scale;
 
     scale = options.scale;
-  } else if( is.number( options.maxWidth ) || is.number( options.maxHeight ) ){
+  } else if( specdMaxDims ){
     var maxScaleW = Infinity;
     var maxScaleH = Infinity;
 
@@ -40,6 +43,12 @@ CRp.bufferCanvasImage = function( options ){
 
     width *= scale;
     height *= scale;
+  }
+
+  if( !specdMaxDims ){
+    width *= pxRatio;
+    height *= pxRatio;
+    scale *= pxRatio;
   }
 
   var buffCanvas = document.createElement( 'canvas' );
@@ -65,29 +74,27 @@ CRp.bufferCanvasImage = function( options ){
 
     buffCxt.globalCompositeOperation = 'source-over';
 
-    if( options.full ){ // draw the full bounds of the graph
-      this.render( {
-        forcedContext: buffCxt,
-        drawAllLayers: true,
-        forcedZoom: scale,
-        forcedPan: { x: -bb.x1 * scale, y: -bb.y1 * scale },
-        forcedPxRatio: 1
-      } );
-    } else { // draw the current view
-      var cyPan = cy.pan();
-      var pan = {
-        x: cyPan.x * scale,
-        y: cyPan.y * scale
-      };
-      var zoom = cy.zoom() * scale;
+    var zsortedEles = this.getCachedZSortedEles();
 
-      this.render( {
-        forcedContext: buffCxt,
-        drawAllLayers: true,
-        forcedZoom: zoom,
-        forcedPan: pan,
-        forcedPxRatio: 1
-      } );
+    if( options.full ){ // draw the full bounds of the graph
+      buffCxt.translate( -bb.x1 * scale, -bb.y1 * scale );
+      buffCxt.scale( scale, scale );
+
+      this.drawElements( buffCxt, zsortedEles );
+    } else { // draw the current view
+      var pan = cy.pan();
+      
+      var translation = {
+        x: pan.x * scale,
+        y: pan.y * scale
+      };
+
+      scale *= cy.zoom();
+
+      buffCxt.translate( translation.x, translation.y );
+      buffCxt.scale( scale, scale );
+
+      this.drawElements( buffCxt, zsortedEles );
     }
   }
 

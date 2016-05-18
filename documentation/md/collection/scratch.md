@@ -1,6 +1,6 @@
 ## Details
 
-This function is useful for storing temporary, possibly non-JSON data.  Extensions &mdash; like layouts, renderers, and so on &mdash; use `ele.scratch()` namespaced on their registered name.  For example, an extension named `foo` would use the namespace `'foo'`.  
+This function is useful for storing temporary, possibly non-JSON data.  Extensions --- like layouts, renderers, and so on --- use `ele.scratch()` namespaced on their registered name.  For example, an extension named `foo` would use the namespace `'foo'`.  
 
 If you want to use this function for your own app-level data, you can prefix the namespaces you use by underscore to avoid collisions with extensions.  For example, using `ele.scratch('_foo')` in your app will avoid collisions with an extension named `foo`.
 

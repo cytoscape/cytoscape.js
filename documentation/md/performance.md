@@ -5,7 +5,7 @@ You may notice that performance starts to degrade on graphs with large numbers o
 * Performance is a function of graph size, so performance decreases as the number of elements increases.
 * The rich visual styles that Cytoscape.js supports can be very expensive.  Only drawing circles and straight lines is cheap, but drawing complex graphs is not.
 * Edges are particularly expensive to render.  Multigraphs become even more expensive with the need for bezier curve edges.
-* Interactivity is expensive.  Being able to pan, pinch-to-zoom, drag nodes around, et cetera is expensive &mdash; especially when having to rerender edges.
+* Interactivity is expensive.  Being able to pan, pinch-to-zoom, drag nodes around, et cetera is expensive --- especially when having to rerender edges.
 * The performance of rendering a (bitmap) canvas is a function of the area that it needs to render.  As such, an increased pixel ratio (as in high density displays, like on iPad) can significantly decrease rendering performance.
 
 
@@ -19,7 +19,7 @@ You can get much better performance out of Cytoscape.js by tuning your options, 
 * **Labels** : Drawing labels is expensive.
  * If you can go without them or show them on tap/mouseover, you'll get better performance.
  * Consider not having labels for edges.
- * Consider setting `min-zoomed-font-size` in your style so that when labels are small &mdash; and hard to read anyway &mdash; they are not rendered.  When the labels are at least the size you set (i.e. the user zooms in), they will be visible.
+ * Consider setting `min-zoomed-font-size` in your style so that when labels are small --- and hard to read anyway --- they are not rendered.  When the labels are at least the size you set (i.e. the user zooms in), they will be visible.
  * Adding background color and borders to your labels makes more shape to draw on the canvas so you might want to remove them
 * **Animations** : You will get better performance without animations.  If using animations anyway:
  * [`eles.flashClass()`](#collection/style/eles.flashClass) is a cheaper alternative than a smooth animation.

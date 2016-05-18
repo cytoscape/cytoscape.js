@@ -1,6 +1,6 @@
 ## Details
 
-Normally, when you modify elements, each modification can trigger a style calculation and a redraw &mdash; depending on timing for a redraw.  For example, the following will cause two style calculations and at least one draw:
+Normally, when you modify elements, each modification can trigger a style calculation and a redraw --- depending on timing for a redraw.  For example, the following will cause two style calculations and at least one draw:
 
 ```js
 cy.$('#j')
@@ -14,7 +14,7 @@ cy.$('#j')
 ;
 ```
 
-This is not a problem for a handful of operations on a handful of elements, but for many operations on many elements you end up with redundant style calculations and probably redundant redraws.  In the worst case, you have `eles.length * numOps` style updates and redraws &mdash; and both style updates and redraws can be expensive.  In the worst case when using `cy.batch()`, you limit the style updates to `eles.length` and you limit the redraws to just one.
+This is not a problem for a handful of operations on a handful of elements, but for many operations on many elements you end up with redundant style calculations and probably redundant redraws.  In the worst case, you have `eles.length * numOps` style updates and redraws --- and both style updates and redraws can be expensive.  In the worst case when using `cy.batch()`, you limit the style updates to `eles.length` and you limit the redraws to just one.
 
 Thus, this function is useful for making many changes to elements at once.  When the specified callback function is complete, only elements that require it have their style updated and the renderer makes at most a single redraw.
 

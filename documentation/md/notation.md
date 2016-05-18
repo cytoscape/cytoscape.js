@@ -32,7 +32,7 @@ There are several types that different functions can be executed on, and the var
 
 By default, a function returns a reference back to the calling object to allow for chaining (e.g. `obj.fn1().fn2().fn3()`).  Unless otherwise indicated in this documentation, a function is chainable in this manner unless a different return value is specified.  This applies both to the core and to collections.
 
-For functions that return a value, note that calling a singular &mdash; `ele`, `node`, or `edge` &mdash; function on a collection of more than one element will return the expected value for only the first element.
+For functions that return a value, note that calling a singular --- `ele`, `node`, or `edge` --- function on a collection of more than one element will return the expected value for only the first element.
 
 
 ## Object ownership
@@ -64,7 +64,7 @@ A node's position refers to the centre point of its bounding box.
 
 There is an important distinction to make for position:  A position may be a _model_ position or a _rendered_ position.
 
-A model position &mdash; as its name suggests &mdash; is the position stored in the model for an element.  An element's model position remains constant, despite changes to zoom and pan.
+A model position --- as its name suggests --- is the position stored in the model for an element.  An element's model position remains constant, despite changes to zoom and pan.
 
 A rendered position is an on-screen location relative to the viewport.  For example, a rendered position of `{ x: 100, y: 100 }` specifies a point 100 pixels to the right and 100 pixels down from the top-left corner of the viewport.  An element's rendered position naturally changes as zoom and pan changes, because the element's on-screen position in the viewport changes as zooming and panning are applied.  Panning is always measured in rendered coordinates.
 
@@ -160,7 +160,9 @@ Compound nodes are an addition to the traditional graph model.  A compound node 
 
 Compound nodes are specified via the `parent` field in an element's `data`.  Similar to the `source` and `target` fields of edges, the `parent` field is immutable:  A node's parent can be specified when the node is added to the graph, and after that point, this parent-child relationship is immutable.  However, you can effectively move child nodes via [`eles.move()`](#collection/graph-manipulation/eles.move).
 
-As far as the API is concerned, compound nodes are treated just like regular nodes &mdash; except in [explicitly compound functions](#collection/compound-nodes) like `node.parent()`.  This means that traditional graph theory functions like `eles.dijkstra()` and `eles.neighborhood()` do not make special allowances for compound nodes, so you may need to make different calls to the API depending on your usecase.
+A compound parent node does not have independent dimensions (position and size), as those values are automatically inferred by the positions and dimensions of the descendant nodes.
+
+As far as the API is concerned, compound nodes are treated just like regular nodes --- except in [explicitly compound functions](#collection/compound-nodes) like `node.parent()`.  This means that traditional graph theory functions like `eles.dijkstra()` and `eles.neighborhood()` do not make special allowances for compound nodes, so you may need to make different calls to the API depending on your usecase.
 
 For instance:
 

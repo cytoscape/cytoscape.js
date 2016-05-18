@@ -48,4 +48,4 @@ There exists [a Slush project for Cytoscape.js](https://github.com/cytoscape/slu
 
 ## Multitasking
 
-Multitasking APIs are built into Cytoscape.js for extensions like layouts &mdash; making layout much faster, for example.  The APIs are pulled in from the [Weaver](http://weaver.js.org) library and put on the `cytoscape` object instead of `weaver`.  For example, you can make a thread via `cytoscape.thread()` instead of the usual `weaver.thread()`.
+Multitasking APIs are built into Cytoscape.js for extensions like layouts --- making layout much faster, for example.  The APIs are pulled in from the [Weaver](http://weaver.js.org) library and put on the `cytoscape` object instead of `weaver`.  For example, you can make a thread via `cytoscape.thread()` instead of the usual `weaver.thread()`.

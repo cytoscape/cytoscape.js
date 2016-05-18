@@ -81,6 +81,8 @@ function md2html( file ){
 
     },
 
+    smartypants: true,
+
     renderer: mdRend
   } );
 

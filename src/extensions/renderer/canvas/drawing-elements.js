@@ -29,7 +29,7 @@ CRp.drawCachedElement = function( context, ele, pxRatio, extent ){
   }
 };
 
-CRp.drawElements = function( context, eles, pxRatio, extent ){
+CRp.drawElements = function( context, eles ){
   var r = this;
 
   for( var i = 0; i < eles.length; i++ ){

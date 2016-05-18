@@ -1677,10 +1677,7 @@ BRp.findEdgeControlPoints = function( edges ){
         rs.allpts.push( rs.endX, rs.endY );
 
         var m, mt;
-        if( rs.edgeType === 'bezier' ){
-          rs.midX = math.qbezierAt( rs.arrowStartX, rs.ctrlpts[0], rs.arrowEndX, 0.5 );
-          rs.midY = math.qbezierAt( rs.arrowStartY, rs.ctrlpts[1], rs.arrowEndY, 0.5 );
-        } else if( rs.ctrlpts.length / 2 % 2 === 0 ){
+        if( rs.ctrlpts.length / 2 % 2 === 0 ){
           m = rs.allpts.length / 2 - 1;
 
           rs.midX = rs.allpts[ m ];
@@ -1698,8 +1695,8 @@ BRp.findEdgeControlPoints = function( edges ){
         rs.allpts = [ rs.startX, rs.startY, rs.endX, rs.endY ];
 
         // default midpt for labels etc
-        rs.midX = ( rs.arrowStartX + rs.arrowEndX ) / 2;
-        rs.midY = ( rs.arrowStartY + rs.arrowEndY ) / 2;
+        rs.midX = ( rs.startX + rs.endX + rs.arrowStartX + rs.arrowEndX ) / 4;
+        rs.midY = ( rs.startY + rs.endY + rs.arrowStartY + rs.arrowEndY ) / 4;
 
       } else if( rs.edgeType === 'segments' ){
         rs.allpts = [];

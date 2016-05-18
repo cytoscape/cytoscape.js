@@ -135,16 +135,7 @@ BRp.recalculateRenderedStyle = function( eles, useCache ){
       rstyle.nodeH = ele.pstyle( 'height' ).pfValue;
     } else { // edges
 
-      var srcPos = _p.source._private.position;
-      var tgtPos = _p.target._private.position;
-
       edges.push( ele );
-
-      // update rstyle positions
-      rstyle.srcX = srcPos.x;
-      rstyle.srcY = srcPos.y;
-      rstyle.tgtX = tgtPos.x;
-      rstyle.tgtY = tgtPos.y;
 
     } // if edges
 
@@ -154,6 +145,22 @@ BRp.recalculateRenderedStyle = function( eles, useCache ){
 
   this.recalculateEdgeProjections( edges );
   this.recalculateLabelProjections( nodes, edges );
+
+  // update edge data from projections
+  for( var i = 0; i < edges.length; i++ ){
+    var ele = edges[ i ];
+    var _p = ele._private;
+    var rstyle = _p.rstyle;
+    var rs = _p.rscratch;
+
+    // update rstyle positions
+    rstyle.srcX = rs.arrowStartX;
+    rstyle.srcY = rs.arrowStartY;
+    rstyle.tgtX = rs.arrowEndX;
+    rstyle.tgtY = rs.arrowEndY;
+    rstyle.midX = rs.midX;
+    rstyle.midY = rs.midY;
+  }
 };
 
 // Project mouse
@@ -684,6 +691,8 @@ BRp.projectLines = function( edge ){
       { x: hpts[2], y: hpts[3] }
     ];
   }
+
+  _p.rstyle.arrowWidth = this.getArrowWidth( edge.pstyle('width').pfValue ) * this.arrowShapeWidth;
 };
 
 BRp.projectBezier = BRp.projectLines;
@@ -1553,7 +1562,7 @@ BRp.findEdgeControlPoints = function( edges ){
       var badAEnd = !is.number( rs.arrowEndX ) || !is.number( rs.arrowEndY );
 
       var minCpADistFactor = 3;
-      var arrowW = this.getArrowWidth( edge.pstyle( 'width' ).pfValue ) * this.arrowShapeHeight;
+      var arrowW = this.getArrowWidth( edge.pstyle( 'width' ).pfValue ) * this.arrowShapeWidth;
       var minCpADist = minCpADistFactor * arrowW;
 
       if( rs.edgeType === 'bezier' ){

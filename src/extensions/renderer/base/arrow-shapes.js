@@ -6,7 +6,7 @@ var util = require( '../../../util' );
 
 var BRp = {};
 
-BRp.arrowShapeHeight = 0.3;
+BRp.arrowShapeWidth = 0.3;
 
 BRp.registerArrowShapes = function(){
   var arrowShapes = this.arrowShapes = {};
@@ -204,18 +204,6 @@ BRp.registerArrowShapes = function(){
     }
   } );
 
-  defineArrowShape( 'half-triangle-overshot', {
-    points: [
-      0, -0.25,
-      -0.5, -0.25,
-      0.5, 0.25
-    ],
-
-    leavePathOpen: true,
-
-    matchEdgeWidth: true
-  } );
-
   defineArrowShape( 'circle', {
     radius: 0.15,
 
@@ -238,10 +226,10 @@ BRp.registerArrowShapes = function(){
 
   defineArrowShape( 'inhibitor', {
     points: [
-      -0.25, 0,
-      -0.25, -0.1,
-      0.25, -0.1,
-      0.25, 0
+      -0.15, 0,
+      -0.15, -0.1,
+      0.15, -0.1,
+      0.15, 0
     ],
 
     spacing: function( edge ){

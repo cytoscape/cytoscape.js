@@ -302,6 +302,30 @@ var prefixedProperty = function( obj, field, prefix ){
   return util.getPrefixedProperty( obj, field, prefix );
 };
 
+var updateBoundsFromArrow = function( bounds, ele, prefix, options ){
+  var _p = ele._private;
+  var rstyle = _p.rstyle;
+  var halfArW = rstyle.arrowWidth / 2;
+  var arrowType = ele.pstyle( prefix + '-arrow-shape' ).value;
+  var x;
+  var y;
+
+  if( arrowType !== 'none' ){
+    if( prefix === 'source' ){
+      x = rstyle.srcX;
+      y = rstyle.srcY;
+    } else if( prefix === 'target' ){
+      x = rstyle.tgtX;
+      y = rstyle.tgtY;
+    } else {
+      x = rstyle.midX;
+      y = rstyle.midY;
+    }
+
+    updateBounds( bounds, x - halfArW, y - halfArW, x + halfArW, y + halfArW );
+  }
+};
+
 var updateBoundsFromLabel = function( bounds, ele, prefix, options ){
   var prefixDash;
 
@@ -459,6 +483,14 @@ var boundingBoxImpl = function( ele, options ){
       }
     }
 
+    var w = 0;
+    var wHalf = 0;
+
+    if( styleEnabled ){
+      w = ele.pstyle( 'width' ).pfValue;
+      wHalf = w / 2;
+    }
+
     if( isNode && options.includeNodes ){
       var pos = _p.position;
       x = pos.x;
@@ -479,73 +511,27 @@ var boundingBoxImpl = function( ele, options ){
       updateBounds( bounds, ex1, ey1, ex2, ey2 );
 
     } else if( isEdge && options.includeEdges ){
-      var n1 = _p.source;
-      var n1_p = n1._private;
-      var n1pos = n1_p.position;
-
-      var n2 = _p.target;
-      var n2_p = n2._private;
-      var n2pos = n2_p.position;
-
+      var rstyle = _p.rstyle || {};
 
       // handle edge dimensions (rough box estimate)
       //////////////////////////////////////////////
-
-      var rstyle = _p.rstyle || {};
-      var w = 0;
-      var wHalf = 0;
-
       if( styleEnabled ){
-        w = ele.pstyle( 'width' ).pfValue;
-        wHalf = w / 2;
+        ex1 = Math.min( rstyle.srcX, rstyle.midX, rstyle.tgtX );
+        ex2 = Math.max( rstyle.srcX, rstyle.midX, rstyle.tgtX );
+        ey1 = Math.min( rstyle.srcY, rstyle.midY, rstyle.tgtY );
+        ey2 = Math.max( rstyle.srcY, rstyle.midY, rstyle.tgtY );
+
+        // take into account edge width
+        ex1 -= wHalf;
+        ex2 += wHalf;
+        ey1 -= wHalf;
+        ey2 += wHalf;
+
+        updateBounds( bounds, ex1, ey1, ex2, ey2 );
       }
 
-      ex1 = n1pos.x;
-      ex2 = n2pos.x;
-      ey1 = n1pos.y;
-      ey2 = n2pos.y;
-
-      if( ex1 > ex2 ){
-        var temp = ex1;
-        ex1 = ex2;
-        ex2 = temp;
-      }
-
-      if( ey1 > ey2 ){
-        var temp = ey1;
-        ey1 = ey2;
-        ey2 = temp;
-      }
-
-      // take into account edge width and overlay
-      ex1 -= wHalf;
-      ex2 += wHalf;
-      ey1 -= wHalf;
-      ey2 += wHalf;
-
-      updateBounds( bounds, ex1, ey1, ex2, ey2 );
-
-      // handle points along edge (sanity check)
-      //////////////////////////////////////////
-
-      if( styleEnabled ){
-        var pts = rstyle.bezierPts || rstyle.linePts || [];
-
-        for( var j = 0; j < pts.length; j++ ){
-          var pt = pts[ j ];
-
-          ex1 = pt.x - wHalf;
-          ex2 = pt.x + wHalf;
-          ey1 = pt.y - wHalf;
-          ey2 = pt.y + wHalf;
-
-          updateBounds( bounds, ex1, ey1, ex2, ey2 );
-        }
-      }
-
-      // precise haystacks (sanity check)
-      ///////////////////////////////////
-
+      // precise haystacks
+      ////////////////////
       if( styleEnabled && ele.pstyle( 'curve-style' ).strValue === 'haystack' ){
         var hpts = rstyle.haystackPts;
 
@@ -566,7 +552,60 @@ var boundingBoxImpl = function( ele, options ){
           ey2 = temp;
         }
 
-        updateBounds( bounds, ex1, ey1, ex2, ey2 );
+        updateBounds( bounds, ex1 - wHalf, ey1 - wHalf, ex2 + wHalf, ey2 + wHalf );
+
+      // handle points along edge
+      ///////////////////////////
+      } else {
+        var pts = rstyle.bezierPts || rstyle.linePts || [];
+
+        for( var j = 0; j < pts.length; j++ ){
+          var pt = pts[ j ];
+
+          ex1 = pt.x - wHalf;
+          ex2 = pt.x + wHalf;
+          ey1 = pt.y - wHalf;
+          ey2 = pt.y + wHalf;
+
+          updateBounds( bounds, ex1, ey1, ex2, ey2 );
+        }
+
+        // fallback on source and target positions
+        //////////////////////////////////////////
+        if( pts.length === 0 ){
+          var n1 = _p.source;
+          var n1_p = n1._private;
+          var n1pos = n1_p.position;
+
+          var n2 = _p.target;
+          var n2_p = n2._private;
+          var n2pos = n2_p.position;
+
+          ex1 = n1pos.x;
+          ex2 = n2pos.x;
+          ey1 = n1pos.y;
+          ey2 = n2pos.y;
+
+          if( ex1 > ex2 ){
+            var temp = ex1;
+            ex1 = ex2;
+            ex2 = temp;
+          }
+
+          if( ey1 > ey2 ){
+            var temp = ey1;
+            ey1 = ey2;
+            ey2 = temp;
+          }
+
+          // take into account edge width
+          ex1 -= wHalf;
+          ex2 += wHalf;
+          ey1 -= wHalf;
+          ey2 += wHalf;
+
+          updateBounds( bounds, ex1, ey1, ex2, ey2 );
+        }
       }
 
     } // edges
@@ -590,6 +629,16 @@ var boundingBoxImpl = function( ele, options ){
       }
 
       updateBounds( bounds, ex1 - overlayPadding, ey1 - overlayPadding, ex2 + overlayPadding, ey2 + overlayPadding );
+    }
+
+    // handle edge arrow size
+    /////////////////////////
+
+    if( styleEnabled && options.includeEdges && isEdge ){
+      updateBoundsFromArrow( bounds, ele, 'mid-source', options );
+      updateBoundsFromArrow( bounds, ele, 'mid-target', options );
+      updateBoundsFromArrow( bounds, ele, 'source', options );
+      updateBoundsFromArrow( bounds, ele, 'target', options );
     }
 
     // handle label dimensions

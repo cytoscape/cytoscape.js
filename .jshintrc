@@ -14,7 +14,7 @@
     "Path2D": false,
     "require": false,
     "module": false,
-    "document": false,
+    "document": true,
     "window": true,
     "setTimeout": false,
     "clearTimeout": false,
@@ -26,6 +26,7 @@
     "DocumentTouch": false,
     "HTMLElement": false,
     "navigator": false,
-    "console": false
+    "console": false,
+    "Promise": true
   }
 }

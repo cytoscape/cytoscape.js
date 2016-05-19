@@ -175,7 +175,6 @@ function roundRect( ctx, x, y, width, height, radius ){
 // Draw text
 CRp.drawText = function( context, ele, prefix ){
   var _p = ele._private;
-  var rstyle = _p.rstyle;
   var rscratch = _p.rscratch;
   var parentOpacity = ele.effectiveOpacity();
   if( parentOpacity === 0 || ele.pstyle( 'text-opacity' ).value === 0 ){
@@ -186,7 +185,7 @@ CRp.drawText = function( context, ele, prefix ){
   var textY = util.getPrefixedProperty( rscratch, 'labelY', prefix );
   var text = this.getLabelText( ele, prefix );
 
-  if( text != null && text != '' && !isNaN( textX ) && !isNaN( textY ) ){
+  if( text != null && text !== '' && !isNaN( textX ) && !isNaN( textY ) ){
     this.setupTextStyle( context, ele );
 
     var pdash = prefix ? prefix + '-' : '';

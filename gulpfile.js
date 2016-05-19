@@ -656,8 +656,8 @@ gulp.task('watch', function(next){
 
 // http://www.jshint.com/docs/options/
 gulp.task('lint', function(){
-  return gulp.src( 'src/**' )
-    .pipe( $.jshint( require('.jshintrc') ) )
+  return gulp.src( 'src/**.js' )
+    .pipe( $.jshint( JSON.parse( fs.readFileSync('./.jshintrc', 'utf8') ) ) )
 
     .pipe( $.jshint.reporter( require('jshint-stylish') ) )
   ;

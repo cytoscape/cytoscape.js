@@ -1,7 +1,6 @@
 'use strict';
 
 var util = require( '../util' );
-var Event = require('../event');
 
 var corefn = ({
 
@@ -48,8 +47,8 @@ var corefn = ({
     var rOpts = util.extend( {}, options, {
       cy: cy
     } );
-    var renderer = cy._private.renderer = new RendererProto( rOpts );
 
+    cy._private.renderer = new RendererProto( rOpts );
   },
 
   onRender: function( fn ){

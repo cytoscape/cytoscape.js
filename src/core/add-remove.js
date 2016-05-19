@@ -4,9 +4,6 @@ var is = require( '../is' );
 var util = require( '../util' );
 var Collection = require( '../collection' );
 var Element = require( '../collection/element' );
-var window = require( '../window' );
-var document = window ? window.document : null;
-var NullRenderer = require( '../extensions/renderer/null' );
 
 var corefn = {
   add: function( opts ){

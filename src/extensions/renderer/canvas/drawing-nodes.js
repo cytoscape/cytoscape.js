@@ -16,7 +16,6 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
   }
 
   var usePaths = this.usePaths();
-  var canvasContext = context;
   var path;
   var pathCacheHit = false;
 

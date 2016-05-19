@@ -484,13 +484,13 @@ var corefn = ({
     var _p = this._private;
     var container = _p.container;
 
-    return _p.sizeCache = _p.sizeCache || ( container ? {
+    return ( _p.sizeCache = _p.sizeCache || ( container ? {
       width: container.clientWidth,
       height: container.clientHeight
     } : { // fallback if no container (not 0 b/c can be used for dividing etc)
       width: 1,
       height: 1
-    } );
+    } ) );
   },
 
   width: function(){

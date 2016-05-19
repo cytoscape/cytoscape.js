@@ -25,7 +25,7 @@ var useHighQualityEleTxrReqs = true; // whether to use high quality ele txr requ
 
 var useEleTxrCaching = true; // whether to use individual ele texture caching underneath this cache
 
-var log = function(){ console.log.apply( console, arguments ); };
+// var log = function(){ console.log.apply( console, arguments ); };
 
 var LayeredTextureCache = function( renderer, eleTxrCache ){
   var self = this;

@@ -1,6 +1,6 @@
 {
   "name": "cytoscape",
-  "version": "2.5.5",
+  "version": "2.7.0-unstable",
   "license": "MIT",
   "description": "Graph theory (a.k.a. network) library for analysis and visualisation",
   "homepage": "http://js.cytoscape.org",
@@ -93,6 +93,7 @@
     "handlebars": "^4.0.5",
     "highlight.js": "^9.3.0",
     "jscs": "^2.11.0",
+    "jshint": "^2.9.2",
     "jshint-stylish": "^2.1.0",
     "jsonlint": "^1.6.2",
     "marked": "^0.3.5",

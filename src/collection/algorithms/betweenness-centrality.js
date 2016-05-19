@@ -53,7 +53,7 @@ var elesfn = ({
     }
 
     for( var s = 0; s < V.length; s++ ){
-      var sid = V[s].id()
+      var sid = V[s].id();
       var S = []; // stack
       var P = {};
       var g = {};

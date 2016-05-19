@@ -3,7 +3,6 @@
 var CRp = {};
 
 var util = require( '../../../util' );
-var math = require( '../../../math' );
 
 var motionBlurDelay = 100;
 

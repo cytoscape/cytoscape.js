@@ -26,7 +26,7 @@ var cache = function( fn, name ){
       if( cacheHit ){
         return cacheHit;
       } else {
-        return ch[ key ] = fn.call( eles, arg1, arg2, arg3, arg4 );
+        return ( ch[ key ] = fn.call( eles, arg1, arg2, arg3, arg4 ) );
       }
     } else {
       return fn.call( eles, arg1, arg2, arg3, arg4 );
@@ -81,7 +81,6 @@ var defineDagOneHop = function( params ){
 
     for( var i = 0; i < eles.length; i++ ){
       var ele = eles[ i ];
-      var eleId = ele.id();
 
       if( !ele.isNode() ){ continue; }
 

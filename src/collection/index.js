@@ -8,7 +8,6 @@ var Element = require( './element' );
 // factory for generating edge ids when no id is specified for a new element
 var idFactory = {
   generate: function( cy, element, tryThisId ){
-    var json = is.element( element ) ? element._private : element;
     var id = tryThisId != null ? tryThisId : util.uuid();
 
     while( cy.hasElementWithId( id ) ){
@@ -498,7 +497,6 @@ elesfn.remove = function( notifyRenderer ){
   var elesToRemove = [];
   var elesToRemoveIds = {};
   var cy = self._private.cy;
-  var cy_p = cy._private;
 
   if( notifyRenderer === undefined ){
     notifyRenderer = true;
@@ -558,7 +556,6 @@ elesfn.remove = function( notifyRenderer ){
     node._private.traversalCache = null;
   }
 
-  var removedParallelRefs = {};
   function removeParallelRefs( edge ){
     // removing an edge invalidates the traversal caches for the parallel edges
     var pedges = edge.parallelEdges();

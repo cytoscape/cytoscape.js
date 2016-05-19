@@ -2,6 +2,7 @@
 
 var util = require( '../util' );
 var is = require( '../is' );
+var math = require( '../math' );
 
 var styfn = {};
 

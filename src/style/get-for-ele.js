@@ -54,7 +54,6 @@ styfn.getStylePropertyValue = function( ele, propName, isRenderedVal ){
 };
 
 styfn.getAnimationStartStyle = function( ele, aniProps ){
-  var self = this;
   var rstyle = {};
 
   for( var i = 0; i < aniProps.length; i++ ){

@@ -340,7 +340,6 @@ var updateBoundsFromLabel = function( bounds, ele, prefix, options ){
   var label = ele.pstyle( prefixDash + 'label' ).strValue;
 
   if( label ){
-    var fontSize = ele.pstyle( 'font-size' );
     var halign = ele.pstyle( 'text-halign' );
     var valign = ele.pstyle( 'text-valign' );
     var labelWidth = prefixedProperty( rstyle, 'labelWidth', prefix );

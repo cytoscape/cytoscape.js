@@ -63,7 +63,7 @@ var util = {
                       :
              '-'            //  in other cases (if "a" is 9,14,19,24) insert "-"
           );
-      return b
+      return b;
   }
 
 };

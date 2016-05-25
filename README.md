@@ -1,5 +1,7 @@
 # Cytoscape.js
 
+[![Join the chat at https://gitter.im/cytoscape/cytoscape.js](https://badges.gitter.im/cytoscape/cytoscape.js.svg)](https://gitter.im/cytoscape/cytoscape.js?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 Graph theory (a.k.a. network) library for analysis and visualisation : [http://js.cytoscape.org](http://js.cytoscape.org)
 
 

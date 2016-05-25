@@ -392,18 +392,6 @@ gulp.task('docsdl', ['version', 'zip'], function(){
   ;
 });
 
-gulp.task('docsbuildlist', ['docsdl'], function(next){
-  var cwd = process.cwd();
-
-  process.chdir('./documentation/download');
-  require('./documentation/download/dlmaker')(function(){
-    process.chdir( cwd );
-
-    next();
-  });
-
-});
-
 gulp.task('snapshotpush', ['docsdl'], function(){
   return gulp.src('')
     .pipe( $.shell( replaceShellVars([
@@ -536,7 +524,7 @@ gulp.task('docsdemodl', function(){
 });
 
 gulp.task('docspub', function(next){
-  runSequence( 'version', 'docsver', 'docsjs', 'docsbuildlist', 'docsdemodl', 'docsmin', next );
+  runSequence( 'version', 'docsver', 'docsjs', 'docsdemodl', 'docsmin', next );
 });
 
 gulp.task('docsrebuild', function(next){

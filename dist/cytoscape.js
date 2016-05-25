@@ -5662,10 +5662,18 @@ var zIndexSort = function( a, b ){
   if( sameDepth ){
 
     if( aIsNode && bIsEdge ){
-      return 1; // 'a' is a node, it should be drawn later
+      if( cy.zorderStrict() && zDiff !== 0 ) {
+        return zDiff;  // 'z-index' specified
+      } else {
+        return 1; // 'a' is a node, it should be drawn later
+      }
 
     } else if( aIsEdge && bIsNode ){
-      return -1; // 'a' is an edge, it should be drawn first
+      if( cy.zorderStrict() && zDiff !== 0 ) {
+        return zDiff;  // 'z-index' specified
+      } else {
+        return -1; // 'a' is an edge, it should be drawn first
+      }
 
     } else { // both nodes or both edges
       if( zDiff === 0 ){ // same z-index => compare indices in the core (order added to graph w/ last on top)
@@ -6513,6 +6521,7 @@ var Core = function( opts ){
     autoungrabify: defVal(false, options.autoungrabify, options.autoungrabifyNodes),
     autounselectify: defVal(false, options.autounselectify),
     styleEnabled: options.styleEnabled === undefined ? head : options.styleEnabled,
+    zorderStrict: defVal(false, options.zorderStrict),
     zoom: is.number(options.zoom) ? options.zoom : 1,
     pan: {
       x: is.plainObject(options.pan) && is.number(options.pan.x) ? options.pan.x : 0,
@@ -6673,6 +6682,10 @@ util.extend(corefn, {
 
   styleEnabled: function(){
     return this._private.styleEnabled;
+  },
+
+  zorderStrict: function(){
+    return this._private.zorderStrict;
   },
 
   addToPool: function( eles ){
@@ -18880,7 +18893,7 @@ var cytoscape = function( options ){ // jshint ignore:line
 };
 
 // replaced by build system
-cytoscape.version = '2.6.12';
+cytoscape.version = 'snapshot-fb5fc5f7dd-1464196951029';
 
 // try to register w/ jquery
 if( window && window.jQuery ){

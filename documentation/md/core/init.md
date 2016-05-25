@@ -53,6 +53,7 @@ var cy = cytoscape({
   // rendering options:
   headless: false,
   styleEnabled: true,
+  zorderStrict: false,
   hideEdgesOnViewport: false,
   hideLabelsOnViewport: false,
   textureOnViewport: false,
@@ -115,6 +116,8 @@ var cy = cytoscape({
 **`headless`** : A convenience option that initialises the instance to run headlessly.  You do not need to set this in environments that are implicitly headless (e.g. Node.js).  However, it is handy to set `headless: true` if you want a headless instance in a browser.
 
 **`styleEnabled`** : A boolean that indicates whether styling should be used.  For headless (i.e. outside the browser) environments, display is not necessary and so neither is styling necessary &mdash; thereby speeding up your code.  You can manually enable styling in headless environments if you require it for a special case.  Note that it does not make sense to disable style if you plan on rendering the graph.
+
+**`zorderStrict`** : A boolean that indicates whether default (false) or strict (true) ordering should be used.  Strict ordering uses the z-index value to determine drawing order for nodes and edges.  Non-strict default mode always ensures nodes are drawn atop edges independent of their respective z-index values.
 
 **`hideEdgesOnViewport`** : When set to `true`, the renderer does not render edges while the viewport is being manipulated.  This makes panning, zooming, dragging, et cetera more responsive for large graphs.
 

@@ -13,6 +13,7 @@
   * npm
   * Bower
   * Meteor/Atmosphere
+  * The [R language](https://www.r-project.org/) via [RCyjs](http://www.bioconductor.org/packages/release/bioc/html/RCyjs.html)
  * Has a full suite of unit tests that can be run in the browser or the terminal
  * Documentation includes live code examples, doubling as an interactive requirements specification; example graphs may also be freely modified in your browser's JS console
  * Fully serialisable and deserialisable via JSON

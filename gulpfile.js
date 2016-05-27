@@ -524,7 +524,7 @@ gulp.task('docsdemodl', function(){
 });
 
 gulp.task('docspub', function(next){
-  runSequence( 'version', 'docsver', 'docsjs', 'docsdemodl', 'docsmin', next );
+  runSequence( 'version', 'docsdl', 'docsver', 'docsjs', 'docsdemodl', 'docsmin', next );
 });
 
 gulp.task('docsrebuild', function(next){

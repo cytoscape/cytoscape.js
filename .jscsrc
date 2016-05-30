@@ -12,15 +12,26 @@
     "beforeOpeningRoundBrace": true,
     "beforeOpeningCurlyBrace": true
   },
+  "disallowSpaceAfterKeywords": [
+    "if",
+    "for",
+    "while",
+    "switch",
+    "catch"
+  ],
+  "requireSpaceAfterKeywords": [
+    "return",
+    "else",
+    "do",
+    "try"
+  ],
   "disallowSpacesInsideParentheses": false,
   "disallowTrailingWhitespace": true,
+  "disallowTrailingComma": true,
   "requireCamelCaseOrUpperCaseIdentifiers": false,
   "requireCapitalizedComments": false,
   "requireCapitalizedConstructors": false,
   "requireSemicolons": true,
-  "requireSpaceAfterKeywords": [
-    "return"
-  ],
   "requireSpaceAfterLineComment": false,
   "requireSpaceAfterBinaryOperators": true,
   "requireSpaceBeforeBinaryOperators": true,
@@ -28,7 +39,8 @@
   "requireSpaceBeforeObjectValues": true,
   "requireSpacesInsideParentheses": {
     "all": true,
-    "except": ["(", ")"]
+    "ignoreParenthesizedExpression": true,
+    "except": [""]
   },
   "validateIndentation": 2,
   "validateLineBreaks": "LF",

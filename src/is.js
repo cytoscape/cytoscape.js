@@ -1,6 +1,6 @@
 'use strict';
 
-var window = require('./window');
+var window = require( './window' );
 var navigator = window ? window.navigator : null;
 
 var typeofstr = typeof '';
@@ -13,43 +13,43 @@ var instanceStr = function( obj ){
 };
 
 var is = {
-  defined: function(obj){
+  defined: function( obj ){
     return obj != null; // not undefined or null
   },
 
-  string: function(obj){
+  string: function( obj ){
     return obj != null && typeof obj == typeofstr;
   },
 
-  fn: function(obj){
+  fn: function( obj ){
     return obj != null && typeof obj === typeoffn;
   },
 
-  array: function(obj){
-    return Array.isArray ? Array.isArray(obj) : obj != null && obj instanceof Array;
+  array: function( obj ){
+    return Array.isArray ? Array.isArray( obj ) : obj != null && obj instanceof Array;
   },
 
-  plainObject: function(obj){
-    return obj != null && typeof obj === typeofobj && !is.array(obj) && obj.constructor === Object;
+  plainObject: function( obj ){
+    return obj != null && typeof obj === typeofobj && !is.array( obj ) && obj.constructor === Object;
   },
 
-  object: function(obj){
+  object: function( obj ){
     return obj != null && typeof obj === typeofobj;
   },
 
-  number: function(obj){
-    return obj != null && typeof obj === typeof 1 && !isNaN(obj);
+  number: function( obj ){
+    return obj != null && typeof obj === typeof 1 && !isNaN( obj );
   },
 
   integer: function( obj ){
-    return is.number(obj) && Math.floor(obj) === obj;
+    return is.number( obj ) && Math.floor( obj ) === obj;
   },
 
-  bool: function(obj){
+  bool: function( obj ){
     return obj != null && typeof obj === typeof true;
   },
 
-  htmlElement: function(obj){
+  htmlElement: function( obj ){
     if( 'undefined' === typeofhtmlele ){
       return undefined;
     } else {
@@ -57,63 +57,61 @@ var is = {
     }
   },
 
-  elementOrCollection: function(obj){
-    return is.element(obj) || is.collection(obj);
+  elementOrCollection: function( obj ){
+    return is.element( obj ) || is.collection( obj );
   },
 
-  element: function(obj){
-    return instanceStr(obj) === 'collection' && obj._private.single;
+  element: function( obj ){
+    return instanceStr( obj ) === 'collection' && obj._private.single;
   },
 
-  collection: function(obj){
-    return instanceStr(obj) === 'collection' && !obj._private.single;
+  collection: function( obj ){
+    return instanceStr( obj ) === 'collection' && !obj._private.single;
   },
 
-  core: function(obj){
-    return instanceStr(obj) === 'core';
+  core: function( obj ){
+    return instanceStr( obj ) === 'core';
   },
 
-  style: function(obj){
-    return instanceStr(obj) === 'style';
+  style: function( obj ){
+    return instanceStr( obj ) === 'style';
   },
 
-  stylesheet: function(obj){
-    return instanceStr(obj) === 'stylesheet';
+  stylesheet: function( obj ){
+    return instanceStr( obj ) === 'stylesheet';
   },
 
-  event: function(obj){
-    return instanceStr(obj) === 'event';
+  event: function( obj ){
+    return instanceStr( obj ) === 'event';
   },
 
-  thread: function(obj){
-    return instanceStr(obj) === 'thread';
+  thread: function( obj ){
+    return instanceStr( obj ) === 'thread';
   },
 
-  fabric: function(obj){
-    return instanceStr(obj) === 'fabric';
+  fabric: function( obj ){
+    return instanceStr( obj ) === 'fabric';
   },
 
-  emptyString: function(obj){
-    if( !obj ){ // null is empty
+  emptyString: function( obj ){
+    if( obj === undefined || obj === null ){ // null is empty
       return true;
-    } else if( is.string(obj) ){
-      if( obj === '' || obj.match(/^\s+$/) ){
-        return true; // empty string is empty
-      }
+    } else if( obj === '' || obj.match( /^\s+$/ ) ){
+      return true; // empty string is empty
     }
 
     return false; // otherwise, we don't know what we've got
   },
 
-  nonemptyString: function(obj){
-    if( obj && is.string(obj) && obj !== '' && !obj.match(/^\s+$/) ){
+  nonemptyString: function( obj ){
+    if( obj && is.string( obj ) && obj !== '' && !obj.match( /^\s+$/ ) ){
       return true;
     }
 
     return false;
   },
 
-  domElement: function(obj){
+  domElement: function( obj ){
     if( typeof HTMLElement === 'undefined' ){
       return false; // we're not in a browser so it doesn't matter
     } else {
@@ -121,15 +119,15 @@ var is = {
     }
   },
 
-  boundingBox: function(obj){
-    return is.plainObject(obj) &&
-      is.number(obj.x1) && is.number(obj.x2) &&
-      is.number(obj.y1) && is.number(obj.y2)
+  boundingBox: function( obj ){
+    return is.plainObject( obj ) &&
+      is.number( obj.x1 ) && is.number( obj.x2 ) &&
+      is.number( obj.y1 ) && is.number( obj.y2 )
     ;
   },
 
-  promise: function(obj){
-    return is.object(obj) && is.fn(obj.then);
+  promise: function( obj ){
+    return is.object( obj ) && is.fn( obj.then );
   },
 
   touch: function(){
@@ -149,7 +147,7 @@ var is = {
   },
 
   khtml: function(){
-    return navigator && navigator.vendor.match(/kde/i); // probably a better way to detect this...
+    return navigator && navigator.vendor.match( /kde/i ); // probably a better way to detect this...
   },
 
   khtmlEtc: function(){
@@ -157,23 +155,23 @@ var is = {
   },
 
   ms: function(){
-     return navigator && navigator.userAgent.match(/msie|trident|edge/i); // probably a better way to detect this...
+    return navigator && navigator.userAgent.match( /msie|trident|edge/i ); // probably a better way to detect this...
   },
 
   windows: function(){
-    return navigator && navigator.appVersion.match(/Win/i);
+    return navigator && navigator.appVersion.match( /Win/i );
   },
 
   mac: function(){
-    return navigator && navigator.appVersion.match(/Mac/i);
+    return navigator && navigator.appVersion.match( /Mac/i );
   },
 
   linux: function(){
-    return navigator && navigator.appVersion.match(/Linux/i);
+    return navigator && navigator.appVersion.match( /Linux/i );
   },
 
   unix: function(){
-    return navigator && navigator.appVersion.match(/X11/i);
+    return navigator && navigator.appVersion.match( /X11/i );
   }
 };
 

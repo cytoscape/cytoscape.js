@@ -1,13 +1,13 @@
 'use strict';
 
-var is = require('../is');
-var zIndexSort = require('./zsort');
+var is = require( '../is' );
+var zIndexSort = require( './zsort' );
 
 var elesfn = ({
-  each: function(fn){
-    if( is.fn(fn) ){
-      for(var i = 0; i < this.length; i++){
-        var ele = this[i];
+  each: function( fn ){
+    if( is.fn( fn ) ){
+      for( var i = 0; i < this.length; i++ ){
+        var ele = this[ i ];
         var ret = fn.apply( ele, [ i, ele ] );
 
         if( ret === false ){ break; } // exit each early on return false
@@ -16,11 +16,11 @@ var elesfn = ({
     return this;
   },
 
-  forEach: function(fn, thisArg){
-    if( is.fn(fn) ){
+  forEach: function( fn, thisArg ){
+    if( is.fn( fn ) ){
 
-      for(var i = 0; i < this.length; i++){
-        var ele = this[i];
+      for( var i = 0; i < this.length; i++ ){
+        var ele = this[ i ];
         var ret = thisArg ? fn.apply( thisArg, [ ele, i, this ] ) : fn( ele, i, this );
 
         if( ret === false ){ break; } // exit each early on return false
@@ -33,14 +33,14 @@ var elesfn = ({
   toArray: function(){
     var array = [];
 
-    for(var i = 0; i < this.length; i++){
-      array.push( this[i] );
+    for( var i = 0; i < this.length; i++ ){
+      array.push( this[ i ] );
     }
 
     return array;
   },
 
-  slice: function(start, end){
+  slice: function( start, end ){
     var array = [];
     var thisSize = this.length;
 
@@ -60,19 +60,19 @@ var elesfn = ({
       end = thisSize + end;
     }
 
-    for(var i = start; i >= 0 && i < end && i < thisSize; i++){
-      array.push( this[i] );
+    for( var i = start; i >= 0 && i < end && i < thisSize; i++ ){
+      array.push( this[ i ] );
     }
 
-    return this.spawn(array);
+    return this.spawn( array );
   },
 
   size: function(){
     return this.length;
   },
 
-  eq: function(i){
-    return this[i] || this.spawn();
+  eq: function( i ){
+    return this[ i ] || this.spawn();
   },
 
   first: function(){
@@ -98,7 +98,7 @@ var elesfn = ({
 
     var sorted = this.toArray().sort( sortFn );
 
-    return this.spawn(sorted);
+    return this.spawn( sorted );
   },
 
   sortByZIndex: function(){

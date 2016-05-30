@@ -1,7 +1,7 @@
 'use strict';
 
-var util = require('../../util');
-var is = require('../../is');
+var util = require( '../../util' );
+var is = require( '../../is' );
 
 var defaults = {
   positions: undefined, // map of (node id) => (position obj); or function(node){ return somPos; }
@@ -17,7 +17,7 @@ var defaults = {
 };
 
 function PresetLayout( options ){
-  this.options = util.extend({}, defaults, options);
+  this.options = util.extend( {}, defaults, options );
 }
 
 PresetLayout.prototype.run = function(){
@@ -27,7 +27,7 @@ PresetLayout.prototype.run = function(){
   var nodes = eles.nodes();
   var posIsFn = is.fn( options.positions );
 
-  function getPosition(node){
+  function getPosition( node ){
     if( options.positions == null ){
       return null;
     }
@@ -36,7 +36,7 @@ PresetLayout.prototype.run = function(){
       return options.positions.apply( node, [ node ] );
     }
 
-    var pos = options.positions[node._private.data.id];
+    var pos = options.positions[ node._private.data.id ];
 
     if( pos == null ){
       return null;
@@ -45,15 +45,15 @@ PresetLayout.prototype.run = function(){
     return pos;
   }
 
-  nodes.layoutPositions(this, options, function(i, node){
-    var position = getPosition(node);
+  nodes.layoutPositions( this, options, function( i, node ){
+    var position = getPosition( node );
 
     if( node.locked() || position == null ){
       return false;
     }
 
     return position;
-  });
+  } );
 
   return this; // chaining
 };

@@ -6,7 +6,6 @@
 		<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
 
 		<link rel="stylesheet" href="font-awesome.css" />
-		<link rel="stylesheet" href="jquery.gritter.css" />
 		<link rel="stylesheet" href="style.css" />
 
 		<!--<script type="text/javascript" src="require.js"></script>-->
@@ -20,7 +19,6 @@
 			<script src="../build/cytoscape.js"></script>
 			<!-- endinject -->
 
-		<script type="text/javascript" src="jquery.gritter.js"></script>
 		<script type="text/javascript" src="bind.js"></script>
 		<script type="text/javascript" src="data.js"></script>
 		<script type="text/javascript" src="filter.js"></script>
@@ -33,6 +31,24 @@
 		<script type="text/javascript" src="init.js"></script>
 		<script type="text/javascript" src="profile.js"></script>
 
+		<script>
+			notify = function( name, descr ){
+				console.log( name );
+				console.log( descr );
+
+				$('#note-name').html( name );
+				$('#note-descr').html( descr );
+
+				$('#note').show();
+
+				clearTimeout( notify.timeout );
+
+				notify.timeout = setTimeout( function(){
+					$('#note').hide();
+				}, 3000 );
+			};
+		</script>
+
 		<title>cytoscape.js debug page</title>
 	</head>
 
@@ -40,8 +56,8 @@
 
     	<button id="goto-cy2">\ down /</button>
 	    <div id="cytoscape">
-	    	<div id="bb"></div>
 	    </div>
+			<div id="bb"></div>
 
 	    <!-- <div id="overlay-tester" style="position: absolute; left: 0; top: 0; width: 300px; height: 300px; background: rgba(255, 0, 0, 0.5);"></div> -->
 
@@ -59,7 +75,7 @@
 
 	    <div id="commands-show-area">
 	    	<button id="show-commands">+</button>
-		</div>
+			</div>
 
 	    <div id="commands">
 
@@ -104,7 +120,11 @@
 
 	    	Selected BB:
 	    	<button id="show-bb">show</button>
-	    	<button id="hide-bb">hide</button>
+	    	<button id="hide-bb">hide</button><br />
+
+				Fullscreen:
+	    	<button id="full-cy">on</button>
+	    	<button id="defsize-cy">off</button>
 
 	    	<h2>Layout</h2>
 	    	<select id="layout-select">
@@ -170,6 +190,8 @@
 	    		<option value="ungrabify">ungrabify</option>
 	    		<option value="selectify">selectify</option>
 	    		<option value="unselectify">unselectify</option>
+					<option value="box">box</option>
+					<option value="boxselect">boxselect</option>
 	    		<option value="">null (unbind all)</option>
 	    	</select>
 	    	with delegate<br />
@@ -211,6 +233,10 @@
 	    		<option value="layoutstop">layoutstop</option>
 	    		<option value="pan">pan</option>
 	    		<option value="zoom">zoom</option>
+					<option value="boxstart">boxstart</option>
+					<option value="boxend">boxend</option>
+					<option value="box">box</option>
+					<option value="boxselect">boxselect</option>
 	    		<option value="">null (unbind all)</option>
 	    	</select>
 	    	with delegate<br />
@@ -240,6 +266,11 @@
             <button id="run-cose">Run CoSE</button>
 
 	    </div>
+
+			<div id="note">
+				<div id="note-name"></div>
+				<div id="note-descr"></div>
+			</div>
 	</body>
 
 </html>

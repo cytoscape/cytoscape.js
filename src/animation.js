@@ -1,8 +1,8 @@
 'use strict';
 
-var util = require('./util');
-var is = require('./is');
-var Promise = require('./promise');
+var util = require( './util' );
+var is = require( './is' );
+var Promise = require( './promise' );
 
 var Animation = function( target, opts, opts2 ){
   if( !(this instanceof Animation) ){
@@ -23,7 +23,7 @@ var Animation = function( target, opts, opts2 ){
   _p.completes = [];
   _p.frames = [];
 
-  if( _p.complete && is.fn(_p.complete) ){
+  if( _p.complete && is.fn( _p.complete ) ){
     _p.completes.push( _p.complete );
   }
 
@@ -124,11 +124,11 @@ util.extend( anifn, {
   },
 
   rewind: function(){
-    return this.progress(0);
+    return this.progress( 0 );
   },
 
   fastforward: function(){
-    return this.progress(1);
+    return this.progress( 1 );
   },
 
   time: function( t ){
@@ -179,10 +179,10 @@ util.extend( anifn, {
     _p.started = false;
 
     var swap = function( a, b ){
-      var _pa = _p[a];
+      var _pa = _p[ a ];
 
-      _p[a] = _p[b];
-      _p[b] = _pa;
+      _p[ a ] = _p[ b ];
+      _p[ b ] = _pa;
     };
 
     swap( 'zoom', 'startZoom' );
@@ -191,12 +191,12 @@ util.extend( anifn, {
 
     // swap styles
     for( var i = 0; i < _p.style.length; i++ ){
-      var prop = _p.style[i];
+      var prop = _p.style[ i ];
       var name = prop.name;
       var startStyleProp = _p.startStyle[ name ];
 
-      _p.startStyle[ name ] = _p.startStyle[ util.dash2camel( name ) ] = prop;
-      _p.style[i] = startStyleProp;
+      _p.startStyle[ name ] = prop;
+      _p.style[ i ] = startStyleProp;
     }
 
     if( wasPlaying ){
@@ -221,11 +221,11 @@ util.extend( anifn, {
         arr = _p.completes;
     }
 
-    return new Promise(function( resolve, reject ){
-      arr.push(function(){
+    return new Promise( function( resolve, reject ){
+      arr.push( function(){
         resolve();
-      });
-    });
+      } );
+    } );
   }
 
 } );

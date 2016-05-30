@@ -1,11 +1,11 @@
 'use strict';
 
-var util = require('./util');
-var define = require('./define');
-var Collection = require('./collection');
-var Core = require('./core');
-var incExts = require('./extensions');
-var is = require('./is');
+var util = require( './util' );
+var define = require( './define' );
+var Collection = require( './collection' );
+var Core = require( './core' );
+var incExts = require( './extensions' );
+var is = require( './is' );
 
 // registered extensions to cytoscape, indexed by name
 var extensions = {};
@@ -32,7 +32,7 @@ function setExtension( type, name, registrant ){
       registrant.call( this, options );
 
       // make sure layout has _private for use w/ std apis like .on()
-      if( !is.plainObject(this._private) ){
+      if( !is.plainObject( this._private ) ){
         this._private = {};
       }
 
@@ -45,9 +45,9 @@ function setExtension( type, name, registrant ){
     var optLayoutFns = [];
 
     for( var i = 0; i < optLayoutFns.length; i++ ){
-      var fnName = optLayoutFns[i];
+      var fnName = optLayoutFns[ i ];
 
-      layoutProto[fnName] = layoutProto[fnName] || function(){ return this; };
+      layoutProto[ fnName ] = layoutProto[ fnName ] || function(){ return this; };
     }
 
     // either .start() or .run() is defined, so autogen the other
@@ -64,11 +64,11 @@ function setExtension( type, name, registrant ){
         if( opts && opts.animate ){
           var anis = this.animations;
           for( var i = 0; i < anis.length; i++ ){
-            anis[i].stop();
+            anis[ i ].stop();
           }
         }
 
-        this.trigger('layoutstop');
+        this.trigger( 'layoutstop' );
 
         return this;
       };
@@ -80,11 +80,11 @@ function setExtension( type, name, registrant ){
       };
     }
 
-    layoutProto.on = define.on({ layout: true });
-    layoutProto.one = define.on({ layout: true, unbindSelfOnTrigger: true });
-    layoutProto.once = define.on({ layout: true, unbindAllBindersOnTrigger: true });
-    layoutProto.off = define.off({ layout: true });
-    layoutProto.trigger = define.trigger({ layout: true });
+    layoutProto.on = define.on( { layout: true } );
+    layoutProto.one = define.on( { layout: true, unbindSelfOnTrigger: true } );
+    layoutProto.once = define.on( { layout: true, unbindAllBindersOnTrigger: true } );
+    layoutProto.off = define.off( { layout: true } );
+    layoutProto.trigger = define.trigger( { layout: true } );
 
     define.eventAliasesOn( layoutProto );
 
@@ -93,81 +93,96 @@ function setExtension( type, name, registrant ){
   } else if( type === 'renderer' && name !== 'null' && name !== 'base' ){
     // user registered renderers inherit from base
 
-    var bProto = getExtension( 'renderer', 'base' ).prototype;
+    var BaseRenderer = getExtension( 'renderer', 'base' );
+    var bProto = BaseRenderer.prototype;
+    var RegistrantRenderer = registrant;
     var rProto = registrant.prototype;
+
+    var Renderer = function(){
+      BaseRenderer.apply( this, arguments );
+      RegistrantRenderer.apply( this, arguments );
+    };
+
+    var proto = Renderer.prototype;
 
     for( var pName in bProto ){
       var pVal = bProto[ pName ];
       var existsInR = rProto[ pName ] != null;
 
       if( existsInR ){
-        util.error('Can not register renderer `' + name + '` since it overrides `' + pName + '` in its prototype');
+        util.error( 'Can not register renderer `' + name + '` since it overrides `' + pName + '` in its prototype' );
         return;
       }
 
-      rProto[ pName ] = pVal; // take impl from base
+      proto[ pName ] = pVal; // take impl from base
     }
 
-    bProto.clientFunctions.forEach(function( name ){
-      rProto[ name ] = rProto[ name ] || function(){
-        util.error('Renderer does not implement `renderer.' + name + '()` on its prototype');
+    for( var pName in rProto ){
+      proto[ pName ] = rProto[ pName ]; // take impl from registrant
+    }
+
+    bProto.clientFunctions.forEach( function( name ){
+      proto[ name ] = proto[ name ] || function(){
+        util.error( 'Renderer does not implement `renderer.' + name + '()` on its prototype' );
       };
-    });
+    } );
+
+    ext = Renderer;
 
   }
 
-  return util.setMap({
+  return util.setMap( {
     map: extensions,
     keys: [ type, name ],
     value: ext
-  });
+  } );
 }
 
-function getExtension(type, name){
-  return util.getMap({
+function getExtension( type, name ){
+  return util.getMap( {
     map: extensions,
     keys: [ type, name ]
-  });
+  } );
 }
 
-function setModule(type, name, moduleType, moduleName, registrant){
-  return util.setMap({
+function setModule( type, name, moduleType, moduleName, registrant ){
+  return util.setMap( {
     map: modules,
     keys: [ type, name, moduleType, moduleName ],
     value: registrant
-  });
+  } );
 }
 
-function getModule(type, name, moduleType, moduleName){
-  return util.getMap({
+function getModule( type, name, moduleType, moduleName ){
+  return util.getMap( {
     map: modules,
     keys: [ type, name, moduleType, moduleName ]
-  });
+  } );
 }
 
 var extension = function(){
   // e.g. extension('renderer', 'svg')
   if( arguments.length === 2 ){
-    return getExtension.apply(null, arguments);
+    return getExtension.apply( null, arguments );
   }
 
   // e.g. extension('renderer', 'svg', { ... })
   else if( arguments.length === 3 ){
-    return setExtension.apply(null, arguments);
+    return setExtension.apply( null, arguments );
   }
 
   // e.g. extension('renderer', 'svg', 'nodeShape', 'ellipse')
   else if( arguments.length === 4 ){
-    return getModule.apply(null, arguments);
+    return getModule.apply( null, arguments );
   }
 
   // e.g. extension('renderer', 'svg', 'nodeShape', 'ellipse', { ... })
   else if( arguments.length === 5 ){
-    return setModule.apply(null, arguments);
+    return setModule.apply( null, arguments );
   }
 
   else {
-    util.error('Invalid extension access syntax');
+    util.error( 'Invalid extension access syntax' );
   }
 
 };
@@ -176,10 +191,10 @@ var extension = function(){
 Core.prototype.extension = extension;
 
 // included extensions
-incExts.forEach(function( group ){
-  group.extensions.forEach(function( ext ){
+incExts.forEach( function( group ){
+  group.extensions.forEach( function( ext ){
     setExtension( group.type, ext.name, ext.impl );
-  });
-});
+  } );
+} );
 
 module.exports = extension;

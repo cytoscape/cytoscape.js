@@ -76,22 +76,4 @@ Run `gulp <target>` in the console.  The main targets are:
 
 ## Tests
 
-Mocha tests are found in the [test directory](https://github.com/cytoscape/cytoscape.js/tree/master/test).  The tests can be run in the browser or they can be run via Node.js (`gulp test`).
-
-
-
-
-## Funding
-
-Funding for Cytoscape.js and Cytoscape is provided by NRNB (U.S. National Institutes of Health, National Center for Research Resources grant numbers P41 RR031228 and GM103504) and by NIH grants 2R01GM070743 and 1U41HG006623. The following organizations help develop Cytoscape:
-
-[ISB](http://www.systemsbiology.org) |
-[UCSD](http://www.ucsd.edu) |
-[MSKCC](http://cbio.mskcc.org) |
-[Pasteur](http://www.pasteur.fr) |
-[Agilent](http://www.agilent.com/) |
-[UCSF](http://www.ucsf.edu/) |
-[Unilever](http://www.unilever.com) |
-[Toronto](http://www.utoronto.ca) |
-[NCIBI](http://portal.ncibi.org/gateway/index.html) |
-[NRNB](http://nrnb.org)
+Mocha tests are found in the [test directory](https://github.com/cytoscape/cytoscape.js/tree/master/test).  The tests can be run in the browser or they can be run via Node.js (`gulp test` or `mocha`).

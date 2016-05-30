@@ -1,7 +1,7 @@
 'use strict';
 
-var is = require('../is');
-var util = require('../util');
+var is = require( '../is' );
+var util = require( '../util' );
 
 var elesfn = ({
 
@@ -10,23 +10,23 @@ var elesfn = ({
     var nodes = this.nodes();
     var cy = this.cy();
 
-    layout.trigger({ type: 'layoutstart', layout: layout });
+    layout.trigger( { type: 'layoutstart', layout: layout } );
 
     layout.animations = [];
 
     if( options.animate ){
       for( var i = 0; i < nodes.length; i++ ){
-        var node = nodes[i];
+        var node = nodes[ i ];
         var lastNode = i === nodes.length - 1;
 
         var newPos = fn.call( node, i, node );
         var pos = node.position();
 
-        if( !is.number(pos.x) || !is.number(pos.y) ){
-          node.silentPosition({ x: 0, y: 0 });
+        if( !is.number( pos.x ) || !is.number( pos.y ) ){
+          node.silentPosition( { x: 0, y: 0 } );
         }
 
-        var ani = node.animation({
+        var ani = node.animation( {
           position: newPos,
           duration: options.animationDuration,
           easing: options.animationEasing,
@@ -48,18 +48,18 @@ var elesfn = ({
               cy.fit( options.eles, options.padding );
             }
 
-            layout.one('layoutstop', options.stop);
-            layout.trigger({ type: 'layoutstop', layout: layout });
+            layout.one( 'layoutstop', options.stop );
+            layout.trigger( { type: 'layoutstop', layout: layout } );
           }
-        });
+        } );
 
         layout.animations.push( ani );
 
         ani.play();
       }
 
-      layout.one('layoutready', options.ready);
-      layout.trigger({ type: 'layoutready', layout: layout });
+      layout.one( 'layoutready', options.ready );
+      layout.trigger( { type: 'layoutready', layout: layout } );
     } else {
       nodes.positions( fn );
 
@@ -75,11 +75,11 @@ var elesfn = ({
         cy.pan( options.pan );
       }
 
-      layout.one('layoutready', options.ready);
-      layout.trigger({ type: 'layoutready', layout: layout });
+      layout.one( 'layoutready', options.ready );
+      layout.trigger( { type: 'layoutready', layout: layout } );
 
-      layout.one('layoutstop', options.stop);
-      layout.trigger({ type: 'layoutstop', layout: layout });
+      layout.one( 'layoutstop', options.stop );
+      layout.trigger( { type: 'layoutstop', layout: layout } );
     }
 
     return this; // chaining
@@ -88,9 +88,9 @@ var elesfn = ({
   layout: function( options ){
     var cy = this.cy();
 
-    cy.layout( util.extend({}, options, {
+    cy.layout( util.extend( {}, options, {
       eles: this
-    }) );
+    } ) );
 
     return this;
   },
@@ -98,9 +98,9 @@ var elesfn = ({
   makeLayout: function( options ){
     var cy = this.cy();
 
-    return cy.makeLayout( util.extend({}, options, {
+    return cy.makeLayout( util.extend( {}, options, {
       eles: this
-    }) );
+    } ) );
   }
 
 });

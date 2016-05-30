@@ -2,16 +2,14 @@
 
 var zIndexSort = function( a, b ){
   var cy = a.cy();
-  var a_p = a._private;
-  var b_p = b._private;
-  var zDiff = a_p.style['z-index'].value - b_p.style['z-index'].value;
+  var zDiff = a.pstyle( 'z-index' ).value - b.pstyle( 'z-index' ).value;
   var depthA = 0;
   var depthB = 0;
   var hasCompoundNodes = cy.hasCompoundNodes();
-  var aIsNode = a_p.group === 'nodes';
-  var aIsEdge = a_p.group === 'edges';
-  var bIsNode = b_p.group === 'nodes';
-  var bIsEdge = b_p.group === 'edges';
+  var aIsNode = a.isNode();
+  var aIsEdge = !aIsNode;
+  var bIsNode = b.isNode();
+  var bIsEdge = !bIsNode;
 
   // no need to calculate element depth if there is no compound node
   if( hasCompoundNodes ){
@@ -32,7 +30,7 @@ var zIndexSort = function( a, b ){
 
     } else { // both nodes or both edges
       if( zDiff === 0 ){ // same z-index => compare indices in the core (order added to graph w/ last on top)
-        return a_p.index - b_p.index;
+        return a.poolIndex() - b.poolIndex();
       } else {
         return zDiff;
       }

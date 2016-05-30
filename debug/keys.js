@@ -30,4 +30,10 @@ $(function(){
 		console.log("Pressed backtab (`) at " + (new Date()));
 	});
 
+	shortcut({
+		which: 'F'.charCodeAt(0)
+	}, function(){
+		$("#cytoscape").toggleClass('full');
+	});
+
 });

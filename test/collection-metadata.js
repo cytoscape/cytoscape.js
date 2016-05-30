@@ -1,11 +1,11 @@
 var expect = require('chai').expect;
-var cytoscape = require('../build/cytoscape.js', cytoscape);
+var cytoscape = require('../src', cytoscape);
 
 describe('Collection metadata', function(){
 
   var cy;
 
-  // test setup 
+  // test setup
   beforeEach(function(done){
     cytoscape({
       elements: {
@@ -16,7 +16,7 @@ describe('Collection metadata', function(){
             { data: { id: 'n4' } },
             { data: { id: 'n5' } }
         ],
-        
+
         edges: [
             { data: { id: 'n1n2', source: 'n1', target: 'n2' } },
             { data: { id: 'n2n3', source: 'n2', target: 'n3' } },

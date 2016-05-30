@@ -1,6 +1,6 @@
 'use strict';
 
-var util = require('../../../util');
+var util = require( '../../../util' );
 
 var BRp = {};
 
@@ -8,37 +8,28 @@ BRp.timeToRender = function(){
   return this.redrawTotalTime / this.redrawCount;
 };
 
-var minRedrawLimit = 1000/60; // people can't see much better than 60fps
-var maxRedrawLimit = 1000;  // don't cap max b/c it's more important to be responsive than smooth
-
 BRp.redraw = function( options ){
   options = options || util.staticEmptyObject();
 
   var r = this;
-  var forcedContext = options.forcedContext;
 
   if( r.averageRedrawTime === undefined ){ r.averageRedrawTime = 0; }
   if( r.lastRedrawTime === undefined ){ r.lastRedrawTime = 0; }
-
-  var redrawLimit = r.lastRedrawTime; // estimate the ideal redraw limit based on how fast we can draw
-  redrawLimit = minRedrawLimit > redrawLimit ? minRedrawLimit : redrawLimit;
-  redrawLimit = redrawLimit < maxRedrawLimit ? redrawLimit : maxRedrawLimit;
-
   if( r.lastDrawTime === undefined ){ r.lastDrawTime = 0; }
-
-  var nowTime = Date.now();
-  var timeElapsed = nowTime - r.lastDrawTime;
-  var callAfterLimit = timeElapsed >= redrawLimit;
-
-  if( !forcedContext ){
-    if( !callAfterLimit ){
-      r.skipFrame = true;
-      return;
-    }
-  }
 
   r.requestedFrame = true;
   r.renderOptions = options;
+};
+
+BRp.beforeRender = function( fn, priority ){
+  priority = priority || 0;
+
+  var cbs = this.beforeRenderCallbacks;
+
+  cbs.push({ fn: fn, priority: priority });
+
+  // higher priority callbacks executed first
+  cbs.sort(function( a, b ){ return b.priority - a.priority; });
 };
 
 BRp.startRenderLoop = function(){
@@ -50,15 +41,25 @@ BRp.startRenderLoop = function(){
     r.renderLoopStarted = true;
   }
 
-  var renderFn = function(){
+  var beforeRenderCallbacks = function( willDraw, startTime ){
+    var cbs = r.beforeRenderCallbacks;
+
+    for( var i = 0; i < cbs.length; i++ ){
+      cbs[i].fn( willDraw, startTime );
+    }
+  };
+
+  var renderFn = function( requestTime ){
     if( r.destroyed ){ return; }
 
     if( r.requestedFrame && !r.skipFrame ){
+      beforeRenderCallbacks( true, requestTime );
+
       var startTime = util.performanceNow();
 
       r.render( r.renderOptions );
 
-      var endTime = r.lastRedrawTime = util.performanceNow();
+      var endTime = r.lastDrawTime = util.performanceNow();
 
       if( r.averageRedrawTime === undefined ){
         r.averageRedrawTime = endTime - startTime;
@@ -80,9 +81,11 @@ BRp.startRenderLoop = function(){
       r.lastRedrawTime = duration;
 
       // use a weighted average with a bias from the previous average so we don't spike so easily
-      r.averageRedrawTime = r.averageRedrawTime/2 + duration/2;
+      r.averageRedrawTime = r.averageRedrawTime / 2 + duration / 2;
 
       r.requestedFrame = false;
+    } else {
+      beforeRenderCallbacks( false, requestTime );
     }
 
     r.skipFrame = false;

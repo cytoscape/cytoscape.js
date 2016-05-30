@@ -17,7 +17,7 @@ mdRend.code = function(code, lang){
   var button = '';
 
   if( lang === 'js' ){
-    button = '<button class="run run-inline-code"><span class="icon-play"></span></button>';
+    button = '<button class="run run-inline-code"><span class="fa fa-play"></span></button>';
   }
 
   return rendCode.call(this, code, lang) + button;
@@ -81,6 +81,8 @@ function md2html( file ){
 
     },
 
+    smartypants: true,
+
     renderer: mdRend
   } );
 
@@ -98,7 +100,7 @@ function toUrl( str ){
 }
 
 function makeBookmark( id ){
-  return '<a href="#'+ id +'"><span class="icon-bookmark"></span></a>';
+  return '<a href="#'+ id +'"><span class="fa fa-bookmark"></span></a>';
 }
 
 function parseSubsections( section ){

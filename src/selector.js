@@ -1,17 +1,12 @@
 'use strict';
 
-var is = require('./is');
-var util = require('./util');
+var is = require( './is' );
+var util = require( './util' );
 
-var Selector = function( onlyThisGroup, selector ){
+var Selector = function( selector ){
 
   if( !(this instanceof Selector) ){
-    return new Selector(onlyThisGroup, selector);
-  }
-
-  if( selector === undefined && onlyThisGroup !== undefined ){
-    selector = onlyThisGroup;
-    onlyThisGroup = undefined;
+    return new Selector( selector );
   }
 
   var self = this;
@@ -21,25 +16,57 @@ var Selector = function( onlyThisGroup, selector ){
     invalid: true
   };
 
-  if( !selector || ( is.string(selector) && selector.match(/^\s*$/) ) ){
+  // storage for parsed queries
+  var newQuery = function(){
+    return {
+      classes: [],
+      colonSelectors: [],
+      data: [],
+      group: null,
+      ids: [],
+      meta: [],
 
-    if( onlyThisGroup == null ){
-      // ignore
-      self.length = 0;
-    } else {
-      self[0] = newQuery();
-      self[0].group = onlyThisGroup;
-      self.length = 1;
-    }
+      // fake selectors
+      collection: null, // a collection to match against
+      filter: null, // filter function
+
+      // these are defined in the upward direction rather than down (e.g. child)
+      // because we need to go up in Selector.filter()
+      parent: null, // parent query obj
+      ancestor: null, // ancestor query obj
+      subject: null, // defines subject in compound query (subject query obj; points to self if subject)
+
+      // use these only when subject has been defined
+      child: null,
+      descendant: null
+    };
+  };
+
+  if( !selector || ( is.string( selector ) && selector.match( /^\s*$/ ) ) ){
+
+    self.length = 0;
+
+  } else if( selector === '*' || selector === 'edge' || selector === 'node' ){
+
+    // make single, group-only selectors cheap to make and cheap to filter
+
+    self[0] = newQuery();
+    self[0].group = selector === '*' ? selector : selector + 's';
+    self[0].groupOnly = true;
+    self._private.invalid = false;
+    self._private.selectorText = selector;
+    self.length = 1;
 
   } else if( is.elementOrCollection( selector ) ){
+
     var collection = selector.collection();
 
     self[0] = newQuery();
     self[0].collection = collection;
     self.length = 1;
 
-  } else if( is.fn( selector ) ) {
+  } else if( is.fn( selector ) ){
+
     self[0] = newQuery();
     self[0].filter = selector;
     self.length = 1;
@@ -48,32 +75,6 @@ var Selector = function( onlyThisGroup, selector ){
 
     // the current subject in the query
     var currentSubject = null;
-
-    // storage for parsed queries
-    var newQuery = function(){
-      return {
-        classes: [],
-        colonSelectors: [],
-        data: [],
-        group: null,
-        ids: [],
-        meta: [],
-
-        // fake selectors
-        collection: null, // a collection to match against
-        filter: null, // filter function
-
-        // these are defined in the upward direction rather than down (e.g. child)
-        // because we need to go up in Selector.filter()
-        parent: null, // parent query obj
-        ancestor: null, // ancestor query obj
-        subject: null, // defines subject in compound query (subject query obj; points to self if subject)
-
-        // use these only when subject has been defined
-        child: null,
-        descendant: null
-      };
-    };
 
     // tokens in the query language
     var tokens = {
@@ -88,32 +89,32 @@ var Selector = function( onlyThisGroup, selector ){
       child: '\\s+>\\s+',
       subject: '\\$'
     };
-    tokens.variable = '(?:[\\w-]|(?:\\\\'+ tokens.metaChar +'))+'; // a variable name
+    tokens.variable = '(?:[\\w-]|(?:\\\\' + tokens.metaChar + '))+'; // a variable name
     tokens.value = tokens.string + '|' + tokens.number; // a value literal, either a string or number
     tokens.className = tokens.variable; // a class name (follows variable conventions)
     tokens.id = tokens.variable; // an element id (follows variable conventions)
 
     // when a token like a variable has escaped meta characters, we need to clean the backslashes out
     // so that values get compared properly in Selector.filter()
-    var cleanMetaChars = function(str){
-      return str.replace(new RegExp('\\\\(' + tokens.metaChar + ')', 'g'), function(match, $1, offset, original){
+    var cleanMetaChars = function( str ){
+      return str.replace( new RegExp( '\\\\(' + tokens.metaChar + ')', 'g' ), function( match, $1, offset, original ){
         return $1;
-      });
+      } );
     };
 
     // add @ variants to comparatorOp
-    var ops = tokens.comparatorOp.split('|');
+    var ops = tokens.comparatorOp.split( '|' );
     for( var i = 0; i < ops.length; i++ ){
-      var op = ops[i];
+      var op = ops[ i ];
       tokens.comparatorOp += '|@' + op;
     }
 
     // add ! variants to comparatorOp
-    var ops = tokens.comparatorOp.split('|');
+    var ops = tokens.comparatorOp.split( '|' );
     for( var i = 0; i < ops.length; i++ ){
-      var op = ops[i];
+      var op = ops[ i ];
 
-      if( op.indexOf('!') >= 0 ){ continue; } // skip ops that explicitly contain !
+      if( op.indexOf( '!' ) >= 0 ){ continue; } // skip ops that explicitly contain !
       if( op === '=' ){ continue; } // skip = b/c != is explicitly defined
 
       tokens.comparatorOp += '|\\!' + op;
@@ -130,7 +131,7 @@ var Selector = function( onlyThisGroup, selector ){
         query: true,
         regex: '(node|edge|\\*)',
         populate: function( group ){
-          this.group = group == "*" ? group : group + 's';
+          this.group = group === '*' ? group : group + 's';
         }
       },
 
@@ -148,75 +149,75 @@ var Selector = function( onlyThisGroup, selector ){
       {
         name: 'id',
         query: true,
-        regex: '\\#('+ tokens.id +')',
+        regex: '\\#(' + tokens.id + ')',
         populate: function( id ){
-          this.ids.push( cleanMetaChars(id) );
+          this.ids.push( cleanMetaChars( id ) );
         }
       },
 
       {
         name: 'className',
         query: true,
-        regex: '\\.('+ tokens.className +')',
+        regex: '\\.(' + tokens.className + ')',
         populate: function( className ){
-          this.classes.push( cleanMetaChars(className) );
+          this.classes.push( cleanMetaChars( className ) );
         }
       },
 
       {
         name: 'dataExists',
         query: true,
-        regex: '\\[\\s*('+ tokens.variable +')\\s*\\]',
+        regex: '\\[\\s*(' + tokens.variable + ')\\s*\\]',
         populate: function( variable ){
-          this.data.push({
-            field: cleanMetaChars(variable)
-          });
+          this.data.push( {
+            field: cleanMetaChars( variable )
+          } );
         }
       },
 
       {
         name: 'dataCompare',
         query: true,
-        regex: '\\[\\s*('+ tokens.variable +')\\s*('+ tokens.comparatorOp +')\\s*('+ tokens.value +')\\s*\\]',
+        regex: '\\[\\s*(' + tokens.variable + ')\\s*(' + tokens.comparatorOp + ')\\s*(' + tokens.value + ')\\s*\\]',
         populate: function( variable, comparatorOp, value ){
-          var valueIsString = new RegExp('^' + tokens.string + '$').exec(value) != null;
+          var valueIsString = new RegExp( '^' + tokens.string + '$' ).exec( value ) != null;
 
           if( valueIsString ){
-            value = value.substring(1, value.length - 1);
+            value = value.substring( 1, value.length - 1 );
           } else {
-            value = parseFloat(value);
+            value = parseFloat( value );
           }
 
-          this.data.push({
-            field: cleanMetaChars(variable),
+          this.data.push( {
+            field: cleanMetaChars( variable ),
             operator: comparatorOp,
             value: value
-          });
+          } );
         }
       },
 
       {
         name: 'dataBool',
         query: true,
-        regex: '\\[\\s*('+ tokens.boolOp +')\\s*('+ tokens.variable +')\\s*\\]',
+        regex: '\\[\\s*(' + tokens.boolOp + ')\\s*(' + tokens.variable + ')\\s*\\]',
         populate: function( boolOp, variable ){
-          this.data.push({
-            field: cleanMetaChars(variable),
+          this.data.push( {
+            field: cleanMetaChars( variable ),
             operator: boolOp
-          });
+          } );
         }
       },
 
       {
         name: 'metaCompare',
         query: true,
-        regex: '\\[\\[\\s*('+ tokens.meta +')\\s*('+ tokens.comparatorOp +')\\s*('+ tokens.number +')\\s*\\]\\]',
+        regex: '\\[\\[\\s*(' + tokens.meta + ')\\s*(' + tokens.comparatorOp + ')\\s*(' + tokens.number + ')\\s*\\]\\]',
         populate: function( meta, comparatorOp, number ){
-          this.meta.push({
-            field: cleanMetaChars(meta),
+          this.meta.push( {
+            field: cleanMetaChars( meta ),
             operator: comparatorOp,
-            value: parseFloat(number)
-          });
+            value: parseFloat( number )
+          } );
         }
       },
 
@@ -226,7 +227,7 @@ var Selector = function( onlyThisGroup, selector ){
         regex: tokens.separator,
         populate: function(){
           // go on to next query
-          self[++i] = newQuery();
+          self[ ++i ] = newQuery();
           currentSubject = null;
         }
       },
@@ -242,7 +243,7 @@ var Selector = function( onlyThisGroup, selector ){
           childQuery.subject = currentSubject;
 
           // we're now populating the child query with expressions that follow
-          self[i] = childQuery;
+          self[ i ] = childQuery;
         }
       },
 
@@ -257,7 +258,7 @@ var Selector = function( onlyThisGroup, selector ){
           descendantQuery.subject = currentSubject;
 
           // we're now populating the descendant query with expressions that follow
-          self[i] = descendantQuery;
+          self[ i ] = descendantQuery;
         }
       },
 
@@ -267,7 +268,7 @@ var Selector = function( onlyThisGroup, selector ){
         regex: tokens.subject,
         populate: function(){
           if( currentSubject != null && this.subject != this ){
-            util.error('Redefinition of subject in selector `' + selector + '`');
+            util.error( 'Redefinition of subject in selector `' + selector + '`' );
             return false;
           }
 
@@ -289,13 +290,13 @@ var Selector = function( onlyThisGroup, selector ){
       var name;
 
       for( var j = 0; j < exprs.length; j++ ){
-        var e = exprs[j];
+        var e = exprs[ j ];
         var n = e.name;
 
         // ignore this expression if it doesn't meet the expectation function
-        if( is.fn( expectation ) && !expectation(n, e) ){ continue; }
+        if( is.fn( expectation ) && !expectation( n, e ) ){ continue; }
 
-        var m = remaining.match(new RegExp( '^' + e.regex ));
+        var m = remaining.match( new RegExp( '^' + e.regex ) );
 
         if( m != null ){
           match = m;
@@ -318,7 +319,7 @@ var Selector = function( onlyThisGroup, selector ){
 
     // consume all leading whitespace
     var consumeWhitespace = function(){
-      var match = remaining.match(/^\s+/);
+      var match = remaining.match( /^\s+/ );
 
       if( match ){
         var consumed = match[0];
@@ -329,26 +330,26 @@ var Selector = function( onlyThisGroup, selector ){
     self[0] = newQuery(); // get started
 
     consumeWhitespace(); // get rid of leading whitespace
-    for(;;){
+    for( ;; ){
       var check = consumeExpr();
 
       if( check.expr == null ){
-        util.error('The selector `'+ selector +'`is invalid');
+        util.error( 'The selector `' + selector + '`is invalid' );
         return;
       } else {
         var args = [];
-        for(var j = 1; j < check.match.length; j++){
-          args.push( check.match[j] );
+        for( var j = 1; j < check.match.length; j++ ){
+          args.push( check.match[ j ] );
         }
 
         // let the token populate the selector object (i.e. in self[i])
-        var ret = check.expr.populate.apply( self[i], args );
+        var ret = check.expr.populate.apply( self[ i ], args );
 
         if( ret === false ){ return; } // exit if population failed
       }
 
       // we're done when there's nothing left to parse
-      if( remaining.match(/^\s*$/) ){
+      if( remaining.match( /^\s*$/ ) ){
         break;
       }
     }
@@ -356,12 +357,12 @@ var Selector = function( onlyThisGroup, selector ){
     self.length = i + 1;
 
     // adjust references for subject
-    for(var j = 0; j < self.length; j++){
-      var query = self[j];
+    for( var j = 0; j < self.length; j++ ){
+      var query = self[ j ];
 
       if( query.subject != null ){
         // go up the tree until we reach the subject
-        for(;;){
+        for( ;; ){
           if( query.subject == query ){ break; } // done if subject is self
 
           if( query.parent != null ){ // swap parent/child reference
@@ -381,29 +382,17 @@ var Selector = function( onlyThisGroup, selector ){
 
             query = ancestor; // go up the tree
           } else {
-            util.error('When adjusting references for the selector `'+ query +'`, neither parent nor ancestor was found');
+            util.error( 'When adjusting references for the selector `' + query + '`, neither parent nor ancestor was found' );
             break;
           }
         } // for
 
-        self[j] = query.subject; // subject should be the root query
+        self[ j ] = query.subject; // subject should be the root query
       } // if
     } // for
 
-    // make sure for each query that the subject group matches the implicit group if any
-    if( onlyThisGroup != null ){
-      for(var j = 0; j < self.length; j++){
-        if( self[j].group != null && self[j].group != onlyThisGroup ){
-          util.error('Group `'+ self[j].group +'` conflicts with implicit group `'+ onlyThisGroup +'` in selector `'+ selector +'`');
-          return;
-        }
-
-        self[j].group = onlyThisGroup; // set to implicit group
-      }
-    }
-
   } else {
-    util.error('A selector must be created from a string; found ' + selector);
+    util.error( 'A selector must be created from a string; found ' + selector );
     return;
   }
 
@@ -417,106 +406,113 @@ selfn.size = function(){
   return this.length;
 };
 
-selfn.eq = function(i){
-  return this[i];
+selfn.eq = function( i ){
+  return this[ i ];
 };
 
-var queryMatches = function(query, element){
+var queryMatches = function( query, ele ){
+  var ele_p = ele._private;
+
+  // make single group-only selectors really cheap to check since they're the most common ones
+  if( query.groupOnly ){
+    return query.group === '*' || query.group === ele_p.group;
+  }
+
   // check group
-  if( query.group != null && query.group != '*' && query.group != element._private.group ){
+  if( query.group != null && query.group != '*' && query.group != ele_p.group ){
     return false;
   }
 
-  var cy = element.cy();
+  var cy = ele.cy();
 
   // check colon selectors
   var allColonSelectorsMatch = true;
-  for(var k = 0; k < query.colonSelectors.length; k++){
-    var sel = query.colonSelectors[k];
+  for( var k = 0; k < query.colonSelectors.length; k++ ){
+    var sel = query.colonSelectors[ k ];
 
-    switch(sel){
-    case ':selected':
-      allColonSelectorsMatch = element.selected();
-      break;
-    case ':unselected':
-      allColonSelectorsMatch = !element.selected();
-      break;
-    case ':selectable':
-      allColonSelectorsMatch = element.selectable();
-      break;
-    case ':unselectable':
-      allColonSelectorsMatch = !element.selectable();
-      break;
-    case ':locked':
-      allColonSelectorsMatch = element.locked();
-      break;
-    case ':unlocked':
-      allColonSelectorsMatch = !element.locked();
-      break;
-    case ':visible':
-      allColonSelectorsMatch = element.visible();
-      break;
-    case ':hidden':
-      allColonSelectorsMatch = !element.visible();
-      break;
-    case ':transparent':
-      allColonSelectorsMatch = element.transparent();
-      break;
-    case ':grabbed':
-      allColonSelectorsMatch = element.grabbed();
-      break;
-    case ':free':
-      allColonSelectorsMatch = !element.grabbed();
-      break;
-    case ':removed':
-      allColonSelectorsMatch = element.removed();
-      break;
-    case ':inside':
-      allColonSelectorsMatch = !element.removed();
-      break;
-    case ':grabbable':
-      allColonSelectorsMatch = element.grabbable();
-      break;
-    case ':ungrabbable':
-      allColonSelectorsMatch = !element.grabbable();
-      break;
-    case ':animated':
-      allColonSelectorsMatch = element.animated();
-      break;
-    case ':unanimated':
-      allColonSelectorsMatch = !element.animated();
-      break;
-    case ':parent':
-      allColonSelectorsMatch = element.isNode() && element.children().nonempty();
-      break;
-    case ':child':
-    case ':nonorphan':
-      allColonSelectorsMatch = element.isNode() && element.parent().nonempty();
-      break;
-    case ':orphan':
-      allColonSelectorsMatch = element.isNode() && element.parent().empty();
-      break;
-    case ':loop':
-      allColonSelectorsMatch = element.isEdge() && element.data('source') === element.data('target');
-      break;
-    case ':simple':
-      allColonSelectorsMatch = element.isEdge() && element.data('source') !== element.data('target');
-      break;
-    case ':active':
-      allColonSelectorsMatch = element.active();
-      break;
-    case ':inactive':
-      allColonSelectorsMatch = !element.active();
-      break;
-    case ':touch':
-      allColonSelectorsMatch = is.touch();
-      break;
-    case ':backgrounding':
-      allColonSelectorsMatch = element.backgrounding();
-      break;
-    case ':nonbackgrounding':
-      allColonSelectorsMatch = !element.backgrounding();
-      break;
+    switch( sel ){
+      case ':selected':
+        allColonSelectorsMatch = ele.selected();
+        break;
+      case ':unselected':
+        allColonSelectorsMatch = !ele.selected();
+        break;
+      case ':selectable':
+        allColonSelectorsMatch = ele.selectable();
+        break;
+      case ':unselectable':
+        allColonSelectorsMatch = !ele.selectable();
+        break;
+      case ':locked':
+        allColonSelectorsMatch = ele.locked();
+        break;
+      case ':unlocked':
+        allColonSelectorsMatch = !ele.locked();
+        break;
+      case ':visible':
+        allColonSelectorsMatch = ele.visible();
+        break;
+      case ':hidden':
+        allColonSelectorsMatch = !ele.visible();
+        break;
+      case ':transparent':
+        allColonSelectorsMatch = ele.transparent();
+        break;
+      case ':grabbed':
+        allColonSelectorsMatch = ele.grabbed();
+        break;
+      case ':free':
+        allColonSelectorsMatch = !ele.grabbed();
+        break;
+      case ':removed':
+        allColonSelectorsMatch = ele.removed();
+        break;
+      case ':inside':
+        allColonSelectorsMatch = !ele.removed();
+        break;
+      case ':grabbable':
+        allColonSelectorsMatch = ele.grabbable();
+        break;
+      case ':ungrabbable':
+        allColonSelectorsMatch = !ele.grabbable();
+        break;
+      case ':animated':
+        allColonSelectorsMatch = ele.animated();
+        break;
+      case ':unanimated':
+        allColonSelectorsMatch = !ele.animated();
+        break;
+      case ':parent':
+        allColonSelectorsMatch = ele.isNode() && ele.children().nonempty();
+        break;
+      case ':child':
+      case ':nonorphan':
+        allColonSelectorsMatch = ele.isNode() && ele.parent().nonempty();
+        break;
+      case ':orphan':
+        allColonSelectorsMatch = ele.isNode() && ele.parent().empty();
+        break;
+      case ':loop':
+        allColonSelectorsMatch = ele.isEdge() && ele.data( 'source' ) === ele.data( 'target' );
+        break;
+      case ':simple':
+        allColonSelectorsMatch = ele.isEdge() && ele.data( 'source' ) !== ele.data( 'target' );
+        break;
+      case ':active':
+        allColonSelectorsMatch = ele.active();
+        break;
+      case ':inactive':
+        allColonSelectorsMatch = !ele.active();
+        break;
+      case ':touch':
+        allColonSelectorsMatch = is.touch();
+        break;
+      case ':backgrounding':
+        allColonSelectorsMatch = ele.backgrounding();
+        break;
+      case ':nonbackgrounding':
+        allColonSelectorsMatch = !ele.backgrounding();
+        break;
     }
 
     if( !allColonSelectorsMatch ) break;
@@ -525,9 +521,9 @@ var queryMatches = function(query, element){
 
   // check id
   var allIdsMatch = true;
-  for(var k = 0; k < query.ids.length; k++){
-    var id = query.ids[k];
-    var actualId = element._private.data.id;
+  for( var k = 0; k < query.ids.length; k++ ){
+    var id = query.ids[ k ];
+    var actualId = ele_p.data.id;
 
     allIdsMatch = allIdsMatch && (id == actualId);
 
@@ -537,20 +533,20 @@ var queryMatches = function(query, element){
 
   // check classes
   var allClassesMatch = true;
-  for(var k = 0; k < query.classes.length; k++){
-    var cls = query.classes[k];
+  for( var k = 0; k < query.classes.length; k++ ){
+    var cls = query.classes[ k ];
 
-    allClassesMatch = allClassesMatch && element.hasClass(cls);
+    allClassesMatch = allClassesMatch && ele.hasClass( cls );
 
     if( !allClassesMatch ) break;
   }
   if( !allClassesMatch ) return false;
 
   // generic checking for data/metadata
-  var operandsMatch = function(params){
+  var operandsMatch = function( params ){
     var allDataMatches = true;
-    for(var k = 0; k < query[params.name].length; k++){
-      var data = query[params.name][k];
+    for( var k = 0; k < query[ params.name ].length; k++ ){
+      var data = query[ params.name ][ k ];
       var operator = data.operator;
       var value = data.value;
       var field = data.field;
@@ -558,23 +554,23 @@ var queryMatches = function(query, element){
 
       if( operator != null && value != null ){
 
-        var fieldVal = params.fieldValue(field);
-        var fieldStr = !is.string(fieldVal) && !is.number(fieldVal) ? '' : '' + fieldVal;
+        var fieldVal = params.fieldValue( field );
+        var fieldStr = !is.string( fieldVal ) && !is.number( fieldVal ) ? '' : '' + fieldVal;
         var valStr = '' + value;
 
         var caseInsensitive = false;
-        if( operator.indexOf('@') >= 0 ){
+        if( operator.indexOf( '@' ) >= 0 ){
           fieldStr = fieldStr.toLowerCase();
           valStr = valStr.toLowerCase();
 
-          operator = operator.replace('@', '');
+          operator = operator.replace( '@', '' );
           caseInsensitive = true;
         }
 
         var notExpr = false;
         var handledNotExpr = false;
-        if( operator.indexOf('!') >= 0 ){
-          operator = operator.replace('!', '');
+        if( operator.indexOf( '!' ) >= 0 ){
+          operator = operator.replace( '!', '' );
           notExpr = true;
         }
 
@@ -585,15 +581,15 @@ var queryMatches = function(query, element){
           fieldVal = fieldStr.toLowerCase();
         }
 
-        switch(operator){
+        switch( operator ){
         case '*=':
-          matches = fieldStr.search(valStr) >= 0;
+          matches = fieldStr.search( valStr ) >= 0;
           break;
         case '$=':
-          matches = new RegExp(valStr + '$').exec(fieldStr) != null;
+          matches = new RegExp( valStr + '$' ).exec( fieldStr ) != null;
           break;
         case '^=':
-          matches = new RegExp('^' + valStr).exec(fieldStr) != null;
+          matches = new RegExp( '^' + valStr ).exec( fieldStr ) != null;
           break;
         case '=':
           matches = fieldVal === value;
@@ -623,19 +619,19 @@ var queryMatches = function(query, element){
 
         }
       } else if( operator != null ){
-        switch(operator){
+        switch( operator ){
         case '?':
-          matches = params.fieldTruthy(field);
+          matches = params.fieldTruthy( field );
           break;
         case '!':
-          matches = !params.fieldTruthy(field);
+          matches = !params.fieldTruthy( field );
           break;
         case '^':
-          matches = params.fieldUndefined(field);
+          matches = params.fieldUndefined( field );
           break;
         }
       } else {
-        matches = !params.fieldUndefined(field);
+        matches = !params.fieldUndefined( field );
       }
 
       if( notExpr && !handledNotExpr ){
@@ -653,48 +649,42 @@ var queryMatches = function(query, element){
   }; // operandsMatch
 
   // check data matches
-  var allDataMatches = operandsMatch({
+  var allDataMatches = operandsMatch( {
     name: 'data',
-    fieldValue: function(field){
-      return element._private.data[field];
+    fieldValue: function( field ){
+      return ele_p.data[ field ];
     },
-    fieldRef: function(field){
-      return 'element._private.data.' + field;
+    fieldUndefined: function( field ){
+      return ele_p.data[ field ] === undefined;
     },
-    fieldUndefined: function(field){
-      return element._private.data[field] === undefined;
-    },
-    fieldTruthy: function(field){
-      if( element._private.data[field] ){
+    fieldTruthy: function( field ){
+      if( ele_p.data[ field ] ){
         return true;
       }
       return false;
     }
-  });
+  } );
 
   if( !allDataMatches ){
     return false;
   }
 
   // check metadata matches
-  var allMetaMatches = operandsMatch({
+  var allMetaMatches = operandsMatch( {
     name: 'meta',
-    fieldValue: function(field){
-      return element[field]();
+    fieldValue: function( field ){
+      return ele[ field ]();
     },
-    fieldRef: function(field){
-      return 'element.' + field + '()';
+    fieldUndefined: function( field ){
+      return ele[ field ]() == null;
     },
-    fieldUndefined: function(field){
-      return element[field]() == null;
-    },
-    fieldTruthy: function(field){
-      if( element[field]() ){
+    fieldTruthy: function( field ){
+      if( ele[ field ]() ){
         return true;
       }
       return false;
     }
-  });
+  } );
 
   if( !allMetaMatches ){
     return false;
@@ -702,7 +692,7 @@ var queryMatches = function(query, element){
 
   // check collection
   if( query.collection != null ){
-    var matchesAny = query.collection._private.ids[ element.id() ] != null;
+    var matchesAny = query.collection.hasElementWithId( ele.id() );
 
     if( !matchesAny ){
       return false;
@@ -710,13 +700,12 @@ var queryMatches = function(query, element){
   }
 
   // check filter function
-  if( query.filter != null && element.collection().filter( query.filter ).size() === 0 ){
+  if( query.filter != null && ele.collection().filter( query.filter ).size() === 0 ){
     return false;
   }
 
-
   // check parent/child relations
-  var confirmRelations = function( query, elements ){
+  var confirmRelations = function( query, eles ){
     if( query != null ){
       var matches = false;
 
@@ -724,11 +713,11 @@ var queryMatches = function(query, element){
         return false;
       }
 
-      elements = elements(); // make elements functional so we save cycles if query == null
+      eles = eles(); // save cycles if query == null
 
       // query must match for at least one element (may be recursive)
-      for(var i = 0; i < elements.length; i++){
-        if( queryMatches( query, elements[i] ) ){
+      for( var i = 0; i < eles.length; i++ ){
+        if( queryMatches( query, eles[ i ] ) ){
           matches = true;
           break;
         }
@@ -740,28 +729,28 @@ var queryMatches = function(query, element){
     }
   };
 
-  if (! confirmRelations(query.parent, function(){
-    return element.parent();
-  }) ){ return false; }
+  if( !confirmRelations( query.parent, function(){
+    return ele.parent();
+  } ) ){ return false; }
 
-  if (! confirmRelations(query.ancestor, function(){
-    return element.parents();
-  }) ){ return false; }
+  if( !confirmRelations( query.ancestor, function(){
+    return ele.parents();
+  } ) ){ return false; }
 
-  if (! confirmRelations(query.child, function(){
-    return element.children();
-  }) ){ return false; }
+  if( !confirmRelations( query.child, function(){
+    return ele.children();
+  } ) ){ return false; }
 
-  if (! confirmRelations(query.descendant, function(){
-    return element.descendants();
-  }) ){ return false; }
+  if( !confirmRelations( query.descendant, function(){
+    return ele.descendants();
+  } ) ){ return false; }
 
   // we've reached the end, so we've matched everything for this query
   return true;
 }; // queryMatches
 
 // filter an existing collection
-selfn.filter = function(collection){
+selfn.filter = function( collection ){
   var self = this;
   var cy = collection.cy();
 
@@ -770,11 +759,11 @@ selfn.filter = function(collection){
     return cy.collection();
   }
 
-  var selectorFunction = function(i, element){
-    for(var j = 0; j < self.length; j++){
-      var query = self[j];
+  var selectorFunction = function( i, element ){
+    for( var j = 0; j < self.length; j++ ){
+      var query = self[ j ];
 
-      if( queryMatches(query, element) ){
+      if( queryMatches( query, element ) ){
         return true;
       }
     }
@@ -792,7 +781,7 @@ selfn.filter = function(collection){
 }; // filter
 
 // does selector match a single element?
-selfn.matches = function(ele){
+selfn.matches = function( ele ){
   var self = this;
 
   // don't bother trying if it's invalid
@@ -800,10 +789,10 @@ selfn.matches = function(ele){
     return false;
   }
 
-  for(var j = 0; j < self.length; j++){
-    var query = self[j];
+  for( var j = 0; j < self.length; j++ ){
+    var query = self[ j ];
 
-    if( queryMatches(query, ele) ){
+    if( queryMatches( query, ele ) ){
       return true;
     }
   }
@@ -816,50 +805,50 @@ selfn.toString = selfn.selector = function(){
 
   var str = '';
 
-  var clean = function(obj, isValue){
-    if( is.string(obj) ){
+  var clean = function( obj, isValue ){
+    if( is.string( obj ) ){
       return isValue ? '"' + obj + '"' : obj;
     }
     return '';
   };
 
-  var queryToString = function(query){
+  var queryToString = function( query ){
     var str = '';
 
     if( query.subject === query ){
       str += '$';
     }
 
-    var group = clean(query.group);
-    str += group.substring(0, group.length - 1);
+    var group = clean( query.group );
+    str += group.substring( 0, group.length - 1 );
 
-    for(var j = 0; j < query.data.length; j++){
-      var data = query.data[j];
+    for( var j = 0; j < query.data.length; j++ ){
+      var data = query.data[ j ];
 
       if( data.value ){
-        str += '[' + data.field + clean(data.operator) + clean(data.value, true) + ']';
+        str += '[' + data.field + clean( data.operator ) + clean( data.value, true ) + ']';
       } else {
-        str += '[' + clean(data.operator) + data.field + ']';
+        str += '[' + clean( data.operator ) + data.field + ']';
       }
     }
 
-    for(var j = 0; j < query.meta.length; j++){
-      var meta = query.meta[j];
-      str += '[[' + meta.field + clean(meta.operator) + clean(meta.value, true) + ']]';
+    for( var j = 0; j < query.meta.length; j++ ){
+      var meta = query.meta[ j ];
+      str += '[[' + meta.field + clean( meta.operator ) + clean( meta.value, true ) + ']]';
     }
 
-    for(var j = 0; j < query.colonSelectors.length; j++){
-      var sel = query.colonSelectors[i];
+    for( var j = 0; j < query.colonSelectors.length; j++ ){
+      var sel = query.colonSelectors[ i ];
       str += sel;
     }
 
-    for(var j = 0; j < query.ids.length; j++){
-      var sel = '#' + query.ids[i];
+    for( var j = 0; j < query.ids.length; j++ ){
+      var sel = '#' + query.ids[ i ];
       str += sel;
     }
 
-    for(var j = 0; j < query.classes.length; j++){
-      var sel = '.' + query.classes[j];
+    for( var j = 0; j < query.classes.length; j++ ){
+      var sel = '.' + query.classes[ j ];
       str += sel;
     }
 
@@ -882,8 +871,8 @@ selfn.toString = selfn.selector = function(){
     return str;
   };
 
-  for(var i = 0; i < this.length; i++){
-    var query = this[i];
+  for( var i = 0; i < this.length; i++ ){
+    var query = this[ i ];
 
     str += queryToString( query );
 

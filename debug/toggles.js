@@ -23,4 +23,14 @@ $(function(){
     $(window).scrollTop( $('body').height()/2 );
   });
 
+	$(document).on("click", "#full-cy", function(){
+    $("#cytoscape").addClass('full');
+		// cy.resize();
+  });
+
+  $(document).on("click", "#defsize-cy", function(){
+    $("#cytoscape").removeClass('full');
+		// cy.resize();
+  });
+
 });

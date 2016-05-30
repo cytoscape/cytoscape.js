@@ -1,31 +1,31 @@
 'use strict';
 
-var util = require('../util');
+var util = require( '../util' );
 
 var elesfn = ({
   classes: function( classes ){
-    classes = classes.match(/\S+/g) || [];
+    classes = classes.match( /\S+/g ) || [];
     var self = this;
     var changed = [];
     var classesMap = {};
 
     // fill in classes map
     for( var i = 0; i < classes.length; i++ ){
-      var cls = classes[i];
+      var cls = classes[ i ];
 
       classesMap[ cls ] = true;
     }
 
     // check and update each ele
     for( var j = 0; j < self.length; j++ ){
-      var ele = self[j];
+      var ele = self[ j ];
       var _p = ele._private;
       var eleClasses = _p.classes;
       var changedEle = false;
 
       // check if ele has all of the passed classes
       for( var i = 0; i < classes.length; i++ ){
-        var cls = classes[i];
+        var cls = classes[ i ];
         var eleHasClass = eleClasses[ cls ];
 
         if( !eleHasClass ){
@@ -54,9 +54,9 @@ var elesfn = ({
 
     // trigger update style on those eles that had class changes
     if( changed.length > 0 ){
-      this.spawn(changed)
+      this.spawn( changed )
         .updateStyle()
-        .trigger('class')
+        .trigger( 'class' )
       ;
     }
 
@@ -69,36 +69,36 @@ var elesfn = ({
 
   hasClass: function( className ){
     var ele = this[0];
-    return ( ele != null && ele._private.classes[className] ) ? true : false;
+    return ( ele != null && ele._private.classes[ className ] ) ? true : false;
   },
 
   toggleClass: function( classesStr, toggle ){
-    var classes = classesStr.match(/\S+/g) || [];
+    var classes = classesStr.match( /\S+/g ) || [];
     var self = this;
     var changed = []; // eles who had classes changed
 
     for( var i = 0, il = self.length; i < il; i++ ){
-      var ele = self[i];
+      var ele = self[ i ];
       var changedEle = false;
 
       for( var j = 0; j < classes.length; j++ ){
-        var cls = classes[j];
+        var cls = classes[ j ];
         var eleClasses = ele._private.classes;
-        var hasClass = eleClasses[cls];
+        var hasClass = eleClasses[ cls ];
         var shouldAdd = toggle || (toggle === undefined && !hasClass);
 
         if( shouldAdd ){
-          eleClasses[cls] = true;
+          eleClasses[ cls ] = true;
 
           if( !hasClass && !changedEle ){
-            changed.push(ele);
+            changed.push( ele );
             changedEle = true;
           }
         } else { // then remove
-          eleClasses[cls] = false;
+          eleClasses[ cls ] = false;
 
           if( hasClass && !changedEle ){
-            changed.push(ele);
+            changed.push( ele );
             changedEle = true;
           }
         }
@@ -108,9 +108,9 @@ var elesfn = ({
 
     // trigger update style on those eles that had class changes
     if( changed.length > 0 ){
-      this.spawn(changed)
+      this.spawn( changed )
         .updateStyle()
-        .trigger('class')
+        .trigger( 'class' )
       ;
     }
 
@@ -131,9 +131,9 @@ var elesfn = ({
     }
 
     self.addClass( classes );
-    setTimeout(function(){
+    setTimeout( function(){
       self.removeClass( classes );
-    }, duration);
+    }, duration );
 
     return self;
   }

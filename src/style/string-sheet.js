@@ -1,7 +1,7 @@
 'use strict';
 
-var util = require('../util');
-var Selector = require('../selector');
+var util = require( '../util' );
+var Selector = require( '../selector' );
 
 var styfn = {};
 
@@ -14,7 +14,7 @@ styfn.applyFromString = function( string ){
   var propAndValStr;
 
   // remove comments from the style string
-  remaining = remaining.replace(/[/][*](\s|.)+?[*][/]/g, '');
+  remaining = remaining.replace( /[/][*](\s|.)+?[*][/]/g, '' );
 
   function removeSelAndBlockFromRemaining(){
     // remove the parsed selector and block from the remaining text to parse
@@ -34,14 +34,14 @@ styfn.applyFromString = function( string ){
     }
   }
 
-  while(true){
-    var nothingLeftToParse = remaining.match(/^\s*$/);
+  while( true ){
+    var nothingLeftToParse = remaining.match( /^\s*$/ );
     if( nothingLeftToParse ){ break; }
 
-    var selAndBlock = remaining.match(/^\s*((?:.|\s)+?)\s*\{((?:.|\s)+?)\}/);
+    var selAndBlock = remaining.match( /^\s*((?:.|\s)+?)\s*\{((?:.|\s)+?)\}/ );
 
     if( !selAndBlock ){
-      util.error('Halting stylesheet parsing: String stylesheet contains more to parse but no selector and block found in: ' + remaining);
+      util.error( 'Halting stylesheet parsing: String stylesheet contains more to parse but no selector and block found in: ' + remaining );
       break;
     }
 
@@ -52,7 +52,7 @@ styfn.applyFromString = function( string ){
     if( selectorStr !== 'core' ){
       var selector = new Selector( selectorStr );
       if( selector._private.invalid ){
-        util.error('Skipping parsing of block: Invalid selector found in string stylesheet: ' + selectorStr);
+        util.error( 'Skipping parsing of block: Invalid selector found in string stylesheet: ' + selectorStr );
 
         // skip this selector and block
         removeSelAndBlockFromRemaining();
@@ -66,14 +66,14 @@ styfn.applyFromString = function( string ){
     blockRem = blockStr;
     var props = [];
 
-    while(true){
-      var nothingLeftToParse = blockRem.match(/^\s*$/);
+    while( true ){
+      var nothingLeftToParse = blockRem.match( /^\s*$/ );
       if( nothingLeftToParse ){ break; }
 
-      var propAndVal = blockRem.match(/^\s*(.+?)\s*:\s*(.+?)\s*;/);
+      var propAndVal = blockRem.match( /^\s*(.+?)\s*:\s*(.+?)\s*;/ );
 
       if( !propAndVal ){
-        util.error('Skipping parsing of block: Invalid formatting of style property and value definitions found in:' + blockStr);
+        util.error( 'Skipping parsing of block: Invalid formatting of style property and value definitions found in:' + blockStr );
         invalidBlock = true;
         break;
       }
@@ -84,7 +84,7 @@ styfn.applyFromString = function( string ){
 
       var prop = self.properties[ propStr ];
       if( !prop ){
-        util.error('Skipping property: Invalid property name in: ' + propAndValStr);
+        util.error( 'Skipping property: Invalid property name in: ' + propAndValStr );
 
         // skip this property in the block
         removePropAndValFromRem();
@@ -94,17 +94,17 @@ styfn.applyFromString = function( string ){
       var parsedProp = style.parse( propStr, valStr );
 
       if( !parsedProp ){
-        util.error('Skipping property: Invalid property definition in: ' + propAndValStr);
+        util.error( 'Skipping property: Invalid property definition in: ' + propAndValStr );
 
         // skip this property in the block
         removePropAndValFromRem();
         continue;
       }
 
-      props.push({
+      props.push( {
         name: propStr,
         val: valStr
-      });
+      } );
       removePropAndValFromRem();
     }
 
@@ -116,7 +116,7 @@ styfn.applyFromString = function( string ){
     // put the parsed block in the style
     style.selector( selectorStr );
     for( var i = 0; i < props.length; i++ ){
-      var prop = props[i];
+      var prop = props[ i ];
       style.css( prop.name, prop.val );
     }
 

@@ -22,8 +22,6 @@ Your stylesheet may include something like this (assuming a DOM element with ID 
 }
 ```
 
-<span class="important-indicator"></span> Also note that you should call [`cy.resize()`](#core/viewport-manipulation/cy.resize) when your code resizes the viewport.
-
 To install Cytoscape.js via npm:
 
 ```bash
@@ -44,22 +42,16 @@ require(['cytoscape'], function(cytoscape){
 });
 ```
 
-To install Cytoscape.js via Bower (in the terminal):
+To install Cytoscape.js via Bower:
 
 ```bash
 bower install cytoscape
 ```
 
-To install Cytoscape.js via spm (in the terminal):
+To install Cytoscape.js via Meteor/Atmosphere:
 
 ```bash
-spm install cytoscape
-```
-
-To install Cytoscape.js via Meteor/Atmosphere (in the terminal):
-
-```bash
-meteor add cytoscape:cytoscape
+npm install cytoscape
 ```
 
 
@@ -82,7 +74,7 @@ var cy = cytoscape({
 });
 ```
 
-If you are running Cytoscape.js in Node.js or otherwise running it headlessly, you will not specify the `container` option.  When running Cytoscape.js headlessly in the browser, you should specify `options.renderer.name` as `'null'` so that the default canvas renderer is not used to draw the graph.  Outside of the browser (e.g. in Node.js) or if the convenience option `options.headless` is `true`, the null renderer is used by default.
+If you are running Cytoscape.js in Node.js or otherwise running it headlessly, you will not specify the `container` option.  In implicitly headless environments like Node.js, an instance is automatically headless.  To explicitly run a headless instance (e.g. in the browser) you can specify `options.headless` as `true`.
 
 
 

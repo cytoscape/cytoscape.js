@@ -1,160 +1,177 @@
 'use strict';
 
-var is = require('../../is');
+var is = require( '../../is' );
+var Heap = require( '../../heap' );
 
 var elesfn = ({
 
   // Implemented from the algorithm in the paper "On Variants of Shortest-Path Betweenness Centrality and their Generic Computation" by Ulrik Brandes
-  betweennessCentrality: function (options) {
+  betweennessCentrality: function( options ){
     options = options || {};
 
     // Weight - optional
-    if (options.weight != null && is.fn(options.weight)) {
-      var weightFn = options.weight;
-      var weighted = true;
+    var weighted, weightFn;
+    if( is.fn( options.weight ) ){
+      weightFn = options.weight;
+      weighted = true;
     } else {
-      var weighted = false;
+      weighted = false;
     }
 
     // Directed - default false
-    if (options.directed != null && is.bool(options.directed)) {
-      var directed = options.directed;
-    } else {
-      var directed = false;
-    }
-
-    var priorityInsert = function (queue, ele) {
-      queue.unshift(ele);
-      for (var i = 0; d[queue[i]] < d[queue[i + 1]] && i < queue.length - 1; i++) {
-        var tmp = queue[i];
-        queue[i] = queue[i + 1];
-        queue[i + 1] = tmp;
-      }
-    };
+    var directed = options.directed != null ? options.directed : false;
 
     var cy = this._private.cy;
 
     // starting
     var V = this.nodes();
     var A = {};
-    var C = {};
+    var _C = {};
+    var max;
+    var C = {
+      set: function( key, val ){
+        _C[ key ] = val;
+
+        if( val > max ){ max = val; }
+      },
+
+      get: function( key ){ return _C[ key ]; }
+    };
 
     // A contains the neighborhoods of every node
-    for (var i = 0; i < V.length; i++) {
-      if (directed) {
-        A[V[i].id()] = V[i].outgoers("node"); // get outgoers of every node
+    for( var i = 0; i < V.length; i++ ){
+      var v = V[ i ];
+      var vid = v.id();
+
+      if( directed ){
+        A[ vid ] = v.outgoers().nodes(); // get outgoers of every node
       } else {
-        A[V[i].id()] = V[i].openNeighborhood("node"); // get neighbors of every node
+        A[ vid ] = v.openNeighborhood().nodes(); // get neighbors of every node
       }
+
+      C.set( vid, 0 );
     }
 
-    // C contains the betweenness values
-    for (var i = 0; i < V.length; i++) {
-      C[V[i].id()] = 0;
-    }
-
-    for (var s = 0; s < V.length; s++) {
+    for( var s = 0; s < V.length; s++ ){
+      var sid = V[s].id();
       var S = []; // stack
       var P = {};
       var g = {};
       var d = {};
-      var Q = []; // queue
+      var Q = new Heap(function( a, b ){
+        return d[a] - d[b];
+      }); // queue
 
       // init dictionaries
-      for (var i = 0; i < V.length; i++) {
-        P[V[i].id()] = [];
-        g[V[i].id()] = 0;
-        d[V[i].id()] = Number.POSITIVE_INFINITY;
+      for( var i = 0; i < V.length; i++ ){
+        var vid = V[ i ].id();
+
+        P[ vid ] = [];
+        g[ vid ] = 0;
+        d[ vid ] = Infinity;
       }
 
-      g[V[s].id()] = 1; // sigma
-      d[V[s].id()] = 0; // distance to s
+      g[ sid ] = 1; // sigma
+      d[ sid ] = 0; // distance to s
 
-      Q.unshift(V[s].id());
+      Q.push( sid );
 
-      while (Q.length > 0) {
+      while( !Q.empty() ){
         var v = Q.pop();
-        S.push(v);
-        if (weighted) {
-          A[v].forEach(function (w) {
-            if (cy.$('#' + v).edgesTo(w).length > 0) {
-              var edge = cy.$('#' + v).edgesTo(w)[0];
+
+        S.push( v );
+
+        if( weighted ){
+          for( var j = 0; j < A[v].length; j++ ){
+            var w = A[v][j];
+            var vEle = cy.getElementById( v );
+
+            var edge;
+            if( vEle.edgesTo( w ).length > 0 ){
+              edge = vEle.edgesTo( w )[0];
             } else {
-              var edge = w.edgesTo('#' + v)[0];
+              edge = w.edgesTo( vEle )[0];
             }
 
-            var edgeWeight = weightFn.apply(edge, [edge]);
+            var edgeWeight = weightFn.apply( edge, [ edge ] );
 
-            if (d[w.id()] > d[v] + edgeWeight) {
-              d[w.id()] = d[v] + edgeWeight;
-              if (Q.indexOf(w.id()) < 0) { //if w is not in Q
-                priorityInsert(Q, w.id());
+            w = w.id();
+
+            if( d[w] > d[v] + edgeWeight ){
+              d[w] = d[v] + edgeWeight;
+
+              if( Q.nodes.indexOf( w ) < 0 ){ //if w is not in Q
+                Q.push( w );
               } else { // update position if w is in Q
-                Q.splice(Q.indexOf(w.id()), 1);
-                priorityInsert(Q, w.id());
+                Q.updateItem( w );
               }
-              g[w.id()] = 0;
-              P[w.id()] = [];
+
+              g[w] = 0;
+              P[w] = [];
             }
-            if (d[w.id()] == d[v] + edgeWeight) {
-              g[w.id()] = g[w.id()] + g[v];
-              P[w.id()].push(v);
+
+            if( d[w] == d[v] + edgeWeight ){
+              g[w] = g[w] + g[v];
+              P[w].push( v );
             }
-          });
+          }
         } else {
-          A[v].forEach(function (w) {
-            if (d[w.id()] == Number.POSITIVE_INFINITY) {
-              Q.unshift(w.id());
-              d[w.id()] = d[v] + 1;
+          for( var j = 0; j < A[v].length; j++ ){
+            var w = A[v][j].id();
+
+            if( d[w] == Infinity ){
+              Q.push( w );
+
+              d[w] = d[v] + 1;
             }
-            if (d[w.id()] == d[v] + 1) {
-              g[w.id()] = g[w.id()] + g[v];
-              P[w.id()].push(v);
+
+            if( d[w] == d[v] + 1 ){
+              g[w] = g[w] + g[v];
+              P[w].push( v );
             }
-          });
+          }
         }
       }
 
       var e = {};
-      for (var i = 0; i < V.length; i++) {
-        e[V[i].id()] = 0;
+      for( var i = 0; i < V.length; i++ ){
+        e[ V[ i ].id() ] = 0;
       }
 
-      while (S.length > 0) {
+      while( S.length > 0 ){
         var w = S.pop();
-        P[w].forEach(function (v) {
-          e[v] = e[v] + (g[v] / g[w]) * (1 + e[w]);
-          if (w != V[s].id())
-            C[w] = C[w] + e[w];
-        });
-      }
-    }
 
-    var max = 0;
-    for (var key in C) {
-      if (max < C[key])
-        max = C[key];
+        for( var j = 0; j < P[w].length; j++ ){
+          var v = P[w][j];
+
+          e[v] = e[v] + (g[v] / g[w]) * (1 + e[w]);
+
+          if( w != V[s].id() ){
+            C.set( w, C.get( w ) + e[w] );
+          }
+        }
+      }
     }
 
     var ret = {
-      betweenness: function (node) {
-        if (is.string(node)) {
-          var node = (cy.filter(node)[0]).id();
+      betweenness: function( node ){
+        if( is.string( node ) ){
+          var node = cy.filter( node ).id();
         } else {
           var node = node.id();
         }
 
-        return C[node];
+        return C.get( node );
       },
 
-      betweennessNormalized: function (node) {
-        if (is.string(node)) {
-          var node = (cy.filter(node)[0]).id();
+      betweennessNormalized: function( node ){
+        if( is.string( node ) ){
+          var node = cy.filter( node ).id();
         } else {
           var node = node.id();
         }
 
-        return C[node] / max;
+        return C.get( node ) / max;
       }
     };
 

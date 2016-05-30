@@ -1,17 +1,17 @@
 'use strict';
 
-var is = require('../is');
-var util = require('../util');
-var Selector = require('../selector');
+var is = require( '../is' );
+var util = require( '../util' );
+var Selector = require( '../selector' );
 
 var Style = function( cy ){
 
   if( !(this instanceof Style) ){
-    return new Style(cy);
+    return new Style( cy );
   }
 
-  if( !is.core(cy) ){
-    util.error('A style must have a core reference');
+  if( !is.core( cy ) ){
+    util.error( 'A style must have a core reference' );
     return;
   }
 
@@ -35,7 +35,7 @@ styfn.instanceString = function(){
 // remove all contexts
 styfn.clear = function(){
   for( var i = 0; i < this.length; i++ ){
-    this[i] = undefined;
+    this[ i ] = undefined;
   }
   this.length = 0;
   this._private.newStyle = true;
@@ -61,7 +61,7 @@ styfn.selector = function( selectorStr ){
   var selector = selectorStr === 'core' ? null : new Selector( selectorStr );
 
   var i = this.length++; // new context means new index
-  this[i] = {
+  this[ i ] = {
     selector: selector,
     properties: [],
     mappedProperties: [],
@@ -81,11 +81,11 @@ styfn.css = function(){
     var map = args[0];
 
     for( var i = 0; i < self.properties.length; i++ ){
-      var prop = self.properties[i];
+      var prop = self.properties[ i ];
       var mapVal = map[ prop.name ];
 
       if( mapVal === undefined ){
-        mapVal = map[ util.dash2camel(prop.name) ];
+        mapVal = map[ util.dash2camel( prop.name ) ];
       }
 
       if( mapVal !== undefined ){
@@ -115,19 +115,19 @@ styfn.cssRule = function( name, value ){
   // add property to current context if valid
   if( property ){
     var i = this.length - 1;
-    this[i].properties.push( property );
-    this[i].properties[ property.name ] = property; // allow access by name as well
+    this[ i ].properties.push( property );
+    this[ i ].properties[ property.name ] = property; // allow access by name as well
 
-    if( property.name.match(/pie-(\d+)-background-size/) && property.value ){
+    if( property.name.match( /pie-(\d+)-background-size/ ) && property.value ){
       this._private.hasPie = true;
     }
 
     if( property.mapped ){
-      this[i].mappedProperties.push( property );
+      this[ i ].mappedProperties.push( property );
     }
 
     // add to core style if necessary
-    var currentSelectorIsCore = !this[i].selector;
+    var currentSelectorIsCore = !this[ i ].selector;
     if( currentSelectorIsCore ){
       this._private.coreStyle[ property.name ] = property;
     }
@@ -150,17 +150,17 @@ Style.fromString = function( cy, string ){
 };
 
 [
-  require('./apply'),
-  require('./bypass'),
-  require('./container'),
-  require('./get-for-ele'),
-  require('./json'),
-  require('./string-sheet'),
-  require('./properties'),
-  require('./parse')
-].forEach(function( props ){
+  require( './apply' ),
+  require( './bypass' ),
+  require( './container' ),
+  require( './get-for-ele' ),
+  require( './json' ),
+  require( './string-sheet' ),
+  require( './properties' ),
+  require( './parse' )
+].forEach( function( props ){
   util.extend( styfn, props );
-});
+} );
 
 
 Style.types = styfn.types;

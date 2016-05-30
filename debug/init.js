@@ -7,29 +7,30 @@ $(function(){
   var addRandomEles = false;
   var height, width;
 
-  var cliques = 2;
-  var numNodes = 40;
-  var numEdges = 120;
+  var cliques = 4;
+  var numNodes = 100;
+  var numEdges = 1000;
 
   var defaultSty = window.defaultSty = cytoscape.stylesheet()
-      // .selector('node, edge')
-      //   .css({
-      //     'transition-property': 'background-color, line-color, source-arrow-color, target-arrow-color',
-      //     'transition-duration': '0.25s'
-      //   })
+      .selector('node, edge')
+        .css({
+          // 'transition-property': 'background-color, line-color, source-arrow-color, target-arrow-color',
+          // 'transition-duration': '0.25s'
+        })
 
       .selector('node')
         .css({
           'label': 'data(id)',
-          'border-width': 3,
-          'background-color': '#DDD',
-          'border-color': '#555',
-          'shape': 'ellipse',
+          // 'min-zoomed-font-size': 10,
+          // 'border-width': 3,
+          // 'background-color': '#888',
+          // 'border-color': '#555',
+          // 'shape': 'ellipse',
           // 'shape': 'polygon',
           // 'shape-polygon-points': [ 0, -1,   1, 1,   -1, 1 ],
           //'shape': 'data(shape)',
-          'width': 'mapData(weight, 0, 100, 15, 50)',
-          'height': 'mapData(weight, 0, 100, 15, 50)',
+          // 'width': 'mapData(weight, 0, 100, 15, 50)',
+          // 'height': 'mapData(weight, 0, 100, 15, 50)',
           //'width': 'mapLayoutData(concentric, 0, 10, 10, 50)',
           //'height': 'mapLayoutData(concentric, 0, 10, 10, 50)',
           //'border-style': 'dashed'
@@ -51,37 +52,40 @@ $(function(){
           // 'pie-4-background-size': '15%',
           // 'pie-4-background-color': 'yellow',
           // 'pie-4-background-opacity': 0.5
+          // 'text-rotation': Math.PI/2
         })
       .selector('$node > node') // compound (parent) nodes
         .css({
-          'width': 'auto',
-          'height': 'auto',
-          'textValign': 'bottom',
-          'font-weight': 'bold',
-          'font-style': 'italic',
-          'background-color': '#B7E1ED',
-          'padding-left': 10,
-          'padding-right': 10,
-          'padding-top': 10,
-          'padding-bottom': 10,
-          'background-opacity': 1
+          // 'width': 'auto',
+          // 'height': 'auto',
+          // 'textValign': 'bottom',
+          // 'font-weight': 'bold',
+          // 'font-style': 'italic',
+          // 'background-color': '#B7E1ED',
+          // 'padding-left': 10,
+          // 'padding-right': 10,
+          // 'padding-top': 10,
+          // 'padding-bottom': 10,
+          // 'background-opacity': 1
         })
       .selector('node[id="non-auto"]') // to init a non-auto sized compound
         .css({
-          'width': 10,
-          'height': 10,
-          'shape': 'triangle'
+          // 'width': 10,
+          // 'height': 10,
+          // 'shape': 'triangle'
           })
       .selector('edge')
         .css({
-          'line-color': '#ccc',
-          'source-arrow-color': '#ccc',
-          'mid-source-arrow-color': '#ccc',
-          'target-arrow-color': '#ccc',
-          'mid-target-arrow-color': '#ccc',
+          // 'line-color': 'red',
+          // 'edge-distances': 'node-position',
+          // 'source-arrow-color': '#ccc',
+          // 'mid-source-arrow-color': '#ccc',
+          // 'target-arrow-color': '#ccc',
+          // 'mid-target-arrow-color': '#ccc',
           // 'curve-style': 'unbundled-bezier',
           // 'control-point-distance': 100,
-          'width': '3',
+          // 'control-point-step-size': 100,
+          // 'width': '3',
           'source-arrow-shape': 'triangle-backcurve',
           'target-arrow-shape': 'triangle',
           'mid-target-arrow-shape': 'triangle',
@@ -89,31 +93,41 @@ $(function(){
           // 'target-arrow-fill': 'filled',
           // 'source-arrow-shape': 'data(srcShape)',
           // 'curve-style': 'haystack',
+          // 'haystack-radius': 0.5,
           // 'opacity': 0.5
-          //'content': 'data(weight)'
+          // 'content': 'data(weight)',
+          // 'text-rotation': 'autorotate',
+          // 'label': 'edge',
+          // 'source-label': 'src',
+          // 'source-text-offset': 25,
+          // 'target-label': 'tgt',
+          // 'target-text-offset': 25,
+          // 'text-border-opacity': 1,
+          // 'text-border-width': 2,
+          // 'text-border-color': 'red'
         })
-      // .selector('[source="n1"]')
-      //   .css({
-      //     'control-point-distance': 200,
-      //     'control-point-weight': 0
-      //   })
+      .selector('[source="n1"]')
+        .css({
+          // 'control-point-distance': 200,
+          // 'control-point-weight': 0
+        })
       .selector(':selected')
         .css({
-          'background-color': '#000',
-          'line-color': '#000',
-          'source-arrow-color': '#000',
-          'target-arrow-color': '#000',
-          'mid-source-arrow-color': '#000',
-          'mid-target-arrow-color': '#000'
+          // 'background-color': '#000',
+          // 'line-color': '#000',
+          // 'source-arrow-color': '#000',
+          // 'target-arrow-color': '#000',
+          // 'mid-source-arrow-color': '#000',
+          // 'mid-target-arrow-color': '#000'
         })
       .selector('.foo')
         .css({
-          'width': 15
+          // 'width': 15
         })
       .selector('#ab')
         .css({
           'curve-style': 'unbundled-bezier',
-          'control-point-distances': [ 100, -100, 100 ],
+          'control-point-distances': [ 20, -100, 20 ],
           'control-point-weights': [ 0.25, 0.5, 0.75 ],
           // 'label': 'hello world',
           // 'edge-text-rotation': 'autorotate'
@@ -130,6 +144,10 @@ $(function(){
           'curve-style': 'haystack',
           'haystack-radius': 0.5
         })
+      .selector('[source = "d"][target = "e"]')
+        .css({
+          'curve-style': 'bezier'
+        })
   ;
 
   window.options = {
@@ -137,9 +155,9 @@ $(function(){
     // hideEdgesOnViewport: true,
     // hideLabelsOnViewport: true,
     // textureOnViewport: true,
-    // motionBlur: false,
+    // motionBlur: true,
     // pixelRatio: 'auto',
-    // motionBlurOpacity: 0.5,
+    // motionBlurOpacity: 0.125,
     renderer: {
       name: 'canvas',
       showFps: true
@@ -177,14 +195,8 @@ $(function(){
       ]
     },
     ready: function(){
-      console.log('cy ready');
-
       window.cy = this;
       window.$$ = cytoscape;
-    },
-    initrender: function(){
-      console.log('initrender');
-      console.log(arguments);
     }
   };
 

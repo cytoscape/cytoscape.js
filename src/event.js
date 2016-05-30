@@ -8,14 +8,14 @@ https://tldrlegal.com/license/mit-license
 https://github.com/jquery/jquery/blob/master/src/event.js
 */
 
-var Event = function( src, props ) {
+var Event = function( src, props ){
   // Allow instantiation without the 'new' keyword
-  if ( !(this instanceof Event) ) {
+  if( !(this instanceof Event) ){
     return new Event( src, props );
   }
 
   // Event object
-  if ( src && src.type ) {
+  if( src && src.type ){
     this.originalEvent = src;
     this.type = src.type;
 
@@ -29,7 +29,7 @@ var Event = function( src, props ) {
   }
 
   // Put explicitly provided properties onto the event object
-  if ( props ) {
+  if( props ){
     // util.extend( this, props );
 
     // more efficient to manually copy fields we use
@@ -48,11 +48,11 @@ var Event = function( src, props ) {
   this.timeStamp = src && src.timeStamp || Date.now();
 };
 
-function returnFalse() {
+function returnFalse(){
   return false;
 }
 
-function returnTrue() {
+function returnTrue(){
   return true;
 }
 
@@ -62,35 +62,35 @@ Event.prototype = {
     return 'event';
   },
 
-  preventDefault: function() {
+  preventDefault: function(){
     this.isDefaultPrevented = returnTrue;
 
     var e = this.originalEvent;
-    if ( !e ) {
+    if( !e ){
       return;
     }
 
     // if preventDefault exists run it on the original event
-    if ( e.preventDefault ) {
+    if( e.preventDefault ){
       e.preventDefault();
     }
   },
 
-  stopPropagation: function() {
+  stopPropagation: function(){
     this.isPropagationStopped = returnTrue;
 
     var e = this.originalEvent;
-    if ( !e ) {
+    if( !e ){
       return;
     }
 
     // if stopPropagation exists run it on the original event
-    if ( e.stopPropagation ) {
+    if( e.stopPropagation ){
       e.stopPropagation();
     }
   },
 
-  stopImmediatePropagation: function() {
+  stopImmediatePropagation: function(){
     this.isImmediatePropagationStopped = returnTrue;
     this.stopPropagation();
   },

@@ -1,7 +1,7 @@
 'use strict';
 
-var util = require('../util');
-var is = require('../is');
+var util = require( '../util' );
+var is = require( '../is' );
 
 var styfn = {};
 
@@ -11,14 +11,20 @@ var styfn = {};
 // - what selectors match it
 styfn.apply = function( eles ){
   var self = this;
+  var _p = self._private;
 
   if( self._private.newStyle ){ // clear style caches
-    this._private.contextStyles = {};
-    this._private.propDiffs = {};
+    _p.contextStyles = {};
+    _p.propDiffs = {};
   }
 
   for( var ie = 0; ie < eles.length; ie++ ){
-    var ele = eles[ie];
+    var ele = eles[ ie ];
+
+    if( self._private.newStyle ){ // clear style from old sheets
+      ele._private.style = {};
+    }
+
     var cxtMeta = self.getContextMeta( ele );
     var cxtStyle = self.getContextStyle( cxtMeta );
     var app = self.applyContextStyle( cxtMeta, cxtStyle, ele );
@@ -29,14 +35,14 @@ styfn.apply = function( eles ){
 
   } // for elements
 
-  self._private.newStyle = false;
+  _p.newStyle = false;
 };
 
 styfn.getPropertiesDiff = function( oldCxtKey, newCxtKey ){
   var self = this;
   var cache = self._private.propDiffs = self._private.propDiffs || {};
   var dualCxtKey = oldCxtKey + '-' + newCxtKey;
-  var cachedVal = cache[dualCxtKey];
+  var cachedVal = cache[ dualCxtKey ];
 
   if( cachedVal ){
     return cachedVal;
@@ -46,9 +52,9 @@ styfn.getPropertiesDiff = function( oldCxtKey, newCxtKey ){
   var addedProp = {};
 
   for( var i = 0; i < self.length; i++ ){
-    var cxt = self[i];
-    var oldHasCxt = oldCxtKey[i] === 't';
-    var newHasCxt = newCxtKey[i] === 't';
+    var cxt = self[ i ];
+    var oldHasCxt = oldCxtKey[ i ] === 't';
+    var newHasCxt = newCxtKey[ i ] === 't';
     var cxtHasDiffed = oldHasCxt !== newHasCxt;
     var cxtHasMappedProps = cxt.mappedProperties.length > 0;
 
@@ -64,7 +70,7 @@ styfn.getPropertiesDiff = function( oldCxtKey, newCxtKey ){
       }
 
       for( var j = 0; j < props.length; j++ ){
-        var prop = props[j];
+        var prop = props[ j ];
         var name = prop.name;
 
         // if a later context overrides this property, then the fact that this context has switched/diffed doesn't matter
@@ -72,8 +78,8 @@ styfn.getPropertiesDiff = function( oldCxtKey, newCxtKey ){
         // is cached)
         var laterCxtOverrides = false;
         for( var k = i + 1; k < self.length; k++ ){
-          var laterCxt = self[k];
-          var hasLaterCxt = newCxtKey[k] === 't';
+          var laterCxt = self[ k ];
+          var hasLaterCxt = newCxtKey[ k ] === 't';
 
           if( !hasLaterCxt ){ continue; } // can't override unless the context is active
 
@@ -82,8 +88,8 @@ styfn.getPropertiesDiff = function( oldCxtKey, newCxtKey ){
           if( laterCxtOverrides ){ break; } // exit early as long as one later context overrides
         }
 
-        if( !addedProp[name] && !laterCxtOverrides ){
-          addedProp[name] = true;
+        if( !addedProp[ name ] && !laterCxtOverrides ){
+          addedProp[ name ] = true;
           diffProps.push( name );
         }
       } // for props
@@ -107,7 +113,7 @@ styfn.getContextMeta = function( ele ){
 
   // get the cxt key
   for( var i = 0; i < self.length; i++ ){
-    var context = self[i];
+    var context = self[ i ];
     var contextSelectorMatches = context.selector && context.selector.matches( ele ); // NB: context.selector may be null for 'core'
 
     if( contextSelectorMatches ){
@@ -134,7 +140,7 @@ styfn.getContextStyle = function( cxtMeta ){
   var cxtStyles = this._private.contextStyles = this._private.contextStyles || {};
 
   // if already computed style, returned cached copy
-  if( cxtStyles[cxtKey] ){ return cxtStyles[cxtKey]; }
+  if( cxtStyles[ cxtKey ] ){ return cxtStyles[ cxtKey ]; }
 
   var style = {
     _private: {
@@ -143,20 +149,20 @@ styfn.getContextStyle = function( cxtMeta ){
   };
 
   for( var i = 0; i < self.length; i++ ){
-    var cxt = self[i];
-    var hasCxt = cxtKey[i] === 't';
+    var cxt = self[ i ];
+    var hasCxt = cxtKey[ i ] === 't';
 
     if( !hasCxt ){ continue; }
 
     for( var j = 0; j < cxt.properties.length; j++ ){
-      var prop = cxt.properties[j];
+      var prop = cxt.properties[ j ];
       var styProp = style[ prop.name ] = prop;
 
       styProp.context = cxt;
     }
   }
 
-  cxtStyles[cxtKey] = style;
+  cxtStyles[ cxtKey ] = style;
   return style;
 };
 
@@ -166,12 +172,20 @@ styfn.applyContextStyle = function( cxtMeta, cxtStyle, ele ){
   var retDiffProps = {};
 
   for( var i = 0; i < diffProps.length; i++ ){
-    var diffPropName = diffProps[i];
+    var diffPropName = diffProps[ i ];
     var cxtProp = cxtStyle[ diffPropName ];
-    var eleProp = ele._private.style[ diffPropName ];
+    var eleProp = ele.pstyle( diffPropName );
+
+    if( !cxtProp ){ // no context prop means delete
+      if( eleProp.bypass ){
+        cxtProp = { name: diffPropName, deleteBypassed: true };
+      } else {
+        cxtProp = { name: diffPropName, delete: true };
+      }
+    }
 
     // save cycles when the context prop doesn't need to be applied
-    if( !cxtProp || eleProp === cxtProp ){ continue; }
+    if( eleProp === cxtProp ){ continue; }
 
     var retDiffProp = retDiffProps[ diffPropName ] = {
       prev: eleProp
@@ -179,7 +193,7 @@ styfn.applyContextStyle = function( cxtMeta, cxtStyle, ele ){
 
     self.applyParsedProperty( ele, cxtProp );
 
-    retDiffProp.next = ele._private.style[ diffPropName ];
+    retDiffProp.next = ele.pstyle( diffPropName );
 
     if( retDiffProp.next && retDiffProp.next.bypass ){
       retDiffProp.next = retDiffProp.next.bypassed;
@@ -205,15 +219,14 @@ styfn.enforceCompoundSizing = function(ele){
 styfn.updateStyleHints = function(ele){
   var _p = ele._private;
   var self = this;
-  var style = _p.style;
 
   if( ele.removed() ){ return; }
 
   // set whether has pie or not; for greater efficiency
   var hasPie = false;
-  if( _p.group === 'nodes' && self._private.hasPie ){
+  if( _p.group === 'nodes' ){
     for( var i = 1; i <= self.pieBackgroundN; i++ ){ // 1..N
-      var size = _p.style['pie-' + i + '-background-size'].value;
+      var size = ele.pstyle( 'pie-' + i + '-background-size' ).value;
 
       if( size > 0 ){
         hasPie = true;
@@ -224,36 +237,25 @@ styfn.updateStyleHints = function(ele){
 
   _p.hasPie = hasPie;
 
-  var transform = style['text-transform'].strValue;
-  var content = style['label'].strValue;
-  var fStyle = style['font-style'].strValue;
-  var size = style['font-size'].pfValue + 'px';
-  var family = style['font-family'].strValue;
+  var transform = ele.pstyle( 'text-transform' ).strValue;
+  var content = ele.pstyle( 'label' ).strValue;
+  var srcContent = ele.pstyle( 'source-label' ).strValue;
+  var tgtContent = ele.pstyle( 'target-label' ).strValue;
+  var fStyle = ele.pstyle( 'font-style' ).strValue;
+  var size = ele.pstyle( 'font-size' ).pfValue + 'px';
+  var family = ele.pstyle( 'font-family' ).strValue;
   // var variant = style['font-variant'].strValue;
-  var weight = style['font-weight'].strValue;
-  var valign = style['text-valign'].strValue;
-  var halign = style['text-valign'].strValue;
-  var oWidth = style['text-outline-width'].pfValue;
-  var wrap = style['text-wrap'].strValue;
-  var wrapW = style['text-max-width'].pfValue;
-  _p.labelKey = fStyle +'$'+ size +'$'+ family +'$'+ weight +'$'+ content +'$'+ transform +'$'+ valign +'$'+ halign +'$'+ oWidth + '$' + wrap + '$' + wrapW;
-  _p.fontKey = fStyle +'$'+ weight +'$'+ size +'$'+ family;
-
-  var width = style['width'].pfValue;
-  var height = style['height'].pfValue;
-  var borderW = style['border-width'].pfValue;
-  _p.boundingBoxKey = width +'$'+ height +'$'+ borderW;
-
-  if( ele._private.group === 'edges' ){
-    var cpss = style['control-point-step-size'].pfValue;
-    var cpd = style['control-point-distances'] ? style['control-point-distances'].pfValue.join('_') : undefined;
-    var cpw = style['control-point-weights'].value.join('_');
-    var curve = style['curve-style'].strValue;
-    var sd = style['segment-distances'] ? style['segment-distances'].pfValue.join('_') : undefined;
-    var sw = style['segment-weights'].value.join('_');
-
-    _p.boundingBoxKey += '$'+ cpss +'$'+ cpd +'$'+ cpw +'$'+ sd +'$'+ sw +'$'+ curve;
-  }
+  var weight = ele.pstyle( 'font-weight' ).strValue;
+  var valign = ele.pstyle( 'text-valign' ).strValue;
+  var halign = ele.pstyle( 'text-valign' ).strValue;
+  var oWidth = ele.pstyle( 'text-outline-width' ).pfValue;
+  var wrap = ele.pstyle( 'text-wrap' ).strValue;
+  var wrapW = ele.pstyle( 'text-max-width' ).pfValue;
+  var labelStyleKey = fStyle + '$' + size + '$' + family + '$' + weight + '$' + transform + '$' + valign + '$' + halign + '$' + oWidth + '$' + wrap + '$' + wrapW;
+  _p.sourceLabelKey = labelStyleKey + '$' + srcContent;
+  _p.targetLabelKey = labelStyleKey + '$' + tgtContent;
+  _p.labelKey = labelStyleKey + '$' + content;
+  _p.fontKey = fStyle + '$' + weight + '$' + size + '$' + family;
 
   _p.styleKey = Date.now();
 };
@@ -295,17 +297,43 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
     }
   }
 
+  // edges connected to compound nodes can not be haystacks
+  if(
+    parsedProp.name === 'curve-style'
+    && parsedProp.value === 'haystack'
+    && ele.isEdge()
+    && ( ele.isLoop() || ele.source().isParent() || ele.target().isParent() )
+  ){
+    prop = parsedProp = this.parse( parsedProp.name, 'bezier', propIsBypass );
+  }
+
+  if( prop.delete ){ // delete the property and use the default value on falsey value
+    style[ prop.name ] = undefined;
+
+    return true;
+  }
+
+  if( prop.deleteBypassed ){ // delete the property that the
+    if( !origProp ){
+      return true; // can't delete if no prop
+
+    } else if( origProp.bypass ){ // delete bypassed
+      origProp.bypassed = undefined;
+      return true;
+
+    } else {
+      return false; // we're unsuccessful deleting the bypassed
+    }
+  }
+
   // check if we need to delete the current bypass
-  if( propIsBypass && prop.deleteBypass ){ // then this property is just here to indicate we need to delete
-    var currentProp = style[ prop.name ];
-
-    // can only delete if the current prop is a bypass and it points to the property it was overriding
-    if( !currentProp ){
+  if( prop.deleteBypass ){ // then this property is just here to indicate we need to delete
+    if( !origProp ){
       return true; // property is already not defined
-    } else if( currentProp.bypass && currentProp.bypassed ){ // then replace the bypass property with the original
 
+    } else if( origProp.bypass ){ // then replace the bypass property with the original
       // because the bypassed property was already applied (and therefore parsed), we can just replace it (no reapplying necessary)
-      style[ prop.name ] = currentProp.bypassed;
+      style[ prop.name ] = origProp.bypassed;
       return true;
 
     } else {
@@ -314,7 +342,7 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
   }
 
   var printMappingErr = function(){
-    util.error('Do not assign mappings to elements without corresponding data (e.g. ele `'+ ele.id() +'` for property `'+ prop.name +'` with data field `'+ prop.field +'`); try a `['+ prop.field +']` selector to limit scope to elements with `'+ prop.field +'` defined');
+    util.error( 'Do not assign mappings to elements without corresponding data (e.g. ele `' + ele.id() + '` for property `' + prop.name + '` with data field `' + prop.field + '`); try a `[' + prop.field + ']` selector to limit scope to elements with `' + prop.field + '` defined' );
   };
 
   // put the property in the style objects
@@ -327,7 +355,7 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
     var isScratch = prop.mapped === types.mapScratch;
 
     // flatten the field (e.g. data.foo.bar)
-    var fields = prop.field.split(".");
+    var fields = prop.field.split( '.' );
     var fieldVal;
 
     if( isScratch || isLayout ){
@@ -337,12 +365,12 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
     }
 
     for( var i = 0; i < fields.length && fieldVal; i++ ){
-      var field = fields[i];
+      var field = fields[ i ];
       fieldVal = fieldVal[ field ];
     }
 
     var percent;
-    if( !is.number(fieldVal) ){ // then keep the mapping but assume 0% for now
+    if( !is.number( fieldVal ) ){ // then keep the mapping but assume 0% for now
       percent = 0;
     } else {
       percent = (fieldVal - prop.fieldMin) / (prop.fieldMax - prop.fieldMin);
@@ -366,10 +394,10 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
       var a2 = prop.valueMax[3] == null ? 1 : prop.valueMax[3];
 
       var clr = [
-        Math.round( r1 + (r2 - r1)*percent ),
-        Math.round( g1 + (g2 - g1)*percent ),
-        Math.round( b1 + (b2 - b1)*percent ),
-        Math.round( a1 + (a2 - a1)*percent )
+        Math.round( r1 + (r2 - r1) * percent ),
+        Math.round( g1 + (g2 - g1) * percent ),
+        Math.round( b1 + (b2 - b1) * percent ),
+        Math.round( a1 + (a2 - a1) * percent )
       ];
 
       flatProp = { // colours are simple, so just create the flat property instead of expensive string parsing
@@ -405,7 +433,7 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
     var isScratch = prop.mapped === types.scratch;
 
     // flatten the field (e.g. data.foo.bar)
-    var fields = prop.field.split(".");
+    var fields = prop.field.split( '.' );
     var fieldVal;
 
     if( isScratch || isLayout ){
@@ -415,7 +443,7 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
     }
 
     if( fieldVal ){ for( var i = 0; i < fields.length; i++ ){
-      var field = fields[i];
+      var field = fields[ i ];
       fieldVal = fieldVal[ field ];
     } }
 
@@ -485,11 +513,11 @@ styfn.updateMappers = function( eles ){
   var self = this;
 
   for( var i = 0; i < eles.length; i++ ){ // for each ele
-    var ele = eles[i];
+    var ele = eles[ i ];
     var style = ele._private.style;
 
     for( var j = 0; j < self.properties.length; j++ ){ // for each prop
-      var prop = self.properties[j];
+      var prop = self.properties[ j ];
       var propInStyle = style[ prop.name ];
 
       if( propInStyle && propInStyle.mapping ){
@@ -506,19 +534,19 @@ styfn.updateMappers = function( eles ){
 styfn.updateTransitions = function( ele, diffProps, isBypass ){
   var self = this;
   var _p = ele._private;
-  var style = _p.style;
-  var props = style['transition-property'].value;
-  var duration = style['transition-duration'].pfValue;
-  var delay = style['transition-delay'].pfValue;
-  var css = {};
+  var props = ele.pstyle( 'transition-property' ).value;
+  var duration = ele.pstyle( 'transition-duration' ).pfValue;
+  var delay = ele.pstyle( 'transition-delay' ).pfValue;
 
   if( props.length > 0 && duration > 0 ){
+
+    var css = {};
 
     // build up the style to animate towards
     var anyPrev = false;
     for( var i = 0; i < props.length; i++ ){
-      var prop = props[i];
-      var styProp = style[ prop ];
+      var prop = props[ i ];
+      var styProp = ele.pstyle( prop );
       var diffProp = diffProps[ prop ];
 
       if( !diffProp ){ continue; }
@@ -572,11 +600,11 @@ styfn.updateTransitions = function( ele, diffProps, isBypass ){
       ele.delay( delay );
     }
 
-    ele.animate({
+    ele.animate( {
       css: css
     }, {
       duration: duration,
-      easing: style['transition-timing-function'].value,
+      easing: ele.pstyle( 'transition-timing-function' ).value,
       queue: false,
       complete: function(){
         if( !isBypass ){
@@ -585,7 +613,7 @@ styfn.updateTransitions = function( ele, diffProps, isBypass ){
 
         _p.transitioning = false;
       }
-    });
+    } );
 
   } else if( _p.transitioning ){
     ele.stop();

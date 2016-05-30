@@ -1,5 +1,5 @@
 var expect = require('chai').expect;
-var cytoscape = require('../build/cytoscape.js', cytoscape);
+var cytoscape = require('../src', cytoscape);
 
 describe('Collection selection', function(){
 
@@ -14,7 +14,7 @@ describe('Collection selection', function(){
             { data: { id: 'n2' } },
             { data: { id: 'n3' } }
         ],
-        
+
         edges: [
             { data: { id: 'n1n2', source: 'n1', target: 'n2' } },
             { data: { id: 'n2n3', source: 'n2', target: 'n3' } }
@@ -91,7 +91,7 @@ describe('Collection selection', function(){
       n1.unselect();
 
       expect( triggered ).to.be.true;
-      
+
     });
 
   });

@@ -21,7 +21,7 @@ The extensions below are a curated list.  To add your extension, [please submit 
  * [`cola`](https://github.com/cytoscape/cytoscape.js-cola) : The Cola.js physics simulation layout.  Cola makes beautiful layout results, it animates very smoothly, and it has great options for controlling the layout.
  * [`cose-bilkent`](https://github.com/cytoscape/cytoscape.js-cose-bilkent) : The CoSE layout by Bilkent with enhanced compound node placement.  CoSE Bilkent gives near-perfect end results.  However, it's more expensive than the version of CoSE directly included with Cytoscape.js.
  * [`dagre`](https://github.com/cytoscape/cytoscape.js-dagre) : The Dagre layout for DAGs and trees.
- * [`spread`](https://github.com/cytoscape/cytoscape.js-spread) : The speedy Spread physics simulation layout.  It tries to use all the viewport space, but it can be configured to produce a tighter result.
+ * [`spread`](https://github.com/cytoscape/cytoscape.js-spread) : The speedy Spread physics simulation layout.  It tries to use all the viewport space, but it can be configured to produce a tighter result.  It uses Fruchterman-Reingold initially, and it uses Gansner and North for the spread phase.
  * [`springy`](https://github.com/cytoscape/cytoscape.js-springy) : The Springy physics simulation layout.  It's a basic physics layout.
 
 
@@ -48,4 +48,4 @@ There exists [a Slush project for Cytoscape.js](https://github.com/cytoscape/slu
 
 ## Multitasking
 
-Multitasking APIs are built into Cytoscape.js for extensions like layouts &mdash; making layout much faster, for example.  The APIs are pulled in from the [Weaver](http://weaver.js.org) library and put on the `cytoscape` object instead of `weaver`.  For example, you can make a thread via `cytoscape.thread()` instead of the usual `weaver.thread()`.
+Multitasking APIs are built into Cytoscape.js for extensions like layouts --- making layout much faster, for example.  The APIs are pulled in from the [Weaver](http://weaver.js.org) library and put on the `cytoscape` object instead of `weaver`.  For example, you can make a thread via `cytoscape.thread()` instead of the usual `weaver.thread()`.

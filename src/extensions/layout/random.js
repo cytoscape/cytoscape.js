@@ -1,7 +1,7 @@
 'use strict';
 
-var util = require('../../util');
-var math = require('../../math');
+var util = require( '../../util' );
+var math = require( '../../math' );
 
 var defaults = {
   fit: true, // whether to fit to viewport
@@ -15,14 +15,14 @@ var defaults = {
 };
 
 function RandomLayout( options ){
-  this.options = util.extend({}, defaults, options);
+  this.options = util.extend( {}, defaults, options );
 }
 
 RandomLayout.prototype.run = function(){
   var options = this.options;
   var cy = options.cy;
   var eles = options.eles;
-  var nodes = eles.nodes().not(':parent');
+  var nodes = eles.nodes().not( ':parent' );
 
   var bb = math.makeBoundingBox( options.boundingBox ? options.boundingBox : {
     x1: 0, y1: 0, w: cy.width(), h: cy.height()

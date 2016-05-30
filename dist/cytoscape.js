@@ -12965,9 +12965,9 @@ BRp.findEdgeControlPoints = function(edges) {
       var minCpADist = minCpADistFactor * arrowW;
 
       if( rs.edgeType === 'bezier' ){
-        var startACpDist = math.distance( { x: rs.ctrlpts[0], y: rs.ctrlpts[1] }, { x: rs.startX, y: rs.startY } );
+        var startACpDist = math.dist( { x: rs.ctrlpts[0], y: rs.ctrlpts[1] }, { x: rs.startX, y: rs.startY } );
         var closeStartACp = startACpDist < minCpADist;
-        var endACpDist = math.distance( { x: rs.ctrlpts[0], y: rs.ctrlpts[1] }, { x: rs.endX, y: rs.endY } );
+        var endACpDist = math.dist( { x: rs.ctrlpts[0], y: rs.ctrlpts[1] }, { x: rs.endX, y: rs.endY } );
         var closeEndACp = endACpDist < minCpADist;
 
         var overlapping = false;
@@ -19171,7 +19171,7 @@ math.signum = function(x){
   }
 };
 
-math.distance = function( p1, p2 ){
+math.dist = function( p1, p2 ){
   return Math.sqrt( math.sqDistance(p1, p2) );
 };
 

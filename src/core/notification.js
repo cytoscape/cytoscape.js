@@ -8,8 +8,8 @@ var corefn = ({
       var bEles = _p.batchNotifyEles;
       var bTypes = _p.batchNotifyTypes;
 
-      if( params.collection ){
-        bEles.merge( params.collection );
+      if( params.eles ){
+        bEles.merge( params.eles );
       }
 
       if( !bTypes.ids[ params.type ] ){
@@ -24,7 +24,7 @@ var corefn = ({
 
     var renderer = this.renderer();
 
-    renderer.notify(params);
+    renderer.notify( params );
   },
 
   notifications: function( bool ){
@@ -38,9 +38,9 @@ var corefn = ({
   },
 
   noNotifications: function( callback ){
-    this.notifications(false);
+    this.notifications( false );
     callback();
-    this.notifications(true);
+    this.notifications( true );
   },
 
   startBatch: function(){
@@ -55,7 +55,6 @@ var corefn = ({
       _p.batchStyleEles = this.collection();
       _p.batchNotifyEles = this.collection();
       _p.batchNotifyTypes = [];
-
       _p.batchNotifyTypes.ids = {};
     }
 
@@ -76,10 +75,10 @@ var corefn = ({
 
       // notify the renderer of queued eles and event types
       _p.batchingNotify = false;
-      this.notify({
+      this.notify( {
         type: _p.batchNotifyTypes,
-        collection: _p.batchNotifyEles
-      });
+        eles: _p.batchNotifyEles
+      } );
     }
 
     return this;
@@ -97,14 +96,14 @@ var corefn = ({
   batchData: function( map ){
     var cy = this;
 
-    return this.batch(function(){
+    return this.batch( function(){
       for( var id in map ){
-        var data = map[id];
+        var data = map[ id ];
         var ele = cy.getElementById( id );
 
         ele.data( data );
       }
-    });
+    } );
   }
 });
 

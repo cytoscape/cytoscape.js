@@ -1,10 +1,10 @@
 'use strict';
 
-var util = require('../util');
+var util = require( '../util' );
 
 var elesfn = {};
 
-function defineDegreeFunction(callback){
+function defineDegreeFunction( callback ){
   return function( includeLoops ){
     var self = this;
 
@@ -20,7 +20,7 @@ function defineDegreeFunction(callback){
       var connectedEdges = node._private.edges;
 
       for( var i = 0; i < connectedEdges.length; i++ ){
-        var edge = connectedEdges[i];
+        var edge = connectedEdges[ i ];
 
         if( !includeLoops && edge.isLoop() ){
           continue;
@@ -36,41 +36,41 @@ function defineDegreeFunction(callback){
   };
 }
 
-util.extend(elesfn, {
-  degree: defineDegreeFunction(function(node, edge){
+util.extend( elesfn, {
+  degree: defineDegreeFunction( function( node, edge ){
     if( edge.source().same( edge.target() ) ){
       return 2;
     } else {
       return 1;
     }
-  }),
+  } ),
 
-  indegree: defineDegreeFunction(function(node, edge){
-    if( edge.target().same(node) ){
+  indegree: defineDegreeFunction( function( node, edge ){
+    if( edge.target().same( node ) ){
       return 1;
     } else {
       return 0;
     }
-  }),
+  } ),
 
-  outdegree: defineDegreeFunction(function(node, edge){
-    if( edge.source().same(node) ){
+  outdegree: defineDegreeFunction( function( node, edge ){
+    if( edge.source().same( node ) ){
       return 1;
     } else {
       return 0;
     }
-  })
-});
+  } )
+} );
 
-function defineDegreeBoundsFunction(degreeFn, callback){
+function defineDegreeBoundsFunction( degreeFn, callback ){
   return function( includeLoops ){
     var ret;
     var nodes = this.nodes();
 
     for( var i = 0; i < nodes.length; i++ ){
-      var ele = nodes[i];
-      var degree = ele[degreeFn]( includeLoops );
-      if( degree !== undefined && (ret === undefined || callback(degree, ret)) ){
+      var ele = nodes[ i ];
+      var degree = ele[ degreeFn ]( includeLoops );
+      if( degree !== undefined && (ret === undefined || callback( degree, ret )) ){
         ret = degree;
       }
     }
@@ -79,43 +79,43 @@ function defineDegreeBoundsFunction(degreeFn, callback){
   };
 }
 
-util.extend(elesfn, {
-  minDegree: defineDegreeBoundsFunction('degree', function(degree, min){
+util.extend( elesfn, {
+  minDegree: defineDegreeBoundsFunction( 'degree', function( degree, min ){
     return degree < min;
-  }),
+  } ),
 
-  maxDegree: defineDegreeBoundsFunction('degree', function(degree, max){
+  maxDegree: defineDegreeBoundsFunction( 'degree', function( degree, max ){
     return degree > max;
-  }),
+  } ),
 
-  minIndegree: defineDegreeBoundsFunction('indegree', function(degree, min){
+  minIndegree: defineDegreeBoundsFunction( 'indegree', function( degree, min ){
     return degree < min;
-  }),
+  } ),
 
-  maxIndegree: defineDegreeBoundsFunction('indegree', function(degree, max){
+  maxIndegree: defineDegreeBoundsFunction( 'indegree', function( degree, max ){
     return degree > max;
-  }),
+  } ),
 
-  minOutdegree: defineDegreeBoundsFunction('outdegree', function(degree, min){
+  minOutdegree: defineDegreeBoundsFunction( 'outdegree', function( degree, min ){
     return degree < min;
-  }),
+  } ),
 
-  maxOutdegree: defineDegreeBoundsFunction('outdegree', function(degree, max){
+  maxOutdegree: defineDegreeBoundsFunction( 'outdegree', function( degree, max ){
     return degree > max;
-  })
-});
+  } )
+} );
 
-util.extend(elesfn, {
+util.extend( elesfn, {
   totalDegree: function( includeLoops ){
     var total = 0;
     var nodes = this.nodes();
 
     for( var i = 0; i < nodes.length; i++ ){
-      total += nodes[i].degree( includeLoops );
+      total += nodes[ i ].degree( includeLoops );
     }
 
     return total;
   }
-});
+} );
 
 module.exports = elesfn;

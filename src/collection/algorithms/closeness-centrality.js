@@ -1,10 +1,10 @@
 'use strict';
 
-var is = require('../../is');
+var is = require( '../../is' );
 
 var elesfn = ({
 
-  closenessCentralityNormalized: function (options) {
+  closenessCentralityNormalized: function( options ){
     options = options || {};
 
     var cy = this.cy();
@@ -17,14 +17,14 @@ var elesfn = ({
     var closenesses = {};
     var maxCloseness = 0;
     var nodes = this.nodes();
-    var fw = this.floydWarshall({ weight: options.weight, directed: options.directed });
+    var fw = this.floydWarshall( { weight: options.weight, directed: options.directed } );
 
     // Compute closeness for every node and find the maximum closeness
-    for(var i = 0; i < nodes.length; i++){
+    for( var i = 0; i < nodes.length; i++ ){
       var currCloseness = 0;
-      for (var j = 0; j < nodes.length; j++) {
-        if (i != j) {
-          var d = fw.distance(nodes[i], nodes[j]);
+      for( var j = 0; j < nodes.length; j++ ){
+        if( i != j ){
+          var d = fw.distance( nodes[ i ], nodes[ j ] );
 
           if( harmonic ){
             currCloseness += 1 / d;
@@ -38,37 +38,37 @@ var elesfn = ({
         currCloseness = 1 / currCloseness;
       }
 
-      if (maxCloseness < currCloseness){
+      if( maxCloseness < currCloseness ){
         maxCloseness = currCloseness;
       }
 
-      closenesses[nodes[i].id()] = currCloseness;
+      closenesses[ nodes[ i ].id() ] = currCloseness;
     }
 
     return {
-      closeness: function (node) {
-        if (is.string(node)) {
+      closeness: function( node ){
+        if( is.string( node ) ){
           // from is a selector string
-          var node = (cy.filter(node)[0]).id();
+          var node = (cy.filter( node )[0]).id();
         } else {
           // from is a node
           var node = node.id();
         }
 
-        return closenesses[node] / maxCloseness;
+        return closenesses[ node ] / maxCloseness;
       }
     };
   },
 
   // Implemented from pseudocode from wikipedia
-  closenessCentrality: function (options) {
+  closenessCentrality: function( options ){
     options = options || {};
 
     // root - mandatory!
-    if (options.root != null) {
-      if (is.string(options.root)) {
+    if( options.root != null ){
+      if( is.string( options.root ) ){
         // use it as a selector, e.g. "#rootID
-        var root = this.filter(options.root)[0];
+        var root = this.filter( options.root )[0];
       } else {
         var root = options.root[0];
       }
@@ -77,14 +77,14 @@ var elesfn = ({
     }
 
     // weight - optional
-    if (options.weight != null && is.fn(options.weight)) {
+    if( options.weight != null && is.fn( options.weight ) ){
       var weight = options.weight;
     } else {
       var weight = function(){return 1;};
     }
 
     // directed - optional
-    if (options.directed != null && is.bool(options.directed)) {
+    if( options.directed != null && is.bool( options.directed ) ){
       var directed = options.directed;
     } else {
       var directed = false;
@@ -96,17 +96,17 @@ var elesfn = ({
     }
 
     // we need distance from this node to every other node
-    var dijkstra = this.dijkstra({
+    var dijkstra = this.dijkstra( {
       root: root,
       weight: weight,
       directed: directed
-    });
+    } );
     var totalDistance = 0;
 
     var nodes = this.nodes();
-    for (var i = 0; i < nodes.length; i++){
-      if (nodes[i].id() != root.id()){
-        var d = dijkstra.distanceTo(nodes[i]);
+    for( var i = 0; i < nodes.length; i++ ){
+      if( nodes[ i ].id() != root.id() ){
+        var d = dijkstra.distanceTo( nodes[ i ] );
 
         if( harmonic ){
           totalDistance += 1 / d;

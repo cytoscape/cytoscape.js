@@ -6,8 +6,10 @@ Modifications tracked on Github.
 
 'use strict';
 
-var util = require('../../../util');
-var is = require('../../../is');
+var util = require( '../../../util' );
+var is = require( '../../../is' );
+var ElementTextureCache = require('./ele-texture-cache');
+var LayeredTextureCache = require('./layered-texture-cache');
 
 var CR = CanvasRenderer;
 var CRp = CanvasRenderer.prototype;
@@ -24,57 +26,78 @@ CRp.TEXTURE_BUFFER = 0;
 CRp.MOTIONBLUR_BUFFER_NODE = 1;
 CRp.MOTIONBLUR_BUFFER_DRAG = 2;
 
-function CanvasRenderer(options) {
+function CanvasRenderer( options ){
   var r = this;
 
   r.data = {
-    canvases: new Array(CRp.CANVAS_LAYERS),
-    contexts: new Array(CRp.CANVAS_LAYERS),
-    canvasNeedsRedraw: new Array(CRp.CANVAS_LAYERS),
+    canvases: new Array( CRp.CANVAS_LAYERS ),
+    contexts: new Array( CRp.CANVAS_LAYERS ),
+    canvasNeedsRedraw: new Array( CRp.CANVAS_LAYERS ),
 
-    bufferCanvases: new Array(CRp.BUFFER_COUNT),
-    bufferContexts: new Array(CRp.CANVAS_LAYERS)
+    bufferCanvases: new Array( CRp.BUFFER_COUNT ),
+    bufferContexts: new Array( CRp.CANVAS_LAYERS ),
   };
 
-  r.data.canvasContainer = document.createElement('div');
+  r.data.canvasContainer = document.createElement( 'div' );
   var containerStyle = r.data.canvasContainer.style;
-  r.data.canvasContainer.setAttribute('style', '-webkit-tap-highlight-color: rgba(0,0,0,0);');
+  r.data.canvasContainer.setAttribute( 'style', '-webkit-tap-highlight-color: rgba(0,0,0,0);' );
   containerStyle.position = 'relative';
   containerStyle.zIndex = '0';
   containerStyle.overflow = 'hidden';
 
   var container = options.cy.container();
   container.appendChild( r.data.canvasContainer );
-  container.setAttribute('style', ( container.getAttribute('style') || '' ) + '-webkit-tap-highlight-color: rgba(0,0,0,0);');
+  container.setAttribute( 'style', ( container.getAttribute( 'style' ) || '' ) + '-webkit-tap-highlight-color: rgba(0,0,0,0);' );
 
-  for (var i = 0; i < CRp.CANVAS_LAYERS; i++) {
-    var canvas = r.data.canvases[i] = document.createElement('canvas');
-    r.data.contexts[i] = canvas.getContext('2d');
+  for( var i = 0; i < CRp.CANVAS_LAYERS; i++ ){
+    var canvas = r.data.canvases[ i ] = document.createElement( 'canvas' );
+    r.data.contexts[ i ] = canvas.getContext( '2d' );
     canvas.setAttribute( 'style', '-webkit-user-select: none; -moz-user-select: -moz-none; user-select: none; -webkit-tap-highlight-color: rgba(0,0,0,0); outline-style: none;' + ( is.ms() ? ' -ms-touch-action: none; touch-action: none; ' : '' ) );
     canvas.style.position = 'absolute';
-    canvas.setAttribute('data-id', 'layer' + i);
-    canvas.style.zIndex = String(CRp.CANVAS_LAYERS - i);
-    r.data.canvasContainer.appendChild(canvas);
+    canvas.setAttribute( 'data-id', 'layer' + i );
+    canvas.style.zIndex = String( CRp.CANVAS_LAYERS - i );
+    r.data.canvasContainer.appendChild( canvas );
 
-    r.data.canvasNeedsRedraw[i] = false;
+    r.data.canvasNeedsRedraw[ i ] = false;
   }
   r.data.topCanvas = r.data.canvases[0];
 
-  r.data.canvases[CRp.NODE].setAttribute('data-id', 'layer' + CRp.NODE + '-node');
-  r.data.canvases[CRp.SELECT_BOX].setAttribute('data-id', 'layer' + CRp.SELECT_BOX + '-selectbox');
-  r.data.canvases[CRp.DRAG].setAttribute('data-id', 'layer' + CRp.DRAG + '-drag');
+  r.data.canvases[ CRp.NODE ].setAttribute( 'data-id', 'layer' + CRp.NODE + '-node' );
+  r.data.canvases[ CRp.SELECT_BOX ].setAttribute( 'data-id', 'layer' + CRp.SELECT_BOX + '-selectbox' );
+  r.data.canvases[ CRp.DRAG ].setAttribute( 'data-id', 'layer' + CRp.DRAG + '-drag' );
 
-  for (var i = 0; i < CRp.BUFFER_COUNT; i++) {
-    r.data.bufferCanvases[i] = document.createElement('canvas');
-    r.data.bufferContexts[i] = r.data.bufferCanvases[i].getContext('2d');
-    r.data.bufferCanvases[i].style.position = 'absolute';
-    r.data.bufferCanvases[i].setAttribute('data-id', 'buffer' + i);
-    r.data.bufferCanvases[i].style.zIndex = String(-i - 1);
-    r.data.bufferCanvases[i].style.visibility = 'hidden';
+  for( var i = 0; i < CRp.BUFFER_COUNT; i++ ){
+    r.data.bufferCanvases[ i ] = document.createElement( 'canvas' );
+    r.data.bufferContexts[ i ] = r.data.bufferCanvases[ i ].getContext( '2d' );
+    r.data.bufferCanvases[ i ].style.position = 'absolute';
+    r.data.bufferCanvases[ i ].setAttribute( 'data-id', 'buffer' + i );
+    r.data.bufferCanvases[ i ].style.zIndex = String( -i - 1 );
+    r.data.bufferCanvases[ i ].style.visibility = 'hidden';
     //r.data.canvasContainer.appendChild(r.data.bufferCanvases[i]);
   }
 
   r.pathsEnabled = true;
+
+  r.data.eleTxrCache = new ElementTextureCache( r );
+  r.data.lyrTxrCache = new LayeredTextureCache( r, r.data.eleTxrCache );
+
+  r.onUpdateEleCalcs(function invalidateTextureCaches( willDraw, eles ){
+    for( var i = 0; i < eles.length; i++ ){
+      var ele = eles[i];
+      var rs = ele._private.rstyle;
+      var de = rs.dirtyEvents;
+
+      if( ele.isNode() && de && de.length === 1 && de['position'] ){
+        // then keep cached ele texture
+      } else {
+        r.data.eleTxrCache.invalidateElement( ele );
+      }
+    }
+
+    if( eles.length > 0 ){
+      r.data.lyrTxrCache.invalidateElements( eles );
+    }
+  });
 }
 
 CRp.redrawHint = function( group, bool ){
@@ -109,17 +132,18 @@ CRp.usePaths = function(){
 };
 
 [
-  require('./arrow-shapes'),
-  require('./drawing-edges'),
-  require('./drawing-images'),
-  require('./drawing-label-text'),
-  require('./drawing-nodes'),
-  require('./drawing-redraw'),
-  require('./drawing-shapes'),
-  require('./export-image'),
-  require('./node-shapes')
-].forEach(function( props ){
+  require( './arrow-shapes' ),
+  require( './drawing-elements' ),
+  require( './drawing-edges' ),
+  require( './drawing-images' ),
+  require( './drawing-label-text' ),
+  require( './drawing-nodes' ),
+  require( './drawing-redraw' ),
+  require( './drawing-shapes' ),
+  require( './export-image' ),
+  require( './node-shapes' )
+].forEach( function( props ){
   util.extend( CRp, props );
-});
+} );
 
 module.exports = CR;

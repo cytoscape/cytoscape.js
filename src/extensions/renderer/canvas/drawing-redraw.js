@@ -2,8 +2,7 @@
 
 var CRp = {};
 
-var util = require('../../../util');
-var math = require('../../../math');
+var util = require( '../../../util' );
 
 var motionBlurDelay = 100;
 
@@ -26,13 +25,13 @@ CRp.getPixelRatio = function(){
   return (window.devicePixelRatio || 1) / backingStore;
 };
 
-CRp.paintCache = function(context){
+CRp.paintCache = function( context ){
   var caches = this.paintCaches = this.paintCaches || [];
   var needToCreateCache = true;
   var cache;
 
-  for(var i = 0; i < caches.length; i++ ){
-    cache = caches[i];
+  for( var i = 0; i < caches.length; i++ ){
+    cache = caches[ i ];
 
     if( cache.context === context ){
       needToCreateCache = false;
@@ -50,7 +49,7 @@ CRp.paintCache = function(context){
   return cache;
 };
 
-CRp.fillStyle = function(context, r, g, b, a){
+CRp.fillStyle = function( context, r, g, b, a ){
   context.fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
 
   // turn off for now, seems context does its own caching
@@ -64,7 +63,7 @@ CRp.fillStyle = function(context, r, g, b, a){
   // }
 };
 
-CRp.strokeStyle = function(context, r, g, b, a){
+CRp.strokeStyle = function( context, r, g, b, a ){
   context.strokeStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
 
   // turn off for now, seems context does its own caching
@@ -78,31 +77,33 @@ CRp.strokeStyle = function(context, r, g, b, a){
   // }
 };
 
-CRp.shadowStyle = function(context, color, opacity, blur, offsetX, offsetY){
+CRp.shadowStyle = function( context, color, opacity, blur, offsetX, offsetY ){
   var zoom = this.cy.zoom();
 
-  var cache = this.paintCache(context);
+  // var cache = this.paintCache( context );
+  //
+  // // don't make expensive changes to the shadow style if it's not used
+  // if( cache.shadowOpacity === 0 && opacity === 0 ){
+  //   return;
+  // }
+  //
+  // cache.shadowOpacity = opacity;
 
-  // don't make expensive changes to the shadow style if it's not used
-  if( cache.shadowOpacity === 0 && opacity === 0 ){
-    return;
-  }
-
-  cache.shadowOpacity = opacity;
-
-  if (opacity > 0) {
+  if( opacity > 0 ){
     context.shadowBlur = blur * zoom;
-    context.shadowColor = "rgba(" + color[0] + "," + color[1] + "," + color[2] + "," + opacity + ")";
+    context.shadowColor = 'rgba(' + color[0] + ',' + color[1] + ',' + color[2] + ',' + opacity + ')';
     context.shadowOffsetX = offsetX * zoom;
     context.shadowOffsetY = offsetY * zoom;
   } else {
     context.shadowBlur = 0;
-    context.shadowColor = "transparent";
+    context.shadowColor = 'transparent';
+    context.shadowOffsetX = 0;
+    context.shadowOffsetY = 0;
   }
 };
 
 // Resize canvas
-CRp.matchCanvasSize = function(container) {
+CRp.matchCanvasSize = function( container ){
   var r = this;
   var data = r.data;
   var width = container.clientWidth;
@@ -111,8 +112,8 @@ CRp.matchCanvasSize = function(container) {
   var mbPxRatio = r.motionBlurPxRatio;
 
   if(
-    container === r.data.bufferCanvases[r.MOTIONBLUR_BUFFER_NODE] ||
-    container === r.data.bufferCanvases[r.MOTIONBLUR_BUFFER_DRAG]
+    container === r.data.bufferCanvases[ r.MOTIONBLUR_BUFFER_NODE ] ||
+    container === r.data.bufferCanvases[ r.MOTIONBLUR_BUFFER_DRAG ]
   ){
     pixelRatio = mbPxRatio;
   }
@@ -131,11 +132,11 @@ CRp.matchCanvasSize = function(container) {
   canvasContainer.style.width = width + 'px';
   canvasContainer.style.height = height + 'px';
 
-  for (var i = 0; i < r.CANVAS_LAYERS; i++) {
+  for( var i = 0; i < r.CANVAS_LAYERS; i++ ){
 
-    canvas = data.canvases[i];
+    canvas = data.canvases[ i ];
 
-    if (canvas.width !== canvasWidth || canvas.height !== canvasHeight) {
+    if( canvas.width !== canvasWidth || canvas.height !== canvasHeight ){
 
       canvas.width = canvasWidth;
       canvas.height = canvasHeight;
@@ -145,11 +146,11 @@ CRp.matchCanvasSize = function(container) {
     }
   }
 
-  for (var i = 0; i < r.BUFFER_COUNT; i++) {
+  for( var i = 0; i < r.BUFFER_COUNT; i++ ){
 
-    canvas = data.bufferCanvases[i];
+    canvas = data.bufferCanvases[ i ];
 
-    if (canvas.width !== canvasWidth || canvas.height !== canvasHeight) {
+    if( canvas.width !== canvasWidth || canvas.height !== canvasHeight ){
 
       canvas.width = canvasWidth;
       canvas.height = canvasHeight;
@@ -174,16 +175,16 @@ CRp.matchCanvasSize = function(container) {
 };
 
 CRp.renderTo = function( cxt, zoom, pan, pxRatio ){
-  this.render({
+  this.render( {
     forcedContext: cxt,
     forcedZoom: zoom,
     forcedPan: pan,
     drawAllLayers: true,
     forcedPxRatio: pxRatio
-  });
+  } );
 };
 
-CRp.render = function( options ) {
+CRp.render = function( options ){
   options = options || util.staticEmptyObject();
 
   var forcedContext = options.forcedContext;
@@ -247,11 +248,10 @@ CRp.render = function( options ) {
   // b/c drawToContext() may be async w.r.t. redraw(), keep track of last texture frame
   // because a rogue async texture frame would clear needDraw
   if( r.textureDrawLastFrame && !textureDraw ){
-    needDraw[r.NODE] = true;
-    needDraw[r.SELECT_BOX] = true;
+    needDraw[ r.NODE ] = true;
+    needDraw[ r.SELECT_BOX ] = true;
   }
 
-  var edges = r.getCachedEdges();
   var coreStyle = cy.style()._private.coreStyle;
 
   var zoom = cy.zoom();
@@ -287,33 +287,22 @@ CRp.render = function( options ) {
   effectivePan.x *= pixelRatio;
   effectivePan.y *= pixelRatio;
 
-  var eles = {
-    drag: {
-      nodes: [],
-      edges: [],
-      eles: []
-    },
-    nondrag: {
-      nodes: [],
-      edges: [],
-      eles: []
-    }
-  };
+  var eles = r.getCachedZSortedEles();
 
   function mbclear( context, x, y, w, h ){
     var gco = context.globalCompositeOperation;
 
     context.globalCompositeOperation = 'destination-out';
     r.fillStyle( context, 255, 255, 255, r.motionBlurTransparency );
-    context.fillRect(x, y, w, h);
+    context.fillRect( x, y, w, h );
 
     context.globalCompositeOperation = gco;
   }
 
-  function setContextTransform(context, clear){
+  function setContextTransform( context, clear ){
     var ePan, eZoom, w, h;
 
-    if( !r.clearingMotionBlur && (context === data.bufferContexts[r.MOTIONBLUR_BUFFER_NODE] || context === data.bufferContexts[r.MOTIONBLUR_BUFFER_DRAG]) ){
+    if( !r.clearingMotionBlur && (context === data.bufferContexts[ r.MOTIONBLUR_BUFFER_NODE ] || context === data.bufferContexts[ r.MOTIONBLUR_BUFFER_DRAG ]) ){
       ePan = {
         x: pan.x * mbPxRatio,
         y: pan.y * mbPxRatio
@@ -331,12 +320,12 @@ CRp.render = function( options ) {
       h = r.canvasHeight;
     }
 
-    context.setTransform(1, 0, 0, 1, 0, 0);
+    context.setTransform( 1, 0, 0, 1, 0, 0 );
 
     if( clear === 'motionBlur' ){
-      mbclear(context, 0, 0, w, h);
+      mbclear( context, 0, 0, w, h );
     } else if( !forcedContext && (clear === undefined || clear) ){
-      context.clearRect(0, 0, w, h);
+      context.clearRect( 0, 0, w, h );
     }
 
     if( !drawAllLayers ){
@@ -369,14 +358,14 @@ CRp.render = function( options ) {
 
       var cxt = r.data.bufferContexts[ r.TEXTURE_BUFFER ];
 
-      cxt.setTransform(1, 0, 0, 1, 0, 0);
-      cxt.clearRect(0, 0, r.canvasWidth * r.textureMult, r.canvasHeight * r.textureMult);
+      cxt.setTransform( 1, 0, 0, 1, 0, 0 );
+      cxt.clearRect( 0, 0, r.canvasWidth * r.textureMult, r.canvasHeight * r.textureMult );
 
-      r.render({
+      r.render( {
         forcedContext: cxt,
         drawOnlyNodeLayer: true,
         forcedPxRatio: pixelRatio * r.textureMult
-      });
+      } );
 
       var vp = r.textureCache.viewport = {
         zoom: cy.zoom(),
@@ -386,30 +375,30 @@ CRp.render = function( options ) {
       };
 
       vp.mpan = {
-        x: (0 - vp.pan.x)/vp.zoom,
-        y: (0 - vp.pan.y)/vp.zoom
+        x: (0 - vp.pan.x) / vp.zoom,
+        y: (0 - vp.pan.y) / vp.zoom
       };
     }
 
-    needDraw[r.DRAG] = false;
-    needDraw[r.NODE] = false;
+    needDraw[ r.DRAG ] = false;
+    needDraw[ r.NODE ] = false;
 
-    var context = data.contexts[r.NODE];
+    var context = data.contexts[ r.NODE ];
 
     var texture = r.textureCache.texture;
     var vp = r.textureCache.viewport;
     bb = r.textureCache.bb;
 
-    context.setTransform(1, 0, 0, 1, 0, 0);
+    context.setTransform( 1, 0, 0, 1, 0, 0 );
 
     if( motionBlur ){
-      mbclear(context, 0, 0, vp.width, vp.height);
+      mbclear( context, 0, 0, vp.width, vp.height );
     } else {
-      context.clearRect(0, 0, vp.width, vp.height);
+      context.clearRect( 0, 0, vp.width, vp.height );
     }
 
-    var outsideBgColor = coreStyle['outside-texture-bg-color'].value;
-    var outsideBgOpacity = coreStyle['outside-texture-bg-opacity'].value;
+    var outsideBgColor = coreStyle[ 'outside-texture-bg-color' ].value;
+    var outsideBgOpacity = coreStyle[ 'outside-texture-bg-opacity' ].value;
     r.fillStyle( context, outsideBgColor[0], outsideBgColor[1], outsideBgColor[2], outsideBgOpacity );
     context.fillRect( 0, 0, vp.width, vp.height );
 
@@ -417,142 +406,94 @@ CRp.render = function( options ) {
 
     setContextTransform( context, false );
 
-    context.clearRect( vp.mpan.x, vp.mpan.y, vp.width/vp.zoom/pixelRatio, vp.height/vp.zoom/pixelRatio );
-    context.drawImage( texture, vp.mpan.x, vp.mpan.y, vp.width/vp.zoom/pixelRatio, vp.height/vp.zoom/pixelRatio );
+    context.clearRect( vp.mpan.x, vp.mpan.y, vp.width / vp.zoom / pixelRatio, vp.height / vp.zoom / pixelRatio );
+    context.drawImage( texture, vp.mpan.x, vp.mpan.y, vp.width / vp.zoom / pixelRatio, vp.height / vp.zoom / pixelRatio );
 
   } else if( r.textureOnViewport && !forcedContext ){ // clear the cache since we don't need it
     r.textureCache = null;
   }
 
+  var extent = cy.extent();
   var vpManip = (r.pinching || r.hoverData.dragging || r.swipePanning || r.data.wheelZooming || r.hoverData.draggingEles);
   var hideEdges = r.hideEdgesOnViewport && vpManip;
-  var hideLabels = r.hideLabelsOnViewport && vpManip;
-
-  if (needDraw[r.DRAG] || needDraw[r.NODE] || drawAllLayers || drawOnlyNodeLayer) {
-    if( hideEdges ){
-    } else {
-      r.findEdgeControlPoints(edges);
-    }
-
-    var zEles = r.getCachedZSortedEles();
-    var extent = cy.extent();
-
-    for (var i = 0; i < zEles.length; i++) {
-      var ele = zEles[i];
-      var list;
-      var bb = forcedContext ? null : ele.boundingBox();
-      var insideExtent = forcedContext ? true : math.boundingBoxesIntersect( extent, bb );
-
-      if( !insideExtent ){ continue; } // no need to render
-
-      if ( ele._private.rscratch.inDragLayer ) {
-        list = eles.drag;
-      } else {
-        list = eles.nondrag;
-      }
-
-      list.eles.push( ele );
-    }
-
-  }
-
-
-  function drawElements( list, context ){
-    var eles = list.eles;
-
-    for( var i = 0; i < eles.length; i++ ){
-      var ele = eles[i];
-
-      if( ele.isNode() ){
-        r.drawNode(context, ele);
-
-        if( !hideLabels ){
-          r.drawNodeText(context, ele);
-        }
-
-        r.drawNode(context, ele, true);
-      } else if( !hideEdges ) {
-        r.drawEdge(context, ele);
-
-        if( !hideLabels ){
-          r.drawEdgeText(context, ele);
-        }
-
-        r.drawEdge(context, ele, true);
-      }
-
-
-    }
-
-  }
 
   var needMbClear = [];
 
-  needMbClear[r.NODE] = !needDraw[r.NODE] && motionBlur && !r.clearedForMotionBlur[r.NODE] || r.clearingMotionBlur;
-  if( needMbClear[r.NODE] ){ r.clearedForMotionBlur[r.NODE] = true; }
+  needMbClear[ r.NODE ] = !needDraw[ r.NODE ] && motionBlur && !r.clearedForMotionBlur[ r.NODE ] || r.clearingMotionBlur;
+  if( needMbClear[ r.NODE ] ){ r.clearedForMotionBlur[ r.NODE ] = true; }
 
-  needMbClear[r.DRAG] = !needDraw[r.DRAG] && motionBlur && !r.clearedForMotionBlur[r.DRAG] || r.clearingMotionBlur;
-  if( needMbClear[r.DRAG] ){ r.clearedForMotionBlur[r.DRAG] = true; }
+  needMbClear[ r.DRAG ] = !needDraw[ r.DRAG ] && motionBlur && !r.clearedForMotionBlur[ r.DRAG ] || r.clearingMotionBlur;
+  if( needMbClear[ r.DRAG ] ){ r.clearedForMotionBlur[ r.DRAG ] = true; }
 
-  if( needDraw[r.NODE] || drawAllLayers || drawOnlyNodeLayer || needMbClear[r.NODE] ){
-    var useBuffer = motionBlur && !needMbClear[r.NODE] && mbPxRatio !== 1;
-    var context = forcedContext || ( useBuffer ? r.data.bufferContexts[ r.MOTIONBLUR_BUFFER_NODE ] : data.contexts[r.NODE] );
+  if( needDraw[ r.NODE ] || drawAllLayers || drawOnlyNodeLayer || needMbClear[ r.NODE ] ){
+    var useBuffer = motionBlur && !needMbClear[ r.NODE ] && mbPxRatio !== 1;
+    var context = forcedContext || ( useBuffer ? r.data.bufferContexts[ r.MOTIONBLUR_BUFFER_NODE ] : data.contexts[ r.NODE ] );
     var clear = motionBlur && !useBuffer ? 'motionBlur' : undefined;
 
     setContextTransform( context, clear );
-    drawElements(eles.nondrag, context);
+
+    if( hideEdges ){
+      r.drawCachedNodes( context, eles.nondrag, pixelRatio, extent );
+    } else {
+      r.drawLayeredElements( context, eles.nondrag, pixelRatio, extent );
+    }
 
     if( !drawAllLayers && !motionBlur ){
-      needDraw[r.NODE] = false;
+      needDraw[ r.NODE ] = false;
     }
   }
 
-  if ( !drawOnlyNodeLayer && (needDraw[r.DRAG] || drawAllLayers || needMbClear[r.DRAG]) ) {
-    var useBuffer = motionBlur && !needMbClear[r.DRAG] && mbPxRatio !== 1;
-    var context = forcedContext || ( useBuffer ? r.data.bufferContexts[ r.MOTIONBLUR_BUFFER_DRAG ] : data.contexts[r.DRAG] );
+  if( !drawOnlyNodeLayer && (needDraw[ r.DRAG ] || drawAllLayers || needMbClear[ r.DRAG ]) ){
+    var useBuffer = motionBlur && !needMbClear[ r.DRAG ] && mbPxRatio !== 1;
+    var context = forcedContext || ( useBuffer ? r.data.bufferContexts[ r.MOTIONBLUR_BUFFER_DRAG ] : data.contexts[ r.DRAG ] );
 
     setContextTransform( context, motionBlur && !useBuffer ? 'motionBlur' : undefined );
-    drawElements(eles.drag, context);
+
+    if( hideEdges ){
+      r.drawCachedNodes( context, eles.drag, pixelRatio, extent );
+    } else {
+      r.drawCachedElements( context, eles.drag, pixelRatio, extent );
+    }
 
     if( !drawAllLayers && !motionBlur ){
-      needDraw[r.DRAG] = false;
+      needDraw[ r.DRAG ] = false;
     }
   }
 
-  if( r.showFps || (!drawOnlyNodeLayer && (needDraw[r.SELECT_BOX] && !drawAllLayers)) ) {
-    var context = forcedContext || data.contexts[r.SELECT_BOX];
+  if( r.showFps || (!drawOnlyNodeLayer && (needDraw[ r.SELECT_BOX ] && !drawAllLayers)) ){
+    var context = forcedContext || data.contexts[ r.SELECT_BOX ];
 
     setContextTransform( context );
 
     if( r.selection[4] == 1 && ( r.hoverData.selecting || r.touchData.selecting ) ){
       var zoom = r.cy.zoom();
-      var borderWidth = coreStyle['selection-box-border-width'].value / zoom;
+      var borderWidth = coreStyle[ 'selection-box-border-width' ].value / zoom;
 
       context.lineWidth = borderWidth;
-      context.fillStyle = "rgba("
-        + coreStyle['selection-box-color'].value[0] + ","
-        + coreStyle['selection-box-color'].value[1] + ","
-        + coreStyle['selection-box-color'].value[2] + ","
-        + coreStyle['selection-box-opacity'].value + ")";
+      context.fillStyle = 'rgba('
+        + coreStyle[ 'selection-box-color' ].value[0] + ','
+        + coreStyle[ 'selection-box-color' ].value[1] + ','
+        + coreStyle[ 'selection-box-color' ].value[2] + ','
+        + coreStyle[ 'selection-box-opacity' ].value + ')';
 
       context.fillRect(
         r.selection[0],
         r.selection[1],
         r.selection[2] - r.selection[0],
-        r.selection[3] - r.selection[1]);
+        r.selection[3] - r.selection[1] );
 
-      if (borderWidth > 0) {
-        context.strokeStyle = "rgba("
-          + coreStyle['selection-box-border-color'].value[0] + ","
-          + coreStyle['selection-box-border-color'].value[1] + ","
-          + coreStyle['selection-box-border-color'].value[2] + ","
-          + coreStyle['selection-box-opacity'].value + ")";
+      if( borderWidth > 0 ){
+        context.strokeStyle = 'rgba('
+          + coreStyle[ 'selection-box-border-color' ].value[0] + ','
+          + coreStyle[ 'selection-box-border-color' ].value[1] + ','
+          + coreStyle[ 'selection-box-border-color' ].value[2] + ','
+          + coreStyle[ 'selection-box-opacity' ].value + ')';
 
         context.strokeRect(
           r.selection[0],
           r.selection[1],
           r.selection[2] - r.selection[0],
-          r.selection[3] - r.selection[1]);
+          r.selection[3] - r.selection[1] );
       }
     }
 
@@ -560,49 +501,49 @@ CRp.render = function( options ) {
       var zoom = r.cy.zoom();
       var pos = data.bgActivePosistion;
 
-      context.fillStyle = "rgba("
-        + coreStyle['active-bg-color'].value[0] + ","
-        + coreStyle['active-bg-color'].value[1] + ","
-        + coreStyle['active-bg-color'].value[2] + ","
-        + coreStyle['active-bg-opacity'].value + ")";
+      context.fillStyle = 'rgba('
+        + coreStyle[ 'active-bg-color' ].value[0] + ','
+        + coreStyle[ 'active-bg-color' ].value[1] + ','
+        + coreStyle[ 'active-bg-color' ].value[2] + ','
+        + coreStyle[ 'active-bg-opacity' ].value + ')';
 
       context.beginPath();
-      context.arc(pos.x, pos.y, coreStyle['active-bg-size'].pfValue / zoom, 0, 2 * Math.PI);
+      context.arc( pos.x, pos.y, coreStyle[ 'active-bg-size' ].pfValue / zoom, 0, 2 * Math.PI );
       context.fill();
     }
 
     var timeToRender = r.lastRedrawTime;
     if( r.showFps && timeToRender ){
       timeToRender = Math.round( timeToRender );
-      var fps = Math.round(1000/timeToRender);
+      var fps = Math.round( 1000 / timeToRender );
 
-      context.setTransform(1, 0, 0, 1, 0, 0);
+      context.setTransform( 1, 0, 0, 1, 0, 0 );
 
       context.fillStyle = 'rgba(255, 0, 0, 0.75)';
       context.strokeStyle = 'rgba(255, 0, 0, 0.75)';
       context.lineWidth = 1;
-      context.fillText( '1 frame = ' + timeToRender + ' ms = ' + fps + ' fps', 0, 20);
+      context.fillText( '1 frame = ' + timeToRender + ' ms = ' + fps + ' fps', 0, 20 );
 
       var maxFps = 60;
-      context.strokeRect(0, 30, 250, 20);
-      context.fillRect(0, 30, 250 * Math.min(fps/maxFps, 1), 20);
+      context.strokeRect( 0, 30, 250, 20 );
+      context.fillRect( 0, 30, 250 * Math.min( fps / maxFps, 1 ), 20 );
     }
 
     if( !drawAllLayers ){
-      needDraw[r.SELECT_BOX] = false;
+      needDraw[ r.SELECT_BOX ] = false;
     }
   }
 
   // motionblur: blit rendered blurry frames
   if( motionBlur && mbPxRatio !== 1 ){
-    var cxtNode = data.contexts[r.NODE];
+    var cxtNode = data.contexts[ r.NODE ];
     var txtNode = r.data.bufferCanvases[ r.MOTIONBLUR_BUFFER_NODE ];
 
-    var cxtDrag = data.contexts[r.DRAG];
+    var cxtDrag = data.contexts[ r.DRAG ];
     var txtDrag = r.data.bufferCanvases[ r.MOTIONBLUR_BUFFER_DRAG ];
 
     var drawMotionBlur = function( cxt, txt, needClear ){
-      cxt.setTransform(1, 0, 0, 1, 0, 0);
+      cxt.setTransform( 1, 0, 0, 1, 0, 0 );
 
       if( needClear || !motionBlurFadeEffect ){
         cxt.clearRect( 0, 0, r.canvasWidth, r.canvasHeight );
@@ -621,14 +562,14 @@ CRp.render = function( options ) {
       );
     };
 
-    if( needDraw[r.NODE] || needMbClear[r.NODE] ){
-      drawMotionBlur( cxtNode, txtNode, needMbClear[r.NODE] );
-      needDraw[r.NODE] = false;
+    if( needDraw[ r.NODE ] || needMbClear[ r.NODE ] ){
+      drawMotionBlur( cxtNode, txtNode, needMbClear[ r.NODE ] );
+      needDraw[ r.NODE ] = false;
     }
 
-    if( needDraw[r.DRAG] || needMbClear[r.DRAG] ){
-      drawMotionBlur( cxtDrag, txtDrag, needMbClear[r.DRAG] );
-      needDraw[r.DRAG] = false;
+    if( needDraw[ r.DRAG ] || needMbClear[ r.DRAG ] ){
+      drawMotionBlur( cxtDrag, txtDrag, needMbClear[ r.DRAG ] );
+      needDraw[ r.DRAG ] = false;
     }
   }
 
@@ -641,20 +582,20 @@ CRp.render = function( options ) {
   }
 
   if( motionBlur ){
-    r.motionBlurTimeout = setTimeout(function(){
+    r.motionBlurTimeout = setTimeout( function(){
       r.motionBlurTimeout = null;
 
-      r.clearedForMotionBlur[r.NODE] = false;
-      r.clearedForMotionBlur[r.DRAG] = false;
+      r.clearedForMotionBlur[ r.NODE ] = false;
+      r.clearedForMotionBlur[ r.DRAG ] = false;
       r.motionBlur = false;
       r.clearingMotionBlur = !textureDraw;
       r.mbFrames = 0;
 
-      needDraw[r.NODE] = true;
-      needDraw[r.DRAG] = true;
+      needDraw[ r.NODE ] = true;
+      needDraw[ r.DRAG ] = true;
 
       r.redraw();
-    }, motionBlurDelay);
+    }, motionBlurDelay );
   }
 
   r.drawingImage = false;
@@ -662,11 +603,11 @@ CRp.render = function( options ) {
 
   if( !forcedContext && !r.initrender ){
     r.initrender = true;
-    cy.trigger('initrender');
+    cy.trigger( 'initrender' );
   }
 
   if( !forcedContext ){
-    cy.triggerOnRender();
+    cy.trigger('render');
   }
 
 };

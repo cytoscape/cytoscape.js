@@ -1,13 +1,15 @@
 'use strict';
 
-var window = require('./window');
-var is = require('./is');
-var Core = require('./core');
-var extension = require('./extension');
-var registerJquery = require('./jquery-plugin');
-var Stylesheet = require('./stylesheet');
-var Thread = require('./thread');
-var Fabric = require('./fabric');
+require('./-preamble');
+
+var window = require( './window' );
+var is = require( './is' );
+var Core = require( './core' );
+var extension = require( './extension' );
+var registerJquery = require( './jquery-plugin' );
+var Stylesheet = require( './stylesheet' );
+var Thread = require( './thread' );
+var Fabric = require( './fabric' );
 
 var cytoscape = function( options ){ // jshint ignore:line
   // if no options specified, use default
@@ -21,13 +23,13 @@ var cytoscape = function( options ){ // jshint ignore:line
   }
 
   // allow for registration of extensions
-  else if( is.string( options ) ) {
-    return extension.apply(extension, arguments);
+  else if( is.string( options ) ){
+    return extension.apply( extension, arguments );
   }
 };
 
 // replaced by build system
-cytoscape.version = '{{VERSION}}';
+cytoscape.version = require('./version');
 
 // try to register w/ jquery
 if( window && window.jQuery ){

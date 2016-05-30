@@ -1,5 +1,5 @@
 {
-  "version": "2.6.12",
+  "version": "2.7.0-beta1",
 
   "fnArgLinks": {
     "selector": "#selectors",
@@ -1544,9 +1544,10 @@
                       "name": "options",
                       "descr": "An object containing options for the function.",
                       "fields": [
-                        { "name": "includeNodes", "descr": "A boolean indicating whether to include nodes in the bounding box." },
-                        { "name": "includeEdges", "descr": "A boolean indicating whether to include edges in the bounding box." },
-                        { "name": "includeLabels", "descr": "A boolean indicating whether to include labels in the bounding box." }
+                        { "name": "includeNodes", "descr": "A boolean indicating whether to include nodes in the bounding box (default `true`)." },
+                        { "name": "includeEdges", "descr": "A boolean indicating whether to include edges in the bounding box (default `true`)." },
+                        { "name": "includeLabels", "descr": "A boolean indicating whether to include labels in the bounding box (default `true`)." },
+                        { "name": "includeShadows", "descr": "A boolean indicating whether to include shadows in the bounding box (default `true`)." }
                       ]
                     }
                   ]
@@ -1568,9 +1569,10 @@
                       "name": "options",
                       "descr": "An object containing options for the function.",
                       "fields": [
-                        { "name": "includeNodes", "descr": "A boolean indicating whether to include nodes in the bounding box." },
-                        { "name": "includeEdges", "descr": "A boolean indicating whether to include edges in the bounding box." },
-                        { "name": "includeLabels", "descr": "A boolean indicating whether to include labels in the bounding box." }
+                        { "name": "includeNodes", "descr": "A boolean indicating whether to include nodes in the bounding box (default `true`)." },
+                        { "name": "includeEdges", "descr": "A boolean indicating whether to include edges in the bounding box (default `true`)." },
+                        { "name": "includeLabels", "descr": "A boolean indicating whether to include labels in the bounding box (default `true`)." },
+                        { "name": "includeShadows", "descr": "A boolean indicating whether to include shadows in the bounding box (default `true`)." }
                       ]
                     }
                   ]
@@ -1687,8 +1689,7 @@
                     }
                   ]
                 }
-              ],
-              "md": "collection/layout"
+              ]
             }
           ]
         },
@@ -3008,8 +3009,8 @@
             },
 
             {
-              "name": "nodes.parents",
-              "pureAliases": ["nodes.ancestors"],
+              "name": "nodes.ancestors",
+              "pureAliases": ["nodes.parents"],
               "descr": "Get all compound ancestor nodes (i.e. parents, parents' parents, etc.) of each node in the collection.",
               "formats": [
                 {

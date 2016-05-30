@@ -3,10 +3,6 @@ $(function(){
 	$("#cytoscape").cy(function(){
 		var cy = this;
 
-		console.log('ready');
-
-		console.log(cy);
-
 		var tests = {}; // name => setup
 		function test(options){
 			$("#test-type-select").append('<option value="'+ options.name +'">'+ options.displayName +'</option>');
@@ -29,16 +25,18 @@ $(function(){
 			break;
 		}
 
+		$('#note').on('click', function(){
+			$('#note').hide();
+		});
+
 		$("#test-type-select").change(function(){
 			currentTest.teardown();
 
 			var name = $("#test-type-select").val();
 			currentTest = tests[name];
 
-			$.gritter.add({
-				title: currentTest.displayName,
-				text: currentTest.description
-			});
+			notify( currentTest.displayName, currentTest.description );
+
 			currentTest.setup();
 		});
 
@@ -67,15 +65,15 @@ $(function(){
 		test({
 			name: "bypassOnClick",
 			displayName: "Bypass on click",
-			description: "Set nodes to red and edges to blue on click",
+			description: "Set nodes to red and edges to orange on click",
 			setup: function(){
 				cy.elements().bind("click", function(){
 					this.css("background-color", "red");
 
 					this.css({
-						lineColor: "blue",
-						targetArrowColor: "blue",
-						sourceArrowColor: "blue"
+						lineColor: "orange",
+						targetArrowColor: "orange",
+						sourceArrowColor: "orange"
 					});
 				});
 			},

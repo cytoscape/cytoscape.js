@@ -1,21 +1,18 @@
 'use strict';
 
-var is = require('../is');
-var util = require('../util');
-var Collection = require('../collection');
-var Element = require('../collection/element');
-var window = require('../window');
-var document = window ? window.document : null;
-var NullRenderer = require('../extensions/renderer/null');
+var is = require( '../is' );
+var util = require( '../util' );
+var Collection = require( '../collection' );
+var Element = require( '../collection/element' );
 
 var corefn = {
-  add: function(opts){
+  add: function( opts ){
 
     var elements;
     var cy = this;
 
     // add the elements
-    if( is.elementOrCollection(opts) ){
+    if( is.elementOrCollection( opts ) ){
       var eles = opts;
 
       if( eles._private.cy === cy ){ // same instance => just restore
@@ -25,7 +22,7 @@ var corefn = {
         var jsons = [];
 
         for( var i = 0; i < eles.length; i++ ){
-          var ele = eles[i];
+          var ele = eles[ i ];
           jsons.push( ele.json() );
         }
 
@@ -34,33 +31,33 @@ var corefn = {
     }
 
     // specify an array of options
-    else if( is.array(opts) ){
+    else if( is.array( opts ) ){
       var jsons = opts;
 
-      elements = new Collection(cy, jsons);
+      elements = new Collection( cy, jsons );
     }
 
     // specify via opts.nodes and opts.edges
-    else if( is.plainObject(opts) && (is.array(opts.nodes) || is.array(opts.edges)) ){
+    else if( is.plainObject( opts ) && (is.array( opts.nodes ) || is.array( opts.edges )) ){
       var elesByGroup = opts;
       var jsons = [];
 
-      var grs = ['nodes', 'edges'];
+      var grs = [ 'nodes', 'edges' ];
       for( var i = 0, il = grs.length; i < il; i++ ){
-        var group = grs[i];
-        var elesArray = elesByGroup[group];
+        var group = grs[ i ];
+        var elesArray = elesByGroup[ group ];
 
-        if( is.array(elesArray) ){
+        if( is.array( elesArray ) ){
 
           for( var j = 0, jl = elesArray.length; j < jl; j++ ){
-            var json = util.extend( { group: group }, elesArray[j] );
+            var json = util.extend( { group: group }, elesArray[ j ] );
 
             jsons.push( json );
           }
         }
       }
 
-      elements = new Collection(cy, jsons);
+      elements = new Collection( cy, jsons );
     }
 
     // specify options for one element
@@ -72,10 +69,10 @@ var corefn = {
     return elements;
   },
 
-  remove: function(collection){
-    if( is.elementOrCollection(collection) ){
+  remove: function( collection ){
+    if( is.elementOrCollection( collection ) ){
       collection = collection;
-    } else if( is.string(collection) ){
+    } else if( is.string( collection ) ){
       var selector = collection;
       collection = this.$( selector );
     }
@@ -83,10 +80,10 @@ var corefn = {
     return collection.remove();
   },
 
-  load: function(elements, onload, ondone){
+  load: function( elements, onload, ondone ){
     var cy = this;
 
-    cy.notifications(false);
+    cy.notifications( false );
 
     // remove old elements
     var oldEles = cy.elements();
@@ -95,28 +92,28 @@ var corefn = {
     }
 
     if( elements != null ){
-      if( is.plainObject(elements) || is.array(elements) ){
+      if( is.plainObject( elements ) || is.array( elements ) ){
         cy.add( elements );
       }
     }
 
-    cy.one('layoutready', function(e){
-      cy.notifications(true);
-      cy.trigger(e); // we missed this event by turning notifications off, so pass it on
+    cy.one( 'layoutready', function( e ){
+      cy.notifications( true );
+      cy.trigger( e ); // we missed this event by turning notifications off, so pass it on
 
-      cy.notify({
+      cy.notify( {
         type: 'load',
-        collection: cy.elements()
-      });
+        eles: cy.elements()
+      } );
 
-      cy.one('load', onload);
-      cy.trigger('load');
-    }).one('layoutstop', function(){
-      cy.one('done', ondone);
-      cy.trigger('done');
-    });
+      cy.one( 'load', onload );
+      cy.trigger( 'load' );
+    } ).one( 'layoutstop', function(){
+      cy.one( 'done', ondone );
+      cy.trigger( 'done' );
+    } );
 
-    var layoutOpts = util.extend({}, cy._private.options.layout);
+    var layoutOpts = util.extend( {}, cy._private.options.layout );
     layoutOpts.eles = cy.$();
 
     cy.layout( layoutOpts );

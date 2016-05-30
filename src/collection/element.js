@@ -1,19 +1,15 @@
 'use strict';
 
-var util = require('../util');
-var is = require('../is');
+var util = require( '../util' );
+var is = require( '../is' );
 
 // represents a node or an edge
-var Element = function(cy, params, restore){
-  if( !(this instanceof Element) ){
-    return new Element(cy, params, restore);
-  }
-
+var Element = function( cy, params, restore ){
   var self = this;
   restore = (restore === undefined || restore ? true : false);
 
-  if( cy === undefined || params === undefined || !is.core(cy) ){
-    util.error('An element must have a core reference and parameters set');
+  if( cy === undefined || params === undefined || !is.core( cy ) ){
+    util.error( 'An element must have a core reference and parameters set' );
     return;
   }
 
@@ -21,7 +17,7 @@ var Element = function(cy, params, restore){
 
   // try to automatically infer the group if unspecified
   if( group == null ){
-    if( params.data.source != null && params.data.target != null ){
+    if( params.data && params.data.source != null && params.data.target != null ){
       group = 'edges';
     } else {
       group = 'nodes';
@@ -30,7 +26,7 @@ var Element = function(cy, params, restore){
 
   // validate group
   if( group !== 'nodes' && group !== 'edges' ){
-    util.error('An element must be of type `nodes` or `edges`; you specified `' + group + '`');
+    util.error( 'An element must be of type `nodes` or `edges`; you specified `' + group + '`' );
     return;
   }
 
@@ -66,7 +62,8 @@ var Element = function(cy, params, restore){
     rscratch: {}, // object in which the renderer can store information
     scratch: params.scratch || {}, // scratch objects
     edges: [], // array of connected edges
-    children: [] // array of children
+    children: [], // array of children
+    traversalCache: {} // cache of output of traversal functions
   };
 
   // renderedPosition overrides if specified
@@ -76,18 +73,18 @@ var Element = function(cy, params, restore){
     var zoom = cy.zoom();
 
     this._private.position = {
-      x: (rpos.x - pan.x)/zoom,
-      y: (rpos.y - pan.y)/zoom
+      x: (rpos.x - pan.x) / zoom,
+      y: (rpos.y - pan.y) / zoom
     };
   }
 
-  if( is.string(params.classes) ){
-    var classes = params.classes.split(/\s+/);
+  if( is.string( params.classes ) ){
+    var classes = params.classes.split( /\s+/ );
     for( var i = 0, l = classes.length; i < l; i++ ){
-      var cls = classes[i];
+      var cls = classes[ i ];
       if( !cls || cls === '' ){ continue; }
 
-      self._private.classes[cls] = true;
+      self._private.classes[ cls ] = true;
     }
   }
 

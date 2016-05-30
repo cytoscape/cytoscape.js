@@ -3,11 +3,11 @@
 module.exports = [
   {
     type: 'layout',
-    extensions: require('./layout')
+    extensions: require( './layout' )
   },
 
   {
     type: 'renderer',
-    extensions: require('./renderer')
+    extensions: require( './renderer' )
   }
 ];

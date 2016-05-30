@@ -1,10 +1,10 @@
 'use strict';
 
-var is = require('../is');
+var is = require( '../is' );
 
 var corefn = ({
 
-  autolock: function(bool){
+  autolock: function( bool ){
     if( bool !== undefined ){
       this._private.autolock = bool ? true : false;
     } else {
@@ -14,7 +14,7 @@ var corefn = ({
     return this; // chaining
   },
 
-  autoungrabify: function(bool){
+  autoungrabify: function( bool ){
     if( bool !== undefined ){
       this._private.autoungrabify = bool ? true : false;
     } else {
@@ -24,7 +24,7 @@ var corefn = ({
     return this; // chaining
   },
 
-  autounselectify: function(bool){
+  autounselectify: function( bool ){
     if( bool !== undefined ){
       this._private.autounselectify = bool ? true : false;
     } else {
@@ -99,7 +99,7 @@ var corefn = ({
         dim = args[0];
         return pan[ dim ];
 
-      } else if( is.plainObject( args[0] ) ) { // .pan({ x: 0, y: 100 })
+      } else if( is.plainObject( args[0] ) ){ // .pan({ x: 0, y: 100 })
         if( !this._private.panningEnabled ){
           return this;
         }
@@ -108,15 +108,15 @@ var corefn = ({
         x = dims.x;
         y = dims.y;
 
-        if( is.number(x) ){
+        if( is.number( x ) ){
           pan.x = x;
         }
 
-        if( is.number(y) ){
+        if( is.number( y ) ){
           pan.y = y;
         }
 
-        this.trigger('pan viewport');
+        this.trigger( 'pan viewport' );
       }
       break;
 
@@ -128,25 +128,25 @@ var corefn = ({
       dim = args[0];
       val = args[1];
 
-      if( (dim === 'x' || dim === 'y') && is.number(val) ){
-        pan[dim] = val;
+      if( (dim === 'x' || dim === 'y') && is.number( val ) ){
+        pan[ dim ] = val;
       }
 
-      this.trigger('pan viewport');
+      this.trigger( 'pan viewport' );
       break;
 
     default:
       break; // invalid
     }
 
-    this.notify({ // notify the renderer that the viewport changed
+    this.notify( { // notify the renderer that the viewport changed
       type: 'viewport'
-    });
+    } );
 
     return this; // chaining
   },
 
-  panBy: function(params){
+  panBy: function( params ){
     var args = arguments;
     var pan = this._private.pan;
     var dim, val, dims, x, y;
@@ -158,20 +158,20 @@ var corefn = ({
     switch( args.length ){
     case 1:
 
-      if( is.plainObject( args[0] ) ) { // .panBy({ x: 0, y: 100 })
+      if( is.plainObject( args[0] ) ){ // .panBy({ x: 0, y: 100 })
         dims = args[0];
         x = dims.x;
         y = dims.y;
 
-        if( is.number(x) ){
+        if( is.number( x ) ){
           pan.x += x;
         }
 
-        if( is.number(y) ){
+        if( is.number( y ) ){
           pan.y += y;
         }
 
-        this.trigger('pan viewport');
+        this.trigger( 'pan viewport' );
       }
       break;
 
@@ -179,20 +179,20 @@ var corefn = ({
       dim = args[0];
       val = args[1];
 
-      if( (dim === 'x' || dim === 'y') && is.number(val) ){
-        pan[dim] += val;
+      if( (dim === 'x' || dim === 'y') && is.number( val ) ){
+        pan[ dim ] += val;
       }
 
-      this.trigger('pan viewport');
+      this.trigger( 'pan viewport' );
       break;
 
     default:
       break; // invalid
     }
 
-    this.notify({ // notify the renderer that the viewport changed
+    this.notify( { // notify the renderer that the viewport changed
       type: 'viewport'
-    });
+    } );
 
     return this; // chaining
   },
@@ -205,18 +205,18 @@ var corefn = ({
       _p.zoom = viewportState.zoom;
       _p.pan = viewportState.pan;
 
-      this.trigger('pan zoom viewport');
+      this.trigger( 'pan zoom viewport' );
 
-      this.notify({ // notify the renderer that the viewport changed
+      this.notify( { // notify the renderer that the viewport changed
         type: 'viewport'
-      });
+      } );
     }
 
     return this; // chaining
   },
 
   getFitViewport: function( elements, padding ){
-    if( is.number(elements) && padding === undefined ){ // elements is optional
+    if( is.number( elements ) && padding === undefined ){ // elements is optional
       padding = elements;
       elements = undefined;
     }
@@ -227,11 +227,11 @@ var corefn = ({
 
     var bb;
 
-    if( is.string(elements) ){
+    if( is.string( elements ) ){
       var sel = elements;
       elements = this.$( sel );
 
-    } else if( is.boundingBox(elements) ){ // assume bb
+    } else if( is.boundingBox( elements ) ){ // assume bb
       var bbe = elements;
       bb = {
         x1: bbe.x1,
@@ -243,7 +243,7 @@ var corefn = ({
       bb.w = bb.x2 - bb.x1;
       bb.h = bb.y2 - bb.y1;
 
-    } else if( !is.elementOrCollection(elements) ){
+    } else if( !is.elementOrCollection( elements ) ){
       elements = this.elements();
     }
 
@@ -252,18 +252,18 @@ var corefn = ({
     var w = this.width();
     var h = this.height();
     var zoom;
-    padding = is.number(padding) ? padding : 0;
+    padding = is.number( padding ) ? padding : 0;
 
-    if( !isNaN(w) && !isNaN(h) && w > 0 && h > 0 && !isNaN(bb.w) && !isNaN(bb.h) &&  bb.w > 0 && bb.h > 0 ){
-      zoom = Math.min( (w - 2*padding)/bb.w, (h - 2*padding)/bb.h );
+    if( !isNaN( w ) && !isNaN( h ) && w > 0 && h > 0 && !isNaN( bb.w ) && !isNaN( bb.h ) &&  bb.w > 0 && bb.h > 0 ){
+      zoom = Math.min( (w - 2 * padding) / bb.w, (h - 2 * padding) / bb.h );
 
       // crop zoom
       zoom = zoom > this._private.maxZoom ? this._private.maxZoom : zoom;
       zoom = zoom < this._private.minZoom ? this._private.minZoom : zoom;
 
       var pan = { // now pan to middle
-        x: (w - zoom*( bb.x1 + bb.x2 ))/2,
-        y: (h - zoom*( bb.y1 + bb.y2 ))/2
+        x: (w - zoom * ( bb.x1 + bb.x2 )) / 2,
+        y: (h - zoom * ( bb.y1 + bb.y2 )) / 2
       };
 
       return {
@@ -278,7 +278,7 @@ var corefn = ({
   minZoom: function( zoom ){
     if( zoom === undefined ){
       return this._private.minZoom;
-    } else if( is.number(zoom) ){
+    } else if( is.number( zoom ) ){
       this._private.minZoom = zoom;
     }
 
@@ -288,7 +288,7 @@ var corefn = ({
   maxZoom: function( zoom ){
     if( zoom === undefined ){
       return this._private.maxZoom;
-    } else if( is.number(zoom) ){
+    } else if( is.number( zoom ) ){
       this._private.maxZoom = zoom;
     }
 
@@ -302,10 +302,10 @@ var corefn = ({
     if( params === undefined ){ // then get the zoom
       return this._private.zoom;
 
-    } else if( is.number(params) ){ // then set the zoom
+    } else if( is.number( params ) ){ // then set the zoom
       zoom = params;
 
-    } else if( is.plainObject(params) ){ // then zoom about a point
+    } else if( is.plainObject( params ) ){ // then zoom about a point
       zoom = params.level;
 
       if( params.position ){
@@ -330,7 +330,7 @@ var corefn = ({
       return this; // zooming disabled
     }
 
-    if( !is.number(zoom) || ( pos && (!is.number(pos.x) || !is.number(pos.y)) ) ){
+    if( !is.number( zoom ) || ( pos && (!is.number( pos.x ) || !is.number( pos.y )) ) ){
       return this; // can't zoom with invalid params
     }
 
@@ -344,24 +344,24 @@ var corefn = ({
       var zoom2 = zoom;
 
       var pan2 = {
-        x: -zoom2/zoom1 * (pos.x - pan1.x) + pos.x,
-        y: -zoom2/zoom1 * (pos.y - pan1.y) + pos.y
+        x: -zoom2 / zoom1 * (pos.x - pan1.x) + pos.x,
+        y: -zoom2 / zoom1 * (pos.y - pan1.y) + pos.y
       };
 
       this._private.zoom = zoom;
       this._private.pan = pan2;
 
       var posChanged = pan1.x !== pan2.x || pan1.y !== pan2.y;
-      this.trigger(' zoom ' + (posChanged ? ' pan ' : '') + ' viewport ' );
+      this.trigger( ' zoom ' + (posChanged ? ' pan ' : '') + ' viewport ' );
 
     } else { // just set the zoom
       this._private.zoom = zoom;
-      this.trigger('zoom viewport');
+      this.trigger( 'zoom viewport' );
     }
 
-    this.notify({ // notify the renderer that the viewport changed
+    this.notify( { // notify the renderer that the viewport changed
       type: 'viewport'
-    });
+    } );
 
     return this; // chaining
   },
@@ -375,8 +375,8 @@ var corefn = ({
     var panFailed = false;
 
     if( !opts ){ return this; }
-    if( !is.number(opts.zoom) ){ zoomDefd = false; }
-    if( !is.plainObject(opts.pan) ){ panDefd = false; }
+    if( !is.number( opts.zoom ) ){ zoomDefd = false; }
+    if( !is.plainObject( opts.pan ) ){ panDefd = false; }
     if( !zoomDefd && !panDefd ){ return this; }
 
     if( zoomDefd ){
@@ -388,35 +388,35 @@ var corefn = ({
       } else {
         _p.zoom = z;
 
-        events.push('zoom');
+        events.push( 'zoom' );
       }
     }
 
     if( panDefd && (!zoomFailed || !opts.cancelOnFailedZoom) && _p.panningEnabled ){
       var p = opts.pan;
 
-      if( is.number(p.x) ){
+      if( is.number( p.x ) ){
         _p.pan.x = p.x;
         panFailed = false;
       }
 
-      if( is.number(p.y) ){
+      if( is.number( p.y ) ){
         _p.pan.y = p.y;
         panFailed = false;
       }
 
       if( !panFailed ){
-        events.push('pan');
+        events.push( 'pan' );
       }
     }
 
     if( events.length > 0 ){
-      events.push('viewport');
-      this.trigger( events.join(' ') );
+      events.push( 'viewport' );
+      this.trigger( events.join( ' ' ) );
 
-      this.notify({
+      this.notify( {
         type: 'viewport'
-      });
+      } );
     }
 
     return this; // chaining
@@ -428,11 +428,11 @@ var corefn = ({
     if( pan ){
       this._private.pan = pan;
 
-      this.trigger('pan viewport');
+      this.trigger( 'pan viewport' );
 
-      this.notify({ // notify the renderer that the viewport changed
+      this.notify( { // notify the renderer that the viewport changed
         type: 'viewport'
-      });
+      } );
     }
 
     return this; // chaining
@@ -443,10 +443,10 @@ var corefn = ({
       return;
     }
 
-    if( is.string(elements) ){
+    if( is.string( elements ) ){
       var selector = elements;
       elements = this.elements( selector );
-    } else if( !is.elementOrCollection(elements) ){
+    } else if( !is.elementOrCollection( elements ) ){
       elements = this.elements();
     }
 
@@ -456,8 +456,8 @@ var corefn = ({
     zoom = zoom === undefined ? this._private.zoom : zoom;
 
     var pan = { // middle
-      x: (w - zoom*( bb.x1 + bb.x2 ))/2,
-      y: (h - zoom*( bb.y1 + bb.y2 ))/2
+      x: (w - zoom * ( bb.x1 + bb.x2 )) / 2,
+      y: (h - zoom * ( bb.y1 + bb.y2 )) / 2
     };
 
     return pan;
@@ -468,32 +468,37 @@ var corefn = ({
       return this;
     }
 
-    this.viewport({
+    this.viewport( {
       pan: { x: 0, y: 0 },
       zoom: 1
-    });
+    } );
 
     return this; // chaining
   },
 
+  invalidateSize: function(){
+    this._private.sizeCache = null;
+  },
+
+  size: function(){
+    var _p = this._private;
+    var container = _p.container;
+
+    return ( _p.sizeCache = _p.sizeCache || ( container ? {
+      width: container.clientWidth,
+      height: container.clientHeight
+    } : { // fallback if no container (not 0 b/c can be used for dividing etc)
+      width: 1,
+      height: 1
+    } ) );
+  },
+
   width: function(){
-    var container = this._private.container;
-
-    if( container ){
-      return container.clientWidth;
-    }
-
-    return 1; // fallback if no container (not 0 b/c can be used for dividing etc)
+    return this.size().width;
   },
 
   height: function(){
-    var container = this._private.container;
-
-    if( container ){
-      return container.clientHeight;
-    }
-
-    return 1; // fallback if no container (not 0 b/c can be used for dividing etc)
+    return this.size().height;
   },
 
   extent: function(){
@@ -502,10 +507,10 @@ var corefn = ({
     var rb = this.renderedExtent();
 
     var b = {
-      x1: ( rb.x1 - pan.x )/zoom,
-      x2: ( rb.x2 - pan.x )/zoom,
-      y1: ( rb.y1 - pan.y )/zoom,
-      y2: ( rb.y2 - pan.y )/zoom
+      x1: ( rb.x1 - pan.x ) / zoom,
+      x2: ( rb.x2 - pan.x ) / zoom,
+      y1: ( rb.y1 - pan.y ) / zoom,
+      y2: ( rb.y2 - pan.y ) / zoom
     };
 
     b.w = b.x2 - b.x1;

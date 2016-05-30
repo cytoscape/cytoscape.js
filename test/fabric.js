@@ -1,7 +1,7 @@
 /*! Weaver licensed under MIT (https://tldrlegal.com/license/mit-license), copyright Max Franz */
 
 var expect = require('chai').expect;
-var cytoscape = require('../build/cytoscape.js', cytoscape);
+var cytoscape = require('../src', cytoscape);
 var $$ = cytoscape;
 var isNode = typeof module !== 'undefined';
 

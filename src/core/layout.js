@@ -1,7 +1,7 @@
 'use strict';
 
-var util = require('../util');
-var is = require('../is');
+var util = require( '../util' );
+var is = require( '../is' );
 
 var corefn = ({
 
@@ -17,20 +17,20 @@ var corefn = ({
     var cy = this;
 
     if( options == null ){
-      util.error('Layout options must be specified to make a layout');
+      util.error( 'Layout options must be specified to make a layout' );
       return;
     }
 
     if( options.name == null ){
-      util.error('A `name` must be specified to make a layout');
+      util.error( 'A `name` must be specified to make a layout' );
       return;
     }
 
     var name = options.name;
-    var Layout = cy.extension('layout', name);
+    var Layout = cy.extension( 'layout', name );
 
     if( Layout == null ){
-      util.error('Can not apply layout: No such layout `' + name + '` found; did you include its JS file?');
+      util.error( 'Can not apply layout: No such layout `' + name + '` found; did you include its JS file?' );
       return;
     }
 
@@ -41,10 +41,10 @@ var corefn = ({
       eles = options.eles != null ? options.eles : cy.$();
     }
 
-    var layout = new Layout( util.extend({}, options, {
+    var layout = new Layout( util.extend( {}, options, {
       cy: cy,
       eles: eles
-    }) );
+    } ) );
 
     return layout;
   }

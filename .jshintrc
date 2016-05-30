@@ -1,0 +1,32 @@
+{
+  "newcap": false,
+  "funcscope": true,
+  "laxbreak": true,
+  "loopfunc": true,
+  "strict": true,
+  "unused": "vars",
+  "eqnull": true,
+  "sub": true,
+  "shadow": true,
+  "laxcomma": true,
+  "node": true,
+  "globals": {
+    "Path2D": false,
+    "require": false,
+    "module": false,
+    "document": true,
+    "window": true,
+    "setTimeout": false,
+    "clearTimeout": false,
+    "MutationObserver": false,
+    "__dirname": false,
+    "Image": false,
+    "Blob": false,
+    "Worker": false,
+    "DocumentTouch": false,
+    "HTMLElement": false,
+    "navigator": false,
+    "console": false,
+    "Promise": true
+  }
+}

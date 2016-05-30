@@ -1,8 +1,8 @@
 'use strict';
 
-var util = require('../../util');
-var math = require('../../math');
-var is = require('../../is');
+var util = require( '../../util' );
+var math = require( '../../math' );
+var is = require( '../../is' );
 
 var defaults = {
   fit: true, // whether to fit the viewport to the graph
@@ -22,7 +22,7 @@ var defaults = {
 };
 
 function BreadthFirstLayout( options ){
-  this.options = util.extend({}, defaults, options);
+  this.options = util.extend( {}, defaults, options );
 }
 
 BreadthFirstLayout.prototype.run = function(){
@@ -31,7 +31,7 @@ BreadthFirstLayout.prototype.run = function(){
 
   var cy = params.cy;
   var eles = options.eles;
-  var nodes = eles.nodes().not(':parent');
+  var nodes = eles.nodes().not( ':parent' );
   var graph = eles;
 
   var bb = math.makeBoundingBox( options.boundingBox ? options.boundingBox : {
@@ -39,19 +39,19 @@ BreadthFirstLayout.prototype.run = function(){
   } );
 
   var roots;
-  if( is.elementOrCollection(options.roots) ){
+  if( is.elementOrCollection( options.roots ) ){
     roots = options.roots;
-  } else if( is.array(options.roots) ){
+  } else if( is.array( options.roots ) ){
     var rootsArray = [];
 
     for( var i = 0; i < options.roots.length; i++ ){
-      var id = options.roots[i];
+      var id = options.roots[ i ];
       var ele = cy.getElementById( id );
       rootsArray.push( ele );
     }
 
     roots = cy.collection( rootsArray );
-  } else if( is.string(options.roots) ){
+  } else if( is.string( options.roots ) ){
     roots = cy.$( options.roots );
 
   } else {
@@ -64,13 +64,13 @@ BreadthFirstLayout.prototype.run = function(){
       while( unhandledNodes.length > 0 ){
         var currComp = cy.collection();
 
-        eles.bfs({
+        eles.bfs( {
           roots: unhandledNodes[0],
-          visit: function(i, depth, node, edge, pNode){
+          visit: function( i, depth, node, edge, pNode ){
             currComp = currComp.add( node );
           },
           directed: false
-        });
+        } );
 
         unhandledNodes = unhandledNodes.not( currComp );
         components.push( currComp );
@@ -78,11 +78,11 @@ BreadthFirstLayout.prototype.run = function(){
 
       roots = cy.collection();
       for( var i = 0; i < components.length; i++ ){
-        var comp = components[i];
+        var comp = components[ i ];
         var maxDegree = comp.maxDegree( false );
-        var compRoots = comp.filter(function(){
-          return this.degree(false) === maxDegree;
-        });
+        var compRoots = comp.filter( function(){
+          return this.degree( false ) === maxDegree;
+        } );
 
         roots = roots.add( compRoots );
       }
@@ -99,18 +99,18 @@ BreadthFirstLayout.prototype.run = function(){
   var successors = {};
 
   // find the depths of the nodes
-  graph.bfs({
+  graph.bfs( {
     roots: roots,
     directed: options.directed,
-    visit: function(i, depth, node, edge, pNode){
+    visit: function( i, depth, node, edge, pNode ){
       var ele = this[0];
       var id = ele.id();
 
-      if( !depths[depth] ){
-        depths[depth] = [];
+      if( !depths[ depth ] ){
+        depths[ depth ] = [];
       }
 
-      depths[depth].push( ele );
+      depths[ depth ].push( ele );
       foundByBfs[ id ] = true;
       id2depth[ id ] = depth;
       prevNode[ id ] = pNode;
@@ -123,12 +123,12 @@ BreadthFirstLayout.prototype.run = function(){
         succ.push( node );
       }
     }
-  });
+  } );
 
   // check for nodes not found by bfs
   var orphanNodes = [];
   for( var i = 0; i < nodes.length; i++ ){
-    var ele = nodes[i];
+    var ele = nodes[ i ];
 
     if( foundByBfs[ ele.id() ] ){
       continue;
@@ -146,10 +146,10 @@ BreadthFirstLayout.prototype.run = function(){
     var assignedDepth = false;
 
     for( var i = 0; i < neighbors.length; i++ ){
-      var depth = id2depth[ neighbors[i].id() ];
+      var depth = id2depth[ neighbors[ i ].id() ];
 
       if( depth !== undefined ){
-        depths[depth].push( node );
+        depths[ depth ].push( node );
         assignedDepth = true;
         break;
       }
@@ -180,7 +180,7 @@ BreadthFirstLayout.prototype.run = function(){
 
     if( !assignedDepth ){ // worst case if the graph really isn't tree friendly, then just dump it in 0
       if( depths.length === 0 ){
-        depths.push([]);
+        depths.push( [] );
       }
 
       depths[0].push( node );
@@ -190,10 +190,10 @@ BreadthFirstLayout.prototype.run = function(){
   // assign the nodes a depth and index
   var assignDepthsToEles = function(){
     for( var i = 0; i < depths.length; i++ ){
-      var eles = depths[i];
+      var eles = depths[ i ];
 
       for( var j = 0; j < eles.length; j++ ){
-        var ele = eles[j];
+        var ele = eles[ j ];
 
         ele._private.scratch.breadthfirst = {
           depth: i,
@@ -206,14 +206,14 @@ BreadthFirstLayout.prototype.run = function(){
 
 
   var intersectsDepth = function( node ){ // returns true if has edges pointing in from a higher depth
-    var edges = node.connectedEdges(function(){
-      return this.data('target') === node.id();
-    });
+    var edges = node.connectedEdges( function(){
+      return this.data( 'target' ) === node.id();
+    } );
     var thisInfo = node._private.scratch.breadthfirst;
     var highestDepthOfOther = 0;
     var highestOther;
     for( var i = 0; i < edges.length; i++ ){
-      var edge = edges[i];
+      var edge = edges[ i ];
       var otherNode = edge.source()[0];
       var otherInfo = otherNode._private.scratch.breadthfirst;
 
@@ -226,19 +226,19 @@ BreadthFirstLayout.prototype.run = function(){
     return highestOther;
   };
 
-   // make maximal if so set by adjusting depths
+  // make maximal if so set by adjusting depths
   for( var adj = 0; adj < options.maximalAdjustments; adj++ ){
 
     var nDepths = depths.length;
     var elesToMove = [];
     for( var i = 0; i < nDepths; i++ ){
-      var depth = depths[i];
+      var depth = depths[ i ];
 
       var nDepth = depth.length;
       for( var j = 0; j < nDepth; j++ ){
-        var ele = depth[j];
+        var ele = depth[ j ];
         var info = ele._private.scratch.breadthfirst;
-        var intEle = intersectsDepth(ele);
+        var intEle = intersectsDepth( ele );
 
         if( intEle ){
           info.intEle = intEle;
@@ -248,7 +248,7 @@ BreadthFirstLayout.prototype.run = function(){
     }
 
     for( var i = 0; i < elesToMove.length; i++ ){
-      var ele = elesToMove[i];
+      var ele = elesToMove[ i ];
       var info = ele._private.scratch.breadthfirst;
       var intEle = info.intEle;
       var intInfo = intEle._private.scratch.breadthfirst;
@@ -258,12 +258,12 @@ BreadthFirstLayout.prototype.run = function(){
       // add to end of new depth
       var newDepth = intInfo.depth + 1;
       while( newDepth > depths.length - 1 ){
-        depths.push([]);
+        depths.push( [] );
       }
       depths[ newDepth ].push( ele );
 
       info.depth = newDepth;
-      info.index = depths[newDepth].length - 1;
+      info.index = depths[ newDepth ].length - 1;
     }
 
     assignDepthsToEles();
@@ -273,12 +273,12 @@ BreadthFirstLayout.prototype.run = function(){
   var minDistance = 0;
   if( options.avoidOverlap ){
     for( var i = 0; i < nodes.length; i++ ){
-      var n = nodes[i];
+      var n = nodes[ i ];
       var nbb = n.boundingBox();
       var w = nbb.w;
       var h = nbb.h;
 
-      minDistance = Math.max(minDistance, w, h);
+      minDistance = Math.max( minDistance, w, h );
     }
     minDistance *= options.spacingFactor; // just to have some nice spacing
   }
@@ -291,16 +291,16 @@ BreadthFirstLayout.prototype.run = function(){
     }
 
     var eleDepth = ele._private.scratch.breadthfirst.depth;
-    var neighbors = ele.neighborhood().nodes().not(':parent');
+    var neighbors = ele.neighborhood().nodes().not( ':parent' );
     var percent = 0;
     var samples = 0;
 
     for( var i = 0; i < neighbors.length; i++ ){
-      var neighbor = neighbors[i];
+      var neighbor = neighbors[ i ];
       var bf = neighbor._private.scratch.breadthfirst;
       var index = bf.index;
       var depth = bf.depth;
-      var nDepth = depths[depth].length;
+      var nDepth = depths[ depth ].length;
 
       if( eleDepth > depth || eleDepth === 0 ){ // only get influenced by elements above
         percent += index / nDepth;
@@ -308,7 +308,7 @@ BreadthFirstLayout.prototype.run = function(){
       }
     }
 
-    samples = Math.max(1, samples);
+    samples = Math.max( 1, samples );
     percent = percent / samples;
 
     if( samples === 0 ){ // so lone nodes have a "don't care" state in sorting
@@ -322,7 +322,7 @@ BreadthFirstLayout.prototype.run = function(){
 
   // rearrange the indices in each depth level based on connectivity
 
-  var sortFn = function(a, b){
+  var sortFn = function( a, b ){
     var apct = getWeightedPercent( a );
     var bpct = getWeightedPercent( b );
 
@@ -332,7 +332,7 @@ BreadthFirstLayout.prototype.run = function(){
   for( var times = 0; times < 3; times++ ){ // do it a few times b/c the depths are dynamic and we want a more stable result
 
     for( var i = 0; i < depths.length; i++ ){
-      depths[i] = depths[i].sort( sortFn );
+      depths[ i ] = depths[ i ].sort( sortFn );
     }
     assignDepthsToEles(); // and update
 
@@ -340,19 +340,19 @@ BreadthFirstLayout.prototype.run = function(){
 
   var biggestDepthSize = 0;
   for( var i = 0; i < depths.length; i++ ){
-    biggestDepthSize = Math.max( depths[i].length, biggestDepthSize );
+    biggestDepthSize = Math.max( depths[ i ].length, biggestDepthSize );
   }
 
   var center = {
-    x: bb.x1 + bb.w/2,
-    y: bb.x1 + bb.h/2
+    x: bb.x1 + bb.w / 2,
+    y: bb.x1 + bb.h / 2
   };
 
   var getPosition = function( ele, isBottomDepth ){
     var info = ele._private.scratch.breadthfirst;
     var depth = info.depth;
     var index = info.index;
-    var depthSize = depths[depth].length;
+    var depthSize = depths[ depth ].length;
 
     var distanceX = Math.max( bb.w / (depthSize + 1), minDistance );
     var distanceY = Math.max( bb.h / (depths.length + 1), minDistance );
@@ -362,7 +362,7 @@ BreadthFirstLayout.prototype.run = function(){
     if( !options.circle ){
 
       var epos = {
-        x: center.x + (index + 1 - (depthSize + 1)/2) * distanceX,
+        x: center.x + (index + 1 - (depthSize + 1) / 2) * distanceX,
         y: (depth + 1) * distanceY
       };
 
@@ -389,21 +389,21 @@ BreadthFirstLayout.prototype.run = function(){
 
     } else {
       if( options.circle ){
-        var radius = radiusStepSize * depth + radiusStepSize - (depths.length > 0 && depths[0].length <= 3 ? radiusStepSize/2 : 0);
-        var theta = 2 * Math.PI / depths[depth].length * index;
+        var radius = radiusStepSize * depth + radiusStepSize - (depths.length > 0 && depths[0].length <= 3 ? radiusStepSize / 2 : 0);
+        var theta = 2 * Math.PI / depths[ depth ].length * index;
 
         if( depth === 0 && depths[0].length === 1 ){
           radius = 1;
         }
 
         return {
-          x: center.x + radius * Math.cos(theta),
-          y: center.y + radius * Math.sin(theta)
+          x: center.x + radius * Math.cos( theta ),
+          y: center.y + radius * Math.sin( theta )
         };
 
       } else {
         return {
-          x: center.x + (index + 1 - (depthSize + 1)/2) * distanceX,
+          x: center.x + (index + 1 - (depthSize + 1) / 2) * distanceX,
           y: (depth + 1) * distanceY
         };
       }
@@ -413,19 +413,19 @@ BreadthFirstLayout.prototype.run = function(){
 
   // get positions in reverse depth order
   var pos = {};
-  for( var i = depths.length - 1; i >=0; i-- ){
-    var depth = depths[i];
+  for( var i = depths.length - 1; i >= 0; i-- ){
+    var depth = depths[ i ];
 
     for( var j = 0; j < depth.length; j++ ){
-      var node = depth[j];
+      var node = depth[ j ];
 
       pos[ node.id() ] = getPosition( node, i === depths.length - 1 );
     }
   }
 
-  nodes.layoutPositions(this, options, function(){
+  nodes.layoutPositions( this, options, function(){
     return pos[ this.id() ];
-  });
+  } );
 
   return this; // chaining
 };

@@ -1,6 +1,6 @@
 'use strict';
 
-var is = require('./is');
+var is = require( './is' );
 
 var cyReg = function( $ele ){
   var d = $ele[0]._cyreg = $ele[0]._cyreg || {};
@@ -15,8 +15,8 @@ var registerJquery = function( $, cytoscape ){
 
   // allow calls on a jQuery selector by proxying calls to $.cytoscape
   // e.g. $("#foo").cytoscape(options) => $.cytoscape(options) on #foo
-  $.fn.cytoscape = function(opts){
-    var $this = $(this);
+  $.fn.cytoscape = function( opts ){
+    var $this = $( this );
 
     // get object
     if( opts === 'get' ){
@@ -24,13 +24,13 @@ var registerJquery = function( $, cytoscape ){
     }
 
     // bind to ready
-    else if( is.fn(opts) ){
+    else if( is.fn( opts ) ){
 
       var ready = opts;
       var cy = cyReg( $this ).cy;
 
       if( cy && cy.isReady() ){ // already ready so just trigger now
-        cy.trigger('ready', [], ready);
+        cy.trigger( 'ready', [], ready );
 
       } else { // not yet ready, so add to readies list
         var data = cyReg( $this );
@@ -42,14 +42,14 @@ var registerJquery = function( $, cytoscape ){
     }
 
     // proxy to create instance
-    else if( is.plainObject(opts) ){
-      return $this.each(function(){
-        var options = $.extend({}, opts, {
-          container: $(this)[0]
-        });
+    else if( is.plainObject( opts ) ){
+      return $this.each( function(){
+        var options = $.extend( {}, opts, {
+          container: $( this )[0]
+        } );
 
-        cytoscape(options);
-      });
+        cytoscape( options );
+      } );
     }
   };
 

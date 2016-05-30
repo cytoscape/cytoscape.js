@@ -1,40 +1,38 @@
 'use strict';
 
-var is = require('../is');
-var Selector = require('../selector');
+var is = require( '../is' );
+var Selector = require( '../selector' );
 
 var elesfn = ({
   nodes: function( selector ){
-    return this.filter(function(i, element){
+    return this.filter( function( i, element ){
       return element.isNode();
-    }).filter(selector);
+    } ).filter( selector );
   },
 
   edges: function( selector ){
-    return this.filter(function(i, element){
+    return this.filter( function( i, element ){
       return element.isEdge();
-    }).filter(selector);
+    } ).filter( selector );
   },
 
   filter: function( filter ){
-    if( is.fn(filter) ){
+    if( filter === undefined ){ // check this first b/c it's the most common/performant case
+      return this;
+    } else if( is.string( filter ) || is.elementOrCollection( filter ) ){
+      return Selector( filter ).filter( this );
+    } else if( is.fn( filter ) ){
       var elements = [];
 
       for( var i = 0; i < this.length; i++ ){
-        var ele = this[i];
+        var ele = this[ i ];
 
-        if( filter.apply(ele, [i, ele]) ){
-          elements.push(ele);
+        if( filter.apply( ele, [ i, ele ] ) ){
+          elements.push( ele );
         }
       }
 
-      return this.spawn(elements);
-
-    } else if( is.string(filter) || is.elementOrCollection(filter) ){
-      return Selector(filter).filter(this);
-
-    } else if( filter === undefined ){
-      return this;
+      return this.spawn( elements );
     }
 
     return this.spawn(); // if not handled by above, give 'em an empty collection
@@ -52,7 +50,7 @@ var elesfn = ({
       var elements = [];
 
       for( var i = 0; i < this.length; i++ ){
-        var element = this[i];
+        var element = this[ i ];
 
         var remove = toRemove._private.ids[ element.id() ];
         if( !remove ){
@@ -73,7 +71,7 @@ var elesfn = ({
 
   intersect: function( other ){
     // if a selector is specified, then filter by it instead
-    if( is.string(other) ){
+    if( is.string( other ) ){
       var selector = other;
       return this.filter( selector );
     }
@@ -87,7 +85,7 @@ var elesfn = ({
     var col = col1Smaller ? col1 : col2;
 
     for( var i = 0; i < col.length; i++ ){
-      var id = col[i]._private.data.id;
+      var id = col[ i ]._private.data.id;
       var ele = ids2[ id ];
 
       if( ele ){
@@ -101,7 +99,7 @@ var elesfn = ({
   xor: function( other ){
     var cy = this._private.cy;
 
-    if( is.string(other) ){
+    if( is.string( other ) ){
       other = cy.$( other );
     }
 
@@ -112,7 +110,7 @@ var elesfn = ({
     var add = function( col, other ){
 
       for( var i = 0; i < col.length; i++ ){
-        var ele = col[i];
+        var ele = col[ i ];
         var id = ele._private.data.id;
         var inOther = other._private.ids[ id ];
 
@@ -132,7 +130,7 @@ var elesfn = ({
   diff: function( other ){
     var cy = this._private.cy;
 
-    if( is.string(other) ){
+    if( is.string( other ) ){
       other = cy.$( other );
     }
 
@@ -145,7 +143,7 @@ var elesfn = ({
     var add = function( col, other, retEles ){
 
       for( var i = 0; i < col.length; i++ ){
-        var ele = col[i];
+        var ele = col[ i ];
         var id = ele._private.data.id;
         var inOther = other._private.ids[ id ];
 
@@ -175,26 +173,26 @@ var elesfn = ({
       return this;
     }
 
-    if( is.string(toAdd) ){
+    if( is.string( toAdd ) ){
       var selector = toAdd;
-      toAdd = cy.elements(selector);
+      toAdd = cy.elements( selector );
     }
 
     var elements = [];
 
     for( var i = 0; i < this.length; i++ ){
-      elements.push( this[i] );
+      elements.push( this[ i ] );
     }
 
     for( var i = 0; i < toAdd.length; i++ ){
 
-      var add = !this._private.ids[ toAdd[i].id() ];
+      var add = !this._private.ids[ toAdd[ i ].id() ];
       if( add ){
-        elements.push( toAdd[i] );
+        elements.push( toAdd[ i ] );
       }
     }
 
-    return this.spawn(elements);
+    return this.spawn( elements );
   },
 
   // in place merge on calling collection
@@ -206,14 +204,14 @@ var elesfn = ({
       return this;
     }
 
-    if( is.string(toAdd) ){
+    if( toAdd && is.string( toAdd ) ){
       var selector = toAdd;
-      toAdd = cy.elements(selector);
+      toAdd = cy.elements( selector );
     }
 
     for( var i = 0; i < toAdd.length; i++ ){
-      var toAddEle = toAdd[i];
-      var id = toAddEle.id();
+      var toAddEle = toAdd[ i ];
+      var id = toAddEle._private.data.id;
       var add = !_p.ids[ id ];
 
       if( add ){
@@ -233,7 +231,7 @@ var elesfn = ({
     ele = ele[0];
 
     var _p = this._private;
-    var id = ele.id();
+    var id = ele._private.data.id;
     var i = _p.indexes[ id ];
 
     if( i == null ){
@@ -241,7 +239,7 @@ var elesfn = ({
     }
 
     // remove ele
-    this[i] = undefined;
+    this[ i ] = undefined;
     _p.ids[ id ] = undefined;
     _p.indexes[ id ] = undefined;
 
@@ -251,10 +249,11 @@ var elesfn = ({
     if( this.length > 1 && !unmergedLastEle ){
       var lastEleI = this.length - 1;
       var lastEle = this[ lastEleI ];
+      var lastEleId = lastEle._private.data.id;
 
       this[ lastEleI ] = undefined;
-      this[i] = lastEle;
-      _p.indexes[ lastEle.id() ] = i;
+      this[ i ] = lastEle;
+      _p.indexes[ lastEleId ] = i;
     }
 
     // the collection is now 1 ele smaller
@@ -271,13 +270,13 @@ var elesfn = ({
       return this;
     }
 
-    if( is.string(toRemove) ){
+    if( toRemove && is.string( toRemove ) ){
       var selector = toRemove;
-      toRemove = cy.elements(selector);
+      toRemove = cy.elements( selector );
     }
 
     for( var i = 0; i < toRemove.length; i++ ){
-      this.unmergeOne( toRemove[i] );
+      this.unmergeOne( toRemove[ i ] );
     }
 
     return this; // chaining
@@ -288,8 +287,8 @@ var elesfn = ({
     var eles = this;
 
     for( var i = 0; i < eles.length; i++ ){
-      var ele = eles[i];
-      var ret = thisArg ? mapFn.apply( thisArg, [ele, i, eles] ) : mapFn( ele, i, eles );
+      var ele = eles[ i ];
+      var ret = thisArg ? mapFn.apply( thisArg, [ ele, i, eles ] ) : mapFn( ele, i, eles );
 
       arr.push( ret );
     }
@@ -302,8 +301,8 @@ var elesfn = ({
     var eles = this;
 
     for( var i = 0; i < eles.length; i++ ){
-      var ele = eles[i];
-      var include = thisArg ? fn.apply( thisArg, [ele, i, eles] ) : fn( ele, i, eles );
+      var ele = eles[ i ];
+      var include = thisArg ? fn.apply( thisArg, [ ele, i, eles ] ) : fn( ele, i, eles );
 
       if( include ){
         filterEles.push( ele );
@@ -319,7 +318,7 @@ var elesfn = ({
     var eles = this;
 
     for( var i = 0; i < eles.length; i++ ){
-      var ele = eles[i];
+      var ele = eles[ i ];
       var val = thisArg ? valFn.apply( thisArg, [ ele, i, eles ] ) : valFn( ele, i, eles );
 
       if( val > max ){
@@ -340,7 +339,7 @@ var elesfn = ({
     var eles = this;
 
     for( var i = 0; i < eles.length; i++ ){
-      var ele = eles[i];
+      var ele = eles[ i ];
       var val = thisArg ? valFn.apply( thisArg, [ ele, i, eles ] ) : valFn( ele, i, eles );
 
       if( val < min ){
@@ -358,10 +357,10 @@ var elesfn = ({
 
 // aliases
 var fn = elesfn;
-fn['u'] = fn['|'] = fn['+'] = fn.union = fn.or = fn.add;
-fn['\\'] = fn['!'] = fn['-'] = fn.difference = fn.relativeComplement = fn.subtract = fn.not;
-fn['n'] = fn['&'] = fn['.'] = fn.and = fn.intersection = fn.intersect;
-fn['^'] = fn['(+)'] = fn['(-)'] = fn.symmetricDifference = fn.symdiff = fn.xor;
+fn[ 'u' ] = fn[ '|' ] = fn[ '+' ] = fn.union = fn.or = fn.add;
+fn[ '\\' ] = fn[ '!' ] = fn[ '-' ] = fn.difference = fn.relativeComplement = fn.subtract = fn.not;
+fn[ 'n' ] = fn[ '&' ] = fn[ '.' ] = fn.and = fn.intersection = fn.intersect;
+fn[ '^' ] = fn[ '(+)' ] = fn[ '(-)' ] = fn.symmetricDifference = fn.symdiff = fn.xor;
 fn.fnFilter = fn.filterFn = fn.stdFilter;
 fn.complement = fn.abscomp = fn.absoluteComplement;
 

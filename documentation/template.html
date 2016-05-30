@@ -4,12 +4,12 @@
 		<meta charset="UTF-8">
 		<meta http-equiv="content-type" content="text/html;charset=UTF-8">
 		<link rel="canonical" href="http://js.cytoscape.org" />
-		<meta name="description" content="Graph theory library for analysis and visualisation (compatible with CommonJS/Node.js, AMD/Require.js, npm, Bower, spm, jspm, Meteor/Atmosphere, jQuery, and plain JS/JavaScript)">
+		<meta name="description" content="Graph theory library for analysis and visualisation (compatible with CommonJS/Node.js/Browserify/Webpack, AMD/Require.js, npm, Bower, jspm, Meteor/Atmosphere, jQuery, and plain JS/JavaScript)">
 		<meta name="author" content="Max Franz">
 		<meta name="robots" content="all" />
 		<meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimal-ui">
 
-		<link rel="shortcut icon" href="img/cytoscape-logo.ico" />
+		<link rel="shortcut icon" href="img/cytoscape-logo.png" />
 		<link rel="shortcut icon" href="img/cytoscape-logo.svg" type="image/svg" />
 
 		<title>Cytoscape.js</title>
@@ -27,7 +27,7 @@
 
 		<div id="content">
 
-			<a id="open-navigation" class="activatable plain-link"><span class="icon-reorder"></span></a>
+			<a id="open-navigation" class="activatable plain-link"><span class="fa fa-bars"></span></a>
 			<div id="open-navigation-bg"></div>
 
 			<h1 id="top" class="title">Cytoscape.js</h1>
@@ -36,12 +36,11 @@
 
 				<div class="footnote">
 					Compatible with
-					<a target="_blank" href="http://wiki.commonjs.org/wiki/CommonJS">CommonJS</a>/<a target="_blank" href="http://nodejs.org/">Node.js</a>,
+					<a target="_blank" href="http://wiki.commonjs.org/wiki/CommonJS">CommonJS</a>/<a target="_blank" href="http://nodejs.org/">Node.js</a>/<a target="_blank" href="http://browserify.org">Browserify</a>/<a target="_blank" href="https://webpack.github.io">Webpack</a>,
 					<a target="_blank" href="http://requirejs.org">AMD/Require.js</a>,
 					<a target="_blank" href="http://jquery.com/">jQuery</a>,
 					<a target="_blank" href="http://npmjs.org">npm</a>,
 					<a target="_blank" href="http://bower.io">Bower</a>,
-					<a target="_blank" href="http://spmjs.io">spm</a>,
 					<a target="_blank" href="http://jspm.io/">jspm</a>,
 					<a target="_blank" href="https://www.meteor.com">Meteor/Atmosphere</a>,
 					and plain JS/JavaScript
@@ -49,18 +48,17 @@
 			</div>
 
 			<div class="buttons-subtitle">
-				<a class="button green" target="_blank" href="https://github.com/cytoscape/cytoscape.js"><span class="icon-github-alt"></span> GitHub</a>
+				<a class="button green" target="_blank" href="https://github.com/cytoscape/cytoscape.js"><span class="fa fa-github-alt"></span> GitHub</a>
 
-				<a id="download-button" class="button green" href="download/cytoscape.js-{{version}}.zip"><span class="icon-download-alt"></span> Download {{version}}</a>
+				<a id="download-button" class="button green" href="download/cytoscape.js-{{version}}.zip"><span class="fa fa-download"></span> Download {{version}}</a>
 			</div>
 
 			<div class="links">
-				<a href="#extensions"><span class="icon-puzzle-piece"></span> Extensions</a> &nbsp;
-				<a target="_blank" href="https://twitter.com/cytoscape"><span class="icon-twitter"></span> Twitter</a> &nbsp;
-				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues/new"><span class="icon-bug"></span> File an issue or feature request via GitHub</a> (or <a href="mailto:cytoscapejs.issues@gmail.com">via email</a>) &nbsp;
-				<a target="_blank" href="http://stackoverflow.com/questions/tagged/cytoscape.js"><span class="icon-question"></span> Previous questions</a> &nbsp;
-				<a target="_blank" href="http://stackoverflow.com/questions/ask?tags=cytoscape.js"><span class="icon-comments"></span> Ask a question</a> &nbsp;
-				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/milestones"><span class="icon-calendar"></span> Milestones</a>
+				<a href="#extensions"><span class="fa fa-puzzle-piece"></span> Extensions</a> &nbsp;
+				<a target="_blank" href="https://twitter.com/cytoscape"><span class="fa fa-twitter"></span> Twitter</a> &nbsp;
+				<a target="_blank" href="https://gitter.im/cytoscape/cytoscape.js"><span class="fa fa-comments"></span> Gitter</a> &nbsp;
+				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues/new"><span class="fa fa-bug"></span> File an issue or feature request via GitHub</a> (or <a href="mailto:cytoscapejs.issues@gmail.com">via email</a>) &nbsp;
+				<a target="_blank" href="http://stackoverflow.com/questions/tagged/cytoscape.js"><span class="fa fa-stack-overflow"></span> Search previous questions via Stack Overflow</a> (or <a target="_blank" href="http://stackoverflow.com/questions/ask?tags=cytoscape.js">ask a different question</a>) &nbsp;
 			</div>
 
 			<div class="links likes">
@@ -70,19 +68,19 @@
 					<input name="hosted_button_id" value="UYUEWUL7FNZ3S" type="hidden" />
 					<button type="submit" class="outline">Donate</button>
 				</form> &nbsp;
-				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js"><span class="icon-star"></span> Star it on GitHub</a> &nbsp;
-				<a target="_blank" href="https://twitter.com/intent/tweet?status=Cytoscape.js,%20a%20graph%20%28a.k.a.%20network%29%20library%20for%20analysis%20and%20visualisation%20js.cytoscape.org"><span class="icon-twitter"></span> Share it on Twitter</a> &nbsp;
-				<a target="_blank" href="https://plus.google.com/share?url=js.cytoscape.org"><span class="icon-google-plus"></span> Share it on Google+</a>
+				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js"><span class="fa fa-star"></span> Star it on GitHub</a> &nbsp;
+				<a target="_blank" href="https://twitter.com/intent/tweet?status=Cytoscape.js,%20a%20graph%20%28a.k.a.%20network%29%20library%20for%20analysis%20and%20visualisation%20js.cytoscape.org"><span class="fa fa-twitter"></span> Share it on Twitter</a> &nbsp;
+				<a target="_blank" href="https://plus.google.com/share?url=js.cytoscape.org"><span class="fa fa-google-plus"></span> Share it on Google+</a>
 				<div class="footnote">Donations are tax deductible to a 501(c)(3) nonprofit organization, The Cytoscape Consoritum, Tax ID: 20-4909879.</div>
 			</div>
 
 			<div class="links likes">
-				Use Cytoscape.js? &nbsp; <a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues/914"> <span class="icon-comments"></span> Let us know</a>
+				Use Cytoscape.js? &nbsp; <a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues/914"> <span class="fa fa-comments"></span> Let us know</a>
 			</div>
 
 			<!-- enable during gsoc period
 			<div class="links likes">
-				Are you a student interested in Google Summer of Code? &nbsp; <a target="_blank" href="http://nrnb.org/gsoc.html"><span class="icon-sun"></span> Participate with Cytoscape.js</a>
+				Are you a student interested in Google Summer of Code? &nbsp; <a target="_blank" href="http://nrnb.org/gsoc.html"><span class="fa fa-sun"></span> Participate with Cytoscape.js</a>
 			</div>
 			-->
 
@@ -103,7 +101,7 @@
 							<span class="gallery-full-preview" style="background-image: url('{{demo.imgUrl}}');"></span>
 						</a>
 
-						<button class="run"><span class="icon-play"></span></button>
+						<button class="run"><span class="fa fa-play"></span></button>
 
 					</div>
 
@@ -128,13 +126,13 @@
 							<div class="gallery-title">
 								<span class="gallery-name">{{name}}</span><br />
 								<span class="gallery-jsbin">
-									<a target="_blank"href="{{jsbinUrl}}"><span class="icon-code"></span></a>
+									<a target="_blank"href="{{jsbinUrl}}"><span class="fa fa-code"></span></a>
 								</span>
 								<span class="gallery-download">
-									<a href="{{downloadUrl}}"><span class="icon-download-alt"></span></a>
+									<a href="{{downloadUrl}}"><span class="fa fa-download"></span></a>
 								</span>
 								<span class="gallery-github">
-									<a target="_blank" href="{{githubUrl}}"><span class="icon-github-alt"></span></a>
+									<a target="_blank" href="{{githubUrl}}"><span class="fa fa-github-alt"></span></a>
 								</span>
 							</div>
 
@@ -164,7 +162,7 @@
 					{{#if layout}}
 						<h3>Options</h3>
 						<pre><code class="lang-js">{{{layout.optionsFormatted}}}</code></pre>
-						<button class="run run-inline-code"><span class="icon-play"></span></button>
+						<button class="run run-inline-code"><span class="fa fa-play"></span></button>
 					{{/if}}
 
 					{{#each fns}}
@@ -176,7 +174,7 @@
 
 							{{#if extFn}}
 								<div class="ext-function-note">
-									<span class="icon-puzzle-piece important"></span> <a href="#extensions">Extension</a> function: This function is intended for use in extensions.
+									<span class="fa fa-puzzle-piece important"></span> <a href="#extensions">Extension</a> function: This function is intended for use in extensions.
 								</div>
 							{{/if}}
 
@@ -268,14 +266,14 @@
 			{{/each}}
 			</div>
 
-			<p><span class="icon-sign-blank"></span></p>
+			<p><span class="fa fa-sign-blank"></span></p>
 
 		</div>
 
 		<div class="toc-search">
 			<input id="toc-input" type="text" placeholder="&#61442; Find sections"></input>
-			<a id="toc-clear" class="plain-link"><span class="icon-remove"></span></a>
-			<a id="toc-top" href="#top" class="plain-link"><span class="icon-arrow-up"></span></a>
+			<a id="toc-clear" class="plain-link"><span class="fa fa-times"></span></a>
+			<a id="toc-top" href="#top" class="plain-link"><span class="fa fa-arrow-up"></span></a>
 		</div>
 
 		<div id="navigation">
@@ -284,49 +282,49 @@
 				{{#each sections}}
 					<div class="section lvl1">
 						{{#if sections}}<span class="expander">
-							<span class="icon-caret-down expanded-icon"></span>
-							<span class="icon-caret-right collapsed-icon"></span>
+							<span class="fa fa-caret-down expanded-icon"></span>
+							<span class="fa fa-caret-right collapsed-icon"></span>
 						</span>{{/if}}
-						<a class="toclink" href="#{{id}}"><span class="icon-bookmark bookmark-icon"></span> {{& name}}</a>
+						<a class="toclink" href="#{{id}}"><span class="fa fa-bookmark bookmark-icon"></span> {{& name}}</a>
 					</div>
 
 					{{#each sections}}
 						<div class="section lvl2">
 							{{#if fns}}<span class="expander">
-								<span class="icon-caret-down expanded-icon"></span>
-								<span class="icon-caret-right collapsed-icon"></span>
+								<span class="fa fa-caret-down expanded-icon"></span>
+								<span class="fa fa-caret-right collapsed-icon"></span>
 							</span>{{/if}}
-							<a class="toclink" href="#{{id}}"><span class="icon-bookmark bookmark-icon"></span> {{& name}}</a>
+							<a class="toclink" href="#{{id}}"><span class="fa fa-bookmark bookmark-icon"></span> {{& name}}</a>
 						</div>
 
 						{{#each fns}}
-							<div class="section lvl3"><a class="toclink" href="#{{id}}"><span class="icon-bookmark bookmark-icon"></span> {{name}}() {{#if aliases}}et al{{/if}}</a></div>
+							<div class="section lvl3"><a class="toclink" href="#{{id}}"><span class="fa fa-bookmark bookmark-icon"></span> {{name}}() {{#if aliases}}et al{{/if}}</a></div>
 						{{/each}}
 					{{/each}}
 				{{/each}}
 
 			</div>
 
-			<p><span class="icon-sign-blank"></span></p>
+			<p><span class="fa fa-sign-blank"></span></p>
 		</div>
 
 
 		<div id="orphaned-cy-container">
 			<div id="cy-etc" class="hidden">
 				<div id="cy-arrow">
-					<span class="icon-arrow-down"></span>
+					<span class="fa fa-arrow-down"></span>
 				</div>
 				<div id="cy-title"><pre class="content"></pre></div>
 				<div id="cy-label" class="hidden"><code>window.cy</code></div>
 				<div id="cy" class="hidden"></div>
 				<div id="cy-refresh" class="hidden">
-					<span class="link plain-link icon-refresh"></span>
+					<span class="link plain-link fa fa-refresh"></span>
 				</div>
 				<div id="cy-show">
-					<span class="link plain-link icon-plus"></span>
+					<span class="link plain-link fa fa-plus"></span>
 				</div>
 				<div id="cy-hide" class="hidden">
-					<span class="link plain-link icon-minus"></span>
+					<span class="link plain-link fa fa-minus"></span>
 				</div>
 			</div>
 		</div>

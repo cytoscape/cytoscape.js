@@ -6,12 +6,12 @@
 // e.g.
 // var foo = define.foo({ /* params... */ })
 
-var util = require('./util');
-var is = require('./is');
-var Selector = require('./selector');
-var Promise = require('./promise');
-var Event = require('./event');
-var Animation = require('./animation');
+var util = require( './util' );
+var is = require( './is' );
+var Selector = require( './selector' );
+var Promise = require( './promise' );
+var Event = require( './event' );
+var Animation = require( './animation' );
 
 var define = {
 
@@ -31,17 +31,17 @@ var define = {
       onSet: function( self ){},
       canSet: function( self ){ return true; }
     };
-    params = util.extend({}, defaults, params);
+    params = util.extend( {}, defaults, params );
 
     return function dataImpl( name, value ){
       var p = params;
       var self = this;
       var selfIsArrayLike = self.length !== undefined;
-      var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
+      var all = selfIsArrayLike ? self : [ self ]; // put in array if not array-like
       var single = selfIsArrayLike ? self[0] : self;
 
       // .data('foo', ...)
-      if( is.string(name) ){ // set or get property
+      if( is.string( name ) ){ // set or get property
 
         // .data('foo')
         if( p.allowGetting && value === undefined ){ // get
@@ -53,12 +53,12 @@ var define = {
           return ret;
 
         // .data('foo', 'bar')
-        } else if( p.allowSetting && value !== undefined ) { // set
-          var valid = !p.immutableKeys[name];
+        } else if( p.allowSetting && value !== undefined ){ // set
+          var valid = !p.immutableKeys[ name ];
           if( valid ){
             for( var i = 0, l = all.length; i < l; i++ ){
-              if( p.canSet( all[i] ) ){
-                all[i]._private[ p.field ][ name ] = value;
+              if( p.canSet( all[ i ] ) ){
+                all[ i ]._private[ p.field ][ name ] = value;
               }
             }
 
@@ -75,18 +75,18 @@ var define = {
         }
 
       // .data({ 'foo': 'bar' })
-      } else if( p.allowSetting && is.plainObject(name) ){ // extend
+      } else if( p.allowSetting && is.plainObject( name ) ){ // extend
         var obj = name;
         var k, v;
 
         for( k in obj ){
           v = obj[ k ];
 
-          var valid = !p.immutableKeys[k];
+          var valid = !p.immutableKeys[ k ];
           if( valid ){
             for( var i = 0, l = all.length; i < l; i++ ){
-              if( p.canSet( all[i] ) ){
-                all[i]._private[ p.field ][ k ] = v;
+              if( p.canSet( all[ i ] ) ){
+                all[ i ]._private[ p.field ][ k ] = v;
               }
             }
           }
@@ -103,9 +103,9 @@ var define = {
         }
 
       // .data(function(){ ... })
-      } else if( p.allowBinding && is.fn(name) ){ // bind to event
+      } else if( p.allowBinding && is.fn( name ) ){ // bind to event
         var fn = name;
-        self.bind( p.bindingEvent, fn );
+        self.on( p.bindingEvent, fn );
 
       // .data()
       } else if( p.allowGetting && name === undefined ){ // get whole object
@@ -129,22 +129,22 @@ var define = {
       triggerEvent: false,
       immutableKeys: {} // key => true if immutable
     };
-    params = util.extend({}, defaults, params);
+    params = util.extend( {}, defaults, params );
 
     return function removeDataImpl( names ){
       var p = params;
       var self = this;
       var selfIsArrayLike = self.length !== undefined;
-      var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
+      var all = selfIsArrayLike ? self : [ self ]; // put in array if not array-like
 
       // .removeData('foo bar')
-      if( is.string(names) ){ // then get the list of keys, and delete them
-        var keys = names.split(/\s+/);
+      if( is.string( names ) ){ // then get the list of keys, and delete them
+        var keys = names.split( /\s+/ );
         var l = keys.length;
 
         for( var i = 0; i < l; i++ ){ // delete each non-empty key
-          var key = keys[i];
-          if( is.emptyString(key) ){ continue; }
+          var key = keys[ i ];
+          if( is.emptyString( key ) ){ continue; }
 
           var valid = !p.immutableKeys[ key ]; // not valid if immutable
           if( valid ){
@@ -184,8 +184,9 @@ var define = {
 
   // event function reusable stuff
   event: {
-    regex: /(\w+)(\.\w+)?/, // regex for matching event strings (e.g. "click.namespace")
-    optionalTypeRegex: /(\w+)?(\.\w+)?/,
+    regex: /(\w+)(\.(?:\w+|\*))?/, // regex for matching event strings (e.g. "click.namespace")
+    universalNamespace: '.*', // matches as if no namespace specified and prevents users from unbinding accidentally
+    optionalTypeRegex: /(\w+)?(\.(?:\w+|\*))?/,
     falseCallback: function(){ return false; }
   },
 
@@ -195,33 +196,33 @@ var define = {
       unbindSelfOnTrigger: false,
       unbindAllBindersOnTrigger: false
     };
-    params = util.extend({}, defaults, params);
+    params = util.extend( {}, defaults, params );
 
-    return function onImpl(events, selector, data, callback){
+    return function onImpl( events, selector, data, callback ){
       var self = this;
       var selfIsArrayLike = self.length !== undefined;
-      var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
-      var eventsIsString = is.string(events);
+      var all = selfIsArrayLike ? self : [ self ]; // put in array if not array-like
+      var eventsIsString = is.string( events );
       var p = params;
 
-      if( is.plainObject(selector) ){ // selector is actually data
+      if( is.plainObject( selector ) ){ // selector is actually data
         callback = data;
         data = selector;
         selector = undefined;
-      } else if( is.fn(selector) || selector === false ){ // selector is actually callback
+      } else if( is.fn( selector ) || selector === false ){ // selector is actually callback
         callback = selector;
         data = undefined;
         selector = undefined;
       }
 
-      if( is.fn(data) || data === false ){ // data is actually callback
+      if( is.fn( data ) || data === false ){ // data is actually callback
         callback = data;
         data = undefined;
       }
 
       // if there isn't a callback, we can't really do anything
       // (can't speak for mapped events arg version)
-      if( !(is.fn(callback) || callback === false) && eventsIsString ){
+      if( !(is.fn( callback ) || callback === false) && eventsIsString ){
         return self; // maintain chaining
       }
 
@@ -232,17 +233,17 @@ var define = {
       }
 
       for( var evts in events ){
-        callback = events[evts];
+        callback = events[ evts ];
         if( callback === false ){
           callback = define.event.falseCallback;
         }
 
-        if( !is.fn(callback) ){ continue; }
+        if( !is.fn( callback ) ){ continue; }
 
-        evts = evts.split(/\s+/);
+        evts = evts.split( /\s+/ );
         for( var i = 0; i < evts.length; i++ ){
-          var evt = evts[i];
-          if( is.emptyString(evt) ){ continue; }
+          var evt = evts[ i ];
+          if( is.emptyString( evt ) ){ continue; }
 
           var match = evt.match( define.event.regex ); // type[.namespace]
 
@@ -255,7 +256,7 @@ var define = {
               data: data, // extra data in eventObj.data
               delegated: selector ? true : false, // whether the evt is delegated
               selector: selector, // the selector to match for delegated events
-              selObj: new Selector(selector), // cached selector object to save rebuilding
+              selObj: new Selector( selector ), // cached selector object to save rebuilding
               type: type, // the event type (e.g. 'click')
               namespace: namespace, // the event namespace (e.g. ".foo")
               unbindSelfOnTrigger: p.unbindSelfOnTrigger,
@@ -264,7 +265,7 @@ var define = {
             };
 
             for( var j = 0; j < all.length; j++ ){
-              var _p = all[j]._private;
+              var _p = all[ j ]._private = all[ j ]._private || {};
 
               _p.listeners = _p.listeners || [];
               _p.listeners.push( listener );
@@ -289,42 +290,44 @@ var define = {
       var self = this;
       var args = Array.prototype.slice.call( arguments, 0 );
 
-      return new Promise(function( resolve, reject ){
+      return new Promise( function( resolve, reject ){
         var callback = function( e ){
           self.off.apply( self, offArgs );
 
           resolve( e );
         };
 
-        var onArgs = args.concat([ callback ]);
-        var offArgs = onArgs.concat([]);
+        var onArgs = args.concat( [ callback ] );
+        var offArgs = onArgs.concat( [] );
 
         self.on.apply( self, onArgs );
-      });
+      } );
     };
   },
 
   off: function offImpl( params ){
     var defaults = {
     };
-    params = util.extend({}, defaults, params);
+    params = util.extend( {}, defaults, params );
 
-    return function(events, selector, callback){
+    return function( events, selector, callback ){
       var self = this;
       var selfIsArrayLike = self.length !== undefined;
-      var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
-      var eventsIsString = is.string(events);
+      var all = selfIsArrayLike ? self : [ self ]; // put in array if not array-like
+      var eventsIsString = is.string( events );
 
       if( arguments.length === 0 ){ // then unbind all
 
         for( var i = 0; i < all.length; i++ ){
-          all[i]._private.listeners = [];
+          all[ i ]._private = all[ i ]._private || {};
+
+          _p.listeners = [];
         }
 
         return self; // maintain chaining
       }
 
-      if( is.fn(selector) || selector === false ){ // selector is actually callback
+      if( is.fn( selector ) || selector === false ){ // selector is actually callback
         callback = selector;
         selector = undefined;
       }
@@ -336,16 +339,16 @@ var define = {
       }
 
       for( var evts in events ){
-        callback = events[evts];
+        callback = events[ evts ];
 
         if( callback === false ){
           callback = define.event.falseCallback;
         }
 
-        evts = evts.split(/\s+/);
+        evts = evts.split( /\s+/ );
         for( var h = 0; h < evts.length; h++ ){
-          var evt = evts[h];
-          if( is.emptyString(evt) ){ continue; }
+          var evt = evts[ h ];
+          if( is.emptyString( evt ) ){ continue; }
 
           var match = evt.match( define.event.optionalTypeRegex ); // [type][.namespace]
           if( match ){
@@ -353,10 +356,11 @@ var define = {
             var namespace = match[2] ? match[2] : undefined;
 
             for( var i = 0; i < all.length; i++ ){ //
-              var listeners = all[i]._private.listeners = all[i]._private.listeners || [];
+              var _p = all[ i ]._private = all[ i ]._private || {};
+              var listeners = _p.listeners = _p.listeners || [];
 
               for( var j = 0; j < listeners.length; j++ ){
-                var listener = listeners[j];
+                var listener = listeners[ j ];
                 var nsMatches = !namespace || namespace === listener.namespace;
                 var typeMatches = !type || listener.type === type;
                 var cbMatches = !callback || callback === listener.callback;
@@ -364,7 +368,7 @@ var define = {
 
                 // delete listener if it matches
                 if( listenerMatches ){
-                  listeners.splice(j, 1);
+                  listeners.splice( j, 1 );
                   j--;
                 }
               } // for listeners
@@ -380,25 +384,26 @@ var define = {
 
   trigger: function( params ){
     var defaults = {};
-    params = util.extend({}, defaults, params);
+    params = util.extend( {}, defaults, params );
 
-    return function triggerImpl(events, extraParams, fnToTrigger){
+    return function triggerImpl( events, extraParams, fnToTrigger ){
       var self = this;
       var selfIsArrayLike = self.length !== undefined;
-      var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
-      var eventsIsString = is.string(events);
-      var eventsIsObject = is.plainObject(events);
-      var eventsIsEvent = is.event(events);
-      var cy = this._private.cy || ( is.core(this) ? this : null );
+      var all = selfIsArrayLike ? self : [ self ]; // put in array if not array-like
+      var eventsIsString = is.string( events );
+      var eventsIsObject = is.plainObject( events );
+      var eventsIsEvent = is.event( events );
+      var _p = this._private = this._private || {};
+      var cy = _p.cy || ( is.core( this ) ? this : null );
       var hasCompounds = cy ? cy.hasCompoundNodes() : false;
 
       if( eventsIsString ){ // then make a plain event object for each event name
-        var evts = events.split(/\s+/);
+        var evts = events.split( /\s+/ );
         events = [];
 
         for( var i = 0; i < evts.length; i++ ){
-          var evt = evts[i];
-          if( is.emptyString(evt) ){ continue; }
+          var evt = evts[ i ];
+          if( is.emptyString( evt ) ){ continue; }
 
           var match = evt.match( define.event.regex ); // type[.namespace]
           var type = match[1];
@@ -416,7 +421,7 @@ var define = {
       }
 
       if( extraParams ){
-        if( !is.array(extraParams) ){ // make sure extra params are in an array if specified
+        if( !is.array( extraParams ) ){ // make sure extra params are in an array if specified
           extraParams = [ extraParams ];
         }
       } else { // otherwise, we've got nothing
@@ -424,12 +429,13 @@ var define = {
       }
 
       for( var i = 0; i < events.length; i++ ){ // trigger each event in order
-        var evtObj = events[i];
+        var evtObj = events[ i ];
 
         for( var j = 0; j < all.length; j++ ){ // for each
-          var triggerer = all[j];
-          var listeners = triggerer._private.listeners = triggerer._private.listeners || [];
-          var triggererIsElement = is.element(triggerer);
+          var triggerer = all[ j ];
+          var _p = triggerer._private = triggerer._private || {};
+          var listeners = _p.listeners = _p.listeners || [];
+          var triggererIsElement = is.element( triggerer );
           var bubbleUp = triggererIsElement || params.layout;
 
           // create the event for this element from the event object
@@ -472,18 +478,18 @@ var define = {
           }
 
           if( fnToTrigger ){ // then override the listeners list with just the one we specified
-            listeners = [{
+            listeners = [ {
               namespace: evt.namespace,
               type: evt.type,
               callback: fnToTrigger
-            }];
+            } ];
           }
 
           for( var k = 0; k < listeners.length; k++ ){ // check each listener
-            var lis = listeners[k];
-            var nsMatches = !lis.namespace || lis.namespace === evt.namespace;
+            var lis = listeners[ k ];
+            var nsMatches = !lis.namespace || lis.namespace === evt.namespace || lis.namespace === define.event.universalNamespace;
             var typeMatches = lis.type === evt.type;
-            var targetMatches = lis.delegated ? ( triggerer !== evt.cyTarget && is.element(evt.cyTarget) && lis.selObj.matches(evt.cyTarget) ) : (true); // we're not going to validate the hierarchy; that's too expensive
+            var targetMatches = lis.delegated ? ( triggerer !== evt.cyTarget && is.element( evt.cyTarget ) && lis.selObj.matches( evt.cyTarget ) ) : (true); // we're not going to validate the hierarchy; that's too expensive
             var listenerMatches = nsMatches && typeMatches && targetMatches;
 
             if( listenerMatches ){ // then trigger it
@@ -497,22 +503,22 @@ var define = {
               }
 
               if( lis.unbindSelfOnTrigger || lis.unbindAllBindersOnTrigger ){ // then remove listener
-                listeners.splice(k, 1);
+                listeners.splice( k, 1 );
                 k--;
               }
 
               if( lis.unbindAllBindersOnTrigger ){ // then delete the listener for all binders
                 var binders = lis.binders;
                 for( var l = 0; l < binders.length; l++ ){
-                  var binder = binders[l];
+                  var binder = binders[ l ];
                   if( !binder || binder === triggerer ){ continue; } // already handled triggerer or we can't handle it
 
                   var binderListeners = binder._private.listeners;
                   for( var m = 0; m < binderListeners.length; m++ ){
-                    var binderListener = binderListeners[m];
+                    var binderListener = binderListeners[ m ];
 
                     if( binderListener === lis ){ // delete listener from list
-                      binderListeners.splice(m, 1);
+                      binderListeners.splice( m, 1 );
                       m--;
                     }
                   }
@@ -543,9 +549,9 @@ var define = {
 
             if( hasParent ){ // then bubble up to parent
               parent = parent[0];
-              parent.trigger(evt);
+              parent.trigger( evt );
             } else { // otherwise, bubble up to the core
-              cy.trigger(evt);
+              cy.trigger( evt );
             }
           }
 
@@ -558,12 +564,12 @@ var define = {
 
   animated: function( fnParams ){
     var defaults = {};
-    fnParams = util.extend({}, defaults, fnParams);
+    fnParams = util.extend( {}, defaults, fnParams );
 
     return function animatedImpl(){
       var self = this;
       var selfIsArrayLike = self.length !== undefined;
-      var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
+      var all = selfIsArrayLike ? self : [ self ]; // put in array if not array-like
       var cy = this._private.cy || this;
 
       if( !cy.styleEnabled() ){ return false; }
@@ -578,18 +584,18 @@ var define = {
 
   clearQueue: function( fnParams ){
     var defaults = {};
-    fnParams = util.extend({}, defaults, fnParams);
+    fnParams = util.extend( {}, defaults, fnParams );
 
     return function clearQueueImpl(){
       var self = this;
       var selfIsArrayLike = self.length !== undefined;
-      var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
+      var all = selfIsArrayLike ? self : [ self ]; // put in array if not array-like
       var cy = this._private.cy || this;
 
       if( !cy.styleEnabled() ){ return this; }
 
       for( var i = 0; i < all.length; i++ ){
-        var ele = all[i];
+        var ele = all[ i ];
         ele._private.animation.queue = [];
       }
 
@@ -599,46 +605,46 @@ var define = {
 
   delay: function( fnParams ){
     var defaults = {};
-    fnParams = util.extend({}, defaults, fnParams);
+    fnParams = util.extend( {}, defaults, fnParams );
 
     return function delayImpl( time, complete ){
       var cy = this._private.cy || this;
 
       if( !cy.styleEnabled() ){ return this; }
 
-      return this.animate({
+      return this.animate( {
         delay: time,
         duration: time,
         complete: complete
-      });
+      } );
     };
   }, // delay
 
   delayAnimation: function( fnParams ){
     var defaults = {};
-    fnParams = util.extend({}, defaults, fnParams);
+    fnParams = util.extend( {}, defaults, fnParams );
 
     return function delayAnimationImpl( time, complete ){
       var cy = this._private.cy || this;
 
       if( !cy.styleEnabled() ){ return this; }
 
-      return this.animation({
+      return this.animation( {
         delay: time,
         duration: time,
         complete: complete
-      });
+      } );
     };
   }, // delay
 
   animation: function( fnParams ){
     var defaults = {};
-    fnParams = util.extend({}, defaults, fnParams);
+    fnParams = util.extend( {}, defaults, fnParams );
 
     return function animationImpl( properties, params ){
       var self = this;
       var selfIsArrayLike = self.length !== undefined;
-      var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
+      var all = selfIsArrayLike ? self : [ self ]; // put in array if not array-like
       var cy = this._private.cy || this;
       var isCore = !selfIsArrayLike;
       var isEles = !isCore;
@@ -684,8 +690,8 @@ var define = {
         var zoom = cy.zoom();
 
         properties.position = {
-          x: ( rpos.x - pan.x ) /zoom,
-          y: ( rpos.y - pan.y ) /zoom
+          x: ( rpos.x - pan.x ) / zoom,
+          y: ( rpos.y - pan.y ) / zoom
         };
       }
 
@@ -727,12 +733,12 @@ var define = {
 
   animate: function( fnParams ){
     var defaults = {};
-    fnParams = util.extend({}, defaults, fnParams);
+    fnParams = util.extend( {}, defaults, fnParams );
 
     return function animateImpl( properties, params ){
       var self = this;
       var selfIsArrayLike = self.length !== undefined;
-      var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
+      var all = selfIsArrayLike ? self : [ self ]; // put in array if not array-like
       var cy = this._private.cy || this;
 
       if( !cy.styleEnabled() ){ return this; }
@@ -743,7 +749,7 @@ var define = {
 
       // manually hook and run the animation
       for( var i = 0; i < all.length; i++ ){
-        var ele = all[i];
+        var ele = all[ i ];
         var queue = ele.animated() && (properties.queue === undefined || properties.queue);
 
         var ani = ele.animation( properties, (queue ? { queue: true } : undefined) );
@@ -757,23 +763,23 @@ var define = {
 
   stop: function( fnParams ){
     var defaults = {};
-    fnParams = util.extend({}, defaults, fnParams);
+    fnParams = util.extend( {}, defaults, fnParams );
 
     return function stopImpl( clearQueue, jumpToEnd ){
       var self = this;
       var selfIsArrayLike = self.length !== undefined;
-      var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
+      var all = selfIsArrayLike ? self : [ self ]; // put in array if not array-like
       var cy = this._private.cy || this;
 
       if( !cy.styleEnabled() ){ return this; }
 
       for( var i = 0; i < all.length; i++ ){
-        var ele = all[i];
+        var ele = all[ i ];
         var _p = ele._private;
         var anis = _p.animation.current;
 
         for( var j = 0; j < anis.length; j++ ){
-          var ani = anis[j];
+          var ani = anis[ j ];
           var ani_p = ani._private;
 
           if( jumpToEnd ){
@@ -794,10 +800,10 @@ var define = {
       }
 
       // we have to notify (the animation loop doesn't do it for us on `stop`)
-      cy.notify({
-        collection: this,
+      cy.notify( {
+        eles: this,
         type: 'draw'
-      });
+      } );
 
       return this;
     };

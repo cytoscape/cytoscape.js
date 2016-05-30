@@ -1,5 +1,5 @@
 var expect = require('chai').expect;
-var cytoscape = require('../build/cytoscape.js', cytoscape);
+var cytoscape = require('../src', cytoscape);
 
 describe('Collection style', function(){
 
@@ -30,46 +30,46 @@ describe('Collection style', function(){
   });
 
 
-  describe('eles.css() etc', function(){
+  describe('eles.style() etc', function(){
 
-    it('eles.css() gets a name-value pair object', function(){
-      var css = cy.$('#n1').css();
+    it('eles.style() gets a name-value pair object', function(){
+      var style = cy.$('#n1').style();
 
-      expect( css ).to.be.an('object');
-      expect( css ).to.have.property('background-color');
-      expect( css['background-color'] ).to.be.defined;
+      expect( style ).to.be.an('object');
+      expect( style ).to.have.property('background-color');
+      expect( style['background-color'] ).to.be.defined;
     });
 
-    it('eles.css(name, val) gets and sets the specified property', function(){
+    it('eles.style(name, val) gets and sets the specified property', function(){
       var n1 = cy.$('#n1');
 
-      n1.css('width', '10px');
+      n1.style('width', '10px');
 
-      expect( n1.css('width') ).to.equal('10px');
+      expect( n1.style('width') ).to.equal('10px');
     });
 
-    it('eles.css({}) sets the specified properties', function(){
+    it('eles.style({}) sets the specified properties', function(){
       var n1 = cy.$('#n1');
 
-      n1.css({
+      n1.style({
         height: '10px',
         width: '20px'
       });
 
-      expect( n1.css('height') ).to.equal('10px');
-      expect( n1.css('width') ).to.equal('20px');
+      expect( n1.style('height') ).to.equal('10px');
+      expect( n1.style('width') ).to.equal('20px');
     });
 
-    it('eles.removeCss() clears bypassed style', function(){
+    it('eles.removeStyle() clears bypassed style', function(){
       var n1 = cy.$('#n1');
 
-      n1.css({
+      n1.style({
         height: '999px'
       });
 
-      n1.removeCss();
+      n1.removeStyle();
 
-      expect( n1.css('height') ).to.not.equal('999px');
+      expect( n1.style('height') ).to.not.equal('999px');
     });
 
     it('eles.show() sets `display: element`', function(){
@@ -77,7 +77,7 @@ describe('Collection style', function(){
 
       n1.show();
 
-      expect( n1.css('display') ).to.equal('element');
+      expect( n1.style('display') ).to.equal('element');
       expect( n1.visible() ).to.be.true;
     });
 
@@ -86,7 +86,7 @@ describe('Collection style', function(){
 
       n1.hide();
 
-      expect( n1.css('display') ).to.equal('none');
+      expect( n1.style('display') ).to.equal('none');
       expect( n1.hidden() ).to.be.true;
     });
 
@@ -96,13 +96,13 @@ describe('Collection style', function(){
         { group: 'nodes', data: { id: 'c', parent: 'p' } }
       ]);
 
-      cy.$('#p').css('opacity', 0.5);
-      cy.$('#c').css('opacity', 0.5);
+      cy.$('#p').style('opacity', 0.5);
+      cy.$('#c').style('opacity', 0.5);
 
       expect( cy.$('#c').effectiveOpacity() ).to.equal(0.25);
       expect( cy.$('#p').transparent() ).to.be.false;
 
-      cy.$('#p').css('opacity', 0);
+      cy.$('#p').style('opacity', 0);
 
       expect( cy.$('#p').effectiveOpacity() ).to.equal(0);
       expect( cy.$('#p').transparent() ).to.be.true;

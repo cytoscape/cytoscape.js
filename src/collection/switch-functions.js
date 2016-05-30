@@ -2,7 +2,7 @@
 
 var elesfn = {};
 
-function defineSwitchFunction(params){
+function defineSwitchFunction( params ){
   return function(){
     var args = arguments;
     var changedEles = [];
@@ -11,24 +11,24 @@ function defineSwitchFunction(params){
     if( args.length === 2 ){
       var data = args[0];
       var handler = args[1];
-      this.bind( params.event, data, handler );
+      this.on( params.event, data, handler );
     }
 
     // e.g. cy.nodes().select( handler )
     else if( args.length === 1 ){
       var handler = args[0];
-      this.bind( params.event, handler );
+      this.on( params.event, handler );
     }
 
     // e.g. cy.nodes().select()
     else if( args.length === 0 ){
       for( var i = 0; i < this.length; i++ ){
-        var ele = this[i];
-        var able = !params.ableField || ele._private[params.ableField];
-        var changed = ele._private[params.field] != params.value;
+        var ele = this[ i ];
+        var able = !params.ableField || ele._private[ params.ableField ];
+        var changed = ele._private[ params.field ] != params.value;
 
         if( params.overrideAble ){
-          var overrideAble = params.overrideAble(ele);
+          var overrideAble = params.overrideAble( ele );
 
           if( overrideAble !== undefined ){
             able = overrideAble;
@@ -38,7 +38,7 @@ function defineSwitchFunction(params){
         }
 
         if( able ){
-          ele._private[params.field] = params.value;
+          ele._private[ params.field ] = params.value;
 
           if( changed ){
             changedEles.push( ele );
@@ -61,7 +61,7 @@ function defineSwitchSet( params ){
 
     if( ele ){
       if( params.overrideField ){
-        var val = params.overrideField(ele);
+        var val = params.overrideField( ele );
 
         if( val !== undefined ){
           return val;
@@ -72,59 +72,59 @@ function defineSwitchSet( params ){
     }
   };
 
-  elesfn[ params.on ] = defineSwitchFunction({
+  elesfn[ params.on ] = defineSwitchFunction( {
     event: params.on,
     field: params.field,
     ableField: params.ableField,
     overrideAble: params.overrideAble,
     value: true
-  });
+  } );
 
-  elesfn[ params.off ] = defineSwitchFunction({
+  elesfn[ params.off ] = defineSwitchFunction( {
     event: params.off,
     field: params.field,
     ableField: params.ableField,
     overrideAble: params.overrideAble,
     value: false
-  });
+  } );
 }
 
-defineSwitchSet({
+defineSwitchSet( {
   field: 'locked',
-  overrideField: function(ele){
+  overrideField: function( ele ){
     return ele.cy().autolock() ? true : undefined;
   },
   on: 'lock',
   off: 'unlock'
-});
+} );
 
-defineSwitchSet({
+defineSwitchSet( {
   field: 'grabbable',
-  overrideField: function(ele){
+  overrideField: function( ele ){
     return ele.cy().autoungrabify() ? false : undefined;
   },
   on: 'grabify',
   off: 'ungrabify'
-});
+} );
 
-defineSwitchSet({
+defineSwitchSet( {
   field: 'selected',
   ableField: 'selectable',
-  overrideAble: function(ele){
+  overrideAble: function( ele ){
     return ele.cy().autounselectify() ? false : undefined;
   },
   on: 'select',
   off: 'unselect'
-});
+} );
 
-defineSwitchSet({
+defineSwitchSet( {
   field: 'selectable',
-  overrideField: function(ele){
+  overrideField: function( ele ){
     return ele.cy().autounselectify() ? false : undefined;
   },
   on: 'selectify',
   off: 'unselectify'
-});
+} );
 
 elesfn.deselect = elesfn.unselect;
 
@@ -135,11 +135,11 @@ elesfn.grabbed = function(){
   }
 };
 
-defineSwitchSet({
+defineSwitchSet( {
   field: 'active',
   on: 'activate',
   off: 'unactivate'
-});
+} );
 
 elesfn.inactive = function(){
   var ele = this[0];

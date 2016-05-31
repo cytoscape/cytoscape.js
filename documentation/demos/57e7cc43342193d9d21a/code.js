@@ -6,13 +6,13 @@ var cy = cytoscape({
   //hideLabelsOnViewport: true,
   
   // this is an alternative that uses a bitmap during interaction
-  textureOnViewport: true,
+  // textureOnViewport: true,
   
   // interpolate on high density displays instead of increasing resolution
-  pixelRatio: 1,
+  // pixelRatio: 1,
   
-  // a motion blur effect that increases perceived performance for little or no cost
-  motionBlur: true,
+  // hides edges on pan, zoom, and node drag
+  // hideEdgesOnViewport: true,
   
   container: document.getElementById('cy'),
   

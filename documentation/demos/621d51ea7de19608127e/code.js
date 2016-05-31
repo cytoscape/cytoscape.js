@@ -13,11 +13,16 @@ var cy = cytoscape({
         'text-valign': 'center',
         'color': 'white',
         'text-outline-width': 2,
-        'text-outline-color': '#888'
+        'backgrund-color': '#999',
+        'text-outline-color': '#999'
       })
     .selector('edge')
       .css({
-        'target-arrow-shape': 'triangle'
+        'curve-style': 'bezier',
+        'target-arrow-shape': 'triangle',
+        'target-arrow-color': '#ccc',
+        'line-color': '#ccc',
+        'width': 1
       })
     .selector(':selected')
       .css({

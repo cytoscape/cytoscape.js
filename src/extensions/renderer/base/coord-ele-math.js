@@ -1328,6 +1328,7 @@ BRp.findEdgeControlPoints = function( edges ){
 
       var curveStyle = edge.pstyle( 'curve-style' ).value;
       var ctrlptDists = edge.pstyle( 'control-point-distances' );
+      var loopDir = eStyle['loop-direction'] ? eStyle['loop-direction'].value : 'northwest';
       var ctrlptWs = edge.pstyle( 'control-point-weights' );
       var bezierN = ctrlptDists && ctrlptWs ? Math.min( ctrlptDists.value.length, ctrlptWs.value.length ) : 1;
       var stepSize = edge.pstyle( 'control-point-step-size' ).pfValue;
@@ -1404,13 +1405,63 @@ BRp.findEdgeControlPoints = function( edges ){
           loopDist = ctrlptDist;
         }
 
-        rs.ctrlpts = [
-          srcPos.x,
-          srcPos.y - (1 + Math.pow( srcH, 1.12 ) / 100) * loopDist * (j / 3 + 1),
-
-          srcPos.x - (1 + Math.pow( srcW, 1.12 ) / 100) * loopDist * (j / 3 + 1),
-          srcPos.y
-        ];
+        if (loopDir === 'north') {
+          rs.ctrlpts = [
+            srcPos.x + (0.4)*(1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1),
+            srcPos.y - (0.67)*(1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1),
+            srcPos.x - (0.4)*(1 + Math.pow(srcW, 1.12) / 100) * loopDist * (j / 3 + 1),
+            srcPos.y - (0.67)*(1 + Math.pow(srcW, 1.12) / 100) * loopDist * (j / 3 + 1)
+          ];
+        } else if (loopDir === 'south'){
+          rs.ctrlpts = [
+            srcPos.x + (0.4)*(1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1),
+            srcPos.y + (0.67)*(1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1),
+            srcPos.x - (0.4)*(1 + Math.pow(srcW, 1.12) / 100) * loopDist * (j / 3 + 1),
+            srcPos.y + (0.67)*(1 + Math.pow(srcW, 1.12) / 100) * loopDist * (j / 3 + 1)
+          ];
+        } else if (loopDir === 'east'){
+          rs.ctrlpts = [
+            srcPos.x + (0.67)*(1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1),
+            srcPos.y + (0.4)*(1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1),
+            srcPos.x + (0.67)*(1 + Math.pow(srcW, 1.12) / 100) * loopDist * (j / 3 + 1),
+            srcPos.y - (0.4)*(1 + Math.pow(srcW, 1.12) / 100) * loopDist * (j / 3 + 1)
+          ];
+        } else if (loopDir === 'west'){
+          rs.ctrlpts = [
+            srcPos.x - (0.67)*(1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1),
+            srcPos.y + (0.4)*(1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1),
+            srcPos.x - (0.67)*(1 + Math.pow(srcW, 1.12) / 100) * loopDist * (j / 3 + 1),
+            srcPos.y - (0.4)*(1 + Math.pow(srcW, 1.12) / 100) * loopDist * (j / 3 + 1)
+          ];
+        } else if (loopDir === 'northeast'){
+          rs.ctrlpts = [
+            srcPos.x,
+            srcPos.y - (1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1),
+            srcPos.x + (1 + Math.pow(srcW, 1.12) / 100) * loopDist * (j / 3 + 1),
+            srcPos.y
+          ];
+        } else if (loopDir === 'southeast'){
+          rs.ctrlpts = [
+            srcPos.x,
+            srcPos.y + (1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1),
+            srcPos.x + (1 + Math.pow(srcW, 1.12) / 100) * loopDist * (j / 3 + 1),
+            srcPos.y
+          ];
+        } else if (loopDir === 'southwest'){
+          rs.ctrlpts = [
+            srcPos.x,
+            srcPos.y + (1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1),
+            srcPos.x - (1 + Math.pow(srcW, 1.12) / 100) * loopDist * (j / 3 + 1),
+            srcPos.y
+          ];
+        } else {  //northwest is default
+           rs.ctrlpts = [
+            srcPos.x,
+            srcPos.y - (1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1),
+            srcPos.x - (1 + Math.pow(srcW, 1.12) / 100) * loopDist * (j / 3 + 1),
+            srcPos.y
+          ];
+        }
 
       } else if(
         hasCompounds &&

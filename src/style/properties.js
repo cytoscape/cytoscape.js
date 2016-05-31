@@ -41,6 +41,7 @@ var styfn = {};
     lineStyle: { enums: [ 'solid', 'dotted', 'dashed' ] },
     borderStyle: { enums: [ 'solid', 'dotted', 'dashed', 'double' ] },
     curveStyle: { enums: [ 'bezier', 'unbundled-bezier', 'haystack', 'segments' ] },
+    loopDirection: { enums: ['north', 'south', 'east', 'west', 'northwest', 'southwest', 'northeast', 'southeast'] },
     fontFamily: { regex: '^([\\w- \\"]+(?:\\s*,\\s*[\\w- \\"]+)*)$' },
     fontVariant: { enums: [ 'small-caps', 'normal' ] },
     fontStyle: { enums: [ 'italic', 'normal', 'oblique' ] },
@@ -220,6 +221,7 @@ var styfn = {};
     { name: 'segment-distances', type: t.bidirectionalSizes },
     { name: 'segment-weights', type: t.numbers },
     { name: 'edge-distances', type: t.edgeDistances },
+    { name: 'loop-direction', type: t.loopDirection },
 
     // these are just for the core
     { name: 'selection-box-color', type: t.color },

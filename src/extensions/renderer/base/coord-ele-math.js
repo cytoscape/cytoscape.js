@@ -980,7 +980,7 @@ BRp.applyPrefixedLabelDimensions = function( ele, prefix ){
   var _p = ele._private;
 
   var text = this.getLabelText( ele, prefix );
-  var labelDims = this.calculateLabelDimensions( ele, text );
+  var labelDims = this.calculateLabelDimensions( ele, text, prefix );
 
   util.setPrefixedProperty( _p.rstyle,   'labelWidth', prefix, labelDims.width );
   util.setPrefixedProperty( _p.rscratch, 'labelWidth', prefix, labelDims.width );
@@ -1028,7 +1028,7 @@ BRp.getLabelText = function( ele, prefix ){
 
     for( var l = 0; l < lines.length; l++ ){
       var line = lines[ l ];
-      var lineDims = this.calculateLabelDimensions( ele, line, 'line=' + line );
+      var lineDims = this.calculateLabelDimensions( ele, line, '', 'line=' + line );
       var lineW = lineDims.width;
 
       if( lineW > maxW ){ // line is too long
@@ -1038,7 +1038,7 @@ BRp.getLabelText = function( ele, prefix ){
         for( var w = 0; w < words.length; w++ ){
           var word = words[ w ];
           var testLine = subline.length === 0 ? word : subline + ' ' + word;
-          var testDims = this.calculateLabelDimensions( ele, testLine, 'testLine=' + testLine );
+          var testDims = this.calculateLabelDimensions( ele, testLine, '', 'testLine=' + testLine );
           var testW = testDims.width;
 
           if( testW <= maxW ){ // word fits on current line
@@ -1068,11 +1068,13 @@ BRp.getLabelText = function( ele, prefix ){
   return text;
 };
 
-BRp.calculateLabelDimensions = function( ele, text, extraKey ){
+BRp.calculateLabelDimensions = function( ele, text, prefix, extraKey ){
   var r = this;
 
   var cacheKey = ele._private.labelKey;
-
+  if (prefix && prefix !== '') {
+    cacheKey = ele._private[prefix+'LabelKey']
+  }
   if( extraKey ){
     cacheKey += '$@$' + extraKey;
   }

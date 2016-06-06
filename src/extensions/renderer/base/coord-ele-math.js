@@ -390,7 +390,7 @@ BRp.findNearestElements = function( x, y, visibleElementsOnly, isTouch ){
     var rotation = ele.pstyle( prefixDash + 'text-rotation' );
 
     // adjust bb w/ angle
-    if( rotation.strValue === 'autorotate' || rotation.pfValue !== 0 ){
+    if( rotation.strValue === 'autorotate' || !!rotation.pfValue ){
 
       var rstyle = _p.rstyle;
       var bw = ele.pstyle('text-border-width').pfValue;

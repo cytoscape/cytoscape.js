@@ -1328,7 +1328,7 @@ BRp.findEdgeControlPoints = function( edges ){
 
       var curveStyle = edge.pstyle( 'curve-style' ).value;
       var ctrlptDists = edge.pstyle( 'control-point-distances' );
-      var loopDir = eStyle['loop-direction'] ? eStyle['loop-direction'].value : 'northwest';
+      var loopDir = edge.pstyle('loop-direction') ? edge.pstyle('loop-direction').value : 'northwest';
       var ctrlptWs = edge.pstyle( 'control-point-weights' );
       var bezierN = ctrlptDists && ctrlptWs ? Math.min( ctrlptDists.value.length, ctrlptWs.value.length ) : 1;
       var stepSize = edge.pstyle( 'control-point-step-size' ).pfValue;

@@ -1071,7 +1071,7 @@ BRp.getLabelText = function( ele, prefix ){
 BRp.calculateLabelDimensions = function( ele, text, extraKey ){
   var r = this;
 
-  var cacheKey = ele._private.labelKey;
+  var cacheKey = ele._private.labelStyleKey + '$@$' + text;
 
   if( extraKey ){
     cacheKey += '$@$' + extraKey;

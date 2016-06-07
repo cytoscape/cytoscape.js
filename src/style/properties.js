@@ -362,7 +362,8 @@ styfn.getDefaultProperties = util.memoize( function(){
     'transition-duration': 0,
     'transition-delay': 0,
     'transition-timing-function': 'linear',
-
+    'loop-direction': 'northwest',
+    
     // node props
     'background-blacken': 0,
     'background-color': '#999',

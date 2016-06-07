@@ -2,7 +2,7 @@
 
 /*!
 
-Cytoscape.js snapshot-c40bf93f73-1465223730899 (MIT licensed)
+Cytoscape.js snapshot-fe92658f0a-1465320032323 (MIT licensed)
 
 Copyright (c) The Cytoscape Consortium
 
@@ -13276,7 +13276,6 @@ BRp.findEdgeControlPoints = function( edges ){
       var curveStyle = edge.pstyle( 'curve-style' ).value;
       var ctrlptDists = edge.pstyle( 'control-point-distances' );
       var loopDir = edge.pstyle('loop-direction') ? edge.pstyle('loop-direction').value : 'northwest';
-      //var loopDir = eStyle['loop-direction'] ? eStyle['loop-direction'].value : 'northwest';
       var ctrlptWs = edge.pstyle( 'control-point-weights' );
       var bezierN = ctrlptDists && ctrlptWs ? Math.min( ctrlptDists.value.length, ctrlptWs.value.length ) : 1;
       var stepSize = edge.pstyle( 'control-point-step-size' ).pfValue;
@@ -25237,7 +25236,8 @@ styfn.getDefaultProperties = util.memoize( function(){
     'transition-duration': 0,
     'transition-delay': 0,
     'transition-timing-function': 'linear',
-
+    'loop-direction': 'northwest',
+    
     // node props
     'background-blacken': 0,
     'background-color': '#999',
@@ -26918,7 +26918,7 @@ util.debounce = function( func, wait, options ){ // ported lodash debounce funct
 module.exports = util;
 
 },{"../is":83,"../window":107}],106:[function(_dereq_,module,exports){
-module.exports="snapshot-c40bf93f73-1465223730899"
+module.exports="snapshot-fe92658f0a-1465320032323"
 },{}],107:[function(_dereq_,module,exports){
 module.exports = ( typeof window === 'undefined' ? null : window );
 

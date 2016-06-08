@@ -1315,6 +1315,17 @@ BRp.findEdgeControlPoints = function( edges ){
     var edge_p;
     var rs;
 
+    var dirCounts = {
+      'north': 0,
+      'west': 0,
+      'south': 0,
+      'east': 0,
+      'northwest': 0,
+      'southwest': 0,
+      'northeast': 0,
+      'southeast': 0
+    }
+
     for( var i = 0; i < pairEdges.length; i++ ){
       edge = pairEdges[ i ];
       edge_p = edge._private;
@@ -1406,6 +1417,9 @@ BRp.findEdgeControlPoints = function( edges ){
         }
 
         if (loopDir === 'north') {
+          if(!edgeIsUnbundled){
+            j = dirCounts['north'];
+          }
           rs.ctrlpts = [
             srcPos.x + (0.4)*(1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1),
             srcPos.y - (0.67)*(1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1),
@@ -1413,6 +1427,9 @@ BRp.findEdgeControlPoints = function( edges ){
             srcPos.y - (0.67)*(1 + Math.pow(srcW, 1.12) / 100) * loopDist * (j / 3 + 1)
           ];
         } else if (loopDir === 'south'){
+          if(!edgeIsUnbundled){
+            j = dirCounts['south'];
+          }
           rs.ctrlpts = [
             srcPos.x + (0.4)*(1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1),
             srcPos.y + (0.67)*(1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1),
@@ -1420,6 +1437,9 @@ BRp.findEdgeControlPoints = function( edges ){
             srcPos.y + (0.67)*(1 + Math.pow(srcW, 1.12) / 100) * loopDist * (j / 3 + 1)
           ];
         } else if (loopDir === 'east'){
+          if(!edgeIsUnbundled){
+            j = dirCounts['east'];
+          }
           rs.ctrlpts = [
             srcPos.x + (0.67)*(1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1),
             srcPos.y + (0.4)*(1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1),
@@ -1427,6 +1447,9 @@ BRp.findEdgeControlPoints = function( edges ){
             srcPos.y - (0.4)*(1 + Math.pow(srcW, 1.12) / 100) * loopDist * (j / 3 + 1)
           ];
         } else if (loopDir === 'west'){
+          if(!edgeIsUnbundled){
+            j = dirCounts['west'];
+          }
           rs.ctrlpts = [
             srcPos.x - (0.67)*(1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1),
             srcPos.y + (0.4)*(1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1),
@@ -1434,6 +1457,9 @@ BRp.findEdgeControlPoints = function( edges ){
             srcPos.y - (0.4)*(1 + Math.pow(srcW, 1.12) / 100) * loopDist * (j / 3 + 1)
           ];
         } else if (loopDir === 'northeast'){
+          if(!edgeIsUnbundled){
+            j = dirCounts['northeast'];
+          }
           rs.ctrlpts = [
             srcPos.x,
             srcPos.y - (1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1),
@@ -1441,6 +1467,9 @@ BRp.findEdgeControlPoints = function( edges ){
             srcPos.y
           ];
         } else if (loopDir === 'southeast'){
+          if(!edgeIsUnbundled){
+            j = dirCounts['southeast'];
+          }
           rs.ctrlpts = [
             srcPos.x,
             srcPos.y + (1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1),
@@ -1448,6 +1477,9 @@ BRp.findEdgeControlPoints = function( edges ){
             srcPos.y
           ];
         } else if (loopDir === 'southwest'){
+          if(!edgeIsUnbundled){
+            j = dirCounts['southwest'];
+          }
           rs.ctrlpts = [
             srcPos.x,
             srcPos.y + (1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1),
@@ -1455,6 +1487,9 @@ BRp.findEdgeControlPoints = function( edges ){
             srcPos.y
           ];
         } else {  //northwest is default
+          if(!edgeIsUnbundled){
+            j = dirCounts['northwest'];
+          }
            rs.ctrlpts = [
             srcPos.x,
             srcPos.y - (1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1),
@@ -1462,6 +1497,7 @@ BRp.findEdgeControlPoints = function( edges ){
             srcPos.y
           ];
         }
+        dirCounts[edge.pstyle('loop-direction').value]++;
 
       } else if(
         hasCompounds &&

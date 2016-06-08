@@ -2,7 +2,7 @@
 
 /*!
 
-Cytoscape.js 2.7.1 (MIT licensed)
+Cytoscape.js 2.7.2 (MIT licensed)
 
 Copyright (c) The Cytoscape Consortium
 
@@ -12337,7 +12337,7 @@ BRp.findNearestElements = function( x, y, visibleElementsOnly, isTouch ){
     var rotation = ele.pstyle( prefixDash + 'text-rotation' );
 
     // adjust bb w/ angle
-    if( rotation.strValue === 'autorotate' || rotation.pfValue !== 0 ){
+    if( rotation.strValue === 'autorotate' || !!rotation.pfValue ){
 
       var rstyle = _p.rstyle;
       var bw = ele.pstyle('text-border-width').pfValue;
@@ -13018,7 +13018,7 @@ BRp.getLabelText = function( ele, prefix ){
 BRp.calculateLabelDimensions = function( ele, text, extraKey ){
   var r = this;
 
-  var cacheKey = ele._private.labelKey;
+  var cacheKey = ele._private.labelStyleKey + '$@$' + text;
 
   if( extraKey ){
     cacheKey += '$@$' + extraKey;
@@ -20874,7 +20874,7 @@ var cytoscape = function( options ){ // jshint ignore:line
 };
 
 // replaced by build system
-cytoscape.version = _dereq_('./version');
+cytoscape.version = _dereq_('./version.json');
 
 // try to register w/ jquery
 if( window && window.jQuery ){
@@ -20893,7 +20893,7 @@ cytoscape.fabric = cytoscape.Fabric = Fabric;
 
 module.exports = cytoscape;
 
-},{"./-preamble":1,"./core":37,"./extension":46,"./fabric":80,"./is":83,"./jquery-plugin":84,"./stylesheet":97,"./thread":98,"./version":106,"./window":107}],83:[function(_dereq_,module,exports){
+},{"./-preamble":1,"./core":37,"./extension":46,"./fabric":80,"./is":83,"./jquery-plugin":84,"./stylesheet":97,"./thread":98,"./version.json":106,"./window":107}],83:[function(_dereq_,module,exports){
 'use strict';
 
 var window = _dereq_( './window' );
@@ -23504,6 +23504,7 @@ styfn.updateStyleHints = function(ele){
   var wrap = ele.pstyle( 'text-wrap' ).strValue;
   var wrapW = ele.pstyle( 'text-max-width' ).pfValue;
   var labelStyleKey = fStyle + '$' + size + '$' + family + '$' + weight + '$' + transform + '$' + valign + '$' + halign + '$' + oWidth + '$' + wrap + '$' + wrapW;
+  _p.labelStyleKey = labelStyleKey;
   _p.sourceLabelKey = labelStyleKey + '$' + srcContent;
   _p.targetLabelKey = labelStyleKey + '$' + tgtContent;
   _p.labelKey = labelStyleKey + '$' + content;
@@ -26864,7 +26865,7 @@ util.debounce = function( func, wait, options ){ // ported lodash debounce funct
 module.exports = util;
 
 },{"../is":83,"../window":107}],106:[function(_dereq_,module,exports){
-module.exports="2.7.1"
+module.exports="2.7.2"
 },{}],107:[function(_dereq_,module,exports){
 module.exports = ( typeof window === 'undefined' ? null : window );
 

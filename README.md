@@ -66,6 +66,7 @@ Run `gulp <target>` in the console.  The main targets are:
 
 ## Release instructions
 
+ 1. Make sure the docs are updated with the list of releases in `documentation/md/intro.md`
  1. Update the `VERSION` environment variable, e.g. `export VERSION=1.2.3`
  1. Confirm JS files pass linting: `gulp lint`
  1. Confirm all tests passing: `gulp test`

@@ -19,7 +19,8 @@ $('#cy').cytoscape({
       .css({
         'width': 4,
         'target-arrow-shape': 'triangle',
-        'opacity': 0.5
+        'opacity': 0.5,
+        'curve-style': 'bezier'
       })
     .selector(':selected')
       .css({

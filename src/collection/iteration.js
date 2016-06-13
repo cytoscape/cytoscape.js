@@ -117,7 +117,7 @@ var elesfn = ({
       var depth = _p.data.parent ? ele.parents().size() : 0;
 
       if( !ele.isParent() ){
-        return Number.MAX_VALUE; // childless nodes always on top
+        return Number.MAX_SAFE_INTEGER - 1; // childless nodes always on top
       }
 
       return depth;

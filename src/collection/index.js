@@ -309,6 +309,9 @@ elesfn.restore = function( notifyRenderer ){
     var _private = ele._private;
     var data = _private.data;
 
+    // the traversal cache should start fresh when ele is added
+    _private.traversalCache = null;
+
     // set id and validate
     if( data.id === undefined ){
       data.id = idFactory.generate( cy, ele );

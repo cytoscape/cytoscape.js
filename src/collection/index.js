@@ -564,12 +564,22 @@ elesfn.remove = function( notifyRenderer ){
     }
   }
 
+  var alteredParents = [];
+  alteredParents.ids = {};
+
   function removeChildRef( parent, ele ){
     ele = ele[0];
     parent = parent[0];
+
     var children = parent._private.children;
+    var pid = parent.id();
 
     util.removeFromArray( children, ele );
+
+    if( !alteredParents.ids[ pid ] ){
+      alteredParents.ids[ pid ] = true;
+      alteredParents.push( parent );
+    }
   }
 
   // remove from core pool
@@ -627,20 +637,12 @@ elesfn.remove = function( notifyRenderer ){
     removedElements.trigger( 'remove' );
   }
 
-  // check for empty remaining parent nodes
-  var checkedParentId = {};
-  for( var i = 0; i < elesToRemove.length; i++ ){
-    var ele = elesToRemove[ i ];
-    var isNode = ele._private.group === 'nodes';
-    var parentId = ele._private.data.parent;
+  // the parents who were modified by the removal need their style updated
+  for( var i = 0; i < alteredParents.length; i++ ){
+    var ele = alteredParents[ i ];
 
-    if( isNode && parentId !== undefined && !checkedParentId[ parentId ] ){
-      checkedParentId[ parentId ] = true;
-      var parent = cy.getElementById( parentId );
-
-      if( parent && parent.length !== 0 && !parent._private.removed && parent.children().length === 0 ){
-        parent.updateStyle();
-      }
+    if( !ele.removed() ){
+      ele.updateStyle();
     }
   }
 
@@ -691,9 +693,9 @@ elesfn.move = function( struct ){
           json.data.parent = parentId === null ? undefined : parentId;
         }
       }
-    }
 
-    return cy.add( jsons ).union( descsEtc.restore() );
+      return cy.add( jsons ).union( descsEtc.restore() );
+    }
   }
 
   return this; // if nothing done

@@ -279,8 +279,8 @@ Only mid arrows are supported on haystack edges.
 
 Elements are drawn in a specific order based on compound depth (low to high), the element type (typically nodes above edges), and z-index (low to high).  These styles affect the ordering:
 
-* **`z-compound-depth`** : May be `bottom` | `orphan` | `auto` (default) | `top`.  The first drawn is `bottom`, the second is `orphan`, which is the same depth as the root of the compound graph, followed by the default of `auto` which draws in depth order from root to leaves of the compound graph.  The last drawn is `top`.
-* **`z-index-compare`**: May be `auto` (default) | `manual`.  The setting `auto` will always draws edges under nodes, whereas `manual` ignores this convention and draws based on the `z-index` value setting. 
+* **`z-compound-depth`** : May be `bottom`, `orphan`, `auto` (default), or `top`.  The first drawn is `bottom`, the second is `orphan`, which is the same depth as the root of the compound graph, followed by the default of `auto` which draws in depth order from root to leaves of the compound graph.  The last drawn is `top`.
+* **`z-index-compare`**: May be `auto` (default) or `manual`.  The `auto` setting draws edges under nodes, whereas `manual` ignores this convention and draws solely based on the `z-index` value. 
 * **`z-index`** : An integer value that affects the relative draw order of elements.  In general, an element with a higher `z-index` will be drawn on top of an element with a lower `z-index` within the same depth.
 
 

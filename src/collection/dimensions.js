@@ -221,6 +221,8 @@ fn = elesfn = ({
     var updated = [];
 
     function update( parent ){
+      if( !parent.isParent() ){ return; }
+
       var _p = parent._private;
       var children = parent.children();
       var includeLabels = parent.pstyle( 'compound-sizing-wrt-labels' ).value === 'include';
@@ -260,7 +262,7 @@ fn = elesfn = ({
     }
 
     // go up, level by level
-    var eles = this.parent();
+    var eles = this;
     while( eles.nonempty() ){
 
       // update each parent node in this level

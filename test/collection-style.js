@@ -5,6 +5,12 @@ describe('Collection style', function(){
 
   var cy;
 
+  var useFn = function( fn ){
+    return function( arg ){
+      return fn( arg );
+    }
+  }
+
   // test setup
   beforeEach(function(){
     cy = cytoscape({
@@ -21,7 +27,23 @@ describe('Collection style', function(){
             { data: { id: 'n1n2', source: 'n1', target: 'n2' } },
             { data: { id: 'n2n3', source: 'n2', target: 'n3' } }
         ]
-      }
+      },
+
+      style: [
+        {
+          selector: '#n1',
+          style: {
+            label: useFn(function(){ return 'n1' })
+          }
+        },
+
+        {
+          selector: '#n2',
+          style: {
+            label: useFn(function(){ return 'n2' })
+          }
+        }
+      ]
     });
   });
 
@@ -108,6 +130,23 @@ describe('Collection style', function(){
       expect( cy.$('#p').transparent() ).to.be.true;
     });
 
+    it('eles.style() gets correct value when using function prop value (n1)', function(){
+      var style = cy.$('#n1').style();
+
+      expect( style ).to.be.an('object');
+      expect( style ).to.have.property('label');
+      expect( style['label'] ).to.be.defined;
+      expect( style['label'] ).to.equal( 'n1' );
+    });
+
+    it('eles.style() gets correct value when using function prop value (n2)', function(){
+      var style = cy.$('#n2').style();
+
+      expect( style ).to.be.an('object');
+      expect( style ).to.have.property('label');
+      expect( style['label'] ).to.be.defined;
+      expect( style['label'] ).to.equal( 'n2' );
+    });
   });
 
   describe('eles.addClass() etc', function(){

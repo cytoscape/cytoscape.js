@@ -1339,7 +1339,9 @@ BRp.findEdgeControlPoints = function( edges ){
 
       var curveStyle = edge.pstyle( 'curve-style' ).value;
       var ctrlptDists = edge.pstyle( 'control-point-distances' );
-      var loopDir = edge.pstyle('loop-direction') ? edge.pstyle('loop-direction').value : 'northwest';
+      var loopDir = edge.pstyle('loop-direction') ? edge.pstyle('loop-direction').value : -135; // defaults match previous behavior
+      var loopSwp = edge.pstyle('loop-sweep') ? edge.pstyle('loop-sweep').value : -90;         // looping to northwest
+
       var ctrlptWs = edge.pstyle( 'control-point-weights' );
       var bezierN = ctrlptDists && ctrlptWs ? Math.min( ctrlptDists.value.length, ctrlptWs.value.length ) : 1;
       var stepSize = edge.pstyle( 'control-point-step-size' ).pfValue;
@@ -1416,88 +1418,21 @@ BRp.findEdgeControlPoints = function( edges ){
           loopDist = ctrlptDist;
         }
 
-        if (loopDir === 'north') {
-          if(!edgeIsUnbundled){
-            j = dirCounts['north'];
-          }
-          rs.ctrlpts = [
-            srcPos.x + (0.4)*(1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1),
-            srcPos.y - (0.67)*(1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1),
-            srcPos.x - (0.4)*(1 + Math.pow(srcW, 1.12) / 100) * loopDist * (j / 3 + 1),
-            srcPos.y - (0.67)*(1 + Math.pow(srcW, 1.12) / 100) * loopDist * (j / 3 + 1)
-          ];
-        } else if (loopDir === 'south'){
-          if(!edgeIsUnbundled){
-            j = dirCounts['south'];
-          }
-          rs.ctrlpts = [
-            srcPos.x + (0.4)*(1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1),
-            srcPos.y + (0.67)*(1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1),
-            srcPos.x - (0.4)*(1 + Math.pow(srcW, 1.12) / 100) * loopDist * (j / 3 + 1),
-            srcPos.y + (0.67)*(1 + Math.pow(srcW, 1.12) / 100) * loopDist * (j / 3 + 1)
-          ];
-        } else if (loopDir === 'east'){
-          if(!edgeIsUnbundled){
-            j = dirCounts['east'];
-          }
-          rs.ctrlpts = [
-            srcPos.x + (0.67)*(1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1),
-            srcPos.y + (0.4)*(1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1),
-            srcPos.x + (0.67)*(1 + Math.pow(srcW, 1.12) / 100) * loopDist * (j / 3 + 1),
-            srcPos.y - (0.4)*(1 + Math.pow(srcW, 1.12) / 100) * loopDist * (j / 3 + 1)
-          ];
-        } else if (loopDir === 'west'){
-          if(!edgeIsUnbundled){
-            j = dirCounts['west'];
-          }
-          rs.ctrlpts = [
-            srcPos.x - (0.67)*(1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1),
-            srcPos.y + (0.4)*(1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1),
-            srcPos.x - (0.67)*(1 + Math.pow(srcW, 1.12) / 100) * loopDist * (j / 3 + 1),
-            srcPos.y - (0.4)*(1 + Math.pow(srcW, 1.12) / 100) * loopDist * (j / 3 + 1)
-          ];
-        } else if (loopDir === 'northeast'){
-          if(!edgeIsUnbundled){
-            j = dirCounts['northeast'];
-          }
-          rs.ctrlpts = [
-            srcPos.x,
-            srcPos.y - (1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1),
-            srcPos.x + (1 + Math.pow(srcW, 1.12) / 100) * loopDist * (j / 3 + 1),
-            srcPos.y
-          ];
-        } else if (loopDir === 'southeast'){
-          if(!edgeIsUnbundled){
-            j = dirCounts['southeast'];
-          }
-          rs.ctrlpts = [
-            srcPos.x,
-            srcPos.y + (1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1),
-            srcPos.x + (1 + Math.pow(srcW, 1.12) / 100) * loopDist * (j / 3 + 1),
-            srcPos.y
-          ];
-        } else if (loopDir === 'southwest'){
-          if(!edgeIsUnbundled){
-            j = dirCounts['southwest'];
-          }
-          rs.ctrlpts = [
-            srcPos.x,
-            srcPos.y + (1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1),
-            srcPos.x - (1 + Math.pow(srcW, 1.12) / 100) * loopDist * (j / 3 + 1),
-            srcPos.y
-          ];
-        } else {  //northwest is default
-          if(!edgeIsUnbundled){
-            j = dirCounts['northwest'];
-          }
-           rs.ctrlpts = [
-            srcPos.x,
-            srcPos.y - (1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1),
-            srcPos.x - (1 + Math.pow(srcW, 1.12) / 100) * loopDist * (j / 3 + 1),
-            srcPos.y
-          ];
-        }
-        dirCounts[edge.pstyle('loop-direction').value]++;
+        var ldr = loopDir * Math.PI / 180;
+        var lsr = loopSwp * Math.PI / 180;
+        var outAngle =  ldr - lsr / 2;
+        var inAngle  =  ldr + lsr / 2;
+
+        // increase by step size for overlapping loops, keyed on direction and sweep values
+        var dc = String(loopDir + '_' + loopSwp);
+        j = dirCounts[dc] === undefined ? dirCounts[dc] = 0 : ++dirCounts[dc];
+
+        rs.ctrlpts = [
+          srcPos.x + Math.cos(outAngle) * 1.4 * loopDist * (j / 3 + 1),
+          srcPos.y + Math.sin(outAngle) * 1.4 * loopDist * (j / 3 + 1),
+          srcPos.x + Math.cos(inAngle) * 1.4 * loopDist * (j / 3 + 1),
+          srcPos.y + Math.sin(inAngle) * 1.4 * loopDist * (j / 3 + 1)
+        ];
 
       } else if(
         hasCompounds &&

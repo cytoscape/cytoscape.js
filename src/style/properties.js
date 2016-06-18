@@ -41,7 +41,8 @@ var styfn = {};
     lineStyle: { enums: [ 'solid', 'dotted', 'dashed' ] },
     borderStyle: { enums: [ 'solid', 'dotted', 'dashed', 'double' ] },
     curveStyle: { enums: [ 'bezier', 'unbundled-bezier', 'haystack', 'segments' ] },
-    loopDirection: { enums: ['north', 'south', 'east', 'west', 'northwest', 'southwest', 'northeast', 'southeast'] },
+    loopDirection: { number: true },
+    loopSweep: { number: true },
     fontFamily: { regex: '^([\\w- \\"]+(?:\\s*,\\s*[\\w- \\"]+)*)$' },
     fontVariant: { enums: [ 'small-caps', 'normal' ] },
     fontStyle: { enums: [ 'italic', 'normal', 'oblique' ] },
@@ -222,6 +223,7 @@ var styfn = {};
     { name: 'segment-weights', type: t.numbers },
     { name: 'edge-distances', type: t.edgeDistances },
     { name: 'loop-direction', type: t.loopDirection },
+    { name: 'loop-sweep', type: t.loopSweep },
 
     // these are just for the core
     { name: 'selection-box-color', type: t.color },
@@ -362,8 +364,9 @@ styfn.getDefaultProperties = util.memoize( function(){
     'transition-duration': 0,
     'transition-delay': 0,
     'transition-timing-function': 'linear',
-    'loop-direction': 'northwest',
-    
+    'loop-direction': '-135',
+    'loop-sweep': '-90',
+
     // node props
     'background-blacken': 0,
     'background-color': '#999',

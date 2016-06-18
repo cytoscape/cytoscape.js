@@ -2,7 +2,7 @@
 
 /*!
 
-Cytoscape.js snapshot-0b88c954f1-1465369358848 (MIT licensed)
+Cytoscape.js snapshot-8225838675-1466288954151 (MIT licensed)
 
 Copyright (c) The Cytoscape Consortium
 
@@ -13286,7 +13286,9 @@ BRp.findEdgeControlPoints = function( edges ){
 
       var curveStyle = edge.pstyle( 'curve-style' ).value;
       var ctrlptDists = edge.pstyle( 'control-point-distances' );
-      var loopDir = edge.pstyle('loop-direction') ? edge.pstyle('loop-direction').value : 'northwest';
+      var loopDir = edge.pstyle('loop-direction') ? edge.pstyle('loop-direction').value : -135; // defaults match previous behavior
+      var loopSwp = edge.pstyle('loop-sweep') ? edge.pstyle('loop-sweep').value : -90;         // looping to northwest
+
       var ctrlptWs = edge.pstyle( 'control-point-weights' );
       var bezierN = ctrlptDists && ctrlptWs ? Math.min( ctrlptDists.value.length, ctrlptWs.value.length ) : 1;
       var stepSize = edge.pstyle( 'control-point-step-size' ).pfValue;
@@ -13363,88 +13365,21 @@ BRp.findEdgeControlPoints = function( edges ){
           loopDist = ctrlptDist;
         }
 
-        if (loopDir === 'north') {
-          if(!edgeIsUnbundled){
-            j = dirCounts['north'];
-          }
-          rs.ctrlpts = [
-            srcPos.x + (0.4)*(1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1),
-            srcPos.y - (0.67)*(1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1),
-            srcPos.x - (0.4)*(1 + Math.pow(srcW, 1.12) / 100) * loopDist * (j / 3 + 1),
-            srcPos.y - (0.67)*(1 + Math.pow(srcW, 1.12) / 100) * loopDist * (j / 3 + 1)
-          ];
-        } else if (loopDir === 'south'){
-          if(!edgeIsUnbundled){
-            j = dirCounts['south'];
-          }
-          rs.ctrlpts = [
-            srcPos.x + (0.4)*(1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1),
-            srcPos.y + (0.67)*(1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1),
-            srcPos.x - (0.4)*(1 + Math.pow(srcW, 1.12) / 100) * loopDist * (j / 3 + 1),
-            srcPos.y + (0.67)*(1 + Math.pow(srcW, 1.12) / 100) * loopDist * (j / 3 + 1)
-          ];
-        } else if (loopDir === 'east'){
-          if(!edgeIsUnbundled){
-            j = dirCounts['east'];
-          }
-          rs.ctrlpts = [
-            srcPos.x + (0.67)*(1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1),
-            srcPos.y + (0.4)*(1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1),
-            srcPos.x + (0.67)*(1 + Math.pow(srcW, 1.12) / 100) * loopDist * (j / 3 + 1),
-            srcPos.y - (0.4)*(1 + Math.pow(srcW, 1.12) / 100) * loopDist * (j / 3 + 1)
-          ];
-        } else if (loopDir === 'west'){
-          if(!edgeIsUnbundled){
-            j = dirCounts['west'];
-          }
-          rs.ctrlpts = [
-            srcPos.x - (0.67)*(1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1),
-            srcPos.y + (0.4)*(1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1),
-            srcPos.x - (0.67)*(1 + Math.pow(srcW, 1.12) / 100) * loopDist * (j / 3 + 1),
-            srcPos.y - (0.4)*(1 + Math.pow(srcW, 1.12) / 100) * loopDist * (j / 3 + 1)
-          ];
-        } else if (loopDir === 'northeast'){
-          if(!edgeIsUnbundled){
-            j = dirCounts['northeast'];
-          }
-          rs.ctrlpts = [
-            srcPos.x,
-            srcPos.y - (1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1),
-            srcPos.x + (1 + Math.pow(srcW, 1.12) / 100) * loopDist * (j / 3 + 1),
-            srcPos.y
-          ];
-        } else if (loopDir === 'southeast'){
-          if(!edgeIsUnbundled){
-            j = dirCounts['southeast'];
-          }
-          rs.ctrlpts = [
-            srcPos.x,
-            srcPos.y + (1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1),
-            srcPos.x + (1 + Math.pow(srcW, 1.12) / 100) * loopDist * (j / 3 + 1),
-            srcPos.y
-          ];
-        } else if (loopDir === 'southwest'){
-          if(!edgeIsUnbundled){
-            j = dirCounts['southwest'];
-          }
-          rs.ctrlpts = [
-            srcPos.x,
-            srcPos.y + (1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1),
-            srcPos.x - (1 + Math.pow(srcW, 1.12) / 100) * loopDist * (j / 3 + 1),
-            srcPos.y
-          ];
-        } else {  //northwest is default
-          if(!edgeIsUnbundled){
-            j = dirCounts['northwest'];
-          }
-           rs.ctrlpts = [
-            srcPos.x,
-            srcPos.y - (1 + Math.pow(srcH, 1.12) / 100) * loopDist * (j / 3 + 1),
-            srcPos.x - (1 + Math.pow(srcW, 1.12) / 100) * loopDist * (j / 3 + 1),
-            srcPos.y
-          ];
-        }
-        dirCounts[edge.pstyle('loop-direction').value]++;
+        var ldr = loopDir * Math.PI / 180;
+        var lsr = loopSwp * Math.PI / 180;
+        var outAngle =  ldr - lsr / 2;
+        var inAngle  =  ldr + lsr / 2;
+
+        // increase by step size for overlapping loops, keyed on direction and sweep values
+        var dc = String(loopDir + '_' + loopSwp);
+        j = dirCounts[dc] === undefined ? dirCounts[dc] = 0 : ++dirCounts[dc];
+
+        rs.ctrlpts = [
+          srcPos.x + Math.cos(outAngle) * 1.4 * loopDist * (j / 3 + 1),
+          srcPos.y + Math.sin(outAngle) * 1.4 * loopDist * (j / 3 + 1),
+          srcPos.x + Math.cos(inAngle) * 1.4 * loopDist * (j / 3 + 1),
+          srcPos.y + Math.sin(inAngle) * 1.4 * loopDist * (j / 3 + 1)
+        ];
 
       } else if(
         hasCompounds &&
@@ -24951,7 +24886,8 @@ var styfn = {};
     lineStyle: { enums: [ 'solid', 'dotted', 'dashed' ] },
     borderStyle: { enums: [ 'solid', 'dotted', 'dashed', 'double' ] },
     curveStyle: { enums: [ 'bezier', 'unbundled-bezier', 'haystack', 'segments' ] },
-    loopDirection: { enums: ['north', 'south', 'east', 'west', 'northwest', 'southwest', 'northeast', 'southeast'] },
+    loopDirection: { number: true },
+    loopSweep: { number: true },
     fontFamily: { regex: '^([\\w- \\"]+(?:\\s*,\\s*[\\w- \\"]+)*)$' },
     fontVariant: { enums: [ 'small-caps', 'normal' ] },
     fontStyle: { enums: [ 'italic', 'normal', 'oblique' ] },
@@ -25132,6 +25068,7 @@ var styfn = {};
     { name: 'segment-weights', type: t.numbers },
     { name: 'edge-distances', type: t.edgeDistances },
     { name: 'loop-direction', type: t.loopDirection },
+    { name: 'loop-sweep', type: t.loopSweep },
 
     // these are just for the core
     { name: 'selection-box-color', type: t.color },
@@ -25272,8 +25209,9 @@ styfn.getDefaultProperties = util.memoize( function(){
     'transition-duration': 0,
     'transition-delay': 0,
     'transition-timing-function': 'linear',
-    'loop-direction': 'northwest',
-    
+    'loop-direction': '-135',
+    'loop-sweep': '-90',
+
     // node props
     'background-blacken': 0,
     'background-color': '#999',
@@ -26954,7 +26892,7 @@ util.debounce = function( func, wait, options ){ // ported lodash debounce funct
 module.exports = util;
 
 },{"../is":83,"../window":107}],106:[function(_dereq_,module,exports){
-module.exports="snapshot-0b88c954f1-1465369358848"
+module.exports="snapshot-8225838675-1466288954151"
 },{}],107:[function(_dereq_,module,exports){
 module.exports = ( typeof window === 'undefined' ? null : window );
 

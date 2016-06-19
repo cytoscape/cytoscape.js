@@ -57,6 +57,8 @@ var styfn = {};
     arrowFill: { enums: [ 'filled', 'hollow' ] },
     display: { enums: [ 'element', 'none' ] },
     visibility: { enums: [ 'hidden', 'visible' ] },
+    zCompoundDepth: { enums: [ 'bottom', 'orphan', 'auto', 'top' ] },
+    zIndexCompare: { enums: [ 'auto', 'manual' ] },
     valign: { enums: [ 'top', 'center', 'bottom' ] },
     halign: { enums: [ 'left', 'center', 'right' ] },
     text: { string: true },
@@ -150,6 +152,8 @@ var styfn = {};
     { name: 'display', type: t.display },
     { name: 'visibility', type: t.visibility },
     { name: 'opacity', type: t.zeroOneNumber },
+    { name: 'z-compound-depth', type: t.zCompoundDepth },
+    { name: 'z-index-compare', type: t.zIndexCompare },
     { name: 'z-index', type: t.nonNegativeInt },
 
     // overlays
@@ -335,6 +339,8 @@ styfn.getDefaultProperties = util.memoize( function(){
     'visibility': 'visible',
     'display': 'element',
     'opacity': 1,
+    'z-compound-depth': 'auto',
+    'z-index-compare': 'auto',
     'z-index': 0,
     'label': '',
     'text-margin-x': 0,

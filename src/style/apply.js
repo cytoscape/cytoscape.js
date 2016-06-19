@@ -252,6 +252,7 @@ styfn.updateStyleHints = function(ele){
   var wrap = ele.pstyle( 'text-wrap' ).strValue;
   var wrapW = ele.pstyle( 'text-max-width' ).pfValue;
   var labelStyleKey = fStyle + '$' + size + '$' + family + '$' + weight + '$' + transform + '$' + valign + '$' + halign + '$' + oWidth + '$' + wrap + '$' + wrapW;
+  _p.labelStyleKey = labelStyleKey;
   _p.sourceLabelKey = labelStyleKey + '$' + srcContent;
   _p.targetLabelKey = labelStyleKey + '$' + tgtContent;
   _p.labelKey = labelStyleKey + '$' + content;

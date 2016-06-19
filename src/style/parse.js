@@ -9,6 +9,12 @@ var styfn = {};
 // a caching layer for property parsing
 styfn.parse = function( name, value, propIsBypass, propIsFlat ){
   var self = this;
+
+  // function values can't be cached in all cases, and there isn't much benefit of caching them anyway
+  if( is.fn( value ) ){
+    return self.parseImpl( name, value, propIsBypass, propIsFlat );
+  }
+
   var argHash = [ name, value, propIsBypass, propIsFlat ].join( '$' );
   var propCache = self.propCache = self.propCache || {};
   var ret;

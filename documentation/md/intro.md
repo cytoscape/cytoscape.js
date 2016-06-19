@@ -31,7 +31,9 @@
  * Well maintained, with only a sliver of active bug time (i.e. minimised time to bugfix)
  * Used by
   * [Abasy Atlas](http://abasy.ccg.unam.mx/)
+  * [Agile Protein Interactomes DataServer](Agile Protein Interactomes DataServer)
   * [Aras](http://www.aras.com/)
+  * [Avenue](https://avenue-2p0.herokuapp.com/)
   * [BioGRID](http://thebiogrid.org/)
   * [Cray Inc.](http://www.cray.com)
   * [CyNetShare](http://cynetshare.ucsd.edu/)
@@ -42,8 +44,10 @@
   * [Ganister](http://www.ganister.eu/)
   * [GeneMANIA](http://genemania.org)
   * [Graphlytic](http://graphlytic.sk/)
+  * [ICSI Haystack Project](https://haystack.mobi/panopticon/)
   * [InfoTrack](http://www.infotrack.com.au/)
   * [Kartoteka](http://www.kartoteka.ru/vizual/)
+  * [Musicalized](http://en.musicalized.com/full)
   * [NDex](http://www.ndexbio.org/)
   * [Pathway Commons](http://www.pathwaycommons.org)
   * [py2cytoscape](https://github.com/idekerlab/py2cytoscape)
@@ -82,6 +86,8 @@ The library was created at the [Donnelly Centre](http://thedonnellycentre.utoron
 
 - 2.7
  - [2.7.0](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A2.7.0+is%3Aclosed)
+ - [2.7.1](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A2.7.1+is%3Aclosed)
+ - [2.7.2](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A2.7.2+is%3Aclosed)
 - 2.6
  - [2.6.10](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A2.6.10+is%3Aclosed)
  - [2.6.9](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A2.6.9+is%3Aclosed)

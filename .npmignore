@@ -1,5 +1,4 @@
 documentation
-src
 test
 debug
 gulpfile.js
@@ -8,3 +7,7 @@ bower.json
 README.md
 build
 node_modules
+dist
+snippets
+benchmark
+CONTRIBUTING.md

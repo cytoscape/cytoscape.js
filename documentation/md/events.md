@@ -23,7 +23,7 @@ Fields for only layout events:
 
 ## Event bubbling
 
-All events that occur on elements get bubbled up to the core.  You must take this into consideration when binding to the core so you can differentiate between events that happened on the background and ones that happened on elements.  Use the `eventObj.cyTarget` field, which indicates the originator of the event (i.e. `eventObj.cyTarget === cy || eventObj.cyTarget === someEle`).
+All events that occur on elements get bubbled up to [compound parents](#notation/compound-nodes) and then to the core.  You must take this into consideration when binding to the core so you can differentiate between events that happened on the background and ones that happened on elements.  Use the `eventObj.cyTarget` field, which indicates the originator of the event (i.e. `eventObj.cyTarget === cy || eventObj.cyTarget === someEle`).
 
 
 ## User input device events

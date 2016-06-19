@@ -679,7 +679,7 @@ BRp.load = function(){
     } else {
       if( down && down.isEdge() && down.active() ){ down.unactivate(); }
 
-      if( near != last ){
+      if( !down && near != last ){
 
         if( last ){
           triggerEvents( last, [ 'mouseout', 'tapdragout' ], e, {
@@ -1508,7 +1508,7 @@ BRp.load = function(){
 
                 var dragDelta = r.touchData.dragDelta;
 
-                if( updatePos && is.number( dragDelta[0] ) && is.number( dragDelta[1] ) ){
+                if( updatePos && dragDelta && is.number( dragDelta[0] ) && is.number( dragDelta[1] ) ){
                   dPos.x += dragDelta[0];
                   dPos.y += dragDelta[1];
                 }
@@ -1554,7 +1554,7 @@ BRp.load = function(){
           cyPosition: { x: now[0], y: now[1] }
         } );
 
-        if( near != last ){
+        if( !start && near != last ){
           if( last ){ last.trigger( new Event( e, { type: 'tapdragout', cyPosition: { x: now[0], y: now[1] } } ) ); }
           if( near ){ near.trigger( new Event( e, { type: 'tapdragover', cyPosition: { x: now[0], y: now[1] } } ) ); }
         }
@@ -1766,7 +1766,7 @@ BRp.load = function(){
           start.trigger( 'free' );
         }
 
-        triggerEvents( start, [ 'touchend', 'tapend', 'vmouseup' ], e, {
+        triggerEvents( start, [ 'touchend', 'tapend', 'vmouseup', 'tapdragout' ], e, {
           cyPosition: { x: now[0], y: now[1] }
         } );
 
@@ -1777,7 +1777,7 @@ BRp.load = function(){
       } else {
         var near = r.findNearestElement( now[0], now[1], true, true );
 
-        triggerEvents( near, [ 'touchend', 'tapend', 'vmouseup' ], e, {
+        triggerEvents( near, [ 'touchend', 'tapend', 'vmouseup', 'tapdragout' ], e, {
           cyPosition: { x: now[0], y: now[1] }
         } );
 

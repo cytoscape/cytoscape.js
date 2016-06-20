@@ -683,7 +683,7 @@ BRp.load = function(){
     } else {
       if( down && down.isEdge() && down.active() ){ down.unactivate(); }
 
-      if( !down && near != last ){
+      if( ( !down || !down.grabbed() ) && near != last ){
 
         if( last ){
           triggerEvents( last, [ 'mouseout', 'tapdragout' ], e, {
@@ -1470,7 +1470,7 @@ BRp.load = function(){
       if( e.touches[1] ){ var pos = r.projectIntoViewport( e.touches[1].clientX, e.touches[1].clientY ); now[2] = pos[0]; now[3] = pos[1]; }
       if( e.touches[2] ){ var pos = r.projectIntoViewport( e.touches[2].clientX, e.touches[2].clientY ); now[4] = pos[0]; now[5] = pos[1]; }
 
-    } else if( capture && e.touches[0] ){
+    } else if( e.touches[0] ){
       var start = r.touchData.start;
       var last = r.touchData.last;
       var near;
@@ -1479,12 +1479,12 @@ BRp.load = function(){
         near = r.findNearestElement( now[0], now[1], true, true );
       }
 
-      if( start != null ){
+      if( capture && start != null ){
         e.preventDefault();
       }
 
       // dragging nodes
-      if( start != null && r.nodeIsDraggable( start ) ){
+      if( capture && start != null && r.nodeIsDraggable( start ) ){
 
         if( isOverThresholdDrag ){ // then dragging can happen
           var draggedEles = r.dragData.touchDragEles;
@@ -1558,7 +1558,7 @@ BRp.load = function(){
           cyPosition: { x: now[0], y: now[1] }
         } );
 
-        if( !start && near != last ){
+        if( ( !start || !start.grabbed() ) && near != last ){
           if( last ){ last.trigger( new Event( e, { type: 'tapdragout', cyPosition: { x: now[0], y: now[1] } } ) ); }
           if( near ){ near.trigger( new Event( e, { type: 'tapdragover', cyPosition: { x: now[0], y: now[1] } } ) ); }
         }
@@ -1567,12 +1567,14 @@ BRp.load = function(){
       }
 
       // check to cancel taphold
-      for( var i = 0;i < now.length;i++ ){
-        if( now[ i ]
-          && r.touchData.startPosition[ i ]
-          && isOverThresholdDrag ){
+      if( capture ){
+        for( var i = 0; i < now.length; i++ ){
+          if( now[ i ]
+            && r.touchData.startPosition[ i ]
+            && isOverThresholdDrag ){
 
-          r.touchData.singleTouchMoved = true;
+            r.touchData.singleTouchMoved = true;
+          }
         }
       }
 

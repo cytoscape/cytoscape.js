@@ -290,6 +290,9 @@ var noninf = function( x ){
 };
 
 var updateBounds = function( b, x1, y1, x2, y2 ){
+  // don't update with zero area boxes
+  if( x2 - x1 === 0 || y2 - y1 === 0 ){ return; }
+
   b.x1 = x1 < b.x1 ? x1 : b.x1;
   b.x2 = x2 > b.x2 ? x2 : b.x2;
   b.y1 = y1 < b.y1 ? y1 : b.y1;
@@ -663,7 +666,9 @@ var boundingBoxImpl = function( ele, options ){
   bounds.h = noninf( bounds.y2 - bounds.y1 );
 
   // expand bounds by 1 because antialiasing can increase the visual/effective size by 1 on all sides
-  math.expandBoundingBox( bounds, 1 );
+  if( bounds.w > 0 && bounds.h > 0 && displayed ){
+    math.expandBoundingBox( bounds, 1 );
+  }
 
   return bounds;
 };

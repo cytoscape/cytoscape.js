@@ -121,8 +121,8 @@ BRp.recalculateRenderedStyle = function( eles, useCache ){
     var _p = ele._private;
     var rstyle = _p.rstyle;
 
-    // only update if dirty
-    if( useCache && rstyle.clean ){ continue; }
+    // only update if dirty and in graph
+    if( (useCache && rstyle.clean) || ele.removed() ){ continue; }
 
     if( _p.group === 'nodes' ){
       var pos = _p.position;

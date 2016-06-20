@@ -39,17 +39,21 @@ BRp.binder = function( tgt ){
 };
 
 BRp.nodeIsDraggable = function( node ){
-  if( node && node.isNode()
-    && node.pstyle( 'opacity' ).value !== 0
-    && node.pstyle( 'visibility' ).value == 'visible'
-    && node.pstyle( 'display' ).value == 'element'
+  return (
+    node
+    && node.isNode()
     && !node.locked()
-    && node.grabbable() ){
+    && node.grabbable()
+  );
+};
 
-    return true;
-  }
-
-  return false;
+BRp.nodeIsGrabbable = function( node ){
+  return (
+    this.nodeIsDraggable( node )
+    && node.pstyle( 'opacity' ).value !== 0
+    && node.pstyle( 'visibility' ).value === 'visible'
+    && node.pstyle( 'display' ).value === 'element'
+  );
 };
 
 BRp.load = function(){
@@ -411,7 +415,7 @@ BRp.load = function(){
         // If something is under the cursor and it is draggable, prepare to grab it
         if( near != null ){
 
-          if( r.nodeIsDraggable( near ) ){
+          if( r.nodeIsGrabbable( near ) ){
 
             var grabEvent = new Event( e, {
               type: 'grab',
@@ -430,7 +434,7 @@ BRp.load = function(){
             } else if( near.selected() ){
               draggedElements = r.dragData.possibleDragElements = [  ];
 
-              var selectedNodes = cy.$( function(){ return this.isNode() && this.selected() && r.nodeIsDraggable( this ); } );
+              var selectedNodes = cy.$( function(){ return this.isNode() && this.selected() && r.nodeIsGrabbable( this ); } );
 
               addNodesToDrag( selectedNodes, { addToList: draggedElements } );
 
@@ -1156,7 +1160,7 @@ BRp.load = function(){
         r.touchData.start = near;
         r.touchData.starts = nears;
 
-        if( r.nodeIsDraggable( near ) ){
+        if( r.nodeIsGrabbable( near ) ){
 
           var draggedEles = r.dragData.touchDragEles = [];
 
@@ -1167,7 +1171,7 @@ BRp.load = function(){
             // reset drag elements, since near will be added again
 
             var selectedNodes = cy.$( function(){
-              return this.selected() && r.nodeIsDraggable( this );
+              return this.selected() && r.nodeIsGrabbable( this );
             } );
 
             addNodesToDrag( selectedNodes, { addToList: draggedEles } );

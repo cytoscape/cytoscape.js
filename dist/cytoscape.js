@@ -2,7 +2,7 @@
 
 /*!
 
-Cytoscape.js snapshot-8900fd5ce6-1466536684807 (MIT licensed)
+Cytoscape.js snapshot-564e9ad5ee-1466537151217 (MIT licensed)
 
 Copyright (c) The Cytoscape Consortium
 
@@ -13309,10 +13309,9 @@ BRp.findEdgeControlPoints = function( edges ){
 
       var curveStyle = edge.pstyle( 'curve-style' ).value;
       var ctrlptDists = edge.pstyle( 'control-point-distances' );
-
-      /* loop dir and sweep defaults match previous behavior of 90 degree sweep to the northwest */
-      var loopDir = edge.pstyle('loop-direction') ? edge.pstyle('loop-direction').pfValue : -Math.PI * 3 / 4;
-      var loopSwp = edge.pstyle('loop-sweep') ? edge.pstyle('loop-sweep').pfValue : -Math.PI / 2;
+      
+      var loopDir = edge.pstyle('loop-direction').pfValue;
+      var loopSwp = edge.pstyle('loop-sweep').pfValue;
 
       var ctrlptWs = edge.pstyle( 'control-point-weights' );
       var bezierN = ctrlptDists && ctrlptWs ? Math.min( ctrlptDists.value.length, ctrlptWs.value.length ) : 1;
@@ -26932,7 +26931,7 @@ util.debounce = function( func, wait, options ){ // ported lodash debounce funct
 module.exports = util;
 
 },{"../is":83,"../window":107}],106:[function(_dereq_,module,exports){
-module.exports="snapshot-8900fd5ce6-1466536684807"
+module.exports="snapshot-564e9ad5ee-1466537151217"
 },{}],107:[function(_dereq_,module,exports){
 module.exports = ( typeof window === 'undefined' ? null : window );
 

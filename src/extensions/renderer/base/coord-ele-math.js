@@ -1339,8 +1339,8 @@ BRp.findEdgeControlPoints = function( edges ){
 
       var curveStyle = edge.pstyle( 'curve-style' ).value;
       var ctrlptDists = edge.pstyle( 'control-point-distances' );
-      var loopDir = edge.pstyle('loop-direction') ? edge.pstyle('loop-direction').value : -135; // defaults match previous behavior
-      var loopSwp = edge.pstyle('loop-sweep') ? edge.pstyle('loop-sweep').value : -90;         // looping to northwest
+      var loopDir = edge.pstyle('loop-direction') ? edge.pstyle('loop-direction').value : '-135deg'; // defaults match previous behavior
+      var loopSwp = edge.pstyle('loop-sweep') ? edge.pstyle('loop-sweep').value : '-90deg';         // looping to northwest
 
       var ctrlptWs = edge.pstyle( 'control-point-weights' );
       var bezierN = ctrlptDists && ctrlptWs ? Math.min( ctrlptDists.value.length, ctrlptWs.value.length ) : 1;

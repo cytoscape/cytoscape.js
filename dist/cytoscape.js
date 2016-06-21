@@ -2,7 +2,7 @@
 
 /*!
 
-Cytoscape.js snapshot-ec44bd1221-1466490057783 (MIT licensed)
+Cytoscape.js snapshot-10515b83de-1466493748141 (MIT licensed)
 
 Copyright (c) The Cytoscape Consortium
 
@@ -13309,8 +13309,8 @@ BRp.findEdgeControlPoints = function( edges ){
 
       var curveStyle = edge.pstyle( 'curve-style' ).value;
       var ctrlptDists = edge.pstyle( 'control-point-distances' );
-      var loopDir = edge.pstyle('loop-direction') ? edge.pstyle('loop-direction').value : -135; // defaults match previous behavior
-      var loopSwp = edge.pstyle('loop-sweep') ? edge.pstyle('loop-sweep').value : -90;         // looping to northwest
+      var loopDir = edge.pstyle('loop-direction') ? edge.pstyle('loop-direction').value : '-135deg'; // defaults match previous behavior
+      var loopSwp = edge.pstyle('loop-sweep') ? edge.pstyle('loop-sweep').value : '-90deg';         // looping to northwest
 
       var ctrlptWs = edge.pstyle( 'control-point-weights' );
       var bezierN = ctrlptDists && ctrlptWs ? Math.min( ctrlptDists.value.length, ctrlptWs.value.length ) : 1;
@@ -24922,8 +24922,6 @@ var styfn = {};
     lineStyle: { enums: [ 'solid', 'dotted', 'dashed' ] },
     borderStyle: { enums: [ 'solid', 'dotted', 'dashed', 'double' ] },
     curveStyle: { enums: [ 'bezier', 'unbundled-bezier', 'haystack', 'segments' ] },
-    loopDirection: { number: true },
-    loopSweep: { number: true },
     fontFamily: { regex: '^([\\w- \\"]+(?:\\s*,\\s*[\\w- \\"]+)*)$' },
     fontVariant: { enums: [ 'small-caps', 'normal' ] },
     fontStyle: { enums: [ 'italic', 'normal', 'oblique' ] },
@@ -25251,8 +25249,8 @@ styfn.getDefaultProperties = util.memoize( function(){
     'transition-duration': 0,
     'transition-delay': 0,
     'transition-timing-function': 'linear',
-    'loop-direction': '-135',
-    'loop-sweep': '-90',
+    'loop-direction': '-135deg',
+    'loop-sweep': '-90deg',
 
     // node props
     'background-blacken': 0,
@@ -26934,7 +26932,7 @@ util.debounce = function( func, wait, options ){ // ported lodash debounce funct
 module.exports = util;
 
 },{"../is":83,"../window":107}],106:[function(_dereq_,module,exports){
-module.exports="snapshot-ec44bd1221-1466490057783"
+module.exports="snapshot-10515b83de-1466493748141"
 },{}],107:[function(_dereq_,module,exports){
 module.exports = ( typeof window === 'undefined' ? null : window );
 

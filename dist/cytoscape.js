@@ -2,7 +2,7 @@
 
 /*!
 
-Cytoscape.js 2.7.2 (MIT licensed)
+Cytoscape.js 2.7.3 (MIT licensed)
 
 Copyright (c) The Cytoscape Consortium
 
@@ -2869,6 +2869,8 @@ fn = elesfn = ({
     var updated = [];
 
     function update( parent ){
+      if( !parent.isParent() ){ return; }
+
       var _p = parent._private;
       var children = parent.children();
       var includeLabels = parent.pstyle( 'compound-sizing-wrt-labels' ).value === 'include';
@@ -2908,7 +2910,7 @@ fn = elesfn = ({
     }
 
     // go up, level by level
-    var eles = this.parent();
+    var eles = this;
     while( eles.nonempty() ){
 
       // update each parent node in this level
@@ -2936,6 +2938,9 @@ var noninf = function( x ){
 };
 
 var updateBounds = function( b, x1, y1, x2, y2 ){
+  // don't update with zero area boxes
+  if( x2 - x1 === 0 || y2 - y1 === 0 ){ return; }
+
   b.x1 = x1 < b.x1 ? x1 : b.x1;
   b.x2 = x2 > b.x2 ? x2 : b.x2;
   b.y1 = y1 < b.y1 ? y1 : b.y1;
@@ -3309,7 +3314,9 @@ var boundingBoxImpl = function( ele, options ){
   bounds.h = noninf( bounds.y2 - bounds.y1 );
 
   // expand bounds by 1 because antialiasing can increase the visual/effective size by 1 on all sides
-  math.expandBoundingBox( bounds, 1 );
+  if( bounds.w > 0 && bounds.h > 0 && displayed ){
+    math.expandBoundingBox( bounds, 1 );
+  }
 
   return bounds;
 };
@@ -4360,6 +4367,9 @@ elesfn.restore = function( notifyRenderer ){
     var _private = ele._private;
     var data = _private.data;
 
+    // the traversal cache should start fresh when ele is added
+    _private.traversalCache = null;
+
     // set id and validate
     if( data.id === undefined ){
       data.id = idFactory.generate( cy, ele );
@@ -4615,12 +4625,22 @@ elesfn.remove = function( notifyRenderer ){
     }
   }
 
+  var alteredParents = [];
+  alteredParents.ids = {};
+
   function removeChildRef( parent, ele ){
     ele = ele[0];
     parent = parent[0];
+
     var children = parent._private.children;
+    var pid = parent.id();
 
     util.removeFromArray( children, ele );
+
+    if( !alteredParents.ids[ pid ] ){
+      alteredParents.ids[ pid ] = true;
+      alteredParents.push( parent );
+    }
   }
 
   // remove from core pool
@@ -4678,20 +4698,12 @@ elesfn.remove = function( notifyRenderer ){
     removedElements.trigger( 'remove' );
   }
 
-  // check for empty remaining parent nodes
-  var checkedParentId = {};
-  for( var i = 0; i < elesToRemove.length; i++ ){
-    var ele = elesToRemove[ i ];
-    var isNode = ele._private.group === 'nodes';
-    var parentId = ele._private.data.parent;
+  // the parents who were modified by the removal need their style updated
+  for( var i = 0; i < alteredParents.length; i++ ){
+    var ele = alteredParents[ i ];
 
-    if( isNode && parentId !== undefined && !checkedParentId[ parentId ] ){
-      checkedParentId[ parentId ] = true;
-      var parent = cy.getElementById( parentId );
-
-      if( parent && parent.length !== 0 && !parent._private.removed && parent.children().length === 0 ){
-        parent.updateStyle();
-      }
+    if( !ele.removed() ){
+      ele.updateStyle();
     }
   }
 
@@ -4742,9 +4754,9 @@ elesfn.move = function( struct ){
           json.data.parent = parentId === null ? undefined : parentId;
         }
       }
-    }
 
-    return cy.add( jsons ).union( descsEtc.restore() );
+      return cy.add( jsons ).union( descsEtc.restore() );
+    }
   }
 
   return this; // if nothing done
@@ -12068,8 +12080,8 @@ BRp.recalculateRenderedStyle = function( eles, useCache ){
     var _p = ele._private;
     var rstyle = _p.rstyle;
 
-    // only update if dirty
-    if( useCache && rstyle.clean ){ continue; }
+    // only update if dirty and in graph
+    if( (useCache && rstyle.clean) || ele.removed() ){ continue; }
 
     if( _p.group === 'nodes' ){
       var pos = _p.position;
@@ -14244,17 +14256,21 @@ BRp.binder = function( tgt ){
 };
 
 BRp.nodeIsDraggable = function( node ){
-  if( node && node.isNode()
-    && node.pstyle( 'opacity' ).value !== 0
-    && node.pstyle( 'visibility' ).value == 'visible'
-    && node.pstyle( 'display' ).value == 'element'
+  return (
+    node
+    && node.isNode()
     && !node.locked()
-    && node.grabbable() ){
+    && node.grabbable()
+  );
+};
 
-    return true;
-  }
-
-  return false;
+BRp.nodeIsGrabbable = function( node ){
+  return (
+    this.nodeIsDraggable( node )
+    && node.pstyle( 'opacity' ).value !== 0
+    && node.pstyle( 'visibility' ).value === 'visible'
+    && node.pstyle( 'display' ).value === 'element'
+  );
 };
 
 BRp.load = function(){
@@ -14616,7 +14632,7 @@ BRp.load = function(){
         // If something is under the cursor and it is draggable, prepare to grab it
         if( near != null ){
 
-          if( r.nodeIsDraggable( near ) ){
+          if( r.nodeIsGrabbable( near ) ){
 
             var grabEvent = new Event( e, {
               type: 'grab',
@@ -14635,7 +14651,7 @@ BRp.load = function(){
             } else if( near.selected() ){
               draggedElements = r.dragData.possibleDragElements = [  ];
 
-              var selectedNodes = cy.$( function(){ return this.isNode() && this.selected() && r.nodeIsDraggable( this ); } );
+              var selectedNodes = cy.$( function(){ return this.isNode() && this.selected() && r.nodeIsGrabbable( this ); } );
 
               addNodesToDrag( selectedNodes, { addToList: draggedElements } );
 
@@ -14884,7 +14900,7 @@ BRp.load = function(){
     } else {
       if( down && down.isEdge() && down.active() ){ down.unactivate(); }
 
-      if( near != last ){
+      if( ( !down || !down.grabbed() ) && near != last ){
 
         if( last ){
           triggerEvents( last, [ 'mouseout', 'tapdragout' ], e, {
@@ -15361,7 +15377,7 @@ BRp.load = function(){
         r.touchData.start = near;
         r.touchData.starts = nears;
 
-        if( r.nodeIsDraggable( near ) ){
+        if( r.nodeIsGrabbable( near ) ){
 
           var draggedEles = r.dragData.touchDragEles = [];
 
@@ -15372,7 +15388,7 @@ BRp.load = function(){
             // reset drag elements, since near will be added again
 
             var selectedNodes = cy.$( function(){
-              return this.selected() && r.nodeIsDraggable( this );
+              return this.selected() && r.nodeIsGrabbable( this );
             } );
 
             addNodesToDrag( selectedNodes, { addToList: draggedEles } );
@@ -15671,7 +15687,7 @@ BRp.load = function(){
       if( e.touches[1] ){ var pos = r.projectIntoViewport( e.touches[1].clientX, e.touches[1].clientY ); now[2] = pos[0]; now[3] = pos[1]; }
       if( e.touches[2] ){ var pos = r.projectIntoViewport( e.touches[2].clientX, e.touches[2].clientY ); now[4] = pos[0]; now[5] = pos[1]; }
 
-    } else if( capture && e.touches[0] ){
+    } else if( e.touches[0] ){
       var start = r.touchData.start;
       var last = r.touchData.last;
       var near;
@@ -15680,12 +15696,12 @@ BRp.load = function(){
         near = r.findNearestElement( now[0], now[1], true, true );
       }
 
-      if( start != null ){
+      if( capture && start != null ){
         e.preventDefault();
       }
 
       // dragging nodes
-      if( start != null && r.nodeIsDraggable( start ) ){
+      if( capture && start != null && r.nodeIsDraggable( start ) ){
 
         if( isOverThresholdDrag ){ // then dragging can happen
           var draggedEles = r.dragData.touchDragEles;
@@ -15713,7 +15729,7 @@ BRp.load = function(){
 
                 var dragDelta = r.touchData.dragDelta;
 
-                if( updatePos && is.number( dragDelta[0] ) && is.number( dragDelta[1] ) ){
+                if( updatePos && dragDelta && is.number( dragDelta[0] ) && is.number( dragDelta[1] ) ){
                   dPos.x += dragDelta[0];
                   dPos.y += dragDelta[1];
                 }
@@ -15759,7 +15775,7 @@ BRp.load = function(){
           cyPosition: { x: now[0], y: now[1] }
         } );
 
-        if( near != last ){
+        if( ( !start || !start.grabbed() ) && near != last ){
           if( last ){ last.trigger( new Event( e, { type: 'tapdragout', cyPosition: { x: now[0], y: now[1] } } ) ); }
           if( near ){ near.trigger( new Event( e, { type: 'tapdragover', cyPosition: { x: now[0], y: now[1] } } ) ); }
         }
@@ -15768,12 +15784,14 @@ BRp.load = function(){
       }
 
       // check to cancel taphold
-      for( var i = 0;i < now.length;i++ ){
-        if( now[ i ]
-          && r.touchData.startPosition[ i ]
-          && isOverThresholdDrag ){
+      if( capture ){
+        for( var i = 0; i < now.length; i++ ){
+          if( now[ i ]
+            && r.touchData.startPosition[ i ]
+            && isOverThresholdDrag ){
 
-          r.touchData.singleTouchMoved = true;
+            r.touchData.singleTouchMoved = true;
+          }
         }
       }
 
@@ -15971,7 +15989,7 @@ BRp.load = function(){
           start.trigger( 'free' );
         }
 
-        triggerEvents( start, [ 'touchend', 'tapend', 'vmouseup' ], e, {
+        triggerEvents( start, [ 'touchend', 'tapend', 'vmouseup', 'tapdragout' ], e, {
           cyPosition: { x: now[0], y: now[1] }
         } );
 
@@ -15982,7 +16000,7 @@ BRp.load = function(){
       } else {
         var near = r.findNearestElement( now[0], now[1], true, true );
 
-        triggerEvents( near, [ 'touchend', 'tapend', 'vmouseup' ], e, {
+        triggerEvents( near, [ 'touchend', 'tapend', 'vmouseup', 'tapdragout' ], e, {
           cyPosition: { x: now[0], y: now[1] }
         } );
 
@@ -24427,6 +24445,12 @@ var styfn = {};
 // a caching layer for property parsing
 styfn.parse = function( name, value, propIsBypass, propIsFlat ){
   var self = this;
+
+  // function values can't be cached in all cases, and there isn't much benefit of caching them anyway
+  if( is.fn( value ) ){
+    return self.parseImpl( name, value, propIsBypass, propIsFlat );
+  }
+
   var argHash = [ name, value, propIsBypass, propIsFlat ].join( '$' );
   var propCache = self.propCache = self.propCache || {};
   var ret;
@@ -26865,7 +26889,7 @@ util.debounce = function( func, wait, options ){ // ported lodash debounce funct
 module.exports = util;
 
 },{"../is":83,"../window":107}],106:[function(_dereq_,module,exports){
-module.exports="2.7.2"
+module.exports="2.7.3"
 },{}],107:[function(_dereq_,module,exports){
 module.exports = ( typeof window === 'undefined' ? null : window );
 

@@ -2,7 +2,7 @@
 
 /*!
 
-Cytoscape.js snapshot-8225838675-1466288954151 (MIT licensed)
+Cytoscape.js snapshot-ec44bd1221-1466490057783 (MIT licensed)
 
 Copyright (c) The Cytoscape Consortium
 
@@ -2869,6 +2869,8 @@ fn = elesfn = ({
     var updated = [];
 
     function update( parent ){
+      if( !parent.isParent() ){ return; }
+
       var _p = parent._private;
       var children = parent.children();
       var includeLabels = parent.pstyle( 'compound-sizing-wrt-labels' ).value === 'include';
@@ -2908,7 +2910,7 @@ fn = elesfn = ({
     }
 
     // go up, level by level
-    var eles = this.parent();
+    var eles = this;
     while( eles.nonempty() ){
 
       // update each parent node in this level
@@ -2936,6 +2938,9 @@ var noninf = function( x ){
 };
 
 var updateBounds = function( b, x1, y1, x2, y2 ){
+  // don't update with zero area boxes
+  if( x2 - x1 === 0 || y2 - y1 === 0 ){ return; }
+
   b.x1 = x1 < b.x1 ? x1 : b.x1;
   b.x2 = x2 > b.x2 ? x2 : b.x2;
   b.y1 = y1 < b.y1 ? y1 : b.y1;
@@ -3309,7 +3314,9 @@ var boundingBoxImpl = function( ele, options ){
   bounds.h = noninf( bounds.y2 - bounds.y1 );
 
   // expand bounds by 1 because antialiasing can increase the visual/effective size by 1 on all sides
-  math.expandBoundingBox( bounds, 1 );
+  if( bounds.w > 0 && bounds.h > 0 && displayed ){
+    math.expandBoundingBox( bounds, 1 );
+  }
 
   return bounds;
 };
@@ -4360,6 +4367,9 @@ elesfn.restore = function( notifyRenderer ){
     var _private = ele._private;
     var data = _private.data;
 
+    // the traversal cache should start fresh when ele is added
+    _private.traversalCache = null;
+
     // set id and validate
     if( data.id === undefined ){
       data.id = idFactory.generate( cy, ele );
@@ -4615,12 +4625,22 @@ elesfn.remove = function( notifyRenderer ){
     }
   }
 
+  var alteredParents = [];
+  alteredParents.ids = {};
+
   function removeChildRef( parent, ele ){
     ele = ele[0];
     parent = parent[0];
+
     var children = parent._private.children;
+    var pid = parent.id();
 
     util.removeFromArray( children, ele );
+
+    if( !alteredParents.ids[ pid ] ){
+      alteredParents.ids[ pid ] = true;
+      alteredParents.push( parent );
+    }
   }
 
   // remove from core pool
@@ -4678,20 +4698,12 @@ elesfn.remove = function( notifyRenderer ){
     removedElements.trigger( 'remove' );
   }
 
-  // check for empty remaining parent nodes
-  var checkedParentId = {};
-  for( var i = 0; i < elesToRemove.length; i++ ){
-    var ele = elesToRemove[ i ];
-    var isNode = ele._private.group === 'nodes';
-    var parentId = ele._private.data.parent;
+  // the parents who were modified by the removal need their style updated
+  for( var i = 0; i < alteredParents.length; i++ ){
+    var ele = alteredParents[ i ];
 
-    if( isNode && parentId !== undefined && !checkedParentId[ parentId ] ){
-      checkedParentId[ parentId ] = true;
-      var parent = cy.getElementById( parentId );
-
-      if( parent && parent.length !== 0 && !parent._private.removed && parent.children().length === 0 ){
-        parent.updateStyle();
-      }
+    if( !ele.removed() ){
+      ele.updateStyle();
     }
   }
 
@@ -4742,9 +4754,9 @@ elesfn.move = function( struct ){
           json.data.parent = parentId === null ? undefined : parentId;
         }
       }
-    }
 
-    return cy.add( jsons ).union( descsEtc.restore() );
+      return cy.add( jsons ).union( descsEtc.restore() );
+    }
   }
 
   return this; // if nothing done
@@ -4894,7 +4906,7 @@ var elesfn = ({
       var depth = _p.data.parent ? ele.parents().size() : 0;
 
       if( !ele.isParent() ){
-        return Number.MAX_VALUE; // childless nodes always on top
+        return Number.MAX_SAFE_INTEGER - 1; // childless nodes always on top
       }
 
       return depth;
@@ -5927,47 +5939,58 @@ module.exports = elesfn;
 },{"../is":83,"../util":100}],32:[function(_dereq_,module,exports){
 'use strict';
 
+/**
+ *  Elements are drawn in a specific order based on compound depth (low to high), the element type (nodes above edges),
+ *  and z-index (low to high).  These styles affect how this applies:
+ *
+ *  z-compound-depth: May be `bottom | orphan | auto | top`.  The first drawn is `bottom`, then `orphan` which is the
+ *      same depth as the root of the compound graph, followed by the default value `auto` which draws in order from
+ *      root to leaves of the compound graph.  The last drawn is `top`.
+ *  z-index-compare: May be `auto | manual`.  The default value is `auto` which always draws edges under nodes.
+ *      `manual` ignores this convention and draws based on the `z-index` value setting.
+ *  z-index: An integer value that affects the relative draw order of elements.  In general, an element with a higher
+ *      `z-index` will be drawn on top of an element with a lower `z-index`.
+ */
 var zIndexSort = function( a, b ){
   var cy = a.cy();
-  var zDiff = a.pstyle( 'z-index' ).value - b.pstyle( 'z-index' ).value;
-  var depthA = 0;
-  var depthB = 0;
   var hasCompoundNodes = cy.hasCompoundNodes();
-  var aIsNode = a.isNode();
-  var aIsEdge = !aIsNode;
-  var bIsNode = b.isNode();
-  var bIsEdge = !bIsNode;
 
-  // no need to calculate element depth if there is no compound node
-  if( hasCompoundNodes ){
-    depthA = a.zDepth();
-    depthB = b.zDepth();
-  }
-
-  var depthDiff = depthA - depthB;
-  var sameDepth = depthDiff === 0;
-
-  if( sameDepth ){
-
-    if( aIsNode && bIsEdge ){
-      return 1; // 'a' is a node, it should be drawn later
-
-    } else if( aIsEdge && bIsNode ){
-      return -1; // 'a' is an edge, it should be drawn first
-
-    } else { // both nodes or both edges
-      if( zDiff === 0 ){ // same z-index => compare indices in the core (order added to graph w/ last on top)
-        return a.poolIndex() - b.poolIndex();
-      } else {
-        return zDiff;
-      }
+  function getDepth(ele){
+    var style = ele.pstyle( 'z-compound-depth' );
+    if ( style.value === 'auto' ){
+      return hasCompoundNodes ? ele.zDepth() : 0
+    } else if ( style.value === 'bottom' ){
+      return -1
+    } else if ( style.value === 'top' ){
+      return Number.MAX_SAFE_INTEGER
     }
-
-  // elements on different level
-  } else {
-    return depthDiff; // deeper element should be drawn later
+    // 'orphan'
+    return 0
+  }
+  var depthDiff = getDepth(a) - getDepth(b);
+  if ( depthDiff !== 0 ){
+    return depthDiff
   }
 
+  function getEleDepth(ele){
+    var style = ele.pstyle( 'z-index-compare' );
+    if ( style.value === 'auto' ){
+      return ele.isNode() ? 1 : 0
+    }
+    // 'manual'
+    return 0
+  }
+  var eleDiff = getEleDepth(a) - getEleDepth(b);
+  if ( eleDiff !== 0 ){
+    return eleDiff
+  }
+
+  var zDiff = a.pstyle( 'z-index' ).value - b.pstyle( 'z-index' ).value;
+  if ( zDiff !== 0 ){
+    return zDiff
+  }
+  // compare indices in the core (order added to graph w/ last on top)
+  return a.poolIndex() - b.poolIndex();
 };
 
 module.exports = zIndexSort;
@@ -12068,8 +12091,8 @@ BRp.recalculateRenderedStyle = function( eles, useCache ){
     var _p = ele._private;
     var rstyle = _p.rstyle;
 
-    // only update if dirty
-    if( useCache && rstyle.clean ){ continue; }
+    // only update if dirty and in graph
+    if( (useCache && rstyle.clean) || ele.removed() ){ continue; }
 
     if( _p.group === 'nodes' ){
       var pos = _p.position;
@@ -12337,7 +12360,7 @@ BRp.findNearestElements = function( x, y, visibleElementsOnly, isTouch ){
     var rotation = ele.pstyle( prefixDash + 'text-rotation' );
 
     // adjust bb w/ angle
-    if( rotation.strValue === 'autorotate' || rotation.pfValue !== 0 ){
+    if( rotation.strValue === 'autorotate' || !!rotation.pfValue ){
 
       var rstyle = _p.rstyle;
       var bw = ele.pstyle('text-border-width').pfValue;
@@ -13018,7 +13041,7 @@ BRp.getLabelText = function( ele, prefix ){
 BRp.calculateLabelDimensions = function( ele, text, extraKey ){
   var r = this;
 
-  var cacheKey = ele._private.labelKey;
+  var cacheKey = ele._private.labelStyleKey + '$@$' + text;
 
   if( extraKey ){
     cacheKey += '$@$' + extraKey;
@@ -14266,17 +14289,21 @@ BRp.binder = function( tgt ){
 };
 
 BRp.nodeIsDraggable = function( node ){
-  if( node && node.isNode()
-    && node.pstyle( 'opacity' ).value !== 0
-    && node.pstyle( 'visibility' ).value == 'visible'
-    && node.pstyle( 'display' ).value == 'element'
+  return (
+    node
+    && node.isNode()
     && !node.locked()
-    && node.grabbable() ){
+    && node.grabbable()
+  );
+};
 
-    return true;
-  }
-
-  return false;
+BRp.nodeIsGrabbable = function( node ){
+  return (
+    this.nodeIsDraggable( node )
+    && node.pstyle( 'opacity' ).value !== 0
+    && node.pstyle( 'visibility' ).value === 'visible'
+    && node.pstyle( 'display' ).value === 'element'
+  );
 };
 
 BRp.load = function(){
@@ -14638,7 +14665,7 @@ BRp.load = function(){
         // If something is under the cursor and it is draggable, prepare to grab it
         if( near != null ){
 
-          if( r.nodeIsDraggable( near ) ){
+          if( r.nodeIsGrabbable( near ) ){
 
             var grabEvent = new Event( e, {
               type: 'grab',
@@ -14657,7 +14684,7 @@ BRp.load = function(){
             } else if( near.selected() ){
               draggedElements = r.dragData.possibleDragElements = [  ];
 
-              var selectedNodes = cy.$( function(){ return this.isNode() && this.selected() && r.nodeIsDraggable( this ); } );
+              var selectedNodes = cy.$( function(){ return this.isNode() && this.selected() && r.nodeIsGrabbable( this ); } );
 
               addNodesToDrag( selectedNodes, { addToList: draggedElements } );
 
@@ -14906,7 +14933,7 @@ BRp.load = function(){
     } else {
       if( down && down.isEdge() && down.active() ){ down.unactivate(); }
 
-      if( near != last ){
+      if( ( !down || !down.grabbed() ) && near != last ){
 
         if( last ){
           triggerEvents( last, [ 'mouseout', 'tapdragout' ], e, {
@@ -15383,7 +15410,7 @@ BRp.load = function(){
         r.touchData.start = near;
         r.touchData.starts = nears;
 
-        if( r.nodeIsDraggable( near ) ){
+        if( r.nodeIsGrabbable( near ) ){
 
           var draggedEles = r.dragData.touchDragEles = [];
 
@@ -15394,7 +15421,7 @@ BRp.load = function(){
             // reset drag elements, since near will be added again
 
             var selectedNodes = cy.$( function(){
-              return this.selected() && r.nodeIsDraggable( this );
+              return this.selected() && r.nodeIsGrabbable( this );
             } );
 
             addNodesToDrag( selectedNodes, { addToList: draggedEles } );
@@ -15693,7 +15720,7 @@ BRp.load = function(){
       if( e.touches[1] ){ var pos = r.projectIntoViewport( e.touches[1].clientX, e.touches[1].clientY ); now[2] = pos[0]; now[3] = pos[1]; }
       if( e.touches[2] ){ var pos = r.projectIntoViewport( e.touches[2].clientX, e.touches[2].clientY ); now[4] = pos[0]; now[5] = pos[1]; }
 
-    } else if( capture && e.touches[0] ){
+    } else if( e.touches[0] ){
       var start = r.touchData.start;
       var last = r.touchData.last;
       var near;
@@ -15702,12 +15729,12 @@ BRp.load = function(){
         near = r.findNearestElement( now[0], now[1], true, true );
       }
 
-      if( start != null ){
+      if( capture && start != null ){
         e.preventDefault();
       }
 
       // dragging nodes
-      if( start != null && r.nodeIsDraggable( start ) ){
+      if( capture && start != null && r.nodeIsDraggable( start ) ){
 
         if( isOverThresholdDrag ){ // then dragging can happen
           var draggedEles = r.dragData.touchDragEles;
@@ -15735,7 +15762,7 @@ BRp.load = function(){
 
                 var dragDelta = r.touchData.dragDelta;
 
-                if( updatePos && is.number( dragDelta[0] ) && is.number( dragDelta[1] ) ){
+                if( updatePos && dragDelta && is.number( dragDelta[0] ) && is.number( dragDelta[1] ) ){
                   dPos.x += dragDelta[0];
                   dPos.y += dragDelta[1];
                 }
@@ -15781,7 +15808,7 @@ BRp.load = function(){
           cyPosition: { x: now[0], y: now[1] }
         } );
 
-        if( near != last ){
+        if( ( !start || !start.grabbed() ) && near != last ){
           if( last ){ last.trigger( new Event( e, { type: 'tapdragout', cyPosition: { x: now[0], y: now[1] } } ) ); }
           if( near ){ near.trigger( new Event( e, { type: 'tapdragover', cyPosition: { x: now[0], y: now[1] } } ) ); }
         }
@@ -15790,12 +15817,14 @@ BRp.load = function(){
       }
 
       // check to cancel taphold
-      for( var i = 0;i < now.length;i++ ){
-        if( now[ i ]
-          && r.touchData.startPosition[ i ]
-          && isOverThresholdDrag ){
+      if( capture ){
+        for( var i = 0; i < now.length; i++ ){
+          if( now[ i ]
+            && r.touchData.startPosition[ i ]
+            && isOverThresholdDrag ){
 
-          r.touchData.singleTouchMoved = true;
+            r.touchData.singleTouchMoved = true;
+          }
         }
       }
 
@@ -15993,7 +16022,7 @@ BRp.load = function(){
           start.trigger( 'free' );
         }
 
-        triggerEvents( start, [ 'touchend', 'tapend', 'vmouseup' ], e, {
+        triggerEvents( start, [ 'touchend', 'tapend', 'vmouseup', 'tapdragout' ], e, {
           cyPosition: { x: now[0], y: now[1] }
         } );
 
@@ -16004,7 +16033,7 @@ BRp.load = function(){
       } else {
         var near = r.findNearestElement( now[0], now[1], true, true );
 
-        triggerEvents( near, [ 'touchend', 'tapend', 'vmouseup' ], e, {
+        triggerEvents( near, [ 'touchend', 'tapend', 'vmouseup', 'tapdragout' ], e, {
           cyPosition: { x: now[0], y: now[1] }
         } );
 
@@ -20896,7 +20925,7 @@ var cytoscape = function( options ){ // jshint ignore:line
 };
 
 // replaced by build system
-cytoscape.version = _dereq_('./version');
+cytoscape.version = _dereq_('./version.json');
 
 // try to register w/ jquery
 if( window && window.jQuery ){
@@ -20915,7 +20944,7 @@ cytoscape.fabric = cytoscape.Fabric = Fabric;
 
 module.exports = cytoscape;
 
-},{"./-preamble":1,"./core":37,"./extension":46,"./fabric":80,"./is":83,"./jquery-plugin":84,"./stylesheet":97,"./thread":98,"./version":106,"./window":107}],83:[function(_dereq_,module,exports){
+},{"./-preamble":1,"./core":37,"./extension":46,"./fabric":80,"./is":83,"./jquery-plugin":84,"./stylesheet":97,"./thread":98,"./version.json":106,"./window":107}],83:[function(_dereq_,module,exports){
 'use strict';
 
 var window = _dereq_( './window' );
@@ -23526,6 +23555,7 @@ styfn.updateStyleHints = function(ele){
   var wrap = ele.pstyle( 'text-wrap' ).strValue;
   var wrapW = ele.pstyle( 'text-max-width' ).pfValue;
   var labelStyleKey = fStyle + '$' + size + '$' + family + '$' + weight + '$' + transform + '$' + valign + '$' + halign + '$' + oWidth + '$' + wrap + '$' + wrapW;
+  _p.labelStyleKey = labelStyleKey;
   _p.sourceLabelKey = labelStyleKey + '$' + srcContent;
   _p.targetLabelKey = labelStyleKey + '$' + tgtContent;
   _p.labelKey = labelStyleKey + '$' + content;
@@ -24448,6 +24478,12 @@ var styfn = {};
 // a caching layer for property parsing
 styfn.parse = function( name, value, propIsBypass, propIsFlat ){
   var self = this;
+
+  // function values can't be cached in all cases, and there isn't much benefit of caching them anyway
+  if( is.fn( value ) ){
+    return self.parseImpl( name, value, propIsBypass, propIsFlat );
+  }
+
   var argHash = [ name, value, propIsBypass, propIsFlat ].join( '$' );
   var propCache = self.propCache = self.propCache || {};
   var ret;
@@ -24902,6 +24938,8 @@ var styfn = {};
     arrowFill: { enums: [ 'filled', 'hollow' ] },
     display: { enums: [ 'element', 'none' ] },
     visibility: { enums: [ 'hidden', 'visible' ] },
+    zCompoundDepth: { enums: [ 'bottom', 'orphan', 'auto', 'top' ] },
+    zIndexCompare: { enums: [ 'auto', 'manual' ] },
     valign: { enums: [ 'top', 'center', 'bottom' ] },
     halign: { enums: [ 'left', 'center', 'right' ] },
     text: { string: true },
@@ -24995,6 +25033,8 @@ var styfn = {};
     { name: 'display', type: t.display },
     { name: 'visibility', type: t.visibility },
     { name: 'opacity', type: t.zeroOneNumber },
+    { name: 'z-compound-depth', type: t.zCompoundDepth },
+    { name: 'z-index-compare', type: t.zIndexCompare },
     { name: 'z-index', type: t.nonNegativeInt },
 
     // overlays
@@ -25067,8 +25107,8 @@ var styfn = {};
     { name: 'segment-distances', type: t.bidirectionalSizes },
     { name: 'segment-weights', type: t.numbers },
     { name: 'edge-distances', type: t.edgeDistances },
-    { name: 'loop-direction', type: t.loopDirection },
-    { name: 'loop-sweep', type: t.loopSweep },
+    { name: 'loop-direction', type: t.angle },
+    { name: 'loop-sweep', type: t.angle },
 
     // these are just for the core
     { name: 'selection-box-color', type: t.color },
@@ -25180,6 +25220,8 @@ styfn.getDefaultProperties = util.memoize( function(){
     'visibility': 'visible',
     'display': 'element',
     'opacity': 1,
+    'z-compound-depth': 'auto',
+    'z-index-compare': 'auto',
     'z-index': 0,
     'label': '',
     'text-margin-x': 0,
@@ -26892,7 +26934,7 @@ util.debounce = function( func, wait, options ){ // ported lodash debounce funct
 module.exports = util;
 
 },{"../is":83,"../window":107}],106:[function(_dereq_,module,exports){
-module.exports="snapshot-8225838675-1466288954151"
+module.exports="snapshot-ec44bd1221-1466490057783"
 },{}],107:[function(_dereq_,module,exports){
 module.exports = ( typeof window === 'undefined' ? null : window );
 

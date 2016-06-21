@@ -2,7 +2,7 @@
 
 /*!
 
-Cytoscape.js snapshot-10515b83de-1466493748141 (MIT licensed)
+Cytoscape.js snapshot-8900fd5ce6-1466536684807 (MIT licensed)
 
 Copyright (c) The Cytoscape Consortium
 
@@ -13309,8 +13309,10 @@ BRp.findEdgeControlPoints = function( edges ){
 
       var curveStyle = edge.pstyle( 'curve-style' ).value;
       var ctrlptDists = edge.pstyle( 'control-point-distances' );
-      var loopDir = edge.pstyle('loop-direction') ? edge.pstyle('loop-direction').value : '-135deg'; // defaults match previous behavior
-      var loopSwp = edge.pstyle('loop-sweep') ? edge.pstyle('loop-sweep').value : '-90deg';         // looping to northwest
+
+      /* loop dir and sweep defaults match previous behavior of 90 degree sweep to the northwest */
+      var loopDir = edge.pstyle('loop-direction') ? edge.pstyle('loop-direction').pfValue : -Math.PI * 3 / 4;
+      var loopSwp = edge.pstyle('loop-sweep') ? edge.pstyle('loop-sweep').pfValue : -Math.PI / 2;
 
       var ctrlptWs = edge.pstyle( 'control-point-weights' );
       var bezierN = ctrlptDists && ctrlptWs ? Math.min( ctrlptDists.value.length, ctrlptWs.value.length ) : 1;
@@ -13388,10 +13390,8 @@ BRp.findEdgeControlPoints = function( edges ){
           loopDist = ctrlptDist;
         }
 
-        var ldr = loopDir * Math.PI / 180;
-        var lsr = loopSwp * Math.PI / 180;
-        var outAngle =  ldr - lsr / 2;
-        var inAngle  =  ldr + lsr / 2;
+        var outAngle =  loopDir - loopSwp / 2;
+        var inAngle  =  loopDir + loopSwp / 2;
 
         // increase by step size for overlapping loops, keyed on direction and sweep values
         var dc = String(loopDir + '_' + loopSwp);
@@ -26932,7 +26932,7 @@ util.debounce = function( func, wait, options ){ // ported lodash debounce funct
 module.exports = util;
 
 },{"../is":83,"../window":107}],106:[function(_dereq_,module,exports){
-module.exports="snapshot-10515b83de-1466493748141"
+module.exports="snapshot-8900fd5ce6-1466536684807"
 },{}],107:[function(_dereq_,module,exports){
 module.exports = ( typeof window === 'undefined' ? null : window );
 

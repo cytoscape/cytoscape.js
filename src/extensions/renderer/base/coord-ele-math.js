@@ -90,7 +90,7 @@ BRp.registerCalculationListeners = function(){
         fn( willDraw, elesToUpdate );
       } }
 
-      r.recalculateRenderedStyle( elesToUpdate );
+      r.recalculateRenderedStyle( elesToUpdate, false );
 
       for( var i = 0; i < elesToUpdate.length; i++ ){
         elesToUpdate[i]._private.rstyle.dirtyEvents = null;

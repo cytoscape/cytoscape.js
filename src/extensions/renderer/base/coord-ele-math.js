@@ -1315,6 +1315,17 @@ BRp.findEdgeControlPoints = function( edges ){
     var edge_p;
     var rs;
 
+    var dirCounts = {
+      'north': 0,
+      'west': 0,
+      'south': 0,
+      'east': 0,
+      'northwest': 0,
+      'southwest': 0,
+      'northeast': 0,
+      'southeast': 0
+    }
+
     for( var i = 0; i < pairEdges.length; i++ ){
       edge = pairEdges[ i ];
       edge_p = edge._private;
@@ -1328,6 +1339,10 @@ BRp.findEdgeControlPoints = function( edges ){
 
       var curveStyle = edge.pstyle( 'curve-style' ).value;
       var ctrlptDists = edge.pstyle( 'control-point-distances' );
+      
+      var loopDir = edge.pstyle('loop-direction').pfValue;
+      var loopSwp = edge.pstyle('loop-sweep').pfValue;
+
       var ctrlptWs = edge.pstyle( 'control-point-weights' );
       var bezierN = ctrlptDists && ctrlptWs ? Math.min( ctrlptDists.value.length, ctrlptWs.value.length ) : 1;
       var stepSize = edge.pstyle( 'control-point-step-size' ).pfValue;
@@ -1404,12 +1419,18 @@ BRp.findEdgeControlPoints = function( edges ){
           loopDist = ctrlptDist;
         }
 
-        rs.ctrlpts = [
-          srcPos.x,
-          srcPos.y - (1 + Math.pow( srcH, 1.12 ) / 100) * loopDist * (j / 3 + 1),
+        var outAngle =  loopDir - loopSwp / 2;
+        var inAngle  =  loopDir + loopSwp / 2;
 
-          srcPos.x - (1 + Math.pow( srcW, 1.12 ) / 100) * loopDist * (j / 3 + 1),
-          srcPos.y
+        // increase by step size for overlapping loops, keyed on direction and sweep values
+        var dc = String(loopDir + '_' + loopSwp);
+        j = dirCounts[dc] === undefined ? dirCounts[dc] = 0 : ++dirCounts[dc];
+
+        rs.ctrlpts = [
+          srcPos.x + Math.cos(outAngle) * 1.4 * loopDist * (j / 3 + 1),
+          srcPos.y + Math.sin(outAngle) * 1.4 * loopDist * (j / 3 + 1),
+          srcPos.x + Math.cos(inAngle) * 1.4 * loopDist * (j / 3 + 1),
+          srcPos.y + Math.sin(inAngle) * 1.4 * loopDist * (j / 3 + 1)
         ];
 
       } else if(

@@ -224,6 +224,8 @@ var styfn = {};
     { name: 'segment-distances', type: t.bidirectionalSizes },
     { name: 'segment-weights', type: t.numbers },
     { name: 'edge-distances', type: t.edgeDistances },
+    { name: 'loop-direction', type: t.angle },
+    { name: 'loop-sweep', type: t.angle },
 
     // these are just for the core
     { name: 'selection-box-color', type: t.color },
@@ -366,6 +368,8 @@ styfn.getDefaultProperties = util.memoize( function(){
     'transition-duration': 0,
     'transition-delay': 0,
     'transition-timing-function': 'linear',
+    'loop-direction': '-135deg',
+    'loop-sweep': '-90deg',
 
     // node props
     'background-blacken': 0,

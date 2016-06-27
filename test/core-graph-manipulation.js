@@ -288,6 +288,16 @@ describe('Core graph manipulation', function(){
       }) ).to.have.length(1);
     });
 
+    it('cy.$() returns immutible collection', function(){
+      var eles = cy.$();
+      var length = eles.length;
+
+      cy.add({ data: { id: 'foo' } });
+
+      expect( eles.length ).to.equal( length );
+      expect( eles.filter('#foo').empty() ).to.be.true;
+    });
+
   });
 
   describe('cy.json()', function(){

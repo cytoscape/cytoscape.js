@@ -81,8 +81,11 @@ util.extend = Object.assign != null ? Object.assign : function( tgt ){
 
   for( var i = 1; i < args.length; i++ ){
     var obj = args[ i ];
+    var keys = Object.keys( obj );
 
-    for( var k in obj ){
+    for( var j = 0; j < keys.length; j++ ){
+      var k = keys[j];
+
       tgt[ k ] = obj[ k ];
     }
   }

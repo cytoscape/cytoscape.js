@@ -54,9 +54,9 @@ var corefn = ({
 
     if( selector ){
       return eles.filter( selector );
+    } else {
+      return eles.spawnSelf();
     }
-
-    return eles;
   }
 
 });

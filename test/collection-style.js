@@ -217,6 +217,27 @@ describe('Collection style', function(){
       expect( n1.hasClass('bar') ).to.be.false;
     });
 
+    it('eles.classes() replaces classes (subset)', function(){
+      ['foo', 'bar', 'baz'].forEach(function( c ){ n1.addClass(c); });
+
+      n1.classes('foo');
+
+      expect( n1.hasClass('foo') ).to.be.true;
+      expect( n1.hasClass('bar') ).to.be.false;
+      expect( n1.hasClass('baz') ).to.be.false;
+    });
+
+    it('eles.classes() replaces classes (all different)', function(){
+      ['foo', 'bar', 'baz'].forEach(function( c ){ n1.addClass(c); });
+
+      n1.classes('bat');
+
+      expect( n1.hasClass('bat') ).to.be.true;
+      expect( n1.hasClass('foo') ).to.be.false;
+      expect( n1.hasClass('bar') ).to.be.false;
+      expect( n1.hasClass('baz') ).to.be.false;
+    });
+
   });
 
   describe('eles.animate() etc', function(){

@@ -85,7 +85,10 @@ styfn.getPropsList = function( propsObj ){
   var props = self.properties;
 
   if( style ){
-    for( var name in style ){
+    var names = Object.keys( style );
+
+    for( var i = 0; i < names.length; i++ ){
+      var name = names[i];
       var val = style[ name ];
       var prop = props[ name ] || props[ util.camel2dash( name ) ];
       var styleProp = this.parse( prop.name, val );

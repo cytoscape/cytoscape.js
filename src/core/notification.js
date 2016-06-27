@@ -97,7 +97,10 @@ var corefn = ({
     var cy = this;
 
     return this.batch( function(){
-      for( var id in map ){
+      var ids = Object.keys( map );
+
+      for( var i = 0; i < ids.length; i++ ){
+        var ids = id[i];
         var data = map[ id ];
         var ele = cy.getElementById( id );
 

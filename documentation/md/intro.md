@@ -85,6 +85,7 @@ The library was created at the [Donnelly Centre](http://thedonnellycentre.utoron
 ## Releases
 
 - 2.7
+ - [2.7.4](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A2.7.4+is%3Aclosed)
  - [2.7.3](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A2.7.3+is%3Aclosed)
  - [2.7.2](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A2.7.2+is%3Aclosed)
  - [2.7.1](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A2.7.1+is%3Aclosed)

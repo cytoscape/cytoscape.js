@@ -2,7 +2,7 @@
 
 /*!
 
-Cytoscape.js 2.7.3 (MIT licensed)
+Cytoscape.js 2.7.4 (MIT licensed)
 
 Copyright (c) The Cytoscape Consortium
 
@@ -2143,15 +2143,20 @@ var elesfn = ({
       }
 
       // check if ele has classes outside of those passed
-      if( !changedEle ){ for( var eleCls in eleClasses ){
-        var eleHasClass = eleClasses[ eleCls ];
-        var specdClass = classesMap[ eleCls ]; // i.e. this class is passed to the function
+      if( !changedEle ){
+        var classes = Object.keys( eleClasses );
 
-        if( eleHasClass && !specdClass ){
-          changedEle = true;
-          break;
+        for( var i = 0; i < classes.length; i++ ){
+          var eleCls = classes[i];
+          var eleHasClass = eleClasses[ eleCls ];
+          var specdClass = classesMap[ eleCls ]; // i.e. this class is passed to the function
+
+          if( eleHasClass && !specdClass ){
+            changedEle = true;
+            break;
+          }
         }
-      } }
+      }
 
       if( changedEle ){
         _p.classes = util.copy( classesMap );
@@ -4281,13 +4286,7 @@ elesfn.json = function( obj ){
       classes: null
     };
 
-    var classes = [];
-    for( var cls in p.classes ){
-      if( p.classes[ cls ] ){
-        classes.push( cls );
-      }
-    }
-    json.classes = classes.join( ' ' );
+    json.classes = Object.keys( p.classes ).join(' ');
 
     return json;
   }
@@ -4928,6 +4927,7 @@ module.exports = elesfn;
 
 var is = _dereq_( '../is' );
 var util = _dereq_( '../util' );
+var Promise = _dereq_('../promise');
 
 var elesfn = ({
 
@@ -4955,28 +4955,7 @@ var elesfn = ({
         var ani = node.animation( {
           position: newPos,
           duration: options.animationDuration,
-          easing: options.animationEasing,
-          step: !lastNode ? undefined : function(){
-            if( options.fit ){
-              cy.fit( options.eles, options.padding );
-            }
-          },
-          complete: !lastNode ? undefined : function(){
-            if( options.zoom != null ){
-              cy.zoom( options.zoom );
-            }
-
-            if( options.pan ){
-              cy.pan( options.pan );
-            }
-
-            if( options.fit ){
-              cy.fit( options.eles, options.padding );
-            }
-
-            layout.one( 'layoutstop', options.stop );
-            layout.trigger( { type: 'layoutstop', layout: layout } );
-          }
+          easing: options.animationEasing
         } );
 
         layout.animations.push( ani );
@@ -4984,8 +4963,40 @@ var elesfn = ({
         ani.play();
       }
 
+      var onStep;
+      cy.on( 'step.*', ( onStep = function(){
+        if( options.fit ){
+          cy.fit( options.eles, options.padding );
+        }
+      }) );
+
+      layout.one('layoutstop', function(){
+        cy.off('step.*', onStep);
+      });
+
       layout.one( 'layoutready', options.ready );
       layout.trigger( { type: 'layoutready', layout: layout } );
+
+      Promise.all( layout.animations.map(function( ani ){
+        return ani.promise();
+      }) ).then(function(){
+        cy.off('step.*', onStep);
+
+        if( options.zoom != null ){
+          cy.zoom( options.zoom );
+        }
+
+        if( options.pan ){
+          cy.pan( options.pan );
+        }
+
+        if( options.fit ){
+          cy.fit( options.eles, options.padding );
+        }
+
+        layout.one( 'layoutstop', options.stop );
+        layout.trigger( { type: 'layoutstop', layout: layout } );
+      });
     } else {
       nodes.positions( fn );
 
@@ -5036,7 +5047,7 @@ elesfn.createLayout = elesfn.makeLayout;
 
 module.exports = elesfn;
 
-},{"../is":83,"../util":100}],29:[function(_dereq_,module,exports){
+},{"../is":83,"../promise":86,"../util":100}],29:[function(_dereq_,module,exports){
 'use strict';
 
 var is = _dereq_( '../is' );
@@ -6229,6 +6240,10 @@ var corefn = ({
 
           step( ele, ani, now, isCore );
 
+          if( is.fn( ani_p.step ) ){
+            ani_p.step.call( ele, now );
+          }
+
           if( ani_p.applying ){
             ani_p.applying = false;
           }
@@ -6284,6 +6299,8 @@ var corefn = ({
 
       // remove elements from list of currently animating if its queues are empty
       eles.unmerge( doneEles );
+
+      cy.trigger('step');
 
     } // handleElements
 
@@ -6452,10 +6469,6 @@ var corefn = ({
 
         } // if
 
-      }
-
-      if( is.fn( ani_p.step ) ){
-        ani_p.step.apply( self, [ now ] );
       }
 
       ani_p.progress = percent;
@@ -7315,7 +7328,10 @@ var corefn = ({
     var cy = this;
 
     return this.batch( function(){
-      for( var id in map ){
+      var ids = Object.keys( map );
+
+      for( var i = 0; i < ids.length; i++ ){
+        var ids = id[i];
         var data = map[ id ];
         var ele = cy.getElementById( id );
 
@@ -7452,9 +7468,9 @@ var corefn = ({
 
     if( selector ){
       return eles.filter( selector );
+    } else {
+      return eles.spawnSelf();
     }
-
-    return eles;
   }
 
 });
@@ -8131,15 +8147,19 @@ var define = {
       } else if( p.allowSetting && is.plainObject( name ) ){ // extend
         var obj = name;
         var k, v;
+        var keys = Object.keys( obj );
 
-        for( k in obj ){
+        for( var i = 0; i < keys.length; i++ ){
+          k = keys[ i ];
           v = obj[ k ];
 
           var valid = !p.immutableKeys[ k ];
           if( valid ){
-            for( var i = 0, l = all.length; i < l; i++ ){
-              if( p.canSet( all[ i ] ) ){
-                all[ i ]._private[ p.field ][ k ] = v;
+            for( var j = 0; j < all.length; j++ ){
+              var ele = all[j];
+
+              if( p.canSet( ele ) ){
+                ele._private[ p.field ][ k ] = v;
               }
             }
           }
@@ -8216,8 +8236,10 @@ var define = {
 
         for( var i_a = 0, l_a = all.length; i_a < l_a; i_a++ ){
           var _privateFields = all[ i_a ]._private[ p.field ];
+          var keys = Object.keys( _privateFields );
 
-          for( var key in _privateFields ){
+          for( var i = 0; i < keys.length; i++ ){
+            var key = keys[i];
             var validKeyToDelete = !p.immutableKeys[ key ];
 
             if( validKeyToDelete ){
@@ -8285,7 +8307,11 @@ var define = {
         events = map;
       }
 
-      for( var evts in events ){
+      var keys = Object.keys( events );
+
+      for( var k = 0; k < keys.length; k++ ){
+        var evts = keys[k];
+
         callback = events[ evts ];
         if( callback === false ){
           callback = define.event.falseCallback;
@@ -8391,7 +8417,11 @@ var define = {
         events = map;
       }
 
-      for( var evts in events ){
+      var keys = Object.keys( events );
+
+      for( var k = 0; k < keys.length; k++ ){
+        var evts = keys[k];
+
         callback = events[ evts ];
 
         if( callback === false ){
@@ -8721,11 +8751,7 @@ var define = {
         break;
       }
 
-      var propertiesEmpty = true;
-      if( properties ){ for( var i in properties ){ // jshint ignore:line
-        propertiesEmpty = false;
-        break;
-      } }
+      var propertiesEmpty = Object.keys( properties ).length === 0;
 
       if( propertiesEmpty ){
         return new Animation( all[0], properties ); // nothing to animate
@@ -12049,7 +12075,7 @@ BRp.registerCalculationListeners = function(){
         fn( willDraw, elesToUpdate );
       } }
 
-      r.recalculateRenderedStyle( elesToUpdate );
+      r.recalculateRenderedStyle( elesToUpdate, false );
 
       for( var i = 0; i < elesToUpdate.length; i++ ){
         elesToUpdate[i]._private.rstyle.dirtyEvents = null;
@@ -24187,7 +24213,10 @@ styfn.getPropsList = function( propsObj ){
   var props = self.properties;
 
   if( style ){
-    for( var name in style ){
+    var names = Object.keys( style );
+
+    for( var i = 0; i < names.length; i++ ){
+      var name = names[i];
       var val = style[ name ];
       var prop = props[ name ] || props[ util.camel2dash( name ) ];
       var styleProp = this.parse( prop.name, val );
@@ -24384,10 +24413,12 @@ styfn.applyFromJson = function( json ){
     var context = json[ i ];
     var selector = context.selector;
     var props = context.style || context.css;
+    var names = Object.keys( props );
 
     style.selector( selector ); // apply selector
 
-    for( var name in props ){
+    for( var j = 0; j < names.length; j++ ){
+      var name = names[j];
       var value = props[ name ];
 
       style.css( name, value ); // apply property
@@ -26455,7 +26486,13 @@ util.extend = Object.assign != null ? Object.assign : function( tgt ){
   for( var i = 1; i < args.length; i++ ){
     var obj = args[ i ];
 
-    for( var k in obj ){
+    if( !obj ){ continue; }
+
+    var keys = Object.keys( obj );
+
+    for( var j = 0; j < keys.length; j++ ){
+      var k = keys[j];
+
       tgt[ k ] = obj[ k ];
     }
   }
@@ -26525,10 +26562,7 @@ module.exports = {
     var empty = true;
 
     if( map != null ){
-      for( var i in map ){ // jshint ignore:line
-        empty = false;
-        break;
-      }
+      return Object.keys( map ).length === 0;
     }
 
     return empty;
@@ -26617,7 +26651,11 @@ module.exports = {
       if( lastKey ){
 
         if( keepChildren ){ // then only delete child fields not in keepChildren
-          for( var child in obj ){
+          var children = Object.keys( obj );
+
+          for( var j = 0; j < children.length; j++ ){
+            var child = children[j];
+
             if( !keepChildren[ child ] ){
               obj[ child ] = undefined;
             }
@@ -26889,7 +26927,7 @@ util.debounce = function( func, wait, options ){ // ported lodash debounce funct
 module.exports = util;
 
 },{"../is":83,"../window":107}],106:[function(_dereq_,module,exports){
-module.exports="2.7.3"
+module.exports="2.7.4"
 },{}],107:[function(_dereq_,module,exports){
 module.exports = ( typeof window === 'undefined' ? null : window );
 

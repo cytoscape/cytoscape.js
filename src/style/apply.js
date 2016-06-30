@@ -154,9 +154,8 @@ styfn.getContextStyle = function( cxtMeta ){
 
     for( var j = 0; j < cxt.properties.length; j++ ){
       var prop = cxt.properties[ j ];
-      var styProp = style[ prop.name ] = prop;
 
-      styProp.context = cxt;
+      style[ prop.name ] = prop;
     }
   }
 
@@ -286,6 +285,7 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
   var origProp = style[ prop.name ];
   var origPropIsBypass = origProp && origProp.bypass;
   var _p = ele._private;
+  var flatPropMapping = 'mapping';
 
   // can't apply auto to width or height unless it's a parent node
   if( (parsedProp.name === 'height' || parsedProp.name === 'width') && ele.isNode() ){
@@ -408,14 +408,14 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
 
     } else if( type.number ){
       var calcValue = prop.valueMin + (prop.valueMax - prop.valueMin) * percent;
-      flatProp = this.parse( prop.name, calcValue, prop.bypass, true );
+      flatProp = this.parse( prop.name, calcValue, prop.bypass, flatPropMapping );
 
     } else {
       return false; // can only map to colours and numbers
     }
 
     if( !flatProp ){ // if we can't flatten the property, then use the origProp so we still keep the mapping itself
-      flatProp = this.parse( prop.name, origProp.strValue, prop.bypass, true );
+      flatProp = this.parse( prop.name, origProp.strValue, prop.bypass, flatPropMapping );
     }
 
     if( !flatProp ){ printMappingErr(); }
@@ -446,12 +446,12 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
       fieldVal = fieldVal[ field ];
     } }
 
-    flatProp = this.parse( prop.name, fieldVal, prop.bypass, true );
+    flatProp = this.parse( prop.name, fieldVal, prop.bypass, flatPropMapping );
 
     if( !flatProp ){ // if we can't flatten the property, then use the origProp so we still keep the mapping itself
       var flatPropVal = origProp ? origProp.strValue : '';
 
-      flatProp = this.parse( prop.name, flatPropVal, prop.bypass, true );
+      flatProp = this.parse( prop.name, flatPropVal, prop.bypass, flatPropMapping );
     }
 
     if( !flatProp ){ printMappingErr(); }
@@ -464,7 +464,7 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
     var fn = prop.value;
     var fnRetVal = fn( ele );
 
-    flatProp = this.parse( prop.name, fnRetVal, prop.bypass, true );
+    flatProp = this.parse( prop.name, fnRetVal, prop.bypass, flatPropMapping );
     flatProp.mapping = prop; // keep a reference to the mapping
     prop = flatProp; // the flattened (mapped) property is the one we want
 

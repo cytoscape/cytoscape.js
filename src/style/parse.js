@@ -15,7 +15,8 @@ styfn.parse = function( name, value, propIsBypass, propIsFlat ){
     return self.parseImpl( name, value, propIsBypass, propIsFlat );
   }
 
-  var argHash = [ name, value, propIsBypass, propIsFlat ].join( '$' );
+  var flatKey = ( propIsFlat === 'mapping' || propIsFlat === true || propIsFlat === false || propIsFlat == null ) ? 'dontcare' : propIsFlat;
+  var argHash = [ name, value, propIsBypass, flatKey ].join( '$' );
   var propCache = self.propCache = self.propCache || {};
   var ret;
 
@@ -23,11 +24,15 @@ styfn.parse = function( name, value, propIsBypass, propIsFlat ){
     ret = propCache[ argHash ] = self.parseImpl( name, value, propIsBypass, propIsFlat );
   }
 
-  // always need a copy since props are mutated later in their lifecycles
-  ret = util.copy( ret );
+  // - bypasses can't be shared b/c the value can be changed by animations or otherwise overridden
+  // - mappings can't be shared b/c mappings are per-element
+  if( propIsBypass || propIsFlat === 'mapping' ){
+    // need a copy since props are mutated later in their lifecycles
+    ret = util.copy( ret );
 
-  if( ret ){
-    ret.value = util.copy( ret.value ); // because it could be an array, e.g. colour
+    if( ret ){
+      ret.value = util.copy( ret.value ); // because it could be an array, e.g. colour
+    }
   }
 
   return ret;

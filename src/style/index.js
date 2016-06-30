@@ -17,13 +17,12 @@ var Style = function( cy ){
 
   this._private = {
     cy: cy,
-    coreStyle: {},
-    newStyle: true
+    coreStyle: {}
   };
 
   this.length = 0;
 
-  this.addDefaultStylesheet();
+  this.resetToDefault();
 };
 
 var styfn = Style.prototype;
@@ -38,7 +37,10 @@ styfn.clear = function(){
     this[ i ] = undefined;
   }
   this.length = 0;
-  this._private.newStyle = true;
+
+  var _p = this._private;
+
+  _p.newStyle = true;
 
   return this; // chaining
 };

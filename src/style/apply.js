@@ -13,17 +13,15 @@ styfn.apply = function( eles ){
   var self = this;
   var _p = self._private;
 
-  if( self._private.newStyle ){ // clear style caches
+  if( _p.newStyle ){ // clear style caches
     _p.contextStyles = {};
     _p.propDiffs = {};
+
+    self.cleanElements( eles, true );
   }
 
   for( var ie = 0; ie < eles.length; ie++ ){
     var ele = eles[ ie ];
-
-    if( self._private.newStyle ){ // clear style from old sheets
-      ele._private.style = {};
-    }
 
     var cxtMeta = self.getContextMeta( ele );
     var cxtStyle = self.getContextStyle( cxtMeta );
@@ -498,6 +496,34 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
   }
 
   return true;
+};
+
+styfn.cleanElements = function( eles, keepBypasses ){
+  var self = this;
+  var props = self.properties;
+
+  for( var i = 0; i < eles.length; i++ ){
+    var ele = eles[i];
+
+    if( !keepBypasses ){
+      ele._private.style = {};
+    } else {
+      var style = ele._private.style;
+
+      for( var j = 0; j < props.length; j++ ){
+        var prop = props[j];
+        var eleProp = style[ prop.name ];
+
+        if( eleProp ){
+          if( eleProp.bypass ){
+            eleProp.bypassed = null;
+          } else {
+            style[ prop.name ] = null;
+          }
+        }
+      }
+    }
+  }
 };
 
 // updates the visual style for all elements (useful for manual style modification after init)

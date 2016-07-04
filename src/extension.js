@@ -17,11 +17,23 @@ function setExtension( type, name, registrant ){
 
   var ext = registrant;
 
+  var overrideErr = function( field ){
+    util.error( 'Can not register `' + name + '` for `' + type + '` since `' + field + '` already exists in the prototype and can not be overridden' );
+  };
+
   if( type === 'core' ){
-    Core.prototype[ name ] = registrant;
+    if( Core.prototype[ name ] ){
+      return overrideErr( name );
+    } else {
+      Core.prototype[ name ] = registrant;
+    }
 
   } else if( type === 'collection' ){
-    Collection.prototype[ name ] = registrant;
+    if( Collection.prototype[ name ] ){
+      return overrideErr( name );
+    } else {
+      Collection.prototype[ name ] = registrant;
+    }
 
   } else if( type === 'layout' ){
     // fill in missing layout functions in the prototype
@@ -110,8 +122,7 @@ function setExtension( type, name, registrant ){
       var existsInR = rProto[ pName ] != null;
 
       if( existsInR ){
-        util.error( 'Can not register renderer `' + name + '` since it overrides `' + pName + '` in its prototype' );
-        return;
+        return overrideErr( pName );
       }
 
       proto[ pName ] = pVal; // take impl from base

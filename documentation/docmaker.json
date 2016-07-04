@@ -389,6 +389,11 @@
 
           "fns": [
             {
+              "name": "cy.container",
+              "descr": "Get the HTML DOM element in which the graph is visualised.  A nully value is returned if the instance is headless."
+            },
+
+            {
               "name": "cy.center",
               "pureAliases": ["cy.centre"],
               "descr": "Pan the graph to the centre of a collection.",

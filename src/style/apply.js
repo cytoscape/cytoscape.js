@@ -529,7 +529,7 @@ styfn.cleanElements = function( eles, keepBypasses ){
 // updates the visual style for all elements (useful for manual style modification after init)
 styfn.update = function(){
   var cy = this._private.cy;
-  var eles = cy.elements();
+  var eles = cy.mutableElements();
 
   eles.updateStyle();
 };

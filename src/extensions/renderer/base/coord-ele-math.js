@@ -606,12 +606,10 @@ BRp.updateCachedGrabbedEles = function(){
 };
 
 BRp.getCachedZSortedEles = function( forceRecalc ){
-  var cyEles = this.cy.elements();
-  var eles = [];
-
   if( forceRecalc || !this.cachedZSortedEles ){
     //console.time('cachezorder')
 
+    var cyEles = this.cy.mutableElements();
     var eles = [];
 
     eles.nodes = [];

@@ -57,6 +57,10 @@ var corefn = ({
     } else {
       return eles.spawnSelf();
     }
+  },
+
+  mutableElements: function(){
+    return this._private.elements;
   }
 
 });

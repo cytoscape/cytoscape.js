@@ -257,6 +257,7 @@ util.extend( corefn, {
   json: function( obj ){
     var cy = this;
     var _p = cy._private;
+    var eles = cy.mutableElements();
 
     if( is.plainObject( obj ) ){ // set
 
@@ -301,7 +302,7 @@ util.extend( corefn, {
         }
 
         // elements not specified in json should be removed
-        cy.elements().stdFilter( function( ele ){
+        eles.stdFilter( function( ele ){
           return !idInJson[ ele.id() ];
         } ).remove();
       }
@@ -342,7 +343,7 @@ util.extend( corefn, {
       var json = {};
 
       json.elements = {};
-      cy.elements().each( function( i, ele ){
+      eles.forEach( function( ele ){
         var group = ele.group();
 
         if( !json.elements[ group ] ){

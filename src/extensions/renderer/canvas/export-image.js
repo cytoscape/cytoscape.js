@@ -14,7 +14,7 @@ CRp.createBuffer = function( w, h ){
 
 CRp.bufferCanvasImage = function( options ){
   var cy = this.cy;
-  var eles = cy.elements();
+  var eles = cy.mutableElements();
   var bb = eles.boundingBox();
   var width = options.full ? Math.ceil( bb.w ) : this.container.clientWidth;
   var height = options.full ? Math.ceil( bb.h ) : this.container.clientHeight;
@@ -83,7 +83,7 @@ CRp.bufferCanvasImage = function( options ){
       this.drawElements( buffCxt, zsortedEles );
     } else { // draw the current view
       var pan = cy.pan();
-      
+
       var translation = {
         x: pan.x * scale,
         y: pan.y * scale

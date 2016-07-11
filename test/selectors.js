@@ -13,7 +13,7 @@ describe('Selectors', function(){
 
       elements: {
         nodes: [
-          { data: { id: 'n1', foo: 'one', weight: 1 }, classes: 'cls1 cls2' },
+          { data: { id: 'n1', foo: 'one', weight: 1, 'weird.name': 1, 'weird.name2': 'weird.val' }, classes: 'cls1 cls2' },
           { data: { id: 'n2', foo: 'two', parent: 'nparent', weight: 2 }, classes: 'cls1' },
           { data: { id: 'nparent', weight: 3 }, classes: 'cls2' }
         ],
@@ -135,6 +135,13 @@ describe('Selectors', function(){
     // edges
     itSelects(':loop', 'nparentLoop');
     itSelects(':simple', 'n1n2');
+
+    // metachars
+    itSelects('[weird\\.name = 1]', 'n1');
+    itSelects('[weird\\.name2 = "weird.val"]', 'n1');
+    itSelects('[weird\\.name2 *= "d.v"]', 'n1');
+    itSelects('[weird\\.name2 ^= "weird."]', 'n1');
+    itSelects('[weird\\.name2 $= ".val"]', 'n1');
   //}
 
 });

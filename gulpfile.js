@@ -121,7 +121,7 @@ gulp.task('default', ['build'], function( next ){
 });
 
 gulp.task('version', function( next ){
-  if( version ){ next(); }
+  if( version ){ next(); return; }
 
   var now = new Date();
   version = process.env['VERSION'];

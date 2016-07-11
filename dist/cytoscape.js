@@ -2,7 +2,7 @@
 
 /*!
 
-Cytoscape.js 2.7.4 (MIT licensed)
+Cytoscape.js 2.7.5 (MIT licensed)
 
 Copyright (c) The Cytoscape Consortium
 
@@ -3728,7 +3728,7 @@ var elesfn = ({
   absoluteComplement: function(){
     var cy = this._private.cy;
 
-    return cy.elements().not( this );
+    return cy.mutableElements().not( this );
   },
 
   intersect: function( other ){
@@ -3837,7 +3837,7 @@ var elesfn = ({
 
     if( is.string( toAdd ) ){
       var selector = toAdd;
-      toAdd = cy.elements( selector );
+      toAdd = cy.mutableElements().filter( selector );
     }
 
     var elements = [];
@@ -3868,7 +3868,7 @@ var elesfn = ({
 
     if( toAdd && is.string( toAdd ) ){
       var selector = toAdd;
-      toAdd = cy.elements( selector );
+      toAdd = cy.mutableElements().filter( selector );
     }
 
     for( var i = 0; i < toAdd.length; i++ ){
@@ -3934,7 +3934,7 @@ var elesfn = ({
 
     if( toRemove && is.string( toRemove ) ){
       var selector = toRemove;
-      toRemove = cy.elements( selector );
+      toRemove = cy.mutableElements().filter( selector );
     }
 
     for( var i = 0; i < toRemove.length; i++ ){
@@ -6084,7 +6084,7 @@ var corefn = {
     cy.notifications( false );
 
     // remove old elements
-    var oldEles = cy.elements();
+    var oldEles = cy.mutableElements();
     if( oldEles.length > 0 ){
       oldEles.remove();
     }
@@ -6101,7 +6101,7 @@ var corefn = {
 
       cy.notify( {
         type: 'load',
-        eles: cy.elements()
+        eles: cy.mutableElements()
       } );
 
       cy.one( 'load', onload );
@@ -6112,7 +6112,7 @@ var corefn = {
     } );
 
     var layoutOpts = util.extend( {}, cy._private.options.layout );
-    layoutOpts.eles = cy.$();
+    layoutOpts.eles = cy.elements();
 
     cy.layout( layoutOpts );
 
@@ -7015,6 +7015,7 @@ util.extend( corefn, {
   json: function( obj ){
     var cy = this;
     var _p = cy._private;
+    var eles = cy.mutableElements();
 
     if( is.plainObject( obj ) ){ // set
 
@@ -7059,7 +7060,7 @@ util.extend( corefn, {
         }
 
         // elements not specified in json should be removed
-        cy.elements().stdFilter( function( ele ){
+        eles.stdFilter( function( ele ){
           return !idInJson[ ele.id() ];
         } ).remove();
       }
@@ -7100,7 +7101,7 @@ util.extend( corefn, {
       var json = {};
 
       json.elements = {};
-      cy.elements().each( function( i, ele ){
+      eles.forEach( function( ele ){
         var group = ele.group();
 
         if( !json.elements[ group ] ){
@@ -7471,6 +7472,10 @@ var corefn = ({
     } else {
       return eles.spawnSelf();
     }
+  },
+
+  mutableElements: function(){
+    return this._private.elements;
   }
 
 });
@@ -7767,7 +7772,7 @@ var corefn = ({
       bb.h = bb.y2 - bb.y1;
 
     } else if( !is.elementOrCollection( elements ) ){
-      elements = this.elements();
+      elements = this.mutableElements();
     }
 
     bb = bb || elements.boundingBox();
@@ -7968,9 +7973,9 @@ var corefn = ({
 
     if( is.string( elements ) ){
       var selector = elements;
-      elements = this.elements( selector );
+      elements = this.mutableElements().filter( selector );
     } else if( !is.elementOrCollection( elements ) ){
-      elements = this.elements();
+      elements = this.mutableElements();
     }
 
     var bb = elements.boundingBox();
@@ -9017,11 +9022,23 @@ function setExtension( type, name, registrant ){
 
   var ext = registrant;
 
+  var overrideErr = function( field ){
+    util.error( 'Can not register `' + name + '` for `' + type + '` since `' + field + '` already exists in the prototype and can not be overridden' );
+  };
+
   if( type === 'core' ){
-    Core.prototype[ name ] = registrant;
+    if( Core.prototype[ name ] ){
+      return overrideErr( name );
+    } else {
+      Core.prototype[ name ] = registrant;
+    }
 
   } else if( type === 'collection' ){
-    Collection.prototype[ name ] = registrant;
+    if( Collection.prototype[ name ] ){
+      return overrideErr( name );
+    } else {
+      Collection.prototype[ name ] = registrant;
+    }
 
   } else if( type === 'layout' ){
     // fill in missing layout functions in the prototype
@@ -9110,8 +9127,7 @@ function setExtension( type, name, registrant ){
       var existsInR = rProto[ pName ] != null;
 
       if( existsInR ){
-        util.error( 'Can not register renderer `' + name + '` since it overrides `' + pName + '` in its prototype' );
-        return;
+        return overrideErr( pName );
       }
 
       proto[ pName ] = pVal; // take impl from base
@@ -12591,12 +12607,10 @@ BRp.updateCachedGrabbedEles = function(){
 };
 
 BRp.getCachedZSortedEles = function( forceRecalc ){
-  var cyEles = this.cy.elements();
-  var eles = [];
-
   if( forceRecalc || !this.cachedZSortedEles ){
     //console.time('cachezorder')
 
+    var cyEles = this.cy.mutableElements();
     var eles = [];
 
     eles.nodes = [];
@@ -18219,7 +18233,7 @@ CRp.render = function( options ){
     if( !r.textureCache ){
       r.textureCache = {};
 
-      bb = r.textureCache.bb = cy.elements().boundingBox();
+      bb = r.textureCache.bb = cy.mutableElements().boundingBox();
 
       r.textureCache.texture = r.data.bufferCanvases[ r.TEXTURE_BUFFER ];
 
@@ -19083,7 +19097,7 @@ CRp.createBuffer = function( w, h ){
 
 CRp.bufferCanvasImage = function( options ){
   var cy = this.cy;
-  var eles = cy.elements();
+  var eles = cy.mutableElements();
   var bb = eles.boundingBox();
   var width = options.full ? Math.ceil( bb.w ) : this.container.clientWidth;
   var height = options.full ? Math.ceil( bb.h ) : this.container.clientHeight;
@@ -19152,7 +19166,7 @@ CRp.bufferCanvasImage = function( options ){
       this.drawElements( buffCxt, zsortedEles );
     } else { // draw the current view
       var pan = cy.pan();
-      
+
       var translation = {
         x: pan.x * scale,
         y: pan.y * scale
@@ -23309,17 +23323,15 @@ styfn.apply = function( eles ){
   var self = this;
   var _p = self._private;
 
-  if( self._private.newStyle ){ // clear style caches
+  if( _p.newStyle ){ // clear style caches
     _p.contextStyles = {};
     _p.propDiffs = {};
+
+    self.cleanElements( eles, true );
   }
 
   for( var ie = 0; ie < eles.length; ie++ ){
     var ele = eles[ ie ];
-
-    if( self._private.newStyle ){ // clear style from old sheets
-      ele._private.style = {};
-    }
 
     var cxtMeta = self.getContextMeta( ele );
     var cxtStyle = self.getContextStyle( cxtMeta );
@@ -23796,10 +23808,38 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
   return true;
 };
 
+styfn.cleanElements = function( eles, keepBypasses ){
+  var self = this;
+  var props = self.properties;
+
+  for( var i = 0; i < eles.length; i++ ){
+    var ele = eles[i];
+
+    if( !keepBypasses ){
+      ele._private.style = {};
+    } else {
+      var style = ele._private.style;
+
+      for( var j = 0; j < props.length; j++ ){
+        var prop = props[j];
+        var eleProp = style[ prop.name ];
+
+        if( eleProp ){
+          if( eleProp.bypass ){
+            eleProp.bypassed = null;
+          } else {
+            style[ prop.name ] = null;
+          }
+        }
+      }
+    }
+  }
+};
+
 // updates the visual style for all elements (useful for manual style modification after init)
 styfn.update = function(){
   var cy = this._private.cy;
-  var eles = cy.elements();
+  var eles = cy.mutableElements();
 
   eles.updateStyle();
 };
@@ -24250,13 +24290,12 @@ var Style = function( cy ){
 
   this._private = {
     cy: cy,
-    coreStyle: {},
-    newStyle: true
+    coreStyle: {}
   };
 
   this.length = 0;
 
-  this.addDefaultStylesheet();
+  this.resetToDefault();
 };
 
 var styfn = Style.prototype;
@@ -24271,7 +24310,10 @@ styfn.clear = function(){
     this[ i ] = undefined;
   }
   this.length = 0;
-  this._private.newStyle = true;
+
+  var _p = this._private;
+
+  _p.newStyle = true;
 
   return this; // chaining
 };
@@ -26927,7 +26969,7 @@ util.debounce = function( func, wait, options ){ // ported lodash debounce funct
 module.exports = util;
 
 },{"../is":83,"../window":107}],106:[function(_dereq_,module,exports){
-module.exports="2.7.4"
+module.exports="2.7.5"
 },{}],107:[function(_dereq_,module,exports){
 module.exports = ( typeof window === 'undefined' ? null : window );
 

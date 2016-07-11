@@ -30,7 +30,8 @@ var cy = cytoscape({
     {
       selector: 'edge',
       css: {
-        'target-arrow-shape': 'triangle'
+        'target-arrow-shape': 'triangle',
+        'curve-style': 'bezier'
       }
     },
     {

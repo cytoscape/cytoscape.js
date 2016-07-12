@@ -1067,17 +1067,19 @@ BRp.getLabelText = function( ele, prefix ){
     var maxW = ele.pstyle( 'text-max-width' ).pfValue;
     var ellipsized = '';
     var ellipsis = '\u2026';
-    var i;
+    var incLastCh = false;
 
-    for( i = 0; i < text.length; i++ ){
+    for( var i = 0; i < text.length; i++ ){
       var widthWithNextCh = this.calculateLabelDimensions( ele, ellipsized + text[i] + ellipsis ).width;
 
       if( widthWithNextCh > maxW ){ break; }
 
       ellipsized += text[i];
+
+      if( i === text.length - 1 ){ incLastCh = true; }
     }
 
-    if( i < text.length ){
+    if( !incLastCh ){
       ellipsized += ellipsis;
     }
 

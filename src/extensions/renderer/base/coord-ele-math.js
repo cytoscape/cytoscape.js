@@ -1008,7 +1008,9 @@ BRp.getLabelText = function( ele, prefix ){
     text = text.toLowerCase();
   }
 
-  if( ele.pstyle( 'text-wrap' ).value === 'wrap' ){
+  var wrapStyle = ele.pstyle( 'text-wrap' ).value;
+
+  if( wrapStyle === 'wrap' ){
     //console.log('wrap');
 
     var labelKey = rscratch( 'labelKey' );
@@ -1061,7 +1063,7 @@ BRp.getLabelText = function( ele, prefix ){
     rscratch( 'labelWrapKey', labelKey );
 
     // console.log(text)
-  } else if( ele.pstyle( 'text-wrap' ).value === 'ellipsize' ){
+  } else if( wrapStyle === 'ellipsis' ){
     var maxW = ele.pstyle( 'text-max-width' ).pfValue;
     var ellipsized = '';
     var ellipsis = '\u2026';

@@ -1061,7 +1061,25 @@ BRp.getLabelText = function( ele, prefix ){
     rscratch( 'labelWrapKey', labelKey );
 
     // console.log(text)
-  } // if wrap
+  } else if( ele.pstyle( 'text-wrap' ).value === 'ellipsize' ){
+    var maxW = ele.pstyle( 'text-max-width' ).pfValue;
+
+    var ellipsized = '';
+    var split = text.split('');
+
+    // tolerance in px
+    var tolerance = 5;
+
+    var i = 0;
+
+    while ( this.calculateLabelDimensions( ele, ellipsized + '\u2026' ).width < (maxW - tolerance) && i < split.length )
+      ellipsized += split[i++];
+
+    if( i < split.length )
+      ellipsized += '\u2026';
+
+    return ellipsized;
+  } // if ellipsize
 
   return text;
 };

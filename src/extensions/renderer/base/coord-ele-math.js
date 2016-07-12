@@ -1063,20 +1063,21 @@ BRp.getLabelText = function( ele, prefix ){
     // console.log(text)
   } else if( ele.pstyle( 'text-wrap' ).value === 'ellipsize' ){
     var maxW = ele.pstyle( 'text-max-width' ).pfValue;
-
     var ellipsized = '';
-    var split = text.split('');
+    var ellipsis = '\u2026';
+    var i;
 
-    // tolerance in px
-    var tolerance = 5;
+    for( i = 0; i < text.length; i++ ){
+      var widthWithNextCh = this.calculateLabelDimensions( ele, ellipsized + text[i] + ellipsis ).width;
 
-    var i = 0;
+      if( widthWithNextCh > maxW ){ break; }
 
-    while ( this.calculateLabelDimensions( ele, ellipsized + '\u2026' ).width < (maxW - tolerance) && i < split.length )
-      ellipsized += split[i++];
+      ellipsized += text[i];
+    }
 
-    if( i < split.length )
-      ellipsized += '\u2026';
+    if( i < text.length ){
+      ellipsized += ellipsis;
+    }
 
     return ellipsized;
   } // if ellipsize
@@ -1355,7 +1356,7 @@ BRp.findEdgeControlPoints = function( edges ){
 
       var curveStyle = edge.pstyle( 'curve-style' ).value;
       var ctrlptDists = edge.pstyle( 'control-point-distances' );
-      
+
       var loopDir = edge.pstyle('loop-direction').pfValue;
       var loopSwp = edge.pstyle('loop-sweep').pfValue;
 

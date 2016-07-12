@@ -568,7 +568,6 @@ var queryMatches = function( query, ele ){
         }
 
         var notExpr = false;
-        var handledNotExpr = false;
         if( operator.indexOf( '!' ) >= 0 ){
           operator = operator.replace( '!', '' );
           notExpr = true;
@@ -581,42 +580,45 @@ var queryMatches = function( query, ele ){
           fieldVal = fieldStr.toLowerCase();
         }
 
+        var isIneqCmp = false;
+
         switch( operator ){
         case '*=':
-          matches = fieldStr.search( valStr ) >= 0;
+          matches = fieldStr.indexOf( valStr ) >= 0;
           break;
         case '$=':
-          matches = new RegExp( valStr + '$' ).exec( fieldStr ) != null;
+          matches = fieldStr.indexOf( valStr, fieldStr.length - valStr.length ) >= 0;
           break;
         case '^=':
-          matches = new RegExp( '^' + valStr ).exec( fieldStr ) != null;
+          matches = fieldStr.indexOf( valStr ) === 0;
           break;
         case '=':
           matches = fieldVal === value;
           break;
-        case '!=':
-          matches = fieldVal !== value;
-          break;
         case '>':
-          matches = !notExpr ? fieldVal > value : fieldVal <= value;
-          handledNotExpr = true;
+          isIneqCmp = true;
+          matches = fieldVal > value;
           break;
         case '>=':
-          matches = !notExpr ? fieldVal >= value : fieldVal < value;
-          handledNotExpr = true;
+          isIneqCmp = true;
+          matches = fieldVal >= value;
           break;
         case '<':
-          matches = !notExpr ? fieldVal < value : fieldVal >= value;
-          handledNotExpr = true;
+          isIneqCmp = true;
+          matches = fieldVal < value;
           break;
         case '<=':
-          matches = !notExpr ? fieldVal <= value : fieldVal > value;
-          handledNotExpr = true;
+          isIneqCmp = true;
+          matches = fieldVal <= value;
           break;
         default:
           matches = false;
           break;
+        }
 
+        // apply the not op, but null vals for inequalities should always stay non-matching
+        if( notExpr && ( fieldVal != null || !isIneqCmp ) ){
+          matches = !matches;
         }
       } else if( operator != null ){
         switch( operator ){
@@ -632,11 +634,6 @@ var queryMatches = function( query, ele ){
         }
       } else {
         matches = !params.fieldUndefined( field );
-      }
-
-      if( notExpr && !handledNotExpr ){
-        matches = !matches;
-        handledNotExpr = true;
       }
 
       if( !matches ){

@@ -223,7 +223,9 @@ elesfn.json = function( obj ){
       classes: null
     };
 
-    json.classes = Object.keys( p.classes ).join(' ');
+    json.classes = Object.keys( p.classes ).filter(function( cls ){
+      return p.classes[cls];
+    }).join(' ');
 
     return json;
   }

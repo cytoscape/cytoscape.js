@@ -1298,9 +1298,9 @@ BRp.findEdgeControlPoints = function( edges ){
       };
 
 
-      // if src intersection is inside tgt or tgt intersection is inside src, then no ctrl pts to draw
+      // if node shapes overlap, then no ctrl pts to draw
       if(
-        tgtShape.checkPoint( srcOutside[0], srcOutside[1], 0, tgtW, tgtH, tgtPos.x, tgtPos.y )  ||
+        tgtShape.checkPoint( srcOutside[0], srcOutside[1], 0, tgtW, tgtH, tgtPos.x, tgtPos.y )  &&
         srcShape.checkPoint( tgtOutside[0], tgtOutside[1], 0, srcW, srcH, srcPos.x, srcPos.y )
       ){
         vectorNormInverse = {};

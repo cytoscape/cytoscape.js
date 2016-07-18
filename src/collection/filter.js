@@ -220,6 +220,11 @@ var elesfn = ({
         this[ index ] = toAddEle;
         _p.ids[ id ] = toAddEle;
         _p.indexes[ id ] = index;
+      } else { // replace
+        var index = _p.indexes[ id ];
+
+        this[ index ] = toAddEle;
+        _p.ids[ id ] = toAddEle;
       }
     }
 

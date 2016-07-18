@@ -2012,6 +2012,7 @@ BRp.findEndpoints = function( edge ){
   var multi = et !== 'bezier';
   var lines = et === 'straight' || et === 'segments';
   var segments = et === 'segments';
+  var hasEndpts = bezier || multi || lines;
 
   var p1, p2;
 
@@ -2075,7 +2076,7 @@ BRp.findEndpoints = function( edge ){
   rs.arrowStartX = arrowStart[0];
   rs.arrowStartY = arrowStart[1];
 
-  if( lines ){
+  if( hasEndpts ){
     if( !is.number( rs.startX ) || !is.number( rs.startY ) || !is.number( rs.endX ) || !is.number( rs.endY ) ){
       rs.badLine = true;
     } else {

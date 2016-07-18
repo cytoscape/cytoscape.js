@@ -238,6 +238,19 @@ describe('Collection style', function(){
       expect( n1.hasClass('baz') ).to.be.false;
     });
 
+    it('eles.addClass() adds class to json', function(){
+      n1.addClass('foo');
+
+      expect( n1.json().classes ).to.equal('foo');
+    });
+
+    it('eles.removeClass() removes class from json', function(){
+      n1.addClass('foo');
+      n1.removeClass('foo');
+
+      expect( n1.json().classes ).to.be.empty;
+    });
+
   });
 
   describe('eles.animate() etc', function(){

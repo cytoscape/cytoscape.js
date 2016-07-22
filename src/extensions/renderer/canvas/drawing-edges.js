@@ -177,6 +177,8 @@ CRp.drawArrowheads = function( context, edge, drawOverlayInstead, gap ){
   var rs = edge._private.rscratch;
   var isHaystack = rs.edgeType === 'haystack';
 
+  var pts = edge._private.rscratch.allpts;
+  
   var diff = [1, 1];
   if( gap > 0 ) {
     diff = [(pts[0] - pts[pts.length - 2]) / gap, (pts[1] - pts[pts.length - 1]) / gap];

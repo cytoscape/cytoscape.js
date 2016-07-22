@@ -53,7 +53,7 @@ CRp.drawEdge = function( context, edge, shiftToOriginWithBb, drawLabel, drawOver
 
   var edgeWidth = edge.pstyle( 'width' ).pfValue + (drawOverlayInstead ? 2 * overlayPadding : 0);
   var lineStyle = drawOverlayInstead ? 'solid' : edge.pstyle( 'line-style' ).value;
-  var edgeGap = pstyle( 'gap' ).pfValue;
+  var edgeGap = edge.pstyle( 'gap' ).pfValue;
   context.lineWidth = edgeWidth;
 
   var shadowBlur = edge.pstyle( 'shadow-blur' ).pfValue;

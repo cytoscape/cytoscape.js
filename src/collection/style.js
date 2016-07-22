@@ -270,20 +270,6 @@ var elesfn = ({
     }
   },
 
-  isFullAutoParent: function(){
-    var cy = this.cy();
-    if( !cy.styleEnabled() ){ return false; }
-
-    var ele = this[0];
-
-    if( ele ){
-      var autoW = ele.pstyle( 'width' ).value === 'auto';
-      var autoH = ele.pstyle( 'height' ).value === 'auto';
-
-      return ele.isParent() && autoW && autoH;
-    }
-  },
-
   backgrounding: function(){
     var cy = this.cy();
     if( !cy.styleEnabled() ){ return false; }

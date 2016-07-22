@@ -220,7 +220,7 @@ var styfn = {};
     { name: 'segment-distances', type: t.bidirectionalSizes },
     { name: 'segment-weights', type: t.numbers },
     { name: 'edge-distances', type: t.edgeDistances },
-    { name: 'gap', type: t.size },
+    { name: 'distance-from-node', type: t.size },
 
     // these are just for the core
     { name: 'selection-box-color', type: t.color },
@@ -418,7 +418,7 @@ styfn.getDefaultProperties = util.memoize( function(){
     'edge-distances': 'intersection',
     'curve-style': 'bezier',
     'haystack-radius': 0,
-    'gap': 0
+    'distance-from-node': 0
   }, [
     { name: 'arrow-shape', value: 'none' },
     { name: 'arrow-color', value: '#999' },

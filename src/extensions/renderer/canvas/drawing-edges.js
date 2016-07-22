@@ -53,6 +53,7 @@ CRp.drawEdge = function( context, edge, shiftToOriginWithBb, drawLabel, drawOver
 
   var edgeWidth = edge.pstyle( 'width' ).pfValue + (drawOverlayInstead ? 2 * overlayPadding : 0);
   var lineStyle = drawOverlayInstead ? 'solid' : edge.pstyle( 'line-style' ).value;
+  var edgeGap = pstyle( 'gap' ).pfValue;
   context.lineWidth = edgeWidth;
 
   var shadowBlur = edge.pstyle( 'shadow-blur' ).pfValue;
@@ -68,10 +69,11 @@ CRp.drawEdge = function( context, edge, shiftToOriginWithBb, drawLabel, drawOver
     context,
     rs.allpts,
     lineStyle,
-    edgeWidth
+    edgeWidth,
+    edgeGap
   );
 
-  this.drawArrowheads( context, edge, drawOverlayInstead );
+  this.drawArrowheads( context, edge, drawOverlayInstead, edgeGap );
 
   this.shadowStyle( context, 'transparent', 0 ); // reset for next guy
 
@@ -87,7 +89,7 @@ CRp.drawEdge = function( context, edge, shiftToOriginWithBb, drawLabel, drawOver
 };
 
 
-CRp.drawEdgePath = function( edge, context, pts, type, width ){
+CRp.drawEdgePath = function( edge, context, pts, type, width, gap ){
   var rs = edge._private.rscratch;
   var canvasCxt = context;
   var path;
@@ -125,8 +127,15 @@ CRp.drawEdgePath = function( edge, context, pts, type, width ){
   }
 
   if( !pathCacheHit && !rs.badLine ){
+    var diff = [1, 1];
+    if (gap > 0) {
+      diff = [(pts[0]-pts[pts.length-2])/gap, (pts[1]-pts[pts.length-1])/gap];
+    }
+    var mag = Math.sqrt(Math.pow(diff[0],2) + Math.pow(diff[1],2));
+    var unitdiff = [diff[0]/mag, diff[1]/mag]; 
+    
     if( context.beginPath ){ context.beginPath(); }
-    context.moveTo( pts[0], pts[1] );
+    context.moveTo( pts[0]-unitdiff[0]*gap, pts[1]-unitdiff[1]*gap );
 
     switch( rs.edgeType ){
       case 'bezier':
@@ -134,7 +143,7 @@ CRp.drawEdgePath = function( edge, context, pts, type, width ){
       case 'compound':
       case 'multibezier':
         for( var i = 2; i + 3 < pts.length; i += 4 ){
-          context.quadraticCurveTo( pts[ i ], pts[ i + 1], pts[ i + 2], pts[ i + 3] );
+          context.quadraticCurveTo( pts[i]+unitdiff[0]*gap, pts[i+1]+unitdiff[1]*gap, pts[i+2]+unitdiff[0]*gap, pts[i+3]+unitdiff[1]*gap );
         }
         break;
 
@@ -142,7 +151,7 @@ CRp.drawEdgePath = function( edge, context, pts, type, width ){
       case 'segments':
       case 'haystack':
         for( var i = 2; i + 1 < pts.length; i += 2 ){
-          context.lineTo( pts[ i ], pts[ i + 1] );
+          context.lineTo( pts[i]+unitdiff[0]*gap, pts[i+1]+unitdiff[1]*gap );
         }
         break;
     }
@@ -162,14 +171,21 @@ CRp.drawEdgePath = function( edge, context, pts, type, width ){
 
 };
 
-CRp.drawArrowheads = function( context, edge, drawOverlayInstead ){
+CRp.drawArrowheads = function( context, edge, drawOverlayInstead, gap ){
   if( drawOverlayInstead ){ return; } // don't do anything for overlays
 
   var rs = edge._private.rscratch;
   var isHaystack = rs.edgeType === 'haystack';
 
+  var diff = [1, 1];
+  if (gap > 0) {
+      diff = [(pts[0]-pts[pts.length-2])/gap, (pts[1]-pts[pts.length-1])/gap];
+  }
+  var mag = Math.sqrt(Math.pow(diff[0],2) + Math.pow(diff[1],2));
+  var unitdiff = [diff[0]/mag, diff[1]/mag];
+  
   if( !isHaystack ){
-    this.drawArrowhead( context, edge, 'source', rs.arrowStartX, rs.arrowStartY, rs.srcArrowAngle );
+    this.drawArrowhead( context, edge, 'source', rs.arrowStartX+unitdiff[0]*gap, rs.arrowStartY+unitdiff[1]*gap, rs.srcArrowAngle );
   }
 
   this.drawArrowhead( context, edge, 'mid-target', rs.midX, rs.midY, rs.midtgtArrowAngle );
@@ -177,7 +193,7 @@ CRp.drawArrowheads = function( context, edge, drawOverlayInstead ){
   this.drawArrowhead( context, edge, 'mid-source', rs.midX, rs.midY, rs.midsrcArrowAngle );
 
   if( !isHaystack ){
-    this.drawArrowhead( context, edge, 'target', rs.arrowEndX, rs.arrowEndY, rs.tgtArrowAngle );
+    this.drawArrowhead( context, edge, 'target', rs.arrowEndX+unitdiff[0]*gap, rs.arrowEndY+unitdiff[1]*gap, rs.tgtArrowAngle );
   }
 };
 

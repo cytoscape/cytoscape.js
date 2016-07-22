@@ -220,7 +220,7 @@ var styfn = {};
     { name: 'segment-distances', type: t.bidirectionalSizes },
     { name: 'segment-weights', type: t.numbers },
     { name: 'edge-distances', type: t.edgeDistances },
-    { name: 'gap', type: t.size }, 
+    { name: 'gap', type: t.size },
 
     // these are just for the core
     { name: 'selection-box-color', type: t.color },

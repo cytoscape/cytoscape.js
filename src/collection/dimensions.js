@@ -244,21 +244,13 @@ fn = elesfn = ({
       var pos = _p.position;
       var didUpdate = false;
 
-      if( parent.pstyle( 'width' ).value === 'auto' ){
-        _p.autoWidth = bb.w;
-        pos.x = (bb.x1 + bb.x2 - padding.left + padding.right) / 2;
-        didUpdate = true;
-      }
+      _p.autoWidth = bb.w;
+      pos.x = (bb.x1 + bb.x2 - padding.left + padding.right) / 2;
 
-      if( parent.pstyle( 'height' ).value === 'auto' ){
-        _p.autoHeight = bb.h;
-        pos.y = (bb.y1 + bb.y2 - padding.top + padding.bottom) / 2;
-        didUpdate = true;
-      }
+      _p.autoHeight = bb.h;
+      pos.y = (bb.y1 + bb.y2 - padding.top + padding.bottom) / 2;
 
-      if( didUpdate ){
-        updated.push( parent );
-      }
+      updated.push( parent );
     }
 
     // go up, level by level
@@ -798,11 +790,13 @@ var defineDimFns = function( opts ){
 
     if( ele ){
       if( styleEnabled ){
-        var d = ele.pstyle( opts.name );
+        if( ele.isParent() ){
+          return _p[ opts.autoName ] || 0;
+        }
 
+        var d = ele.pstyle( opts.name );
+        
         switch( d.strValue ){
-          case 'auto':
-            return _p[ opts.autoName ] || 0;
           case 'label':
             return _p.rstyle[ opts.labelName ] || 0;
           default:

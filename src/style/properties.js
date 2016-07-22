@@ -24,7 +24,7 @@ var styfn = {};
     nOneOneNumber: { number: true, min: -1, max: 1, unitless: true },
     nonNegativeInt: { number: true, min: 0, integer: true, unitless: true },
     position: { enums: [ 'parent', 'origin' ] },
-    nodeSize: { number: true, min: 0, enums: [ 'auto', 'label' ] },
+    nodeSize: { number: true, min: 0, enums: [ 'label' ] },
     number: { number: true, unitless: true },
     numbers: { number: true, unitless: true, multiple: true },
     size: { number: true, min: 0 },
@@ -463,8 +463,6 @@ styfn.addDefaultStylesheet = function(){
   this
     .selector( '$node > node' ) // compound (parent) node properties
       .css( {
-        'width': 'auto',
-        'height': 'auto',
         'shape': 'rectangle',
         'padding-top': 10,
         'padding-right': 10,

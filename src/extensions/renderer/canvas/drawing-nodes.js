@@ -108,10 +108,11 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
   //
   // draw shape
 
-  var styleShape = node.pstyle( 'shape' ).strValue;
+  var styleShape = node.pstyle('shape').strValue;
+  var shapePts = node.pstyle('shape-polygon-points').pfValue;
 
   if( usePaths ){
-    var pathCacheKey = styleShape + '$' + nodeWidth + '$' + nodeHeight;
+    var pathCacheKey = styleShape + '$' + nodeWidth + '$' + nodeHeight + ( styleShape === 'polygon' ? '$' + shapePts.join('$') : '' );
 
     context.translate( pos.x, pos.y );
 

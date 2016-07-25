@@ -242,7 +242,6 @@ fn = elesfn = ({
         right: parent.pstyle( 'padding-right' ).pfValue
       };
       var pos = _p.position;
-      var didUpdate = false;
 
       _p.autoWidth = bb.w;
       pos.x = (bb.x1 + bb.x2 - padding.left + padding.right) / 2;
@@ -795,7 +794,7 @@ var defineDimFns = function( opts ){
         }
 
         var d = ele.pstyle( opts.name );
-        
+
         switch( d.strValue ){
           case 'label':
             return _p.rstyle[ opts.labelName ] || 0;

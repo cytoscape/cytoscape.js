@@ -226,6 +226,7 @@ var styfn = {};
     { name: 'edge-distances', type: t.edgeDistances },
     { name: 'loop-direction', type: t.angle },
     { name: 'loop-sweep', type: t.angle },
+    { name: 'distance-from-node', type: t.size },
 
     // these are just for the core
     { name: 'selection-box-color', type: t.color },
@@ -426,7 +427,8 @@ styfn.getDefaultProperties = util.memoize( function(){
     'segment-distances': 20,
     'edge-distances': 'intersection',
     'curve-style': 'bezier',
-    'haystack-radius': 0
+    'haystack-radius': 0,
+    'distance-from-node': 0
   }, [
     { name: 'arrow-shape', value: 'none' },
     { name: 'arrow-color', value: '#999' },

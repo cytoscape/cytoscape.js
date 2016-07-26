@@ -2005,6 +2005,8 @@ BRp.findEndpoints = function( edge ){
   var tgtArShape = edge.pstyle( 'target-arrow-shape' ).value;
   var srcArShape = edge.pstyle( 'source-arrow-shape' ).value;
 
+  var distanceFromNode = edge.pstyle( 'distance-from-node' ).pfValue;
+  
   var rs = edge._private.rscratch;
 
   var et = rs.edgeType;
@@ -2033,8 +2035,8 @@ BRp.findEndpoints = function( edge ){
   intersect = r.nodeShapes[ this.getNodeShape( target ) ].intersectLine(
     tgtPos.x,
     tgtPos.y,
-    target.outerWidth(),
-    target.outerHeight(),
+    target.outerWidth() + distanceFromNode,
+    target.outerHeight() + distanceFromNode,
     p1[0],
     p1[1],
     0
@@ -2054,8 +2056,8 @@ BRp.findEndpoints = function( edge ){
   intersect = r.nodeShapes[ this.getNodeShape( source ) ].intersectLine(
     srcPos.x,
     srcPos.y,
-    source.outerWidth(),
-    source.outerHeight(),
+    source.outerWidth() + distanceFromNode,
+    source.outerHeight() + distanceFromNode,
     p2[0],
     p2[1],
     0

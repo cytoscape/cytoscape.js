@@ -2005,6 +2005,9 @@ BRp.findEndpoints = function( edge ){
   var tgtArShape = edge.pstyle( 'target-arrow-shape' ).value;
   var srcArShape = edge.pstyle( 'source-arrow-shape' ).value;
 
+  var tgtDist = edge.pstyle( 'target-distance-from-node' ).pfValue;
+  var srcDist = edge.pstyle( 'source-distance-from-node' ).pfValue;
+
   var rs = edge._private.rscratch;
 
   var et = rs.edgeType;
@@ -2040,10 +2043,16 @@ BRp.findEndpoints = function( edge ){
     0
   );
 
-  var arrowEnd = math.shortenIntersection( intersect, p1,
-    r.arrowShapes[ tgtArShape ].spacing( edge ) );
-  var edgeEnd = math.shortenIntersection( intersect, p1,
-    r.arrowShapes[ tgtArShape ].gap( edge ) );
+  var arrowEnd = math.shortenIntersection(
+    intersect,
+    p1,
+    r.arrowShapes[ tgtArShape ].spacing( edge ) + tgtDist
+  );
+  var edgeEnd = math.shortenIntersection(
+    intersect,
+    p1,
+    r.arrowShapes[ tgtArShape ].gap( edge ) + tgtDist
+  );
 
   rs.endX = edgeEnd[0];
   rs.endY = edgeEnd[1];
@@ -2062,12 +2071,14 @@ BRp.findEndpoints = function( edge ){
   );
 
   var arrowStart = math.shortenIntersection(
-    intersect, p2,
-    r.arrowShapes[ srcArShape ].spacing( edge )
+    intersect,
+    p2,
+    r.arrowShapes[ srcArShape ].spacing( edge ) + srcDist
   );
   var edgeStart = math.shortenIntersection(
-    intersect, p2,
-    r.arrowShapes[ srcArShape ].gap( edge )
+    intersect,
+    p2,
+    r.arrowShapes[ srcArShape ].gap( edge ) + srcDist
   );
 
   rs.startX = edgeStart[0];

@@ -226,6 +226,8 @@ var styfn = {};
     { name: 'edge-distances', type: t.edgeDistances },
     { name: 'loop-direction', type: t.angle },
     { name: 'loop-sweep', type: t.angle },
+    { name: 'source-distance-from-node', type: t.size },
+    { name: 'target-distance-from-node', type: t.size },
 
     // these are just for the core
     { name: 'selection-box-color', type: t.color },
@@ -370,6 +372,8 @@ styfn.getDefaultProperties = util.memoize( function(){
     'transition-timing-function': 'linear',
     'loop-direction': '-135deg',
     'loop-sweep': '-90deg',
+    'source-distance-from-node': 0,
+    'target-distance-from-node': 0,
 
     // node props
     'background-blacken': 0,

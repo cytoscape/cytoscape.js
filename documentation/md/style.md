@@ -88,6 +88,8 @@ You may alternatively use `css` in place of `style`, e.g. `.selector( ... ).css(
 
 In the JSON or function stylesheet formats, it is possible to specify a function as the value for a style property.  In this manner, the style value can be specified via a function on a per-element basis.
 
+<span class="important-indicator"></span> Using a function as a style property value may be convenient in certain cases.  However, it may not be a performant option.  Thus, it may be worthwhile to use caching if possible, such as by using the lodash [`_.memoize()`](https://lodash.com/docs#memoize) function.
+
 <span class="important-indicator"></span> Note that if using functions as style values, it will not be possible to serialise and deserialise your stylesheet to JSON proper.
 
 Example:
@@ -114,8 +116,6 @@ cytoscape({
   // , ...
 });
 ```
-
-<span class="important-indicator"></span> Using a function as a style property value may be convenient in certain cases.  However, it may not be a performant option.  Thus, it may be worthwhile to use caching if possible, such as by using the lodash [`_.memoize()`](https://lodash.com/docs#memoize) function.
 
 
 

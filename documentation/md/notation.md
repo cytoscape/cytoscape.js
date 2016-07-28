@@ -51,8 +51,8 @@ Cytoscape.js supports several gestures:
  * Tap to select : touch & desktop
  * Tap background to unselect : desktop
  * Taphold background to unselect : desktop & touch
- * Multiple selection via metakey (shift, command, control, alt) + tap : desktop
- * Box selection : touch (three finger swipe) & desktop (metakey + mousedown then drag)
+ * Multiple selection via modifier key (shift, command, control, alt) + tap : desktop
+ * Box selection : touch (three finger swipe) & desktop (modifier key + mousedown then drag)
  * Grab and drag nodes : touch & desktop
 
 All gesture actions can be controlled by the dev, toggling them on or off whenever needed.
@@ -60,13 +60,15 @@ All gesture actions can be controlled by the dev, toggling them on or off whenev
 
 ## Position
 
-A node's position refers to the centre point of its bounding box.
+A node's position refers to the centre point of its body.
 
 There is an important distinction to make for position:  A position may be a _model_ position or a _rendered_ position.
 
-A model position --- as its name suggests --- is the position stored in the model for an element.  An element's model position remains constant, despite changes to zoom and pan.
+A model position --- as its name suggests --- is the position stored in the model for an element.  An element's model position remains constant, despite changes to zoom and pan.  Numeric style property values are specified in model co-ordinates, e.g. an node with width 20px will be 20 pixels wide at zoom 1.
 
-A rendered position is an on-screen location relative to the viewport.  For example, a rendered position of `{ x: 100, y: 100 }` specifies a point 100 pixels to the right and 100 pixels down from the top-left corner of the viewport.  An element's rendered position naturally changes as zoom and pan changes, because the element's on-screen position in the viewport changes as zooming and panning are applied.  Panning is always measured in rendered coordinates.
+A rendered position is an on-screen location relative to the viewport.  For example, a rendered position of `{ x: 100, y: 100 }` specifies a point 100 pixels to the right and 100 pixels down from the top-left corner of the viewport.  The model position and rendered position are the same at zoom 1 and pan (0, 0).
+
+An element's rendered position naturally changes as zoom and pan changes, because the element's on-screen position in the viewport changes as zooming and panning are applied.  Panning is always measured in rendered coordinates.
 
 In this documentation, "position" refers to model position unless otherwise stated.
 

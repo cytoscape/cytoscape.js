@@ -666,6 +666,11 @@ BRp.projectLines = function( edge ){
   var rs = _p.rscratch;
   var et = rs.edgeType;
 
+  // clear the cached points state
+  _p.rstyle.bezierPts = null;
+  _p.rstyle.linePts = null;
+  _p.rstyle.haystackPts = null;
+
   if( et === 'multibezier' ||  et === 'bezier' ||  et === 'self' ||  et === 'compound' ){
     var bpts = _p.rstyle.bezierPts = []; // jshint ignore:line
 

@@ -1243,16 +1243,15 @@ BRp.findEdgeControlPoints = function( edges ){
     src = pairEdges[0]._private.source;
     tgt = pairEdges[0]._private.target;
 
-    src_p = src._private;
-    tgt_p = tgt._private;
-
-    // make sure src/tgt distinction is consistent
-    // (src/tgt in this case are just for ctrlpts and don't actually have to be true src/tgt)
-    if( src_p.data.id > tgt_p.data.id ){
+    // make sure src/tgt distinction is consistent for bundled edges
+    if( !pairEdges.hasUnbundled && src.id() > tgt.id() ){
       var temp = src;
       src = tgt;
       tgt = temp;
     }
+
+    src_p = src._private;
+    tgt_p = tgt._private;
 
     srcPos = src_p.position;
     tgtPos = tgt_p.position;
@@ -1375,12 +1374,6 @@ BRp.findEdgeControlPoints = function( edges ){
       var ctrlptDist = ctrlptDists ? ctrlptDists.pfValue[0] : undefined;
       var ctrlptWeight = ctrlptWs.value[0];
       var edgeIsUnbundled = curveStyle === 'unbundled-bezier' || curveStyle === 'segments';
-
-      var swappedDirection = edge_p.source !== src;
-
-      if( swappedDirection && edgeIsUnbundled ){
-        ctrlptDist *= -1;
-      }
 
       var srcX1 = rs.lastSrcCtlPtX;
       var srcX2 = srcPos.x;
@@ -1524,14 +1517,7 @@ BRp.findEdgeControlPoints = function( edges ){
           var w = segmentWs[ s ];
           var d = segmentDs[ s ];
 
-          // d = swappedDirection ? -d : d;
-          //
-          // d = Math.abs(d);
-
-          // var w1 = !swappedDirection ? (1 - w) : w;
-          // var w2 = !swappedDirection ? w : (1 - w);
-
-          var w1 = (1 - w);
+          var w1 = 1 - w;
           var w2 = w;
 
           var midptPts = edgeDistances === 'node-position' ? posPts : midptSrcPts;
@@ -1582,8 +1568,8 @@ BRp.findEdgeControlPoints = function( edges ){
 
           var distanceFromMidpoint = manctrlptDist !== undefined ? manctrlptDist : normctrlptDist;
 
-          var w1 = !swappedDirection || edgeIsUnbundled ? (1 - ctrlptWeight) : ctrlptWeight;
-          var w2 = !swappedDirection || edgeIsUnbundled ? ctrlptWeight : (1 - ctrlptWeight);
+          var w1 = 1 - ctrlptWeight;
+          var w2 = ctrlptWeight;
 
           var midptPts = edgeDistances === 'node-position' ? posPts : midptSrcPts;
 

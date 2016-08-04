@@ -107,6 +107,27 @@ CRp.drawEdgePath = function( edge, context, pts, type, width ){
       rs.pathCache = path;
     }
   }
+  
+  function bezierLength(x1, y1, x2, y2, x3, y3) {
+    //formula source : http://www.malczak.linuxpl.com/blog/quadratic-bezier-curve-length/
+    var a = {
+      x: x1 - 2 * x2 + x3,
+      y: y1 - 2 * y2 + y3
+    },
+    b = {
+      x: 2 * (x2 - x1),
+      y: 2 * (y2 - y1)
+    };
+    var A = 4 * (a.x * a.x + a.y * a.y);
+    var B = 4 * (a.x * b.x + a.y * b.y);
+    var C = b.x * b.x + b.y * b.y;
+    var A32 = Math.pow(A, 3/2);
+    var A12 = Math.sqrt(A);
+    var ABC12 = Math.sqrt(A+B+C);
+    var C12 = Math.sqrt(C);
+    return 1 / (8 * A32) * (4 * A32 * ABC12 + 2 * A12 * B * (ABC12 - C12) + 
+                           (4 * C * A - B * B) * Math.abs(Math.log((2 * A12 + B / A12 + 2 * ABC12) / (B / A12 + 2 * C12))));
+  }
 
   if( canvasCxt.setLineDash ){ // for very outofdate browsers
     switch( type ){
@@ -128,26 +149,6 @@ CRp.drawEdgePath = function( edge, context, pts, type, width ){
           case 'bezier':
           case 'compound':
           case 'multibezier':
-            function bezierLength(x1, y1, x2, y2, x3, y3) {
-              //formula source : http://www.malczak.linuxpl.com/blog/quadratic-bezier-curve-length/
-              var a = {
-                x: x1 - 2 * x2 + x3,
-                y: y1 - 2 * y2 + y3
-              },
-              b = {
-                x: 2 * (x2 - x1),
-                y: 2 * (y2 - y1)
-              };
-              var A = 4 * (a.x * a.x + a.y * a.y);
-              var B = 4 * (a.x * b.x + a.y * b.y);
-              var C = b.x * b.x + b.y * b.y;
-              var A32 = Math.pow(A, 3/2);
-              var A12 = Math.sqrt(A);
-              var ABC12 = Math.sqrt(A+B+C);
-              var C12 = Math.sqrt(C);
-              return 1 / (8 * A32) * (4 * A32 * ABC12 + 2 * A12 * B * (ABC12 - C12) + 
-                                      (4 * C * A - B * B) * Math.abs(Math.log((2 * A12 + B / A12 + 2 * ABC12) / (B / A12 + 2 * C12))));
-            }
             for ( var i = 2; i + 3 < pts.length; i += 4 ) {
               length += bezierLength( pts[i - 2], pts[i - 1], pts[i], pts[i + 1], pts[i+2],pts[i + 3] );
             }

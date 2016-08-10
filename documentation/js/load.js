@@ -19,7 +19,7 @@ cy = cytoscape( options = {
         'font-family': 'helvetica',
         'font-size': 14,
         'text-outline-width': 3,
-        'text-outline-color': '#888',
+        'text-outline-color': '#999',
         'text-valign': 'center',
         'color': '#fff',
         'width': 'mapData(weight, 30, 80, 20, 50)',
@@ -42,6 +42,7 @@ cy = cytoscape( options = {
       selector: 'edge',
       css: {
         'width': 2,
+        'curve-style': 'bezier',
         'target-arrow-shape': 'triangle'
       }
     },
@@ -80,7 +81,7 @@ cy = cytoscape( options = {
     ],
   },
 
-  
+
   ready: function(){
     // when layout has set initial node positions etc
   }

@@ -54,18 +54,7 @@ CRp.drawElementText = function( context, ele, force ){
         context.textAlign = 'center';
     }
 
-    switch( textValign ){
-      case 'top':
-        context.textBaseline = 'bottom';
-        break;
-
-      case 'bottom':
-        context.textBaseline = 'top';
-        break;
-
-      default: // e.g. center
-        context.textBaseline = 'middle';
-    }
+    context.textBaseline = 'bottom';
   } else {
     var label = ele.pstyle( 'label' );
     var srcLabel = ele.pstyle( 'source-label' );
@@ -80,7 +69,7 @@ CRp.drawElementText = function( context, ele, force ){
     }
 
     context.textAlign = 'center';
-    context.textBaseline = 'middle';
+    context.textBaseline = 'bottom';
   }
 
 
@@ -249,28 +238,32 @@ CRp.drawText = function( context, ele, prefix ){
     var textBorderWidth = ele.pstyle( 'text-border-width' ).pfValue;
 
     if( backgroundOpacity > 0 || ( textBorderWidth > 0 && borderOpacity > 0 ) ){
-      var bgWidth = textW;
-      var bgHeight = textH;
       var bgX = textX;
 
-      if( halign ){
-        if( halign == 'center' ){
-          bgX = bgX - bgWidth / 2;
-        } else if( halign == 'left' ){
-          bgX = bgX - bgWidth;
-        }
+      switch( halign ){
+        case 'left':
+          bgX -= textW;
+          break;
+        case 'center':
+          bgX -= textW / 2;
+          break;
+        case 'right':
+          break;
       }
 
       var bgY = textY;
 
-      if( isNode ){
-        if( valign == 'top' ){
-          bgY = bgY - bgHeight;
-        } else if( valign == 'center' ){
-          bgY = bgY - bgHeight / 2;
-        }
-      } else {
-        bgY = bgY - bgHeight / 2;
+      switch( valign ){
+        case 'top':
+          bgY -= textH;
+          break;
+        case 'center':
+          bgY -= textH / 2;
+          textY += textH / 2;
+          break;
+        case 'bottom':
+          textY += textH;
+          break;
       }
 
       if( backgroundOpacity > 0 ){
@@ -280,9 +273,9 @@ CRp.drawText = function( context, ele, prefix ){
         context.fillStyle = 'rgba(' + textBackgroundColor[ 0 ] + ',' + textBackgroundColor[ 1 ] + ',' + textBackgroundColor[ 2 ] + ',' + backgroundOpacity * parentOpacity + ')';
         var styleShape = ele.pstyle( 'text-background-shape' ).strValue;
         if( styleShape == 'roundrectangle' ){
-          roundRect( context, bgX, bgY, bgWidth, bgHeight, 2 );
+          roundRect( context, bgX, bgY, textW, textH, 2 );
         } else {
-          context.fillRect( bgX, bgY, bgWidth, bgHeight );
+          context.fillRect( bgX, bgY, textW, textH );
         }
         context.fillStyle = textFill;
       }
@@ -314,12 +307,12 @@ CRp.drawText = function( context, ele, prefix ){
           }
         }
 
-        context.strokeRect( bgX, bgY, bgWidth, bgHeight );
+        context.strokeRect( bgX, bgY, textW, textH );
 
         if( textBorderStyle === 'double' ){
           var whiteWidth = textBorderWidth / 2;
 
-          context.strokeRect( bgX + whiteWidth, bgY + whiteWidth, bgWidth - whiteWidth * 2, bgHeight - whiteWidth * 2 );
+          context.strokeRect( bgX + whiteWidth, bgY + whiteWidth, textW - whiteWidth * 2, textH - whiteWidth * 2 );
         }
 
         if( context.setLineDash ){ // for very outofdate browsers

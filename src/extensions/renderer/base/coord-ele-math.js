@@ -160,6 +160,9 @@ BRp.recalculateRenderedStyle = function( eles, useCache ){
     rstyle.tgtY = rs.arrowEndY;
     rstyle.midX = rs.midX;
     rstyle.midY = rs.midY;
+    rstyle.labelAngle = rs.labelAngle;
+    rstyle.sourceLabelAngle = rs.sourceLabelAngle;
+    rstyle.targetLabelAngle = rs.targetLabelAngle;
   }
 };
 

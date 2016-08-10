@@ -223,9 +223,37 @@ describe('Collection graph manipulation', function(){
 
       expect( cy.$('#ce').source().same( cy.$('#c') ) ).to.be.true;
       expect( cy.$('#ce').target().same( cy.$('#e') ) ).to.be.true;
-      
+
       expect( cy.$('#cd').source().same( cy.$('#c') ) ).to.be.true;
       expect( cy.$('#cd').target().same( cy.$('#d') ) ).to.be.true;
+    });
+
+    it('should maintain primitive scratch data (for edge)', function(){
+      cy.$('#n1n2').scratch('foo', 'bar').move({ source: 'n3' });
+
+      expect( cy.$('#n1n2').scratch('foo') ).to.equal('bar');
+    });
+
+    it('should maintain object scratch data (for edge)', function(){
+      var foo = { bar: 'baz' };
+
+      cy.$('#n1n2').scratch( 'foo', foo ).move({ source: 'n3' });
+
+      expect( cy.$('#n1n2').scratch('foo') ).to.equal( foo );
+    });
+
+    it('should maintain primitive scratch data (for node)', function(){
+      cy.$('#child').scratch('foo', 'bar').move({ parent: 'n1' });
+
+      expect( cy.$('#child').scratch('foo') ).to.equal('bar');
+    });
+
+    it('should maintain object scratch data (for node)', function(){
+      var foo = { bar: 'baz' };
+
+      cy.$('#child').scratch( 'foo', foo ).move({ parent: 'n1' });
+
+      expect( cy.$('#child').scratch('foo') ).to.equal( foo );
     });
 
   });

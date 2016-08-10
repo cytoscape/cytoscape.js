@@ -286,7 +286,7 @@
 							<span class="fa fa-caret-down expanded-icon"></span>
 							<span class="fa fa-caret-right collapsed-icon"></span>
 						</span>{{/if}}
-						<a class="toclink" href="#{{id}}"><span class="fa fa-bookmark bookmark-icon"></span> {{& name}}</a>
+						<a class="toclink" href="#{{id}}">{{& name}}</a>
 					</div>
 
 					{{#each sections}}
@@ -295,11 +295,11 @@
 								<span class="fa fa-caret-down expanded-icon"></span>
 								<span class="fa fa-caret-right collapsed-icon"></span>
 							</span>{{/if}}
-							<a class="toclink" href="#{{id}}"><span class="fa fa-bookmark bookmark-icon"></span> {{& name}}</a>
+							<a class="toclink" href="#{{id}}">{{& name}}</a>
 						</div>
 
 						{{#each fns}}
-							<div class="section lvl3"><a class="toclink" href="#{{id}}"><span class="fa fa-bookmark bookmark-icon"></span> {{name}}() {{#if aliases}}et al{{/if}}</a></div>
+							<div class="section lvl3"><a class="toclink" href="#{{id}}">{{name}}() {{#if aliases}}et al{{/if}}</a></div>
 						{{/each}}
 					{{/each}}
 				{{/each}}

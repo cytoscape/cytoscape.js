@@ -379,8 +379,8 @@ PSF LICENSE AGREEMENT FOR PYTHON 2.7.2
   })();
 
   (function( root, factory ){
-    if( typeof define === 'function' && define.amd ){
-      return define( [], factory );
+    if( typeof define === 'function' && define.amd ){ // eslint-disable-line no-undef
+      return define( [], factory );  // eslint-disable-line no-undef
     } else if( typeof exports === 'object' ){
       return module.exports = factory();
     } else {

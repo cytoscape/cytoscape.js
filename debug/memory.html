@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<meta http-equiv="content-type" content="text/html;charset=UTF-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
+
+		<link rel="shortcut icon" href="images/favicon.png" />
+
+		<script type="text/javascript" src="jquery-2.1.1.js"></script>
+
+		<script src="livereload.js"></script>
+
+		<script src="../build/cytoscape.js"></script>
+
+		<title>cytoscape.js memory debug page</title>
+	</head>
+
+	<body>
+
+    <button id="init">Init</button>
+    <button id="destroy">Destroy</button>
+
+    <div style="border: 1px solid #888; width: 300px; height: 300px;" id="cytoscape"></div>
+
+    <script>
+      function init(){
+        window.cy = cytoscape({
+          container: document.getElementById('cytoscape'),
+          elements: [
+            { data: { id: 'foo' } },
+            { data: { id: 'bar' } },
+            { data: { id: 'baz', source: 'foo', target: 'bar' } }
+          ]
+        });
+      }
+
+      function destroy(){
+        cy.destroy();
+
+        window.cy = null;
+      }
+
+      $('#init').on('click', init);
+
+      $('#destroy').on('click', destroy);
+    </script>
+
+	</body>
+
+</html>

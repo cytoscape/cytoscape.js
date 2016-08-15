@@ -12,7 +12,7 @@ BRp.getCachedImage = function( url, onLoad ){
 
   var cache = imageCache[ url ] = imageCache[ url ] || {};
 
-  var image = cache.image = new Image();
+  var image = cache.image = new Image(); // eslint-disable-line no-undef
   image.addEventListener('load', onLoad);
   image.crossOrigin = 'Anonymous'; // prevent tainted canvas
   image.src = url;

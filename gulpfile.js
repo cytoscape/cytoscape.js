@@ -646,9 +646,11 @@ gulp.task('watch', function(next){
 
 // http://www.jshint.com/docs/options/
 gulp.task('lint', function(){
-  return gulp.src( 'src/**.js' )
-    .pipe( $.jshint( JSON.parse( fs.readFileSync('./.jshintrc', 'utf8') ) ) )
+  return gulp.src( 'src/**/*.js' )
+    .pipe( $.eslint() )
 
-    .pipe( $.jshint.reporter( require('jshint-stylish') ) )
+    .pipe( $.eslint.format() )
+
+    .pipe( $.eslint.failAfterError() )
   ;
 });

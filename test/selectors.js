@@ -7,8 +7,8 @@ describe('Selectors', function(){
   var n1, n2, nparent, n1n2, nparentLoop;
   var eles;
 
-  before(function(next){
-    cytoscape({
+  beforeEach(function(){
+    cy = cytoscape({
       styleEnabled: true,
 
       elements: {
@@ -22,32 +22,28 @@ describe('Selectors', function(){
           { data: { id: 'n1n2', source: 'n1', target: 'n2', weight: 1, foo: false }, classes: 'cls2' },
           { data: { id: 'nparentLoop', source: 'nparent', target: 'nparent' } }
         ]
-      },
-      ready: function(){
-        cy = this;
-        n1 = cy.getElementById('n1');
-        n2 = cy.getElementById('n2');
-        nparent = cy.getElementById('nparent');
-        n1n2 = cy.getElementById('n1n2');
-        nparentLoop = cy.getElementById('nparentLoop');
-
-        n1.select();
-        n2.unselectify();
-        nparent.lock();
-        n1n2.hide();
-        n1n2.css('opacity', 0);
-
-        eles = {
-          n1: n1,
-          n2: n2,
-          n1n2: n1n2,
-          nparent: nparent,
-          nparentLoop: nparentLoop
-        };
-
-        next();
       }
     });
+
+    n1 = cy.getElementById('n1');
+    n2 = cy.getElementById('n2');
+    nparent = cy.getElementById('nparent');
+    n1n2 = cy.getElementById('n1n2');
+    nparentLoop = cy.getElementById('nparentLoop');
+
+    n1.select();
+    n2.unselectify();
+    nparent.lock();
+    n1n2.hide();
+    n1n2.css('opacity', 0);
+
+    eles = {
+      n1: n1,
+      n2: n2,
+      n1n2: n1n2,
+      nparent: nparent,
+      nparentLoop: nparentLoop
+    };
   });
 
   afterEach(function(){

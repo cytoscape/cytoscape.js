@@ -233,6 +233,17 @@ CRp.drawText = function( context, ele, prefix ){
       textY -= pBottom / 2;
     }
 
+    switch( valign ){
+      case 'top':
+        break;
+      case 'center':
+        textY += textH / 2;
+        break;
+      case 'bottom':
+        textY += textH;
+        break;
+    }
+
     var backgroundOpacity = ele.pstyle( 'text-background-opacity' ).value;
     var borderOpacity = ele.pstyle( 'text-border-opacity' ).value;
     var textBorderWidth = ele.pstyle( 'text-border-width' ).pfValue;
@@ -259,10 +270,8 @@ CRp.drawText = function( context, ele, prefix ){
           break;
         case 'center':
           bgY -= textH / 2;
-          textY += textH / 2;
           break;
         case 'bottom':
-          textY += textH;
           break;
       }
 

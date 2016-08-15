@@ -51,6 +51,23 @@ var corefn = ({
     cy._private.renderer = new RendererProto( rOpts );
   },
 
+  destroyRenderer: function(){
+    var cy = this;
+
+    cy.notify( { type: 'destroy' } ); // destroy the renderer
+
+    var domEle = cy.container();
+    if( domEle ){
+      domEle._cyreg = null;
+
+      while( domEle.childNodes.length > 0 ){
+        domEle.removeChild( domEle.childNodes[0] );
+      }
+    }
+
+    cy._private.renderer = null; // to be extra safe, remove the ref
+  },
+
   onRender: function( fn ){
     return this.on('render', fn);
   },

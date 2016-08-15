@@ -153,7 +153,7 @@ elesfn.poolIndex = function(){
   var id = this._private.data.id;
 
   return eles._private.indexes[ id ];
-},
+};
 
 elesfn.json = function( obj ){
   var ele = this.element();
@@ -664,7 +664,7 @@ elesfn.move = function( struct ){
 
       for( var i = 0; i < jsons.length; i++ ){
         var json = jsons[i];
-        var ele = this[i]
+        var ele = this[i];
 
         if( json.group === 'edges' ){
           if( srcExists ){ json.data.source = srcId; }

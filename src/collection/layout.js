@@ -18,7 +18,6 @@ var elesfn = ({
     if( options.animate ){
       for( var i = 0; i < nodes.length; i++ ){
         var node = nodes[ i ];
-        var lastNode = i === nodes.length - 1;
 
         var newPos = fn.call( node, i, node );
         var pos = node.position();

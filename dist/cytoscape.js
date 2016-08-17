@@ -2,7 +2,7 @@
 
 /*!
 
-Cytoscape.js 2.7.7 (MIT licensed)
+Cytoscape.js 2.7.8 (MIT licensed)
 
 Copyright (c) The Cytoscape Consortium
 
@@ -4218,7 +4218,7 @@ elesfn.poolIndex = function(){
   var id = this._private.data.id;
 
   return eles._private.indexes[ id ];
-},
+};
 
 elesfn.json = function( obj ){
   var ele = this.element();
@@ -4728,11 +4728,15 @@ elesfn.move = function( struct ){
       this.remove();
 
       for( var i = 0; i < jsons.length; i++ ){
-        var json = jsons[ i ];
+        var json = jsons[i];
+        var ele = this[i];
 
         if( json.group === 'edges' ){
           if( srcExists ){ json.data.source = srcId; }
+
           if( tgtExists ){ json.data.target = tgtId; }
+
+          json.scratch = ele._private.scratch;
         }
       }
 
@@ -4751,10 +4755,13 @@ elesfn.move = function( struct ){
       this.remove(); // NB: also removes descendants and their connected edges
 
       for( var i = 0; i < this.length; i++ ){
-        var json = jsons[ i ];
+        var json = jsons[i];
+        var ele = this[i];
 
         if( json.group === 'nodes' ){
           json.data.parent = parentId === null ? undefined : parentId;
+
+          json.scratch = ele._private.scratch;
         }
       }
 
@@ -4947,7 +4954,6 @@ var elesfn = ({
     if( options.animate ){
       for( var i = 0; i < nodes.length; i++ ){
         var node = nodes[ i ];
-        var lastNode = i === nodes.length - 1;
 
         var newPos = fn.call( node, i, node );
         var pos = node.position();
@@ -6059,7 +6065,7 @@ var corefn = {
 
   remove: function( collection ){
     if( is.elementOrCollection( collection ) ){
-      collection = collection;
+      // already have right ref
     } else if( is.string( collection ) ){
       var selector = collection;
       collection = this.$( selector );
@@ -6944,16 +6950,7 @@ util.extend( corefn, {
 
     cy.stopAnimationLoop();
 
-    cy.notify( { type: 'destroy' } ); // destroy the renderer
-
-    var domEle = cy.container();
-    if( domEle ){
-      domEle._cyreg = null;
-
-      while( domEle.childNodes.length > 0 ){
-        domEle.removeChild( domEle.childNodes[0] );
-      }
-    }
+    cy.destroyRenderer();
 
     return cy;
   },
@@ -7322,7 +7319,7 @@ var corefn = ({
       var ids = Object.keys( map );
 
       for( var i = 0; i < ids.length; i++ ){
-        var ids = id[i];
+        var id = ids[i];
         var data = map[ id ];
         var ele = cy.getElementById( id );
 
@@ -7386,6 +7383,23 @@ var corefn = ({
     } );
 
     cy._private.renderer = new RendererProto( rOpts );
+  },
+
+  destroyRenderer: function(){
+    var cy = this;
+
+    cy.notify( { type: 'destroy' } ); // destroy the renderer
+
+    var domEle = cy.container();
+    if( domEle ){
+      domEle._cyreg = null;
+
+      while( domEle.childNodes.length > 0 ){
+        domEle.removeChild( domEle.childNodes[0] );
+      }
+    }
+
+    cy._private.renderer = null; // to be extra safe, remove the ref
   },
 
   onRender: function( fn ){
@@ -10815,7 +10829,7 @@ CoseLayout.prototype.run = function(){
       }
 
       if( options.animate ){
-        broadcast( layoutInfo.layoutNodes ); // jshint ignore:line
+        broadcast( layoutInfo.layoutNodes ); // eslint-disable-line no-undef
       }
 
     } while( loopRet && i + 1 < options.numIter );
@@ -11140,7 +11154,7 @@ var findLCA_aux = function( node1, node2, graphIx, layoutInfo ){
  *         Only used for debbuging
  */
 var printLayoutInfo = function( layoutInfo ){
-  /* jshint ignore:start */
+  /* eslint-disable */
 
   if( !DEBUG ){
     return;
@@ -11197,7 +11211,7 @@ var printLayoutInfo = function( layoutInfo ){
   console.debug( s );
 
   return;
-  /* jshint ignore:end */
+  /* eslint-enable */
 };
 
 
@@ -12151,6 +12165,9 @@ BRp.recalculateRenderedStyle = function( eles, useCache ){
     rstyle.tgtY = rs.arrowEndY;
     rstyle.midX = rs.midX;
     rstyle.midY = rs.midY;
+    rstyle.labelAngle = rs.labelAngle;
+    rstyle.sourceLabelAngle = rs.sourceLabelAngle;
+    rstyle.targetLabelAngle = rs.targetLabelAngle;
   }
 };
 
@@ -12998,6 +13015,7 @@ BRp.getLabelText = function( ele, prefix ){
   };
 
   if( textTransform == 'none' ){
+    // passthrough
   } else if( textTransform == 'uppercase' ){
     text = text.toUpperCase();
   } else if( textTransform == 'lowercase' ){
@@ -13077,16 +13095,17 @@ BRp.calculateLabelDimensions = function( ele, text, extraKey ){
     return cache[ cacheKey ];
   }
 
+  var sizeMult = 1; // increase the scale to increase accuracy w.r.t. zoomed text
   var fStyle = ele.pstyle( 'font-style' ).strValue;
-  var size = ele.pstyle( 'font-size' ).pfValue + 'px';
+  var size = ( sizeMult * ele.pstyle( 'font-size' ).pfValue ) + 'px';
   var family = ele.pstyle( 'font-family' ).strValue;
   var weight = ele.pstyle( 'font-weight' ).strValue;
 
   var div = this.labelCalcDiv;
 
   if( !div ){
-    div = this.labelCalcDiv = document.createElement( 'div' );
-    document.body.appendChild( div );
+    div = this.labelCalcDiv = document.createElement( 'div' ); // eslint-disable-line no-undef
+    document.body.appendChild( div ); // eslint-disable-line no-undef
   }
 
   var ds = div.style;
@@ -13117,8 +13136,8 @@ BRp.calculateLabelDimensions = function( ele, text, extraKey ){
   div.textContent = text;
 
   cache[ cacheKey ] = {
-    width: div.clientWidth,
-    height: div.clientHeight
+    width: Math.ceil( div.clientWidth / sizeMult ),
+    height: Math.ceil( div.clientHeight / sizeMult )
   };
 
   return cache[ cacheKey ];
@@ -13211,16 +13230,15 @@ BRp.findEdgeControlPoints = function( edges ){
     src = pairEdges[0]._private.source;
     tgt = pairEdges[0]._private.target;
 
-    src_p = src._private;
-    tgt_p = tgt._private;
-
-    // make sure src/tgt distinction is consistent
-    // (src/tgt in this case are just for ctrlpts and don't actually have to be true src/tgt)
-    if( src_p.data.id > tgt_p.data.id ){
+    // make sure src/tgt distinction is consistent for bundled edges
+    if( !pairEdges.hasUnbundled && src.id() > tgt.id() ){
       var temp = src;
       src = tgt;
       tgt = temp;
     }
+
+    src_p = src._private;
+    tgt_p = tgt._private;
 
     srcPos = src_p.position;
     tgtPos = tgt_p.position;
@@ -13328,12 +13346,6 @@ BRp.findEdgeControlPoints = function( edges ){
       var ctrlptDist = ctrlptDists ? ctrlptDists.pfValue[0] : undefined;
       var ctrlptWeight = ctrlptWs.value[0];
       var edgeIsUnbundled = curveStyle === 'unbundled-bezier' || curveStyle === 'segments';
-
-      var swappedDirection = edge_p.source !== src;
-
-      if( swappedDirection && edgeIsUnbundled ){
-        ctrlptDist *= -1;
-      }
 
       var srcX1 = rs.lastSrcCtlPtX;
       var srcX2 = srcPos.x;
@@ -13471,14 +13483,7 @@ BRp.findEdgeControlPoints = function( edges ){
           var w = segmentWs[ s ];
           var d = segmentDs[ s ];
 
-          // d = swappedDirection ? -d : d;
-          //
-          // d = Math.abs(d);
-
-          // var w1 = !swappedDirection ? (1 - w) : w;
-          // var w2 = !swappedDirection ? w : (1 - w);
-
-          var w1 = (1 - w);
+          var w1 = 1 - w;
           var w2 = w;
 
           var midptPts = edgeDistances === 'node-position' ? posPts : midptSrcPts;
@@ -13529,8 +13534,8 @@ BRp.findEdgeControlPoints = function( edges ){
 
           var distanceFromMidpoint = manctrlptDist !== undefined ? manctrlptDist : normctrlptDist;
 
-          var w1 = !swappedDirection || edgeIsUnbundled ? (1 - ctrlptWeight) : ctrlptWeight;
-          var w2 = !swappedDirection || edgeIsUnbundled ? ctrlptWeight : (1 - ctrlptWeight);
+          var w1 = 1 - ctrlptWeight;
+          var w2 = ctrlptWeight;
 
           var midptPts = edgeDistances === 'node-position' ? posPts : midptSrcPts;
 
@@ -14068,7 +14073,7 @@ BRp.getCachedImage = function( url, onLoad ){
 
   var cache = imageCache[ url ] = imageCache[ url ] || {};
 
-  var image = cache.image = new Image();
+  var image = cache.image = new Image(); // eslint-disable-line no-undef
   image.addEventListener('load', onLoad);
   image.crossOrigin = 'Anonymous'; // prevent tainted canvas
   image.src = url;
@@ -14220,6 +14225,10 @@ BRp.destroy = function(){
     ( tgt.off || tgt.removeEventListener ).apply( tgt, b.args );
   }
 
+  r.bindings = [];
+  r.beforeRenderCallbacks = [];
+  r.onUpdateEleCalcsFns = [];
+
   if( r.removeObserver ){
     r.removeObserver.disconnect();
   }
@@ -14230,7 +14239,7 @@ BRp.destroy = function(){
 
   if( r.labelCalcDiv ){
     try {
-      document.body.removeChild( r.labelCalcDiv );
+      document.body.removeChild( r.labelCalcDiv ); // eslint-disable-line no-undef
     } catch( e ){
       // ie10 issue #1014
     }
@@ -14516,7 +14525,7 @@ BRp.load = function(){
 
   // watch for when the cy container is removed from the dom
   if( haveMutationsApi ){
-    r.removeObserver = new MutationObserver( function( mutns ){
+    r.removeObserver = new MutationObserver( function( mutns ){ // eslint-disable-line no-undef
       for( var i = 0; i < mutns.length; i++ ){
         var mutn = mutns[ i ];
         var rNodes = mutn.removedNodes;
@@ -14552,13 +14561,13 @@ BRp.load = function(){
   }, 100 );
 
   if( haveMutationsApi ){
-    r.styleObserver = new MutationObserver( onResize );
+    r.styleObserver = new MutationObserver( onResize ); // eslint-disable-line no-undef
 
     r.styleObserver.observe( r.container, { attributes: true } );
   }
 
   // auto resize
-  r.registerBinding( window, 'resize', onResize );
+  r.registerBinding( window, 'resize', onResize ); // eslint-disable-line no-undef
 
   var invalCtnrBBOnScroll = function( domEle ){
     r.registerBinding( domEle, 'scroll', function( e ){
@@ -14735,7 +14744,7 @@ BRp.load = function(){
 
   }, false );
 
-  r.registerBinding( window, 'mousemove', function mousemoveHandler( e ){
+  r.registerBinding( window, 'mousemove', function mousemoveHandler( e ){ // eslint-disable-line no-undef
     var preventDefault = false;
     var capture = r.hoverData.capture;
 
@@ -15030,7 +15039,7 @@ BRp.load = function(){
     }
   }, false );
 
-  r.registerBinding( window, 'mouseup', function mouseupHandler( e ){
+  r.registerBinding( window, 'mouseup', function mouseupHandler( e ){ // eslint-disable-line no-undef
     var capture = r.hoverData.capture;
     if( !capture ){ return; }
     r.hoverData.capture = false;
@@ -15265,7 +15274,7 @@ BRp.load = function(){
   // r.registerBinding(r.container, 'DOMMouseScroll', wheelHandler, true);
   // r.registerBinding(r.container, 'MozMousePixelScroll', wheelHandler, true); // older firefox
 
-  r.registerBinding( window, 'scroll', function scrollHandler( e ){
+  r.registerBinding( window, 'scroll', function scrollHandler( e ){ // eslint-disable-line no-undef
     r.scrollingPage = true;
 
     clearTimeout( r.scrollingPageTimeout );
@@ -15400,9 +15409,9 @@ BRp.load = function(){
     }
 
     if( e.touches[2] ){
-
+      // ignore
     } else if( e.touches[1] ){
-
+      // ignore
     } else if( e.touches[0] ){
       var nears = r.findNearestElements( now[0], now[1], true, true );
       var near = nears[0];
@@ -15492,7 +15501,7 @@ BRp.load = function(){
   }, false );
 
   var touchmoveHandler;
-  r.registerBinding(window, 'touchmove', touchmoveHandler = function(e) {
+  r.registerBinding(window, 'touchmove', touchmoveHandler = function(e) { // eslint-disable-line no-undef
     var select = r.selection;
     var capture = r.touchData.capture;
     var cy = r.cy;
@@ -15884,7 +15893,7 @@ BRp.load = function(){
   }, false );
 
   var touchcancelHandler;
-  r.registerBinding( window, 'touchcancel', touchcancelHandler = function( e ){
+  r.registerBinding( window, 'touchcancel', touchcancelHandler = function( e ){ // eslint-disable-line no-undef
     var start = r.touchData.start;
 
     r.touchData.capture = false;
@@ -15895,7 +15904,7 @@ BRp.load = function(){
   } );
 
   var touchendHandler;
-  r.registerBinding( window, 'touchend', touchendHandler = function( e ){
+  r.registerBinding( window, 'touchend', touchendHandler = function( e ){ // eslint-disable-line no-undef
     var start = r.touchData.start;
 
     var capture = r.touchData.capture;
@@ -16001,8 +16010,9 @@ BRp.load = function(){
       r.data.bgActivePosistion = undefined;
       r.redrawHint( 'select', true );
     } else if( e.touches[1] ){
-
+      // ignore
     } else if( e.touches[0] ){
+      // ignore
 
     // Last touch released
     } else if( !e.touches[0] ){
@@ -16211,15 +16221,45 @@ var math = _dereq_( '../../../math' );
 
 var BRp = {};
 
-BRp.registerNodeShapes = function(){
-  var nodeShapes = this.nodeShapes = {};
-  var renderer = this;
+BRp.generatePolygon = function( name, points ){
+  return ( this.nodeShapes[ name ] = {
+    renderer: this,
 
-  nodeShapes[ 'ellipse' ] = {
+    name: name,
+
+    points: points,
+
+    draw: function( context, centerX, centerY, width, height ){
+      this.renderer.nodeShapeImpl( 'polygon', context, centerX, centerY, width, height, this.points );
+    },
+
+    intersectLine: function( nodeX, nodeY, width, height, x, y, padding ){
+      return math.polygonIntersectLine(
+          x, y,
+          this.points,
+          nodeX,
+          nodeY,
+          width / 2, height / 2,
+          padding )
+        ;
+    },
+
+    checkPoint: function( x, y, padding, width, height, centerX, centerY ){
+      return math.pointInsidePolygon( x, y, this.points,
+        centerX, centerY, width, height, [0, -1], padding )
+      ;
+    }
+  } );
+};
+
+BRp.generateEllipse = function(){
+  return ( this.nodeShapes['ellipse'] = {
+    renderer: this,
+
     name: 'ellipse',
 
     draw: function( context, centerX, centerY, width, height ){
-      renderer.nodeShapeImpl( this.name )( context, centerX, centerY, width, height );
+      this.renderer.nodeShapeImpl( this.name, context, centerX, centerY, width, height );
     },
 
     intersectLine: function( nodeX, nodeY, width, height, x, y, padding ){
@@ -16241,49 +16281,19 @@ BRp.registerNodeShapes = function(){
 
       return x * x + y * y <= 1;
     }
-  };
+  } );
+};
 
-  function generatePolygon( name, points ){
-    return ( nodeShapes[ name ] = {
-      name: name,
+BRp.generateRoundRectangle = function(){
+  return ( this.nodeShapes['roundrectangle'] = {
+    renderer: this,
 
-      points: points,
-
-      draw: function( context, centerX, centerY, width, height ){
-        renderer.nodeShapeImpl( 'polygon' )( context, centerX, centerY, width, height, this.points );
-      },
-
-      intersectLine: function( nodeX, nodeY, width, height, x, y, padding ){
-        return math.polygonIntersectLine(
-            x, y,
-            this.points,
-            nodeX,
-            nodeY,
-            width / 2, height / 2,
-            padding )
-          ;
-      },
-
-      checkPoint: function( x, y, padding, width, height, centerX, centerY ){
-        return math.pointInsidePolygon( x, y, nodeShapes[ name ].points,
-          centerX, centerY, width, height, [0, -1], padding )
-        ;
-      }
-    } );
-  }
-
-  generatePolygon( 'triangle', math.generateUnitNgonPointsFitToSquare( 3, 0 ) );
-
-  generatePolygon( 'square', math.generateUnitNgonPointsFitToSquare( 4, 0 ) );
-  nodeShapes[ 'rectangle' ] = nodeShapes[ 'square' ];
-
-  nodeShapes[ 'roundrectangle' ] = {
     name: 'roundrectangle',
 
     points: math.generateUnitNgonPointsFitToSquare( 4, 0 ),
 
     draw: function( context, centerX, centerY, width, height ){
-      renderer.nodeShapeImpl( this.name )( context, centerX, centerY, width, height );
+      this.renderer.nodeShapeImpl( this.name, context, centerX, centerY, width, height );
     },
 
     intersectLine: function( nodeX, nodeY, width, height, x, y, padding ){
@@ -16363,22 +16373,36 @@ BRp.registerNodeShapes = function(){
 
       return false;
     }
-  };
+  } );
+};
 
-  generatePolygon( 'diamond', [
+BRp.registerNodeShapes = function(){
+  var nodeShapes = this.nodeShapes = {};
+  var renderer = this;
+
+  this.generateEllipse();
+
+  this.generatePolygon( 'triangle', math.generateUnitNgonPointsFitToSquare( 3, 0 ) );
+
+  this.generatePolygon( 'rectangle', math.generateUnitNgonPointsFitToSquare( 4, 0 ) );
+  nodeShapes[ 'square' ] = nodeShapes[ 'rectangle' ];
+
+  this.generateRoundRectangle();
+
+  this.generatePolygon( 'diamond', [
     0, 1,
     1, 0,
     0, -1,
     -1, 0
   ] );
 
-  generatePolygon( 'pentagon', math.generateUnitNgonPointsFitToSquare( 5, 0 ) );
+  this.generatePolygon( 'pentagon', math.generateUnitNgonPointsFitToSquare( 5, 0 ) );
 
-  generatePolygon( 'hexagon', math.generateUnitNgonPointsFitToSquare( 6, 0 ) );
+  this.generatePolygon( 'hexagon', math.generateUnitNgonPointsFitToSquare( 6, 0 ) );
 
-  generatePolygon( 'heptagon', math.generateUnitNgonPointsFitToSquare( 7, 0 ) );
+  this.generatePolygon( 'heptagon', math.generateUnitNgonPointsFitToSquare( 7, 0 ) );
 
-  generatePolygon( 'octagon', math.generateUnitNgonPointsFitToSquare( 8, 0 ) );
+  this.generatePolygon( 'octagon', math.generateUnitNgonPointsFitToSquare( 8, 0 ) );
 
   var star5Points = new Array( 20 );
   {
@@ -16405,16 +16429,16 @@ BRp.registerNodeShapes = function(){
 
   star5Points = math.fitPolygonToSquare( star5Points );
 
-  generatePolygon( 'star', star5Points );
+  this.generatePolygon( 'star', star5Points );
 
-  generatePolygon( 'vee', [
+  this.generatePolygon( 'vee', [
     -1, -1,
     0, -0.333,
     1, -1,
     0, 1
   ] );
 
-  generatePolygon( 'rhomboid', [
+  this.generatePolygon( 'rhomboid', [
     -1, -1,
     0.333, -1,
     1, 1,
@@ -16429,12 +16453,12 @@ BRp.registerNodeShapes = function(){
     var name = 'polygon-' + key;
     var shape;
 
-    if( (shape = nodeShapes[ name ]) ){ // got cached shape
+    if( (shape = this[ name ]) ){ // got cached shape
       return shape;
     }
 
     // create and cache new shape
-    return generatePolygon( name, points );
+    return renderer.generatePolygon( name, points );
   };
 
 };
@@ -16476,6 +16500,14 @@ BRp.beforeRender = function( fn, priority ){
   cbs.sort(function( a, b ){ return b.priority - a.priority; });
 };
 
+var beforeRenderCallbacks = function( r, willDraw, startTime ){
+  var cbs = r.beforeRenderCallbacks;
+
+  for( var i = 0; i < cbs.length; i++ ){
+    cbs[i].fn( willDraw, startTime );
+  }
+};
+
 BRp.startRenderLoop = function(){
   var r = this;
 
@@ -16485,19 +16517,11 @@ BRp.startRenderLoop = function(){
     r.renderLoopStarted = true;
   }
 
-  var beforeRenderCallbacks = function( willDraw, startTime ){
-    var cbs = r.beforeRenderCallbacks;
-
-    for( var i = 0; i < cbs.length; i++ ){
-      cbs[i].fn( willDraw, startTime );
-    }
-  };
-
   var renderFn = function( requestTime ){
     if( r.destroyed ){ return; }
 
     if( r.requestedFrame && !r.skipFrame ){
-      beforeRenderCallbacks( true, requestTime );
+      beforeRenderCallbacks( r, true, requestTime );
 
       var startTime = util.performanceNow();
 
@@ -16529,7 +16553,7 @@ BRp.startRenderLoop = function(){
 
       r.requestedFrame = false;
     } else {
-      beforeRenderCallbacks( false, requestTime );
+      beforeRenderCallbacks( r, false, requestTime );
     }
 
     r.skipFrame = false;
@@ -16577,22 +16601,30 @@ CRp.arrowShapeImpl = function( name ){
     },
 
     'triangle-tee': function( context, trianglePoints, teePoints ){
-      var triPts = trianglePoints;
-      for( var i = 0; i < triPts.length; i++ ){
-        var pt = triPts[ i ];
+      if( context.beginPath ){ context.beginPath(); }
 
-        context.lineTo( pt.x, pt.y );
-      }
+        var triPts = trianglePoints;
+        for( var i = 0; i < triPts.length; i++ ){
+          var pt = triPts[ i ];
 
-      var teePts = teePoints;
-      var firstTeePt = teePoints[0];
-      context.moveTo( firstTeePt.x, firstTeePt.y );
+          context.lineTo( pt.x, pt.y );
+        }
 
-      for( var i = 0; i < teePts.length; i++ ){
-        var pt = teePts[ i ];
+      if( context.closePath ){ context.closePath(); }
 
-        context.lineTo( pt.x, pt.y );
-      }
+      if( context.beginPath ){ context.beginPath(); }
+
+        var teePts = teePoints;
+        var firstTeePt = teePoints[0];
+        context.moveTo( firstTeePt.x, firstTeePt.y );
+
+        for( var i = 0; i < teePts.length; i++ ){
+          var pt = teePts[ i ];
+
+          context.lineTo( pt.x, pt.y );
+        }
+
+      if( context.closePath ){ context.closePath(); }
     },
 
     'circle': function( context, rx, ry, r ){
@@ -16708,7 +16740,7 @@ CRp.drawEdgePath = function( edge, context, pts, type, width ){
       path = context = rs.pathCache;
       pathCacheHit = true;
     } else {
-      path = context = new Path2D();
+      path = context = new Path2D(); // eslint-disable-line no-undef
       rs.pathCacheKey = pathCacheKey;
       rs.pathCache = path;
     }
@@ -16853,7 +16885,7 @@ CRp.drawArrowShape = function( edge, arrowType, context, fill, edgeWidth, shape,
       path = context = rs.arrowPathCache[ arrowType ];
       pathCacheHit = true;
     } else {
-      path = context = new Path2D();
+      path = context = new Path2D(); // eslint-disable-line no-undef
       rs.arrowPathCacheKey[ arrowType ] = pathCacheKey;
       rs.arrowPathCache[ arrowType ] = path;
     }
@@ -17017,12 +17049,12 @@ CRp.drawInscribedImage = function( context, img, node ){
 
   // workaround for broken browsers like ie
   if( null == imgW || null == imgH ){
-    document.body.appendChild( img );
+    document.body.appendChild( img ); // eslint-disable-line no-undef
 
     imgW = img.cachedW = img.width || img.offsetWidth;
     imgH = img.cachedH = img.height || img.offsetHeight;
 
-    document.body.removeChild( img );
+    document.body.removeChild( img ); // eslint-disable-line no-undef
   }
 
   var w = imgW;
@@ -17188,18 +17220,7 @@ CRp.drawElementText = function( context, ele, force ){
         context.textAlign = 'center';
     }
 
-    switch( textValign ){
-      case 'top':
-        context.textBaseline = 'bottom';
-        break;
-
-      case 'bottom':
-        context.textBaseline = 'top';
-        break;
-
-      default: // e.g. center
-        context.textBaseline = 'middle';
-    }
+    context.textBaseline = 'bottom';
   } else {
     var label = ele.pstyle( 'label' );
     var srcLabel = ele.pstyle( 'source-label' );
@@ -17214,7 +17235,7 @@ CRp.drawElementText = function( context, ele, force ){
     }
 
     context.textAlign = 'center';
-    context.textBaseline = 'middle';
+    context.textBaseline = 'bottom';
   }
 
 
@@ -17378,33 +17399,46 @@ CRp.drawText = function( context, ele, prefix ){
       textY -= pBottom / 2;
     }
 
+    switch( valign ){
+      case 'top':
+        break;
+      case 'center':
+        textY += textH / 2;
+        break;
+      case 'bottom':
+        textY += textH;
+        break;
+    }
+
     var backgroundOpacity = ele.pstyle( 'text-background-opacity' ).value;
     var borderOpacity = ele.pstyle( 'text-border-opacity' ).value;
     var textBorderWidth = ele.pstyle( 'text-border-width' ).pfValue;
 
     if( backgroundOpacity > 0 || ( textBorderWidth > 0 && borderOpacity > 0 ) ){
-      var bgWidth = textW;
-      var bgHeight = textH;
       var bgX = textX;
 
-      if( halign ){
-        if( halign == 'center' ){
-          bgX = bgX - bgWidth / 2;
-        } else if( halign == 'left' ){
-          bgX = bgX - bgWidth;
-        }
+      switch( halign ){
+        case 'left':
+          bgX -= textW;
+          break;
+        case 'center':
+          bgX -= textW / 2;
+          break;
+        case 'right':
+          break;
       }
 
       var bgY = textY;
 
-      if( isNode ){
-        if( valign == 'top' ){
-          bgY = bgY - bgHeight;
-        } else if( valign == 'center' ){
-          bgY = bgY - bgHeight / 2;
-        }
-      } else {
-        bgY = bgY - bgHeight / 2;
+      switch( valign ){
+        case 'top':
+          bgY -= textH;
+          break;
+        case 'center':
+          bgY -= textH / 2;
+          break;
+        case 'bottom':
+          break;
       }
 
       if( backgroundOpacity > 0 ){
@@ -17414,9 +17448,9 @@ CRp.drawText = function( context, ele, prefix ){
         context.fillStyle = 'rgba(' + textBackgroundColor[ 0 ] + ',' + textBackgroundColor[ 1 ] + ',' + textBackgroundColor[ 2 ] + ',' + backgroundOpacity * parentOpacity + ')';
         var styleShape = ele.pstyle( 'text-background-shape' ).strValue;
         if( styleShape == 'roundrectangle' ){
-          roundRect( context, bgX, bgY, bgWidth, bgHeight, 2 );
+          roundRect( context, bgX, bgY, textW, textH, 2 );
         } else {
-          context.fillRect( bgX, bgY, bgWidth, bgHeight );
+          context.fillRect( bgX, bgY, textW, textH );
         }
         context.fillStyle = textFill;
       }
@@ -17448,12 +17482,12 @@ CRp.drawText = function( context, ele, prefix ){
           }
         }
 
-        context.strokeRect( bgX, bgY, bgWidth, bgHeight );
+        context.strokeRect( bgX, bgY, textW, textH );
 
         if( textBorderStyle === 'double' ){
           var whiteWidth = textBorderWidth / 2;
 
-          context.strokeRect( bgX + whiteWidth, bgY + whiteWidth, bgWidth - whiteWidth * 2, bgHeight - whiteWidth * 2 );
+          context.strokeRect( bgX + whiteWidth, bgY + whiteWidth, textW - whiteWidth * 2, textH - whiteWidth * 2 );
         }
 
         if( context.setLineDash ){ // for very outofdate browsers
@@ -17641,7 +17675,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
       path = rs.pathCache;
       pathCacheHit = true;
     } else {
-      path = new Path2D();
+      path = new Path2D(); // eslint-disable-line no-undef
       rs.pathCacheKey = pathCacheKey;
       rs.pathCache = path;
     }
@@ -17898,7 +17932,7 @@ CRp.getPixelRatio = function(){
     context.oBackingStorePixelRatio ||
     context.backingStorePixelRatio || 1;
 
-  return (window.devicePixelRatio || 1) / backingStore;
+  return (window.devicePixelRatio || 1) / backingStore; // eslint-disable-line no-undef
 };
 
 CRp.paintCache = function( context ){
@@ -18517,7 +18551,7 @@ CRp.drawPolygonPath = function(
 
 // Round rectangle drawing
 CRp.drawRoundRectanglePath = function(
-  context, x, y, width, height, radius ){
+  context, x, y, width, height ){
 
   var halfWidth = width / 2;
   var halfHeight = height / 2;
@@ -18928,7 +18962,7 @@ ETCp.addTexture = function( txrH, minW ){
   txr.invalidatedWidth = 0;
   txr.fullnessChecks = 0;
 
-  txr.canvas = document.createElement('canvas');
+  txr.canvas = document.createElement('canvas'); // eslint-disable-line no-undef
   txr.canvas.width = txr.width;
   txr.canvas.height = txr.height;
 
@@ -19083,7 +19117,7 @@ var is = _dereq_( '../../../is' );
 var CRp = {};
 
 CRp.createBuffer = function( w, h ){
-  var buffer = document.createElement( 'canvas' );
+  var buffer = document.createElement( 'canvas' ); // eslint-disable-line no-undef
   buffer.width = w;
   buffer.height = h;
 
@@ -19129,7 +19163,7 @@ CRp.bufferCanvasImage = function( options ){
     scale *= pxRatio;
   }
 
-  var buffCanvas = document.createElement( 'canvas' );
+  var buffCanvas = document.createElement( 'canvas' ); // eslint-disable-line no-undef
 
   buffCanvas.width = width;
   buffCanvas.height = height;
@@ -19230,7 +19264,7 @@ function CanvasRenderer( options ){
     bufferContexts: new Array( CRp.CANVAS_LAYERS ),
   };
 
-  r.data.canvasContainer = document.createElement( 'div' );
+  r.data.canvasContainer = document.createElement( 'div' ); // eslint-disable-line no-undef
   var containerStyle = r.data.canvasContainer.style;
   r.data.canvasContainer.setAttribute( 'style', '-webkit-tap-highlight-color: rgba(0,0,0,0);' );
   containerStyle.position = 'relative';
@@ -19242,7 +19276,7 @@ function CanvasRenderer( options ){
   container.setAttribute( 'style', ( container.getAttribute( 'style' ) || '' ) + '-webkit-tap-highlight-color: rgba(0,0,0,0);' );
 
   for( var i = 0; i < CRp.CANVAS_LAYERS; i++ ){
-    var canvas = r.data.canvases[ i ] = document.createElement( 'canvas' );
+    var canvas = r.data.canvases[ i ] = document.createElement( 'canvas' );  // eslint-disable-line no-undef
     r.data.contexts[ i ] = canvas.getContext( '2d' );
     canvas.setAttribute( 'style', '-webkit-user-select: none; -moz-user-select: -moz-none; user-select: none; -webkit-tap-highlight-color: rgba(0,0,0,0); outline-style: none;' + ( is.ms() ? ' -ms-touch-action: none; touch-action: none; ' : '' ) );
     canvas.style.position = 'absolute';
@@ -19259,7 +19293,7 @@ function CanvasRenderer( options ){
   r.data.canvases[ CRp.DRAG ].setAttribute( 'data-id', 'layer' + CRp.DRAG + '-drag' );
 
   for( var i = 0; i < CRp.BUFFER_COUNT; i++ ){
-    r.data.bufferCanvases[ i ] = document.createElement( 'canvas' );
+    r.data.bufferCanvases[ i ] = document.createElement( 'canvas' );  // eslint-disable-line no-undef
     r.data.bufferContexts[ i ] = r.data.bufferCanvases[ i ].getContext( '2d' );
     r.data.bufferCanvases[ i ].style.position = 'absolute';
     r.data.bufferCanvases[ i ].setAttribute( 'data-id', 'buffer' + i );
@@ -19373,9 +19407,6 @@ var useEleTxrCaching = true; // whether to use individual ele texture caching un
 var LayeredTextureCache = function( renderer, eleTxrCache ){
   var self = this;
 
-  // TODO disable once not debugging
-  window.cache = this;
-
   var r = self.renderer = renderer;
 
   self.layersByLevel = {}; // e.g. 2 => [ layer1, layer2, ..., layerN ]
@@ -19418,7 +19449,7 @@ LTCp.makeLayer = function( bb, lvl ){
   var w = Math.ceil( bb.w * scale );
   var h = Math.ceil( bb.h * scale );
 
-  var canvas = document.createElement('canvas');
+  var canvas = document.createElement('canvas'); // eslint-disable-line no-undef
 
   canvas.width = w;
   canvas.height = h;
@@ -20035,24 +20066,15 @@ module.exports = LayeredTextureCache;
 
 var CRp = {};
 
-var impl;
-
-CRp.nodeShapeImpl = function( name ){
-  var self = this;
-
-  return ( impl || (impl = {
-    'ellipse': function( context, centerX, centerY, width, height ){
-      self.drawEllipsePath( context, centerX, centerY, width, height );
-    },
-
-    'polygon': function( context, centerX, centerY, width, height, points ){
-      self.drawPolygonPath( context, centerX, centerY, width, height, points );
-    },
-
-    'roundrectangle': function( context, centerX, centerY, width, height ){
-      self.drawRoundRectanglePath( context, centerX, centerY, width, height, 10 );
-    }
-  }) )[ name ];
+CRp.nodeShapeImpl = function( name, context, centerX, centerY, width, height, points ){
+  switch( name ){
+    case 'ellipse':
+      return this.drawEllipsePath( context, centerX, centerY, width, height );
+    case 'polygon':
+      return this.drawPolygonPath( context, centerX, centerY, width, height, points );
+    case 'roundrectangle':
+      return this.drawRoundRectanglePath( context, centerX, centerY, width, height );
+  }
 };
 
 module.exports = CRp;
@@ -20880,8 +20902,8 @@ PSF LICENSE AGREEMENT FOR PYTHON 2.7.2
   })();
 
   (function( root, factory ){
-    if( typeof define === 'function' && define.amd ){
-      return define( [], factory );
+    if( typeof define === 'function' && define.amd ){ // eslint-disable-line no-undef
+      return define( [], factory );  // eslint-disable-line no-undef
     } else if( typeof exports === 'object' ){
       return module.exports = factory();
     } else {
@@ -20949,8 +20971,11 @@ module.exports = cytoscape;
 },{"./-preamble":1,"./core":37,"./extension":46,"./fabric":80,"./is":83,"./jquery-plugin":84,"./stylesheet":97,"./thread":98,"./version.json":106,"./window":107}],83:[function(_dereq_,module,exports){
 'use strict';
 
+/*global HTMLElement DocumentTouch */
+
 var window = _dereq_( './window' );
 var navigator = window ? window.navigator : null;
+var document = window ? window.document : null;
 
 var typeofstr = typeof '';
 var typeofobj = typeof {};
@@ -21084,15 +21109,15 @@ var is = {
   },
 
   gecko: function(){
-    return typeof InstallTrigger !== 'undefined' || ('MozAppearance' in document.documentElement.style);
+    return window && ( typeof InstallTrigger !== 'undefined' || ('MozAppearance' in document.documentElement.style) );
   },
 
   webkit: function(){
-    return typeof webkitURL !== 'undefined' || ('WebkitAppearance' in document.documentElement.style);
+    return window && ( typeof webkitURL !== 'undefined' || ('WebkitAppearance' in document.documentElement.style) );
   },
 
   chromium: function(){
-    return typeof chrome !== 'undefined';
+    return window && ( typeof chrome !== 'undefined' );
   },
 
   khtml: function(){
@@ -21733,7 +21758,7 @@ math.pointInsidePolygonPoints = function( x, y, points ){
     }
 
     if( x1 == x && x2 == x ){
-
+      // then ignore
     } else if( (x1 >= x && x >= x2)
       || (x1 <= x && x <= x2) ){
 
@@ -22432,7 +22457,7 @@ api.reject = function( val ){
   return new api(function( resolve, reject ){ reject( val ); });
 };
 
-module.exports = typeof Promise !== 'undefined' ? Promise : api;
+module.exports = typeof Promise !== 'undefined' ? Promise : api; // eslint-disable-line no-undef
 
 },{}],87:[function(_dereq_,module,exports){
 'use strict';
@@ -26436,6 +26461,8 @@ module.exports = {
 },{"../is":83}],100:[function(_dereq_,module,exports){
 'use strict';
 
+/*global console */
+
 var is = _dereq_( '../is' );
 var math = _dereq_( '../math' );
 
@@ -26449,8 +26476,8 @@ var util = {
 
   noop: function(){},
 
-  /* jshint ignore:start */
   error: function( msg ){
+    /* eslint-disable */
     if( console.error ){
       console.error.apply( console, arguments );
 
@@ -26460,8 +26487,8 @@ var util = {
 
       if( console.trace ){ console.trace(); }
     }
+    /* eslint-enable */
   },
-  /* jshint ignore:end */
 
   clone: function( obj ){
     return this.extend( {}, obj );
@@ -26707,8 +26734,6 @@ module.exports = {
 'use strict';
 
 module.exports = function memoize( fn, keyFn ){
-  var cache = {};
-
   if( !keyFn ){
     keyFn = function(){
       if( arguments.length === 1 ){
@@ -26727,11 +26752,12 @@ module.exports = function memoize( fn, keyFn ){
     };
   }
 
-  return function memoizedFn(){
+  var memoizedFn = function(){
     var self = this;
     var args = arguments;
     var ret;
     var k = keyFn.apply( self, args );
+    var cache = memoizedFn.cache;
 
     if( !(ret = cache[ k ]) ){
       ret = cache[ k ] = fn.apply( self, args );
@@ -26739,6 +26765,10 @@ module.exports = function memoize( fn, keyFn ){
 
     return ret;
   };
+
+  memoizedFn.cache = {};
+
+  return memoizedFn;
 };
 
 },{}],103:[function(_dereq_,module,exports){
@@ -26959,9 +26989,9 @@ util.debounce = function( func, wait, options ){ // ported lodash debounce funct
 module.exports = util;
 
 },{"../is":83,"../window":107}],106:[function(_dereq_,module,exports){
-module.exports="2.7.7"
+module.exports="2.7.8"
 },{}],107:[function(_dereq_,module,exports){
-module.exports = ( typeof window === 'undefined' ? null : window );
+module.exports = ( typeof window === 'undefined' ? null : window ); // eslint-disable-line no-undef
 
 },{}]},{},[82])(82)
 });

@@ -47,6 +47,9 @@ var defaults = {
   // Constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
   boundingBox: undefined,
 
+  // Randomize the initial positions of the nodes (true) or use existing positions (false)
+  randomize: false,
+
   // Extra spacing between components in non-compound graphs
   componentSpacing: 100,
 
@@ -129,9 +132,9 @@ CoseLayout.prototype.run = function(){
   }
 
   // If required, randomize node positions
-  // if (true === options.randomize) {
-  randomizePositions( layoutInfo, cy );
-  // }
+  if (options.randomize) {
+    randomizePositions( layoutInfo, cy );
+  }
 
   var startTime = Date.now();
   var refreshRequested = false;

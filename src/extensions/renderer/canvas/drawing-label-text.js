@@ -347,14 +347,10 @@ CRp.drawText = function( context, ele, prefix ){
         case 'top':
           textY -= ( lines.length - 1 ) * lineHeight;
           break;
-
-        case 'bottom':
-          // nothing required
-          break;
-
-        default:
         case 'center':
-          textY -= ( lines.length - 1 ) * lineHeight / 2;
+        case 'bottom':
+          textY -= ( lines.length - 1 ) * lineHeight;
+          break;
       }
 
       for( var l = 0; l < lines.length; l++ ){

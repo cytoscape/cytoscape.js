@@ -262,18 +262,7 @@ CRp.drawText = function( context, ele, prefix ){
           break;
       }
 
-      var bgY = textY;
-
-      switch( valign ){
-        case 'top':
-          bgY -= textH;
-          break;
-        case 'center':
-          bgY -= textH / 2;
-          break;
-        case 'bottom':
-          break;
-      }
+      var bgY = textY - textH;
 
       if( backgroundOpacity > 0 ){
         var textFill = context.fillStyle;

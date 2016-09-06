@@ -1,14 +1,15 @@
 # Contributing to Cytoscape.js
 
-Cytoscape.js is an open source project, and anyone interested is encouraged to contribute to Cytoscape.js.  To contribute, [fork](https://help.github.com/articles/fork-a-repo/) Cytoscape.js, commit your changes, and send a [pull request](https://help.github.com/articles/using-pull-requests/).
+Cytoscape.js is an open source project, we greatly appreciate any and all contributions.  Thank you for taking the time and effort to contribute!
 
+If you'd like to contribute code to Cytoscape.js but you're not sure exactly what you'd like to implement, take a look at our [current milestones](https://github.com/cytoscape/cytoscape.js/milestones) to see what features we have planned in future.  Of course, we also welcome your own ideas.
 
 
 ## Submitting issues
 
 Submit issues or feature requests to the [issue tracker](https://github.com/cytoscape/cytoscape.js/issues).  If your issue pertains to an extension, you should file the issue on that extension's issue tracker instead.
 
-Before submitting an issue, you should ensure that the issue still exists in the latest version of the library.  Because we follow semver, you can safely upgrade patch releases (x.y.**z**) and feature releases (x.**y**) without worry of breaking API changes.
+Before submitting an issue, please ensure that the issue still exists in the latest version of the library.  Because we follow semver, you can safely upgrade patch releases (x.y.**z**) and feature releases (x.**y**) without worry of breaking API changes.
 
 Clearly describe your issue.  List the steps necessary to reproduce your issue along with the corresponding code (either an inline snippet or a live one like JSBin).
 

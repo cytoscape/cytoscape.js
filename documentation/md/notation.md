@@ -72,6 +72,8 @@ An element's rendered position naturally changes as zoom and pan changes, becaus
 
 In this documentation, "position" refers to model position unless otherwise stated.
 
+A node's position can be set manually, or it can be set automatically using a [layout](#layouts).  Because the positions of two nodes influence the lengths of the edges in between them, a layout effectively sets edge lengths.
+
 ## Elements JSON
 
 Examples are given that outline format of the elements JSON used to load elements into Cytoscape.js:

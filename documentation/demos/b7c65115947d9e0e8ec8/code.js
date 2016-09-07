@@ -3,7 +3,8 @@ $(function(){ // on dom ready
 $('#cy').cytoscape({
   layout: {
     name: 'cose',
-    padding: 10
+    padding: 10,
+    randomize: true
   },
   
   style: cytoscape.stylesheet()

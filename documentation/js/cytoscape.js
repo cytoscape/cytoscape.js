@@ -2,7 +2,7 @@
 
 /*!
 
-Cytoscape.js 2.7.8 (MIT licensed)
+Cytoscape.js 2.7.9 (MIT licensed)
 
 Copyright (c) The Cytoscape Consortium
 
@@ -10024,6 +10024,9 @@ var defaults = {
   // Constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
   boundingBox: undefined,
 
+  // Randomize the initial positions of the nodes (true) or use existing positions (false)
+  randomize: false,
+
   // Extra spacing between components in non-compound graphs
   componentSpacing: 100,
 
@@ -10106,9 +10109,9 @@ CoseLayout.prototype.run = function(){
   }
 
   // If required, randomize node positions
-  // if (true === options.randomize) {
-  randomizePositions( layoutInfo, cy );
-  // }
+  if (options.randomize) {
+    randomizePositions( layoutInfo, cy );
+  }
 
   var startTime = Date.now();
   var refreshRequested = false;
@@ -14066,19 +14069,24 @@ var BRp = {};
 BRp.getCachedImage = function( url, onLoad ){
   var r = this;
   var imageCache = r.imageCache = r.imageCache || {};
+  var cache = imageCache[ url ];
 
-  if( imageCache[ url ] && imageCache[ url ].image ){
-    return imageCache[ url ].image;
+  if( cache ){
+    if( !cache.image.complete ){
+      cache.image.addEventListener('load', onLoad);
+    }
+
+    return cache.image;
+  } else {
+    cache = imageCache[ url ] = imageCache[ url ] || {};
+
+    var image = cache.image = new Image(); // eslint-disable-line no-undef
+    image.addEventListener('load', onLoad);
+    image.crossOrigin = 'Anonymous'; // prevent tainted canvas
+    image.src = url;
+
+    return image;
   }
-
-  var cache = imageCache[ url ] = imageCache[ url ] || {};
-
-  var image = cache.image = new Image(); // eslint-disable-line no-undef
-  image.addEventListener('load', onLoad);
-  image.crossOrigin = 'Anonymous'; // prevent tainted canvas
-  image.src = url;
-
-  return image;
 };
 
 module.exports = BRp;
@@ -17428,18 +17436,7 @@ CRp.drawText = function( context, ele, prefix ){
           break;
       }
 
-      var bgY = textY;
-
-      switch( valign ){
-        case 'top':
-          bgY -= textH;
-          break;
-        case 'center':
-          bgY -= textH / 2;
-          break;
-        case 'bottom':
-          break;
-      }
+      var bgY = textY - textH;
 
       if( backgroundOpacity > 0 ){
         var textFill = context.fillStyle;
@@ -17513,14 +17510,10 @@ CRp.drawText = function( context, ele, prefix ){
         case 'top':
           textY -= ( lines.length - 1 ) * lineHeight;
           break;
-
-        case 'bottom':
-          // nothing required
-          break;
-
-        default:
         case 'center':
-          textY -= ( lines.length - 1 ) * lineHeight / 2;
+        case 'bottom':
+          textY -= ( lines.length - 1 ) * lineHeight;
+          break;
       }
 
       for( var l = 0; l < lines.length; l++ ){
@@ -23264,11 +23257,24 @@ selfn.toString = selfn.selector = function(){
 
   var str = '';
 
-  var clean = function( obj, isValue ){
-    if( is.string( obj ) ){
-      return isValue ? '"' + obj + '"' : obj;
+  var clean = function( obj ){
+    if( obj == null ){
+      return '';
+    } else {
+      return obj;
     }
-    return '';
+  };
+
+  var cleanVal = function( val ){
+    if( is.string( val ) ){
+      return '"' + val + '"';
+    } else {
+      return clean( val );
+    }
+  };
+
+  var space = function( val ){
+    return ' ' + val + ' ';
   };
 
   var queryToString = function( query ){
@@ -23285,7 +23291,7 @@ selfn.toString = selfn.selector = function(){
       var data = query.data[ j ];
 
       if( data.value ){
-        str += '[' + data.field + clean( data.operator ) + clean( data.value, true ) + ']';
+        str += '[' + data.field + space( clean( data.operator ) ) + cleanVal( data.value ) + ']';
       } else {
         str += '[' + clean( data.operator ) + data.field + ']';
       }
@@ -23293,7 +23299,7 @@ selfn.toString = selfn.selector = function(){
 
     for( var j = 0; j < query.meta.length; j++ ){
       var meta = query.meta[ j ];
-      str += '[[' + meta.field + clean( meta.operator ) + clean( meta.value, true ) + ']]';
+      str += '[[' + meta.field + space( clean( meta.operator ) ) + cleanVal( meta.value ) + ']]';
     }
 
     for( var j = 0; j < query.colonSelectors.length; j++ ){
@@ -25003,7 +25009,7 @@ var styfn = {};
     mapLayoutData: { mapping: true, regex: mapData( 'mapLayoutData' ) },
     mapScratch: { mapping: true, regex: mapData( 'mapScratch' ) },
     fn: { mapping: true, fn: true },
-    url: { regex: '^url\\s*\\(\\s*([^\\s]+)\\s*\\s*\\)|none|(.+)$' },
+    url: { regex: 'url\\s*\\(\\s*[\'"]?(.+?)[\'"]?\\s*\\)|none|(.+)$' },
     propList: { propList: true },
     angle: { number: true, units: 'deg|rad', implicitUnits: 'rad' },
     textRotation: { number: true, units: 'deg|rad', implicitUnits: 'rad', enums: [ 'none', 'autorotate' ] },
@@ -26989,7 +26995,7 @@ util.debounce = function( func, wait, options ){ // ported lodash debounce funct
 module.exports = util;
 
 },{"../is":83,"../window":107}],106:[function(_dereq_,module,exports){
-module.exports="2.7.8"
+module.exports="2.7.9"
 },{}],107:[function(_dereq_,module,exports){
 module.exports = ( typeof window === 'undefined' ? null : window ); // eslint-disable-line no-undef
 

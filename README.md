@@ -1,7 +1,7 @@
 # Cytoscape.js
 
 [![Build Status](https://travis-ci.org/cytoscape/cytoscape.js.svg?branch=master)](https://travis-ci.org/cytoscape/cytoscape.js) [![Build Status](https://travis-ci.org/cytoscape/cytoscape.js.svg?branch=unstable)](https://travis-ci.org/cytoscape/cytoscape.js)  
-*(master branch, unstable branch)* 
+*(master branch, unstable branch)*
 
 
 Graph theory (a.k.a. network) library for analysis and visualisation : [http://js.cytoscape.org](http://js.cytoscape.org)
@@ -29,6 +29,12 @@ Learn more about the features of Cytoscape.js by reading [its documentation](htt
 ## Documentation
 
 You can find the documentation and downloads on the [project website](http://js.cytoscape.org).
+
+
+
+## Roadmap
+
+Future versions of Cytoscape.js are planned in the [milestones of the Github issue tracker](https://github.com/cytoscape/cytoscape.js/milestones).  You can use the milestones to see what's currently planned for future releases.
 
 
 

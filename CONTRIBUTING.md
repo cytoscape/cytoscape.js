@@ -1,8 +1,11 @@
 # Contributing to Cytoscape.js
 
-Cytoscape.js is an open source project, we greatly appreciate any and all contributions.  Thank you for taking the time and effort to contribute!
+Cytoscape.js is an open source project, and we greatly appreciate any and all contributions.
 
-If you'd like to contribute code to Cytoscape.js but you're not sure exactly what you'd like to implement, take a look at our [current milestones](https://github.com/cytoscape/cytoscape.js/milestones) to see what features we have planned in future.  Of course, we also welcome your own ideas.
+If you'd like to contribute code to Cytoscape.js but you're not sure exactly what you'd like to implement, take a look at our [current milestones](https://github.com/cytoscape/cytoscape.js/milestones) to see what features we have planned in future --- or anything labelled [`help-wanted`](https://github.com/cytoscape/cytoscape.js/issues?q=is%3Aopen+is%3Aissue+label%3Ahelp-wanted).  Of course, we also welcome your own ideas.
+
+Our goal is to make Cytoscape.js as comprehensive as possible.  Thank you for taking the time and effort to contribute to help make that happen!
+
 
 
 ## Submitting issues
@@ -37,4 +40,4 @@ You can run `gulp format` to automatically format the code to more or less match
 
 Tests go in the `./test` directory, as Mocha tests usually do.  They are just a flat list of `.js` files that Mocha runs.  If your change is a bugfix, please add a unit test that would fail without your fix.  If your change is a new feature, please add unit tests accordingly.  If your change is visual/rendering-related, then unit tests are not possible.
 
-Please run `gulp test` to make sure all the unit tests are passing before you make your pull request.
+Please run `gulp test` or `mocha` to make sure all the unit tests are passing before you make your pull request.

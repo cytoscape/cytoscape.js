@@ -719,6 +719,18 @@ var defBbOpts = {
 
 var defBbOptsKey = getKey( defBbOpts );
 
+elesfn.recalculateRenderedStyle = function( useCache ){
+  var cy = this.cy();
+  var renderer = cy.renderer();
+  var styleEnabled = cy.styleEnabled();
+
+  if( renderer && styleEnabled ){
+    renderer.recalculateRenderedStyle( this, useCache );
+  }
+
+  return this;
+};
+
 elesfn.boundingBox = function( options ){
   // the main usecase is ele.boundingBox() for a single element with no/def options
   // specified s.t. the cache is used, so check for this case to make it faster by
@@ -751,18 +763,17 @@ elesfn.boundingBox = function( options ){
 
   var eles = this;
   var cy = eles.cy();
-  var renderer = eles.cy().renderer();
   var styleEnabled = cy.styleEnabled();
 
   if( styleEnabled ){
-    renderer.recalculateRenderedStyle( eles, opts.useCache );
+    this.recalculateRenderedStyle( opts.useCache );
   }
 
   for( var i = 0; i < eles.length; i++ ){
     var ele = eles[i];
 
     if( styleEnabled && ele.isEdge() && ele.pstyle('curve-style').strValue === 'bezier' ){
-      renderer.recalculateRenderedStyle( ele.parallelEdges(), opts.useCache ); // n.b. ele.parallelEdges() single is cached
+      ele.parallelEdges().recalculateRenderedStyle( opts.useCache ); // n.b. ele.parallelEdges() single is cached
     }
 
     updateBoundsFromBox( bounds, cachedBoundingBoxImpl( ele, opts ) );

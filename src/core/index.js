@@ -60,6 +60,7 @@ var Core = function( opts ){
     scratch: {}, // scratch object for core
     layout: null,
     renderer: null,
+    destroyed: false, // whether destroy was called
     notificationsEnabled: true, // whether notifications are sent to the renderer
     minZoom: 1e-50,
     maxZoom: 1e50,
@@ -177,6 +178,10 @@ util.extend( corefn, {
     return this._private.ready;
   },
 
+  isDestroyed: function(){
+    return this._private.destroyed;
+  },
+
   ready: function( fn ){
     if( this.isReady() ){
       this.trigger( 'ready', [], fn ); // just calls fn as though triggered via ready event
@@ -193,10 +198,15 @@ util.extend( corefn, {
 
   destroy: function(){
     var cy = this;
+    if( cy.isDestroyed() ) return;
 
     cy.stopAnimationLoop();
 
     cy.destroyRenderer();
+
+    this.trigger( 'destroy' );
+
+    cy._private.destroyed = true;
 
     return cy;
   },

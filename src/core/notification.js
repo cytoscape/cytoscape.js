@@ -24,6 +24,10 @@ var corefn = ({
 
     var renderer = this.renderer();
 
+    // exit if destroy() called on core or renderer in between frames #1499
+    // TODO first check this.isDestroyed() in >=3.1 #1440
+    if( !renderer ){ return; }
+
     renderer.notify( params );
   },
 

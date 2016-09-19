@@ -84,6 +84,9 @@ BRp.notify = function( params ){
   var types;
   var r = this;
 
+  // the renderer can't be notified after it's destroyed
+  if( this.destroyed ){ return; }
+
   if( is.array( params.type ) ){
     types = params.type;
 

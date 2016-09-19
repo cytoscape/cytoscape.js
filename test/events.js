@@ -214,6 +214,14 @@ describe('Events', function(){
       expect( triggers ).to.equal(1);
     });
 
+    it('`destroy`', function(){
+      cy.on('destroy', handler);
+
+      cy.destroy();
+
+      expect( triggers ).to.equal(1);
+    });
+
   });
 
 

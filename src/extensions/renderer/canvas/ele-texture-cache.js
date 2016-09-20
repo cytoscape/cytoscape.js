@@ -89,6 +89,8 @@ ETCp.getElement = function( ele, bb, pxRatio, lvl, reason ){
   var rs = ele._private.rscratch;
   var zoom = r.cy.zoom();
 
+  if( bb.w === 0 || bb.h === 0 ){ return null; }
+
   if( lvl == null ){
     lvl = Math.ceil( math.log2( zoom * pxRatio ) );
   }

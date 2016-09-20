@@ -11,10 +11,7 @@ CRp.drawEdge = function( context, edge, shiftToOriginWithBb, drawLabel, drawOver
     return;
   }
 
-  // Edge line width
-  if( edge.pstyle( 'width' ).pfValue <= 0 ){
-    return;
-  }
+  if( !edge.visible() ){ return; }
 
   var bb;
   if( shiftToOriginWithBb ){

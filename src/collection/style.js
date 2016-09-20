@@ -190,8 +190,16 @@ var elesfn = ({
         return false;
       }
 
+      if( ele.pstyle('width').pfValue === 0 ){
+        return false;
+      }
+
       if( ele._private.group === 'nodes' ){
         if( !hasCompoundNodes ){ return true; }
+
+        if( ele.pstyle('height').pfValue === 0 ){
+          return false;
+        }
 
         var parents = ele._private.data.parent ? ele.parents() : null;
 

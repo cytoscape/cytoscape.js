@@ -15,12 +15,13 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
     return; // can't draw node with undefined position
   }
 
+  if( !node.visible() ){ return; }
+
+  var parentOpacity = node.effectiveOpacity();
+
   var usePaths = this.usePaths();
   var path;
   var pathCacheHit = false;
-
-  var parentOpacity = node.effectiveOpacity();
-  if( parentOpacity === 0 ){ return; }
 
   nodeWidth = node.width() + node.pstyle( 'padding-left' ).pfValue + node.pstyle( 'padding-right' ).pfValue;
   nodeHeight = node.height() + node.pstyle( 'padding-top' ).pfValue + node.pstyle( 'padding-bottom' ).pfValue;

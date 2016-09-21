@@ -600,12 +600,6 @@ CRp.render = function( options ){
 
   r.drawingImage = false;
 
-
-  if( !forcedContext && !r.initrender ){
-    r.initrender = true;
-    cy.trigger( 'initrender' );
-  }
-
   if( !forcedContext ){
     cy.trigger('render');
   }

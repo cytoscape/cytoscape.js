@@ -2,11 +2,11 @@ $(function(){
 
 	$("#cytoscape").cy(function(){
 		var cy = this;
-		
+
 		$("#layout-button").bind("click", function(){
 			cy.layout({
 				name: $("#layout-select").val()
-			});
+			}).run();
 		});
 
 		var start, end;
@@ -20,7 +20,7 @@ $(function(){
 				$("#layout-time").html( (time) + " ms" );
 			}
 		});
-		
+
 	});
 
 	$("#cytoscape2").cy(function(){
@@ -29,10 +29,10 @@ $(function(){
 		$("#run-cose").on("click", function(){
 			cy2.layout({
 				name: 'cose'
-			});
+			}).run();
 		});
 
-		
+
 	});
 
 });

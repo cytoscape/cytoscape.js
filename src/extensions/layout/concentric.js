@@ -61,7 +61,7 @@ ConcentricLayout.prototype.run = function(){
     var value;
 
     // calculate the node value
-    value = options.concentric.apply( node, [ node ] );
+    value = options.concentric( node );
     nodeValues.push( {
       value: value,
       node: node

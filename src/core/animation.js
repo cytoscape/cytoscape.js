@@ -115,10 +115,6 @@ var corefn = ({
 
           step( ele, ani, now, isCore );
 
-          if( is.fn( ani_p.step ) ){
-            ani_p.step.call( ele, now );
-          }
-
           if( ani_p.applying ){
             ani_p.applying = false;
           }

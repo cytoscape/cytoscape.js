@@ -1,7 +1,13 @@
 # Cytoscape.js
 
-[![Build Status](https://travis-ci.org/cytoscape/cytoscape.js.svg?branch=master)](https://travis-ci.org/cytoscape/cytoscape.js) [![Build Status](https://travis-ci.org/cytoscape/cytoscape.js.svg?branch=unstable)](https://travis-ci.org/cytoscape/cytoscape.js)  
-*(master branch, unstable branch)*
+[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/cytoscape/cytoscape.js/master/LICENSE)
+[![npm](https://img.shields.io/npm/v/cytoscape.svg?maxAge=2592000)](https://www.npmjs.com/package/cytoscape)
+[![npm installs](https://img.shields.io/npm/dt/cytoscape.svg?maxAge=2592000&label=npm installs)](https://www.npmjs.com/package/cytoscape)
+[![master branch tests](https://img.shields.io/travis/cytoscape/cytoscape.js/master.svg?maxAge=2592000&label=master%20branch)](https://travis-ci.org/cytoscape/cytoscape.js)
+[![unstable branch tests](https://img.shields.io/travis/cytoscape/cytoscape.js/unstable.svg?maxAge=2592000&label=unstable%20branch)](https://travis-ci.org/cytoscape/cytoscape.js)
+[![StackOverflow](https://img.shields.io/stackexchange/stackoverflow/t/cytoscape.js.svg?maxAge=2592000)](http://stackoverflow.com/questions/tagged/cytoscape.js)
+[![StackOverflow](https://img.shields.io/badge/ask%20question-on%20stackoverflow-brightgreen.svg?maxAge=2592000)](http://stackoverflow.com/questions/ask?tags=cytoscape.js)
+[![Gitter](https://img.shields.io/gitter/room/cytoscape/cytoscape.js.svg?maxAge=2592000)](https://gitter.im/cytoscape/cytoscape.js)
 
 
 Graph theory (a.k.a. network) library for analysis and visualisation : [http://js.cytoscape.org](http://js.cytoscape.org)

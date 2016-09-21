@@ -92,7 +92,7 @@ var elesfn = ({
       var edge = edges[ i ];
       var s = id2position[ edge.source().id() ];
       var t = id2position[ edge.target().id() ];
-      var w = weightFn.apply( edge, [ edge ] );
+      var w = weightFn( edge );
 
       // Update matrix
       matrix[ t ][ s ] += w;

@@ -177,21 +177,29 @@ describe('Events', function(){
 
       cy.layout({
         name: 'null'
-      });
+      }).run();
 
     });
 
     it('`load` & `done`', function(done){
+
+      if( typeof Promise === typeof undefined ){
+        return; // can't test this w/o a promise
+      }
+
+      var cy = cytoscape({
+        elements: new Promise(function( resolve ){
+          setTimeout(function(){
+            resolve([ {} ]);
+          }, 100);
+        })
+      });
 
       cy.on('load', handler);
       cy.on('done', function(){
         expect( triggers ).to.equal(1);
         done();
       });
-
-      cy.load([
-        { group: 'nodes', data: { id: 'foo' } }
-      ]);
 
     });
 

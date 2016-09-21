@@ -380,7 +380,7 @@ describe('Events', function(){
           expect( e ).to.be.ok;
           expect( e ).to.have.property('type', 'foo');
           expect( e ).to.have.property('cy', cy);
-          expect( e ).to.have.property('cyTarget', cy);
+          expect( e ).to.have.property('target', cy);
           expect( e ).to.have.property('namespace', '.bar');
           expect( e.timeStamp ).to.be.a('number');
 

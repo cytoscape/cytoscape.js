@@ -831,23 +831,7 @@
           "fns": [
             {
               "name": "cy.layout",
-              "descr": "Run a layout, which algorithmically positions the nodes in the graph.",
-              "formats": [
-                {
-                  "args": [
-                    {
-                      "name": "options",
-                      "descr": "The layout options."
-                    }
-                  ]
-                }
-              ],
-              "md": "core/layout"
-            },
-
-            {
-              "name": "cy.makeLayout",
-              "pureAliases": ["cy.createLayout"],
+              "pureAliases": ["cy.createLayout", "cy.makeLayout"],
               "descr": "Get a new layout, which can be used to algorithmically position the nodes in the graph.",
               "formats": [
                 {
@@ -859,7 +843,7 @@
                   ]
                 }
               ],
-              "md": "core/makeLayout"
+              "md": "core/layout"
             }
           ]
         },
@@ -1636,25 +1620,10 @@
         {
           "name": "Layout",
           "fns": [
-            {
-              "name": "eles.layout",
-              "descr": "Run a layout on the elements in the calling collection, algorithmically positioning the nodes.",
-              "formats": [
-                {
-                  "args": [
-                    {
-                      "name": "options",
-                      "descr": "The layout options."
-                    }
-                  ]
-                }
-              ],
-              "md": "collection/layout"
-            },
 
             {
-              "name": "eles.makeLayout",
-              "pureAliases": ["eles.createLayout"],
+              "name": "eles.layout",
+              "pureAliases": ["eles.createLayout", "eles.makeLayout"],
               "descr": "Get a new layout, which can be used to algorithmically position the nodes in the collection.",
               "formats": [
                 {
@@ -1666,7 +1635,7 @@
                   ]
                 }
               ],
-              "md": "collection/makeLayout"
+              "md": "collection/layout"
             },
 
             {

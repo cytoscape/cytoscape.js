@@ -166,16 +166,6 @@ var elesfn = ({
   layout: function( options ){
     var cy = this.cy();
 
-    cy.layout( util.extend( {}, options, {
-      eles: this
-    } ) );
-
-    return this;
-  },
-
-  makeLayout: function( options ){
-    var cy = this.cy();
-
     return cy.makeLayout( util.extend( {}, options, {
       eles: this
     } ) );
@@ -184,6 +174,6 @@ var elesfn = ({
 });
 
 // aliases:
-elesfn.createLayout = elesfn.makeLayout;
+elesfn.createLayout = elesfn.makeLayout = elesfn.layout;
 
 module.exports = elesfn;

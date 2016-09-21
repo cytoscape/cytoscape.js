@@ -5,15 +5,7 @@ var is = require( '../is' );
 
 var corefn = ({
 
-  layout: function( params ){
-    var layout = this._private.prevLayout = ( params == null ? this._private.prevLayout : this.makeLayout( params ) );
-
-    layout.run();
-
-    return this; // chaining
-  },
-
-  makeLayout: function( options ){
+  layout: function( options ){
     var cy = this;
 
     if( options == null ){
@@ -51,6 +43,6 @@ var corefn = ({
 
 });
 
-corefn.createLayout = corefn.makeLayout;
+corefn.createLayout = corefn.makeLayout = corefn.layout;
 
 module.exports = corefn;

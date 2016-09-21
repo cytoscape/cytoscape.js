@@ -28,7 +28,7 @@ RandomLayout.prototype.run = function(){
     x1: 0, y1: 0, w: cy.width(), h: cy.height()
   } );
 
-  var getPos = function( i, node ){
+  var getPos = function( node, i ){
     return {
       x: bb.x1 + Math.round( Math.random() * bb.w ),
       y: bb.y1 + Math.round( Math.random() * bb.h )

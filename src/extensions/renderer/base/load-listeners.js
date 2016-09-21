@@ -434,7 +434,7 @@ BRp.load = function(){
             } else if( near.selected() ){
               draggedElements = r.dragData.possibleDragElements = [  ];
 
-              var selectedNodes = cy.$( function(){ return this.isNode() && this.selected() && r.nodeIsGrabbable( this ); } );
+              var selectedNodes = cy.$( function( ele ){ return ele.isNode() && ele.selected() && r.nodeIsGrabbable( ele ); } );
 
               addNodesToDrag( selectedNodes, { addToList: draggedElements } );
 
@@ -838,9 +838,7 @@ BRp.load = function(){
         && !isMultSelKeyDown( e )
       ){
 
-        cy.$( function(){
-          return this.selected();
-        } ).unselect();
+        cy.$( function( ele ){ return ele.selected(); } ).unselect();
 
         if( draggedElements.length > 0 ){
           r.redrawHint( 'eles', true );
@@ -1170,8 +1168,8 @@ BRp.load = function(){
           if( near.selected() ){
             // reset drag elements, since near will be added again
 
-            var selectedNodes = cy.$( function(){
-              return this.selected() && r.nodeIsGrabbable( this );
+            var selectedNodes = cy.$( function( ele ){
+              return ele.selected() && r.nodeIsGrabbable( ele );
             } );
 
             addNodesToDrag( selectedNodes, { addToList: draggedEles } );

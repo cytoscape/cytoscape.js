@@ -283,7 +283,7 @@ describe('Core graph manipulation', function(){
     });
 
     it('cy.filter() with function', function(){
-      expect( cy.filter(function(i, ele){
+      expect( cy.filter(function(ele, i){
         return ele.id() === 'n1';
       }) ).to.have.length(1);
     });

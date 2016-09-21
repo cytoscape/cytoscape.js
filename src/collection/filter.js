@@ -5,34 +5,36 @@ var Selector = require( '../selector' );
 
 var elesfn = ({
   nodes: function( selector ){
-    return this.filter( function( i, element ){
-      return element.isNode();
+    return this.filter( function( ele, i ){
+      return ele.isNode();
     } ).filter( selector );
   },
 
   edges: function( selector ){
-    return this.filter( function( i, element ){
-      return element.isEdge();
+    return this.filter( function( ele, i ){
+      return ele.isEdge();
     } ).filter( selector );
   },
 
-  filter: function( filter ){
+  filter: function( filter, thisArg ){
     if( filter === undefined ){ // check this first b/c it's the most common/performant case
       return this;
     } else if( is.string( filter ) || is.elementOrCollection( filter ) ){
       return Selector( filter ).filter( this );
     } else if( is.fn( filter ) ){
-      var elements = [];
+      var filterEles = this.spawn();
+      var eles = this;
 
-      for( var i = 0; i < this.length; i++ ){
-        var ele = this[ i ];
+      for( var i = 0; i < eles.length; i++ ){
+        var ele = eles[ i ];
+        var include = thisArg ? filter.apply( thisArg, [ ele, i, eles ] ) : filter( ele, i, eles );
 
-        if( filter.apply( ele, [ i, ele ] ) ){
-          elements.push( ele );
+        if( include ){
+          filterEles.merge( ele );
         }
       }
 
-      return this.spawn( elements );
+      return filterEles;
     }
 
     return this.spawn(); // if not handled by above, give 'em an empty collection
@@ -301,22 +303,6 @@ var elesfn = ({
     return arr;
   },
 
-  stdFilter: function( fn, thisArg ){
-    var filterEles = [];
-    var eles = this;
-
-    for( var i = 0; i < eles.length; i++ ){
-      var ele = eles[ i ];
-      var include = thisArg ? fn.apply( thisArg, [ ele, i, eles ] ) : fn( ele, i, eles );
-
-      if( include ){
-        filterEles.push( ele );
-      }
-    }
-
-    return this.spawn( filterEles );
-  },
-
   max: function( valFn, thisArg ){
     var max = -Infinity;
     var maxEle;
@@ -366,7 +352,7 @@ fn[ 'u' ] = fn[ '|' ] = fn[ '+' ] = fn.union = fn.or = fn.add;
 fn[ '\\' ] = fn[ '!' ] = fn[ '-' ] = fn.difference = fn.relativeComplement = fn.subtract = fn.not;
 fn[ 'n' ] = fn[ '&' ] = fn[ '.' ] = fn.and = fn.intersection = fn.intersect;
 fn[ '^' ] = fn[ '(+)' ] = fn[ '(-)' ] = fn.symmetricDifference = fn.symdiff = fn.xor;
-fn.fnFilter = fn.filterFn = fn.stdFilter;
+fn.fnFilter = fn.filterFn = fn.stdFilter = fn.filter;
 fn.complement = fn.abscomp = fn.absoluteComplement;
 
 module.exports = elesfn;

@@ -53,8 +53,8 @@ $(function(){
 			displayName: "Random edge colours",
 			description: "Set each edge to a random colour",
 			setup: function(){
-				cy.edges().each(function(){
-					this.css( 'line-color', randomColor() );
+				cy.edges().each(function( ele ){
+					ele.css( 'line-color', randomColor() );
 				});
 			},
 			teardown: function(){

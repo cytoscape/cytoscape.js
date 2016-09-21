@@ -756,7 +756,7 @@ selfn.filter = function( collection ){
     return cy.collection();
   }
 
-  var selectorFunction = function( i, element ){
+  var selectorFunction = function( element, i ){
     for( var j = 0; j < self.length; j++ ){
       var query = self[ j ];
 

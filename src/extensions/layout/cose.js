@@ -1290,7 +1290,7 @@ var refreshPositions = function( layoutInfo, cy, options ){
     coseBB.h = coseBB.y2 - coseBB.y1;
   }
 
-  nodes.positions( function( i, ele ){
+  nodes.positions( function( ele, i ){
     var lnode = layoutInfo.layoutNodes[ layoutInfo.idToIndex[ ele.data( 'id' ) ] ];
     // s = "Node: " + lnode.id + ". Refreshed position: (" +
     // lnode.positionX + ", " + lnode.positionY + ").";

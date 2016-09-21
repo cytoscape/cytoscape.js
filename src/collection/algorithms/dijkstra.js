@@ -22,7 +22,7 @@ var elesfn = ({
     var prev = {};
     var knownDist = {};
 
-    var edges = this.edges().filter( function(){ return !this.isLoop(); } );
+    var edges = this.edges().filter( function( ele ){ return !ele.isLoop(); } );
     var nodes = this.nodes();
 
     var getDist = function( node ){

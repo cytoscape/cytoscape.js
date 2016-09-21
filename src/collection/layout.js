@@ -19,7 +19,7 @@ var elesfn = ({
       for( var i = 0; i < nodes.length; i++ ){
         var node = nodes[ i ];
 
-        var newPos = fn.call( node, i, node );
+        var newPos = fn.call( node, node, i );
         var pos = node.position();
 
         if( !is.number( pos.x ) || !is.number( pos.y ) ){

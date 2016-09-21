@@ -38,7 +38,7 @@ BRp.registerCalculationListeners = function(){
     // nodes
 
     .on('position.* style.* free.*', 'node', function onDirtyModNode( e ){
-      var node = e.cyTarget;
+      var node = e.target;
 
       enqueue( node, e );
       enqueue( node.connectedEdges(), e );
@@ -52,7 +52,7 @@ BRp.registerCalculationListeners = function(){
     })
 
     .on('add.* background.*', 'node', function onDirtyAddNode( e ){
-      var ele = e.cyTarget;
+      var ele = e.target;
 
       enqueue( ele, e );
     })
@@ -60,14 +60,14 @@ BRp.registerCalculationListeners = function(){
     // edges
 
     .on('add.* style.*', 'edge', function onDirtyEdge( e ){
-      var edge = e.cyTarget;
+      var edge = e.target;
 
       enqueue( edge, e );
       enqueue( edge.parallelEdges(), e );
     })
 
     .on('remove.*', 'edge', function onDirtyRemoveEdge( e ){
-      var edge = e.cyTarget;
+      var edge = e.target;
       var pEdges = edge.parallelEdges();
 
       for( var i = 0; i < pEdges.length; i++ ){

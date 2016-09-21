@@ -52,7 +52,6 @@ var Core = function( opts ){
   var _p = this._private = {
     container: container, // html dom ele container
     ready: false, // whether ready has been triggered
-    initrender: false, // has initrender has been triggered
     options: options, // cached options
     elements: new Collection( this ), // elements in the graph
     listeners: [], // list of listeners
@@ -173,14 +172,6 @@ var Core = function( opts ){
       cy.setStyle( initStyle );
     }
 
-    // trigger the passed function for the `initrender` event
-    if( options.initrender ){
-      cy.on( 'initrender', options.initrender );
-      cy.on( 'initrender', function(){
-        _p.initrender = true;
-      } );
-    }
-
     // initial load
     setElesAndLayout( initEles, function(){ // onready
       cy.startAnimationLoop();
@@ -227,10 +218,6 @@ util.extend( corefn, {
     }
 
     return this;
-  },
-
-  initrender: function(){
-    return this._private.initrender;
   },
 
   destroy: function(){

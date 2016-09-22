@@ -71,7 +71,8 @@ These events are custom to Cytoscape.js.  You can bind to these events for colle
  * `unselect` : when an element is unselected
  * `lock` : when an element is locked
  * `unlock` : when an element is unlocked
- * `grab` : when an element is grabbed by the mouse cursor or a finger on a touch input
+ * `grabon` : when an element is grabbed directly (including only the one node directly under the cursor or the user's finger)
+ * `grab` : when an element is grabbed (including all elements that would be dragged)
  * `drag` : when an element is grabbed and then moved
  * `free` : when an element is freed (i.e. let go from being grabbed)
  * `position` : when an element changes position

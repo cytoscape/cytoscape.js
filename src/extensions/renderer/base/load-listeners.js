@@ -415,10 +415,16 @@ BRp.load = function(){
 
           if( r.nodeIsGrabbable( near ) ){
 
-            var grabEvent = new Event( e, {
-              type: 'grab',
-              position: { x: pos[0], y: pos[1] }
-            } );
+            var makeEvent = function( type ){
+              return new Event( e, {
+                type: type,
+                position: { x: pos[0], y: pos[1] }
+              } );
+            };
+
+            var triggerGrab = function( ele ){
+              ele.trigger( makeEvent('grab') );
+            };
 
             setGrabTarget( near );
 
@@ -427,16 +433,18 @@ BRp.load = function(){
               draggedElements = r.dragData.possibleDragElements = [];
               addNodeToDrag( near, { addToList: draggedElements } );
 
-              near.trigger( grabEvent );
+              near.trigger( makeEvent('grabon') ).trigger( makeEvent('grab') );
 
-            } else if( near.selected() ){
+            } else {
               draggedElements = r.dragData.possibleDragElements = [  ];
 
               var selectedNodes = cy.$( function( ele ){ return ele.isNode() && ele.selected() && r.nodeIsGrabbable( ele ); } );
 
               addNodesToDrag( selectedNodes, { addToList: draggedElements } );
 
-              near.trigger( grabEvent );
+              near.trigger( makeEvent('grabon') );
+
+              selectedNodes.forEach( triggerGrab );
             }
 
             r.redrawHint( 'eles', true );
@@ -1159,6 +1167,7 @@ BRp.load = function(){
         if( r.nodeIsGrabbable( near ) ){
 
           var draggedEles = r.dragData.touchDragEles = [];
+          var selectedNodes = null;
 
           r.redrawHint( 'eles', true );
           r.redrawHint( 'drag', true );
@@ -1166,7 +1175,7 @@ BRp.load = function(){
           if( near.selected() ){
             // reset drag elements, since near will be added again
 
-            var selectedNodes = cy.$( function( ele ){
+            selectedNodes = cy.$( function( ele ){
               return ele.selected() && r.nodeIsGrabbable( ele );
             } );
 
@@ -1177,10 +1186,20 @@ BRp.load = function(){
 
           setGrabTarget( near );
 
-          near.trigger( new Event( e, {
-            type: 'grab',
-            position: { x: now[0], y: now[1] }
-          } ) );
+          var makeEvent = function( type ){
+            return new Event( e, {
+              type: type,
+              position: { x: now[0], y: now[1] }
+            } );
+          };
+
+          near.trigger( makeEvent('grabon') )
+
+          if( selectedNodes ){
+            selectedNodes.forEach(function( n ){ n.trigger( makeEvent('grab') ); });
+          } else {
+            near.trigger( makeEvent('grab') );
+          }
         }
       }
 

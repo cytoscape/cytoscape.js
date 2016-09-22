@@ -194,11 +194,11 @@ BRp.invalidateContainerClientCoordsCache = function(){
   this.containerBB = null;
 };
 
-BRp.findNearestElement = function( x, y, visibleElementsOnly, isTouch ){
-  return this.findNearestElements( x, y, visibleElementsOnly, isTouch )[0];
+BRp.findNearestElement = function( x, y, interactiveElementsOnly, isTouch ){
+  return this.findNearestElements( x, y, interactiveElementsOnly, isTouch )[0];
 };
 
-BRp.findNearestElements = function( x, y, visibleElementsOnly, isTouch ){
+BRp.findNearestElements = function( x, y, interactiveElementsOnly, isTouch ){
   var self = this;
   var r = this;
   var eles = r.getCachedZSortedEles();
@@ -211,6 +211,10 @@ BRp.findNearestElements = function( x, y, visibleElementsOnly, isTouch ){
   var minSqDist = Infinity;
   var nearEdge;
   var nearNode;
+
+  if( interactiveElementsOnly ){
+    eles = eles.interactive;
+  }
 
   function addEle( ele, sqDist ){
     if( ele.isNode() ){
@@ -246,8 +250,6 @@ BRp.findNearestElements = function( x, y, visibleElementsOnly, isTouch ){
   function checkNode( node ){
     var _p = node._private;
 
-    if( node.pstyle( 'events' ).strValue === 'no' ){ return; }
-
     var width = node.outerWidth() + 2 * nodeThreshold;
     var height = node.outerHeight() + 2 * nodeThreshold;
     var hw = width / 2;
@@ -259,13 +261,6 @@ BRp.findNearestElements = function( x, y, visibleElementsOnly, isTouch ){
         &&
       pos.y - hh <= y && y <= pos.y + hh // bb check y
     ){
-      var visible = !visibleElementsOnly || ( node.visible() && !node.transparent() );
-
-      // exit early if invisible edge and must be visible
-      if( visibleElementsOnly && !visible ){
-        return;
-      }
-
       var shape = r.nodeShapes[ self.getNodeShape( node ) ];
 
       if(
@@ -280,8 +275,6 @@ BRp.findNearestElements = function( x, y, visibleElementsOnly, isTouch ){
   function checkEdge( edge ){
     var _p = edge._private;
 
-    if( edge.pstyle('events').strValue === 'no' ){ return; }
-
     var rs = _p.rscratch;
     var width = edge.pstyle( 'width' ).pfValue / 2 + edgeThreshold; // more like a distance radius from centre
     var widthSq = width * width;
@@ -291,35 +284,13 @@ BRp.findNearestElements = function( x, y, visibleElementsOnly, isTouch ){
     var inEdgeBB = false;
     var sqDist;
 
-    // exit early if invisible edge and must be visible
-    var passedVisibilityCheck;
-    var passesVisibilityCheck = function(){
-      if( passedVisibilityCheck !== undefined ){
-        return passedVisibilityCheck;
-      }
-
-      if( !visibleElementsOnly ){
-        passedVisibilityCheck = true;
-        return true;
-      }
-
-      var visible = edge.visible() && !edge.transparent();
-      if( visible ){
-        passedVisibilityCheck = true;
-        return true;
-      }
-
-      passedVisibilityCheck = false;
-      return false;
-    };
-
     if( rs.edgeType === 'segments' || rs.edgeType === 'straight' || rs.edgeType === 'haystack' ){
       var pts = rs.allpts;
 
       for( var i = 0; i + 3 < pts.length; i += 2 ){
         if(
           (inEdgeBB = math.inLineVicinity( x, y, pts[ i ], pts[ i + 1], pts[ i + 2], pts[ i + 3], width2 ))
-            && passesVisibilityCheck() &&
+            &&
           widthSq > ( sqDist = math.sqdistToFiniteLine( x, y, pts[ i ], pts[ i + 1], pts[ i + 2], pts[ i + 3] ) )
         ){
           addEle( edge, sqDist );
@@ -331,7 +302,7 @@ BRp.findNearestElements = function( x, y, visibleElementsOnly, isTouch ){
       for( var i = 0; i + 5 < rs.allpts.length; i += 4 ){
         if(
           (inEdgeBB = math.inBezierVicinity( x, y, pts[ i ], pts[ i + 1], pts[ i + 2], pts[ i + 3], pts[ i + 4], pts[ i + 5], width2 ))
-            && passesVisibilityCheck() &&
+            &&
           (widthSq > (sqDist = math.sqdistToQuadraticBezier( x, y, pts[ i ], pts[ i + 1], pts[ i + 2], pts[ i + 3], pts[ i + 4], pts[ i + 5] )) )
         ){
           addEle( edge, sqDist );
@@ -340,7 +311,7 @@ BRp.findNearestElements = function( x, y, visibleElementsOnly, isTouch ){
     }
 
     // if we're close to the edge but didn't hit it, maybe we hit its arrows
-    if( inEdgeBB && passesVisibilityCheck() ){
+    if( inEdgeBB ){
       var src = src || _p.source;
       var tgt = tgt || _p.target;
 
@@ -484,9 +455,7 @@ BRp.findNearestElements = function( x, y, visibleElementsOnly, isTouch ){
 
 // 'Give me everything from this box'
 BRp.getAllInBox = function( x1, y1, x2, y2 ){
-  var eles = this.getCachedZSortedEles();
-  var nodes = eles.nodes;
-  var edges = eles.edges;
+  var eles = this.getCachedZSortedEles().interactive;
   var box = [];
 
   var x1c = Math.min( x1, x2 );
@@ -504,48 +473,49 @@ BRp.getAllInBox = function( x1, y1, x2, y2 ){
     x2: x2, y2: y2
   } );
 
-  for( var i = 0; i < nodes.length; i++ ){
-    var node = nodes[ i ];
-    var nodeBb = node.boundingBox( {
-      includeNodes: true,
-      includeEdges: false,
-      includeLabels: false,
-      includeShadows: false
-    } );
+  for( var e = 0; e < eles.length; e++ ){
+    var ele = eles[e];
 
-    if( math.boundingBoxesIntersect( boxBb, nodeBb ) ){
-      box.push( nodes[ i ] );
-    }
-  }
+    if( ele.isNode() ){
+      var node = ele;
+      var nodeBb = node.boundingBox( {
+        includeNodes: true,
+        includeEdges: false,
+        includeLabels: false,
+        includeShadows: false
+      } );
 
-  for( var e = 0; e < edges.length; e++ ){
-    var edge = edges[ e ];
-    var _p = edge._private;
-    var rs = _p.rscratch;
-
-    if( rs.startX != null && rs.startY != null && !math.inBoundingBox( boxBb, rs.startX, rs.startY ) ){ continue; }
-    if( rs.endX != null && rs.endY != null && !math.inBoundingBox( boxBb, rs.endX, rs.endY ) ){ continue; }
-
-    if( rs.edgeType === 'bezier' || rs.edgeType === 'multibezier' || rs.edgeType === 'self' || rs.edgeType === 'compound' || rs.edgeType === 'segments' || rs.edgeType === 'haystack' ){
-
-      var pts = _p.rstyle.bezierPts || _p.rstyle.linePts || _p.rstyle.haystackPts;
-      var allInside = true;
-
-      for( var i = 0; i < pts.length; i++ ){
-        if( !math.pointInBoundingBox( boxBb, pts[ i ] ) ){
-          allInside = false;
-          break;
-        }
+      if( math.boundingBoxesIntersect( boxBb, nodeBb ) ){
+        box.push( node );
       }
+    } else {
+      var edge = ele;
+      var _p = edge._private;
+      var rs = _p.rscratch;
 
-      if( allInside ){
+      if( rs.startX != null && rs.startY != null && !math.inBoundingBox( boxBb, rs.startX, rs.startY ) ){ continue; }
+      if( rs.endX != null && rs.endY != null && !math.inBoundingBox( boxBb, rs.endX, rs.endY ) ){ continue; }
+
+      if( rs.edgeType === 'bezier' || rs.edgeType === 'multibezier' || rs.edgeType === 'self' || rs.edgeType === 'compound' || rs.edgeType === 'segments' || rs.edgeType === 'haystack' ){
+
+        var pts = _p.rstyle.bezierPts || _p.rstyle.linePts || _p.rstyle.haystackPts;
+        var allInside = true;
+
+        for( var i = 0; i < pts.length; i++ ){
+          if( !math.pointInBoundingBox( boxBb, pts[ i ] ) ){
+            allInside = false;
+            break;
+          }
+        }
+
+        if( allInside ){
+          box.push( edge );
+        }
+
+      } else if( rs.edgeType === 'haystack' || rs.edgeType === 'straight' ){
         box.push( edge );
       }
-
-    } else if( rs.edgeType === 'haystack' || rs.edgeType === 'straight' ){
-      box.push( edge );
     }
-
   }
 
   return box;
@@ -615,27 +585,13 @@ BRp.getCachedZSortedEles = function( forceRecalc ){
   if( forceRecalc || !this.cachedZSortedEles ){
     //console.time('cachezorder')
 
-    var cyEles = this.cy.mutableElements();
-    var eles = [];
-
-    eles.nodes = [];
-    eles.edges = [];
-
-    for( var i = 0; i < cyEles.length; i++ ){
-      var ele = cyEles[i];
-
-      if( ele.animated() || (ele.visible() && !ele.transparent()) ){
-        eles.push( ele );
-
-        if( ele.isNode() ){
-          eles.nodes.push( ele );
-        } else {
-          eles.edges.push( ele );
-        }
-      }
-    }
+    var eles = this.cy.mutableElements().toArray();
 
     eles.sort( zIndexSort );
+
+    eles.interactive = eles.filter(function( ele ){
+      return ele.interactive();
+    });
 
     this.cachedZSortedEles = eles;
 

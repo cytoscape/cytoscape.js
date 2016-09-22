@@ -19,11 +19,6 @@ $(function(){
 				title,
 				text
 			);
-
-			console.log(title);
-			console.log(text);
-			console.log(e)
-			console.log( e.cyTarget.id ? e.cyTarget.id() : e.cyTarget )
 		};
 
 		if( action == "unbind" || action == "off" ){
@@ -63,11 +58,6 @@ $(function(){
 				title,
 				text
 			);
-
-			console.log(title);
-			console.log(text);
-			console.log(e)
-			console.log( e.cyTarget.id ? e.cyTarget.id() : e.cyTarget )
 		};
 
 		if( action == "unbind" || action == "off" ){

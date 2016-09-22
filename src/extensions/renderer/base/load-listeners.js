@@ -77,9 +77,7 @@ BRp.nodeIsDraggable = function( node ){
 BRp.nodeIsGrabbable = function( node ){
   return (
     this.nodeIsDraggable( node )
-    && node.pstyle( 'opacity' ).value !== 0
-    && node.pstyle( 'visibility' ).value === 'visible'
-    && node.pstyle( 'display' ).value === 'element'
+    && node.interactive()
   );
 };
 

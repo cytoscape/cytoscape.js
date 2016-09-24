@@ -18,6 +18,8 @@ CRp.drawCachedElement = function( context, ele, pxRatio, extent ){
   var r = this;
   var bb = ele.boundingBox();
 
+  if( bb.w === 0 || bb.h === 0 ){ return; }
+
   if( !extent || math.boundingBoxesIntersect( bb, extent ) ){
     var cache = r.data.eleTxrCache.getElement( ele, bb, pxRatio );
 
@@ -70,6 +72,8 @@ CRp.drawLayeredElements = function( context, eles, pxRatio, extent ){
     for( var i = 0; i < layers.length; i++ ){
       var layer = layers[i];
       var bb = layer.bb;
+
+      if( bb.w === 0 || bb.h === 0 ){ continue; }
 
       context.drawImage( layer.canvas, bb.x1, bb.y1, bb.w, bb.h );
     }

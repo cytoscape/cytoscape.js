@@ -186,11 +186,14 @@ var elesfn = ({
       if(
         ele.pstyle( 'visibility' ).value !== 'visible'
         || ele.pstyle( 'display' ).value !== 'element'
+        || ele.pstyle('width').pfValue === 0
       ){
         return false;
       }
 
       if( ele._private.group === 'nodes' ){
+        if( ele.pstyle('height').pfValue === 0 ){ return false; }
+
         if( !hasCompoundNodes ){ return true; }
 
         var parents = ele._private.data.parent ? ele.parents() : null;
@@ -267,20 +270,6 @@ var elesfn = ({
       } else {
         return ele.effectiveOpacity() === 0;
       }
-    }
-  },
-
-  isFullAutoParent: function(){
-    var cy = this.cy();
-    if( !cy.styleEnabled() ){ return false; }
-
-    var ele = this[0];
-
-    if( ele ){
-      var autoW = ele.pstyle( 'width' ).value === 'auto';
-      var autoH = ele.pstyle( 'height' ).value === 'auto';
-
-      return ele.isParent() && autoW && autoH;
     }
   },
 

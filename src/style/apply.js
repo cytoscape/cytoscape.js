@@ -13,23 +13,20 @@ styfn.apply = function( eles ){
   var self = this;
   var _p = self._private;
 
-  if( self._private.newStyle ){ // clear style caches
+  if( _p.newStyle ){ // clear style caches
     _p.contextStyles = {};
     _p.propDiffs = {};
+
+    self.cleanElements( eles, true );
   }
 
   for( var ie = 0; ie < eles.length; ie++ ){
     var ele = eles[ ie ];
 
-    if( self._private.newStyle ){ // clear style from old sheets
-      ele._private.style = {};
-    }
-
     var cxtMeta = self.getContextMeta( ele );
     var cxtStyle = self.getContextStyle( cxtMeta );
     var app = self.applyContextStyle( cxtMeta, cxtStyle, ele );
 
-    self.enforceCompoundSizing( ele );
     self.updateTransitions( ele, app.diffProps );
     self.updateStyleHints( ele );
 
@@ -156,9 +153,8 @@ styfn.getContextStyle = function( cxtMeta ){
 
     for( var j = 0; j < cxt.properties.length; j++ ){
       var prop = cxt.properties[ j ];
-      var styProp = style[ prop.name ] = prop;
 
-      styProp.context = cxt;
+      style[ prop.name ] = prop;
     }
   }
 
@@ -203,17 +199,6 @@ styfn.applyContextStyle = function( cxtMeta, cxtStyle, ele ){
   return {
     diffProps: retDiffProps
   };
-};
-
-// because a node can become and unbecome a parent, it's safer to enforce auto sizing manually
-// (i.e. the style context diff could be empty, meaning the autosizing is stale)
-styfn.enforceCompoundSizing = function(ele){
-  var self = this;
-
-  if( ele.isParent() ){
-    self.applyParsedProperty( ele, self.parse('width', 'auto') );
-    self.applyParsedProperty( ele, self.parse('height', 'auto') );
-  }
 };
 
 styfn.updateStyleHints = function(ele){
@@ -288,15 +273,7 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
   var origProp = style[ prop.name ];
   var origPropIsBypass = origProp && origProp.bypass;
   var _p = ele._private;
-
-  // can't apply auto to width or height unless it's a parent node
-  if( (parsedProp.name === 'height' || parsedProp.name === 'width') && ele.isNode() ){
-    if( parsedProp.value === 'auto' && !ele.isParent() ){
-      return false;
-    } else if( parsedProp.value !== 'auto' && ele.isParent() ){
-      prop = parsedProp = this.parse( parsedProp.name, 'auto', propIsBypass );
-    }
-  }
+  var flatPropMapping = 'mapping';
 
   // edges connected to compound nodes can not be haystacks
   if(
@@ -410,14 +387,14 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
 
     } else if( type.number ){
       var calcValue = prop.valueMin + (prop.valueMax - prop.valueMin) * percent;
-      flatProp = this.parse( prop.name, calcValue, prop.bypass, true );
+      flatProp = this.parse( prop.name, calcValue, prop.bypass, flatPropMapping );
 
     } else {
       return false; // can only map to colours and numbers
     }
 
     if( !flatProp ){ // if we can't flatten the property, then use the origProp so we still keep the mapping itself
-      flatProp = this.parse( prop.name, origProp.strValue, prop.bypass, true );
+      flatProp = this.parse( prop.name, origProp.strValue, prop.bypass, flatPropMapping );
     }
 
     if( !flatProp ){ printMappingErr(); }
@@ -448,12 +425,12 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
       fieldVal = fieldVal[ field ];
     } }
 
-    flatProp = this.parse( prop.name, fieldVal, prop.bypass, true );
+    flatProp = this.parse( prop.name, fieldVal, prop.bypass, flatPropMapping );
 
     if( !flatProp ){ // if we can't flatten the property, then use the origProp so we still keep the mapping itself
       var flatPropVal = origProp ? origProp.strValue : '';
 
-      flatProp = this.parse( prop.name, flatPropVal, prop.bypass, true );
+      flatProp = this.parse( prop.name, flatPropVal, prop.bypass, flatPropMapping );
     }
 
     if( !flatProp ){ printMappingErr(); }
@@ -466,7 +443,7 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
     var fn = prop.value;
     var fnRetVal = fn( ele );
 
-    flatProp = this.parse( prop.name, fnRetVal, prop.bypass, true );
+    flatProp = this.parse( prop.name, fnRetVal, prop.bypass, flatPropMapping );
     flatProp.mapping = prop; // keep a reference to the mapping
     prop = flatProp; // the flattened (mapped) property is the one we want
 
@@ -500,10 +477,38 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
   return true;
 };
 
+styfn.cleanElements = function( eles, keepBypasses ){
+  var self = this;
+  var props = self.properties;
+
+  for( var i = 0; i < eles.length; i++ ){
+    var ele = eles[i];
+
+    if( !keepBypasses ){
+      ele._private.style = {};
+    } else {
+      var style = ele._private.style;
+
+      for( var j = 0; j < props.length; j++ ){
+        var prop = props[j];
+        var eleProp = style[ prop.name ];
+
+        if( eleProp ){
+          if( eleProp.bypass ){
+            eleProp.bypassed = null;
+          } else {
+            style[ prop.name ] = null;
+          }
+        }
+      }
+    }
+  }
+};
+
 // updates the visual style for all elements (useful for manual style modification after init)
 styfn.update = function(){
   var cy = this._private.cy;
-  var eles = cy.elements();
+  var eles = cy.mutableElements();
 
   eles.updateStyle();
 };

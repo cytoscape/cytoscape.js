@@ -22,7 +22,7 @@ CRp.getPixelRatio = function(){
     context.oBackingStorePixelRatio ||
     context.backingStorePixelRatio || 1;
 
-  return (window.devicePixelRatio || 1) / backingStore;
+  return (window.devicePixelRatio || 1) / backingStore; // eslint-disable-line no-undef
 };
 
 CRp.paintCache = function( context ){
@@ -352,7 +352,7 @@ CRp.render = function( options ){
     if( !r.textureCache ){
       r.textureCache = {};
 
-      bb = r.textureCache.bb = cy.elements().boundingBox();
+      bb = r.textureCache.bb = cy.mutableElements().boundingBox();
 
       r.textureCache.texture = r.data.bufferCanvases[ r.TEXTURE_BUFFER ];
 

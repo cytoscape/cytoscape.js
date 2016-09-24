@@ -24,6 +24,10 @@ var corefn = ({
 
     var renderer = this.renderer();
 
+    // exit if destroy() called on core or renderer in between frames #1499
+    // TODO first check this.isDestroyed() in >=3.1 #1440
+    if( !renderer ){ return; }
+
     renderer.notify( params );
   },
 
@@ -97,7 +101,10 @@ var corefn = ({
     var cy = this;
 
     return this.batch( function(){
-      for( var id in map ){
+      var ids = Object.keys( map );
+
+      for( var i = 0; i < ids.length; i++ ){
+        var id = ids[i];
         var data = map[ id ];
         var ele = cy.getElementById( id );
 

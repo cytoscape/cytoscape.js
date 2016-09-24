@@ -71,7 +71,7 @@ var corefn = {
 
   remove: function( collection ){
     if( is.elementOrCollection( collection ) ){
-      collection = collection;
+      // already have right ref
     } else if( is.string( collection ) ){
       var selector = collection;
       collection = this.$( selector );
@@ -86,7 +86,7 @@ var corefn = {
     cy.notifications( false );
 
     // remove old elements
-    var oldEles = cy.elements();
+    var oldEles = cy.mutableElements();
     if( oldEles.length > 0 ){
       oldEles.remove();
     }
@@ -103,7 +103,7 @@ var corefn = {
 
       cy.notify( {
         type: 'load',
-        eles: cy.elements()
+        eles: cy.mutableElements()
       } );
 
       cy.one( 'load', onload );
@@ -114,7 +114,7 @@ var corefn = {
     } );
 
     var layoutOpts = util.extend( {}, cy._private.options.layout );
-    layoutOpts.eles = cy.$();
+    layoutOpts.eles = cy.elements();
 
     cy.layout( layoutOpts );
 

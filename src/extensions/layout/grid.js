@@ -208,7 +208,7 @@ GridLayout.prototype.run = function(){
     var getPos = function( i, element ){
       var x, y;
 
-      if( element.locked() || element.isFullAutoParent() ){
+      if( element.locked() || element.isParent() ){
         return false;
       }
 

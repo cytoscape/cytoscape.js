@@ -242,23 +242,14 @@ fn = elesfn = ({
         right: parent.pstyle( 'padding-right' ).pfValue
       };
       var pos = _p.position;
-      var didUpdate = false;
 
-      if( parent.pstyle( 'width' ).value === 'auto' ){
-        _p.autoWidth = bb.w;
-        pos.x = (bb.x1 + bb.x2 - padding.left + padding.right) / 2;
-        didUpdate = true;
-      }
+      _p.autoWidth = bb.w;
+      pos.x = (bb.x1 + bb.x2 - padding.left + padding.right) / 2;
 
-      if( parent.pstyle( 'height' ).value === 'auto' ){
-        _p.autoHeight = bb.h;
-        pos.y = (bb.y1 + bb.y2 - padding.top + padding.bottom) / 2;
-        didUpdate = true;
-      }
+      _p.autoHeight = bb.h;
+      pos.y = (bb.y1 + bb.y2 - padding.top + padding.bottom) / 2;
 
-      if( didUpdate ){
-        updated.push( parent );
-      }
+      updated.push( parent );
     }
 
     // go up, level by level
@@ -360,16 +351,20 @@ var updateBoundsFromLabel = function( bounds, ele, prefix, options ){
     var shadowY = ele.pstyle( 'text-shadow-offset-y' ).pfValue;
     var shadowOpacity = ele.pstyle( 'text-shadow-opacity' ).value;
     var outlineWidth = ele.pstyle( 'text-outline-width' ).pfValue;
+    var borderWidth = ele.pstyle( 'text-border-width' ).pfValue;
+    var halfBorderWidth = borderWidth / 2;
 
     var lh = labelHeight;
     var lw = labelWidth;
+    var lw_2 = lw / 2;
+    var lh_2 = lh / 2;
     var lx1, lx2, ly1, ly2;
 
     if( isEdge ){
-      lx1 = labelX - lw / 2;
-      lx2 = labelX + lw / 2;
-      ly1 = labelY - lh / 2;
-      ly2 = labelY + lh / 2;
+      lx1 = labelX - lw_2;
+      lx2 = labelX + lw_2;
+      ly1 = labelY - lh_2;
+      ly2 = labelY + lh_2;
     } else {
       switch( halign.value ){
         case 'left':
@@ -378,8 +373,8 @@ var updateBoundsFromLabel = function( bounds, ele, prefix, options ){
           break;
 
         case 'center':
-          lx1 = labelX - lw / 2;
-          lx2 = labelX + lw / 2;
+          lx1 = labelX - lw_2;
+          lx2 = labelX + lw_2;
           break;
 
         case 'right':
@@ -395,8 +390,8 @@ var updateBoundsFromLabel = function( bounds, ele, prefix, options ){
           break;
 
         case 'center':
-          ly1 = labelY - lh / 2;
-          ly2 = labelY + lh / 2;
+          ly1 = labelY - lh_2;
+          ly2 = labelY + lh_2;
           break;
 
         case 'bottom':
@@ -435,10 +430,10 @@ var updateBoundsFromLabel = function( bounds, ele, prefix, options ){
       ly2 = Math.max( px1y1.y, px1y2.y, px2y1.y, px2y2.y );
     }
 
-    lx1 += marginX - outlineWidth;
-    lx2 += marginX + outlineWidth;
-    ly1 += marginY - outlineWidth;
-    ly2 += marginY + outlineWidth;
+    lx1 += marginX - Math.max( outlineWidth, halfBorderWidth );
+    lx2 += marginX + Math.max( outlineWidth, halfBorderWidth );
+    ly1 += marginY - Math.max( outlineWidth, halfBorderWidth );
+    ly2 += marginY + Math.max( outlineWidth, halfBorderWidth );
 
     updateBounds( bounds, lx1, ly1, lx2, ly2 );
 
@@ -724,6 +719,18 @@ var defBbOpts = {
 
 var defBbOptsKey = getKey( defBbOpts );
 
+elesfn.recalculateRenderedStyle = function( useCache ){
+  var cy = this.cy();
+  var renderer = cy.renderer();
+  var styleEnabled = cy.styleEnabled();
+
+  if( renderer && styleEnabled ){
+    renderer.recalculateRenderedStyle( this, useCache );
+  }
+
+  return this;
+};
+
 elesfn.boundingBox = function( options ){
   // the main usecase is ele.boundingBox() for a single element with no/def options
   // specified s.t. the cache is used, so check for this case to make it faster by
@@ -756,18 +763,17 @@ elesfn.boundingBox = function( options ){
 
   var eles = this;
   var cy = eles.cy();
-  var renderer = eles.cy().renderer();
   var styleEnabled = cy.styleEnabled();
 
   if( styleEnabled ){
-    renderer.recalculateRenderedStyle( eles, opts.useCache );
+    this.recalculateRenderedStyle( opts.useCache );
   }
 
   for( var i = 0; i < eles.length; i++ ){
     var ele = eles[i];
 
     if( styleEnabled && ele.isEdge() && ele.pstyle('curve-style').strValue === 'bezier' ){
-      renderer.recalculateRenderedStyle( ele.parallelEdges(), opts.useCache ); // n.b. ele.parallelEdges() single is cached
+      ele.parallelEdges().recalculateRenderedStyle( opts.useCache ); // n.b. ele.parallelEdges() single is cached
     }
 
     updateBoundsFromBox( bounds, cachedBoundingBoxImpl( ele, opts ) );
@@ -798,11 +804,13 @@ var defineDimFns = function( opts ){
 
     if( ele ){
       if( styleEnabled ){
+        if( ele.isParent() ){
+          return _p[ opts.autoName ] || 0;
+        }
+
         var d = ele.pstyle( opts.name );
 
         switch( d.strValue ){
-          case 'auto':
-            return _p[ opts.autoName ] || 0;
           case 'label':
             return _p.rstyle[ opts.labelName ] || 0;
           default:

@@ -60,6 +60,7 @@ var Core = function( opts ){
     scratch: {}, // scratch object for core
     layout: null,
     renderer: null,
+    destroyed: false, // whether destroy was called
     notificationsEnabled: true, // whether notifications are sent to the renderer
     minZoom: 1e-50,
     maxZoom: 1e50,
@@ -177,6 +178,10 @@ util.extend( corefn, {
     return this._private.ready;
   },
 
+  isDestroyed: function(){
+    return this._private.destroyed;
+  },
+
   ready: function( fn ){
     if( this.isReady() ){
       this.trigger( 'ready', [], fn ); // just calls fn as though triggered via ready event
@@ -193,19 +198,15 @@ util.extend( corefn, {
 
   destroy: function(){
     var cy = this;
+    if( cy.isDestroyed() ) return;
 
     cy.stopAnimationLoop();
 
-    cy.notify( { type: 'destroy' } ); // destroy the renderer
+    cy.destroyRenderer();
 
-    var domEle = cy.container();
-    if( domEle ){
-      domEle._cyreg = null;
+    this.trigger( 'destroy' );
 
-      while( domEle.childNodes.length > 0 ){
-        domEle.removeChild( domEle.childNodes[0] );
-      }
-    }
+    cy._private.destroyed = true;
 
     return cy;
   },
@@ -257,6 +258,7 @@ util.extend( corefn, {
   json: function( obj ){
     var cy = this;
     var _p = cy._private;
+    var eles = cy.mutableElements();
 
     if( is.plainObject( obj ) ){ // set
 
@@ -301,7 +303,7 @@ util.extend( corefn, {
         }
 
         // elements not specified in json should be removed
-        cy.elements().stdFilter( function( ele ){
+        eles.stdFilter( function( ele ){
           return !idInJson[ ele.id() ];
         } ).remove();
       }
@@ -342,7 +344,7 @@ util.extend( corefn, {
       var json = {};
 
       json.elements = {};
-      cy.elements().each( function( i, ele ){
+      eles.forEach( function( ele ){
         var group = ele.group();
 
         if( !json.elements[ group ] ){

@@ -115,6 +115,10 @@ var corefn = ({
 
           step( ele, ani, now, isCore );
 
+          if( is.fn( ani_p.step ) ){
+            ani_p.step.call( ele, now );
+          }
+
           if( ani_p.applying ){
             ani_p.applying = false;
           }
@@ -170,6 +174,8 @@ var corefn = ({
 
       // remove elements from list of currently animating if its queues are empty
       eles.unmerge( doneEles );
+
+      cy.trigger('step');
 
     } // handleElements
 
@@ -338,10 +344,6 @@ var corefn = ({
 
         } // if
 
-      }
-
-      if( is.fn( ani_p.step ) ){
-        ani_p.step.apply( self, [ now ] );
       }
 
       ani_p.progress = percent;

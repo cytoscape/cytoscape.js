@@ -217,6 +217,40 @@ describe('Collection style', function(){
       expect( n1.hasClass('bar') ).to.be.false;
     });
 
+    it('eles.classes() replaces classes (subset)', function(){
+      ['foo', 'bar', 'baz'].forEach(function( c ){ n1.addClass(c); });
+
+      n1.classes('foo');
+
+      expect( n1.hasClass('foo') ).to.be.true;
+      expect( n1.hasClass('bar') ).to.be.false;
+      expect( n1.hasClass('baz') ).to.be.false;
+    });
+
+    it('eles.classes() replaces classes (all different)', function(){
+      ['foo', 'bar', 'baz'].forEach(function( c ){ n1.addClass(c); });
+
+      n1.classes('bat');
+
+      expect( n1.hasClass('bat') ).to.be.true;
+      expect( n1.hasClass('foo') ).to.be.false;
+      expect( n1.hasClass('bar') ).to.be.false;
+      expect( n1.hasClass('baz') ).to.be.false;
+    });
+
+    it('eles.addClass() adds class to json', function(){
+      n1.addClass('foo');
+
+      expect( n1.json().classes ).to.equal('foo');
+    });
+
+    it('eles.removeClass() removes class from json', function(){
+      n1.addClass('foo');
+      n1.removeClass('foo');
+
+      expect( n1.json().classes ).to.be.empty;
+    });
+
   });
 
   describe('eles.animate() etc', function(){

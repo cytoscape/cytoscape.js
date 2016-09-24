@@ -24,7 +24,7 @@ var styfn = {};
     nOneOneNumber: { number: true, min: -1, max: 1, unitless: true },
     nonNegativeInt: { number: true, min: 0, integer: true, unitless: true },
     position: { enums: [ 'parent', 'origin' ] },
-    nodeSize: { number: true, min: 0, enums: [ 'auto', 'label' ] },
+    nodeSize: { number: true, min: 0, enums: [ 'label' ] },
     number: { number: true, unitless: true },
     numbers: { number: true, unitless: true, multiple: true },
     size: { number: true, min: 0 },
@@ -47,7 +47,7 @@ var styfn = {};
     fontWeight: { enums: [ 'normal', 'bold', 'bolder', 'lighter', '100', '200', '300', '400', '500', '600', '800', '900', 100, 200, 300, 400, 500, 600, 700, 800, 900 ] },
     textDecoration: { enums: [ 'none', 'underline', 'overline', 'line-through' ] },
     textTransform: { enums: [ 'none', 'uppercase', 'lowercase' ] },
-    textWrap: { enums: [ 'none', 'wrap' ] },
+    textWrap: { enums: [ 'none', 'wrap', 'ellipsis' ] },
     textBackgroundShape: { enums: [ 'rectangle', 'roundrectangle' ]},
     nodeShape: { enums: [ 'rectangle', 'roundrectangle', 'ellipse', 'triangle', 'square', 'pentagon', 'hexagon', 'heptagon', 'octagon', 'star', 'diamond', 'vee', 'rhomboid', 'polygon' ] },
     compoundIncludeLabels: { enums: [ 'include', 'exclude' ] },
@@ -67,7 +67,7 @@ var styfn = {};
     mapLayoutData: { mapping: true, regex: mapData( 'mapLayoutData' ) },
     mapScratch: { mapping: true, regex: mapData( 'mapScratch' ) },
     fn: { mapping: true, fn: true },
-    url: { regex: '^url\\s*\\(\\s*([^\\s]+)\\s*\\s*\\)|none|(.+)$' },
+    url: { regex: 'url\\s*\\(\\s*[\'"]?(.+?)[\'"]?\\s*\\)|none|(.+)$' },
     propList: { propList: true },
     angle: { number: true, units: 'deg|rad', implicitUnits: 'rad' },
     textRotation: { number: true, units: 'deg|rad', implicitUnits: 'rad', enums: [ 'none', 'autorotate' ] },
@@ -226,6 +226,8 @@ var styfn = {};
     { name: 'edge-distances', type: t.edgeDistances },
     { name: 'loop-direction', type: t.angle },
     { name: 'loop-sweep', type: t.angle },
+    { name: 'source-distance-from-node', type: t.size },
+    { name: 'target-distance-from-node', type: t.size },
 
     // these are just for the core
     { name: 'selection-box-color', type: t.color },
@@ -370,6 +372,8 @@ styfn.getDefaultProperties = util.memoize( function(){
     'transition-timing-function': 'linear',
     'loop-direction': '-135deg',
     'loop-sweep': '-90deg',
+    'source-distance-from-node': 0,
+    'target-distance-from-node': 0,
 
     // node props
     'background-blacken': 0,
@@ -463,8 +467,6 @@ styfn.addDefaultStylesheet = function(){
   this
     .selector( '$node > node' ) // compound (parent) node properties
       .css( {
-        'width': 'auto',
-        'height': 'auto',
         'shape': 'rectangle',
         'padding-top': 10,
         'padding-right': 10,

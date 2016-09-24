@@ -1,6 +1,10 @@
 # Contributing to Cytoscape.js
 
-Cytoscape.js is an open source project, and anyone interested is encouraged to contribute to Cytoscape.js.  To contribute, [fork](https://help.github.com/articles/fork-a-repo/) Cytoscape.js, commit your changes, and send a [pull request](https://help.github.com/articles/using-pull-requests/).
+Cytoscape.js is an open source project, and we greatly appreciate any and all contributions.
+
+If you'd like to contribute code to Cytoscape.js but you're not sure exactly what you'd like to implement, take a look at our [current milestones](https://github.com/cytoscape/cytoscape.js/milestones) to see what features we have planned in future --- or anything labelled [`help-wanted`](https://github.com/cytoscape/cytoscape.js/issues?q=is%3Aopen+is%3Aissue+label%3Ahelp-wanted).  Of course, we also welcome your own ideas.
+
+Our goal is to make Cytoscape.js as comprehensive as possible.  Thank you for taking the time and effort to contribute to help make that happen!
 
 
 
@@ -8,9 +12,9 @@ Cytoscape.js is an open source project, and anyone interested is encouraged to c
 
 Submit issues or feature requests to the [issue tracker](https://github.com/cytoscape/cytoscape.js/issues).  If your issue pertains to an extension, you should file the issue on that extension's issue tracker instead.
 
-Before submitting an issue, you should ensure that the issue still exists in the latest version of the library.  Because we follow semver, you can safely upgrade patch releases (x.y.**z**) and feature releases (x.**y**) without worry of breaking API changes.
+Before submitting an issue, please ensure that the issue still exists in the latest version of the library.  Because we follow semver, you can safely upgrade patch releases (x.y.**z**) and feature releases (x.**y**) without worry of breaking API changes.
 
-Clearly describe your issue.  List the steps necessary to reproduce your issue along with the corresponding code (either an inline snippet or a live one like JSBin).
+Clearly describe your issue.  List the steps necessary to reproduce your issue along with the corresponding code (preferably a JSBin, as that makes the issue less ambiguous and much faster to fix).
 
 Make certain to mention the version of the library you are using and version of the browser/environment you are using.
 
@@ -36,4 +40,4 @@ You can run `gulp format` to automatically format the code to more or less match
 
 Tests go in the `./test` directory, as Mocha tests usually do.  They are just a flat list of `.js` files that Mocha runs.  If your change is a bugfix, please add a unit test that would fail without your fix.  If your change is a new feature, please add unit tests accordingly.  If your change is visual/rendering-related, then unit tests are not possible.
 
-Please run `gulp test` to make sure all the unit tests are passing before you make your pull request.
+Please run `gulp test` or `mocha` to make sure all the unit tests are passing before you make your pull request.

@@ -9,10 +9,12 @@ styfn.applyFromJson = function( json ){
     var context = json[ i ];
     var selector = context.selector;
     var props = context.style || context.css;
+    var names = Object.keys( props );
 
     style.selector( selector ); // apply selector
 
-    for( var name in props ){
+    for( var j = 0; j < names.length; j++ ){
+      var name = names[j];
       var value = props[ name ];
 
       style.css( name, value ); // apply property

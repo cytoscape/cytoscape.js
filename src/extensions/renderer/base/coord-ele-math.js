@@ -90,7 +90,7 @@ BRp.registerCalculationListeners = function(){
         fn( willDraw, elesToUpdate );
       } }
 
-      r.recalculateRenderedStyle( elesToUpdate );
+      r.recalculateRenderedStyle( elesToUpdate, false );
 
       for( var i = 0; i < elesToUpdate.length; i++ ){
         elesToUpdate[i]._private.rstyle.dirtyEvents = null;
@@ -113,6 +113,9 @@ BRp.recalculateRenderedStyle = function( eles, useCache ){
   var edges = [];
   var nodes = [];
 
+  // the renderer can't be used for calcs when destroyed, e.g. ele.boundingBox()
+  if( this.destroyed ){ return; }
+
   // use cache by default for perf
   if( useCache === undefined ){ useCache = true; }
 
@@ -125,26 +128,31 @@ BRp.recalculateRenderedStyle = function( eles, useCache ){
     if( (useCache && rstyle.clean) || ele.removed() ){ continue; }
 
     if( _p.group === 'nodes' ){
-      var pos = _p.position;
-
       nodes.push( ele );
-
-      rstyle.nodeX = pos.x;
-      rstyle.nodeY = pos.y;
-      rstyle.nodeW = ele.pstyle( 'width' ).pfValue;
-      rstyle.nodeH = ele.pstyle( 'height' ).pfValue;
     } else { // edges
-
       edges.push( ele );
-
-    } // if edges
+    }
 
     rstyle.clean = true;
     // rstyle.dirtyEvents = null;
   }
 
+  // update node data from projections
+  for( var i = 0; i < nodes.length; i++ ){
+    var ele = nodes[i];
+    var _p = ele._private;
+    var rstyle = _p.rstyle;
+    var pos = _p.position;
+
+    this.recalculateNodeLabelProjection( ele );
+
+    rstyle.nodeX = pos.x;
+    rstyle.nodeY = pos.y;
+    rstyle.nodeW = ele.pstyle( 'width' ).pfValue;
+    rstyle.nodeH = ele.pstyle( 'height' ).pfValue;
+  }
+
   this.recalculateEdgeProjections( edges );
-  this.recalculateLabelProjections( nodes, edges );
 
   // update edge data from projections
   for( var i = 0; i < edges.length; i++ ){
@@ -153,6 +161,8 @@ BRp.recalculateRenderedStyle = function( eles, useCache ){
     var rstyle = _p.rstyle;
     var rs = _p.rscratch;
 
+    this.recalculateEdgeLabelProjections( ele );
+
     // update rstyle positions
     rstyle.srcX = rs.arrowStartX;
     rstyle.srcY = rs.arrowStartY;
@@ -160,6 +170,9 @@ BRp.recalculateRenderedStyle = function( eles, useCache ){
     rstyle.tgtY = rs.arrowEndY;
     rstyle.midX = rs.midX;
     rstyle.midY = rs.midY;
+    rstyle.labelAngle = rs.labelAngle;
+    rstyle.sourceLabelAngle = rs.sourceLabelAngle;
+    rstyle.targetLabelAngle = rs.targetLabelAngle;
   }
 };
 
@@ -606,12 +619,10 @@ BRp.updateCachedGrabbedEles = function(){
 };
 
 BRp.getCachedZSortedEles = function( forceRecalc ){
-  var cyEles = this.cy.elements();
-  var eles = [];
-
   if( forceRecalc || !this.cachedZSortedEles ){
     //console.time('cachezorder')
 
+    var cyEles = this.cy.mutableElements();
     var eles = [];
 
     eles.nodes = [];
@@ -667,6 +678,11 @@ BRp.projectLines = function( edge ){
   var _p = edge._private;
   var rs = _p.rscratch;
   var et = rs.edgeType;
+
+  // clear the cached points state
+  _p.rstyle.bezierPts = null;
+  _p.rstyle.linePts = null;
+  _p.rstyle.haystackPts = null;
 
   if( et === 'multibezier' ||  et === 'bezier' ||  et === 'self' ||  et === 'compound' ){
     var bpts = _p.rstyle.bezierPts = []; // jshint ignore:line
@@ -1004,13 +1020,16 @@ BRp.getLabelText = function( ele, prefix ){
   };
 
   if( textTransform == 'none' ){
+    // passthrough
   } else if( textTransform == 'uppercase' ){
     text = text.toUpperCase();
   } else if( textTransform == 'lowercase' ){
     text = text.toLowerCase();
   }
 
-  if( ele.pstyle( 'text-wrap' ).value === 'wrap' ){
+  var wrapStyle = ele.pstyle( 'text-wrap' ).value;
+
+  if( wrapStyle === 'wrap' ){
     //console.log('wrap');
 
     var labelKey = rscratch( 'labelKey' );
@@ -1063,7 +1082,28 @@ BRp.getLabelText = function( ele, prefix ){
     rscratch( 'labelWrapKey', labelKey );
 
     // console.log(text)
-  } // if wrap
+  } else if( wrapStyle === 'ellipsis' ){
+    var maxW = ele.pstyle( 'text-max-width' ).pfValue;
+    var ellipsized = '';
+    var ellipsis = '\u2026';
+    var incLastCh = false;
+
+    for( var i = 0; i < text.length; i++ ){
+      var widthWithNextCh = this.calculateLabelDimensions( ele, ellipsized + text[i] + ellipsis ).width;
+
+      if( widthWithNextCh > maxW ){ break; }
+
+      ellipsized += text[i];
+
+      if( i === text.length - 1 ){ incLastCh = true; }
+    }
+
+    if( !incLastCh ){
+      ellipsized += ellipsis;
+    }
+
+    return ellipsized;
+  } // if ellipsize
 
   return text;
 };
@@ -1083,16 +1123,17 @@ BRp.calculateLabelDimensions = function( ele, text, extraKey ){
     return cache[ cacheKey ];
   }
 
+  var sizeMult = 1; // increase the scale to increase accuracy w.r.t. zoomed text
   var fStyle = ele.pstyle( 'font-style' ).strValue;
-  var size = ele.pstyle( 'font-size' ).pfValue + 'px';
+  var size = ( sizeMult * ele.pstyle( 'font-size' ).pfValue ) + 'px';
   var family = ele.pstyle( 'font-family' ).strValue;
   var weight = ele.pstyle( 'font-weight' ).strValue;
 
   var div = this.labelCalcDiv;
 
   if( !div ){
-    div = this.labelCalcDiv = document.createElement( 'div' );
-    document.body.appendChild( div );
+    div = this.labelCalcDiv = document.createElement( 'div' ); // eslint-disable-line no-undef
+    document.body.appendChild( div ); // eslint-disable-line no-undef
   }
 
   var ds = div.style;
@@ -1123,21 +1164,11 @@ BRp.calculateLabelDimensions = function( ele, text, extraKey ){
   div.textContent = text;
 
   cache[ cacheKey ] = {
-    width: div.clientWidth,
-    height: div.clientHeight
+    width: Math.ceil( div.clientWidth / sizeMult ),
+    height: Math.ceil( div.clientHeight / sizeMult )
   };
 
   return cache[ cacheKey ];
-};
-
-BRp.recalculateLabelProjections = function( nodes, edges ){
-  for( var i = 0; i < nodes.length; i++ ){
-    this.recalculateNodeLabelProjection( nodes[ i ] );
-  }
-
-  for( var i = 0; i < edges.length; i++ ){
-    this.recalculateEdgeLabelProjections( edges[ i ] );
-  }
 };
 
 BRp.recalculateEdgeProjections = function( edges ){
@@ -1217,16 +1248,15 @@ BRp.findEdgeControlPoints = function( edges ){
     src = pairEdges[0]._private.source;
     tgt = pairEdges[0]._private.target;
 
-    src_p = src._private;
-    tgt_p = tgt._private;
-
-    // make sure src/tgt distinction is consistent
-    // (src/tgt in this case are just for ctrlpts and don't actually have to be true src/tgt)
-    if( src_p.data.id > tgt_p.data.id ){
+    // make sure src/tgt distinction is consistent for bundled edges
+    if( !pairEdges.hasUnbundled && src.id() > tgt.id() ){
       var temp = src;
       src = tgt;
       tgt = temp;
     }
+
+    src_p = src._private;
+    tgt_p = tgt._private;
 
     srcPos = src_p.position;
     tgtPos = tgt_p.position;
@@ -1300,9 +1330,9 @@ BRp.findEdgeControlPoints = function( edges ){
       };
 
 
-      // if src intersection is inside tgt or tgt intersection is inside src, then no ctrl pts to draw
+      // if node shapes overlap, then no ctrl pts to draw
       if(
-        tgtShape.checkPoint( srcOutside[0], srcOutside[1], 0, tgtW, tgtH, tgtPos.x, tgtPos.y )  ||
+        tgtShape.checkPoint( srcOutside[0], srcOutside[1], 0, tgtW, tgtH, tgtPos.x, tgtPos.y )  &&
         srcShape.checkPoint( tgtOutside[0], tgtOutside[1], 0, srcW, srcH, srcPos.x, srcPos.y )
       ){
         vectorNormInverse = {};
@@ -1339,7 +1369,7 @@ BRp.findEdgeControlPoints = function( edges ){
 
       var curveStyle = edge.pstyle( 'curve-style' ).value;
       var ctrlptDists = edge.pstyle( 'control-point-distances' );
-      
+
       var loopDir = edge.pstyle('loop-direction').pfValue;
       var loopSwp = edge.pstyle('loop-sweep').pfValue;
 
@@ -1349,12 +1379,6 @@ BRp.findEdgeControlPoints = function( edges ){
       var ctrlptDist = ctrlptDists ? ctrlptDists.pfValue[0] : undefined;
       var ctrlptWeight = ctrlptWs.value[0];
       var edgeIsUnbundled = curveStyle === 'unbundled-bezier' || curveStyle === 'segments';
-
-      var swappedDirection = edge_p.source !== src;
-
-      if( swappedDirection && edgeIsUnbundled ){
-        ctrlptDist *= -1;
-      }
 
       var srcX1 = rs.lastSrcCtlPtX;
       var srcX2 = srcPos.x;
@@ -1498,14 +1522,7 @@ BRp.findEdgeControlPoints = function( edges ){
           var w = segmentWs[ s ];
           var d = segmentDs[ s ];
 
-          // d = swappedDirection ? -d : d;
-          //
-          // d = Math.abs(d);
-
-          // var w1 = !swappedDirection ? (1 - w) : w;
-          // var w2 = !swappedDirection ? w : (1 - w);
-
-          var w1 = (1 - w);
+          var w1 = 1 - w;
           var w2 = w;
 
           var midptPts = edgeDistances === 'node-position' ? posPts : midptSrcPts;
@@ -1556,8 +1573,8 @@ BRp.findEdgeControlPoints = function( edges ){
 
           var distanceFromMidpoint = manctrlptDist !== undefined ? manctrlptDist : normctrlptDist;
 
-          var w1 = !swappedDirection || edgeIsUnbundled ? (1 - ctrlptWeight) : ctrlptWeight;
-          var w2 = !swappedDirection || edgeIsUnbundled ? ctrlptWeight : (1 - ctrlptWeight);
+          var w1 = 1 - ctrlptWeight;
+          var w2 = ctrlptWeight;
 
           var midptPts = edgeDistances === 'node-position' ? posPts : midptSrcPts;
 
@@ -1984,6 +2001,9 @@ BRp.findEndpoints = function( edge ){
   var tgtArShape = edge.pstyle( 'target-arrow-shape' ).value;
   var srcArShape = edge.pstyle( 'source-arrow-shape' ).value;
 
+  var tgtDist = edge.pstyle( 'target-distance-from-node' ).pfValue;
+  var srcDist = edge.pstyle( 'source-distance-from-node' ).pfValue;
+
   var rs = edge._private.rscratch;
 
   var et = rs.edgeType;
@@ -1991,6 +2011,7 @@ BRp.findEndpoints = function( edge ){
   var multi = et !== 'bezier';
   var lines = et === 'straight' || et === 'segments';
   var segments = et === 'segments';
+  var hasEndpts = bezier || multi || lines;
 
   var p1, p2;
 
@@ -2018,10 +2039,16 @@ BRp.findEndpoints = function( edge ){
     0
   );
 
-  var arrowEnd = math.shortenIntersection( intersect, p1,
-    r.arrowShapes[ tgtArShape ].spacing( edge ) );
-  var edgeEnd = math.shortenIntersection( intersect, p1,
-    r.arrowShapes[ tgtArShape ].gap( edge ) );
+  var arrowEnd = math.shortenIntersection(
+    intersect,
+    p1,
+    r.arrowShapes[ tgtArShape ].spacing( edge ) + tgtDist
+  );
+  var edgeEnd = math.shortenIntersection(
+    intersect,
+    p1,
+    r.arrowShapes[ tgtArShape ].gap( edge ) + tgtDist
+  );
 
   rs.endX = edgeEnd[0];
   rs.endY = edgeEnd[1];
@@ -2040,12 +2067,14 @@ BRp.findEndpoints = function( edge ){
   );
 
   var arrowStart = math.shortenIntersection(
-    intersect, p2,
-    r.arrowShapes[ srcArShape ].spacing( edge )
+    intersect,
+    p2,
+    r.arrowShapes[ srcArShape ].spacing( edge ) + srcDist
   );
   var edgeStart = math.shortenIntersection(
-    intersect, p2,
-    r.arrowShapes[ srcArShape ].gap( edge )
+    intersect,
+    p2,
+    r.arrowShapes[ srcArShape ].gap( edge ) + srcDist
   );
 
   rs.startX = edgeStart[0];
@@ -2054,7 +2083,7 @@ BRp.findEndpoints = function( edge ){
   rs.arrowStartX = arrowStart[0];
   rs.arrowStartY = arrowStart[1];
 
-  if( lines ){
+  if( hasEndpts ){
     if( !is.number( rs.startX ) || !is.number( rs.startY ) || !is.number( rs.endX ) || !is.number( rs.endY ) ){
       rs.badLine = true;
     } else {

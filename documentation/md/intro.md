@@ -31,10 +31,11 @@
  * Well maintained, with only a sliver of active bug time (i.e. minimised time to bugfix)
  * Used by
   * [Abasy Atlas](http://abasy.ccg.unam.mx/)
-  * [Agile Protein Interactomes DataServer](Agile Protein Interactomes DataServer)
+  * [Agile Protein Interactomes DataServer](http://apid.dep.usal.es/)
   * [Aras](http://www.aras.com/)
   * [Avenue](https://avenue-2p0.herokuapp.com/)
   * [BioGRID](http://thebiogrid.org/)
+  * [BS CytoGraph](www.brettjsettle.site/graph)
   * [Cray Inc.](http://www.cray.com)
   * [CyNetShare](http://cynetshare.ucsd.edu/)
   * [DARPA](http://www.darpa.mil)
@@ -55,6 +56,7 @@
   * [Sotera Defense Solutions, Inc.](http://www.soteradefense.com/) : [Graphene](http://sotera.github.io/graphene/)
   * [Trace](https://trace.risingstack.com/)
   * [University of Cambridge](http://www.cam.ac.uk/) : [Intermine](http://intermine.org/)
+  * [Virginia Tech](http://www.vt.edu/index.html) [T. M. Murali's Research Group](http://bioinformatics.cs.vt.edu/~murali/) : [GraphSpace](http://graphspace.org)
   * [Visual Interaction GmbH](http://www.mygaze.com/)
 
 
@@ -85,10 +87,14 @@ The library was created at the [Donnelly Centre](http://thedonnellycentre.utoron
 ## Releases
 
 - 2.7
- - [2.7.0](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A2.7.0+is%3Aclosed)
- - [2.7.1](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A2.7.1+is%3Aclosed)
+ - [2.7.4](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A2.7.4+is%3Aclosed)
+ - [2.7.3](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A2.7.3+is%3Aclosed)
  - [2.7.2](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A2.7.2+is%3Aclosed)
+ - [2.7.1](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A2.7.1+is%3Aclosed)
+ - [2.7.0](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A2.7.0+is%3Aclosed)
 - 2.6
+ - [2.6.12](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A2.6.12+is%3Aclosed)
+ - [2.6.11](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A2.6.11+is%3Aclosed)
  - [2.6.10](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A2.6.10+is%3Aclosed)
  - [2.6.9](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A2.6.9+is%3Aclosed)
  - [2.6.8](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A2.6.8+is%3Aclosed)

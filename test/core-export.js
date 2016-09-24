@@ -15,6 +15,7 @@ describe('Core export', function(){
             { data: { id: "n1", foo: "bar" }, classes: "odd one" },
         ]
       },
+
       ready: function(){
         cy = this;
 
@@ -52,4 +53,51 @@ describe('Core export', function(){
 
   });
 
+  var itExportsSelector = function( sel ){
+    it('exports `' + sel + '` selector in style', function(){
+      cy.style([
+        {
+          selector: sel,
+          style: {}
+        },
+      ]);
+
+      expect( cy.json().style[0].selector ).to.equal( sel );
+    });
+  };
+
+  itExportsSelector('#foo');
+  itExportsSelector('.foo');
+  itExportsSelector('[foo]');
+  itExportsSelector('[^foo]');
+  itExportsSelector('[?foo]');
+  itExportsSelector('[!foo]');
+  itExportsSelector('[foo = 1]');
+  itExportsSelector('[foo = 1.23]');
+  itExportsSelector('[foo != 1]');
+  itExportsSelector('[foo > 1]');
+  itExportsSelector('[foo >= 1]');
+  itExportsSelector('[foo < 1]');
+  itExportsSelector('[foo <= 1]');
+  itExportsSelector('[foo = "bar"]');
+  itExportsSelector('[foo != "bar"]');
+  itExportsSelector('[foo *= "bar"]');
+  itExportsSelector('[foo ^= "bar"]');
+  itExportsSelector('[foo $= "bar"]');
+  itExportsSelector('[foo @= "bar"]');
+  itExportsSelector('[foo @!= "bar"]');
+  itExportsSelector('[foo @*= "bar"]');
+  itExportsSelector('[foo @^= "bar"]');
+  itExportsSelector('[foo @$= "bar"]');
+  itExportsSelector('[[degree > 2]]');
+  itExportsSelector('[[degree < 2]]');
+  itExportsSelector('[[degree = 2]]');
+  itExportsSelector('[[degree != 2]]');
+  itExportsSelector('node > node');
+  itExportsSelector('node node');
+  itExportsSelector('$node > node');
+  itExportsSelector('node > $node');
+  itExportsSelector('node > node');
+  itExportsSelector(':selected');
+  itExportsSelector('$node:selected > node[?foo][bar > 2][baz *= "bat"][[degree > 1]]:locked');
 });

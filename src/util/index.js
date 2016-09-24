@@ -1,5 +1,7 @@
 'use strict';
 
+/*global console */
+
 var is = require( '../is' );
 var math = require( '../math' );
 
@@ -13,8 +15,8 @@ var util = {
 
   noop: function(){},
 
-  /* jshint ignore:start */
   error: function( msg ){
+    /* eslint-disable */
     if( console.error ){
       console.error.apply( console, arguments );
 
@@ -24,8 +26,8 @@ var util = {
 
       if( console.trace ){ console.trace(); }
     }
+    /* eslint-enable */
   },
-  /* jshint ignore:end */
 
   clone: function( obj ){
     return this.extend( {}, obj );
@@ -82,7 +84,13 @@ util.extend = Object.assign != null ? Object.assign : function( tgt ){
   for( var i = 1; i < args.length; i++ ){
     var obj = args[ i ];
 
-    for( var k in obj ){
+    if( !obj ){ continue; }
+
+    var keys = Object.keys( obj );
+
+    for( var j = 0; j < keys.length; j++ ){
+      var k = keys[j];
+
       tgt[ k ] = obj[ k ];
     }
   }

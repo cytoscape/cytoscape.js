@@ -121,6 +121,8 @@ gulp.task('default', ['build'], function( next ){
 });
 
 gulp.task('version', function( next ){
+  if( version ){ next(); return; }
+
   var now = new Date();
   version = process.env['VERSION'];
 
@@ -644,9 +646,11 @@ gulp.task('watch', function(next){
 
 // http://www.jshint.com/docs/options/
 gulp.task('lint', function(){
-  return gulp.src( 'src/**.js' )
-    .pipe( $.jshint( JSON.parse( fs.readFileSync('./.jshintrc', 'utf8') ) ) )
+  return gulp.src( 'src/**/*.js' )
+    .pipe( $.eslint() )
 
-    .pipe( $.jshint.reporter( require('jshint-stylish') ) )
+    .pipe( $.eslint.format() )
+
+    .pipe( $.eslint.failAfterError() )
   ;
 });

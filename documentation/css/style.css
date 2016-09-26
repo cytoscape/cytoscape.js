@@ -226,7 +226,7 @@ button.outline {
 	left: 0;
 	top: 2.5em;
 	bottom: 0;
-	width: 14em;
+	width: 17em;
 	/*border-right: 1px solid #eee;*/
 	z-index: 1;
 	padding: 0 0.5em;
@@ -245,7 +245,7 @@ button.outline {
 	position: fixed;
 	top: 0;
 	left: 0;
-	width: 15em;
+	width: 18em;
 	z-index: 9999;
 	padding-top: 0.5em;
 	background: #fff;
@@ -266,7 +266,7 @@ button.outline {
 
 #toc-input {
 	display: inline-block;
-	width: 11em;
+	width: 14em;
 	position: absolute;
 	left: 0.25em;
 	right: 0;
@@ -456,7 +456,7 @@ button.outline {
 
 #content {
 	margin: 0 0.25em;
-	margin-left: 16em;
+	margin-left: 18.5em;
 }
 
 #content:before {

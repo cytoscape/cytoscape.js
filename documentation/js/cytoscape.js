@@ -2,7 +2,7 @@
 
 /*!
 
-Cytoscape.js 2.7.9 (MIT licensed)
+Cytoscape.js 2.7.10 (MIT licensed)
 
 Copyright (c) The Cytoscape Consortium
 
@@ -3372,6 +3372,18 @@ var defBbOpts = {
 
 var defBbOptsKey = getKey( defBbOpts );
 
+elesfn.recalculateRenderedStyle = function( useCache ){
+  var cy = this.cy();
+  var renderer = cy.renderer();
+  var styleEnabled = cy.styleEnabled();
+
+  if( renderer && styleEnabled ){
+    renderer.recalculateRenderedStyle( this, useCache );
+  }
+
+  return this;
+};
+
 elesfn.boundingBox = function( options ){
   // the main usecase is ele.boundingBox() for a single element with no/def options
   // specified s.t. the cache is used, so check for this case to make it faster by
@@ -3404,18 +3416,17 @@ elesfn.boundingBox = function( options ){
 
   var eles = this;
   var cy = eles.cy();
-  var renderer = eles.cy().renderer();
   var styleEnabled = cy.styleEnabled();
 
   if( styleEnabled ){
-    renderer.recalculateRenderedStyle( eles, opts.useCache );
+    this.recalculateRenderedStyle( opts.useCache );
   }
 
   for( var i = 0; i < eles.length; i++ ){
     var ele = eles[i];
 
     if( styleEnabled && ele.isEdge() && ele.pstyle('curve-style').strValue === 'bezier' ){
-      renderer.recalculateRenderedStyle( ele.parallelEdges(), opts.useCache ); // n.b. ele.parallelEdges() single is cached
+      ele.parallelEdges().recalculateRenderedStyle( opts.useCache ); // n.b. ele.parallelEdges() single is cached
     }
 
     updateBoundsFromBox( bounds, cachedBoundingBoxImpl( ele, opts ) );
@@ -5246,11 +5257,14 @@ var elesfn = ({
       if(
         ele.pstyle( 'visibility' ).value !== 'visible'
         || ele.pstyle( 'display' ).value !== 'element'
+        || ele.pstyle('width').pfValue === 0
       ){
         return false;
       }
 
       if( ele._private.group === 'nodes' ){
+        if( ele.pstyle('height').pfValue === 0 ){ return false; }
+
         if( !hasCompoundNodes ){ return true; }
 
         var parents = ele._private.data.parent ? ele.parents() : null;
@@ -7242,6 +7256,10 @@ var corefn = ({
     if( !_p.notificationsEnabled ){ return; } // exit on disabled
 
     var renderer = this.renderer();
+
+    // exit if destroy() called on core or renderer in between frames #1499
+    // TODO first check this.isDestroyed() in >=3.1 #1440
+    if( !renderer ){ return; }
 
     renderer.notify( params );
   },
@@ -12121,6 +12139,9 @@ BRp.recalculateRenderedStyle = function( eles, useCache ){
   var edges = [];
   var nodes = [];
 
+  // the renderer can't be used for calcs when destroyed, e.g. ele.boundingBox()
+  if( this.destroyed ){ return; }
+
   // use cache by default for perf
   if( useCache === undefined ){ useCache = true; }
 
@@ -12133,26 +12154,31 @@ BRp.recalculateRenderedStyle = function( eles, useCache ){
     if( (useCache && rstyle.clean) || ele.removed() ){ continue; }
 
     if( _p.group === 'nodes' ){
-      var pos = _p.position;
-
       nodes.push( ele );
-
-      rstyle.nodeX = pos.x;
-      rstyle.nodeY = pos.y;
-      rstyle.nodeW = ele.pstyle( 'width' ).pfValue;
-      rstyle.nodeH = ele.pstyle( 'height' ).pfValue;
     } else { // edges
-
       edges.push( ele );
-
-    } // if edges
+    }
 
     rstyle.clean = true;
     // rstyle.dirtyEvents = null;
   }
 
+  // update node data from projections
+  for( var i = 0; i < nodes.length; i++ ){
+    var ele = nodes[i];
+    var _p = ele._private;
+    var rstyle = _p.rstyle;
+    var pos = _p.position;
+
+    this.recalculateNodeLabelProjection( ele );
+
+    rstyle.nodeX = pos.x;
+    rstyle.nodeY = pos.y;
+    rstyle.nodeW = ele.pstyle( 'width' ).pfValue;
+    rstyle.nodeH = ele.pstyle( 'height' ).pfValue;
+  }
+
   this.recalculateEdgeProjections( edges );
-  this.recalculateLabelProjections( nodes, edges );
 
   // update edge data from projections
   for( var i = 0; i < edges.length; i++ ){
@@ -12160,6 +12186,8 @@ BRp.recalculateRenderedStyle = function( eles, useCache ){
     var _p = ele._private;
     var rstyle = _p.rstyle;
     var rs = _p.rscratch;
+
+    this.recalculateEdgeLabelProjections( ele );
 
     // update rstyle positions
     rstyle.srcX = rs.arrowStartX;
@@ -13144,16 +13172,6 @@ BRp.calculateLabelDimensions = function( ele, text, extraKey ){
   };
 
   return cache[ cacheKey ];
-};
-
-BRp.recalculateLabelProjections = function( nodes, edges ){
-  for( var i = 0; i < nodes.length; i++ ){
-    this.recalculateNodeLabelProjection( nodes[ i ] );
-  }
-
-  for( var i = 0; i < edges.length; i++ ){
-    this.recalculateEdgeLabelProjections( edges[ i ] );
-  }
 };
 
 BRp.recalculateEdgeProjections = function( edges ){
@@ -14177,6 +14195,9 @@ BRp.init = function( options ){
 BRp.notify = function( params ){
   var types;
   var r = this;
+
+  // the renderer can't be notified after it's destroyed
+  if( this.destroyed ){ return; }
 
   if( is.array( params.type ) ){
     types = params.type;
@@ -16498,6 +16519,9 @@ BRp.redraw = function( options ){
 };
 
 BRp.beforeRender = function( fn, priority ){
+  // the renderer can't add tick callbacks when destroyed
+  if( this.destroyed ){ return; }
+
   priority = priority || 0;
 
   var cbs = this.beforeRenderCallbacks;
@@ -16657,10 +16681,7 @@ CRp.drawEdge = function( context, edge, shiftToOriginWithBb, drawLabel, drawOver
     return;
   }
 
-  // Edge line width
-  if( edge.pstyle( 'width' ).pfValue <= 0 ){
-    return;
-  }
+  if( !edge.visible() ){ return; }
 
   var bb;
   if( shiftToOriginWithBb ){
@@ -16955,6 +16976,8 @@ CRp.drawCachedElement = function( context, ele, pxRatio, extent ){
   var r = this;
   var bb = ele.boundingBox();
 
+  if( bb.w === 0 || bb.h === 0 ){ return; }
+
   if( !extent || math.boundingBoxesIntersect( bb, extent ) ){
     var cache = r.data.eleTxrCache.getElement( ele, bb, pxRatio );
 
@@ -17007,6 +17030,8 @@ CRp.drawLayeredElements = function( context, eles, pxRatio, extent ){
     for( var i = 0; i < layers.length; i++ ){
       var layer = layers[i];
       var bb = layer.bb;
+
+      if( bb.w === 0 || bb.h === 0 ){ continue; }
 
       context.drawImage( layer.canvas, bb.x1, bb.y1, bb.w, bb.h );
     }
@@ -17563,12 +17588,13 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
     return; // can't draw node with undefined position
   }
 
+  if( !node.visible() ){ return; }
+
+  var parentOpacity = node.effectiveOpacity();
+
   var usePaths = this.usePaths();
   var path;
   var pathCacheHit = false;
-
-  var parentOpacity = node.effectiveOpacity();
-  if( parentOpacity === 0 ){ return; }
 
   nodeWidth = node.width() + node.pstyle( 'padding-left' ).pfValue + node.pstyle( 'padding-right' ).pfValue;
   nodeHeight = node.height() + node.pstyle( 'padding-top' ).pfValue + node.pstyle( 'padding-bottom' ).pfValue;
@@ -18700,6 +18726,8 @@ ETCp.getElement = function( ele, bb, pxRatio, lvl, reason ){
   var rs = ele._private.rscratch;
   var zoom = r.cy.zoom();
 
+  if( bb.w === 0 || bb.h === 0 ){ return null; }
+
   if( lvl == null ){
     lvl = Math.ceil( math.log2( zoom * pxRatio ) );
   }
@@ -19680,6 +19708,9 @@ LTCp.drawEleInLayer = function( layer, ele, lvl, pxRatio ){
   var r = this.renderer;
   var context = layer.context;
   var bb = ele.boundingBox();
+
+  if( bb.w === 0 || bb.h === 0 ){ return; }
+
   var eleCache = self.eleTxrCache;
   var reason = useHighQualityEleTxrReqs ? eleCache.reasons.highQuality : undefined;
 
@@ -20530,385 +20561,369 @@ PSF LICENSE AGREEMENT FOR PYTHON 2.7.2
 */
 
 'use strict';
-/* jshint ignore:start */
-
 // Generated by CoffeeScript 1.8.0
-(function(){
-  var Heap, defaultCmp, floor, heapify, heappop, heappush, heappushpop, heapreplace, insort, min, nlargest, nsmallest, updateItem, _siftdown, _siftup;
 
-  floor = Math.floor, min = Math.min;
+var Heap, defaultCmp, floor, heapify, heappop, heappush, heappushpop, heapreplace, insort, min, nlargest, nsmallest, updateItem, _siftdown, _siftup;
 
-
-  /*
-  Default comparison function to be used
-   */
-
-  defaultCmp = function( x, y ){
-    if( x < y ){
-      return -1;
-    }
-    if( x > y ){
-      return 1;
-    }
-    return 0;
-  };
+floor = Math.floor, min = Math.min;
 
 
-  /*
-  Insert item x in list a, and keep it sorted assuming a is sorted.
+/*
+Default comparison function to be used
+ */
 
-  If x is already in a, insert it to the right of the rightmost x.
-
-  Optional args lo (default 0) and hi (default a.length) bound the slice
-  of a to be searched.
-   */
-
-  insort = function( a, x, lo, hi, cmp ){
-    var mid;
-    if( lo == null ){
-      lo = 0;
-    }
-    if( cmp == null ){
-      cmp = defaultCmp;
-    }
-    if( lo < 0 ){
-      throw new Error( 'lo must be non-negative' );
-    }
-    if( hi == null ){
-      hi = a.length;
-    }
-    while( lo < hi ){
-      mid = floor( (lo + hi) / 2 );
-      if( cmp( x, a[ mid ] ) < 0 ){
-        hi = mid;
-      } else {
-        lo = mid + 1;
-      }
-    }
-    return ([].splice.apply( a, [ lo, lo - lo ].concat( x ) ), x);
-  };
+defaultCmp = function( x, y ){
+  if( x < y ){
+    return -1;
+  }
+  if( x > y ){
+    return 1;
+  }
+  return 0;
+};
 
 
-  /*
-  Push item onto heap, maintaining the heap invariant.
-   */
+/*
+Insert item x in list a, and keep it sorted assuming a is sorted.
 
-  heappush = function( array, item, cmp ){
-    if( cmp == null ){
-      cmp = defaultCmp;
-    }
-    array.push( item );
-    return _siftdown( array, 0, array.length - 1, cmp );
-  };
+If x is already in a, insert it to the right of the rightmost x.
 
+Optional args lo (default 0) and hi (default a.length) bound the slice
+of a to be searched.
+ */
 
-  /*
-  Pop the smallest item off the heap, maintaining the heap invariant.
-   */
-
-  heappop = function( array, cmp ){
-    var lastelt, returnitem;
-    if( cmp == null ){
-      cmp = defaultCmp;
-    }
-    lastelt = array.pop();
-    if( array.length ){
-      returnitem = array[0];
-      array[0] = lastelt;
-      _siftup( array, 0, cmp );
+insort = function( a, x, lo, hi, cmp ){
+  var mid;
+  if( lo == null ){
+    lo = 0;
+  }
+  if( cmp == null ){
+    cmp = defaultCmp;
+  }
+  if( lo < 0 ){
+    throw new Error( 'lo must be non-negative' );
+  }
+  if( hi == null ){
+    hi = a.length;
+  }
+  while( lo < hi ){
+    mid = floor( (lo + hi) / 2 );
+    if( cmp( x, a[ mid ] ) < 0 ){
+      hi = mid;
     } else {
-      returnitem = lastelt;
+      lo = mid + 1;
     }
-    return returnitem;
-  };
+  }
+  return ([].splice.apply( a, [ lo, lo - lo ].concat( x ) ), x);
+};
 
 
-  /*
-  Pop and return the current smallest value, and add the new item.
+/*
+Push item onto heap, maintaining the heap invariant.
+ */
 
-  This is more efficient than heappop() followed by heappush(), and can be
-  more appropriate when using a fixed size heap. Note that the value
-  returned may be larger than item! That constrains reasonable use of
-  this routine unless written as part of a conditional replacement:
-      if item > array[0]
-        item = heapreplace(array, item)
-   */
+heappush = function( array, item, cmp ){
+  if( cmp == null ){
+    cmp = defaultCmp;
+  }
+  array.push( item );
+  return _siftdown( array, 0, array.length - 1, cmp );
+};
 
-  heapreplace = function( array, item, cmp ){
-    var returnitem;
-    if( cmp == null ){
-      cmp = defaultCmp;
-    }
+
+/*
+Pop the smallest item off the heap, maintaining the heap invariant.
+ */
+
+heappop = function( array, cmp ){
+  var lastelt, returnitem;
+  if( cmp == null ){
+    cmp = defaultCmp;
+  }
+  lastelt = array.pop();
+  if( array.length ){
     returnitem = array[0];
-    array[0] = item;
+    array[0] = lastelt;
     _siftup( array, 0, cmp );
-    return returnitem;
-  };
+  } else {
+    returnitem = lastelt;
+  }
+  return returnitem;
+};
 
 
-  /*
-  Fast version of a heappush followed by a heappop.
-   */
+/*
+Pop and return the current smallest value, and add the new item.
 
-  heappushpop = function( array, item, cmp ){
-    var _ref;
-    if( cmp == null ){
-      cmp = defaultCmp;
-    }
-    if( array.length && cmp( array[0], item ) < 0 ){
-      _ref = [ array[0], item ], item = _ref[0], array[0] = _ref[1];
-      _siftup( array, 0, cmp );
-    }
-    return item;
-  };
+This is more efficient than heappop() followed by heappush(), and can be
+more appropriate when using a fixed size heap. Note that the value
+returned may be larger than item! That constrains reasonable use of
+this routine unless written as part of a conditional replacement:
+    if item > array[0]
+      item = heapreplace(array, item)
+ */
 
-
-  /*
-  Transform list into a heap, in-place, in O(array.length) time.
-   */
-
-  heapify = function( array, cmp ){
-    var i, _i, _j, _len, _ref, _ref1, _results, _results1;
-    if( cmp == null ){
-      cmp = defaultCmp;
-    }
-    _ref1 = (function(){
-      _results1 = [];
-      for( var _j = 0, _ref = floor( array.length / 2 ); 0 <= _ref ? _j < _ref : _j > _ref; 0 <= _ref ? _j++ : _j-- ){ _results1.push( _j ); }
-      return _results1;
-    }).apply( this ).reverse();
-    _results = [];
-    for( _i = 0, _len = _ref1.length; _i < _len; _i++ ){
-      i = _ref1[ _i ];
-      _results.push( _siftup( array, i, cmp ) );
-    }
-    return _results;
-  };
+heapreplace = function( array, item, cmp ){
+  var returnitem;
+  if( cmp == null ){
+    cmp = defaultCmp;
+  }
+  returnitem = array[0];
+  array[0] = item;
+  _siftup( array, 0, cmp );
+  return returnitem;
+};
 
 
-  /*
-  Update the position of the given item in the heap.
-  This function should be called every time the item is being modified.
-   */
+/*
+Fast version of a heappush followed by a heappop.
+ */
 
-  updateItem = function( array, item, cmp ){
-    var pos;
-    if( cmp == null ){
-      cmp = defaultCmp;
-    }
-    pos = array.indexOf( item );
-    if( pos === -1 ){
-      return;
-    }
-    _siftdown( array, 0, pos, cmp );
-    return _siftup( array, pos, cmp );
-  };
+heappushpop = function( array, item, cmp ){
+  var _ref;
+  if( cmp == null ){
+    cmp = defaultCmp;
+  }
+  if( array.length && cmp( array[0], item ) < 0 ){
+    _ref = [ array[0], item ], item = _ref[0], array[0] = _ref[1];
+    _siftup( array, 0, cmp );
+  }
+  return item;
+};
 
 
-  /*
-  Find the n largest elements in a dataset.
-   */
+/*
+Transform list into a heap, in-place, in O(array.length) time.
+ */
 
-  nlargest = function( array, n, cmp ){
-    var elem, result, _i, _len, _ref;
-    if( cmp == null ){
-      cmp = defaultCmp;
-    }
-    result = array.slice( 0, n );
+heapify = function( array, cmp ){
+  var i, _i, _j, _len, _ref, _ref1, _results, _results1;
+  if( cmp == null ){
+    cmp = defaultCmp;
+  }
+  _ref1 = (function(){
+    _results1 = [];
+    for( var _j = 0, _ref = floor( array.length / 2 ); 0 <= _ref ? _j < _ref : _j > _ref; 0 <= _ref ? _j++ : _j-- ){ _results1.push( _j ); }
+    return _results1;
+  }).apply( this ).reverse();
+  _results = [];
+  for( _i = 0, _len = _ref1.length; _i < _len; _i++ ){
+    i = _ref1[ _i ];
+    _results.push( _siftup( array, i, cmp ) );
+  }
+  return _results;
+};
+
+
+/*
+Update the position of the given item in the heap.
+This function should be called every time the item is being modified.
+ */
+
+updateItem = function( array, item, cmp ){
+  var pos;
+  if( cmp == null ){
+    cmp = defaultCmp;
+  }
+  pos = array.indexOf( item );
+  if( pos === -1 ){
+    return;
+  }
+  _siftdown( array, 0, pos, cmp );
+  return _siftup( array, pos, cmp );
+};
+
+
+/*
+Find the n largest elements in a dataset.
+ */
+
+nlargest = function( array, n, cmp ){
+  var elem, result, _i, _len, _ref;
+  if( cmp == null ){
+    cmp = defaultCmp;
+  }
+  result = array.slice( 0, n );
+  if( !result.length ){
+    return result;
+  }
+  heapify( result, cmp );
+  _ref = array.slice( n );
+  for( _i = 0, _len = _ref.length; _i < _len; _i++ ){
+    elem = _ref[ _i ];
+    heappushpop( result, elem, cmp );
+  }
+  return result.sort( cmp ).reverse();
+};
+
+
+/*
+Find the n smallest elements in a dataset.
+ */
+
+nsmallest = function( array, n, cmp ){
+  var elem, i, los, result, _i, _j, _len, _ref, _ref1, _results;
+  if( cmp == null ){
+    cmp = defaultCmp;
+  }
+  if( n * 10 <= array.length ){
+    result = array.slice( 0, n ).sort( cmp );
     if( !result.length ){
       return result;
     }
-    heapify( result, cmp );
+    los = result[ result.length - 1];
     _ref = array.slice( n );
     for( _i = 0, _len = _ref.length; _i < _len; _i++ ){
       elem = _ref[ _i ];
-      heappushpop( result, elem, cmp );
-    }
-    return result.sort( cmp ).reverse();
-  };
-
-
-  /*
-  Find the n smallest elements in a dataset.
-   */
-
-  nsmallest = function( array, n, cmp ){
-    var elem, i, los, result, _i, _j, _len, _ref, _ref1, _results;
-    if( cmp == null ){
-      cmp = defaultCmp;
-    }
-    if( n * 10 <= array.length ){
-      result = array.slice( 0, n ).sort( cmp );
-      if( !result.length ){
-        return result;
+      if( cmp( elem, los ) < 0 ){
+        insort( result, elem, 0, null, cmp );
+        result.pop();
+        los = result[ result.length - 1];
       }
-      los = result[ result.length - 1];
-      _ref = array.slice( n );
-      for( _i = 0, _len = _ref.length; _i < _len; _i++ ){
-        elem = _ref[ _i ];
-        if( cmp( elem, los ) < 0 ){
-          insort( result, elem, 0, null, cmp );
-          result.pop();
-          los = result[ result.length - 1];
-        }
-      }
-      return result;
     }
-    heapify( array, cmp );
-    _results = [];
-    for( i = _j = 0, _ref1 = min( n, array.length ); 0 <= _ref1 ? _j < _ref1 : _j > _ref1; i = 0 <= _ref1 ? ++_j : --_j ){
-      _results.push( heappop( array, cmp ) );
-    }
-    return _results;
-  };
+    return result;
+  }
+  heapify( array, cmp );
+  _results = [];
+  for( i = _j = 0, _ref1 = min( n, array.length ); 0 <= _ref1 ? _j < _ref1 : _j > _ref1; i = 0 <= _ref1 ? ++_j : --_j ){
+    _results.push( heappop( array, cmp ) );
+  }
+  return _results;
+};
 
-  _siftdown = function( array, startpos, pos, cmp ){
-    var newitem, parent, parentpos;
-    if( cmp == null ){
-      cmp = defaultCmp;
+_siftdown = function( array, startpos, pos, cmp ){
+  var newitem, parent, parentpos;
+  if( cmp == null ){
+    cmp = defaultCmp;
+  }
+  newitem = array[ pos ];
+  while( pos > startpos ){
+    parentpos = (pos - 1) >> 1;
+    parent = array[ parentpos ];
+    if( cmp( newitem, parent ) < 0 ){
+      array[ pos ] = parent;
+      pos = parentpos;
+      continue;
     }
-    newitem = array[ pos ];
-    while( pos > startpos ){
-      parentpos = (pos - 1) >> 1;
-      parent = array[ parentpos ];
-      if( cmp( newitem, parent ) < 0 ){
-        array[ pos ] = parent;
-        pos = parentpos;
-        continue;
-      }
-      break;
-    }
-    return array[ pos ] = newitem;
-  };
+    break;
+  }
+  return array[ pos ] = newitem;
+};
 
-  _siftup = function( array, pos, cmp ){
-    var childpos, endpos, newitem, rightpos, startpos;
-    if( cmp == null ){
-      cmp = defaultCmp;
+_siftup = function( array, pos, cmp ){
+  var childpos, endpos, newitem, rightpos, startpos;
+  if( cmp == null ){
+    cmp = defaultCmp;
+  }
+  endpos = array.length;
+  startpos = pos;
+  newitem = array[ pos ];
+  childpos = 2 * pos + 1;
+  while( childpos < endpos ){
+    rightpos = childpos + 1;
+    if( rightpos < endpos && !(cmp( array[ childpos ], array[ rightpos ] ) < 0) ){
+      childpos = rightpos;
     }
-    endpos = array.length;
-    startpos = pos;
-    newitem = array[ pos ];
+    array[ pos ] = array[ childpos ];
+    pos = childpos;
     childpos = 2 * pos + 1;
-    while( childpos < endpos ){
-      rightpos = childpos + 1;
-      if( rightpos < endpos && !(cmp( array[ childpos ], array[ rightpos ] ) < 0) ){
-        childpos = rightpos;
-      }
-      array[ pos ] = array[ childpos ];
-      pos = childpos;
-      childpos = 2 * pos + 1;
-    }
-    array[ pos ] = newitem;
-    return _siftdown( array, startpos, pos, cmp );
+  }
+  array[ pos ] = newitem;
+  return _siftdown( array, startpos, pos, cmp );
+};
+
+Heap = (function(){
+  Heap.push = heappush;
+
+  Heap.pop = heappop;
+
+  Heap.replace = heapreplace;
+
+  Heap.pushpop = heappushpop;
+
+  Heap.heapify = heapify;
+
+  Heap.updateItem = updateItem;
+
+  Heap.nlargest = nlargest;
+
+  Heap.nsmallest = nsmallest;
+
+  function Heap( cmp ){
+    this.cmp = cmp != null ? cmp : defaultCmp;
+    this.nodes = [];
+  }
+
+  Heap.prototype.push = function( x ){
+    return heappush( this.nodes, x, this.cmp );
   };
 
-  Heap = (function(){
-    Heap.push = heappush;
+  Heap.prototype.pop = function(){
+    return heappop( this.nodes, this.cmp );
+  };
 
-    Heap.pop = heappop;
+  Heap.prototype.peek = function(){
+    return this.nodes[0];
+  };
 
-    Heap.replace = heapreplace;
+  Heap.prototype.contains = function( x ){
+    return this.nodes.indexOf( x ) !== -1;
+  };
 
-    Heap.pushpop = heappushpop;
+  Heap.prototype.replace = function( x ){
+    return heapreplace( this.nodes, x, this.cmp );
+  };
 
-    Heap.heapify = heapify;
+  Heap.prototype.pushpop = function( x ){
+    return heappushpop( this.nodes, x, this.cmp );
+  };
 
-    Heap.updateItem = updateItem;
+  Heap.prototype.heapify = function(){
+    return heapify( this.nodes, this.cmp );
+  };
 
-    Heap.nlargest = nlargest;
+  Heap.prototype.updateItem = function( x ){
+    return updateItem( this.nodes, x, this.cmp );
+  };
 
-    Heap.nsmallest = nsmallest;
+  Heap.prototype.clear = function(){
+    return this.nodes = [];
+  };
 
-    function Heap( cmp ){
-      this.cmp = cmp != null ? cmp : defaultCmp;
-      this.nodes = [];
-    }
+  Heap.prototype.empty = function(){
+    return this.nodes.length === 0;
+  };
 
-    Heap.prototype.push = function( x ){
-      return heappush( this.nodes, x, this.cmp );
-    };
+  Heap.prototype.size = function(){
+    return this.nodes.length;
+  };
 
-    Heap.prototype.pop = function(){
-      return heappop( this.nodes, this.cmp );
-    };
+  Heap.prototype.clone = function(){
+    var heap;
+    heap = new Heap();
+    heap.nodes = this.nodes.slice( 0 );
+    return heap;
+  };
 
-    Heap.prototype.peek = function(){
-      return this.nodes[0];
-    };
+  Heap.prototype.toArray = function(){
+    return this.nodes.slice( 0 );
+  };
 
-    Heap.prototype.contains = function( x ){
-      return this.nodes.indexOf( x ) !== -1;
-    };
+  Heap.prototype.insert = Heap.prototype.push;
 
-    Heap.prototype.replace = function( x ){
-      return heapreplace( this.nodes, x, this.cmp );
-    };
+  Heap.prototype.top = Heap.prototype.peek;
 
-    Heap.prototype.pushpop = function( x ){
-      return heappushpop( this.nodes, x, this.cmp );
-    };
+  Heap.prototype.front = Heap.prototype.peek;
 
-    Heap.prototype.heapify = function(){
-      return heapify( this.nodes, this.cmp );
-    };
+  Heap.prototype.has = Heap.prototype.contains;
 
-    Heap.prototype.updateItem = function( x ){
-      return updateItem( this.nodes, x, this.cmp );
-    };
+  Heap.prototype.copy = Heap.prototype.clone;
 
-    Heap.prototype.clear = function(){
-      return this.nodes = [];
-    };
+  return Heap;
 
-    Heap.prototype.empty = function(){
-      return this.nodes.length === 0;
-    };
+})();
 
-    Heap.prototype.size = function(){
-      return this.nodes.length;
-    };
-
-    Heap.prototype.clone = function(){
-      var heap;
-      heap = new Heap();
-      heap.nodes = this.nodes.slice( 0 );
-      return heap;
-    };
-
-    Heap.prototype.toArray = function(){
-      return this.nodes.slice( 0 );
-    };
-
-    Heap.prototype.insert = Heap.prototype.push;
-
-    Heap.prototype.top = Heap.prototype.peek;
-
-    Heap.prototype.front = Heap.prototype.peek;
-
-    Heap.prototype.has = Heap.prototype.contains;
-
-    Heap.prototype.copy = Heap.prototype.clone;
-
-    return Heap;
-
-  })();
-
-  (function( root, factory ){
-    if( typeof define === 'function' && define.amd ){ // eslint-disable-line no-undef
-      return define( [], factory );  // eslint-disable-line no-undef
-    } else if( typeof exports === 'object' ){
-      return module.exports = factory();
-    } else {
-      return root.Heap = factory();
-    }
-  })( this, function(){
-    return Heap;
-  } );
-
-}).call( this );
-
-/* jshint ignore:end */
+module.exports = Heap;
 
 },{}],82:[function(_dereq_,module,exports){
 'use strict';
@@ -26995,7 +27010,7 @@ util.debounce = function( func, wait, options ){ // ported lodash debounce funct
 module.exports = util;
 
 },{"../is":83,"../window":107}],106:[function(_dereq_,module,exports){
-module.exports="2.7.9"
+module.exports="2.7.10"
 },{}],107:[function(_dereq_,module,exports){
 module.exports = ( typeof window === 'undefined' ? null : window ); // eslint-disable-line no-undef
 

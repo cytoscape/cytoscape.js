@@ -226,8 +226,9 @@ For automatic, bundled bezier edges (`curve-style: bezier`):
  * **`control-point-distance`** : A single value that overrides `control-point-step-size` with a manual value.  Because it overrides the step size, bezier edges with the same value will overlap.  Thus, it's best to use this as a one-off value for particular edges if need be.
  * **`control-point-weight`** : A single value that weights control points along the line from source to target.  The value usually ranges on [0, 1], with 0 towards the source node and 1 towards the target node --- but larger or smaller values can also be used.
  * **`edge-distances`** : With value `intersection` (default), the line from source to target for `control-point-weight` is from the outside of the source node's shape to the outside of the target node's shape.  With value `node-position`, the line is from the source position to the target position.  The `node-position` option makes calculating edge points easier --- but it should be used carefully because you can create invalid points that `intersection` would have automatically corrected.
-* **`loop-direction`** : Determines the angle in degrees that loops extend from the node in cases when the source and target node of an edge is the same. A value of -90 will result in a loop that extends straight upward from the node. Default is -135 (extending to the upper left).
-* **`loop-sweep`** : Determines the angle in degrees between the leaving and returning edges in loops. Positive values result in clockwise looping and negative values result in counter-clockwise looping. Default is -90.  
+ * **`loop-direction`** : Determines the angle in degrees (`deg`) or radians (`rad`) that loops extend from the node in cases when the source and target node of an edge is the same. A value of `-90deg` will result in a loop that extends straight upward from the node. Default is `-135deg` (extending to the upper left). In the event that multiple loops from a node share the same `loop-direction` and `loop-sweep` values, loops will be stepped according to their `control-point-step-size` value.
+ * **`loop-sweep`** : Determines the angle in degrees between the leaving and returning edges in loops. Positive values result in clockwise looping and negative values result in counter-clockwise looping. Default is `-90deg`.  
+
 
 
 ## Unbundled bezier edges

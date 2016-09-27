@@ -1,13 +1,13 @@
 # Cytoscape.js
 
-[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/cytoscape/cytoscape.js/master/LICENSE)
-[![npm](https://img.shields.io/npm/v/cytoscape.svg)](https://www.npmjs.com/package/cytoscape)
-[![npm installs](https://img.shields.io/npm/dt/cytoscape.svg&label=npm%20installs)](https://www.npmjs.com/package/cytoscape)
-[![master branch tests](https://img.shields.io/travis/cytoscape/cytoscape.js/master.svg&label=master%20branch)](https://travis-ci.org/cytoscape/cytoscape.js)
-[![unstable branch tests](https://img.shields.io/travis/cytoscape/cytoscape.js/unstable.svg&label=unstable%20branch)](https://travis-ci.org/cytoscape/cytoscape.js)
-[![StackOverflow](https://img.shields.io/stackexchange/stackoverflow/t/cytoscape.js.svg)](http://stackoverflow.com/questions/tagged/cytoscape.js)
-[![StackOverflow](https://img.shields.io/badge/ask%20question-on%20stackoverflow-brightgreen.svg)](http://stackoverflow.com/questions/ask?tags=cytoscape.js)
-[![Gitter](https://img.shields.io/gitter/room/cytoscape/cytoscape.js.svg)](https://gitter.im/cytoscape/cytoscape.js)
+[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg?maxAge=1)](https://raw.githubusercontent.com/cytoscape/cytoscape.js/master/LICENSE)
+[![npm](https://img.shields.io/npm/v/cytoscape.svg?maxAge=1)](https://www.npmjs.com/package/cytoscape)
+[![npm installs](https://img.shields.io/npm/dt/cytoscape.svg?maxAge=1&label=npm%20installs)](https://www.npmjs.com/package/cytoscape)
+[![master branch tests](https://img.shields.io/travis/cytoscape/cytoscape.js/master.svg?maxAge=1&label=master%20branch)](https://travis-ci.org/cytoscape/cytoscape.js)
+[![unstable branch tests](https://img.shields.io/travis/cytoscape/cytoscape.js/unstable.svg?maxAge=1&label=unstable%20branch)](https://travis-ci.org/cytoscape/cytoscape.js)
+[![StackOverflow](https://img.shields.io/stackexchange/stackoverflow/t/cytoscape.js.svg?maxAge=1)](http://stackoverflow.com/questions/tagged/cytoscape.js)
+[![StackOverflow](https://img.shields.io/badge/ask%20question-on%20stackoverflow-brightgreen.svg?maxAge=1)](http://stackoverflow.com/questions/ask?tags=cytoscape.js)
+[![Gitter](https://img.shields.io/gitter/room/cytoscape/cytoscape.js.svg?maxAge=1)](https://gitter.im/cytoscape/cytoscape.js)
 
 
 Graph theory (a.k.a. network) library for analysis and visualisation : [http://js.cytoscape.org](http://js.cytoscape.org)

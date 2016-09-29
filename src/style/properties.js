@@ -73,6 +73,7 @@ var styfn = {};
     textRotation: { number: true, units: 'deg|rad', implicitUnits: 'rad', enums: [ 'none', 'autorotate' ] },
     polygonPointList: { number: true, multiple: true, evenMultiple: true, min: -1, max: 1, unitless: true },
     edgeDistances: { enums: ['intersection', 'node-position'] },
+    edgeDirections: { enums: ['outside', 'inside'] },
     easing: {
       regexes: [
         '^(spring)\\s*\\(\\s*(' + number + ')\\s*,\\s*(' + number + ')\\s*\\)$',
@@ -224,6 +225,7 @@ var styfn = {};
     { name: 'segment-distances', type: t.bidirectionalSizes },
     { name: 'segment-weights', type: t.numbers },
     { name: 'edge-distances', type: t.edgeDistances },
+    { name: 'edge-pointing-direction', type: t.edgeDirections },
     { name: 'loop-direction', type: t.angle },
     { name: 'loop-sweep', type: t.angle },
     { name: 'source-distance-from-node', type: t.size },
@@ -429,6 +431,7 @@ styfn.getDefaultProperties = util.memoize( function(){
     'segment-weights': 0.5,
     'segment-distances': 20,
     'edge-distances': 'intersection',
+    'edge-pointing-direction': 'inside',
     'curve-style': 'bezier',
     'haystack-radius': 0
   }, [

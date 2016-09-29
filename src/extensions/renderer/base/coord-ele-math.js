@@ -1830,10 +1830,12 @@ var getAngleFromDisp = function( dispX, dispY ){
 BRp.calculateArrowAngles = function( edge ){
   var rs = edge._private.rscratch;
   var isHaystack = rs.edgeType === 'haystack';
+  var isBezier = rs.edgeType === 'bezier';
   var isMultibezier = rs.edgeType === 'multibezier';
   var isSegments = rs.edgeType === 'segments';
   var isCompound = rs.edgeType === 'compound';
   var isSelf = rs.edgeType === 'self';
+  var isInside = rs.edgePointsTowards === 'inside';
 
   // Displacement gives direction for arrowhead orientation
   var dispX, dispY;
@@ -1857,8 +1859,20 @@ BRp.calculateArrowAngles = function( edge ){
   // source
   //
 
-  dispX = srcPos.x - startX;
-  dispY = srcPos.y - startY;
+  if( !isInside && isSegments ){
+    dispX = startX - rs.segpts[0];
+    dispY = startY - rs.segpts[1];
+  } else if( !isInside && ( isMultibezier || isCompound || isSelf || isBezier ) ){
+    var pts = rs.allpts;
+    var bX = math.qbezierAt( pts[0], pts[2], pts[4], 0.1 );
+    var bY = math.qbezierAt( pts[1], pts[3], pts[5], 0.1 );
+
+    dispX = startX - bX;
+    dispY = startY - bY;
+  } else {
+    dispX = srcPos.x - startX;
+    dispY = srcPos.y - startY;
+  }
 
   rs.srcArrowAngle = getAngleFromDisp( dispX, dispY );
 
@@ -1958,8 +1972,21 @@ BRp.calculateArrowAngles = function( edge ){
   // target
   //
 
-  dispX = tgtPos.x - endX;
-  dispY = tgtPos.y - endY;
+  if( !isInside && isSegments ){
+    dispX = endX - rs.segpts[ rs.segpts.length - 2 ];
+    dispY = endY - rs.segpts[ rs.segpts.length - 1 ];
+  } else if( !isInside && ( isMultibezier || isCompound || isSelf || isBezier ) ){
+    var pts = rs.allpts;
+    var l = pts.length;
+    var bX = math.qbezierAt( pts[l-6], pts[l-4], pts[l-2], 0.9 );
+    var bY = math.qbezierAt( pts[l-5], pts[l-3], pts[l-1], 0.9 );
+
+    dispX = endX - bX;
+    dispY = endY - bY;
+  } else {
+    dispX = tgtPos.x - endX;
+    dispY = tgtPos.y - endY;
+  }
 
   rs.tgtArrowAngle = getAngleFromDisp( dispX, dispY );
 };
@@ -2007,13 +2034,22 @@ BRp.findEndpoints = function( edge ){
   var rs = edge._private.rscratch;
 
   var et = rs.edgeType;
-  var bezier = et === 'bezier' || et === 'multibezier' || et === 'self' || et === 'compound';
+  var self = et === 'self' || et === 'compound';
+  var bezier = et === 'bezier' || et === 'multibezier' || self;
   var multi = et !== 'bezier';
   var lines = et === 'straight' || et === 'segments';
   var segments = et === 'segments';
   var hasEndpts = bezier || multi || lines;
+  var pointsTowards = self ? 'inside' : edge.pstyle('edge-pointing-direction').value;
+  var inside = pointsTowards === 'inside';
 
-  var p1, p2;
+  rs.edgePointsTowards = pointsTowards;
+
+  var p1; // last known point of edge on target side
+  var p2; // last known point of edge on source side
+
+  var p1_i; // point to intersect with target shape
+  var p2_i; // point to intersect with source shape
 
   if( bezier ){
     var cpStart = [ rs.ctrlpts[0], rs.ctrlpts[1] ];
@@ -2029,13 +2065,21 @@ BRp.findEndpoints = function( edge ){
     p2 = srcArrowFromPt;
   }
 
+  p1_i = p1;
+  p2_i = p2;
+
+  if( !inside ){
+    p1_i = [ srcPos.x, srcPos.y ];
+    p2_i = [ tgtPos.x, tgtPos.y ];
+  }
+
   intersect = r.nodeShapes[ this.getNodeShape( target ) ].intersectLine(
     tgtPos.x,
     tgtPos.y,
     target.outerWidth(),
     target.outerHeight(),
-    p1[0],
-    p1[1],
+    p1_i[0],
+    p1_i[1],
     0
   );
 
@@ -2061,8 +2105,8 @@ BRp.findEndpoints = function( edge ){
     srcPos.y,
     source.outerWidth(),
     source.outerHeight(),
-    p2[0],
-    p2[1],
+    p2_i[0],
+    p2_i[1],
     0
   );
 

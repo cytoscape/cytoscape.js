@@ -214,6 +214,7 @@ These properties affect the styling of an edge's line:
 
  * **`width`** : The width of an edge's line.
  * **`curve-style`** : The curving method used to separate two or more edges between two nodes; may be [`haystack`](#style/haystack-edges) (default, very fast, bundled straight edges for which loops and compounds are unsupported), [`bezier`](#style/bezier-edges) (bundled curved edges), [`unbundled-bezier`](#style/unbundled-bezier-edges) (curved edges for use with manual control points), or [`segments`](#style/segments-edges) (a series of straight lines).  Note that `haystack` edges work best with `ellipse`, `rectangle`, or similar nodes.  Smaller node shapes, like `triangle`, will not be as aesthetically pleasing.  Also note that edge arrows are unsupported for `haystack` edges.
+ * **`edge-pointing-direction`** : Indicates where the end points of an edge should be directed.  With value `inside`, each end point (e.g. arrow) of the edge points towards the middle of the connected node.  With value `outside`, each end point of the edge points towards the intersection of a line formed between the source node position and the target node position.  The `outside` value is useful for bundling the arrows of edges together, and it is also useful for large nodes (like compounds) as `inside` edges can tend to be impossible to draw for larger nodes.
  * **`line-color`** : The colour of the edge's line.
  * **`line-style`** : The style of the edge's line; may be `solid`, `dotted`, or `dashed`.
 
@@ -225,10 +226,17 @@ For automatic, bundled bezier edges (`curve-style: bezier`):
  * **`control-point-step-size`** : From the line perpendicular from source to target, this value specifies the distance between successive bezier edges.
  * **`control-point-distance`** : A single value that overrides `control-point-step-size` with a manual value.  Because it overrides the step size, bezier edges with the same value will overlap.  Thus, it's best to use this as a one-off value for particular edges if need be.
  * **`control-point-weight`** : A single value that weights control points along the line from source to target.  The value usually ranges on [0, 1], with 0 towards the source node and 1 towards the target node --- but larger or smaller values can also be used.
- * **`edge-distances`** : With value `intersection` (default), the line from source to target for `control-point-weight` is from the outside of the source node's shape to the outside of the target node's shape.  With value `node-position`, the line is from the source position to the target position.  The `node-position` option makes calculating edge points easier --- but it should be used carefully because you can create invalid points that `intersection` would have automatically corrected.
- * **`loop-direction`** : Determines the angle in degrees (`deg`) or radians (`rad`) that loops extend from the node in cases when the source and target node of an edge is the same. A value of `-90deg` will result in a loop that extends straight upward from the node. Default is `-135deg` (extending to the upper left). In the event that multiple loops from a node share the same `loop-direction` and `loop-sweep` values, loops will be stepped according to their `control-point-step-size` value.
- * **`loop-sweep`** : Determines the angle in degrees between the leaving and returning edges in loops. Positive values result in clockwise looping and negative values result in counter-clockwise looping. Default is `-90deg`.  
+ * **`edge-distances`** : With value `intersection` (default), the line from source to target for `control-point-weight` is from the outside of the source node's shape to the outside of the target node's shape.  With value `node-position`, the line is from the source position to the target position.  The `node-position` option makes calculating edge points easier &emdash; but it should be used carefully because you can create invalid points that `intersection` would have automatically corrected.
 
+
+## Loop edges
+
+For loops (i.e. same source and target):
+
+ * **`loop-direction`** : Determines the angle in degrees that loops extend from the node in cases when the source and target node of an edge is the same. A value of -90 will result in a loop that extends straight upward from the node. Default is -135 (extending to the upper left).
+ * **`loop-sweep`** : Determines the angle in degrees between the leaving and returning edges in loops. Positive values result in clockwise looping and negative values result in counter-clockwise looping. Default is -90.  
+
+Note that loops may only be `bezier` or `unbundled-bezier` for their `curve-style`.
 
 
 ## Unbundled bezier edges
@@ -237,7 +245,7 @@ For bezier edges with manual control points (`curve-style: unbundled-bezier`):
 
 * **`control-point-distances`** : A series of values that specify for each control point the distance perpendicular to a line formed from source to target, e.g. `-20 20 -20`.
 * **`control-point-weights`** : A series of values that weights control points along a line from source to target, e.g. `0.25 0.5 0.75`.  A value usually ranges on [0, 1], with 0 towards the source node and 1 towards the target node --- but larger or smaller values can also be used.
-* **`edge-distances`** : With value `intersection` (default), the line from source to target for `control-point-weights` is from the outside of the source node's shape to the outside of the target node's shape.  With value `node-position`, the line is from the source position to the target position.  The `node-position` option makes calculating edge points easier --- but it should be used carefully because you can create invalid points that `intersection` would have automatically corrected.
+* **`edge-distances`** : With value `intersection` (default), the line from source to target for `control-point-weights` is from the outside of the source node's shape to the outside of the target node's shape.  With value `node-position`, the line is from the source position to the target position.  The `node-position` option makes calculating edge points easier &emdash; but it should be used carefully because you can create invalid points that `intersection` would have automatically corrected.
 
 
 ## Haystack edges
@@ -255,7 +263,7 @@ For edges made of several straight lines (`curve-style: segments`):
 
 * **`segment-distances`** : A series of values that specify for each segment point the distance perpendicular to a line formed from source to target, e.g. `-20 20 -20`.
 * **`segment-weights`** : A series of values that weights segment points along a line from source to target, e.g. `0.25 0.5 0.75`.  A value usually ranges on [0, 1], with 0 towards the source node and 1 towards the target node --- but larger or smaller values can also be used.
-* **`edge-distances`** : With value `intersection` (default), the line from source to target for `segment-weights` is from the outside of the source node's shape to the outside of the target node's shape.  With value `node-position`, the line is from the source position to the target position.  The `node-position` option makes calculating edge points easier --- but it should be used carefully because you can create invalid points that `intersection` would have automatically corrected.
+* **`edge-distances`** : With value `intersection` (default), the line from source to target for `segment-weights` is from the outside of the source node's shape to the outside of the target node's shape.  With value `node-position`, the line is from the source position to the target position.  The `node-position` option makes calculating edge points easier &emdash; but it should be used carefully because you can create invalid points that `intersection` would have automatically corrected.
 
 
 ## Edge arrow

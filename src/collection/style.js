@@ -98,13 +98,7 @@ var elesfn = ({
     var ele = this[0];
 
     if( ele ){
-      var renstyle = ele.cy().style().getRenderedStyle( ele );
-
-      if( property === undefined ){
-        return renstyle;
-      } else {
-        return renstyle[ property ];
-      }
+      return cy.style().getRenderedStyle( ele, property );
     }
   },
 

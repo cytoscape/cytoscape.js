@@ -6,8 +6,12 @@ var is = require( '../is' );
 var styfn = {};
 
 // gets the rendered style for an element
-styfn.getRenderedStyle = function( ele ){
-  return this.getRawStyle( ele, true );
+styfn.getRenderedStyle = function( ele, prop ){
+  if( prop ){
+    return this.getStylePropertyValue( ele, prop, true );
+  } else {
+    return this.getRawStyle( ele, true );
+  }
 };
 
 // gets the raw style for an element
@@ -22,7 +26,7 @@ styfn.getRawStyle = function( ele, isRenderedVal ){
       var prop = self.properties[ i ];
       var val = self.getStylePropertyValue( ele, prop.name, isRenderedVal );
 
-      if( val ){
+      if( val != null ){
         rstyle[ prop.name ] = val;
         rstyle[ util.dash2camel( prop.name ) ] = val;
       }

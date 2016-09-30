@@ -1851,6 +1851,23 @@
             },
 
             {
+              "name": "ele.numericStyle",
+              "descr": "Get the numeric value of a style property in preferred units that can be used for calculations.",
+              "formats": [
+                { "args": [ { "name": "name", "descr": "The name of the style property to get." } ] }
+              ],
+              "md": "collection/numericStyle"
+            },
+
+            {
+              "name": "ele.numericStyleUnits",
+              "descr": "Get the units that `ele.numericStyle()` is expressed in, for a particular property.",
+              "formats": [
+                { "args": [ { "name": "name", "descr": "The name of the style property to get." } ] }
+              ]
+            },
+
+            {
               "name": "ele.visible",
               "descr": "Get whether the element is visible (i.e. `display: element` and `visibility: visible`).",
               "formats": [

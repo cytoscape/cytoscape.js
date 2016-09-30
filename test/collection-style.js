@@ -201,6 +201,24 @@ describe('Collection style', function(){
       expect( ret ).to.equal( 50 );
       expect( cy.$('#n1').numericStyleUnits('background-position-x') ).to.equal('%');
     });
+
+    it('ele.renderedStyle() returns single val with zoom', function(){
+      cy.zoom(2);
+
+      var ret = cy.$('#n1').style('width', '10px').renderedStyle('width');
+
+      expect( ret ).to.equal('20px');
+    });
+
+    it('ele.renderedStyle() returns multiple vals with zoom', function(){
+      cy.zoom(2);
+
+      var ret1 = cy.$('#n1').style('width', '10px').renderedStyle('width');
+      var ret2 = cy.$('#n1').style('height', '20px').renderedStyle('height');
+
+      expect( ret1 ).to.equal('20px');
+      expect( ret2 ).to.equal('40px');
+    });
   });
 
   describe('eles.addClass() etc', function(){

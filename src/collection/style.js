@@ -58,10 +58,34 @@ var elesfn = ({
   // get the internal parsed style object for the specified property
   parsedStyle: function( property ){
     var ele = this[0];
+    var cy = ele.cy();
+
+    if( !cy.styleEnabled() ){ return; }
+
+    if( ele ){
+      return ele._private.style[ property ] || cy.style().getDefaultProperty( property );
+    }
+  },
+
+  numericStyle: function( property ){
+    var ele = this[0];
+
     if( !ele.cy().styleEnabled() ){ return; }
 
     if( ele ){
-      return ele._private.style[ property ] || ele.cy().style().getDefaultProperty( property );
+      var pstyle = ele.pstyle( property );
+
+      return pstyle.pfValue !== undefined ? pstyle.pfValue : pstyle.value;
+    }
+  },
+
+  numericStyleUnits: function( property ){
+    var ele = this[0];
+
+    if( !ele.cy().styleEnabled() ){ return; }
+
+    if( ele ){
+      return ele.pstyle( property ).units;
     }
   },
 

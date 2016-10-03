@@ -2438,6 +2438,28 @@
             },
 
             {
+              "name": "eles.reduce",
+              "descr": "Reduce a single value by applying a function against an accumulator and each value of the collection.",
+              "formats": [
+                {
+                  "args": [
+                    {
+                      "name": "function(prevVal, ele, i, eles)",
+                      "descr": "The function that returns the accumulated value given the previous value and the current element.",
+                      "fields": [
+                        { "name": "prevVal", "descr": "The value accumulated from previous elements." },
+                        { "name": "ele", "descr": "The current element." },
+                        { "name": "i", "descr": "The index of the current element." },
+                        { "name": "eles", "descr": "The collection of elements being reduced." }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "md": "collection/reduce"
+            },
+
+            {
               "name": "eles.min",
               "descr": "Find a minimum value in a collection.",
               "formats": [

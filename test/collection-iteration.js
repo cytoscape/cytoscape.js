@@ -66,16 +66,47 @@ describe('Collection iteration', function(){
 
   it('eles.forEach()', function(){
     var count = 0;
+    var that = {};
 
     cy.nodes().forEach(function( ele, i, eles ){
       expect( is.elementOrCollection(ele) ).to.be.true;
       expect( is.elementOrCollection(eles) ).to.be.true;
       expect( i ).to.equal( count );
+      expect( this ).to.equal( that );
 
       count++;
-    });
+    }, that);
 
     expect( count ).to.equal(3);
+  });
+
+  it('eles.reduce()', function(){
+    var eles = cy.$('#n1, #n2, #n3');
+    var index = 0;
+    var vals =  [1, 2, 3];
+    var prevs = [0, 1, 3];
+    var end = 1 + 2 + 3;
+    var sum = function( a, b ){ return a + b; }
+
+    eles.forEach(function( ele, i ){
+      ele.data( 'foo', vals[i] );
+    });
+    
+    var callback = function( prev, ele, i, eles ){
+      expect( index++, 'i' ).to.equal( i );
+
+      expect( eles[0].same( cy.$('#n1') ), 'n1' ).to.be.true;
+      expect( eles[1].same( cy.$('#n2') ), 'n2' ).to.be.true;
+      expect( eles[2].same( cy.$('#n3') ), 'n3' ).to.be.true;
+
+      expect( ele.same( eles[i] ), 'ele' ).to.be.true;
+
+      expect( prev, 'prev' ).to.equal( prevs[i] );
+
+      return prev + ele.data('foo');
+    };
+
+    expect( eles.reduce( callback, 0 ), 'ret' ).to.equal( end );
   });
 
   it('eles.eq()', function(){

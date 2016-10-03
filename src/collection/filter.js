@@ -301,6 +301,17 @@ var elesfn = ({
     return arr;
   },
 
+  reduce: function( fn, initialValue ){
+    var val = initialValue;
+    var eles = this;
+
+    for( var i = 0; i < eles.length; i++ ){
+      val = fn( val, eles[i], i, eles );
+    }
+
+    return val;
+  },
+
   stdFilter: function( fn, thisArg ){
     var filterEles = [];
     var eles = this;

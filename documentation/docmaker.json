@@ -935,7 +935,7 @@
                         { "name": "scale", "descr": "This value specifies a positive number that scales the size of the resultant image." },
                         { "name": "maxWidth", "descr": "Specifies the scale automatically in combination with `maxHeight` such that the resultant image is no wider than `maxWidth`." },
                         { "name": "maxHeight", "descr": "Specifies the scale automatically in combination with `maxWidth` such that the resultant image is no taller than `maxHeight`." },
-                        { "name": "quality", "descr": "Specifies the quality of the image from `0` (low quality, low filesize) to `1` (high quality, high filesize)." }
+                        { "name": "quality", "descr": "Specifies the quality of the image from `0` (low quality, low filesize) to `1` (high quality, high filesize).  If not set, the browser's default quality value is used." }
                       ]
                     }
                   ]

@@ -101,12 +101,46 @@ CRp.bufferCanvasImage = function( options ){
   return buffCanvas;
 };
 
+function b64ToBlob( b64, mimeType ){
+  var bytes = atob( b64 );
+  var buff = new ArrayBuffer( bytes.length );
+  var buffUint8 = new Uint8Array( buff );
+
+  for( var i = 0; i < bytes.length; i++ ){
+    buffUint8[i] = bytes.charCodeAt(i);
+  }
+
+  return new Blob( [buff], { type: mimeType } );
+}
+
+function b64UriToB64( b64uri ){
+  var i = b64uri.indexOf(',');
+
+  return b64uri.substr( i + 1 );
+};
+
+function output( options, canvas, mimeType ){
+  var b64Uri = canvas.toDataURL( mimeType, options.quality );
+
+  switch( options.output ){
+    case 'blob':
+      return b64ToBlob( b64UriToB64( b64Uri ), mimeType );
+
+    case 'base64':
+      return b64UriToB64( b64Uri );
+
+    case 'base64uri':
+    default:
+      return b64Uri;
+  }
+}
+
 CRp.png = function( options ){
-  return this.bufferCanvasImage( options ).toDataURL( 'image/png' );
+  return output( options, this.bufferCanvasImage( options ), 'image/png' );
 };
 
 CRp.jpg = function( options ){
-  return this.bufferCanvasImage( options ).toDataURL( 'image/jpeg' );
+  return output( options, this.bufferCanvasImage( options ), 'image/jpeg' );
 };
 
 module.exports = CRp;

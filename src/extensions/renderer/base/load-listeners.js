@@ -987,7 +987,16 @@ BRp.load = function(){
         r.redraw();
       }, 150 );
 
-      var diff = e.deltaY / -250 || e.wheelDeltaY / 1000 || e.wheelDelta / 1000;
+      var diff;
+
+      if( e.deltaY != null ){
+        diff = e.deltaY / -250;
+      } else if( e.wheelDeltaY != null ){
+        diff = e.wheelDeltaY / 1000;
+      } else {
+        diff = e.wheelDelta / 1000;
+      }
+
       diff = diff * r.wheelSensitivity;
 
       var needsWheelFix = e.deltaMode === 1;

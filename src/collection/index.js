@@ -685,11 +685,11 @@ elesfn.move = function( struct ){
     if( parentExists ){
       var jsons = this.jsons();
       var descs = this.descendants();
-      var descsEtc = descs.union( descs.union( this ).connectedEdges() );
+      var descsEtcJsons = descs.union( descs.union( this ).connectedEdges() ).jsons();
 
       this.remove(); // NB: also removes descendants and their connected edges
 
-      for( var i = 0; i < this.length; i++ ){
+      for( var i = 0; i < jsons.length; i++ ){
         var json = jsons[i];
         var ele = this[i];
 
@@ -700,7 +700,7 @@ elesfn.move = function( struct ){
         }
       }
 
-      return cy.add( jsons ).union( descsEtc.restore() );
+      return cy.add( jsons.concat( descsEtcJsons ) );
     }
   }
 

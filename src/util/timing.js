@@ -18,7 +18,7 @@ raf = raf || function( fn ){
 };
 
 util.requestAnimationFrame = function( fn ){
-  raf( fn );
+  raf.call(null, fn);
 };
 
 var pnow = performance && performance.now ? function(){ return performance.now(); } : function(){ return Date.now(); };

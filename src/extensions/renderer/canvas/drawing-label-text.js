@@ -246,24 +246,55 @@ CRp.drawText = function( context, ele, prefix ){
 
     var backgroundOpacity = ele.pstyle( 'text-background-opacity' ).value;
     var borderOpacity = ele.pstyle( 'text-border-opacity' ).value;
+    var borderPadding = ele.pstyle( 'text-border-padding' ).pfValue;
     var textBorderWidth = ele.pstyle( 'text-border-width' ).pfValue;
 
     if( backgroundOpacity > 0 || ( textBorderWidth > 0 && borderOpacity > 0 ) ){
       var bgX = textX;
-
-      switch( halign ){
-        case 'left':
-          bgX -= textW;
-          break;
-        case 'center':
-          bgX -= textW / 2;
-          break;
-        case 'right':
-          break;
-      }
-
       var bgY = textY - textH;
 
+      if (borderPadding > 0){
+        switch( halign ){
+          case 'left':
+            bgX -= textW + 2 * borderPadding;
+            textX -= borderPadding;
+            break;
+          case 'center':
+            bgX -= textW / 2 + borderPadding;
+            textX -= borderPadding
+          case 'right':
+            textX += borderPadding;
+            break;
+        }
+        switch( valign ){
+          case 'top':
+            bgY -= 2 * borderPadding;
+            textY -= borderPadding;
+            break;
+          case 'center':
+            bgY -= borderPadding;
+            break;
+          case 'bottom':
+            textY += borderPadding;
+            break;
+        }
+        textW += (2 * borderPadding);
+        textH += (2 * borderPadding);
+        console.log("Applying my tests");
+      } else {
+        switch( halign ){
+          case 'left':
+            bgX -= textW;
+            break;
+          case 'center':
+            bgX -= textW / 2;
+            break;
+          case 'right':
+            break;
+        }
+      }
+
+      //fill background
       if( backgroundOpacity > 0 ){
         var textFill = context.fillStyle;
         var textBackgroundColor = ele.pstyle( 'text-background-color' ).value;
@@ -278,6 +309,7 @@ CRp.drawText = function( context, ele, prefix ){
         context.fillStyle = textFill;
       }
 
+      //draw border
       if( textBorderWidth > 0 && borderOpacity > 0 ){
         var textStroke = context.strokeStyle;
         var textLineWidth = context.lineWidth;
@@ -328,6 +360,7 @@ CRp.drawText = function( context, ele, prefix ){
       context.lineWidth = lineWidth;
     }
 
+    //write text
     if( ele.pstyle( 'text-wrap' ).value === 'wrap' ){
       var lines = rscratch.labelWrapCachedLines;
       var lineHeight = textH / lines.length;

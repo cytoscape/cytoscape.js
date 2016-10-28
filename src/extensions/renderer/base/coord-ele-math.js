@@ -389,7 +389,8 @@ BRp.findNearestElements = function( x, y, visibleElementsOnly, isTouch ){
 
   function checkLabel( ele, prefix ){
     var _p = ele._private;
-    var th = labelThreshold;
+    var th = labelThreshold; 
+    var borderPadding = ele.pstyle( 'text-border-padding' ).pfValue;
 
     var prefixDash;
     if( prefix ){
@@ -406,6 +407,7 @@ BRp.findNearestElements = function( x, y, visibleElementsOnly, isTouch ){
     if( rotation.strValue === 'autorotate' || !!rotation.pfValue ){
 
       var rstyle = _p.rstyle;
+
       var bw = ele.pstyle('text-border-width').pfValue;
       var lw = preprop( rstyle, 'labelWidth', prefix ) + bw/2 + 2*th;
       var lh = preprop( rstyle, 'labelHeight', prefix ) + bw/2 + 2*th;
@@ -455,10 +457,10 @@ BRp.findNearestElements = function( x, y, visibleElementsOnly, isTouch ){
       } );
 
       // adjust bb w/ threshold
-      bb.x1 -= th;
-      bb.y1 -= th;
-      bb.x2 += th;
-      bb.y2 += th;
+      bb.x1 -= th - borderPadding;
+      bb.y1 -= th - borderPadding;
+      bb.x2 += th + borderPadding;
+      bb.y2 += th + borderPadding;
       bb.w = bb.x2 - bb.x1;
       bb.h = bb.y2 - bb.y1;
 
@@ -729,6 +731,7 @@ BRp.recalculateNodeLabelProjection = function( node ){
   var nodePos = _p.position;
   var textHalign = node.pstyle( 'text-halign' ).strValue;
   var textValign = node.pstyle( 'text-valign' ).strValue;
+  var borderPadding = node.pstyle( 'text-border-padding' ).pfValue;
   var rs = _p.rscratch;
   var rstyle = _p.rstyle;
 

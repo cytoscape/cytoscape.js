@@ -353,6 +353,7 @@ var updateBoundsFromLabel = function( bounds, ele, prefix, options ){
     var outlineWidth = ele.pstyle( 'text-outline-width' ).pfValue;
     var borderWidth = ele.pstyle( 'text-border-width' ).pfValue;
     var halfBorderWidth = borderWidth / 2;
+    var borderPadding = ele.pstyle( 'text-border-padding' ).pfValue;
 
     var lh = labelHeight;
     var lw = labelWidth;
@@ -368,35 +369,35 @@ var updateBoundsFromLabel = function( bounds, ele, prefix, options ){
     } else {
       switch( halign.value ){
         case 'left':
-          lx1 = labelX - lw;
+          lx1 = labelX - lw - 2 * borderPadding ;
           lx2 = labelX;
           break;
 
         case 'center':
-          lx1 = labelX - lw_2;
-          lx2 = labelX + lw_2;
+          lx1 = labelX - lw_2 - borderPadding ;
+          lx2 = labelX + lw_2 + borderPadding ;
           break;
 
         case 'right':
           lx1 = labelX;
-          lx2 = labelX + lw;
+          lx2 = labelX + lw + 2 * borderPadding ;
           break;
       }
 
       switch( valign.value ){
         case 'top':
-          ly1 = labelY - lh;
+          ly1 = labelY - lh - 2 * borderPadding ;
           ly2 = labelY;
           break;
 
         case 'center':
-          ly1 = labelY - lh_2;
-          ly2 = labelY + lh_2;
+          ly1 = labelY - lh_2 - borderPadding ;
+          ly2 = labelY + lh_2 + borderPadding ;
           break;
 
         case 'bottom':
           ly1 = labelY;
-          ly2 = labelY + lh;
+          ly2 = labelY + lh + 2 * borderPadding ;
           break;
       }
     }
@@ -430,10 +431,10 @@ var updateBoundsFromLabel = function( bounds, ele, prefix, options ){
       ly2 = Math.max( px1y1.y, px1y2.y, px2y1.y, px2y2.y );
     }
 
-    lx1 += marginX - Math.max( outlineWidth, halfBorderWidth );
-    lx2 += marginX + Math.max( outlineWidth, halfBorderWidth );
-    ly1 += marginY - Math.max( outlineWidth, halfBorderWidth );
-    ly2 += marginY + Math.max( outlineWidth, halfBorderWidth );
+    lx1 += marginX - Math.max( outlineWidth, halfBorderWidth + borderPadding);
+    lx2 += marginX + Math.max( outlineWidth, halfBorderWidth + borderPadding);
+    ly1 += marginY - Math.max( outlineWidth, halfBorderWidth + borderPadding);
+    ly2 += marginY + Math.max( outlineWidth, halfBorderWidth + borderPadding);
 
     updateBounds( bounds, lx1, ly1, lx2, ly2 );
 
@@ -833,7 +834,6 @@ var defineDimFns = function( opts ){
         var dim = ele[ opts.name ]();
         var border = ele.pstyle( 'border-width' ).pfValue;
         var padding = ele.pstyle( opts.paddings[0] ).pfValue + ele.pstyle( opts.paddings[1] ).pfValue;
-
         return dim + border + padding;
       } else {
         return 1;

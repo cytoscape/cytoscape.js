@@ -1,1 +1,0 @@
-These functions apply to [compound graphs](#notation/compound-nodes).

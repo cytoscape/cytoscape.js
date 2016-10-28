@@ -1,1 +1,0 @@
-The `random` layout puts nodes in random positions within the viewport.

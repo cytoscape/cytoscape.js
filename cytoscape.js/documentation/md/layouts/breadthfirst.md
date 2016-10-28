@@ -1,1 +1,0 @@
-The `breadthfirst` layout puts nodes in a hierarchy, based on a breadthfirst traversal of the graph.

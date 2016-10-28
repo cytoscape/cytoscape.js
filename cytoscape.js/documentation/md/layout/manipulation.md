@@ -1,1 +1,0 @@
-Layouts have a set of functions available to them, which allow for more complex behaviour than the primary run-one-layout-at-a-time usecase.  A new, developer accessible layout can be made via [`cy.makeLayout()`](#core/visuals/cy.makeLayout).

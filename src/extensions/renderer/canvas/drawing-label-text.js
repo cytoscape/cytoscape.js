@@ -363,7 +363,7 @@ CRp.drawText = function( context, ele, prefix ){
     //write text
     if( ele.pstyle( 'text-wrap' ).value === 'wrap' ){
       var lines = rscratch.labelWrapCachedLines;
-      var lineHeight = textH / lines.length;
+      var lineHeight = (textH - 2 * borderPadding) / lines.length;
 
       switch( valign ){
         case 'top':

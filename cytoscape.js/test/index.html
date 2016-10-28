@@ -1,0 +1,64 @@
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Cy.js Mocha Tests</title>
+
+  <link rel="stylesheet" href="lib/mocha.css" />
+
+  <script src="lib/chai.js"></script>
+  <script src="lib/jquery.js"></script>
+  <script src="lib/bluebird.js"></script>
+  <script src="lib/livereload.js"></script>
+
+  <!-- `gulp testrefs` updates these scripts -->
+
+  <!-- inject:js -->
+  <script src="../build/cytoscape.js"></script>
+  <!-- endinject -->
+
+  <script>
+    window.require = function( name, fallbackVal ){
+      if( fallbackVal ){ return fallbackVal; }
+
+      return window[ name ];
+    };
+  </script>
+</head>
+
+  <body>
+    <div id="mocha"></div>
+    <script src="lib/mocha.js"></script>
+    <script>mocha.setup('bdd')</script>
+
+    <!-- `gulp testlist` updates these scripts -->
+
+    <!-- inject:test:js -->
+    <script src="collection-algorithms.js"></script>
+    <script src="collection-algorithms2.js"></script>
+    <script src="collection-building-and-filtering.js"></script>
+    <script src="collection-comparison.js"></script>
+    <script src="collection-compound-nodes.js"></script>
+    <script src="collection-data.js"></script>
+    <script src="collection-graph-manipulation.js"></script>
+    <script src="collection-iteration.js"></script>
+    <script src="collection-metadata.js"></script>
+    <script src="collection-position-and-dimensions.js"></script>
+    <script src="collection-selection.js"></script>
+    <script src="collection-style.js"></script>
+    <script src="collection-traversing.js"></script>
+    <script src="core-export.js"></script>
+    <script src="core-graph-manipulation.js"></script>
+    <script src="core-init.js"></script>
+    <script src="events.js"></script>
+    <script src="fabric.js"></script>
+    <script src="foo.js"></script>
+    <script src="selectors.js"></script>
+    <script src="thread.js"></script>
+    <!-- endinject -->
+
+    <script>mocha.run();</script>
+
+    <div id="cy"></div>
+
+  </body>
+</html>

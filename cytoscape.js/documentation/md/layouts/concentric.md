@@ -1,0 +1,1 @@
+The `concentric` layout positions nodes in concentric circles, based on a metric that you specify to segregate the nodes into levels.  This layout sets the `concentric` value in [`ele.scratch()`](#ele.scratch).

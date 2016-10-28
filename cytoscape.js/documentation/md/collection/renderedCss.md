@@ -1,0 +1,1 @@
+Note that this function has the alias `ele.renderedStyle()`, which is interchangeable with `ele.renderedCss()`.

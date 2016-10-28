@@ -1,0 +1,1 @@
+The `grid` layout puts nodes in a well-spaced grid.

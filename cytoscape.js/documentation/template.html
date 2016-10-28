@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<meta http-equiv="content-type" content="text/html;charset=UTF-8">
+		<link rel="canonical" href="http://js.cytoscape.org" />
+		<meta name="description" content="Graph theory library for analysis and visualisation (compatible with CommonJS/Node.js/Browserify/Webpack, AMD/Require.js, npm, Bower, jspm, Meteor/Atmosphere, jQuery, and plain JS/JavaScript)">
+		<meta name="author" content="Max Franz">
+		<meta name="robots" content="all" />
+		<meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimal-ui">
+
+		<link rel="shortcut icon" href="img/cytoscape-logo.png" />
+		<link rel="shortcut icon" href="img/cytoscape-logo.svg" type="image/svg" />
+
+		<title>Cytoscape.js</title>
+
+		<!-- inject:css -->
+		<link rel="stylesheet" href="css/reset.css">
+		<link rel="stylesheet" href="css/font-awesome.css">
+		<link rel="stylesheet" href="css/highlight/github.css">
+		<link rel="stylesheet" href="css/style.css">
+		<!-- endinject -->
+
+	</head>
+
+	<body>
+
+		<div id="content">
+
+			<a id="open-navigation" class="activatable plain-link"><span class="fa fa-bars"></span></a>
+			<div id="open-navigation-bg"></div>
+
+			<h1 id="top" class="title">Cytoscape.js</h1>
+			<div class="subtitle">
+				Graph theory (a.k.a. network) library for analysis and visualisation
+
+				<div class="footnote">
+					Compatible with
+					<a target="_blank" href="http://wiki.commonjs.org/wiki/CommonJS">CommonJS</a>/<a target="_blank" href="http://nodejs.org/">Node.js</a>/<a target="_blank" href="http://browserify.org">Browserify</a>/<a target="_blank" href="https://webpack.github.io">Webpack</a>,
+					<a target="_blank" href="http://requirejs.org">AMD/Require.js</a>,
+					<a target="_blank" href="http://jquery.com/">jQuery</a>,
+					<a target="_blank" href="http://npmjs.org">npm</a>,
+					<a target="_blank" href="http://bower.io">Bower</a>,
+					<a target="_blank" href="http://jspm.io/">jspm</a>,
+					<a target="_blank" href="https://www.meteor.com">Meteor/Atmosphere</a>,
+					and plain JS/JavaScript
+				</div>
+			</div>
+
+			<div class="buttons-subtitle">
+				<a class="button green" target="_blank" href="https://github.com/cytoscape/cytoscape.js"><span class="fa fa-github-alt"></span> GitHub</a>
+
+				<a id="download-button" class="button green" href="download/cytoscape.js-{{version}}.zip"><span class="fa fa-download"></span> Download {{version}}</a>
+			</div>
+
+			<div class="links">
+				<a href="#extensions"><span class="fa fa-puzzle-piece"></span> Extensions</a> &nbsp;
+				<a target="_blank" href="http://blog.js.cytoscape.org"><span class="fa fa-newspaper-o"></span> News &amp; tutorials</a> &nbsp;
+				<a target="_blank" href="https://twitter.com/cytoscape"><span class="fa fa-twitter"></span> Twitter</a> &nbsp;
+				<a target="_blank" href="https://gitter.im/cytoscape/cytoscape.js"><span class="fa fa-comments"></span> Gitter</a> &nbsp;
+				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues/new"><span class="fa fa-bug"></span> File a GitHub issue</a> &nbsp;
+				<a target="_blank" href="http://stackoverflow.com/questions/tagged/cytoscape.js"><span class="fa fa-stack-overflow"></span> Search previous questions via Stack Overflow</a> (or <a target="_blank" href="http://stackoverflow.com/questions/ask?tags=cytoscape.js">ask a different question</a>) &nbsp;
+			</div>
+
+			<div class="links likes">
+				<span class="like-label">Like Cytoscape.js?</span> &nbsp;
+				<form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_blank">
+					<input name="cmd" value="_s-xclick" type="hidden" />
+					<input name="hosted_button_id" value="UYUEWUL7FNZ3S" type="hidden" />
+					<button type="submit" class="outline">Donate</button>
+				</form> &nbsp;
+				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js"><span class="fa fa-star"></span> Star it on GitHub</a> &nbsp;
+				<a target="_blank" href="https://twitter.com/intent/tweet?status=Cytoscape.js,%20a%20graph%20%28a.k.a.%20network%29%20library%20for%20analysis%20and%20visualisation%20js.cytoscape.org"><span class="fa fa-twitter"></span> Share it on Twitter</a> &nbsp;
+				<a target="_blank" href="https://plus.google.com/share?url=js.cytoscape.org"><span class="fa fa-google-plus"></span> Share it on Google+</a>
+				<div class="footnote">Donations are tax deductible to a 501(c)(3) nonprofit organization, The Cytoscape Consoritum, Tax ID: 20-4909879.</div>
+			</div>
+
+			<div class="links likes">
+				Use Cytoscape.js? &nbsp; <a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues/914"> <span class="fa fa-comments"></span> Let us know</a>
+			</div>
+
+			<!-- enable during gsoc period
+			<div class="links likes">
+				Are you a student interested in Google Summer of Code? &nbsp; <a target="_blank" href="http://nrnb.org/gsoc.html"><span class="fa fa-sun"></span> Participate with Cytoscape.js</a>
+			</div>
+			-->
+
+			<div id="documentation">
+			{{#each sections}}
+				<h1 id="{{id}}">{{name}} {{{bookmark}}}</h1>
+
+				{{#if html}}
+					{{{html}}}
+				{{/if}}
+
+				{{#if demo}}
+
+					<div class="gallery-full-demo">
+						<div class="gallery-full-padder"></div>
+
+						<a class="gallery-full-link" target="_blank" href="{{demo.viewUrl}}">
+							<span class="gallery-full-preview" style="background-image: url('{{demo.imgUrl}}');"></span>
+						</a>
+
+						<button class="run"><span class="fa fa-play"></span></button>
+
+					</div>
+
+					{{#if demo.name}}
+						<div class="gallery-full-title">
+							<span class="gallery-full-name">{{demo.name}}</span>
+						</div>
+					{{/if}}
+
+				{{/if}}
+
+				{{#if demos}}
+
+					<div class="gallery-demos">
+					{{#each demos}}
+						<div class="gallery-demo">
+
+							<a class="gallery-link" target="_blank" href="{{viewUrl}}">
+								<span class="gallery-preview" style="background-image: url('{{imgUrl}}');"></span>
+							</a>
+
+							<div class="gallery-title">
+								<span class="gallery-name">{{name}}</span><br />
+								<span class="gallery-jsbin">
+									<a target="_blank"href="{{jsbinUrl}}"><span class="fa fa-code"></span></a>
+								</span>
+								<span class="gallery-download">
+									<a href="{{downloadUrl}}"><span class="fa fa-download"></span></a>
+								</span>
+								<span class="gallery-github">
+									<a target="_blank" href="{{githubUrl}}"><span class="fa fa-github-alt"></span></a>
+								</span>
+							</div>
+
+						</div>
+					{{/each}}
+					</div>
+
+				{{/if}}
+
+				{{#each sections}}
+				{{#if fromMd}}
+				{{else}}
+					<h2 id="{{id}}">{{name}} {{{bookmark}}}</h2>
+
+					{{#if extensions}}
+						<ul>
+						{{#each extensions}}
+							<li><a target="_blank" href="{{url}}"><code>{{name}}</code></a> : {{descr}}</li>
+						{{/each}}
+						</ul>
+					{{/if}}
+
+					{{#if html}}
+						{{{html}}}
+					{{/if}}
+
+					{{#if layout}}
+						<h3>Options</h3>
+						<pre><code class="lang-js">{{{layout.optionsFormatted}}}</code></pre>
+						<button class="run run-inline-code"><span class="fa fa-play"></span></button>
+					{{/if}}
+
+					{{#each fns}}
+						<div class="function">
+							<div class="name" id="{{id}}">
+								<span class="fn-name">{{name}}()</span> {{#if aliases}}et al{{/if}} {{{bookmark}}}
+								{{#each altIds}}<span id="{{.}}">&nbsp;</span>{{/each}}
+							</div>
+
+							{{#if extFn}}
+								<div class="ext-function-note">
+									<span class="fa fa-puzzle-piece important"></span> <a href="#extensions">Extension</a> function: This function is intended for use in extensions.
+								</div>
+							{{/if}}
+
+							{{#if processedPureAliases}}
+							<div class="pure-aliases">
+								<span class="important-indicator"></span> Aliases:
+
+								{{#each processedPureAliases}}
+									<span class="pure-alias">
+										<code id="{{id}}" class="pure-alias-name">{{name}}()</code><span class="pure-alias-comma">,</span>
+									</span>
+								{{/each}}
+							</div>
+							{{/if}}
+
+							<div class="descr">{{{descr}}}</div>
+
+							{{#if formats}}
+							<div class="formats">
+								{{#each formats}}
+									<div class="format">
+										{{#if args}}
+											<div class="name">{{name}}( <span class="args-summary">{{#each args}}{{#if optional}} [{{/if}}<span class="comma">,&nbsp;</span>{{{name}}}{{#if optional}}]{{/if}}{{/each}}</span> )</div>
+										{{else}}
+											<div class="name">{{name}}()</div>
+										{{/if}}
+
+										{{#if processedPureAliases}}
+										<div class="pure-aliases">
+											<span class="important-indicator"></span> Aliases:
+
+											{{#each processedPureAliases}}
+												<span class="pure-alias">
+													<span id="{{id}}" class="pure-alias-name">{{name}}()</span><span class="pure-alias-comma">,</span>
+												</span>
+											{{/each}}
+										</div>
+										{{/if}}
+
+										<div class="descr">{{{descr}}}</div>
+										<ul class="args">
+											{{#each args}}
+												<li>
+													<span class="name">{{{linkedName}}}</span>
+													{{#if optional}}<span class="optional">[optional]</span>{{/if}}
+													<span class="descr">{{{descr}}}</span>
+
+													{{#if fields}}
+													<ul class="fields">
+														{{#each fields}}
+															<li>
+																<span class="name">{{{linkedName}}}</span>
+																{{#if optional}}<span class="optional">[optional]</span>{{/if}}
+																<span class="descr">{{{descr}}}</span>
+															</li>
+
+															{{#if fields}}
+															<ul class="fields">
+																{{#each fields}}
+																<li>
+																	<span class="name">{{{linkedName}}}</span>
+																	{{#if optional}}<span class="optional">[optional]</span>{{/if}}
+																	<span class="descr">{{{descr}}}</span>
+																</li>
+																{{/each}}
+															</ul>
+															{{/if}}
+														{{/each}}
+													</ul>
+													{{/if}}
+												</li>
+											{{/each}}
+										</ul>
+									</div>
+								{{/each}}
+							</div>
+							{{/if}}
+
+							<div class="details">
+								{{#if html}}
+									{{{html}}}
+								{{/if}}
+							</div>
+						</div>
+					{{/each}}
+
+				{{/if}}
+				{{/each}}
+			{{/each}}
+			</div>
+
+			<p><span class="fa fa-sign-blank"></span></p>
+
+		</div>
+
+		<div class="toc-search">
+			<input id="toc-input" type="text" placeholder="&#61442; Find sections"></input>
+			<a id="toc-clear" class="plain-link"><span class="fa fa-times"></span></a>
+			<a id="toc-top" href="#top" class="plain-link"><span class="fa fa-arrow-up"></span></a>
+		</div>
+
+		<div id="navigation">
+			<div id="toc-sections" class="toc-sections">
+
+				{{#each sections}}
+					<div class="section lvl1">
+						{{#if sections}}<span class="expander">
+							<span class="fa fa-caret-down expanded-icon"></span>
+							<span class="fa fa-caret-right collapsed-icon"></span>
+						</span>{{/if}}
+						<a class="toclink" href="#{{id}}">{{& name}}</a>
+					</div>
+
+					{{#each sections}}
+						<div class="section lvl2">
+							{{#if fns}}<span class="expander">
+								<span class="fa fa-caret-down expanded-icon"></span>
+								<span class="fa fa-caret-right collapsed-icon"></span>
+							</span>{{/if}}
+							<a class="toclink" href="#{{id}}">{{& name}}</a>
+						</div>
+
+						{{#each fns}}
+							<div class="section lvl3"><a class="toclink" href="#{{id}}">{{name}}() {{#if aliases}}et al{{/if}}</a></div>
+						{{/each}}
+					{{/each}}
+				{{/each}}
+
+			</div>
+
+			<p><span class="fa fa-sign-blank"></span></p>
+		</div>
+
+
+		<div id="orphaned-cy-container">
+			<div id="cy-etc" class="hidden">
+				<div id="cy-arrow">
+					<span class="fa fa-arrow-down"></span>
+				</div>
+				<div id="cy-title"><pre class="content"></pre></div>
+				<div id="cy-label" class="hidden"><code>window.cy</code></div>
+				<div id="cy" class="hidden"></div>
+				<div id="cy-refresh" class="hidden">
+					<span class="link plain-link fa fa-refresh"></span>
+				</div>
+				<div id="cy-show">
+					<span class="link plain-link fa fa-plus"></span>
+				</div>
+				<div id="cy-hide" class="hidden">
+					<span class="link plain-link fa fa-minus"></span>
+				</div>
+			</div>
+		</div>
+
+
+		<!-- inject:js -->
+		<script src="js/fastclick.js"></script>
+		<script src="js/jquery.js"></script>
+		<script src="js/cytoscape.js"></script>
+		<script src="js/load.js"></script>
+		<script src="js/script.js"></script>
+		<!-- endinject -->
+
+		<script type="text/javascript">
+
+		var _gaq = _gaq || [];
+		_gaq.push(['_setAccount', 'UA-155159-11']);
+		_gaq.push(['_trackPageview']);
+
+		(function() {
+		var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+		ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+		var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+		})();
+
+		</script>
+
+	</body>
+</html>

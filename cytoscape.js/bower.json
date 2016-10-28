@@ -1,0 +1,70 @@
+{
+  "name": "cytoscape",
+  "license": "MIT",
+  "description": "Graph theory (a.k.a. network) library for analysis and visualisation",
+  "homepage": "http://js.cytoscape.org",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cytoscape/cytoscape.js.git"
+  },
+  "authors": [
+    {
+      "name": "Max Franz",
+      "email": "maxkfranz@gmail.com",
+      "homepage": "http://maxfranz.com"
+    },
+    {
+      "name": "Christian Lopes",
+      "email": "chrtannus@gmail.com"
+    },
+    {
+      "name": "Yue Dong",
+      "email": "oryato@gmail.com"
+    },
+    {
+      "name": "Onur Sumer",
+      "email": "s.onur.sumer@gmail.com"
+    },
+    {
+      "name": "Gerardo Huck",
+      "email": "gerardohuck@gmail.com"
+    },
+    {
+      "name": "Alexandr Truhin (bumbu)",
+      "email": "bmbalex@gmail.com"
+    }
+  ],
+  "keywords": [
+    "graph",
+    "graph-theory",
+    "network",
+    "node",
+    "edge",
+    "vertex",
+    "link",
+    "analysis",
+    "visualisation",
+    "visualization",
+    "requirejs",
+    "amd",
+    "commonjs",
+    "node",
+    "npm",
+    "nodejs",
+    "bower",
+    "jquery"
+  ],
+  "main": "dist/cytoscape.js",
+  "ignore": [
+    "documentation",
+    "src",
+    "test",
+    "debug",
+    "gulpfile.js",
+    "*.sh",
+    "package.json",
+    "README.md",
+    "build",
+    "node_modules"
+  ]
+}

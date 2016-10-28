@@ -280,7 +280,6 @@ CRp.drawText = function( context, ele, prefix ){
         }
         textW += (2 * borderPadding);
         textH += (2 * borderPadding);
-        console.log("Applying my tests");
       } else {
         switch( halign ){
           case 'left':
@@ -294,7 +293,6 @@ CRp.drawText = function( context, ele, prefix ){
         }
       }
 
-      //fill background
       if( backgroundOpacity > 0 ){
         var textFill = context.fillStyle;
         var textBackgroundColor = ele.pstyle( 'text-background-color' ).value;
@@ -309,7 +307,6 @@ CRp.drawText = function( context, ele, prefix ){
         context.fillStyle = textFill;
       }
 
-      //draw border
       if( textBorderWidth > 0 && borderOpacity > 0 ){
         var textStroke = context.strokeStyle;
         var textLineWidth = context.lineWidth;
@@ -360,7 +357,6 @@ CRp.drawText = function( context, ele, prefix ){
       context.lineWidth = lineWidth;
     }
 
-    //write text
     if( ele.pstyle( 'text-wrap' ).value === 'wrap' ){
       var lines = rscratch.labelWrapCachedLines;
       var lineHeight = (textH - 2 * borderPadding) / lines.length;

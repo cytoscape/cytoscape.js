@@ -731,7 +731,6 @@ BRp.recalculateNodeLabelProjection = function( node ){
   var nodePos = _p.position;
   var textHalign = node.pstyle( 'text-halign' ).strValue;
   var textValign = node.pstyle( 'text-valign' ).strValue;
-  var borderPadding = node.pstyle( 'text-border-padding' ).pfValue;
   var rs = _p.rscratch;
   var rstyle = _p.rstyle;
 

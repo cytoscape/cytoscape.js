@@ -361,11 +361,12 @@ var updateBoundsFromLabel = function( bounds, ele, prefix, options ){
     var lh_2 = lh / 2;
     var lx1, lx2, ly1, ly2;
 
+
     if( isEdge ){
-      lx1 = labelX - lw_2;
-      lx2 = labelX + lw_2;
-      ly1 = labelY - lh_2;
-      ly2 = labelY + lh_2;
+      lx1 = labelX - lw_2 - borderPadding;
+      lx2 = labelX + lw_2 + borderPadding;
+      ly1 = labelY - lh_2 - borderPadding;
+      ly2 = labelY + lh_2 + borderPadding;
     } else {
       switch( halign.value ){
         case 'left':
@@ -431,10 +432,10 @@ var updateBoundsFromLabel = function( bounds, ele, prefix, options ){
       ly2 = Math.max( px1y1.y, px1y2.y, px2y1.y, px2y2.y );
     }
 
-    lx1 += marginX - Math.max( outlineWidth, halfBorderWidth + borderPadding);
-    lx2 += marginX + Math.max( outlineWidth, halfBorderWidth + borderPadding);
-    ly1 += marginY - Math.max( outlineWidth, halfBorderWidth + borderPadding);
-    ly2 += marginY + Math.max( outlineWidth, halfBorderWidth + borderPadding);
+    lx1 += marginX - Math.max( outlineWidth, halfBorderWidth);
+    lx2 += marginX + Math.max( outlineWidth, halfBorderWidth);
+    ly1 += marginY - Math.max( outlineWidth, halfBorderWidth);
+    ly2 += marginY + Math.max( outlineWidth, halfBorderWidth);
 
     updateBounds( bounds, lx1, ly1, lx2, ly2 );
 

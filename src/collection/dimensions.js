@@ -362,10 +362,10 @@ var updateBoundsFromLabel = function( bounds, ele, prefix, options ){
     var lx1, lx2, ly1, ly2;
 
     if( isEdge ){
-      lx1 = labelX - lw_2;
-      lx2 = labelX + lw_2;
-      ly1 = labelY - lh_2;
-      ly2 = labelY + lh_2;
+      lx1 = labelX - lw_2 - borderPadding;
+      lx2 = labelX + lw_2 + borderPadding;
+      ly1 = labelY - lh_2 - borderPadding;
+      ly2 = labelY + lh_2 + borderPadding;
     } else {
       switch( halign.value ){
         case 'left':

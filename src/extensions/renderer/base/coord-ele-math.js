@@ -446,7 +446,11 @@ BRp.findNearestElements = function( x, y, visibleElementsOnly, isTouch ){
       ];
 
       if( math.pointInsidePolygonPoints( x, y, points ) ){
+        console.log("inside");
         addEle( ele );
+      }
+      else{
+        console.log("outside");
       }
 
     } else {

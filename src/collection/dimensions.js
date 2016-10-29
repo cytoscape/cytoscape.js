@@ -431,10 +431,10 @@ var updateBoundsFromLabel = function( bounds, ele, prefix, options ){
       ly2 = Math.max( px1y1.y, px1y2.y, px2y1.y, px2y2.y );
     }
 
-    lx1 += marginX - Math.max( outlineWidth, halfBorderWidth + borderPadding);
-    lx2 += marginX + Math.max( outlineWidth, halfBorderWidth + borderPadding);
-    ly1 += marginY - Math.max( outlineWidth, halfBorderWidth + borderPadding);
-    ly2 += marginY + Math.max( outlineWidth, halfBorderWidth + borderPadding);
+    lx1 += marginX - Math.max( outlineWidth, halfBorderWidth);
+    lx2 += marginX + Math.max( outlineWidth, halfBorderWidth);
+    ly1 += marginY - Math.max( outlineWidth, halfBorderWidth);
+    ly2 += marginY + Math.max( outlineWidth, halfBorderWidth);
 
     updateBounds( bounds, lx1, ly1, lx2, ly2 );
 

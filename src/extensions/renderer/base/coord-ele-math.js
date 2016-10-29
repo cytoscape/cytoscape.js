@@ -28,6 +28,7 @@ BRp.registerCalculationListeners = function(){
       if( !evts[ e.type ] ){
         evts[ e.type ] = true;
         evts.length++;
+//
         // elesToUpdate.merge( ele );
       }
     }
@@ -455,10 +456,11 @@ BRp.findNearestElements = function( x, y, visibleElementsOnly, isTouch ){
         includeEdges: false
       } );
 
-      bb.x1 -= th;
-      bb.y1 -= th;
-      bb.x2 += th;
-      bb.y2 += th;
+      // adjust bb w/ threshold
+      bb.x1 -= th - borderPadding;
+      bb.y1 -= th - borderPadding;
+      bb.x2 += th + borderPadding;
+      bb.y2 += th + borderPadding;
       bb.w = bb.x2 - bb.x1;
       bb.h = bb.y2 - bb.y1;
 

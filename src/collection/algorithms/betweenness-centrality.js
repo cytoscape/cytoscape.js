@@ -27,7 +27,7 @@ var elesfn = ({
     var V = this.nodes();
     var A = {};
     var _C = {};
-    var max;
+    var max = 0;
     var C = {
       set: function( key, val ){
         _C[ key ] = val;
@@ -165,6 +165,9 @@ var elesfn = ({
       },
 
       betweennessNormalized: function( node ){
+        if ( max == 0 )
+          return 0;
+
         if( is.string( node ) ){
           var node = cy.filter( node ).id();
         } else {

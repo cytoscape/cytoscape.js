@@ -36,6 +36,9 @@ var elesfn = ({
 
       return {
         degree: function( node ){
+          if( maxDegree == 0 )
+            return 0;
+
           if( is.string( node ) ){
             // from is a selector string
             var node = (cy.filter( node )[0]).id();
@@ -70,6 +73,9 @@ var elesfn = ({
 
       return {
         indegree: function( node ){
+          if ( maxIndegree == 0 )
+            return 0;
+
           if( is.string( node ) ){
             // from is a selector string
             var node = (cy.filter( node )[0]).id();
@@ -81,6 +87,9 @@ var elesfn = ({
           return indegrees[ node ] / maxIndegree;
         },
         outdegree: function( node ){
+          if ( maxOutdegree == 0 )
+            return 0;
+
           if( is.string( node ) ){
             // from is a selector string
             var node = (cy.filter( node )[0]).id();

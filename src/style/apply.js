@@ -173,7 +173,10 @@ styfn.applyContextStyle = function( cxtMeta, cxtStyle, ele ){
     var eleProp = ele.pstyle( diffPropName );
 
     if( !cxtProp ){ // no context prop means delete
-      if( eleProp.bypass ){
+      if( !eleProp ){
+        continue; // no existing prop means nothing needs to be removed
+        // nb affects initial application on mapped values like control-point-distances
+      } else if( eleProp.bypass ){
         cxtProp = { name: diffPropName, deleteBypassed: true };
       } else {
         cxtProp = { name: diffPropName, delete: true };

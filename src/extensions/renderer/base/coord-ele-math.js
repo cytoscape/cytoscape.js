@@ -389,7 +389,8 @@ BRp.findNearestElements = function( x, y, visibleElementsOnly, isTouch ){
 
   function checkLabel( ele, prefix ){
     var _p = ele._private;
-    var th = labelThreshold;
+    var th = labelThreshold; 
+    var borderPadding = ele.pstyle( 'text-border-padding' ).pfValue;
 
     var prefixDash;
     if( prefix ){
@@ -406,9 +407,10 @@ BRp.findNearestElements = function( x, y, visibleElementsOnly, isTouch ){
     if( rotation.strValue === 'autorotate' || !!rotation.pfValue ){
 
       var rstyle = _p.rstyle;
+
       var bw = ele.pstyle('text-border-width').pfValue;
-      var lw = preprop( rstyle, 'labelWidth', prefix ) + bw/2 + 2*th;
-      var lh = preprop( rstyle, 'labelHeight', prefix ) + bw/2 + 2*th;
+      var lw = preprop( rstyle, 'labelWidth', prefix ) + bw/2 + 2*th + 2* borderPadding;
+      var lh = preprop( rstyle, 'labelHeight', prefix ) + bw/2 + 2*th + 2* borderPadding;
       var lx = preprop( rstyle, 'labelX', prefix );
       var ly = preprop( rstyle, 'labelY', prefix );
 
@@ -444,7 +446,11 @@ BRp.findNearestElements = function( x, y, visibleElementsOnly, isTouch ){
       ];
 
       if( math.pointInsidePolygonPoints( x, y, points ) ){
+        console.log("inside");
         addEle( ele );
+      }
+      else{
+        console.log("outside");
       }
 
     } else {

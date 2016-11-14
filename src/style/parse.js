@@ -12,7 +12,7 @@ styfn.parse = function( name, value, propIsBypass, propIsFlat ){
 
   // function values can't be cached in all cases, and there isn't much benefit of caching them anyway
   if( is.fn( value ) ){
-    return self.parseImpl( name, value, propIsBypass, propIsFlat );
+    return self.parseImplWarn( name, value, propIsBypass, propIsFlat );
   }
 
   var flatKey = ( propIsFlat === 'mapping' || propIsFlat === true || propIsFlat === false || propIsFlat == null ) ? 'dontcare' : propIsFlat;
@@ -21,7 +21,7 @@ styfn.parse = function( name, value, propIsBypass, propIsFlat ){
   var ret;
 
   if( !(ret = propCache[ argHash ]) ){
-    ret = propCache[ argHash ] = self.parseImpl( name, value, propIsBypass, propIsFlat );
+    ret = propCache[ argHash ] = self.parseImplWarn( name, value, propIsBypass, propIsFlat );
   }
 
   // - bypasses can't be shared b/c the value can be changed by animations or otherwise overridden
@@ -38,13 +38,23 @@ styfn.parse = function( name, value, propIsBypass, propIsFlat ){
   return ret;
 };
 
+styfn.parseImplWarn = function( name, value, propIsBypass, propIsFlat ){
+  var prop = this.parseImpl( name, value, propIsBypass, propIsFlat );
+
+  if( !prop && value != null ){
+    util.error('The style property `%s: %s` is invalid', name, value);
+  }
+
+  return prop;
+};
+
 // parse a property; return null on invalid; return parsed property otherwise
 // fields :
 // - name : the name of the property
 // - value : the parsed, native-typed value of the property
 // - strValue : a string value that represents the property value in valid css
 // - bypass : true iff the property is a bypass property
-var parseImpl = function( name, value, propIsBypass, propIsFlat ){
+styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
   var self = this;
 
   name = util.camel2dash( name ); // make sure the property name is in dash form (e.g. 'property-name' not 'propertyName')
@@ -410,6 +420,5 @@ var parseImpl = function( name, value, propIsBypass, propIsFlat ){
   }
 
 };
-styfn.parseImpl = parseImpl;
 
 module.exports = styfn;

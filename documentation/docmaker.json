@@ -2024,6 +2024,20 @@
             },
 
             {
+              "name": "eles.contains",
+              "pureAliases": ["eles.has"],
+              "descr": "Determine whether this collection contains all of the elements of another collection.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "eles", "descr": "The other elements to compare to." }
+                  ]
+                }
+              ],
+              "md": "collection/contains"
+            },
+
+            {
               "name": "eles.allAreNeighbors",
               "pureAliases": ["eles.allAreNeighbours"],
               "descr": "Determine whether all elements in the specified collection are in the neighbourhood of the calling collection.",

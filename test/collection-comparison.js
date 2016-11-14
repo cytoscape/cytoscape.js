@@ -106,4 +106,13 @@ describe('Collection comparison', function(){
     }) ).to.be.true;
   });
 
+  it('eles.contains()', function(){
+    expect( cy.$('#n1, #n2').contains('#n1') ).to.be.true;
+    expect( cy.$('#n1, #n2').contains( cy.$('#n1') ) ).to.be.true;
+    expect( cy.$('#n1, #n2').contains('#n2') ).to.be.true;
+    expect( cy.$('#n1, #n2').contains( cy.$('#n2') ) ).to.be.true;
+    expect( cy.$('#n1, #n2').contains('#n3') ).to.be.false;
+    expect( cy.$('#n1, #n2').contains( cy.$('#n3') ) ).to.be.false;
+  });
+
 });

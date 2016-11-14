@@ -250,7 +250,7 @@ LTCp.getLayers = function( eles, pxRatio, lvl ){
     if(
       !layer
       || layer.eles.length >= maxElesPerLayer
-      || ( defNumLayers > 1 && !math.boundingBoxInBoundingBox( layer.bb, ele.boundingBox() ) )
+      || !math.boundingBoxInBoundingBox( layer.bb, ele.boundingBox() )
     ){
       // log('make new layer for ele %s', ele.id());
 

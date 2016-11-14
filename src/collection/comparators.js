@@ -54,9 +54,16 @@ var elesfn = ({
     collection = this.cy().collection( collection );
 
     return this.neighborhood().intersect( collection ).length === collection.length;
+  },
+
+  contains: function( collection ){
+    collection = this.cy().collection( collection );
+
+    return this.intersect( collection ).length === collection.length;
   }
 });
 
 elesfn.allAreNeighbours = elesfn.allAreNeighbors;
+elesfn.has = elesfn.contains;
 
 module.exports = elesfn;

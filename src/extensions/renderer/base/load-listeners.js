@@ -571,6 +571,20 @@ BRp.load = function(){
       cyPosition: { x: pos[0], y: pos[1] }
     } );
 
+    var goIntoBoxMode = function(){
+      r.data.bgActivePosistion = undefined;
+
+      if( !r.hoverData.selecting ){
+        cy.trigger('boxstart');
+      }
+
+      select[4] = 1;
+      r.hoverData.selecting = true;
+
+      r.redrawHint( 'select', true );
+      r.redraw();
+    };
+
     // trigger context drag if rmouse down
     if( r.hoverData.which === 3 ){
       // but only if over threshold
@@ -650,16 +664,7 @@ BRp.load = function(){
       if( isOverThresholdDrag ){
 
         if( !r.hoverData.dragging && cy.boxSelectionEnabled() && ( multSelKeyDown || !cy.panningEnabled() || !cy.userPanningEnabled() ) ){
-          r.data.bgActivePosistion = undefined;
-
-          if( !r.hoverData.selecting ){
-            cy.trigger('boxstart');
-          }
-
-          r.hoverData.selecting = true;
-
-          r.redrawHint( 'select', true );
-          r.redraw();
+          goIntoBoxMode();
 
         } else if( !r.hoverData.selecting && cy.panningEnabled() && cy.userPanningEnabled() ){
           var allowPassthrough = allowPanningPassthrough( down, r.hoverData.downs );
@@ -702,62 +707,73 @@ BRp.load = function(){
 
       if( down && r.nodeIsDraggable( down ) ){
 
-        if( isOverThresholdDrag ){ // then drag
+        if( isOverThresholdDrag ){ // then we can take action
 
-          var justStartedDrag = !r.dragData.didDrag;
+          if( cy.boxSelectionEnabled() && multSelKeyDown ){ // then selection overrides
+            if( down && down.grabbed() ){
+              freeDraggedElements( draggedElements );
 
-          if( justStartedDrag ){
-            r.redrawHint( 'eles', true );
-          }
+              down.trigger('free');
+            }
 
-          r.dragData.didDrag = true; // indicate that we actually did drag the node
+            goIntoBoxMode();
 
-          var toTrigger = [];
+          } else { // otherwise drag
+            var justStartedDrag = !r.dragData.didDrag;
 
-          // now, add the elements to the drag layer if not done already
-          if( !r.hoverData.draggingEles ){
-            addNodesToDrag( cy.collection( draggedElements ), { inDragLayer: true } );
-          }
+            if( justStartedDrag ){
+              r.redrawHint( 'eles', true );
+            }
 
-          for( var i = 0; i < draggedElements.length; i++ ){
-            var dEle = draggedElements[ i ];
+            r.dragData.didDrag = true; // indicate that we actually did drag the node
 
-            // Locked nodes not draggable, as well as non-visible nodes
-            if( r.nodeIsDraggable( dEle ) && dEle.grabbed() ){
-              var dPos = dEle._private.position;
+            var toTrigger = [];
 
-              toTrigger.push( dEle );
+            // now, add the elements to the drag layer if not done already
+            if( !r.hoverData.draggingEles ){
+              addNodesToDrag( cy.collection( draggedElements ), { inDragLayer: true } );
+            }
 
-              if( is.number( disp[0] ) && is.number( disp[1] ) ){
-                var updatePos = !dEle.isParent();
+            for( var i = 0; i < draggedElements.length; i++ ){
+              var dEle = draggedElements[ i ];
 
-                if( updatePos ){
-                  dPos.x += disp[0];
-                  dPos.y += disp[1];
-                }
+              // Locked nodes not draggable, as well as non-visible nodes
+              if( r.nodeIsDraggable( dEle ) && dEle.grabbed() ){
+                var dPos = dEle._private.position;
 
-                if( justStartedDrag ){
-                  var dragDelta = r.hoverData.dragDelta;
+                toTrigger.push( dEle );
 
-                  if( updatePos && dragDelta && is.number( dragDelta[0] ) && is.number( dragDelta[1] ) ){
-                    dPos.x += dragDelta[0];
-                    dPos.y += dragDelta[1];
+                if( is.number( disp[0] ) && is.number( disp[1] ) ){
+                  var updatePos = !dEle.isParent();
+
+                  if( updatePos ){
+                    dPos.x += disp[0];
+                    dPos.y += disp[1];
+                  }
+
+                  if( justStartedDrag ){
+                    var dragDelta = r.hoverData.dragDelta;
+
+                    if( updatePos && dragDelta && is.number( dragDelta[0] ) && is.number( dragDelta[1] ) ){
+                      dPos.x += dragDelta[0];
+                      dPos.y += dragDelta[1];
+                    }
                   }
                 }
+
               }
-
             }
+
+            r.hoverData.draggingEles = true;
+
+            var tcol = cy.collection( toTrigger );
+
+            tcol.updateCompoundBounds();
+            tcol.trigger( 'position drag' );
+
+            r.redrawHint( 'drag', true );
+            r.redraw();
           }
-
-          r.hoverData.draggingEles = true;
-
-          var tcol = cy.collection( toTrigger );
-
-          tcol.updateCompoundBounds();
-          tcol.trigger( 'position drag' );
-
-          r.redrawHint( 'drag', true );
-          r.redraw();
 
         } else { // otherwise save drag delta for when we actually start dragging so the relative grab pos is constant
           updateDragDelta();

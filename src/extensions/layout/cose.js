@@ -244,6 +244,10 @@ CoseLayout.prototype.run = function(){
       }
     };
 
+    var randomDistance = function( max ){
+      return -max + 2 * max * Math.random();
+    };
+
     /**
      * @brief : Compute the node repulsion forces between a pair of nodes
      */
@@ -258,12 +262,13 @@ CoseLayout.prototype.run = function(){
       // Get direction of line connecting both node centers
       var directionX = node2.positionX - node1.positionX;
       var directionY = node2.positionY - node1.positionY;
+      var maxRandDist = 1;
       // s += "\ndirectionX: " + directionX + ", directionY: " + directionY;
 
       // If both centers are the same, apply a random force
       if( 0 === directionX && 0 === directionY ){
-        // s += "\nNodes have the same position.";
-        return; // TODO could be improved with random force
+        directionX = randomDistance( maxRandDist );
+        directionY = randomDistance( maxRandDist );
       }
 
       var overlap = nodesOverlap( node1, node2, directionX, directionY );

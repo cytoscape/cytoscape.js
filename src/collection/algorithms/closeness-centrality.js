@@ -47,8 +47,7 @@ var elesfn = ({
 
     return {
       closeness: function( node ){
-		if( maxCloseness == 0 )
-			return 0;
+        if( maxCloseness == 0 ){ return 0; }
 
         if( is.string( node ) ){
           // from is a selector string

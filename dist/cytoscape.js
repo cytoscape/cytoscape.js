@@ -2,7 +2,7 @@
 
 /*!
 
-Cytoscape.js 2.7.10 (MIT licensed)
+Cytoscape.js 2.7.11 (MIT licensed)
 
 Copyright (c) The Cytoscape Consortium
 
@@ -689,7 +689,7 @@ var elesfn = ({
     var V = this.nodes();
     var A = {};
     var _C = {};
-    var max;
+    var max = 0;
     var C = {
       set: function( key, val ){
         _C[ key ] = val;
@@ -827,6 +827,9 @@ var elesfn = ({
       },
 
       betweennessNormalized: function( node ){
+        if ( max == 0 )
+          return 0;
+
         if( is.string( node ) ){
           var node = cy.filter( node ).id();
         } else {
@@ -1042,6 +1045,8 @@ var elesfn = ({
 
     return {
       closeness: function( node ){
+        if( maxCloseness == 0 ){ return 0; }
+
         if( is.string( node ) ){
           // from is a selector string
           var node = (cy.filter( node )[0]).id();
@@ -1161,6 +1166,9 @@ var elesfn = ({
 
       return {
         degree: function( node ){
+          if( maxDegree == 0 )
+            return 0;
+
           if( is.string( node ) ){
             // from is a selector string
             var node = (cy.filter( node )[0]).id();
@@ -1195,6 +1203,9 @@ var elesfn = ({
 
       return {
         indegree: function( node ){
+          if ( maxIndegree == 0 )
+            return 0;
+
           if( is.string( node ) ){
             // from is a selector string
             var node = (cy.filter( node )[0]).id();
@@ -1206,6 +1217,9 @@ var elesfn = ({
           return indegrees[ node ] / maxIndegree;
         },
         outdegree: function( node ){
+          if ( maxOutdegree == 0 )
+            return 0;
+
           if( is.string( node ) ){
             // from is a selector string
             var node = (cy.filter( node )[0]).id();
@@ -4761,11 +4775,11 @@ elesfn.move = function( struct ){
     if( parentExists ){
       var jsons = this.jsons();
       var descs = this.descendants();
-      var descsEtc = descs.union( descs.union( this ).connectedEdges() );
+      var descsEtcJsons = descs.union( descs.union( this ).connectedEdges() ).jsons();
 
       this.remove(); // NB: also removes descendants and their connected edges
 
-      for( var i = 0; i < this.length; i++ ){
+      for( var i = 0; i < jsons.length; i++ ){
         var json = jsons[i];
         var ele = this[i];
 
@@ -4776,7 +4790,7 @@ elesfn.move = function( struct ){
         }
       }
 
-      return cy.add( jsons ).union( descsEtc.restore() );
+      return cy.add( jsons.concat( descsEtcJsons ) );
     }
   }
 
@@ -14100,7 +14114,15 @@ BRp.getCachedImage = function( url, onLoad ){
 
     var image = cache.image = new Image(); // eslint-disable-line no-undef
     image.addEventListener('load', onLoad);
-    image.crossOrigin = 'Anonymous'; // prevent tainted canvas
+
+    // #1582 safari doesn't load data uris with crossOrigin properly
+    // https://bugs.webkit.org/show_bug.cgi?id=123978
+    var dataUriPrefix = 'data:';
+    var isDataUri = url.substring( 0, dataUriPrefix.length ).toLowerCase() === dataUriPrefix;
+    if( !isDataUri ){
+      image.crossOrigin = 'Anonymous'; // prevent tainted canvas
+    }
+
     image.src = url;
 
     return image;
@@ -15278,7 +15300,16 @@ BRp.load = function(){
         r.redraw();
       }, 150 );
 
-      var diff = e.deltaY / -250 || e.wheelDeltaY / 1000 || e.wheelDelta / 1000;
+      var diff;
+
+      if( e.deltaY != null ){
+        diff = e.deltaY / -250;
+      } else if( e.wheelDeltaY != null ){
+        diff = e.wheelDeltaY / 1000;
+      } else {
+        diff = e.wheelDelta / 1000;
+      }
+
       diff = diff * r.wheelSensitivity;
 
       var needsWheelFix = e.deltaMode === 1;
@@ -19648,7 +19679,7 @@ LTCp.getLayers = function( eles, pxRatio, lvl ){
     if(
       !layer
       || layer.eles.length >= maxElesPerLayer
-      || ( defNumLayers > 1 && !math.boundingBoxInBoundingBox( layer.bb, ele.boundingBox() ) )
+      || !math.boundingBoxInBoundingBox( layer.bb, ele.boundingBox() )
     ){
       // log('make new layer for ele %s', ele.id());
 
@@ -23543,7 +23574,10 @@ styfn.applyContextStyle = function( cxtMeta, cxtStyle, ele ){
     var eleProp = ele.pstyle( diffPropName );
 
     if( !cxtProp ){ // no context prop means delete
-      if( eleProp.bypass ){
+      if( !eleProp ){
+        continue; // no existing prop means nothing needs to be removed
+        // nb affects initial application on mapped values like control-point-distances
+      } else if( eleProp.bypass ){
         cxtProp = { name: diffPropName, deleteBypassed: true };
       } else {
         cxtProp = { name: diffPropName, delete: true };
@@ -27010,7 +27044,7 @@ util.debounce = function( func, wait, options ){ // ported lodash debounce funct
 module.exports = util;
 
 },{"../is":83,"../window":107}],106:[function(_dereq_,module,exports){
-module.exports="2.7.10"
+module.exports="2.7.11"
 },{}],107:[function(_dereq_,module,exports){
 module.exports = ( typeof window === 'undefined' ? null : window ); // eslint-disable-line no-undef
 

@@ -588,7 +588,7 @@ BRp.getNodeShape = function( node ){
 };
 
 BRp.updateCachedGrabbedEles = function(){
-  var eles = this.cachedZSortedEles;
+  var eles = this.getCachedZSortedEles();
 
   eles.drag = [];
   eles.nondrag = [];

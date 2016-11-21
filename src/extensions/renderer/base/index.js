@@ -107,7 +107,7 @@ BRp.notify = function( params ){
   }
 
   if( has['add'] || has['remove'] || has['load'] || has['style'] ){
-    r.updateCachedZSortedEles();
+    r.invalidateCachedZSortedEles();
   }
 
   if( has['viewport'] ){

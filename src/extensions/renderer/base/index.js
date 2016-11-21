@@ -106,7 +106,7 @@ BRp.notify = function( params ){
     return;
   }
 
-  if( has['add'] || has['remove'] || has['load'] || has['style'] ){
+  if( has['add'] || has['remove'] || has['load'] || has['zorder'] ){
     r.invalidateCachedZSortedEles();
   }
 

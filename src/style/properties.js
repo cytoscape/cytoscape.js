@@ -94,6 +94,23 @@ var styfn = {};
     }
   };
 
+  var zOrderDiff = {
+    zeroNonZero: function( val1, val2 ){
+      if( val1 === 0 && val2 !== 0 ){
+        return true;
+      } else if( val1 !== 0 && val2 === 0 ){
+        return true;
+      } else {
+        return false;
+      }
+    },
+    anyDiff: function( val1, val2 ){
+      return val1 !== val2;
+    }
+  };
+
+  var zd = zOrderDiff;
+
   // define visual style properties
   var t = styfn.types;
   var props = styfn.properties = [
@@ -149,12 +166,12 @@ var styfn = {};
     { name: 'events', type: t.bool },
 
     // visibility
-    { name: 'display', type: t.display },
-    { name: 'visibility', type: t.visibility },
-    { name: 'opacity', type: t.zeroOneNumber },
-    { name: 'z-compound-depth', type: t.zCompoundDepth },
-    { name: 'z-index-compare', type: t.zIndexCompare },
-    { name: 'z-index', type: t.nonNegativeInt },
+    { name: 'display', type: t.display, triggersZOrder: zd.anyDiff },
+    { name: 'visibility', type: t.visibility, triggersZOrder: zd.anyDiff },
+    { name: 'opacity', type: t.zeroOneNumber, triggersZOrder: zd.zeroNonZero },
+    { name: 'z-compound-depth', type: t.zCompoundDepth, triggersZOrder: zd.anyDiff },
+    { name: 'z-index-compare', type: t.zIndexCompare, triggersZOrder: zd.anyDiff },
+    { name: 'z-index', type: t.nonNegativeInt, triggersZOrder: zd.anyDiff },
 
     // overlays
     { name: 'overlay-padding', type: t.size },

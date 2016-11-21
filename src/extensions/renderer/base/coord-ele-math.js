@@ -598,8 +598,6 @@ BRp.invalidateCachedZSortedEles = function(){
 
 BRp.getCachedZSortedEles = function( forceRecalc ){
   if( forceRecalc || !this.cachedZSortedEles ){
-    //console.time('cachezorder')
-
     var cyEles = this.cy.mutableElements();
     var eles = [];
 
@@ -625,13 +623,8 @@ BRp.getCachedZSortedEles = function( forceRecalc ){
     this.cachedZSortedEles = eles;
 
     this.updateCachedGrabbedEles();
-
-    //console.log('make cache')
-
-    //console.timeEnd('cachezorder')
   } else {
     eles = this.cachedZSortedEles;
-    //console.log('read cache')
   }
 
   return eles;

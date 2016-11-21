@@ -597,14 +597,14 @@ BRp.updateCachedGrabbedEles = function(){
   eles.drag = [];
   eles.nondrag = [];
 
-  var grabTarget;
+  var grabTargets = [];
 
   for( var i = 0; i < eles.length; i++ ){
     var ele = eles[i];
     var rs = ele._private.rscratch;
 
-    if( rs.isGrabTarget && !ele.isParent() ){
-      grabTarget = ele;
+    if( ele.grabbed() && !ele.isParent() ){
+      grabTargets.push( ele );
     } else if( rs.inDragLayer ){
       eles.drag.push( ele );
     } else {
@@ -612,9 +612,11 @@ BRp.updateCachedGrabbedEles = function(){
     }
   }
 
-  // put the grab target node last so it's on top of its neighbourhood
-  if( grabTarget ){
-    eles.drag.push( grabTarget );
+  // put the grab target nodes last so it's on top of its neighbourhood
+  for( var i = 0; i < grabTargets.length; i++ ){
+    var ele = grabTargets[i];
+
+    eles.drag.push( ele );
   }
 };
 

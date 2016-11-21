@@ -6,16 +6,23 @@ var performance = window ? window.performance : null;
 
 var util = {};
 
-var raf = !window ? null : ( window.requestAnimationFrame || window.mozRequestAnimationFrame ||
-      window.webkitRequestAnimationFrame || window.msRequestAnimationFrame );
-
-raf = raf || function( fn ){
+var raf = !window ? function( fn ){
   if( fn ){
     setTimeout( function(){
       fn( pnow() );
     }, 1000 / 60 );
   }
-};
+} : (function(){
+  if( window.requestAnimationFrame ){
+    return function( fn ){ window.requestAnimationFrame( fn ); };
+  } else if( window.mozRequestAnimationFrame ){
+    return function( fn ){ window.mozRequestAnimationFrame( fn ); }
+  } else if( window.webkitRequestAnimationFrame ){
+    return function( fn ){ window.webkitRequestAnimationFrame( fn ); }
+  } else if( window.msRequestAnimationFrame ){
+    return function( fn ){ window.msRequestAnimationFrame( fn ); }
+  }
+})();
 
 util.requestAnimationFrame = function( fn ){
   raf( fn );

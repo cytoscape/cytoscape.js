@@ -2,7 +2,7 @@
 
 var BRp = {};
 
-BRp.getCachedImage = function( url, onLoad ){
+BRp.getCachedImage = function( url, crossOrigin, onLoad ){
   var r = this;
   var imageCache = r.imageCache = r.imageCache || {};
   var cache = imageCache[ url ];
@@ -24,7 +24,7 @@ BRp.getCachedImage = function( url, onLoad ){
     var dataUriPrefix = 'data:';
     var isDataUri = url.substring( 0, dataUriPrefix.length ).toLowerCase() === dataUriPrefix;
     if( !isDataUri ){
-      image.crossOrigin = 'Anonymous'; // prevent tainted canvas
+      image.crossOrigin = crossOrigin; // prevent tainted canvas
     }
 
     image.src = url;

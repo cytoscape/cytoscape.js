@@ -477,6 +477,8 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
     }
   }
 
+  this.checkZOrderTrigger( ele, prop.name, origProp ? origProp.value : null, prop.value );
+
   return true;
 };
 
@@ -630,6 +632,17 @@ styfn.updateTransitions = function( ele, diffProps, isBypass ){
     this.removeBypasses( ele, props );
 
     _p.transitioning = false;
+  }
+};
+
+styfn.checkZOrderTrigger = function( ele, name, fromValue, toValue ){
+  var prop = this.properties[ name ];
+
+  if( prop.triggersZOrder && ( fromValue == null || prop.triggersZOrder( fromValue, toValue ) ) ){
+    this._private.cy.notify({
+      type: 'zorder',
+      eles: ele
+    });
   }
 };
 

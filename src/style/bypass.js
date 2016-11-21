@@ -113,6 +113,8 @@ styfn.overrideBypass = function( eles, name, value ){
       continue;
     }
 
+    var oldValue = prop.pfValue != null ? prop.pfValue : prop.value;
+
     prop.value = value;
 
     if( prop.pfValue != null ){
@@ -126,6 +128,8 @@ styfn.overrideBypass = function( eles, name, value ){
     } else {
       prop.strValue = '' + value;
     }
+
+    this.checkZOrderTrigger( ele, name, oldValue, value );
   }
 };
 

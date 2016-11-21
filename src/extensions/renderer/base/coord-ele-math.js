@@ -587,10 +587,6 @@ BRp.getNodeShape = function( node ){
   return shape;
 };
 
-BRp.updateCachedZSortedEles = function(){
-  this.getCachedZSortedEles( true );
-};
-
 BRp.updateCachedGrabbedEles = function(){
   var eles = this.cachedZSortedEles;
 
@@ -616,6 +612,10 @@ BRp.updateCachedGrabbedEles = function(){
   if( grabTarget ){
     eles.drag.push( grabTarget );
   }
+};
+
+BRp.invalidateCachedZSortedEles = function(){
+  this.cachedZSortedEles = null;
 };
 
 BRp.getCachedZSortedEles = function( forceRecalc ){

@@ -127,6 +127,9 @@ BRp.recalculateRenderedStyle = function( eles, useCache ){
     // only update if dirty and in graph
     if( (useCache && rstyle.clean) || ele.removed() ){ continue; }
 
+    // only update if not display: none
+    if( ele.pstyle('display').value === 'none' ){ continue; }
+
     if( _p.group === 'nodes' ){
       nodes.push( ele );
     } else { // edges

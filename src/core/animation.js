@@ -66,6 +66,16 @@ var corefn = ({
         var queue = _p.animation.queue;
         var ranAnis = false;
 
+        // cancel all animations on display:none ele
+        if( !isCore && ele.pstyle('display').value === 'none' ){
+          // put all current and queue animations in this tick's current list
+          // and empty the lists for the element
+          current = current.splice( 0, current.length ).concat( queue.splice( 0, queue.length ) );
+
+          // stop all animations
+          for( var i = 0; i < current.length; i++ ){ current[i].stop(); }
+        }
+
         // if nothing currently animating, get something from the queue
         if( current.length === 0 ){
           var next = queue.shift();

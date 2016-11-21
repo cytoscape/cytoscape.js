@@ -47,8 +47,10 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
 
   if( url !== undefined ){
 
+    var bgImgCrossOrigin = node.pstyle( 'background-image-crossorigin' );
+
     // get image, and if not loaded then ask to redraw when later loaded
-    image = this.getCachedImage( url, function(){
+    image = this.getCachedImage( url, bgImgCrossOrigin, function(){
       node.trigger('background');
 
       r.redrawHint( 'eles', true );

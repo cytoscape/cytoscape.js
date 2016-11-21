@@ -35,6 +35,7 @@ var styfn = {};
     bgPos: { number: true, allowPercent: true },
     bgRepeat: { enums: [ 'repeat', 'repeat-x', 'repeat-y', 'no-repeat' ] },
     bgFit: { enums: [ 'none', 'contain', 'cover' ] },
+    bgCrossOrigin: { enums: [ 'anonymous', 'use-credentials' ] },
     bgClip: { enums: [ 'none', 'node' ] },
     color: { color: true },
     bool: { enums: [ 'yes', 'no' ] },
@@ -201,6 +202,7 @@ var styfn = {};
 
     // node background images
     { name: 'background-image', type: t.url },
+    { name: 'background-image-crossorigin', type: t.bgCrossOrigin },
     { name: 'background-image-opacity', type: t.zeroOneNumber },
     { name: 'background-position-x', type: t.bgPos },
     { name: 'background-position-y', type: t.bgPos },
@@ -382,6 +384,7 @@ styfn.getDefaultProperties = util.memoize( function(){
     'background-color': '#999',
     'background-opacity': 1,
     'background-image': 'none',
+    'background-image-crossorigin': 'anonymous',
     'background-image-opacity': 1,
     'background-position-x': '50%',
     'background-position-y': '50%',

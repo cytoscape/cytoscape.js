@@ -247,9 +247,10 @@ CRp.drawText = function( context, ele, prefix ){
     var backgroundOpacity = ele.pstyle( 'text-background-opacity' ).value;
     var borderOpacity = ele.pstyle( 'text-border-opacity' ).value;
     var textBorderWidth = ele.pstyle( 'text-border-width' ).pfValue;
+    var backgroundPadding = ele.pstyle( 'text-background-padding' ).pfValue;
 
     if( backgroundOpacity > 0 || ( textBorderWidth > 0 && borderOpacity > 0 ) ){
-      var bgX = textX;
+      var bgX = textX - backgroundPadding;
 
       switch( halign ){
         case 'left':
@@ -262,7 +263,9 @@ CRp.drawText = function( context, ele, prefix ){
           break;
       }
 
-      var bgY = textY - textH;
+      var bgY = textY - textH - backgroundPadding;
+      var bgW = textW + 2*backgroundPadding;
+      var bgH = textH + 2*backgroundPadding;
 
       if( backgroundOpacity > 0 ){
         var textFill = context.fillStyle;
@@ -271,9 +274,9 @@ CRp.drawText = function( context, ele, prefix ){
         context.fillStyle = 'rgba(' + textBackgroundColor[ 0 ] + ',' + textBackgroundColor[ 1 ] + ',' + textBackgroundColor[ 2 ] + ',' + backgroundOpacity * parentOpacity + ')';
         var styleShape = ele.pstyle( 'text-background-shape' ).strValue;
         if( styleShape == 'roundrectangle' ){
-          roundRect( context, bgX, bgY, textW, textH, 2 );
+          roundRect( context, bgX, bgY, bgW, bgH, 2 );
         } else {
-          context.fillRect( bgX, bgY, textW, textH );
+          context.fillRect( bgX, bgY, bgW, bgH );
         }
         context.fillStyle = textFill;
       }
@@ -305,12 +308,12 @@ CRp.drawText = function( context, ele, prefix ){
           }
         }
 
-        context.strokeRect( bgX, bgY, textW, textH );
+        context.strokeRect( bgX, bgY, bgW, bgH );
 
         if( textBorderStyle === 'double' ){
           var whiteWidth = textBorderWidth / 2;
 
-          context.strokeRect( bgX + whiteWidth, bgY + whiteWidth, textW - whiteWidth * 2, textH - whiteWidth * 2 );
+          context.strokeRect( bgX + whiteWidth, bgY + whiteWidth, bgW - whiteWidth * 2, bgH - whiteWidth * 2 );
         }
 
         if( context.setLineDash ){ // for very outofdate browsers

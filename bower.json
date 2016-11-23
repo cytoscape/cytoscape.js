@@ -61,9 +61,8 @@
     "test",
     "debug",
     "gulpfile.js",
-    "*.sh",
     "package.json",
-    "README.md",
+    "CONTRIBUTING.md",
     "build",
     "node_modules"
   ]

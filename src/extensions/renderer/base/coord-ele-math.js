@@ -382,8 +382,9 @@ BRp.findNearestElements = function( x, y, isTouch ){
 
     var rstyle = _p.rstyle;
     var bw = ele.pstyle('text-border-width').pfValue;
-    var lw = preprop( rstyle, 'labelWidth', prefix ) + bw/2 + 2*th;
-    var lh = preprop( rstyle, 'labelHeight', prefix ) + bw/2 + 2*th;
+    var pw = ele.pstyle('text-background-padding').pfValue;
+    var lw = preprop( rstyle, 'labelWidth', prefix ) + bw + 2*th + 2*pw;
+    var lh = preprop( rstyle, 'labelHeight', prefix ) + bw + 2*th + 2*pw;
     var lx = preprop( rstyle, 'labelX', prefix );
     var ly = preprop( rstyle, 'labelY', prefix );
 

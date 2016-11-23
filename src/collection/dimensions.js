@@ -353,9 +353,10 @@ var updateBoundsFromLabel = function( bounds, ele, prefix, options ){
     var outlineWidth = ele.pstyle( 'text-outline-width' ).pfValue;
     var borderWidth = ele.pstyle( 'text-border-width' ).pfValue;
     var halfBorderWidth = borderWidth / 2;
+    var padding = ele.pstyle( 'text-background-padding' ).pfValue;
 
-    var lh = labelHeight;
-    var lw = labelWidth;
+    var lh = labelHeight + 2 * padding;
+    var lw = labelWidth + 2 * padding;
     var lw_2 = lw / 2;
     var lh_2 = lh / 2;
     var lx1, lx2, ly1, ly2;

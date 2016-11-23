@@ -420,7 +420,7 @@ BRp.findNearestElements = function( x, y, visibleElementsOnly, isTouch ){
     var ly1 = ly - lh / 2;
     var ly2 = ly + lh / 2;
 
-    if( theta !== 0 ){
+    if( theta ){
       var cos = Math.cos( theta );
       var sin = Math.sin( theta );
 

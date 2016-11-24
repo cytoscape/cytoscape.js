@@ -232,6 +232,12 @@ var styfn = {};
     // compound props
     { name: 'position', type: t.position },
     { name: 'compound-sizing-wrt-labels', type: t.compoundIncludeLabels },
+    { name: 'min-width', type: t.size },
+    { name: 'min-width-bias-left', type: t.percent },
+    { name: 'min-width-bias-right', type: t.percent },
+    { name: 'min-height', type: t.size },
+    { name: 'min-height-bias-top', type: t.percent },
+    { name: 'min-height-bias-bottom', type: t.percent },
 
     // edge line
     { name: 'line-style', type: t.lineStyle },
@@ -425,7 +431,13 @@ styfn.getDefaultProperties = util.memoize( function(){
     'padding-left': 0,
     'padding-right': 0,
     'position': 'origin',
-    'compound-sizing-wrt-labels': 'include'
+    'compound-sizing-wrt-labels': 'include',
+    'min-width': 0,
+    'min-width-bias-left': 0,
+    'min-width-bias-right': 0,
+    'min-height': 0,
+    'min-height-bias-top': 0,
+    'min-height-bias-bottom': 0
   }, {
     // node pie bg
     'pie-size': '100%'

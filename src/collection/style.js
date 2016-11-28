@@ -18,19 +18,34 @@ var elesfn = ({
       return this; // chaining and exit early when batching
     }
 
+    var hasCompounds = cy.hasCompoundNodes();
     var style = cy.style();
+    var updatedEles = this;
+
     notifyRenderer = notifyRenderer || notifyRenderer === undefined ? true : false;
 
-    style.apply( this );
+    if( hasCompounds ){ // then add everything up and down for compound selector checks
+      updatedEles = this.spawnSelf().merge( this.descendants() ).merge( this.parents() );
+    }
 
-    var updatedCompounds = this.updateCompoundBounds();
-    var toNotify = updatedCompounds.length > 0 ? this.add( updatedCompounds ) : this;
+    style.apply( updatedEles );
+
+    if( hasCompounds ){
+      var updatedCompounds = updatedEles.updateCompoundBounds();
+
+      // disable for performance for now
+      // (as updatedCompounds would be a subset of updatedEles ayway b/c of selectors check)
+      // if( updatedCompounds.length > 0 ){
+      //   updatedEles.merge( updatedCompounds );
+      // }
+    }
 
     if( notifyRenderer ){
-      toNotify.rtrigger( 'style' ); // let renderer know we changed style
+      updatedEles.rtrigger( 'style' ); // let renderer know we changed style
     } else {
-      toNotify.trigger( 'style' ); // just fire the event
+      updatedEles.trigger( 'style' ); // just fire the event
     }
+
     return this; // chaining
   },
 

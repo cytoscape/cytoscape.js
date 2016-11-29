@@ -16,11 +16,11 @@ var raf = !window ? function( fn ){
   if( window.requestAnimationFrame ){
     return function( fn ){ window.requestAnimationFrame( fn ); };
   } else if( window.mozRequestAnimationFrame ){
-    return function( fn ){ window.mozRequestAnimationFrame( fn ); }
+    return function( fn ){ window.mozRequestAnimationFrame( fn ); };
   } else if( window.webkitRequestAnimationFrame ){
-    return function( fn ){ window.webkitRequestAnimationFrame( fn ); }
+    return function( fn ){ window.webkitRequestAnimationFrame( fn ); };
   } else if( window.msRequestAnimationFrame ){
-    return function( fn ){ window.msRequestAnimationFrame( fn ); }
+    return function( fn ){ window.msRequestAnimationFrame( fn ); };
   }
 })();
 

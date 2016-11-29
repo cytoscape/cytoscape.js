@@ -2,7 +2,7 @@
 
 /*!
 
-Cytoscape.js 2.7.11 (MIT licensed)
+Cytoscape.js 2.7.12 (MIT licensed)
 
 Copyright (c) The Cytoscape Consortium
 
@@ -5103,19 +5103,34 @@ var elesfn = ({
       return this; // chaining and exit early when batching
     }
 
+    var hasCompounds = cy.hasCompoundNodes();
     var style = cy.style();
+    var updatedEles = this;
+
     notifyRenderer = notifyRenderer || notifyRenderer === undefined ? true : false;
 
-    style.apply( this );
+    if( hasCompounds ){ // then add everything up and down for compound selector checks
+      updatedEles = this.spawnSelf().merge( this.descendants() ).merge( this.parents() );
+    }
 
-    var updatedCompounds = this.updateCompoundBounds();
-    var toNotify = updatedCompounds.length > 0 ? this.add( updatedCompounds ) : this;
+    style.apply( updatedEles );
+
+    if( hasCompounds ){
+      var updatedCompounds = updatedEles.updateCompoundBounds();
+
+      // disable for performance for now
+      // (as updatedCompounds would be a subset of updatedEles ayway b/c of selectors check)
+      // if( updatedCompounds.length > 0 ){
+      //   updatedEles.merge( updatedCompounds );
+      // }
+    }
 
     if( notifyRenderer ){
-      toNotify.rtrigger( 'style' ); // let renderer know we changed style
+      updatedEles.rtrigger( 'style' ); // let renderer know we changed style
     } else {
-      toNotify.trigger( 'style' ); // just fire the event
+      updatedEles.trigger( 'style' ); // just fire the event
     }
+
     return this; // chaining
   },
 
@@ -12319,6 +12334,7 @@ BRp.findNearestElements = function( x, y, visibleElementsOnly, isTouch ){
         shape.checkPoint( x, y, 0, width, height, pos.x, pos.y )
       ){
         addEle( node, 0 );
+        return true;
       }
 
     }
@@ -12370,6 +12386,7 @@ BRp.findNearestElements = function( x, y, visibleElementsOnly, isTouch ){
           widthSq > ( sqDist = math.sqdistToFiniteLine( x, y, pts[ i ], pts[ i + 1], pts[ i + 2], pts[ i + 3] ) )
         ){
           addEle( edge, sqDist );
+          return true;
         }
       }
 
@@ -12382,6 +12399,7 @@ BRp.findNearestElements = function( x, y, visibleElementsOnly, isTouch ){
           (widthSq > (sqDist = math.sqdistToQuadraticBezier( x, y, pts[ i ], pts[ i + 1], pts[ i + 2], pts[ i + 3], pts[ i + 4], pts[ i + 5] )) )
         ){
           addEle( edge, sqDist );
+          return true;
         }
       }
     }
@@ -12438,21 +12456,26 @@ BRp.findNearestElements = function( x, y, visibleElementsOnly, isTouch ){
       prefixDash = '';
     }
 
-    if( ele.pstyle( 'text-events' ).strValue === 'no' ){ return; }
+    var text = ele.pstyle( prefixDash + 'label' ).value;
+    var eventsEnabled = ele.pstyle( 'text-events' ).strValue === 'yes';
 
-    var rotation = ele.pstyle( prefixDash + 'text-rotation' );
+    if( !eventsEnabled || !text ){ return; }
 
-    // adjust bb w/ angle
-    if( rotation.strValue === 'autorotate' || !!rotation.pfValue ){
+    var rstyle = _p.rstyle;
+    var bw = ele.pstyle('text-border-width').pfValue;
+    var lw = preprop( rstyle, 'labelWidth', prefix ) + bw/2 + 2*th;
+    var lh = preprop( rstyle, 'labelHeight', prefix ) + bw/2 + 2*th;
+    var lx = preprop( rstyle, 'labelX', prefix );
+    var ly = preprop( rstyle, 'labelY', prefix );
 
-      var rstyle = _p.rstyle;
-      var bw = ele.pstyle('text-border-width').pfValue;
-      var lw = preprop( rstyle, 'labelWidth', prefix ) + bw/2 + 2*th;
-      var lh = preprop( rstyle, 'labelHeight', prefix ) + bw/2 + 2*th;
-      var lx = preprop( rstyle, 'labelX', prefix );
-      var ly = preprop( rstyle, 'labelY', prefix );
+    var theta = preprop( _p.rscratch, 'labelAngle', prefix );
 
-      var theta = preprop( _p.rscratch, 'labelAngle', prefix );
+    var lx1 = lx - lw / 2;
+    var lx2 = lx + lw / 2;
+    var ly1 = ly - lh / 2;
+    var ly2 = ly + lh / 2;
+
+    if( theta ){
       var cos = Math.cos( theta );
       var sin = Math.sin( theta );
 
@@ -12465,11 +12488,6 @@ BRp.findNearestElements = function( x, y, visibleElementsOnly, isTouch ){
           y: x * sin + y * cos + ly
         };
       };
-
-      var lx1 = lx - lw / 2;
-      var lx2 = lx + lw / 2;
-      var ly1 = ly - lh / 2;
-      var ly2 = ly + lh / 2;
 
       var px1y1 = rotate( lx1, ly1 );
       var px1y2 = rotate( lx1, ly2 );
@@ -12485,25 +12503,21 @@ BRp.findNearestElements = function( x, y, visibleElementsOnly, isTouch ){
 
       if( math.pointInsidePolygonPoints( x, y, points ) ){
         addEle( ele );
+        return true;
       }
-
-    } else {
-      var bb = ele.boundingBox( {
-        includeLabels: true,
-        includeNodes: false,
-        includeEdges: false
-      } );
-
-      // adjust bb w/ threshold
-      bb.x1 -= th;
-      bb.y1 -= th;
-      bb.x2 += th;
-      bb.y2 += th;
-      bb.w = bb.x2 - bb.x1;
-      bb.h = bb.y2 - bb.y1;
+    } else { // do a cheaper bb check
+      var bb = {
+        w: lw,
+        h: lh,
+        x1: lx1,
+        x2: lx2,
+        y1: ly1,
+        y2: ly2
+      };
 
       if( math.inBoundingBox( bb, x, y ) ){
         addEle( ele );
+        return true;
       }
     }
 
@@ -12513,16 +12527,10 @@ BRp.findNearestElements = function( x, y, visibleElementsOnly, isTouch ){
     var ele = eles[ i ];
 
     if( ele.isNode() ){
-      checkNode( ele );
-
-      checkLabel( ele );
+      checkNode( ele ) || checkLabel( ele );
 
     } else { // then edge
-      checkEdge( ele );
-
-      checkLabel( ele );
-      checkLabel( ele, 'source' );
-      checkLabel( ele, 'target' );
+      checkEdge( ele ) || checkLabel( ele ) || checkLabel( ele, 'source' ) || checkLabel( ele, 'target' );
     }
   }
 
@@ -12637,14 +12645,14 @@ BRp.updateCachedGrabbedEles = function(){
   eles.drag = [];
   eles.nondrag = [];
 
-  var grabTarget;
+  var grabTargets = [];
 
   for( var i = 0; i < eles.length; i++ ){
     var ele = eles[i];
     var rs = ele._private.rscratch;
 
-    if( rs.isGrabTarget && !ele.isParent() ){
-      grabTarget = ele;
+    if( ele.grabbed() && !ele.isParent() ){
+      grabTargets.push( ele );
     } else if( rs.inDragLayer ){
       eles.drag.push( ele );
     } else {
@@ -12652,9 +12660,11 @@ BRp.updateCachedGrabbedEles = function(){
     }
   }
 
-  // put the grab target node last so it's on top of its neighbourhood
-  if( grabTarget ){
-    eles.drag.push( grabTarget );
+  // put the grab target nodes last so it's on top of its neighbourhood
+  for( var i = 0; i < grabTargets.length; i++ ){
+    var ele = grabTargets[i];
+
+    eles.drag.push( ele );
   }
 };
 
@@ -14098,7 +14108,7 @@ module.exports = BRp;
 
 var BRp = {};
 
-BRp.getCachedImage = function( url, onLoad ){
+BRp.getCachedImage = function( url, crossOrigin, onLoad ){
   var r = this;
   var imageCache = r.imageCache = r.imageCache || {};
   var cache = imageCache[ url ];
@@ -14120,7 +14130,7 @@ BRp.getCachedImage = function( url, onLoad ){
     var dataUriPrefix = 'data:';
     var isDataUri = url.substring( 0, dataUriPrefix.length ).toLowerCase() === dataUriPrefix;
     if( !isDataUri ){
-      image.crossOrigin = 'Anonymous'; // prevent tainted canvas
+      image.crossOrigin = crossOrigin; // prevent tainted canvas
     }
 
     image.src = url;
@@ -17651,8 +17661,10 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
 
   if( url !== undefined ){
 
+    var bgImgCrossOrigin = node.pstyle( 'background-image-crossorigin' );
+
     // get image, and if not loaded then ask to redraw when later loaded
-    image = this.getCachedImage( url, function(){
+    image = this.getCachedImage( url, bgImgCrossOrigin, function(){
       node.trigger('background');
 
       r.redrawHint( 'eles', true );
@@ -24973,7 +24985,7 @@ var parseImpl = function( name, value, propIsBypass, propIsFlat ){
     // just return
     return {
       name: name,
-      value: value,
+      value: '' + value,
       strValue: '' + value,
       bypass: propIsBypass
     };
@@ -25028,6 +25040,7 @@ var styfn = {};
     bgPos: { number: true, allowPercent: true },
     bgRepeat: { enums: [ 'repeat', 'repeat-x', 'repeat-y', 'no-repeat' ] },
     bgFit: { enums: [ 'none', 'contain', 'cover' ] },
+    bgCrossOrigin: { enums: [ 'anonymous', 'use-credentials' ] },
     bgClip: { enums: [ 'none', 'node' ] },
     color: { color: true },
     bool: { enums: [ 'yes', 'no' ] },
@@ -25189,6 +25202,7 @@ var styfn = {};
 
     // node background images
     { name: 'background-image', type: t.url },
+    { name: 'background-image-crossorigin', type: t.bgCrossOrigin },
     { name: 'background-image-opacity', type: t.zeroOneNumber },
     { name: 'background-position-x', type: t.bgPos },
     { name: 'background-position-y', type: t.bgPos },
@@ -25359,6 +25373,7 @@ styfn.getDefaultProperties = util.memoize( function(){
     'background-color': '#999',
     'background-opacity': 1,
     'background-image': 'none',
+    'background-image-crossorigin': 'anonymous',
     'background-image-opacity': 1,
     'background-position-x': '50%',
     'background-position-y': '50%',
@@ -26897,16 +26912,23 @@ var performance = window ? window.performance : null;
 
 var util = {};
 
-var raf = !window ? null : ( window.requestAnimationFrame || window.mozRequestAnimationFrame ||
-      window.webkitRequestAnimationFrame || window.msRequestAnimationFrame );
-
-raf = raf || function( fn ){
+var raf = !window ? function( fn ){
   if( fn ){
     setTimeout( function(){
       fn( pnow() );
     }, 1000 / 60 );
   }
-};
+} : (function(){
+  if( window.requestAnimationFrame ){
+    return function( fn ){ window.requestAnimationFrame( fn ); };
+  } else if( window.mozRequestAnimationFrame ){
+    return function( fn ){ window.mozRequestAnimationFrame( fn ); };
+  } else if( window.webkitRequestAnimationFrame ){
+    return function( fn ){ window.webkitRequestAnimationFrame( fn ); };
+  } else if( window.msRequestAnimationFrame ){
+    return function( fn ){ window.msRequestAnimationFrame( fn ); };
+  }
+})();
 
 util.requestAnimationFrame = function( fn ){
   raf( fn );
@@ -27044,7 +27066,7 @@ util.debounce = function( func, wait, options ){ // ported lodash debounce funct
 module.exports = util;
 
 },{"../is":83,"../window":107}],106:[function(_dereq_,module,exports){
-module.exports="2.7.11"
+module.exports="2.7.12"
 },{}],107:[function(_dereq_,module,exports){
 module.exports = ( typeof window === 'undefined' ? null : window ); // eslint-disable-line no-undef
 

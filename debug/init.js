@@ -148,6 +148,19 @@ $(function(){
         .css({
           'curve-style': 'bezier'
         })
+      .selector('node#n1')
+        .css({
+          // 'min-width': 400,
+          // 'min-width-bias-left': 30,
+          // 'min-width-bias-right': 60,
+          // 'padding-left': 0,
+          // 'padding-right': 0,
+          // 'padding-bottom': 0,
+          // 'padding-top': 0,
+          // 'min-height': 400,
+          // 'min-height-bias-top': 20,
+          // 'min-height-bias-bottom': 40
+        })
   ;
 
   window.options = {

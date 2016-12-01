@@ -226,6 +226,20 @@ fn = elesfn = ({
       var _p = parent._private;
       var children = parent.children();
       var includeLabels = parent.pstyle( 'compound-sizing-wrt-labels' ).value === 'include';
+
+      var min = {
+        width: {
+          val: parent.pstyle( 'min-width' ).pfValue,
+          left: parent.pstyle( 'min-width-bias-left' ).pfValue,
+          right: parent.pstyle( 'min-width-bias-right' ).pfValue
+        },
+        height: {
+          val: parent.pstyle( 'min-height' ).pfValue,
+          top: parent.pstyle( 'min-height-bias-top' ).pfValue,
+          bottom: parent.pstyle( 'min-height-bias-bottom' ).pfValue
+        }
+      };
+
       var bb = children.boundingBox( {
         includeLabels: includeLabels,
         includeShadows: false,
@@ -243,11 +257,40 @@ fn = elesfn = ({
       };
       var pos = _p.position;
 
-      _p.autoWidth = bb.w;
-      pos.x = (bb.x1 + bb.x2 - padding.left + padding.right) / 2;
+      var widthDiff = min.width.val - bb.w;
+      var diffLeft = 0;
+      var diffRight = 0;
+      if( widthDiff > 0 ){
+        var normalizedLeft = 0;
+        var normalizedRight = 0;
+        if( min.width.right + min.width.left > 0 ){
+          normalizedLeft = min.width.left / (min.width.right + min.width.left);
+          normalizedRight = min.width.right / (min.width.right + min.width.left);
+        }
+        diffRight = widthDiff * normalizedRight;
+        diffLeft = widthDiff * normalizedLeft;
+      }
 
-      _p.autoHeight = bb.h;
-      pos.y = (bb.y1 + bb.y2 - padding.top + padding.bottom) / 2;
+      var heightDiff = min.height.val - bb.h;
+      var diffTop = 0;
+      var diffBottom = 0;
+      if( heightDiff > 0 ){
+        var normalizedTop = 0;
+        var normalizedBottom = 0;
+        if( min.height.top + min.height.bottom > 0 ){
+          normalizedTop = min.height.top / (min.height.bottom + min.height.top);
+          normalizedBottom = min.height.bottom / (min.height.bottom + min.height.top);
+        }
+
+        diffTop = heightDiff * normalizedTop;
+        diffBottom = heightDiff * normalizedBottom;
+      }
+
+      _p.autoWidth = Math.max(bb.w, min.width.val) + padding.left + padding.right;
+      pos.x = (- padding.left - diffLeft + bb.x1 + bb.x2 + diffRight + padding.right) / 2;
+
+      _p.autoHeight = Math.max(bb.h, min.height.val) + padding.bottom + padding.top;
+      pos.y = (- padding.bottom - diffBottom + bb.y1 + bb.y2 + diffTop + padding.top) / 2;
 
       updated.push( parent );
     }

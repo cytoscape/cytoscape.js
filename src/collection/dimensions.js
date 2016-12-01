@@ -240,6 +240,9 @@ fn = elesfn = ({
         }
       };
 
+      min.width.total = min.width.left + min.width.right;
+      min.height.total = min.height.top + min.height.bottom;
+
       var bb = children.boundingBox( {
         includeLabels: includeLabels,
         includeShadows: false,
@@ -263,9 +266,9 @@ fn = elesfn = ({
       if( widthDiff > 0 ){
         var normalizedLeft = 0;
         var normalizedRight = 0;
-        if( min.width.right + min.width.left > 0 ){
-          normalizedLeft = min.width.left / (min.width.right + min.width.left);
-          normalizedRight = min.width.right / (min.width.right + min.width.left);
+        if( min.width.total > 0 ){
+          normalizedLeft = min.width.left / min.width.total;
+          normalizedRight = min.width.right / min.width.total;
         }
         diffRight = widthDiff * normalizedRight;
         diffLeft = widthDiff * normalizedLeft;
@@ -277,9 +280,9 @@ fn = elesfn = ({
       if( heightDiff > 0 ){
         var normalizedTop = 0;
         var normalizedBottom = 0;
-        if( min.height.top + min.height.bottom > 0 ){
-          normalizedTop = min.height.top / (min.height.bottom + min.height.top);
-          normalizedBottom = min.height.bottom / (min.height.bottom + min.height.top);
+        if( min.height.total > 0 ){
+          normalizedTop = min.height.top / min.height.total;
+          normalizedBottom = min.height.bottom / min.height.total;
         }
 
         diffTop = heightDiff * normalizedTop;

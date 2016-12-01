@@ -173,9 +173,16 @@ A padding defines an addition to a node's dimension.  For example, `padding-left
 * **`padding-top`** : The amount of top padding.
 * **`padding-bottom`** : The amount of bottom padding.
 
-Compound parent:
+Compound parent sizing:
 
  * **`compound-sizing-wrt-labels`** : Whether to include labels of descendants in sizing a compound node; may be `include` or `exclude`.
+ * **`min-width`** : Specifies the minimum (inner) width of the node's body for a compound parent node (e.g. `400px`).  If the biases for `min-width` do not add up to 100%, then the biases are normalised to a total of 100%.
+ * **`min-width-bias-left`** : When a compound node is enlarged by its `min-width`, this value specifies the percent of the extra width put on the left side of the node (e.g. `50%`).
+ * **`min-width-bias-right`** : When a compound node is enlarged by its `min-width`, this value specifies the percent of the extra width put on the right side of the node (e.g. `50%`).
+ * **`min-height`** : Specifies the minimum (inner) height of the node's body for a compound parent node (e.g. `400px`).  If the biases for `min-height` do not add up to 100%, then the biases are normalised to a total of 100%.
+ * **`min-height-bias-top`** : When a compound node is enlarged by its `min-height`, this value specifies the percent of the extra width put on the top side of the node (e.g. `50%`).
+ * **`min-height-bias-bottom`** : When a compound node is enlarged by its `min-height`, this value specifies the percent of the extra width put on the bottom side of the node (e.g. `50%`).
+
 
 
 

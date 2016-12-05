@@ -99,8 +99,20 @@ $(function(){
 			return this;
 		});
 
-		$("#hide-bb").click(function(){
-			$('#bb').hide();
+		$("#show-debug").click(function(){
+			cy.renderer().debug = true;
+
+			// force redraws
+			cy.panBy({ x: 1 });
+			cy.panBy({ x: -1 });
+		});
+
+		$("#hide-debug").click(function(){
+			cy.renderer().debug = false;
+
+			// force redraws
+			cy.panBy({ x: 1 });
+			cy.panBy({ x: -1 });
 		});
 
 	});

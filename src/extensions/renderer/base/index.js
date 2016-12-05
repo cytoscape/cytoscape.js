@@ -44,6 +44,7 @@ BRp.init = function( options ){
 
   r.redraws = 0;
   r.showFps = options.showFps;
+  r.debug = options.debug;
 
   r.hideEdgesOnViewport = options.hideEdgesOnViewport;
   r.hideLabelsOnViewport = options.hideLabelsOnViewport;

@@ -438,6 +438,10 @@ CRp.render = function( options ){
       r.drawLayeredElements( context, eles.nondrag, pixelRatio, extent );
     }
 
+    if( r.debug ){
+      r.drawDebugPoints( context, eles.nondrag );
+    }
+
     if( !drawAllLayers && !motionBlur ){
       needDraw[ r.NODE ] = false;
     }
@@ -453,6 +457,10 @@ CRp.render = function( options ){
       r.drawCachedNodes( context, eles.drag, pixelRatio, extent );
     } else {
       r.drawCachedElements( context, eles.drag, pixelRatio, extent );
+    }
+
+    if( r.debug ){
+      r.drawDebugPoints( context, eles.drag );
     }
 
     if( !drawAllLayers && !motionBlur ){

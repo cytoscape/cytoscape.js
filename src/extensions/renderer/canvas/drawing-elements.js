@@ -82,4 +82,33 @@ CRp.drawLayeredElements = function( context, eles, pxRatio, extent ){
   }
 };
 
+CRp.drawDebugPoints = function( context, eles ){
+  var draw = function( x, y, color ){
+    context.fillStyle = color;
+    context.fillRect( x - 1, y - 1, 3, 3 );
+  }
+
+  for( var i = 0; i < eles.length; i++ ){
+    var ele = eles[i];
+    var rs = ele._private.rscratch;
+
+    if( ele.isNode() ){
+      var p = ele.position();
+
+      draw( p.x, p.y, 'magenta' );
+    } else {
+      var pts = rs.allpts;
+
+      for( var j = 0; j + 1 < pts.length; j += 2 ){
+        var x = pts[ j ];
+        var y = pts[ j + 1 ];
+
+        draw( x, y, 'cyan' );
+      }
+
+      draw( rs.midX, rs.midY, 'yellow' );
+    }
+  }
+};
+
 module.exports = CRp;

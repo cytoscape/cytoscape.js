@@ -690,10 +690,7 @@ BRp.recalculateNodeLabelProjection = function( node ){
   var _p = node._private;
   var nodeWidth = node.width();
   var nodeHeight = node.height();
-  var paddingLeft = node.pstyle('padding-left').pfValue;
-  var paddingRight = node.pstyle('padding-right').pfValue;
-  var paddingTop = node.pstyle('padding-top').pfValue;
-  var paddingBottom = node.pstyle('padding-bottom').pfValue;
+  var padding = node.pstyle('padding').pfValue;
   var nodePos = _p.position;
   var textHalign = node.pstyle( 'text-halign' ).strValue;
   var textValign = node.pstyle( 'text-valign' ).strValue;
@@ -702,11 +699,11 @@ BRp.recalculateNodeLabelProjection = function( node ){
 
   switch( textHalign ){
     case 'left':
-      textX = nodePos.x - nodeWidth / 2 - paddingLeft;
+      textX = nodePos.x - nodeWidth / 2 - padding;
       break;
 
     case 'right':
-      textX = nodePos.x + nodeWidth / 2 + paddingRight;
+      textX = nodePos.x + nodeWidth / 2 + padding;
       break;
 
     default: // e.g. center
@@ -715,11 +712,11 @@ BRp.recalculateNodeLabelProjection = function( node ){
 
   switch( textValign ){
     case 'top':
-      textY = nodePos.y - nodeHeight / 2 - paddingTop;
+      textY = nodePos.y - nodeHeight / 2 - padding;
       break;
 
     case 'bottom':
-      textY = nodePos.y + nodeHeight / 2 + paddingBottom;
+      textY = nodePos.y + nodeHeight / 2 + padding;
       break;
 
     default: // e.g. middle

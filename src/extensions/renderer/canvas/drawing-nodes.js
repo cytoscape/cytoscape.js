@@ -23,8 +23,10 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
   var path;
   var pathCacheHit = false;
 
-  nodeWidth = node.width() + node.pstyle( 'padding-left' ).pfValue + node.pstyle( 'padding-right' ).pfValue;
-  nodeHeight = node.height() + node.pstyle( 'padding-top' ).pfValue + node.pstyle( 'padding-bottom' ).pfValue;
+  var padding = node.pstyle('padding').pfValue;
+
+  nodeWidth = node.width() + 2 * padding;
+  nodeHeight = node.height() + 2 * padding;
 
   context.lineWidth = node.pstyle( 'border-width' ).pfValue;
 

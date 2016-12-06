@@ -235,19 +235,13 @@ fn = elesfn = ({
         // cache cycle (i.e. before fired events)
         useCache: false
       } );
-      var padding = {
-        top: parent.pstyle( 'padding-top' ).pfValue,
-        bottom: parent.pstyle( 'padding-bottom' ).pfValue,
-        left: parent.pstyle( 'padding-left' ).pfValue,
-        right: parent.pstyle( 'padding-right' ).pfValue
-      };
       var pos = _p.position;
 
       _p.autoWidth = bb.w;
-      pos.x = (bb.x1 + bb.x2 - padding.left + padding.right) / 2;
+      pos.x = (bb.x1 + bb.x2) / 2;
 
       _p.autoHeight = bb.h;
-      pos.y = (bb.y1 + bb.y2 - padding.top + padding.bottom) / 2;
+      pos.y = (bb.y1 + bb.y2) / 2;
 
       updated.push( parent );
     }
@@ -831,8 +825,8 @@ var defineDimFns = function( opts ){
     if( ele ){
       if( styleEnabled ){
         var dim = ele[ opts.name ]();
-        var border = ele.pstyle( 'border-width' ).pfValue;
-        var padding = ele.pstyle( opts.paddings[0] ).pfValue + ele.pstyle( opts.paddings[1] ).pfValue;
+        var border = ele.pstyle( 'border-width' ).pfValue; // n.b. 1/2 each side
+        var padding = 2 * ele.pstyle( 'padding' ).pfValue;
 
         return dim + border + padding;
       } else {
@@ -861,13 +855,11 @@ var defineDimFns = function( opts ){
 };
 
 defineDimFns( {
-  name: 'width',
-  paddings: [ 'padding-left', 'padding-right' ]
+  name: 'width'
 } );
 
 defineDimFns( {
-  name: 'height',
-  paddings: [ 'padding-top', 'padding-bottom' ]
+  name: 'height'
 } );
 
 // aliases

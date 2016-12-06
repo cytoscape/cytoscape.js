@@ -166,12 +166,9 @@ Border:
 
 Padding:
 
-A padding defines an addition to a node's dimension.  For example, `padding-left` adds to a node's outer (i.e. total) width.  This can be used to add spacing around the label of `width: label; height: label;` nodes, or it can be used to add spacing between a compound node parent and its children.
+A padding defines an addition to a node's dimension.  For example, `padding` adds to a node's outer (i.e. total) width and height.  This can be used to add spacing around the label of `width: label; height: label;` nodes, or it can be used to add spacing between a compound node parent and its children.
 
-* **`padding-left`** : The amount of left padding.
-* **`padding-right`** : The amount of right padding.
-* **`padding-top`** : The amount of top padding.
-* **`padding-bottom`** : The amount of bottom padding.
+* **`padding`** : The amount of padding around all sides of the node.
 
 Compound parent sizing:
 

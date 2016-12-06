@@ -220,19 +220,6 @@ CRp.drawText = function( context, ele, prefix ){
       textY = 0;
     }
 
-    if( isNode ){
-      var pLeft = ele.pstyle( 'padding-left' ).pfValue;
-      var pRight = ele.pstyle( 'padding-right' ).pfValue;
-      var pTop = ele.pstyle( 'padding-top' ).pfValue;
-      var pBottom = ele.pstyle( 'padding-bottom' ).pfValue;
-
-      textX += pLeft / 2;
-      textX -= pRight / 2;
-
-      textY += pTop / 2;
-      textY -= pBottom / 2;
-    }
-
     switch( valign ){
       case 'top':
         break;

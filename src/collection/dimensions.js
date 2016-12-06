@@ -252,12 +252,6 @@ fn = elesfn = ({
         // cache cycle (i.e. before fired events)
         useCache: false
       } );
-      var padding = {
-        top: parent.pstyle( 'padding-top' ).pfValue,
-        bottom: parent.pstyle( 'padding-bottom' ).pfValue,
-        left: parent.pstyle( 'padding-left' ).pfValue,
-        right: parent.pstyle( 'padding-right' ).pfValue
-      };
       var pos = _p.position;
 
       var widthDiff = min.width.val - bb.w;
@@ -289,11 +283,11 @@ fn = elesfn = ({
         diffBottom = heightDiff * normalizedBottom;
       }
 
-      _p.autoWidth = Math.max(bb.w, min.width.val) + padding.left + padding.right;
-      pos.x = (- padding.left - diffLeft + bb.x1 + bb.x2 + diffRight + padding.right) / 2;
+      _p.autoWidth = Math.max(bb.w, min.width.val);
+      pos.x = (- diffLeft + bb.x1 + bb.x2 + diffRight) / 2;
 
-      _p.autoHeight = Math.max(bb.h, min.height.val) + padding.bottom + padding.top;
-      pos.y = (- padding.bottom - diffBottom + bb.y1 + bb.y2 + diffTop + padding.top) / 2;
+      _p.autoHeight = Math.max(bb.h, min.height.val);
+      pos.y = (- diffBottom + bb.y1 + bb.y2 + diffTop) / 2;
 
       updated.push( parent );
     }
@@ -878,8 +872,8 @@ var defineDimFns = function( opts ){
     if( ele ){
       if( styleEnabled ){
         var dim = ele[ opts.name ]();
-        var border = ele.pstyle( 'border-width' ).pfValue;
-        var padding = ele.pstyle( opts.paddings[0] ).pfValue + ele.pstyle( opts.paddings[1] ).pfValue;
+        var border = ele.pstyle( 'border-width' ).pfValue; // n.b. 1/2 each side
+        var padding = 2 * ele.pstyle( 'padding' ).pfValue;
 
         return dim + border + padding;
       } else {
@@ -908,13 +902,11 @@ var defineDimFns = function( opts ){
 };
 
 defineDimFns( {
-  name: 'width',
-  paddings: [ 'padding-left', 'padding-right' ]
+  name: 'width'
 } );
 
 defineDimFns( {
-  name: 'height',
-  paddings: [ 'padding-top', 'padding-bottom' ]
+  name: 'height'
 } );
 
 // aliases

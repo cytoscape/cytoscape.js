@@ -206,10 +206,7 @@ var styfn = {};
     { name: 'background-color', type: t.color },
     { name: 'background-opacity', type: t.zeroOneNumber },
     { name: 'background-blacken', type: t.nOneOneNumber },
-    { name: 'padding-left', type: t.size },
-    { name: 'padding-right', type: t.size },
-    { name: 'padding-top', type: t.size },
-    { name: 'padding-bottom', type: t.size },
+    { name: 'padding', type: t.size },
 
     // node border
     { name: 'border-color', type: t.color },
@@ -273,7 +270,11 @@ var styfn = {};
     { name: 'content', pointsTo: 'label' },
     { name: 'control-point-distance', pointsTo: 'control-point-distances' },
     { name: 'control-point-weight', pointsTo: 'control-point-weights' },
-    { name: 'edge-text-rotation', pointsTo: 'text-rotation' }
+    { name: 'edge-text-rotation', pointsTo: 'text-rotation' },
+    { name: 'padding-left', pointsTo: 'padding' },
+    { name: 'padding-right', pointsTo: 'padding' },
+    { name: 'padding-top', pointsTo: 'padding' },
+    { name: 'padding-bottom', pointsTo: 'padding' }
   ];
 
   // pie backgrounds for nodes
@@ -426,10 +427,7 @@ styfn.getDefaultProperties = util.memoize( function(){
     'shape-polygon-points': '-1, -1,   1, -1,   1, 1,   -1, 1',
 
     // compound props
-    'padding-top': 0,
-    'padding-bottom': 0,
-    'padding-left': 0,
-    'padding-right': 0,
+    'padding': 0,
     'position': 'origin',
     'compound-sizing-wrt-labels': 'include',
     'min-width': 0,
@@ -503,10 +501,7 @@ styfn.addDefaultStylesheet = function(){
     .selector( '$node > node' ) // compound (parent) node properties
       .css( {
         'shape': 'rectangle',
-        'padding-top': 10,
-        'padding-right': 10,
-        'padding-left': 10,
-        'padding-bottom': 10,
+        'padding': 10,
         'background-color': '#eee',
         'border-color': '#ccc',
         'border-width': 1

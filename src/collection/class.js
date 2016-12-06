@@ -4,7 +4,7 @@ var util = require( '../util' );
 
 var elesfn = ({
   classes: function( classes ){
-    classes = classes.match( /\S+/g ) || [];
+    classes = ( classes || '' ).match( /\S+/g ) || [];
     var self = this;
     var changed = [];
     var classesMap = {};

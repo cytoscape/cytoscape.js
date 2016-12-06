@@ -38,6 +38,11 @@ styfn.getStylePropertyValue = function( ele, propName, isRenderedVal ){
 
   if( ele ){
     var prop = self.properties[ propName ];
+
+    if( prop.alias ){
+      prop = prop.pointsTo;
+    }
+
     var type = prop.type;
     var styleProp = ele.pstyle( prop.name );
     var zoom = ele.cy().zoom();

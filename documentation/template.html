@@ -126,9 +126,15 @@
 
 							<div class="gallery-title">
 								<span class="gallery-name">{{name}}</span><br />
+								{{#if jsbinUrl}}
 								<span class="gallery-jsbin">
 									<a target="_blank"href="{{jsbinUrl}}"><span class="fa fa-code"></span></a>
 								</span>
+								{{else}}
+								<span class="gallery-code">
+									<a target="_blank"href="{{githubUrl}}"><span class="fa fa-code"></span></a>
+								</span>
+								{{/if}}
 								<span class="gallery-download">
 									<a href="{{downloadUrl}}"><span class="fa fa-download"></span></a>
 								</span>

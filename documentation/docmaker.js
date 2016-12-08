@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 var fs = require('fs');
 // var Converter = require('./js/Markdown.Converter').Converter;
 // var converter = new Converter();
@@ -12,7 +14,7 @@ var configFile = './docmaker.json';
 var demoFile = './js/load.js';
 var mdRend = new marked.Renderer();
 
-rendCode = mdRend.code;
+var rendCode = mdRend.code;
 mdRend.code = function(code, lang){
   var button = '';
 
@@ -128,11 +130,23 @@ function parseSubsections( section ){
 }
 
 function populateDemo( demo ){
-  demo.jsbinUrl = 'http://jsbin.com/gist/' + demo.id + '?output';
+  if( demo.github ){
+    demo.githubUrl = 'https://github.com/' + demo.github;
+    demo.downloadUrl = 'https://github.com/' + demo.github + '/archive/gh-pages.zip';
+
+    if( !demo.viewUrl ){ // use github pages url if unspecified
+      var gh = demo.github.match(/(.+)\/(.+)/);
+
+      demo.downloadUrl = 'https://' + gh[0] + '.github.io/' + gh[1];
+    }
+  } else { // gist / jsbin
+    demo.jsbinUrl = 'http://jsbin.com/gist/' + demo.id + '?output';
+    demo.githubUrl = 'https://gist.github.com/' + demo.id;
+    demo.downloadUrl = 'https://gist.github.com/' + demo.id + '/download';
+    demo.viewUrl = 'demos/' + demo.id;
+  }
+
   demo.imgUrl = 'img/demos/' + demo.id + '.png';
-  demo.githubUrl = 'https://gist.github.com/' + demo.id;
-  demo.downloadUrl = 'https://gist.github.com/' + demo.id + '/download';
-  demo.viewUrl = 'demos/' + demo.id;
 }
 
 function compileAliases( section, fn ){

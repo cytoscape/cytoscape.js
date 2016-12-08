@@ -1,5 +1,7 @@
 'use strict';
 
+/* eslint-disable */
+
 var gulp = require('gulp');
 var $ = require('gulp-load-plugins')();
 var fs = require('fs');
@@ -499,7 +501,9 @@ gulp.task('docsdemodl', function(){
   }).map(function( s ){
     return s.demos || [ s.demo ];
   }).map(function( ds ){
-    return ds.map(function(d){
+    return ds.filter(function(d){
+      return !d.github; // don't have to download demos
+    }).map(function(d){
       return 'https://gist.github.com/' + d.id + '/download';
     });
   }).reduce(function(prevDs, currDs){

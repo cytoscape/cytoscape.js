@@ -33,7 +33,7 @@
       "demos": [
         { "name": "Cola.js gene-gene graph", "id": "2ebdc40f1c2540de6cf0" },
         { "name": "Tokyo railways", "id": "f64e811fc3311414e083" },
-        { "name": "Wine & cheese", "id": "cde4db55e581d10405f5" },
+        { "name": "Wine & cheese", "id": "cde4db55e581d10405f5", "github": "cytoscape/wineandcheesemap", "viewUrl": "http://wineandcheesemap.com" },
         { "name": "Performance tuning", "id": "57e7cc43342193d9d21a" },
         { "name": "qTip extension", "id": "546dd8ca4872cc87106a" },
         { "name": "Circle layout", "id": "04030586763520be8d7a" },

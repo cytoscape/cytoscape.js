@@ -69,22 +69,28 @@ function setExtension( type, name, registrant ){
       layoutProto.start = function(){ this.run(); return this; };
     }
 
-    if( !layoutProto.stop ){
-      layoutProto.stop = function(){
-        var opts = this.options;
+    var regStop = registrant.prototype.stop;
+    layoutProto.stop = function(){
+      var opts = this.options;
 
-        if( opts && opts.animate ){
-          var anis = this.animations;
+      if( opts && opts.animate ){
+        var anis = this.animations;
+
+        if( anis ){
           for( var i = 0; i < anis.length; i++ ){
             anis[ i ].stop();
           }
         }
+      }
 
+      if( regStop ){
+        regStop.call( this );
+      } else {
         this.trigger( 'layoutstop' );
+      }
 
-        return this;
-      };
-    }
+      return this;
+    };
 
     if( !layoutProto.destroy ){
       layoutProto.destroy = function(){

@@ -291,7 +291,7 @@ BreadthFirstLayout.prototype.run = function(){
     }
 
     var eleDepth = ele._private.scratch.breadthfirst.depth;
-    var neighbors = ele.neighborhood().nodes().not( ':parent' );
+    var neighbors = ele.neighborhood().nodes().not( ':parent' ).intersection(nodes);
     var percent = 0;
     var samples = 0;
 

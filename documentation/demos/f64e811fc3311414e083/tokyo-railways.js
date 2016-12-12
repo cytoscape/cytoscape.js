@@ -21,7 +21,7 @@ $(function(){
   
   // also get style via ajax
   var styleP = $.ajax({
-    url: 'https://cdn.rawgit.com/maxkfranz/2c23fe9a23d0cc8d43af/raw', // tokyo-railways-style.cycss
+    url: 'https://cdn.rawgit.com/maxkfranz/2c23fe9a23d0cc8d43af/raw/6b4cd5f5f9eb9390c0600ad0ca11d4f51821feaf/gistfile1.txt', // tokyo-railways-style.cycss
     type: 'GET',
     dataType: 'text'
   });

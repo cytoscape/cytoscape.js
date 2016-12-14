@@ -230,18 +230,15 @@ fn = elesfn = ({
       var min = {
         width: {
           val: parent.pstyle( 'min-width' ).pfValue,
-          left: parent.pstyle( 'min-width-bias-left' ).pfValue,
-          right: parent.pstyle( 'min-width-bias-right' ).pfValue
+          left: parent.pstyle( 'min-width-bias-left' ),
+          right: parent.pstyle( 'min-width-bias-right' )
         },
         height: {
           val: parent.pstyle( 'min-height' ).pfValue,
-          top: parent.pstyle( 'min-height-bias-top' ).pfValue,
-          bottom: parent.pstyle( 'min-height-bias-bottom' ).pfValue
+          top: parent.pstyle( 'min-height-bias-top' ),
+          bottom: parent.pstyle( 'min-height-bias-bottom' )
         }
       };
-
-      min.width.total = min.width.left + min.width.right;
-      min.height.total = min.height.top + min.height.bottom;
 
       var bb = children.boundingBox( {
         includeLabels: includeLabels,
@@ -254,34 +251,47 @@ fn = elesfn = ({
       } );
       var pos = _p.position;
 
-      var widthDiff = min.width.val - bb.w;
-      var diffLeft = 0;
-      var diffRight = 0;
-      if( widthDiff > 0 ){
-        var normalizedLeft = 0;
-        var normalizedRight = 0;
-        if( min.width.total > 0 ){
-          normalizedLeft = min.width.left / min.width.total;
-          normalizedRight = min.width.right / min.width.total;
+      function computeBiasValues( propDiff, propBias, propBiasComplement ){
+        var biasDiff = 0;
+        var biasComplementDiff = 0;
+        var biasTotal = propBias + propBiasComplement;
+
+        if( propDiff > 0 && biasTotal > 0 ){
+          biasDiff = ( propBias / biasTotal ) * propDiff;
+          biasComplementDiff = ( propBiasComplement / biasTotal ) * propDiff;
         }
-        diffRight = widthDiff * normalizedRight;
-        diffLeft = widthDiff * normalizedLeft;
+        return {
+          biasDiff: biasDiff,
+          biasComplementDiff: biasComplementDiff
+        };
       }
 
-      var heightDiff = min.height.val - bb.h;
-      var diffTop = 0;
-      var diffBottom = 0;
-      if( heightDiff > 0 ){
-        var normalizedTop = 0;
-        var normalizedBottom = 0;
-        if( min.height.total > 0 ){
-          normalizedTop = min.height.top / min.height.total;
-          normalizedBottom = min.height.bottom / min.height.total;
-        }
-
-        diffTop = heightDiff * normalizedTop;
-        diffBottom = heightDiff * normalizedBottom;
+      var leftVal = min.width.left.value;
+      if( min.width.left.units === 'px' && min.width.val > 0 ){
+        leftVal = ( leftVal * 100 ) / min.width.val;
       }
+      var rightVal = min.width.right.value;
+      if( min.width.right.units === 'px' && min.width.val > 0 ){
+        rightVal = ( rightVal * 100 ) / min.width.val;
+      }
+
+      var topVal = min.height.top.value;
+      if( min.height.top.units === 'px' && min.height.val > 0 ){
+        topVal = ( topVal * 100 ) / min.height.val;
+      }
+
+      var bottomVal = min.height.bottom.value;
+      if( min.height.bottom.units === 'px' && min.height.val > 0 ){
+        bottomVal = ( bottomVal * 100 ) / min.height.val;
+      }
+
+      var widthBiasDiffs = computeBiasValues( min.width.val - bb.w, leftVal, rightVal );
+      var diffLeft = widthBiasDiffs.biasDiff;
+      var diffRight = widthBiasDiffs.biasComplementDiff;
+
+      var heightBiasDiffs = computeBiasValues( min.height.val - bb.h, topVal, bottomVal );
+      var diffTop = heightBiasDiffs.biasDiff;
+      var diffBottom = heightBiasDiffs.biasComplementDiff;
 
       _p.autoWidth = Math.max(bb.w, min.width.val);
       pos.x = (- diffLeft + bb.x1 + bb.x2 + diffRight) / 2;

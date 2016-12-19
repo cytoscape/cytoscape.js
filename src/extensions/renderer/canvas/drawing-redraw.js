@@ -106,8 +106,9 @@ CRp.shadowStyle = function( context, color, opacity, blur, offsetX, offsetY ){
 CRp.matchCanvasSize = function( container ){
   var r = this;
   var data = r.data;
-  var width = container.clientWidth;
-  var height = container.clientHeight;
+  var bb = r.findContainerClientCoords();
+  var width = bb[2];
+  var height = bb[3];
   var pixelRatio = r.getPixelRatio();
   var mbPxRatio = r.motionBlurPxRatio;
 

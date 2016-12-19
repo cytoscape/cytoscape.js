@@ -4,6 +4,7 @@ var math = require( '../../../math' );
 var is = require( '../../../is' );
 var util = require( '../../../util' );
 var zIndexSort = require( '../../../collection/zsort' );
+var window = require( '../../../window' );
 
 var BRp = {};
 
@@ -171,23 +172,41 @@ BRp.recalculateRenderedStyle = function( eles, useCache ){
 
 // Project mouse
 BRp.projectIntoViewport = function( clientX, clientY ){
+  var cy = this.cy;
   var offsets = this.findContainerClientCoords();
   var offsetLeft = offsets[0];
   var offsetTop = offsets[1];
+  var pan = cy.pan();
+  var zoom = cy.zoom();
 
-  var x = clientX - offsetLeft;
-  var y = clientY - offsetTop;
+  var x = ( clientX - offsetLeft - pan.x ) / zoom;
+  var y = ( clientY - offsetTop - pan.y ) / zoom;
 
-  x -= this.cy.pan().x; y -= this.cy.pan().y; x /= this.cy.zoom(); y /= this.cy.zoom();
   return [ x, y ];
 };
 
 BRp.findContainerClientCoords = function(){
+  if( this.containerBB ){
+    return this.containerBB;
+  }
+
   var container = this.container;
+  var rect = container.getBoundingClientRect();
+  var style = window.getComputedStyle( container );
+  var styleValue = function( name ){ return parseFloat( style.getPropertyValue( name ) ); };
+  var extra = {
+    left: styleValue('padding-left') + styleValue('border-left-width'),
+    right: styleValue('padding-right') + styleValue('border-right-width'),
+    top: styleValue('padding-top') + styleValue('border-top-width'),
+    bottom: styleValue('padding-bottom') + styleValue('border-bottom-width')
+  };
 
-  var bb = this.containerBB = this.containerBB || container.getBoundingClientRect();
-
-  return [ bb.left, bb.top, bb.right - bb.left, bb.bottom - bb.top ];
+  return ( this.containerBB = [ // x, y, w, h
+    rect.left + extra.left,
+    rect.top + extra.top,
+    rect.right - rect.left - extra.left - extra.right,
+    rect.bottom - rect.top - extra.top - extra.bottom
+  ] );
 };
 
 BRp.invalidateContainerClientCoordsCache = function(){

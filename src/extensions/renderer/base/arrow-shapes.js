@@ -224,7 +224,7 @@ BRp.registerArrowShapes = function(){
     }
   } );
 
-  defineArrowShape( 'inhibitor', {
+  defineArrowShape( 'tee', {
     points: [
       -0.15, 0,
       -0.15, -0.1,
@@ -240,8 +240,6 @@ BRp.registerArrowShapes = function(){
       return 1;
     }
   } );
-
-  defineArrowShape( 'tee', 'inhibitor' );
 
   defineArrowShape( 'square', {
     points: [

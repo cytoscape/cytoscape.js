@@ -1,6 +1,7 @@
 'use strict';
 
 var is = require( '../is' );
+var window = require( '../window' );
 
 var corefn = ({
 
@@ -484,10 +485,16 @@ var corefn = ({
     var _p = this._private;
     var container = _p.container;
 
-    return ( _p.sizeCache = _p.sizeCache || ( container ? {
-      width: container.clientWidth,
-      height: container.clientHeight
-    } : { // fallback if no container (not 0 b/c can be used for dividing etc)
+    return ( _p.sizeCache = _p.sizeCache || ( container ? (function(){
+      var rect = container.getBoundingClientRect();
+      var style = window.getComputedStyle( container );
+      var val = function( name ){ return parseFloat( style.getPropertyValue( name ) ); };
+
+      return {
+        width: rect.width - val('padding-left') - val('padding-right') - val('border-left-width') - val('border-right-width'),
+        height: rect.height - val('padding-top') - val('padding-bottom') - val('border-top-width') - val('border-bottom-width')
+      };
+    })() : { // fallback if no container (not 0 b/c can be used for dividing etc)
       width: 1,
       height: 1
     } ) );

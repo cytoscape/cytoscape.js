@@ -23,7 +23,6 @@ var styfn = {};
     zeroOneNumber: { number: true, min: 0, max: 1, unitless: true },
     nOneOneNumber: { number: true, min: -1, max: 1, unitless: true },
     nonNegativeInt: { number: true, min: 0, integer: true, unitless: true },
-    pxPercentSize: { number: true, min: 0, allowPercent: true },
     position: { enums: [ 'parent', 'origin' ] },
     nodeSize: { number: true, min: 0, enums: [ 'label' ] },
     number: { number: true, unitless: true },
@@ -31,7 +30,7 @@ var styfn = {};
     size: { number: true, min: 0 },
     bidirectionalSize: { number: true }, // allows negative
     bidirectionalSizes: { number: true, multiple: true }, // allows negative
-    bgSize: { number: true, min: 0, allowPercent: true },
+    sizeMaybePercent: { number: true, min: 0, allowPercent: true },
     bgWH: { number: true, min: 0, allowPercent: true, enums: [ 'auto' ] },
     bgPos: { number: true, allowPercent: true },
     bgRepeat: { enums: [ 'repeat', 'repeat-x', 'repeat-y', 'no-repeat' ] },
@@ -231,11 +230,11 @@ var styfn = {};
     { name: 'position', type: t.position },
     { name: 'compound-sizing-wrt-labels', type: t.compoundIncludeLabels },
     { name: 'min-width', type: t.size },
-    { name: 'min-width-bias-left', type: t.pxPercentSize },
-    { name: 'min-width-bias-right', type: t.pxPercentSize },
+    { name: 'min-width-bias-left', type: t.sizeMaybePercent },
+    { name: 'min-width-bias-right', type: t.sizeMaybePercent },
     { name: 'min-height', type: t.size },
-    { name: 'min-height-bias-top', type: t.pxPercentSize },
-    { name: 'min-height-bias-bottom', type: t.pxPercentSize },
+    { name: 'min-height-bias-top', type: t.sizeMaybePercent },
+    { name: 'min-height-bias-bottom', type: t.sizeMaybePercent },
 
     // edge line
     { name: 'line-style', type: t.lineStyle },
@@ -280,7 +279,7 @@ var styfn = {};
 
   // pie backgrounds for nodes
   styfn.pieBackgroundN = 16; // because the pie properties are numbered, give access to a constant N (for renderer use)
-  props.push( { name: 'pie-size', type: t.bgSize } );
+  props.push( { name: 'pie-size', type: t.sizeMaybePercent } );
   for( var i = 1; i <= styfn.pieBackgroundN; i++ ){
     props.push( { name: 'pie-' + i + '-background-color', type: t.color } );
     props.push( { name: 'pie-' + i + '-background-size', type: t.percent } );

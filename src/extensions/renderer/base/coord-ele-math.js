@@ -306,7 +306,8 @@ BRp.findNearestElements = function( x, y, isTouch ){
     if( edge.pstyle('events').strValue === 'no' ){ return; }
 
     var rs = _p.rscratch;
-    var width = edge.pstyle( 'width' ).pfValue / 2 + edgeThreshold; // more like a distance radius from centre
+    var styleWidth = edge.pstyle( 'width' ).pfValue;
+    var width = styleWidth / 2 + edgeThreshold; // more like a distance radius from centre
     var widthSq = width * width;
     var width2 = width * 2;
     var src = _p.source;
@@ -343,32 +344,30 @@ BRp.findNearestElements = function( x, y, isTouch ){
     }
 
     // if we're close to the edge but didn't hit it, maybe we hit its arrows
-    if( inEdgeBB ){
-      var src = src || _p.source;
-      var tgt = tgt || _p.target;
 
-      var eWidth = edge.pstyle( 'width' ).pfValue;
-      var arSize = self.getArrowWidth( eWidth );
+    var src = src || _p.source;
+    var tgt = tgt || _p.target;
 
-      var arrows = [
-        { name: 'source', x: rs.arrowStartX, y: rs.arrowStartY, angle: rs.srcArrowAngle },
-        { name: 'target', x: rs.arrowEndX, y: rs.arrowEndY, angle: rs.tgtArrowAngle },
-        { name: 'mid-source', x: rs.midX, y: rs.midY, angle: rs.midsrcArrowAngle },
-        { name: 'mid-target', x: rs.midX, y: rs.midY, angle: rs.midtgtArrowAngle }
-      ];
+    var arSize = self.getArrowWidth( styleWidth );
 
-      for( var i = 0; i < arrows.length; i++ ){
-        var ar = arrows[ i ];
-        var shape = r.arrowShapes[ edge.pstyle( ar.name + '-arrow-shape' ).value ];
+    var arrows = [
+      { name: 'source', x: rs.arrowStartX, y: rs.arrowStartY, angle: rs.srcArrowAngle },
+      { name: 'target', x: rs.arrowEndX, y: rs.arrowEndY, angle: rs.tgtArrowAngle },
+      { name: 'mid-source', x: rs.midX, y: rs.midY, angle: rs.midsrcArrowAngle },
+      { name: 'mid-target', x: rs.midX, y: rs.midY, angle: rs.midtgtArrowAngle }
+    ];
 
-        if(
-          shape.roughCollide( x, y, arSize, ar.angle, { x: ar.x, y: ar.y }, edgeThreshold )
-           &&
-          shape.collide( x, y, arSize, ar.angle, { x: ar.x, y: ar.y }, edgeThreshold )
-        ){
-          addEle( edge );
-          break;
-        }
+    for( var i = 0; i < arrows.length; i++ ){
+      var ar = arrows[ i ];
+      var shape = r.arrowShapes[ edge.pstyle( ar.name + '-arrow-shape' ).value ];
+
+      if(
+        shape.roughCollide( x, y, arSize, ar.angle, { x: ar.x, y: ar.y }, edgeThreshold )
+         &&
+        shape.collide( x, y, arSize, ar.angle, { x: ar.x, y: ar.y }, edgeThreshold )
+      ){
+        addEle( edge );
+        return true;
       }
     }
 

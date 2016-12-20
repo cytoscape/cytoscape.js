@@ -310,7 +310,8 @@ BRp.findNearestElements = function( x, y, visibleElementsOnly, isTouch ){
     if( edge.pstyle('events').strValue === 'no' ){ return; }
 
     var rs = _p.rscratch;
-    var width = edge.pstyle( 'width' ).pfValue / 2 + edgeThreshold; // more like a distance radius from centre
+    var styleWidth = edge.pstyle( 'width' ).pfValue;
+    var width = styleWidth / 2 + edgeThreshold; // more like a distance radius from centre
     var widthSq = width * width;
     var width2 = width * 2;
     var src = _p.source;
@@ -369,12 +370,11 @@ BRp.findNearestElements = function( x, y, visibleElementsOnly, isTouch ){
     }
 
     // if we're close to the edge but didn't hit it, maybe we hit its arrows
-    if( inEdgeBB && passesVisibilityCheck() ){
+    if( passesVisibilityCheck() ){
       var src = src || _p.source;
       var tgt = tgt || _p.target;
 
-      var eWidth = edge.pstyle( 'width' ).pfValue;
-      var arSize = self.getArrowWidth( eWidth );
+      var arSize = self.getArrowWidth( styleWidth );
 
       var arrows = [
         { name: 'source', x: rs.arrowStartX, y: rs.arrowStartY, angle: rs.srcArrowAngle },
@@ -393,7 +393,7 @@ BRp.findNearestElements = function( x, y, visibleElementsOnly, isTouch ){
           shape.collide( x, y, arSize, ar.angle, { x: ar.x, y: ar.y }, edgeThreshold )
         ){
           addEle( edge );
-          break;
+          return true;
         }
       }
     }

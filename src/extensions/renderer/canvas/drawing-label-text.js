@@ -319,7 +319,7 @@ CRp.drawText = function( context, ele, prefix ){
     }
 
     if( ele.pstyle( 'text-wrap' ).value === 'wrap' ){
-      var lines = rscratch.labelWrapCachedLines;
+      var lines = util.getPrefixedProperty( rscratch, 'labelWrapCachedLines', prefix );
       var lineHeight = textH / lines.length;
 
       switch( valign ){

@@ -55,7 +55,7 @@
   * [Rezza](http://rezza.io)
   * [Sainsbury Laboratory](http://www.tsl.ac.uk/) : [PINet](http://pinet.tsl.ac.uk/)
   * [Sotera Defense Solutions, Inc.](http://www.soteradefense.com/) : [Graphene](http://sotera.github.io/graphene/)
-  * [Steemit](https://steemit.com/) : SteemStars
+  * [Steemit](https://steemit.com/) : [SteemStars](https://steemstars.herokuapp.com/)
   * [Stringify](https://www.stringify.com/)
   * [Trace](https://trace.risingstack.com/)
   * [University of Cambridge](http://www.cam.ac.uk/) : [Intermine](http://intermine.org/)

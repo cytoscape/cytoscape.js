@@ -1176,7 +1176,6 @@ BRp.load = function(){
             type: 'cxttapstart',
             cyPosition: { x: now[0], y: now[1] }
           } ) );
-          r.touchData.start = null;
         }
 
         if( r.touchData.start ){ r.touchData.start._private.grabbed = false; }
@@ -1251,14 +1250,6 @@ BRp.load = function(){
       // Tap, taphold
       // -----
 
-      r.touchData.startPosition = [];
-      for (var i=0; i<now.length; i++) {
-        earlier[i] = now[i];
-        r.touchData.startPosition[i] = now[i];
-      }
-
-      r.touchData.startGPosition = [ e.touches[0].clientX, e.touches[0].clientY ];
-
       r.touchData.singleTouchMoved = false;
       r.touchData.singleTouchStartTime = +new Date();
 
@@ -1281,6 +1272,18 @@ BRp.load = function(){
       }, r.tapholdDuration );
     }
 
+    if( e.touches.length >= 1 ){
+      var sPos = r.touchData.startPosition = [];
+
+      for( var i = 0; i < now.length; i++ ){
+        sPos[i] = earlier[i] = now[i];
+      }
+
+      var touch0 = e.touches[0];
+
+      r.touchData.startGPosition = [ touch0.clientX, touch0.clientY ];
+    }
+
   }, false );
 
   var touchmoveHandler;
@@ -1299,11 +1302,11 @@ BRp.load = function(){
     if( e.touches[1] ){ var pos = r.projectIntoViewport( e.touches[1].clientX, e.touches[1].clientY ); now[2] = pos[0]; now[3] = pos[1]; }
     if( e.touches[2] ){ var pos = r.projectIntoViewport( e.touches[2].clientX, e.touches[2].clientY ); now[4] = pos[0]; now[5] = pos[1]; }
 
+    var startGPos = r.touchData.startGPosition;
     var isOverThresholdDrag;
 
-    if( capture && e.touches[0] ){
+    if( capture && e.touches[0] && startGPos ){
       var disp = []; for (var j=0;j<now.length;j++) { disp[j] = now[j] - earlier[j]; }
-      var startGPos = r.touchData.startGPosition;
       var dx = e.touches[0].clientX - startGPos[0];
       var dx2 = dx * dx;
       var dy = e.touches[0].clientY - startGPos[1];
@@ -1331,16 +1334,23 @@ BRp.load = function(){
       // cancel ctx gestures if the distance b/t the fingers increases
       if( factorSq >= factorThresholdSq || distance2Sq >= distThresholdSq ){
         r.touchData.cxt = false;
-        if( r.touchData.start ){ r.touchData.start.unactivate(); r.touchData.start = null; }
+
         r.data.bgActivePosistion = undefined;
+
         r.redrawHint( 'select', true );
 
         var cxtEvt = new Event( e, {
           type: 'cxttapend',
           cyPosition: { x: now[0], y: now[1] }
         } );
+
         if( r.touchData.start ){
-          r.touchData.start.trigger( cxtEvt );
+          r.touchData.start
+            .unactivate()
+            .trigger( cxtEvt )
+          ;
+
+          r.touchData.start = null;
         } else {
           cy.trigger( cxtEvt );
         }
@@ -1432,8 +1442,10 @@ BRp.load = function(){
         r.redrawHint( 'drag', true );
 
         for( var i = 0; i < draggedEles.length; i++ ){
-          draggedEles[ i ]._private.grabbed = false;
-          draggedEles[ i ]._private.rscratch.inDragLayer = false;
+          var de_p = draggedEles[i]._private;
+
+          de_p.grabbed = false;
+          de_p.rscratch.inDragLayer = false;
         }
       }
 
@@ -1447,7 +1459,7 @@ BRp.load = function(){
       // var factor = Math.sqrt( distance2Sq ) / Math.sqrt( distance1Sq );
       var factor = distance2 / distance1;
 
-      if( factor != 1 && twoFingersStartInside ){
+      if( twoFingersStartInside ){
         // delta finger1
         var df1x = f1x2 - f1x1;
         var df1y = f1y2 - f1y1;
@@ -1484,7 +1496,7 @@ BRp.load = function(){
         };
 
         // remove dragged eles
-        if( r.touchData.start ){
+        if( r.touchData.start && r.touchData.start.active() ){
           var draggedEles = r.dragData.touchDragEles;
 
           freeDraggedElements( draggedEles );
@@ -1493,8 +1505,8 @@ BRp.load = function(){
           r.redrawHint( 'eles', true );
 
           r.touchData.start
-            .trigger( 'free' )
             .unactivate()
+            .trigger( 'free' )
           ;
         }
 

@@ -289,6 +289,17 @@ Only mid arrows are supported on haystack edges.
 
 ## Edge endpoints
 
+`source-endpoint` & `target-endpoint` : Specifies the endpoint of the source side of the edge and the target side of the edge, respectively.  There are several options for how those properties can be set:
+
+- A special, named value may be used.
+  - `outside-to-node` (default) indicates that the edge should be placed automatically to point towards the node's position and be placed on the outside of the node's shape.
+  - `inside-to-node` indicates the edge should go all the way inside the node and point directly on the node's position.  This is the same as specifying `0 0`.
+  - `outside-to-line` indicates the edge endpoint should be placed outside the node's shape where it would intersect the imaginary line from the source position to the target position.  This value is useful for automatically  avoiding invalid cases for bezier edges, especially with compound nodes.
+- Two numbers may specify the endpoint.  The numbers indicate a position relative to the source node's position.  The numbers can be specified as percent values (e.g. `50%`, which are relative to the node's width and height respectively) or as absolute distances (e.g. `100px` or `2em`).  
+- A single angle value (e.g. `90deg` or `1.57rad`) may specify that the endpoint should be placed at where the line formed from the node's position with the specified angle would intersect the node's shape.  The angle starts at 12 o'clock and progresses clockwise.
+
+For loops, this overrides the `loop-direction` and `loop-sweep` properties.  For haystack edges, this overrides the `haystack-radius`  property.
+
 The endpoints for edges can be shifted away from the source and target node.  This is not supported for `curve-style: haystack` edges, because haystacks must be within the radius of the node shape.
 
  * **`source-distance-from-node`** : A value that shifts the edge away from the source node (default `0px`).

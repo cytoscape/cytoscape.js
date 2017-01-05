@@ -298,12 +298,12 @@ Only mid arrows are supported on haystack edges.
 - Two numbers may specify the endpoint.  The numbers indicate a position relative to the source node's position.  The numbers can be specified as percent values (e.g. `50%`, which are relative to the node's width and height respectively) or as absolute distances (e.g. `100px` or `2em`).  
 - A single angle value (e.g. `90deg` or `1.57rad`) may specify that the endpoint should be placed at where the line formed from the node's position with the specified angle would intersect the node's shape.  The angle starts at 12 o'clock and progresses clockwise.
 
-For loops, this overrides the `loop-direction` and `loop-sweep` properties.  For haystack edges, this overrides the `haystack-radius`  property.
-
-The endpoints for edges can be shifted away from the source and target node.  This is not supported for `curve-style: haystack` edges, because haystacks must be within the radius of the node shape.
+The endpoints for edges can be shifted away from the source and target node:
 
  * **`source-distance-from-node`** : A value that shifts the edge away from the source node (default `0px`).
  * **`target-distance-from-node`** : A value that shifts the edge away from the target node (default `0px`).
+
+Endpoint modification is not supported for `curve-style: haystack` edges for performance reasons.
 
 
 ## Visibility

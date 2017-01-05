@@ -1,6 +1,7 @@
 'use strict';
 
 var util = require( '../util' );
+var is = require( '../is' );
 
 var styfn = {};
 
@@ -74,7 +75,20 @@ var styfn = {};
     textRotation: { number: true, units: 'deg|rad', implicitUnits: 'rad', enums: [ 'none', 'autorotate' ] },
     polygonPointList: { number: true, multiple: true, evenMultiple: true, min: -1, max: 1, unitless: true },
     edgeDistances: { enums: ['intersection', 'node-position'] },
-    edgeDirections: { enums: ['outside', 'inside'] },
+    edgeEndpoint: {
+      number: true, multiple: true, units: '%|px|em|deg|rad', implicitUnits: 'px',
+      enums: [ 'inside-to-node', 'outside-to-node', 'outside-to-line' ], singleEnum: true,
+      validate: function( valArr, unitsArr ){
+        switch( valArr.length ){
+          case 2: // can be % or px only
+            return unitsArr[0] !== 'deg' && unitsArr[0] !== 'rad' && unitsArr[1] !== 'deg' && unitsArr[1] !== 'rad';
+          case 1: // can be enum, deg, or rad only
+            return is.string( valArr[0] ) || unitsArr[0] === 'deg' || unitsArr[0] === 'rad';
+          default:
+            return false;
+        }
+      }
+    },
     easing: {
       regexes: [
         '^(spring)\\s*\\(\\s*(' + number + ')\\s*,\\s*(' + number + ')\\s*\\)$',
@@ -241,13 +255,14 @@ var styfn = {};
     { name: 'line-color', type: t.color },
     { name: 'curve-style', type: t.curveStyle },
     { name: 'haystack-radius', type: t.zeroOneNumber },
+    { name: 'source-endpoint', type: t.edgeEndpoint },
+    { name: 'target-endpoint', type: t.edgeEndpoint },
     { name: 'control-point-step-size', type: t.size },
     { name: 'control-point-distances', type: t.bidirectionalSizes },
     { name: 'control-point-weights', type: t.numbers },
     { name: 'segment-distances', type: t.bidirectionalSizes },
     { name: 'segment-weights', type: t.numbers },
     { name: 'edge-distances', type: t.edgeDistances },
-    { name: 'edge-pointing-direction', type: t.edgeDirections },
     { name: 'loop-direction', type: t.angle },
     { name: 'loop-sweep', type: t.angle },
     { name: 'source-distance-from-node', type: t.size },
@@ -334,6 +349,7 @@ styfn.getDefaultProperty = function( name ){
 
 styfn.getDefaultProperties = util.memoize( function(){
   var rawProps = util.extend( {
+    // common node/edge props
     'events': 'yes',
     'text-events': 'no',
     'text-valign': 'top',
@@ -398,10 +414,6 @@ styfn.getDefaultProperties = util.memoize( function(){
     'transition-duration': 0,
     'transition-delay': 0,
     'transition-timing-function': 'linear',
-    'loop-direction': '-135deg',
-    'loop-sweep': '-90deg',
-    'source-distance-from-node': 0,
-    'target-distance-from-node': 0,
 
     // node props
     'background-blacken': 0,
@@ -461,9 +473,14 @@ styfn.getDefaultProperties = util.memoize( function(){
     'segment-weights': 0.5,
     'segment-distances': 20,
     'edge-distances': 'intersection',
-    'edge-pointing-direction': 'inside',
     'curve-style': 'bezier',
-    'haystack-radius': 0
+    'haystack-radius': 0,
+    'loop-direction': '-135deg',
+    'loop-sweep': '-90deg',
+    'source-distance-from-node': 0,
+    'target-distance-from-node': 0,
+    'source-endpoint': 'outside-to-node',
+    'target-endpoint': 'outside-to-node'
   }, [
     { name: 'arrow-shape', value: 'none' },
     { name: 'arrow-color', value: '#999' },

@@ -51,7 +51,7 @@ CRp.drawInscribedImage = function( context, img, node ){
   var bgW = node.pstyle( 'background-width' );
   if( bgW.value !== 'auto' ){
     if( bgW.units === '%' ){
-      w = bgW.value / 100 * nodeW;
+      w = bgW.pfValue * nodeW;
     } else {
       w = bgW.pfValue;
     }
@@ -60,7 +60,7 @@ CRp.drawInscribedImage = function( context, img, node ){
   var bgH = node.pstyle( 'background-height' );
   if( bgH.value !== 'auto' ){
     if( bgH.units === '%' ){
-      h = bgH.value / 100 * nodeH;
+      h = bgH.pfValue * nodeH;
     } else {
       h = bgH.pfValue;
     }
@@ -85,14 +85,14 @@ CRp.drawInscribedImage = function( context, img, node ){
 
   var x = (nodeX - nodeW / 2); // left
   if( xPos.units === '%' ){
-    x += (nodeW - w) * xPos.value / 100;
+    x += (nodeW - w) * xPos.pfValue;
   } else {
     x += xPos.pfValue;
   }
 
   var y = (nodeY - nodeH / 2); // top
   if( yPos.units === '%' ){
-    y += (nodeH - h) * yPos.value / 100;
+    y += (nodeH - h) * yPos.pfValue;
   } else {
     y += yPos.pfValue;
   }

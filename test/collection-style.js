@@ -198,7 +198,7 @@ describe('Collection style', function(){
       var ret = cy.$('#n1').style('background-position-x', '50%').numericStyle('background-position-x');
 
       expect( ret ).to.be.a.number;
-      expect( ret ).to.equal( 50 );
+      expect( ret ).to.equal( 0.5 );
       expect( cy.$('#n1').numericStyleUnits('background-position-x') ).to.equal('%');
     });
 

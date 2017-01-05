@@ -247,6 +247,7 @@ var styfn = {};
     { name: 'segment-distances', type: t.bidirectionalSizes },
     { name: 'segment-weights', type: t.numbers },
     { name: 'edge-distances', type: t.edgeDistances },
+    { name: 'arrow-scale', type: t.number},
     { name: 'edge-pointing-direction', type: t.edgeDirections },
     { name: 'loop-direction', type: t.angle },
     { name: 'loop-sweep', type: t.angle },
@@ -463,7 +464,8 @@ styfn.getDefaultProperties = util.memoize( function(){
     'edge-distances': 'intersection',
     'edge-pointing-direction': 'inside',
     'curve-style': 'bezier',
-    'haystack-radius': 0
+    'haystack-radius': 0,
+    'arrow-scale': 1
   }, [
     { name: 'arrow-shape', value: 'none' },
     { name: 'arrow-color', value: '#999' },

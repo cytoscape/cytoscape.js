@@ -312,7 +312,7 @@ CRp.drawPie = function( context, node, nodeOpacity, pos ){
   }
 
   if( pieSize.units === '%' ){
-    radius = radius * pieSize.value / 100;
+    radius = radius * pieSize.pfValue;
   } else if( pieSize.pfValue !== undefined ){
     radius = pieSize.pfValue / 2;
   }

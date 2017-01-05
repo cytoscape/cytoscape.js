@@ -212,23 +212,45 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
 
     if( type.evenMultiple && vals.length % 2 !== 0 ){ return null; }
 
-    var valArr = vals.map( function( v ){
-      var p = self.parse( name, v, propIsBypass, 'multiple' );
+    var valArr = [];
+    var unitsArr = [];
+    var pfValArr = [];
+    var hasEnum = false;
 
-      if( p.pfValue != null ){
-        return p.pfValue;
+    for( var i = 0; i < vals.length; i++ ){
+      var p = self.parse( name, vals[i], propIsBypass, 'multiple' );
+
+      hasEnum = hasEnum || is.string( p.value );
+
+      valArr.push( p.value );
+      pfValArr.push( p.pfValue != null ? p.pfValue : p.value );
+      unitsArr.push( p.units );
+    }
+
+    if( type.validate && !type.validate( valArr, unitsArr ) ){
+      return null;
+    }
+
+    if( type.singleEnum && hasEnum ){
+      if( valArr.length === 1 && is.string( valArr[0] ) ){
+        return {
+          name: name,
+          value: valArr[0],
+          strValue: valArr[0],
+          bypass: propIsBypass
+        };
       } else {
-        return p.value;
+        return null;
       }
-    } );
+    }
 
     return {
       name: name,
       value: valArr,
-      pfValue: valArr,
+      pfValue: pfValArr,
       strValue: valArr.join( ' ' ),
       bypass: propIsBypass,
-      units: type.number && !type.unitless ? type.implicitUnits || 'px' : undefined
+      units: unitsArr
     };
   }
 
@@ -331,6 +353,11 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
       ret.pfValue = units === 'rad' ? value : math.deg2rad( value );
     }
 
+    // normalize value in %
+    if( units === '%' ){
+      ret.pfValue = value / 100;
+    }
+
     return ret;
 
   } else if( type.propList ){
@@ -370,6 +397,7 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
     return {
       name: name,
       value: tuple,
+      pfValue: tuple,
       strValue: '' + value,
       bypass: propIsBypass,
       roundValue: true

@@ -1337,7 +1337,7 @@ BRp.findEdgeControlPoints = function( edges ){
       'southwest': 0,
       'northeast': 0,
       'southeast': 0
-    }
+    };
 
     for( var i = 0; i < pairEdges.length; i++ ){
       edge = pairEdges[ i ];
@@ -1818,11 +1818,10 @@ BRp.calculateArrowAngles = function( edge ){
   var isSegments = rs.edgeType === 'segments';
   var isCompound = rs.edgeType === 'compound';
   var isSelf = rs.edgeType === 'self';
-  var isInside = rs.edgePointsTowards === 'inside';
 
   // Displacement gives direction for arrowhead orientation
   var dispX, dispY;
-  var startX, startY, endX, endY;
+  var startX, startY, endX, endY, midX, midY;
 
   var srcPos = edge._private.source._private.position;
   var tgtPos = edge._private.target._private.position;
@@ -1839,13 +1838,16 @@ BRp.calculateArrowAngles = function( edge ){
     endY = rs.arrowEndY;
   }
 
+  midX = rs.midX;
+  midY = rs.midY;
+
   // source
   //
 
-  if( !isInside && isSegments ){
+  if( isSegments ){
     dispX = startX - rs.segpts[0];
     dispY = startY - rs.segpts[1];
-  } else if( !isInside && ( isMultibezier || isCompound || isSelf || isBezier ) ){
+  } else if( isMultibezier || isCompound || isSelf || isBezier ){
     var pts = rs.allpts;
     var bX = math.qbezierAt( pts[0], pts[2], pts[4], 0.1 );
     var bY = math.qbezierAt( pts[1], pts[3], pts[5], 0.1 );
@@ -1853,8 +1855,8 @@ BRp.calculateArrowAngles = function( edge ){
     dispX = startX - bX;
     dispY = startY - bY;
   } else {
-    dispX = srcPos.x - startX;
-    dispY = srcPos.y - startY;
+    dispX = startX - midX;
+    dispY = startY - midY;
   }
 
   rs.srcArrowAngle = getAngleFromDisp( dispX, dispY );
@@ -1955,10 +1957,10 @@ BRp.calculateArrowAngles = function( edge ){
   // target
   //
 
-  if( !isInside && isSegments ){
+  if( isSegments ){
     dispX = endX - rs.segpts[ rs.segpts.length - 2 ];
     dispY = endY - rs.segpts[ rs.segpts.length - 1 ];
-  } else if( !isInside && ( isMultibezier || isCompound || isSelf || isBezier ) ){
+  } else if( isMultibezier || isCompound || isSelf || isBezier ){
     var pts = rs.allpts;
     var l = pts.length;
     var bX = math.qbezierAt( pts[l-6], pts[l-4], pts[l-2], 0.9 );
@@ -1967,8 +1969,8 @@ BRp.calculateArrowAngles = function( edge ){
     dispX = endX - bX;
     dispY = endY - bY;
   } else {
-    dispX = tgtPos.x - endX;
-    dispY = tgtPos.y - endY;
+    dispX = endX - midX;
+    dispY = endY - midY;
   }
 
   rs.tgtArrowAngle = getAngleFromDisp( dispX, dispY );
@@ -1994,6 +1996,50 @@ BRp.calculateLabelAngles = function( ele ){
   }
 };
 
+BRp.manualEndptToPx = function( node, prop ){
+  var r = this;
+  var npos = node.position();
+  var w = node.outerWidth();
+  var h = node.outerHeight();
+
+  if( prop.value.length === 2 ){
+    var p = [
+      prop.pfValue[0],
+      prop.pfValue[1]
+    ];
+
+    if( prop.units[0] === '%' ){
+      p[0] = p[0] * w;
+    }
+
+    if( prop.units[1] === '%' ){
+      p[1] = p[1] * h;
+    }
+
+    p[0] += npos.x;
+    p[1] += npos.y;
+
+    return p;
+  } else {
+    var angle = prop.pfValue[0];
+
+    angle = -Math.PI / 2 + angle; // start at 12 o'clock
+
+    var l = 2 * Math.max( w, h );
+
+    var p = [
+      npos.x + Math.cos( angle ) * l,
+      npos.y + Math.sin( angle ) * l
+    ];
+
+    return r.nodeShapes[ this.getNodeShape( node ) ].intersectLine(
+      npos.x, npos.y,
+      w, h,
+      p[0], p[1],
+      0
+    );
+  }
+};
 
 BRp.findEndpoints = function( edge ){
   var r = this;
@@ -2023,10 +2069,11 @@ BRp.findEndpoints = function( edge ){
   var lines = et === 'straight' || et === 'segments';
   var segments = et === 'segments';
   var hasEndpts = bezier || multi || lines;
-  var pointsTowards = self ? 'inside' : edge.pstyle('edge-pointing-direction').value;
-  var inside = pointsTowards === 'inside';
+  var srcManEndpt = edge.pstyle('source-endpoint');
+  var tgtManEndpt = edge.pstyle('target-endpoint');
 
-  rs.edgePointsTowards = pointsTowards;
+  rs.srcManEndpt = srcManEndpt;
+  rs.tgtManEndpt = tgtManEndpt;
 
   var p1; // last known point of edge on target side
   var p2; // last known point of edge on source side
@@ -2048,23 +2095,27 @@ BRp.findEndpoints = function( edge ){
     p2 = srcArrowFromPt;
   }
 
-  p1_i = p1;
-  p2_i = p2;
+  if( tgtManEndpt.value === 'inside-to-node' ){
+    intersect = [ tgtPos.x, tgtPos.y ];
+  } else if( tgtManEndpt.units ){
+    intersect = this.manualEndptToPx( target, tgtManEndpt );
+  } else {
+    if( tgtManEndpt.value === 'outside-to-node' ){
+      p1_i = p1;
+    } else if( tgtManEndpt.value === 'outside-to-line' ){
+      p1_i = [ srcPos.x, srcPos.y ];
+    }
 
-  if( !inside ){
-    p1_i = [ srcPos.x, srcPos.y ];
-    p2_i = [ tgtPos.x, tgtPos.y ];
+    intersect = r.nodeShapes[ this.getNodeShape( target ) ].intersectLine(
+      tgtPos.x,
+      tgtPos.y,
+      target.outerWidth(),
+      target.outerHeight(),
+      p1_i[0],
+      p1_i[1],
+      0
+    );
   }
-
-  intersect = r.nodeShapes[ this.getNodeShape( target ) ].intersectLine(
-    tgtPos.x,
-    tgtPos.y,
-    target.outerWidth(),
-    target.outerHeight(),
-    p1_i[0],
-    p1_i[1],
-    0
-  );
 
   var arrowEnd = math.shortenIntersection(
     intersect,
@@ -2083,15 +2134,27 @@ BRp.findEndpoints = function( edge ){
   rs.arrowEndX = arrowEnd[0];
   rs.arrowEndY = arrowEnd[1];
 
-  intersect = r.nodeShapes[ this.getNodeShape( source ) ].intersectLine(
-    srcPos.x,
-    srcPos.y,
-    source.outerWidth(),
-    source.outerHeight(),
-    p2_i[0],
-    p2_i[1],
-    0
-  );
+  if( srcManEndpt.value === 'inside-to-node' ){
+    intersect = [ srcPos.x, srcPos.y ];
+  } else if( srcManEndpt.units ){
+    intersect = this.manualEndptToPx( source, srcManEndpt );
+  } else {
+    if( srcManEndpt.value === 'outside-to-node' ){
+      p2_i = p2;
+    } else if( srcManEndpt.value === 'outside-to-line' ){
+      p2_i = [ tgtPos.x, tgtPos.y ];
+    }
+
+    intersect = r.nodeShapes[ this.getNodeShape( source ) ].intersectLine(
+      srcPos.x,
+      srcPos.y,
+      source.outerWidth(),
+      source.outerHeight(),
+      p2_i[0],
+      p2_i[1],
+      0
+    );
+  }
 
   var arrowStart = math.shortenIntersection(
     intersect,

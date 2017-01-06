@@ -231,7 +231,8 @@ CRp.drawArrowShape = function( edge, arrowType, context, fill, edgeWidth, shape,
   var path;
   var canvasContext = context;
   var translation = { x: x, y: y };
-  var size = this.getArrowWidth( edgeWidth );
+  var scale = edge.pstyle( 'arrow-scale' ).value;
+  var size = this.getArrowWidth( edgeWidth, scale );
   var shapeImpl = r.arrowShapes[ shape ];
 
   if( usePaths ){

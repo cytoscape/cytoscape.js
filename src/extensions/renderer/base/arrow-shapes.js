@@ -219,7 +219,7 @@ BRp.registerArrowShapes = function(){
     },
 
     spacing: function( edge ){
-      return renderer.getArrowWidth( edge.pstyle( 'width' ).pfValue )
+      return renderer.getArrowWidth( edge.pstyle( 'width' ).pfValue, edge.pstyle( 'arrow-scale' ).value )
         * this.radius;
     }
   } );

@@ -22,6 +22,11 @@ var elesfn = ({
         var newPos = fn.call( node, i, node );
         var pos = node.position();
 
+        if ( options.scalingFactor && options.scalingFactor !== 1){
+          var scale = Math.abs(options.scalingFactor);
+          newPos = util.extend( {}, newPos, { x: newPos.x * scale, y: newPos.y * scale } );
+        }
+
         if( !is.number( pos.x ) || !is.number( pos.y ) ){
           node.silentPosition( { x: 0, y: 0 } );
         }
@@ -73,6 +78,17 @@ var elesfn = ({
       });
     } else {
       nodes.positions( fn );
+
+      if ( options.scalingFactor && options.scalingFactor !== 1){
+        nodes.positions( function( i, node ){
+          var pos = node.position();
+          var scale = Math.abs(options.scalingFactor);
+          return {
+            x: pos.x * scale,
+            y: pos.y * scale
+          };
+        });
+      }
 
       if( options.fit ){
         cy.fit( options.eles, options.padding );

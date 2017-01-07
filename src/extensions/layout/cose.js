@@ -84,7 +84,10 @@ var defaults = {
   minTemp: 1.0,
 
   // Whether to use threading to speed up the layout
-  useMultitasking: true
+  useMultitasking: true,
+
+  // Applies a multiplicative factor (>0) to expand or compress the overall area that the nodes take up
+  scalingFactor: undefined
 };
 
 

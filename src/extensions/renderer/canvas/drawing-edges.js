@@ -183,20 +183,20 @@ CRp.drawArrowhead = function( context, edge, prefix, x, y, angle ){
 
   var self = this;
   var arrowShape = edge.pstyle( prefix + '-arrow-shape' ).value;
-
-  if( arrowShape === 'none' ){
-    return;
-  }
-
-  var gco = context.globalCompositeOperation;
+  if( arrowShape === 'none' ) { return; }
 
   var arrowClearFill = edge.pstyle( prefix + '-arrow-fill' ).value === 'hollow' ? 'both' : 'filled';
   var arrowFill = edge.pstyle( prefix + '-arrow-fill' ).value;
+  var edgeWidth = edge.pstyle( 'width' ).pfValue;
   var opacity = edge.pstyle( 'opacity' ).value;
 
-  if( arrowShape === 'half-triangle-overshot' ){
-    arrowFill = 'hollow';
-    arrowClearFill = 'hollow';
+  var gco = context.globalCompositeOperation;
+
+  var shapeImpl = self.arrowShapes[ arrowShape ];
+
+  // check if the shape needs both fill and stroke operations to be drawn
+  if( shapeImpl.forceStroke && arrowFill === 'filled' ){
+    arrowFill = 'both';
   }
 
   if( opacity !== 1 || arrowFill === 'hollow' ){ // then extra clear is needed
@@ -206,8 +206,7 @@ CRp.drawArrowhead = function( context, edge, prefix, x, y, angle ){
     self.strokeStyle( context, 255, 255, 255, 1 );
 
     self.drawArrowShape( edge, prefix, context,
-      arrowClearFill, edge.pstyle( 'width' ).pfValue, edge.pstyle( prefix + '-arrow-shape' ).value,
-      x, y, angle
+      arrowClearFill, edgeWidth, arrowShape, x, y, angle
     );
 
     context.globalCompositeOperation = gco;
@@ -218,8 +217,7 @@ CRp.drawArrowhead = function( context, edge, prefix, x, y, angle ){
   self.strokeStyle( context, color[0], color[1], color[2], opacity );
 
   self.drawArrowShape( edge, prefix, context,
-    arrowFill, edge.pstyle( 'width' ).pfValue, edge.pstyle( prefix + '-arrow-shape' ).value,
-    x, y, angle
+    arrowFill, edgeWidth, arrowShape, x, y, angle
   );
 };
 
@@ -254,7 +252,7 @@ CRp.drawArrowShape = function( edge, arrowType, context, fill, edgeWidth, shape,
   if( context.beginPath ){ context.beginPath(); }
 
   if( !pathCacheHit ){
-    shapeImpl.draw( context, size, angle, translation );
+    shapeImpl.draw( context, size, angle, translation, edgeWidth );
   }
 
   if( !shapeImpl.leavePathOpen && context.closePath ){
@@ -280,7 +278,6 @@ CRp.drawArrowShape = function( edge, arrowType, context, fill, edgeWidth, shape,
     } else {
       context.stroke();
     }
-
   }
 };
 

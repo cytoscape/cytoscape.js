@@ -10,7 +10,6 @@ var defaults = {
   padding: 30, // padding on fit
   circle: false, // put depths in concentric circles if true, put depths top down if false
   spacingFactor: 1.75, // positive spacing factor, larger => more space between nodes (N.B. n/a if causes overlap)
-  scalingFactor: undefined, // Applies a multiplicative factor (>0) to expand or compress the overall area that the nodes take up
   boundingBox: undefined, // constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
   avoidOverlap: true, // prevents node overlap, may overflow boundingBox if not enough space
   roots: undefined, // the roots of the trees
@@ -281,7 +280,6 @@ BreadthFirstLayout.prototype.run = function(){
 
       minDistance = Math.max( minDistance, w, h );
     }
-    minDistance *= options.spacingFactor; // just to have some nice spacing
   }
 
   // get the weighted percent for an element based on its connectivity to other levels

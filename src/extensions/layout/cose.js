@@ -87,7 +87,7 @@ var defaults = {
   useMultitasking: true,
 
   // Applies a multiplicative factor (>0) to expand or compress the overall area that the nodes take up
-  scalingFactor: undefined
+  spacingFactor: undefined
 };
 
 

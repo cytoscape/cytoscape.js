@@ -22,9 +22,18 @@ var elesfn = ({
         var newPos = fn.call( node, i, node );
         var pos = node.position();
 
-        if ( options.scalingFactor && options.scalingFactor !== 1){
-          var scale = Math.abs(options.scalingFactor);
-          newPos = util.extend( {}, newPos, { x: newPos.x * scale, y: newPos.y * scale } );
+        if ( options.spacingFactor && options.spacingFactor !== 1){
+          var spacing = Math.abs(options.spacingFactor);
+          var nbb = nodes.boundingBox();
+          var center = {
+            x: nbb.x1 + nbb.w / 2,
+            y: nbb.y1 + nbb.h / 2
+          };
+          var spacingVector = { // scale the spacing from center of bounding box (not necessarily 0,0)
+            x: (newPos.x - center.x) * spacing,
+            y: (newPos.y - center.y) * spacing
+          };
+          newPos = util.extend( {}, newPos, { x: center.x + spacingVector.x, y: center.y + spacingVector.y } );
         }
 
         if( !is.number( pos.x ) || !is.number( pos.y ) ){
@@ -79,13 +88,22 @@ var elesfn = ({
     } else {
       nodes.positions( fn );
 
-      if ( options.scalingFactor && options.scalingFactor !== 1){
-        nodes.positions( function( i, node ){
+      if ( options.spacingFactor && options.spacingFactor !== 1){
+        var spacing = Math.abs(options.spacingFactor);
+        nodes.positions( function (i, node){
           var pos = node.position();
-          var scale = Math.abs(options.scalingFactor);
+          var nbb = nodes.boundingBox();
+          var center = {
+            x: nbb.x1 + nbb.w / 2,
+            y: nbb.y1 + nbb.h / 2
+          };
+          var scaleVector = { // scale from center of bounding box (not necessarily 0,0)
+            x: (pos.x - center.x) * spacing,
+            y: (pos.y - center.y) * spacing
+          };
           return {
-            x: pos.x * scale,
-            y: pos.y * scale
+            x: center.x + scaleVector.x,
+            y: center.y + scaleVector.y
           };
         });
       }

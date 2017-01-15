@@ -22,6 +22,10 @@ var elesfn = ({
         var newPos = fn.call( node, i, node );
         var pos = node.position();
 
+        if( !is.number( pos.x ) || !is.number( pos.y ) ){
+          node.silentPosition( { x: 0, y: 0 } );
+        }
+
         if ( options.spacingFactor && options.spacingFactor !== 1){
           var spacing = Math.abs(options.spacingFactor);
           var nbb = nodes.boundingBox();
@@ -34,10 +38,6 @@ var elesfn = ({
             y: (newPos.y - center.y) * spacing
           };
           newPos = util.extend( {}, newPos, { x: center.x + spacingVector.x, y: center.y + spacingVector.y } );
-        }
-
-        if( !is.number( pos.x ) || !is.number( pos.y ) ){
-          node.silentPosition( { x: 0, y: 0 } );
         }
 
         var ani = node.animation( {

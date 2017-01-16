@@ -1,5 +1,7 @@
 ## Details
 
+Only JSON-serialisable data may be put in `ele.data()`.  For temporary data or non-serialisable data, use [`ele.scratch()`](#ele.scratch).
+
 The following fields are immutable:
 
  * `id` : The `id` field is used to uniquely identify an element in the graph.

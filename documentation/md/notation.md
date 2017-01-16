@@ -89,9 +89,9 @@ cytoscape({
       // NB the group field can be automatically inferred for you but specifying it
       // gives you nice debug messages if you mis-init elements
 
-      // NB: id fields must be strings or numbers
-      data: { // element data (put dev data here)
-        id: 'n1', // mandatory for each element, assigned automatically on undefined
+
+      data: { // element data (put json serialisable dev data here)
+        id: 'n1', // mandatory (string or number) id for each element, assigned automatically on undefined
         parent: 'nparent', // indicates the compound node parent id; not defined => no parent
       },
 

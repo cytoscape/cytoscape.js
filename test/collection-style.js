@@ -577,4 +577,33 @@ describe('Collection style', function(){
 
   });
 
+  describe('eles.boundingBox()', function(){
+    it('is a nonzero box for node', function(){
+      var bb = cy.nodes()[0].boundingBox();
+
+      expect( bb.w ).is.above( 0 );
+      expect( bb.h ).is.above( 0 );
+    });
+
+    it('is a nonzero box for node without labels', function(){
+      var bb = cy.nodes()[0].boundingBox({ includeLabels: false });
+
+      expect( bb.w ).is.above( 0 );
+      expect( bb.h ).is.above( 0 );
+    });
+
+    it('is a nonzero box for node without labels using cache', function(){
+      var n = cy.nodes()[0];
+
+      // make sure both default case and no label case are cached
+      n.boundingBox();
+      n.boundingBox({ includeLabels: false });
+
+      var bb = cy.nodes()[0].boundingBox({ includeLabels: false });
+
+      expect( bb.w ).is.above( 0 );
+      expect( bb.h ).is.above( 0 );
+    });
+  });
+
 });

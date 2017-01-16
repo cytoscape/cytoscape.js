@@ -1,7 +1,8 @@
 {
     "env": {
         "commonjs": true,
-        "shared-node-browser": true
+        "shared-node-browser": true,
+        "mocha": true
     },
     "extends": "eslint:recommended",
     "rules": {

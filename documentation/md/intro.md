@@ -50,6 +50,7 @@
   * [Kartoteka](http://www.kartoteka.ru/vizual/)
   * [Musicalized](http://en.musicalized.com/full)
   * [NDex](http://www.ndexbio.org/)
+  * [OHDSI](http://www.ohdsi.org/)
   * [Pathway Commons](http://www.pathwaycommons.org)
   * [py2cytoscape](https://github.com/idekerlab/py2cytoscape)
   * [Rezza](http://rezza.io)

@@ -2188,13 +2188,13 @@ BRp.findEndpoints = function( edge ){
 BRp.getArrowWidth = BRp.getArrowHeight = function( edgeWidth, scale ){
   var cache = this.arrowWidthCache = this.arrowWidthCache || {};
 
-  var cachedVal = cache[ edgeWidth ];
+  var cachedVal = cache[ edgeWidth + ', ' + scale ];
   if( cachedVal ){
     return cachedVal;
   }
 
   cachedVal =  Math.max( Math.pow( edgeWidth * 13.37, 0.9 ), 29 ) * scale;
-  cache[ edgeWidth ] = cachedVal;
+  cache[ edgeWidth + ', ' + scale ] = cachedVal;
 
   return cachedVal;
 };

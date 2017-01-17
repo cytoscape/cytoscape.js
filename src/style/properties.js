@@ -263,7 +263,7 @@ var styfn = {};
     { name: 'segment-distances', type: t.bidirectionalSizes },
     { name: 'segment-weights', type: t.numbers },
     { name: 'edge-distances', type: t.edgeDistances },
-    { name: 'arrow-scale', type: t.size},
+    { name: 'arrow-scale', type: t.number},
     { name: 'loop-direction', type: t.angle },
     { name: 'loop-sweep', type: t.angle },
     { name: 'source-distance-from-node', type: t.size },

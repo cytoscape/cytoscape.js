@@ -15,6 +15,22 @@ var elesfn = ({
 
     layout.animations = [];
 
+    var calculateSpacing = function( spacing, nodes, pos ){
+      var nbb = nodes.boundingBox();
+      var center = {
+        x: nbb.x1 + nbb.w / 2,
+        y: nbb.y1 + nbb.h / 2
+      };
+      var spacingVector = { // scale from center of bounding box (not necessarily 0,0)
+        x: (pos.x - center.x) * spacing,
+        y: (pos.y - center.y) * spacing
+      };
+      return {
+        x: center.x + spacingVector.x,
+        y: center.y + spacingVector.y
+      };
+    };
+
     if( options.animate ){
       for( var i = 0; i < nodes.length; i++ ){
         var node = nodes[ i ];
@@ -28,16 +44,7 @@ var elesfn = ({
 
         if ( options.spacingFactor && options.spacingFactor !== 1){
           var spacing = Math.abs(options.spacingFactor);
-          var nbb = nodes.boundingBox();
-          var center = {
-            x: nbb.x1 + nbb.w / 2,
-            y: nbb.y1 + nbb.h / 2
-          };
-          var spacingVector = { // scale the spacing from center of bounding box (not necessarily 0,0)
-            x: (newPos.x - center.x) * spacing,
-            y: (newPos.y - center.y) * spacing
-          };
-          newPos = util.extend( {}, newPos, { x: center.x + spacingVector.x, y: center.y + spacingVector.y } );
+          newPos = calculateSpacing(spacing, nodes, newPos);
         }
 
         var ani = node.animation( {
@@ -90,21 +97,9 @@ var elesfn = ({
 
       if ( options.spacingFactor && options.spacingFactor !== 1){
         var spacing = Math.abs(options.spacingFactor);
-        nodes.positions( function (i, node){
+        nodes.positions( function( i, node){
           var pos = node.position();
-          var nbb = nodes.boundingBox();
-          var center = {
-            x: nbb.x1 + nbb.w / 2,
-            y: nbb.y1 + nbb.h / 2
-          };
-          var scaleVector = { // scale from center of bounding box (not necessarily 0,0)
-            x: (pos.x - center.x) * spacing,
-            y: (pos.y - center.y) * spacing
-          };
-          return {
-            x: center.x + scaleVector.x,
-            y: center.y + scaleVector.y
-          };
+          return calculateSpacing(spacing, nodes, pos);
         });
       }
 

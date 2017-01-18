@@ -2,7 +2,7 @@
 
 /*!
 
-Cytoscape.js 2.7.13 (MIT licensed)
+Cytoscape.js 2.7.14 (MIT licensed)
 
 Copyright (c) The Cytoscape Consortium
 
@@ -3392,6 +3392,17 @@ elesfn.recalculateRenderedStyle = function( useCache ){
   return this;
 };
 
+function filledBbOpts( options ){
+  return {
+    includeNodes: util.default( options.includeNodes, defBbOpts.includeNodes ),
+    includeEdges: util.default( options.includeEdges, defBbOpts.includeEdges ),
+    includeLabels: util.default( options.includeLabels, defBbOpts.includeLabels ),
+    includeShadows: util.default( options.includeShadows, defBbOpts.includeShadows ),
+    includeOverlays: util.default( options.includeOverlays, defBbOpts.includeOverlays ),
+    useCache: util.default( options.useCache, defBbOpts.useCache )
+  };
+}
+
 elesfn.boundingBox = function( options ){
   // the main usecase is ele.boundingBox() for a single element with no/def options
   // specified s.t. the cache is used, so check for this case to make it faster by
@@ -3399,6 +3410,8 @@ elesfn.boundingBox = function( options ){
   if( this.length === 1 && this[0]._private.bbCache && (options === undefined || options.useCache === undefined || options.useCache === true) ){
     if( options === undefined ){
       options = defBbOpts;
+    } else {
+      options = filledBbOpts( options );
     }
 
     return cachedBoundingBoxImpl( this[0], options );
@@ -3413,14 +3426,7 @@ elesfn.boundingBox = function( options ){
 
   options = options || util.staticEmptyObject();
 
-  var opts = {
-    includeNodes: util.default( options.includeNodes, defBbOpts.includeNodes ),
-    includeEdges: util.default( options.includeEdges, defBbOpts.includeEdges ),
-    includeLabels: util.default( options.includeLabels, defBbOpts.includeLabels ),
-    includeShadows: util.default( options.includeShadows, defBbOpts.includeShadows ),
-    includeOverlays: util.default( options.includeOverlays, defBbOpts.includeOverlays ),
-    useCache: util.default( options.useCache, defBbOpts.useCache )
-  };
+  var opts = filledBbOpts( options );
 
   var eles = this;
   var cy = eles.cy();
@@ -7572,6 +7578,7 @@ module.exports = corefn;
 'use strict';
 
 var is = _dereq_( '../is' );
+var window = _dereq_( '../window' );
 
 var corefn = ({
 
@@ -8055,10 +8062,16 @@ var corefn = ({
     var _p = this._private;
     var container = _p.container;
 
-    return ( _p.sizeCache = _p.sizeCache || ( container ? {
-      width: container.clientWidth,
-      height: container.clientHeight
-    } : { // fallback if no container (not 0 b/c can be used for dividing etc)
+    return ( _p.sizeCache = _p.sizeCache || ( container ? (function(){
+      var rect = container.getBoundingClientRect();
+      var style = window.getComputedStyle( container );
+      var val = function( name ){ return parseFloat( style.getPropertyValue( name ) ); };
+
+      return {
+        width: rect.width - val('padding-left') - val('padding-right') - val('border-left-width') - val('border-right-width'),
+        height: rect.height - val('padding-top') - val('padding-bottom') - val('border-top-width') - val('border-bottom-width')
+      };
+    })() : { // fallback if no container (not 0 b/c can be used for dividing etc)
       width: 1,
       height: 1
     } ) );
@@ -8114,7 +8127,7 @@ corefn.autoungrabifyNodes = corefn.autoungrabify;
 
 module.exports = corefn;
 
-},{"../is":83}],44:[function(_dereq_,module,exports){
+},{"../is":83,"../window":107}],44:[function(_dereq_,module,exports){
 'use strict';
 
 // use this module to cherry pick functions into your prototype
@@ -12057,6 +12070,7 @@ var math = _dereq_( '../../../math' );
 var is = _dereq_( '../../../is' );
 var util = _dereq_( '../../../util' );
 var zIndexSort = _dereq_( '../../../collection/zsort' );
+var window = _dereq_( '../../../window' );
 
 var BRp = {};
 
@@ -12231,23 +12245,41 @@ BRp.recalculateRenderedStyle = function( eles, useCache ){
 
 // Project mouse
 BRp.projectIntoViewport = function( clientX, clientY ){
+  var cy = this.cy;
   var offsets = this.findContainerClientCoords();
   var offsetLeft = offsets[0];
   var offsetTop = offsets[1];
+  var pan = cy.pan();
+  var zoom = cy.zoom();
 
-  var x = clientX - offsetLeft;
-  var y = clientY - offsetTop;
+  var x = ( clientX - offsetLeft - pan.x ) / zoom;
+  var y = ( clientY - offsetTop - pan.y ) / zoom;
 
-  x -= this.cy.pan().x; y -= this.cy.pan().y; x /= this.cy.zoom(); y /= this.cy.zoom();
   return [ x, y ];
 };
 
 BRp.findContainerClientCoords = function(){
+  if( this.containerBB ){
+    return this.containerBB;
+  }
+
   var container = this.container;
+  var rect = container.getBoundingClientRect();
+  var style = window.getComputedStyle( container );
+  var styleValue = function( name ){ return parseFloat( style.getPropertyValue( name ) ); };
+  var extra = {
+    left: styleValue('padding-left') + styleValue('border-left-width'),
+    right: styleValue('padding-right') + styleValue('border-right-width'),
+    top: styleValue('padding-top') + styleValue('border-top-width'),
+    bottom: styleValue('padding-bottom') + styleValue('border-bottom-width')
+  };
 
-  var bb = this.containerBB = this.containerBB || container.getBoundingClientRect();
-
-  return [ bb.left, bb.top, bb.right - bb.left, bb.bottom - bb.top ];
+  return ( this.containerBB = [ // x, y, w, h
+    rect.left + extra.left,
+    rect.top + extra.top,
+    rect.right - rect.left - extra.left - extra.right,
+    rect.bottom - rect.top - extra.top - extra.bottom
+  ] );
 };
 
 BRp.invalidateContainerClientCoordsCache = function(){
@@ -12344,7 +12376,8 @@ BRp.findNearestElements = function( x, y, visibleElementsOnly, isTouch ){
     if( edge.pstyle('events').strValue === 'no' ){ return; }
 
     var rs = _p.rscratch;
-    var width = edge.pstyle( 'width' ).pfValue / 2 + edgeThreshold; // more like a distance radius from centre
+    var styleWidth = edge.pstyle( 'width' ).pfValue;
+    var width = styleWidth / 2 + edgeThreshold; // more like a distance radius from centre
     var widthSq = width * width;
     var width2 = width * 2;
     var src = _p.source;
@@ -12403,12 +12436,11 @@ BRp.findNearestElements = function( x, y, visibleElementsOnly, isTouch ){
     }
 
     // if we're close to the edge but didn't hit it, maybe we hit its arrows
-    if( inEdgeBB && passesVisibilityCheck() ){
+    if( passesVisibilityCheck() ){
       var src = src || _p.source;
       var tgt = tgt || _p.target;
 
-      var eWidth = edge.pstyle( 'width' ).pfValue;
-      var arSize = self.getArrowWidth( eWidth );
+      var arSize = self.getArrowWidth( styleWidth );
 
       var arrows = [
         { name: 'source', x: rs.arrowStartX, y: rs.arrowStartY, angle: rs.srcArrowAngle },
@@ -12427,7 +12459,7 @@ BRp.findNearestElements = function( x, y, visibleElementsOnly, isTouch ){
           shape.collide( x, y, arSize, ar.angle, { x: ar.x, y: ar.y }, edgeThreshold )
         ){
           addEle( edge );
-          break;
+          return true;
         }
       }
     }
@@ -14098,7 +14130,7 @@ BRp.getArrowWidth = BRp.getArrowHeight = function( edgeWidth ){
 
 module.exports = BRp;
 
-},{"../../../collection/zsort":32,"../../../is":83,"../../../math":85,"../../../util":100}],59:[function(_dereq_,module,exports){
+},{"../../../collection/zsort":32,"../../../is":83,"../../../math":85,"../../../util":100,"../../../window":107}],59:[function(_dereq_,module,exports){
 'use strict';
 
 var BRp = {};
@@ -14654,8 +14686,53 @@ BRp.load = function(){
     return r.selection[4] !== 0;
   };
 
+  var eventInContainer = function( e ){
+    // save cycles if mouse events aren't to be captured
+    var containerPageCoords = r.findContainerClientCoords();
+    var x = containerPageCoords[0];
+    var y = containerPageCoords[1];
+    var width = containerPageCoords[2];
+    var height = containerPageCoords[3];
+
+    var positions = e.touches ? e.touches : [ e ];
+    var atLeastOnePosInside = false;
+
+    for( var i = 0; i < positions.length; i++ ){
+      var p = positions[i];
+
+      if( x <= p.clientX && p.clientX <= x + width
+        && y <= p.clientY && p.clientY <= y + height
+      ){
+        atLeastOnePosInside = true;
+        break;
+      }
+    }
+
+    if( !atLeastOnePosInside ){ return false; }
+
+    var container = r.container;
+    var target = e.target;
+    var tParent = target.parentNode;
+    var containerIsTarget = false;
+
+    while( tParent ){
+      if( tParent === container ){
+        containerIsTarget = true;
+        break;
+      }
+
+      tParent = tParent.parentNode;
+    }
+
+    if( !containerIsTarget ){ return false; } // if target is outisde cy container, then this event is not for us
+
+    return true;
+  };
+
   // Primary key
   r.registerBinding( r.container, 'mousedown', function mousedownHandler( e ){
+    if( !eventInContainer(e) ){ return; }
+
     e.preventDefault();
     r.hoverData.capture = true;
     r.hoverData.which = e.which;
@@ -14801,38 +14878,11 @@ BRp.load = function(){
   }, false );
 
   r.registerBinding( window, 'mousemove', function mousemoveHandler( e ){ // eslint-disable-line no-undef
-    var preventDefault = false;
     var capture = r.hoverData.capture;
 
-    // save cycles if mouse events aren't to be captured
-    if( !capture ){
-      var containerPageCoords = r.findContainerClientCoords();
+    if( !capture && !eventInContainer(e) ){ return; }
 
-      if( e.clientX > containerPageCoords[0] && e.clientX < containerPageCoords[0] + r.canvasWidth
-        && e.clientY > containerPageCoords[1] && e.clientY < containerPageCoords[1] + r.canvasHeight
-      ){
-        // inside container bounds so OK
-      } else {
-        return;
-      }
-
-      var cyContainer = r.container;
-      var target = e.target;
-      var tParent = target.parentNode;
-      var containerIsTarget = false;
-
-      while( tParent ){
-        if( tParent === cyContainer ){
-          containerIsTarget = true;
-          break;
-        }
-
-        tParent = tParent.parentNode;
-      }
-
-      if( !containerIsTarget ){ return; } // if target is outisde cy container, then this event is not for us
-    }
-
+    var preventDefault = false;
     var cy = r.cy;
     var zoom = cy.zoom();
     var gpos = [ e.clientX, e.clientY ];
@@ -15385,6 +15435,8 @@ BRp.load = function(){
 
   var touchstartHandler;
   r.registerBinding( r.container, 'touchstart', touchstartHandler = function( e ){
+    if( !eventInContainer(e) ){ return; }
+
     r.touchData.capture = true;
     r.data.bgActivePosistion = undefined;
 
@@ -15458,7 +15510,6 @@ BRp.load = function(){
             type: 'cxttapstart',
             cyPosition: { x: now[0], y: now[1] }
           } ) );
-          r.touchData.start = null;
         }
 
         if( r.touchData.start ){ r.touchData.start._private.grabbed = false; }
@@ -15533,14 +15584,6 @@ BRp.load = function(){
       // Tap, taphold
       // -----
 
-      r.touchData.startPosition = [];
-      for (var i=0; i<now.length; i++) {
-        earlier[i] = now[i];
-        r.touchData.startPosition[i] = now[i];
-      }
-
-      r.touchData.startGPosition = [ e.touches[0].clientX, e.touches[0].clientY ];
-
       r.touchData.singleTouchMoved = false;
       r.touchData.singleTouchStartTime = +new Date();
 
@@ -15563,12 +15606,27 @@ BRp.load = function(){
       }, r.tapholdDuration );
     }
 
+    if( e.touches.length >= 1 ){
+      var sPos = r.touchData.startPosition = [];
+
+      for( var i = 0; i < now.length; i++ ){
+        sPos[i] = earlier[i] = now[i];
+      }
+
+      var touch0 = e.touches[0];
+
+      r.touchData.startGPosition = [ touch0.clientX, touch0.clientY ];
+    }
+
   }, false );
 
   var touchmoveHandler;
   r.registerBinding(window, 'touchmove', touchmoveHandler = function(e) { // eslint-disable-line no-undef
-    var select = r.selection;
     var capture = r.touchData.capture;
+
+    if( !capture && !eventInContainer(e) ){ return; }
+
+    var select = r.selection;
     var cy = r.cy;
     var now = r.touchData.now;
     var earlier = r.touchData.earlier;
@@ -15578,11 +15636,11 @@ BRp.load = function(){
     if( e.touches[1] ){ var pos = r.projectIntoViewport( e.touches[1].clientX, e.touches[1].clientY ); now[2] = pos[0]; now[3] = pos[1]; }
     if( e.touches[2] ){ var pos = r.projectIntoViewport( e.touches[2].clientX, e.touches[2].clientY ); now[4] = pos[0]; now[5] = pos[1]; }
 
+    var startGPos = r.touchData.startGPosition;
     var isOverThresholdDrag;
 
-    if( capture && e.touches[0] ){
+    if( capture && e.touches[0] && startGPos ){
       var disp = []; for (var j=0;j<now.length;j++) { disp[j] = now[j] - earlier[j]; }
-      var startGPos = r.touchData.startGPosition;
       var dx = e.touches[0].clientX - startGPos[0];
       var dx2 = dx * dx;
       var dy = e.touches[0].clientY - startGPos[1];
@@ -15610,16 +15668,23 @@ BRp.load = function(){
       // cancel ctx gestures if the distance b/t the fingers increases
       if( factorSq >= factorThresholdSq || distance2Sq >= distThresholdSq ){
         r.touchData.cxt = false;
-        if( r.touchData.start ){ r.touchData.start.unactivate(); r.touchData.start = null; }
+
         r.data.bgActivePosistion = undefined;
+
         r.redrawHint( 'select', true );
 
         var cxtEvt = new Event( e, {
           type: 'cxttapend',
           cyPosition: { x: now[0], y: now[1] }
         } );
+
         if( r.touchData.start ){
-          r.touchData.start.trigger( cxtEvt );
+          r.touchData.start
+            .unactivate()
+            .trigger( cxtEvt )
+          ;
+
+          r.touchData.start = null;
         } else {
           cy.trigger( cxtEvt );
         }
@@ -15711,8 +15776,10 @@ BRp.load = function(){
         r.redrawHint( 'drag', true );
 
         for( var i = 0; i < draggedEles.length; i++ ){
-          draggedEles[ i ]._private.grabbed = false;
-          draggedEles[ i ]._private.rscratch.inDragLayer = false;
+          var de_p = draggedEles[i]._private;
+
+          de_p.grabbed = false;
+          de_p.rscratch.inDragLayer = false;
         }
       }
 
@@ -15726,7 +15793,7 @@ BRp.load = function(){
       // var factor = Math.sqrt( distance2Sq ) / Math.sqrt( distance1Sq );
       var factor = distance2 / distance1;
 
-      if( factor != 1 && twoFingersStartInside ){
+      if( twoFingersStartInside ){
         // delta finger1
         var df1x = f1x2 - f1x1;
         var df1y = f1y2 - f1y1;
@@ -15763,7 +15830,7 @@ BRp.load = function(){
         };
 
         // remove dragged eles
-        if( r.touchData.start ){
+        if( r.touchData.start && r.touchData.start.active() ){
           var draggedEles = r.dragData.touchDragEles;
 
           freeDraggedElements( draggedEles );
@@ -15772,8 +15839,8 @@ BRp.load = function(){
           r.redrawHint( 'eles', true );
 
           r.touchData.start
-            .trigger( 'free' )
             .unactivate()
+            .trigger( 'free' )
           ;
         }
 
@@ -17551,7 +17618,7 @@ CRp.drawText = function( context, ele, prefix ){
     }
 
     if( ele.pstyle( 'text-wrap' ).value === 'wrap' ){
-      var lines = rscratch.labelWrapCachedLines;
+      var lines = util.getPrefixedProperty( rscratch, 'labelWrapCachedLines', prefix );
       var lineHeight = textH / lines.length;
 
       switch( valign ){
@@ -18062,8 +18129,9 @@ CRp.shadowStyle = function( context, color, opacity, blur, offsetX, offsetY ){
 CRp.matchCanvasSize = function( container ){
   var r = this;
   var data = r.data;
-  var width = container.clientWidth;
-  var height = container.clientHeight;
+  var bb = r.findContainerClientCoords();
+  var width = bb[2];
+  var height = bb[3];
   var pixelRatio = r.getPixelRatio();
   var mbPxRatio = r.motionBlurPxRatio;
 
@@ -19176,8 +19244,9 @@ CRp.bufferCanvasImage = function( options ){
   var cy = this.cy;
   var eles = cy.mutableElements();
   var bb = eles.boundingBox();
-  var width = options.full ? Math.ceil( bb.w ) : this.container.clientWidth;
-  var height = options.full ? Math.ceil( bb.h ) : this.container.clientHeight;
+  var ctrRect = this.findContainerClientCoords();
+  var width = options.full ? Math.ceil( bb.w ) : ctrRect[2];
+  var height = options.full ? Math.ceil( bb.h ) : ctrRect[3];
   var specdMaxDims = is.number( options.maxWidth ) || is.number( options.maxHeight );
   var pxRatio = this.getPixelRatio();
   var scale = 1;
@@ -27050,7 +27119,7 @@ util.debounce = function( func, wait, options ){ // ported lodash debounce funct
 module.exports = util;
 
 },{"../is":83,"../window":107}],106:[function(_dereq_,module,exports){
-module.exports="2.7.13"
+module.exports="2.7.14"
 },{}],107:[function(_dereq_,module,exports){
 module.exports = ( typeof window === 'undefined' ? null : window ); // eslint-disable-line no-undef
 

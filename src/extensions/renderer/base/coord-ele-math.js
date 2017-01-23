@@ -307,6 +307,7 @@ BRp.findNearestElements = function( x, y, isTouch ){
 
     var rs = _p.rscratch;
     var styleWidth = edge.pstyle( 'width' ).pfValue;
+    var scale = edge.pstyle( 'arrow-scale' ).value;
     var width = styleWidth / 2 + edgeThreshold; // more like a distance radius from centre
     var widthSq = width * width;
     var width2 = width * 2;
@@ -348,7 +349,7 @@ BRp.findNearestElements = function( x, y, isTouch ){
     var src = src || _p.source;
     var tgt = tgt || _p.target;
 
-    var arSize = self.getArrowWidth( styleWidth );
+    var arSize = self.getArrowWidth( styleWidth, scale );
 
     var arrows = [
       { name: 'source', x: rs.arrowStartX, y: rs.arrowStartY, angle: rs.srcArrowAngle },
@@ -694,7 +695,8 @@ BRp.projectLines = function( edge ){
     ];
   }
 
-  _p.rstyle.arrowWidth = this.getArrowWidth( edge.pstyle('width').pfValue ) * this.arrowShapeWidth;
+  _p.rstyle.arrowWidth = this.getArrowWidth( edge.pstyle('width').pfValue, edge.pstyle( 'arrow-scale' ).value )
+    * this.arrowShapeWidth;
 };
 
 BRp.projectBezier = BRp.projectLines;
@@ -1583,7 +1585,8 @@ BRp.findEdgeControlPoints = function( edges ){
       var badAEnd = !is.number( rs.arrowEndX ) || !is.number( rs.arrowEndY );
 
       var minCpADistFactor = 3;
-      var arrowW = this.getArrowWidth( edge.pstyle( 'width' ).pfValue ) * this.arrowShapeWidth;
+      var arrowW = this.getArrowWidth( edge.pstyle( 'width' ).pfValue, edge.pstyle( 'arrow-scale' ).value )
+        * this.arrowShapeWidth;
       var minCpADist = minCpADistFactor * arrowW;
 
       if( rs.edgeType === 'bezier' ){
@@ -2182,16 +2185,16 @@ BRp.findEndpoints = function( edge ){
   }
 };
 
-BRp.getArrowWidth = BRp.getArrowHeight = function( edgeWidth ){
+BRp.getArrowWidth = BRp.getArrowHeight = function( edgeWidth, scale ){
   var cache = this.arrowWidthCache = this.arrowWidthCache || {};
 
-  var cachedVal = cache[ edgeWidth ];
+  var cachedVal = cache[ edgeWidth + ', ' + scale ];
   if( cachedVal ){
     return cachedVal;
   }
 
-  cachedVal =  Math.max( Math.pow( edgeWidth * 13.37, 0.9 ), 29 );
-  cache[ edgeWidth ] = cachedVal;
+  cachedVal =  Math.max( Math.pow( edgeWidth * 13.37, 0.9 ), 29 ) * scale;
+  cache[ edgeWidth + ', ' + scale ] = cachedVal;
 
   return cachedVal;
 };

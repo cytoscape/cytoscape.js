@@ -322,8 +322,8 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
     }
 
     // check value is within range
-    if( (type.min !== undefined && value < type.min)
-    || (type.max !== undefined && value > type.max)
+    if( ( type.min !== undefined && ( value < type.min || (type.strictMin && value === type.min) ) )
+    ||  ( type.max !== undefined && ( value > type.max || (type.strictMax && value === type.max) ) )
     ){
       return null;
     }

@@ -28,6 +28,7 @@ var styfn = {};
     nodeSize: { number: true, min: 0, enums: [ 'label' ] },
     number: { number: true, unitless: true },
     numbers: { number: true, unitless: true, multiple: true },
+    positiveNumber: { number: true, unitless: true, min: 0, strictMin: true },
     size: { number: true, min: 0 },
     bidirectionalSize: { number: true }, // allows negative
     bidirectionalSizes: { number: true, multiple: true }, // allows negative
@@ -263,7 +264,7 @@ var styfn = {};
     { name: 'segment-distances', type: t.bidirectionalSizes },
     { name: 'segment-weights', type: t.numbers },
     { name: 'edge-distances', type: t.edgeDistances },
-    { name: 'arrow-scale', type: t.number},
+    { name: 'arrow-scale', type: t.positiveNumber },
     { name: 'loop-direction', type: t.angle },
     { name: 'loop-sweep', type: t.angle },
     { name: 'source-distance-from-node', type: t.size },

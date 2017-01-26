@@ -29,7 +29,7 @@ var cytoscape = function( options ){ // jshint ignore:line
 };
 
 // replaced by build system
-cytoscape.version = require('./version.json');
+cytoscape.version = require('./version');
 
 // try to register w/ jquery
 if( window && window.jQuery ){

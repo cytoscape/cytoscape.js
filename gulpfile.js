@@ -142,7 +142,7 @@ gulp.task('version', function( next ){
   function done(){
     console.log('Using version number `%s` for building', version);
 
-    fs.writeFileSync('./src/version.json', '"'+ version +'"');
+    fs.writeFileSync('./src/version.js', 'module.exports = "'+ version +'";\n');
 
     next();
   }

@@ -202,7 +202,7 @@ BRp.registerArrowShapes = function(){
     ],
 
     gap: function( edge ){
-      return edge.pstyle( 'width' ).pfValue * edge.pstyle( 'arrow-scale' ).pfValue;
+      return standardGap(edge) * 0.985;
     }
   } );
 

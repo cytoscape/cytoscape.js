@@ -17,8 +17,35 @@ BRp.registerBinding = function( target, event, handler, useCapture ){
 BRp.binder = function( tgt ){
   var r = this;
 
-  var on = function(){
-    var args = arguments;
+  var tgtIsDom = tgt === window || tgt === document || tgt === document.body || is.domElement( tgt );
+
+  if( r.supportsPassiveEvents == null ){
+
+    // from https://github.com/WICG/EventListenerOptions/blob/gh-pages/explainer.md#feature-detection
+    var supportsPassive = false;
+    try {
+      var opts = Object.defineProperty( {}, 'passive', {
+        get: function(){
+          supportsPassive = true;
+        }
+      } );
+
+      window.addEventListener( 'test', null, opts );
+    } catch( err ){}
+
+    r.supportsPassiveEvents = supportsPassive;
+  }
+
+  var on = function( event, handler, useCapture ){
+    var args = Array.prototype.slice.call( arguments );
+
+    if( tgtIsDom && r.supportsPassiveEvents ){ // replace useCapture w/ opts obj
+      args[2] = {
+        capture: useCapture != null ? useCapture : false,
+        passive: false,
+        once: false
+      };
+    }
 
     r.bindings.push({
       target: tgt,

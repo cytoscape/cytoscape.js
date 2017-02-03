@@ -93,15 +93,15 @@ var elesfn = ({
         layout.trigger( { type: 'layoutstop', layout: layout } );
       });
     } else {
-      nodes.positions( fn );
-
-      if ( options.spacingFactor && options.spacingFactor !== 1){
+      if( options.spacingFactor && options.spacingFactor !== 1){
         var spacing = Math.abs(options.spacingFactor);
         nodes.positions( function( i, node){
-          var pos = node.position();
+          var pos = fn( i, node);
           var nodesBb = nodes.boundingBox();
           return calculateSpacing(spacing, nodesBb, pos);
         });
+      } else {
+        nodes.positions(fn);
       }
 
       if( options.fit ){

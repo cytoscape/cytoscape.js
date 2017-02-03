@@ -193,6 +193,60 @@ BRp.registerArrowShapes = function(){
     }
   } );
 
+  defineArrowShape( 'triangle-cross', {
+    points: [
+      -0.15, -0.3,
+      0, 0,
+      0.15, -0.3,
+      -0.15, -0.3
+    ],
+
+    crossLinePoints: [
+      -0.24175, -0.4,
+      0.24175, -0.4,
+    ],
+
+    forceStroke: true,
+
+    matchEdgeWidth: true,
+
+    scaleCoord: function ( constant, size, edgeWidth ){
+     return constant + ( edgeWidth * 0.012 ) + ( math.log2( size - 28.95 ) * 0.001 );
+    },
+
+   scaleCrossLineXCoord: function( size, edgeWidth ){
+      return this.scaleCoord( 0.42, size, edgeWidth );
+    },
+
+    scaleCrossLineYCoord: function( size, edgeWidth ){
+      return this.scaleCoord( -0.01, size, edgeWidth );
+    },
+
+    collide: function( x, y, size, angle, translation, padding ){
+      var triPts = pointsToArr( transformPoints( this.points, size + 2 * padding, angle, translation ) );
+      var crossLinePts = pointsToArr( transformPoints( this.crossLinePoints, size + 2 * padding, angle, translation ) );
+
+      var inside = math.pointInsidePolygonPoints( x, y, triPts )
+      || math.inLineVicinity( x, y,
+        crossLinePts[0], crossLinePts[1], crossLinePts[2], crossLinePts[3], padding );
+
+      return inside;
+    },
+
+    draw: function( context, size, angle, translation, edgeWidth ){
+      var scaledCrossLine = [
+        this.crossLinePoints[0] + this.scaleCrossLineXCoord( size, edgeWidth ),
+        this.crossLinePoints[1] - this.scaleCrossLineYCoord( size, edgeWidth ),
+        this.crossLinePoints[2] - this.scaleCrossLineXCoord( size, edgeWidth ),
+        this.crossLinePoints[3] - this.scaleCrossLineYCoord( size, edgeWidth )
+      ];
+      var triPts = transformPoints( this.points, size, angle, translation );
+      var crossLinePts = transformPoints( scaledCrossLine, size, angle, translation );
+
+      renderer.arrowShapeImpl( this.name )( context, triPts, crossLinePts );
+    }
+  } );
+
   defineArrowShape( 'vee', {
     points: [
       -0.15, -0.3,

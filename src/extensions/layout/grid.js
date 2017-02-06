@@ -9,6 +9,7 @@ var defaults = {
   boundingBox: undefined, // constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
   avoidOverlap: true, // prevents node overlap, may overflow boundingBox if not enough space
   avoidOverlapPadding: 10, // extra spacing around nodes when avoidOverlap: true
+  spacingFactor: undefined, // Applies a multiplicative factor (>0) to expand or compress the overall area that the nodes take up
   condense: false, // uses all available space on false, uses minimal space on true
   rows: undefined, // force num of rows in the grid
   cols: undefined, // force num of columns in the grid

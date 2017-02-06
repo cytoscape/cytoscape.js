@@ -280,7 +280,6 @@ BreadthFirstLayout.prototype.run = function(){
 
       minDistance = Math.max( minDistance, w, h );
     }
-    minDistance *= options.spacingFactor; // just to have some nice spacing
   }
 
   // get the weighted percent for an element based on its connectivity to other levels

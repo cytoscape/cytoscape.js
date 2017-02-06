@@ -15,7 +15,23 @@ var elesfn = ({
 
     layout.animations = [];
 
+    var calculateSpacing = function( spacing, nodesBb, pos ){
+      var center = {
+        x: nodesBb.x1 + nodesBb.w / 2,
+        y: nodesBb.y1 + nodesBb.h / 2
+      };
+      var spacingVector = { // scale from center of bounding box (not necessarily 0,0)
+        x: (pos.x - center.x) * spacing,
+        y: (pos.y - center.y) * spacing
+      };
+      return {
+        x: center.x + spacingVector.x,
+        y: center.y + spacingVector.y
+      };
+    };
+
     if( options.animate ){
+      var nodesBb = nodes.boundingBox();
       for( var i = 0; i < nodes.length; i++ ){
         var node = nodes[ i ];
 
@@ -24,6 +40,11 @@ var elesfn = ({
 
         if( !is.number( pos.x ) || !is.number( pos.y ) ){
           node.silentPosition( { x: 0, y: 0 } );
+        }
+
+        if ( options.spacingFactor && options.spacingFactor !== 1){
+          var spacing = Math.abs(options.spacingFactor);
+          newPos = calculateSpacing(spacing, nodesBb, newPos);
         }
 
         var ani = node.animation( {
@@ -72,7 +93,16 @@ var elesfn = ({
         layout.trigger( { type: 'layoutstop', layout: layout } );
       });
     } else {
-      nodes.positions( fn );
+      if( options.spacingFactor && options.spacingFactor !== 1 ){
+        var spacing = Math.abs( options.spacingFactor );
+        nodes.positions( function( i, node ){
+          var pos = fn( i, node );
+          var nodesBb = nodes.boundingBox();
+          return calculateSpacing( spacing, nodesBb, pos );
+        });
+      } else {
+        nodes.positions( fn );
+      }
 
       if( options.fit ){
         cy.fit( options.eles, options.padding );

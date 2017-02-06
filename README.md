@@ -101,3 +101,15 @@ Run `gulp <target>` in the console.  The main targets are:
 ## Tests
 
 Mocha tests are found in the [test directory](https://github.com/cytoscape/cytoscape.js/tree/master/test).  The tests can be run in the browser or they can be run via Node.js (`gulp test` or `mocha`).
+
+## Citation
+
+To cite Cytoscape.js in a paper, please cite the Oxford Bioinformatics issue:
+
+*Cytoscape.js: a graph theory library for visualisation and analysis*
+
+Franz M, Lopes CT, Huck G, Dong Y, Sumer O, Bader GD
+
+[Bioinformatics (2016) 32 (2): 309-311 first published online September 28, 2015 doi:10.1093/bioinformatics/btv557 (PDF)](http://bioinformatics.oxfordjournals.org/content/32/2/309)
+
+[PubMed Abstract](http://www.ncbi.nlm.nih.gov/pubmed/26415722)

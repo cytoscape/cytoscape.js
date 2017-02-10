@@ -1,0 +1,1128 @@
+{
+  "nodes": [{
+    "data": {
+      "id": "Nucleoplasm",
+      "bbox": {
+        "x": 923.4972,
+        "y": 1046.42075,
+        "w": "518.8462",
+        "h": "509.42316"
+      },
+      "class": "compartment",
+      "label": "Nucleoplasm",
+      "statesandinfos": [],
+      "ports": []
+    }
+  }, {
+    "data": {
+      "id": "Cytosol",
+      "bbox": {
+        "x": 310.499538,
+        "y": 333.057477,
+        "w": "548.6305",
+        "h": "555.5366"
+      },
+      "class": "compartment",
+      "label": "Cytosol",
+      "statesandinfos": [],
+      "ports": []
+    }
+  }, {
+    "data": {
+      "id": "http___pathwaycommons_org_pc2_Protein_2fa53096c42af17756f3555c663e7c7a",
+      "bbox": {
+        "x": 1156.9203,
+        "y": 1236.3717,
+        "w": "48.0",
+        "h": "25.0"
+      },
+      "class": "macromolecule",
+      "label": "HZF",
+      "statesandinfos": [],
+      "parent": "Nucleoplasm",
+      "ports": []
+    }
+  }, {
+    "data": {
+      "id": "http___pathwaycommons_org_pc2_Complex_8e82104bc6e926646879ce573566fa41",
+      "bbox": {
+        "x": 943.8819,
+        "y": 1043.0155300000001,
+        "w": "89.0",
+        "h": "98.99994"
+      },
+      "class": "complex",
+      "label": "p-S15,S20-TP53 Tetramer:ZNF385A:CDKN1A Gene",
+      "statesandinfos": [],
+      "parent": "Nucleoplasm",
+      "ports": []
+    }
+  }, {
+    "data": {
+      "id": "http___pathwaycommons_org_pc2_Protein_2fa53096c42af17756f3555c663e7c7a_http___pathwaycommons_org_pc2_Complex_8e82104bc6e926646879ce573566fa41",
+      "bbox": {
+        "x": 925.3819,
+        "y": 1078.0155,
+        "w": "48.0",
+        "h": "25.0"
+      },
+      "class": "macromolecule",
+      "label": "HZF",
+      "statesandinfos": [],
+      "parent": "http___pathwaycommons_org_pc2_Complex_8e82104bc6e926646879ce573566fa41",
+      "ports": []
+    }
+  }, {
+    "data": {
+      "id": "http___pathwaycommons_org_pc2_Protein_e2decd93240c777b7254aaca57c31d58_http___pathwaycommons_org_pc2_Complex_8e82104bc6e926646879ce573566fa41",
+      "bbox": {
+        "x": 943.8819,
+        "y": 1008.01556,
+        "w": "85.0",
+        "h": "25.0"
+      },
+      "class": "macromolecule",
+      "label": "p-S15,S20-TP53",
+      "statesandinfos": [{
+        "id": "http___pathwaycommons_org_pc2_Protein_e2decd93240c777b7254aaca57c31d58_http___pathwaycommons_org_pc2_Complex_8e82104bc6e926646879ce573566fa41.info.1",
+        "clazz": "state variable",
+        "state": {
+          "value": "x[1 - 393]"
+        },
+        "bbox": {
+          "x": -23.52941176470588,
+          "y": -50,
+          "w": "35.0",
+          "h": "10.0"
+        }
+      }, {
+        "id": "http___pathwaycommons_org_pc2_Protein_e2decd93240c777b7254aaca57c31d58_http___pathwaycommons_org_pc2_Complex_8e82104bc6e926646879ce573566fa41.state.2",
+        "clazz": "state variable",
+        "state": {
+          "value": "opser",
+          "variable": "20"
+        },
+        "bbox": {
+          "x": 0,
+          "y": 50,
+          "w": "35.0",
+          "h": "10.0"
+        }
+      }, {
+        "id": "http___pathwaycommons_org_pc2_Protein_e2decd93240c777b7254aaca57c31d58_http___pathwaycommons_org_pc2_Complex_8e82104bc6e926646879ce573566fa41.info.3",
+        "clazz": "state variable",
+        "state": {
+          "value": "opser",
+          "variable": "15"
+        },
+        "bbox": {
+          "x": 23.52941176470588,
+          "y": -50,
+          "w": "35.0",
+          "h": "10.0"
+        }
+      }],
+      "parent": "http___pathwaycommons_org_pc2_Complex_8e82104bc6e926646879ce573566fa41",
+      "ports": []
+    }
+  }, {
+    "data": {
+      "id": "http___pathwaycommons_org_pc2_Dna_fb997f351a7d81230f8ce04a2fd77194_http___pathwaycommons_org_pc2_Complex_8e82104bc6e926646879ce573566fa41",
+      "bbox": {
+        "x": 926.3819,
+        "y": 1043.0155,
+        "w": "50.0",
+        "h": "25.0"
+      },
+      "class": "nucleic acid feature",
+      "label": "p21 Gene",
+      "statesandinfos": [{
+        "id": "http___pathwaycommons_org_pc2_Dna_fb997f351a7d81230f8ce04a2fd77194_http___pathwaycommons_org_pc2_Complex_8e82104bc6e926646879ce573566fa41.info.1",
+        "clazz": "unit of information",
+        "label": {
+          "text": "mt:DNA"
+        },
+        "bbox": {
+          "x": 0,
+          "y": -50,
+          "w": "35.0",
+          "h": "10.0"
+        }
+      }],
+      "parent": "http___pathwaycommons_org_pc2_Complex_8e82104bc6e926646879ce573566fa41",
+      "ports": []
+    }
+  }, {
+    "data": {
+      "id": "http___pathwaycommons_org_pc2_Protein_ea1d79fc711e95b973e780d9b96b690c",
+      "bbox": {
+        "x": 690.0741,
+        "y": 806.20917,
+        "w": "48.0",
+        "h": "25.0"
+      },
+      "class": "macromolecule",
+      "label": "p21",
+      "statesandinfos": [{
+        "id": "http___pathwaycommons_org_pc2_Protein_ea1d79fc711e95b973e780d9b96b690c.info.1",
+        "clazz": "state variable",
+        "state": {
+          "value": "x[2 - 164]"
+        },
+        "bbox": {
+          "x": 0,
+          "y": -50,
+          "w": "35.0",
+          "h": "10.0"
+        }
+      }],
+      "parent": "Nucleoplasm",
+      "ports": []
+    }
+  }, {
+    "data": {
+      "id": "http___pathwaycommons_org_pc2_Complex_ab4b57f8765cdc0ce281453e224735b5",
+      "bbox": {
+        "x": 1131.1969,
+        "y": 1145.5996,
+        "w": "89.0",
+        "h": "29.0"
+      },
+      "class": "complex",
+      "label": "p-S15,S20-TP53 Tetramer",
+      "statesandinfos": [],
+      "parent": "Nucleoplasm",
+      "ports": []
+    }
+  }, {
+    "data": {
+      "id": "http___pathwaycommons_org_pc2_Protein_e2decd93240c777b7254aaca57c31d58_http___pathwaycommons_org_pc2_Complex_ab4b57f8765cdc0ce281453e224735b5",
+      "bbox": {
+        "x": 1131.1969,
+        "y": 1145.5996,
+        "w": "85.0",
+        "h": "25.0"
+      },
+      "class": "macromolecule",
+      "label": "p-S15,S20-TP53",
+      "statesandinfos": [{
+        "id": "http___pathwaycommons_org_pc2_Protein_e2decd93240c777b7254aaca57c31d58_http___pathwaycommons_org_pc2_Complex_ab4b57f8765cdc0ce281453e224735b5.info.1",
+        "clazz": "state variable",
+        "state": {
+          "value": "x[1 - 393]"
+        },
+        "bbox": {
+          "x": -23.52941176470588,
+          "y": -50,
+          "w": "35.0",
+          "h": "10.0"
+        }
+      }, {
+        "id": "http___pathwaycommons_org_pc2_Protein_e2decd93240c777b7254aaca57c31d58_http___pathwaycommons_org_pc2_Complex_ab4b57f8765cdc0ce281453e224735b5.state.2",
+        "clazz": "state variable",
+        "state": {
+          "value": "opser",
+          "variable": "20"
+        },
+        "bbox": {
+          "x": 0,
+          "y": 50,
+          "w": "35.0",
+          "h": "10.0"
+        }
+      }, {
+        "id": "http___pathwaycommons_org_pc2_Protein_e2decd93240c777b7254aaca57c31d58_http___pathwaycommons_org_pc2_Complex_ab4b57f8765cdc0ce281453e224735b5.info.3",
+        "clazz": "state variable",
+        "state": {
+          "value": "opser",
+          "variable": "15"
+        },
+        "bbox": {
+          "x": 23.52941176470588,
+          "y": -50,
+          "w": "35.0",
+          "h": "10.0"
+        }
+      }],
+      "parent": "http___pathwaycommons_org_pc2_Complex_ab4b57f8765cdc0ce281453e224735b5",
+      "ports": []
+    }
+  }, {
+    "data": {
+      "id": "http___pathwaycommons_org_pc2_Complex_362f1995ea829308849a644839f320d0",
+      "bbox": {
+        "x": 938.2023,
+        "y": 1267.1323,
+        "w": "89.0",
+        "h": "64.0"
+      },
+      "class": "complex",
+      "label": "p-S15,S20-TP53 Tetramer:ZNF385A",
+      "statesandinfos": [],
+      "parent": "Nucleoplasm",
+      "ports": []
+    }
+  }, {
+    "data": {
+      "id": "http___pathwaycommons_org_pc2_Protein_2fa53096c42af17756f3555c663e7c7a_http___pathwaycommons_org_pc2_Complex_362f1995ea829308849a644839f320d0",
+      "bbox": {
+        "x": 919.7023,
+        "y": 1284.6323,
+        "w": "48.0",
+        "h": "25.0"
+      },
+      "class": "macromolecule",
+      "label": "HZF",
+      "statesandinfos": [],
+      "parent": "http___pathwaycommons_org_pc2_Complex_362f1995ea829308849a644839f320d0",
+      "ports": []
+    }
+  }, {
+    "data": {
+      "id": "http___pathwaycommons_org_pc2_Protein_e2decd93240c777b7254aaca57c31d58_http___pathwaycommons_org_pc2_Complex_362f1995ea829308849a644839f320d0",
+      "bbox": {
+        "x": 938.2023,
+        "y": 1249.6323,
+        "w": "85.0",
+        "h": "25.0"
+      },
+      "class": "macromolecule",
+      "label": "p-S15,S20-TP53",
+      "statesandinfos": [{
+        "id": "http___pathwaycommons_org_pc2_Protein_e2decd93240c777b7254aaca57c31d58_http___pathwaycommons_org_pc2_Complex_362f1995ea829308849a644839f320d0.info.1",
+        "clazz": "state variable",
+        "state": {
+          "value": "x[1 - 393]"
+        },
+        "bbox": {
+          "x": -23.52941176470588,
+          "y": -50,
+          "w": "35.0",
+          "h": "10.0"
+        }
+      }, {
+        "id": "http___pathwaycommons_org_pc2_Protein_e2decd93240c777b7254aaca57c31d58_http___pathwaycommons_org_pc2_Complex_362f1995ea829308849a644839f320d0.state.2",
+        "clazz": "state variable",
+        "state": {
+          "value": "opser",
+          "variable": "20"
+        },
+        "bbox": {
+          "x": 0,
+          "y": 50,
+          "w": "35.0",
+          "h": "10.0"
+        }
+      }, {
+        "id": "http___pathwaycommons_org_pc2_Protein_e2decd93240c777b7254aaca57c31d58_http___pathwaycommons_org_pc2_Complex_362f1995ea829308849a644839f320d0.info.3",
+        "clazz": "state variable",
+        "state": {
+          "value": "opser",
+          "variable": "15"
+        },
+        "bbox": {
+          "x": 23.52941176470588,
+          "y": -50,
+          "w": "35.0",
+          "h": "10.0"
+        }
+      }],
+      "parent": "http___pathwaycommons_org_pc2_Complex_362f1995ea829308849a644839f320d0",
+      "ports": []
+    }
+  }, {
+    "data": {
+      "id": "http___pathwaycommons_org_pc2_Dna_fb997f351a7d81230f8ce04a2fd77194",
+      "bbox": {
+        "x": 826.321,
+        "y": 1068.471,
+        "w": "50.0",
+        "h": "25.0"
+      },
+      "class": "nucleic acid feature",
+      "label": "p21 Gene",
+      "statesandinfos": [{
+        "id": "http___pathwaycommons_org_pc2_Dna_fb997f351a7d81230f8ce04a2fd77194.info.1",
+        "clazz": "unit of information",
+        "label": {
+          "text": "mt:DNA"
+        },
+        "bbox": {
+          "x": 0,
+          "y": -50,
+          "w": "35.0",
+          "h": "10.0"
+        }
+      }],
+      "parent": "Nucleoplasm",
+      "ports": []
+    }
+  }, {
+    "data": {
+      "id": "http___identifiers_org_reactome_R-HSA-6803801LEFT_TO_RIGHT",
+      "bbox": {
+        "x": 868.3598,
+        "y": 1161.6938,
+        "w": "15.0",
+        "h": "15.0"
+      },
+      "class": "process",
+      "statesandinfos": [],
+      "parent": "Nucleoplasm",
+      "ports": [{
+        "id": "InputPort_http___identifiers_org_reactome_R-HSA-6803801LEFT_TO_RIGHT",
+        "x": -66.66666666666666,
+        "y": 0
+      }, {
+        "id": "OutputPort_http___identifiers_org_reactome_R-HSA-6803801LEFT_TO_RIGHT",
+        "x": 66.66666666666666,
+        "y": 0
+      }]
+    }
+  }, {
+    "data": {
+      "id": "http___identifiers_org_reactome_R-HSA-6803719LEFT_TO_RIGHT",
+      "bbox": {
+        "x": 1067.2671,
+        "y": 1234.7435,
+        "w": "15.0",
+        "h": "15.0"
+      },
+      "class": "process",
+      "statesandinfos": [],
+      "parent": "Nucleoplasm",
+      "ports": [{
+        "id": "InputPort_http___identifiers_org_reactome_R-HSA-6803719LEFT_TO_RIGHT",
+        "x": 66.66666666666666,
+        "y": 0
+      }, {
+        "id": "OutputPort_http___identifiers_org_reactome_R-HSA-6803719LEFT_TO_RIGHT",
+        "x": -66.66666666666666,
+        "y": 0
+      }]
+    }
+  }, {
+    "data": {
+      "id": "http___identifiers_org_reactome_R-HSA-6803388LEFT_TO_RIGHT",
+      "bbox": {
+        "x": 797.237,
+        "y": 951.9048,
+        "w": "15.0",
+        "h": "15.0"
+      },
+      "class": "process",
+      "statesandinfos": [],
+      "parent": "Nucleoplasm",
+      "ports": [{
+        "id": "InputPort_http___identifiers_org_reactome_R-HSA-6803388LEFT_TO_RIGHT",
+        "x": 0,
+        "y": 66.66666666666666
+      }, {
+        "id": "OutputPort_http___identifiers_org_reactome_R-HSA-6803388LEFT_TO_RIGHT",
+        "x": 0,
+        "y": -66.66666666666666
+      }]
+    }
+  }, {
+    "data": {
+      "id": "http___pathwaycommons_org_pc2_Complex_9a16339fd8545b5fef1bf6af7247e78e",
+      "bbox": {
+        "x": 156.01544,
+        "y": 71.789177,
+        "w": "52.0",
+        "h": "29.0"
+      },
+      "class": "complex",
+      "label": "HSP90 homodimer",
+      "statesandinfos": [],
+      "parent": "Cytosol",
+      "ports": []
+    }
+  }, {
+    "data": {
+      "id": "http___pathwaycommons_org_pc2_Protein_4a6152df63f8b5821b68624f1f5365e3_http___pathwaycommons_org_pc2_Complex_9a16339fd8545b5fef1bf6af7247e78e",
+      "bbox": {
+        "x": 156.01544,
+        "y": 71.789177,
+        "w": "48.0",
+        "h": "25.0"
+      },
+      "class": "macromolecule",
+      "label": "HSP90AB1",
+      "statesandinfos": [{
+        "id": "http___pathwaycommons_org_pc2_Protein_4a6152df63f8b5821b68624f1f5365e3_http___pathwaycommons_org_pc2_Complex_9a16339fd8545b5fef1bf6af7247e78e.info.1",
+        "clazz": "state variable",
+        "state": {
+          "value": "x[2 - 724]"
+        },
+        "bbox": {
+          "x": 0,
+          "y": -49.99999999999997,
+          "w": "35.0",
+          "h": "10.0"
+        }
+      }],
+      "parent": "http___pathwaycommons_org_pc2_Complex_9a16339fd8545b5fef1bf6af7247e78e",
+      "ports": []
+    }
+  }, {
+    "data": {
+      "id": "http___pathwaycommons_org_pc2_Rna_066a231fb05a83e5f649787f259b29b3",
+      "bbox": {
+        "x": 555.7883,
+        "y": 573.70386,
+        "w": "50.0",
+        "h": "25.0"
+      },
+      "class": "nucleic acid feature",
+      "label": "p21 mRNA",
+      "statesandinfos": [{
+        "id": "http___pathwaycommons_org_pc2_Rna_066a231fb05a83e5f649787f259b29b3.info.1",
+        "clazz": "unit of information",
+        "label": {
+          "text": "mt:RNA"
+        },
+        "bbox": {
+          "x": 0,
+          "y": -50,
+          "w": "35.0",
+          "h": "10.0"
+        }
+      }],
+      "parent": "Cytosol",
+      "ports": []
+    }
+  }, {
+    "data": {
+      "id": "http___pathwaycommons_org_pc2_Complex_1e4cebbb09aabda7603a015800e9b0ab",
+      "bbox": {
+        "x": 64.18428800000001,
+        "y": 426.24594,
+        "w": "52.0",
+        "h": "129.0"
+      },
+      "class": "complex",
+      "label": "GTSE1:CDKN1A:FKBPL:HSP90",
+      "statesandinfos": [],
+      "parent": "Cytosol",
+      "ports": []
+    }
+  }, {
+    "data": {
+      "id": "http___pathwaycommons_org_pc2_Protein_127ead5393cb9c24b47db54d4a6b3b8f_http___pathwaycommons_org_pc2_Complex_1e4cebbb09aabda7603a015800e9b0ab",
+      "bbox": {
+        "x": 64.18428800000001,
+        "y": 376.24594,
+        "w": "48.0",
+        "h": "25.0"
+      },
+      "class": "macromolecule",
+      "label": "GTSE1",
+      "statesandinfos": [{
+        "id": "http___pathwaycommons_org_pc2_Protein_127ead5393cb9c24b47db54d4a6b3b8f_http___pathwaycommons_org_pc2_Complex_1e4cebbb09aabda7603a015800e9b0ab.info.1",
+        "clazz": "state variable",
+        "state": {
+          "value": "x[1 - 720]"
+        },
+        "bbox": {
+          "x": 0,
+          "y": -50,
+          "w": "35.0",
+          "h": "10.0"
+        }
+      }],
+      "parent": "http___pathwaycommons_org_pc2_Complex_1e4cebbb09aabda7603a015800e9b0ab",
+      "ports": []
+    }
+  }, {
+    "data": {
+      "id": "http___pathwaycommons_org_pc2_Complex_c01ff93f913af27bcb0831a570c51a46_http___pathwaycommons_org_pc2_Complex_1e4cebbb09aabda7603a015800e9b0ab",
+      "bbox": {
+        "x": 64.18428800000001,
+        "y": 478.74594,
+        "w": "48.0",
+        "h": "20.0"
+      },
+      "class": "complex",
+      "label": "HSP90:HSP90",
+      "statesandinfos": [],
+      "parent": "http___pathwaycommons_org_pc2_Complex_1e4cebbb09aabda7603a015800e9b0ab",
+      "ports": []
+    }
+  }, {
+    "data": {
+      "id": "http___pathwaycommons_org_pc2_Protein_ab96027e9f5bdd1ec6967b1a2ad68933_http___pathwaycommons_org_pc2_Complex_1e4cebbb09aabda7603a015800e9b0ab",
+      "bbox": {
+        "x": 64.18428800000001,
+        "y": 411.24594,
+        "w": "48.0",
+        "h": "25.0"
+      },
+      "class": "macromolecule",
+      "label": "p21",
+      "statesandinfos": [{
+        "id": "http___pathwaycommons_org_pc2_Protein_ab96027e9f5bdd1ec6967b1a2ad68933_http___pathwaycommons_org_pc2_Complex_1e4cebbb09aabda7603a015800e9b0ab.info.1",
+        "clazz": "state variable",
+        "state": {
+          "value": "x[2 - 164]"
+        },
+        "bbox": {
+          "x": 0,
+          "y": -50,
+          "w": "35.0",
+          "h": "10.0"
+        }
+      }],
+      "parent": "http___pathwaycommons_org_pc2_Complex_1e4cebbb09aabda7603a015800e9b0ab",
+      "ports": []
+    }
+  }, {
+    "data": {
+      "id": "http___pathwaycommons_org_pc2_Protein_ec4fb14f51d05f51b7265d151d27f2f2_http___pathwaycommons_org_pc2_Complex_1e4cebbb09aabda7603a015800e9b0ab",
+      "bbox": {
+        "x": 64.18428800000001,
+        "y": 446.24594,
+        "w": "48.0",
+        "h": "25.0"
+      },
+      "class": "macromolecule",
+      "label": "NG7",
+      "statesandinfos": [{
+        "id": "http___pathwaycommons_org_pc2_Protein_ec4fb14f51d05f51b7265d151d27f2f2_http___pathwaycommons_org_pc2_Complex_1e4cebbb09aabda7603a015800e9b0ab.info.1",
+        "clazz": "state variable",
+        "state": {
+          "value": "x[1 - 349]"
+        },
+        "bbox": {
+          "x": 0,
+          "y": -50,
+          "w": "35.0",
+          "h": "10.0"
+        }
+      }],
+      "parent": "http___pathwaycommons_org_pc2_Complex_1e4cebbb09aabda7603a015800e9b0ab",
+      "ports": []
+    }
+  }, {
+    "data": {
+      "id": "http___pathwaycommons_org_pc2_Protein_8e914f4622af26be019754a15281d309",
+      "bbox": {
+        "x": 558.81476,
+        "y": 596.3258,
+        "w": "48.0",
+        "h": "25.0"
+      },
+      "class": "macromolecule",
+      "label": "PCBP4",
+      "statesandinfos": [{
+        "id": "http___pathwaycommons_org_pc2_Protein_8e914f4622af26be019754a15281d309.info.1",
+        "clazz": "state variable",
+        "state": {
+          "value": "x[1 - 403]"
+        },
+        "bbox": {
+          "x": 0,
+          "y": -50,
+          "w": "35.0",
+          "h": "10.0"
+        }
+      }],
+      "parent": "Cytosol",
+      "ports": []
+    }
+  }, {
+    "data": {
+      "id": "http___pathwaycommons_org_pc2_Complex_ace1aed23ff193e27660fb25bee61aa8",
+      "bbox": {
+        "x": 408.8828,
+        "y": 468.08545,
+        "w": "54.0",
+        "h": "64.0"
+      },
+      "class": "complex",
+      "label": "PCBP4:CDKN1A mRNA",
+      "statesandinfos": [],
+      "parent": "Cytosol",
+      "ports": []
+    }
+  }, {
+    "data": {
+      "id": "http___pathwaycommons_org_pc2_Protein_8e914f4622af26be019754a15281d309_http___pathwaycommons_org_pc2_Complex_ace1aed23ff193e27660fb25bee61aa8",
+      "bbox": {
+        "x": 407.8828,
+        "y": 485.58545,
+        "w": "48.0",
+        "h": "25.0"
+      },
+      "class": "macromolecule",
+      "label": "PCBP4",
+      "statesandinfos": [{
+        "id": "http___pathwaycommons_org_pc2_Protein_8e914f4622af26be019754a15281d309_http___pathwaycommons_org_pc2_Complex_ace1aed23ff193e27660fb25bee61aa8.info.1",
+        "clazz": "state variable",
+        "state": {
+          "value": "x[1 - 403]"
+        },
+        "bbox": {
+          "x": 0,
+          "y": -50,
+          "w": "35.0",
+          "h": "10.0"
+        }
+      }],
+      "parent": "http___pathwaycommons_org_pc2_Complex_ace1aed23ff193e27660fb25bee61aa8",
+      "ports": []
+    }
+  }, {
+    "data": {
+      "id": "http___pathwaycommons_org_pc2_Rna_066a231fb05a83e5f649787f259b29b3_http___pathwaycommons_org_pc2_Complex_ace1aed23ff193e27660fb25bee61aa8",
+      "bbox": {
+        "x": 408.8828,
+        "y": 450.58545,
+        "w": "50.0",
+        "h": "25.0"
+      },
+      "class": "nucleic acid feature",
+      "label": "p21 mRNA",
+      "statesandinfos": [{
+        "id": "http___pathwaycommons_org_pc2_Rna_066a231fb05a83e5f649787f259b29b3_http___pathwaycommons_org_pc2_Complex_ace1aed23ff193e27660fb25bee61aa8.info.1",
+        "clazz": "unit of information",
+        "label": {
+          "text": "mt:RNA"
+        },
+        "bbox": {
+          "x": 0,
+          "y": -50,
+          "w": "35.0",
+          "h": "10.0"
+        }
+      }],
+      "parent": "http___pathwaycommons_org_pc2_Complex_ace1aed23ff193e27660fb25bee61aa8",
+      "ports": []
+    }
+  }, {
+    "data": {
+      "id": "http___pathwaycommons_org_pc2_Protein_ab96027e9f5bdd1ec6967b1a2ad68933",
+      "bbox": {
+        "x": 134.10747,
+        "y": 566.00555,
+        "w": "48.0",
+        "h": "25.0"
+      },
+      "class": "macromolecule",
+      "label": "p21",
+      "statesandinfos": [{
+        "id": "http___pathwaycommons_org_pc2_Protein_ab96027e9f5bdd1ec6967b1a2ad68933.info.1",
+        "clazz": "state variable",
+        "state": {
+          "value": "x[2 - 164]"
+        },
+        "bbox": {
+          "x": 0,
+          "y": -50,
+          "w": "35.0",
+          "h": "10.0"
+        }
+      }],
+      "parent": "Cytosol",
+      "ports": []
+    }
+  }, {
+    "data": {
+      "id": "http___pathwaycommons_org_pc2_Protein_ec4fb14f51d05f51b7265d151d27f2f2",
+      "bbox": {
+        "x": 222.64046,
+        "y": 545.7199,
+        "w": "48.0",
+        "h": "25.0"
+      },
+      "class": "macromolecule",
+      "label": "NG7",
+      "statesandinfos": [{
+        "id": "http___pathwaycommons_org_pc2_Protein_ec4fb14f51d05f51b7265d151d27f2f2.info.1",
+        "clazz": "state variable",
+        "state": {
+          "value": "x[1 - 349]"
+        },
+        "bbox": {
+          "x": 0,
+          "y": -50,
+          "w": "35.0",
+          "h": "10.0"
+        }
+      }],
+      "parent": "Cytosol",
+      "ports": []
+    }
+  }, {
+    "data": {
+      "id": "http___pathwaycommons_org_pc2_Complex_1e2eb28f728ee0c528f4a33741054531",
+      "bbox": {
+        "x": 156.01544,
+        "y": 146.78918,
+        "w": "52.0",
+        "h": "29.0"
+      },
+      "class": "complex",
+      "label": "HSP90",
+      "statesandinfos": [],
+      "parent": "Cytosol",
+      "ports": []
+    }
+  }, {
+    "data": {
+      "id": "http___pathwaycommons_org_pc2_Protein_b29f61de42f667110bfdfa9db81e42e4_http___pathwaycommons_org_pc2_Complex_1e2eb28f728ee0c528f4a33741054531",
+      "bbox": {
+        "x": 156.01544,
+        "y": 146.78918,
+        "w": "48.0",
+        "h": "25.0"
+      },
+      "class": "macromolecule",
+      "label": "HSP90",
+      "statesandinfos": [{
+        "id": "http___pathwaycommons_org_pc2_Protein_b29f61de42f667110bfdfa9db81e42e4_http___pathwaycommons_org_pc2_Complex_1e2eb28f728ee0c528f4a33741054531.info.1",
+        "clazz": "state variable",
+        "state": {
+          "value": "x[2 - 732]"
+        },
+        "bbox": {
+          "x": 0,
+          "y": -50,
+          "w": "35.0",
+          "h": "10.0"
+        }
+      }],
+      "parent": "http___pathwaycommons_org_pc2_Complex_1e2eb28f728ee0c528f4a33741054531",
+      "ports": []
+    }
+  }, {
+    "data": {
+      "id": "http___pathwaycommons_org_pc2_Protein_127ead5393cb9c24b47db54d4a6b3b8f",
+      "bbox": {
+        "x": 251.37129,
+        "y": 479.31427,
+        "w": "48.0",
+        "h": "25.0"
+      },
+      "class": "macromolecule",
+      "label": "GTSE1",
+      "statesandinfos": [{
+        "id": "http___pathwaycommons_org_pc2_Protein_127ead5393cb9c24b47db54d4a6b3b8f.info.1",
+        "clazz": "state variable",
+        "state": {
+          "value": "x[1 - 720]"
+        },
+        "bbox": {
+          "x": 0,
+          "y": -50,
+          "w": "35.0",
+          "h": "10.0"
+        }
+      }],
+      "parent": "Cytosol",
+      "ports": []
+    }
+  }, {
+    "data": {
+      "id": "http___pathwaycommons_org_pc2_Complex_c01ff93f913af27bcb0831a570c51a46",
+      "bbox": {
+        "x": 134.29953,
+        "y": 523.0994,
+        "w": "48.0",
+        "h": "20.0"
+      },
+      "class": "complex",
+      "label": "HSP90:HSP90",
+      "statesandinfos": [],
+      "parent": "Cytosol",
+      "ports": []
+    }
+  }, {
+    "data": {
+      "id": "http___identifiers_org_reactome_R-HSA-6803411LEFT_TO_RIGHT",
+      "bbox": {
+        "x": 531.3605,
+        "y": 498.17328,
+        "w": "15.0",
+        "h": "15.0"
+      },
+      "class": "process",
+      "statesandinfos": [],
+      "parent": "Cytosol",
+      "ports": [{
+        "id": "InputPort_http___identifiers_org_reactome_R-HSA-6803411LEFT_TO_RIGHT",
+        "x": 0,
+        "y": -66.66666666666666
+      }, {
+        "id": "OutputPort_http___identifiers_org_reactome_R-HSA-6803411LEFT_TO_RIGHT",
+        "x": 0,
+        "y": 66.66666666666666
+      }]
+    }
+  }, {
+    "data": {
+      "id": "http___identifiers_org_reactome_R-HSA-6803403LEFT_TO_RIGHT",
+      "bbox": {
+        "x": 467.9903,
+        "y": 576.2019,
+        "w": "15.0",
+        "h": "15.0"
+      },
+      "class": "process",
+      "statesandinfos": [],
+      "parent": "Cytosol",
+      "ports": [{
+        "id": "InputPort_http___identifiers_org_reactome_R-HSA-6803403LEFT_TO_RIGHT",
+        "x": 66.66666666666666,
+        "y": 0
+      }, {
+        "id": "OutputPort_http___identifiers_org_reactome_R-HSA-6803403LEFT_TO_RIGHT",
+        "x": -66.66666666666666,
+        "y": 0
+      }]
+    }
+  }, {
+    "data": {
+      "id": "http___identifiers_org_reactome_R-HSA-8852362LEFT_TO_RIGHT",
+      "bbox": {
+        "x": 170.65907,
+        "y": 471.11386,
+        "w": "15.0",
+        "h": "15.0"
+      },
+      "class": "process",
+      "statesandinfos": [],
+      "parent": "Cytosol",
+      "ports": [{
+        "id": "InputPort_http___identifiers_org_reactome_R-HSA-8852362LEFT_TO_RIGHT",
+        "x": 0,
+        "y": 66.66666666666666
+      }, {
+        "id": "OutputPort_http___identifiers_org_reactome_R-HSA-8852362LEFT_TO_RIGHT",
+        "x": 0,
+        "y": -66.66666666666666
+      }]
+    }
+  }],
+  "edges": [{
+    "data": {
+      "id": "http___pathwaycommons_org_pc2_Dna_fb997f351a7d81230f8ce04a2fd77194--to--http___identifiers_org_reactome_R-HSA-6803388LEFT_TO_RIGHT.input",
+      "class": "consumption",
+      "bendPointPositions": [],
+      "cardinality": 0,
+      "source": "http___pathwaycommons_org_pc2_Dna_fb997f351a7d81230f8ce04a2fd77194",
+      "target": "http___identifiers_org_reactome_R-HSA-6803388LEFT_TO_RIGHT",
+      "portsource": "http___pathwaycommons_org_pc2_Dna_fb997f351a7d81230f8ce04a2fd77194",
+      "porttarget": "InputPort_http___identifiers_org_reactome_R-HSA-6803388LEFT_TO_RIGHT"
+    }
+  }, {
+    "data": {
+      "id": "http___pathwaycommons_org_pc2_Complex_8e82104bc6e926646879ce573566fa41--to--http___identifiers_org_reactome_R-HSA-6803388LEFT_TO_RIGHT",
+      "class": "stimulation",
+      "bendPointPositions": [],
+      "cardinality": 0,
+      "source": "http___pathwaycommons_org_pc2_Complex_8e82104bc6e926646879ce573566fa41",
+      "target": "http___identifiers_org_reactome_R-HSA-6803388LEFT_TO_RIGHT",
+      "portsource": "http___pathwaycommons_org_pc2_Complex_8e82104bc6e926646879ce573566fa41",
+      "porttarget": "http___identifiers_org_reactome_R-HSA-6803388LEFT_TO_RIGHT"
+    }
+  }, {
+    "data": {
+      "id": "http___pathwaycommons_org_pc2_Complex_c01ff93f913af27bcb0831a570c51a46--to--http___identifiers_org_reactome_R-HSA-8852362LEFT_TO_RIGHT.input",
+      "class": "consumption",
+      "bendPointPositions": [],
+      "cardinality": 0,
+      "source": "http___pathwaycommons_org_pc2_Complex_c01ff93f913af27bcb0831a570c51a46",
+      "target": "http___identifiers_org_reactome_R-HSA-8852362LEFT_TO_RIGHT",
+      "portsource": "http___pathwaycommons_org_pc2_Complex_c01ff93f913af27bcb0831a570c51a46",
+      "porttarget": "InputPort_http___identifiers_org_reactome_R-HSA-8852362LEFT_TO_RIGHT"
+    }
+  }, {
+    "data": {
+      "id": "http___pathwaycommons_org_pc2_Complex_362f1995ea829308849a644839f320d0--to--http___identifiers_org_reactome_R-HSA-6803801LEFT_TO_RIGHT.input",
+      "class": "consumption",
+      "bendPointPositions": [],
+      "cardinality": 0,
+      "source": "http___pathwaycommons_org_pc2_Complex_362f1995ea829308849a644839f320d0",
+      "target": "http___identifiers_org_reactome_R-HSA-6803801LEFT_TO_RIGHT",
+      "portsource": "http___pathwaycommons_org_pc2_Complex_362f1995ea829308849a644839f320d0",
+      "porttarget": "InputPort_http___identifiers_org_reactome_R-HSA-6803801LEFT_TO_RIGHT"
+    }
+  }, {
+    "data": {
+      "id": "http___pathwaycommons_org_pc2_Complex_ace1aed23ff193e27660fb25bee61aa8--to--http___identifiers_org_reactome_R-HSA-6803411LEFT_TO_RIGHT",
+      "class": "inhibition",
+      "bendPointPositions": [],
+      "cardinality": 0,
+      "source": "http___pathwaycommons_org_pc2_Complex_ace1aed23ff193e27660fb25bee61aa8",
+      "target": "http___identifiers_org_reactome_R-HSA-6803411LEFT_TO_RIGHT",
+      "portsource": "http___pathwaycommons_org_pc2_Complex_ace1aed23ff193e27660fb25bee61aa8",
+      "porttarget": "http___identifiers_org_reactome_R-HSA-6803411LEFT_TO_RIGHT"
+    }
+  }, {
+    "data": {
+      "id": "http___pathwaycommons_org_pc2_Protein_ab96027e9f5bdd1ec6967b1a2ad68933--to--http___identifiers_org_reactome_R-HSA-8852362LEFT_TO_RIGHT.input",
+      "class": "consumption",
+      "bendPointPositions": [],
+      "cardinality": 0,
+      "source": "http___pathwaycommons_org_pc2_Protein_ab96027e9f5bdd1ec6967b1a2ad68933",
+      "target": "http___identifiers_org_reactome_R-HSA-8852362LEFT_TO_RIGHT",
+      "portsource": "http___pathwaycommons_org_pc2_Protein_ab96027e9f5bdd1ec6967b1a2ad68933",
+      "porttarget": "InputPort_http___identifiers_org_reactome_R-HSA-8852362LEFT_TO_RIGHT"
+    }
+  }, {
+    "data": {
+      "id": "http___identifiers_org_reactome_R-HSA-6803411LEFT_TO_RIGHT.output--to--http___pathwaycommons_org_pc2_Protein_ea1d79fc711e95b973e780d9b96b690c",
+      "class": "production",
+      "bendPointPositions": [],
+      "cardinality": 0,
+      "source": "http___identifiers_org_reactome_R-HSA-6803411LEFT_TO_RIGHT",
+      "target": "http___pathwaycommons_org_pc2_Protein_ea1d79fc711e95b973e780d9b96b690c",
+      "portsource": "OutputPort_http___identifiers_org_reactome_R-HSA-6803411LEFT_TO_RIGHT",
+      "porttarget": "http___pathwaycommons_org_pc2_Protein_ea1d79fc711e95b973e780d9b96b690c"
+    }
+  }, {
+    "data": {
+      "id": "http___pathwaycommons_org_pc2_Rna_066a231fb05a83e5f649787f259b29b3--to--http___identifiers_org_reactome_R-HSA-6803403LEFT_TO_RIGHT.input",
+      "class": "consumption",
+      "bendPointPositions": [],
+      "cardinality": 0,
+      "source": "http___pathwaycommons_org_pc2_Rna_066a231fb05a83e5f649787f259b29b3",
+      "target": "http___identifiers_org_reactome_R-HSA-6803403LEFT_TO_RIGHT",
+      "portsource": "http___pathwaycommons_org_pc2_Rna_066a231fb05a83e5f649787f259b29b3",
+      "porttarget": "InputPort_http___identifiers_org_reactome_R-HSA-6803403LEFT_TO_RIGHT"
+    }
+  }, {
+    "data": {
+      "id": "http___pathwaycommons_org_pc2_Protein_ec4fb14f51d05f51b7265d151d27f2f2--to--http___identifiers_org_reactome_R-HSA-8852362LEFT_TO_RIGHT.input",
+      "class": "consumption",
+      "bendPointPositions": [],
+      "cardinality": 0,
+      "source": "http___pathwaycommons_org_pc2_Protein_ec4fb14f51d05f51b7265d151d27f2f2",
+      "target": "http___identifiers_org_reactome_R-HSA-8852362LEFT_TO_RIGHT",
+      "portsource": "http___pathwaycommons_org_pc2_Protein_ec4fb14f51d05f51b7265d151d27f2f2",
+      "porttarget": "InputPort_http___identifiers_org_reactome_R-HSA-8852362LEFT_TO_RIGHT"
+    }
+  }, {
+    "data": {
+      "id": "http___identifiers_org_reactome_R-HSA-8852362LEFT_TO_RIGHT.output--to--http___pathwaycommons_org_pc2_Complex_1e4cebbb09aabda7603a015800e9b0ab",
+      "class": "production",
+      "bendPointPositions": [],
+      "cardinality": 0,
+      "source": "http___identifiers_org_reactome_R-HSA-8852362LEFT_TO_RIGHT",
+      "target": "http___pathwaycommons_org_pc2_Complex_1e4cebbb09aabda7603a015800e9b0ab",
+      "portsource": "OutputPort_http___identifiers_org_reactome_R-HSA-8852362LEFT_TO_RIGHT",
+      "porttarget": "http___pathwaycommons_org_pc2_Complex_1e4cebbb09aabda7603a015800e9b0ab"
+    }
+  }, {
+    "data": {
+      "id": "http___identifiers_org_reactome_R-HSA-6803388LEFT_TO_RIGHT.output--to--http___pathwaycommons_org_pc2_Rna_066a231fb05a83e5f649787f259b29b3",
+      "class": "production",
+      "bendPointPositions": [],
+      "cardinality": 0,
+      "source": "http___identifiers_org_reactome_R-HSA-6803388LEFT_TO_RIGHT",
+      "target": "http___pathwaycommons_org_pc2_Rna_066a231fb05a83e5f649787f259b29b3",
+      "portsource": "OutputPort_http___identifiers_org_reactome_R-HSA-6803388LEFT_TO_RIGHT",
+      "porttarget": "http___pathwaycommons_org_pc2_Rna_066a231fb05a83e5f649787f259b29b3"
+    }
+  }, {
+    "data": {
+      "id": "http___pathwaycommons_org_pc2_Dna_fb997f351a7d81230f8ce04a2fd77194--to--http___identifiers_org_reactome_R-HSA-6803801LEFT_TO_RIGHT.input",
+      "class": "consumption",
+      "bendPointPositions": [],
+      "cardinality": 0,
+      "source": "http___pathwaycommons_org_pc2_Dna_fb997f351a7d81230f8ce04a2fd77194",
+      "target": "http___identifiers_org_reactome_R-HSA-6803801LEFT_TO_RIGHT",
+      "portsource": "http___pathwaycommons_org_pc2_Dna_fb997f351a7d81230f8ce04a2fd77194",
+      "porttarget": "InputPort_http___identifiers_org_reactome_R-HSA-6803801LEFT_TO_RIGHT"
+    }
+  }, {
+    "data": {
+      "id": "http___pathwaycommons_org_pc2_Protein_127ead5393cb9c24b47db54d4a6b3b8f--to--http___identifiers_org_reactome_R-HSA-8852362LEFT_TO_RIGHT.input",
+      "class": "consumption",
+      "bendPointPositions": [],
+      "cardinality": 0,
+      "source": "http___pathwaycommons_org_pc2_Protein_127ead5393cb9c24b47db54d4a6b3b8f",
+      "target": "http___identifiers_org_reactome_R-HSA-8852362LEFT_TO_RIGHT",
+      "portsource": "http___pathwaycommons_org_pc2_Protein_127ead5393cb9c24b47db54d4a6b3b8f",
+      "porttarget": "InputPort_http___identifiers_org_reactome_R-HSA-8852362LEFT_TO_RIGHT"
+    }
+  }, {
+    "data": {
+      "id": "http___pathwaycommons_org_pc2_Rna_066a231fb05a83e5f649787f259b29b3--to--http___identifiers_org_reactome_R-HSA-6803411LEFT_TO_RIGHT.input",
+      "class": "consumption",
+      "bendPointPositions": [],
+      "cardinality": 0,
+      "source": "http___pathwaycommons_org_pc2_Rna_066a231fb05a83e5f649787f259b29b3",
+      "target": "http___identifiers_org_reactome_R-HSA-6803411LEFT_TO_RIGHT",
+      "portsource": "http___pathwaycommons_org_pc2_Rna_066a231fb05a83e5f649787f259b29b3",
+      "porttarget": "InputPort_http___identifiers_org_reactome_R-HSA-6803411LEFT_TO_RIGHT"
+    }
+  }, {
+    "data": {
+      "id": "http___identifiers_org_reactome_R-HSA-6803403LEFT_TO_RIGHT.output--to--http___pathwaycommons_org_pc2_Complex_ace1aed23ff193e27660fb25bee61aa8",
+      "class": "production",
+      "bendPointPositions": [],
+      "cardinality": 0,
+      "source": "http___identifiers_org_reactome_R-HSA-6803403LEFT_TO_RIGHT",
+      "target": "http___pathwaycommons_org_pc2_Complex_ace1aed23ff193e27660fb25bee61aa8",
+      "portsource": "OutputPort_http___identifiers_org_reactome_R-HSA-6803403LEFT_TO_RIGHT",
+      "porttarget": "http___pathwaycommons_org_pc2_Complex_ace1aed23ff193e27660fb25bee61aa8"
+    }
+  }, {
+    "data": {
+      "id": "http___pathwaycommons_org_pc2_Protein_2fa53096c42af17756f3555c663e7c7a--to--http___identifiers_org_reactome_R-HSA-6803719LEFT_TO_RIGHT.input",
+      "class": "consumption",
+      "bendPointPositions": [],
+      "cardinality": 0,
+      "source": "http___pathwaycommons_org_pc2_Protein_2fa53096c42af17756f3555c663e7c7a",
+      "target": "http___identifiers_org_reactome_R-HSA-6803719LEFT_TO_RIGHT",
+      "portsource": "http___pathwaycommons_org_pc2_Protein_2fa53096c42af17756f3555c663e7c7a",
+      "porttarget": "InputPort_http___identifiers_org_reactome_R-HSA-6803719LEFT_TO_RIGHT"
+    }
+  }, {
+    "data": {
+      "id": "http___identifiers_org_reactome_R-HSA-6803801LEFT_TO_RIGHT.output--to--http___pathwaycommons_org_pc2_Complex_8e82104bc6e926646879ce573566fa41",
+      "class": "production",
+      "bendPointPositions": [],
+      "cardinality": 0,
+      "source": "http___identifiers_org_reactome_R-HSA-6803801LEFT_TO_RIGHT",
+      "target": "http___pathwaycommons_org_pc2_Complex_8e82104bc6e926646879ce573566fa41",
+      "portsource": "OutputPort_http___identifiers_org_reactome_R-HSA-6803801LEFT_TO_RIGHT",
+      "porttarget": "http___pathwaycommons_org_pc2_Complex_8e82104bc6e926646879ce573566fa41"
+    }
+  }, {
+    "data": {
+      "id": "http___identifiers_org_reactome_R-HSA-6803719LEFT_TO_RIGHT.output--to--http___pathwaycommons_org_pc2_Complex_362f1995ea829308849a644839f320d0",
+      "class": "production",
+      "bendPointPositions": [],
+      "cardinality": 0,
+      "source": "http___identifiers_org_reactome_R-HSA-6803719LEFT_TO_RIGHT",
+      "target": "http___pathwaycommons_org_pc2_Complex_362f1995ea829308849a644839f320d0",
+      "portsource": "OutputPort_http___identifiers_org_reactome_R-HSA-6803719LEFT_TO_RIGHT",
+      "porttarget": "http___pathwaycommons_org_pc2_Complex_362f1995ea829308849a644839f320d0"
+    }
+  }, {
+    "data": {
+      "id": "http___pathwaycommons_org_pc2_Complex_ab4b57f8765cdc0ce281453e224735b5--to--http___identifiers_org_reactome_R-HSA-6803719LEFT_TO_RIGHT.input",
+      "class": "consumption",
+      "bendPointPositions": [],
+      "cardinality": 0,
+      "source": "http___pathwaycommons_org_pc2_Complex_ab4b57f8765cdc0ce281453e224735b5",
+      "target": "http___identifiers_org_reactome_R-HSA-6803719LEFT_TO_RIGHT",
+      "portsource": "http___pathwaycommons_org_pc2_Complex_ab4b57f8765cdc0ce281453e224735b5",
+      "porttarget": "InputPort_http___identifiers_org_reactome_R-HSA-6803719LEFT_TO_RIGHT"
+    }
+  }, {
+    "data": {
+      "id": "http___pathwaycommons_org_pc2_Protein_8e914f4622af26be019754a15281d309--to--http___identifiers_org_reactome_R-HSA-6803403LEFT_TO_RIGHT.input",
+      "class": "consumption",
+      "bendPointPositions": [],
+      "cardinality": 0,
+      "source": "http___pathwaycommons_org_pc2_Protein_8e914f4622af26be019754a15281d309",
+      "target": "http___identifiers_org_reactome_R-HSA-6803403LEFT_TO_RIGHT",
+      "portsource": "http___pathwaycommons_org_pc2_Protein_8e914f4622af26be019754a15281d309",
+      "porttarget": "InputPort_http___identifiers_org_reactome_R-HSA-6803403LEFT_TO_RIGHT"
+    }
+  }]
+}

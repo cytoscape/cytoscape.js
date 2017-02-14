@@ -168,7 +168,7 @@ Padding:
 
 A padding defines an addition to a node's dimension.  For example, `padding` adds to a node's outer (i.e. total) width and height.  This can be used to add spacing around the label of `width: label; height: label;` nodes, or it can be used to add spacing between a compound node parent and its children.
 
-* **`padding`** : The amount of padding around all sides of the node.
+* **`padding`** : The amount of padding around all sides of the node. Either percentage or pixel value can be specified.
 
 Compound parent sizing:
 

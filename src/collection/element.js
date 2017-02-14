@@ -42,6 +42,7 @@ var Element = function( cy, params, restore ){
     position: params.position || {}, // (x, y) position pair
     autoWidth: undefined, // width and height of nodes calculated by the renderer when set to special 'auto' value
     autoHeight: undefined,
+    autoPadding: undefined,
     listeners: [], // array of bound listeners
     group: group, // string; 'nodes' or 'edges'
     style: {}, // properties as set by the style

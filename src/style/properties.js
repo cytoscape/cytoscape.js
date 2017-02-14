@@ -221,7 +221,7 @@ var styfn = {};
     { name: 'background-color', type: t.color },
     { name: 'background-opacity', type: t.zeroOneNumber },
     { name: 'background-blacken', type: t.nOneOneNumber },
-    { name: 'padding', type: t.size },
+    { name: 'padding', type: t.sizeMaybePercent },
 
     // node border
     { name: 'border-color', type: t.color },

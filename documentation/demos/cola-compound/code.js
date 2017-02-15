@@ -20,7 +20,7 @@ var initCy = function(cy3json) {
     style: [{
         selector: 'node',
         css: {
-          'content': 'data(label)',
+          'content': 'data(id)',
           'text-valign': 'center',
           'text-halign': 'center'
         }

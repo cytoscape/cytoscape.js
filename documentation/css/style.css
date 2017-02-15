@@ -7,7 +7,7 @@ body {
 	line-height: 1.5;
 	-webkit-text-size-adjust: 100%;
 	background: #fff;
-	font-weight: 300;
+	font-weight: 400;
 }
 
 body, html {
@@ -29,6 +29,7 @@ form {
 
 .footnote {
 	font-size: 0.65em;
+	margin: 0.77em 0;
 }
 
 #orphaned-cy-container {
@@ -241,7 +242,7 @@ button.outline {
 }
 
 .toc-search {
-	font-weight: 200;
+	font-weight: 400;
 	margin: 0;
 	position: fixed;
 	top: 0;
@@ -569,7 +570,7 @@ button.outline {
 	line-height: 1.25;
 	white-space: nowrap;
 	margin: 0;
-	font-weight: 100 !important;
+	font-weight: 200 !important;
 }
 
 .title .description {
@@ -582,11 +583,11 @@ button.outline {
 }
 
 .subtitle {
-	font-weight: 200;
+	font-weight: 400;
 }
 
 .links {
-	font-weight: 200;
+	font-weight: 400;
 }
 
 .links a {
@@ -595,7 +596,7 @@ button.outline {
 
 .likes {
 	margin-top: 1em;
-	font-weight: 200;
+	font-weight: 400;
 }
 
 .like-label {

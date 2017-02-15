@@ -4,7 +4,7 @@ var domReady = new Promise(function(resolve) {
   });
 });
 
-var fetchData = fetch('data.json')
+var fetchData = fetch('data.json', {mode: 'no-cors'})
   .then(function(res) {
     return res.json()
   });

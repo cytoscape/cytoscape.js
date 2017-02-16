@@ -271,11 +271,9 @@ fn = elesfn = ({
         // Follows CSS2 specifications for padding
         if(paddingObject.units === '%') {
           return (width > 0 ? paddingObject.pfValue * width : 0);
-        }
-        else if(paddingObject.units === 'px') {
+        } else if(paddingObject.units === 'px') {
           return paddingObject.pfValue;
-        }
-        else {
+        } else {
           return 0;
         }
       }
@@ -941,9 +939,15 @@ defineDimFns( {
   name: 'height'
 } );
 
-defineDimFns( {
-  name: 'padding'
-} );
+elesfn.padding = function(){
+  var ele = this[0];
+  var _p = ele._private;
+  if( _p.autoPadding !== undefined ) {
+    return _p.autoPadding;
+  } else {
+    return ele.pstyle( 'padding' ).pfValue;
+  }
+}
 
 // aliases
 fn.modelPosition = fn.point = fn.position;

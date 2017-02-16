@@ -266,11 +266,26 @@ fn = elesfn = ({
         };
       }
 
-      function computePaddingValues( width, paddingObject ) {
+      function computePaddingValues( width, height, paddingObject, relativeTo ) {
         // Assuming percentage is number from 0 to 1
-        // Follows CSS2 specifications for padding
         if(paddingObject.units === '%') {
-          return (width > 0 ? paddingObject.pfValue * width : 0);
+          return {
+            'width': function(){
+              return width > 0 ? paddingObject.pfValue * width : 0;
+            },
+            'height': function(){
+              return height > 0 ? paddingObject.pfValue * height : 0;
+            },
+            'whAverage': function(){
+              return ( width > 0 ) && ( height > 0 ) ? paddingObject.pfValue * ( width + height ) / 2 : 0;
+            },
+            'whMin': function(){
+              return ( width > 0 ) && ( height > 0 ) ? ( ( width > height ) ? paddingObject.pfValue * height : paddingObject.pfValue * width ) : 0;
+            },
+            'whMax': function(){
+              return ( width > 0 ) && ( height > 0 ) ? ( ( width > height ) ? paddingObject.pfValue * width : paddingObject.pfValue * height ) : 0;
+            }
+          }[relativeTo || 'width']();
         } else if(paddingObject.units === 'px') {
           return paddingObject.pfValue;
         } else {
@@ -305,7 +320,7 @@ fn = elesfn = ({
       var diffTop = heightBiasDiffs.biasDiff;
       var diffBottom = heightBiasDiffs.biasComplementDiff;
 
-      _p.autoPadding = computePaddingValues( bb.w, ele.pstyle( 'padding' ) );
+      _p.autoPadding = computePaddingValues( bb.w, bb.h, ele.pstyle( 'padding' ), ele.pstyle( 'padding-relative-to' ).value );
 
       _p.autoWidth = Math.max(bb.w, min.width.val);
       pos.x = (- diffLeft + bb.x1 + bb.x2 + diffRight) / 2;

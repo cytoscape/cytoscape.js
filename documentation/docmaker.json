@@ -50,7 +50,7 @@
         { "name": "Labels", "id": "2abfc41c86c1e3cb0700" },
         { "name": "Compound nodes", "id": "5b192c88616af2f75344" },
         { "name": "Linkout example", "id": "eb861f83fb741628342f" },
-        { "name": "Pie style", "id": "173313aba1f31cae49a5" },
+        { "name": "Pie style", "id": "pie-style" },
         { "name": "Multiple instances", "id": "310dca83ba6970812dd0" },
         { "name": "Visual style", "id": "b7c65115947d9e0e8ec8" },
         { "name": "Initialisation", "id": "621d51ea7de19608127e" }

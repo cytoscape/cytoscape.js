@@ -1810,8 +1810,6 @@ BRp.findEdgeControlPoints = function( edges ){
     this.recalculateEdgeLabelProjections( edge );
     this.calculateLabelAngles( edge );
   }
-
-  return hashTable;
 };
 
 var getAngleFromDisp = function( dispX, dispY ){

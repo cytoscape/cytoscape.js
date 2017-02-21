@@ -1459,6 +1459,9 @@ BRp.findEdgeControlPoints = function( edges ){
 
       }
 
+      rs.srcIntn = srcOutside;
+      rs.tgtIntn = tgtOutside;
+
       if( src === tgt ){
         // Self-edge
 
@@ -2140,6 +2143,8 @@ BRp.findEndpoints = function( edge ){
     intersect = [ tgtPos.x, tgtPos.y ];
   } else if( tgtManEndpt.units ){
     intersect = this.manualEndptToPx( target, tgtManEndpt );
+  } else if( tgtManEndpt.value === 'outside-to-line' ){
+    intersect = rs.tgtIntn; // use cached value from ctrlpt calc
   } else {
     if( tgtManEndpt.value === 'outside-to-node' ){
       p1_i = p1;
@@ -2179,6 +2184,8 @@ BRp.findEndpoints = function( edge ){
     intersect = [ srcPos.x, srcPos.y ];
   } else if( srcManEndpt.units ){
     intersect = this.manualEndptToPx( source, srcManEndpt );
+  } else if( srcManEndpt.value === 'outside-to-line' ){
+    intersect = rs.srcIntn; // use cached value from ctrlpt calc
   } else {
     if( srcManEndpt.value === 'outside-to-node' ){
       p2_i = p2;

@@ -83,6 +83,14 @@ var elesfn = ({
     }
   },
 
+  isChildless: function(){
+    var ele = this[0];
+
+    if( ele ){
+      return ele.isNode() && ele._private.children.length === 0;
+    }
+  },
+
   isChild: function(){
     var ele = this[0];
 

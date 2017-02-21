@@ -126,6 +126,7 @@ describe('Selectors', function(){
 
   // compound
   itSelects(':parent', 'nparent');
+  itSelects(':childless', 'n1', 'n2');
   itSelects(':child', 'n2');
   itSelects(':nonorphan', 'n2');
   itSelects(':orphan', 'n1', 'nparent');

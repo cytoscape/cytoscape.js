@@ -27,6 +27,15 @@ var cytoscape = function( options ){ // jshint ignore:line
   }
 };
 
+// e.g. cytoscape.use( require('cytoscape-foo'), bar )
+cytoscape.use = function( ext ){
+  var args = Array.prototype.slice.call( arguments, 1 ); // args to pass to ext
+
+  args.unshift( cytoscape ); // cytoscape is first arg to ext
+
+  ext.apply( null, args );
+};
+
 // replaced by build system
 cytoscape.version = require('./version');
 

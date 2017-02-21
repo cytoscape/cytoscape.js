@@ -1257,75 +1257,6 @@ BRp.findEdgeControlPoints = function( edges ){
 
     badBezier = false;
 
-
-    if( (pairEdges.length > 1 && src !== tgt) || pairEdges.hasUnbundled ){
-
-      // pt outside src shape to calc distance/displacement from src to tgt
-      var srcOutside = srcShape.intersectLine(
-        srcPos.x,
-        srcPos.y,
-        srcW,
-        srcH,
-        tgtPos.x,
-        tgtPos.y,
-        0
-      );
-
-      // pt outside tgt shape to calc distance/displacement from src to tgt
-      var tgtOutside = tgtShape.intersectLine(
-        tgtPos.x,
-        tgtPos.y,
-        tgtW,
-        tgtH,
-        srcPos.x,
-        srcPos.y,
-        0
-      );
-
-      var midptSrcPts = {
-        x1: srcOutside[0],
-        x2: tgtOutside[0],
-        y1: srcOutside[1],
-        y2: tgtOutside[1]
-      };
-
-      var posPts = {
-        x1: srcPos.x,
-        x2: tgtPos.x,
-        y1: srcPos.y,
-        y2: tgtPos.y
-      };
-
-      var dy = ( tgtOutside[1] - srcOutside[1] );
-      var dx = ( tgtOutside[0] - srcOutside[0] );
-      var l = Math.sqrt( dx * dx + dy * dy );
-
-      var vector = {
-        x: dx,
-        y: dy
-      };
-
-      var vectorNorm = {
-        x: vector.x / l,
-        y: vector.y / l
-      };
-      vectorNormInverse = {
-        x: -vectorNorm.y,
-        y: vectorNorm.x
-      };
-
-
-      // if node shapes overlap, then no ctrl pts to draw
-      if(
-        tgtShape.checkPoint( srcOutside[0], srcOutside[1], 0, tgtW, tgtH, tgtPos.x, tgtPos.y )  &&
-        srcShape.checkPoint( tgtOutside[0], tgtOutside[1], 0, srcW, srcH, srcPos.x, srcPos.y )
-      ){
-        vectorNormInverse = {};
-        badBezier = true;
-      }
-
-    }
-
     var edge;
     var edge_p;
     var rs;
@@ -1341,6 +1272,18 @@ BRp.findEdgeControlPoints = function( edges ){
       'southeast': 0
     };
 
+    var srcX2 = srcPos.x;
+    var srcY2 = srcPos.y;
+    var srcW2 = srcW;
+    var srcH2 = srcH;
+
+    var tgtX2 = tgtPos.x;
+    var tgtY2 = tgtPos.y;
+    var tgtW2 = tgtW;
+    var tgtH2 = tgtH;
+
+    var numEdges2 = pairEdges.length;
+
     for( var i = 0; i < pairEdges.length; i++ ){
       edge = pairEdges[ i ];
       edge_p = edge._private;
@@ -1350,43 +1293,60 @@ BRp.findEdgeControlPoints = function( edges ){
       var edgeIndex2 = i;
 
       var numEdges1 = rs.lastNumEdges;
-      var numEdges2 = pairEdges.length;
 
       var curveStyle = edge.pstyle( 'curve-style' ).value;
-      var ctrlptDists = edge.pstyle( 'control-point-distances' );
 
+      var edgeIsUnbundled = curveStyle === 'unbundled-bezier' || curveStyle === 'segments';
+
+      var ctrlptDists = edge.pstyle( 'control-point-distances' );
       var loopDir = edge.pstyle('loop-direction').pfValue;
       var loopSwp = edge.pstyle('loop-sweep').pfValue;
-
       var ctrlptWs = edge.pstyle( 'control-point-weights' );
       var bezierN = ctrlptDists && ctrlptWs ? Math.min( ctrlptDists.value.length, ctrlptWs.value.length ) : 1;
       var stepSize = edge.pstyle( 'control-point-step-size' ).pfValue;
       var ctrlptDist = ctrlptDists ? ctrlptDists.pfValue[0] : undefined;
       var ctrlptWeight = ctrlptWs.value[0];
-      var edgeIsUnbundled = curveStyle === 'unbundled-bezier' || curveStyle === 'segments';
+      var edgeDistances = edge.pstyle('edge-distances').value;
+      var segmentWs = edge.pstyle( 'segment-weights' );
+      var segmentDs = edge.pstyle( 'segment-distances' );
+      var segmentsN = Math.min( segmentWs.pfValue.length, segmentDs.pfValue.length );
 
       var srcX1 = rs.lastSrcCtlPtX;
-      var srcX2 = srcPos.x;
       var srcY1 = rs.lastSrcCtlPtY;
-      var srcY2 = srcPos.y;
       var srcW1 = rs.lastSrcCtlPtW;
-      var srcW2 = src.outerWidth();
       var srcH1 = rs.lastSrcCtlPtH;
-      var srcH2 = src.outerHeight();
 
       var tgtX1 = rs.lastTgtCtlPtX;
-      var tgtX2 = tgtPos.x;
       var tgtY1 = rs.lastTgtCtlPtY;
-      var tgtY2 = tgtPos.y;
       var tgtW1 = rs.lastTgtCtlPtW;
-      var tgtW2 = tgt.outerWidth();
       var tgtH1 = rs.lastTgtCtlPtH;
-      var tgtH2 = tgt.outerHeight();
 
-      var width1 = rs.lastW;
-      var width2 = edge.pstyle( 'control-point-step-size' ).pfValue;
+      var curveStyle1 = rs.lastCurveStyle;
+      var curveStyle2 = curveStyle;
 
-      var edgeDistances = edge.pstyle('edge-distances').value;
+      var ctrlptDists1 = rs.lastCtrlptDists;
+      var ctrlptDists2 = ctrlptDists ? ctrlptDists.strValue : null;
+
+      var ctrlptWs1 = rs.lastCtrlptWs;
+      var ctrlptWs2 = ctrlptWs.strValue;
+
+      var segmentWs1 = rs.lastSegmentWs;
+      var segmentWs2 = segmentWs.strValue;
+
+      var segmentDs1 = rs.lastSegmentDs;
+      var segmentDs2 = segmentDs.strValue;
+
+      var stepSize1 = rs.lastStepSize;
+      var stepSize2 = stepSize;
+
+      var loopDir1 = rs.lastLoopDir;
+      var loopDir2 = loopDir;
+
+      var loopSwp1 = rs.lastLoopSwp;
+      var loopSwp2 = loopSwp;
+
+      var edgeDistances1 = rs.lastEdgeDistances;
+      var edgeDistances2 = edgeDistances;
 
       if( badBezier ){
         rs.badBezier = true;
@@ -1396,9 +1356,16 @@ BRp.findEdgeControlPoints = function( edges ){
 
       if( srcX1 === srcX2 && srcY1 === srcY2 && srcW1 === srcW2 && srcH1 === srcH2
       &&  tgtX1 === tgtX2 && tgtY1 === tgtY2 && tgtW1 === tgtW2 && tgtH1 === tgtH2
-      &&  width1 === width2
+      &&  curveStyle1 === curveStyle2
+      &&  ctrlptDists1 === ctrlptDists2
+      &&  ctrlptWs1 === ctrlptWs2
+      &&  segmentWs1 === segmentWs2
+      &&  segmentDs1 === segmentDs2
+      &&  stepSize1 === stepSize2
+      &&  loopDir1 === loopDir2
+      &&  loopSwp1 === loopSwp2
+      &&  edgeDistances1 === edgeDistances2
       &&  ((edgeIndex1 === edgeIndex2 && numEdges1 === numEdges2) || edgeIsUnbundled) ){
-        // console.log('edge ctrl pt cache HIT')
         continue; // then the control points haven't changed and we can skip calculating them
       } else {
         rs.lastSrcCtlPtX = srcX2;
@@ -1411,9 +1378,89 @@ BRp.findEdgeControlPoints = function( edges ){
         rs.lastTgtCtlPtH = tgtH2;
         rs.lastEdgeIndex = edgeIndex2;
         rs.lastNumEdges = numEdges2;
-        rs.lastWidth = width2;
-        // console.log('edge ctrl pt cache MISS')
+        rs.lastCurveStyle = curveStyle2;
+        rs.lastCtrlptDists = ctrlptDists2;
+        rs.lastCtrlptWs = ctrlptWs2;
+        rs.lastSegmentDs = segmentDs2;
+        rs.lastSegmentWs = segmentWs2;
+        rs.lastStepSize = stepSize2;
+        rs.lastLoopDir = loopDir2;
+        rs.lastLoopSwp = loopSwp2;
+        rs.lastEdgeDistances = edgeDistances2;
       }
+
+      if( !pairEdges.calculatedIntersection && ( (pairEdges.length > 1 && src !== tgt) || pairEdges.hasUnbundled ) ){
+
+        pairEdges.calculatedIntersection = true;
+
+        // pt outside src shape to calc distance/displacement from src to tgt
+        var srcOutside = srcShape.intersectLine(
+          srcPos.x,
+          srcPos.y,
+          srcW,
+          srcH,
+          tgtPos.x,
+          tgtPos.y,
+          0
+        );
+
+        // pt outside tgt shape to calc distance/displacement from src to tgt
+        var tgtOutside = tgtShape.intersectLine(
+          tgtPos.x,
+          tgtPos.y,
+          tgtW,
+          tgtH,
+          srcPos.x,
+          srcPos.y,
+          0
+        );
+
+        var midptSrcPts = {
+          x1: srcOutside[0],
+          x2: tgtOutside[0],
+          y1: srcOutside[1],
+          y2: tgtOutside[1]
+        };
+
+        var posPts = {
+          x1: srcPos.x,
+          x2: tgtPos.x,
+          y1: srcPos.y,
+          y2: tgtPos.y
+        };
+
+        var dy = ( tgtOutside[1] - srcOutside[1] );
+        var dx = ( tgtOutside[0] - srcOutside[0] );
+        var l = Math.sqrt( dx * dx + dy * dy );
+
+        var vector = {
+          x: dx,
+          y: dy
+        };
+
+        var vectorNorm = {
+          x: vector.x / l,
+          y: vector.y / l
+        };
+        vectorNormInverse = {
+          x: -vectorNorm.y,
+          y: vectorNorm.x
+        };
+
+
+        // if node shapes overlap, then no ctrl pts to draw
+        if(
+          tgtShape.checkPoint( srcOutside[0], srcOutside[1], 0, tgtW, tgtH, tgtPos.x, tgtPos.y )  &&
+          srcShape.checkPoint( tgtOutside[0], tgtOutside[1], 0, srcW, srcH, srcPos.x, srcPos.y )
+        ){
+          vectorNormInverse = {};
+          badBezier = true;
+        }
+
+      }
+
+      rs.srcIntn = srcOutside;
+      rs.tgtIntn = tgtOutside;
 
       if( src === tgt ){
         // Self-edge
@@ -1499,13 +1546,9 @@ BRp.findEdgeControlPoints = function( edges ){
         rs.edgeType = 'segments';
         rs.segpts = [];
 
-        var segmentWs = edge.pstyle( 'segment-weights' ).pfValue;
-        var segmentDs = edge.pstyle( 'segment-distances' ).pfValue;
-        var segmentsN = Math.min( segmentWs.length, segmentDs.length );
-
         for( var s = 0; s < segmentsN; s++ ){
-          var w = segmentWs[ s ];
-          var d = segmentDs[ s ];
+          var w = segmentWs.pfValue[ s ];
+          var d = segmentDs.pfValue[ s ];
 
           var w1 = 1 - w;
           var w2 = w;
@@ -1805,8 +1848,6 @@ BRp.findEdgeControlPoints = function( edges ){
     this.recalculateEdgeLabelProjections( edge );
     this.calculateLabelAngles( edge );
   }
-
-  return hashTable;
 };
 
 var getAngleFromDisp = function( dispX, dispY ){
@@ -2102,6 +2143,8 @@ BRp.findEndpoints = function( edge ){
     intersect = [ tgtPos.x, tgtPos.y ];
   } else if( tgtManEndpt.units ){
     intersect = this.manualEndptToPx( target, tgtManEndpt );
+  } else if( tgtManEndpt.value === 'outside-to-line' ){
+    intersect = rs.tgtIntn; // use cached value from ctrlpt calc
   } else {
     if( tgtManEndpt.value === 'outside-to-node' ){
       p1_i = p1;
@@ -2141,6 +2184,8 @@ BRp.findEndpoints = function( edge ){
     intersect = [ srcPos.x, srcPos.y ];
   } else if( srcManEndpt.units ){
     intersect = this.manualEndptToPx( source, srcManEndpt );
+  } else if( srcManEndpt.value === 'outside-to-line' ){
+    intersect = rs.srcIntn; // use cached value from ctrlpt calc
   } else {
     if( srcManEndpt.value === 'outside-to-node' ){
       p2_i = p2;

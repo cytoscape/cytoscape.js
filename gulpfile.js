@@ -492,45 +492,8 @@ gulp.task('docsrefs', function(){
   ;
 });
 
-gulp.task('docsdemodl', function(){
-
-  var docmaker = require('./documentation/docmaker.json');
-
-  var demos = docmaker.sections.filter(function(s){
-    return s.demos != null || s.demo != null;
-  }).map(function( s ){
-    return s.demos || [ s.demo ];
-  }).map(function( ds ){
-    return ds.filter(function(d){
-      return !d.github; // don't have to download demos
-    }).map(function(d){
-      return 'https://gist.github.com/' + d.id + '/download';
-    });
-  }).reduce(function(prevDs, currDs){
-    return prevDs.concat( currDs );
-  }, []);
-
-  return $.download( demos )
-    .pipe( $.unzip() )
-
-    .pipe( $.rename(function( path ){
-      // console.log(path)
-
-      var match = path.dirname.match(/^(.+)\-master$/);
-
-      if( match ){
-        path.dirname = match[1];
-      }
-    }) )
-
-    .pipe( $.replace(/".*cytoscape(\.min){0,1}\.js"/, '"../../js/cytoscape.min.js"') )
-
-    .pipe( gulp.dest('documentation/demos') )
-  ;
-});
-
 gulp.task('docspub', function(next){
-  runSequence( 'version', 'docsdl', 'docsver', 'docsjs', 'docsdemodl', 'docsmin', next );
+  runSequence( 'version', 'docsdl', 'docsver', 'docsjs', 'docsmin', next );
 });
 
 gulp.task('docsrebuild', function(next){

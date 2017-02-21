@@ -50,13 +50,13 @@ var elesfn = ({
 
   orphans: function( selector ){
     return this.stdFilter( function( ele ){
-      return ele.isNode() && ele.parent().empty();
+      return ele.isOrphan();
     } ).filter( selector );
   },
 
   nonorphans: function( selector ){
     return this.stdFilter( function( ele ){
-      return ele.isNode() && ele.parent().nonempty();
+      return ele.isChild();
     } ).filter( selector );
   },
 
@@ -79,7 +79,7 @@ var elesfn = ({
     var ele = this[0];
 
     if( ele ){
-      return ele._private.children.length !== 0;
+      return ele.isNode() && ele._private.children.length !== 0;
     }
   },
 
@@ -87,7 +87,15 @@ var elesfn = ({
     var ele = this[0];
 
     if( ele ){
-      return ele._private.data.parent !== undefined && ele.parent().length !== 0;
+      return ele.isNode() && ele._private.parent != null;
+    }
+  },
+
+  isOrphan: function(){
+    var ele = this[0];
+
+    if( ele ){
+      return ele.isNode() && ele._private.parent == null;
     }
   },
 

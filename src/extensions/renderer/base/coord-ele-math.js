@@ -1274,13 +1274,13 @@ BRp.findEdgeControlPoints = function( edges ){
 
     var srcX2 = srcPos.x;
     var srcY2 = srcPos.y;
-    var srcW2 = src.outerWidth();
-    var srcH2 = src.outerHeight();
+    var srcW2 = srcW;
+    var srcH2 = srcH;
 
     var tgtX2 = tgtPos.x;
     var tgtY2 = tgtPos.y;
-    var tgtW2 = tgt.outerWidth();
-    var tgtH2 = tgt.outerHeight();
+    var tgtW2 = tgtW;
+    var tgtH2 = tgtH;
 
     var numEdges2 = pairEdges.length;
 

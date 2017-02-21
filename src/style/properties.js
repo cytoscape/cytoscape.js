@@ -33,7 +33,7 @@ var styfn = {};
     bidirectionalSize: { number: true }, // allows negative
     bidirectionalSizes: { number: true, multiple: true }, // allows negative
     sizeMaybePercent: { number: true, min: 0, allowPercent: true },
-    paddingRelativeTo: { enums: [ 'width', 'height', 'whAverage', 'whMin', 'whMax' ] },
+    paddingRelativeTo: { enums: [ 'width', 'height', 'average', 'min', 'max' ] },
     bgWH: { number: true, min: 0, allowPercent: true, enums: [ 'auto' ] },
     bgPos: { number: true, allowPercent: true },
     bgRepeat: { enums: [ 'repeat', 'repeat-x', 'repeat-y', 'no-repeat' ] },

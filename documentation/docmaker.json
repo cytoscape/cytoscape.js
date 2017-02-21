@@ -46,7 +46,7 @@
         { "name": "Spread layout", "id": "spread-layout" },
         { "name": "Images & breadthfirst layout", "id": "aedff159b0df05ccfaa5" },
         { "name": "Animated BFS", "id": "7e2f4d29ff7ef1a1bba5" },
-        { "name": "Edge types", "id": "18504640d9a03c178fff" },
+        { "name": "Edge types", "id": "edge-types" },
         { "name": "Labels", "id": "2abfc41c86c1e3cb0700" },
         { "name": "Compound nodes", "id": "5b192c88616af2f75344" },
         { "name": "Linkout example", "id": "eb861f83fb741628342f" },

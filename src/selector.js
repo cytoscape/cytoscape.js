@@ -3,6 +3,138 @@
 var is = require( './is' );
 var util = require( './util' );
 
+var stateSelectors = [
+  {
+    selector: ':selected',
+    matches: function( ele ){ return ele.selected(); }
+  },
+  {
+    selector: ':unselected',
+    matches: function( ele ){ return !ele.selected(); }
+  },
+  {
+    selector: ':selectable',
+    matches: function( ele ){ return ele.selectable(); }
+  },
+  {
+    selector: ':unselectable',
+    matches: function( ele ){ return !ele.selectable(); }
+  },
+  {
+    selector: ':locked',
+    matches: function( ele ){ return ele.locked(); }
+  },
+  {
+    selector: ':unlocked',
+    matches: function( ele ){ return !ele.locked(); }
+  },
+  {
+    selector: ':visible',
+    matches: function( ele ){ return ele.visible(); }
+  },
+  {
+    selector: ':hidden',
+    matches: function( ele ){ return !ele.visible(); }
+  },
+  {
+    selector: ':transparent',
+    matches: function( ele ){ return ele.transparent(); }
+  },
+  {
+    selector: ':grabbed',
+    matches: function( ele ){ return ele.grabbed(); }
+  },
+  {
+    selector: ':free',
+    matches: function( ele ){ return !ele.grabbed(); }
+  },
+  {
+    selector: ':removed',
+    matches: function( ele ){ return ele.removed(); }
+  },
+  {
+    selector: ':inside',
+    matches: function( ele ){ return !ele.removed(); }
+  },
+  {
+    selector: ':grabbable',
+    matches: function( ele ){ return ele.grabbable(); }
+  },
+  {
+    selector: ':ungrabbable',
+    matches: function( ele ){ return !ele.grabbable(); }
+  },
+  {
+    selector: ':animated',
+    matches: function( ele ){ return ele.animated(); }
+  },
+  {
+    selector: ':unanimated',
+    matches: function( ele ){ return !ele.animated(); }
+  },
+  {
+    selector: ':parent',
+    matches: function( ele ){ return ele.isParent(); }
+  },
+  {
+    selector: ':child',
+    matches: function( ele ){ return ele.isChild(); }
+  },
+  {
+    selector: ':orphan',
+    matches: function( ele ){ return ele.isOrphan(); }
+  },
+  {
+    selector: ':nonorphan',
+    matches: function( ele ){ return ele.isChild(); }
+  },
+  {
+    selector: ':loop',
+    matches: function( ele ){ return ele.isLoop(); }
+  },
+  {
+    selector: ':simple',
+    matches: function( ele ){ return ele.isSimple(); }
+  },
+  {
+    selector: ':active',
+    matches: function( ele ){ return ele.active(); }
+  },
+  {
+    selector: ':inactive',
+    matches: function( ele ){ return !ele.active(); }
+  },
+  {
+    selector: ':backgrounding',
+    matches: function( ele ){ return ele.backgrounding(); }
+  },
+  {
+    selector: ':nonbackgrounding',
+    matches: function( ele ){ return !ele.backgrounding(); }
+  }
+].sort(function( a, b ){ // n.b. selectors that are starting substrings of others must have the longer ones first
+  return util.sort.descending( a.selector, b.selector );
+});
+
+var stateSelectorMatches = function( sel, ele ){
+  var lookup = stateSelectorMatches.lookup = stateSelectorMatches.lookup || (function(){
+    var selToFn = {};
+    var s;
+
+    for( var i = 0; i < stateSelectors.length; i++ ){
+      s = stateSelectors[i];
+
+      selToFn[ s.selector ] = s.matches;
+    }
+
+    return selToFn;
+  })();
+
+  return lookup[ sel ]( ele );
+};
+
+var stateSelectorRegex = '(' + stateSelectors.map(function( s ){ return s.selector; }).join('|') + ')';
+
 var Selector = function( selector ){
 
   if( !(this instanceof Selector) ){
@@ -138,9 +270,7 @@ var Selector = function( selector ){
       {
         name: 'state',
         query: true,
-        // NB: if one colon selector is a substring of another from its start, place the longer one first
-        // e.g. :foobar|:foo
-        regex: '(:selected|:unselected|:locked|:unlocked|:visible|:hidden|:transparent|:grabbed|:free|:removed|:inside|:grabbable|:ungrabbable|:animated|:unanimated|:selectable|:unselectable|:orphan|:nonorphan|:parent|:child|:loop|:simple|:active|:inactive|:touch|:backgrounding|:nonbackgrounding)',
+        regex: stateSelectorRegex,
         populate: function( state ){
           this.colonSelectors.push( state );
         }
@@ -430,90 +560,7 @@ var queryMatches = function( query, ele ){
   for( var k = 0; k < query.colonSelectors.length; k++ ){
     var sel = query.colonSelectors[ k ];
 
-    switch( sel ){
-      case ':selected':
-        allColonSelectorsMatch = ele.selected();
-        break;
-      case ':unselected':
-        allColonSelectorsMatch = !ele.selected();
-        break;
-      case ':selectable':
-        allColonSelectorsMatch = ele.selectable();
-        break;
-      case ':unselectable':
-        allColonSelectorsMatch = !ele.selectable();
-        break;
-      case ':locked':
-        allColonSelectorsMatch = ele.locked();
-        break;
-      case ':unlocked':
-        allColonSelectorsMatch = !ele.locked();
-        break;
-      case ':visible':
-        allColonSelectorsMatch = ele.visible();
-        break;
-      case ':hidden':
-        allColonSelectorsMatch = !ele.visible();
-        break;
-      case ':transparent':
-        allColonSelectorsMatch = ele.transparent();
-        break;
-      case ':grabbed':
-        allColonSelectorsMatch = ele.grabbed();
-        break;
-      case ':free':
-        allColonSelectorsMatch = !ele.grabbed();
-        break;
-      case ':removed':
-        allColonSelectorsMatch = ele.removed();
-        break;
-      case ':inside':
-        allColonSelectorsMatch = !ele.removed();
-        break;
-      case ':grabbable':
-        allColonSelectorsMatch = ele.grabbable();
-        break;
-      case ':ungrabbable':
-        allColonSelectorsMatch = !ele.grabbable();
-        break;
-      case ':animated':
-        allColonSelectorsMatch = ele.animated();
-        break;
-      case ':unanimated':
-        allColonSelectorsMatch = !ele.animated();
-        break;
-      case ':parent':
-        allColonSelectorsMatch = ele.isNode() && ele.children().nonempty();
-        break;
-      case ':child':
-      case ':nonorphan':
-        allColonSelectorsMatch = ele.isNode() && ele.parent().nonempty();
-        break;
-      case ':orphan':
-        allColonSelectorsMatch = ele.isNode() && ele.parent().empty();
-        break;
-      case ':loop':
-        allColonSelectorsMatch = ele.isEdge() && ele.data( 'source' ) === ele.data( 'target' );
-        break;
-      case ':simple':
-        allColonSelectorsMatch = ele.isEdge() && ele.data( 'source' ) !== ele.data( 'target' );
-        break;
-      case ':active':
-        allColonSelectorsMatch = ele.active();
-        break;
-      case ':inactive':
-        allColonSelectorsMatch = !ele.active();
-        break;
-      case ':touch':
-        allColonSelectorsMatch = is.touch();
-        break;
-      case ':backgrounding':
-        allColonSelectorsMatch = ele.backgrounding();
-        break;
-      case ':nonbackgrounding':
-        allColonSelectorsMatch = !ele.backgrounding();
-        break;
-    }
+    allColonSelectorsMatch = stateSelectorMatches( sel, ele );
 
     if( !allColonSelectorsMatch ) break;
   }

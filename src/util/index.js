@@ -142,7 +142,8 @@ util.setPrefixedProperty = function( obj, propName, prefix, value ){
   { memoize: require( './memoize' ) },
   require( './regex' ),
   require( './strings' ),
-  require( './timing' )
+  require( './timing' ),
+  require( './sort' )
 ].forEach( function( req ){
   util.extend( util, req );
 } );

@@ -1272,6 +1272,18 @@ BRp.findEdgeControlPoints = function( edges ){
       'southeast': 0
     };
 
+    var srcX2 = srcPos.x;
+    var srcY2 = srcPos.y;
+    var srcW2 = src.outerWidth();
+    var srcH2 = src.outerHeight();
+
+    var tgtX2 = tgtPos.x;
+    var tgtY2 = tgtPos.y;
+    var tgtW2 = tgt.outerWidth();
+    var tgtH2 = tgt.outerHeight();
+
+    var numEdges2 = pairEdges.length;
+
     for( var i = 0; i < pairEdges.length; i++ ){
       edge = pairEdges[ i ];
       edge_p = edge._private;
@@ -1281,43 +1293,23 @@ BRp.findEdgeControlPoints = function( edges ){
       var edgeIndex2 = i;
 
       var numEdges1 = rs.lastNumEdges;
-      var numEdges2 = pairEdges.length;
 
       var curveStyle = edge.pstyle( 'curve-style' ).value;
-      var ctrlptDists = edge.pstyle( 'control-point-distances' );
 
-      var loopDir = edge.pstyle('loop-direction').pfValue;
-      var loopSwp = edge.pstyle('loop-sweep').pfValue;
-
-      var ctrlptWs = edge.pstyle( 'control-point-weights' );
-      var bezierN = ctrlptDists && ctrlptWs ? Math.min( ctrlptDists.value.length, ctrlptWs.value.length ) : 1;
-      var stepSize = edge.pstyle( 'control-point-step-size' ).pfValue;
-      var ctrlptDist = ctrlptDists ? ctrlptDists.pfValue[0] : undefined;
-      var ctrlptWeight = ctrlptWs.value[0];
       var edgeIsUnbundled = curveStyle === 'unbundled-bezier' || curveStyle === 'segments';
 
       var srcX1 = rs.lastSrcCtlPtX;
-      var srcX2 = srcPos.x;
       var srcY1 = rs.lastSrcCtlPtY;
-      var srcY2 = srcPos.y;
       var srcW1 = rs.lastSrcCtlPtW;
-      var srcW2 = src.outerWidth();
       var srcH1 = rs.lastSrcCtlPtH;
-      var srcH2 = src.outerHeight();
 
       var tgtX1 = rs.lastTgtCtlPtX;
-      var tgtX2 = tgtPos.x;
       var tgtY1 = rs.lastTgtCtlPtY;
-      var tgtY2 = tgtPos.y;
       var tgtW1 = rs.lastTgtCtlPtW;
-      var tgtW2 = tgt.outerWidth();
       var tgtH1 = rs.lastTgtCtlPtH;
-      var tgtH2 = tgt.outerHeight();
 
       var width1 = rs.lastW;
       var width2 = edge.pstyle( 'control-point-step-size' ).pfValue;
-
-      var edgeDistances = edge.pstyle('edge-distances').value;
 
       if( badBezier ){
         rs.badBezier = true;
@@ -1345,6 +1337,18 @@ BRp.findEdgeControlPoints = function( edges ){
         rs.lastWidth = width2;
         // console.log('edge ctrl pt cache MISS')
       }
+
+      var ctrlptDists = edge.pstyle( 'control-point-distances' );
+
+      var loopDir = edge.pstyle('loop-direction').pfValue;
+      var loopSwp = edge.pstyle('loop-sweep').pfValue;
+
+      var ctrlptWs = edge.pstyle( 'control-point-weights' );
+      var bezierN = ctrlptDists && ctrlptWs ? Math.min( ctrlptDists.value.length, ctrlptWs.value.length ) : 1;
+      var stepSize = edge.pstyle( 'control-point-step-size' ).pfValue;
+      var ctrlptDist = ctrlptDists ? ctrlptDists.pfValue[0] : undefined;
+      var ctrlptWeight = ctrlptWs.value[0];
+      var edgeDistances = edge.pstyle('edge-distances').value;
 
       if( !pairEdges.calculatedIntersection && ( (pairEdges.length > 1 && src !== tgt) || pairEdges.hasUnbundled ) ){
 

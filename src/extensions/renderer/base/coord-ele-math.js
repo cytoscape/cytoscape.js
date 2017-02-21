@@ -1257,75 +1257,6 @@ BRp.findEdgeControlPoints = function( edges ){
 
     badBezier = false;
 
-
-    if( (pairEdges.length > 1 && src !== tgt) || pairEdges.hasUnbundled ){
-
-      // pt outside src shape to calc distance/displacement from src to tgt
-      var srcOutside = srcShape.intersectLine(
-        srcPos.x,
-        srcPos.y,
-        srcW,
-        srcH,
-        tgtPos.x,
-        tgtPos.y,
-        0
-      );
-
-      // pt outside tgt shape to calc distance/displacement from src to tgt
-      var tgtOutside = tgtShape.intersectLine(
-        tgtPos.x,
-        tgtPos.y,
-        tgtW,
-        tgtH,
-        srcPos.x,
-        srcPos.y,
-        0
-      );
-
-      var midptSrcPts = {
-        x1: srcOutside[0],
-        x2: tgtOutside[0],
-        y1: srcOutside[1],
-        y2: tgtOutside[1]
-      };
-
-      var posPts = {
-        x1: srcPos.x,
-        x2: tgtPos.x,
-        y1: srcPos.y,
-        y2: tgtPos.y
-      };
-
-      var dy = ( tgtOutside[1] - srcOutside[1] );
-      var dx = ( tgtOutside[0] - srcOutside[0] );
-      var l = Math.sqrt( dx * dx + dy * dy );
-
-      var vector = {
-        x: dx,
-        y: dy
-      };
-
-      var vectorNorm = {
-        x: vector.x / l,
-        y: vector.y / l
-      };
-      vectorNormInverse = {
-        x: -vectorNorm.y,
-        y: vectorNorm.x
-      };
-
-
-      // if node shapes overlap, then no ctrl pts to draw
-      if(
-        tgtShape.checkPoint( srcOutside[0], srcOutside[1], 0, tgtW, tgtH, tgtPos.x, tgtPos.y )  &&
-        srcShape.checkPoint( tgtOutside[0], tgtOutside[1], 0, srcW, srcH, srcPos.x, srcPos.y )
-      ){
-        vectorNormInverse = {};
-        badBezier = true;
-      }
-
-    }
-
     var edge;
     var edge_p;
     var rs;
@@ -1413,6 +1344,76 @@ BRp.findEdgeControlPoints = function( edges ){
         rs.lastNumEdges = numEdges2;
         rs.lastWidth = width2;
         // console.log('edge ctrl pt cache MISS')
+      }
+
+      if( !pairEdges.calculatedIntersection && ( (pairEdges.length > 1 && src !== tgt) || pairEdges.hasUnbundled ) ){
+
+        pairEdges.calculatedIntersection = true;
+
+        // pt outside src shape to calc distance/displacement from src to tgt
+        var srcOutside = srcShape.intersectLine(
+          srcPos.x,
+          srcPos.y,
+          srcW,
+          srcH,
+          tgtPos.x,
+          tgtPos.y,
+          0
+        );
+
+        // pt outside tgt shape to calc distance/displacement from src to tgt
+        var tgtOutside = tgtShape.intersectLine(
+          tgtPos.x,
+          tgtPos.y,
+          tgtW,
+          tgtH,
+          srcPos.x,
+          srcPos.y,
+          0
+        );
+
+        var midptSrcPts = {
+          x1: srcOutside[0],
+          x2: tgtOutside[0],
+          y1: srcOutside[1],
+          y2: tgtOutside[1]
+        };
+
+        var posPts = {
+          x1: srcPos.x,
+          x2: tgtPos.x,
+          y1: srcPos.y,
+          y2: tgtPos.y
+        };
+
+        var dy = ( tgtOutside[1] - srcOutside[1] );
+        var dx = ( tgtOutside[0] - srcOutside[0] );
+        var l = Math.sqrt( dx * dx + dy * dy );
+
+        var vector = {
+          x: dx,
+          y: dy
+        };
+
+        var vectorNorm = {
+          x: vector.x / l,
+          y: vector.y / l
+        };
+        vectorNormInverse = {
+          x: -vectorNorm.y,
+          y: vectorNorm.x
+        };
+
+
+        // if node shapes overlap, then no ctrl pts to draw
+        if(
+          tgtShape.checkPoint( srcOutside[0], srcOutside[1], 0, tgtW, tgtH, tgtPos.x, tgtPos.y )  &&
+          srcShape.checkPoint( tgtOutside[0], tgtOutside[1], 0, srcW, srcH, srcPos.x, srcPos.y )
+        ){
+          vectorNormInverse = {};
+          badBezier = true;
+        }
+
       }
 
       if( src === tgt ){

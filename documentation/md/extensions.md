@@ -1,3 +1,17 @@
+You can use an extension (e.g. `cy-ext`) as follows with `cytoscape.use()`:
+
+```js
+cytoscape.use( require('cy-ext') );
+```
+
+Using `import`, the above example would be:
+
+```js
+import ext from 'cy-ext';
+
+cytoscape.use( ext );
+```
+
 The extensions below are a curated list.  To add your extension, [please submit a request](https://github.com/cytoscape/cytoscape.js/issues/new?labels=documentation&title=List%20extension%20:%20%3Cyour%20extension%20name%3E&body=Please%20enter%20your%20Github%20URL%20and%20a%20one-line%20description) that includes your extension's URL and a one line description.
 
 <i class="fa fa-user"></i> denotes a first-party extension, one that is maintained by groups associated with the Cytoscape Consortium.

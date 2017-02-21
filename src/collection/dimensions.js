@@ -269,23 +269,20 @@ fn = elesfn = ({
       function computePaddingValues( width, height, paddingObject, relativeTo ) {
         // Assuming percentage is number from 0 to 1
         if(paddingObject.units === '%') {
-          return {
-            'width': function(){
+          switch(relativeTo) {
+            case 'width':
               return width > 0 ? paddingObject.pfValue * width : 0;
-            },
-            'height': function(){
+            case 'height':
               return height > 0 ? paddingObject.pfValue * height : 0;
-            },
-            'whAverage': function(){
+            case 'average':
               return ( width > 0 ) && ( height > 0 ) ? paddingObject.pfValue * ( width + height ) / 2 : 0;
-            },
-            'whMin': function(){
+            case 'min':
               return ( width > 0 ) && ( height > 0 ) ? ( ( width > height ) ? paddingObject.pfValue * height : paddingObject.pfValue * width ) : 0;
-            },
-            'whMax': function(){
+            case 'max':
               return ( width > 0 ) && ( height > 0 ) ? ( ( width > height ) ? paddingObject.pfValue * width : paddingObject.pfValue * height ) : 0;
-            }
-          }[relativeTo || 'width']();
+            default:
+              return 0;
+          }
         } else if(paddingObject.units === 'px') {
           return paddingObject.pfValue;
         } else {

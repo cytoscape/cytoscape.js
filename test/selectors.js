@@ -53,6 +53,12 @@ describe('Selectors', function(){
   var itSelects = function(selector  /* , eles ... */){
     var args = arguments;
 
+    var getIds = function( col ){
+      return col.map(function( ele ){
+        return '#' + ele.id();
+      }).sort().join(', ');
+    }
+
     it(selector, function(){
       var col = cy.collection();
 
@@ -62,7 +68,7 @@ describe('Selectors', function(){
         col = col.add(ele);
       }
 
-      expect( cy.$(selector).same(col) ).to.be.true;
+      expect( getIds( cy.$(selector) ) ).to.equal( getIds( col ) );
     });
   };
 

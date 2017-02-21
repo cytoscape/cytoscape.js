@@ -33,6 +33,16 @@ describe('Collection compound nodes', function(){
     expect( n3.isParent() ).to.be.false;
   });
 
+  it('node.isChild()', function(){
+    expect( n1.isChild() ).to.be.false;
+    expect( n3.isChild() ).to.be.true;
+  });
+
+  it('node.isOrphan()', function(){
+    expect( n1.isOrphan() ).to.be.true;
+    expect( n3.isOrphan() ).to.be.false;
+  });
+
   it('nodes.parent()', function(){
     expect( n2.parent().same(n1) ).to.be.true;
   });

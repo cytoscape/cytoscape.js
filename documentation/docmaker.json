@@ -3058,6 +3058,11 @@
             },
 
             {
+              "name": "node.isOrphan",
+              "descr": "Get whether the node is an orphan (i.e. a node with no parent)"
+            },
+
+            {
               "name": "nodes.parent",
               "descr": "Get the compound parent node of each node in the collection.",
               "formats": [

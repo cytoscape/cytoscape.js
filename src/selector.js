@@ -77,6 +77,10 @@ var stateSelectors = [
     matches: function( ele ){ return ele.isParent(); }
   },
   {
+    selector: ':childless',
+    matches: function( ele ){ return ele.isChildless(); }
+  },
+  {
     selector: ':child',
     matches: function( ele ){ return ele.isChild(); }
   },

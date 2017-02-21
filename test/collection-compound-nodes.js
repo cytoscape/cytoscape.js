@@ -33,6 +33,11 @@ describe('Collection compound nodes', function(){
     expect( n3.isParent() ).to.be.false;
   });
 
+  it('node.isChildless()', function(){
+    expect( n1.isChildless() ).to.be.false;
+    expect( n3.isChildless() ).to.be.true;
+  });
+
   it('node.isChild()', function(){
     expect( n1.isChild() ).to.be.false;
     expect( n3.isChild() ).to.be.true;

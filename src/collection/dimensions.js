@@ -955,12 +955,17 @@ defineDimFns( {
 } );
 
 elesfn.padding = function(){
-  var ele = this[0];
-  var _p = ele._private;
-  if( _p.autoPadding !== undefined ) {
-    return _p.autoPadding;
-  } else {
-    return ele.pstyle( 'padding' ).pfValue;
+  if(this.length > 0) {
+    var ele = this[0];
+    var _p = ele._private;
+    if( _p.autoPadding !== undefined ) {
+      return _p.autoPadding;
+    } else {
+      return ele.pstyle( 'padding' ).pfValue;
+    }
+  }
+  else {
+    return 0;
   }
 }
 

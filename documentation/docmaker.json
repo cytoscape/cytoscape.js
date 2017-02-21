@@ -36,7 +36,7 @@
         { "name": "Wine & cheese", "id": "cde4db55e581d10405f5", "github": "cytoscape/wineandcheesemap", "viewUrl": "http://wineandcheesemap.com" },
         { "name": "Performance tuning", "id": "57e7cc43342193d9d21a" },
         { "name": "qTip extension", "id": "546dd8ca4872cc87106a" },
-        { "name": "Circle layout", "id": "04030586763520be8d7a" },
+        { "name": "Circle layout", "id": "circle-layout" },
         { "name": "Concentric layout", "id": "444dc95703caa319c147" },
         { "name": "Grid layout", "id": "f70c9e45c43f40f7dfe1" },
         { "name": "CoSE layout", "id": "7b511e1f48ffd044ad66" },

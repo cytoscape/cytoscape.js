@@ -49,6 +49,7 @@
         { "name": "Animated BFS", "id": "animated-bfs" },
         { "name": "Edge types", "id": "edge-types" },
         { "name": "Labels", "id": "labels" },
+		{ "name": "AngularJS Example", "id": "angularjs-example" }
         { "name": "Compound nodes", "id": "compound-nodes" },
         { "name": "Linkout example", "id": "eb861f83fb741628342f" },
         { "name": "Pie style", "id": "pie-style" },

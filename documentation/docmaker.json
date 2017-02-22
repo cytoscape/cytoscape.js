@@ -35,7 +35,7 @@
 		{ "name": "GeneMANIA Export", "id": "genemania-export"},
         { "name": "Tokyo railways", "id": "f64e811fc3311414e083" },
         { "name": "Wine & cheese", "id": "cde4db55e581d10405f5", "github": "cytoscape/wineandcheesemap", "viewUrl": "http://wineandcheesemap.com" },
-        { "name": "Performance tuning", "id": "57e7cc43342193d9d21a" },
+        { "name": "Performance tuning", "id": "performance-tuning" },
         { "name": "qTip extension", "id": "qtip-extension" },
         { "name": "Circle layout", "id": "circle-layout" },
         { "name": "Concentric layout", "id": "concentric-layout" },

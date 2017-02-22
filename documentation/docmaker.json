@@ -54,7 +54,7 @@
         { "name": "Linkout example", "id": "eb861f83fb741628342f" },
         { "name": "Pie style", "id": "pie-style" },
         { "name": "Multiple instances", "id": "multiple-instances" },
-        { "name": "Visual style", "id": "b7c65115947d9e0e8ec8" },
+        { "name": "Visual style", "id": "visual-style" },
         { "name": "Initialisation", "id": "initialisation" },
         { "name": "Architecture", "id": "architecture" }
       ]

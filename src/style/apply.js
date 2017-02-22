@@ -24,6 +24,11 @@ styfn.apply = function( eles ){
     var ele = eles[ ie ];
 
     var cxtMeta = self.getContextMeta( ele );
+
+    if( cxtMeta.empty ){
+      continue;
+    }
+
     var cxtStyle = self.getContextStyle( cxtMeta );
     var app = self.applyContextStyle( cxtMeta, cxtStyle, ele );
 
@@ -126,7 +131,8 @@ styfn.getContextMeta = function( ele ){
 
   return {
     key: cxtKey,
-    diffPropNames: diffProps
+    diffPropNames: diffProps,
+    empty: diffProps.length === 0
   };
 };
 

@@ -7,8 +7,6 @@ var is = require( './is' );
 var Core = require( './core' );
 var extension = require( './extension' );
 var Stylesheet = require( './stylesheet' );
-var Thread = require( './thread' );
-var Fabric = require( './fabric' );
 
 var cytoscape = function( options ){ // jshint ignore:line
   // if no options specified, use default
@@ -41,7 +39,5 @@ cytoscape.version = require('./version');
 
 // expose public apis (mostly for extensions)
 cytoscape.stylesheet = cytoscape.Stylesheet = Stylesheet;
-cytoscape.thread = cytoscape.Thread = Thread;
-cytoscape.fabric = cytoscape.Fabric = Fabric;
 
 module.exports = cytoscape;

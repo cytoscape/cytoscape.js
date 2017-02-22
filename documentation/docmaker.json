@@ -51,7 +51,7 @@
         { "name": "Labels", "id": "labels" },
 		{ "name": "AngularJS Example", "id": "angularjs-example" }
         { "name": "Compound nodes", "id": "compound-nodes" },
-        { "name": "Linkout example", "id": "eb861f83fb741628342f" },
+        { "name": "Linkout example", "id": "linkout-example" },
         { "name": "Pie style", "id": "pie-style" },
         { "name": "Multiple instances", "id": "multiple-instances" },
         { "name": "Visual style", "id": "visual-style" },

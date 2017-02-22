@@ -33,7 +33,7 @@
       "demos": [
         { "name": "Cola.js gene-gene graph", "id": "colajs-graph" },
 		{ "name": "GeneMANIA Export", "id": "genemania-export"},
-        { "name": "Tokyo railways", "id": "f64e811fc3311414e083" },
+        { "name": "Tokyo railways", "id": "tokyo-railways" },
         { "name": "Wine & cheese", "id": "wine-cheese-map", "github": "cytoscape/wineandcheesemap", "viewUrl": "http://wineandcheesemap.com" },
         { "name": "Performance tuning", "id": "performance-tuning" },
         { "name": "qTip extension", "id": "qtip-extension" },

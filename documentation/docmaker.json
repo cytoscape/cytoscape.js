@@ -45,7 +45,7 @@
         { "name": "CoSE Bilkent layout (compound)", "id": "59e38e9f20e25a293e44" },
         { "name": "Dagre layout", "id": "e52c2fbc0b09edd6ec46" },
         { "name": "Spread layout", "id": "spread-layout" },
-        { "name": "Images & breadthfirst layout", "id": "aedff159b0df05ccfaa5" },
+        { "name": "Images & breadthfirst layout", "id": "images-breadthfirst-layout" },
         { "name": "Animated BFS", "id": "animated-bfs" },
         { "name": "Edge types", "id": "edge-types" },
         { "name": "Labels", "id": "labels" },

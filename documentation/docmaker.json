@@ -40,7 +40,7 @@
         { "name": "Circle layout", "id": "circle-layout" },
         { "name": "Concentric layout", "id": "concentric-layout" },
         { "name": "Grid layout", "id": "f70c9e45c43f40f7dfe1" },
-        { "name": "CoSE layout", "id": "7b511e1f48ffd044ad66" },
+        { "name": "CoSE layout", "id": "cose-layout" },
         { "name": "CoSE Bilkent layout", "id": "cose-bilkent-layout" },
         { "name": "CoSE Bilkent layout (compound)", "id": "59e38e9f20e25a293e44" },
         { "name": "Dagre layout", "id": "e52c2fbc0b09edd6ec46" },

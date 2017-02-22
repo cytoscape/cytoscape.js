@@ -54,7 +54,8 @@
         { "name": "Pie style", "id": "pie-style" },
         { "name": "Multiple instances", "id": "multiple-instances" },
         { "name": "Visual style", "id": "b7c65115947d9e0e8ec8" },
-        { "name": "Initialisation", "id": "initialisation" }
+        { "name": "Initialisation", "id": "initialisation" },
+        { "name": "Architecture", "id": "architecture" }
       ]
     },
 
@@ -3447,7 +3448,7 @@
     {
       "name": "Architecture",
       "md": "architecture",
-      "demo": { "id": "689efca4fcb0fd05671b", "name": "A diagramme of the architecture of Cytoscape.js, made using Cytoscape.js" }
+      "demo": { "id": "architecture", "name": "A diagramme of the architecture of Cytoscape.js, made using Cytoscape.js" }
     },
 
     {

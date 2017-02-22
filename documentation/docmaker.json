@@ -39,7 +39,7 @@
         { "name": "qTip extension", "id": "qtip-extension" },
         { "name": "Circle layout", "id": "circle-layout" },
         { "name": "Concentric layout", "id": "concentric-layout" },
-        { "name": "Grid layout", "id": "f70c9e45c43f40f7dfe1" },
+        { "name": "Grid layout", "id": "grid-layout" },
         { "name": "CoSE layout", "id": "cose-layout" },
         { "name": "CoSE Bilkent layout", "id": "cose-bilkent-layout" },
         { "name": "CoSE Bilkent layout (compound)", "id": "59e38e9f20e25a293e44" },

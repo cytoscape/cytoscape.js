@@ -49,7 +49,7 @@
         { "name": "Animated BFS", "id": "7e2f4d29ff7ef1a1bba5" },
         { "name": "Edge types", "id": "edge-types" },
         { "name": "Labels", "id": "labels" },
-        { "name": "Compound nodes", "id": "5b192c88616af2f75344" },
+        { "name": "Compound nodes", "id": "compound-nodes" },
         { "name": "Linkout example", "id": "eb861f83fb741628342f" },
         { "name": "Pie style", "id": "pie-style" },
         { "name": "Multiple instances", "id": "multiple-instances" },

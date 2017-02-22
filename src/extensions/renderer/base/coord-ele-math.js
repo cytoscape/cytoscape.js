@@ -38,18 +38,11 @@ BRp.registerCalculationListeners = function(){
   r.binder( cy )
     // nodes
 
-    .on('position.* style.* free.*', 'node', function onDirtyModNode( e ){
+    .on('position.* style.* free.* bounds.*', 'node', function onDirtyModNode( e ){
       var node = e.cyTarget;
 
       enqueue( node, e );
       enqueue( node.connectedEdges(), e );
-
-      if( cy.hasCompoundNodes() ){
-        var parents = node.parents();
-
-        enqueue( parents, e );
-        enqueue( parents.connectedEdges(), e );
-      }
     })
 
     .on('add.* background.*', 'node', function onDirtyAddNode( e ){

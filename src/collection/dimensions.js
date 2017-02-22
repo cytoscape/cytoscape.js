@@ -19,8 +19,7 @@ fn = elesfn = ({
     allowGetting: true,
     validKeys: [ 'x', 'y' ],
     onSet: function( eles ){
-      var updatedEles = eles.updateCompoundBounds();
-      updatedEles.rtrigger( 'position' );
+      eles.updateCompoundBounds();
     },
     canSet: function( ele ){
       return !ele.locked() && !ele.isParent();
@@ -39,7 +38,7 @@ fn = elesfn = ({
     allowGetting: true,
     validKeys: [ 'x', 'y' ],
     onSet: function( eles ){
-      eles.updateCompoundBounds();
+      eles.updateCompoundBounds( false );
     },
     canSet: function( ele ){
       return !ele.locked() && !ele.isParent();
@@ -48,7 +47,11 @@ fn = elesfn = ({
 
   positions: function( pos, silent ){
     if( is.plainObject( pos ) ){
-      this.position( pos );
+      if( silent ){
+        this.silentPosition( pos );
+      } else {
+        this.position( pos );
+      }
 
     } else if( is.fn( pos ) ){
       var fn = pos;
@@ -65,13 +68,12 @@ fn = elesfn = ({
         }
       }
 
-      var updatedEles = this.updateCompoundBounds();
-      var toTrigger = updatedEles.length > 0 ? this.add( updatedEles ) : this;
+      this.updateCompoundBounds( !silent );
 
       if( silent ){
-        toTrigger.trigger( 'position' );
+        this.trigger( 'position' );
       } else {
-        toTrigger.rtrigger( 'position' );
+        this.rtrigger( 'position' );
       }
     }
 
@@ -212,7 +214,7 @@ fn = elesfn = ({
     };
   },
 
-  updateCompoundBounds: function(){
+  updateCompoundBounds: function( notifyRenderer ){
     var cy = this.cy();
 
     // save cycles for non compound graphs or when style disabled
@@ -318,7 +320,15 @@ fn = elesfn = ({
     }
 
     // return changed
-    return this.spawn( updated );
+    var changed = this.spawn( updated );
+
+    if( notifyRenderer ){
+      changed.rtrigger('bounds');
+    } else {
+      changed.trigger('bounds');
+    }
+
+    return changed;
   }
 });
 

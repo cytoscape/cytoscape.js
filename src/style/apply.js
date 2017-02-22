@@ -12,6 +12,8 @@ var styfn = {};
 styfn.apply = function( eles ){
   var self = this;
   var _p = self._private;
+  var cy = _p.cy;
+  var updatedEles = cy.collection();
 
   if( _p.newStyle ){ // clear style caches
     _p.contextStyles = {};
@@ -27,6 +29,8 @@ styfn.apply = function( eles ){
 
     if( cxtMeta.empty ){
       continue;
+    } else {
+      updatedEles.merge( ele );
     }
 
     var cxtStyle = self.getContextStyle( cxtMeta );
@@ -38,6 +42,8 @@ styfn.apply = function( eles ){
   } // for elements
 
   _p.newStyle = false;
+
+  return updatedEles;
 };
 
 styfn.getPropertiesDiff = function( oldCxtKey, newCxtKey ){
@@ -528,10 +534,13 @@ styfn.update = function(){
 // styles (less expensive than recalculation)
 styfn.updateMappers = function( eles ){
   var self = this;
+  var cy = this._private.cy;
+  var updatedEles = cy.collection();
 
   for( var i = 0; i < eles.length; i++ ){ // for each ele
     var ele = eles[ i ];
     var style = ele._private.style;
+    var updatedEle = false;
 
     for( var j = 0; j < self.properties.length; j++ ){ // for each prop
       var prop = self.properties[ j ];
@@ -539,12 +548,21 @@ styfn.updateMappers = function( eles ){
 
       if( propInStyle && propInStyle.mapping ){
         var mapping = propInStyle.mapping;
+
         this.applyParsedProperty( ele, mapping ); // reapply the mapping property
+
+        updatedEle = true;
       }
     }
 
-    this.updateStyleHints( ele );
+    if( updatedEle ){
+      this.updateStyleHints( ele );
+
+      updatedEles.merge( ele );
+    }
   }
+
+  return updatedEles;
 };
 
 // diffProps : { name => { prev, next } }

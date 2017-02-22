@@ -28,10 +28,10 @@ var elesfn = ({
       updatedEles = this.spawnSelf().merge( this.descendants() ).merge( this.parents() );
     }
 
-    style.apply( updatedEles );
+    var changedEles = style.apply( updatedEles );
 
     if( hasCompounds ){
-      var updatedCompounds = updatedEles.updateCompoundBounds();
+      var updatedCompounds = updatedEles.updateCompoundBounds( notifyRenderer );
 
       // disable for performance for now
       // (as updatedCompounds would be a subset of updatedEles ayway b/c of selectors check)
@@ -41,9 +41,9 @@ var elesfn = ({
     }
 
     if( notifyRenderer ){
-      updatedEles.rtrigger( 'style' ); // let renderer know we changed style
+      changedEles.rtrigger( 'style' ); // let renderer know we changed style
     } else {
-      updatedEles.trigger( 'style' ); // just fire the event
+      changedEles.trigger( 'style' ); // just fire the event
     }
 
     return this; // chaining
@@ -57,15 +57,14 @@ var elesfn = ({
 
     if( !cy.styleEnabled() ){ return this; }
 
-    style.updateMappers( this );
+    var changedEles = style.updateMappers( this );
 
-    var updatedCompounds = this.updateCompoundBounds();
-    var toNotify = updatedCompounds.length > 0 ? this.add( updatedCompounds ) : this;
+    this.updateCompoundBounds( notifyRenderer );
 
     if( notifyRenderer ){
-      toNotify.rtrigger( 'style' ); // let renderer know we changed style
+      changedEles.rtrigger( 'style' ); // let renderer know we changed style
     } else {
-      toNotify.trigger( 'style' ); // just fire the event
+      changedEles.trigger( 'style' ); // just fire the event
     }
     return this; // chaining
   },
@@ -130,9 +129,9 @@ var elesfn = ({
       var props = name;
       style.applyBypass( this, props, updateTransitions );
 
-      var updatedCompounds = this.updateCompoundBounds();
-      var toNotify = updatedCompounds.length > 0 ? this.add( updatedCompounds ) : this;
-      toNotify.rtrigger( 'style' ); // let the renderer know we've updated style
+      this.updateCompoundBounds();
+
+      this.rtrigger( 'style' ); // let the renderer know we've updated style
 
     } else if( is.string( name ) ){
 
@@ -148,9 +147,9 @@ var elesfn = ({
       } else { // then set the bypass with the property value
         style.applyBypass( this, name, value, updateTransitions );
 
-        var updatedCompounds = this.updateCompoundBounds();
-        var toNotify = updatedCompounds.length > 0 ? this.add( updatedCompounds ) : this;
-        toNotify.rtrigger( 'style' ); // let the renderer know we've updated style
+        this.updateCompoundBounds();
+
+        this.rtrigger( 'style' ); // let the renderer know we've updated style
       }
 
     } else if( name === undefined ){
@@ -191,9 +190,9 @@ var elesfn = ({
       }
     }
 
-    var updatedCompounds = this.updateCompoundBounds();
-    var toNotify = updatedCompounds.length > 0 ? this.add( updatedCompounds ) : this;
-    toNotify.rtrigger( 'style' ); // let the renderer know we've updated style
+    this.updateCompoundBounds();
+
+    this.rtrigger( 'style' ); // let the renderer know we've updated style
 
     return this; // chaining
   },

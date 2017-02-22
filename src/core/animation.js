@@ -169,11 +169,11 @@ var corefn = ({
       // notify renderer
       if( ranEleAni || ranCoreAni ){
         if( eles.length > 0 ){
-          var updatedEles = eles.updateCompoundBounds().spawnSelf().merge( eles );
+          eles.updateCompoundBounds();
 
           cy.notify({
             type: 'draw',
-            eles: updatedEles
+            eles: eles
           });
         } else {
           cy.notify({

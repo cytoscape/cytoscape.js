@@ -813,7 +813,7 @@ BRp.load = function(){
 
             var tcol = cy.collection( toTrigger );
 
-            tcol.updateCompoundBounds();
+            tcol.updateCompoundBounds( false );
             tcol.trigger( 'position drag' );
 
             r.redrawHint( 'drag', true );
@@ -1610,7 +1610,7 @@ BRp.load = function(){
 
           var tcol = cy.collection( draggedEles );
 
-          tcol.updateCompoundBounds();
+          tcol.updateCompoundBounds( false );
           tcol.trigger( 'position drag' );
 
           r.hoverData.draggingEles = true;

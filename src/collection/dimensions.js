@@ -862,11 +862,19 @@ elesfn.boundingBox = function( options ){
     this.recalculateRenderedStyle( opts.useCache );
   }
 
+  var updatedEdge = {}; // use to avoid duplicated edge updates
+
   for( var i = 0; i < eles.length; i++ ){
     var ele = eles[i];
 
-    if( styleEnabled && ele.isEdge() && ele.pstyle('curve-style').strValue === 'bezier' ){
-      ele.parallelEdges().recalculateRenderedStyle( opts.useCache ); // n.b. ele.parallelEdges() single is cached
+    if( styleEnabled && ele.isEdge() && ele.pstyle('curve-style').strValue === 'bezier' && !updatedEdge[ ele.id() ] ){
+      var edges = ele.parallelEdges();
+
+      for( var j = 0; j < edges.length; j++ ){ // make all as updated
+        updatedEdge[ edges[j].id() ] = true;
+      }
+
+      edges.recalculateRenderedStyle( opts.useCache ); // n.b. ele.parallelEdges() single is cached
     }
 
     updateBoundsFromBox( bounds, cachedBoundingBoxImpl( ele, opts ) );

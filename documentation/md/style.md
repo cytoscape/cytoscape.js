@@ -442,7 +442,35 @@ These properties allow for the creation of shadows on nodes or edges. Note that 
  * **`transition-property`** : A comma separated list of style properties to animate in this state.
  * **`transition-duration`** : The length of the transition in seconds (e.g. `0.5s`).
  * **`transition-delay`** : The length of the delay in seconds before the transition occurs (e.g. `250ms`).
- * **`transition-timing-function`** : An easing function that controls the animation progress curve; may be `linear` (default), `spring( tension, friction )` (the [demo](http://codepen.io/anon/pen/ZbzbbZ) has details for parameter values), `cubic-bezier( x1, y1, x2, y2 )` (the [demo](http://cubic-bezier.com) has details for parameter values), `ease`, `ease-in`, `ease-out`, `ease-in-out`, `ease-in-sine`, `ease-out-sine`, `ease-in-out-sine`, `ease-in-quad`, `ease-out-quad`, `ease-in-out-quad`,  `ease-in-cubic`, `ease-out-cubic`, `ease-in-out-cubic`,  `ease-in-quart`, `ease-out-quart`, `ease-in-out-quart`,  `ease-in-quint`, `ease-out-quint`, `ease-in-out-quint`,  `ease-in-expo`, `ease-out-expo`, `ease-in-out-expo`,  `ease-in-circ`, `ease-out-circ`, `ease-in-out-circ` (a [visualisation](http://easings.net/) of easings serves as a reference).
+ * **`transition-timing-function`** : An easing function that controls the animation progress curve; may be one of the following values.  A [visualisation](http://easings.net/) of easings serves as a reference.
+   * `linear` (default),
+   * `spring( tension, friction )` (the [demo](http://codepen.io/anon/pen/ZbzbbZ) has details for parameter values),
+   * `cubic-bezier( x1, y1, x2, y2 )` (the [demo](http://cubic-bezier.com) has details for parameter values),
+   * `ease`,
+   * `ease-in`,
+   * `ease-out`,
+   * `ease-in-out`,
+   * `ease-in-sine`,
+   * `ease-out-sine`,
+   * `ease-in-out-sine`,
+   * `ease-in-quad`,
+   * `ease-out-quad`,
+   * `ease-in-out-quad`,  
+   * `ease-in-cubic`,
+   * `ease-out-cubic`,
+   * `ease-in-out-cubic`,  
+   * `ease-in-quart`,
+   * `ease-out-quart`,
+   * `ease-in-out-quart`,  
+   * `ease-in-quint`,
+   * `ease-out-quint`,
+   * `ease-in-out-quint`,
+   * `ease-in-expo`,
+   * `ease-out-expo`,
+   * `ease-in-out-expo`,  
+   * `ease-in-circ`,
+   * `ease-out-circ`,
+   * `ease-in-out-circ`.
 
 
 ## Core

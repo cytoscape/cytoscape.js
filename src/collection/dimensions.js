@@ -268,6 +268,30 @@ fn = elesfn = ({
         };
       }
 
+      function computePaddingValues( width, height, paddingObject, relativeTo ) {
+        // Assuming percentage is number from 0 to 1
+        if(paddingObject.units === '%') {
+          switch(relativeTo) {
+            case 'width':
+              return width > 0 ? paddingObject.pfValue * width : 0;
+            case 'height':
+              return height > 0 ? paddingObject.pfValue * height : 0;
+            case 'average':
+              return ( width > 0 ) && ( height > 0 ) ? paddingObject.pfValue * ( width + height ) / 2 : 0;
+            case 'min':
+              return ( width > 0 ) && ( height > 0 ) ? ( ( width > height ) ? paddingObject.pfValue * height : paddingObject.pfValue * width ) : 0;
+            case 'max':
+              return ( width > 0 ) && ( height > 0 ) ? ( ( width > height ) ? paddingObject.pfValue * width : paddingObject.pfValue * height ) : 0;
+            default:
+              return 0;
+          }
+        } else if(paddingObject.units === 'px') {
+          return paddingObject.pfValue;
+        } else {
+          return 0;
+        }
+      }
+
       var leftVal = min.width.left.value;
       if( min.width.left.units === 'px' && min.width.val > 0 ){
         leftVal = ( leftVal * 100 ) / min.width.val;
@@ -294,6 +318,8 @@ fn = elesfn = ({
       var heightBiasDiffs = computeBiasValues( min.height.val - bb.h, topVal, bottomVal );
       var diffTop = heightBiasDiffs.biasDiff;
       var diffBottom = heightBiasDiffs.biasComplementDiff;
+
+      _p.autoPadding = computePaddingValues( bb.w, bb.h, ele.pstyle( 'padding' ), ele.pstyle( 'padding-relative-to' ).value );
 
       _p.autoWidth = Math.max(bb.w, min.width.val);
       pos.x = (- diffLeft + bb.x1 + bb.x2 + diffRight) / 2;
@@ -899,7 +925,7 @@ var defineDimFns = function( opts ){
       if( styleEnabled ){
         var dim = ele[ opts.name ]();
         var border = ele.pstyle( 'border-width' ).pfValue; // n.b. 1/2 each side
-        var padding = 2 * ele.pstyle( 'padding' ).pfValue;
+        var padding = 2 * ele.padding();
 
         return dim + border + padding;
       } else {
@@ -934,6 +960,16 @@ defineDimFns( {
 defineDimFns( {
   name: 'height'
 } );
+
+elesfn.padding = function(){
+  var ele = this[0];
+  var _p = ele._private;
+  if( ele.isParent() && ( _p.autoPadding !== undefined ) ){
+    return _p.autoPadding;
+  } else {
+    return ele.pstyle( 'padding' ).pfValue;
+  }
+}
 
 // aliases
 fn.modelPosition = fn.point = fn.position;

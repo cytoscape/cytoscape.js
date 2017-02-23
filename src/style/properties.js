@@ -33,6 +33,7 @@ var styfn = {};
     bidirectionalSize: { number: true }, // allows negative
     bidirectionalSizes: { number: true, multiple: true }, // allows negative
     sizeMaybePercent: { number: true, min: 0, allowPercent: true },
+    paddingRelativeTo: { enums: [ 'width', 'height', 'average', 'min', 'max' ] },
     bgWH: { number: true, min: 0, allowPercent: true, enums: [ 'auto' ] },
     bgPos: { number: true, allowPercent: true },
     bgRepeat: { enums: [ 'repeat', 'repeat-x', 'repeat-y', 'no-repeat' ] },
@@ -221,7 +222,8 @@ var styfn = {};
     { name: 'background-color', type: t.color },
     { name: 'background-opacity', type: t.zeroOneNumber },
     { name: 'background-blacken', type: t.nOneOneNumber },
-    { name: 'padding', type: t.size },
+    { name: 'padding', type: t.sizeMaybePercent },
+    { name: 'padding-relative-to', type: t.paddingRelativeTo },
 
     // node border
     { name: 'border-color', type: t.color },
@@ -442,6 +444,7 @@ styfn.getDefaultProperties = util.memoize( function(){
 
     // compound props
     'padding': 0,
+    'padding-relative-to': 'width',
     'position': 'origin',
     'compound-sizing-wrt-labels': 'include',
     'min-width': 0,

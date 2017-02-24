@@ -890,6 +890,51 @@ elesfn.boundingBox = function( options ){
   return bounds;
 };
 
+// private helper to get bounding box for custom node positions
+// - good for perf in certain cases but currently requires dirtying the rendered style
+// - would be better to not modify the nodes but the nodes are read directly everywhere in the renderer...
+// - try to use for only things like discrete layouts where the node position would change anyway
+elesfn.boundingBoxAt = function( fn ){
+  var nodes = this.nodes();
+  var oldPos = {};
+
+  if( is.plainObject( fn ) ){
+    var obj = fn;
+
+    fn = function(){ return obj; };
+  }
+
+  // save the current position and set the new one, per node
+  for( var i = 0; i < nodes.length; i++ ){
+    var n = nodes[i];
+    var pos = n._private.position;
+    var newPos = fn.call( n, i, n );
+
+    oldPos[ n.id() ] = { x: pos.x, y: pos.y };
+
+    pos.x = newPos.x;
+    pos.y = newPos.y;
+  }
+
+  this.trigger('dirty'); // let the renderer know we've manually dirtied rendered dim calcs
+
+  var bb = this.boundingBox({ useCache: false });
+
+  // restore the original position, per node
+  for( var i = 0; i < nodes.length; i++ ){
+    var n = nodes[i];
+    var pos = n._private.position;
+    var old = oldPos[ n.id() ];
+
+    pos.x = old.x;
+    pos.y = old.y;
+  }
+
+  this.trigger('dirty'); // let the renderer know we've manually dirtied rendered dim calcs
+
+  return bb;
+};
+
 var defineDimFns = function( opts ){
   opts.uppercaseName = util.capitalize( opts.name );
   opts.autoName = 'auto' + opts.uppercaseName;

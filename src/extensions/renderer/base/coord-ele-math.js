@@ -72,6 +72,14 @@ BRp.registerCalculationListeners = function(){
         }
       }
     })
+
+    // manual dirtying
+
+    .on('dirty.*', 'node', function onDirtyEle( e ){
+      var ele = e.cyTarget;
+
+      enqueue( ele, e );
+    })
   ;
 
   var updateEleCalcs = function( willDraw ){

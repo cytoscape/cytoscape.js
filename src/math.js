@@ -144,6 +144,16 @@ math.updateBoundingBox = function( bb1, bb2 ){
   bb1.h = bb1.y2 - bb1.y1;
 };
 
+math.expandBoundingBoxByPoint = function( bb, x, y ){
+  bb.x1 = Math.min( bb.x1, x );
+  bb.x2 = Math.max( bb.x2, x );
+  bb.w = bb.x2 - bb.x1;
+
+  bb.y1 = Math.min( bb.y1, y );
+  bb.y2 = Math.max( bb.y2, y );
+  bb.h = bb.y2 - bb.y1;
+};
+
 math.expandBoundingBox = function( bb, padding ){
   bb.x1 -= padding;
   bb.x2 += padding;

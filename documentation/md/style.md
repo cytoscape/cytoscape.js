@@ -170,11 +170,11 @@ A padding defines an addition to a node's dimension.  For example, `padding` add
 
 * **`padding`** : The amount of padding around all sides of the node. Either percentage or pixel value can be specified. For example, both `50%` and `50px` are acceptable values. By default, percentage padding is calculated as a percentage of node width.
 * **`padding-relative-to`** : Determines how padding is calculated if and only if the percentage unit is used. Accepts one of the keywords specified below.
-  * If `width` is specified, the padding will be calculated as a percentage of the node width.
-  * If `height` is specified, the padding will be calculated as a percentage of the node height.
-  * If `average` is specified, the padding will be calculated as a percentage of the average of the node height and width.
-  * If `min` is specified, the padding will be calculated as a percentage of the smallest number between width and height.
-  * If `max` is specified, the padding will be calculated as a percentage of the largest number between width and height.
+  * **`width`** : calculate padding as a percentage the node width.
+  * **`height`** : calculate padding as a percentage of the node height.
+  * **`average`** : calculate padding as a percentage of the average of the node width and height.
+  * **`min`** : calculate padding as a percentage of the minimum of the node width and height.
+  * **`max`** : calculate padding as a percentage of the maximum of the node width and height.
 
 Compound parent sizing:
 

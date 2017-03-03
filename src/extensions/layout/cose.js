@@ -387,64 +387,68 @@ CoseLayout.prototype.run = function(){
       //
       // Compute intersection
       var res = {};
-      do {
-        // Case: Vertical direction (up)
-        if( 0 === dX && 0 < dY ){
-          res.x = X;
-          // s += "\nUp direction";
-          res.y = Y + H / 2;
-          break;
-        }
 
-        // Case: Vertical direction (down)
-        if( 0 === dX && 0 > dY ){
-          res.x = X;
-          res.y = Y + H / 2;
-          // s += "\nDown direction";
-          break;
-        }
+      // Case: Vertical direction (up)
+      if( 0 === dX && 0 < dY ){
+        res.x = X;
+        // s += "\nUp direction";
+        res.y = Y + H / 2;
 
-        // Case: Intersects the right border
-        if( 0 < dX &&
-        -1 * nodeSlope <= dirSlope &&
-        dirSlope <= nodeSlope ){
-          res.x = X + W / 2;
-          res.y = Y + (W * dY / 2 / dX);
-          // s += "\nRightborder";
-          break;
-        }
+        return res;
+      }
 
-        // Case: Intersects the left border
-        if( 0 > dX &&
-        -1 * nodeSlope <= dirSlope &&
-        dirSlope <= nodeSlope ){
-          res.x = X - W / 2;
-          res.y = Y - (W * dY / 2 / dX);
-          // s += "\nLeftborder";
-          break;
-        }
+      // Case: Vertical direction (down)
+      if( 0 === dX && 0 > dY ){
+        res.x = X;
+        res.y = Y + H / 2;
+        // s += "\nDown direction";
 
-        // Case: Intersects the top border
-        if( 0 < dY &&
-        ( dirSlope <= -1 * nodeSlope ||
-          dirSlope >= nodeSlope ) ){
-          res.x = X + (H * dX / 2 / dY);
-          res.y = Y + H / 2;
-          // s += "\nTop border";
-          break;
-        }
+        return res;
+      }
 
-        // Case: Intersects the bottom border
-        if( 0 > dY &&
-        ( dirSlope <= -1 * nodeSlope ||
-          dirSlope >= nodeSlope ) ){
-          res.x = X - (H * dX / 2 / dY);
-          res.y = Y - H / 2;
-          // s += "\nBottom border";
-          break;
-        }
+      // Case: Intersects the right border
+      if( 0 < dX &&
+      -1 * nodeSlope <= dirSlope &&
+      dirSlope <= nodeSlope ){
+        res.x = X + W / 2;
+        res.y = Y + (W * dY / 2 / dX);
+        // s += "\nRightborder";
 
-      } while( false);
+        return res;
+      }
+
+      // Case: Intersects the left border
+      if( 0 > dX &&
+      -1 * nodeSlope <= dirSlope &&
+      dirSlope <= nodeSlope ){
+        res.x = X - W / 2;
+        res.y = Y - (W * dY / 2 / dX);
+        // s += "\nLeftborder";
+
+        return res;
+      }
+
+      // Case: Intersects the top border
+      if( 0 < dY &&
+      ( dirSlope <= -1 * nodeSlope ||
+        dirSlope >= nodeSlope ) ){
+        res.x = X + (H * dX / 2 / dY);
+        res.y = Y + H / 2;
+        // s += "\nTop border";
+
+        return res;
+      }
+
+      // Case: Intersects the bottom border
+      if( 0 > dY &&
+      ( dirSlope <= -1 * nodeSlope ||
+        dirSlope >= nodeSlope ) ){
+        res.x = X - (H * dX / 2 / dY);
+        res.y = Y - H / 2;
+        // s += "\nBottom border";
+
+        return res;
+      }
 
       // s += "\nClipping point found at " + res.x + ", " + res.y;
       // logDebug(s);

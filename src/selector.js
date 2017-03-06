@@ -140,11 +140,6 @@ var stateSelectorMatches = function( sel, ele ){
 var stateSelectorRegex = '(' + stateSelectors.map(function( s ){ return s.selector; }).join('|') + ')';
 
 var Selector = function( selector ){
-
-  if( !(this instanceof Selector) ){
-    return new Selector( selector );
-  }
-
   var self = this;
 
   self._private = {

@@ -20,7 +20,7 @@ var elesfn = ({
     if( filter === undefined ){ // check this first b/c it's the most common/performant case
       return this;
     } else if( is.string( filter ) || is.elementOrCollection( filter ) ){
-      return Selector( filter ).filter( this );
+      return new Selector( filter ).filter( this );
     } else if( is.fn( filter ) ){
       var elements = [];
 

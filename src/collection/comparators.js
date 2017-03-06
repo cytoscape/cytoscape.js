@@ -1,12 +1,23 @@
 'use strict';
 
+var is = require('../is');
+var Selector = require('../selector');
+
 var elesfn = ({
   allAre: function( selector ){
-    return this.filter( selector ).length === this.length;
+    var selObj = new Selector( selector );
+
+    return this.every(function( ele ){
+      return selObj.matches( ele );
+    });
   },
 
   is: function( selector ){
-    return this.filter( selector ).length > 0;
+    var selObj = new Selector( selector );
+
+    return this.some(function( ele ){
+      return selObj.matches( ele );
+    });
   },
 
   some: function( fn, thisArg ){
@@ -41,25 +52,37 @@ var elesfn = ({
       return false;
     }
 
-    return this.intersect( collection ).length === this.length;
+    return this.every(function( ele ){
+      return collection.hasElementWithId( ele.id() );
+    });
   },
 
   anySame: function( collection ){
     collection = this.cy().collection( collection );
 
-    return this.intersect( collection ).length > 0;
+    return this.some(function( ele ){
+      return collection.hasElementWithId( ele.id() );
+    });
   },
 
   allAreNeighbors: function( collection ){
     collection = this.cy().collection( collection );
 
-    return this.neighborhood().intersect( collection ).length === collection.length;
+    var nhood = this.neighborhood();
+
+    return collection.every(function( ele ){
+      return nhood.hasElementWithId( ele.id() );
+    });
   },
 
   contains: function( collection ){
     collection = this.cy().collection( collection );
 
-    return this.intersect( collection ).length === collection.length;
+    var self = this;
+
+    return collection.every(function( ele ){
+      return self.hasElementWithId( ele.id() );
+    });
   }
 });
 

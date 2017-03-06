@@ -17,7 +17,7 @@ function Suite( name, suiteOpts ){
     };
 
     global.teardown = suiteOpts.teardown || function( cy ){
-      if( cy.destroy ){ cy.destroy(); }
+      if( cy && cy.destroy ){ cy.destroy(); }
     };
 
     global.fn = fn;

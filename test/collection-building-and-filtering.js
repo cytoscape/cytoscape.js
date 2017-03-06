@@ -75,10 +75,10 @@ describe('Collection building and filtering', function(){
       return a.data('sortVal') - b.data('sortVal');
     });
 
-    expect( sorted.length ).to.equal(3);
-    expect( sorted[0].same(n2) ).to.be.true;
-    expect( sorted[1].same(n1) ).to.be.true;
-    expect( sorted[2].same(n3) ).to.be.true;
+    expect( sorted.length, 'length' ).to.equal(3);
+    expect( sorted[0].same(n2), 'n2' ).to.be.true;
+    expect( sorted[1].same(n1), 'n1' ).to.be.true;
+    expect( sorted[2].same(n3), 'n3' ).to.be.true;
   });
 
   it('eles.map()', function(){
@@ -112,19 +112,22 @@ describe('Collection building and filtering', function(){
 
   it('eles.merge()', function(){
     var eles = cy.collection();
-    var _p = eles._private;
+
+    var has = function( id ){
+      return eles.hasElementWithId( id );
+    };
 
     // confirm empty
-    expect( _p.indexes ).to.be.empty;
-    expect( _p.ids ).to.be.empty;
+    expect( has('n1') ).to.be.false;
+    expect( has('n2') ).to.be.false;
     expect( eles.length ).to.equal(0);
     expect( eles[0] ).to.not.exist;
 
     eles.merge( n1 );
 
     // confirm n1 added
-    expect( _p.indexes['n1'] ).to.equal(0);
-    expect( _p.ids['n1'] ).to.equal(n1);
+    expect( has('n1') ).to.be.true;
+    expect( has('n2') ).to.be.false;
     expect( eles.length ).to.equal(1);
     expect( eles[0] ).to.equal(n1);
     expect( eles[1] ).to.not.exist;
@@ -132,36 +135,33 @@ describe('Collection building and filtering', function(){
     eles.merge( n2 );
 
     // confirm n1 still there
-    expect( _p.indexes['n1'] ).to.equal(0);
-    expect( _p.ids['n1'] ).to.equal(n1);
+    expect( has('n1') ).to.be.true;
     expect( eles[0] ).to.equal(n1);
 
     // confirm n2 added
-    expect( _p.indexes['n2'] ).to.equal(1);
-    expect( _p.ids['n2'] ).to.equal(n2);
+    expect( has('n2') ).to.be.true;
     expect( eles.length ).to.equal(2);
     expect( eles[1] ).to.equal(n2);
   });
 
   it('eles.unmerge()', function(){
     var eles = cy.$('#n1, #n2');
-    var _p = eles._private;
+
+    var has = function( id ){
+      return eles.hasElementWithId( id );
+    };
 
     // confirm init state of collection
-    expect( _p.indexes['n1'] ).to.equal(0);
-    expect( _p.indexes['n2'] ).to.equal(1);
-    expect( _p.ids['n1'] ).to.equal(n1);
-    expect( _p.ids['n2'] ).to.equal(n2);
+    expect( has('n1') ).to.be.true;
+    expect( has('n2') ).to.be.true;
     expect( eles.length ).to.equal(2);
     expect( eles[2] ).to.not.exist;
 
     eles.unmerge( n1 );
 
     // confirm only n2 left
-    expect( _p.indexes['n1'] ).to.not.exist;
-    expect( _p.indexes['n2'] ).to.equal(0);
-    expect( _p.ids['n1'] ).to.not.exist;
-    expect( _p.ids['n2'] ).to.equal(n2);
+    expect( has('n1') ).to.be.false;
+    expect( has('n2') ).to.be.true;
     expect( eles.length ).to.equal(1);
     expect( eles[1] ).to.not.exist;
     expect( eles[2] ).to.not.exist;
@@ -169,10 +169,8 @@ describe('Collection building and filtering', function(){
     eles.unmerge( n2 );
 
     // confirm empty
-    expect( _p.indexes['n1'] ).to.not.exist;
-    expect( _p.indexes['n2'] ).to.not.exist;
-    expect( _p.ids['n1'] ).to.not.exist;
-    expect( _p.ids['n2'] ).to.not.exist;
+    expect( has('n1') ).to.be.false;
+    expect( has('n2') ).to.be.false;
     expect( eles.length ).to.equal(0);
     expect( eles[0] ).to.not.exist;
     expect( eles[1] ).to.not.exist;
@@ -181,23 +179,22 @@ describe('Collection building and filtering', function(){
 
   it('eles.unmerge() last ele', function(){
     var eles = cy.$('#n1, #n2');
-    var _p = eles._private;
+
+    var has = function( id ){
+      return eles.hasElementWithId( id );
+    };
 
     // confirm init state of collection
-    expect( _p.indexes['n1'] ).to.equal(0);
-    expect( _p.indexes['n2'] ).to.equal(1);
-    expect( _p.ids['n1'] ).to.equal(n1);
-    expect( _p.ids['n2'] ).to.equal(n2);
+    expect( has('n1') ).to.be.true;
+    expect( has('n2') ).to.be.true;
     expect( eles.length ).to.equal(2);
     expect( eles[2] ).to.not.exist;
 
     eles.unmerge( n2 );
 
     // confirm only n1 left
-    expect( _p.indexes['n2'] ).to.not.exist;
-    expect( _p.indexes['n1'] ).to.equal(0);
-    expect( _p.ids['n2'] ).to.not.exist;
-    expect( _p.ids['n1'] ).to.equal(n1);
+    expect( has('n1') ).to.be.true;
+    expect( has('n2') ).to.be.false;
     expect( eles.length ).to.equal(1);
     expect( eles[1] ).to.not.exist;
     expect( eles[2] ).to.not.exist;
@@ -205,10 +202,8 @@ describe('Collection building and filtering', function(){
     eles.unmerge( n1 );
 
     // confirm empty
-    expect( _p.indexes['n1'] ).to.not.exist;
-    expect( _p.indexes['n2'] ).to.not.exist;
-    expect( _p.ids['n1'] ).to.not.exist;
-    expect( _p.ids['n2'] ).to.not.exist;
+    expect( has('n1') ).to.be.false;
+    expect( has('n2') ).to.be.false;
     expect( eles.length ).to.equal(0);
     expect( eles[0] ).to.not.exist;
     expect( eles[1] ).to.not.exist;

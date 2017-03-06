@@ -136,6 +136,12 @@ var defineDagAllHops = function( params ){
   };
 };
 
+elesfn.clearTraversalCache = function( ){
+  for( var i = 0; i < this.length; i++ ){
+    this[i]._private.traversalCache = null;
+  }
+};
+
 util.extend( elesfn, {
   // get the root nodes in the DAG
   roots: defineDagExtremity({ noIncomingEdges: true }),
@@ -278,17 +284,14 @@ function defineEdgesWithFunction( params ){
       otherNodes = cy.$( otherNodes );
     }
 
-    var thisIds = this._private.ids;
-    var otherIds = otherNodes._private.ids;
-
     for( var h = 0; h < otherNodes.length; h++ ){
       var edges = otherNodes[ h ]._private.edges;
 
       for( var i = 0; i < edges.length; i++ ){
         var edge = edges[ i ];
         var edgeData = edge._private.data;
-        var thisToOther = thisIds[ edgeData.source ] && otherIds[ edgeData.target ];
-        var otherToThis = otherIds[ edgeData.source ] && thisIds[ edgeData.target ];
+        var thisToOther = this.hasElementWithId( edgeData.source ) && otherNodes.hasElementWithId( edgeData.target );
+        var otherToThis = otherNodes.hasElementWithId( edgeData.source ) && this.hasElementWithId( edgeData.target );
         var edgeConnectsThisAndOther = thisToOther || otherToThis;
 
         if( !edgeConnectsThisAndOther ){ continue; }

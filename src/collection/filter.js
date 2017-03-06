@@ -48,11 +48,12 @@ var elesfn = ({
       }
 
       var elements = [];
+      var rMap = toRemove._private.map;
 
       for( var i = 0; i < this.length; i++ ){
         var element = this[ i ];
 
-        var remove = toRemove._private.ids[ element.id() ];
+        var remove = rMap.has( element.id() );
         if( !remove ){
           elements.push( element );
         }
@@ -80,16 +81,15 @@ var elesfn = ({
     var col1 = this;
     var col2 = other;
     var col1Smaller = this.length < other.length;
-    // var ids1 = col1Smaller ? col1._private.ids : col2._private.ids;
-    var ids2 = col1Smaller ? col2._private.ids : col1._private.ids;
+    var map2 = col1Smaller ? col2._private.map : col1._private.map;
     var col = col1Smaller ? col1 : col2;
 
     for( var i = 0; i < col.length; i++ ){
       var id = col[ i ]._private.data.id;
-      var ele = ids2[ id ];
+      var entry = map2.get( id );
 
-      if( ele ){
-        elements.push( ele );
+      if( entry ){
+        elements.push( entry.ele );
       }
     }
 
@@ -108,11 +108,10 @@ var elesfn = ({
     var col2 = other;
 
     var add = function( col, other ){
-
       for( var i = 0; i < col.length; i++ ){
         var ele = col[ i ];
         var id = ele._private.data.id;
-        var inOther = other._private.ids[ id ];
+        var inOther = other.hasElementWithId( id );
 
         if( !inOther ){
           elements.push( ele );
@@ -145,7 +144,7 @@ var elesfn = ({
       for( var i = 0; i < col.length; i++ ){
         var ele = col[ i ];
         var id = ele._private.data.id;
-        var inOther = other._private.ids[ id ];
+        var inOther = other.hasElementWithId( id );
 
         if( inOther ){
           both.push( ele );
@@ -184,9 +183,11 @@ var elesfn = ({
       elements.push( this[ i ] );
     }
 
+    var map = this._private.map;
+
     for( var i = 0; i < toAdd.length; i++ ){
 
-      var add = !this._private.ids[ toAdd[ i ].id() ];
+      var add = !map.has( toAdd[ i ].id() );
       if( add ){
         elements.push( toAdd[ i ] );
       }
@@ -209,22 +210,24 @@ var elesfn = ({
       toAdd = cy.mutableElements().filter( selector );
     }
 
+    var map = _p.map;
+
     for( var i = 0; i < toAdd.length; i++ ){
       var toAddEle = toAdd[ i ];
       var id = toAddEle._private.data.id;
-      var add = !_p.ids[ id ];
+      var add = !map.has( id );
 
       if( add ){
         var index = this.length++;
 
         this[ index ] = toAddEle;
-        _p.ids[ id ] = toAddEle;
-        _p.indexes[ id ] = index;
+
+        map.set( id, { ele: toAddEle, index: index } );
       } else { // replace
-        var index = _p.indexes[ id ];
+        var index = map.get( id ).index;
 
         this[ index ] = toAddEle;
-        _p.ids[ id ] = toAddEle;
+        map.set( id, { ele: toAddEle, index: index } );
       }
     }
 
@@ -237,16 +240,18 @@ var elesfn = ({
 
     var _p = this._private;
     var id = ele._private.data.id;
-    var i = _p.indexes[ id ];
+    var map = _p.map;
+    var entry =  map.get( id );
 
-    if( i == null ){
+    if( !entry ){
       return this; // no need to remove
     }
 
+    var i = entry.index;
+
     // remove ele
     this[ i ] = undefined;
-    _p.ids[ id ] = undefined;
-    _p.indexes[ id ] = undefined;
+    map.delete( id );
 
     var unmergedLastEle = i === this.length - 1;
 
@@ -258,7 +263,7 @@ var elesfn = ({
 
       this[ lastEleI ] = undefined;
       this[ i ] = lastEle;
-      _p.indexes[ lastEleId ] = i;
+      map.set( lastEleId, { ele: lastEle, index: i } );
     }
 
     // the collection is now 1 ele smaller

@@ -35,7 +35,7 @@ var Element = function( cy, params, restore ){
   this[0] = this;
 
   // NOTE: when something is added here, add also to ele.json()
-  this._private = {
+  var _p = this._private = {
     cy: cy,
     single: true, // indicates this is an element
     data: params.data || {}, // data object
@@ -73,7 +73,7 @@ var Element = function( cy, params, restore ){
     var pan = cy.pan();
     var zoom = cy.zoom();
 
-    this._private.position = {
+    _p.position = {
       x: (rpos.x - pan.x) / zoom,
       y: (rpos.y - pan.y) / zoom
     };
@@ -85,7 +85,7 @@ var Element = function( cy, params, restore ){
       var cls = classes[ i ];
       if( !cls || cls === '' ){ continue; }
 
-      self._private.classes[ cls ] = true;
+      _p.classes[ cls ] = true;
     }
   }
 

@@ -6,17 +6,17 @@ global.newCytoscape = newCytoscape;
 global.oldCytoscape = oldCytoscape;
 
 function Suite( name, suiteOpts ){
+  suiteOpts = suiteOpts || {};
+
   var suite = new Benchmark.Suite( name, suiteOpts );
   var suiteAdd = suite.add;
 
-  suite.add = function( fn, opts ){
-    var opts = global.opts = opts || {};
-
-    global.setup = opts.setup || function( cytoscape ){
-      return oldCytoscape();
+  suite.add = function( fn ){
+    global.setup = suiteOpts.setup || function( cytoscape ){
+      return cytoscape();
     };
 
-    global.teardown = opts.teardown || function( cy ){
+    global.teardown = suiteOpts.teardown || function( cy ){
       if( cy.destroy ){ cy.destroy(); }
     };
 

@@ -1,9 +1,11 @@
 'use strict';
 
-var util = require( '../util' );
-var is = require( '../is' );
+var util = require('../util');
+var is = require('../is');
+var Map = require('../map');
+var Set = require('../set');
 
-var Element = require( './element' );
+var Element = require('./element');
 
 // factory for generating edge ids when no id is specified for a new element
 var idFactory = {
@@ -25,8 +27,7 @@ var Collection = function( cy, elements, options ){
     return;
   }
 
-  var ids = {};
-  var indexes = {};
+  var map = new Map();
   var createdElements = false;
 
   if( !elements ){
@@ -36,7 +37,7 @@ var Collection = function( cy, elements, options ){
 
     // make elements from json and restore all at once later
     var eles = [];
-    var elesIds = {};
+    var elesIds = new Set();
 
     for( var i = 0, l = elements.length; i < l; i++ ){
       var json = elements[ i ];
@@ -50,13 +51,13 @@ var Collection = function( cy, elements, options ){
       // make sure newly created elements have valid ids
       if( data.id == null ){
         data.id = idFactory.generate( cy, json );
-      } else if( cy.hasElementWithId( data.id ) || elesIds[ data.id ] ){
+      } else if( cy.hasElementWithId( data.id ) || elesIds.has( data.id ) ){
         continue; // can't create element if prior id already exists
       }
 
       var ele = new Element( cy, json, false );
       eles.push( ele );
-      elesIds[ data.id ] = true;
+      elesIds.add( data.id );
     }
 
     elements = eles;
@@ -70,9 +71,11 @@ var Collection = function( cy, elements, options ){
 
     var id = element._private.data.id;
 
-    if( !options || (options.unique && !ids[ id ] ) ){
-      ids[ id ] = element;
-      indexes[ id ] = this.length;
+    if( !options || ( options.unique && !map.has(id) ) ){
+      map.set( id, {
+        index: this.length,
+        ele: element
+      } );
 
       this[ this.length ] = element;
       this.length++;
@@ -81,8 +84,7 @@ var Collection = function( cy, elements, options ){
 
   this._private = {
     cy: cy,
-    ids: ids,
-    indexes: indexes
+    map: map
   };
 
   // restore the elements if we created them from json
@@ -137,14 +139,14 @@ elesfn.unique = function(){
 };
 
 elesfn.hasElementWithId = function( id ){
-  return !!this._private.ids[ id ];
+  return this._private.map.has( id );
 };
 
 elesfn.getElementById = function( id ){
   var cy = this._private.cy;
-  var ele = this._private.ids[ id ];
+  var entry = this._private.map.get( id );
 
-  return ele ? ele : new Collection( cy ); // get ele or empty collection
+  return entry ? entry.ele : new Collection( cy ); // get ele or empty collection
 };
 
 elesfn.poolIndex = function(){
@@ -152,7 +154,7 @@ elesfn.poolIndex = function(){
   var eles = cy._private.elements;
   var id = this._private.data.id;
 
-  return eles._private.indexes[ id ];
+  return eles._private.map.get( id ).index;
 };
 
 elesfn.json = function( obj ){
@@ -306,7 +308,7 @@ elesfn.restore = function( notifyRenderer ){
     var data = _private.data;
 
     // the traversal cache should start fresh when ele is added
-    _private.traversalCache = null;
+    ele.clearTraversalCache();
 
     // set id and validate
     if( data.id === undefined ){
@@ -385,10 +387,8 @@ elesfn.restore = function( notifyRenderer ){
     } // if is edge
 
     // create mock ids / indexes maps for element so it can be used like collections
-    _private.ids = {};
-    _private.ids[ id ] = ele;
-    _private.indexes = {};
-    _private.indexes[ id ] = ele;
+    _private.map = new Map();
+    _private.map.set( id, { ele: ele, index: 0 } );
 
     _private.removed = false;
     cy.addToPool( ele );
@@ -450,20 +450,17 @@ elesfn.restore = function( notifyRenderer ){
       if( ele.isNode() ){ continue; }
 
       // adding an edge invalidates the traversal caches for the parallel edges
-      var pedges = ele.parallelEdges();
-      for( var j = 0; j < pedges.length; j++ ){
-        pedges[j]._private.traversalCache = null;
-      }
+      var pedges = ele.parallelEdges().clearTraversalCache();
 
       // adding an edge invalidates the traversal cache for the connected nodes
-      ele.source()[0]._private.traversalCache = null;
-      ele.target()[0]._private.traversalCache = null;
+      ele.source().clearTraversalCache();
+      ele.target().clearTraversalCache();
     }
 
     var toUpdateStyle;
 
     if( cy_p.hasCompoundNodes ){
-      toUpdateStyle = restored.add( restored.connectedNodes() ).add( restored.parent() );
+      toUpdateStyle = cy.collection().merge( restored ).merge( restored.connectedNodes() ).merge( restored.parent() );
     } else {
       toUpdateStyle = restored;
     }
@@ -552,15 +549,12 @@ elesfn.remove = function( notifyRenderer ){
     util.removeFromArray( connectedEdges, edge );
 
     // removing an edges invalidates the traversal cache for its nodes
-    node._private.traversalCache = null;
+    node.clearTraversalCache();
   }
 
   function removeParallelRefs( edge ){
     // removing an edge invalidates the traversal caches for the parallel edges
-    var pedges = edge.parallelEdges();
-    for( var j = 0; j < pedges.length; j++ ){
-      pedges[j]._private.traversalCache = null;
-    }
+    edge.parallelEdges().clearTraversalCache();
   }
 
   var alteredParents = [];

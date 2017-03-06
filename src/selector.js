@@ -150,6 +150,8 @@ var Selector = function( selector ){
   // storage for parsed queries
   var newQuery = function(){
     return {
+      length: 0, // how many expressions per query
+
       classes: [],
       colonSelectors: [],
       data: [],
@@ -184,6 +186,7 @@ var Selector = function( selector ){
     self[0] = newQuery();
     self[0].group = selector === '*' ? selector : selector + 's';
     self[0].groupOnly = true;
+    self[0].length = 1;
     self._private.invalid = false;
     self._private.selectorText = selector;
     self.length = 1;
@@ -194,12 +197,14 @@ var Selector = function( selector ){
 
     self[0] = newQuery();
     self[0].collection = collection;
+    self[0].length = 1;
     self.length = 1;
 
   } else if( is.fn( selector ) ){
 
     self[0] = newQuery();
     self[0].filter = selector;
+    self[0].length = 1;
     self.length = 1;
 
   } else if( is.string( selector ) ){
@@ -470,6 +475,8 @@ var Selector = function( selector ){
         for( var j = 1; j < check.match.length; j++ ){
           args.push( check.match[ j ] );
         }
+
+        self[i].length++;
 
         // let the token populate the selector object (i.e. in self[i])
         var ret = check.expr.populate.apply( self[ i ], args );
@@ -743,7 +750,7 @@ var queryMatches = function( query, ele ){
   }
 
   // check filter function
-  if( query.filter != null && ele.collection().filter( query.filter ).size() === 0 ){
+  if( query.filter != null && ele.collection().some( query.filter ) ){
     return false;
   }
 
@@ -800,6 +807,11 @@ selfn.filter = function( collection ){
   // don't bother trying if it's invalid
   if( self._private.invalid ){
     return cy.collection();
+  }
+
+  // for 1 id #foo queries, just get the element
+  if( self.length === 1 && self[0].length === 1 && self[0].ids.length === 1 ){
+    return collection.getElementById( self[0].ids[0] ).collection();
   }
 
   var selectorFunction = function( i, element ){

@@ -20,7 +20,7 @@ var assign = function( a, b ){
   return a;
 };
 
-var benchmarkVersion = '2.5.3'; // old version to test against for benchmarks
+var benchmarkVersion = require('./benchmark/old-version.json'); // old version to test against for benchmarks
 var benchmarkVersionUrl = 'https://raw.githubusercontent.com/cytoscape/cytoscape.js/v' + benchmarkVersion + '/dist/cytoscape.js';
 
 var weaverVersion = 'master';

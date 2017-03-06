@@ -14,7 +14,7 @@ var elesfn = ({
     var reconstructPath = function( start, end, cameFromMap, pathAcum ){
       // Base case
       if( start == end ){
-        pathAcum.push( cy.getElementById( end ) );
+        pathAcum.unshift( cy.getElementById( end ) );
         return pathAcum;
       }
 
@@ -23,9 +23,8 @@ var elesfn = ({
         var previous = cameFromMap[ end ];
         var previousEdge = cameFromEdge[ end ];
 
-        pathAcum.push( cy.getElementById( end ) );
-        pathAcum.push( cy.getElementById( previousEdge ) );
-
+        pathAcum.unshift( cy.getElementById( previousEdge ) );
+        pathAcum.unshift( cy.getElementById( end ) );
 
         return reconstructPath( start,
                      previous,
@@ -99,18 +98,18 @@ var elesfn = ({
       var directed = false;
     }
 
+    var sid = source.id();
+    var tid = target.id();
+
     var closedSet = [];
-    var openSet = [ source.id() ];
+    var openSet = [ sid ];
     var cameFrom = {};
     var cameFromEdge = {};
     var gScore = {};
     var fScore = {};
 
-    gScore[ source.id() ] = 0;
-    fScore[ source.id() ] = heuristic( source );
-
-    var edges = this.edges().stdFilter( function( e ){ return !e.isLoop(); } );
-    var nodes = this.nodes();
+    gScore[ sid ] = 0;
+    fScore[ sid ] = heuristic( source );
 
     // Counter
     var steps = 0;
@@ -119,42 +118,55 @@ var elesfn = ({
     while( openSet.length > 0 ){
       var minPos = findMin( openSet, fScore );
       var cMin = cy.getElementById( openSet[ minPos ] );
+      var cMinId = cMin.id();
       steps++;
 
       // If we've found our goal, then we are done
-      if( cMin.id() == target.id() ){
-        var rPath = reconstructPath( source.id(), target.id(), cameFrom, [] );
-        rPath.reverse();
+      if( cMinId == tid ){
+        var rPath = reconstructPath( sid, tid, cameFrom, [] );
+
         return {
           found: true,
-          distance: gScore[ cMin.id() ],
+          distance: gScore[ cMinId ],
           path: eles.spawn( rPath ),
           steps: steps
         };
       }
 
       // Add cMin to processed nodes
-      closedSet.push( cMin.id() );
+      closedSet.push( cMinId );
       // Remove cMin from boundary nodes
       openSet.splice( minPos, 1 );
 
       // Update scores for neighbors of cMin
       // Take into account if graph is directed or not
-      var vwEdges = cMin.connectedEdges();
-      if( directed ){ vwEdges = vwEdges.stdFilter( function( ele ){ return ele.data( 'source' ) === cMin.id(); } ); }
-      vwEdges = vwEdges.intersect( edges );
+      var vwEdges = cMin._private.edges;
 
       for( var i = 0; i < vwEdges.length; i++ ){
         var e = vwEdges[ i ];
-        var w = e.connectedNodes().stdFilter( function( n ){ return n.id() !== cMin.id(); } ).intersect( nodes );
+
+        // edge must be in set of calling eles
+        if( !this.hasElementWithId( e.id() ) ){ continue; }
+
+        // cMin must be the source of edge if directed
+        if( directed && e.data('source') !== cMinId ){ continue; }
+
+        var wSrc = e.source();
+        var wTgt = e.target();
+
+        var w = wSrc.id() !== cMinId ? wSrc : wTgt;
+        var wid = w.id();
+
+        // node must be in set of calling eles
+        if( !this.hasElementWithId( wid ) ){ continue; }
 
         // if node is in closedSet, ignore it
-        if( closedSet.indexOf( w.id() ) != -1 ){
+        if( closedSet.indexOf( wid ) != -1 ){
           continue;
         }
 
         // New tentative score for node w
-        var tempScore = gScore[ cMin.id() ] + weightFn.apply( e, [ e ] );
+        var tempScore = gScore[ cMinId ] + weightFn.apply( e, [ e ] );
 
         // Update gScore for node w if:
         //   w not present in openSet
@@ -162,19 +174,19 @@ var elesfn = ({
         //   tentative gScore is less than previous value
 
         // w not in openSet
-        if( openSet.indexOf( w.id() ) == -1 ){
-          gScore[ w.id() ] = tempScore;
-          fScore[ w.id() ] = tempScore + heuristic( w );
-          openSet.push( w.id() ); // Add node to openSet
-          cameFrom[ w.id() ] = cMin.id();
-          cameFromEdge[ w.id() ] = e.id();
+        if( openSet.indexOf( wid ) == -1 ){
+          gScore[ wid ] = tempScore;
+          fScore[ wid ] = tempScore + heuristic( w );
+          openSet.push( wid ); // Add node to openSet
+          cameFrom[ wid ] = cMinId;
+          cameFromEdge[ wid ] = e.id();
           continue;
         }
         // w already in openSet, but with greater gScore
-        if( tempScore < gScore[ w.id() ] ){
-          gScore[ w.id() ] = tempScore;
-          fScore[ w.id() ] = tempScore + heuristic( w );
-          cameFrom[ w.id() ] = cMin.id();
+        if( tempScore < gScore[ wid ] ){
+          gScore[ wid ] = tempScore;
+          fScore[ wid ] = tempScore + heuristic( w );
+          cameFrom[ wid ] = cMinId;
         }
 
       } // End of neighbors update

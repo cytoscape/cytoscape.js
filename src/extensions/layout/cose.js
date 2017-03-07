@@ -1003,7 +1003,7 @@ var createLayoutInfo = function( cy, layout, options ){
     tempNode.padBottom  = parseFloat( n.style( 'padding' ) );
 
     // forces
-    tempNode.nodeRepulsion = is.fn( options.nodeRepulsion ) ? options.nodeRepulsion.call( n, n ) : options.nodeRepulsion;
+    tempNode.nodeRepulsion = is.fn( options.nodeRepulsion ) ? options.nodeRepulsion(n) : options.nodeRepulsion;
 
     // Add new node
     layoutInfo.layoutNodes.push( tempNode );
@@ -1072,8 +1072,8 @@ var createLayoutInfo = function( cy, layout, options ){
     tempEdge.targetId = e.data( 'target' );
 
     // Compute ideal length
-    var idealLength = is.fn( options.idealEdgeLength ) ? options.idealEdgeLength.call( e, e ) : options.idealEdgeLength;
-    var elasticity = is.fn( options.edgeElasticity ) ? options.edgeElasticity.call( e, e ) : options.edgeElasticity;
+    var idealLength = is.fn( options.idealEdgeLength ) ? options.idealEdgeLength(e) : options.idealEdgeLength;
+    var elasticity = is.fn( options.edgeElasticity ) ? options.edgeElasticity(e) : options.edgeElasticity;
 
     // Check if it's an inter graph edge
     var sourceIx    = layoutInfo.idToIndex[ tempEdge.sourceId ];

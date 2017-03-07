@@ -93,7 +93,7 @@ var elesfn = ({
               edge = w.edgesTo( vEle )[0];
             }
 
-            var edgeWeight = weightFn.apply( edge, [ edge ] );
+            var edgeWeight = weightFn( edge );
 
             w = w.id();
 

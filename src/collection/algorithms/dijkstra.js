@@ -53,7 +53,7 @@ var elesfn = ({
 
       for( var i = 0; i < uvs.length; i++ ){
         var edge = uvs[ i ];
-        var weight = weightFn.apply( edge, [ edge ] );
+        var weight = weightFn( edge );
 
         if( weight < smallestDistance || !smallestEdge ){
           smallestDistance = weight;

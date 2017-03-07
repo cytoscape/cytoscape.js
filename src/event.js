@@ -35,9 +35,9 @@ var Event = function( src, props ){
     // more efficient to manually copy fields we use
     this.type = props.type !== undefined ? props.type : this.type;
     this.cy = props.cy;
-    this.cyTarget = props.cyTarget;
-    this.cyPosition = props.cyPosition;
-    this.cyRenderedPosition = props.cyRenderedPosition;
+    this.target = props.target;
+    this.position = props.position;
+    this.renderedPosition = props.renderedPosition;
     this.namespace = props.namespace;
     this.layout = props.layout;
     this.data = props.data;

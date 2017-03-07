@@ -154,7 +154,7 @@ var elesfn = ({
       // Now, sum edge weights
       for( var i = 0; i < connEdges.length; i++ ){
         var edge = connEdges[ i ];
-        s += weightFn.apply( edge, [ edge ] );
+        s += weightFn( edge );
       }
 
       return {
@@ -171,13 +171,13 @@ var elesfn = ({
       // Now, sum incoming edge weights
       for( var i = 0; i < incoming.length; i++ ){
         var edge = incoming[ i ];
-        s_in += weightFn.apply( edge, [ edge ] );
+        s_in += weightFn( edge );
       }
 
       // Now, sum outgoing edge weights
       for( var i = 0; i < outgoing.length; i++ ){
         var edge = outgoing[ i ];
-        s_out += weightFn.apply( edge, [ edge ] );
+        s_out += weightFn( edge );
       }
 
       return {

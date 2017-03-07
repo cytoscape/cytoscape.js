@@ -70,7 +70,7 @@ var elesfn = ({
       for( var e = 0; e < edges.length; e++ ){
         var sourceIndex = id2position[ edges[ e ].source().id() ];
         var targetIndex = id2position[ edges[ e ].target().id() ];
-        var weight = weightFn.apply( edges[ e ], [ edges[ e ] ] );
+        var weight = weightFn( edges[ e ] );
 
         var temp = cost[ sourceIndex ] + weight;
         if( temp < cost[ targetIndex ] ){
@@ -102,7 +102,7 @@ var elesfn = ({
       for( var e = 0; e < edges.length; e++ ){
         var sourceIndex = id2position[ edges[ e ].source().id() ];
         var targetIndex = id2position[ edges[ e ].target().id() ];
-        var weight = weightFn.apply( edges[ e ], [ edges[ e ] ] );
+        var weight = weightFn( edges[ e ] );
 
         if( cost[ sourceIndex ] + weight < cost[ targetIndex ] ){
           util.error( 'Graph contains a negative weight cycle for Bellman-Ford' );

@@ -59,7 +59,7 @@ fn = elesfn = ({
       for( var i = 0; i < this.length; i++ ){
         var ele = this[ i ];
 
-        var pos = fn.apply( ele, [ i, ele ] );
+        var pos = fn.apply( ele, [ ele, i ] );
 
         if( pos && !ele.locked() && !ele.isParent() ){
           var elePos = ele._private.position;

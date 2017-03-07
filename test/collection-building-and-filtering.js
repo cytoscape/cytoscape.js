@@ -54,8 +54,8 @@ describe('Collection building and filtering', function(){
   it('eles.filter() etc', function(){
     expect( cy.$('#n1, #n2').filter('#n1').same(n1) ).to.be.true;
 
-    expect( cy.$('#n1, #n2').filter(function(){
-      return this.id() === 'n1';
+    expect( cy.$('#n1, #n2').filter(function( ele ){
+      return ele.id() === 'n1';
     }).same(n1) ).to.be.true;
 
   });

@@ -814,7 +814,7 @@ selfn.filter = function( collection ){
     return collection.getElementById( self[0].ids[0] ).collection();
   }
 
-  var selectorFunction = function( i, element ){
+  var selectorFunction = function( element, i ){
     for( var j = 0; j < self.length; j++ ){
       var query = self[ j ];
 

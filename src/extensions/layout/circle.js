@@ -83,7 +83,7 @@ CircleLayout.prototype.run = function(){
     r = Math.max( rMin, r );
   }
 
-  var getPos = function( i, ele ){
+  var getPos = function( ele, i ){
     var theta = options.startAngle + i * dTheta * ( clockwise ? 1 : -1 );
 
     var rx = r * Math.cos( theta );

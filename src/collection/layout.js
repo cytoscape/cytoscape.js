@@ -14,9 +14,7 @@ var elesfn = ({
     var layoutEles = options.eles; // nodes & edges
 
     // memoized version of position function
-    var fnMem = util.memoize( function( node, i ){
-      return fn.call( node, i, node );
-    }, function( node, i ){
+    var fnMem = util.memoize( fn, function( node, i ){
       return node.id() + '$' + i;
     } );
 
@@ -134,7 +132,7 @@ var elesfn = ({
         var spacing = Math.abs( options.spacingFactor );
         var bb = spacingBb();
 
-        nodes.positions( function( i, node ){
+        nodes.positions( function( node, i ){
           var pos = fnMem( node, i );
 
           return calculateSpacing( spacing, bb, pos );

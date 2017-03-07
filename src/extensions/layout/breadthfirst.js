@@ -66,7 +66,7 @@ BreadthFirstLayout.prototype.run = function(){
 
         eles.bfs( {
           roots: unhandledNodes[0],
-          visit: function( i, depth, node, edge, pNode ){
+          visit: function( node, edge, pNode, i, depth ){
             currComp = currComp.add( node );
           },
           directed: false
@@ -80,8 +80,8 @@ BreadthFirstLayout.prototype.run = function(){
       for( var i = 0; i < components.length; i++ ){
         var comp = components[ i ];
         var maxDegree = comp.maxDegree( false );
-        var compRoots = comp.filter( function(){
-          return this.degree( false ) === maxDegree;
+        var compRoots = comp.filter( function( ele ){
+          return ele.degree( false ) === maxDegree;
         } );
 
         roots = roots.add( compRoots );
@@ -102,8 +102,8 @@ BreadthFirstLayout.prototype.run = function(){
   graph.bfs( {
     roots: roots,
     directed: options.directed,
-    visit: function( i, depth, node, edge, pNode ){
-      var ele = this[0];
+    visit: function( node, edge, pNode, i, depth ){
+      var ele = node[0];
       var id = ele.id();
 
       if( !depths[ depth ] ){
@@ -206,8 +206,8 @@ BreadthFirstLayout.prototype.run = function(){
 
 
   var intersectsDepth = function( node ){ // returns true if has edges pointing in from a higher depth
-    var edges = node.connectedEdges( function(){
-      return this.data( 'target' ) === node.id();
+    var edges = node.connectedEdges( function( ele ){
+      return ele.data( 'target' ) === node.id();
     } );
     var thisInfo = node._private.scratch.breadthfirst;
     var highestDepthOfOther = 0;
@@ -422,8 +422,8 @@ BreadthFirstLayout.prototype.run = function(){
     }
   }
 
-  nodes.layoutPositions( this, options, function(){
-    return pos[ this.id() ];
+  nodes.layoutPositions( this, options, function( node ){
+    return pos[ node.id() ];
   } );
 
   return this; // chaining

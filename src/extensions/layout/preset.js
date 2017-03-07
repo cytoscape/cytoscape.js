@@ -33,7 +33,7 @@ PresetLayout.prototype.run = function(){
     }
 
     if( posIsFn ){
-      return options.positions.apply( node, [ node ] );
+      return options.positions( node );
     }
 
     var pos = options.positions[ node._private.data.id ];
@@ -45,7 +45,7 @@ PresetLayout.prototype.run = function(){
     return pos;
   }
 
-  nodes.layoutPositions( this, options, function( i, node ){
+  nodes.layoutPositions( this, options, function( node, i ){
     var position = getPosition( node );
 
     if( node.locked() || position == null ){

@@ -12,6 +12,7 @@ You may notice that performance starts to degrade on graphs with large numbers o
 
 You can get much better performance out of Cytoscape.js by tuning your options, in descending order of significance:
 
+* **Use `cy.getElementById()`** : The [`cy.getElementById('foo')`](#cy.getElementById) function is the fastest way to get an element by ID.  You can use `cy.$id('foo')` to type less.  Searching by selector generally means you have to check each element in the collection, whereas getting by ID is much faster as a lookup table is used.  The single ID selector (e.g. `cy.$('#foo')`) is optimised to also use the lookup table, but it does have the added cost of parsing.
 * **Batch element modifications** : Use [`cy.batch()`](#core/graph-manipulation/cy.batch) to modify many elements at once.
 * **Animations** : You will get better performance without animations.  If using animations anyway:
  * [`eles.flashClass()`](#collection/style/eles.flashClass) is a cheaper alternative than a smooth animation.

@@ -124,6 +124,7 @@
 
             {
               "name": "cy.getElementById",
+              "pureAliases": ["cy.$id"],
               "descr": "Get an element from its ID in a very performant way.",
               "formats": [
                 { "args": [

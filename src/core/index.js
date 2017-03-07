@@ -397,6 +397,8 @@ util.extend( corefn, {
 
 } );
 
+corefn.$id = corefn.getElementById;
+
 [
   require( './add-remove' ),
   require( './animation' ),

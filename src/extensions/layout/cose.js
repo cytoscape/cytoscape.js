@@ -12,8 +12,8 @@ Modifications tracked on Github.
 
 var util = require( '../../util' );
 var math = require( '../../math' );
-var Thread = require( '../../thread' );
 var is = require( '../../is' );
+var Promise = require('../../promise');
 
 var DEBUG;
 
@@ -86,11 +86,8 @@ var defaults = {
   // Lower temperature threshold (below this point the layout will end)
   minTemp: 1.0,
 
-  // Whether to use threading to speed up the layout
-  useMultitasking: true,
-
-  // Applies a multiplicative factor (>0) to expand or compress the overall area that the nodes take up
-  spacingFactor: undefined
+  // Pass a reference to weaver to use threads for calculations
+  weaver: false
 };
 
 
@@ -104,7 +101,6 @@ function CoseLayout( options ){
   this.options.layout = this;
 }
 
-
 /**
  * @brief : runs the layout
  */
@@ -113,9 +109,52 @@ CoseLayout.prototype.run = function(){
   var cy      = options.cy;
   var layout  = this;
   var thread  = this.thread;
+  var Thread  = options.weaver ? options.weaver.Thread : null;
+
+  var falseThread = { // use false thread as polyfill
+    listeners: [],
+    on: function(e, cb){
+      this.listeners.push({ event: e, callback: cb });
+
+      return this;
+    },
+    trigger: function(e){
+      if( is.string(e) ){
+        e = { type: e };
+      }
+
+      var matchesEvent = function( l ){ return l.event === e.type; };
+      var trigger = function( l ){ l.callback(e); };
+
+      this.listeners.filter( matchesEvent ).forEach( trigger );
+
+      return this;
+    },
+    pass: function( data ){
+      this.pass = data;
+
+      return this;
+    },
+    run: function( cb ){
+      var pass = this.pass;
+
+      return new Promise(function( resolve ){
+        resolve( cb( pass ) );
+      });
+    },
+    stop: function(){
+      return this;
+    }
+  };
+
+  function broadcast( message ){ // for false thread
+    var e = { type: 'message', message: message };
+
+    falseThread.trigger( e );
+  }
 
   if( !thread || thread.stopped() ){
-    thread = this.thread = Thread( { disabled: !options.useMultitasking } );
+    thread = this.thread = Thread ? new Thread() : falseThread;
   }
 
   layout.stopped = false;

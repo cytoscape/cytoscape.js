@@ -224,11 +224,11 @@ BRp.invalidateContainerClientCoordsCache = function(){
   this.containerBB = null;
 };
 
-BRp.findNearestElement = function( x, y, isTouch ){
-  return this.findNearestElements( x, y, isTouch )[0];
+BRp.findNearestElement = function( x, y, visibleElementsOnly, isTouch ){
+  return this.findNearestElements( x, y, visibleElementsOnly, isTouch )[0];
 };
 
-BRp.findNearestElements = function( x, y, isTouch ){
+BRp.findNearestElements = function( x, y, visibleElementsOnly, isTouch ){
   var self = this;
   var r = this;
   var eles = r.getCachedZSortedEles();
@@ -289,6 +289,13 @@ BRp.findNearestElements = function( x, y, isTouch ){
         &&
       pos.y - hh <= y && y <= pos.y + hh // bb check y
     ){
+      var visible = !visibleElementsOnly || ( node.visible() && !node.transparent() );
+
+      // exit early if invisible edge and must be visible
+      if( visibleElementsOnly && !visible ){
+        return;
+      }
+
       var shape = r.nodeShapes[ self.getNodeShape( node ) ];
 
       if(
@@ -317,13 +324,35 @@ BRp.findNearestElements = function( x, y, isTouch ){
     var inEdgeBB = false;
     var sqDist;
 
+    // exit early if invisible edge and must be visible
+    var passedVisibilityCheck;
+    var passesVisibilityCheck = function(){
+      if( passedVisibilityCheck !== undefined ){
+        return passedVisibilityCheck;
+      }
+
+      if( !visibleElementsOnly ){
+        passedVisibilityCheck = true;
+        return true;
+      }
+
+      var visible = edge.visible() && !edge.transparent();
+      if( visible ){
+        passedVisibilityCheck = true;
+        return true;
+      }
+
+      passedVisibilityCheck = false;
+      return false;
+    };
+
     if( rs.edgeType === 'segments' || rs.edgeType === 'straight' || rs.edgeType === 'haystack' ){
       var pts = rs.allpts;
 
       for( var i = 0; i + 3 < pts.length; i += 2 ){
         if(
           (inEdgeBB = math.inLineVicinity( x, y, pts[ i ], pts[ i + 1], pts[ i + 2], pts[ i + 3], width2 ))
-            &&
+            && passesVisibilityCheck() &&
           widthSq > ( sqDist = math.sqdistToFiniteLine( x, y, pts[ i ], pts[ i + 1], pts[ i + 2], pts[ i + 3] ) )
         ){
           addEle( edge, sqDist );
@@ -336,7 +365,7 @@ BRp.findNearestElements = function( x, y, isTouch ){
       for( var i = 0; i + 5 < rs.allpts.length; i += 4 ){
         if(
           (inEdgeBB = math.inBezierVicinity( x, y, pts[ i ], pts[ i + 1], pts[ i + 2], pts[ i + 3], pts[ i + 4], pts[ i + 5], width2 ))
-            &&
+            && passesVisibilityCheck() &&
           (widthSq > (sqDist = math.sqdistToQuadraticBezier( x, y, pts[ i ], pts[ i + 1], pts[ i + 2], pts[ i + 3], pts[ i + 4], pts[ i + 5] )) )
         ){
           addEle( edge, sqDist );

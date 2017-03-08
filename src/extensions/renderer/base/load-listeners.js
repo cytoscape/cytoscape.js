@@ -418,7 +418,7 @@ BRp.load = function(){
     var gpos = [ e.clientX, e.clientY ];
     var pos = r.projectIntoViewport( gpos[0], gpos[1] );
     var select = r.selection;
-    var nears = r.findNearestElements( pos[0], pos[1], false );
+    var nears = r.findNearestElements( pos[0], pos[1], true, false );
     var near = nears[0];
     var draggedElements = r.dragData.possibleDragElements;
 
@@ -570,7 +570,7 @@ BRp.load = function(){
 
     var near = null;
     if( !r.hoverData.draggingEles && !r.hoverData.dragging && !r.hoverData.selecting ){
-      near = r.findNearestElement( pos[0], pos[1], false );
+      near = r.findNearestElement( pos[0], pos[1], true, false );
     }
     var last = r.hoverData.last;
     var down = r.hoverData.down;
@@ -844,7 +844,7 @@ BRp.load = function(){
     r.hoverData.capture = false;
 
     var cy = r.cy; var pos = r.projectIntoViewport( e.clientX, e.clientY ); var select = r.selection;
-    var near = r.findNearestElement( pos[0], pos[1], false );
+    var near = r.findNearestElement( pos[0], pos[1], true, false );
     var draggedElements = r.dragData.possibleDragElements; var down = r.hoverData.down;
     var multSelKeyDown = isMultSelKeyDown( e );
 
@@ -1179,8 +1179,8 @@ BRp.load = function(){
       var cxtDistThresholdSq = cxtDistThreshold * cxtDistThreshold;
       if( distance1Sq < cxtDistThresholdSq && !e.touches[2] ){
 
-        var near1 = r.findNearestElement( now[0], now[1], true );
-        var near2 = r.findNearestElement( now[2], now[3], true );
+        var near1 = r.findNearestElement( now[0], now[1], true, true );
+        var near2 = r.findNearestElement( now[2], now[3], true, true );
 
         if( near1 && near1.isNode() ){
           near1.activate().trigger( new Event( e, {
@@ -1220,7 +1220,7 @@ BRp.load = function(){
     } else if( e.touches[1] ){
       // ignore
     } else if( e.touches[0] ){
-      var nears = r.findNearestElements( now[0], now[1], true );
+      var nears = r.findNearestElements( now[0], now[1], true, true );
       var near = nears[0];
 
       if( near != null ){
@@ -1401,7 +1401,7 @@ BRp.load = function(){
       if( r.touchData.start ){ r.touchData.start._private.grabbed = false; }
       r.touchData.cxtDragged = true;
 
-      var near = r.findNearestElement( now[0], now[1], true );
+      var near = r.findNearestElement( now[0], now[1], true, true );
 
       if( !r.touchData.cxtOver || near !== r.touchData.cxtOver ){
 
@@ -1561,7 +1561,7 @@ BRp.load = function(){
       var near;
 
       if( !r.hoverData.draggingEles && !r.swipePanning ){
-        near = r.findNearestElement( now[0], now[1], true );
+        near = r.findNearestElement( now[0], now[1], true, true );
       }
 
       if( capture && start != null ){
@@ -1867,7 +1867,7 @@ BRp.load = function(){
         r.touchData.start = null;
 
       } else {
-        var near = r.findNearestElement( now[0], now[1], true );
+        var near = r.findNearestElement( now[0], now[1], true, true );
 
         triggerEvents( near, [ 'touchend', 'tapend', 'vmouseup', 'tapdragout' ], e, {
           position: { x: now[0], y: now[1] }

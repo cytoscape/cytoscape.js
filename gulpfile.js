@@ -23,29 +23,6 @@ var assign = function( a, b ){
 var benchmarkVersion = require('./benchmark/old-version.json'); // old version to test against for benchmarks
 var benchmarkVersionUrl = 'https://raw.githubusercontent.com/cytoscape/cytoscape.js/v' + benchmarkVersion + '/dist/cytoscape.js';
 
-var weaverVersion = 'master';
-var weaverUrlBase = 'https://raw.githubusercontent.com/maxkfranz/weaver/' + weaverVersion + '/';
-
-var addWeaverUrlBase = function( path ){
-  return weaverUrlBase + path;
-};
-
-var weaverSrc = [
-  'src/thread.js',
-  'src/fabric.js',
-  'src/thread-node-fork.js'
-].map( addWeaverUrlBase );
-
-var weaverTest = [
-  'test/thread.js',
-  'test/fabric.js',
-  'test/requires/foo.js'
-].map( addWeaverUrlBase );
-
-var weaverTestReqs = [
-  'test/requires/foo.js'
-].map( addWeaverUrlBase );
-
 var version; // used for marking builds w/ version etc
 
 var paths = {
@@ -319,36 +296,6 @@ gulp.task('test-browserify', ['concat'], function(next){
       reporter: 'spec'
     }) )
   ;
-});
-
-gulp.task('weaver-src', function(){
-
-  return $.download( weaverSrc )
-    .pipe( $.replace('weaver', 'cytoscape') )
-    .pipe( gulp.dest('src') )
-  ;
-
-});
-
-gulp.task('weaver-test', function(){
-
-  return $.download( weaverTest )
-    .pipe( $.replace('weaver', 'cytoscape') )
-    .pipe( gulp.dest('test') )
-  ;
-
-});
-
-gulp.task('weaver-test-reqs', function(){
-
-  return $.download( weaverTestReqs )
-    .pipe( gulp.dest('test/requires') )
-  ;
-
-});
-
-gulp.task('weaver', function(next){
-  return runSequence(['weaver-src', 'weaver-test', 'weaver-test-reqs'], next);
 });
 
 gulp.task('benchmark-old-ver', function(){

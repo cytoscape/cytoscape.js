@@ -315,9 +315,22 @@ Endpoint modification is not supported for `curve-style: haystack` edges for per
 
 ## Visibility
 
-* **`display`** : Whether to display the element; may be `element` for displayed or `none` for not displayed.  Note that a `display: none` bezier edge does not take up space in its bundle.
-* **`visibility`** : Whether the element is visible; may be `visible` or `hidden`.  Note that a `visibility: hidden` bezier edge still takes up space in its bundle.
+* **`display`** : Whether to display the element; may be `element` for displayed or `none` for not displayed.
+  * A `display: none` element does not take up space.
+    * A `display: none` bundled bezier edge does not take up space in its bundle.
+    * A `display: none` node hides its connected edges.
+  * A `display: none` element is not interactive.
+* **`visibility`** : Whether the element is visible; may be `visible` or `hidden`.
+  * A `visibility: hidden` element does take up space.
+    * A `visibility: hidden` bundled bezier edge does take up space in its bundle.
+    * A `visibility: hidden` node does not hide its connected edges.
+  * A `visibility: hidden` element is not interactive.
 * **`opacity`** : The opacity of the element, ranging from 0 to 1.  Note that the opacity of a compound node parent affects the effective opacity of its children.
+  * An `opacity: 0` element does take up space.
+    * An `opacity: 0` bundled bezier edge does take up space in its bundle.
+    * An `opacity: 0` node does not hide its connected edges.
+  * An `opacity: 0` element is interactive.
+* **`z-index`** : An integer value that affects the relative draw order of elements.  In general, an element with a higher `z-index` will be drawn on top of an element with a lower `z-index`.  Note that edges are under nodes despite `z-index`, except when necessary for compound nodes.
 
 Elements are drawn in a specific order based on compound depth (low to high), the element type (typically nodes above edges), and z-index (low to high).  These styles affect the ordering:
 
@@ -415,7 +428,7 @@ Interactivity:
 
 ## Events
 
- * **`events`** : Whether events should occur on an element (e.g. `tap`, `mouseover`, etc.); may be `yes` or `no`.  For `no`, the element receives no events and events simply pass through to the core/viewport.
+ * **`events`** : Whether events should occur on an element (e.g. `tap`, `mouseover`, etc.); may be `yes` or `no`.  For `no`, the element receives no events and events simply pass through to the core/viewport.  The `events` property is per-element, so the value of a compound parent does not affect its children.
  * **`text-events`** : Whether events should occur on an element if the label receives an event; may be `yes` or `no`.  You may want a style applied to the text on `:active` so you know the text is activatable.
 
 

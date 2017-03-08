@@ -200,6 +200,20 @@ $(function(){
 	});
 
 	test({
+		name: "hideOnClick3",
+		displayName: "opacity:0 on click",
+		description: "opacity:0 on nodes and edges when clicked",
+		setup: function(){
+			cy.elements().bind("click", function(){
+				this.css("opacity", 0);
+			});
+		},
+		teardown: function(){
+			cy.elements().unbind("click").css("*", "");
+		}
+	});
+
+	test({
 		name: "growOnClick",
 		displayName: "Coloured and sized",
 		description: "Make nodes grow/shrink and change colour on click",

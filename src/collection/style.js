@@ -207,60 +207,6 @@ var elesfn = ({
     return this; // chaining
   },
 
-  visible: function(){
-    var cy = this.cy();
-    if( !cy.styleEnabled() ){ return true; }
-
-    var ele = this[0];
-    var hasCompoundNodes = cy.hasCompoundNodes();
-
-    if( ele ){
-      if(
-        ele.pstyle( 'visibility' ).value !== 'visible'
-        || ele.pstyle( 'display' ).value !== 'element'
-        || ele.pstyle('width').pfValue === 0
-      ){
-        return false;
-      }
-
-      if( ele._private.group === 'nodes' ){
-        if( ele.pstyle('height').pfValue === 0 ){ return false; }
-
-        if( !hasCompoundNodes ){ return true; }
-
-        var parents = ele._private.data.parent ? ele.parents() : null;
-
-        if( parents ){
-          for( var i = 0; i < parents.length; i++ ){
-            var parent = parents[ i ];
-            var pVis = parent.pstyle( 'visibility' ).value;
-            var pDis = parent.pstyle( 'display' ).value;
-
-            if( pVis !== 'visible' || pDis !== 'element' ){
-              return false;
-            }
-          }
-        }
-
-        return true;
-      } else {
-        var src = ele._private.source;
-        var tgt = ele._private.target;
-
-        return src.visible() && tgt.visible();
-      }
-
-    }
-  },
-
-  hidden: function(){
-    var ele = this[0];
-
-    if( ele ){
-      return !ele.visible();
-    }
-  },
-
   effectiveOpacity: function(){
     var cy = this.cy();
     if( !cy.styleEnabled() ){ return 1; }
@@ -315,6 +261,106 @@ var elesfn = ({
   }
 
 });
+
+function defineDerivedStateFunction( specs ){
+  var ok = specs.ok;
+  var edgeOkViaNode = specs.edgeOkViaNode || specs.ok;
+  var parentOk = specs.parentOk || specs.ok;
+
+  return function(){
+    var cy = this.cy();
+    if( !cy.styleEnabled() ){ return true; }
+
+    var ele = this[0];
+    var hasCompoundNodes = cy.hasCompoundNodes();
+
+    if( ele ){
+      var _p = ele._private;
+
+      if( !ok( ele ) ){ return false; }
+
+      if( ele.isNode() ){
+        if( hasCompoundNodes ){
+          var parents = _p.data.parent ? ele.parents() : null;
+
+          if( parents ){ for( var i = 0; i < parents.length; i++ ){
+            var parent = parents[ i ];
+
+            if( !parentOk( parent ) ){ return false; }
+          } }
+        }
+
+        return true;
+      } else {
+        return edgeOkViaNode( _p.source ) && edgeOkViaNode( _p.target );
+      }
+    }
+  }
+}
+
+var eleTakesUpSpace = function( ele ){
+  return (
+    ele.pstyle( 'display' ).value === 'element'
+    && ele.width() !== 0
+    && ( ele.isNode() ? ele.height() !== 0 : true )
+  );
+};
+
+elesfn.takesUpSpace = defineDerivedStateFunction({
+  ok: eleTakesUpSpace
+});
+
+var eleInteractive = function( ele ){
+  return (
+    ele.pstyle('events').value === 'yes'
+    && ele.pstyle('visibility').value === 'visible'
+    && eleTakesUpSpace( ele )
+  );
+};
+
+var parentInteractive = function( parent ){
+  return (
+    parent.pstyle('visibility').value === 'visible'
+    && eleTakesUpSpace( parent )
+  );
+};
+
+elesfn.interactive = defineDerivedStateFunction({
+  ok: eleInteractive,
+  parentOk: parentInteractive,
+  edgeOkViaNode: eleTakesUpSpace
+});
+
+elesfn.noninteractive = function(){
+  var ele = this[0];
+
+  if( ele ){
+    return !ele.interactive();
+  }
+};
+
+var eleVisible = function( ele ){
+  return (
+    ele.pstyle( 'visibility' ).value === 'visible'
+    && ele.pstyle( 'opacity' ).pfValue !== 0
+    && eleTakesUpSpace( ele )
+  );
+};
+
+var edgeVisibleViaNode = eleTakesUpSpace;
+
+elesfn.visible = defineDerivedStateFunction({
+  ok: eleVisible,
+  edgeOkViaNode: edgeVisibleViaNode
+});
+
+elesfn.hidden = function(){
+  var ele = this[0];
+
+  if( ele ){
+    return !ele.visible();
+  }
+};
 
 
 elesfn.bypass = elesfn.css = elesfn.style;

@@ -13,24 +13,24 @@ BRp.registerCalculationListeners = function(){
   var elesToUpdate = cy.collection();
   var r = this;
 
-  var enqueue = function( eles, e ){
+  var enqueue = function( eles, e, dirtyStyleCaches ){
     elesToUpdate.merge( eles );
 
-    for( var i = 0; i < eles.length; i++ ){
-      var ele = eles[i];
-      var _p = ele._private;
-      var rstyle = _p.rstyle;
+    if( dirtyStyleCaches === true || dirtyStyleCaches === undefined ){
+      for( var i = 0; i < eles.length; i++ ){
+        var ele = eles[i];
+        var _p = ele._private;
+        var rstyle = _p.rstyle;
 
-      rstyle.clean = false;
-      _p.bbCache = null;
+        rstyle.clean = false;
+        _p.bbCache = null;
 
-      var evts = rstyle.dirtyEvents = rstyle.dirtyEvents || { length: 0 };
+        var evts = rstyle.dirtyEvents = rstyle.dirtyEvents || { length: 0 };
 
-      if( !evts[ e.type ] ){
-        evts[ e.type ] = true;
-        evts.length++;
-//
-        // elesToUpdate.merge( ele );
+        if( !evts[ e.type ] ){
+          evts[ e.type ] = true;
+          evts.length++;
+        }
       }
     }
   };
@@ -45,10 +45,16 @@ BRp.registerCalculationListeners = function(){
       enqueue( node.connectedEdges(), e );
     })
 
-    .on('add.* background.*', 'node', function onDirtyAddNode( e ){
+    .on('add.*', 'node', function onDirtyAddNode( e ){
       var ele = e.target;
 
       enqueue( ele, e );
+    })
+
+    .on('background.*', 'node', function onDirtyBgNode( e ){
+      var ele = e.target;
+
+      enqueue( ele, e, false );
     })
 
     // edges

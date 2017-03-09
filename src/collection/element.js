@@ -43,6 +43,7 @@ var Element = function( cy, params, restore ){
     autoWidth: undefined, // width and height of nodes calculated by the renderer when set to special 'auto' value
     autoHeight: undefined,
     autoPadding: undefined,
+    compoundBoundsClean: false, // whether the compound dimensions need to be recalculated the next time dimensions are read
     listeners: [], // array of bound listeners
     group: group, // string; 'nodes' or 'edges'
     style: {}, // properties as set by the style
@@ -64,6 +65,7 @@ var Element = function( cy, params, restore ){
     scratch: params.scratch || {}, // scratch objects
     edges: [], // array of connected edges
     children: [], // array of children
+    parent: null, // parent ref
     traversalCache: {} // cache of output of traversal functions
   };
 

@@ -165,7 +165,7 @@ var corefn = ({
       // notify renderer
       if( ranEleAni || ranCoreAni ){
         if( eles.length > 0 ){
-          eles.updateCompoundBounds();
+          eles.dirtyCompoundBoundsCache();
 
           cy.notify({
             type: 'draw',

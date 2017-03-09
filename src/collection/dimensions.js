@@ -19,7 +19,7 @@ fn = elesfn = ({
     allowGetting: true,
     validKeys: [ 'x', 'y' ],
     onSet: function( eles ){
-      eles.updateCompoundBounds();
+      eles.dirtyCompoundBoundsCache();
     },
     canSet: function( ele ){
       return !ele.locked() && !ele.isParent();
@@ -38,7 +38,7 @@ fn = elesfn = ({
     allowGetting: true,
     validKeys: [ 'x', 'y' ],
     onSet: function( eles ){
-      eles.updateCompoundBounds( false );
+      eles.dirtyCompoundBoundsCache();
     },
     canSet: function( ele ){
       return !ele.locked() && !ele.isParent();
@@ -68,7 +68,7 @@ fn = elesfn = ({
         }
       }
 
-      this.updateCompoundBounds( !silent );
+      this.dirtyCompoundBoundsCache();
 
       if( silent ){
         this.trigger( 'position' );
@@ -161,6 +161,7 @@ fn = elesfn = ({
           }
         }
 
+        this.dirtyCompoundBoundsCache();
         this.rtrigger( 'position' );
 
       } else { // getting
@@ -214,11 +215,40 @@ fn = elesfn = ({
     };
   },
 
-  updateCompoundBounds: function( notifyRenderer ){
+  dirtyCompoundBoundsCache: function(){
+    var cy = this.cy();
+
+    if( !cy.styleEnabled() || !cy.hasCompoundNodes() ){ return this; }
+
+    var eles = this;
+    var q = [];
+
+    for( var i = 0; i < this.length; i++ ){
+      q.push( this[i] );
+    }
+
+    while( q.length > 0 ){
+      var ele = q.shift();
+
+      ele._private.compoundBoundsClean = false;
+
+      if( ele.isParent() ){
+        ele.trigger('bounds');
+      }
+
+      if( ele.isChild() ){
+        q.push( ele.parent() );
+      }
+    }
+
+    return this;
+  },
+
+  updateCompoundBounds: function(){
     var cy = this.cy();
 
     // save cycles for non compound graphs or when style disabled
-    if( !cy.styleEnabled() || !cy.hasCompoundNodes() ){ return cy.collection(); }
+    if( !cy.styleEnabled() || !cy.hasCompoundNodes() ){ return this; }
 
     var updated = [];
 
@@ -330,31 +360,20 @@ fn = elesfn = ({
       updated.push( parent );
     }
 
-    // go up, level by level
-    var eles = this;
-    while( eles.nonempty() ){
+    for( var i = 0; i < this.length; i++ ){
+      var ele = this[i];
+      var _p = ele._private;
 
-      // update each parent node in this level
-      for( var i = 0; i < eles.length; i++ ){
-        var ele = eles[ i ];
-
+      if( !_p.compoundBoundsClean ){
         update( ele );
+
+        if( !cy._private.batchingStyle ){
+          _p.compoundBoundsClean = true;
+        }
       }
-
-      // next level
-      eles = eles.parent();
     }
 
-    // return changed
-    var changed = this.spawn( updated );
-
-    if( notifyRenderer ){
-      changed.rtrigger('bounds');
-    } else {
-      changed.trigger('bounds');
-    }
-
-    return changed;
+    return this;
   }
 });
 
@@ -951,6 +970,8 @@ var defineDimFns = function( opts ){
     if( ele ){
       if( styleEnabled ){
         if( ele.isParent() ){
+          ele.updateCompoundBounds();
+
           return _p[ opts.autoName ] || 0;
         }
 
@@ -1017,10 +1038,16 @@ defineDimFns( {
 elesfn.padding = function(){
   var ele = this[0];
   var _p = ele._private;
-  if( ele.isParent() && ( _p.autoPadding !== undefined ) ){
-    return _p.autoPadding;
+  if( ele.isParent() ){
+    ele.updateCompoundBounds();
+
+    if( _p.autoPadding !== undefined ){
+      return _p.autoPadding;
+    } else {
+      return ele.pstyle('padding').pfValue;
+    }
   } else {
-    return ele.pstyle( 'padding' ).pfValue;
+    return ele.pstyle('padding').pfValue;
   }
 }
 

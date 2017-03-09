@@ -219,9 +219,7 @@ CRp.render = function( options ){
       r.mbFrames = 0;
     }
 
-    if( !r.drawingImage ){ // image loading frames don't count towards motion blur blurry frames
-      r.mbFrames++;
-    }
+    r.mbFrames++;
 
     if( r.mbFrames < 3 ){ // need several frames before even high quality motionblur
       motionBlurFadeEffect = false;
@@ -598,8 +596,6 @@ CRp.render = function( options ){
       r.redraw();
     }, motionBlurDelay );
   }
-
-  r.drawingImage = false;
 
   if( !forcedContext ){
     cy.trigger('render');

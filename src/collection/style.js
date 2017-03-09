@@ -30,16 +30,6 @@ var elesfn = ({
 
     var changedEles = style.apply( updatedEles );
 
-    if( hasCompounds ){
-      var updatedCompounds = updatedEles.updateCompoundBounds( notifyRenderer );
-
-      // disable for performance for now
-      // (as updatedCompounds would be a subset of updatedEles ayway b/c of selectors check)
-      // if( updatedCompounds.length > 0 ){
-      //   updatedEles.merge( updatedCompounds );
-      // }
-    }
-
     if( notifyRenderer ){
       changedEles.rtrigger( 'style' ); // let renderer know we changed style
     } else {
@@ -59,7 +49,7 @@ var elesfn = ({
 
     var changedEles = style.updateMappers( this );
 
-    this.updateCompoundBounds( notifyRenderer );
+    this.dirtyCompoundBoundsCache( notifyRenderer );
 
     if( notifyRenderer ){
       changedEles.rtrigger( 'style' ); // let renderer know we changed style
@@ -129,7 +119,7 @@ var elesfn = ({
       var props = name;
       style.applyBypass( this, props, updateTransitions );
 
-      this.updateCompoundBounds();
+      this.dirtyCompoundBoundsCache();
 
       this.rtrigger( 'style' ); // let the renderer know we've updated style
 
@@ -147,7 +137,7 @@ var elesfn = ({
       } else { // then set the bypass with the property value
         style.applyBypass( this, name, value, updateTransitions );
 
-        this.updateCompoundBounds();
+        this.dirtyCompoundBoundsCache();
 
         this.rtrigger( 'style' ); // let the renderer know we've updated style
       }
@@ -190,7 +180,7 @@ var elesfn = ({
       }
     }
 
-    this.updateCompoundBounds();
+    this.dirtyCompoundBoundsCache();
 
     this.rtrigger( 'style' ); // let the renderer know we've updated style
 

@@ -5,11 +5,18 @@ var elesfn = ({
     var parents = [];
     var cy = this._private.cy;
 
+    // optimisation for single ele call
+    if( this.length === 1 ){
+      var parent = this[0]._private.parent;
+
+      if( parent ){ return parent; }
+    }
+
     for( var i = 0; i < this.length; i++ ){
       var ele = this[ i ];
-      var parent = cy.getElementById( ele._private.data.parent );
+      var parent = ele._private.parent;
 
-      if( parent.size() > 0 ){
+      if( parent ){
         parents.push( parent );
       }
     }

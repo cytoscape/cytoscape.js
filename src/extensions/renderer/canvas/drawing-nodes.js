@@ -59,13 +59,6 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
       image[i] = this.getCachedImage( url, bgImgCrossOrigin, function(){
         node.rtrigger('background');
       } );
-
-      var prevBging = _p.backgrounding;
-      _p.backgrounding = !image[i].complete;
-
-      if( prevBging !== _p.backgrounding ){ // update style b/c :backgrounding state changed
-        node.updateStyle( false );
-      }
     }
   }
 
@@ -159,10 +152,19 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
   //
   // bg image
 
+  var prevBging = _p.backgrounding;
+  var totalCompleted = 0;
+
   for( var i = 0; i < numImages; i++ ){
     if( ( urlDefined[i] ) && image[i].complete ){
+      totalCompleted++;
       this.drawInscribedImage( context, image[i], node );
     }
+  }
+
+  _p.backgrounding = !(totalCompleted === numImages);
+  if( prevBging !== _p.backgrounding ){ // update style b/c :backgrounding state changed
+    node.updateStyle( false );
   }
 
   //

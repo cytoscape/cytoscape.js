@@ -44,24 +44,28 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
   // load bg image
 
   var bgImgProp = node.pstyle( 'background-image' );
-  var url = bgImgProp.value;
-  var urlDefined = url != null && url !== 'none';
-  var image;
+  var urls = bgImgProp.value;
+  var url;
+  var urlDefined = [];
+  var image = [];
+  var numImages = urls.length;
+  for( var i = 0; i < numImages; i++ ){
+    url = urls[i];
+    urlDefined[i] = url != null && url !== 'none';
+    if( urlDefined[i] ){
+      var bgImgCrossOrigin = node.pstyle( 'background-image-crossorigin' );
 
-  if( urlDefined ){
+      // get image, and if not loaded then ask to redraw when later loaded
+      image[i] = this.getCachedImage( url, bgImgCrossOrigin, function(){
+        node.rtrigger('background');
+      } );
 
-    var bgImgCrossOrigin = node.pstyle( 'background-image-crossorigin' );
+      var prevBging = _p.backgrounding;
+      _p.backgrounding = !image[i].complete;
 
-    // get image, and if not loaded then ask to redraw when later loaded
-    image = this.getCachedImage( url, bgImgCrossOrigin, function(){
-      node.rtrigger('background');
-    } );
-
-    var prevBging = _p.backgrounding;
-    _p.backgrounding = !image.complete;
-
-    if( prevBging !== _p.backgrounding ){ // update style b/c :backgrounding state changed
-      node.updateStyle( false );
+      if( prevBging !== _p.backgrounding ){ // update style b/c :backgrounding state changed
+        node.updateStyle( false );
+      }
     }
   }
 
@@ -155,9 +159,9 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
   //
   // bg image
 
-  if( urlDefined ){
-    if( image.complete ){
-      this.drawInscribedImage( context, image, node );
+  for( var i = 0; i < numImages; i++ ){
+    if( ( urlDefined[i] ) && image[i].complete ){
+      this.drawInscribedImage( context, image[i], node );
     }
   }
 

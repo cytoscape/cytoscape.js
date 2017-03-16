@@ -16,6 +16,11 @@ var styfn = {};
     var mapArg = number + '|\\w+|' + rgba + '|' + hsla + '|' + hex3 + '|' + hex6;
     return '^' + prefix + '\\s*\\(([\\w\\.]+)\\s*\\,\\s*(' + number + ')\\s*\\,\\s*(' + number + ')\\s*,\\s*(' + mapArg + ')\\s*\\,\\s*(' + mapArg + ')\\)$';
   };
+  var urlRegexes = [
+    '^url\\s*\\(\\s*[\'"]?(.+?)[\'"]?\\s*\\)$',
+    '^(none)$',
+    '^(\\S+)$'
+  ];
 
   // each visual style property has a type and needs to be validated according to it
   styfn.types = {
@@ -71,7 +76,8 @@ var styfn = {};
     mapLayoutData: { mapping: true, regex: mapData( 'mapLayoutData' ) },
     mapScratch: { mapping: true, regex: mapData( 'mapScratch' ) },
     fn: { mapping: true, fn: true },
-    url: { regex: 'url\\s*\\(\\s*[\'"]?(.+?)[\'"]?\\s*\\)|none|(.+)$' },
+    url: { regexes: urlRegexes, singleRegexMatchValue: true },
+    urls: { regexes: urlRegexes, singleRegexMatchValue: true, multiple: true },
     propList: { propList: true },
     angle: { number: true, units: 'deg|rad', implicitUnits: 'rad' },
     textRotation: { number: true, units: 'deg|rad', implicitUnits: 'rad', enums: [ 'none', 'autorotate' ] },

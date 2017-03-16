@@ -395,7 +395,7 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
       if( m ){ // regex matches
         return {
           name: name,
-          value: m,
+          value: type.singleRegexMatchValue ? m[1] : m,
           strValue: '' + value,
           bypass: propIsBypass
         };

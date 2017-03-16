@@ -44,10 +44,11 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
   // load bg image
 
   var bgImgProp = node.pstyle( 'background-image' );
-  var url = bgImgProp.value[2] || bgImgProp.value[1];
+  var url = bgImgProp.value;
+  var urlDefined = url != null && url !== 'none';
   var image;
 
-  if( url !== undefined ){
+  if( urlDefined ){
 
     var bgImgCrossOrigin = node.pstyle( 'background-image-crossorigin' );
 
@@ -154,7 +155,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
   //
   // bg image
 
-  if( url !== undefined ){
+  if( urlDefined ){
     if( image.complete ){
       this.drawInscribedImage( context, image, node );
     }

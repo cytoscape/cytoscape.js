@@ -19,7 +19,7 @@ var styfn = {};
   var urlRegexes = [
     '^url\\s*\\(\\s*[\'"]?(.+?)[\'"]?\\s*\\)$',
     '^(none)$',
-    '^(\\S+)$'
+    '^(.+)$'
   ];
 
   // each visual style property has a type and needs to be validated according to it

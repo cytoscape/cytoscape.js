@@ -21,6 +21,8 @@ The following sections go over the options in more detail.
 
 An instance of Cytoscape.js has a number of options that can be set on initialisation.  They are outlined below with their default values.
 
+<span class="important-indicator"></span> Note that if you are using custom fonts in your stylesheet, you need to ensure your fonts are loaded prior to Cytoscape initialisation.
+
 <span class="important-indicator"></span> Note that everything is optional.  By default, you get an empty graph with the default stylesheet.  Environments outside the browser (e.g. Node.js) are automatically set as headless for convenience.
 
 <pre><code>var cy = cytoscape({

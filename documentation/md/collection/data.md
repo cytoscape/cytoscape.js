@@ -8,6 +8,8 @@ The following fields are immutable:
  * `source` & `target` : These fields define an edge's relationship to nodes, and this relationship can not be changed after creation.
  * `parent` : The `parent` field defines the parent (compound) node.
 
+You can effectively move edges and data via [`eles.move()`](#ele.move).
+
 ## Examples
 
 ```js

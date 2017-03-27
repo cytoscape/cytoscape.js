@@ -228,7 +228,6 @@ fn = elesfn = ({
       var includeLabels = parent.pstyle( 'compound-sizing-wrt-labels' ).value === 'include';
       var bb = children.boundingBox( {
         includeLabels: includeLabels,
-        includeShadows: false,
         includeOverlays: false,
 
         // updating the compound bounds happens outside of the regular
@@ -340,10 +339,6 @@ var updateBoundsFromLabel = function( bounds, ele, prefix, options ){
     var marginY = ele.pstyle( prefixDash + 'text-margin-y' ).pfValue;
     var isEdge = ele.isEdge();
     var rotation = ele.pstyle( prefixDash + 'text-rotation' );
-    var shadowR = ele.pstyle( 'text-shadow-blur' ).pfValue / 2;
-    var shadowX = ele.pstyle( 'text-shadow-offset-x' ).pfValue;
-    var shadowY = ele.pstyle( 'text-shadow-offset-y' ).pfValue;
-    var shadowOpacity = ele.pstyle( 'text-shadow-opacity' ).value;
     var outlineWidth = ele.pstyle( 'text-outline-width' ).pfValue;
     var borderWidth = ele.pstyle( 'text-border-width' ).pfValue;
     var halfBorderWidth = borderWidth / 2;
@@ -430,15 +425,6 @@ var updateBoundsFromLabel = function( bounds, ele, prefix, options ){
     ly2 += marginY + Math.max( outlineWidth, halfBorderWidth );
 
     updateBounds( bounds, lx1, ly1, lx2, ly2 );
-
-    if( options.includeShadows && shadowOpacity > 0 ){
-      lx1 += - shadowR + shadowX;
-      lx2 += + shadowR + shadowX;
-      ly1 += - shadowR + shadowY;
-      ly2 += + shadowR + shadowY;
-
-      updateBounds( bounds, lx1, ly1, lx2, ly2 );
-    }
   }
 
   return bounds;
@@ -603,8 +589,8 @@ var boundingBoxImpl = function( ele, options ){
 
     } // edges
 
-    // shadow and overlay
-    /////////////////////
+    // overlay
+    //////////
 
     if( styleEnabled ){
 
@@ -612,14 +598,6 @@ var boundingBoxImpl = function( ele, options ){
       ex2 = bounds.x2;
       ey1 = bounds.y1;
       ey2 = bounds.y2;
-
-      if( options.includeShadows && ele.pstyle('shadow-opacity').value > 0 ){
-        var r = ele.pstyle('shadow-blur').pfValue / 2;
-        var ox = ele.pstyle('shadow-offset-x').pfValue;
-        var oy = ele.pstyle('shadow-offset-y').pfValue;
-
-        updateBounds( bounds, ex1 - r + ox, ey1 - r + oy, ex2 + r + ox, ey2 + r + oy );
-      }
 
       updateBounds( bounds, ex1 - overlayPadding, ey1 - overlayPadding, ex2 + overlayPadding, ey2 + overlayPadding );
     }
@@ -676,7 +654,6 @@ var getKey = function( opts ){
   key += tf( opts.incudeNodes );
   key += tf( opts.includeEdges );
   key += tf( opts.includeLabels );
-  key += tf( opts.includeShadows );
   key += tf( opts.includeOverlays );
 
   return key;
@@ -706,7 +683,6 @@ var defBbOpts = {
   includeNodes: true,
   includeEdges: true,
   includeLabels: true,
-  includeShadows: true,
   includeOverlays: true,
   useCache: true
 };
@@ -730,7 +706,6 @@ function filledBbOpts( options ){
     includeNodes: util.default( options.includeNodes, defBbOpts.includeNodes ),
     includeEdges: util.default( options.includeEdges, defBbOpts.includeEdges ),
     includeLabels: util.default( options.includeLabels, defBbOpts.includeLabels ),
-    includeShadows: util.default( options.includeShadows, defBbOpts.includeShadows ),
     includeOverlays: util.default( options.includeOverlays, defBbOpts.includeOverlays ),
     useCache: util.default( options.useCache, defBbOpts.useCache )
   };

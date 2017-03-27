@@ -40,7 +40,6 @@ var Event = function( src, props ){
     this.renderedPosition = props.renderedPosition;
     this.namespace = props.namespace;
     this.layout = props.layout;
-    this.data = props.data;
     this.message = props.message;
   }
 

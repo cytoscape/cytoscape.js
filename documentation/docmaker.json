@@ -270,7 +270,6 @@
                   "args": [
                     { "name": "events", "descr": "A space separated list of event names." },
                     { "name": "selector", "descr": "A selector to specify elements for which the handler is triggered.", "optional": true },
-                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true },
                     { "name": "function(event)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "event", "descr": "The event object." } ] }
                   ]
                 }
@@ -301,7 +300,6 @@
                   "args": [
                     { "name": "events", "descr": "A space separated list of event names." },
                     { "name": "selector", "descr": "A selector to specify elements for which the handler is triggered.", "optional": true },
-                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true },
                     { "name": "function(event)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "event", "descr": "The event object." } ] }
                   ]
                 }
@@ -1012,7 +1010,6 @@
                   "args": [
                     { "name": "events", "descr": "A space separated list of event names." },
                     { "name": "selector", "descr": "A delegate selector to specify child elements for which the handler is triggered.", "optional": true },
-                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true },
                     { "name": "function(event)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "event", "descr": "The event object." } ] }
                   ]
                 }
@@ -1043,7 +1040,6 @@
                   "args": [
                     { "name": "events", "descr": "A space separated list of event names." },
                     { "name": "selector", "descr": "A delegate selector to specify child elements for which the handler is triggered.", "optional": true },
-                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true },
                     { "name": "function(event)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "event", "descr": "The event object." } ] }
                   ]
                 }
@@ -1059,7 +1055,6 @@
                   "args": [
                     { "name": "events", "descr": "A space separated list of event names." },
                     { "name": "selector", "descr": "A delegate selector to specify child elements for which the handler is triggered.", "optional": true },
-                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true },
                     { "name": "function(event)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "event", "descr": "The event object." } ] }
                   ]
                 }

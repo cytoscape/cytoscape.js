@@ -341,32 +341,6 @@
             },
 
             {
-              "name": "cy.onRender",
-              "descr": "Run a handler function every time a frame is rendered.",
-              "formats": [
-                {
-                  "args": [
-                    { "name": "function()", "descr": "The handler function to call on each frame." }
-                  ]
-                }
-              ],
-              "md": "core/onRender"
-            },
-
-            {
-              "name": "cy.offRender",
-              "descr": "Remove handlers function bound via `cy.onRender()`.",
-              "formats": [
-                {
-                  "args": [
-                    { "name": "handler", "descr": "A reference to the handler function to remove.  All handlers are removed if this is unspecified.", "optional": true }
-                  ]
-                }
-              ],
-              "md": "core/offRender"
-            },
-
-            {
               "name": "cy.ready",
               "descr": "Run a callback as soon as the graph becomes ready (i.e. data loaded and initial layout completed).  If the graph is already ready, then the callback is called immediately.  If data is loaded synchronously and the layout used is discrete/synchronous/unanimated/unspecified, then you don't need `cy.ready()`.",
               "formats": [

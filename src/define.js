@@ -204,26 +204,16 @@ var define = {
     };
     params = util.extend( {}, defaults, params );
 
-    return function onImpl( events, selector, data, callback ){
+    return function onImpl( events, selector, callback ){
       var self = this;
       var selfIsArrayLike = self.length !== undefined;
       var all = selfIsArrayLike ? self : [ self ]; // put in array if not array-like
       var eventsIsString = is.string( events );
       var p = params;
 
-      if( is.plainObject( selector ) ){ // selector is actually data
-        callback = data;
-        data = selector;
-        selector = undefined;
-      } else if( is.fn( selector ) || selector === false ){ // selector is actually callback
+      if( is.fn( selector ) ){ // selector is actually callback
         callback = selector;
-        data = undefined;
         selector = undefined;
-      }
-
-      if( is.fn( data ) || data === false ){ // data is actually callback
-        callback = data;
-        data = undefined;
       }
 
       // if there isn't a callback, we can't really do anything
@@ -263,7 +253,6 @@ var define = {
 
             var listener = {
               callback: callback, // callback to run
-              data: data, // extra data in eventObj.data
               delegated: selector ? true : false, // whether the evt is delegated
               selector: selector, // the selector to match for delegated events
               selObj: new Selector( selector ), // cached selector object to save rebuilding
@@ -509,12 +498,6 @@ var define = {
             if( listenerMatches ){ // then trigger it
               var args = [ evt ];
               args = args.concat( extraParams ); // add extra params to args list
-
-              if( lis.data ){ // add on data plugged into binding
-                evt.data = lis.data;
-              } else { // or clear it in case the event obj is reused
-                evt.data = undefined;
-              }
 
               if( lis.unbindSelfOnTrigger || lis.unbindAllBindersOnTrigger ){ // then remove listener
                 listeners.splice( k, 1 );

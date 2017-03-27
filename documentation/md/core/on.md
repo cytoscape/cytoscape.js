@@ -2,9 +2,7 @@
 
 Bind to events that bubble up from elements matching the specified `node` selector:
 ```js
-cy.on('tap', 'node', { foo: 'bar' }, function(evt){
-  console.log( evt.data.foo ); // 'bar'
-
+cy.on('tap', 'node', function(evt){
   var node = evt.target;
   console.log( 'tapped ' + node.id() );
 });

@@ -354,19 +354,6 @@ describe('Events', function(){
 
     });
 
-    it('binds with data', function(done){
-
-      cy.on('foo', { bar: 'baz' }, function(e){
-        expect( e ).to.have.property('data');
-        expect( e.data ).to.have.property('bar', 'baz');
-
-        done();
-      });
-
-      cy.trigger('foo');
-
-    });
-
     it('binds with an event map', function(){
       var triggers = 0;
 
@@ -632,15 +619,6 @@ describe('Events', function(){
       expect( triggers ).to.equal(1);
     });
 
-    it('should pass extra data correctly', function(done){
-      n1.on('foo', { bar: 'baz' }, function(e){
-        expect( e.data.bar ).to.equal('baz');
-        done();
-      });
-
-      n1.trigger('foo');
-    });
-
   });
 
   describe('eles.one()', function(){
@@ -678,19 +656,6 @@ describe('Events', function(){
       expect( triggers ).to.equal(1);
     });
 
-    it('passes data correctly', function(){
-      var evt;
-
-      n1.one('foo', { bar: 'baz' }, function(e){
-        evt = e;
-      });
-      n1.trigger('foo');
-
-      expect( evt.data ).to.exist;
-      expect( evt.data.bar ).to.exist;
-      expect( evt.data.bar ).to.equal('baz');
-    });
-
   });
 
   describe('eles.once()', function(){
@@ -726,19 +691,6 @@ describe('Events', function(){
       expect( triggers ).to.equal(1);
       cy.$('#n5').trigger('foo');
       expect( triggers ).to.equal(1);
-    });
-
-    it('passes data correctly', function(){
-      var evt;
-
-      n1.once('foo', { bar: 'baz' }, function(e){
-        evt = e;
-      });
-      n1.trigger('foo');
-
-      expect( evt.data ).to.exist;
-      expect( evt.data.bar ).to.exist;
-      expect( evt.data.bar ).to.equal('baz');
     });
 
   });

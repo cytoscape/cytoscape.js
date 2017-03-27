@@ -511,8 +511,7 @@ BRp.getAllInBox = function( x1, y1, x2, y2 ){
       var nodeBb = node.boundingBox( {
         includeNodes: true,
         includeEdges: false,
-        includeLabels: false,
-        includeShadows: false
+        includeLabels: false
       } );
 
       if( math.boundingBoxesIntersect( boxBb, nodeBb ) ){

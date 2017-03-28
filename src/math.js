@@ -827,7 +827,12 @@ math.midOfThree = function( a, b, c ){
   }
 };
 
-math.finiteLinesIntersect = function( x1, y1, x2, y2, x3, y3, x4, y4, infiniteLines ){
+// (x1,y1)=>(x2,y2) intersect with (x3,y3)=>(x4,y4)
+math.finiteLinesIntersect = function(
+  x1, y1, x2, y2,
+  x3, y3, x4, y4,
+  infiniteLines
+){
 
   var dx13 = x1 - x3;
   var dx21 = x2 - x1;
@@ -888,6 +893,11 @@ math.finiteLinesIntersect = function( x1, y1, x2, y2, x3, y3, x4, y4, infiniteLi
   }
 };
 
+// math.polygonIntersectLine( x, y, basePoints, centerX, centerY, width, height, padding )
+// intersect a node polygon (pts transformed)
+//
+// math.polygonIntersectLine( x, y, basePoints, centerX, centerY )
+// intersect the points (no transform)
 math.polygonIntersectLine = function(
   x, y, basePoints, centerX, centerY, width, height, padding ){
 
@@ -896,23 +906,31 @@ math.polygonIntersectLine = function(
 
   var transformedPoints = new Array( basePoints.length );
 
-  for( var i = 0; i < transformedPoints.length / 2; i++ ){
-    transformedPoints[ i * 2] = basePoints[ i * 2] * width + centerX;
-    transformedPoints[ i * 2 + 1] = basePoints[ i * 2 + 1] * height + centerY;
+  var doTransform = true;
+  if( arguments.length === 5 ){
+    doTransform = false;
   }
 
   var points;
 
-  if( padding > 0 ){
-    var expandedLineSet = math.expandPolygon(
-      transformedPoints,
-      -padding );
+  if( doTransform ){
+    for( var i = 0; i < transformedPoints.length / 2; i++ ){
+      transformedPoints[ i * 2] = basePoints[ i * 2] * width + centerX;
+      transformedPoints[ i * 2 + 1] = basePoints[ i * 2 + 1] * height + centerY;
+    }
 
-    points = math.joinLines( expandedLineSet );
+    if( padding > 0 ){
+      var expandedLineSet = math.expandPolygon(
+        transformedPoints,
+        -padding );
+
+      points = math.joinLines( expandedLineSet );
+    } else {
+      points = transformedPoints;
+    }
   } else {
-    points = transformedPoints;
+    points = basePoints;
   }
-  // var points = transformedPoints;
 
   var currentX, currentY, nextX, nextY;
 
@@ -1028,6 +1046,10 @@ math.getRoundRectangleRadius = function( width, height ){
 
   // Set the default radius, unless half of width or height is smaller than default
   return Math.min( width / 4, height / 4, 8 );
+};
+
+math.getCutRectangleCornerLength = function(){
+  return 8;
 };
 
 module.exports = math;

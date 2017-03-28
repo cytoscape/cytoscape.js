@@ -1,6 +1,7 @@
 'use strict';
 
-var math = require( '../../../math' );
+var math = require('../../../math');
+var util = require('../../../util');
 
 var BRp = {};
 
@@ -159,6 +160,70 @@ BRp.generateRoundRectangle = function(){
   } );
 };
 
+BRp.generateCutRectangle = function(){
+  return ( this.nodeShapes['cutrectangle'] = {
+    renderer: this,
+
+    name: 'cutrectangle',
+
+    cornerLength: math.getCutRectangleCornerLength(),
+
+    points: math.generateUnitNgonPointsFitToSquare( 4, 0 ),
+
+    draw: function( context, centerX, centerY, width, height ){
+      this.renderer.nodeShapeImpl( this.name, context, centerX, centerY, width, height );
+    },
+
+    generateCutTrianglePts: function( width, height, centerX, centerY ){
+      var cl = this.cornerLength;
+      var hh = height / 2;
+      var hw = width / 2;
+      var xBegin = centerX - hw;
+      var xEnd = centerX + hw;
+      var yBegin = centerY - hh;
+      var yEnd = centerY + hh;
+
+      // points are in clockwise order, inner (imaginary) triangle pt on [4, 5]
+      return {
+        topLeft: [ xBegin, yBegin + cl, xBegin + cl, yBegin, xBegin + cl, yBegin + cl ],
+        topRight: [ xEnd - cl, yBegin, xEnd, yBegin + cl, xEnd - cl, yBegin + cl ],
+        bottomRight: [ xEnd, yEnd - cl, xEnd - cl, yEnd, xEnd - cl, yEnd - cl ],
+        bottomLeft: [ xBegin + cl, yEnd, xBegin, yEnd - cl, xBegin + cl, yEnd - cl ]
+      };
+    },
+
+    intersectLine: function( nodeX, nodeY, width, height, x, y, padding ){
+      var cPts = this.generateCutTrianglePts( width + 2*padding, height+2*padding, nodeX, nodeY );
+      var pts = [].concat.apply([],
+       [cPts.topLeft.splice(0, 4), cPts.topRight.splice(0, 4),
+         cPts.bottomRight.splice(0, 4), cPts.bottomLeft.splice(0, 4)
+       ]);
+
+      return math.polygonIntersectLine( x, y, pts, nodeX, nodeY );
+    },
+
+    checkPoint: function( x, y, padding, width, height, centerX, centerY ){
+      // Check hBox
+      if( math.pointInsidePolygon( x, y, this.points,
+        centerX, centerY, width, height - 2 * this.cornerLength, [0, -1], padding ) ){
+        return true;
+      }
+
+      // Check vBox
+      if( math.pointInsidePolygon( x, y, this.points,
+        centerX, centerY, width - 2 * this.cornerLength, height, [0, -1], padding ) ){
+        return true;
+      }
+      var cutTrianglePts = this.generateCutTrianglePts(width, height, centerX, centerY);
+      return math.pointInsidePolygonPoints( x, y, cutTrianglePts.topLeft)
+       || math.pointInsidePolygonPoints( x, y, cutTrianglePts.topRight )
+       || math.pointInsidePolygonPoints( x, y, cutTrianglePts.bottomRight )
+       || math.pointInsidePolygonPoints( x, y, cutTrianglePts.bottomLeft );
+    }
+
+  } );
+};
+
 BRp.registerNodeShapes = function(){
   var nodeShapes = this.nodeShapes = {};
   var renderer = this;
@@ -171,6 +236,8 @@ BRp.registerNodeShapes = function(){
   nodeShapes[ 'square' ] = nodeShapes[ 'rectangle' ];
 
   this.generateRoundRectangle();
+
+  this.generateCutRectangle();
 
   this.generatePolygon( 'diamond', [
     0, 1,

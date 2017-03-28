@@ -10,6 +10,8 @@ CRp.nodeShapeImpl = function( name, context, centerX, centerY, width, height, po
       return this.drawPolygonPath( context, centerX, centerY, width, height, points );
     case 'roundrectangle':
       return this.drawRoundRectanglePath( context, centerX, centerY, width, height );
+    case 'cutrectangle':
+      return this.drawCutRectanglePath( context, centerX, centerY, width, height );
   }
 };
 

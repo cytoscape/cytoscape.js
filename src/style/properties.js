@@ -59,7 +59,7 @@ var styfn = {};
     textTransform: { enums: [ 'none', 'uppercase', 'lowercase' ] },
     textWrap: { enums: [ 'none', 'wrap', 'ellipsis' ] },
     textBackgroundShape: { enums: [ 'rectangle', 'roundrectangle' ]},
-    nodeShape: { enums: [ 'rectangle', 'roundrectangle', 'ellipse', 'triangle', 'square', 'pentagon', 'hexagon', 'heptagon', 'octagon', 'star', 'diamond', 'vee', 'rhomboid', 'polygon' ] },
+    nodeShape: { enums: [ 'rectangle', 'roundrectangle', 'cutrectangle', 'ellipse', 'triangle', 'square', 'pentagon', 'hexagon', 'heptagon', 'octagon', 'star', 'diamond', 'vee', 'rhomboid', 'polygon' ] },
     compoundIncludeLabels: { enums: [ 'include', 'exclude' ] },
     arrowShape: { enums: [ 'tee', 'triangle', 'triangle-tee', 'triangle-cross', 'triangle-backcurve', 'half-triangle-overshot', 'vee', 'square', 'circle', 'diamond', 'none' ] },
     arrowFill: { enums: [ 'filled', 'hollow' ] },

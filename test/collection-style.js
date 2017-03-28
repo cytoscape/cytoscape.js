@@ -186,20 +186,20 @@ describe('Collection style', function(){
       expect( cy.$('#n1').numericStyleUnits('opacity') ).to.not.exist;
     });
 
-    it('ele.numericStyle() returns pixel value for background-position-x', function(){
-      var ret = cy.$('#n1').style('background-position-x', '10px').numericStyle('background-position-x');
+    it('ele.numericStyle() returns pixel value for padding', function(){
+      var ret = cy.$('#n1').style('padding', '10px').numericStyle('padding');
 
       expect( ret ).to.be.a.number;
       expect( ret ).to.equal( 10 );
-      expect( cy.$('#n1').numericStyleUnits('background-position-x') ).to.equal('px');
+      expect( cy.$('#n1').numericStyleUnits('padding') ).to.equal('px');
     });
 
-    it('ele.numericStyle() returns percent value for background-position-x', function(){
-      var ret = cy.$('#n1').style('background-position-x', '50%').numericStyle('background-position-x');
+    it('ele.numericStyle() returns percent value for padding', function(){
+      var ret = cy.$('#n1').style('padding', '50%').numericStyle('padding');
 
       expect( ret ).to.be.a.number;
       expect( ret ).to.equal( 0.5 );
-      expect( cy.$('#n1').numericStyleUnits('background-position-x') ).to.equal('%');
+      expect( cy.$('#n1').numericStyleUnits('padding') ).to.equal('%');
     });
 
     it('ele.renderedStyle() returns single val with zoom', function(){

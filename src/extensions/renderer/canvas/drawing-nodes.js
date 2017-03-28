@@ -1,6 +1,8 @@
 'use strict';
 
 var is = require( '../../../is' );
+var util = require( '../../../util' );
+var getIndexedStyle = util.getIndexedStyle.bind( util );
 
 var CRp = {};
 
@@ -44,24 +46,21 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
   // load bg image
 
   var bgImgProp = node.pstyle( 'background-image' );
-  var url = bgImgProp.value;
-  var urlDefined = url != null && url !== 'none';
-  var image;
+  var urls = bgImgProp.value;
+  var url;
+  var urlDefined = [];
+  var image = [];
+  var numImages = urls.length;
+  for( var i = 0; i < numImages; i++ ){
+    url = urls[i];
+    urlDefined[i] = url != null && url !== 'none';
+    if( urlDefined[i] ){
+      var bgImgCrossOrigin = getIndexedStyle(node, 'background-image-crossorigin', 'value', i);
 
-  if( urlDefined ){
-
-    var bgImgCrossOrigin = node.pstyle( 'background-image-crossorigin' );
-
-    // get image, and if not loaded then ask to redraw when later loaded
-    image = this.getCachedImage( url, bgImgCrossOrigin, function(){
-      node.rtrigger('background');
-    } );
-
-    var prevBging = _p.backgrounding;
-    _p.backgrounding = !image.complete;
-
-    if( prevBging !== _p.backgrounding ){ // update style b/c :backgrounding state changed
-      node.updateStyle( false );
+      // get image, and if not loaded then ask to redraw when later loaded
+      image[i] = this.getCachedImage( url, bgImgCrossOrigin, function(){
+        node.rtrigger('background');
+      } );
     }
   }
 
@@ -145,10 +144,19 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
   //
   // bg image
 
-  if( urlDefined ){
-    if( image.complete ){
-      this.drawInscribedImage( context, image, node );
+  var prevBging = _p.backgrounding;
+  var totalCompleted = 0;
+
+  for( var i = 0; i < numImages; i++ ){
+    if( ( urlDefined[i] ) && image[i].complete ){
+      totalCompleted++;
+      this.drawInscribedImage( context, image[i], node, i );
     }
+  }
+
+  _p.backgrounding = !(totalCompleted === numImages);
+  if( prevBging !== _p.backgrounding ){ // update style b/c :backgrounding state changed
+    node.updateStyle( false );
   }
 
   //

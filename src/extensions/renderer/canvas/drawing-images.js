@@ -1,5 +1,7 @@
 'use strict';
 
+var getIndexedStyle = require( '../../../util' ).getIndexedStyle;
+
 var CRp = {};
 
 CRp.safeDrawImage = function( context, img, ix, iy, iw, ih, x, y, w, h ){
@@ -13,20 +15,18 @@ CRp.safeDrawImage = function( context, img, ix, iy, iw, ih, x, y, w, h ){
   context.drawImage( img, ix, iy, iw, ih, x, y, w, h );
 };
 
-CRp.drawInscribedImage = function( context, img, node ){
+CRp.drawInscribedImage = function( context, img, node, index ){
   var r = this;
   var nodeX = node._private.position.x;
   var nodeY = node._private.position.y;
-  var fit = node.pstyle( 'background-fit' ).value;
-  var xPos = node.pstyle( 'background-position-x' );
-  var yPos = node.pstyle( 'background-position-y' );
-  var repeat = node.pstyle( 'background-repeat' ).value;
+  var fit = getIndexedStyle( node, 'background-fit', 'value', index );
+  var repeat = getIndexedStyle( node, 'background-repeat', 'value', index );
   var nodeW = node.width();
   var nodeH = node.height();
   var rs = node._private.rscratch;
   var clip = node.pstyle( 'background-clip' ).value;
   var shouldClip = clip === 'node';
-  var imgOpacity = node.pstyle( 'background-image-opacity' ).value;
+  var imgOpacity = getIndexedStyle( node, 'background-image-opacity', 'value', index );
 
   var imgW = img.width || img.cachedW;
   var imgH = img.height || img.cachedH;
@@ -44,21 +44,19 @@ CRp.drawInscribedImage = function( context, img, node ){
   var w = imgW;
   var h = imgH;
 
-  var bgW = node.pstyle( 'background-width' );
-  if( bgW.value !== 'auto' ){
-    if( bgW.units === '%' ){
-      w = bgW.pfValue * nodeW;
+  if( getIndexedStyle( node, 'background-width', 'value', index ) !== 'auto' ){
+    if( getIndexedStyle( node, 'background-width', 'units', index ) === '%' ){
+      w = getIndexedStyle( node, 'background-width', 'pfValue', index ) * nodeW;
     } else {
-      w = bgW.pfValue;
+      w = getIndexedStyle( node, 'background-width', 'pfValue', index );
     }
   }
 
-  var bgH = node.pstyle( 'background-height' );
-  if( bgH.value !== 'auto' ){
-    if( bgH.units === '%' ){
-      h = bgH.pfValue * nodeH;
+  if( getIndexedStyle( node, 'background-height', 'value', index ) !== 'auto' ){
+    if( getIndexedStyle( node, 'background-height', 'units', index ) === '%' ){
+      h = getIndexedStyle( node, 'background-height', 'pfValue', index ) * nodeH;
     } else {
-      h = bgH.pfValue;
+      h = getIndexedStyle( node, 'background-height', 'pfValue', index );
     }
   }
 
@@ -80,17 +78,17 @@ CRp.drawInscribedImage = function( context, img, node ){
   }
 
   var x = (nodeX - nodeW / 2); // left
-  if( xPos.units === '%' ){
-    x += (nodeW - w) * xPos.pfValue;
+  if( getIndexedStyle( node, 'background-position-x', 'units', index ) === '%' ){
+    x += (nodeW - w) * getIndexedStyle( node, 'background-position-x', 'pfValue', index );
   } else {
-    x += xPos.pfValue;
+    x += getIndexedStyle( node, 'background-position-x', 'pfValue', index );
   }
 
   var y = (nodeY - nodeH / 2); // top
-  if( yPos.units === '%' ){
-    y += (nodeH - h) * yPos.pfValue;
+  if( getIndexedStyle( node, 'background-position-y', 'units', index ) === '%' ){
+    y += (nodeH - h) * getIndexedStyle( node, 'background-position-y', 'pfValue', index );
   } else {
-    y += yPos.pfValue;
+    y += getIndexedStyle( node, 'background-position-y', 'pfValue', index );
   }
 
   if( rs.pathCache ){

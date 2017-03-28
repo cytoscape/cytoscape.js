@@ -1,7 +1,8 @@
 'use strict';
 
 var is = require( '../../../is' );
-var getIndexedStyle = require( '../../../util' ).getIndexedStyle;
+var util = require( '../../../util' );
+var getIndexedStyle = util.getIndexedStyle.bind( util );
 
 var CRp = {};
 

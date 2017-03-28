@@ -137,7 +137,8 @@ util.setPrefixedProperty = function( obj, propName, prefix, value ){
 };
 
 util.getIndexedStyle = function( node, property, subproperty, index ){
-	return node.pstyle( property )[subproperty][index] || node.cy().style().getDefaultProperty( property )[subproperty][0];
+  var pstyle = node.pstyle( property )[subproperty][index];
+  return pstyle != null ? pstyle : node.cy().style().getDefaultProperty( property )[subproperty][0];
 };
 
 [

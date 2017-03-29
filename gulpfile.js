@@ -20,6 +20,11 @@ var assign = function( a, b ){
   return a;
 };
 
+process.on('SIGINT', function() {
+  $.util.log($.util.colors.red('Successfully closed gulp process ' + process.pid));
+  process.exit(1);
+});
+
 var benchmarkVersion = require('./benchmark/old-version.json'); // old version to test against for benchmarks
 var benchmarkVersionUrl = 'https://raw.githubusercontent.com/cytoscape/cytoscape.js/v' + benchmarkVersion + '/dist/cytoscape.js';
 

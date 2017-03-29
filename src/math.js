@@ -1055,4 +1055,8 @@ math.getCutRectangleCornerLength = function(){
   return 8;
 };
 
+math.getBarrelRadius = function(width, height){
+  return Math.min( width / 8, height / 8, 12 );
+};
+
 module.exports = math;

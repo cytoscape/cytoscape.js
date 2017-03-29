@@ -224,6 +224,99 @@ BRp.generateCutRectangle = function(){
   } );
 };
 
+BRp.generateBarrel = function(){
+  return ( this.nodeShapes['barrel'] = {
+    renderer: this,
+
+    name: 'barrel',
+
+    points: math.generateUnitNgonPointsFitToSquare( 4, 0 ),
+
+    draw: function( context, centerX, centerY, width, height ){
+      this.renderer.nodeShapeImpl( this.name, context, centerX, centerY, width, height );
+    },
+
+    intersectLine: function( nodeX, nodeY, width, height, x, y, padding ){
+      return math.roundRectangleIntersectLine(
+        x, y,
+        nodeX,
+        nodeY,
+        width, height,
+        padding )
+      ;
+    },
+
+    // Looks like the width passed into this function is actually the total width / 2
+    checkPoint: function(
+      x, y, padding, width, height, centerX, centerY ){
+
+      var cornerRadius = math.getRoundRectangleRadius( width, height );
+
+      // Check hBox
+      if( math.pointInsidePolygon( x, y, this.points,
+        centerX, centerY, width, height - 2 * cornerRadius, [0, -1], padding ) ){
+        return true;
+      }
+
+      // Check vBox
+      if( math.pointInsidePolygon( x, y, this.points,
+        centerX, centerY, width - 2 * cornerRadius, height, [0, -1], padding ) ){
+        return true;
+      }
+
+      var checkInEllipse = function( x, y, centerX, centerY, width, height, padding ){
+        x -= centerX;
+        y -= centerY;
+
+        x /= (width / 2 + padding);
+        y /= (height / 2 + padding);
+
+        return (x * x + y * y <= 1);
+      };
+
+
+      // Check top left quarter circle
+      if( checkInEllipse( x, y,
+        centerX - width / 2 + cornerRadius,
+        centerY - height / 2 + cornerRadius,
+        cornerRadius * 2, cornerRadius * 2, padding ) ){
+
+        return true;
+      }
+
+      // Check top right quarter circle
+      if( checkInEllipse( x, y,
+        centerX + width / 2 - cornerRadius,
+        centerY - height / 2 + cornerRadius,
+        cornerRadius * 2, cornerRadius * 2, padding ) ){
+
+        return true;
+      }
+
+      // Check bottom right quarter circle
+      if( checkInEllipse( x, y,
+        centerX + width / 2 - cornerRadius,
+        centerY + height / 2 - cornerRadius,
+        cornerRadius * 2, cornerRadius * 2, padding ) ){
+
+        return true;
+      }
+
+      // Check bottom left quarter circle
+      if( checkInEllipse( x, y,
+        centerX - width / 2 + cornerRadius,
+        centerY + height / 2 - cornerRadius,
+        cornerRadius * 2, cornerRadius * 2, padding ) ){
+
+        return true;
+      }
+
+      return false;
+    }
+  } );
+};
+
+
 BRp.registerNodeShapes = function(){
   var nodeShapes = this.nodeShapes = {};
   var renderer = this;
@@ -238,6 +331,8 @@ BRp.registerNodeShapes = function(){
   this.generateRoundRectangle();
 
   this.generateCutRectangle();
+
+  this.generateBarrel();
 
   this.generatePolygon( 'diamond', [
     0, 1,

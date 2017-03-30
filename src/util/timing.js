@@ -9,7 +9,7 @@ var util = {};
 var pnow = performance && performance.now ? function(){ return performance.now(); } : function(){ return Date.now(); };
 
 var raf = (function(){
-  if(window) {
+  if( window ) {
     if( window.requestAnimationFrame ){
       return function( fn ){ window.requestAnimationFrame( fn ); };
     } else if( window.mozRequestAnimationFrame ){

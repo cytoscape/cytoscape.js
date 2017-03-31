@@ -464,7 +464,7 @@ styfn.getDefaultProperties = util.memoize( function(){
     'curve-style': 'bezier',
     'haystack-radius': 0,
     'arrow-scale': 1,
-    'loop-direction': '-135deg',
+    'loop-direction': '-45deg',
     'loop-sweep': '-90deg',
     'source-distance-from-node': 0,
     'target-distance-from-node': 0,

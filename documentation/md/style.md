@@ -244,8 +244,8 @@ For automatic, bundled bezier edges (`curve-style: bezier`):
 
 For loops (i.e. same source and target):
 
- * **`loop-direction`** : Determines the angle in degrees that loops extend from the node in cases when the source and target node of an edge is the same. A value of -90 will result in a loop that extends straight upward from the node. Default is -135 (extending to the upper left).
- * **`loop-sweep`** : Determines the angle in degrees between the leaving and returning edges in loops. Positive values result in clockwise looping and negative values result in counter-clockwise looping. Default is -90.  
+ * **`loop-direction`** : Determines the angle that loops extend from the node in cases when the source and target node of an edge is the same.  The angle is specified from the 12 o'clock position and it progresses clockwise for increasing positive values. The default is `-45deg` (extending to the upper left).
+ * **`loop-sweep`** : Determines the angle between the leaving and returning edges in loops. Positive values result in clockwise looping and negative values result in counter-clockwise looping. Default is `-90deg`.
 
 Note that loops may only be `bezier` or `unbundled-bezier` for their `curve-style`.
 

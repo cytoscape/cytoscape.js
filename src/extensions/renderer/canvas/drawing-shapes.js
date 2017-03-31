@@ -49,6 +49,28 @@ CRp.drawRoundRectanglePath = function(
   context.closePath();
 };
 
+CRp.drawCutRectanglePath = function(
+  context, x, y, width, height ){
+
+    var halfWidth = width / 2;
+    var halfHeight = height / 2;
+    var cornerLength = math.getCutRectangleCornerLength();
+
+    if( context.beginPath ){ context.beginPath(); }
+
+    context.moveTo( x - halfWidth + cornerLength, y - halfHeight );
+
+    context.lineTo( x + halfWidth - cornerLength, y - halfHeight );
+    context.lineTo( x + halfWidth, y - halfHeight + cornerLength );
+    context.lineTo( x + halfWidth, y + halfHeight - cornerLength );
+    context.lineTo( x + halfWidth - cornerLength, y + halfHeight );
+    context.lineTo( x - halfWidth + cornerLength,  y + halfHeight );
+    context.lineTo( x - halfWidth, y + halfHeight - cornerLength );
+    context.lineTo( x - halfWidth, y - halfHeight + cornerLength );
+
+    context.closePath();
+};
+
 var sin0 = Math.sin( 0 );
 var cos0 = Math.cos( 0 );
 

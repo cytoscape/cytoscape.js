@@ -563,7 +563,9 @@ BRp.getNodeShape = function( node ){
   var shape = node.pstyle( 'shape' ).value;
 
   if( node.isParent() ){
-    if( shape === 'rectangle' || shape === 'roundrectangle' ){
+    if( shape === 'rectangle'
+    || shape === 'roundrectangle'
+    || shape === 'cutrectangle' ){
       return shape;
     } else {
       return 'rectangle';

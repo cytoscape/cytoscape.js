@@ -1472,9 +1472,9 @@
               "descr": "Get the width of the element.",
               "formats": [
                 { "name": "ele.width", "descr": "Get the width of the element." },
-                { "name": "ele.outerWidth", "descr": "Get the outer width of the element (includes width & border)." },
+                { "name": "ele.outerWidth", "descr": "Get the outer width of the element (includes width, padding, & border)." },
                 { "name": "ele.renderedWidth", "descr": "Get the width of the element in rendered dimensions." },
-                { "name": "ele.renderedOuterWidth", "descr": "Get the outer width of the element (includes width & border) in rendered dimensions." }
+                { "name": "ele.renderedOuterWidth", "descr": "Get the outer width of the element (includes width, padding, & border) in rendered dimensions." }
               ]
             },
 
@@ -1483,9 +1483,9 @@
               "descr": "Get the height of the element.",
               "formats": [
                 { "name": "ele.height", "descr": "Get the height of the element." },
-                { "name": "ele.outerHeight", "descr": "Get the outer height of the element (includes height & border)." },
+                { "name": "ele.outerHeight", "descr": "Get the outer height of the element (includes height, padding, & border)." },
                 { "name": "ele.renderedHeight", "descr": "Get the height of the element in rendered dimensions." },
-                { "name": "ele.renderedOuterHeight", "descr": "Get the outer height of the element (includes height & border) in rendered dimensions." }
+                { "name": "ele.renderedOuterHeight", "descr": "Get the outer height of the element (includes height, padding, & border) in rendered dimensions." }
               ]
             },
 

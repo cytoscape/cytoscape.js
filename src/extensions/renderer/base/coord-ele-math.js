@@ -1470,8 +1470,9 @@ BRp.findEdgeControlPoints = function( edges ){
           loopDist = ctrlptDist;
         }
 
-        var outAngle =  loopDir - loopSwp / 2;
-        var inAngle  =  loopDir + loopSwp / 2;
+        var loopAngle = loopDir - Math.PI / 2;
+        var outAngle =  loopAngle - loopSwp / 2;
+        var inAngle =  loopAngle + loopSwp / 2;
 
         // increase by step size for overlapping loops, keyed on direction and sweep values
         var dc = String(loopDir + '_' + loopSwp);
@@ -1914,10 +1915,7 @@ BRp.calculateArrowAngles = function( edge ){
   dispX = endX - startX;
   dispY = endY - startY;
 
-  if( isSelf ){
-    dispX = -1;
-    dispY = 1;
-  } else if( isSegments ){
+  if( isSegments ){
     var pts = rs.allpts;
 
     if( pts.length / 2 % 2 === 0 ){
@@ -1934,7 +1932,7 @@ BRp.calculateArrowAngles = function( edge ){
       dispX = ( pts[ i2 ] - pts[ i1 ] );
       dispY = ( pts[ i2 + 1] - pts[ i1 + 1] );
     }
-  } else if( isMultibezier || isCompound ){
+  } else if( isMultibezier || isCompound || isSelf ){
     var pts = rs.allpts;
     var cpts = rs.ctrlpts;
     var bp0x, bp0y;

@@ -120,6 +120,11 @@ util.clearArray = function( arr ){
   arr.splice( 0, arr.length );
 };
 
+util.push = function( arr ){
+  var args = Array.prototype.slice.call( arguments, 1 );
+  Array.prototype.push.apply( arr, args );
+};
+
 util.getPrefixedProperty = function( obj, propName, prefix ){
   if( prefix ){
     propName = this.prependCamel( prefix, propName ); // e.g. (labelWidth, source) => sourceLabelWidth

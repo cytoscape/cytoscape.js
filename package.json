@@ -53,15 +53,10 @@
     "analysis",
     "visualisation",
     "visualization",
-    "requirejs",
-    "amd",
-    "commonjs",
-    "node",
-    "npm",
-    "nodejs",
-    "bower",
-    "jquery",
-    "biojs"
+    "draw",
+    "render",
+    "biojs",
+    "cytoscape"
   ],
   "engines": {
     "node": ">=0.6"

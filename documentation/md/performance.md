@@ -26,12 +26,10 @@ You can get much better performance out of Cytoscape.js by tuning your options, 
  * Background and outlines increase the expense of rendering labels.
 * **Simplify edge style** : Drawing edges can be expensive.
  * Set your edges `curve-style` to `haystack` in your stylesheet.  Haystack edges are straight lines, which are much less expensive to render than `bezier` edges.  This is the default edge style.
- * Shadows are very expensive.  Avoid them if performance becomes an issue.
  * Use solid edges.  Dotted and dashed edges are much more expensive to draw, so you will get increased performance by not using them.  
  * Edge arrows are expensive to render, so consider not using them if they do not have any semantic meaning in your graph.
  * Opaque edges with arrows are more than twice as fast as semitransparent edges with arrows.
 * **Simplify node style** : Certain styles for nodes can be expensive.
- * Shadows are very expensive.  Avoid them if performance becomes an issue.
  * Background images are very expensive in certain cases.  The most performant background images are non-repeating (`background-repeat: no-repeat`) and non-clipped (`background-clip: none`).  For simple node shapes like squares or circles, you can use `background-fit` for scaling and preclip your images to simulate software clipping (e.g. with [Gulp](https://github.com/scalableminds/gulp-image-resize) so it's automated).  In lieu of preclipping, you could make clever use of PNGs with transparent backgrounds.
  * Node borders can be slightly expensive, so you can experiment with removing them to see if it makes a noticeable difference for your use case.
 * **Set a lower pixel ratio** : Because it is more expensive to render more pixels, you can set `pixelRatio` to `1` [in the initialisation options](#init-opts/pixelRatio) to increase performance for large graphs on high density displays.  However, this makes the rendering less crisp.

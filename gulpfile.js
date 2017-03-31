@@ -51,7 +51,6 @@ var paths = {
 
   docs: {
     js: [
-      'documentation/js/fastclick.js',
       'documentation/js/jquery.js',
       'documentation/js/cytoscape.js',
       'documentation/js/load.js',

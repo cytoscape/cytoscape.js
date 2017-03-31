@@ -314,13 +314,7 @@ BRp.load = function(){
   }
 
   var onResize = util.debounce( function(){
-    r.cy.invalidateSize();
-    r.invalidateContainerClientCoordsCache();
-
-    r.matchCanvasSize( r.container );
-    r.redrawHint( 'eles', true );
-    r.redrawHint( 'drag', true );
-    r.redraw();
+    r.cy.resize();
   }, 100 );
 
   if( haveMutationsApi ){

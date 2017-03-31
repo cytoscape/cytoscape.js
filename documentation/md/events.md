@@ -93,3 +93,4 @@ These events are custom to Cytoscape.js, and they occur on the core.
  * `render` : when the viewport is (re)rendered
  * `pan` : when the viewport is panned
  * `zoom` : when the viewport is zoomed
+ * `resize` : when the viewport is resized (usually by calling `cy.resize()`, a `window` resize, or toggling a class on the Cytoscape.js div)

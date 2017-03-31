@@ -59,9 +59,6 @@ var defaults = {
   // Node repulsion (overlapping) multiplier
   nodeOverlap: 10,
 
-  // Node overlap increase multiplier
-  nodeOverlapAutoFactor: 2,
-
   // Ideal edge (non nested) length
   idealEdgeLength: function( edge ){ return 10; },
 
@@ -235,15 +232,6 @@ CoseLayout.prototype.run = function(){
     var layoutInfo = pass.layoutInfo;
     var options = pass.options;
     var stopped = false;
-    var currentForce = {};
-    var t = 2;
-    for(var i = 0; i < layoutInfo.layoutNodes.length; i++) {
-      //console.log(layoutInfo.layoutNodes[i].id);
-      currentForce[layoutInfo.layoutNodes[i].id] = {};
-      for(var j = i + 1; j < layoutInfo.layoutNodes.length; j++) {
-        currentForce[layoutInfo.layoutNodes[i].id][layoutInfo.layoutNodes[j].id] = options.nodeOverlap;
-      }
-    }
 
     /**
      * @brief          : Performs one iteration of the physical simulation
@@ -332,16 +320,15 @@ CoseLayout.prototype.run = function(){
         // s += "\nOverlap: " + overlap;
         // If nodes overlap, repulsion force is proportional
         // to the overlap
-        var force    = currentForce[node1.id][node2.id] /*options.nodeOverlap*/ * overlap;
+        var force    = options.nodeOverlap * overlap;
 
         // Compute the module and components of the force vector
         var distance = Math.sqrt( directionX * directionX + directionY * directionY );
         // s += "\nDistance: " + distance;
         var forceX   = force * directionX / distance;
         var forceY   = force * directionY / distance;
-        currentForce[node1.id][node2.id] *= options.nodeOverlapAutoFactor;
+
       } else {
-        currentForce[node1.id][node2.id] = options.nodeOverlap;
         // s += "\nNodes do NOT overlap.";
         // If there's no overlap, force is inversely proportional
         // to squared distance
@@ -362,7 +349,6 @@ CoseLayout.prototype.run = function(){
         var forceX = force * distanceX / distance;
         var forceY = force * distanceY / distance;
       }
-
 
       // Apply force
       if( !node1.isLocked ){

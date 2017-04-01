@@ -1637,7 +1637,8 @@
                     }
                   ]
                 }
-              ]
+              ],
+              "md": "collection/layoutPositions"
             }
           ]
         },

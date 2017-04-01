@@ -38,6 +38,8 @@ var corefn = ({
       eles: eles
     } ) );
 
+    layout.run();
+
     return layout;
   }
 

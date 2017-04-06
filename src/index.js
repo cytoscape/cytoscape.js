@@ -32,6 +32,8 @@ cytoscape.use = function( ext ){
   args.unshift( cytoscape ); // cytoscape is first arg to ext
 
   ext.apply( null, args );
+
+  return this;
 };
 
 // replaced by build system

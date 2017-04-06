@@ -82,7 +82,7 @@ BRp.registerCalculationListeners = function(){
     // manual dirtying
 
     .on('dirty.*', 'node', function onDirtyEle( e ){
-      var ele = e.cyTarget;
+      var ele = e.target;
 
       enqueue( ele, e );
     })

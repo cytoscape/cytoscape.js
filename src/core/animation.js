@@ -193,7 +193,7 @@ var corefn = ({
       var ani_p = ani._private;
 
       if( isEles ){
-        var pos = ele._private.position;
+        var pos = ele.position();
 
         ani_p.startPosition = ani_p.startPosition || {
           x: pos.x,
@@ -289,8 +289,10 @@ var corefn = ({
 
         var startPos = ani_p.startPosition;
         var endPos = ani_p.position;
-        var pos = _p.position;
+
         if( endPos && isEles ){
+          var pos = self.position();
+
           if( valid( startPos.x, endPos.x ) ){
             pos.x = ease( startPos.x, endPos.x, percent, easing );
           }

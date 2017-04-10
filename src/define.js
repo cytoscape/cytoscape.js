@@ -28,6 +28,7 @@ var define = {
       triggerFnName: 'trigger',
       immutableKeys: {}, // key => true if immutable
       updateStyle: false,
+      beforeGet: function( self ){},
       onSet: function( self ){},
       canSet: function( self ){ return true; }
     };
@@ -48,6 +49,8 @@ var define = {
 
           var ret;
           if( single ){
+            p.beforeGet( single );
+
             ret = single._private[ p.field ][ name ];
           }
           return ret;
@@ -115,6 +118,8 @@ var define = {
       } else if( p.allowGetting && name === undefined ){ // get whole object
         var ret;
         if( single ){
+          p.beforeGet( single );
+
           ret = single._private[ p.field ];
         }
         return ret;

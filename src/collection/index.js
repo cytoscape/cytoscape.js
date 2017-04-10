@@ -465,7 +465,7 @@ elesfn.restore = function( notifyRenderer ){
       toUpdateStyle = restored;
     }
 
-    toUpdateStyle.updateStyle( notifyRenderer );
+    toUpdateStyle.dirtyCompoundBoundsCache().updateStyle( notifyRenderer );
 
     if( notifyRenderer ){
       restored.rtrigger( 'add' );

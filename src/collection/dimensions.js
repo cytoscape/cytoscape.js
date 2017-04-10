@@ -18,6 +18,9 @@ fn = elesfn = ({
     triggerFnName: 'rtrigger',
     allowGetting: true,
     validKeys: [ 'x', 'y' ],
+    beforeGet: function( ele ){
+      ele.updateCompoundBounds();
+    },
     onSet: function( eles ){
       eles.dirtyCompoundBoundsCache();
     },
@@ -35,7 +38,7 @@ fn = elesfn = ({
     settingEvent: 'position',
     settingTriggersEvent: false,
     triggerFnName: 'trigger',
-    allowGetting: true,
+    allowGetting: false,
     validKeys: [ 'x', 'y' ],
     onSet: function( eles ){
       eles.dirtyCompoundBoundsCache();
@@ -58,11 +61,11 @@ fn = elesfn = ({
 
       for( var i = 0; i < this.length; i++ ){
         var ele = this[ i ];
+        var pos;
 
-        var pos = fn( ele, i );
-
-        if( pos && !ele.locked() && !ele.isParent() ){
+        if( !ele.locked() && !ele.isParent() && ( pos = fn(ele, i) ) ){
           var elePos = ele._private.position;
+
           elePos.x = pos.x;
           elePos.y = pos.y;
         }
@@ -99,18 +102,16 @@ fn = elesfn = ({
           var ele = this[ i ];
 
           if( val !== undefined ){ // set one dimension
-            ele._private.position[ dim ] = ( val - pan[ dim ] ) / zoom;
+            ele.position( dim, ( val - pan[ dim ] ) / zoom );
           } else if( rpos !== undefined ){ // set whole position
-            ele._private.position = {
+            ele.position({
               x: ( rpos.x - pan.x ) / zoom,
               y: ( rpos.y - pan.y ) / zoom
-            };
+            });
           }
         }
-
-        this.rtrigger( 'position' );
       } else { // getting
-        var pos = ele._private.position;
+        var pos = ele.position();
         rpos = {
           x: pos.x * zoom + pan.x,
           y: pos.y * zoom + pan.y
@@ -149,23 +150,20 @@ fn = elesfn = ({
             parent = parent[0];
           }
 
-          var origin = relativeToParent ? parent._private.position : { x: 0, y: 0 };
+          var origin = relativeToParent ? parent.position() : { x: 0, y: 0 };
 
           if( val !== undefined ){ // set one dimension
-            ele._private.position[ dim ] = val + origin[ dim ];
+            ele.position( dim, val + origin[ dim ] );
           } else if( ppos !== undefined ){ // set whole position
-            ele._private.position = {
+            ele.position({
               x: ppos.x + origin.x,
               y: ppos.y + origin.y
-            };
+            });
           }
         }
 
-        this.dirtyCompoundBoundsCache();
-        this.rtrigger( 'position' );
-
       } else { // getting
-        var pos = ele._private.position;
+        var pos = ele.position();
         var parent = hasCompoundNodes ? ele.parent() : null;
         var hasParent = parent && parent.length > 0;
         var relativeToParent = hasParent;
@@ -174,7 +172,7 @@ fn = elesfn = ({
           parent = parent[0];
         }
 
-        var origin = relativeToParent ? parent._private.position : { x: 0, y: 0 };
+        var origin = relativeToParent ? parent.position() : { x: 0, y: 0 };
 
         ppos = {
           x: pos.x - origin.x,
@@ -223,8 +221,8 @@ fn = elesfn = ({
     var eles = this;
     var q = [];
 
-    for( var i = 0; i < this.length; i++ ){
-      q.push( this[i] );
+    for( var i = 0; i < eles.length; i++ ){
+      q.push( eles[i] );
     }
 
     while( q.length > 0 ){
@@ -583,7 +581,7 @@ var boundingBoxImpl = function( ele, options ){
     }
 
     if( isNode && options.includeNodes ){
-      var pos = _p.position;
+      var pos = ele.position();
       x = pos.x;
       y = pos.y;
       var w = ele.outerWidth();
@@ -664,13 +662,11 @@ var boundingBoxImpl = function( ele, options ){
         // fallback on source and target positions
         //////////////////////////////////////////
         if( pts.length === 0 ){
-          var n1 = _p.source;
-          var n1_p = n1._private;
-          var n1pos = n1_p.position;
+          var n1 = ele.source();
+          var n1pos = n1.position();
 
-          var n2 = _p.target;
-          var n2_p = n2._private;
-          var n2pos = n2_p.position;
+          var n2 = ele.target();
+          var n2pos = n2.position();
 
           ex1 = n1pos.x;
           ex2 = n2pos.x;
@@ -856,6 +852,8 @@ elesfn.boundingBox = function( options ){
     this.recalculateRenderedStyle( opts.useCache );
   }
 
+  this.updateCompoundBounds();
+
   var updatedEdge = {}; // use to avoid duplicated edge updates
 
   for( var i = 0; i < eles.length; i++ ){
@@ -890,7 +888,6 @@ elesfn.boundingBox = function( options ){
 // - try to use for only things like discrete layouts where the node position would change anyway
 elesfn.boundingBoxAt = function( fn ){
   var nodes = this.nodes();
-  var oldPos = {};
 
   if( is.plainObject( fn ) ){
     var obj = fn;
@@ -901,28 +898,36 @@ elesfn.boundingBoxAt = function( fn ){
   // save the current position and set the new one, per node
   for( var i = 0; i < nodes.length; i++ ){
     var n = nodes[i];
-    var pos = n._private.position;
+    var _p = n._private;
+    var pos = _p.position;
     var newPos = fn.call( n, i, n );
 
-    oldPos[ n.id() ] = { x: pos.x, y: pos.y };
+    _p.bbAtOldPos = { x: pos.x, y: pos.y };
 
-    pos.x = newPos.x;
-    pos.y = newPos.y;
+    if( newPos ){
+      pos.x = newPos.x;
+      pos.y = newPos.y;
+    }
   }
 
   this.trigger('dirty'); // let the renderer know we've manually dirtied rendered dim calcs
+
+  nodes.dirtyCompoundBoundsCache().updateCompoundBounds();
 
   var bb = this.boundingBox({ useCache: false });
 
   // restore the original position, per node
   for( var i = 0; i < nodes.length; i++ ){
     var n = nodes[i];
+    var _p = n._private;
     var pos = n._private.position;
-    var old = oldPos[ n.id() ];
+    var old = _p.bbAtOldPos;
 
     pos.x = old.x;
     pos.y = old.y;
   }
+
+  nodes.dirtyCompoundBoundsCache();
 
   this.trigger('dirty'); // let the renderer know we've manually dirtied rendered dim calcs
 

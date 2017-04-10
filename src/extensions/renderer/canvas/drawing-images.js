@@ -18,8 +18,9 @@ CRp.safeDrawImage = function( context, img, ix, iy, iw, ih, x, y, w, h ){
 
 CRp.drawInscribedImage = function( context, img, node, index ){
   var r = this;
-  var nodeX = node._private.position.x;
-  var nodeY = node._private.position.y;
+  var pos = node.position();
+  var nodeX = pos.x;
+  var nodeY = pos.y;
   var fit = getIndexedStyle( node, 'background-fit', 'value', index );
   var repeat = getIndexedStyle( node, 'background-repeat', 'value', index );
   var nodeW = node.width();

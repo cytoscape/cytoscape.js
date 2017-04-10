@@ -85,7 +85,7 @@ Run `gulp <target>` in the console.  The main targets are:
 **Testing:**
 
  * `test` : run the Mocha unit tests
- * `lint` : lint the JS sources via jshint
+ * `lint` : lint the JS sources via eslint
  * `benchmark` : run benchmark regression tests
  * `benchmark-single` : run benchmarks only for the suite specified in `benchmark/single`
  * `sniper` : runs a BioJS sniper server that hosts demos
@@ -115,4 +115,3 @@ Run `gulp <target>` in the console.  The main targets are:
 ## Tests
 
 Mocha tests are found in the [test directory](https://github.com/cytoscape/cytoscape.js/tree/master/test).  The tests can be run in the browser or they can be run via Node.js (`gulp test` or `mocha`).
-

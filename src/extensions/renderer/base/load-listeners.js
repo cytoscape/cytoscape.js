@@ -784,7 +784,7 @@ BRp.load = function(){
 
               // Locked nodes not draggable, as well as non-visible nodes
               if( r.nodeIsDraggable( dEle ) && dEle.grabbed() ){
-                var dPos = dEle._private.position;
+                var dPos = dEle.position();
 
                 toTrigger.push( dEle );
 
@@ -1595,7 +1595,7 @@ BRp.load = function(){
 
             if( r.nodeIsDraggable( draggedEle ) && draggedEle.grabbed() ){
               r.dragData.didDrag = true;
-              var dPos = draggedEle._private.position;
+              var dPos = draggedEle.position();
               var updatePos = !draggedEle.isParent();
 
               if( updatePos && is.number( disp[0] ) && is.number( disp[1] ) ){

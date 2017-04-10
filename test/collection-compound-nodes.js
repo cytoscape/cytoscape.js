@@ -8,6 +8,8 @@ describe('Collection compound nodes', function(){
   // test setup
   beforeEach(function(done){
     cytoscape({
+      styleEnabled: true,
+
       elements: {
         nodes: [
             { data: { id: 'n1' } },
@@ -16,6 +18,11 @@ describe('Collection compound nodes', function(){
             { data: { id: 'n4', parent: 'n2' } }
         ]
       },
+
+      layout: {
+        name: 'grid'
+      },
+
       ready: function(){
         cy = this;
         n1 = cy.$('#n1');
@@ -82,5 +89,26 @@ describe('Collection compound nodes', function(){
 
   it('nodes.nonorphans()', function(){
     expect( cy.elements().nonorphans().same( n2.add(n3).add(n4) ) ).to.be.true;
+  });
+
+  it('child.position() moves parent', function(){
+    var p1 = {
+      x: n2.position().x,
+      y: n2.position().y
+    };
+
+    n4.position({ x: -200, y: -200 });
+
+    expect( n2.position() ).to.not.deep.equal( p1 );
+  });
+
+  it('child.position() moves parent boundingbox', function(){
+    var w = n2.boundingBox().w;
+    var h = n2.boundingBox().h;
+
+    n4.position({ x: -200, y: -200 });
+
+    expect( n2.boundingBox().w ).to.not.equal( w );
+    expect( n2.boundingBox().h ).to.not.equal( h );
   });
 });

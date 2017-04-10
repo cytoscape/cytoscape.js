@@ -153,7 +153,7 @@ BRp.recalculateRenderedStyle = function( eles, useCache ){
     var ele = nodes[i];
     var _p = ele._private;
     var rstyle = _p.rstyle;
-    var pos = _p.position;
+    var pos = ele.position();
 
     this.recalculateNodeLabelProjection( ele );
 
@@ -284,13 +284,11 @@ BRp.findNearestElements = function( x, y, interactiveElementsOnly, isTouch ){
   }
 
   function checkNode( node ){
-    var _p = node._private;
-
     var width = node.outerWidth() + 2 * nodeThreshold;
     var height = node.outerHeight() + 2 * nodeThreshold;
     var hw = width / 2;
     var hh = height / 2;
-    var pos = _p.position;
+    var pos = node.position();
 
     if(
       pos.x - hw <= x && x <= pos.x + hw // bb check x
@@ -706,7 +704,7 @@ BRp.recalculateNodeLabelProjection = function( node ){
   var nodeWidth = node.width();
   var nodeHeight = node.height();
   var padding = node.padding();
-  var nodePos = _p.position;
+  var nodePos = node.position();
   var textHalign = node.pstyle( 'text-halign' ).strValue;
   var textValign = node.pstyle( 'text-valign' ).strValue;
   var rs = _p.rscratch;
@@ -1238,8 +1236,8 @@ BRp.findEdgeControlPoints = function( edges ){
     src_p = src._private;
     tgt_p = tgt._private;
 
-    srcPos = src_p.position;
-    tgtPos = tgt_p.position;
+    srcPos = src.position();
+    tgtPos = tgt.position();
 
     srcW = src.outerWidth();
     srcH = src.outerHeight();
@@ -1816,8 +1814,8 @@ BRp.findEdgeControlPoints = function( edges ){
 
     var src = _p.source;
     var tgt = _p.target;
-    var srcPos = src._private.position;
-    var tgtPos = tgt._private.position;
+    var srcPos = src.position();
+    var tgtPos = tgt.position();
     var srcW = src.width();
     var tgtW = tgt.width();
     var srcH = src.height();
@@ -1862,9 +1860,6 @@ BRp.calculateArrowAngles = function( edge ){
   // Displacement gives direction for arrowhead orientation
   var dispX, dispY;
   var startX, startY, endX, endY, midX, midY;
-
-  var srcPos = edge._private.source._private.position;
-  var tgtPos = edge._private.target._private.position;
 
   if( isHaystack ){
     startX = rs.haystackPts[0];
@@ -2085,11 +2080,8 @@ BRp.findEndpoints = function( edge ){
   var source = edge.source()[0];
   var target = edge.target()[0];
 
-  var src_p = source._private;
-  var tgt_p = target._private;
-
-  var srcPos = src_p.position;
-  var tgtPos = tgt_p.position;
+  var srcPos = source.position();
+  var tgtPos = target.position();
 
   var tgtArShape = edge.pstyle( 'target-arrow-shape' ).value;
   var srcArShape = edge.pstyle( 'source-arrow-shape' ).value;

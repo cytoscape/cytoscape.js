@@ -11,7 +11,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
   var nodeWidth, nodeHeight;
   var rs = node._private.rscratch;
   var _p = node._private;
-  var pos = pos || _p.position;
+  var pos = pos || node.position();
 
   if( !is.number( pos.x ) || !is.number( pos.y ) ){
     return; // can't draw node with undefined position
@@ -258,8 +258,8 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
 
     r.nodeShapes[ 'roundrectangle' ].draw(
       context,
-      node._private.position.x,
-      node._private.position.y,
+      pos.x,
+      pos.y,
       nodeWidth + overlayPadding * 2,
       nodeHeight + overlayPadding * 2
     );
@@ -286,12 +286,11 @@ CRp.hasPie = function( node ){
 CRp.drawPie = function( context, node, nodeOpacity, pos ){
   node = node[0]; // ensure ele ref
 
-  var _p = node._private;
   var cyStyle = node.cy().style();
   var pieSize = node.pstyle( 'pie-size' );
   var nodeW = node.width();
   var nodeH = node.height();
-  var pos = pos || _p.position;
+  var pos = pos || node.position();
   var x = pos.x;
   var y = pos.y;
   var radius = Math.min( nodeW, nodeH ) / 2; // must fit in node

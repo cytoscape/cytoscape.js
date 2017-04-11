@@ -33,8 +33,6 @@ var version; // used for marking builds w/ version etc
 var paths = {
   sourceEntry: 'src/index.js',
 
-  preamble: 'src/-preamble.js',
-
   debugFiles: [
     'build/cytoscape.js'
   ],
@@ -207,7 +205,6 @@ gulp.task('build-unmin', ['version'], function(){
 gulp.task('build-min', ['version'], function(){
   return getBrowserify({
     file: 'cytoscape.min.js',
-    preamble: true,
     minify: true
   })
     .pipe( gulp.dest('build') )
@@ -339,7 +336,7 @@ gulp.task('snapshotpush', ['docsdl'], function(){
 
     .pipe( $.shell( replaceShellVars([
       '$GIT add -A',
-      '$GIT commit -a -m "updating list of builds"',
+      '$GIT commit -a -m "Adding snapshot build"',
       '$GIT push origin'
     ]), { cwd: $TEMP_DIR + '/cytoscape.js' } ) )
   ;
@@ -459,7 +456,7 @@ gulp.task('pubprep', function(next){
 
 gulp.task('pubpush', $.shell.task( replaceShellVars([
   '$GIT add -A',
-  '$GIT commit -m "preparing to publish $VERSION"',
+  '$GIT commit -m "Preparing to publish $VERSION"',
   '$GIT push'
 ]) ));
 

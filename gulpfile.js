@@ -260,9 +260,7 @@ gulp.task('refs', function(next){
 gulp.task('zip', ['version', 'build'], function(){
   return gulp.src([
     'build/cytoscape.js',
-    'build/cytoscape.js.map',
     'build/cytoscape.min.js',
-    'build/cytoscape.min.js.map',
     'LICENSE',
     'lib/*.js'
   ])
@@ -451,9 +449,7 @@ gulp.task('pkgver', ['version'], function(){
 gulp.task('dist', ['build'], function(){
   return gulp.src([
     'build/cytoscape.js',
-    'build/cytoscape.js.map',
-    'build/cytoscape.min.js',
-    'build/cytoscape.min.js.map'
+    'build/cytoscape.min.js'
   ])
     .pipe( gulp.dest('dist') )
   ;

@@ -35,12 +35,6 @@ var paths = {
 
   preamble: 'src/-preamble.js',
 
-  nodethreadName: 'thread-node-fork.js',
-  nodethreadSrc: [
-    'src/-preamble.js',
-    'src/thread-node-fork.js'
-  ],
-
   debugFiles: [
     'build/cytoscape.js'
   ],
@@ -194,7 +188,7 @@ var getBrowserify = function( opts ){
   return b;
 };
 
-gulp.task('concat', ['version', 'nodeworker'], function(){
+gulp.task('concat', ['version'], function(){
   return getBrowserify({
     sourceMaps: true
   })
@@ -202,13 +196,13 @@ gulp.task('concat', ['version', 'nodeworker'], function(){
   ;
 });
 
-gulp.task('build-unmin', ['version', 'nodeworker'], function(){
+gulp.task('build-unmin', ['version'], function(){
   return getBrowserify()
     .pipe( gulp.dest('build') )
   ;
 });
 
-gulp.task('build-min', ['version', 'nodeworker'], function(){
+gulp.task('build-min', ['version'], function(){
   return getBrowserify({
     file: 'cytoscape.min.js',
     preamble: true,
@@ -220,16 +214,6 @@ gulp.task('build-min', ['version', 'nodeworker'], function(){
 
 gulp.task('build', ['build-unmin', 'build-min'], function( next ){
   next();
-});
-
-gulp.task('nodeworker', ['version'], function(){
-  return gulp.src( paths.nodethreadSrc )
-    .pipe( $.concat(paths.nodethreadName) )
-
-    .pipe( $.replace('{{VERSION}}', version) )
-
-    .pipe( gulp.dest('build') )
-  ;
 });
 
 gulp.task('debugrefs', function(){
@@ -467,8 +451,7 @@ gulp.task('dist', ['build'], function(){
     'build/cytoscape.js',
     'build/cytoscape.js.map',
     'build/cytoscape.min.js',
-    'build/cytoscape.min.js.map',
-    'build/' + paths.nodethreadName
+    'build/cytoscape.min.js.map'
   ])
     .pipe( gulp.dest('dist') )
   ;

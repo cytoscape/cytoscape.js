@@ -261,8 +261,7 @@ gulp.task('zip', ['version', 'build'], function(){
   return gulp.src([
     'build/cytoscape.js',
     'build/cytoscape.min.js',
-    'LICENSE',
-    'lib/*.js'
+    'LICENSE'
   ])
     .pipe( $.zip('cytoscape.js-' + version + '.zip') )
 
@@ -314,8 +313,7 @@ gulp.task('docsver', ['version'], function(){
 gulp.task('docsjs', ['version', 'build'], function(){
   return gulp.src([
     'build/cytoscape.js',
-    'build/cytoscape.min.js',
-    'lib/*.js'
+    'build/cytoscape.min.js'
   ])
     .pipe( gulp.dest('documentation/js') )
 

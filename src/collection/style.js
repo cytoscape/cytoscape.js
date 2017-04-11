@@ -278,7 +278,7 @@ function defineDerivedStateFunction( specs ){
         return edgeOkViaNode( _p.source ) && edgeOkViaNode( _p.target );
       }
     }
-  }
+  };
 }
 
 var eleTakesUpSpace = function( ele ){

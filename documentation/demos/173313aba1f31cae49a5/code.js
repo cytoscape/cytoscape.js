@@ -1,6 +1,8 @@
 $(function(){ // on dom ready
 
-$('#cy').cytoscape({
+var cy = cytoscape({
+  container: document.getElementById('cy'),
+  
   style: cytoscape.stylesheet()
     .selector('node')
       .css({

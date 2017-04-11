@@ -96,16 +96,16 @@ var cy = cytoscape({
   }
 }); // cy init
   
-cy.on('tap', 'node', function(){
-  var nodes = this;
+cy.on('tap', 'node', function( e ){
+  var nodes = e.target;
   var tapped = nodes;
   var food = [];
   
   nodes.addClass('eater');
   
   for(;;){
-    var connectedEdges = nodes.connectedEdges(function(){
-      return !this.target().anySame( nodes );
+    var connectedEdges = nodes.connectedEdges(function(el){
+      return !el.target().anySame( nodes );
     });
     
     var connectedNodes = connectedEdges.targets();
@@ -121,8 +121,8 @@ cy.on('tap', 'node', function(){
   var duration = 500;
   for( var i = food.length - 1; i >= 0; i-- ){ (function(){
     var thisFood = food[i];
-    var eater = thisFood.connectedEdges(function(){
-      return this.target().same(thisFood);
+    var eater = thisFood.connectedEdges(function(el){
+      return el.target().same(thisFood);
     }).source();
             
     thisFood.delay( delay, function(){

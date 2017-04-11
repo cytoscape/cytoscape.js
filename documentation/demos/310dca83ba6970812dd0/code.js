@@ -20,7 +20,9 @@ var elesJson = {
   ]
 };
   
-$('#cy').cytoscape({
+var cy = cytoscape({
+  container: document.getElementById('cy'),
+  
   style: cytoscape.stylesheet()
     .selector('node')
       .css({
@@ -62,8 +64,9 @@ $('#cy').cytoscape({
     // ready 1
   }
 });
-
-$('#cy2').cytoscape({
+var cy2 = cytoscape({
+  container: document.getElementById('cy2'),
+  
   style: cytoscape.stylesheet()
     .selector('node')
       .css({

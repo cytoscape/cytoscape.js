@@ -20,14 +20,14 @@ var raf = (function(){
       return function( fn ){ window.msRequestAnimationFrame( fn ); };
     }
   }
-  
+
   return function( fn ){
     if( fn ){
       setTimeout( function(){
         fn( pnow() );
       }, 1000 / 60 );
     }
-  }
+  };
 })();
 
 util.requestAnimationFrame = function( fn ){

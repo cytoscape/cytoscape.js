@@ -2,7 +2,7 @@
 
 /*!
 
-Cytoscape.js 2.7.16 (MIT licensed)
+Cytoscape.js 2.7.17 (MIT licensed)
 
 Copyright (c) The Cytoscape Consortium
 
@@ -14380,6 +14380,8 @@ module.exports = BR;
 },{"../../../is":83,"../../../util":100,"./arrow-shapes":57,"./coord-ele-math":58,"./images":59,"./load-listeners":61,"./node-shapes":62,"./redraw":63}],61:[function(_dereq_,module,exports){
 'use strict';
 
+var window = _dereq_('../../../window');
+var document = window ? window.document : null;
 var is = _dereq_( '../../../is' );
 var util = _dereq_( '../../../util' );
 var math = _dereq_( '../../../math' );
@@ -14411,7 +14413,9 @@ BRp.binder = function( tgt ){
       } );
 
       window.addEventListener( 'test', null, opts );
-    } catch( err ){}
+    } catch( err ){
+      // just consume the error
+    }
 
     r.supportsPassiveEvents = supportsPassive;
   }
@@ -16403,7 +16407,7 @@ BRp.load = function(){
 
 module.exports = BRp;
 
-},{"../../../event":45,"../../../is":83,"../../../math":85,"../../../util":100}],62:[function(_dereq_,module,exports){
+},{"../../../event":45,"../../../is":83,"../../../math":85,"../../../util":100,"../../../window":107}],62:[function(_dereq_,module,exports){
 'use strict';
 
 var math = _dereq_( '../../../math' );
@@ -27014,29 +27018,33 @@ var performance = window ? window.performance : null;
 
 var util = {};
 
-var raf = !window ? function( fn ){
-  if( fn ){
-    setTimeout( function(){
-      fn( pnow() );
-    }, 1000 / 60 );
+var pnow = performance && performance.now ? function(){ return performance.now(); } : function(){ return Date.now(); };
+
+var raf = (function(){
+  if( window ) {
+    if( window.requestAnimationFrame ){
+      return function( fn ){ window.requestAnimationFrame( fn ); };
+    } else if( window.mozRequestAnimationFrame ){
+      return function( fn ){ window.mozRequestAnimationFrame( fn ); };
+    } else if( window.webkitRequestAnimationFrame ){
+      return function( fn ){ window.webkitRequestAnimationFrame( fn ); };
+    } else if( window.msRequestAnimationFrame ){
+      return function( fn ){ window.msRequestAnimationFrame( fn ); };
+    }
   }
-} : (function(){
-  if( window.requestAnimationFrame ){
-    return function( fn ){ window.requestAnimationFrame( fn ); };
-  } else if( window.mozRequestAnimationFrame ){
-    return function( fn ){ window.mozRequestAnimationFrame( fn ); };
-  } else if( window.webkitRequestAnimationFrame ){
-    return function( fn ){ window.webkitRequestAnimationFrame( fn ); };
-  } else if( window.msRequestAnimationFrame ){
-    return function( fn ){ window.msRequestAnimationFrame( fn ); };
-  }
+
+  return function( fn ){
+    if( fn ){
+      setTimeout( function(){
+        fn( pnow() );
+      }, 1000 / 60 );
+    }
+  };
 })();
 
 util.requestAnimationFrame = function( fn ){
   raf( fn );
 };
-
-var pnow = performance && performance.now ? function(){ return performance.now(); } : function(){ return Date.now(); };
 
 util.performanceNow = pnow;
 
@@ -27168,7 +27176,7 @@ util.debounce = function( func, wait, options ){ // ported lodash debounce funct
 module.exports = util;
 
 },{"../is":83,"../window":107}],106:[function(_dereq_,module,exports){
-module.exports = "2.7.16";
+module.exports = "2.7.17";
 
 },{}],107:[function(_dereq_,module,exports){
 module.exports = ( typeof window === 'undefined' ? null : window ); // eslint-disable-line no-undef

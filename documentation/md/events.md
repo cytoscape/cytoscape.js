@@ -8,8 +8,7 @@ Fields:
  * `target` : indicates the element or core that first caused the event
  * `type` : the event type string (e.g. `"tap"`)
  * `namespace` : the event namespace string (e.g. `"foo"` for `"foo.tap"`)
- * `data` : additional data object passed by `.trigger()`
- * `timeStamp` : Unix epoch time of event
+ * `timeStamp` : Unix epoch time of event in milliseconds
 
 Fields for only user input device events:
 

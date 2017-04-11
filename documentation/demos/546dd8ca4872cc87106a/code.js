@@ -6,6 +6,8 @@ var cy = cytoscape({
   
   boxSelectionEnabled: false,
   autounselectify: true,
+  minZoom: 0.5,
+  maxZoom: 2,
   
   elements: {
     nodes: [

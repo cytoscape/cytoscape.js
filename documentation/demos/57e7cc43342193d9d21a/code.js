@@ -24,7 +24,7 @@ var cy = cytoscape({
       })
     .selector('edge')
       .css({
-        'opacity': '0.666',
+        'opacity': '0.4',
         'width': 'mapData(weight, 0, 100, 1, 6)',
         'curve-style': 'haystack' // fast edges!
       })
@@ -36,7 +36,7 @@ var cy = cytoscape({
   
   layout: {
     name: 'concentric',
-    concentric: function(){ return this.data('weight'); },
+    concentric: function( ele ){ return ele.data('weight'); },
     levelWidth: function( nodes ){ return 10; },
     padding: 10
   },

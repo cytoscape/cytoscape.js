@@ -25,8 +25,8 @@ var corefn = ({
   },
 
   nodes: function( selector ){
-    var nodes = this.$( function(){
-      return this.isNode();
+    var nodes = this.$( function( ele ){
+      return ele.isNode();
     } );
 
     if( selector ){
@@ -37,8 +37,8 @@ var corefn = ({
   },
 
   edges: function( selector ){
-    var edges = this.$( function(){
-      return this.isEdge();
+    var edges = this.$( function( ele ){
+      return ele.isEdge();
     } );
 
     if( selector ){

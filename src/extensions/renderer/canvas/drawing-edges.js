@@ -52,14 +52,6 @@ CRp.drawEdge = function( context, edge, shiftToOriginWithBb, drawLabel, drawOver
   var lineStyle = drawOverlayInstead ? 'solid' : edge.pstyle( 'line-style' ).value;
   context.lineWidth = edgeWidth;
 
-  var shadowBlur = edge.pstyle( 'shadow-blur' ).pfValue;
-  var shadowOpacity = edge.pstyle( 'shadow-opacity' ).value;
-  var shadowColor = edge.pstyle( 'shadow-color' ).value;
-  var shadowOffsetX = edge.pstyle( 'shadow-offset-x' ).pfValue;
-  var shadowOffsetY = edge.pstyle( 'shadow-offset-y' ).pfValue;
-
-  this.shadowStyle( context,  shadowColor, drawOverlayInstead ? 0 : shadowOpacity, shadowBlur, shadowOffsetX, shadowOffsetY );
-
   this.drawEdgePath(
     edge,
     context,
@@ -69,8 +61,6 @@ CRp.drawEdge = function( context, edge, shiftToOriginWithBb, drawLabel, drawOver
   );
 
   this.drawArrowheads( context, edge, drawOverlayInstead );
-
-  this.shadowStyle( context, 'transparent', 0 ); // reset for next guy
 
   if( !drawOverlayInstead ){
     this.drawEdge( context, edge, false, drawLabel, true );

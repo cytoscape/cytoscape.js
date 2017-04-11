@@ -1,13 +1,17 @@
-## Details
+This function is useful for running a layout on a subset of the elements in the graph, perhaps in parallel to other layouts.
 
-This function is useful for running a layout on a subset of the elements in the graph.
+You must specify `options.name` with the name of the layout you wish to use.
 
-For layouts included with Cytoscape.js, you can find their options documented in the [Layouts section](#layouts).  For external layouts, please refer to their accompanying documentation.
+This function creates and returns a [layout object](#layouts).  You may want to keep a reference to the layout for more advanced usecases, such as running multiple layouts simultaneously.
+
+<span class="important-indicator"></span> Note that you must call [`layout.run()`](#layouts/layout-manipulation/layout.run) in order for it to affect the graph.
 
 ## Examples
 
-Run the grid layout:
-
 ```js
-cy.elements().layout({ name: 'grid' });
+var layout = cy.elements().layout({
+  name: 'random'
+});
+
+layout.run();
 ```

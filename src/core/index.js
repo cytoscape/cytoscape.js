@@ -52,7 +52,6 @@ var Core = function( opts ){
   var _p = this._private = {
     container: container, // html dom ele container
     ready: false, // whether ready has been triggered
-    initrender: false, // has initrender has been triggered
     options: options, // cached options
     elements: new Collection( this ), // elements in the graph
     listeners: [], // list of listeners
@@ -126,6 +125,43 @@ var Core = function( opts ){
     touchTapThreshold: options.touchTapThreshold === undefined ? 8 : options.touchTapThreshold
   }, options.renderer ) );
 
+  var setElesAndLayout = function( elements, onload, ondone ){
+    cy.notifications( false );
+
+    // remove old elements
+    var oldEles = cy.mutableElements();
+    if( oldEles.length > 0 ){
+      oldEles.remove();
+    }
+
+    if( elements != null ){
+      if( is.plainObject( elements ) || is.array( elements ) ){
+        cy.add( elements );
+      }
+    }
+
+    cy.one( 'layoutready', function( e ){
+      cy.notifications( true );
+      cy.trigger( e ); // we missed this event by turning notifications off, so pass it on
+
+      cy.notify( {
+        type: 'load',
+        eles: cy.mutableElements()
+      } );
+
+      cy.one( 'load', onload );
+      cy.trigger( 'load' );
+    } ).one( 'layoutstop', function(){
+      cy.one( 'done', ondone );
+      cy.trigger( 'done' );
+    } );
+
+    var layoutOpts = util.extend( {}, cy._private.options.layout );
+    layoutOpts.eles = cy.elements();
+
+    cy.layout( layoutOpts ).run();
+  };
+
   loadExtData([ options.style, options.elements ], function( thens ){
     var initStyle = thens[0];
     var initEles = thens[1];
@@ -135,16 +171,8 @@ var Core = function( opts ){
       cy.setStyle( initStyle );
     }
 
-    // trigger the passed function for the `initrender` event
-    if( options.initrender ){
-      cy.on( 'initrender', options.initrender );
-      cy.on( 'initrender', function(){
-        _p.initrender = true;
-      } );
-    }
-
     // initial load
-    cy.load( initEles, function(){ // onready
+    setElesAndLayout( initEles, function(){ // onready
       cy.startAnimationLoop();
       _p.ready = true;
 
@@ -185,10 +213,6 @@ util.extend( corefn, {
     }
 
     return this;
-  },
-
-  initrender: function(){
-    return this._private.initrender;
   },
 
   destroy: function(){

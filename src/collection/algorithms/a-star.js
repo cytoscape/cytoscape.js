@@ -154,7 +154,7 @@ var elesfn = ({
         }
 
         // New tentative score for node w
-        var tempScore = gScore[ cMin.id() ] + weightFn.apply( e, [ e ] );
+        var tempScore = gScore[ cMin.id() ] + weightFn( e );
 
         // Update gScore for node w if:
         //   w not present in openSet

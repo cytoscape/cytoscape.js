@@ -19,7 +19,7 @@ var elesfn = ({
       for( var i = 0; i < nodes.length; i++ ){
         var node = nodes[ i ];
 
-        var newPos = fn.call( node, i, node );
+        var newPos = fn( node, i );
         var pos = node.position();
 
         if( !is.number( pos.x ) || !is.number( pos.y ) ){
@@ -99,16 +99,6 @@ var elesfn = ({
   layout: function( options ){
     var cy = this.cy();
 
-    cy.layout( util.extend( {}, options, {
-      eles: this
-    } ) );
-
-    return this;
-  },
-
-  makeLayout: function( options ){
-    var cy = this.cy();
-
     return cy.makeLayout( util.extend( {}, options, {
       eles: this
     } ) );
@@ -117,6 +107,6 @@ var elesfn = ({
 });
 
 // aliases:
-elesfn.createLayout = elesfn.makeLayout;
+elesfn.createLayout = elesfn.makeLayout = elesfn.layout;
 
 module.exports = elesfn;

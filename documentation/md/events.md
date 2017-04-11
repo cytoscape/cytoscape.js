@@ -5,7 +5,7 @@ Events passed to handler callbacks are similar to [jQuery event objects](http://
 Fields:
 
  * `cy` : a reference to the corresponding core instance
- * `cyTarget` : indicates the element or core that first caused the event
+ * `target` : indicates the element or core that first caused the event
  * `type` : the event type string (e.g. `"tap"`)
  * `namespace` : the event namespace string (e.g. `"foo"` for `"foo.tap"`)
  * `data` : additional data object passed by `.trigger()`
@@ -13,8 +13,8 @@ Fields:
 
 Fields for only user input device events:
 
- * `cyPosition` : indicates the model position of the event
- * `cyRenderedPosition` : indicates the rendered position of the event
+ * `position` : indicates the model position of the event
+ * `renderedPosition` : indicates the rendered position of the event
  * `originalEvent` : the original user input device event object
 
 Fields for only layout events:
@@ -23,7 +23,7 @@ Fields for only layout events:
 
 ## Event bubbling
 
-All events that occur on elements get bubbled up to [compound parents](#notation/compound-nodes) and then to the core.  You must take this into consideration when binding to the core so you can differentiate between events that happened on the background and ones that happened on elements.  Use the `eventObj.cyTarget` field, which indicates the originator of the event (i.e. `eventObj.cyTarget === cy || eventObj.cyTarget === someEle`).
+All events that occur on elements get bubbled up to [compound parents](#notation/compound-nodes) and then to the core.  You must take this into consideration when binding to the core so you can differentiate between events that happened on the background and ones that happened on elements.  Use the `eventObj.target` field, which indicates the originator of the event (i.e. `eventObj.target === cy || eventObj.target === someEle`).
 
 
 ## User input device events
@@ -71,7 +71,8 @@ These events are custom to Cytoscape.js.  You can bind to these events for colle
  * `unselect` : when an element is unselected
  * `lock` : when an element is locked
  * `unlock` : when an element is unlocked
- * `grab` : when an element is grabbed by the mouse cursor or a finger on a touch input
+ * `grabon` : when an element is grabbed directly (including only the one node directly under the cursor or the user's finger)
+ * `grab` : when an element is grabbed (including all elements that would be dragged)
  * `drag` : when an element is grabbed and then moved
  * `free` : when an element is freed (i.e. let go from being grabbed)
  * `position` : when an element changes position
@@ -88,5 +89,6 @@ These events are custom to Cytoscape.js, and they occur on the core.
  * `layoutready` : when a layout has set initial positions for all the nodes (but perhaps not final positions)
  * `layoutstop` : when a layout has finished running completely or otherwise stopped running
  * `ready` : when a new instance of Cytoscape.js is ready to be interacted with
+ * `render` : when the viewport is (re)rendered
  * `pan` : when the viewport is panned
  * `zoom` : when the viewport is zoomed

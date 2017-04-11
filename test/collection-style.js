@@ -147,6 +147,275 @@ describe('Collection style', function(){
       expect( style['label'] ).to.be.defined;
       expect( style['label'] ).to.equal( 'n2' );
     });
+
+    it('ele.visible() true by default', function(){
+      expect( cy.$('#n1').visible() ).to.be.true;
+    });
+
+    it('ele.visible() false for `display: none`', function(){
+      expect( cy.$('#n1').style('display', 'none').visible() ).to.be.false;
+    });
+
+    it('ele.visible() false for `width: 0`', function(){
+      expect( cy.$('#n1').style('width', 0).visible() ).to.be.false;
+    });
+
+    it('ele.visible() false for `height: 0`', function(){
+      expect( cy.$('#n1').style('height', 0).visible() ).to.be.false;
+    });
+
+    it('ele.visible() false for edge with `display: none` source', function(){
+      cy.$('#n1').style('display', 'none');
+
+      expect( cy.$('#n1n2').visible() ).to.be.false;
+    });
+
+    it('ele.visible() false for edge with `width: 0` source', function(){
+      cy.$('#n1').style('width', 0);
+
+      expect( cy.$('#n1n2').visible() ).to.be.false;
+    });
+
+    it('ele.visible() false for edge with `height: 0` source', function(){
+      cy.$('#n1').style('height', 0);
+
+      expect( cy.$('#n1n2').visible() ).to.be.false;
+    });
+
+    it('ele.visible() false for edge with `display: none` target', function(){
+      cy.$('#n2').style('display', 'none');
+
+      expect( cy.$('#n1n2').visible() ).to.be.false;
+    });
+
+    it('ele.visible() false for edge with `width: 0` target', function(){
+      cy.$('#n2').style('width', 0);
+
+      expect( cy.$('#n1n2').visible() ).to.be.false;
+    });
+
+    it('ele.visible() false for edge with `height: 0` target', function(){
+      cy.$('#n2').style('height', 0);
+
+      expect( cy.$('#n1n2').visible() ).to.be.false;
+    });
+
+    it('ele.visible() false for `visibility: hidden`', function(){
+      expect( cy.$('#n1').style('visibility', 'hidden').visible() ).to.be.false;
+    });
+
+    it('ele.visible() false for `opacity: 0`', function(){
+      expect( cy.$('#n1').style('opacity', 0).visible() ).to.be.false;
+    });
+
+    it('ele.visible() false for parent `opacity: 0`', function(){
+      cy.add([
+        { data: { id: 'p' } },
+        { data: { id: 'c', parent: 'p' } }
+      ]);
+
+      cy.$('#p').style('opacity', 0);
+
+      expect( cy.$('#c').visible() ).to.be.false;
+    });
+
+    it('ele.visible() false for parent `display: none`', function(){
+      cy.add([
+        { data: { id: 'p' } },
+        { data: { id: 'c', parent: 'p' } }
+      ]);
+
+      cy.$('#p').style('display', 'none');
+
+      expect( cy.$('#c').visible() ).to.be.false;
+    });
+
+    it('ele.visible() false for parent `visibility: hidden`', function(){
+      cy.add([
+        { data: { id: 'p' } },
+        { data: { id: 'c', parent: 'p' } }
+      ]);
+
+      cy.$('#p').style('visibility', 'hidden');
+
+      expect( cy.$('#c').visible() ).to.be.false;
+    });
+
+    it('ele.takesUpSpace() true by default', function(){
+      expect( cy.$('#n1').takesUpSpace() ).to.be.true;
+    });
+
+    it('ele.takesUpSpace() true for `visibility: hidden`', function(){
+      expect( cy.$('#n1').style('visibility', 'hidden').takesUpSpace() ).to.be.true;
+    });
+
+    it('ele.takesUpSpace() false for `display: none`', function(){
+      expect( cy.$('#n1').style('display', 'none').takesUpSpace() ).to.be.false;
+    });
+
+    it('ele.takesUpSpace() false for `width: 0`', function(){
+      expect( cy.$('#n1').style('width', 0).takesUpSpace() ).to.be.false;
+    });
+
+    it('ele.takesUpSpace() false for `height: 0`', function(){
+      expect( cy.$('#n1').style('height', 0).takesUpSpace() ).to.be.false;
+    });
+
+    it('ele.takesUpSpace() false for edge with source `display: none`', function(){
+      cy.$('#n1').style('display', 'none');
+      expect( cy.$('#n1n2').takesUpSpace() ).to.be.false;
+    });
+
+    it('ele.takesUpSpace() false for edge with source `width: 0`', function(){
+      cy.$('#n1').style('width', 0);
+      expect( cy.$('#n1n2').takesUpSpace() ).to.be.false;
+    });
+
+    it('ele.takesUpSpace() false for edge with source `height: 0`', function(){
+      cy.$('#n1').style('height', 0);
+      expect( cy.$('#n1n2').takesUpSpace() ).to.be.false;
+    });
+
+    it('ele.takesUpSpace() true for edge with source `visibility: hidden`', function(){
+      cy.$('#n1').style('visibility', 'hidden');
+      expect( cy.$('#n1n2').takesUpSpace() ).to.be.true;
+    });
+
+    it('ele.takesUpSpace() true for edge with source `opacity: 0`', function(){
+      cy.$('#n1').style('opacity', 0);
+      expect( cy.$('#n1n2').takesUpSpace() ).to.be.true;
+    });
+
+    it('ele.takesUpSpace() false for edge with target `display: none`', function(){
+      cy.$('#n2').style('display', 'none');
+      expect( cy.$('#n1n2').takesUpSpace() ).to.be.false;
+    });
+
+    it('ele.takesUpSpace() false for edge with target `width: 0`', function(){
+      cy.$('#n2').style('width', 0);
+      expect( cy.$('#n1n2').takesUpSpace() ).to.be.false;
+    });
+
+    it('ele.takesUpSpace() false for edge with target `height: 0`', function(){
+      cy.$('#n2').style('height', 0);
+      expect( cy.$('#n1n2').takesUpSpace() ).to.be.false;
+    });
+
+    it('ele.takesUpSpace() true for edge with target `visibility: hidden`', function(){
+      cy.$('#n2').style('visibility', 'hidden');
+      expect( cy.$('#n1n2').takesUpSpace() ).to.be.true;
+    });
+
+    it('ele.takesUpSpace() true for edge with target `opacity: 0`', function(){
+      cy.$('#n2').style('opacity', 0);
+      expect( cy.$('#n1n2').takesUpSpace() ).to.be.true;
+    });
+
+    it('ele.interactive() true by default', function(){
+      expect( cy.$('#n1').interactive() ).to.be.true;
+    });
+
+    it('ele.interactive() false for `events: no`', function(){
+    expect( cy.$('#n1').style('events', 'no').interactive() ).to.be.false;
+    });
+
+    it('ele.interactive() false for `visibility: hidden`', function(){
+      expect( cy.$('#n1').style('visibility', 'hidden').interactive() ).to.be.false;
+    });
+
+    it('ele.interactive() false for `display: none`', function(){
+      expect( cy.$('#n1').style('display', 'none').interactive() ).to.be.false;
+    });
+
+    it('ele.interactive() false for `width: 0`', function(){
+      expect( cy.$('#n1').style('width', 0).interactive() ).to.be.false;
+    });
+
+    it('ele.interactive() false for `height: 0`', function(){
+      expect( cy.$('#n1').style('height', 0).interactive() ).to.be.false;
+    });
+
+    it('ele.interactive() false for edge with source `display: none`', function(){
+      cy.$('#n1').style('display', 'none');
+      expect( cy.$('#n1n2').interactive() ).to.be.false;
+    });
+
+    it('ele.interactive() false for edge with source `width: 0`', function(){
+      cy.$('#n1').style('width', 0);
+      expect( cy.$('#n1n2').interactive() ).to.be.false;
+    });
+
+    it('ele.interactive() false for edge with source `height: 0`', function(){
+      cy.$('#n1').style('height', 0);
+      expect( cy.$('#n1n2').interactive() ).to.be.false;
+    });
+
+    it('ele.interactive() true for edge with source `visibility: hidden`', function(){
+      cy.$('#n1').style('visibility', 'hidden');
+      expect( cy.$('#n1n2').interactive() ).to.be.true;
+    });
+
+    it('ele.interactive() true for edge with source `opacity: 0`', function(){
+      cy.$('#n1').style('opacity', 0);
+      expect( cy.$('#n1n2').interactive() ).to.be.true;
+    });
+
+    it('ele.interactive() true for edge with source `events: no`', function(){
+      cy.$('#n1').style('events', 'no');
+      expect( cy.$('#n1n2').interactive() ).to.be.true;
+    });
+
+    it('ele.interactive() false for edge with target `display: none`', function(){
+      cy.$('#n2').style('display', 'none');
+      expect( cy.$('#n1n2').interactive() ).to.be.false;
+    });
+
+    it('ele.interactive() false for edge with target `width: 0`', function(){
+      cy.$('#n2').style('width', 0);
+      expect( cy.$('#n1n2').interactive() ).to.be.false;
+    });
+
+    it('ele.interactive() false for edge with target `height: 0`', function(){
+      cy.$('#n2').style('height', 0);
+      expect( cy.$('#n1n2').interactive() ).to.be.false;
+    });
+
+    it('ele.interactive() true for edge with target `visibility: hidden`', function(){
+      cy.$('#n2').style('visibility', 'hidden');
+      expect( cy.$('#n1n2').interactive() ).to.be.true;
+    });
+
+    it('ele.interactive() true for edge with target `opacity: 0`', function(){
+      cy.$('#n2').style('opacity', 0);
+      expect( cy.$('#n1n2').interactive() ).to.be.true;
+    });
+
+    it('ele.interactive() true for edge with target `events: no`', function(){
+      cy.$('#n2').style('events', 'no');
+      expect( cy.$('#n1n2').interactive() ).to.be.true;
+    });
+
+    it('ele.interactive() true for parent `events: no`', function(){
+      cy.add([
+        { data: { id: 'p' } },
+        { data: { id: 'c', parent: 'p' } }
+      ]);
+
+      cy.$('#p').style('events', 'no');
+
+      expect( cy.$('#c').visible() ).to.be.true;
+    });
+
+    it('ele.interactive() true for parent `events: no`', function(){
+      cy.add([
+        { data: { id: 'p' } },
+        { data: { id: 'c', parent: 'p' } }
+      ]);
+
+      cy.$('#p').style('events', 'no');
+
+      expect( cy.$('#c').visible() ).to.be.true;
+    });
   });
 
   describe('eles.addClass() etc', function(){

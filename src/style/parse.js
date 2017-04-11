@@ -87,27 +87,14 @@ var parseImpl = function( name, value, propIsBypass, propIsFlat ){
   }
 
   // check if value is mapped
-  var data, mapData, layoutData, mapLayoutData, scratch, mapScratch;
+  var data, mapData;
   if( !valueIsString || propIsFlat ){
     // then don't bother to do the expensive regex checks
 
-  } else if(
-    ( data = new RegExp( types.data.regex ).exec( value ) ) ||
-    ( layoutData = new RegExp( types.layoutData.regex ).exec( value ) ) ||
-    ( scratch = new RegExp( types.scratch.regex ).exec( value ) )
-  ){
+  } else if( (data = new RegExp( types.data.regex ).exec( value )) ){
     if( propIsBypass ){ return false; } // mappers not allowed in bypass
 
-    var mapped;
-    if( data ){
-      mapped = types.data;
-    } else if( layoutData ){
-      mapped = types.layoutData;
-    } else {
-      mapped = types.scratch;
-    }
-
-    data = data || layoutData || scratch;
+    var mapped = types.data;
 
     return {
       name: name,
@@ -118,24 +105,11 @@ var parseImpl = function( name, value, propIsBypass, propIsFlat ){
       bypass: propIsBypass
     };
 
-  } else if(
-    ( mapData = new RegExp( types.mapData.regex ).exec( value ) ) ||
-    ( mapLayoutData = new RegExp( types.mapLayoutData.regex ).exec( value ) ) ||
-    ( mapScratch = new RegExp( types.mapScratch.regex ).exec( value ) )
-  ){
+  } else if( (mapData = new RegExp( types.mapData.regex ).exec( value )) ){
     if( propIsBypass ){ return false; } // mappers not allowed in bypass
     if( type.multiple ){ return false; } // impossible to map to num
 
-    var mapped;
-    if( mapData ){
-      mapped = types.mapData;
-    } else if( mapLayoutData ){
-      mapped = types.mapLayoutData;
-    } else {
-      mapped = types.mapScratch;
-    }
-
-    mapData = mapData || mapLayoutData || mapScratch;
+    var mapped = types.mapData;
 
     // we can map only if the type is a colour or a number
     if( !(type.color || type.number) ){ return false; }

@@ -78,7 +78,7 @@ describe('Collection position & dimensions', function(){
 
   describe('eles.positions()', function(){
     it('sets correctly', function(){
-      var nodes = cy.nodes().positions(function(i, ele){
+      var nodes = cy.nodes().positions(function(ele, i){
         switch( ele.id() ){
           case 'n1':
             return false;

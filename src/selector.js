@@ -140,7 +140,7 @@ var Selector = function( selector ){
         query: true,
         // NB: if one colon selector is a substring of another from its start, place the longer one first
         // e.g. :foobar|:foo
-        regex: '(:selected|:unselected|:locked|:unlocked|:visible|:hidden|:transparent|:grabbed|:free|:removed|:inside|:grabbable|:ungrabbable|:animated|:unanimated|:selectable|:unselectable|:orphan|:nonorphan|:parent|:child|:loop|:simple|:active|:inactive|:touch|:backgrounding|:nonbackgrounding)',
+        regex: '(:selected|:unselected|:locked|:unlocked|:visible|:hidden|:transparent|:grabbed|:free|:removed|:inside|:grabbable|:ungrabbable|:animated|:unanimated|:selectable|:unselectable|:orphan|:nonorphan|:parent|:child|:loop|:simple|:active|:inactive|:backgrounding|:nonbackgrounding)',
         populate: function( state ){
           this.colonSelectors.push( state );
         }
@@ -504,9 +504,6 @@ var queryMatches = function( query, ele ){
       case ':inactive':
         allColonSelectorsMatch = !ele.active();
         break;
-      case ':touch':
-        allColonSelectorsMatch = is.touch();
-        break;
       case ':backgrounding':
         allColonSelectorsMatch = ele.backgrounding();
         break;
@@ -756,7 +753,7 @@ selfn.filter = function( collection ){
     return cy.collection();
   }
 
-  var selectorFunction = function( i, element ){
+  var selectorFunction = function( element, i ){
     for( var j = 0; j < self.length; j++ ){
       var query = self[ j ];
 

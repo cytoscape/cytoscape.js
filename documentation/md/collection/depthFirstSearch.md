@@ -13,16 +13,16 @@ This function returns an object that contains two collections (`{ path: eles, fo
 ```js
 var dfs = cy.elements().dfs({
   roots: '#e',
-  visit: function(i, depth){
-    console.log( 'visit ' + this.id() );
+  visit: function(v, e, u, i, depth){
+    console.log( 'visit ' + v.id() );
 
     // example of finding desired node
-    if( this.data('weight') > 70 ){
+    if( v.data('weight') > 70 ){
       return true;
     }
 
     // example of exiting search early
-    if( this.data('weight') < 0 ){
+    if( v.data('weight') < 0 ){
       return false;
     }
   },

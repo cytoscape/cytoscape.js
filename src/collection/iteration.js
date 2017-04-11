@@ -4,18 +4,6 @@ var is = require( '../is' );
 var zIndexSort = require( './zsort' );
 
 var elesfn = ({
-  each: function( fn ){
-    if( is.fn( fn ) ){
-      for( var i = 0; i < this.length; i++ ){
-        var ele = this[ i ];
-        var ret = fn.apply( ele, [ i, ele ] );
-
-        if( ret === false ){ break; } // exit each early on return false
-      }
-    }
-    return this;
-  },
-
   forEach: function( fn, thisArg ){
     if( is.fn( fn ) ){
 
@@ -131,5 +119,7 @@ var elesfn = ({
     }
   }
 });
+
+elesfn.each = elesfn.forEach;
 
 module.exports = elesfn;

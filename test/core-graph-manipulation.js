@@ -219,36 +219,6 @@ describe('Core graph manipulation', function(){
 
   });
 
-  describe('cy.load()', function(){
-
-    it('loads a single node graph on top of the current graph', function(done){
-      var readyCalled = false;
-
-      cy.load({
-        nodes: [
-                {
-                  data: { id: "foo" }
-                }
-                ]
-      }, function(){
-        // on ready
-
-        expect( cy.elements() ).to.have.length( 1 );
-        expect( cy.nodes().data('id') ).to.equal('foo');
-        expect( cy.$('#foo') ).to.have.length(1);
-
-        readyCalled = true;
-      }, function(){
-        // on done
-
-        expect( readyCalled ).to.be.true;
-
-        done();
-      });
-    });
-
-  });
-
   describe('cy.collection()', function(){
 
     it('gets an empty collection', function(){
@@ -283,7 +253,7 @@ describe('Core graph manipulation', function(){
     });
 
     it('cy.filter() with function', function(){
-      expect( cy.filter(function(i, ele){
+      expect( cy.filter(function(ele, i){
         return ele.id() === 'n1';
       }) ).to.have.length(1);
     });

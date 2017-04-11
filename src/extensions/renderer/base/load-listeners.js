@@ -81,9 +81,7 @@ BRp.nodeIsDraggable = function( node ){
 BRp.nodeIsGrabbable = function( node ){
   return (
     this.nodeIsDraggable( node )
-    && node.pstyle( 'opacity' ).value !== 0
-    && node.pstyle( 'visibility' ).value === 'visible'
-    && node.pstyle( 'display' ).value === 'element'
+    && node.interactive()
   );
 };
 
@@ -444,12 +442,12 @@ BRp.load = function(){
           if( ele ){
             ele.trigger( new Event( e, {
               type: 'taphold',
-              cyPosition: { x: pos[0], y: pos[1] }
+              position: { x: pos[0], y: pos[1] }
             } ) );
           } else {
             cy.trigger( new Event( e, {
               type: 'taphold',
-              cyPosition: { x: pos[0], y: pos[1] }
+              position: { x: pos[0], y: pos[1] }
             } ) );
           }
         }
@@ -464,7 +462,7 @@ BRp.load = function(){
 
       var cxtEvt = new Event( e, {
         type: 'cxttapstart',
-        cyPosition: { x: pos[0], y: pos[1] }
+        position: { x: pos[0], y: pos[1] }
       } );
 
       if( near ){
@@ -493,10 +491,16 @@ BRp.load = function(){
 
           if( r.nodeIsGrabbable( near ) ){
 
-            var grabEvent = new Event( e, {
-              type: 'grab',
-              cyPosition: { x: pos[0], y: pos[1] }
-            } );
+            var makeEvent = function( type ){
+              return new Event( e, {
+                type: type,
+                position: { x: pos[0], y: pos[1] }
+              } );
+            };
+
+            var triggerGrab = function( ele ){
+              ele.trigger( makeEvent('grab') );
+            };
 
             setGrabTarget( near );
 
@@ -505,16 +509,18 @@ BRp.load = function(){
               draggedElements = r.dragData.possibleDragElements = [];
               addNodeToDrag( near, { addToList: draggedElements } );
 
-              near.trigger( grabEvent );
+              near.trigger( makeEvent('grabon') ).trigger( makeEvent('grab') );
 
-            } else if( near.selected() ){
+            } else {
               draggedElements = r.dragData.possibleDragElements = [  ];
 
-              var selectedNodes = cy.$( function(){ return this.isNode() && this.selected() && r.nodeIsGrabbable( this ); } );
+              var selectedNodes = cy.$( function( ele ){ return ele.isNode() && ele.selected() && r.nodeIsGrabbable( ele ); } );
 
               addNodesToDrag( selectedNodes, { addToList: draggedElements } );
 
-              near.trigger( grabEvent );
+              near.trigger( makeEvent('grabon') );
+
+              selectedNodes.forEach( triggerGrab );
             }
 
             r.redrawHint( 'eles', true );
@@ -530,7 +536,7 @@ BRp.load = function(){
       }
 
       triggerEvents( near, [ 'mousedown', 'tapstart', 'vmousedown' ], e, {
-        cyPosition: { x: pos[0], y: pos[1] }
+        position: { x: pos[0], y: pos[1] }
       } );
 
       if( near == null ){
@@ -617,7 +623,7 @@ BRp.load = function(){
     preventDefault = true;
 
     triggerEvents( near, [ 'mousemove', 'vmousemove', 'tapdrag' ], e, {
-      cyPosition: { x: pos[0], y: pos[1] }
+      position: { x: pos[0], y: pos[1] }
     } );
 
     // trigger context drag if rmouse down
@@ -626,7 +632,7 @@ BRp.load = function(){
       if( isOverThresholdDrag ){
         var cxtEvt = new Event( e, {
           type: 'cxtdrag',
-          cyPosition: { x: pos[0], y: pos[1] }
+          position: { x: pos[0], y: pos[1] }
         } );
 
         if( down ){
@@ -642,7 +648,7 @@ BRp.load = function(){
           if( r.hoverData.cxtOver ){
             r.hoverData.cxtOver.trigger( new Event( e, {
               type: 'cxtdragout',
-              cyPosition: { x: pos[0], y: pos[1] }
+              position: { x: pos[0], y: pos[1] }
             } ) );
           }
 
@@ -651,7 +657,7 @@ BRp.load = function(){
           if( near ){
             near.trigger( new Event( e, {
               type: 'cxtdragover',
-              cyPosition: { x: pos[0], y: pos[1] }
+              position: { x: pos[0], y: pos[1] }
             } ) );
           }
 
@@ -736,13 +742,13 @@ BRp.load = function(){
 
         if( last ){
           triggerEvents( last, [ 'mouseout', 'tapdragout' ], e, {
-            cyPosition: { x: pos[0], y: pos[1] }
+            position: { x: pos[0], y: pos[1] }
           } );
         }
 
         if( near ){
           triggerEvents( near, [ 'mouseover', 'tapdragover' ], e, {
-            cyPosition: { x: pos[0], y: pos[1] }
+            position: { x: pos[0], y: pos[1] }
           } );
         }
 
@@ -852,7 +858,7 @@ BRp.load = function(){
     if( r.hoverData.which === 3 ){
       var cxtEvt = new Event( e, {
         type: 'cxttapend',
-        cyPosition: { x: pos[0], y: pos[1] }
+        position: { x: pos[0], y: pos[1] }
       } );
 
       if( down ){
@@ -864,7 +870,7 @@ BRp.load = function(){
       if( !r.hoverData.cxtDragged ){
         var cxtTap = new Event( e, {
           type: 'cxttap',
-          cyPosition: { x: pos[0], y: pos[1] }
+          position: { x: pos[0], y: pos[1] }
         } );
 
         if( down ){
@@ -887,9 +893,7 @@ BRp.load = function(){
         && !isMultSelKeyDown( e )
       ){
 
-        cy.$( function(){
-          return this.selected();
-        } ).unselect();
+        cy.$( function( ele ){ return ele.selected(); } ).unselect();
 
         if( draggedElements.length > 0 ){
           r.redrawHint( 'eles', true );
@@ -899,7 +903,7 @@ BRp.load = function(){
       }
 
       triggerEvents( near, [ 'mouseup', 'tapend', 'vmouseup' ], e, {
-        cyPosition: { x: pos[0], y: pos[1] }
+        position: { x: pos[0], y: pos[1] }
       } );
 
       if(
@@ -908,7 +912,7 @@ BRp.load = function(){
         && !r.hoverData.selecting // not box selection
       ){
         triggerEvents( down, ['click', 'tap', 'vclick'], e, {
-          cyPosition: { x: pos[0], y: pos[1] }
+          position: { x: pos[0], y: pos[1] }
         } );
       }
 
@@ -1086,7 +1090,7 @@ BRp.load = function(){
 
     r.cy.trigger( new Event( e, {
       type: 'mouseout',
-      cyPosition: { x: pos[0], y: pos[1] }
+      position: { x: pos[0], y: pos[1] }
     } ) );
   }, false );
 
@@ -1095,7 +1099,7 @@ BRp.load = function(){
 
     r.cy.trigger( new Event( e, {
       type: 'mouseover',
-      cyPosition: { x: pos[0], y: pos[1] }
+      position: { x: pos[0], y: pos[1] }
     } ) );
   }, false );
 
@@ -1175,21 +1179,21 @@ BRp.load = function(){
         if( near1 && near1.isNode() ){
           near1.activate().trigger( new Event( e, {
             type: 'cxttapstart',
-            cyPosition: { x: now[0], y: now[1] }
+            position: { x: now[0], y: now[1] }
           } ) );
           r.touchData.start = near1;
 
         } else if( near2 && near2.isNode() ){
           near2.activate().trigger( new Event( e, {
             type: 'cxttapstart',
-            cyPosition: { x: now[0], y: now[1] }
+            position: { x: now[0], y: now[1] }
           } ) );
           r.touchData.start = near2;
 
         } else {
           cy.trigger( new Event( e, {
             type: 'cxttapstart',
-            cyPosition: { x: now[0], y: now[1] }
+            position: { x: now[0], y: now[1] }
           } ) );
         }
 
@@ -1222,6 +1226,7 @@ BRp.load = function(){
         if( r.nodeIsGrabbable( near ) ){
 
           var draggedEles = r.dragData.touchDragEles = [];
+          var selectedNodes = null;
 
           r.redrawHint( 'eles', true );
           r.redrawHint( 'drag', true );
@@ -1229,8 +1234,8 @@ BRp.load = function(){
           if( near.selected() ){
             // reset drag elements, since near will be added again
 
-            var selectedNodes = cy.$( function(){
-              return this.selected() && r.nodeIsGrabbable( this );
+            selectedNodes = cy.$( function( ele ){
+              return ele.selected() && r.nodeIsGrabbable( ele );
             } );
 
             addNodesToDrag( selectedNodes, { addToList: draggedEles } );
@@ -1240,15 +1245,25 @@ BRp.load = function(){
 
           setGrabTarget( near );
 
-          near.trigger( new Event( e, {
-            type: 'grab',
-            cyPosition: { x: now[0], y: now[1] }
-          } ) );
+          var makeEvent = function( type ){
+            return new Event( e, {
+              type: type,
+              position: { x: now[0], y: now[1] }
+            } );
+          };
+
+          near.trigger( makeEvent('grabon') );
+
+          if( selectedNodes ){
+            selectedNodes.forEach(function( n ){ n.trigger( makeEvent('grab') ); });
+          } else {
+            near.trigger( makeEvent('grab') );
+          }
         }
       }
 
       triggerEvents( near, [ 'touchstart', 'tapstart', 'vmousedown' ], e, {
-        cyPosition: { x: now[0], y: now[1] }
+        position: { x: now[0], y: now[1] }
       } );
 
       if( near == null ){
@@ -1276,7 +1291,7 @@ BRp.load = function(){
             && !r.touchData.selecting // box selection shouldn't allow taphold through
         ){
           triggerEvents( r.touchData.start, [ 'taphold' ], e, {
-            cyPosition: { x: now[0], y: now[1] }
+            position: { x: now[0], y: now[1] }
           } );
 
           if( !r.touchData.start ){
@@ -1356,7 +1371,7 @@ BRp.load = function(){
 
         var cxtEvt = new Event( e, {
           type: 'cxttapend',
-          cyPosition: { x: now[0], y: now[1] }
+          position: { x: now[0], y: now[1] }
         } );
 
         if( r.touchData.start ){
@@ -1377,7 +1392,7 @@ BRp.load = function(){
     if( capture && r.touchData.cxt ){
       var cxtEvt = new Event( e, {
         type: 'cxtdrag',
-        cyPosition: { x: now[0], y: now[1] }
+        position: { x: now[0], y: now[1] }
       } );
       r.data.bgActivePosistion = undefined;
       r.redrawHint( 'select', true );
@@ -1398,7 +1413,7 @@ BRp.load = function(){
         if( r.touchData.cxtOver ){
           r.touchData.cxtOver.trigger( new Event( e, {
             type: 'cxtdragout',
-            cyPosition: { x: now[0], y: now[1] }
+            position: { x: now[0], y: now[1] }
           } ) );
         }
 
@@ -1407,7 +1422,7 @@ BRp.load = function(){
         if( near ){
           near.trigger( new Event( e, {
             type: 'cxtdragover',
-            cyPosition: { x: now[0], y: now[1] }
+            position: { x: now[0], y: now[1] }
           } ) );
 
         }
@@ -1630,12 +1645,12 @@ BRp.load = function(){
       // touchmove
       {
         triggerEvents( (start || near), [ 'touchmove', 'tapdrag', 'vmousemove' ], e, {
-          cyPosition: { x: now[0], y: now[1] }
+          position: { x: now[0], y: now[1] }
         } );
 
         if( ( !start || !start.grabbed() ) && near != last ){
-          if( last ){ last.trigger( new Event( e, { type: 'tapdragout', cyPosition: { x: now[0], y: now[1] } } ) ); }
-          if( near ){ near.trigger( new Event( e, { type: 'tapdragover', cyPosition: { x: now[0], y: now[1] } } ) ); }
+          if( last ){ last.trigger( new Event( e, { type: 'tapdragout', position: { x: now[0], y: now[1] } } ) ); }
+          if( near ){ near.trigger( new Event( e, { type: 'tapdragover', position: { x: now[0], y: now[1] } } ) ); }
         }
 
         r.touchData.last = near;
@@ -1752,7 +1767,7 @@ BRp.load = function(){
     if( r.touchData.cxt ){
       ctxTapend = new Event( e, {
         type: 'cxttapend',
-        cyPosition: { x: now[0], y: now[1] }
+        position: { x: now[0], y: now[1] }
       } );
 
       if( start ){
@@ -1764,7 +1779,7 @@ BRp.load = function(){
       if( !r.touchData.cxtDragged ){
         var ctxTap = new Event( e, {
           type: 'cxttap',
-          cyPosition: { x: now[0], y: now[1] }
+          position: { x: now[0], y: now[1] }
         } );
 
         if( start ){
@@ -1849,7 +1864,7 @@ BRp.load = function(){
         }
 
         triggerEvents( start, [ 'touchend', 'tapend', 'vmouseup', 'tapdragout' ], e, {
-          cyPosition: { x: now[0], y: now[1] }
+          position: { x: now[0], y: now[1] }
         } );
 
         start.unactivate();
@@ -1860,7 +1875,7 @@ BRp.load = function(){
         var near = r.findNearestElement( now[0], now[1], true, true );
 
         triggerEvents( near, [ 'touchend', 'tapend', 'vmouseup', 'tapdragout' ], e, {
-          cyPosition: { x: now[0], y: now[1] }
+          position: { x: now[0], y: now[1] }
         } );
 
       }
@@ -1897,7 +1912,7 @@ BRp.load = function(){
       // Tap event, roughly same as mouse click event for touch
       if( !r.touchData.singleTouchMoved ){
         triggerEvents( start, [ 'tap', 'vclick' ], e, {
-          cyPosition: { x: now[0], y: now[1] }
+          position: { x: now[0], y: now[1] }
         } );
       }
 

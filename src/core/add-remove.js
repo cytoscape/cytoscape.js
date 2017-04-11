@@ -78,47 +78,6 @@ var corefn = {
     }
 
     return collection.remove();
-  },
-
-  load: function( elements, onload, ondone ){
-    var cy = this;
-
-    cy.notifications( false );
-
-    // remove old elements
-    var oldEles = cy.mutableElements();
-    if( oldEles.length > 0 ){
-      oldEles.remove();
-    }
-
-    if( elements != null ){
-      if( is.plainObject( elements ) || is.array( elements ) ){
-        cy.add( elements );
-      }
-    }
-
-    cy.one( 'layoutready', function( e ){
-      cy.notifications( true );
-      cy.trigger( e ); // we missed this event by turning notifications off, so pass it on
-
-      cy.notify( {
-        type: 'load',
-        eles: cy.mutableElements()
-      } );
-
-      cy.one( 'load', onload );
-      cy.trigger( 'load' );
-    } ).one( 'layoutstop', function(){
-      cy.one( 'done', ondone );
-      cy.trigger( 'done' );
-    } );
-
-    var layoutOpts = util.extend( {}, cy._private.options.layout );
-    layoutOpts.eles = cy.elements();
-
-    cy.layout( layoutOpts );
-
-    return this;
   }
 };
 

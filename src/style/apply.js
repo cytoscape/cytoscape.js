@@ -329,21 +329,9 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
   // put the property in the style objects
   switch( prop.mapped ){ // flatten the property if mapped
   case types.mapData:
-  case types.mapLayoutData:
-  case types.mapScratch:
-
-    var isLayout = prop.mapped === types.mapLayoutData;
-    var isScratch = prop.mapped === types.mapScratch;
-
     // flatten the field (e.g. data.foo.bar)
     var fields = prop.field.split( '.' );
-    var fieldVal;
-
-    if( isScratch || isLayout ){
-      fieldVal = _p.scratch;
-    } else {
-      fieldVal = _p.data;
-    }
+    var fieldVal = _p.data;
 
     for( var i = 0; i < fields.length && fieldVal; i++ ){
       var field = fields[ i ];
@@ -408,20 +396,9 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
 
   // direct mapping
   case types.data:
-  case types.layoutData:
-  case types.scratch:
-    var isLayout = prop.mapped === types.layoutData;
-    var isScratch = prop.mapped === types.scratch;
-
     // flatten the field (e.g. data.foo.bar)
     var fields = prop.field.split( '.' );
-    var fieldVal;
-
-    if( isScratch || isLayout ){
-      fieldVal = _p.scratch;
-    } else {
-      fieldVal = _p.data;
-    }
+    var fieldVal = _p.data;
 
     if( fieldVal ){ for( var i = 0; i < fields.length; i++ ){
       var field = fields[ i ];

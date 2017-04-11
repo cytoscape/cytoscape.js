@@ -168,9 +168,9 @@ var getBrowserify = function( opts ){
     pipe( buffer() );
   }
 
-  //if( opts.sourceMaps ){
+  if( opts.sourceMaps ){
     pipe( $.sourcemaps.init({ loadMaps: true }) );
-  //}
+  }
 
   pipe( $.derequire() );
   pipe( $.replace('{{VERSION}}', version) );
@@ -197,7 +197,9 @@ gulp.task('concat', ['version'], function(){
 });
 
 gulp.task('build-unmin', ['version'], function(){
-  return getBrowserify()
+  return getBrowserify({
+    sourceMaps: true
+  })
     .pipe( gulp.dest('build') )
   ;
 });

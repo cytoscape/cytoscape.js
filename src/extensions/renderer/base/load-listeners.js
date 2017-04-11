@@ -1,5 +1,7 @@
 'use strict';
 
+var window = require('../../../window');
+var document = window ? window.document : null;
 var is = require( '../../../is' );
 var util = require( '../../../util' );
 var math = require( '../../../math' );
@@ -31,7 +33,9 @@ BRp.binder = function( tgt ){
       } );
 
       window.addEventListener( 'test', null, opts );
-    } catch( err ){}
+    } catch( err ){
+      // just consume the error
+    }
 
     r.supportsPassiveEvents = supportsPassive;
   }
@@ -1239,7 +1243,7 @@ BRp.load = function(){
             } );
           };
 
-          near.trigger( makeEvent('grabon') )
+          near.trigger( makeEvent('grabon') );
 
           if( selectedNodes ){
             selectedNodes.forEach(function( n ){ n.trigger( makeEvent('grab') ); });

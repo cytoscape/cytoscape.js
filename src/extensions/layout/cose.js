@@ -12,8 +12,8 @@ Modifications tracked on Github.
 
 var util = require( '../../util' );
 var math = require( '../../math' );
-var Thread = require( '../../thread' );
 var is = require( '../../is' );
+var Promise = require('../../promise');
 
 var DEBUG;
 
@@ -83,8 +83,8 @@ var defaults = {
   // Lower temperature threshold (below this point the layout will end)
   minTemp: 1.0,
 
-  // Whether to use threading to speed up the layout
-  useMultitasking: true
+  // Pass a reference to weaver to use threads for calculations
+  weaver: false
 };
 
 
@@ -98,7 +98,6 @@ function CoseLayout( options ){
   this.options.layout = this;
 }
 
-
 /**
  * @brief : runs the layout
  */
@@ -107,9 +106,52 @@ CoseLayout.prototype.run = function(){
   var cy      = options.cy;
   var layout  = this;
   var thread  = this.thread;
+  var Thread  = options.weaver ? options.weaver.Thread : null;
+
+  var falseThread = { // use false thread as polyfill
+    listeners: [],
+    on: function(e, cb){
+      this.listeners.push({ event: e, callback: cb });
+
+      return this;
+    },
+    trigger: function(e){
+      if( is.string(e) ){
+        e = { type: e };
+      }
+
+      var matchesEvent = function( l ){ return l.event === e.type; };
+      var trigger = function( l ){ l.callback(e); };
+
+      this.listeners.filter( matchesEvent ).forEach( trigger );
+
+      return this;
+    },
+    pass: function( data ){
+      this.pass = data;
+
+      return this;
+    },
+    run: function( cb ){
+      var pass = this.pass;
+
+      return new Promise(function( resolve ){
+        resolve( cb( pass ) );
+      });
+    },
+    stop: function(){
+      return this;
+    }
+  };
+
+  function broadcast( message ){ // for false thread
+    var e = { type: 'message', message: message };
+
+    falseThread.trigger( e );
+  }
 
   if( !thread || thread.stopped() ){
-    thread = this.thread = Thread( { disabled: !options.useMultitasking } );
+    thread = this.thread = Thread ? new Thread() : falseThread;
   }
 
   layout.stopped = false;
@@ -981,7 +1023,7 @@ var createLayoutInfo = function( cy, layout, options ){
     tempNode.padBottom  = parseFloat( n.style( 'padding' ) );
 
     // forces
-    tempNode.nodeRepulsion = is.fn( options.nodeRepulsion ) ? options.nodeRepulsion.call( n, n ) : options.nodeRepulsion;
+    tempNode.nodeRepulsion = is.fn( options.nodeRepulsion ) ? options.nodeRepulsion(n) : options.nodeRepulsion;
 
     // Add new node
     layoutInfo.layoutNodes.push( tempNode );
@@ -1050,8 +1092,8 @@ var createLayoutInfo = function( cy, layout, options ){
     tempEdge.targetId = e.data( 'target' );
 
     // Compute ideal length
-    var idealLength = is.fn( options.idealEdgeLength ) ? options.idealEdgeLength.call( e, e ) : options.idealEdgeLength;
-    var elasticity = is.fn( options.edgeElasticity ) ? options.edgeElasticity.call( e, e ) : options.edgeElasticity;
+    var idealLength = is.fn( options.idealEdgeLength ) ? options.idealEdgeLength(e) : options.idealEdgeLength;
+    var elasticity = is.fn( options.edgeElasticity ) ? options.edgeElasticity(e) : options.edgeElasticity;
 
     // Check if it's an inter graph edge
     var sourceIx    = layoutInfo.idToIndex[ tempEdge.sourceId ];
@@ -1294,7 +1336,7 @@ var refreshPositions = function( layoutInfo, cy, options ){
     coseBB.h = coseBB.y2 - coseBB.y1;
   }
 
-  nodes.positions( function( i, ele ){
+  nodes.positions( function( ele, i ){
     var lnode = layoutInfo.layoutNodes[ layoutInfo.idToIndex[ ele.data( 'id' ) ] ];
     // s = "Node: " + lnode.id + ". Refreshed position: (" +
     // lnode.positionX + ", " + lnode.positionY + ").";

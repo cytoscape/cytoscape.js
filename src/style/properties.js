@@ -156,20 +156,6 @@ var styfn = {};
     { name: 'overlay-color', type: t.color },
     { name: 'overlay-opacity', type: t.zeroOneNumber },
 
-    // shadows
-    { name: 'shadow-blur', type: t.size },
-    { name: 'shadow-color', type: t.color },
-    { name: 'shadow-opacity', type: t.zeroOneNumber },
-    { name: 'shadow-offset-x', type: t.bidirectionalSize },
-    { name: 'shadow-offset-y', type: t.bidirectionalSize },
-
-    // label shadows
-    { name: 'text-shadow-blur', type: t.size },
-    { name: 'text-shadow-color', type: t.color },
-    { name: 'text-shadow-opacity', type: t.zeroOneNumber },
-    { name: 'text-shadow-offset-x', type: t.bidirectionalSize },
-    { name: 'text-shadow-offset-y', type: t.bidirectionalSize },
-
     // transition anis
     { name: 'transition-property', type: t.propList },
     { name: 'transition-duration', type: t.time },
@@ -349,16 +335,6 @@ styfn.getDefaultProperties = util.memoize( function(){
     'overlay-opacity': 0,
     'overlay-color': '#000',
     'overlay-padding': 10,
-    'shadow-opacity': 0,
-    'shadow-color': '#000',
-    'shadow-blur': 10,
-    'shadow-offset-x': 0,
-    'shadow-offset-y': 0,
-    'text-shadow-opacity': 0,
-    'text-shadow-color': '#000',
-    'text-shadow-blur': 5,
-    'text-shadow-offset-x': 0,
-    'text-shadow-offset-y': 0,
     'transition-property': 'none',
     'transition-duration': 0,
     'transition-delay': 0,

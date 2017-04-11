@@ -42,7 +42,7 @@ GridLayout.prototype.run = function(){
   } );
 
   if( bb.h === 0 || bb.w === 0 ){
-    nodes.layoutPositions( this, options, function(){
+    nodes.layoutPositions( this, options, function( ele ){
       return { x: bb.x1, y: bb.y1 };
     } );
 
@@ -205,7 +205,7 @@ GridLayout.prototype.run = function(){
       }
     }
 
-    var getPos = function( i, element ){
+    var getPos = function( element, i ){
       var x, y;
 
       if( element.locked() || element.isParent() ){

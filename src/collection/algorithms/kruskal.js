@@ -35,8 +35,8 @@ var elesfn = ({
 
     var edges = this.edges();
     var S = edges.toArray().sort( function( a, b ){
-      var weightA = weightFn.call( a, a );
-      var weightB = weightFn.call( b, b );
+      var weightA = weightFn( a );
+      var weightB = weightFn( b );
 
       return weightA - weightB;
     } );

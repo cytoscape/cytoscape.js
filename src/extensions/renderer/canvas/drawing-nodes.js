@@ -82,14 +82,6 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
 
   this.strokeStyle( context, borderColor[0], borderColor[1], borderColor[2], node.pstyle( 'border-opacity' ).value * parentOpacity );
 
-  var shadowBlur = node.pstyle( 'shadow-blur' ).pfValue;
-  var shadowOpacity = node.pstyle( 'shadow-opacity' ).value;
-  var shadowColor = node.pstyle( 'shadow-color' ).value;
-  var shadowOffsetX = node.pstyle( 'shadow-offset-x' ).pfValue;
-  var shadowOffsetY = node.pstyle( 'shadow-offset-y' ).pfValue;
-
-  this.shadowStyle( context, shadowColor, shadowOpacity, shadowBlur, shadowOffsetX, shadowOffsetY );
-
   context.lineJoin = 'miter'; // so borders are square with the node shape
 
   if( context.setLineDash ){ // for very outofdate browsers
@@ -155,8 +147,6 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
   } else {
     context.fill();
   }
-
-  this.shadowStyle( context, 'transparent', 0 ); // reset for next guy
 
   //
   // bg image

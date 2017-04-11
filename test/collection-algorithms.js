@@ -83,8 +83,8 @@ describe('Graph theory algorithms (traversing, search, etc)', function(){
 
     var bfs = cy.elements().bfs({
       roots: a,
-      visit: function(i, depth){
-        depths[ this.id() ] = depth;
+      visit: function(v, e, u, i, depth){
+        depths[ v.id() ] = depth;
       }
     });
 
@@ -114,8 +114,8 @@ describe('Graph theory algorithms (traversing, search, etc)', function(){
 
     var bfs = cy.elements().bfs({
       roots: a,
-      visit: function(i, depth){
-        depths[ this.id() ] = depth;
+      visit: function(v, e, u, i, depth){
+        depths[ v.id() ] = depth;
       },
       directed: true
     });
@@ -168,8 +168,8 @@ describe('Graph theory algorithms (traversing, search, etc)', function(){
   it('eles.dijkstra() undirected', function(){
     var di = cy.elements().dijkstra({
       root: a,
-      weight: function(){
-        return this.data('weight');
+      weight: function( ele ){
+        return ele.data('weight');
       }
     });
 
@@ -213,8 +213,8 @@ describe('Graph theory algorithms (traversing, search, etc)', function(){
 
     var di = cy.elements().dijkstra({
       root: '#a',
-      weight: function(){
-        return this.data('weight');
+      weight: function( ele ){
+        return ele.data('weight');
       }
     });
 
@@ -224,8 +224,8 @@ describe('Graph theory algorithms (traversing, search, etc)', function(){
   it('eles.dijkstra() directed', function(){
     var di = cy.elements().dijkstra({
       root: a,
-      weight: function(){
-        return this.data('weight');
+      weight: function( ele ){
+        return ele.data('weight');
       },
       directed: true
     });
@@ -253,8 +253,8 @@ describe('Graph theory algorithms (traversing, search, etc)', function(){
   });
 
   it('eles.kruskal()', function(){
-    var kruskal = cy.elements().kruskal( function(){
-      return this.data('weight');
+    var kruskal = cy.elements().kruskal( function( ele ){
+      return ele.data('weight');
     } );
 
     expect( kruskal.same( eles(a, b, c, d, e, ae, cd, ab, bc) ) );
@@ -309,7 +309,7 @@ describe('Graph theory algorithms (traversing, search, etc)', function(){
       var options = {root: a,
 		     goal: d,
 		     directed: false,
-		     weight: function() {return this.data('weight');},
+		     weight: function( ele ) {return ele.data('weight');},
 		     heuristic: function(a){return 0;}
 		    };
       var res = cy.elements().aStar(options);
@@ -322,7 +322,7 @@ describe('Graph theory algorithms (traversing, search, etc)', function(){
       var options = {root: a,
 		     goal: d,
 		     directed: true,
-		     weight: function() {return this.data('weight');},
+		     weight: function( ele ) {return ele.data('weight');},
 		     heuristic: function(a){return 0;}
 		    };
       var res = cy.elements().aStar(options);
@@ -335,7 +335,7 @@ describe('Graph theory algorithms (traversing, search, etc)', function(){
       var options = {root: d,
 		     goal: a,
 		     directed: true,
-		     weight: function() {return this.data('weight');},
+		     weight: function( ele ) {return ele.data('weight');},
 		     heuristic: function(a){return 0;}
 		    };
       var res = cy.elements().aStar(options);
@@ -346,7 +346,7 @@ describe('Graph theory algorithms (traversing, search, etc)', function(){
 
   it('eles.floydWarshall(): directed, weighted', function() {
       var options = {directed: true,
-		     weight: function() {return this.data('weight');}
+		     weight: function( ele ) {return ele.data('weight');}
 		    };
       var res = cy.elements().floydWarshall(options);
       var path = res.path;
@@ -437,7 +437,7 @@ describe('Graph theory algorithms (traversing, search, etc)', function(){
 
   it('eles.floydWarshall(): undirected, weighted', function() {
       var options = {directed: false,
-		     weight: function() {return this.data('weight');}
+		     weight: function( ele ) {return ele.data('weight');}
 		    };
       var res = cy.elements().floydWarshall(options);
       var path = res.path;
@@ -578,7 +578,7 @@ describe('Graph theory algorithms (traversing, search, etc)', function(){
   it('eles.bellmanFord(): undirected, weighted', function() {
       var options = { root: a,
 		      directed: false,
-		      weight: function() {return this.data('weight');}
+		      weight: function( ele ) {return ele.data('weight');}
 		    };
       var res = cy.elements().bellmanFord(options);
       var path = res.pathTo;
@@ -608,7 +608,7 @@ describe('Graph theory algorithms (traversing, search, etc)', function(){
   it('eles.bellmanFord(): detection of negative weight cycle', function() {
       var options = { root: a,
 		      directed: false,
-		      weight: function() {return -1 * this.data('weight');}
+		      weight: function( ele ) {return -1 * ele.data('weight');}
 		    };
       var res = cy.elements().bellmanFord(options);
 
@@ -621,7 +621,7 @@ describe('Graph theory algorithms (traversing, search, etc)', function(){
   it('eles.bellmanFord(): directed, weighted', function() {
       var options = { root: b,
 		      directed: true,
-		      weight: function() {return this.data('weight');}
+		      weight: function( ele ) {return ele.data('weight');}
 		    };
       var res = cy.elements().bellmanFord(options);
       var path = res.pathTo;
@@ -741,8 +741,8 @@ describe('Graph theory algorithms (traversing, search, etc)', function(){
     cy.nodes().forEach(function (ele) {
       res["dc_" + ele.id()] = cy.elements().degreeCentrality({
         root: ele,
-        weight: function(){
-          return this.data('weight');
+        weight: function( ele ){
+          return ele.data('weight');
         },
         directed: false,
         alpha: 0
@@ -761,8 +761,8 @@ describe('Graph theory algorithms (traversing, search, etc)', function(){
     cy.nodes().forEach(function (ele) {
       res["dc_" + ele.id()] = cy.elements().degreeCentrality({
         root: ele,
-        weight: function(){
-          return this.data('weight');
+        weight: function( ele ){
+          return ele.data('weight');
         },
         directed: false,
         alpha: 1
@@ -827,8 +827,8 @@ describe('Graph theory algorithms (traversing, search, etc)', function(){
     cy.nodes().forEach(function (ele) {
       res["dc_" + ele.id()] = cy.elements().degreeCentrality({
         root: ele,
-        weight: function(){
-          return this.data('weight');
+        weight: function( ele ){
+          return ele.data('weight');
         },
         directed: true,
         alpha: 0
@@ -853,8 +853,8 @@ describe('Graph theory algorithms (traversing, search, etc)', function(){
     cy.nodes().forEach(function (ele) {
       res["dc_" + ele.id()] = cy.elements().degreeCentrality({
         root: ele,
-        weight: function(){
-          return this.data('weight');
+        weight: function( ele ){
+          return ele.data('weight');
         },
         directed: true,
         alpha: 1
@@ -908,8 +908,8 @@ describe('Graph theory algorithms (traversing, search, etc)', function(){
     cy.nodes().forEach(function (ele) {
       res["dc_" + ele.id()] = cy.elements().closenessCentrality({
         root: ele,
-        weight: function(){
-          return this.data('weight');
+        weight: function( ele ){
+          return ele.data('weight');
         }
       });
     });
@@ -926,8 +926,8 @@ describe('Graph theory algorithms (traversing, search, etc)', function(){
     cy.nodes().forEach(function (ele) {
       res["dc_" + ele.id()] = cy.elements().closenessCentrality({
         root: ele,
-        weight: function(){
-          return this.data('weight');
+        weight: function( ele ){
+          return ele.data('weight');
         },
         directed: true
       });
@@ -964,8 +964,8 @@ describe('Graph theory algorithms (traversing, search, etc)', function(){
 
   it('eles.betweennessCentrality() weighted undirected', function(){
     var res = cy.elements().betweennessCentrality({
-      weight: function(){
-        return this.data('weight');
+      weight: function( ele ){
+        return ele.data('weight');
       }
     });
 
@@ -978,8 +978,8 @@ describe('Graph theory algorithms (traversing, search, etc)', function(){
 
   it('eles.betweennessCentrality() weighted directed', function(){
     var res = cy.elements().betweennessCentrality({
-      weight: function(){
-        return this.data('weight');
+      weight: function( ele ){
+        return ele.data('weight');
       },
       directed:true
     });

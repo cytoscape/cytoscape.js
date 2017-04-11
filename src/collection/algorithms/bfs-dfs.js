@@ -11,15 +11,11 @@ var defineSearch = function( params ){
   // from pseudocode on wikipedia
   return function searchFn( roots, fn, directed ){
     var options;
-    var std;
-    var thisArg;
     if( is.plainObject( roots ) && !is.elementOrCollection( roots ) ){
       options = roots;
       roots = options.roots || options.root;
       fn = options.visit;
       directed = options.directed;
-      std = options.std;
-      thisArg = options.thisArg;
     }
 
     directed = arguments.length === 2 && !is.fn( fn ) ? fn : directed;
@@ -68,11 +64,7 @@ var defineSearch = function( params ){
       var prevNode = prevEdge == null ? undefined : prevEdge.connectedNodes().not( v )[0];
       var ret;
 
-      if( std ){
-        ret = fn.call( thisArg, v, prevEdge, prevNode, j++, depth );
-      } else {
-        ret = fn.call( v, j++, depth, v, prevEdge, prevNode );
-      }
+      ret = fn( v, prevEdge, prevNode, j++, depth );
 
       if( ret === true ){
         found = v;
@@ -83,10 +75,10 @@ var defineSearch = function( params ){
         break;
       }
 
-      var vwEdges = v.connectedEdges( directed ? function(){ return this.data( 'source' ) === v.id(); } : undefined ).intersect( edges );
+      var vwEdges = v.connectedEdges( directed ? function( ele ){ return ele.data( 'source' ) === v.id(); } : undefined ).intersect( edges );
       for( var i = 0; i < vwEdges.length; i++ ){
         var e = vwEdges[ i ];
-        var w = e.connectedNodes( function(){ return this.id() !== v.id(); } ).intersect( nodes );
+        var w = e.connectedNodes( function( n ){ return n.id() !== v.id(); } ).intersect( nodes );
 
         if( w.length !== 0 && !V[ w.id() ] ){
           w = w[0];

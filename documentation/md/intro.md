@@ -31,11 +31,10 @@
  * Well maintained, with only a sliver of active bug time (i.e. minimised time to bugfix)
  * Used by
   * [Abasy Atlas](http://abasy.ccg.unam.mx/)
-  * [Agile Protein Interactomes DataServer](http://apid.dep.usal.es/)
+  * [Agile Protein Interactomes DataServer](Agile Protein Interactomes DataServer)
   * [Aras](http://www.aras.com/)
   * [Avenue](https://avenue-2p0.herokuapp.com/)
   * [BioGRID](http://thebiogrid.org/)
-  * [BS CytoGraph](www.brettjsettle.site/graph)
   * [Cray Inc.](http://www.cray.com)
   * [CyNetShare](http://cynetshare.ucsd.edu/)
   * [DARPA](http://www.darpa.mil)
@@ -53,14 +52,12 @@
   * [OHDSI](http://www.ohdsi.org/)
   * [Pathway Commons](http://www.pathwaycommons.org)
   * [py2cytoscape](https://github.com/idekerlab/py2cytoscape)
-  * [Rezza](http://rezza.io)
   * [Sainsbury Laboratory](http://www.tsl.ac.uk/) : [PINet](http://pinet.tsl.ac.uk/)
   * [Sotera Defense Solutions, Inc.](http://www.soteradefense.com/) : [Graphene](http://sotera.github.io/graphene/)
   * [Steemit](https://steemit.com/) : [SteemStars](https://steemstars.herokuapp.com/)
   * [Stringify](https://www.stringify.com/)
   * [Trace](https://trace.risingstack.com/)
   * [University of Cambridge](http://www.cam.ac.uk/) : [Intermine](http://intermine.org/)
-  * [Virginia Tech](http://www.vt.edu/index.html) [T. M. Murali's Research Group](http://bioinformatics.cs.vt.edu/~murali/) : [GraphSpace](http://graphspace.org)
   * [Visual Interaction GmbH](http://www.mygaze.com/)
 
 
@@ -91,9 +88,6 @@ The library was created at the [Donnelly Centre](http://thedonnellycentre.utoron
 ## Releases
 
 - 2.7
- - [2.7.17](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A2.7.17+is%3Aclosed)
- - [2.7.16](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A2.7.16+is%3Aclosed)
- - [2.7.15](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A2.7.15+is%3Aclosed)
  - [2.7.14](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A2.7.14+is%3Aclosed)
  - [2.7.13](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A2.7.13+is%3Aclosed)
  - [2.7.12](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A2.7.12+is%3Aclosed)

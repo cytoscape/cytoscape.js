@@ -204,26 +204,16 @@ var define = {
     };
     params = util.extend( {}, defaults, params );
 
-    return function onImpl( events, selector, data, callback ){
+    return function onImpl( events, selector, callback ){
       var self = this;
       var selfIsArrayLike = self.length !== undefined;
       var all = selfIsArrayLike ? self : [ self ]; // put in array if not array-like
       var eventsIsString = is.string( events );
       var p = params;
 
-      if( is.plainObject( selector ) ){ // selector is actually data
-        callback = data;
-        data = selector;
-        selector = undefined;
-      } else if( is.fn( selector ) || selector === false ){ // selector is actually callback
+      if( is.fn( selector ) ){ // selector is actually callback
         callback = selector;
-        data = undefined;
         selector = undefined;
-      }
-
-      if( is.fn( data ) || data === false ){ // data is actually callback
-        callback = data;
-        data = undefined;
       }
 
       // if there isn't a callback, we can't really do anything
@@ -263,7 +253,6 @@ var define = {
 
             var listener = {
               callback: callback, // callback to run
-              data: data, // extra data in eventObj.data
               delegated: selector ? true : false, // whether the evt is delegated
               selector: selector, // the selector to match for delegated events
               selObj: new Selector( selector ), // cached selector object to save rebuilding
@@ -458,12 +447,12 @@ var define = {
           if( eventsIsEvent ){ // then just get the object
             evt = evtObj;
 
-            evt.cyTarget = evt.cyTarget || triggerer;
+            evt.target = evt.target || triggerer;
             evt.cy = evt.cy || cy;
 
           } else { // then we have to make one
             evt = new Event( evtObj, {
-              cyTarget: triggerer,
+              target: triggerer,
               cy: cy,
               namespace: evtObj.namespace
             } );
@@ -480,12 +469,12 @@ var define = {
           }
 
           // create a rendered position based on the passed position
-          if( evt.cyPosition ){
-            var pos = evt.cyPosition;
+          if( evt.position ){
+            var pos = evt.position;
             var zoom = cy.zoom();
             var pan = cy.pan();
 
-            evt.cyRenderedPosition = {
+            evt.renderedPosition = {
               x: pos.x * zoom + pan.x,
               y: pos.y * zoom + pan.y
             };
@@ -503,18 +492,12 @@ var define = {
             var lis = listeners[ k ];
             var nsMatches = !lis.namespace || lis.namespace === evt.namespace || lis.namespace === define.event.universalNamespace;
             var typeMatches = lis.type === evt.type;
-            var targetMatches = lis.delegated ? ( triggerer !== evt.cyTarget && is.element( evt.cyTarget ) && lis.selObj.matches( evt.cyTarget ) ) : (true); // we're not going to validate the hierarchy; that's too expensive
+            var targetMatches = lis.delegated ? ( triggerer !== evt.target && is.element( evt.target ) && lis.selObj.matches( evt.target ) ) : (true); // we're not going to validate the hierarchy; that's too expensive
             var listenerMatches = nsMatches && typeMatches && targetMatches;
 
             if( listenerMatches ){ // then trigger it
               var args = [ evt ];
               args = args.concat( extraParams ); // add extra params to args list
-
-              if( lis.data ){ // add on data plugged into binding
-                evt.data = lis.data;
-              } else { // or clear it in case the event obj is reused
-                evt.data = undefined;
-              }
 
               if( lis.unbindSelfOnTrigger || lis.unbindAllBindersOnTrigger ){ // then remove listener
                 listeners.splice( k, 1 );
@@ -540,7 +523,7 @@ var define = {
               }
 
               // run the callback
-              var context = lis.delegated ? evt.cyTarget : triggerer;
+              var context = lis.delegated ? evt.target : triggerer;
               var ret = lis.callback.apply( context, args );
 
               if( ret === false || evt.isPropagationStopped() ){

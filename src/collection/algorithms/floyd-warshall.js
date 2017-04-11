@@ -71,7 +71,7 @@ var elesfn = ({
     for( var i = 0; i < edges.length ; i++ ){
       var sourceIndex = id2position[ edges[ i ].source().id() ];
       var targetIndex = id2position[ edges[ i ].target().id() ];
-      var weight = weightFn.apply( edges[ i ], [ edges[ i ] ] );
+      var weight = weightFn( edges[ i ] );
 
       // Check if already process another edge between same 2 nodes
       if( dist[ sourceIndex ][ targetIndex ] > weight ){
@@ -86,7 +86,7 @@ var elesfn = ({
       for( var i = 0; i < edges.length ; i++ ){
         var sourceIndex = id2position[ edges[ i ].target().id() ];
         var targetIndex = id2position[ edges[ i ].source().id() ];
-        var weight = weightFn.apply( edges[ i ], [ edges[ i ] ] );
+        var weight = weightFn( edges[ i ] );
 
         // Check if already process another edge between same 2 nodes
         if( dist[ sourceIndex ][ targetIndex ] > weight ){

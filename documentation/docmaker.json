@@ -1,5 +1,5 @@
 {
-  "version": "2.7.17",
+  "version": "3.0.0",
 
   "fnArgLinks": {
     "selector": "#selectors",
@@ -173,7 +173,7 @@
                       "descr": "The filter function that returns true for elements that should be returned.",
                       "fields": [
                         { "name": "i", "descr": "The counter used for iteration over the elements in the graph." },
-                        { "name": "ele", "descr": "The current element under consideration for filtering (also accessible as `this`)." }
+                        { "name": "ele", "descr": "The current element under consideration for filtering." }
                       ]
                     }
                   ]
@@ -266,7 +266,6 @@
                   "args": [
                     { "name": "events", "descr": "A space separated list of event names." },
                     { "name": "selector", "descr": "A selector to specify elements for which the handler is triggered.", "optional": true },
-                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true },
                     { "name": "function(event)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "event", "descr": "The event object." } ] }
                   ]
                 }
@@ -297,7 +296,6 @@
                   "args": [
                     { "name": "events", "descr": "A space separated list of event names." },
                     { "name": "selector", "descr": "A selector to specify elements for which the handler is triggered.", "optional": true },
-                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true },
                     { "name": "function(event)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "event", "descr": "The event object." } ] }
                   ]
                 }
@@ -334,32 +332,6 @@
                 }
               ],
               "md": "core/trigger"
-            },
-
-            {
-              "name": "cy.onRender",
-              "descr": "Run a handler function every time a frame is rendered.",
-              "formats": [
-                {
-                  "args": [
-                    { "name": "function()", "descr": "The handler function to call on each frame." }
-                  ]
-                }
-              ],
-              "md": "core/onRender"
-            },
-
-            {
-              "name": "cy.offRender",
-              "descr": "Remove handlers function bound via `cy.onRender()`.",
-              "formats": [
-                {
-                  "args": [
-                    { "name": "handler", "descr": "A reference to the handler function to remove.  All handlers are removed if this is unspecified.", "optional": true }
-                  ]
-                }
-              ],
-              "md": "core/offRender"
             },
 
             {
@@ -831,23 +803,7 @@
           "fns": [
             {
               "name": "cy.layout",
-              "descr": "Run a layout, which algorithmically positions the nodes in the graph.",
-              "formats": [
-                {
-                  "args": [
-                    {
-                      "name": "options",
-                      "descr": "The layout options."
-                    }
-                  ]
-                }
-              ],
-              "md": "core/layout"
-            },
-
-            {
-              "name": "cy.makeLayout",
-              "pureAliases": ["cy.createLayout"],
+              "pureAliases": ["cy.createLayout", "cy.makeLayout"],
               "descr": "Get a new layout, which can be used to algorithmically position the nodes in the graph.",
               "formats": [
                 {
@@ -859,7 +815,7 @@
                   ]
                 }
               ],
-              "md": "core/makeLayout"
+              "md": "core/layout"
             }
           ]
         },
@@ -1047,7 +1003,6 @@
                   "args": [
                     { "name": "events", "descr": "A space separated list of event names." },
                     { "name": "selector", "descr": "A delegate selector to specify child elements for which the handler is triggered.", "optional": true },
-                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true },
                     { "name": "function(event)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "event", "descr": "The event object." } ] }
                   ]
                 }
@@ -1078,7 +1033,6 @@
                   "args": [
                     { "name": "events", "descr": "A space separated list of event names." },
                     { "name": "selector", "descr": "A delegate selector to specify child elements for which the handler is triggered.", "optional": true },
-                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true },
                     { "name": "function(event)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "event", "descr": "The event object." } ] }
                   ]
                 }
@@ -1094,7 +1048,6 @@
                   "args": [
                     { "name": "events", "descr": "A space separated list of event names." },
                     { "name": "selector", "descr": "A delegate selector to specify child elements for which the handler is triggered.", "optional": true },
-                    { "name": "data", "descr": "A plain object which is passed to the handler in the event object argument.", "optional": true },
                     { "name": "function(event)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "event", "descr": "The event object." } ] }
                   ]
                 }
@@ -1425,14 +1378,14 @@
               "descr": "Set the (model) positions of several nodes with a function.",
               "formats": [
                 {
-                  "descr": "Set the positions functionally.",
+                  "descr": "Set the positions via a function.",
                   "args": [
                     {
-                      "name": "function(i, ele)",
+                      "name": "function(ele, i)",
                       "descr": "A callback function that returns the position to set for each element.",
                       "fields": [
-                        { "name": "i", "descr": "The index of the element when iterating over the elements in the collection." },
-                        { "name": "ele", "descr": "The element being iterated over for which the function should return a position to set." }
+                        { "name": "ele", "descr": "The element being iterated over for which the function should return a position to set." },
+                        { "name": "i", "descr": "The index of the element when iterating over the elements in the collection." }
                       ]
                     }
                   ]
@@ -1551,8 +1504,7 @@
                       "fields": [
                         { "name": "includeNodes", "descr": "A boolean indicating whether to include nodes in the bounding box (default `true`)." },
                         { "name": "includeEdges", "descr": "A boolean indicating whether to include edges in the bounding box (default `true`)." },
-                        { "name": "includeLabels", "descr": "A boolean indicating whether to include labels in the bounding box (default `true`)." },
-                        { "name": "includeShadows", "descr": "A boolean indicating whether to include shadows in the bounding box (default `true`)." }
+                        { "name": "includeLabels", "descr": "A boolean indicating whether to include labels in the bounding box (default `true`)." }
                       ]
                     }
                   ]
@@ -1576,8 +1528,7 @@
                       "fields": [
                         { "name": "includeNodes", "descr": "A boolean indicating whether to include nodes in the bounding box (default `true`)." },
                         { "name": "includeEdges", "descr": "A boolean indicating whether to include edges in the bounding box (default `true`)." },
-                        { "name": "includeLabels", "descr": "A boolean indicating whether to include labels in the bounding box (default `true`)." },
-                        { "name": "includeShadows", "descr": "A boolean indicating whether to include shadows in the bounding box (default `true`)." }
+                        { "name": "includeLabels", "descr": "A boolean indicating whether to include labels in the bounding box (default `true`)." }
                       ]
                     }
                   ]
@@ -1636,25 +1587,10 @@
         {
           "name": "Layout",
           "fns": [
-            {
-              "name": "eles.layout",
-              "descr": "Run a layout on the elements in the calling collection, algorithmically positioning the nodes.",
-              "formats": [
-                {
-                  "args": [
-                    {
-                      "name": "options",
-                      "descr": "The layout options."
-                    }
-                  ]
-                }
-              ],
-              "md": "collection/layout"
-            },
 
             {
-              "name": "eles.makeLayout",
-              "pureAliases": ["eles.createLayout"],
+              "name": "eles.layout",
+              "pureAliases": ["eles.createLayout", "eles.makeLayout"],
               "descr": "Get a new layout, which can be used to algorithmically position the nodes in the collection.",
               "formats": [
                 {
@@ -1666,7 +1602,7 @@
                   ]
                 }
               ],
-              "md": "collection/makeLayout"
+              "md": "collection/layout"
             },
 
             {
@@ -1685,11 +1621,11 @@
                       "descr": "The layout options object."
                     },
                     {
-                      "name": "function(i, ele)",
+                      "name": "function(ele, i)",
                       "descr": "A function that returns the new position for the specified node.",
                       "fields": [
-                        { "name": "i", "descr": "The index of the current node while iterating over the nodes in the layout." },
-                        { "name": "ele", "descr": "The node being iterated over for which the function should return a position to set." }
+                        { "name": "ele", "descr": "The node being iterated over for which the function should return a position to set." },
+                        { "name": "i", "descr": "The index of the current node while iterating over the nodes in the layout." }
                       ]
                     }
                   ]
@@ -2116,28 +2052,9 @@
             },
 
             {
-              "name": "eles.each",
-              "descr": "Iterate over the elements in the collection.",
-              "formats": [
-                {
-                  "args": [
-                    {
-                      "name": "function(i, ele)",
-                      "descr": "The function executed each iteration.",
-                      "fields": [
-                        { "name": "i", "descr": "The index of the element in the collection." },
-                        { "name": "ele", "descr": "The element at the current index." }
-                      ]
-                    }
-                  ]
-                }
-              ],
-              "md": "collection/each"
-            },
-
-            {
               "name": "eles.forEach",
-              "descr": "Iterate over the elements in the collection using an implementation like the native array function namesake.",
+              "pureAliases": ["eles.each"],
+              "descr": "Iterate over the elements in the collection.",
               "formats": [
                 {
                   "args": [
@@ -2310,28 +2227,32 @@
 
             {
               "name": "eles.filter",
-              "descr": "Get a new collection containing elements that are accepted by the specified filter.",
+              "descr": "Get a new collection containing elements that are accepted by the specified filter function or selector.",
               "formats": [
                 {
-                  "name": "eles.filter",
-                  "descr": "Get the elements that match the specified selector.",
                   "args": [
-                    { "name": "selector", "descr": "The selector to match against." }
+                    {
+                      "name": "function(ele, i, eles)",
+                      "descr": "The filter function that returns truthy values for elements to include and falsey values for elements to exclude.",
+                      "fields": [
+                        { "name": "ele", "descr": "The current element." },
+                        { "name": "i", "descr": "The index of the current element." },
+                        { "name": "eles", "descr": "The collection of elements being filtered." }
+                      ]
+                    },
+                    {
+                      "name": "thisArg",
+                      "descr": "The value for `this` within the iterating function.",
+                      "optional": "true"
+                    }
                   ]
                 },
 
                 {
                   "name": "eles.filter",
-                  "descr": "Get the elements that match the specified filter function.",
+                  "descr": "Get the elements that match the specified selector.",
                   "args": [
-                    {
-                      "name": "function(i, ele)",
-                      "descr": "The filter function that returns true for elements to include.",
-                      "fields": [
-                        { "name": "i", "descr": "The index of the current element being considered." },
-                        { "name": "ele", "descr": "The element being considered." }
-                      ]
-                    }
+                    { "name": "selector", "descr": "The selector to match against." }
                   ]
                 },
 
@@ -2352,33 +2273,6 @@
                 }
               ],
               "md": "collection/filter"
-            },
-
-            {
-              "name": "eles.filterFn",
-              "pureAliases": ["eles.fnFilter", "eles.stdFilter"],
-              "descr": "Get a new collection containing elements that are accepted by the specified filter, using an implementation like the standard array namesake.",
-              "formats": [
-                {
-                  "args": [
-                    {
-                      "name": "function(ele, i, eles)",
-                      "descr": "The filter function that returns truthy values for elements to include and falsey values for elements to exclude.",
-                      "fields": [
-                        { "name": "ele", "descr": "The current element." },
-                        { "name": "i", "descr": "The index of the current element." },
-                        { "name": "eles", "descr": "The collection of elements being filtered." }
-                      ]
-                    },
-                    {
-                      "name": "thisArg",
-                      "descr": "The value for `this` within the iterating function.",
-                      "optional": "true"
-                    }
-                  ]
-                }
-              ],
-              "md": "collection/filterFn"
             },
 
             {
@@ -2749,12 +2643,12 @@
                   "args": [
                     { "name": "options", "fields": [
                       { "name": "root", "descr": "The root nodes (selector or collection) to start the search from." },
-                      { "name": "visit: function(i, depth, v, e, u)", "descr": "A handler function that is called when a node is visited in the search.  The handler returns `true` when it finds the desired node, and it returns `false` to cancel the search.", "optional": true, "fields": [
-                        { "name": "i", "descr": "The index indicating this node is the ith visited node." },
-                        { "name": "depth", "descr": "How many edge hops away this node is from the root nodes." },
+                      { "name": "visit: function(v, e, u, i, depth)", "descr": "A handler function that is called when a node is visited in the search.  The handler returns `true` when it finds the desired node, and it returns `false` to cancel the search.", "optional": true, "fields": [
                         { "name": "v", "descr": "The current node." },
                         { "name": "e", "descr": "The edge connecting the previous node to the current node." },
-                        { "name": "u", "descr": "The previous node." }
+                        { "name": "u", "descr": "The previous node." },
+                        { "name": "i", "descr": "The index indicating this node is the ith visited node." },
+                        { "name": "depth", "descr": "How many edge hops away this node is from the root nodes." }
                       ] },
                       { "name": "directed", "descr": "A boolean indicating whether the algorithm should only go along edges from source to target (default `false`).", "optional": true }
                     ] }
@@ -2773,12 +2667,12 @@
                   "args": [
                     { "name": "options", "fields": [
                       { "name": "root", "descr": "The root nodes (selector or collection) to start the search from." },
-                      { "name": "visit: function(i, depth, v, e, u)", "descr": "A handler function that is called when a node is visited in the search.  The handler returns `true` when it finds the desired node, and it returns `false` to cancel the search.", "optional": true, "fields": [
-                        { "name": "i", "descr": "The index indicating this node is the ith visited node." },
-                        { "name": "depth", "descr": "How many edge hops away this node is from the root nodes." },
+                      { "name": "visit: function(v, e, u, i, depth)", "descr": "A handler function that is called when a node is visited in the search.  The handler returns `true` when it finds the desired node, and it returns `false` to cancel the search.", "optional": true, "fields": [
                         { "name": "v", "descr": "The current node." },
                         { "name": "e", "descr": "The edge connecting the previous node to the current node." },
-                        { "name": "u", "descr": "The previous node." }
+                        { "name": "u", "descr": "The previous node." },
+                        { "name": "i", "descr": "The index indicating this node is the ith visited node." },
+                        { "name": "depth", "descr": "How many edge hops away this node is from the root nodes." }
                       ] },
                       { "name": "directed", "descr": "A boolean indicating whether the algorithm should only go along edges from source to target (default `false`).", "optional": true }
                     ] }
@@ -2796,7 +2690,7 @@
                   "args": [
                     { "name": "options", "fields": [
                       { "name": "root", "descr": "The root node (selector or collection) where the algorithm starts." },
-                      { "name": "weight: function(edge)", "descr": "A function that returns the positive numeric weight for `this` edge.", "optional": true },
+                      { "name": "weight: function(edge)", "descr": "A function that returns the positive numeric weight for the edge.", "optional": true },
                       { "name": "directed", "descr": "A boolean indicating whether the algorithm should only go along edges from source to target (default `false`).", "optional": true }
                     ] }
                   ]
@@ -2814,8 +2708,8 @@
                     { "name": "options", "fields": [
                       { "name": "root", "descr": "The root node (selector or collection) where the search starts." },
                       { "name": "goal", "descr": "The goal node (selector or collection) where the search ends." },
-                      { "name": "weight: function(edge)", "descr": "A function that returns the positive numeric weight for `this` edge.", "optional": true },
-                      { "name": "heuristic: function(node)", "descr": "A function that returns an estimation (cannot be overestimation) on the shortest distance  from the current (`this`) node to the goal.", "optional": true },
+                      { "name": "weight: function(edge)", "descr": "A function that returns the positive numeric weight for the edge.", "optional": true },
+                      { "name": "heuristic: function(node)", "descr": "A function that returns an estimation (cannot be overestimation) on the shortest distance  from the current node to the goal.", "optional": true },
                       { "name": "directed", "descr": "A boolean indicating whether the algorithm should only go along edges from source to target (default `false`).", "optional": true }
                     ] }
                   ]
@@ -2831,7 +2725,7 @@
                 {
                   "args": [
                     { "name": "options", "fields": [
-                      { "name": "weight: function(edge)", "descr": "A function that returns the positive numeric weight for `this` edge.", "optional": true },
+                      { "name": "weight: function(edge)", "descr": "A function that returns the positive numeric weight for the edge.", "optional": true },
                       { "name": "directed", "descr": "A boolean indicating whether the algorithm should only go along edges from source to target (default `false`).", "optional": true }
                     ] }
                   ]
@@ -2848,7 +2742,7 @@
                   "args": [
                     { "name": "options", "fields": [
                       { "name": "root", "descr": "The root node (selector or collection) where the search starts." },
-                      { "name": "weight: function(edge)", "descr": "A function that returns the positive numeric weight for `this` edge.", "optional": true },
+                      { "name": "weight: function(edge)", "descr": "A function that returns the positive numeric weight for the edge.", "optional": true },
                       { "name": "directed", "descr": "A boolean indicating whether the algorithm should only go along edges from source to target (default `false`).", "optional": true }
                     ] }
                   ]
@@ -2863,7 +2757,7 @@
               "formats": [
                 {
                   "args": [
-                    { "name": "function(edge)", "descr": "A function that returns the positive numeric weight for `this` edge.", "optional": true }
+                    { "name": "function(edge)", "descr": "A function that returns the positive numeric weight for the edge.", "optional": true }
                   ]
                 }
               ],
@@ -2902,7 +2796,7 @@
                   "args": [
                     { "name": "options", "fields": [
                       { "name": "root", "descr": "The root node (selector or collection) for which the centrality calculation is made." },
-                      { "name": "weight: function(edge)", "descr": "A function that returns the weight for `this` edge.", "optional": true },
+                      { "name": "weight: function(edge)", "descr": "A function that returns the weight for the edge.", "optional": true },
                       { "name": "alpha", "descr": "The alpha value for the centrality calculation, ranging on [0, 1].  With value 0 (default), disregards edge weights and solely uses number of edges in the centrality calculation.  With value 1, disregards number of edges and solely uses the edge weights in the centrality calculation.", "optional": true },
                       { "name": "directed", "descr": "A boolean indicating whether the directed indegree and outdegree centrality is calculated (`true`) or whether the undirected centrality is calculated (`false`, default).", "optional": true }
                     ] }
@@ -2920,7 +2814,7 @@
                 {
                   "args": [
                     { "name": "options", "fields": [
-                      { "name": "weight: function(edge)", "descr": "A function that returns the weight for `this` edge.", "optional": true },
+                      { "name": "weight: function(edge)", "descr": "A function that returns the weight for the edge.", "optional": true },
                       { "name": "alpha", "descr": "The alpha value for the centrality calculation, ranging on [0, 1].  With value 0 (default), disregards edge weights and solely uses number of edges in the centrality calculation.  With value 1, disregards number of edges and solely uses the edge weights in the centrality calculation.", "optional": true },
                       { "name": "directed", "descr": "A boolean indicating whether the directed indegree and outdegree centrality is calculated (`true`) or whether the undirected centrality is calculated (`false`, default).", "optional": true }
                     ] }
@@ -2939,7 +2833,7 @@
                   "args": [
                     { "name": "options", "fields": [
                       { "name": "root", "descr": "The root node (selector or collection) for which the centrality calculation is made." },
-                      { "name": "weight: function(edge)", "descr": "A function that returns the weight for `this` edge.", "optional": true },
+                      { "name": "weight: function(edge)", "descr": "A function that returns the weight for the edge.", "optional": true },
                       { "name": "directed", "descr": "A boolean indicating whether the algorithm operates on edges in a directed manner from source to target (`true`) or whether the algorithm operates in an undirected manner (`false`, default).", "optional": true },
                       { "name": "harmonic", "descr": "A boolean indicating whether the algorithm calculates the harmonic mean (`true`, default) or the arithmetic mean (`false`) of distances.  The harmonic mean is very useful for graphs that are not strongly connected.", "optional": true }
                     ] }
@@ -2957,7 +2851,7 @@
                 {
                   "args": [
                     { "name": "options", "fields": [
-                      { "name": "weight: function(edge)", "descr": "A function that returns the weight for `this` edge.", "optional": true },
+                      { "name": "weight: function(edge)", "descr": "A function that returns the weight for the edge.", "optional": true },
                       { "name": "directed", "descr": "A boolean indicating whether the algorithm operates on edges in a directed manner from source to target (`true`) or whether the algorithm operates in an undirected manner (`false`, default).", "optional": true },
                       { "name": "harmonic", "descr": "A boolean indicating whether the algorithm calculates the harmonic mean (`true`, default) or the arithmetic mean (`false`) of distances.  The harmonic mean is very useful for graphs that are not strongly connected.", "optional": true }
                     ] }
@@ -2975,7 +2869,7 @@
                 {
                   "args": [
                     { "name": "options", "fields": [
-                      { "name": "weight: function(edge)", "descr": "A function that returns the weight for `this` edge.", "optional": true },
+                      { "name": "weight: function(edge)", "descr": "A function that returns the weight for the edge.", "optional": true },
                       { "name": "directed", "descr": "A boolean indicating whether the algorithm operates on edges in a directed manner from source to target (`true`) or whether the algorithm operates in an undirected manner (`false`, default).", "optional": true }
                     ] }
                   ]

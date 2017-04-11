@@ -8,7 +8,7 @@ The semantics is a bit more complicated for compound nodes where a delegate sele
 
 ```js
 cy.$('node').one('tap', function(e){
-  var ele = e.cyTarget;
+  var ele = e.target;
   console.log('tapped ' + ele.id());
 });
 ```

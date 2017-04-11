@@ -50,20 +50,6 @@ describe('Collection iteration', function(){
     expect( cy.$('node').nonempty() ).to.be.true;
   });
 
-  it('eles.each()', function(){
-    var count = 0;
-
-    cy.nodes().each(function( i, ele ){
-      expect( is.elementOrCollection(this) ).to.be.true;
-      expect( is.elementOrCollection(ele) ).to.be.true;
-      expect( i ).to.equal( count );
-
-      count++;
-    });
-
-    expect( count ).to.equal(3);
-  });
-
   it('eles.forEach()', function(){
     var count = 0;
 

@@ -1639,6 +1639,23 @@
                 }
               ],
               "md": "collection/layoutPositions"
+            },
+
+            {
+              "name": "nodes.layoutDimensions",
+              "descr": "Returns the node width and height",
+              "extFn": true,
+              "formats": [
+                {
+                  "args": [
+                    {
+                      "name": "options",
+                      "descr": "The layout options object."
+                    }
+                  ]
+                }
+              ],
+              "md": "collection/layoutDimensions"
             }
           ]
         },

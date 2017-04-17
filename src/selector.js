@@ -233,22 +233,24 @@ var Selector = function( selector ){
     // when a token like a variable has escaped meta characters, we need to clean the backslashes out
     // so that values get compared properly in Selector.filter()
     var cleanMetaChars = function( str ){
-      return str.replace( new RegExp( '\\\\(' + tokens.metaChar + ')', 'g' ), function( match, $1, offset, original ){
+      return str.replace( new RegExp( '\\\\(' + tokens.metaChar + ')', 'g' ), function( match, $1 ){
         return $1;
       } );
     };
 
+    var ops, op, i;
+
     // add @ variants to comparatorOp
-    var ops = tokens.comparatorOp.split( '|' );
-    for( var i = 0; i < ops.length; i++ ){
-      var op = ops[ i ];
+    ops = tokens.comparatorOp.split( '|' );
+    for( i = 0; i < ops.length; i++ ){
+      op = ops[ i ];
       tokens.comparatorOp += '|@' + op;
     }
 
     // add ! variants to comparatorOp
-    var ops = tokens.comparatorOp.split( '|' );
-    for( var i = 0; i < ops.length; i++ ){
-      var op = ops[ i ];
+    ops = tokens.comparatorOp.split( '|' );
+    for( i = 0; i < ops.length; i++ ){
+      op = ops[ i ];
 
       if( op.indexOf( '!' ) >= 0 ){ continue; } // skip ops that explicitly contain !
       if( op === '=' ){ continue; } // skip = b/c != is explicitly defined
@@ -415,7 +417,8 @@ var Selector = function( selector ){
 
     self._private.selectorText = selector;
     var remaining = selector;
-    var i = 0;
+
+    i = 0;
 
     // of all the expressions, find the first match in the remaining text
     var consumeExpr = function( expectation ){
@@ -463,6 +466,8 @@ var Selector = function( selector ){
 
     self[0] = newQuery(); // get started
 
+    var j;
+
     consumeWhitespace(); // get rid of leading whitespace
     for( ;; ){
       var check = consumeExpr();
@@ -472,7 +477,7 @@ var Selector = function( selector ){
         return;
       } else {
         var args = [];
-        for( var j = 1; j < check.match.length; j++ ){
+        for( j = 1; j < check.match.length; j++ ){
           args.push( check.match[ j ] );
         }
 
@@ -493,7 +498,7 @@ var Selector = function( selector ){
     self.length = i + 1;
 
     // adjust references for subject
-    for( var j = 0; j < self.length; j++ ){
+    for( j = 0; j < self.length; j++ ){
       var query = self[ j ];
 
       if( query.subject != null ){
@@ -547,23 +552,22 @@ selfn.eq = function( i ){
 };
 
 var queryMatches = function( query, ele ){
-  var ele_p = ele._private;
-
   // make single group-only selectors really cheap to check since they're the most common ones
   if( query.groupOnly ){
-    return query.group === '*' || query.group === ele_p.group;
+    return query.group === '*' || query.group === ele.group();
   }
 
   // check group
-  if( query.group != null && query.group != '*' && query.group != ele_p.group ){
+  if( query.group != null && query.group != '*' && query.group != ele.group() ){
     return false;
   }
 
   var cy = ele.cy();
+  var k;
 
   // check colon selectors
   var allColonSelectorsMatch = true;
-  for( var k = 0; k < query.colonSelectors.length; k++ ){
+  for( k = 0; k < query.colonSelectors.length; k++ ){
     var sel = query.colonSelectors[ k ];
 
     allColonSelectorsMatch = stateSelectorMatches( sel, ele );
@@ -574,9 +578,9 @@ var queryMatches = function( query, ele ){
 
   // check id
   var allIdsMatch = true;
-  for( var k = 0; k < query.ids.length; k++ ){
+  for( k = 0; k < query.ids.length; k++ ){
     var id = query.ids[ k ];
-    var actualId = ele_p.data.id;
+    var actualId = ele.id();
 
     allIdsMatch = allIdsMatch && (id == actualId);
 
@@ -586,7 +590,7 @@ var queryMatches = function( query, ele ){
 
   // check classes
   var allClassesMatch = true;
-  for( var k = 0; k < query.classes.length; k++ ){
+  for( k = 0; k < query.classes.length; k++ ){
     var cls = query.classes[ k ];
 
     allClassesMatch = allClassesMatch && ele.hasClass( cls );
@@ -604,10 +608,9 @@ var queryMatches = function( query, ele ){
       var value = data.value;
       var field = data.field;
       var matches;
+      var fieldVal = params.fieldValue( field );
 
       if( operator != null && value != null ){
-
-        var fieldVal = params.fieldValue( field );
         var fieldStr = !is.string( fieldVal ) && !is.number( fieldVal ) ? '' : '' + fieldVal;
         var valStr = '' + value;
 
@@ -676,17 +679,17 @@ var queryMatches = function( query, ele ){
       } else if( operator != null ){
         switch( operator ){
         case '?':
-          matches = params.fieldTruthy( field );
+          matches = fieldVal ? true : false;
           break;
         case '!':
-          matches = !params.fieldTruthy( field );
+          matches = fieldVal ? false : true;
           break;
         case '^':
-          matches = params.fieldUndefined( field );
+          matches = fieldVal === undefined;
           break;
         }
       } else {
-        matches = !params.fieldUndefined( field );
+        matches = fieldVal !== undefined;
       }
 
       if( !matches ){
@@ -702,16 +705,7 @@ var queryMatches = function( query, ele ){
   var allDataMatches = operandsMatch( {
     name: 'data',
     fieldValue: function( field ){
-      return ele_p.data[ field ];
-    },
-    fieldUndefined: function( field ){
-      return ele_p.data[ field ] === undefined;
-    },
-    fieldTruthy: function( field ){
-      if( ele_p.data[ field ] ){
-        return true;
-      }
-      return false;
+      return ele.data( field );
     }
   } );
 
@@ -724,15 +718,6 @@ var queryMatches = function( query, ele ){
     name: 'meta',
     fieldValue: function( field ){
       return ele[ field ]();
-    },
-    fieldUndefined: function( field ){
-      return ele[ field ]() == null;
-    },
-    fieldTruthy: function( field ){
-      if( ele[ field ]() ){
-        return true;
-      }
-      return false;
     }
   } );
 
@@ -814,7 +799,7 @@ selfn.filter = function( collection ){
     return collection.getElementById( self[0].ids[0] ).collection();
   }
 
-  var selectorFunction = function( element, i ){
+  var selectorFunction = function( element ){
     for( var j = 0; j < self.length; j++ ){
       var query = self[ j ];
 
@@ -882,6 +867,7 @@ selfn.toString = selfn.selector = function(){
 
   var queryToString = function( query ){
     var str = '';
+    var j, sel;
 
     if( query.subject === query ){
       str += '$';
@@ -890,7 +876,7 @@ selfn.toString = selfn.selector = function(){
     var group = clean( query.group );
     str += group.substring( 0, group.length - 1 );
 
-    for( var j = 0; j < query.data.length; j++ ){
+    for( j = 0; j < query.data.length; j++ ){
       var data = query.data[ j ];
 
       if( data.value ){
@@ -900,23 +886,23 @@ selfn.toString = selfn.selector = function(){
       }
     }
 
-    for( var j = 0; j < query.meta.length; j++ ){
+    for( j = 0; j < query.meta.length; j++ ){
       var meta = query.meta[ j ];
       str += '[[' + meta.field + space( clean( meta.operator ) ) + cleanVal( meta.value ) + ']]';
     }
 
-    for( var j = 0; j < query.colonSelectors.length; j++ ){
-      var sel = query.colonSelectors[ i ];
+    for( j = 0; j < query.colonSelectors.length; j++ ){
+      sel = query.colonSelectors[ i ];
       str += sel;
     }
 
-    for( var j = 0; j < query.ids.length; j++ ){
-      var sel = '#' + query.ids[ i ];
+    for( j = 0; j < query.ids.length; j++ ){
+      sel = '#' + query.ids[ i ];
       str += sel;
     }
 
-    for( var j = 0; j < query.classes.length; j++ ){
-      var sel = '.' + query.classes[ j ];
+    for( j = 0; j < query.classes.length; j++ ){
+      sel = '.' + query.classes[ j ];
       str += sel;
     }
 

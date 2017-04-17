@@ -1642,8 +1642,8 @@
             },
 
             {
-              "name": "nodes.layoutDimensions",
-              "descr": "Returns the node width and height",
+              "name": "node.layoutDimensions",
+              "descr": "Returns the node width and height. Meant for use in layout positioning to do overlap detection.",
               "extFn": true,
               "formats": [
                 {

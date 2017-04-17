@@ -35,6 +35,10 @@ describe('Collection compound nodes', function(){
     });
   });
 
+  afterEach(function(){
+    cy.destroy();
+  });
+
   it('node.isParent()', function(){
     expect( n1.isParent() ).to.be.true;
     expect( n3.isParent() ).to.be.false;

@@ -12,7 +12,6 @@ var options = {
   eles: someCollection, // collection of elements involved in the layout; set by cy.layout() or eles.layout()
   fit: true, // whether to fit the viewport to the graph
   padding: 30, // padding to leave between graph and viewport
-  nodeDimensionsIncludeLabels: false, // Boolean which changes whether label dimensions are included when calculating node dimensions
   pan: undefined, // pan the graph to the provided position, given as { x, y }
   ready: undefined, // callback for the layoutready event
   stop: undefined, // callback for the layoutstop event

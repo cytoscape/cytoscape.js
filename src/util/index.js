@@ -46,6 +46,10 @@ var util = {
     }
   },
 
+  clonePosition: function( pos ){
+    return { x: pos.x, y: pos.y };
+  },
+
   uuid: function(
       a,b                // placeholders
   ){
@@ -78,7 +82,7 @@ util.staticEmptyObject = function(){
   return util._staticEmptyObject;
 };
 
-util.extend = Object.assign != null ? Object.assign : function( tgt ){
+util.extend = Object.assign != null ? Object.assign.bind( Object ) : function( tgt ){
   var args = arguments;
 
   for( var i = 1; i < args.length; i++ ){

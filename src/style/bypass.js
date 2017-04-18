@@ -38,9 +38,11 @@ styfn.applyBypass = function( eles, name, value, updateTransitions ){
     var specifiedProps = name;
     updateTransitions = value;
 
-    for( var i = 0; i < self.properties.length; i++ ){
-      var prop = self.properties[ i ];
-      var name = prop.name;
+    var names = Object.keys( specifiedProps );
+
+    for( var i = 0; i < names.length; i++ ){
+      var name = names[i];
+      var prop = self.properties[ name ];
       var value = specifiedProps[ name ];
 
       if( value === undefined ){ // try camel case name too

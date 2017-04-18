@@ -652,6 +652,12 @@ var define = {
 
       properties = util.extend( {}, properties, params );
 
+      var propertiesEmpty = Object.keys( properties ).length === 0;
+
+      if( propertiesEmpty ){
+        return new Animation( all[0], properties ); // nothing to animate
+      }
+
       if( properties.duration === undefined ){
         properties.duration = 400;
       }
@@ -663,12 +669,6 @@ var define = {
       case 'fast':
         properties.duration = 200;
         break;
-      }
-
-      var propertiesEmpty = Object.keys( properties ).length === 0;
-
-      if( propertiesEmpty ){
-        return new Animation( all[0], properties ); // nothing to animate
       }
 
       if( isEles ){

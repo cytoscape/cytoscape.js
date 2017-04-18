@@ -5,10 +5,6 @@ var is = require( './is' );
 var Promise = require( './promise' );
 
 var Animation = function( target, opts, opts2 ){
-  if( !(this instanceof Animation) ){
-    return new Animation( target, opts, opts2 );
-  }
-
   var _p = this._private = util.extend( {
     duration: 1000
   }, opts, opts2 );
@@ -181,6 +177,8 @@ util.extend( anifn, {
     var swap = function( a, b ){
       var _pa = _p[ a ];
 
+      if( _pa == null ){ return; }
+
       _p[ a ] = _p[ b ];
       _p[ b ] = _pa;
     };
@@ -190,13 +188,15 @@ util.extend( anifn, {
     swap( 'position', 'startPosition' );
 
     // swap styles
-    for( var i = 0; i < _p.style.length; i++ ){
-      var prop = _p.style[ i ];
-      var name = prop.name;
-      var startStyleProp = _p.startStyle[ name ];
+    if( _p.style ){
+      for( var i = 0; i < _p.style.length; i++ ){
+        var prop = _p.style[ i ];
+        var name = prop.name;
+        var startStyleProp = _p.startStyle[ name ];
 
-      _p.startStyle[ name ] = prop;
-      _p.style[ i ] = startStyleProp;
+        _p.startStyle[ name ] = prop;
+        _p.style[ i ] = startStyleProp;
+      }
     }
 
     if( wasPlaying ){

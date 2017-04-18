@@ -8,8 +8,8 @@ describe('Collection style', function(){
   var useFn = function( fn ){
     return function( arg ){
       return fn( arg );
-    }
-  }
+    };
+  };
 
   // test setup
   beforeEach(function(){
@@ -33,14 +33,14 @@ describe('Collection style', function(){
         {
           selector: '#n1',
           style: {
-            label: useFn(function(){ return 'n1' })
+            label: useFn(function(){ return 'n1'; })
           }
         },
 
         {
           selector: '#n2',
           style: {
-            label: useFn(function(){ return 'n2' })
+            label: useFn(function(){ return 'n2'; })
           }
         }
       ]
@@ -728,7 +728,7 @@ describe('Collection style', function(){
       });
     });
 
-    it('ani progresses from 0 to 1', function( next ){
+    it('ani progresses from 0 to 1', function(){
       var ani = n1.animation({
         style: { width: 200 },
         duration: 100
@@ -736,14 +736,12 @@ describe('Collection style', function(){
 
       expect( ani.progress() ).to.equal(0);
 
-      ani.play().promise().then(function(){
+      return ani.play().promise().then(function(){
         expect( ani.progress() ).to.equal(1);
-
-        next();
       });
     });
 
-    it('ani.rewind() works', function( next ){
+    it('ani.rewind() works', function(){
       var ani = n1.style({
         width: 100
       }).animation({
@@ -751,19 +749,17 @@ describe('Collection style', function(){
         duration: 100
       });
 
-      ani.play().promise().then(function(){
+      return ani.play().promise().then(function(){
         expect( ani.progress() ).to.equal(1);
         expect( parseFloat(n1.style().width) ).to.equal(200);
 
         ani.rewind();
 
         expect( ani.progress() ).to.equal(0);
-
-        next();
       });
     });
 
-    it('ani.rewind() plays again from start', function( next ){
+    it('ani.rewind() plays again from start', function(){
       var ani = n1.style({
         width: 100
       }).animation({
@@ -771,7 +767,7 @@ describe('Collection style', function(){
         duration: 100
       });
 
-      ani.play().promise().then(function(){
+      return ani.play().promise().then(function(){
         expect( ani.progress() ).to.equal(1);
         expect( parseFloat(n1.style().width) ).to.equal(200);
 
@@ -783,12 +779,10 @@ describe('Collection style', function(){
       }).then(function(){
         expect( ani.progress() ).to.equal(1);
         expect( parseFloat(n1.style().width) ).to.equal(200);
-
-        next();
       });
     });
 
-    it('ani.reverse()', function(next){
+    it('ani.reverse()', function(){
       var ani = n1.style({
         width: 100
       }).animation({
@@ -796,7 +790,7 @@ describe('Collection style', function(){
         duration: 100
       });
 
-      ani.play().promise().then(function(){
+      return ani.play().promise().then(function(){
         expect( ani.progress() ).to.equal(1);
         expect( parseFloat(n1.style().width) ).to.equal(200);
 
@@ -806,12 +800,48 @@ describe('Collection style', function(){
       }).then(function(){
         expect( ani.progress() ).to.equal(1);
         expect( parseFloat(n1.style().width) ).to.equal(100);
-
-         next();
       });
     });
 
-    it('ani.apply()', function(next){
+    it('ani.reverse() does not affect second animation', function(){
+      var a1 = n1.animation({
+        style: {
+          'width': 100,
+          'height': 100
+        },
+        duration: 100
+      });
+
+      var p1 = {
+        x: n1.position().x,
+        y: n1.position().y
+      };
+
+      var p2 = {
+        x: 1000,
+        y: 1000
+      };
+
+      var a2 = n1.animation({
+        position: {
+          x: p2.x,
+          y: p2.x
+        },
+        duration: 50
+      });
+
+      a2.play();
+
+      return a1.play().promise().then(function(){
+        return a1.reverse().play().promise();
+      }).then(function(){
+        var p = n1.position();
+
+        expect( p ).to.deep.equal( p2 );
+      });
+    });
+
+    it('ani.apply()', function(){
       var ani = n1.style({
         width: 100
       }).animation({
@@ -819,10 +849,8 @@ describe('Collection style', function(){
         duration: 100
       });
 
-      ani.progress(0.5).apply().promise('frame').then(function(){
+      return ani.progress(0.5).apply().promise('frame').then(function(){
         expect( parseFloat(n1.style('width')) ).to.equal(150);
-
-        next();
       });
 
     });

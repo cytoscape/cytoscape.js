@@ -4,15 +4,13 @@
 <link href="style.css" rel="stylesheet" />
 <meta charset=utf-8 />
 <title>AngularJS example</title>
-<script src="http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
 <script src="../../js/cytoscape.min.js"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.16/angular.min.js"></script>
-<script src="code.js"></script>
 </head>
 <body ng-app="app">
   <div id="logo"></div>
   <div id="cy"></div>
-  
+
   <table id="people-table" ng-controller="PeopleCtrl">
     <tbody>
       <tr>
@@ -25,5 +23,7 @@
       </tr>
     </tbody>
   </table>
+  <!-- Load appplication code at the end to ensure DOM is loaded -->
+  <script src="code.js"></script>
 </body>
 </html>

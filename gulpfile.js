@@ -571,7 +571,7 @@ gulp.task('pubpush', $.shell.task( replaceShellVars([
 ]) ));
 
 gulp.task('publish', function(next){
-  runSequence('confver', 'pubprep', 'tag', 'docspush', 'npm', next);
+  runSequence('confver', 'pubprep', 'tag', 'npm', next);
 });
 
 gulp.task('tag', $.shell.task( replaceShellVars([

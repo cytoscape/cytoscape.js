@@ -20,4 +20,4 @@ var options = {
 }
 ```
 
-Note that if `fit` is true, it will override any values provided in `pan` or `zoom`. 
+Note that if `fit` is true, it will override any values provided in `pan` or `zoom`.

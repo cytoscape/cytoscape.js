@@ -13,9 +13,10 @@ var defaults = {
   minNodeSpacing: 10, // min spacing between outside of nodes (used for radius adjustment)
   boundingBox: undefined, // constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
   avoidOverlap: true, // prevents node overlap, may overflow boundingBox if not enough space
+  nodeDimensionsIncludeLabels: false, // Excludes the label when calculating node bounding boxes for the layout algorithm
   height: undefined, // height of layout area (overrides container height)
   width: undefined, // width of layout area (overrides container width)
-  spacingFactor: undefined, // Applies a multiplicative factor (>0) to expand or compress the overall area that the nodes take up  
+  spacingFactor: undefined, // Applies a multiplicative factor (>0) to expand or compress the overall area that the nodes take up
   concentric: function( node ){ // returns numeric value for each node, placing higher nodes in levels towards the centre
     return node.degree();
   },
@@ -78,7 +79,7 @@ ConcentricLayout.prototype.run = function(){
   // calculate max size now based on potentially updated mappers
   for( var i = 0; i < nodes.length; i++ ){
     var node = nodes[ i ];
-    var nbb = node.boundingBox();
+    var nbb = node.layoutDimensions( options );
 
     maxNodeSize = Math.max( maxNodeSize, nbb.w, nbb.h );
   }

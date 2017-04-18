@@ -14,6 +14,8 @@ var cy = cytoscape({
 });
 ```
 
+Note that in order to guarantee custom font usage, the fonts in question must be loaded before Cytoscape is initialised.
+
 The following sections go over the options in more detail.
 
 

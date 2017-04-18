@@ -12,6 +12,7 @@ var defaults = {
   spacingFactor: 1.75, // positive spacing factor, larger => more space between nodes (N.B. n/a if causes overlap)
   boundingBox: undefined, // constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
   avoidOverlap: true, // prevents node overlap, may overflow boundingBox if not enough space
+  nodeDimensionsIncludeLabels: false, // Excludes the label when calculating node bounding boxes for the layout algorithm
   roots: undefined, // the roots of the trees
   maximalAdjustments: 0, // how many times to try to position the nodes in a maximal way (i.e. no backtracking)
   animate: false, // whether to transition the node positions
@@ -274,7 +275,7 @@ BreadthFirstLayout.prototype.run = function(){
   if( options.avoidOverlap ){
     for( var i = 0; i < nodes.length; i++ ){
       var n = nodes[ i ];
-      var nbb = n.boundingBox();
+      var nbb = n.layoutDimensions( options );
       var w = nbb.w;
       var h = nbb.h;
 

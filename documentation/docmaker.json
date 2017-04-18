@@ -1639,6 +1639,23 @@
                 }
               ],
               "md": "collection/layoutPositions"
+            },
+
+            {
+              "name": "node.layoutDimensions",
+              "descr": "Returns the node width and height. Meant for use in layout positioning to do overlap detection.",
+              "extFn": true,
+              "formats": [
+                {
+                  "args": [
+                    {
+                      "name": "options",
+                      "descr": "The layout options object."
+                    }
+                  ]
+                }
+              ],
+              "md": "collection/layoutDimensions"
             }
           ]
         },

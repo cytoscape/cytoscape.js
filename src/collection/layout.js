@@ -6,6 +6,22 @@ var Promise = require('../promise');
 var math = require('../math');
 
 var elesfn = ({
+  // Calculates and returns node dimensions { x, y } based on options given
+  layoutDimensions: function( options ){
+    if( options.nodeDimensionsIncludeLabels ){
+      var bbDim = this.boundingBox();
+      return {
+        w: bbDim.w,
+        h: bbDim.h
+      };
+    }
+    else {
+      return {
+        w: this.outerWidth(),
+        h: this.outerHeight()
+      };
+    }
+  },
 
   // using standard layout options, apply position function (w/ or w/o animation)
   layoutPositions: function( layout, options, fn ){

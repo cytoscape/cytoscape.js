@@ -47,6 +47,9 @@ var defaults = {
   // Constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
   boundingBox: undefined,
 
+  // Excludes the label when calculating node bounding boxes for the layout algorithm
+  nodeDimensionsIncludeLabels: false,
+
   // Randomize the initial positions of the nodes (true) or use existing positions (false)
   randomize: false,
 
@@ -1004,7 +1007,7 @@ var createLayoutInfo = function( cy, layout, options ){
   // Iterate over all nodes, creating layout nodes
   for( var i = 0; i < layoutInfo.nodeSize; i++ ){
     var n = nodes[ i ];
-    var nbb = n.boundingBox();
+    var nbb = n.layoutDimensions( options );
 
     var tempNode        = {};
     tempNode.isLocked   = n.locked();

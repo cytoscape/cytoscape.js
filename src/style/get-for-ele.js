@@ -98,7 +98,9 @@ styfn.getPropsList = function( propsObj ){
       var prop = props[ name ] || props[ util.camel2dash( name ) ];
       var styleProp = this.parse( prop.name, val );
 
-      rstyle.push( styleProp );
+      if( styleProp ){
+        rstyle.push( styleProp );
+      }
     }
   }
 

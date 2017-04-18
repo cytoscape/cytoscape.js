@@ -356,8 +356,7 @@ var parseImpl = function( name, value, propIsBypass, propIsFlat ){
       name: name,
       value: tuple,
       strValue: '' + value,
-      bypass: propIsBypass,
-      roundValue: true
+      bypass: propIsBypass
     };
 
   } else if( type.regex || type.regexes ){

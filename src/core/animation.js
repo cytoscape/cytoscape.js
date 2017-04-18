@@ -34,6 +34,8 @@ var corefn = ({
 
     if( !cy.styleEnabled() ){ return; } // save cycles when no style used
 
+    var style = cy.style();
+
     // NB the animation loop will exec in headless environments if style enabled
     // and explicit cy.destroy() is necessary to stop the loop
 
@@ -183,7 +185,6 @@ var corefn = ({
       var isCore = is.core( self );
       var isEles = !isCore;
       var ele = self;
-      var style = cy._private.style;
       var ani_p = ani._private;
 
       if( isEles ){
@@ -213,7 +214,6 @@ var corefn = ({
     }
 
     function step( self, ani, now, isCore ){
-      var style = cy._private.style;
       var isEles = !isCore;
       var _p = self._private;
       var ani_p = ani._private;
@@ -532,7 +532,32 @@ var corefn = ({
       }
     };
 
+    function getEasedValue( type, start, end, percent, easingFn ){
+      var val = easingFn( start, end, percent );
+
+      if( type == null ){
+        return val;
+      }
+
+      if( type.roundValue || type.color ){
+        val = Math.round( val );
+      }
+
+      if( type.min !== undefined ){
+        val = Math.max( val, type.min );
+      }
+
+      if( type.max !== undefined ){
+        val = Math.min( val, type.max );
+      }
+
+      return val;
+    }
+
     function ease( startProp, endProp, percent, easingFn ){
+      var propSpec = startProp.name != null ? style.properties[ startProp.name ] : null;
+      var type = propSpec != null ? propSpec.type : null;
+
       if( percent < 0 ){
         percent = 0;
       } else if( percent > 1 ){
@@ -554,7 +579,7 @@ var corefn = ({
       }
 
       if( is.number( start ) && is.number( end ) ){
-        return easingFn( start, end, percent );
+        return getEasedValue( type, start, end, percent, easingFn );
 
       } else if( is.array( start ) && is.array( end ) ){
         var easedArr = [];
@@ -564,9 +589,7 @@ var corefn = ({
           var ei = end[ i ];
 
           if( si != null && ei != null ){
-            var val = easingFn( si, ei, percent );
-
-            if( startProp.roundValue ){ val = Math.round( val ); }
+            var val = getEasedValue( type, si, ei, percent, easingFn );
 
             easedArr.push( val );
           } else {

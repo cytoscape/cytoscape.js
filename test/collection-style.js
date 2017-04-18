@@ -42,6 +42,16 @@ describe('Collection style', function(){
           style: {
             label: useFn(function(){ return 'n2'; })
           }
+        },
+
+        {
+          selector: '.transition',
+          style: {
+            'width': 300,
+            'transition-property': 'width',
+            'transition-timing-function': 'linear',
+            'transition-duration': 50
+          }
         }
       ]
     });
@@ -870,6 +880,19 @@ describe('Collection style', function(){
         });
       }, 100);
 
+    });
+
+    it('ani.play() not stopped by stylesheet transition', function(){
+      var n = n1;
+
+      n.addClass('transition', 100);
+
+      return n.animation({
+        position: { x: 50, y: 50 },
+        duration: 300
+      }).play().promise().then(function(){
+        expect( n.width() ).to.equal( 300 );
+      });
     });
 
   });

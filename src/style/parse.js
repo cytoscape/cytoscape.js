@@ -373,8 +373,7 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
       value: tuple,
       pfValue: tuple,
       strValue: '' + value,
-      bypass: propIsBypass,
-      roundValue: true
+      bypass: propIsBypass
     };
 
   } else if( type.regex || type.regexes ){

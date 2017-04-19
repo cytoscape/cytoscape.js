@@ -1,11 +1,11 @@
-$(function(){ // on dom ready
+cytoscape({
+  container: document.getElementById('cy'),
 
-$('#cy').cytoscape({
   layout: {
     name: 'cose',
     padding: 10
   },
-  
+
   style: cytoscape.stylesheet()
     .selector('node')
       .css({
@@ -43,7 +43,7 @@ $('#cy').cytoscape({
         'opacity': 0.25,
         'text-opacity': 0
       }),
-  
+
   elements: {
     nodes: [
       { data: { id: 'j', name: 'Jerry', weight: 65, faveColor: '#6FB1FC', faveShape: 'triangle' } },
@@ -55,23 +55,19 @@ $('#cy').cytoscape({
       { data: { source: 'j', target: 'e', faveColor: '#6FB1FC', strength: 90 } },
       { data: { source: 'j', target: 'k', faveColor: '#6FB1FC', strength: 70 } },
       { data: { source: 'j', target: 'g', faveColor: '#6FB1FC', strength: 80 } },
-     
+
       { data: { source: 'e', target: 'j', faveColor: '#EDA1ED', strength: 95 } },
       { data: { source: 'e', target: 'k', faveColor: '#EDA1ED', strength: 60 }, classes: 'questionable' },
-      
+
       { data: { source: 'k', target: 'j', faveColor: '#86B342', strength: 100 } },
       { data: { source: 'k', target: 'e', faveColor: '#86B342', strength: 100 } },
       { data: { source: 'k', target: 'g', faveColor: '#86B342', strength: 100 } },
-      
+
       { data: { source: 'g', target: 'j', faveColor: '#F5A45D', strength: 90 } }
     ]
   },
-  
+
   ready: function(){
     window.cy = this;
-    
-    // giddy up
   }
 });
-
-}); // on dom ready

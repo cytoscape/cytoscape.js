@@ -191,25 +191,34 @@ Compound parent sizing:
 
 ## Background image
 
-One or more background images may be applied to a node's body:
+A background image may be applied to a node's body.  The following properties support multiple values (space separated or array) with associated indices.
 
- * **`background-image`** : The URL that points to the image that should be used as the node's background.  PNG, JPG, and SVG are supported formats.  You may use a [data URI](https://en.wikipedia.org/wiki/Data_URI_scheme) to use embedded images, thereby saving a HTTP request. Can specify multiple background images by separating each image with a space (space delimited format), but if setting properties using a JSON object, then using arrays are preferred. The images will be applied to the node's body in the order given, layering one on top of each other. When specifying properties for multiple images, if the property for a given image is not provided, then the default value is used as fallback.
- * **`background-image-crossorigin`** : All images are loaded with a [`crossorigin`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/img#attr-crossorigin) attribute which may be `anonymous` or `use-credentials`. The default is set to `anonymous`. Can specify more than one property for multiple background images, where the index of the property corresponds with the index of the image it is applied to.
- * **`background-image-opacity`** : The opacity of the background image. Can specify more than one property for multiple background images, where the index of the property corresponds with the index of the image it is applied to.
- * **`background-width`** : Specifies the width of the image.  A percent value (e.g. `50%`) may be used to set the image width relative to the node width.  If used in combination with `background-fit`, then this value overrides the width of the image in calculating the fitting --- thereby overriding the aspect ratio.  The `auto` value is used by default, which uses the width of the image. Can specify more than one property for multiple background images, where the index of the property corresponds with the index of the image it is applied to.
- * **`background-height`** : Specifies the height of the image.  A percent value (e.g. `50%`) may be used to set the image height relative to the node height.  If used in combination with `background-fit`, then this value overrides the height of the image in calculating the fitting --- thereby overriding the aspect ratio.  The `auto` value is used by default, which uses the height of the image. Can specify more than one property for multiple background images, where the index of the property corresponds with the index of the image it is applied to.
- * **`background-fit`** : How the background image is fit to the node; may be `none` for original size, `contain` to fit inside node, or `cover` to cover the node. Can specify more than one property for multiple background images, where the index of the property corresponds with the index of the image it is applied to.
- * **`background-repeat`** : Whether to repeat the background image; may be `no-repeat`, `repeat-x`, `repeat-y`, or `repeat`. Can specify more than one property for multiple background images, where the index of the property corresponds with the index of the image it is applied to.
- * **`background-position-x`** : The x position of the background image, measured in percent (e.g. `50%`) or pixels (e.g. `10px`). Can specify more than one property for multiple background images, where the index of the property corresponds with the index of the image it is applied to.
- * **`background-position-y`** : The y position of the background image, measured in percent (e.g. `50%`) or pixels (e.g. `10px`). Can specify more than one property for multiple background images, where the index of the property corresponds with the index of the image it is applied to.
+ * **`background-image`** : The URL that points to the image that should be used as the node's background.  PNG, JPG, and SVG are supported formats.  
+  * You may use a [data URI](https://en.wikipedia.org/wiki/Data_URI_scheme) to use embedded images, thereby saving a HTTP request.
+  * Can specify multiple background images by separating each image with a space (space delimited format), but if using a non-string stylesheet, then using arrays are preferred.
+    * The images will be applied to the node's body in the order given, layering one on top of each other.
+    * When specifying properties for multiple images, if the property for a given image is not provided, then the default value is used as fallback.
+ * ** `background-image-crossorigin`**: All images are loaded with a [`crossorigin`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/img#attr-crossorigin) attribute which may be `anonymous` or `use-credentials`. The default is set to `anonymous`.
+ * **`background-image-opacity`** : The opacity of the background image.
+ * **`background-width`** : Specifies the width of the image.  A percent value (e.g. `50%`) may be used to set the image width relative to the node width.  If used in combination with `background-fit`, then this value overrides the width of the image in calculating the fitting --- thereby overriding the aspect ratio.  The `auto` value is used by default, which uses the width of the image.
+ * **`background-height`** : Specifies the height of the image.  A percent value (e.g. `50%`) may be used to set the image height relative to the node height.  If used in combination with `background-fit`, then this value overrides the height of the image in calculating the fitting --- thereby overriding the aspect ratio.  The `auto` value is used by default, which uses the height of the image.
+ * **`background-fit`** : How the background image is fit to the node; may be `none` for original size, `contain` to fit inside node, or `cover` to cover the node.
+ * **`background-repeat`** : Whether to repeat the background image; may be `no-repeat`, `repeat-x`, `repeat-y`, or `repeat`.
+ * **`background-position-x`** : The x position of the background image, measured in percent (e.g. `50%`) or pixels (e.g. `10px`).
+ * **`background-position-y`** : The y position of the background image, measured in percent (e.g. `50%`) or pixels (e.g. `10px`).
+ * **`background-width-relative-to`** : Changes whether the width is calculated relative to the width of the node or the width in addition to the padding; may be `inner` or `include-padding`. If not specified, `include-padding` is used by default.
+ * **`background-height-relative-to`** : Changes whether the height is calculated relative to the height of the node or the height in addition to the padding; may be `inner` or `include-padding`. If not specified, `include-padding` is used by default.
+
+The following properties apply to all images of a node:
+
  * **`background-clip`** : How background image clipping is handled; may be `node` for clipped to node shape or `none` for no clipping.
 
 The following is an example of valid background image styling using JSON. The example images are taken from Wikimedia Commons with the Creative Commons license.
 ```
 {
   'background-image': [
-    "https://upload.wikimedia.org/wikipedia/commons/b/b4/High_above_the_Cloud_the_Sun_Stays_the_Same.jpg",
-    "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fc/Pigeon_silhouette_4874.svg/1000px-Pigeon_silhouette_4874.svg.png"
+    'https://upload.wikimedia.org/wikipedia/commons/b/b4/High_above_the_Cloud_the_Sun_Stays_the_Same.jpg',
+    'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fc/Pigeon_silhouette_4874.svg/1000px-Pigeon_silhouette_4874.svg.png'
   ],
   'background-fit': 'cover cover',
   `background-image-opacity`: 0.5

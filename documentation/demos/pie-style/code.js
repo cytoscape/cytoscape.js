@@ -1,6 +1,6 @@
-$(function(){ // on dom ready
+cytoscape({
+  container: document.getElementById('cy'),
 
-$('#cy').cytoscape({
   style: cytoscape.stylesheet()
     .selector('node')
       .css({
@@ -34,7 +34,7 @@ $('#cy').cytoscape({
         'opacity': 0.25,
         'text-opacity': 0
       }),
-  
+
   elements: {
     nodes: [
       { data: { id: 'a', foo: 3, bar: 5, baz: 2 } },
@@ -42,7 +42,7 @@ $('#cy').cytoscape({
       { data: { id: 'c', foo: 2, bar: 3, baz: 5 } },
       { data: { id: 'd', foo: 7, bar: 1, baz: 2 } },
       { data: { id: 'e', foo: 2, bar: 3, baz: 5 } }
-    ], 
+    ],
 
     edges: [
       { data: { id: 'ae', weight: 1, source: 'a', target: 'e' } },
@@ -54,15 +54,13 @@ $('#cy').cytoscape({
       { data: { id: 'de', weight: 7, source: 'd', target: 'e' } }
     ]
   },
-  
+
   layout: {
     name: 'circle',
     padding: 10
   },
-  
+
   ready: function(){
     window.cy = this;
   }
 });
-
-}); // on dom ready

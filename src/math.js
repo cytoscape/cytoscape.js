@@ -21,6 +21,10 @@ math.deg2rad = function( deg ){
   return Math.PI * deg / 180;
 };
 
+math.getAngleFromDisp = function( dispX, dispY ){
+  return Math.atan2( dispY, dispX ) - Math.PI / 2;
+};
+
 math.log2 = Math.log2 || function( n ){
   return Math.log( n ) / Math.log( 2 );
 };

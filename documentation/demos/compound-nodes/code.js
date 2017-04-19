@@ -1,11 +1,9 @@
-$(function(){ // on dom ready
-
-var cy = cytoscape({
+var cy = window.cy = cytoscape({
   container: document.getElementById('cy'),
-  
+
   boxSelectionEnabled: false,
   autounselectify: true,
-  
+
   style: [
     {
       selector: 'node',
@@ -43,7 +41,7 @@ var cy = cytoscape({
       }
     }
   ],
-  
+
   elements: {
     nodes: [
       { data: { id: 'a', parent: 'b' }, position: { x: 215, y: 85 } },
@@ -56,14 +54,12 @@ var cy = cytoscape({
     edges: [
       { data: { id: 'ad', source: 'a', target: 'd' } },
       { data: { id: 'eb', source: 'e', target: 'b' } }
-      
+
     ]
   },
-  
+
   layout: {
     name: 'preset',
     padding: 5
   }
 });
-
-}); // on dom ready

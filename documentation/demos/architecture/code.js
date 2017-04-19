@@ -1,8 +1,4 @@
-var cy;
-
-$(function(){ // on dom ready
-
-cy = cytoscape({
+var cy = cytoscape({
   container: document.getElementById('cy'),
   style: cytoscape.stylesheet()
     .selector('node')
@@ -92,65 +88,65 @@ cy = cytoscape({
         'padding-bottom': 40,
         'padding-right': 40
       }),
-  
+
   elements: {
     nodes: [
       {
         data: { id: 'cy', name: 'Cytoscape.js' }
       },
-      
+
       {
         data: { id: 'core', name: 'Core', parent: 'api' },
         position: { x: 0, y: 0 }
       },
-      
+
       {
         data: { id: 'eles', name: 'Collection', parent: 'api' },
         position: { x: 150, y: 150 }
       },
-      
+
       {
         data: { id: 'style', name: 'Stylesheet', parent: 'api' },
         position: { x: 0, y: 150 }
       },
-      
+
       {
         data: { id: 'selector', name: 'Selector', parent: 'api' },
         position: { x: -150, y: 150 }
       },
-      
+
       {
         data: { id: 'ext', name: 'Extensions', parent: 'cy' }
       },
-      
+
       {
         data: { id: 'corefn', name: 'Core Function', parent: 'ext' },
         classes: 'ext',
         position: { x: 350, y: -140 }
       },
-      
+
       {
         data: { id: 'elesfn', name: 'Collection Function', parent: 'ext' },
         classes: 'ext',
         position: { x: 350, y: 0 }
       },
-      
+
       {
         data: { id: 'layout', name: 'Layout', parent: 'ext' },
         classes: 'ext',
         position: { x: 350, y: 140 }
       },
-      
+
       {
         data: { id: 'renderer', name: 'Renderer', parent: 'ext' },
         classes: 'ext',
         position: { x: 350, y: 280 }
       },
-      
+
       {
         data: { id: 'api', name: 'Core API', parent: 'cy' }
       },
-      
+
       {
         data: { id: 'app', name: 'Client' },
         position: { x: 0, y: 480 }
@@ -170,10 +166,8 @@ cy = cytoscape({
       { data: { source: 'app', target: 'ext', name: 'register' }, classes: 'app' }
     ]
   },
-  
+
   layout: {
     name: 'preset'
   }
 });
-
-}); // on dom ready

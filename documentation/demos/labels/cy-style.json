@@ -1,0 +1,134 @@
+[
+  {
+    "selector": "node",
+    "style": {
+      "height": 40,
+      "width": 40,
+      "background-color": "#ccc",
+      "label": "data(label)"
+    }
+  },
+
+  {
+    "selector": "edge",
+    "style": {
+      "label": "data(label)",
+      "width": 3,
+      "line-color": "#ccc"
+    }
+  },
+
+  {
+    "selector": ".top-left",
+    "style": {
+      "text-valign": "top",
+      "text-halign": "left"
+    }
+  },
+
+  {
+    "selector": ".top-center",
+    "style": {
+      "text-valign": "top",
+      "text-halign": "center"
+    }
+  },
+
+  {
+    "selector": ".top-right",
+    "style": {
+      "text-valign": "top",
+      "text-halign": "right"
+    }
+  },
+
+  {
+    "selector": ".center-left",
+    "style": {
+      "text-valign": "center",
+      "text-halign": "left"
+    }
+  },
+
+  {
+    "selector": ".center-center",
+    "style": {
+      "text-valign": "center",
+      "text-halign": "center"
+    }
+  },
+
+  {
+    "selector": ".center-right",
+    "style": {
+      "text-valign": "center",
+      "text-halign": "right"
+    }
+  },
+
+  {
+    "selector": ".bottom-left",
+    "style": {
+      "text-valign": "bottom",
+      "text-halign": "left"
+    }
+  },
+
+  {
+    "selector": ".bottom-center",
+    "style": {
+      "text-valign": "bottom",
+      "text-halign": "center"
+    }
+  },
+
+  {
+    "selector": ".bottom-right",
+    "style": {
+      "text-valign": "bottom",
+      "text-halign": "right"
+    }
+  },
+
+  {
+    "selector": ".multiline-manual",
+    "style": {
+      "text-wrap": "wrap"
+    }
+  },
+
+  {
+    "selector": ".multiline-auto",
+    "style": {
+      "text-wrap": "wrap",
+      "text-max-width": 80
+    }
+  },
+
+  {
+    "selector": ".autorotate",
+    "style": {
+      "edge-text-rotation": "autorotate"
+    }
+  },
+
+  {
+    "selector": ".background",
+    "style": {
+      "text-background-opacity": 1,
+      "text-background-color": "#ccc",
+      "text-background-shape": "roundrectangle",
+      "text-border-color": "#000",
+      "text-border-width": 1,
+      "text-border-opacity": 1
+    }
+  },
+
+  {
+    "selector": ".outline",
+    "style": {
+      "text-outline-color": "#ccc",
+      "text-outline-width": 3
+    }
+  }
+]

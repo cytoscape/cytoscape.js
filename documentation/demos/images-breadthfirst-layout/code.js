@@ -1,13 +1,11 @@
-$(function(){ // on dom ready
-
 // photos from flickr with creative commons license
-  
+
 var cy = cytoscape({
   container: document.getElementById('cy'),
-  
+
   boxSelectionEnabled: false,
   autounselectify: true,
-  
+
   style: cytoscape.stylesheet()
     .selector('node')
       .css({
@@ -65,7 +63,7 @@ var cy = cytoscape({
       .css({
         'background-image': 'https://farm3.staticflickr.com/2660/3715569167_7e978e8319_b.jpg'
       }),
-  
+
   elements: {
     nodes: [
       { data: { id: 'cat' } },
@@ -87,35 +85,35 @@ var cy = cytoscape({
       { data: { source: 'aphid', target: 'rose' } }
     ]
   },
-  
+
   layout: {
     name: 'breadthfirst',
     directed: true,
     padding: 10
   }
 }); // cy init
-  
+
 cy.on('tap', 'node', function(){
   var nodes = this;
   var tapped = nodes;
   var food = [];
-  
+
   nodes.addClass('eater');
-  
+
   for(;;){
     var connectedEdges = nodes.connectedEdges(function(){
       return !this.target().anySame( nodes );
     });
-    
+
     var connectedNodes = connectedEdges.targets();
-    
+
     Array.prototype.push.apply( food, connectedNodes );
-    
+
     nodes = connectedNodes;
-    
+
     if( nodes.empty() ){ break; }
   }
-        
+
   var delay = 0;
   var duration = 500;
   for( var i = food.length - 1; i >= 0; i-- ){ (function(){
@@ -123,7 +121,7 @@ cy.on('tap', 'node', function(){
     var eater = thisFood.connectedEdges(function(){
       return this.target().same(thisFood);
     }).source();
-            
+
     thisFood.delay( delay, function(){
       eater.addClass('eating');
     } ).animate({
@@ -140,10 +138,8 @@ cy.on('tap', 'node', function(){
         thisFood.remove();
       }
     });
-    
+
     delay += duration;
   })(); } // for
-  
-}); // on tap
 
-}); // on dom ready
+}); // on tap

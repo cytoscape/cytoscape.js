@@ -1,11 +1,9 @@
-$(function(){ // on dom ready
-
 var cy = cytoscape({
-  container: $('#cy')[0],
-  
+  container: document.getElementById('cy'),
+
   boxSelectionEnabled: false,
   autounselectify: true,
-  
+
   style: cytoscape.stylesheet()
     .selector('node')
       .css({
@@ -23,7 +21,7 @@ var cy = cytoscape({
         'source-arrow-color': 'black',
         'text-outline-color': 'black'
       }),
-  
+
   elements: {
     nodes: [
       { data: { id: 'desktop', name: 'Cytoscape', href: 'http://cytoscape.org' } },
@@ -33,19 +31,17 @@ var cy = cytoscape({
       { data: { source: 'desktop', target: 'js' } }
     ]
   },
-  
+
   layout: {
     name: 'grid',
     padding: 10
   }
 });
-  
+
 cy.on('tap', 'node', function(){
   try { // your browser may block popups
     window.open( this.data('href') );
   } catch(e){ // fall back on url change
-    window.location.href = this.data('href'); 
-  } 
+    window.location.href = this.data('href');
+  }
 });
-
-}); // on dom ready

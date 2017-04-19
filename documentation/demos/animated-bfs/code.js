@@ -1,5 +1,3 @@
-$(function(){ // on dom ready
-
 var cy = cytoscape({
   container: document.getElementById('cy'),
 
@@ -26,7 +24,7 @@ var cy = cytoscape({
         'transition-property': 'background-color, line-color, target-arrow-color',
         'transition-duration': '0.5s'
       }),
-  
+
   elements: {
       nodes: [
         { data: { id: 'a' } },
@@ -34,8 +32,8 @@ var cy = cytoscape({
         { data: { id: 'c' } },
         { data: { id: 'd' } },
         { data: { id: 'e' } }
-      ], 
-      
+      ],
+
       edges: [
         { data: { id: 'a"e', weight: 1, source: 'a', target: 'e' } },
         { data: { id: 'ab', weight: 3, source: 'a', target: 'b' } },
@@ -46,7 +44,7 @@ var cy = cytoscape({
         { data: { id: 'de', weight: 7, source: 'd', target: 'e' } }
       ]
     },
-  
+
   layout: {
     name: 'breadthfirst',
     directed: true,
@@ -54,14 +52,14 @@ var cy = cytoscape({
     padding: 10
   }
 });
-  
+
 var bfs = cy.elements().bfs('#a', function(){}, true);
 
 var i = 0;
 var highlightNextEle = function(){
   if( i < bfs.path.length ){
     bfs.path[i].addClass('highlighted');
-  
+
     i++;
     setTimeout(highlightNextEle, 1000);
   }
@@ -69,5 +67,3 @@ var highlightNextEle = function(){
 
 // kick off first highlight
 highlightNextEle();
-
-}); // on dom ready

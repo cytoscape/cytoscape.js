@@ -1,5 +1,3 @@
-$(function(){ // on dom ready
-
 var elesJson = {
   nodes: [
     { data: { id: 'a', foo: 3, bar: 5, baz: 7 } },
@@ -7,7 +5,7 @@ var elesJson = {
     { data: { id: 'c', foo: 2, bar: 7, baz: 6 } },
     { data: { id: 'd', foo: 9, bar: 5, baz: 2 } },
     { data: { id: 'e', foo: 2, bar: 4, baz: 5 } }
-  ], 
+  ],
 
   edges: [
     { data: { id: 'ae', weight: 1, source: 'a', target: 'e' } },
@@ -19,8 +17,9 @@ var elesJson = {
     { data: { id: 'de', weight: 7, source: 'd', target: 'e' } }
   ]
 };
-  
-$('#cy').cytoscape({
+
+cytoscape({
+  container: document.getElementById('cy'),
   style: cytoscape.stylesheet()
     .selector('node')
       .css({
@@ -50,20 +49,21 @@ $('#cy').cytoscape({
         'opacity': 0.25,
         'text-opacity': 0
       }),
-  
+
   elements: elesJson,
-  
+
   layout: {
     name: 'circle',
     padding: 10
   },
-  
+
   ready: function(){
     // ready 1
   }
 });
 
-$('#cy2').cytoscape({
+cytoscape({
+  container: document.getElementById('cy2'),
   style: cytoscape.stylesheet()
     .selector('node')
       .css({
@@ -89,18 +89,16 @@ $('#cy2').cytoscape({
         'source-arrow-color': 'black',
         'opacity': 1
       }),
-  
+
   elements: elesJson,
-  
+
   layout: {
     name: 'breadthfirst',
     directed: true,
     padding: 10
   },
-  
+
   ready: function(){
     // ready 2
   }
 });
-  
-}); // on dom ready

@@ -1,5 +1,3 @@
-document.addEventListener('DOMContentLoaded', function(){ // on dom ready
-
 var cy = cytoscape({
   container: document.querySelector('#cy'),
 
@@ -76,5 +74,3 @@ cy.on('tap', function(e){
     cy.elements().removeClass('faded');
   }
 });
-
-}); // on dom ready

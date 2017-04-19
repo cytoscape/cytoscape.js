@@ -1,7 +1,8 @@
 'use strict';
 
-var is = require( '../../../is' );
-var util = require( '../../../util' );
+var is = require('../../../is');
+var util = require('../../../util');
+var window = require('../../../window');
 
 var BaseRenderer = function( options ){ this.init( options ); };
 var BR = BaseRenderer;
@@ -16,7 +17,34 @@ BRp.init = function( options ){
 
   r.cy = options.cy;
 
-  r.container = options.cy.container();
+  var ctr = r.container = options.cy.container();
+
+  // prepend a stylesheet in the head such that
+  if( window ){
+    var document = window.document;
+    var head = document.head;
+    var stylesheetId = '__________cytoscape_stylesheet';
+    var className =    '__________cytoscape_container';
+    var stylesheetAlreadyExists = document.getElementById( stylesheetId ) != null;
+
+    ctr.className = ( ctr.className || '' ) + ' ' + className;
+
+    if( !stylesheetAlreadyExists ){
+      var stylesheet = document.createElement('style');
+
+      stylesheet.id = stylesheetId;
+      stylesheet.innerHTML = '.'+className+' { position: relative; }';
+
+      head.insertBefore( stylesheet, head.children[0] ); // first so lowest priority
+    }
+
+    var computedStyle = window.getComputedStyle( ctr );
+    var position = computedStyle.getPropertyValue('position');
+
+    if( position === 'static' ){
+      util.error('A Cytoscape container has style position:static and so can not use UI extensions properly');
+    }
+  }
 
   r.selection = [ undefined, undefined, undefined, undefined, 0]; // Coordinates for selection box, plus enabled flag
 

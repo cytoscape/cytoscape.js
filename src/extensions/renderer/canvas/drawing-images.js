@@ -23,8 +23,9 @@ CRp.drawInscribedImage = function( context, img, node, index ){
   var nodeY = pos.y;
   var fit = getIndexedStyle( node, 'background-fit', 'value', index );
   var repeat = getIndexedStyle( node, 'background-repeat', 'value', index );
-  var nodeW = node.width();
-  var nodeH = node.height();
+  var paddingX2 = node.pstyle( 'padding' ).pfValue * 2;
+  var nodeW = node.width() + ( getIndexedStyle( node, 'background-width-relative-to', 'value', index ) === 'inner' ? 0 : paddingX2 );
+  var nodeH = node.height() + ( getIndexedStyle( node, 'background-height-relative-to', 'value', index ) === 'inner' ? 0 : paddingX2 );
   var rs = node._private.rscratch;
   var clip = node.pstyle( 'background-clip' ).value;
   var shouldClip = clip === 'node';

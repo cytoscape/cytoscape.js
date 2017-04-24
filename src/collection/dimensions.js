@@ -787,7 +787,10 @@ var defineDimFns = function( opts ){
 
         switch( d.strValue ){
           case 'label':
+            ele.recalculateRenderedStyle();
+
             return _p.rstyle[ opts.labelName ] || 0;
+
           default:
             return d.pfValue;
         }

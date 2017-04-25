@@ -333,7 +333,7 @@ BRp.getAllInBox = function( x1, y1, x2, y2 ){
         includeLabels: false
       } );
 
-      if( math.boundingBoxesIntersect( boxBb, nodeBb ) ){
+      if( math.boundingBoxesIntersect( boxBb, nodeBb ) && !math.boundingBoxInBoundingBox( nodeBb, boxBb ) ){
         box.push( node );
       }
     } else {

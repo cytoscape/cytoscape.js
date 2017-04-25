@@ -36,6 +36,11 @@ styfn.getRawStyle = function( ele, isRenderedVal ){
   }
 };
 
+styfn.getIndexedStyle = function( ele, property, subproperty, index ){
+  var pstyle = ele.pstyle( property )[subproperty][index];
+  return pstyle != null ? pstyle : ele.cy().style().getDefaultProperty( property )[subproperty][0];
+};
+
 styfn.getStylePropertyValue = function( ele, propName, isRenderedVal ){
   var self = this;
   var ele = ele[0]; // insure it's an element

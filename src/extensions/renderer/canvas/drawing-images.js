@@ -1,8 +1,5 @@
 'use strict';
 
-var util = require( '../../../util' );
-var getIndexedStyle = util.getIndexedStyle.bind( util );
-
 var CRp = {};
 
 CRp.safeDrawImage = function( context, img, ix, iy, iw, ih, x, y, w, h ){
@@ -21,11 +18,14 @@ CRp.drawInscribedImage = function( context, img, node, index ){
   var pos = node.position();
   var nodeX = pos.x;
   var nodeY = pos.y;
+  var getIndexedStyle = node.cy().style().getIndexedStyle;
   var fit = getIndexedStyle( node, 'background-fit', 'value', index );
   var repeat = getIndexedStyle( node, 'background-repeat', 'value', index );
-  var paddingX2 = node.pstyle( 'padding' ).pfValue * 2;
-  var nodeW = node.width() + ( getIndexedStyle( node, 'background-width-relative-to', 'value', index ) === 'inner' ? 0 : paddingX2 );
-  var nodeH = node.height() + ( getIndexedStyle( node, 'background-height-relative-to', 'value', index ) === 'inner' ? 0 : paddingX2 );
+  var nodeW = node.width();
+  var nodeH = node.height();
+  var paddingX2 = node.padding() * 2;
+  var nodeTW = nodeW + ( getIndexedStyle( node, 'background-width-relative-to', 'value', index ) === 'inner' ? 0 : paddingX2 );
+  var nodeTH = nodeH + ( getIndexedStyle( node, 'background-height-relative-to', 'value', index ) === 'inner' ? 0 : paddingX2 );
   var rs = node._private.rscratch;
   var clip = node.pstyle( 'background-clip' ).value;
   var shouldClip = clip === 'node';
@@ -49,7 +49,7 @@ CRp.drawInscribedImage = function( context, img, node, index ){
 
   if( getIndexedStyle( node, 'background-width', 'value', index ) !== 'auto' ){
     if( getIndexedStyle( node, 'background-width', 'units', index ) === '%' ){
-      w = getIndexedStyle( node, 'background-width', 'pfValue', index ) * nodeW;
+      w = getIndexedStyle( node, 'background-width', 'pfValue', index ) * nodeTW;
     } else {
       w = getIndexedStyle( node, 'background-width', 'pfValue', index );
     }
@@ -57,7 +57,7 @@ CRp.drawInscribedImage = function( context, img, node, index ){
 
   if( getIndexedStyle( node, 'background-height', 'value', index ) !== 'auto' ){
     if( getIndexedStyle( node, 'background-height', 'units', index ) === '%' ){
-      h = getIndexedStyle( node, 'background-height', 'pfValue', index ) * nodeH;
+      h = getIndexedStyle( node, 'background-height', 'pfValue', index ) * nodeTH;
     } else {
       h = getIndexedStyle( node, 'background-height', 'pfValue', index );
     }
@@ -68,28 +68,28 @@ CRp.drawInscribedImage = function( context, img, node, index ){
   }
 
   if( fit === 'contain' ){
-    var scale = Math.min( nodeW / w, nodeH / h );
+    var scale = Math.min( nodeTW / w, nodeTH / h );
 
     w *= scale;
     h *= scale;
 
   } else if( fit === 'cover' ){
-    var scale = Math.max( nodeW / w, nodeH / h );
+    var scale = Math.max( nodeTW / w, nodeTH / h );
 
     w *= scale;
     h *= scale;
   }
 
-  var x = (nodeX - nodeW / 2); // left
+  var x = (nodeX - nodeTW / 2); // left
   if( getIndexedStyle( node, 'background-position-x', 'units', index ) === '%' ){
-    x += (nodeW - w) * getIndexedStyle( node, 'background-position-x', 'pfValue', index );
+    x += (nodeTW - w) * getIndexedStyle( node, 'background-position-x', 'pfValue', index );
   } else {
     x += getIndexedStyle( node, 'background-position-x', 'pfValue', index );
   }
 
-  var y = (nodeY - nodeH / 2); // top
+  var y = (nodeY - nodeTH / 2); // top
   if( getIndexedStyle( node, 'background-position-y', 'units', index ) === '%' ){
-    y += (nodeH - h) * getIndexedStyle( node, 'background-position-y', 'pfValue', index );
+    y += (nodeTH - h) * getIndexedStyle( node, 'background-position-y', 'pfValue', index );
   } else {
     y += getIndexedStyle( node, 'background-position-y', 'pfValue', index );
   }
@@ -117,7 +117,7 @@ CRp.drawInscribedImage = function( context, img, node, index ){
         r.nodeShapes[ r.getNodeShape( node ) ].draw(
           context,
           nodeX, nodeY,
-          nodeW, nodeH );
+          nodeTW, nodeTH );
 
         context.clip();
       }
@@ -135,7 +135,7 @@ CRp.drawInscribedImage = function( context, img, node, index ){
     r.nodeShapes[ r.getNodeShape( node ) ].draw(
         context,
         nodeX, nodeY,
-        nodeW, nodeH );
+        nodeTW, nodeTH );
 
     context.translate( x, y );
     context.fill();

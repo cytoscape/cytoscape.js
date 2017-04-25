@@ -10,6 +10,10 @@ If you are using a HTML environment, then include Cytoscape.js in a `<script>` t
 <script src="cytoscape.js"></script>
 ```
 
+To use Cytoscape.js via CDNJS <a target="_blank" href="https://cdnjs.com/libraries/cytoscape">here</a>.
+
+<span class="important-indicator"></span> Please do not use GitHub URL from demos, follow the instructions given in documentation for installing Cytoscape.js correctly.
+
 <span class="important-indicator"></span> Note that Cytoscape.js uses the dimensions of your HTML DOM element container for layouts and rendering at initialisation.  Thus, it is very important to place your CSS stylesheets in the `<head>` before any Cytoscape.js-related code.  Otherwise, dimensions may be sporadically reported incorrectly, resulting in undesired behaviour.
 
 Your stylesheet may include something like this (assuming a DOM element with ID `cy` is used as the container):

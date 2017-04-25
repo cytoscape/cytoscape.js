@@ -1,8 +1,6 @@
 'use strict';
 
 var is = require( '../../../is' );
-var util = require( '../../../util' );
-var getIndexedStyle = util.getIndexedStyle.bind( util );
 
 var CRp = {};
 
@@ -55,7 +53,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
     url = urls[i];
     urlDefined[i] = url != null && url !== 'none';
     if( urlDefined[i] ){
-      var bgImgCrossOrigin = getIndexedStyle(node, 'background-image-crossorigin', 'value', i);
+      var bgImgCrossOrigin = node.cy().style().getIndexedStyle(node, 'background-image-crossorigin', 'value', i);
 
       // get image, and if not loaded then ask to redraw when later loaded
       image[i] = this.getCachedImage( url, bgImgCrossOrigin, function(){

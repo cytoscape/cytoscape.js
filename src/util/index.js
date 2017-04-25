@@ -141,11 +141,6 @@ util.setPrefixedProperty = function( obj, propName, prefix, value ){
   obj[ propName ] = value;
 };
 
-util.getIndexedStyle = function( node, property, subproperty, index ){
-  var pstyle = node.pstyle( property )[subproperty][index];
-  return pstyle != null ? pstyle : node.cy().style().getDefaultProperty( property )[subproperty][0];
-};
-
 [
   require( './colors' ),
   require( './maps' ),

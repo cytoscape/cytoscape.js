@@ -106,7 +106,7 @@
   },
   "sniper": {
     "js": [
-      "http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js",
+      "https://cdnjs.cloudflare.com/ajax/libs/fetch/2.0.3/fetch.min.js",
       "/build/cytoscape.js"
     ],
     "first": "images"

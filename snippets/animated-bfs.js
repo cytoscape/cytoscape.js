@@ -5,28 +5,31 @@ yourDiv.style.height = "100%";
 yourDiv.style.position = "absolute";
 
 var cytoscape = require("cytoscape");
+
 var cy = cytoscape({
   container: yourDiv,
+
   style: cytoscape.stylesheet()
     .selector('node')
-      .css({
+      .style({
         'content': 'data(id)'
       })
     .selector('edge')
-      .css({
+      .style({
         'target-arrow-shape': 'triangle',
         'width': 4,
         'line-color': '#ddd',
         'target-arrow-color': '#ddd'
       })
     .selector('.highlighted')
-      .css({
+      .style({
         'background-color': '#61bffc',
         'line-color': '#61bffc',
         'target-arrow-color': '#61bffc',
         'transition-property': 'background-color, line-color, target-arrow-color',
         'transition-duration': '0.5s'
       }),
+
   elements: {
       nodes: [
         { data: { id: 'a' } },
@@ -34,7 +37,7 @@ var cy = cytoscape({
         { data: { id: 'c' } },
         { data: { id: 'd' } },
         { data: { id: 'e' } }
-      ], 
+      ],
       edges: [
         { data: { id: 'a"e', weight: 1, source: 'a', target: 'e' } },
         { data: { id: 'ab', weight: 3, source: 'a', target: 'b' } },
@@ -45,6 +48,7 @@ var cy = cytoscape({
         { data: { id: 'de', weight: 7, source: 'd', target: 'e' } }
       ]
     },
+
   layout: {
     name: 'breadthfirst',
     directed: true,
@@ -52,13 +56,13 @@ var cy = cytoscape({
     padding: 10
   }
 });
-  
-var bfs = cy.elements().bfs('#a', function(){}, true);
+
+var bfs = cy.elements().bfs({ root: '#a', directed: true });
 
 var i = 0;
 var highlightNextEle = function(){
   bfs.path[i].addClass('highlighted');
-  
+
   if( i < bfs.path.length ){
     i++;
     setTimeout(highlightNextEle, 1000);

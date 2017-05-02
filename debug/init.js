@@ -21,6 +21,7 @@ $(function(){
       .selector('node')
         .css({
           'label': 'data(id)',
+          'shape': 'barrel',
           // 'min-zoomed-font-size': 10,
           // 'border-width': 3,
           // 'background-color': '#888',

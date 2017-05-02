@@ -76,8 +76,6 @@ CRp.drawBarrelPath = function(
 
     var halfWidth = width / 2;
     var halfHeight = height / 2;
-    var barrelRadius = math.getBarrelRadius(width, height);
-
 
     var xBegin = x - halfWidth;
     var xEnd = x + halfWidth;
@@ -86,19 +84,19 @@ CRp.drawBarrelPath = function(
 
     if( context.beginPath ){ context.beginPath(); }
 
-    context.moveTo(xBegin, yBegin + .05 * height);
+    context.moveTo( xBegin, yBegin + .05 * height );
 
-    context.lineTo(xBegin, yBegin + .95 * height);
-    context.quadraticCurveTo(xBegin + 0.05 * width, yEnd, xBegin + 0.25 * width, yEnd);
+    context.lineTo( xBegin, yBegin + .95 * height );
+    context.quadraticCurveTo( xBegin + 0.05 * width, yEnd, xBegin + 0.25 * width, yEnd );
 
-    context.lineTo(xBegin + 0.75 * width, yEnd);
-    context.quadraticCurveTo(xBegin + 0.95 * width, yEnd, xEnd, yBegin + 0.95 * height)
+    context.lineTo( xBegin + 0.75 * width, yEnd );
+    context.quadraticCurveTo( xBegin + 0.95 * width, yEnd, xEnd, yBegin + 0.95 * height)
 
-    context.lineTo(xEnd, yBegin + 0.05 * height);
-    context.quadraticCurveTo(xEnd - 0.05 * width, yBegin, xBegin + 0.75 * width, yBegin);
+    context.lineTo( xEnd, yBegin + 0.05 * height );
+    context.quadraticCurveTo( xEnd - 0.05 * width, yBegin, xBegin + 0.75 * width, yBegin );
 
-    context.lineTo(xBegin + .25 * width, yBegin);
-    context.quadraticCurveTo(xBegin + 0.05 * width, yBegin, xBegin, yBegin + 0.05 * height);
+    context.lineTo( xBegin + .25 * width, yBegin );
+    context.quadraticCurveTo( xBegin + 0.05 * width, yBegin, xBegin, yBegin + 0.05 * height );
 
     context.closePath();
 };

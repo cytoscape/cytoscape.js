@@ -246,71 +246,106 @@ BRp.generateBarrel = function(){
       ;
     },
 
+    generateBarrelBezierPts: function( width, height, centerX, centerY ){
+      var hh = height / 2;
+      var hw = width / 2;
+      var xBegin = centerX - hw;
+      var xEnd = centerX + hw;
+      var yBegin = centerY - hh;
+      var yEnd = centerY + hh;
+
+      // points are in clockwise order, inner (imaginary) control pt on [4, 5]
+      var pts = {
+        topLeft: [ xBegin, yBegin + 0.05 * height, xBegin + 0.05 * width, yBegin, xBegin + .25 * width, yBegin ],
+        topRight: [ xBegin + 0.75 * width, yBegin, xEnd - 0.05 * width, yBegin, xEnd, yBegin + 0.05 * height ],
+        bottomRight: [ xEnd, yBegin + 0.95 * height, xBegin + 0.95 * width, yEnd, xBegin + 0.75 * width, yEnd ],
+        bottomLeft: [ xBegin + 0.25 * width, yEnd, xBegin + 0.05 * width, yEnd, xBegin, yBegin + .95 * height ]
+      };
+
+      pts.topLeft.isTop = true;
+      pts.topRight.isTop = true;
+      pts.bottomLeft.isBottom = true;
+      pts.bottomRight.isBottom = true;
+
+      return pts;
+    },
+
     // Looks like the width passed into this function is actually the total width / 2
     checkPoint: function(
       x, y, padding, width, height, centerX, centerY ){
 
-      var cornerRadius = math.getRoundRectangleRadius( width, height );
-
       // Check hBox
       if( math.pointInsidePolygon( x, y, this.points,
-        centerX, centerY, width, height - 2 * cornerRadius, [0, -1], padding ) ){
+        centerX, centerY, width, height - 2 * 0.05 * height, [0, -1], padding ) ){
         return true;
       }
 
       // Check vBox
       if( math.pointInsidePolygon( x, y, this.points,
-        centerX, centerY, width - 2 * cornerRadius, height, [0, -1], padding ) ){
+        centerX, centerY, width - 2 * .25 * width, height, [0, -1], padding ) ){
         return true;
       }
 
-      var checkInEllipse = function( x, y, centerX, centerY, width, height, padding ){
-        x -= centerX;
-        y -= centerY;
+      var barrelCurvePts = this.generateBarrelBezierPts( width, height, centerX, centerY );
+      var topLeft = barrelCurvePts.topLeft;
+      var topRight = barrelCurvePts.topRight;
+      var bottomRight = barrelCurvePts.bottomRight;
+      var bottomLeft = barrelCurvePts.bottomLeft;
 
-        x /= (width / 2 + padding);
-        y /= (height / 2 + padding);
+      var halfWidth = width / 2;
+      var halfHeight = height / 2;
 
-        return (x * x + y * y <= 1);
+      var xBegin = centerX - halfWidth;
+      var xEnd = centerX + halfWidth;
+
+      var getCurveT = function (x, y, curvePts) {
+        var x0 = curvePts[ 4 ];
+        var x1 = curvePts[ 2 ];
+        var x2 = curvePts[ 0 ];
+        var y0 = curvePts[ 5 ];
+        var y1 = curvePts[ 3 ];
+        var y2 = curvePts[ 1 ];
+
+        var xMin = Math.min( x0, x2 );
+        var xMax = Math.max( x0, x2 );
+        var yMin = Math.min( y0, y2 );
+        var yMax = Math.max( y0, y2 );
+
+        if( xMin <= x && x <= xMax  && yMin <= y && y <= yMax ){
+          var coeff = math.bezierPtsToQuadCoeff( x0, x1, x2 );
+          var roots = math.solveQuadratic( coeff[0], coeff[1], coeff[2], x );
+
+          var validRoots = roots.filter(function( r ){
+            return 0 <= r && r <= 1;
+          });
+
+          if( validRoots.length > 0 ){
+            return validRoots[ 0 ];
+          }
+        }
+        return null;
       };
 
+      var curveRegions = Object.keys( barrelCurvePts );
+      for( var i = 0; i < curveRegions.length; i++ ){
+        var corner = curveRegions[ i ];
+        var cornerPts = barrelCurvePts[ corner ];
+        var t = getCurveT( x, y, cornerPts );
 
-      // Check top left quarter circle
-      if( checkInEllipse( x, y,
-        centerX - width / 2 + cornerRadius,
-        centerY - height / 2 + cornerRadius,
-        cornerRadius * 2, cornerRadius * 2, padding ) ){
+        if( t == null ){ continue; }
 
-        return true;
+        var y0 = cornerPts[ 5 ];
+        var y1 = cornerPts[ 3 ];
+        var y2 = cornerPts[ 1 ];
+        var bezY = math.qbezierAt( y0, y1, y2, t );
+
+        if( cornerPts.isTop && bezY <= y ){
+          return true;
+        }
+        if( cornerPts.isBottom && y <= bezY ){
+          return true;
+        }
       }
-
-      // Check top right quarter circle
-      if( checkInEllipse( x, y,
-        centerX + width / 2 - cornerRadius,
-        centerY - height / 2 + cornerRadius,
-        cornerRadius * 2, cornerRadius * 2, padding ) ){
-
-        return true;
-      }
-
-      // Check bottom right quarter circle
-      if( checkInEllipse( x, y,
-        centerX + width / 2 - cornerRadius,
-        centerY + height / 2 - cornerRadius,
-        cornerRadius * 2, cornerRadius * 2, padding ) ){
-
-        return true;
-      }
-
-      // Check bottom left quarter circle
-      if( checkInEllipse( x, y,
-        centerX - width / 2 + cornerRadius,
-        centerY + height / 2 - cornerRadius,
-        cornerRadius * 2, cornerRadius * 2, padding ) ){
-
-        return true;
-      }
-
       return false;
     }
   } );

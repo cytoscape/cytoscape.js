@@ -63,8 +63,13 @@
   },
   "main": "src/index.js",
   "scripts": {
+    "build": "gulp build",
+    "dist": "gulp dist",
+    "watch": "gulp watch",
     "test": "gulp test && gulp test-browserify",
-    "sniper": "sniper ."
+    "sniper": "sniper .",
+    "docs": "gulp docs",
+    "docspub": "gulp docspub"
   },
   "devDependencies": {
     "benchmark": "^1.0.0",

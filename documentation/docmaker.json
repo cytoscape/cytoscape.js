@@ -176,7 +176,7 @@
                       "name": "function(ele, i, eles)",
                       "descr": "The filter function that returns true for elements that should be returned.",
                       "fields": [
-                        { "name": "ele", "descr": "The current element under consideration for filtering." }
+                        { "name": "ele", "descr": "The current element under consideration for filtering." },
                         { "name": "i", "descr": "The counter used for iteration over the elements in the graph." },
                         { "name": "eles", "descr": "The collection of elements being filtered" }
                       ]

@@ -10,7 +10,8 @@ fetch('data.json', {mode: 'no-cors'})
       autounselectify: true,
 
       layout: {
-        name: 'cose-bilkent'
+        name: 'cose-bilkent',
+        animate: false
       },
 
       style: [

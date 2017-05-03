@@ -1,5 +1,5 @@
 {
-  "version": "3.0.0",
+  "version": "3.1.0",
 
   "fnArgLinks": {
     "selector": "#selectors",
@@ -32,7 +32,6 @@
       "md": "demos",
       "demos": [
         { "name": "Cola.js gene-gene graph", "id": "colajs-graph" },
-		{ "name": "GeneMANIA Export", "id": "genemania-export"},
         { "name": "Tokyo railways", "id": "tokyo-railways" },
         { "name": "Wine & cheese", "id": "wine-cheese-map", "github": "cytoscape/wineandcheesemap", "viewUrl": "http://wineandcheesemap.com" },
         { "name": "Performance tuning", "id": "performance-tuning" },
@@ -49,14 +48,12 @@
         { "name": "Animated BFS", "id": "animated-bfs" },
         { "name": "Edge types", "id": "edge-types" },
         { "name": "Labels", "id": "labels" },
-		{ "name": "AngularJS Example", "id": "angularjs-example" },
         { "name": "Compound nodes", "id": "compound-nodes" },
         { "name": "Linkout example", "id": "linkout-example" },
         { "name": "Pie style", "id": "pie-style" },
         { "name": "Multiple instances", "id": "multiple-instances" },
         { "name": "Visual style", "id": "visual-style" },
-        { "name": "Initialisation", "id": "initialisation" },
-        { "name": "Architecture", "id": "architecture" }
+        { "name": "Initialisation", "id": "initialisation" }
       ]
     },
 

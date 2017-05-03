@@ -79,12 +79,7 @@
     "border-color": "#AAD8FF",
     "border-opacity": "0.5",
     "background-color": "#394855",
-    "text-outline-color": "#394855",
-    "shadow-blur": "12px",
-    "shadow-color": "#000",
-    "shadow-opacity": "0.8",
-    "shadow-offset-x": "0px",
-    "shadow-offset-y": "4px"
+    "text-outline-color": "#394855"
   }
 }, {
   "selector": "edge.filtered",

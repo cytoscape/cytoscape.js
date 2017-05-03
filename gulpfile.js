@@ -561,7 +561,7 @@ gulp.task('dist', ['build'], function(){
 });
 
 gulp.task('pubprep', function(next){
-  runSequence('pkgver', 'dist', 'docspub', 'pubpush', next);
+  runSequence('pkgver', 'dist', 'pubpush', next);
 });
 
 gulp.task('pubpush', $.shell.task( replaceShellVars([

@@ -24,7 +24,7 @@ cy.filter("[weight>50]"); // works the same as the above line
 
 Get nodes with weight greater than 50 with a filter function:
 ```js
-cy.filter(function(i, element){
+cy.filter(function(element, i){
   if( element.isNode() && element.data("weight") > 50 ){
     return true;
   }

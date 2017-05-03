@@ -68,8 +68,8 @@ fetch('data.json', {mode: 'no-cors'})
 
       layout: {
         name: 'concentric',
-        concentric: function(){
-          return this.data('score');
+        concentric: function(ele){
+          return ele.data('score');
         },
         levelWidth: function(nodes){
           return 0.5;

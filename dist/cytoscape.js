@@ -2,7 +2,7 @@
 
 /*!
 
-Cytoscape.js 2.7.17 (MIT licensed)
+Cytoscape.js 2.7.18 (MIT licensed)
 
 Copyright (c) The Cytoscape Consortium
 
@@ -36,10 +36,6 @@ var is = _dereq_( './is' );
 var Promise = _dereq_( './promise' );
 
 var Animation = function( target, opts, opts2 ){
-  if( !(this instanceof Animation) ){
-    return new Animation( target, opts, opts2 );
-  }
-
   var _p = this._private = util.extend( {
     duration: 1000
   }, opts, opts2 );
@@ -212,6 +208,8 @@ util.extend( anifn, {
     var swap = function( a, b ){
       var _pa = _p[ a ];
 
+      if( _pa == null ){ return; }
+
       _p[ a ] = _p[ b ];
       _p[ b ] = _pa;
     };
@@ -221,13 +219,15 @@ util.extend( anifn, {
     swap( 'position', 'startPosition' );
 
     // swap styles
-    for( var i = 0; i < _p.style.length; i++ ){
-      var prop = _p.style[ i ];
-      var name = prop.name;
-      var startStyleProp = _p.startStyle[ name ];
+    if( _p.style ){
+      for( var i = 0; i < _p.style.length; i++ ){
+        var prop = _p.style[ i ];
+        var name = prop.name;
+        var startStyleProp = _p.startStyle[ name ];
 
-      _p.startStyle[ name ] = prop;
-      _p.style[ i ] = startStyleProp;
+        _p.startStyle[ name ] = prop;
+        _p.style[ i ] = startStyleProp;
+      }
     }
 
     if( wasPlaying ){
@@ -6196,6 +6196,8 @@ var corefn = ({
 
     if( !cy.styleEnabled() ){ return; } // save cycles when no style used
 
+    var style = cy.style();
+
     // NB the animation loop will exec in headless environments if style enabled
     // and explicit cy.destroy() is necessary to stop the loop
 
@@ -6345,7 +6347,6 @@ var corefn = ({
       var isCore = is.core( self );
       var isEles = !isCore;
       var ele = self;
-      var style = cy._private.style;
       var ani_p = ani._private;
 
       if( isEles ){
@@ -6375,7 +6376,6 @@ var corefn = ({
     }
 
     function step( self, ani, now, isCore ){
-      var style = cy._private.style;
       var isEles = !isCore;
       var _p = self._private;
       var ani_p = ani._private;
@@ -6694,7 +6694,32 @@ var corefn = ({
       }
     };
 
+    function getEasedValue( type, start, end, percent, easingFn ){
+      var val = easingFn( start, end, percent );
+
+      if( type == null ){
+        return val;
+      }
+
+      if( type.roundValue || type.color ){
+        val = Math.round( val );
+      }
+
+      if( type.min !== undefined ){
+        val = Math.max( val, type.min );
+      }
+
+      if( type.max !== undefined ){
+        val = Math.min( val, type.max );
+      }
+
+      return val;
+    }
+
     function ease( startProp, endProp, percent, easingFn ){
+      var propSpec = startProp.name != null ? style.properties[ startProp.name ] : null;
+      var type = propSpec != null ? propSpec.type : null;
+
       if( percent < 0 ){
         percent = 0;
       } else if( percent > 1 ){
@@ -6716,7 +6741,7 @@ var corefn = ({
       }
 
       if( is.number( start ) && is.number( end ) ){
-        return easingFn( start, end, percent );
+        return getEasedValue( type, start, end, percent, easingFn );
 
       } else if( is.array( start ) && is.array( end ) ){
         var easedArr = [];
@@ -6726,9 +6751,7 @@ var corefn = ({
           var ei = end[ i ];
 
           if( si != null && ei != null ){
-            var val = easingFn( si, ei, percent );
-
-            if( startProp.roundValue ){ val = Math.round( val ); }
+            var val = getEasedValue( type, si, ei, percent, easingFn );
 
             easedArr.push( val );
           } else {
@@ -8799,6 +8822,12 @@ var define = {
 
       properties = util.extend( {}, properties, params );
 
+      var propertiesEmpty = Object.keys( properties ).length === 0;
+
+      if( propertiesEmpty ){
+        return new Animation( all[0], properties ); // nothing to animate
+      }
+
       if( properties.duration === undefined ){
         properties.duration = 400;
       }
@@ -8810,12 +8839,6 @@ var define = {
       case 'fast':
         properties.duration = 200;
         break;
-      }
-
-      var propertiesEmpty = Object.keys( properties ).length === 0;
-
-      if( propertiesEmpty ){
-        return new Animation( all[0], properties ); // nothing to animate
       }
 
       if( isEles ){
@@ -14972,7 +14995,7 @@ BRp.load = function(){
       var dy2 = dy * dy;
       var dist2 = dx2 + dy2;
 
-      isOverThresholdDrag = dist2 >= r.desktopTapThreshold2;
+      r.hoverData.isOverThresholdDrag = isOverThresholdDrag = dist2 >= r.desktopTapThreshold2;
     }
 
     var multSelKeyDown = isMultSelKeyDown( e );
@@ -15286,6 +15309,7 @@ BRp.load = function(){
         !r.dragData.didDrag // didn't move a node around
         && !r.hoverData.dragged // didn't pan
         && !r.hoverData.selecting // not box selection
+        && !r.hoverData.isOverThresholdDrag // didn't move too much
       ){
         triggerEvents( down, ['click', 'tap', 'vclick'], e, {
           cyPosition: { x: pos[0], y: pos[1] }
@@ -15381,6 +15405,7 @@ BRp.load = function(){
     r.hoverData.cxtStarted = false;
     r.hoverData.draggingEles = false;
     r.hoverData.selecting = false;
+    r.hoverData.isOverThresholdDrag = false;
     r.dragData.didDrag = false;
     r.hoverData.dragged = false;
     r.hoverData.dragDelta = [];
@@ -17773,7 +17798,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
 
   if( url !== undefined ){
 
-    var bgImgCrossOrigin = node.pstyle( 'background-image-crossorigin' );
+    var bgImgCrossOrigin = node.pstyle('background-image-crossorigin').value;
 
     // get image, and if not loaded then ask to redraw when later loaded
     image = this.getCachedImage( url, bgImgCrossOrigin, function(){
@@ -18967,6 +18992,10 @@ ETCp.getElement = function( ele, bb, pxRatio, lvl, reason ){
     );
   };
 
+  // reset ele area in texture
+  txr.context.setTransform( 1, 0, 0, 1, 0, 0 );
+  txr.context.clearRect( txr.usedWidth, 0, eleScaledW, txrH );
+
   if( scalableFrom(oneUpCache) ){
     // then we can relatively cheaply rescale the existing image w/o rerendering
     downscale();
@@ -19157,6 +19186,7 @@ ETCp.recycleTexture = function( txrH, minW ){
 
       util.clearArray( txr.eleCaches );
 
+      txr.context.setTransform( 1, 0, 0, 1, 0, 0 );
       txr.context.clearRect( 0, 0, txr.width, txr.height );
 
       util.removeFromArray( rtxtrQ, txr );
@@ -19201,7 +19231,7 @@ ETCp.queueElement = function( ele, bb, lvl ){
   }
 };
 
-ETCp.dequeue = function( pxRatio, extent ){
+ETCp.dequeue = function( pxRatio /*, extent*/ ){
   var self = this;
   var q = self.getElementQueue();
   var id2q = self.getElementIdToQueue();
@@ -23518,8 +23548,9 @@ module.exports = Selector;
 },{"./is":83,"./util":100}],88:[function(_dereq_,module,exports){
 'use strict';
 
-var util = _dereq_( '../util' );
-var is = _dereq_( '../is' );
+var util = _dereq_('../util');
+var is = _dereq_('../is');
+var Promise = _dereq_('../promise');
 
 var styfn = {};
 
@@ -23545,7 +23576,10 @@ styfn.apply = function( eles ){
     var cxtStyle = self.getContextStyle( cxtMeta );
     var app = self.applyContextStyle( cxtMeta, cxtStyle, ele );
 
-    self.updateTransitions( ele, app.diffProps );
+    if( !_p.newStyle ){
+      self.updateTransitions( ele, app.diffProps );
+    }
+
     self.updateStyleHints( ele );
 
   } // for elements
@@ -24067,7 +24101,7 @@ styfn.updateTransitions = function( ele, diffProps, isBypass ){
 
   if( props.length > 0 && duration > 0 ){
 
-    var css = {};
+    var style = {};
 
     // build up the style to animate towards
     var anyPrev = false;
@@ -24109,7 +24143,7 @@ styfn.updateTransitions = function( ele, diffProps, isBypass ){
 
       // the previous value is good for an animation only if it's different
       if( diff ){
-        css[ prop ] = toProp.strValue; // to val
+        style[ prop ] = toProp.strValue; // to val
         this.applyBypass( ele, prop, initVal ); // from val
         anyPrev = true;
       }
@@ -24121,31 +24155,31 @@ styfn.updateTransitions = function( ele, diffProps, isBypass ){
 
     _p.transitioning = true;
 
-    ele.stop();
-
-    if( delay > 0 ){
-      ele.delay( delay );
-    }
-
-    ele.animate( {
-      css: css
-    }, {
-      duration: duration,
-      easing: ele.pstyle( 'transition-timing-function' ).value,
-      queue: false,
-      complete: function(){
-        if( !isBypass ){
-          self.removeBypasses( ele, props );
-        }
-
-        _p.transitioning = false;
+    ( new Promise(function( resolve ){
+      if( delay > 0 ){
+        ele.delayAnimation( delay ).play().promise().then( resolve );
+      } else {
+        resolve();
       }
-    } );
+    }) ).then(function(){
+      return ele.animation( {
+        style: style,
+        duration: duration,
+        easing: ele.pstyle( 'transition-timing-function' ).value,
+        queue: false
+      } ).play().promise();
+    }).then(function(){
+      // if( !isBypass ){
+        self.removeBypasses( ele, props );
+        ele.rtrigger('style');
+      // }
+
+      _p.transitioning = false;
+    });
 
   } else if( _p.transitioning ){
-    ele.stop();
-
     this.removeBypasses( ele, props );
+    ele.rtrigger('style');
 
     _p.transitioning = false;
   }
@@ -24153,7 +24187,7 @@ styfn.updateTransitions = function( ele, diffProps, isBypass ){
 
 module.exports = styfn;
 
-},{"../is":83,"../util":100}],89:[function(_dereq_,module,exports){
+},{"../is":83,"../promise":86,"../util":100}],89:[function(_dereq_,module,exports){
 'use strict';
 
 var is = _dereq_( '../is' );
@@ -24456,7 +24490,9 @@ styfn.getPropsList = function( propsObj ){
       var prop = props[ name ] || props[ util.camel2dash( name ) ];
       var styleProp = this.parse( prop.name, val );
 
-      rstyle.push( styleProp );
+      if( styleProp ){
+        rstyle.push( styleProp );
+      }
     }
   }
 
@@ -25060,8 +25096,7 @@ var parseImpl = function( name, value, propIsBypass, propIsFlat ){
       name: name,
       value: tuple,
       strValue: '' + value,
-      bypass: propIsBypass,
-      roundValue: true
+      bypass: propIsBypass
     };
 
   } else if( type.regex || type.regexes ){
@@ -26683,6 +26718,10 @@ var util = {
     }
   },
 
+  clonePosition: function( pos ){
+    return { x: pos.x, y: pos.y };
+  },
+
   uuid: function(
       a,b                // placeholders
   ){
@@ -26715,7 +26754,7 @@ util.staticEmptyObject = function(){
   return util._staticEmptyObject;
 };
 
-util.extend = Object.assign != null ? Object.assign : function( tgt ){
+util.extend = Object.assign != null ? Object.assign.bind( Object ) : function( tgt ){
   var args = arguments;
 
   for( var i = 1; i < args.length; i++ ){
@@ -27176,7 +27215,7 @@ util.debounce = function( func, wait, options ){ // ported lodash debounce funct
 module.exports = util;
 
 },{"../is":83,"../window":107}],106:[function(_dereq_,module,exports){
-module.exports = "2.7.17";
+module.exports = "2.7.18";
 
 },{}],107:[function(_dereq_,module,exports){
 module.exports = ( typeof window === 'undefined' ? null : window ); // eslint-disable-line no-undef

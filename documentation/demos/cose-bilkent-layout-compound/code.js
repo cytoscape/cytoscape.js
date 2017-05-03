@@ -7,7 +7,8 @@ fetch('data.json', {mode: 'no-cors'})
       container: document.getElementById('cy'),
 
       layout: {
-        name: 'cose-bilkent'
+        name: 'cose-bilkent',
+        animate: false
       },
 
       style: [

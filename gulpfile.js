@@ -474,6 +474,7 @@ gulp.task('docspush', function(){
     .pipe( $.shell( replaceShellVars([
       '$RM $TEMP_DIR/cytoscape.js',
       '$GIT clone -b gh-pages https://github.com/cytoscape/cytoscape.js.git $TEMP_DIR/cytoscape.js',
+      '$RM $TEMP_DIR/cytoscape.js/demos/**',
       '$CP $DOC_DIR/* $TEMP_DIR/cytoscape.js',
     ]) ) )
 
@@ -490,6 +491,7 @@ gulp.task('unstabledocspush', function(){
     .pipe( $.shell( replaceShellVars([
       '$RM $TEMP_DIR/cytoscape.js',
       '$GIT clone -b gh-pages https://github.com/cytoscape/cytoscape.js.git $TEMP_DIR/cytoscape.js',
+      '$RM $TEMP_DIR/cytoscape.js/demos/**',
       '$CP $DOC_DIR/* $TEMP_DIR/cytoscape.js/unstable',
     ]) ) )
 

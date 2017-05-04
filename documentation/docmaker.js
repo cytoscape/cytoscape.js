@@ -132,17 +132,14 @@ function parseSubsections( section ){
 function populateDemo( demo ){
   if( demo.github ){
     demo.githubUrl = 'https://github.com/' + demo.github;
-    demo.downloadUrl = 'https://github.com/' + demo.github + '/archive/gh-pages.zip';
 
     if( !demo.viewUrl ){ // use github pages url if unspecified
       var gh = demo.github.match(/(.+)\/(.+)/);
 
-      demo.downloadUrl = 'https://' + gh[0] + '.github.io/' + gh[1];
+      demo.viewUrl = 'https://' + gh[0] + '.github.io/' + gh[1];
     }
-  } else { // gist / jsbin
-    demo.jsbinUrl = 'http://jsbin.com/gist/' + demo.id + '?output';
-    demo.githubUrl = 'https://gist.github.com/' + demo.id;
-    demo.downloadUrl = 'https://gist.github.com/' + demo.id + '/download';
+  } else { // main repo demo
+    demo.githubUrl = 'https://github.com/cytoscape/cytoscape.js/tree/master/documentation/demos/' + demo.id;
     demo.viewUrl = 'demos/' + demo.id;
   }
 

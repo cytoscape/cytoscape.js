@@ -450,7 +450,7 @@ elesfn.restore = function( notifyRenderer ){
       if( ele.isNode() ){ continue; }
 
       // adding an edge invalidates the traversal caches for the parallel edges
-      var pedges = ele.parallelEdges().clearTraversalCache();
+      ele.parallelEdges().clearTraversalCache();
 
       // adding an edge invalidates the traversal cache for the connected nodes
       ele.source().clearTraversalCache();

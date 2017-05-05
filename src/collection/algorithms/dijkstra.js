@@ -74,7 +74,7 @@ var elesfn = ({
 
       knownDist[ uid ] = smalletsDist;
 
-      if( smalletsDist === Math.Infinite ){
+      if( smalletsDist === undefined ){
         break;
       }
 

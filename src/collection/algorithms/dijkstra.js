@@ -74,8 +74,8 @@ var elesfn = ({
 
       knownDist[ uid ] = smalletsDist;
 
-      if( smalletsDist === undefined ){
-        break;
+      if( smalletsDist === Infinity ){
+        continue;
       }
 
       var neighbors = u.neighborhood().intersect( nodes );

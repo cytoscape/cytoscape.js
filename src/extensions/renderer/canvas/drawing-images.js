@@ -6,7 +6,7 @@ CRp.safeDrawImage = function( context, img, ix, iy, iw, ih, x, y, w, h ){
   var r = this;
 
   // detect problematic cases for old browsers with bad images (cheaper than try-catch)
-  if( iw <= 0 || ih <= 0 || w <= 0 || h <= 0 || !img.width || !img.height){
+  if( iw <= 0 || ih <= 0 || w <= 0 || h <= 0 ){
     return;
   }
 

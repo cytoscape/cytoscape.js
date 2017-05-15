@@ -193,6 +193,37 @@ BRp.registerArrowShapes = function(){
     }
   } );
 
+  defineArrowShape( 'double-arrow', {
+    points: [
+      -0.15, -0.3,
+      0, 0,
+      0.15, -0.3,
+      -0.15, -0.3
+    ],
+
+    pointsSecond: [
+      0, -0.3,
+      0.15, -0.6,
+      -0.15, -0.6
+    ],
+
+    collide: function( x, y, size, angle, translation, padding ){
+      var triPts = pointsToArr( transformPoints( this.points, size + 2 * padding, angle, translation ) );
+      var teePts = pointsToArr( transformPoints( this.pointsSecond, size + 2 * padding, angle, translation ) );
+
+      var inside = math.pointInsidePolygonPoints( x, y, triPts ) || math.pointInsidePolygonPoints( x, y, teePts );
+
+      return inside;
+    },
+
+    draw: function( context, size, angle, translation ){
+      var triPts = transformPoints( this.points, size, angle, translation );
+      var teePts = transformPoints( this.pointsSecond, size, angle, translation );
+
+      renderer.arrowShapeImpl( this.name )( context, triPts, teePts );
+    }
+  } );
+
   defineArrowShape( 'triangle-cross', {
     points: [
       -0.15, -0.3,

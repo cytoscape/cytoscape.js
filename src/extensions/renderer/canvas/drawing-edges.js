@@ -203,12 +203,19 @@ CRp.drawArrowhead = function( context, edge, prefix, x, y, angle ){
   } // otherwise, the opaque arrow clears it for free :)
 
   var color = edge.pstyle( prefix + '-arrow-color' ).value;
-  self.fillStyle( context, color[0], color[1], color[2], opacity );
+  
   self.strokeStyle( context, color[0], color[1], color[2], opacity );
-
-  self.drawArrowShape( edge, prefix, context,
-    arrowFill, edgeWidth, arrowShape, x, y, angle
-  );
+  if(arrowShape == 'circle-border') {
+      self.fillStyle(context, 255, 255, 255, 1);
+      self.drawArrowShape( edge, prefix, context,
+        'border-only', edgeWidth, arrowShape, x, y, angle
+      );
+  } else {  
+    self.fillStyle( context, color[0], color[1], color[2], opacity );
+    self.drawArrowShape( edge, prefix, context,
+      arrowFill, edgeWidth, arrowShape, x, y, angle
+    );
+  }
 };
 
 CRp.drawArrowShape = function( edge, arrowType, context, fill, edgeWidth, shape, x, y, angle ){
@@ -263,6 +270,16 @@ CRp.drawArrowShape = function( edge, arrowType, context, fill, edgeWidth, shape,
     context.lineWidth = ( shapeImpl.matchEdgeWidth ? edgeWidth : 1 );
     context.lineJoin = 'miter';
 
+    if( usePaths ){
+      context.stroke( path );
+    } else {
+      context.stroke();
+    }
+  }
+
+  if( fill === 'border-only'){
+    context.lineWidth = ( shapeImpl.matchEdgeWidth ? edgeWidth : 2 );
+    context.lineJoin = 'miter';
     if( usePaths ){
       context.stroke( path );
     } else {

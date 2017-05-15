@@ -87,6 +87,10 @@ CRp.arrowShapeImpl = function( name ){
       context.arc( rx, ry, r, 0, Math.PI * 2, false );
     },
 
+    'circle-border': function( context, rx, ry, r ){
+      context.arc(rx, ry, r, 0, 2 * Math.PI, false);
+    },
+
     'double-arrow': function( context, trianglePoints, teePoints ){
       if( context.beginPath ){ context.beginPath(); }
 

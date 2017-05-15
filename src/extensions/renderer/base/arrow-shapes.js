@@ -311,6 +311,25 @@ BRp.registerArrowShapes = function(){
     }
   } );
 
+  defineArrowShape( 'circle-border', {
+    radius: 0.15,
+    
+    collide: function( x, y, size, angle, translation, padding ){
+      var t = translation;
+      var inside = ( Math.pow( t.x - x, 2 ) + Math.pow( t.y - y, 2 ) <= Math.pow( (size + 2 * padding) * this.radius, 2 ) );
+      return inside;
+    },
+
+    draw: function( context, size, angle, translation ){
+      renderer.arrowShapeImpl( this.name )( context, translation.x, translation.y, this.radius * size );
+    },
+
+    spacing: function( edge ){
+      return renderer.getArrowWidth( edge.pstyle( 'width' ).pfValue, edge.pstyle( 'arrow-scale' ).value )
+        * this.radius;
+    }
+  } );
+
   defineArrowShape( 'tee', {
     points: [
       -0.15, 0,

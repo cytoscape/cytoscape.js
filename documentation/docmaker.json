@@ -1378,6 +1378,27 @@
             },
 
             {
+              "name": "nodes.shift",
+              "descr": "Shift the positions of the nodes by a given model position vector.",
+              "formats": [
+                {
+                  "descr": "Shift the nodes by one of `'x'` or `'y'`.",
+                  "args": [
+                    { "name": "dimension", "descr": "The position dimension to shift." },
+                    { "name": "value", "descr": "The value to shift the dimension." }
+                  ]
+                },
+
+                {
+                  "descr": "Shift the nodes by a position vector.",
+                  "args": [
+                    { "name": "pos", "descr": "An object specifying name-value pairs representing dimensions to shift." }
+                  ]
+                }
+              ]
+            },
+
+            {
               "name": "nodes.positions",
               "pureAliases": [ "nodes.modelPositions", "nodes.points" ],
               "descr": "Set the (model) positions of several nodes with a function.",

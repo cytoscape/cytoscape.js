@@ -237,13 +237,13 @@ BRp.generateBarrel = function(){
     },
 
     intersectLine: function( nodeX, nodeY, width, height, x, y, padding ){
-      return math.roundRectangleIntersectLine(
-        x, y,
-        nodeX,
-        nodeY,
-        width, height,
-        padding )
-      ;
+      console.log(padding);
+      var bPts = this.generateBarrelBezierPts( width + 2*padding, height + 2*padding, nodeX, nodeY );
+
+      var pts = [].concat.apply([],
+       [bPts.topLeft, bPts.topRight, bPts.bottomRight, bPts.bottomLeft]);
+
+      return math.polygonIntersectLine( x, y, pts, nodeX, nodeY );
     },
 
     generateBarrelBezierPts: function( width, height, centerX, centerY ){

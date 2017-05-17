@@ -237,7 +237,6 @@ BRp.generateBarrel = function(){
     },
 
     intersectLine: function( nodeX, nodeY, width, height, x, y, padding ){
-      console.log(padding);
       var bPts = this.generateBarrelBezierPts( width + 2*padding, height + 2*padding, nodeX, nodeY );
 
       var pts = [].concat.apply([],

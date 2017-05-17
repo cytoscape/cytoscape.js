@@ -232,6 +232,9 @@ BRp.generateBarrel = function(){
 
     points: math.generateUnitNgonPointsFitToSquare( 4, 0 ),
 
+    // common values used to generate barrel curve points and draw the barrel shape
+    commonPercentages: [0.05, 0.25],
+
     draw: function( context, centerX, centerY, width, height ){
       this.renderer.nodeShapeImpl( this.name, context, centerX, centerY, width, height );
     },
@@ -239,8 +242,7 @@ BRp.generateBarrel = function(){
     intersectLine: function( nodeX, nodeY, width, height, x, y, padding ){
       var bPts = this.generateBarrelBezierPts( width + 2*padding, height + 2*padding, nodeX, nodeY );
 
-      var pts = [].concat.apply([],
-       [bPts.topLeft, bPts.topRight, bPts.bottomRight, bPts.bottomLeft]);
+      var pts = [].concat(bPts.topLeft, bPts.topRight, bPts.bottomRight, bPts.bottomLeft);
 
       return math.polygonIntersectLine( x, y, pts, nodeX, nodeY );
     },
@@ -253,12 +255,15 @@ BRp.generateBarrel = function(){
       var yBegin = centerY - hh;
       var yEnd = centerY + hh;
 
+      var cp0 = this.commonPercentages[0];
+      var cp1 = this.commonPercentages[1];
+
       // points are in clockwise order, inner (imaginary) control pt on [4, 5]
       var pts = {
-        topLeft: [ xBegin, yBegin + 0.05 * height, xBegin + 0.05 * width, yBegin, xBegin + .25 * width, yBegin ],
-        topRight: [ xBegin + 0.75 * width, yBegin, xEnd - 0.05 * width, yBegin, xEnd, yBegin + 0.05 * height ],
-        bottomRight: [ xEnd, yBegin + 0.95 * height, xBegin + 0.95 * width, yEnd, xBegin + 0.75 * width, yEnd ],
-        bottomLeft: [ xBegin + 0.25 * width, yEnd, xBegin + 0.05 * width, yEnd, xBegin, yBegin + .95 * height ]
+        topLeft: [ xBegin, yBegin + cp0 * height, xBegin + cp0 * width, yBegin, xBegin + cp1 * width, yBegin ],
+        topRight: [ xEnd - cp1 * width, yBegin, xEnd - cp0 * width, yBegin, xEnd, yBegin + cp0 * height ],
+        bottomRight: [ xEnd, yEnd - cp0 * height, xEnd - cp0 * width, yEnd, xEnd - cp1 * width, yEnd ],
+        bottomLeft: [ xBegin + cp1 * width, yEnd, xBegin + cp0 * width, yEnd, xBegin, yEnd - cp0 * height ]
       };
 
       pts.topLeft.isTop = true;
@@ -273,29 +278,22 @@ BRp.generateBarrel = function(){
     checkPoint: function(
       x, y, padding, width, height, centerX, centerY ){
 
+      var cp0 = this.commonPercentages[0];
+      var cp1 = this.commonPercentages[1];
+
       // Check hBox
       if( math.pointInsidePolygon( x, y, this.points,
-        centerX, centerY, width, height - 2 * 0.05 * height, [0, -1], padding ) ){
+        centerX, centerY, width, height - 2 *  cp0 * height, [0, -1], padding ) ){
         return true;
       }
 
       // Check vBox
       if( math.pointInsidePolygon( x, y, this.points,
-        centerX, centerY, width - 2 * .25 * width, height, [0, -1], padding ) ){
+        centerX, centerY, width - 2 * cp1 * width, height, [0, -1], padding ) ){
         return true;
       }
 
       var barrelCurvePts = this.generateBarrelBezierPts( width, height, centerX, centerY );
-      var topLeft = barrelCurvePts.topLeft;
-      var topRight = barrelCurvePts.topRight;
-      var bottomRight = barrelCurvePts.bottomRight;
-      var bottomLeft = barrelCurvePts.bottomLeft;
-
-      var halfWidth = width / 2;
-      var halfHeight = height / 2;
-
-      var xBegin = centerX - halfWidth;
-      var xEnd = centerX + halfWidth;
 
       var getCurveT = function (x, y, curvePts) {
         var x0 = curvePts[ 4 ];

@@ -2,7 +2,7 @@ function ObjectSet(){
   this._obj = {};
 }
 
-var p = ObjectSet.prototype;
+let p = ObjectSet.prototype;
 
 p.add = function( val ){
   this._obj[ val ] = 1;

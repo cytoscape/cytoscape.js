@@ -1,11 +1,11 @@
 'use strict';
 
-var is = require( '../is' );
+let is = require( '../is' );
 
 module.exports = {
   // has anything been set in the map
   mapEmpty: function( map ){
-    var empty = true;
+    let empty = true;
 
     if( map != null ){
       return Object.keys( map ).length === 0;
@@ -16,7 +16,7 @@ module.exports = {
 
   // pushes to the array at the end of a map (map may not be built)
   pushMap: function( options ){
-    var array = this.getMap( options );
+    let array = this.getMap( options );
 
     if( array == null ){ // if empty, put initial array
       this.setMap( this.extend( {}, options, {
@@ -29,13 +29,13 @@ module.exports = {
 
   // sets the value in a map (map may not be built)
   setMap: function( options ){
-    var obj = options.map;
-    var key;
-    var keys = options.keys;
-    var l = keys.length;
+    let obj = options.map;
+    let key;
+    let keys = options.keys;
+    let l = keys.length;
 
-    for( var i = 0; i < l; i++ ){
-      var key = keys[ i ];
+    for( let i = 0; i < l; i++ ){
+      let key = keys[ i ];
 
       if( is.plainObject( key ) ){
         this.error( 'Tried to set map with object key' );
@@ -58,12 +58,12 @@ module.exports = {
 
   // gets the value in a map even if it's not built in places
   getMap: function( options ){
-    var obj = options.map;
-    var keys = options.keys;
-    var l = keys.length;
+    let obj = options.map;
+    let keys = options.keys;
+    let l = keys.length;
 
-    for( var i = 0; i < l; i++ ){
-      var key = keys[ i ];
+    for( let i = 0; i < l; i++ ){
+      let key = keys[ i ];
 
       if( is.plainObject( key ) ){
         this.error( 'Tried to get map with object key' );
@@ -81,26 +81,26 @@ module.exports = {
 
   // deletes the entry in the map
   deleteMap: function( options ){
-    var obj = options.map;
-    var keys = options.keys;
-    var l = keys.length;
-    var keepChildren = options.keepChildren;
+    let obj = options.map;
+    let keys = options.keys;
+    let l = keys.length;
+    let keepChildren = options.keepChildren;
 
-    for( var i = 0; i < l; i++ ){
-      var key = keys[ i ];
+    for( let i = 0; i < l; i++ ){
+      let key = keys[ i ];
 
       if( is.plainObject( key ) ){
         this.error( 'Tried to delete map with object key' );
       }
 
-      var lastKey = i === options.keys.length - 1;
+      let lastKey = i === options.keys.length - 1;
       if( lastKey ){
 
         if( keepChildren ){ // then only delete child fields not in keepChildren
-          var children = Object.keys( obj );
+          let children = Object.keys( obj );
 
-          for( var j = 0; j < children.length; j++ ){
-            var child = children[j];
+          for( let j = 0; j < children.length; j++ ){
+            let child = children[j];
 
             if( !keepChildren[ child ] ){
               obj[ child ] = undefined;

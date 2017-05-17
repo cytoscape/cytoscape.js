@@ -1,12 +1,12 @@
 'use strict';
 
-var window = require( '../window' );
+let window = require( '../window' );
 
-var styfn = {};
+let styfn = {};
 
 // gets what an em size corresponds to in pixels relative to a dom element
 styfn.getEmSizeInPixels = function(){
-  var px = this.containerCss( 'font-size' );
+  let px = this.containerCss( 'font-size' );
 
   if( px != null ){
     return parseFloat( px );
@@ -17,8 +17,8 @@ styfn.getEmSizeInPixels = function(){
 
 // gets css property from the core container
 styfn.containerCss = function( propName ){
-  var cy = this._private.cy;
-  var domElement = cy.container();
+  let cy = this._private.cy;
+  let domElement = cy.container();
 
   if( window && domElement && window.getComputedStyle ){
     return window.getComputedStyle( domElement ).getPropertyValue( propName );

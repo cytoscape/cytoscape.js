@@ -12,12 +12,12 @@
  *  z-index: An integer value that affects the relative draw order of elements.  In general, an element with a higher
  *      `z-index` will be drawn on top of an element with a lower `z-index`.
  */
-var zIndexSort = function( a, b ){
-  var cy = a.cy();
-  var hasCompoundNodes = cy.hasCompoundNodes();
+let zIndexSort = function( a, b ){
+  let cy = a.cy();
+  let hasCompoundNodes = cy.hasCompoundNodes();
 
   function getDepth(ele){
-    var style = ele.pstyle( 'z-compound-depth' );
+    let style = ele.pstyle( 'z-compound-depth' );
     if ( style.value === 'auto' ){
       return hasCompoundNodes ? ele.zDepth() : 0
     } else if ( style.value === 'bottom' ){
@@ -28,25 +28,25 @@ var zIndexSort = function( a, b ){
     // 'orphan'
     return 0
   }
-  var depthDiff = getDepth(a) - getDepth(b);
+  let depthDiff = getDepth(a) - getDepth(b);
   if ( depthDiff !== 0 ){
     return depthDiff
   }
 
   function getEleDepth(ele){
-    var style = ele.pstyle( 'z-index-compare' );
+    let style = ele.pstyle( 'z-index-compare' );
     if ( style.value === 'auto' ){
       return ele.isNode() ? 1 : 0
     }
     // 'manual'
     return 0
   }
-  var eleDiff = getEleDepth(a) - getEleDepth(b);
+  let eleDiff = getEleDepth(a) - getEleDepth(b);
   if ( eleDiff !== 0 ){
     return eleDiff
   }
 
-  var zDiff = a.pstyle( 'z-index' ).value - b.pstyle( 'z-index' ).value;
+  let zDiff = a.pstyle( 'z-index' ).value - b.pstyle( 'z-index' ).value;
   if ( zDiff !== 0 ){
     return zDiff
   }

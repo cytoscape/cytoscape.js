@@ -5,7 +5,7 @@ function NullRenderer( options ){
   this.notifications = 0; // for testing
 }
 
-var noop = function(){};
+let noop = function(){};
 
 NullRenderer.prototype = {
   recalculateRenderedStyle: noop,

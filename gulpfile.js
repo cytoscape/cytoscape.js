@@ -14,11 +14,9 @@ var buffer = require('vinyl-buffer');
 var notifier = require('node-notifier');
 var watchify = require('watchify');
 var browserify = require('browserify');
+var babelify = require('babelify');
 var source = require('vinyl-source-stream'); // converts node streams into vinyl streams
-var assign = function( a, b ){
-  if( b ){ for( var i in b ){ a[i] = b[i]; } }
-  return a;
-};
+var assign = require('object-assign');
 
 process.on('SIGINT', function() {
   $.util.log($.util.colors.red('Successfully closed gulp process ' + process.pid));
@@ -61,8 +59,8 @@ var paths = {
 var browserifyOpts = {
   entries: [ paths.sourceEntry ],
   debug: true,
+  bundleExternal: true,
   builtins: [],
-  bundleExternal: false,
   detectGlobals: false,
   standalone: 'cytoscape',
   cache: {}, // for watchify
@@ -144,10 +142,20 @@ var getBrowserify = function( opts ){
     sourceMaps: false,
     minify: false,
     handleErrors: true,
-    bundle: true
+    bundle: true,
+    bundleExternal: false,
+    babel: true
   }, opts);
 
-  var b = opts.stream || browserify( browserifyOpts );
+  var bOpts = assign( {}, browserifyOpts, {
+    bundleExternal: opts.bundleExternal
+  } );
+
+  var b = opts.stream || browserify( bOpts );
+
+  if( opts.babel ){
+    b.transform( babelify );
+  }
 
   if( opts.bundle ){
     b = b.bundle();
@@ -171,7 +179,8 @@ var getBrowserify = function( opts ){
   }
 
   pipe( $.derequire() );
-  pipe( $.replace('{{VERSION}}', version) );
+
+  pipe( $.banner( '/*! Cytoscape.js ' + version + ' (MIT licensed) */' ) );
 
   if( opts.minify ){
     pipe( $.uglify({ mangle: true, preserveComments: 'license' }) );
@@ -186,17 +195,11 @@ var getBrowserify = function( opts ){
   return b;
 };
 
-gulp.task('concat', ['version'], function(){
-  return getBrowserify({
-    sourceMaps: true
-  })
-    .pipe( gulp.dest('build') )
-  ;
-});
-
 gulp.task('build-unmin', ['version'], function(){
   return getBrowserify({
-    sourceMaps: true
+    file: 'cytoscape.js',
+    sourceMaps: true,
+    bundleExternal: true
   })
     .pipe( gulp.dest('build') )
   ;
@@ -205,13 +208,24 @@ gulp.task('build-unmin', ['version'], function(){
 gulp.task('build-min', ['version'], function(){
   return getBrowserify({
     file: 'cytoscape.min.js',
-    minify: true
+    minify: true,
+    bundleExternal: true
   })
     .pipe( gulp.dest('build') )
   ;
 });
 
-gulp.task('build', ['build-unmin', 'build-min'], function( next ){
+gulp.task('build-cjs', ['version'], function(){
+  return getBrowserify({
+    file: 'cytoscape.cjs.js',
+    sourceMaps: true,
+    bundleExternal: false
+  })
+    .pipe( gulp.dest('build') )
+  ;
+});
+
+gulp.task('build', ['build-unmin', 'build-min', 'build-cjs'], function( next ){
   next();
 });
 
@@ -258,6 +272,7 @@ gulp.task('zip', ['version', 'build'], function(){
   return gulp.src([
     'build/cytoscape.js',
     'build/cytoscape.min.js',
+    'build/cytoscape.cjs.js',
     'LICENSE'
   ])
     .pipe( $.zip('cytoscape.js-' + version + '.zip') )
@@ -266,7 +281,7 @@ gulp.task('zip', ['version', 'build'], function(){
   ;
 });
 
-gulp.task('test', function(next){
+gulp.task('test', function(){
   return gulp.src('test/*.js')
     .pipe( $.mocha({
       reporter: 'spec'
@@ -274,12 +289,10 @@ gulp.task('test', function(next){
   ;
 });
 
-gulp.task('test-browserify', ['concat'], function(next){
-  return gulp.src('test/browserify/*.js')
-    .pipe( $.mocha({
-      reporter: 'spec'
-    }) )
-  ;
+gulp.task('test-build', function(next){
+  process.env['TEST_BUILD'] = 'true';
+
+  return runSequence('test', next);
 });
 
 gulp.task('benchmark-old-ver', function(){
@@ -444,7 +457,8 @@ gulp.task('pkgver', ['version'], function(){
 gulp.task('dist', ['build'], function(){
   return gulp.src([
     'build/cytoscape.js',
-    'build/cytoscape.min.js'
+    'build/cytoscape.min.js',
+    'build/cytoscape.cjs.js'
   ])
     .pipe( gulp.dest('dist') )
   ;
@@ -511,8 +525,17 @@ gulp.task('npm', $.shell.task( replaceShellVars([
   '$NPM publish .'
 ]) ));
 
+var watchUsesBabel = false;
+
+gulp.task('watch-babel', function(next){
+  watchUsesBabel = true;
+
+  return runSequence('watch', next);
+});
 
 gulp.task('watch', function(next){
+  version = 'watch-build';
+
   $.livereload.listen();
 
   gulp.watch('test/*.js', ['testlist'])
@@ -526,7 +549,8 @@ gulp.task('watch', function(next){
   var rebuild = function(){
     getBrowserify({
       stream: b,
-      sourceMaps: true
+      sourceMaps: true,
+      babel: watchUsesBabel
     })
       .pipe( gulp.dest('build') )
       .pipe( $.livereload() )

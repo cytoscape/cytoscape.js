@@ -1,12 +1,12 @@
 'use strict';
 
-var util = require( '../util' );
+let util = require( '../util' );
 
-var elesfn = {};
+let elesfn = {};
 
 function defineDegreeFunction( callback ){
   return function( includeLoops ){
-    var self = this;
+    let self = this;
 
     if( includeLoops === undefined ){
       includeLoops = true;
@@ -15,12 +15,12 @@ function defineDegreeFunction( callback ){
     if( self.length === 0 ){ return; }
 
     if( self.isNode() && !self.removed() ){
-      var degree = 0;
-      var node = self[0];
-      var connectedEdges = node._private.edges;
+      let degree = 0;
+      let node = self[0];
+      let connectedEdges = node._private.edges;
 
-      for( var i = 0; i < connectedEdges.length; i++ ){
-        var edge = connectedEdges[ i ];
+      for( let i = 0; i < connectedEdges.length; i++ ){
+        let edge = connectedEdges[ i ];
 
         if( !includeLoops && edge.isLoop() ){
           continue;
@@ -64,12 +64,12 @@ util.extend( elesfn, {
 
 function defineDegreeBoundsFunction( degreeFn, callback ){
   return function( includeLoops ){
-    var ret;
-    var nodes = this.nodes();
+    let ret;
+    let nodes = this.nodes();
 
-    for( var i = 0; i < nodes.length; i++ ){
-      var ele = nodes[ i ];
-      var degree = ele[ degreeFn ]( includeLoops );
+    for( let i = 0; i < nodes.length; i++ ){
+      let ele = nodes[ i ];
+      let degree = ele[ degreeFn ]( includeLoops );
       if( degree !== undefined && (ret === undefined || callback( degree, ret )) ){
         ret = degree;
       }
@@ -107,10 +107,10 @@ util.extend( elesfn, {
 
 util.extend( elesfn, {
   totalDegree: function( includeLoops ){
-    var total = 0;
-    var nodes = this.nodes();
+    let total = 0;
+    let nodes = this.nodes();
 
-    for( var i = 0; i < nodes.length; i++ ){
+    for( let i = 0; i < nodes.length; i++ ){
       total += nodes[ i ].degree( includeLoops );
     }
 

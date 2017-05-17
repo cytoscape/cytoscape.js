@@ -8,43 +8,8 @@ https://tldrlegal.com/license/mit-license
 https://github.com/jquery/jquery/blob/master/src/event.js
 */
 
-var Event = function( src, props ){
-  // Allow instantiation without the 'new' keyword
-  if( !(this instanceof Event) ){
-    return new Event( src, props );
-  }
-
-  // Event object
-  if( src && src.type ){
-    this.originalEvent = src;
-    this.type = src.type;
-
-    // Events bubbling up the document may have been marked as prevented
-    // by a handler lower down the tree; reflect the correct value.
-    this.isDefaultPrevented = ( src.defaultPrevented ) ? returnTrue : returnFalse;
-
-  // Event type
-  } else {
-    this.type = src;
-  }
-
-  // Put explicitly provided properties onto the event object
-  if( props ){
-    // util.extend( this, props );
-
-    // more efficient to manually copy fields we use
-    this.type = props.type !== undefined ? props.type : this.type;
-    this.cy = props.cy;
-    this.target = props.target;
-    this.position = props.position;
-    this.renderedPosition = props.renderedPosition;
-    this.namespace = props.namespace;
-    this.layout = props.layout;
-    this.message = props.message;
-  }
-
-  // Create a timestamp if incoming event doesn't have one
-  this.timeStamp = src && src.timeStamp || Date.now();
+let Event = function( src, props ){
+  this.recycle( src, props );
 };
 
 function returnFalse(){
@@ -61,10 +26,56 @@ Event.prototype = {
     return 'event';
   },
 
+  recycle: function( src, props ){
+    this.isImmediatePropagationStopped = this.isPropagationStopped = this.isDefaultPrevented = returnFalse;
+
+    if( src != null && src.preventDefault ){ // Browser Event object
+      this.type = src.type;
+
+      // Events bubbling up the document may have been marked as prevented
+      // by a handler lower down the tree; reflect the correct value.
+      this.isDefaultPrevented = ( src.defaultPrevented ) ? returnTrue : returnFalse;
+
+    } else if( src != null && src.type ){ // Plain object containing all event details
+      props = src;
+
+    } else { // Event string
+      this.type = src;
+    }
+
+    // Put explicitly provided properties onto the event object
+    if( props != null ){
+      // more efficient to manually copy fields we use
+      this.originalEvent = props.originalEvent;
+      this.type = props.type != null ? props.type : this.type;
+      this.cy = props.cy;
+      this.target = props.target;
+      this.position = props.position;
+      this.renderedPosition = props.renderedPosition;
+      this.namespace = props.namespace;
+      this.layout = props.layout;
+    }
+
+    if( this.cy != null && this.position != null && this.renderedPosition == null ){
+      // create a rendered position based on the passed position
+      let pos = this.position;
+      let zoom = this.cy.zoom();
+      let pan = this.cy.pan();
+
+      this.renderedPosition = {
+        x: pos.x * zoom + pan.x,
+        y: pos.y * zoom + pan.y
+      };
+    }
+
+    // Create a timestamp if incoming event doesn't have one
+    this.timeStamp = src && src.timeStamp || Date.now();
+  },
+
   preventDefault: function(){
     this.isDefaultPrevented = returnTrue;
 
-    var e = this.originalEvent;
+    let e = this.originalEvent;
     if( !e ){
       return;
     }
@@ -78,7 +89,7 @@ Event.prototype = {
   stopPropagation: function(){
     this.isPropagationStopped = returnTrue;
 
-    var e = this.originalEvent;
+    let e = this.originalEvent;
     if( !e ){
       return;
     }

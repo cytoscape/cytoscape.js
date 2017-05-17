@@ -1,28 +1,28 @@
 'use strict';
 
-var is = require( '../is' );
-var util = require( '../util' );
-var Collection = require( '../collection' );
-var Element = require( '../collection/element' );
+let is = require( '../is' );
+let util = require( '../util' );
+let Collection = require( '../collection' );
+let Element = require( '../collection/element' );
 
-var corefn = {
+let corefn = {
   add: function( opts ){
 
-    var elements;
-    var cy = this;
+    let elements;
+    let cy = this;
 
     // add the elements
     if( is.elementOrCollection( opts ) ){
-      var eles = opts;
+      let eles = opts;
 
       if( eles._private.cy === cy ){ // same instance => just restore
         elements = eles.restore();
 
       } else { // otherwise, copy from json
-        var jsons = [];
+        let jsons = [];
 
-        for( var i = 0; i < eles.length; i++ ){
-          var ele = eles[ i ];
+        for( let i = 0; i < eles.length; i++ ){
+          let ele = eles[ i ];
           jsons.push( ele.json() );
         }
 
@@ -32,25 +32,25 @@ var corefn = {
 
     // specify an array of options
     else if( is.array( opts ) ){
-      var jsons = opts;
+      let jsons = opts;
 
       elements = new Collection( cy, jsons );
     }
 
     // specify via opts.nodes and opts.edges
     else if( is.plainObject( opts ) && (is.array( opts.nodes ) || is.array( opts.edges )) ){
-      var elesByGroup = opts;
-      var jsons = [];
+      let elesByGroup = opts;
+      let jsons = [];
 
-      var grs = [ 'nodes', 'edges' ];
-      for( var i = 0, il = grs.length; i < il; i++ ){
-        var group = grs[ i ];
-        var elesArray = elesByGroup[ group ];
+      let grs = [ 'nodes', 'edges' ];
+      for( let i = 0, il = grs.length; i < il; i++ ){
+        let group = grs[ i ];
+        let elesArray = elesByGroup[ group ];
 
         if( is.array( elesArray ) ){
 
-          for( var j = 0, jl = elesArray.length; j < jl; j++ ){
-            var json = util.extend( { group: group }, elesArray[ j ] );
+          for( let j = 0, jl = elesArray.length; j < jl; j++ ){
+            let json = util.extend( { group: group }, elesArray[ j ] );
 
             jsons.push( json );
           }
@@ -62,7 +62,7 @@ var corefn = {
 
     // specify options for one element
     else {
-      var json = opts;
+      let json = opts;
       elements = (new Element( cy, json )).collection();
     }
 
@@ -73,7 +73,7 @@ var corefn = {
     if( is.elementOrCollection( collection ) ){
       // already have right ref
     } else if( is.string( collection ) ){
-      var selector = collection;
+      let selector = collection;
       collection = this.$( selector );
     }
 

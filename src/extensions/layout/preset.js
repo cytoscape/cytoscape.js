@@ -1,9 +1,9 @@
 'use strict';
 
-var util = require( '../../util' );
-var is = require( '../../is' );
+let util = require( '../../util' );
+let is = require( '../../is' );
 
-var defaults = {
+let defaults = {
   positions: undefined, // map of (node id) => (position obj); or function(node){ return somPos; }
   zoom: undefined, // the zoom level to set (prob want fit = false if set)
   pan: undefined, // the pan level to set (prob want fit = false if set)
@@ -21,11 +21,11 @@ function PresetLayout( options ){
 }
 
 PresetLayout.prototype.run = function(){
-  var options = this.options;
-  var eles = options.eles;
+  let options = this.options;
+  let eles = options.eles;
 
-  var nodes = eles.nodes();
-  var posIsFn = is.fn( options.positions );
+  let nodes = eles.nodes();
+  let posIsFn = is.fn( options.positions );
 
   function getPosition( node ){
     if( options.positions == null ){
@@ -36,7 +36,7 @@ PresetLayout.prototype.run = function(){
       return options.positions( node );
     }
 
-    var pos = options.positions[ node._private.data.id ];
+    let pos = options.positions[ node._private.data.id ];
 
     if( pos == null ){
       return null;
@@ -46,7 +46,7 @@ PresetLayout.prototype.run = function(){
   }
 
   nodes.layoutPositions( this, options, function( node, i ){
-    var position = getPosition( node );
+    let position = getPosition( node );
 
     if( node.locked() || position == null ){
       return false;

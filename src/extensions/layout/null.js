@@ -1,9 +1,9 @@
 'use strict';
 
-var util = require( '../../util' );
+let util = require( '../../util' );
 
 // default layout options
-var defaults = {
+let defaults = {
   ready: function(){}, // on layoutready
   stop: function(){} // on layoutstop
 };
@@ -16,14 +16,14 @@ function NullLayout( options ){
 
 // runs the layout
 NullLayout.prototype.run = function(){
-  var options = this.options;
-  var eles = options.eles; // elements to consider in the layout
-  var layout = this;
+  let options = this.options;
+  let eles = options.eles; // elements to consider in the layout
+  let layout = this;
 
   // cy is automatically populated for us in the constructor
-  var cy = options.cy; // jshint ignore:line
+  let cy = options.cy; // jshint ignore:line
 
-  layout.trigger( 'layoutstart' );
+  layout.emit( 'layoutstart' );
 
   // puts all nodes at (0, 0)
   eles.nodes().positions( function(){
@@ -35,11 +35,11 @@ NullLayout.prototype.run = function(){
 
   // trigger layoutready when each node has had its position set at least once
   layout.one( 'layoutready', options.ready );
-  layout.trigger( 'layoutready' );
+  layout.emit( 'layoutready' );
 
   // trigger layoutstop when the layout stops (e.g. finishes)
   layout.one( 'layoutstop', options.stop );
-  layout.trigger( 'layoutstop' );
+  layout.emit( 'layoutstop' );
 
   return this; // chaining
 };

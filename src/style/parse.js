@@ -1,24 +1,24 @@
 'use strict';
 
-var util = require( '../util' );
-var is = require( '../is' );
-var math = require( '../math' );
+let util = require( '../util' );
+let is = require( '../is' );
+let math = require( '../math' );
 
-var styfn = {};
+let styfn = {};
 
 // a caching layer for property parsing
 styfn.parse = function( name, value, propIsBypass, propIsFlat ){
-  var self = this;
+  let self = this;
 
   // function values can't be cached in all cases, and there isn't much benefit of caching them anyway
   if( is.fn( value ) ){
     return self.parseImplWarn( name, value, propIsBypass, propIsFlat );
   }
 
-  var flatKey = ( propIsFlat === 'mapping' || propIsFlat === true || propIsFlat === false || propIsFlat == null ) ? 'dontcare' : propIsFlat;
-  var argHash = [ name, value, propIsBypass, flatKey ].join( '$' );
-  var propCache = self.propCache = self.propCache || {};
-  var ret;
+  let flatKey = ( propIsFlat === 'mapping' || propIsFlat === true || propIsFlat === false || propIsFlat == null ) ? 'dontcare' : propIsFlat;
+  let argHash = [ name, value, propIsBypass, flatKey ].join( '$' );
+  let propCache = self.propCache = self.propCache || {};
+  let ret;
 
   if( !(ret = propCache[ argHash ]) ){
     ret = propCache[ argHash ] = self.parseImplWarn( name, value, propIsBypass, propIsFlat );
@@ -39,7 +39,7 @@ styfn.parse = function( name, value, propIsBypass, propIsFlat ){
 };
 
 styfn.parseImplWarn = function( name, value, propIsBypass, propIsFlat ){
-  var prop = this.parseImpl( name, value, propIsBypass, propIsFlat );
+  let prop = this.parseImpl( name, value, propIsBypass, propIsFlat );
 
   if( !prop && value != null ){
     util.error('The style property `%s: %s` is invalid', name, value);
@@ -55,13 +55,13 @@ styfn.parseImplWarn = function( name, value, propIsBypass, propIsFlat ){
 // - strValue : a string value that represents the property value in valid css
 // - bypass : true iff the property is a bypass property
 styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
-  var self = this;
+  let self = this;
 
   name = util.camel2dash( name ); // make sure the property name is in dash form (e.g. 'property-name' not 'propertyName')
 
-  var property = self.properties[ name ];
-  var passedValue = value;
-  var types = self.types;
+  let property = self.properties[ name ];
+  let passedValue = value;
+  let types = self.types;
 
   if( !property ){ return null; } // return null on property of unknown name
   if( value === undefined || value === null ){ return null; } // can't assign null
@@ -72,12 +72,12 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
     name = property.name;
   }
 
-  var valueIsString = is.string( value );
+  let valueIsString = is.string( value );
   if( valueIsString ){ // trim the value to make parsing easier
     value = value.trim();
   }
 
-  var type = property.type;
+  let type = property.type;
   if( !type ){ return null; } // no type, no luck
 
   // check if bypass is null or empty string (i.e. indication to delete bypass property)
@@ -102,14 +102,14 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
   }
 
   // check if value is mapped
-  var data, mapData;
+  let data, mapData;
   if( !valueIsString || propIsFlat ){
     // then don't bother to do the expensive regex checks
 
   } else if( data = new RegExp( types.data.regex ).exec( value ) ){
     if( propIsBypass ){ return false; } // mappers not allowed in bypass
 
-    var mapped = types.data;
+    let mapped = types.data;
 
     return {
       name: name,
@@ -124,15 +124,15 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
     if( propIsBypass ){ return false; } // mappers not allowed in bypass
     if( type.multiple ){ return false; } // impossible to map to num
 
-    var mapped = types.mapData;
+    let mapped = types.mapData;
 
     // we can map only if the type is a colour or a number
     if( !(type.color || type.number) ){ return false; }
 
-    var valueMin = this.parse( name, mapData[4] ); // parse to validate
+    let valueMin = this.parse( name, mapData[4] ); // parse to validate
     if( !valueMin || valueMin.mapped ){ return false; } // can't be invalid or mapped
 
-    var valueMax = this.parse( name, mapData[5] ); // parse to validate
+    let valueMax = this.parse( name, mapData[5] ); // parse to validate
     if( !valueMax || valueMax.mapped ){ return false; } // can't be invalid or mapped
 
     // check if valueMin and valueMax are the same
@@ -140,10 +140,10 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
       return false; // can't make much of a mapper without a range
 
     } else if( type.color ){
-      var c1 = valueMin.value;
-      var c2 = valueMax.value;
+      let c1 = valueMin.value;
+      let c2 = valueMax.value;
 
-      var same = c1[0] === c2[0] // red
+      let same = c1[0] === c2[0] // red
         && c1[1] === c2[1] // green
         && c1[2] === c2[2] // blue
         && ( // optional alpha
@@ -174,7 +174,7 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
   }
 
   if( type.multiple && propIsFlat !== 'multiple' ){
-    var vals;
+    let vals;
 
     if( valueIsString ){
       vals = value.split( /\s+/ );
@@ -186,13 +186,13 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
 
     if( type.evenMultiple && vals.length % 2 !== 0 ){ return null; }
 
-    var valArr = [];
-    var unitsArr = [];
-    var pfValArr = [];
-    var hasEnum = false;
+    let valArr = [];
+    let unitsArr = [];
+    let pfValArr = [];
+    let hasEnum = false;
 
-    for( var i = 0; i < vals.length; i++ ){
-      var p = self.parse( name, vals[i], propIsBypass, 'multiple' );
+    for( let i = 0; i < vals.length; i++ ){
+      let p = self.parse( name, vals[i], propIsBypass, 'multiple' );
 
       hasEnum = hasEnum || is.string( p.value );
 
@@ -229,9 +229,9 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
   }
 
   // several types also allow enums
-  var checkEnums = function(){
-    for( var i = 0; i < type.enums.length; i++ ){
-      var en = type.enums[ i ];
+  let checkEnums = function(){
+    for( let i = 0; i < type.enums.length; i++ ){
+      let en = type.enums[ i ];
 
       if( en === value ){
         return {
@@ -248,8 +248,8 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
 
   // check the type and return the appropriate object
   if( type.number ){
-    var units;
-    var implicitUnits = 'px'; // not set => px
+    let units;
+    let implicitUnits = 'px'; // not set => px
 
     if( type.units ){ // use specified units if set
       units = type.units;
@@ -261,9 +261,9 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
 
     if( !type.unitless ){
       if( valueIsString ){
-        var unitsRegex = 'px|em' + (type.allowPercent ? '|\\%' : '');
+        let unitsRegex = 'px|em' + (type.allowPercent ? '|\\%' : '');
         if( units ){ unitsRegex = units; } // only allow explicit units if so set
-        var match = value.match( '^(' + util.regex.number + ')(' + unitsRegex + ')?' + '$' );
+        let match = value.match( '^(' + util.regex.number + ')(' + unitsRegex + ')?' + '$' );
 
         if( match ){
           value = match[1];
@@ -302,7 +302,7 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
       return null;
     }
 
-    var ret = {
+    let ret = {
       name: name,
       value: value,
       strValue: '' + value + (units ? units : ''),
@@ -336,17 +336,17 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
 
   } else if( type.propList ){
 
-    var props = [];
-    var propsStr = '' + value;
+    let props = [];
+    let propsStr = '' + value;
 
     if( propsStr === 'none' ){
       // leave empty
 
     } else { // go over each prop
 
-      var propsSplit = propsStr.split( ',' );
-      for( var i = 0; i < propsSplit.length; i++ ){
-        var propName = propsSplit[ i ].trim();
+      let propsSplit = propsStr.split( ',' );
+      for( let i = 0; i < propsSplit.length; i++ ){
+        let propName = propsSplit[ i ].trim();
 
         if( self.properties[ propName ] ){
           props.push( propName );
@@ -364,7 +364,7 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
     };
 
   } else if( type.color ){
-    var tuple = util.color2tuple( value );
+    let tuple = util.color2tuple( value );
 
     if( !tuple ){ return null; }
 
@@ -380,16 +380,16 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
 
     // first check enums
     if( type.enums ){
-      var enumProp = checkEnums();
+      let enumProp = checkEnums();
 
       if( enumProp ){ return enumProp; }
     }
 
-    var regexes = type.regexes ? type.regexes : [ type.regex ];
+    let regexes = type.regexes ? type.regexes : [ type.regex ];
 
-    for( var i = 0; i < regexes.length; i++ ){
-      var regex = new RegExp( regexes[ i ] ); // make a regex from the type string
-      var m = regex.exec( value );
+    for( let i = 0; i < regexes.length; i++ ){
+      let regex = new RegExp( regexes[ i ] ); // make a regex from the type string
+      let m = regex.exec( value );
 
       if( m ){ // regex matches
         return {

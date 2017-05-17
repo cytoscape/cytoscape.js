@@ -1,20 +1,20 @@
 'use strict';
 
-var elesfn = ({
+let elesfn = ({
   parent: function( selector ){
-    var parents = [];
-    var cy = this._private.cy;
+    let parents = [];
+    let cy = this._private.cy;
 
     // optimisation for single ele call
     if( this.length === 1 ){
-      var parent = this[0]._private.parent;
+      let parent = this[0]._private.parent;
 
       if( parent ){ return parent; }
     }
 
-    for( var i = 0; i < this.length; i++ ){
-      var ele = this[ i ];
-      var parent = ele._private.parent;
+    for( let i = 0; i < this.length; i++ ){
+      let ele = this[ i ];
+      let parent = ele._private.parent;
 
       if( parent ){
         parents.push( parent );
@@ -25,12 +25,12 @@ var elesfn = ({
   },
 
   parents: function( selector ){
-    var parents = [];
+    let parents = [];
 
-    var eles = this.parent();
+    let eles = this.parent();
     while( eles.nonempty() ){
-      for( var i = 0; i < eles.length; i++ ){
-        var ele = eles[ i ];
+      for( let i = 0; i < eles.length; i++ ){
+        let ele = eles[ i ];
         parents.push( ele );
       }
 
@@ -41,11 +41,11 @@ var elesfn = ({
   },
 
   commonAncestors: function( selector ){
-    var ancestors;
+    let ancestors;
 
-    for( var i = 0; i < this.length; i++ ){
-      var ele = this[ i ];
-      var parents = ele.parents();
+    for( let i = 0; i < this.length; i++ ){
+      let ele = this[ i ];
+      let parents = ele.parents();
 
       ancestors = ancestors || parents;
 
@@ -68,10 +68,10 @@ var elesfn = ({
   },
 
   children: function( selector ){
-    var children = [];
+    let children = [];
 
-    for( var i = 0; i < this.length; i++ ){
-      var ele = this[ i ];
+    for( let i = 0; i < this.length; i++ ){
+      let ele = this[ i ];
       children = children.concat( ele._private.children );
     }
 
@@ -83,7 +83,7 @@ var elesfn = ({
   },
 
   isParent: function(){
-    var ele = this[0];
+    let ele = this[0];
 
     if( ele ){
       return ele.isNode() && ele._private.children.length !== 0;
@@ -91,7 +91,7 @@ var elesfn = ({
   },
 
   isChildless: function(){
-    var ele = this[0];
+    let ele = this[0];
 
     if( ele ){
       return ele.isNode() && ele._private.children.length === 0;
@@ -99,7 +99,7 @@ var elesfn = ({
   },
 
   isChild: function(){
-    var ele = this[0];
+    let ele = this[0];
 
     if( ele ){
       return ele.isNode() && ele._private.parent != null;
@@ -107,7 +107,7 @@ var elesfn = ({
   },
 
   isOrphan: function(){
-    var ele = this[0];
+    let ele = this[0];
 
     if( ele ){
       return ele.isNode() && ele._private.parent == null;
@@ -115,11 +115,11 @@ var elesfn = ({
   },
 
   descendants: function( selector ){
-    var elements = [];
+    let elements = [];
 
     function add( eles ){
-      for( var i = 0; i < eles.length; i++ ){
-        var ele = eles[ i ];
+      for( let i = 0; i < eles.length; i++ ){
+        let ele = eles[ i ];
 
         elements.push( ele );
 

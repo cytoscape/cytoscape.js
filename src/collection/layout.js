@@ -1,15 +1,15 @@
 'use strict';
 
-var is = require( '../is' );
-var util = require( '../util' );
-var Promise = require('../promise');
-var math = require('../math');
+let is = require( '../is' );
+let util = require( '../util' );
+let Promise = require('../promise');
+let math = require('../math');
 
-var elesfn = ({
+let elesfn = ({
   // Calculates and returns node dimensions { x, y } based on options given
   layoutDimensions: function( options ){
     if( options.nodeDimensionsIncludeLabels ){
-      var bbDim = this.boundingBox();
+      let bbDim = this.boundingBox();
       return {
         w: bbDim.w,
         h: bbDim.h
@@ -25,26 +25,26 @@ var elesfn = ({
 
   // using standard layout options, apply position function (w/ or w/o animation)
   layoutPositions: function( layout, options, fn ){
-    var nodes = this.nodes();
-    var cy = this.cy();
-    var layoutEles = options.eles; // nodes & edges
+    let nodes = this.nodes();
+    let cy = this.cy();
+    let layoutEles = options.eles; // nodes & edges
 
     // memoized version of position function
-    var fnMem = util.memoize( fn, function( node, i ){
+    let fnMem = util.memoize( fn, function( node, i ){
       return node.id() + '$' + i;
     } );
 
-    layout.trigger( { type: 'layoutstart', layout: layout } );
+    layout.emit( { type: 'layoutstart', layout: layout } );
 
     layout.animations = [];
 
-    var calculateSpacing = function( spacing, nodesBb, pos ){
-      var center = {
+    let calculateSpacing = function( spacing, nodesBb, pos ){
+      let center = {
         x: nodesBb.x1 + nodesBb.w / 2,
         y: nodesBb.y1 + nodesBb.h / 2
       };
 
-      var spacingVector = { // scale from center of bounding box (not necessarily 0,0)
+      let spacingVector = { // scale from center of bounding box (not necessarily 0,0)
         x: (pos.x - center.x) * spacing,
         y: (pos.y - center.y) * spacing
       };
@@ -55,12 +55,12 @@ var elesfn = ({
       };
     };
 
-    var spacingBb = function(){
-      var bb = math.makeBoundingBox();
+    let spacingBb = function(){
+      let bb = math.makeBoundingBox();
 
-      for( var i = 0; i < nodes.length; i++ ){
-        var node = nodes[i];
-        var pos = fnMem( node, i );
+      for( let i = 0; i < nodes.length; i++ ){
+        let node = nodes[i];
+        let pos = fnMem( node, i );
 
         math.expandBoundingBoxByPoint( bb, pos.x, pos.y );
       }
@@ -69,21 +69,21 @@ var elesfn = ({
     };
 
     if( options.animate ){
-      var bb = spacingBb();
+      let bb = spacingBb();
 
-      var finalPos = {};
+      let finalPos = {};
 
-      for( var i = 0; i < nodes.length; i++ ){
-        var node = nodes[i];
-        var newPos = fnMem( node, i );
-        var pos = node.position();
+      for( let i = 0; i < nodes.length; i++ ){
+        let node = nodes[i];
+        let newPos = fnMem( node, i );
+        let pos = node.position();
 
         if( !is.number( pos.x ) || !is.number( pos.y ) ){
           node.silentPosition( { x: 0, y: 0 } );
         }
 
         if( options.spacingFactor && options.spacingFactor !== 1 ){
-          var spacing = Math.abs( options.spacingFactor );
+          let spacing = Math.abs( options.spacingFactor );
 
           newPos = calculateSpacing( spacing, bb, newPos );
         }
@@ -91,11 +91,11 @@ var elesfn = ({
         finalPos[ node.id() ] = newPos;
       }
 
-      for( var i = 0; i < nodes.length; i++ ){
-        var node = nodes[ i ];
-        var newPos = finalPos[ node.id() ];
+      for( let i = 0; i < nodes.length; i++ ){
+        let node = nodes[ i ];
+        let newPos = finalPos[ node.id() ];
 
-        var ani = node.animation( {
+        let ani = node.animation( {
           position: newPos,
           duration: options.animationDuration,
           easing: options.animationEasing
@@ -107,7 +107,7 @@ var elesfn = ({
       }
 
       if( options.fit ){
-        var fitAni = cy.animation({
+        let fitAni = cy.animation({
           fit: {
             boundingBox: layoutEles.boundingBoxAt(function( i, node ){
               return finalPos[ node.id() ];
@@ -122,7 +122,7 @@ var elesfn = ({
 
         fitAni.play();
       } else if( options.zoom !== undefined && options.pan !== undefined ){
-        var zoomPanAni = cy.animation({
+        let zoomPanAni = cy.animation({
           zoom: options.zoom,
           pan: options.pan,
           duration: options.animationDuration,
@@ -135,21 +135,21 @@ var elesfn = ({
       }
 
       layout.one( 'layoutready', options.ready );
-      layout.trigger( { type: 'layoutready', layout: layout } );
+      layout.emit( { type: 'layoutready', layout: layout } );
 
       Promise.all( layout.animations.map(function( ani ){
         return ani.promise();
       }) ).then(function(){
         layout.one( 'layoutstop', options.stop );
-        layout.trigger( { type: 'layoutstop', layout: layout } );
+        layout.emit( { type: 'layoutstop', layout: layout } );
       });
     } else {
       if( options.spacingFactor && options.spacingFactor !== 1 ){
-        var spacing = Math.abs( options.spacingFactor );
-        var bb = spacingBb();
+        let spacing = Math.abs( options.spacingFactor );
+        let bb = spacingBb();
 
         nodes.positions( function( node, i ){
-          var pos = fnMem( node, i );
+          let pos = fnMem( node, i );
 
           return calculateSpacing( spacing, bb, pos );
         });
@@ -170,17 +170,17 @@ var elesfn = ({
       }
 
       layout.one( 'layoutready', options.ready );
-      layout.trigger( { type: 'layoutready', layout: layout } );
+      layout.emit( { type: 'layoutready', layout: layout } );
 
       layout.one( 'layoutstop', options.stop );
-      layout.trigger( { type: 'layoutstop', layout: layout } );
+      layout.emit( { type: 'layoutstop', layout: layout } );
     }
 
     return this; // chaining
   },
 
   layout: function( options ){
-    var cy = this.cy();
+    let cy = this.cy();
 
     return cy.makeLayout( util.extend( {}, options, {
       eles: this

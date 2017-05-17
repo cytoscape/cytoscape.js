@@ -267,7 +267,7 @@
                 {
                   "args": [
                     { "name": "events", "descr": "A space separated list of event names." },
-                    { "name": "selector", "descr": "A selector to specify elements for which the handler is triggered.", "optional": true },
+                    { "name": "selector", "descr": "A selector to specify elements for which the handler is ran.", "optional": true },
                     { "name": "function(event)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "event", "descr": "The event object." } ] }
                   ]
                 }
@@ -278,12 +278,12 @@
             {
               "name": "cy.promiseOn",
               "pureAliases": ["cy.pon"],
-              "descr": "Get a promise that is resolved with the first of any of the specified events triggered on the graph.",
+              "descr": "Get a promise that is resolved with the first of any of the specified events emitted on the graph.",
               "formats": [
                 {
                   "args": [
                     { "name": "events", "descr": "A space separated list of event names." },
-                    { "name": "selector", "descr": "A selector to specify elements for which the handler is triggered.", "optional": true }
+                    { "name": "selector", "descr": "A selector to specify elements for which the handler is ran.", "optional": true }
                   ]
                 }
               ],
@@ -292,12 +292,12 @@
 
             {
               "name": "cy.one",
-              "descr": "Bind to events that occur in the graph, and trigger the handler only once.",
+              "descr": "Bind to events that occur in the graph, and run the handler only once.",
               "formats": [
                 {
                   "args": [
                     { "name": "events", "descr": "A space separated list of event names." },
-                    { "name": "selector", "descr": "A selector to specify elements for which the handler is triggered.", "optional": true },
+                    { "name": "selector", "descr": "A selector to specify elements for which the handler is ran.", "optional": true },
                     { "name": "function(event)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "event", "descr": "The event object." } ] }
                   ]
                 }
@@ -306,8 +306,8 @@
             },
 
             {
-              "name": "cy.off",
-              "pureAliases": ["cy.unbind", "cy.unlisten", "cy.removeListener"],
+              "name": "cy.removeListener",
+              "pureAliases": ["cy.off", "cy.unbind", "cy.unlisten"],
               "descr": "Remove event handlers.",
               "formats": [
                 {
@@ -318,22 +318,22 @@
                   ]
                 }
               ],
-              "md": "core/off"
+              "md": "core/removeListener"
             },
 
             {
-              "name": "cy.trigger",
-              "pureAliases": ["cy.emit"],
-              "descr": "Trigger one or more events.",
+              "name": "cy.emit",
+              "pureAliases": ["cy.trigger"],
+              "descr": "Emit one or more events.",
               "formats": [
                 {
                   "args": [
-                    { "name": "events", "descr": "A space separated list of event names to trigger." },
+                    { "name": "events", "descr": "A space separated list of event names to emit." },
                     { "name": "extraParams", "descr": "An array of additional parameters to pass to the handler.", "optional": true }
                   ]
                 }
               ],
-              "md": "core/trigger"
+              "md": "core/emit"
             },
 
             {
@@ -1007,7 +1007,7 @@
                 {
                   "args": [
                     { "name": "events", "descr": "A space separated list of event names." },
-                    { "name": "selector", "descr": "A delegate selector to specify child elements for which the handler is triggered.", "optional": true },
+                    { "name": "selector", "descr": "A delegate selector to specify child elements for which the handler is ran.", "optional": true },
                     { "name": "function(event)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "event", "descr": "The event object." } ] }
                   ]
                 }
@@ -1018,12 +1018,12 @@
             {
               "name": "eles.promiseOn",
               "pureAliases": ["eles.pon"],
-              "descr": "Get a promise that is resolved with the first of any of the specified events triggered on any of the elements in the collection.",
+              "descr": "Get a promise that is resolved with the first of any of the specified events emitted on any of the elements in the collection.",
               "formats": [
                 {
                   "args": [
                     { "name": "events", "descr": "A space separated list of event names." },
-                    { "name": "selector", "descr": "A selector to specify elements for which the handler is triggered.", "optional": true }
+                    { "name": "selector", "descr": "A selector to specify elements for which the handler is emitted.", "optional": true }
                   ]
                 }
               ],
@@ -1032,12 +1032,12 @@
 
             {
               "name": "eles.one",
-              "descr": "Bind a callback function that is triggered once per event per element.",
+              "descr": "Bind a callback function that is emitted once per event per element.",
               "formats": [
                 {
                   "args": [
                     { "name": "events", "descr": "A space separated list of event names." },
-                    { "name": "selector", "descr": "A delegate selector to specify child elements for which the handler is triggered.", "optional": true },
+                    { "name": "selector", "descr": "A delegate selector to specify child elements for which the handler is ran.", "optional": true },
                     { "name": "function(event)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "event", "descr": "The event object." } ] }
                   ]
                 }
@@ -1047,12 +1047,12 @@
 
             {
               "name": "eles.once",
-              "descr": "Bind a callback function that is triggered once per event per collection.",
+              "descr": "Bind a callback function that is emitted once per event per collection.",
               "formats": [
                 {
                   "args": [
                     { "name": "events", "descr": "A space separated list of event names." },
-                    { "name": "selector", "descr": "A delegate selector to specify child elements for which the handler is triggered.", "optional": true },
+                    { "name": "selector", "descr": "A delegate selector to specify child elements for which the handler is ran.", "optional": true },
                     { "name": "function(event)", "descr": "The handler function that is called when one of the specified events occurs.", "fields": [ { "name": "event", "descr": "The event object." } ] }
                   ]
                 }
@@ -1061,8 +1061,8 @@
             },
 
             {
-              "name": "eles.off",
-              "pureAliases": ["eles.unbind", "eles.unlisten", "eles.removeListener"],
+              "name": "eles.removeListener",
+              "pureAliases": ["eles.off", "eles.unbind", "eles.unlisten"],
               "descr": "Unbind one or more callback functions on the elements.",
               "formats": [
                 {
@@ -1073,22 +1073,22 @@
                   ]
                 }
               ],
-              "md": "collection/off"
+              "md": "collection/removeListener"
             },
 
             {
-              "name": "eles.trigger",
-              "pureAliases": ["eles.emit"],
-              "descr": "Trigger events on the elements.",
+              "name": "eles.emit",
+              "pureAliases": ["eles.trigger"],
+              "descr": "Emit events on the elements.",
               "formats": [
                 {
                   "args": [
-                    { "name": "events", "descr": "A space separated list of event names to trigger." },
+                    { "name": "events", "descr": "A space separated list of event names to emit." },
                     { "name": "extraParams", "descr": "An array of additional parameters to pass to the handler.", "optional": true }
                   ]
                 }
               ],
-              "md": "collection/trigger"
+              "md": "collection/emit"
             }
           ]
         },
@@ -3193,7 +3193,7 @@
             {
               "name": "layout.promiseOn",
               "pureAliases": ["layout.pon"],
-              "descr": "Get a promise that is resolved with the first of any of the specified events triggered on the layout.",
+              "descr": "Get a promise that is resolved with the first of any of the specified events emitted on the layout.",
               "formats": [
                 {
                   "args": [
@@ -3206,7 +3206,7 @@
 
             {
               "name": "layout.one",
-              "descr": "Bind to events that are emitted by the layout, and trigger the handler only once.",
+              "descr": "Bind to events that are emitted by the layout, and run the handler only once.",
               "formats": [
                 {
                   "args": [
@@ -3220,8 +3220,8 @@
             },
 
             {
-              "name": "layout.off",
-              "pureAliases": ["layout.unbind", "layout.unlisten", "layout.removeListener"],
+              "name": "layout.removeListener",
+              "pureAliases": ["layout.off", "layout.unbind", "layout.unlisten"],
               "descr": "Remove event handlers on the layout.",
               "formats": [
                 {
@@ -3231,22 +3231,22 @@
                   ]
                 }
               ],
-              "md": "layout/off"
+              "md": "layout/removeListener"
             },
 
             {
-              "name": "layout.trigger",
-              "pureAliases": ["layout.emit"],
-              "descr": "Trigger one or more events on the layout.",
+              "name": "layout.emit",
+              "pureAliases": ["layout.trigger"],
+              "descr": "Emit one or more events on the layout.",
               "formats": [
                 {
                   "args": [
-                    { "name": "events", "descr": "A space separated list of event names to trigger." },
+                    { "name": "events", "descr": "A space separated list of event names to emit." },
                     { "name": "extraParams", "descr": "An array of additional parameters to pass to the handler.", "optional": true }
                   ]
                 }
               ],
-              "md": "layout/trigger"
+              "md": "layout/emit"
             }
           ]
         }

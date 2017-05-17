@@ -1,11 +1,11 @@
 'use strict';
 
-var is = require('../is');
-var Selector = require('../selector');
+let is = require('../is');
+let Selector = require('../selector');
 
-var elesfn = ({
+let elesfn = ({
   allAre: function( selector ){
-    var selObj = new Selector( selector );
+    let selObj = new Selector( selector );
 
     return this.every(function( ele ){
       return selObj.matches( ele );
@@ -13,7 +13,7 @@ var elesfn = ({
   },
 
   is: function( selector ){
-    var selObj = new Selector( selector );
+    let selObj = new Selector( selector );
 
     return this.some(function( ele ){
       return selObj.matches( ele );
@@ -21,8 +21,8 @@ var elesfn = ({
   },
 
   some: function( fn, thisArg ){
-    for( var i = 0; i < this.length; i++ ){
-      var ret = !thisArg ? fn( this[ i ], i, this ) : fn.apply( thisArg, [ this[ i ], i, this ] );
+    for( let i = 0; i < this.length; i++ ){
+      let ret = !thisArg ? fn( this[ i ], i, this ) : fn.apply( thisArg, [ this[ i ], i, this ] );
 
       if( ret ){
         return true;
@@ -33,8 +33,8 @@ var elesfn = ({
   },
 
   every: function( fn, thisArg ){
-    for( var i = 0; i < this.length; i++ ){
-      var ret = !thisArg ? fn( this[ i ], i, this ) : fn.apply( thisArg, [ this[ i ], i, this ] );
+    for( let i = 0; i < this.length; i++ ){
+      let ret = !thisArg ? fn( this[ i ], i, this ) : fn.apply( thisArg, [ this[ i ], i, this ] );
 
       if( !ret ){
         return false;
@@ -68,7 +68,7 @@ var elesfn = ({
   allAreNeighbors: function( collection ){
     collection = this.cy().collection( collection );
 
-    var nhood = this.neighborhood();
+    let nhood = this.neighborhood();
 
     return collection.every(function( ele ){
       return nhood.hasElementWithId( ele.id() );
@@ -78,7 +78,7 @@ var elesfn = ({
   contains: function( collection ){
     collection = this.cy().collection( collection );
 
-    var self = this;
+    let self = this;
 
     return collection.every(function( ele ){
       return self.hasElementWithId( ele.id() );

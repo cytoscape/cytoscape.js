@@ -1,7 +1,7 @@
 'use strict';
 
-var define = require( '../define' );
-var fn, elesfn;
+let define = require( '../define' );
+let fn, elesfn;
 
 fn = elesfn = ({
 
@@ -71,7 +71,7 @@ fn = elesfn = ({
   } ),
 
   id: function(){
-    var ele = this[0];
+    let ele = this[0];
 
     if( ele ){
       return ele._private.data.id;

@@ -1,11 +1,11 @@
 'use strict';
 
-var util = require( './util' );
-var is = require( './is' );
-var Promise = require( './promise' );
+let util = require( './util' );
+let is = require( './is' );
+let Promise = require( './promise' );
 
-var Animation = function( target, opts, opts2 ){
-  var _p = this._private = util.extend( {
+let Animation = function( target, opts, opts2 ){
+  let _p = this._private = util.extend( {
     duration: 1000
   }, opts, opts2 );
 
@@ -28,19 +28,19 @@ var Animation = function( target, opts, opts2 ){
   this[0] = this;
 };
 
-var anifn = Animation.prototype;
+let anifn = Animation.prototype;
 
 util.extend( anifn, {
 
   instanceString: function(){ return 'animation'; },
 
   hook: function(){
-    var _p = this._private;
+    let _p = this._private;
 
     if( !_p.hooked ){
       // add to target's animation queue
-      var q;
-      var tAni = _p.target._private.animation;
+      let q;
+      let tAni = _p.target._private.animation;
       if( _p.queue ){
         q = tAni.queue;
       } else {
@@ -60,7 +60,7 @@ util.extend( anifn, {
   },
 
   play: function(){
-    var _p = this._private;
+    let _p = this._private;
 
     // autorewind
     if( _p.progress === 1 ){
@@ -83,7 +83,7 @@ util.extend( anifn, {
   },
 
   apply: function(){
-    var _p = this._private;
+    let _p = this._private;
 
     _p.applying = true;
     _p.started = false; // needs to be started by animation loop
@@ -101,7 +101,7 @@ util.extend( anifn, {
   },
 
   pause: function(){
-    var _p = this._private;
+    let _p = this._private;
 
     _p.playing = false;
     _p.started = false;
@@ -110,7 +110,7 @@ util.extend( anifn, {
   },
 
   stop: function(){
-    var _p = this._private;
+    let _p = this._private;
 
     _p.playing = false;
     _p.started = false;
@@ -128,7 +128,7 @@ util.extend( anifn, {
   },
 
   time: function( t ){
-    var _p = this._private;
+    let _p = this._private;
 
     if( t === undefined ){
       return _p.progress * _p.duration;
@@ -138,8 +138,8 @@ util.extend( anifn, {
   },
 
   progress: function( p ){
-    var _p = this._private;
-    var wasPlaying = _p.playing;
+    let _p = this._private;
+    let wasPlaying = _p.playing;
 
     if( p === undefined ){
       return _p.progress;
@@ -164,8 +164,8 @@ util.extend( anifn, {
   },
 
   reverse: function(){
-    var _p = this._private;
-    var wasPlaying = _p.playing;
+    let _p = this._private;
+    let wasPlaying = _p.playing;
 
     if( wasPlaying ){
       this.pause();
@@ -174,8 +174,8 @@ util.extend( anifn, {
     _p.progress = 1 - _p.progress;
     _p.started = false;
 
-    var swap = function( a, b ){
-      var _pa = _p[ a ];
+    let swap = function( a, b ){
+      let _pa = _p[ a ];
 
       if( _pa == null ){ return; }
 
@@ -189,10 +189,10 @@ util.extend( anifn, {
 
     // swap styles
     if( _p.style ){
-      for( var i = 0; i < _p.style.length; i++ ){
-        var prop = _p.style[ i ];
-        var name = prop.name;
-        var startStyleProp = _p.startStyle[ name ];
+      for( let i = 0; i < _p.style.length; i++ ){
+        let prop = _p.style[ i ];
+        let name = prop.name;
+        let startStyleProp = _p.startStyle[ name ];
 
         _p.startStyle[ name ] = prop;
         _p.style[ i ] = startStyleProp;
@@ -207,9 +207,9 @@ util.extend( anifn, {
   },
 
   promise: function( type ){
-    var _p = this._private;
+    let _p = this._private;
 
-    var arr;
+    let arr;
 
     switch( type ){
       case 'frame':

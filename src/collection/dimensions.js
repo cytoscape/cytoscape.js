@@ -6,6 +6,22 @@ let util = require( '../util' );
 let math = require( '../math' );
 let fn, elesfn;
 
+let beforePositionSet = function( eles, newPos ){
+  for( let i = 0; i < eles.length; i++ ){
+    let ele = eles[i];
+
+    if( ele.isParent() && !ele.locked() ){
+      let oldPos = ele._private.position;
+      let delta = {
+        x: newPos.x - oldPos.x,
+        y: newPos.y - oldPos.y
+      };
+
+      eles.children().shift( delta );
+    }
+  }
+};
+
 fn = elesfn = ({
 
   position: define.data( {
@@ -21,11 +37,12 @@ fn = elesfn = ({
     beforeGet: function( ele ){
       ele.updateCompoundBounds();
     },
+    beforeSet: beforePositionSet,
     onSet: function( eles ){
       eles.dirtyCompoundBoundsCache();
     },
     canSet: function( ele ){
-      return !ele.locked() && !ele.isParent();
+      return !ele.locked();
     }
   } ),
 
@@ -40,11 +57,12 @@ fn = elesfn = ({
     triggerFnName: 'trigger',
     allowGetting: false,
     validKeys: [ 'x', 'y' ],
+    beforeSet: beforePositionSet,
     onSet: function( eles ){
       eles.dirtyCompoundBoundsCache();
     },
     canSet: function( ele ){
-      return !ele.locked() && !ele.isParent();
+      return !ele.locked();
     }
   } ),
 
@@ -58,26 +76,24 @@ fn = elesfn = ({
 
     } else if( is.fn( pos ) ){
       let fn = pos;
+      let cy = this.cy();
+
+      cy.startBatch();
 
       for( let i = 0; i < this.length; i++ ){
         let ele = this[ i ];
         let pos;
 
-        if( !ele.locked() && !ele.isParent() && ( pos = fn(ele, i) ) ){
-          let elePos = ele._private.position;
-
-          elePos.x = pos.x;
-          elePos.y = pos.y;
+        if( ( pos = fn(ele, i) ) ){
+          if( silent ){
+            ele.silentPosition( pos );
+          } else {
+            ele.position( pos );
+          }
         }
       }
 
-      this.dirtyCompoundBoundsCache();
-
-      if( silent ){
-        this.emit( 'position' );
-      } else {
-        this.emitAndNotify( 'position' );
-      }
+      cy.endBatch();
     }
 
     return this; // chaining
@@ -85,6 +101,32 @@ fn = elesfn = ({
 
   silentPositions: function( pos ){
     return this.positions( pos, true );
+  },
+
+  shift: function( dim, val ){
+    let delta;
+
+    if( is.plainObject( dim ) ){
+      delta = dim;
+    } else if( is.string( dim ) && is.number( val ) ){
+      delta = { x: 0, y: 0 };
+
+      delta[ dim ] = val;
+    }
+
+    if( delta != null ){
+      for( let i = 0; i < this.length; i++ ){
+        let ele = this[i];
+        let pos = ele.position();
+
+        ele.position({
+          x: pos.x + delta.x,
+          y: pos.y + delta.y
+        });
+      }
+    }
+
+    return this;
   },
 
   // get/set the rendered (i.e. on screen) positon of the element
@@ -279,6 +321,19 @@ fn = elesfn = ({
         useCache: false
       } );
       let pos = _p.position;
+
+      // if children take up zero area then keep position and fall back on stylesheet w/h
+      if( bb.w === 0 || bb.h === 0 ){
+        bb = {
+          w: parent.pstyle('width').pfValue,
+          h: parent.pstyle('height').pfValue
+        };
+
+        bb.x1 = pos.x - bb.w/2;
+        bb.x2 = pos.x + bb.w/2;
+        bb.y1 = pos.y - bb.h/2;
+        bb.y2 = pos.y + bb.h/2;
+      }
 
       function computeBiasValues( propDiff, propBias, propBiasComplement ){
         let biasDiff = 0;

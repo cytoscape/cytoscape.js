@@ -19,6 +19,7 @@ let define = {
       immutableKeys: {}, // key => true if immutable
       updateStyle: false,
       beforeGet: function( self ){},
+      beforeSet: function( self, obj ){},
       onSet: function( self ){},
       canSet: function( self ){ return true; }
     };
@@ -49,9 +50,15 @@ let define = {
         } else if( p.allowSetting && value !== undefined ){ // set
           let valid = !p.immutableKeys[ name ];
           if( valid ){
+            let change = { [name]: value };
+
+            p.beforeSet( self, change );
+
             for( let i = 0, l = all.length; i < l; i++ ){
-              if( p.canSet( all[ i ] ) ){
-                all[ i ]._private[ p.field ][ name ] = value;
+              let ele = all[i];
+
+              if( p.canSet( ele ) ){
+                ele._private[ p.field ][ name ] = value;
               }
             }
 
@@ -72,6 +79,8 @@ let define = {
         let obj = name;
         let k, v;
         let keys = Object.keys( obj );
+
+        p.beforeSet( self, obj );
 
         for( let i = 0; i < keys.length; i++ ){
           k = keys[ i ];

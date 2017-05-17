@@ -252,6 +252,19 @@ var elesfn = ({
 
 });
 
+function checkCompound( ele, parentOk ){
+  var _p = ele._private;
+  var parents = _p.data.parent ? ele.parents() : null;
+
+  if( parents ){ for( var i = 0; i < parents.length; i++ ){
+    var parent = parents[ i ];
+
+    if( !parentOk( parent ) ){ return false; }
+  } }
+
+  return true;
+}
+
 function defineDerivedStateFunction( specs ){
   var ok = specs.ok;
   var edgeOkViaNode = specs.edgeOkViaNode || specs.ok;
@@ -262,27 +275,20 @@ function defineDerivedStateFunction( specs ){
     if( !cy.styleEnabled() ){ return true; }
 
     var ele = this[0];
+    var _p = ele._private;
     var hasCompoundNodes = cy.hasCompoundNodes();
 
     if( ele ){
-      var _p = ele._private;
-
       if( !ok( ele ) ){ return false; }
 
       if( ele.isNode() ){
-        if( hasCompoundNodes ){
-          var parents = _p.data.parent ? ele.parents() : null;
-
-          if( parents ){ for( var i = 0; i < parents.length; i++ ){
-            var parent = parents[ i ];
-
-            if( !parentOk( parent ) ){ return false; }
-          } }
-        }
-
-        return true;
+        return !hasCompoundNodes || checkCompound( ele, parentOk );
       } else {
-        return edgeOkViaNode( _p.source ) && edgeOkViaNode( _p.target );
+        var src = _p.source;
+        var tgt = _p.target;
+
+        return ( edgeOkViaNode(src) && (!hasCompoundNodes || checkCompound(src, edgeOkViaNode)) ) &&
+          ( _p.source === _p.target || ( edgeOkViaNode(tgt) && (!hasCompoundNodes || checkCompound(tgt, edgeOkViaNode)) ) );
       }
     }
   }

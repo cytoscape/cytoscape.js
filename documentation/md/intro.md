@@ -4,7 +4,6 @@
  * Permissive open source license (MIT)
  * Designed for users first, for both frontfacing app usercases *and* developer usecases
  * Highly optimised
- * Dependency free
  * Compatible with
   * All modern browsers
   * CommonJS/Node.js

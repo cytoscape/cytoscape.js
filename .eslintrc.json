@@ -5,7 +5,7 @@
         "mocha": true
     },
     "parserOptions": {
-      "ecmaVersion": 5
+      "ecmaVersion": 6
     },
     "extends": "eslint:recommended",
     "rules": {

@@ -1,26 +1,26 @@
 'use strict';
 
-var is = require( '../is' );
-var util = require( '../util' );
+let is = require( '../is' );
+let util = require( '../util' );
 
-var styfn = {};
+let styfn = {};
 
 // bypasses are applied to an existing style on an element, and just tacked on temporarily
 // returns true iff application was successful for at least 1 specified property
 styfn.applyBypass = function( eles, name, value, updateTransitions ){
-  var self = this;
-  var props = [];
-  var isBypass = true;
+  let self = this;
+  let props = [];
+  let isBypass = true;
 
   // put all the properties (can specify one or many) in an array after parsing them
   if( name === '*' || name === '**' ){ // apply to all property names
 
     if( value !== undefined ){
-      for( var i = 0; i < self.properties.length; i++ ){
-        var prop = self.properties[ i ];
-        var name = prop.name;
+      for( let i = 0; i < self.properties.length; i++ ){
+        let prop = self.properties[ i ];
+        let name = prop.name;
 
-        var parsedProp = this.parse( name, value, true );
+        let parsedProp = this.parse( name, value, true );
 
         if( parsedProp ){
           props.push( parsedProp );
@@ -29,28 +29,28 @@ styfn.applyBypass = function( eles, name, value, updateTransitions ){
     }
 
   } else if( is.string( name ) ){ // then parse the single property
-    var parsedProp = this.parse( name, value, true );
+    let parsedProp = this.parse( name, value, true );
 
     if( parsedProp ){
       props.push( parsedProp );
     }
   } else if( is.plainObject( name ) ){ // then parse each property
-    var specifiedProps = name;
+    let specifiedProps = name;
     updateTransitions = value;
 
-    var names = Object.keys( specifiedProps );
+    let names = Object.keys( specifiedProps );
 
-    for( var i = 0; i < names.length; i++ ){
-      var name = names[i];
-      var prop = self.properties[ name ];
-      var value = specifiedProps[ name ];
+    for( let i = 0; i < names.length; i++ ){
+      let name = names[i];
+      let prop = self.properties[ name ];
+      let value = specifiedProps[ name ];
 
       if( value === undefined ){ // try camel case name too
         value = specifiedProps[ util.dash2camel( name ) ];
       }
 
       if( value !== undefined ){
-        var parsedProp = this.parse( name, value, true );
+        let parsedProp = this.parse( name, value, true );
 
         if( parsedProp ){
           props.push( parsedProp );
@@ -65,17 +65,17 @@ styfn.applyBypass = function( eles, name, value, updateTransitions ){
   if( props.length === 0 ){ return false; }
 
   // now, apply the bypass properties on the elements
-  var ret = false; // return true if at least one succesful bypass applied
-  for( var i = 0; i < eles.length; i++ ){ // for each ele
-    var ele = eles[ i ];
-    var diffProps = {};
-    var diffProp;
+  let ret = false; // return true if at least one succesful bypass applied
+  for( let i = 0; i < eles.length; i++ ){ // for each ele
+    let ele = eles[ i ];
+    let diffProps = {};
+    let diffProp;
 
-    for( var j = 0; j < props.length; j++ ){ // for each prop
-      var prop = props[ j ];
+    for( let j = 0; j < props.length; j++ ){ // for each prop
+      let prop = props[ j ];
 
       if( updateTransitions ){
-        var prevProp = ele.pstyle( prop.name );
+        let prevProp = ele.pstyle( prop.name );
         diffProp = diffProps[ prop.name ] = { prev: prevProp };
       }
 
@@ -103,19 +103,19 @@ styfn.applyBypass = function( eles, name, value, updateTransitions ){
 styfn.overrideBypass = function( eles, name, value ){
   name = util.camel2dash( name );
 
-  for( var i = 0; i < eles.length; i++ ){
-    var ele = eles[ i ];
-    var prop = ele._private.style[ name ];
-    var type = this.properties[ name ].type;
-    var isColor = type.color;
-    var isMulti = type.mutiple;
+  for( let i = 0; i < eles.length; i++ ){
+    let ele = eles[ i ];
+    let prop = ele._private.style[ name ];
+    let type = this.properties[ name ].type;
+    let isColor = type.color;
+    let isMulti = type.mutiple;
 
     if( !prop || !prop.bypass ){ // need a bypass if one doesn't exist
       this.applyBypass( ele, name, value );
       continue;
     }
 
-    var oldValue = prop.pfValue != null ? prop.pfValue : prop.value;
+    let oldValue = prop.pfValue != null ? prop.pfValue : prop.value;
 
     prop.value = value;
 
@@ -140,25 +140,25 @@ styfn.removeAllBypasses = function( eles, updateTransitions ){
 };
 
 styfn.removeBypasses = function( eles, props, updateTransitions ){
-  var isBypass = true;
+  let isBypass = true;
 
-  for( var j = 0; j < eles.length; j++ ){
-    var ele = eles[ j ];
-    var diffProps = {};
+  for( let j = 0; j < eles.length; j++ ){
+    let ele = eles[ j ];
+    let diffProps = {};
 
-    for( var i = 0; i < props.length; i++ ){
-      var name = props[ i ];
-      var prop = this.properties[ name ];
-      var prevProp = ele.pstyle( prop.name );
+    for( let i = 0; i < props.length; i++ ){
+      let name = props[ i ];
+      let prop = this.properties[ name ];
+      let prevProp = ele.pstyle( prop.name );
 
       if( !prevProp || !prevProp.bypass ){
         // if a bypass doesn't exist for the prop, nothing needs to be removed
         continue;
       }
 
-      var value = ''; // empty => remove bypass
-      var parsedProp = this.parse( name, value, true );
-      var diffProp = diffProps[ prop.name ] = { prev: prevProp };
+      let value = ''; // empty => remove bypass
+      let parsedProp = this.parse( name, value, true );
+      let diffProp = diffProps[ prop.name ] = { prev: prevProp };
 
       this.applyParsedProperty( ele, parsedProp );
 

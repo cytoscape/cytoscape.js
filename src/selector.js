@@ -1,9 +1,9 @@
 'use strict';
 
-var is = require( './is' );
-var util = require( './util' );
+let is = require( './is' );
+let util = require( './util' );
 
-var stateSelectors = [
+let stateSelectors = [
   {
     selector: ':selected',
     matches: function( ele ){ return ele.selected(); }
@@ -120,12 +120,12 @@ var stateSelectors = [
   return util.sort.descending( a.selector, b.selector );
 });
 
-var stateSelectorMatches = function( sel, ele ){
-  var lookup = stateSelectorMatches.lookup = stateSelectorMatches.lookup || (function(){
-    var selToFn = {};
-    var s;
+let stateSelectorMatches = function( sel, ele ){
+  let lookup = stateSelectorMatches.lookup = stateSelectorMatches.lookup || (function(){
+    let selToFn = {};
+    let s;
 
-    for( var i = 0; i < stateSelectors.length; i++ ){
+    for( let i = 0; i < stateSelectors.length; i++ ){
       s = stateSelectors[i];
 
       selToFn[ s.selector ] = s.matches;
@@ -137,10 +137,10 @@ var stateSelectorMatches = function( sel, ele ){
   return lookup[ sel ]( ele );
 };
 
-var stateSelectorRegex = '(' + stateSelectors.map(function( s ){ return s.selector; }).join('|') + ')';
+let stateSelectorRegex = '(' + stateSelectors.map(function( s ){ return s.selector; }).join('|') + ')';
 
-var Selector = function( selector ){
-  var self = this;
+let Selector = function( selector ){
+  let self = this;
 
   self._private = {
     selectorText: null,
@@ -148,7 +148,7 @@ var Selector = function( selector ){
   };
 
   // storage for parsed queries
-  var newQuery = function(){
+  let newQuery = function(){
     return {
       length: 0, // how many expressions per query
 
@@ -193,7 +193,7 @@ var Selector = function( selector ){
 
   } else if( is.elementOrCollection( selector ) ){
 
-    var collection = selector.collection();
+    let collection = selector.collection();
 
     self[0] = newQuery();
     self[0].collection = collection;
@@ -210,11 +210,11 @@ var Selector = function( selector ){
   } else if( is.string( selector ) ){
 
     // the current subject in the query
-    var currentSubject = null;
+    let currentSubject = null;
 
     // tokens in the query language
-    var tokens = {
-      metaChar: '[\\!\\"\\#\\$\\%\\&\\\'\\(\\)\\*\\+\\,\\.\\/\\:\\;\\<\\=\\>\\?\\@\\[\\]\\^\\`\\{\\|\\}\\~]', // chars we need to escape in var names, etc
+    let tokens = {
+      metaChar: '[\\!\\"\\#\\$\\%\\&\\\'\\(\\)\\*\\+\\,\\.\\/\\:\\;\\<\\=\\>\\?\\@\\[\\]\\^\\`\\{\\|\\}\\~]', // chars we need to escape in let names, etc
       comparatorOp: '=|\\!=|>|>=|<|<=|\\$=|\\^=|\\*=', // binary comparison op (used in data selectors)
       boolOp: '\\?|\\!|\\^', // boolean (unary) operators (used in data selectors)
       string: '"(?:\\\\"|[^"])*"' + '|' + "'(?:\\\\'|[^'])*'", // string literals (used in data selectors) -- doublequotes | singlequotes
@@ -225,29 +225,29 @@ var Selector = function( selector ){
       child: '\\s+>\\s+',
       subject: '\\$'
     };
-    tokens.variable = '(?:[\\w-]|(?:\\\\' + tokens.metaChar + '))+'; // a variable name
+    tokens.letiable = '(?:[\\w-]|(?:\\\\' + tokens.metaChar + '))+'; // a letiable name
     tokens.value = tokens.string + '|' + tokens.number; // a value literal, either a string or number
-    tokens.className = tokens.variable; // a class name (follows variable conventions)
-    tokens.id = tokens.variable; // an element id (follows variable conventions)
+    tokens.className = tokens.letiable; // a class name (follows letiable conventions)
+    tokens.id = tokens.letiable; // an element id (follows letiable conventions)
 
-    // when a token like a variable has escaped meta characters, we need to clean the backslashes out
+    // when a token like a letiable has escaped meta characters, we need to clean the backslashes out
     // so that values get compared properly in Selector.filter()
-    var cleanMetaChars = function( str ){
+    let cleanMetaChars = function( str ){
       return str.replace( new RegExp( '\\\\(' + tokens.metaChar + ')', 'g' ), function( match, $1 ){
         return $1;
       } );
     };
 
-    var ops, op, i;
+    let ops, op, i;
 
-    // add @ variants to comparatorOp
+    // add @ letiants to comparatorOp
     ops = tokens.comparatorOp.split( '|' );
     for( i = 0; i < ops.length; i++ ){
       op = ops[ i ];
       tokens.comparatorOp += '|@' + op;
     }
 
-    // add ! variants to comparatorOp
+    // add ! letiants to comparatorOp
     ops = tokens.comparatorOp.split( '|' );
     for( i = 0; i < ops.length; i++ ){
       op = ops[ i ];
@@ -263,7 +263,7 @@ var Selector = function( selector ){
     // - the current query is stored in self[i] --- you can use the reference to `this` in the populate function;
     // - you need to check the query objects in Selector.filter() for it actually filter properly, but that's pretty straight forward
     // - when you add something here, also add to Selector.toString()
-    var exprs = [
+    let exprs = [
       {
         name: 'group',
         query: true,
@@ -303,10 +303,10 @@ var Selector = function( selector ){
       {
         name: 'dataExists',
         query: true,
-        regex: '\\[\\s*(' + tokens.variable + ')\\s*\\]',
-        populate: function( variable ){
+        regex: '\\[\\s*(' + tokens.letiable + ')\\s*\\]',
+        populate: function( letiable ){
           this.data.push( {
-            field: cleanMetaChars( variable )
+            field: cleanMetaChars( letiable )
           } );
         }
       },
@@ -314,9 +314,9 @@ var Selector = function( selector ){
       {
         name: 'dataCompare',
         query: true,
-        regex: '\\[\\s*(' + tokens.variable + ')\\s*(' + tokens.comparatorOp + ')\\s*(' + tokens.value + ')\\s*\\]',
-        populate: function( variable, comparatorOp, value ){
-          var valueIsString = new RegExp( '^' + tokens.string + '$' ).exec( value ) != null;
+        regex: '\\[\\s*(' + tokens.letiable + ')\\s*(' + tokens.comparatorOp + ')\\s*(' + tokens.value + ')\\s*\\]',
+        populate: function( letiable, comparatorOp, value ){
+          let valueIsString = new RegExp( '^' + tokens.string + '$' ).exec( value ) != null;
 
           if( valueIsString ){
             value = value.substring( 1, value.length - 1 );
@@ -325,7 +325,7 @@ var Selector = function( selector ){
           }
 
           this.data.push( {
-            field: cleanMetaChars( variable ),
+            field: cleanMetaChars( letiable ),
             operator: comparatorOp,
             value: value
           } );
@@ -335,10 +335,10 @@ var Selector = function( selector ){
       {
         name: 'dataBool',
         query: true,
-        regex: '\\[\\s*(' + tokens.boolOp + ')\\s*(' + tokens.variable + ')\\s*\\]',
-        populate: function( boolOp, variable ){
+        regex: '\\[\\s*(' + tokens.boolOp + ')\\s*(' + tokens.letiable + ')\\s*\\]',
+        populate: function( boolOp, letiable ){
           this.data.push( {
-            field: cleanMetaChars( variable ),
+            field: cleanMetaChars( letiable ),
             operator: boolOp
           } );
         }
@@ -374,7 +374,7 @@ var Selector = function( selector ){
         regex: tokens.child,
         populate: function(){
           // this query is the parent of the following query
-          var childQuery = newQuery();
+          let childQuery = newQuery();
           childQuery.parent = this;
           childQuery.subject = currentSubject;
 
@@ -389,7 +389,7 @@ var Selector = function( selector ){
         regex: tokens.descendant,
         populate: function(){
           // this query is the ancestor of the following query
-          var descendantQuery = newQuery();
+          let descendantQuery = newQuery();
           descendantQuery.ancestor = this;
           descendantQuery.subject = currentSubject;
 
@@ -416,31 +416,31 @@ var Selector = function( selector ){
     ];
 
     self._private.selectorText = selector;
-    var remaining = selector;
+    let remaining = selector;
 
     i = 0;
 
     // of all the expressions, find the first match in the remaining text
-    var consumeExpr = function( expectation ){
-      var expr;
-      var match;
-      var name;
+    let consumeExpr = function( expectation ){
+      let expr;
+      let match;
+      let name;
 
-      for( var j = 0; j < exprs.length; j++ ){
-        var e = exprs[ j ];
-        var n = e.name;
+      for( let j = 0; j < exprs.length; j++ ){
+        let e = exprs[ j ];
+        let n = e.name;
 
         // ignore this expression if it doesn't meet the expectation function
         if( is.fn( expectation ) && !expectation( n, e ) ){ continue; }
 
-        var m = remaining.match( new RegExp( '^' + e.regex ) );
+        let m = remaining.match( new RegExp( '^' + e.regex ) );
 
         if( m != null ){
           match = m;
           expr = e;
           name = n;
 
-          var consumed = m[0];
+          let consumed = m[0];
           remaining = remaining.substring( consumed.length );
 
           break; // we've consumed one expr, so we can return now
@@ -455,28 +455,28 @@ var Selector = function( selector ){
     };
 
     // consume all leading whitespace
-    var consumeWhitespace = function(){
-      var match = remaining.match( /^\s+/ );
+    let consumeWhitespace = function(){
+      let match = remaining.match( /^\s+/ );
 
       if( match ){
-        var consumed = match[0];
+        let consumed = match[0];
         remaining = remaining.substring( consumed.length );
       }
     };
 
     self[0] = newQuery(); // get started
 
-    var j;
+    let j;
 
     consumeWhitespace(); // get rid of leading whitespace
     for( ;; ){
-      var check = consumeExpr();
+      let check = consumeExpr();
 
       if( check.expr == null ){
         util.error( 'The selector `' + selector + '`is invalid' );
         return;
       } else {
-        var args = [];
+        let args = [];
         for( j = 1; j < check.match.length; j++ ){
           args.push( check.match[ j ] );
         }
@@ -484,7 +484,7 @@ var Selector = function( selector ){
         self[i].length++;
 
         // let the token populate the selector object (i.e. in self[i])
-        var ret = check.expr.populate.apply( self[ i ], args );
+        let ret = check.expr.populate.apply( self[ i ], args );
 
         if( ret === false ){ return; } // exit if population failed
       }
@@ -499,7 +499,7 @@ var Selector = function( selector ){
 
     // adjust references for subject
     for( j = 0; j < self.length; j++ ){
-      var query = self[ j ];
+      let query = self[ j ];
 
       if( query.subject != null ){
         // go up the tree until we reach the subject
@@ -507,16 +507,16 @@ var Selector = function( selector ){
           if( query.subject == query ){ break; } // done if subject is self
 
           if( query.parent != null ){ // swap parent/child reference
-            var parent = query.parent;
-            var child = query;
+            let parent = query.parent;
+            let child = query;
 
             child.parent = null;
             parent.child = child;
 
             query = parent; // go up the tree
           } else if( query.ancestor != null ){ // swap ancestor/descendant
-            var ancestor = query.ancestor;
-            var descendant = query;
+            let ancestor = query.ancestor;
+            let descendant = query;
 
             descendant.ancestor = null;
             ancestor.descendant = descendant;
@@ -541,7 +541,7 @@ var Selector = function( selector ){
 
 };
 
-var selfn = Selector.prototype;
+let selfn = Selector.prototype;
 
 selfn.size = function(){
   return this.length;
@@ -551,7 +551,7 @@ selfn.eq = function( i ){
   return this[ i ];
 };
 
-var queryMatches = function( query, ele ){
+let queryMatches = function( query, ele ){
   // make single group-only selectors really cheap to check since they're the most common ones
   if( query.groupOnly ){
     return query.group === '*' || query.group === ele.group();
@@ -562,13 +562,13 @@ var queryMatches = function( query, ele ){
     return false;
   }
 
-  var cy = ele.cy();
-  var k;
+  let cy = ele.cy();
+  let k;
 
   // check colon selectors
-  var allColonSelectorsMatch = true;
+  let allColonSelectorsMatch = true;
   for( k = 0; k < query.colonSelectors.length; k++ ){
-    var sel = query.colonSelectors[ k ];
+    let sel = query.colonSelectors[ k ];
 
     allColonSelectorsMatch = stateSelectorMatches( sel, ele );
 
@@ -577,10 +577,10 @@ var queryMatches = function( query, ele ){
   if( !allColonSelectorsMatch ) return false;
 
   // check id
-  var allIdsMatch = true;
+  let allIdsMatch = true;
   for( k = 0; k < query.ids.length; k++ ){
-    var id = query.ids[ k ];
-    var actualId = ele.id();
+    let id = query.ids[ k ];
+    let actualId = ele.id();
 
     allIdsMatch = allIdsMatch && (id == actualId);
 
@@ -589,9 +589,9 @@ var queryMatches = function( query, ele ){
   if( !allIdsMatch ) return false;
 
   // check classes
-  var allClassesMatch = true;
+  let allClassesMatch = true;
   for( k = 0; k < query.classes.length; k++ ){
-    var cls = query.classes[ k ];
+    let cls = query.classes[ k ];
 
     allClassesMatch = allClassesMatch && ele.hasClass( cls );
 
@@ -600,21 +600,21 @@ var queryMatches = function( query, ele ){
   if( !allClassesMatch ) return false;
 
   // generic checking for data/metadata
-  var operandsMatch = function( params ){
-    var allDataMatches = true;
-    for( var k = 0; k < query[ params.name ].length; k++ ){
-      var data = query[ params.name ][ k ];
-      var operator = data.operator;
-      var value = data.value;
-      var field = data.field;
-      var matches;
-      var fieldVal = params.fieldValue( field );
+  let operandsMatch = function( params ){
+    let allDataMatches = true;
+    for( let k = 0; k < query[ params.name ].length; k++ ){
+      let data = query[ params.name ][ k ];
+      let operator = data.operator;
+      let value = data.value;
+      let field = data.field;
+      let matches;
+      let fieldVal = params.fieldValue( field );
 
       if( operator != null && value != null ){
-        var fieldStr = !is.string( fieldVal ) && !is.number( fieldVal ) ? '' : '' + fieldVal;
-        var valStr = '' + value;
+        let fieldStr = !is.string( fieldVal ) && !is.number( fieldVal ) ? '' : '' + fieldVal;
+        let valStr = '' + value;
 
-        var caseInsensitive = false;
+        let caseInsensitive = false;
         if( operator.indexOf( '@' ) >= 0 ){
           fieldStr = fieldStr.toLowerCase();
           valStr = valStr.toLowerCase();
@@ -623,7 +623,7 @@ var queryMatches = function( query, ele ){
           caseInsensitive = true;
         }
 
-        var notExpr = false;
+        let notExpr = false;
         if( operator.indexOf( '!' ) >= 0 ){
           operator = operator.replace( '!', '' );
           notExpr = true;
@@ -636,7 +636,7 @@ var queryMatches = function( query, ele ){
           fieldVal = fieldStr.toLowerCase();
         }
 
-        var isIneqCmp = false;
+        let isIneqCmp = false;
 
         switch( operator ){
         case '*=':
@@ -702,7 +702,7 @@ var queryMatches = function( query, ele ){
   }; // operandsMatch
 
   // check data matches
-  var allDataMatches = operandsMatch( {
+  let allDataMatches = operandsMatch( {
     name: 'data',
     fieldValue: function( field ){
       return ele.data( field );
@@ -714,7 +714,7 @@ var queryMatches = function( query, ele ){
   }
 
   // check metadata matches
-  var allMetaMatches = operandsMatch( {
+  let allMetaMatches = operandsMatch( {
     name: 'meta',
     fieldValue: function( field ){
       return ele[ field ]();
@@ -727,7 +727,7 @@ var queryMatches = function( query, ele ){
 
   // check collection
   if( query.collection != null ){
-    var matchesAny = query.collection.hasElementWithId( ele.id() );
+    let matchesAny = query.collection.hasElementWithId( ele.id() );
 
     if( !matchesAny ){
       return false;
@@ -740,9 +740,9 @@ var queryMatches = function( query, ele ){
   }
 
   // check parent/child relations
-  var confirmRelations = function( query, eles ){
+  let confirmRelations = function( query, eles ){
     if( query != null ){
-      var matches = false;
+      let matches = false;
 
       if( !cy.hasCompoundNodes() ){
         return false;
@@ -751,7 +751,7 @@ var queryMatches = function( query, ele ){
       eles = eles(); // save cycles if query == null
 
       // query must match for at least one element (may be recursive)
-      for( var i = 0; i < eles.length; i++ ){
+      for( let i = 0; i < eles.length; i++ ){
         if( queryMatches( query, eles[ i ] ) ){
           matches = true;
           break;
@@ -786,8 +786,8 @@ var queryMatches = function( query, ele ){
 
 // filter an existing collection
 selfn.filter = function( collection ){
-  var self = this;
-  var cy = collection.cy();
+  let self = this;
+  let cy = collection.cy();
 
   // don't bother trying if it's invalid
   if( self._private.invalid ){
@@ -799,9 +799,9 @@ selfn.filter = function( collection ){
     return collection.getElementById( self[0].ids[0] ).collection();
   }
 
-  var selectorFunction = function( element ){
-    for( var j = 0; j < self.length; j++ ){
-      var query = self[ j ];
+  let selectorFunction = function( element ){
+    for( let j = 0; j < self.length; j++ ){
+      let query = self[ j ];
 
       if( queryMatches( query, element ) ){
         return true;
@@ -815,22 +815,22 @@ selfn.filter = function( collection ){
     selectorFunction = function(){ return true; };
   }
 
-  var filteredCollection = collection.filter( selectorFunction );
+  let filteredCollection = collection.filter( selectorFunction );
 
   return filteredCollection;
 }; // filter
 
 // does selector match a single element?
 selfn.matches = function( ele ){
-  var self = this;
+  let self = this;
 
   // don't bother trying if it's invalid
   if( self._private.invalid ){
     return false;
   }
 
-  for( var j = 0; j < self.length; j++ ){
-    var query = self[ j ];
+  for( let j = 0; j < self.length; j++ ){
+    let query = self[ j ];
 
     if( queryMatches( query, ele ) ){
       return true;
@@ -840,12 +840,17 @@ selfn.matches = function( ele ){
   return false;
 }; // filter
 
+selfn.sameText = function( otherSel ){
+  return this._private.selectorText = otherSel._private.selectorText;
+};
+
 // ith query to string
 selfn.toString = selfn.selector = function(){
 
-  var str = '';
+  let i;
+  let str = '';
 
-  var clean = function( obj ){
+  let clean = function( obj ){
     if( obj == null ){
       return '';
     } else {
@@ -853,7 +858,7 @@ selfn.toString = selfn.selector = function(){
     }
   };
 
-  var cleanVal = function( val ){
+  let cleanVal = function( val ){
     if( is.string( val ) ){
       return '"' + val + '"';
     } else {
@@ -861,23 +866,23 @@ selfn.toString = selfn.selector = function(){
     }
   };
 
-  var space = function( val ){
+  let space = function( val ){
     return ' ' + val + ' ';
   };
 
-  var queryToString = function( query ){
-    var str = '';
-    var j, sel;
+  let queryToString = function( query ){
+    let str = '';
+    let j, sel;
 
     if( query.subject === query ){
       str += '$';
     }
 
-    var group = clean( query.group );
+    let group = clean( query.group );
     str += group.substring( 0, group.length - 1 );
 
     for( j = 0; j < query.data.length; j++ ){
-      var data = query.data[ j ];
+      let data = query.data[ j ];
 
       if( data.value ){
         str += '[' + data.field + space( clean( data.operator ) ) + cleanVal( data.value ) + ']';
@@ -887,7 +892,7 @@ selfn.toString = selfn.selector = function(){
     }
 
     for( j = 0; j < query.meta.length; j++ ){
-      var meta = query.meta[ j ];
+      let meta = query.meta[ j ];
       str += '[[' + meta.field + space( clean( meta.operator ) ) + cleanVal( meta.value ) + ']]';
     }
 
@@ -925,8 +930,8 @@ selfn.toString = selfn.selector = function(){
     return str;
   };
 
-  for( var i = 0; i < this.length; i++ ){
-    var query = this[ i ];
+  for( i = 0; i < this.length; i++ ){
+    let query = this[ i ];
 
     str += queryToString( query );
 

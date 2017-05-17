@@ -1,21 +1,21 @@
 'use strict';
 
-var styfn = {};
+let styfn = {};
 
 styfn.applyFromJson = function( json ){
-  var style = this;
+  let style = this;
 
-  for( var i = 0; i < json.length; i++ ){
-    var context = json[ i ];
-    var selector = context.selector;
-    var props = context.style || context.css;
-    var names = Object.keys( props );
+  for( let i = 0; i < json.length; i++ ){
+    let context = json[ i ];
+    let selector = context.selector;
+    let props = context.style || context.css;
+    let names = Object.keys( props );
 
     style.selector( selector ); // apply selector
 
-    for( var j = 0; j < names.length; j++ ){
-      var name = names[j];
-      var value = props[ name ];
+    for( let j = 0; j < names.length; j++ ){
+      let name = names[j];
+      let value = props[ name ];
 
       style.css( name, value ); // apply property
     }
@@ -26,7 +26,7 @@ styfn.applyFromJson = function( json ){
 
 // accessible cy.style() function
 styfn.fromJson = function( json ){
-  var style = this;
+  let style = this;
 
   style.resetToDefault();
   style.applyFromJson( json );
@@ -36,16 +36,16 @@ styfn.fromJson = function( json ){
 
 // get json from cy.style() api
 styfn.json = function(){
-  var json = [];
+  let json = [];
 
-  for( var i = this.defaultLength; i < this.length; i++ ){
-    var cxt = this[ i ];
-    var selector = cxt.selector;
-    var props = cxt.properties;
-    var css = {};
+  for( let i = this.defaultLength; i < this.length; i++ ){
+    let cxt = this[ i ];
+    let selector = cxt.selector;
+    let props = cxt.properties;
+    let css = {};
 
-    for( var j = 0; j < props.length; j++ ){
-      var prop = props[ j ];
+    for( let j = 0; j < props.length; j++ ){
+      let prop = props[ j ];
       css[ prop.name ] = prop.strValue;
     }
 

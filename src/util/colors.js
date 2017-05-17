@@ -1,15 +1,15 @@
 'use strict';
 
-var is = require( '../is' );
+let is = require( '../is' );
 
 module.exports = {
   // get [r, g, b] from #abc or #aabbcc
   hex2tuple: function( hex ){
     if( !(hex.length === 4 || hex.length === 7) || hex[0] !== '#' ){ return; }
 
-    var shortHex = hex.length === 4;
-    var r, g, b;
-    var base = 16;
+    let shortHex = hex.length === 4;
+    let r, g, b;
+    let base = 16;
 
     if( shortHex ){
       r = parseInt( hex[1] + hex[1], base );
@@ -26,8 +26,8 @@ module.exports = {
 
   // get [r, g, b, a] from hsl(0, 0, 0) or hsla(0, 0, 0, 0)
   hsl2tuple: function( hsl ){
-    var ret;
-    var h, s, l, a, r, g, b;
+    let ret;
+    let h, s, l, a, r, g, b;
     function hue2rgb( p, q, t ){
       if( t < 0 ) t += 1;
       if( t > 1 ) t -= 1;
@@ -37,7 +37,7 @@ module.exports = {
       return p;
     }
 
-    var m = new RegExp( '^' + this.regex.hsla + '$' ).exec( hsl );
+    let m = new RegExp( '^' + this.regex.hsla + '$' ).exec( hsl );
     if( m ){
 
       // get hue
@@ -69,8 +69,8 @@ module.exports = {
       if( s === 0 ){
         r = g = b = Math.round( l * 255 ); // achromatic
       } else {
-        var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-        var p = 2 * l - q;
+        let q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        let p = 2 * l - q;
         r = Math.round( 255 * hue2rgb( p, q, h + 1 / 3 ) );
         g = Math.round( 255 * hue2rgb( p, q, h ) );
         b = Math.round( 255 * hue2rgb( p, q, h - 1 / 3 ) );
@@ -84,15 +84,15 @@ module.exports = {
 
   // get [r, g, b, a] from rgb(0, 0, 0) or rgba(0, 0, 0, 0)
   rgb2tuple: function( rgb ){
-    var ret;
+    let ret;
 
-    var m = new RegExp( '^' + this.regex.rgba + '$' ).exec( rgb );
+    let m = new RegExp( '^' + this.regex.rgba + '$' ).exec( rgb );
     if( m ){
       ret = [];
 
-      var isPct = [];
-      for( var i = 1; i <= 3; i++ ){
-        var channel = m[ i ];
+      let isPct = [];
+      for( let i = 1; i <= 3; i++ ){
+        let channel = m[ i ];
 
         if( channel[ channel.length - 1 ] === '%' ){
           isPct[ i ] = true;
@@ -108,11 +108,11 @@ module.exports = {
         ret.push( Math.floor( channel ) );
       }
 
-      var atLeastOneIsPct = isPct[1] || isPct[2] || isPct[3];
-      var allArePct = isPct[1] && isPct[2] && isPct[3];
+      let atLeastOneIsPct = isPct[1] || isPct[2] || isPct[3];
+      let allArePct = isPct[1] && isPct[2] && isPct[3];
       if( atLeastOneIsPct && !allArePct ){ return; } // must all be percent values if one is
 
-      var alpha = m[4];
+      let alpha = m[4];
       if( alpha !== undefined ){
         alpha = parseFloat( alpha );
 

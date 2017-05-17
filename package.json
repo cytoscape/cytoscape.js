@@ -61,23 +61,28 @@
   "engines": {
     "node": ">=0.10"
   },
-  "main": "src/index.js",
+  "main": "dist/cytoscape.cjs.js",
   "scripts": {
     "build": "gulp build",
     "dist": "gulp dist",
     "watch": "gulp watch",
-    "test": "gulp test && gulp test-browserify",
+    "watch-babel": "gulp watch-babel",
+    "test": "gulp test",
+    "test-travis": "gulp build-cjs && gulp test-build",
     "sniper": "sniper .",
     "docs": "gulp docs",
     "docspub": "gulp docspub"
   },
   "devDependencies": {
+    "babel-preset-es2015": "^6.24.1",
+    "babelify": "^7.3.0",
     "benchmark": "^1.0.0",
     "bluebird": "^2.0.2",
     "browserify": "^13.0.0",
     "chai": "^1.9.0",
     "del": "^2.2.0",
     "gulp": "^3.9.1",
+    "gulp-banner": "^0.1.3",
     "gulp-benchmark": "^1.1.1",
     "gulp-concat": "^2.6.0",
     "gulp-cssmin": "^0.1.4",
@@ -103,6 +108,7 @@
     "marked": "^0.3.5",
     "mocha": "^2.3.2",
     "node-notifier": "^4.5.0",
+    "object-assign": "^4.1.1",
     "run-sequence": "^1.1.5",
     "sniper": "^0.2.17",
     "vinyl-buffer": "^1.0.0",
@@ -116,5 +122,9 @@
       "/build/cytoscape.js"
     ],
     "first": "images"
+  },
+  "dependencies": {
+    "heap": "^0.2.6",
+    "lodash.debounce": "^4.0.8"
   }
 }

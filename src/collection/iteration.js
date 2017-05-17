@@ -1,15 +1,15 @@
 'use strict';
 
-var is = require( '../is' );
-var zIndexSort = require( './zsort' );
+let is = require( '../is' );
+let zIndexSort = require( './zsort' );
 
-var elesfn = ({
+let elesfn = ({
   forEach: function( fn, thisArg ){
     if( is.fn( fn ) ){
 
-      for( var i = 0; i < this.length; i++ ){
-        var ele = this[ i ];
-        var ret = thisArg ? fn.apply( thisArg, [ ele, i, this ] ) : fn( ele, i, this );
+      for( let i = 0; i < this.length; i++ ){
+        let ele = this[ i ];
+        let ret = thisArg ? fn.apply( thisArg, [ ele, i, this ] ) : fn( ele, i, this );
 
         if( ret === false ){ break; } // exit each early on return false
       }
@@ -19,9 +19,9 @@ var elesfn = ({
   },
 
   toArray: function(){
-    var array = [];
+    let array = [];
 
-    for( var i = 0; i < this.length; i++ ){
+    for( let i = 0; i < this.length; i++ ){
       array.push( this[ i ] );
     }
 
@@ -29,8 +29,8 @@ var elesfn = ({
   },
 
   slice: function( start, end ){
-    var array = [];
-    var thisSize = this.length;
+    let array = [];
+    let thisSize = this.length;
 
     if( end == null ){
       end = thisSize;
@@ -48,7 +48,7 @@ var elesfn = ({
       end = thisSize + end;
     }
 
-    for( var i = start; i >= 0 && i < end && i < thisSize; i++ ){
+    for( let i = start; i >= 0 && i < end && i < thisSize; i++ ){
       array.push( this[ i ] );
     }
 
@@ -84,7 +84,7 @@ var elesfn = ({
       return this;
     }
 
-    var sorted = this.toArray().sort( sortFn );
+    let sorted = this.toArray().sort( sortFn );
 
     return this.spawn( sorted );
   },
@@ -94,15 +94,15 @@ var elesfn = ({
   },
 
   zDepth: function(){
-    var ele = this[0];
+    let ele = this[0];
     if( !ele ){ return undefined; }
 
-    // var cy = ele.cy();
-    var _p = ele._private;
-    var group = _p.group;
+    // let cy = ele.cy();
+    let _p = ele._private;
+    let group = _p.group;
 
     if( group === 'nodes' ){
-      var depth = _p.data.parent ? ele.parents().size() : 0;
+      let depth = _p.data.parent ? ele.parents().size() : 0;
 
       if( !ele.isParent() ){
         return Number.MAX_SAFE_INTEGER - 1; // childless nodes always on top
@@ -110,10 +110,10 @@ var elesfn = ({
 
       return depth;
     } else {
-      var src = _p.source;
-      var tgt = _p.target;
-      var srcDepth = src.zDepth();
-      var tgtDepth = tgt.zDepth();
+      let src = _p.source;
+      let tgt = _p.target;
+      let srcDepth = src.zDepth();
+      let tgtDepth = tgt.zDepth();
 
       return Math.max( srcDepth, tgtDepth, 0 ); // depth of deepest parent
     }

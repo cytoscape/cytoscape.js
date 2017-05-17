@@ -1,15 +1,91 @@
 'use strict';
 
-var define = require( '../define' );
+let Emitter = require('../emitter');
+let define = require('../define');
+let is = require('../is');
+let util = require('../util');
+let Selector = require('../selector');
 
-var corefn = ({
-  on: define.on(), // .on( events [, selector] [, data], handler)
-  one: define.on( { unbindSelfOnTrigger: true } ),
-  once: define.on( { unbindAllBindersOnTrigger: true } ),
-  off: define.off(), // .off( events [, selector] [, handler] )
-  trigger: define.trigger() // .trigger( events [, extraParams] )
+let emitterOptions = {
+  qualifierCompare: function( selector1, selector2 ){
+    return selector1.sameText( selector2 );
+  },
+  eventMatches: function( cy, listener, eventObj ){
+    let selector = listener.qualifier;
+
+    if( selector != null ){
+      return cy !== eventObj.target && is.element( eventObj.target ) && selector.matches( eventObj.target );
+    }
+
+    return true;
+  },
+  eventFields: function( cy ){
+    return {
+      cy: cy,
+      target: cy
+    };
+  },
+  callbackContext: function( cy, listener, eventObj ){
+    return listener.selector != null ? eventObj.target : cy;
+  }
+};
+
+let argSelector = function( arg ){
+  if( is.string(arg) ){
+    return new Selector( arg );
+  } else {
+    return arg;
+  }
+};
+
+let elesfn = ({
+  createEmitter: function(){
+    let _p = this._private;
+
+    if( !_p.emitter ){
+      _p.emitter = new Emitter( util.assign( {
+        context: this
+      }, emitterOptions ) );
+    }
+
+    return this;
+  },
+
+  emitter: function(){
+    return this._private.emitter;
+  },
+
+  on: function( events, selector, callback ){
+    this.emitter().on( events, argSelector(selector), callback );
+
+    return this;
+  },
+
+  removeListener: function( events, selector, callback ){
+    this.emitter().removeListener( events, argSelector(selector), callback );
+
+    return this;
+  },
+
+  one: function( events, selector, callback ){
+    this.emitter().one( events, argSelector(selector), callback );
+
+    return this;
+  },
+
+  once: function( events, selector, callback ){
+    this.emitter().one( events, argSelector(selector), callback );
+
+    return this;
+  },
+
+  emit: function( events, extraParams ){
+    this.emitter().emit( events, extraParams );
+
+    return this;
+  }
 });
 
-define.eventAliasesOn( corefn );
+define.eventAliasesOn( elesfn );
 
-module.exports = corefn;
+module.exports = elesfn;

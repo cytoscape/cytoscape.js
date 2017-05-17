@@ -2,10 +2,10 @@
 
 /*global console */
 
-var is = require( '../is' );
-var math = require( '../math' );
+let is = require( '../is' );
+let math = require( '../math' );
 
-var util = {
+let util = {
 
   trueify: function(){ return true; },
 
@@ -54,7 +54,7 @@ var util = {
       a,b                // placeholders
   ){
       for(               // loop :)
-          b=a='';        // b - result , a - numeric variable
+          b=a='';        // b - result , a - numeric letiable
           a++<36;        //
           b+=a*51&52  // if "a" is not 9 or 14 or 19 or 24
                       ?  //  return a random number or 4
@@ -83,17 +83,17 @@ util.staticEmptyObject = function(){
 };
 
 util.extend = Object.assign != null ? Object.assign.bind( Object ) : function( tgt ){
-  var args = arguments;
+  let args = arguments;
 
-  for( var i = 1; i < args.length; i++ ){
-    var obj = args[ i ];
+  for( let i = 1; i < args.length; i++ ){
+    let obj = args[ i ];
 
     if( !obj ){ continue; }
 
-    var keys = Object.keys( obj );
+    let keys = Object.keys( obj );
 
-    for( var j = 0; j < keys.length; j++ ){
-      var k = keys[j];
+    for( let j = 0; j < keys.length; j++ ){
+      let k = keys[j];
 
       tgt[ k ] = obj[ k ];
     }
@@ -101,6 +101,8 @@ util.extend = Object.assign != null ? Object.assign.bind( Object ) : function( t
 
   return tgt;
 };
+
+util.assign = util.extend;
 
 util.default = function( val, def ){
   if( val === undefined ){
@@ -111,7 +113,7 @@ util.default = function( val, def ){
 };
 
 util.removeFromArray = function( arr, ele, manyCopies ){
-  for( var i = arr.length; i >= 0; i-- ){
+  for( let i = arr.length; i >= 0; i-- ){
     if( arr[i] === ele ){
       arr.splice( i, 1 );
 
@@ -124,9 +126,12 @@ util.clearArray = function( arr ){
   arr.splice( 0, arr.length );
 };
 
-util.push = function( arr ){
-  var args = Array.prototype.slice.call( arguments, 1 );
-  Array.prototype.push.apply( arr, args );
+util.push = function( arr, otherArr ){
+  for( let i = 0; i < otherArr.length; i++ ){
+    let el = otherArr[i];
+
+    arr.push( el );
+  }
 };
 
 util.getPrefixedProperty = function( obj, propName, prefix ){

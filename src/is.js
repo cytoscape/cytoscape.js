@@ -2,20 +2,20 @@
 
 /*global HTMLElement DocumentTouch */
 
-var window = require( './window' );
-var navigator = window ? window.navigator : null;
-var document = window ? window.document : null;
+let window = require( './window' );
+let navigator = window ? window.navigator : null;
+let document = window ? window.document : null;
 
-var typeofstr = typeof '';
-var typeofobj = typeof {};
-var typeoffn = typeof function(){};
-var typeofhtmlele = typeof HTMLElement;
+let typeofstr = typeof '';
+let typeofobj = typeof {};
+let typeoffn = typeof function(){};
+let typeofhtmlele = typeof HTMLElement;
 
-var instanceStr = function( obj ){
+let instanceStr = function( obj ){
   return obj && obj.instanceString && is.fn( obj.instanceString ) ? obj.instanceString() : null;
 };
 
-var is = {
+let is = {
   defined: function( obj ){
     return obj != null; // not undefined or null
   },

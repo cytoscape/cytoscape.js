@@ -57,7 +57,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
 
       // get image, and if not loaded then ask to redraw when later loaded
       image[i] = this.getCachedImage( url, bgImgCrossOrigin, function(){
-        node.rtrigger('background');
+        node.emitAndNotify('background');
       } );
     }
   }

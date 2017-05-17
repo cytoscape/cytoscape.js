@@ -2,6 +2,8 @@
 
 Cytoscape.js is an open source project, and we greatly appreciate any and all contributions.
 
+Cytoscape.js is transpiled with Babel, so ES2015/ES6 language features can be used.
+
 If you'd like to contribute code to Cytoscape.js but you're not sure exactly what you'd like to implement, take a look at our [current milestones](https://github.com/cytoscape/cytoscape.js/milestones) to see what features we have planned in future --- or anything labelled [`help-wanted`](https://github.com/cytoscape/cytoscape.js/issues?q=is%3Aopen+is%3Aissue+label%3Ahelp-wanted).  Of course, we also welcome your own ideas.
 
 Our goal is to make Cytoscape.js as comprehensive as possible.  Thank you for taking the time and effort to contribute to help make that happen!

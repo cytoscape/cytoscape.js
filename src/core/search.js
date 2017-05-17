@@ -1,9 +1,9 @@
 'use strict';
 
-var is = require( '../is' );
-var Collection = require( '../collection' );
+let is = require( '../is' );
+let Collection = require( '../collection' );
 
-var corefn = ({
+let corefn = ({
 
   // get a collection
   // - empty collection on no args
@@ -25,7 +25,7 @@ var corefn = ({
   },
 
   nodes: function( selector ){
-    var nodes = this.$( function( ele ){
+    let nodes = this.$( function( ele ){
       return ele.isNode();
     } );
 
@@ -37,7 +37,7 @@ var corefn = ({
   },
 
   edges: function( selector ){
-    var edges = this.$( function( ele ){
+    let edges = this.$( function( ele ){
       return ele.isEdge();
     } );
 
@@ -50,7 +50,7 @@ var corefn = ({
 
   // search the graph like jQuery
   $: function( selector ){
-    var eles = this._private.elements;
+    let eles = this._private.elements;
 
     if( selector ){
       return eles.filter( selector );

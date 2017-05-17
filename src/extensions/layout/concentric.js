@@ -1,9 +1,9 @@
 'use strict';
 
-var util = require( '../../util' );
-var math = require( '../../math' );
+let util = require( '../../util' );
+let math = require( '../../math' );
 
-var defaults = {
+let defaults = {
   fit: true, // whether to fit the viewport to the graph
   padding: 30, // the padding on fit
   startAngle: 3 / 2 * Math.PI, // where nodes start in radians
@@ -20,7 +20,7 @@ var defaults = {
   concentric: function( node ){ // returns numeric value for each node, placing higher nodes in levels towards the centre
     return node.degree();
   },
-  levelWidth: function( nodes ){ // the variation of concentric values in each level
+  levelWidth: function( nodes ){ // the letiation of concentric values in each level
     return nodes.maxDegree() / 4;
   },
   animate: false, // whether to transition the node positions
@@ -35,32 +35,32 @@ function ConcentricLayout( options ){
 }
 
 ConcentricLayout.prototype.run = function(){
-  var params = this.options;
-  var options = params;
+  let params = this.options;
+  let options = params;
 
-  var clockwise = options.counterclockwise !== undefined ? !options.counterclockwise : options.clockwise;
+  let clockwise = options.counterclockwise !== undefined ? !options.counterclockwise : options.clockwise;
 
-  var cy = params.cy;
+  let cy = params.cy;
 
-  var eles = options.eles;
-  var nodes = eles.nodes().not( ':parent' );
+  let eles = options.eles;
+  let nodes = eles.nodes().not( ':parent' );
 
-  var bb = math.makeBoundingBox( options.boundingBox ? options.boundingBox : {
+  let bb = math.makeBoundingBox( options.boundingBox ? options.boundingBox : {
     x1: 0, y1: 0, w: cy.width(), h: cy.height()
   } );
 
-  var center = {
+  let center = {
     x: bb.x1 + bb.w / 2,
     y: bb.y1 + bb.h / 2
   };
 
-  var nodeValues = []; // { node, value }
-  var theta = options.startAngle;
-  var maxNodeSize = 0;
+  let nodeValues = []; // { node, value }
+  let theta = options.startAngle;
+  let maxNodeSize = 0;
 
-  for( var i = 0; i < nodes.length; i++ ){
-    var node = nodes[ i ];
-    var value;
+  for( let i = 0; i < nodes.length; i++ ){
+    let node = nodes[ i ];
+    let value;
 
     // calculate the node value
     value = options.concentric( node );
@@ -77,9 +77,9 @@ ConcentricLayout.prototype.run = function(){
   nodes.updateStyle();
 
   // calculate max size now based on potentially updated mappers
-  for( var i = 0; i < nodes.length; i++ ){
-    var node = nodes[ i ];
-    var nbb = node.layoutDimensions( options );
+  for( let i = 0; i < nodes.length; i++ ){
+    let node = nodes[ i ];
+    let nbb = node.layoutDimensions( options );
 
     maxNodeSize = Math.max( maxNodeSize, nbb.w, nbb.h );
   }
@@ -89,16 +89,16 @@ ConcentricLayout.prototype.run = function(){
     return b.value - a.value;
   } );
 
-  var levelWidth = options.levelWidth( nodes );
+  let levelWidth = options.levelWidth( nodes );
 
   // put the values into levels
-  var levels = [ [] ];
-  var currentLevel = levels[0];
-  for( var i = 0; i < nodeValues.length; i++ ){
-    var val = nodeValues[ i ];
+  let levels = [ [] ];
+  let currentLevel = levels[0];
+  for( let i = 0; i < nodeValues.length; i++ ){
+    let val = nodeValues[ i ];
 
     if( currentLevel.length > 0 ){
-      var diff = Math.abs( currentLevel[0].value - val.value );
+      let diff = Math.abs( currentLevel[0].value - val.value );
 
       if( diff >= levelWidth ){
         currentLevel = [];
@@ -111,28 +111,28 @@ ConcentricLayout.prototype.run = function(){
 
   // create positions from levels
 
-  var minDist = maxNodeSize + options.minNodeSpacing; // min dist between nodes
+  let minDist = maxNodeSize + options.minNodeSpacing; // min dist between nodes
 
   if( !options.avoidOverlap ){ // then strictly constrain to bb
-    var firstLvlHasMulti = levels.length > 0 && levels[0].length > 1;
-    var maxR = ( Math.min( bb.w, bb.h ) / 2 - minDist );
-    var rStep = maxR / ( levels.length + firstLvlHasMulti ? 1 : 0 );
+    let firstLvlHasMulti = levels.length > 0 && levels[0].length > 1;
+    let maxR = ( Math.min( bb.w, bb.h ) / 2 - minDist );
+    let rStep = maxR / ( levels.length + firstLvlHasMulti ? 1 : 0 );
 
     minDist = Math.min( minDist, rStep );
   }
 
   // find the metrics for each level
-  var r = 0;
-  for( var i = 0; i < levels.length; i++ ){
-    var level = levels[ i ];
-    var sweep = options.sweep === undefined ? 2 * Math.PI - 2 * Math.PI / level.length : options.sweep;
-    var dTheta = level.dTheta = sweep / ( Math.max( 1, level.length - 1 ) );
+  let r = 0;
+  for( let i = 0; i < levels.length; i++ ){
+    let level = levels[ i ];
+    let sweep = options.sweep === undefined ? 2 * Math.PI - 2 * Math.PI / level.length : options.sweep;
+    let dTheta = level.dTheta = sweep / ( Math.max( 1, level.length - 1 ) );
 
     // calculate the radius
     if( level.length > 1 && options.avoidOverlap ){ // but only if more than one node (can't overlap)
-      var dcos = Math.cos( dTheta ) - Math.cos( 0 );
-      var dsin = Math.sin( dTheta ) - Math.sin( 0 );
-      var rMin = Math.sqrt( minDist * minDist / ( dcos * dcos + dsin * dsin ) ); // s.t. no nodes overlapping
+      let dcos = Math.cos( dTheta ) - Math.cos( 0 );
+      let dsin = Math.sin( dTheta ) - Math.sin( 0 );
+      let rMin = Math.sqrt( minDist * minDist / ( dcos * dcos + dsin * dsin ) ); // s.t. no nodes overlapping
 
       r = Math.max( rMin, r );
     }
@@ -143,19 +143,19 @@ ConcentricLayout.prototype.run = function(){
   }
 
   if( options.equidistant ){
-    var rDeltaMax = 0;
-    var r = 0;
+    let rDeltaMax = 0;
+    let r = 0;
 
-    for( var i = 0; i < levels.length; i++ ){
-      var level = levels[ i ];
-      var rDelta = level.r - r;
+    for( let i = 0; i < levels.length; i++ ){
+      let level = levels[ i ];
+      let rDelta = level.r - r;
 
       rDeltaMax = Math.max( rDeltaMax, rDelta );
     }
 
     r = 0;
-    for( var i = 0; i < levels.length; i++ ){
-      var level = levels[ i ];
+    for( let i = 0; i < levels.length; i++ ){
+      let level = levels[ i ];
 
       if( i === 0 ){
         r = level.r;
@@ -168,17 +168,17 @@ ConcentricLayout.prototype.run = function(){
   }
 
   // calculate the node positions
-  var pos = {}; // id => position
-  for( var i = 0; i < levels.length; i++ ){
-    var level = levels[ i ];
-    var dTheta = level.dTheta;
-    var r = level.r;
+  let pos = {}; // id => position
+  for( let i = 0; i < levels.length; i++ ){
+    let level = levels[ i ];
+    let dTheta = level.dTheta;
+    let r = level.r;
 
-    for( var j = 0; j < level.length; j++ ){
-      var val = level[ j ];
-      var theta = options.startAngle + (clockwise ? 1 : -1) * dTheta * j;
+    for( let j = 0; j < level.length; j++ ){
+      let val = level[ j ];
+      let theta = options.startAngle + (clockwise ? 1 : -1) * dTheta * j;
 
-      var p = {
+      let p = {
         x: center.x + r * Math.cos( theta ),
         y: center.y + r * Math.sin( theta )
       };
@@ -189,7 +189,7 @@ ConcentricLayout.prototype.run = function(){
 
   // position the nodes
   nodes.layoutPositions( this, options, function( ele ){
-    var id = ele.id();
+    let id = ele.id();
 
     return pos[ id ];
   } );

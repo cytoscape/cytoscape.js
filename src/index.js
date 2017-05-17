@@ -1,14 +1,11 @@
 'use strict';
 
-require('./-preamble');
+let is = require( './is' );
+let Core = require( './core' );
+let extension = require( './extension' );
+let Stylesheet = require( './stylesheet' );
 
-var window = require( './window' );
-var is = require( './is' );
-var Core = require( './core' );
-var extension = require( './extension' );
-var Stylesheet = require( './stylesheet' );
-
-var cytoscape = function( options ){ // jshint ignore:line
+let cytoscape = function( options ){ // jshint ignore:line
   // if no options specified, use default
   if( options === undefined ){
     options = {};
@@ -27,7 +24,7 @@ var cytoscape = function( options ){ // jshint ignore:line
 
 // e.g. cytoscape.use( require('cytoscape-foo'), bar )
 cytoscape.use = function( ext ){
-  var args = Array.prototype.slice.call( arguments, 1 ); // args to pass to ext
+  let args = Array.prototype.slice.call( arguments, 1 ); // args to pass to ext
 
   args.unshift( cytoscape ); // cytoscape is first arg to ext
 

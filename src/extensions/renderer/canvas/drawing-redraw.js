@@ -573,7 +573,7 @@ CRp.render = function( options ){
   }
 
   if( !forcedContext ){
-    cy.trigger('render');
+    cy.emit('render');
   }
 
 };

@@ -1,10 +1,10 @@
 'use strict';
 
-var define = require('../define');
-var util = require('../util');
-var is = require('../is');
+let define = require('../define');
+let util = require('../util');
+let is = require('../is');
 
-var corefn = ({
+let corefn = ({
 
   // pull in animation functions
   animate: define.animate(),
@@ -16,7 +16,7 @@ var corefn = ({
   stop: define.stop(),
 
   addToAnimationPool: function( eles ){
-    var cy = this;
+    let cy = this;
 
     if( !cy.styleEnabled() ){ return; } // save cycles when no style used
 
@@ -28,13 +28,13 @@ var corefn = ({
   },
 
   startAnimationLoop: function(){
-    var cy = this;
+    let cy = this;
 
     cy._private.animationsRunning = true;
 
     if( !cy.styleEnabled() ){ return; } // save cycles when no style used
 
-    var style = cy.style();
+    let style = cy.style();
 
     // NB the animation loop will exec in headless environments if style enabled
     // and explicit cy.destroy() is necessary to stop the loop
@@ -48,7 +48,7 @@ var corefn = ({
       } );
     }
 
-    var renderer = cy.renderer();
+    let renderer = cy.renderer();
 
     if( renderer && renderer.beforeRender ){ // let the renderer schedule animations
       renderer.beforeRender( function rendererAnimationStep( willDraw, now ){
@@ -59,14 +59,14 @@ var corefn = ({
     }
 
     function handleElements( now ){
-      var eles = cy._private.aniEles;
-      var doneEles = [];
+      let eles = cy._private.aniEles;
+      let doneEles = [];
 
       function handleElement( ele, isCore ){
-        var _p = ele._private;
-        var current = _p.animation.current;
-        var queue = _p.animation.queue;
-        var ranAnis = false;
+        let _p = ele._private;
+        let current = _p.animation.current;
+        let queue = _p.animation.queue;
+        let ranAnis = false;
 
         // cancel all animations on display:none ele
         if( !isCore && ele.pstyle('display').value === 'none' ){
@@ -75,21 +75,21 @@ var corefn = ({
           current = current.splice( 0, current.length ).concat( queue.splice( 0, queue.length ) );
 
           // stop all animations
-          for( var i = 0; i < current.length; i++ ){ current[i].stop(); }
+          for( let i = 0; i < current.length; i++ ){ current[i].stop(); }
         }
 
         // if nothing currently animating, get something from the queue
         if( current.length === 0 ){
-          var next = queue.shift();
+          let next = queue.shift();
 
           if( next ){
             current.push( next );
           }
         }
 
-        var callbacks = function( callbacks ){
-          for( var j = callbacks.length - 1; j >= 0; j-- ){
-            var cb = callbacks[ j ];
+        let callbacks = function( callbacks ){
+          for( let j = callbacks.length - 1; j >= 0; j-- ){
+            let cb = callbacks[ j ];
 
             cb();
           }
@@ -98,9 +98,9 @@ var corefn = ({
         };
 
         // step and remove if done
-        for( var i = current.length - 1; i >= 0; i-- ){
-          var ani = current[ i ];
-          var ani_p = ani._private;
+        for( let i = current.length - 1; i >= 0; i-- ){
+          let ani = current[ i ];
+          let ani_p = ani._private;
 
           if( ani_p.stopped ){
             current.splice( i, 1 );
@@ -154,15 +154,15 @@ var corefn = ({
       } // handleElement
 
       // handle all eles
-      var ranEleAni = false;
-      for( var e = 0; e < eles.length; e++ ){
-        var ele = eles[ e ];
-        var handledThisEle = handleElement( ele );
+      let ranEleAni = false;
+      for( let e = 0; e < eles.length; e++ ){
+        let ele = eles[ e ];
+        let handledThisEle = handleElement( ele );
 
         ranEleAni = ranEleAni || handledThisEle;
       } // each element
 
-      var ranCoreAni = handleElement( cy, true );
+      let ranCoreAni = handleElement( cy, true );
 
       // notify renderer
       if( ranEleAni || ranCoreAni ){
@@ -183,18 +183,18 @@ var corefn = ({
       // remove elements from list of currently animating if its queues are empty
       eles.unmerge( doneEles );
 
-      cy.trigger('step');
+      cy.emit('step');
 
     } // handleElements
 
     function startAnimation( self, ani, now ){
-      var isCore = is.core( self );
-      var isEles = !isCore;
-      var ele = self;
-      var ani_p = ani._private;
+      let isCore = is.core( self );
+      let isEles = !isCore;
+      let ele = self;
+      let ani_p = ani._private;
 
       if( isEles ){
-        var pos = ele.position();
+        let pos = ele.position();
 
         ani_p.startPosition = ani_p.startPosition || {
           x: pos.x,
@@ -205,7 +205,7 @@ var corefn = ({
       }
 
       if( isCore ){
-        var pan = cy._private.pan;
+        let pan = cy._private.pan;
 
         ani_p.startPan = ani_p.startPan || {
           x: pan.x,
@@ -220,11 +220,11 @@ var corefn = ({
     }
 
     function step( self, ani, now, isCore ){
-      var isEles = !isCore;
-      var _p = self._private;
-      var ani_p = ani._private;
-      var pEasing = ani_p.easing;
-      var startTime = ani_p.startTime;
+      let isEles = !isCore;
+      let _p = self._private;
+      let ani_p = ani._private;
+      let pEasing = ani_p.easing;
+      let startTime = ani_p.startTime;
 
       if( !ani_p.easingImpl ){
 
@@ -232,10 +232,10 @@ var corefn = ({
           ani_p.easingImpl = easings[ 'linear' ];
 
         } else { // then define w/ name
-          var easingVals;
+          let easingVals;
 
           if( is.string( pEasing ) ){
-            var easingProp = style.parse( 'transition-timing-function', pEasing );
+            let easingProp = style.parse( 'transition-timing-function', pEasing );
 
             easingVals = easingProp.value;
 
@@ -243,7 +243,7 @@ var corefn = ({
             easingVals = pEasing;
           }
 
-          var name, args;
+          let name, args;
 
           if( is.string( easingVals ) ){
             name = easingVals;
@@ -266,8 +266,8 @@ var corefn = ({
 
       }
 
-      var easing = ani_p.easingImpl;
-      var percent;
+      let easing = ani_p.easingImpl;
+      let percent;
 
       if( ani_p.duration === 0 ){
         percent = 1;
@@ -287,11 +287,11 @@ var corefn = ({
 
       if( ani_p.delay == null ){ // then update
 
-        var startPos = ani_p.startPosition;
-        var endPos = ani_p.position;
+        let startPos = ani_p.startPosition;
+        let endPos = ani_p.position;
 
         if( endPos && isEles ){
-          var pos = self.position();
+          let pos = self.position();
 
           if( valid( startPos.x, endPos.x ) ){
             pos.x = ease( startPos.x, endPos.x, percent, easing );
@@ -301,13 +301,13 @@ var corefn = ({
             pos.y = ease( startPos.y, endPos.y, percent, easing );
           }
 
-          self.trigger('position');
+          self.emit('position');
         }
 
-        var startPan = ani_p.startPan;
-        var endPan = ani_p.pan;
-        var pan = _p.pan;
-        var animatingPan = endPan != null && isCore;
+        let startPan = ani_p.startPan;
+        let endPan = ani_p.pan;
+        let pan = _p.pan;
+        let animatingPan = endPan != null && isCore;
         if( animatingPan ){
           if( valid( startPan.x, endPan.x ) ){
             pan.x = ease( startPan.x, endPan.x, percent, easing );
@@ -317,38 +317,38 @@ var corefn = ({
             pan.y = ease( startPan.y, endPan.y, percent, easing );
           }
 
-          self.trigger( 'pan' );
+          self.emit( 'pan' );
         }
 
-        var startZoom = ani_p.startZoom;
-        var endZoom = ani_p.zoom;
-        var animatingZoom = endZoom != null && isCore;
+        let startZoom = ani_p.startZoom;
+        let endZoom = ani_p.zoom;
+        let animatingZoom = endZoom != null && isCore;
         if( animatingZoom ){
           if( valid( startZoom, endZoom ) ){
             _p.zoom = ease( startZoom, endZoom, percent, easing );
           }
 
-          self.trigger( 'zoom' );
+          self.emit( 'zoom' );
         }
 
         if( animatingPan || animatingZoom ){
-          self.trigger( 'viewport' );
+          self.emit( 'viewport' );
         }
 
-        var props = ani_p.style;
+        let props = ani_p.style;
         if( props && props.length > 0 && isEles ){
-          for( var i = 0; i < props.length; i++ ){
-            var prop = props[ i ];
-            var name = prop.name;
-            var end = prop;
+          for( let i = 0; i < props.length; i++ ){
+            let prop = props[ i ];
+            let name = prop.name;
+            let end = prop;
 
-            var start = ani_p.startStyle[ name ];
-            var easedVal = ease( start, end, percent, easing );
+            let start = ani_p.startStyle[ name ];
+            let easedVal = ease( start, end, percent, easing );
 
             style.overrideBypass( self, name, easedVal );
           } // for props
 
-          self.trigger('style');
+          self.emit('style');
 
         } // if
 
@@ -375,7 +375,7 @@ var corefn = ({
 
     /*! Bezier curve function generator. Copyright Gaetan Renaudeau. MIT License: http://en.wikipedia.org/wiki/MIT_License */
 		function generateCubicBezier(mX1, mY1, mX2, mY2) {
-      var NEWTON_ITERATIONS = 4,
+      let NEWTON_ITERATIONS = 4,
         NEWTON_MIN_SLOPE = 0.001,
         SUBDIVISION_PRECISION = 0.0000001,
         SUBDIVISION_MAX_ITERATIONS = 10,
@@ -389,7 +389,7 @@ var corefn = ({
       }
 
       /* Arguments must be numbers. */
-      for (var i = 0; i < 4; ++i) {
+      for (let i = 0; i < 4; ++i) {
         if (typeof arguments[i] !== "number" || isNaN(arguments[i]) || !isFinite(arguments[i])) {
           return false;
         }
@@ -401,7 +401,7 @@ var corefn = ({
       mX1 = Math.max(mX1, 0);
       mX2 = Math.max(mX2, 0);
 
-      var mSampleValues = float32ArraySupported ? new Float32Array(kSplineTableSize) : new Array(kSplineTableSize);
+      let mSampleValues = float32ArraySupported ? new Float32Array(kSplineTableSize) : new Array(kSplineTableSize);
 
       function A(aA1, aA2) {
         return 1.0 - 3.0 * aA2 + 3.0 * aA1;
@@ -424,14 +424,14 @@ var corefn = ({
       }
 
       function newtonRaphsonIterate(aX, aGuessT) {
-        for (var i = 0; i < NEWTON_ITERATIONS; ++i) {
-          var currentSlope = getSlope(aGuessT, mX1, mX2);
+        for (let i = 0; i < NEWTON_ITERATIONS; ++i) {
+          let currentSlope = getSlope(aGuessT, mX1, mX2);
 
           if (currentSlope === 0.0) {
             return aGuessT;
           }
 
-          var currentX = calcBezier(aGuessT, mX1, mX2) - aX;
+          let currentX = calcBezier(aGuessT, mX1, mX2) - aX;
           aGuessT -= currentX / currentSlope;
         }
 
@@ -439,13 +439,13 @@ var corefn = ({
       }
 
       function calcSampleValues() {
-        for (var i = 0; i < kSplineTableSize; ++i) {
+        for (let i = 0; i < kSplineTableSize; ++i) {
           mSampleValues[i] = calcBezier(i * kSampleStepSize, mX1, mX2);
         }
       }
 
       function binarySubdivide(aX, aA, aB) {
-        var currentX, currentT, i = 0;
+        let currentX, currentT, i = 0;
 
         do {
           currentT = aA + (aB - aA) / 2.0;
@@ -461,7 +461,7 @@ var corefn = ({
       }
 
       function getTForX(aX) {
-        var intervalStart = 0.0,
+        let intervalStart = 0.0,
           currentSample = 1,
           lastSample = kSplineTableSize - 1;
 
@@ -471,7 +471,7 @@ var corefn = ({
 
         --currentSample;
 
-        var dist = (aX - mSampleValues[currentSample]) / (mSampleValues[currentSample + 1] - mSampleValues[currentSample]),
+        let dist = (aX - mSampleValues[currentSample]) / (mSampleValues[currentSample + 1] - mSampleValues[currentSample]),
           guessForT = intervalStart + dist * kSampleStepSize,
           initialSlope = getSlope(guessForT, mX1, mX2);
 
@@ -484,7 +484,7 @@ var corefn = ({
         }
       }
 
-      var _precomputed = false;
+      let _precomputed = false;
 
       function precompute() {
         _precomputed = true;
@@ -493,7 +493,7 @@ var corefn = ({
         }
       }
 
-      var f = function(aX) {
+      let f = function(aX) {
         if (!_precomputed) {
           precompute();
         }
@@ -520,7 +520,7 @@ var corefn = ({
         }];
       };
 
-      var str = "generateBezier(" + [mX1, mY1, mX2, mY2] + ")";
+      let str = "generateBezier(" + [mX1, mY1, mX2, mY2] + ")";
       f.toString = function() {
         return str;
       };
@@ -531,13 +531,13 @@ var corefn = ({
     /*! Runge-Kutta spring physics function generator. Adapted from Framer.js, copyright Koen Bok. MIT License: http://en.wikipedia.org/wiki/MIT_License */
     /* Given a tension, friction, and duration, a simulation at 60FPS will first run without a defined duration in order to calculate the full path. A second pass
        then adjusts the time delta -- using the relation between actual time and duration -- to calculate the path for the duration-constrained animation. */
-    var generateSpringRK4 = (function(){
+    let generateSpringRK4 = (function(){
       function springAccelerationForState( state ){
         return (-state.tension * state.x) - (state.friction * state.v);
       }
 
       function springEvaluateStateWithDerivative( initialState, dt, derivative ){
-        var state = {
+        let state = {
           x: initialState.x + derivative.dx * dt,
           v: initialState.v + derivative.dv * dt,
           tension: initialState.tension,
@@ -548,7 +548,7 @@ var corefn = ({
       }
 
       function springIntegrateState( state, dt ){
-        var a = {
+        let a = {
           dx: state.v,
           dv: springAccelerationForState( state )
         },
@@ -566,7 +566,7 @@ var corefn = ({
 
       return function springRK4Factory( tension, friction, duration ){
 
-        var initState = {
+        let initState = {
           x: -1,
           v: 0,
           tension: null,
@@ -615,15 +615,15 @@ var corefn = ({
       };
     }());
 
-    var cubicBezier = function( t1, p1, t2, p2 ){
-      var bezier = generateCubicBezier( t1, p1, t2, p2 );
+    let cubicBezier = function( t1, p1, t2, p2 ){
+      let bezier = generateCubicBezier( t1, p1, t2, p2 );
 
       return function( start, end, percent ){
         return start + ( end - start ) * bezier( percent );
       };
     };
 
-    var easings = {
+    let easings = {
       'linear': function( start, end, percent ){
         return start + (end - start) * percent;
       },
@@ -677,7 +677,7 @@ var corefn = ({
           return easings.linear; // duration 0 => jump to end so impl doesn't matter
         }
 
-        var spring = generateSpringRK4( tension, friction, duration );
+        let spring = generateSpringRK4( tension, friction, duration );
 
         return function( start, end, percent ){
           return start + (end - start) * spring( percent );
@@ -688,7 +688,7 @@ var corefn = ({
     };
 
     function getEasedValue( type, start, end, percent, easingFn ){
-      var val = easingFn( start, end, percent );
+      let val = easingFn( start, end, percent );
 
       if( type == null ){
         return val;
@@ -710,8 +710,8 @@ var corefn = ({
     }
 
     function ease( startProp, endProp, percent, easingFn ){
-      var propSpec = startProp.name != null ? style.properties[ startProp.name ] : null;
-      var type = propSpec != null ? propSpec.type : null;
+      let propSpec = startProp.name != null ? style.properties[ startProp.name ] : null;
+      let type = propSpec != null ? propSpec.type : null;
 
       if( percent < 0 ){
         percent = 0;
@@ -719,7 +719,7 @@ var corefn = ({
         percent = 1;
       }
 
-      var start, end;
+      let start, end;
 
       if( startProp.pfValue != null || startProp.value != null ){
         start = startProp.pfValue != null ? startProp.pfValue : startProp.value;
@@ -737,14 +737,14 @@ var corefn = ({
         return getEasedValue( type, start, end, percent, easingFn );
 
       } else if( is.array( start ) && is.array( end ) ){
-        var easedArr = [];
+        let easedArr = [];
 
-        for( var i = 0; i < end.length; i++ ){
-          var si = start[ i ];
-          var ei = end[ i ];
+        for( let i = 0; i < end.length; i++ ){
+          let si = start[ i ];
+          let ei = end[ i ];
 
           if( si != null && ei != null ){
-            var val = getEasedValue( type, si, ei, percent, easingFn );
+            let val = getEasedValue( type, si, ei, percent, easingFn );
 
             easedArr.push( val );
           } else {

@@ -1,11 +1,11 @@
 'use strict';
 
-var util = require( '../util' );
-var is = require( '../is' );
+let util = require( '../util' );
+let is = require( '../is' );
 
 // represents a node or an edge
-var Element = function( cy, params, restore ){
-  var self = this;
+let Element = function( cy, params, restore ){
+  let self = this;
   restore = (restore === undefined || restore ? true : false);
 
   if( cy === undefined || params === undefined || !is.core( cy ) ){
@@ -13,7 +13,7 @@ var Element = function( cy, params, restore ){
     return;
   }
 
-  var group = params.group;
+  let group = params.group;
 
   // try to automatically infer the group if unspecified
   if( group == null ){
@@ -35,7 +35,7 @@ var Element = function( cy, params, restore ){
   this[0] = this;
 
   // NOTE: when something is added here, add also to ele.json()
-  var _p = this._private = {
+  let _p = this._private = {
     cy: cy,
     single: true, // indicates this is an element
     data: params.data || {}, // data object
@@ -71,9 +71,9 @@ var Element = function( cy, params, restore ){
 
   // renderedPosition overrides if specified
   if( params.renderedPosition ){
-    var rpos = params.renderedPosition;
-    var pan = cy.pan();
-    var zoom = cy.zoom();
+    let rpos = params.renderedPosition;
+    let pan = cy.pan();
+    let zoom = cy.zoom();
 
     _p.position = {
       x: (rpos.x - pan.x) / zoom,
@@ -82,9 +82,9 @@ var Element = function( cy, params, restore ){
   }
 
   if( is.string( params.classes ) ){
-    var classes = params.classes.split( /\s+/ );
-    for( var i = 0, l = classes.length; i < l; i++ ){
-      var cls = classes[ i ];
+    let classes = params.classes.split( /\s+/ );
+    for( let i = 0, l = classes.length; i < l; i++ ){
+      let cls = classes[ i ];
       if( !cls || cls === '' ){ continue; }
 
       _p.classes[ cls ] = true;
@@ -94,6 +94,8 @@ var Element = function( cy, params, restore ){
   if( params.style || params.css ){
     cy.style().applyBypass( this, params.style || params.css );
   }
+
+  this.createEmitter();
 
   if( restore === undefined || restore ){
     this.restore();

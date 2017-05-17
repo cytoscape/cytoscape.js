@@ -2,7 +2,7 @@ function ObjectMap(){
   this._obj = {};
 }
 
-var p = ObjectMap.prototype;
+let p = ObjectMap.prototype;
 
 p.set = function( key, val ){
   this._obj[ key ] = val;

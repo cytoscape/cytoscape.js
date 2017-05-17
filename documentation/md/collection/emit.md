@@ -7,5 +7,5 @@ j.on('tap', function(){
   console.log('tap!!');
 });
 
-j.trigger('tap'); // tap!!
+j.emit('tap'); // tap!!
 ```

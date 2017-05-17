@@ -1,6 +1,6 @@
 'use strict';
 
-var math = {};
+let math = {};
 
 math.arePositionsSame = function( p1, p2 ){
   return p1.x === p2.x && p1.y === p2.y;
@@ -44,8 +44,8 @@ math.dist = function( p1, p2 ){
 };
 
 math.sqdist = function( p1, p2 ){
-  var dx = p2.x - p1.x;
-  var dy = p2.y - p1.y;
+  let dx = p2.x - p1.x;
+  let dy = p2.y - p1.y;
 
   return dx * dx + dy * dy;
 };
@@ -63,21 +63,21 @@ math.qbezierPtAt = function( p0, p1, p2, t ){
 };
 
 math.lineAt = function( p0, p1, t, d ){
-  var vec = {
+  let vec = {
     x: p1.x - p0.x,
     y: p1.y - p0.y
   };
 
-  var vecDist = math.dist( p0, p1 );
+  let vecDist = math.dist( p0, p1 );
 
-  var normVec = {
+  let normVec = {
     x: vec.x / vecDist,
     y: vec.y / vecDist
   };
 
   t = t == null ? 0 : t;
 
-  var d = d != null ? d : t * vecDist;
+  d = d != null ? d : t * vecDist;
 
   return {
     x: p0.x + normVec.x * d,
@@ -91,9 +91,9 @@ math.lineAtDist = function( p0, p1, d ){
 
 // get angle at A via cosine law
 math.triangleAngle = function( A, B, C ){
-  var a = math.dist( B, C );
-  var b = math.dist( A, C );
-  var c = math.dist( A, B );
+  let a = math.dist( B, C );
+  let b = math.dist( A, C );
+  let c = math.dist( A, B );
 
   return Math.acos( (a*a + b*b - c*c)/(2*a*b) );
 };
@@ -208,20 +208,20 @@ math.boundingBoxInBoundingBox = function( bb1, bb2 ){
 math.roundRectangleIntersectLine = function(
   x, y, nodeX, nodeY, width, height, padding ){
 
-  var cornerRadius = this.getRoundRectangleRadius( width, height );
+  let cornerRadius = this.getRoundRectangleRadius( width, height );
 
-  var halfWidth = width / 2;
-  var halfHeight = height / 2;
+  let halfWidth = width / 2;
+  let halfHeight = height / 2;
 
   // Check intersections with straight line segments
-  var straightLineIntersections;
+  let straightLineIntersections;
 
   // Top segment, left to right
   {
-    var topStartX = nodeX - halfWidth + cornerRadius - padding;
-    var topStartY = nodeY - halfHeight - padding;
-    var topEndX = nodeX + halfWidth - cornerRadius + padding;
-    var topEndY = topStartY;
+    let topStartX = nodeX - halfWidth + cornerRadius - padding;
+    let topStartY = nodeY - halfHeight - padding;
+    let topEndX = nodeX + halfWidth - cornerRadius + padding;
+    let topEndY = topStartY;
 
     straightLineIntersections = this.finiteLinesIntersect(
       x, y, nodeX, nodeY, topStartX, topStartY, topEndX, topEndY, false );
@@ -233,10 +233,10 @@ math.roundRectangleIntersectLine = function(
 
   // Right segment, top to bottom
   {
-    var rightStartX = nodeX + halfWidth + padding;
-    var rightStartY = nodeY - halfHeight + cornerRadius - padding;
-    var rightEndX = rightStartX;
-    var rightEndY = nodeY + halfHeight - cornerRadius + padding;
+    let rightStartX = nodeX + halfWidth + padding;
+    let rightStartY = nodeY - halfHeight + cornerRadius - padding;
+    let rightEndX = rightStartX;
+    let rightEndY = nodeY + halfHeight - cornerRadius + padding;
 
     straightLineIntersections = this.finiteLinesIntersect(
       x, y, nodeX, nodeY, rightStartX, rightStartY, rightEndX, rightEndY, false );
@@ -248,10 +248,10 @@ math.roundRectangleIntersectLine = function(
 
   // Bottom segment, left to right
   {
-    var bottomStartX = nodeX - halfWidth + cornerRadius - padding;
-    var bottomStartY = nodeY + halfHeight + padding;
-    var bottomEndX = nodeX + halfWidth - cornerRadius + padding;
-    var bottomEndY = bottomStartY;
+    let bottomStartX = nodeX - halfWidth + cornerRadius - padding;
+    let bottomStartY = nodeY + halfHeight + padding;
+    let bottomEndX = nodeX + halfWidth - cornerRadius + padding;
+    let bottomEndY = bottomStartY;
 
     straightLineIntersections = this.finiteLinesIntersect(
       x, y, nodeX, nodeY, bottomStartX, bottomStartY, bottomEndX, bottomEndY, false );
@@ -263,10 +263,10 @@ math.roundRectangleIntersectLine = function(
 
   // Left segment, top to bottom
   {
-    var leftStartX = nodeX - halfWidth - padding;
-    var leftStartY = nodeY - halfHeight + cornerRadius - padding;
-    var leftEndX = leftStartX;
-    var leftEndY = nodeY + halfHeight - cornerRadius + padding;
+    let leftStartX = nodeX - halfWidth - padding;
+    let leftStartY = nodeY - halfHeight + cornerRadius - padding;
+    let leftEndX = leftStartX;
+    let leftEndY = nodeY + halfHeight - cornerRadius + padding;
 
     straightLineIntersections = this.finiteLinesIntersect(
       x, y, nodeX, nodeY, leftStartX, leftStartY, leftEndX, leftEndY, false );
@@ -277,12 +277,12 @@ math.roundRectangleIntersectLine = function(
   }
 
   // Check intersections with arc segments
-  var arcIntersections;
+  let arcIntersections;
 
   // Top Left
   {
-    var topLeftCenterX = nodeX - halfWidth + cornerRadius;
-    var topLeftCenterY = nodeY - halfHeight + cornerRadius;
+    let topLeftCenterX = nodeX - halfWidth + cornerRadius;
+    let topLeftCenterY = nodeY - halfHeight + cornerRadius;
     arcIntersections = this.intersectLineCircle(
       x, y, nodeX, nodeY,
       topLeftCenterX, topLeftCenterY, cornerRadius + padding );
@@ -297,8 +297,8 @@ math.roundRectangleIntersectLine = function(
 
   // Top Right
   {
-    var topRightCenterX = nodeX + halfWidth - cornerRadius;
-    var topRightCenterY = nodeY - halfHeight + cornerRadius;
+    let topRightCenterX = nodeX + halfWidth - cornerRadius;
+    let topRightCenterY = nodeY - halfHeight + cornerRadius;
     arcIntersections = this.intersectLineCircle(
       x, y, nodeX, nodeY,
       topRightCenterX, topRightCenterY, cornerRadius + padding );
@@ -313,8 +313,8 @@ math.roundRectangleIntersectLine = function(
 
   // Bottom Right
   {
-    var bottomRightCenterX = nodeX + halfWidth - cornerRadius;
-    var bottomRightCenterY = nodeY + halfHeight - cornerRadius;
+    let bottomRightCenterX = nodeX + halfWidth - cornerRadius;
+    let bottomRightCenterY = nodeY + halfHeight - cornerRadius;
     arcIntersections = this.intersectLineCircle(
       x, y, nodeX, nodeY,
       bottomRightCenterX, bottomRightCenterY, cornerRadius + padding );
@@ -329,8 +329,8 @@ math.roundRectangleIntersectLine = function(
 
   // Bottom Left
   {
-    var bottomLeftCenterX = nodeX - halfWidth + cornerRadius;
-    var bottomLeftCenterY = nodeY + halfHeight - cornerRadius;
+    let bottomLeftCenterX = nodeX - halfWidth + cornerRadius;
+    let bottomLeftCenterY = nodeY + halfHeight - cornerRadius;
     arcIntersections = this.intersectLineCircle(
       x, y, nodeX, nodeY,
       bottomLeftCenterX, bottomLeftCenterY, cornerRadius + padding );
@@ -347,12 +347,12 @@ math.roundRectangleIntersectLine = function(
 };
 
 math.inLineVicinity = function( x, y, lx1, ly1, lx2, ly2, tolerance ){
-  var t = tolerance;
+  let t = tolerance;
 
-  var x1 = Math.min( lx1, lx2 );
-  var x2 = Math.max( lx1, lx2 );
-  var y1 = Math.min( ly1, ly2 );
-  var y2 = Math.max( ly1, ly2 );
+  let x1 = Math.min( lx1, lx2 );
+  let x2 = Math.max( lx1, lx2 );
+  let y1 = Math.min( ly1, ly2 );
+  let y2 = Math.max( ly1, ly2 );
 
   return x1 - t <= x && x <= x2 + t
     && y1 - t <= y && y <= y2 + t;
@@ -361,7 +361,7 @@ math.inLineVicinity = function( x, y, lx1, ly1, lx2, ly2, tolerance ){
 math.inBezierVicinity = function(
   x, y, x1, y1, x2, y2, x3, y3, tolerance ){
 
-  var bb = {
+  let bb = {
     x1: Math.min( x1, x3, x2 ) - tolerance,
     x2: Math.max( x1, x3, x2 ) + tolerance,
     y1: Math.min( y1, y3, y2 ) - tolerance,
@@ -391,7 +391,7 @@ math.solveCubic = function( a, b, c, d, result ){
   c /= a;
   d /= a;
 
-  var discriminant, q, r, dum1, s, t, term1, r13;
+  let discriminant, q, r, dum1, s, t, term1, r13;
 
   q = (3.0 * c - (b * b)) / 9.0;
   r = -(27.0 * d) + b * (9.0 * c - 2.0 * (b * b));
@@ -445,30 +445,30 @@ math.sqdistToQuadraticBezier = function(
   // whose roots tell us where a possible minimum is
   // (Coefficients are divided by 4)
 
-  var a = 1.0 * x1 * x1 - 4 * x1 * x2 + 2 * x1 * x3 + 4 * x2 * x2 - 4 * x2 * x3 + x3 * x3
+  let a = 1.0 * x1 * x1 - 4 * x1 * x2 + 2 * x1 * x3 + 4 * x2 * x2 - 4 * x2 * x3 + x3 * x3
     + y1 * y1 - 4 * y1 * y2 + 2 * y1 * y3 + 4 * y2 * y2 - 4 * y2 * y3 + y3 * y3;
 
-  var b = 1.0 * 9 * x1 * x2 - 3 * x1 * x1 - 3 * x1 * x3 - 6 * x2 * x2 + 3 * x2 * x3
+  let b = 1.0 * 9 * x1 * x2 - 3 * x1 * x1 - 3 * x1 * x3 - 6 * x2 * x2 + 3 * x2 * x3
     + 9 * y1 * y2 - 3 * y1 * y1 - 3 * y1 * y3 - 6 * y2 * y2 + 3 * y2 * y3;
 
-  var c = 1.0 * 3 * x1 * x1 - 6 * x1 * x2 + x1 * x3 - x1 * x + 2 * x2 * x2 + 2 * x2 * x - x3 * x
+  let c = 1.0 * 3 * x1 * x1 - 6 * x1 * x2 + x1 * x3 - x1 * x + 2 * x2 * x2 + 2 * x2 * x - x3 * x
     + 3 * y1 * y1 - 6 * y1 * y2 + y1 * y3 - y1 * y + 2 * y2 * y2 + 2 * y2 * y - y3 * y;
 
-  var d = 1.0 * x1 * x2 - x1 * x1 + x1 * x - x2 * x
+  let d = 1.0 * x1 * x2 - x1 * x1 + x1 * x - x2 * x
     + y1 * y2 - y1 * y1 + y1 * y - y2 * y;
 
   // debug("coefficients: " + a / a + ", " + b / a + ", " + c / a + ", " + d / a);
 
-  var roots = [];
+  let roots = [];
 
   // Use the cubic solving algorithm
   this.solveCubic( a, b, c, d, roots );
 
-  var zeroThreshold = 0.0000001;
+  let zeroThreshold = 0.0000001;
 
-  var params = [];
+  let params = [];
 
-  for( var index = 0; index < 6; index += 2 ){
+  for( let index = 0; index < 6; index += 2 ){
     if( Math.abs( roots[ index + 1] ) < zeroThreshold
         && roots[ index ] >= 0
         && roots[ index ] <= 1.0 ){
@@ -479,11 +479,11 @@ math.sqdistToQuadraticBezier = function(
   params.push( 1.0 );
   params.push( 0.0 );
 
-  var minDistanceSquared = -1;
-  var closestParam;
+  let minDistanceSquared = -1;
+  let closestParam;
 
-  var curX, curY, distSquared;
-  for( var i = 0; i < params.length; i++ ){
+  let curX, curY, distSquared;
+  for( let i = 0; i < params.length; i++ ){
     curX = Math.pow( 1.0 - params[ i ], 2.0 ) * x1
       + 2.0 * (1 - params[ i ]) * params[ i ] * x2
       + params[ i ] * params[ i ] * x3;
@@ -509,14 +509,14 @@ math.sqdistToQuadraticBezier = function(
 };
 
 math.sqdistToFiniteLine = function( x, y, x1, y1, x2, y2 ){
-  var offset = [ x - x1, y - y1 ];
-  var line = [ x2 - x1, y2 - y1 ];
+  let offset = [ x - x1, y - y1 ];
+  let line = [ x2 - x1, y2 - y1 ];
 
-  var lineSq = line[0] * line[0] + line[1] * line[1];
-  var hypSq = offset[0] * offset[0] + offset[1] * offset[1];
+  let lineSq = line[0] * line[0] + line[1] * line[1];
+  let hypSq = offset[0] * offset[0] + offset[1] * offset[1];
 
-  var dotProduct = offset[0] * line[0] + offset[1] * line[1];
-  var adjSq = dotProduct * dotProduct / lineSq;
+  let dotProduct = offset[0] * line[0] + offset[1] * line[1];
+  let adjSq = dotProduct * dotProduct / lineSq;
 
   if( dotProduct < 0 ){
     return hypSq;
@@ -530,13 +530,13 @@ math.sqdistToFiniteLine = function( x, y, x1, y1, x2, y2 ){
 };
 
 math.pointInsidePolygonPoints = function( x, y, points ){
-  var x1, y1, x2, y2;
-  var y3;
+  let x1, y1, x2, y2;
+  let y3;
 
   // Intersect with vertical line through (x, y)
-  var up = 0;
-  var down = 0;
-  for( var i = 0; i < points.length / 2; i++ ){
+  let up = 0;
+  let down = 0;
+  for( let i = 0; i < points.length / 2; i++ ){
 
     x1 = points[ i * 2];
     y1 = points[ i * 2 + 1];
@@ -580,11 +580,11 @@ math.pointInsidePolygonPoints = function( x, y, points ){
 math.pointInsidePolygon = function(
   x, y, basePoints, centerX, centerY, width, height, direction, padding ){
 
-  //var direction = arguments[6];
-  var transformedPoints = new Array( basePoints.length );
+  //let direction = arguments[6];
+  let transformedPoints = new Array( basePoints.length );
 
   // Gives negative angle
-  var angle;
+  let angle;
 
   if( direction[0] != null ){
     angle = Math.atan( direction[1] / direction[0] );
@@ -598,11 +598,11 @@ math.pointInsidePolygon = function(
     angle = direction;
   }
 
-  var cos = Math.cos( -angle );
-  var sin = Math.sin( -angle );
+  let cos = Math.cos( -angle );
+  let sin = Math.sin( -angle );
 
   //    console.log("base: " + basePoints);
-  for( var i = 0; i < transformedPoints.length / 2; i++ ){
+  for( let i = 0; i < transformedPoints.length / 2; i++ ){
     transformedPoints[ i * 2] =
       width / 2 * (basePoints[ i * 2] * cos
         - basePoints[ i * 2 + 1] * sin);
@@ -615,10 +615,10 @@ math.pointInsidePolygon = function(
     transformedPoints[ i * 2 + 1] += centerY;
   }
 
-  var points;
+  let points;
 
   if( padding > 0 ){
-    var expandedLineSet = this.expandPolygon(
+    let expandedLineSet = this.expandPolygon(
       transformedPoints,
       -padding );
 
@@ -632,12 +632,12 @@ math.pointInsidePolygon = function(
 
 math.joinLines = function( lineSet ){
 
-  var vertices = new Array( lineSet.length / 2 );
+  let vertices = new Array( lineSet.length / 2 );
 
-  var currentLineStartX, currentLineStartY, currentLineEndX, currentLineEndY;
-  var nextLineStartX, nextLineStartY, nextLineEndX, nextLineEndY;
+  let currentLineStartX, currentLineStartY, currentLineEndX, currentLineEndY;
+  let nextLineStartX, nextLineStartY, nextLineEndX, nextLineEndY;
 
-  for( var i = 0; i < lineSet.length / 4; i++ ){
+  for( let i = 0; i < lineSet.length / 4; i++ ){
     currentLineStartX = lineSet[ i * 4];
     currentLineStartY = lineSet[ i * 4 + 1];
     currentLineEndX = lineSet[ i * 4 + 2];
@@ -655,7 +655,7 @@ math.joinLines = function( lineSet ){
       nextLineEndY = lineSet[3];
     }
 
-    var intersection = this.finiteLinesIntersect(
+    let intersection = this.finiteLinesIntersect(
       currentLineStartX, currentLineStartY,
       currentLineEndX, currentLineEndY,
       nextLineStartX, nextLineStartY,
@@ -671,11 +671,11 @@ math.joinLines = function( lineSet ){
 
 math.expandPolygon = function( points, pad ){
 
-  var expandedLineSet = new Array( points.length * 2 );
+  let expandedLineSet = new Array( points.length * 2 );
 
-  var currentPointX, currentPointY, nextPointX, nextPointY;
+  let currentPointX, currentPointY, nextPointX, nextPointY;
 
-  for( var i = 0; i < points.length / 2; i++ ){
+  for( let i = 0; i < points.length / 2; i++ ){
     currentPointX = points[ i * 2];
     currentPointY = points[ i * 2 + 1];
 
@@ -691,13 +691,13 @@ math.expandPolygon = function( points, pad ){
 
     // Assume CCW polygon winding
 
-    var offsetX = (nextPointY - currentPointY);
-    var offsetY = -(nextPointX - currentPointX);
+    let offsetX = (nextPointY - currentPointY);
+    let offsetY = -(nextPointX - currentPointX);
 
     // Normalize
-    var offsetLength = Math.sqrt( offsetX * offsetX + offsetY * offsetY );
-    var normalizedOffsetX = offsetX / offsetLength;
-    var normalizedOffsetY = offsetY / offsetLength;
+    let offsetLength = Math.sqrt( offsetX * offsetX + offsetY * offsetY );
+    let normalizedOffsetX = offsetX / offsetLength;
+    let normalizedOffsetY = offsetY / offsetLength;
 
     expandedLineSet[ i * 4] = currentPointX + normalizedOffsetX * pad;
     expandedLineSet[ i * 4 + 1] = currentPointY + normalizedOffsetY * pad;
@@ -711,21 +711,21 @@ math.expandPolygon = function( points, pad ){
 math.intersectLineEllipse = function(
   x, y, centerX, centerY, ellipseWradius, ellipseHradius ){
 
-  var dispX = centerX - x;
-  var dispY = centerY - y;
+  let dispX = centerX - x;
+  let dispY = centerY - y;
 
   dispX /= ellipseWradius;
   dispY /= ellipseHradius;
 
-  var len = Math.sqrt( dispX * dispX + dispY * dispY );
+  let len = Math.sqrt( dispX * dispX + dispY * dispY );
 
-  var newLength = len - 1;
+  let newLength = len - 1;
 
   if( newLength < 0 ){
     return [];
   }
 
-  var lenProportion = newLength / len;
+  let lenProportion = newLength / len;
 
   return [ (centerX - x) * lenProportion + x, (centerY - y) * lenProportion + y ];
 };
@@ -735,26 +735,25 @@ math.intersectLineCircle = function(
   x1, y1, x2, y2, centerX, centerY, radius ){
 
   // Calculate d, direction vector of line
-  var d = [ x2 - x1, y2 - y1 ]; // Direction vector of line
-  var c = [ centerX, centerY ]; // Center of circle
-  var f = [ x1 - centerX, y1 - centerY ];
+  let d = [ x2 - x1, y2 - y1 ]; // Direction vector of line
+  let f = [ x1 - centerX, y1 - centerY ];
 
-  var a = d[0] * d[0] + d[1] * d[1];
-  var b = 2 * (f[0] * d[0] + f[1] * d[1]);
-  var c = (f[0] * f[0] + f[1] * f[1]) - radius * radius ;
+  let a = d[0] * d[0] + d[1] * d[1];
+  let b = 2 * (f[0] * d[0] + f[1] * d[1]);
+  let c = (f[0] * f[0] + f[1] * f[1]) - radius * radius ;
 
-  var discriminant = b * b - 4 * a * c;
+  let discriminant = b * b - 4 * a * c;
 
   if( discriminant < 0 ){
     return [];
   }
 
-  var t1 = (-b + Math.sqrt( discriminant )) / (2 * a);
-  var t2 = (-b - Math.sqrt( discriminant )) / (2 * a);
+  let t1 = (-b + Math.sqrt( discriminant )) / (2 * a);
+  let t2 = (-b - Math.sqrt( discriminant )) / (2 * a);
 
-  var tMin = Math.min( t1, t2 );
-  var tMax = Math.max( t1, t2 );
-  var inRangeParams = [];
+  let tMin = Math.min( t1, t2 );
+  let tMax = Math.max( t1, t2 );
+  let inRangeParams = [];
 
   if( tMin >= 0 && tMin <= 1 ){
     inRangeParams.push( tMin );
@@ -768,8 +767,8 @@ math.intersectLineCircle = function(
     return [];
   }
 
-  var nearIntersectionX = inRangeParams[0] * d[0] + x1;
-  var nearIntersectionY = inRangeParams[0] * d[1] + y1;
+  let nearIntersectionX = inRangeParams[0] * d[0] + x1;
+  let nearIntersectionY = inRangeParams[0] * d[1] + y1;
 
   if( inRangeParams.length > 1 ){
 
@@ -777,8 +776,8 @@ math.intersectLineCircle = function(
       return [ nearIntersectionX, nearIntersectionY ];
     } else {
 
-      var farIntersectionX = inRangeParams[1] * d[0] + x1;
-      var farIntersectionY = inRangeParams[1] * d[1] + y1;
+      let farIntersectionX = inRangeParams[1] * d[0] + x1;
+      let farIntersectionY = inRangeParams[1] * d[1] + y1;
 
       return [ nearIntersectionX, nearIntersectionY, farIntersectionX, farIntersectionY ];
     }
@@ -792,23 +791,23 @@ math.intersectLineCircle = function(
 math.findCircleNearPoint = function( centerX, centerY,
   radius, farX, farY ){
 
-  var displacementX = farX - centerX;
-  var displacementY = farY - centerY;
-  var distance = Math.sqrt( displacementX * displacementX
+  let displacementX = farX - centerX;
+  let displacementY = farY - centerY;
+  let distance = Math.sqrt( displacementX * displacementX
     + displacementY * displacementY );
 
-  var unitDisplacementX = displacementX / distance;
-  var unitDisplacementY = displacementY / distance;
+  let unitDisplacementX = displacementX / distance;
+  let unitDisplacementY = displacementY / distance;
 
   return [ centerX + unitDisplacementX * radius,
     centerY + unitDisplacementY * radius ];
 };
 
 math.findMaxSqDistanceToOrigin = function( points ){
-  var maxSqDistance = 0.000001;
-  var sqDistance;
+  let maxSqDistance = 0.000001;
+  let sqDistance;
 
-  for( var i = 0; i < points.length / 2; i++ ){
+  for( let i = 0; i < points.length / 2; i++ ){
 
     sqDistance = points[ i * 2] * points[ i * 2]
       + points[ i * 2 + 1] * points[ i * 2 + 1];
@@ -838,25 +837,25 @@ math.finiteLinesIntersect = function(
   infiniteLines
 ){
 
-  var dx13 = x1 - x3;
-  var dx21 = x2 - x1;
-  var dx43 = x4 - x3;
+  let dx13 = x1 - x3;
+  let dx21 = x2 - x1;
+  let dx43 = x4 - x3;
 
-  var dy13 = y1 - y3;
-  var dy21 = y2 - y1;
-  var dy43 = y4 - y3;
+  let dy13 = y1 - y3;
+  let dy21 = y2 - y1;
+  let dy43 = y4 - y3;
 
-  var ua_t = dx43 * dy13 - dy43 * dx13;
-  var ub_t = dx21 * dy13 - dy21 * dx13;
-  var u_b  = dy43 * dx21 - dx43 * dy21;
+  let ua_t = dx43 * dy13 - dy43 * dx13;
+  let ub_t = dx21 * dy13 - dy21 * dx13;
+  let u_b  = dy43 * dx21 - dx43 * dy21;
 
   if( u_b !== 0 ){
-    var ua = ua_t / u_b;
-    var ub = ub_t / u_b;
+    let ua = ua_t / u_b;
+    let ub = ub_t / u_b;
 
-    var flptThreshold = 0.001;
-    var min = 0 - flptThreshold;
-    var max = 1 + flptThreshold;
+    let flptThreshold = 0.001;
+    let min = 0 - flptThreshold;
+    let max = 1 + flptThreshold;
 
     if( min <= ua && ua <= max && min <= ub && ub <= max ){
       return [ x1 + ua * dx21, y1 + ua * dy21 ];
@@ -905,26 +904,26 @@ math.finiteLinesIntersect = function(
 math.polygonIntersectLine = function(
   x, y, basePoints, centerX, centerY, width, height, padding ){
 
-  var intersections = [];
-  var intersection;
+  let intersections = [];
+  let intersection;
 
-  var transformedPoints = new Array( basePoints.length );
+  let transformedPoints = new Array( basePoints.length );
 
-  var doTransform = true;
+  let doTransform = true;
   if( arguments.length === 5 ){
     doTransform = false;
   }
 
-  var points;
+  let points;
 
   if( doTransform ){
-    for( var i = 0; i < transformedPoints.length / 2; i++ ){
+    for( let i = 0; i < transformedPoints.length / 2; i++ ){
       transformedPoints[ i * 2] = basePoints[ i * 2] * width + centerX;
       transformedPoints[ i * 2 + 1] = basePoints[ i * 2 + 1] * height + centerY;
     }
 
     if( padding > 0 ){
-      var expandedLineSet = math.expandPolygon(
+      let expandedLineSet = math.expandPolygon(
         transformedPoints,
         -padding );
 
@@ -936,9 +935,9 @@ math.polygonIntersectLine = function(
     points = basePoints;
   }
 
-  var currentX, currentY, nextX, nextY;
+  let currentX, currentY, nextX, nextY;
 
-  for( var i = 0; i < points.length / 2; i++ ){
+  for( let i = 0; i < points.length / 2; i++ ){
 
     currentX = points[ i * 2];
     currentY = points[ i * 2 + 1];
@@ -967,11 +966,11 @@ math.polygonIntersectLine = function(
 math.shortenIntersection = function(
   intersection, offset, amount ){
 
-  var disp = [ intersection[0] - offset[0], intersection[1] - offset[1] ];
+  let disp = [ intersection[0] - offset[0], intersection[1] - offset[1] ];
 
-  var length = Math.sqrt( disp[0] * disp[0] + disp[1] * disp[1] );
+  let length = Math.sqrt( disp[0] * disp[0] + disp[1] * disp[1] );
 
-  var lenRatio = (length - amount) / length;
+  let lenRatio = (length - amount) / length;
 
   if( lenRatio < 0 ){
     lenRatio = 0.00001;
@@ -981,18 +980,18 @@ math.shortenIntersection = function(
 };
 
 math.generateUnitNgonPointsFitToSquare = function( sides, rotationRadians ){
-  var points = math.generateUnitNgonPoints( sides, rotationRadians );
+  let points = math.generateUnitNgonPoints( sides, rotationRadians );
   points = math.fitPolygonToSquare( points );
 
   return points;
 };
 
 math.fitPolygonToSquare = function( points ){
-  var x, y;
-  var sides = points.length / 2;
-  var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  let x, y;
+  let sides = points.length / 2;
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
 
-  for( var i = 0; i < sides; i++ ){
+  for( let i = 0; i < sides; i++ ){
     x = points[2 * i ];
     y = points[2 * i + 1];
 
@@ -1003,10 +1002,10 @@ math.fitPolygonToSquare = function( points ){
   }
 
   // stretch factors
-  var sx = 2 / (maxX - minX);
-  var sy = 2 / (maxY - minY);
+  let sx = 2 / (maxX - minX);
+  let sy = 2 / (maxY - minY);
 
-  for( var i = 0; i < sides; i++ ){
+  for( let i = 0; i < sides; i++ ){
     x = points[2 * i ] = points[2 * i ] * sx;
     y = points[2 * i + 1] = points[2 * i + 1] * sy;
 
@@ -1017,7 +1016,7 @@ math.fitPolygonToSquare = function( points ){
   }
 
   if( minY < -1 ){
-    for( var i = 0; i < sides; i++ ){
+    for( let i = 0; i < sides; i++ ){
       y = points[2 * i + 1] = points[2 * i + 1] + (-1 - minY);
     }
   }
@@ -1027,16 +1026,16 @@ math.fitPolygonToSquare = function( points ){
 
 math.generateUnitNgonPoints = function( sides, rotationRadians ){
 
-  var increment = 1.0 / sides * 2 * Math.PI;
-  var startAngle = sides % 2 === 0 ?
+  let increment = 1.0 / sides * 2 * Math.PI;
+  let startAngle = sides % 2 === 0 ?
     Math.PI / 2.0 + increment / 2.0 : Math.PI / 2.0;
   //    console.log(nodeShapes['square']);
   startAngle += rotationRadians;
 
-  var points = new Array( sides * 2 );
+  let points = new Array( sides * 2 );
 
-  var currentAngle, x, y;
-  for( var i = 0; i < sides; i++ ){
+  let currentAngle, x, y;
+  for( let i = 0; i < sides; i++ ){
     currentAngle = i * increment + startAngle;
 
     x = points[2 * i ] = Math.cos( currentAngle );// * (1 + i/2);

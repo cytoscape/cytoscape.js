@@ -1,22 +1,22 @@
 'use strict';
 
-var util = require( '../util' );
-var is = require( '../is' );
+let util = require( '../util' );
+let is = require( '../is' );
 
-var styfn = {};
+let styfn = {};
 
 (function(){
-  var number = util.regex.number;
-  var rgba = util.regex.rgbaNoBackRefs;
-  var hsla = util.regex.hslaNoBackRefs;
-  var hex3 = util.regex.hex3;
-  var hex6 = util.regex.hex6;
-  var data = function( prefix ){ return '^' + prefix + '\\s*\\(\\s*([\\w\\.]+)\\s*\\)$'; };
-  var mapData = function( prefix ){
-    var mapArg = number + '|\\w+|' + rgba + '|' + hsla + '|' + hex3 + '|' + hex6;
+  let number = util.regex.number;
+  let rgba = util.regex.rgbaNoBackRefs;
+  let hsla = util.regex.hslaNoBackRefs;
+  let hex3 = util.regex.hex3;
+  let hex6 = util.regex.hex6;
+  let data = function( prefix ){ return '^' + prefix + '\\s*\\(\\s*([\\w\\.]+)\\s*\\)$'; };
+  let mapData = function( prefix ){
+    let mapArg = number + '|\\w+|' + rgba + '|' + hsla + '|' + hex3 + '|' + hex6;
     return '^' + prefix + '\\s*\\(([\\w\\.]+)\\s*\\,\\s*(' + number + ')\\s*\\,\\s*(' + number + ')\\s*,\\s*(' + mapArg + ')\\s*\\,\\s*(' + mapArg + ')\\)$';
   };
-  var urlRegexes = [
+  let urlRegexes = [
     '^url\\s*\\(\\s*[\'"]?(.+?)[\'"]?\\s*\\)$',
     '^(none)$',
     '^(.+)$'
@@ -53,7 +53,7 @@ var styfn = {};
     borderStyle: { enums: [ 'solid', 'dotted', 'dashed', 'double' ] },
     curveStyle: { enums: [ 'bezier', 'unbundled-bezier', 'haystack', 'segments' ] },
     fontFamily: { regex: '^([\\w- \\"]+(?:\\s*,\\s*[\\w- \\"]+)*)$' },
-    fontVariant: { enums: [ 'small-caps', 'normal' ] },
+    fontletiant: { enums: [ 'small-caps', 'normal' ] },
     fontStyle: { enums: [ 'italic', 'normal', 'oblique' ] },
     fontWeight: { enums: [ 'normal', 'bold', 'bolder', 'lighter', '100', '200', '300', '400', '500', '600', '800', '900', 100, 200, 300, 400, 500, 600, 700, 800, 900 ] },
     textDecoration: { enums: [ 'none', 'underline', 'overline', 'line-through' ] },
@@ -118,7 +118,7 @@ var styfn = {};
     }
   };
 
-  var zOrderDiff = {
+  let zOrderDiff = {
     zeroNonZero: function( val1, val2 ){
       if( val1 === 0 && val2 !== 0 ){
         return true;
@@ -133,11 +133,11 @@ var styfn = {};
     }
   };
 
-  var zd = zOrderDiff;
+  let zd = zOrderDiff;
 
   // define visual style properties
-  var t = styfn.types;
-  var props = styfn.properties = [
+  let t = styfn.types;
+  let props = styfn.properties = [
     // main label
     { name: 'label', type: t.text },
     { name: 'text-rotation', type: t.textRotation },
@@ -181,7 +181,7 @@ var styfn = {};
     { name: 'text-events', type: t.bool },
     { name: 'font-family', type: t.fontFamily },
     { name: 'font-style', type: t.fontStyle },
-    // { name: 'font-variant', type: t.fontVariant }, // not useful
+    // { name: 'font-letiant', type: t.fontletiant }, // not useful
     { name: 'font-weight', type: t.fontWeight },
     { name: 'font-size', type: t.size },
     { name: 'min-zoomed-font-size', type: t.size },
@@ -281,7 +281,7 @@ var styfn = {};
   ];
 
   // define aliases
-  var aliases = styfn.aliases = [
+  let aliases = styfn.aliases = [
     { name: 'content', pointsTo: 'label' },
     { name: 'control-point-distance', pointsTo: 'control-point-distances' },
     { name: 'control-point-weight', pointsTo: 'control-point-weights' },
@@ -295,22 +295,22 @@ var styfn = {};
   // pie backgrounds for nodes
   styfn.pieBackgroundN = 16; // because the pie properties are numbered, give access to a constant N (for renderer use)
   props.push( { name: 'pie-size', type: t.sizeMaybePercent } );
-  for( var i = 1; i <= styfn.pieBackgroundN; i++ ){
+  for( let i = 1; i <= styfn.pieBackgroundN; i++ ){
     props.push( { name: 'pie-' + i + '-background-color', type: t.color } );
     props.push( { name: 'pie-' + i + '-background-size', type: t.percent } );
     props.push( { name: 'pie-' + i + '-background-opacity', type: t.zeroOneNumber } );
   }
 
   // edge arrows
-  var arrowPrefixes = styfn.arrowPrefixes = [ 'source', 'mid-source', 'target', 'mid-target' ];
+  let arrowPrefixes = styfn.arrowPrefixes = [ 'source', 'mid-source', 'target', 'mid-target' ];
   [
     { name: 'arrow-shape', type: t.arrowShape },
     { name: 'arrow-color', type: t.color },
     { name: 'arrow-fill', type: t.arrowFill }
   ].forEach( function( prop ){
     arrowPrefixes.forEach( function( prefix ){
-      var name = prefix + '-' + prop.name;
-      var type = prop.type;
+      let name = prefix + '-' + prop.name;
+      let type = prop.type;
 
       props.push( { name: name, type: type } );
     } );
@@ -320,17 +320,17 @@ var styfn = {};
   styfn.propertyNames = props.map( function( p ){ return p.name; } );
 
   // allow access of properties by name ( e.g. style.properties.height )
-  for( var i = 0; i < props.length; i++ ){
-    var prop = props[ i ];
+  for( let i = 0; i < props.length; i++ ){
+    let prop = props[ i ];
 
     props[ prop.name ] = prop; // allow lookup by name
   }
 
   // map aliases
-  for( var i = 0; i < aliases.length; i++ ){
-    var alias = aliases[ i ];
-    var pointsToProp = props[ alias.pointsTo ];
-    var aliasProp = {
+  for( let i = 0; i < aliases.length; i++ ){
+    let alias = aliases[ i ];
+    let pointsToProp = props[ alias.pointsTo ];
+    let aliasProp = {
       name: alias.name,
       alias: true,
       pointsTo: pointsToProp
@@ -348,7 +348,7 @@ styfn.getDefaultProperty = function( name ){
 };
 
 styfn.getDefaultProperties = util.memoize( function(){
-  var rawProps = util.extend( {
+  let rawProps = util.extend( {
     // common node/edge props
     'events': 'yes',
     'text-events': 'no',
@@ -373,7 +373,7 @@ styfn.getDefaultProperties = util.memoize( function(){
     'text-border-color': '#000',
     'font-family': 'Helvetica Neue, Helvetica, sans-serif',
     'font-style': 'normal',
-    // 'font-variant': fontVariant,
+    // 'font-letiant': fontletiant,
     'font-weight': 'normal',
     'font-size': 16,
     'min-zoomed-font-size': 0,
@@ -449,9 +449,9 @@ styfn.getDefaultProperties = util.memoize( function(){
     { name: 'pie-{{i}}-background-size', value: '0%' },
     { name: 'pie-{{i}}-background-opacity', value: 1 }
   ].reduce( function( css, prop ){
-    for( var i = 1; i <= styfn.pieBackgroundN; i++ ){
-      var name = prop.name.replace( '{{i}}', i );
-      var val = prop.value;
+    for( let i = 1; i <= styfn.pieBackgroundN; i++ ){
+      let name = prop.name.replace( '{{i}}', i );
+      let val = prop.value;
 
       css[ name ] = val;
     }
@@ -481,8 +481,8 @@ styfn.getDefaultProperties = util.memoize( function(){
     { name: 'arrow-fill', value: 'filled' }
   ].reduce( function( css, prop ){
     styfn.arrowPrefixes.forEach( function( prefix ){
-      var name = prefix + '-' + prop.name;
-      var val = prop.value;
+      let name = prefix + '-' + prop.name;
+      let val = prop.value;
 
       css[ name ] = val;
     } );
@@ -490,16 +490,16 @@ styfn.getDefaultProperties = util.memoize( function(){
     return css;
   }, {} ) );
 
-  var parsedProps = {};
+  let parsedProps = {};
 
-  for( var i = 0; i < this.properties.length; i++ ){
-    var prop = this.properties[i];
+  for( let i = 0; i < this.properties.length; i++ ){
+    let prop = this.properties[i];
 
     if( prop.pointsTo ){ continue; }
 
-    var name = prop.name;
-    var val = rawProps[ name ];
-    var parsedProp = this.parse( name, val );
+    let name = prop.name;
+    let val = rawProps[ name ];
+    let parsedProp = this.parse( name, val );
 
     parsedProps[ name ] = parsedProp;
   }

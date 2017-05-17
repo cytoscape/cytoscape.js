@@ -9,9 +9,9 @@ module.exports = function memoize( fn, keyFn ){
         return 'undefined';
       }
 
-      var args = [];
+      let args = [];
 
-      for( var i = 0; i < arguments.length; i++ ){
+      for( let i = 0; i < arguments.length; i++ ){
         args.push( arguments[ i ] );
       }
 
@@ -19,12 +19,12 @@ module.exports = function memoize( fn, keyFn ){
     };
   }
 
-  var memoizedFn = function(){
-    var self = this;
-    var args = arguments;
-    var ret;
-    var k = keyFn.apply( self, args );
-    var cache = memoizedFn.cache;
+  let memoizedFn = function(){
+    let self = this;
+    let args = arguments;
+    let ret;
+    let k = keyFn.apply( self, args );
+    let cache = memoizedFn.cache;
 
     if( !(ret = cache[ k ]) ){
       ret = cache[ k ] = fn.apply( self, args );

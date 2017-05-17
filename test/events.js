@@ -1,5 +1,5 @@
 var expect = require('chai').expect;
-var cytoscape = require('../src', cytoscape);
+var cytoscape = require('../src/test.js', cytoscape);
 
 describe('Events', function(){
 
@@ -354,19 +354,6 @@ describe('Events', function(){
 
     });
 
-    it('binds with an event map', function(){
-      var triggers = 0;
-
-      cy.on({
-        'foo': function(){ triggers++; },
-        'bar': function(){ triggers++; }
-      });
-
-      cy.trigger('foo bar');
-
-      expect( triggers ).to.equal(2);
-    });
-
     it('has event object structure', function(done){
 
       cy
@@ -419,22 +406,6 @@ describe('Events', function(){
       expect( triggers ).to.equal(1);
     });
 
-    it('triggers once with map', function(){
-      var triggers = 0;
-
-      cy.one({
-        'foo': function(e){
-          triggers++;
-        }
-      });
-
-      cy.trigger('foo');
-      expect( triggers ).to.equal(1);
-
-      cy.trigger('foo');
-      expect( triggers ).to.equal(1);
-    });
-
   });
 
   describe('cy.off()', function(){
@@ -476,22 +447,6 @@ describe('Events', function(){
       });
 
       cy.off('foo');
-
-      cy.trigger('foo');
-      expect( triggers ).to.equal(0);
-    });
-
-    it('removes a handler via events map', function(){
-      var triggers = 0;
-      var handler;
-
-      cy.on('foo', handler = function(){
-        triggers++;
-      });
-
-      cy.off({
-        'foo': handler
-      });
 
       cy.trigger('foo');
       expect( triggers ).to.equal(0);

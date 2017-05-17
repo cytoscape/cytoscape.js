@@ -1,15 +1,15 @@
 'use strict';
 
-var util = require( '../util' );
-var is = require( '../is' );
+let util = require( '../util' );
+let is = require( '../is' );
 
-var elesfn = {};
+let elesfn = {};
 
-var cache = function( fn, name ){
+let cache = function( fn, name ){
   return function traversalCache( arg1, arg2, arg3, arg4 ){
-    var selectorOrEles = arg1;
-    var eles = this;
-    var key;
+    let selectorOrEles = arg1;
+    let eles = this;
+    let key;
 
     if( selectorOrEles == null ){
       key = 'null';
@@ -18,10 +18,10 @@ var cache = function( fn, name ){
     }
 
     if( eles.length === 1 && key ){
-      var _p = eles[0]._private;
-      var tch = _p.traversalCache = _p.traversalCache || {};
-      var ch = tch[ name ] = tch[ name ] || {};
-      var cacheHit = ch[ key ];
+      let _p = eles[0]._private;
+      let tch = _p.traversalCache = _p.traversalCache || {};
+      let ch = tch[ name ] = tch[ name ] || {};
+      let cacheHit = ch[ key ];
 
       if( cacheHit ){
         return cacheHit;
@@ -37,24 +37,24 @@ var cache = function( fn, name ){
 // DAG functions
 ////////////////
 
-var defineDagExtremity = function( params ){
+let defineDagExtremity = function( params ){
   return function dagExtremityImpl( selector ){
-    var eles = this;
-    var ret = [];
+    let eles = this;
+    let ret = [];
 
-    for( var i = 0; i < eles.length; i++ ){
-      var ele = eles[ i ];
+    for( let i = 0; i < eles.length; i++ ){
+      let ele = eles[ i ];
       if( !ele.isNode() ){
         continue;
       }
 
-      var disqualified = false;
-      var edges = ele.connectedEdges();
+      let disqualified = false;
+      let edges = ele.connectedEdges();
 
-      for( var j = 0; j < edges.length; j++ ){
-        var edge = edges[j];
-        var src = edge.source();
-        var tgt = edge.target();
+      for( let j = 0; j < edges.length; j++ ){
+        let edge = edges[j];
+        let src = edge.source();
+        let tgt = edge.target();
 
         if(
              ( params.noIncomingEdges && tgt === ele && src !== ele )
@@ -74,21 +74,21 @@ var defineDagExtremity = function( params ){
   };
 };
 
-var defineDagOneHop = function( params ){
+let defineDagOneHop = function( params ){
   return function( selector ){
-    var eles = this;
-    var oEles = [];
+    let eles = this;
+    let oEles = [];
 
-    for( var i = 0; i < eles.length; i++ ){
-      var ele = eles[ i ];
+    for( let i = 0; i < eles.length; i++ ){
+      let ele = eles[ i ];
 
       if( !ele.isNode() ){ continue; }
 
-      var edges = ele.connectedEdges();
-      for( var j = 0; j < edges.length; j++ ){
-        var edge = edges[ j ];
-        var src = edge.source();
-        var tgt = edge.target();
+      let edges = ele.connectedEdges();
+      for( let j = 0; j < edges.length; j++ ){
+        let edge = edges[ j ];
+        let src = edge.source();
+        let tgt = edge.target();
 
         if( params.outgoing && src === ele ){
           oEles.push( edge );
@@ -104,21 +104,21 @@ var defineDagOneHop = function( params ){
   };
 };
 
-var defineDagAllHops = function( params ){
+let defineDagAllHops = function( params ){
   return function( selector ){
-    var eles = this;
-    var sEles = [];
-    var sElesIds = {};
+    let eles = this;
+    let sEles = [];
+    let sElesIds = {};
 
     for( ;; ){
-      var next = params.outgoing ? eles.outgoers() : eles.incomers();
+      let next = params.outgoing ? eles.outgoers() : eles.incomers();
 
       if( next.length === 0 ){ break; } // done if none left
 
-      var newNext = false;
-      for( var i = 0; i < next.length; i++ ){
-        var n = next[ i ];
-        var nid = n.id();
+      let newNext = false;
+      for( let i = 0; i < next.length; i++ ){
+        let n = next[ i ];
+        let nid = n.id();
 
         if( !sElesIds[ nid ] ){
           sElesIds[ nid ] = true;
@@ -137,7 +137,7 @@ var defineDagAllHops = function( params ){
 };
 
 elesfn.clearTraversalCache = function( ){
-  for( var i = 0; i < this.length; i++ ){
+  for( let i = 0; i < this.length; i++ ){
     this[i]._private.traversalCache = null;
   }
 };
@@ -170,19 +170,19 @@ util.extend( elesfn, {
 
 util.extend( elesfn, {
   neighborhood: cache(function( selector ){
-    var elements = [];
-    var nodes = this.nodes();
+    let elements = [];
+    let nodes = this.nodes();
 
-    for( var i = 0; i < nodes.length; i++ ){ // for all nodes
-      var node = nodes[ i ];
-      var connectedEdges = node.connectedEdges();
+    for( let i = 0; i < nodes.length; i++ ){ // for all nodes
+      let node = nodes[ i ];
+      let connectedEdges = node.connectedEdges();
 
       // for each connected edge, add the edge and the other node
-      for( var j = 0; j < connectedEdges.length; j++ ){
-        var edge = connectedEdges[ j ];
-        var src = edge.source();
-        var tgt = edge.target();
-        var otherNode = node === src ? tgt : src;
+      for( let j = 0; j < connectedEdges.length; j++ ){
+        let edge = connectedEdges[ j ];
+        let src = edge.source();
+        let tgt = edge.target();
+        let otherNode = node === src ? tgt : src;
 
         // need check in case of loop
         if( otherNode.length > 0 ){
@@ -217,8 +217,8 @@ elesfn.openNeighbourhood = elesfn.openNeighborhood;
 
 util.extend( elesfn, {
   source: cache(function sourceImpl( selector ){
-    var ele = this[0];
-    var src;
+    let ele = this[0];
+    let src;
 
     if( ele ){
       src = ele._private.source || ele.cy().collection();
@@ -228,8 +228,8 @@ util.extend( elesfn, {
   }, 'source'),
 
   target: cache(function targetImpl( selector ){
-    var ele = this[0];
-    var tgt;
+    let ele = this[0];
+    let tgt;
 
     if( ele ){
       tgt = ele._private.target || ele.cy().collection();
@@ -249,11 +249,11 @@ util.extend( elesfn, {
 
 function defineSourceFunction( params ){
   return function sourceImpl( selector ){
-    var sources = [];
+    let sources = [];
 
-    for( var i = 0; i < this.length; i++ ){
-      var ele = this[ i ];
-      var src = ele._private[ params.attr ];
+    for( let i = 0; i < this.length; i++ ){
+      let ele = this[ i ];
+      let src = ele._private[ params.attr ];
 
       if( src ){
         sources.push( src );
@@ -275,24 +275,24 @@ util.extend( elesfn, {
 function defineEdgesWithFunction( params ){
 
   return function edgesWithImpl( otherNodes ){
-    var elements = [];
-    var cy = this._private.cy;
-    var p = params || {};
+    let elements = [];
+    let cy = this._private.cy;
+    let p = params || {};
 
     // get elements if a selector is specified
     if( is.string( otherNodes ) ){
       otherNodes = cy.$( otherNodes );
     }
 
-    for( var h = 0; h < otherNodes.length; h++ ){
-      var edges = otherNodes[ h ]._private.edges;
+    for( let h = 0; h < otherNodes.length; h++ ){
+      let edges = otherNodes[ h ]._private.edges;
 
-      for( var i = 0; i < edges.length; i++ ){
-        var edge = edges[ i ];
-        var edgeData = edge._private.data;
-        var thisToOther = this.hasElementWithId( edgeData.source ) && otherNodes.hasElementWithId( edgeData.target );
-        var otherToThis = otherNodes.hasElementWithId( edgeData.source ) && this.hasElementWithId( edgeData.target );
-        var edgeConnectsThisAndOther = thisToOther || otherToThis;
+      for( let i = 0; i < edges.length; i++ ){
+        let edge = edges[ i ];
+        let edgeData = edge._private.data;
+        let thisToOther = this.hasElementWithId( edgeData.source ) && otherNodes.hasElementWithId( edgeData.target );
+        let otherToThis = otherNodes.hasElementWithId( edgeData.source ) && this.hasElementWithId( edgeData.target );
+        let edgeConnectsThisAndOther = thisToOther || otherToThis;
 
         if( !edgeConnectsThisAndOther ){ continue; }
 
@@ -312,17 +312,17 @@ function defineEdgesWithFunction( params ){
 
 util.extend( elesfn, {
   connectedEdges: cache(function( selector ){
-    var retEles = [];
+    let retEles = [];
 
-    var eles = this;
-    for( var i = 0; i < eles.length; i++ ){
-      var node = eles[ i ];
+    let eles = this;
+    for( let i = 0; i < eles.length; i++ ){
+      let node = eles[ i ];
       if( !node.isNode() ){ continue; }
 
-      var edges = node._private.edges;
+      let edges = node._private.edges;
 
-      for( var j = 0; j < edges.length; j++ ){
-        var edge = edges[ j ];
+      for( let j = 0; j < edges.length; j++ ){
+        let edge = edges[ j ];
         retEles.push( edge );
       }
     }
@@ -331,11 +331,11 @@ util.extend( elesfn, {
   }, 'connectedEdges'),
 
   connectedNodes: cache(function( selector ){
-    var retEles = [];
+    let retEles = [];
 
-    var eles = this;
-    for( var i = 0; i < eles.length; i++ ){
-      var edge = eles[ i ];
+    let eles = this;
+    for( let i = 0; i < eles.length; i++ ){
+      let edge = eles[ i ];
       if( !edge.isEdge() ){ continue; }
 
       retEles.push( edge.source()[0] );
@@ -353,34 +353,34 @@ util.extend( elesfn, {
 } );
 
 function defineParallelEdgesFunction( params ){
-  var defaults = {
+  let defaults = {
     codirected: false
   };
   params = util.extend( {}, defaults, params );
 
   return function parallelEdgesImpl( selector ){ // micro-optimised for renderer
-    var elements = [];
-    var edges = this.edges();
-    var p = params;
+    let elements = [];
+    let edges = this.edges();
+    let p = params;
 
     // look at all the edges in the collection
-    for( var i = 0; i < edges.length; i++ ){
-      var edge1 = edges[ i ];
-      var edge1_p = edge1._private;
-      var src1 = edge1_p.source;
-      var srcid1 = src1._private.data.id;
-      var tgtid1 = edge1_p.data.target;
-      var srcEdges1 = src1._private.edges;
+    for( let i = 0; i < edges.length; i++ ){
+      let edge1 = edges[ i ];
+      let edge1_p = edge1._private;
+      let src1 = edge1_p.source;
+      let srcid1 = src1._private.data.id;
+      let tgtid1 = edge1_p.data.target;
+      let srcEdges1 = src1._private.edges;
 
       // look at edges connected to the src node of this edge
-      for( var j = 0; j < srcEdges1.length; j++ ){
-        var edge2 = srcEdges1[ j ];
-        var edge2data = edge2._private.data;
-        var tgtid2 = edge2data.target;
-        var srcid2 = edge2data.source;
+      for( let j = 0; j < srcEdges1.length; j++ ){
+        let edge2 = srcEdges1[ j ];
+        let edge2data = edge2._private.data;
+        let tgtid2 = edge2data.target;
+        let srcid2 = edge2data.source;
 
-        var codirected = tgtid2 === tgtid1 && srcid2 === srcid1;
-        var oppdirected = srcid1 === tgtid2 && tgtid1 === srcid2;
+        let codirected = tgtid2 === tgtid1 && srcid2 === srcid1;
+        let oppdirected = srcid1 === tgtid2 && tgtid1 === srcid2;
 
         if( (p.codirected && codirected) || (!p.codirected && (codirected || oppdirected)) ){
           elements.push( edge2 );
@@ -398,13 +398,13 @@ function defineParallelEdgesFunction( params ){
 
 util.extend( elesfn, {
   components: function(){
-    var self = this;
-    var cy = self.cy();
-    var visited = self.spawn();
-    var unvisited = self.nodes().spawnSelf();
-    var components = [];
+    let self = this;
+    let cy = self.cy();
+    let visited = self.spawn();
+    let unvisited = self.nodes().spawnSelf();
+    let components = [];
 
-    var visitInComponent = function( node, component ){
+    let visitInComponent = function( node, component ){
       visited.merge( node );
       unvisited.unmerge( node );
       component.merge( node );
@@ -413,10 +413,10 @@ util.extend( elesfn, {
     if( unvisited.empty() ){ return self.spawn(); }
 
     do {
-      var component = cy.collection();
+      let component = cy.collection();
       components.push( component );
 
-      var root = unvisited[0];
+      let root = unvisited[0];
       visitInComponent( root, component );
 
       self.bfs({
@@ -430,7 +430,7 @@ util.extend( elesfn, {
     } while( unvisited.length > 0 );
 
     return components.map(function( component ){
-      var connectedEdges = component.connectedEdges().stdFilter(function( edge ){
+      let connectedEdges = component.connectedEdges().stdFilter(function( edge ){
         return component.anySame( edge.source() ) && component.anySame( edge.target() );
       });
 

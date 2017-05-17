@@ -1,13 +1,13 @@
 'use strict';
 
-var is = require( '../is' );
-var Style = require( '../style' );
+let is = require( '../is' );
+let Style = require( '../style' );
 
-var corefn = ({
+let corefn = ({
 
   style: function( newStyle ){
     if( newStyle ){
-      var s = this.setStyle( newStyle );
+      let s = this.setStyle( newStyle );
 
       s.update();
     }
@@ -16,7 +16,7 @@ var corefn = ({
   },
 
   setStyle: function( style ){
-    var _p = this._private;
+    let _p = this._private;
 
     if( is.stylesheet( style ) ){
       _p.style = style.generateStyle( this );

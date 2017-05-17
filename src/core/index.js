@@ -1,18 +1,18 @@
 'use strict';
 
-var window = require( '../window' );
-var util = require( '../util' );
-var Collection = require( '../collection' );
-var is = require( '../is' );
-var Promise = require( '../promise' );
-var define = require( '../define' );
+let window = require( '../window' );
+let util = require( '../util' );
+let Collection = require( '../collection' );
+let is = require( '../is' );
+let Promise = require( '../promise' );
+let define = require( '../define' );
 
-var Core = function( opts ){
-  var cy = this;
+let Core = function( opts ){
+  let cy = this;
 
   opts = util.extend( {}, opts );
 
-  var container = opts.container;
+  let container = opts.container;
 
   // allow for passing a wrapped jquery object
   // e.g. cytoscape({ container: $('#cy') })
@@ -20,7 +20,7 @@ var Core = function( opts ){
     container = container[0];
   }
 
-  var reg = container ? container._cyreg : null; // e.g. already registered some info (e.g. readies) via jquery
+  let reg = container ? container._cyreg : null; // e.g. already registered some info (e.g. readies) via jquery
   reg = reg || {};
 
   if( reg && reg.cy ){
@@ -29,17 +29,17 @@ var Core = function( opts ){
     reg = {}; // old instance => replace reg completely
   }
 
-  var readies = reg.readies = reg.readies || [];
+  let readies = reg.readies = reg.readies || [];
 
   if( container ){ container._cyreg = reg; } // make sure container assoc'd reg points to this cy
   reg.cy = cy;
 
-  var head = window !== undefined && container !== undefined && !opts.headless;
-  var options = opts;
+  let head = window !== undefined && container !== undefined && !opts.headless;
+  let options = opts;
   options.layout = util.extend( { name: head ? 'grid' : 'null' }, options.layout );
   options.renderer = util.extend( { name: head ? 'canvas' : 'null' }, options.renderer );
 
-  var defVal = function( def, val, altVal ){
+  let defVal = function( def, val, altVal ){
     if( val !== undefined ){
       return val;
     } else if( altVal !== undefined ){
@@ -49,7 +49,7 @@ var Core = function( opts ){
     }
   };
 
-  var _p = this._private = {
+  let _p = this._private = {
     container: container, // html dom ele container
     ready: false, // whether ready has been triggered
     options: options, // cached options
@@ -84,8 +84,10 @@ var Core = function( opts ){
     hasCompoundNodes: false
   };
 
+  this.createEmitter();
+
   // set selection type
-  var selType = options.selectionType;
+  let selType = options.selectionType;
   if( selType === undefined || (selType !== 'additive' && selType !== 'single') ){
     // then set default
 
@@ -104,8 +106,8 @@ var Core = function( opts ){
     _p.maxZoom = options.maxZoom;
   }
 
-  var loadExtData = function( extData, next ){
-    var anyIsPromise = extData.some( is.promise );
+  let loadExtData = function( extData, next ){
+    let anyIsPromise = extData.some( is.promise );
 
     if( anyIsPromise ){
       return Promise.all( extData ).then( next ); // load all data asynchronously, then exec rest of init
@@ -126,11 +128,11 @@ var Core = function( opts ){
     touchTapThreshold: options.touchTapThreshold === undefined ? 8 : options.touchTapThreshold
   }, options.renderer ) );
 
-  var setElesAndLayout = function( elements, onload, ondone ){
+  let setElesAndLayout = function( elements, onload, ondone ){
     cy.notifications( false );
 
     // remove old elements
-    var oldEles = cy.mutableElements();
+    let oldEles = cy.mutableElements();
     if( oldEles.length > 0 ){
       oldEles.remove();
     }
@@ -143,7 +145,7 @@ var Core = function( opts ){
 
     cy.one( 'layoutready', function( e ){
       cy.notifications( true );
-      cy.trigger( e ); // we missed this event by turning notifications off, so pass it on
+      cy.emit( e ); // we missed this event by turning notifications off, so pass it on
 
       cy.notify( {
         type: 'load',
@@ -151,21 +153,21 @@ var Core = function( opts ){
       } );
 
       cy.one( 'load', onload );
-      cy.trigger( 'load' );
+      cy.emit( 'load' );
     } ).one( 'layoutstop', function(){
       cy.one( 'done', ondone );
-      cy.trigger( 'done' );
+      cy.emit( 'done' );
     } );
 
-    var layoutOpts = util.extend( {}, cy._private.options.layout );
+    let layoutOpts = util.extend( {}, cy._private.options.layout );
     layoutOpts.eles = cy.elements();
 
     cy.layout( layoutOpts ).run();
   };
 
   loadExtData([ options.style, options.elements ], function( thens ){
-    var initStyle = thens[0];
-    var initEles = thens[1];
+    let initStyle = thens[0];
+    let initEles = thens[1];
 
     // init style
     if( _p.styleEnabled ){
@@ -183,19 +185,19 @@ var Core = function( opts ){
       }
 
       // bind all the ready handlers registered before creating this instance
-      for( var i = 0; i < readies.length; i++ ){
-        var fn = readies[ i ];
+      for( let i = 0; i < readies.length; i++ ){
+        let fn = readies[ i ];
         cy.on( 'ready', fn );
       }
       if( reg ){ reg.readies = []; } // clear b/c we've bound them all and don't want to keep it around in case a new core uses the same div etc
 
-      cy.trigger( 'ready' );
+      cy.emit( 'ready' );
     }, options.done );
 
   } );
 };
 
-var corefn = Core.prototype; // short alias
+let corefn = Core.prototype; // short alias
 
 util.extend( corefn, {
   instanceString: function(){
@@ -212,7 +214,7 @@ util.extend( corefn, {
 
   ready: function( fn ){
     if( this.isReady() ){
-      this.trigger( 'ready', [], fn ); // just calls fn as though triggered via ready event
+      this.emitter().emit( 'ready', [], fn ); // just calls fn as though triggered via ready event
     } else {
       this.on( 'ready', fn );
     }
@@ -221,14 +223,14 @@ util.extend( corefn, {
   },
 
   destroy: function(){
-    var cy = this;
+    let cy = this;
     if( cy.isDestroyed() ) return;
 
     cy.stopAnimationLoop();
 
     cy.destroyRenderer();
 
-    this.trigger( 'destroy' );
+    this.emit( 'destroy' );
 
     cy._private.destroyed = true;
 
@@ -280,22 +282,22 @@ util.extend( corefn, {
   },
 
   json: function( obj ){
-    var cy = this;
-    var _p = cy._private;
-    var eles = cy.mutableElements();
+    let cy = this;
+    let _p = cy._private;
+    let eles = cy.mutableElements();
 
     if( is.plainObject( obj ) ){ // set
 
       cy.startBatch();
 
       if( obj.elements ){
-        var idInJson = {};
+        let idInJson = {};
 
-        var updateEles = function( jsons, gr ){
-          for( var i = 0; i < jsons.length; i++ ){
-            var json = jsons[ i ];
-            var id = json.data.id;
-            var ele = cy.getElementById( id );
+        let updateEles = function( jsons, gr ){
+          for( let i = 0; i < jsons.length; i++ ){
+            let json = jsons[ i ];
+            let id = json.data.id;
+            let ele = cy.getElementById( id );
 
             idInJson[ id ] = true;
 
@@ -315,10 +317,10 @@ util.extend( corefn, {
           updateEles( obj.elements );
 
         } else { // elements: { nodes: [], edges: [] }
-          var grs = [ 'nodes', 'edges' ];
-          for( var i = 0; i < grs.length; i++ ){
-            var gr = grs[ i ];
-            var elements = obj.elements[ gr ];
+          let grs = [ 'nodes', 'edges' ];
+          for( let i = 0; i < grs.length; i++ ){
+            let gr = grs[ i ];
+            let elements = obj.elements[ gr ];
 
             if( is.array( elements ) ){
               updateEles( elements, gr );
@@ -346,15 +348,15 @@ util.extend( corefn, {
         }
       }
 
-      var fields = [
+      let fields = [
         'minZoom', 'maxZoom', 'zoomingEnabled', 'userZoomingEnabled',
         'panningEnabled', 'userPanningEnabled',
         'boxSelectionEnabled',
         'autolock', 'autoungrabify', 'autounselectify'
       ];
 
-      for( var i = 0; i < fields.length; i++ ){
-        var f = fields[ i ];
+      for( let i = 0; i < fields.length; i++ ){
+        let f = fields[ i ];
 
         if( obj[ f ] != null ){
           cy[ f ]( obj[ f ] );
@@ -365,11 +367,11 @@ util.extend( corefn, {
 
       return this; // chaining
     } else if( obj === undefined ){ // get
-      var json = {};
+      let json = {};
 
       json.elements = {};
       eles.forEach( function( ele ){
-        var group = ele.group();
+        let group = ele.group();
 
         if( !json.elements[ group ] ){
           json.elements[ group ] = [];

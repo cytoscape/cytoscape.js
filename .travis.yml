@@ -9,3 +9,4 @@ node_js:
   - "7"
   - "stable"
 sudo: false
+script: npm run test-travis

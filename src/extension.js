@@ -1,23 +1,24 @@
 'use strict';
 
-var util = require( './util' );
-var define = require( './define' );
-var Collection = require( './collection' );
-var Core = require( './core' );
-var incExts = require( './extensions' );
-var is = require( './is' );
+let util = require('./util');
+let define = require('./define');
+let Collection = require('./collection');
+let Core = require('./core');
+let incExts = require('./extensions');
+let is = require('./is');
+let Emitter = require('./emitter');
 
 // registered extensions to cytoscape, indexed by name
-var extensions = {};
+let extensions = {};
 
 // registered modules for extensions, indexed by name
-var modules = {};
+let modules = {};
 
 function setExtension( type, name, registrant ){
 
-  var ext = registrant;
+  let ext = registrant;
 
-  var overrideErr = function( field ){
+  let overrideErr = function( field ){
     util.error( 'Can not register `' + name + '` for `' + type + '` since `' + field + '` already exists in the prototype and can not be overridden' );
   };
 
@@ -38,7 +39,7 @@ function setExtension( type, name, registrant ){
   } else if( type === 'layout' ){
     // fill in missing layout functions in the prototype
 
-    var Layout = function( options ){
+    let Layout = function( options ){
       this.options = options;
 
       registrant.call( this, options );
@@ -50,14 +51,16 @@ function setExtension( type, name, registrant ){
 
       this._private.cy = options.cy;
       this._private.listeners = [];
+
+      this.createEmitter();
     };
 
-    var layoutProto = Layout.prototype = Object.create( registrant.prototype );
+    let layoutProto = Layout.prototype = Object.create( registrant.prototype );
 
-    var optLayoutFns = [];
+    let optLayoutFns = [];
 
-    for( var i = 0; i < optLayoutFns.length; i++ ){
-      var fnName = optLayoutFns[ i ];
+    for( let i = 0; i < optLayoutFns.length; i++ ){
+      let fnName = optLayoutFns[ i ];
 
       layoutProto[ fnName ] = layoutProto[ fnName ] || function(){ return this; };
     }
@@ -69,15 +72,15 @@ function setExtension( type, name, registrant ){
       layoutProto.start = function(){ this.run(); return this; };
     }
 
-    var regStop = registrant.prototype.stop;
+    let regStop = registrant.prototype.stop;
     layoutProto.stop = function(){
-      var opts = this.options;
+      let opts = this.options;
 
       if( opts && opts.animate ){
-        var anis = this.animations;
+        let anis = this.animations;
 
         if( anis ){
-          for( var i = 0; i < anis.length; i++ ){
+          for( let i = 0; i < anis.length; i++ ){
             anis[ i ].stop();
           }
         }
@@ -86,7 +89,7 @@ function setExtension( type, name, registrant ){
       if( regStop ){
         regStop.call( this );
       } else {
-        this.trigger( 'layoutstop' );
+        this.emit( 'layoutstop' );
       }
 
       return this;
@@ -98,11 +101,34 @@ function setExtension( type, name, registrant ){
       };
     }
 
-    layoutProto.on = define.on( { layout: true } );
-    layoutProto.one = define.on( { layout: true, unbindSelfOnTrigger: true } );
-    layoutProto.once = define.on( { layout: true, unbindAllBindersOnTrigger: true } );
-    layoutProto.off = define.off( { layout: true } );
-    layoutProto.trigger = define.trigger( { layout: true } );
+    layoutProto.cy = function(){
+      return this._private.cy;
+    };
+
+    util.assign( layoutProto, {
+      createEmitter: function(){
+        this._private.emitter = new Emitter({
+          eventFields: function( layout ){
+            return {
+              layout: layout,
+              cy: layout.cy(),
+              target: layout
+            };
+          },
+          bubble: function(){ return true; },
+          parent: function( layout ){ return layout.cy(); },
+          context: this
+        });
+
+        return this;
+      },
+      emitter: function(){ return this._private.emitter; },
+      on: function( evt, cb ){ this.emitter().on( evt, cb ); return this; },
+      one: function( evt, cb ){ this.emitter().one( evt, cb ); return this; },
+      once: function( evt, cb ){ this.emitter().one( evt, cb ); return this; },
+      removeListener: function( evt, cb ){ this.emitter().removeListener( evt, cb ); return this; },
+      emit: function( evt, params ){ this.emitter().emit( evt, params ); return this; }
+    } );
 
     define.eventAliasesOn( layoutProto );
 
@@ -111,21 +137,21 @@ function setExtension( type, name, registrant ){
   } else if( type === 'renderer' && name !== 'null' && name !== 'base' ){
     // user registered renderers inherit from base
 
-    var BaseRenderer = getExtension( 'renderer', 'base' );
-    var bProto = BaseRenderer.prototype;
-    var RegistrantRenderer = registrant;
-    var rProto = registrant.prototype;
+    let BaseRenderer = getExtension( 'renderer', 'base' );
+    let bProto = BaseRenderer.prototype;
+    let RegistrantRenderer = registrant;
+    let rProto = registrant.prototype;
 
-    var Renderer = function(){
+    let Renderer = function(){
       BaseRenderer.apply( this, arguments );
       RegistrantRenderer.apply( this, arguments );
     };
 
-    var proto = Renderer.prototype;
+    let proto = Renderer.prototype;
 
-    for( var pName in bProto ){
-      var pVal = bProto[ pName ];
-      var existsInR = rProto[ pName ] != null;
+    for( let pName in bProto ){
+      let pVal = bProto[ pName ];
+      let existsInR = rProto[ pName ] != null;
 
       if( existsInR ){
         return overrideErr( pName );
@@ -134,7 +160,7 @@ function setExtension( type, name, registrant ){
       proto[ pName ] = pVal; // take impl from base
     }
 
-    for( var pName in rProto ){
+    for( let pName in rProto ){
       proto[ pName ] = rProto[ pName ]; // take impl from registrant
     }
 
@@ -177,7 +203,7 @@ function getModule( type, name, moduleType, moduleName ){
   } );
 }
 
-var extension = function(){
+let extension = function(){
   // e.g. extension('renderer', 'svg')
   if( arguments.length === 2 ){
     return getExtension.apply( null, arguments );

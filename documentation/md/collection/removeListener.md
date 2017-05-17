@@ -12,13 +12,13 @@ j.on('tap', function(){
   console.log('some other handler');
 });
 
-j.trigger('tap'); // 'tap' & 'some other handler'
+j.emit('tap'); // 'tap' & 'some other handler'
 
 // unbind the renferenced handler
-j.off('tap', handler);
+j.removeListener('tap', handler);
 
-j.trigger('tap'); // some other handler
+j.emit('tap'); // some other handler
 
 // unbind all tap handlers (including unnamed handler)
-j.off('tap');
+j.removeListener('tap');
 ```

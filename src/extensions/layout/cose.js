@@ -150,7 +150,7 @@ CoseLayout.prototype.run = function(){
   function broadcast( message ){ // for false thread
     var e = { type: 'message', message: message };
 
-    falseThread.trigger( e );
+    falseThread.emit( e );
   }
 
   if( !thread || thread.stopped() ){
@@ -159,7 +159,7 @@ CoseLayout.prototype.run = function(){
 
   layout.stopped = false;
 
-  layout.trigger( { type: 'layoutstart', layout: layout } );
+  layout.emit( { type: 'layoutstart', layout: layout } );
 
   // Set DEBUG - Global variable
   if( true === options.debug ){
@@ -930,7 +930,7 @@ CoseLayout.prototype.run = function(){
       next: function(){
         // Layout has finished
         layout.one('layoutstop', options.stop);
-        layout.trigger({ type: 'layoutstop', layout: layout });
+        layout.emit({ type: 'layoutstop', layout: layout });
       }
     });
   };
@@ -949,7 +949,7 @@ CoseLayout.prototype.stop = function(){
     this.thread.stop();
   }
 
-  this.trigger( 'layoutstop' );
+  this.emit( 'layoutstop' );
 
   return this; // chaining
 };
@@ -1372,7 +1372,7 @@ var refreshPositions = function( layoutInfo, cy, options ){
     // logDebug(s);
     layoutInfo.ready = true;
     layout.one( 'layoutready', options.ready );
-    layout.trigger( { type: 'layoutready', layout: this } );
+    layout.emit( { type: 'layoutready', layout: this } );
   }
 };
 

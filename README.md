@@ -78,11 +78,14 @@ Run `gulp <target>` in the console.  The main targets are:
 
  * `build` (default) : build the library
  * `clean` : clean the `build` directory
- * `watch` : automatically build lib and tests for debugging
+ * `watch` : automatically build lib and tests for debugging (no babel)
+ * `watch-babel` : automatically build lib and tests for debugging (with babel; good for testing out of date browsers)
  * `zip` : build the release ZIP
  * `dist` : update the distribution JS for npm, bower, etc.
 
 **Testing:**
+
+If the `TRAVIS` or `TEST_BUILD` environment variables are defined, then `mocha` or `gulp test` will test `build/cytoscape.cjs.js`.  Otherwise, the unbundled, unbabelified, raw source is tested.  This keeps local tests very quick to run on modern versions of Node while ensuring we can test old versions of Node as well.
 
  * `test` : run the Mocha unit tests
  * `lint` : lint the JS sources via eslint

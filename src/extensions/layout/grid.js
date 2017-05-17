@@ -1,9 +1,9 @@
 'use strict';
 
-var util = require( '../../util' );
-var math = require( '../../math' );
+let util = require( '../../util' );
+let math = require( '../../math' );
 
-var defaults = {
+let defaults = {
   fit: true, // whether to fit the viewport to the graph
   padding: 30, // padding used on fit
   boundingBox: undefined, // constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
@@ -28,18 +28,18 @@ function GridLayout( options ){
 }
 
 GridLayout.prototype.run = function(){
-  var params = this.options;
-  var options = params;
+  let params = this.options;
+  let options = params;
 
-  var cy = params.cy;
-  var eles = options.eles;
-  var nodes = eles.nodes().not( ':parent' );
+  let cy = params.cy;
+  let eles = options.eles;
+  let nodes = eles.nodes().not( ':parent' );
 
   if( options.sort ){
     nodes = nodes.sort( options.sort );
   }
 
-  var bb = math.makeBoundingBox( options.boundingBox ? options.boundingBox : {
+  let bb = math.makeBoundingBox( options.boundingBox ? options.boundingBox : {
     x1: 0, y1: 0, w: cy.width(), h: cy.height()
   } );
 
@@ -51,16 +51,16 @@ GridLayout.prototype.run = function(){
   } else {
 
     // width/height * splits^2 = cells where splits is number of times to split width
-    var cells = nodes.size();
-    var splits = Math.sqrt( cells * bb.h / bb.w );
-    var rows = Math.round( splits );
-    var cols = Math.round( bb.w / bb.h * splits );
+    let cells = nodes.size();
+    let splits = Math.sqrt( cells * bb.h / bb.w );
+    let rows = Math.round( splits );
+    let cols = Math.round( bb.w / bb.h * splits );
 
-    var small = function( val ){
+    let small = function( val ){
       if( val == null ){
         return Math.min( rows, cols );
       } else {
-        var min = Math.min( rows, cols );
+        let min = Math.min( rows, cols );
         if( min == rows ){
           rows = val;
         } else {
@@ -69,11 +69,11 @@ GridLayout.prototype.run = function(){
       }
     };
 
-    var large = function( val ){
+    let large = function( val ){
       if( val == null ){
         return Math.max( rows, cols );
       } else {
-        var max = Math.max( rows, cols );
+        let max = Math.max( rows, cols );
         if( max == rows ){
           rows = val;
         } else {
@@ -82,8 +82,8 @@ GridLayout.prototype.run = function(){
       }
     };
 
-    var oRows = options.rows;
-    var oCols = options.cols != null ? options.cols : options.columns;
+    let oRows = options.rows;
+    let oCols = options.cols != null ? options.cols : options.columns;
 
     // if rows or columns were set in options, use those values
     if( oRows != null && oCols != null ){
@@ -101,8 +101,8 @@ GridLayout.prototype.run = function(){
 
     // if rounding was up, see if we can reduce rows or columns
     else if( cols * rows > cells ){
-      var sm = small();
-      var lg = large();
+      let sm = small();
+      let lg = large();
 
       // reducing the small side takes away the most cells, so try it first
       if( (sm - 1) * lg >= cells ){
@@ -114,8 +114,8 @@ GridLayout.prototype.run = function(){
 
       // if rounding was too low, add rows or columns
       while( cols * rows < cells ){
-        var sm = small();
-        var lg = large();
+        let sm = small();
+        let lg = large();
 
         // try to add to larger side first (adds less in multiplication)
         if( (lg + 1) * sm >= cells ){
@@ -126,8 +126,8 @@ GridLayout.prototype.run = function(){
       }
     }
 
-    var cellWidth = bb.w / cols;
-    var cellHeight = bb.h / rows;
+    let cellWidth = bb.w / cols;
+    let cellHeight = bb.h / rows;
 
     if( options.condense ){
       cellWidth = 0;
@@ -135,40 +135,40 @@ GridLayout.prototype.run = function(){
     }
 
     if( options.avoidOverlap ){
-      for( var i = 0; i < nodes.length; i++ ){
-        var node = nodes[ i ];
-        var pos = node._private.position;
+      for( let i = 0; i < nodes.length; i++ ){
+        let node = nodes[ i ];
+        let pos = node._private.position;
 
         if( pos.x == null || pos.y == null ){ // for bb
           pos.x = 0;
           pos.y = 0;
         }
 
-        var nbb = node.layoutDimensions( options );
-        var p = options.avoidOverlapPadding;
+        let nbb = node.layoutDimensions( options );
+        let p = options.avoidOverlapPadding;
 
-        var w = nbb.w + p;
-        var h = nbb.h + p;
+        let w = nbb.w + p;
+        let h = nbb.h + p;
 
         cellWidth = Math.max( cellWidth, w );
         cellHeight = Math.max( cellHeight, h );
       }
     }
 
-    var cellUsed = {}; // e.g. 'c-0-2' => true
+    let cellUsed = {}; // e.g. 'c-0-2' => true
 
-    var used = function( row, col ){
+    let used = function( row, col ){
       return cellUsed[ 'c-' + row + '-' + col ] ? true : false;
     };
 
-    var use = function( row, col ){
+    let use = function( row, col ){
       cellUsed[ 'c-' + row + '-' + col ] = true;
     };
 
     // to keep track of current cell position
-    var row = 0;
-    var col = 0;
-    var moveToNextCell = function(){
+    let row = 0;
+    let col = 0;
+    let moveToNextCell = function(){
       col++;
       if( col >= cols ){
         col = 0;
@@ -177,13 +177,13 @@ GridLayout.prototype.run = function(){
     };
 
     // get a cache of all the manual positions
-    var id2manPos = {};
-    for( var i = 0; i < nodes.length; i++ ){
-      var node = nodes[ i ];
-      var rcPos = options.position( node );
+    let id2manPos = {};
+    for( let i = 0; i < nodes.length; i++ ){
+      let node = nodes[ i ];
+      let rcPos = options.position( node );
 
       if( rcPos && (rcPos.row !== undefined || rcPos.col !== undefined) ){ // must have at least row or col def'd
-        var pos = {
+        let pos = {
           row: rcPos.row,
           col: rcPos.col
         };
@@ -207,15 +207,15 @@ GridLayout.prototype.run = function(){
       }
     }
 
-    var getPos = function( element, i ){
-      var x, y;
+    let getPos = function( element, i ){
+      let x, y;
 
       if( element.locked() || element.isParent() ){
         return false;
       }
 
       // see if we have a manual position set
-      var rcPos = id2manPos[ element.id() ];
+      let rcPos = id2manPos[ element.id() ];
       if( rcPos ){
         x = rcPos.col * cellWidth + cellWidth / 2 + bb.x1;
         y = rcPos.row * cellHeight + cellHeight / 2 + bb.y1;

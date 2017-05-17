@@ -1,34 +1,34 @@
 'use strict';
 
-var elesfn = {};
+let elesfn = {};
 
 function defineSwitchFunction( params ){
   return function(){
-    var args = arguments;
-    var changedEles = [];
+    let args = arguments;
+    let changedEles = [];
 
     // e.g. cy.nodes().select( data, handler )
     if( args.length === 2 ){
-      var data = args[0];
-      var handler = args[1];
+      let data = args[0];
+      let handler = args[1];
       this.on( params.event, data, handler );
     }
 
     // e.g. cy.nodes().select( handler )
     else if( args.length === 1 ){
-      var handler = args[0];
+      let handler = args[0];
       this.on( params.event, handler );
     }
 
     // e.g. cy.nodes().select()
     else if( args.length === 0 ){
-      for( var i = 0; i < this.length; i++ ){
-        var ele = this[ i ];
-        var able = !params.ableField || ele._private[ params.ableField ];
-        var changed = ele._private[ params.field ] != params.value;
+      for( let i = 0; i < this.length; i++ ){
+        let ele = this[ i ];
+        let able = !params.ableField || ele._private[ params.ableField ];
+        let changed = ele._private[ params.field ] != params.value;
 
         if( params.overrideAble ){
-          var overrideAble = params.overrideAble( ele );
+          let overrideAble = params.overrideAble( ele );
 
           if( overrideAble !== undefined ){
             able = overrideAble;
@@ -46,9 +46,9 @@ function defineSwitchFunction( params ){
         }
       }
 
-      var changedColl = this.spawn( changedEles );
+      let changedColl = this.spawn( changedEles );
       changedColl.updateStyle(); // change of state => possible change of style
-      changedColl.trigger( params.event );
+      changedColl.emit( params.event );
     }
 
     return this;
@@ -57,11 +57,11 @@ function defineSwitchFunction( params ){
 
 function defineSwitchSet( params ){
   elesfn[ params.field ] = function(){
-    var ele = this[0];
+    let ele = this[0];
 
     if( ele ){
       if( params.overrideField ){
-        var val = params.overrideField( ele );
+        let val = params.overrideField( ele );
 
         if( val !== undefined ){
           return val;
@@ -129,7 +129,7 @@ defineSwitchSet( {
 elesfn.deselect = elesfn.unselect;
 
 elesfn.grabbed = function(){
-  var ele = this[0];
+  let ele = this[0];
   if( ele ){
     return ele._private.grabbed;
   }
@@ -142,7 +142,7 @@ defineSwitchSet( {
 } );
 
 elesfn.inactive = function(){
-  var ele = this[0];
+  let ele = this[0];
   if( ele ){
     return !ele._private.active;
   }

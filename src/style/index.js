@@ -1,10 +1,10 @@
 'use strict';
 
-var is = require( '../is' );
-var util = require( '../util' );
-var Selector = require( '../selector' );
+let is = require( '../is' );
+let util = require( '../util' );
+let Selector = require( '../selector' );
 
-var Style = function( cy ){
+let Style = function( cy ){
 
   if( !(this instanceof Style) ){
     return new Style( cy );
@@ -25,7 +25,7 @@ var Style = function( cy ){
   this.resetToDefault();
 };
 
-var styfn = Style.prototype;
+let styfn = Style.prototype;
 
 styfn.instanceString = function(){
   return 'style';
@@ -33,12 +33,12 @@ styfn.instanceString = function(){
 
 // remove all contexts
 styfn.clear = function(){
-  for( var i = 0; i < this.length; i++ ){
+  for( let i = 0; i < this.length; i++ ){
     this[ i ] = undefined;
   }
   this.length = 0;
 
-  var _p = this._private;
+  let _p = this._private;
 
   _p.newStyle = true;
 
@@ -60,9 +60,9 @@ styfn.core = function(){
 // create a new context from the specified selector string and switch to that context
 styfn.selector = function( selectorStr ){
   // 'core' is a special case and does not need a selector
-  var selector = selectorStr === 'core' ? null : new Selector( selectorStr );
+  let selector = selectorStr === 'core' ? null : new Selector( selectorStr );
 
-  var i = this.length++; // new context means new index
+  let i = this.length++; // new context means new index
   this[ i ] = {
     selector: selector,
     properties: [],
@@ -75,16 +75,16 @@ styfn.selector = function( selectorStr ){
 
 // add one or many css rules to the current context
 styfn.css = function(){
-  var self = this;
-  var args = arguments;
+  let self = this;
+  let args = arguments;
 
   switch( args.length ){
   case 1:
-    var map = args[0];
+    let map = args[0];
 
-    for( var i = 0; i < self.properties.length; i++ ){
-      var prop = self.properties[ i ];
-      var mapVal = map[ prop.name ];
+    for( let i = 0; i < self.properties.length; i++ ){
+      let prop = self.properties[ i ];
+      let mapVal = map[ prop.name ];
 
       if( mapVal === undefined ){
         mapVal = map[ util.dash2camel( prop.name ) ];
@@ -112,11 +112,11 @@ styfn.style = styfn.css;
 // add a single css rule to the current context
 styfn.cssRule = function( name, value ){
   // name-value pair
-  var property = this.parse( name, value );
+  let property = this.parse( name, value );
 
   // add property to current context if valid
   if( property ){
-    var i = this.length - 1;
+    let i = this.length - 1;
     this[ i ].properties.push( property );
     this[ i ].properties[ property.name ] = property; // allow access by name as well
 
@@ -129,7 +129,7 @@ styfn.cssRule = function( name, value ){
     }
 
     // add to core style if necessary
-    var currentSelectorIsCore = !this[ i ].selector;
+    let currentSelectorIsCore = !this[ i ].selector;
     if( currentSelectorIsCore ){
       this._private.coreStyle[ property.name ] = property;
     }
@@ -140,7 +140,7 @@ styfn.cssRule = function( name, value ){
 
 // static function
 Style.fromJson = function( cy, json ){
-  var style = new Style( cy );
+  let style = new Style( cy );
 
   style.fromJson( json );
 

@@ -17,6 +17,7 @@ var browserify = require('browserify');
 var babelify = require('babelify');
 var source = require('vinyl-source-stream'); // converts node streams into vinyl streams
 var assign = require('object-assign');
+var process = require('process');
 
 process.on('SIGINT', function() {
   $.util.log($.util.colors.red('Successfully closed gulp process ' + process.pid));
@@ -281,12 +282,18 @@ gulp.task('zip', ['version', 'build'], function(){
   ;
 });
 
-gulp.task('test', function(next){
+gulp.task('test', function(){
   return gulp.src('test/*.js')
     .pipe( $.mocha({
       reporter: 'spec'
     }) )
   ;
+});
+
+gulp.task('test-build', function(next){
+  process.env['TEST_BUILD'] = 'true';
+
+  return runSequence('test', next);
 });
 
 gulp.task('benchmark-old-ver', function(){

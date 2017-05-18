@@ -1,9 +1,9 @@
 'use strict';
 
-let define = require( '../define' );
-let is = require( '../is' );
-let util = require( '../util' );
-let math = require( '../math' );
+let define = require('../define');
+let is = require('../is');
+let util = require('../util');
+let math = require('../math');
 let fn, elesfn;
 
 let beforePositionSet = function( eles, newPos ){
@@ -260,26 +260,13 @@ fn = elesfn = ({
 
     if( !cy.styleEnabled() || !cy.hasCompoundNodes() ){ return this; }
 
-    let eles = this;
-    let q = [];
-
-    for( let i = 0; i < eles.length; i++ ){
-      q.push( eles[i] );
-    }
-
-    while( q.length > 0 ){
-      let ele = q.shift();
-
+    this.forEachUp( ele => {
       ele._private.compoundBoundsClean = false;
 
       if( ele.isParent() ){
         ele.emit('bounds');
       }
-
-      if( ele.isChild() ){
-        q.push( ele.parent() );
-      }
-    }
+    } );
 
     return this;
   },

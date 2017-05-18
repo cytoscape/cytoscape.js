@@ -2,7 +2,65 @@
 
 let is = require( '../is' );
 
+function styleCache( key, fn, ele ){
+  var _p = ele._private;
+  var cache = _p.styleCache = _p.styleCache || {};
+  var val;
+
+  if( (val = cache[key]) != null ){
+    return val;
+  } else {
+    val = cache[key] = fn( ele );
+
+    return val;
+  }
+}
+
+function cacheStyleFunction( key, fn ){
+  return function cachedStyleFunction( ele ){
+    return styleCache( key, fn, ele );
+  }
+}
+
+function cachePrototypeStyleFunction( key, fn ){
+  let selfFn = ele => fn.call( ele );
+
+  return function cachedPrototypeStyleFunction(){
+    var ele = this[0];
+
+    if( ele ){
+      return styleCache( key, selfFn, ele );
+    }
+  }
+}
+
 let elesfn = ({
+
+  dirtyStyleCache: function(){
+    let cy = this.cy();
+    let dirty = ele => ele._private.styleCache = {};
+
+    if( cy.hasCompoundNodes() ){
+      let eles;
+
+      eles = this.spawnSelf()
+        .merge( this.descendants() )
+        .merge( this.parents() )
+      ;
+
+      eles.merge( eles.connectedEdges() );
+
+      eles.forEach( dirty );
+    } else {
+      this.forEach( ele => {
+        dirty( ele );
+
+        ele.connectedEdges().forEach( dirty );
+      } );
+    }
+
+    return this;
+  },
 
   // fully updates (recalculates) the style for the elements
   updateStyle: function( notifyRenderer ){
@@ -49,7 +107,8 @@ let elesfn = ({
 
     let changedEles = style.updateMappers( this );
 
-    this.dirtyCompoundBoundsCache( notifyRenderer );
+    this.dirtyStyleCache();
+    this.dirtyCompoundBoundsCache();
 
     if( notifyRenderer ){
       changedEles.emitAndNotify( 'style' ); // let renderer know we changed style
@@ -119,6 +178,7 @@ let elesfn = ({
       let props = name;
       style.applyBypass( this, props, updateTransitions );
 
+      this.dirtyStyleCache();
       this.dirtyCompoundBoundsCache();
 
       this.emitAndNotify( 'style' ); // let the renderer know we've updated style
@@ -137,6 +197,7 @@ let elesfn = ({
       } else { // then set the bypass with the property value
         style.applyBypass( this, name, value, updateTransitions );
 
+        this.dirtyStyleCache();
         this.dirtyCompoundBoundsCache();
 
         this.emitAndNotify( 'style' ); // let the renderer know we've updated style
@@ -180,6 +241,7 @@ let elesfn = ({
       }
     }
 
+    this.dirtyStyleCache();
     this.dirtyCompoundBoundsCache();
 
     this.emitAndNotify( 'style' ); // let the renderer know we've updated style
@@ -295,38 +357,38 @@ function defineDerivedStateFunction( specs ){
   }
 }
 
-let eleTakesUpSpace = function( ele ){
+let eleTakesUpSpace = cacheStyleFunction( 'eleTakesUpSpace', function( ele ){
   return (
     ele.pstyle( 'display' ).value === 'element'
     && ele.width() !== 0
     && ( ele.isNode() ? ele.height() !== 0 : true )
   );
-};
+} );
 
-elesfn.takesUpSpace = defineDerivedStateFunction({
+elesfn.takesUpSpace = cachePrototypeStyleFunction( 'takesUpSpace', defineDerivedStateFunction({
   ok: eleTakesUpSpace
-});
+}) );
 
-let eleInteractive = function( ele ){
+let eleInteractive = cacheStyleFunction( 'eleInteractive', function( ele ){
   return (
     ele.pstyle('events').value === 'yes'
     && ele.pstyle('visibility').value === 'visible'
     && eleTakesUpSpace( ele )
   );
-};
+} );
 
-let parentInteractive = function( parent ){
+let parentInteractive = cacheStyleFunction( 'parentInteractive', function( parent ){
   return (
     parent.pstyle('visibility').value === 'visible'
     && eleTakesUpSpace( parent )
   );
-};
+} );
 
-elesfn.interactive = defineDerivedStateFunction({
+elesfn.interactive = cachePrototypeStyleFunction( 'interactive', defineDerivedStateFunction({
   ok: eleInteractive,
   parentOk: parentInteractive,
   edgeOkViaNode: eleTakesUpSpace
-});
+}) );
 
 elesfn.noninteractive = function(){
   let ele = this[0];
@@ -336,20 +398,20 @@ elesfn.noninteractive = function(){
   }
 };
 
-let eleVisible = function( ele ){
+let eleVisible = cacheStyleFunction( 'eleVisible', function( ele ){
   return (
     ele.pstyle( 'visibility' ).value === 'visible'
     && ele.pstyle( 'opacity' ).pfValue !== 0
     && eleTakesUpSpace( ele )
   );
-};
+} );
 
 let edgeVisibleViaNode = eleTakesUpSpace;
 
-elesfn.visible = defineDerivedStateFunction({
+elesfn.visible = cachePrototypeStyleFunction( 'visible', defineDerivedStateFunction({
   ok: eleVisible,
   edgeOkViaNode: edgeVisibleViaNode
-});
+}) );
 
 elesfn.hidden = function(){
   let ele = this[0];

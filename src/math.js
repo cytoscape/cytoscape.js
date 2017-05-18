@@ -378,6 +378,20 @@ math.inBezierVicinity = function(
   }
 
 };
+math.solveQuadratic = function( a, b, c, val ){
+  c -= val;
+
+  var r = b * b - 4 * a * c;
+
+  if( r < 0 ){ return []; }
+
+  var sqrtR = Math.sqrt( r );
+  var denom = 2 * a;
+  var root1 = ( -b + sqrtR ) / denom;
+  var root2 = ( -b - sqrtR ) / denom;
+
+  return [ root1, root2 ];
+};
 
 math.solveCubic = function( a, b, c, d, result ){
 
@@ -1054,5 +1068,14 @@ math.getRoundRectangleRadius = function( width, height ){
 math.getCutRectangleCornerLength = function(){
   return 8;
 };
+
+math.bezierPtsToQuadCoeff = function( p0, p1, p2 ){
+  return [
+    p0 - 2 * p1 + p2,
+    2 * ( p1 - p0 ),
+    p0
+  ];
+};
+
 
 module.exports = math;

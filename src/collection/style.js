@@ -252,6 +252,19 @@ let elesfn = ({
 
 });
 
+function checkCompound( ele, parentOk ){
+  let _p = ele._private;
+  let parents = _p.data.parent ? ele.parents() : null;
+
+  if( parents ){ for( let i = 0; i < parents.length; i++ ){
+    let parent = parents[ i ];
+
+    if( !parentOk( parent ) ){ return false; }
+  } }
+
+  return true;
+}
+
 function defineDerivedStateFunction( specs ){
   let ok = specs.ok;
   let edgeOkViaNode = specs.edgeOkViaNode || specs.ok;
@@ -270,19 +283,13 @@ function defineDerivedStateFunction( specs ){
       if( !ok( ele ) ){ return false; }
 
       if( ele.isNode() ){
-        if( hasCompoundNodes ){
-          let parents = _p.data.parent ? ele.parents() : null;
-
-          if( parents ){ for( let i = 0; i < parents.length; i++ ){
-            let parent = parents[ i ];
-
-            if( !parentOk( parent ) ){ return false; }
-          } }
-        }
-
-        return true;
+        return !hasCompoundNodes || checkCompound( ele, parentOk );
       } else {
-        return edgeOkViaNode( _p.source ) && edgeOkViaNode( _p.target );
+        let src = _p.source;
+        let tgt = _p.target;
+
+        return ( edgeOkViaNode(src) && (!hasCompoundNodes || checkCompound(src, edgeOkViaNode)) ) &&
+          ( src === tgt || ( edgeOkViaNode(tgt) && (!hasCompoundNodes || checkCompound(tgt, edgeOkViaNode)) ) );
       }
     }
   }

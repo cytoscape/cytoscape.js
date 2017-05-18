@@ -1077,5 +1077,14 @@ math.bezierPtsToQuadCoeff = function( p0, p1, p2 ){
   ];
 };
 
+math.getBarrelCurveConstants = function(){
+  // get curve width, height, and control point position offsets as a percentage of node height / width
+  return {
+    heightOffsetPct: 0.05,
+    widthOffsetPct: 0.25,
+    ctrlPtOffsetPct: 0.05
+  };
+};
+
 
 module.exports = math;

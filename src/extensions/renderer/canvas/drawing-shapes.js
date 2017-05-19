@@ -82,26 +82,26 @@ CRp.drawBarrelPath = function(
     var yBegin = y - halfHeight;
     var yEnd = y + halfHeight;
 
-    var barrelCurveConstants = math.getBarrelCurveConstants();
-    var widthOffsetPct = barrelCurveConstants.widthOffsetPct;
-    var heightOffsetPct = barrelCurveConstants.heightOffsetPct;
-    var ctrlPtOffsetPct = barrelCurveConstants.ctrlPtOffsetPct;
+    var barrelCurveConstants = math.getBarrelCurveConstants( width, height );
+    var wOffset = barrelCurveConstants.widthOffset;
+    var hOffset = barrelCurveConstants.heightOffset;
+    var ctrlPtXOffset = barrelCurveConstants.ctrlPtOffsetPct * width;
 
     if( context.beginPath ){ context.beginPath(); }
 
-    context.moveTo( xBegin, yBegin + heightOffsetPct * height );
+    context.moveTo( xBegin, yBegin + hOffset );
 
-    context.lineTo( xBegin, yEnd - heightOffsetPct * height );
-    context.quadraticCurveTo( xBegin + ctrlPtOffsetPct * width, yEnd, xBegin + widthOffsetPct * width, yEnd );
+    context.lineTo( xBegin, yEnd - hOffset );
+    context.quadraticCurveTo( xBegin + ctrlPtXOffset, yEnd, xBegin + wOffset, yEnd );
 
-    context.lineTo( xEnd - widthOffsetPct * width, yEnd );
-    context.quadraticCurveTo( xEnd - ctrlPtOffsetPct * width, yEnd, xEnd, yEnd - heightOffsetPct * height)
+    context.lineTo( xEnd - wOffset, yEnd );
+    context.quadraticCurveTo( xEnd - ctrlPtXOffset, yEnd, xEnd, yEnd - hOffset )
 
-    context.lineTo( xEnd, yBegin + heightOffsetPct * height );
-    context.quadraticCurveTo( xEnd - ctrlPtOffsetPct * width, yBegin, xEnd -  widthOffsetPct * width, yBegin );
+    context.lineTo( xEnd, yBegin + hOffset );
+    context.quadraticCurveTo( xEnd - ctrlPtXOffset, yBegin, xEnd -  wOffset, yBegin );
 
-    context.lineTo( xBegin + widthOffsetPct * width, yBegin );
-    context.quadraticCurveTo( xBegin + ctrlPtOffsetPct * width, yBegin, xBegin, yBegin + heightOffsetPct * height );
+    context.lineTo( xBegin + wOffset, yBegin );
+    context.quadraticCurveTo( xBegin + ctrlPtXOffset, yBegin, xBegin, yBegin + hOffset );
 
     context.closePath();
 };

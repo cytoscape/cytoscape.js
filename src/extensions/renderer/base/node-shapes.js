@@ -252,16 +252,17 @@ BRp.generateBarrel = function(){
       var yBegin = centerY - hh;
       var yEnd = centerY + hh;
 
-      var curveConstants = math.getBarrelCurveConstants();
-      var hOffset = curveConstants.heightOffsetPct;
-      var wOffset = curveConstants.widthOffsetPct;
+      var curveConstants = math.getBarrelCurveConstants( width, height );
+      var hOffset = curveConstants.heightOffset;
+      var wOffset = curveConstants.widthOffset;
+      var ctrlPtXOffset = curveConstants.ctrlPtOffsetPct * width;
 
       // points are in clockwise order, inner (imaginary) control pt on [4, 5]
       var pts = {
-        topLeft: [ xBegin, yBegin + hOffset * height, xBegin + hOffset * width, yBegin, xBegin + wOffset * width, yBegin ],
-        topRight: [ xEnd - wOffset * width, yBegin, xEnd - hOffset * width, yBegin, xEnd, yBegin + hOffset * height ],
-        bottomRight: [ xEnd, yEnd - hOffset * height, xEnd - hOffset * width, yEnd, xEnd - wOffset * width, yEnd ],
-        bottomLeft: [ xBegin + wOffset * width, yEnd, xBegin + hOffset * width, yEnd, xBegin, yEnd - hOffset * height ]
+        topLeft: [ xBegin, yBegin + hOffset, xBegin + ctrlPtXOffset, yBegin, xBegin + wOffset, yBegin ],
+        topRight: [ xEnd - wOffset, yBegin, xEnd - ctrlPtXOffset, yBegin, xEnd, yBegin + hOffset ],
+        bottomRight: [ xEnd, yEnd - hOffset, xEnd - ctrlPtXOffset, yEnd, xEnd - wOffset, yEnd ],
+        bottomLeft: [ xBegin + wOffset, yEnd, xBegin + ctrlPtXOffset, yEnd, xBegin, yEnd - hOffset ]
       };
 
       pts.topLeft.isTop = true;
@@ -276,19 +277,19 @@ BRp.generateBarrel = function(){
     checkPoint: function(
       x, y, padding, width, height, centerX, centerY ){
 
-      var curveConstants = math.getBarrelCurveConstants();
-      var hOffset = curveConstants.heightOffsetPct;
-      var wOffset = curveConstants.widthOffsetPct;
+      var curveConstants = math.getBarrelCurveConstants( width, height );
+      var hOffset = curveConstants.heightOffset;
+      var wOffset = curveConstants.widthOffset;
 
       // Check hBox
       if( math.pointInsidePolygon( x, y, this.points,
-        centerX, centerY, width, height - 2 *  hOffset * height, [0, -1], padding ) ){
+        centerX, centerY, width, height - 2 *  hOffset, [0, -1], padding ) ){
         return true;
       }
 
       // Check vBox
       if( math.pointInsidePolygon( x, y, this.points,
-        centerX, centerY, width - 2 * wOffset * width, height, [0, -1], padding ) ){
+        centerX, centerY, width - 2 * wOffset, height, [0, -1], padding ) ){
         return true;
       }
 

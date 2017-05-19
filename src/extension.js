@@ -105,18 +105,20 @@ function setExtension( type, name, registrant ){
       return this._private.cy;
     };
 
+    let getCy = layout => layout._private.cy;
+
     util.assign( layoutProto, {
       createEmitter: function(){
         this._private.emitter = new Emitter({
           eventFields: function( layout ){
             return {
               layout: layout,
-              cy: layout.cy(),
+              cy: getCy(layout),
               target: layout
             };
           },
           bubble: function(){ return true; },
-          parent: function( layout ){ return layout.cy(); },
+          parent: function( layout ){ return getCy(layout); },
           context: this
         });
 

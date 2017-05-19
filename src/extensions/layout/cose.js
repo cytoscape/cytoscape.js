@@ -150,7 +150,7 @@ CoseLayout.prototype.run = function(){
   function broadcast( message ){ // for false thread
     var e = { type: 'message', message: message };
 
-    falseThread.emit( e );
+    falseThread.trigger( e );
   }
 
   if( !thread || thread.stopped() ){

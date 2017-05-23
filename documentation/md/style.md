@@ -246,7 +246,6 @@ These properties affect the styling of an edge's line:
 
  * **`width`** : The width of an edge's line.
  * **`curve-style`** : The curving method used to separate two or more edges between two nodes; may be [`haystack`](#style/haystack-edges) (default, very fast, bundled straight edges for which loops and compounds are unsupported), [`bezier`](#style/bezier-edges) (bundled curved edges), [`unbundled-bezier`](#style/unbundled-bezier-edges) (curved edges for use with manual control points), or [`segments`](#style/segments-edges) (a series of straight lines).  Note that `haystack` edges work best with `ellipse`, `rectangle`, or similar nodes.  Smaller node shapes, like `triangle`, will not be as aesthetically pleasing.  Also note that edge arrows are unsupported for `haystack` edges.
- * **`edge-pointing-direction`** : Indicates where the end points of an edge should be directed.  With value `inside`, each end point (e.g. arrow) of the edge points towards the middle of the connected node.  With value `outside`, each end point of the edge points towards the intersection of a line formed between the source node position and the target node position.  The `outside` value is useful for bundling the arrows of edges together, and it is also useful for large nodes (like compounds) as `inside` edges can tend to be impossible to draw for larger nodes.
  * **`line-color`** : The colour of the edge's line.
  * **`line-style`** : The style of the edge's line; may be `solid`, `dotted`, or `dashed`.
 

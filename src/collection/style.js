@@ -88,6 +88,9 @@ let elesfn = ({
 
     let changedEles = style.apply( updatedEles );
 
+    changedEles.dirtyStyleCache();
+    changedEles.dirtyCompoundBoundsCache();
+
     if( notifyRenderer ){
       changedEles.emitAndNotify( 'style' ); // let renderer know we changed style
     } else {
@@ -107,8 +110,8 @@ let elesfn = ({
 
     let changedEles = style.updateMappers( this );
 
-    this.dirtyStyleCache();
-    this.dirtyCompoundBoundsCache();
+    changedEles.dirtyStyleCache();
+    changedEles.dirtyCompoundBoundsCache();
 
     if( notifyRenderer ){
       changedEles.emitAndNotify( 'style' ); // let renderer know we changed style

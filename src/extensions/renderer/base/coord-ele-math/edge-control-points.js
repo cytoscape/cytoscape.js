@@ -153,6 +153,8 @@ BRp.findEdgeControlPoints = function( edges ){
       var segmentWs = edge.pstyle( 'segment-weights' );
       var segmentDs = edge.pstyle( 'segment-distances' );
       var segmentsN = Math.min( segmentWs.pfValue.length, segmentDs.pfValue.length );
+      var srcEndpt = edge.pstyle('source-endpoint').value;
+      var tgtEndpt = edge.pstyle('target-endpoint').value;
 
       var srcX1 = rs.lastSrcCtlPtX;
       var srcY1 = rs.lastSrcCtlPtY;
@@ -191,6 +193,12 @@ BRp.findEdgeControlPoints = function( edges ){
       var edgeDistances1 = rs.lastEdgeDistances;
       var edgeDistances2 = edgeDistances;
 
+      var srcEndpt1 = rs.lastSrcEndpt;
+      var srcEndpt2 = srcEndpt;
+
+      var tgtEndpt1 = rs.lastTgtEndpt;
+      var tgtEndpt2 = tgtEndpt;
+
       if( badBezier ){
         rs.badBezier = true;
       } else {
@@ -208,6 +216,8 @@ BRp.findEdgeControlPoints = function( edges ){
       &&  loopDir1 === loopDir2
       &&  loopSwp1 === loopSwp2
       &&  edgeDistances1 === edgeDistances2
+      &&  srcEndpt1 === srcEndpt2
+      &&  tgtEndpt1 === tgtEndpt2
       &&  ((edgeIndex1 === edgeIndex2 && numEdges1 === numEdges2) || edgeIsUnbundled) ){
         continue; // then the control points haven't changed and we can skip calculating them
       } else {
@@ -230,6 +240,8 @@ BRp.findEdgeControlPoints = function( edges ){
         rs.lastLoopDir = loopDir2;
         rs.lastLoopSwp = loopSwp2;
         rs.lastEdgeDistances = edgeDistances2;
+        rs.lastSrcEndpt = srcEndpt2;
+        rs.lastTgtEndpt = tgtEndpt2;
       }
 
       if( !pairEdges.calculatedIntersection && ( (pairEdges.length > 1 && src !== tgt) || pairEdges.hasUnbundled ) ){

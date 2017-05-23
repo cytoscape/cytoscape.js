@@ -30,6 +30,8 @@ var elesfn = ({
 
     var changedEles = style.apply( updatedEles );
 
+    changedEles.dirtyCompoundBoundsCache();
+
     if( notifyRenderer ){
       changedEles.rtrigger( 'style' ); // let renderer know we changed style
     } else {
@@ -49,7 +51,7 @@ var elesfn = ({
 
     var changedEles = style.updateMappers( this );
 
-    this.dirtyCompoundBoundsCache( notifyRenderer );
+    changedEles.dirtyCompoundBoundsCache();
 
     if( notifyRenderer ){
       changedEles.rtrigger( 'style' ); // let renderer know we changed style

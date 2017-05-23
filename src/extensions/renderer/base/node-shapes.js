@@ -232,9 +232,6 @@ BRp.generateBarrel = function(){
 
     points: math.generateUnitNgonPointsFitToSquare( 4, 0 ),
 
-    // common values used to generate barrel curve points and draw the barrel shape
-    commonPercentages: [0.05, 0.25],
-
     draw: function( context, centerX, centerY, width, height ){
       this.renderer.nodeShapeImpl( this.name, context, centerX, centerY, width, height );
     },
@@ -255,15 +252,17 @@ BRp.generateBarrel = function(){
       var yBegin = centerY - hh;
       var yEnd = centerY + hh;
 
-      var cp0 = this.commonPercentages[0];
-      var cp1 = this.commonPercentages[1];
+      var curveConstants = math.getBarrelCurveConstants( width, height );
+      var hOffset = curveConstants.heightOffset;
+      var wOffset = curveConstants.widthOffset;
+      var ctrlPtXOffset = curveConstants.ctrlPtOffsetPct * width;
 
       // points are in clockwise order, inner (imaginary) control pt on [4, 5]
       var pts = {
-        topLeft: [ xBegin, yBegin + cp0 * height, xBegin + cp0 * width, yBegin, xBegin + cp1 * width, yBegin ],
-        topRight: [ xEnd - cp1 * width, yBegin, xEnd - cp0 * width, yBegin, xEnd, yBegin + cp0 * height ],
-        bottomRight: [ xEnd, yEnd - cp0 * height, xEnd - cp0 * width, yEnd, xEnd - cp1 * width, yEnd ],
-        bottomLeft: [ xBegin + cp1 * width, yEnd, xBegin + cp0 * width, yEnd, xBegin, yEnd - cp0 * height ]
+        topLeft: [ xBegin, yBegin + hOffset, xBegin + ctrlPtXOffset, yBegin, xBegin + wOffset, yBegin ],
+        topRight: [ xEnd - wOffset, yBegin, xEnd - ctrlPtXOffset, yBegin, xEnd, yBegin + hOffset ],
+        bottomRight: [ xEnd, yEnd - hOffset, xEnd - ctrlPtXOffset, yEnd, xEnd - wOffset, yEnd ],
+        bottomLeft: [ xBegin + wOffset, yEnd, xBegin + ctrlPtXOffset, yEnd, xBegin, yEnd - hOffset ]
       };
 
       pts.topLeft.isTop = true;
@@ -278,18 +277,19 @@ BRp.generateBarrel = function(){
     checkPoint: function(
       x, y, padding, width, height, centerX, centerY ){
 
-      var cp0 = this.commonPercentages[0];
-      var cp1 = this.commonPercentages[1];
+      var curveConstants = math.getBarrelCurveConstants( width, height );
+      var hOffset = curveConstants.heightOffset;
+      var wOffset = curveConstants.widthOffset;
 
       // Check hBox
       if( math.pointInsidePolygon( x, y, this.points,
-        centerX, centerY, width, height - 2 *  cp0 * height, [0, -1], padding ) ){
+        centerX, centerY, width, height - 2 *  hOffset, [0, -1], padding ) ){
         return true;
       }
 
       // Check vBox
       if( math.pointInsidePolygon( x, y, this.points,
-        centerX, centerY, width - 2 * cp1 * width, height, [0, -1], padding ) ){
+        centerX, centerY, width - 2 * wOffset, height, [0, -1], padding ) ){
         return true;
       }
 

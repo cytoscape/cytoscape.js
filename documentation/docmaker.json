@@ -1797,7 +1797,7 @@
             {
               "name": "eles.style",
               "pureAliases": [ "eles.css" ],
-              "descr": "Get the style of the element.",
+              "descr": "Get or override the style of the element.",
               "formatsSameFn": true,
               "formats": [
                 {
@@ -1809,6 +1809,23 @@
                   "name": "ele.style",
                   "descr": "Get a particular style property value.",
                   "args": [ { "name": "name", "descr": "The name of the visual style property to get." } ]
+                },
+
+                {
+                  "name": "ele.style",
+                  "descr": "Set a particular style property value.",
+                  "args": [
+                    { "name": "name", "descr": "The name of the visual style property to set." },
+                    { "name": "value", "descr": "The value of the visual style property to set." }
+                  ]
+                },
+
+                {
+                  "name": "ele.style",
+                  "descr": "Set several particular style property values.",
+                  "args": [
+                    { "name": "obj", "descr": "An object of style property name-value pairs to set." }
+                  ]
                 }
               ],
               "md": "collection/style"

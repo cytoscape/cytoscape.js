@@ -854,7 +854,7 @@
           "fns": [
             {
               "name": "cy.png",
-              "descr": "Export the current graph view as a PNG image in Base64 representation.",
+              "descr": "Export the current graph view as a PNG image.",
               "formats": [
                 {
                   "args": [
@@ -879,7 +879,7 @@
             {
               "name": "cy.jpg",
               "pureAliases": ["cy.jpeg"],
-              "descr": "Export the current graph view as a JPG image in Base64 representation.",
+              "descr": "Export the current graph view as a JPG image.",
               "formats": [
                 {
                   "args": [

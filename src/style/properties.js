@@ -49,7 +49,7 @@ let styfn = {};
     bgClip: { enums: [ 'none', 'node' ] },
     color: { color: true },
     bool: { enums: [ 'yes', 'no' ] },
-    lineStyle: { enums: [ 'solid', 'dotted', 'dashed' ] },
+    lineStyle: { enums: [ 'solid', 'dotted', 'dashed', 'break' ] },
     borderStyle: { enums: [ 'solid', 'dotted', 'dashed', 'double' ] },
     curveStyle: { enums: [ 'bezier', 'unbundled-bezier', 'haystack', 'segments' ] },
     fontFamily: { regex: '^([\\w- \\"]+(?:\\s*,\\s*[\\w- \\"]+)*)$' },

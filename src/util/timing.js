@@ -31,7 +31,7 @@ var raf = (function(){
 })();
 
 util.requestAnimationFrame = function( fn ){
-  raf( fn );
+  raf.call(null, fn);
 };
 
 util.performanceNow = pnow;

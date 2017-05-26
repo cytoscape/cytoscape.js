@@ -1,5 +1,5 @@
 {
-  "version": "3.1.0",
+  "version": "3.1.1",
 
   "fnArgLinks": {
     "selector": "#selectors",
@@ -854,7 +854,7 @@
           "fns": [
             {
               "name": "cy.png",
-              "descr": "Export the current graph view as a PNG image in Base64 representation.",
+              "descr": "Export the current graph view as a PNG image.",
               "formats": [
                 {
                   "args": [
@@ -879,7 +879,7 @@
             {
               "name": "cy.jpg",
               "pureAliases": ["cy.jpeg"],
-              "descr": "Export the current graph view as a JPG image in Base64 representation.",
+              "descr": "Export the current graph view as a JPG image.",
               "formats": [
                 {
                   "args": [
@@ -1776,7 +1776,7 @@
             {
               "name": "eles.style",
               "pureAliases": [ "eles.css" ],
-              "descr": "Get the style of the element.",
+              "descr": "Get or override the style of the element.",
               "formatsSameFn": true,
               "formats": [
                 {
@@ -1788,6 +1788,23 @@
                   "name": "ele.style",
                   "descr": "Get a particular style property value.",
                   "args": [ { "name": "name", "descr": "The name of the visual style property to get." } ]
+                },
+
+                {
+                  "name": "eles.style",
+                  "descr": "Set a particular style property value.",
+                  "args": [
+                    { "name": "name", "descr": "The name of the visual style property to set." },
+                    { "name": "value", "descr": "The value of the visual style property to set." }
+                  ]
+                },
+
+                {
+                  "name": "eles.style",
+                  "descr": "Set several particular style property values.",
+                  "args": [
+                    { "name": "obj", "descr": "An object of style property name-value pairs to set." }
+                  ]
                 }
               ],
               "md": "collection/style"

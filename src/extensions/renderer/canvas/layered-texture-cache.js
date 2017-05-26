@@ -311,7 +311,7 @@ LTCp.drawEleInLayer = function( layer, ele, lvl, pxRatio ){
   var context = layer.context;
   var bb = ele.boundingBox();
 
-  if( bb.w === 0 || bb.h === 0 ){ return; }
+  if( bb.w === 0 || bb.h === 0 || !ele.visible() ){ return; }
 
   var eleCache = self.eleTxrCache;
   var reason = useHighQualityEleTxrReqs ? eleCache.reasons.highQuality : undefined;

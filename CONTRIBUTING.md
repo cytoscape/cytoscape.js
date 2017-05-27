@@ -6,6 +6,8 @@ If you'd like to contribute code to Cytoscape.js but you're not sure exactly wha
 
 Our goal is to make Cytoscape.js as comprehensive as possible.  Thank you for taking the time and effort to contribute to help make that happen!
 
+A blog post is available [on blog.js.cytoscape.org](http://blog.js.cytoscape.org/2017/05/09/contributing/) geared towards first-time contributors with more in-depth instructions on the project's structure, the process of creating and merging changes to the code, and more.
+
 
 
 ## Submitting issues
@@ -14,10 +16,9 @@ Submit issues or feature requests to the [issue tracker](https://github.com/cyto
 
 Before submitting an issue, please ensure that the issue still exists in the latest version of the library.  Because we follow semver, you can safely upgrade patch releases (x.y.**z**) and feature releases (x.**y**) without worry of breaking API changes.
 
-Clearly describe your issue.  List the steps necessary to reproduce your issue along with the corresponding code (preferably a JSBin, as that makes the issue less ambiguous and much faster to fix).
+Clearly describe your issue.  List the steps necessary to reproduce your issue along with the corresponding code (preferably a JSBin, as that makes the issue less ambiguous and much faster to fix). Refer to the `ISSUE_TEMPLATE.md` file in this repository for guidance on formatting and submitting an issue.
 
 Make certain to mention the version of the library you are using and version of the browser/environment you are using.
-
 
 
 ## Where to put changes

@@ -69,13 +69,17 @@ let forEachEvent = function( self, handler, events, qualifier, callback, conf, c
   }
 };
 
+let makeEventObj = function( self, obj ){
+  return new Event( obj.type, util.assign( obj, self.eventFields( self.context ) ) );
+};
+
 let forEachEventObj = function( self, handler, events ){
   if( is.event( events ) ){
     handler( self, events );
 
     return;
   } else if( is.plainObject( events ) ){
-    handler( self, new Event( events ) );
+    handler( self, makeEventObj( self, events ) );
 
     return;
   }
@@ -92,10 +96,11 @@ let forEachEventObj = function( self, handler, events ){
     if( match ){
       let type = match[1];
       let namespace = match[2] ? match[2] : null;
-      let eventObj = new Event( type, util.assign( {
+      let eventObj = makeEventObj( self, {
+        type: type,
         namespace: namespace,
         target: self.context
-      }, self.eventFields( self.context ) ) );
+      } );
 
       handler( self, eventObj );
     }

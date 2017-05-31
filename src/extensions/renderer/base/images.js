@@ -8,6 +8,7 @@ BRp.getCachedImage = function( url, crossOrigin, onLoad ){
   var cache = imageCache[ url ];
 
   if( cache ){
+    cache.image.addEventListener('error', function(){ cache.image.error = true; });
     if( !cache.image.complete ){
       cache.image.addEventListener('load', onLoad);
     }
@@ -17,6 +18,7 @@ BRp.getCachedImage = function( url, crossOrigin, onLoad ){
     cache = imageCache[ url ] = imageCache[ url ] || {};
 
     var image = cache.image = new Image(); // eslint-disable-line no-undef
+    image.addEventListener('error', function(){ image.error = true; });
     image.addEventListener('load', onLoad);
 
     // #1582 safari doesn't load data uris with crossOrigin properly

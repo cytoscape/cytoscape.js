@@ -1,36 +1,38 @@
-let util = require('./util');
-let is = require('./is');
-let Event = require('./event');
+const util = require('./util');
+const is = require('./is');
+const Event = require('./event');
 
-let eventRegex = /(\w+)(\.(?:\w+|\*))?/; // regex for matching event strings (e.g. "click.namespace")
-let universalNamespace = '.*'; // matches as if no namespace specified and prevents users from unbinding accidentally
+const eventRegex = /(\w+)(\.(?:\w+|\*))?/; // regex for matching event strings (e.g. "click.namespace")
+const universalNamespace = '.*'; // matches as if no namespace specified and prevents users from unbinding accidentally
+
+const defaults = {
+  qualifierCompare: function( q1, q2 ){
+    return q1 === q2;
+  },
+  eventMatches: function( /*context, listener, eventObj*/ ){
+    return true;
+  },
+  eventFields: function( /*context*/ ){
+    return {};
+  },
+  callbackContext: function( context/*, listener, eventObj*/ ){
+    return context;
+  },
+  beforeEmit: function(/* context, listener, eventObj */){
+  },
+  afterEmit: function(/* context, listener, eventObj */){
+  },
+  bubble: function( /*context*/ ){
+    return false;
+  },
+  parent: function( /*context*/ ){
+    return null;
+  },
+  context: this
+};
 
 function Emitter( opts ){
-  util.assign( this, {
-    qualifierCompare: function( q1, q2 ){
-      return q1 === q2;
-    },
-    eventMatches: function( /*context, listener, eventObj*/ ){
-      return true;
-    },
-    eventFields: function( /*context*/ ){
-      return {};
-    },
-    callbackContext: function( context/*, listener, eventObj*/ ){
-      return context;
-    },
-    beforeEmit: function(/* context, listener, eventObj */){
-    },
-    afterEmit: function(/* context, listener, eventObj */){
-    },
-    bubble: function( /*context*/ ){
-      return false;
-    },
-    parent: function( /*context*/ ){
-      return null;
-    },
-    context: this
-  }, opts );
+  util.assign( this, defaults, opts );
 
   this.listeners = [];
 }

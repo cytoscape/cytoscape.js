@@ -148,7 +148,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
   for( var i = 0; i < numImages; i++ ){
     if( ( urlDefined[i] ) && image[i].complete ){
       totalCompleted++;
-      if ( !(image[i].renderable == false) ) {
+      if ( !(image[i].error) ) {
           this.drawInscribedImage( context, image[i], node, i );
       }
     }

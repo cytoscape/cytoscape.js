@@ -139,6 +139,14 @@ describe('Selectors', function(){
   // edges
   itSelects(':loop', 'nparentLoop');
   itSelects(':simple', 'n1n2');
+  itSelects('node -> node', 'n1n2', 'nparentLoop');
+  itSelects('#n1 -> node', 'n1n2');
+  itSelects('[foo = "one"] -> node', 'n1n2');
+  itSelects('[weight = 1] -> node', 'n1n2');
+  itSelects('node <-> node', 'n1n2', 'nparentLoop');
+  itSelects('node <-> #n1', 'n1n2');
+  itSelects('node <-> [foo = "one"]', 'n1n2');
+  itSelects('node <-> [weight = 1]', 'n1n2');
 
   // metachars
   itSelects('[weird\\.name = 1]', 'n1');

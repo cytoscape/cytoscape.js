@@ -67,11 +67,11 @@ let Collection = function( cy, elements, options ){
 
   for( let i = 0, l = elements.length; i < l; i++ ){
     let element = elements[ i ];
-    if( !element ){  continue; }
+    if( element == null ){  continue; }
 
     let id = element._private.data.id;
 
-    if( !options || ( options.unique && !map.has(id) ) ){
+    if( options == null || ( options.unique && !map.has(id) ) ){
       map.set( id, {
         index: this.length,
         ele: element

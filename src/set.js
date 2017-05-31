@@ -16,4 +16,8 @@ p.has = function( val ){
   return this._obj[ val ] === 1;
 };
 
+p.forEach = function( callback, thisArg ){
+  return Object.keys( this._obj ).forEach( callback, thisArg );
+};
+
 module.exports = typeof Set !== 'undefined' ? Set : ObjectSet;

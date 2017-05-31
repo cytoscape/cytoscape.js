@@ -8,8 +8,8 @@ BRp.getCachedImage = function( url, crossOrigin, onLoad ){
   var cache = imageCache[ url ];
 
   if( cache ){
+    cache.image.addEventListener('error', function(){ cache.image.error = true; });
     if( !cache.image.complete ){
-      cache.image.addEventListener('error', function(){ cache.image.error = true; });
       cache.image.addEventListener('load', onLoad);
     }
 

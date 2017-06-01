@@ -52,6 +52,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
   for( var i = 0; i < numImages; i++ ){
     url = urls[i];
     urlDefined[i] = url != null && url !== 'none';
+
     if( urlDefined[i] ){
       var bgImgCrossOrigin = node.cy().style().getIndexedStyle(node, 'background-image-crossorigin', 'value', i);
 
@@ -146,7 +147,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
   var totalCompleted = 0;
 
   for( var i = 0; i < numImages; i++ ){
-    if( ( urlDefined[i] ) && image[i].complete ){
+    if( urlDefined[i] && image[i].complete && !image[i].error ){
       totalCompleted++;
       this.drawInscribedImage( context, image[i], node, i );
     }

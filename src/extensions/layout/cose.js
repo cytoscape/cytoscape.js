@@ -54,34 +54,34 @@ var defaults = {
   randomize: false,
 
   // Extra spacing between components in non-compound graphs
-  componentSpacing: 100,
+  componentSpacing: 40,
 
   // Node repulsion (non overlapping) multiplier
-  nodeRepulsion: function( node ){ return 400000; },
+  nodeRepulsion: function( node ){ return 2048; },
 
   // Node repulsion (overlapping) multiplier
-  nodeOverlap: 10,
+  nodeOverlap: 4,
 
   // Ideal edge (non nested) length
-  idealEdgeLength: function( edge ){ return 10; },
+  idealEdgeLength: function( edge ){ return 32; },
 
   // Divisor to compute edge forces
-  edgeElasticity: function( edge ){ return 100; },
+  edgeElasticity: function( edge ){ return 32; },
 
   // Nesting factor (multiplier) to compute ideal edge length for nested edges
-  nestingFactor: 5,
+  nestingFactor: 1.2,
 
   // Gravity force (constant)
-  gravity: 80,
+  gravity: 1,
 
   // Maximum number of iterations to perform
   numIter: 1000,
 
   // Initial temperature (maximum node displacement)
-  initialTemp: 200,
+  initialTemp: 1000,
 
   // Cooling factor (how the temperature is reduced between consecutive iterations
-  coolingFactor: 0.95,
+  coolingFactor: 0.99,
 
   // Lower temperature threshold (below this point the layout will end)
   minTemp: 1.0,

@@ -503,7 +503,7 @@ CoseLayout.prototype.run = function(){
         // If both centers are the same, do nothing.
         // A random force has already been applied as node repulsion
         if( 0 === directionX && 0 === directionY ){
-          return;
+          continue;
         }
 
         // Get clipping points for both nodes

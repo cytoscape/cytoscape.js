@@ -35,9 +35,6 @@ The source is organised in relatively the same as the documentation, under `./sr
 
 Use two spaces for indentation, and single-quoted strings are preferred.  The main thing is to  try to keep your code neat and similarly formatted as the rest of the code.  There isn't a strict styleguide.
 
-You can run `gulp format` to automatically format the code to more or less match the style we use.  Please do `gulp format` in a separate commit just in case it touches files or lines you didn't change.  Alternatively, you can manually run `jscs --fix <files you changed>`.
-
-
 
 ## Testing
 

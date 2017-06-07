@@ -9,6 +9,7 @@
     },
     "extends": "eslint:recommended",
     "rules": {
-      "no-redeclare": "off"
+      "no-redeclare": "off",
+      "semi": "error"
     }
 }

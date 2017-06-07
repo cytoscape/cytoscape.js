@@ -1,8 +1,19 @@
-var env = process.env;
-var FILENAME = env.FILENAME || 'cytoscape.js';
-var NODE_ENV = env.NODE_ENV || '';
-var MINIFY = env.MINIFY ? true : false;
-var BABEL = env.BABEL === undefined ? true : ( env.BABEL ? true : false );
+var env = function( name, def ){
+  var val = process.env[ name ];
+
+  if( val === undefined || val === '' ){
+    return def;
+  } else {
+    return val;
+  }
+};
+var boolEnv = function( name, def ){
+  return env( name, def ) == 'true';
+};
+var FILENAME = env('FILENAME', 'cytoscape.js');
+var NODE_ENV = env('NODE_ENV', '');
+var MINIFY = boolEnv('MINIFY', false);
+var BABEL = boolEnv('BABEL', true);
 var pkg = require('./package.json');
 var path = require('path');
 var webpack = require('webpack');

@@ -1,7 +1,6 @@
 'use strict';
 
 var math = require('../../../math');
-var util = require('../../../util');
 
 var BRp = {};
 
@@ -57,13 +56,7 @@ BRp.generateEllipse = function(){
     },
 
     checkPoint: function( x, y, padding, width, height, centerX, centerY ){
-      x -= centerX;
-      y -= centerY;
-
-      x /= (width / 2 + padding);
-      y /= (height / 2 + padding);
-
-      return x * x + y * y <= 1;
+      math.checkInEllipse( x, y, padding, width, height, centerX, centerY );
     }
   } );
 };
@@ -90,7 +83,6 @@ BRp.generateRoundRectangle = function(){
       ;
     },
 
-    // Looks like the width passed into this function is actually the total width / 2
     checkPoint: function(
       x, y, padding, width, height, centerX, centerY ){
 
@@ -108,19 +100,8 @@ BRp.generateRoundRectangle = function(){
         return true;
       }
 
-      var checkInEllipse = function( x, y, centerX, centerY, width, height, padding ){
-        x -= centerX;
-        y -= centerY;
-
-        x /= (width / 2 + padding);
-        y /= (height / 2 + padding);
-
-        return (x * x + y * y <= 1);
-      };
-
-
       // Check top left quarter circle
-      if( checkInEllipse( x, y,
+      if( math.checkInEllipse( x, y,
         centerX - width / 2 + cornerRadius,
         centerY - height / 2 + cornerRadius,
         cornerRadius * 2, cornerRadius * 2, padding ) ){
@@ -129,7 +110,7 @@ BRp.generateRoundRectangle = function(){
       }
 
       // Check top right quarter circle
-      if( checkInEllipse( x, y,
+      if( math.checkInEllipse( x, y,
         centerX + width / 2 - cornerRadius,
         centerY - height / 2 + cornerRadius,
         cornerRadius * 2, cornerRadius * 2, padding ) ){
@@ -138,7 +119,7 @@ BRp.generateRoundRectangle = function(){
       }
 
       // Check bottom right quarter circle
-      if( checkInEllipse( x, y,
+      if( math.checkInEllipse( x, y,
         centerX + width / 2 - cornerRadius,
         centerY + height / 2 - cornerRadius,
         cornerRadius * 2, cornerRadius * 2, padding ) ){
@@ -147,7 +128,7 @@ BRp.generateRoundRectangle = function(){
       }
 
       // Check bottom left quarter circle
-      if( checkInEllipse( x, y,
+      if( math.checkInEllipse( x, y,
         centerX - width / 2 + cornerRadius,
         centerY + height / 2 - cornerRadius,
         cornerRadius * 2, cornerRadius * 2, padding ) ){
@@ -273,7 +254,6 @@ BRp.generateBarrel = function(){
       return pts;
     },
 
-    // Looks like the width passed into this function is actually the total width / 2
     checkPoint: function(
       x, y, padding, width, height, centerX, centerY ){
 
@@ -300,7 +280,7 @@ BRp.generateBarrel = function(){
         var x1 = curvePts[ 2 ];
         var x2 = curvePts[ 0 ];
         var y0 = curvePts[ 5 ];
-        var y1 = curvePts[ 3 ];
+        // var y1 = curvePts[ 3 ];
         var y2 = curvePts[ 1 ];
 
         var xMin = Math.min( x0, x2 );
@@ -381,7 +361,6 @@ BRp.generateBottomRoundrectangle = function(){
       ;
     },
 
-    // Looks like the width passed into this function is actually the total width / 2
     checkPoint: function(
       x, y, padding, width, height, centerX, centerY ){
 
@@ -408,23 +387,12 @@ BRp.generateBottomRoundrectangle = function(){
         centerX + outerWidth, centerY,
         centerX + outerWidth, centerY - outerHeight
       ];
-      if( math.pointInsidePolygonPoints( x, y, points)){
+      if( math.pointInsidePolygonPoints( x, y, points) ){
         return true;
       }
 
-
-      var checkInEllipse = function( x, y, centerX, centerY, width, height, padding ){
-        x -= centerX;
-        y -= centerY;
-
-        x /= (width / 2 + padding);
-        y /= (height / 2 + padding);
-
-        return (x * x + y * y <= 1);
-      };
-
       // Check bottom right quarter circle
-      if( checkInEllipse( x, y,
+      if( math.checkInEllipse( x, y,
         centerX + width / 2 - cornerRadius,
         centerY + height / 2 - cornerRadius,
         cornerRadius * 2, cornerRadius * 2, padding ) ){
@@ -433,7 +401,7 @@ BRp.generateBottomRoundrectangle = function(){
       }
 
       // Check bottom left quarter circle
-      if( checkInEllipse( x, y,
+      if( math.checkInEllipse( x, y,
         centerX - width / 2 + cornerRadius,
         centerY + height / 2 - cornerRadius,
         cornerRadius * 2, cornerRadius * 2, padding ) ){
@@ -444,7 +412,7 @@ BRp.generateBottomRoundrectangle = function(){
       return false;
     }
   } );
-}
+};
 
 
 BRp.registerNodeShapes = function(){
@@ -537,7 +505,7 @@ BRp.registerNodeShapes = function(){
     1, 0,
     0.25,1,
     -1, 1
-  ])
+  ]);
 
   nodeShapes.makePolygon = function( points ){
 

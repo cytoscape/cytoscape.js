@@ -1,7 +1,6 @@
 'use strict';
 
 var math = require('../../../math');
-var util = require('../../../util');
 
 var BRp = {};
 
@@ -57,13 +56,7 @@ BRp.generateEllipse = function(){
     },
 
     checkPoint: function( x, y, padding, width, height, centerX, centerY ){
-      x -= centerX;
-      y -= centerY;
-
-      x /= (width / 2 + padding);
-      y /= (height / 2 + padding);
-
-      return x * x + y * y <= 1;
+      math.checkInEllipse( x, y, padding, width, height, centerX, centerY );
     }
   } );
 };
@@ -90,7 +83,6 @@ BRp.generateRoundRectangle = function(){
       ;
     },
 
-    // Looks like the width passed into this function is actually the total width / 2
     checkPoint: function(
       x, y, padding, width, height, centerX, centerY ){
 
@@ -108,19 +100,8 @@ BRp.generateRoundRectangle = function(){
         return true;
       }
 
-      var checkInEllipse = function( x, y, centerX, centerY, width, height, padding ){
-        x -= centerX;
-        y -= centerY;
-
-        x /= (width / 2 + padding);
-        y /= (height / 2 + padding);
-
-        return (x * x + y * y <= 1);
-      };
-
-
       // Check top left quarter circle
-      if( checkInEllipse( x, y,
+      if( math.checkInEllipse( x, y,
         centerX - width / 2 + cornerRadius,
         centerY - height / 2 + cornerRadius,
         cornerRadius * 2, cornerRadius * 2, padding ) ){
@@ -129,7 +110,7 @@ BRp.generateRoundRectangle = function(){
       }
 
       // Check top right quarter circle
-      if( checkInEllipse( x, y,
+      if( math.checkInEllipse( x, y,
         centerX + width / 2 - cornerRadius,
         centerY - height / 2 + cornerRadius,
         cornerRadius * 2, cornerRadius * 2, padding ) ){
@@ -138,7 +119,7 @@ BRp.generateRoundRectangle = function(){
       }
 
       // Check bottom right quarter circle
-      if( checkInEllipse( x, y,
+      if( math.checkInEllipse( x, y,
         centerX + width / 2 - cornerRadius,
         centerY + height / 2 - cornerRadius,
         cornerRadius * 2, cornerRadius * 2, padding ) ){
@@ -147,7 +128,7 @@ BRp.generateRoundRectangle = function(){
       }
 
       // Check bottom left quarter circle
-      if( checkInEllipse( x, y,
+      if( math.checkInEllipse( x, y,
         centerX - width / 2 + cornerRadius,
         centerY + height / 2 - cornerRadius,
         cornerRadius * 2, cornerRadius * 2, padding ) ){
@@ -273,7 +254,6 @@ BRp.generateBarrel = function(){
       return pts;
     },
 
-    // Looks like the width passed into this function is actually the total width / 2
     checkPoint: function(
       x, y, padding, width, height, centerX, centerY ){
 
@@ -300,7 +280,7 @@ BRp.generateBarrel = function(){
         var x1 = curvePts[ 2 ];
         var x2 = curvePts[ 0 ];
         var y0 = curvePts[ 5 ];
-        var y1 = curvePts[ 3 ];
+        // var y1 = curvePts[ 3 ];
         var y2 = curvePts[ 1 ];
 
         var xMin = Math.min( x0, x2 );
@@ -348,6 +328,92 @@ BRp.generateBarrel = function(){
   } );
 };
 
+BRp.generateBottomRoundrectangle = function(){
+  return ( this.nodeShapes['bottomroundrectangle'] = {
+    renderer: this,
+
+    name: 'bottomroundrectangle',
+
+    points: math.generateUnitNgonPointsFitToSquare( 4, 0 ),
+
+    draw: function( context, centerX, centerY, width, height ){
+      this.renderer.nodeShapeImpl( this.name, context, centerX, centerY, width, height );
+    },
+
+    intersectLine: function( nodeX, nodeY, width, height, x, y, padding ){
+      var topStartX = nodeX - ( width / 2 + padding );
+      var topStartY = nodeY - ( height / 2 + padding );
+      var topEndY = topStartY;
+      var topEndX = nodeX + ( width / 2 + padding );
+
+      var topIntersections = math.finiteLinesIntersect(
+        x, y, nodeX, nodeY, topStartX, topStartY, topEndX, topEndY, false );
+      if( topIntersections.length > 0 ){
+        return topIntersections;
+      }
+
+      return math.roundRectangleIntersectLine(
+        x, y,
+        nodeX,
+        nodeY,
+        width, height,
+        padding )
+      ;
+    },
+
+    checkPoint: function(
+      x, y, padding, width, height, centerX, centerY ){
+
+      var cornerRadius = math.getRoundRectangleRadius( width, height );
+
+      // Check hBox
+      if( math.pointInsidePolygon( x, y, this.points,
+        centerX, centerY, width, height - 2 * cornerRadius, [0, -1], padding ) ){
+        return true;
+      }
+
+      // Check vBox
+      if( math.pointInsidePolygon( x, y, this.points,
+        centerX, centerY, width - 2 * cornerRadius, height, [0, -1], padding ) ){
+        return true;
+      }
+
+      // check non-rounded top side
+      var outerWidth = ( ( width / 2 ) + 2 * padding );
+      var outerHeight = ( ( height / 2 ) + 2 * padding );
+      var points = [
+        centerX - outerWidth, centerY - outerHeight,
+        centerX - outerWidth, centerY,
+        centerX + outerWidth, centerY,
+        centerX + outerWidth, centerY - outerHeight
+      ];
+      if( math.pointInsidePolygonPoints( x, y, points) ){
+        return true;
+      }
+
+      // Check bottom right quarter circle
+      if( math.checkInEllipse( x, y,
+        centerX + width / 2 - cornerRadius,
+        centerY + height / 2 - cornerRadius,
+        cornerRadius * 2, cornerRadius * 2, padding ) ){
+
+        return true;
+      }
+
+      // Check bottom left quarter circle
+      if( math.checkInEllipse( x, y,
+        centerX - width / 2 + cornerRadius,
+        centerY + height / 2 - cornerRadius,
+        cornerRadius * 2, cornerRadius * 2, padding ) ){
+
+        return true;
+      }
+
+      return false;
+    }
+  } );
+};
+
 
 BRp.registerNodeShapes = function(){
   var nodeShapes = this.nodeShapes = {};
@@ -365,6 +431,8 @@ BRp.registerNodeShapes = function(){
   this.generateCutRectangle();
 
   this.generateBarrel();
+
+  this.generateBottomRoundrectangle();
 
   this.generatePolygon( 'diamond', [
     0, 1,
@@ -421,6 +489,23 @@ BRp.registerNodeShapes = function(){
     1, 1,
     -0.333, 1
   ] );
+
+  this.generatePolygon( 'concavehexagon', [
+    -1, -0.95,
+    -0.75, 0,
+    -1, 0.95,
+    1, 0.95,
+    0.75, 0,
+    1, -0.95
+  ] );
+
+  this.generatePolygon( 'tag', [
+    -1, -1,
+    0.25, -1,
+    1, 0,
+    0.25,1,
+    -1, 1
+  ]);
 
   nodeShapes.makePolygon = function( points ){
 

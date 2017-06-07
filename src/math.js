@@ -494,7 +494,6 @@ math.sqdistToQuadraticBezier = function(
   params.push( 0.0 );
 
   let minDistanceSquared = -1;
-  let closestParam;
 
   let curX, curY, distSquared;
   for( let i = 0; i < params.length; i++ ){
@@ -511,11 +510,9 @@ math.sqdistToQuadraticBezier = function(
     if( minDistanceSquared >= 0 ){
       if( distSquared < minDistanceSquared ){
         minDistanceSquared = distSquared;
-        closestParam = params[ i ];
       }
     } else {
       minDistanceSquared = distSquared;
-      closestParam = params[ i ];
     }
   }
 
@@ -549,9 +546,8 @@ math.pointInsidePolygonPoints = function( x, y, points ){
 
   // Intersect with vertical line through (x, y)
   let up = 0;
-  let down = 0;
+  // let down = 0;
   for( let i = 0; i < points.length / 2; i++ ){
-
     x1 = points[ i * 2];
     y1 = points[ i * 2 + 1];
 
@@ -574,9 +570,9 @@ math.pointInsidePolygonPoints = function( x, y, points ){
         up++;
       }
 
-      if( y3 < y ){
-        down++;
-      }
+      // if( y3 < y ){
+        // down++;
+      // }
 
     } else {
       continue;
@@ -742,6 +738,17 @@ math.intersectLineEllipse = function(
   let lenProportion = newLength / len;
 
   return [ (centerX - x) * lenProportion + x, (centerY - y) * lenProportion + y ];
+};
+
+math.checkInEllipse = function(
+  x, y, padding, width, height, centerX, centerY ){
+  x -= centerX;
+  y -= centerY;
+
+  x /= (width / 2 + padding);
+  y /= (height / 2 + padding);
+
+  return x * x + y * y <= 1;
 };
 
 // Returns intersections of increasing distance from line's start point
@@ -1043,17 +1050,17 @@ math.generateUnitNgonPoints = function( sides, rotationRadians ){
   let increment = 1.0 / sides * 2 * Math.PI;
   let startAngle = sides % 2 === 0 ?
     Math.PI / 2.0 + increment / 2.0 : Math.PI / 2.0;
-  //    console.log(nodeShapes['square']);
+
   startAngle += rotationRadians;
 
   let points = new Array( sides * 2 );
 
-  let currentAngle, x, y;
+  let currentAngle;
   for( let i = 0; i < sides; i++ ){
     currentAngle = i * increment + startAngle;
 
-    x = points[2 * i ] = Math.cos( currentAngle );// * (1 + i/2);
-    y = points[2 * i + 1] = Math.sin( -currentAngle );//  * (1 + i/2);
+    points[2 * i ] = Math.cos( currentAngle ); // x
+    points[2 * i + 1] = Math.sin( -currentAngle ); // y
   }
 
   return points;

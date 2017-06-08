@@ -36,7 +36,7 @@ CRp.drawElementText = function( context, ele, force ){
   if( ele.isNode() ){
     var label = ele.pstyle( 'label' );
 
-    if( !label || !label.value ){ return; }
+    if( !label || label.value === "" ){ return; }
 
     var textHalign = ele.pstyle( 'text-halign' ).strValue;
     var textValign = ele.pstyle( 'text-valign' ).strValue;
@@ -61,9 +61,9 @@ CRp.drawElementText = function( context, ele, force ){
     var tgtLabel = ele.pstyle( 'target-label' );
 
     if(
-      ( !label || !label.value )
-      && ( !srcLabel || !srcLabel.value )
-      && ( !tgtLabel || !tgtLabel.value )
+      ( !label || label.value === "" )
+      && ( !srcLabel || srcLabel.value === "" )
+      && ( !tgtLabel || tgtLabel.value === "" )
     ){
       return;
     }

@@ -352,7 +352,7 @@ fn = elesfn = ({
       pos.x = (- diffLeft + bb.x1 + bb.x2 + diffRight) / 2;
 
       _p.autoHeight = Math.max(bb.h, min.height.val);
-      pos.y = (- diffBottom + bb.y1 + bb.y2 + diffTop) / 2;
+      pos.y = (- diffTop + bb.y1 + bb.y2 + diffBottom) / 2;
 
       updated.push( parent );
     }

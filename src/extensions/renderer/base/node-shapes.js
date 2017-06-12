@@ -56,7 +56,7 @@ BRp.generateEllipse = function(){
     },
 
     checkPoint: function( x, y, padding, width, height, centerX, centerY ){
-      math.checkInEllipse( x, y, padding, width, height, centerX, centerY );
+      return math.checkInEllipse( x, y, padding, width, height, centerX, centerY );
     }
   } );
 };

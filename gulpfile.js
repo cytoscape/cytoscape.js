@@ -16,6 +16,7 @@ var pkg = require('./package.json');
 var webpack = require('webpack');
 var env = process.env;
 var path = require('path');
+var requireUncached = require('require-uncached');
 
 process.on('SIGINT', function() {
   $.util.log($.util.colors.red('Successfully closed gulp process ' + process.pid));
@@ -127,9 +128,10 @@ gulp.task('clean', function(){
 gulp.task('build-unmin', ['version'], function( next ){
   env.NODE_ENV = 'development';
   env.FILENAME = 'cytoscape.js';
+  env.MINIFY = false;
   env.BABEL = true;
 
-  webpack( require('./webpack.config'), next );
+  webpack( requireUncached('./webpack.config'), next );
 });
 
 gulp.task('build-min', ['version'], function( next ){
@@ -138,19 +140,20 @@ gulp.task('build-min', ['version'], function( next ){
   env.MINIFY = true;
   env.BABEL = true;
 
-  webpack( require('./webpack.config'), next );
+  webpack( requireUncached('./webpack.config'), next );
 });
 
 gulp.task('build-cjs', ['version'], function( next ){
   env.NODE_ENV = 'production';
   env.FILENAME = 'cytoscape.cjs.js';
+  env.MINIFY = false;
   env.BABEL = true;
 
-  webpack( require('./webpack.config'), next );
+  webpack( requireUncached('./webpack.config'), next );
 });
 
-gulp.task('build', ['build-unmin', 'build-min', 'build-cjs'], function( next ){
-  next();
+gulp.task('build', function( next ){
+  return runSequence( 'build-unmin', 'build-min', 'build-cjs', next );
 });
 
 gulp.task('debug-refs', function(){
@@ -460,6 +463,10 @@ gulp.task('watch', function(next){
     env.BABEL = false;
   }
 
+  env.MINIFY = false;
+  env.FILENAME = 'cytoscape.js';
+  env.NODE_ENV = 'development';
+
   var out = 'build/cytoscape.js';
 
   version = 'watch-build';
@@ -482,7 +489,7 @@ gulp.task('watch', function(next){
     gulp.src( out ).pipe( $.livereload() );
   });
 
-  var compiler = webpack( require('./webpack.config') );
+  var compiler = webpack( requireUncached('./webpack.config') );
 
   compiler.watch({}, function( err, stats ){
     console.log( stats.toString({ colors: true }) );

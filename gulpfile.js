@@ -10,13 +10,13 @@ var runSequence = require('run-sequence');
 var del = require('del');
 var vinylPaths = require('vinyl-paths');
 var clean = function(){ return vinylPaths(del); };
-var buffer = require('vinyl-buffer');
 var notifier = require('node-notifier');
-var watchify = require('watchify');
-var browserify = require('browserify');
-var babelify = require('babelify');
-var source = require('vinyl-source-stream'); // converts node streams into vinyl streams
 var assign = require('object-assign');
+var pkg = require('./package.json');
+var webpack = require('webpack');
+var env = process.env;
+var path = require('path');
+var requireUncached = require('require-uncached');
 
 process.on('SIGINT', function() {
   $.util.log($.util.colors.red('Successfully closed gulp process ' + process.pid));
@@ -27,6 +27,10 @@ var benchmarkVersion = require('./benchmark/old-version.json'); // old version t
 var benchmarkVersionUrl = 'https://raw.githubusercontent.com/cytoscape/cytoscape.js/v' + benchmarkVersion + '/dist/cytoscape.js';
 
 var version; // used for marking builds w/ version etc
+
+var relPath = function( pathStr ){
+  return path.relative( './', pathStr );
+};
 
 var paths = {
   sourceEntry: 'src/index.js',
@@ -54,17 +58,6 @@ var paths = {
       'documentation/css/style.css'
     ]
   }
-};
-
-var browserifyOpts = {
-  entries: [ paths.sourceEntry ],
-  debug: true,
-  bundleExternal: true,
-  builtins: [],
-  detectGlobals: false,
-  standalone: 'cytoscape',
-  cache: {}, // for watchify
-  packageCache: {} // for watchify
 };
 
 var logError = function( err ){
@@ -120,7 +113,7 @@ gulp.task('version', function( next ){
 
 });
 
-gulp.task('confver', ['version'], function(){
+gulp.task('confirm-ver', ['version'], function(){
   return gulp.src('.')
     .pipe( $.prompt.confirm({ message: 'Are you sure version `' + version + '` is OK to publish?' }) )
   ;
@@ -132,104 +125,38 @@ gulp.task('clean', function(){
   ;
 });
 
-gulp.task('format', $.shell.task([
-  './node_modules/jscs/bin/jscs src/** --fix'
-]));
+gulp.task('build-unmin', ['version'], function( next ){
+  env.NODE_ENV = 'development';
+  env.FILENAME = 'cytoscape.js';
+  env.MINIFY = false;
+  env.BABEL = true;
 
-var getBrowserify = function( opts ){
-  opts = assign({
-    file: 'cytoscape.js',
-    sourceMaps: false,
-    minify: false,
-    handleErrors: true,
-    bundle: true,
-    bundleExternal: false,
-    babel: true
-  }, opts);
-
-  var bOpts = assign( {}, browserifyOpts, {
-    bundleExternal: opts.bundleExternal
-  } );
-
-  var b = opts.stream || browserify( bOpts );
-
-  if( opts.babel ){
-    b.transform( babelify );
-  }
-
-  if( opts.bundle ){
-    b = b.bundle();
-  }
-
-  if( opts.handleErrors ){
-    b = b.on( 'error', logError );
-  }
-
-  var pipe = function( fn ){
-    b = b.pipe( fn );
-  };
-
-  if( opts.file ){
-    pipe( source( opts.file ) );
-    pipe( buffer() );
-  }
-
-  if( opts.sourceMaps ){
-    pipe( $.sourcemaps.init({ loadMaps: true }) );
-  }
-
-  pipe( $.derequire() );
-
-  pipe( $.banner( '/*! Cytoscape.js ' + version + ' (MIT licensed) */' ) );
-
-  if( opts.minify ){
-    pipe( $.uglify({ mangle: true, preserveComments: 'license' }) );
-  }
-
-  if( opts.sourceMaps === true ){
-    pipe( $.sourcemaps.write() );
-  } else if( opts.sourceMaps ){
-    pipe( $.sourcemaps.write( opts.sourceMaps ) );
-  }
-
-  return b;
-};
-
-gulp.task('build-unmin', ['version'], function(){
-  return getBrowserify({
-    file: 'cytoscape.js',
-    sourceMaps: true,
-    bundleExternal: true
-  })
-    .pipe( gulp.dest('build') )
-  ;
+  webpack( requireUncached('./webpack.config'), next );
 });
 
-gulp.task('build-min', ['version'], function(){
-  return getBrowserify({
-    file: 'cytoscape.min.js',
-    minify: true,
-    bundleExternal: true
-  })
-    .pipe( gulp.dest('build') )
-  ;
+gulp.task('build-min', ['version'], function( next ){
+  env.NODE_ENV = 'development';
+  env.FILENAME = 'cytoscape.min.js';
+  env.MINIFY = true;
+  env.BABEL = true;
+
+  webpack( requireUncached('./webpack.config'), next );
 });
 
-gulp.task('build-cjs', ['version'], function(){
-  return getBrowserify({
-    file: 'cytoscape.cjs.js',
-    sourceMaps: true,
-    bundleExternal: false
-  })
-    .pipe( gulp.dest('build') )
-  ;
+gulp.task('build-cjs', ['version'], function( next ){
+  env.NODE_ENV = 'production';
+  env.FILENAME = 'cytoscape.cjs.js';
+  env.MINIFY = false;
+  env.BABEL = true;
+
+  webpack( requireUncached('./webpack.config'), next );
 });
 
-gulp.task('build', ['build-unmin', 'build-min', 'build-cjs'], function( next ){
-  next();
+gulp.task('build', function( next ){
+  return runSequence( 'build-unmin', 'build-min', 'build-cjs', next );
 });
 
-gulp.task('debugrefs', function(){
+gulp.task('debug-refs', function(){
   return gulp.src('debug/index.html')
     .pipe( $.inject( gulp.src(paths.debugFiles, { read: false }), {
       addPrefix: '..',
@@ -240,7 +167,7 @@ gulp.task('debugrefs', function(){
   ;
 });
 
-gulp.task('testrefs', function(){
+gulp.task('test-refs', function(){
   return gulp.src('test/index.html')
     .pipe( $.inject( gulp.src(paths.testFiles, { read: false }), {
       addPrefix: '..',
@@ -251,7 +178,7 @@ gulp.task('testrefs', function(){
   ;
 });
 
-gulp.task('testlist', function(){
+gulp.task('test-list', function(){
   return gulp.src('test/index.html')
     .pipe( $.inject( gulp.src('test/*.js', { read: false }), {
       addPrefix: '',
@@ -265,7 +192,7 @@ gulp.task('testlist', function(){
 });
 
 gulp.task('refs', function(next){
-  runSequence( 'debugrefs', 'testrefs', 'testlist', next );
+  runSequence( 'debug-refs', 'test-refs', 'test-list', next );
 });
 
 gulp.task('zip', ['version', 'build'], function(){
@@ -312,7 +239,7 @@ gulp.task('benchmark-single', ['benchmark-old-ver'], function(next){
   ;
 });
 
-gulp.task('docsver', ['version'], function(){
+gulp.task('docs-ver', ['version'], function(){
   return gulp.src('documentation/docmaker.json')
     .pipe( $.replace(/\"version\"\:\s*\".*?\"/, '"version": "' + version + '"') )
 
@@ -320,7 +247,7 @@ gulp.task('docsver', ['version'], function(){
   ;
 });
 
-gulp.task('docsjs', ['version', 'build'], function(){
+gulp.task('docs-js', ['version', 'build'], function(){
   return gulp.src([
     'build/cytoscape.js',
     'build/cytoscape.min.js'
@@ -333,13 +260,13 @@ gulp.task('docsjs', ['version', 'build'], function(){
   ;
 });
 
-gulp.task('docsdl', ['version', 'zip'], function(){
+gulp.task('docs-dl', ['version', 'zip'], function(){
   return gulp.src('build/cytoscape.js-' + version + '.zip')
     .pipe( gulp.dest('documentation/download') )
   ;
 });
 
-gulp.task('snapshotpush', ['docsdl'], function(){
+gulp.task('snapshot-push', ['docs-dl'], function(){
   return gulp.src('')
     .pipe( $.shell( replaceShellVars([
       '$RM $TEMP_DIR/cytoscape.js',
@@ -370,17 +297,17 @@ gulp.task('docs', function(next){
 
 });
 
-gulp.task('docsmin', function(next){
-  runSequence( 'docs', 'docsminrefs', 'docshtmlmin', next );
+gulp.task('docs-min', function(next){
+  runSequence( 'docs', 'docs-min-refs', 'docs-html-min', next );
 });
 
-gulp.task('docsclean', function(next){
+gulp.task('docs-clean', function(next){
   return gulp.src(['documentation/js/all.min.js', 'documentation/css/all.min.css', 'documentation/index.html'])
     .pipe( clean({ read: false }) )
   ;
 });
 
-gulp.task('docshtmlmin', function(){
+gulp.task('docs-html-min', function(){
   return gulp.src('documentation/index.html')
     .pipe( $.htmlmin({
       collapseWhitespace: true,
@@ -391,7 +318,7 @@ gulp.task('docshtmlmin', function(){
   ;
 });
 
-gulp.task('docsjsmin', function(){
+gulp.task('docs-js-min', function(){
   return gulp.src( paths.docs.js )
     .pipe( $.concat('all.min.js') )
 
@@ -403,7 +330,7 @@ gulp.task('docsjsmin', function(){
   ;
 });
 
-gulp.task('docscssmin', function(){
+gulp.task('docs-css-min', function(){
   return gulp.src( paths.docs.css )
     .pipe( $.concat('all.min.css') )
 
@@ -413,7 +340,7 @@ gulp.task('docscssmin', function(){
   ;
 });
 
-gulp.task('docsminrefs', ['docscssmin', 'docsjsmin'], function(){
+gulp.task('docs-min-refs', ['docs-css-min', 'docs-js-min'], function(){
   return gulp.src('documentation/index.html')
     .pipe( $.inject( gulp.src([ 'documentation/js/all.min.js', 'documentation/css/all.min.css' ] ), {
       addRootSlash: false,
@@ -424,7 +351,7 @@ gulp.task('docsminrefs', ['docscssmin', 'docsjsmin'], function(){
   ;
 });
 
-gulp.task('docsrefs', function(){
+gulp.task('docs-refs', function(){
   return gulp.src([ 'documentation/index.html', 'documentation/template.html' ])
     .pipe( $.inject( gulp.src(paths.docs.js.$.concat( paths.docs.css ), { read: false }), {
       addRootSlash: false,
@@ -435,12 +362,12 @@ gulp.task('docsrefs', function(){
   ;
 });
 
-gulp.task('docspub', function(next){
-  runSequence( 'version', 'docsdl', 'docsver', 'docsjs', 'docsmin', next );
+gulp.task('docs-pub', function(next){
+  runSequence( 'version', 'docs-dl', 'docs-ver', 'docs-js', 'docs-min', next );
 });
 
-gulp.task('docsrebuild', function(next){
-  runSequence( 'docsmin', next );
+gulp.task('docs-rebuild', function(next){
+  runSequence( 'docs-min', next );
 });
 
 gulp.task('pkgver', ['version'], function(){
@@ -465,7 +392,7 @@ gulp.task('dist', ['build'], function(){
 });
 
 gulp.task('pubprep', function(next){
-  runSequence('pkgver', 'dist', 'docspub', 'pubpush', next);
+  runSequence('pkgver', 'dist', 'docs-pub', 'pubpush', next);
 });
 
 gulp.task('pubpush', $.shell.task( replaceShellVars([
@@ -475,7 +402,7 @@ gulp.task('pubpush', $.shell.task( replaceShellVars([
 ]) ));
 
 gulp.task('publish', function(next){
-  runSequence('confver', 'pubprep', 'tag', 'docspush', 'npm', next);
+  runSequence('confirm-ver', 'pubprep', 'tag', 'docs-push', 'npm', next);
 });
 
 gulp.task('tag', $.shell.task( replaceShellVars([
@@ -483,7 +410,7 @@ gulp.task('tag', $.shell.task( replaceShellVars([
   '$GIT push origin v$VERSION'
 ]) ));
 
-gulp.task('docspush', function(){
+gulp.task('docs-push', function(){
   return gulp.src('')
     .pipe( $.shell( replaceShellVars([
       '$RM $TEMP_DIR/cytoscape.js',
@@ -500,7 +427,7 @@ gulp.task('docspush', function(){
   ;
 });
 
-gulp.task('unstabledocspush', function(){
+gulp.task('docs-push-unstable', function(){
   return gulp.src('')
     .pipe( $.shell( replaceShellVars([
       '$RM $TEMP_DIR/cytoscape.js',
@@ -525,41 +452,48 @@ gulp.task('npm', $.shell.task( replaceShellVars([
   '$NPM publish .'
 ]) ));
 
-var watchUsesBabel = false;
-
 gulp.task('watch-babel', function(next){
-  watchUsesBabel = true;
+  env.BABEL = true;
 
   return runSequence('watch', next);
 });
 
 gulp.task('watch', function(next){
+  if( env.BABEL === undefined ){
+    env.BABEL = false;
+  }
+
+  env.MINIFY = false;
+  env.FILENAME = 'cytoscape.js';
+  env.NODE_ENV = 'development';
+
+  var out = 'build/cytoscape.js';
+
   version = 'watch-build';
 
   $.livereload.listen();
 
-  gulp.watch('test/*.js', ['testlist'])
+  gulp.watch('test/*.js', ['test-list'])
     .on('added deleted', function( event ){
-      console.log('File ' + event.path + ' was ' + event.type + ', updating test refs in pages...');
+      $.util.log('File', $.util.colors.magenta( relPath(event.path) ), 'was', event.type);
     })
   ;
 
-  var b = watchify( browserify( browserifyOpts ), { poll: true } );
+  gulp.watch('debug/**').on('change', function( event ){
+    $.util.log('File', $.util.colors.magenta( relPath(event.path) ), ' was modified');
 
-  var rebuild = function(){
-    getBrowserify({
-      stream: b,
-      sourceMaps: true,
-      babel: watchUsesBabel
-    })
-      .pipe( gulp.dest('build') )
-      .pipe( $.livereload() )
-    ;
-  };
+    $.livereload.reload();
+  });
 
-  rebuild();
+  gulp.watch( out ).on('change', function( event ){
+    gulp.src( out ).pipe( $.livereload() );
+  });
 
-  b.on('update', rebuild);
+  var compiler = webpack( requireUncached('./webpack.config') );
+
+  compiler.watch({}, function( err, stats ){
+    console.log( stats.toString({ colors: true }) );
+  });
 
   next();
 });

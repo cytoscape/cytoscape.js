@@ -65,20 +65,20 @@ Franz M, Lopes CT, Huck G, Dong Y, Sumer O, Bader GD
 
 ## Build dependencies
 
-Install `node`, `npm` and `gulp`.  Of course, `npm install` before using `gulp`.
+Install `node`, `npm` and `gulp` (optional).  Of course, `npm install` before using `gulp` or `npm run`.
 
 
 
 
 ## Build instructions
 
-Run `gulp <target>` in the console.  The main targets are:
+Run `npm run <target>` or `gulp <target>` in the console.  The main targets are:
 
 **Building:**
 
  * `build` (default) : build the library
  * `clean` : clean the `build` directory
- * `watch` : automatically build lib and tests for debugging (no babel)
+ * `watch` : automatically build lib and tests for debugging (no babel, very quick)
  * `watch-babel` : automatically build lib and tests for debugging (with babel; good for testing out of date browsers)
  * `zip` : build the release ZIP
  * `dist` : update the distribution JS for npm, bower, etc.
@@ -93,15 +93,6 @@ If the `TRAVIS` or `TEST_BUILD` environment variables are defined, then `mocha` 
  * `benchmark-single` : run benchmarks only for the suite specified in `benchmark/single`
  * `sniper` : runs a BioJS sniper server that hosts demos
 
-**Documentation:**
-
- * `docs` : build the documentation template
- * `docsmin` : build the documentation template with all resources minified
- * `docspub` : build the documentation for publishing (ZIPs, JS refs, etc.)
- * `docspush` : push the built documentation to [js.cytoscape.org](http://js.cytoscape.org)
- * `unstabledocspush` : push the built documentation to [js.cytoscape.org/unstable](http://js.cytoscape.org/unstable)
-
-
 
 
 ## Release instructions
@@ -111,7 +102,7 @@ If the `TRAVIS` or `TEST_BUILD` environment variables are defined, then `mocha` 
  1. Update the `VERSION` environment variable, e.g. `export VERSION=1.2.3`
  1. Confirm JS files pass linting: `gulp lint`
  1. Confirm all tests passing: `gulp test`
- 1. Test the docs and demos with the latest code: `gulp docspub`
+ 1. Test the docs and demos with the latest code: `gulp docs-pub`
  1. Build and publish the release: `gulp publish`
 
 

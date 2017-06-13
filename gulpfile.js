@@ -13,10 +13,11 @@ var clean = function(){ return vinylPaths(del); };
 var buffer = require('vinyl-buffer');
 var notifier = require('node-notifier');
 var watchify = require('watchify');
-var browserify = require('browserify');
-var babelify = require('babelify');
 var source = require('vinyl-source-stream'); // converts node streams into vinyl streams
 var assign = require('object-assign');
+var pkg = require('./package.json');
+var webpack = require('webpack');
+var env = process.env;
 
 process.on('SIGINT', function() {
   $.util.log($.util.colors.red('Successfully closed gulp process ' + process.pid));
@@ -54,17 +55,6 @@ var paths = {
       'documentation/css/style.css'
     ]
   }
-};
-
-var browserifyOpts = {
-  entries: [ paths.sourceEntry ],
-  debug: true,
-  bundleExternal: true,
-  builtins: [],
-  detectGlobals: false,
-  standalone: 'cytoscape',
-  cache: {}, // for watchify
-  packageCache: {} // for watchify
 };
 
 var logError = function( err ){
@@ -132,97 +122,26 @@ gulp.task('clean', function(){
   ;
 });
 
-gulp.task('format', $.shell.task([
-  './node_modules/jscs/bin/jscs src/** --fix'
-]));
+gulp.task('build-unmin', ['version'], function( next ){
+  env.NODE_ENV = 'development';
+  env.FILENAME = 'cytoscape.js';
 
-var getBrowserify = function( opts ){
-  opts = assign({
-    file: 'cytoscape.js',
-    sourceMaps: false,
-    minify: false,
-    handleErrors: true,
-    bundle: true,
-    bundleExternal: false,
-    babel: true
-  }, opts);
-
-  var bOpts = assign( {}, browserifyOpts, {
-    bundleExternal: opts.bundleExternal
-  } );
-
-  var b = opts.stream || browserify( bOpts );
-
-  if( opts.babel ){
-    b.transform( babelify );
-  }
-
-  if( opts.bundle ){
-    b = b.bundle();
-  }
-
-  if( opts.handleErrors ){
-    b = b.on( 'error', logError );
-  }
-
-  var pipe = function( fn ){
-    b = b.pipe( fn );
-  };
-
-  if( opts.file ){
-    pipe( source( opts.file ) );
-    pipe( buffer() );
-  }
-
-  if( opts.sourceMaps ){
-    pipe( $.sourcemaps.init({ loadMaps: true }) );
-  }
-
-  pipe( $.derequire() );
-
-  pipe( $.banner( '/*! Cytoscape.js ' + version + ' (MIT licensed) */' ) );
-
-  if( opts.minify ){
-    pipe( $.uglify({ mangle: true, preserveComments: 'license' }) );
-  }
-
-  if( opts.sourceMaps === true ){
-    pipe( $.sourcemaps.write() );
-  } else if( opts.sourceMaps ){
-    pipe( $.sourcemaps.write( opts.sourceMaps ) );
-  }
-
-  return b;
-};
-
-gulp.task('build-unmin', ['version'], function(){
-  return getBrowserify({
-    file: 'cytoscape.js',
-    sourceMaps: true,
-    bundleExternal: true
-  })
-    .pipe( gulp.dest('build') )
-  ;
+  webpack( require('./webpack.config'), next );
 });
 
-gulp.task('build-min', ['version'], function(){
-  return getBrowserify({
-    file: 'cytoscape.min.js',
-    minify: true,
-    bundleExternal: true
-  })
-    .pipe( gulp.dest('build') )
-  ;
+gulp.task('build-min', ['version'], function( next ){
+  env.NODE_ENV = 'development';
+  env.FILENAME = 'cytoscape.min.js';
+  env.MINIFY = true;
+
+  webpack( require('./webpack.config'), next );
 });
 
-gulp.task('build-cjs', ['version'], function(){
-  return getBrowserify({
-    file: 'cytoscape.cjs.js',
-    sourceMaps: true,
-    bundleExternal: false
-  })
-    .pipe( gulp.dest('build') )
-  ;
+gulp.task('build-cjs', ['version'], function( next ){
+  env.NODE_ENV = 'production';
+  env.FILENAME = 'cytoscape.cjs.js';
+
+  webpack( require('./webpack.config'), next );
 });
 
 gulp.task('build', ['build-unmin', 'build-min', 'build-cjs'], function( next ){
@@ -525,15 +444,19 @@ gulp.task('npm', $.shell.task( replaceShellVars([
   '$NPM publish .'
 ]) ));
 
-var watchUsesBabel = false;
-
 gulp.task('watch-babel', function(next){
-  watchUsesBabel = true;
+  env.BABEL = true;
 
   return runSequence('watch', next);
 });
 
 gulp.task('watch', function(next){
+  if( env.BABEL === undefined ){
+    env.BABEL = false;
+  }
+
+  var out = 'build/cytoscape.js';
+
   version = 'watch-build';
 
   $.livereload.listen();
@@ -544,22 +467,15 @@ gulp.task('watch', function(next){
     })
   ;
 
-  var b = watchify( browserify( browserifyOpts ), { poll: true } );
+  gulp.watch( out ).on('change', function( event ){
+    gulp.src( out ).pipe( $.livereload() );
+  });
 
-  var rebuild = function(){
-    getBrowserify({
-      stream: b,
-      sourceMaps: true,
-      babel: watchUsesBabel
-    })
-      .pipe( gulp.dest('build') )
-      .pipe( $.livereload() )
-    ;
-  };
+  var compiler = webpack( require('./webpack.config') );
 
-  rebuild();
-
-  b.on('update', rebuild);
+  compiler.watch({}, function( err, stats ){
+    console.log( stats.toString({ colors: true }) );
+  });
 
   next();
 });

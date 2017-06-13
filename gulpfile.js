@@ -10,14 +10,12 @@ var runSequence = require('run-sequence');
 var del = require('del');
 var vinylPaths = require('vinyl-paths');
 var clean = function(){ return vinylPaths(del); };
-var buffer = require('vinyl-buffer');
 var notifier = require('node-notifier');
-var watchify = require('watchify');
-var source = require('vinyl-source-stream'); // converts node streams into vinyl streams
 var assign = require('object-assign');
 var pkg = require('./package.json');
 var webpack = require('webpack');
 var env = process.env;
+var path = require('path');
 
 process.on('SIGINT', function() {
   $.util.log($.util.colors.red('Successfully closed gulp process ' + process.pid));
@@ -28,6 +26,10 @@ var benchmarkVersion = require('./benchmark/old-version.json'); // old version t
 var benchmarkVersionUrl = 'https://raw.githubusercontent.com/cytoscape/cytoscape.js/v' + benchmarkVersion + '/dist/cytoscape.js';
 
 var version; // used for marking builds w/ version etc
+
+var relPath = function( pathStr ){
+  return path.relative( './', pathStr );
+};
 
 var paths = {
   sourceEntry: 'src/index.js',
@@ -466,9 +468,15 @@ gulp.task('watch', function(next){
 
   gulp.watch('test/*.js', ['test-list'])
     .on('added deleted', function( event ){
-      console.log('File ' + event.path + ' was ' + event.type + ', updating test refs in pages...');
+      $.util.log('File', $.util.colors.magenta( relPath(event.path) ), 'was', event.type);
     })
   ;
+
+  gulp.watch('debug/**').on('change', function( event ){
+    $.util.log('File', $.util.colors.magenta( relPath(event.path) ), ' was modified');
+
+    $.livereload.reload();
+  });
 
   gulp.watch( out ).on('change', function( event ){
     gulp.src( out ).pipe( $.livereload() );

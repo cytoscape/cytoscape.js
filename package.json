@@ -79,8 +79,15 @@
     "test-travis": "gulp build-cjs && gulp test-build",
     "sniper": "sniper .",
     "docs": "gulp docs",
-    "docspub": "gulp docspub",
-    "publish": "gulp publish"
+    "docs-min": "gulp docs-min",
+    "docs-pub": "gulp docs-pub",
+    "docs-push": "gulp docs-push",
+    "docs-push-unstable": "gulp docs-push-unstable",
+    "publish": "gulp publish",
+    "zip": "gulp zip",
+    "lint": "gulp lint",
+    "benchmark": "gulp benchmark",
+    "benchmark-single": "gulp benchmark-single"
   },
   "devDependencies": {
     "babel-core": "^6.24.1",

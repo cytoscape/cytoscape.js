@@ -294,6 +294,10 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
   let _p = ele._private;
   let flatPropMapping = 'mapping';
 
+  let checkZOrder = function(){
+    self.checkZOrderTrigger( ele, prop.name, origProp ? origProp.value : null, prop.value );
+  };
+
   // edges connected to compound nodes can not be haystacks
   if(
     parsedProp.name === 'curve-style'
@@ -307,15 +311,22 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
   if( prop.delete ){ // delete the property and use the default value on falsey value
     style[ prop.name ] = undefined;
 
+    checkZOrder();
+
     return true;
   }
 
   if( prop.deleteBypassed ){ // delete the property that the
     if( !origProp ){
+      checkZOrder();
+
       return true; // can't delete if no prop
 
     } else if( origProp.bypass ){ // delete bypassed
       origProp.bypassed = undefined;
+
+      checkZOrder();
+
       return true;
 
     } else {
@@ -326,11 +337,16 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
   // check if we need to delete the current bypass
   if( prop.deleteBypass ){ // then this property is just here to indicate we need to delete
     if( !origProp ){
+      checkZOrder();
+
       return true; // property is already not defined
 
     } else if( origProp.bypass ){ // then replace the bypass property with the original
       // because the bypassed property was already applied (and therefore parsed), we can just replace it (no reapplying necessary)
       style[ prop.name ] = origProp.bypassed;
+
+      checkZOrder();
+
       return true;
 
     } else {
@@ -473,7 +489,7 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
     }
   }
 
-  this.checkZOrderTrigger( ele, prop.name, origProp ? origProp.value : null, prop.value );
+  checkZOrder();
 
   return true;
 };
@@ -646,7 +662,7 @@ styfn.updateTransitions = function( ele, diffProps, isBypass ){
 styfn.checkZOrderTrigger = function( ele, name, fromValue, toValue ){
   let prop = this.properties[ name ];
 
-  if( prop.triggersZOrder && ( fromValue == null || prop.triggersZOrder( fromValue, toValue ) ) ){
+  if( prop.triggersZOrder != null && ( fromValue == null || prop.triggersZOrder( fromValue, toValue ) ) ){
     this._private.cy.notify({
       type: 'zorder',
       eles: ele

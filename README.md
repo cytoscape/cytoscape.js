@@ -85,7 +85,7 @@ Run `npm run <target>` or `gulp <target>` in the console.  The main targets are:
 
 **Testing:**
 
-If the `TRAVIS` or `TEST_BUILD` environment variables are defined, then `mocha` or `gulp test` will test `build/cytoscape.cjs.js`.  Otherwise, the unbundled, unbabelified, raw source is tested.  This keeps local tests very quick to run on modern versions of Node while ensuring we can test old versions of Node as well.
+If the `TRAVIS` or `TEST_BUILD` environment variables are defined, then `mocha` or `gulp test` will test `build/cytoscape.cjs.js`.  Otherwise, the unbundled, unbabelified, raw source is tested.  This keeps local tests very quick to run on modern versions of Node while ensuring we can test old versions of Node as well.  The library can be built on `node>=4`, but it can be tested on `node>=0.10`.
 
  * `test` : run the Mocha unit tests
  * `lint` : lint the JS sources via eslint

@@ -76,6 +76,7 @@
     "watch": "gulp watch",
     "watch-babel": "gulp watch-babel",
     "test": "gulp test",
+    "test-build": "gulp test-build",
     "test-travis": "gulp build-cjs && gulp test-build",
     "sniper": "sniper .",
     "docs": "gulp docs",

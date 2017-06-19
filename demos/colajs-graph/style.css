@@ -1,0 +1,94 @@
+
+html {
+  width: 100%;
+  height: 100%;
+}
+
+body { 
+  font: 14px helvetica neue, helvetica, arial, sans-serif;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+#cy {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  right: 17em;
+}
+
+.config {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 17em;
+  background: rgba(0, 0, 0, 0.75);
+  box-sizing: border-box;
+  padding: 1em;
+  color: #fff;
+  transition-property: opacity;
+  transition-duration: 250ms;
+  transition-timing-function: ease-out;
+  overflow: auto;
+  z-index: 1;
+}
+
+.param {
+  margin-bottom: 1em;
+}
+
+.preamble {
+  margin-bottom: 2em;
+}
+
+p {
+  margin: 0.5em 0;
+  font-size: 0.8em;
+}
+
+.param button {
+  width: 3em;
+  margin-right: 0.25em;
+}
+
+a,
+a:hover {
+  color: #62daea;
+}
+
+.label {
+  display: inline-block;
+}
+
+.slider {
+  display: block;
+}
+
+.config-toggle {
+  position: absolute;
+  right: 0;
+  top: 0;
+  padding: 1em;
+  margin: 0.2em;
+  cursor: pointer;
+  color: #888;
+  z-index: 9999999;
+}
+
+.config-closed .config {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.config-closed #cy {
+  right: 0;
+}
+
+@media (max-width: 600px){
+  #cy {
+    right: 0;
+  }
+}

@@ -1,0 +1,51 @@
+[{
+  "selector": "node",
+  "style": {
+    "height": 40,
+    "width": 40,
+    "background-color": "#333",
+    "label": "data(type)",
+    "text-valign": "center",
+    "text-halign": "left"
+  }
+}, {
+  "selector": "edge",
+  "style": {
+    "width": 3,
+    "opacity": 0.666,
+    "line-color": "#888"
+  }
+}, {
+  "selector": "edge.bezier",
+  "style": {
+    "curve-style": "bezier",
+    "control-point-step-size": 40
+  }
+}, {
+  "selector": "edge.unbundled-bezier",
+  "style": {
+    "curve-style": "unbundled-bezier",
+    "control-point-distances": 120,
+    "control-point-weights": 0.1
+  }
+}, {
+  "selector": "edge.multi-unbundled-bezier",
+  "style": {
+    "curve-style": "unbundled-bezier",
+    "control-point-distances": "40-40",
+    "control-point-weights": "0.250.75"
+  }
+}, {
+  "selector": "edge.haystack",
+  "style": {
+    "curve-style": "haystack",
+    "haystack-radius": 0.5
+  }
+}, {
+  "selector": "edge.segments",
+  "style": {
+    "curve-style": "segments",
+    "segment-distances": "40-40",
+    "segment-weights": "0.250.75"
+  }
+}]

@@ -43,7 +43,7 @@ var paths = {
 
   docs: {
     libs: [
-      'documentation/js/cash.min.js',
+      'documentation/js/jquery.js',
       'documentation/js/cytoscape.min.js'
     ],
 

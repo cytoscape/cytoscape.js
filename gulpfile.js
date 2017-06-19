@@ -44,9 +44,12 @@ var paths = {
   ],
 
   docs: {
+    libs: [
+      'documentation/js/cash.min.js',
+      'documentation/js/cytoscape.min.js'
+    ],
+
     js: [
-      'documentation/js/jquery.js',
-      'documentation/js/cytoscape.js',
       'documentation/js/load.js',
       'documentation/js/script.js'
     ],
@@ -56,7 +59,13 @@ var paths = {
       'documentation/css/font-awesome.css',
       'documentation/css/highlight/github.css',
       'documentation/css/style.css'
-    ]
+    ],
+
+    jsmin: 'documentation/js/all.min.js',
+
+    cssmin: 'documentation/css/all.min.css',
+
+    index: 'documentation/index.html'
   }
 };
 
@@ -67,6 +76,7 @@ var logError = function( err ){
 
 // update these if you don't have a unix like env or these programmes aren't in your $PATH
 var $TEMP_DIR = '/tmp';
+var $DOC_DIR = 'documentation';
 var replaceShellVars = function( cmds ){
   return cmds.map(function( cmd ){
     return cmd
@@ -74,9 +84,21 @@ var replaceShellVars = function( cmds ){
       .replace(/\$GIT/g, 'git')
       .replace(/\$RM/g, 'rm -rf')
       .replace(/\$CP/g, 'cp -R')
+      .replace(/\$MKDIR/g, 'mkdir -p')
       .replace(/\$TEMP_DIR/g, $TEMP_DIR)
-      .replace(/\$DOC_DIR/g, 'documentation')
+      .replace(/\$DOC_DIR/g, $DOC_DIR)
       .replace(/\$DL_DIR/g, 'download')
+      .replace(/\$DOC_TOP_FILES/g, [
+        'CNAME',
+        'img',
+        'font',
+        'demos',
+        'index.html'
+      ].join(' '))
+      .replace(/\$DOC_CSS_FILE/g, paths.docs.cssmin)
+      .replace(/\$DOC_JS_FILE/g, paths.docs.jsmin)
+      .replace(/\$DOC_DIST_FILE/g, 'documentation/js/cytoscape.min.js')
+      .replace(/\$DOC_JQ_FILE/g, 'documentation/js/cash.min.js')
       .replace(/\$NPM/g, 'npm')
     ;
   });
@@ -247,43 +269,13 @@ gulp.task('docs-ver', ['version'], function(){
   ;
 });
 
-gulp.task('docs-js', ['version', 'build'], function(){
+gulp.task('docs-js', ['version', 'build-min'], function(){
   return gulp.src([
-    'build/cytoscape.js',
     'build/cytoscape.min.js'
   ])
     .pipe( gulp.dest('documentation/js') )
-
-    .pipe( gulp.dest('documentation/api/cytoscape.js-' + version) )
-
-    .pipe( gulp.dest('documentation/api/cytoscape.js-latest') )
   ;
 });
-
-gulp.task('docs-dl', ['version', 'zip'], function(){
-  return gulp.src('build/cytoscape.js-' + version + '.zip')
-    .pipe( gulp.dest('documentation/download') )
-  ;
-});
-
-gulp.task('snapshot-push', ['docs-dl'], function(){
-  return gulp.src('')
-    .pipe( $.shell( replaceShellVars([
-      '$RM $TEMP_DIR/cytoscape.js',
-      '$GIT clone -b gh-pages https://github.com/cytoscape/cytoscape.js.git $TEMP_DIR/cytoscape.js',
-      '$CP $DOC_DIR/$DL_DIR/* $TEMP_DIR/cytoscape.js/$DL_DIR',
-    ]) ) )
-
-    .pipe( $.shell( replaceShellVars([
-      '$GIT add -A',
-      '$GIT commit -a -m "Adding snapshot build"',
-      '$GIT push origin'
-    ]), { cwd: $TEMP_DIR + '/cytoscape.js' } ) )
-  ;
-});
-
-
-
 
 gulp.task('docs', function(next){
   var cwd = process.cwd();
@@ -302,13 +294,13 @@ gulp.task('docs-min', function(next){
 });
 
 gulp.task('docs-clean', function(next){
-  return gulp.src(['documentation/js/all.min.js', 'documentation/css/all.min.css', 'documentation/index.html'])
+  return gulp.src([paths.docs.jsmin, paths.docs.cssmin, paths.docs.index])
     .pipe( clean({ read: false }) )
   ;
 });
 
 gulp.task('docs-html-min', function(){
-  return gulp.src('documentation/index.html')
+  return gulp.src(paths.docs.index)
     .pipe( $.htmlmin({
       collapseWhitespace: true,
       keepClosingSlash: true
@@ -341,8 +333,8 @@ gulp.task('docs-css-min', function(){
 });
 
 gulp.task('docs-min-refs', ['docs-css-min', 'docs-js-min'], function(){
-  return gulp.src('documentation/index.html')
-    .pipe( $.inject( gulp.src([ 'documentation/js/all.min.js', 'documentation/css/all.min.css' ] ), {
+  return gulp.src(paths.docs.index)
+    .pipe( $.inject( gulp.src( paths.docs.libs.concat([ paths.docs.cssmin, paths.docs.jsmin ]) ), {
       addRootSlash: false,
       ignorePath: 'documentation'
     } ) )
@@ -352,8 +344,8 @@ gulp.task('docs-min-refs', ['docs-css-min', 'docs-js-min'], function(){
 });
 
 gulp.task('docs-refs', function(){
-  return gulp.src([ 'documentation/index.html', 'documentation/template.html' ])
-    .pipe( $.inject( gulp.src(paths.docs.js.$.concat( paths.docs.css ), { read: false }), {
+  return gulp.src([ paths.docs.index, 'documentation/template.html' ])
+    .pipe( $.inject( gulp.src(paths.docs.libs.concat( paths.docs.js.concat( paths.docs.css ) ), { read: false }), {
       addRootSlash: false,
       ignorePath: 'documentation'
     } ) )
@@ -363,7 +355,7 @@ gulp.task('docs-refs', function(){
 });
 
 gulp.task('docs-pub', function(next){
-  runSequence( 'version', 'docs-dl', 'docs-ver', 'docs-js', 'docs-min', next );
+  runSequence( 'version', 'docs-ver', 'docs-js', 'docs-min', next );
 });
 
 gulp.task('docs-rebuild', function(next){
@@ -415,30 +407,26 @@ gulp.task('docs-push', function(){
     .pipe( $.shell( replaceShellVars([
       '$RM $TEMP_DIR/cytoscape.js',
       '$GIT clone -b gh-pages https://github.com/cytoscape/cytoscape.js.git $TEMP_DIR/cytoscape.js',
-      '$RM $TEMP_DIR/cytoscape.js/demos/**',
-      '$CP $DOC_DIR/* $TEMP_DIR/cytoscape.js',
+      '$RM $TEMP_DIR/cytoscape.js/**'
     ]) ) )
 
     .pipe( $.shell( replaceShellVars([
-      '$GIT add -A',
-      '$GIT commit -a -m "updating docs to $VERSION"',
-      '$GIT push origin'
-    ]), { cwd: $TEMP_DIR + '/cytoscape.js' } ) )
-  ;
-});
+      '$CP $DOC_TOP_FILES $TEMP_DIR/cytoscape.js'
+    ]), { cwd: $DOC_DIR } ) )
 
-gulp.task('docs-push-unstable', function(){
-  return gulp.src('')
     .pipe( $.shell( replaceShellVars([
-      '$RM $TEMP_DIR/cytoscape.js',
-      '$GIT clone -b gh-pages https://github.com/cytoscape/cytoscape.js.git $TEMP_DIR/cytoscape.js',
-      '$RM $TEMP_DIR/cytoscape.js/demos/**',
-      '$CP $DOC_DIR/* $TEMP_DIR/cytoscape.js/unstable',
-    ]) ) )
+      '$MKDIR $TEMP_DIR/cytoscape.js/js',
+      '$CP $DOC_JS_FILE $TEMP_DIR/cytoscape.js/js',
+
+      '$MKDIR $TEMP_DIR/cytoscape.js/css',
+      '$CP $DOC_CSS_FILE $TEMP_DIR/cytoscape.js/css',
+    ].concat( paths.docs.libs.map(function(lib){
+      return '$CP ' + lib + ' $TEMP_DIR/cytoscape.js/js';
+    }) ) ) ) )
 
     .pipe( $.shell( replaceShellVars([
       '$GIT add -A',
-      '$GIT commit -a -m "updating unstable docs to $VERSION"',
+      '$GIT commit -a -m "Updating docs to $VERSION"',
       '$GIT push origin'
     ]), { cwd: $TEMP_DIR + '/cytoscape.js' } ) )
   ;

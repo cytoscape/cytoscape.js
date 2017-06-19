@@ -152,6 +152,7 @@ gulp.task('build-unmin', ['version'], function( next ){
   env.FILENAME = 'cytoscape.js';
   env.MINIFY = false;
   env.BABEL = true;
+  env.SOURCEMAPS = false;
 
   webpack( requireUncached('./webpack.config'), next );
 });
@@ -161,6 +162,7 @@ gulp.task('build-min', ['version'], function( next ){
   env.FILENAME = 'cytoscape.min.js';
   env.MINIFY = true;
   env.BABEL = true;
+  env.SOURCEMAPS = false;
 
   webpack( requireUncached('./webpack.config'), next );
 });
@@ -170,6 +172,7 @@ gulp.task('build-cjs', ['version'], function( next ){
   env.FILENAME = 'cytoscape.cjs.js';
   env.MINIFY = false;
   env.BABEL = true;
+  env.SOURCEMAPS = false;
 
   webpack( requireUncached('./webpack.config'), next );
 });
@@ -454,6 +457,7 @@ gulp.task('watch', function(next){
   env.MINIFY = false;
   env.FILENAME = 'cytoscape.js';
   env.NODE_ENV = 'development';
+  env.SOURCEMAPS = true;
 
   var out = 'build/cytoscape.js';
 

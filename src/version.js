@@ -1,1 +1,1 @@
-module.exports = "snapshot-a7977e6d9d-1494520298203";
+module.exports = "3.2.0-unstable";

@@ -14,6 +14,7 @@ var FILENAME = env('FILENAME', 'cytoscape.js');
 var NODE_ENV = env('NODE_ENV', '');
 var MINIFY = boolEnv('MINIFY', false);
 var BABEL = boolEnv('BABEL', true);
+var SOURCEMAPS = boolEnv('SOURCEMAPS', false);
 var pkg = require('./package.json');
 var path = require('path');
 var webpack = require('webpack');
@@ -53,5 +54,5 @@ module.exports = {
       }
     })
   ] : [] ),
-  devtool: 'inline-source-map'
+  devtool: SOURCEMAPS ? 'inline-source-map' : false
 };

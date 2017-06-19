@@ -210,7 +210,7 @@ var getBrowserify = function( opts ){
 
 gulp.task('concat', ['version'], function(){
   return getBrowserify({
-    sourceMaps: true
+    sourceMaps: false
   })
     .pipe( gulp.dest('build') )
   ;
@@ -218,7 +218,7 @@ gulp.task('concat', ['version'], function(){
 
 gulp.task('build-unmin', ['version'], function(){
   return getBrowserify({
-    sourceMaps: true
+    sourceMaps: false
   })
     .pipe( gulp.dest('build') )
   ;

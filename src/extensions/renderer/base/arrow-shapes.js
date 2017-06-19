@@ -193,6 +193,37 @@ BRp.registerArrowShapes = function(){
     }
   } );
 
+  defineArrowShape( 'double-arrow', {
+    points: [
+      -0.15, -0.3,
+      0, 0,
+      0.15, -0.3,
+      -0.15, -0.3
+    ],
+
+    pointsSecond: [
+      0, -0.3,
+      0.15, -0.6,
+      -0.15, -0.6
+    ],
+
+    collide: function( x, y, size, angle, translation, padding ){
+      var triPts = pointsToArr( transformPoints( this.points, size + 2 * padding, angle, translation ) );
+      var teePts = pointsToArr( transformPoints( this.pointsSecond, size + 2 * padding, angle, translation ) );
+
+      var inside = math.pointInsidePolygonPoints( x, y, triPts ) || math.pointInsidePolygonPoints( x, y, teePts );
+
+      return inside;
+    },
+
+    draw: function( context, size, angle, translation ){
+      var triPts = transformPoints( this.points, size, angle, translation );
+      var teePts = transformPoints( this.pointsSecond, size, angle, translation );
+
+      renderer.arrowShapeImpl( this.name )( context, triPts, teePts );
+    }
+  } );
+
   defineArrowShape( 'triangle-cross', {
     points: [
       -0.15, -0.3,
@@ -267,6 +298,25 @@ BRp.registerArrowShapes = function(){
       var t = translation;
       var inside = ( Math.pow( t.x - x, 2 ) + Math.pow( t.y - y, 2 ) <= Math.pow( (size + 2 * padding) * this.radius, 2 ) );
 
+      return inside;
+    },
+
+    draw: function( context, size, angle, translation ){
+      renderer.arrowShapeImpl( this.name )( context, translation.x, translation.y, this.radius * size );
+    },
+
+    spacing: function( edge ){
+      return renderer.getArrowWidth( edge.pstyle( 'width' ).pfValue, edge.pstyle( 'arrow-scale' ).value )
+        * this.radius;
+    }
+  } );
+
+  defineArrowShape( 'circle-border', {
+    radius: 0.15,
+    
+    collide: function( x, y, size, angle, translation, padding ){
+      var t = translation;
+      var inside = ( Math.pow( t.x - x, 2 ) + Math.pow( t.y - y, 2 ) <= Math.pow( (size + 2 * padding) * this.radius, 2 ) );
       return inside;
     },
 

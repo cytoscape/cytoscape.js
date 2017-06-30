@@ -2204,6 +2204,11 @@
                   ]
                 }
               ]
+            },
+
+            {
+              "name": "eles.toArray()",
+              "descr": "Get the collection as an array, maintaining the order of the elements."
             }
           ]
         },

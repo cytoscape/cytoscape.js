@@ -14,11 +14,12 @@ BRp.projectIntoViewport = function( clientX, clientY ){
   var offsets = this.findContainerClientCoords();
   var offsetLeft = offsets[0];
   var offsetTop = offsets[1];
+  var scale = offsets[4];
   var pan = cy.pan();
   var zoom = cy.zoom();
 
-  var x = ( clientX - offsetLeft - pan.x ) / zoom;
-  var y = ( clientY - offsetTop - pan.y ) / zoom;
+  var x = ( (clientX - offsetLeft)/scale - pan.x ) / zoom;
+  var y = ( (clientY - offsetTop)/scale - pan.y ) / zoom;
 
   return [ x, y ];
 };
@@ -32,18 +33,47 @@ BRp.findContainerClientCoords = function(){
   var rect = container.getBoundingClientRect();
   var style = window.getComputedStyle( container );
   var styleValue = function( name ){ return parseFloat( style.getPropertyValue( name ) ); };
-  var extra = {
-    left: styleValue('padding-left') + styleValue('border-left-width'),
-    right: styleValue('padding-right') + styleValue('border-right-width'),
-    top: styleValue('padding-top') + styleValue('border-top-width'),
-    bottom: styleValue('padding-bottom') + styleValue('border-bottom-width')
+
+  var padding = {
+    left: styleValue('padding-left'),
+    right: styleValue('padding-right'),
+    top: styleValue('padding-top'),
+    bottom: styleValue('padding-bottom')
   };
 
-  return ( this.containerBB = [ // x, y, w, h
-    rect.left + extra.left,
-    rect.top + extra.top,
-    rect.right - rect.left - extra.left - extra.right,
-    rect.bottom - rect.top - extra.top - extra.bottom
+  var border = {
+    left: styleValue('border-left-width'),
+    right: styleValue('border-right-width'),
+    top: styleValue('border-top-width'),
+    bottom: styleValue('border-bottom-width')
+  };
+
+  var clientWidth = container.clientWidth;
+  var clientHeight = container.clientHeight;
+
+  var paddingHor =  padding.left + padding.right;
+  var paddingVer = padding.top + padding.bottom;
+
+  var borderHor = border.left + border.right;
+  var borderVer = border.top + border.bottom;
+
+  var scale = rect.width / ( clientWidth + borderHor );
+
+  var unscaledW = clientWidth - paddingHor;
+  var unscaledH = clientHeight - paddingVer;
+
+  var scaledW = rect.width - (paddingHor + borderHor) * scale;
+  var scaledH = rect.height - (paddingVer + borderVer) * scale;
+
+  var left = rect.left + padding.left + border.left;
+  var top = rect.top + padding.top + border.top;
+
+  return ( this.containerBB = [
+    left,
+    top,
+    unscaledW,
+    unscaledH,
+    scale
   ] );
 };
 

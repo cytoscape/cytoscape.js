@@ -486,13 +486,12 @@ let corefn = ({
     let container = _p.container;
 
     return ( _p.sizeCache = _p.sizeCache || ( container ? (function(){
-      let rect = container.getBoundingClientRect();
       let style = window.getComputedStyle( container );
       let val = function( name ){ return parseFloat( style.getPropertyValue( name ) ); };
 
       return {
-        width: rect.width - val('padding-left') - val('padding-right') - val('border-left-width') - val('border-right-width'),
-        height: rect.height - val('padding-top') - val('padding-bottom') - val('border-top-width') - val('border-bottom-width')
+        width: container.clientWidth - val('padding-left') - val('padding-right'),
+        height: container.clientHeight - val('padding-top') - val('padding-bottom')
       };
     })() : { // fallback if no container (not 0 b/c can be used for dividing etc)
       width: 1,

@@ -325,25 +325,23 @@ BRp.load = function(){
   // auto resize
   r.registerBinding( window, 'resize', onResize ); // eslint-disable-line no-undef
 
-  var invalCtnrBBOnScroll = function( domEle ){
-    r.registerBinding( domEle, 'scroll', function( e ){
-      r.invalidateContainerClientCoordsCache();
-    } );
+  var forEachUp = function( domEle, fn ){
+    while( domEle != null ){
+      fn( domEle );
+
+      domEle = domEle.parentNode
+    }
   };
 
-  var bbCtnr = r.cy.container();
+  var invalidateCoords = function(){
+    r.invalidateContainerClientCoordsCache();
+  };
 
-  for( ;; ){
-
-    invalCtnrBBOnScroll( bbCtnr );
-
-    if( bbCtnr.parentNode ){
-      bbCtnr = bbCtnr.parentNode;
-    } else {
-      break;
-    }
-
-  }
+  forEachUp( r.container, function( domEle ){
+    r.registerBinding( domEle, 'transitionend', invalidateCoords );
+    r.registerBinding( domEle, 'animationend', invalidateCoords );
+    r.registerBinding( domEle, 'scroll', invalidateCoords );
+  } );
 
   // stop right click menu from appearing on cy
   r.registerBinding( r.container, 'contextmenu', function( e ){

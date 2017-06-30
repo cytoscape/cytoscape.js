@@ -6,7 +6,7 @@ Calling `layout.stop()` stops an asynchronous (continuous) layout.  It's useful 
 ## Examples
 
 ```js
-var layout = cy.makeLayout({ name: 'cose' });
+var layout = cy.layout({ name: 'cose' });
 
 layout.run();
 

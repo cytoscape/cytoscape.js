@@ -942,7 +942,7 @@ elesfn.boundingBoxAt = function( fn ){
     let n = nodes[i];
     let _p = n._private;
     let pos = _p.position;
-    let newPos = fn.call( n, i, n );
+    let newPos = fn.call( n, n, i );
 
     _p.bbAtOldPos = { x: pos.x, y: pos.y };
 

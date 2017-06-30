@@ -28,11 +28,8 @@ let elesfn = ({
     let nodes = this.nodes();
     let cy = this.cy();
     let layoutEles = options.eles; // nodes & edges
-
-    // memoized version of position function
-    let fnMem = util.memoize( fn, function( node, i ){
-      return node.id() + '$' + i;
-    } );
+    let getMemoizeKey = ( node, i ) => node.id() + '$' + i;
+    let fnMem = util.memoize( fn, getMemoizeKey ); // memoized version of position function
 
     layout.emit( { type: 'layoutstart', layout: layout } );
 
@@ -55,7 +52,11 @@ let elesfn = ({
       };
     };
 
+    let useSpacingFactor = options.spacingFactor && options.spacingFactor !== 1;
+
     let spacingBb = function(){
+      if( !useSpacingFactor ){ return null; }
+
       let bb = math.makeBoundingBox();
 
       for( let i = 0; i < nodes.length; i++ ){
@@ -68,32 +69,33 @@ let elesfn = ({
       return bb;
     };
 
-    if( options.animate ){
-      let bb = spacingBb();
+    let bb = spacingBb();
 
-      let finalPos = {};
+    let getFinalPos = util.memoize( function( node, i ){
+      let newPos = fnMem( node, i );
+      let pos = node.position();
 
-      for( let i = 0; i < nodes.length; i++ ){
-        let node = nodes[i];
-        let newPos = fnMem( node, i );
-        let pos = node.position();
-
-        if( !is.number( pos.x ) || !is.number( pos.y ) ){
-          node.silentPosition( { x: 0, y: 0 } );
-        }
-
-        if( options.spacingFactor && options.spacingFactor !== 1 ){
-          let spacing = Math.abs( options.spacingFactor );
-
-          newPos = calculateSpacing( spacing, bb, newPos );
-        }
-
-        finalPos[ node.id() ] = newPos;
+      if( !is.number( pos.x ) || !is.number( pos.y ) ){
+        node.silentPosition( { x: 0, y: 0 } );
       }
 
+      if( useSpacingFactor ){
+        let spacing = Math.abs( options.spacingFactor );
+
+        newPos = calculateSpacing( spacing, bb, newPos );
+      }
+
+      if( options.transform != null ){
+        newPos = options.transform( node, newPos );
+      }
+
+      return newPos;
+    }, getMemoizeKey );
+
+    if( options.animate ){
       for( let i = 0; i < nodes.length; i++ ){
         let node = nodes[ i ];
-        let newPos = finalPos[ node.id() ];
+        let newPos = getFinalPos( node, i );
 
         let ani = node.animation( {
           position: newPos,
@@ -109,9 +111,7 @@ let elesfn = ({
       if( options.fit ){
         let fitAni = cy.animation({
           fit: {
-            boundingBox: layoutEles.boundingBoxAt(function( i, node ){
-              return finalPos[ node.id() ];
-            }),
+            boundingBox: layoutEles.boundingBoxAt( getFinalPos ),
             padding: options.padding
           },
           duration: options.animationDuration,
@@ -144,18 +144,8 @@ let elesfn = ({
         layout.emit( { type: 'layoutstop', layout: layout } );
       });
     } else {
-      if( options.spacingFactor && options.spacingFactor !== 1 ){
-        let spacing = Math.abs( options.spacingFactor );
-        let bb = spacingBb();
 
-        nodes.positions( function( node, i ){
-          let pos = fnMem( node, i );
-
-          return calculateSpacing( spacing, bb, pos );
-        });
-      } else {
-        nodes.positions( fn );
-      }
+      nodes.positions( getFinalPos );
 
       if( options.fit ){
         cy.fit( options.eles, options.padding );

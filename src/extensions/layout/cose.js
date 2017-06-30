@@ -28,9 +28,18 @@ var defaults = {
   stop: function(){},
 
   // Whether to animate while running the layout
+  // true : Animate continuously as the layout is running
+  // false : Just show the end result
+  // 'end' : Animate with the end result, from the initial positions to the end positions
   animate: true,
 
-  // The layout animates only after this many milliseconds
+  // Easing of the animation for animate:'end'
+  animationEasing: undefined,
+
+  // The duration of the animation for animate:'end'
+  animationDuration: undefined,
+
+  // The layout animates only after this many milliseconds for animate:true
   // (prevents flashing on fast runs)
   animationThreshold: 250,
 
@@ -159,7 +168,9 @@ CoseLayout.prototype.run = function(){
 
   layout.stopped = false;
 
-  layout.emit( { type: 'layoutstart', layout: layout } );
+  if( options.animate === true || options.animate === false ){
+    layout.emit( { type: 'layoutstart', layout: layout } );
+  }
 
   // Set DEBUG - Global variable
   if( true === options.debug ){
@@ -908,7 +919,7 @@ CoseLayout.prototype.run = function(){
         i++;
       }
 
-      if( options.animate ){
+      if( options.animate === true ){
         broadcast( layoutInfo.layoutNodes ); // eslint-disable-line no-undef
       }
 
@@ -925,14 +936,22 @@ CoseLayout.prototype.run = function(){
   } );
 
   var done = function(){
-    refresh({
-      force: true,
-      next: function(){
-        // Layout has finished
-        layout.one('layoutstop', options.stop);
-        layout.emit({ type: 'layoutstop', layout: layout });
-      }
-    });
+    if( options.animate === true || options.animate === false ){
+      refresh({
+        force: true,
+        next: function(){
+          // Layout has finished
+          layout.one('layoutstop', options.stop);
+          layout.emit({ type: 'layoutstop', layout: layout });
+        }
+      });
+    } else {
+      options.eles.nodes().layoutPositions( layout, options, function( node ){
+        var lnode = layoutInfo.layoutNodes[ layoutInfo.idToIndex[ node.data( 'id' ) ] ];
+
+        return { x: lnode.positionX, y: lnode.positionY };
+      } );
+    }
   };
 
   return this; // chaining

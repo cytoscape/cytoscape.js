@@ -96,16 +96,22 @@ let elesfn = ({
       for( let i = 0; i < nodes.length; i++ ){
         let node = nodes[ i ];
         let newPos = getFinalPos( node, i );
+        let animateNode = options.animateFilter == null || options.animateFilter( node, i );
 
-        let ani = node.animation( {
-          position: newPos,
-          duration: options.animationDuration,
-          easing: options.animationEasing
-        } );
+        if( animateNode ){
+          let ani = node.animation( {
+            position: newPos,
+            duration: options.animationDuration,
+            easing: options.animationEasing
+          } );
 
-        layout.animations.push( ani );
+          layout.animations.push( ani );
 
-        ani.play();
+          ani.play();
+        } else {
+          node.position( newPos );
+        }
+
       }
 
       if( options.fit ){

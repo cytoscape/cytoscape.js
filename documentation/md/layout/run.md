@@ -8,7 +8,7 @@ The layout will emit the `layoutstop` event when it has finished or has been oth
 ## Examples
 
 ```js
-var layout = cy.makeLayout({ name: 'random' });
+var layout = cy.layout({ name: 'random' });
 
 layout.run();
 ```

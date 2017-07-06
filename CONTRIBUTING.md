@@ -34,9 +34,9 @@ The source is organised in relatively the same as the documentation, under `./sr
 
 ## Code style
 
-Use two spaces for indentation, and single-quoted strings are preferred.  The main thing is to  try to keep your code neat and similarly formatted as the rest of the code.  There isn't a strict styleguide.
+Use two spaces for indentation, and single-quoted strings are preferred.  The main thing is to  try to keep your code neat and similarly formatted as the rest of the code.  There isn't a strict styleguide.  We do use [eslint](http://eslint.org/), so you can use `eslint` in the terminal or use eslint support in your editor.
 
-You can run `gulp format` to automatically format the code to more or less match the style we use.  Please do `gulp format` in a separate commit just in case it touches files or lines you didn't change.  Alternatively, you can manually run `jscs --fix <files you changed>`.
+You can run `eslint --fix` to automatically format the code to more or less match the style we use.  It will only catch basic things, though.
 
 
 

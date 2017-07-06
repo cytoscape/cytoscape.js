@@ -154,6 +154,10 @@ p.removeListener = p.off = function( events, qualifier, callback, conf ){
 p.emit = p.trigger = function( events, extraParams, manualCallback ){
   let listeners = this.listeners;
 
+    if( !is.array( extraParams ) ){
+      extraParams = [ extraParams ];
+    }
+
     forEachEventObj( this, function( self, eventObj ){
       if( manualCallback != null ){
         listeners = [{
@@ -175,11 +179,7 @@ p.emit = p.trigger = function( events, extraParams, manualCallback ){
           let args = [ eventObj ];
 
           if( extraParams != null ){
-            if( is.array( extraParams ) ){
-              util.push( args, extraParams );
-            } else {
-              args.push( eventObj );
-            }
+            util.push( args, extraParams );
           }
 
           self.beforeEmit( self.context, listener, eventObj );
@@ -189,7 +189,8 @@ p.emit = p.trigger = function( events, extraParams, manualCallback ){
             i--;
           }
 
-          let ret = listener.callback.apply( self.callbackContext( self.context, listener, eventObj ), args );
+          let context = self.callbackContext( self.context, listener, eventObj );
+          let ret = listener.callback.apply( context, args );
 
           self.afterEmit( self.context, listener, eventObj );
 
@@ -201,7 +202,7 @@ p.emit = p.trigger = function( events, extraParams, manualCallback ){
       } // for listener
 
       if( self.bubble( self.context ) && !eventObj.isPropagationStopped() ){
-        self.parent( self.context ).emit( eventObj );
+        self.parent( self.context ).emit( eventObj, extraParams );
       }
     }, events );
 

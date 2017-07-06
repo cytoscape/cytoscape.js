@@ -688,6 +688,10 @@ var corefn = ({
     };
 
     function getEasedValue( type, start, end, percent, easingFn ){
+      if( percent === 1 ){
+        return end;
+      }
+
       var val = easingFn( start, end, percent );
 
       if( type == null ){

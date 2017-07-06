@@ -290,7 +290,7 @@ let corefn = ({
         let startPos = ani_p.startPosition;
         let endPos = ani_p.position;
 
-        if( endPos && isEles ){
+        if( endPos && isEles && !self.locked() ){
           let pos = self.position();
 
           if( valid( startPos.x, endPos.x ) ){

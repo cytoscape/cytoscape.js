@@ -554,6 +554,21 @@ describe('Collection style', function(){
       });
     });
 
+    it('animation does not move locked node', function(){
+      var n = n1;
+      var p = { x: 1, y: 2 };
+
+      n.position( p );
+      n.lock();
+
+      return n.animation({
+        position: { x: 123, y: 456 },
+        duration: 300
+      }).play().promise().then(function(){
+        expect( n.position() ).to.deep.equal( p );
+      });
+    });
+
   });
 
   describe('eles.boundingBox()', function(){

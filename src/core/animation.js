@@ -283,8 +283,10 @@ var corefn = ({
 
         var startPos = ani_p.startPosition;
         var endPos = ani_p.position;
-        var pos = _p.position;
-        if( endPos && isEles ){
+
+        if( endPos && isEles && !self.locked() ){
+          var pos = _p.position;
+
           if( valid( startPos.x, endPos.x ) ){
             pos.x = ease( startPos.x, endPos.x, percent, easing );
           }

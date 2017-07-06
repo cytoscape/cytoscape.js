@@ -569,6 +569,20 @@ describe('Collection style', function(){
       });
     });
 
+    it('spring animation does not ease beyond 100%', function(){
+      var n = n1;
+
+      n.position({ x: 1, y: 2 });
+
+      return n.animation({
+        position: { x: 123, y: 456 },
+        duration: 300,
+        easing: 'spring(500, 20)'
+      }).play().promise().then(function(){
+        expect( n.position() ).to.deep.equal({ x: 123, y: 456 });
+      });
+    });
+
   });
 
   describe('eles.boundingBox()', function(){

@@ -283,6 +283,30 @@ describe('Events', function(){
       expect( coreTrigger ).to.be.true;
     });
 
+    it('should pass extra args to core when bubbled', function( done ){
+      var node = cy.$('#n1');
+
+      cy.on('foo', function( event, bar, baz ){
+        expect(bar).to.equal('bar');
+        expect(baz).to.equal('baz');
+
+        done();
+      });
+
+      node.trigger('foo', ['bar', 'baz']);
+    });
+
+    it('should pass extra args to parent node when bubbled', function( done ){
+      cy.$('#n4').on('foo', function( event, bar, baz ){
+        expect(bar).to.equal('bar');
+        expect(baz).to.equal('baz');
+
+        done();
+      });
+
+      cy.$('#n5').trigger('foo', ['bar', 'baz']);
+    });
+
   });
 
 

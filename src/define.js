@@ -563,9 +563,9 @@ var define = {
 
             if( hasParent ){ // then bubble up to parent
               parent = parent[0];
-              parent.trigger( evt );
+              parent.trigger( evt, extraParams );
             } else { // otherwise, bubble up to the core
-              cy.trigger( evt );
+              cy.trigger( evt, extraParams );
             }
           }
 

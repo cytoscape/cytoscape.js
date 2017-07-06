@@ -2,7 +2,7 @@
 
 Cytoscape.js is an open source project, and we greatly appreciate any and all contributions.
 
-Cytoscape.js is transpiled with Babel, so ES2015/ES6 language features can be used.
+A blog post is available [on blog.js.cytoscape.org](http://blog.js.cytoscape.org/2017/05/09/contributing/) geared towards first-time contributors with more in-depth instructions on the project's structure, the process of creating and merging changes to the code, and more.
 
 If you'd like to contribute code to Cytoscape.js but you're not sure exactly what you'd like to implement, take a look at our [current milestones](https://github.com/cytoscape/cytoscape.js/milestones) to see what features we have planned in future --- or anything labelled [`help-wanted`](https://github.com/cytoscape/cytoscape.js/issues?q=is%3Aopen+is%3Aissue+label%3Ahelp-wanted).  Of course, we also welcome your own ideas.
 
@@ -33,6 +33,8 @@ The source is organised in relatively the same as the documentation, under `./sr
 
 
 ## Code style
+
+Cytoscape.js is transpiled with Babel, so ES2015/ES6+ language features can be used.
 
 Use two spaces for indentation, and single-quoted strings are preferred.  The main thing is to  try to keep your code neat and similarly formatted as the rest of the code.  There isn't a strict styleguide.  We do use [eslint](http://eslint.org/), so you can use `eslint` in the terminal or use eslint support in your editor.
 

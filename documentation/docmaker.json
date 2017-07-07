@@ -1805,6 +1805,19 @@
                   "args": [
                     { "name": "obj", "descr": "An object of style property name-value pairs to set." }
                   ]
+                },
+
+                {
+                  "name": "eles.removeStyle",
+                  "descr": "Remove all style overrides."
+                },
+
+                {
+                  "name": "eles.removeStyle",
+                  "descr": "Remove specific style overrides.",
+                  "args": [
+                    { "name": "names", "descr": "A space-separated list of property names to remove overrides." }
+                  ]
                 }
               ],
               "md": "collection/style"

@@ -23,6 +23,7 @@ BRp.findEdgeControlPoints = function( edges ){
     var data = _p.data;
     var curveStyle = edge.pstyle( 'curve-style' ).value;
     var edgeIsUnbundled = curveStyle === 'unbundled-bezier' || curveStyle === 'segments';
+    var edgeIsBezier = curveStyle === 'unbundled-bezier' || curveStyle === 'bezier';
 
     // ignore edges who are not to be displayed
     // they shouldn't take up space
@@ -46,15 +47,21 @@ BRp.findEdgeControlPoints = function( edges ){
       pairId = 'unbundled' + '$-$' + data.id;
     }
 
-    if( hashTable[ pairId ] == null ){
-      hashTable[ pairId ] = [];
+    var tableEntry = hashTable[ pairId ];
+
+    if( tableEntry == null ){
+      tableEntry = hashTable[ pairId ] = [];
       pairIds.push( pairId );
     }
 
-    hashTable[ pairId ].push( edge );
+    tableEntry.push( edge );
 
     if( edgeIsUnbundled ){
-      hashTable[ pairId ].hasUnbundled = true;
+      tableEntry.hasUnbundled = true;
+    }
+
+    if( edgeIsBezier ){
+      tableEntry.hasBezier = true;
     }
   }
 
@@ -244,7 +251,7 @@ BRp.findEdgeControlPoints = function( edges ){
         rs.lastTgtEndpt = tgtEndpt2;
       }
 
-      if( !pairEdges.calculatedIntersection && ( (pairEdges.length > 1 && src !== tgt) || pairEdges.hasUnbundled ) ){
+      if( !pairEdges.calculatedIntersection && src !== tgt && ( pairEdges.hasBezier || pairEdges.hasUnbundled ) ){
 
         pairEdges.calculatedIntersection = true;
 
@@ -259,6 +266,8 @@ BRp.findEdgeControlPoints = function( edges ){
           0
         );
 
+        pairEdges.srcIntn = srcOutside;
+
         // pt outside tgt shape to calc distance/displacement from src to tgt
         var tgtOutside = tgtShape.intersectLine(
           tgtPos.x,
@@ -269,6 +278,8 @@ BRp.findEdgeControlPoints = function( edges ){
           srcPos.y,
           0
         );
+
+        pairEdges.tgtIntn = tgtOutside;
 
         var midptSrcPts = {
           x1: srcOutside[0],
@@ -314,8 +325,8 @@ BRp.findEdgeControlPoints = function( edges ){
 
       }
 
-      rs.srcIntn = srcOutside;
-      rs.tgtIntn = tgtOutside;
+      rs.srcIntn = pairEdges.srcIntn;
+      rs.tgtIntn = pairEdges.tgtIntn;
 
       if( src === tgt ){
         // Self-edge

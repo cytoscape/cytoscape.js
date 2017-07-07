@@ -149,6 +149,8 @@ elesfn.getElementById = function( id ){
   return entry ? entry.ele : new Collection( cy ); // get ele or empty collection
 };
 
+elesfn.$id = elesfn.getElementById;
+
 elesfn.poolIndex = function(){
   let cy = this._private.cy;
   let eles = cy._private.elements;

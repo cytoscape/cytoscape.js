@@ -935,6 +935,11 @@
           "name": "Graph manipulation",
           "fns": [
             {
+              "name": "ele.cy",
+              "descr": "Get the core instance that owns the element."
+            },
+
+            {
               "name": "eles.remove",
               "descr": "Remove the elements from the graph, and return all elements removed by this call.",
               "md": "collection/remove"

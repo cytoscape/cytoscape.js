@@ -76,7 +76,9 @@ BRp.findEndpoints = function( edge ){
   var segments = et === 'segments';
   var hasEndpts = bezier || multi || lines;
   var srcManEndpt = edge.pstyle('source-endpoint');
+  var srcManEndptVal = self ? 'outside-to-node' : srcManEndpt.value;
   var tgtManEndpt = edge.pstyle('target-endpoint');
+  var tgtManEndptVal = self ? 'outside-to-node' : tgtManEndpt.value;
 
   rs.srcManEndpt = srcManEndpt;
   rs.tgtManEndpt = tgtManEndpt;
@@ -101,16 +103,16 @@ BRp.findEndpoints = function( edge ){
     p2 = srcArrowFromPt;
   }
 
-  if( tgtManEndpt.value === 'inside-to-node' ){
+  if( tgtManEndptVal === 'inside-to-node' ){
     intersect = [ tgtPos.x, tgtPos.y ];
   } else if( tgtManEndpt.units ){
     intersect = this.manualEndptToPx( target, tgtManEndpt );
-  } else if( tgtManEndpt.value === 'outside-to-line' ){
+  } else if( tgtManEndptVal === 'outside-to-line' ){
     intersect = rs.tgtIntn; // use cached value from ctrlpt calc
   } else {
-    if( tgtManEndpt.value === 'outside-to-node' ){
+    if( tgtManEndptVal === 'outside-to-node' ){
       p1_i = p1;
-    } else if( tgtManEndpt.value === 'outside-to-line' ){
+    } else if( tgtManEndptVal === 'outside-to-line' ){
       p1_i = [ srcPos.x, srcPos.y ];
     }
 
@@ -142,16 +144,16 @@ BRp.findEndpoints = function( edge ){
   rs.arrowEndX = arrowEnd[0];
   rs.arrowEndY = arrowEnd[1];
 
-  if( srcManEndpt.value === 'inside-to-node' ){
+  if( srcManEndptVal === 'inside-to-node' ){
     intersect = [ srcPos.x, srcPos.y ];
   } else if( srcManEndpt.units ){
     intersect = this.manualEndptToPx( source, srcManEndpt );
-  } else if( srcManEndpt.value === 'outside-to-line' ){
+  } else if( srcManEndptVal === 'outside-to-line' ){
     intersect = rs.srcIntn; // use cached value from ctrlpt calc
   } else {
-    if( srcManEndpt.value === 'outside-to-node' ){
+    if( srcManEndptVal === 'outside-to-node' ){
       p2_i = p2;
-    } else if( srcManEndpt.value === 'outside-to-line' ){
+    } else if( srcManEndptVal === 'outside-to-line' ){
       p2_i = [ tgtPos.x, tgtPos.y ];
     }
 

@@ -522,6 +522,12 @@ styfn.addDefaultStylesheet = function(){
         'width': 3,
         'curve-style': 'haystack'
       } )
+    .selector( ':parent <-> node' )
+      .css( {
+        'curve-style': 'bezier',
+        'source-endpoint': 'outside-to-line',
+        'target-endpoint': 'outside-to-line'
+      } )
     .selector( ':selected' )
       .css( {
         'background-color': '#0169D9',

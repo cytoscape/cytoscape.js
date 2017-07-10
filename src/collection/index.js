@@ -120,6 +120,10 @@ elesfn.cy = function(){
   return this._private.cy;
 };
 
+elesfn.renderer = function(){
+  return this._private.cy.renderer();
+};
+
 elesfn.element = function(){
   return this[0];
 };
@@ -334,7 +338,6 @@ elesfn.restore = function( notifyRenderer ){
     let id = data.id; // id is finalised, now let's keep a ref
 
     if( ele.isNode() ){ // extra checks for nodes
-      let node = ele;
       let pos = _private.position;
 
       // make sure the nodes have a defined position

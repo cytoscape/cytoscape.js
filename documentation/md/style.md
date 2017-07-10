@@ -148,7 +148,25 @@ Shape:
 
  * **`width`** : The width of the node's body.  This property can take on the special value `label` so the width is automatically based on the node's label.
  * **`height`** : The height of the node's body.  This property can take on the special value `label` so the height is automatically based on the node's label.
- * **`shape`** : The shape of the node's body; may be `rectangle`, `roundrectangle`, `bottomroundrectangle`, `cutrectangle`, `barrel`, `ellipse`, `triangle`, `pentagon`, `hexagon`, `concavehexagon`, `heptagon`, `octagon`, `tag`, `star`, `diamond`, `vee`, `rhomboid`, or `polygon` (custom polygon specified via `shape-polygon-points`).  Note that each shape fits within the specified `width` and `height`, and so you may have to adjust `width` and `height` if you desire an equilateral shape (i.e. `width !== height` for several equilateral shapes).
+ * **`shape`** : The shape of the node's body.  Note that each shape fits within the specified `width` and `height`, and so you may have to adjust `width` and `height` if you desire an equilateral shape (i.e. `width !== height` for several equilateral shapes).  Only `*rectangle` shapes are supported by compounds, because the dimensions of a compound are defined by the bounding box of the children.  The following values are accepted:
+    * `ellipse`
+    * `triangle`
+    * `rectangle`
+    * `roundrectangle`
+    * `bottomroundrectangle`
+    * `cutrectangle`
+    * `barrel`
+    * `rhomboid`
+    * `diamond`
+    * `pentagon`
+    * `hexagon`
+    * `concavehexagon`
+    * `heptagon`
+    * `octagon`
+    * `star`
+    * `tag`
+    * `vee`
+    * `polygon` (custom polygon specified via `shape-polygon-points`).
  * **`shape-polygon-points`** : A space-separated list of numbers ranging on [-1, 1], representing alternating x and y values (i.e. `x1 y1   x2 y2,   x3 y3 ...`).  This represents the points in the polygon for the node's shape.  The bounding box of the node is given by (-1, -1), (1, -1), (1, 1), (-1, 1).
 
 Background:

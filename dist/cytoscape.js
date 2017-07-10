@@ -2,7 +2,7 @@
 
 /*!
 
-Cytoscape.js 2.7.20 (MIT licensed)
+Cytoscape.js 2.7.21 (MIT licensed)
 
 Copyright (c) The Cytoscape Consortium
 
@@ -6445,8 +6445,10 @@ var corefn = ({
 
         var startPos = ani_p.startPosition;
         var endPos = ani_p.position;
-        var pos = _p.position;
-        if( endPos && isEles ){
+
+        if( endPos && isEles && !self.locked() ){
+          var pos = _p.position;
+
           if( valid( startPos.x, endPos.x ) ){
             pos.x = ease( startPos.x, endPos.x, percent, easing );
           }
@@ -6842,6 +6844,10 @@ var corefn = ({
     };
 
     function getEasedValue( type, start, end, percent, easingFn ){
+      if( percent === 1 ){
+        return end;
+      }
+
       var val = easingFn( start, end, percent );
 
       if( type == null ){
@@ -8863,9 +8869,9 @@ var define = {
 
             if( hasParent ){ // then bubble up to parent
               parent = parent[0];
-              parent.trigger( evt );
+              parent.trigger( evt, extraParams );
             } else { // otherwise, bubble up to the core
-              cy.trigger( evt );
+              cy.trigger( evt, extraParams );
             }
           }
 
@@ -27362,7 +27368,7 @@ util.debounce = function( func, wait, options ){ // ported lodash debounce funct
 module.exports = util;
 
 },{"../is":83,"../window":107}],106:[function(_dereq_,module,exports){
-module.exports = "2.7.20";
+module.exports = "2.7.21";
 
 },{}],107:[function(_dereq_,module,exports){
 module.exports = ( typeof window === 'undefined' ? null : window ); // eslint-disable-line no-undef

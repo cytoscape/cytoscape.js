@@ -1,5 +1,3 @@
-'use strict';
-
 let define = require( '../define' );
 let fn, elesfn;
 

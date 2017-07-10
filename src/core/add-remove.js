@@ -1,5 +1,3 @@
-'use strict';
-
 let is = require( '../is' );
 let util = require( '../util' );
 let Collection = require( '../collection' );

@@ -1,5 +1,3 @@
-'use strict';
-
 var BRp = {};
 
 BRp.registerCalculationListeners = function(){

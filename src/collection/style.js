@@ -1,5 +1,3 @@
-'use strict';
-
 let is = require( '../is' );
 
 function styleCache( key, fn, ele ){

@@ -1,5 +1,3 @@
-'use strict';
-
 var window = require( '../../../../window' );
 var math = require( '../../../../math' );
 var util = require( '../../../../util' );

@@ -1,5 +1,3 @@
-'use strict';
-
 var CRp = {};
 
 CRp.drawEdge = function( context, edge, shiftToOriginWithBb, drawLabel, drawOverlayInstead ){

@@ -1,5 +1,3 @@
-'use strict';
-
 var is = require( '../../is' );
 
 var defineSearch = function( params ){

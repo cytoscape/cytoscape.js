@@ -1,5 +1,3 @@
-'use strict';
-
 /**
  *  Elements are drawn in a specific order based on compound depth (low to high), the element type (nodes above edges),
  *  and z-index (low to high).  These styles affect how this applies:

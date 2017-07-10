@@ -1,5 +1,3 @@
-'use strict';
-
 let styfn = {};
 
 styfn.applyFromJson = function( json ){

@@ -1,5 +1,3 @@
-'use strict';
-
 module.exports = function memoize( fn, keyFn ){
   if( !keyFn ){
     keyFn = function(){

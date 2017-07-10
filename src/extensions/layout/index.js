@@ -1,5 +1,3 @@
-'use strict';
-
 module.exports = [
   { name: 'breadthfirst', impl: require( './breadthfirst' ) },
   { name: 'circle', impl: require( './circle' ) },

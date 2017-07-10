@@ -1,5 +1,3 @@
-'use strict';
-
 let Promise = require( '../promise' );
 
 let define = {

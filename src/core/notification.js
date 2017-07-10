@@ -1,5 +1,3 @@
-'use strict';
-
 let corefn = ({
   notify: function( params ){
     let _p = this._private;

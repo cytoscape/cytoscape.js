@@ -1,5 +1,3 @@
-'use strict';
-
 var zIndexSort = require( '../../../../collection/zsort' );
 
 var BRp = {};

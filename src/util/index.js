@@ -1,5 +1,3 @@
-'use strict';
-
 /*global console */
 
 let is = require( '../is' );

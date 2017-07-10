@@ -1,5 +1,3 @@
-'use strict';
-
 var CRp = {};
 
 CRp.nodeShapeImpl = function( name, context, centerX, centerY, width, height, points ){

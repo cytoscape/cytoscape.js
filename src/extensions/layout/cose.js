@@ -1,5 +1,3 @@
-'use strict';
-
 /*
 The CoSE layout was written by Gerardo Huck.
 https://www.linkedin.com/in/gerardohuck/

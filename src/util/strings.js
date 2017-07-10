@@ -1,5 +1,3 @@
-'use strict';
-
 let memoize = require( './memoize' );
 let is = require( '../is' );
 

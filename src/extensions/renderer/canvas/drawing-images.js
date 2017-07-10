@@ -1,5 +1,3 @@
-'use strict';
-
 var CRp = {};
 
 CRp.safeDrawImage = function( context, img, ix, iy, iw, ih, x, y, w, h ){

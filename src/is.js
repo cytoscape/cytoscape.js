@@ -1,5 +1,3 @@
-'use strict';
-
 /*global HTMLElement DocumentTouch */
 
 let window = require( './window' );

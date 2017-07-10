@@ -1,5 +1,3 @@
-'use strict';
-
 var CRp = {};
 
 var impl;

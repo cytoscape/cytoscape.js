@@ -1,5 +1,3 @@
-'use strict';
-
 let Set = require('../set');
 
 let elesfn = ({

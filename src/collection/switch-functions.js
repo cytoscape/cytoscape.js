@@ -1,5 +1,3 @@
-'use strict';
-
 let elesfn = {};
 
 function defineSwitchFunction( params ){

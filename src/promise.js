@@ -4,8 +4,6 @@ Copyright (c) 2013-2014 Ralf S. Engelschall (http://engelschall.com)
 Licensed under The MIT License (http://opensource.org/licenses/MIT)
 */
 
-'use strict';
-
 /*  promise states [Promises/A+ 2.1]  */
 var STATE_PENDING   = 0;                                         /*  [Promises/A+ 2.1.1]  */
 var STATE_FULFILLED = 1;                                         /*  [Promises/A+ 2.1.2]  */

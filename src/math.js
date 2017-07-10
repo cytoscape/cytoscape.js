@@ -1,5 +1,3 @@
-'use strict';
-
 let math = {};
 
 math.arePositionsSame = function( p1, p2 ){

@@ -4,8 +4,6 @@ The canvas renderer was written by Yue Dong.
 Modifications tracked on Github.
 */
 
-'use strict';
-
 var util = require( '../../../util' );
 var is = require( '../../../is' );
 var ElementTextureCache = require('./ele-texture-cache');

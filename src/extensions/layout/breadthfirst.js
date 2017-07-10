@@ -1,5 +1,3 @@
-'use strict';
-
 let util = require( '../../util' );
 let math = require( '../../math' );
 let is = require( '../../is' );

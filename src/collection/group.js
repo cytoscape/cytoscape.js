@@ -1,5 +1,3 @@
-'use strict';
-
 let elesfn = ({
   isNode: function(){
     return this.group() === 'nodes';

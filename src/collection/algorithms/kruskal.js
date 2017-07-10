@@ -1,5 +1,3 @@
-'use strict';
-
 var is = require( '../../is' );
 
 // search, spanning trees, etc

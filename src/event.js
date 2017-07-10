@@ -1,5 +1,3 @@
-'use strict';
-
 /*!
 Event object based on jQuery events, MIT license
 

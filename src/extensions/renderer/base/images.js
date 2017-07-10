@@ -1,5 +1,3 @@
-'use strict';
-
 var BRp = {};
 
 BRp.getCachedImage = function( url, crossOrigin, onLoad ){

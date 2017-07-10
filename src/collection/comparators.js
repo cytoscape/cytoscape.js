@@ -1,5 +1,3 @@
-'use strict';
-
 let is = require('../is');
 let Selector = require('../selector');
 

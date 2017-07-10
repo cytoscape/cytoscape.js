@@ -1,5 +1,3 @@
-'use strict';
-
 var window = require( '../window' );
 var performance = window ? window.performance : null;
 

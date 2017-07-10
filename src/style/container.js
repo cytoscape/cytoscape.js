@@ -1,5 +1,3 @@
-'use strict';
-
 let window = require( '../window' );
 
 let styfn = {};

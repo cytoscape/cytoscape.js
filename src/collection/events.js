@@ -1,5 +1,3 @@
-'use strict';
-
 let Emitter = require('../emitter');
 let define = require('../define');
 let is = require('../is');

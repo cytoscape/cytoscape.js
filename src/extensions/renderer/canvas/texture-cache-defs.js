@@ -1,5 +1,3 @@
-'use strict';
-
 var util = require( '../../../util' );
 
 var fullFpsTime = 1000/60; // assume 60 frames per second

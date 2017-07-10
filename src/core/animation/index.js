@@ -1,5 +1,3 @@
-'use strict';
-
 let define = require('../../define');
 let util = require('../../util');
 let stepAll = require('./step-all');

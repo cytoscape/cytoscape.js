@@ -1,5 +1,3 @@
-'use strict';
-
 var math = require( '../../../../math' );
 
 var BRp = {};

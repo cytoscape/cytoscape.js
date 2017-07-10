@@ -83,7 +83,7 @@ Promise.all([
         params[i] = opts[i];
       }
 
-      return cy.makeLayout( params );
+      return cy.layout( params );
     }
 
     function makeSlider( opts ){

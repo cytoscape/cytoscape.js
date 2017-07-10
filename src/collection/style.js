@@ -19,7 +19,7 @@ function styleCache( key, fn, ele ){
 function cacheStyleFunction( key, fn ){
   return function cachedStyleFunction( ele ){
     return styleCache( key, fn, ele );
-  }
+  };
 }
 
 function cachePrototypeStyleFunction( key, fn ){
@@ -31,10 +31,22 @@ function cachePrototypeStyleFunction( key, fn ){
     if( ele ){
       return styleCache( key, selfFn, ele );
     }
-  }
+  };
 }
 
 let elesfn = ({
+
+  recalculateRenderedStyle: function( useCache ){
+    let cy = this.cy();
+    let renderer = cy.renderer();
+    let styleEnabled = cy.styleEnabled();
+
+    if( renderer && styleEnabled ){
+      renderer.recalculateRenderedStyle( this, useCache );
+    }
+
+    return this;
+  },
 
   dirtyStyleCache: function(){
     let cy = this.cy();
@@ -357,7 +369,7 @@ function defineDerivedStateFunction( specs ){
           ( src === tgt || ( edgeOkViaNode(tgt) && (!hasCompoundNodes || checkCompound(tgt, edgeOkViaNode)) ) );
       }
     }
-  }
+  };
 }
 
 let eleTakesUpSpace = cacheStyleFunction( 'eleTakesUpSpace', function( ele ){

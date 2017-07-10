@@ -1,420 +1,190 @@
-'use strict';
-
-let define = require('../define');
-let is = require('../is');
-let util = require('../util');
-let math = require('../math');
+let is = require('../../is');
+let util = require('../../util');
+let math = require('../../math');
 let fn, elesfn;
 
-let beforePositionSet = function( eles, newPos ){
-  for( let i = 0; i < eles.length; i++ ){
-    let ele = eles[i];
+fn = elesfn = {};
 
-    if( ele.isParent() && !ele.locked() ){
-      let oldPos = ele._private.position;
-      let delta = {
-        x: newPos.x - oldPos.x,
-        y: newPos.y - oldPos.y
-      };
+elesfn.renderedBoundingBox = function( options ){
+  let bb = this.boundingBox( options );
+  let cy = this.cy();
+  let zoom = cy.zoom();
+  let pan = cy.pan();
 
-      eles.children().shift( delta );
-    }
-  }
+  let x1 = bb.x1 * zoom + pan.x;
+  let x2 = bb.x2 * zoom + pan.x;
+  let y1 = bb.y1 * zoom + pan.y;
+  let y2 = bb.y2 * zoom + pan.y;
+
+  return {
+    x1: x1,
+    x2: x2,
+    y1: y1,
+    y2: y2,
+    w: x2 - x1,
+    h: y2 - y1
+  };
 };
 
-fn = elesfn = ({
+elesfn.dirtyCompoundBoundsCache = function(){
+  let cy = this.cy();
 
-  position: define.data( {
-    field: 'position',
-    bindingEvent: 'position',
-    allowBinding: true,
-    allowSetting: true,
-    settingEvent: 'position',
-    settingTriggersEvent: true,
-    triggerFnName: 'emitAndNotify',
-    allowGetting: true,
-    validKeys: [ 'x', 'y' ],
-    beforeGet: function( ele ){
-      ele.updateCompoundBounds();
-    },
-    beforeSet: beforePositionSet,
-    onSet: function( eles ){
-      eles.dirtyCompoundBoundsCache();
-    },
-    canSet: function( ele ){
-      return !ele.locked();
+  if( !cy.styleEnabled() || !cy.hasCompoundNodes() ){ return this; }
+
+  this.forEachUp( ele => {
+    ele._private.compoundBoundsClean = false;
+
+    if( ele.isParent() ){
+      ele.emit('bounds');
     }
-  } ),
+  } );
 
-  // position but no notification to renderer
-  silentPosition: define.data( {
-    field: 'position',
-    bindingEvent: 'position',
-    allowBinding: false,
-    allowSetting: true,
-    settingEvent: 'position',
-    settingTriggersEvent: false,
-    triggerFnName: 'trigger',
-    allowGetting: false,
-    validKeys: [ 'x', 'y' ],
-    beforeSet: beforePositionSet,
-    onSet: function( eles ){
-      eles.dirtyCompoundBoundsCache();
-    },
-    canSet: function( ele ){
-      return !ele.locked();
-    }
-  } ),
+  return this;
+};
 
-  positions: function( pos, silent ){
-    if( is.plainObject( pos ) ){
-      if( silent ){
-        this.silentPosition( pos );
-      } else {
-        this.position( pos );
+elesfn.updateCompoundBounds = function(){
+  let cy = this.cy();
+
+  // save cycles for non compound graphs or when style disabled
+  if( !cy.styleEnabled() || !cy.hasCompoundNodes() ){ return this; }
+
+  let updated = [];
+
+  function update( parent ){
+    if( !parent.isParent() ){ return; }
+
+    let _p = parent._private;
+    let children = parent.children();
+    let includeLabels = parent.pstyle( 'compound-sizing-wrt-labels' ).value === 'include';
+
+    let min = {
+      width: {
+        val: parent.pstyle( 'min-width' ).pfValue,
+        left: parent.pstyle( 'min-width-bias-left' ),
+        right: parent.pstyle( 'min-width-bias-right' )
+      },
+      height: {
+        val: parent.pstyle( 'min-height' ).pfValue,
+        top: parent.pstyle( 'min-height-bias-top' ),
+        bottom: parent.pstyle( 'min-height-bias-bottom' )
       }
-
-    } else if( is.fn( pos ) ){
-      let fn = pos;
-      let cy = this.cy();
-
-      cy.startBatch();
-
-      for( let i = 0; i < this.length; i++ ){
-        let ele = this[ i ];
-        let pos;
-
-        if( ( pos = fn(ele, i) ) ){
-          if( silent ){
-            ele.silentPosition( pos );
-          } else {
-            ele.position( pos );
-          }
-        }
-      }
-
-      cy.endBatch();
-    }
-
-    return this; // chaining
-  },
-
-  silentPositions: function( pos ){
-    return this.positions( pos, true );
-  },
-
-  shift: function( dim, val ){
-    let delta;
-
-    if( is.plainObject( dim ) ){
-      delta = dim;
-    } else if( is.string( dim ) && is.number( val ) ){
-      delta = { x: 0, y: 0 };
-
-      delta[ dim ] = val;
-    }
-
-    if( delta != null ){
-      for( let i = 0; i < this.length; i++ ){
-        let ele = this[i];
-        let pos = ele.position();
-
-        ele.position({
-          x: pos.x + delta.x,
-          y: pos.y + delta.y
-        });
-      }
-    }
-
-    return this;
-  },
-
-  // get/set the rendered (i.e. on screen) positon of the element
-  renderedPosition: function( dim, val ){
-    let ele = this[0];
-    let cy = this.cy();
-    let zoom = cy.zoom();
-    let pan = cy.pan();
-    let rpos = is.plainObject( dim ) ? dim : undefined;
-    let setting = rpos !== undefined || ( val !== undefined && is.string( dim ) );
-
-    if( ele && ele.isNode() ){ // must have an element and must be a node to return position
-      if( setting ){
-        for( let i = 0; i < this.length; i++ ){
-          let ele = this[ i ];
-
-          if( val !== undefined ){ // set one dimension
-            ele.position( dim, ( val - pan[ dim ] ) / zoom );
-          } else if( rpos !== undefined ){ // set whole position
-            ele.position({
-              x: ( rpos.x - pan.x ) / zoom,
-              y: ( rpos.y - pan.y ) / zoom
-            });
-          }
-        }
-      } else { // getting
-        let pos = ele.position();
-        rpos = {
-          x: pos.x * zoom + pan.x,
-          y: pos.y * zoom + pan.y
-        };
-
-        if( dim === undefined ){ // then return the whole rendered position
-          return rpos;
-        } else { // then return the specified dimension
-          return rpos[ dim ];
-        }
-      }
-    } else if( !setting ){
-      return undefined; // for empty collection case
-    }
-
-    return this; // chaining
-  },
-
-  // get/set the position relative to the parent
-  relativePosition: function( dim, val ){
-    let ele = this[0];
-    let cy = this.cy();
-    let ppos = is.plainObject( dim ) ? dim : undefined;
-    let setting = ppos !== undefined || ( val !== undefined && is.string( dim ) );
-    let hasCompoundNodes = cy.hasCompoundNodes();
-
-    if( ele && ele.isNode() ){ // must have an element and must be a node to return position
-      if( setting ){
-        for( let i = 0; i < this.length; i++ ){
-          let ele = this[ i ];
-          let parent = hasCompoundNodes ? ele.parent() : null;
-          let hasParent = parent && parent.length > 0;
-          let relativeToParent = hasParent;
-
-          if( hasParent ){
-            parent = parent[0];
-          }
-
-          let origin = relativeToParent ? parent.position() : { x: 0, y: 0 };
-
-          if( val !== undefined ){ // set one dimension
-            ele.position( dim, val + origin[ dim ] );
-          } else if( ppos !== undefined ){ // set whole position
-            ele.position({
-              x: ppos.x + origin.x,
-              y: ppos.y + origin.y
-            });
-          }
-        }
-
-      } else { // getting
-        let pos = ele.position();
-        let parent = hasCompoundNodes ? ele.parent() : null;
-        let hasParent = parent && parent.length > 0;
-        let relativeToParent = hasParent;
-
-        if( hasParent ){
-          parent = parent[0];
-        }
-
-        let origin = relativeToParent ? parent.position() : { x: 0, y: 0 };
-
-        ppos = {
-          x: pos.x - origin.x,
-          y: pos.y - origin.y
-        };
-
-        if( dim === undefined ){ // then return the whole rendered position
-          return ppos;
-        } else { // then return the specified dimension
-          return ppos[ dim ];
-        }
-      }
-    } else if( !setting ){
-      return undefined; // for empty collection case
-    }
-
-    return this; // chaining
-  },
-
-  renderedBoundingBox: function( options ){
-    let bb = this.boundingBox( options );
-    let cy = this.cy();
-    let zoom = cy.zoom();
-    let pan = cy.pan();
-
-    let x1 = bb.x1 * zoom + pan.x;
-    let x2 = bb.x2 * zoom + pan.x;
-    let y1 = bb.y1 * zoom + pan.y;
-    let y2 = bb.y2 * zoom + pan.y;
-
-    return {
-      x1: x1,
-      x2: x2,
-      y1: y1,
-      y2: y2,
-      w: x2 - x1,
-      h: y2 - y1
     };
-  },
 
-  dirtyCompoundBoundsCache: function(){
-    let cy = this.cy();
+    let bb = children.boundingBox( {
+      includeLabels: includeLabels,
+      includeOverlays: false,
 
-    if( !cy.styleEnabled() || !cy.hasCompoundNodes() ){ return this; }
-
-    this.forEachUp( ele => {
-      ele._private.compoundBoundsClean = false;
-
-      if( ele.isParent() ){
-        ele.emit('bounds');
-      }
+      // updating the compound bounds happens outside of the regular
+      // cache cycle (i.e. before fired events)
+      useCache: false
     } );
+    let pos = _p.position;
 
-    return this;
-  },
-
-  updateCompoundBounds: function(){
-    let cy = this.cy();
-
-    // save cycles for non compound graphs or when style disabled
-    if( !cy.styleEnabled() || !cy.hasCompoundNodes() ){ return this; }
-
-    let updated = [];
-
-    function update( parent ){
-      if( !parent.isParent() ){ return; }
-
-      let _p = parent._private;
-      let children = parent.children();
-      let includeLabels = parent.pstyle( 'compound-sizing-wrt-labels' ).value === 'include';
-
-      let min = {
-        width: {
-          val: parent.pstyle( 'min-width' ).pfValue,
-          left: parent.pstyle( 'min-width-bias-left' ),
-          right: parent.pstyle( 'min-width-bias-right' )
-        },
-        height: {
-          val: parent.pstyle( 'min-height' ).pfValue,
-          top: parent.pstyle( 'min-height-bias-top' ),
-          bottom: parent.pstyle( 'min-height-bias-bottom' )
-        }
+    // if children take up zero area then keep position and fall back on stylesheet w/h
+    if( bb.w === 0 || bb.h === 0 ){
+      bb = {
+        w: parent.pstyle('width').pfValue,
+        h: parent.pstyle('height').pfValue
       };
 
-      let bb = children.boundingBox( {
-        includeLabels: includeLabels,
-        includeOverlays: false,
-
-        // updating the compound bounds happens outside of the regular
-        // cache cycle (i.e. before fired events)
-        useCache: false
-      } );
-      let pos = _p.position;
-
-      // if children take up zero area then keep position and fall back on stylesheet w/h
-      if( bb.w === 0 || bb.h === 0 ){
-        bb = {
-          w: parent.pstyle('width').pfValue,
-          h: parent.pstyle('height').pfValue
-        };
-
-        bb.x1 = pos.x - bb.w/2;
-        bb.x2 = pos.x + bb.w/2;
-        bb.y1 = pos.y - bb.h/2;
-        bb.y2 = pos.y + bb.h/2;
-      }
-
-      function computeBiasValues( propDiff, propBias, propBiasComplement ){
-        let biasDiff = 0;
-        let biasComplementDiff = 0;
-        let biasTotal = propBias + propBiasComplement;
-
-        if( propDiff > 0 && biasTotal > 0 ){
-          biasDiff = ( propBias / biasTotal ) * propDiff;
-          biasComplementDiff = ( propBiasComplement / biasTotal ) * propDiff;
-        }
-        return {
-          biasDiff: biasDiff,
-          biasComplementDiff: biasComplementDiff
-        };
-      }
-
-      function computePaddingValues( width, height, paddingObject, relativeTo ) {
-        // Assuming percentage is number from 0 to 1
-        if(paddingObject.units === '%') {
-          switch(relativeTo) {
-            case 'width':
-              return width > 0 ? paddingObject.pfValue * width : 0;
-            case 'height':
-              return height > 0 ? paddingObject.pfValue * height : 0;
-            case 'average':
-              return ( width > 0 ) && ( height > 0 ) ? paddingObject.pfValue * ( width + height ) / 2 : 0;
-            case 'min':
-              return ( width > 0 ) && ( height > 0 ) ? ( ( width > height ) ? paddingObject.pfValue * height : paddingObject.pfValue * width ) : 0;
-            case 'max':
-              return ( width > 0 ) && ( height > 0 ) ? ( ( width > height ) ? paddingObject.pfValue * width : paddingObject.pfValue * height ) : 0;
-            default:
-              return 0;
-          }
-        } else if(paddingObject.units === 'px') {
-          return paddingObject.pfValue;
-        } else {
-          return 0;
-        }
-      }
-
-      let leftVal = min.width.left.value;
-      if( min.width.left.units === 'px' && min.width.val > 0 ){
-        leftVal = ( leftVal * 100 ) / min.width.val;
-      }
-      let rightVal = min.width.right.value;
-      if( min.width.right.units === 'px' && min.width.val > 0 ){
-        rightVal = ( rightVal * 100 ) / min.width.val;
-      }
-
-      let topVal = min.height.top.value;
-      if( min.height.top.units === 'px' && min.height.val > 0 ){
-        topVal = ( topVal * 100 ) / min.height.val;
-      }
-
-      let bottomVal = min.height.bottom.value;
-      if( min.height.bottom.units === 'px' && min.height.val > 0 ){
-        bottomVal = ( bottomVal * 100 ) / min.height.val;
-      }
-
-      let widthBiasDiffs = computeBiasValues( min.width.val - bb.w, leftVal, rightVal );
-      let diffLeft = widthBiasDiffs.biasDiff;
-      let diffRight = widthBiasDiffs.biasComplementDiff;
-
-      let heightBiasDiffs = computeBiasValues( min.height.val - bb.h, topVal, bottomVal );
-      let diffTop = heightBiasDiffs.biasDiff;
-      let diffBottom = heightBiasDiffs.biasComplementDiff;
-
-      _p.autoPadding = computePaddingValues( bb.w, bb.h, parent.pstyle( 'padding' ), parent.pstyle( 'padding-relative-to' ).value );
-
-      _p.autoWidth = Math.max(bb.w, min.width.val);
-      pos.x = (- diffLeft + bb.x1 + bb.x2 + diffRight) / 2;
-
-      _p.autoHeight = Math.max(bb.h, min.height.val);
-      pos.y = (- diffTop + bb.y1 + bb.y2 + diffBottom) / 2;
-
-      updated.push( parent );
+      bb.x1 = pos.x - bb.w/2;
+      bb.x2 = pos.x + bb.w/2;
+      bb.y1 = pos.y - bb.h/2;
+      bb.y2 = pos.y + bb.h/2;
     }
 
-    for( let i = 0; i < this.length; i++ ){
-      let ele = this[i];
-      let _p = ele._private;
+    function computeBiasValues( propDiff, propBias, propBiasComplement ){
+      let biasDiff = 0;
+      let biasComplementDiff = 0;
+      let biasTotal = propBias + propBiasComplement;
 
-      if( !_p.compoundBoundsClean ){
-        update( ele );
+      if( propDiff > 0 && biasTotal > 0 ){
+        biasDiff = ( propBias / biasTotal ) * propDiff;
+        biasComplementDiff = ( propBiasComplement / biasTotal ) * propDiff;
+      }
+      return {
+        biasDiff: biasDiff,
+        biasComplementDiff: biasComplementDiff
+      };
+    }
 
-        if( !cy._private.batchingStyle ){
-          _p.compoundBoundsClean = true;
+    function computePaddingValues( width, height, paddingObject, relativeTo ) {
+      // Assuming percentage is number from 0 to 1
+      if(paddingObject.units === '%') {
+        switch(relativeTo) {
+          case 'width':
+            return width > 0 ? paddingObject.pfValue * width : 0;
+          case 'height':
+            return height > 0 ? paddingObject.pfValue * height : 0;
+          case 'average':
+            return ( width > 0 ) && ( height > 0 ) ? paddingObject.pfValue * ( width + height ) / 2 : 0;
+          case 'min':
+            return ( width > 0 ) && ( height > 0 ) ? ( ( width > height ) ? paddingObject.pfValue * height : paddingObject.pfValue * width ) : 0;
+          case 'max':
+            return ( width > 0 ) && ( height > 0 ) ? ( ( width > height ) ? paddingObject.pfValue * width : paddingObject.pfValue * height ) : 0;
+          default:
+            return 0;
         }
+      } else if(paddingObject.units === 'px') {
+        return paddingObject.pfValue;
+      } else {
+        return 0;
       }
     }
 
-    return this;
+    let leftVal = min.width.left.value;
+    if( min.width.left.units === 'px' && min.width.val > 0 ){
+      leftVal = ( leftVal * 100 ) / min.width.val;
+    }
+    let rightVal = min.width.right.value;
+    if( min.width.right.units === 'px' && min.width.val > 0 ){
+      rightVal = ( rightVal * 100 ) / min.width.val;
+    }
+
+    let topVal = min.height.top.value;
+    if( min.height.top.units === 'px' && min.height.val > 0 ){
+      topVal = ( topVal * 100 ) / min.height.val;
+    }
+
+    let bottomVal = min.height.bottom.value;
+    if( min.height.bottom.units === 'px' && min.height.val > 0 ){
+      bottomVal = ( bottomVal * 100 ) / min.height.val;
+    }
+
+    let widthBiasDiffs = computeBiasValues( min.width.val - bb.w, leftVal, rightVal );
+    let diffLeft = widthBiasDiffs.biasDiff;
+    let diffRight = widthBiasDiffs.biasComplementDiff;
+
+    let heightBiasDiffs = computeBiasValues( min.height.val - bb.h, topVal, bottomVal );
+    let diffTop = heightBiasDiffs.biasDiff;
+    let diffBottom = heightBiasDiffs.biasComplementDiff;
+
+    _p.autoPadding = computePaddingValues( bb.w, bb.h, parent.pstyle( 'padding' ), parent.pstyle( 'padding-relative-to' ).value );
+
+    _p.autoWidth = Math.max(bb.w, min.width.val);
+    pos.x = (- diffLeft + bb.x1 + bb.x2 + diffRight) / 2;
+
+    _p.autoHeight = Math.max(bb.h, min.height.val);
+    pos.y = (- diffTop + bb.y1 + bb.y2 + diffBottom) / 2;
+
+    updated.push( parent );
   }
-});
+
+  for( let i = 0; i < this.length; i++ ){
+    let ele = this[i];
+    let _p = ele._private;
+
+    if( !_p.compoundBoundsClean ){
+      update( ele );
+
+      if( !cy._private.batchingStyle ){
+        _p.compoundBoundsClean = true;
+      }
+    }
+  }
+
+  return this;
+};
 
 let noninf = function( x ){
   if( x === Infinity || x === -Infinity ){
@@ -442,7 +212,7 @@ let prefixedProperty = function( obj, field, prefix ){
   return util.getPrefixedProperty( obj, field, prefix );
 };
 
-let updateBoundsFromArrow = function( bounds, ele, prefix, options ){
+let updateBoundsFromArrow = function( bounds, ele, prefix ){
   let _p = ele._private;
   let rstyle = _p.rstyle;
   let halfArW = rstyle.arrowWidth / 2;
@@ -466,7 +236,7 @@ let updateBoundsFromArrow = function( bounds, ele, prefix, options ){
   }
 };
 
-let updateBoundsFromLabel = function( bounds, ele, prefix, options ){
+let updateBoundsFromLabel = function( bounds, ele, prefix ){
   let prefixDash;
 
   if( prefix ){
@@ -839,18 +609,6 @@ let defBbOpts = {
 
 let defBbOptsKey = getKey( defBbOpts );
 
-elesfn.recalculateRenderedStyle = function( useCache ){
-  let cy = this.cy();
-  let renderer = cy.renderer();
-  let styleEnabled = cy.styleEnabled();
-
-  if( renderer && styleEnabled ){
-    renderer.recalculateRenderedStyle( this, useCache );
-  }
-
-  return this;
-};
-
 function filledBbOpts( options ){
   return {
     includeNodes: util.default( options.includeNodes, defBbOpts.includeNodes ),
@@ -976,111 +734,6 @@ elesfn.boundingBoxAt = function( fn ){
   return bb;
 };
 
-let defineDimFns = function( opts ){
-  opts.uppercaseName = util.capitalize( opts.name );
-  opts.autoName = 'auto' + opts.uppercaseName;
-  opts.labelName = 'label' + opts.uppercaseName;
-  opts.outerName = 'outer' + opts.uppercaseName;
-  opts.uppercaseOuterName = util.capitalize( opts.outerName );
-
-  fn[ opts.name ] = function dimImpl(){
-    let ele = this[0];
-    let _p = ele._private;
-    let cy = _p.cy;
-    let styleEnabled = cy._private.styleEnabled;
-
-    if( ele ){
-      if( styleEnabled ){
-        if( ele.isParent() ){
-          ele.updateCompoundBounds();
-
-          return _p[ opts.autoName ] || 0;
-        }
-
-        let d = ele.pstyle( opts.name );
-
-        switch( d.strValue ){
-          case 'label':
-            ele.recalculateRenderedStyle();
-
-            return _p.rstyle[ opts.labelName ] || 0;
-
-          default:
-            return d.pfValue;
-        }
-      } else {
-        return 1;
-      }
-    }
-  };
-
-  fn[ 'outer' + opts.uppercaseName ] = function outerDimImpl(){
-    let ele = this[0];
-    let _p = ele._private;
-    let cy = _p.cy;
-    let styleEnabled = cy._private.styleEnabled;
-
-    if( ele ){
-      if( styleEnabled ){
-        let dim = ele[ opts.name ]();
-        let border = ele.pstyle( 'border-width' ).pfValue; // n.b. 1/2 each side
-        let padding = 2 * ele.padding();
-
-        return dim + border + padding;
-      } else {
-        return 1;
-      }
-    }
-  };
-
-  fn[ 'rendered' + opts.uppercaseName ] = function renderedDimImpl(){
-    let ele = this[0];
-
-    if( ele ){
-      let d = ele[ opts.name ]();
-      return d * this.cy().zoom();
-    }
-  };
-
-  fn[ 'rendered' + opts.uppercaseOuterName ] = function renderedOuterDimImpl(){
-    let ele = this[0];
-
-    if( ele ){
-      let od = ele[ opts.outerName ]();
-      return od * this.cy().zoom();
-    }
-  };
-};
-
-defineDimFns( {
-  name: 'width'
-} );
-
-defineDimFns( {
-  name: 'height'
-} );
-
-elesfn.padding = function(){
-  let ele = this[0];
-  let _p = ele._private;
-  if( ele.isParent() ){
-    ele.updateCompoundBounds();
-
-    if( _p.autoPadding !== undefined ){
-      return _p.autoPadding;
-    } else {
-      return ele.pstyle('padding').pfValue;
-    }
-  } else {
-    return ele.pstyle('padding').pfValue;
-  }
-}
-
-// aliases
-fn.modelPosition = fn.point = fn.position;
-fn.modelPositions = fn.points = fn.positions;
-fn.renderedPoint = fn.renderedPosition;
-fn.relativePoint = fn.relativePosition;
 fn.boundingbox = fn.boundingBox;
 fn.renderedBoundingbox = fn.renderedBoundingBox;
 

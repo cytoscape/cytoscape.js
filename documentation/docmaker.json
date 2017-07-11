@@ -1618,6 +1618,39 @@
         },
 
         {
+          "name": "Edge points",
+          "fns": [
+            {
+              "name": "edge.controlPoints",
+              "description": "Get an array of control point model positions for a `curve-style: bezier` or `curve-style: unbundled-bezier` edge.",
+              "md": "collection/controlPoints"
+            },
+
+            {
+              "name": "edge.segmentPoints",
+              "description": "Get an array of segment point model positions (i.e. bend points) for a `curve-style: segments` edge.",
+              "md": "collection/segmentPoints"
+            },
+
+            {
+              "name": "edge.sourceEndpoint",
+              "description": "Get the model position of where the edge ends, towards the source node."
+            },
+
+            {
+              "name": "edge.targetEndpoint",
+              "description": "Get the model position of where the edge ends, towards the target node."
+            },
+
+            {
+              "name": "edge.midpoint",
+              "description": "Get the model position of the midpoint of the edge.",
+              "md": "collection/midpoint.md"
+            }
+          ]
+        },
+
+        {
           "name": "Layout",
           "fns": [
 

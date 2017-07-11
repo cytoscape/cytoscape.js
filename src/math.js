@@ -8,6 +8,20 @@ math.copyPosition = function( p ){
   return { x: p.x, y: p.y };
 };
 
+math.modelToRenderedPosition = function( p, zoom, pan ){
+  return {
+    x: p.x * zoom + pan.x,
+    y: p.y * zoom + pan.y
+  };
+};
+
+math.renderedToModelPosition = function( p, zoom, pan ){
+  return {
+    x: ( p.x - pan.x ) / zoom,
+    y: ( p.y - pan.y ) / zoom
+  };
+};
+
 math.array2point = function( arr ){
   return {
     x: arr[0],

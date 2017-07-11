@@ -1,12 +1,11 @@
 let util = require( '../util' );
 let Animation = require( '../animation' );
+let math = require('../math');
+let is = require('../is');
 
 let define = {
 
-  animated: function( fnParams ){
-    let defaults = {};
-    fnParams = util.extend( {}, defaults, fnParams );
-
+  animated: function(){
     return function animatedImpl(){
       let self = this;
       let selfIsArrayLike = self.length !== undefined;
@@ -23,10 +22,7 @@ let define = {
     };
   }, // animated
 
-  clearQueue: function( fnParams ){
-    let defaults = {};
-    fnParams = util.extend( {}, defaults, fnParams );
-
+  clearQueue: function(){
     return function clearQueueImpl(){
       let self = this;
       let selfIsArrayLike = self.length !== undefined;
@@ -44,10 +40,7 @@ let define = {
     };
   }, // clearQueue
 
-  delay: function( fnParams ){
-    let defaults = {};
-    fnParams = util.extend( {}, defaults, fnParams );
-
+  delay: function(){
     return function delayImpl( time, complete ){
       let cy = this._private.cy || this;
 
@@ -61,10 +54,7 @@ let define = {
     };
   }, // delay
 
-  delayAnimation: function( fnParams ){
-    let defaults = {};
-    fnParams = util.extend( {}, defaults, fnParams );
-
+  delayAnimation: function(){
     return function delayAnimationImpl( time, complete ){
       let cy = this._private.cy || this;
 
@@ -78,10 +68,7 @@ let define = {
     };
   }, // delay
 
-  animation: function( fnParams ){
-    let defaults = {};
-    fnParams = util.extend( {}, defaults, fnParams );
-
+  animation: function(){
     return function animationImpl( properties, params ){
       let self = this;
       let selfIsArrayLike = self.length !== undefined;
@@ -94,7 +81,7 @@ let define = {
 
       let style = cy.style();
 
-      properties = util.extend( {}, properties, params );
+      properties = util.assign( {}, properties, params );
 
       let propertiesEmpty = Object.keys( properties ).length === 0;
 
@@ -121,19 +108,16 @@ let define = {
         properties.css = undefined;
       }
 
-      if( properties.renderedPosition && isEles ){
+      if( isEles && properties.renderedPosition != null ){
         let rpos = properties.renderedPosition;
         let pan = cy.pan();
         let zoom = cy.zoom();
 
-        properties.position = {
-          x: ( rpos.x - pan.x ) / zoom,
-          y: ( rpos.y - pan.y ) / zoom
-        };
+        properties.position = math.renderedToModelPosition( rpos, zoom, pan );
       }
 
       // override pan w/ panBy if set
-      if( properties.panBy && isCore ){
+      if( isCore && properties.panBy != null ){
         let panBy = properties.panBy;
         let cyPan = cy.pan();
 
@@ -145,22 +129,33 @@ let define = {
 
       // override pan w/ center if set
       let center = properties.center || properties.centre;
-      if( center && isCore ){
+      if( isCore && center != null ){
         let centerPan = cy.getCenterPan( center.eles, properties.zoom );
 
-        if( centerPan ){
+        if( centerPan != null ){
           properties.pan = centerPan;
         }
       }
 
       // override pan & zoom w/ fit if set
-      if( properties.fit && isCore ){
+      if( isCore && properties.fit != null ){
         let fit = properties.fit;
         let fitVp = cy.getFitViewport( fit.eles || fit.boundingBox, fit.padding );
 
-        if( fitVp ){
+        if( fitVp != null ){
           properties.pan = fitVp.pan;
           properties.zoom = fitVp.zoom;
+        }
+      }
+
+      // override zoom (& potentially pan) w/ zoom obj if set
+      if( isCore && is.plainObject( properties.zoom ) ){
+        let vp = cy.getZoomedViewport( properties.zoom );
+
+        if( vp != null ){
+          if( vp.zoomed ){ properties.zoom = vp.zoom; }
+
+          if( vp.panned ){ properties.pan = vp.pan; }
         }
       }
 
@@ -168,10 +163,7 @@ let define = {
     };
   }, // animate
 
-  animate: function( fnParams ){
-    let defaults = {};
-    fnParams = util.extend( {}, defaults, fnParams );
-
+  animate: function(){
     return function animateImpl( properties, params ){
       let self = this;
       let selfIsArrayLike = self.length !== undefined;
@@ -198,10 +190,7 @@ let define = {
     };
   }, // animate
 
-  stop: function( fnParams ){
-    let defaults = {};
-    fnParams = util.extend( {}, defaults, fnParams );
-
+  stop: function(){
     return function stopImpl( clearQueue, jumpToEnd ){
       let self = this;
       let selfIsArrayLike = self.length !== undefined;

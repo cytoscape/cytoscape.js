@@ -92,8 +92,11 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
     }
   }
 
-  let setupColors = ( bgOpy = bgOpacity, bdrOpy = borderOpacity ) => {
+  let setupShapeColor = ( bgOpy = bgOpacity ) => {
     r.fillStyle( context, bgColor[0], bgColor[1], bgColor[2], bgOpy );
+  };
+
+  let setupBorderColor = ( bdrOpy = borderOpacity ) => {
     r.strokeStyle( context, borderColor[0], borderColor[1], borderColor[2], bdrOpy );
   };
 
@@ -146,14 +149,14 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
     }
   };
 
-  let drawImages = () => {
+  let drawImages = ( nodeOpacity = parentOpacity ) => {
     let prevBging = _p.backgrounding;
     let totalCompleted = 0;
 
     for( let i = 0; i < numImages; i++ ){
       if( urlDefined[i] && image[i].complete && !image[i].error ){
         totalCompleted++;
-        r.drawInscribedImage( context, image[i], node, i );
+        r.drawInscribedImage( context, image[i], node, i, nodeOpacity );
       }
     }
 
@@ -163,12 +166,12 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
     }
   };
 
-  let drawPie = () => {
+  let drawPie = ( redrawShape = false, pieOpacity = parentOpacity ) => {
     if( r.hasPie( node ) ){
-      r.drawPie( context, node, parentOpacity );
+      r.drawPie( context, node, pieOpacity );
 
-      // redraw path for blacken and border
-      if( darkness !== 0 || borderWidth !== 0 ){
+      // redraw/restore path if steps after pie need it
+      if( redrawShape ){
 
         if( !usePaths ){
           r.nodeShapes[ r.getNodeShape( node ) ].draw(
@@ -182,18 +185,12 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
     }
   };
 
-  let darken = () => {
-    if( darkness > 0 ){
-      r.fillStyle( context, 0, 0, 0, darkness );
+  let darken = ( darkenOpacity = parentOpacity ) => {
+    let opacity = ( darkness > 0 ? darkness : -darkness ) * darkenOpacity;
+    let c = darkness > 0 ? 0 : 255;
 
-      if( usePaths ){
-        context.fill( path );
-      } else {
-        context.fill();
-      }
-
-    } else if( darkness < 0 ){
-      r.fillStyle( context, 255, 255, 255, -darkness );
+    if( darkness !== 0 ){
+      r.fillStyle( context, c, c, c, opacity );
 
       if( usePaths ){
         context.fill( path );
@@ -230,62 +227,69 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
     }
   };
 
+  let drawOverlay = () => {
+    let overlayPadding = node.pstyle( 'overlay-padding' ).pfValue;
+    let overlayOpacity = node.pstyle( 'overlay-opacity' ).value;
+    let overlayColor = node.pstyle( 'overlay-color' ).value;
+
+    if( overlayOpacity > 0 ){
+      r.fillStyle( context, overlayColor[0], overlayColor[1], overlayColor[2], overlayOpacity );
+
+      r.nodeShapes[ 'roundrectangle' ].draw(
+        context,
+        pos.x,
+        pos.y,
+        nodeWidth + overlayPadding * 2,
+        nodeHeight + overlayPadding * 2
+      );
+
+      context.fill();
+    }
+  };
+
+  let drawText = () => {
+    r.drawElementText( context, node, drawLabel );
+  };
+
   let ghost = node.pstyle('ghost').value === 'yes';
 
   if( ghost ){
     let gx = node.pstyle('ghost-offset-x').pfValue;
     let gy = node.pstyle('ghost-offset-y').pfValue;
     let ghostOpacity = node.pstyle('ghost-opacity').value;
+    let effGhostOpacity = ghostOpacity * parentOpacity;
 
     context.translate( gx, gy );
 
-    setupColors( ghostOpacity * bgOpacity, ghostOpacity * borderOpacity );
+    setupShapeColor( ghostOpacity * bgOpacity );
     drawShape();
+    drawImages( effGhostOpacity );
+    drawPie( darkness !== 0 || borderWidth !== 0 );
+    darken( effGhostOpacity );
+    setupBorderColor( ghostOpacity * borderOpacity );
     drawBorder();
 
     context.translate( -gx, -gy );
   }
 
-  setupColors();
+  setupShapeColor();
   drawShape();
   drawImages();
-  drawPie();
+  drawPie( darkness !== 0 || borderWidth !== 0 );
   darken();
+  setupBorderColor();
   drawBorder();
 
   if( usePaths ){
     context.translate( -pos.x, -pos.y );
   }
 
+  drawText();
+  drawOverlay();
+
   // reset in case we changed the border style
   if( context.setLineDash ){ // for very outofdate browsers
     context.setLineDash( [ ] );
-  }
-
-  //
-  // label
-
-  r.drawElementText( context, node, drawLabel );
-
-  //
-  // overlay
-
-  let overlayPadding = node.pstyle( 'overlay-padding' ).pfValue;
-  let overlayOpacity = node.pstyle( 'overlay-opacity' ).value;
-  let overlayColor = node.pstyle( 'overlay-color' ).value;
-
-  if( overlayOpacity > 0 ){
-    r.fillStyle( context, overlayColor[0], overlayColor[1], overlayColor[2], overlayOpacity );
-
-    r.nodeShapes[ 'roundrectangle' ].draw(
-      context,
-      pos.x,
-      pos.y,
-      nodeWidth + overlayPadding * 2,
-      nodeHeight + overlayPadding * 2
-    );
-
-    context.fill();
   }
 
   //

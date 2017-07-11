@@ -95,7 +95,6 @@
     "babel-loader": "^7.0.0",
     "babel-preset-env": "^1.5.2",
     "benchmark": "^1.0.0",
-    "bluebird": "^2.0.2",
     "chai": "^1.9.0",
     "del": "^2.2.0",
     "gulp": "^3.9.1",
@@ -125,9 +124,7 @@
     "require-uncached": "^1.0.3",
     "run-sequence": "^1.1.5",
     "sniper": "^0.2.17",
-    "vinyl-buffer": "^1.0.0",
     "vinyl-paths": "^2.1.0",
-    "vinyl-source-stream": "^1.1.0",
     "webpack": "^2.6.1"
   },
   "sniper": {
@@ -138,6 +135,7 @@
     "first": "images"
   },
   "dependencies": {
+    "gulp-download": "0.0.1",
     "heap": "^0.2.6",
     "lodash.debounce": "^4.0.8"
   }

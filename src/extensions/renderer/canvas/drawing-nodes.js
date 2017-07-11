@@ -1,13 +1,15 @@
-var is = require( '../../../is' );
+/* global Path2D */
 
-var CRp = {};
+let is = require( '../../../is' );
+
+let CRp = {};
 
 CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
-  var r = this;
-  var nodeWidth, nodeHeight;
-  var rs = node._private.rscratch;
-  var _p = node._private;
-  var pos = pos || node.position();
+  let r = this;
+  let nodeWidth, nodeHeight;
+  let _p = node._private;
+  let rs = _p.rscratch;
+  let pos = node.position();
 
   if( !is.number( pos.x ) || !is.number( pos.y ) ){
     return; // can't draw node with undefined position
@@ -15,13 +17,13 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
 
   if( !node.visible() ){ return; }
 
-  var parentOpacity = node.effectiveOpacity();
+  let parentOpacity = node.effectiveOpacity();
 
-  var usePaths = this.usePaths();
-  var path;
-  var pathCacheHit = false;
+  let usePaths = r.usePaths();
+  let path;
+  let pathCacheHit = false;
 
-  var padding = node.padding();
+  let padding = node.padding();
 
   nodeWidth = node.width() + 2 * padding;
   nodeHeight = node.height() + 2 * padding;
@@ -31,7 +33,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
   //
   // setup shift
 
-  var bb;
+  let bb;
   if( shiftToOriginWithBb ){
     bb = shiftToOriginWithBb;
 
@@ -41,20 +43,20 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
   //
   // load bg image
 
-  var bgImgProp = node.pstyle( 'background-image' );
-  var urls = bgImgProp.value;
-  var url;
-  var urlDefined = [];
-  var image = [];
-  var numImages = urls.length;
-  for( var i = 0; i < numImages; i++ ){
+  let bgImgProp = node.pstyle( 'background-image' );
+  let urls = bgImgProp.value;
+  let url;
+  let urlDefined = [];
+  let image = [];
+  let numImages = urls.length;
+  for( let i = 0; i < numImages; i++ ){
     url = urls[i];
     urlDefined[i] = url != null && url !== 'none';
     if( urlDefined[i] ){
-      var bgImgCrossOrigin = node.cy().style().getIndexedStyle(node, 'background-image-crossorigin', 'value', i);
+      let bgImgCrossOrigin = node.cy().style().getIndexedStyle(node, 'background-image-crossorigin', 'value', i);
 
       // get image, and if not loaded then ask to redraw when later loaded
-      image[i] = this.getCachedImage( url, bgImgCrossOrigin, function(){
+      image[i] = r.getCachedImage( url, bgImgCrossOrigin, function(){
         node.emitAndNotify('background');
       } );
     }
@@ -63,13 +65,13 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
   //
   // setup styles
 
-  var bgColor = node.pstyle( 'background-color' ).value;
-  var borderColor = node.pstyle( 'border-color' ).value;
-  var borderStyle = node.pstyle( 'border-style' ).value;
-
-  this.fillStyle( context, bgColor[0], bgColor[1], bgColor[2], node.pstyle( 'background-opacity' ).value * parentOpacity );
-
-  this.strokeStyle( context, borderColor[0], borderColor[1], borderColor[2], node.pstyle( 'border-opacity' ).value * parentOpacity );
+  let darkness = node.pstyle('background-blacken').value;
+  let borderWidth = node.pstyle('border-width').pfValue;
+  let bgColor = node.pstyle('background-color').value;
+  let bgOpacity = node.pstyle('background-opacity').value * parentOpacity;
+  let borderColor = node.pstyle('border-color').value;
+  let borderStyle = node.pstyle('border-style').value;
+  let borderOpacity = node.pstyle('border-opacity').value * parentOpacity;
 
   context.lineJoin = 'miter'; // so borders are square with the node shape
 
@@ -90,15 +92,20 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
     }
   }
 
+  let setupColors = ( bgOpy = bgOpacity, bdrOpy = borderOpacity ) => {
+    r.fillStyle( context, bgColor[0], bgColor[1], bgColor[2], bgOpy );
+    r.strokeStyle( context, borderColor[0], borderColor[1], borderColor[2], bdrOpy );
+  };
+
 
   //
-  // draw shape
+  // setup shape
 
-  var styleShape = node.pstyle('shape').strValue;
-  var shapePts = node.pstyle('shape-polygon-points').pfValue;
+  let styleShape = node.pstyle('shape').strValue;
+  let shapePts = node.pstyle('shape-polygon-points').pfValue;
 
   if( usePaths ){
-    var pathCacheKey = styleShape + '$' + nodeWidth + '$' + nodeHeight + ( styleShape === 'polygon' ? '$' + shapePts.join('$') : '' );
+    let pathCacheKey = styleShape + '$' + nodeWidth + '$' + nodeHeight + ( styleShape === 'polygon' ? '$' + shapePts.join('$') : '' );
 
     context.translate( pos.x, pos.y );
 
@@ -106,116 +113,98 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
       path = rs.pathCache;
       pathCacheHit = true;
     } else {
-      path = new Path2D(); // eslint-disable-line no-undef
+      path = new Path2D();
       rs.pathCacheKey = pathCacheKey;
       rs.pathCache = path;
     }
   }
 
-  if( !pathCacheHit ){
+  let drawShape = () => {
+    if( !pathCacheHit ){
 
-    var npos = pos;
+      let npos = pos;
 
-    if( usePaths ){
-      npos = {
-        x: 0,
-        y: 0
-      };
-    }
+      if( usePaths ){
+        npos = {
+          x: 0,
+          y: 0
+        };
+      }
 
-    r.nodeShapes[ this.getNodeShape( node ) ].draw(
-          ( path || context ),
-          npos.x,
-          npos.y,
-          nodeWidth,
-          nodeHeight );
-  }
-
-  if( usePaths ){
-    context.fill( path );
-  } else {
-    context.fill();
-  }
-
-  //
-  // bg image
-
-  var prevBging = _p.backgrounding;
-  var totalCompleted = 0;
-
-  for( var i = 0; i < numImages; i++ ){
-    if( urlDefined[i] && image[i].complete && !image[i].error ){
-      totalCompleted++;
-      this.drawInscribedImage( context, image[i], node, i );
-    }
-  }
-
-  _p.backgrounding = !(totalCompleted === numImages);
-  if( prevBging !== _p.backgrounding ){ // update style b/c :backgrounding state changed
-    node.updateStyle( false );
-  }
-
-  //
-  // pie
-
-  var darkness = node.pstyle( 'background-blacken' ).value;
-  var borderWidth = node.pstyle( 'border-width' ).pfValue;
-
-  if( this.hasPie( node ) ){
-    this.drawPie( context, node, parentOpacity );
-
-    // redraw path for blacken and border
-    if( darkness !== 0 || borderWidth !== 0 ){
-
-      if( !usePaths ){
-        r.nodeShapes[ this.getNodeShape( node ) ].draw(
-            context,
-            pos.x,
-            pos.y,
+      r.nodeShapes[ r.getNodeShape( node ) ].draw(
+            ( path || context ),
+            npos.x,
+            npos.y,
             nodeWidth,
             nodeHeight );
+    }
+
+    if( usePaths ){
+      context.fill( path );
+    } else {
+      context.fill();
+    }
+  };
+
+  let drawImages = () => {
+    let prevBging = _p.backgrounding;
+    let totalCompleted = 0;
+
+    for( let i = 0; i < numImages; i++ ){
+      if( urlDefined[i] && image[i].complete && !image[i].error ){
+        totalCompleted++;
+        r.drawInscribedImage( context, image[i], node, i );
       }
     }
-  }
 
-  //
-  // darken/lighten
-
-  if( darkness > 0 ){
-    this.fillStyle( context, 0, 0, 0, darkness );
-
-    if( usePaths ){
-      context.fill( path );
-    } else {
-      context.fill();
+    _p.backgrounding = !(totalCompleted === numImages);
+    if( prevBging !== _p.backgrounding ){ // update style b/c :backgrounding state changed
+      node.updateStyle( false );
     }
+  };
 
-  } else if( darkness < 0 ){
-    this.fillStyle( context, 255, 255, 255, -darkness );
+  let drawPie = () => {
+    if( r.hasPie( node ) ){
+      r.drawPie( context, node, parentOpacity );
 
-    if( usePaths ){
-      context.fill( path );
-    } else {
-      context.fill();
+      // redraw path for blacken and border
+      if( darkness !== 0 || borderWidth !== 0 ){
+
+        if( !usePaths ){
+          r.nodeShapes[ r.getNodeShape( node ) ].draw(
+              context,
+              pos.x,
+              pos.y,
+              nodeWidth,
+              nodeHeight );
+        }
+      }
     }
-  }
+  };
 
-  //
-  // border
+  let darken = () => {
+    if( darkness > 0 ){
+      r.fillStyle( context, 0, 0, 0, darkness );
 
-  if( borderWidth > 0 ){
+      if( usePaths ){
+        context.fill( path );
+      } else {
+        context.fill();
+      }
 
-    if( usePaths ){
-      context.stroke( path );
-    } else {
-      context.stroke();
+    } else if( darkness < 0 ){
+      r.fillStyle( context, 255, 255, 255, -darkness );
+
+      if( usePaths ){
+        context.fill( path );
+      } else {
+        context.fill();
+      }
     }
+  };
 
-    if( borderStyle === 'double' ){
-      context.lineWidth = node.pstyle( 'border-width' ).pfValue / 3;
-
-      var gco = context.globalCompositeOperation;
-      context.globalCompositeOperation = 'destination-out';
+  let drawBorder = () => {
+    if( borderWidth > 0 ){
 
       if( usePaths ){
         context.stroke( path );
@@ -223,10 +212,46 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
         context.stroke();
       }
 
-      context.globalCompositeOperation = gco;
-    }
+      if( borderStyle === 'double' ){
+        context.lineWidth = borderWidth / 3;
 
+        let gco = context.globalCompositeOperation;
+        context.globalCompositeOperation = 'destination-out';
+
+        if( usePaths ){
+          context.stroke( path );
+        } else {
+          context.stroke();
+        }
+
+        context.globalCompositeOperation = gco;
+      }
+
+    }
+  };
+
+  let ghost = node.pstyle('ghost').value === 'yes';
+
+  if( ghost ){
+    let gx = node.pstyle('ghost-offset-x').pfValue;
+    let gy = node.pstyle('ghost-offset-y').pfValue;
+    let ghostOpacity = node.pstyle('ghost-opacity').value;
+
+    context.translate( gx, gy );
+
+    setupColors( ghostOpacity * bgOpacity, ghostOpacity * borderOpacity );
+    drawShape();
+    drawBorder();
+
+    context.translate( -gx, -gy );
   }
+
+  setupColors();
+  drawShape();
+  drawImages();
+  drawPie();
+  darken();
+  drawBorder();
 
   if( usePaths ){
     context.translate( -pos.x, -pos.y );
@@ -245,12 +270,12 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
   //
   // overlay
 
-  var overlayPadding = node.pstyle( 'overlay-padding' ).pfValue;
-  var overlayOpacity = node.pstyle( 'overlay-opacity' ).value;
-  var overlayColor = node.pstyle( 'overlay-color' ).value;
+  let overlayPadding = node.pstyle( 'overlay-padding' ).pfValue;
+  let overlayOpacity = node.pstyle( 'overlay-opacity' ).value;
+  let overlayColor = node.pstyle( 'overlay-color' ).value;
 
   if( overlayOpacity > 0 ){
-    this.fillStyle( context, overlayColor[0], overlayColor[1], overlayColor[2], overlayOpacity );
+    r.fillStyle( context, overlayColor[0], overlayColor[1], overlayColor[2], overlayOpacity );
 
     r.nodeShapes[ 'roundrectangle' ].draw(
       context,
@@ -281,17 +306,17 @@ CRp.hasPie = function( node ){
 
 CRp.drawPie = function( context, node, nodeOpacity, pos ){
   node = node[0]; // ensure ele ref
+  pos || node.position();
 
-  var cyStyle = node.cy().style();
-  var pieSize = node.pstyle( 'pie-size' );
-  var nodeW = node.width();
-  var nodeH = node.height();
-  var pos = pos || node.position();
-  var x = pos.x;
-  var y = pos.y;
-  var radius = Math.min( nodeW, nodeH ) / 2; // must fit in node
-  var lastPercent = 0; // what % to continue drawing pie slices from on [0, 1]
-  var usePaths = this.usePaths();
+  let cyStyle = node.cy().style();
+  let pieSize = node.pstyle( 'pie-size' );
+  let x = pos.x;
+  let y = pos.y;
+  let nodeW = node.width();
+  let nodeH = node.height();
+  let radius = Math.min( nodeW, nodeH ) / 2; // must fit in node
+  let lastPercent = 0; // what % to continue drawing pie slices from on [0, 1]
+  let usePaths = this.usePaths();
 
   if( usePaths ){
     x = 0;
@@ -304,20 +329,20 @@ CRp.drawPie = function( context, node, nodeOpacity, pos ){
     radius = pieSize.pfValue / 2;
   }
 
-  for( var i = 1; i <= cyStyle.pieBackgroundN; i++ ){ // 1..N
-    var size = node.pstyle( 'pie-' + i + '-background-size' ).value;
-    var color = node.pstyle( 'pie-' + i + '-background-color' ).value;
-    var opacity = node.pstyle( 'pie-' + i + '-background-opacity' ).value * nodeOpacity;
-    var percent = size / 100; // map integer range [0, 100] to [0, 1]
+  for( let i = 1; i <= cyStyle.pieBackgroundN; i++ ){ // 1..N
+    let size = node.pstyle( 'pie-' + i + '-background-size' ).value;
+    let color = node.pstyle( 'pie-' + i + '-background-color' ).value;
+    let opacity = node.pstyle( 'pie-' + i + '-background-opacity' ).value * nodeOpacity;
+    let percent = size / 100; // map integer range [0, 100] to [0, 1]
 
     // percent can't push beyond 1
     if( percent + lastPercent > 1 ){
       percent = 1 - lastPercent;
     }
 
-    var angleStart = 1.5 * Math.PI + 2 * Math.PI * lastPercent; // start at 12 o'clock and go clockwise
-    var angleDelta = 2 * Math.PI * percent;
-    var angleEnd = angleStart + angleDelta;
+    let angleStart = 1.5 * Math.PI + 2 * Math.PI * lastPercent; // start at 12 o'clock and go clockwise
+    let angleDelta = 2 * Math.PI * percent;
+    let angleEnd = angleStart + angleDelta;
 
     // ignore if
     // - zero size

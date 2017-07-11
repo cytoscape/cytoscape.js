@@ -369,7 +369,8 @@ let boundingBoxImpl = function( ele, options ){
   let display = styleEnabled ? ele.pstyle( 'display' ).value : 'element';
   let isNode = ele.isNode();
   let isEdge = ele.isEdge();
-  let ex1, ex2, ey1, ey2, x, y;
+  let ex1, ex2, ey1, ey2; // extrema of body / lines
+  let x, y; // node pos
   let displayed = display !== 'none';
 
   if( displayed ){
@@ -509,6 +510,31 @@ let boundingBoxImpl = function( ele, options ){
 
     } // edges
 
+
+    // handle edge arrow size
+    /////////////////////////
+
+    if( styleEnabled && options.includeEdges && isEdge ){
+      updateBoundsFromArrow( bounds, ele, 'mid-source', options );
+      updateBoundsFromArrow( bounds, ele, 'mid-target', options );
+      updateBoundsFromArrow( bounds, ele, 'source', options );
+      updateBoundsFromArrow( bounds, ele, 'target', options );
+    }
+
+    // ghost
+    ////////
+
+    if( styleEnabled ){
+      let ghost = ele.pstyle('ghost').value === 'yes';
+
+      if( ghost ){
+        let gx = ele.pstyle('ghost-offset-x').pfValue;
+        let gy = ele.pstyle('ghost-offset-y').pfValue;
+
+        updateBounds( bounds, bounds.x1 + gx, bounds.y1 + gy, bounds.x2 + gx, bounds.y2 + gy );
+      }
+    }
+
     // overlay
     //////////
 
@@ -520,16 +546,6 @@ let boundingBoxImpl = function( ele, options ){
       ey2 = bounds.y2;
 
       updateBounds( bounds, ex1 - overlayPadding, ey1 - overlayPadding, ex2 + overlayPadding, ey2 + overlayPadding );
-    }
-
-    // handle edge arrow size
-    /////////////////////////
-
-    if( styleEnabled && options.includeEdges && isEdge ){
-      updateBoundsFromArrow( bounds, ele, 'mid-source', options );
-      updateBoundsFromArrow( bounds, ele, 'mid-target', options );
-      updateBoundsFromArrow( bounds, ele, 'source', options );
-      updateBoundsFromArrow( bounds, ele, 'target', options );
     }
 
     // handle label dimensions

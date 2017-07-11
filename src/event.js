@@ -18,7 +18,7 @@ function returnTrue(){
   return true;
 }
 
-http://www.w3.org/TR/2003/WD-DOM-Level-3-Events-20030331/ecma-script-binding.html
+//http://www.w3.org/TR/2003/WD-DOM-Level-3-Events-20030331/ecma-script-binding.html
 Event.prototype = {
   instanceString: function(){
     return 'event';

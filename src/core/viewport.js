@@ -329,7 +329,7 @@ let corefn = ({
     zoom = zoom < _p.minZoom ? _p.minZoom : zoom;
 
     // can't zoom with invalid params
-    if( bail || !is.number( zoom ) || zoom === currentZoom || ( pos !== null && (!is.number( pos.x ) || !is.number( pos.y )) ) ){
+    if( bail || !is.number( zoom ) || zoom === currentZoom || ( pos != null && (!is.number( pos.x ) || !is.number( pos.y )) ) ){
       return null;
     }
 

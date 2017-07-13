@@ -106,7 +106,7 @@ CRp.drawBarrelPath = function(
     var barrelCurveConstants = math.getBarrelCurveConstants( width, height );
     var wOffset = barrelCurveConstants.widthOffset;
     var hOffset = barrelCurveConstants.heightOffset;
-    var ctrlPtXOffset = barrelCurveConstants.ctrlPtOffsetPct * width;
+    var ctrlPtXOffset = barrelCurveConstants.ctrlPtOffsetPct * wOffset;
 
     if( context.beginPath ){ context.beginPath(); }
 
@@ -116,7 +116,7 @@ CRp.drawBarrelPath = function(
     context.quadraticCurveTo( xBegin + ctrlPtXOffset, yEnd, xBegin + wOffset, yEnd );
 
     context.lineTo( xEnd - wOffset, yEnd );
-    context.quadraticCurveTo( xEnd - ctrlPtXOffset, yEnd, xEnd, yEnd - hOffset )
+    context.quadraticCurveTo( xEnd - ctrlPtXOffset, yEnd, xEnd, yEnd - hOffset );
 
     context.lineTo( xEnd, yBegin + hOffset );
     context.quadraticCurveTo( xEnd - ctrlPtXOffset, yBegin, xEnd -  wOffset, yBegin );

@@ -30,7 +30,7 @@ Feature request
 <!-- What does the bug do? -->
 
 
-**Desired behavior**
+**Desired behaviour**
 
 <!-- What do you expect Cytoscape.js to do instead? -->
 

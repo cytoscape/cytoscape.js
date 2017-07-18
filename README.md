@@ -1,5 +1,6 @@
 # Cytoscape.js
 
+[![DOI](https://zenodo.org/badge/2255947.svg)](https://zenodo.org/badge/latestdoi/2255947)
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg?maxAge=1)](https://raw.githubusercontent.com/cytoscape/cytoscape.js/master/LICENSE)
 [![npm](https://img.shields.io/npm/v/cytoscape.svg?maxAge=1)](https://www.npmjs.com/package/cytoscape)
 [![npm installs](https://img.shields.io/npm/dm/cytoscape.svg?maxAge=1&label=npm%20installs)](https://www.npmjs.com/package/cytoscape)
@@ -110,6 +111,7 @@ Run `gulp <target>` in the console.  The main targets are:
  1. Confirm all tests passing: `gulp test`
  1. Test the docs and demos with the latest code: `gulp docspub`
  1. Build and publish the release: `gulp publish`
+ 1. [Create a release](https://github.com/cytoscape/cytoscape.js/releases/new) for Zenodo from the latest tag
 
 
 

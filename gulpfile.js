@@ -25,7 +25,6 @@ process.on('SIGINT', function() {
 
 var benchmarkVersion = require('./benchmark/old-version.json'); // old version to test against for benchmarks
 var benchmarkVersionUrl = 'https://raw.githubusercontent.com/cytoscape/cytoscape.js/v' + benchmarkVersion + '/dist/cytoscape.js';
-// var benchmarkVersionUrl = 'https://raw.githubusercontent.com/alexcli/cytest/master/cytoscape.js';
 
 var version; // used for marking builds w/ version etc
 

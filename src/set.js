@@ -1,45 +1,47 @@
 /* global Set */
 
-function ObjectSet( iterable ){
-  this._obj = {};
+class ObjectSet {
+  constructor( iterable ){
+    this._obj = {};
 
-  for( let val of iterable ){
-    this.add( val );
+    if( iterable != null ){
+      for( let val of iterable ){
+        this.add( val );
+      }
+    }
+  }
+
+  add( val ){
+    this._obj[ val ] = 1;
+  }
+
+  delete( val ){
+    this._obj[ val ] = 0;
+  }
+
+  clear(){
+    this._obj = {};
+  }
+
+  has( val ){
+    return this._obj[ val ] === 1;
+  }
+
+  values(){
+    return Object.keys( this._obj ).filter( key => this.has(key) );
+  }
+
+  entries(){
+    return this.values.map( val => [ val, val ] );
+  }
+
+  size(){
+    return this.values().length;
+  }
+
+  forEach( callback, thisArg ){
+    return this.values().forEach( callback, thisArg );
   }
 }
-
-let p = ObjectSet.prototype;
-
-p.add = function( val ){
-  this._obj[ val ] = 1;
-};
-
-p.delete = function( val ){
-  this._obj[ val ] = 0;
-};
-
-p.has = function( val ){
-  return this._obj[ val ] === 1;
-};
-
-p.values = function(){
-  return Object.keys( this._obj ).filter( key => this.has(key) );
-};
-
-p.entries = function(){
-  return this.values.map( val => [ val, val ] );
-};
-
-p.size = function(){
-  return this.values().length;
-};
-
-p.clear = function(){
-  this.values().forEach( val => this.delete(val) );
-};
-
-p.forEach = function( callback, thisArg ){
-  return this.values().forEach( callback, thisArg );
-};
 
 module.exports = typeof Set !== 'undefined' ? Set : ObjectSet;

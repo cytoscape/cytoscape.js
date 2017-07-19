@@ -35,8 +35,8 @@ let elesfn = ({
       // check if ele has classes outside of those passed
       if( !changedEle ){
         for( let eleCls of eleClasses ){
+
           let specdClass = classesMap.has(eleCls);
-          
           if( !specdClass ){
             changedEle = true;
             break;

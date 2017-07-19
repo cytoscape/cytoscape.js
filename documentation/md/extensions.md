@@ -22,6 +22,7 @@ The extensions below are a curated list.  To add your extension, [please submit 
 
  * <i class="fa fa-fw fa-user"></i> [`automove`](https://github.com/cytoscape/cytoscape.js-automove) : Automatically update node positions based on specified rules (e.g. synching node movements, constraining movements, etc.)
  * <i class="fa fa-fw fa-user"></i> [`autopan-on-drag`](https://github.com/iVis-at-Bilkent/cytoscape.js-autopan-on-drag) : Automatically pan the viewport when nodes are dragged outside of the viewport bounds.
+ * <i class="fa fa-fw fa-users"></i> [`canvas`](https://github.com/classcraft/cytoscape.js-canvas) : An extension to create a canvas over or under a Cytoscape graph. Useful for customizing nodes/edges, drawing backgrounds, etc.
  * <i class="fa fa-fw fa-users"></i> [`cerebralweb`](https://github.com/silviafrias/cerebral-web) : Enable fast and interactive visualisation of molecular interaction networks stratified based on subcellular localisation or other custom annotation.
  * <i class="fa fa-fw fa-user"></i> [`context-menus`](https://github.com/iVis-at-Bilkent/cytoscape.js-context-menus) : A traditional right click menu
  * <i class="fa fa-fw fa-user"></i> [`cxtmenu`](https://github.com/cytoscape/cytoscape.js-cxtmenu) : A circular context menu that allows for one-swipe commands on the graph.
@@ -46,6 +47,7 @@ The extensions below are a curated list.  To add your extension, [please submit 
  * <i class="fa fa-fw fa-user"></i> [`cola`](https://github.com/cytoscape/cytoscape.js-cola) : The Cola.js physics simulation layout.  Cola makes beautiful layout results, it animates very smoothly, and it has great options for controlling the layout.
  * <i class="fa fa-fw fa-user"></i> [`cose-bilkent`](https://github.com/cytoscape/cytoscape.js-cose-bilkent) : The CoSE layout by Bilkent with enhanced compound node placement.  CoSE Bilkent gives near-perfect end results.  However, it's more expensive than the version of CoSE directly included with Cytoscape.js.
  * <i class="fa fa-fw fa-user"></i> [`dagre`](https://github.com/cytoscape/cytoscape.js-dagre) : The Dagre layout for DAGs and trees.
+ * <i class="fa fa-fw fa-user"></i> [`euler`](https://github.com/cytoscape/cytoscape.js-euler) : Euler is a fast, small file-size, high-quality force-directed (physics simulation) layout.  It is excellent for non-compound graphs, and it has basic support for compound graphs.
  * <i class="fa fa-fw fa-users"></i> [`ngraph.forcelayout`](https://github.com/Nickolasmv/cytoscape-ngraph.forcelayout) : A physics simulation layout that works particularly well on planar graphs.  It is relatively fast.
  * <i class="fa fa-fw fa-users"></i> [`polywas`](https://github.com/monprin/polywas) : A layout for GWAS (genome-wide association study) data illustrating inter-locus relationships.
  * <i class="fa fa-fw fa-user"></i> [`spread`](https://github.com/cytoscape/cytoscape.js-spread) : The speedy Spread physics simulation layout.  It tries to use all the viewport space, but it can be configured to produce a tighter result.  It uses Fruchterman-Reingold initially, and it uses Gansner and North for the spread phase.

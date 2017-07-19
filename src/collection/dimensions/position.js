@@ -1,5 +1,6 @@
 let define = require('../../define');
 let is = require('../../is');
+let math = require('../../math');
 let fn, elesfn;
 
 let beforePositionSet = function( eles, newPos ){
@@ -142,18 +143,12 @@ fn = elesfn = ({
           if( val !== undefined ){ // set one dimension
             ele.position( dim, ( val - pan[ dim ] ) / zoom );
           } else if( rpos !== undefined ){ // set whole position
-            ele.position({
-              x: ( rpos.x - pan.x ) / zoom,
-              y: ( rpos.y - pan.y ) / zoom
-            });
+            ele.position( math.renderedToModelPosition( rpos, zoom, pan ) );
           }
         }
       } else { // getting
         let pos = ele.position();
-        rpos = {
-          x: pos.x * zoom + pan.x,
-          y: pos.y * zoom + pan.y
-        };
+        rpos = math.modelToRenderedPosition( pos, zoom, pan );
 
         if( dim === undefined ){ // then return the whole rendered position
           return rpos;

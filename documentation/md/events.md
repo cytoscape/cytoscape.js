@@ -78,6 +78,7 @@ These events are custom to Cytoscape.js.  You can bind to these events for colle
  * `data` : when an element's data is changed
  * `scratch` : when an element's scratchpad data is changed
  * `style` : when an element's style is changed
+ * `background` : when a node's background image is loaded
 
 
 ## Graph events

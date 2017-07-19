@@ -1,35 +1,70 @@
-## **I'm submitting a:**
-- [ ] Bug report
-- [ ] Feature request
-- [ ] *Requests for help should be directed to [Stack Overflow](http://stackoverflow.com/questions/tagged/cytoscape.js) or [Gitter](https://gitter.im/cytoscape/cytoscape.js)*
+**Issue type**
 
---------------------
-
-## Bug reports
+<!-- 
+Are you submitting a bug report or a feature request?
 
 When submitting a bug report, check the following:
-- [ ] Report has a descriptive title
-- [ ] Bug still exists in most recent Cy.js version
+- The report has a descriptive title.
+- The bug still exists in most recent version of the library.
 
-### Environment info
-- [ ] Browser and version:
-  - [ ] Node version (if running headless):
-- [ ] Cytoscape.js version:
+A request for help or a requests for a how-to should be directed to Stack Overflow:
+http://stackoverflow.com/questions/tagged/cytoscape.js 
+-->
 
-### Current behavior
+<!-- Delete one option -->
+Bug report
+Feature request 
+
+
+
+
+<!-- BUG REPORT : Delete if requesting a feature -->
+
+**Environment info**
+
+- Cytoscape.js version : 
+- Browser/Node.js & version : 
+
+**Current (buggy) behaviour**
+
 <!-- What does the bug do? -->
 
-### Desired behavior
+
+**Desired behaviour**
+
 <!-- What do you expect Cytoscape.js to do instead? -->
 
-### Minimum steps to reproduce
-<!-- Repos that can be cloned to reproduce bug or a link to a JSBin/ CodePen/ JSFiddle are appreciated!  It helps to address your issue faster. -->
 
---------------------
+**Minimum steps to reproduce**
 
-## Feature requests
+<!-- 
+Write out an overview of what you need to do to reproduce the issue.
 
-### Description of new feature
+Fork/clone this JSBin demo and reproduce your issue so that your issue can be addressed quickly:
+http://jsbin.com/teworah
 
-### Motivation for new feature
-<!-- Describe your use case for this new feature -->
+If your code to reproduce is only two or three lines, you can write it in the issue instead.  Format your code in backtick code blocks like this:
+
+```js
+my.code();
+```
+-->
+
+<!-- END BUG REPORT -->
+
+
+
+
+<!-- FEATURE REQUEST : Delete if reporting a bug -->
+
+**Description of new feature**
+
+<!-- What should the new feature do?  For visual features, include an image/mockup of the expected output. -->
+
+
+**Motivation for new feature**
+
+<!-- Describe your use case for this new feature. -->
+
+
+<!-- END FEATURE REQUEST -->

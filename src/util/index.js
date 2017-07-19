@@ -86,7 +86,7 @@ util.extend = Object.assign != null ? Object.assign.bind( Object ) : function( t
   for( let i = 1; i < args.length; i++ ){
     let obj = args[ i ];
 
-    if( !obj ){ continue; }
+    if( obj == null ){ continue; }
 
     let keys = Object.keys( obj );
 

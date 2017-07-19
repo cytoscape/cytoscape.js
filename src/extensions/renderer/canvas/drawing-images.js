@@ -11,7 +11,7 @@ CRp.safeDrawImage = function( context, img, ix, iy, iw, ih, x, y, w, h ){
   context.drawImage( img, ix, iy, iw, ih, x, y, w, h );
 };
 
-CRp.drawInscribedImage = function( context, img, node, index ){
+CRp.drawInscribedImage = function( context, img, node, index, nodeOpacity ){
   var r = this;
   var pos = node.position();
   var nodeX = pos.x;
@@ -28,7 +28,7 @@ CRp.drawInscribedImage = function( context, img, node, index ){
   var rs = node._private.rscratch;
   var clip = node.pstyle( 'background-clip' ).value;
   var shouldClip = clip === 'node';
-  var imgOpacity = getIndexedStyle( node, 'background-image-opacity', 'value', index );
+  var imgOpacity = getIndexedStyle( node, 'background-image-opacity', 'value', index ) * nodeOpacity;
 
   var imgW = img.width || img.cachedW;
   var imgH = img.height || img.cachedH;

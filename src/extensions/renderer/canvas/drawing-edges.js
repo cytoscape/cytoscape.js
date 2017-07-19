@@ -1,8 +1,9 @@
-var CRp = {};
+let CRp = {};
 
-CRp.drawEdge = function( context, edge, shiftToOriginWithBb, drawLabel, drawOverlayInstead ){
-  var rs = edge._private.rscratch;
-  var usePaths = this.usePaths();
+CRp.drawEdge = function( context, edge, shiftToOriginWithBb, drawLabel ){
+  let r = this;
+  let rs = edge._private.rscratch;
+  let usePaths = r.usePaths();
 
   // if bezier ctrl pts can not be calculated, then die
   if( rs.badLine || isNaN(rs.allpts[0]) ){ // isNaN in case edge is impossible and browser bugs (e.g. safari)
@@ -11,60 +12,85 @@ CRp.drawEdge = function( context, edge, shiftToOriginWithBb, drawLabel, drawOver
 
   if( !edge.visible() ){ return; }
 
-  var bb;
+  let bb;
   if( shiftToOriginWithBb ){
     bb = shiftToOriginWithBb;
 
     context.translate( -bb.x1, -bb.y1 );
   }
 
-  var overlayPadding = edge.pstyle( 'overlay-padding' ).pfValue;
-  var overlayOpacity = edge.pstyle( 'overlay-opacity' ).value;
-  var overlayColor = edge.pstyle( 'overlay-color' ).value;
+  let overlayPadding = edge.pstyle('overlay-padding').pfValue;
+  let overlayWidth = 2 * overlayPadding;
+  let overlayOpacity = edge.pstyle('overlay-opacity').value;
+  let overlayColor = edge.pstyle('overlay-color').value;
+  let lineColor = edge.pstyle('line-color').value;
+  let opacity = edge.pstyle('opacity').value;
+  let lineStyle = edge.pstyle('line-style').value;
+  let edgeWidth = edge.pstyle('width').pfValue;
 
-  // Edge color & opacity
-  if( drawOverlayInstead ){
-
-    if( overlayOpacity === 0 ){ // exit early if no overlay
-      return;
-    }
-
-    this.strokeStyle( context, overlayColor[0], overlayColor[1], overlayColor[2], overlayOpacity );
-    context.lineCap = 'round';
-
-    if( rs.edgeType == 'self' && !usePaths ){
-      context.lineCap = 'butt';
-    }
-
-  } else {
-    var lineColor = edge.pstyle( 'line-color' ).value;
-
-    this.strokeStyle( context, lineColor[0], lineColor[1], lineColor[2], edge.pstyle( 'opacity' ).value );
-
+  let drawLine = ( strokeOpacity = opacity ) => {
+    context.lineWidth = edgeWidth;
     context.lineCap = 'butt';
-  }
+
+    r.strokeStyle( context, lineColor[0], lineColor[1], lineColor[2], strokeOpacity );
+
+    r.drawEdgePath(
+      edge,
+      context,
+      rs.allpts,
+      lineStyle
+    );
+  };
+
+  let drawOverlay = ( strokeOpacity = overlayOpacity ) => {
+    context.lineWidth = overlayWidth;
+
+    if( rs.edgeType === 'self' && !usePaths ){
+      context.lineCap = 'butt';
+    } else {
+      context.lineCap = 'round';
+    }
+
+    r.strokeStyle( context, overlayColor[0], overlayColor[1], overlayColor[2], strokeOpacity );
+
+    r.drawEdgePath(
+      edge,
+      context,
+      rs.allpts,
+      'solid'
+    );
+  };
+
+  let drawArrows = ( arrowOpacity = opacity ) => {
+    r.drawArrowheads( context, edge, arrowOpacity );
+  };
+
+  let drawText = () => {
+    r.drawElementText( context, edge, drawLabel );
+  };
 
   context.lineJoin = 'round';
 
-  var edgeWidth = edge.pstyle( 'width' ).pfValue + (drawOverlayInstead ? 2 * overlayPadding : 0);
-  var lineStyle = drawOverlayInstead ? 'solid' : edge.pstyle( 'line-style' ).value;
-  context.lineWidth = edgeWidth;
+  let ghost = edge.pstyle('ghost').value === 'yes';
 
-  this.drawEdgePath(
-    edge,
-    context,
-    rs.allpts,
-    lineStyle,
-    edgeWidth
-  );
+  if( ghost ){
+    let gx = edge.pstyle('ghost-offset-x').pfValue;
+    let gy = edge.pstyle('ghost-offset-y').pfValue;
+    let ghostOpacity = edge.pstyle('ghost-opacity').value;
+    let effectiveGhostOpacity = opacity * ghostOpacity;
 
-  this.drawArrowheads( context, edge, drawOverlayInstead );
+    context.translate( gx, gy );
 
-  if( !drawOverlayInstead ){
-    this.drawEdge( context, edge, false, drawLabel, true );
+    drawLine( effectiveGhostOpacity );
+    drawArrows( effectiveGhostOpacity );
+
+    context.translate( -gx, -gy );
   }
 
-  this.drawElementText( context, edge, drawLabel );
+  drawLine();
+  drawArrows();
+  drawOverlay();
+  drawText();
 
   if( shiftToOriginWithBb ){
     context.translate( bb.x1, bb.y1 );
@@ -72,16 +98,16 @@ CRp.drawEdge = function( context, edge, shiftToOriginWithBb, drawLabel, drawOver
 };
 
 
-CRp.drawEdgePath = function( edge, context, pts, type, width ){
-  var rs = edge._private.rscratch;
-  var canvasCxt = context;
-  var path;
-  var pathCacheHit = false;
-  var usePaths = this.usePaths();
+CRp.drawEdgePath = function( edge, context, pts, type ){
+  let rs = edge._private.rscratch;
+  let canvasCxt = context;
+  let path;
+  let pathCacheHit = false;
+  let usePaths = this.usePaths();
 
   if( usePaths ){
-    var pathCacheKey = pts.join( '$' );
-    var keyMatches = rs.pathCacheKey && rs.pathCacheKey === pathCacheKey;
+    let pathCacheKey = pts.join( '$' );
+    let keyMatches = rs.pathCacheKey && rs.pathCacheKey === pathCacheKey;
 
     if( keyMatches ){
       path = context = rs.pathCache;
@@ -118,7 +144,7 @@ CRp.drawEdgePath = function( edge, context, pts, type, width ){
       case 'self':
       case 'compound':
       case 'multibezier':
-        for( var i = 2; i + 3 < pts.length; i += 4 ){
+        for( let i = 2; i + 3 < pts.length; i += 4 ){
           context.quadraticCurveTo( pts[ i ], pts[ i + 1], pts[ i + 2], pts[ i + 3] );
         }
         break;
@@ -126,7 +152,7 @@ CRp.drawEdgePath = function( edge, context, pts, type, width ){
       case 'straight':
       case 'segments':
       case 'haystack':
-        for( var i = 2; i + 1 < pts.length; i += 2 ){
+        for( let i = 2; i + 1 < pts.length; i += 2 ){
           context.lineTo( pts[ i ], pts[ i + 1] );
         }
         break;
@@ -147,40 +173,42 @@ CRp.drawEdgePath = function( edge, context, pts, type, width ){
 
 };
 
-CRp.drawArrowheads = function( context, edge, drawOverlayInstead ){
-  if( drawOverlayInstead ){ return; } // don't do anything for overlays
-
-  var rs = edge._private.rscratch;
-  var isHaystack = rs.edgeType === 'haystack';
+CRp.drawArrowheads = function( context, edge, opacity ){
+  let rs = edge._private.rscratch;
+  let isHaystack = rs.edgeType === 'haystack';
 
   if( !isHaystack ){
-    this.drawArrowhead( context, edge, 'source', rs.arrowStartX, rs.arrowStartY, rs.srcArrowAngle );
+    this.drawArrowhead( context, edge, 'source', rs.arrowStartX, rs.arrowStartY, rs.srcArrowAngle, opacity );
   }
 
-  this.drawArrowhead( context, edge, 'mid-target', rs.midX, rs.midY, rs.midtgtArrowAngle );
+  this.drawArrowhead( context, edge, 'mid-target', rs.midX, rs.midY, rs.midtgtArrowAngle, opacity );
 
-  this.drawArrowhead( context, edge, 'mid-source', rs.midX, rs.midY, rs.midsrcArrowAngle );
+  this.drawArrowhead( context, edge, 'mid-source', rs.midX, rs.midY, rs.midsrcArrowAngle, opacity );
 
   if( !isHaystack ){
-    this.drawArrowhead( context, edge, 'target', rs.arrowEndX, rs.arrowEndY, rs.tgtArrowAngle );
+    this.drawArrowhead( context, edge, 'target', rs.arrowEndX, rs.arrowEndY, rs.tgtArrowAngle, opacity );
   }
 };
 
-CRp.drawArrowhead = function( context, edge, prefix, x, y, angle ){
+CRp.drawArrowhead = function( context, edge, prefix, x, y, angle, opacity ){
   if( isNaN( x ) || x == null || isNaN( y ) || y == null || isNaN( angle ) || angle == null ){ return; }
 
-  var self = this;
-  var arrowShape = edge.pstyle( prefix + '-arrow-shape' ).value;
+  let self = this;
+  let arrowShape = edge.pstyle( prefix + '-arrow-shape' ).value;
   if( arrowShape === 'none' ) { return; }
 
-  var arrowClearFill = edge.pstyle( prefix + '-arrow-fill' ).value === 'hollow' ? 'both' : 'filled';
-  var arrowFill = edge.pstyle( prefix + '-arrow-fill' ).value;
-  var edgeWidth = edge.pstyle( 'width' ).pfValue;
-  var opacity = edge.pstyle( 'opacity' ).value;
+  let arrowClearFill = edge.pstyle( prefix + '-arrow-fill' ).value === 'hollow' ? 'both' : 'filled';
+  let arrowFill = edge.pstyle( prefix + '-arrow-fill' ).value;
+  let edgeWidth = edge.pstyle( 'width' ).pfValue;
+  let edgeOpacity = edge.pstyle( 'opacity' ).value;
 
-  var gco = context.globalCompositeOperation;
+  if( opacity === undefined ){
+    opacity = edgeOpacity;
+  }
 
-  var shapeImpl = self.arrowShapes[ arrowShape ];
+  let gco = context.globalCompositeOperation;
+
+  let shapeImpl = self.arrowShapes[ arrowShape ];
 
   // check if the shape needs both fill and stroke operations to be drawn
   if( shapeImpl.forceStroke && arrowFill === 'filled' ){
@@ -200,7 +228,7 @@ CRp.drawArrowhead = function( context, edge, prefix, x, y, angle ){
     context.globalCompositeOperation = gco;
   } // otherwise, the opaque arrow clears it for free :)
 
-  var color = edge.pstyle( prefix + '-arrow-color' ).value;
+  let color = edge.pstyle( prefix + '-arrow-color' ).value;
   self.fillStyle( context, color[0], color[1], color[2], opacity );
   self.strokeStyle( context, color[0], color[1], color[2], opacity );
 
@@ -210,23 +238,23 @@ CRp.drawArrowhead = function( context, edge, prefix, x, y, angle ){
 };
 
 CRp.drawArrowShape = function( edge, arrowType, context, fill, edgeWidth, shape, x, y, angle ){
-  var r = this;
-  var usePaths = this.usePaths();
-  var rs = edge._private.rscratch;
-  var pathCacheHit = false;
-  var path;
-  var canvasContext = context;
-  var translation = { x: x, y: y };
-  var scale = edge.pstyle( 'arrow-scale' ).value;
-  var size = this.getArrowWidth( edgeWidth, scale );
-  var shapeImpl = r.arrowShapes[ shape ];
+  let r = this;
+  let usePaths = this.usePaths();
+  let rs = edge._private.rscratch;
+  let pathCacheHit = false;
+  let path;
+  let canvasContext = context;
+  let translation = { x: x, y: y };
+  let scale = edge.pstyle( 'arrow-scale' ).value;
+  let size = this.getArrowWidth( edgeWidth, scale );
+  let shapeImpl = r.arrowShapes[ shape ];
 
   if( usePaths ){
-    var pathCacheKey = size + '$' + shape + '$' + angle + '$' + x + '$' + y;
+    let pathCacheKey = size + '$' + shape + '$' + angle + '$' + x + '$' + y;
     rs.arrowPathCacheKey = rs.arrowPathCacheKey || {};
     rs.arrowPathCache = rs.arrowPathCache || {};
 
-    var alreadyCached = rs.arrowPathCacheKey[ arrowType ] === pathCacheKey;
+    let alreadyCached = rs.arrowPathCacheKey[ arrowType ] === pathCacheKey;
     if( alreadyCached ){
       path = context = rs.arrowPathCache[ arrowType ];
       pathCacheHit = true;

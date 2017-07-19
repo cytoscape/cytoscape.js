@@ -685,7 +685,15 @@
                       "name": "options",
                       "descr": "An object containing the details of the animation.",
                       "fields": [
-                        { "name": "zoom", "descr": "A zoom level to which the graph will be animated." },
+                        {
+                          "name": "zoom",
+                          "descr": "A zoom level (number) or a zoom configuration object to which the graph will be animated.",
+                          "fields": [
+                            { "name": "level", "descr": "The zoom level to use." },
+                            { "name": "position", "descr": "The position about which zooming occurs.  This automatically modifies the pan such that the specified model position remains at the same position in the viewport extent during zooming." },
+                            { "name": "renderedPosition", "descr": "The rendered position about which zooming occurs, as an alternative to using the model position.  This automatically modifies the pan such that the model position, corresponding to the rendered position at the start of the animation, remains at the same position in the viewport extent during zooming." }
+                          ]
+                        },
                         { "name": "pan", "descr": "A panning position to which the graph will be animated." },
                         { "name": "panBy", "descr": "A relative panning position to which the graph will be animated." },
                         {
@@ -726,7 +734,15 @@
                       "name": "options",
                       "descr": "An object containing the details of the animation.",
                       "fields": [
-                        { "name": "zoom", "descr": "A zoom level to which the graph will be animated." },
+                        {
+                          "name": "zoom",
+                          "descr": "A zoom level (number) or a zoom configuration object to which the graph will be animated.",
+                          "fields": [
+                            { "name": "level", "descr": "The zoom level to use." },
+                            { "name": "position", "descr": "The position about which zooming occurs.  This automatically modifies the pan such that the specified model position remains at the same position in the viewport extent during zooming." },
+                            { "name": "renderedPosition", "descr": "The rendered position about which zooming occurs, as an alternative to using the model position.  This automatically modifies the pan such that the model position, corresponding to the rendered position at the start of the animation, remains at the same position in the viewport extent during zooming." }
+                          ]
+                        },
                         { "name": "pan", "descr": "A panning position to which the graph will be animated." },
                         { "name": "panBy", "descr": "A relative panning position to which the graph will be animated." },
                         {

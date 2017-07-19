@@ -281,15 +281,8 @@ gulp.task('docs-js', ['version', 'build-min'], function(){
 });
 
 gulp.task('docs', function(next){
-  var cwd = process.cwd();
-
-  process.chdir('./documentation');
-  require('./documentation/docmaker')( function(){
-    process.chdir( cwd );
-
-    next();
-  } );
-
+  require('./documentation/docmaker');
+  next();
 });
 
 gulp.task('docs-min', function(next){

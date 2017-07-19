@@ -1,5 +1,6 @@
-let is = require( '../is' );
-let window = require( '../window' );
+let is = require('../is');
+let window = require('../window');
+let math = require('../math');
 
 let corefn = ({
 
@@ -145,7 +146,7 @@ let corefn = ({
     return this; // chaining
   },
 
-  panBy: function( params ){
+  panBy: function( arg0, arg1 ){
     let args = arguments;
     let pan = this._private.pan;
     let dim, val, dims, x, y;
@@ -157,7 +158,7 @@ let corefn = ({
     switch( args.length ){
     case 1:
 
-      if( is.plainObject( args[0] ) ){ // .panBy({ x: 0, y: 100 })
+      if( is.plainObject( arg0 ) ){ // .panBy({ x: 0, y: 100 })
         dims = args[0];
         x = dims.x;
         y = dims.y;
@@ -175,8 +176,8 @@ let corefn = ({
       break;
 
     case 2: // .panBy('x', 100)
-      dim = args[0];
-      val = args[1];
+      dim = arg0;
+      val = arg1;
 
       if( (dim === 'x' || dim === 'y') && is.number( val ) ){
         pan[ dim ] += val;
@@ -294,52 +295,47 @@ let corefn = ({
     return this;
   },
 
-  zoom: function( params ){
+  getZoomedViewport: function( params ){
+    let _p = this._private;
+    let currentPan = _p.pan;
+    let currentZoom = _p.zoom;
     let pos; // in rendered px
     let zoom;
+    let bail = false;
 
-    if( params === undefined ){ // then get the zoom
-      return this._private.zoom;
+    if( !_p.zoomingEnabled ){ // zooming disabled
+      bail = true;
+    }
 
-    } else if( is.number( params ) ){ // then set the zoom
+    if( is.number( params ) ){ // then set the zoom
       zoom = params;
 
     } else if( is.plainObject( params ) ){ // then zoom about a point
       zoom = params.level;
 
-      if( params.position ){
-        let p = params.position;
-        let pan = this._private.pan;
-        let z = this._private.zoom;
-
-        pos = { // convert to rendered px
-          x: p.x * z + pan.x,
-          y: p.y * z + pan.y
-        };
-      } else if( params.renderedPosition ){
+      if( params.position != null ){
+        pos = math.modelToRenderedPosition( params.position, currentZoom, currentPan );
+      } else if( params.renderedPosition != null ){
         pos = params.renderedPosition;
       }
 
-      if( pos && !this._private.panningEnabled ){
-        return this; // panning disabled
+      if( pos != null && !_p.panningEnabled ){ // panning disabled
+        bail = true;
       }
     }
 
-    if( !this._private.zoomingEnabled ){
-      return this; // zooming disabled
-    }
-
-    if( !is.number( zoom ) || ( pos && (!is.number( pos.x ) || !is.number( pos.y )) ) ){
-      return this; // can't zoom with invalid params
-    }
-
     // crop zoom
-    zoom = zoom > this._private.maxZoom ? this._private.maxZoom : zoom;
-    zoom = zoom < this._private.minZoom ? this._private.minZoom : zoom;
+    zoom = zoom > _p.maxZoom ? _p.maxZoom : zoom;
+    zoom = zoom < _p.minZoom ? _p.minZoom : zoom;
 
-    if( pos ){ // set zoom about position
-      let pan1 = this._private.pan;
-      let zoom1 = this._private.zoom;
+    // can't zoom with invalid params
+    if( bail || !is.number( zoom ) || zoom === currentZoom || ( pos != null && (!is.number( pos.x ) || !is.number( pos.y )) ) ){
+      return null;
+    }
+
+    if( pos != null ){ // set zoom about position
+      let pan1 = currentPan;
+      let zoom1 = currentZoom;
       let zoom2 = zoom;
 
       let pan2 = {
@@ -347,22 +343,47 @@ let corefn = ({
         y: -zoom2 / zoom1 * (pos.y - pan1.y) + pos.y
       };
 
-      this._private.zoom = zoom;
-      this._private.pan = pan2;
-
-      let posChanged = pan1.x !== pan2.x || pan1.y !== pan2.y;
-      this.emit( ' zoom ' + (posChanged ? ' pan ' : '') + ' viewport ' );
+      return {
+        zoomed: true,
+        panned: true,
+        zoom: zoom2,
+        pan: pan2
+      };
 
     } else { // just set the zoom
-      this._private.zoom = zoom;
-      this.emit( 'zoom viewport' );
+      return {
+        zoomed: true,
+        panned: false,
+        zoom: zoom,
+        pan: currentPan
+      };
     }
+  },
 
-    this.notify( { // notify the renderer that the viewport changed
-      type: 'viewport'
-    } );
+  zoom: function( params ){
+    if( params === undefined ){ // get
+      return this._private.zoom;
+    } else { // set
+      let vp = this.getZoomedViewport( params );
+      let _p = this._private;
 
-    return this; // chaining
+      if( vp == null || !vp.zoomed ){ return this; }
+
+      _p.zoom = vp.zoom;
+
+      if( vp.panned ){
+        _p.pan.x = vp.pan.x;
+        _p.pan.y = vp.pan.y;
+      }
+
+      this.emit( 'zoom' + ( vp.panned ? ' pan' : '' ) + ' viewport' );
+
+      this.notify( { // notify the renderer that the viewport changed
+        type: 'viewport'
+      } );
+
+      return this; // chaining
+    }
   },
 
   viewport: function( opts ){

@@ -266,6 +266,12 @@ let styfn = {};
     { name: 'source-distance-from-node', type: t.size },
     { name: 'target-distance-from-node', type: t.size },
 
+    // ghost properties
+    { name: 'ghost', type: t.bool },
+    { name: 'ghost-offset-x', type: t.bidirectionalSize },
+    { name: 'ghost-offset-y', type: t.bidirectionalSize },
+    { name: 'ghost-opacity', type: t.zeroOneNumber },
+
     // these are just for the core
     { name: 'selection-box-color', type: t.color },
     { name: 'selection-box-opacity', type: t.zeroOneNumber },
@@ -427,6 +433,12 @@ styfn.getDefaultProperties = util.memoize( function(){
     'width': 30,
     'shape': 'ellipse',
     'shape-polygon-points': '-1, -1,   1, -1,   1, 1,   -1, 1',
+
+    // ghost props
+    'ghost': 'no',
+    'ghost-offset-y': 0,
+    'ghost-offset-x': 0,
+    'ghost-opacity': 0,
 
     // compound props
     'padding': 0,

@@ -34,6 +34,9 @@
   * [Agile Protein Interactomes DataServer](http://apid.dep.usal.es/)
   * [Aras](http://www.aras.com/)
   * [Avenue](https://avenue-2p0.herokuapp.com/)
+  * [Ben-Gurion University of the Negev](http://bgu.ac.il/)
+   * [DiffNet](http://netbio.bgu.ac.il/diffnet/)
+   * [TissueNet](http://netbio.bgu.ac.il/tissuenet)
   * [BioGRID](http://thebiogrid.org/)
   * [BS CytoGraph](www.brettjsettle.site/graph)
   * [Cray Inc.](http://www.cray.com)
@@ -62,6 +65,7 @@
   * [Threat Crowd](https://www.threatcrowd.org/)
   * [Trace](https://trace.risingstack.com/)
   * [University of Cambridge](http://www.cam.ac.uk/) : [Intermine](http://intermine.org/)
+  * [University of Leipzig, Institute for Medical Informatics, Statistics and Epidemiology (IMISE)](http://www.imise.uni-leipzig.de/en) : [Visualisation of the ontology of Information Management in hospitals](http://www.snik.eu/graph/) for the [SNIK research project](http://www.snik.eu/)
   * [University of Southern California, San Diego](http://www.ucsd.edu/) : [Visualization of structurally related compounds in Mass Spectrometry with Molecular Networks at GNPS](http://gnps.ucsd.edu/ProteoSAFe/result.jsp?view=network_displayer&componentindex=67&task=c95481f0c53d42e78a61bf899e9f9adb#%7B%7D)
   * [VentureApp](https://www.ventureapp.com/) : VentureMap (e.g. [Boston](https://www.ventureapp.com/map/boston-tech/), [New York](https://www.ventureapp.com/map/nyc-tech/), [Chicago](https://www.ventureapp.com/map/chicago-tech/))
   * [Virginia Tech](http://www.vt.edu/index.html) [T. M. Murali's Research Group](http://bioinformatics.cs.vt.edu/~murali/) : [GraphSpace](http://graphspace.org)
@@ -96,6 +100,7 @@ The library was created at the [Donnelly Centre](http://thedonnellycentre.utoron
 ## Releases
 
 - 3.1
+ - [3.1.4](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.1.4+is%3Aclosed)
  - [3.1.3](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.1.3+is%3Aclosed)
  - [3.1.2](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.1.2+is%3Aclosed)
  - [3.1.1](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.1.1+is%3Aclosed)

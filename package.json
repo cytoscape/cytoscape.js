@@ -135,6 +135,7 @@
     "first": "images"
   },
   "dependencies": {
+    "bluebird": "^3.5.0",
     "gulp-download": "0.0.1",
     "heap": "^0.2.6",
     "lodash.debounce": "^4.0.8"

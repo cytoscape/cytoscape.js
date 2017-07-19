@@ -471,6 +471,15 @@ These properties allow for the creation of overlays on top of nodes or edges, an
  * **`overlay-padding`** : The area outside of the element within which the overlay is shown.
  * **`overlay-opacity`** : The opacity of the overlay.
 
+## Ghost
+
+The ghost properties allow for creating a ghosting effect, a semitransparent duplicate of the element drawn at an offset.
+
+ * **`ghost`** : Whether to use the ghost effect; may be `yes` or `no`.
+ * **`ghost-offset-x`** : The horizontal offset used to position the ghost effect.
+ * **`ghost-offset-y`** : The vertical offset used to position the ghost effect.
+ * **`ghost-opacity`** : The opacity of the ghost effect.
+
 ## Transition animation
 
  * **`transition-property`** : A comma separated list of style properties to animate in this state.

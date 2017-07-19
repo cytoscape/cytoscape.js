@@ -15,6 +15,7 @@ let elesfn = ({
       let eleClasses = _p.classes;
       let changedEle = false;
 
+      // check if ele has all of the passed classes
       for( let cls of classesMap ){
         let eleHasClass = eleClasses.has(cls);
 

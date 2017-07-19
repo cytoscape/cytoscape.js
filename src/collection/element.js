@@ -54,7 +54,7 @@ let Element = function( cy, params, restore ){
     grabbed: false, // whether the element is grabbed by the mouse; renderer sets this privately
     grabbable: params.grabbable === undefined ? true : ( params.grabbable ? true : false ), // whether the element can be grabbed
     active: false, // whether the element is active from user interaction
-    classes: {}, // map ( className => true )
+    classes: new Set(), // map ( className => true )
     animation: { // object for currently-running animations
       current: [],
       queue: []
@@ -85,7 +85,7 @@ let Element = function( cy, params, restore ){
       let cls = classes[ i ];
       if( !cls || cls === '' ){ continue; }
 
-      _p.classes[ cls ] = true;
+      _p.classes.add(cls)
     }
   }
 

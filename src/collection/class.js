@@ -1,17 +1,18 @@
 let util = require( '../util' );
+let Set = require('../set');
 
 let elesfn = ({
   classes: function( classes ){
     classes = ( classes || '' ).match( /\S+/g ) || [];
     let self = this;
     let changed = [];
-    let classesMap = {};
+    let classesMap = new Set();
 
     // fill in classes map
     for( let i = 0; i < classes.length; i++ ){
       let cls = classes[ i ];
 
-      classesMap[ cls ] = true;
+      classesMap.add(cls);
     }
 
     // check and update each ele
@@ -22,9 +23,8 @@ let elesfn = ({
       let changedEle = false;
 
       // check if ele has all of the passed classes
-      for( let i = 0; i < classes.length; i++ ){
-        let cls = classes[ i ];
-        let eleHasClass = eleClasses[ cls ];
+      for( let cls of classesMap ){
+        let eleHasClass = eleClasses.has(cls);
 
         if( !eleHasClass ){
           changedEle = true;
@@ -34,14 +34,10 @@ let elesfn = ({
 
       // check if ele has classes outside of those passed
       if( !changedEle ){
-        let classes = Object.keys( eleClasses );
+        for( let eleCls of eleClasses ){
 
-        for( let i = 0; i < classes.length; i++ ){
-          let eleCls = classes[i];
-          let eleHasClass = eleClasses[ eleCls ];
-          let specdClass = classesMap[ eleCls ]; // i.e. this class is passed to the function
-
-          if( eleHasClass && !specdClass ){
+          let specdClass = classesMap.has(eleCls);
+          if( !specdClass ){
             changedEle = true;
             break;
           }
@@ -49,7 +45,7 @@ let elesfn = ({
       }
 
       if( changedEle ){
-        _p.classes = util.copy( classesMap );
+        _p.classes = new Set( classesMap.values() );
 
         changed.push( ele );
       }
@@ -72,7 +68,7 @@ let elesfn = ({
 
   hasClass: function( className ){
     let ele = this[0];
-    return ( ele != null && ele._private.classes[ className ] ) ? true : false;
+    return ( ele != null && ele._private.classes.has(className) );
   },
 
   toggleClass: function( classesStr, toggle ){
@@ -87,18 +83,18 @@ let elesfn = ({
       for( let j = 0; j < classes.length; j++ ){
         let cls = classes[ j ];
         let eleClasses = ele._private.classes;
-        let hasClass = eleClasses[ cls ];
+        let hasClass = eleClasses.has(cls);
         let shouldAdd = toggle || (toggle === undefined && !hasClass);
 
         if( shouldAdd ){
-          eleClasses[ cls ] = true;
+          eleClasses.add(cls);
 
           if( !hasClass && !changedEle ){
             changed.push( ele );
             changedEle = true;
           }
         } else { // then remove
-          eleClasses[ cls ] = false;
+          eleClasses.delete(cls);
 
           if( hasClass && !changedEle ){
             changed.push( ele );

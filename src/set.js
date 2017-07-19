@@ -14,7 +14,7 @@ p.add = function( val ){
   this._obj[ val ] = 1;
 };
 
-p.remove = function( val ){
+p.delete = function( val ){
   this._obj[ val ] = 0;
 };
 
@@ -35,7 +35,7 @@ p.size = function(){
 };
 
 p.clear = function(){
-  this.values().forEach( val => this.remove(val) );
+  this.values().forEach( val => this.delete(val) );
 };
 
 p.forEach = function( callback, thisArg ){

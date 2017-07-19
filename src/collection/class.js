@@ -1,4 +1,5 @@
 let util = require( '../util' );
+let Set = require('../set');
 
 let elesfn = ({
   classes: function( classes ){
@@ -34,8 +35,8 @@ let elesfn = ({
       // check if ele has classes outside of those passed
       if( !changedEle ){
         for( let eleCls of eleClasses ){
-
           let specdClass = classesMap.has(eleCls);
+          
           if( !specdClass ){
             changedEle = true;
             break;
@@ -44,7 +45,7 @@ let elesfn = ({
       }
 
       if( changedEle ){
-        _p.classes = util.copy( classesMap );
+        _p.classes = new Set( classesMap.values() );
 
         changed.push( ele );
       }
@@ -67,7 +68,7 @@ let elesfn = ({
 
   hasClass: function( className ){
     let ele = this[0];
-    return ( ele != null && ele._private.classes.has(className) ) ? true : false;
+    return ( ele != null && ele._private.classes.has(className) );
   },
 
   toggleClass: function( classesStr, toggle ){

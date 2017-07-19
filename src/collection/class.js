@@ -6,14 +6,7 @@ let elesfn = ({
     classes = ( classes || '' ).match( /\S+/g ) || [];
     let self = this;
     let changed = [];
-    let classesMap = new Set();
-
-    // fill in classes map
-    for( let i = 0; i < classes.length; i++ ){
-      let cls = classes[ i ];
-
-      classesMap.add(cls);
-    }
+    let classesMap = new Set( classes );
 
     // check and update each ele
     for( let j = 0; j < self.length; j++ ){

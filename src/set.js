@@ -1,4 +1,8 @@
-/* global Set */
+/* global Set, Symbol */
+
+const undef = typeof undefined;
+const iterator = typeof Symbol !== undef ? Symbol.iterator : '@@iterator';
+const ArrayIterator = require('./array-iterator');
 
 class ObjectSet {
   constructor( iterable ){
@@ -27,12 +31,16 @@ class ObjectSet {
     return this._obj[ val ] === 1;
   }
 
-  values(){
+  toArray(){
     return Object.keys( this._obj ).filter( key => this.has(key) );
   }
 
+  values(){
+    return new ArrayIterator( this.toArray() );
+  }
+
   entries(){
-    return this.values.map( val => [ val, val ] );
+    return new ArrayIterator( this.toArray().map( val => [ val, val ] ) );
   }
 
   size(){
@@ -44,4 +52,6 @@ class ObjectSet {
   }
 }
 
-module.exports = typeof Set !== 'undefined' ? Set : ObjectSet;
+ObjectSet.prototype[ iterator ] = ObjectSet.prototype.values;
+
+module.exports = typeof Set !== undef ? Set : ObjectSet;

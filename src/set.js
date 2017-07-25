@@ -4,7 +4,7 @@ const undef = typeof undefined;
 
 class ObjectSet {
   constructor( arrayOrObjectSet ){
-    this._obj = {};
+    this._obj = Object.create(null);
 
     if( arrayOrObjectSet != null ){
       let arr;
@@ -34,7 +34,7 @@ class ObjectSet {
   }
 
   clear(){
-    this._obj = {};
+    this._obj = Object.create(null);
   }
 
   has( val ){

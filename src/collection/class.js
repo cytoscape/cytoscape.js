@@ -38,7 +38,7 @@ let elesfn = ({
       }
 
       if( changedEle ){
-        _p.classes = new Set( classesMap.values() );
+        _p.classes = new Set( classesMap );
 
         changed.push( ele );
       }

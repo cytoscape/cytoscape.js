@@ -1,14 +1,21 @@
 var Suite = require('./suite');
+
+var a;
+
 var suite = new Suite('eles.addClass(); ... eles.removeClass();', {
   setup: function( cytoscape ){
-    return cytoscape({ elements: require('./graphs/gal'), styleEnabled: false });
+    var cy = cytoscape({ elements: require('./graphs/gal'), styleEnabled: false });
+
+    a = cy.nodes();
+
+    return cy
   }
 });
 
 suite
   .add( function( cy ) {
-    cy.nodes().addClass('foo bar');
-    cy.nodes().removeClass('foo bar');
+    a.addClass('foo bar');
+    a.removeClass('foo bar');
   })
 ;
 module.exports = suite;

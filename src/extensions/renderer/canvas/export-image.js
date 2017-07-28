@@ -67,12 +67,6 @@ CRp.bufferCanvasImage = function( options ){
 
     buffCxt.clearRect( 0, 0, width, height );
 
-    if( options.bg ){
-      buffCxt.fillStyle = options.bg;
-      buffCxt.rect( 0, 0, width, height );
-      buffCxt.fill();
-    }
-
     buffCxt.globalCompositeOperation = 'source-over';
 
     var zsortedEles = this.getCachedZSortedEles();
@@ -82,6 +76,9 @@ CRp.bufferCanvasImage = function( options ){
       buffCxt.scale( scale, scale );
 
       this.drawElements( buffCxt, zsortedEles );
+
+      buffCxt.scale( 1/scale, 1/scale );
+      buffCxt.translate( bb.x1 * scale, bb.y1 * scale );
     } else { // draw the current view
       var pan = cy.pan();
 
@@ -96,6 +93,18 @@ CRp.bufferCanvasImage = function( options ){
       buffCxt.scale( scale, scale );
 
       this.drawElements( buffCxt, zsortedEles );
+
+      buffCxt.scale( 1/scale, 1/scale );
+      buffCxt.translate( -translation.x, -translation.y );
+    }
+
+    // need to fill bg at end like this in order to fill cleared transparent pixels in jpgs
+    if( options.bg ){
+      buffCxt.globalCompositeOperation = 'destination-over';
+
+      buffCxt.fillStyle = options.bg;
+      buffCxt.rect( 0, 0, width, height );
+      buffCxt.fill();
     }
   }
 

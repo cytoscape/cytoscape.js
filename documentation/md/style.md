@@ -209,6 +209,18 @@ Compound parent sizing:
 
 ## Background image
 
+#### SVG image considerations
+* Using the ```viewbox``` attribute in svg images may cause render problems in Firefox.
+* SVG imagaes do not work consistently in Internet Explorer.
+* Always include this xml hearder in each svg image: 
+```
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE svg>
+```
+* Use [encodeURIComponent](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/encodeURIComponent) to load svg data.
+```
+let data = 'data:image/svg+xml;utf8,' + encodeURIComponent(svgFile);
+```
+
 A background image may be applied to a node's body.  The following properties support multiple values (space separated or array) with associated indices.
 
  * **`background-image`** : The URL that points to the image that should be used as the node's background.  PNG, JPG, and SVG are supported formats.  

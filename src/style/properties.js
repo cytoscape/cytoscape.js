@@ -49,7 +49,7 @@ let styfn = {};
     bool: { enums: [ 'yes', 'no' ] },
     lineStyle: { enums: [ 'solid', 'dotted', 'dashed' ] },
     borderStyle: { enums: [ 'solid', 'dotted', 'dashed', 'double' ] },
-    curveStyle: { enums: [ 'bezier', 'unbundled-bezier', 'haystack', 'segments' ] },
+    curveStyle: { enums: [ 'bezier', 'unbundled-bezier', 'haystack', 'segments', 'straight' ] },
     fontFamily: { regex: '^([\\w- \\"]+(?:\\s*,\\s*[\\w- \\"]+)*)$' },
     fontletiant: { enums: [ 'small-caps', 'normal' ] },
     fontStyle: { enums: [ 'italic', 'normal', 'oblique' ] },

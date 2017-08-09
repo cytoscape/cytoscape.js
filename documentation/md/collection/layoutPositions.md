@@ -18,6 +18,7 @@ var options = {
   ready: undefined, // callback for the layoutready event
   stop: undefined, // callback for the layoutstop event
   spacingFactor: 1, // a positive value which adjusts spacing between nodes (>1 means greater than usual spacing)
+  transform: function (node, position ){ return position; } // transform a given node position. Useful for changing flow direction in discrete layouts 
   zoom: undefined // zoom level as a positive number to set after animation
 }
 ```

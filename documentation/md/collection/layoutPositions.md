@@ -9,6 +9,8 @@ var options = {
   animate: false, // whether to animate changes to the layout
   animationDuration: 500, // duration of animation in ms, if enabled
   animationEasing: undefined, // easing of animation, if enabled
+  animateFilter: function ( node, i ){ return true; }, // a function that determines whether the node should be animated.
+  //All nodes animated by default on animate enabled.  Non-animated nodes are positioned immediately when the layout starts
   eles: someCollection, // collection of elements involved in the layout; set by cy.layout() or eles.layout()
   fit: true, // whether to fit the viewport to the graph
   padding: 30, // padding to leave between graph and viewport

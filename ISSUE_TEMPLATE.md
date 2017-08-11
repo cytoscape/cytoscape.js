@@ -1,6 +1,10 @@
+<!--
+Is your issue related solely to the core library, or is your issue related to an extension?  An extension issue must be filed in the extension's repo.
+-->
+
 **Issue type**
 
-<!-- 
+<!--
 Are you submitting a bug report or a feature request?
 
 When submitting a bug report, check the following:
@@ -8,12 +12,12 @@ When submitting a bug report, check the following:
 - The bug still exists in most recent version of the library.
 
 A request for help or a requests for a how-to should be directed to Stack Overflow:
-http://stackoverflow.com/questions/tagged/cytoscape.js 
+http://stackoverflow.com/questions/tagged/cytoscape.js
 -->
 
 <!-- Delete one option -->
 Bug report
-Feature request 
+Feature request
 
 
 
@@ -22,8 +26,8 @@ Feature request
 
 **Environment info**
 
-- Cytoscape.js version : 
-- Browser/Node.js & version : 
+- Cytoscape.js version :
+- Browser/Node.js & version :
 
 **Current (buggy) behaviour**
 
@@ -37,7 +41,7 @@ Feature request
 
 **Minimum steps to reproduce**
 
-<!-- 
+<!--
 Write out an overview of what you need to do to reproduce the issue.
 
 Fork/clone this JSBin demo and reproduce your issue so that your issue can be addressed quickly:

@@ -25,9 +25,6 @@ var defaults = {
   // Called on `layoutstop`
   stop: function(){},
   
-  // Transform a given node position. Useful for changing flow direction in discrete layouts 
-  transform: function (node, position ){ return position; },
-
   // Whether to animate while running the layout
   // true : Animate continuously as the layout is running
   // false : Just show the end result

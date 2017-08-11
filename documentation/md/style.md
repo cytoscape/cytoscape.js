@@ -209,18 +209,6 @@ Compound parent sizing:
 
 ## Background image
 
-#### SVG image considerations
-* Using the ```viewbox``` attribute in svg images may cause render problems in Firefox.
-* SVG imagaes do not work consistently in Internet Explorer.
-* Always include this xml hearder in each svg image: 
-```
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE svg>
-```
-* Use [encodeURIComponent](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/encodeURIComponent) to load svg data.
-```
-let data = 'data:image/svg+xml;utf8,' + encodeURIComponent(svgFile);
-```
-
 A background image may be applied to a node's body.  The following properties support multiple values (space separated or array) with associated indices.
 
  * **`background-image`** : The URL that points to the image that should be used as the node's background.  PNG, JPG, and SVG are supported formats.  
@@ -228,6 +216,17 @@ A background image may be applied to a node's body.  The following properties su
   * Can specify multiple background images by separating each image with a space (space delimited format), but if using a non-string stylesheet, then using arrays are preferred.
     * The images will be applied to the node's body in the order given, layering one on top of each other.
     * When specifying properties for multiple images, if the property for a given image is not provided, then the default value is used as fallback.
+  * SVG image considerations
+    * Using the `viewbox` attribute in svg images may cause render problems in Firefox.
+    * SVG imagaes do not work consistently in Internet Explorer.
+    * Always include this xml hearder in each svg image:
+    ```
+    <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE svg>
+    ```
+    * Use [encodeURIComponent](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/encodeURIComponent) to load svg data.
+    ```
+    let data = 'data:image/svg+xml;utf8,' + encodeURIComponent(svgFile);
+    ```
  * ** `background-image-crossorigin`**: All images are loaded with a [`crossorigin`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/img#attr-crossorigin) attribute which may be `anonymous` or `use-credentials`. The default is set to `anonymous`.
  * **`background-image-opacity`** : The opacity of the background image.
  * **`background-width`** : Specifies the width of the image.  A percent value (e.g. `50%`) may be used to set the image width relative to the node width.  If used in combination with `background-fit`, then this value overrides the width of the image in calculating the fitting --- thereby overriding the aspect ratio.  The `auto` value is used by default, which uses the width of the image.

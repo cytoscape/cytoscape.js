@@ -24,6 +24,9 @@ var defaults = {
 
   // Called on `layoutstop`
   stop: function(){},
+  
+  // Transform a given node position. Useful for changing flow direction in discrete layouts 
+  transform: function (node, position ){ return position; },
 
   // Whether to animate while running the layout
   // true : Animate continuously as the layout is running
@@ -36,6 +39,12 @@ var defaults = {
 
   // The duration of the animation for animate:'end'
   animationDuration: undefined,
+
+  // A function that determines whether the node should be animated
+  // All nodes animated by default on animate enabled
+  // Non-animated nodes are positioned immediately when the layout starts
+  animateFilter: function ( node, i ){ return true; },
+
 
   // The layout animates only after this many milliseconds for animate:true
   // (prevents flashing on fast runs)

@@ -2403,6 +2403,44 @@
             },
 
             {
+              "name": "eles.merge",
+              "descr": "Perform a in-place merge of the given elements into the calling collection.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "eles", "descr": "The elements to merge in-place." }
+                  ]
+                },
+
+                {
+                  "args": [
+                    { "name": "selector", "descr": "A selector representing the elements to merge.  All elements in the graph matching the selector are used as the passed collection." }
+                  ]
+                }
+              ],
+              "md": "collection/merge"
+            },
+
+            {
+              "name": "eles.unmerge",
+              "descr": "Perform an in-place operation on the calling collection to remove the given elements.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "eles", "descr": "The elements to remove in-place." }
+                  ]
+                },
+
+                {
+                  "args": [
+                    { "name": "selector", "descr": "A selector representing the elements to remove.  All elements in the graph matching the selector are used as the passed collection." }
+                  ]
+                }
+              ],
+              "md": "collection/unmerge"
+            },
+
+            {
               "name": "eles.filter",
               "descr": "Get a new collection containing elements that are accepted by the specified filter function or selector.",
               "formats": [

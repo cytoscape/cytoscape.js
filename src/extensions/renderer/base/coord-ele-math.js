@@ -1816,7 +1816,7 @@ BRp.findEdgeControlPoints = function( edges ){
     rs.midY = (rs.allpts[1] + rs.allpts[3]) / 2;
 
     // always override as haystack in case set to different type previously
-    rscratch.edgeType = 'haystack';
+    rscratch.lastCurveStyle = rscratch.edgeType = 'haystack';
     rscratch.haystack = true;
 
     this.projectLines( edge );

@@ -1,7 +1,7 @@
 # Cytoscape.js
 
-[![DOI](https://zenodo.org/badge/2255947.svg)](https://zenodo.org/badge/latestdoi/2255947)
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg?maxAge=1)](https://raw.githubusercontent.com/cytoscape/cytoscape.js/master/LICENSE)
+[![DOI](https://zenodo.org/badge/2255947.svg)](https://zenodo.org/badge/latestdoi/2255947)
 [![npm](https://img.shields.io/npm/v/cytoscape.svg?maxAge=1)](https://www.npmjs.com/package/cytoscape)
 [![npm installs](https://img.shields.io/npm/dm/cytoscape.svg?maxAge=1&label=npm%20installs)](https://www.npmjs.com/package/cytoscape)
 [![master branch tests](https://img.shields.io/travis/cytoscape/cytoscape.js/master.svg?maxAge=1&label=master%20branch)](https://travis-ci.org/cytoscape/cytoscape.js)

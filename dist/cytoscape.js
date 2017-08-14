@@ -2,7 +2,7 @@
 
 /*!
 
-Cytoscape.js 2.7.21 (MIT licensed)
+Cytoscape.js 2.7.22 (MIT licensed)
 
 Copyright (c) The Cytoscape Consortium
 
@@ -13602,6 +13602,8 @@ BRp.findEdgeControlPoints = function( edges ){
       var segmentWs = edge.pstyle( 'segment-weights' );
       var segmentDs = edge.pstyle( 'segment-distances' );
       var segmentsN = Math.min( segmentWs.pfValue.length, segmentDs.pfValue.length );
+      var srcArrShape = edge.pstyle('source-arrow-shape').value;
+      var tgtArrShape = edge.pstyle('target-arrow-shape').value;
 
       var srcX1 = rs.lastSrcCtlPtX;
       var srcX2 = srcPos.x;
@@ -13642,6 +13644,12 @@ BRp.findEdgeControlPoints = function( edges ){
       var edgeDistances1 = rs.lastEdgeDistances;
       var edgeDistances2 = edgeDistances;
 
+      var srcArr1 = rs.lastSrcArr;
+      var srcArr2 = srcArrShape;
+
+      var tgtArr1 = rs.lastTgtArr;
+      var tgtArr2 = tgtArrShape;
+
       if( badBezier ){
         rs.badBezier = true;
       } else {
@@ -13657,6 +13665,8 @@ BRp.findEdgeControlPoints = function( edges ){
       &&  segmentDs1 === segmentDs2
       &&  stepSize1 === stepSize2
       &&  edgeDistances1 === edgeDistances2
+      &&  srcArr1 === srcArr2
+      &&  tgtArr1 === tgtArr2
       &&  ((edgeIndex1 === edgeIndex2 && numEdges1 === numEdges2) || edgeIsUnbundled) ){
         continue; // then the control points haven't changed and we can skip calculating them
       } else {
@@ -13677,6 +13687,8 @@ BRp.findEdgeControlPoints = function( edges ){
         rs.lastSegmentWs = segmentWs2;
         rs.lastStepSize = stepSize2;
         rs.lastEdgeDistances = edgeDistances2;
+        rs.lastSrcArr = srcArr2;
+        rs.lastTgtArr = tgtArr2;
       }
 
       if( src === tgt ){
@@ -14050,7 +14062,7 @@ BRp.findEdgeControlPoints = function( edges ){
     rs.midY = (rs.allpts[1] + rs.allpts[3]) / 2;
 
     // always override as haystack in case set to different type previously
-    rscratch.edgeType = 'haystack';
+    rscratch.lastCurveStyle = rscratch.edgeType = 'haystack';
     rscratch.haystack = true;
 
     this.projectLines( edge );
@@ -19531,12 +19543,6 @@ CRp.bufferCanvasImage = function( options ){
 
     buffCxt.clearRect( 0, 0, width, height );
 
-    if( options.bg ){
-      buffCxt.fillStyle = options.bg;
-      buffCxt.rect( 0, 0, width, height );
-      buffCxt.fill();
-    }
-
     buffCxt.globalCompositeOperation = 'source-over';
 
     var zsortedEles = this.getCachedZSortedEles();
@@ -19546,6 +19552,9 @@ CRp.bufferCanvasImage = function( options ){
       buffCxt.scale( scale, scale );
 
       this.drawElements( buffCxt, zsortedEles );
+
+      buffCxt.scale( 1/scale, 1/scale );
+      buffCxt.translate( bb.x1 * scale, bb.y1 * scale );
     } else { // draw the current view
       var pan = cy.pan();
 
@@ -19560,6 +19569,18 @@ CRp.bufferCanvasImage = function( options ){
       buffCxt.scale( scale, scale );
 
       this.drawElements( buffCxt, zsortedEles );
+
+      buffCxt.scale( 1/scale, 1/scale );
+      buffCxt.translate( -translation.x, -translation.y );
+    }
+
+    // need to fill bg at end like this in order to fill cleared transparent pixels in jpgs
+    if( options.bg ){
+      buffCxt.globalCompositeOperation = 'destination-over';
+
+      buffCxt.fillStyle = options.bg;
+      buffCxt.rect( 0, 0, width, height );
+      buffCxt.fill();
     }
   }
 
@@ -27368,7 +27389,7 @@ util.debounce = function( func, wait, options ){ // ported lodash debounce funct
 module.exports = util;
 
 },{"../is":83,"../window":107}],106:[function(_dereq_,module,exports){
-module.exports = "2.7.21";
+module.exports = "2.7.22";
 
 },{}],107:[function(_dereq_,module,exports){
 module.exports = ( typeof window === 'undefined' ? null : window ); // eslint-disable-line no-undef

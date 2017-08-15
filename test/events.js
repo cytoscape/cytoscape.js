@@ -320,6 +320,31 @@ describe('Events', function(){
       cy.$('#n5').trigger('foo', ['bar', 'baz']);
     });
 
+    it('should get the element context when bubbled with a delegate selector on the core', function( done ){
+      let n4 = cy.$('#n4');
+
+      cy.on('foo', 'node', function(){
+        expect( this[0] === n4[0] ).to.be.true;
+
+        done();
+      });
+
+      n4.emit('foo');
+    });
+
+    it('should get the element context when bubbled with a delegate selector on a collection', function( done ){
+      let n4 = cy.$('#n4');
+      let n5 = cy.$('#n5');
+
+      n4.on('foo', 'node', function(){
+        expect( this[0] === n5[0] ).to.be.true;
+
+        done();
+      });
+
+      n5.emit('foo');
+    });
+
   });
 
 

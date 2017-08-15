@@ -1,13 +1,13 @@
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
-		module.exports = factory();
+		module.exports = factory(require("heap"), require("lodash.debounce"));
 	else if(typeof define === 'function' && define.amd)
-		define([], factory);
+		define(["heap", "lodash.debounce"], factory);
 	else if(typeof exports === 'object')
-		exports["cytoscape"] = factory();
+		exports["cytoscape"] = factory(require("heap"), require("lodash.debounce"));
 	else
-		root["cytoscape"] = factory();
-})(this, function() {
+		root["cytoscape"] = factory(root["heap"], root["lodash.debounce"]);
+})(this, function(__WEBPACK_EXTERNAL_MODULE_140__, __WEBPACK_EXTERNAL_MODULE_141__) {
 return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
@@ -73,7 +73,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 117);
+/******/ 	return __webpack_require__(__webpack_require__.s = 116);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -428,7 +428,7 @@ util.setPrefixedProperty = function (obj, propName, prefix, value) {
   obj[propName] = value;
 };
 
-[__webpack_require__(131), __webpack_require__(132), { memoize: __webpack_require__(19) }, __webpack_require__(133), __webpack_require__(135), __webpack_require__(136), __webpack_require__(134)].forEach(function (req) {
+[__webpack_require__(130), __webpack_require__(131), { memoize: __webpack_require__(19) }, __webpack_require__(132), __webpack_require__(134), __webpack_require__(135), __webpack_require__(133)].forEach(function (req) {
   util.extend(util, req);
 });
 
@@ -1534,7 +1534,7 @@ var util = __webpack_require__(1);
 
 var define = {};
 
-[__webpack_require__(73), __webpack_require__(74), __webpack_require__(75)].forEach(function (m) {
+[__webpack_require__(72), __webpack_require__(73), __webpack_require__(74)].forEach(function (m) {
   util.assign(define, m);
 });
 
@@ -1766,7 +1766,7 @@ api.reject = function (val) {
 };
 
 module.exports = typeof Promise !== 'undefined' ? Promise : api; // eslint-disable-line no-undef
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(142).setImmediate))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(138).setImmediate))
 
 /***/ }),
 /* 6 */
@@ -1967,7 +1967,7 @@ selfn.toString = selfn.selector = function () {
   return str;
 };
 
-[__webpack_require__(121), __webpack_require__(120)].forEach(function (p) {
+[__webpack_require__(120), __webpack_require__(119)].forEach(function (p) {
   return util.assign(selfn, p);
 });
 
@@ -1982,7 +1982,7 @@ module.exports = Selector;
 
 var util = __webpack_require__(1);
 var is = __webpack_require__(0);
-var Map = __webpack_require__(118);
+var Map = __webpack_require__(117);
 var Set = __webpack_require__(11);
 
 var Element = __webpack_require__(13);
@@ -2706,7 +2706,7 @@ elesfn.move = function (struct) {
   return this; // if nothing done
 };
 
-[__webpack_require__(33), __webpack_require__(37), __webpack_require__(38), __webpack_require__(39), __webpack_require__(40), __webpack_require__(41), __webpack_require__(42), __webpack_require__(45), __webpack_require__(48), __webpack_require__(49), __webpack_require__(50), __webpack_require__(7), __webpack_require__(51), __webpack_require__(52), __webpack_require__(53), __webpack_require__(54), __webpack_require__(55)].forEach(function (props) {
+[__webpack_require__(32), __webpack_require__(36), __webpack_require__(37), __webpack_require__(38), __webpack_require__(39), __webpack_require__(40), __webpack_require__(41), __webpack_require__(44), __webpack_require__(47), __webpack_require__(48), __webpack_require__(49), __webpack_require__(7), __webpack_require__(50), __webpack_require__(51), __webpack_require__(52), __webpack_require__(53), __webpack_require__(54)].forEach(function (props) {
   util.extend(elesfn, props);
 });
 
@@ -2719,7 +2719,7 @@ module.exports = Collection;
 "use strict";
 
 
-module.exports = __webpack_require__(137);
+module.exports = __webpack_require__(140);
 
 /***/ }),
 /* 9 */
@@ -3490,7 +3490,7 @@ util.extend(corefn, {
 
 corefn.$id = corefn.getElementById;
 
-[__webpack_require__(56), __webpack_require__(60), __webpack_require__(65), __webpack_require__(66), __webpack_require__(67), __webpack_require__(68), __webpack_require__(69), __webpack_require__(70), __webpack_require__(71), __webpack_require__(72)].forEach(function (props) {
+[__webpack_require__(55), __webpack_require__(59), __webpack_require__(64), __webpack_require__(65), __webpack_require__(66), __webpack_require__(67), __webpack_require__(68), __webpack_require__(69), __webpack_require__(70), __webpack_require__(71)].forEach(function (props) {
   util.extend(corefn, props);
 });
 
@@ -4217,7 +4217,7 @@ Style.fromString = function (cy, string) {
   return new Style(cy).fromString(string);
 };
 
-[__webpack_require__(123), __webpack_require__(124), __webpack_require__(125), __webpack_require__(126), __webpack_require__(127), __webpack_require__(130), __webpack_require__(129), __webpack_require__(128)].forEach(function (props) {
+[__webpack_require__(122), __webpack_require__(123), __webpack_require__(124), __webpack_require__(125), __webpack_require__(126), __webpack_require__(129), __webpack_require__(128), __webpack_require__(127)].forEach(function (props) {
   util.extend(styfn, props);
 });
 
@@ -4273,33 +4273,6 @@ module.exports = function memoize(fn, keyFn) {
 
 /***/ }),
 /* 20 */
-/***/ (function(module, exports) {
-
-var g;
-
-// This works in non-strict mode
-g = (function() {
-	return this;
-})();
-
-try {
-	// This works if eval is allowed (see CSP)
-	g = g || Function("return this")() || (1,eval)("this");
-} catch(e) {
-	// This works if the window reference is available
-	if(typeof window === "object")
-		g = window;
-}
-
-// g can still be undefined, but nothing to do about it...
-// We return undefined, instead of nothing here, so it's
-// easier to handle this case. if(!global) { ...}
-
-module.exports = g;
-
-
-/***/ }),
-/* 21 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -4309,7 +4282,7 @@ var util = __webpack_require__(1);
 var define = __webpack_require__(3);
 var Collection = __webpack_require__(7);
 var Core = __webpack_require__(12);
-var incExts = __webpack_require__(76);
+var incExts = __webpack_require__(75);
 var is = __webpack_require__(0);
 var Emitter = __webpack_require__(9);
 
@@ -4567,7 +4540,7 @@ incExts.forEach(function (group) {
 module.exports = extension;
 
 /***/ }),
-/* 22 */
+/* 21 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -4667,7 +4640,7 @@ sheetfn.generateStyle = function (cy) {
 module.exports = Stylesheet;
 
 /***/ }),
-/* 23 */
+/* 22 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -4676,7 +4649,7 @@ module.exports = Stylesheet;
 module.exports = "3.2.0";
 
 /***/ }),
-/* 24 */
+/* 23 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -4921,7 +4894,7 @@ anifn.complete = anifn.completed;
 module.exports = Animation;
 
 /***/ }),
-/* 25 */
+/* 24 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -5138,7 +5111,7 @@ var elesfn = {
 module.exports = elesfn;
 
 /***/ }),
-/* 26 */
+/* 25 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -5334,7 +5307,7 @@ var elesfn = {
 module.exports = elesfn;
 
 /***/ }),
-/* 27 */
+/* 26 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -5537,7 +5510,7 @@ elesfn.bc = elesfn.betweennessCentrality;
 module.exports = elesfn;
 
 /***/ }),
-/* 28 */
+/* 27 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -5680,7 +5653,7 @@ elesfn.dfs = elesfn.depthFirstSearch;
 module.exports = elesfn;
 
 /***/ }),
-/* 29 */
+/* 28 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -5820,7 +5793,7 @@ elesfn.ccn = elesfn.closenessCentralityNormalised = elesfn.closenessCentralityNo
 module.exports = elesfn;
 
 /***/ }),
-/* 30 */
+/* 29 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -6014,7 +5987,7 @@ elesfn.dcn = elesfn.degreeCentralityNormalised = elesfn.degreeCentralityNormaliz
 module.exports = elesfn;
 
 /***/ }),
-/* 31 */
+/* 30 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -6155,7 +6128,7 @@ var elesfn = {
 module.exports = elesfn;
 
 /***/ }),
-/* 32 */
+/* 31 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -6354,7 +6327,7 @@ var elesfn = {
 module.exports = elesfn;
 
 /***/ }),
-/* 33 */
+/* 32 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -6364,14 +6337,14 @@ var util = __webpack_require__(1);
 
 var elesfn = {};
 
-[__webpack_require__(28), __webpack_require__(31), __webpack_require__(35), __webpack_require__(25), __webpack_require__(32), __webpack_require__(26), __webpack_require__(34), __webpack_require__(36), __webpack_require__(30), __webpack_require__(29), __webpack_require__(27)].forEach(function (props) {
+[__webpack_require__(27), __webpack_require__(30), __webpack_require__(34), __webpack_require__(24), __webpack_require__(31), __webpack_require__(25), __webpack_require__(33), __webpack_require__(35), __webpack_require__(29), __webpack_require__(28), __webpack_require__(26)].forEach(function (props) {
   util.extend(elesfn, props);
 });
 
 module.exports = elesfn;
 
 /***/ }),
-/* 34 */
+/* 33 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -6548,7 +6521,7 @@ var elesfn = {
 module.exports = elesfn;
 
 /***/ }),
-/* 35 */
+/* 34 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -6620,7 +6593,7 @@ var elesfn = {
 module.exports = elesfn;
 
 /***/ }),
-/* 36 */
+/* 35 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -6805,7 +6778,7 @@ var elesfn = {
 module.exports = elesfn;
 
 /***/ }),
-/* 37 */
+/* 36 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -6826,7 +6799,7 @@ var elesfn = {
 module.exports = elesfn;
 
 /***/ }),
-/* 38 */
+/* 37 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -7005,7 +6978,7 @@ var elesfn = {
 module.exports = elesfn;
 
 /***/ }),
-/* 39 */
+/* 38 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -7103,7 +7076,7 @@ elesfn.has = elesfn.contains;
 module.exports = elesfn;
 
 /***/ }),
-/* 40 */
+/* 39 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -7333,7 +7306,7 @@ elesfn.ancestors = elesfn.parents;
 module.exports = elesfn;
 
 /***/ }),
-/* 41 */
+/* 40 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -7427,7 +7400,7 @@ fn.removeAttr = fn.removeData;
 module.exports = elesfn;
 
 /***/ }),
-/* 42 */
+/* 41 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -7556,7 +7529,7 @@ util.extend(elesfn, {
 module.exports = elesfn;
 
 /***/ }),
-/* 43 */
+/* 42 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -8337,7 +8310,7 @@ fn.renderedBoundingbox = fn.renderedBoundingBox;
 module.exports = elesfn;
 
 /***/ }),
-/* 44 */
+/* 43 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -8388,22 +8361,22 @@ module.exports = {
 };
 
 /***/ }),
-/* 45 */
+/* 44 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
 var util = __webpack_require__(1);
-var position = __webpack_require__(46);
-var bounds = __webpack_require__(43);
-var widthHeight = __webpack_require__(47);
-var edgePoints = __webpack_require__(44);
+var position = __webpack_require__(45);
+var bounds = __webpack_require__(42);
+var widthHeight = __webpack_require__(46);
+var edgePoints = __webpack_require__(43);
 
 module.exports = util.assign({}, position, bounds, widthHeight, edgePoints);
 
 /***/ }),
-/* 46 */
+/* 45 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -8657,7 +8630,7 @@ fn.relativePoint = fn.relativePosition;
 module.exports = elesfn;
 
 /***/ }),
-/* 47 */
+/* 46 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -8772,7 +8745,7 @@ elesfn.padding = function () {
 module.exports = elesfn;
 
 /***/ }),
-/* 48 */
+/* 47 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -8921,7 +8894,7 @@ define.eventAliasesOn(elesfn);
 module.exports = elesfn;
 
 /***/ }),
-/* 49 */
+/* 48 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -9300,7 +9273,7 @@ fn.complement = fn.abscomp = fn.absoluteComplement;
 module.exports = elesfn;
 
 /***/ }),
-/* 50 */
+/* 49 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -9335,7 +9308,7 @@ var elesfn = {
 module.exports = elesfn;
 
 /***/ }),
-/* 51 */
+/* 50 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -9470,7 +9443,7 @@ elesfn.each = elesfn.forEach;
 module.exports = elesfn;
 
 /***/ }),
-/* 52 */
+/* 51 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -9673,7 +9646,7 @@ elesfn.createLayout = elesfn.makeLayout = elesfn.layout;
 module.exports = elesfn;
 
 /***/ }),
-/* 53 */
+/* 52 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -10143,7 +10116,7 @@ elesfn.pstyle = elesfn.parsedStyle;
 module.exports = elesfn;
 
 /***/ }),
-/* 54 */
+/* 53 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -10302,7 +10275,7 @@ elesfn.inactive = function () {
 module.exports = elesfn;
 
 /***/ }),
-/* 55 */
+/* 54 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -10767,7 +10740,7 @@ util.extend(elesfn, {
 module.exports = elesfn;
 
 /***/ }),
-/* 56 */
+/* 55 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -10858,7 +10831,7 @@ var corefn = {
 module.exports = corefn;
 
 /***/ }),
-/* 57 */
+/* 56 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -11026,7 +10999,7 @@ function generateCubicBezier(mX1, mY1, mX2, mY2) {
 module.exports = generateCubicBezier;
 
 /***/ }),
-/* 58 */
+/* 57 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -11111,14 +11084,14 @@ function ease(startProp, endProp, percent, easingFn, propSpec) {
 module.exports = ease;
 
 /***/ }),
-/* 59 */
+/* 58 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var generateCubicBezier = __webpack_require__(57);
-var generateSpringRK4 = __webpack_require__(61);
+var generateCubicBezier = __webpack_require__(56);
+var generateSpringRK4 = __webpack_require__(60);
 
 var cubicBezier = function cubicBezier(t1, p1, t2, p2) {
   var bezier = generateCubicBezier(t1, p1, t2, p2);
@@ -11195,7 +11168,7 @@ var easings = {
 module.exports = easings;
 
 /***/ }),
-/* 60 */
+/* 59 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -11203,7 +11176,7 @@ module.exports = easings;
 
 var define = __webpack_require__(3);
 var util = __webpack_require__(1);
-var stepAll = __webpack_require__(63);
+var stepAll = __webpack_require__(62);
 
 var corefn = {
 
@@ -11271,7 +11244,7 @@ var corefn = {
 module.exports = corefn;
 
 /***/ }),
-/* 61 */
+/* 60 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -11371,7 +11344,7 @@ var generateSpringRK4 = function () {
 module.exports = generateSpringRK4;
 
 /***/ }),
-/* 62 */
+/* 61 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -11413,14 +11386,14 @@ function startAnimation(self, ani, now, isCore) {
 module.exports = startAnimation;
 
 /***/ }),
-/* 63 */
+/* 62 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var step = __webpack_require__(64);
-var startAnimation = __webpack_require__(62);
+var step = __webpack_require__(63);
+var startAnimation = __webpack_require__(61);
 
 function stepAll(now, cy) {
   var eles = cy._private.aniEles;
@@ -11557,14 +11530,14 @@ function stepAll(now, cy) {
 module.exports = stepAll;
 
 /***/ }),
-/* 64 */
+/* 63 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var easings = __webpack_require__(59);
-var ease = __webpack_require__(58);
+var easings = __webpack_require__(58);
+var ease = __webpack_require__(57);
 var is = __webpack_require__(0);
 
 function step(self, ani, now, isCore) {
@@ -11730,7 +11703,7 @@ function valid(start, end) {
 module.exports = step;
 
 /***/ }),
-/* 65 */
+/* 64 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -11827,7 +11800,7 @@ define.eventAliasesOn(elesfn);
 module.exports = elesfn;
 
 /***/ }),
-/* 66 */
+/* 65 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -11858,7 +11831,7 @@ corefn.jpeg = corefn.jpg;
 module.exports = corefn;
 
 /***/ }),
-/* 67 */
+/* 66 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -11912,7 +11885,7 @@ corefn.createLayout = corefn.makeLayout = corefn.layout;
 module.exports = corefn;
 
 /***/ }),
-/* 68 */
+/* 67 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -12038,7 +12011,7 @@ var corefn = {
 module.exports = corefn;
 
 /***/ }),
-/* 69 */
+/* 68 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -12127,7 +12100,7 @@ corefn.invalidateDimensions = corefn.resize;
 module.exports = corefn;
 
 /***/ }),
-/* 70 */
+/* 69 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -12202,7 +12175,7 @@ corefn.elements = corefn.filter = corefn.$;
 module.exports = corefn;
 
 /***/ }),
-/* 71 */
+/* 70 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -12243,7 +12216,7 @@ var corefn = {
 module.exports = corefn;
 
 /***/ }),
-/* 72 */
+/* 71 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -12850,14 +12823,14 @@ corefn.autoungrabifyNodes = corefn.autoungrabify;
 module.exports = corefn;
 
 /***/ }),
-/* 73 */
+/* 72 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
 var util = __webpack_require__(1);
-var Animation = __webpack_require__(24);
+var Animation = __webpack_require__(23);
 var math = __webpack_require__(2);
 var is = __webpack_require__(0);
 
@@ -13116,7 +13089,7 @@ var define = {
 module.exports = define;
 
 /***/ }),
-/* 74 */
+/* 73 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -13338,7 +13311,7 @@ var define = {
 module.exports = define;
 
 /***/ }),
-/* 75 */
+/* 74 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -13380,7 +13353,7 @@ var define = {
 module.exports = define;
 
 /***/ }),
-/* 76 */
+/* 75 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -13388,14 +13361,14 @@ module.exports = define;
 
 module.exports = [{
   type: 'layout',
-  extensions: __webpack_require__(82)
+  extensions: __webpack_require__(81)
 }, {
   type: 'renderer',
-  extensions: __webpack_require__(115)
+  extensions: __webpack_require__(114)
 }];
 
 /***/ }),
-/* 77 */
+/* 76 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -13845,7 +13818,7 @@ BreadthFirstLayout.prototype.run = function () {
 module.exports = BreadthFirstLayout;
 
 /***/ }),
-/* 78 */
+/* 77 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -13963,7 +13936,7 @@ CircleLayout.prototype.run = function () {
 module.exports = CircleLayout;
 
 /***/ }),
-/* 79 */
+/* 78 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -14179,7 +14152,7 @@ ConcentricLayout.prototype.run = function () {
 module.exports = ConcentricLayout;
 
 /***/ }),
-/* 80 */
+/* 79 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -15588,7 +15561,7 @@ var refreshPositions = function refreshPositions(layoutInfo, cy, options) {
 module.exports = CoseLayout;
 
 /***/ }),
-/* 81 */
+/* 80 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -15849,16 +15822,16 @@ GridLayout.prototype.run = function () {
 module.exports = GridLayout;
 
 /***/ }),
-/* 82 */
+/* 81 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-module.exports = [{ name: 'breadthfirst', impl: __webpack_require__(77) }, { name: 'circle', impl: __webpack_require__(78) }, { name: 'concentric', impl: __webpack_require__(79) }, { name: 'cose', impl: __webpack_require__(80) }, { name: 'grid', impl: __webpack_require__(81) }, { name: 'null', impl: __webpack_require__(83) }, { name: 'preset', impl: __webpack_require__(84) }, { name: 'random', impl: __webpack_require__(85) }];
+module.exports = [{ name: 'breadthfirst', impl: __webpack_require__(76) }, { name: 'circle', impl: __webpack_require__(77) }, { name: 'concentric', impl: __webpack_require__(78) }, { name: 'cose', impl: __webpack_require__(79) }, { name: 'grid', impl: __webpack_require__(80) }, { name: 'null', impl: __webpack_require__(82) }, { name: 'preset', impl: __webpack_require__(83) }, { name: 'random', impl: __webpack_require__(84) }];
 
 /***/ }),
-/* 83 */
+/* 82 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -15916,7 +15889,7 @@ NullLayout.prototype.stop = function () {
 module.exports = NullLayout;
 
 /***/ }),
-/* 84 */
+/* 83 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -15989,7 +15962,7 @@ PresetLayout.prototype.run = function () {
 module.exports = PresetLayout;
 
 /***/ }),
-/* 85 */
+/* 84 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -16044,7 +16017,7 @@ RandomLayout.prototype.run = function () {
 module.exports = RandomLayout;
 
 /***/ }),
-/* 86 */
+/* 85 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -16317,7 +16290,7 @@ BRp.registerArrowShapes = function () {
 module.exports = BRp;
 
 /***/ }),
-/* 87 */
+/* 86 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -16699,7 +16672,7 @@ BRp.getAllInBox = function (x1, y1, x2, y2) {
 module.exports = BRp;
 
 /***/ }),
-/* 88 */
+/* 87 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -16886,7 +16859,7 @@ BRp.getArrowWidth = BRp.getArrowHeight = function (edgeWidth, scale) {
 module.exports = BRp;
 
 /***/ }),
-/* 89 */
+/* 88 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -17574,7 +17547,7 @@ BRp.getEdgeMidpoint = function (edge) {
 module.exports = BRp;
 
 /***/ }),
-/* 90 */
+/* 89 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -17768,7 +17741,7 @@ BRp.getTargetEndpoint = function (edge) {
 module.exports = BRp;
 
 /***/ }),
-/* 91 */
+/* 90 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -17836,7 +17809,7 @@ BRp.recalculateEdgeProjections = function (edges) {
 module.exports = BRp;
 
 /***/ }),
-/* 92 */
+/* 91 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -17846,14 +17819,14 @@ var util = __webpack_require__(1);
 
 var BRp = {};
 
-[__webpack_require__(87), __webpack_require__(88), __webpack_require__(89), __webpack_require__(90), __webpack_require__(91), __webpack_require__(93), __webpack_require__(94), __webpack_require__(95), __webpack_require__(96)].forEach(function (props) {
+[__webpack_require__(86), __webpack_require__(87), __webpack_require__(88), __webpack_require__(89), __webpack_require__(90), __webpack_require__(92), __webpack_require__(93), __webpack_require__(94), __webpack_require__(95)].forEach(function (props) {
   util.extend(BRp, props);
 });
 
 module.exports = BRp;
 
 /***/ }),
-/* 93 */
+/* 92 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -18353,7 +18326,7 @@ BRp.calculateLabelAngles = function (ele) {
 module.exports = BRp;
 
 /***/ }),
-/* 94 */
+/* 93 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -18385,7 +18358,7 @@ BRp.getNodeShape = function (node) {
 module.exports = BRp;
 
 /***/ }),
-/* 95 */
+/* 94 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -18579,7 +18552,7 @@ BRp.recalculateRenderedStyle = function (eles, useCache) {
 module.exports = BRp;
 
 /***/ }),
-/* 96 */
+/* 95 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -18652,7 +18625,7 @@ BRp.getCachedZSortedEles = function (forceRecalc) {
 module.exports = BRp;
 
 /***/ }),
-/* 97 */
+/* 96 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -18698,7 +18671,7 @@ BRp.getCachedImage = function (url, crossOrigin, onLoad) {
 module.exports = BRp;
 
 /***/ }),
-/* 98 */
+/* 97 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -18899,14 +18872,14 @@ BRp.destroy = function () {
   }
 };
 
-[__webpack_require__(86), __webpack_require__(92), __webpack_require__(97), __webpack_require__(99), __webpack_require__(100), __webpack_require__(101)].forEach(function (props) {
+[__webpack_require__(85), __webpack_require__(91), __webpack_require__(96), __webpack_require__(98), __webpack_require__(99), __webpack_require__(100)].forEach(function (props) {
   util.extend(BRp, props);
 });
 
 module.exports = BR;
 
 /***/ }),
-/* 99 */
+/* 98 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -20982,7 +20955,7 @@ BRp.load = function () {
 module.exports = BRp;
 
 /***/ }),
-/* 100 */
+/* 99 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -21421,7 +21394,7 @@ BRp.registerNodeShapes = function () {
 module.exports = BRp;
 
 /***/ }),
-/* 101 */
+/* 100 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -21541,7 +21514,7 @@ BRp.startRenderLoop = function () {
 module.exports = BRp;
 
 /***/ }),
-/* 102 */
+/* 101 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -21654,7 +21627,7 @@ CRp.arrowShapeImpl = function (name) {
 module.exports = CRp;
 
 /***/ }),
-/* 103 */
+/* 102 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -21966,7 +21939,7 @@ CRp.drawArrowShape = function (edge, arrowType, context, fill, edgeWidth, shape,
 module.exports = CRp;
 
 /***/ }),
-/* 104 */
+/* 103 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -22094,7 +22067,7 @@ CRp.drawDebugPoints = function (context, eles) {
 module.exports = CRp;
 
 /***/ }),
-/* 105 */
+/* 104 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -22242,7 +22215,7 @@ CRp.drawInscribedImage = function (context, img, node, index, nodeOpacity) {
 module.exports = CRp;
 
 /***/ }),
-/* 106 */
+/* 105 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -22603,7 +22576,7 @@ CRp.drawText = function (context, ele, prefix) {
 module.exports = CRp;
 
 /***/ }),
-/* 107 */
+/* 106 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -22982,7 +22955,7 @@ CRp.drawPie = function (context, node, nodeOpacity, pos) {
 module.exports = CRp;
 
 /***/ }),
-/* 108 */
+/* 107 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -23543,7 +23516,7 @@ CRp.render = function (options) {
 module.exports = CRp;
 
 /***/ }),
-/* 109 */
+/* 108 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -23724,7 +23697,7 @@ CRp.drawEllipsePath = function (context, centerX, centerY, width, height) {
 module.exports = CRp;
 
 /***/ }),
-/* 110 */
+/* 109 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -24219,7 +24192,7 @@ ETCp.setupDequeueing = defs.setupDequeueing({
 module.exports = ElementTextureCache;
 
 /***/ }),
-/* 111 */
+/* 110 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -24383,7 +24356,7 @@ CRp.jpg = function (options) {
 module.exports = CRp;
 
 /***/ }),
-/* 112 */
+/* 111 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -24397,8 +24370,8 @@ Modifications tracked on Github.
 
 var util = __webpack_require__(1);
 var is = __webpack_require__(0);
-var ElementTextureCache = __webpack_require__(110);
-var LayeredTextureCache = __webpack_require__(113);
+var ElementTextureCache = __webpack_require__(109);
+var LayeredTextureCache = __webpack_require__(112);
 
 var CR = CanvasRenderer;
 var CRp = CanvasRenderer.prototype;
@@ -24520,14 +24493,14 @@ CRp.usePaths = function () {
   return pathsImpld && this.pathsEnabled;
 };
 
-[__webpack_require__(102), __webpack_require__(104), __webpack_require__(103), __webpack_require__(105), __webpack_require__(106), __webpack_require__(107), __webpack_require__(108), __webpack_require__(109), __webpack_require__(111), __webpack_require__(114)].forEach(function (props) {
+[__webpack_require__(101), __webpack_require__(103), __webpack_require__(102), __webpack_require__(104), __webpack_require__(105), __webpack_require__(106), __webpack_require__(107), __webpack_require__(108), __webpack_require__(110), __webpack_require__(113)].forEach(function (props) {
   util.extend(CRp, props);
 });
 
 module.exports = CR;
 
 /***/ }),
-/* 113 */
+/* 112 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -25252,7 +25225,7 @@ LTCp.setupDequeueing = defs.setupDequeueing({
 module.exports = LayeredTextureCache;
 
 /***/ }),
-/* 114 */
+/* 113 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -25280,16 +25253,16 @@ CRp.nodeShapeImpl = function (name, context, centerX, centerY, width, height, po
 module.exports = CRp;
 
 /***/ }),
-/* 115 */
+/* 114 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-module.exports = [{ name: 'null', impl: __webpack_require__(116) }, { name: 'base', impl: __webpack_require__(98) }, { name: 'canvas', impl: __webpack_require__(112) }];
+module.exports = [{ name: 'null', impl: __webpack_require__(115) }, { name: 'base', impl: __webpack_require__(97) }, { name: 'canvas', impl: __webpack_require__(111) }];
 
 /***/ }),
-/* 116 */
+/* 115 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -25313,7 +25286,7 @@ NullRenderer.prototype = {
 module.exports = NullRenderer;
 
 /***/ }),
-/* 117 */
+/* 116 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -25321,8 +25294,8 @@ module.exports = NullRenderer;
 
 var is = __webpack_require__(0);
 var Core = __webpack_require__(12);
-var extension = __webpack_require__(21);
-var Stylesheet = __webpack_require__(22);
+var extension = __webpack_require__(20);
+var Stylesheet = __webpack_require__(21);
 
 var cytoscape = function cytoscape(options) {
   // jshint ignore:line
@@ -25354,7 +25327,7 @@ cytoscape.use = function (ext) {
 };
 
 // replaced by build system
-cytoscape.version = __webpack_require__(23);
+cytoscape.version = __webpack_require__(22);
 
 // expose public apis (mostly for extensions)
 cytoscape.stylesheet = cytoscape.Stylesheet = Stylesheet;
@@ -25362,7 +25335,7 @@ cytoscape.stylesheet = cytoscape.Stylesheet = Stylesheet;
 module.exports = cytoscape;
 
 /***/ }),
-/* 118 */
+/* 117 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -25393,7 +25366,7 @@ p.get = function (key) {
 module.exports = typeof Map !== 'undefined' ? Map : ObjectMap;
 
 /***/ }),
-/* 119 */
+/* 118 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -25404,7 +25377,7 @@ var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = [
 var _require = __webpack_require__(17),
     stateSelectorRegex = _require.stateSelectorRegex;
 
-var tokens = __webpack_require__(122);
+var tokens = __webpack_require__(121);
 var util = __webpack_require__(1);
 var newQuery = __webpack_require__(10);
 
@@ -25638,7 +25611,7 @@ exprs.forEach(function (e) {
 module.exports = exprs;
 
 /***/ }),
-/* 120 */
+/* 119 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -25980,14 +25953,14 @@ var matches = function matches(ele) {
 module.exports = { matches: matches, filter: filter };
 
 /***/ }),
-/* 121 */
+/* 120 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
 var util = __webpack_require__(1);
-var exprs = __webpack_require__(119);
+var exprs = __webpack_require__(118);
 var newQuery = __webpack_require__(10);
 
 // of all the expressions, find the first match in the remaining text
@@ -26119,7 +26092,7 @@ var parse = function parse(selector) {
 module.exports = { parse: parse };
 
 /***/ }),
-/* 122 */
+/* 121 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -26179,7 +26152,7 @@ tokens.id = tokens.variable; // an element id (follows variable conventions)
 module.exports = tokens;
 
 /***/ }),
-/* 123 */
+/* 122 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -26880,7 +26853,7 @@ styfn.checkZOrderTrigger = function (ele, name, fromValue, toValue) {
 module.exports = styfn;
 
 /***/ }),
-/* 124 */
+/* 123 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -27070,7 +27043,7 @@ styfn.removeBypasses = function (eles, props, updateTransitions) {
 module.exports = styfn;
 
 /***/ }),
-/* 125 */
+/* 124 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -27104,7 +27077,7 @@ styfn.containerCss = function (propName) {
 module.exports = styfn;
 
 /***/ }),
-/* 126 */
+/* 125 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -27232,7 +27205,7 @@ styfn.getPropsList = function (propsObj) {
 module.exports = styfn;
 
 /***/ }),
-/* 127 */
+/* 126 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -27299,7 +27272,7 @@ styfn.json = function () {
 module.exports = styfn;
 
 /***/ }),
-/* 128 */
+/* 127 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -27749,7 +27722,7 @@ styfn.parseImpl = function (name, value, propIsBypass, propIsFlat) {
 module.exports = styfn;
 
 /***/ }),
-/* 129 */
+/* 128 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -28194,7 +28167,7 @@ styfn.addDefaultStylesheet = function () {
 module.exports = styfn;
 
 /***/ }),
-/* 130 */
+/* 129 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -28342,7 +28315,7 @@ styfn.fromString = function (string) {
 module.exports = styfn;
 
 /***/ }),
-/* 131 */
+/* 130 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -28659,7 +28632,7 @@ module.exports = {
 };
 
 /***/ }),
-/* 132 */
+/* 131 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -28784,7 +28757,7 @@ module.exports = {
 };
 
 /***/ }),
-/* 133 */
+/* 132 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -28814,7 +28787,7 @@ module.exports = {
 };
 
 /***/ }),
-/* 134 */
+/* 133 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -28842,7 +28815,7 @@ module.exports = {
 };
 
 /***/ }),
-/* 135 */
+/* 134 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -28882,7 +28855,7 @@ module.exports = {
 };
 
 /***/ }),
-/* 136 */
+/* 135 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -28935,7 +28908,7 @@ util.requestAnimationFrame = function (fn) {
 
 util.performanceNow = pnow;
 
-util.debounce = __webpack_require__(139);
+util.debounce = __webpack_require__(141);
 
 util.now = function () {
   return Date.now();
@@ -28944,782 +28917,7 @@ util.now = function () {
 module.exports = util;
 
 /***/ }),
-/* 137 */
-/***/ (function(module, exports, __webpack_require__) {
-
-module.exports = __webpack_require__(138);
-
-
-/***/ }),
-/* 138 */
-/***/ (function(module, exports, __webpack_require__) {
-
-var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;// Generated by CoffeeScript 1.8.0
-(function() {
-  var Heap, defaultCmp, floor, heapify, heappop, heappush, heappushpop, heapreplace, insort, min, nlargest, nsmallest, updateItem, _siftdown, _siftup;
-
-  floor = Math.floor, min = Math.min;
-
-
-  /*
-  Default comparison function to be used
-   */
-
-  defaultCmp = function(x, y) {
-    if (x < y) {
-      return -1;
-    }
-    if (x > y) {
-      return 1;
-    }
-    return 0;
-  };
-
-
-  /*
-  Insert item x in list a, and keep it sorted assuming a is sorted.
-  
-  If x is already in a, insert it to the right of the rightmost x.
-  
-  Optional args lo (default 0) and hi (default a.length) bound the slice
-  of a to be searched.
-   */
-
-  insort = function(a, x, lo, hi, cmp) {
-    var mid;
-    if (lo == null) {
-      lo = 0;
-    }
-    if (cmp == null) {
-      cmp = defaultCmp;
-    }
-    if (lo < 0) {
-      throw new Error('lo must be non-negative');
-    }
-    if (hi == null) {
-      hi = a.length;
-    }
-    while (lo < hi) {
-      mid = floor((lo + hi) / 2);
-      if (cmp(x, a[mid]) < 0) {
-        hi = mid;
-      } else {
-        lo = mid + 1;
-      }
-    }
-    return ([].splice.apply(a, [lo, lo - lo].concat(x)), x);
-  };
-
-
-  /*
-  Push item onto heap, maintaining the heap invariant.
-   */
-
-  heappush = function(array, item, cmp) {
-    if (cmp == null) {
-      cmp = defaultCmp;
-    }
-    array.push(item);
-    return _siftdown(array, 0, array.length - 1, cmp);
-  };
-
-
-  /*
-  Pop the smallest item off the heap, maintaining the heap invariant.
-   */
-
-  heappop = function(array, cmp) {
-    var lastelt, returnitem;
-    if (cmp == null) {
-      cmp = defaultCmp;
-    }
-    lastelt = array.pop();
-    if (array.length) {
-      returnitem = array[0];
-      array[0] = lastelt;
-      _siftup(array, 0, cmp);
-    } else {
-      returnitem = lastelt;
-    }
-    return returnitem;
-  };
-
-
-  /*
-  Pop and return the current smallest value, and add the new item.
-  
-  This is more efficient than heappop() followed by heappush(), and can be
-  more appropriate when using a fixed size heap. Note that the value
-  returned may be larger than item! That constrains reasonable use of
-  this routine unless written as part of a conditional replacement:
-      if item > array[0]
-        item = heapreplace(array, item)
-   */
-
-  heapreplace = function(array, item, cmp) {
-    var returnitem;
-    if (cmp == null) {
-      cmp = defaultCmp;
-    }
-    returnitem = array[0];
-    array[0] = item;
-    _siftup(array, 0, cmp);
-    return returnitem;
-  };
-
-
-  /*
-  Fast version of a heappush followed by a heappop.
-   */
-
-  heappushpop = function(array, item, cmp) {
-    var _ref;
-    if (cmp == null) {
-      cmp = defaultCmp;
-    }
-    if (array.length && cmp(array[0], item) < 0) {
-      _ref = [array[0], item], item = _ref[0], array[0] = _ref[1];
-      _siftup(array, 0, cmp);
-    }
-    return item;
-  };
-
-
-  /*
-  Transform list into a heap, in-place, in O(array.length) time.
-   */
-
-  heapify = function(array, cmp) {
-    var i, _i, _j, _len, _ref, _ref1, _results, _results1;
-    if (cmp == null) {
-      cmp = defaultCmp;
-    }
-    _ref1 = (function() {
-      _results1 = [];
-      for (var _j = 0, _ref = floor(array.length / 2); 0 <= _ref ? _j < _ref : _j > _ref; 0 <= _ref ? _j++ : _j--){ _results1.push(_j); }
-      return _results1;
-    }).apply(this).reverse();
-    _results = [];
-    for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-      i = _ref1[_i];
-      _results.push(_siftup(array, i, cmp));
-    }
-    return _results;
-  };
-
-
-  /*
-  Update the position of the given item in the heap.
-  This function should be called every time the item is being modified.
-   */
-
-  updateItem = function(array, item, cmp) {
-    var pos;
-    if (cmp == null) {
-      cmp = defaultCmp;
-    }
-    pos = array.indexOf(item);
-    if (pos === -1) {
-      return;
-    }
-    _siftdown(array, 0, pos, cmp);
-    return _siftup(array, pos, cmp);
-  };
-
-
-  /*
-  Find the n largest elements in a dataset.
-   */
-
-  nlargest = function(array, n, cmp) {
-    var elem, result, _i, _len, _ref;
-    if (cmp == null) {
-      cmp = defaultCmp;
-    }
-    result = array.slice(0, n);
-    if (!result.length) {
-      return result;
-    }
-    heapify(result, cmp);
-    _ref = array.slice(n);
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      elem = _ref[_i];
-      heappushpop(result, elem, cmp);
-    }
-    return result.sort(cmp).reverse();
-  };
-
-
-  /*
-  Find the n smallest elements in a dataset.
-   */
-
-  nsmallest = function(array, n, cmp) {
-    var elem, i, los, result, _i, _j, _len, _ref, _ref1, _results;
-    if (cmp == null) {
-      cmp = defaultCmp;
-    }
-    if (n * 10 <= array.length) {
-      result = array.slice(0, n).sort(cmp);
-      if (!result.length) {
-        return result;
-      }
-      los = result[result.length - 1];
-      _ref = array.slice(n);
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        elem = _ref[_i];
-        if (cmp(elem, los) < 0) {
-          insort(result, elem, 0, null, cmp);
-          result.pop();
-          los = result[result.length - 1];
-        }
-      }
-      return result;
-    }
-    heapify(array, cmp);
-    _results = [];
-    for (i = _j = 0, _ref1 = min(n, array.length); 0 <= _ref1 ? _j < _ref1 : _j > _ref1; i = 0 <= _ref1 ? ++_j : --_j) {
-      _results.push(heappop(array, cmp));
-    }
-    return _results;
-  };
-
-  _siftdown = function(array, startpos, pos, cmp) {
-    var newitem, parent, parentpos;
-    if (cmp == null) {
-      cmp = defaultCmp;
-    }
-    newitem = array[pos];
-    while (pos > startpos) {
-      parentpos = (pos - 1) >> 1;
-      parent = array[parentpos];
-      if (cmp(newitem, parent) < 0) {
-        array[pos] = parent;
-        pos = parentpos;
-        continue;
-      }
-      break;
-    }
-    return array[pos] = newitem;
-  };
-
-  _siftup = function(array, pos, cmp) {
-    var childpos, endpos, newitem, rightpos, startpos;
-    if (cmp == null) {
-      cmp = defaultCmp;
-    }
-    endpos = array.length;
-    startpos = pos;
-    newitem = array[pos];
-    childpos = 2 * pos + 1;
-    while (childpos < endpos) {
-      rightpos = childpos + 1;
-      if (rightpos < endpos && !(cmp(array[childpos], array[rightpos]) < 0)) {
-        childpos = rightpos;
-      }
-      array[pos] = array[childpos];
-      pos = childpos;
-      childpos = 2 * pos + 1;
-    }
-    array[pos] = newitem;
-    return _siftdown(array, startpos, pos, cmp);
-  };
-
-  Heap = (function() {
-    Heap.push = heappush;
-
-    Heap.pop = heappop;
-
-    Heap.replace = heapreplace;
-
-    Heap.pushpop = heappushpop;
-
-    Heap.heapify = heapify;
-
-    Heap.updateItem = updateItem;
-
-    Heap.nlargest = nlargest;
-
-    Heap.nsmallest = nsmallest;
-
-    function Heap(cmp) {
-      this.cmp = cmp != null ? cmp : defaultCmp;
-      this.nodes = [];
-    }
-
-    Heap.prototype.push = function(x) {
-      return heappush(this.nodes, x, this.cmp);
-    };
-
-    Heap.prototype.pop = function() {
-      return heappop(this.nodes, this.cmp);
-    };
-
-    Heap.prototype.peek = function() {
-      return this.nodes[0];
-    };
-
-    Heap.prototype.contains = function(x) {
-      return this.nodes.indexOf(x) !== -1;
-    };
-
-    Heap.prototype.replace = function(x) {
-      return heapreplace(this.nodes, x, this.cmp);
-    };
-
-    Heap.prototype.pushpop = function(x) {
-      return heappushpop(this.nodes, x, this.cmp);
-    };
-
-    Heap.prototype.heapify = function() {
-      return heapify(this.nodes, this.cmp);
-    };
-
-    Heap.prototype.updateItem = function(x) {
-      return updateItem(this.nodes, x, this.cmp);
-    };
-
-    Heap.prototype.clear = function() {
-      return this.nodes = [];
-    };
-
-    Heap.prototype.empty = function() {
-      return this.nodes.length === 0;
-    };
-
-    Heap.prototype.size = function() {
-      return this.nodes.length;
-    };
-
-    Heap.prototype.clone = function() {
-      var heap;
-      heap = new Heap();
-      heap.nodes = this.nodes.slice(0);
-      return heap;
-    };
-
-    Heap.prototype.toArray = function() {
-      return this.nodes.slice(0);
-    };
-
-    Heap.prototype.insert = Heap.prototype.push;
-
-    Heap.prototype.top = Heap.prototype.peek;
-
-    Heap.prototype.front = Heap.prototype.peek;
-
-    Heap.prototype.has = Heap.prototype.contains;
-
-    Heap.prototype.copy = Heap.prototype.clone;
-
-    return Heap;
-
-  })();
-
-  (function(root, factory) {
-    if (true) {
-      return !(__WEBPACK_AMD_DEFINE_ARRAY__ = [], __WEBPACK_AMD_DEFINE_FACTORY__ = (factory),
-				__WEBPACK_AMD_DEFINE_RESULT__ = (typeof __WEBPACK_AMD_DEFINE_FACTORY__ === 'function' ?
-				(__WEBPACK_AMD_DEFINE_FACTORY__.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__)) : __WEBPACK_AMD_DEFINE_FACTORY__),
-				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-    } else if (typeof exports === 'object') {
-      return module.exports = factory();
-    } else {
-      return root.Heap = factory();
-    }
-  })(this, function() {
-    return Heap;
-  });
-
-}).call(this);
-
-
-/***/ }),
-/* 139 */
-/***/ (function(module, exports, __webpack_require__) {
-
-/* WEBPACK VAR INJECTION */(function(global) {/**
- * lodash (Custom Build) <https://lodash.com/>
- * Build: `lodash modularize exports="npm" -o ./`
- * Copyright jQuery Foundation and other contributors <https://jquery.org/>
- * Released under MIT license <https://lodash.com/license>
- * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
- * Copyright Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
- */
-
-/** Used as the `TypeError` message for "Functions" methods. */
-var FUNC_ERROR_TEXT = 'Expected a function';
-
-/** Used as references for various `Number` constants. */
-var NAN = 0 / 0;
-
-/** `Object#toString` result references. */
-var symbolTag = '[object Symbol]';
-
-/** Used to match leading and trailing whitespace. */
-var reTrim = /^\s+|\s+$/g;
-
-/** Used to detect bad signed hexadecimal string values. */
-var reIsBadHex = /^[-+]0x[0-9a-f]+$/i;
-
-/** Used to detect binary string values. */
-var reIsBinary = /^0b[01]+$/i;
-
-/** Used to detect octal string values. */
-var reIsOctal = /^0o[0-7]+$/i;
-
-/** Built-in method references without a dependency on `root`. */
-var freeParseInt = parseInt;
-
-/** Detect free variable `global` from Node.js. */
-var freeGlobal = typeof global == 'object' && global && global.Object === Object && global;
-
-/** Detect free variable `self`. */
-var freeSelf = typeof self == 'object' && self && self.Object === Object && self;
-
-/** Used as a reference to the global object. */
-var root = freeGlobal || freeSelf || Function('return this')();
-
-/** Used for built-in method references. */
-var objectProto = Object.prototype;
-
-/**
- * Used to resolve the
- * [`toStringTag`](http://ecma-international.org/ecma-262/7.0/#sec-object.prototype.tostring)
- * of values.
- */
-var objectToString = objectProto.toString;
-
-/* Built-in method references for those with the same name as other `lodash` methods. */
-var nativeMax = Math.max,
-    nativeMin = Math.min;
-
-/**
- * Gets the timestamp of the number of milliseconds that have elapsed since
- * the Unix epoch (1 January 1970 00:00:00 UTC).
- *
- * @static
- * @memberOf _
- * @since 2.4.0
- * @category Date
- * @returns {number} Returns the timestamp.
- * @example
- *
- * _.defer(function(stamp) {
- *   console.log(_.now() - stamp);
- * }, _.now());
- * // => Logs the number of milliseconds it took for the deferred invocation.
- */
-var now = function() {
-  return root.Date.now();
-};
-
-/**
- * Creates a debounced function that delays invoking `func` until after `wait`
- * milliseconds have elapsed since the last time the debounced function was
- * invoked. The debounced function comes with a `cancel` method to cancel
- * delayed `func` invocations and a `flush` method to immediately invoke them.
- * Provide `options` to indicate whether `func` should be invoked on the
- * leading and/or trailing edge of the `wait` timeout. The `func` is invoked
- * with the last arguments provided to the debounced function. Subsequent
- * calls to the debounced function return the result of the last `func`
- * invocation.
- *
- * **Note:** If `leading` and `trailing` options are `true`, `func` is
- * invoked on the trailing edge of the timeout only if the debounced function
- * is invoked more than once during the `wait` timeout.
- *
- * If `wait` is `0` and `leading` is `false`, `func` invocation is deferred
- * until to the next tick, similar to `setTimeout` with a timeout of `0`.
- *
- * See [David Corbacho's article](https://css-tricks.com/debouncing-throttling-explained-examples/)
- * for details over the differences between `_.debounce` and `_.throttle`.
- *
- * @static
- * @memberOf _
- * @since 0.1.0
- * @category Function
- * @param {Function} func The function to debounce.
- * @param {number} [wait=0] The number of milliseconds to delay.
- * @param {Object} [options={}] The options object.
- * @param {boolean} [options.leading=false]
- *  Specify invoking on the leading edge of the timeout.
- * @param {number} [options.maxWait]
- *  The maximum time `func` is allowed to be delayed before it's invoked.
- * @param {boolean} [options.trailing=true]
- *  Specify invoking on the trailing edge of the timeout.
- * @returns {Function} Returns the new debounced function.
- * @example
- *
- * // Avoid costly calculations while the window size is in flux.
- * jQuery(window).on('resize', _.debounce(calculateLayout, 150));
- *
- * // Invoke `sendMail` when clicked, debouncing subsequent calls.
- * jQuery(element).on('click', _.debounce(sendMail, 300, {
- *   'leading': true,
- *   'trailing': false
- * }));
- *
- * // Ensure `batchLog` is invoked once after 1 second of debounced calls.
- * var debounced = _.debounce(batchLog, 250, { 'maxWait': 1000 });
- * var source = new EventSource('/stream');
- * jQuery(source).on('message', debounced);
- *
- * // Cancel the trailing debounced invocation.
- * jQuery(window).on('popstate', debounced.cancel);
- */
-function debounce(func, wait, options) {
-  var lastArgs,
-      lastThis,
-      maxWait,
-      result,
-      timerId,
-      lastCallTime,
-      lastInvokeTime = 0,
-      leading = false,
-      maxing = false,
-      trailing = true;
-
-  if (typeof func != 'function') {
-    throw new TypeError(FUNC_ERROR_TEXT);
-  }
-  wait = toNumber(wait) || 0;
-  if (isObject(options)) {
-    leading = !!options.leading;
-    maxing = 'maxWait' in options;
-    maxWait = maxing ? nativeMax(toNumber(options.maxWait) || 0, wait) : maxWait;
-    trailing = 'trailing' in options ? !!options.trailing : trailing;
-  }
-
-  function invokeFunc(time) {
-    var args = lastArgs,
-        thisArg = lastThis;
-
-    lastArgs = lastThis = undefined;
-    lastInvokeTime = time;
-    result = func.apply(thisArg, args);
-    return result;
-  }
-
-  function leadingEdge(time) {
-    // Reset any `maxWait` timer.
-    lastInvokeTime = time;
-    // Start the timer for the trailing edge.
-    timerId = setTimeout(timerExpired, wait);
-    // Invoke the leading edge.
-    return leading ? invokeFunc(time) : result;
-  }
-
-  function remainingWait(time) {
-    var timeSinceLastCall = time - lastCallTime,
-        timeSinceLastInvoke = time - lastInvokeTime,
-        result = wait - timeSinceLastCall;
-
-    return maxing ? nativeMin(result, maxWait - timeSinceLastInvoke) : result;
-  }
-
-  function shouldInvoke(time) {
-    var timeSinceLastCall = time - lastCallTime,
-        timeSinceLastInvoke = time - lastInvokeTime;
-
-    // Either this is the first call, activity has stopped and we're at the
-    // trailing edge, the system time has gone backwards and we're treating
-    // it as the trailing edge, or we've hit the `maxWait` limit.
-    return (lastCallTime === undefined || (timeSinceLastCall >= wait) ||
-      (timeSinceLastCall < 0) || (maxing && timeSinceLastInvoke >= maxWait));
-  }
-
-  function timerExpired() {
-    var time = now();
-    if (shouldInvoke(time)) {
-      return trailingEdge(time);
-    }
-    // Restart the timer.
-    timerId = setTimeout(timerExpired, remainingWait(time));
-  }
-
-  function trailingEdge(time) {
-    timerId = undefined;
-
-    // Only invoke if we have `lastArgs` which means `func` has been
-    // debounced at least once.
-    if (trailing && lastArgs) {
-      return invokeFunc(time);
-    }
-    lastArgs = lastThis = undefined;
-    return result;
-  }
-
-  function cancel() {
-    if (timerId !== undefined) {
-      clearTimeout(timerId);
-    }
-    lastInvokeTime = 0;
-    lastArgs = lastCallTime = lastThis = timerId = undefined;
-  }
-
-  function flush() {
-    return timerId === undefined ? result : trailingEdge(now());
-  }
-
-  function debounced() {
-    var time = now(),
-        isInvoking = shouldInvoke(time);
-
-    lastArgs = arguments;
-    lastThis = this;
-    lastCallTime = time;
-
-    if (isInvoking) {
-      if (timerId === undefined) {
-        return leadingEdge(lastCallTime);
-      }
-      if (maxing) {
-        // Handle invocations in a tight loop.
-        timerId = setTimeout(timerExpired, wait);
-        return invokeFunc(lastCallTime);
-      }
-    }
-    if (timerId === undefined) {
-      timerId = setTimeout(timerExpired, wait);
-    }
-    return result;
-  }
-  debounced.cancel = cancel;
-  debounced.flush = flush;
-  return debounced;
-}
-
-/**
- * Checks if `value` is the
- * [language type](http://www.ecma-international.org/ecma-262/7.0/#sec-ecmascript-language-types)
- * of `Object`. (e.g. arrays, functions, objects, regexes, `new Number(0)`, and `new String('')`)
- *
- * @static
- * @memberOf _
- * @since 0.1.0
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is an object, else `false`.
- * @example
- *
- * _.isObject({});
- * // => true
- *
- * _.isObject([1, 2, 3]);
- * // => true
- *
- * _.isObject(_.noop);
- * // => true
- *
- * _.isObject(null);
- * // => false
- */
-function isObject(value) {
-  var type = typeof value;
-  return !!value && (type == 'object' || type == 'function');
-}
-
-/**
- * Checks if `value` is object-like. A value is object-like if it's not `null`
- * and has a `typeof` result of "object".
- *
- * @static
- * @memberOf _
- * @since 4.0.0
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is object-like, else `false`.
- * @example
- *
- * _.isObjectLike({});
- * // => true
- *
- * _.isObjectLike([1, 2, 3]);
- * // => true
- *
- * _.isObjectLike(_.noop);
- * // => false
- *
- * _.isObjectLike(null);
- * // => false
- */
-function isObjectLike(value) {
-  return !!value && typeof value == 'object';
-}
-
-/**
- * Checks if `value` is classified as a `Symbol` primitive or object.
- *
- * @static
- * @memberOf _
- * @since 4.0.0
- * @category Lang
- * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is a symbol, else `false`.
- * @example
- *
- * _.isSymbol(Symbol.iterator);
- * // => true
- *
- * _.isSymbol('abc');
- * // => false
- */
-function isSymbol(value) {
-  return typeof value == 'symbol' ||
-    (isObjectLike(value) && objectToString.call(value) == symbolTag);
-}
-
-/**
- * Converts `value` to a number.
- *
- * @static
- * @memberOf _
- * @since 4.0.0
- * @category Lang
- * @param {*} value The value to process.
- * @returns {number} Returns the number.
- * @example
- *
- * _.toNumber(3.2);
- * // => 3.2
- *
- * _.toNumber(Number.MIN_VALUE);
- * // => 5e-324
- *
- * _.toNumber(Infinity);
- * // => Infinity
- *
- * _.toNumber('3.2');
- * // => 3.2
- */
-function toNumber(value) {
-  if (typeof value == 'number') {
-    return value;
-  }
-  if (isSymbol(value)) {
-    return NAN;
-  }
-  if (isObject(value)) {
-    var other = typeof value.valueOf == 'function' ? value.valueOf() : value;
-    value = isObject(other) ? (other + '') : other;
-  }
-  if (typeof value != 'string') {
-    return value === 0 ? value : +value;
-  }
-  value = value.replace(reTrim, '');
-  var isBinary = reIsBinary.test(value);
-  return (isBinary || reIsOctal.test(value))
-    ? freeParseInt(value.slice(2), isBinary ? 2 : 8)
-    : (reIsBadHex.test(value) ? NAN : +value);
-}
-
-module.exports = debounce;
-
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(20)))
-
-/***/ }),
-/* 140 */
+/* 136 */
 /***/ (function(module, exports) {
 
 // shim for using process in browser
@@ -29909,7 +29107,7 @@ process.umask = function() { return 0; };
 
 
 /***/ }),
-/* 141 */
+/* 137 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(global, process) {(function (global, undefined) {
@@ -30099,10 +29297,10 @@ process.umask = function() { return 0; };
     attachTo.clearImmediate = clearImmediate;
 }(typeof self === "undefined" ? typeof global === "undefined" ? this : global : self));
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(20), __webpack_require__(140)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(139), __webpack_require__(136)))
 
 /***/ }),
-/* 142 */
+/* 138 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var apply = Function.prototype.apply;
@@ -30155,10 +29353,49 @@ exports._unrefActive = exports.active = function(item) {
 };
 
 // setimmediate attaches itself to the global object
-__webpack_require__(141);
+__webpack_require__(137);
 exports.setImmediate = setImmediate;
 exports.clearImmediate = clearImmediate;
 
+
+/***/ }),
+/* 139 */
+/***/ (function(module, exports) {
+
+var g;
+
+// This works in non-strict mode
+g = (function() {
+	return this;
+})();
+
+try {
+	// This works if eval is allowed (see CSP)
+	g = g || Function("return this")() || (1,eval)("this");
+} catch(e) {
+	// This works if the window reference is available
+	if(typeof window === "object")
+		g = window;
+}
+
+// g can still be undefined, but nothing to do about it...
+// We return undefined, instead of nothing here, so it's
+// easier to handle this case. if(!global) { ...}
+
+module.exports = g;
+
+
+/***/ }),
+/* 140 */
+/***/ (function(module, exports) {
+
+module.exports = __WEBPACK_EXTERNAL_MODULE_140__;
+
+/***/ }),
+/* 141 */
+/***/ (function(module, exports) {
+
+module.exports = __WEBPACK_EXTERNAL_MODULE_141__;
 
 /***/ })
 /******/ ]);

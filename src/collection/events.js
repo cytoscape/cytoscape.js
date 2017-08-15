@@ -24,7 +24,7 @@ let emitterOptions = {
     };
   },
   callbackContext: function( ele, listener, eventObj ){
-    return listener.selector != null ? eventObj.target : ele;
+    return listener.qualifier != null ? eventObj.target : ele;
   },
   beforeEmit: function( context, listener/*, eventObj*/ ){
     if( listener.conf && listener.conf.once ){

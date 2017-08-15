@@ -24,7 +24,7 @@ let emitterOptions = {
     };
   },
   callbackContext: function( cy, listener, eventObj ){
-    return listener.selector != null ? eventObj.target : cy;
+    return listener.qualifier != null ? eventObj.target : cy;
   }
 };
 

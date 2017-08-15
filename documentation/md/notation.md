@@ -13,7 +13,7 @@ The core provides several functions to access elements in the graph.  Each of th
 
 <span class="important-indicator"></span> Note that a collection is immutable by default, meaning that the set of elements within a collection can not be changed.  The API returns a new collection with different elements when necessary, instead of mutating the existing collection.  This allows the developer to safely use set theory operations on collections, use collections functionally, and so on.  Note that because a collection is just a list of elements, it is inexpensive to create new collections.  
 
-<span class="important-indicator"></span>For very performance intensive code, a collection can be treated as mutable with `[eles.merge()](#eles.merge)` and `[eles.unmerge()](#eles.unmerge)`.  Most apps should never need these functions.
+<span class="important-indicator"></span> For very performance intensive code, a collection can be treated as mutable with [`eles.merge()`](#eles.merge) and [`eles.unmerge()`](#eles.unmerge).  Most apps should never need these functions.
 
 
 ## Functions

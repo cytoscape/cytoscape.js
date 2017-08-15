@@ -6,6 +6,10 @@ let math = require('../math');
 let elesfn = ({
   // Calculates and returns node dimensions { x, y } based on options given
   layoutDimensions: function( options ){
+    options = util.assign( {
+      nodeDimensionsIncludeLabels: true
+    }, options );
+
     if( options.nodeDimensionsIncludeLabels ){
       let bbDim = this.boundingBox();
       return {

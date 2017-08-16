@@ -404,12 +404,13 @@ Basic font styling:
  * **`font-size`** : The size of the label text.
  * **`font-style`** : A [CSS font style](https://developer.mozilla.org/en-US/docs/Web/CSS/font-style) to be applied to the label text.
  * **`font-weight`** : A [CSS font weight](https://developer.mozilla.org/en-US/docs/Web/CSS/font-weight) to be applied to the label text.
- * **`text-transform`** : A transformation to apply to the label text; may be `none`, `uppercase`, or `lowercase`.
+ * **`text-transform`** : A transformation to apply to the label text; may be `none`, 
+ `uppercase`, or `lowercase`.
 
 Wrapping text:
 
- * **`text-wrap`** : A wrapping style to apply to the label text; may be `none` for no wrapping (including manual newlines: `\n`), `wrap` for manual and/or autowrapping or `ellipsize` to truncate the string and append '...' based on `text-max-width`.
- * **`text-max-width`** : The maximum width for wrapped text, applied when `text-wrap` is set to `wrap` or `ellipsize`.  For only manual newlines (i.e. `\n`), set a very large value like `1000px` such that only your newline characters would apply.
+ * **`text-wrap`** : A wrapping style to apply to the label text; may be `none` for no wrapping (including manual newlines: `\n`), `wrap` for manual and/or autowrapping or `ellipsis` to truncate the string and append '...' based on `text-max-width`.
+ * **`text-max-width`** : The maximum width for wrapped text, applied when `text-wrap` is set to `wrap` or `ellipsis`.  For only manual newlines (i.e. `\n`), set a very large value like `1000px` such that only your newline characters would apply.
 
 Node label alignment:
 

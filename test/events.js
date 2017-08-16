@@ -321,7 +321,7 @@ describe('Events', function(){
     });
 
     it('should get the element context when bubbled with a delegate selector on the core', function( done ){
-      let n4 = cy.$('#n4');
+      var n4 = cy.$('#n4');
 
       cy.on('foo', 'node', function(){
         expect( this[0] === n4[0] ).to.be.true;
@@ -333,8 +333,8 @@ describe('Events', function(){
     });
 
     it('should get the element context when bubbled with a delegate selector on a collection', function( done ){
-      let n4 = cy.$('#n4');
-      let n5 = cy.$('#n5');
+      var n4 = cy.$('#n4');
+      var n5 = cy.$('#n5');
 
       n4.on('foo', 'node', function(){
         expect( this[0] === n5[0] ).to.be.true;

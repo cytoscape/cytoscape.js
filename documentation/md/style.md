@@ -315,6 +315,11 @@ For edges made of several straight lines (`curve-style: segments`):
 * **`edge-distances`** : With value `intersection` (default), the line from source to target for `segment-weights` is from the outside of the source node's shape to the outside of the target node's shape.  With value `node-position`, the line is from the source position to the target position.  The `node-position` option makes calculating edge points easier --- but it should be used carefully because you can create invalid points that `intersection` would have automatically corrected.
 
 
+## Straight edges
+
+For explicit specification of a straight edge with endpoint arrows allowed (`curve-style: straight`)
+
+
 ## Edge arrow
 
  * **`<pos>-arrow-color`** : The colour of the edge's source arrow.

@@ -84,7 +84,6 @@
     "docs-pub": "gulp docs-pub",
     "docs-push": "gulp docs-push",
     "docs-push-unstable": "gulp docs-push-unstable",
-    "publish": "gulp publish",
     "zip": "gulp zip",
     "lint": "gulp lint",
     "benchmark": "gulp benchmark",

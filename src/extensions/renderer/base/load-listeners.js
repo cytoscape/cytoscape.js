@@ -2016,8 +2016,12 @@ BRp.load = function(){
       } );
     };
 
+    var pointerIsMouse = function( e ){
+      return e.pointerType === 'mouse' || e.pointerType === 4;
+    };
+
     r.registerBinding( r.container, 'pointerdown', function( e ){
-      if( e.pointerType === 'mouse' ){ return; } // mouse already handled
+      if( pointerIsMouse(e) ){ return; } // mouse already handled
 
       e.preventDefault();
 
@@ -2028,7 +2032,7 @@ BRp.load = function(){
     } );
 
     r.registerBinding( r.container, 'pointerup', function( e ){
-      if( e.pointerType === 'mouse' ){ return; } // mouse already handled
+      if( pointerIsMouse(e) ){ return; } // mouse already handled
 
       removePointer( e );
 
@@ -2037,7 +2041,7 @@ BRp.load = function(){
     } );
 
     r.registerBinding( r.container, 'pointercancel', function( e ){
-      if( e.pointerType === 'mouse' ){ return; } // mouse already handled
+      if( pointerIsMouse(e) ){ return; } // mouse already handled
 
       removePointer( e );
 
@@ -2046,7 +2050,7 @@ BRp.load = function(){
     } );
 
     r.registerBinding( r.container, 'pointermove', function( e ){
-      if( e.pointerType === 'mouse' ){ return; } // mouse already handled
+      if( pointerIsMouse(e) ){ return; } // mouse already handled
 
       e.preventDefault();
 

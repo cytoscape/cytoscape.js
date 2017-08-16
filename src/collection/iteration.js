@@ -1,5 +1,6 @@
 let is = require( '../is' );
 let zIndexSort = require( './zsort' );
+let util = require('../util');
 
 let elesfn = ({
   forEach: function( fn, thisArg ){
@@ -103,7 +104,7 @@ let elesfn = ({
       let depth = _p.data.parent ? ele.parents().size() : 0;
 
       if( !ele.isParent() ){
-        return Number.MAX_SAFE_INTEGER - 1; // childless nodes always on top
+        return util.MAX_INT - 1; // childless nodes always on top
       }
 
       return depth;

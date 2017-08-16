@@ -1,7 +1,7 @@
 
 /*!
 
-Cytoscape.js 2.7.22 (MIT licensed)
+Cytoscape.js 2.7.23 (MIT licensed)
 
 Copyright (c) The Cytoscape Consortium
 

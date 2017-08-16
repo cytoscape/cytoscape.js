@@ -2,7 +2,7 @@
 
 /*!
 
-Cytoscape.js 2.7.22 (MIT licensed)
+Cytoscape.js 2.7.23 (MIT licensed)
 
 Copyright (c) The Cytoscape Consortium
 
@@ -16552,8 +16552,12 @@ BRp.load = function(){
       } );
     };
 
+    var pointerIsMouse = function( e ){
+      return e.pointerType === 'mouse' || e.pointerType === 4;
+    };
+
     r.registerBinding( r.container, 'pointerdown', function( e ){
-      if( e.pointerType === 'mouse' ){ return; } // mouse already handled
+      if( pointerIsMouse(e) ){ return; } // mouse already handled
 
       e.preventDefault();
 
@@ -16564,7 +16568,7 @@ BRp.load = function(){
     } );
 
     r.registerBinding( r.container, 'pointerup', function( e ){
-      if( e.pointerType === 'mouse' ){ return; } // mouse already handled
+      if( pointerIsMouse(e) ){ return; } // mouse already handled
 
       removePointer( e );
 
@@ -16573,7 +16577,7 @@ BRp.load = function(){
     } );
 
     r.registerBinding( r.container, 'pointercancel', function( e ){
-      if( e.pointerType === 'mouse' ){ return; } // mouse already handled
+      if( pointerIsMouse(e) ){ return; } // mouse already handled
 
       removePointer( e );
 
@@ -16582,7 +16586,7 @@ BRp.load = function(){
     } );
 
     r.registerBinding( r.container, 'pointermove', function( e ){
-      if( e.pointerType === 'mouse' ){ return; } // mouse already handled
+      if( pointerIsMouse(e) ){ return; } // mouse already handled
 
       e.preventDefault();
 
@@ -27389,7 +27393,7 @@ util.debounce = function( func, wait, options ){ // ported lodash debounce funct
 module.exports = util;
 
 },{"../is":83,"../window":107}],106:[function(_dereq_,module,exports){
-module.exports = "2.7.22";
+module.exports = "2.7.23";
 
 },{}],107:[function(_dereq_,module,exports){
 module.exports = ( typeof window === 'undefined' ? null : window ); // eslint-disable-line no-undef

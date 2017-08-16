@@ -277,6 +277,8 @@ var math = __webpack_require__(2);
 
 var util = {
 
+  MAX_INT: Number.MAX_SAFE_INTEGER || 9007199254740991,
+
   trueify: function trueify() {
     return true;
   },
@@ -3628,6 +3630,8 @@ module.exports = Element;
  *  z-index: An integer value that affects the relative draw order of elements.  In general, an element with a higher
  *      `z-index` will be drawn on top of an element with a lower `z-index`.
  */
+var util = __webpack_require__(1);
+
 var zIndexSort = function zIndexSort(a, b) {
   var cy = a.cy();
   var hasCompoundNodes = cy.hasCompoundNodes();
@@ -3639,7 +3643,7 @@ var zIndexSort = function zIndexSort(a, b) {
     } else if (style.value === 'bottom') {
       return -1;
     } else if (style.value === 'top') {
-      return Number.MAX_SAFE_INTEGER;
+      return util.MAX_INT;
     }
     // 'orphan'
     return 0;
@@ -4673,7 +4677,7 @@ module.exports = Stylesheet;
 "use strict";
 
 
-module.exports = "3.2.0";
+module.exports = "3.2.1";
 
 /***/ }),
 /* 24 */
@@ -8804,7 +8808,7 @@ var emitterOptions = {
     };
   },
   callbackContext: function callbackContext(ele, listener, eventObj) {
-    return listener.selector != null ? eventObj.target : ele;
+    return listener.qualifier != null ? eventObj.target : ele;
   },
   beforeEmit: function beforeEmit(context, listener /*, eventObj*/) {
     if (listener.conf && listener.conf.once) {
@@ -9343,6 +9347,7 @@ module.exports = elesfn;
 
 var is = __webpack_require__(0);
 var zIndexSort = __webpack_require__(14);
+var util = __webpack_require__(1);
 
 var elesfn = {
   forEach: function forEach(fn, thisArg) {
@@ -9450,7 +9455,7 @@ var elesfn = {
       var depth = _p.data.parent ? ele.parents().size() : 0;
 
       if (!ele.isParent()) {
-        return Number.MAX_SAFE_INTEGER - 1; // childless nodes always on top
+        return util.MAX_INT - 1; // childless nodes always on top
       }
 
       return depth;
@@ -11762,7 +11767,7 @@ var emitterOptions = {
     };
   },
   callbackContext: function callbackContext(cy, listener, eventObj) {
-    return listener.selector != null ? eventObj.target : cy;
+    return listener.qualifier != null ? eventObj.target : cy;
   }
 };
 
@@ -20929,8 +20934,12 @@ BRp.load = function () {
       });
     };
 
+    var pointerIsMouse = function pointerIsMouse(e) {
+      return e.pointerType === 'mouse' || e.pointerType === 4;
+    };
+
     r.registerBinding(r.container, 'pointerdown', function (e) {
-      if (e.pointerType === 'mouse') {
+      if (pointerIsMouse(e)) {
         return;
       } // mouse already handled
 
@@ -20943,7 +20952,7 @@ BRp.load = function () {
     });
 
     r.registerBinding(r.container, 'pointerup', function (e) {
-      if (e.pointerType === 'mouse') {
+      if (pointerIsMouse(e)) {
         return;
       } // mouse already handled
 
@@ -20954,7 +20963,7 @@ BRp.load = function () {
     });
 
     r.registerBinding(r.container, 'pointercancel', function (e) {
-      if (e.pointerType === 'mouse') {
+      if (pointerIsMouse(e)) {
         return;
       } // mouse already handled
 
@@ -20965,7 +20974,7 @@ BRp.load = function () {
     });
 
     r.registerBinding(r.container, 'pointermove', function (e) {
-      if (e.pointerType === 'mouse') {
+      if (pointerIsMouse(e)) {
         return;
       } // mouse already handled
 

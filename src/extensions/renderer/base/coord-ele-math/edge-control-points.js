@@ -20,7 +20,7 @@ BRp.findEdgeControlPoints = function( edges ){
     var _p = edge._private;
     var data = _p.data;
     var curveStyle = edge.pstyle( 'curve-style' ).value;
-    var edgeIsUnbundled = curveStyle === 'unbundled-bezier' || curveStyle === 'segments';
+    var edgeIsUnbundled = curveStyle === 'unbundled-bezier' || curveStyle === 'segments' || curveStyle === 'straight';
     var edgeIsBezier = curveStyle === 'unbundled-bezier' || curveStyle === 'bezier';
 
     // ignore edges who are not to be displayed

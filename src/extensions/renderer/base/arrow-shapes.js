@@ -220,9 +220,9 @@ BRp.registerArrowShapes = function(){
     },
 
     draw: function( context, size, angle, translation, edgeWidth ){
-      var sz = size*0.94 + edgeWidth + 2; 
+      var scaledCrossLineSize = size*0.94 + edgeWidth + 2; 
       var triPts = transformPoints( this.points, size, angle, translation );
-      var crossLinePts = transformPoints( this.crossLinePoints, sz, angle, translation );
+      var crossLinePts = transformPoints( this.crossLinePoints, scaledCrossLineSize, angle, translation );
       
       renderer.arrowShapeImpl( this.name )( context, triPts, crossLinePts );
     }

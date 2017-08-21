@@ -44,6 +44,10 @@ let corefn = ({
     this.notifications( true );
   },
 
+  batching: function(){
+    return this._private.batchCount > 0;
+  },
+
   startBatch: function(){
     let _p = this._private;
 

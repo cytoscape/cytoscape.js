@@ -48,6 +48,9 @@ elesfn.updateCompoundBounds = function(){
   // save cycles for non compound graphs or when style disabled
   if( !cy.styleEnabled() || !cy.hasCompoundNodes() ){ return this; }
 
+  // save cycles when batching -- but bounds will be stale (or not exist yet)
+  if( cy.batching() ){ return this; }
+
   let updated = [];
 
   function update( parent ){

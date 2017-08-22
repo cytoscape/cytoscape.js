@@ -1358,6 +1358,7 @@ BRp.findEdgeControlPoints = function( edges ){
       var segmentsN = Math.min( segmentWs.pfValue.length, segmentDs.pfValue.length );
       var srcArrShape = edge.pstyle('source-arrow-shape').value;
       var tgtArrShape = edge.pstyle('target-arrow-shape').value;
+      var lineWidth = edge.pstyle('width').value;
 
       var srcX1 = rs.lastSrcCtlPtX;
       var srcX2 = srcPos.x;
@@ -1404,6 +1405,9 @@ BRp.findEdgeControlPoints = function( edges ){
       var tgtArr1 = rs.lastTgtArr;
       var tgtArr2 = tgtArrShape;
 
+      var lineW1 = rs.lastLineW;
+      var lineW2 = lineWidth;
+
       if( badBezier ){
         rs.badBezier = true;
       } else {
@@ -1421,6 +1425,7 @@ BRp.findEdgeControlPoints = function( edges ){
       &&  edgeDistances1 === edgeDistances2
       &&  srcArr1 === srcArr2
       &&  tgtArr1 === tgtArr2
+      &&  lineW1 === lineW2
       &&  ((edgeIndex1 === edgeIndex2 && numEdges1 === numEdges2) || edgeIsUnbundled) ){
         continue; // then the control points haven't changed and we can skip calculating them
       } else {
@@ -1443,6 +1448,7 @@ BRp.findEdgeControlPoints = function( edges ){
         rs.lastEdgeDistances = edgeDistances2;
         rs.lastSrcArr = srcArr2;
         rs.lastTgtArr = tgtArr2;
+        rs.lastLineW = lineW2;
       }
 
       if( src === tgt ){

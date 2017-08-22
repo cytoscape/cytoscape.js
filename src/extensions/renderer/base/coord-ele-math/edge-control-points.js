@@ -63,7 +63,7 @@ BRp.findEdgeControlPoints = function( edges ){
     }
   }
 
-  var src, tgt, src_p, tgt_p, srcPos, tgtPos, srcW, srcH, tgtW, tgtH, srcShape, tgtShape;
+  var src, tgt, srcPos, tgtPos, srcW, srcH, tgtW, tgtH, srcShape, tgtShape;
   var vectorNormInverse;
   var badBezier;
 
@@ -87,9 +87,6 @@ BRp.findEdgeControlPoints = function( edges ){
       src = tgt;
       tgt = temp;
     }
-
-    src_p = src._private;
-    tgt_p = tgt._private;
 
     srcPos = src.position();
     tgtPos = tgt.position();
@@ -162,6 +159,8 @@ BRp.findEdgeControlPoints = function( edges ){
       var tgtEndpt = edge.pstyle('target-endpoint').value;
       var srcArrShape = edge.pstyle('source-arrow-shape').value;
       var tgtArrShape = edge.pstyle('target-arrow-shape').value;
+      var arrowScale = edge.pstyle('arrow-scale').value;
+      var lineWidth = edge.pstyle('width').value;
 
       var srcX1 = rs.lastSrcCtlPtX;
       var srcY1 = rs.lastSrcCtlPtY;
@@ -212,6 +211,12 @@ BRp.findEdgeControlPoints = function( edges ){
       var tgtArr1 = rs.lastTgtArr;
       var tgtArr2 = tgtArrShape;
 
+      var lineW1 = rs.lastLineW;
+      var lineW2 = lineWidth;
+
+      var arrScl1 = rs.lastArrScl;
+      var arrScl2 = arrowScale;
+
       if( badBezier ){
         rs.badBezier = true;
       } else {
@@ -233,6 +238,8 @@ BRp.findEdgeControlPoints = function( edges ){
       &&  tgtEndpt1 === tgtEndpt2
       &&  srcArr1 === srcArr2
       &&  tgtArr1 === tgtArr2
+      &&  lineW1 === lineW2
+      &&  arrScl1 === arrScl2
       &&  ((edgeIndex1 === edgeIndex2 && numEdges1 === numEdges2) || edgeIsUnbundled) ){
         continue; // then the control points haven't changed and we can skip calculating them
       } else {
@@ -259,6 +266,8 @@ BRp.findEdgeControlPoints = function( edges ){
         rs.lastTgtEndpt = tgtEndpt2;
         rs.lastSrcArr = srcArr2;
         rs.lastTgtArr = tgtArr2;
+        rs.lastLineW = lineW2;
+        rs.lastArrScl = arrScl2;
       }
 
       if( !pairEdges.calculatedIntersection && src !== tgt && ( pairEdges.hasBezier || pairEdges.hasUnbundled ) ){

@@ -1358,7 +1358,7 @@ BRp.findEdgeControlPoints = function( edges ){
       var segmentsN = Math.min( segmentWs.pfValue.length, segmentDs.pfValue.length );
       var srcArrShape = edge.pstyle('source-arrow-shape').value;
       var tgtArrShape = edge.pstyle('target-arrow-shape').value;
-      var lineWidth = edge.pstyle('width').value;
+      var lineWidth = edge.pstyle('width').pfValue;
 
       var srcX1 = rs.lastSrcCtlPtX;
       var srcX2 = srcPos.x;

@@ -23,6 +23,7 @@ var cy = window.cy = cytoscape({
     {
       selector: 'edge',
       style: {
+        'curve-style': 'bezier',
         'width': 4,
         'target-arrow-shape': 'triangle',
         'line-color': '#9dbaea',

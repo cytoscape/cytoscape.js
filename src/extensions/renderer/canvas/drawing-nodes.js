@@ -310,7 +310,7 @@ CRp.hasPie = function( node ){
 
 CRp.drawPie = function( context, node, nodeOpacity, pos ){
   node = node[0]; // ensure ele ref
-  pos || node.position();
+  pos = pos || node.position();
 
   let cyStyle = node.cy().style();
   let pieSize = node.pstyle( 'pie-size' );

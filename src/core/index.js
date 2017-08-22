@@ -5,15 +5,10 @@ let is = require( '../is' );
 let Promise = require( '../promise' );
 let define = require( '../define' );
 
-let Core = function( opts ){
-  let cy = this;
-
-  opts = util.extend( {}, opts );
-
-  let container = opts.container;
-
-  // allow for passing a wrapped jquery object
-  // e.g. cytoscape({ container: $('#cy') })
+let coreInit = function( cy, opts ){
+  let options = util.extend( {}, opts );
+  
+  let container = options.container;
   if( container && !is.htmlElement( container ) && is.htmlElement( container[0] ) ){
     container = container[0];
   }
@@ -28,12 +23,11 @@ let Core = function( opts ){
   }
 
   let readies = reg.readies = reg.readies || [];
-
+  
   if( container ){ container._cyreg = reg; } // make sure container assoc'd reg points to this cy
   reg.cy = cy;
-
+  
   let head = window !== undefined && container !== undefined && !opts.headless;
-  let options = opts;
   options.layout = util.extend( { name: head ? 'grid' : 'null' }, options.layout );
   options.renderer = util.extend( { name: head ? 'canvas' : 'null' }, options.renderer );
 
@@ -47,17 +41,18 @@ let Core = function( opts ){
     }
   };
 
-  let _p = this._private = {
+  let _p = cy._private = {
     container: container, // html dom ele container
     ready: false, // whether ready has been triggered
     options: options, // cached options
-    elements: new Collection( this ), // elements in the graph
+    elements: new Collection( cy ), // elements in the graph
     listeners: [], // list of listeners
-    aniEles: new Collection( this ), // elements being animated
+    aniEles: new Collection( cy ), // elements being animated
     scratch: {}, // scratch object for core
     layout: null,
     renderer: null,
     destroyed: false, // whether destroy was called
+    mounted: head,  // whether mount was called
     notificationsEnabled: true, // whether notifications are sent to the renderer
     minZoom: 1e-50,
     maxZoom: 1e50,
@@ -82,7 +77,7 @@ let Core = function( opts ){
     hasCompoundNodes: false
   };
 
-  this.createEmitter();
+  cy.createEmitter();
 
   // set selection type
   let selType = options.selectionType;
@@ -195,6 +190,13 @@ let Core = function( opts ){
   } );
 };
 
+let Core = function( opts ){
+
+  let cy = this;
+
+  coreInit( cy, opts );
+};
+
 let corefn = Core.prototype; // short alias
 
 util.extend( corefn, {
@@ -273,6 +275,17 @@ util.extend( corefn, {
 
   container: function(){
     return this._private.container;
+  },
+
+  mount: function( container ){
+    let cy = this;
+    let _p = cy._private;
+    if( container && _p.options.headless ){
+      _p.options.container = container;
+      _p.options.renderer.name = 'canvas';
+      _p.options.headless = false; 
+      coreInit(cy, _p.options);
+    }
   },
 
   options: function(){

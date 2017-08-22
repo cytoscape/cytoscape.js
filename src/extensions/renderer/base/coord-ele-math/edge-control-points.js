@@ -160,7 +160,7 @@ BRp.findEdgeControlPoints = function( edges ){
       var srcArrShape = edge.pstyle('source-arrow-shape').value;
       var tgtArrShape = edge.pstyle('target-arrow-shape').value;
       var arrowScale = edge.pstyle('arrow-scale').value;
-      var lineWidth = edge.pstyle('width').value;
+      var lineWidth = edge.pstyle('width').pfValue;
 
       var srcX1 = rs.lastSrcCtlPtX;
       var srcY1 = rs.lastSrcCtlPtY;

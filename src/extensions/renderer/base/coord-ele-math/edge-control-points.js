@@ -504,6 +504,12 @@ BRp.findEdgeControlPoints = function( edges ){
             var w1 = 1 - ctrlptWeight;
             var w2 = ctrlptWeight;
 
+            if( edgeIsSwapped ){
+              var temp = w1;
+              w1 = w2;
+              w2 = temp;
+            }
+
             var midptPts = edgeDistances === 'node-position' ? posPts : midptSrcPts;
 
             var adjustedMidpt = {

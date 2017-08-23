@@ -280,7 +280,8 @@ util.extend( corefn, {
   mount: function( container ){
     let cy = this;
     let _p = cy._private;
-    if( container && _p.options.headless ){
+    if( container ){
+      cy.destroyRenderer();
       _p.options.container = container;
       _p.options.renderer.name = 'canvas';
       _p.options.headless = false; 

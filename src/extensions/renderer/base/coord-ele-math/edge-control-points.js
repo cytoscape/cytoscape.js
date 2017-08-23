@@ -143,6 +143,9 @@ BRp.findEdgeControlPoints = function( edges ){
 
       var edgeIsUnbundled = curveStyle === 'unbundled-bezier' || curveStyle === 'segments';
 
+      // whether the normalised pair order is the reverse of the edge's src-tgt order
+      var edgeIsSwapped = src.id() !== edge.source().id();
+
       var ctrlptDists = edge.pstyle( 'control-point-distances' );
       var loopDir = edge.pstyle('loop-direction').pfValue;
       var loopSwp = edge.pstyle('loop-sweep').pfValue;
@@ -350,8 +353,13 @@ BRp.findEdgeControlPoints = function( edges ){
 
         }
 
-        rs.srcIntn = pairEdges.srcIntn;
-        rs.tgtIntn = pairEdges.tgtIntn;
+        if( !edgeIsSwapped ){
+          rs.srcIntn = pairEdges.srcIntn;
+          rs.tgtIntn = pairEdges.tgtIntn;
+        } else { // ensure that the per-edge cached value for intersections are correct for swapped bundled edges
+          rs.srcIntn = pairEdges.tgtIntn;
+          rs.tgtIntn = pairEdges.srcIntn;
+        }
 
         if( src === tgt ){
           // Self-edge

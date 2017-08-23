@@ -1,5 +1,5 @@
 /* eslint-disable */
-console.log('1')
+
 var fs = require('fs');
 // var Converter = require('./js/Markdown.Converter').Converter;
 // var converter = new Converter();
@@ -14,8 +14,6 @@ var configFile = './docmaker.json';
 var demoFile = './js/load.js';
 var mdRend = new marked.Renderer();
 var path = require('path');
-
-console.log('2')
 
 var rendCode = mdRend.code;
 mdRend.code = function(code, lang){

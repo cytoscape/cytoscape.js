@@ -35,6 +35,7 @@ function Emitter( opts ){
   util.assign( this, defaults, opts );
 
   this.listeners = [];
+  this.emitting = false;
 }
 
 let p = Emitter.prototype;
@@ -65,8 +66,9 @@ let forEachEvent = function( self, handler, events, qualifier, callback, conf, c
     if( match ){
       let type = match[1];
       let namespace = match[2] ? match[2] : null;
+      let ret = handler( self, evt, type, namespace, qualifier, callback, conf );
 
-      handler( self, evt, type, namespace, qualifier, callback, conf );
+      if( ret === false ){ break; } // allow exiting early
     }
   }
 };
@@ -131,6 +133,10 @@ p.one = function( events, qualifier, callback, conf ){
 };
 
 p.removeListener = p.off = function( events, qualifier, callback, conf ){
+  if( this.emitting ){
+    this.listeners = util.copy( this.listeners );
+  }
+
   let listeners = this.listeners;
 
   for( let i = listeners.length - 1; i >= 0; i-- ){
@@ -144,6 +150,8 @@ p.removeListener = p.off = function( events, qualifier, callback, conf ){
         ( !callback || listener.callback === callback )
       ){
         listeners.splice( i, 1 );
+
+        return false;
       }
     }, events, qualifier, callback, conf );
   }
@@ -154,57 +162,61 @@ p.removeListener = p.off = function( events, qualifier, callback, conf ){
 p.emit = p.trigger = function( events, extraParams, manualCallback ){
   let listeners = this.listeners;
 
-    if( !is.array( extraParams ) ){
-      extraParams = [ extraParams ];
+  this.emitting = true;
+
+  if( !is.array( extraParams ) ){
+    extraParams = [ extraParams ];
+  }
+
+  forEachEventObj( this, function( self, eventObj ){
+    if( manualCallback != null ){
+      listeners = [{
+        event: eventObj.event,
+        type: eventObj.type,
+        namespace: eventObj.namespace,
+        callback: manualCallback
+      }];
     }
 
-    forEachEventObj( this, function( self, eventObj ){
-      if( manualCallback != null ){
-        listeners = [{
-          event: eventObj.event,
-          type: eventObj.type,
-          namespace: eventObj.namespace,
-          callback: manualCallback
-        }];
-      }
+    for( let i = 0; i < listeners.length; i++ ){
+      let listener = listeners[i];
 
-      for( let i = 0; i < listeners.length; i++ ){
-        let listener = listeners[i];
+      if(
+        ( listener.type === eventObj.type ) &&
+        ( !listener.namespace || listener.namespace === eventObj.namespace || listener.namespace === universalNamespace ) &&
+        ( self.eventMatches( self.context, listener, eventObj ) )
+      ){
+        let args = [ eventObj ];
 
-        if(
-          ( listener.type === eventObj.type ) &&
-          ( !listener.namespace || listener.namespace === eventObj.namespace || listener.namespace === universalNamespace ) &&
-          ( self.eventMatches( self.context, listener, eventObj ) )
-        ){
-          let args = [ eventObj ];
+        if( extraParams != null ){
+          util.push( args, extraParams );
+        }
 
-          if( extraParams != null ){
-            util.push( args, extraParams );
-          }
+        self.beforeEmit( self.context, listener, eventObj );
 
-          self.beforeEmit( self.context, listener, eventObj );
+        if( listener.conf && listener.conf.one ){
+          listeners.splice( i, 1 );
+          i--;
+        }
 
-          if( listener.conf && listener.conf.one ){
-            listeners.splice( i, 1 );
-            i--;
-          }
+        let context = self.callbackContext( self.context, listener, eventObj );
+        let ret = listener.callback.apply( context, args );
 
-          let context = self.callbackContext( self.context, listener, eventObj );
-          let ret = listener.callback.apply( context, args );
+        self.afterEmit( self.context, listener, eventObj );
 
-          self.afterEmit( self.context, listener, eventObj );
+        if( ret === false ){
+          eventObj.stopPropagation();
+          eventObj.preventDefault();
+        }
+      } // if listener matches
+    } // for listener
 
-          if( ret === false ){
-            eventObj.stopPropagation();
-            eventObj.preventDefault();
-          }
-        } // if listener matches
-      } // for listener
+    if( self.bubble( self.context ) && !eventObj.isPropagationStopped() ){
+      self.parent( self.context ).emit( eventObj, extraParams );
+    }
+  }, events );
 
-      if( self.bubble( self.context ) && !eventObj.isPropagationStopped() ){
-        self.parent( self.context ).emit( eventObj, extraParams );
-      }
-    }, events );
+  this.emitting = false;
 
   return this;
 };

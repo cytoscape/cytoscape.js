@@ -247,6 +247,8 @@ let corefn = ({
       elements = this.mutableElements();
     }
 
+    if( elements.empty() ){ return; } // can't fit to nothing
+
     bb = bb || elements.boundingBox();
 
     let w = this.width();
@@ -469,6 +471,8 @@ let corefn = ({
     } else if( !is.elementOrCollection( elements ) ){
       elements = this.mutableElements();
     }
+
+    if( elements.length === 0 ){ return; } // can't centre pan to nothing
 
     let bb = elements.boundingBox();
     let w = this.width();

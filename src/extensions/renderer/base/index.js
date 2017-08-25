@@ -25,7 +25,9 @@ BRp.init = function( options ){
     var className =    '__________cytoscape_container';
     var stylesheetAlreadyExists = document.getElementById( stylesheetId ) != null;
 
-    ctr.className = ( ctr.className || '' ) + ' ' + className;
+    if( ctr.className.indexOf( className ) < 0 ){
+      ctr.className = ( ctr.className || '' ) + ' ' + className;
+    }
 
     if( !stylesheetAlreadyExists ){
       var stylesheet = document.createElement('style');

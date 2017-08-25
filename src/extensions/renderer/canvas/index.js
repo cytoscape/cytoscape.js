@@ -36,16 +36,21 @@ function CanvasRenderer( options ){
     bufferContexts: new Array( CRp.CANVAS_LAYERS ),
   };
 
+  var tapHlOff = '-webkit-tap-highlight-color: rgba(0,0,0,0);';
+
   r.data.canvasContainer = document.createElement( 'div' ); // eslint-disable-line no-undef
   var containerStyle = r.data.canvasContainer.style;
-  r.data.canvasContainer.setAttribute( 'style', '-webkit-tap-highlight-color: rgba(0,0,0,0);' );
+  r.data.canvasContainer.setAttribute( 'style', tapHlOff );
   containerStyle.position = 'relative';
   containerStyle.zIndex = '0';
   containerStyle.overflow = 'hidden';
 
   var container = options.cy.container();
   container.appendChild( r.data.canvasContainer );
-  container.setAttribute( 'style', ( container.getAttribute( 'style' ) || '' ) + '-webkit-tap-highlight-color: rgba(0,0,0,0);' );
+
+  if( (container.getAttribute('style') || '').indexOf(tapHlOff) < 0 ){
+    container.setAttribute( 'style', ( container.getAttribute( 'style' ) || '' ) + tapHlOff );
+  }
 
   for( var i = 0; i < CRp.CANVAS_LAYERS; i++ ){
     var canvas = r.data.canvases[ i ] = document.createElement( 'canvas' );  // eslint-disable-line no-undef

@@ -623,6 +623,30 @@ describe('Events', function(){
       expect( triggers ).to.equal(1);
     });
 
+    it('should not trigger handler added handler', function(){
+      var n = cy.nodes()[0];
+      var outer = false;
+      var inner = false;
+      var addedInner = false;
+
+      n.on('foo', function(){
+        outer = true;
+
+        if( !addedInner ){
+          addedInner = true;
+
+          n.on('foo', function(){
+            inner = true;
+          });
+        }
+      });
+
+      n.trigger('foo');
+
+      expect(outer, 'outer').to.be.true;
+      expect(inner, 'inner').to.be.false;
+    });
+
   });
 
   describe('eles.one()', function(){
@@ -658,6 +682,24 @@ describe('Events', function(){
       expect( triggers ).to.equal(1);
       cy.$('#n5').trigger('foo');
       expect( triggers ).to.equal(1);
+    });
+
+    it('removed one event stays removed', function( next ){
+      var n = cy.nodes()[0];
+      var count = 0;
+      var inc = function(){ ++count; };
+
+      n.pon('foo').then( inc );
+      n.one('foo', inc );
+
+      n.trigger('foo');
+
+      setTimeout(function(){
+        expect( count ).to.equal(2);
+        next();
+      }, 50);
+
+      n.trigger('foo');
     });
 
   });
@@ -738,7 +780,7 @@ describe('Events', function(){
     });
 
     it('should not affect other listeners', function(){
-      var n = cy.nodes().first();
+      var n = cy.nodes()[0];
       var foo1 = false;
       var foo2 = false;
       var foo1cb, foo2cb;
@@ -760,7 +802,7 @@ describe('Events', function(){
     });
 
     it('should not trigger extra on re-add', function(){
-      var n = cy.nodes().first();
+      var n = cy.nodes()[0];
       var cb;
       var i = 0;
       var removed = false;
@@ -782,7 +824,7 @@ describe('Events', function(){
     });
 
     it('should not trigger extra on re-add x3', function(){
-      var n = cy.nodes().first();
+      var n = cy.nodes()[0];
       var cb;
       var i = 0;
       var removed = false;
@@ -895,7 +937,7 @@ describe('Events', function(){
     });
 
     it('removed event promise does not prevent next handler', function( next ){
-      var n = cy.nodes().first();
+      var n = cy.nodes()[0];
       var count = 0;
       var inc = function(){ ++count; };
 

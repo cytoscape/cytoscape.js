@@ -35,7 +35,7 @@ function Emitter( opts ){
   util.assign( this, defaults, opts );
 
   this.listeners = [];
-  this.emitting = false;
+  this.emitting = 0;
 }
 
 let p = Emitter.prototype;
@@ -133,8 +133,8 @@ p.one = function( events, qualifier, callback, conf ){
 };
 
 p.removeListener = p.off = function( events, qualifier, callback, conf ){
-  if( this.emitting ){
-    this.listeners = util.copy( this.listeners );
+  if( this.emitting !== 0 ){
+    this.listeners = util.copyArray( this.listeners );
   }
 
   let listeners = this.listeners;
@@ -161,8 +161,9 @@ p.removeListener = p.off = function( events, qualifier, callback, conf ){
 
 p.emit = p.trigger = function( events, extraParams, manualCallback ){
   let listeners = this.listeners;
+  let numListenersBeforeEmit = listeners.length;
 
-  this.emitting = true;
+  this.emitting++;
 
   if( !is.array( extraParams ) ){
     extraParams = [ extraParams ];
@@ -176,9 +177,11 @@ p.emit = p.trigger = function( events, extraParams, manualCallback ){
         namespace: eventObj.namespace,
         callback: manualCallback
       }];
+
+      numListenersBeforeEmit = listeners.length;
     }
 
-    for( let i = 0; i < listeners.length; i++ ){
+    for( let i = 0; i < numListenersBeforeEmit; i++ ){
       let listener = listeners[i];
 
       if(
@@ -195,8 +198,7 @@ p.emit = p.trigger = function( events, extraParams, manualCallback ){
         self.beforeEmit( self.context, listener, eventObj );
 
         if( listener.conf && listener.conf.one ){
-          listeners.splice( i, 1 );
-          i--;
+          self.listeners = self.listeners.filter( l => l !== listener );
         }
 
         let context = self.callbackContext( self.context, listener, eventObj );
@@ -216,7 +218,7 @@ p.emit = p.trigger = function( events, extraParams, manualCallback ){
     }
   }, events );
 
-  this.emitting = false;
+  this.emitting--;
 
   return this;
 };

@@ -46,6 +46,10 @@ let util = {
     }
   },
 
+  copyArray: function( arr ){
+    return arr.slice();
+  },
+
   clonePosition: function( pos ){
     return { x: pos.x, y: pos.y };
   },

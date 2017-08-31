@@ -2,7 +2,7 @@
 
 /*!
 
-Cytoscape.js 2.7.23 (MIT licensed)
+Cytoscape.js 2.7.24 (MIT licensed)
 
 Copyright (c) The Cytoscape Consortium
 
@@ -8679,6 +8679,10 @@ var define = {
               var _p = all[ i ]._private = all[ i ]._private || {};
               var listeners = _p.listeners = _p.listeners || [];
 
+              if( _p.emitting !== 0 ){
+                listeners = _p.listeners = _p.listeners.slice();
+              }
+
               for( var j = 0; j < listeners.length; j++ ){
                 var listener = listeners[ j ];
                 var nsMatches = !namespace || namespace === listener.namespace;
@@ -8757,6 +8761,13 @@ var define = {
           var listeners = _p.listeners = _p.listeners || [];
           var triggererIsElement = is.element( triggerer );
           var bubbleUp = triggererIsElement || params.layout;
+          var numListenersBeforeEmit = listeners.length;
+
+          if( _p.emitting == null ){
+            _p.emitting = 0;
+          }
+
+          _p.emitting++;
 
           // create the event for this element from the event object
           var evt;
@@ -8803,9 +8814,11 @@ var define = {
               type: evt.type,
               callback: fnToTrigger
             } ];
+
+            numListenersBeforeEmit = listeners.length;
           }
 
-          for( var k = 0; k < listeners.length; k++ ){ // check each listener
+          for( var k = 0; k < numListenersBeforeEmit; k++ ){ // check each listener
             var lis = listeners[ k ];
             var nsMatches = !lis.namespace || lis.namespace === evt.namespace || lis.namespace === define.event.universalNamespace;
             var typeMatches = lis.type === evt.type;
@@ -8823,8 +8836,7 @@ var define = {
               }
 
               if( lis.unbindSelfOnTrigger || lis.unbindAllBindersOnTrigger ){ // then remove listener
-                listeners.splice( k, 1 );
-                k--;
+                _p.listeners = _p.listeners.filter( function(l){ return l !== lis; } );
               }
 
               if( lis.unbindAllBindersOnTrigger ){ // then delete the listener for all binders
@@ -8874,6 +8886,8 @@ var define = {
               cy.trigger( evt, extraParams );
             }
           }
+
+          _p.emitting--;
 
         } // for each of all
       } // for each event
@@ -13604,6 +13618,7 @@ BRp.findEdgeControlPoints = function( edges ){
       var segmentsN = Math.min( segmentWs.pfValue.length, segmentDs.pfValue.length );
       var srcArrShape = edge.pstyle('source-arrow-shape').value;
       var tgtArrShape = edge.pstyle('target-arrow-shape').value;
+      var lineWidth = edge.pstyle('width').pfValue;
 
       var srcX1 = rs.lastSrcCtlPtX;
       var srcX2 = srcPos.x;
@@ -13650,11 +13665,16 @@ BRp.findEdgeControlPoints = function( edges ){
       var tgtArr1 = rs.lastTgtArr;
       var tgtArr2 = tgtArrShape;
 
+      var lineW1 = rs.lastLineW;
+      var lineW2 = lineWidth;
+
       if( badBezier ){
         rs.badBezier = true;
       } else {
         rs.badBezier = false;
       }
+
+      var ptCacheHit;
 
       if( srcX1 === srcX2 && srcY1 === srcY2 && srcW1 === srcW2 && srcH1 === srcH2
       &&  tgtX1 === tgtX2 && tgtY1 === tgtY2 && tgtW1 === tgtW2 && tgtH1 === tgtH2
@@ -13667,9 +13687,12 @@ BRp.findEdgeControlPoints = function( edges ){
       &&  edgeDistances1 === edgeDistances2
       &&  srcArr1 === srcArr2
       &&  tgtArr1 === tgtArr2
+      &&  lineW1 === lineW2
       &&  ((edgeIndex1 === edgeIndex2 && numEdges1 === numEdges2) || edgeIsUnbundled) ){
-        continue; // then the control points haven't changed and we can skip calculating them
+        ptCacheHit = true; // then the control points haven't changed and we can skip calculating them
       } else {
+        ptCacheHit = false;
+
         rs.lastSrcCtlPtX = srcX2;
         rs.lastSrcCtlPtY = srcY2;
         rs.lastSrcCtlPtW = srcW2;
@@ -13689,328 +13712,332 @@ BRp.findEdgeControlPoints = function( edges ){
         rs.lastEdgeDistances = edgeDistances2;
         rs.lastSrcArr = srcArr2;
         rs.lastTgtArr = tgtArr2;
+        rs.lastLineW = lineW2;
       }
 
-      if( src === tgt ){
-        // Self-edge
+      if( !ptCacheHit ){
+        if( src === tgt ){
+          // Self-edge
 
-        rs.edgeType = 'self';
+          rs.edgeType = 'self';
 
-        var j = i;
-        var loopDist = stepSize;
+          var j = i;
+          var loopDist = stepSize;
 
-        if( edgeIsUnbundled ){
-          j = 0;
-          loopDist = ctrlptDist;
-        }
-
-        rs.ctrlpts = [
-          srcPos.x,
-          srcPos.y - (1 + Math.pow( srcH, 1.12 ) / 100) * loopDist * (j / 3 + 1),
-
-          srcPos.x - (1 + Math.pow( srcW, 1.12 ) / 100) * loopDist * (j / 3 + 1),
-          srcPos.y
-        ];
-
-      } else if(
-        hasCompounds &&
-        ( src.isParent() || src.isChild() || tgt.isParent() || tgt.isChild() ) &&
-        ( src.parents().anySame( tgt ) || tgt.parents().anySame( src ) )
-      ){
-        // Compound edge
-
-        rs.edgeType = 'compound';
-
-        // because the line approximation doesn't apply for compound beziers
-        // (loop/self edges are already elided b/c of cheap src==tgt check)
-        rs.badBezier = false;
-
-        var j = i;
-        var loopDist = stepSize;
-
-        if( edgeIsUnbundled ){
-          j = 0;
-          loopDist = ctrlptDist;
-        }
-
-        var loopW = 50;
-
-        var loopaPos = {
-          x: srcPos.x - srcW / 2,
-          y: srcPos.y - srcH / 2
-        };
-
-        var loopbPos = {
-          x: tgtPos.x - tgtW / 2,
-          y: tgtPos.y - tgtH / 2
-        };
-
-        var loopPos = {
-          x: Math.min( loopaPos.x, loopbPos.x ),
-          y: Math.min( loopaPos.y, loopbPos.y )
-        };
-
-        // avoids cases with impossible beziers
-        var minCompoundStretch = 0.5;
-        var compoundStretchA = Math.max( minCompoundStretch, Math.log( srcW * 0.01 ) );
-        var compoundStretchB = Math.max( minCompoundStretch, Math.log( tgtW * 0.01 ) );
-
-        rs.ctrlpts = [
-          loopPos.x,
-          loopPos.y - (1 + Math.pow( loopW, 1.12 ) / 100) * loopDist * (j / 3 + 1) * compoundStretchA,
-
-          loopPos.x - (1 + Math.pow( loopW, 1.12 ) / 100) * loopDist * (j / 3 + 1) * compoundStretchB,
-          loopPos.y
-        ];
-
-      } else if( curveStyle === 'segments' ){
-        // Segments (multiple straight lines)
-
-        rs.edgeType = 'segments';
-        rs.segpts = [];
-
-        for( var s = 0; s < segmentsN; s++ ){
-          var w = segmentWs.pfValue[ s ];
-          var d = segmentDs.pfValue[ s ];
-
-          var w1 = 1 - w;
-          var w2 = w;
-
-          var midptPts = edgeDistances === 'node-position' ? posPts : midptSrcPts;
-
-          var adjustedMidpt = {
-            x: midptPts.x1 * w1 + midptPts.x2 * w2,
-            y: midptPts.y1 * w1 + midptPts.y2 * w2
-          };
-
-          rs.segpts.push(
-            adjustedMidpt.x + vectorNormInverse.x * d,
-            adjustedMidpt.y + vectorNormInverse.y * d
-          );
-        }
-
-      // Straight edge
-      } else if(
-        pairEdges.length % 2 === 1
-        && i === Math.floor( pairEdges.length / 2 )
-        && !edgeIsUnbundled
-      ){
-
-        rs.edgeType = 'straight';
-
-      } else {
-        // (Multi)bezier
-
-        var multi = edgeIsUnbundled;
-
-        rs.edgeType = multi ? 'multibezier' : 'bezier';
-        rs.ctrlpts = [];
-
-        for( var b = 0; b < bezierN; b++ ){
-          var normctrlptDist = (0.5 - pairEdges.length / 2 + i) * stepSize;
-          var manctrlptDist;
-          var sign = math.signum( normctrlptDist );
-
-          if( multi ){
-            ctrlptDist = ctrlptDists ? ctrlptDists.pfValue[ b ] : stepSize; // fall back on step size
-            ctrlptWeight = ctrlptWs.value[ b ];
+          if( edgeIsUnbundled ){
+            j = 0;
+            loopDist = ctrlptDist;
           }
 
-          if( edgeIsUnbundled ){ // multi or single unbundled
-            manctrlptDist = ctrlptDist;
-          } else {
-            manctrlptDist = ctrlptDist !== undefined ? sign * ctrlptDist : undefined;
-          }
-
-          var distanceFromMidpoint = manctrlptDist !== undefined ? manctrlptDist : normctrlptDist;
-
-          var w1 = 1 - ctrlptWeight;
-          var w2 = ctrlptWeight;
-
-          var midptPts = edgeDistances === 'node-position' ? posPts : midptSrcPts;
-
-          var adjustedMidpt = {
-            x: midptPts.x1 * w1 + midptPts.x2 * w2,
-            y: midptPts.y1 * w1 + midptPts.y2 * w2
-          };
-
-          rs.ctrlpts.push(
-            adjustedMidpt.x + vectorNormInverse.x * distanceFromMidpoint,
-            adjustedMidpt.y + vectorNormInverse.y * distanceFromMidpoint
-          );
-        }
-
-      }
-
-      // find endpts for edge
-      this.findEndpoints( edge );
-
-      var badStart = !is.number( rs.startX ) || !is.number( rs.startY );
-      var badAStart = !is.number( rs.arrowStartX ) || !is.number( rs.arrowStartY );
-      var badEnd = !is.number( rs.endX ) || !is.number( rs.endY );
-      var badAEnd = !is.number( rs.arrowEndX ) || !is.number( rs.arrowEndY );
-
-      var minCpADistFactor = 3;
-      var arrowW = this.getArrowWidth( edge.pstyle( 'width' ).pfValue ) * this.arrowShapeWidth;
-      var minCpADist = minCpADistFactor * arrowW;
-
-      if( rs.edgeType === 'bezier' ){
-        var startACpDist = math.dist( { x: rs.ctrlpts[0], y: rs.ctrlpts[1] }, { x: rs.startX, y: rs.startY } );
-        var closeStartACp = startACpDist < minCpADist;
-        var endACpDist = math.dist( { x: rs.ctrlpts[0], y: rs.ctrlpts[1] }, { x: rs.endX, y: rs.endY } );
-        var closeEndACp = endACpDist < minCpADist;
-
-        var overlapping = false;
-
-        if( badStart || badAStart || closeStartACp ){
-          overlapping = true;
-
-          // project control point along line from src centre to outside the src shape
-          // (otherwise intersection will yield nothing)
-          var cpD = { // delta
-            x: rs.ctrlpts[0] - srcPos.x,
-            y: rs.ctrlpts[1] - srcPos.y
-          };
-          var cpL = Math.sqrt( cpD.x * cpD.x + cpD.y * cpD.y ); // length of line
-          var cpM = { // normalised delta
-            x: cpD.x / cpL,
-            y: cpD.y / cpL
-          };
-          var radius = Math.max( srcW, srcH );
-          var cpProj = { // *2 radius guarantees outside shape
-            x: rs.ctrlpts[0] + cpM.x * 2 * radius,
-            y: rs.ctrlpts[1] + cpM.y * 2 * radius
-          };
-
-          var srcCtrlPtIntn = srcShape.intersectLine(
+          rs.ctrlpts = [
             srcPos.x,
-            srcPos.y,
-            srcW,
-            srcH,
-            cpProj.x,
-            cpProj.y,
-            0
-          );
+            srcPos.y - (1 + Math.pow( srcH, 1.12 ) / 100) * loopDist * (j / 3 + 1),
 
-          if( closeStartACp ){
-            rs.ctrlpts[0] = rs.ctrlpts[0] + cpM.x * (minCpADist - startACpDist);
-            rs.ctrlpts[1] = rs.ctrlpts[1] + cpM.y * (minCpADist - startACpDist);
-          } else {
-            rs.ctrlpts[0] = srcCtrlPtIntn[0] + cpM.x * minCpADist;
-            rs.ctrlpts[1] = srcCtrlPtIntn[1] + cpM.y * minCpADist;
-          }
-        }
+            srcPos.x - (1 + Math.pow( srcW, 1.12 ) / 100) * loopDist * (j / 3 + 1),
+            srcPos.y
+          ];
 
-        if( badEnd || badAEnd || closeEndACp ){
-          overlapping = true;
+        } else if(
+          hasCompounds &&
+          ( src.isParent() || src.isChild() || tgt.isParent() || tgt.isChild() ) &&
+          ( src.parents().anySame( tgt ) || tgt.parents().anySame( src ) )
+        ){
+          // Compound edge
 
-          // project control point along line from tgt centre to outside the tgt shape
-          // (otherwise intersection will yield nothing)
-          var cpD = { // delta
-            x: rs.ctrlpts[0] - tgtPos.x,
-            y: rs.ctrlpts[1] - tgtPos.y
-          };
-          var cpL = Math.sqrt( cpD.x * cpD.x + cpD.y * cpD.y ); // length of line
-          var cpM = { // normalised delta
-            x: cpD.x / cpL,
-            y: cpD.y / cpL
-          };
-          var radius = Math.max( srcW, srcH );
-          var cpProj = { // *2 radius guarantees outside shape
-            x: rs.ctrlpts[0] + cpM.x * 2 * radius,
-            y: rs.ctrlpts[1] + cpM.y * 2 * radius
-          };
+          rs.edgeType = 'compound';
 
-          var tgtCtrlPtIntn = tgtShape.intersectLine(
-            tgtPos.x,
-            tgtPos.y,
-            tgtW,
-            tgtH,
-            cpProj.x,
-            cpProj.y,
-            0
-          );
+          // because the line approximation doesn't apply for compound beziers
+          // (loop/self edges are already elided b/c of cheap src==tgt check)
+          rs.badBezier = false;
 
-          if( closeEndACp ){
-            rs.ctrlpts[0] = rs.ctrlpts[0] + cpM.x * (minCpADist - endACpDist);
-            rs.ctrlpts[1] = rs.ctrlpts[1] + cpM.y * (minCpADist - endACpDist);
-          } else {
-            rs.ctrlpts[0] = tgtCtrlPtIntn[0] + cpM.x * minCpADist;
-            rs.ctrlpts[1] = tgtCtrlPtIntn[1] + cpM.y * minCpADist;
+          var j = i;
+          var loopDist = stepSize;
+
+          if( edgeIsUnbundled ){
+            j = 0;
+            loopDist = ctrlptDist;
           }
 
-        }
+          var loopW = 50;
 
-        if( overlapping ){
-          // recalc endpts
-          this.findEndpoints( edge );
-        }
+          var loopaPos = {
+            x: srcPos.x - srcW / 2,
+            y: srcPos.y - srcH / 2
+          };
 
-      }
+          var loopbPos = {
+            x: tgtPos.x - tgtW / 2,
+            y: tgtPos.y - tgtH / 2
+          };
 
-      if( rs.edgeType === 'multibezier' || rs.edgeType === 'bezier' || rs.edgeType === 'self' || rs.edgeType === 'compound' ){
-        rs.allpts = [];
+          var loopPos = {
+            x: Math.min( loopaPos.x, loopbPos.x ),
+            y: Math.min( loopaPos.y, loopbPos.y )
+          };
 
-        rs.allpts.push( rs.startX, rs.startY );
+          // avoids cases with impossible beziers
+          var minCompoundStretch = 0.5;
+          var compoundStretchA = Math.max( minCompoundStretch, Math.log( srcW * 0.01 ) );
+          var compoundStretchB = Math.max( minCompoundStretch, Math.log( tgtW * 0.01 ) );
 
-        for( var b = 0; b + 1 < rs.ctrlpts.length; b += 2 ){
-          // ctrl pt itself
-          rs.allpts.push( rs.ctrlpts[ b ], rs.ctrlpts[ b + 1] );
+          rs.ctrlpts = [
+            loopPos.x,
+            loopPos.y - (1 + Math.pow( loopW, 1.12 ) / 100) * loopDist * (j / 3 + 1) * compoundStretchA,
 
-          // the midpt between ctrlpts as intermediate destination pts
-          if( b + 3 < rs.ctrlpts.length ){
-            rs.allpts.push( (rs.ctrlpts[ b ] + rs.ctrlpts[ b + 2]) / 2, (rs.ctrlpts[ b + 1] + rs.ctrlpts[ b + 3]) / 2 );
+            loopPos.x - (1 + Math.pow( loopW, 1.12 ) / 100) * loopDist * (j / 3 + 1) * compoundStretchB,
+            loopPos.y
+          ];
+
+        } else if( curveStyle === 'segments' ){
+          // Segments (multiple straight lines)
+
+          rs.edgeType = 'segments';
+          rs.segpts = [];
+
+          for( var s = 0; s < segmentsN; s++ ){
+            var w = segmentWs.pfValue[ s ];
+            var d = segmentDs.pfValue[ s ];
+
+            var w1 = 1 - w;
+            var w2 = w;
+
+            var midptPts = edgeDistances === 'node-position' ? posPts : midptSrcPts;
+
+            var adjustedMidpt = {
+              x: midptPts.x1 * w1 + midptPts.x2 * w2,
+              y: midptPts.y1 * w1 + midptPts.y2 * w2
+            };
+
+            rs.segpts.push(
+              adjustedMidpt.x + vectorNormInverse.x * d,
+              adjustedMidpt.y + vectorNormInverse.y * d
+            );
           }
-        }
 
-        rs.allpts.push( rs.endX, rs.endY );
+        // Straight edge
+        } else if(
+          pairEdges.length % 2 === 1
+          && i === Math.floor( pairEdges.length / 2 )
+          && !edgeIsUnbundled
+        ){
 
-        var m, mt;
-        if( rs.ctrlpts.length / 2 % 2 === 0 ){
-          m = rs.allpts.length / 2 - 1;
+          rs.edgeType = 'straight';
 
-          rs.midX = rs.allpts[ m ];
-          rs.midY = rs.allpts[ m + 1];
         } else {
-          m = rs.allpts.length / 2 - 3;
-          mt = 0.5;
+          // (Multi)bezier
 
-          rs.midX = math.qbezierAt( rs.allpts[ m ], rs.allpts[ m + 2], rs.allpts[ m + 4], mt );
-          rs.midY = math.qbezierAt( rs.allpts[ m + 1], rs.allpts[ m + 3], rs.allpts[ m + 5], mt );
+          var multi = edgeIsUnbundled;
+
+          rs.edgeType = multi ? 'multibezier' : 'bezier';
+          rs.ctrlpts = [];
+
+          for( var b = 0; b < bezierN; b++ ){
+            var normctrlptDist = (0.5 - pairEdges.length / 2 + i) * stepSize;
+            var manctrlptDist;
+            var sign = math.signum( normctrlptDist );
+
+            if( multi ){
+              ctrlptDist = ctrlptDists ? ctrlptDists.pfValue[ b ] : stepSize; // fall back on step size
+              ctrlptWeight = ctrlptWs.value[ b ];
+            }
+
+            if( edgeIsUnbundled ){ // multi or single unbundled
+              manctrlptDist = ctrlptDist;
+            } else {
+              manctrlptDist = ctrlptDist !== undefined ? sign * ctrlptDist : undefined;
+            }
+
+            var distanceFromMidpoint = manctrlptDist !== undefined ? manctrlptDist : normctrlptDist;
+
+            var w1 = 1 - ctrlptWeight;
+            var w2 = ctrlptWeight;
+
+            var midptPts = edgeDistances === 'node-position' ? posPts : midptSrcPts;
+
+            var adjustedMidpt = {
+              x: midptPts.x1 * w1 + midptPts.x2 * w2,
+              y: midptPts.y1 * w1 + midptPts.y2 * w2
+            };
+
+            rs.ctrlpts.push(
+              adjustedMidpt.x + vectorNormInverse.x * distanceFromMidpoint,
+              adjustedMidpt.y + vectorNormInverse.y * distanceFromMidpoint
+            );
+          }
+
         }
 
-      } else if( rs.edgeType === 'straight' ){
-        // need to calc these after endpts
-        rs.allpts = [ rs.startX, rs.startY, rs.endX, rs.endY ];
+        // find endpts for edge
+        this.findEndpoints( edge );
 
-        // default midpt for labels etc
-        rs.midX = ( rs.startX + rs.endX + rs.arrowStartX + rs.arrowEndX ) / 4;
-        rs.midY = ( rs.startY + rs.endY + rs.arrowStartY + rs.arrowEndY ) / 4;
+        var badStart = !is.number( rs.startX ) || !is.number( rs.startY );
+        var badAStart = !is.number( rs.arrowStartX ) || !is.number( rs.arrowStartY );
+        var badEnd = !is.number( rs.endX ) || !is.number( rs.endY );
+        var badAEnd = !is.number( rs.arrowEndX ) || !is.number( rs.arrowEndY );
 
-      } else if( rs.edgeType === 'segments' ){
-        rs.allpts = [];
-        rs.allpts.push( rs.startX, rs.startY );
-        rs.allpts.push.apply( rs.allpts, rs.segpts );
-        rs.allpts.push( rs.endX, rs.endY );
+        var minCpADistFactor = 3;
+        var arrowW = this.getArrowWidth( edge.pstyle( 'width' ).pfValue ) * this.arrowShapeWidth;
+        var minCpADist = minCpADistFactor * arrowW;
 
-        if( rs.segpts.length % 4 === 0 ){
-          var i2 = rs.segpts.length / 2;
-          var i1 = i2 - 2;
+        if( rs.edgeType === 'bezier' ){
+          var startACpDist = math.dist( { x: rs.ctrlpts[0], y: rs.ctrlpts[1] }, { x: rs.startX, y: rs.startY } );
+          var closeStartACp = startACpDist < minCpADist;
+          var endACpDist = math.dist( { x: rs.ctrlpts[0], y: rs.ctrlpts[1] }, { x: rs.endX, y: rs.endY } );
+          var closeEndACp = endACpDist < minCpADist;
 
-          rs.midX = ( rs.segpts[ i1 ] + rs.segpts[ i2 ] ) / 2;
-          rs.midY = ( rs.segpts[ i1 + 1] + rs.segpts[ i2 + 1] ) / 2;
-        } else {
-          var i1 = rs.segpts.length / 2 - 1;
+          var overlapping = false;
 
-          rs.midX = rs.segpts[ i1 ];
-          rs.midY = rs.segpts[ i1 + 1];
+          if( badStart || badAStart || closeStartACp ){
+            overlapping = true;
+
+            // project control point along line from src centre to outside the src shape
+            // (otherwise intersection will yield nothing)
+            var cpD = { // delta
+              x: rs.ctrlpts[0] - srcPos.x,
+              y: rs.ctrlpts[1] - srcPos.y
+            };
+            var cpL = Math.sqrt( cpD.x * cpD.x + cpD.y * cpD.y ); // length of line
+            var cpM = { // normalised delta
+              x: cpD.x / cpL,
+              y: cpD.y / cpL
+            };
+            var radius = Math.max( srcW, srcH );
+            var cpProj = { // *2 radius guarantees outside shape
+              x: rs.ctrlpts[0] + cpM.x * 2 * radius,
+              y: rs.ctrlpts[1] + cpM.y * 2 * radius
+            };
+
+            var srcCtrlPtIntn = srcShape.intersectLine(
+              srcPos.x,
+              srcPos.y,
+              srcW,
+              srcH,
+              cpProj.x,
+              cpProj.y,
+              0
+            );
+
+            if( closeStartACp ){
+              rs.ctrlpts[0] = rs.ctrlpts[0] + cpM.x * (minCpADist - startACpDist);
+              rs.ctrlpts[1] = rs.ctrlpts[1] + cpM.y * (minCpADist - startACpDist);
+            } else {
+              rs.ctrlpts[0] = srcCtrlPtIntn[0] + cpM.x * minCpADist;
+              rs.ctrlpts[1] = srcCtrlPtIntn[1] + cpM.y * minCpADist;
+            }
+          }
+
+          if( badEnd || badAEnd || closeEndACp ){
+            overlapping = true;
+
+            // project control point along line from tgt centre to outside the tgt shape
+            // (otherwise intersection will yield nothing)
+            var cpD = { // delta
+              x: rs.ctrlpts[0] - tgtPos.x,
+              y: rs.ctrlpts[1] - tgtPos.y
+            };
+            var cpL = Math.sqrt( cpD.x * cpD.x + cpD.y * cpD.y ); // length of line
+            var cpM = { // normalised delta
+              x: cpD.x / cpL,
+              y: cpD.y / cpL
+            };
+            var radius = Math.max( srcW, srcH );
+            var cpProj = { // *2 radius guarantees outside shape
+              x: rs.ctrlpts[0] + cpM.x * 2 * radius,
+              y: rs.ctrlpts[1] + cpM.y * 2 * radius
+            };
+
+            var tgtCtrlPtIntn = tgtShape.intersectLine(
+              tgtPos.x,
+              tgtPos.y,
+              tgtW,
+              tgtH,
+              cpProj.x,
+              cpProj.y,
+              0
+            );
+
+            if( closeEndACp ){
+              rs.ctrlpts[0] = rs.ctrlpts[0] + cpM.x * (minCpADist - endACpDist);
+              rs.ctrlpts[1] = rs.ctrlpts[1] + cpM.y * (minCpADist - endACpDist);
+            } else {
+              rs.ctrlpts[0] = tgtCtrlPtIntn[0] + cpM.x * minCpADist;
+              rs.ctrlpts[1] = tgtCtrlPtIntn[1] + cpM.y * minCpADist;
+            }
+
+          }
+
+          if( overlapping ){
+            // recalc endpts
+            this.findEndpoints( edge );
+          }
+
         }
 
+        if( rs.edgeType === 'multibezier' || rs.edgeType === 'bezier' || rs.edgeType === 'self' || rs.edgeType === 'compound' ){
+          rs.allpts = [];
 
-      }
+          rs.allpts.push( rs.startX, rs.startY );
 
-      this.projectLines( edge );
-      this.calculateArrowAngles( edge );
+          for( var b = 0; b + 1 < rs.ctrlpts.length; b += 2 ){
+            // ctrl pt itself
+            rs.allpts.push( rs.ctrlpts[ b ], rs.ctrlpts[ b + 1] );
+
+            // the midpt between ctrlpts as intermediate destination pts
+            if( b + 3 < rs.ctrlpts.length ){
+              rs.allpts.push( (rs.ctrlpts[ b ] + rs.ctrlpts[ b + 2]) / 2, (rs.ctrlpts[ b + 1] + rs.ctrlpts[ b + 3]) / 2 );
+            }
+          }
+
+          rs.allpts.push( rs.endX, rs.endY );
+
+          var m, mt;
+          if( rs.ctrlpts.length / 2 % 2 === 0 ){
+            m = rs.allpts.length / 2 - 1;
+
+            rs.midX = rs.allpts[ m ];
+            rs.midY = rs.allpts[ m + 1];
+          } else {
+            m = rs.allpts.length / 2 - 3;
+            mt = 0.5;
+
+            rs.midX = math.qbezierAt( rs.allpts[ m ], rs.allpts[ m + 2], rs.allpts[ m + 4], mt );
+            rs.midY = math.qbezierAt( rs.allpts[ m + 1], rs.allpts[ m + 3], rs.allpts[ m + 5], mt );
+          }
+
+        } else if( rs.edgeType === 'straight' ){
+          // need to calc these after endpts
+          rs.allpts = [ rs.startX, rs.startY, rs.endX, rs.endY ];
+
+          // default midpt for labels etc
+          rs.midX = ( rs.startX + rs.endX + rs.arrowStartX + rs.arrowEndX ) / 4;
+          rs.midY = ( rs.startY + rs.endY + rs.arrowStartY + rs.arrowEndY ) / 4;
+
+        } else if( rs.edgeType === 'segments' ){
+          rs.allpts = [];
+          rs.allpts.push( rs.startX, rs.startY );
+          rs.allpts.push.apply( rs.allpts, rs.segpts );
+          rs.allpts.push( rs.endX, rs.endY );
+
+          if( rs.segpts.length % 4 === 0 ){
+            var i2 = rs.segpts.length / 2;
+            var i1 = i2 - 2;
+
+            rs.midX = ( rs.segpts[ i1 ] + rs.segpts[ i2 ] ) / 2;
+            rs.midY = ( rs.segpts[ i1 + 1] + rs.segpts[ i2 + 1] ) / 2;
+          } else {
+            var i1 = rs.segpts.length / 2 - 1;
+
+            rs.midX = rs.segpts[ i1 ];
+            rs.midY = rs.segpts[ i1 + 1];
+          }
+
+
+        }
+
+        this.projectLines( edge );
+        this.calculateArrowAngles( edge );
+      } // if point cache miss
+
       this.recalculateEdgeLabelProjections( edge );
       this.calculateLabelAngles( edge );
 
@@ -27393,7 +27420,7 @@ util.debounce = function( func, wait, options ){ // ported lodash debounce funct
 module.exports = util;
 
 },{"../is":83,"../window":107}],106:[function(_dereq_,module,exports){
-module.exports = "2.7.23";
+module.exports = "2.7.24";
 
 },{}],107:[function(_dereq_,module,exports){
 module.exports = ( typeof window === 'undefined' ? null : window ); // eslint-disable-line no-undef

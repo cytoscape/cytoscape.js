@@ -373,6 +373,10 @@ var define = {
               var _p = all[ i ]._private = all[ i ]._private || {};
               var listeners = _p.listeners = _p.listeners || [];
 
+              if( _p.emitting !== 0 ){
+                listeners = _p.listeners = _p.listeners.slice();
+              }
+
               for( var j = 0; j < listeners.length; j++ ){
                 var listener = listeners[ j ];
                 var nsMatches = !namespace || namespace === listener.namespace;
@@ -451,6 +455,13 @@ var define = {
           var listeners = _p.listeners = _p.listeners || [];
           var triggererIsElement = is.element( triggerer );
           var bubbleUp = triggererIsElement || params.layout;
+          var numListenersBeforeEmit = listeners.length;
+
+          if( _p.emitting == null ){
+            _p.emitting = 0;
+          }
+
+          _p.emitting++;
 
           // create the event for this element from the event object
           var evt;
@@ -497,9 +508,11 @@ var define = {
               type: evt.type,
               callback: fnToTrigger
             } ];
+
+            numListenersBeforeEmit = listeners.length;
           }
 
-          for( var k = 0; k < listeners.length; k++ ){ // check each listener
+          for( var k = 0; k < numListenersBeforeEmit; k++ ){ // check each listener
             var lis = listeners[ k ];
             var nsMatches = !lis.namespace || lis.namespace === evt.namespace || lis.namespace === define.event.universalNamespace;
             var typeMatches = lis.type === evt.type;
@@ -517,8 +530,7 @@ var define = {
               }
 
               if( lis.unbindSelfOnTrigger || lis.unbindAllBindersOnTrigger ){ // then remove listener
-                listeners.splice( k, 1 );
-                k--;
+                _p.listeners = _p.listeners.filter( function(l){ return l !== lis; } );
               }
 
               if( lis.unbindAllBindersOnTrigger ){ // then delete the listener for all binders
@@ -568,6 +580,8 @@ var define = {
               cy.trigger( evt, extraParams );
             }
           }
+
+          _p.emitting--;
 
         } // for each of all
       } // for each event

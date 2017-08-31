@@ -652,6 +652,30 @@ describe('Events', function(){
       n1.trigger('foo');
     });
 
+    it('should not trigger handler added handler', function(){
+      var n = cy.nodes()[0];
+      var outer = false;
+      var inner = false;
+      var addedInner = false;
+
+      n.on('foo', function(){
+        outer = true;
+
+        if( !addedInner ){
+          addedInner = true;
+
+          n.on('foo', function(){
+            inner = true;
+          });
+        }
+      });
+
+      n.trigger('foo');
+
+      expect(outer, 'outer').to.be.true;
+      expect(inner, 'inner').to.be.false;
+    });
+
   });
 
   describe('eles.one()', function(){
@@ -700,6 +724,24 @@ describe('Events', function(){
       expect( evt.data ).to.exist;
       expect( evt.data.bar ).to.exist;
       expect( evt.data.bar ).to.equal('baz');
+    });
+
+    it('removed one event stays removed', function( next ){
+      var n = cy.nodes()[0];
+      var count = 0;
+      var inc = function(){ ++count; };
+
+      n.pon('foo').then( inc );
+      n.one('foo', inc );
+
+      n.trigger('foo');
+
+      setTimeout(function(){
+        expect( count ).to.equal(2);
+        next();
+      }, 50);
+
+      n.trigger('foo');
     });
 
   });
@@ -792,6 +834,84 @@ describe('Events', function(){
       expect( triggers ).to.equal(0);
     });
 
+    it('should not affect other listeners', function(){
+      var n = cy.nodes()[0];
+      var foo1 = false;
+      var foo2 = false;
+      var foo1cb, foo2cb;
+
+      n.on('foo', foo1cb = function(){
+        foo1 = true;
+
+        n.off('foo', foo1cb);
+      });
+
+      n.on('foo', foo2cb = function(){
+        foo2 = true;
+      });
+
+      n.trigger('foo');
+
+      expect( foo1, '1' ).to.be.true;
+      expect( foo2, '2' ).to.be.true;
+    });
+
+    it('should not trigger extra on re-add', function(){
+      var n = cy.nodes()[0];
+      var cb;
+      var i = 0;
+      var removed = false;
+
+      n.on('foo', cb = function(){
+        i++;
+
+        if( !removed ){
+          removed = true;
+          n.off('foo', cb);
+          n.on('foo', cb);
+          n.trigger('foo');
+        }
+      });
+
+      n.trigger('foo');
+
+      expect(i).to.equal(2);
+    });
+
+    it('should not trigger extra on re-add x3', function(){
+      var n = cy.nodes()[0];
+      var cb;
+      var i = 0;
+      var removed = false;
+      var pre = 0;
+      var post = 0;
+
+      n.on('foo', function(){
+        pre++;
+      });
+
+      n.on('foo', cb = function(){
+        i++;
+
+        if( !removed ){
+          removed = true;
+          n.off('foo', cb);
+          n.on('foo', cb);
+          n.trigger('foo');
+        }
+      });
+
+      n.on('foo', function(){
+        post++;
+      });
+
+      n.trigger('foo');
+
+      expect(i, 'i').to.equal(2);
+      expect(pre, 'pre').to.equal(2);
+      expect(post, 'post').to.equal(2);
+    });
+
   });
 
   describe('eles.trigger()', function(){
@@ -824,6 +944,22 @@ describe('Events', function(){
         done();
       });
       n1.trigger('foo', ['bar', 'baz']);
+    });
+
+    it('removed event promise does not prevent next handler', function( next ){
+      var n = cy.nodes()[0];
+      var count = 0;
+      var inc = function(){ ++count; };
+
+      n.pon('foo').then( inc );
+      n.pon('foo').then( inc );
+
+      n.trigger('foo');
+
+      setTimeout(function(){
+        expect( count ).to.equal(2);
+        next();
+      }, 50);
     });
 
   });

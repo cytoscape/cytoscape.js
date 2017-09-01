@@ -5,6 +5,7 @@ const undef = typeof undefined;
 class ObjectSet {
   constructor( arrayOrObjectSet ){
     this._obj = Object.create(null);
+    this.size = 0;
 
     if( arrayOrObjectSet != null ){
       let arr;
@@ -21,20 +22,26 @@ class ObjectSet {
     }
   }
 
-  get size(){
-    return this.toArray().length;
-  }
-
   instanceString(){
     return 'set';
   }
 
   add( val ){
-    this._obj[ val ] = 1;
+    let o = this._obj;
+
+    if( o[ val ] !== 1 ){
+      o[ val ] = 1;
+      this.size++;
+    }
   }
 
   delete( val ){
-    this._obj[ val ] = 0;
+    let o = this._obj;
+
+    if( o[ val ] === 1 ){
+      o[ val ] = 0;
+      this.size--;
+    }
   }
 
   clear(){

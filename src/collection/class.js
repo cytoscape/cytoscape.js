@@ -1,4 +1,3 @@
-let util = require( '../util' );
 let Set = require('../set');
 
 let elesfn = ({
@@ -16,25 +15,23 @@ let elesfn = ({
       let changedEle = false;
 
       // check if ele has all of the passed classes
-      for( let cls of classesMap ){
+      classesMap.forEach( cls => {
         let eleHasClass = eleClasses.has(cls);
 
         if( !eleHasClass ){
           changedEle = true;
-          break;
         }
-      }
+      });
 
       // check if ele has classes outside of those passed
       if( !changedEle ){
-        for( let eleCls of eleClasses ){
-
+        eleClasses.forEach( eleCls => {
           let specdClass = classesMap.has(eleCls);
+
           if( !specdClass ){
             changedEle = true;
-            break;
           }
-        }
+        });
       }
 
       if( changedEle ){

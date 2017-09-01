@@ -21,6 +21,10 @@ class ObjectSet {
     }
   }
 
+  get size(){
+    return this.toArray().length;
+  }
+
   instanceString(){
     return 'set';
   }
@@ -43,6 +47,10 @@ class ObjectSet {
 
   toArray(){
     return Object.keys( this._obj ).filter( key => this.has(key) );
+  }
+
+  forEach( callback, thisArg ){
+    return this.toArray().forEach( callback, thisArg );
   }
 }
 

@@ -229,7 +229,10 @@ elesfn.json = function( obj ){
       classes: null
     };
 
-    json.classes = Array.from(p.classes).join(' ')
+    json.classes = '';
+
+    let i = 0;
+    p.classes.forEach( cls => json.classes += ( i++ === 0 ? cls : ' ' + cls ) );
 
     return json;
   }

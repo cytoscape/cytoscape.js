@@ -13,10 +13,15 @@ var clean = function(){ return vinylPaths(del); };
 var notifier = require('node-notifier');
 var assign = require('object-assign');
 var pkg = require('./package.json');
-var webpack = require('webpack');
 var env = process.env;
 var path = require('path');
 var requireUncached = require('require-uncached');
+
+var webpack = function(){
+  var w = require('webpack');
+
+  return w.apply( w, arguments );
+};
 
 process.on('SIGINT', function() {
   $.util.log($.util.colors.red('Successfully closed gulp process ' + process.pid));

@@ -15,23 +15,19 @@ let elesfn = ({
       let changedEle = false;
 
       // check if ele has all of the passed classes
-      classesMap.forEach( cls => {
+      for( let i = 0; i < classes.length; i++ ){
+        let cls = classes[i];
         let eleHasClass = eleClasses.has(cls);
 
         if( !eleHasClass ){
           changedEle = true;
+          break;
         }
-      });
+      }
 
       // check if ele has classes outside of those passed
       if( !changedEle ){
-        eleClasses.forEach( eleCls => {
-          let specdClass = classesMap.has(eleCls);
-
-          if( !specdClass ){
-            changedEle = true;
-          }
-        });
+        changedEle = eleClasses.size !== classes.length;
       }
 
       if( changedEle ){

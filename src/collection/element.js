@@ -1,9 +1,9 @@
-let util = require( '../util' );
-let is = require( '../is' );
+let util = require('../util');
+let is = require('../is');
+let Set = require('../set');
 
 // represents a node or an edge
 let Element = function( cy, params, restore ){
-  let self = this;
   restore = (restore === undefined || restore ? true : false);
 
   if( cy === undefined || params === undefined || !is.core( cy ) ){
@@ -85,7 +85,7 @@ let Element = function( cy, params, restore ){
       let cls = classes[ i ];
       if( !cls || cls === '' ){ continue; }
 
-      _p.classes.add(cls)
+      _p.classes.add(cls);
     }
   }
 

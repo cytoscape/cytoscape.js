@@ -267,14 +267,14 @@ util.extend( corefn, {
   },
 
   mount: function( container, rendererOptions ){
+    if( container == null ){ return; }
+
     let cy = this;
     let _p = cy._private;
     let options = _p.options;
     
     let rOpts = util.extend( {}, options.renderer, { name: 'canvas' }, rendererOptions );
     options.renderer = rOpts;
-
-    if( container == null ){ return; }
 
     if( !is.htmlElement( container ) && is.htmlElement( container[0] ) ){
       container = container[0];

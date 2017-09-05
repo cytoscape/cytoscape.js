@@ -273,7 +273,7 @@ util.extend( corefn, {
     let _p = cy._private;
     let options = _p.options;
     
-    let rOpts = util.extend( {}, options.renderer, { name: 'canvas' }, rendererOptions );
+    let rOpts = rendererOptions ? rendererOptions : { name: 'canvas' };
     options.renderer = rOpts;
 
     if( !is.htmlElement( container ) && is.htmlElement( container[0] ) ){

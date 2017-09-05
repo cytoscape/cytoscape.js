@@ -5,7 +5,7 @@ let elesfn = ({
     classes = ( classes || '' ).match( /\S+/g ) || [];
     let self = this;
     let changed = [];
-    let classesMap = new Set( classes );
+    let classesSet = new Set( classes );
 
     // check and update each ele
     for( let j = 0; j < self.length; j++ ){
@@ -31,7 +31,7 @@ let elesfn = ({
       }
 
       if( changedEle ){
-        _p.classes = new Set( classesMap );
+        _p.classes = classesSet;
 
         changed.push( ele );
       }

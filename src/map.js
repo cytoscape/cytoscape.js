@@ -20,4 +20,6 @@ p.get = function( key ){
   return this._obj[ key ];
 };
 
-module.exports = typeof Map !== 'undefined' ? Map : ObjectMap;
+// TODO use the stdlib Map in future...
+// module.exports = typeof Map !== 'undefined' ? Map : ObjectMap;
+module.exports = ObjectMap;

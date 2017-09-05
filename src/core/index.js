@@ -382,20 +382,22 @@ util.extend( corefn, {
         json.style = cy.style().json();
       }
 
-      json.zoomingEnabled = cy._private.zoomingEnabled;
-      json.userZoomingEnabled = cy._private.userZoomingEnabled;
-      json.zoom = cy._private.zoom;
-      json.minZoom = cy._private.minZoom;
-      json.maxZoom = cy._private.maxZoom;
-      json.panningEnabled = cy._private.panningEnabled;
-      json.userPanningEnabled = cy._private.userPanningEnabled;
-      json.pan = util.copy( cy._private.pan );
-      json.boxSelectionEnabled = cy._private.boxSelectionEnabled;
-      json.renderer = util.copy( cy._private.options.renderer );
-      json.hideEdgesOnViewport = cy._private.options.hideEdgesOnViewport;
-      json.textureOnViewport = cy._private.options.textureOnViewport;
-      json.wheelSensitivity = cy._private.options.wheelSensitivity;
-      json.motionBlur = cy._private.options.motionBlur;
+      let options = _p.options;
+
+      json.zoomingEnabled = _p.zoomingEnabled;
+      json.userZoomingEnabled = _p.userZoomingEnabled;
+      json.zoom = _p.zoom;
+      json.minZoom = _p.minZoom;
+      json.maxZoom = _p.maxZoom;
+      json.panningEnabled = _p.panningEnabled;
+      json.userPanningEnabled = _p.userPanningEnabled;
+      json.pan = util.copy( _p.pan );
+      json.boxSelectionEnabled = _p.boxSelectionEnabled;
+      json.renderer = util.copy( options.renderer );
+      json.hideEdgesOnViewport = options.hideEdgesOnViewport;
+      json.textureOnViewport = options.textureOnViewport;
+      json.wheelSensitivity = options.wheelSensitivity;
+      json.motionBlur = options.motionBlur;
 
       return json;
     }

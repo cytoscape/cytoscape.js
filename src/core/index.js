@@ -5,10 +5,15 @@ let is = require( '../is' );
 let Promise = require( '../promise' );
 let define = require( '../define' );
 
-let coreInit = function( cy, opts ){
-  let options = util.extend( {}, opts );
-  
-  let container = options.container;
+let Core = function( opts ){
+  let cy = this;
+
+  opts = util.extend( {}, opts );
+
+  let container = opts.container;
+
+  // allow for passing a wrapped jquery object
+  // e.g. cytoscape({ container: $('#cy') })
   if( container && !is.htmlElement( container ) && is.htmlElement( container[0] ) ){
     container = container[0];
   }
@@ -23,11 +28,12 @@ let coreInit = function( cy, opts ){
   }
 
   let readies = reg.readies = reg.readies || [];
-  
+
   if( container ){ container._cyreg = reg; } // make sure container assoc'd reg points to this cy
   reg.cy = cy;
-  
+
   let head = window !== undefined && container !== undefined && !opts.headless;
+  let options = opts;
   options.layout = util.extend( { name: head ? 'grid' : 'null' }, options.layout );
   options.renderer = util.extend( { name: head ? 'canvas' : 'null' }, options.renderer );
 
@@ -41,18 +47,17 @@ let coreInit = function( cy, opts ){
     }
   };
 
-  let _p = cy._private = {
+  let _p = this._private = {
     container: container, // html dom ele container
     ready: false, // whether ready has been triggered
     options: options, // cached options
-    elements: new Collection( cy ), // elements in the graph
+    elements: new Collection( this ), // elements in the graph
     listeners: [], // list of listeners
-    aniEles: new Collection( cy ), // elements being animated
+    aniEles: new Collection( this ), // elements being animated
     scratch: {}, // scratch object for core
     layout: null,
     renderer: null,
     destroyed: false, // whether destroy was called
-    mounted: head,  // whether mount was called
     notificationsEnabled: true, // whether notifications are sent to the renderer
     minZoom: 1e-50,
     maxZoom: 1e50,
@@ -77,7 +82,7 @@ let coreInit = function( cy, opts ){
     hasCompoundNodes: false
   };
 
-  cy.createEmitter();
+  this.createEmitter();
 
   // set selection type
   let selType = options.selectionType;
@@ -190,13 +195,6 @@ let coreInit = function( cy, opts ){
   } );
 };
 
-let Core = function( opts ){
-
-  let cy = this;
-
-  coreInit( cy, opts );
-};
-
 let corefn = Core.prototype; // short alias
 
 util.extend( corefn, {
@@ -280,13 +278,38 @@ util.extend( corefn, {
   mount: function( container ){
     let cy = this;
     let _p = cy._private;
-    if( container ){
-      cy.destroyRenderer();
-      _p.options.container = container;
-      _p.options.renderer.name = 'canvas';
-      _p.options.headless = false; 
-      coreInit(cy, _p.options);
+    let options = _p.options;
+
+    if( container == null ){ return; }
+
+    if( !is.htmlElement( container ) && is.htmlElement( container[0] ) ){
+      container = container[0];
     }
+  
+    cy.stopAnimationLoop();
+    cy.destroyRenderer();
+
+    options.container = container;
+    _p.container = container;
+
+    options.styleEnabled = true;
+    _p.styleEnabled = true;
+
+    options.renderer.name = 'canvas';
+    options.headless = false; 
+
+    cy.initRenderer( util.extend( {
+      hideEdgesOnViewport: options.hideEdgesOnViewport,
+      textureOnViewport: options.textureOnViewport,
+      wheelSensitivity: is.number( options.wheelSensitivity ) && options.wheelSensitivity > 0 ? options.wheelSensitivity : 1,
+      motionBlur: options.motionBlur === undefined ? false : options.motionBlur, // off by default
+      motionBlurOpacity: options.motionBlurOpacity === undefined ? 0.05 : options.motionBlurOpacity,
+      pixelRatio: is.number( options.pixelRatio ) && options.pixelRatio > 0 ? options.pixelRatio : undefined,
+      desktopTapThreshold: options.desktopTapThreshold === undefined ? 4 : options.desktopTapThreshold,
+      touchTapThreshold: options.touchTapThreshold === undefined ? 8 : options.touchTapThreshold
+    }, options.renderer ) );
+    cy.startAnimationLoop();
+    cy.style( options.style );    
   },
 
   options: function(){

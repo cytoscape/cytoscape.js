@@ -115,16 +115,7 @@ let Core = function( opts ){
   };
 
   // create the renderer
-  cy.initRenderer( util.extend( {
-    hideEdgesOnViewport: options.hideEdgesOnViewport,
-    textureOnViewport: options.textureOnViewport,
-    wheelSensitivity: is.number( options.wheelSensitivity ) && options.wheelSensitivity > 0 ? options.wheelSensitivity : 1,
-    motionBlur: options.motionBlur === undefined ? false : options.motionBlur, // off by default
-    motionBlurOpacity: options.motionBlurOpacity === undefined ? 0.05 : options.motionBlurOpacity,
-    pixelRatio: is.number( options.pixelRatio ) && options.pixelRatio > 0 ? options.pixelRatio : undefined,
-    desktopTapThreshold: options.desktopTapThreshold === undefined ? 4 : options.desktopTapThreshold,
-    touchTapThreshold: options.touchTapThreshold === undefined ? 8 : options.touchTapThreshold
-  }, options.renderer ) );
+  cy.initRenderer( options.renderer );
 
   let setElesAndLayout = function( elements, onload, ondone ){
     cy.notifications( false );
@@ -275,10 +266,13 @@ util.extend( corefn, {
     return this._private.container;
   },
 
-  mount: function( container ){
+  mount: function( container, rendererOptions ){
     let cy = this;
     let _p = cy._private;
     let options = _p.options;
+    
+    let rOpts = util.extend( {}, options.renderer, { name: 'canvas' }, rendererOptions );
+    options.renderer = rOpts;
 
     if( container == null ){ return; }
 
@@ -286,30 +280,24 @@ util.extend( corefn, {
       container = container[0];
     }
   
-    cy.stopAnimationLoop();
-    cy.destroyRenderer();
+    cy.unmount();
 
-    options.container = container;
     _p.container = container;
-
-    options.styleEnabled = true;
     _p.styleEnabled = true;
 
-    options.renderer.name = 'canvas';
-    options.headless = false; 
+    cy.initRenderer( rOpts );
 
-    cy.initRenderer( util.extend( {
-      hideEdgesOnViewport: options.hideEdgesOnViewport,
-      textureOnViewport: options.textureOnViewport,
-      wheelSensitivity: is.number( options.wheelSensitivity ) && options.wheelSensitivity > 0 ? options.wheelSensitivity : 1,
-      motionBlur: options.motionBlur === undefined ? false : options.motionBlur, // off by default
-      motionBlurOpacity: options.motionBlurOpacity === undefined ? 0.05 : options.motionBlurOpacity,
-      pixelRatio: is.number( options.pixelRatio ) && options.pixelRatio > 0 ? options.pixelRatio : undefined,
-      desktopTapThreshold: options.desktopTapThreshold === undefined ? 4 : options.desktopTapThreshold,
-      touchTapThreshold: options.touchTapThreshold === undefined ? 8 : options.touchTapThreshold
-    }, options.renderer ) );
     cy.startAnimationLoop();
+
     cy.style( options.style );    
+  },
+
+  unmount: function(){
+    let cy = this;
+
+    cy.stopAnimationLoop();
+
+    cy.destroyRenderer();
   },
 
   options: function(){

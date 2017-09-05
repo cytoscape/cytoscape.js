@@ -1,3 +1,4 @@
+let is = require( '../is' );
 let util = require( '../util' );
 
 let corefn = ({
@@ -42,9 +43,19 @@ let corefn = ({
       return;
     }
 
-    let rOpts = util.extend( {}, options, {
-      cy: cy
-    } );
+    let defaults = {
+      motionBlur: false,
+      motionBlurOpacity: 0.05,
+      desktopTapThreshold: 4,
+      touchTapThreshold: 8,
+      wheelSensitivity: 1
+    };
+
+    let rOpts = util.extend( {}, defaults, options, { 
+      cy: cy,
+      wheelSensitivity: is.number( options.wheelSensitivity ) && options.wheelSensitivity > 0 ? options.wheelSensitivity : defaults.wheelSensitivity,
+      pixelRatio: is.number( options.pixelRatio ) && options.pixelRatio > 0 ? options.pixelRatio : undefined
+     } );
 
     cy._private.renderer = new RendererProto( rOpts );
   },

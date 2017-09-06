@@ -208,6 +208,25 @@
             },
 
             {
+              "name": "cy.mount",
+              "descr": "Attaches the instance to the specified container.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "container", "descr": "A HTML DOM element in which the graph should be rendered." }
+                  ]
+                }
+              ],
+              "md": "core/mount"
+            },
+
+            {
+              "name": "cy.unmount",
+              "descr": "Remove the instance from it's current container.",
+              "md": "core/unmount"
+            },
+
+            {
               "name": "cy.destroy",
               "descr": "A convenience function to explicitly destroy the instance.",
               "md": "core/destroy"

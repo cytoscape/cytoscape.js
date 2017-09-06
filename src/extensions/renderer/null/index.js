@@ -8,7 +8,8 @@ let noop = function(){};
 NullRenderer.prototype = {
   recalculateRenderedStyle: noop,
   notify: function(){ this.notifications++; },
-  init: noop
+  init: noop,
+  isHeadless: function(){ return true; }
 };
 
 module.exports = NullRenderer;

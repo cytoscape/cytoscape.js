@@ -192,6 +192,10 @@ BRp.destroy = function(){
   }
 };
 
+BRp.isHeadless = function(){
+  return false;
+};
+
 [
   require( './arrow-shapes' ),
   require( './coord-ele-math' ),

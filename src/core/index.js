@@ -243,7 +243,7 @@ util.extend( corefn, {
   },
 
   headless: function(){
-    return this._private.options.renderer.name === 'null';
+    return this._private.renderer.isHeadless();
   },
 
   styleEnabled: function(){
@@ -280,7 +280,9 @@ util.extend( corefn, {
       container = container[0];
     }
   
-    cy.unmount();
+    cy.stopAnimationLoop();
+    
+    cy.destroyRenderer();
 
     _p.container = container;
     _p.styleEnabled = true;
@@ -296,8 +298,10 @@ util.extend( corefn, {
     let cy = this;
 
     cy.stopAnimationLoop();
-
+    
     cy.destroyRenderer();
+
+    cy.initRenderer( { name: 'null' } );
   },
 
   options: function(){

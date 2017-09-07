@@ -247,7 +247,7 @@ let corefn = ({
       elements = this.mutableElements();
     }
 
-    if( elements.empty() ){ return; } // can't fit to nothing
+    if( is.elementOrCollection( elements ) && elements.empty() ){ return; } // can't fit to nothing
 
     bb = bb || elements.boundingBox();
 

@@ -272,16 +272,16 @@ util.extend( corefn, {
     let cy = this;
     let _p = cy._private;
     let options = _p.options;
-    
+
     let rOpts = rendererOptions ? rendererOptions : { name: 'canvas' };
     options.renderer = rOpts;
 
     if( !is.htmlElement( container ) && is.htmlElement( container[0] ) ){
       container = container[0];
     }
-  
+
     cy.stopAnimationLoop();
-    
+
     cy.destroyRenderer();
 
     _p.container = container;
@@ -291,17 +291,25 @@ util.extend( corefn, {
 
     cy.startAnimationLoop();
 
-    cy.style( options.style );    
+    cy.style( options.style );
+
+    cy.emit( 'mount' );
+
+    return cy;
   },
 
   unmount: function(){
     let cy = this;
 
     cy.stopAnimationLoop();
-    
+
     cy.destroyRenderer();
 
     cy.initRenderer( { name: 'null' } );
+
+    cy.emit( 'unmount' );
+
+    return cy;
   },
 
   options: function(){

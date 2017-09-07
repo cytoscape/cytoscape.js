@@ -52,7 +52,7 @@ let corefn = ({
       wheelSensitivity: 1
     };
 
-    let rOpts = util.extend( {}, defaults, options, { 
+    let rOpts = util.extend( {}, defaults, options, {
       cy: cy,
       wheelSensitivity: is.number( options.wheelSensitivity ) && options.wheelSensitivity > 0 ? options.wheelSensitivity : defaults.wheelSensitivity,
       pixelRatio: is.number( options.pixelRatio ) && options.pixelRatio > 0 ? options.pixelRatio : defaults.pixelRatio
@@ -76,6 +76,13 @@ let corefn = ({
     }
 
     cy._private.renderer = null; // to be extra safe, remove the ref
+    cy.mutableElements().forEach(function( ele ){
+      let _p = ele._private;
+      _p.rscratch = {};
+      _p.rstyle = {};
+      _p.animation.current = [];
+      _p.animation.queue = [];
+    });
   },
 
   onRender: function( fn ){

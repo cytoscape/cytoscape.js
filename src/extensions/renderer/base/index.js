@@ -135,7 +135,7 @@ BRp.notify = function( params ){
     return;
   }
 
-  if( has['add'] || has['remove'] || has['load'] || has['zorder'] ){
+  if( has['add'] || has['remove'] || has['load'] || has['zorder'] || has['mount'] ){
     r.invalidateCachedZSortedEles();
   }
 
@@ -143,7 +143,7 @@ BRp.notify = function( params ){
     r.redrawHint( 'select', true );
   }
 
-  if( has['load'] || has['resize'] ){
+  if( has['load'] || has['resize'] || has['mount'] ){
     r.invalidateContainerClientCoordsCache();
     r.matchCanvasSize( r.container );
   }

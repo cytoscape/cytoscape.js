@@ -2,10 +2,10 @@
 
  * A fully featured graph library written in pure JS
  * Permissive open source license (MIT)
- * Designed for users first, for both frontfacing app usercases *and* developer usecases
+ * Designed for users first, for both frontfacing app usecases *and* developer usecases
  * Highly optimised
  * Compatible with
-  * All modern browsers
+  * All modern browsers (At least ES5 and canvas support are required; feature detection is used for optional performance enhancements)
   * CommonJS/Node.js
   * AMD/Require.js
   * jQuery
@@ -13,6 +13,7 @@
   * Bower
   * Meteor/Atmosphere
   * The [R language](https://www.r-project.org/) via [RCyjs](http://www.bioconductor.org/packages/release/bioc/html/RCyjs.html)
+ * Supports rendering images of graphs on Node.js with [Cytosnap](https://github.com/cytoscape/cytosnap)
  * Has a full suite of unit tests that can be run in the browser or the terminal
  * Documentation includes live code examples, doubling as an interactive requirements specification; example graphs may also be freely modified in your browser's JS console
  * Fully serialisable and deserialisable via JSON
@@ -33,12 +34,10 @@
   * [Active Value Advisors](http://www.activevalue.eu/) : [How-4](http://www.how-4.com/)
   * [Agile Protein Interactomes DataServer](http://apid.dep.usal.es/)
   * [Aras](http://www.aras.com/)
-  * [Avenue](https://avenue-2p0.herokuapp.com/)
   * [Ben-Gurion University of the Negev](http://bgu.ac.il/)
    * [DiffNet](http://netbio.bgu.ac.il/diffnet/)
    * [TissueNet](http://netbio.bgu.ac.il/tissuenet)
   * [BioGRID](http://thebiogrid.org/)
-  * [BS CytoGraph](www.brettjsettle.site/graph)
   * [Classcraft](https://www.classcraft.com/)
   * [Cray Inc.](http://www.cray.com)
   * [CyNetShare](http://cynetshare.ucsd.edu/)
@@ -53,7 +52,6 @@
   * [InfoTrack](http://www.infotrack.com.au/)
   * [The Interactive Metal Genres Graph](https://www.boundbymetal.com/)
   * [The Kanji Map](http://thekanjimap.com/)
-  * [Kartoteka](http://www.kartoteka.ru/vizual/)
   * [Musicalized](http://en.musicalized.com/full)
   * [NDex](http://www.ndexbio.org/)
   * [OHDSI](http://www.ohdsi.org/)
@@ -72,7 +70,7 @@
   * [VentureApp](https://www.ventureapp.com/) : VentureMap (e.g. [Boston](https://www.ventureapp.com/map/boston-tech/), [New York](https://www.ventureapp.com/map/nyc-tech/), [Chicago](https://www.ventureapp.com/map/chicago-tech/))
   * [Virginia Tech](http://www.vt.edu/index.html) [T. M. Murali's Research Group](http://bioinformatics.cs.vt.edu/~murali/) : [GraphSpace](http://graphspace.org)
   * [Visual Interaction GmbH](http://www.mygaze.com/)
-  * [http://younivise.com/](http://younivise.com/) : Virtual Advisor
+  * [http://younivise.com/](Younivise) : Virtual Advisor
 
 
 

@@ -149,7 +149,7 @@ An instance of Cytoscape.js has a number of options that can be set on initialis
 **`motionBlurOpacity`** : When `motionBlur: true`, this value controls the opacity of motion blur frames.  Higher values make the motion blur effect more pronounced.  This option is now largely moot, as a result of performance enhancements.
 
 <span id="init-opts/wheelSensitivity"></span>
-**`wheelSensitivity`** : Changes the scroll wheel sensitivity when zooming.  This is a multiplicative modifier.  So, a value between 0 and 1 reduces the sensitivity (zooms slower), and a value greater than 1 increases the sensitivity (zooms faster).
+**`wheelSensitivity`** : Changes the scroll wheel sensitivity when zooming.  This is a multiplicative modifier.  So, a value between 0 and 1 reduces the sensitivity (zooms slower), and a value greater than 1 increases the sensitivity (zooms faster).  This option is set to a sane value that works well for mainstream mice (Apple, Logitech, Microsoft) on Linux, Mac, and Windows.  If the default value seems too fast or too slow on your particular system, you may have non-default mouse settings in your OS or a niche mouse.  You should not change this value unless your app is meant to work only on specific hardware.  Otherwise, you risk making zooming too slow or too fast for most users.
 
 <span id="init-opts/pixelRatio"></span>
 **`pixelRatio`** : Overrides the screen pixel ratio with a manually set value (`1.0` recommended, if set).  This can be used to increase performance on high density displays by reducing the effective area that needs to be rendered, though this is much less necessary on more recent browser releases.  If you want to use the hardware's actual pixel ratio, you can set `pixelRatio: 'auto'` (default).

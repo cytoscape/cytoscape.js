@@ -56,6 +56,8 @@ To install Cytoscape.js via Meteor/Atmosphere:
 npm install cytoscape
 ```
 
+Cytoscape.js supports environments with ES5 or newer, as it is transpiled by Babel and it uses only basic features of the standard library.  Feature detection is used for optional features that improve performance.  However, a future version of Cytoscape.js may require a more up-to-date version of the standard library.  You may want to use [`babel-polyfill`](https://babeljs.io/docs/usage/polyfill/) or [`core-js`](https://github.com/zloirock/core-js) if you want to support old browsers in future.
+
 
 
 ## Initialisation

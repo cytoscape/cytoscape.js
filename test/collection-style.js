@@ -924,6 +924,27 @@ describe('Collection style', function(){
       });
     });
 
+    // nb fit to bounding box is internal api
+    // this is just a regression test; it may have to be removed if the internal api changes
+    it('fit to bounding box has no error', function(){
+      var getPan = function(){
+        var p = cy.pan();
+
+        return { x: p.x, y: p.y };
+      };
+
+      var pan1 = getPan();
+
+      return cy.animation({
+        fit: { eles: cy.nodes()[0].boundingBox() },
+        duration: 300
+      }).play().promise().then(function(){
+        var pan2 = getPan();
+
+        expect( pan1 ).to.not.deep.equal( pan2 );
+      });
+    });
+
   });
 
   describe('eles.boundingBox()', function(){

@@ -52,7 +52,22 @@ describe('Collection style', function(){
             'transition-timing-function': 'linear',
             'transition-duration': 50
           }
+        },
+
+        {
+          selector: '#n2n3',
+          style: {
+            'curve-style': 'bezier'
+          }
+        },
+
+        {
+          selector: '#n2n3',
+          style: {
+            'curve-style': 'haystack'
+          }
         }
+
       ]
     });
   });
@@ -612,6 +627,25 @@ describe('Collection style', function(){
       expect( bb.w ).is.above( 0 );
       expect( bb.h ).is.above( 0 );
     });
+
+    it('bezier edge gets a bounding box', function(){
+      var e = cy.$('#n1n2');
+
+      var bb = e.boundingBox();
+
+      expect( bb.w ).is.above(0);
+      expect( bb.h ).is.above(0);
+    });
+
+    it('haystack edge gets a bounding box', function(){
+      var e = cy.$('#n2n3');
+
+      var bb = e.boundingBox();
+
+      expect( bb.w ).is.above(0);
+      expect( bb.h ).is.above(0);
+    });
+
   });
 
 });

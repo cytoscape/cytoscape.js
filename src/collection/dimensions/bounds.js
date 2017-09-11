@@ -201,6 +201,9 @@ let updateBounds = function( b, x1, y1, x2, y2 ){
   // don't update with zero area boxes
   if( x2 - x1 === 0 || y2 - y1 === 0 ){ return; }
 
+  // don't update with null dim
+  if( x1 == null || y1 == null || x2 == null || y2 == null ){ return; }
+
   b.x1 = x1 < b.x1 ? x1 : b.x1;
   b.x2 = x2 > b.x2 ? x2 : b.x2;
   b.y1 = y1 < b.y1 ? y1 : b.y1;
@@ -216,6 +219,8 @@ let prefixedProperty = function( obj, field, prefix ){
 };
 
 let updateBoundsFromArrow = function( bounds, ele, prefix ){
+  if( ele.cy().headless() ){ return; }
+
   let _p = ele._private;
   let rstyle = _p.rstyle;
   let halfArW = rstyle.arrowWidth / 2;
@@ -240,6 +245,8 @@ let updateBoundsFromArrow = function( bounds, ele, prefix ){
 };
 
 let updateBoundsFromLabel = function( bounds, ele, prefix ){
+  if( ele.cy().headless() ){ return; }
+
   let prefixDash;
 
   if( prefix ){
@@ -358,8 +365,8 @@ let updateBoundsFromLabel = function( bounds, ele, prefix ){
 // get the bounding box of the elements (in raw model position)
 let boundingBoxImpl = function( ele, options ){
   let cy = ele._private.cy;
-  let cy_p = cy._private;
-  let styleEnabled = cy_p.styleEnabled;
+  let styleEnabled = cy.styleEnabled();
+  let headless = cy.headless();
 
   let bounds = {
     x1: Infinity,
@@ -420,7 +427,7 @@ let boundingBoxImpl = function( ele, options ){
 
       // handle edge dimensions (rough box estimate)
       //////////////////////////////////////////////
-      if( styleEnabled ){
+      if( styleEnabled && !headless ){
         ex1 = Math.min( rstyle.srcX, rstyle.midX, rstyle.tgtX );
         ex2 = Math.max( rstyle.srcX, rstyle.midX, rstyle.tgtX );
         ey1 = Math.min( rstyle.srcY, rstyle.midY, rstyle.tgtY );
@@ -437,8 +444,8 @@ let boundingBoxImpl = function( ele, options ){
 
       // precise haystacks
       ////////////////////
-      if( styleEnabled && ele.pstyle( 'curve-style' ).strValue === 'haystack' ){
-        let hpts = rstyle.haystackPts;
+      if( styleEnabled && !headless && ele.pstyle( 'curve-style' ).strValue === 'haystack' ){
+        let hpts = rstyle.haystackPts || [];
 
         ex1 = hpts[0].x;
         ey1 = hpts[0].y;

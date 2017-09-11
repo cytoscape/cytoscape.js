@@ -1,6 +1,6 @@
 {
   "name": "cytoscape",
-  "version": "2.7.24",
+  "version": "2.7.25",
   "license": "MIT",
   "description": "Graph theory (a.k.a. network) library for analysis and visualisation",
   "homepage": "http://js.cytoscape.org",

@@ -1,1 +1,1 @@
-module.exports = "2.7.24";
+module.exports = "2.7.25";

@@ -2,7 +2,7 @@
 
 /*!
 
-Cytoscape.js 2.7.24 (MIT licensed)
+Cytoscape.js 2.7.25 (MIT licensed)
 
 Copyright (c) The Cytoscape Consortium
 
@@ -2945,6 +2945,9 @@ var updateBounds = function( b, x1, y1, x2, y2 ){
   // don't update with zero area boxes
   if( x2 - x1 === 0 || y2 - y1 === 0 ){ return; }
 
+  // don't update with null dim
+  if( x1 == null || y1 == null || x2 == null || y2 == null ){ return; }
+
   b.x1 = x1 < b.x1 ? x1 : b.x1;
   b.x2 = x2 > b.x2 ? x2 : b.x2;
   b.y1 = y1 < b.y1 ? y1 : b.y1;
@@ -2960,6 +2963,8 @@ var prefixedProperty = function( obj, field, prefix ){
 };
 
 var updateBoundsFromArrow = function( bounds, ele, prefix, options ){
+  if( ele.cy().headless() ){ return; }
+
   var _p = ele._private;
   var rstyle = _p.rstyle;
   var halfArW = rstyle.arrowWidth / 2;
@@ -2984,6 +2989,8 @@ var updateBoundsFromArrow = function( bounds, ele, prefix, options ){
 };
 
 var updateBoundsFromLabel = function( bounds, ele, prefix, options ){
+  if( ele.cy().headless() ){ return; }
+
   var prefixDash;
 
   if( prefix ){
@@ -3116,6 +3123,7 @@ var boundingBoxImpl = function( ele, options ){
   var cy = ele._private.cy;
   var cy_p = cy._private;
   var styleEnabled = cy_p.styleEnabled;
+  var headless = cy.headless();
 
   var bounds = {
     x1: Infinity,
@@ -3175,7 +3183,7 @@ var boundingBoxImpl = function( ele, options ){
 
       // handle edge dimensions (rough box estimate)
       //////////////////////////////////////////////
-      if( styleEnabled ){
+      if( styleEnabled && !headless ){
         ex1 = Math.min( rstyle.srcX, rstyle.midX, rstyle.tgtX );
         ex2 = Math.max( rstyle.srcX, rstyle.midX, rstyle.tgtX );
         ey1 = Math.min( rstyle.srcY, rstyle.midY, rstyle.tgtY );
@@ -3192,7 +3200,7 @@ var boundingBoxImpl = function( ele, options ){
 
       // precise haystacks
       ////////////////////
-      if( styleEnabled && ele.pstyle( 'curve-style' ).strValue === 'haystack' ){
+      if( styleEnabled && !headless && ele.pstyle( 'curve-style' ).strValue === 'haystack' ){
         var hpts = rstyle.haystackPts;
 
         ex1 = hpts[0].x;
@@ -27420,7 +27428,7 @@ util.debounce = function( func, wait, options ){ // ported lodash debounce funct
 module.exports = util;
 
 },{"../is":83,"../window":107}],106:[function(_dereq_,module,exports){
-module.exports = "2.7.24";
+module.exports = "2.7.25";
 
 },{}],107:[function(_dereq_,module,exports){
 module.exports = ( typeof window === 'undefined' ? null : window ); // eslint-disable-line no-undef

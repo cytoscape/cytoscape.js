@@ -1783,7 +1783,7 @@ module.exports = typeof Promise !== 'undefined' ? Promise : api; // eslint-disab
 
 var is = __webpack_require__(0);
 var util = __webpack_require__(1);
-var newQuery = __webpack_require__(10);
+var newQuery = __webpack_require__(11);
 
 var Selector = function Selector(selector) {
   var self = this;
@@ -1989,7 +1989,7 @@ module.exports = Selector;
 var util = __webpack_require__(1);
 var is = __webpack_require__(0);
 var Map = __webpack_require__(118);
-var Set = __webpack_require__(11);
+var Set = __webpack_require__(9);
 
 var Element = __webpack_require__(13);
 
@@ -2226,7 +2226,12 @@ elesfn.json = function (obj) {
       classes: null
     };
 
-    json.classes = Array.from(p.classes).join(' ');
+    json.classes = '';
+
+    var i = 0;
+    p.classes.forEach(function (cls) {
+      return json.classes += i++ === 0 ? cls : ' ' + cls;
+    });
 
     return json;
   }
@@ -2734,6 +2739,99 @@ module.exports = __webpack_require__(137);
 "use strict";
 
 
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+/* global Set */
+
+var undef =  true ? 'undefined' : _typeof(undefined);
+
+var ObjectSet = function () {
+  function ObjectSet(arrayOrObjectSet) {
+    _classCallCheck(this, ObjectSet);
+
+    this._obj = Object.create(null);
+
+    if (arrayOrObjectSet != null) {
+      var arr = void 0;
+
+      if (arrayOrObjectSet.instanceString != null && arrayOrObjectSet.instanceString() === this.instanceString()) {
+        arr = arrayOrObjectSet.toArray();
+      } else {
+        arr = arrayOrObjectSet;
+      }
+
+      for (var i = 0; i < arr.length; i++) {
+        this.add(arr[i]);
+      }
+    }
+  }
+
+  _createClass(ObjectSet, [{
+    key: 'instanceString',
+    value: function instanceString() {
+      return 'set';
+    }
+  }, {
+    key: 'add',
+    value: function add(val) {
+      this._obj[val] = 1;
+    }
+  }, {
+    key: 'delete',
+    value: function _delete(val) {
+      this._obj[val] = 0;
+    }
+  }, {
+    key: 'clear',
+    value: function clear() {
+      this._obj = Object.create(null);
+    }
+  }, {
+    key: 'has',
+    value: function has(val) {
+      return this._obj[val] === 1;
+    }
+  }, {
+    key: 'toArray',
+    value: function toArray() {
+      var _this = this;
+
+      return Object.keys(this._obj).filter(function (key) {
+        return _this.has(key);
+      });
+    }
+  }, {
+    key: 'forEach',
+    value: function forEach(callback, thisArg) {
+      return this.toArray().forEach(callback, thisArg);
+    }
+  }, {
+    key: 'size',
+    get: function get() {
+      return this.toArray().length;
+    }
+  }]);
+
+  return ObjectSet;
+}();
+
+// TODO use the stdlib Set in future...
+// module.exports = typeof Set !== undef ? Set : ObjectSet;
+
+
+module.exports = ObjectSet;
+
+/***/ }),
+/* 10 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
 var util = __webpack_require__(1);
 var is = __webpack_require__(0);
 var Event = __webpack_require__(15);
@@ -2969,7 +3067,7 @@ p.emit = p.trigger = function (events, extraParams, manualCallback) {
 module.exports = Emitter;
 
 /***/ }),
-/* 10 */
+/* 11 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -3002,85 +3100,6 @@ var newQuery = function newQuery() {
 };
 
 module.exports = newQuery;
-
-/***/ }),
-/* 11 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-/* global Set */
-
-var undef =  true ? 'undefined' : _typeof(undefined);
-
-var ObjectSet = function () {
-  function ObjectSet(arrayOrObjectSet) {
-    _classCallCheck(this, ObjectSet);
-
-    this._obj = Object.create(null);
-
-    if (arrayOrObjectSet != null) {
-      var arr = void 0;
-
-      if (arrayOrObjectSet.instanceString != null && arrayOrObjectSet.instanceString() === this.instanceString()) {
-        arr = arrayOrObjectSet.toArray();
-      } else {
-        arr = arrayOrObjectSet;
-      }
-
-      for (var i = 0; i < arr.length; i++) {
-        this.add(arr[i]);
-      }
-    }
-  }
-
-  _createClass(ObjectSet, [{
-    key: 'instanceString',
-    value: function instanceString() {
-      return 'set';
-    }
-  }, {
-    key: 'add',
-    value: function add(val) {
-      this._obj[val] = 1;
-    }
-  }, {
-    key: 'delete',
-    value: function _delete(val) {
-      this._obj[val] = 0;
-    }
-  }, {
-    key: 'clear',
-    value: function clear() {
-      this._obj = Object.create(null);
-    }
-  }, {
-    key: 'has',
-    value: function has(val) {
-      return this._obj[val] === 1;
-    }
-  }, {
-    key: 'toArray',
-    value: function toArray() {
-      var _this = this;
-
-      return Object.keys(this._obj).filter(function (key) {
-        return _this.has(key);
-      });
-    }
-  }]);
-
-  return ObjectSet;
-}();
-
-module.exports = (typeof Set === 'undefined' ? 'undefined' : _typeof(Set)) !== undef ? Set : ObjectSet;
 
 /***/ }),
 /* 12 */
@@ -3533,10 +3552,10 @@ module.exports = Core;
 
 var util = __webpack_require__(1);
 var is = __webpack_require__(0);
+var Set = __webpack_require__(9);
 
 // represents a node or an edge
 var Element = function Element(cy, params, restore) {
-  var self = this;
   restore = restore === undefined || restore ? true : false;
 
   if (cy === undefined || params === undefined || !is.core(cy)) {
@@ -4341,7 +4360,7 @@ var Collection = __webpack_require__(7);
 var Core = __webpack_require__(12);
 var incExts = __webpack_require__(76);
 var is = __webpack_require__(0);
-var Emitter = __webpack_require__(9);
+var Emitter = __webpack_require__(10);
 
 // registered extensions to cytoscape, indexed by name
 var extensions = {};
@@ -4703,7 +4722,7 @@ module.exports = Stylesheet;
 "use strict";
 
 
-module.exports = "3.2.2";
+module.exports = "3.2.3";
 
 /***/ }),
 /* 24 */
@@ -6862,8 +6881,7 @@ module.exports = elesfn;
 "use strict";
 
 
-var util = __webpack_require__(1);
-var Set = __webpack_require__(11);
+var Set = __webpack_require__(9);
 
 var elesfn = {
   classes: function classes(_classes) {
@@ -6873,75 +6891,31 @@ var elesfn = {
     var classesMap = new Set(_classes);
 
     // check and update each ele
-    for (var j = 0; j < self.length; j++) {
+
+    var _loop = function _loop(j) {
       var ele = self[j];
       var _p = ele._private;
       var eleClasses = _p.classes;
       var changedEle = false;
 
       // check if ele has all of the passed classes
-      var _iteratorNormalCompletion = true;
-      var _didIteratorError = false;
-      var _iteratorError = undefined;
+      classesMap.forEach(function (cls) {
+        var eleHasClass = eleClasses.has(cls);
 
-      try {
-        for (var _iterator = classesMap[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-          var cls = _step.value;
-
-          var eleHasClass = eleClasses.has(cls);
-
-          if (!eleHasClass) {
-            changedEle = true;
-            break;
-          }
+        if (!eleHasClass) {
+          changedEle = true;
         }
+      });
 
-        // check if ele has classes outside of those passed
-      } catch (err) {
-        _didIteratorError = true;
-        _iteratorError = err;
-      } finally {
-        try {
-          if (!_iteratorNormalCompletion && _iterator.return) {
-            _iterator.return();
-          }
-        } finally {
-          if (_didIteratorError) {
-            throw _iteratorError;
-          }
-        }
-      }
-
+      // check if ele has classes outside of those passed
       if (!changedEle) {
-        var _iteratorNormalCompletion2 = true;
-        var _didIteratorError2 = false;
-        var _iteratorError2 = undefined;
+        eleClasses.forEach(function (eleCls) {
+          var specdClass = classesMap.has(eleCls);
 
-        try {
-          for (var _iterator2 = eleClasses[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-            var eleCls = _step2.value;
-
-
-            var specdClass = classesMap.has(eleCls);
-            if (!specdClass) {
-              changedEle = true;
-              break;
-            }
+          if (!specdClass) {
+            changedEle = true;
           }
-        } catch (err) {
-          _didIteratorError2 = true;
-          _iteratorError2 = err;
-        } finally {
-          try {
-            if (!_iteratorNormalCompletion2 && _iterator2.return) {
-              _iterator2.return();
-            }
-          } finally {
-            if (_didIteratorError2) {
-              throw _iteratorError2;
-            }
-          }
-        }
+        });
       }
 
       if (changedEle) {
@@ -6949,6 +6923,10 @@ var elesfn = {
 
         changed.push(ele);
       }
+    };
+
+    for (var j = 0; j < self.length; j++) {
+      _loop(j);
     }
 
     // trigger update style on those eles that had class changes
@@ -6974,29 +6952,29 @@ var elesfn = {
     var changed = []; // eles who had classes changed
 
     for (var i = 0, il = self.length; i < il; i++) {
-      var ele = self[i];
-      var changedEle = false;
+      var _ele = self[i];
+      var _changedEle = false;
 
       for (var j = 0; j < classes.length; j++) {
         var cls = classes[j];
-        var eleClasses = ele._private.classes;
-        var hasClass = eleClasses.has(cls);
+        var _eleClasses = _ele._private.classes;
+        var hasClass = _eleClasses.has(cls);
         var shouldAdd = toggle || toggle === undefined && !hasClass;
 
         if (shouldAdd) {
-          eleClasses.add(cls);
+          _eleClasses.add(cls);
 
-          if (!hasClass && !changedEle) {
-            changed.push(ele);
-            changedEle = true;
+          if (!hasClass && !_changedEle) {
+            changed.push(_ele);
+            _changedEle = true;
           }
         } else {
           // then remove
-          eleClasses.delete(cls);
+          _eleClasses.delete(cls);
 
-          if (hasClass && !changedEle) {
-            changed.push(ele);
-            changedEle = true;
+          if (hasClass && !_changedEle) {
+            changed.push(_ele);
+            _changedEle = true;
           }
         }
       } // for j classes
@@ -7139,7 +7117,7 @@ module.exports = elesfn;
 "use strict";
 
 
-var Set = __webpack_require__(11);
+var Set = __webpack_require__(9);
 
 var elesfn = {
   parent: function parent(selector) {
@@ -7806,6 +7784,11 @@ var updateBounds = function updateBounds(b, x1, y1, x2, y2) {
     return;
   }
 
+  // don't update with null dim
+  if (x1 == null || y1 == null || x2 == null || y2 == null) {
+    return;
+  }
+
   b.x1 = x1 < b.x1 ? x1 : b.x1;
   b.x2 = x2 > b.x2 ? x2 : b.x2;
   b.y1 = y1 < b.y1 ? y1 : b.y1;
@@ -7821,6 +7804,10 @@ var prefixedProperty = function prefixedProperty(obj, field, prefix) {
 };
 
 var updateBoundsFromArrow = function updateBoundsFromArrow(bounds, ele, prefix) {
+  if (ele.cy().headless()) {
+    return;
+  }
+
   var _p = ele._private;
   var rstyle = _p.rstyle;
   var halfArW = rstyle.arrowWidth / 2;
@@ -7845,6 +7832,10 @@ var updateBoundsFromArrow = function updateBoundsFromArrow(bounds, ele, prefix) 
 };
 
 var updateBoundsFromLabel = function updateBoundsFromLabel(bounds, ele, prefix) {
+  if (ele.cy().headless()) {
+    return;
+  }
+
   var prefixDash = void 0;
 
   if (prefix) {
@@ -7966,8 +7957,8 @@ var updateBoundsFromLabel = function updateBoundsFromLabel(bounds, ele, prefix) 
 // get the bounding box of the elements (in raw model position)
 var boundingBoxImpl = function boundingBoxImpl(ele, options) {
   var cy = ele._private.cy;
-  var cy_p = cy._private;
-  var styleEnabled = cy_p.styleEnabled;
+  var styleEnabled = cy.styleEnabled();
+  var headless = cy.headless();
 
   var bounds = {
     x1: Infinity,
@@ -8031,7 +8022,7 @@ var boundingBoxImpl = function boundingBoxImpl(ele, options) {
 
       // handle edge dimensions (rough box estimate)
       //////////////////////////////////////////////
-      if (styleEnabled) {
+      if (styleEnabled && !headless) {
         ex1 = Math.min(rstyle.srcX, rstyle.midX, rstyle.tgtX);
         ex2 = Math.max(rstyle.srcX, rstyle.midX, rstyle.tgtX);
         ey1 = Math.min(rstyle.srcY, rstyle.midY, rstyle.tgtY);
@@ -8048,8 +8039,8 @@ var boundingBoxImpl = function boundingBoxImpl(ele, options) {
 
       // precise haystacks
       ////////////////////
-      if (styleEnabled && ele.pstyle('curve-style').strValue === 'haystack') {
-        var hpts = rstyle.haystackPts;
+      if (styleEnabled && !headless && ele.pstyle('curve-style').strValue === 'haystack') {
+        var hpts = rstyle.haystackPts || [];
 
         ex1 = hpts[0].x;
         ey1 = hpts[0].y;
@@ -8813,7 +8804,7 @@ module.exports = elesfn;
 "use strict";
 
 
-var Emitter = __webpack_require__(9);
+var Emitter = __webpack_require__(10);
 var define = __webpack_require__(3);
 var is = __webpack_require__(0);
 var util = __webpack_require__(1);
@@ -11772,7 +11763,7 @@ module.exports = step;
 "use strict";
 
 
-var Emitter = __webpack_require__(9);
+var Emitter = __webpack_require__(10);
 var define = __webpack_require__(3);
 var is = __webpack_require__(0);
 var util = __webpack_require__(1);
@@ -12551,7 +12542,7 @@ var corefn = {
       elements = this.mutableElements();
     }
 
-    if (elements.empty()) {
+    if (is.elementOrCollection(elements) && elements.empty()) {
       return;
     } // can't fit to nothing
 
@@ -25479,7 +25470,9 @@ p.get = function (key) {
   return this._obj[key];
 };
 
-module.exports = typeof Map !== 'undefined' ? Map : ObjectMap;
+// TODO use the stdlib Map in future...
+// module.exports = typeof Map !== 'undefined' ? Map : ObjectMap;
+module.exports = ObjectMap;
 
 /***/ }),
 /* 119 */
@@ -25495,7 +25488,7 @@ var _require = __webpack_require__(17),
 
 var tokens = __webpack_require__(122);
 var util = __webpack_require__(1);
-var newQuery = __webpack_require__(10);
+var newQuery = __webpack_require__(11);
 
 // when a token like a variable has escaped meta characters, we need to clean the backslashes out
 // so that values get compared properly in Selector.filter()
@@ -26077,7 +26070,7 @@ module.exports = { matches: matches, filter: filter };
 
 var util = __webpack_require__(1);
 var exprs = __webpack_require__(119);
-var newQuery = __webpack_require__(10);
+var newQuery = __webpack_require__(11);
 
 // of all the expressions, find the first match in the remaining text
 var consumeExpr = function consumeExpr(remaining) {

@@ -54,7 +54,7 @@ CRp.arrowShapeImpl = function( name ){
       if( context.closePath ){ context.closePath(); }
     },
 
-    'triangle-cross': function( context, trianglePoints, teePoints ){
+    'triangle-cross': function( context, trianglePoints, crossLinePoints ){
       if( context.beginPath ){ context.beginPath(); }
 
         var triPts = trianglePoints;
@@ -68,8 +68,8 @@ CRp.arrowShapeImpl = function( name ){
 
       if( context.beginPath ){ context.beginPath(); }
 
-        var teePts = teePoints;
-        var firstTeePt = teePoints[0];
+        var teePts = crossLinePoints;
+        var firstTeePt = crossLinePoints[0];
         context.moveTo( firstTeePt.x, firstTeePt.y );
 
         for( var i = 0; i < teePts.length; i++ ){

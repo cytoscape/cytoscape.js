@@ -215,11 +215,11 @@ BRp.findNearestElements = function( x, y, interactiveElementsOnly, isTouch ){
     for( var i = 0; i < arrows.length; i++ ){
       var ar = arrows[ i ];
       var shape = r.arrowShapes[ edge.pstyle( ar.name + '-arrow-shape' ).value ];
-
+      var edgeWidth = edge.pstyle('width').pfValue;
       if(
-        shape.roughCollide( x, y, arSize, ar.angle, { x: ar.x, y: ar.y }, edgeThreshold )
+        shape.roughCollide( x, y, arSize, ar.angle, { x: ar.x, y: ar.y }, edgeWidth, edgeThreshold )
          &&
-        shape.collide( x, y, arSize, ar.angle, { x: ar.x, y: ar.y }, edgeThreshold )
+        shape.collide( x, y, arSize, ar.angle, { x: ar.x, y: ar.y }, edgeWidth, edgeThreshold )
       ){
         addEle( edge );
         return true;

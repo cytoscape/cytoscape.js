@@ -261,7 +261,7 @@ CRp.drawArrowShape = function( edge, arrowType, context, fill, edgeWidth, shape,
   if( context.beginPath ){ context.beginPath(); }
 
   if( !pathCacheHit ){
-    shapeImpl.draw( context, size, angle, translation );
+    shapeImpl.draw( context, size, angle, translation, edgeWidth );
   }
 
   if( !shapeImpl.leavePathOpen && context.closePath ){

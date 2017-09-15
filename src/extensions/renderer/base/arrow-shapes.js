@@ -22,7 +22,7 @@ BRp.registerArrowShapes = function(){
   // spacing: dist(arrowTip, nodeBoundary)
   // gap: dist(edgeTip, nodeBoundary), edgeTip may != arrowTip
 
-  var bbCollide = function( x, y, size, angle, translation, padding ){
+  var bbCollide = function( x, y, size, angle, translation, edgeWidth, padding ){
     var x1 = translation.x - size / 2 - padding;
     var x2 = translation.x + size / 2 + padding;
     var y1 = translation.y - size / 2 - padding;
@@ -145,7 +145,7 @@ BRp.registerArrowShapes = function(){
 
     roughCollide: bbCollide,
 
-    draw: function( context, size, angle, translation ){
+    draw: function( context, size, angle, translation, edgeWidth ){
       var ptsTrans = transformPoints( this.points, size, angle, translation );
       var ctrlPt = this.controlPoint;
       var ctrlPtTrans = transform( ctrlPt[0], ctrlPt[1], size, angle, translation );
@@ -174,7 +174,7 @@ BRp.registerArrowShapes = function(){
       0.15, -0.4
     ],
 
-    collide: function( x, y, size, angle, translation, padding ){
+    collide: function( x, y, size, angle, translation, edgeWidth, padding ){
       var triPts = pointsToArr( transformPoints( this.points, size + 2 * padding, angle, translation ) );
       var teePts = pointsToArr( transformPoints( this.pointsTee, size + 2 * padding, angle, translation ) );
 
@@ -183,7 +183,7 @@ BRp.registerArrowShapes = function(){
       return inside;
     },
 
-    draw: function( context, size, angle, translation ){
+    draw: function( context, size, angle, translation, edgeWidth ){
       var triPts = transformPoints( this.points, size, angle, translation );
       var teePts = transformPoints( this.pointsTee, size, angle, translation );
 
@@ -199,47 +199,37 @@ BRp.registerArrowShapes = function(){
       -0.15, -0.3
     ],
 
-    crossLinePoints: [
-      -0.24175, -0.4,
-      0.24175, -0.4,
+    baseCrossLinePts: [
+      -0.15, -0.4,    // first half of the rectangle
+      -0.15, -0.4,
+      0.15, -0.4,    // second half of the rectangle
+      0.15, -0.4
     ],
 
-    forceStroke: true,
+    crossLinePts: function( size, edgeWidth ){
+      // shift points so that the distance between the cross points matches edge width
+      var p = this.baseCrossLinePts.slice();
+      var shiftFactor = edgeWidth / size;
+      var y0 = 3;
+      var y1 = 5;
 
-    matchEdgeWidth: true,
+      p[y0] = p[y0] - shiftFactor;
+      p[y1] = p[y1] - shiftFactor;
 
-    scaleCoord: function ( constant, size, edgeWidth ){
-     return constant + ( edgeWidth * 0.012 ) + ( math.log2( size - 28.95 ) * 0.001 );
+      return p;
     },
 
-   scaleCrossLineXCoord: function( size, edgeWidth ){
-      return this.scaleCoord( 0.42, size, edgeWidth );
-    },
-
-    scaleCrossLineYCoord: function( size, edgeWidth ){
-      return this.scaleCoord( -0.01, size, edgeWidth );
-    },
-
-    collide: function( x, y, size, angle, translation, padding ){
+    collide: function( x, y, size, angle, translation, edgeWidth, padding ){
       var triPts = pointsToArr( transformPoints( this.points, size + 2 * padding, angle, translation ) );
-      var crossLinePts = pointsToArr( transformPoints( this.crossLinePoints, size + 2 * padding, angle, translation ) );
-
-      var inside = math.pointInsidePolygonPoints( x, y, triPts )
-      || math.inLineVicinity( x, y,
-        crossLinePts[0], crossLinePts[1], crossLinePts[2], crossLinePts[3], padding );
+      var teePts = pointsToArr( transformPoints( this.crossLinePts( size, edgeWidth ), size + 2 * padding, angle, translation ) );
+      var inside = math.pointInsidePolygonPoints( x, y, triPts ) || math.pointInsidePolygonPoints( x, y, teePts );
 
       return inside;
     },
 
     draw: function( context, size, angle, translation, edgeWidth ){
-      var scaledCrossLine = [
-        this.crossLinePoints[0] + this.scaleCrossLineXCoord( size, edgeWidth ),
-        this.crossLinePoints[1] - this.scaleCrossLineYCoord( size, edgeWidth ),
-        this.crossLinePoints[2] - this.scaleCrossLineXCoord( size, edgeWidth ),
-        this.crossLinePoints[3] - this.scaleCrossLineYCoord( size, edgeWidth )
-      ];
       var triPts = transformPoints( this.points, size, angle, translation );
-      var crossLinePts = transformPoints( scaledCrossLine, size, angle, translation );
+      var crossLinePts = transformPoints( this.crossLinePts( size, edgeWidth ), size, angle, translation );
 
       renderer.arrowShapeImpl( this.name )( context, triPts, crossLinePts );
     }
@@ -261,14 +251,14 @@ BRp.registerArrowShapes = function(){
   defineArrowShape( 'circle', {
     radius: 0.15,
 
-    collide: function( x, y, size, angle, translation, padding ){
+    collide: function( x, y, size, angle, translation, edgeWidth, padding ){
       var t = translation;
       var inside = ( Math.pow( t.x - x, 2 ) + Math.pow( t.y - y, 2 ) <= Math.pow( (size + 2 * padding) * this.radius, 2 ) );
 
       return inside;
     },
 
-    draw: function( context, size, angle, translation ){
+    draw: function( context, size, angle, translation, edgeWidth ){
       renderer.arrowShapeImpl( this.name )( context, translation.x, translation.y, this.radius * size );
     },
 

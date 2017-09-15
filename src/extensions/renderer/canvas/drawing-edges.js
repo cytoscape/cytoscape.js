@@ -208,13 +208,6 @@ CRp.drawArrowhead = function( context, edge, prefix, x, y, angle, opacity ){
 
   let gco = context.globalCompositeOperation;
 
-  let shapeImpl = self.arrowShapes[ arrowShape ];
-
-  // check if the shape needs both fill and stroke operations to be drawn
-  if( shapeImpl.forceStroke && arrowFill === 'filled' ){
-    arrowFill = 'both';
-  }
-
   if( opacity !== 1 || arrowFill === 'hollow' ){ // then extra clear is needed
     context.globalCompositeOperation = 'destination-out';
 

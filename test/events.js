@@ -1,6 +1,9 @@
 var expect = require('chai').expect;
 var cytoscape = require('../src/test.js', cytoscape);
 
+/* eslint-disable no-unused-vars */
+/* global Promise */
+
 describe('Events', function(){
 
   var cy;
@@ -46,7 +49,7 @@ describe('Events', function(){
 
     var handler = function(){
       triggers++;
-    }
+    };
 
     it('`add` for new element', function(){
       cy.on('add', handler);
@@ -150,7 +153,7 @@ describe('Events', function(){
     var triggers = 0;
     var handler = function(){
       triggers++;
-    }
+    };
 
     beforeEach(function(){
       triggers = 0;
@@ -565,6 +568,24 @@ describe('Events', function(){
       expect( triggers ).to.equal(0);
     });
 
+    // #1980
+    it('removes a delegated handler when a non-delegated handler also exists', function(){
+      var Na = 0;
+      var Nb = 0;
+
+      var a = function(){ Na++; };
+      var b = function(){ Nb++; };
+
+      cy.on('foo', a);
+      cy.on('foo', 'node', b);
+      cy.off('foo', 'node', b);
+
+      cy.nodes()[0].trigger('foo');
+
+      expect(Na).to.equal(1);
+      expect(Nb).to.equal(0);
+    });
+
   });
 
   describe('cy.trigger()', function(){
@@ -598,7 +619,7 @@ describe('Events', function(){
 
     var triggers = 0;
     var n1;
-    var handler = function(){ triggers++; }
+    var handler = function(){ triggers++; };
 
     beforeEach(function(){
       triggers = 0;
@@ -653,7 +674,7 @@ describe('Events', function(){
 
     var triggers = 0;
     var n1;
-    var handler = function(){ triggers++; }
+    var handler = function(){ triggers++; };
 
     beforeEach(function(){
       triggers = 0;
@@ -708,7 +729,7 @@ describe('Events', function(){
 
     var triggers = 0;
     var n1;
-    var handler = function(){ triggers++; }
+    var handler = function(){ triggers++; };
 
     beforeEach(function(){
       triggers = 0;
@@ -745,7 +766,7 @@ describe('Events', function(){
 
     var triggers = 0;
     var n1;
-    var handler = function(){ triggers++; }
+    var handler = function(){ triggers++; };
 
     beforeEach(function(){
       triggers = 0;
@@ -863,7 +884,7 @@ describe('Events', function(){
 
     var triggers = 0;
     var n1;
-    var handler = function(){ triggers++; }
+    var handler = function(){ triggers++; };
 
     beforeEach(function(){
       triggers = 0;

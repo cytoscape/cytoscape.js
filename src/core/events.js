@@ -6,7 +6,11 @@ let Selector = require('../selector');
 
 let emitterOptions = {
   qualifierCompare: function( selector1, selector2 ){
-    return selector1.sameText( selector2 );
+    if( selector1 == null || selector2 == null ){
+      return selector1 == null && selector2 == null;
+    } else {
+      return selector1.sameText( selector2 );
+    }
   },
   eventMatches: function( cy, listener, eventObj ){
     let selector = listener.qualifier;

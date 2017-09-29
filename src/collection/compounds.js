@@ -1,4 +1,5 @@
 let Set = require('../set');
+let cache = require('./cache-traversal-call');
 
 let elesfn = ({
   parent: function( selector ){
@@ -66,16 +67,20 @@ let elesfn = ({
     } ).filter( selector );
   },
 
-  children: function( selector ){
+  children: cache( function( selector ){
     let children = [];
 
     for( let i = 0; i < this.length; i++ ){
       let ele = this[ i ];
-      children = children.concat( ele._private.children );
+      let eleChildren = ele._private.children;
+
+      for( let j = 0; j < eleChildren.length; j++ ){
+        children.push( eleChildren[j] );
+      }
     }
 
     return this.spawn( children, { unique: true } ).filter( selector );
-  },
+  }, 'children' ),
 
   siblings: function( selector ){
     return this.parent().children().not( this ).filter( selector );

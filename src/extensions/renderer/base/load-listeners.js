@@ -1,11 +1,12 @@
 var is = require( '../../../is' );
 var util = require( '../../../util' );
 var math = require( '../../../math' );
-var Event = require( '../../../event' );
 
 var BRp = {};
 
-BRp.registerBinding = function( target, event, handler, useCapture ){
+/* global document, window */
+
+BRp.registerBinding = function( target, event, handler, useCapture ){ // eslint-disable-line no-unused-vars
   var args = Array.prototype.slice.apply( arguments, [1] ); // copy
   var b = this.binder( target );
 
@@ -29,7 +30,9 @@ BRp.binder = function( tgt ){
       } );
 
       window.addEventListener( 'test', null, opts );
-    } catch( err ){}
+    } catch( err ){
+      // not supported
+    }
 
     r.supportsPassiveEvents = supportsPassive;
   }
@@ -305,7 +308,7 @@ BRp.load = function(){
       r.removeObserver.observe( r.container.parentNode, { childList: true } );
     }
   } else {
-    r.registerBinding( r.container, 'DOMNodeRemoved', function( e ){
+    r.registerBinding( r.container, 'DOMNodeRemoved', function( e ){ // eslint-disable-line no-unused-vars
       r.destroy();
     } );
   }
@@ -327,7 +330,7 @@ BRp.load = function(){
     while( domEle != null ){
       fn( domEle );
 
-      domEle = domEle.parentNode
+      domEle = domEle.parentNode;
     }
   };
 
@@ -1082,7 +1085,7 @@ BRp.load = function(){
   // r.registerBinding(r.container, 'DOMMouseScroll', wheelHandler, true);
   // r.registerBinding(r.container, 'MozMousePixelScroll', wheelHandler, true); // older firefox
 
-  r.registerBinding( window, 'scroll', function scrollHandler( e ){ // eslint-disable-line no-undef
+  r.registerBinding( window, 'scroll', function scrollHandler( e ){ // eslint-disable-line no-unused-vars
     r.scrollingPage = true;
 
     clearTimeout( r.scrollingPageTimeout );
@@ -1266,7 +1269,7 @@ BRp.load = function(){
             } );
           };
 
-          near.emit( makeEvent('grabon') )
+          near.emit( makeEvent('grabon') );
 
           if( selectedNodes ){
             selectedNodes.forEach(function( n ){ n.emit( makeEvent('grab') ); });
@@ -1738,7 +1741,7 @@ BRp.load = function(){
   }, false );
 
   var touchcancelHandler;
-  r.registerBinding( window, 'touchcancel', touchcancelHandler = function( e ){ // eslint-disable-line no-undef
+  r.registerBinding( window, 'touchcancel', touchcancelHandler = function( e ){ // eslint-disable-line no-unused-vars
     var start = r.touchData.start;
 
     r.touchData.capture = false;
@@ -1749,7 +1752,7 @@ BRp.load = function(){
   } );
 
   var touchendHandler;
-  r.registerBinding( window, 'touchend', touchendHandler = function( e ){ // eslint-disable-line no-undef
+  r.registerBinding( window, 'touchend', touchendHandler = function( e ){ // eslint-disable-line no-unused-vars
     var start = r.touchData.start;
 
     var capture = r.touchData.capture;

@@ -1,5 +1,5 @@
 var Benchmark = require('benchmark');
-var newCytoscape = require('../../src/index.js');
+var newCytoscape = require('../../build/cytoscape.cjs');
 var oldCytoscape = require('./cytoscape.js');
 
 global.newCytoscape = newCytoscape;

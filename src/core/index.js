@@ -85,24 +85,10 @@ let Core = function( opts ){
   this.createEmitter();
 
   // set selection type
-  let selType = options.selectionType;
-  if( selType === undefined || (selType !== 'additive' && selType !== 'single') ){
-    // then set default
-
-    _p.selectionType = 'single';
-  } else {
-    _p.selectionType = selType;
-  }
+  this.selectionType( options.selectionType );
 
   // init zoom bounds
-  if( is.number( options.minZoom ) && is.number( options.maxZoom ) && options.minZoom < options.maxZoom ){
-    _p.minZoom = options.minZoom;
-    _p.maxZoom = options.maxZoom;
-  } else if( is.number( options.minZoom ) && options.maxZoom === undefined ){
-    _p.minZoom = options.minZoom;
-  } else if( is.number( options.maxZoom ) && options.minZoom === undefined ){
-    _p.maxZoom = options.maxZoom;
-  }
+  this.zoomRange({ min: options.minZoom, max: options.maxZoom });
 
   let loadExtData = function( extData, next ){
     let anyIsPromise = extData.some( is.promise );
@@ -241,10 +227,6 @@ util.extend( corefn, {
 
   getElementById: function( id ){
     return this._private.elements.getElementById( id );
-  },
-
-  selectionType: function(){
-    return this._private.selectionType;
   },
 
   hasCompoundNodes: function(){

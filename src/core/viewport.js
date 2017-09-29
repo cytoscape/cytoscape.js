@@ -2,6 +2,8 @@ let is = require('../is');
 let window = require('../window');
 let math = require('../math');
 
+let defaultSelectionType = 'single';
+
 let corefn = ({
 
   autolock: function( bool ){
@@ -32,6 +34,24 @@ let corefn = ({
     }
 
     return this; // chaining
+  },
+
+  selectionType: function( selType ){
+    let _p = this._private;
+
+    if( _p.selectionType == null ){
+      _p.selectionType = defaultSelectionType;
+    }
+
+    if( selType !== undefined ){
+      if( selType === 'additive' || selType === 'single' ){
+        _p.selectionType = selType;
+      }
+    } else {
+      return _p.selectionType;
+    }
+
+    return this;
   },
 
   panningEnabled: function( bool ){
@@ -277,24 +297,42 @@ let corefn = ({
     return;
   },
 
-  minZoom: function( zoom ){
-    if( zoom === undefined ){
-      return this._private.minZoom;
-    } else if( is.number( zoom ) ){
-      this._private.minZoom = zoom;
+  zoomRange: function( min, max ){
+    let _p = this._private;
+
+    if( max == null ){
+      let opts = min;
+
+      min = opts.min;
+      max = opts.max;
+    }
+
+    if( is.number( min ) && is.number( max ) && min <= max ){
+      _p.minZoom = min;
+      _p.maxZoom = max;
+    } else if( is.number( min ) && max === undefined && min <= _p.maxZoom ){
+      _p.minZoom = min;
+    } else if( is.number( max ) && min === undefined && max <= _p.minZoom ){
+      _p.maxZoom = max;
     }
 
     return this;
   },
 
+  minZoom: function( zoom ){
+    if( zoom === undefined ){
+      return this._private.minZoom;
+    } else {
+      return this.zoomRange({ min: zoom });
+    }
+  },
+
   maxZoom: function( zoom ){
     if( zoom === undefined ){
       return this._private.maxZoom;
-    } else if( is.number( zoom ) ){
-      this._private.maxZoom = zoom;
+    } else {
+      return this.zoomRange({ max: zoom });
     }
-
-    return this;
   },
 
   getZoomedViewport: function( params ){

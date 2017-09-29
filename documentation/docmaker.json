@@ -582,6 +582,23 @@
             },
 
             {
+              "name": "cy.selectionType",
+              "descr": "Get or set the selection type.  The `'single'` selection type is the default, tapping an element selects that element and deselects the previous elements.  The `'additive' selection type toggles the selection state of an element when tapped.`",
+              "formats": [
+                {
+                  "descr": "Get the selection type string."
+                },
+
+                {
+                  "descr": "Set the selection type.",
+                  "args": [
+                    { "name": "type", "descr": "The selection type string; one of `'single'` (default) or `'additive'`." }
+                  ]
+                }
+              ]
+            },
+
+            {
               "name": "cy.width",
               "descr": "Get the on-screen width of the viewport in pixels."
             },

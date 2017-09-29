@@ -763,7 +763,15 @@ BRp.load = function(){
             if( down && down.grabbed() ){
               freeDraggedElements( draggedElements );
 
-              down.emit('free');
+              let dElesCol = cy.collection( draggedElements );
+
+              down.emit('freeon');
+              dElesCol.emit('free');
+
+              if( r.dragData.didDrag ){
+                down.emit('dragfreeon');
+                dElesCol.emit('dragfree');
+              }
             }
 
             goIntoBoxMode();
@@ -1005,7 +1013,17 @@ BRp.load = function(){
 
         freeDraggedElements( draggedElements );
 
-        if( downWasGrabbed ){ down.emit('free'); }
+        if( downWasGrabbed ){
+          let dElesCol = cy.collection( draggedElements );
+
+          down.emit('freeon');
+          dElesCol.emit('free');
+
+          if( r.dragData.didDrag ){
+            down.emit('dragfreeon');
+            dElesCol.emit('dragfree');
+          }
+        }
       }
 
     } // else not right mouse
@@ -1500,6 +1518,8 @@ BRp.load = function(){
         }
       }
 
+      let start = r.touchData.start;
+
       // (x2, y2) for fingers 1 and 2
       var f1x2 = e.touches[0].clientX - offsetLeft, f1y2 = e.touches[0].clientY - offsetTop;
       var f2x2 = e.touches[1].clientX - offsetLeft, f2y2 = e.touches[1].clientY - offsetTop;
@@ -1547,7 +1567,7 @@ BRp.load = function(){
         };
 
         // remove dragged eles
-        if( r.touchData.start && r.touchData.start.active() ){
+        if( start && start.active() ){
           var draggedEles = r.dragData.touchDragEles;
 
           freeDraggedElements( draggedEles );
@@ -1555,10 +1575,19 @@ BRp.load = function(){
           r.redrawHint( 'drag', true );
           r.redrawHint( 'eles', true );
 
-          r.touchData.start
+          let dElesCol = cy.collection( draggedEles );
+
+          start
             .unactivate()
-            .emit( 'free' )
+            .emit('freeon')
           ;
+
+          dElesCol.emit('free');
+
+          if( r.dragData.didDrag ){
+            start.emit('dragfreeon');
+            dElesCol.emit('dragfree');
+          }
         }
 
         cy.viewport( {
@@ -1882,7 +1911,15 @@ BRp.load = function(){
         r.redrawHint( 'eles', true );
 
         if( startWasGrabbed ){
-          start.emit( 'free' );
+          let dElesCol = cy.collection( draggedEles );
+
+          start.emit('freeon');
+          dElesCol.emit('free');
+
+          if( r.dragData.didDrag ){
+            start.emit('dragfreeon');
+            dElesCol.emit('dragfree');
+          }
         }
 
         triggerEvents( start, [ 'touchend', 'tapend', 'vmouseup', 'tapdragout' ], e, {

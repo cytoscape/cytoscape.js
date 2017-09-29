@@ -74,6 +74,9 @@ These events are custom to Cytoscape.js.  You can bind to these events for colle
  * `grab` : when an element is grabbed (including all elements that would be dragged)
  * `drag` : when an element is grabbed and then moved
  * `free` : when an element is freed (i.e. let go from being grabbed)
+ * `freeon` : when an element is freed directly (including only the one node directly under the cursor or the user's finger)
+ * `dragfree` : when an element is freed after being dragged (i.e. `grab` then `drag` then `free`)
+ * `dragfreeon` : when an element is freed after being dragged directly (i.e. `grabon`, `drag`, `freeon`)
  * `position` : when an element changes position
  * `data` : when an element's data is changed
  * `scratch` : when an element's scratchpad data is changed

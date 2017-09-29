@@ -60,32 +60,30 @@ let elesfn = ({
   toggleClass: function( classesStr, toggle ){
     let classes = classesStr.match( /\S+/g ) || [];
     let self = this;
+    let toggleUndefd = toggle === undefined;
     let changed = []; // eles who had classes changed
 
     for( let i = 0, il = self.length; i < il; i++ ){
       let ele = self[ i ];
+      let eleClasses = ele._private.classes;
       let changedEle = false;
 
       for( let j = 0; j < classes.length; j++ ){
         let cls = classes[ j ];
-        let eleClasses = ele._private.classes;
         let hasClass = eleClasses.has(cls);
-        let shouldAdd = toggle || (toggle === undefined && !hasClass);
+        let changedNow = false;
 
-        if( shouldAdd ){
+        if( toggle || (toggleUndefd && !hasClass) ){
           eleClasses.add(cls);
-
-          if( !hasClass && !changedEle ){
-            changed.push( ele );
-            changedEle = true;
-          }
-        } else { // then remove
+          changedNow = true;
+        } else if( !toggle || (toggleUndefd && hasClass) ){
           eleClasses.delete(cls);
+          changedNow = true;
+        }
 
-          if( hasClass && !changedEle ){
-            changed.push( ele );
-            changedEle = true;
-          }
+        if( !changedEle && changedNow ){
+          changed.push( ele );
+          changedEle = true;
         }
 
       } // for j classes

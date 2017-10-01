@@ -1,8 +1,15 @@
 let Set = require('../set');
+let is = require('../is');
 
 let elesfn = ({
   classes: function( classes ){
-    classes = ( classes || '' ).match( /\S+/g ) || [];
+    if( is.array( classes ) ){
+      // use a copy of the array
+      classes = classes.slice(0);
+    } else {
+      // extract classes from string
+      classes = ( classes || '' ).match( /\S+/g ) || [];
+    }
     let self = this;
     let changed = [];
     let classesSet = new Set( classes );
@@ -57,8 +64,14 @@ let elesfn = ({
     return ( ele != null && ele._private.classes.has(className) );
   },
 
-  toggleClass: function( classesStr, toggle ){
-    let classes = classesStr.match( /\S+/g ) || [];
+  toggleClass: function( classes, toggle ){
+    if( is.array( classes ) ){
+      // use a copy of the array
+      classes = classes.slice(0);
+    } else {
+      // extract classes from string
+      classes = classes.match( /\S+/g ) || [];
+    }
     let self = this;
     let toggleUndefd = toggle === undefined;
     let changed = []; // eles who had classes changed

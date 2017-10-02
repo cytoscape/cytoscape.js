@@ -88,8 +88,7 @@ let Element = function( cy, params, restore ){
       _p.classes.add(cls);
     }
   } else if( is.array( params.classes ) ){
-    // use a copy of the array
-    let classes = params.classes.slice(0);
+    let classes = params.classes;
     for( let i = 0, l = classes.length; i < l; i++ ){
       let cls = classes[ i ];
       if( !cls || cls === '' ){ continue; }

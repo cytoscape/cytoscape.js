@@ -3,10 +3,7 @@ let is = require('../is');
 
 let elesfn = ({
   classes: function( classes ){
-    if( is.array( classes ) ){
-      // use a copy of the array
-      classes = classes.slice(0);
-    } else {
+    if( !is.array( classes ) ){
       // extract classes from string
       classes = ( classes || '' ).match( /\S+/g ) || [];
     }
@@ -65,10 +62,7 @@ let elesfn = ({
   },
 
   toggleClass: function( classes, toggle ){
-    if( is.array( classes ) ){
-      // use a copy of the array
-      classes = classes.slice(0);
-    } else {
+    if( !is.array( classes ) ){
       // extract classes from string
       classes = classes.match( /\S+/g ) || [];
     }

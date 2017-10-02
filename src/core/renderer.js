@@ -1,3 +1,4 @@
+let is = require( '../is' );
 let util = require( '../util' );
 
 let corefn = ({
@@ -42,9 +43,20 @@ let corefn = ({
       return;
     }
 
-    let rOpts = util.extend( {}, options, {
-      cy: cy
-    } );
+    let defaults = {
+      motionBlur: false,
+      motionBlurOpacity: 0.05,
+      pixelRatio: undefined,
+      desktopTapThreshold: 4,
+      touchTapThreshold: 8,
+      wheelSensitivity: 1
+    };
+
+    let rOpts = util.extend( {}, defaults, options, {
+      cy: cy,
+      wheelSensitivity: is.number( options.wheelSensitivity ) && options.wheelSensitivity > 0 ? options.wheelSensitivity : defaults.wheelSensitivity,
+      pixelRatio: is.number( options.pixelRatio ) && options.pixelRatio > 0 ? options.pixelRatio : defaults.pixelRatio
+     } );
 
     cy._private.renderer = new RendererProto( rOpts );
   },
@@ -64,6 +76,13 @@ let corefn = ({
     }
 
     cy._private.renderer = null; // to be extra safe, remove the ref
+    cy.mutableElements().forEach(function( ele ){
+      let _p = ele._private;
+      _p.rscratch = {};
+      _p.rstyle = {};
+      _p.animation.current = [];
+      _p.animation.queue = [];
+    });
   },
 
   onRender: function( fn ){

@@ -79,14 +79,17 @@ let Element = function( cy, params, restore ){
     };
   }
 
-  if( is.string( params.classes ) ){
-    let classes = params.classes.split( /\s+/ );
-    for( let i = 0, l = classes.length; i < l; i++ ){
-      let cls = classes[ i ];
-      if( !cls || cls === '' ){ continue; }
+  let classes = [];
+  if( is.array( params.classes ) ){
+    classes = params.classes;
+  } else if( is.string( params.classes ) ){
+    classes = params.classes.split( /\s+/ );
+  }
+  for( let i = 0, l = classes.length; i < l; i++ ){
+    let cls = classes[ i ];
+    if( !cls || cls === '' ){ continue; }
 
-      _p.classes.add(cls);
-    }
+    _p.classes.add(cls);
   }
 
   if( params.style || params.css ){

@@ -537,6 +537,13 @@ describe('Collection style', function(){
       expect( n1.hasClass('bar') ).to.be.true;
     });
 
+    it('eles.addClass() adds classes with an array', function(){
+      n1.addClass(['foo', 'bar']);
+
+      expect( n1.hasClass('foo') ).to.be.true;
+      expect( n1.hasClass('bar') ).to.be.true;
+    });
+
     it('eles.removeClass() removes class', function(){
       n1.addClass('foo');
       n1.removeClass('foo');
@@ -552,6 +559,14 @@ describe('Collection style', function(){
       expect( n1.hasClass('bar') ).to.be.false;
     });
 
+    it('eles.removeClass() removes classes with an array', function(){
+      n1.addClass(['foo', 'bar']);
+      n1.removeClass(['foo', 'bar']);
+
+      expect( n1.hasClass('foo') ).to.be.false;
+      expect( n1.hasClass('bar') ).to.be.false;
+    });
+
     it('eles.toggleClass() toggles class', function(){
       n1.addClass('foo');
       n1.toggleClass('foo');
@@ -562,6 +577,14 @@ describe('Collection style', function(){
     it('eles.toggleClass() toggles classes', function(){
       n1.addClass('foo bar');
       n1.toggleClass('foo bar');
+
+      expect( n1.hasClass('foo') ).to.be.false;
+      expect( n1.hasClass('bar') ).to.be.false;
+    });
+
+    it('eles.toggleClass() toggles with an array of classes', function(){
+      n1.addClass(['foo', 'bar']);
+      n1.toggleClass(['foo', 'bar']);
 
       expect( n1.hasClass('foo') ).to.be.false;
       expect( n1.hasClass('bar') ).to.be.false;
@@ -592,12 +615,34 @@ describe('Collection style', function(){
       expect( n1.hasClass('baz') ).to.be.false;
     });
 
+    it('eles.classes() replaces with an array of classes (subset)', function(){
+      ['foo', 'bar', 'baz'].forEach(function( c ){ n1.addClass(c); });
+
+      n1.classes(['foo', 'bar']);
+
+      expect( n1.hasClass('foo') ).to.be.true;
+      expect( n1.hasClass('bar') ).to.be.true;
+      expect( n1.hasClass('baz') ).to.be.false;
+    });
+
     it('eles.classes() replaces classes (all different)', function(){
       ['foo', 'bar', 'baz'].forEach(function( c ){ n1.addClass(c); });
 
       n1.classes('bat');
 
       expect( n1.hasClass('bat') ).to.be.true;
+      expect( n1.hasClass('foo') ).to.be.false;
+      expect( n1.hasClass('bar') ).to.be.false;
+      expect( n1.hasClass('baz') ).to.be.false;
+    });
+
+    it('eles.classes() replaces with an array of classes (all different)', function(){
+      ['foo', 'bar', 'baz'].forEach(function( c ){ n1.addClass(c); });
+
+      n1.classes(['bat', 'bot']);
+
+      expect( n1.hasClass('bat') ).to.be.true;
+      expect( n1.hasClass('bot') ).to.be.true;
       expect( n1.hasClass('foo') ).to.be.false;
       expect( n1.hasClass('bar') ).to.be.false;
       expect( n1.hasClass('baz') ).to.be.false;
@@ -614,6 +659,44 @@ describe('Collection style', function(){
       n1.removeClass('foo');
 
       expect( n1.json().classes ).to.be.empty;
+    });
+
+    it('initializes classes with a string', function(){
+      cytoscape({
+        headless: true,
+
+        elements: {
+          nodes: [{
+            data: { id: 'n1' },
+            classes: 'foo bar'
+          }]
+        },
+        ready: function(){
+          var cy = this;
+          var n1 = cy.$('#n1');
+          expect( n1.hasClass('foo') ).to.be.true;
+          expect( n1.hasClass('bar') ).to.be.true;
+        }
+      });
+    });
+
+    it('initializes classes with an array', function(){
+      cytoscape({
+        headless: true,
+
+        elements: {
+          nodes: [{
+            data: { id: 'n1' },
+            classes: [ 'foo', 'bar' ]
+          }]
+        },
+        ready: function(){
+          var cy = this;
+          var n1 = cy.$('#n1');
+          expect( n1.hasClass('foo') ).to.be.true;
+          expect( n1.hasClass('bar') ).to.be.true;
+        }
+      });
     });
 
   });

@@ -59,6 +59,8 @@ let corefn = ({
      } );
 
     cy._private.renderer = new RendererProto( rOpts );
+
+    this.notify({ type: 'init' });
   },
 
   destroyRenderer: function(){

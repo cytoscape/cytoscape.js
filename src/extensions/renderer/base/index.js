@@ -106,7 +106,6 @@ BRp.init = function( options ){
   r.registerNodeShapes();
   r.registerArrowShapes();
   r.registerCalculationListeners();
-  r.load();
 };
 
 BRp.notify = function( params ){
@@ -129,6 +128,11 @@ BRp.notify = function( params ){
 
     has[ type ] = true;
   } // for
+
+  if( has['init'] ){
+    r.load();
+    return;
+  }
 
   if( has['destroy'] ){
     r.destroy();

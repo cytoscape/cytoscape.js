@@ -114,6 +114,11 @@ let Core = function( opts ){
     }
   };
 
+  // start with the default stylesheet so we have something before loading an external stylesheet
+  if( _p.styleEnabled ){
+    cy.setStyle([]);
+  }
+
   // create the renderer
   cy.initRenderer( util.extend( {
     hideEdgesOnViewport: options.hideEdgesOnViewport,
@@ -169,7 +174,7 @@ let Core = function( opts ){
 
     // init style
     if( _p.styleEnabled ){
-      cy.setStyle( initStyle );
+      cy.style().append( initStyle );
     }
 
     // initial load

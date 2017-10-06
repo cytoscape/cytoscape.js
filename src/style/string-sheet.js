@@ -3,7 +3,7 @@ let Selector = require( '../selector' );
 
 let styfn = {};
 
-styfn.applyFromString = function( string ){
+styfn.appendFromString = function( string ){
   let self = this;
   let style = this;
   let remaining = '' + string;
@@ -128,7 +128,7 @@ styfn.fromString = function( string ){
   let style = this;
 
   style.resetToDefault();
-  style.applyFromString( string );
+  style.appendFromString( string );
 
   return style;
 };

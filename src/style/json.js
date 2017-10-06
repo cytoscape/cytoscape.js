@@ -1,6 +1,6 @@
 let styfn = {};
 
-styfn.applyFromJson = function( json ){
+styfn.appendFromJson = function( json ){
   let style = this;
 
   for( let i = 0; i < json.length; i++ ){
@@ -27,7 +27,7 @@ styfn.fromJson = function( json ){
   let style = this;
 
   style.resetToDefault();
-  style.applyFromJson( json );
+  style.appendFromJson( json );
 
   return style;
 };

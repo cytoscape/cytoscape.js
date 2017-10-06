@@ -71,6 +71,11 @@ sheetfn.style = sheetfn.css;
 sheetfn.generateStyle = function( cy ){
   let style = new Style( cy );
 
+  return this.appendToStyle( style );
+};
+
+// append a dummy stylesheet object on a real style object
+sheetfn.appendToStyle = function( style ){
   for( let i = 0; i < this.length; i++ ){
     let context = this[ i ];
     let selector = context.selector;

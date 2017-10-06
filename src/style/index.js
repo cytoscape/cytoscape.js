@@ -136,6 +136,18 @@ styfn.cssRule = function( name, value ){
   return this; // chaining
 };
 
+styfn.append = function( style ){
+  if( is.stylesheet( style ) ){
+    style.appendToStyle( this );
+  } else if( is.array( style ) ){
+    this.appendFromJson( style );
+  } else if( is.string( style ) ){
+    this.appendFromString( style );
+  } // you probably wouldn't want to append a Style, since you'd duplicate the default parts
+
+  return this;
+};
+
 // static function
 Style.fromJson = function( cy, json ){
   let style = new Style( cy );

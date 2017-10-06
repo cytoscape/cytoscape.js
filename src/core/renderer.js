@@ -42,11 +42,9 @@ let corefn = ({
       return;
     }
 
-    let rOpts = util.extend( {}, options, {
-      cy: cy
-    } );
+    cy._private.renderer = new RendererProto( util.extend( {}, options, { cy } ) );
 
-    cy._private.renderer = new RendererProto( rOpts );
+    this.notify({ type: 'init' });
   },
 
   destroyRenderer: function(){

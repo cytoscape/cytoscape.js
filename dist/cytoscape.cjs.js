@@ -3226,6 +3226,11 @@ var Core = function Core(opts) {
     }
   };
 
+  // start with the default stylesheet so we have something before loading an external stylesheet
+  if (_p.styleEnabled) {
+    cy.setStyle([]);
+  }
+
   // create the renderer
   cy.initRenderer(util.extend({
     hideEdgesOnViewport: options.hideEdgesOnViewport,
@@ -3281,7 +3286,7 @@ var Core = function Core(opts) {
 
     // init style
     if (_p.styleEnabled) {
-      cy.setStyle(initStyle);
+      cy.style().append(initStyle);
     }
 
     // initial load
@@ -4253,6 +4258,18 @@ styfn.cssRule = function (name, value) {
   return this; // chaining
 };
 
+styfn.append = function (style) {
+  if (is.stylesheet(style)) {
+    style.appendToStyle(this);
+  } else if (is.array(style)) {
+    this.appendFromJson(style);
+  } else if (is.string(style)) {
+    this.appendFromString(style);
+  } // you probably wouldn't want to append a Style, since you'd duplicate the default parts
+
+  return this;
+};
+
 // static function
 Style.fromJson = function (cy, json) {
   var style = new Style(cy);
@@ -4669,6 +4686,11 @@ sheetfn.style = sheetfn.css;
 sheetfn.generateStyle = function (cy) {
   var style = new Style(cy);
 
+  return this.appendToStyle(style);
+};
+
+// append a dummy stylesheet object on a real style object
+sheetfn.appendToStyle = function (style) {
   for (var i = 0; i < this.length; i++) {
     var context = this[i];
     var selector = context.selector;
@@ -4695,7 +4717,7 @@ module.exports = Stylesheet;
 "use strict";
 
 
-module.exports = "3.2.3";
+module.exports = "3.2.4";
 
 /***/ }),
 /* 23 */
@@ -8785,7 +8807,11 @@ var Selector = __webpack_require__(6);
 
 var emitterOptions = {
   qualifierCompare: function qualifierCompare(selector1, selector2) {
-    return selector1.sameText(selector2);
+    if (selector1 == null || selector2 == null) {
+      return selector1 == null && selector2 == null;
+    } else {
+      return selector1.sameText(selector2);
+    }
   },
   eventMatches: function eventMatches(ele, listener, eventObj) {
     var selector = listener.qualifier;
@@ -11744,7 +11770,11 @@ var Selector = __webpack_require__(6);
 
 var emitterOptions = {
   qualifierCompare: function qualifierCompare(selector1, selector2) {
-    return selector1.sameText(selector2);
+    if (selector1 == null || selector2 == null) {
+      return selector1 == null && selector2 == null;
+    } else {
+      return selector1.sameText(selector2);
+    }
   },
   eventMatches: function eventMatches(cy, listener, eventObj) {
     var selector = listener.qualifier;
@@ -12092,11 +12122,9 @@ var corefn = {
       return;
     }
 
-    var rOpts = util.extend({}, options, {
-      cy: cy
-    });
+    cy._private.renderer = new RendererProto(util.extend({}, options, { cy: cy }));
 
-    cy._private.renderer = new RendererProto(rOpts);
+    this.notify({ type: 'init' });
   },
 
   destroyRenderer: function destroyRenderer() {
@@ -16086,7 +16114,7 @@ BRp.registerArrowShapes = function () {
   // spacing: dist(arrowTip, nodeBoundary)
   // gap: dist(edgeTip, nodeBoundary), edgeTip may != arrowTip
 
-  var bbCollide = function bbCollide(x, y, size, angle, translation, padding) {
+  var bbCollide = function bbCollide(x, y, size, angle, translation, edgeWidth, padding) {
     var x1 = translation.x - size / 2 - padding;
     var x2 = translation.x + size / 2 + padding;
     var y1 = translation.y - size / 2 - padding;
@@ -16200,7 +16228,7 @@ BRp.registerArrowShapes = function () {
 
     roughCollide: bbCollide,
 
-    draw: function draw(context, size, angle, translation) {
+    draw: function draw(context, size, angle, translation, edgeWidth) {
       var ptsTrans = transformPoints(this.points, size, angle, translation);
       var ctrlPt = this.controlPoint;
       var ctrlPtTrans = transform(ctrlPt[0], ctrlPt[1], size, angle, translation);
@@ -16218,7 +16246,7 @@ BRp.registerArrowShapes = function () {
 
     pointsTee: [-0.15, -0.4, -0.15, -0.5, 0.15, -0.5, 0.15, -0.4],
 
-    collide: function collide(x, y, size, angle, translation, padding) {
+    collide: function collide(x, y, size, angle, translation, edgeWidth, padding) {
       var triPts = pointsToArr(transformPoints(this.points, size + 2 * padding, angle, translation));
       var teePts = pointsToArr(transformPoints(this.pointsTee, size + 2 * padding, angle, translation));
 
@@ -16227,7 +16255,7 @@ BRp.registerArrowShapes = function () {
       return inside;
     },
 
-    draw: function draw(context, size, angle, translation) {
+    draw: function draw(context, size, angle, translation, edgeWidth) {
       var triPts = transformPoints(this.points, size, angle, translation);
       var teePts = transformPoints(this.pointsTee, size, angle, translation);
 
@@ -16238,37 +16266,34 @@ BRp.registerArrowShapes = function () {
   defineArrowShape('triangle-cross', {
     points: [-0.15, -0.3, 0, 0, 0.15, -0.3, -0.15, -0.3],
 
-    crossLinePoints: [-0.24175, -0.4, 0.24175, -0.4],
+    baseCrossLinePts: [-0.15, -0.4, // first half of the rectangle
+    -0.15, -0.4, 0.15, -0.4, // second half of the rectangle
+    0.15, -0.4],
 
-    forceStroke: true,
+    crossLinePts: function crossLinePts(size, edgeWidth) {
+      // shift points so that the distance between the cross points matches edge width
+      var p = this.baseCrossLinePts.slice();
+      var shiftFactor = edgeWidth / size;
+      var y0 = 3;
+      var y1 = 5;
 
-    matchEdgeWidth: true,
+      p[y0] = p[y0] - shiftFactor;
+      p[y1] = p[y1] - shiftFactor;
 
-    scaleCoord: function scaleCoord(constant, size, edgeWidth) {
-      return constant + edgeWidth * 0.012 + math.log2(size - 28.95) * 0.001;
+      return p;
     },
 
-    scaleCrossLineXCoord: function scaleCrossLineXCoord(size, edgeWidth) {
-      return this.scaleCoord(0.42, size, edgeWidth);
-    },
-
-    scaleCrossLineYCoord: function scaleCrossLineYCoord(size, edgeWidth) {
-      return this.scaleCoord(-0.01, size, edgeWidth);
-    },
-
-    collide: function collide(x, y, size, angle, translation, padding) {
+    collide: function collide(x, y, size, angle, translation, edgeWidth, padding) {
       var triPts = pointsToArr(transformPoints(this.points, size + 2 * padding, angle, translation));
-      var crossLinePts = pointsToArr(transformPoints(this.crossLinePoints, size + 2 * padding, angle, translation));
-
-      var inside = math.pointInsidePolygonPoints(x, y, triPts) || math.inLineVicinity(x, y, crossLinePts[0], crossLinePts[1], crossLinePts[2], crossLinePts[3], padding);
+      var teePts = pointsToArr(transformPoints(this.crossLinePts(size, edgeWidth), size + 2 * padding, angle, translation));
+      var inside = math.pointInsidePolygonPoints(x, y, triPts) || math.pointInsidePolygonPoints(x, y, teePts);
 
       return inside;
     },
 
     draw: function draw(context, size, angle, translation, edgeWidth) {
-      var scaledCrossLine = [this.crossLinePoints[0] + this.scaleCrossLineXCoord(size, edgeWidth), this.crossLinePoints[1] - this.scaleCrossLineYCoord(size, edgeWidth), this.crossLinePoints[2] - this.scaleCrossLineXCoord(size, edgeWidth), this.crossLinePoints[3] - this.scaleCrossLineYCoord(size, edgeWidth)];
       var triPts = transformPoints(this.points, size, angle, translation);
-      var crossLinePts = transformPoints(scaledCrossLine, size, angle, translation);
+      var crossLinePts = transformPoints(this.crossLinePts(size, edgeWidth), size, angle, translation);
 
       renderer.arrowShapeImpl(this.name)(context, triPts, crossLinePts);
     }
@@ -16285,14 +16310,14 @@ BRp.registerArrowShapes = function () {
   defineArrowShape('circle', {
     radius: 0.15,
 
-    collide: function collide(x, y, size, angle, translation, padding) {
+    collide: function collide(x, y, size, angle, translation, edgeWidth, padding) {
       var t = translation;
       var inside = Math.pow(t.x - x, 2) + Math.pow(t.y - y, 2) <= Math.pow((size + 2 * padding) * this.radius, 2);
 
       return inside;
     },
 
-    draw: function draw(context, size, angle, translation) {
+    draw: function draw(context, size, angle, translation, edgeWidth) {
       renderer.arrowShapeImpl(this.name)(context, translation.x, translation.y, this.radius * size);
     },
 
@@ -16529,8 +16554,8 @@ BRp.findNearestElements = function (x, y, interactiveElementsOnly, isTouch) {
     for (var i = 0; i < arrows.length; i++) {
       var ar = arrows[i];
       var shape = r.arrowShapes[edge.pstyle(ar.name + '-arrow-shape').value];
-
-      if (shape.roughCollide(x, y, arSize, ar.angle, { x: ar.x, y: ar.y }, edgeThreshold) && shape.collide(x, y, arSize, ar.angle, { x: ar.x, y: ar.y }, edgeThreshold)) {
+      var edgeWidth = edge.pstyle('width').pfValue;
+      if (shape.roughCollide(x, y, arSize, ar.angle, { x: ar.x, y: ar.y }, edgeWidth, edgeThreshold) && shape.collide(x, y, arSize, ar.angle, { x: ar.x, y: ar.y }, edgeWidth, edgeThreshold)) {
         addEle(edge);
         return true;
       }
@@ -18856,7 +18881,6 @@ BRp.init = function (options) {
   r.registerNodeShapes();
   r.registerArrowShapes();
   r.registerCalculationListeners();
-  r.load();
 };
 
 BRp.notify = function (params) {
@@ -18880,6 +18904,11 @@ BRp.notify = function (params) {
 
     has[type] = true;
   } // for
+
+  if (has['init']) {
+    r.load();
+    return;
+  }
 
   if (has['destroy']) {
     r.destroy();
@@ -21679,12 +21708,12 @@ CRp.arrowShapeImpl = function (name) {
         context.beginPath();
       }
 
-      var crossLinePts = crossLinePoints;
+      var teePts = crossLinePoints;
       var firstTeePt = crossLinePoints[0];
       context.moveTo(firstTeePt.x, firstTeePt.y);
 
-      for (var i = 0; i < crossLinePts.length; i++) {
-        var pt = crossLinePts[i];
+      for (var i = 0; i < teePts.length; i++) {
+        var pt = teePts[i];
 
         context.lineTo(pt.x, pt.y);
       }
@@ -21922,13 +21951,6 @@ CRp.drawArrowhead = function (context, edge, prefix, x, y, angle, opacity) {
   }
 
   var gco = context.globalCompositeOperation;
-
-  var shapeImpl = self.arrowShapes[arrowShape];
-
-  // check if the shape needs both fill and stroke operations to be drawn
-  if (shapeImpl.forceStroke && arrowFill === 'filled') {
-    arrowFill = 'both';
-  }
 
   if (opacity !== 1 || arrowFill === 'hollow') {
     // then extra clear is needed
@@ -27295,7 +27317,7 @@ module.exports = styfn;
 
 var styfn = {};
 
-styfn.applyFromJson = function (json) {
+styfn.appendFromJson = function (json) {
   var style = this;
 
   for (var i = 0; i < json.length; i++) {
@@ -27322,7 +27344,7 @@ styfn.fromJson = function (json) {
   var style = this;
 
   style.resetToDefault();
-  style.applyFromJson(json);
+  style.appendFromJson(json);
 
   return style;
 };
@@ -28260,7 +28282,7 @@ var Selector = __webpack_require__(6);
 
 var styfn = {};
 
-styfn.applyFromString = function (string) {
+styfn.appendFromString = function (string) {
   var self = this;
   var style = this;
   var remaining = '' + string;
@@ -28389,7 +28411,7 @@ styfn.fromString = function (string) {
   var style = this;
 
   style.resetToDefault();
-  style.applyFromString(string);
+  style.appendFromString(string);
 
   return style;
 };

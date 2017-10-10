@@ -59,6 +59,7 @@
   * [py2cytoscape](https://github.com/idekerlab/py2cytoscape)
   * [Rezza](http://rezza.io)
   * [Sainsbury Laboratory](http://www.tsl.ac.uk/) : [PINet](http://pinet.tsl.ac.uk/)
+  * Southwest Harbor Public Library, Maine : [Digital Archive](http://swhplibrary.net/archive/) : [AvantRelationships](https://github.com/gsoules/AvantRelationships)
   * [Sotera Defense Solutions, Inc.](http://www.soteradefense.com/) : [Graphene](http://sotera.github.io/graphene/)
   * [Steemit](https://steemit.com/) : [SteemStars](https://steemstars.herokuapp.com/)
   * [Stringify](https://www.stringify.com/)

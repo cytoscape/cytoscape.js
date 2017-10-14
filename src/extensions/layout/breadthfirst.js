@@ -263,6 +263,10 @@ BreadthFirstLayout.prototype.run = function(){
       }
       depths[ newDepth ].push( ele );
 
+      for ( let j = info.index; j < depths[info.depth].length; j++ ){
+        depths[info.depth][j]._private.scratch.breadthfirst.index--;
+      }
+
       info.depth = newDepth;
       info.index = depths[ newDepth ].length - 1;
     }

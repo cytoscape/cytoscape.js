@@ -62,7 +62,7 @@ The extensions below are a curated list.  To add your extension, [please submit 
  * <i class="fa fa-fw fa-user"></i> [`view-utilities`](https://github.com/iVis-at-Bilkent/cytoscape.js-view-utilities) : Adds search and highlight APIs to Cytoscape.js
 
 
-## API
+## Registration
 
 To register an extension, make the following call: `cytoscape( type, name, extension );`
 

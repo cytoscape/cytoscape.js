@@ -1,33 +1,68 @@
-$(function() {
+/* global window, document, loadCy, $, _gaq, showCy, hideCy, cy */
+
+(function(){
+  var $$ = function( sel ){
+    var els = document.querySelectorAll(sel);
+    var ret = [];
+
+    for( var i = 0; i < els.length; i++ ){
+      ret.push( els[i] );
+    }
+
+    return ret;
+  };
+
+  var $ = function( sel ){
+    return document.querySelector( sel );
+  };
+
+  var show = function( $e ){
+    if( $e.length != null ){
+      $e.forEach( show );
+    } else {
+      $e.style.display = '';
+    }
+  };
+
+  var hide = function( $e ){
+    if( $e.length != null ){
+      $e.forEach( hide );
+    } else {
+      $e.style.display = 'none';
+    }
+  };
 
   // setTimeout(function(){
   //   cytoscape.defaults( window.options );
   // }, 100);
 
   // fix for webkit
-  $('#navigation').on('wheel mousewheel DOMMouseScroll MozMousePixelScroll scroll', function(e) {
-    e.stopPropagation();
+  ('wheel mousewheel DOMMouseScroll MozMousePixelScroll scroll').split(' ').forEach(function( evt ){
+    $('#navigation').addEventListener(evt, function(e) {
+      e.stopPropagation();
+    });
   });
 
-  $('#open-navigation').on('click', function() {
-    $('body').addClass('navigation-open');
+  $('#open-navigation').addEventListener('click', function() {
+    $('body').classList.add('navigation-open');
   });
 
-  $('#open-navigation-bg, #navigation a').on('click', function() {
-    $('body').removeClass('navigation-open');
+  $('#open-navigation-bg, #navigation a').addEventListener('click', function() {
+    $('body').classList.remove('navigation-open');
   });
 
+  var $nav = $('#navigation');
 
   // avoid weird rendering bug in chrome etc
-  $('#navigation a').on('click', function() {
-    var scroll = $('#navigation').scrollTop();
+  $('#navigation a').addEventListener('click', function() {
+    var scroll = $('#navigation').scrollTop;
 
     // force navigation to rerender, because some browsers (looking at you, chrome)
     // don't render properly after clicking one of the links
     setTimeout(function() {
-      $('#navigation').scrollTop(scroll + 10);
-      $('#navigation').scrollTop(scroll - 10);
-      $('#navigation').scrollTop(scroll);
+      $nav.scrollTop = (scroll + 10);
+      $nav.scrollTop = (scroll - 10);
+      $nav.scrollTop = (scroll);
     }, 0);
   });
 
@@ -45,182 +80,239 @@ $(function() {
         fn.apply(context, args);
       }, delay);
     };
-  };
+  }
 
-  var $toclinks = $('.section > .toclink');
+  var $toclinks = $$('.section > .toclink');
   var $tocinput = $('#toc-input');
   var $tocsections = $('#toc-sections');
   var lastTxt;
+  var txt;
+
+  var nodes = [];
+  var roots = [];
+  var leaves = [];
+  var prev = {};
+
+  $toclinks.forEach(function( $ele ){
+    var $section = $ele.parentNode;
+    var lvl = $section.classList.contains('lvl1') ? 1 : $section.classList.contains('lvl2') ? 2 : 3;
+    var parent;
+
+    var node = {
+      lvl: lvl,
+      $ele: $ele,
+      text: $ele.innerText.toLowerCase(),
+      children: [],
+      parent: null
+    };
+
+    if( lvl === 1 ){
+      roots.push( node );
+    } else {
+      parent = prev[ lvl - 1 ];
+      parent.children.push( node );
+      node.parent = parent;
+    }
+
+    nodes.push( node );
+
+    prev[ lvl ] = node;
+  });
+
+  nodes.forEach(function(n){
+    if( n.children.length === 0 ){
+      leaves.push(n);
+    }
+  });
+
+  var traverseDown = function( nodes, visit ){
+    nodes.forEach(function( node ){
+      visit( node );
+
+      traverseDown( node.children, visit );
+    });
+  };
+
+  var traverseUp = function( nodes, visit ){
+    nodes.forEach(function( node ){
+      visit( node );
+
+      if( node.parent ){
+        traverseUp( [node.parent], visit );
+      }
+    });
+  };
 
   var filterSections = debounce(function() {
-    txt = $tocinput.val().toLowerCase();
+    txt = $tocinput.value.toLowerCase();
 
-    var $shown = txt === '' ? $toclinks : $toclinks.filter(function(i, ele) {
-      return ele.text.toLowerCase().match(txt);
+    nodes.forEach(function(n){
+      n.matches = n.descMatches = n.ancMatches = false;
+
+      n.matches = n.text.indexOf( txt ) >= 0;
     });
 
-    var $notShown = $toclinks.not($shown);
-
-    $shown.show();
-    $notShown.hide();
-
-    $shown.parent().each(function(i, ele) {
-      var $section = $(ele);
-
-      if ($section.hasClass('lvl3')) {
-        $section.prevAll('.lvl2:first').children('.toclink').show();
-        $section.prevAll('.lvl1:first').children('.toclink').show();
-      } else if ($section.hasClass('lvl2')) {
-        $section.prevAll('.lvl1:first').children('.toclink').show();
-        $section.nextUntil('.lvl2, .lvl1').children('.toclink').show();
-      } else if ($section.hasClass('lvl1')) {
-        $section.nextUntil('.lvl1').children('.toclink').show();
+    traverseDown(roots, function(node){
+      if( node.parent && (node.parent.matches || node.parent.ancMatches) ){
+        node.ancMatches = true;
       }
     });
 
-    $tocsections.removeClass('toc-sections-searching');
+    traverseUp(leaves, function(node){
+      if( node.children.some(function(n){ return n.matches || n.descMatches; }) ){
+        node.descMatches = true;
+      }
+    });
+
+    nodes.forEach(function(n){
+      hide( n.$ele );
+    });
+
+    nodes.filter(function(n){
+      return n.matches || n.ancMatches || n.descMatches;
+    }).forEach(function(n){
+      show( n.$ele );
+    });
+
+    $tocsections.classList.remove('toc-sections-searching');
   }, 250);
 
-  $tocinput.on('keydown keyup keypress change', function() {
-    txt = $tocinput.val().toLowerCase();
+  var onChangeSearch = function(){
+    txt = $tocinput.value.toLowerCase();
 
     if (txt === lastTxt) {
       return;
     }
     lastTxt = txt;
 
-    $tocsections.addClass('toc-sections-searching');
+    $tocsections.classList.add('toc-sections-searching');
 
     filterSections();
+  };
+
+  ('keydown keyup keypress change').split(' ').forEach(function( evt ){
+    $tocinput.addEventListener(evt, onChangeSearch);
   });
 
-  $('#toc-clear').on('click', function() {
-    $tocinput.val('').trigger('change');
+  $('#toc-clear').addEventListener('click', function() {
+    $tocinput.value = '';
+
+    onChangeSearch();
   });
 
   loadCy();
 
-  $(document).on('click', '.gallery-refresh', function() {
-    var embedId = $(this).attr('data-embed-id');
-    var embed = document.getElementById(embedId);
-
-    embed.classList.remove('loaded');
-
-    embed.src = embed.src;
-  });
-
-  $('.gallery-embed').on('load', function() {
-    $(this).addClass('loaded');
-  });
-
-  $('body').on('mousedown click', '#cy-refresh', function() {
+  $('#cy-refresh').addEventListener('click', function() {
     loadCy();
 
-    $('#cy').attr('style', ''); // because some example fiddles w/ this
+    $('#cy').setAttribute('style', ''); // because some example fiddles w/ this
   });
 
   window.showCy = function($ele) {
-    $('#cy, #cy-hide, #cy-refresh, #cy-label').removeClass('hidden');
-    $('#cy-show').addClass('hidden');
+    $$('#cy, #cy-hide, #cy-refresh, #cy-label').forEach(function($e){
+      $e.classList.remove('hidden');
+    });
+
+    $('#cy-show').classList.add('hidden');
 
     if ($ele) {
       var $etc = $('#cy-etc');
 
-      $etc.removeClass('hidden').remove();
-      $ele.after($etc);
+      $etc.classList.remove('hidden');
+      $etc.parentNode.removeChild( $etc );
+
+      $ele.insertAdjacentElement('afterend', $etc);
     }
 
     cy.resize();
   };
 
   window.hideCy = function() {
-    $('#cy, #cy-hide, #cy-refresh, #cy-label, #cy-etc').addClass('hidden');
-    $('#cy-show').removeClass('hidden');
+    $$('#cy, #cy-hide, #cy-refresh, #cy-label, #cy-etc').forEach(function($e){
+      $e.classList.add('hidden');
+    });
+
+    $('#cy-show').classList.remove('hidden');
   };
 
-  $('#cy-hide').on('click', function() {
+  $('#cy-hide').addEventListener('click', function() {
     hideCy();
   });
 
-  $('#cy-show').on('click', function() {
+  $('#cy-show').addEventListener('click', function() {
     showCy();
   });
 
+  $$('.run.run-inline-code').forEach(function($e){
+    $e.addEventListener('click', function() {
+      var $run = $e;
+      var $pre = $e.previousElementSibling;
 
-  $('#demo-source .expander').on('click', function() {
-    $('#demo-source').removeClass('collapsed');
-  });
+      showCy($run);
 
-  $(document).on('click', '.run.run-inline-code', function() {
-    var $run = $(this);
-    var $pre = $(this).prevAll('pre:first');
+      var bb = $('#cy').getBoundingClientRect();
+      var scrollDelta = bb.bottom - window.innerHeight;
 
-    showCy($run);
+      var text = $pre.innerText;
 
-    var text = $pre.text();
-
-    var $title = $('#cy-title');
-    var $content = $title.find('.content');
-
-    $content.html(text);
-    $title.show();
-
-    $content.hide().fadeIn(100).delay(250).hide(200, function() {
-      var ret = eval(text);
-
-      var isEles = function(o) {
-        return o != null && o.isNode != null;
+      if( scrollDelta > 0 ){
+        window.scroll(0, window.scrollY + scrollDelta);
       }
 
-      if (isEles(ret) && ret.length > 0) {
+      setTimeout(function(){
+        var ret = eval(text);
 
-        var css = {
-          'text-outline-color': '#4183C4',
-          'background-color': '#4183C4',
-          'line-color': '#4183C4',
-          'target-arrow-color': '#4183C4',
-          'source-arrow-color': '#4183C4'
+        var isEles = function(o) {
+          return o != null && o.isNode != null;
         };
 
-        var delay = 200;
+        if (isEles(ret) && ret.length > 0) {
 
-        ret
-          .stop(true)
+          var css = {
+            'text-outline-color': '#4183C4',
+            'background-color': '#4183C4',
+            'line-color': '#4183C4',
+            'target-arrow-color': '#4183C4',
+            'source-arrow-color': '#4183C4'
+          };
 
-          .animate({
-            css: css
-          })
+          var delay = 200;
 
-          .delay(delay, function() {
-            ret.removeCss();
-          })
+          ret
+            .stop(true)
 
-          .animate({
-            css: css
-          })
+            .animate({
+              css: css
+            })
 
-          .delay(delay, function() {
-            ret.removeCss();
-          })
+            .delay(delay, function() {
+              ret.removeCss();
+            })
 
-          .animate({
-            css: css
-          })
+            .animate({
+              css: css
+            })
 
-          .delay(delay, function() {
-            ret.removeCss();
-            $title.hide();
-          });
+            .delay(delay, function() {
+              ret.removeCss();
+            })
 
-      }
+            .animate({
+              css: css
+            })
+
+            .delay(delay, function() {
+              ret.removeCss();
+            });
+        }
+      }, 500);
     });
-
   });
 
-  $('#download-button').on('click', function() {
+  $('#download-button').addEventListener('click', function() {
     if (_gaq) {
       _gaq.push(['_trackEvent', 'Actions', 'Download']);
     }
   });
 
-});
+})();

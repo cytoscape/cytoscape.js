@@ -50,7 +50,6 @@ var paths = {
 
   docs: {
     libs: [
-      'documentation/js/jquery.js',
       'documentation/js/cytoscape.min.js'
     ],
 

@@ -1,4 +1,5 @@
-$( loadCy = function(){
+/* global window, cy, options, document */
+loadCy = function(){
 
 //<demo>
 
@@ -89,4 +90,6 @@ cy = cytoscape( options = {
 
 //</demo>
 
-} );
+};
+
+loadCy();

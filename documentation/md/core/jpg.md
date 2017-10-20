@@ -11,7 +11,7 @@ By default, the export takes into account the current screen pixel density so th
 var jpg64 = cy.jpg();
 
 // put the png data in an img tag
-$('#jpg-eg').attr('src', jpg64);
+document.querySelector('#jpg-eg').setAttribute('src', jpg64);
 ```
 
 Example image tag:

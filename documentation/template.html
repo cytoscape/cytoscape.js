@@ -236,6 +236,19 @@
 																	{{#if optional}}<span class="optional">[optional]</span>{{/if}}
 																	<span class="descr">{{{descr}}}</span>
 																</li>
+
+																{{#if fields}}
+																<ul class="fields">
+																	{{#each fields}}
+																	<li>
+																		<span class="name">{{{linkedName}}}</span>
+																		{{#if optional}}<span class="optional">[optional]</span>{{/if}}
+																		<span class="descr">{{{descr}}}</span>
+																	</li>
+																	{{/each}}
+																</ul>
+																{{/if}}
+
 																{{/each}}
 															</ul>
 															{{/if}}

@@ -1,7 +1,6 @@
 /*global console */
 
 let is = require( '../is' );
-let math = require( '../math' );
 
 let util = {
 
@@ -77,8 +76,6 @@ let util = {
   }
 
 };
-
-util.makeBoundingBox = math.makeBoundingBox.bind( math );
 
 util._staticEmptyObject = {};
 

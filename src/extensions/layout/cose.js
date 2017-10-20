@@ -24,7 +24,7 @@ var defaults = {
 
   // Called on `layoutstop`
   stop: function(){},
-  
+
   // Whether to animate while running the layout
   // true : Animate continuously as the layout is running
   // false : Just show the end result
@@ -1256,67 +1256,68 @@ var findLCA_aux = function( node1, node2, graphIx, layoutInfo ){
  * @brief: printsLayoutInfo into js console
  *         Only used for debbuging
  */
-var printLayoutInfo = function( layoutInfo ){
-  /* eslint-disable */
+if( process.env.NODE_ENV !== 'production' ){
+  var printLayoutInfo = function( layoutInfo ){
+    /* eslint-disable */
 
-  if( !DEBUG ){
-    return;
-  }
-  console.debug( 'layoutNodes:' );
-  for( var i = 0; i < layoutInfo.nodeSize; i++ ){
-    var n = layoutInfo.layoutNodes[ i ];
-    var s =
-    '\nindex: '     + i +
-    '\nId: '        + n.id +
-    '\nChildren: '  + n.children.toString() +
-    '\nparentId: '  + n.parentId  +
-    '\npositionX: ' + n.positionX +
-    '\npositionY: ' + n.positionY +
-    '\nOffsetX: ' + n.offsetX +
-    '\nOffsetY: ' + n.offsetY +
-    '\npadLeft: ' + n.padLeft +
-    '\npadRight: ' + n.padRight +
-    '\npadTop: ' + n.padTop +
-    '\npadBottom: ' + n.padBottom;
+    if( !DEBUG ){
+      return;
+    }
+    console.debug( 'layoutNodes:' );
+    for( var i = 0; i < layoutInfo.nodeSize; i++ ){
+      var n = layoutInfo.layoutNodes[ i ];
+      var s =
+      '\nindex: '     + i +
+      '\nId: '        + n.id +
+      '\nChildren: '  + n.children.toString() +
+      '\nparentId: '  + n.parentId  +
+      '\npositionX: ' + n.positionX +
+      '\npositionY: ' + n.positionY +
+      '\nOffsetX: ' + n.offsetX +
+      '\nOffsetY: ' + n.offsetY +
+      '\npadLeft: ' + n.padLeft +
+      '\npadRight: ' + n.padRight +
+      '\npadTop: ' + n.padTop +
+      '\npadBottom: ' + n.padBottom;
 
+      console.debug( s );
+    }
+
+    console.debug( 'idToIndex' );
+    for( var i in layoutInfo.idToIndex ){
+      console.debug( 'Id: ' + i + '\nIndex: ' + layoutInfo.idToIndex[ i ] );
+    }
+
+    console.debug( 'Graph Set' );
+    var set = layoutInfo.graphSet;
+    for( var i = 0; i < set.length; i ++ ){
+      console.debug( 'Set : ' + i + ': ' + set[ i ].toString() );
+    }
+
+    var s = 'IndexToGraph';
+    for( var i = 0; i < layoutInfo.indexToGraph.length; i ++ ){
+      s += '\nIndex : ' + i + ' Graph: ' + layoutInfo.indexToGraph[ i ];
+    }
     console.debug( s );
-  }
 
-  console.debug( 'idToIndex' );
-  for( var i in layoutInfo.idToIndex ){
-    console.debug( 'Id: ' + i + '\nIndex: ' + layoutInfo.idToIndex[ i ] );
-  }
+    s = 'Layout Edges';
+    for( var i = 0; i < layoutInfo.layoutEdges.length; i++ ){
+      var e = layoutInfo.layoutEdges[ i ];
+      s += '\nEdge Index: ' + i + ' ID: ' + e.id +
+      ' SouceID: ' + e.sourceId + ' TargetId: ' + e.targetId +
+      ' Ideal Length: ' + e.idealLength;
+    }
+    console.debug( s );
 
-  console.debug( 'Graph Set' );
-  var set = layoutInfo.graphSet;
-  for( var i = 0; i < set.length; i ++ ){
-    console.debug( 'Set : ' + i + ': ' + set[ i ].toString() );
-  }
+    s =  'nodeSize: ' + layoutInfo.nodeSize;
+    s += '\nedgeSize: ' + layoutInfo.edgeSize;
+    s += '\ntemperature: ' + layoutInfo.temperature;
+    console.debug( s );
 
-  var s = 'IndexToGraph';
-  for( var i = 0; i < layoutInfo.indexToGraph.length; i ++ ){
-    s += '\nIndex : ' + i + ' Graph: ' + layoutInfo.indexToGraph[ i ];
-  }
-  console.debug( s );
-
-  s = 'Layout Edges';
-  for( var i = 0; i < layoutInfo.layoutEdges.length; i++ ){
-    var e = layoutInfo.layoutEdges[ i ];
-    s += '\nEdge Index: ' + i + ' ID: ' + e.id +
-    ' SouceID: ' + e.sourceId + ' TargetId: ' + e.targetId +
-    ' Ideal Length: ' + e.idealLength;
-  }
-  console.debug( s );
-
-  s =  'nodeSize: ' + layoutInfo.nodeSize;
-  s += '\nedgeSize: ' + layoutInfo.edgeSize;
-  s += '\ntemperature: ' + layoutInfo.temperature;
-  console.debug( s );
-
-  return;
-  /* eslint-enable */
-};
-
+    return;
+    /* eslint-enable */
+  };
+}
 
 /**
  * @brief : Randomizes the position of all nodes

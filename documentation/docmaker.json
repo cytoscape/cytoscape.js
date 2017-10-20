@@ -2312,7 +2312,7 @@
             },
 
             {
-              "name": "eles.toArray()",
+              "name": "eles.toArray",
               "descr": "Get the collection as an array, maintaining the order of the elements."
             }
           ]
@@ -2905,12 +2905,13 @@
         },
 
         {
-          "name": "Algorithms",
+          "name": "Search",
+          "md": "collection/algorithms",
           "fns": [
             {
               "name": "eles.breadthFirstSearch",
               "pureAliases": [ "eles.bfs" ],
-              "descr": "Perform a breadth-first search within the elements in the collection.",
+              "descr": "Perform a [breadth-first search](https://en.wikipedia.org/wiki/Breadth-first_search) within the elements in the collection.",
               "formats": [
                 {
                   "args": [
@@ -2934,7 +2935,7 @@
             {
               "name": "eles.depthFirstSearch",
               "pureAliases": [ "eles.dfs" ],
-              "descr": "Perform a depth-first search within the elements in the collection.",
+              "descr": "Perform a [depth-first search](https://en.wikipedia.org/wiki/Depth-first_search) within the elements in the collection.",
               "formats": [
                 {
                   "args": [
@@ -2957,7 +2958,7 @@
 
             {
               "name": "eles.dijkstra",
-              "descr": "Perform Dijkstra's algorithm on the elements in the collection.  This finds the shortest paths to all other nodes in the collection from the root node.",
+              "descr": "Perform [Dijkstra's](https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm) algorithm on the elements in the collection.  This finds the shortest paths to all other nodes in the collection from the root node.",
               "formats": [
                 {
                   "args": [
@@ -2974,7 +2975,7 @@
 
             {
               "name": "eles.aStar",
-              "descr": "Perform the A* search algorithm on the elements in the collection. This finds the shortest path from the root node to the goal node.",
+              "descr": "Perform the [A*](https://en.wikipedia.org/wiki/A*_search_algorithm) search algorithm on the elements in the collection. This finds the shortest path from the root node to the goal node.",
               "formats": [
                 {
                   "args": [
@@ -2993,7 +2994,7 @@
 
             {
               "name": "eles.floydWarshall",
-              "descr": "Perform the Floyd Warshall search algorithm on the elements in the collection. This finds the shortest path between all pairs of nodes.",
+              "descr": "Perform the [Floyd-Warshall](https://en.wikipedia.org/wiki/Floyd%E2%80%93Warshall_algorithm) search algorithm on the elements in the collection. This finds the shortest path between all pairs of nodes.",
               "formats": [
                 {
                   "args": [
@@ -3009,7 +3010,7 @@
 
             {
               "name": "eles.bellmanFord",
-              "descr": "Perform the Bellman-Ford search algorithm on the elements in the collection. This finds the shortest path from the starting node to all other nodes in the collection.",
+              "descr": "Perform the [Bellman-Ford](https://en.wikipedia.org/wiki/Bellman%E2%80%93Ford_algorithm) search algorithm on the elements in the collection. This finds the shortest path from the starting node to all other nodes in the collection.",
               "formats": [
                 {
                   "args": [
@@ -3022,11 +3023,18 @@
                 }
               ],
               "md": "collection/bellmanFord"
-            },
+            }
+
+          ]
+        },
+
+        {
+          "name": "Spanning",
+          "fns": [
 
             {
               "name": "eles.kruskal",
-              "descr": "Perform Kruskal's algorithm on the elements in the collection, returning the minimum spanning tree, assuming undirected edges.",
+              "descr": "Perform [Kruskal's](https://en.wikipedia.org/wiki/Kruskal%27s_algorithm) algorithm on the elements in the collection, returning the minimum spanning tree, assuming undirected edges.",
               "formats": [
                 {
                   "args": [
@@ -3035,35 +3043,30 @@
                 }
               ],
               "md": "collection/kruskal"
-            },
+            }
+
+          ]
+        },
+
+        {
+          "name": "Cut",
+          "fns": [
 
             {
               "name": "eles.kargerStein",
-              "descr": "Finds the minimum cut in a graph using the Karger-Stein algorithm. The optimal result is found with a high probability, but without guarantee.",
+              "descr": "Finds the minimum cut in a graph using the [Karger-Stein](https://en.wikipedia.org/wiki/Karger%27s_algorithm#Karger.E2.80.93Stein_algorithm) algorithm. The optimal result is found with a high probability, but without guarantee.",
               "md": "collection/kargerStein"
-            },
+            }
+          ]
+        },
 
-            {
-              "name": "eles.pageRank",
-              "descr": "Rank the nodes in the collection using the Page Rank algorithm.",
-              "formats": [
-                {
-                  "args": [
-                    { "name": "options", "fields": [
-                      { "name": "dampingFactor", "descr": "Numeric parameter for the algorithm.", "optional": true},
-                      { "name": "precision", "descr": "Numeric parameter that represents the required precision.", "optional": true },
-                      { "name": "iterations", "descr": "Maximum number of iterations to perform.", "optional": true }
-                    ] }
-                  ]
-                }
-              ],
-              "md": "collection/pageRank"
-            },
-
+        {
+          "name": "Centrality",
+          "fns": [
             {
               "name": "eles.degreeCentrality",
               "pureAliases": ["eles.dc"],
-              "descr": "Considering only the elements in the calling collection, calculate the degree centrality of the specified root node.",
+              "descr": "Considering only the elements in the calling collection, calculate the [degree centrality](https://en.wikipedia.org/wiki/Centrality#Degree_centrality) of the specified root node.",
               "formats": [
                 {
                   "args": [
@@ -3082,7 +3085,7 @@
             {
               "name": "eles.degreeCentralityNormalized",
               "pureAliases": ["eles.dcn", "eles.degreeCentralityNormalised"],
-              "descr": "Considering only the elements in the calling collection, calculate the normalised degree centrality of the nodes.",
+              "descr": "Considering only the elements in the calling collection, calculate the normalised [degree centrality](https://en.wikipedia.org/wiki/Centrality#Degree_centrality) of the nodes.",
               "formats": [
                 {
                   "args": [
@@ -3100,7 +3103,7 @@
             {
               "name": "eles.closenessCentrality",
               "pureAliases": ["eles.cc"],
-              "descr": "Considering only the elements in the calling collection, calculate the closeness centrality of the specified root node.",
+              "descr": "Considering only the elements in the calling collection, calculate the [closeness centrality](https://en.wikipedia.org/wiki/Closeness_centrality) of the specified root node.",
               "formats": [
                 {
                   "args": [
@@ -3119,7 +3122,7 @@
             {
               "name": "eles.closenessCentralityNormalized",
               "pureAliases": ["eles.ccn", "eles.closenessCentralityNormalised"],
-              "descr": "Considering only the elements in the calling collection, calculate the closeness centrality of the nodes.",
+              "descr": "Considering only the elements in the calling collection, calculate the [closeness centrality](https://en.wikipedia.org/wiki/Closeness_centrality) of the nodes.",
               "formats": [
                 {
                   "args": [
@@ -3137,7 +3140,7 @@
             {
               "name": "eles.betweennessCentrality",
               "pureAliases": ["eles.bc"],
-              "descr": "Considering only the elements in the calling collection, calculate the betweenness centrality of the nodes.",
+              "descr": "Considering only the elements in the calling collection, calculate the [betweenness centrality](https://en.wikipedia.org/wiki/Betweenness_centrality) of the nodes.",
               "formats": [
                 {
                   "args": [
@@ -3149,6 +3152,217 @@
                 }
               ],
               "md": "collection/betweennessCentrality"
+            },
+
+            {
+              "name": "eles.pageRank",
+              "descr": "Rank the nodes in the collection using the [Page Rank](https://en.wikipedia.org/wiki/PageRank) algorithm.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "options", "fields": [
+                      { "name": "dampingFactor", "descr": "The [damping factor](https://en.wikipedia.org/wiki/PageRank#Damping_factor), affecting how long the algorithm goes along the topology of the graph (default `0.8`).", "optional": true},
+                      { "name": "precision", "descr": "Numeric parameter that represents the required precision (default `0.000001`).  The algorithm stops when the difference between iterations is this value or less.", "optional": true },
+                      { "name": "iterations", "descr": "Maximum number of iterations to perform (default `200`).", "optional": true }
+                    ] }
+                  ]
+                }
+              ],
+              "md": "collection/pageRank"
+            }
+
+          ]
+        },
+
+        {
+          "name": "Clustering",
+          "fns": [
+            {
+              "name": "eles.markovClustering",
+              "pureAliases": ["eles.mcl"],
+              "descr": "Considering only the elements in the calling collection, run the [Markov cluster algorithm](https://micans.org/mcl/) of the nodes.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "options", "fields": [
+                      { "name": "attributes: [ function(edge) ... ]", "descr": "An array of attribute functions, each of which returns a numeric attribute value for the specified edge.  Attributes are used to cluster the nodes; i.e. the attributes of an edge indicate similarity between its nodes." },
+                      { "name": "expandFactor", "descr": "A number that affects time of computation and cluster granularity to some extent: `M * M` (default `2`)", "optional": true },
+                      { "name": "inflateFactor", "descr": "A number that affects cluster granularity (the greater the value, the more clusters): `M(i,j) / E(j)` (default `2`)", "optional": true },
+                      { "name": "multFactor", "descr": "Optional number of self loops for each node. Use a neutral value to improve cluster computations (default `1`).", "optional": true },
+                      { "name": "maxIterations", "descr": "Maximum number of iterations of the MCL algorithm in a single run (default `20`).", "optional": true }
+                    ] }
+                  ]
+                }
+              ],
+              "md": "collection/markovClustering"
+            },
+
+            {
+              "name": "nodes.kMeans",
+              "descr": "Considering only the nodes in the calling collection, calculate the [k-means clustering](https://en.wikipedia.org/wiki/K-means_clustering) of the nodes.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "options", "fields": [
+                      { "name": "attributes: [ function( node ) ... ]", "descr": "An array of attribute functions, each of which returns a numeric attribute value for the specified node.  Attributes are used to cluster the nodes; i.e. two nodes with similar attributes tend to be in the same cluster.  Each attribute may have to be normalised in order for the chosen distance metric to make sense.  Attributes must be specified unless a custom `distance: function( nodeP, nodeQ )` is specified." },
+                      { "name": "k", "descr": "The number of clusters to return." },
+                      { "name": "distance", "descr": "The distance classifier used to compare attribute vectors.  It is optional if attributes are specified.  It may take on one of several values:", "fields": [
+                        { "name": "'euclidean'", "descr": "[Euclidean distance](https://en.wikipedia.org/wiki/Euclidean_distance) (default)" },
+                        { "name": "'squaredEuclidean'", "descr": "[Squared Euclidean distance](https://en.wikipedia.org/wiki/Euclidean_distance#Squared_Euclidean_distance)" },
+                        { "name": "'manhattan'", "descr": "[Manhattan distance](https://en.wikipedia.org/wiki/Taxicab_geometry)" },
+                        { "name": "'max'", "descr": "[Max distance](https://en.wikipedia.org/wiki/Uniform_norm)" },
+                        { "name": "function( length, getPAt, getQAt[, nodeP, nodeQ] )", "descr": "A custom function that returns the distance between attribute vectors `p` and `q`.", "fields": [
+                          { "name": "length", "descr": "The length of the vectors." },
+                          { "name": "getPAt(i)", "descr": "A function that returns the ith value of the `p` vector." },
+                          { "name": "getQAt(i)", "descr": "A function that returns the ith value of the `q` vector." },
+                          { "name": "nodeP", "optional": true, "descr": "An optionally-used reference to the node associated with the `p` attribute vector.  It is useful for affecting the weights with information outside of the attributes, such as connectivity." },
+                          { "name": "nodeQ", "optional": true, "descr": "An optionally-used reference to the node associated with the `q` attribute vector.  It is useful for affecting the weights with information outside of the attributes, such as connectivity." }
+                        ] },
+                        { "name": "function( nodeP, nodeQ )", "descr": "A custom function that returns the distance between `nodeP` and `nodeQ`.  This allows for specifying the distance matrix directly, forgoing attributes." }
+                      ] },
+                      { "name": "maxIterations", "descr": "The maximum number of iterations of the algorithm to run (default `10`).", "optional": true }
+                    ] }
+                  ]
+                }
+              ],
+              "md": "collection/kMeans"
+            },
+
+            {
+              "name": "nodes.kMedoids",
+              "descr": "Considering only the nodes in the calling collection, calculate the [k-medoids clustering](https://en.wikipedia.org/wiki/K-medoids) of the nodes.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "options", "fields": [
+                      { "name": "attributes: [ function( node ) ... ]", "descr": "An array of attribute functions, each of which returns a numeric attribute value for the specified node.  Attributes are used to cluster the nodes; i.e. two nodes with similar attributes tend to be in the same cluster.  Each attribute may have to be normalised in order for the chosen distance metric to make sense.  Attributes must be specified unless a custom `distance: function( nodeP, nodeQ )` is specified." },
+                      { "name": "k", "descr": "The number of clusters to return." },
+                      { "name": "distance", "descr": "The distance classifier used to compare attribute vectors.  It is optional if attributes are specified.  It may take on one of several values:", "fields": [
+                        { "name": "'euclidean'", "descr": "[Euclidean distance](https://en.wikipedia.org/wiki/Euclidean_distance) (default)" },
+                        { "name": "'squaredEuclidean'", "descr": "[Squared Euclidean distance](https://en.wikipedia.org/wiki/Euclidean_distance#Squared_Euclidean_distance)" },
+                        { "name": "'manhattan'", "descr": "[Manhattan distance](https://en.wikipedia.org/wiki/Taxicab_geometry)" },
+                        { "name": "'max'", "descr": "[Max distance](https://en.wikipedia.org/wiki/Uniform_norm)" },
+                        { "name": "function( length, getPAt, getQAt[, nodeP, nodeQ] )", "descr": "A custom function that returns the distance between attribute vectors `p` and `q`.", "fields": [
+                          { "name": "length", "descr": "The length of the vectors." },
+                          { "name": "getPAt(i)", "descr": "A function that returns the ith value of the `p` vector." },
+                          { "name": "getQAt(i)", "descr": "A function that returns the ith value of the `q` vector." },
+                          { "name": "nodeP", "optional": true, "descr": "An optionally-used reference to the node associated with the `p` attribute vector.  It is useful for affecting the weights with information outside of the attributes, such as connectivity." },
+                          { "name": "nodeQ", "optional": true, "descr": "An optionally-used reference to the node associated with the `q` attribute vector.  It is useful for affecting the weights with information outside of the attributes, such as connectivity." }
+                        ] },
+                        { "name": "function( nodeP, nodeQ )", "descr": "A custom function that returns the distance between `nodeP` and `nodeQ`.  This allows for specifying the distance matrix directly, forgoing attributes." }
+                      ] },
+                      { "name": "maxIterations", "descr": "The maximum number of iterations of the algorithm to run (default `10`).", "optional": true }
+                    ] }
+                  ]
+                }
+              ],
+              "md": "collection/kMedoids"
+            },
+
+            {
+              "name": "nodes.fuzzyCMeans",
+              "pureAliases": ["nodes.fcm"],
+              "descr": "Considering only the elements in the calling collection, calculate the [fuzzy c-means clustering](https://en.wikipedia.org/wiki/Fuzzy_clustering#Fuzzy_C-means_clustering) of the nodes.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "options", "fields": [
+                      { "name": "attributes: [ function( node ) ... ]", "descr": "An array of attribute functions, each of which returns a numeric attribute value for the specified node.  Attributes are used to cluster the nodes; i.e. two nodes with similar attributes tend to be in the same cluster.  Each attribute may have to be normalised in order for the chosen distance metric to make sense.  Attributes must be specified unless a custom `distance: function( nodeP, nodeQ )` is specified." },
+                      { "name": "k", "descr": "The number of clusters to return." },
+                      { "name": "distance", "descr": "The distance classifier used to compare attribute vectors.  It is optional if attributes are specified.  It may take on one of several values:", "fields": [
+                        { "name": "'euclidean'", "descr": "[Euclidean distance](https://en.wikipedia.org/wiki/Euclidean_distance) (default)" },
+                        { "name": "'squaredEuclidean'", "descr": "[Squared Euclidean distance](https://en.wikipedia.org/wiki/Euclidean_distance#Squared_Euclidean_distance)" },
+                        { "name": "'manhattan'", "descr": "[Manhattan distance](https://en.wikipedia.org/wiki/Taxicab_geometry)" },
+                        { "name": "'max'", "descr": "[Max distance](https://en.wikipedia.org/wiki/Uniform_norm)" },
+                        { "name": "function( length, getPAt, getQAt[, nodeP, nodeQ] )", "descr": "A custom function that returns the distance between attribute vectors `p` and `q`.", "fields": [
+                          { "name": "length", "descr": "The length of the vectors." },
+                          { "name": "getPAt(i)", "descr": "A function that returns the ith value of the `p` vector." },
+                          { "name": "getQAt(i)", "descr": "A function that returns the ith value of the `q` vector." },
+                          { "name": "nodeP", "optional": true, "descr": "An optionally-used reference to the node associated with the `p` attribute vector.  It is useful for affecting the weights with information outside of the attributes, such as connectivity." },
+                          { "name": "nodeQ", "optional": true, "descr": "An optionally-used reference to the node associated with the `q` attribute vector.  It is useful for affecting the weights with information outside of the attributes, such as connectivity." }
+                        ] },
+                        { "name": "function( nodeP, nodeQ )", "descr": "A custom function that returns the distance between `nodeP` and `nodeQ`.  This allows for specifying the distance matrix directly, forgoing attributes." }
+                      ] },
+                      { "name": "maxIterations", "descr": "The maximum number of iterations of the algorithm to run (default `10`).", "optional": true }
+                    ] }
+                  ]
+                }
+              ],
+              "md": "collection/fuzzyCMeans"
+            },
+
+            {
+              "name": "nodes.hierarchicalClustering",
+              "pureAliases": ["nodes.hca"],
+              "descr": "Considering only the elements in the calling collection, calculate the agglomerative [hierarchical clustering](https://en.wikipedia.org/wiki/Hierarchical_clustering) of the nodes.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "options", "fields": [
+                      { "name": "attributes: [ function( node ) ... ]", "descr": "An array of attribute functions, each of which returns a numeric attribute value for the specified node.  Attributes are used to cluster the nodes; i.e. two nodes with similar attributes tend to be in the same cluster.  Each attribute may have to be normalised in order for the chosen distance metric to make sense.  Attributes must be specified unless a custom `distance: function( nodeP, nodeQ )` is specified." },
+                      { "name": "distance", "descr": "The distance classifier used to compare attribute vectors.  It is optional if attributes are specified.  It may take on one of several values:", "fields": [
+                        { "name": "'euclidean'", "descr": "[Euclidean distance](https://en.wikipedia.org/wiki/Euclidean_distance) (default)" },
+                        { "name": "'squaredEuclidean'", "descr": "[Squared Euclidean distance](https://en.wikipedia.org/wiki/Euclidean_distance#Squared_Euclidean_distance)" },
+                        { "name": "'manhattan'", "descr": "[Manhattan distance](https://en.wikipedia.org/wiki/Taxicab_geometry)" },
+                        { "name": "'max'", "descr": "[Max distance](https://en.wikipedia.org/wiki/Uniform_norm)" },
+                        { "name": "function( length, getPAt, getQAt[, nodeP, nodeQ] )", "descr": "A custom function that returns the distance between attribute vectors `p` and `q`.", "fields": [
+                          { "name": "length", "descr": "The length of the vectors." },
+                          { "name": "getPAt(i)", "descr": "A function that returns the ith value of the `p` vector." },
+                          { "name": "getQAt(i)", "descr": "A function that returns the ith value of the `q` vector." },
+                          { "name": "nodeP", "optional": true, "descr": "An optionally-used reference to the node associated with the `p` attribute vector.  It is useful for affecting the weights with information outside of the attributes, such as connectivity." },
+                          { "name": "nodeQ", "optional": true, "descr": "An optionally-used reference to the node associated with the `q` attribute vector.  It is useful for affecting the weights with information outside of the attributes, such as connectivity." }
+                        ] },
+                        { "name": "function( nodeP, nodeQ )", "descr": "A custom function that returns the distance between `nodeP` and `nodeQ`.  This allows for specifying the distance matrix directly, forgoing attributes." }
+                      ] },
+                      { "name": "linkage", "optional": true, "descr": "The [linkage criterion](https://en.wikipedia.org/wiki/Hierarchical_clustering#Linkage_criteria) for measuring the distance between two clusters; may be one of `'mean'`, `'min'` (a.k.a. `'single'`, default), `'max'` (a.k.a. `'complete'`)." },
+                      { "name": "mode", "descr": "The mode of the algorithm.  For `'threshold'` (default), clusters are merged until they are at least the specified distance apart.  For `'dendrogram'`, the clusters are recursively merged using the branches in a [dendrogram](https://en.wikipedia.org/wiki/Dendrogram) (tree) structure beyond a specified depth." },
+                      { "name": "threshold", "descr": "In `mode: 'threshold'`, distance threshold for stopping the algorithm.  All pairs of the returned clusters are at least `threshold` distance apart.  Without specifying this value for `mode: 'threshold'`, all clusters will eventually be merged into a single cluster." },
+                      { "name": "dendrogramDepth", "descr": "In `mode: 'dendrogram'`, the depth beyond which branches are merged in the tree.  For example, a value of 0 (default) results in all branches being merged into a single cluster." },
+                      { "name": "addDendrogram", "optional": true, "descr": "In `mode: 'dendrogram'`, whether to add nodes and edges to the graph for the dendrogram (default `false`).  This is not necessary to run the algorithm, but it is useful for visualising the results." }
+                    ] }
+                  ]
+                }
+              ],
+              "md": "collection/hierarchicalClustering"
+            },
+
+            {
+              "name": "nodes.affinityPropagation",
+              "pureAliases": ["nodes.ap"],
+              "descr": "Considering only the elements in the calling collection, calculate the [affinity propagation clustering](https://en.wikipedia.org/wiki/Affinity_propagation) of the nodes.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "options", "fields": [
+                      { "name": "attributes: [ function( node ) ... ]", "descr": "An array of attribute functions, each of which returns a numeric attribute value for the specified node.  Attributes are used to cluster the nodes; i.e. two nodes with similar attributes tend to be in the same cluster.  Each attribute may have to be normalised in order for the chosen distance metric to make sense.  Attributes must be specified unless a custom `distance: function( nodeP, nodeQ )` is specified." },
+                      { "name": "distance", "descr": "The distance classifier used to compare attribute vectors.  It is optional if attributes are specified.  It may take on one of several values:", "fields": [
+                        { "name": "'euclidean'", "descr": "[Euclidean distance](https://en.wikipedia.org/wiki/Euclidean_distance) (default)" },
+                        { "name": "'squaredEuclidean'", "descr": "[Squared Euclidean distance](https://en.wikipedia.org/wiki/Euclidean_distance#Squared_Euclidean_distance)" },
+                        { "name": "'manhattan'", "descr": "[Manhattan distance](https://en.wikipedia.org/wiki/Taxicab_geometry)" },
+                        { "name": "'max'", "descr": "[Max distance](https://en.wikipedia.org/wiki/Uniform_norm)" },
+                        { "name": "function( length, getPAt, getQAt[, nodeP, nodeQ] )", "descr": "A custom function that returns the distance between attribute vectors `p` and `q`.", "fields": [
+                          { "name": "length", "descr": "The length of the vectors." },
+                          { "name": "getPAt(i)", "descr": "A function that returns the ith value of the `p` vector." },
+                          { "name": "getQAt(i)", "descr": "A function that returns the ith value of the `q` vector." },
+                          { "name": "nodeP", "optional": true, "descr": "An optionally-used reference to the node associated with the `p` attribute vector.  It is useful for affecting the weights with information outside of the attributes, such as connectivity." },
+                          { "name": "nodeQ", "optional": true, "descr": "An optionally-used reference to the node associated with the `q` attribute vector.  It is useful for affecting the weights with information outside of the attributes, such as connectivity." }
+                        ] },
+                        { "name": "function( nodeP, nodeQ )", "descr": "A custom function that returns the distance between `nodeP` and `nodeQ`.  This allows for specifying the distance matrix directly, forgoing attributes." }
+                      ] },
+                      { "name": "preference", "optional": true, "descr": "The metric used to determine the suitability of a data point (i.e. node attribute vector) to serve as an exemplar.  It may take on one of several special values, which are determined from the similarity matrix (i.e. the negative distance matrix).  Or a manual, numeric value may be used (generally of the opposite sign of your distance values).  The special values include:", "fields": [
+                        { "name": "'median'", "descr": "Use the median value of the similarity matrix (default)." },
+                        { "name": "'mean'", "descr": "Use the mean value of the similarity matrix." },
+                        { "name": "'min'", "descr": "Use the minimum value of the similarity matrix." },
+                        { "name": "'max'", "descr": "Use the maximum value of the similarity matrix." }
+                      ] },
+                      { "name": "damping", "descr": "A damping factor on [0.5, 1) (default `0.8`).", "optional": true },
+                      { "name": "minIterations", "descr": "The minimum number of iteraions the algorithm will run before stopping (default `100`).", "optional": true },
+                      { "name": "minIterations", "descr": "The maximum number of iteraions the algorithm will run before stopping (default `1000`).", "optional": true }
+                    ] }
+                  ]
+                }
+              ],
+              "md": "collection/affinityPropagation"
             }
 
           ]

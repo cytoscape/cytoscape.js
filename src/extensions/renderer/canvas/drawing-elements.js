@@ -80,33 +80,35 @@ CRp.drawLayeredElements = function( context, eles, pxRatio, extent ){
   }
 };
 
-CRp.drawDebugPoints = function( context, eles ){
-  let draw = function( x, y, color ){
-    context.fillStyle = color;
-    context.fillRect( x - 1, y - 1, 3, 3 );
-  };
+if( process.NODE_ENV !== 'production' ){
+  CRp.drawDebugPoints = function( context, eles ){
+    let draw = function( x, y, color ){
+      context.fillStyle = color;
+      context.fillRect( x - 1, y - 1, 3, 3 );
+    };
 
-  for( let i = 0; i < eles.length; i++ ){
-    let ele = eles[i];
-    let rs = ele._private.rscratch;
+    for( let i = 0; i < eles.length; i++ ){
+      let ele = eles[i];
+      let rs = ele._private.rscratch;
 
-    if( ele.isNode() ){
-      let p = ele.position();
+      if( ele.isNode() ){
+        let p = ele.position();
 
-      draw( p.x, p.y, 'magenta' );
-    } else {
-      let pts = rs.allpts;
+        draw( p.x, p.y, 'magenta' );
+      } else {
+        let pts = rs.allpts;
 
-      for( let j = 0; j + 1 < pts.length; j += 2 ){
-        let x = pts[ j ];
-        let y = pts[ j + 1 ];
+        for( let j = 0; j + 1 < pts.length; j += 2 ){
+          let x = pts[ j ];
+          let y = pts[ j + 1 ];
 
-        draw( x, y, 'cyan' );
+          draw( x, y, 'cyan' );
+        }
+
+        draw( rs.midX, rs.midY, 'yellow' );
       }
-
-      draw( rs.midX, rs.midY, 'yellow' );
     }
-  }
-};
+  };
+}
 
 module.exports = CRp;

@@ -242,8 +242,10 @@ function compileConfig( config ){
 
         linkifyArg( field );
 
-        if( field.fields ){
-          processFields( field.fields );
+        var subfields = field.fields;
+
+        if( subfields ){
+          processFields( subfields );
         }
       }
     }

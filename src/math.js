@@ -29,6 +29,92 @@ math.array2point = function( arr ){
   };
 };
 
+math.min = function( arr, begin = 0, end = arr.length ){
+  let min = Infinity;
+
+  for( let i = begin; i < end; i++ ){
+    let val = arr[i];
+
+    if( isFinite(val) ){
+      min = Math.min( val, min );
+    }
+  }
+
+  return min;
+};
+
+math.max = function( arr, begin = 0, end = arr.length ){
+  let max = -Infinity;
+
+  for( let i = begin; i < end; i++ ){
+    let val = arr[i];
+
+    if( isFinite(val) ){
+      max = Math.max( val, max );
+    }
+  }
+
+  return max;
+};
+
+math.mean = function( arr, begin = 0, end = arr.length ){
+  let total = 0;
+  let n = 0;
+
+  for( let i = begin; i < end; i++ ){
+    let val = arr[i];
+
+    if( isFinite(val) ){
+      total += val;
+      n++;
+    }
+  }
+
+  return total / n;
+};
+
+math.median = function( arr, begin = 0, end = arr.length, copy = true, sort = true, includeHoles = true ){
+  if( copy ){
+    arr = arr.slice( begin, end );
+  } else {
+    if( end < arr.length ){
+      arr.splice( end, arr.length - end );
+    }
+
+    if( begin > 0 ){
+      arr.splice( 0, begin );
+    }
+  }
+
+  // all non finite (e.g. Infinity, NaN) elements must be -Infinity so they go to the start
+  let off  = 0; // offset from non-finite values
+  for( let i = arr.length - 1; i >= 0; i-- ){
+    let v = arr[i];
+
+    if( includeHoles ){
+      if( !isFinite(v) ){
+        arr[i] = -Infinity;
+        off++;
+      }
+    } else { // just remove it if we don't want to consider holes
+      arr.splice(i, 1);
+    }
+  }
+
+  if( sort ){
+    arr.sort( (a, b) => a - b ); // requires copy = true if you don't want to change the orig
+  }
+
+  let len = arr.length;
+  let mid = Math.floor( len / 2 );
+
+  if( len % 2 !== 0 ){
+    return arr[mid + 1 + off];
+  } else {
+    return ( arr[mid - 1 + off] + arr[mid + off] )/2;
+  }
+};
+
 math.deg2rad = function( deg ){
   return Math.PI * deg / 180;
 };

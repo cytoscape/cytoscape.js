@@ -18,6 +18,7 @@ var SOURCEMAPS = boolEnv('SOURCEMAPS', false);
 var pkg = require('./package.json');
 var path = require('path');
 var webpack = require('webpack');
+var isNotNil = function(x){ return x != null; };
 
 module.exports = {
   entry: './src/index.js',
@@ -29,10 +30,8 @@ module.exports = {
   },
   externals: NODE_ENV === 'production' ? Object.keys( pkg.dependencies || {} ) : [],
   module: {
-    rules: [ // common rules
-
-    ].concat( BABEL ? [
-      {
+    rules: [
+      BABEL ? {
         loader: 'babel-loader',
         test: /\.js$/,
         include: [
@@ -41,18 +40,18 @@ module.exports = {
         exclude: [
           path.resolve(__dirname, 'node_modules')
         ]
-      }
-    ] : [])
+      } : null
+    ].filter( isNotNil )
   },
-  plugins: [ // common plugins
+  plugins: [
+    new webpack.EnvironmentPlugin(['NODE_ENV']),
 
-  ].concat( MINIFY ? [ // minify plugins
-    new webpack.optimize.UglifyJsPlugin({
+    MINIFY ? new webpack.optimize.UglifyJsPlugin({
       compress: {
         warnings: false,
         drop_console: false,
       }
-    })
-  ] : [] ),
+    }) : null
+  ].filter( isNotNil ),
   devtool: SOURCEMAPS ? 'inline-source-map' : false
 };

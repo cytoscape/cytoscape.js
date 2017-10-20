@@ -67,18 +67,18 @@ cy = cytoscape( options = {
     ],
 
     edges: [
-      { data: { source: 'j', target: 'e', id: 'je' } },
-      { data: { source: 'j', target: 'k', id: 'jk' } },
-      { data: { source: 'j', target: 'g', id: 'jg' } },
+      { data: { source: 'j', target: 'e', id: 'je', closeness: 0.85 } },
+      { data: { source: 'j', target: 'k', id: 'jk', closeness: 0.5 } },
+      { data: { source: 'j', target: 'g', id: 'jg', closeness: 0.7 } },
 
-      { data: { source: 'e', target: 'j', id: 'ej' } },
-      { data: { source: 'e', target: 'k', id: 'ek' } },
+      { data: { source: 'e', target: 'j', id: 'ej', closeness: 0.9 } },
+      { data: { source: 'e', target: 'k', id: 'ek', closeness: 0.6 } },
 
-      { data: { source: 'k', target: 'j', id: 'kj' } },
-      { data: { source: 'k', target: 'e', id: 'ke' } },
-      { data: { source: 'k', target: 'g', id: 'kg' } },
+      { data: { source: 'k', target: 'j', id: 'kj', closeness: 0.9 } },
+      { data: { source: 'k', target: 'e', id: 'ke', closeness: 0.9 } },
+      { data: { source: 'k', target: 'g', id: 'kg', closeness: 0.9 } },
 
-      { data: { source: 'g', target: 'j', id: 'gj' } }
+      { data: { source: 'g', target: 'j', id: 'gj', closeness: 0.8 } }
     ],
   },
 

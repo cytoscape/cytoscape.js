@@ -1,7 +1,7 @@
 var expect = require('chai').expect;
 var cytoscape = require('../src/test.js', cytoscape);
 
-describe('Graph theory algorithms (traversing, search, etc)', function(){
+describe('Algorithms', function(){
 
   var cy;
   var a, b, c, d, e;

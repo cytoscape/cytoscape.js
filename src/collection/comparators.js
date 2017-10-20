@@ -1,4 +1,3 @@
-let is = require('../is');
 let Selector = require('../selector');
 
 let elesfn = ({
@@ -63,6 +62,20 @@ let elesfn = ({
     });
   },
 
+  equals: function( collection ){
+    if( this === collection ){ return true; }
+
+    collection = this.cy().collection( collection );
+
+    if( this.length !== collection.length ){ return false; }
+
+    for( let i = 0; i < this.length; i++ ){
+      if( !this[i].same( collection[i] ) ){ return false; }
+    }
+
+    return true;
+  },
+
   allAreNeighbors: function( collection ){
     collection = this.cy().collection( collection );
 
@@ -86,5 +99,6 @@ let elesfn = ({
 
 elesfn.allAreNeighbours = elesfn.allAreNeighbors;
 elesfn.has = elesfn.contains;
+elesfn.equal = elesfn.equals;
 
 module.exports = elesfn;

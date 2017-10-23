@@ -193,11 +193,12 @@ BreadthFirstLayout.prototype.run = function(){
     for( let i = 0; i < depths.length; i++ ){
       let eles = depths[ i ];
 
-      for( let j = eles.length - 1; j >= 0; j-- ){
+      for( let j = 0; j < eles.length; j++ ){
         let ele = eles[ j ];
 
         if( ele == null ){
           eles.splice( j, 1 );
+          j--;
           continue;
         }
 

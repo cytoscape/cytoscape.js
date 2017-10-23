@@ -49,7 +49,7 @@ if( process.env.NODE_ENV !== 'production' ){ /* eslint-disable no-console, no-un
       log(row);
     }
 
-    require('fs').writeFileSync('matrix', str);
+    console.log(str);
   };
 } /* eslint-enable */
 

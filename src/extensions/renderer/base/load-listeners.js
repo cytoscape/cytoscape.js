@@ -752,7 +752,7 @@ BRp.load = function(){
         r.hoverData.last = near;
       }
 
-      if( down && r.nodeIsDraggable( down ) ){
+      if( down ){
 
         if( isOverThresholdDrag ){ // then we can take action
 
@@ -765,7 +765,7 @@ BRp.load = function(){
 
             goIntoBoxMode();
 
-          } else { // otherwise drag
+          } else if( down && down.grabbed() && r.nodeIsDraggable( down ) ){ // drag node
             var justStartedDrag = !r.dragData.didDrag;
 
             if( justStartedDrag ){

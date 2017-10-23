@@ -144,8 +144,8 @@ describe('Algorithms', function(){
           expect( cluster2.length, 'cluster length' ).to.equal( cluster.length );
 
           for( var l = 0; l < cluster2.length; l++ ){
-            let ele = cluster[l];
-            let ele2 = cluster2[l];
+            var ele = cluster[l];
+            var ele2 = cluster2[l];
 
             expect( ele.same(ele2), 'same ele' ).to.be.true;
           }

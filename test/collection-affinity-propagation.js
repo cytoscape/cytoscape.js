@@ -826,7 +826,7 @@ describe('Algorithms', function() {
 
     it('should return the numerically correct results (expected results)', function() {
 
-      let idify = clusters => clusters.map( cluster => cluster.map( el => el.id() ) );
+      var idify = clusters => clusters.map( cluster => cluster.map( el => el.id() ) );
 
       expect( idify(clusters) ).to.deep.equal([
         ['001', '002', '003', '004', '005', '006', '011', '013', '022'],

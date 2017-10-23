@@ -19,7 +19,7 @@ let defaults = {
   animateFilter: function ( node, i ){ return true; }, // a function that determines whether the node should be animated.  All nodes animated by default on animate enabled.  Non-animated nodes are positioned immediately when the layout starts
   ready: undefined, // callback on layoutready
   stop: undefined, // callback on layoutstop
-  transform: function (node, position ){ return position; } // transform a given node position. Useful for changing flow direction in discrete layouts 
+  transform: function (node, position ){ return position; } // transform a given node position. Useful for changing flow direction in discrete layouts
 };
 
 function BreadthFirstLayout( options ){
@@ -193,8 +193,13 @@ BreadthFirstLayout.prototype.run = function(){
     for( let i = 0; i < depths.length; i++ ){
       let eles = depths[ i ];
 
-      for( let j = 0; j < eles.length; j++ ){
+      for( let j = eles.length - 1; j >= 0; j-- ){
         let ele = eles[ j ];
+
+        if( ele == null ){
+          eles.splice( j, 1 );
+          continue;
+        }
 
         ele._private.scratch.breadthfirst = {
           depth: i,
@@ -254,7 +259,7 @@ BreadthFirstLayout.prototype.run = function(){
       let intEle = info.intEle;
       let intInfo = intEle._private.scratch.breadthfirst;
 
-      depths[ info.depth ].splice( info.index, 1 ); // remove from old depth & index
+      depths[ info.depth ][ info.index ] = null; // remove from old depth & index (create hole to be cleaned)
 
       // add to end of new depth
       let newDepth = intInfo.depth + 1;

@@ -1,1 +1,1 @@
-The `breadthfirst` layout puts nodes in a hierarchy, based on a breadthfirst traversal of the graph.
+The `breadthfirst` layout puts nodes in a hierarchy, based on a breadthfirst traversal of the graph.  It is best suited to trees and forests in its default top-down mode, and it is best suited to DAGs in its circle mode.

@@ -99,7 +99,7 @@ cytoscape({
 
       // scratchpad data (usually temp or nonserialisable data)
       scratch: {
-        foo: 'bar'
+        _foo: 'bar' // app fields prefixed by underscore; extension fields unprefixed
       },
 
       position: { // the model position of the node (optional on init, mandatory after)

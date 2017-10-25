@@ -217,15 +217,15 @@ A background image may be applied to a node's body.  The following properties su
     * The images will be applied to the node's body in the order given, layering one on top of each other.
     * When specifying properties for multiple images, if the property for a given image is not provided, then the default value is used as fallback.
   * SVG image considerations
-    * Using the `viewbox` attribute in svg images may cause render problems in Firefox.
-    * SVG imagaes do not work consistently in Internet Explorer.
-    * Always include this xml hearder in each svg image:
+    * Using the `viewbox` attribute in SVG images may cause render problems in Firefox.
+    * SVG images do not work consistently in Internet Explorer.
+    * Always include this XML header in each SVG image:
     ```
     <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE svg>
     ```
-    * Use [encodeURIComponent](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/encodeURIComponent) to load svg data.
+    * Use [encodeURIComponent](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/encodeURIComponent) to load SVG data.
     ```
-    let data = 'data:image/svg+xml;utf8,' + encodeURIComponent(svgFile);
+    var data = 'data:image/svg+xml;utf8,' + encodeURIComponent(svgFile);
     ```
  * ** `background-image-crossorigin`**: All images are loaded with a [`crossorigin`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/img#attr-crossorigin) attribute which may be `anonymous` or `use-credentials`. The default is set to `anonymous`.
  * **`background-image-opacity`** : The opacity of the background image.

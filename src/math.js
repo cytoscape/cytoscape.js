@@ -753,7 +753,7 @@ math.intersectLineEllipse = function(
 };
 
 math.checkInEllipse = function(
-  x, y, padding, width, height, centerX, centerY ){
+  x, y, centerX, centerY, width, height, padding ){
   x -= centerX;
   y -= centerY;
 

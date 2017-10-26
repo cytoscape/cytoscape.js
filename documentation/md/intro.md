@@ -40,6 +40,7 @@
   * [BioGRID](http://thebiogrid.org/)
   * [Classcraft](https://www.classcraft.com/)
   * [Cray Inc.](http://www.cray.com)
+  * [CyberSift](https://cybersift.io)
   * [CyNetShare](http://cynetshare.ucsd.edu/)
   * [DARPA](http://www.darpa.mil)
   * [dSysMap](http://dsysmap.irbbarcelona.org)

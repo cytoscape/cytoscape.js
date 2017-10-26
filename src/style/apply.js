@@ -431,10 +431,10 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
     let fields = prop.field.split( '.' );
     let fieldVal = _p.data;
 
-    if( fieldVal ){ for( let i = 0; i < fields.length; i++ ){
+    for( let i = 0; i < fields.length && fieldVal; i++ ){
       let field = fields[ i ];
       fieldVal = fieldVal[ field ];
-    } }
+    }
 
     flatProp = this.parse( prop.name, fieldVal, prop.bypass, flatPropMapping );
 

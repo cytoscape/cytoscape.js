@@ -368,9 +368,15 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
       fieldVal = fieldVal[ field ];
     }
 
+    if( fieldVal == null ){
+      printMappingErr();
+      return;
+    }
+
     let percent;
-    if( !is.number( fieldVal ) ){ // then keep the mapping but assume 0% for now
-      percent = 0;
+    if( !is.number( fieldVal ) ){ // then don't apply and fall back on the existing style
+      util.error('Do not use continuous mappers without specifying numeric data (i.e. `' + prop.field + ': ' + fieldVal + '` for `' + ele.id() + '` is non-numeric)');
+      return false;
     } else {
       percent = (fieldVal - prop.fieldMin) / (prop.fieldMax - prop.fieldMin);
     }
@@ -414,11 +420,11 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
       return false; // can only map to colours and numbers
     }
 
-    if( !flatProp ){ // if we can't flatten the property, then use the origProp so we still keep the mapping itself
-      flatProp = this.parse( prop.name, origProp.strValue, prop.bypass, flatPropMapping );
+    if( !flatProp ){ // if we can't flatten the property, then don't apply the property and fall back on the existing style
+      printMappingErr();
+      return false;
     }
 
-    if( !flatProp ){ printMappingErr(); }
     flatProp.mapping = prop; // keep a reference to the mapping
     prop = flatProp; // the flattened (mapped) property is the one we want
 
@@ -438,13 +444,11 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
 
     flatProp = this.parse( prop.name, fieldVal, prop.bypass, flatPropMapping );
 
-    if( !flatProp ){ // if we can't flatten the property, then use the origProp so we still keep the mapping itself
-      let flatPropVal = origProp ? origProp.strValue : '';
-
-      flatProp = this.parse( prop.name, flatPropVal, prop.bypass, flatPropMapping );
+    if( !flatProp ){ // if we can't flatten the property, then don't apply and fall back on the existing style
+      printMappingErr();
+      return false;
     }
 
-    if( !flatProp ){ printMappingErr(); }
     flatProp.mapping = prop; // keep a reference to the mapping
     prop = flatProp; // the flattened (mapped) property is the one we want
 

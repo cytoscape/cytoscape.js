@@ -1186,7 +1186,7 @@ math.intersectLineEllipse = function (x, y, centerX, centerY, ellipseWradius, el
   return [(centerX - x) * lenProportion + x, (centerY - y) * lenProportion + y];
 };
 
-math.checkInEllipse = function (x, y, padding, width, height, centerX, centerY) {
+math.checkInEllipse = function (x, y, width, height, centerX, centerY, padding) {
   x -= centerX;
   y -= centerY;
 
@@ -4717,7 +4717,7 @@ module.exports = Stylesheet;
 "use strict";
 
 
-module.exports = "3.2.4";
+module.exports = "3.2.5";
 
 /***/ }),
 /* 23 */
@@ -13466,7 +13466,7 @@ var defaults = {
   stop: undefined, // callback on layoutstop
   transform: function transform(node, position) {
     return position;
-  } // transform a given node position. Useful for changing flow direction in discrete layouts 
+  } // transform a given node position. Useful for changing flow direction in discrete layouts
 };
 
 function BreadthFirstLayout(options) {
@@ -13650,6 +13650,12 @@ BreadthFirstLayout.prototype.run = function () {
       for (var j = 0; j < _eles.length; j++) {
         var _ele2 = _eles[j];
 
+        if (_ele2 == null) {
+          _eles.splice(j, 1);
+          j--;
+          continue;
+        }
+
         _ele2._private.scratch.breadthfirst = {
           depth: _i4,
           index: j
@@ -13708,7 +13714,7 @@ BreadthFirstLayout.prototype.run = function () {
       var _intEle = _info.intEle;
       var intInfo = _intEle._private.scratch.breadthfirst;
 
-      depths[_info.depth].splice(_info.index, 1); // remove from old depth & index
+      depths[_info.depth][_info.index] = null; // remove from old depth & index (create hole to be cleaned)
 
       // add to end of new depth
       var newDepth = intInfo.depth + 1;
@@ -19737,7 +19743,7 @@ BRp.load = function () {
         r.hoverData.last = near;
       }
 
-      if (down && r.nodeIsDraggable(down)) {
+      if (down) {
 
         if (isOverThresholdDrag) {
           // then we can take action
@@ -19751,8 +19757,8 @@ BRp.load = function () {
             }
 
             goIntoBoxMode();
-          } else {
-            // otherwise drag
+          } else if (down && down.grabbed() && r.nodeIsDraggable(down)) {
+            // drag node
             var justStartedDrag = !r.dragData.didDrag;
 
             if (justStartedDrag) {
@@ -21106,7 +21112,7 @@ BRp.generateEllipse = function () {
     },
 
     checkPoint: function checkPoint(x, y, padding, width, height, centerX, centerY) {
-      return math.checkInEllipse(x, y, padding, width, height, centerX, centerY);
+      return math.checkInEllipse(x, y, width, height, centerX, centerY, padding);
     }
   };
 };
@@ -21130,37 +21136,38 @@ BRp.generateRoundRectangle = function () {
     checkPoint: function checkPoint(x, y, padding, width, height, centerX, centerY) {
 
       var cornerRadius = math.getRoundRectangleRadius(width, height);
+      var diam = cornerRadius * 2;
 
       // Check hBox
-      if (math.pointInsidePolygon(x, y, this.points, centerX, centerY, width, height - 2 * cornerRadius, [0, -1], padding)) {
+      if (math.pointInsidePolygon(x, y, this.points, centerX, centerY, width, height - diam, [0, -1], padding)) {
         return true;
       }
 
       // Check vBox
-      if (math.pointInsidePolygon(x, y, this.points, centerX, centerY, width - 2 * cornerRadius, height, [0, -1], padding)) {
+      if (math.pointInsidePolygon(x, y, this.points, centerX, centerY, width - diam, height, [0, -1], padding)) {
         return true;
       }
 
       // Check top left quarter circle
-      if (math.checkInEllipse(x, y, centerX - width / 2 + cornerRadius, centerY - height / 2 + cornerRadius, cornerRadius * 2, cornerRadius * 2, padding)) {
+      if (math.checkInEllipse(x, y, diam, diam, centerX - width / 2 + cornerRadius, centerY - height / 2 + cornerRadius, padding)) {
 
         return true;
       }
 
       // Check top right quarter circle
-      if (math.checkInEllipse(x, y, centerX + width / 2 - cornerRadius, centerY - height / 2 + cornerRadius, cornerRadius * 2, cornerRadius * 2, padding)) {
+      if (math.checkInEllipse(x, y, diam, diam, centerX + width / 2 - cornerRadius, centerY - height / 2 + cornerRadius, padding)) {
 
         return true;
       }
 
       // Check bottom right quarter circle
-      if (math.checkInEllipse(x, y, centerX + width / 2 - cornerRadius, centerY + height / 2 - cornerRadius, cornerRadius * 2, cornerRadius * 2, padding)) {
+      if (math.checkInEllipse(x, y, diam, diam, centerX + width / 2 - cornerRadius, centerY + height / 2 - cornerRadius, padding)) {
 
         return true;
       }
 
       // Check bottom left quarter circle
-      if (math.checkInEllipse(x, y, centerX - width / 2 + cornerRadius, centerY + height / 2 - cornerRadius, cornerRadius * 2, cornerRadius * 2, padding)) {
+      if (math.checkInEllipse(x, y, diam, diam, centerX - width / 2 + cornerRadius, centerY + height / 2 - cornerRadius, padding)) {
 
         return true;
       }
@@ -21377,14 +21384,15 @@ BRp.generateBottomRoundrectangle = function () {
     checkPoint: function checkPoint(x, y, padding, width, height, centerX, centerY) {
 
       var cornerRadius = math.getRoundRectangleRadius(width, height);
+      var diam = 2 * cornerRadius;
 
       // Check hBox
-      if (math.pointInsidePolygon(x, y, this.points, centerX, centerY, width, height - 2 * cornerRadius, [0, -1], padding)) {
+      if (math.pointInsidePolygon(x, y, this.points, centerX, centerY, width, height - diam, [0, -1], padding)) {
         return true;
       }
 
       // Check vBox
-      if (math.pointInsidePolygon(x, y, this.points, centerX, centerY, width - 2 * cornerRadius, height, [0, -1], padding)) {
+      if (math.pointInsidePolygon(x, y, this.points, centerX, centerY, width - diam, height, [0, -1], padding)) {
         return true;
       }
 
@@ -21397,13 +21405,13 @@ BRp.generateBottomRoundrectangle = function () {
       }
 
       // Check bottom right quarter circle
-      if (math.checkInEllipse(x, y, centerX + width / 2 - cornerRadius, centerY + height / 2 - cornerRadius, cornerRadius * 2, cornerRadius * 2, padding)) {
+      if (math.checkInEllipse(x, y, diam, diam, centerX + width / 2 - cornerRadius, centerY + height / 2 - cornerRadius, padding)) {
 
         return true;
       }
 
       // Check bottom left quarter circle
-      if (math.checkInEllipse(x, y, centerX - width / 2 + cornerRadius, centerY + height / 2 - cornerRadius, cornerRadius * 2, cornerRadius * 2, padding)) {
+      if (math.checkInEllipse(x, y, diam, diam, centerX - width / 2 + cornerRadius, centerY + height / 2 - cornerRadius, padding)) {
 
         return true;
       }

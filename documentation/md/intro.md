@@ -29,6 +29,8 @@
  * Animatable graph elements and viewport
  * Fully extendable (and extensions can be autoscaffolded for you)
  * Well maintained, with only a sliver of active bug time (i.e. minimised time to bugfix)
+ * Listed by [Zenodo](https://doi.org/10.5281/zenodo.831800) for per-version DOIs
+ * Listed by [OMIC Tools](https://omictools.com/cytoscape-js-tool)
  * Used by
   * [Abasy Atlas](http://abasy.ccg.unam.mx/)
   * [Active Value Advisors](http://www.activevalue.eu/) : [How-4](http://www.how-4.com/)
@@ -72,7 +74,7 @@
   * [VentureApp](https://www.ventureapp.com/) : VentureMap (e.g. [Boston](https://www.ventureapp.com/map/boston-tech/), [New York](https://www.ventureapp.com/map/nyc-tech/), [Chicago](https://www.ventureapp.com/map/chicago-tech/))
   * [Virginia Tech](http://www.vt.edu/index.html) [T. M. Murali's Research Group](http://bioinformatics.cs.vt.edu/~murali/) : [GraphSpace](http://graphspace.org)
   * [Visual Interaction GmbH](http://www.mygaze.com/)
-  * [http://younivise.com/](Younivise) : Virtual Advisor
+  * [Younivise](http://younivise.com/) : Virtual Advisor
 
 
 

@@ -1,4 +1,5 @@
 import * as is from '../is';
+import * as regex from './regex.js';
 
   // get [r, g, b] from #abc or #aabbcc
 export function hex2tuple( hex ){
@@ -34,7 +35,7 @@ export function hsl2tuple( hsl ){
     return p;
   }
 
-  let m = new RegExp( '^' + this.regex.hsla + '$' ).exec( hsl );
+  let m = new RegExp( '^' + regex.hsla + '$' ).exec( hsl );
   if( m ){
 
     // get hue
@@ -83,7 +84,7 @@ export function hsl2tuple( hsl ){
 export function rgb2tuple( rgb ){
   let ret;
 
-  let m = new RegExp( '^' + this.regex.rgba + '$' ).exec( rgb );
+  let m = new RegExp( '^' + regex.rgba + '$' ).exec( rgb );
   if( m ){
     ret = [];
 
@@ -123,15 +124,15 @@ export function rgb2tuple( rgb ){
 }
 
 export function colorname2tuple( color ){
-  return this.colors[ color.toLowerCase() ];
+  return colors[ color.toLowerCase() ];
 }
 
 export function color2tuple( color ){
   return ( is.array( color ) ? color : null )
-    || this.colorname2tuple( color )
-    || this.hex2tuple( color )
-    || this.rgb2tuple( color )
-    || this.hsl2tuple( color );
+    || colorname2tuple( color )
+    || hex2tuple( color )
+    || rgb2tuple( color )
+    || hsl2tuple( color );
 }
 
 export var colors = {

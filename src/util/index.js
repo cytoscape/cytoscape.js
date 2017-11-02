@@ -3,11 +3,15 @@
 import * as is from '../is';
 import * as math from '../math';
 import * as strings from './strings';
+import * as regex from './regex';
+
+export {
+  regex
+};
 
 export * from './colors';
 export * from './maps';
 export { default as memoize } from './memoize';
-export * from './regex';
 export * from './strings';
 export * from './timing';
 export * from './sort';

@@ -22,7 +22,6 @@ var BABEL = boolEnv('BABEL', true);
 var SOURCEMAPS = boolEnv('SOURCEMAPS', false);
 var pkg = require('./package.json');
 var path = require('path');
-var webpack = require('webpack');
 
 module.exports = {
   input: './src/index.js',

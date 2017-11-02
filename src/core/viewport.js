@@ -1,6 +1,6 @@
-let is = require('../is');
-let window = require('../window');
-let math = require('../math');
+import * as is from '../is';
+import window from '../window';
+import * as math from '../math';
 
 let corefn = ({
 
@@ -570,4 +570,4 @@ corefn.centre = corefn.center;
 corefn.autolockNodes = corefn.autolock;
 corefn.autoungrabifyNodes = corefn.autoungrabify;
 
-module.exports = corefn;
+export default corefn;

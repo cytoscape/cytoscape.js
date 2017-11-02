@@ -108,4 +108,4 @@ Event.prototype = {
   isImmediatePropagationStopped: returnFalse
 };
 
-module.exports = Event;
+export default Event;

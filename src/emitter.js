@@ -1,6 +1,7 @@
-const util = require('./util');
-const is = require('./is');
-const Event = require('./event');
+import * as util from './util';
+import * as is from './is';
+import window from './window';
+import Event from './event';
 
 const eventRegex = /(\w+)(\.(?:\w+|\*))?/; // regex for matching event strings (e.g. "click.namespace")
 const universalNamespace = '.*'; // matches as if no namespace specified and prevents users from unbinding accidentally
@@ -28,7 +29,7 @@ const defaults = {
   parent: function( /*context*/ ){
     return null;
   },
-  context: this
+  context: window
 };
 
 function Emitter( opts ){
@@ -223,4 +224,4 @@ p.emit = p.trigger = function( events, extraParams, manualCallback ){
   return this;
 };
 
-module.exports = Emitter;
+export default Emitter;

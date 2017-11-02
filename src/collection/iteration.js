@@ -1,6 +1,6 @@
-let is = require( '../is' );
-let zIndexSort = require( './zsort' );
-let util = require('../util');
+import * as is from '../is';
+import zIndexSort from './zsort';
+import * as util from '../util';
 
 let elesfn = ({
   forEach: function( fn, thisArg ){
@@ -121,4 +121,4 @@ let elesfn = ({
 
 elesfn.each = elesfn.forEach;
 
-module.exports = elesfn;
+export default elesfn;

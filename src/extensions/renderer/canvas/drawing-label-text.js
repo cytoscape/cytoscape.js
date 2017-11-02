@@ -1,5 +1,5 @@
-var util = require( '../../../util' );
-var math = require( '../../../math' );
+import * as util from '../../../util';
+import * as math from '../../../math';
 
 var CRp = {};
 
@@ -348,4 +348,4 @@ CRp.drawText = function( context, ele, prefix ){
   }
 };
 
-module.exports = CRp;
+export default CRp;

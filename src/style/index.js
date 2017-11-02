@@ -1,6 +1,15 @@
-let is = require( '../is' );
-let util = require( '../util' );
-let Selector = require( '../selector' );
+import * as is from '../is';
+import * as util from '../util';
+import Selector from '../selector';
+import applyFn from './apply';
+import bypassFn from './bypass';
+import containerFn from './container';
+import getForEleFn from './get-for-ele';
+import jsonFn from './json';
+import stringSheetFn from './string-sheet';
+import propertiesFn from './properties';
+import parseFn from './parse';
+
 
 let Style = function( cy ){
 
@@ -162,14 +171,14 @@ Style.fromString = function( cy, string ){
 };
 
 [
-  require( './apply' ),
-  require( './bypass' ),
-  require( './container' ),
-  require( './get-for-ele' ),
-  require( './json' ),
-  require( './string-sheet' ),
-  require( './properties' ),
-  require( './parse' )
+  applyFn,
+  bypassFn,
+  containerFn,
+  getForEleFn,
+  jsonFn,
+  stringSheetFn,
+  propertiesFn,
+  parseFn
 ].forEach( function( props ){
   util.extend( styfn, props );
 } );
@@ -178,4 +187,4 @@ Style.fromString = function( cy, string ){
 Style.types = styfn.types;
 Style.properties = styfn.properties;
 
-module.exports = Style;
+export default Style;

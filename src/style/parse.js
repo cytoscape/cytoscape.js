@@ -1,6 +1,6 @@
-let util = require( '../util' );
-let is = require( '../is' );
-let math = require( '../math' );
+import * as util from '../util';
+import * as is from '../is';
+import * as math from '../math';
 
 let styfn = {};
 
@@ -420,4 +420,4 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
 
 };
 
-module.exports = styfn;
+export default styfn;

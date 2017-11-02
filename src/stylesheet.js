@@ -1,6 +1,6 @@
-let is = require( './is' );
-let util = require( './util' );
-let Style = require( './style' );
+import * as is from './is';
+import * as util from './util';
+import Style from './style' ;
 
 // a dummy stylesheet object that doesn't need a reference to the core
 // (useful for init)
@@ -93,4 +93,4 @@ sheetfn.appendToStyle = function( style ){
   return style;
 };
 
-module.exports = Stylesheet;
+export default Stylesheet;

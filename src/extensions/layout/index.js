@@ -1,10 +1,19 @@
-module.exports = [
-  { name: 'breadthfirst', impl: require( './breadthfirst' ) },
-  { name: 'circle', impl: require( './circle' ) },
-  { name: 'concentric',impl: require( './concentric' ) },
-  { name: 'cose', impl: require( './cose' ) },
-  { name: 'grid', impl: require( './grid' ) },
-  { name: 'null', impl: require( './null' ) },
-  { name: 'preset', impl: require( './preset' ) },
-  { name: 'random', impl: require( './random' ) }
+import breadthfirstLayout from './breadthfirst';
+import circleLayout from './circle';
+import concentricLayout from './concentric';
+import coseLayout from './cose';
+import gridLayout from './grid';
+import nullLayout from './null';
+import presetLayout from './preset';
+import randomLayout from './random';
+
+export default [
+  { name: 'breadthfirst', impl: breadthfirstLayout },
+  { name: 'circle', impl: circleLayout },
+  { name: 'concentric',impl: concentricLayout },
+  { name: 'cose', impl: coseLayout },
+  { name: 'grid', impl: gridLayout },
+  { name: 'null', impl: nullLayout },
+  { name: 'preset', impl: presetLayout },
+  { name: 'random', impl: randomLayout }
 ];

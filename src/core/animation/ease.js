@@ -1,4 +1,4 @@
-let is = require('../../is');
+import * as is from '../../is';
 
 function getEasedValue( type, start, end, percent, easingFn ){
   if( percent === 1 ){
@@ -74,4 +74,4 @@ function ease( startProp, endProp, percent, easingFn, propSpec ){
   return undefined;
 }
 
-module.exports = ease;
+export default ease;

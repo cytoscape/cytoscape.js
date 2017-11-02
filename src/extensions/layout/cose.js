@@ -8,10 +8,10 @@ http://dl.acm.org/citation.cfm?id=1498047
 Modifications tracked on Github.
 */
 
-var util = require( '../../util' );
-var math = require( '../../math' );
-var is = require( '../../is' );
-var Promise = require('../../promise');
+import * as util from '../../util';
+import * as math from '../../math';
+import * as is from '../../is';
+import Promise from '../../promise';
 
 var DEBUG;
 
@@ -1408,4 +1408,4 @@ var refreshPositions = function( layoutInfo, cy, options ){
 //   }
 // };
 
-module.exports = CoseLayout;
+export default CoseLayout;

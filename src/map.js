@@ -22,4 +22,4 @@ p.get = function( key ){
 
 // TODO use the stdlib Map in future...
 // module.exports = typeof Map !== 'undefined' ? Map : ObjectMap;
-module.exports = ObjectMap;
+export default ObjectMap;

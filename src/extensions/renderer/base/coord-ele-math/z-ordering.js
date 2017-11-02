@@ -1,4 +1,4 @@
-var zIndexSort = require( '../../../../collection/zsort' );
+import zIndexSort from '../../../../collection/zsort';
 
 var BRp = {};
 
@@ -62,4 +62,4 @@ BRp.getCachedZSortedEles = function( forceRecalc ){
   return eles;
 };
 
-module.exports = BRp
+export default BRp;

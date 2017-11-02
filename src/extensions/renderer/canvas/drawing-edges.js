@@ -290,4 +290,4 @@ CRp.drawArrowShape = function( edge, arrowType, context, fill, edgeWidth, shape,
   }
 };
 
-module.exports = CRp;
+export default CRp;

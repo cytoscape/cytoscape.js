@@ -4,16 +4,6 @@
 // e.g.
 // let foo = define.foo({ /* params... */ })
 
-let util = require('../util');
-
-let define = {};
-
-[
-  require('./animation'),
-  require('./data'),
-  require('./events')
-].forEach(function( m ){
-  util.assign( define, m );
-});
-
-module.exports = define;
+export * from './animation';
+export * from './data';
+export * from './events';

@@ -1,9 +1,19 @@
-let window = require( '../window' );
-let util = require( '../util' );
-let Collection = require( '../collection' );
-let is = require( '../is' );
-let Promise = require( '../promise' );
-let define = require( '../define' );
+import window from '../window';
+import * as util from '../util';
+import Collection from '../collection';
+import * as is from '../is';
+import Promise from '../promise';
+import * as define from '../define';
+import addRemoveFn from './add-remove';
+import animationFn from './animation';
+import eventsFn from './events';
+import exportFn from './export';
+import layoutFn from './layout';
+import notificationFn from './notification';
+import rendererFn from './renderer';
+import searchFn from './search';
+import styleFn from './style';
+import viewportFn from './viewport';
 
 let Core = function( opts ){
   let cy = this;
@@ -429,18 +439,18 @@ util.extend( corefn, {
 corefn.$id = corefn.getElementById;
 
 [
-  require( './add-remove' ),
-  require( './animation' ),
-  require( './events' ),
-  require( './export' ),
-  require( './layout' ),
-  require( './notification' ),
-  require( './renderer' ),
-  require( './search' ),
-  require( './style' ),
-  require( './viewport' )
+  addRemoveFn,
+  animationFn,
+  eventsFn,
+  exportFn,
+  layoutFn,
+  notificationFn,
+  rendererFn,
+  searchFn,
+  styleFn,
+  viewportFn
 ].forEach( function( props ){
   util.extend( corefn, props );
 } );
 
-module.exports = Core;
+export default Core;

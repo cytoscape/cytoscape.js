@@ -1,6 +1,6 @@
-let util = require('../util');
-let is = require('../is');
-let Promise = require('../promise');
+import * as util from '../util';
+import * as is from '../is';
+import Promise from '../promise';
 
 let styfn = {};
 
@@ -668,4 +668,4 @@ styfn.checkZOrderTrigger = function( ele, name, fromValue, toValue ){
   }
 };
 
-module.exports = styfn;
+export default styfn;

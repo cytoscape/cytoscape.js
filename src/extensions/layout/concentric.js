@@ -1,5 +1,5 @@
-let util = require( '../../util' );
-let math = require( '../../math' );
+import * as util from '../../util';
+import * as math from '../../math';
 
 let defaults = {
   fit: true, // whether to fit the viewport to the graph
@@ -197,4 +197,4 @@ ConcentricLayout.prototype.run = function(){
   return this; // chaining
 };
 
-module.exports = ConcentricLayout;
+export default ConcentricLayout;

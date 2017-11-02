@@ -1,5 +1,5 @@
-let is = require( '../is' );
-let util = require( '../util' );
+import * as is from '../is';
+import * as util from '../util';
 
 let styfn = {};
 
@@ -171,4 +171,4 @@ styfn.removeBypasses = function( eles, props, updateTransitions ){
   } // for eles
 };
 
-module.exports = styfn;
+export default styfn;

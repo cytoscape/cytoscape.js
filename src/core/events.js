@@ -1,8 +1,8 @@
-let Emitter = require('../emitter');
-let define = require('../define');
-let is = require('../is');
-let util = require('../util');
-let Selector = require('../selector');
+import Emitter from '../emitter';
+import * as define from '../define';
+import * as is from '../is';
+import * as util from '../util';
+import Selector from '../selector';
 
 let emitterOptions = {
   qualifierCompare: function( selector1, selector2 ){
@@ -90,4 +90,4 @@ let elesfn = ({
 
 define.eventAliasesOn( elesfn );
 
-module.exports = elesfn;
+export default elesfn;

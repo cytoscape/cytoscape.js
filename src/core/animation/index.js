@@ -1,6 +1,6 @@
-let define = require('../../define');
-let util = require('../../util');
-let stepAll = require('./step-all');
+import * as define from '../../define';
+import * as util from '../../util';
+import stepAll from './step-all';
 
 let corefn = ({
 
@@ -57,4 +57,4 @@ let corefn = ({
 
 });
 
-module.exports = corefn;
+export default corefn;

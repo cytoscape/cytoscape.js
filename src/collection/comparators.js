@@ -1,5 +1,5 @@
-let is = require('../is');
-let Selector = require('../selector');
+import * as is from '../is';
+import Selector from '../selector';
 
 let elesfn = ({
   allAre: function( selector ){
@@ -87,4 +87,4 @@ let elesfn = ({
 elesfn.allAreNeighbours = elesfn.allAreNeighbors;
 elesfn.has = elesfn.contains;
 
-module.exports = elesfn;
+export default elesfn;

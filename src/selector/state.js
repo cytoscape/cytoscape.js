@@ -1,6 +1,6 @@
-const util = require('../util');
+import * as util from '../util';
 
-let stateSelectors = [
+export let stateSelectors = [
   {
     selector: ':selected',
     matches: function( ele ){ return ele.selected(); }
@@ -117,7 +117,7 @@ let stateSelectors = [
   return util.sort.descending( a.selector, b.selector );
 });
 
-let stateSelectorMatches = function( sel, ele ){
+export let stateSelectorMatches = function( sel, ele ){
   let lookup = stateSelectorMatches.lookup = stateSelectorMatches.lookup || (function(){
     let selToFn = {};
     let s;
@@ -134,6 +134,4 @@ let stateSelectorMatches = function( sel, ele ){
   return lookup[ sel ]( ele );
 };
 
-let stateSelectorRegex = '(' + stateSelectors.map(function( s ){ return s.selector; }).join('|') + ')';
-
-module.exports = { stateSelectors, stateSelectorMatches, stateSelectorRegex };
+export let stateSelectorRegex = '(' + stateSelectors.map(function( s ){ return s.selector; }).join('|') + ')';

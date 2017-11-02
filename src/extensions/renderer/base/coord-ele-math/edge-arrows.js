@@ -1,4 +1,4 @@
-var math = require( '../../../../math' );
+import * as math from '../../../../math';
 
 var BRp = {};
 
@@ -176,4 +176,4 @@ BRp.getArrowWidth = BRp.getArrowHeight = function( edgeWidth, scale ){
   return cachedVal;
 };
 
-module.exports = BRp;
+export default BRp;

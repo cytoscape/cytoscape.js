@@ -1,5 +1,5 @@
-var is = require( '../../is' );
-var util = require( '../../util' );
+import * as is from '../../is';
+import * as util from '../../util';
 
 var elesfn = ({
 
@@ -191,4 +191,4 @@ var elesfn = ({
 elesfn.dc = elesfn.degreeCentrality;
 elesfn.dcn = elesfn.degreeCentralityNormalised = elesfn.degreeCentralityNormalized;
 
-module.exports = elesfn;
+export default elesfn;

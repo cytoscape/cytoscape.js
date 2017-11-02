@@ -33,4 +33,4 @@ BRp.getCachedImage = function( url, crossOrigin, onLoad ){
   }
 };
 
-module.exports = BRp;
+export default BRp;

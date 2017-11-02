@@ -1,4 +1,4 @@
-let util = require( '../util' );
+import * as util from '../util';
 
 let corefn = ({
 
@@ -76,4 +76,4 @@ let corefn = ({
 
 corefn.invalidateDimensions = corefn.resize;
 
-module.exports = corefn;
+export default corefn;

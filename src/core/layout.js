@@ -1,5 +1,5 @@
-let util = require( '../util' );
-let is = require( '../is' );
+import * as util from '../util';
+import * as is from '../is';
 
 let corefn = ({
 
@@ -43,4 +43,4 @@ let corefn = ({
 
 corefn.createLayout = corefn.makeLayout = corefn.layout;
 
-module.exports = corefn;
+export default corefn;

@@ -4,10 +4,20 @@ The canvas renderer was written by Yue Dong.
 Modifications tracked on Github.
 */
 
-var util = require( '../../../util' );
-var is = require( '../../../is' );
-var ElementTextureCache = require('./ele-texture-cache');
-var LayeredTextureCache = require('./layered-texture-cache');
+import * as util from '../../../util';
+import * as is from '../../../is';
+import ElementTextureCache from './ele-texture-cache';
+import LayeredTextureCache from './layered-texture-cache';
+import arrowShapes from './arrow-shapes';
+import drawingElements from './drawing-elements';
+import drawingEdges from './drawing-edges';
+import drawingImages from './drawing-images';
+import drawingLabelText from './drawing-label-text';
+import drawingNodes from './drawing-nodes';
+import drawingRedraw from './drawing-redraw';
+import drawingShapes from './drawing-shapes';
+import exportImage from './export-image';
+import nodeShapes from './node-shapes';
 
 var CR = CanvasRenderer;
 var CRp = CanvasRenderer.prototype;
@@ -135,18 +145,18 @@ CRp.usePaths = function(){
 };
 
 [
-  require( './arrow-shapes' ),
-  require( './drawing-elements' ),
-  require( './drawing-edges' ),
-  require( './drawing-images' ),
-  require( './drawing-label-text' ),
-  require( './drawing-nodes' ),
-  require( './drawing-redraw' ),
-  require( './drawing-shapes' ),
-  require( './export-image' ),
-  require( './node-shapes' )
+  arrowShapes,
+  drawingElements,
+  drawingEdges,
+  drawingImages,
+  drawingLabelText,
+  drawingNodes,
+  drawingRedraw,
+  drawingShapes,
+  exportImage,
+  nodeShapes
 ].forEach( function( props ){
   util.extend( CRp, props );
 } );
 
-module.exports = CR;
+export default CR;

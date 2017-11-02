@@ -1,5 +1,5 @@
-var is = require( '../../is' );
-var Heap = require( '../../heap' );
+import * as is from '../../is';
+import Heap from '../../heap';
 
 var elesfn = ({
 
@@ -187,4 +187,4 @@ var elesfn = ({
 // nice, short mathemathical alias
 elesfn.bc = elesfn.betweennessCentrality;
 
-module.exports = elesfn;
+export default elesfn;

@@ -1,7 +1,6 @@
-var window = require( '../window' );
-var performance = window ? window.performance : null;
+import window from '../window';
 
-var util = {};
+var performance = window ? window.performance : null;
 
 var pnow = performance && performance.now ? function(){ return performance.now(); } : function(){ return Date.now(); };
 
@@ -27,16 +26,14 @@ var raf = (function(){
   }
 })();
 
-util.requestAnimationFrame = function( fn ){
+export function requestAnimationFrame( fn ){
   raf( fn );
-};
+}
 
-util.performanceNow = pnow;
+export var performanceNow = pnow;
 
-util.debounce = require('lodash.debounce');
+export { default as debounce } from 'lodash.debounce';
 
-util.now = function(){
+export function now(){
   return Date.now();
-};
-
-module.exports = util;
+}

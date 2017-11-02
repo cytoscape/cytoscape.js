@@ -1,34 +1,28 @@
-let Promise = require( '../promise' );
+import Promise from '../promise';
 
-let define = {
+export function eventAliasesOn( proto ){
+  let p = proto;
 
-  eventAliasesOn: function( proto ){
-    let p = proto;
+  p.addListener = p.listen = p.bind = p.on;
+  p.unlisten = p.unbind = p.off = p.removeListener;
+  p.trigger = p.emit;
 
-    p.addListener = p.listen = p.bind = p.on;
-    p.unlisten = p.unbind = p.off = p.removeListener;
-    p.trigger = p.emit;
+  // this is just a wrapper alias of .on()
+  p.pon = p.promiseOn = function( events, selector ){
+    let self = this;
+    let args = Array.prototype.slice.call( arguments, 0 );
 
-    // this is just a wrapper alias of .on()
-    p.pon = p.promiseOn = function( events, selector ){
-      let self = this;
-      let args = Array.prototype.slice.call( arguments, 0 );
+    return new Promise( function( resolve, reject ){
+      let callback = function( e ){
+        self.off.apply( self, offArgs );
 
-      return new Promise( function( resolve, reject ){
-        let callback = function( e ){
-          self.off.apply( self, offArgs );
+        resolve( e );
+      };
 
-          resolve( e );
-        };
+      let onArgs = args.concat( [ callback ] );
+      let offArgs = onArgs.concat( [] );
 
-        let onArgs = args.concat( [ callback ] );
-        let offArgs = onArgs.concat( [] );
-
-        self.on.apply( self, onArgs );
-      } );
-    };
-  },
-
-}; // define
-
-module.exports = define;
+      self.on.apply( self, onArgs );
+    } );
+  };
+}

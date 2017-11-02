@@ -1,6 +1,6 @@
-let is = require('../../is');
-let util = require('../../util');
-let math = require('../../math');
+import * as is from '../../is';
+import * as util from '../../util';
+import * as math from '../../math';
 let fn, elesfn;
 
 fn = elesfn = {};
@@ -763,4 +763,4 @@ elesfn.boundingBoxAt = function( fn ){
 fn.boundingbox = fn.boundingBox;
 fn.renderedBoundingbox = fn.renderedBoundingBox;
 
-module.exports = elesfn;
+export default elesfn;

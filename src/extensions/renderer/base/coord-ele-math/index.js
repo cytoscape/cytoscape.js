@@ -1,19 +1,28 @@
-var util = require('../../../../util');
+import * as util from '../../../../util';
+import coords from './coords';
+import edgeArrows from './edge-arrows';
+import edgeControlPoints from './edge-control-points';
+import edgeEndpoints from './edge-endpoints';
+import edgeProjection from './edge-projection';
+import labels from './labels';
+import nodes from './nodes';
+import renderedStyle from './rendered-style';
+import zOrdering from './z-ordering';
 
 var BRp = {};
 
 [
-  require('./coords'),
-  require('./edge-arrows'),
-  require('./edge-control-points'),
-  require('./edge-endpoints'),
-  require('./edge-projection'),
-  require('./labels'),
-  require('./nodes'),
-  require('./rendered-style'),
-  require('./z-ordering')
+  coords,
+  edgeArrows,
+  edgeControlPoints,
+  edgeEndpoints,
+  edgeProjection,
+  labels,
+  nodes,
+  renderedStyle,
+  zOrdering
 ].forEach(function( props ){
   util.extend( BRp, props );
 });
 
-module.exports = BRp;
+export default BRp;

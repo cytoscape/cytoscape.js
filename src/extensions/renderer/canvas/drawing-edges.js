@@ -27,10 +27,11 @@ CRp.drawEdge = function( context, edge, shiftToOriginWithBb, drawLabel ){
   let opacity = edge.pstyle('opacity').value;
   let lineStyle = edge.pstyle('line-style').value;
   let edgeWidth = edge.pstyle('width').pfValue;
+  let edgeCap = edge.pstyle('edge-cap').value;
 
   let drawLine = ( strokeOpacity = opacity ) => {
     context.lineWidth = edgeWidth;
-    context.lineCap = 'butt';
+    context.lineCap = edgeCap;
 
     r.strokeStyle( context, lineColor[0], lineColor[1], lineColor[2], strokeOpacity );
 

@@ -41,6 +41,8 @@ CRp.drawEdge = function( context, edge, shiftToOriginWithBb, drawLabel ){
       rs.allpts,
       lineStyle
     );
+
+    context.lineCap = 'butt'; // reset for other drawing functions
   };
 
   let drawOverlay = ( strokeOpacity = overlayOpacity ) => {

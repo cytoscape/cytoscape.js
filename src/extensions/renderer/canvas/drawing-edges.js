@@ -27,10 +27,11 @@ CRp.drawEdge = function( context, edge, shiftToOriginWithBb, drawLabel ){
   let opacity = edge.pstyle('opacity').value;
   let lineStyle = edge.pstyle('line-style').value;
   let edgeWidth = edge.pstyle('width').pfValue;
+  let lineCap = edge.pstyle('line-cap').value;
 
   let drawLine = ( strokeOpacity = opacity ) => {
     context.lineWidth = edgeWidth;
-    context.lineCap = 'butt';
+    context.lineCap = lineCap;
 
     r.strokeStyle( context, lineColor[0], lineColor[1], lineColor[2], strokeOpacity );
 
@@ -40,6 +41,8 @@ CRp.drawEdge = function( context, edge, shiftToOriginWithBb, drawLabel ){
       rs.allpts,
       lineStyle
     );
+
+    context.lineCap = 'butt'; // reset for other drawing functions
   };
 
   let drawOverlay = ( strokeOpacity = overlayOpacity ) => {

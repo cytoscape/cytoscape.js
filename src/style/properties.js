@@ -48,6 +48,7 @@ let styfn = {};
     color: { color: true },
     bool: { enums: [ 'yes', 'no' ] },
     lineStyle: { enums: [ 'solid', 'dotted', 'dashed' ] },
+    lineCap: { enums: [ 'butt', 'round', 'square' ] },
     borderStyle: { enums: [ 'solid', 'dotted', 'dashed', 'double' ] },
     curveStyle: { enums: [ 'bezier', 'unbundled-bezier', 'haystack', 'segments', 'straight' ] },
     fontFamily: { regex: '^([\\w- \\"]+(?:\\s*,\\s*[\\w- \\"]+)*)$' },
@@ -250,6 +251,7 @@ let styfn = {};
     // edge line
     { name: 'line-style', type: t.lineStyle },
     { name: 'line-color', type: t.color },
+    { name: 'line-cap', type: t.lineCap },
     { name: 'curve-style', type: t.curveStyle },
     { name: 'haystack-radius', type: t.zeroOneNumber },
     { name: 'source-endpoint', type: t.edgeEndpoint },
@@ -471,6 +473,7 @@ styfn.getDefaultProperties = util.memoize( function(){
     // edge props
     'line-style': 'solid',
     'line-color': '#999',
+    'line-cap': 'butt',
     'control-point-step-size': 40,
     'control-point-weights': 0.5,
     'segment-weights': 0.5,

@@ -926,8 +926,10 @@ and (orientation:landscape) {
 	z-index: 9999;
 	opacity: 0;
 	pointer-events: none;
-	transition-property: opacity;
-	transition-duration: 250ms;
+
+	/* causes flicker on initial load on chrome */
+	/*transition-property: opacity;
+	transition-duration: 250ms;*/
 }
 
 .navigation-open #open-navigation-bg,

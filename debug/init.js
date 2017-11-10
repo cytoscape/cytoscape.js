@@ -1,5 +1,5 @@
+/* eslint-disable no-console, no-unused-vars */
 /* global $, cytoscape, options, cy */
-/* eslint-disable no-console */
 
 var cy, defaultSty, options;
 

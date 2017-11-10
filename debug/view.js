@@ -123,4 +123,12 @@
 	$("#hide-bb").addEventListener('click', function(){
 		$('#bb').style.display = 'none';
 	});
+
+	$('#mount').addEventListener('click', function(){
+		cy.mount( $('#cytoscape') );
+	});
+
+	$('#unmount').addEventListener('click', function(){
+		cy.unmount();
+	});
 })();

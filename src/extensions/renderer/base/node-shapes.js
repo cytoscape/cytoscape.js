@@ -60,10 +60,10 @@ BRp.generateEllipse = function(){
 };
 
 BRp.generateRoundRectangle = function(){
-  return ( this.nodeShapes['roundrectangle'] = {
+  return ( this.nodeShapes['round-rectangle'] = this.nodeShapes['roundrectangle'] = {
     renderer: this,
 
-    name: 'roundrectangle',
+    name: 'round-rectangle',
 
     points: math.generateUnitNgonPointsFitToSquare( 4, 0 ),
 
@@ -145,10 +145,10 @@ BRp.generateRoundRectangle = function(){
 };
 
 BRp.generateCutRectangle = function(){
-  return ( this.nodeShapes['cutrectangle'] = {
+  return ( this.nodeShapes['cut-rectangle'] = this.nodeShapes['cutrectangle'] = {
     renderer: this,
 
-    name: 'cutrectangle',
+    name: 'cut-rectangle',
 
     cornerLength: math.getCutRectangleCornerLength(),
 
@@ -332,10 +332,10 @@ BRp.generateBarrel = function(){
 };
 
 BRp.generateBottomRoundrectangle = function(){
-  return ( this.nodeShapes['bottomroundrectangle'] = {
+  return ( this.nodeShapes['bottom-round-rectangle'] = this.nodeShapes['bottomroundrectangle'] = {
     renderer: this,
 
-    name: 'bottomroundrectangle',
+    name: 'bottom-round-rectangle',
 
     points: math.generateUnitNgonPointsFitToSquare( 4, 0 ),
 
@@ -496,7 +496,7 @@ BRp.registerNodeShapes = function(){
     -0.333, 1
   ] );
 
-  this.generatePolygon( 'concavehexagon', [
+  this.nodeShapes['concavehexagon'] = this.generatePolygon( 'concave-hexagon', [
     -1, -0.95,
     -0.75, 0,
     -1, 0.95,

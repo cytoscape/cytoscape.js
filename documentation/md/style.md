@@ -161,15 +161,15 @@ Shape:
     * `ellipse`
     * `triangle`
     * `rectangle`
-    * `roundrectangle`
-    * `bottomroundrectangle`
-    * `cutrectangle`
+    * `round-rectangle`
+    * `bottom-round-rectangle`
+    * `cut-rectangle`
     * `barrel`
     * `rhomboid`
     * `diamond`
     * `pentagon`
     * `hexagon`
-    * `concavehexagon`
+    * `concave-hexagon`
     * `heptagon`
     * `octagon`
     * `star`

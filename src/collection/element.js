@@ -64,7 +64,8 @@ let Element = function( cy, params, restore ){
     edges: [], // array of connected edges
     children: [], // array of children
     parent: null, // parent ref
-    traversalCache: {} // cache of output of traversal functions
+    traversalCache: {}, // cache of output of traversal functions
+    backgrounding: false // whether background images are loading
   };
 
   // renderedPosition overrides if specified

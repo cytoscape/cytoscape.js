@@ -45,15 +45,17 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
 
   let bgImgProp = node.pstyle( 'background-image' );
   let urls = bgImgProp.value;
-  let url;
-  let urlDefined = [];
-  let image = [];
-  let numImages = urls.length;
-  for( let i = 0; i < numImages; i++ ){
-    url = urls[i];
-    urlDefined[i] = url != null && url !== 'none';
-    if( urlDefined[i] ){
+  let urlDefined = new Array( urls.length );
+  let image = new Array( urls.length );
+  let numImages = 0;
+  for( let i = 0; i < urls.length; i++ ){
+    let url = urls[i];
+    let defd = urlDefined[i] = url != null && url !== 'none';
+
+    if( defd ){
       let bgImgCrossOrigin = node.cy().style().getIndexedStyle(node, 'background-image-crossorigin', 'value', i);
+
+      numImages++;
 
       // get image, and if not loaded then ask to redraw when later loaded
       image[i] = r.getCachedImage( url, bgImgCrossOrigin, function(){
@@ -153,7 +155,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
     let prevBging = _p.backgrounding;
     let totalCompleted = 0;
 
-    for( let i = 0; i < numImages; i++ ){
+    for( let i = 0; i < image.length; i++ ){
       if( urlDefined[i] && image[i].complete && !image[i].error ){
         totalCompleted++;
         r.drawInscribedImage( context, image[i], node, i, nodeOpacity );

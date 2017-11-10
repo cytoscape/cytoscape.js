@@ -1674,29 +1674,79 @@
           "fns": [
             {
               "name": "edge.controlPoints",
-              "descr": "Get an array of control point model positions for a `curve-style: bezier` or `curve-style: unbundled-bezier` edge.",
+              "descr": "Get an array of control point positions for a `curve-style: bezier` or `curve-style: unbundled-bezier` edge.",
+              "formats": [
+                {
+                  "name": "edge.controlPoints",
+                  "descr": "Get the control points in [model coordinates](#notation/position)."
+                },
+                {
+                  "name": "edge.renderedControlPoints",
+                  "descr": "Get the control points in [rendered coordinates](#notation/position)."
+                }
+              ],
               "md": "collection/controlPoints"
             },
 
             {
               "name": "edge.segmentPoints",
-              "descr": "Get an array of segment point model positions (i.e. bend points) for a `curve-style: segments` edge.",
+              "descr": "Get an array of segment point positions (i.e. bend points) for a `curve-style: segments` edge.",
+              "formats": [
+                {
+                  "name": "edge.segmentPoints",
+                  "descr": "Get the segment points in [model coordinates](#notation/position)."
+                },
+                {
+                  "name": "edge.renderedSegmentPoints",
+                  "descr": "Get the segment points in [rendered coordinates](#notation/position)."
+                }
+              ],
               "md": "collection/segmentPoints"
             },
 
             {
               "name": "edge.sourceEndpoint",
-              "descr": "Get the model position of where the edge ends, towards the source node."
+              "descr": "Get the model position of where the edge ends, towards the source node.",
+              "formats": [
+                {
+                  "name": "edge.sourceEndpoint",
+                  "descr": "Get the source endpoint in [model coordinates](#notation/position)."
+                },
+                {
+                  "name": "edge.renderedSourceEndpoint",
+                  "descr": "Get the target endpoint in [rendered coordinates](#notation/position)."
+                }
+              ]
             },
 
             {
               "name": "edge.targetEndpoint",
-              "descr": "Get the model position of where the edge ends, towards the target node."
+              "descr": "Get the position of where the edge ends, towards the target node.",
+              "formats": [
+                {
+                  "name": "edge.targetEndpoint",
+                  "descr": "Get the target endpoint in [model coordinates](#notation/position)."
+                },
+                {
+                  "name": "edge.renderedTargetEndpoint",
+                  "descr": "Get the target endpoint in [rendered coordinates](#notation/position)."
+                }
+              ]
             },
 
             {
               "name": "edge.midpoint",
-              "descr": "Get the model position of the midpoint of the edge.",
+              "descr": "Get the position of the midpoint of the edge.",
+              "formats": [
+                {
+                  "name": "edge.midpoint",
+                  "descr": "Get the midpoint in [model coordinates](#notation/position)."
+                },
+                {
+                  "name": "edge.renderedMidpoint",
+                  "descr": "Get the midpoint in [rendered coordinates](#notation/position)."
+                }
+              ],
               "md": "collection/midpoint.md"
             }
           ]

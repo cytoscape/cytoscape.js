@@ -40,40 +40,33 @@ describe('Core initialisation', function(){
     });
   });
 
-  it('does not create an edge with bad source and target', function(done){
-    cytoscape({
-      headless: true,
+  it('does not create an edge with bad source and target', function(){
+    var init = function(){
+      cytoscape({
+        headless: true,
 
-      elements: {
-        edges: [ { data: { source: "n1", target: "n2" } } ]
-      },
-      ready: function(){
-        var cy = this;
+        elements: {
+          edges: [ { data: { source: "n1", target: "n2" } } ]
+        }
+      });
+    };
 
-        expect( cy.elements().length ).to.equal(0);
-
-        done();
-      }
-    });
+    expect(init).to.throw();
   });
 
-  it('does not create an edge with bad target', function(done){
-    cytoscape({
-      headless: true,
+  it('does not create an edge with bad target', function(){
+    var init = function(){
+      cytoscape({
+        headless: true,
 
-      elements: {
-        nodes: [ { data: { id: "n1" } } ],
-        edges: [ { data: { source: "n1", target: "n2" } } ]
-      },
-      ready: function(){
-        var cy = this;
+        elements: {
+          nodes: [ { data: { id: "n1" } } ],
+          edges: [ { data: { source: "n1", target: "n2" } } ]
+        }
+      });
+    };
 
-        expect( cy.edges().size() ).to.equal( 0 );
-        expect( cy.nodes().size() ).to.equal( 1 );
-
-        done();
-      }
-    });
+    expect(init).to.throw();
   });
 
   it('creates an edge that specifies good source and target', function(done){

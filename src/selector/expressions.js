@@ -214,7 +214,7 @@ let exprs = [
     regex: tokens.subject,
     populate: function( selector, query ){
       if( selector.currentSubject != null && query.subject != query ){
-        util.error( 'Redefinition of subject in selector `' + selector.toString() + '`' );
+        util.warn( 'Redefinition of subject in selector `' + selector.toString() + '`' );
         return false;
       }
 

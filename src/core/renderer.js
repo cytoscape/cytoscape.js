@@ -39,7 +39,7 @@ let corefn = ({
 
     let RendererProto = cy.extension( 'renderer', options.name );
     if( RendererProto == null ){
-      util.error( 'Can not initialise: No such renderer `%s` found; did you include its JS file?', options.name );
+      util.error( `Can not initialise: No such renderer \`${options.name}\` found. Did you forget to import it and \`cytoscape.use()\` it?` );
       return;
     }
 

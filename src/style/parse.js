@@ -40,7 +40,7 @@ styfn.parseImplWarn = function( name, value, propIsBypass, propIsFlat ){
   let prop = this.parseImpl( name, value, propIsBypass, propIsFlat );
 
   if( !prop && value != null ){
-    util.error('The style property `%s: %s` is invalid', name, value);
+    util.warn(`The style property \`${name}: value\` is invalid`);
   }
 
   return prop;
@@ -104,7 +104,7 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
   if( !valueIsString || propIsFlat ){
     // then don't bother to do the expensive regex checks
 
-  } else if( data = new RegExp( types.data.regex ).exec( value ) ){
+  } else if(( data = new RegExp( types.data.regex ).exec( value ) )){
     if( propIsBypass ){ return false; } // mappers not allowed in bypass
 
     let mapped = types.data;
@@ -118,7 +118,7 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
       bypass: propIsBypass
     };
 
-  } else if( mapData = new RegExp( types.mapData.regex ).exec( value ) ){
+  } else if(( mapData = new RegExp( types.mapData.regex ).exec( value ) )){
     if( propIsBypass ){ return false; } // mappers not allowed in bypass
     if( type.multiple ){ return false; } // impossible to map to num
 

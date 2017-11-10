@@ -61,7 +61,7 @@ let parse = function( selector ){
     let check = consumeExpr( remaining );
 
     if( check.expr == null ){
-      util.error( 'The selector `' + selector + '`is invalid' );
+      util.warn( 'The selector `' + selector + '`is invalid' );
       return false;
     } else {
       let args = check.match.slice( 1 );
@@ -110,10 +110,10 @@ let parse = function( selector ){
 
           query = ancestor; // go up the tree
         } else if( query.source || query.target || query.connectedNodes ){
-          util.error( 'The selector `' + self.text() + '` can not contain a subject selector that applies to the source or target of an edge selector' );
+          util.warn( 'The selector `' + self.text() + '` can not contain a subject selector that applies to the source or target of an edge selector' );
           return false;
         } else {
-          util.error( 'When adjusting references for the selector `' + self.text() + '`, neither parent nor ancestor was found' );
+          util.warn( 'When adjusting references for the selector `' + self.text() + '`, neither parent nor ancestor was found' );
           return false;
         }
       } // for

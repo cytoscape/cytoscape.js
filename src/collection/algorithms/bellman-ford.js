@@ -103,7 +103,7 @@ var elesfn = ({
         var weight = weightFn( edges[ e ] );
 
         if( cost[ sourceIndex ] + weight < cost[ targetIndex ] ){
-          util.error( 'Graph contains a negative weight cycle for Bellman-Ford' );
+          util.warn( 'Graph contains a negative weight cycle for Bellman-Ford' );
           return { pathTo: undefined,
                distanceTo: undefined,
                hasNegativeWeightCycle: true};

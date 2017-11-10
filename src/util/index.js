@@ -1,6 +1,8 @@
 /*global console */
 
 let is = require( '../is' );
+let warnSupported = console.warn != null; // eslint-disable-line no-console
+let traceSupported = console.trace != null; // eslint-disable-line no-console
 
 let util = {
 
@@ -15,18 +17,20 @@ let util = {
   noop: function(){},
 
   error: function( msg ){
-    /* eslint-disable */
-    if( console.error ){
-      console.error.apply( console, arguments );
-
-      if( console.trace ){ console.trace(); }
-    } else {
-      console.log.apply( console, arguments );
-
-      if( console.trace ){ console.trace(); }
-    }
-    /* eslint-enable */
+    throw new Error( msg );
   },
+
+  warn: function( msg ){ /* eslint-disable no-console */
+    if( warnSupported ){
+      console.warn( msg );
+    } else {
+      console.log( msg );
+
+      if( traceSupported ){
+        console.trace();
+      }
+    }
+  }, /* eslint-enable */
 
   clone: function( obj ){
     return this.extend( {}, obj );

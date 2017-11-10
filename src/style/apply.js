@@ -353,7 +353,7 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
   }
 
   let printMappingErr = function(){
-    util.error( 'Do not assign mappings to elements without corresponding data (e.g. ele `' + ele.id() + '` for property `' + prop.name + '` with data field `' + prop.field + '`); try a `[' + prop.field + ']` selector to limit scope to elements with `' + prop.field + '` defined' );
+    util.warn( 'Do not assign mappings to elements without corresponding data (e.g. ele `' + ele.id() + '` for property `' + prop.name + '` with data field `' + prop.field + '`); try a `[' + prop.field + ']` selector to limit scope to elements with `' + prop.field + '` defined' );
   };
 
   // put the property in the style objects
@@ -375,7 +375,7 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
 
     let percent;
     if( !is.number( fieldVal ) ){ // then don't apply and fall back on the existing style
-      util.error('Do not use continuous mappers without specifying numeric data (i.e. `' + prop.field + ': ' + fieldVal + '` for `' + ele.id() + '` is non-numeric)');
+      util.warn('Do not use continuous mappers without specifying numeric data (i.e. `' + prop.field + ': ' + fieldVal + '` for `' + ele.id() + '` is non-numeric)');
       return false;
     } else {
       percent = (fieldVal - prop.fieldMin) / (prop.fieldMax - prop.fieldMin);

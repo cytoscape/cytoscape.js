@@ -20,7 +20,7 @@ let corefn = ({
     let Layout = cy.extension( 'layout', name );
 
     if( Layout == null ){
-      util.error( 'Can not apply layout: No such layout `' + name + '` found; did you include its JS file?' );
+      util.error( 'No such layout `' + name + '` found.  Did you forget to import it and `cytoscape.use()` it?' );
       return;
     }
 

@@ -32,14 +32,14 @@ styfn.appendFromString = function( string ){
     }
   }
 
-  while( true ){
+  for(;;){
     let nothingLeftToParse = remaining.match( /^\s*$/ );
     if( nothingLeftToParse ){ break; }
 
     let selAndBlock = remaining.match( /^\s*((?:.|\s)+?)\s*\{((?:.|\s)+?)\}/ );
 
     if( !selAndBlock ){
-      util.error( 'Halting stylesheet parsing: String stylesheet contains more to parse but no selector and block found in: ' + remaining );
+      util.warn( 'Halting stylesheet parsing: String stylesheet contains more to parse but no selector and block found in: ' + remaining );
       break;
     }
 
@@ -50,7 +50,7 @@ styfn.appendFromString = function( string ){
     if( selectorStr !== 'core' ){
       let selector = new Selector( selectorStr );
       if( selector._private.invalid ){
-        util.error( 'Skipping parsing of block: Invalid selector found in string stylesheet: ' + selectorStr );
+        util.warn( 'Skipping parsing of block: Invalid selector found in string stylesheet: ' + selectorStr );
 
         // skip this selector and block
         removeSelAndBlockFromRemaining();
@@ -64,14 +64,14 @@ styfn.appendFromString = function( string ){
     blockRem = blockStr;
     let props = [];
 
-    while( true ){
+    for(;;){
       let nothingLeftToParse = blockRem.match( /^\s*$/ );
       if( nothingLeftToParse ){ break; }
 
       let propAndVal = blockRem.match( /^\s*(.+?)\s*:\s*(.+?)\s*;/ );
 
       if( !propAndVal ){
-        util.error( 'Skipping parsing of block: Invalid formatting of style property and value definitions found in:' + blockStr );
+        util.warn( 'Skipping parsing of block: Invalid formatting of style property and value definitions found in:' + blockStr );
         invalidBlock = true;
         break;
       }
@@ -82,7 +82,7 @@ styfn.appendFromString = function( string ){
 
       let prop = self.properties[ propStr ];
       if( !prop ){
-        util.error( 'Skipping property: Invalid property name in: ' + propAndValStr );
+        util.warn( 'Skipping property: Invalid property name in: ' + propAndValStr );
 
         // skip this property in the block
         removePropAndValFromRem();
@@ -92,7 +92,7 @@ styfn.appendFromString = function( string ){
       let parsedProp = style.parse( propStr, valStr );
 
       if( !parsedProp ){
-        util.error( 'Skipping property: Invalid property definition in: ' + propAndValStr );
+        util.warn( 'Skipping property: Invalid property definition in: ' + propAndValStr );
 
         // skip this property in the block
         removePropAndValFromRem();

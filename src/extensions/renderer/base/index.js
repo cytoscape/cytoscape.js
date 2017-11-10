@@ -42,7 +42,7 @@ BRp.init = function( options ){
     var position = computedStyle.getPropertyValue('position');
 
     if( position === 'static' ){
-      util.error('A Cytoscape container has style position:static and so can not use UI extensions properly');
+      util.warn('A Cytoscape container has style position:static and so can not use UI extensions properly');
     }
   }
 

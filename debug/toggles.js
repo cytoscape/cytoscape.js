@@ -1,36 +1,27 @@
-$(function(){
+/* global document, $, cy, $$ */
 
-	$(document).on("click", "button.toggler", function(){
-		var $this = $(this);
-		var name = $this.text();
+(function(){
 
-		cy.$(":selected")[name]();
+	$$('button.toggler').forEach(function(el){
+		el.addEventListener('click', function(){
+			var name = el.innerText;
+
+			cy.$(':selected')[name]();
+		});
 	});
 
-  $(document).on("click", "#hide-commands", function(){
-    $("#commands").hide();
+  $('#hide-commands').addEventListener('click', function(){
+    document.body.classList.remove('commands-shown');
+    document.body.classList.add('commands-hidden');
+
+		cy.resize();
   });
 
-  $(document).on("click", "#show-commands", function(){
-    $("#commands").show();
+  $('#show-commands').addEventListener('click', function(){
+    document.body.classList.add('commands-shown');
+    document.body.classList.remove('commands-hidden');
+
+		cy.resize();
   });
 
-  $(document).on("click", "#goto-cy", function(){
-    $(window).scrollTop(0);
-  });
-
-  $(document).on("click", "#goto-cy2", function(){
-    $(window).scrollTop( $('body').height()/2 );
-  });
-
-	$(document).on("click", "#full-cy", function(){
-    $("#cytoscape").addClass('full');
-		// cy.resize();
-  });
-
-  $(document).on("click", "#defsize-cy", function(){
-    $("#cytoscape").removeClass('full');
-		// cy.resize();
-  });
-
-});
+})();

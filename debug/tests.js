@@ -1,10 +1,37 @@
-$(function(){
+/* global $, cy, notify, window, document */
+
+(function(){
+
+  var assign = function( tgt ){
+    let args = arguments;
+
+    for( let i = 1; i < args.length; i++ ){
+      let obj = args[ i ];
+
+      if( obj == null ){ continue; }
+
+      let keys = Object.keys( obj );
+
+      for( let j = 0; j < keys.length; j++ ){
+        let k = keys[j];
+
+        tgt[ k ] = obj[ k ];
+      }
+    }
+
+    return tgt;
+  };
 
   var tests = {}; // name => setup
   function test(options){
-    $("#test-type-select").append('<option value="'+ options.name +'">'+ options.displayName +'</option>');
+    var option = document.createElement('option');
 
-    tests[options.name] = $.extend({}, {
+    option.value = options.name;
+    option.innerHTML = options.displayName;
+
+    $("#test-type-select").appendChild( option );
+
+    tests[options.name] = assign({}, {
       setup: function(){},
       teardown: function(){},
       description: ""
@@ -22,14 +49,14 @@ $(function(){
     break;
   }
 
-  $('#note').on('click', function(){
-    $('#note').hide();
+  $('#note').addEventListener('click', function(){
+    $('#note').style.display = 'none';
   });
 
-  $("#test-type-select").change(function(){
+  $("#test-type-select").addEventListener('change', function(){
     currentTest.teardown();
 
-    var name = $("#test-type-select").val();
+    var name = $("#test-type-select").value;
     currentTest = tests[name];
 
     notify( currentTest.displayName, currentTest.description );
@@ -224,7 +251,7 @@ $(function(){
         }
 
         function rcolor(){
-          return "rgb(" + rch() + "," + rch() + "," + rch() + ")"
+          return "rgb(" + rch() + "," + rch() + "," + rch() + ")";
         }
 
         function rsize(){
@@ -421,8 +448,6 @@ $(function(){
     description: "Change the visual style and make sure it takes effect",
     setup: function(){
 
-      var length = cy.style().length;
-
       cy.style()
         .resetToDefault()
         .selector("node")
@@ -566,4 +591,4 @@ $(function(){
     }
   });
 
-});
+})();

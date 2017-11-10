@@ -1,8 +1,10 @@
-$(function(){
+/* global $, cy, cy2 */
 
-	$("#layout-button").bind("click", function(){
+(function(){
+
+	$("#layout-button").addEventListener("click", function(){
 		cy.layout({
-			name: $("#layout-select").val()
+			name: $("#layout-select").value
 		}).run();
 	});
 
@@ -14,16 +16,8 @@ $(function(){
 		var time = end - start;
 
 		if( !isNaN(time) ){
-			$("#layout-time").html( (time) + " ms" );
+			$("#layout-time").innerHTML = ( (time) + " ms" );
 		}
 	});
 
-
-	$("#run-cose").on("click", function(){
-		cy2.layout({
-			name: 'cose'
-		}).run();
-	});
-
-
-});
+})();

@@ -7,8 +7,6 @@
 
 		<link rel="shortcut icon" href="images/favicon.png" />
 
-		<script type="text/javascript" src="jquery-2.1.1.js"></script>
-
 		<script src="livereload.js"></script>
 
 		<script src="../build/cytoscape.js"></script>
@@ -20,6 +18,7 @@
 
     <button id="init">Init</button>
     <button id="destroy">Destroy</button>
+		<button id="x">Init / destroy 100x</button>
 
     <div style="border: 1px solid #888; width: 300px; height: 300px;" id="cytoscape"></div>
 
@@ -41,9 +40,18 @@
         window.cy = null;
       }
 
-      $('#init').on('click', init);
+			function x(){
+				for( var i = 0; i < 100; i++ ){
+					init();
+					destroy();
+				}
+			}
 
-      $('#destroy').on('click', destroy);
+      document.getElementById('init').addEventListener('click', init);
+
+      document.getElementById('destroy').addEventListener('click', destroy);
+
+      document.getElementById('x').addEventListener('click', x);
     </script>
 
 	</body>

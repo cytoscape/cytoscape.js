@@ -1,79 +1,76 @@
-$(function(){
+/* global $, notify, cy */
 
-	$("#bind-button").click(function(){
-		var action = $("#bind-type-select").val();
-		var event = $("#bind-event-select").val();
-		var selector = $("#bind-selector").val();
-		var delegate = $("#bind-delegate").val();
+$("#bind-button").addEventListener('click', function(){
+	var action = $("#bind-type-select").value;
+	var event = $("#bind-event-select").value;
+	var selector = $("#bind-selector").value;
+	var delegate = $("#bind-delegate").value;
 
-		notify('Binding applied',
-			action + ' on `' + selector + '` for `' + event + '` with delegate `' + delegate + '`'
-		);
+	notify('Binding applied',
+		action + ' on `' + selector + '` for `' + event + '` with delegate `' + delegate + '`'
+	);
 
-		var callback = function(e){
-
-			var title = 'Event triggered for ' + this.data("id");
-			var text = action + ' on `' + selector + '` for ' + event + '` with delegate `' + delegate + '`';
-
-			notify(
-				title,
-				text
-			);
-		};
-
-		if( action == "unbind" || action == "off" ){
-			callback = undefined;
-		}
-
-		if( event == "" ){
-			event = undefined;
-		}
-
-		var args = [];
-		if( event ){ args.push(event) }
-		if( delegate ){ args.push(delegate) }
-		if( callback ){ args.push(callback) }
-
-		var eles = cy.elements(selector);
-
-		eles[action].apply( eles, args );
-	});
-
-	$("#core-bind-button").click(function(){
-		var action = $("#core-bind-type-select").val();
-		var event = $("#core-bind-event-select").val();
-		var delegate = $("#core-bind-delegate").val();
-		var target = "core";
+	var callback = function(){
+		var title = 'Event triggered for ' + this.data("id");
+		var text = action + ' on `' + selector + '` for ' + event + '` with delegate `' + delegate + '`';
 
 		notify(
-			'Binding applied',
-			action + ' on ' + target + ' for `' + event + '`' + '` with delegate `' + delegate + '`'
+			title,
+			text
 		);
+	};
 
-		var callback = function(e){
-			var title = 'Event triggered for core';
-			var text = '`' + action + '` on ' + target + '  for `' + event + '`' + '` with delegate `' + delegate + '`';
+	if( action == "unbind" || action == "off" ){
+		callback = undefined;
+	}
 
-			notify(
-				title,
-				text
-			);
-		};
+	if( event == "" ){
+		event = undefined;
+	}
 
-		if( action == "unbind" || action == "off" ){
-			callback = undefined;
-		}
+	var args = [];
+	if( event ){ args.push(event); }
+	if( delegate ){ args.push(delegate); }
+	if( callback ){ args.push(callback); }
 
-		if( event == "" ){
-			event = undefined;
-		}
+	var eles = cy.elements(selector);
 
-		var args = [];
-		if( event ){ args.push(event) }
-		if( delegate ){ args.push(delegate) }
-		if( callback ){ args.push(callback) }
+	eles[action].apply( eles, args );
+});
 
-		cy[action].apply( cy, args );
-	});
+$("#core-bind-button").addEventListener('click', function(){
+	var action = $("#core-bind-type-select").value;
+	var event = $("#core-bind-event-select").value;
+	var delegate = $("#core-bind-delegate").value;
+	var target = "core";
 
+	notify(
+		'Binding applied',
+		action + ' on ' + target + ' for `' + event + '`' + '` with delegate `' + delegate + '`'
+	);
+
+	var callback = function(){
+		var title = 'Event triggered for core';
+		var text = '`' + action + '` on ' + target + '  for `' + event + '`' + '` with delegate `' + delegate + '`';
+
+		notify(
+			title,
+			text
+		);
+	};
+
+	if( action == "unbind" || action == "off" ){
+		callback = undefined;
+	}
+
+	if( event == "" ){
+		event = undefined;
+	}
+
+	var args = [];
+	if( event ){ args.push(event); }
+	if( delegate ){ args.push(delegate); }
+	if( callback ){ args.push(callback); }
+
+	cy[action].apply( cy, args );
 });

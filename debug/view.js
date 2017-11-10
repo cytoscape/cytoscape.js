@@ -1,78 +1,80 @@
-$(function(){
+/* global $, cy */
 
-	$("#zoom-pan-button").click(function(){
+(function(){
+
+	$("#zoom-pan-button").addEventListener('click', function(){
 		cy.reset();
 	});
 
-	$("#fit-button").click(function(){
+	$("#fit-button").addEventListener('click', function(){
 		cy.fit();
 	});
 
-	$("#fit-selected-button").click(function(){
+	$("#fit-selected-button").addEventListener('click', function(){
 		cy.fit( cy.elements(":selected") );
 	});
 
-	$("#center-selected-button").click(function(){
+	$("#center-selected-button").addEventListener('click', function(){
 		cy.center( cy.elements(":selected") );
 	});
 
-	$("#enable-panning").click(function(){
+	$("#enable-panning").addEventListener('click', function(){
 		cy.panningEnabled(true);
 	});
 
-	$("#disable-panning").click(function(){
+	$("#disable-panning").addEventListener('click', function(){
 		cy.panningEnabled(false);
 	});
 
-	$("#enable-user-panning").click(function(){
+	$("#enable-user-panning").addEventListener('click', function(){
 		cy.userPanningEnabled(true);
 	});
 
-	$("#disable-user-panning").click(function(){
+	$("#disable-user-panning").addEventListener('click', function(){
 		cy.userPanningEnabled(false);
 	});
 
-	$("#enable-zooming").click(function(){
+	$("#enable-zooming").addEventListener('click', function(){
 		cy.zoomingEnabled(true);
 	});
 
-	$("#disable-zooming").click(function(){
+	$("#disable-zooming").addEventListener('click', function(){
 		cy.zoomingEnabled(false);
 	});
 
-	$("#enable-user-zooming").click(function(){
+	$("#enable-user-zooming").addEventListener('click', function(){
 		cy.userZoomingEnabled(true);
 	});
 
-	$("#disable-user-zooming").click(function(){
+	$("#disable-user-zooming").addEventListener('click', function(){
 		cy.userZoomingEnabled(false);
 	});
 
-	$("#enable-autolock").click(function(){
+	$("#enable-autolock").addEventListener('click', function(){
 		cy.autolock(true);
 	});
 
-	$("#disable-autolock").click(function(){
+	$("#disable-autolock").addEventListener('click', function(){
 		cy.autolock(false);
 	});
 
-	$("#enable-autoungrabify").click(function(){
+	$("#enable-autoungrabify").addEventListener('click', function(){
 		cy.autoungrabify(true);
 	});
 
-	$("#disable-autoungrabify").click(function(){
+	$("#disable-autoungrabify").addEventListener('click', function(){
 		cy.autoungrabify(false);
 	});
 
-	$("#enable-autounselectify").click(function(){
+	$("#enable-autounselectify").addEventListener('click', function(){
 		cy.autounselectify(true);
 	});
 
-	$("#disable-autounselectify").click(function(){
+	$("#disable-autounselectify").addEventListener('click', function(){
 		cy.autounselectify(false);
 	});
 
-	$("#show-debug").click(function(){
+	$("#show-debug").addEventListener('click', function(){
 		cy.renderer().debug = true;
 
 		// force redraws
@@ -80,7 +82,7 @@ $(function(){
 		cy.panBy({ x: -1 });
 	});
 
-	$("#hide-debug").click(function(){
+	$("#hide-debug").addEventListener('click', function(){
 		cy.renderer().debug = false;
 
 		// force redraws
@@ -88,31 +90,37 @@ $(function(){
 		cy.panBy({ x: -1 });
 	});
 
-	$("#show-bb").click(function(){
+	var showBB = function( eles ){
+		var bb = eles.renderedBoundingBox();
+
+		var $bb = $('#bb');
+
+		var style = {
+			left: bb.x1 + 'px',
+			top: bb.y1 + 'px',
+			width: (bb.x2 - bb.x1) + 'px',
+			height: (bb.y2 - bb.y1) + 'px',
+			display: 'block'
+		};
+
+		Object.keys( style ).forEach(function( key ){
+			var val = style[key];
+
+			$bb.style[ key ] = val;
+		});
+	};
+
+	$("#show-bb").addEventListener('click', function(){
 		var eles = cy.$(':selected');
 
 		if( eles.length === 0 ){
 			eles = cy.elements();
 		}
 
-		eles.showBB();
+		showBB( eles );
 	});
 
-	cytoscape('collection', 'showBB', function(){
-		var bb = this.renderedBoundingBox();
-		var os = $('#cytoscape').offset();
-
-		$('#bb').css({
-			left: bb.x1 + os.left + 1,
-			top: bb.y1 + os.top + 1,
-			width: bb.x2 - bb.x1,
-			height: bb.y2 - bb.y1
-		}).show();
-
-		return this;
+	$("#hide-bb").addEventListener('click', function(){
+		$('#bb').style.display = 'none';
 	});
-
-	$("#hide-bb").click(function(){
-		$('#bb').hide();
-	});
-});
+})();

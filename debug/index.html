@@ -7,11 +7,12 @@
 
 		<link rel="shortcut icon" href="images/favicon.png" />
 
-		<link rel="stylesheet" href="font-awesome.css" />
 		<link rel="stylesheet" href="style.css" />
 
-		<!--<script type="text/javascript" src="require.js"></script>-->
-		<script type="text/javascript" src="jquery-2.1.1.js"></script>
+		<script>
+			var $ = function( sel ){ return document.querySelector(sel); };
+			var $$ = function( sel ){ return document.querySelectorAll(sel); };
+		</script>
 
 		<script src="livereload.js"></script>
 
@@ -21,43 +22,11 @@
 			<script src="../build/cytoscape.js"></script>
 			<!-- endinject -->
 
-		<script type="text/javascript" src="init.js"></script>
-		<script type="text/javascript" src="bind.js"></script>
-		<script type="text/javascript" src="data.js"></script>
-		<script type="text/javascript" src="filter.js"></script>
-		<script type="text/javascript" src="keys.js"></script>
-		<script type="text/javascript" src="layout.js"></script>
-		<script type="text/javascript" src="tests.js"></script>
-		<script type="text/javascript" src="toggles.js"></script>
-		<script type="text/javascript" src="view.js"></script>
-		<script type="text/javascript" src="style.js"></script>
-
-		<script>
-			notify = function( name, descr ){
-				console.log( name );
-				console.log( descr );
-
-				$('#note-name').html( name );
-				$('#note-descr').html( descr );
-
-				$('#note').show();
-
-				clearTimeout( notify.timeout );
-
-				notify.timeout = setTimeout( function(){
-					$('#note').hide();
-				}, 3000 );
-			};
-		</script>
-
 		<title>cytoscape.js debug page</title>
 	</head>
 
 	<body>
-
-    	<button id="goto-cy2">\ down /</button>
-	    <div id="cytoscape">
-	    </div>
+	    <div id="cytoscape"></div>
 			<div id="bb"></div>
 
 	    <!-- <div id="overlay-tester" style="position: absolute; left: 0; top: 0; width: 300px; height: 300px; background: rgba(255, 0, 0, 0.5);"></div> -->
@@ -67,10 +36,6 @@
 
 	    <canvas style="border: 1px solid red;" width="600" height="600" id="dummy-canvas"></canvas>
 -->
-
-	    <div><button id="goto-cy">/ up \</button> Second instance: <button id="init2">init</button></div>
-
-	    <div id="cytoscape2"></div>
 
 	    <div id="console"></div>
 
@@ -127,10 +92,6 @@
 	    	<button id="show-debug">show</button>
 	    	<button id="hide-debug">hide</button><br />
 
-				Fullscreen:
-	    	<button id="full-cy">on</button>
-	    	<button id="defsize-cy">off</button>
-
 	    	<h2>Layout</h2>
 	    	<select id="layout-select">
 	    		<option value="null">Null</option>
@@ -144,14 +105,20 @@
 	    	<button id="layout-button">Apply</button>
 	    	<small>Time taken: <span id="layout-time">&nbsp;</span></small> <br />
 
-	    	<h2>Add & remove elements</h2>
+				<h2>Filtering</h2>
+				<label for="filter-selector">Selector</label> <input type="text" id="filter-selector" />
+				<button id="filter-button">Select matches</button>
+
+
+	    	<h2>Add &amp; remove elements</h2>
 	    	<label for="nodes-number">Nodes</label> <input type="text" id="nodes-number" />
 	    	<label for="edges-number">Edges</label> <input type="text" id="edges-number" />
 	    	<button id="add-elements-button">Add</button>
 	    	<button id="remove-selected-button">Remove selected</button> <br />
-	    	<small>Time taken: <span id="add-remove-time">&nbsp;</span></small> <br />
+	    	<small>Time taken: <span id="add-remove-time">&nbsp;</span></small> <br /><br />
+				<button id="load-compound">Load compound graph</button>
 
-	    	<h2>Element binding</h2>
+	    	<h2>Element events</h2>
 	    	<select id="bind-type-select">
 	    		<option value="bind">.bind()</option>
 	    		<option value="one">.one()</option>
@@ -209,7 +176,7 @@
 	    	<label for="bind-delegate">Selector</label> <input type="text" id="bind-delegate" />
 	    	<button id="bind-button">Apply</button>
 
-	    	<h2>Core binding</h2>
+	    	<h2>Core events</h2>
 	    	<select id="core-bind-type-select">
 	    		<option value="bind">.bind()</option>
 	    		<option value="one">.one()</option>
@@ -259,29 +226,27 @@
 	    	<button class="toggler">lock</button> <button class="toggler">unlock</button><br />
 	    	<button class="toggler">grabify</button> <button class="toggler">ungrabify</button>
 
-	    	<h2>Filtering</h2>
-	    	<label for="filter-selector">Selector</label> <input type="text" id="filter-selector" />
-	    	<button id="filter-button">Select matches</button>
-
 	    	<h2>String stylesheets</h2>
 	    	<label for="string-stylesheet"></label> <textarea id="string-stylesheet"></textarea>
 	    	<button id="string-stylesheet-apply-button">Apply stylesheet</button>
-
-	    	<h2>Testing Second Instance</h2>
-            <label for="parent-node">Parent Node</label> <input type="text" id="parent-node" />
-            <button id="add-child-button">Add child</button>
-            <button id="compound-remove-selected-button">Remove selected</button> <br />
-            <button id="compound-hide-selected-button">Hide selected</button>
-            <button id="compound-show-all-button">Show all</button><br />
-            <button id="set-random-style">Randomize style (selected)</button>
-            <button id="run-cose">Run CoSE</button>
-
 	    </div>
 
 			<div id="note">
 				<div id="note-name"></div>
 				<div id="note-descr"></div>
 			</div>
+
+			<script src="compound.js"></script>
+			<script src="notify.js"></script>
+			<script src="init.js"></script>
+			<script src="bind.js"></script>
+			<script src="filter.js"></script>
+			<script src="layout.js"></script>
+			<script src="tests.js"></script>
+			<script src="toggles.js"></script>
+			<script src="view.js"></script>
+			<script src="style.js"></script>
+			<script src="add-remove.js"></script>
 	</body>
 
 </html>

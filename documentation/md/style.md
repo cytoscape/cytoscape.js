@@ -129,7 +129,7 @@ cytoscape({
 
 
 
- ## Mappers
+## Mappers
 
 In addition to specifying the value of a property outright, the developer may also use a mapper to dynamically specify the property value.
 
@@ -137,7 +137,16 @@ In addition to specifying the value of a property outright, the developer may al
 
 * **`data()`** specifies a direct mapping to an element's data field.  For example, `data(descr)` would map a property to the value in an element's `descr` field in its data (i.e. `ele.data("descr")`).  This is useful for mapping to properties like label text content (the `content` property).
 * **`mapData()`** specifies a linear mapping to an element's data field.  For example, `mapData(weight, 0, 100, blue, red)` maps an element's weight to gradients between blue and red for weights between 0 and 100.  An element with `ele.data("weight") === 0` would  be mapped to blue, for instance.  Elements whose values fall outside of the specified range are mapped to the extremity values.  In the previous example, an element with `ele.data("weight") === -1` would be mapped to blue.
-* **`function( ele ){ ... }`** A function may be passed as the value of a style property.  The function has a single `ele` argument which specifies the element for which the style property value is being calculated.  The function must specify a valid value for the corresponding style property for all elements that its corresponding selector block applies.  <span class="important-indicator"></span> Note that while convenient, these functions ought to be inexpensive to execute, ideally cached with something like lodash's [`_.memoize()`](https://lodash.com/docs#memoize).
+* **`function( ele ){ ... }`** A function may be passed as the value of a style property.  The function has a single `ele` argument which specifies the element for which the style property value is being calculated.  
+  * **Do** specify a valid value for the corresponding style property for all elements that its corresponding selector block applies.
+  * **Do not** create cyclic dependencies (i.e. one style property reads the value of another style property).
+  * **Do** use pure functions that depend on only
+    * `ele.data()`,
+    * `ele.scratch()`, or
+    * basic state that could alternatively be represented with selectors (e.g. `ele.selected()` is OK because there's a `:selected` selector).
+  * **Do** use caching, e.g.  with [`_.memoize()`](https://lodash.com/docs#memoize), for expensive property functions.  If the functions are pure, then `_.memoize()` works perfectly.
+  * **Do not** use functions if you can use built-in mappers and selectors to express the same thing.  If you use a function, you lose built-in style performance enhancements and you'll have to optimise and cache the function yourself.
+
 
 
 

@@ -28,8 +28,6 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
   nodeWidth = node.width() + 2 * padding;
   nodeHeight = node.height() + 2 * padding;
 
-  context.lineWidth = node.pstyle( 'border-width' ).pfValue;
-
   //
   // setup shift
 
@@ -76,23 +74,6 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
   let borderOpacity = node.pstyle('border-opacity').value * parentOpacity;
 
   context.lineJoin = 'miter'; // so borders are square with the node shape
-
-  if( context.setLineDash ){ // for very outofdate browsers
-    switch( borderStyle ){
-      case 'dotted':
-        context.setLineDash( [ 1, 1 ] );
-        break;
-
-      case 'dashed':
-        context.setLineDash( [ 4, 2 ] );
-        break;
-
-      case 'solid':
-      case 'double':
-        context.setLineDash( [ ] );
-        break;
-    }
-  }
 
   let setupShapeColor = ( bgOpy = bgOpacity ) => {
     r.fillStyle( context, bgColor[0], bgColor[1], bgColor[2], bgOpy );
@@ -205,6 +186,26 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
   let drawBorder = () => {
     if( borderWidth > 0 ){
 
+      context.lineWidth = borderWidth;
+      context.lineCap = 'butt';
+
+      if( context.setLineDash ){ // for very outofdate browsers
+        switch( borderStyle ){
+          case 'dotted':
+            context.setLineDash( [ 1, 1 ] );
+            break;
+
+          case 'dashed':
+            context.setLineDash( [ 4, 2 ] );
+            break;
+
+          case 'solid':
+          case 'double':
+            context.setLineDash( [ ] );
+            break;
+        }
+      }
+
       if( usePaths ){
         context.stroke( path );
       } else {
@@ -224,6 +225,11 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
         }
 
         context.globalCompositeOperation = gco;
+      }
+
+      // reset in case we changed the border style
+      if( context.setLineDash ){ // for very outofdate browsers
+        context.setLineDash( [ ] );
       }
 
     }
@@ -288,11 +294,6 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
 
   drawText();
   drawOverlay();
-
-  // reset in case we changed the border style
-  if( context.setLineDash ){ // for very outofdate browsers
-    context.setLineDash( [ ] );
-  }
 
   //
   // clean up shift

@@ -1819,7 +1819,7 @@
               "descr": "Add classes to elements.",
               "formats": [
                 {
-                  "args": [ { "name": "classes", "descr": "A space-separated list of class names to add to the elements." } ]
+                  "args": [ { "name": "classes", "descr": "An array (or a space-separated string) of class names to add to the elements." } ]
                 }
               ],
               "md": "collection/addClass"
@@ -1830,7 +1830,7 @@
               "descr": "Remove classes from elements.",
               "formats": [
                 {
-                  "args": [ { "name": "classes", "descr": "A space-separated list of class names to remove from the elements." } ]
+                  "args": [ { "name": "classes", "descr": "An array (or a space-separated string) of class names to remove from the elements." } ]
                 }
               ],
               "md": "collection/removeClass"
@@ -1842,7 +1842,7 @@
               "formats": [
                 {
                   "args": [
-                    { "name": "classes", "descr": "A space-separated list of class names to toggle on the elements." },
+                    { "name": "classes", "descr": "An array (or a space-separated string) of class names to toggle on the elements." },
                     { "name": "toggle", "descr": "Instead of automatically toggling, adds the classes on truthy values or removes them on falsey values.", "optional": true }
                   ]
                 }
@@ -1855,7 +1855,7 @@
               "descr": "Replace the current list of classes on the elements with the specified list.",
               "formats": [
                 {
-                  "args": [ { "name": "classes", "descr": "A space-separated list of class names that replaces the current class list." } ]
+                  "args": [ { "name": "classes", "descr": "An array (or a space-separated string) of class names that replaces the current class list." } ]
                 }
               ],
               "md": "collection/classes"
@@ -1867,7 +1867,7 @@
               "formats": [
                 {
                   "args": [
-                    { "name": "classes", "descr": "A space-separated list of class names to flash on the elements." },
+                    { "name": "classes", "descr": "An array (or a space-separated string) of class names to flash on the elements." },
                     { "name": "duration", "descr": "The duration in milliseconds that the classes should be added on the elements.  After the duration, the classes are removed.", "optional": true }
                   ]
                 }

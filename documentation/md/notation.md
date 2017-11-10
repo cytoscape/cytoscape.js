@@ -115,7 +115,7 @@ cytoscape({
 
       grabbable: true, // whether the node can be grabbed and moved by the user
 
-      classes: 'foo bar' // a space separated list of class names that the element has
+      classes: ['foo', 'bar'] // an array (or a space separated string) of class names that the element has
     },
 
     { // node n2

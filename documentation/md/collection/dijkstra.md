@@ -19,8 +19,8 @@ If no weight function is defined, a constant weight of 1 is used for each edge.
 ## Examples
 
 ```js
-var dijkstra = cy.elements().dijkstra('#e', function(){
-  return this.data('weight');
+var dijkstra = cy.elements().dijkstra('#e', function(edge){
+  return edge.data('weight');
 });
 
 var pathToJ = dijkstra.pathTo( cy.$('#j') );

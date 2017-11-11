@@ -1,5 +1,5 @@
-let util = require( '../../util' );
-let is = require( '../../is' );
+import * as util from '../../util';
+import * as is from '../../is';
 
 let defaults = {
   positions: undefined, // map of (node id) => (position obj); or function(node){ return somPos; }
@@ -58,4 +58,4 @@ PresetLayout.prototype.run = function(){
   return this; // chaining
 };
 
-module.exports = PresetLayout;
+export default PresetLayout;

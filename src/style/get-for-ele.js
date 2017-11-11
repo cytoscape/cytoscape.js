@@ -1,5 +1,5 @@
-let util = require( '../util' );
-let is = require( '../is' );
+import * as util from '../util';
+import * as is from '../is';
 
 let styfn = {};
 
@@ -116,4 +116,4 @@ styfn.getPropsList = function( propsObj ){
   return rstyle;
 };
 
-module.exports = styfn;
+export default styfn;

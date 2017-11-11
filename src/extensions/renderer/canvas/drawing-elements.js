@@ -1,4 +1,4 @@
-let math = require( '../../../math' );
+import * as math from '../../../math';
 
 let CRp = {};
 
@@ -109,4 +109,4 @@ CRp.drawDebugPoints = function( context, eles ){
   }
 };
 
-module.exports = CRp;
+export default CRp;

@@ -1,6 +1,8 @@
-const is = require('../is');
-const util = require('../util');
-const newQuery = require('./new-query');
+import * as is from '../is';
+import * as util from '../util';
+import newQuery from './new-query';
+import parseFn from './parse';
+import matchingFn from './matching';
 
 let Selector = function( selector ){
   let self = this;
@@ -193,8 +195,8 @@ selfn.toString = selfn.selector = function(){
 };
 
 [
-  require('./parse'),
-  require('./matching')
+  parseFn,
+  matchingFn
 ].forEach( p => util.assign( selfn, p ) );
 
-module.exports = Selector;
+export default Selector;

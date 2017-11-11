@@ -1,4 +1,4 @@
-var math = require( '../../../../math' );
+import * as math from '../../../../math';
 
 var BRp = {};
 
@@ -59,4 +59,4 @@ BRp.recalculateEdgeProjections = function( edges ){
   this.findEdgeControlPoints( edges );
 };
 
-module.exports = BRp;
+export default BRp;

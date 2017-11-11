@@ -1,6 +1,6 @@
-var math = require( '../../../../math' );
-var is = require( '../../../../is' );
-var util = require( '../../../../util' );
+import * as math from '../../../../math';
+import * as is from '../../../../is';
+import * as util from '../../../../util';
 
 var BRp = {};
 
@@ -480,4 +480,4 @@ BRp.calculateLabelAngles = function( ele ){
   }
 };
 
-module.exports = BRp;
+export default BRp;

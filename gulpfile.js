@@ -16,12 +16,7 @@ var pkg = require('./package.json');
 var env = process.env;
 var path = require('path');
 var requireUncached = require('require-uncached');
-
-var webpack = function(){
-  var w = require('webpack');
-
-  return w.apply( w, arguments );
-};
+var rollup = require('rollup');
 
 process.on('SIGINT', function() {
   $.util.log($.util.colors.red('Successfully closed gulp process ' + process.pid));
@@ -133,7 +128,7 @@ gulp.task('version', function( next ){
   function done(){
     console.log('Using version number `%s` for building', version);
 
-    fs.writeFileSync('./src/version.js', 'module.exports = "'+ version +'";\n');
+    fs.writeFileSync('./src/version.js', 'export default "'+ version +'";\n');
 
     next();
   }
@@ -152,34 +147,37 @@ gulp.task('clean', function(){
   ;
 });
 
-gulp.task('build-unmin', ['version'], function( next ){
+gulp.task('build-unmin', ['version'], function(){
   env.NODE_ENV = 'development';
   env.FILENAME = 'cytoscape.js';
   env.MINIFY = false;
   env.BABEL = true;
   env.SOURCEMAPS = false;
+  var config = requireUncached('./rollup.config.js');
 
-  webpack( requireUncached('./webpack.config'), next );
+  return rollup.rollup(config).then(bundle => bundle.write(config.output));
 });
 
-gulp.task('build-min', ['version'], function( next ){
+gulp.task('build-min', ['version'], function(){
   env.NODE_ENV = 'development';
   env.FILENAME = 'cytoscape.min.js';
   env.MINIFY = true;
   env.BABEL = true;
   env.SOURCEMAPS = false;
+  var config = requireUncached('./rollup.config.js');
 
-  webpack( requireUncached('./webpack.config'), next );
+  return rollup.rollup(config).then(bundle => bundle.write(config.output));
 });
 
-gulp.task('build-cjs', ['version'], function( next ){
+gulp.task('build-cjs', ['version'], function(){
   env.NODE_ENV = 'production';
   env.FILENAME = 'cytoscape.cjs.js';
   env.MINIFY = false;
   env.BABEL = true;
   env.SOURCEMAPS = false;
+  var config = requireUncached('./rollup.config.js');
 
-  webpack( requireUncached('./webpack.config'), next );
+  return rollup.rollup(config).then(bundle => bundle.write(config.output));
 });
 
 gulp.task('build', function( next ){
@@ -479,10 +477,11 @@ gulp.task('watch', function(next){
     gulp.src( out ).pipe( $.livereload() );
   });
 
-  var compiler = webpack( requireUncached('./webpack.config') );
-
-  compiler.watch({}, function( err, stats ){
-    console.log( stats.toString({ colors: true }) );
+  rollup.watch(requireUncached('./rollup.config.js')).on('event', function(e) {
+    Object.keys(e).forEach(function(key) {
+      console.log(key + ': ' + e[key]);
+    });
+    console.log('====');
   });
 
   next();

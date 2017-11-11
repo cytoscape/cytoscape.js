@@ -1,4 +1,4 @@
-var math = require('../../../math');
+import * as math from '../../../math';
 
 var BRp = {};
 
@@ -531,4 +531,4 @@ BRp.registerNodeShapes = function(){
 
 };
 
-module.exports = BRp;
+export default BRp;

@@ -1,1 +1,1 @@
-module.exports = "3.2.5";
+export default "snapshot-211895a527-1509654570716";

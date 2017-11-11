@@ -1,5 +1,5 @@
-let generateCubicBezier = require('./cubic-bezier');
-let generateSpringRK4 = require('./spring');
+import generateCubicBezier from './cubic-bezier';
+import generateSpringRK4 from './spring';
 
 let cubicBezier = function( t1, p1, t2, p2 ){
   let bezier = generateCubicBezier( t1, p1, t2, p2 );
@@ -73,4 +73,4 @@ let easings = {
   'cubic-bezier': cubicBezier
 };
 
-module.exports = easings;
+export default easings;

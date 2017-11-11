@@ -1,11 +1,14 @@
-module.exports = [
+import layout from './layout';
+import renderer from './renderer';
+
+export default [
   {
     type: 'layout',
-    extensions: require( './layout' )
+    extensions: layout
   },
 
   {
     type: 'renderer',
-    extensions: require( './renderer' )
+    extensions: renderer
   }
 ];

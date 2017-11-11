@@ -31,4 +31,4 @@ function startAnimation( self, ani, now, isCore ){
   ani_p.startTime = now - ani_p.progress * ani_p.duration;
 }
 
-module.exports = startAnimation;
+export default startAnimation;

@@ -10,5 +10,6 @@ if( process.env.TRAVIS || process.env.TEST_BUILD ){
 // Otherwise use the unbundled, unbabelified, raw source
 // NB : Must use a version of Node that natively supports all JS features used in the lib
 } else {
-  module.exports = require('./index.js');
+  require('babel-register');
+  module.exports = require('./index.js').default;
 }

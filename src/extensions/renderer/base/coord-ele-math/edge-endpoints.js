@@ -1,5 +1,5 @@
-let math = require( '../../../../math' );
-let is = require( '../../../../is' );
+import * as math from '../../../../math';
+import * as is from '../../../../is';
 
 let BRp = {};
 
@@ -226,4 +226,4 @@ BRp.getTargetEndpoint = function( edge ){
   }
 };
 
-module.exports = BRp;
+export default BRp;

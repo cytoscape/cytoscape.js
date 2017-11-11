@@ -1,6 +1,6 @@
 /* global Path2D */
 
-let is = require( '../../../is' );
+import * as is from '../../../is';
 
 let CRp = {};
 
@@ -374,4 +374,4 @@ CRp.drawPie = function( context, node, nodeOpacity, pos ){
 };
 
 
-module.exports = CRp;
+export default CRp;

@@ -1,6 +1,7 @@
-let define = require('../../define');
-let is = require('../../is');
-let math = require('../../math');
+import * as define from '../../define';
+import * as is from '../../is';
+import * as math from '../../math';
+
 let fn, elesfn;
 
 let beforePositionSet = function( eles, newPos ){
@@ -232,4 +233,4 @@ fn.modelPositions = fn.points = fn.positions;
 fn.renderedPoint = fn.renderedPosition;
 fn.relativePoint = fn.relativePosition;
 
-module.exports = elesfn;
+export default elesfn;

@@ -1,7 +1,8 @@
-let is = require( './is' );
-let Core = require( './core' );
-let extension = require( './extension' );
-let Stylesheet = require( './stylesheet' );
+import * as is from './is';
+import Core from './core';
+import extension from './extension';
+import Stylesheet from './stylesheet';
+import version from './version';
 
 let cytoscape = function( options ){ // jshint ignore:line
   // if no options specified, use default
@@ -32,9 +33,8 @@ cytoscape.use = function( ext ){
 };
 
 // replaced by build system
-cytoscape.version = require('./version');
+cytoscape.version = version;
 
 // expose public apis (mostly for extensions)
-cytoscape.stylesheet = cytoscape.Stylesheet = Stylesheet;
 
-module.exports = cytoscape;
+export default cytoscape;

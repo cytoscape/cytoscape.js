@@ -11,4 +11,4 @@ NullRenderer.prototype = {
   init: noop
 };
 
-module.exports = NullRenderer;
+export default NullRenderer;

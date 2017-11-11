@@ -86,4 +86,4 @@ CRp.arrowShapeImpl = function( name ){
   }) )[ name ];
 };
 
-module.exports = CRp;
+export default CRp;

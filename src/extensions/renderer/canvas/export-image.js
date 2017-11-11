@@ -1,4 +1,4 @@
-var is = require( '../../../is' );
+import * as is from '../../../is';
 
 var CRp = {};
 
@@ -151,4 +151,4 @@ CRp.jpg = function( options ){
   return output( options, this.bufferCanvasImage( options ), 'image/jpeg' );
 };
 
-module.exports = CRp;
+export default CRp;

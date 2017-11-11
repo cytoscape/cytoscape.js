@@ -1,4 +1,4 @@
-let Set = require('../set');
+import Set from '../set';
 
 let elesfn = ({
   classes: function( classes ){
@@ -128,4 +128,4 @@ let elesfn = ({
   }
 });
 
-module.exports = elesfn;
+export default elesfn;

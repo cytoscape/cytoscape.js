@@ -1,5 +1,5 @@
-let util = require( '../util' );
-let is = require( '../is' );
+import * as util from '../util';
+import * as is from '../is';
 
 let elesfn = {};
 
@@ -437,4 +437,4 @@ util.extend( elesfn, {
   }
 } );
 
-module.exports = elesfn;
+export default elesfn;

@@ -1,8 +1,8 @@
-var util = require( '../../../util' );
+import * as util from '../../../util';
 
 var fullFpsTime = 1000/60; // assume 60 frames per second
 
-module.exports = {
+export default {
   setupDequeueing: function( opts ){
     return function setupDequeueingImpl(){
       var self = this;

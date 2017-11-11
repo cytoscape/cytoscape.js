@@ -1,4 +1,4 @@
-var util = require( '../../../util' );
+import * as util from '../../../util';
 
 var BRp = {};
 
@@ -98,4 +98,4 @@ BRp.startRenderLoop = function(){
 
 };
 
-module.exports = BRp;
+export default BRp;

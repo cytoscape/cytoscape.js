@@ -1,7 +1,7 @@
-var is = require( '../../../is' );
-var util = require( '../../../util' );
-var math = require( '../../../math' );
-var Event = require( '../../../event' );
+import * as is from '../../../is';
+import * as util from '../../../util';
+import * as math from '../../../math';
+import Event from '../../../event';
 
 var BRp = {};
 
@@ -2063,4 +2063,4 @@ BRp.load = function(){
   }
 };
 
-module.exports = BRp;
+export default BRp;

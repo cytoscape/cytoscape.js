@@ -4,7 +4,7 @@ let ifEdge = (self, then) => {
   }
 };
 
-module.exports = {
+export default {
   controlPoints: function(){
     return ifEdge( this, renderer => renderer.getControlPoints( this ) );
   },

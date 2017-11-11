@@ -1,47 +1,45 @@
-let math = {};
-
-math.arePositionsSame = function( p1, p2 ){
+export function arePositionsSame( p1, p2 ){
   return p1.x === p2.x && p1.y === p2.y;
-};
+}
 
-math.copyPosition = function( p ){
+export function copyPosition( p ){
   return { x: p.x, y: p.y };
-};
+}
 
-math.modelToRenderedPosition = function( p, zoom, pan ){
+export function modelToRenderedPosition( p, zoom, pan ){
   return {
     x: p.x * zoom + pan.x,
     y: p.y * zoom + pan.y
   };
-};
+}
 
-math.renderedToModelPosition = function( p, zoom, pan ){
+export function renderedToModelPosition( p, zoom, pan ){
   return {
     x: ( p.x - pan.x ) / zoom,
     y: ( p.y - pan.y ) / zoom
   };
-};
+}
 
-math.array2point = function( arr ){
+export function array2point( arr ){
   return {
     x: arr[0],
     y: arr[1]
   };
-};
+}
 
-math.deg2rad = function( deg ){
+export function deg2rad( deg ){
   return Math.PI * deg / 180;
-};
+}
 
-math.getAngleFromDisp = function( dispX, dispY ){
+export function getAngleFromDisp( dispX, dispY ){
   return Math.atan2( dispY, dispX ) - Math.PI / 2;
-};
+}
 
-math.log2 = Math.log2 || function( n ){
+export var log2 = Math.log2 || function( n ){
   return Math.log( n ) / Math.log( 2 );
 };
 
-math.signum = function( x ){
+export function signum( x ){
   if( x > 0 ){
     return 1;
   } else if( x < 0 ){
@@ -49,38 +47,38 @@ math.signum = function( x ){
   } else {
     return 0;
   }
-};
+}
 
-math.dist = function( p1, p2 ){
-  return Math.sqrt( math.sqdist( p1, p2 ) );
-};
+export function dist( p1, p2 ){
+  return Math.sqrt( sqdist( p1, p2 ) );
+}
 
-math.sqdist = function( p1, p2 ){
+export function sqdist( p1, p2 ){
   let dx = p2.x - p1.x;
   let dy = p2.y - p1.y;
 
   return dx * dx + dy * dy;
-};
+}
 
 // from http://en.wikipedia.org/wiki/Bézier_curve#Quadratic_curves
-math.qbezierAt = function( p0, p1, p2, t ){
+export function qbezierAt( p0, p1, p2, t ){
   return (1 - t) * (1 - t) * p0 + 2 * (1 - t) * t * p1 + t * t * p2;
-};
+}
 
-math.qbezierPtAt = function( p0, p1, p2, t ){
+export function qbezierPtAt( p0, p1, p2, t ){
   return {
-    x: math.qbezierAt( p0.x, p1.x, p2.x, t ),
-    y: math.qbezierAt( p0.y, p1.y, p2.y, t )
+    x: qbezierAt( p0.x, p1.x, p2.x, t ),
+    y: qbezierAt( p0.y, p1.y, p2.y, t )
   };
-};
+}
 
-math.lineAt = function( p0, p1, t, d ){
+export function lineAt( p0, p1, t, d ){
   let vec = {
     x: p1.x - p0.x,
     y: p1.y - p0.y
   };
 
-  let vecDist = math.dist( p0, p1 );
+  let vecDist = dist( p0, p1 );
 
   let normVec = {
     x: vec.x / vecDist,
@@ -95,27 +93,27 @@ math.lineAt = function( p0, p1, t, d ){
     x: p0.x + normVec.x * d,
     y: p0.y + normVec.y * d
   };
-};
+}
 
-math.lineAtDist = function( p0, p1, d ){
-  return math.lineAt( p0, p1, undefined, d );
-};
+export function lineAtDist( p0, p1, d ){
+  return lineAt( p0, p1, undefined, d );
+}
 
 // get angle at A via cosine law
-math.triangleAngle = function( A, B, C ){
-  let a = math.dist( B, C );
-  let b = math.dist( A, C );
-  let c = math.dist( A, B );
+export function triangleAngle( A, B, C ){
+  let a = dist( B, C );
+  let b = dist( A, C );
+  let c = dist( A, B );
 
   return Math.acos( (a*a + b*b - c*c)/(2*a*b) );
-};
+}
 
-math.bound = function( min, val, max ){
+export function bound( min, val, max ){
   return Math.max( min, Math.min( max, val ) );
-};
+}
 
 // makes a full bb (x1, y1, x2, y2, w, h) from implicit params
-math.makeBoundingBox = function( bb ){
+export function makeBoundingBox( bb ){
   if( bb == null ){
     return {
       x1: Infinity,
@@ -146,9 +144,9 @@ math.makeBoundingBox = function( bb ){
       };
     }
   }
-};
+}
 
-math.updateBoundingBox = function( bb1, bb2 ){
+export function updateBoundingBox( bb1, bb2 ){
   // update bb1 with bb2 bounds
 
   bb1.x1 = Math.min( bb1.x1, bb2.x1 );
@@ -158,9 +156,9 @@ math.updateBoundingBox = function( bb1, bb2 ){
   bb1.y1 = Math.min( bb1.y1, bb2.y1 );
   bb1.y2 = Math.max( bb1.y2, bb2.y2 );
   bb1.h = bb1.y2 - bb1.y1;
-};
+}
 
-math.expandBoundingBoxByPoint = function( bb, x, y ){
+export function expandBoundingBoxByPoint( bb, x, y ){
   bb.x1 = Math.min( bb.x1, x );
   bb.x2 = Math.max( bb.x2, x );
   bb.w = bb.x2 - bb.x1;
@@ -168,9 +166,9 @@ math.expandBoundingBoxByPoint = function( bb, x, y ){
   bb.y1 = Math.min( bb.y1, y );
   bb.y2 = Math.max( bb.y2, y );
   bb.h = bb.y2 - bb.y1;
-};
+}
 
-math.expandBoundingBox = function( bb, padding ){
+export function expandBoundingBox( bb, padding ){
   bb.x1 -= padding;
   bb.x2 += padding;
   bb.y1 -= padding;
@@ -179,9 +177,9 @@ math.expandBoundingBox = function( bb, padding ){
   bb.h = bb.y2 - bb.y1;
 
   return bb;
-};
+}
 
-math.boundingBoxesIntersect = function( bb1, bb2 ){
+export function boundingBoxesIntersect( bb1, bb2 ){
   // case: one bb to right of other
   if( bb1.x1 > bb2.x2 ){ return false; }
   if( bb2.x1 > bb1.x2 ){ return false; }
@@ -200,24 +198,24 @@ math.boundingBoxesIntersect = function( bb1, bb2 ){
 
   // otherwise, must have some overlap
   return true;
-};
+}
 
-math.inBoundingBox = function( bb, x, y ){
+export function inBoundingBox( bb, x, y ){
   return bb.x1 <= x && x <= bb.x2 && bb.y1 <= y && y <= bb.y2;
-};
+}
 
-math.pointInBoundingBox = function( bb, pt ){
+export function pointInBoundingBox( bb, pt ){
   return this.inBoundingBox( bb, pt.x, pt.y );
-};
+}
 
-math.boundingBoxInBoundingBox = function( bb1, bb2 ){
+export function boundingBoxInBoundingBox( bb1, bb2 ){
   return (
-       math.inBoundingBox( bb1, bb2.x1, bb2.y1 )
-    && math.inBoundingBox( bb1, bb2.x2, bb2.y2 )
+       inBoundingBox( bb1, bb2.x1, bb2.y1 )
+    && inBoundingBox( bb1, bb2.x2, bb2.y2 )
   );
-};
+}
 
-math.roundRectangleIntersectLine = function(
+export function roundRectangleIntersectLine(
   x, y, nodeX, nodeY, width, height, padding ){
 
   let cornerRadius = this.getRoundRectangleRadius( width, height );
@@ -356,9 +354,9 @@ math.roundRectangleIntersectLine = function(
   }
 
   return []; // if nothing
-};
+}
 
-math.inLineVicinity = function( x, y, lx1, ly1, lx2, ly2, tolerance ){
+export function inLineVicinity( x, y, lx1, ly1, lx2, ly2, tolerance ){
   let t = tolerance;
 
   let x1 = Math.min( lx1, lx2 );
@@ -368,9 +366,9 @@ math.inLineVicinity = function( x, y, lx1, ly1, lx2, ly2, tolerance ){
 
   return x1 - t <= x && x <= x2 + t
     && y1 - t <= y && y <= y2 + t;
-};
+}
 
-math.inBezierVicinity = function(
+export function inBezierVicinity(
   x, y, x1, y1, x2, y2, x3, y3, tolerance ){
 
   let bb = {
@@ -388,9 +386,9 @@ math.inBezierVicinity = function(
     // console.log('do more expensive check');
     return true;
   }
+}
 
-};
-math.solveQuadratic = function( a, b, c, val ){
+export function solveQuadratic( a, b, c, val ){
   c -= val;
 
   var r = b * b - 4 * a * c;
@@ -403,9 +401,9 @@ math.solveQuadratic = function( a, b, c, val ){
   var root2 = ( -b - sqrtR ) / denom;
 
   return [ root1, root2 ];
-};
+}
 
-math.solveCubic = function( a, b, c, d, result ){
+export function solveCubic( a, b, c, d, result ){
 
   // Solves a cubic function, returns root in form [r1, i1, r2, i2, r3, i3], where
   // r is the real component, i is the imaginary component
@@ -459,9 +457,9 @@ math.solveCubic = function( a, b, c, d, result ){
   result[4] = -term1 + r13 * Math.cos( (dum1 + 4.0 * Math.PI) / 3.0 );
 
   return;
-};
+}
 
-math.sqdistToQuadraticBezier = function(
+export function sqdistToQuadraticBezier(
   x, y, x1, y1, x2, y2, x3, y3 ){
 
   // Find minimum distance by using the minimum of the distance
@@ -529,9 +527,9 @@ math.sqdistToQuadraticBezier = function(
   }
 
   return minDistanceSquared;
-};
+}
 
-math.sqdistToFiniteLine = function( x, y, x1, y1, x2, y2 ){
+export function sqdistToFiniteLine( x, y, x1, y1, x2, y2 ){
   let offset = [ x - x1, y - y1 ];
   let line = [ x2 - x1, y2 - y1 ];
 
@@ -550,9 +548,9 @@ math.sqdistToFiniteLine = function( x, y, x1, y1, x2, y2 ){
   }
 
   return hypSq - adjSq;
-};
+}
 
-math.pointInsidePolygonPoints = function( x, y, points ){
+export function pointInsidePolygonPoints( x, y, points ){
   let x1, y1, x2, y2;
   let y3;
 
@@ -597,9 +595,9 @@ math.pointInsidePolygonPoints = function( x, y, points ){
   } else {
     return true;
   }
-};
+}
 
-math.pointInsidePolygon = function(
+export function pointInsidePolygon(
   x, y, basePoints, centerX, centerY, width, height, direction, padding ){
 
   //let direction = arguments[6];
@@ -649,10 +647,10 @@ math.pointInsidePolygon = function(
     points = transformedPoints;
   }
 
-  return math.pointInsidePolygonPoints( x, y, points );
-};
+  return pointInsidePolygonPoints( x, y, points );
+}
 
-math.joinLines = function( lineSet ){
+export function joinLines( lineSet ){
 
   let vertices = new Array( lineSet.length / 2 );
 
@@ -689,9 +687,9 @@ math.joinLines = function( lineSet ){
   }
 
   return vertices;
-};
+}
 
-math.expandPolygon = function( points, pad ){
+export function expandPolygon( points, pad ){
 
   let expandedLineSet = new Array( points.length * 2 );
 
@@ -728,9 +726,9 @@ math.expandPolygon = function( points, pad ){
   }
 
   return expandedLineSet;
-};
+}
 
-math.intersectLineEllipse = function(
+export function intersectLineEllipse(
   x, y, centerX, centerY, ellipseWradius, ellipseHradius ){
 
   let dispX = centerX - x;
@@ -750,9 +748,9 @@ math.intersectLineEllipse = function(
   let lenProportion = newLength / len;
 
   return [ (centerX - x) * lenProportion + x, (centerY - y) * lenProportion + y ];
-};
+}
 
-math.checkInEllipse = function(
+export function checkInEllipse(
   x, y, width, height, centerX, centerY, padding ){
   x -= centerX;
   y -= centerY;
@@ -761,10 +759,10 @@ math.checkInEllipse = function(
   y /= (height / 2 + padding);
 
   return x * x + y * y <= 1;
-};
+}
 
 // Returns intersections of increasing distance from line's start point
-math.intersectLineCircle = function(
+export function intersectLineCircle(
   x1, y1, x2, y2, centerX, centerY, radius ){
 
   // Calculate d, direction vector of line
@@ -819,9 +817,9 @@ math.intersectLineCircle = function(
     return [ nearIntersectionX, nearIntersectionY ];
   }
 
-};
+}
 
-math.findCircleNearPoint = function( centerX, centerY,
+export function findCircleNearPoint( centerX, centerY,
   radius, farX, farY ){
 
   let displacementX = farX - centerX;
@@ -834,9 +832,9 @@ math.findCircleNearPoint = function( centerX, centerY,
 
   return [ centerX + unitDisplacementX * radius,
     centerY + unitDisplacementY * radius ];
-};
+}
 
-math.findMaxSqDistanceToOrigin = function( points ){
+export function findMaxSqDistanceToOrigin( points ){
   let maxSqDistance = 0.000001;
   let sqDistance;
 
@@ -851,9 +849,9 @@ math.findMaxSqDistanceToOrigin = function( points ){
   }
 
   return maxSqDistance;
-};
+}
 
-math.midOfThree = function( a, b, c ){
+export function midOfThree( a, b, c ){
   if( (b <= a && a <= c) || (c <= a && a <= b) ){
     return a;
   } else if( (a <= b && b <= c) || (c <= b && b <= a) ){
@@ -861,10 +859,10 @@ math.midOfThree = function( a, b, c ){
   } else {
     return c;
   }
-};
+}
 
 // (x1,y1)=>(x2,y2) intersect with (x3,y3)=>(x4,y4)
-math.finiteLinesIntersect = function(
+export function finiteLinesIntersect(
   x1, y1, x2, y2,
   x3, y3, x4, y4,
   infiniteLines
@@ -927,14 +925,14 @@ math.finiteLinesIntersect = function(
       return [];
     }
   }
-};
+}
 
-// math.polygonIntersectLine( x, y, basePoints, centerX, centerY, width, height, padding )
+// polygonIntersectLine( x, y, basePoints, centerX, centerY, width, height, padding )
 // intersect a node polygon (pts transformed)
 //
-// math.polygonIntersectLine( x, y, basePoints, centerX, centerY )
+// polygonIntersectLine( x, y, basePoints, centerX, centerY )
 // intersect the points (no transform)
-math.polygonIntersectLine = function(
+export function polygonIntersectLine(
   x, y, basePoints, centerX, centerY, width, height, padding ){
 
   let intersections = [];
@@ -956,11 +954,11 @@ math.polygonIntersectLine = function(
     }
 
     if( padding > 0 ){
-      let expandedLineSet = math.expandPolygon(
+      let expandedLineSet = expandPolygon(
         transformedPoints,
         -padding );
 
-      points = math.joinLines( expandedLineSet );
+      points = joinLines( expandedLineSet );
     } else {
       points = transformedPoints;
     }
@@ -994,9 +992,9 @@ math.polygonIntersectLine = function(
   }
 
   return intersections;
-};
+}
 
-math.shortenIntersection = function(
+export function shortenIntersection(
   intersection, offset, amount ){
 
   let disp = [ intersection[0] - offset[0], intersection[1] - offset[1] ];
@@ -1010,16 +1008,16 @@ math.shortenIntersection = function(
   }
 
   return [ offset[0] + lenRatio * disp[0], offset[1] + lenRatio * disp[1] ];
-};
+}
 
-math.generateUnitNgonPointsFitToSquare = function( sides, rotationRadians ){
-  let points = math.generateUnitNgonPoints( sides, rotationRadians );
-  points = math.fitPolygonToSquare( points );
+export function generateUnitNgonPointsFitToSquare( sides, rotationRadians ){
+  let points = generateUnitNgonPoints( sides, rotationRadians );
+  points = fitPolygonToSquare( points );
 
   return points;
-};
+}
 
-math.fitPolygonToSquare = function( points ){
+export function fitPolygonToSquare( points ){
   let x, y;
   let sides = points.length / 2;
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -1055,9 +1053,9 @@ math.fitPolygonToSquare = function( points ){
   }
 
   return points;
-};
+}
 
-math.generateUnitNgonPoints = function( sides, rotationRadians ){
+export function generateUnitNgonPoints( sides, rotationRadians ){
 
   let increment = 1.0 / sides * 2 * Math.PI;
   let startAngle = sides % 2 === 0 ?
@@ -1076,34 +1074,31 @@ math.generateUnitNgonPoints = function( sides, rotationRadians ){
   }
 
   return points;
-};
+}
 
-math.getRoundRectangleRadius = function( width, height ){
+export function getRoundRectangleRadius( width, height ){
 
   // Set the default radius, unless half of width or height is smaller than default
   return Math.min( width / 4, height / 4, 8 );
-};
+}
 
-math.getCutRectangleCornerLength = function(){
+export function getCutRectangleCornerLength(){
   return 8;
-};
+}
 
-math.bezierPtsToQuadCoeff = function( p0, p1, p2 ){
+export function bezierPtsToQuadCoeff( p0, p1, p2 ){
   return [
     p0 - 2 * p1 + p2,
     2 * ( p1 - p0 ),
     p0
   ];
-};
+}
 
-math.getBarrelCurveConstants = function( width, height ){
+export function getBarrelCurveConstants( width, height ){
   // get curve width, height, and control point position offsets as a percentage of node height / width
   return {
     heightOffset: Math.min(15, 0.05 * height),
     widthOffset: Math.min(100, 0.25 * width),
     ctrlPtOffsetPct: 0.05
   };
-};
-
-
-module.exports = math;
+}

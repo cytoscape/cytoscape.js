@@ -1,6 +1,6 @@
-let util = require('../util');
-let is = require('../is');
-let Set = require('../set');
+import * as util from '../util';
+import * as is from '../is';
+import Set from '../set';
 
 // represents a node or an edge
 let Element = function( cy, params, restore ){
@@ -102,4 +102,4 @@ let Element = function( cy, params, restore ){
 
 };
 
-module.exports = Element;
+export default Element;

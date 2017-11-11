@@ -1,4 +1,4 @@
-var math = require( '../../../math' );
+import * as math from '../../../math';
 
 var CRp = {};
 
@@ -165,4 +165,4 @@ CRp.drawEllipsePath = function( context, centerX, centerY, width, height ){
     context.closePath();
   };
 
-module.exports = CRp;
+export default CRp;

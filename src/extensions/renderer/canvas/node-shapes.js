@@ -17,4 +17,4 @@ CRp.nodeShapeImpl = function( name, context, centerX, centerY, width, height, po
   }
 };
 
-module.exports = CRp;
+export default CRp;

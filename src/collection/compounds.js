@@ -1,4 +1,4 @@
-let Set = require('../set');
+import Set from '../set';
 
 let elesfn = ({
   parent: function( selector ){
@@ -211,4 +211,4 @@ elesfn.forEachUpAndDown = function( fn, includeSelf = true ){
 // aliases
 elesfn.ancestors = elesfn.parents;
 
-module.exports = elesfn;
+export default elesfn;

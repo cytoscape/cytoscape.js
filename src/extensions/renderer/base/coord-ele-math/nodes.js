@@ -24,4 +24,4 @@ BRp.getNodeShape = function( node ){
   return shape;
 };
 
-module.exports = BRp;
+export default BRp;

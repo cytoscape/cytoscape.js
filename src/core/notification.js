@@ -115,4 +115,4 @@ let corefn = ({
   }
 });
 
-module.exports = corefn;
+export default corefn;

@@ -1,92 +1,101 @@
 /*global console */
 
-let is = require( '../is' );
-let math = require( '../math' );
+import * as is from '../is';
+import * as math from '../math';
+import * as strings from './strings';
+import * as regex from './regex';
 
-let util = {
+export {
+  regex
+};
 
-  MAX_INT: Number.MAX_SAFE_INTEGER || 9007199254740991,
+export * from './colors';
+export * from './maps';
+export { default as memoize } from './memoize';
+export * from './strings';
+export * from './timing';
+export * from './sort';
 
-  trueify: function(){ return true; },
+export var MAX_INT = Number.MAX_SAFE_INTEGER || 9007199254740991;
 
-  falsify: function(){ return false; },
+export function trueify(){ return true; }
 
-  zeroify: function(){ return 0; },
+export function falsify(){ return false; }
 
-  noop: function(){},
+export function zeroify(){ return 0; }
 
-  error: function( msg ){
-    /* eslint-disable */
-    if( console.error ){
-      console.error.apply( console, arguments );
+export function noop(){}
 
-      if( console.trace ){ console.trace(); }
-    } else {
-      console.log.apply( console, arguments );
+export function error( msg ){
+  /* eslint-disable */
+  if( console.error ){
+    console.error.apply( console, arguments );
 
-      if( console.trace ){ console.trace(); }
-    }
-    /* eslint-enable */
-  },
+    if( console.trace ){ console.trace(); }
+  } else {
+    console.log.apply( console, arguments );
 
-  clone: function( obj ){
-    return this.extend( {}, obj );
-  },
-
-  // gets a shallow copy of the argument
-  copy: function( obj ){
-    if( obj == null ){
-      return obj;
-    } if( is.array( obj ) ){
-      return obj.slice();
-    } else if( is.plainObject( obj ) ){
-      return this.clone( obj );
-    } else {
-      return obj;
-    }
-  },
-
-  copyArray: function( arr ){
-    return arr.slice();
-  },
-
-  clonePosition: function( pos ){
-    return { x: pos.x, y: pos.y };
-  },
-
-  uuid: function(
-      a,b                // placeholders
-  ){
-      for(               // loop :)
-          b=a='';        // b - result , a - numeric letiable
-          a++<36;        //
-          b+=a*51&52  // if "a" is not 9 or 14 or 19 or 24
-                      ?  //  return a random number or 4
-             (
-               a^15      // if "a" is not 15
-                  ?      // genetate a random number from 0 to 15
-               8^Math.random()*
-               (a^20?16:4)  // unless "a" is 20, in which case a random number from 8 to 11
-                  :
-               4            //  otherwise 4
-               ).toString(16)
-                      :
-             '-'            //  in other cases (if "a" is 9,14,19,24) insert "-"
-          );
-      return b;
+    if( console.trace ){ console.trace(); }
   }
+  /* eslint-enable */
+}
 
-};
+export function clone( obj ){
+  return extend( {}, obj );
+}
 
-util.makeBoundingBox = math.makeBoundingBox.bind( math );
+// gets a shallow copy of the argument
+export function copy( obj ){
+  if( obj == null ){
+    return obj;
+  } if( is.array( obj ) ){
+    return obj.slice();
+  } else if( is.plainObject( obj ) ){
+    return clone( obj );
+  } else {
+    return obj;
+  }
+}
 
-util._staticEmptyObject = {};
+export function copyArray( arr ){
+  return arr.slice();
+}
 
-util.staticEmptyObject = function(){
-  return util._staticEmptyObject;
-};
+export function clonePosition( pos ){
+  return { x: pos.x, y: pos.y };
+}
 
-util.extend = Object.assign != null ? Object.assign.bind( Object ) : function( tgt ){
+export function uuid(
+    a,b                // placeholders
+){
+    for(               // loop :)
+        b=a='';        // b - result , a - numeric letiable
+        a++<36;        //
+        b+=a*51&52  // if "a" is not 9 or 14 or 19 or 24
+                    ?  //  return a random number or 4
+           (
+             a^15      // if "a" is not 15
+                ?      // genetate a random number from 0 to 15
+             8^Math.random()*
+             (a^20?16:4)  // unless "a" is 20, in which case a random number from 8 to 11
+                :
+             4            //  otherwise 4
+             ).toString(16)
+                    :
+           '-'            //  in other cases (if "a" is 9,14,19,24) insert "-"
+        );
+    return b;
+}
+
+export var makeBoundingBox = math.makeBoundingBox.bind( math );
+
+export var _staticEmptyObject = {};
+
+export function staticEmptyObject(){
+  return _staticEmptyObject;
+}
+
+export var extend = Object.assign != null ? Object.assign.bind( Object ) : function( tgt ){
   let args = arguments;
 
   for( let i = 1; i < args.length; i++ ){
@@ -106,17 +115,18 @@ util.extend = Object.assign != null ? Object.assign.bind( Object ) : function( t
   return tgt;
 };
 
-util.assign = util.extend;
+export var assign = extend;
 
-util.default = function( val, def ){
+// TODO rename to not conflict reserved word
+export default function _default( val, def ){
   if( val === undefined ){
     return def;
   } else {
     return val;
   }
-};
+}
 
-util.removeFromArray = function( arr, ele, manyCopies ){
+export function removeFromArray( arr, ele, manyCopies ){
   for( let i = arr.length; i >= 0; i-- ){
     if( arr[i] === ele ){
       arr.splice( i, 1 );
@@ -124,13 +134,13 @@ util.removeFromArray = function( arr, ele, manyCopies ){
       if( !manyCopies ){ break; }
     }
   }
-};
+}
 
-util.clearArray = function( arr ){
+export function clearArray( arr ){
   arr.splice( 0, arr.length );
-};
+}
 
-util.push = function( arr, otherArr ){
+export function push( arr, otherArr ){
   for( let i = 0; i < otherArr.length; i++ ){
     let el = otherArr[i];
 
@@ -138,32 +148,18 @@ util.push = function( arr, otherArr ){
   }
 };
 
-util.getPrefixedProperty = function( obj, propName, prefix ){
+export function getPrefixedProperty( obj, propName, prefix ){
   if( prefix ){
-    propName = this.prependCamel( prefix, propName ); // e.g. (labelWidth, source) => sourceLabelWidth
+    propName = strings.prependCamel( prefix, propName ); // e.g. (labelWidth, source) => sourceLabelWidth
   }
 
   return obj[ propName ];
-};
+}
 
-util.setPrefixedProperty = function( obj, propName, prefix, value ){
+export function setPrefixedProperty( obj, propName, prefix, value ){
   if( prefix ){
-    propName = this.prependCamel( prefix, propName ); // e.g. (labelWidth, source) => sourceLabelWidth
+    propName = strings.prependCamel( prefix, propName ); // e.g. (labelWidth, source) => sourceLabelWidth
   }
 
   obj[ propName ] = value;
-};
-
-[
-  require( './colors' ),
-  require( './maps' ),
-  { memoize: require( './memoize' ) },
-  require( './regex' ),
-  require( './strings' ),
-  require( './timing' ),
-  require( './sort' )
-].forEach( function( req ){
-  util.extend( util, req );
-} );
-
-module.exports = util;
+}

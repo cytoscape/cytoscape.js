@@ -56,4 +56,4 @@ styfn.json = function(){
   return json;
 };
 
-module.exports = styfn;
+export default styfn;

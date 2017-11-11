@@ -1,4 +1,4 @@
-var is = require( '../../is' );
+import * as is from '../../is';
 
 // search, spanning trees, etc
 var elesfn = ({
@@ -59,4 +59,4 @@ var elesfn = ({
   }
 });
 
-module.exports = elesfn;
+export default elesfn;

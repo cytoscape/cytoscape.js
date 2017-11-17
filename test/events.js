@@ -426,6 +426,73 @@ describe('Events', function(){
 
     });
 
+    it('allows dash in event name', function(){
+      var foo = false;
+      var fooBar = false;
+
+      cy.on('foo-bar');
+
+      cy.on('foo', function(){ foo = true; });
+
+      cy.on('foo-bar', function(){ fooBar = true; });
+
+      cy.emit('foo-bar');
+
+      expect(foo).to.be.false;
+      expect(fooBar).to.be.true;
+    });
+
+    it('allows underscore in event namespace', function(){
+      var bar = false;
+      var barBaz = false;
+      var foo = false;
+
+      cy.on('foo.bar', function(){ bar = true; });
+
+      cy.on('foo.bar-baz', function(){ barBaz = true; });
+
+      cy.on('foo', function(){ foo = true; });
+
+      cy.emit('foo.bar-baz');
+
+      expect(foo, 'foo').to.be.true;
+      expect(bar, 'foo.bar').to.be.false;
+      expect(barBaz, 'foo.bar-baz').to.be.true;
+    });
+
+    it('allows dash in event name', function(){
+      var foo = false;
+      var fooBar = false;
+
+      cy.on('foo_bar');
+
+      cy.on('foo', function(){ foo = true; });
+
+      cy.on('foo_bar', function(){ fooBar = true; });
+
+      cy.emit('foo_bar');
+
+      expect(foo).to.be.false;
+      expect(fooBar).to.be.true;
+    });
+
+    it('allows underscore in event namespace', function(){
+      var bar = false;
+      var barBaz = false;
+      var foo = false;
+
+      cy.on('foo.bar', function(){ bar = true; });
+
+      cy.on('foo.bar_baz', function(){ barBaz = true; });
+
+      cy.on('foo', function(){ foo = true; });
+
+      cy.emit('foo.bar_baz');
+
+      expect(foo, 'foo').to.be.true;
+      expect(bar, 'foo.bar').to.be.false;
+      expect(barBaz, 'foo.bar_baz').to.be.true;
+    });
   });
 
   describe('cy.one()', function(){
@@ -666,6 +733,74 @@ describe('Events', function(){
 
       expect(outer, 'outer').to.be.true;
       expect(inner, 'inner').to.be.false;
+    });
+
+    it('allows dash in event name', function(){
+      var n = cy.nodes()[0];
+      var foo = false;
+      var fooBar = false;
+
+      n.on('foo', function(){ foo = true; });
+
+      n.on('foo-bar', function(){ fooBar = true; });
+
+      n.emit('foo-bar');
+
+      expect(foo).to.be.false;
+      expect(fooBar).to.be.true;
+    });
+
+    it('allows dash in event namespace', function(){
+      var n = cy.nodes()[0];
+      var bar = false;
+      var barBaz = false;
+      var foo = false;
+
+      n.on('foo.bar', function(){ bar = true; });
+
+      n.on('foo.bar-baz', function(){ barBaz = true; });
+
+      n.on('foo', function(){ foo = true; });
+
+      n.emit('foo.bar-baz');
+
+      expect(foo, 'foo').to.be.true;
+      expect(bar, 'foo.bar').to.be.false;
+      expect(barBaz, 'foo.bar-baz').to.be.true;
+    });
+
+    it('allows underscore in event name', function(){
+      var n = cy.nodes()[0];
+      var foo = false;
+      var fooBar = false;
+
+      n.on('foo', function(){ foo = true; });
+
+      n.on('foo_bar', function(){ fooBar = true; });
+
+      n.emit('foo_bar');
+
+      expect(foo).to.be.false;
+      expect(fooBar).to.be.true;
+    });
+
+    it('allows underscore in event namespace', function(){
+      var n = cy.nodes()[0];
+      var bar = false;
+      var barBaz = false;
+      var foo = false;
+
+      n.on('foo.bar', function(){ bar = true; });
+
+      n.on('foo.bar_baz', function(){ barBaz = true; });
+
+      n.on('foo', function(){ foo = true; });
+
+      n.emit('foo.bar_baz');
+
+      expect(foo, 'foo').to.be.true;
+      expect(bar, 'foo.bar').to.be.false;
+      expect(barBaz, 'foo.bar_baz').to.be.true;
     });
 
   });

@@ -2,7 +2,7 @@ const util = require('./util');
 const is = require('./is');
 const Event = require('./event');
 
-const eventRegex = /(\w+)(\.(?:\w+|\*))?/; // regex for matching event strings (e.g. "click.namespace")
+const eventRegex = /^([^.]+)(\.(?:[^.]+))?$/; // regex for matching event strings (e.g. "click.namespace")
 const universalNamespace = '.*'; // matches as if no namespace specified and prevents users from unbinding accidentally
 
 const defaults = {

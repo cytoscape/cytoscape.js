@@ -190,9 +190,9 @@ var define = {
 
   // event function reusable stuff
   event: {
-    regex: /(\w+)(\.(?:\w+|\*))?/, // regex for matching event strings (e.g. "click.namespace")
+    regex: /([^.]+)(\.(?:[^.]+|\*))?/, // regex for matching event strings (e.g. "click.namespace")
     universalNamespace: '.*', // matches as if no namespace specified and prevents users from unbinding accidentally
-    optionalTypeRegex: /(\w+)?(\.(?:\w+|\*))?/,
+    optionalTypeRegex: /([^.]+)?(\.(?:[^.]+|\*))?/,
     falseCallback: function(){ return false; }
   },
 

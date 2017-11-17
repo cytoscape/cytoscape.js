@@ -2836,7 +2836,7 @@ var util = __webpack_require__(1);
 var is = __webpack_require__(0);
 var Event = __webpack_require__(15);
 
-var eventRegex = /(\w+)(\.(?:\w+|\*))?/; // regex for matching event strings (e.g. "click.namespace")
+var eventRegex = /^([^.]+)(\.(?:[^.]+))?$/; // regex for matching event strings (e.g. "click.namespace")
 var universalNamespace = '.*'; // matches as if no namespace specified and prevents users from unbinding accidentally
 
 var defaults = {
@@ -3621,7 +3621,8 @@ var Element = function Element(cy, params, restore) {
     edges: [], // array of connected edges
     children: [], // array of children
     parent: null, // parent ref
-    traversalCache: {} // cache of output of traversal functions
+    traversalCache: {}, // cache of output of traversal functions
+    backgrounding: false // whether background images are loading
   };
 
   // renderedPosition overrides if specified
@@ -4717,7 +4718,7 @@ module.exports = Stylesheet;
 "use strict";
 
 
-module.exports = "3.2.5";
+module.exports = "3.2.6";
 
 /***/ }),
 /* 23 */
@@ -22720,8 +22721,6 @@ CRp.drawNode = function (context, node, shiftToOriginWithBb, drawLabel) {
   nodeWidth = node.width() + 2 * padding;
   nodeHeight = node.height() + 2 * padding;
 
-  context.lineWidth = node.pstyle('border-width').pfValue;
-
   //
   // setup shift
 
@@ -22737,15 +22736,17 @@ CRp.drawNode = function (context, node, shiftToOriginWithBb, drawLabel) {
 
   var bgImgProp = node.pstyle('background-image');
   var urls = bgImgProp.value;
-  var url = void 0;
-  var urlDefined = [];
-  var image = [];
-  var numImages = urls.length;
-  for (var i = 0; i < numImages; i++) {
-    url = urls[i];
-    urlDefined[i] = url != null && url !== 'none';
-    if (urlDefined[i]) {
+  var urlDefined = new Array(urls.length);
+  var image = new Array(urls.length);
+  var numImages = 0;
+  for (var i = 0; i < urls.length; i++) {
+    var url = urls[i];
+    var defd = urlDefined[i] = url != null && url !== 'none';
+
+    if (defd) {
       var bgImgCrossOrigin = node.cy().style().getIndexedStyle(node, 'background-image-crossorigin', 'value', i);
+
+      numImages++;
 
       // get image, and if not loaded then ask to redraw when later loaded
       image[i] = r.getCachedImage(url, bgImgCrossOrigin, function () {
@@ -22766,24 +22767,6 @@ CRp.drawNode = function (context, node, shiftToOriginWithBb, drawLabel) {
   var borderOpacity = node.pstyle('border-opacity').value * parentOpacity;
 
   context.lineJoin = 'miter'; // so borders are square with the node shape
-
-  if (context.setLineDash) {
-    // for very outofdate browsers
-    switch (borderStyle) {
-      case 'dotted':
-        context.setLineDash([1, 1]);
-        break;
-
-      case 'dashed':
-        context.setLineDash([4, 2]);
-        break;
-
-      case 'solid':
-      case 'double':
-        context.setLineDash([]);
-        break;
-    }
-  }
 
   var setupShapeColor = function setupShapeColor() {
     var bgOpy = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : bgOpacity;
@@ -22846,7 +22829,7 @@ CRp.drawNode = function (context, node, shiftToOriginWithBb, drawLabel) {
     var prevBging = _p.backgrounding;
     var totalCompleted = 0;
 
-    for (var _i = 0; _i < numImages; _i++) {
+    for (var _i = 0; _i < image.length; _i++) {
       if (urlDefined[_i] && image[_i].complete && !image[_i].error) {
         totalCompleted++;
         r.drawInscribedImage(context, image[_i], node, _i, nodeOpacity);
@@ -22897,6 +22880,27 @@ CRp.drawNode = function (context, node, shiftToOriginWithBb, drawLabel) {
   var drawBorder = function drawBorder() {
     if (borderWidth > 0) {
 
+      context.lineWidth = borderWidth;
+      context.lineCap = 'butt';
+
+      if (context.setLineDash) {
+        // for very outofdate browsers
+        switch (borderStyle) {
+          case 'dotted':
+            context.setLineDash([1, 1]);
+            break;
+
+          case 'dashed':
+            context.setLineDash([4, 2]);
+            break;
+
+          case 'solid':
+          case 'double':
+            context.setLineDash([]);
+            break;
+        }
+      }
+
       if (usePaths) {
         context.stroke(path);
       } else {
@@ -22916,6 +22920,12 @@ CRp.drawNode = function (context, node, shiftToOriginWithBb, drawLabel) {
         }
 
         context.globalCompositeOperation = gco;
+      }
+
+      // reset in case we changed the border style
+      if (context.setLineDash) {
+        // for very outofdate browsers
+        context.setLineDash([]);
       }
     }
   };
@@ -22973,12 +22983,6 @@ CRp.drawNode = function (context, node, shiftToOriginWithBb, drawLabel) {
 
   drawText();
   drawOverlay();
-
-  // reset in case we changed the border style
-  if (context.setLineDash) {
-    // for very outofdate browsers
-    context.setLineDash([]);
-  }
 
   //
   // clean up shift

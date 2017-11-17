@@ -7,7 +7,7 @@ Fields:
  * `cy` : a reference to the corresponding core instance
  * `target` : indicates the element or core that first caused the event
  * `type` : the event type string (e.g. `"tap"`)
- * `namespace` : the event namespace string (e.g. `"foo"` for `"foo.tap"`)
+ * `namespace` : the event namespace string (e.g. `"foo"` for `"tap.foo"`)
  * `timeStamp` : Unix epoch time of event in milliseconds
 
 Fields for only user input device events:

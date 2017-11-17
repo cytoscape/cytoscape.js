@@ -2,7 +2,7 @@
 
 /*!
 
-Cytoscape.js 2.7.25 (MIT licensed)
+Cytoscape.js 2.7.26 (MIT licensed)
 
 Copyright (c) The Cytoscape Consortium
 
@@ -8504,9 +8504,9 @@ var define = {
 
   // event function reusable stuff
   event: {
-    regex: /(\w+)(\.(?:\w+|\*))?/, // regex for matching event strings (e.g. "click.namespace")
+    regex: /([^.]+)(\.(?:[^.]+|\*))?/, // regex for matching event strings (e.g. "click.namespace")
     universalNamespace: '.*', // matches as if no namespace specified and prevents users from unbinding accidentally
-    optionalTypeRegex: /(\w+)?(\.(?:\w+|\*))?/,
+    optionalTypeRegex: /([^.]+)?(\.(?:[^.]+|\*))?/,
     falseCallback: function(){ return false; }
   },
 
@@ -27428,7 +27428,7 @@ util.debounce = function( func, wait, options ){ // ported lodash debounce funct
 module.exports = util;
 
 },{"../is":83,"../window":107}],106:[function(_dereq_,module,exports){
-module.exports = "2.7.25";
+module.exports = "2.7.26";
 
 },{}],107:[function(_dereq_,module,exports){
 module.exports = ( typeof window === 'undefined' ? null : window ); // eslint-disable-line no-undef

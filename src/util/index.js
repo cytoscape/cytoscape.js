@@ -7,6 +7,8 @@ var math = require( '../math' );
 
 var util = {
 
+  MAX_INT: Number.MAX_SAFE_INTEGER || 9007199254740991,
+
   trueify: function(){ return true; },
 
   falsify: function(){ return false; },

@@ -270,6 +270,9 @@ ETCp.invalidateElement = function( ele ){
         caches[ lvl ] = null;
         util.removeFromArray( txr.eleCaches, cache );
 
+        // remove from queue since the old req was for the old state
+        self.removeFromQueue( ele );
+
         // might have to remove the entire texture if it's not efficiently using its space
         self.checkTextureUtility( txr );
       }
@@ -395,6 +398,7 @@ ETCp.queueElement = function( ele, bb, lvl ){
   if( existingReq ){ // use the max lvl b/c in between lvls are cheap to make
     existingReq.level = Math.max( existingReq.level, lvl );
     existingReq.reqs++;
+    existingReq.bb = bb;
 
     q.updateItem( existingReq );
   } else {
@@ -433,30 +437,30 @@ ETCp.dequeue = function( pxRatio /*, extent*/ ){
 
       dequeued.push( req );
 
-      var ele = req.ele;
-      var bb;
-
-      if(
-        ( ele.isEdge()
-          && (
-            !math.arePositionsSame( ele.source().position(), req.positions.source )
-            || !math.arePositionsSame( ele.target().position(), req.positions.target )
-          )
-        )
-        || ( !math.arePositionsSame( ele.position(), req.position ) )
-      ){
-        bb = ele.boundingBox();
-      } else {
-        bb = req.bb;
-      }
-
-      self.getElement( req.ele, bb, pxRatio, req.level, getTxrReasons.dequeue );
+      self.getElement( req.ele, req.bb, pxRatio, req.level, getTxrReasons.dequeue );
     } else {
       break;
     }
   }
 
   return dequeued;
+};
+
+ETCp.removeFromQueue = function( ele ){
+  var self = this;
+  var q = self.getElementQueue();
+  var id2q = self.getElementIdToQueue();
+  var req = id2q[ ele.id() ];
+
+  if( req != null ){
+    // bring to front of queue
+    req.reqs = util.MAX_INT;
+    q.updateItem( req );
+
+    q.pop(); // remove from queue
+
+    id2q[ ele.id() ] = null; // remove from lookup map
+  }
 };
 
 ETCp.onDequeue = function( fn ){ this.onDequeues.push( fn ); };

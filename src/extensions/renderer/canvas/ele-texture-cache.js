@@ -200,7 +200,7 @@ ETCp.getElement = function( ele, bb, pxRatio, lvl, reason ){
       downscale();
 
     } else {
-      self.queueElement( ele, bb, higherCache.level - 1 );
+      self.queueElement( ele, higherCache.level - 1 );
 
       return higherCache;
     }
@@ -218,7 +218,7 @@ ETCp.getElement = function( ele, bb, pxRatio, lvl, reason ){
     if( scalableFrom(lowerCache) ){
       // then use the lower quality cache for now and queue the better one for later
 
-      self.queueElement( ele, bb, lvl );
+      self.queueElement( ele, lvl );
 
       return lowerCache;
     }
@@ -388,7 +388,7 @@ ETCp.recycleTexture = function( txrH, minW ){
   }
 };
 
-ETCp.queueElement = function( ele, bb, lvl ){
+ETCp.queueElement = function( ele, lvl ){
   var self = this;
   var q = self.getElementQueue();
   var id2q = self.getElementIdToQueue();
@@ -398,24 +398,14 @@ ETCp.queueElement = function( ele, bb, lvl ){
   if( existingReq ){ // use the max lvl b/c in between lvls are cheap to make
     existingReq.level = Math.max( existingReq.level, lvl );
     existingReq.reqs++;
-    existingReq.bb = bb;
 
     q.updateItem( existingReq );
   } else {
     var req = {
       ele: ele,
-      bb: bb,
-      position: math.copyPosition( ele.position() ),
       level: lvl,
       reqs: 1
     };
-
-    if( ele.isEdge() ){
-      req.positions = {
-        source: math.copyPosition( ele.source().position() ),
-        target: math.copyPosition( ele.target().position() )
-      };
-    }
 
     q.push( req );
 
@@ -432,12 +422,21 @@ ETCp.dequeue = function( pxRatio /*, extent*/ ){
   for( var i = 0; i < maxDeqSize; i++ ){
     if( q.size() > 0 ){
       var req = q.pop();
+      var ele = req.ele;
+      var caches = ele._private.rscratch.imgCaches;
 
-      id2q[ req.ele.id() ] = null;
+      // dequeueing isn't necessary when an existing cache exists
+      if( caches[ req.level ] != null ){
+        continue;
+      }
+
+      id2q[ ele.id() ] = null;
 
       dequeued.push( req );
 
-      self.getElement( req.ele, req.bb, pxRatio, req.level, getTxrReasons.dequeue );
+      var bb = ele.boundingBox();
+
+      self.getElement( ele, bb, pxRatio, req.level, getTxrReasons.dequeue );
     } else {
       break;
     }
@@ -484,7 +483,7 @@ ETCp.setupDequeueing = defs.setupDequeueing({
   },
   shouldRedraw: function( self, deqd, pxRatio, extent ){
     for( var i = 0; i < deqd.length; i++ ){
-      var bb = deqd[i].bb;
+      var bb = deqd[i].ele.boundingBox();
 
       if( math.boundingBoxesIntersect( bb, extent ) ){
         return true;

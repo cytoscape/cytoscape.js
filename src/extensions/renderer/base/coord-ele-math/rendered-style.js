@@ -5,24 +5,24 @@ BRp.registerCalculationListeners = function(){
   var elesToUpdate = cy.collection();
   var r = this;
 
-  var enqueue = function( eles, e, dirtyStyleCaches ){
+  var enqueue = function( eles, e, dirtyStyleCaches = true ){
     elesToUpdate.merge( eles );
 
-    if( dirtyStyleCaches === true || dirtyStyleCaches === undefined ){
-      for( var i = 0; i < eles.length; i++ ){
-        var ele = eles[i];
-        var _p = ele._private;
-        var rstyle = _p.rstyle;
+    for( var i = 0; i < eles.length; i++ ){
+      var ele = eles[i];
+      var _p = ele._private;
+      var rstyle = _p.rstyle;
 
+      if( dirtyStyleCaches ){
         rstyle.clean = false;
         _p.bbCache = null;
+      }
 
-        var evts = rstyle.dirtyEvents = rstyle.dirtyEvents || { length: 0 };
+      var evts = rstyle.dirtyEvents = rstyle.dirtyEvents || { length: 0 };
 
-        if( !evts[ e.type ] ){
-          evts[ e.type ] = true;
-          evts.length++;
-        }
+      if( !evts[ e.type ] ){
+        evts[ e.type ] = true;
+        evts.length++;
       }
     }
   };

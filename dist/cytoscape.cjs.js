@@ -4718,7 +4718,7 @@ module.exports = Stylesheet;
 "use strict";
 
 
-module.exports = "3.2.6";
+module.exports = "3.2.7";
 
 /***/ }),
 /* 23 */
@@ -18472,24 +18472,26 @@ BRp.registerCalculationListeners = function () {
   var elesToUpdate = cy.collection();
   var r = this;
 
-  var enqueue = function enqueue(eles, e, dirtyStyleCaches) {
+  var enqueue = function enqueue(eles, e) {
+    var dirtyStyleCaches = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : true;
+
     elesToUpdate.merge(eles);
 
-    if (dirtyStyleCaches === true || dirtyStyleCaches === undefined) {
-      for (var i = 0; i < eles.length; i++) {
-        var ele = eles[i];
-        var _p = ele._private;
-        var rstyle = _p.rstyle;
+    for (var i = 0; i < eles.length; i++) {
+      var ele = eles[i];
+      var _p = ele._private;
+      var rstyle = _p.rstyle;
 
+      if (dirtyStyleCaches) {
         rstyle.clean = false;
         _p.bbCache = null;
+      }
 
-        var evts = rstyle.dirtyEvents = rstyle.dirtyEvents || { length: 0 };
+      var evts = rstyle.dirtyEvents = rstyle.dirtyEvents || { length: 0 };
 
-        if (!evts[e.type]) {
-          evts[e.type] = true;
-          evts.length++;
-        }
+      if (!evts[e.type]) {
+        evts[e.type] = true;
+        evts.length++;
       }
     }
   };
@@ -24005,7 +24007,7 @@ ETCp.getElement = function (ele, bb, pxRatio, lvl, reason) {
 
       downscale();
     } else {
-      self.queueElement(ele, bb, higherCache.level - 1);
+      self.queueElement(ele, higherCache.level - 1);
 
       return higherCache;
     }
@@ -24025,7 +24027,7 @@ ETCp.getElement = function (ele, bb, pxRatio, lvl, reason) {
     if (scalableFrom(lowerCache)) {
       // then use the lower quality cache for now and queue the better one for later
 
-      self.queueElement(ele, bb, lvl);
+      self.queueElement(ele, lvl);
 
       return lowerCache;
     }
@@ -24076,6 +24078,9 @@ ETCp.invalidateElement = function (ele) {
         // remove refs with the element
         caches[lvl] = null;
         util.removeFromArray(txr.eleCaches, cache);
+
+        // remove from queue since the old req was for the old state
+        self.removeFromQueue(ele);
 
         // might have to remove the entire texture if it's not efficiently using its space
         self.checkTextureUtility(txr);
@@ -24192,7 +24197,7 @@ ETCp.recycleTexture = function (txrH, minW) {
   }
 };
 
-ETCp.queueElement = function (ele, bb, lvl) {
+ETCp.queueElement = function (ele, lvl) {
   var self = this;
   var q = self.getElementQueue();
   var id2q = self.getElementIdToQueue();
@@ -24208,18 +24213,9 @@ ETCp.queueElement = function (ele, bb, lvl) {
   } else {
     var req = {
       ele: ele,
-      bb: bb,
-      position: math.copyPosition(ele.position()),
       level: lvl,
       reqs: 1
     };
-
-    if (ele.isEdge()) {
-      req.positions = {
-        source: math.copyPosition(ele.source().position()),
-        target: math.copyPosition(ele.target().position())
-      };
-    }
 
     q.push(req);
 
@@ -24236,27 +24232,44 @@ ETCp.dequeue = function (pxRatio /*, extent*/) {
   for (var i = 0; i < maxDeqSize; i++) {
     if (q.size() > 0) {
       var req = q.pop();
+      var ele = req.ele;
+      var caches = ele._private.rscratch.imgCaches;
 
-      id2q[req.ele.id()] = null;
+      // dequeueing isn't necessary when an existing cache exists
+      if (caches[req.level] != null) {
+        continue;
+      }
+
+      id2q[ele.id()] = null;
 
       dequeued.push(req);
 
-      var ele = req.ele;
-      var bb;
+      var bb = ele.boundingBox();
 
-      if (ele.isEdge() && (!math.arePositionsSame(ele.source().position(), req.positions.source) || !math.arePositionsSame(ele.target().position(), req.positions.target)) || !math.arePositionsSame(ele.position(), req.position)) {
-        bb = ele.boundingBox();
-      } else {
-        bb = req.bb;
-      }
-
-      self.getElement(req.ele, bb, pxRatio, req.level, getTxrReasons.dequeue);
+      self.getElement(ele, bb, pxRatio, req.level, getTxrReasons.dequeue);
     } else {
       break;
     }
   }
 
   return dequeued;
+};
+
+ETCp.removeFromQueue = function (ele) {
+  var self = this;
+  var q = self.getElementQueue();
+  var id2q = self.getElementIdToQueue();
+  var req = id2q[ele.id()];
+
+  if (req != null) {
+    // bring to front of queue
+    req.reqs = util.MAX_INT;
+    q.updateItem(req);
+
+    q.pop(); // remove from queue
+
+    id2q[ele.id()] = null; // remove from lookup map
+  }
 };
 
 ETCp.onDequeue = function (fn) {
@@ -24284,7 +24297,7 @@ ETCp.setupDequeueing = defs.setupDequeueing({
   },
   shouldRedraw: function shouldRedraw(self, deqd, pxRatio, extent) {
     for (var i = 0; i < deqd.length; i++) {
-      var bb = deqd[i].bb;
+      var bb = deqd[i].ele.boundingBox();
 
       if (math.boundingBoxesIntersect(bb, extent)) {
         return true;

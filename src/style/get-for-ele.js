@@ -116,4 +116,48 @@ styfn.getPropsList = function( propsObj ){
   return rstyle;
 };
 
+let getPropIntIterator = ( ele, propNames ) => {
+  let entry = { done: false, value: 0 };
+
+  let propIndex = 0;
+  let nProps = propNames.length;
+
+  let prop = null;
+  let strValue = null;
+  let strIndex = 0;
+  let strLength = 0;
+
+  let next = () => {
+    if( propIndex < nProps ){
+      if( prop === null ){
+        prop = ele.pstyle( propNames[ propIndex ] );
+        strValue = prop.strValue;
+        strIndex = 0;
+        strLength = strValue.length;
+      }
+
+      if( strIndex < strLength ){
+        entry.value = strValue.charCodeAt( strIndex++ );
+      } else {
+        propIndex++;
+        prop = null;
+
+        return next();
+      }
+    } else {
+      entry.done = true;
+    }
+
+    return entry;
+  };
+
+  let iter = { next };
+
+  return iter;
+};
+
+styfn.getPropertiesHash = function( ele, propNames, seed ){
+  return util.hashIterableInts( getPropIntIterator( ele, propNames, seed ) );
+};
+
 module.exports = styfn;

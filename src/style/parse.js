@@ -14,8 +14,10 @@ styfn.parse = function( name, value, propIsBypass, propIsFlat ){
   }
 
   let flatKey = ( propIsFlat === 'mapping' || propIsFlat === true || propIsFlat === false || propIsFlat == null ) ? 'dontcare' : propIsFlat;
-  let argHash = [ name, value, propIsBypass, flatKey ].join( '$' );
-  let propCache = self.propCache = self.propCache || {};
+  let bypassKey = propIsBypass ? 't' : 'f';
+  let valueKey = '' + value;
+  let argHash = util.hashStrings( name, valueKey, bypassKey, flatKey );
+  let propCache = self.propCache = self.propCache || [];
   let ret;
 
   if( !(ret = propCache[ argHash ]) ){

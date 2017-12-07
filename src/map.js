@@ -1,3 +1,5 @@
+/* global Map */
+
 class ObjectMap {
   constructor(){
     this._obj = {};
@@ -28,6 +30,4 @@ class ObjectMap {
   }
 }
 
-// TODO use the stdlib Map in future...
-// module.exports = typeof Map !== 'undefined' ? Map : ObjectMap;
-module.exports = ObjectMap;
+module.exports = typeof Map !== 'undefined' ? Map : ObjectMap;

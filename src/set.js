@@ -61,6 +61,4 @@ class ObjectSet {
   }
 }
 
-// TODO use the stdlib Set in future...
-// module.exports = typeof Set !== undef ? Set : ObjectSet;
-module.exports = ObjectSet;
+module.exports = typeof Set !== undef ? Set : ObjectSet;

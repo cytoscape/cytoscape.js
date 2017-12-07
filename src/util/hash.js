@@ -33,4 +33,24 @@ let hashString = function( str, seed ){
   return hashIterableInts( iterator, seed );
 };
 
-module.exports = { hashIterableInts, hashString };
+let hashStrings = function(){
+  return hashStringsArray( arguments );
+};
+
+let hashStringsArray = function( strs ){
+  let hash;
+
+  for( let i = 0; i < strs.length; i++ ){
+    let str = strs[i];
+
+    if( i === 0 ){
+      hash = hashString( str );
+    } else {
+      hash = hashString( str, hash );
+    }
+  }
+
+  return hash;
+};
+
+module.exports = { hashIterableInts, hashString, hashStrings, hashStringsArray };

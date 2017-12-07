@@ -162,7 +162,8 @@ util.setPrefixedProperty = function( obj, propName, prefix, value ){
   require( './regex' ),
   require( './strings' ),
   require( './timing' ),
-  require( './sort' )
+  require( './sort' ),
+  require( './hash' )
 ].forEach( function( req ){
   util.extend( util, req );
 } );

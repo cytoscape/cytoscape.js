@@ -1,8 +1,9 @@
-let is = require( '../is' );
+let is = require('../is');
+let util = require('../util');
 
 function styleCache( key, fn, ele ){
   var _p = ele._private;
-  var cache = _p.styleCache = _p.styleCache || {};
+  var cache = _p.styleCache = _p.styleCache || [];
   var val;
 
   if( (val = cache[key]) != null ){
@@ -15,12 +16,16 @@ function styleCache( key, fn, ele ){
 }
 
 function cacheStyleFunction( key, fn ){
+  key = util.hashString( key );
+
   return function cachedStyleFunction( ele ){
     return styleCache( key, fn, ele );
   };
 }
 
 function cachePrototypeStyleFunction( key, fn ){
+  key = util.hashString( key );
+
   let selfFn = ele => fn.call( ele );
 
   return function cachedPrototypeStyleFunction(){
@@ -48,7 +53,7 @@ let elesfn = ({
 
   dirtyStyleCache: function(){
     let cy = this.cy();
-    let dirty = ele => ele._private.styleCache = {};
+    let dirty = ele => ele._private.styleCache = null;
 
     if( cy.hasCompoundNodes() ){
       let eles;

@@ -218,15 +218,26 @@ styfn.applyContextStyle = function( cxtMeta, cxtStyle, ele ){
   };
 };
 
+// each of the three lists implicitly builds on top of the preceeding lists
+const fontProperties = ['font-style', 'font-size', 'font-family', 'font-weight'];
+const labelDimPropNames = ['text-transform', 'text-outline-width', 'text-wrap', 'text-max-width'];
+const labelStylePropNames = [];
+
+const labelPropNames = ['label'];
+const sourceLabelPropNames = ['source-label'];
+const targetLabelPropNames = ['target-label'];
+
 styfn.updateStyleHints = function(ele){
   let _p = ele._private;
   let self = this;
 
   if( ele.removed() ){ return; }
 
+  let isNode = _p.group === 'nodes';
+
   // set whether has pie or not; for greater efficiency
   let hasPie = false;
-  if( _p.group === 'nodes' ){
+  if( isNode ){
     for( let i = 1; i <= self.pieBackgroundN; i++ ){ // 1..N
       let size = ele.pstyle( 'pie-' + i + '-background-size' ).value;
 
@@ -239,28 +250,16 @@ styfn.updateStyleHints = function(ele){
 
   _p.hasPie = hasPie;
 
-  let transform = ele.pstyle( 'text-transform' ).strValue;
-  let content = ele.pstyle( 'label' ).strValue;
-  let srcContent = ele.pstyle( 'source-label' ).strValue;
-  let tgtContent = ele.pstyle( 'target-label' ).strValue;
-  let fStyle = ele.pstyle( 'font-style' ).strValue;
-  let size = ele.pstyle( 'font-size' ).pfValue + 'px';
-  let family = ele.pstyle( 'font-family' ).strValue;
-  // let letiant = style['font-letiant'].strValue;
-  let weight = ele.pstyle( 'font-weight' ).strValue;
-  let valign = ele.pstyle( 'text-valign' ).strValue;
-  let halign = ele.pstyle( 'text-valign' ).strValue;
-  let oWidth = ele.pstyle( 'text-outline-width' ).pfValue;
-  let wrap = ele.pstyle( 'text-wrap' ).strValue;
-  let wrapW = ele.pstyle( 'text-max-width' ).pfValue;
-  let labelStyleKey = fStyle + '$' + size + '$' + family + '$' + weight + '$' + transform + '$' + valign + '$' + halign + '$' + oWidth + '$' + wrap + '$' + wrapW;
-  _p.labelStyleKey = labelStyleKey;
-  _p.sourceLabelKey = labelStyleKey + '$' + srcContent;
-  _p.targetLabelKey = labelStyleKey + '$' + tgtContent;
-  _p.labelKey = labelStyleKey + '$' + content;
-  _p.fontKey = fStyle + '$' + weight + '$' + size + '$' + family;
+  _p.fontKey = self.getPropertiesHash( ele, fontProperties );
+  _p.labelDimsKey = self.getPropertiesHash( ele, labelDimPropNames, _p.fontKey );
+  _p.labelStyleKey = self.getPropertiesHash( ele, labelStylePropNames, _p.labelDimsKey );
 
-  _p.styleKey = Date.now();
+  _p.labelKey = self.getPropertiesHash( ele, labelPropNames, _p.labelStyleKey );
+
+  if( !isNode ){
+    _p.sourceLabelKey = self.getPropertiesHash( ele, sourceLabelPropNames, _p.labelStyleKey );
+    _p.targetLabelKey = self.getPropertiesHash( ele, targetLabelPropNames, _p.labelStyleKey );
+  }
 };
 
 // apply a property to the style (for internal use)
@@ -283,7 +282,7 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
   let self = this;
   let prop = parsedProp;
   let style = ele._private.style;
-  let fieldVal, flatProp;
+  let flatProp;
   let types = self.types;
   let type = self.properties[ prop.name ].type;
   let propIsBypass = prop.bypass;
@@ -568,7 +567,7 @@ styfn.updateMappers = function( eles ){
 };
 
 // diffProps : { name => { prev, next } }
-styfn.updateTransitions = function( ele, diffProps, isBypass ){
+styfn.updateTransitions = function( ele, diffProps ){
   let self = this;
   let _p = ele._private;
   let props = ele.pstyle( 'transition-property' ).value;

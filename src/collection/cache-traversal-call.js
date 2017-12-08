@@ -1,4 +1,5 @@
-let is = require( '../is' );
+let is = require('../is');
+let util = require('../util');
 
 let cache = function( fn, name ){
   return function traversalCache( arg1, arg2, arg3, arg4 ){
@@ -7,21 +8,22 @@ let cache = function( fn, name ){
     let key;
 
     if( selectorOrEles == null ){
-      key = 'null';
+      key = '';
     } else if( is.elementOrCollection( selectorOrEles ) && selectorOrEles.length === 1 ){
-      key = '#' + selectorOrEles.id();
+      key = selectorOrEles.id();
     }
 
     if( eles.length === 1 && key ){
       let _p = eles[0]._private;
       let tch = _p.traversalCache = _p.traversalCache || {};
-      let ch = tch[ name ] = tch[ name ] || {};
-      let cacheHit = ch[ key ];
+      let ch = tch[ name ] = tch[ name ] || [];
+      let hash = util.hashString( key );
+      let cacheHit = ch[ hash ];
 
       if( cacheHit ){
         return cacheHit;
       } else {
-        return ( ch[ key ] = fn.call( eles, arg1, arg2, arg3, arg4 ) );
+        return ( ch[ hash ] = fn.call( eles, arg1, arg2, arg3, arg4 ) );
       }
     } else {
       return fn.call( eles, arg1, arg2, arg3, arg4 );

@@ -586,16 +586,10 @@ let boundingBoxImpl = function( ele, options ){
   return bounds;
 };
 
-let tf = function( val ){
-  if( val ){
-    return 't';
-  } else {
-    return 'f';
-  }
-};
-
 let getKey = function( opts ){
-  let key = '';
+  let i = 0;
+  let tf = val => (val ? 1 : 0) << i++;
+  let key = 0;
 
   key += tf( opts.incudeNodes );
   key += tf( opts.includeEdges );
@@ -615,7 +609,7 @@ let cachedBoundingBoxImpl = function( ele, opts ){
     bb = boundingBoxImpl( ele, opts );
 
     if( !headless ){
-      _p.bbCache = _p.bbCache || {};
+      _p.bbCache = _p.bbCache || [];
       _p.bbCache[key] = bb;
     }
   } else {

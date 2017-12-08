@@ -323,7 +323,7 @@ BRp.getLabelText = function( ele, prefix ){
     var labelKey = rscratch( 'labelKey' );
 
     // save recalc if the label is the same as before
-    if( labelKey && rscratch( 'labelWrapKey' ) === labelKey ){
+    if( labelKey != null && rscratch( 'labelWrapKey' ) === labelKey ){
       // console.log('wrap cache hit');
       return rscratch( 'labelWrapCachedText' );
     }
@@ -335,7 +335,7 @@ BRp.getLabelText = function( ele, prefix ){
 
     for( var l = 0; l < lines.length; l++ ){
       var line = lines[ l ];
-      var lineDims = this.calculateLabelDimensions( ele, line, 'line=' + line );
+      var lineDims = this.calculateLabelDimensions( ele, line );
       var lineW = lineDims.width;
 
       if( lineW > maxW ){ // line is too long
@@ -345,7 +345,7 @@ BRp.getLabelText = function( ele, prefix ){
         for( var w = 0; w < words.length; w++ ){
           var word = words[ w ];
           var testLine = subline.length === 0 ? word : subline + ' ' + word;
-          var testDims = this.calculateLabelDimensions( ele, testLine, 'testLine=' + testLine );
+          var testDims = this.calculateLabelDimensions( ele, testLine );
           var testW = testDims.width;
 
           if( testW <= maxW ){ // word fits on current line
@@ -396,19 +396,17 @@ BRp.getLabelText = function( ele, prefix ){
   return text;
 };
 
-BRp.calculateLabelDimensions = function( ele, text, extraKey ){
+BRp.calculateLabelDimensions = function( ele, text ){
   var r = this;
 
-  var cacheKey = ele._private.labelStyleKey + '$@$' + text;
+  var cacheKey = util.hashString( text, ele._private.labelDimsKey );
 
-  if( extraKey ){
-    cacheKey += '$@$' + extraKey;
-  }
+  var cache = r.labelDimCache || (r.labelDimCache = []);
 
-  var cache = r.labelDimCache || (r.labelDimCache = {});
+  var existingVal = cache[ cacheKey ];
 
-  if( cache[ cacheKey ] ){
-    return cache[ cacheKey ];
+  if( existingVal != null ){
+    return existingVal;
   }
 
   var sizeMult = 1; // increase the scale to increase accuracy w.r.t. zoomed text
@@ -451,12 +449,10 @@ BRp.calculateLabelDimensions = function( ele, text, extraKey ){
   // put label content in div
   div.textContent = text;
 
-  cache[ cacheKey ] = {
+  return ( cache[ cacheKey ] = {
     width: Math.ceil( div.clientWidth / sizeMult ),
     height: Math.ceil( div.clientHeight / sizeMult )
-  };
-
-  return cache[ cacheKey ];
+  } );
 };
 
 

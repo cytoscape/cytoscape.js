@@ -1,3 +1,7 @@
+/* global Path2D */
+
+let util = require('../../../util');
+
 let CRp = {};
 
 CRp.drawEdge = function( context, edge, shiftToOriginWithBb, drawLabel ){
@@ -116,7 +120,7 @@ CRp.drawEdgePath = function( edge, context, pts, type ){
       path = context = rs.pathCache;
       pathCacheHit = true;
     } else {
-      path = context = new Path2D(); // eslint-disable-line no-undef
+      path = context = new Path2D();
       rs.pathCacheKey = pathCacheKey;
       rs.pathCache = path;
     }
@@ -217,7 +221,7 @@ CRp.drawArrowhead = function( context, edge, prefix, x, y, angle, opacity ){
     self.fillStyle( context, 255, 255, 255, 1 );
     self.strokeStyle( context, 255, 255, 255, 1 );
 
-    self.drawArrowShape( edge, prefix, context,
+    self.drawArrowShape( edge, context,
       arrowClearFill, edgeWidth, arrowShape, x, y, angle
     );
 
@@ -228,50 +232,55 @@ CRp.drawArrowhead = function( context, edge, prefix, x, y, angle, opacity ){
   self.fillStyle( context, color[0], color[1], color[2], opacity );
   self.strokeStyle( context, color[0], color[1], color[2], opacity );
 
-  self.drawArrowShape( edge, prefix, context,
+  self.drawArrowShape( edge, context,
     arrowFill, edgeWidth, arrowShape, x, y, angle
   );
 };
 
-CRp.drawArrowShape = function( edge, arrowType, context, fill, edgeWidth, shape, x, y, angle ){
+CRp.drawArrowShape = function( edge, context, fill, edgeWidth, shape, x, y, angle ){
   let r = this;
   let usePaths = this.usePaths();
-  let rs = edge._private.rscratch;
   let pathCacheHit = false;
   let path;
   let canvasContext = context;
-  let translation = { x: x, y: y };
+  let translation = { x, y };
   let scale = edge.pstyle( 'arrow-scale' ).value;
   let size = this.getArrowWidth( edgeWidth, scale );
   let shapeImpl = r.arrowShapes[ shape ];
 
   if( usePaths ){
-    let pathCacheKey = size + '$' + shape + '$' + angle + '$' + x + '$' + y;
-    rs.arrowPathCacheKey = rs.arrowPathCacheKey || {};
-    rs.arrowPathCache = rs.arrowPathCache || {};
+    let cache = r.arrowPathCache = r.arrowPathCache || [];
+    let key = util.hashString(shape);
+    let cachedPath = cache[ key ];
 
-    let alreadyCached = rs.arrowPathCacheKey[ arrowType ] === pathCacheKey;
-    if( alreadyCached ){
-      path = context = rs.arrowPathCache[ arrowType ];
+    if( cachedPath != null ){
+      path = context = cachedPath;
       pathCacheHit = true;
     } else {
-      path = context = new Path2D(); // eslint-disable-line no-undef
-      rs.arrowPathCacheKey[ arrowType ] = pathCacheKey;
-      rs.arrowPathCache[ arrowType ] = path;
+      path = context = new Path2D();
+      cache[ key ] = path;
     }
   }
 
   if( context.beginPath ){ context.beginPath(); }
 
   if( !pathCacheHit ){
-    shapeImpl.draw( context, size, angle, translation, edgeWidth );
+    if( usePaths ){ // store in the path cache with values easily manipulated later
+      shapeImpl.draw( context, 1, 0, { x: 0, y: 0 }, 1 );
+    } else {
+      shapeImpl.draw( context, size, angle, translation, edgeWidth );
+    }
   }
 
-  if( !shapeImpl.leavePathOpen && context.closePath ){
-    context.closePath();
-  }
+  if( context.closePath ){ context.closePath(); }
 
   context = canvasContext;
+
+  if( usePaths ){ // set transform to arrow position/orientation
+    context.translate( x, y );
+    context.rotate( angle );
+    context.scale( size, size );
+  }
 
   if( fill === 'filled' || fill === 'both' ){
     if( usePaths ){
@@ -282,7 +291,7 @@ CRp.drawArrowShape = function( edge, arrowType, context, fill, edgeWidth, shape,
   }
 
   if( fill === 'hollow' || fill === 'both' ){
-    context.lineWidth = ( shapeImpl.matchEdgeWidth ? edgeWidth : 1 );
+    context.lineWidth = ( shapeImpl.matchEdgeWidth ? edgeWidth : 1 ) / ( usePaths ? size : 1 );
     context.lineJoin = 'miter';
 
     if( usePaths ){
@@ -290,6 +299,12 @@ CRp.drawArrowShape = function( edge, arrowType, context, fill, edgeWidth, shape,
     } else {
       context.stroke();
     }
+  }
+
+  if( usePaths ){ // reset transform by applying inverse
+    context.scale( 1/size, 1/size );
+    context.rotate( -angle );
+    context.translate( -x, -y );
   }
 };
 

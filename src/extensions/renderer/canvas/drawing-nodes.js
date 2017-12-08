@@ -1,6 +1,7 @@
 /* global Path2D */
 
-let is = require( '../../../is' );
+let is = require('../../../is');
+let util = require('../../../util');
 
 let CRp = {};
 
@@ -91,17 +92,24 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
   let shapePts = node.pstyle('shape-polygon-points').pfValue;
 
   if( usePaths ){
-    let pathCacheKey = styleShape + '$' + nodeWidth + '$' + nodeHeight + ( styleShape === 'polygon' ? '$' + shapePts.join('$') : '' );
-
     context.translate( pos.x, pos.y );
 
-    if( rs.pathCacheKey === pathCacheKey ){
-      path = rs.pathCache;
+    let pathCache = r.nodePathCache = r.nodePathCache || [];
+
+    let key = util.hashStrings(
+      styleShape === 'polygon' ? styleShape + ',' + shapePts.join(',') : styleShape,
+      '' + nodeHeight,
+      '' + nodeWidth
+    );
+
+    let cachedPath = pathCache[ key ];
+
+    if( cachedPath != null ){
+      path = cachedPath;
       pathCacheHit = true;
     } else {
       path = new Path2D();
-      rs.pathCacheKey = pathCacheKey;
-      rs.pathCache = path;
+      pathCache[ key ] = path;
     }
   }
 

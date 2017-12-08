@@ -117,19 +117,9 @@ CRp.setupTextStyle = function( context, ele ){
   var color = ele.pstyle( 'color' ).value;
   var outlineColor = ele.pstyle( 'text-outline-color' ).value;
 
-  var fontCacheKey = ele._private.fontKey;
-  var cache = this.getFontCache( context );
+  context.font = labelStyle + ' ' + labelWeight + ' ' + labelSize + ' ' + labelFamily;
 
-  if( cache.key !== fontCacheKey ){
-    context.font = labelStyle + ' ' + labelWeight + ' ' + labelSize + ' ' + labelFamily;
-
-    cache.key = fontCacheKey;
-  }
-
-  // Calculate text draw position based on text alignment
-
-  // so text outlines aren't jagged
-  context.lineJoin = 'round';
+  context.lineJoin = 'round'; // so text outlines aren't jagged
 
   this.fillStyle( context, color[ 0 ], color[ 1 ], color[ 2 ], opacity );
 

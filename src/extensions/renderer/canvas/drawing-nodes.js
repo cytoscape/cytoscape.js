@@ -94,7 +94,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
   if( usePaths ){
     context.translate( pos.x, pos.y );
 
-    let pathCache = rs.nodePathCache = rs.nodePathCache || [];
+    let pathCache = r.nodePathCache = r.nodePathCache || [];
 
     let key = util.hashStrings(
       styleShape === 'polygon' ? styleShape + ',' + shapePts.join(',') : styleShape,

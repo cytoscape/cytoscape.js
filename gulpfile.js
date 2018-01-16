@@ -384,7 +384,7 @@ gulp.task('dist', ['build'], function(){
 });
 
 gulp.task('pubprep', function(next){
-  runSequence('pkgver', 'dist', 'docs-pub', 'pubpush', next);
+  runSequence('pkgver', 'dist', 'copyright', 'docs-pub', 'pubpush', next);
 });
 
 gulp.task('pubpush', $.shell.task( replaceShellVars([
@@ -434,6 +434,10 @@ gulp.task('docs-push', function(){
 
 gulp.task('sniper', ['build-min'], $.shell.task( replaceShellVars([
   '$NPM run sniper'
+]) ));
+
+gulp.task('copyright', $.shell.task( replaceShellVars([
+  '$NPM run copyright'
 ]) ));
 
 gulp.task('npm', $.shell.task( replaceShellVars([

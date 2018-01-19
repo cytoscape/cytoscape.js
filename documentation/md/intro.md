@@ -1,7 +1,8 @@
 ## Factsheet
 
  * A fully featured graph library written in pure JS
- * Permissive open source license (MIT)
+ * Permissive open source license (MIT) for the core Cytoscape.js library and all first-party extensions
+ * Used in commercial projects and open-source projects in production
  * Designed for users first, for both frontfacing app usecases *and* developer usecases
  * Highly optimised
  * Compatible with

@@ -135,6 +135,25 @@ module.exports = {
       || this.hsl2tuple( color );
   },
 
+  gradient2tuple: function( gradient ){
+    let m = new RegExp( '^' + this.regex.gradient + '$' ).exec( gradient );
+    if( !m ){
+      return null; //unsupported
+    }
+    let argRegexp = new RegExp(this.regex.gradientArguemnts, 'g');
+    let tuples = [];
+    while (m = argRegexp.exec( gradient )) {
+      let tuple = this.color2tuple(m[1]);
+      if (tuple) tuples.push(tuple);
+    }
+    return tuples;
+  },
+
+  colorOrGradient2tuple: function( color ){
+    return this.color2tuple(color)
+      || this.gradient2tuple(color);
+  },
+
   colors: {
     // special colour names
     transparent: [0, 0, 0, 0], // NB alpha === 0

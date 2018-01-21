@@ -37,8 +37,18 @@ CRp.drawEdge = function( context, edge, shiftToOriginWithBb, drawLabel ){
     context.lineWidth = edgeWidth;
     context.lineCap = lineCap;
 
-    r.strokeStyle( context, lineColor[0], lineColor[1], lineColor[2], strokeOpacity );
-
+    if (Array.isArray(lineColor[0])) { //check if gradient
+      let grd = context.createLinearGradient(rs.allpts[0], rs.allpts[1], rs.allpts[rs.allpts.length-2], rs.allpts[rs.allpts.length-1]);
+      let length = lineColor.length;
+      for (let i = 0; i < length ; i++) {
+        grd.addColorStop(i / (length - 1), 'rgba(' + lineColor[i][0] + ',' + lineColor[i][1] + ',' + lineColor[i][2] + ',' + strokeOpacity + ')');
+      }
+      context.strokeStyle = grd;
+    }
+    else {
+      r.strokeStyle(context, lineColor[0], lineColor[1], lineColor[2], strokeOpacity);
+    }
+    
     r.drawEdgePath(
       edge,
       context,

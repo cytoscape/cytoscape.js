@@ -46,6 +46,7 @@ let styfn = {};
     bgCrossOrigin: { enums: [ 'anonymous', 'use-credentials' ], multiple: true },
     bgClip: { enums: [ 'none', 'node' ] },
     color: { color: true },
+    colorOrGradient: { colorOrGradient: true },
     bool: { enums: [ 'yes', 'no' ] },
     lineStyle: { enums: [ 'solid', 'dotted', 'dashed' ] },
     lineCap: { enums: [ 'butt', 'round', 'square' ] },
@@ -254,7 +255,7 @@ let styfn = {};
 
     // edge line
     { name: 'line-style', type: t.lineStyle },
-    { name: 'line-color', type: t.color },
+    { name: 'line-color', type: t.colorOrGradient },
     { name: 'line-cap', type: t.lineCap },
     { name: 'curve-style', type: t.curveStyle },
     { name: 'haystack-radius', type: t.zeroOneNumber },

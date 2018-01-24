@@ -53,5 +53,6 @@ module.exports = {
       }
     }) : null
   ].filter( isNotNil ),
-  devtool: SOURCEMAPS ? 'inline-source-map' : false
+  devtool: SOURCEMAPS ? 'inline-source-map' : false,
+  node: false
 };

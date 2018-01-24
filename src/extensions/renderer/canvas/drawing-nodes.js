@@ -107,6 +107,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
     if( cachedPath != null ){
       path = cachedPath;
       pathCacheHit = true;
+      rs.pathCache = path;
     } else {
       path = new Path2D();
       pathCache[ key ] = rs.pathCache = path;

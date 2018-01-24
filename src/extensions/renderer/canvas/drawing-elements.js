@@ -80,7 +80,7 @@ CRp.drawLayeredElements = function( context, eles, pxRatio, extent ){
   }
 };
 
-if( process.NODE_ENV !== 'production' ){
+if( process.env.NODE_ENV !== 'production' ){
   CRp.drawDebugPoints = function( context, eles ){
     let draw = function( x, y, color ){
       context.fillStyle = color;

@@ -6,15 +6,9 @@
   <link rel="stylesheet" href="lib/mocha.css" />
 
   <script src="lib/chai.js"></script>
-  <script src="lib/jquery.js"></script>
   <script src="lib/bluebird.js"></script>
-  <script src="lib/livereload.js"></script>
 
-  <!-- `gulp testrefs` updates these scripts -->
-
-  <!-- inject:js -->
   <script src="../build/cytoscape.js"></script>
-  <!-- endinject -->
 
   <script>
     window.require = function( name, fallbackVal ){
@@ -30,9 +24,6 @@
     <script src="lib/mocha.js"></script>
     <script>mocha.setup('bdd')</script>
 
-    <!-- `gulp testlist` updates these scripts -->
-
-    <!-- inject:test:js -->
     <script src="collection-affinity-propagation.js"></script>
     <script src="collection-algorithms.js"></script>
     <script src="collection-astar.js"></script>
@@ -57,9 +48,7 @@
     <script src="core-init.js"></script>
     <script src="events.js"></script>
     <script src="extensions.js"></script>
-    <script src="foo.js"></script>
     <script src="selectors.js"></script>
-    <!-- endinject -->
 
     <script>mocha.run();</script>
 

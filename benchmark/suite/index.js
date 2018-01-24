@@ -1,6 +1,6 @@
 var Benchmark = require('benchmark');
 var newCytoscape = require('../../build/cytoscape.cjs');
-var oldCytoscape = require('./cytoscape.js');
+var oldCytoscape = require('../../build/cytoscape.benchmark.js');
 
 global.newCytoscape = newCytoscape;
 global.oldCytoscape = oldCytoscape;
@@ -10,6 +10,18 @@ function Suite( name, suiteOpts ){
 
   var suite = new Benchmark.Suite( name, suiteOpts );
   var suiteAdd = suite.add;
+
+  suite.on('start', function(){
+    console.log('Starting benchmark:', suite.name);
+  });
+
+  suite.on('cycle', function(event) {
+    console.log(String(event.target));
+  });
+
+  suite.on('complete', function(){
+    console.log( 'Fastest is:' ,this.filter('fastest').map('name')[0] );
+  });
 
   suite.add = function( fn ){
     global.setup = suiteOpts.setup || function( cytoscape ){

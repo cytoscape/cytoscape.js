@@ -44,7 +44,7 @@ module.exports = {
     ].filter( isNotNil )
   },
   plugins: [
-    new webpack.EnvironmentPlugin(['NODE_ENV']),
+    new webpack.EnvironmentPlugin(['NODE_ENV', 'VERSION']),
 
     MINIFY ? new webpack.optimize.UglifyJsPlugin({
       compress: {

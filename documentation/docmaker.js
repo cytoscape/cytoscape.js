@@ -34,6 +34,8 @@ try {
   throw e;
 }
 
+config.version = process.env.VERSION || 'snapshot';
+
 // load the demo file
 try {
   config.demojs = fs.readFileSync( path.join(__dirname, demoFile), 'utf8');

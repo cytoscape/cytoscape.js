@@ -1,6 +1,4 @@
 {
-  "version": "3.3.0-unstable",
-
   "fnArgLinks": {
     "selector": "#selectors",
     "event": "#events",

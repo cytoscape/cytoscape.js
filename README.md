@@ -74,26 +74,37 @@ Install `node`, `npm` and `gulp` (optional).  Of course, `npm install` before us
 
 ## Build instructions
 
-Run `npm run <target>` or `gulp <target>` in the console.  The main targets are:
+Run `npm run <target>` in the console.  The main targets are:
 
 **Building:**
 
- * `build` (default) : build the library
+ * `build`: do all builds of the library (unmin, min, umd)
+ * `build:unmin` : do the unminified build with bundled dependencies (for simple html pages, good for novices)
+ * `build:min` : do the unminified build with bundled dependencies (for simple html pages, good for novices)
+ * `build:umd` : do the umd (cjd/amd/globals) build
  * `clean` : clean the `build` directory
- * `watch` : automatically build lib and tests for debugging (no babel, very quick)
- * `watch-babel` : automatically build lib and tests for debugging (with babel; good for testing out of date browsers)
- * `zip` : build the release ZIP
- * `dist` : update the distribution JS for npm, bower, etc.
+ * `docs` : build the docs into `documentation`
+ * `release` : build all release artefacts
+ * `watch` : automatically build lib for debugging (with sourcemap, no babel, very quick)
+   * good for general testing on `debug/index.html`
+   * served on `http://localhost:8080` or the first available port thereafter, with livereload on `debug/index.html`
+ * `watch:babel` : automatically build lib for debugging (with sourcemap, with babel, a bit slower)
+   * good for testing performance or for testing out of date browsers
+   * served on `http://localhost:8080` or the first available port thereafter, with livereload on `debug/index.html`
+ * `watch:umd` : automatically build prod umd bundle (no sourcemap, with babel)
+   * good for testing cytoscape in another project (with a `"cytoscape": "file:./path/to/cytoscape"` reference in your project's `package.json`)
+   * no http server
+ * `dist` : update the distribution js for npm, bower, etc.
 
 **Testing:**
 
-If the `TRAVIS` or `TEST_BUILD` environment variables are defined, then `mocha` or `gulp test` will test `build/cytoscape.cjs.js`.  Otherwise, the unbundled, unbabelified, raw source is tested.  This keeps local tests very quick to run on modern versions of Node while ensuring we can test old versions of Node as well.  The library can be built on `node>=4`, but it can be tested on `node>=0.10`.
+If the `TRAVIS` or `TEST_BUILD` environment variables are defined, then `mocha` or `gulp test` will test `build/cytoscape.umd.js`.  Otherwise, the unbundled, unbabelified, raw source is tested.  This keeps local tests very quick to run on modern versions of node while ensuring we can test old versions of node as well.  The library can be built on `node>=4`, but it can be tested on `node>=0.10`.
 
  * `test` : run the Mocha unit tests
- * `lint` : lint the JS sources via eslint
- * `benchmark` : run benchmark regression tests
- * `benchmark-single` : run benchmarks only for the suite specified in `benchmark/single`
- * `sniper` : runs a BioJS sniper server that hosts demos
+ * `lint` : lint the js sources via eslint
+ * `benchmark` : run all benchmarks
+ * `benchmark:single` : run benchmarks only for the suite specified in `benchmark/single`
+ * `sniper` : runs a biojs sniper server that hosts demos
 
 
 
@@ -102,10 +113,13 @@ If the `TRAVIS` or `TEST_BUILD` environment variables are defined, then `mocha` 
  1. Do each backport patch release before the corresponding current release.  This ensures that npm lists the current version as the latest one.
  1. Make sure the docs are updated with the list of releases in `documentation/md/intro.md`
  1. Update the `VERSION` environment variable, e.g. `export VERSION=1.2.3`
- 1. Confirm JS files pass linting: `gulp lint`
- 1. Confirm all tests passing: `gulp test`
- 1. Test the docs and demos with the latest code: `gulp docs-pub`
- 1. Build and publish the release: `gulp publish`
+ 1. Confirm all tests passing: `npm run test` (see also `test/index.html` for browser testing)
+ 1. Prepare a release: `npm run release`
+ 1. Review the files that were just built in the previous step.  Try out the newly-built docs and demos.
+ 1. Add the the release to git: `git add . && git commit -m "Build $VERSION"`
+ 1. Update the package version: `npm version $VERSION`
+ 1. Push the release changes: `git push && git push --tags`
+ 1. Publish the release to npm: `npm publish .`
  1. [Create a release](https://github.com/cytoscape/cytoscape.js/releases/new) for Zenodo from the latest tag
 
 

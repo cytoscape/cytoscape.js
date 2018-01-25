@@ -173,6 +173,9 @@ let styfn = {};
     { name: 'text-border-style', type: t.borderStyle },
     { name: 'text-background-shape', type: t.textBackgroundShape},
     // { name: 'text-decoration', type: t.textDecoration }, // not supported in canvas
+    { name: 'text-shadow', type: t.bidirectionalSizes },
+    { name: 'text-shadow-color', type: t.color },
+    { name: 'text-shadow-opacity', type: t.zeroOneNumber },
     { name: 'text-transform', type: t.textTransform },
     { name: 'text-wrap', type: t.textWrap },
     { name: 'text-max-width', type: t.size },
@@ -216,6 +219,11 @@ let styfn = {};
     { name: 'background-blacken', type: t.nOneOneNumber },
     { name: 'padding', type: t.sizeMaybePercent },
     { name: 'padding-relative-to', type: t.paddingRelativeTo },
+
+    // node shadow
+    { name: 'box-shadow', type: t.bidirectionalSizes },
+    { name: 'box-shadow-color', type: t.color },
+    { name: 'box-shadow-opacity', type: t.zeroOneNumber },
 
     // node border
     { name: 'border-color', type: t.color },
@@ -364,6 +372,8 @@ styfn.getDefaultProperties = util.memoize( function(){
     'text-outline-opacity': 1,
     'text-opacity': 1,
     'text-decoration': 'none',
+    'text-shadow-color': '#000',
+    'text-shadow-opacity': 1,
     'text-transform': 'none',
     'text-wrap': 'none',
     'text-max-width': 9999,
@@ -433,6 +443,10 @@ styfn.getDefaultProperties = util.memoize( function(){
     'width': 30,
     'shape': 'ellipse',
     'shape-polygon-points': '-1, -1,   1, -1,   1, 1,   -1, 1',
+
+    // node shadow
+    'box-shadow-color': '#000',
+    'box-shadow-opacity': 1,
 
     // ghost props
     'ghost': 'no',

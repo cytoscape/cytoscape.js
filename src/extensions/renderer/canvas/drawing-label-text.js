@@ -116,6 +116,9 @@ CRp.setupTextStyle = function( context, ele ){
   var outlineOpacity = ele.pstyle( 'text-outline-opacity' ).value * opacity;
   var color = ele.pstyle( 'color' ).value;
   var outlineColor = ele.pstyle( 'text-outline-color' ).value;
+  var textShadow = ele.pstyle( 'text-shadow' );
+  var textShadowColor = ele.pstyle( 'text-shadow-color' ).value;
+  var textShadowOpacity = ele.pstyle( 'text-shadow-opacity' ).value * parentOpacity;
 
   var fontCacheKey = ele._private.fontKey;
   var cache = this.getFontCache( context );
@@ -134,6 +137,20 @@ CRp.setupTextStyle = function( context, ele ){
   this.fillStyle( context, color[ 0 ], color[ 1 ], color[ 2 ], opacity );
 
   this.strokeStyle( context, outlineColor[ 0 ], outlineColor[ 1 ], outlineColor[ 2 ], outlineOpacity );
+
+  if ( textShadow ) {
+    let shadow = textShadow.pfValue;
+    context.shadowOffsetX = shadow[0];
+    context.shadowOffsetY = (shadow[1] || 0);
+    context.shadowBlur = (shadow[2] || 0);
+    this.shadowColor(context, textShadowColor[0], textShadowColor[1], textShadowColor[2], textShadowOpacity);
+  }
+  else { // reset shadow
+    context.shadowOffsetX = 0;
+    context.shadowOffsetY = 0;
+    context.shadowBlur = 0;
+    context.shadowColor = null;
+  }
 };
 
 function roundRect( ctx, x, y, width, height, radius ){

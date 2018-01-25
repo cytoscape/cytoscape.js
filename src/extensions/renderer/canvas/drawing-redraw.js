@@ -75,6 +75,20 @@ CRp.strokeStyle = function( context, r, g, b, a ){
   // }
 };
 
+CRp.shadowColor = function( context, r, g, b, a ){
+  context.shadowColor = 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
+
+  // turn off for now, seems context does its own caching
+
+  // var cache = this.paintCache(context);
+
+  // var shadowColor = 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
+
+  // if( cache.shadowColor !== shadowColor ){
+  //   context.shadowColor = cache.shadowColor = shadowColor;
+  // }
+};
+
 // Resize canvas
 CRp.matchCanvasSize = function( container ){
   var r = this;

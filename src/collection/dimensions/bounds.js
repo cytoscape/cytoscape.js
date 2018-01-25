@@ -403,6 +403,15 @@ let boundingBoxImpl = function( ele, options ){
       wHalf = w / 2;
     }
 
+    const boxShadow = ele.pstyle( 'box-shadow' );
+    if( boxShadow ){
+      let shadow = boxShadow.value;
+      let hOffset = shadow[0],
+        vOffset = (shadow[1] || 0),
+        blur = (shadow[2] || 0);
+      overlayPadding += Math.max(blur, 0) + Math.abs(hOffset)+ Math.abs(vOffset);
+    }
+
     if( isNode && options.includeNodes ){
       let pos = ele.position();
       x = pos.x;

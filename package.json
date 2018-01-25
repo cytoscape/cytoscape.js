@@ -129,7 +129,7 @@
     "update": "^0.7.4",
     "updater-license": "^1.0.0",
     "vinyl-paths": "^2.1.0",
-    "webpack": "^2.6.1"
+    "webpack": "^3.10.0"
   },
   "sniper": {
     "js": [

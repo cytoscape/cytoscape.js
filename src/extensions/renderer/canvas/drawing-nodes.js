@@ -80,15 +80,11 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
   context.lineJoin = 'miter'; // so borders are square with the node shape
 
   const setupShadow = ( shadow, shadowColor, shadowOpacity ) => {
-    if ( shadow.length > 0 ) {
-      context.shadowOffsetX = shadow[0];
-      context.shadowOffsetY = (shadow[1] || 0);
-      context.shadowBlur = (shadow[2] || 0);
-      context.shadowColor = null;
-    }
-    if ( shadowColor ) {
-      r.shadowColor(context, shadowColor[0], shadowColor[1], shadowColor[2], shadowOpacity );
-    }
+    context.shadowOffsetX = shadow[0];
+    context.shadowOffsetY = (shadow[1] || 0);
+    context.shadowBlur = (shadow[2] || 0);
+    context.shadowColor = null;
+    r.shadowColor(context, shadowColor[0], shadowColor[1], shadowColor[2], shadowOpacity );
   };
 
   const resetShadow = () => {

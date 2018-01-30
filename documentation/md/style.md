@@ -122,6 +122,7 @@ cytoscape({
 ## Property types
 
  * Colours may be specified by name (e.g. `red`), hex (e.g. `#ff0000` or `#f00`), RGB (e.g. `rgb(255, 0, 0)`), or HSL (e.g. `hsl(0, 100%, 50%)`).
+     * Edge's `line-color` also accepts `linear-gradient(auto, ...<colors>)` as a linear gradient between the edge points.
  * Values requiring a number, such as a length, can be specified in pixel values (e.g. `24px`), unitless values that are implicitly in pixels (`24`), or em values (e.g. `2em`).  Sizes are specified in [model co-ordinates](#notation/position), so on-screen (rendered) sizes are as specified at zoom 1.
  * Opacity values are specified as numbers ranging on `0 <= opacity <= 1`.
  * Time is measured in units of ms or s.

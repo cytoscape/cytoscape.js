@@ -374,6 +374,19 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
       bypass: propIsBypass
     };
 
+  } else if( type.colorOrGradient ) {
+    let tuple = util.colorOrGradient2tuple( value );
+    
+    if ( !tuple ){ return null; }
+
+    return {
+      name: name,
+      value: tuple,
+      pfValue: tuple,
+      strValue: '' + value,
+      bypass: propIsBypass
+    };
+    
   } else if( type.regex || type.regexes ){
 
     // first check enums

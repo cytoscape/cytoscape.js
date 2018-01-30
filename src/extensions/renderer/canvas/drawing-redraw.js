@@ -68,7 +68,6 @@ const createGradientStyle = function (context, colorStyle) {
   else {
     if (ele.isEdge()) {
       let start = ele.sourceEndpoint(), end = ele.targetEndpoint();
-      ele.data('faveColor') === '#F5A45D' && console.log('edge' , start.x.toFixed(2), start.y.toFixed(2), end.x.toFixed(2), end.y.toFixed(2));
       gradientStyle = context.createLinearGradient(start.x, start.y, end.x, end.y);
     } else {
       let pos = colorStyle.usePaths ? {x: 0, y: 0 } : ele.position(),

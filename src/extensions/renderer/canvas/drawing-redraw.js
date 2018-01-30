@@ -47,9 +47,81 @@ CRp.paintCache = function( context ){
   return cache;
 };
 
-CRp.fillStyle = function( context, r, g, b, a ){
-  context.fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
+const pointsDistance = function ( x1, y1, x2, y2 ) {
+  return Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
+};
 
+const createGradientStyle = function (context, colorStyle) {
+  let { gradient, ele, colors, opacity } = colorStyle;
+  let gradientStyle;
+
+  if (gradient === 'radial-gradient') {
+    if (ele.isEdge()) {
+      let start = ele.sourceEndpoint(), end = ele.targetEndpoint();
+      gradientStyle = context.createRadialGradient(start.x, start.y, 0, start.x, start.y, pointsDistance(start.x, start.y, end.x, end.y));
+    } else {
+      let pos = colorStyle.usePaths ? {x: 0, y: 0 } : ele.position(),
+        width = ele.width(), height = ele.height();
+      gradientStyle = context.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, Math.max(width, height));
+    }
+  }
+  else {
+    if (ele.isEdge()) {
+      let start = ele.sourceEndpoint(), end = ele.targetEndpoint();
+      ele.data('faveColor') === '#F5A45D' && console.log('edge' , start.x.toFixed(2), start.y.toFixed(2), end.x.toFixed(2), end.y.toFixed(2));
+      gradientStyle = context.createLinearGradient(start.x, start.y, end.x, end.y);
+    } else {
+      let pos = colorStyle.usePaths ? {x: 0, y: 0 } : ele.position(),
+        width = ele.width(), height = ele.height(),
+        halfWidth = width / 2, halfHeight = height / 2;
+      switch (colorStyle.direction) {
+        case 'to bottom':
+          gradientStyle = context.createLinearGradient(pos.x, pos.y - halfHeight, pos.x, pos.y + halfHeight);
+          break;
+        case 'to top':
+          gradientStyle = context.createLinearGradient(pos.x, pos.y + halfHeight, pos.x, pos.y - halfHeight);
+          break;
+        case 'to left':
+          gradientStyle = context.createLinearGradient(pos.x - halfWidth, pos.y, pos.x + halfWidth, pos.y);
+          break;
+        case 'to right':
+          gradientStyle = context.createLinearGradient(pos.x + halfWidth, pos.y, pos.x - halfWidth, pos.y);
+          break;
+        case 'to bottom right':
+        case 'to right bottom':
+          gradientStyle = context.createLinearGradient(pos.x - halfWidth, pos.y - halfHeight, pos.x + halfWidth, pos.y + halfHeight);
+          break;
+        case 'to top right':
+        case 'to right top':
+          gradientStyle = context.createLinearGradient(pos.x - halfWidth, pos.y + halfHeight, pos.x + halfWidth, pos.y - halfHeight);
+          break;
+        case 'to bottom left':
+        case 'to left bottom':
+          gradientStyle = context.createLinearGradient(pos.x + halfWidth, pos.y - halfHeight, pos.x - halfWidth, pos.y + halfHeight);
+          break;
+        case 'to top left':
+        case 'to left top':
+          gradientStyle = context.createLinearGradient(pos.x + halfWidth, pos.y + halfHeight, pos.x - halfWidth, pos.y - halfHeight);
+          break;
+      }
+    }
+  }
+  if (!gradientStyle) return null; // invalid gradient style
+
+  let length = colors.length;
+  for (let i = 0; i < length ; i++) {
+    gradientStyle.addColorStop(i / (length - 1), 'rgba(' + colors[i][0] + ',' + colors[i][1] + ',' + colors[i][2] + ',' + opacity + ')');
+  }
+  return gradientStyle;
+};
+
+CRp.fillStyle = function( context, colorStyle, r, g, b, a ){
+  if (!colorStyle) {
+    context.fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
+  }
+  else if (colorStyle.gradient) {
+    context.fillStyle = createGradientStyle(context, colorStyle);
+  }
   // turn off for now, seems context does its own caching
 
   // var cache = this.paintCache(context);
@@ -61,9 +133,13 @@ CRp.fillStyle = function( context, r, g, b, a ){
   // }
 };
 
-CRp.strokeStyle = function( context, r, g, b, a ){
-  context.strokeStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
-
+CRp.strokeStyle = function( context, colorStyle, r, g, b, a ){
+  if (!colorStyle) {
+    context.strokeStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
+  }
+  else if (colorStyle.gradient) {
+    context.strokeStyle = createGradientStyle(context, colorStyle);
+  }
   // turn off for now, seems context does its own caching
 
   // var cache = this.paintCache(context);
@@ -257,7 +333,7 @@ CRp.render = function( options ){
     var gco = context.globalCompositeOperation;
 
     context.globalCompositeOperation = 'destination-out';
-    r.fillStyle( context, 255, 255, 255, r.motionBlurTransparency );
+    r.fillStyle( context, false, 255, 255, 255, r.motionBlurTransparency );
     context.fillRect( x, y, w, h );
 
     context.globalCompositeOperation = gco;
@@ -363,7 +439,7 @@ CRp.render = function( options ){
 
     var outsideBgColor = coreStyle[ 'outside-texture-bg-color' ].value;
     var outsideBgOpacity = coreStyle[ 'outside-texture-bg-opacity' ].value;
-    r.fillStyle( context, outsideBgColor[0], outsideBgColor[1], outsideBgColor[2], outsideBgOpacity );
+    r.fillStyle( context, false, outsideBgColor[0], outsideBgColor[1], outsideBgColor[2], outsideBgOpacity );
     context.fillRect( 0, 0, vp.width, vp.height );
 
     var zoom = cy.zoom();

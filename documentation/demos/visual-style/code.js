@@ -16,6 +16,9 @@ cytoscape({
         'text-outline-width': 2,
         'text-outline-color': 'data(faveColor)',
         'background-color': 'data(faveColor)',
+        'background-color-style': 'radial-gradient',
+        'background-gradient-stop-1-color': 'data(faveColor)',
+        'background-gradient-stop-2-color': 'black',
         'color': '#fff'
       })
     .selector(':selected')
@@ -31,6 +34,9 @@ cytoscape({
         'target-arrow-shape': 'triangle',
         'source-arrow-shape': 'circle',
         'line-color': 'data(faveColor)',
+        'line-color-style': 'linear-gradient',
+        'line-gradient-stop-1-color': 'data(faveColor)',
+        'line-gradient-stop-2-color': 'black',
         'source-arrow-color': 'data(faveColor)',
         'target-arrow-color': 'data(faveColor)'
       })

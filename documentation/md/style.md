@@ -122,7 +122,6 @@ cytoscape({
 ## Property types
 
  * Colours may be specified by name (e.g. `red`), hex (e.g. `#ff0000` or `#f00`), RGB (e.g. `rgb(255, 0, 0)`), or HSL (e.g. `hsl(0, 100%, 50%)`).
-     * Edge's `line-color` also accepts `linear-gradient(auto, ...<colors>)` as a linear gradient between the edge points.
  * Values requiring a number, such as a length, can be specified in pixel values (e.g. `24px`), unitless values that are implicitly in pixels (`24`), or em values (e.g. `2em`).  Sizes are specified in [model co-ordinates](#notation/position), so on-screen (rendered) sizes are as specified at zoom 1.
  * Opacity values are specified as numbers ranging on `0 <= opacity <= 1`.
  * Time is measured in units of ms or s.
@@ -184,6 +183,14 @@ Background:
  * **`background-color`** : The colour of the node's body.
  * **`background-blacken`** : Blackens the node's body for values from 0 to 1; whitens the node's body for values from 0 to -1.
  * **`background-opacity`** : The opacity level of the node's background colour.
+ * **`background-color-style`** : The colouring style of the node's body; may be `none` (default), `linear-gradient`, or `radial-gradient`.
+
+Gradient:
+ * **`background-gradient-direction`** : In case `background-color-style` is `linear-gradient`, defines the direction of the gradient.
+   * may be `to bottom` (default), `to top`, `to left`, `to right`, `to bottom right`, `to bottom left`, `to top right`, `to top left`..
+ * **`background-gradient-stop-1-color`** : The colour of the first gradient stop.
+ * **`background-gradient-stop-1-color`** : The colour of the second gradient stop.
+
 
 Border:
 
@@ -288,6 +295,12 @@ These properties affect the styling of an edge's line:
  * **`line-color`** : The colour of the edge's line.
  * **`line-style`** : The style of the edge's line; may be `solid`, `dotted`, or `dashed`.
  * **`line-cap`** : The cap style of the edge's line; may be `butt` (default), `round`, or `square`.  The cap may or may not be visible, depending on the shape of the node and the relative size of the node and edge.  Caps other than `butt` extend beyond the specified endpoint of the edge.
+ * **`line-color-style`** : The colouring style of the edge's line; may be `none` (default), `linear-gradient`, or `radial-gradient`.
+
+## Gradient
+
+ * **`line-gradient-stop-1-color`** : The colour of the first gradient stop.
+ * **`line-gradient-stop-1-color`** : The colour of the second gradient stop.
 
 ## Bezier edges
 

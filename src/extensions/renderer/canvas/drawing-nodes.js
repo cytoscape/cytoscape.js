@@ -73,17 +73,34 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
   let borderColor = node.pstyle('border-color').value;
   let borderStyle = node.pstyle('border-style').value;
   let borderOpacity = node.pstyle('border-opacity').value * parentOpacity;
+  let bgColorStyle = node.pstyle('background-color-style').value;
 
   context.lineJoin = 'miter'; // so borders are square with the node shape
 
   let setupShapeColor = ( bgOpy = bgOpacity ) => {
-    r.fillStyle( context, bgColor[0], bgColor[1], bgColor[2], bgOpy );
+
+    if (bgColorStyle === 'linear-gradient' || bgColorStyle === 'radial-gradient') {
+      let gradientDirection = node.pstyle('background-gradient-direction').value,
+        gradientStop1Color = node.pstyle('background-gradient-stop-1-color').value,
+        gradientStop2Color = node.pstyle('background-gradient-stop-2-color').value;
+
+      r.fillStyle(context, {
+        gradient: bgColorStyle,
+        ele: node,
+        usePaths,
+        colors: [gradientStop1Color, gradientStop2Color],
+        direction: gradientDirection,
+        opacity: bgOpy
+      })
+    }
+    else {
+      r.fillStyle( context, false, bgColor[0], bgColor[1], bgColor[2], bgOpy );
+    }
   };
 
   let setupBorderColor = ( bdrOpy = borderOpacity ) => {
-    r.strokeStyle( context, borderColor[0], borderColor[1], borderColor[2], bdrOpy );
+    r.strokeStyle( context, false, borderColor[0], borderColor[1], borderColor[2], bdrOpy );
   };
-
 
   //
   // setup shape
@@ -182,7 +199,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
     let c = darkness > 0 ? 0 : 255;
 
     if( darkness !== 0 ){
-      r.fillStyle( context, c, c, c, opacity );
+      r.fillStyle( context, false, c, c, c, opacity );
 
       if( usePaths ){
         context.fill( path );
@@ -250,7 +267,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
     let overlayColor = node.pstyle( 'overlay-color' ).value;
 
     if( overlayOpacity > 0 ){
-      r.fillStyle( context, overlayColor[0], overlayColor[1], overlayColor[2], overlayOpacity );
+      r.fillStyle( context, false, overlayColor[0], overlayColor[1], overlayColor[2], overlayOpacity );
 
       r.nodeShapes[ 'roundrectangle' ].draw(
         context,
@@ -373,7 +390,7 @@ CRp.drawPie = function( context, node, nodeOpacity, pos ){
     context.arc( x, y, radius, angleStart, angleEnd );
     context.closePath();
 
-    this.fillStyle( context, color[0], color[1], color[2], opacity );
+    this.fillStyle( context, false, color[0], color[1], color[2], opacity );
 
     context.fill();
 

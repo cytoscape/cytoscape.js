@@ -11,8 +11,8 @@ let hex6 = '\\#[0-9a-fA-F]{6}';
 
 let colorName = '[a-zA-Z]+';
 let colorNameRgbaHslaOrHex = '(' + colorName + '|' + rgba + '|' + hsla + '|' + hex3 + '|' + hex6 + ')';
-let gradientArguemnts = ',\\s*' + colorNameRgbaHslaOrHex + '\\s*';
-let gradient = 'linear-gradient\\(\\s*auto\\s*(' + gradientArguemnts + '){2,}\\)';
+let gradientArguments = ',\\s*' + colorNameRgbaHslaOrHex + '\\s*';
+let gradient = 'linear-gradient\\(\\s*auto\\s*(' + gradientArguments + '){2,}\\)';
 
 module.exports = {
   regex: {
@@ -24,6 +24,6 @@ module.exports = {
     hex3: hex3,
     hex6: hex6,
     gradient: gradient,
-    gradientArguemnts: gradientArguemnts
+    gradientArguments: gradientArguments
   }
 };

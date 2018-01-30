@@ -140,7 +140,7 @@ module.exports = {
     if( !m ){
       return null; //unsupported
     }
-    let argRegexp = new RegExp(this.regex.gradientArguemnts, 'g');
+    let argRegexp = new RegExp(this.regex.gradientArguments, 'g');
     let tuples = [];
     while (m = argRegexp.exec( gradient )) {
       let tuple = this.color2tuple(m[1]);

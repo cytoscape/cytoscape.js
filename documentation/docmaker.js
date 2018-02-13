@@ -137,9 +137,9 @@ function populateDemo( demo ){
     demo.githubUrl = 'https://github.com/' + demo.github;
 
     if( !demo.viewUrl ){ // use github pages url if unspecified
-      var gh = demo.github.match(/(.+)\/(.+)/);
+      var gh = demo.github.match(/([^/]+)\/([^/]+)/);
 
-      demo.viewUrl = 'https://' + gh[0] + '.github.io/' + gh[1];
+      demo.viewUrl = 'https://' + gh[1] + '.github.io/' + gh[2];
     }
   } else { // main repo demo
     demo.githubUrl = 'https://github.com/cytoscape/cytoscape.js/tree/master/documentation/demos/' + demo.id;

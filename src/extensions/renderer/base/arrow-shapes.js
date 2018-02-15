@@ -244,7 +244,7 @@ BRp.registerArrowShapes = function(){
     ],
 
     gap: function( edge ){
-      return standardGap(edge) * 0.985;
+      return standardGap(edge) * 0.525;
     }
   } );
 

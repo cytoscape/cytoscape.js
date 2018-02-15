@@ -328,10 +328,20 @@ For edges made of several straight lines (`curve-style: segments`):
 
 ## Edge arrow
 
- * **`<pos>-arrow-color`** : The colour of the edge's source arrow.
- * **`<pos>-arrow-shape`** : The shape of the edge's source arrow; may be `tee`, `triangle`, `triangle-tee`, `triangle-cross`, `triangle-backcurve`, `square`, `circle`, `diamond`, or `none`.
- * **`<pos>-arrow-fill`** : The fill state of the edge's source arrow; may be `filled` or `hollow`.
- * **`arrow-scale`** : Scaling for the arrow size; may be any number >= 0.
+* **`<pos>-arrow-color`** : The colour of the edge's source arrow.
+* **`<pos>-arrow-shape`** : The shape of the edge's source arrow; may be one of:
+  * `triangle`
+  * `triangle-tee`
+  * `triangle-cross`
+  * `triangle-backcurve`
+  * `vee`
+  * `tee`
+  * `square`
+  * `circle`
+  * `diamond`
+  * `none`
+* **`<pos>-arrow-fill`** : The fill state of the edge's source arrow; may be `filled` or `hollow`.
+* **`arrow-scale`** : Scaling for the arrow size; may be any number >= 0.
 
 For each edge arrow property above, replace `<pos>` with one of
 

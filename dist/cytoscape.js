@@ -2,7 +2,7 @@
 
 /*!
 
-Cytoscape.js 2.7.26 (MIT licensed)
+Cytoscape.js 2.7.27 (MIT licensed)
 
 Copyright (c) The Cytoscape Consortium
 
@@ -19216,7 +19216,7 @@ ETCp.getElement = function( ele, bb, pxRatio, lvl, reason ){
       downscale();
 
     } else {
-      self.queueElement( ele, bb, higherCache.level - 1 );
+      self.queueElement( ele, higherCache.level - 1 );
 
       return higherCache;
     }
@@ -19234,7 +19234,7 @@ ETCp.getElement = function( ele, bb, pxRatio, lvl, reason ){
     if( scalableFrom(lowerCache) ){
       // then use the lower quality cache for now and queue the better one for later
 
-      self.queueElement( ele, bb, lvl );
+      self.queueElement( ele, lvl );
 
       return lowerCache;
     }
@@ -19285,6 +19285,9 @@ ETCp.invalidateElement = function( ele ){
         // remove refs with the element
         caches[ lvl ] = null;
         util.removeFromArray( txr.eleCaches, cache );
+
+        // remove from queue since the old req was for the old state
+        self.removeFromQueue( ele );
 
         // might have to remove the entire texture if it's not efficiently using its space
         self.checkTextureUtility( txr );
@@ -19401,7 +19404,7 @@ ETCp.recycleTexture = function( txrH, minW ){
   }
 };
 
-ETCp.queueElement = function( ele, bb, lvl ){
+ETCp.queueElement = function( ele, lvl ){
   var self = this;
   var q = self.getElementQueue();
   var id2q = self.getElementIdToQueue();
@@ -19416,18 +19419,9 @@ ETCp.queueElement = function( ele, bb, lvl ){
   } else {
     var req = {
       ele: ele,
-      bb: bb,
-      position: math.copyPosition( ele.position() ),
       level: lvl,
       reqs: 1
     };
-
-    if( ele.isEdge() ){
-      req.positions = {
-        source: math.copyPosition( ele.source().position() ),
-        target: math.copyPosition( ele.target().position() )
-      };
-    }
 
     q.push( req );
 
@@ -19444,35 +19438,44 @@ ETCp.dequeue = function( pxRatio /*, extent*/ ){
   for( var i = 0; i < maxDeqSize; i++ ){
     if( q.size() > 0 ){
       var req = q.pop();
+      var ele = req.ele;
+      var caches = ele._private.rscratch.imgCaches;
 
-      id2q[ req.ele.id() ] = null;
+      // dequeueing isn't necessary when an existing cache exists
+      if( caches[ req.level ] != null ){
+        continue;
+      }
+
+      id2q[ ele.id() ] = null;
 
       dequeued.push( req );
 
-      var ele = req.ele;
-      var bb;
+      var bb = ele.boundingBox();
 
-      if(
-        ( ele.isEdge()
-          && (
-            !math.arePositionsSame( ele.source().position(), req.positions.source )
-            || !math.arePositionsSame( ele.target().position(), req.positions.target )
-          )
-        )
-        || ( !math.arePositionsSame( ele.position(), req.position ) )
-      ){
-        bb = ele.boundingBox();
-      } else {
-        bb = req.bb;
-      }
-
-      self.getElement( req.ele, bb, pxRatio, req.level, getTxrReasons.dequeue );
+      self.getElement( ele, bb, pxRatio, req.level, getTxrReasons.dequeue );
     } else {
       break;
     }
   }
 
   return dequeued;
+};
+
+ETCp.removeFromQueue = function( ele ){
+  var self = this;
+  var q = self.getElementQueue();
+  var id2q = self.getElementIdToQueue();
+  var req = id2q[ ele.id() ];
+
+  if( req != null ){
+    // bring to front of queue
+    req.reqs = util.MAX_INT;
+    q.updateItem( req );
+
+    q.pop(); // remove from queue
+
+    id2q[ ele.id() ] = null; // remove from lookup map
+  }
 };
 
 ETCp.onDequeue = function( fn ){ this.onDequeues.push( fn ); };
@@ -19496,7 +19499,7 @@ ETCp.setupDequeueing = defs.setupDequeueing({
   },
   shouldRedraw: function( self, deqd, pxRatio, extent ){
     for( var i = 0; i < deqd.length; i++ ){
-      var bb = deqd[i].bb;
+      var bb = deqd[i].ele.boundingBox();
 
       if( math.boundingBoxesIntersect( bb, extent ) ){
         return true;
@@ -26892,6 +26895,8 @@ var math = _dereq_( '../math' );
 
 var util = {
 
+  MAX_INT: Number.MAX_SAFE_INTEGER || 9007199254740991,
+
   trueify: function(){ return true; },
 
   falsify: function(){ return false; },
@@ -27428,7 +27433,7 @@ util.debounce = function( func, wait, options ){ // ported lodash debounce funct
 module.exports = util;
 
 },{"../is":83,"../window":107}],106:[function(_dereq_,module,exports){
-module.exports = "2.7.26";
+module.exports = "2.7.27";
 
 },{}],107:[function(_dereq_,module,exports){
 module.exports = ( typeof window === 'undefined' ? null : window ); // eslint-disable-line no-undef

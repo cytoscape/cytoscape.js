@@ -1,13 +1,13 @@
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
-		module.exports = factory(require("heap"), require("lodash.debounce"));
+		module.exports = factory(require("lodash.debounce"), require("heap"));
 	else if(typeof define === 'function' && define.amd)
-		define(["heap", "lodash.debounce"], factory);
+		define(["lodash.debounce", "heap"], factory);
 	else if(typeof exports === 'object')
-		exports["cytoscape"] = factory(require("heap"), require("lodash.debounce"));
+		exports["cytoscape"] = factory(require("lodash.debounce"), require("heap"));
 	else
-		root["cytoscape"] = factory(root["heap"], root["lodash.debounce"]);
-})(this, function(__WEBPACK_EXTERNAL_MODULE_140__, __WEBPACK_EXTERNAL_MODULE_141__) {
+		root["cytoscape"] = factory(root["lodash.debounce"], root["heap"]);
+})(typeof self !== 'undefined' ? self : this, function(__WEBPACK_EXTERNAL_MODULE_26__, __WEBPACK_EXTERNAL_MODULE_32__) {
 return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
@@ -43,9 +43,6 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// expose the module cache
 /******/ 	__webpack_require__.c = installedModules;
 /******/
-/******/ 	// identity function for calling harmony imports with the correct context
-/******/ 	__webpack_require__.i = function(value) { return value; };
-/******/
 /******/ 	// define getter function for harmony exports
 /******/ 	__webpack_require__.d = function(exports, name, getter) {
 /******/ 		if(!__webpack_require__.o(exports, name)) {
@@ -73,7 +70,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 116);
+/******/ 	return __webpack_require__(__webpack_require__.s = 20);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -87,7 +84,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
 /*global HTMLElement DocumentTouch */
 
-var window = __webpack_require__(4);
+var window = __webpack_require__(3);
 var navigator = window ? window.navigator : null;
 var document = window ? window.document : null;
 
@@ -434,7 +431,7 @@ util.setPrefixedProperty = function (obj, propName, prefix, value) {
   obj[propName] = value;
 };
 
-[__webpack_require__(130), __webpack_require__(131), { memoize: __webpack_require__(19) }, __webpack_require__(132), __webpack_require__(134), __webpack_require__(135), __webpack_require__(133)].forEach(function (req) {
+[__webpack_require__(21), __webpack_require__(22), { memoize: __webpack_require__(13) }, __webpack_require__(23), __webpack_require__(24), __webpack_require__(25), __webpack_require__(27)].forEach(function (req) {
   util.extend(util, req);
 });
 
@@ -1530,6 +1527,15 @@ module.exports = math;
 "use strict";
 
 
+module.exports = typeof window === 'undefined' ? null : window; // eslint-disable-line no-undef
+
+/***/ }),
+/* 4 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
 // use this module to cherry pick functions into your prototype
 // (useful for functions shared between the core and collections, for example)
 
@@ -1540,27 +1546,18 @@ var util = __webpack_require__(1);
 
 var define = {};
 
-[__webpack_require__(72), __webpack_require__(73), __webpack_require__(74)].forEach(function (m) {
+[__webpack_require__(43), __webpack_require__(45), __webpack_require__(46)].forEach(function (m) {
   util.assign(define, m);
 });
 
 module.exports = define;
 
 /***/ }),
-/* 4 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-module.exports = typeof window === 'undefined' ? null : window; // eslint-disable-line no-undef
-
-/***/ }),
 /* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-/* WEBPACK VAR INJECTION */(function(setImmediate) {
+
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
@@ -1772,7 +1769,6 @@ api.reject = function (val) {
 };
 
 module.exports = typeof Promise !== 'undefined' ? Promise : api; // eslint-disable-line no-undef
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(138).setImmediate))
 
 /***/ }),
 /* 6 */
@@ -1783,7 +1779,7 @@ module.exports = typeof Promise !== 'undefined' ? Promise : api; // eslint-disab
 
 var is = __webpack_require__(0);
 var util = __webpack_require__(1);
-var newQuery = __webpack_require__(11);
+var newQuery = __webpack_require__(10);
 
 var Selector = function Selector(selector) {
   var self = this;
@@ -1973,7 +1969,7 @@ selfn.toString = selfn.selector = function () {
   return str;
 };
 
-[__webpack_require__(120), __webpack_require__(119)].forEach(function (p) {
+[__webpack_require__(49), __webpack_require__(52)].forEach(function (p) {
   return util.assign(selfn, p);
 });
 
@@ -1988,10 +1984,10 @@ module.exports = Selector;
 
 var util = __webpack_require__(1);
 var is = __webpack_require__(0);
-var Map = __webpack_require__(117);
-var Set = __webpack_require__(9);
+var Map = __webpack_require__(28);
+var Set = __webpack_require__(8);
 
-var Element = __webpack_require__(13);
+var Element = __webpack_require__(14);
 
 // factory for generating edge ids when no id is specified for a new element
 var idFactory = {
@@ -2717,7 +2713,7 @@ elesfn.move = function (struct) {
   return this; // if nothing done
 };
 
-[__webpack_require__(32), __webpack_require__(36), __webpack_require__(37), __webpack_require__(38), __webpack_require__(39), __webpack_require__(40), __webpack_require__(41), __webpack_require__(44), __webpack_require__(47), __webpack_require__(48), __webpack_require__(49), __webpack_require__(7), __webpack_require__(50), __webpack_require__(51), __webpack_require__(52), __webpack_require__(53), __webpack_require__(54)].forEach(function (props) {
+[__webpack_require__(29), __webpack_require__(42), __webpack_require__(47), __webpack_require__(48), __webpack_require__(53), __webpack_require__(54), __webpack_require__(55), __webpack_require__(56), __webpack_require__(61), __webpack_require__(62), __webpack_require__(63), __webpack_require__(7), __webpack_require__(64), __webpack_require__(65), __webpack_require__(66), __webpack_require__(67), __webpack_require__(68)].forEach(function (props) {
   util.extend(elesfn, props);
 });
 
@@ -2725,15 +2721,6 @@ module.exports = Collection;
 
 /***/ }),
 /* 8 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-module.exports = __webpack_require__(140);
-
-/***/ }),
-/* 9 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2826,7 +2813,51 @@ var ObjectSet = function () {
 module.exports = ObjectSet;
 
 /***/ }),
+/* 9 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+module.exports = __webpack_require__(32);
+
+/***/ }),
 /* 10 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+// storage for parsed queries
+var newQuery = function newQuery() {
+  return {
+    classes: [],
+    colonSelectors: [],
+    data: [],
+    group: null,
+    ids: [],
+    meta: [],
+
+    // fake selectors
+    collection: null, // a collection to match against
+    filter: null, // filter function
+
+    // these are defined in the upward direction rather than down (e.g. child)
+    // because we need to go up in Selector.filter()
+    parent: null, // parent query obj
+    ancestor: null, // ancestor query obj
+    subject: null, // defines subject in compound query (subject query obj; points to self if subject)
+
+    // use these only when subject has been defined
+    child: null,
+    descendant: null
+  };
+};
+
+module.exports = newQuery;
+
+/***/ }),
+/* 11 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2834,7 +2865,7 @@ module.exports = ObjectSet;
 
 var util = __webpack_require__(1);
 var is = __webpack_require__(0);
-var Event = __webpack_require__(15);
+var Event = __webpack_require__(16);
 
 var eventRegex = /^([^.]+)(\.(?:[^.]+))?$/; // regex for matching event strings (e.g. "click.namespace")
 var universalNamespace = '.*'; // matches as if no namespace specified and prevents users from unbinding accidentally
@@ -3067,53 +3098,18 @@ p.emit = p.trigger = function (events, extraParams, manualCallback) {
 module.exports = Emitter;
 
 /***/ }),
-/* 11 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-// storage for parsed queries
-var newQuery = function newQuery() {
-  return {
-    classes: [],
-    colonSelectors: [],
-    data: [],
-    group: null,
-    ids: [],
-    meta: [],
-
-    // fake selectors
-    collection: null, // a collection to match against
-    filter: null, // filter function
-
-    // these are defined in the upward direction rather than down (e.g. child)
-    // because we need to go up in Selector.filter()
-    parent: null, // parent query obj
-    ancestor: null, // ancestor query obj
-    subject: null, // defines subject in compound query (subject query obj; points to self if subject)
-
-    // use these only when subject has been defined
-    child: null,
-    descendant: null
-  };
-};
-
-module.exports = newQuery;
-
-/***/ }),
 /* 12 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var window = __webpack_require__(4);
+var window = __webpack_require__(3);
 var util = __webpack_require__(1);
 var Collection = __webpack_require__(7);
 var is = __webpack_require__(0);
 var Promise = __webpack_require__(5);
-var define = __webpack_require__(3);
+var define = __webpack_require__(4);
 
 var Core = function Core(opts) {
   var cy = this;
@@ -3542,7 +3538,7 @@ util.extend(corefn, {
 
 corefn.$id = corefn.getElementById;
 
-[__webpack_require__(55), __webpack_require__(59), __webpack_require__(64), __webpack_require__(65), __webpack_require__(66), __webpack_require__(67), __webpack_require__(68), __webpack_require__(69), __webpack_require__(70), __webpack_require__(71)].forEach(function (props) {
+[__webpack_require__(69), __webpack_require__(70), __webpack_require__(78), __webpack_require__(79), __webpack_require__(80), __webpack_require__(81), __webpack_require__(82), __webpack_require__(83), __webpack_require__(84), __webpack_require__(93)].forEach(function (props) {
   util.extend(corefn, props);
 });
 
@@ -3555,9 +3551,54 @@ module.exports = Core;
 "use strict";
 
 
+module.exports = function memoize(fn, keyFn) {
+  if (!keyFn) {
+    keyFn = function keyFn() {
+      if (arguments.length === 1) {
+        return arguments[0];
+      } else if (arguments.length === 0) {
+        return 'undefined';
+      }
+
+      var args = [];
+
+      for (var i = 0; i < arguments.length; i++) {
+        args.push(arguments[i]);
+      }
+
+      return args.join('$');
+    };
+  }
+
+  var memoizedFn = function memoizedFn() {
+    var self = this;
+    var args = arguments;
+    var ret = void 0;
+    var k = keyFn.apply(self, args);
+    var cache = memoizedFn.cache;
+
+    if (!(ret = cache[k])) {
+      ret = cache[k] = fn.apply(self, args);
+    }
+
+    return ret;
+  };
+
+  memoizedFn.cache = {};
+
+  return memoizedFn;
+};
+
+/***/ }),
+/* 14 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
 var util = __webpack_require__(1);
 var is = __webpack_require__(0);
-var Set = __webpack_require__(9);
+var Set = __webpack_require__(8);
 
 // represents a node or an edge
 var Element = function Element(cy, params, restore) {
@@ -3663,282 +3704,7 @@ var Element = function Element(cy, params, restore) {
 module.exports = Element;
 
 /***/ }),
-/* 14 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-/**
- *  Elements are drawn in a specific order based on compound depth (low to high), the element type (nodes above edges),
- *  and z-index (low to high).  These styles affect how this applies:
- *
- *  z-compound-depth: May be `bottom | orphan | auto | top`.  The first drawn is `bottom`, then `orphan` which is the
- *      same depth as the root of the compound graph, followed by the default value `auto` which draws in order from
- *      root to leaves of the compound graph.  The last drawn is `top`.
- *  z-index-compare: May be `auto | manual`.  The default value is `auto` which always draws edges under nodes.
- *      `manual` ignores this convention and draws based on the `z-index` value setting.
- *  z-index: An integer value that affects the relative draw order of elements.  In general, an element with a higher
- *      `z-index` will be drawn on top of an element with a lower `z-index`.
- */
-var util = __webpack_require__(1);
-
-var zIndexSort = function zIndexSort(a, b) {
-  var cy = a.cy();
-  var hasCompoundNodes = cy.hasCompoundNodes();
-
-  function getDepth(ele) {
-    var style = ele.pstyle('z-compound-depth');
-    if (style.value === 'auto') {
-      return hasCompoundNodes ? ele.zDepth() : 0;
-    } else if (style.value === 'bottom') {
-      return -1;
-    } else if (style.value === 'top') {
-      return util.MAX_INT;
-    }
-    // 'orphan'
-    return 0;
-  }
-  var depthDiff = getDepth(a) - getDepth(b);
-  if (depthDiff !== 0) {
-    return depthDiff;
-  }
-
-  function getEleDepth(ele) {
-    var style = ele.pstyle('z-index-compare');
-    if (style.value === 'auto') {
-      return ele.isNode() ? 1 : 0;
-    }
-    // 'manual'
-    return 0;
-  }
-  var eleDiff = getEleDepth(a) - getEleDepth(b);
-  if (eleDiff !== 0) {
-    return eleDiff;
-  }
-
-  var zDiff = a.pstyle('z-index').value - b.pstyle('z-index').value;
-  if (zDiff !== 0) {
-    return zDiff;
-  }
-  // compare indices in the core (order added to graph w/ last on top)
-  return a.poolIndex() - b.poolIndex();
-};
-
-module.exports = zIndexSort;
-
-/***/ }),
 /* 15 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-/*!
-Event object based on jQuery events, MIT license
-
-https://jquery.org/license/
-https://tldrlegal.com/license/mit-license
-https://github.com/jquery/jquery/blob/master/src/event.js
-*/
-
-var Event = function Event(src, props) {
-  this.recycle(src, props);
-};
-
-function returnFalse() {
-  return false;
-}
-
-function returnTrue() {
-  return true;
-}
-
-// http://www.w3.org/TR/2003/WD-DOM-Level-3-Events-20030331/ecma-script-binding.html
-Event.prototype = {
-  instanceString: function instanceString() {
-    return 'event';
-  },
-
-  recycle: function recycle(src, props) {
-    this.isImmediatePropagationStopped = this.isPropagationStopped = this.isDefaultPrevented = returnFalse;
-
-    if (src != null && src.preventDefault) {
-      // Browser Event object
-      this.type = src.type;
-
-      // Events bubbling up the document may have been marked as prevented
-      // by a handler lower down the tree; reflect the correct value.
-      this.isDefaultPrevented = src.defaultPrevented ? returnTrue : returnFalse;
-    } else if (src != null && src.type) {
-      // Plain object containing all event details
-      props = src;
-    } else {
-      // Event string
-      this.type = src;
-    }
-
-    // Put explicitly provided properties onto the event object
-    if (props != null) {
-      // more efficient to manually copy fields we use
-      this.originalEvent = props.originalEvent;
-      this.type = props.type != null ? props.type : this.type;
-      this.cy = props.cy;
-      this.target = props.target;
-      this.position = props.position;
-      this.renderedPosition = props.renderedPosition;
-      this.namespace = props.namespace;
-      this.layout = props.layout;
-    }
-
-    if (this.cy != null && this.position != null && this.renderedPosition == null) {
-      // create a rendered position based on the passed position
-      var pos = this.position;
-      var zoom = this.cy.zoom();
-      var pan = this.cy.pan();
-
-      this.renderedPosition = {
-        x: pos.x * zoom + pan.x,
-        y: pos.y * zoom + pan.y
-      };
-    }
-
-    // Create a timestamp if incoming event doesn't have one
-    this.timeStamp = src && src.timeStamp || Date.now();
-  },
-
-  preventDefault: function preventDefault() {
-    this.isDefaultPrevented = returnTrue;
-
-    var e = this.originalEvent;
-    if (!e) {
-      return;
-    }
-
-    // if preventDefault exists run it on the original event
-    if (e.preventDefault) {
-      e.preventDefault();
-    }
-  },
-
-  stopPropagation: function stopPropagation() {
-    this.isPropagationStopped = returnTrue;
-
-    var e = this.originalEvent;
-    if (!e) {
-      return;
-    }
-
-    // if stopPropagation exists run it on the original event
-    if (e.stopPropagation) {
-      e.stopPropagation();
-    }
-  },
-
-  stopImmediatePropagation: function stopImmediatePropagation() {
-    this.isImmediatePropagationStopped = returnTrue;
-    this.stopPropagation();
-  },
-
-  isDefaultPrevented: returnFalse,
-  isPropagationStopped: returnFalse,
-  isImmediatePropagationStopped: returnFalse
-};
-
-module.exports = Event;
-
-/***/ }),
-/* 16 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var util = __webpack_require__(1);
-
-var fullFpsTime = 1000 / 60; // assume 60 frames per second
-
-module.exports = {
-  setupDequeueing: function setupDequeueing(opts) {
-    return function setupDequeueingImpl() {
-      var self = this;
-      var r = this.renderer;
-
-      if (self.dequeueingSetup) {
-        return;
-      } else {
-        self.dequeueingSetup = true;
-      }
-
-      var queueRedraw = util.debounce(function () {
-        r.redrawHint('eles', true);
-        r.redrawHint('drag', true);
-
-        r.redraw();
-      }, opts.deqRedrawThreshold);
-
-      var dequeue = function dequeue(willDraw, frameStartTime) {
-        var startTime = util.performanceNow();
-        var avgRenderTime = r.averageRedrawTime;
-        var renderTime = r.lastRedrawTime;
-        var deqd = [];
-        var extent = r.cy.extent();
-        var pixelRatio = r.getPixelRatio();
-
-        while (true) {
-          var now = util.performanceNow();
-          var duration = now - startTime;
-          var frameDuration = now - frameStartTime;
-
-          if (renderTime < fullFpsTime) {
-            // if we're rendering faster than the ideal fps, then do dequeueing
-            // during all of the remaining frame time
-
-            var timeAvailable = fullFpsTime - (willDraw ? avgRenderTime : 0);
-
-            if (frameDuration >= opts.deqFastCost * timeAvailable) {
-              break;
-            }
-          } else {
-            if (willDraw) {
-              if (duration >= opts.deqCost * renderTime || duration >= opts.deqAvgCost * avgRenderTime) {
-                break;
-              }
-            } else if (frameDuration >= opts.deqNoDrawCost * fullFpsTime) {
-              break;
-            }
-          }
-
-          var thisDeqd = opts.deq(self, pixelRatio, extent);
-
-          if (thisDeqd.length > 0) {
-            for (var i = 0; i < thisDeqd.length; i++) {
-              deqd.push(thisDeqd[i]);
-            }
-          } else {
-            break;
-          }
-        }
-
-        // callbacks on dequeue
-        if (deqd.length > 0) {
-          opts.onDeqd(self, deqd);
-
-          if (!willDraw && opts.shouldRedraw(self, deqd, pixelRatio, extent)) {
-            queueRedraw();
-          }
-        }
-      };
-
-      var priority = opts.priority || util.noop;
-
-      r.beforeRender(dequeue, priority(self));
-    };
-  }
-};
-
-/***/ }),
-/* 17 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -4115,6 +3881,191 @@ var stateSelectorRegex = '(' + stateSelectors.map(function (s) {
 module.exports = { stateSelectors: stateSelectors, stateSelectorMatches: stateSelectorMatches, stateSelectorRegex: stateSelectorRegex };
 
 /***/ }),
+/* 16 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+/*!
+Event object based on jQuery events, MIT license
+
+https://jquery.org/license/
+https://tldrlegal.com/license/mit-license
+https://github.com/jquery/jquery/blob/master/src/event.js
+*/
+
+var Event = function Event(src, props) {
+  this.recycle(src, props);
+};
+
+function returnFalse() {
+  return false;
+}
+
+function returnTrue() {
+  return true;
+}
+
+// http://www.w3.org/TR/2003/WD-DOM-Level-3-Events-20030331/ecma-script-binding.html
+Event.prototype = {
+  instanceString: function instanceString() {
+    return 'event';
+  },
+
+  recycle: function recycle(src, props) {
+    this.isImmediatePropagationStopped = this.isPropagationStopped = this.isDefaultPrevented = returnFalse;
+
+    if (src != null && src.preventDefault) {
+      // Browser Event object
+      this.type = src.type;
+
+      // Events bubbling up the document may have been marked as prevented
+      // by a handler lower down the tree; reflect the correct value.
+      this.isDefaultPrevented = src.defaultPrevented ? returnTrue : returnFalse;
+    } else if (src != null && src.type) {
+      // Plain object containing all event details
+      props = src;
+    } else {
+      // Event string
+      this.type = src;
+    }
+
+    // Put explicitly provided properties onto the event object
+    if (props != null) {
+      // more efficient to manually copy fields we use
+      this.originalEvent = props.originalEvent;
+      this.type = props.type != null ? props.type : this.type;
+      this.cy = props.cy;
+      this.target = props.target;
+      this.position = props.position;
+      this.renderedPosition = props.renderedPosition;
+      this.namespace = props.namespace;
+      this.layout = props.layout;
+    }
+
+    if (this.cy != null && this.position != null && this.renderedPosition == null) {
+      // create a rendered position based on the passed position
+      var pos = this.position;
+      var zoom = this.cy.zoom();
+      var pan = this.cy.pan();
+
+      this.renderedPosition = {
+        x: pos.x * zoom + pan.x,
+        y: pos.y * zoom + pan.y
+      };
+    }
+
+    // Create a timestamp if incoming event doesn't have one
+    this.timeStamp = src && src.timeStamp || Date.now();
+  },
+
+  preventDefault: function preventDefault() {
+    this.isDefaultPrevented = returnTrue;
+
+    var e = this.originalEvent;
+    if (!e) {
+      return;
+    }
+
+    // if preventDefault exists run it on the original event
+    if (e.preventDefault) {
+      e.preventDefault();
+    }
+  },
+
+  stopPropagation: function stopPropagation() {
+    this.isPropagationStopped = returnTrue;
+
+    var e = this.originalEvent;
+    if (!e) {
+      return;
+    }
+
+    // if stopPropagation exists run it on the original event
+    if (e.stopPropagation) {
+      e.stopPropagation();
+    }
+  },
+
+  stopImmediatePropagation: function stopImmediatePropagation() {
+    this.isImmediatePropagationStopped = returnTrue;
+    this.stopPropagation();
+  },
+
+  isDefaultPrevented: returnFalse,
+  isPropagationStopped: returnFalse,
+  isImmediatePropagationStopped: returnFalse
+};
+
+module.exports = Event;
+
+/***/ }),
+/* 17 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+/**
+ *  Elements are drawn in a specific order based on compound depth (low to high), the element type (nodes above edges),
+ *  and z-index (low to high).  These styles affect how this applies:
+ *
+ *  z-compound-depth: May be `bottom | orphan | auto | top`.  The first drawn is `bottom`, then `orphan` which is the
+ *      same depth as the root of the compound graph, followed by the default value `auto` which draws in order from
+ *      root to leaves of the compound graph.  The last drawn is `top`.
+ *  z-index-compare: May be `auto | manual`.  The default value is `auto` which always draws edges under nodes.
+ *      `manual` ignores this convention and draws based on the `z-index` value setting.
+ *  z-index: An integer value that affects the relative draw order of elements.  In general, an element with a higher
+ *      `z-index` will be drawn on top of an element with a lower `z-index`.
+ */
+var util = __webpack_require__(1);
+
+var zIndexSort = function zIndexSort(a, b) {
+  var cy = a.cy();
+  var hasCompoundNodes = cy.hasCompoundNodes();
+
+  function getDepth(ele) {
+    var style = ele.pstyle('z-compound-depth');
+    if (style.value === 'auto') {
+      return hasCompoundNodes ? ele.zDepth() : 0;
+    } else if (style.value === 'bottom') {
+      return -1;
+    } else if (style.value === 'top') {
+      return util.MAX_INT;
+    }
+    // 'orphan'
+    return 0;
+  }
+  var depthDiff = getDepth(a) - getDepth(b);
+  if (depthDiff !== 0) {
+    return depthDiff;
+  }
+
+  function getEleDepth(ele) {
+    var style = ele.pstyle('z-index-compare');
+    if (style.value === 'auto') {
+      return ele.isNode() ? 1 : 0;
+    }
+    // 'manual'
+    return 0;
+  }
+  var eleDiff = getEleDepth(a) - getEleDepth(b);
+  if (eleDiff !== 0) {
+    return eleDiff;
+  }
+
+  var zDiff = a.pstyle('z-index').value - b.pstyle('z-index').value;
+  if (zDiff !== 0) {
+    return zDiff;
+  }
+  // compare indices in the core (order added to graph w/ last on top)
+  return a.poolIndex() - b.poolIndex();
+};
+
+module.exports = zIndexSort;
+
+/***/ }),
 /* 18 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -4284,7 +4235,7 @@ Style.fromString = function (cy, string) {
   return new Style(cy).fromString(string);
 };
 
-[__webpack_require__(122), __webpack_require__(123), __webpack_require__(124), __webpack_require__(125), __webpack_require__(126), __webpack_require__(129), __webpack_require__(128), __webpack_require__(127)].forEach(function (props) {
+[__webpack_require__(85), __webpack_require__(86), __webpack_require__(87), __webpack_require__(88), __webpack_require__(89), __webpack_require__(90), __webpack_require__(91), __webpack_require__(92)].forEach(function (props) {
   util.extend(styfn, props);
 });
 
@@ -4300,42 +4251,87 @@ module.exports = Style;
 "use strict";
 
 
-module.exports = function memoize(fn, keyFn) {
-  if (!keyFn) {
-    keyFn = function keyFn() {
-      if (arguments.length === 1) {
-        return arguments[0];
-      } else if (arguments.length === 0) {
-        return 'undefined';
+var util = __webpack_require__(1);
+
+var fullFpsTime = 1000 / 60; // assume 60 frames per second
+
+module.exports = {
+  setupDequeueing: function setupDequeueing(opts) {
+    return function setupDequeueingImpl() {
+      var self = this;
+      var r = this.renderer;
+
+      if (self.dequeueingSetup) {
+        return;
+      } else {
+        self.dequeueingSetup = true;
       }
 
-      var args = [];
+      var queueRedraw = util.debounce(function () {
+        r.redrawHint('eles', true);
+        r.redrawHint('drag', true);
 
-      for (var i = 0; i < arguments.length; i++) {
-        args.push(arguments[i]);
-      }
+        r.redraw();
+      }, opts.deqRedrawThreshold);
 
-      return args.join('$');
+      var dequeue = function dequeue(willDraw, frameStartTime) {
+        var startTime = util.performanceNow();
+        var avgRenderTime = r.averageRedrawTime;
+        var renderTime = r.lastRedrawTime;
+        var deqd = [];
+        var extent = r.cy.extent();
+        var pixelRatio = r.getPixelRatio();
+
+        while (true) {
+          var now = util.performanceNow();
+          var duration = now - startTime;
+          var frameDuration = now - frameStartTime;
+
+          if (renderTime < fullFpsTime) {
+            // if we're rendering faster than the ideal fps, then do dequeueing
+            // during all of the remaining frame time
+
+            var timeAvailable = fullFpsTime - (willDraw ? avgRenderTime : 0);
+
+            if (frameDuration >= opts.deqFastCost * timeAvailable) {
+              break;
+            }
+          } else {
+            if (willDraw) {
+              if (duration >= opts.deqCost * renderTime || duration >= opts.deqAvgCost * avgRenderTime) {
+                break;
+              }
+            } else if (frameDuration >= opts.deqNoDrawCost * fullFpsTime) {
+              break;
+            }
+          }
+
+          var thisDeqd = opts.deq(self, pixelRatio, extent);
+
+          if (thisDeqd.length > 0) {
+            for (var i = 0; i < thisDeqd.length; i++) {
+              deqd.push(thisDeqd[i]);
+            }
+          } else {
+            break;
+          }
+        }
+
+        // callbacks on dequeue
+        if (deqd.length > 0) {
+          opts.onDeqd(self, deqd);
+
+          if (!willDraw && opts.shouldRedraw(self, deqd, pixelRatio, extent)) {
+            queueRedraw();
+          }
+        }
+      };
+
+      var priority = opts.priority || util.noop;
+
+      r.beforeRender(dequeue, priority(self));
     };
   }
-
-  var memoizedFn = function memoizedFn() {
-    var self = this;
-    var args = arguments;
-    var ret = void 0;
-    var k = keyFn.apply(self, args);
-    var cache = memoizedFn.cache;
-
-    if (!(ret = cache[k])) {
-      ret = cache[k] = fn.apply(self, args);
-    }
-
-    return ret;
-  };
-
-  memoizedFn.cache = {};
-
-  return memoizedFn;
 };
 
 /***/ }),
@@ -4345,266 +4341,47 @@ module.exports = function memoize(fn, keyFn) {
 "use strict";
 
 
-var util = __webpack_require__(1);
-var define = __webpack_require__(3);
-var Collection = __webpack_require__(7);
-var Core = __webpack_require__(12);
-var incExts = __webpack_require__(75);
 var is = __webpack_require__(0);
-var Emitter = __webpack_require__(10);
+var Core = __webpack_require__(12);
+var extension = __webpack_require__(94);
+var Stylesheet = __webpack_require__(136);
 
-// registered extensions to cytoscape, indexed by name
-var extensions = {};
-
-// registered modules for extensions, indexed by name
-var modules = {};
-
-function setExtension(type, name, registrant) {
-
-  var ext = registrant;
-
-  var overrideErr = function overrideErr(field) {
-    util.error('Can not register `' + name + '` for `' + type + '` since `' + field + '` already exists in the prototype and can not be overridden');
-  };
-
-  if (type === 'core') {
-    if (Core.prototype[name]) {
-      return overrideErr(name);
-    } else {
-      Core.prototype[name] = registrant;
-    }
-  } else if (type === 'collection') {
-    if (Collection.prototype[name]) {
-      return overrideErr(name);
-    } else {
-      Collection.prototype[name] = registrant;
-    }
-  } else if (type === 'layout') {
-    // fill in missing layout functions in the prototype
-
-    var Layout = function Layout(options) {
-      this.options = options;
-
-      registrant.call(this, options);
-
-      // make sure layout has _private for use w/ std apis like .on()
-      if (!is.plainObject(this._private)) {
-        this._private = {};
-      }
-
-      this._private.cy = options.cy;
-      this._private.listeners = [];
-
-      this.createEmitter();
-    };
-
-    var layoutProto = Layout.prototype = Object.create(registrant.prototype);
-
-    var optLayoutFns = [];
-
-    for (var i = 0; i < optLayoutFns.length; i++) {
-      var fnName = optLayoutFns[i];
-
-      layoutProto[fnName] = layoutProto[fnName] || function () {
-        return this;
-      };
-    }
-
-    // either .start() or .run() is defined, so autogen the other
-    if (layoutProto.start && !layoutProto.run) {
-      layoutProto.run = function () {
-        this.start();return this;
-      };
-    } else if (!layoutProto.start && layoutProto.run) {
-      layoutProto.start = function () {
-        this.run();return this;
-      };
-    }
-
-    var regStop = registrant.prototype.stop;
-    layoutProto.stop = function () {
-      var opts = this.options;
-
-      if (opts && opts.animate) {
-        var anis = this.animations;
-
-        if (anis) {
-          for (var _i = 0; _i < anis.length; _i++) {
-            anis[_i].stop();
-          }
-        }
-      }
-
-      if (regStop) {
-        regStop.call(this);
-      } else {
-        this.emit('layoutstop');
-      }
-
-      return this;
-    };
-
-    if (!layoutProto.destroy) {
-      layoutProto.destroy = function () {
-        return this;
-      };
-    }
-
-    layoutProto.cy = function () {
-      return this._private.cy;
-    };
-
-    var getCy = function getCy(layout) {
-      return layout._private.cy;
-    };
-
-    util.assign(layoutProto, {
-      createEmitter: function createEmitter() {
-        this._private.emitter = new Emitter({
-          eventFields: function eventFields(layout) {
-            return {
-              layout: layout,
-              cy: getCy(layout),
-              target: layout
-            };
-          },
-          bubble: function bubble() {
-            return true;
-          },
-          parent: function parent(layout) {
-            return getCy(layout);
-          },
-          context: this
-        });
-
-        return this;
-      },
-      emitter: function emitter() {
-        return this._private.emitter;
-      },
-      on: function on(evt, cb) {
-        this.emitter().on(evt, cb);return this;
-      },
-      one: function one(evt, cb) {
-        this.emitter().one(evt, cb);return this;
-      },
-      once: function once(evt, cb) {
-        this.emitter().one(evt, cb);return this;
-      },
-      removeListener: function removeListener(evt, cb) {
-        this.emitter().removeListener(evt, cb);return this;
-      },
-      emit: function emit(evt, params) {
-        this.emitter().emit(evt, params);return this;
-      }
-    });
-
-    define.eventAliasesOn(layoutProto);
-
-    ext = Layout; // replace with our wrapped layout
-  } else if (type === 'renderer' && name !== 'null' && name !== 'base') {
-    // user registered renderers inherit from base
-
-    var BaseRenderer = getExtension('renderer', 'base');
-    var bProto = BaseRenderer.prototype;
-    var RegistrantRenderer = registrant;
-    var rProto = registrant.prototype;
-
-    var Renderer = function Renderer() {
-      BaseRenderer.apply(this, arguments);
-      RegistrantRenderer.apply(this, arguments);
-    };
-
-    var proto = Renderer.prototype;
-
-    for (var pName in bProto) {
-      var pVal = bProto[pName];
-      var existsInR = rProto[pName] != null;
-
-      if (existsInR) {
-        return overrideErr(pName);
-      }
-
-      proto[pName] = pVal; // take impl from base
-    }
-
-    for (var _pName in rProto) {
-      proto[_pName] = rProto[_pName]; // take impl from registrant
-    }
-
-    bProto.clientFunctions.forEach(function (name) {
-      proto[name] = proto[name] || function () {
-        util.error('Renderer does not implement `renderer.' + name + '()` on its prototype');
-      };
-    });
-
-    ext = Renderer;
+var cytoscape = function cytoscape(options) {
+  // jshint ignore:line
+  // if no options specified, use default
+  if (options === undefined) {
+    options = {};
   }
 
-  return util.setMap({
-    map: extensions,
-    keys: [type, name],
-    value: ext
-  });
-}
-
-function getExtension(type, name) {
-  return util.getMap({
-    map: extensions,
-    keys: [type, name]
-  });
-}
-
-function setModule(type, name, moduleType, moduleName, registrant) {
-  return util.setMap({
-    map: modules,
-    keys: [type, name, moduleType, moduleName],
-    value: registrant
-  });
-}
-
-function getModule(type, name, moduleType, moduleName) {
-  return util.getMap({
-    map: modules,
-    keys: [type, name, moduleType, moduleName]
-  });
-}
-
-var extension = function extension() {
-  // e.g. extension('renderer', 'svg')
-  if (arguments.length === 2) {
-    return getExtension.apply(null, arguments);
+  // create instance
+  if (is.plainObject(options)) {
+    return new Core(options);
   }
 
-  // e.g. extension('renderer', 'svg', { ... })
-  else if (arguments.length === 3) {
-      return setExtension.apply(null, arguments);
+  // allow for registration of extensions
+  else if (is.string(options)) {
+      return extension.apply(extension, arguments);
     }
-
-    // e.g. extension('renderer', 'svg', 'nodeShape', 'ellipse')
-    else if (arguments.length === 4) {
-        return getModule.apply(null, arguments);
-      }
-
-      // e.g. extension('renderer', 'svg', 'nodeShape', 'ellipse', { ... })
-      else if (arguments.length === 5) {
-          return setModule.apply(null, arguments);
-        } else {
-          util.error('Invalid extension access syntax');
-        }
 };
 
-// allows a core instance to access extensions internally
-Core.prototype.extension = extension;
+// e.g. cytoscape.use( require('cytoscape-foo'), bar )
+cytoscape.use = function (ext) {
+  var args = Array.prototype.slice.call(arguments, 1); // args to pass to ext
 
-// included extensions
-incExts.forEach(function (group) {
-  group.extensions.forEach(function (ext) {
-    setExtension(group.type, ext.name, ext.impl);
-  });
-});
+  args.unshift(cytoscape); // cytoscape is first arg to ext
 
-module.exports = extension;
+  ext.apply(null, args);
+
+  return this;
+};
+
+// replaced by build system
+cytoscape.version = __webpack_require__(137);
+
+// expose public apis (mostly for extensions)
+cytoscape.stylesheet = cytoscape.Stylesheet = Stylesheet;
+
+module.exports = cytoscape;
 
 /***/ }),
 /* 21 */
@@ -4614,102 +4391,314 @@ module.exports = extension;
 
 
 var is = __webpack_require__(0);
-var util = __webpack_require__(1);
-var Style = __webpack_require__(18);
 
-// a dummy stylesheet object that doesn't need a reference to the core
-// (useful for init)
-var Stylesheet = function Stylesheet() {
-  if (!(this instanceof Stylesheet)) {
-    return new Stylesheet();
-  }
+module.exports = {
+  // get [r, g, b] from #abc or #aabbcc
+  hex2tuple: function hex2tuple(hex) {
+    if (!(hex.length === 4 || hex.length === 7) || hex[0] !== '#') {
+      return;
+    }
 
-  this.length = 0;
-};
+    var shortHex = hex.length === 4;
+    var r = void 0,
+        g = void 0,
+        b = void 0;
+    var base = 16;
 
-var sheetfn = Stylesheet.prototype;
+    if (shortHex) {
+      r = parseInt(hex[1] + hex[1], base);
+      g = parseInt(hex[2] + hex[2], base);
+      b = parseInt(hex[3] + hex[3], base);
+    } else {
+      r = parseInt(hex[1] + hex[2], base);
+      g = parseInt(hex[3] + hex[4], base);
+      b = parseInt(hex[5] + hex[6], base);
+    }
 
-sheetfn.instanceString = function () {
-  return 'stylesheet';
-};
+    return [r, g, b];
+  },
 
-// just store the selector to be parsed later
-sheetfn.selector = function (selector) {
-  var i = this.length++;
+  // get [r, g, b, a] from hsl(0, 0, 0) or hsla(0, 0, 0, 0)
+  hsl2tuple: function hsl2tuple(hsl) {
+    var ret = void 0;
+    var h = void 0,
+        s = void 0,
+        l = void 0,
+        a = void 0,
+        r = void 0,
+        g = void 0,
+        b = void 0;
+    function hue2rgb(p, q, t) {
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+      if (t < 1 / 6) return p + (q - p) * 6 * t;
+      if (t < 1 / 2) return q;
+      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+      return p;
+    }
 
-  this[i] = {
-    selector: selector,
-    properties: []
-  };
+    var m = new RegExp('^' + this.regex.hsla + '$').exec(hsl);
+    if (m) {
 
-  return this; // chaining
-};
+      // get hue
+      h = parseInt(m[1]);
+      if (h < 0) {
+        h = (360 - -1 * h % 360) % 360;
+      } else if (h > 360) {
+        h = h % 360;
+      }
+      h /= 360; // normalise on [0, 1]
 
-// just store the property to be parsed later
-sheetfn.css = function (name, value) {
-  var i = this.length - 1;
+      s = parseFloat(m[2]);
+      if (s < 0 || s > 100) {
+        return;
+      } // saturation is [0, 100]
+      s = s / 100; // normalise on [0, 1]
 
-  if (is.string(name)) {
-    this[i].properties.push({
-      name: name,
-      value: value
-    });
-  } else if (is.plainObject(name)) {
-    var map = name;
+      l = parseFloat(m[3]);
+      if (l < 0 || l > 100) {
+        return;
+      } // lightness is [0, 100]
+      l = l / 100; // normalise on [0, 1]
 
-    for (var j = 0; j < Style.properties.length; j++) {
-      var prop = Style.properties[j];
-      var mapVal = map[prop.name];
+      a = m[4];
+      if (a !== undefined) {
+        a = parseFloat(a);
 
-      if (mapVal === undefined) {
-        // also try camel case name
-        mapVal = map[util.dash2camel(prop.name)];
+        if (a < 0 || a > 1) {
+          return;
+        } // alpha is [0, 1]
       }
 
-      if (mapVal !== undefined) {
-        var _name = prop.name;
-        var _value = mapVal;
+      // now, convert to rgb
+      // code from http://mjijackson.com/2008/02/rgb-to-hsl-and-rgb-to-hsv-color-model-conversion-algorithms-in-javascript
+      if (s === 0) {
+        r = g = b = Math.round(l * 255); // achromatic
+      } else {
+        var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        var p = 2 * l - q;
+        r = Math.round(255 * hue2rgb(p, q, h + 1 / 3));
+        g = Math.round(255 * hue2rgb(p, q, h));
+        b = Math.round(255 * hue2rgb(p, q, h - 1 / 3));
+      }
 
-        this[i].properties.push({
-          name: _name,
-          value: _value
-        });
+      ret = [r, g, b, a];
+    }
+
+    return ret;
+  },
+
+  // get [r, g, b, a] from rgb(0, 0, 0) or rgba(0, 0, 0, 0)
+  rgb2tuple: function rgb2tuple(rgb) {
+    var ret = void 0;
+
+    var m = new RegExp('^' + this.regex.rgba + '$').exec(rgb);
+    if (m) {
+      ret = [];
+
+      var isPct = [];
+      for (var i = 1; i <= 3; i++) {
+        var channel = m[i];
+
+        if (channel[channel.length - 1] === '%') {
+          isPct[i] = true;
+        }
+        channel = parseFloat(channel);
+
+        if (isPct[i]) {
+          channel = channel / 100 * 255; // normalise to [0, 255]
+        }
+
+        if (channel < 0 || channel > 255) {
+          return;
+        } // invalid channel value
+
+        ret.push(Math.floor(channel));
+      }
+
+      var atLeastOneIsPct = isPct[1] || isPct[2] || isPct[3];
+      var allArePct = isPct[1] && isPct[2] && isPct[3];
+      if (atLeastOneIsPct && !allArePct) {
+        return;
+      } // must all be percent values if one is
+
+      var alpha = m[4];
+      if (alpha !== undefined) {
+        alpha = parseFloat(alpha);
+
+        if (alpha < 0 || alpha > 1) {
+          return;
+        } // invalid alpha value
+
+        ret.push(alpha);
       }
     }
+
+    return ret;
+  },
+
+  colorname2tuple: function colorname2tuple(color) {
+    return this.colors[color.toLowerCase()];
+  },
+
+  color2tuple: function color2tuple(color) {
+    return (is.array(color) ? color : null) || this.colorname2tuple(color) || this.hex2tuple(color) || this.rgb2tuple(color) || this.hsl2tuple(color);
+  },
+
+  colors: {
+    // special colour names
+    transparent: [0, 0, 0, 0], // NB alpha === 0
+
+    // regular colours
+    aliceblue: [240, 248, 255],
+    antiquewhite: [250, 235, 215],
+    aqua: [0, 255, 255],
+    aquamarine: [127, 255, 212],
+    azure: [240, 255, 255],
+    beige: [245, 245, 220],
+    bisque: [255, 228, 196],
+    black: [0, 0, 0],
+    blanchedalmond: [255, 235, 205],
+    blue: [0, 0, 255],
+    blueviolet: [138, 43, 226],
+    brown: [165, 42, 42],
+    burlywood: [222, 184, 135],
+    cadetblue: [95, 158, 160],
+    chartreuse: [127, 255, 0],
+    chocolate: [210, 105, 30],
+    coral: [255, 127, 80],
+    cornflowerblue: [100, 149, 237],
+    cornsilk: [255, 248, 220],
+    crimson: [220, 20, 60],
+    cyan: [0, 255, 255],
+    darkblue: [0, 0, 139],
+    darkcyan: [0, 139, 139],
+    darkgoldenrod: [184, 134, 11],
+    darkgray: [169, 169, 169],
+    darkgreen: [0, 100, 0],
+    darkgrey: [169, 169, 169],
+    darkkhaki: [189, 183, 107],
+    darkmagenta: [139, 0, 139],
+    darkolivegreen: [85, 107, 47],
+    darkorange: [255, 140, 0],
+    darkorchid: [153, 50, 204],
+    darkred: [139, 0, 0],
+    darksalmon: [233, 150, 122],
+    darkseagreen: [143, 188, 143],
+    darkslateblue: [72, 61, 139],
+    darkslategray: [47, 79, 79],
+    darkslategrey: [47, 79, 79],
+    darkturquoise: [0, 206, 209],
+    darkviolet: [148, 0, 211],
+    deeppink: [255, 20, 147],
+    deepskyblue: [0, 191, 255],
+    dimgray: [105, 105, 105],
+    dimgrey: [105, 105, 105],
+    dodgerblue: [30, 144, 255],
+    firebrick: [178, 34, 34],
+    floralwhite: [255, 250, 240],
+    forestgreen: [34, 139, 34],
+    fuchsia: [255, 0, 255],
+    gainsboro: [220, 220, 220],
+    ghostwhite: [248, 248, 255],
+    gold: [255, 215, 0],
+    goldenrod: [218, 165, 32],
+    gray: [128, 128, 128],
+    grey: [128, 128, 128],
+    green: [0, 128, 0],
+    greenyellow: [173, 255, 47],
+    honeydew: [240, 255, 240],
+    hotpink: [255, 105, 180],
+    indianred: [205, 92, 92],
+    indigo: [75, 0, 130],
+    ivory: [255, 255, 240],
+    khaki: [240, 230, 140],
+    lavender: [230, 230, 250],
+    lavenderblush: [255, 240, 245],
+    lawngreen: [124, 252, 0],
+    lemonchiffon: [255, 250, 205],
+    lightblue: [173, 216, 230],
+    lightcoral: [240, 128, 128],
+    lightcyan: [224, 255, 255],
+    lightgoldenrodyellow: [250, 250, 210],
+    lightgray: [211, 211, 211],
+    lightgreen: [144, 238, 144],
+    lightgrey: [211, 211, 211],
+    lightpink: [255, 182, 193],
+    lightsalmon: [255, 160, 122],
+    lightseagreen: [32, 178, 170],
+    lightskyblue: [135, 206, 250],
+    lightslategray: [119, 136, 153],
+    lightslategrey: [119, 136, 153],
+    lightsteelblue: [176, 196, 222],
+    lightyellow: [255, 255, 224],
+    lime: [0, 255, 0],
+    limegreen: [50, 205, 50],
+    linen: [250, 240, 230],
+    magenta: [255, 0, 255],
+    maroon: [128, 0, 0],
+    mediumaquamarine: [102, 205, 170],
+    mediumblue: [0, 0, 205],
+    mediumorchid: [186, 85, 211],
+    mediumpurple: [147, 112, 219],
+    mediumseagreen: [60, 179, 113],
+    mediumslateblue: [123, 104, 238],
+    mediumspringgreen: [0, 250, 154],
+    mediumturquoise: [72, 209, 204],
+    mediumvioletred: [199, 21, 133],
+    midnightblue: [25, 25, 112],
+    mintcream: [245, 255, 250],
+    mistyrose: [255, 228, 225],
+    moccasin: [255, 228, 181],
+    navajowhite: [255, 222, 173],
+    navy: [0, 0, 128],
+    oldlace: [253, 245, 230],
+    olive: [128, 128, 0],
+    olivedrab: [107, 142, 35],
+    orange: [255, 165, 0],
+    orangered: [255, 69, 0],
+    orchid: [218, 112, 214],
+    palegoldenrod: [238, 232, 170],
+    palegreen: [152, 251, 152],
+    paleturquoise: [175, 238, 238],
+    palevioletred: [219, 112, 147],
+    papayawhip: [255, 239, 213],
+    peachpuff: [255, 218, 185],
+    peru: [205, 133, 63],
+    pink: [255, 192, 203],
+    plum: [221, 160, 221],
+    powderblue: [176, 224, 230],
+    purple: [128, 0, 128],
+    red: [255, 0, 0],
+    rosybrown: [188, 143, 143],
+    royalblue: [65, 105, 225],
+    saddlebrown: [139, 69, 19],
+    salmon: [250, 128, 114],
+    sandybrown: [244, 164, 96],
+    seagreen: [46, 139, 87],
+    seashell: [255, 245, 238],
+    sienna: [160, 82, 45],
+    silver: [192, 192, 192],
+    skyblue: [135, 206, 235],
+    slateblue: [106, 90, 205],
+    slategray: [112, 128, 144],
+    slategrey: [112, 128, 144],
+    snow: [255, 250, 250],
+    springgreen: [0, 255, 127],
+    steelblue: [70, 130, 180],
+    tan: [210, 180, 140],
+    teal: [0, 128, 128],
+    thistle: [216, 191, 216],
+    tomato: [255, 99, 71],
+    turquoise: [64, 224, 208],
+    violet: [238, 130, 238],
+    wheat: [245, 222, 179],
+    white: [255, 255, 255],
+    whitesmoke: [245, 245, 245],
+    yellow: [255, 255, 0],
+    yellowgreen: [154, 205, 50]
   }
-
-  return this; // chaining
 };
-
-sheetfn.style = sheetfn.css;
-
-// generate a real style object from the dummy stylesheet
-sheetfn.generateStyle = function (cy) {
-  var style = new Style(cy);
-
-  return this.appendToStyle(style);
-};
-
-// append a dummy stylesheet object on a real style object
-sheetfn.appendToStyle = function (style) {
-  for (var i = 0; i < this.length; i++) {
-    var context = this[i];
-    var selector = context.selector;
-    var props = context.properties;
-
-    style.selector(selector); // apply selector
-
-    for (var j = 0; j < props.length; j++) {
-      var prop = props[j];
-
-      style.css(prop.name, prop.value); // apply property
-    }
-  }
-
-  return style;
-};
-
-module.exports = Stylesheet;
 
 /***/ }),
 /* 22 */
@@ -4718,10 +4707,2502 @@ module.exports = Stylesheet;
 "use strict";
 
 
-module.exports = "3.2.8";
+var is = __webpack_require__(0);
+
+module.exports = {
+  // has anything been set in the map
+  mapEmpty: function mapEmpty(map) {
+    var empty = true;
+
+    if (map != null) {
+      return Object.keys(map).length === 0;
+    }
+
+    return empty;
+  },
+
+  // pushes to the array at the end of a map (map may not be built)
+  pushMap: function pushMap(options) {
+    var array = this.getMap(options);
+
+    if (array == null) {
+      // if empty, put initial array
+      this.setMap(this.extend({}, options, {
+        value: [options.value]
+      }));
+    } else {
+      array.push(options.value);
+    }
+  },
+
+  // sets the value in a map (map may not be built)
+  setMap: function setMap(options) {
+    var obj = options.map;
+    var key = void 0;
+    var keys = options.keys;
+    var l = keys.length;
+
+    for (var i = 0; i < l; i++) {
+      var _key = keys[i];
+
+      if (is.plainObject(_key)) {
+        this.error('Tried to set map with object key');
+      }
+
+      if (i < keys.length - 1) {
+
+        // extend the map if necessary
+        if (obj[_key] == null) {
+          obj[_key] = {};
+        }
+
+        obj = obj[_key];
+      } else {
+        // set the value
+        obj[_key] = options.value;
+      }
+    }
+  },
+
+  // gets the value in a map even if it's not built in places
+  getMap: function getMap(options) {
+    var obj = options.map;
+    var keys = options.keys;
+    var l = keys.length;
+
+    for (var i = 0; i < l; i++) {
+      var key = keys[i];
+
+      if (is.plainObject(key)) {
+        this.error('Tried to get map with object key');
+      }
+
+      obj = obj[key];
+
+      if (obj == null) {
+        return obj;
+      }
+    }
+
+    return obj;
+  },
+
+  // deletes the entry in the map
+  deleteMap: function deleteMap(options) {
+    var obj = options.map;
+    var keys = options.keys;
+    var l = keys.length;
+    var keepChildren = options.keepChildren;
+
+    for (var i = 0; i < l; i++) {
+      var key = keys[i];
+
+      if (is.plainObject(key)) {
+        this.error('Tried to delete map with object key');
+      }
+
+      var lastKey = i === options.keys.length - 1;
+      if (lastKey) {
+
+        if (keepChildren) {
+          // then only delete child fields not in keepChildren
+          var children = Object.keys(obj);
+
+          for (var j = 0; j < children.length; j++) {
+            var child = children[j];
+
+            if (!keepChildren[child]) {
+              obj[child] = undefined;
+            }
+          }
+        } else {
+          obj[key] = undefined;
+        }
+      } else {
+        obj = obj[key];
+      }
+    }
+  }
+};
 
 /***/ }),
 /* 23 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var number = '(?:[-+]?(?:(?:\\d+|\\d*\\.\\d+)(?:[Ee][+-]?\\d+)?))';
+
+var rgba = 'rgb[a]?\\((' + number + '[%]?)\\s*,\\s*(' + number + '[%]?)\\s*,\\s*(' + number + '[%]?)(?:\\s*,\\s*(' + number + '))?\\)';
+var rgbaNoBackRefs = 'rgb[a]?\\((?:' + number + '[%]?)\\s*,\\s*(?:' + number + '[%]?)\\s*,\\s*(?:' + number + '[%]?)(?:\\s*,\\s*(?:' + number + '))?\\)';
+
+var hsla = 'hsl[a]?\\((' + number + ')\\s*,\\s*(' + number + '[%])\\s*,\\s*(' + number + '[%])(?:\\s*,\\s*(' + number + '))?\\)';
+var hslaNoBackRefs = 'hsl[a]?\\((?:' + number + ')\\s*,\\s*(?:' + number + '[%])\\s*,\\s*(?:' + number + '[%])(?:\\s*,\\s*(?:' + number + '))?\\)';
+
+var hex3 = '\\#[0-9a-fA-F]{3}';
+var hex6 = '\\#[0-9a-fA-F]{6}';
+
+module.exports = {
+  regex: {
+    number: number,
+    rgba: rgba,
+    rgbaNoBackRefs: rgbaNoBackRefs,
+    hsla: hsla,
+    hslaNoBackRefs: hslaNoBackRefs,
+    hex3: hex3,
+    hex6: hex6
+  }
+};
+
+/***/ }),
+/* 24 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var memoize = __webpack_require__(13);
+var is = __webpack_require__(0);
+
+module.exports = {
+
+  camel2dash: memoize(function (str) {
+    return str.replace(/([A-Z])/g, function (v) {
+      return '-' + v.toLowerCase();
+    });
+  }),
+
+  dash2camel: memoize(function (str) {
+    return str.replace(/(-\w)/g, function (v) {
+      return v[1].toUpperCase();
+    });
+  }),
+
+  prependCamel: memoize(function (prefix, str) {
+    return prefix + str[0].toUpperCase() + str.substring(1);
+  }, function (prefix, str) {
+    return prefix + '$' + str;
+  }),
+
+  capitalize: function capitalize(str) {
+    if (is.emptyString(str)) {
+      return str;
+    }
+
+    return str.charAt(0).toUpperCase() + str.substring(1);
+  }
+
+};
+
+/***/ }),
+/* 25 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var window = __webpack_require__(3);
+var performance = window ? window.performance : null;
+
+var util = {};
+
+var pnow = performance && performance.now ? function () {
+  return performance.now();
+} : function () {
+  return Date.now();
+};
+
+var raf = function () {
+  if (window) {
+    if (window.requestAnimationFrame) {
+      return function (fn) {
+        window.requestAnimationFrame(fn);
+      };
+    } else if (window.mozRequestAnimationFrame) {
+      return function (fn) {
+        window.mozRequestAnimationFrame(fn);
+      };
+    } else if (window.webkitRequestAnimationFrame) {
+      return function (fn) {
+        window.webkitRequestAnimationFrame(fn);
+      };
+    } else if (window.msRequestAnimationFrame) {
+      return function (fn) {
+        window.msRequestAnimationFrame(fn);
+      };
+    }
+  }
+
+  return function (fn) {
+    if (fn) {
+      setTimeout(function () {
+        fn(pnow());
+      }, 1000 / 60);
+    }
+  };
+}();
+
+util.requestAnimationFrame = function (fn) {
+  raf(fn);
+};
+
+util.performanceNow = pnow;
+
+util.debounce = __webpack_require__(26);
+
+util.now = function () {
+  return Date.now();
+};
+
+module.exports = util;
+
+/***/ }),
+/* 26 */
+/***/ (function(module, exports) {
+
+module.exports = __WEBPACK_EXTERNAL_MODULE_26__;
+
+/***/ }),
+/* 27 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+function ascending(a, b) {
+  if (a < b) {
+    return -1;
+  } else if (a > b) {
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
+function descending(a, b) {
+  return -1 * ascending(a, b);
+}
+
+module.exports = {
+  sort: {
+    ascending: ascending,
+    descending: descending
+  }
+};
+
+/***/ }),
+/* 28 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+function ObjectMap() {
+  this._obj = {};
+}
+
+var p = ObjectMap.prototype;
+
+p.set = function (key, val) {
+  this._obj[key] = val;
+};
+
+p.delete = function (key) {
+  this._obj[key] = null;
+};
+
+p.has = function (key) {
+  return this._obj[key] != null;
+};
+
+p.get = function (key) {
+  return this._obj[key];
+};
+
+// TODO use the stdlib Map in future...
+// module.exports = typeof Map !== 'undefined' ? Map : ObjectMap;
+module.exports = ObjectMap;
+
+/***/ }),
+/* 29 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var util = __webpack_require__(1);
+
+var elesfn = {};
+
+[__webpack_require__(30), __webpack_require__(31), __webpack_require__(33), __webpack_require__(34), __webpack_require__(35), __webpack_require__(36), __webpack_require__(37), __webpack_require__(38), __webpack_require__(39), __webpack_require__(40), __webpack_require__(41)].forEach(function (props) {
+  util.extend(elesfn, props);
+});
+
+module.exports = elesfn;
+
+/***/ }),
+/* 30 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var is = __webpack_require__(0);
+
+var defineSearch = function defineSearch(params) {
+  params = {
+    bfs: params.bfs || !params.dfs,
+    dfs: params.dfs || !params.bfs
+  };
+
+  // from pseudocode on wikipedia
+  return function searchFn(roots, fn, directed) {
+    var options;
+    if (is.plainObject(roots) && !is.elementOrCollection(roots)) {
+      options = roots;
+      roots = options.roots || options.root;
+      fn = options.visit;
+      directed = options.directed;
+    }
+
+    directed = arguments.length === 2 && !is.fn(fn) ? fn : directed;
+    fn = is.fn(fn) ? fn : function () {};
+
+    var cy = this._private.cy;
+    var v = roots = is.string(roots) ? this.filter(roots) : roots;
+    var Q = [];
+    var connectedNodes = [];
+    var connectedBy = {};
+    var id2depth = {};
+    var V = {};
+    var j = 0;
+    var found;
+    var nodes = this.nodes();
+    var edges = this.edges();
+
+    // enqueue v
+    for (var i = 0; i < v.length; i++) {
+      if (v[i].isNode()) {
+        Q.unshift(v[i]);
+
+        if (params.bfs) {
+          V[v[i].id()] = true;
+
+          connectedNodes.push(v[i]);
+        }
+
+        id2depth[v[i].id()] = 0;
+      }
+    }
+
+    while (Q.length !== 0) {
+      var v = params.bfs ? Q.shift() : Q.pop();
+
+      if (params.dfs) {
+        if (V[v.id()]) {
+          continue;
+        }
+
+        V[v.id()] = true;
+
+        connectedNodes.push(v);
+      }
+
+      var depth = id2depth[v.id()];
+      var prevEdge = connectedBy[v.id()];
+      var prevNode = prevEdge == null ? undefined : prevEdge.connectedNodes().not(v)[0];
+      var ret;
+
+      ret = fn(v, prevEdge, prevNode, j++, depth);
+
+      if (ret === true) {
+        found = v;
+        break;
+      }
+
+      if (ret === false) {
+        break;
+      }
+
+      var vwEdges = v.connectedEdges(directed ? function (ele) {
+        return ele.data('source') === v.id();
+      } : undefined).intersect(edges);
+      for (var i = 0; i < vwEdges.length; i++) {
+        var e = vwEdges[i];
+        var w = e.connectedNodes(function (n) {
+          return n.id() !== v.id();
+        }).intersect(nodes);
+
+        if (w.length !== 0 && !V[w.id()]) {
+          w = w[0];
+
+          Q.push(w);
+
+          if (params.bfs) {
+            V[w.id()] = true;
+
+            connectedNodes.push(w);
+          }
+
+          connectedBy[w.id()] = e;
+
+          id2depth[w.id()] = id2depth[v.id()] + 1;
+        }
+      }
+    }
+
+    var connectedEles = [];
+
+    for (var i = 0; i < connectedNodes.length; i++) {
+      var node = connectedNodes[i];
+      var edge = connectedBy[node.id()];
+
+      if (edge) {
+        connectedEles.push(edge);
+      }
+
+      connectedEles.push(node);
+    }
+
+    return {
+      path: cy.collection(connectedEles, { unique: true }),
+      found: cy.collection(found)
+    };
+  };
+};
+
+// search, spanning trees, etc
+var elesfn = {
+  breadthFirstSearch: defineSearch({ bfs: true }),
+  depthFirstSearch: defineSearch({ dfs: true })
+};
+
+// nice, short mathemathical alias
+elesfn.bfs = elesfn.breadthFirstSearch;
+elesfn.dfs = elesfn.depthFirstSearch;
+
+module.exports = elesfn;
+
+/***/ }),
+/* 31 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var is = __webpack_require__(0);
+var Heap = __webpack_require__(9);
+
+var elesfn = {
+
+  dijkstra: function dijkstra(root, weightFn, directed) {
+    var options;
+    if (is.plainObject(root) && !is.elementOrCollection(root)) {
+      options = root;
+      root = options.root;
+      weightFn = options.weight;
+      directed = options.directed;
+    }
+
+    var cy = this._private.cy;
+    weightFn = is.fn(weightFn) ? weightFn : function () {
+      return 1;
+    }; // if not specified, assume each edge has equal weight (1)
+
+    var source = is.string(root) ? this.filter(root)[0] : root[0];
+    var dist = {};
+    var prev = {};
+    var knownDist = {};
+
+    var edges = this.edges().filter(function (ele) {
+      return !ele.isLoop();
+    });
+    var nodes = this.nodes();
+
+    var getDist = function getDist(node) {
+      return dist[node.id()];
+    };
+
+    var setDist = function setDist(node, d) {
+      dist[node.id()] = d;
+
+      Q.updateItem(node);
+    };
+
+    var Q = new Heap(function (a, b) {
+      return getDist(a) - getDist(b);
+    });
+
+    for (var i = 0; i < nodes.length; i++) {
+      var node = nodes[i];
+
+      dist[node.id()] = node.same(source) ? 0 : Infinity;
+      Q.push(node);
+    }
+
+    var distBetween = function distBetween(u, v) {
+      var uvs = (directed ? u.edgesTo(v) : u.edgesWith(v)).intersect(edges);
+      var smallestDistance = Infinity;
+      var smallestEdge;
+
+      for (var i = 0; i < uvs.length; i++) {
+        var edge = uvs[i];
+        var weight = weightFn(edge);
+
+        if (weight < smallestDistance || !smallestEdge) {
+          smallestDistance = weight;
+          smallestEdge = edge;
+        }
+      }
+
+      return {
+        edge: smallestEdge,
+        dist: smallestDistance
+      };
+    };
+
+    while (Q.size() > 0) {
+      var u = Q.pop();
+      var smalletsDist = getDist(u);
+      var uid = u.id();
+
+      knownDist[uid] = smalletsDist;
+
+      if (smalletsDist === Infinity) {
+        continue;
+      }
+
+      var neighbors = u.neighborhood().intersect(nodes);
+      for (var i = 0; i < neighbors.length; i++) {
+        var v = neighbors[i];
+        var vid = v.id();
+        var vDist = distBetween(u, v);
+
+        var alt = smalletsDist + vDist.dist;
+
+        if (alt < getDist(v)) {
+          setDist(v, alt);
+
+          prev[vid] = {
+            node: u,
+            edge: vDist.edge
+          };
+        }
+      } // for
+    } // while
+
+    return {
+      distanceTo: function distanceTo(node) {
+        var target = is.string(node) ? nodes.filter(node)[0] : node[0];
+
+        return knownDist[target.id()];
+      },
+
+      pathTo: function pathTo(node) {
+        var target = is.string(node) ? nodes.filter(node)[0] : node[0];
+        var S = [];
+        var u = target;
+
+        if (target.length > 0) {
+          S.unshift(target);
+
+          while (prev[u.id()]) {
+            var p = prev[u.id()];
+
+            S.unshift(p.edge);
+            S.unshift(p.node);
+
+            u = p.node;
+          }
+        }
+
+        return cy.collection(S);
+      }
+    };
+  }
+};
+
+module.exports = elesfn;
+
+/***/ }),
+/* 32 */
+/***/ (function(module, exports) {
+
+module.exports = __WEBPACK_EXTERNAL_MODULE_32__;
+
+/***/ }),
+/* 33 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var is = __webpack_require__(0);
+
+// search, spanning trees, etc
+var elesfn = {
+
+  // kruskal's algorithm (finds min spanning tree, assuming undirected graph)
+  // implemented from pseudocode from wikipedia
+  kruskal: function kruskal(weightFn) {
+    var cy = this.cy();
+
+    weightFn = is.fn(weightFn) ? weightFn : function () {
+      return 1;
+    }; // if not specified, assume each edge has equal weight (1)
+
+    function findSet(ele) {
+      for (var i = 0; i < forest.length; i++) {
+        var eles = forest[i];
+
+        if (eles.anySame(ele)) {
+          return {
+            eles: eles,
+            index: i
+          };
+        }
+      }
+    }
+
+    var A = cy.collection(cy, []);
+    var forest = [];
+    var nodes = this.nodes();
+
+    for (var i = 0; i < nodes.length; i++) {
+      forest.push(nodes[i].collection());
+    }
+
+    var edges = this.edges();
+    var S = edges.toArray().sort(function (a, b) {
+      var weightA = weightFn(a);
+      var weightB = weightFn(b);
+
+      return weightA - weightB;
+    });
+
+    for (var i = 0; i < S.length; i++) {
+      var edge = S[i];
+      var u = edge.source()[0];
+      var v = edge.target()[0];
+      var setU = findSet(u);
+      var setV = findSet(v);
+
+      if (setU.index !== setV.index) {
+        A = A.add(edge);
+
+        // combine forests for u and v
+        forest[setU.index] = setU.eles.add(setV.eles);
+        forest.splice(setV.index, 1);
+      }
+    }
+
+    return nodes.add(A);
+  }
+};
+
+module.exports = elesfn;
+
+/***/ }),
+/* 34 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var is = __webpack_require__(0);
+
+var elesfn = {
+
+  // Implemented from pseudocode from wikipedia
+  aStar: function aStar(options) {
+    var eles = this;
+
+    options = options || {};
+
+    // Reconstructs the path from Start to End, acumulating the result in pathAcum
+    var reconstructPath = function reconstructPath(start, end, cameFromMap, pathAcum) {
+      // Base case
+      if (start == end) {
+        pathAcum.unshift(cy.getElementById(end));
+        return pathAcum;
+      }
+
+      if (end in cameFromMap) {
+        // We know which node is before the last one
+        var previous = cameFromMap[end];
+        var previousEdge = cameFromEdge[end];
+
+        pathAcum.unshift(cy.getElementById(previousEdge));
+        pathAcum.unshift(cy.getElementById(end));
+
+        return reconstructPath(start, previous, cameFromMap, pathAcum);
+      }
+
+      // We should not reach here!
+      return undefined;
+    };
+
+    // Returns the index of the element in openSet which has minimum fScore
+    var findMin = function findMin(openSet, fScore) {
+      if (openSet.length === 0) {
+        // Should never be the case
+        return undefined;
+      }
+      var minPos = 0;
+      var tempScore = fScore[openSet[0]];
+      for (var i = 1; i < openSet.length; i++) {
+        var s = fScore[openSet[i]];
+        if (s < tempScore) {
+          tempScore = s;
+          minPos = i;
+        }
+      }
+      return minPos;
+    };
+
+    var cy = this._private.cy;
+
+    // root - mandatory!
+    if (options != null && options.root != null) {
+      var source = is.string(options.root) ?
+      // use it as a selector, e.g. "#rootID
+      this.filter(options.root)[0] : options.root[0];
+    } else {
+      return undefined;
+    }
+
+    // goal - mandatory!
+    if (options.goal != null) {
+      var target = is.string(options.goal) ?
+      // use it as a selector, e.g. "#goalID
+      this.filter(options.goal)[0] : options.goal[0];
+    } else {
+      return undefined;
+    }
+
+    // Heuristic function - optional
+    if (options.heuristic != null && is.fn(options.heuristic)) {
+      var heuristic = options.heuristic;
+    } else {
+      var heuristic = function heuristic() {
+        return 0;
+      }; // use constant if unspecified
+    }
+
+    // Weight function - optional
+    if (options.weight != null && is.fn(options.weight)) {
+      var weightFn = options.weight;
+    } else {
+      // If not specified, assume each edge has equal weight (1)
+      var weightFn = function weightFn(e) {
+        return 1;
+      };
+    }
+
+    // directed - optional
+    if (options.directed != null) {
+      var directed = options.directed;
+    } else {
+      var directed = false;
+    }
+
+    var sid = source.id();
+    var tid = target.id();
+
+    var closedSet = [];
+    var openSet = [sid];
+    var cameFrom = {};
+    var cameFromEdge = {};
+    var gScore = {};
+    var fScore = {};
+
+    gScore[sid] = 0;
+    fScore[sid] = heuristic(source);
+
+    // Counter
+    var steps = 0;
+
+    // Main loop
+    while (openSet.length > 0) {
+      var minPos = findMin(openSet, fScore);
+      var cMin = cy.getElementById(openSet[minPos]);
+      var cMinId = cMin.id();
+      steps++;
+
+      // If we've found our goal, then we are done
+      if (cMinId == tid) {
+        var rPath = reconstructPath(sid, tid, cameFrom, []);
+
+        return {
+          found: true,
+          distance: gScore[cMinId],
+          path: eles.spawn(rPath),
+          steps: steps
+        };
+      }
+
+      // Add cMin to processed nodes
+      closedSet.push(cMinId);
+      // Remove cMin from boundary nodes
+      openSet.splice(minPos, 1);
+
+      // Update scores for neighbors of cMin
+      // Take into account if graph is directed or not
+      var vwEdges = cMin._private.edges;
+
+      for (var i = 0; i < vwEdges.length; i++) {
+        var e = vwEdges[i];
+
+        // edge must be in set of calling eles
+        if (!this.hasElementWithId(e.id())) {
+          continue;
+        }
+
+        // cMin must be the source of edge if directed
+        if (directed && e.data('source') !== cMinId) {
+          continue;
+        }
+
+        var wSrc = e.source();
+        var wTgt = e.target();
+
+        var w = wSrc.id() !== cMinId ? wSrc : wTgt;
+        var wid = w.id();
+
+        // node must be in set of calling eles
+        if (!this.hasElementWithId(wid)) {
+          continue;
+        }
+
+        // if node is in closedSet, ignore it
+        if (closedSet.indexOf(wid) != -1) {
+          continue;
+        }
+
+        // New tentative score for node w
+        var tempScore = gScore[cMinId] + weightFn(e);
+
+        // Update gScore for node w if:
+        //   w not present in openSet
+        // OR
+        //   tentative gScore is less than previous value
+
+        // w not in openSet
+        if (openSet.indexOf(wid) == -1) {
+          gScore[wid] = tempScore;
+          fScore[wid] = tempScore + heuristic(w);
+          openSet.push(wid); // Add node to openSet
+          cameFrom[wid] = cMinId;
+          cameFromEdge[wid] = e.id();
+          continue;
+        }
+        // w already in openSet, but with greater gScore
+        if (tempScore < gScore[wid]) {
+          gScore[wid] = tempScore;
+          fScore[wid] = tempScore + heuristic(w);
+          cameFrom[wid] = cMinId;
+        }
+      } // End of neighbors update
+    } // End of main loop
+
+    // If we've reached here, then we've not reached our goal
+    return {
+      found: false,
+      distance: undefined,
+      path: undefined,
+      steps: steps
+    };
+  }
+
+}; // elesfn
+
+
+module.exports = elesfn;
+
+/***/ }),
+/* 35 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var is = __webpack_require__(0);
+
+var elesfn = {
+
+  // Implemented from pseudocode from wikipedia
+  floydWarshall: function floydWarshall(options) {
+    options = options || {};
+
+    var cy = this.cy();
+
+    // Weight function - optional
+    if (options.weight != null && is.fn(options.weight)) {
+      var weightFn = options.weight;
+    } else {
+      // If not specified, assume each edge has equal weight (1)
+      var weightFn = function weightFn(e) {
+        return 1;
+      };
+    }
+
+    // directed - optional
+    if (options.directed != null) {
+      var directed = options.directed;
+    } else {
+      var directed = false;
+    }
+
+    var edges = this.edges().stdFilter(function (e) {
+      return !e.isLoop();
+    });
+    var nodes = this.nodes();
+    var numNodes = nodes.length;
+
+    // mapping: node id -> position in nodes array
+    var id2position = {};
+    for (var i = 0; i < numNodes; i++) {
+      id2position[nodes[i].id()] = i;
+    }
+
+    // Initialize distance matrix
+    var dist = [];
+    for (var i = 0; i < numNodes; i++) {
+      var newRow = new Array(numNodes);
+      for (var j = 0; j < numNodes; j++) {
+        if (i == j) {
+          newRow[j] = 0;
+        } else {
+          newRow[j] = Infinity;
+        }
+      }
+      dist.push(newRow);
+    }
+
+    // Initialize matrix used for path reconstruction
+    // Initialize distance matrix
+    var next = [];
+    var edgeNext = [];
+
+    var initMatrix = function initMatrix(next) {
+      for (var i = 0; i < numNodes; i++) {
+        var newRow = new Array(numNodes);
+        for (var j = 0; j < numNodes; j++) {
+          newRow[j] = undefined;
+        }
+        next.push(newRow);
+      }
+    };
+
+    initMatrix(next);
+    initMatrix(edgeNext);
+
+    // Process edges
+    for (var i = 0; i < edges.length; i++) {
+      var sourceIndex = id2position[edges[i].source().id()];
+      var targetIndex = id2position[edges[i].target().id()];
+      var weight = weightFn(edges[i]);
+
+      // Check if already process another edge between same 2 nodes
+      if (dist[sourceIndex][targetIndex] > weight) {
+        dist[sourceIndex][targetIndex] = weight;
+        next[sourceIndex][targetIndex] = targetIndex;
+        edgeNext[sourceIndex][targetIndex] = edges[i];
+      }
+    }
+
+    // If undirected graph, process 'reversed' edges
+    if (!directed) {
+      for (var i = 0; i < edges.length; i++) {
+        var sourceIndex = id2position[edges[i].target().id()];
+        var targetIndex = id2position[edges[i].source().id()];
+        var weight = weightFn(edges[i]);
+
+        // Check if already process another edge between same 2 nodes
+        if (dist[sourceIndex][targetIndex] > weight) {
+          dist[sourceIndex][targetIndex] = weight;
+          next[sourceIndex][targetIndex] = targetIndex;
+          edgeNext[sourceIndex][targetIndex] = edges[i];
+        }
+      }
+    }
+
+    // Main loop
+    for (var k = 0; k < numNodes; k++) {
+      for (var i = 0; i < numNodes; i++) {
+        for (var j = 0; j < numNodes; j++) {
+          if (dist[i][k] + dist[k][j] < dist[i][j]) {
+            dist[i][j] = dist[i][k] + dist[k][j];
+            next[i][j] = next[i][k];
+          }
+        }
+      }
+    }
+
+    // Build result object
+    var position2id = [];
+    for (var i = 0; i < numNodes; i++) {
+      position2id.push(nodes[i].id());
+    }
+
+    var res = {
+      distance: function distance(from, to) {
+        if (is.string(from)) {
+          // from is a selector string
+          var fromId = cy.filter(from)[0].id();
+        } else {
+          // from is a node
+          var fromId = from.id();
+        }
+
+        if (is.string(to)) {
+          // to is a selector string
+          var toId = cy.filter(to)[0].id();
+        } else {
+          // to is a node
+          var toId = to.id();
+        }
+
+        return dist[id2position[fromId]][id2position[toId]];
+      },
+
+      path: function path(from, to) {
+        var reconstructPathAux = function reconstructPathAux(from, to, next, position2id, edgeNext) {
+          if (from === to) {
+            return cy.getElementById(position2id[from]);
+          }
+          if (next[from][to] === undefined) {
+            return undefined;
+          }
+
+          var path = [cy.getElementById(position2id[from])];
+          var prev = from;
+          while (from !== to) {
+            prev = from;
+            from = next[from][to];
+
+            var edge = edgeNext[prev][from];
+            path.push(edge);
+
+            path.push(cy.getElementById(position2id[from]));
+          }
+          return path;
+        };
+
+        if (is.string(from)) {
+          // from is a selector string
+          var fromId = cy.filter(from)[0].id();
+        } else {
+          // from is a node
+          var fromId = from.id();
+        }
+
+        if (is.string(to)) {
+          // to is a selector string
+          var toId = cy.filter(to)[0].id();
+        } else {
+          // to is a node
+          var toId = to.id();
+        }
+
+        var pathArr = reconstructPathAux(id2position[fromId], id2position[toId], next, position2id, edgeNext);
+
+        return cy.collection(pathArr);
+      }
+    };
+
+    return res;
+  } // floydWarshall
+
+}; // elesfn
+
+module.exports = elesfn;
+
+/***/ }),
+/* 36 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var is = __webpack_require__(0);
+var util = __webpack_require__(1);
+
+var elesfn = {
+
+  // Implemented from pseudocode from wikipedia
+  bellmanFord: function bellmanFord(options) {
+    var eles = this;
+
+    options = options || {};
+
+    // Weight function - optional
+    if (options.weight != null && is.fn(options.weight)) {
+      var weightFn = options.weight;
+    } else {
+      // If not specified, assume each edge has equal weight (1)
+      var weightFn = function weightFn(e) {
+        return 1;
+      };
+    }
+
+    // directed - optional
+    if (options.directed != null) {
+      var directed = options.directed;
+    } else {
+      var directed = false;
+    }
+
+    // root - mandatory!
+    if (options.root != null) {
+      if (is.string(options.root)) {
+        // use it as a selector, e.g. "#rootID
+        var source = this.filter(options.root)[0];
+      } else {
+        var source = options.root[0];
+      }
+    } else {
+      return undefined;
+    }
+
+    var cy = this._private.cy;
+    var edges = this.edges().stdFilter(function (e) {
+      return !e.isLoop();
+    });
+    var nodes = this.nodes();
+    var numNodes = nodes.length;
+
+    // mapping: node id -> position in nodes array
+    var id2position = {};
+    for (var i = 0; i < numNodes; i++) {
+      id2position[nodes[i].id()] = i;
+    }
+
+    // Initializations
+    var cost = [];
+    var predecessor = [];
+    var predEdge = [];
+
+    for (var i = 0; i < numNodes; i++) {
+      if (nodes[i].id() === source.id()) {
+        cost[i] = 0;
+      } else {
+        cost[i] = Infinity;
+      }
+      predecessor[i] = undefined;
+    }
+
+    // Edges relaxation
+    var flag = false;
+    for (var i = 1; i < numNodes; i++) {
+      flag = false;
+      for (var e = 0; e < edges.length; e++) {
+        var sourceIndex = id2position[edges[e].source().id()];
+        var targetIndex = id2position[edges[e].target().id()];
+        var weight = weightFn(edges[e]);
+
+        var temp = cost[sourceIndex] + weight;
+        if (temp < cost[targetIndex]) {
+          cost[targetIndex] = temp;
+          predecessor[targetIndex] = sourceIndex;
+          predEdge[targetIndex] = edges[e];
+          flag = true;
+        }
+
+        // If undirected graph, we need to take into account the 'reverse' edge
+        if (!directed) {
+          var temp = cost[targetIndex] + weight;
+          if (temp < cost[sourceIndex]) {
+            cost[sourceIndex] = temp;
+            predecessor[sourceIndex] = targetIndex;
+            predEdge[sourceIndex] = edges[e];
+            flag = true;
+          }
+        }
+      }
+
+      if (!flag) {
+        break;
+      }
+    }
+
+    if (flag) {
+      // Check for negative weight cycles
+      for (var e = 0; e < edges.length; e++) {
+        var sourceIndex = id2position[edges[e].source().id()];
+        var targetIndex = id2position[edges[e].target().id()];
+        var weight = weightFn(edges[e]);
+
+        if (cost[sourceIndex] + weight < cost[targetIndex]) {
+          util.error('Graph contains a negative weight cycle for Bellman-Ford');
+          return { pathTo: undefined,
+            distanceTo: undefined,
+            hasNegativeWeightCycle: true };
+        }
+      }
+    }
+
+    // Build result object
+    var position2id = [];
+    for (var i = 0; i < numNodes; i++) {
+      position2id.push(nodes[i].id());
+    }
+
+    var res = {
+      distanceTo: function distanceTo(to) {
+        if (is.string(to)) {
+          // to is a selector string
+          var toId = cy.filter(to)[0].id();
+        } else {
+          // to is a node
+          var toId = to.id();
+        }
+
+        return cost[id2position[toId]];
+      },
+
+      pathTo: function pathTo(to) {
+
+        var reconstructPathAux = function reconstructPathAux(predecessor, fromPos, toPos, position2id, acumPath, predEdge) {
+          for (;;) {
+            // Add toId to path
+            acumPath.push(cy.getElementById(position2id[toPos]));
+            acumPath.push(predEdge[toPos]);
+
+            if (fromPos === toPos) {
+              // reached starting node
+              return acumPath;
+            }
+
+            // If no path exists, discart acumulated path and return undefined
+            var predPos = predecessor[toPos];
+            if (typeof predPos === 'undefined') {
+              return undefined;
+            }
+
+            toPos = predPos;
+          }
+        };
+
+        if (is.string(to)) {
+          // to is a selector string
+          var toId = cy.filter(to)[0].id();
+        } else {
+          // to is a node
+          var toId = to.id();
+        }
+        var path = [];
+
+        // This returns a reversed path
+        var res = reconstructPathAux(predecessor, id2position[source.id()], id2position[toId], position2id, path, predEdge);
+
+        // Get it in the correct order and return it
+        if (res != null) {
+          res.reverse();
+        }
+
+        return eles.spawn(res);
+      },
+
+      hasNegativeWeightCycle: false
+    };
+
+    return res;
+  } // bellmanFord
+
+}; // elesfn
+
+module.exports = elesfn;
+
+/***/ }),
+/* 37 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var util = __webpack_require__(1);
+
+var elesfn = {
+
+  // Computes the minimum cut of an undirected graph
+  // Returns the correct answer with high probability
+  kargerStein: function kargerStein(options) {
+    var eles = this;
+
+    options = options || {};
+
+    // Function which colapses 2 (meta) nodes into one
+    // Updates the remaining edge lists
+    // Receives as a paramater the edge which causes the collapse
+    var colapse = function colapse(edgeIndex, nodeMap, remainingEdges) {
+      var edgeInfo = remainingEdges[edgeIndex];
+      var sourceIn = edgeInfo[1];
+      var targetIn = edgeInfo[2];
+      var partition1 = nodeMap[sourceIn];
+      var partition2 = nodeMap[targetIn];
+
+      // Delete all edges between partition1 and partition2
+      var newEdges = remainingEdges.filter(function (edge) {
+        if (nodeMap[edge[1]] === partition1 && nodeMap[edge[2]] === partition2) {
+          return false;
+        }
+        if (nodeMap[edge[1]] === partition2 && nodeMap[edge[2]] === partition1) {
+          return false;
+        }
+        return true;
+      });
+
+      // All edges pointing to partition2 should now point to partition1
+      for (var i = 0; i < newEdges.length; i++) {
+        var edge = newEdges[i];
+        if (edge[1] === partition2) {
+          // Check source
+          newEdges[i] = edge.slice(0);
+          newEdges[i][1] = partition1;
+        } else if (edge[2] === partition2) {
+          // Check target
+          newEdges[i] = edge.slice(0);
+          newEdges[i][2] = partition1;
+        }
+      }
+
+      // Move all nodes from partition2 to partition1
+      for (var i = 0; i < nodeMap.length; i++) {
+        if (nodeMap[i] === partition2) {
+          nodeMap[i] = partition1;
+        }
+      }
+
+      return newEdges;
+    };
+
+    // Contracts a graph until we reach a certain number of meta nodes
+    var contractUntil = function contractUntil(metaNodeMap, remainingEdges, size, sizeLimit) {
+      // Stop condition
+      if (size <= sizeLimit) {
+        return remainingEdges;
+      }
+
+      // Choose an edge randomly
+      var edgeIndex = Math.floor(Math.random() * remainingEdges.length);
+
+      // Colapse graph based on edge
+      var newEdges = colapse(edgeIndex, metaNodeMap, remainingEdges);
+
+      return contractUntil(metaNodeMap, newEdges, size - 1, sizeLimit);
+    };
+
+    var cy = this._private.cy;
+    var edges = this.edges().stdFilter(function (e) {
+      return !e.isLoop();
+    });
+    var nodes = this.nodes();
+    var numNodes = nodes.length;
+    var numEdges = edges.length;
+    var numIter = Math.ceil(Math.pow(Math.log(numNodes) / Math.LN2, 2));
+    var stopSize = Math.floor(numNodes / Math.sqrt(2));
+
+    if (numNodes < 2) {
+      util.error('At least 2 nodes are required for Karger-Stein algorithm');
+      return undefined;
+    }
+
+    // Create numerical identifiers for each node
+    // mapping: node id -> position in nodes array
+    // for reverse mapping, simply use nodes array
+    var id2position = {};
+    for (var i = 0; i < numNodes; i++) {
+      id2position[nodes[i].id()] = i;
+    }
+
+    // Now store edge destination as indexes
+    // Format for each edge (edge index, source node index, target node index)
+    var edgeIndexes = [];
+    for (var i = 0; i < numEdges; i++) {
+      var e = edges[i];
+      edgeIndexes.push([i, id2position[e.source().id()], id2position[e.target().id()]]);
+    }
+
+    // We will store the best cut found here
+    var minCutSize = Infinity;
+    var minCut;
+
+    // Initial meta node partition
+    var originalMetaNode = [];
+    for (var i = 0; i < numNodes; i++) {
+      originalMetaNode.push(i);
+    }
+
+    // Main loop
+    for (var iter = 0; iter <= numIter; iter++) {
+      // Create new meta node partition
+      var metaNodeMap = originalMetaNode.slice(0);
+
+      // Contract until stop point (stopSize nodes)
+      var edgesState = contractUntil(metaNodeMap, edgeIndexes, numNodes, stopSize);
+
+      // Create a copy of the colapsed nodes state
+      var metaNodeMap2 = metaNodeMap.slice(0);
+
+      // Run 2 iterations starting in the stop state
+      var res1 = contractUntil(metaNodeMap, edgesState, stopSize, 2);
+      var res2 = contractUntil(metaNodeMap2, edgesState, stopSize, 2);
+
+      // Is any of the 2 results the best cut so far?
+      if (res1.length <= res2.length && res1.length < minCutSize) {
+        minCutSize = res1.length;
+        minCut = [res1, metaNodeMap];
+      } else if (res2.length <= res1.length && res2.length < minCutSize) {
+        minCutSize = res2.length;
+        minCut = [res2, metaNodeMap2];
+      }
+    } // end of main loop
+
+
+    // Construct result
+    var resEdges = minCut[0].map(function (e) {
+      return edges[e[0]];
+    });
+    var partition1 = [];
+    var partition2 = [];
+
+    // traverse metaNodeMap for best cut
+    var witnessNodePartition = minCut[1][0];
+    for (var i = 0; i < minCut[1].length; i++) {
+      var partitionId = minCut[1][i];
+      if (partitionId === witnessNodePartition) {
+        partition1.push(nodes[i]);
+      } else {
+        partition2.push(nodes[i]);
+      }
+    }
+
+    var ret = {
+      cut: eles.spawn(cy, resEdges),
+      partition1: eles.spawn(partition1),
+      partition2: eles.spawn(partition2)
+    };
+
+    return ret;
+  }
+}; // elesfn
+
+
+module.exports = elesfn;
+
+/***/ }),
+/* 38 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var is = __webpack_require__(0);
+
+var elesfn = {
+
+  pageRank: function pageRank(options) {
+    options = options || {};
+
+    var normalizeVector = function normalizeVector(vector) {
+      var length = vector.length;
+
+      // First, get sum of all elements
+      var total = 0;
+      for (var i = 0; i < length; i++) {
+        total += vector[i];
+      }
+
+      // Now, divide each by the sum of all elements
+      for (var i = 0; i < length; i++) {
+        vector[i] = vector[i] / total;
+      }
+    };
+
+    // dampingFactor - optional
+    if (options != null && options.dampingFactor != null) {
+      var dampingFactor = options.dampingFactor;
+    } else {
+      var dampingFactor = 0.8; // Default damping factor
+    }
+
+    // desired precision - optional
+    if (options != null && options.precision != null) {
+      var epsilon = options.precision;
+    } else {
+      var epsilon = 0.000001; // Default precision
+    }
+
+    // Max number of iterations - optional
+    if (options != null && options.iterations != null) {
+      var numIter = options.iterations;
+    } else {
+      var numIter = 200; // Default number of iterations
+    }
+
+    // Weight function - optional
+    if (options != null && options.weight != null && is.fn(options.weight)) {
+      var weightFn = options.weight;
+    } else {
+      // If not specified, assume each edge has equal weight (1)
+      var weightFn = function weightFn(e) {
+        return 1;
+      };
+    }
+
+    var cy = this._private.cy;
+    var edges = this.edges().stdFilter(function (e) {
+      return !e.isLoop();
+    });
+    var nodes = this.nodes();
+    var numNodes = nodes.length;
+    var numEdges = edges.length;
+
+    // Create numerical identifiers for each node
+    // mapping: node id -> position in nodes array
+    // for reverse mapping, simply use nodes array
+    var id2position = {};
+    for (var i = 0; i < numNodes; i++) {
+      id2position[nodes[i].id()] = i;
+    }
+
+    // Construct transposed adjacency matrix
+    // First lets have a zeroed matrix of the right size
+    // We'll also keep track of the sum of each column
+    var matrix = [];
+    var columnSum = [];
+    var additionalProb = (1 - dampingFactor) / numNodes;
+
+    // Create null matric
+    for (var i = 0; i < numNodes; i++) {
+      var newRow = [];
+      for (var j = 0; j < numNodes; j++) {
+        newRow.push(0.0);
+      }
+      matrix.push(newRow);
+      columnSum.push(0.0);
+    }
+
+    // Now, process edges
+    for (var i = 0; i < numEdges; i++) {
+      var edge = edges[i];
+      var s = id2position[edge.source().id()];
+      var t = id2position[edge.target().id()];
+      var w = weightFn(edge);
+
+      // Update matrix
+      matrix[t][s] += w;
+
+      // Update column sum
+      columnSum[s] += w;
+    }
+
+    // Add additional probability based on damping factor
+    // Also, take into account columns that have sum = 0
+    var p = 1.0 / numNodes + additionalProb; // Shorthand
+    // Traverse matrix, column by column
+    for (var j = 0; j < numNodes; j++) {
+      if (columnSum[j] === 0) {
+        // No 'links' out from node jth, assume equal probability for each possible node
+        for (var i = 0; i < numNodes; i++) {
+          matrix[i][j] = p;
+        }
+      } else {
+        // Node jth has outgoing link, compute normalized probabilities
+        for (var i = 0; i < numNodes; i++) {
+          matrix[i][j] = matrix[i][j] / columnSum[j] + additionalProb;
+        }
+      }
+    }
+
+    // Compute dominant eigenvector using power method
+    var eigenvector = [];
+    var nullVector = [];
+    var previous;
+
+    // Start with a vector of all 1's
+    // Also, initialize a null vector which will be used as shorthand
+    for (var i = 0; i < numNodes; i++) {
+      eigenvector.push(1.0);
+      nullVector.push(0.0);
+    }
+
+    for (var iter = 0; iter < numIter; iter++) {
+      // New array with all 0's
+      var temp = nullVector.slice(0);
+
+      // Multiply matrix with previous result
+      for (var i = 0; i < numNodes; i++) {
+        for (var j = 0; j < numNodes; j++) {
+          temp[i] += matrix[i][j] * eigenvector[j];
+        }
+      }
+
+      normalizeVector(temp);
+      previous = eigenvector;
+      eigenvector = temp;
+
+      var diff = 0;
+      // Compute difference (squared module) of both vectors
+      for (var i = 0; i < numNodes; i++) {
+        diff += Math.pow(previous[i] - eigenvector[i], 2);
+      }
+
+      // If difference is less than the desired threshold, stop iterating
+      if (diff < epsilon) {
+        break;
+      }
+    }
+
+    // Construct result
+    var res = {
+      rank: function rank(node) {
+        if (is.string(node)) {
+          // is a selector string
+          var nodeId = cy.filter(node)[0].id();
+        } else {
+          // is a node object
+          var nodeId = node.id();
+        }
+        return eigenvector[id2position[nodeId]];
+      }
+    };
+
+    return res;
+  } // pageRank
+
+}; // elesfn
+
+module.exports = elesfn;
+
+/***/ }),
+/* 39 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var is = __webpack_require__(0);
+var util = __webpack_require__(1);
+
+var elesfn = {
+
+  degreeCentralityNormalized: function degreeCentralityNormalized(options) {
+    options = options || {};
+
+    var cy = this.cy();
+
+    // directed - optional
+    if (options.directed != null) {
+      var directed = options.directed;
+    } else {
+      var directed = false;
+    }
+
+    var nodes = this.nodes();
+    var numNodes = nodes.length;
+
+    if (!directed) {
+      var degrees = {};
+      var maxDegree = 0;
+
+      for (var i = 0; i < numNodes; i++) {
+        var node = nodes[i];
+        // add current node to the current options object and call degreeCentrality
+        var currDegree = this.degreeCentrality(util.extend({}, options, { root: node }));
+        if (maxDegree < currDegree.degree) maxDegree = currDegree.degree;
+
+        degrees[node.id()] = currDegree.degree;
+      }
+
+      return {
+        degree: function degree(node) {
+          if (maxDegree == 0) return 0;
+
+          if (is.string(node)) {
+            // from is a selector string
+            var node = cy.filter(node)[0].id();
+          } else {
+            // from is a node
+            var node = node.id();
+          }
+
+          return degrees[node] / maxDegree;
+        }
+      };
+    } else {
+      var indegrees = {};
+      var outdegrees = {};
+      var maxIndegree = 0;
+      var maxOutdegree = 0;
+
+      for (var i = 0; i < numNodes; i++) {
+        var node = nodes[i];
+        // add current node to the current options object and call degreeCentrality
+        var currDegree = this.degreeCentrality(util.extend({}, options, { root: node }));
+
+        if (maxIndegree < currDegree.indegree) maxIndegree = currDegree.indegree;
+
+        if (maxOutdegree < currDegree.outdegree) maxOutdegree = currDegree.outdegree;
+
+        indegrees[node.id()] = currDegree.indegree;
+        outdegrees[node.id()] = currDegree.outdegree;
+      }
+
+      return {
+        indegree: function indegree(node) {
+          if (maxIndegree == 0) return 0;
+
+          if (is.string(node)) {
+            // from is a selector string
+            var node = cy.filter(node)[0].id();
+          } else {
+            // from is a node
+            var node = node.id();
+          }
+
+          return indegrees[node] / maxIndegree;
+        },
+        outdegree: function outdegree(node) {
+          if (maxOutdegree == 0) return 0;
+
+          if (is.string(node)) {
+            // from is a selector string
+            var node = cy.filter(node)[0].id();
+          } else {
+            // from is a node
+            var node = node.id();
+          }
+
+          return outdegrees[node] / maxOutdegree;
+        }
+
+      };
+    }
+  }, // degreeCentralityNormalized
+
+  // Implemented from the algorithm in Opsahl's paper
+  // "Node centrality in weighted networks: Generalizing degree and shortest paths"
+  // check the heading 2 "Degree"
+  degreeCentrality: function degreeCentrality(options) {
+    options = options || {};
+
+    var callingEles = this;
+
+    // root - mandatory!
+    if (options != null && options.root != null) {
+      var root = is.string(options.root) ? this.filter(options.root)[0] : options.root[0];
+    } else {
+      return undefined;
+    }
+
+    // weight - optional
+    if (options.weight != null && is.fn(options.weight)) {
+      var weightFn = options.weight;
+    } else {
+      // If not specified, assume each edge has equal weight (1)
+      var weightFn = function weightFn(e) {
+        return 1;
+      };
+    }
+
+    // directed - optional
+    if (options.directed != null) {
+      var directed = options.directed;
+    } else {
+      var directed = false;
+    }
+
+    // alpha - optional
+    if (options.alpha != null && is.number(options.alpha)) {
+      var alpha = options.alpha;
+    } else {
+      alpha = 0;
+    }
+
+    if (!directed) {
+      var connEdges = root.connectedEdges().intersection(callingEles);
+      var k = connEdges.length;
+      var s = 0;
+
+      // Now, sum edge weights
+      for (var i = 0; i < connEdges.length; i++) {
+        var edge = connEdges[i];
+        s += weightFn(edge);
+      }
+
+      return {
+        degree: Math.pow(k, 1 - alpha) * Math.pow(s, alpha)
+      };
+    } else {
+      var incoming = root.connectedEdges('edge[target = "' + root.id() + '"]').intersection(callingEles);
+      var outgoing = root.connectedEdges('edge[source = "' + root.id() + '"]').intersection(callingEles);
+      var k_in = incoming.length;
+      var k_out = outgoing.length;
+      var s_in = 0;
+      var s_out = 0;
+
+      // Now, sum incoming edge weights
+      for (var i = 0; i < incoming.length; i++) {
+        var edge = incoming[i];
+        s_in += weightFn(edge);
+      }
+
+      // Now, sum outgoing edge weights
+      for (var i = 0; i < outgoing.length; i++) {
+        var edge = outgoing[i];
+        s_out += weightFn(edge);
+      }
+
+      return {
+        indegree: Math.pow(k_in, 1 - alpha) * Math.pow(s_in, alpha),
+        outdegree: Math.pow(k_out, 1 - alpha) * Math.pow(s_out, alpha)
+      };
+    }
+  } // degreeCentrality
+
+}; // elesfn
+
+// nice, short mathemathical alias
+elesfn.dc = elesfn.degreeCentrality;
+elesfn.dcn = elesfn.degreeCentralityNormalised = elesfn.degreeCentralityNormalized;
+
+module.exports = elesfn;
+
+/***/ }),
+/* 40 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var is = __webpack_require__(0);
+
+var elesfn = {
+
+  closenessCentralityNormalized: function closenessCentralityNormalized(options) {
+    options = options || {};
+
+    var cy = this.cy();
+
+    var harmonic = options.harmonic;
+    if (harmonic === undefined) {
+      harmonic = true;
+    }
+
+    var closenesses = {};
+    var maxCloseness = 0;
+    var nodes = this.nodes();
+    var fw = this.floydWarshall({ weight: options.weight, directed: options.directed });
+
+    // Compute closeness for every node and find the maximum closeness
+    for (var i = 0; i < nodes.length; i++) {
+      var currCloseness = 0;
+      for (var j = 0; j < nodes.length; j++) {
+        if (i != j) {
+          var d = fw.distance(nodes[i], nodes[j]);
+
+          if (harmonic) {
+            currCloseness += 1 / d;
+          } else {
+            currCloseness += d;
+          }
+        }
+      }
+
+      if (!harmonic) {
+        currCloseness = 1 / currCloseness;
+      }
+
+      if (maxCloseness < currCloseness) {
+        maxCloseness = currCloseness;
+      }
+
+      closenesses[nodes[i].id()] = currCloseness;
+    }
+
+    return {
+      closeness: function closeness(node) {
+        if (maxCloseness == 0) {
+          return 0;
+        }
+
+        if (is.string(node)) {
+          // from is a selector string
+          var node = cy.filter(node)[0].id();
+        } else {
+          // from is a node
+          var node = node.id();
+        }
+
+        return closenesses[node] / maxCloseness;
+      }
+    };
+  },
+
+  // Implemented from pseudocode from wikipedia
+  closenessCentrality: function closenessCentrality(options) {
+    options = options || {};
+
+    // root - mandatory!
+    if (options.root != null) {
+      if (is.string(options.root)) {
+        // use it as a selector, e.g. "#rootID
+        var root = this.filter(options.root)[0];
+      } else {
+        var root = options.root[0];
+      }
+    } else {
+      return undefined;
+    }
+
+    // weight - optional
+    if (options.weight != null && is.fn(options.weight)) {
+      var weight = options.weight;
+    } else {
+      var weight = function weight() {
+        return 1;
+      };
+    }
+
+    // directed - optional
+    if (options.directed != null && is.bool(options.directed)) {
+      var directed = options.directed;
+    } else {
+      var directed = false;
+    }
+
+    var harmonic = options.harmonic;
+    if (harmonic === undefined) {
+      harmonic = true;
+    }
+
+    // we need distance from this node to every other node
+    var dijkstra = this.dijkstra({
+      root: root,
+      weight: weight,
+      directed: directed
+    });
+    var totalDistance = 0;
+
+    var nodes = this.nodes();
+    for (var i = 0; i < nodes.length; i++) {
+      if (nodes[i].id() != root.id()) {
+        var d = dijkstra.distanceTo(nodes[i]);
+
+        if (harmonic) {
+          totalDistance += 1 / d;
+        } else {
+          totalDistance += d;
+        }
+      }
+    }
+
+    return harmonic ? totalDistance : 1 / totalDistance;
+  } // closenessCentrality
+
+}; // elesfn
+
+// nice, short mathemathical alias
+elesfn.cc = elesfn.closenessCentrality;
+elesfn.ccn = elesfn.closenessCentralityNormalised = elesfn.closenessCentralityNormalized;
+
+module.exports = elesfn;
+
+/***/ }),
+/* 41 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var is = __webpack_require__(0);
+var Heap = __webpack_require__(9);
+
+var elesfn = {
+
+  // Implemented from the algorithm in the paper "On Variants of Shortest-Path Betweenness Centrality and their Generic Computation" by Ulrik Brandes
+  betweennessCentrality: function betweennessCentrality(options) {
+    options = options || {};
+
+    // Weight - optional
+    var weighted, weightFn;
+    if (is.fn(options.weight)) {
+      weightFn = options.weight;
+      weighted = true;
+    } else {
+      weighted = false;
+    }
+
+    // Directed - default false
+    var directed = options.directed != null ? options.directed : false;
+
+    var cy = this._private.cy;
+
+    // starting
+    var V = this.nodes();
+    var A = {};
+    var _C = {};
+    var max = 0;
+    var C = {
+      set: function set(key, val) {
+        _C[key] = val;
+
+        if (val > max) {
+          max = val;
+        }
+      },
+
+      get: function get(key) {
+        return _C[key];
+      }
+    };
+
+    // A contains the neighborhoods of every node
+    for (var i = 0; i < V.length; i++) {
+      var v = V[i];
+      var vid = v.id();
+
+      if (directed) {
+        A[vid] = v.outgoers().nodes(); // get outgoers of every node
+      } else {
+        A[vid] = v.openNeighborhood().nodes(); // get neighbors of every node
+      }
+
+      C.set(vid, 0);
+    }
+
+    for (var s = 0; s < V.length; s++) {
+      var sid = V[s].id();
+      var S = []; // stack
+      var P = {};
+      var g = {};
+      var d = {};
+      var Q = new Heap(function (a, b) {
+        return d[a] - d[b];
+      }); // queue
+
+      // init dictionaries
+      for (var i = 0; i < V.length; i++) {
+        var vid = V[i].id();
+
+        P[vid] = [];
+        g[vid] = 0;
+        d[vid] = Infinity;
+      }
+
+      g[sid] = 1; // sigma
+      d[sid] = 0; // distance to s
+
+      Q.push(sid);
+
+      while (!Q.empty()) {
+        var v = Q.pop();
+
+        S.push(v);
+
+        if (weighted) {
+          for (var j = 0; j < A[v].length; j++) {
+            var w = A[v][j];
+            var vEle = cy.getElementById(v);
+
+            var edge;
+            if (vEle.edgesTo(w).length > 0) {
+              edge = vEle.edgesTo(w)[0];
+            } else {
+              edge = w.edgesTo(vEle)[0];
+            }
+
+            var edgeWeight = weightFn(edge);
+
+            w = w.id();
+
+            if (d[w] > d[v] + edgeWeight) {
+              d[w] = d[v] + edgeWeight;
+
+              if (Q.nodes.indexOf(w) < 0) {
+                //if w is not in Q
+                Q.push(w);
+              } else {
+                // update position if w is in Q
+                Q.updateItem(w);
+              }
+
+              g[w] = 0;
+              P[w] = [];
+            }
+
+            if (d[w] == d[v] + edgeWeight) {
+              g[w] = g[w] + g[v];
+              P[w].push(v);
+            }
+          }
+        } else {
+          for (var j = 0; j < A[v].length; j++) {
+            var w = A[v][j].id();
+
+            if (d[w] == Infinity) {
+              Q.push(w);
+
+              d[w] = d[v] + 1;
+            }
+
+            if (d[w] == d[v] + 1) {
+              g[w] = g[w] + g[v];
+              P[w].push(v);
+            }
+          }
+        }
+      }
+
+      var e = {};
+      for (var i = 0; i < V.length; i++) {
+        e[V[i].id()] = 0;
+      }
+
+      while (S.length > 0) {
+        var w = S.pop();
+
+        for (var j = 0; j < P[w].length; j++) {
+          var v = P[w][j];
+
+          e[v] = e[v] + g[v] / g[w] * (1 + e[w]);
+
+          if (w != V[s].id()) {
+            C.set(w, C.get(w) + e[w]);
+          }
+        }
+      }
+    }
+
+    var ret = {
+      betweenness: function betweenness(node) {
+        if (is.string(node)) {
+          var node = cy.filter(node).id();
+        } else {
+          var node = node.id();
+        }
+
+        return C.get(node);
+      },
+
+      betweennessNormalized: function betweennessNormalized(node) {
+        if (max == 0) return 0;
+
+        if (is.string(node)) {
+          var node = cy.filter(node).id();
+        } else {
+          var node = node.id();
+        }
+
+        return C.get(node) / max;
+      }
+    };
+
+    // alias
+    ret.betweennessNormalised = ret.betweennessNormalized;
+
+    return ret;
+  } // betweennessCentrality
+
+}; // elesfn
+
+// nice, short mathemathical alias
+elesfn.bc = elesfn.betweennessCentrality;
+
+module.exports = elesfn;
+
+/***/ }),
+/* 42 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var define = __webpack_require__(4);
+
+var elesfn = {
+  animate: define.animate(),
+  animation: define.animation(),
+  animated: define.animated(),
+  clearQueue: define.clearQueue(),
+  delay: define.delay(),
+  delayAnimation: define.delayAnimation(),
+  stop: define.stop()
+};
+
+module.exports = elesfn;
+
+/***/ }),
+/* 43 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var util = __webpack_require__(1);
+var Animation = __webpack_require__(44);
+var math = __webpack_require__(2);
+var is = __webpack_require__(0);
+
+var define = {
+
+  animated: function animated() {
+    return function animatedImpl() {
+      var self = this;
+      var selfIsArrayLike = self.length !== undefined;
+      var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
+      var cy = this._private.cy || this;
+
+      if (!cy.styleEnabled()) {
+        return false;
+      }
+
+      var ele = all[0];
+
+      if (ele) {
+        return ele._private.animation.current.length > 0;
+      }
+    };
+  }, // animated
+
+  clearQueue: function clearQueue() {
+    return function clearQueueImpl() {
+      var self = this;
+      var selfIsArrayLike = self.length !== undefined;
+      var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
+      var cy = this._private.cy || this;
+
+      if (!cy.styleEnabled()) {
+        return this;
+      }
+
+      for (var i = 0; i < all.length; i++) {
+        var ele = all[i];
+        ele._private.animation.queue = [];
+      }
+
+      return this;
+    };
+  }, // clearQueue
+
+  delay: function delay() {
+    return function delayImpl(time, complete) {
+      var cy = this._private.cy || this;
+
+      if (!cy.styleEnabled()) {
+        return this;
+      }
+
+      return this.animate({
+        delay: time,
+        duration: time,
+        complete: complete
+      });
+    };
+  }, // delay
+
+  delayAnimation: function delayAnimation() {
+    return function delayAnimationImpl(time, complete) {
+      var cy = this._private.cy || this;
+
+      if (!cy.styleEnabled()) {
+        return this;
+      }
+
+      return this.animation({
+        delay: time,
+        duration: time,
+        complete: complete
+      });
+    };
+  }, // delay
+
+  animation: function animation() {
+    return function animationImpl(properties, params) {
+      var self = this;
+      var selfIsArrayLike = self.length !== undefined;
+      var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
+      var cy = this._private.cy || this;
+      var isCore = !selfIsArrayLike;
+      var isEles = !isCore;
+
+      if (!cy.styleEnabled()) {
+        return this;
+      }
+
+      var style = cy.style();
+
+      properties = util.assign({}, properties, params);
+
+      var propertiesEmpty = Object.keys(properties).length === 0;
+
+      if (propertiesEmpty) {
+        return new Animation(all[0], properties); // nothing to animate
+      }
+
+      if (properties.duration === undefined) {
+        properties.duration = 400;
+      }
+
+      switch (properties.duration) {
+        case 'slow':
+          properties.duration = 600;
+          break;
+        case 'fast':
+          properties.duration = 200;
+          break;
+      }
+
+      if (isEles) {
+        properties.style = style.getPropsList(properties.style || properties.css);
+
+        properties.css = undefined;
+      }
+
+      if (isEles && properties.renderedPosition != null) {
+        var rpos = properties.renderedPosition;
+        var pan = cy.pan();
+        var zoom = cy.zoom();
+
+        properties.position = math.renderedToModelPosition(rpos, zoom, pan);
+      }
+
+      // override pan w/ panBy if set
+      if (isCore && properties.panBy != null) {
+        var panBy = properties.panBy;
+        var cyPan = cy.pan();
+
+        properties.pan = {
+          x: cyPan.x + panBy.x,
+          y: cyPan.y + panBy.y
+        };
+      }
+
+      // override pan w/ center if set
+      var center = properties.center || properties.centre;
+      if (isCore && center != null) {
+        var centerPan = cy.getCenterPan(center.eles, properties.zoom);
+
+        if (centerPan != null) {
+          properties.pan = centerPan;
+        }
+      }
+
+      // override pan & zoom w/ fit if set
+      if (isCore && properties.fit != null) {
+        var fit = properties.fit;
+        var fitVp = cy.getFitViewport(fit.eles || fit.boundingBox, fit.padding);
+
+        if (fitVp != null) {
+          properties.pan = fitVp.pan;
+          properties.zoom = fitVp.zoom;
+        }
+      }
+
+      // override zoom (& potentially pan) w/ zoom obj if set
+      if (isCore && is.plainObject(properties.zoom)) {
+        var vp = cy.getZoomedViewport(properties.zoom);
+
+        if (vp != null) {
+          if (vp.zoomed) {
+            properties.zoom = vp.zoom;
+          }
+
+          if (vp.panned) {
+            properties.pan = vp.pan;
+          }
+        }
+      }
+
+      return new Animation(all[0], properties);
+    };
+  }, // animate
+
+  animate: function animate() {
+    return function animateImpl(properties, params) {
+      var self = this;
+      var selfIsArrayLike = self.length !== undefined;
+      var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
+      var cy = this._private.cy || this;
+
+      if (!cy.styleEnabled()) {
+        return this;
+      }
+
+      if (params) {
+        properties = util.extend({}, properties, params);
+      }
+
+      // manually hook and run the animation
+      for (var i = 0; i < all.length; i++) {
+        var ele = all[i];
+        var queue = ele.animated() && (properties.queue === undefined || properties.queue);
+
+        var ani = ele.animation(properties, queue ? { queue: true } : undefined);
+
+        ani.play();
+      }
+
+      return this; // chaining
+    };
+  }, // animate
+
+  stop: function stop() {
+    return function stopImpl(clearQueue, jumpToEnd) {
+      var self = this;
+      var selfIsArrayLike = self.length !== undefined;
+      var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
+      var cy = this._private.cy || this;
+
+      if (!cy.styleEnabled()) {
+        return this;
+      }
+
+      for (var i = 0; i < all.length; i++) {
+        var ele = all[i];
+        var _p = ele._private;
+        var anis = _p.animation.current;
+
+        for (var j = 0; j < anis.length; j++) {
+          var ani = anis[j];
+          var ani_p = ani._private;
+
+          if (jumpToEnd) {
+            // next iteration of the animation loop, the animation
+            // will go straight to the end and be removed
+            ani_p.duration = 0;
+          }
+        }
+
+        // clear the queue of future animations
+        if (clearQueue) {
+          _p.animation.queue = [];
+        }
+
+        if (!jumpToEnd) {
+          _p.animation.current = [];
+        }
+      }
+
+      // we have to notify (the animation loop doesn't do it for us on `stop`)
+      cy.notify({
+        eles: this,
+        type: 'draw'
+      });
+
+      return this;
+    };
+  } // stop
+
+}; // define
+
+module.exports = define;
+
+/***/ }),
+/* 44 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -4966,1918 +7447,277 @@ anifn.complete = anifn.completed;
 module.exports = Animation;
 
 /***/ }),
-/* 24 */
+/* 45 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var is = __webpack_require__(0);
-
-var elesfn = {
-
-  // Implemented from pseudocode from wikipedia
-  aStar: function aStar(options) {
-    var eles = this;
-
-    options = options || {};
-
-    // Reconstructs the path from Start to End, acumulating the result in pathAcum
-    var reconstructPath = function reconstructPath(start, end, cameFromMap, pathAcum) {
-      // Base case
-      if (start == end) {
-        pathAcum.unshift(cy.getElementById(end));
-        return pathAcum;
-      }
-
-      if (end in cameFromMap) {
-        // We know which node is before the last one
-        var previous = cameFromMap[end];
-        var previousEdge = cameFromEdge[end];
-
-        pathAcum.unshift(cy.getElementById(previousEdge));
-        pathAcum.unshift(cy.getElementById(end));
-
-        return reconstructPath(start, previous, cameFromMap, pathAcum);
-      }
-
-      // We should not reach here!
-      return undefined;
-    };
-
-    // Returns the index of the element in openSet which has minimum fScore
-    var findMin = function findMin(openSet, fScore) {
-      if (openSet.length === 0) {
-        // Should never be the case
-        return undefined;
-      }
-      var minPos = 0;
-      var tempScore = fScore[openSet[0]];
-      for (var i = 1; i < openSet.length; i++) {
-        var s = fScore[openSet[i]];
-        if (s < tempScore) {
-          tempScore = s;
-          minPos = i;
-        }
-      }
-      return minPos;
-    };
-
-    var cy = this._private.cy;
-
-    // root - mandatory!
-    if (options != null && options.root != null) {
-      var source = is.string(options.root) ?
-      // use it as a selector, e.g. "#rootID
-      this.filter(options.root)[0] : options.root[0];
-    } else {
-      return undefined;
-    }
-
-    // goal - mandatory!
-    if (options.goal != null) {
-      var target = is.string(options.goal) ?
-      // use it as a selector, e.g. "#goalID
-      this.filter(options.goal)[0] : options.goal[0];
-    } else {
-      return undefined;
-    }
-
-    // Heuristic function - optional
-    if (options.heuristic != null && is.fn(options.heuristic)) {
-      var heuristic = options.heuristic;
-    } else {
-      var heuristic = function heuristic() {
-        return 0;
-      }; // use constant if unspecified
-    }
-
-    // Weight function - optional
-    if (options.weight != null && is.fn(options.weight)) {
-      var weightFn = options.weight;
-    } else {
-      // If not specified, assume each edge has equal weight (1)
-      var weightFn = function weightFn(e) {
-        return 1;
-      };
-    }
-
-    // directed - optional
-    if (options.directed != null) {
-      var directed = options.directed;
-    } else {
-      var directed = false;
-    }
-
-    var sid = source.id();
-    var tid = target.id();
-
-    var closedSet = [];
-    var openSet = [sid];
-    var cameFrom = {};
-    var cameFromEdge = {};
-    var gScore = {};
-    var fScore = {};
-
-    gScore[sid] = 0;
-    fScore[sid] = heuristic(source);
-
-    // Counter
-    var steps = 0;
-
-    // Main loop
-    while (openSet.length > 0) {
-      var minPos = findMin(openSet, fScore);
-      var cMin = cy.getElementById(openSet[minPos]);
-      var cMinId = cMin.id();
-      steps++;
-
-      // If we've found our goal, then we are done
-      if (cMinId == tid) {
-        var rPath = reconstructPath(sid, tid, cameFrom, []);
-
-        return {
-          found: true,
-          distance: gScore[cMinId],
-          path: eles.spawn(rPath),
-          steps: steps
-        };
-      }
-
-      // Add cMin to processed nodes
-      closedSet.push(cMinId);
-      // Remove cMin from boundary nodes
-      openSet.splice(minPos, 1);
-
-      // Update scores for neighbors of cMin
-      // Take into account if graph is directed or not
-      var vwEdges = cMin._private.edges;
-
-      for (var i = 0; i < vwEdges.length; i++) {
-        var e = vwEdges[i];
-
-        // edge must be in set of calling eles
-        if (!this.hasElementWithId(e.id())) {
-          continue;
-        }
-
-        // cMin must be the source of edge if directed
-        if (directed && e.data('source') !== cMinId) {
-          continue;
-        }
-
-        var wSrc = e.source();
-        var wTgt = e.target();
-
-        var w = wSrc.id() !== cMinId ? wSrc : wTgt;
-        var wid = w.id();
-
-        // node must be in set of calling eles
-        if (!this.hasElementWithId(wid)) {
-          continue;
-        }
-
-        // if node is in closedSet, ignore it
-        if (closedSet.indexOf(wid) != -1) {
-          continue;
-        }
-
-        // New tentative score for node w
-        var tempScore = gScore[cMinId] + weightFn(e);
-
-        // Update gScore for node w if:
-        //   w not present in openSet
-        // OR
-        //   tentative gScore is less than previous value
-
-        // w not in openSet
-        if (openSet.indexOf(wid) == -1) {
-          gScore[wid] = tempScore;
-          fScore[wid] = tempScore + heuristic(w);
-          openSet.push(wid); // Add node to openSet
-          cameFrom[wid] = cMinId;
-          cameFromEdge[wid] = e.id();
-          continue;
-        }
-        // w already in openSet, but with greater gScore
-        if (tempScore < gScore[wid]) {
-          gScore[wid] = tempScore;
-          fScore[wid] = tempScore + heuristic(w);
-          cameFrom[wid] = cMinId;
-        }
-      } // End of neighbors update
-    } // End of main loop
-
-    // If we've reached here, then we've not reached our goal
-    return {
-      found: false,
-      distance: undefined,
-      path: undefined,
-      steps: steps
-    };
-  }
-
-}; // elesfn
-
-
-module.exports = elesfn;
-
-/***/ }),
-/* 25 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var is = __webpack_require__(0);
-var util = __webpack_require__(1);
-
-var elesfn = {
-
-  // Implemented from pseudocode from wikipedia
-  bellmanFord: function bellmanFord(options) {
-    var eles = this;
-
-    options = options || {};
-
-    // Weight function - optional
-    if (options.weight != null && is.fn(options.weight)) {
-      var weightFn = options.weight;
-    } else {
-      // If not specified, assume each edge has equal weight (1)
-      var weightFn = function weightFn(e) {
-        return 1;
-      };
-    }
-
-    // directed - optional
-    if (options.directed != null) {
-      var directed = options.directed;
-    } else {
-      var directed = false;
-    }
-
-    // root - mandatory!
-    if (options.root != null) {
-      if (is.string(options.root)) {
-        // use it as a selector, e.g. "#rootID
-        var source = this.filter(options.root)[0];
-      } else {
-        var source = options.root[0];
-      }
-    } else {
-      return undefined;
-    }
-
-    var cy = this._private.cy;
-    var edges = this.edges().stdFilter(function (e) {
-      return !e.isLoop();
-    });
-    var nodes = this.nodes();
-    var numNodes = nodes.length;
-
-    // mapping: node id -> position in nodes array
-    var id2position = {};
-    for (var i = 0; i < numNodes; i++) {
-      id2position[nodes[i].id()] = i;
-    }
-
-    // Initializations
-    var cost = [];
-    var predecessor = [];
-    var predEdge = [];
-
-    for (var i = 0; i < numNodes; i++) {
-      if (nodes[i].id() === source.id()) {
-        cost[i] = 0;
-      } else {
-        cost[i] = Infinity;
-      }
-      predecessor[i] = undefined;
-    }
-
-    // Edges relaxation
-    var flag = false;
-    for (var i = 1; i < numNodes; i++) {
-      flag = false;
-      for (var e = 0; e < edges.length; e++) {
-        var sourceIndex = id2position[edges[e].source().id()];
-        var targetIndex = id2position[edges[e].target().id()];
-        var weight = weightFn(edges[e]);
-
-        var temp = cost[sourceIndex] + weight;
-        if (temp < cost[targetIndex]) {
-          cost[targetIndex] = temp;
-          predecessor[targetIndex] = sourceIndex;
-          predEdge[targetIndex] = edges[e];
-          flag = true;
-        }
-
-        // If undirected graph, we need to take into account the 'reverse' edge
-        if (!directed) {
-          var temp = cost[targetIndex] + weight;
-          if (temp < cost[sourceIndex]) {
-            cost[sourceIndex] = temp;
-            predecessor[sourceIndex] = targetIndex;
-            predEdge[sourceIndex] = edges[e];
-            flag = true;
-          }
-        }
-      }
-
-      if (!flag) {
-        break;
-      }
-    }
-
-    if (flag) {
-      // Check for negative weight cycles
-      for (var e = 0; e < edges.length; e++) {
-        var sourceIndex = id2position[edges[e].source().id()];
-        var targetIndex = id2position[edges[e].target().id()];
-        var weight = weightFn(edges[e]);
-
-        if (cost[sourceIndex] + weight < cost[targetIndex]) {
-          util.error('Graph contains a negative weight cycle for Bellman-Ford');
-          return { pathTo: undefined,
-            distanceTo: undefined,
-            hasNegativeWeightCycle: true };
-        }
-      }
-    }
-
-    // Build result object
-    var position2id = [];
-    for (var i = 0; i < numNodes; i++) {
-      position2id.push(nodes[i].id());
-    }
-
-    var res = {
-      distanceTo: function distanceTo(to) {
-        if (is.string(to)) {
-          // to is a selector string
-          var toId = cy.filter(to)[0].id();
-        } else {
-          // to is a node
-          var toId = to.id();
-        }
-
-        return cost[id2position[toId]];
-      },
-
-      pathTo: function pathTo(to) {
-
-        var reconstructPathAux = function reconstructPathAux(predecessor, fromPos, toPos, position2id, acumPath, predEdge) {
-          for (;;) {
-            // Add toId to path
-            acumPath.push(cy.getElementById(position2id[toPos]));
-            acumPath.push(predEdge[toPos]);
-
-            if (fromPos === toPos) {
-              // reached starting node
-              return acumPath;
-            }
-
-            // If no path exists, discart acumulated path and return undefined
-            var predPos = predecessor[toPos];
-            if (typeof predPos === 'undefined') {
-              return undefined;
-            }
-
-            toPos = predPos;
-          }
-        };
-
-        if (is.string(to)) {
-          // to is a selector string
-          var toId = cy.filter(to)[0].id();
-        } else {
-          // to is a node
-          var toId = to.id();
-        }
-        var path = [];
-
-        // This returns a reversed path
-        var res = reconstructPathAux(predecessor, id2position[source.id()], id2position[toId], position2id, path, predEdge);
-
-        // Get it in the correct order and return it
-        if (res != null) {
-          res.reverse();
-        }
-
-        return eles.spawn(res);
-      },
-
-      hasNegativeWeightCycle: false
-    };
-
-    return res;
-  } // bellmanFord
-
-}; // elesfn
-
-module.exports = elesfn;
-
-/***/ }),
-/* 26 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var is = __webpack_require__(0);
-var Heap = __webpack_require__(8);
-
-var elesfn = {
-
-  // Implemented from the algorithm in the paper "On Variants of Shortest-Path Betweenness Centrality and their Generic Computation" by Ulrik Brandes
-  betweennessCentrality: function betweennessCentrality(options) {
-    options = options || {};
-
-    // Weight - optional
-    var weighted, weightFn;
-    if (is.fn(options.weight)) {
-      weightFn = options.weight;
-      weighted = true;
-    } else {
-      weighted = false;
-    }
-
-    // Directed - default false
-    var directed = options.directed != null ? options.directed : false;
-
-    var cy = this._private.cy;
-
-    // starting
-    var V = this.nodes();
-    var A = {};
-    var _C = {};
-    var max = 0;
-    var C = {
-      set: function set(key, val) {
-        _C[key] = val;
-
-        if (val > max) {
-          max = val;
-        }
-      },
-
-      get: function get(key) {
-        return _C[key];
-      }
-    };
-
-    // A contains the neighborhoods of every node
-    for (var i = 0; i < V.length; i++) {
-      var v = V[i];
-      var vid = v.id();
-
-      if (directed) {
-        A[vid] = v.outgoers().nodes(); // get outgoers of every node
-      } else {
-        A[vid] = v.openNeighborhood().nodes(); // get neighbors of every node
-      }
-
-      C.set(vid, 0);
-    }
-
-    for (var s = 0; s < V.length; s++) {
-      var sid = V[s].id();
-      var S = []; // stack
-      var P = {};
-      var g = {};
-      var d = {};
-      var Q = new Heap(function (a, b) {
-        return d[a] - d[b];
-      }); // queue
-
-      // init dictionaries
-      for (var i = 0; i < V.length; i++) {
-        var vid = V[i].id();
-
-        P[vid] = [];
-        g[vid] = 0;
-        d[vid] = Infinity;
-      }
-
-      g[sid] = 1; // sigma
-      d[sid] = 0; // distance to s
-
-      Q.push(sid);
-
-      while (!Q.empty()) {
-        var v = Q.pop();
-
-        S.push(v);
-
-        if (weighted) {
-          for (var j = 0; j < A[v].length; j++) {
-            var w = A[v][j];
-            var vEle = cy.getElementById(v);
-
-            var edge;
-            if (vEle.edgesTo(w).length > 0) {
-              edge = vEle.edgesTo(w)[0];
-            } else {
-              edge = w.edgesTo(vEle)[0];
-            }
-
-            var edgeWeight = weightFn(edge);
-
-            w = w.id();
-
-            if (d[w] > d[v] + edgeWeight) {
-              d[w] = d[v] + edgeWeight;
-
-              if (Q.nodes.indexOf(w) < 0) {
-                //if w is not in Q
-                Q.push(w);
-              } else {
-                // update position if w is in Q
-                Q.updateItem(w);
-              }
-
-              g[w] = 0;
-              P[w] = [];
-            }
-
-            if (d[w] == d[v] + edgeWeight) {
-              g[w] = g[w] + g[v];
-              P[w].push(v);
-            }
-          }
-        } else {
-          for (var j = 0; j < A[v].length; j++) {
-            var w = A[v][j].id();
-
-            if (d[w] == Infinity) {
-              Q.push(w);
-
-              d[w] = d[v] + 1;
-            }
-
-            if (d[w] == d[v] + 1) {
-              g[w] = g[w] + g[v];
-              P[w].push(v);
-            }
-          }
-        }
-      }
-
-      var e = {};
-      for (var i = 0; i < V.length; i++) {
-        e[V[i].id()] = 0;
-      }
-
-      while (S.length > 0) {
-        var w = S.pop();
-
-        for (var j = 0; j < P[w].length; j++) {
-          var v = P[w][j];
-
-          e[v] = e[v] + g[v] / g[w] * (1 + e[w]);
-
-          if (w != V[s].id()) {
-            C.set(w, C.get(w) + e[w]);
-          }
-        }
-      }
-    }
-
-    var ret = {
-      betweenness: function betweenness(node) {
-        if (is.string(node)) {
-          var node = cy.filter(node).id();
-        } else {
-          var node = node.id();
-        }
-
-        return C.get(node);
-      },
-
-      betweennessNormalized: function betweennessNormalized(node) {
-        if (max == 0) return 0;
-
-        if (is.string(node)) {
-          var node = cy.filter(node).id();
-        } else {
-          var node = node.id();
-        }
-
-        return C.get(node) / max;
-      }
-    };
-
-    // alias
-    ret.betweennessNormalised = ret.betweennessNormalized;
-
-    return ret;
-  } // betweennessCentrality
-
-}; // elesfn
-
-// nice, short mathemathical alias
-elesfn.bc = elesfn.betweennessCentrality;
-
-module.exports = elesfn;
-
-/***/ }),
-/* 27 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var is = __webpack_require__(0);
-
-var defineSearch = function defineSearch(params) {
-  params = {
-    bfs: params.bfs || !params.dfs,
-    dfs: params.dfs || !params.bfs
-  };
-
-  // from pseudocode on wikipedia
-  return function searchFn(roots, fn, directed) {
-    var options;
-    if (is.plainObject(roots) && !is.elementOrCollection(roots)) {
-      options = roots;
-      roots = options.roots || options.root;
-      fn = options.visit;
-      directed = options.directed;
-    }
-
-    directed = arguments.length === 2 && !is.fn(fn) ? fn : directed;
-    fn = is.fn(fn) ? fn : function () {};
-
-    var cy = this._private.cy;
-    var v = roots = is.string(roots) ? this.filter(roots) : roots;
-    var Q = [];
-    var connectedNodes = [];
-    var connectedBy = {};
-    var id2depth = {};
-    var V = {};
-    var j = 0;
-    var found;
-    var nodes = this.nodes();
-    var edges = this.edges();
-
-    // enqueue v
-    for (var i = 0; i < v.length; i++) {
-      if (v[i].isNode()) {
-        Q.unshift(v[i]);
-
-        if (params.bfs) {
-          V[v[i].id()] = true;
-
-          connectedNodes.push(v[i]);
-        }
-
-        id2depth[v[i].id()] = 0;
-      }
-    }
-
-    while (Q.length !== 0) {
-      var v = params.bfs ? Q.shift() : Q.pop();
-
-      if (params.dfs) {
-        if (V[v.id()]) {
-          continue;
-        }
-
-        V[v.id()] = true;
-
-        connectedNodes.push(v);
-      }
-
-      var depth = id2depth[v.id()];
-      var prevEdge = connectedBy[v.id()];
-      var prevNode = prevEdge == null ? undefined : prevEdge.connectedNodes().not(v)[0];
-      var ret;
-
-      ret = fn(v, prevEdge, prevNode, j++, depth);
-
-      if (ret === true) {
-        found = v;
-        break;
-      }
-
-      if (ret === false) {
-        break;
-      }
-
-      var vwEdges = v.connectedEdges(directed ? function (ele) {
-        return ele.data('source') === v.id();
-      } : undefined).intersect(edges);
-      for (var i = 0; i < vwEdges.length; i++) {
-        var e = vwEdges[i];
-        var w = e.connectedNodes(function (n) {
-          return n.id() !== v.id();
-        }).intersect(nodes);
-
-        if (w.length !== 0 && !V[w.id()]) {
-          w = w[0];
-
-          Q.push(w);
-
-          if (params.bfs) {
-            V[w.id()] = true;
-
-            connectedNodes.push(w);
-          }
-
-          connectedBy[w.id()] = e;
-
-          id2depth[w.id()] = id2depth[v.id()] + 1;
-        }
-      }
-    }
-
-    var connectedEles = [];
-
-    for (var i = 0; i < connectedNodes.length; i++) {
-      var node = connectedNodes[i];
-      var edge = connectedBy[node.id()];
-
-      if (edge) {
-        connectedEles.push(edge);
-      }
-
-      connectedEles.push(node);
-    }
-
-    return {
-      path: cy.collection(connectedEles, { unique: true }),
-      found: cy.collection(found)
-    };
-  };
-};
-
-// search, spanning trees, etc
-var elesfn = {
-  breadthFirstSearch: defineSearch({ bfs: true }),
-  depthFirstSearch: defineSearch({ dfs: true })
-};
-
-// nice, short mathemathical alias
-elesfn.bfs = elesfn.breadthFirstSearch;
-elesfn.dfs = elesfn.depthFirstSearch;
-
-module.exports = elesfn;
-
-/***/ }),
-/* 28 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var is = __webpack_require__(0);
-
-var elesfn = {
-
-  closenessCentralityNormalized: function closenessCentralityNormalized(options) {
-    options = options || {};
-
-    var cy = this.cy();
-
-    var harmonic = options.harmonic;
-    if (harmonic === undefined) {
-      harmonic = true;
-    }
-
-    var closenesses = {};
-    var maxCloseness = 0;
-    var nodes = this.nodes();
-    var fw = this.floydWarshall({ weight: options.weight, directed: options.directed });
-
-    // Compute closeness for every node and find the maximum closeness
-    for (var i = 0; i < nodes.length; i++) {
-      var currCloseness = 0;
-      for (var j = 0; j < nodes.length; j++) {
-        if (i != j) {
-          var d = fw.distance(nodes[i], nodes[j]);
-
-          if (harmonic) {
-            currCloseness += 1 / d;
-          } else {
-            currCloseness += d;
-          }
-        }
-      }
-
-      if (!harmonic) {
-        currCloseness = 1 / currCloseness;
-      }
-
-      if (maxCloseness < currCloseness) {
-        maxCloseness = currCloseness;
-      }
-
-      closenesses[nodes[i].id()] = currCloseness;
-    }
-
-    return {
-      closeness: function closeness(node) {
-        if (maxCloseness == 0) {
-          return 0;
-        }
-
-        if (is.string(node)) {
-          // from is a selector string
-          var node = cy.filter(node)[0].id();
-        } else {
-          // from is a node
-          var node = node.id();
-        }
-
-        return closenesses[node] / maxCloseness;
-      }
-    };
-  },
-
-  // Implemented from pseudocode from wikipedia
-  closenessCentrality: function closenessCentrality(options) {
-    options = options || {};
-
-    // root - mandatory!
-    if (options.root != null) {
-      if (is.string(options.root)) {
-        // use it as a selector, e.g. "#rootID
-        var root = this.filter(options.root)[0];
-      } else {
-        var root = options.root[0];
-      }
-    } else {
-      return undefined;
-    }
-
-    // weight - optional
-    if (options.weight != null && is.fn(options.weight)) {
-      var weight = options.weight;
-    } else {
-      var weight = function weight() {
-        return 1;
-      };
-    }
-
-    // directed - optional
-    if (options.directed != null && is.bool(options.directed)) {
-      var directed = options.directed;
-    } else {
-      var directed = false;
-    }
-
-    var harmonic = options.harmonic;
-    if (harmonic === undefined) {
-      harmonic = true;
-    }
-
-    // we need distance from this node to every other node
-    var dijkstra = this.dijkstra({
-      root: root,
-      weight: weight,
-      directed: directed
-    });
-    var totalDistance = 0;
-
-    var nodes = this.nodes();
-    for (var i = 0; i < nodes.length; i++) {
-      if (nodes[i].id() != root.id()) {
-        var d = dijkstra.distanceTo(nodes[i]);
-
-        if (harmonic) {
-          totalDistance += 1 / d;
-        } else {
-          totalDistance += d;
-        }
-      }
-    }
-
-    return harmonic ? totalDistance : 1 / totalDistance;
-  } // closenessCentrality
-
-}; // elesfn
-
-// nice, short mathemathical alias
-elesfn.cc = elesfn.closenessCentrality;
-elesfn.ccn = elesfn.closenessCentralityNormalised = elesfn.closenessCentralityNormalized;
-
-module.exports = elesfn;
-
-/***/ }),
-/* 29 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var is = __webpack_require__(0);
-var util = __webpack_require__(1);
-
-var elesfn = {
-
-  degreeCentralityNormalized: function degreeCentralityNormalized(options) {
-    options = options || {};
-
-    var cy = this.cy();
-
-    // directed - optional
-    if (options.directed != null) {
-      var directed = options.directed;
-    } else {
-      var directed = false;
-    }
-
-    var nodes = this.nodes();
-    var numNodes = nodes.length;
-
-    if (!directed) {
-      var degrees = {};
-      var maxDegree = 0;
-
-      for (var i = 0; i < numNodes; i++) {
-        var node = nodes[i];
-        // add current node to the current options object and call degreeCentrality
-        var currDegree = this.degreeCentrality(util.extend({}, options, { root: node }));
-        if (maxDegree < currDegree.degree) maxDegree = currDegree.degree;
-
-        degrees[node.id()] = currDegree.degree;
-      }
-
-      return {
-        degree: function degree(node) {
-          if (maxDegree == 0) return 0;
-
-          if (is.string(node)) {
-            // from is a selector string
-            var node = cy.filter(node)[0].id();
-          } else {
-            // from is a node
-            var node = node.id();
-          }
-
-          return degrees[node] / maxDegree;
-        }
-      };
-    } else {
-      var indegrees = {};
-      var outdegrees = {};
-      var maxIndegree = 0;
-      var maxOutdegree = 0;
-
-      for (var i = 0; i < numNodes; i++) {
-        var node = nodes[i];
-        // add current node to the current options object and call degreeCentrality
-        var currDegree = this.degreeCentrality(util.extend({}, options, { root: node }));
-
-        if (maxIndegree < currDegree.indegree) maxIndegree = currDegree.indegree;
-
-        if (maxOutdegree < currDegree.outdegree) maxOutdegree = currDegree.outdegree;
-
-        indegrees[node.id()] = currDegree.indegree;
-        outdegrees[node.id()] = currDegree.outdegree;
-      }
-
-      return {
-        indegree: function indegree(node) {
-          if (maxIndegree == 0) return 0;
-
-          if (is.string(node)) {
-            // from is a selector string
-            var node = cy.filter(node)[0].id();
-          } else {
-            // from is a node
-            var node = node.id();
-          }
-
-          return indegrees[node] / maxIndegree;
-        },
-        outdegree: function outdegree(node) {
-          if (maxOutdegree == 0) return 0;
-
-          if (is.string(node)) {
-            // from is a selector string
-            var node = cy.filter(node)[0].id();
-          } else {
-            // from is a node
-            var node = node.id();
-          }
-
-          return outdegrees[node] / maxOutdegree;
-        }
-
-      };
-    }
-  }, // degreeCentralityNormalized
-
-  // Implemented from the algorithm in Opsahl's paper
-  // "Node centrality in weighted networks: Generalizing degree and shortest paths"
-  // check the heading 2 "Degree"
-  degreeCentrality: function degreeCentrality(options) {
-    options = options || {};
-
-    var callingEles = this;
-
-    // root - mandatory!
-    if (options != null && options.root != null) {
-      var root = is.string(options.root) ? this.filter(options.root)[0] : options.root[0];
-    } else {
-      return undefined;
-    }
-
-    // weight - optional
-    if (options.weight != null && is.fn(options.weight)) {
-      var weightFn = options.weight;
-    } else {
-      // If not specified, assume each edge has equal weight (1)
-      var weightFn = function weightFn(e) {
-        return 1;
-      };
-    }
-
-    // directed - optional
-    if (options.directed != null) {
-      var directed = options.directed;
-    } else {
-      var directed = false;
-    }
-
-    // alpha - optional
-    if (options.alpha != null && is.number(options.alpha)) {
-      var alpha = options.alpha;
-    } else {
-      alpha = 0;
-    }
-
-    if (!directed) {
-      var connEdges = root.connectedEdges().intersection(callingEles);
-      var k = connEdges.length;
-      var s = 0;
-
-      // Now, sum edge weights
-      for (var i = 0; i < connEdges.length; i++) {
-        var edge = connEdges[i];
-        s += weightFn(edge);
-      }
-
-      return {
-        degree: Math.pow(k, 1 - alpha) * Math.pow(s, alpha)
-      };
-    } else {
-      var incoming = root.connectedEdges('edge[target = "' + root.id() + '"]').intersection(callingEles);
-      var outgoing = root.connectedEdges('edge[source = "' + root.id() + '"]').intersection(callingEles);
-      var k_in = incoming.length;
-      var k_out = outgoing.length;
-      var s_in = 0;
-      var s_out = 0;
-
-      // Now, sum incoming edge weights
-      for (var i = 0; i < incoming.length; i++) {
-        var edge = incoming[i];
-        s_in += weightFn(edge);
-      }
-
-      // Now, sum outgoing edge weights
-      for (var i = 0; i < outgoing.length; i++) {
-        var edge = outgoing[i];
-        s_out += weightFn(edge);
-      }
-
-      return {
-        indegree: Math.pow(k_in, 1 - alpha) * Math.pow(s_in, alpha),
-        outdegree: Math.pow(k_out, 1 - alpha) * Math.pow(s_out, alpha)
-      };
-    }
-  } // degreeCentrality
-
-}; // elesfn
-
-// nice, short mathemathical alias
-elesfn.dc = elesfn.degreeCentrality;
-elesfn.dcn = elesfn.degreeCentralityNormalised = elesfn.degreeCentralityNormalized;
-
-module.exports = elesfn;
-
-/***/ }),
-/* 30 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var is = __webpack_require__(0);
-var Heap = __webpack_require__(8);
-
-var elesfn = {
-
-  dijkstra: function dijkstra(root, weightFn, directed) {
-    var options;
-    if (is.plainObject(root) && !is.elementOrCollection(root)) {
-      options = root;
-      root = options.root;
-      weightFn = options.weight;
-      directed = options.directed;
-    }
-
-    var cy = this._private.cy;
-    weightFn = is.fn(weightFn) ? weightFn : function () {
-      return 1;
-    }; // if not specified, assume each edge has equal weight (1)
-
-    var source = is.string(root) ? this.filter(root)[0] : root[0];
-    var dist = {};
-    var prev = {};
-    var knownDist = {};
-
-    var edges = this.edges().filter(function (ele) {
-      return !ele.isLoop();
-    });
-    var nodes = this.nodes();
-
-    var getDist = function getDist(node) {
-      return dist[node.id()];
-    };
-
-    var setDist = function setDist(node, d) {
-      dist[node.id()] = d;
-
-      Q.updateItem(node);
-    };
-
-    var Q = new Heap(function (a, b) {
-      return getDist(a) - getDist(b);
-    });
-
-    for (var i = 0; i < nodes.length; i++) {
-      var node = nodes[i];
-
-      dist[node.id()] = node.same(source) ? 0 : Infinity;
-      Q.push(node);
-    }
-
-    var distBetween = function distBetween(u, v) {
-      var uvs = (directed ? u.edgesTo(v) : u.edgesWith(v)).intersect(edges);
-      var smallestDistance = Infinity;
-      var smallestEdge;
-
-      for (var i = 0; i < uvs.length; i++) {
-        var edge = uvs[i];
-        var weight = weightFn(edge);
-
-        if (weight < smallestDistance || !smallestEdge) {
-          smallestDistance = weight;
-          smallestEdge = edge;
-        }
-      }
-
-      return {
-        edge: smallestEdge,
-        dist: smallestDistance
-      };
-    };
-
-    while (Q.size() > 0) {
-      var u = Q.pop();
-      var smalletsDist = getDist(u);
-      var uid = u.id();
-
-      knownDist[uid] = smalletsDist;
-
-      if (smalletsDist === Infinity) {
-        continue;
-      }
-
-      var neighbors = u.neighborhood().intersect(nodes);
-      for (var i = 0; i < neighbors.length; i++) {
-        var v = neighbors[i];
-        var vid = v.id();
-        var vDist = distBetween(u, v);
-
-        var alt = smalletsDist + vDist.dist;
-
-        if (alt < getDist(v)) {
-          setDist(v, alt);
-
-          prev[vid] = {
-            node: u,
-            edge: vDist.edge
-          };
-        }
-      } // for
-    } // while
-
-    return {
-      distanceTo: function distanceTo(node) {
-        var target = is.string(node) ? nodes.filter(node)[0] : node[0];
-
-        return knownDist[target.id()];
-      },
-
-      pathTo: function pathTo(node) {
-        var target = is.string(node) ? nodes.filter(node)[0] : node[0];
-        var S = [];
-        var u = target;
-
-        if (target.length > 0) {
-          S.unshift(target);
-
-          while (prev[u.id()]) {
-            var p = prev[u.id()];
-
-            S.unshift(p.edge);
-            S.unshift(p.node);
-
-            u = p.node;
-          }
-        }
-
-        return cy.collection(S);
-      }
-    };
-  }
-};
-
-module.exports = elesfn;
-
-/***/ }),
-/* 31 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var is = __webpack_require__(0);
-
-var elesfn = {
-
-  // Implemented from pseudocode from wikipedia
-  floydWarshall: function floydWarshall(options) {
-    options = options || {};
-
-    var cy = this.cy();
-
-    // Weight function - optional
-    if (options.weight != null && is.fn(options.weight)) {
-      var weightFn = options.weight;
-    } else {
-      // If not specified, assume each edge has equal weight (1)
-      var weightFn = function weightFn(e) {
-        return 1;
-      };
-    }
-
-    // directed - optional
-    if (options.directed != null) {
-      var directed = options.directed;
-    } else {
-      var directed = false;
-    }
-
-    var edges = this.edges().stdFilter(function (e) {
-      return !e.isLoop();
-    });
-    var nodes = this.nodes();
-    var numNodes = nodes.length;
-
-    // mapping: node id -> position in nodes array
-    var id2position = {};
-    for (var i = 0; i < numNodes; i++) {
-      id2position[nodes[i].id()] = i;
-    }
-
-    // Initialize distance matrix
-    var dist = [];
-    for (var i = 0; i < numNodes; i++) {
-      var newRow = new Array(numNodes);
-      for (var j = 0; j < numNodes; j++) {
-        if (i == j) {
-          newRow[j] = 0;
-        } else {
-          newRow[j] = Infinity;
-        }
-      }
-      dist.push(newRow);
-    }
-
-    // Initialize matrix used for path reconstruction
-    // Initialize distance matrix
-    var next = [];
-    var edgeNext = [];
-
-    var initMatrix = function initMatrix(next) {
-      for (var i = 0; i < numNodes; i++) {
-        var newRow = new Array(numNodes);
-        for (var j = 0; j < numNodes; j++) {
-          newRow[j] = undefined;
-        }
-        next.push(newRow);
-      }
-    };
-
-    initMatrix(next);
-    initMatrix(edgeNext);
-
-    // Process edges
-    for (var i = 0; i < edges.length; i++) {
-      var sourceIndex = id2position[edges[i].source().id()];
-      var targetIndex = id2position[edges[i].target().id()];
-      var weight = weightFn(edges[i]);
-
-      // Check if already process another edge between same 2 nodes
-      if (dist[sourceIndex][targetIndex] > weight) {
-        dist[sourceIndex][targetIndex] = weight;
-        next[sourceIndex][targetIndex] = targetIndex;
-        edgeNext[sourceIndex][targetIndex] = edges[i];
-      }
-    }
-
-    // If undirected graph, process 'reversed' edges
-    if (!directed) {
-      for (var i = 0; i < edges.length; i++) {
-        var sourceIndex = id2position[edges[i].target().id()];
-        var targetIndex = id2position[edges[i].source().id()];
-        var weight = weightFn(edges[i]);
-
-        // Check if already process another edge between same 2 nodes
-        if (dist[sourceIndex][targetIndex] > weight) {
-          dist[sourceIndex][targetIndex] = weight;
-          next[sourceIndex][targetIndex] = targetIndex;
-          edgeNext[sourceIndex][targetIndex] = edges[i];
-        }
-      }
-    }
-
-    // Main loop
-    for (var k = 0; k < numNodes; k++) {
-      for (var i = 0; i < numNodes; i++) {
-        for (var j = 0; j < numNodes; j++) {
-          if (dist[i][k] + dist[k][j] < dist[i][j]) {
-            dist[i][j] = dist[i][k] + dist[k][j];
-            next[i][j] = next[i][k];
-          }
-        }
-      }
-    }
-
-    // Build result object
-    var position2id = [];
-    for (var i = 0; i < numNodes; i++) {
-      position2id.push(nodes[i].id());
-    }
-
-    var res = {
-      distance: function distance(from, to) {
-        if (is.string(from)) {
-          // from is a selector string
-          var fromId = cy.filter(from)[0].id();
-        } else {
-          // from is a node
-          var fromId = from.id();
-        }
-
-        if (is.string(to)) {
-          // to is a selector string
-          var toId = cy.filter(to)[0].id();
-        } else {
-          // to is a node
-          var toId = to.id();
-        }
-
-        return dist[id2position[fromId]][id2position[toId]];
-      },
-
-      path: function path(from, to) {
-        var reconstructPathAux = function reconstructPathAux(from, to, next, position2id, edgeNext) {
-          if (from === to) {
-            return cy.getElementById(position2id[from]);
-          }
-          if (next[from][to] === undefined) {
-            return undefined;
-          }
-
-          var path = [cy.getElementById(position2id[from])];
-          var prev = from;
-          while (from !== to) {
-            prev = from;
-            from = next[from][to];
-
-            var edge = edgeNext[prev][from];
-            path.push(edge);
-
-            path.push(cy.getElementById(position2id[from]));
-          }
-          return path;
-        };
-
-        if (is.string(from)) {
-          // from is a selector string
-          var fromId = cy.filter(from)[0].id();
-        } else {
-          // from is a node
-          var fromId = from.id();
-        }
-
-        if (is.string(to)) {
-          // to is a selector string
-          var toId = cy.filter(to)[0].id();
-        } else {
-          // to is a node
-          var toId = to.id();
-        }
-
-        var pathArr = reconstructPathAux(id2position[fromId], id2position[toId], next, position2id, edgeNext);
-
-        return cy.collection(pathArr);
-      }
-    };
-
-    return res;
-  } // floydWarshall
-
-}; // elesfn
-
-module.exports = elesfn;
-
-/***/ }),
-/* 32 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
 var util = __webpack_require__(1);
+var is = __webpack_require__(0);
 
-var elesfn = {};
+var define = {
 
-[__webpack_require__(27), __webpack_require__(30), __webpack_require__(34), __webpack_require__(24), __webpack_require__(31), __webpack_require__(25), __webpack_require__(33), __webpack_require__(35), __webpack_require__(29), __webpack_require__(28), __webpack_require__(26)].forEach(function (props) {
-  util.extend(elesfn, props);
-});
-
-module.exports = elesfn;
-
-/***/ }),
-/* 33 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var util = __webpack_require__(1);
-
-var elesfn = {
-
-  // Computes the minimum cut of an undirected graph
-  // Returns the correct answer with high probability
-  kargerStein: function kargerStein(options) {
-    var eles = this;
-
-    options = options || {};
-
-    // Function which colapses 2 (meta) nodes into one
-    // Updates the remaining edge lists
-    // Receives as a paramater the edge which causes the collapse
-    var colapse = function colapse(edgeIndex, nodeMap, remainingEdges) {
-      var edgeInfo = remainingEdges[edgeIndex];
-      var sourceIn = edgeInfo[1];
-      var targetIn = edgeInfo[2];
-      var partition1 = nodeMap[sourceIn];
-      var partition2 = nodeMap[targetIn];
-
-      // Delete all edges between partition1 and partition2
-      var newEdges = remainingEdges.filter(function (edge) {
-        if (nodeMap[edge[1]] === partition1 && nodeMap[edge[2]] === partition2) {
-          return false;
-        }
-        if (nodeMap[edge[1]] === partition2 && nodeMap[edge[2]] === partition1) {
-          return false;
-        }
+  // access data field
+  data: function data(params) {
+    var defaults = {
+      field: 'data',
+      bindingEvent: 'data',
+      allowBinding: false,
+      allowSetting: false,
+      allowGetting: false,
+      settingEvent: 'data',
+      settingTriggersEvent: false,
+      triggerFnName: 'trigger',
+      immutableKeys: {}, // key => true if immutable
+      updateStyle: false,
+      beforeGet: function beforeGet(self) {},
+      beforeSet: function beforeSet(self, obj) {},
+      onSet: function onSet(self) {},
+      canSet: function canSet(self) {
         return true;
+      }
+    };
+    params = util.extend({}, defaults, params);
+
+    return function dataImpl(name, value) {
+      var p = params;
+      var self = this;
+      var selfIsArrayLike = self.length !== undefined;
+      var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
+      var single = selfIsArrayLike ? self[0] : self;
+
+      // .data('foo', ...)
+      if (is.string(name)) {
+        // set or get property
+
+        // .data('foo')
+        if (p.allowGetting && value === undefined) {
+          // get
+
+          var ret = void 0;
+          if (single) {
+            p.beforeGet(single);
+
+            ret = single._private[p.field][name];
+          }
+          return ret;
+
+          // .data('foo', 'bar')
+        } else if (p.allowSetting && value !== undefined) {
+          // set
+          var valid = !p.immutableKeys[name];
+          if (valid) {
+            var change = _defineProperty({}, name, value);
+
+            p.beforeSet(self, change);
+
+            for (var i = 0, l = all.length; i < l; i++) {
+              var ele = all[i];
+
+              if (p.canSet(ele)) {
+                ele._private[p.field][name] = value;
+              }
+            }
+
+            // update mappers if asked
+            if (p.updateStyle) {
+              self.updateStyle();
+            }
+
+            // call onSet callback
+            p.onSet(self);
+
+            if (p.settingTriggersEvent) {
+              self[p.triggerFnName](p.settingEvent);
+            }
+          }
+        }
+
+        // .data({ 'foo': 'bar' })
+      } else if (p.allowSetting && is.plainObject(name)) {
+        // extend
+        var obj = name;
+        var k = void 0,
+            v = void 0;
+        var keys = Object.keys(obj);
+
+        p.beforeSet(self, obj);
+
+        for (var _i = 0; _i < keys.length; _i++) {
+          k = keys[_i];
+          v = obj[k];
+
+          var _valid = !p.immutableKeys[k];
+          if (_valid) {
+            for (var j = 0; j < all.length; j++) {
+              var _ele = all[j];
+
+              if (p.canSet(_ele)) {
+                _ele._private[p.field][k] = v;
+              }
+            }
+          }
+        }
+
+        // update mappers if asked
+        if (p.updateStyle) {
+          self.updateStyle();
+        }
+
+        // call onSet callback
+        p.onSet(self);
+
+        if (p.settingTriggersEvent) {
+          self[p.triggerFnName](p.settingEvent);
+        }
+
+        // .data(function(){ ... })
+      } else if (p.allowBinding && is.fn(name)) {
+        // bind to event
+        var fn = name;
+        self.on(p.bindingEvent, fn);
+
+        // .data()
+      } else if (p.allowGetting && name === undefined) {
+        // get whole object
+        var _ret = void 0;
+        if (single) {
+          p.beforeGet(single);
+
+          _ret = single._private[p.field];
+        }
+        return _ret;
+      }
+
+      return self; // maintain chainability
+    }; // function
+  }, // data
+
+  // remove data field
+  removeData: function removeData(params) {
+    var defaults = {
+      field: 'data',
+      event: 'data',
+      triggerFnName: 'trigger',
+      triggerEvent: false,
+      immutableKeys: {} // key => true if immutable
+    };
+    params = util.extend({}, defaults, params);
+
+    return function removeDataImpl(names) {
+      var p = params;
+      var self = this;
+      var selfIsArrayLike = self.length !== undefined;
+      var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
+
+      // .removeData('foo bar')
+      if (is.string(names)) {
+        // then get the list of keys, and delete them
+        var keys = names.split(/\s+/);
+        var l = keys.length;
+
+        for (var i = 0; i < l; i++) {
+          // delete each non-empty key
+          var key = keys[i];
+          if (is.emptyString(key)) {
+            continue;
+          }
+
+          var valid = !p.immutableKeys[key]; // not valid if immutable
+          if (valid) {
+            for (var i_a = 0, l_a = all.length; i_a < l_a; i_a++) {
+              all[i_a]._private[p.field][key] = undefined;
+            }
+          }
+        }
+
+        if (p.triggerEvent) {
+          self[p.triggerFnName](p.event);
+        }
+
+        // .removeData()
+      } else if (names === undefined) {
+        // then delete all keys
+
+        for (var _i_a = 0, _l_a = all.length; _i_a < _l_a; _i_a++) {
+          var _privateFields = all[_i_a]._private[p.field];
+          var _keys = Object.keys(_privateFields);
+
+          for (var _i2 = 0; _i2 < _keys.length; _i2++) {
+            var _key = _keys[_i2];
+            var validKeyToDelete = !p.immutableKeys[_key];
+
+            if (validKeyToDelete) {
+              _privateFields[_key] = undefined;
+            }
+          }
+        }
+
+        if (p.triggerEvent) {
+          self[p.triggerFnName](p.event);
+        }
+      }
+
+      return self; // maintain chaining
+    }; // function
+  } // removeData
+}; // define
+
+module.exports = define;
+
+/***/ }),
+/* 46 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var Promise = __webpack_require__(5);
+
+var define = {
+
+  eventAliasesOn: function eventAliasesOn(proto) {
+    var p = proto;
+
+    p.addListener = p.listen = p.bind = p.on;
+    p.unlisten = p.unbind = p.off = p.removeListener;
+    p.trigger = p.emit;
+
+    // this is just a wrapper alias of .on()
+    p.pon = p.promiseOn = function (events, selector) {
+      var self = this;
+      var args = Array.prototype.slice.call(arguments, 0);
+
+      return new Promise(function (resolve, reject) {
+        var callback = function callback(e) {
+          self.off.apply(self, offArgs);
+
+          resolve(e);
+        };
+
+        var onArgs = args.concat([callback]);
+        var offArgs = onArgs.concat([]);
+
+        self.on.apply(self, onArgs);
       });
-
-      // All edges pointing to partition2 should now point to partition1
-      for (var i = 0; i < newEdges.length; i++) {
-        var edge = newEdges[i];
-        if (edge[1] === partition2) {
-          // Check source
-          newEdges[i] = edge.slice(0);
-          newEdges[i][1] = partition1;
-        } else if (edge[2] === partition2) {
-          // Check target
-          newEdges[i] = edge.slice(0);
-          newEdges[i][2] = partition1;
-        }
-      }
-
-      // Move all nodes from partition2 to partition1
-      for (var i = 0; i < nodeMap.length; i++) {
-        if (nodeMap[i] === partition2) {
-          nodeMap[i] = partition1;
-        }
-      }
-
-      return newEdges;
     };
-
-    // Contracts a graph until we reach a certain number of meta nodes
-    var contractUntil = function contractUntil(metaNodeMap, remainingEdges, size, sizeLimit) {
-      // Stop condition
-      if (size <= sizeLimit) {
-        return remainingEdges;
-      }
-
-      // Choose an edge randomly
-      var edgeIndex = Math.floor(Math.random() * remainingEdges.length);
-
-      // Colapse graph based on edge
-      var newEdges = colapse(edgeIndex, metaNodeMap, remainingEdges);
-
-      return contractUntil(metaNodeMap, newEdges, size - 1, sizeLimit);
-    };
-
-    var cy = this._private.cy;
-    var edges = this.edges().stdFilter(function (e) {
-      return !e.isLoop();
-    });
-    var nodes = this.nodes();
-    var numNodes = nodes.length;
-    var numEdges = edges.length;
-    var numIter = Math.ceil(Math.pow(Math.log(numNodes) / Math.LN2, 2));
-    var stopSize = Math.floor(numNodes / Math.sqrt(2));
-
-    if (numNodes < 2) {
-      util.error('At least 2 nodes are required for Karger-Stein algorithm');
-      return undefined;
-    }
-
-    // Create numerical identifiers for each node
-    // mapping: node id -> position in nodes array
-    // for reverse mapping, simply use nodes array
-    var id2position = {};
-    for (var i = 0; i < numNodes; i++) {
-      id2position[nodes[i].id()] = i;
-    }
-
-    // Now store edge destination as indexes
-    // Format for each edge (edge index, source node index, target node index)
-    var edgeIndexes = [];
-    for (var i = 0; i < numEdges; i++) {
-      var e = edges[i];
-      edgeIndexes.push([i, id2position[e.source().id()], id2position[e.target().id()]]);
-    }
-
-    // We will store the best cut found here
-    var minCutSize = Infinity;
-    var minCut;
-
-    // Initial meta node partition
-    var originalMetaNode = [];
-    for (var i = 0; i < numNodes; i++) {
-      originalMetaNode.push(i);
-    }
-
-    // Main loop
-    for (var iter = 0; iter <= numIter; iter++) {
-      // Create new meta node partition
-      var metaNodeMap = originalMetaNode.slice(0);
-
-      // Contract until stop point (stopSize nodes)
-      var edgesState = contractUntil(metaNodeMap, edgeIndexes, numNodes, stopSize);
-
-      // Create a copy of the colapsed nodes state
-      var metaNodeMap2 = metaNodeMap.slice(0);
-
-      // Run 2 iterations starting in the stop state
-      var res1 = contractUntil(metaNodeMap, edgesState, stopSize, 2);
-      var res2 = contractUntil(metaNodeMap2, edgesState, stopSize, 2);
-
-      // Is any of the 2 results the best cut so far?
-      if (res1.length <= res2.length && res1.length < minCutSize) {
-        minCutSize = res1.length;
-        minCut = [res1, metaNodeMap];
-      } else if (res2.length <= res1.length && res2.length < minCutSize) {
-        minCutSize = res2.length;
-        minCut = [res2, metaNodeMap2];
-      }
-    } // end of main loop
-
-
-    // Construct result
-    var resEdges = minCut[0].map(function (e) {
-      return edges[e[0]];
-    });
-    var partition1 = [];
-    var partition2 = [];
-
-    // traverse metaNodeMap for best cut
-    var witnessNodePartition = minCut[1][0];
-    for (var i = 0; i < minCut[1].length; i++) {
-      var partitionId = minCut[1][i];
-      if (partitionId === witnessNodePartition) {
-        partition1.push(nodes[i]);
-      } else {
-        partition2.push(nodes[i]);
-      }
-    }
-
-    var ret = {
-      cut: eles.spawn(cy, resEdges),
-      partition1: eles.spawn(partition1),
-      partition2: eles.spawn(partition2)
-    };
-
-    return ret;
   }
-}; // elesfn
 
+}; // define
 
-module.exports = elesfn;
+module.exports = define;
 
 /***/ }),
-/* 34 */
+/* 47 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var is = __webpack_require__(0);
-
-// search, spanning trees, etc
-var elesfn = {
-
-  // kruskal's algorithm (finds min spanning tree, assuming undirected graph)
-  // implemented from pseudocode from wikipedia
-  kruskal: function kruskal(weightFn) {
-    var cy = this.cy();
-
-    weightFn = is.fn(weightFn) ? weightFn : function () {
-      return 1;
-    }; // if not specified, assume each edge has equal weight (1)
-
-    function findSet(ele) {
-      for (var i = 0; i < forest.length; i++) {
-        var eles = forest[i];
-
-        if (eles.anySame(ele)) {
-          return {
-            eles: eles,
-            index: i
-          };
-        }
-      }
-    }
-
-    var A = cy.collection(cy, []);
-    var forest = [];
-    var nodes = this.nodes();
-
-    for (var i = 0; i < nodes.length; i++) {
-      forest.push(nodes[i].collection());
-    }
-
-    var edges = this.edges();
-    var S = edges.toArray().sort(function (a, b) {
-      var weightA = weightFn(a);
-      var weightB = weightFn(b);
-
-      return weightA - weightB;
-    });
-
-    for (var i = 0; i < S.length; i++) {
-      var edge = S[i];
-      var u = edge.source()[0];
-      var v = edge.target()[0];
-      var setU = findSet(u);
-      var setV = findSet(v);
-
-      if (setU.index !== setV.index) {
-        A = A.add(edge);
-
-        // combine forests for u and v
-        forest[setU.index] = setU.eles.add(setV.eles);
-        forest.splice(setV.index, 1);
-      }
-    }
-
-    return nodes.add(A);
-  }
-};
-
-module.exports = elesfn;
-
-/***/ }),
-/* 35 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var is = __webpack_require__(0);
-
-var elesfn = {
-
-  pageRank: function pageRank(options) {
-    options = options || {};
-
-    var normalizeVector = function normalizeVector(vector) {
-      var length = vector.length;
-
-      // First, get sum of all elements
-      var total = 0;
-      for (var i = 0; i < length; i++) {
-        total += vector[i];
-      }
-
-      // Now, divide each by the sum of all elements
-      for (var i = 0; i < length; i++) {
-        vector[i] = vector[i] / total;
-      }
-    };
-
-    // dampingFactor - optional
-    if (options != null && options.dampingFactor != null) {
-      var dampingFactor = options.dampingFactor;
-    } else {
-      var dampingFactor = 0.8; // Default damping factor
-    }
-
-    // desired precision - optional
-    if (options != null && options.precision != null) {
-      var epsilon = options.precision;
-    } else {
-      var epsilon = 0.000001; // Default precision
-    }
-
-    // Max number of iterations - optional
-    if (options != null && options.iterations != null) {
-      var numIter = options.iterations;
-    } else {
-      var numIter = 200; // Default number of iterations
-    }
-
-    // Weight function - optional
-    if (options != null && options.weight != null && is.fn(options.weight)) {
-      var weightFn = options.weight;
-    } else {
-      // If not specified, assume each edge has equal weight (1)
-      var weightFn = function weightFn(e) {
-        return 1;
-      };
-    }
-
-    var cy = this._private.cy;
-    var edges = this.edges().stdFilter(function (e) {
-      return !e.isLoop();
-    });
-    var nodes = this.nodes();
-    var numNodes = nodes.length;
-    var numEdges = edges.length;
-
-    // Create numerical identifiers for each node
-    // mapping: node id -> position in nodes array
-    // for reverse mapping, simply use nodes array
-    var id2position = {};
-    for (var i = 0; i < numNodes; i++) {
-      id2position[nodes[i].id()] = i;
-    }
-
-    // Construct transposed adjacency matrix
-    // First lets have a zeroed matrix of the right size
-    // We'll also keep track of the sum of each column
-    var matrix = [];
-    var columnSum = [];
-    var additionalProb = (1 - dampingFactor) / numNodes;
-
-    // Create null matric
-    for (var i = 0; i < numNodes; i++) {
-      var newRow = [];
-      for (var j = 0; j < numNodes; j++) {
-        newRow.push(0.0);
-      }
-      matrix.push(newRow);
-      columnSum.push(0.0);
-    }
-
-    // Now, process edges
-    for (var i = 0; i < numEdges; i++) {
-      var edge = edges[i];
-      var s = id2position[edge.source().id()];
-      var t = id2position[edge.target().id()];
-      var w = weightFn(edge);
-
-      // Update matrix
-      matrix[t][s] += w;
-
-      // Update column sum
-      columnSum[s] += w;
-    }
-
-    // Add additional probability based on damping factor
-    // Also, take into account columns that have sum = 0
-    var p = 1.0 / numNodes + additionalProb; // Shorthand
-    // Traverse matrix, column by column
-    for (var j = 0; j < numNodes; j++) {
-      if (columnSum[j] === 0) {
-        // No 'links' out from node jth, assume equal probability for each possible node
-        for (var i = 0; i < numNodes; i++) {
-          matrix[i][j] = p;
-        }
-      } else {
-        // Node jth has outgoing link, compute normalized probabilities
-        for (var i = 0; i < numNodes; i++) {
-          matrix[i][j] = matrix[i][j] / columnSum[j] + additionalProb;
-        }
-      }
-    }
-
-    // Compute dominant eigenvector using power method
-    var eigenvector = [];
-    var nullVector = [];
-    var previous;
-
-    // Start with a vector of all 1's
-    // Also, initialize a null vector which will be used as shorthand
-    for (var i = 0; i < numNodes; i++) {
-      eigenvector.push(1.0);
-      nullVector.push(0.0);
-    }
-
-    for (var iter = 0; iter < numIter; iter++) {
-      // New array with all 0's
-      var temp = nullVector.slice(0);
-
-      // Multiply matrix with previous result
-      for (var i = 0; i < numNodes; i++) {
-        for (var j = 0; j < numNodes; j++) {
-          temp[i] += matrix[i][j] * eigenvector[j];
-        }
-      }
-
-      normalizeVector(temp);
-      previous = eigenvector;
-      eigenvector = temp;
-
-      var diff = 0;
-      // Compute difference (squared module) of both vectors
-      for (var i = 0; i < numNodes; i++) {
-        diff += Math.pow(previous[i] - eigenvector[i], 2);
-      }
-
-      // If difference is less than the desired threshold, stop iterating
-      if (diff < epsilon) {
-        break;
-      }
-    }
-
-    // Construct result
-    var res = {
-      rank: function rank(node) {
-        if (is.string(node)) {
-          // is a selector string
-          var nodeId = cy.filter(node)[0].id();
-        } else {
-          // is a node object
-          var nodeId = node.id();
-        }
-        return eigenvector[id2position[nodeId]];
-      }
-    };
-
-    return res;
-  } // pageRank
-
-}; // elesfn
-
-module.exports = elesfn;
-
-/***/ }),
-/* 36 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var define = __webpack_require__(3);
-
-var elesfn = {
-  animate: define.animate(),
-  animation: define.animation(),
-  animated: define.animated(),
-  clearQueue: define.clearQueue(),
-  delay: define.delay(),
-  delayAnimation: define.delayAnimation(),
-  stop: define.stop()
-};
-
-module.exports = elesfn;
-
-/***/ }),
-/* 37 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var Set = __webpack_require__(9);
+var Set = __webpack_require__(8);
 
 var elesfn = {
   classes: function classes(_classes) {
@@ -7009,7 +7849,7 @@ var elesfn = {
 module.exports = elesfn;
 
 /***/ }),
-/* 38 */
+/* 48 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -7107,13 +7947,799 @@ elesfn.has = elesfn.contains;
 module.exports = elesfn;
 
 /***/ }),
-/* 39 */
+/* 49 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var Set = __webpack_require__(9);
+var util = __webpack_require__(1);
+var exprs = __webpack_require__(50);
+var newQuery = __webpack_require__(10);
+
+// of all the expressions, find the first match in the remaining text
+var consumeExpr = function consumeExpr(remaining) {
+  var expr = void 0;
+  var match = void 0;
+  var name = void 0;
+
+  for (var j = 0; j < exprs.length; j++) {
+    var e = exprs[j];
+    var n = e.name;
+
+    var m = remaining.match(e.regexObj);
+
+    if (m != null) {
+      match = m;
+      expr = e;
+      name = n;
+
+      var consumed = m[0];
+      remaining = remaining.substring(consumed.length);
+
+      break; // we've consumed one expr, so we can return now
+    }
+  }
+
+  return {
+    expr: expr,
+    match: match,
+    name: name,
+    remaining: remaining
+  };
+};
+
+// consume all leading whitespace
+var consumeWhitespace = function consumeWhitespace(remaining) {
+  var match = remaining.match(/^\s+/);
+
+  if (match) {
+    var consumed = match[0];
+    remaining = remaining.substring(consumed.length);
+  }
+
+  return remaining;
+};
+
+var parse = function parse(selector) {
+  var self = this;
+
+  var remaining = self._private.selectorText = selector;
+
+  var currentQuery = self[0] = newQuery();
+  self.length = 1;
+
+  remaining = consumeWhitespace(remaining); // get rid of leading whitespace
+
+  for (;;) {
+    var check = consumeExpr(remaining);
+
+    if (check.expr == null) {
+      util.error('The selector `' + selector + '`is invalid');
+      return false;
+    } else {
+      var args = check.match.slice(1);
+
+      // let the token populate the selector object in currentQuery
+      var ret = check.expr.populate(self, currentQuery, args);
+
+      if (ret === false) {
+        return false; // exit if population failed
+      } else if (ret != null) {
+        currentQuery = ret; // change the current query to be filled if the expr specifies
+      }
+    }
+
+    remaining = check.remaining;
+
+    // we're done when there's nothing left to parse
+    if (remaining.match(/^\s*$/)) {
+      break;
+    }
+  }
+
+  // adjust references for subject
+  for (var j = 0; j < self.length; j++) {
+    var query = self[j];
+
+    if (query.subject != null) {
+      // go up the tree until we reach the subject
+      for (;;) {
+        if (query.subject === query) {
+          break;
+        } // done if subject is self
+
+        if (query.parent != null) {
+          // swap parent/child reference
+          var parent = query.parent;
+          var child = query;
+
+          child.parent = null;
+          parent.child = child;
+
+          query = parent; // go up the tree
+        } else if (query.ancestor != null) {
+          // swap ancestor/descendant
+          var ancestor = query.ancestor;
+          var descendant = query;
+
+          descendant.ancestor = null;
+          ancestor.descendant = descendant;
+
+          query = ancestor; // go up the tree
+        } else if (query.source || query.target || query.connectedNodes) {
+          util.error('The selector `' + self.text() + '` can not contain a subject selector that applies to the source or target of an edge selector');
+          return false;
+        } else {
+          util.error('When adjusting references for the selector `' + self.text() + '`, neither parent nor ancestor was found');
+          return false;
+        }
+      } // for
+
+      self[j] = query.subject; // subject should be the root query
+    } // if
+  } // for
+
+  return true; // success
+};
+
+module.exports = { parse: parse };
+
+/***/ }),
+/* 50 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+
+var _require = __webpack_require__(15),
+    stateSelectorRegex = _require.stateSelectorRegex;
+
+var tokens = __webpack_require__(51);
+var util = __webpack_require__(1);
+var newQuery = __webpack_require__(10);
+
+// when a token like a variable has escaped meta characters, we need to clean the backslashes out
+// so that values get compared properly in Selector.filter()
+var cleanMetaChars = function cleanMetaChars(str) {
+  return str.replace(new RegExp('\\\\(' + tokens.metaChar + ')', 'g'), function (match, $1) {
+    return $1;
+  });
+};
+
+var replaceLastQuery = function replaceLastQuery(selector, examiningQuery, replacementQuery) {
+  if (examiningQuery === selector[selector.length - 1]) {
+    selector[selector.length - 1] = replacementQuery;
+  }
+};
+
+// NOTE: add new expression syntax here to have it recognised by the parser;
+// - a query contains all adjacent (i.e. no separator in between) expressions;
+// - the current query is stored in selector[i] --- you can use the reference to `this` in the populate function;
+// - you need to check the query objects in Selector.filter() for it actually filter properly, but that's pretty straight forward
+// - when you add something here, also add to Selector.toString()
+var exprs = [{
+  name: 'group',
+  query: true,
+  regex: '(' + tokens.group + ')',
+  populate: function populate(selector, query, _ref) {
+    var _ref2 = _slicedToArray(_ref, 1),
+        group = _ref2[0];
+
+    query.group = group === '*' ? group : group + 's';
+  }
+}, {
+  name: 'state',
+  query: true,
+  regex: stateSelectorRegex,
+  populate: function populate(selector, query, _ref3) {
+    var _ref4 = _slicedToArray(_ref3, 1),
+        state = _ref4[0];
+
+    query.colonSelectors.push(state);
+  }
+}, {
+  name: 'id',
+  query: true,
+  regex: '\\#(' + tokens.id + ')',
+  populate: function populate(selector, query, _ref5) {
+    var _ref6 = _slicedToArray(_ref5, 1),
+        id = _ref6[0];
+
+    query.ids.push(cleanMetaChars(id));
+  }
+}, {
+  name: 'className',
+  query: true,
+  regex: '\\.(' + tokens.className + ')',
+  populate: function populate(selector, query, _ref7) {
+    var _ref8 = _slicedToArray(_ref7, 1),
+        className = _ref8[0];
+
+    query.classes.push(cleanMetaChars(className));
+  }
+}, {
+  name: 'dataExists',
+  query: true,
+  regex: '\\[\\s*(' + tokens.variable + ')\\s*\\]',
+  populate: function populate(selector, query, _ref9) {
+    var _ref10 = _slicedToArray(_ref9, 1),
+        variable = _ref10[0];
+
+    query.data.push({
+      field: cleanMetaChars(variable)
+    });
+  }
+}, {
+  name: 'dataCompare',
+  query: true,
+  regex: '\\[\\s*(' + tokens.variable + ')\\s*(' + tokens.comparatorOp + ')\\s*(' + tokens.value + ')\\s*\\]',
+  populate: function populate(selector, query, _ref11) {
+    var _ref12 = _slicedToArray(_ref11, 3),
+        variable = _ref12[0],
+        comparatorOp = _ref12[1],
+        value = _ref12[2];
+
+    var valueIsString = new RegExp('^' + tokens.string + '$').exec(value) != null;
+
+    if (valueIsString) {
+      value = value.substring(1, value.length - 1);
+    } else {
+      value = parseFloat(value);
+    }
+
+    query.data.push({
+      field: cleanMetaChars(variable),
+      operator: comparatorOp,
+      value: value
+    });
+  }
+}, {
+  name: 'dataBool',
+  query: true,
+  regex: '\\[\\s*(' + tokens.boolOp + ')\\s*(' + tokens.variable + ')\\s*\\]',
+  populate: function populate(selector, query, _ref13) {
+    var _ref14 = _slicedToArray(_ref13, 2),
+        boolOp = _ref14[0],
+        variable = _ref14[1];
+
+    query.data.push({
+      field: cleanMetaChars(variable),
+      operator: boolOp
+    });
+  }
+}, {
+  name: 'metaCompare',
+  query: true,
+  regex: '\\[\\[\\s*(' + tokens.meta + ')\\s*(' + tokens.comparatorOp + ')\\s*(' + tokens.number + ')\\s*\\]\\]',
+  populate: function populate(selector, query, _ref15) {
+    var _ref16 = _slicedToArray(_ref15, 3),
+        meta = _ref16[0],
+        comparatorOp = _ref16[1],
+        number = _ref16[2];
+
+    query.meta.push({
+      field: cleanMetaChars(meta),
+      operator: comparatorOp,
+      value: parseFloat(number)
+    });
+  }
+}, {
+  name: 'nextQuery',
+  separator: true,
+  regex: tokens.separator,
+  populate: function populate(selector) {
+    // go on to next query
+    var nextQuery = selector[selector.length++] = newQuery();
+    selector.currentSubject = null;
+
+    return nextQuery;
+  }
+}, {
+  name: 'directedEdge',
+  separator: true,
+  regex: tokens.directedEdge,
+  populate: function populate(selector, query) {
+    var edgeQuery = newQuery();
+    var source = query;
+    var target = newQuery();
+
+    edgeQuery.group = 'edges';
+    edgeQuery.target = target;
+    edgeQuery.source = source;
+    edgeQuery.subject = selector.currentSubject;
+
+    // the query in the selector should be the edge rather than the source
+    replaceLastQuery(selector, query, edgeQuery);
+
+    // we're now populating the target query with expressions that follow
+    return target;
+  }
+}, {
+  name: 'undirectedEdge',
+  separator: true,
+  regex: tokens.undirectedEdge,
+  populate: function populate(selector, query) {
+    var edgeQuery = newQuery();
+    var source = query;
+    var target = newQuery();
+
+    edgeQuery.group = 'edges';
+    edgeQuery.connectedNodes = [source, target];
+    edgeQuery.subject = selector.currentSubject;
+
+    // the query in the selector should be the edge rather than the source
+    replaceLastQuery(selector, query, edgeQuery);
+
+    // we're now populating the target query with expressions that follow
+    return target;
+  }
+}, {
+  name: 'child',
+  separator: true,
+  regex: tokens.child,
+  populate: function populate(selector, query) {
+    // this query is the parent of the following query
+    var childQuery = newQuery();
+    childQuery.parent = query;
+    childQuery.subject = selector.currentSubject;
+
+    // it's cheaper to compare children first and go up so replace the parent
+    replaceLastQuery(selector, query, childQuery);
+
+    // we're now populating the child query with expressions that follow
+    return childQuery;
+  }
+}, {
+  name: 'descendant',
+  separator: true,
+  regex: tokens.descendant,
+  populate: function populate(selector, query) {
+    // this query is the ancestor of the following query
+    var descendantQuery = newQuery();
+    descendantQuery.ancestor = query;
+    descendantQuery.subject = selector.currentSubject;
+
+    // it's cheaper to compare descendants first and go up so replace the ancestor
+    replaceLastQuery(selector, query, descendantQuery);
+
+    // we're now populating the descendant query with expressions that follow
+    return descendantQuery;
+  }
+}, {
+  name: 'subject',
+  modifier: true,
+  regex: tokens.subject,
+  populate: function populate(selector, query) {
+    if (selector.currentSubject != null && query.subject != query) {
+      util.error('Redefinition of subject in selector `' + selector.toString() + '`');
+      return false;
+    }
+
+    selector.currentSubject = query;
+    query.subject = query;
+    selector[selector.length - 1].subject = query;
+  }
+}];
+
+exprs.forEach(function (e) {
+  return e.regexObj = new RegExp('^' + e.regex);
+});
+
+module.exports = exprs;
+
+/***/ }),
+/* 51 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var util = __webpack_require__(1);
+
+// tokens in the query language
+var tokens = {
+  metaChar: '[\\!\\"\\#\\$\\%\\&\\\'\\(\\)\\*\\+\\,\\.\\/\\:\\;\\<\\=\\>\\?\\@\\[\\]\\^\\`\\{\\|\\}\\~]', // chars we need to escape in let names, etc
+  comparatorOp: '=|\\!=|>|>=|<|<=|\\$=|\\^=|\\*=', // binary comparison op (used in data selectors)
+  boolOp: '\\?|\\!|\\^', // boolean (unary) operators (used in data selectors)
+  string: '"(?:\\\\"|[^"])*"' + '|' + "'(?:\\\\'|[^'])*'", // string literals (used in data selectors) -- doublequotes | singlequotes
+  number: util.regex.number, // number literal (used in data selectors) --- e.g. 0.1234, 1234, 12e123
+  meta: 'degree|indegree|outdegree', // allowed metadata fields (i.e. allowed functions to use from Collection)
+  separator: '\\s*,\\s*', // queries are separated by commas, e.g. edge[foo = 'bar'], node.someClass
+  descendant: '\\s+',
+  child: '\\s+>\\s+',
+  subject: '\\$',
+  group: 'node|edge|\\*',
+  directedEdge: '\\s+->\\s+',
+  undirectedEdge: '\\s+<->\\s+'
+};
+tokens.variable = '(?:[\\w-]|(?:\\\\' + tokens.metaChar + '))+'; // a variable name
+tokens.value = tokens.string + '|' + tokens.number; // a value literal, either a string or number
+tokens.className = tokens.variable; // a class name (follows variable conventions)
+tokens.id = tokens.variable; // an element id (follows variable conventions)
+
+(function () {
+  var ops = void 0,
+      op = void 0,
+      i = void 0;
+
+  // add @ variants to comparatorOp
+  ops = tokens.comparatorOp.split('|');
+  for (i = 0; i < ops.length; i++) {
+    op = ops[i];
+    tokens.comparatorOp += '|@' + op;
+  }
+
+  // add ! variants to comparatorOp
+  ops = tokens.comparatorOp.split('|');
+  for (i = 0; i < ops.length; i++) {
+    op = ops[i];
+
+    if (op.indexOf('!') >= 0) {
+      continue;
+    } // skip ops that explicitly contain !
+    if (op === '=') {
+      continue;
+    } // skip = b/c != is explicitly defined
+
+    tokens.comparatorOp += '|\\!' + op;
+  }
+})();
+
+module.exports = tokens;
+
+/***/ }),
+/* 52 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var _require = __webpack_require__(15),
+    stateSelectorMatches = _require.stateSelectorMatches;
+
+var is = __webpack_require__(0);
+
+// generic checking for data/metadata
+var operandsMatch = function operandsMatch(query, params) {
+  var allDataMatches = true;
+  for (var k = 0; k < query[params.name].length; k++) {
+    var data = query[params.name][k];
+    var operator = data.operator;
+    var value = data.value;
+    var field = data.field;
+    var _matches = void 0;
+    var fieldVal = params.fieldValue(field);
+
+    if (operator != null && value != null) {
+      var fieldStr = !is.string(fieldVal) && !is.number(fieldVal) ? '' : '' + fieldVal;
+      var valStr = '' + value;
+
+      var caseInsensitive = false;
+      if (operator.indexOf('@') >= 0) {
+        fieldStr = fieldStr.toLowerCase();
+        valStr = valStr.toLowerCase();
+
+        operator = operator.replace('@', '');
+        caseInsensitive = true;
+      }
+
+      var notExpr = false;
+      if (operator.indexOf('!') >= 0) {
+        operator = operator.replace('!', '');
+        notExpr = true;
+      }
+
+      // if we're doing a case insensitive comparison, then we're using a STRING comparison
+      // even if we're comparing numbers
+      if (caseInsensitive) {
+        value = valStr.toLowerCase();
+        fieldVal = fieldStr.toLowerCase();
+      }
+
+      var isIneqCmp = false;
+
+      switch (operator) {
+        case '*=':
+          _matches = fieldStr.indexOf(valStr) >= 0;
+          break;
+        case '$=':
+          _matches = fieldStr.indexOf(valStr, fieldStr.length - valStr.length) >= 0;
+          break;
+        case '^=':
+          _matches = fieldStr.indexOf(valStr) === 0;
+          break;
+        case '=':
+          _matches = fieldVal === value;
+          break;
+        case '>':
+          isIneqCmp = true;
+          _matches = fieldVal > value;
+          break;
+        case '>=':
+          isIneqCmp = true;
+          _matches = fieldVal >= value;
+          break;
+        case '<':
+          isIneqCmp = true;
+          _matches = fieldVal < value;
+          break;
+        case '<=':
+          isIneqCmp = true;
+          _matches = fieldVal <= value;
+          break;
+        default:
+          _matches = false;
+          break;
+      }
+
+      // apply the not op, but null vals for inequalities should always stay non-matching
+      if (notExpr && (fieldVal != null || !isIneqCmp)) {
+        _matches = !_matches;
+      }
+    } else if (operator != null) {
+      switch (operator) {
+        case '?':
+          _matches = fieldVal ? true : false;
+          break;
+        case '!':
+          _matches = fieldVal ? false : true;
+          break;
+        case '^':
+          _matches = fieldVal === undefined;
+          break;
+      }
+    } else {
+      _matches = fieldVal !== undefined;
+    }
+
+    if (!_matches) {
+      allDataMatches = false;
+      break;
+    }
+  } // for
+
+  return allDataMatches;
+}; // operandsMatch
+
+// check parent/child relations
+var confirmRelations = function confirmRelations(query, isNecessary, eles) {
+  if (query != null) {
+    var _matches2 = false;
+
+    if (!isNecessary) {
+      return false;
+    }
+
+    eles = eles(); // save cycles if query == null
+
+    // query must match for at least one element (may be recursive)
+    for (var i = 0; i < eles.length; i++) {
+      if (queryMatches(query, eles[i])) {
+        _matches2 = true;
+        break;
+      }
+    }
+
+    return _matches2;
+  } else {
+    return true;
+  }
+};
+
+var queryMatches = function queryMatches(query, ele) {
+  // make single group-only selectors really cheap to check since they're the most common ones
+  if (query.groupOnly) {
+    return query.group === '*' || query.group === ele.group();
+  }
+
+  // check group
+  if (query.group != null && query.group != '*' && query.group != ele.group()) {
+    return false;
+  }
+
+  var cy = ele.cy();
+  var k = void 0;
+
+  // check colon selectors
+  var allColonSelectorsMatch = true;
+  for (k = 0; k < query.colonSelectors.length; k++) {
+    var sel = query.colonSelectors[k];
+
+    allColonSelectorsMatch = stateSelectorMatches(sel, ele);
+
+    if (!allColonSelectorsMatch) break;
+  }
+  if (!allColonSelectorsMatch) return false;
+
+  // check id
+  var allIdsMatch = true;
+  for (k = 0; k < query.ids.length; k++) {
+    var id = query.ids[k];
+    var actualId = ele.id();
+
+    allIdsMatch = allIdsMatch && id == actualId;
+
+    if (!allIdsMatch) break;
+  }
+  if (!allIdsMatch) return false;
+
+  // check classes
+  var allClassesMatch = true;
+  for (k = 0; k < query.classes.length; k++) {
+    var cls = query.classes[k];
+
+    allClassesMatch = allClassesMatch && ele.hasClass(cls);
+
+    if (!allClassesMatch) break;
+  }
+  if (!allClassesMatch) return false;
+
+  // check data matches
+  var allDataMatches = operandsMatch(query, {
+    name: 'data',
+    fieldValue: function fieldValue(field) {
+      return ele.data(field);
+    }
+  });
+
+  if (!allDataMatches) {
+    return false;
+  }
+
+  // check metadata matches
+  var allMetaMatches = operandsMatch(query, {
+    name: 'meta',
+    fieldValue: function fieldValue(field) {
+      return ele[field]();
+    }
+  });
+
+  if (!allMetaMatches) {
+    return false;
+  }
+
+  // check collection
+  if (query.collection != null) {
+    var matchesAny = query.collection.hasElementWithId(ele.id());
+
+    if (!matchesAny) {
+      return false;
+    }
+  }
+
+  // check filter function
+  if (query.filter != null && ele.collection().some(query.filter)) {
+    return false;
+  }
+
+  var isCompound = cy.hasCompoundNodes();
+  var getSource = function getSource() {
+    return ele.source();
+  };
+  var getTarget = function getTarget() {
+    return ele.target();
+  };
+
+  if (!confirmRelations(query.parent, isCompound, function () {
+    return ele.parent();
+  })) {
+    return false;
+  }
+
+  if (!confirmRelations(query.ancestor, isCompound, function () {
+    return ele.parents();
+  })) {
+    return false;
+  }
+
+  if (!confirmRelations(query.child, isCompound, function () {
+    return ele.children();
+  })) {
+    return false;
+  }
+
+  if (!confirmRelations(query.descendant, isCompound, function () {
+    return ele.descendants();
+  })) {
+    return false;
+  }
+
+  if (!confirmRelations(query.source, true, getSource)) {
+    return false;
+  }
+
+  if (!confirmRelations(query.target, true, getTarget)) {
+    return false;
+  }
+
+  if (query.connectedNodes) {
+    var q0 = query.connectedNodes[0];
+    var q1 = query.connectedNodes[1];
+
+    if (confirmRelations(q0, true, getSource) && confirmRelations(q1, true, getTarget)) {
+      // match
+    } else if (confirmRelations(q0, true, getTarget) && confirmRelations(q1, true, getSource)) {
+      // match
+    } else {
+      return false;
+    }
+  }
+
+  // we've reached the end, so we've matched everything for this query
+  return true;
+}; // queryMatches
+
+// filter an existing collection
+var filter = function filter(collection) {
+  var self = this;
+  var cy = collection.cy();
+
+  // don't bother trying if it's invalid
+  if (self.invalid()) {
+    return cy.collection();
+  }
+
+  // for 1 id #foo queries, just get the element
+  if (self.length === 1 && self[0].length === 1 && self[0].ids.length === 1) {
+    return collection.getElementById(self[0].ids[0]).collection();
+  }
+
+  var selectorFunction = function selectorFunction(element) {
+    for (var j = 0; j < self.length; j++) {
+      var query = self[j];
+
+      if (queryMatches(query, element)) {
+        return true;
+      }
+    }
+
+    return false;
+  };
+
+  if (self.text() == null) {
+    selectorFunction = function selectorFunction() {
+      return true;
+    };
+  }
+
+  var filteredCollection = collection.filter(selectorFunction);
+
+  return filteredCollection;
+}; // filter
+
+// does selector match a single element?
+var matches = function matches(ele) {
+  var self = this;
+
+  // don't bother trying if it's invalid
+  if (self.invalid()) {
+    return false;
+  }
+
+  for (var j = 0; j < self.length; j++) {
+    var query = self[j];
+
+    if (queryMatches(query, ele)) {
+      return true;
+    }
+  }
+
+  return false;
+}; // filter
+
+module.exports = { matches: matches, filter: filter };
+
+/***/ }),
+/* 53 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var Set = __webpack_require__(8);
 
 var elesfn = {
   parent: function parent(selector) {
@@ -7337,13 +8963,13 @@ elesfn.ancestors = elesfn.parents;
 module.exports = elesfn;
 
 /***/ }),
-/* 40 */
+/* 54 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var define = __webpack_require__(3);
+var define = __webpack_require__(4);
 var fn = void 0,
     elesfn = void 0;
 
@@ -7431,7 +9057,7 @@ fn.removeAttr = fn.removeData;
 module.exports = elesfn;
 
 /***/ }),
-/* 41 */
+/* 55 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -7560,7 +9186,276 @@ util.extend(elesfn, {
 module.exports = elesfn;
 
 /***/ }),
-/* 42 */
+/* 56 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var util = __webpack_require__(1);
+var position = __webpack_require__(57);
+var bounds = __webpack_require__(58);
+var widthHeight = __webpack_require__(59);
+var edgePoints = __webpack_require__(60);
+
+module.exports = util.assign({}, position, bounds, widthHeight, edgePoints);
+
+/***/ }),
+/* 57 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var define = __webpack_require__(4);
+var is = __webpack_require__(0);
+var math = __webpack_require__(2);
+var fn = void 0,
+    elesfn = void 0;
+
+var beforePositionSet = function beforePositionSet(eles, newPos) {
+  for (var i = 0; i < eles.length; i++) {
+    var ele = eles[i];
+
+    if (ele.isParent() && !ele.locked()) {
+      var oldPos = ele._private.position;
+      var delta = {
+        x: newPos.x - oldPos.x,
+        y: newPos.y - oldPos.y
+      };
+
+      eles.children().shift(delta);
+    }
+  }
+};
+
+fn = elesfn = {
+
+  position: define.data({
+    field: 'position',
+    bindingEvent: 'position',
+    allowBinding: true,
+    allowSetting: true,
+    settingEvent: 'position',
+    settingTriggersEvent: true,
+    triggerFnName: 'emitAndNotify',
+    allowGetting: true,
+    validKeys: ['x', 'y'],
+    beforeGet: function beforeGet(ele) {
+      ele.updateCompoundBounds();
+    },
+    beforeSet: beforePositionSet,
+    onSet: function onSet(eles) {
+      eles.dirtyCompoundBoundsCache();
+    },
+    canSet: function canSet(ele) {
+      return !ele.locked();
+    }
+  }),
+
+  // position but no notification to renderer
+  silentPosition: define.data({
+    field: 'position',
+    bindingEvent: 'position',
+    allowBinding: false,
+    allowSetting: true,
+    settingEvent: 'position',
+    settingTriggersEvent: false,
+    triggerFnName: 'trigger',
+    allowGetting: false,
+    validKeys: ['x', 'y'],
+    beforeSet: beforePositionSet,
+    onSet: function onSet(eles) {
+      eles.dirtyCompoundBoundsCache();
+    },
+    canSet: function canSet(ele) {
+      return !ele.locked();
+    }
+  }),
+
+  positions: function positions(pos, silent) {
+    if (is.plainObject(pos)) {
+      if (silent) {
+        this.silentPosition(pos);
+      } else {
+        this.position(pos);
+      }
+    } else if (is.fn(pos)) {
+      var _fn = pos;
+      var cy = this.cy();
+
+      cy.startBatch();
+
+      for (var i = 0; i < this.length; i++) {
+        var ele = this[i];
+        var _pos = void 0;
+
+        if (_pos = _fn(ele, i)) {
+          if (silent) {
+            ele.silentPosition(_pos);
+          } else {
+            ele.position(_pos);
+          }
+        }
+      }
+
+      cy.endBatch();
+    }
+
+    return this; // chaining
+  },
+
+  silentPositions: function silentPositions(pos) {
+    return this.positions(pos, true);
+  },
+
+  shift: function shift(dim, val) {
+    var delta = void 0;
+
+    if (is.plainObject(dim)) {
+      delta = dim;
+    } else if (is.string(dim) && is.number(val)) {
+      delta = { x: 0, y: 0 };
+
+      delta[dim] = val;
+    }
+
+    if (delta != null) {
+      for (var i = 0; i < this.length; i++) {
+        var ele = this[i];
+        var pos = ele.position();
+
+        ele.position({
+          x: pos.x + delta.x,
+          y: pos.y + delta.y
+        });
+      }
+    }
+
+    return this;
+  },
+
+  // get/set the rendered (i.e. on screen) positon of the element
+  renderedPosition: function renderedPosition(dim, val) {
+    var ele = this[0];
+    var cy = this.cy();
+    var zoom = cy.zoom();
+    var pan = cy.pan();
+    var rpos = is.plainObject(dim) ? dim : undefined;
+    var setting = rpos !== undefined || val !== undefined && is.string(dim);
+
+    if (ele && ele.isNode()) {
+      // must have an element and must be a node to return position
+      if (setting) {
+        for (var i = 0; i < this.length; i++) {
+          var _ele = this[i];
+
+          if (val !== undefined) {
+            // set one dimension
+            _ele.position(dim, (val - pan[dim]) / zoom);
+          } else if (rpos !== undefined) {
+            // set whole position
+            _ele.position(math.renderedToModelPosition(rpos, zoom, pan));
+          }
+        }
+      } else {
+        // getting
+        var pos = ele.position();
+        rpos = math.modelToRenderedPosition(pos, zoom, pan);
+
+        if (dim === undefined) {
+          // then return the whole rendered position
+          return rpos;
+        } else {
+          // then return the specified dimension
+          return rpos[dim];
+        }
+      }
+    } else if (!setting) {
+      return undefined; // for empty collection case
+    }
+
+    return this; // chaining
+  },
+
+  // get/set the position relative to the parent
+  relativePosition: function relativePosition(dim, val) {
+    var ele = this[0];
+    var cy = this.cy();
+    var ppos = is.plainObject(dim) ? dim : undefined;
+    var setting = ppos !== undefined || val !== undefined && is.string(dim);
+    var hasCompoundNodes = cy.hasCompoundNodes();
+
+    if (ele && ele.isNode()) {
+      // must have an element and must be a node to return position
+      if (setting) {
+        for (var i = 0; i < this.length; i++) {
+          var _ele2 = this[i];
+          var parent = hasCompoundNodes ? _ele2.parent() : null;
+          var hasParent = parent && parent.length > 0;
+          var relativeToParent = hasParent;
+
+          if (hasParent) {
+            parent = parent[0];
+          }
+
+          var origin = relativeToParent ? parent.position() : { x: 0, y: 0 };
+
+          if (val !== undefined) {
+            // set one dimension
+            _ele2.position(dim, val + origin[dim]);
+          } else if (ppos !== undefined) {
+            // set whole position
+            _ele2.position({
+              x: ppos.x + origin.x,
+              y: ppos.y + origin.y
+            });
+          }
+        }
+      } else {
+        // getting
+        var pos = ele.position();
+        var _parent = hasCompoundNodes ? ele.parent() : null;
+        var _hasParent = _parent && _parent.length > 0;
+        var _relativeToParent = _hasParent;
+
+        if (_hasParent) {
+          _parent = _parent[0];
+        }
+
+        var _origin = _relativeToParent ? _parent.position() : { x: 0, y: 0 };
+
+        ppos = {
+          x: pos.x - _origin.x,
+          y: pos.y - _origin.y
+        };
+
+        if (dim === undefined) {
+          // then return the whole rendered position
+          return ppos;
+        } else {
+          // then return the specified dimension
+          return ppos[dim];
+        }
+      }
+    } else if (!setting) {
+      return undefined; // for empty collection case
+    }
+
+    return this; // chaining
+  }
+};
+
+// aliases
+fn.modelPosition = fn.point = fn.position;
+fn.modelPositions = fn.points = fn.positions;
+fn.renderedPoint = fn.renderedPosition;
+fn.relativePoint = fn.relativePosition;
+
+module.exports = elesfn;
+
+/***/ }),
+/* 58 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -8359,327 +10254,7 @@ fn.renderedBoundingbox = fn.renderedBoundingBox;
 module.exports = elesfn;
 
 /***/ }),
-/* 43 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var ifEdge = function ifEdge(self, then) {
-  if (self.isEdge()) {
-    return then(self.renderer());
-  }
-};
-
-module.exports = {
-  controlPoints: function controlPoints() {
-    var _this = this;
-
-    return ifEdge(this, function (renderer) {
-      return renderer.getControlPoints(_this);
-    });
-  },
-  segmentPoints: function segmentPoints() {
-    var _this2 = this;
-
-    return ifEdge(this, function (renderer) {
-      return renderer.getSegmentPoints(_this2);
-    });
-  },
-  sourceEndpoint: function sourceEndpoint() {
-    var _this3 = this;
-
-    return ifEdge(this, function (renderer) {
-      return renderer.getSourceEndpoint(_this3);
-    });
-  },
-  targetEndpoint: function targetEndpoint() {
-    var _this4 = this;
-
-    return ifEdge(this, function (renderer) {
-      return renderer.getTargetEndpoint(_this4);
-    });
-  },
-  midpoint: function midpoint() {
-    var _this5 = this;
-
-    return ifEdge(this, function (renderer) {
-      return renderer.getEdgeMidpoint(_this5);
-    });
-  }
-};
-
-/***/ }),
-/* 44 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var util = __webpack_require__(1);
-var position = __webpack_require__(45);
-var bounds = __webpack_require__(42);
-var widthHeight = __webpack_require__(46);
-var edgePoints = __webpack_require__(43);
-
-module.exports = util.assign({}, position, bounds, widthHeight, edgePoints);
-
-/***/ }),
-/* 45 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var define = __webpack_require__(3);
-var is = __webpack_require__(0);
-var math = __webpack_require__(2);
-var fn = void 0,
-    elesfn = void 0;
-
-var beforePositionSet = function beforePositionSet(eles, newPos) {
-  for (var i = 0; i < eles.length; i++) {
-    var ele = eles[i];
-
-    if (ele.isParent() && !ele.locked()) {
-      var oldPos = ele._private.position;
-      var delta = {
-        x: newPos.x - oldPos.x,
-        y: newPos.y - oldPos.y
-      };
-
-      eles.children().shift(delta);
-    }
-  }
-};
-
-fn = elesfn = {
-
-  position: define.data({
-    field: 'position',
-    bindingEvent: 'position',
-    allowBinding: true,
-    allowSetting: true,
-    settingEvent: 'position',
-    settingTriggersEvent: true,
-    triggerFnName: 'emitAndNotify',
-    allowGetting: true,
-    validKeys: ['x', 'y'],
-    beforeGet: function beforeGet(ele) {
-      ele.updateCompoundBounds();
-    },
-    beforeSet: beforePositionSet,
-    onSet: function onSet(eles) {
-      eles.dirtyCompoundBoundsCache();
-    },
-    canSet: function canSet(ele) {
-      return !ele.locked();
-    }
-  }),
-
-  // position but no notification to renderer
-  silentPosition: define.data({
-    field: 'position',
-    bindingEvent: 'position',
-    allowBinding: false,
-    allowSetting: true,
-    settingEvent: 'position',
-    settingTriggersEvent: false,
-    triggerFnName: 'trigger',
-    allowGetting: false,
-    validKeys: ['x', 'y'],
-    beforeSet: beforePositionSet,
-    onSet: function onSet(eles) {
-      eles.dirtyCompoundBoundsCache();
-    },
-    canSet: function canSet(ele) {
-      return !ele.locked();
-    }
-  }),
-
-  positions: function positions(pos, silent) {
-    if (is.plainObject(pos)) {
-      if (silent) {
-        this.silentPosition(pos);
-      } else {
-        this.position(pos);
-      }
-    } else if (is.fn(pos)) {
-      var _fn = pos;
-      var cy = this.cy();
-
-      cy.startBatch();
-
-      for (var i = 0; i < this.length; i++) {
-        var ele = this[i];
-        var _pos = void 0;
-
-        if (_pos = _fn(ele, i)) {
-          if (silent) {
-            ele.silentPosition(_pos);
-          } else {
-            ele.position(_pos);
-          }
-        }
-      }
-
-      cy.endBatch();
-    }
-
-    return this; // chaining
-  },
-
-  silentPositions: function silentPositions(pos) {
-    return this.positions(pos, true);
-  },
-
-  shift: function shift(dim, val) {
-    var delta = void 0;
-
-    if (is.plainObject(dim)) {
-      delta = dim;
-    } else if (is.string(dim) && is.number(val)) {
-      delta = { x: 0, y: 0 };
-
-      delta[dim] = val;
-    }
-
-    if (delta != null) {
-      for (var i = 0; i < this.length; i++) {
-        var ele = this[i];
-        var pos = ele.position();
-
-        ele.position({
-          x: pos.x + delta.x,
-          y: pos.y + delta.y
-        });
-      }
-    }
-
-    return this;
-  },
-
-  // get/set the rendered (i.e. on screen) positon of the element
-  renderedPosition: function renderedPosition(dim, val) {
-    var ele = this[0];
-    var cy = this.cy();
-    var zoom = cy.zoom();
-    var pan = cy.pan();
-    var rpos = is.plainObject(dim) ? dim : undefined;
-    var setting = rpos !== undefined || val !== undefined && is.string(dim);
-
-    if (ele && ele.isNode()) {
-      // must have an element and must be a node to return position
-      if (setting) {
-        for (var i = 0; i < this.length; i++) {
-          var _ele = this[i];
-
-          if (val !== undefined) {
-            // set one dimension
-            _ele.position(dim, (val - pan[dim]) / zoom);
-          } else if (rpos !== undefined) {
-            // set whole position
-            _ele.position(math.renderedToModelPosition(rpos, zoom, pan));
-          }
-        }
-      } else {
-        // getting
-        var pos = ele.position();
-        rpos = math.modelToRenderedPosition(pos, zoom, pan);
-
-        if (dim === undefined) {
-          // then return the whole rendered position
-          return rpos;
-        } else {
-          // then return the specified dimension
-          return rpos[dim];
-        }
-      }
-    } else if (!setting) {
-      return undefined; // for empty collection case
-    }
-
-    return this; // chaining
-  },
-
-  // get/set the position relative to the parent
-  relativePosition: function relativePosition(dim, val) {
-    var ele = this[0];
-    var cy = this.cy();
-    var ppos = is.plainObject(dim) ? dim : undefined;
-    var setting = ppos !== undefined || val !== undefined && is.string(dim);
-    var hasCompoundNodes = cy.hasCompoundNodes();
-
-    if (ele && ele.isNode()) {
-      // must have an element and must be a node to return position
-      if (setting) {
-        for (var i = 0; i < this.length; i++) {
-          var _ele2 = this[i];
-          var parent = hasCompoundNodes ? _ele2.parent() : null;
-          var hasParent = parent && parent.length > 0;
-          var relativeToParent = hasParent;
-
-          if (hasParent) {
-            parent = parent[0];
-          }
-
-          var origin = relativeToParent ? parent.position() : { x: 0, y: 0 };
-
-          if (val !== undefined) {
-            // set one dimension
-            _ele2.position(dim, val + origin[dim]);
-          } else if (ppos !== undefined) {
-            // set whole position
-            _ele2.position({
-              x: ppos.x + origin.x,
-              y: ppos.y + origin.y
-            });
-          }
-        }
-      } else {
-        // getting
-        var pos = ele.position();
-        var _parent = hasCompoundNodes ? ele.parent() : null;
-        var _hasParent = _parent && _parent.length > 0;
-        var _relativeToParent = _hasParent;
-
-        if (_hasParent) {
-          _parent = _parent[0];
-        }
-
-        var _origin = _relativeToParent ? _parent.position() : { x: 0, y: 0 };
-
-        ppos = {
-          x: pos.x - _origin.x,
-          y: pos.y - _origin.y
-        };
-
-        if (dim === undefined) {
-          // then return the whole rendered position
-          return ppos;
-        } else {
-          // then return the specified dimension
-          return ppos[dim];
-        }
-      }
-    } else if (!setting) {
-      return undefined; // for empty collection case
-    }
-
-    return this; // chaining
-  }
-};
-
-// aliases
-fn.modelPosition = fn.point = fn.position;
-fn.modelPositions = fn.points = fn.positions;
-fn.renderedPoint = fn.renderedPosition;
-fn.relativePoint = fn.relativePosition;
-
-module.exports = elesfn;
-
-/***/ }),
-/* 46 */
+/* 59 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -8794,14 +10369,65 @@ elesfn.padding = function () {
 module.exports = elesfn;
 
 /***/ }),
-/* 47 */
+/* 60 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var Emitter = __webpack_require__(10);
-var define = __webpack_require__(3);
+var ifEdge = function ifEdge(self, then) {
+  if (self.isEdge()) {
+    return then(self.renderer());
+  }
+};
+
+module.exports = {
+  controlPoints: function controlPoints() {
+    var _this = this;
+
+    return ifEdge(this, function (renderer) {
+      return renderer.getControlPoints(_this);
+    });
+  },
+  segmentPoints: function segmentPoints() {
+    var _this2 = this;
+
+    return ifEdge(this, function (renderer) {
+      return renderer.getSegmentPoints(_this2);
+    });
+  },
+  sourceEndpoint: function sourceEndpoint() {
+    var _this3 = this;
+
+    return ifEdge(this, function (renderer) {
+      return renderer.getSourceEndpoint(_this3);
+    });
+  },
+  targetEndpoint: function targetEndpoint() {
+    var _this4 = this;
+
+    return ifEdge(this, function (renderer) {
+      return renderer.getTargetEndpoint(_this4);
+    });
+  },
+  midpoint: function midpoint() {
+    var _this5 = this;
+
+    return ifEdge(this, function (renderer) {
+      return renderer.getEdgeMidpoint(_this5);
+    });
+  }
+};
+
+/***/ }),
+/* 61 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var Emitter = __webpack_require__(11);
+var define = __webpack_require__(4);
 var is = __webpack_require__(0);
 var util = __webpack_require__(1);
 var Selector = __webpack_require__(6);
@@ -8947,7 +10573,7 @@ define.eventAliasesOn(elesfn);
 module.exports = elesfn;
 
 /***/ }),
-/* 48 */
+/* 62 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -9326,7 +10952,7 @@ fn.complement = fn.abscomp = fn.absoluteComplement;
 module.exports = elesfn;
 
 /***/ }),
-/* 49 */
+/* 63 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -9361,14 +10987,14 @@ var elesfn = {
 module.exports = elesfn;
 
 /***/ }),
-/* 50 */
+/* 64 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
 var is = __webpack_require__(0);
-var zIndexSort = __webpack_require__(14);
+var zIndexSort = __webpack_require__(17);
 var util = __webpack_require__(1);
 
 var elesfn = {
@@ -9497,7 +11123,7 @@ elesfn.each = elesfn.forEach;
 module.exports = elesfn;
 
 /***/ }),
-/* 51 */
+/* 65 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -9700,7 +11326,7 @@ elesfn.createLayout = elesfn.makeLayout = elesfn.layout;
 module.exports = elesfn;
 
 /***/ }),
-/* 52 */
+/* 66 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -10170,7 +11796,7 @@ elesfn.pstyle = elesfn.parsedStyle;
 module.exports = elesfn;
 
 /***/ }),
-/* 53 */
+/* 67 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -10329,7 +11955,7 @@ elesfn.inactive = function () {
 module.exports = elesfn;
 
 /***/ }),
-/* 54 */
+/* 68 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -10794,7 +12420,7 @@ util.extend(elesfn, {
 module.exports = elesfn;
 
 /***/ }),
-/* 55 */
+/* 69 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -10803,7 +12429,7 @@ module.exports = elesfn;
 var is = __webpack_require__(0);
 var util = __webpack_require__(1);
 var Collection = __webpack_require__(7);
-var Element = __webpack_require__(13);
+var Element = __webpack_require__(14);
 
 var corefn = {
   add: function add(opts) {
@@ -10885,7 +12511,484 @@ var corefn = {
 module.exports = corefn;
 
 /***/ }),
-/* 56 */
+/* 70 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var define = __webpack_require__(4);
+var util = __webpack_require__(1);
+var stepAll = __webpack_require__(71);
+
+var corefn = {
+
+  // pull in animation functions
+  animate: define.animate(),
+  animation: define.animation(),
+  animated: define.animated(),
+  clearQueue: define.clearQueue(),
+  delay: define.delay(),
+  delayAnimation: define.delayAnimation(),
+  stop: define.stop(),
+
+  addToAnimationPool: function addToAnimationPool(eles) {
+    var cy = this;
+
+    if (!cy.styleEnabled()) {
+      return;
+    } // save cycles when no style used
+
+    cy._private.aniEles.merge(eles);
+  },
+
+  stopAnimationLoop: function stopAnimationLoop() {
+    this._private.animationsRunning = false;
+  },
+
+  startAnimationLoop: function startAnimationLoop() {
+    var cy = this;
+
+    cy._private.animationsRunning = true;
+
+    if (!cy.styleEnabled()) {
+      return;
+    } // save cycles when no style used
+
+    // NB the animation loop will exec in headless environments if style enabled
+    // and explicit cy.destroy() is necessary to stop the loop
+
+    function headlessStep() {
+      if (!cy._private.animationsRunning) {
+        return;
+      }
+
+      util.requestAnimationFrame(function animationStep(now) {
+        stepAll(now, cy);
+        headlessStep();
+      });
+    }
+
+    var renderer = cy.renderer();
+
+    if (renderer && renderer.beforeRender) {
+      // let the renderer schedule animations
+      renderer.beforeRender(function rendererAnimationStep(willDraw, now) {
+        stepAll(now, cy);
+      }, renderer.beforeRenderPriorities.animations);
+    } else {
+      // manage the animation loop ourselves
+      headlessStep(); // first call
+    }
+  }
+
+};
+
+module.exports = corefn;
+
+/***/ }),
+/* 71 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var step = __webpack_require__(72);
+var startAnimation = __webpack_require__(77);
+
+function stepAll(now, cy) {
+  var eles = cy._private.aniEles;
+  var doneEles = [];
+
+  function stepOne(ele, isCore) {
+    var _p = ele._private;
+    var current = _p.animation.current;
+    var queue = _p.animation.queue;
+    var ranAnis = false;
+
+    // cancel all animations on display:none ele
+    if (!isCore && ele.pstyle('display').value === 'none') {
+      // put all current and queue animations in this tick's current list
+      // and empty the lists for the element
+      current = current.splice(0, current.length).concat(queue.splice(0, queue.length));
+
+      // stop all animations
+      for (var i = 0; i < current.length; i++) {
+        current[i].stop();
+      }
+    }
+
+    // if nothing currently animating, get something from the queue
+    if (current.length === 0) {
+      var next = queue.shift();
+
+      if (next) {
+        current.push(next);
+      }
+    }
+
+    var callbacks = function callbacks(_callbacks) {
+      for (var j = _callbacks.length - 1; j >= 0; j--) {
+        var cb = _callbacks[j];
+
+        cb();
+      }
+
+      _callbacks.splice(0, _callbacks.length);
+    };
+
+    // step and remove if done
+    for (var _i = current.length - 1; _i >= 0; _i--) {
+      var ani = current[_i];
+      var ani_p = ani._private;
+
+      if (ani_p.stopped) {
+        current.splice(_i, 1);
+
+        ani_p.hooked = false;
+        ani_p.playing = false;
+        ani_p.started = false;
+
+        callbacks(ani_p.frames);
+
+        continue;
+      }
+
+      if (!ani_p.playing && !ani_p.applying) {
+        continue;
+      }
+
+      // an apply() while playing shouldn't do anything
+      if (ani_p.playing && ani_p.applying) {
+        ani_p.applying = false;
+      }
+
+      if (!ani_p.started) {
+        startAnimation(ele, ani, now, isCore);
+      }
+
+      step(ele, ani, now, isCore);
+
+      if (ani_p.applying) {
+        ani_p.applying = false;
+      }
+
+      callbacks(ani_p.frames);
+
+      if (ani.completed()) {
+        current.splice(_i, 1);
+
+        ani_p.hooked = false;
+        ani_p.playing = false;
+        ani_p.started = false;
+
+        callbacks(ani_p.completes);
+      }
+
+      ranAnis = true;
+    }
+
+    if (!isCore && current.length === 0 && queue.length === 0) {
+      doneEles.push(ele);
+    }
+
+    return ranAnis;
+  } // stepElement
+
+  // handle all eles
+  var ranEleAni = false;
+  for (var e = 0; e < eles.length; e++) {
+    var ele = eles[e];
+    var handledThisEle = stepOne(ele);
+
+    ranEleAni = ranEleAni || handledThisEle;
+  } // each element
+
+  var ranCoreAni = stepOne(cy, true);
+
+  // notify renderer
+  if (ranEleAni || ranCoreAni) {
+    if (eles.length > 0) {
+      eles.dirtyCompoundBoundsCache();
+
+      cy.notify({
+        type: 'draw',
+        eles: eles
+      });
+    } else {
+      cy.notify({
+        type: 'draw'
+      });
+    }
+  }
+
+  // remove elements from list of currently animating if its queues are empty
+  eles.unmerge(doneEles);
+
+  cy.emit('step');
+} // stepAll
+
+module.exports = stepAll;
+
+/***/ }),
+/* 72 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var easings = __webpack_require__(73);
+var ease = __webpack_require__(76);
+var is = __webpack_require__(0);
+
+function step(self, ani, now, isCore) {
+  var isEles = !isCore;
+  var _p = self._private;
+  var ani_p = ani._private;
+  var pEasing = ani_p.easing;
+  var startTime = ani_p.startTime;
+  var cy = isCore ? self : self.cy();
+  var style = cy.style();
+
+  if (!ani_p.easingImpl) {
+
+    if (pEasing == null) {
+      // use default
+      ani_p.easingImpl = easings['linear'];
+    } else {
+      // then define w/ name
+      var easingVals = void 0;
+
+      if (is.string(pEasing)) {
+        var easingProp = style.parse('transition-timing-function', pEasing);
+
+        easingVals = easingProp.value;
+      } else {
+        // then assume preparsed array
+        easingVals = pEasing;
+      }
+
+      var name = void 0,
+          args = void 0;
+
+      if (is.string(easingVals)) {
+        name = easingVals;
+        args = [];
+      } else {
+        name = easingVals[1];
+        args = easingVals.slice(2).map(function (n) {
+          return +n;
+        });
+      }
+
+      if (args.length > 0) {
+        // create with args
+        if (name === 'spring') {
+          args.push(ani_p.duration); // need duration to generate spring
+        }
+
+        ani_p.easingImpl = easings[name].apply(null, args);
+      } else {
+        // static impl by name
+        ani_p.easingImpl = easings[name];
+      }
+    }
+  }
+
+  var easing = ani_p.easingImpl;
+  var percent = void 0;
+
+  if (ani_p.duration === 0) {
+    percent = 1;
+  } else {
+    percent = (now - startTime) / ani_p.duration;
+  }
+
+  if (ani_p.applying) {
+    percent = ani_p.progress;
+  }
+
+  if (percent < 0) {
+    percent = 0;
+  } else if (percent > 1) {
+    percent = 1;
+  }
+
+  if (ani_p.delay == null) {
+    // then update
+
+    var startPos = ani_p.startPosition;
+    var endPos = ani_p.position;
+
+    if (endPos && isEles && !self.locked()) {
+      var pos = self.position();
+
+      if (valid(startPos.x, endPos.x)) {
+        pos.x = ease(startPos.x, endPos.x, percent, easing);
+      }
+
+      if (valid(startPos.y, endPos.y)) {
+        pos.y = ease(startPos.y, endPos.y, percent, easing);
+      }
+
+      self.emit('position');
+    }
+
+    var startPan = ani_p.startPan;
+    var endPan = ani_p.pan;
+    var pan = _p.pan;
+    var animatingPan = endPan != null && isCore;
+    if (animatingPan) {
+      if (valid(startPan.x, endPan.x)) {
+        pan.x = ease(startPan.x, endPan.x, percent, easing);
+      }
+
+      if (valid(startPan.y, endPan.y)) {
+        pan.y = ease(startPan.y, endPan.y, percent, easing);
+      }
+
+      self.emit('pan');
+    }
+
+    var startZoom = ani_p.startZoom;
+    var endZoom = ani_p.zoom;
+    var animatingZoom = endZoom != null && isCore;
+    if (animatingZoom) {
+      if (valid(startZoom, endZoom)) {
+        _p.zoom = ease(startZoom, endZoom, percent, easing);
+      }
+
+      self.emit('zoom');
+    }
+
+    if (animatingPan || animatingZoom) {
+      self.emit('viewport');
+    }
+
+    var props = ani_p.style;
+    if (props && props.length > 0 && isEles) {
+      for (var i = 0; i < props.length; i++) {
+        var prop = props[i];
+        var _name = prop.name;
+        var end = prop;
+        var start = ani_p.startStyle[_name];
+        var propSpec = style.properties[start.name];
+        var easedVal = ease(start, end, percent, easing, propSpec);
+
+        style.overrideBypass(self, _name, easedVal);
+      } // for props
+
+      self.emit('style');
+    } // if
+  }
+
+  ani_p.progress = percent;
+
+  return percent;
+}
+
+function valid(start, end) {
+  if (start == null || end == null) {
+    return false;
+  }
+
+  if (is.number(start) && is.number(end)) {
+    return true;
+  } else if (start && end) {
+    return true;
+  }
+
+  return false;
+}
+
+module.exports = step;
+
+/***/ }),
+/* 73 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var generateCubicBezier = __webpack_require__(74);
+var generateSpringRK4 = __webpack_require__(75);
+
+var cubicBezier = function cubicBezier(t1, p1, t2, p2) {
+  var bezier = generateCubicBezier(t1, p1, t2, p2);
+
+  return function (start, end, percent) {
+    return start + (end - start) * bezier(percent);
+  };
+};
+
+var easings = {
+  'linear': function linear(start, end, percent) {
+    return start + (end - start) * percent;
+  },
+
+  // default easings
+  'ease': cubicBezier(0.25, 0.1, 0.25, 1),
+  'ease-in': cubicBezier(0.42, 0, 1, 1),
+  'ease-out': cubicBezier(0, 0, 0.58, 1),
+  'ease-in-out': cubicBezier(0.42, 0, 0.58, 1),
+
+  // sine
+  'ease-in-sine': cubicBezier(0.47, 0, 0.745, 0.715),
+  'ease-out-sine': cubicBezier(0.39, 0.575, 0.565, 1),
+  'ease-in-out-sine': cubicBezier(0.445, 0.05, 0.55, 0.95),
+
+  // quad
+  'ease-in-quad': cubicBezier(0.55, 0.085, 0.68, 0.53),
+  'ease-out-quad': cubicBezier(0.25, 0.46, 0.45, 0.94),
+  'ease-in-out-quad': cubicBezier(0.455, 0.03, 0.515, 0.955),
+
+  // cubic
+  'ease-in-cubic': cubicBezier(0.55, 0.055, 0.675, 0.19),
+  'ease-out-cubic': cubicBezier(0.215, 0.61, 0.355, 1),
+  'ease-in-out-cubic': cubicBezier(0.645, 0.045, 0.355, 1),
+
+  // quart
+  'ease-in-quart': cubicBezier(0.895, 0.03, 0.685, 0.22),
+  'ease-out-quart': cubicBezier(0.165, 0.84, 0.44, 1),
+  'ease-in-out-quart': cubicBezier(0.77, 0, 0.175, 1),
+
+  // quint
+  'ease-in-quint': cubicBezier(0.755, 0.05, 0.855, 0.06),
+  'ease-out-quint': cubicBezier(0.23, 1, 0.32, 1),
+  'ease-in-out-quint': cubicBezier(0.86, 0, 0.07, 1),
+
+  // expo
+  'ease-in-expo': cubicBezier(0.95, 0.05, 0.795, 0.035),
+  'ease-out-expo': cubicBezier(0.19, 1, 0.22, 1),
+  'ease-in-out-expo': cubicBezier(1, 0, 0, 1),
+
+  // circ
+  'ease-in-circ': cubicBezier(0.6, 0.04, 0.98, 0.335),
+  'ease-out-circ': cubicBezier(0.075, 0.82, 0.165, 1),
+  'ease-in-out-circ': cubicBezier(0.785, 0.135, 0.15, 0.86),
+
+  // user param easings...
+
+  'spring': function spring(tension, friction, duration) {
+    if (duration === 0) {
+      // can't get a spring w/ duration 0
+      return easings.linear; // duration 0 => jump to end so impl doesn't matter
+    }
+
+    var spring = generateSpringRK4(tension, friction, duration);
+
+    return function (start, end, percent) {
+      return start + (end - start) * spring(percent);
+    };
+  },
+
+  'cubic-bezier': cubicBezier
+};
+
+module.exports = easings;
+
+/***/ }),
+/* 74 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -11053,252 +13156,7 @@ function generateCubicBezier(mX1, mY1, mX2, mY2) {
 module.exports = generateCubicBezier;
 
 /***/ }),
-/* 57 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var is = __webpack_require__(0);
-
-function getEasedValue(type, start, end, percent, easingFn) {
-  if (percent === 1) {
-    return end;
-  }
-
-  var val = easingFn(start, end, percent);
-
-  if (type == null) {
-    return val;
-  }
-
-  if (type.roundValue || type.color) {
-    val = Math.round(val);
-  }
-
-  if (type.min !== undefined) {
-    val = Math.max(val, type.min);
-  }
-
-  if (type.max !== undefined) {
-    val = Math.min(val, type.max);
-  }
-
-  return val;
-}
-
-function ease(startProp, endProp, percent, easingFn, propSpec) {
-  var type = propSpec != null ? propSpec.type : null;
-
-  if (percent < 0) {
-    percent = 0;
-  } else if (percent > 1) {
-    percent = 1;
-  }
-
-  var start = void 0,
-      end = void 0;
-
-  if (startProp.pfValue != null || startProp.value != null) {
-    start = startProp.pfValue != null ? startProp.pfValue : startProp.value;
-  } else {
-    start = startProp;
-  }
-
-  if (endProp.pfValue != null || endProp.value != null) {
-    end = endProp.pfValue != null ? endProp.pfValue : endProp.value;
-  } else {
-    end = endProp;
-  }
-
-  if (is.number(start) && is.number(end)) {
-    return getEasedValue(type, start, end, percent, easingFn);
-  } else if (is.array(start) && is.array(end)) {
-    var easedArr = [];
-
-    for (var i = 0; i < end.length; i++) {
-      var si = start[i];
-      var ei = end[i];
-
-      if (si != null && ei != null) {
-        var val = getEasedValue(type, si, ei, percent, easingFn);
-
-        easedArr.push(val);
-      } else {
-        easedArr.push(ei);
-      }
-    }
-
-    return easedArr;
-  }
-
-  return undefined;
-}
-
-module.exports = ease;
-
-/***/ }),
-/* 58 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var generateCubicBezier = __webpack_require__(56);
-var generateSpringRK4 = __webpack_require__(60);
-
-var cubicBezier = function cubicBezier(t1, p1, t2, p2) {
-  var bezier = generateCubicBezier(t1, p1, t2, p2);
-
-  return function (start, end, percent) {
-    return start + (end - start) * bezier(percent);
-  };
-};
-
-var easings = {
-  'linear': function linear(start, end, percent) {
-    return start + (end - start) * percent;
-  },
-
-  // default easings
-  'ease': cubicBezier(0.25, 0.1, 0.25, 1),
-  'ease-in': cubicBezier(0.42, 0, 1, 1),
-  'ease-out': cubicBezier(0, 0, 0.58, 1),
-  'ease-in-out': cubicBezier(0.42, 0, 0.58, 1),
-
-  // sine
-  'ease-in-sine': cubicBezier(0.47, 0, 0.745, 0.715),
-  'ease-out-sine': cubicBezier(0.39, 0.575, 0.565, 1),
-  'ease-in-out-sine': cubicBezier(0.445, 0.05, 0.55, 0.95),
-
-  // quad
-  'ease-in-quad': cubicBezier(0.55, 0.085, 0.68, 0.53),
-  'ease-out-quad': cubicBezier(0.25, 0.46, 0.45, 0.94),
-  'ease-in-out-quad': cubicBezier(0.455, 0.03, 0.515, 0.955),
-
-  // cubic
-  'ease-in-cubic': cubicBezier(0.55, 0.055, 0.675, 0.19),
-  'ease-out-cubic': cubicBezier(0.215, 0.61, 0.355, 1),
-  'ease-in-out-cubic': cubicBezier(0.645, 0.045, 0.355, 1),
-
-  // quart
-  'ease-in-quart': cubicBezier(0.895, 0.03, 0.685, 0.22),
-  'ease-out-quart': cubicBezier(0.165, 0.84, 0.44, 1),
-  'ease-in-out-quart': cubicBezier(0.77, 0, 0.175, 1),
-
-  // quint
-  'ease-in-quint': cubicBezier(0.755, 0.05, 0.855, 0.06),
-  'ease-out-quint': cubicBezier(0.23, 1, 0.32, 1),
-  'ease-in-out-quint': cubicBezier(0.86, 0, 0.07, 1),
-
-  // expo
-  'ease-in-expo': cubicBezier(0.95, 0.05, 0.795, 0.035),
-  'ease-out-expo': cubicBezier(0.19, 1, 0.22, 1),
-  'ease-in-out-expo': cubicBezier(1, 0, 0, 1),
-
-  // circ
-  'ease-in-circ': cubicBezier(0.6, 0.04, 0.98, 0.335),
-  'ease-out-circ': cubicBezier(0.075, 0.82, 0.165, 1),
-  'ease-in-out-circ': cubicBezier(0.785, 0.135, 0.15, 0.86),
-
-  // user param easings...
-
-  'spring': function spring(tension, friction, duration) {
-    if (duration === 0) {
-      // can't get a spring w/ duration 0
-      return easings.linear; // duration 0 => jump to end so impl doesn't matter
-    }
-
-    var spring = generateSpringRK4(tension, friction, duration);
-
-    return function (start, end, percent) {
-      return start + (end - start) * spring(percent);
-    };
-  },
-
-  'cubic-bezier': cubicBezier
-};
-
-module.exports = easings;
-
-/***/ }),
-/* 59 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var define = __webpack_require__(3);
-var util = __webpack_require__(1);
-var stepAll = __webpack_require__(62);
-
-var corefn = {
-
-  // pull in animation functions
-  animate: define.animate(),
-  animation: define.animation(),
-  animated: define.animated(),
-  clearQueue: define.clearQueue(),
-  delay: define.delay(),
-  delayAnimation: define.delayAnimation(),
-  stop: define.stop(),
-
-  addToAnimationPool: function addToAnimationPool(eles) {
-    var cy = this;
-
-    if (!cy.styleEnabled()) {
-      return;
-    } // save cycles when no style used
-
-    cy._private.aniEles.merge(eles);
-  },
-
-  stopAnimationLoop: function stopAnimationLoop() {
-    this._private.animationsRunning = false;
-  },
-
-  startAnimationLoop: function startAnimationLoop() {
-    var cy = this;
-
-    cy._private.animationsRunning = true;
-
-    if (!cy.styleEnabled()) {
-      return;
-    } // save cycles when no style used
-
-    // NB the animation loop will exec in headless environments if style enabled
-    // and explicit cy.destroy() is necessary to stop the loop
-
-    function headlessStep() {
-      if (!cy._private.animationsRunning) {
-        return;
-      }
-
-      util.requestAnimationFrame(function animationStep(now) {
-        stepAll(now, cy);
-        headlessStep();
-      });
-    }
-
-    var renderer = cy.renderer();
-
-    if (renderer && renderer.beforeRender) {
-      // let the renderer schedule animations
-      renderer.beforeRender(function rendererAnimationStep(willDraw, now) {
-        stepAll(now, cy);
-      }, renderer.beforeRenderPriorities.animations);
-    } else {
-      // manage the animation loop ourselves
-      headlessStep(); // first call
-    }
-  }
-
-};
-
-module.exports = corefn;
-
-/***/ }),
-/* 60 */
+/* 75 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -11398,7 +13256,92 @@ var generateSpringRK4 = function () {
 module.exports = generateSpringRK4;
 
 /***/ }),
-/* 61 */
+/* 76 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var is = __webpack_require__(0);
+
+function getEasedValue(type, start, end, percent, easingFn) {
+  if (percent === 1) {
+    return end;
+  }
+
+  var val = easingFn(start, end, percent);
+
+  if (type == null) {
+    return val;
+  }
+
+  if (type.roundValue || type.color) {
+    val = Math.round(val);
+  }
+
+  if (type.min !== undefined) {
+    val = Math.max(val, type.min);
+  }
+
+  if (type.max !== undefined) {
+    val = Math.min(val, type.max);
+  }
+
+  return val;
+}
+
+function ease(startProp, endProp, percent, easingFn, propSpec) {
+  var type = propSpec != null ? propSpec.type : null;
+
+  if (percent < 0) {
+    percent = 0;
+  } else if (percent > 1) {
+    percent = 1;
+  }
+
+  var start = void 0,
+      end = void 0;
+
+  if (startProp.pfValue != null || startProp.value != null) {
+    start = startProp.pfValue != null ? startProp.pfValue : startProp.value;
+  } else {
+    start = startProp;
+  }
+
+  if (endProp.pfValue != null || endProp.value != null) {
+    end = endProp.pfValue != null ? endProp.pfValue : endProp.value;
+  } else {
+    end = endProp;
+  }
+
+  if (is.number(start) && is.number(end)) {
+    return getEasedValue(type, start, end, percent, easingFn);
+  } else if (is.array(start) && is.array(end)) {
+    var easedArr = [];
+
+    for (var i = 0; i < end.length; i++) {
+      var si = start[i];
+      var ei = end[i];
+
+      if (si != null && ei != null) {
+        var val = getEasedValue(type, si, ei, percent, easingFn);
+
+        easedArr.push(val);
+      } else {
+        easedArr.push(ei);
+      }
+    }
+
+    return easedArr;
+  }
+
+  return undefined;
+}
+
+module.exports = ease;
+
+/***/ }),
+/* 77 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -11440,331 +13383,14 @@ function startAnimation(self, ani, now, isCore) {
 module.exports = startAnimation;
 
 /***/ }),
-/* 62 */
+/* 78 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var step = __webpack_require__(63);
-var startAnimation = __webpack_require__(61);
-
-function stepAll(now, cy) {
-  var eles = cy._private.aniEles;
-  var doneEles = [];
-
-  function stepOne(ele, isCore) {
-    var _p = ele._private;
-    var current = _p.animation.current;
-    var queue = _p.animation.queue;
-    var ranAnis = false;
-
-    // cancel all animations on display:none ele
-    if (!isCore && ele.pstyle('display').value === 'none') {
-      // put all current and queue animations in this tick's current list
-      // and empty the lists for the element
-      current = current.splice(0, current.length).concat(queue.splice(0, queue.length));
-
-      // stop all animations
-      for (var i = 0; i < current.length; i++) {
-        current[i].stop();
-      }
-    }
-
-    // if nothing currently animating, get something from the queue
-    if (current.length === 0) {
-      var next = queue.shift();
-
-      if (next) {
-        current.push(next);
-      }
-    }
-
-    var callbacks = function callbacks(_callbacks) {
-      for (var j = _callbacks.length - 1; j >= 0; j--) {
-        var cb = _callbacks[j];
-
-        cb();
-      }
-
-      _callbacks.splice(0, _callbacks.length);
-    };
-
-    // step and remove if done
-    for (var _i = current.length - 1; _i >= 0; _i--) {
-      var ani = current[_i];
-      var ani_p = ani._private;
-
-      if (ani_p.stopped) {
-        current.splice(_i, 1);
-
-        ani_p.hooked = false;
-        ani_p.playing = false;
-        ani_p.started = false;
-
-        callbacks(ani_p.frames);
-
-        continue;
-      }
-
-      if (!ani_p.playing && !ani_p.applying) {
-        continue;
-      }
-
-      // an apply() while playing shouldn't do anything
-      if (ani_p.playing && ani_p.applying) {
-        ani_p.applying = false;
-      }
-
-      if (!ani_p.started) {
-        startAnimation(ele, ani, now, isCore);
-      }
-
-      step(ele, ani, now, isCore);
-
-      if (ani_p.applying) {
-        ani_p.applying = false;
-      }
-
-      callbacks(ani_p.frames);
-
-      if (ani.completed()) {
-        current.splice(_i, 1);
-
-        ani_p.hooked = false;
-        ani_p.playing = false;
-        ani_p.started = false;
-
-        callbacks(ani_p.completes);
-      }
-
-      ranAnis = true;
-    }
-
-    if (!isCore && current.length === 0 && queue.length === 0) {
-      doneEles.push(ele);
-    }
-
-    return ranAnis;
-  } // stepElement
-
-  // handle all eles
-  var ranEleAni = false;
-  for (var e = 0; e < eles.length; e++) {
-    var ele = eles[e];
-    var handledThisEle = stepOne(ele);
-
-    ranEleAni = ranEleAni || handledThisEle;
-  } // each element
-
-  var ranCoreAni = stepOne(cy, true);
-
-  // notify renderer
-  if (ranEleAni || ranCoreAni) {
-    if (eles.length > 0) {
-      eles.dirtyCompoundBoundsCache();
-
-      cy.notify({
-        type: 'draw',
-        eles: eles
-      });
-    } else {
-      cy.notify({
-        type: 'draw'
-      });
-    }
-  }
-
-  // remove elements from list of currently animating if its queues are empty
-  eles.unmerge(doneEles);
-
-  cy.emit('step');
-} // stepAll
-
-module.exports = stepAll;
-
-/***/ }),
-/* 63 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var easings = __webpack_require__(58);
-var ease = __webpack_require__(57);
-var is = __webpack_require__(0);
-
-function step(self, ani, now, isCore) {
-  var isEles = !isCore;
-  var _p = self._private;
-  var ani_p = ani._private;
-  var pEasing = ani_p.easing;
-  var startTime = ani_p.startTime;
-  var cy = isCore ? self : self.cy();
-  var style = cy.style();
-
-  if (!ani_p.easingImpl) {
-
-    if (pEasing == null) {
-      // use default
-      ani_p.easingImpl = easings['linear'];
-    } else {
-      // then define w/ name
-      var easingVals = void 0;
-
-      if (is.string(pEasing)) {
-        var easingProp = style.parse('transition-timing-function', pEasing);
-
-        easingVals = easingProp.value;
-      } else {
-        // then assume preparsed array
-        easingVals = pEasing;
-      }
-
-      var name = void 0,
-          args = void 0;
-
-      if (is.string(easingVals)) {
-        name = easingVals;
-        args = [];
-      } else {
-        name = easingVals[1];
-        args = easingVals.slice(2).map(function (n) {
-          return +n;
-        });
-      }
-
-      if (args.length > 0) {
-        // create with args
-        if (name === 'spring') {
-          args.push(ani_p.duration); // need duration to generate spring
-        }
-
-        ani_p.easingImpl = easings[name].apply(null, args);
-      } else {
-        // static impl by name
-        ani_p.easingImpl = easings[name];
-      }
-    }
-  }
-
-  var easing = ani_p.easingImpl;
-  var percent = void 0;
-
-  if (ani_p.duration === 0) {
-    percent = 1;
-  } else {
-    percent = (now - startTime) / ani_p.duration;
-  }
-
-  if (ani_p.applying) {
-    percent = ani_p.progress;
-  }
-
-  if (percent < 0) {
-    percent = 0;
-  } else if (percent > 1) {
-    percent = 1;
-  }
-
-  if (ani_p.delay == null) {
-    // then update
-
-    var startPos = ani_p.startPosition;
-    var endPos = ani_p.position;
-
-    if (endPos && isEles && !self.locked()) {
-      var pos = self.position();
-
-      if (valid(startPos.x, endPos.x)) {
-        pos.x = ease(startPos.x, endPos.x, percent, easing);
-      }
-
-      if (valid(startPos.y, endPos.y)) {
-        pos.y = ease(startPos.y, endPos.y, percent, easing);
-      }
-
-      self.emit('position');
-    }
-
-    var startPan = ani_p.startPan;
-    var endPan = ani_p.pan;
-    var pan = _p.pan;
-    var animatingPan = endPan != null && isCore;
-    if (animatingPan) {
-      if (valid(startPan.x, endPan.x)) {
-        pan.x = ease(startPan.x, endPan.x, percent, easing);
-      }
-
-      if (valid(startPan.y, endPan.y)) {
-        pan.y = ease(startPan.y, endPan.y, percent, easing);
-      }
-
-      self.emit('pan');
-    }
-
-    var startZoom = ani_p.startZoom;
-    var endZoom = ani_p.zoom;
-    var animatingZoom = endZoom != null && isCore;
-    if (animatingZoom) {
-      if (valid(startZoom, endZoom)) {
-        _p.zoom = ease(startZoom, endZoom, percent, easing);
-      }
-
-      self.emit('zoom');
-    }
-
-    if (animatingPan || animatingZoom) {
-      self.emit('viewport');
-    }
-
-    var props = ani_p.style;
-    if (props && props.length > 0 && isEles) {
-      for (var i = 0; i < props.length; i++) {
-        var prop = props[i];
-        var _name = prop.name;
-        var end = prop;
-        var start = ani_p.startStyle[_name];
-        var propSpec = style.properties[start.name];
-        var easedVal = ease(start, end, percent, easing, propSpec);
-
-        style.overrideBypass(self, _name, easedVal);
-      } // for props
-
-      self.emit('style');
-    } // if
-  }
-
-  ani_p.progress = percent;
-
-  return percent;
-}
-
-function valid(start, end) {
-  if (start == null || end == null) {
-    return false;
-  }
-
-  if (is.number(start) && is.number(end)) {
-    return true;
-  } else if (start && end) {
-    return true;
-  }
-
-  return false;
-}
-
-module.exports = step;
-
-/***/ }),
-/* 64 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var Emitter = __webpack_require__(10);
-var define = __webpack_require__(3);
+var Emitter = __webpack_require__(11);
+var define = __webpack_require__(4);
 var is = __webpack_require__(0);
 var util = __webpack_require__(1);
 var Selector = __webpack_require__(6);
@@ -11858,7 +13484,7 @@ define.eventAliasesOn(elesfn);
 module.exports = elesfn;
 
 /***/ }),
-/* 65 */
+/* 79 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -11889,7 +13515,7 @@ corefn.jpeg = corefn.jpg;
 module.exports = corefn;
 
 /***/ }),
-/* 66 */
+/* 80 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -11943,7 +13569,7 @@ corefn.createLayout = corefn.makeLayout = corefn.layout;
 module.exports = corefn;
 
 /***/ }),
-/* 67 */
+/* 81 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -12073,7 +13699,7 @@ var corefn = {
 module.exports = corefn;
 
 /***/ }),
-/* 68 */
+/* 82 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -12160,7 +13786,7 @@ corefn.invalidateDimensions = corefn.resize;
 module.exports = corefn;
 
 /***/ }),
-/* 69 */
+/* 83 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -12235,7 +13861,7 @@ corefn.elements = corefn.filter = corefn.$;
 module.exports = corefn;
 
 /***/ }),
-/* 70 */
+/* 84 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -12276,14 +13902,2177 @@ var corefn = {
 module.exports = corefn;
 
 /***/ }),
-/* 71 */
+/* 85 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var util = __webpack_require__(1);
+var is = __webpack_require__(0);
+var Promise = __webpack_require__(5);
+
+var styfn = {};
+
+// (potentially expensive calculation)
+// apply the style to the element based on
+// - its bypass
+// - what selectors match it
+styfn.apply = function (eles) {
+  var self = this;
+  var _p = self._private;
+  var cy = _p.cy;
+  var updatedEles = cy.collection();
+
+  if (_p.newStyle) {
+    // clear style caches
+    _p.contextStyles = {};
+    _p.propDiffs = {};
+
+    self.cleanElements(eles, true);
+  }
+
+  for (var ie = 0; ie < eles.length; ie++) {
+    var ele = eles[ie];
+
+    var cxtMeta = self.getContextMeta(ele);
+
+    if (cxtMeta.empty) {
+      continue;
+    } else {
+      updatedEles.merge(ele);
+    }
+
+    var cxtStyle = self.getContextStyle(cxtMeta);
+    var app = self.applyContextStyle(cxtMeta, cxtStyle, ele);
+
+    if (!_p.newStyle) {
+      self.updateTransitions(ele, app.diffProps);
+    }
+
+    self.updateStyleHints(ele);
+  } // for elements
+
+  _p.newStyle = false;
+
+  return updatedEles;
+};
+
+styfn.getPropertiesDiff = function (oldCxtKey, newCxtKey) {
+  var self = this;
+  var cache = self._private.propDiffs = self._private.propDiffs || {};
+  var dualCxtKey = oldCxtKey + '-' + newCxtKey;
+  var cachedVal = cache[dualCxtKey];
+
+  if (cachedVal) {
+    return cachedVal;
+  }
+
+  var diffProps = [];
+  var addedProp = {};
+
+  for (var i = 0; i < self.length; i++) {
+    var cxt = self[i];
+    var oldHasCxt = oldCxtKey[i] === 't';
+    var newHasCxt = newCxtKey[i] === 't';
+    var cxtHasDiffed = oldHasCxt !== newHasCxt;
+    var cxtHasMappedProps = cxt.mappedProperties.length > 0;
+
+    if (cxtHasDiffed || cxtHasMappedProps) {
+      var props = void 0;
+
+      if (cxtHasDiffed && cxtHasMappedProps) {
+        props = cxt.properties; // suffices b/c mappedProperties is a subset of properties
+      } else if (cxtHasDiffed) {
+        props = cxt.properties; // need to check them all
+      } else if (cxtHasMappedProps) {
+        props = cxt.mappedProperties; // only need to check mapped
+      }
+
+      for (var j = 0; j < props.length; j++) {
+        var prop = props[j];
+        var name = prop.name;
+
+        // if a later context overrides this property, then the fact that this context has switched/diffed doesn't matter
+        // (semi expensive check since it makes this function O(n^2) on context length, but worth it since overall result
+        // is cached)
+        var laterCxtOverrides = false;
+        for (var k = i + 1; k < self.length; k++) {
+          var laterCxt = self[k];
+          var hasLaterCxt = newCxtKey[k] === 't';
+
+          if (!hasLaterCxt) {
+            continue;
+          } // can't override unless the context is active
+
+          laterCxtOverrides = laterCxt.properties[prop.name] != null;
+
+          if (laterCxtOverrides) {
+            break;
+          } // exit early as long as one later context overrides
+        }
+
+        if (!addedProp[name] && !laterCxtOverrides) {
+          addedProp[name] = true;
+          diffProps.push(name);
+        }
+      } // for props
+    } // if
+  } // for contexts
+
+  cache[dualCxtKey] = diffProps;
+  return diffProps;
+};
+
+styfn.getContextMeta = function (ele) {
+  var self = this;
+  var cxtKey = '';
+  var diffProps = void 0;
+  var prevKey = ele._private.styleCxtKey || '';
+
+  if (self._private.newStyle) {
+    prevKey = ''; // since we need to apply all style if a fresh stylesheet
+  }
+
+  // get the cxt key
+  for (var i = 0; i < self.length; i++) {
+    var context = self[i];
+    var contextSelectorMatches = context.selector && context.selector.matches(ele); // NB: context.selector may be null for 'core'
+
+    if (contextSelectorMatches) {
+      cxtKey += 't';
+    } else {
+      cxtKey += 'f';
+    }
+  } // for context
+
+  diffProps = self.getPropertiesDiff(prevKey, cxtKey);
+
+  ele._private.styleCxtKey = cxtKey;
+
+  return {
+    key: cxtKey,
+    diffPropNames: diffProps,
+    empty: diffProps.length === 0
+  };
+};
+
+// gets a computed ele style object based on matched contexts
+styfn.getContextStyle = function (cxtMeta) {
+  var cxtKey = cxtMeta.key;
+  var self = this;
+  var cxtStyles = this._private.contextStyles = this._private.contextStyles || {};
+
+  // if already computed style, returned cached copy
+  if (cxtStyles[cxtKey]) {
+    return cxtStyles[cxtKey];
+  }
+
+  var style = {
+    _private: {
+      key: cxtKey
+    }
+  };
+
+  for (var i = 0; i < self.length; i++) {
+    var cxt = self[i];
+    var hasCxt = cxtKey[i] === 't';
+
+    if (!hasCxt) {
+      continue;
+    }
+
+    for (var j = 0; j < cxt.properties.length; j++) {
+      var prop = cxt.properties[j];
+
+      style[prop.name] = prop;
+    }
+  }
+
+  cxtStyles[cxtKey] = style;
+  return style;
+};
+
+styfn.applyContextStyle = function (cxtMeta, cxtStyle, ele) {
+  var self = this;
+  var diffProps = cxtMeta.diffPropNames;
+  var retDiffProps = {};
+
+  for (var i = 0; i < diffProps.length; i++) {
+    var diffPropName = diffProps[i];
+    var cxtProp = cxtStyle[diffPropName];
+    var eleProp = ele.pstyle(diffPropName);
+
+    if (!cxtProp) {
+      // no context prop means delete
+      if (!eleProp) {
+        continue; // no existing prop means nothing needs to be removed
+        // nb affects initial application on mapped values like control-point-distances
+      } else if (eleProp.bypass) {
+        cxtProp = { name: diffPropName, deleteBypassed: true };
+      } else {
+        cxtProp = { name: diffPropName, delete: true };
+      }
+    }
+
+    // save cycles when the context prop doesn't need to be applied
+    if (eleProp === cxtProp) {
+      continue;
+    }
+
+    var retDiffProp = retDiffProps[diffPropName] = {
+      prev: eleProp
+    };
+
+    self.applyParsedProperty(ele, cxtProp);
+
+    retDiffProp.next = ele.pstyle(diffPropName);
+
+    if (retDiffProp.next && retDiffProp.next.bypass) {
+      retDiffProp.next = retDiffProp.next.bypassed;
+    }
+  }
+
+  return {
+    diffProps: retDiffProps
+  };
+};
+
+styfn.updateStyleHints = function (ele) {
+  var _p = ele._private;
+  var self = this;
+
+  if (ele.removed()) {
+    return;
+  }
+
+  // set whether has pie or not; for greater efficiency
+  var hasPie = false;
+  if (_p.group === 'nodes') {
+    for (var i = 1; i <= self.pieBackgroundN; i++) {
+      // 1..N
+      var _size = ele.pstyle('pie-' + i + '-background-size').value;
+
+      if (_size > 0) {
+        hasPie = true;
+        break;
+      }
+    }
+  }
+
+  _p.hasPie = hasPie;
+
+  var transform = ele.pstyle('text-transform').strValue;
+  var content = ele.pstyle('label').strValue;
+  var srcContent = ele.pstyle('source-label').strValue;
+  var tgtContent = ele.pstyle('target-label').strValue;
+  var fStyle = ele.pstyle('font-style').strValue;
+  var size = ele.pstyle('font-size').pfValue + 'px';
+  var family = ele.pstyle('font-family').strValue;
+  // let letiant = style['font-letiant'].strValue;
+  var weight = ele.pstyle('font-weight').strValue;
+  var valign = ele.pstyle('text-valign').strValue;
+  var halign = ele.pstyle('text-valign').strValue;
+  var oWidth = ele.pstyle('text-outline-width').pfValue;
+  var wrap = ele.pstyle('text-wrap').strValue;
+  var wrapW = ele.pstyle('text-max-width').pfValue;
+  var labelStyleKey = fStyle + '$' + size + '$' + family + '$' + weight + '$' + transform + '$' + valign + '$' + halign + '$' + oWidth + '$' + wrap + '$' + wrapW;
+  _p.labelStyleKey = labelStyleKey;
+  _p.sourceLabelKey = labelStyleKey + '$' + srcContent;
+  _p.targetLabelKey = labelStyleKey + '$' + tgtContent;
+  _p.labelKey = labelStyleKey + '$' + content;
+  _p.fontKey = fStyle + '$' + weight + '$' + size + '$' + family;
+
+  _p.styleKey = Date.now();
+};
+
+// apply a property to the style (for internal use)
+// returns whether application was successful
+//
+// now, this function flattens the property, and here's how:
+//
+// for parsedProp:{ bypass: true, deleteBypass: true }
+// no property is generated, instead the bypass property in the
+// element's style is replaced by what's pointed to by the `bypassed`
+// field in the bypass property (i.e. restoring the property the
+// bypass was overriding)
+//
+// for parsedProp:{ mapped: truthy }
+// the generated flattenedProp:{ mapping: prop }
+//
+// for parsedProp:{ bypass: true }
+// the generated flattenedProp:{ bypassed: parsedProp }
+styfn.applyParsedProperty = function (ele, parsedProp) {
+  var self = this;
+  var prop = parsedProp;
+  var style = ele._private.style;
+  var fieldVal = void 0,
+      flatProp = void 0;
+  var types = self.types;
+  var type = self.properties[prop.name].type;
+  var propIsBypass = prop.bypass;
+  var origProp = style[prop.name];
+  var origPropIsBypass = origProp && origProp.bypass;
+  var _p = ele._private;
+  var flatPropMapping = 'mapping';
+
+  var checkZOrder = function checkZOrder() {
+    self.checkZOrderTrigger(ele, prop.name, origProp ? origProp.value : null, prop.value);
+  };
+
+  // edges connected to compound nodes can not be haystacks
+  if (parsedProp.name === 'curve-style' && parsedProp.value === 'haystack' && ele.isEdge() && (ele.isLoop() || ele.source().isParent() || ele.target().isParent())) {
+    prop = parsedProp = this.parse(parsedProp.name, 'bezier', propIsBypass);
+  }
+
+  if (prop.delete) {
+    // delete the property and use the default value on falsey value
+    style[prop.name] = undefined;
+
+    checkZOrder();
+
+    return true;
+  }
+
+  if (prop.deleteBypassed) {
+    // delete the property that the
+    if (!origProp) {
+      checkZOrder();
+
+      return true; // can't delete if no prop
+    } else if (origProp.bypass) {
+      // delete bypassed
+      origProp.bypassed = undefined;
+
+      checkZOrder();
+
+      return true;
+    } else {
+      return false; // we're unsuccessful deleting the bypassed
+    }
+  }
+
+  // check if we need to delete the current bypass
+  if (prop.deleteBypass) {
+    // then this property is just here to indicate we need to delete
+    if (!origProp) {
+      checkZOrder();
+
+      return true; // property is already not defined
+    } else if (origProp.bypass) {
+      // then replace the bypass property with the original
+      // because the bypassed property was already applied (and therefore parsed), we can just replace it (no reapplying necessary)
+      style[prop.name] = origProp.bypassed;
+
+      checkZOrder();
+
+      return true;
+    } else {
+      return false; // we're unsuccessful deleting the bypass
+    }
+  }
+
+  var printMappingErr = function printMappingErr() {
+    util.error('Do not assign mappings to elements without corresponding data (e.g. ele `' + ele.id() + '` for property `' + prop.name + '` with data field `' + prop.field + '`); try a `[' + prop.field + ']` selector to limit scope to elements with `' + prop.field + '` defined');
+  };
+
+  // put the property in the style objects
+  switch (prop.mapped) {// flatten the property if mapped
+    case types.mapData:
+      {
+        // flatten the field (e.g. data.foo.bar)
+        var fields = prop.field.split('.');
+        var _fieldVal = _p.data;
+
+        for (var i = 0; i < fields.length && _fieldVal; i++) {
+          var field = fields[i];
+          _fieldVal = _fieldVal[field];
+        }
+
+        var percent = void 0;
+        if (!is.number(_fieldVal)) {
+          // then keep the mapping but assume 0% for now
+          percent = 0;
+        } else {
+          percent = (_fieldVal - prop.fieldMin) / (prop.fieldMax - prop.fieldMin);
+        }
+
+        // make sure to bound percent value
+        if (percent < 0) {
+          percent = 0;
+        } else if (percent > 1) {
+          percent = 1;
+        }
+
+        if (type.color) {
+          var r1 = prop.valueMin[0];
+          var r2 = prop.valueMax[0];
+          var g1 = prop.valueMin[1];
+          var g2 = prop.valueMax[1];
+          var b1 = prop.valueMin[2];
+          var b2 = prop.valueMax[2];
+          var a1 = prop.valueMin[3] == null ? 1 : prop.valueMin[3];
+          var a2 = prop.valueMax[3] == null ? 1 : prop.valueMax[3];
+
+          var clr = [Math.round(r1 + (r2 - r1) * percent), Math.round(g1 + (g2 - g1) * percent), Math.round(b1 + (b2 - b1) * percent), Math.round(a1 + (a2 - a1) * percent)];
+
+          flatProp = { // colours are simple, so just create the flat property instead of expensive string parsing
+            bypass: prop.bypass, // we're a bypass if the mapping property is a bypass
+            name: prop.name,
+            value: clr,
+            strValue: 'rgb(' + clr[0] + ', ' + clr[1] + ', ' + clr[2] + ')'
+          };
+        } else if (type.number) {
+          var calcValue = prop.valueMin + (prop.valueMax - prop.valueMin) * percent;
+          flatProp = this.parse(prop.name, calcValue, prop.bypass, flatPropMapping);
+        } else {
+          return false; // can only map to colours and numbers
+        }
+
+        if (!flatProp) {
+          // if we can't flatten the property, then use the origProp so we still keep the mapping itself
+          flatProp = this.parse(prop.name, origProp.strValue, prop.bypass, flatPropMapping);
+        }
+
+        if (!flatProp) {
+          printMappingErr();
+        }
+        flatProp.mapping = prop; // keep a reference to the mapping
+        prop = flatProp; // the flattened (mapped) property is the one we want
+
+        break;
+      }
+
+    // direct mapping
+    case types.data:
+      {
+        // flatten the field (e.g. data.foo.bar)
+        var _fields = prop.field.split('.');
+        var _fieldVal2 = _p.data;
+
+        if (_fieldVal2) {
+          for (var _i = 0; _i < _fields.length; _i++) {
+            var _field = _fields[_i];
+            _fieldVal2 = _fieldVal2[_field];
+          }
+        }
+
+        flatProp = this.parse(prop.name, _fieldVal2, prop.bypass, flatPropMapping);
+
+        if (!flatProp) {
+          // if we can't flatten the property, then use the origProp so we still keep the mapping itself
+          var flatPropVal = origProp ? origProp.strValue : '';
+
+          flatProp = this.parse(prop.name, flatPropVal, prop.bypass, flatPropMapping);
+        }
+
+        if (!flatProp) {
+          printMappingErr();
+        }
+        flatProp.mapping = prop; // keep a reference to the mapping
+        prop = flatProp; // the flattened (mapped) property is the one we want
+
+        break;
+      }
+
+    case types.fn:
+      {
+        var fn = prop.value;
+        var fnRetVal = fn(ele);
+
+        flatProp = this.parse(prop.name, fnRetVal, prop.bypass, flatPropMapping);
+        flatProp.mapping = prop; // keep a reference to the mapping
+        prop = flatProp; // the flattened (mapped) property is the one we want
+
+        break;
+      }
+
+    case undefined:
+      break; // just set the property
+
+    default:
+      return false; // not a valid mapping
+  }
+
+  // if the property is a bypass property, then link the resultant property to the original one
+  if (propIsBypass) {
+    if (origPropIsBypass) {
+      // then this bypass overrides the existing one
+      prop.bypassed = origProp.bypassed; // steal bypassed prop from old bypass
+    } else {
+      // then link the orig prop to the new bypass
+      prop.bypassed = origProp;
+    }
+
+    style[prop.name] = prop; // and set
+  } else {
+    // prop is not bypass
+    if (origPropIsBypass) {
+      // then keep the orig prop (since it's a bypass) and link to the new prop
+      origProp.bypassed = prop;
+    } else {
+      // then just replace the old prop with the new one
+      style[prop.name] = prop;
+    }
+  }
+
+  checkZOrder();
+
+  return true;
+};
+
+styfn.cleanElements = function (eles, keepBypasses) {
+  var self = this;
+  var props = self.properties;
+
+  for (var i = 0; i < eles.length; i++) {
+    var ele = eles[i];
+
+    if (!keepBypasses) {
+      ele._private.style = {};
+    } else {
+      var style = ele._private.style;
+
+      for (var j = 0; j < props.length; j++) {
+        var prop = props[j];
+        var eleProp = style[prop.name];
+
+        if (eleProp) {
+          if (eleProp.bypass) {
+            eleProp.bypassed = null;
+          } else {
+            style[prop.name] = null;
+          }
+        }
+      }
+    }
+  }
+};
+
+// updates the visual style for all elements (useful for manual style modification after init)
+styfn.update = function () {
+  var cy = this._private.cy;
+  var eles = cy.mutableElements();
+
+  eles.updateStyle();
+};
+
+// just update the functional properties (i.e. mappings) in the elements'
+// styles (less expensive than recalculation)
+styfn.updateMappers = function (eles) {
+  var self = this;
+  var cy = this._private.cy;
+  var updatedEles = cy.collection();
+
+  for (var i = 0; i < eles.length; i++) {
+    // for each ele
+    var ele = eles[i];
+    var style = ele._private.style;
+    var updatedEle = false;
+
+    for (var j = 0; j < self.properties.length; j++) {
+      // for each prop
+      var prop = self.properties[j];
+      var propInStyle = style[prop.name];
+
+      if (propInStyle && propInStyle.mapping) {
+        var mapping = propInStyle.mapping;
+
+        this.applyParsedProperty(ele, mapping); // reapply the mapping property
+
+        updatedEle = true;
+      }
+    }
+
+    if (updatedEle) {
+      this.updateStyleHints(ele);
+
+      updatedEles.merge(ele);
+    }
+  }
+
+  return updatedEles;
+};
+
+// diffProps : { name => { prev, next } }
+styfn.updateTransitions = function (ele, diffProps, isBypass) {
+  var self = this;
+  var _p = ele._private;
+  var props = ele.pstyle('transition-property').value;
+  var duration = ele.pstyle('transition-duration').pfValue;
+  var delay = ele.pstyle('transition-delay').pfValue;
+
+  if (props.length > 0 && duration > 0) {
+
+    var style = {};
+
+    // build up the style to animate towards
+    var anyPrev = false;
+    for (var i = 0; i < props.length; i++) {
+      var prop = props[i];
+      var styProp = ele.pstyle(prop);
+      var diffProp = diffProps[prop];
+
+      if (!diffProp) {
+        continue;
+      }
+
+      var prevProp = diffProp.prev;
+      var fromProp = prevProp;
+      var toProp = diffProp.next != null ? diffProp.next : styProp;
+      var diff = false;
+      var initVal = void 0;
+      var initDt = 0.000001; // delta time % value for initVal (allows animating out of init zero opacity)
+
+      if (!fromProp) {
+        continue;
+      }
+
+      // consider px values
+      if (is.number(fromProp.pfValue) && is.number(toProp.pfValue)) {
+        diff = toProp.pfValue - fromProp.pfValue; // nonzero is truthy
+        initVal = fromProp.pfValue + initDt * diff;
+
+        // consider numerical values
+      } else if (is.number(fromProp.value) && is.number(toProp.value)) {
+        diff = toProp.value - fromProp.value; // nonzero is truthy
+        initVal = fromProp.value + initDt * diff;
+
+        // consider colour values
+      } else if (is.array(fromProp.value) && is.array(toProp.value)) {
+        diff = fromProp.value[0] !== toProp.value[0] || fromProp.value[1] !== toProp.value[1] || fromProp.value[2] !== toProp.value[2];
+
+        initVal = fromProp.strValue;
+      }
+
+      // the previous value is good for an animation only if it's different
+      if (diff) {
+        style[prop] = toProp.strValue; // to val
+        this.applyBypass(ele, prop, initVal); // from val
+        anyPrev = true;
+      }
+    } // end if props allow ani
+
+    // can't transition if there's nothing previous to transition from
+    if (!anyPrev) {
+      return;
+    }
+
+    _p.transitioning = true;
+
+    new Promise(function (resolve) {
+      if (delay > 0) {
+        ele.delayAnimation(delay).play().promise().then(resolve);
+      } else {
+        resolve();
+      }
+    }).then(function () {
+      return ele.animation({
+        style: style,
+        duration: duration,
+        easing: ele.pstyle('transition-timing-function').value,
+        queue: false
+      }).play().promise();
+    }).then(function () {
+      // if( !isBypass ){
+      self.removeBypasses(ele, props);
+      ele.emitAndNotify('style');
+      // }
+
+      _p.transitioning = false;
+    });
+  } else if (_p.transitioning) {
+    this.removeBypasses(ele, props);
+    ele.emitAndNotify('style');
+
+    _p.transitioning = false;
+  }
+};
+
+styfn.checkZOrderTrigger = function (ele, name, fromValue, toValue) {
+  var prop = this.properties[name];
+
+  if (prop.triggersZOrder != null && (fromValue == null || prop.triggersZOrder(fromValue, toValue))) {
+    this._private.cy.notify({
+      type: 'zorder',
+      eles: ele
+    });
+  }
+};
+
+module.exports = styfn;
+
+/***/ }),
+/* 86 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
 var is = __webpack_require__(0);
-var window = __webpack_require__(4);
+var util = __webpack_require__(1);
+
+var styfn = {};
+
+// bypasses are applied to an existing style on an element, and just tacked on temporarily
+// returns true iff application was successful for at least 1 specified property
+styfn.applyBypass = function (eles, name, value, updateTransitions) {
+  var self = this;
+  var props = [];
+  var isBypass = true;
+
+  // put all the properties (can specify one or many) in an array after parsing them
+  if (name === '*' || name === '**') {
+    // apply to all property names
+
+    if (value !== undefined) {
+      for (var i = 0; i < self.properties.length; i++) {
+        var prop = self.properties[i];
+        var _name = prop.name;
+
+        var parsedProp = this.parse(_name, value, true);
+
+        if (parsedProp) {
+          props.push(parsedProp);
+        }
+      }
+    }
+  } else if (is.string(name)) {
+    // then parse the single property
+    var _parsedProp = this.parse(name, value, true);
+
+    if (_parsedProp) {
+      props.push(_parsedProp);
+    }
+  } else if (is.plainObject(name)) {
+    // then parse each property
+    var specifiedProps = name;
+    updateTransitions = value;
+
+    var names = Object.keys(specifiedProps);
+
+    for (var _i = 0; _i < names.length; _i++) {
+      var _name2 = names[_i];
+      var _prop = self.properties[_name2];
+      var _value = specifiedProps[_name2];
+
+      if (_value === undefined) {
+        // try camel case name too
+        _value = specifiedProps[util.dash2camel(_name2)];
+      }
+
+      if (_value !== undefined) {
+        var _parsedProp2 = this.parse(_name2, _value, true);
+
+        if (_parsedProp2) {
+          props.push(_parsedProp2);
+        }
+      }
+    }
+  } else {
+    // can't do anything without well defined properties
+    return false;
+  }
+
+  // we've failed if there are no valid properties
+  if (props.length === 0) {
+    return false;
+  }
+
+  // now, apply the bypass properties on the elements
+  var ret = false; // return true if at least one succesful bypass applied
+  for (var _i2 = 0; _i2 < eles.length; _i2++) {
+    // for each ele
+    var ele = eles[_i2];
+    var diffProps = {};
+    var diffProp = void 0;
+
+    for (var j = 0; j < props.length; j++) {
+      // for each prop
+      var _prop2 = props[j];
+
+      if (updateTransitions) {
+        var prevProp = ele.pstyle(_prop2.name);
+        diffProp = diffProps[_prop2.name] = { prev: prevProp };
+      }
+
+      ret = this.applyParsedProperty(ele, _prop2) || ret;
+
+      if (updateTransitions) {
+        diffProp.next = ele.pstyle(_prop2.name);
+      }
+    } // for props
+
+    if (ret) {
+      this.updateStyleHints(ele);
+    }
+
+    if (updateTransitions) {
+      this.updateTransitions(ele, diffProps, isBypass);
+    }
+  } // for eles
+
+  return ret;
+};
+
+// only useful in specific cases like animation
+styfn.overrideBypass = function (eles, name, value) {
+  name = util.camel2dash(name);
+
+  for (var i = 0; i < eles.length; i++) {
+    var ele = eles[i];
+    var prop = ele._private.style[name];
+    var type = this.properties[name].type;
+    var isColor = type.color;
+    var isMulti = type.mutiple;
+
+    if (!prop || !prop.bypass) {
+      // need a bypass if one doesn't exist
+      this.applyBypass(ele, name, value);
+      continue;
+    }
+
+    var oldValue = prop.pfValue != null ? prop.pfValue : prop.value;
+
+    prop.value = value;
+
+    if (prop.pfValue != null) {
+      prop.pfValue = value;
+    }
+
+    if (isColor) {
+      prop.strValue = 'rgb(' + value.join(',') + ')';
+    } else if (isMulti) {
+      prop.strValue = value.join(' ');
+    } else {
+      prop.strValue = '' + value;
+    }
+
+    this.checkZOrderTrigger(ele, name, oldValue, value);
+  }
+};
+
+styfn.removeAllBypasses = function (eles, updateTransitions) {
+  return this.removeBypasses(eles, this.propertyNames, updateTransitions);
+};
+
+styfn.removeBypasses = function (eles, props, updateTransitions) {
+  var isBypass = true;
+
+  for (var j = 0; j < eles.length; j++) {
+    var ele = eles[j];
+    var diffProps = {};
+
+    for (var i = 0; i < props.length; i++) {
+      var name = props[i];
+      var prop = this.properties[name];
+      var prevProp = ele.pstyle(prop.name);
+
+      if (!prevProp || !prevProp.bypass) {
+        // if a bypass doesn't exist for the prop, nothing needs to be removed
+        continue;
+      }
+
+      var value = ''; // empty => remove bypass
+      var parsedProp = this.parse(name, value, true);
+      var diffProp = diffProps[prop.name] = { prev: prevProp };
+
+      this.applyParsedProperty(ele, parsedProp);
+
+      diffProp.next = ele.pstyle(prop.name);
+    } // for props
+
+    this.updateStyleHints(ele);
+
+    if (updateTransitions) {
+      this.updateTransitions(ele, diffProps, isBypass);
+    }
+  } // for eles
+};
+
+module.exports = styfn;
+
+/***/ }),
+/* 87 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var window = __webpack_require__(3);
+
+var styfn = {};
+
+// gets what an em size corresponds to in pixels relative to a dom element
+styfn.getEmSizeInPixels = function () {
+  var px = this.containerCss('font-size');
+
+  if (px != null) {
+    return parseFloat(px);
+  } else {
+    return 1; // for headless
+  }
+};
+
+// gets css property from the core container
+styfn.containerCss = function (propName) {
+  var cy = this._private.cy;
+  var domElement = cy.container();
+
+  if (window && domElement && window.getComputedStyle) {
+    return window.getComputedStyle(domElement).getPropertyValue(propName);
+  }
+};
+
+module.exports = styfn;
+
+/***/ }),
+/* 88 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var util = __webpack_require__(1);
+var is = __webpack_require__(0);
+
+var styfn = {};
+
+// gets the rendered style for an element
+styfn.getRenderedStyle = function (ele, prop) {
+  if (prop) {
+    return this.getStylePropertyValue(ele, prop, true);
+  } else {
+    return this.getRawStyle(ele, true);
+  }
+};
+
+// gets the raw style for an element
+styfn.getRawStyle = function (ele, isRenderedVal) {
+  var self = this;
+
+  ele = ele[0]; // insure it's an element
+
+  if (ele) {
+    var rstyle = {};
+
+    for (var i = 0; i < self.properties.length; i++) {
+      var prop = self.properties[i];
+      var val = self.getStylePropertyValue(ele, prop.name, isRenderedVal);
+
+      if (val != null) {
+        rstyle[prop.name] = val;
+        rstyle[util.dash2camel(prop.name)] = val;
+      }
+    }
+
+    return rstyle;
+  }
+};
+
+styfn.getIndexedStyle = function (ele, property, subproperty, index) {
+  var pstyle = ele.pstyle(property)[subproperty][index];
+  return pstyle != null ? pstyle : ele.cy().style().getDefaultProperty(property)[subproperty][0];
+};
+
+styfn.getStylePropertyValue = function (ele, propName, isRenderedVal) {
+  var self = this;
+
+  ele = ele[0]; // insure it's an element
+
+  if (ele) {
+    var prop = self.properties[propName];
+
+    if (prop.alias) {
+      prop = prop.pointsTo;
+    }
+
+    var type = prop.type;
+    var styleProp = ele.pstyle(prop.name);
+    var zoom = ele.cy().zoom();
+
+    if (styleProp) {
+      var units = styleProp.units ? type.implicitUnits || 'px' : null;
+      var val = units ? [].concat(styleProp.pfValue).map(function (pfValue) {
+        return pfValue * (isRenderedVal ? zoom : 1) + units;
+      }).join(' ') : styleProp.strValue;
+
+      return val;
+    }
+  }
+};
+
+styfn.getAnimationStartStyle = function (ele, aniProps) {
+  var rstyle = {};
+
+  for (var i = 0; i < aniProps.length; i++) {
+    var aniProp = aniProps[i];
+    var name = aniProp.name;
+
+    var styleProp = ele.pstyle(name);
+
+    if (styleProp !== undefined) {
+      // then make a prop of it
+      if (is.plainObject(styleProp)) {
+        styleProp = this.parse(name, styleProp.strValue);
+      } else {
+        styleProp = this.parse(name, styleProp);
+      }
+    }
+
+    if (styleProp) {
+      rstyle[name] = styleProp;
+    }
+  }
+
+  return rstyle;
+};
+
+styfn.getPropsList = function (propsObj) {
+  var self = this;
+  var rstyle = [];
+  var style = propsObj;
+  var props = self.properties;
+
+  if (style) {
+    var names = Object.keys(style);
+
+    for (var i = 0; i < names.length; i++) {
+      var name = names[i];
+      var val = style[name];
+      var prop = props[name] || props[util.camel2dash(name)];
+      var styleProp = this.parse(prop.name, val);
+
+      if (styleProp) {
+        rstyle.push(styleProp);
+      }
+    }
+  }
+
+  return rstyle;
+};
+
+module.exports = styfn;
+
+/***/ }),
+/* 89 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var styfn = {};
+
+styfn.appendFromJson = function (json) {
+  var style = this;
+
+  for (var i = 0; i < json.length; i++) {
+    var context = json[i];
+    var selector = context.selector;
+    var props = context.style || context.css;
+    var names = Object.keys(props);
+
+    style.selector(selector); // apply selector
+
+    for (var j = 0; j < names.length; j++) {
+      var name = names[j];
+      var value = props[name];
+
+      style.css(name, value); // apply property
+    }
+  }
+
+  return style;
+};
+
+// accessible cy.style() function
+styfn.fromJson = function (json) {
+  var style = this;
+
+  style.resetToDefault();
+  style.appendFromJson(json);
+
+  return style;
+};
+
+// get json from cy.style() api
+styfn.json = function () {
+  var json = [];
+
+  for (var i = this.defaultLength; i < this.length; i++) {
+    var cxt = this[i];
+    var selector = cxt.selector;
+    var props = cxt.properties;
+    var css = {};
+
+    for (var j = 0; j < props.length; j++) {
+      var prop = props[j];
+      css[prop.name] = prop.strValue;
+    }
+
+    json.push({
+      selector: !selector ? 'core' : selector.toString(),
+      style: css
+    });
+  }
+
+  return json;
+};
+
+module.exports = styfn;
+
+/***/ }),
+/* 90 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var util = __webpack_require__(1);
+var Selector = __webpack_require__(6);
+
+var styfn = {};
+
+styfn.appendFromString = function (string) {
+  var self = this;
+  var style = this;
+  var remaining = '' + string;
+  var selAndBlockStr = void 0;
+  var blockRem = void 0;
+  var propAndValStr = void 0;
+
+  // remove comments from the style string
+  remaining = remaining.replace(/[/][*](\s|.)+?[*][/]/g, '');
+
+  function removeSelAndBlockFromRemaining() {
+    // remove the parsed selector and block from the remaining text to parse
+    if (remaining.length > selAndBlockStr.length) {
+      remaining = remaining.substr(selAndBlockStr.length);
+    } else {
+      remaining = '';
+    }
+  }
+
+  function removePropAndValFromRem() {
+    // remove the parsed property and value from the remaining block text to parse
+    if (blockRem.length > propAndValStr.length) {
+      blockRem = blockRem.substr(propAndValStr.length);
+    } else {
+      blockRem = '';
+    }
+  }
+
+  while (true) {
+    var nothingLeftToParse = remaining.match(/^\s*$/);
+    if (nothingLeftToParse) {
+      break;
+    }
+
+    var selAndBlock = remaining.match(/^\s*((?:.|\s)+?)\s*\{((?:.|\s)+?)\}/);
+
+    if (!selAndBlock) {
+      util.error('Halting stylesheet parsing: String stylesheet contains more to parse but no selector and block found in: ' + remaining);
+      break;
+    }
+
+    selAndBlockStr = selAndBlock[0];
+
+    // parse the selector
+    var selectorStr = selAndBlock[1];
+    if (selectorStr !== 'core') {
+      var selector = new Selector(selectorStr);
+      if (selector._private.invalid) {
+        util.error('Skipping parsing of block: Invalid selector found in string stylesheet: ' + selectorStr);
+
+        // skip this selector and block
+        removeSelAndBlockFromRemaining();
+        continue;
+      }
+    }
+
+    // parse the block of properties and values
+    var blockStr = selAndBlock[2];
+    var invalidBlock = false;
+    blockRem = blockStr;
+    var props = [];
+
+    while (true) {
+      var _nothingLeftToParse = blockRem.match(/^\s*$/);
+      if (_nothingLeftToParse) {
+        break;
+      }
+
+      var propAndVal = blockRem.match(/^\s*(.+?)\s*:\s*(.+?)\s*;/);
+
+      if (!propAndVal) {
+        util.error('Skipping parsing of block: Invalid formatting of style property and value definitions found in:' + blockStr);
+        invalidBlock = true;
+        break;
+      }
+
+      propAndValStr = propAndVal[0];
+      var propStr = propAndVal[1];
+      var valStr = propAndVal[2];
+
+      var prop = self.properties[propStr];
+      if (!prop) {
+        util.error('Skipping property: Invalid property name in: ' + propAndValStr);
+
+        // skip this property in the block
+        removePropAndValFromRem();
+        continue;
+      }
+
+      var parsedProp = style.parse(propStr, valStr);
+
+      if (!parsedProp) {
+        util.error('Skipping property: Invalid property definition in: ' + propAndValStr);
+
+        // skip this property in the block
+        removePropAndValFromRem();
+        continue;
+      }
+
+      props.push({
+        name: propStr,
+        val: valStr
+      });
+      removePropAndValFromRem();
+    }
+
+    if (invalidBlock) {
+      removeSelAndBlockFromRemaining();
+      break;
+    }
+
+    // put the parsed block in the style
+    style.selector(selectorStr);
+    for (var i = 0; i < props.length; i++) {
+      var _prop = props[i];
+      style.css(_prop.name, _prop.val);
+    }
+
+    removeSelAndBlockFromRemaining();
+  }
+
+  return style;
+};
+
+styfn.fromString = function (string) {
+  var style = this;
+
+  style.resetToDefault();
+  style.appendFromString(string);
+
+  return style;
+};
+
+module.exports = styfn;
+
+/***/ }),
+/* 91 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var util = __webpack_require__(1);
+var is = __webpack_require__(0);
+
+var styfn = {};
+
+(function () {
+  var number = util.regex.number;
+  var rgba = util.regex.rgbaNoBackRefs;
+  var hsla = util.regex.hslaNoBackRefs;
+  var hex3 = util.regex.hex3;
+  var hex6 = util.regex.hex6;
+  var data = function data(prefix) {
+    return '^' + prefix + '\\s*\\(\\s*([\\w\\.]+)\\s*\\)$';
+  };
+  var mapData = function mapData(prefix) {
+    var mapArg = number + '|\\w+|' + rgba + '|' + hsla + '|' + hex3 + '|' + hex6;
+    return '^' + prefix + '\\s*\\(([\\w\\.]+)\\s*\\,\\s*(' + number + ')\\s*\\,\\s*(' + number + ')\\s*,\\s*(' + mapArg + ')\\s*\\,\\s*(' + mapArg + ')\\)$';
+  };
+  var urlRegexes = ['^url\\s*\\(\\s*[\'"]?(.+?)[\'"]?\\s*\\)$', '^(none)$', '^(.+)$'];
+
+  // each visual style property has a type and needs to be validated according to it
+  styfn.types = {
+    time: { number: true, min: 0, units: 's|ms', implicitUnits: 'ms' },
+    percent: { number: true, min: 0, max: 100, units: '%', implicitUnits: '%' },
+    zeroOneNumber: { number: true, min: 0, max: 1, unitless: true },
+    zeroOneNumbers: { number: true, min: 0, max: 1, unitless: true, multiple: true },
+    nOneOneNumber: { number: true, min: -1, max: 1, unitless: true },
+    nonNegativeInt: { number: true, min: 0, integer: true, unitless: true },
+    position: { enums: ['parent', 'origin'] },
+    nodeSize: { number: true, min: 0, enums: ['label'] },
+    number: { number: true, unitless: true },
+    numbers: { number: true, unitless: true, multiple: true },
+    positiveNumber: { number: true, unitless: true, min: 0, strictMin: true },
+    size: { number: true, min: 0 },
+    bidirectionalSize: { number: true }, // allows negative
+    bidirectionalSizes: { number: true, multiple: true }, // allows negative
+    sizeMaybePercent: { number: true, min: 0, allowPercent: true },
+    paddingRelativeTo: { enums: ['width', 'height', 'average', 'min', 'max'] },
+    bgWH: { number: true, min: 0, allowPercent: true, enums: ['auto'], multiple: true },
+    bgPos: { number: true, allowPercent: true, multiple: true },
+    bgRelativeTo: { enums: ['inner', 'include-padding'], multiple: true },
+    bgRepeat: { enums: ['repeat', 'repeat-x', 'repeat-y', 'no-repeat'], multiple: true },
+    bgFit: { enums: ['none', 'contain', 'cover'], multiple: true },
+    bgCrossOrigin: { enums: ['anonymous', 'use-credentials'], multiple: true },
+    bgClip: { enums: ['none', 'node'] },
+    color: { color: true },
+    bool: { enums: ['yes', 'no'] },
+    lineStyle: { enums: ['solid', 'dotted', 'dashed'] },
+    borderStyle: { enums: ['solid', 'dotted', 'dashed', 'double'] },
+    curveStyle: { enums: ['bezier', 'unbundled-bezier', 'haystack', 'segments'] },
+    fontFamily: { regex: '^([\\w- \\"]+(?:\\s*,\\s*[\\w- \\"]+)*)$' },
+    fontletiant: { enums: ['small-caps', 'normal'] },
+    fontStyle: { enums: ['italic', 'normal', 'oblique'] },
+    fontWeight: { enums: ['normal', 'bold', 'bolder', 'lighter', '100', '200', '300', '400', '500', '600', '800', '900', 100, 200, 300, 400, 500, 600, 700, 800, 900] },
+    textDecoration: { enums: ['none', 'underline', 'overline', 'line-through'] },
+    textTransform: { enums: ['none', 'uppercase', 'lowercase'] },
+    textWrap: { enums: ['none', 'wrap', 'ellipsis'] },
+    textBackgroundShape: { enums: ['rectangle', 'roundrectangle'] },
+    nodeShape: { enums: ['rectangle', 'roundrectangle', 'cutrectangle', 'bottomroundrectangle', 'barrel', 'ellipse', 'triangle', 'square', 'pentagon', 'hexagon', 'concavehexagon', 'heptagon', 'octagon', 'tag', 'star', 'diamond', 'vee', 'rhomboid', 'polygon'] },
+    compoundIncludeLabels: { enums: ['include', 'exclude'] },
+    arrowShape: { enums: ['tee', 'triangle', 'triangle-tee', 'triangle-cross', 'triangle-backcurve', 'half-triangle-overshot', 'vee', 'square', 'circle', 'diamond', 'none'] },
+    arrowFill: { enums: ['filled', 'hollow'] },
+    display: { enums: ['element', 'none'] },
+    visibility: { enums: ['hidden', 'visible'] },
+    zCompoundDepth: { enums: ['bottom', 'orphan', 'auto', 'top'] },
+    zIndexCompare: { enums: ['auto', 'manual'] },
+    valign: { enums: ['top', 'center', 'bottom'] },
+    halign: { enums: ['left', 'center', 'right'] },
+    text: { string: true },
+    data: { mapping: true, regex: data('data') },
+    layoutData: { mapping: true, regex: data('layoutData') },
+    scratch: { mapping: true, regex: data('scratch') },
+    mapData: { mapping: true, regex: mapData('mapData') },
+    mapLayoutData: { mapping: true, regex: mapData('mapLayoutData') },
+    mapScratch: { mapping: true, regex: mapData('mapScratch') },
+    fn: { mapping: true, fn: true },
+    url: { regexes: urlRegexes, singleRegexMatchValue: true },
+    urls: { regexes: urlRegexes, singleRegexMatchValue: true, multiple: true },
+    propList: { propList: true },
+    angle: { number: true, units: 'deg|rad', implicitUnits: 'rad' },
+    textRotation: { number: true, units: 'deg|rad', implicitUnits: 'rad', enums: ['none', 'autorotate'] },
+    polygonPointList: { number: true, multiple: true, evenMultiple: true, min: -1, max: 1, unitless: true },
+    edgeDistances: { enums: ['intersection', 'node-position'] },
+    edgeEndpoint: {
+      number: true, multiple: true, units: '%|px|em|deg|rad', implicitUnits: 'px',
+      enums: ['inside-to-node', 'outside-to-node', 'outside-to-line'], singleEnum: true,
+      validate: function validate(valArr, unitsArr) {
+        switch (valArr.length) {
+          case 2:
+            // can be % or px only
+            return unitsArr[0] !== 'deg' && unitsArr[0] !== 'rad' && unitsArr[1] !== 'deg' && unitsArr[1] !== 'rad';
+          case 1:
+            // can be enum, deg, or rad only
+            return is.string(valArr[0]) || unitsArr[0] === 'deg' || unitsArr[0] === 'rad';
+          default:
+            return false;
+        }
+      }
+    },
+    easing: {
+      regexes: ['^(spring)\\s*\\(\\s*(' + number + ')\\s*,\\s*(' + number + ')\\s*\\)$', '^(cubic-bezier)\\s*\\(\\s*(' + number + ')\\s*,\\s*(' + number + ')\\s*,\\s*(' + number + ')\\s*,\\s*(' + number + ')\\s*\\)$'],
+      enums: ['linear', 'ease', 'ease-in', 'ease-out', 'ease-in-out', 'ease-in-sine', 'ease-out-sine', 'ease-in-out-sine', 'ease-in-quad', 'ease-out-quad', 'ease-in-out-quad', 'ease-in-cubic', 'ease-out-cubic', 'ease-in-out-cubic', 'ease-in-quart', 'ease-out-quart', 'ease-in-out-quart', 'ease-in-quint', 'ease-out-quint', 'ease-in-out-quint', 'ease-in-expo', 'ease-out-expo', 'ease-in-out-expo', 'ease-in-circ', 'ease-out-circ', 'ease-in-out-circ']
+    }
+  };
+
+  var zOrderDiff = {
+    zeroNonZero: function zeroNonZero(val1, val2) {
+      if (val1 === 0 && val2 !== 0) {
+        return true;
+      } else if (val1 !== 0 && val2 === 0) {
+        return true;
+      } else {
+        return false;
+      }
+    },
+    anyDiff: function anyDiff(val1, val2) {
+      return val1 !== val2;
+    }
+  };
+
+  var zd = zOrderDiff;
+
+  // define visual style properties
+  var t = styfn.types;
+  var props = styfn.properties = [
+  // main label
+  { name: 'label', type: t.text }, { name: 'text-rotation', type: t.textRotation }, { name: 'text-margin-x', type: t.bidirectionalSize }, { name: 'text-margin-y', type: t.bidirectionalSize },
+
+  // source label
+  { name: 'source-label', type: t.text }, { name: 'source-text-rotation', type: t.textRotation }, { name: 'source-text-margin-x', type: t.bidirectionalSize }, { name: 'source-text-margin-y', type: t.bidirectionalSize }, { name: 'source-text-offset', type: t.size },
+
+  // target label
+  { name: 'target-label', type: t.text }, { name: 'target-text-rotation', type: t.textRotation }, { name: 'target-text-margin-x', type: t.bidirectionalSize }, { name: 'target-text-margin-y', type: t.bidirectionalSize }, { name: 'target-text-offset', type: t.size },
+
+  // common label style
+  { name: 'text-valign', type: t.valign }, { name: 'text-halign', type: t.halign }, { name: 'color', type: t.color }, { name: 'text-outline-color', type: t.color }, { name: 'text-outline-width', type: t.size }, { name: 'text-outline-opacity', type: t.zeroOneNumber }, { name: 'text-opacity', type: t.zeroOneNumber }, { name: 'text-background-color', type: t.color }, { name: 'text-background-opacity', type: t.zeroOneNumber }, { name: 'text-background-padding', type: t.size }, { name: 'text-border-opacity', type: t.zeroOneNumber }, { name: 'text-border-color', type: t.color }, { name: 'text-border-width', type: t.size }, { name: 'text-border-style', type: t.borderStyle }, { name: 'text-background-shape', type: t.textBackgroundShape },
+  // { name: 'text-decoration', type: t.textDecoration }, // not supported in canvas
+  { name: 'text-transform', type: t.textTransform }, { name: 'text-wrap', type: t.textWrap }, { name: 'text-max-width', type: t.size }, { name: 'text-events', type: t.bool }, { name: 'font-family', type: t.fontFamily }, { name: 'font-style', type: t.fontStyle },
+  // { name: 'font-letiant', type: t.fontletiant }, // not useful
+  { name: 'font-weight', type: t.fontWeight }, { name: 'font-size', type: t.size }, { name: 'min-zoomed-font-size', type: t.size },
+
+  // behaviour
+  { name: 'events', type: t.bool },
+
+  // visibility
+  { name: 'display', type: t.display, triggersZOrder: zd.anyDiff }, { name: 'visibility', type: t.visibility, triggersZOrder: zd.anyDiff }, { name: 'opacity', type: t.zeroOneNumber, triggersZOrder: zd.zeroNonZero }, { name: 'z-compound-depth', type: t.zCompoundDepth, triggersZOrder: zd.anyDiff }, { name: 'z-index-compare', type: t.zIndexCompare, triggersZOrder: zd.anyDiff }, { name: 'z-index', type: t.nonNegativeInt, triggersZOrder: zd.anyDiff },
+
+  // overlays
+  { name: 'overlay-padding', type: t.size }, { name: 'overlay-color', type: t.color }, { name: 'overlay-opacity', type: t.zeroOneNumber },
+
+  // transition anis
+  { name: 'transition-property', type: t.propList }, { name: 'transition-duration', type: t.time }, { name: 'transition-delay', type: t.time }, { name: 'transition-timing-function', type: t.easing },
+
+  // node body
+  { name: 'height', type: t.nodeSize }, { name: 'width', type: t.nodeSize }, { name: 'shape', type: t.nodeShape }, { name: 'shape-polygon-points', type: t.polygonPointList }, { name: 'background-color', type: t.color }, { name: 'background-opacity', type: t.zeroOneNumber }, { name: 'background-blacken', type: t.nOneOneNumber }, { name: 'padding', type: t.sizeMaybePercent }, { name: 'padding-relative-to', type: t.paddingRelativeTo },
+
+  // node border
+  { name: 'border-color', type: t.color }, { name: 'border-opacity', type: t.zeroOneNumber }, { name: 'border-width', type: t.size }, { name: 'border-style', type: t.borderStyle },
+
+  // node background images
+  { name: 'background-image', type: t.urls }, { name: 'background-image-crossorigin', type: t.bgCrossOrigin }, { name: 'background-image-opacity', type: t.zeroOneNumbers }, { name: 'background-position-x', type: t.bgPos }, { name: 'background-position-y', type: t.bgPos }, { name: 'background-width-relative-to', type: t.bgRelativeTo }, { name: 'background-height-relative-to', type: t.bgRelativeTo }, { name: 'background-repeat', type: t.bgRepeat }, { name: 'background-fit', type: t.bgFit }, { name: 'background-clip', type: t.bgClip }, { name: 'background-width', type: t.bgWH }, { name: 'background-height', type: t.bgWH },
+
+  // compound props
+  { name: 'position', type: t.position }, { name: 'compound-sizing-wrt-labels', type: t.compoundIncludeLabels }, { name: 'min-width', type: t.size }, { name: 'min-width-bias-left', type: t.sizeMaybePercent }, { name: 'min-width-bias-right', type: t.sizeMaybePercent }, { name: 'min-height', type: t.size }, { name: 'min-height-bias-top', type: t.sizeMaybePercent }, { name: 'min-height-bias-bottom', type: t.sizeMaybePercent },
+
+  // edge line
+  { name: 'line-style', type: t.lineStyle }, { name: 'line-color', type: t.color }, { name: 'curve-style', type: t.curveStyle }, { name: 'haystack-radius', type: t.zeroOneNumber }, { name: 'source-endpoint', type: t.edgeEndpoint }, { name: 'target-endpoint', type: t.edgeEndpoint }, { name: 'control-point-step-size', type: t.size }, { name: 'control-point-distances', type: t.bidirectionalSizes }, { name: 'control-point-weights', type: t.numbers }, { name: 'segment-distances', type: t.bidirectionalSizes }, { name: 'segment-weights', type: t.numbers }, { name: 'edge-distances', type: t.edgeDistances }, { name: 'arrow-scale', type: t.positiveNumber }, { name: 'loop-direction', type: t.angle }, { name: 'loop-sweep', type: t.angle }, { name: 'source-distance-from-node', type: t.size }, { name: 'target-distance-from-node', type: t.size },
+
+  // ghost properties
+  { name: 'ghost', type: t.bool }, { name: 'ghost-offset-x', type: t.bidirectionalSize }, { name: 'ghost-offset-y', type: t.bidirectionalSize }, { name: 'ghost-opacity', type: t.zeroOneNumber },
+
+  // these are just for the core
+  { name: 'selection-box-color', type: t.color }, { name: 'selection-box-opacity', type: t.zeroOneNumber }, { name: 'selection-box-border-color', type: t.color }, { name: 'selection-box-border-width', type: t.size }, { name: 'active-bg-color', type: t.color }, { name: 'active-bg-opacity', type: t.zeroOneNumber }, { name: 'active-bg-size', type: t.size }, { name: 'outside-texture-bg-color', type: t.color }, { name: 'outside-texture-bg-opacity', type: t.zeroOneNumber }];
+
+  // define aliases
+  var aliases = styfn.aliases = [{ name: 'content', pointsTo: 'label' }, { name: 'control-point-distance', pointsTo: 'control-point-distances' }, { name: 'control-point-weight', pointsTo: 'control-point-weights' }, { name: 'edge-text-rotation', pointsTo: 'text-rotation' }, { name: 'padding-left', pointsTo: 'padding' }, { name: 'padding-right', pointsTo: 'padding' }, { name: 'padding-top', pointsTo: 'padding' }, { name: 'padding-bottom', pointsTo: 'padding' }];
+
+  // pie backgrounds for nodes
+  styfn.pieBackgroundN = 16; // because the pie properties are numbered, give access to a constant N (for renderer use)
+  props.push({ name: 'pie-size', type: t.sizeMaybePercent });
+  for (var i = 1; i <= styfn.pieBackgroundN; i++) {
+    props.push({ name: 'pie-' + i + '-background-color', type: t.color });
+    props.push({ name: 'pie-' + i + '-background-size', type: t.percent });
+    props.push({ name: 'pie-' + i + '-background-opacity', type: t.zeroOneNumber });
+  }
+
+  // edge arrows
+  var arrowPrefixes = styfn.arrowPrefixes = ['source', 'mid-source', 'target', 'mid-target'];
+  [{ name: 'arrow-shape', type: t.arrowShape }, { name: 'arrow-color', type: t.color }, { name: 'arrow-fill', type: t.arrowFill }].forEach(function (prop) {
+    arrowPrefixes.forEach(function (prefix) {
+      var name = prefix + '-' + prop.name;
+      var type = prop.type;
+
+      props.push({ name: name, type: type });
+    });
+  }, {});
+
+  // list of property names
+  styfn.propertyNames = props.map(function (p) {
+    return p.name;
+  });
+
+  // allow access of properties by name ( e.g. style.properties.height )
+  for (var _i = 0; _i < props.length; _i++) {
+    var prop = props[_i];
+
+    props[prop.name] = prop; // allow lookup by name
+  }
+
+  // map aliases
+  for (var _i2 = 0; _i2 < aliases.length; _i2++) {
+    var alias = aliases[_i2];
+    var pointsToProp = props[alias.pointsTo];
+    var aliasProp = {
+      name: alias.name,
+      alias: true,
+      pointsTo: pointsToProp
+    };
+
+    // add alias prop for parsing
+    props.push(aliasProp);
+
+    props[alias.name] = aliasProp; // allow lookup by name
+  }
+})();
+
+styfn.getDefaultProperty = function (name) {
+  return this.getDefaultProperties()[name];
+};
+
+styfn.getDefaultProperties = util.memoize(function () {
+  var rawProps = util.extend({
+    // common node/edge props
+    'events': 'yes',
+    'text-events': 'no',
+    'text-valign': 'top',
+    'text-halign': 'center',
+    'color': '#000',
+    'text-outline-color': '#000',
+    'text-outline-width': 0,
+    'text-outline-opacity': 1,
+    'text-opacity': 1,
+    'text-decoration': 'none',
+    'text-transform': 'none',
+    'text-wrap': 'none',
+    'text-max-width': 9999,
+    'text-background-color': '#000',
+    'text-background-opacity': 0,
+    'text-background-shape': 'rectangle',
+    'text-background-padding': 0,
+    'text-border-opacity': 0,
+    'text-border-width': 0,
+    'text-border-style': 'solid',
+    'text-border-color': '#000',
+    'font-family': 'Helvetica Neue, Helvetica, sans-serif',
+    'font-style': 'normal',
+    // 'font-letiant': fontletiant,
+    'font-weight': 'normal',
+    'font-size': 16,
+    'min-zoomed-font-size': 0,
+    'text-rotation': 'none',
+    'source-text-rotation': 'none',
+    'target-text-rotation': 'none',
+    'visibility': 'visible',
+    'display': 'element',
+    'opacity': 1,
+    'z-compound-depth': 'auto',
+    'z-index-compare': 'auto',
+    'z-index': 0,
+    'label': '',
+    'text-margin-x': 0,
+    'text-margin-y': 0,
+    'source-label': '',
+    'source-text-offset': 0,
+    'source-text-margin-x': 0,
+    'source-text-margin-y': 0,
+    'target-label': '',
+    'target-text-offset': 0,
+    'target-text-margin-x': 0,
+    'target-text-margin-y': 0,
+    'overlay-opacity': 0,
+    'overlay-color': '#000',
+    'overlay-padding': 10,
+    'transition-property': 'none',
+    'transition-duration': 0,
+    'transition-delay': 0,
+    'transition-timing-function': 'linear',
+
+    // node props
+    'background-blacken': 0,
+    'background-color': '#999',
+    'background-opacity': 1,
+    'background-image': 'none',
+    'background-image-crossorigin': 'anonymous',
+    'background-image-opacity': 1,
+    'background-position-x': '50%',
+    'background-position-y': '50%',
+    'background-width-relative-to': 'include-padding',
+    'background-height-relative-to': 'include-padding',
+    'background-repeat': 'no-repeat',
+    'background-fit': 'none',
+    'background-clip': 'node',
+    'background-width': 'auto',
+    'background-height': 'auto',
+    'border-color': '#000',
+    'border-opacity': 1,
+    'border-width': 0,
+    'border-style': 'solid',
+    'height': 30,
+    'width': 30,
+    'shape': 'ellipse',
+    'shape-polygon-points': '-1, -1,   1, -1,   1, 1,   -1, 1',
+
+    // ghost props
+    'ghost': 'no',
+    'ghost-offset-y': 0,
+    'ghost-offset-x': 0,
+    'ghost-opacity': 0,
+
+    // compound props
+    'padding': 0,
+    'padding-relative-to': 'width',
+    'position': 'origin',
+    'compound-sizing-wrt-labels': 'include',
+    'min-width': 0,
+    'min-width-bias-left': 0,
+    'min-width-bias-right': 0,
+    'min-height': 0,
+    'min-height-bias-top': 0,
+    'min-height-bias-bottom': 0
+  }, {
+    // node pie bg
+    'pie-size': '100%'
+  }, [{ name: 'pie-{{i}}-background-color', value: 'black' }, { name: 'pie-{{i}}-background-size', value: '0%' }, { name: 'pie-{{i}}-background-opacity', value: 1 }].reduce(function (css, prop) {
+    for (var i = 1; i <= styfn.pieBackgroundN; i++) {
+      var name = prop.name.replace('{{i}}', i);
+      var val = prop.value;
+
+      css[name] = val;
+    }
+
+    return css;
+  }, {}), {
+    // edge props
+    'line-style': 'solid',
+    'line-color': '#999',
+    'control-point-step-size': 40,
+    'control-point-weights': 0.5,
+    'segment-weights': 0.5,
+    'segment-distances': 20,
+    'edge-distances': 'intersection',
+    'curve-style': 'bezier',
+    'haystack-radius': 0,
+    'arrow-scale': 1,
+    'loop-direction': '-45deg',
+    'loop-sweep': '-90deg',
+    'source-distance-from-node': 0,
+    'target-distance-from-node': 0,
+    'source-endpoint': 'outside-to-node',
+    'target-endpoint': 'outside-to-node'
+  }, [{ name: 'arrow-shape', value: 'none' }, { name: 'arrow-color', value: '#999' }, { name: 'arrow-fill', value: 'filled' }].reduce(function (css, prop) {
+    styfn.arrowPrefixes.forEach(function (prefix) {
+      var name = prefix + '-' + prop.name;
+      var val = prop.value;
+
+      css[name] = val;
+    });
+
+    return css;
+  }, {}));
+
+  var parsedProps = {};
+
+  for (var i = 0; i < this.properties.length; i++) {
+    var prop = this.properties[i];
+
+    if (prop.pointsTo) {
+      continue;
+    }
+
+    var name = prop.name;
+    var val = rawProps[name];
+    var parsedProp = this.parse(name, val);
+
+    parsedProps[name] = parsedProp;
+  }
+
+  return parsedProps;
+});
+
+styfn.addDefaultStylesheet = function () {
+  this.selector('$node > node') // compound (parent) node properties
+  .css({
+    'shape': 'rectangle',
+    'padding': 10,
+    'background-color': '#eee',
+    'border-color': '#ccc',
+    'border-width': 1
+  }).selector('edge') // just edge properties
+  .css({
+    'width': 3,
+    'curve-style': 'haystack'
+  }).selector(':parent <-> node').css({
+    'curve-style': 'bezier',
+    'source-endpoint': 'outside-to-line',
+    'target-endpoint': 'outside-to-line'
+  }).selector(':selected').css({
+    'background-color': '#0169D9',
+    'line-color': '#0169D9',
+    'source-arrow-color': '#0169D9',
+    'target-arrow-color': '#0169D9',
+    'mid-source-arrow-color': '#0169D9',
+    'mid-target-arrow-color': '#0169D9'
+  }).selector('node:parent:selected').css({
+    'background-color': '#CCE1F9',
+    'border-color': '#aec8e5'
+  }).selector(':active').css({
+    'overlay-color': 'black',
+    'overlay-padding': 10,
+    'overlay-opacity': 0.25
+  }).selector('core') // just core properties
+  .css({
+    'selection-box-color': '#ddd',
+    'selection-box-opacity': 0.65,
+    'selection-box-border-color': '#aaa',
+    'selection-box-border-width': 1,
+    'active-bg-color': 'black',
+    'active-bg-opacity': 0.15,
+    'active-bg-size': 30,
+    'outside-texture-bg-color': '#000',
+    'outside-texture-bg-opacity': 0.125
+  });
+
+  this.defaultLength = this.length;
+};
+
+module.exports = styfn;
+
+/***/ }),
+/* 92 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var util = __webpack_require__(1);
+var is = __webpack_require__(0);
+var math = __webpack_require__(2);
+
+var styfn = {};
+
+// a caching layer for property parsing
+styfn.parse = function (name, value, propIsBypass, propIsFlat) {
+  var self = this;
+
+  // function values can't be cached in all cases, and there isn't much benefit of caching them anyway
+  if (is.fn(value)) {
+    return self.parseImplWarn(name, value, propIsBypass, propIsFlat);
+  }
+
+  var flatKey = propIsFlat === 'mapping' || propIsFlat === true || propIsFlat === false || propIsFlat == null ? 'dontcare' : propIsFlat;
+  var argHash = [name, value, propIsBypass, flatKey].join('$');
+  var propCache = self.propCache = self.propCache || {};
+  var ret = void 0;
+
+  if (!(ret = propCache[argHash])) {
+    ret = propCache[argHash] = self.parseImplWarn(name, value, propIsBypass, propIsFlat);
+  }
+
+  // - bypasses can't be shared b/c the value can be changed by animations or otherwise overridden
+  // - mappings can't be shared b/c mappings are per-element
+  if (propIsBypass || propIsFlat === 'mapping') {
+    // need a copy since props are mutated later in their lifecycles
+    ret = util.copy(ret);
+
+    if (ret) {
+      ret.value = util.copy(ret.value); // because it could be an array, e.g. colour
+    }
+  }
+
+  return ret;
+};
+
+styfn.parseImplWarn = function (name, value, propIsBypass, propIsFlat) {
+  var prop = this.parseImpl(name, value, propIsBypass, propIsFlat);
+
+  if (!prop && value != null) {
+    util.error('The style property `%s: %s` is invalid', name, value);
+  }
+
+  return prop;
+};
+
+// parse a property; return null on invalid; return parsed property otherwise
+// fields :
+// - name : the name of the property
+// - value : the parsed, native-typed value of the property
+// - strValue : a string value that represents the property value in valid css
+// - bypass : true iff the property is a bypass property
+styfn.parseImpl = function (name, value, propIsBypass, propIsFlat) {
+  var self = this;
+
+  name = util.camel2dash(name); // make sure the property name is in dash form (e.g. 'property-name' not 'propertyName')
+
+  var property = self.properties[name];
+  var passedValue = value;
+  var types = self.types;
+
+  if (!property) {
+    return null;
+  } // return null on property of unknown name
+  if (value === undefined || value === null) {
+    return null;
+  } // can't assign null
+
+  // the property may be an alias
+  if (property.alias) {
+    property = property.pointsTo;
+    name = property.name;
+  }
+
+  var valueIsString = is.string(value);
+  if (valueIsString) {
+    // trim the value to make parsing easier
+    value = value.trim();
+  }
+
+  var type = property.type;
+  if (!type) {
+    return null;
+  } // no type, no luck
+
+  // check if bypass is null or empty string (i.e. indication to delete bypass property)
+  if (propIsBypass && (value === '' || value === null)) {
+    return {
+      name: name,
+      value: value,
+      bypass: true,
+      deleteBypass: true
+    };
+  }
+
+  // check if value is a function used as a mapper
+  if (is.fn(value)) {
+    return {
+      name: name,
+      value: value,
+      strValue: 'fn',
+      mapped: types.fn,
+      bypass: propIsBypass
+    };
+  }
+
+  // check if value is mapped
+  var data = void 0,
+      mapData = void 0;
+  if (!valueIsString || propIsFlat) {
+    // then don't bother to do the expensive regex checks
+
+  } else if (data = new RegExp(types.data.regex).exec(value)) {
+    if (propIsBypass) {
+      return false;
+    } // mappers not allowed in bypass
+
+    var mapped = types.data;
+
+    return {
+      name: name,
+      value: data,
+      strValue: '' + value,
+      mapped: mapped,
+      field: data[1],
+      bypass: propIsBypass
+    };
+  } else if (mapData = new RegExp(types.mapData.regex).exec(value)) {
+    if (propIsBypass) {
+      return false;
+    } // mappers not allowed in bypass
+    if (type.multiple) {
+      return false;
+    } // impossible to map to num
+
+    var _mapped = types.mapData;
+
+    // we can map only if the type is a colour or a number
+    if (!(type.color || type.number)) {
+      return false;
+    }
+
+    var valueMin = this.parse(name, mapData[4]); // parse to validate
+    if (!valueMin || valueMin.mapped) {
+      return false;
+    } // can't be invalid or mapped
+
+    var valueMax = this.parse(name, mapData[5]); // parse to validate
+    if (!valueMax || valueMax.mapped) {
+      return false;
+    } // can't be invalid or mapped
+
+    // check if valueMin and valueMax are the same
+    if (valueMin.value === valueMax.value) {
+      return false; // can't make much of a mapper without a range
+    } else if (type.color) {
+      var c1 = valueMin.value;
+      var c2 = valueMax.value;
+
+      var same = c1[0] === c2[0] // red
+      && c1[1] === c2[1] // green
+      && c1[2] === c2[2] // blue
+      && ( // optional alpha
+      c1[3] === c2[3] // same alpha outright
+      || (c1[3] == null || c1[3] === 1) && ( // full opacity for colour 1?
+      c2[3] == null || c2[3] === 1) // full opacity for colour 2?
+      );
+
+      if (same) {
+        return false;
+      } // can't make a mapper without a range
+    }
+
+    return {
+      name: name,
+      value: mapData,
+      strValue: '' + value,
+      mapped: _mapped,
+      field: mapData[1],
+      fieldMin: parseFloat(mapData[2]), // min & max are numeric
+      fieldMax: parseFloat(mapData[3]),
+      valueMin: valueMin.value,
+      valueMax: valueMax.value,
+      bypass: propIsBypass
+    };
+  }
+
+  if (type.multiple && propIsFlat !== 'multiple') {
+    var vals = void 0;
+
+    if (valueIsString) {
+      vals = value.split(/\s+/);
+    } else if (is.array(value)) {
+      vals = value;
+    } else {
+      vals = [value];
+    }
+
+    if (type.evenMultiple && vals.length % 2 !== 0) {
+      return null;
+    }
+
+    var valArr = [];
+    var unitsArr = [];
+    var pfValArr = [];
+    var hasEnum = false;
+
+    for (var i = 0; i < vals.length; i++) {
+      var p = self.parse(name, vals[i], propIsBypass, 'multiple');
+
+      hasEnum = hasEnum || is.string(p.value);
+
+      valArr.push(p.value);
+      pfValArr.push(p.pfValue != null ? p.pfValue : p.value);
+      unitsArr.push(p.units);
+    }
+
+    if (type.validate && !type.validate(valArr, unitsArr)) {
+      return null;
+    }
+
+    if (type.singleEnum && hasEnum) {
+      if (valArr.length === 1 && is.string(valArr[0])) {
+        return {
+          name: name,
+          value: valArr[0],
+          strValue: valArr[0],
+          bypass: propIsBypass
+        };
+      } else {
+        return null;
+      }
+    }
+
+    return {
+      name: name,
+      value: valArr,
+      pfValue: pfValArr,
+      strValue: valArr.join(' '),
+      bypass: propIsBypass,
+      units: unitsArr
+    };
+  }
+
+  // several types also allow enums
+  var checkEnums = function checkEnums() {
+    for (var _i = 0; _i < type.enums.length; _i++) {
+      var en = type.enums[_i];
+
+      if (en === value) {
+        return {
+          name: name,
+          value: value,
+          strValue: '' + value,
+          bypass: propIsBypass
+        };
+      }
+    }
+
+    return null;
+  };
+
+  // check the type and return the appropriate object
+  if (type.number) {
+    var units = void 0;
+    var implicitUnits = 'px'; // not set => px
+
+    if (type.units) {
+      // use specified units if set
+      units = type.units;
+    }
+
+    if (type.implicitUnits) {
+      implicitUnits = type.implicitUnits;
+    }
+
+    if (!type.unitless) {
+      if (valueIsString) {
+        var unitsRegex = 'px|em' + (type.allowPercent ? '|\\%' : '');
+        if (units) {
+          unitsRegex = units;
+        } // only allow explicit units if so set
+        var match = value.match('^(' + util.regex.number + ')(' + unitsRegex + ')?' + '$');
+
+        if (match) {
+          value = match[1];
+          units = match[2] || implicitUnits;
+        }
+      } else if (!units || type.implicitUnits) {
+        units = implicitUnits; // implicitly px if unspecified
+      }
+    }
+
+    value = parseFloat(value);
+
+    // if not a number and enums not allowed, then the value is invalid
+    if (isNaN(value) && type.enums === undefined) {
+      return null;
+    }
+
+    // check if this number type also accepts special keywords in place of numbers
+    // (i.e. `left`, `auto`, etc)
+    if (isNaN(value) && type.enums !== undefined) {
+      value = passedValue;
+
+      return checkEnums();
+    }
+
+    // check if value must be an integer
+    if (type.integer && !is.integer(value)) {
+      return null;
+    }
+
+    // check value is within range
+    if (type.min !== undefined && (value < type.min || type.strictMin && value === type.min) || type.max !== undefined && (value > type.max || type.strictMax && value === type.max)) {
+      return null;
+    }
+
+    var ret = {
+      name: name,
+      value: value,
+      strValue: '' + value + (units ? units : ''),
+      units: units,
+      bypass: propIsBypass
+    };
+
+    // normalise value in pixels
+    if (type.unitless || units !== 'px' && units !== 'em') {
+      ret.pfValue = value;
+    } else {
+      ret.pfValue = units === 'px' || !units ? value : this.getEmSizeInPixels() * value;
+    }
+
+    // normalise value in ms
+    if (units === 'ms' || units === 's') {
+      ret.pfValue = units === 'ms' ? value : 1000 * value;
+    }
+
+    // normalise value in rad
+    if (units === 'deg' || units === 'rad') {
+      ret.pfValue = units === 'rad' ? value : math.deg2rad(value);
+    }
+
+    // normalize value in %
+    if (units === '%') {
+      ret.pfValue = value / 100;
+    }
+
+    return ret;
+  } else if (type.propList) {
+
+    var props = [];
+    var propsStr = '' + value;
+
+    if (propsStr === 'none') {
+      // leave empty
+
+    } else {
+      // go over each prop
+
+      var propsSplit = propsStr.split(',');
+      for (var _i2 = 0; _i2 < propsSplit.length; _i2++) {
+        var propName = propsSplit[_i2].trim();
+
+        if (self.properties[propName]) {
+          props.push(propName);
+        }
+      }
+
+      if (props.length === 0) {
+        return null;
+      }
+    }
+
+    return {
+      name: name,
+      value: props,
+      strValue: props.length === 0 ? 'none' : props.join(', '),
+      bypass: propIsBypass
+    };
+  } else if (type.color) {
+    var tuple = util.color2tuple(value);
+
+    if (!tuple) {
+      return null;
+    }
+
+    return {
+      name: name,
+      value: tuple,
+      pfValue: tuple,
+      strValue: '' + value,
+      bypass: propIsBypass
+    };
+  } else if (type.regex || type.regexes) {
+
+    // first check enums
+    if (type.enums) {
+      var enumProp = checkEnums();
+
+      if (enumProp) {
+        return enumProp;
+      }
+    }
+
+    var regexes = type.regexes ? type.regexes : [type.regex];
+
+    for (var _i3 = 0; _i3 < regexes.length; _i3++) {
+      var regex = new RegExp(regexes[_i3]); // make a regex from the type string
+      var m = regex.exec(value);
+
+      if (m) {
+        // regex matches
+        return {
+          name: name,
+          value: type.singleRegexMatchValue ? m[1] : m,
+          strValue: '' + value,
+          bypass: propIsBypass
+        };
+      }
+    }
+
+    return null; // didn't match any
+  } else if (type.string) {
+    // just return
+    return {
+      name: name,
+      value: '' + value,
+      strValue: '' + value,
+      bypass: propIsBypass
+    };
+  } else if (type.enums) {
+    // check enums last because it's a combo type in others
+    return checkEnums();
+  } else {
+    return null; // not a type we can handle
+  }
+};
+
+module.exports = styfn;
+
+/***/ }),
+/* 93 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var is = __webpack_require__(0);
+var window = __webpack_require__(3);
 var math = __webpack_require__(2);
 
 var corefn = {
@@ -12891,537 +16680,275 @@ corefn.autoungrabifyNodes = corefn.autoungrabify;
 module.exports = corefn;
 
 /***/ }),
-/* 72 */
+/* 94 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
 var util = __webpack_require__(1);
-var Animation = __webpack_require__(23);
-var math = __webpack_require__(2);
+var define = __webpack_require__(4);
+var Collection = __webpack_require__(7);
+var Core = __webpack_require__(12);
+var incExts = __webpack_require__(95);
 var is = __webpack_require__(0);
+var Emitter = __webpack_require__(11);
 
-var define = {
+// registered extensions to cytoscape, indexed by name
+var extensions = {};
 
-  animated: function animated() {
-    return function animatedImpl() {
-      var self = this;
-      var selfIsArrayLike = self.length !== undefined;
-      var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
-      var cy = this._private.cy || this;
+// registered modules for extensions, indexed by name
+var modules = {};
 
-      if (!cy.styleEnabled()) {
-        return false;
+function setExtension(type, name, registrant) {
+
+  var ext = registrant;
+
+  var overrideErr = function overrideErr(field) {
+    util.error('Can not register `' + name + '` for `' + type + '` since `' + field + '` already exists in the prototype and can not be overridden');
+  };
+
+  if (type === 'core') {
+    if (Core.prototype[name]) {
+      return overrideErr(name);
+    } else {
+      Core.prototype[name] = registrant;
+    }
+  } else if (type === 'collection') {
+    if (Collection.prototype[name]) {
+      return overrideErr(name);
+    } else {
+      Collection.prototype[name] = registrant;
+    }
+  } else if (type === 'layout') {
+    // fill in missing layout functions in the prototype
+
+    var Layout = function Layout(options) {
+      this.options = options;
+
+      registrant.call(this, options);
+
+      // make sure layout has _private for use w/ std apis like .on()
+      if (!is.plainObject(this._private)) {
+        this._private = {};
       }
 
-      var ele = all[0];
+      this._private.cy = options.cy;
+      this._private.listeners = [];
 
-      if (ele) {
-        return ele._private.animation.current.length > 0;
-      }
+      this.createEmitter();
     };
-  }, // animated
 
-  clearQueue: function clearQueue() {
-    return function clearQueueImpl() {
-      var self = this;
-      var selfIsArrayLike = self.length !== undefined;
-      var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
-      var cy = this._private.cy || this;
+    var layoutProto = Layout.prototype = Object.create(registrant.prototype);
 
-      if (!cy.styleEnabled()) {
+    var optLayoutFns = [];
+
+    for (var i = 0; i < optLayoutFns.length; i++) {
+      var fnName = optLayoutFns[i];
+
+      layoutProto[fnName] = layoutProto[fnName] || function () {
         return this;
+      };
+    }
+
+    // either .start() or .run() is defined, so autogen the other
+    if (layoutProto.start && !layoutProto.run) {
+      layoutProto.run = function () {
+        this.start();return this;
+      };
+    } else if (!layoutProto.start && layoutProto.run) {
+      layoutProto.start = function () {
+        this.run();return this;
+      };
+    }
+
+    var regStop = registrant.prototype.stop;
+    layoutProto.stop = function () {
+      var opts = this.options;
+
+      if (opts && opts.animate) {
+        var anis = this.animations;
+
+        if (anis) {
+          for (var _i = 0; _i < anis.length; _i++) {
+            anis[_i].stop();
+          }
+        }
       }
 
-      for (var i = 0; i < all.length; i++) {
-        var ele = all[i];
-        ele._private.animation.queue = [];
+      if (regStop) {
+        regStop.call(this);
+      } else {
+        this.emit('layoutstop');
       }
 
       return this;
     };
-  }, // clearQueue
 
-  delay: function delay() {
-    return function delayImpl(time, complete) {
-      var cy = this._private.cy || this;
-
-      if (!cy.styleEnabled()) {
+    if (!layoutProto.destroy) {
+      layoutProto.destroy = function () {
         return this;
-      }
+      };
+    }
 
-      return this.animate({
-        delay: time,
-        duration: time,
-        complete: complete
-      });
+    layoutProto.cy = function () {
+      return this._private.cy;
     };
-  }, // delay
 
-  delayAnimation: function delayAnimation() {
-    return function delayAnimationImpl(time, complete) {
-      var cy = this._private.cy || this;
+    var getCy = function getCy(layout) {
+      return layout._private.cy;
+    };
 
-      if (!cy.styleEnabled()) {
+    util.assign(layoutProto, {
+      createEmitter: function createEmitter() {
+        this._private.emitter = new Emitter({
+          eventFields: function eventFields(layout) {
+            return {
+              layout: layout,
+              cy: getCy(layout),
+              target: layout
+            };
+          },
+          bubble: function bubble() {
+            return true;
+          },
+          parent: function parent(layout) {
+            return getCy(layout);
+          },
+          context: this
+        });
+
         return this;
+      },
+      emitter: function emitter() {
+        return this._private.emitter;
+      },
+      on: function on(evt, cb) {
+        this.emitter().on(evt, cb);return this;
+      },
+      one: function one(evt, cb) {
+        this.emitter().one(evt, cb);return this;
+      },
+      once: function once(evt, cb) {
+        this.emitter().one(evt, cb);return this;
+      },
+      removeListener: function removeListener(evt, cb) {
+        this.emitter().removeListener(evt, cb);return this;
+      },
+      emit: function emit(evt, params) {
+        this.emitter().emit(evt, params);return this;
       }
+    });
 
-      return this.animation({
-        delay: time,
-        duration: time,
-        complete: complete
-      });
+    define.eventAliasesOn(layoutProto);
+
+    ext = Layout; // replace with our wrapped layout
+  } else if (type === 'renderer' && name !== 'null' && name !== 'base') {
+    // user registered renderers inherit from base
+
+    var BaseRenderer = getExtension('renderer', 'base');
+    var bProto = BaseRenderer.prototype;
+    var RegistrantRenderer = registrant;
+    var rProto = registrant.prototype;
+
+    var Renderer = function Renderer() {
+      BaseRenderer.apply(this, arguments);
+      RegistrantRenderer.apply(this, arguments);
     };
-  }, // delay
 
-  animation: function animation() {
-    return function animationImpl(properties, params) {
-      var self = this;
-      var selfIsArrayLike = self.length !== undefined;
-      var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
-      var cy = this._private.cy || this;
-      var isCore = !selfIsArrayLike;
-      var isEles = !isCore;
+    var proto = Renderer.prototype;
 
-      if (!cy.styleEnabled()) {
-        return this;
+    for (var pName in bProto) {
+      var pVal = bProto[pName];
+      var existsInR = rProto[pName] != null;
+
+      if (existsInR) {
+        return overrideErr(pName);
       }
 
-      var style = cy.style();
-
-      properties = util.assign({}, properties, params);
-
-      var propertiesEmpty = Object.keys(properties).length === 0;
-
-      if (propertiesEmpty) {
-        return new Animation(all[0], properties); // nothing to animate
-      }
-
-      if (properties.duration === undefined) {
-        properties.duration = 400;
-      }
-
-      switch (properties.duration) {
-        case 'slow':
-          properties.duration = 600;
-          break;
-        case 'fast':
-          properties.duration = 200;
-          break;
-      }
-
-      if (isEles) {
-        properties.style = style.getPropsList(properties.style || properties.css);
-
-        properties.css = undefined;
-      }
-
-      if (isEles && properties.renderedPosition != null) {
-        var rpos = properties.renderedPosition;
-        var pan = cy.pan();
-        var zoom = cy.zoom();
-
-        properties.position = math.renderedToModelPosition(rpos, zoom, pan);
-      }
-
-      // override pan w/ panBy if set
-      if (isCore && properties.panBy != null) {
-        var panBy = properties.panBy;
-        var cyPan = cy.pan();
-
-        properties.pan = {
-          x: cyPan.x + panBy.x,
-          y: cyPan.y + panBy.y
-        };
-      }
-
-      // override pan w/ center if set
-      var center = properties.center || properties.centre;
-      if (isCore && center != null) {
-        var centerPan = cy.getCenterPan(center.eles, properties.zoom);
-
-        if (centerPan != null) {
-          properties.pan = centerPan;
-        }
-      }
-
-      // override pan & zoom w/ fit if set
-      if (isCore && properties.fit != null) {
-        var fit = properties.fit;
-        var fitVp = cy.getFitViewport(fit.eles || fit.boundingBox, fit.padding);
-
-        if (fitVp != null) {
-          properties.pan = fitVp.pan;
-          properties.zoom = fitVp.zoom;
-        }
-      }
-
-      // override zoom (& potentially pan) w/ zoom obj if set
-      if (isCore && is.plainObject(properties.zoom)) {
-        var vp = cy.getZoomedViewport(properties.zoom);
-
-        if (vp != null) {
-          if (vp.zoomed) {
-            properties.zoom = vp.zoom;
-          }
-
-          if (vp.panned) {
-            properties.pan = vp.pan;
-          }
-        }
-      }
-
-      return new Animation(all[0], properties);
-    };
-  }, // animate
-
-  animate: function animate() {
-    return function animateImpl(properties, params) {
-      var self = this;
-      var selfIsArrayLike = self.length !== undefined;
-      var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
-      var cy = this._private.cy || this;
-
-      if (!cy.styleEnabled()) {
-        return this;
-      }
-
-      if (params) {
-        properties = util.extend({}, properties, params);
-      }
-
-      // manually hook and run the animation
-      for (var i = 0; i < all.length; i++) {
-        var ele = all[i];
-        var queue = ele.animated() && (properties.queue === undefined || properties.queue);
-
-        var ani = ele.animation(properties, queue ? { queue: true } : undefined);
-
-        ani.play();
-      }
-
-      return this; // chaining
-    };
-  }, // animate
-
-  stop: function stop() {
-    return function stopImpl(clearQueue, jumpToEnd) {
-      var self = this;
-      var selfIsArrayLike = self.length !== undefined;
-      var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
-      var cy = this._private.cy || this;
-
-      if (!cy.styleEnabled()) {
-        return this;
-      }
-
-      for (var i = 0; i < all.length; i++) {
-        var ele = all[i];
-        var _p = ele._private;
-        var anis = _p.animation.current;
-
-        for (var j = 0; j < anis.length; j++) {
-          var ani = anis[j];
-          var ani_p = ani._private;
-
-          if (jumpToEnd) {
-            // next iteration of the animation loop, the animation
-            // will go straight to the end and be removed
-            ani_p.duration = 0;
-          }
-        }
-
-        // clear the queue of future animations
-        if (clearQueue) {
-          _p.animation.queue = [];
-        }
-
-        if (!jumpToEnd) {
-          _p.animation.current = [];
-        }
-      }
-
-      // we have to notify (the animation loop doesn't do it for us on `stop`)
-      cy.notify({
-        eles: this,
-        type: 'draw'
-      });
-
-      return this;
-    };
-  } // stop
-
-}; // define
-
-module.exports = define;
-
-/***/ }),
-/* 73 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
-
-var util = __webpack_require__(1);
-var is = __webpack_require__(0);
-
-var define = {
-
-  // access data field
-  data: function data(params) {
-    var defaults = {
-      field: 'data',
-      bindingEvent: 'data',
-      allowBinding: false,
-      allowSetting: false,
-      allowGetting: false,
-      settingEvent: 'data',
-      settingTriggersEvent: false,
-      triggerFnName: 'trigger',
-      immutableKeys: {}, // key => true if immutable
-      updateStyle: false,
-      beforeGet: function beforeGet(self) {},
-      beforeSet: function beforeSet(self, obj) {},
-      onSet: function onSet(self) {},
-      canSet: function canSet(self) {
-        return true;
-      }
-    };
-    params = util.extend({}, defaults, params);
-
-    return function dataImpl(name, value) {
-      var p = params;
-      var self = this;
-      var selfIsArrayLike = self.length !== undefined;
-      var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
-      var single = selfIsArrayLike ? self[0] : self;
-
-      // .data('foo', ...)
-      if (is.string(name)) {
-        // set or get property
-
-        // .data('foo')
-        if (p.allowGetting && value === undefined) {
-          // get
-
-          var ret = void 0;
-          if (single) {
-            p.beforeGet(single);
-
-            ret = single._private[p.field][name];
-          }
-          return ret;
-
-          // .data('foo', 'bar')
-        } else if (p.allowSetting && value !== undefined) {
-          // set
-          var valid = !p.immutableKeys[name];
-          if (valid) {
-            var change = _defineProperty({}, name, value);
-
-            p.beforeSet(self, change);
-
-            for (var i = 0, l = all.length; i < l; i++) {
-              var ele = all[i];
-
-              if (p.canSet(ele)) {
-                ele._private[p.field][name] = value;
-              }
-            }
-
-            // update mappers if asked
-            if (p.updateStyle) {
-              self.updateStyle();
-            }
-
-            // call onSet callback
-            p.onSet(self);
-
-            if (p.settingTriggersEvent) {
-              self[p.triggerFnName](p.settingEvent);
-            }
-          }
-        }
-
-        // .data({ 'foo': 'bar' })
-      } else if (p.allowSetting && is.plainObject(name)) {
-        // extend
-        var obj = name;
-        var k = void 0,
-            v = void 0;
-        var keys = Object.keys(obj);
-
-        p.beforeSet(self, obj);
-
-        for (var _i = 0; _i < keys.length; _i++) {
-          k = keys[_i];
-          v = obj[k];
-
-          var _valid = !p.immutableKeys[k];
-          if (_valid) {
-            for (var j = 0; j < all.length; j++) {
-              var _ele = all[j];
-
-              if (p.canSet(_ele)) {
-                _ele._private[p.field][k] = v;
-              }
-            }
-          }
-        }
-
-        // update mappers if asked
-        if (p.updateStyle) {
-          self.updateStyle();
-        }
-
-        // call onSet callback
-        p.onSet(self);
-
-        if (p.settingTriggersEvent) {
-          self[p.triggerFnName](p.settingEvent);
-        }
-
-        // .data(function(){ ... })
-      } else if (p.allowBinding && is.fn(name)) {
-        // bind to event
-        var fn = name;
-        self.on(p.bindingEvent, fn);
-
-        // .data()
-      } else if (p.allowGetting && name === undefined) {
-        // get whole object
-        var _ret = void 0;
-        if (single) {
-          p.beforeGet(single);
-
-          _ret = single._private[p.field];
-        }
-        return _ret;
-      }
-
-      return self; // maintain chainability
-    }; // function
-  }, // data
-
-  // remove data field
-  removeData: function removeData(params) {
-    var defaults = {
-      field: 'data',
-      event: 'data',
-      triggerFnName: 'trigger',
-      triggerEvent: false,
-      immutableKeys: {} // key => true if immutable
-    };
-    params = util.extend({}, defaults, params);
-
-    return function removeDataImpl(names) {
-      var p = params;
-      var self = this;
-      var selfIsArrayLike = self.length !== undefined;
-      var all = selfIsArrayLike ? self : [self]; // put in array if not array-like
-
-      // .removeData('foo bar')
-      if (is.string(names)) {
-        // then get the list of keys, and delete them
-        var keys = names.split(/\s+/);
-        var l = keys.length;
-
-        for (var i = 0; i < l; i++) {
-          // delete each non-empty key
-          var key = keys[i];
-          if (is.emptyString(key)) {
-            continue;
-          }
-
-          var valid = !p.immutableKeys[key]; // not valid if immutable
-          if (valid) {
-            for (var i_a = 0, l_a = all.length; i_a < l_a; i_a++) {
-              all[i_a]._private[p.field][key] = undefined;
-            }
-          }
-        }
-
-        if (p.triggerEvent) {
-          self[p.triggerFnName](p.event);
-        }
-
-        // .removeData()
-      } else if (names === undefined) {
-        // then delete all keys
-
-        for (var _i_a = 0, _l_a = all.length; _i_a < _l_a; _i_a++) {
-          var _privateFields = all[_i_a]._private[p.field];
-          var _keys = Object.keys(_privateFields);
-
-          for (var _i2 = 0; _i2 < _keys.length; _i2++) {
-            var _key = _keys[_i2];
-            var validKeyToDelete = !p.immutableKeys[_key];
-
-            if (validKeyToDelete) {
-              _privateFields[_key] = undefined;
-            }
-          }
-        }
-
-        if (p.triggerEvent) {
-          self[p.triggerFnName](p.event);
-        }
-      }
-
-      return self; // maintain chaining
-    }; // function
-  } // removeData
-}; // define
-
-module.exports = define;
-
-/***/ }),
-/* 74 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var Promise = __webpack_require__(5);
-
-var define = {
-
-  eventAliasesOn: function eventAliasesOn(proto) {
-    var p = proto;
-
-    p.addListener = p.listen = p.bind = p.on;
-    p.unlisten = p.unbind = p.off = p.removeListener;
-    p.trigger = p.emit;
-
-    // this is just a wrapper alias of .on()
-    p.pon = p.promiseOn = function (events, selector) {
-      var self = this;
-      var args = Array.prototype.slice.call(arguments, 0);
-
-      return new Promise(function (resolve, reject) {
-        var callback = function callback(e) {
-          self.off.apply(self, offArgs);
-
-          resolve(e);
-        };
-
-        var onArgs = args.concat([callback]);
-        var offArgs = onArgs.concat([]);
-
-        self.on.apply(self, onArgs);
-      });
-    };
+      proto[pName] = pVal; // take impl from base
+    }
+
+    for (var _pName in rProto) {
+      proto[_pName] = rProto[_pName]; // take impl from registrant
+    }
+
+    bProto.clientFunctions.forEach(function (name) {
+      proto[name] = proto[name] || function () {
+        util.error('Renderer does not implement `renderer.' + name + '()` on its prototype');
+      };
+    });
+
+    ext = Renderer;
   }
 
-}; // define
+  return util.setMap({
+    map: extensions,
+    keys: [type, name],
+    value: ext
+  });
+}
 
-module.exports = define;
+function getExtension(type, name) {
+  return util.getMap({
+    map: extensions,
+    keys: [type, name]
+  });
+}
+
+function setModule(type, name, moduleType, moduleName, registrant) {
+  return util.setMap({
+    map: modules,
+    keys: [type, name, moduleType, moduleName],
+    value: registrant
+  });
+}
+
+function getModule(type, name, moduleType, moduleName) {
+  return util.getMap({
+    map: modules,
+    keys: [type, name, moduleType, moduleName]
+  });
+}
+
+var extension = function extension() {
+  // e.g. extension('renderer', 'svg')
+  if (arguments.length === 2) {
+    return getExtension.apply(null, arguments);
+  }
+
+  // e.g. extension('renderer', 'svg', { ... })
+  else if (arguments.length === 3) {
+      return setExtension.apply(null, arguments);
+    }
+
+    // e.g. extension('renderer', 'svg', 'nodeShape', 'ellipse')
+    else if (arguments.length === 4) {
+        return getModule.apply(null, arguments);
+      }
+
+      // e.g. extension('renderer', 'svg', 'nodeShape', 'ellipse', { ... })
+      else if (arguments.length === 5) {
+          return setModule.apply(null, arguments);
+        } else {
+          util.error('Invalid extension access syntax');
+        }
+};
+
+// allows a core instance to access extensions internally
+Core.prototype.extension = extension;
+
+// included extensions
+incExts.forEach(function (group) {
+  group.extensions.forEach(function (ext) {
+    setExtension(group.type, ext.name, ext.impl);
+  });
+});
+
+module.exports = extension;
 
 /***/ }),
-/* 75 */
+/* 95 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -13429,14 +16956,23 @@ module.exports = define;
 
 module.exports = [{
   type: 'layout',
-  extensions: __webpack_require__(81)
+  extensions: __webpack_require__(96)
 }, {
   type: 'renderer',
-  extensions: __webpack_require__(114)
+  extensions: __webpack_require__(105)
 }];
 
 /***/ }),
-/* 76 */
+/* 96 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+module.exports = [{ name: 'breadthfirst', impl: __webpack_require__(97) }, { name: 'circle', impl: __webpack_require__(98) }, { name: 'concentric', impl: __webpack_require__(99) }, { name: 'cose', impl: __webpack_require__(100) }, { name: 'grid', impl: __webpack_require__(101) }, { name: 'null', impl: __webpack_require__(102) }, { name: 'preset', impl: __webpack_require__(103) }, { name: 'random', impl: __webpack_require__(104) }];
+
+/***/ }),
+/* 97 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -13892,7 +17428,7 @@ BreadthFirstLayout.prototype.run = function () {
 module.exports = BreadthFirstLayout;
 
 /***/ }),
-/* 77 */
+/* 98 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -14010,7 +17546,7 @@ CircleLayout.prototype.run = function () {
 module.exports = CircleLayout;
 
 /***/ }),
-/* 78 */
+/* 99 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -14226,7 +17762,7 @@ ConcentricLayout.prototype.run = function () {
 module.exports = ConcentricLayout;
 
 /***/ }),
-/* 79 */
+/* 100 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -15635,7 +19171,7 @@ var refreshPositions = function refreshPositions(layoutInfo, cy, options) {
 module.exports = CoseLayout;
 
 /***/ }),
-/* 80 */
+/* 101 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -15896,16 +19432,7 @@ GridLayout.prototype.run = function () {
 module.exports = GridLayout;
 
 /***/ }),
-/* 81 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-module.exports = [{ name: 'breadthfirst', impl: __webpack_require__(76) }, { name: 'circle', impl: __webpack_require__(77) }, { name: 'concentric', impl: __webpack_require__(78) }, { name: 'cose', impl: __webpack_require__(79) }, { name: 'grid', impl: __webpack_require__(80) }, { name: 'null', impl: __webpack_require__(82) }, { name: 'preset', impl: __webpack_require__(83) }, { name: 'random', impl: __webpack_require__(84) }];
-
-/***/ }),
-/* 82 */
+/* 102 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -15963,7 +19490,7 @@ NullLayout.prototype.stop = function () {
 module.exports = NullLayout;
 
 /***/ }),
-/* 83 */
+/* 103 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -16036,7 +19563,7 @@ PresetLayout.prototype.run = function () {
 module.exports = PresetLayout;
 
 /***/ }),
-/* 84 */
+/* 104 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -16091,7 +19618,254 @@ RandomLayout.prototype.run = function () {
 module.exports = RandomLayout;
 
 /***/ }),
-/* 85 */
+/* 105 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+module.exports = [{ name: 'null', impl: __webpack_require__(106) }, { name: 'base', impl: __webpack_require__(107) }, { name: 'canvas', impl: __webpack_require__(123) }];
+
+/***/ }),
+/* 106 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+function NullRenderer(options) {
+  this.options = options;
+  this.notifications = 0; // for testing
+}
+
+var noop = function noop() {};
+
+NullRenderer.prototype = {
+  recalculateRenderedStyle: noop,
+  notify: function notify() {
+    this.notifications++;
+  },
+  init: noop
+};
+
+module.exports = NullRenderer;
+
+/***/ }),
+/* 107 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var is = __webpack_require__(0);
+var util = __webpack_require__(1);
+var window = __webpack_require__(3);
+
+var BaseRenderer = function BaseRenderer(options) {
+  this.init(options);
+};
+var BR = BaseRenderer;
+var BRp = BR.prototype;
+
+BRp.clientFunctions = ['redrawHint', 'render', 'renderTo', 'matchCanvasSize', 'nodeShapeImpl', 'arrowShapeImpl'];
+
+BRp.init = function (options) {
+  var r = this;
+
+  r.options = options;
+
+  r.cy = options.cy;
+
+  var ctr = r.container = options.cy.container();
+
+  // prepend a stylesheet in the head such that
+  if (window) {
+    var document = window.document;
+    var head = document.head;
+    var stylesheetId = '__________cytoscape_stylesheet';
+    var className = '__________cytoscape_container';
+    var stylesheetAlreadyExists = document.getElementById(stylesheetId) != null;
+
+    if (ctr.className.indexOf(className) < 0) {
+      ctr.className = (ctr.className || '') + ' ' + className;
+    }
+
+    if (!stylesheetAlreadyExists) {
+      var stylesheet = document.createElement('style');
+
+      stylesheet.id = stylesheetId;
+      stylesheet.innerHTML = '.' + className + ' { position: relative; }';
+
+      head.insertBefore(stylesheet, head.children[0]); // first so lowest priority
+    }
+
+    var computedStyle = window.getComputedStyle(ctr);
+    var position = computedStyle.getPropertyValue('position');
+
+    if (position === 'static') {
+      util.error('A Cytoscape container has style position:static and so can not use UI extensions properly');
+    }
+  }
+
+  r.selection = [undefined, undefined, undefined, undefined, 0]; // Coordinates for selection box, plus enabled flag
+
+  r.bezierProjPcts = [0.05, 0.225, 0.4, 0.5, 0.6, 0.775, 0.95];
+
+  //--Pointer-related data
+  r.hoverData = { down: null, last: null,
+    downTime: null, triggerMode: null,
+    dragging: false,
+    initialPan: [null, null], capture: false };
+
+  r.dragData = { possibleDragElements: [] };
+
+  r.touchData = {
+    start: null, capture: false,
+
+    // These 3 fields related to tap, taphold events
+    startPosition: [null, null, null, null, null, null],
+    singleTouchStartTime: null,
+    singleTouchMoved: true,
+
+    now: [null, null, null, null, null, null],
+    earlier: [null, null, null, null, null, null]
+  };
+
+  r.redraws = 0;
+  r.showFps = options.showFps;
+  r.debug = options.debug;
+
+  r.hideEdgesOnViewport = options.hideEdgesOnViewport;
+  r.hideLabelsOnViewport = options.hideLabelsOnViewport;
+  r.textureOnViewport = options.textureOnViewport;
+  r.wheelSensitivity = options.wheelSensitivity;
+  r.motionBlurEnabled = options.motionBlur; // on by default
+  r.forcedPixelRatio = options.pixelRatio;
+  r.motionBlur = options.motionBlur; // for initial kick off
+  r.motionBlurOpacity = options.motionBlurOpacity;
+  r.motionBlurTransparency = 1 - r.motionBlurOpacity;
+  r.motionBlurPxRatio = 1;
+  r.mbPxRBlurry = 1; //0.8;
+  r.minMbLowQualFrames = 4;
+  r.fullQualityMb = false;
+  r.clearedForMotionBlur = [];
+  r.desktopTapThreshold = options.desktopTapThreshold;
+  r.desktopTapThreshold2 = options.desktopTapThreshold * options.desktopTapThreshold;
+  r.touchTapThreshold = options.touchTapThreshold;
+  r.touchTapThreshold2 = options.touchTapThreshold * options.touchTapThreshold;
+  r.tapholdDuration = 500;
+
+  r.bindings = [];
+  r.beforeRenderCallbacks = [];
+  r.beforeRenderPriorities = { // higher priority execs before lower one
+    animations: 400,
+    eleCalcs: 300,
+    eleTxrDeq: 200,
+    lyrTxrDeq: 100
+  };
+
+  r.registerNodeShapes();
+  r.registerArrowShapes();
+  r.registerCalculationListeners();
+};
+
+BRp.notify = function (params) {
+  var types;
+  var r = this;
+
+  // the renderer can't be notified after it's destroyed
+  if (this.destroyed) {
+    return;
+  }
+
+  if (is.array(params.type)) {
+    types = params.type;
+  } else {
+    types = [params.type];
+  }
+
+  var has = {};
+  for (var i = 0; i < types.length; i++) {
+    var type = types[i];
+
+    has[type] = true;
+  } // for
+
+  if (has['init']) {
+    r.load();
+    return;
+  }
+
+  if (has['destroy']) {
+    r.destroy();
+    return;
+  }
+
+  if (has['add'] || has['remove'] || has['load'] || has['zorder']) {
+    r.invalidateCachedZSortedEles();
+  }
+
+  if (has['viewport']) {
+    r.redrawHint('select', true);
+  }
+
+  if (has['load'] || has['resize']) {
+    r.invalidateContainerClientCoordsCache();
+    r.matchCanvasSize(r.container);
+  }
+
+  r.redrawHint('eles', true);
+  r.redrawHint('drag', true);
+
+  this.startRenderLoop();
+
+  this.redraw();
+};
+
+BRp.destroy = function () {
+  var r = this;
+
+  r.destroyed = true;
+
+  r.cy.stopAnimationLoop();
+
+  for (var i = 0; i < r.bindings.length; i++) {
+    var binding = r.bindings[i];
+    var b = binding;
+    var tgt = b.target;
+
+    (tgt.off || tgt.removeEventListener).apply(tgt, b.args);
+  }
+
+  r.bindings = [];
+  r.beforeRenderCallbacks = [];
+  r.onUpdateEleCalcsFns = [];
+
+  if (r.removeObserver) {
+    r.removeObserver.disconnect();
+  }
+
+  if (r.styleObserver) {
+    r.styleObserver.disconnect();
+  }
+
+  if (r.labelCalcDiv) {
+    try {
+      document.body.removeChild(r.labelCalcDiv); // eslint-disable-line no-undef
+    } catch (e) {
+      // ie10 issue #1014
+    }
+  }
+};
+
+[__webpack_require__(108), __webpack_require__(109), __webpack_require__(119), __webpack_require__(120), __webpack_require__(121), __webpack_require__(122)].forEach(function (props) {
+  util.extend(BRp, props);
+});
+
+module.exports = BR;
+
+/***/ }),
+/* 108 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -16244,7 +20018,7 @@ BRp.registerArrowShapes = function () {
     },
 
     gap: function gap(edge) {
-      return standardGap(edge) * 0.985;
+      return standardGap(edge) * 0.8;
     }
   });
 
@@ -16310,7 +20084,7 @@ BRp.registerArrowShapes = function () {
     points: [-0.15, -0.3, 0, 0, 0.15, -0.3, 0, -0.15],
 
     gap: function gap(edge) {
-      return standardGap(edge) * 0.985;
+      return standardGap(edge) * 0.525;
     }
   });
 
@@ -16361,16 +20135,33 @@ BRp.registerArrowShapes = function () {
 module.exports = BRp;
 
 /***/ }),
-/* 86 */
+/* 109 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var window = __webpack_require__(4);
+var util = __webpack_require__(1);
+
+var BRp = {};
+
+[__webpack_require__(110), __webpack_require__(111), __webpack_require__(112), __webpack_require__(113), __webpack_require__(114), __webpack_require__(115), __webpack_require__(116), __webpack_require__(117), __webpack_require__(118)].forEach(function (props) {
+  util.extend(BRp, props);
+});
+
+module.exports = BRp;
+
+/***/ }),
+/* 110 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var window = __webpack_require__(3);
 var math = __webpack_require__(2);
 var util = __webpack_require__(1);
-var window = __webpack_require__(4);
+var window = __webpack_require__(3);
 
 var BRp = {};
 
@@ -16743,7 +20534,7 @@ BRp.getAllInBox = function (x1, y1, x2, y2) {
 module.exports = BRp;
 
 /***/ }),
-/* 87 */
+/* 111 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -16930,7 +20721,7 @@ BRp.getArrowWidth = BRp.getArrowHeight = function (edgeWidth, scale) {
 module.exports = BRp;
 
 /***/ }),
-/* 88 */
+/* 112 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -17648,7 +21439,7 @@ BRp.getEdgeMidpoint = function (edge) {
 module.exports = BRp;
 
 /***/ }),
-/* 89 */
+/* 113 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -17842,7 +21633,7 @@ BRp.getTargetEndpoint = function (edge) {
 module.exports = BRp;
 
 /***/ }),
-/* 90 */
+/* 114 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -17910,24 +21701,7 @@ BRp.recalculateEdgeProjections = function (edges) {
 module.exports = BRp;
 
 /***/ }),
-/* 91 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var util = __webpack_require__(1);
-
-var BRp = {};
-
-[__webpack_require__(86), __webpack_require__(87), __webpack_require__(88), __webpack_require__(89), __webpack_require__(90), __webpack_require__(92), __webpack_require__(93), __webpack_require__(94), __webpack_require__(95)].forEach(function (props) {
-  util.extend(BRp, props);
-});
-
-module.exports = BRp;
-
-/***/ }),
-/* 92 */
+/* 115 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -18427,7 +22201,7 @@ BRp.calculateLabelAngles = function (ele) {
 module.exports = BRp;
 
 /***/ }),
-/* 93 */
+/* 116 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -18459,7 +22233,7 @@ BRp.getNodeShape = function (node) {
 module.exports = BRp;
 
 /***/ }),
-/* 94 */
+/* 117 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -18655,13 +22429,13 @@ BRp.recalculateRenderedStyle = function (eles, useCache) {
 module.exports = BRp;
 
 /***/ }),
-/* 95 */
+/* 118 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var zIndexSort = __webpack_require__(14);
+var zIndexSort = __webpack_require__(17);
 
 var BRp = {};
 
@@ -18728,7 +22502,7 @@ BRp.getCachedZSortedEles = function (forceRecalc) {
 module.exports = BRp;
 
 /***/ }),
-/* 96 */
+/* 119 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -18774,221 +22548,7 @@ BRp.getCachedImage = function (url, crossOrigin, onLoad) {
 module.exports = BRp;
 
 /***/ }),
-/* 97 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var is = __webpack_require__(0);
-var util = __webpack_require__(1);
-var window = __webpack_require__(4);
-
-var BaseRenderer = function BaseRenderer(options) {
-  this.init(options);
-};
-var BR = BaseRenderer;
-var BRp = BR.prototype;
-
-BRp.clientFunctions = ['redrawHint', 'render', 'renderTo', 'matchCanvasSize', 'nodeShapeImpl', 'arrowShapeImpl'];
-
-BRp.init = function (options) {
-  var r = this;
-
-  r.options = options;
-
-  r.cy = options.cy;
-
-  var ctr = r.container = options.cy.container();
-
-  // prepend a stylesheet in the head such that
-  if (window) {
-    var document = window.document;
-    var head = document.head;
-    var stylesheetId = '__________cytoscape_stylesheet';
-    var className = '__________cytoscape_container';
-    var stylesheetAlreadyExists = document.getElementById(stylesheetId) != null;
-
-    if (ctr.className.indexOf(className) < 0) {
-      ctr.className = (ctr.className || '') + ' ' + className;
-    }
-
-    if (!stylesheetAlreadyExists) {
-      var stylesheet = document.createElement('style');
-
-      stylesheet.id = stylesheetId;
-      stylesheet.innerHTML = '.' + className + ' { position: relative; }';
-
-      head.insertBefore(stylesheet, head.children[0]); // first so lowest priority
-    }
-
-    var computedStyle = window.getComputedStyle(ctr);
-    var position = computedStyle.getPropertyValue('position');
-
-    if (position === 'static') {
-      util.error('A Cytoscape container has style position:static and so can not use UI extensions properly');
-    }
-  }
-
-  r.selection = [undefined, undefined, undefined, undefined, 0]; // Coordinates for selection box, plus enabled flag
-
-  r.bezierProjPcts = [0.05, 0.225, 0.4, 0.5, 0.6, 0.775, 0.95];
-
-  //--Pointer-related data
-  r.hoverData = { down: null, last: null,
-    downTime: null, triggerMode: null,
-    dragging: false,
-    initialPan: [null, null], capture: false };
-
-  r.dragData = { possibleDragElements: [] };
-
-  r.touchData = {
-    start: null, capture: false,
-
-    // These 3 fields related to tap, taphold events
-    startPosition: [null, null, null, null, null, null],
-    singleTouchStartTime: null,
-    singleTouchMoved: true,
-
-    now: [null, null, null, null, null, null],
-    earlier: [null, null, null, null, null, null]
-  };
-
-  r.redraws = 0;
-  r.showFps = options.showFps;
-  r.debug = options.debug;
-
-  r.hideEdgesOnViewport = options.hideEdgesOnViewport;
-  r.hideLabelsOnViewport = options.hideLabelsOnViewport;
-  r.textureOnViewport = options.textureOnViewport;
-  r.wheelSensitivity = options.wheelSensitivity;
-  r.motionBlurEnabled = options.motionBlur; // on by default
-  r.forcedPixelRatio = options.pixelRatio;
-  r.motionBlur = options.motionBlur; // for initial kick off
-  r.motionBlurOpacity = options.motionBlurOpacity;
-  r.motionBlurTransparency = 1 - r.motionBlurOpacity;
-  r.motionBlurPxRatio = 1;
-  r.mbPxRBlurry = 1; //0.8;
-  r.minMbLowQualFrames = 4;
-  r.fullQualityMb = false;
-  r.clearedForMotionBlur = [];
-  r.desktopTapThreshold = options.desktopTapThreshold;
-  r.desktopTapThreshold2 = options.desktopTapThreshold * options.desktopTapThreshold;
-  r.touchTapThreshold = options.touchTapThreshold;
-  r.touchTapThreshold2 = options.touchTapThreshold * options.touchTapThreshold;
-  r.tapholdDuration = 500;
-
-  r.bindings = [];
-  r.beforeRenderCallbacks = [];
-  r.beforeRenderPriorities = { // higher priority execs before lower one
-    animations: 400,
-    eleCalcs: 300,
-    eleTxrDeq: 200,
-    lyrTxrDeq: 100
-  };
-
-  r.registerNodeShapes();
-  r.registerArrowShapes();
-  r.registerCalculationListeners();
-};
-
-BRp.notify = function (params) {
-  var types;
-  var r = this;
-
-  // the renderer can't be notified after it's destroyed
-  if (this.destroyed) {
-    return;
-  }
-
-  if (is.array(params.type)) {
-    types = params.type;
-  } else {
-    types = [params.type];
-  }
-
-  var has = {};
-  for (var i = 0; i < types.length; i++) {
-    var type = types[i];
-
-    has[type] = true;
-  } // for
-
-  if (has['init']) {
-    r.load();
-    return;
-  }
-
-  if (has['destroy']) {
-    r.destroy();
-    return;
-  }
-
-  if (has['add'] || has['remove'] || has['load'] || has['zorder']) {
-    r.invalidateCachedZSortedEles();
-  }
-
-  if (has['viewport']) {
-    r.redrawHint('select', true);
-  }
-
-  if (has['load'] || has['resize']) {
-    r.invalidateContainerClientCoordsCache();
-    r.matchCanvasSize(r.container);
-  }
-
-  r.redrawHint('eles', true);
-  r.redrawHint('drag', true);
-
-  this.startRenderLoop();
-
-  this.redraw();
-};
-
-BRp.destroy = function () {
-  var r = this;
-
-  r.destroyed = true;
-
-  r.cy.stopAnimationLoop();
-
-  for (var i = 0; i < r.bindings.length; i++) {
-    var binding = r.bindings[i];
-    var b = binding;
-    var tgt = b.target;
-
-    (tgt.off || tgt.removeEventListener).apply(tgt, b.args);
-  }
-
-  r.bindings = [];
-  r.beforeRenderCallbacks = [];
-  r.onUpdateEleCalcsFns = [];
-
-  if (r.removeObserver) {
-    r.removeObserver.disconnect();
-  }
-
-  if (r.styleObserver) {
-    r.styleObserver.disconnect();
-  }
-
-  if (r.labelCalcDiv) {
-    try {
-      document.body.removeChild(r.labelCalcDiv); // eslint-disable-line no-undef
-    } catch (e) {
-      // ie10 issue #1014
-    }
-  }
-};
-
-[__webpack_require__(85), __webpack_require__(91), __webpack_require__(96), __webpack_require__(98), __webpack_require__(99), __webpack_require__(100)].forEach(function (props) {
-  util.extend(BRp, props);
-});
-
-module.exports = BR;
-
-/***/ }),
-/* 98 */
+/* 120 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -18997,7 +22557,7 @@ module.exports = BR;
 var is = __webpack_require__(0);
 var util = __webpack_require__(1);
 var math = __webpack_require__(2);
-var Event = __webpack_require__(15);
+var Event = __webpack_require__(16);
 
 var BRp = {};
 
@@ -21068,7 +24628,7 @@ BRp.load = function () {
 module.exports = BRp;
 
 /***/ }),
-/* 99 */
+/* 121 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -21509,7 +25069,7 @@ BRp.registerNodeShapes = function () {
 module.exports = BRp;
 
 /***/ }),
-/* 100 */
+/* 122 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -21629,2186 +25189,156 @@ BRp.startRenderLoop = function () {
 module.exports = BRp;
 
 /***/ }),
-/* 101 */
+/* 123 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-var CRp = {};
-
-var impl;
-
-CRp.arrowShapeImpl = function (name) {
-  return (impl || (impl = {
-    'polygon': function polygon(context, points) {
-      for (var i = 0; i < points.length; i++) {
-        var pt = points[i];
-
-        context.lineTo(pt.x, pt.y);
-      }
-    },
-
-    'triangle-backcurve': function triangleBackcurve(context, points, controlPoint) {
-      var firstPt;
-
-      for (var i = 0; i < points.length; i++) {
-        var pt = points[i];
-
-        if (i === 0) {
-          firstPt = pt;
-        }
-
-        context.lineTo(pt.x, pt.y);
-      }
-
-      context.quadraticCurveTo(controlPoint.x, controlPoint.y, firstPt.x, firstPt.y);
-    },
-
-    'triangle-tee': function triangleTee(context, trianglePoints, teePoints) {
-      if (context.beginPath) {
-        context.beginPath();
-      }
-
-      var triPts = trianglePoints;
-      for (var i = 0; i < triPts.length; i++) {
-        var pt = triPts[i];
-
-        context.lineTo(pt.x, pt.y);
-      }
-
-      if (context.closePath) {
-        context.closePath();
-      }
-
-      if (context.beginPath) {
-        context.beginPath();
-      }
-
-      var teePts = teePoints;
-      var firstTeePt = teePoints[0];
-      context.moveTo(firstTeePt.x, firstTeePt.y);
-
-      for (var i = 0; i < teePts.length; i++) {
-        var pt = teePts[i];
-
-        context.lineTo(pt.x, pt.y);
-      }
-      if (context.closePath) {
-        context.closePath();
-      }
-    },
-
-    'triangle-cross': function triangleCross(context, trianglePoints, crossLinePoints) {
-      if (context.beginPath) {
-        context.beginPath();
-      }
-
-      var triPts = trianglePoints;
-      for (var i = 0; i < triPts.length; i++) {
-        var pt = triPts[i];
-
-        context.lineTo(pt.x, pt.y);
-      }
-
-      if (context.closePath) {
-        context.closePath();
-      }
-
-      if (context.beginPath) {
-        context.beginPath();
-      }
-
-      var teePts = crossLinePoints;
-      var firstTeePt = crossLinePoints[0];
-      context.moveTo(firstTeePt.x, firstTeePt.y);
-
-      for (var i = 0; i < teePts.length; i++) {
-        var pt = teePts[i];
-
-        context.lineTo(pt.x, pt.y);
-      }
-      if (context.closePath) {
-        context.closePath();
-      }
-    },
-
-    'circle': function circle(context, rx, ry, r) {
-      context.arc(rx, ry, r, 0, Math.PI * 2, false);
-    }
-  }))[name];
-};
-
-module.exports = CRp;
-
-/***/ }),
-/* 102 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var CRp = {};
-
-CRp.drawEdge = function (context, edge, shiftToOriginWithBb, drawLabel) {
-  var r = this;
-  var rs = edge._private.rscratch;
-  var usePaths = r.usePaths();
-
-  // if bezier ctrl pts can not be calculated, then die
-  if (rs.badLine || isNaN(rs.allpts[0])) {
-    // isNaN in case edge is impossible and browser bugs (e.g. safari)
-    return;
-  }
-
-  if (!edge.visible()) {
-    return;
-  }
-
-  var bb = void 0;
-  if (shiftToOriginWithBb) {
-    bb = shiftToOriginWithBb;
-
-    context.translate(-bb.x1, -bb.y1);
-  }
-
-  var overlayPadding = edge.pstyle('overlay-padding').pfValue;
-  var overlayWidth = 2 * overlayPadding;
-  var overlayOpacity = edge.pstyle('overlay-opacity').value;
-  var overlayColor = edge.pstyle('overlay-color').value;
-  var lineColor = edge.pstyle('line-color').value;
-  var opacity = edge.pstyle('opacity').value;
-  var lineStyle = edge.pstyle('line-style').value;
-  var edgeWidth = edge.pstyle('width').pfValue;
-
-  var drawLine = function drawLine() {
-    var strokeOpacity = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : opacity;
-
-    context.lineWidth = edgeWidth;
-    context.lineCap = 'butt';
-
-    r.strokeStyle(context, lineColor[0], lineColor[1], lineColor[2], strokeOpacity);
-
-    r.drawEdgePath(edge, context, rs.allpts, lineStyle);
-  };
-
-  var drawOverlay = function drawOverlay() {
-    var strokeOpacity = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : overlayOpacity;
-
-    context.lineWidth = overlayWidth;
-
-    if (rs.edgeType === 'self' && !usePaths) {
-      context.lineCap = 'butt';
-    } else {
-      context.lineCap = 'round';
-    }
-
-    r.strokeStyle(context, overlayColor[0], overlayColor[1], overlayColor[2], strokeOpacity);
-
-    r.drawEdgePath(edge, context, rs.allpts, 'solid');
-  };
-
-  var drawArrows = function drawArrows() {
-    var arrowOpacity = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : opacity;
-
-    r.drawArrowheads(context, edge, arrowOpacity);
-  };
-
-  var drawText = function drawText() {
-    r.drawElementText(context, edge, drawLabel);
-  };
-
-  context.lineJoin = 'round';
-
-  var ghost = edge.pstyle('ghost').value === 'yes';
-
-  if (ghost) {
-    var gx = edge.pstyle('ghost-offset-x').pfValue;
-    var gy = edge.pstyle('ghost-offset-y').pfValue;
-    var ghostOpacity = edge.pstyle('ghost-opacity').value;
-    var effectiveGhostOpacity = opacity * ghostOpacity;
-
-    context.translate(gx, gy);
-
-    drawLine(effectiveGhostOpacity);
-    drawArrows(effectiveGhostOpacity);
-
-    context.translate(-gx, -gy);
-  }
-
-  drawLine();
-  drawArrows();
-  drawOverlay();
-  drawText();
-
-  if (shiftToOriginWithBb) {
-    context.translate(bb.x1, bb.y1);
-  }
-};
-
-CRp.drawEdgePath = function (edge, context, pts, type) {
-  var rs = edge._private.rscratch;
-  var canvasCxt = context;
-  var path = void 0;
-  var pathCacheHit = false;
-  var usePaths = this.usePaths();
-
-  if (usePaths) {
-    var pathCacheKey = pts.join('$');
-    var keyMatches = rs.pathCacheKey && rs.pathCacheKey === pathCacheKey;
-
-    if (keyMatches) {
-      path = context = rs.pathCache;
-      pathCacheHit = true;
-    } else {
-      path = context = new Path2D(); // eslint-disable-line no-undef
-      rs.pathCacheKey = pathCacheKey;
-      rs.pathCache = path;
-    }
-  }
-
-  if (canvasCxt.setLineDash) {
-    // for very outofdate browsers
-    switch (type) {
-      case 'dotted':
-        canvasCxt.setLineDash([1, 1]);
-        break;
-
-      case 'dashed':
-        canvasCxt.setLineDash([6, 3]);
-        break;
-
-      case 'solid':
-        canvasCxt.setLineDash([]);
-        break;
-    }
-  }
-
-  if (!pathCacheHit && !rs.badLine) {
-    if (context.beginPath) {
-      context.beginPath();
-    }
-    context.moveTo(pts[0], pts[1]);
-
-    switch (rs.edgeType) {
-      case 'bezier':
-      case 'self':
-      case 'compound':
-      case 'multibezier':
-        for (var i = 2; i + 3 < pts.length; i += 4) {
-          context.quadraticCurveTo(pts[i], pts[i + 1], pts[i + 2], pts[i + 3]);
-        }
-        break;
-
-      case 'straight':
-      case 'segments':
-      case 'haystack':
-        for (var _i = 2; _i + 1 < pts.length; _i += 2) {
-          context.lineTo(pts[_i], pts[_i + 1]);
-        }
-        break;
-    }
-  }
-
-  context = canvasCxt;
-  if (usePaths) {
-    context.stroke(path);
-  } else {
-    context.stroke();
-  }
-
-  // reset any line dashes
-  if (context.setLineDash) {
-    // for very outofdate browsers
-    context.setLineDash([]);
-  }
-};
-
-CRp.drawArrowheads = function (context, edge, opacity) {
-  var rs = edge._private.rscratch;
-  var isHaystack = rs.edgeType === 'haystack';
-
-  if (!isHaystack) {
-    this.drawArrowhead(context, edge, 'source', rs.arrowStartX, rs.arrowStartY, rs.srcArrowAngle, opacity);
-  }
-
-  this.drawArrowhead(context, edge, 'mid-target', rs.midX, rs.midY, rs.midtgtArrowAngle, opacity);
-
-  this.drawArrowhead(context, edge, 'mid-source', rs.midX, rs.midY, rs.midsrcArrowAngle, opacity);
-
-  if (!isHaystack) {
-    this.drawArrowhead(context, edge, 'target', rs.arrowEndX, rs.arrowEndY, rs.tgtArrowAngle, opacity);
-  }
-};
-
-CRp.drawArrowhead = function (context, edge, prefix, x, y, angle, opacity) {
-  if (isNaN(x) || x == null || isNaN(y) || y == null || isNaN(angle) || angle == null) {
-    return;
-  }
-
-  var self = this;
-  var arrowShape = edge.pstyle(prefix + '-arrow-shape').value;
-  if (arrowShape === 'none') {
-    return;
-  }
-
-  var arrowClearFill = edge.pstyle(prefix + '-arrow-fill').value === 'hollow' ? 'both' : 'filled';
-  var arrowFill = edge.pstyle(prefix + '-arrow-fill').value;
-  var edgeWidth = edge.pstyle('width').pfValue;
-  var edgeOpacity = edge.pstyle('opacity').value;
-
-  if (opacity === undefined) {
-    opacity = edgeOpacity;
-  }
-
-  var gco = context.globalCompositeOperation;
-
-  if (opacity !== 1 || arrowFill === 'hollow') {
-    // then extra clear is needed
-    context.globalCompositeOperation = 'destination-out';
-
-    self.fillStyle(context, 255, 255, 255, 1);
-    self.strokeStyle(context, 255, 255, 255, 1);
-
-    self.drawArrowShape(edge, prefix, context, arrowClearFill, edgeWidth, arrowShape, x, y, angle);
-
-    context.globalCompositeOperation = gco;
-  } // otherwise, the opaque arrow clears it for free :)
-
-  var color = edge.pstyle(prefix + '-arrow-color').value;
-  self.fillStyle(context, color[0], color[1], color[2], opacity);
-  self.strokeStyle(context, color[0], color[1], color[2], opacity);
-
-  self.drawArrowShape(edge, prefix, context, arrowFill, edgeWidth, arrowShape, x, y, angle);
-};
-
-CRp.drawArrowShape = function (edge, arrowType, context, fill, edgeWidth, shape, x, y, angle) {
-  var r = this;
-  var usePaths = this.usePaths();
-  var rs = edge._private.rscratch;
-  var pathCacheHit = false;
-  var path = void 0;
-  var canvasContext = context;
-  var translation = { x: x, y: y };
-  var scale = edge.pstyle('arrow-scale').value;
-  var size = this.getArrowWidth(edgeWidth, scale);
-  var shapeImpl = r.arrowShapes[shape];
-
-  if (usePaths) {
-    var pathCacheKey = size + '$' + shape + '$' + angle + '$' + x + '$' + y;
-    rs.arrowPathCacheKey = rs.arrowPathCacheKey || {};
-    rs.arrowPathCache = rs.arrowPathCache || {};
-
-    var alreadyCached = rs.arrowPathCacheKey[arrowType] === pathCacheKey;
-    if (alreadyCached) {
-      path = context = rs.arrowPathCache[arrowType];
-      pathCacheHit = true;
-    } else {
-      path = context = new Path2D(); // eslint-disable-line no-undef
-      rs.arrowPathCacheKey[arrowType] = pathCacheKey;
-      rs.arrowPathCache[arrowType] = path;
-    }
-  }
-
-  if (context.beginPath) {
-    context.beginPath();
-  }
-
-  if (!pathCacheHit) {
-    shapeImpl.draw(context, size, angle, translation, edgeWidth);
-  }
-
-  if (!shapeImpl.leavePathOpen && context.closePath) {
-    context.closePath();
-  }
-
-  context = canvasContext;
-
-  if (fill === 'filled' || fill === 'both') {
-    if (usePaths) {
-      context.fill(path);
-    } else {
-      context.fill();
-    }
-  }
-
-  if (fill === 'hollow' || fill === 'both') {
-    context.lineWidth = shapeImpl.matchEdgeWidth ? edgeWidth : 1;
-    context.lineJoin = 'miter';
-
-    if (usePaths) {
-      context.stroke(path);
-    } else {
-      context.stroke();
-    }
-  }
-};
-
-module.exports = CRp;
-
-/***/ }),
-/* 103 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var math = __webpack_require__(2);
-
-var CRp = {};
-
-CRp.drawElement = function (context, ele, shiftToOriginWithBb, showLabel) {
-  var r = this;
-
-  if (ele.isNode()) {
-    r.drawNode(context, ele, shiftToOriginWithBb, showLabel);
-  } else {
-    r.drawEdge(context, ele, shiftToOriginWithBb, showLabel);
-  }
-};
-
-CRp.drawCachedElement = function (context, ele, pxRatio, extent) {
-  var r = this;
-  var bb = ele.boundingBox();
-
-  if (bb.w === 0 || bb.h === 0) {
-    return;
-  }
-
-  if (!extent || math.boundingBoxesIntersect(bb, extent)) {
-    var cache = r.data.eleTxrCache.getElement(ele, bb, pxRatio);
-
-    if (cache != null) {
-      context.drawImage(cache.texture.canvas, cache.x, 0, cache.width, cache.height, bb.x1, bb.y1, bb.w, bb.h);
-    } else {
-      // if the element is not cacheable, then draw directly
-      r.drawElement(context, ele);
-    }
-  }
-};
-
-CRp.drawElements = function (context, eles) {
-  var r = this;
-
-  for (var i = 0; i < eles.length; i++) {
-    var ele = eles[i];
-
-    r.drawElement(context, ele);
-  }
-};
-
-CRp.drawCachedElements = function (context, eles, pxRatio, extent) {
-  var r = this;
-
-  for (var i = 0; i < eles.length; i++) {
-    var ele = eles[i];
-
-    r.drawCachedElement(context, ele, pxRatio, extent);
-  }
-};
-
-CRp.drawCachedNodes = function (context, eles, pxRatio, extent) {
-  var r = this;
-
-  for (var i = 0; i < eles.length; i++) {
-    var ele = eles[i];
-
-    if (!ele.isNode()) {
-      continue;
-    }
-
-    r.drawCachedElement(context, ele, pxRatio, extent);
-  }
-};
-
-CRp.drawLayeredElements = function (context, eles, pxRatio, extent) {
-  var r = this;
-
-  var layers = r.data.lyrTxrCache.getLayers(eles, pxRatio);
-
-  if (layers) {
-    for (var i = 0; i < layers.length; i++) {
-      var layer = layers[i];
-      var bb = layer.bb;
-
-      if (bb.w === 0 || bb.h === 0) {
-        continue;
-      }
-
-      context.drawImage(layer.canvas, bb.x1, bb.y1, bb.w, bb.h);
-    }
-  } else {
-    // fall back on plain caching if no layers
-    r.drawCachedElements(context, eles, pxRatio, extent);
-  }
-};
-
-CRp.drawDebugPoints = function (context, eles) {
-  var draw = function draw(x, y, color) {
-    context.fillStyle = color;
-    context.fillRect(x - 1, y - 1, 3, 3);
-  };
-
-  for (var i = 0; i < eles.length; i++) {
-    var ele = eles[i];
-    var rs = ele._private.rscratch;
-
-    if (ele.isNode()) {
-      var p = ele.position();
-
-      draw(p.x, p.y, 'magenta');
-    } else {
-      var pts = rs.allpts;
-
-      for (var j = 0; j + 1 < pts.length; j += 2) {
-        var x = pts[j];
-        var y = pts[j + 1];
-
-        draw(x, y, 'cyan');
-      }
-
-      draw(rs.midX, rs.midY, 'yellow');
-    }
-  }
-};
-
-module.exports = CRp;
-
-/***/ }),
-/* 104 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var CRp = {};
-
-CRp.safeDrawImage = function (context, img, ix, iy, iw, ih, x, y, w, h) {
-  var r = this;
-
-  // detect problematic cases for old browsers with bad images (cheaper than try-catch)
-  if (iw <= 0 || ih <= 0 || w <= 0 || h <= 0) {
-    return;
-  }
-
-  context.drawImage(img, ix, iy, iw, ih, x, y, w, h);
-};
-
-CRp.drawInscribedImage = function (context, img, node, index, nodeOpacity) {
-  var r = this;
-  var pos = node.position();
-  var nodeX = pos.x;
-  var nodeY = pos.y;
-  var styleObj = node.cy().style();
-  var getIndexedStyle = styleObj.getIndexedStyle.bind(styleObj);
-  var fit = getIndexedStyle(node, 'background-fit', 'value', index);
-  var repeat = getIndexedStyle(node, 'background-repeat', 'value', index);
-  var nodeW = node.width();
-  var nodeH = node.height();
-  var paddingX2 = node.padding() * 2;
-  var nodeTW = nodeW + (getIndexedStyle(node, 'background-width-relative-to', 'value', index) === 'inner' ? 0 : paddingX2);
-  var nodeTH = nodeH + (getIndexedStyle(node, 'background-height-relative-to', 'value', index) === 'inner' ? 0 : paddingX2);
-  var rs = node._private.rscratch;
-  var clip = node.pstyle('background-clip').value;
-  var shouldClip = clip === 'node';
-  var imgOpacity = getIndexedStyle(node, 'background-image-opacity', 'value', index) * nodeOpacity;
-
-  var imgW = img.width || img.cachedW;
-  var imgH = img.height || img.cachedH;
-
-  // workaround for broken browsers like ie
-  if (null == imgW || null == imgH) {
-    document.body.appendChild(img); // eslint-disable-line no-undef
-
-    imgW = img.cachedW = img.width || img.offsetWidth;
-    imgH = img.cachedH = img.height || img.offsetHeight;
-
-    document.body.removeChild(img); // eslint-disable-line no-undef
-  }
-
-  var w = imgW;
-  var h = imgH;
-
-  if (getIndexedStyle(node, 'background-width', 'value', index) !== 'auto') {
-    if (getIndexedStyle(node, 'background-width', 'units', index) === '%') {
-      w = getIndexedStyle(node, 'background-width', 'pfValue', index) * nodeTW;
-    } else {
-      w = getIndexedStyle(node, 'background-width', 'pfValue', index);
-    }
-  }
-
-  if (getIndexedStyle(node, 'background-height', 'value', index) !== 'auto') {
-    if (getIndexedStyle(node, 'background-height', 'units', index) === '%') {
-      h = getIndexedStyle(node, 'background-height', 'pfValue', index) * nodeTH;
-    } else {
-      h = getIndexedStyle(node, 'background-height', 'pfValue', index);
-    }
-  }
-
-  if (w === 0 || h === 0) {
-    return; // no point in drawing empty image (and chrome is broken in this case)
-  }
-
-  if (fit === 'contain') {
-    var scale = Math.min(nodeTW / w, nodeTH / h);
-
-    w *= scale;
-    h *= scale;
-  } else if (fit === 'cover') {
-    var scale = Math.max(nodeTW / w, nodeTH / h);
-
-    w *= scale;
-    h *= scale;
-  }
-
-  var x = nodeX - nodeTW / 2; // left
-  if (getIndexedStyle(node, 'background-position-x', 'units', index) === '%') {
-    x += (nodeTW - w) * getIndexedStyle(node, 'background-position-x', 'pfValue', index);
-  } else {
-    x += getIndexedStyle(node, 'background-position-x', 'pfValue', index);
-  }
-
-  var y = nodeY - nodeTH / 2; // top
-  if (getIndexedStyle(node, 'background-position-y', 'units', index) === '%') {
-    y += (nodeTH - h) * getIndexedStyle(node, 'background-position-y', 'pfValue', index);
-  } else {
-    y += getIndexedStyle(node, 'background-position-y', 'pfValue', index);
-  }
-
-  if (rs.pathCache) {
-    x -= nodeX;
-    y -= nodeY;
-
-    nodeX = 0;
-    nodeY = 0;
-  }
-
-  var gAlpha = context.globalAlpha;
-
-  context.globalAlpha = imgOpacity;
-
-  if (repeat === 'no-repeat') {
-
-    if (shouldClip) {
-      context.save();
-
-      if (rs.pathCache) {
-        context.clip(rs.pathCache);
-      } else {
-        r.nodeShapes[r.getNodeShape(node)].draw(context, nodeX, nodeY, nodeTW, nodeTH);
-
-        context.clip();
-      }
-    }
-
-    r.safeDrawImage(context, img, 0, 0, imgW, imgH, x, y, w, h);
-
-    if (shouldClip) {
-      context.restore();
-    }
-  } else {
-    var pattern = context.createPattern(img, repeat);
-    context.fillStyle = pattern;
-
-    r.nodeShapes[r.getNodeShape(node)].draw(context, nodeX, nodeY, nodeTW, nodeTH);
-
-    context.translate(x, y);
-    context.fill();
-    context.translate(-x, -y);
-  }
-
-  context.globalAlpha = gAlpha;
-};
-
-module.exports = CRp;
-
-/***/ }),
-/* 105 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
+/*
+The canvas renderer was written by Yue Dong.
+
+Modifications tracked on Github.
+*/
 
 var util = __webpack_require__(1);
-var math = __webpack_require__(2);
-
-var CRp = {};
-
-CRp.eleTextBiggerThanMin = function (ele, scale) {
-  if (!scale) {
-    var zoom = ele.cy().zoom();
-    var pxRatio = this.getPixelRatio();
-    var lvl = Math.ceil(math.log2(zoom * pxRatio)); // the effective texture level
-
-    scale = Math.pow(2, lvl);
-  }
-
-  var computedSize = ele.pstyle('font-size').pfValue * scale;
-  var minSize = ele.pstyle('min-zoomed-font-size').pfValue;
-
-  if (computedSize < minSize) {
-    return false;
-  }
-
-  return true;
-};
-
-CRp.drawElementText = function (context, ele, force) {
-  var r = this;
-
-  if (force === undefined) {
-    if (!r.eleTextBiggerThanMin(ele)) {
-      return;
-    }
-  } else {
-    if (!force) {
-      return;
-    }
-  }
-
-  if (ele.isNode()) {
-    var label = ele.pstyle('label');
-
-    if (!label || !label.value) {
-      return;
-    }
-
-    var textHalign = ele.pstyle('text-halign').strValue;
-    var textValign = ele.pstyle('text-valign').strValue;
-
-    switch (textHalign) {
-      case 'left':
-        context.textAlign = 'right';
-        break;
-
-      case 'right':
-        context.textAlign = 'left';
-        break;
-
-      default:
-        // e.g. center
-        context.textAlign = 'center';
-    }
-
-    context.textBaseline = 'bottom';
-  } else {
-    var label = ele.pstyle('label');
-    var srcLabel = ele.pstyle('source-label');
-    var tgtLabel = ele.pstyle('target-label');
-
-    if ((!label || !label.value) && (!srcLabel || !srcLabel.value) && (!tgtLabel || !tgtLabel.value)) {
-      return;
-    }
-
-    context.textAlign = 'center';
-    context.textBaseline = 'bottom';
-  }
-
-  r.drawText(context, ele);
-
-  if (ele.isEdge()) {
-    r.drawText(context, ele, 'source');
-
-    r.drawText(context, ele, 'target');
-  }
-};
-
-CRp.drawNodeText = CRp.drawEdgeText = CRp.drawElementText;
-
-CRp.getFontCache = function (context) {
-  var cache;
-
-  this.fontCaches = this.fontCaches || [];
-
-  for (var i = 0; i < this.fontCaches.length; i++) {
-    cache = this.fontCaches[i];
-
-    if (cache.context === context) {
-      return cache;
-    }
-  }
-
-  cache = {
-    context: context
-  };
-  this.fontCaches.push(cache);
-
-  return cache;
-};
-
-// set up canvas context with font
-// returns transformed text string
-CRp.setupTextStyle = function (context, ele) {
-  // Font style
-  var parentOpacity = ele.effectiveOpacity();
-  var labelStyle = ele.pstyle('font-style').strValue;
-  var labelSize = ele.pstyle('font-size').pfValue + 'px';
-  var labelFamily = ele.pstyle('font-family').strValue;
-  var labelWeight = ele.pstyle('font-weight').strValue;
-  var opacity = ele.pstyle('text-opacity').value * ele.pstyle('opacity').value * parentOpacity;
-  var outlineOpacity = ele.pstyle('text-outline-opacity').value * opacity;
-  var color = ele.pstyle('color').value;
-  var outlineColor = ele.pstyle('text-outline-color').value;
-
-  var fontCacheKey = ele._private.fontKey;
-  var cache = this.getFontCache(context);
-
-  if (cache.key !== fontCacheKey) {
-    context.font = labelStyle + ' ' + labelWeight + ' ' + labelSize + ' ' + labelFamily;
-
-    cache.key = fontCacheKey;
-  }
-
-  // Calculate text draw position based on text alignment
-
-  // so text outlines aren't jagged
-  context.lineJoin = 'round';
-
-  this.fillStyle(context, color[0], color[1], color[2], opacity);
-
-  this.strokeStyle(context, outlineColor[0], outlineColor[1], outlineColor[2], outlineOpacity);
-};
-
-function roundRect(ctx, x, y, width, height, radius) {
-  var radius = radius || 5;
-  ctx.beginPath();
-  ctx.moveTo(x + radius, y);
-  ctx.lineTo(x + width - radius, y);
-  ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
-  ctx.lineTo(x + width, y + height - radius);
-  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-  ctx.lineTo(x + radius, y + height);
-  ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
-  ctx.lineTo(x, y + radius);
-  ctx.quadraticCurveTo(x, y, x + radius, y);
-  ctx.closePath();
-  ctx.fill();
-}
-
-// Draw text
-CRp.drawText = function (context, ele, prefix) {
-  var _p = ele._private;
-  var rscratch = _p.rscratch;
-  var parentOpacity = ele.effectiveOpacity();
-  if (parentOpacity === 0 || ele.pstyle('text-opacity').value === 0) {
-    return;
-  }
-
-  var textX = util.getPrefixedProperty(rscratch, 'labelX', prefix);
-  var textY = util.getPrefixedProperty(rscratch, 'labelY', prefix);
-  var text = this.getLabelText(ele, prefix);
-
-  if (text != null && text !== '' && !isNaN(textX) && !isNaN(textY)) {
-    this.setupTextStyle(context, ele);
-
-    var pdash = prefix ? prefix + '-' : '';
-    var textW = util.getPrefixedProperty(rscratch, 'labelWidth', prefix);
-    var textH = util.getPrefixedProperty(rscratch, 'labelHeight', prefix);
-    var textAngle = util.getPrefixedProperty(rscratch, 'labelAngle', prefix);
-    var marginX = ele.pstyle(pdash + 'text-margin-x').pfValue;
-    var marginY = ele.pstyle(pdash + 'text-margin-y').pfValue;
-
-    var isEdge = ele.isEdge();
-    var isNode = ele.isNode();
-
-    var halign = ele.pstyle('text-halign').value;
-    var valign = ele.pstyle('text-valign').value;
-
-    if (isEdge) {
-      halign = 'center';
-      valign = 'center';
-    }
-
-    textX += marginX;
-    textY += marginY;
-
-    var rotation = ele.pstyle('text-rotation');
-    var theta;
-
-    if (rotation.strValue === 'autorotate') {
-      theta = isEdge ? textAngle : 0;
-    } else if (rotation.strValue === 'none') {
-      theta = 0;
-    } else {
-      theta = rotation.pfValue;
-    }
-
-    if (theta !== 0) {
-      var orgTextX = textX;
-      var orgTextY = textY;
-
-      context.translate(orgTextX, orgTextY);
-      context.rotate(theta);
-
-      textX = 0;
-      textY = 0;
-    }
-
-    switch (valign) {
-      case 'top':
-        break;
-      case 'center':
-        textY += textH / 2;
-        break;
-      case 'bottom':
-        textY += textH;
-        break;
-    }
-
-    var backgroundOpacity = ele.pstyle('text-background-opacity').value;
-    var borderOpacity = ele.pstyle('text-border-opacity').value;
-    var textBorderWidth = ele.pstyle('text-border-width').pfValue;
-    var backgroundPadding = ele.pstyle('text-background-padding').pfValue;
-
-    if (backgroundOpacity > 0 || textBorderWidth > 0 && borderOpacity > 0) {
-      var bgX = textX - backgroundPadding;
-
-      switch (halign) {
-        case 'left':
-          bgX -= textW;
-          break;
-        case 'center':
-          bgX -= textW / 2;
-          break;
-        case 'right':
-          break;
-      }
-
-      var bgY = textY - textH - backgroundPadding;
-      var bgW = textW + 2 * backgroundPadding;
-      var bgH = textH + 2 * backgroundPadding;
-
-      if (backgroundOpacity > 0) {
-        var textFill = context.fillStyle;
-        var textBackgroundColor = ele.pstyle('text-background-color').value;
-
-        context.fillStyle = 'rgba(' + textBackgroundColor[0] + ',' + textBackgroundColor[1] + ',' + textBackgroundColor[2] + ',' + backgroundOpacity * parentOpacity + ')';
-        var styleShape = ele.pstyle('text-background-shape').strValue;
-        if (styleShape == 'roundrectangle') {
-          roundRect(context, bgX, bgY, bgW, bgH, 2);
-        } else {
-          context.fillRect(bgX, bgY, bgW, bgH);
-        }
-        context.fillStyle = textFill;
-      }
-
-      if (textBorderWidth > 0 && borderOpacity > 0) {
-        var textStroke = context.strokeStyle;
-        var textLineWidth = context.lineWidth;
-        var textBorderColor = ele.pstyle('text-border-color').value;
-        var textBorderStyle = ele.pstyle('text-border-style').value;
-
-        context.strokeStyle = 'rgba(' + textBorderColor[0] + ',' + textBorderColor[1] + ',' + textBorderColor[2] + ',' + borderOpacity * parentOpacity + ')';
-        context.lineWidth = textBorderWidth;
-
-        if (context.setLineDash) {
-          // for very outofdate browsers
-          switch (textBorderStyle) {
-            case 'dotted':
-              context.setLineDash([1, 1]);
-              break;
-            case 'dashed':
-              context.setLineDash([4, 2]);
-              break;
-            case 'double':
-              context.lineWidth = textBorderWidth / 4; // 50% reserved for white between the two borders
-              context.setLineDash([]);
-              break;
-            case 'solid':
-              context.setLineDash([]);
-              break;
-          }
-        }
-
-        context.strokeRect(bgX, bgY, bgW, bgH);
-
-        if (textBorderStyle === 'double') {
-          var whiteWidth = textBorderWidth / 2;
-
-          context.strokeRect(bgX + whiteWidth, bgY + whiteWidth, bgW - whiteWidth * 2, bgH - whiteWidth * 2);
-        }
-
-        if (context.setLineDash) {
-          // for very outofdate browsers
-          context.setLineDash([]);
-        }
-        context.lineWidth = textLineWidth;
-        context.strokeStyle = textStroke;
-      }
-    }
-
-    var lineWidth = 2 * ele.pstyle('text-outline-width').pfValue; // *2 b/c the stroke is drawn centred on the middle
-
-    if (lineWidth > 0) {
-      context.lineWidth = lineWidth;
-    }
-
-    if (ele.pstyle('text-wrap').value === 'wrap') {
-      var lines = util.getPrefixedProperty(rscratch, 'labelWrapCachedLines', prefix);
-      var lineHeight = textH / lines.length;
-
-      switch (valign) {
-        case 'top':
-          textY -= (lines.length - 1) * lineHeight;
-          break;
-        case 'center':
-        case 'bottom':
-          textY -= (lines.length - 1) * lineHeight;
-          break;
-      }
-
-      for (var l = 0; l < lines.length; l++) {
-        if (lineWidth > 0) {
-          context.strokeText(lines[l], textX, textY);
-        }
-
-        context.fillText(lines[l], textX, textY);
-
-        textY += lineHeight;
-      }
-    } else {
-      if (lineWidth > 0) {
-        context.strokeText(text, textX, textY);
-      }
-
-      context.fillText(text, textX, textY);
-    }
-
-    if (theta !== 0) {
-      context.rotate(-theta);
-      context.translate(-orgTextX, -orgTextY);
-    }
-  }
-};
-
-module.exports = CRp;
-
-/***/ }),
-/* 106 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-/* global Path2D */
-
 var is = __webpack_require__(0);
+var ElementTextureCache = __webpack_require__(124);
+var LayeredTextureCache = __webpack_require__(125);
 
-var CRp = {};
+var CR = CanvasRenderer;
+var CRp = CanvasRenderer.prototype;
 
-CRp.drawNode = function (context, node, shiftToOriginWithBb, drawLabel) {
+CRp.CANVAS_LAYERS = 3;
+//
+CRp.SELECT_BOX = 0;
+CRp.DRAG = 1;
+CRp.NODE = 2;
+
+CRp.BUFFER_COUNT = 3;
+//
+CRp.TEXTURE_BUFFER = 0;
+CRp.MOTIONBLUR_BUFFER_NODE = 1;
+CRp.MOTIONBLUR_BUFFER_DRAG = 2;
+
+function CanvasRenderer(options) {
   var r = this;
-  var nodeWidth = void 0,
-      nodeHeight = void 0;
-  var _p = node._private;
-  var rs = _p.rscratch;
-  var pos = node.position();
 
-  if (!is.number(pos.x) || !is.number(pos.y)) {
-    return; // can't draw node with undefined position
-  }
+  r.data = {
+    canvases: new Array(CRp.CANVAS_LAYERS),
+    contexts: new Array(CRp.CANVAS_LAYERS),
+    canvasNeedsRedraw: new Array(CRp.CANVAS_LAYERS),
 
-  if (!node.visible()) {
-    return;
-  }
-
-  var parentOpacity = node.effectiveOpacity();
-
-  var usePaths = r.usePaths();
-  var path = void 0;
-  var pathCacheHit = false;
-
-  var padding = node.padding();
-
-  nodeWidth = node.width() + 2 * padding;
-  nodeHeight = node.height() + 2 * padding;
-
-  //
-  // setup shift
-
-  var bb = void 0;
-  if (shiftToOriginWithBb) {
-    bb = shiftToOriginWithBb;
-
-    context.translate(-bb.x1, -bb.y1);
-  }
-
-  //
-  // load bg image
-
-  var bgImgProp = node.pstyle('background-image');
-  var urls = bgImgProp.value;
-  var urlDefined = new Array(urls.length);
-  var image = new Array(urls.length);
-  var numImages = 0;
-  for (var i = 0; i < urls.length; i++) {
-    var url = urls[i];
-    var defd = urlDefined[i] = url != null && url !== 'none';
-
-    if (defd) {
-      var bgImgCrossOrigin = node.cy().style().getIndexedStyle(node, 'background-image-crossorigin', 'value', i);
-
-      numImages++;
-
-      // get image, and if not loaded then ask to redraw when later loaded
-      image[i] = r.getCachedImage(url, bgImgCrossOrigin, function () {
-        node.emitAndNotify('background');
-      });
-    }
-  }
-
-  //
-  // setup styles
-
-  var darkness = node.pstyle('background-blacken').value;
-  var borderWidth = node.pstyle('border-width').pfValue;
-  var bgColor = node.pstyle('background-color').value;
-  var bgOpacity = node.pstyle('background-opacity').value * parentOpacity;
-  var borderColor = node.pstyle('border-color').value;
-  var borderStyle = node.pstyle('border-style').value;
-  var borderOpacity = node.pstyle('border-opacity').value * parentOpacity;
-
-  context.lineJoin = 'miter'; // so borders are square with the node shape
-
-  var setupShapeColor = function setupShapeColor() {
-    var bgOpy = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : bgOpacity;
-
-    r.fillStyle(context, bgColor[0], bgColor[1], bgColor[2], bgOpy);
+    bufferCanvases: new Array(CRp.BUFFER_COUNT),
+    bufferContexts: new Array(CRp.CANVAS_LAYERS)
   };
 
-  var setupBorderColor = function setupBorderColor() {
-    var bdrOpy = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : borderOpacity;
+  var tapHlOff = '-webkit-tap-highlight-color: rgba(0,0,0,0);';
 
-    r.strokeStyle(context, borderColor[0], borderColor[1], borderColor[2], bdrOpy);
-  };
+  r.data.canvasContainer = document.createElement('div'); // eslint-disable-line no-undef
+  var containerStyle = r.data.canvasContainer.style;
+  r.data.canvasContainer.setAttribute('style', tapHlOff);
+  containerStyle.position = 'relative';
+  containerStyle.zIndex = '0';
+  containerStyle.overflow = 'hidden';
 
-  //
-  // setup shape
+  var container = options.cy.container();
+  container.appendChild(r.data.canvasContainer);
 
-  var styleShape = node.pstyle('shape').strValue;
-  var shapePts = node.pstyle('shape-polygon-points').pfValue;
-
-  if (usePaths) {
-    var pathCacheKey = styleShape + '$' + nodeWidth + '$' + nodeHeight + (styleShape === 'polygon' ? '$' + shapePts.join('$') : '');
-
-    context.translate(pos.x, pos.y);
-
-    if (rs.pathCacheKey === pathCacheKey) {
-      path = rs.pathCache;
-      pathCacheHit = true;
-    } else {
-      path = new Path2D();
-      rs.pathCacheKey = pathCacheKey;
-      rs.pathCache = path;
-    }
+  if ((container.getAttribute('style') || '').indexOf(tapHlOff) < 0) {
+    container.setAttribute('style', (container.getAttribute('style') || '') + tapHlOff);
   }
 
-  var drawShape = function drawShape() {
-    if (!pathCacheHit) {
+  for (var i = 0; i < CRp.CANVAS_LAYERS; i++) {
+    var canvas = r.data.canvases[i] = document.createElement('canvas'); // eslint-disable-line no-undef
+    r.data.contexts[i] = canvas.getContext('2d');
+    canvas.setAttribute('style', '-webkit-user-select: none; -moz-user-select: -moz-none; user-select: none; -webkit-tap-highlight-color: rgba(0,0,0,0); outline-style: none;' + (is.ms() ? ' -ms-touch-action: none; touch-action: none; ' : ''));
+    canvas.style.position = 'absolute';
+    canvas.setAttribute('data-id', 'layer' + i);
+    canvas.style.zIndex = String(CRp.CANVAS_LAYERS - i);
+    r.data.canvasContainer.appendChild(canvas);
 
-      var npos = pos;
+    r.data.canvasNeedsRedraw[i] = false;
+  }
+  r.data.topCanvas = r.data.canvases[0];
 
-      if (usePaths) {
-        npos = {
-          x: 0,
-          y: 0
-        };
-      }
+  r.data.canvases[CRp.NODE].setAttribute('data-id', 'layer' + CRp.NODE + '-node');
+  r.data.canvases[CRp.SELECT_BOX].setAttribute('data-id', 'layer' + CRp.SELECT_BOX + '-selectbox');
+  r.data.canvases[CRp.DRAG].setAttribute('data-id', 'layer' + CRp.DRAG + '-drag');
 
-      r.nodeShapes[r.getNodeShape(node)].draw(path || context, npos.x, npos.y, nodeWidth, nodeHeight);
-    }
+  for (var i = 0; i < CRp.BUFFER_COUNT; i++) {
+    r.data.bufferCanvases[i] = document.createElement('canvas'); // eslint-disable-line no-undef
+    r.data.bufferContexts[i] = r.data.bufferCanvases[i].getContext('2d');
+    r.data.bufferCanvases[i].style.position = 'absolute';
+    r.data.bufferCanvases[i].setAttribute('data-id', 'buffer' + i);
+    r.data.bufferCanvases[i].style.zIndex = String(-i - 1);
+    r.data.bufferCanvases[i].style.visibility = 'hidden';
+    //r.data.canvasContainer.appendChild(r.data.bufferCanvases[i]);
+  }
 
-    if (usePaths) {
-      context.fill(path);
-    } else {
-      context.fill();
-    }
-  };
+  r.pathsEnabled = true;
 
-  var drawImages = function drawImages() {
-    var nodeOpacity = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : parentOpacity;
+  r.data.eleTxrCache = new ElementTextureCache(r);
+  r.data.lyrTxrCache = new LayeredTextureCache(r, r.data.eleTxrCache);
 
-    var prevBging = _p.backgrounding;
-    var totalCompleted = 0;
+  r.onUpdateEleCalcs(function invalidateTextureCaches(willDraw, eles) {
+    for (var i = 0; i < eles.length; i++) {
+      var ele = eles[i];
+      var rs = ele._private.rstyle;
+      var de = rs.dirtyEvents;
 
-    for (var _i = 0; _i < image.length; _i++) {
-      if (urlDefined[_i] && image[_i].complete && !image[_i].error) {
-        totalCompleted++;
-        r.drawInscribedImage(context, image[_i], node, _i, nodeOpacity);
-      }
-    }
-
-    _p.backgrounding = !(totalCompleted === numImages);
-    if (prevBging !== _p.backgrounding) {
-      // update style b/c :backgrounding state changed
-      node.updateStyle(false);
-    }
-  };
-
-  var drawPie = function drawPie() {
-    var redrawShape = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
-    var pieOpacity = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : parentOpacity;
-
-    if (r.hasPie(node)) {
-      r.drawPie(context, node, pieOpacity);
-
-      // redraw/restore path if steps after pie need it
-      if (redrawShape) {
-
-        if (!usePaths) {
-          r.nodeShapes[r.getNodeShape(node)].draw(context, pos.x, pos.y, nodeWidth, nodeHeight);
-        }
-      }
-    }
-  };
-
-  var darken = function darken() {
-    var darkenOpacity = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : parentOpacity;
-
-    var opacity = (darkness > 0 ? darkness : -darkness) * darkenOpacity;
-    var c = darkness > 0 ? 0 : 255;
-
-    if (darkness !== 0) {
-      r.fillStyle(context, c, c, c, opacity);
-
-      if (usePaths) {
-        context.fill(path);
+      if (ele.isNode() && de && de.length === 1 && de['position']) {
+        // then keep cached ele texture
       } else {
-        context.fill();
+        r.data.eleTxrCache.invalidateElement(ele);
       }
     }
-  };
 
-  var drawBorder = function drawBorder() {
-    if (borderWidth > 0) {
-
-      context.lineWidth = borderWidth;
-      context.lineCap = 'butt';
-
-      if (context.setLineDash) {
-        // for very outofdate browsers
-        switch (borderStyle) {
-          case 'dotted':
-            context.setLineDash([1, 1]);
-            break;
-
-          case 'dashed':
-            context.setLineDash([4, 2]);
-            break;
-
-          case 'solid':
-          case 'double':
-            context.setLineDash([]);
-            break;
-        }
-      }
-
-      if (usePaths) {
-        context.stroke(path);
-      } else {
-        context.stroke();
-      }
-
-      if (borderStyle === 'double') {
-        context.lineWidth = borderWidth / 3;
-
-        var gco = context.globalCompositeOperation;
-        context.globalCompositeOperation = 'destination-out';
-
-        if (usePaths) {
-          context.stroke(path);
-        } else {
-          context.stroke();
-        }
-
-        context.globalCompositeOperation = gco;
-      }
-
-      // reset in case we changed the border style
-      if (context.setLineDash) {
-        // for very outofdate browsers
-        context.setLineDash([]);
-      }
+    if (eles.length > 0) {
+      r.data.lyrTxrCache.invalidateElements(eles);
     }
-  };
-
-  var drawOverlay = function drawOverlay() {
-    var overlayPadding = node.pstyle('overlay-padding').pfValue;
-    var overlayOpacity = node.pstyle('overlay-opacity').value;
-    var overlayColor = node.pstyle('overlay-color').value;
-
-    if (overlayOpacity > 0) {
-      r.fillStyle(context, overlayColor[0], overlayColor[1], overlayColor[2], overlayOpacity);
-
-      r.nodeShapes['roundrectangle'].draw(context, pos.x, pos.y, nodeWidth + overlayPadding * 2, nodeHeight + overlayPadding * 2);
-
-      context.fill();
-    }
-  };
-
-  var drawText = function drawText() {
-    r.drawElementText(context, node, drawLabel);
-  };
-
-  var ghost = node.pstyle('ghost').value === 'yes';
-
-  if (ghost) {
-    var gx = node.pstyle('ghost-offset-x').pfValue;
-    var gy = node.pstyle('ghost-offset-y').pfValue;
-    var ghostOpacity = node.pstyle('ghost-opacity').value;
-    var effGhostOpacity = ghostOpacity * parentOpacity;
-
-    context.translate(gx, gy);
-
-    setupShapeColor(ghostOpacity * bgOpacity);
-    drawShape();
-    drawImages(effGhostOpacity);
-    drawPie(darkness !== 0 || borderWidth !== 0);
-    darken(effGhostOpacity);
-    setupBorderColor(ghostOpacity * borderOpacity);
-    drawBorder();
-
-    context.translate(-gx, -gy);
-  }
-
-  setupShapeColor();
-  drawShape();
-  drawImages();
-  drawPie(darkness !== 0 || borderWidth !== 0);
-  darken();
-  setupBorderColor();
-  drawBorder();
-
-  if (usePaths) {
-    context.translate(-pos.x, -pos.y);
-  }
-
-  drawText();
-  drawOverlay();
-
-  //
-  // clean up shift
-
-  if (shiftToOriginWithBb) {
-    context.translate(bb.x1, bb.y1);
-  }
-};
-
-// does the node have at least one pie piece?
-CRp.hasPie = function (node) {
-  node = node[0]; // ensure ele ref
-
-  return node._private.hasPie;
-};
-
-CRp.drawPie = function (context, node, nodeOpacity, pos) {
-  node = node[0]; // ensure ele ref
-  pos = pos || node.position();
-
-  var cyStyle = node.cy().style();
-  var pieSize = node.pstyle('pie-size');
-  var x = pos.x;
-  var y = pos.y;
-  var nodeW = node.width();
-  var nodeH = node.height();
-  var radius = Math.min(nodeW, nodeH) / 2; // must fit in node
-  var lastPercent = 0; // what % to continue drawing pie slices from on [0, 1]
-  var usePaths = this.usePaths();
-
-  if (usePaths) {
-    x = 0;
-    y = 0;
-  }
-
-  if (pieSize.units === '%') {
-    radius = radius * pieSize.pfValue;
-  } else if (pieSize.pfValue !== undefined) {
-    radius = pieSize.pfValue / 2;
-  }
-
-  for (var i = 1; i <= cyStyle.pieBackgroundN; i++) {
-    // 1..N
-    var size = node.pstyle('pie-' + i + '-background-size').value;
-    var color = node.pstyle('pie-' + i + '-background-color').value;
-    var opacity = node.pstyle('pie-' + i + '-background-opacity').value * nodeOpacity;
-    var percent = size / 100; // map integer range [0, 100] to [0, 1]
-
-    // percent can't push beyond 1
-    if (percent + lastPercent > 1) {
-      percent = 1 - lastPercent;
-    }
-
-    var angleStart = 1.5 * Math.PI + 2 * Math.PI * lastPercent; // start at 12 o'clock and go clockwise
-    var angleDelta = 2 * Math.PI * percent;
-    var angleEnd = angleStart + angleDelta;
-
-    // ignore if
-    // - zero size
-    // - we're already beyond the full circle
-    // - adding the current slice would go beyond the full circle
-    if (size === 0 || lastPercent >= 1 || lastPercent + percent > 1) {
-      continue;
-    }
-
-    context.beginPath();
-    context.moveTo(x, y);
-    context.arc(x, y, radius, angleStart, angleEnd);
-    context.closePath();
-
-    this.fillStyle(context, color[0], color[1], color[2], opacity);
-
-    context.fill();
-
-    lastPercent += percent;
-  }
-};
-
-module.exports = CRp;
-
-/***/ }),
-/* 107 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var CRp = {};
-
-var util = __webpack_require__(1);
-
-var motionBlurDelay = 100;
-
-// var isFirefox = typeof InstallTrigger !== 'undefined';
-
-CRp.getPixelRatio = function () {
-  var context = this.data.contexts[0];
-
-  if (this.forcedPixelRatio != null) {
-    return this.forcedPixelRatio;
-  }
-
-  var backingStore = context.backingStorePixelRatio || context.webkitBackingStorePixelRatio || context.mozBackingStorePixelRatio || context.msBackingStorePixelRatio || context.oBackingStorePixelRatio || context.backingStorePixelRatio || 1;
-
-  return (window.devicePixelRatio || 1) / backingStore; // eslint-disable-line no-undef
-};
-
-CRp.paintCache = function (context) {
-  var caches = this.paintCaches = this.paintCaches || [];
-  var needToCreateCache = true;
-  var cache;
-
-  for (var i = 0; i < caches.length; i++) {
-    cache = caches[i];
-
-    if (cache.context === context) {
-      needToCreateCache = false;
-      break;
-    }
-  }
-
-  if (needToCreateCache) {
-    cache = {
-      context: context
-    };
-    caches.push(cache);
-  }
-
-  return cache;
-};
-
-CRp.fillStyle = function (context, r, g, b, a) {
-  context.fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
-
-  // turn off for now, seems context does its own caching
-
-  // var cache = this.paintCache(context);
-
-  // var fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
-
-  // if( cache.fillStyle !== fillStyle ){
-  //   context.fillStyle = cache.fillStyle = fillStyle;
-  // }
-};
-
-CRp.strokeStyle = function (context, r, g, b, a) {
-  context.strokeStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
-
-  // turn off for now, seems context does its own caching
-
-  // var cache = this.paintCache(context);
-
-  // var strokeStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
-
-  // if( cache.strokeStyle !== strokeStyle ){
-  //   context.strokeStyle = cache.strokeStyle = strokeStyle;
-  // }
-};
-
-// Resize canvas
-CRp.matchCanvasSize = function (container) {
-  var r = this;
-  var data = r.data;
-  var bb = r.findContainerClientCoords();
-  var width = bb[2];
-  var height = bb[3];
-  var pixelRatio = r.getPixelRatio();
-  var mbPxRatio = r.motionBlurPxRatio;
-
-  if (container === r.data.bufferCanvases[r.MOTIONBLUR_BUFFER_NODE] || container === r.data.bufferCanvases[r.MOTIONBLUR_BUFFER_DRAG]) {
-    pixelRatio = mbPxRatio;
-  }
-
-  var canvasWidth = width * pixelRatio;
-  var canvasHeight = height * pixelRatio;
-  var canvas;
-
-  if (canvasWidth === r.canvasWidth && canvasHeight === r.canvasHeight) {
-    return; // save cycles if same
-  }
-
-  r.fontCaches = null; // resizing resets the style
-
-  var canvasContainer = data.canvasContainer;
-  canvasContainer.style.width = width + 'px';
-  canvasContainer.style.height = height + 'px';
-
-  for (var i = 0; i < r.CANVAS_LAYERS; i++) {
-    canvas = data.canvases[i];
-
-    canvas.width = canvasWidth;
-    canvas.height = canvasHeight;
-
-    canvas.style.width = width + 'px';
-    canvas.style.height = height + 'px';
-  }
-
-  for (var i = 0; i < r.BUFFER_COUNT; i++) {
-    canvas = data.bufferCanvases[i];
-
-    canvas.width = canvasWidth;
-    canvas.height = canvasHeight;
-
-    canvas.style.width = width + 'px';
-    canvas.style.height = height + 'px';
-  }
-
-  r.textureMult = 1;
-  if (pixelRatio <= 1) {
-    canvas = data.bufferCanvases[r.TEXTURE_BUFFER];
-
-    r.textureMult = 2;
-    canvas.width = canvasWidth * r.textureMult;
-    canvas.height = canvasHeight * r.textureMult;
-  }
-
-  r.canvasWidth = canvasWidth;
-  r.canvasHeight = canvasHeight;
-};
-
-CRp.renderTo = function (cxt, zoom, pan, pxRatio) {
-  this.render({
-    forcedContext: cxt,
-    forcedZoom: zoom,
-    forcedPan: pan,
-    drawAllLayers: true,
-    forcedPxRatio: pxRatio
   });
-};
-
-CRp.render = function (options) {
-  options = options || util.staticEmptyObject();
-
-  var forcedContext = options.forcedContext;
-  var drawAllLayers = options.drawAllLayers;
-  var drawOnlyNodeLayer = options.drawOnlyNodeLayer;
-  var forcedZoom = options.forcedZoom;
-  var forcedPan = options.forcedPan;
-  var r = this;
-  var pixelRatio = options.forcedPxRatio === undefined ? this.getPixelRatio() : options.forcedPxRatio;
-  var cy = r.cy;var data = r.data;
-  var needDraw = data.canvasNeedsRedraw;
-  var textureDraw = r.textureOnViewport && !forcedContext && (r.pinching || r.hoverData.dragging || r.swipePanning || r.data.wheelZooming);
-  var motionBlur = options.motionBlur !== undefined ? options.motionBlur : r.motionBlur;
-  var mbPxRatio = r.motionBlurPxRatio;
-  var hasCompoundNodes = cy.hasCompoundNodes();
-  var inNodeDragGesture = r.hoverData.draggingEles;
-  var inBoxSelection = r.hoverData.selecting || r.touchData.selecting ? true : false;
-  motionBlur = motionBlur && !forcedContext && r.motionBlurEnabled && !inBoxSelection;
-  var motionBlurFadeEffect = motionBlur;
-
-  if (!forcedContext) {
-    if (r.prevPxRatio !== pixelRatio) {
-      r.invalidateContainerClientCoordsCache();
-      r.matchCanvasSize(r.container);
-
-      r.redrawHint('eles', true);
-      r.redrawHint('drag', true);
-    }
-
-    r.prevPxRatio = pixelRatio;
-  }
-
-  if (!forcedContext && r.motionBlurTimeout) {
-    clearTimeout(r.motionBlurTimeout);
-  }
-
-  if (motionBlur) {
-    if (r.mbFrames == null) {
-      r.mbFrames = 0;
-    }
-
-    r.mbFrames++;
-
-    if (r.mbFrames < 3) {
-      // need several frames before even high quality motionblur
-      motionBlurFadeEffect = false;
-    }
-
-    // go to lower quality blurry frames when several m/b frames have been rendered (avoids flashing)
-    if (r.mbFrames > r.minMbLowQualFrames) {
-      //r.fullQualityMb = false;
-      r.motionBlurPxRatio = r.mbPxRBlurry;
-    }
-  }
-
-  if (r.clearingMotionBlur) {
-    r.motionBlurPxRatio = 1;
-  }
-
-  // b/c drawToContext() may be async w.r.t. redraw(), keep track of last texture frame
-  // because a rogue async texture frame would clear needDraw
-  if (r.textureDrawLastFrame && !textureDraw) {
-    needDraw[r.NODE] = true;
-    needDraw[r.SELECT_BOX] = true;
-  }
-
-  var coreStyle = cy.style()._private.coreStyle;
-
-  var zoom = cy.zoom();
-  var effectiveZoom = forcedZoom !== undefined ? forcedZoom : zoom;
-  var pan = cy.pan();
-  var effectivePan = {
-    x: pan.x,
-    y: pan.y
-  };
-
-  var vp = {
-    zoom: zoom,
-    pan: {
-      x: pan.x,
-      y: pan.y
-    }
-  };
-  var prevVp = r.prevViewport;
-  var viewportIsDiff = prevVp === undefined || vp.zoom !== prevVp.zoom || vp.pan.x !== prevVp.pan.x || vp.pan.y !== prevVp.pan.y;
-
-  // we want the low quality motionblur only when the viewport is being manipulated etc (where it's not noticed)
-  if (!viewportIsDiff && !(inNodeDragGesture && !hasCompoundNodes)) {
-    r.motionBlurPxRatio = 1;
-  }
-
-  if (forcedPan) {
-    effectivePan = forcedPan;
-  }
-
-  // apply pixel ratio
-
-  effectiveZoom *= pixelRatio;
-  effectivePan.x *= pixelRatio;
-  effectivePan.y *= pixelRatio;
-
-  var eles = r.getCachedZSortedEles();
-
-  function mbclear(context, x, y, w, h) {
-    var gco = context.globalCompositeOperation;
-
-    context.globalCompositeOperation = 'destination-out';
-    r.fillStyle(context, 255, 255, 255, r.motionBlurTransparency);
-    context.fillRect(x, y, w, h);
-
-    context.globalCompositeOperation = gco;
-  }
-
-  function setContextTransform(context, clear) {
-    var ePan, eZoom, w, h;
-
-    if (!r.clearingMotionBlur && (context === data.bufferContexts[r.MOTIONBLUR_BUFFER_NODE] || context === data.bufferContexts[r.MOTIONBLUR_BUFFER_DRAG])) {
-      ePan = {
-        x: pan.x * mbPxRatio,
-        y: pan.y * mbPxRatio
-      };
-
-      eZoom = zoom * mbPxRatio;
-
-      w = r.canvasWidth * mbPxRatio;
-      h = r.canvasHeight * mbPxRatio;
-    } else {
-      ePan = effectivePan;
-      eZoom = effectiveZoom;
-
-      w = r.canvasWidth;
-      h = r.canvasHeight;
-    }
-
-    context.setTransform(1, 0, 0, 1, 0, 0);
-
-    if (clear === 'motionBlur') {
-      mbclear(context, 0, 0, w, h);
-    } else if (!forcedContext && (clear === undefined || clear)) {
-      context.clearRect(0, 0, w, h);
-    }
-
-    if (!drawAllLayers) {
-      context.translate(ePan.x, ePan.y);
-      context.scale(eZoom, eZoom);
-    }
-    if (forcedPan) {
-      context.translate(forcedPan.x, forcedPan.y);
-    }
-    if (forcedZoom) {
-      context.scale(forcedZoom, forcedZoom);
-    }
-  }
-
-  if (!textureDraw) {
-    r.textureDrawLastFrame = false;
-  }
-
-  if (textureDraw) {
-    r.textureDrawLastFrame = true;
-
-    var bb;
-
-    if (!r.textureCache) {
-      r.textureCache = {};
-
-      bb = r.textureCache.bb = cy.mutableElements().boundingBox();
-
-      r.textureCache.texture = r.data.bufferCanvases[r.TEXTURE_BUFFER];
-
-      var cxt = r.data.bufferContexts[r.TEXTURE_BUFFER];
-
-      cxt.setTransform(1, 0, 0, 1, 0, 0);
-      cxt.clearRect(0, 0, r.canvasWidth * r.textureMult, r.canvasHeight * r.textureMult);
-
-      r.render({
-        forcedContext: cxt,
-        drawOnlyNodeLayer: true,
-        forcedPxRatio: pixelRatio * r.textureMult
-      });
-
-      var vp = r.textureCache.viewport = {
-        zoom: cy.zoom(),
-        pan: cy.pan(),
-        width: r.canvasWidth,
-        height: r.canvasHeight
-      };
-
-      vp.mpan = {
-        x: (0 - vp.pan.x) / vp.zoom,
-        y: (0 - vp.pan.y) / vp.zoom
-      };
-    }
-
-    needDraw[r.DRAG] = false;
-    needDraw[r.NODE] = false;
-
-    var context = data.contexts[r.NODE];
-
-    var texture = r.textureCache.texture;
-    var vp = r.textureCache.viewport;
-    bb = r.textureCache.bb;
-
-    context.setTransform(1, 0, 0, 1, 0, 0);
-
-    if (motionBlur) {
-      mbclear(context, 0, 0, vp.width, vp.height);
-    } else {
-      context.clearRect(0, 0, vp.width, vp.height);
-    }
-
-    var outsideBgColor = coreStyle['outside-texture-bg-color'].value;
-    var outsideBgOpacity = coreStyle['outside-texture-bg-opacity'].value;
-    r.fillStyle(context, outsideBgColor[0], outsideBgColor[1], outsideBgColor[2], outsideBgOpacity);
-    context.fillRect(0, 0, vp.width, vp.height);
-
-    var zoom = cy.zoom();
-
-    setContextTransform(context, false);
-
-    context.clearRect(vp.mpan.x, vp.mpan.y, vp.width / vp.zoom / pixelRatio, vp.height / vp.zoom / pixelRatio);
-    context.drawImage(texture, vp.mpan.x, vp.mpan.y, vp.width / vp.zoom / pixelRatio, vp.height / vp.zoom / pixelRatio);
-  } else if (r.textureOnViewport && !forcedContext) {
-    // clear the cache since we don't need it
-    r.textureCache = null;
-  }
-
-  var extent = cy.extent();
-  var vpManip = r.pinching || r.hoverData.dragging || r.swipePanning || r.data.wheelZooming || r.hoverData.draggingEles;
-  var hideEdges = r.hideEdgesOnViewport && vpManip;
-
-  var needMbClear = [];
-
-  needMbClear[r.NODE] = !needDraw[r.NODE] && motionBlur && !r.clearedForMotionBlur[r.NODE] || r.clearingMotionBlur;
-  if (needMbClear[r.NODE]) {
-    r.clearedForMotionBlur[r.NODE] = true;
-  }
-
-  needMbClear[r.DRAG] = !needDraw[r.DRAG] && motionBlur && !r.clearedForMotionBlur[r.DRAG] || r.clearingMotionBlur;
-  if (needMbClear[r.DRAG]) {
-    r.clearedForMotionBlur[r.DRAG] = true;
-  }
-
-  if (needDraw[r.NODE] || drawAllLayers || drawOnlyNodeLayer || needMbClear[r.NODE]) {
-    var useBuffer = motionBlur && !needMbClear[r.NODE] && mbPxRatio !== 1;
-    var context = forcedContext || (useBuffer ? r.data.bufferContexts[r.MOTIONBLUR_BUFFER_NODE] : data.contexts[r.NODE]);
-    var clear = motionBlur && !useBuffer ? 'motionBlur' : undefined;
-
-    setContextTransform(context, clear);
-
-    if (hideEdges) {
-      r.drawCachedNodes(context, eles.nondrag, pixelRatio, extent);
-    } else {
-      r.drawLayeredElements(context, eles.nondrag, pixelRatio, extent);
-    }
-
-    if (r.debug) {
-      r.drawDebugPoints(context, eles.nondrag);
-    }
-
-    if (!drawAllLayers && !motionBlur) {
-      needDraw[r.NODE] = false;
-    }
-  }
-
-  if (!drawOnlyNodeLayer && (needDraw[r.DRAG] || drawAllLayers || needMbClear[r.DRAG])) {
-    var useBuffer = motionBlur && !needMbClear[r.DRAG] && mbPxRatio !== 1;
-    var context = forcedContext || (useBuffer ? r.data.bufferContexts[r.MOTIONBLUR_BUFFER_DRAG] : data.contexts[r.DRAG]);
-
-    setContextTransform(context, motionBlur && !useBuffer ? 'motionBlur' : undefined);
-
-    if (hideEdges) {
-      r.drawCachedNodes(context, eles.drag, pixelRatio, extent);
-    } else {
-      r.drawCachedElements(context, eles.drag, pixelRatio, extent);
-    }
-
-    if (r.debug) {
-      r.drawDebugPoints(context, eles.drag);
-    }
-
-    if (!drawAllLayers && !motionBlur) {
-      needDraw[r.DRAG] = false;
-    }
-  }
-
-  if (r.showFps || !drawOnlyNodeLayer && needDraw[r.SELECT_BOX] && !drawAllLayers) {
-    var context = forcedContext || data.contexts[r.SELECT_BOX];
-
-    setContextTransform(context);
-
-    if (r.selection[4] == 1 && (r.hoverData.selecting || r.touchData.selecting)) {
-      var zoom = r.cy.zoom();
-      var borderWidth = coreStyle['selection-box-border-width'].value / zoom;
-
-      context.lineWidth = borderWidth;
-      context.fillStyle = 'rgba(' + coreStyle['selection-box-color'].value[0] + ',' + coreStyle['selection-box-color'].value[1] + ',' + coreStyle['selection-box-color'].value[2] + ',' + coreStyle['selection-box-opacity'].value + ')';
-
-      context.fillRect(r.selection[0], r.selection[1], r.selection[2] - r.selection[0], r.selection[3] - r.selection[1]);
-
-      if (borderWidth > 0) {
-        context.strokeStyle = 'rgba(' + coreStyle['selection-box-border-color'].value[0] + ',' + coreStyle['selection-box-border-color'].value[1] + ',' + coreStyle['selection-box-border-color'].value[2] + ',' + coreStyle['selection-box-opacity'].value + ')';
-
-        context.strokeRect(r.selection[0], r.selection[1], r.selection[2] - r.selection[0], r.selection[3] - r.selection[1]);
-      }
-    }
-
-    if (data.bgActivePosistion && !r.hoverData.selecting) {
-      var zoom = r.cy.zoom();
-      var pos = data.bgActivePosistion;
-
-      context.fillStyle = 'rgba(' + coreStyle['active-bg-color'].value[0] + ',' + coreStyle['active-bg-color'].value[1] + ',' + coreStyle['active-bg-color'].value[2] + ',' + coreStyle['active-bg-opacity'].value + ')';
-
-      context.beginPath();
-      context.arc(pos.x, pos.y, coreStyle['active-bg-size'].pfValue / zoom, 0, 2 * Math.PI);
-      context.fill();
-    }
-
-    var timeToRender = r.lastRedrawTime;
-    if (r.showFps && timeToRender) {
-      timeToRender = Math.round(timeToRender);
-      var fps = Math.round(1000 / timeToRender);
-
-      context.setTransform(1, 0, 0, 1, 0, 0);
-
-      context.fillStyle = 'rgba(255, 0, 0, 0.75)';
-      context.strokeStyle = 'rgba(255, 0, 0, 0.75)';
-      context.lineWidth = 1;
-      context.fillText('1 frame = ' + timeToRender + ' ms = ' + fps + ' fps', 0, 20);
-
-      var maxFps = 60;
-      context.strokeRect(0, 30, 250, 20);
-      context.fillRect(0, 30, 250 * Math.min(fps / maxFps, 1), 20);
-    }
-
-    if (!drawAllLayers) {
-      needDraw[r.SELECT_BOX] = false;
-    }
-  }
-
-  // motionblur: blit rendered blurry frames
-  if (motionBlur && mbPxRatio !== 1) {
-    var cxtNode = data.contexts[r.NODE];
-    var txtNode = r.data.bufferCanvases[r.MOTIONBLUR_BUFFER_NODE];
-
-    var cxtDrag = data.contexts[r.DRAG];
-    var txtDrag = r.data.bufferCanvases[r.MOTIONBLUR_BUFFER_DRAG];
-
-    var drawMotionBlur = function drawMotionBlur(cxt, txt, needClear) {
-      cxt.setTransform(1, 0, 0, 1, 0, 0);
-
-      if (needClear || !motionBlurFadeEffect) {
-        cxt.clearRect(0, 0, r.canvasWidth, r.canvasHeight);
-      } else {
-        mbclear(cxt, 0, 0, r.canvasWidth, r.canvasHeight);
-      }
-
-      var pxr = mbPxRatio;
-
-      cxt.drawImage(txt, // img
-      0, 0, // sx, sy
-      r.canvasWidth * pxr, r.canvasHeight * pxr, // sw, sh
-      0, 0, // x, y
-      r.canvasWidth, r.canvasHeight // w, h
-      );
-    };
-
-    if (needDraw[r.NODE] || needMbClear[r.NODE]) {
-      drawMotionBlur(cxtNode, txtNode, needMbClear[r.NODE]);
-      needDraw[r.NODE] = false;
-    }
-
-    if (needDraw[r.DRAG] || needMbClear[r.DRAG]) {
-      drawMotionBlur(cxtDrag, txtDrag, needMbClear[r.DRAG]);
-      needDraw[r.DRAG] = false;
-    }
-  }
-
-  r.prevViewport = vp;
-
-  if (r.clearingMotionBlur) {
-    r.clearingMotionBlur = false;
-    r.motionBlurCleared = true;
-    r.motionBlur = true;
-  }
-
-  if (motionBlur) {
-    r.motionBlurTimeout = setTimeout(function () {
-      r.motionBlurTimeout = null;
-
-      r.clearedForMotionBlur[r.NODE] = false;
-      r.clearedForMotionBlur[r.DRAG] = false;
-      r.motionBlur = false;
-      r.clearingMotionBlur = !textureDraw;
-      r.mbFrames = 0;
-
-      needDraw[r.NODE] = true;
-      needDraw[r.DRAG] = true;
-
-      r.redraw();
-    }, motionBlurDelay);
-  }
-
-  if (!forcedContext) {
-    cy.emit('render');
-  }
-};
-
-module.exports = CRp;
-
-/***/ }),
-/* 108 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var math = __webpack_require__(2);
-
-var CRp = {};
-
-// @O Polygon drawing
-CRp.drawPolygonPath = function (context, x, y, width, height, points) {
-
-  var halfW = width / 2;
-  var halfH = height / 2;
-
-  if (context.beginPath) {
-    context.beginPath();
-  }
-
-  context.moveTo(x + halfW * points[0], y + halfH * points[1]);
-
-  for (var i = 1; i < points.length / 2; i++) {
-    context.lineTo(x + halfW * points[i * 2], y + halfH * points[i * 2 + 1]);
-  }
-
-  context.closePath();
-};
-
-// Round rectangle drawing
-CRp.drawRoundRectanglePath = function (context, x, y, width, height) {
-
-  var halfWidth = width / 2;
-  var halfHeight = height / 2;
-  var cornerRadius = math.getRoundRectangleRadius(width, height);
-
-  if (context.beginPath) {
-    context.beginPath();
-  }
-
-  // Start at top middle
-  context.moveTo(x, y - halfHeight);
-  // Arc from middle top to right side
-  context.arcTo(x + halfWidth, y - halfHeight, x + halfWidth, y, cornerRadius);
-  // Arc from right side to bottom
-  context.arcTo(x + halfWidth, y + halfHeight, x, y + halfHeight, cornerRadius);
-  // Arc from bottom to left side
-  context.arcTo(x - halfWidth, y + halfHeight, x - halfWidth, y, cornerRadius);
-  // Arc from left side to topBorder
-  context.arcTo(x - halfWidth, y - halfHeight, x, y - halfHeight, cornerRadius);
-  // Join line
-  context.lineTo(x, y - halfHeight);
-
-  context.closePath();
-};
-
-CRp.drawBottomRoundRectanglePath = function (context, x, y, width, height) {
-
-  var halfWidth = width / 2;
-  var halfHeight = height / 2;
-  var cornerRadius = math.getRoundRectangleRadius(width, height);
-
-  if (context.beginPath) {
-    context.beginPath();
-  }
-
-  // Start at top middle
-  context.moveTo(x, y - halfHeight);
-  context.lineTo(x + halfWidth, y - halfHeight);
-  context.lineTo(x + halfWidth, y);
-
-  context.arcTo(x + halfWidth, y + halfHeight, x, y + halfHeight, cornerRadius);
-  context.arcTo(x - halfWidth, y + halfHeight, x - halfWidth, y, cornerRadius);
-
-  context.lineTo(x - halfWidth, y - halfHeight);
-  context.lineTo(x, y - halfHeight);
-
-  context.closePath();
-};
-
-CRp.drawCutRectanglePath = function (context, x, y, width, height) {
-
-  var halfWidth = width / 2;
-  var halfHeight = height / 2;
-  var cornerLength = math.getCutRectangleCornerLength();
-
-  if (context.beginPath) {
-    context.beginPath();
-  }
-
-  context.moveTo(x - halfWidth + cornerLength, y - halfHeight);
-
-  context.lineTo(x + halfWidth - cornerLength, y - halfHeight);
-  context.lineTo(x + halfWidth, y - halfHeight + cornerLength);
-  context.lineTo(x + halfWidth, y + halfHeight - cornerLength);
-  context.lineTo(x + halfWidth - cornerLength, y + halfHeight);
-  context.lineTo(x - halfWidth + cornerLength, y + halfHeight);
-  context.lineTo(x - halfWidth, y + halfHeight - cornerLength);
-  context.lineTo(x - halfWidth, y - halfHeight + cornerLength);
-
-  context.closePath();
-};
-
-CRp.drawBarrelPath = function (context, x, y, width, height) {
-
-  var halfWidth = width / 2;
-  var halfHeight = height / 2;
-
-  var xBegin = x - halfWidth;
-  var xEnd = x + halfWidth;
-  var yBegin = y - halfHeight;
-  var yEnd = y + halfHeight;
-
-  var barrelCurveConstants = math.getBarrelCurveConstants(width, height);
-  var wOffset = barrelCurveConstants.widthOffset;
-  var hOffset = barrelCurveConstants.heightOffset;
-  var ctrlPtXOffset = barrelCurveConstants.ctrlPtOffsetPct * wOffset;
-
-  if (context.beginPath) {
-    context.beginPath();
-  }
-
-  context.moveTo(xBegin, yBegin + hOffset);
-
-  context.lineTo(xBegin, yEnd - hOffset);
-  context.quadraticCurveTo(xBegin + ctrlPtXOffset, yEnd, xBegin + wOffset, yEnd);
-
-  context.lineTo(xEnd - wOffset, yEnd);
-  context.quadraticCurveTo(xEnd - ctrlPtXOffset, yEnd, xEnd, yEnd - hOffset);
-
-  context.lineTo(xEnd, yBegin + hOffset);
-  context.quadraticCurveTo(xEnd - ctrlPtXOffset, yBegin, xEnd - wOffset, yBegin);
-
-  context.lineTo(xBegin + wOffset, yBegin);
-  context.quadraticCurveTo(xBegin + ctrlPtXOffset, yBegin, xBegin, yBegin + hOffset);
-
-  context.closePath();
-};
-
-var sin0 = Math.sin(0);
-var cos0 = Math.cos(0);
-
-var sin = {};
-var cos = {};
-
-var ellipseStepSize = Math.PI / 40;
-
-for (var i = 0 * Math.PI; i < 2 * Math.PI; i += ellipseStepSize) {
-  sin[i] = Math.sin(i);
-  cos[i] = Math.cos(i);
 }
 
-CRp.drawEllipsePath = function (context, centerX, centerY, width, height) {
-  if (context.beginPath) {
-    context.beginPath();
+CRp.redrawHint = function (group, bool) {
+  var r = this;
+
+  switch (group) {
+    case 'eles':
+      r.data.canvasNeedsRedraw[CRp.NODE] = bool;
+      break;
+    case 'drag':
+      r.data.canvasNeedsRedraw[CRp.DRAG] = bool;
+      break;
+    case 'select':
+      r.data.canvasNeedsRedraw[CRp.SELECT_BOX] = bool;
+      break;
   }
-
-  if (context.ellipse) {
-    context.ellipse(centerX, centerY, width / 2, height / 2, 0, 0, 2 * Math.PI);
-  } else {
-    var xPos, yPos;
-    var rw = width / 2;
-    var rh = height / 2;
-    for (var i = 0 * Math.PI; i < 2 * Math.PI; i += ellipseStepSize) {
-      xPos = centerX - rw * sin[i] * sin0 + rw * cos[i] * cos0;
-      yPos = centerY + rh * cos[i] * sin0 + rh * sin[i] * cos0;
-
-      if (i === 0) {
-        context.moveTo(xPos, yPos);
-      } else {
-        context.lineTo(xPos, yPos);
-      }
-    }
-  }
-
-  context.closePath();
 };
 
-module.exports = CRp;
+// whether to use Path2D caching for drawing
+var pathsImpld = typeof Path2D !== 'undefined';
+
+CRp.path2dEnabled = function (on) {
+  if (on === undefined) {
+    return this.pathsEnabled;
+  }
+
+  this.pathsEnabled = on ? true : false;
+};
+
+CRp.usePaths = function () {
+  return pathsImpld && this.pathsEnabled;
+};
+
+[__webpack_require__(126), __webpack_require__(127), __webpack_require__(128), __webpack_require__(129), __webpack_require__(130), __webpack_require__(131), __webpack_require__(132), __webpack_require__(133), __webpack_require__(134), __webpack_require__(135)].forEach(function (props) {
+  util.extend(CRp, props);
+});
+
+module.exports = CR;
 
 /***/ }),
-/* 109 */
+/* 124 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -23816,8 +25346,8 @@ module.exports = CRp;
 
 var math = __webpack_require__(2);
 var util = __webpack_require__(1);
-var Heap = __webpack_require__(8);
-var defs = __webpack_require__(16);
+var Heap = __webpack_require__(9);
+var defs = __webpack_require__(19);
 
 var minTxrH = 25; // the size of the texture cache for small height eles (special case)
 var txrStepH = 50; // the min size of the regular cache, and the size it increases with each step up
@@ -24314,320 +25844,7 @@ ETCp.setupDequeueing = defs.setupDequeueing({
 module.exports = ElementTextureCache;
 
 /***/ }),
-/* 110 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var is = __webpack_require__(0);
-
-var CRp = {};
-
-CRp.createBuffer = function (w, h) {
-  var buffer = document.createElement('canvas'); // eslint-disable-line no-undef
-  buffer.width = w;
-  buffer.height = h;
-
-  return [buffer, buffer.getContext('2d')];
-};
-
-CRp.bufferCanvasImage = function (options) {
-  var cy = this.cy;
-  var eles = cy.mutableElements();
-  var bb = eles.boundingBox();
-  var ctrRect = this.findContainerClientCoords();
-  var width = options.full ? Math.ceil(bb.w) : ctrRect[2];
-  var height = options.full ? Math.ceil(bb.h) : ctrRect[3];
-  var specdMaxDims = is.number(options.maxWidth) || is.number(options.maxHeight);
-  var pxRatio = this.getPixelRatio();
-  var scale = 1;
-
-  if (options.scale !== undefined) {
-    width *= options.scale;
-    height *= options.scale;
-
-    scale = options.scale;
-  } else if (specdMaxDims) {
-    var maxScaleW = Infinity;
-    var maxScaleH = Infinity;
-
-    if (is.number(options.maxWidth)) {
-      maxScaleW = scale * options.maxWidth / width;
-    }
-
-    if (is.number(options.maxHeight)) {
-      maxScaleH = scale * options.maxHeight / height;
-    }
-
-    scale = Math.min(maxScaleW, maxScaleH);
-
-    width *= scale;
-    height *= scale;
-  }
-
-  if (!specdMaxDims) {
-    width *= pxRatio;
-    height *= pxRatio;
-    scale *= pxRatio;
-  }
-
-  var buffCanvas = document.createElement('canvas'); // eslint-disable-line no-undef
-
-  buffCanvas.width = width;
-  buffCanvas.height = height;
-
-  buffCanvas.style.width = width + 'px';
-  buffCanvas.style.height = height + 'px';
-
-  var buffCxt = buffCanvas.getContext('2d');
-
-  // Rasterize the layers, but only if container has nonzero size
-  if (width > 0 && height > 0) {
-
-    buffCxt.clearRect(0, 0, width, height);
-
-    buffCxt.globalCompositeOperation = 'source-over';
-
-    var zsortedEles = this.getCachedZSortedEles();
-
-    if (options.full) {
-      // draw the full bounds of the graph
-      buffCxt.translate(-bb.x1 * scale, -bb.y1 * scale);
-      buffCxt.scale(scale, scale);
-
-      this.drawElements(buffCxt, zsortedEles);
-
-      buffCxt.scale(1 / scale, 1 / scale);
-      buffCxt.translate(bb.x1 * scale, bb.y1 * scale);
-    } else {
-      // draw the current view
-      var pan = cy.pan();
-
-      var translation = {
-        x: pan.x * scale,
-        y: pan.y * scale
-      };
-
-      scale *= cy.zoom();
-
-      buffCxt.translate(translation.x, translation.y);
-      buffCxt.scale(scale, scale);
-
-      this.drawElements(buffCxt, zsortedEles);
-
-      buffCxt.scale(1 / scale, 1 / scale);
-      buffCxt.translate(-translation.x, -translation.y);
-    }
-
-    // need to fill bg at end like this in order to fill cleared transparent pixels in jpgs
-    if (options.bg) {
-      buffCxt.globalCompositeOperation = 'destination-over';
-
-      buffCxt.fillStyle = options.bg;
-      buffCxt.rect(0, 0, width, height);
-      buffCxt.fill();
-    }
-  }
-
-  return buffCanvas;
-};
-
-function b64ToBlob(b64, mimeType) {
-  var bytes = atob(b64);
-  var buff = new ArrayBuffer(bytes.length);
-  var buffUint8 = new Uint8Array(buff);
-
-  for (var i = 0; i < bytes.length; i++) {
-    buffUint8[i] = bytes.charCodeAt(i);
-  }
-
-  return new Blob([buff], { type: mimeType });
-}
-
-function b64UriToB64(b64uri) {
-  var i = b64uri.indexOf(',');
-
-  return b64uri.substr(i + 1);
-};
-
-function output(options, canvas, mimeType) {
-  var b64Uri = canvas.toDataURL(mimeType, options.quality);
-
-  switch (options.output) {
-    case 'blob':
-      return b64ToBlob(b64UriToB64(b64Uri), mimeType);
-
-    case 'base64':
-      return b64UriToB64(b64Uri);
-
-    case 'base64uri':
-    default:
-      return b64Uri;
-  }
-}
-
-CRp.png = function (options) {
-  return output(options, this.bufferCanvasImage(options), 'image/png');
-};
-
-CRp.jpg = function (options) {
-  return output(options, this.bufferCanvasImage(options), 'image/jpeg');
-};
-
-module.exports = CRp;
-
-/***/ }),
-/* 111 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-/*
-The canvas renderer was written by Yue Dong.
-
-Modifications tracked on Github.
-*/
-
-var util = __webpack_require__(1);
-var is = __webpack_require__(0);
-var ElementTextureCache = __webpack_require__(109);
-var LayeredTextureCache = __webpack_require__(112);
-
-var CR = CanvasRenderer;
-var CRp = CanvasRenderer.prototype;
-
-CRp.CANVAS_LAYERS = 3;
-//
-CRp.SELECT_BOX = 0;
-CRp.DRAG = 1;
-CRp.NODE = 2;
-
-CRp.BUFFER_COUNT = 3;
-//
-CRp.TEXTURE_BUFFER = 0;
-CRp.MOTIONBLUR_BUFFER_NODE = 1;
-CRp.MOTIONBLUR_BUFFER_DRAG = 2;
-
-function CanvasRenderer(options) {
-  var r = this;
-
-  r.data = {
-    canvases: new Array(CRp.CANVAS_LAYERS),
-    contexts: new Array(CRp.CANVAS_LAYERS),
-    canvasNeedsRedraw: new Array(CRp.CANVAS_LAYERS),
-
-    bufferCanvases: new Array(CRp.BUFFER_COUNT),
-    bufferContexts: new Array(CRp.CANVAS_LAYERS)
-  };
-
-  var tapHlOff = '-webkit-tap-highlight-color: rgba(0,0,0,0);';
-
-  r.data.canvasContainer = document.createElement('div'); // eslint-disable-line no-undef
-  var containerStyle = r.data.canvasContainer.style;
-  r.data.canvasContainer.setAttribute('style', tapHlOff);
-  containerStyle.position = 'relative';
-  containerStyle.zIndex = '0';
-  containerStyle.overflow = 'hidden';
-
-  var container = options.cy.container();
-  container.appendChild(r.data.canvasContainer);
-
-  if ((container.getAttribute('style') || '').indexOf(tapHlOff) < 0) {
-    container.setAttribute('style', (container.getAttribute('style') || '') + tapHlOff);
-  }
-
-  for (var i = 0; i < CRp.CANVAS_LAYERS; i++) {
-    var canvas = r.data.canvases[i] = document.createElement('canvas'); // eslint-disable-line no-undef
-    r.data.contexts[i] = canvas.getContext('2d');
-    canvas.setAttribute('style', '-webkit-user-select: none; -moz-user-select: -moz-none; user-select: none; -webkit-tap-highlight-color: rgba(0,0,0,0); outline-style: none;' + (is.ms() ? ' -ms-touch-action: none; touch-action: none; ' : ''));
-    canvas.style.position = 'absolute';
-    canvas.setAttribute('data-id', 'layer' + i);
-    canvas.style.zIndex = String(CRp.CANVAS_LAYERS - i);
-    r.data.canvasContainer.appendChild(canvas);
-
-    r.data.canvasNeedsRedraw[i] = false;
-  }
-  r.data.topCanvas = r.data.canvases[0];
-
-  r.data.canvases[CRp.NODE].setAttribute('data-id', 'layer' + CRp.NODE + '-node');
-  r.data.canvases[CRp.SELECT_BOX].setAttribute('data-id', 'layer' + CRp.SELECT_BOX + '-selectbox');
-  r.data.canvases[CRp.DRAG].setAttribute('data-id', 'layer' + CRp.DRAG + '-drag');
-
-  for (var i = 0; i < CRp.BUFFER_COUNT; i++) {
-    r.data.bufferCanvases[i] = document.createElement('canvas'); // eslint-disable-line no-undef
-    r.data.bufferContexts[i] = r.data.bufferCanvases[i].getContext('2d');
-    r.data.bufferCanvases[i].style.position = 'absolute';
-    r.data.bufferCanvases[i].setAttribute('data-id', 'buffer' + i);
-    r.data.bufferCanvases[i].style.zIndex = String(-i - 1);
-    r.data.bufferCanvases[i].style.visibility = 'hidden';
-    //r.data.canvasContainer.appendChild(r.data.bufferCanvases[i]);
-  }
-
-  r.pathsEnabled = true;
-
-  r.data.eleTxrCache = new ElementTextureCache(r);
-  r.data.lyrTxrCache = new LayeredTextureCache(r, r.data.eleTxrCache);
-
-  r.onUpdateEleCalcs(function invalidateTextureCaches(willDraw, eles) {
-    for (var i = 0; i < eles.length; i++) {
-      var ele = eles[i];
-      var rs = ele._private.rstyle;
-      var de = rs.dirtyEvents;
-
-      if (ele.isNode() && de && de.length === 1 && de['position']) {
-        // then keep cached ele texture
-      } else {
-        r.data.eleTxrCache.invalidateElement(ele);
-      }
-    }
-
-    if (eles.length > 0) {
-      r.data.lyrTxrCache.invalidateElements(eles);
-    }
-  });
-}
-
-CRp.redrawHint = function (group, bool) {
-  var r = this;
-
-  switch (group) {
-    case 'eles':
-      r.data.canvasNeedsRedraw[CRp.NODE] = bool;
-      break;
-    case 'drag':
-      r.data.canvasNeedsRedraw[CRp.DRAG] = bool;
-      break;
-    case 'select':
-      r.data.canvasNeedsRedraw[CRp.SELECT_BOX] = bool;
-      break;
-  }
-};
-
-// whether to use Path2D caching for drawing
-var pathsImpld = typeof Path2D !== 'undefined';
-
-CRp.path2dEnabled = function (on) {
-  if (on === undefined) {
-    return this.pathsEnabled;
-  }
-
-  this.pathsEnabled = on ? true : false;
-};
-
-CRp.usePaths = function () {
-  return pathsImpld && this.pathsEnabled;
-};
-
-[__webpack_require__(101), __webpack_require__(103), __webpack_require__(102), __webpack_require__(104), __webpack_require__(105), __webpack_require__(106), __webpack_require__(107), __webpack_require__(108), __webpack_require__(110), __webpack_require__(113)].forEach(function (props) {
-  util.extend(CRp, props);
-});
-
-module.exports = CR;
-
-/***/ }),
-/* 112 */
+/* 125 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -24635,9 +25852,9 @@ module.exports = CR;
 
 var util = __webpack_require__(1);
 var math = __webpack_require__(2);
-var Heap = __webpack_require__(8);
+var Heap = __webpack_require__(9);
 var is = __webpack_require__(0);
-var defs = __webpack_require__(16);
+var defs = __webpack_require__(19);
 
 var defNumLayers = 1; // default number of layers to use
 var minLvl = -4; // when scaling smaller than that we don't need to re-render
@@ -25352,7 +26569,2350 @@ LTCp.setupDequeueing = defs.setupDequeueing({
 module.exports = LayeredTextureCache;
 
 /***/ }),
-/* 113 */
+/* 126 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var CRp = {};
+
+var impl;
+
+CRp.arrowShapeImpl = function (name) {
+  return (impl || (impl = {
+    'polygon': function polygon(context, points) {
+      for (var i = 0; i < points.length; i++) {
+        var pt = points[i];
+
+        context.lineTo(pt.x, pt.y);
+      }
+    },
+
+    'triangle-backcurve': function triangleBackcurve(context, points, controlPoint) {
+      var firstPt;
+
+      for (var i = 0; i < points.length; i++) {
+        var pt = points[i];
+
+        if (i === 0) {
+          firstPt = pt;
+        }
+
+        context.lineTo(pt.x, pt.y);
+      }
+
+      context.quadraticCurveTo(controlPoint.x, controlPoint.y, firstPt.x, firstPt.y);
+    },
+
+    'triangle-tee': function triangleTee(context, trianglePoints, teePoints) {
+      if (context.beginPath) {
+        context.beginPath();
+      }
+
+      var triPts = trianglePoints;
+      for (var i = 0; i < triPts.length; i++) {
+        var pt = triPts[i];
+
+        context.lineTo(pt.x, pt.y);
+      }
+
+      if (context.closePath) {
+        context.closePath();
+      }
+
+      if (context.beginPath) {
+        context.beginPath();
+      }
+
+      var teePts = teePoints;
+      var firstTeePt = teePoints[0];
+      context.moveTo(firstTeePt.x, firstTeePt.y);
+
+      for (var i = 0; i < teePts.length; i++) {
+        var pt = teePts[i];
+
+        context.lineTo(pt.x, pt.y);
+      }
+      if (context.closePath) {
+        context.closePath();
+      }
+    },
+
+    'triangle-cross': function triangleCross(context, trianglePoints, crossLinePoints) {
+      if (context.beginPath) {
+        context.beginPath();
+      }
+
+      var triPts = trianglePoints;
+      for (var i = 0; i < triPts.length; i++) {
+        var pt = triPts[i];
+
+        context.lineTo(pt.x, pt.y);
+      }
+
+      if (context.closePath) {
+        context.closePath();
+      }
+
+      if (context.beginPath) {
+        context.beginPath();
+      }
+
+      var teePts = crossLinePoints;
+      var firstTeePt = crossLinePoints[0];
+      context.moveTo(firstTeePt.x, firstTeePt.y);
+
+      for (var i = 0; i < teePts.length; i++) {
+        var pt = teePts[i];
+
+        context.lineTo(pt.x, pt.y);
+      }
+      if (context.closePath) {
+        context.closePath();
+      }
+    },
+
+    'circle': function circle(context, rx, ry, r) {
+      context.arc(rx, ry, r, 0, Math.PI * 2, false);
+    }
+  }))[name];
+};
+
+module.exports = CRp;
+
+/***/ }),
+/* 127 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var math = __webpack_require__(2);
+
+var CRp = {};
+
+CRp.drawElement = function (context, ele, shiftToOriginWithBb, showLabel) {
+  var r = this;
+
+  if (ele.isNode()) {
+    r.drawNode(context, ele, shiftToOriginWithBb, showLabel);
+  } else {
+    r.drawEdge(context, ele, shiftToOriginWithBb, showLabel);
+  }
+};
+
+CRp.drawCachedElement = function (context, ele, pxRatio, extent) {
+  var r = this;
+  var bb = ele.boundingBox();
+
+  if (bb.w === 0 || bb.h === 0) {
+    return;
+  }
+
+  if (!extent || math.boundingBoxesIntersect(bb, extent)) {
+    var cache = r.data.eleTxrCache.getElement(ele, bb, pxRatio);
+
+    if (cache != null) {
+      context.drawImage(cache.texture.canvas, cache.x, 0, cache.width, cache.height, bb.x1, bb.y1, bb.w, bb.h);
+    } else {
+      // if the element is not cacheable, then draw directly
+      r.drawElement(context, ele);
+    }
+  }
+};
+
+CRp.drawElements = function (context, eles) {
+  var r = this;
+
+  for (var i = 0; i < eles.length; i++) {
+    var ele = eles[i];
+
+    r.drawElement(context, ele);
+  }
+};
+
+CRp.drawCachedElements = function (context, eles, pxRatio, extent) {
+  var r = this;
+
+  for (var i = 0; i < eles.length; i++) {
+    var ele = eles[i];
+
+    r.drawCachedElement(context, ele, pxRatio, extent);
+  }
+};
+
+CRp.drawCachedNodes = function (context, eles, pxRatio, extent) {
+  var r = this;
+
+  for (var i = 0; i < eles.length; i++) {
+    var ele = eles[i];
+
+    if (!ele.isNode()) {
+      continue;
+    }
+
+    r.drawCachedElement(context, ele, pxRatio, extent);
+  }
+};
+
+CRp.drawLayeredElements = function (context, eles, pxRatio, extent) {
+  var r = this;
+
+  var layers = r.data.lyrTxrCache.getLayers(eles, pxRatio);
+
+  if (layers) {
+    for (var i = 0; i < layers.length; i++) {
+      var layer = layers[i];
+      var bb = layer.bb;
+
+      if (bb.w === 0 || bb.h === 0) {
+        continue;
+      }
+
+      context.drawImage(layer.canvas, bb.x1, bb.y1, bb.w, bb.h);
+    }
+  } else {
+    // fall back on plain caching if no layers
+    r.drawCachedElements(context, eles, pxRatio, extent);
+  }
+};
+
+CRp.drawDebugPoints = function (context, eles) {
+  var draw = function draw(x, y, color) {
+    context.fillStyle = color;
+    context.fillRect(x - 1, y - 1, 3, 3);
+  };
+
+  for (var i = 0; i < eles.length; i++) {
+    var ele = eles[i];
+    var rs = ele._private.rscratch;
+
+    if (ele.isNode()) {
+      var p = ele.position();
+
+      draw(p.x, p.y, 'magenta');
+    } else {
+      var pts = rs.allpts;
+
+      for (var j = 0; j + 1 < pts.length; j += 2) {
+        var x = pts[j];
+        var y = pts[j + 1];
+
+        draw(x, y, 'cyan');
+      }
+
+      draw(rs.midX, rs.midY, 'yellow');
+    }
+  }
+};
+
+module.exports = CRp;
+
+/***/ }),
+/* 128 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var CRp = {};
+
+CRp.drawEdge = function (context, edge, shiftToOriginWithBb, drawLabel) {
+  var r = this;
+  var rs = edge._private.rscratch;
+  var usePaths = r.usePaths();
+
+  // if bezier ctrl pts can not be calculated, then die
+  if (rs.badLine || isNaN(rs.allpts[0])) {
+    // isNaN in case edge is impossible and browser bugs (e.g. safari)
+    return;
+  }
+
+  if (!edge.visible()) {
+    return;
+  }
+
+  var bb = void 0;
+  if (shiftToOriginWithBb) {
+    bb = shiftToOriginWithBb;
+
+    context.translate(-bb.x1, -bb.y1);
+  }
+
+  var overlayPadding = edge.pstyle('overlay-padding').pfValue;
+  var overlayWidth = 2 * overlayPadding;
+  var overlayOpacity = edge.pstyle('overlay-opacity').value;
+  var overlayColor = edge.pstyle('overlay-color').value;
+  var lineColor = edge.pstyle('line-color').value;
+  var opacity = edge.pstyle('opacity').value;
+  var lineStyle = edge.pstyle('line-style').value;
+  var edgeWidth = edge.pstyle('width').pfValue;
+
+  var drawLine = function drawLine() {
+    var strokeOpacity = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : opacity;
+
+    context.lineWidth = edgeWidth;
+    context.lineCap = 'butt';
+
+    r.strokeStyle(context, lineColor[0], lineColor[1], lineColor[2], strokeOpacity);
+
+    r.drawEdgePath(edge, context, rs.allpts, lineStyle);
+  };
+
+  var drawOverlay = function drawOverlay() {
+    var strokeOpacity = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : overlayOpacity;
+
+    context.lineWidth = overlayWidth;
+
+    if (rs.edgeType === 'self' && !usePaths) {
+      context.lineCap = 'butt';
+    } else {
+      context.lineCap = 'round';
+    }
+
+    r.strokeStyle(context, overlayColor[0], overlayColor[1], overlayColor[2], strokeOpacity);
+
+    r.drawEdgePath(edge, context, rs.allpts, 'solid');
+  };
+
+  var drawArrows = function drawArrows() {
+    var arrowOpacity = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : opacity;
+
+    r.drawArrowheads(context, edge, arrowOpacity);
+  };
+
+  var drawText = function drawText() {
+    r.drawElementText(context, edge, drawLabel);
+  };
+
+  context.lineJoin = 'round';
+
+  var ghost = edge.pstyle('ghost').value === 'yes';
+
+  if (ghost) {
+    var gx = edge.pstyle('ghost-offset-x').pfValue;
+    var gy = edge.pstyle('ghost-offset-y').pfValue;
+    var ghostOpacity = edge.pstyle('ghost-opacity').value;
+    var effectiveGhostOpacity = opacity * ghostOpacity;
+
+    context.translate(gx, gy);
+
+    drawLine(effectiveGhostOpacity);
+    drawArrows(effectiveGhostOpacity);
+
+    context.translate(-gx, -gy);
+  }
+
+  drawLine();
+  drawArrows();
+  drawOverlay();
+  drawText();
+
+  if (shiftToOriginWithBb) {
+    context.translate(bb.x1, bb.y1);
+  }
+};
+
+CRp.drawEdgePath = function (edge, context, pts, type) {
+  var rs = edge._private.rscratch;
+  var canvasCxt = context;
+  var path = void 0;
+  var pathCacheHit = false;
+  var usePaths = this.usePaths();
+
+  if (usePaths) {
+    var pathCacheKey = pts.join('$');
+    var keyMatches = rs.pathCacheKey && rs.pathCacheKey === pathCacheKey;
+
+    if (keyMatches) {
+      path = context = rs.pathCache;
+      pathCacheHit = true;
+    } else {
+      path = context = new Path2D(); // eslint-disable-line no-undef
+      rs.pathCacheKey = pathCacheKey;
+      rs.pathCache = path;
+    }
+  }
+
+  if (canvasCxt.setLineDash) {
+    // for very outofdate browsers
+    switch (type) {
+      case 'dotted':
+        canvasCxt.setLineDash([1, 1]);
+        break;
+
+      case 'dashed':
+        canvasCxt.setLineDash([6, 3]);
+        break;
+
+      case 'solid':
+        canvasCxt.setLineDash([]);
+        break;
+    }
+  }
+
+  if (!pathCacheHit && !rs.badLine) {
+    if (context.beginPath) {
+      context.beginPath();
+    }
+    context.moveTo(pts[0], pts[1]);
+
+    switch (rs.edgeType) {
+      case 'bezier':
+      case 'self':
+      case 'compound':
+      case 'multibezier':
+        for (var i = 2; i + 3 < pts.length; i += 4) {
+          context.quadraticCurveTo(pts[i], pts[i + 1], pts[i + 2], pts[i + 3]);
+        }
+        break;
+
+      case 'straight':
+      case 'segments':
+      case 'haystack':
+        for (var _i = 2; _i + 1 < pts.length; _i += 2) {
+          context.lineTo(pts[_i], pts[_i + 1]);
+        }
+        break;
+    }
+  }
+
+  context = canvasCxt;
+  if (usePaths) {
+    context.stroke(path);
+  } else {
+    context.stroke();
+  }
+
+  // reset any line dashes
+  if (context.setLineDash) {
+    // for very outofdate browsers
+    context.setLineDash([]);
+  }
+};
+
+CRp.drawArrowheads = function (context, edge, opacity) {
+  var rs = edge._private.rscratch;
+  var isHaystack = rs.edgeType === 'haystack';
+
+  if (!isHaystack) {
+    this.drawArrowhead(context, edge, 'source', rs.arrowStartX, rs.arrowStartY, rs.srcArrowAngle, opacity);
+  }
+
+  this.drawArrowhead(context, edge, 'mid-target', rs.midX, rs.midY, rs.midtgtArrowAngle, opacity);
+
+  this.drawArrowhead(context, edge, 'mid-source', rs.midX, rs.midY, rs.midsrcArrowAngle, opacity);
+
+  if (!isHaystack) {
+    this.drawArrowhead(context, edge, 'target', rs.arrowEndX, rs.arrowEndY, rs.tgtArrowAngle, opacity);
+  }
+};
+
+CRp.drawArrowhead = function (context, edge, prefix, x, y, angle, opacity) {
+  if (isNaN(x) || x == null || isNaN(y) || y == null || isNaN(angle) || angle == null) {
+    return;
+  }
+
+  var self = this;
+  var arrowShape = edge.pstyle(prefix + '-arrow-shape').value;
+  if (arrowShape === 'none') {
+    return;
+  }
+
+  var arrowClearFill = edge.pstyle(prefix + '-arrow-fill').value === 'hollow' ? 'both' : 'filled';
+  var arrowFill = edge.pstyle(prefix + '-arrow-fill').value;
+  var edgeWidth = edge.pstyle('width').pfValue;
+  var edgeOpacity = edge.pstyle('opacity').value;
+
+  if (opacity === undefined) {
+    opacity = edgeOpacity;
+  }
+
+  var gco = context.globalCompositeOperation;
+
+  if (opacity !== 1 || arrowFill === 'hollow') {
+    // then extra clear is needed
+    context.globalCompositeOperation = 'destination-out';
+
+    self.fillStyle(context, 255, 255, 255, 1);
+    self.strokeStyle(context, 255, 255, 255, 1);
+
+    self.drawArrowShape(edge, prefix, context, arrowClearFill, edgeWidth, arrowShape, x, y, angle);
+
+    context.globalCompositeOperation = gco;
+  } // otherwise, the opaque arrow clears it for free :)
+
+  var color = edge.pstyle(prefix + '-arrow-color').value;
+  self.fillStyle(context, color[0], color[1], color[2], opacity);
+  self.strokeStyle(context, color[0], color[1], color[2], opacity);
+
+  self.drawArrowShape(edge, prefix, context, arrowFill, edgeWidth, arrowShape, x, y, angle);
+};
+
+CRp.drawArrowShape = function (edge, arrowType, context, fill, edgeWidth, shape, x, y, angle) {
+  var r = this;
+  var usePaths = this.usePaths();
+  var rs = edge._private.rscratch;
+  var pathCacheHit = false;
+  var path = void 0;
+  var canvasContext = context;
+  var translation = { x: x, y: y };
+  var scale = edge.pstyle('arrow-scale').value;
+  var size = this.getArrowWidth(edgeWidth, scale);
+  var shapeImpl = r.arrowShapes[shape];
+
+  if (usePaths) {
+    var pathCacheKey = size + '$' + shape + '$' + angle + '$' + x + '$' + y;
+    rs.arrowPathCacheKey = rs.arrowPathCacheKey || {};
+    rs.arrowPathCache = rs.arrowPathCache || {};
+
+    var alreadyCached = rs.arrowPathCacheKey[arrowType] === pathCacheKey;
+    if (alreadyCached) {
+      path = context = rs.arrowPathCache[arrowType];
+      pathCacheHit = true;
+    } else {
+      path = context = new Path2D(); // eslint-disable-line no-undef
+      rs.arrowPathCacheKey[arrowType] = pathCacheKey;
+      rs.arrowPathCache[arrowType] = path;
+    }
+  }
+
+  if (context.beginPath) {
+    context.beginPath();
+  }
+
+  if (!pathCacheHit) {
+    shapeImpl.draw(context, size, angle, translation, edgeWidth);
+  }
+
+  if (!shapeImpl.leavePathOpen && context.closePath) {
+    context.closePath();
+  }
+
+  context = canvasContext;
+
+  if (fill === 'filled' || fill === 'both') {
+    if (usePaths) {
+      context.fill(path);
+    } else {
+      context.fill();
+    }
+  }
+
+  if (fill === 'hollow' || fill === 'both') {
+    context.lineWidth = shapeImpl.matchEdgeWidth ? edgeWidth : 1;
+    context.lineJoin = 'miter';
+
+    if (usePaths) {
+      context.stroke(path);
+    } else {
+      context.stroke();
+    }
+  }
+};
+
+module.exports = CRp;
+
+/***/ }),
+/* 129 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var CRp = {};
+
+CRp.safeDrawImage = function (context, img, ix, iy, iw, ih, x, y, w, h) {
+  var r = this;
+
+  // detect problematic cases for old browsers with bad images (cheaper than try-catch)
+  if (iw <= 0 || ih <= 0 || w <= 0 || h <= 0) {
+    return;
+  }
+
+  context.drawImage(img, ix, iy, iw, ih, x, y, w, h);
+};
+
+CRp.drawInscribedImage = function (context, img, node, index, nodeOpacity) {
+  var r = this;
+  var pos = node.position();
+  var nodeX = pos.x;
+  var nodeY = pos.y;
+  var styleObj = node.cy().style();
+  var getIndexedStyle = styleObj.getIndexedStyle.bind(styleObj);
+  var fit = getIndexedStyle(node, 'background-fit', 'value', index);
+  var repeat = getIndexedStyle(node, 'background-repeat', 'value', index);
+  var nodeW = node.width();
+  var nodeH = node.height();
+  var paddingX2 = node.padding() * 2;
+  var nodeTW = nodeW + (getIndexedStyle(node, 'background-width-relative-to', 'value', index) === 'inner' ? 0 : paddingX2);
+  var nodeTH = nodeH + (getIndexedStyle(node, 'background-height-relative-to', 'value', index) === 'inner' ? 0 : paddingX2);
+  var rs = node._private.rscratch;
+  var clip = node.pstyle('background-clip').value;
+  var shouldClip = clip === 'node';
+  var imgOpacity = getIndexedStyle(node, 'background-image-opacity', 'value', index) * nodeOpacity;
+
+  var imgW = img.width || img.cachedW;
+  var imgH = img.height || img.cachedH;
+
+  // workaround for broken browsers like ie
+  if (null == imgW || null == imgH) {
+    document.body.appendChild(img); // eslint-disable-line no-undef
+
+    imgW = img.cachedW = img.width || img.offsetWidth;
+    imgH = img.cachedH = img.height || img.offsetHeight;
+
+    document.body.removeChild(img); // eslint-disable-line no-undef
+  }
+
+  var w = imgW;
+  var h = imgH;
+
+  if (getIndexedStyle(node, 'background-width', 'value', index) !== 'auto') {
+    if (getIndexedStyle(node, 'background-width', 'units', index) === '%') {
+      w = getIndexedStyle(node, 'background-width', 'pfValue', index) * nodeTW;
+    } else {
+      w = getIndexedStyle(node, 'background-width', 'pfValue', index);
+    }
+  }
+
+  if (getIndexedStyle(node, 'background-height', 'value', index) !== 'auto') {
+    if (getIndexedStyle(node, 'background-height', 'units', index) === '%') {
+      h = getIndexedStyle(node, 'background-height', 'pfValue', index) * nodeTH;
+    } else {
+      h = getIndexedStyle(node, 'background-height', 'pfValue', index);
+    }
+  }
+
+  if (w === 0 || h === 0) {
+    return; // no point in drawing empty image (and chrome is broken in this case)
+  }
+
+  if (fit === 'contain') {
+    var scale = Math.min(nodeTW / w, nodeTH / h);
+
+    w *= scale;
+    h *= scale;
+  } else if (fit === 'cover') {
+    var scale = Math.max(nodeTW / w, nodeTH / h);
+
+    w *= scale;
+    h *= scale;
+  }
+
+  var x = nodeX - nodeTW / 2; // left
+  if (getIndexedStyle(node, 'background-position-x', 'units', index) === '%') {
+    x += (nodeTW - w) * getIndexedStyle(node, 'background-position-x', 'pfValue', index);
+  } else {
+    x += getIndexedStyle(node, 'background-position-x', 'pfValue', index);
+  }
+
+  var y = nodeY - nodeTH / 2; // top
+  if (getIndexedStyle(node, 'background-position-y', 'units', index) === '%') {
+    y += (nodeTH - h) * getIndexedStyle(node, 'background-position-y', 'pfValue', index);
+  } else {
+    y += getIndexedStyle(node, 'background-position-y', 'pfValue', index);
+  }
+
+  if (rs.pathCache) {
+    x -= nodeX;
+    y -= nodeY;
+
+    nodeX = 0;
+    nodeY = 0;
+  }
+
+  var gAlpha = context.globalAlpha;
+
+  context.globalAlpha = imgOpacity;
+
+  if (repeat === 'no-repeat') {
+
+    if (shouldClip) {
+      context.save();
+
+      if (rs.pathCache) {
+        context.clip(rs.pathCache);
+      } else {
+        r.nodeShapes[r.getNodeShape(node)].draw(context, nodeX, nodeY, nodeTW, nodeTH);
+
+        context.clip();
+      }
+    }
+
+    r.safeDrawImage(context, img, 0, 0, imgW, imgH, x, y, w, h);
+
+    if (shouldClip) {
+      context.restore();
+    }
+  } else {
+    var pattern = context.createPattern(img, repeat);
+    context.fillStyle = pattern;
+
+    r.nodeShapes[r.getNodeShape(node)].draw(context, nodeX, nodeY, nodeTW, nodeTH);
+
+    context.translate(x, y);
+    context.fill();
+    context.translate(-x, -y);
+  }
+
+  context.globalAlpha = gAlpha;
+};
+
+module.exports = CRp;
+
+/***/ }),
+/* 130 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var util = __webpack_require__(1);
+var math = __webpack_require__(2);
+
+var CRp = {};
+
+CRp.eleTextBiggerThanMin = function (ele, scale) {
+  if (!scale) {
+    var zoom = ele.cy().zoom();
+    var pxRatio = this.getPixelRatio();
+    var lvl = Math.ceil(math.log2(zoom * pxRatio)); // the effective texture level
+
+    scale = Math.pow(2, lvl);
+  }
+
+  var computedSize = ele.pstyle('font-size').pfValue * scale;
+  var minSize = ele.pstyle('min-zoomed-font-size').pfValue;
+
+  if (computedSize < minSize) {
+    return false;
+  }
+
+  return true;
+};
+
+CRp.drawElementText = function (context, ele, force) {
+  var r = this;
+
+  if (force === undefined) {
+    if (!r.eleTextBiggerThanMin(ele)) {
+      return;
+    }
+  } else {
+    if (!force) {
+      return;
+    }
+  }
+
+  if (ele.isNode()) {
+    var label = ele.pstyle('label');
+
+    if (!label || !label.value) {
+      return;
+    }
+
+    var textHalign = ele.pstyle('text-halign').strValue;
+    var textValign = ele.pstyle('text-valign').strValue;
+
+    switch (textHalign) {
+      case 'left':
+        context.textAlign = 'right';
+        break;
+
+      case 'right':
+        context.textAlign = 'left';
+        break;
+
+      default:
+        // e.g. center
+        context.textAlign = 'center';
+    }
+
+    context.textBaseline = 'bottom';
+  } else {
+    var label = ele.pstyle('label');
+    var srcLabel = ele.pstyle('source-label');
+    var tgtLabel = ele.pstyle('target-label');
+
+    if ((!label || !label.value) && (!srcLabel || !srcLabel.value) && (!tgtLabel || !tgtLabel.value)) {
+      return;
+    }
+
+    context.textAlign = 'center';
+    context.textBaseline = 'bottom';
+  }
+
+  r.drawText(context, ele);
+
+  if (ele.isEdge()) {
+    r.drawText(context, ele, 'source');
+
+    r.drawText(context, ele, 'target');
+  }
+};
+
+CRp.drawNodeText = CRp.drawEdgeText = CRp.drawElementText;
+
+CRp.getFontCache = function (context) {
+  var cache;
+
+  this.fontCaches = this.fontCaches || [];
+
+  for (var i = 0; i < this.fontCaches.length; i++) {
+    cache = this.fontCaches[i];
+
+    if (cache.context === context) {
+      return cache;
+    }
+  }
+
+  cache = {
+    context: context
+  };
+  this.fontCaches.push(cache);
+
+  return cache;
+};
+
+// set up canvas context with font
+// returns transformed text string
+CRp.setupTextStyle = function (context, ele) {
+  // Font style
+  var parentOpacity = ele.effectiveOpacity();
+  var labelStyle = ele.pstyle('font-style').strValue;
+  var labelSize = ele.pstyle('font-size').pfValue + 'px';
+  var labelFamily = ele.pstyle('font-family').strValue;
+  var labelWeight = ele.pstyle('font-weight').strValue;
+  var opacity = ele.pstyle('text-opacity').value * ele.pstyle('opacity').value * parentOpacity;
+  var outlineOpacity = ele.pstyle('text-outline-opacity').value * opacity;
+  var color = ele.pstyle('color').value;
+  var outlineColor = ele.pstyle('text-outline-color').value;
+
+  var fontCacheKey = ele._private.fontKey;
+  var cache = this.getFontCache(context);
+
+  if (cache.key !== fontCacheKey) {
+    context.font = labelStyle + ' ' + labelWeight + ' ' + labelSize + ' ' + labelFamily;
+
+    cache.key = fontCacheKey;
+  }
+
+  // Calculate text draw position based on text alignment
+
+  // so text outlines aren't jagged
+  context.lineJoin = 'round';
+
+  this.fillStyle(context, color[0], color[1], color[2], opacity);
+
+  this.strokeStyle(context, outlineColor[0], outlineColor[1], outlineColor[2], outlineOpacity);
+};
+
+function roundRect(ctx, x, y, width, height, radius) {
+  var radius = radius || 5;
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + width - radius, y);
+  ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+  ctx.lineTo(x + width, y + height - radius);
+  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+  ctx.lineTo(x + radius, y + height);
+  ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+  ctx.lineTo(x, y + radius);
+  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.closePath();
+  ctx.fill();
+}
+
+// Draw text
+CRp.drawText = function (context, ele, prefix) {
+  var _p = ele._private;
+  var rscratch = _p.rscratch;
+  var parentOpacity = ele.effectiveOpacity();
+  if (parentOpacity === 0 || ele.pstyle('text-opacity').value === 0) {
+    return;
+  }
+
+  var textX = util.getPrefixedProperty(rscratch, 'labelX', prefix);
+  var textY = util.getPrefixedProperty(rscratch, 'labelY', prefix);
+  var text = this.getLabelText(ele, prefix);
+
+  if (text != null && text !== '' && !isNaN(textX) && !isNaN(textY)) {
+    this.setupTextStyle(context, ele);
+
+    var pdash = prefix ? prefix + '-' : '';
+    var textW = util.getPrefixedProperty(rscratch, 'labelWidth', prefix);
+    var textH = util.getPrefixedProperty(rscratch, 'labelHeight', prefix);
+    var textAngle = util.getPrefixedProperty(rscratch, 'labelAngle', prefix);
+    var marginX = ele.pstyle(pdash + 'text-margin-x').pfValue;
+    var marginY = ele.pstyle(pdash + 'text-margin-y').pfValue;
+
+    var isEdge = ele.isEdge();
+    var isNode = ele.isNode();
+
+    var halign = ele.pstyle('text-halign').value;
+    var valign = ele.pstyle('text-valign').value;
+
+    if (isEdge) {
+      halign = 'center';
+      valign = 'center';
+    }
+
+    textX += marginX;
+    textY += marginY;
+
+    var rotation = ele.pstyle('text-rotation');
+    var theta;
+
+    if (rotation.strValue === 'autorotate') {
+      theta = isEdge ? textAngle : 0;
+    } else if (rotation.strValue === 'none') {
+      theta = 0;
+    } else {
+      theta = rotation.pfValue;
+    }
+
+    if (theta !== 0) {
+      var orgTextX = textX;
+      var orgTextY = textY;
+
+      context.translate(orgTextX, orgTextY);
+      context.rotate(theta);
+
+      textX = 0;
+      textY = 0;
+    }
+
+    switch (valign) {
+      case 'top':
+        break;
+      case 'center':
+        textY += textH / 2;
+        break;
+      case 'bottom':
+        textY += textH;
+        break;
+    }
+
+    var backgroundOpacity = ele.pstyle('text-background-opacity').value;
+    var borderOpacity = ele.pstyle('text-border-opacity').value;
+    var textBorderWidth = ele.pstyle('text-border-width').pfValue;
+    var backgroundPadding = ele.pstyle('text-background-padding').pfValue;
+
+    if (backgroundOpacity > 0 || textBorderWidth > 0 && borderOpacity > 0) {
+      var bgX = textX - backgroundPadding;
+
+      switch (halign) {
+        case 'left':
+          bgX -= textW;
+          break;
+        case 'center':
+          bgX -= textW / 2;
+          break;
+        case 'right':
+          break;
+      }
+
+      var bgY = textY - textH - backgroundPadding;
+      var bgW = textW + 2 * backgroundPadding;
+      var bgH = textH + 2 * backgroundPadding;
+
+      if (backgroundOpacity > 0) {
+        var textFill = context.fillStyle;
+        var textBackgroundColor = ele.pstyle('text-background-color').value;
+
+        context.fillStyle = 'rgba(' + textBackgroundColor[0] + ',' + textBackgroundColor[1] + ',' + textBackgroundColor[2] + ',' + backgroundOpacity * parentOpacity + ')';
+        var styleShape = ele.pstyle('text-background-shape').strValue;
+        if (styleShape == 'roundrectangle') {
+          roundRect(context, bgX, bgY, bgW, bgH, 2);
+        } else {
+          context.fillRect(bgX, bgY, bgW, bgH);
+        }
+        context.fillStyle = textFill;
+      }
+
+      if (textBorderWidth > 0 && borderOpacity > 0) {
+        var textStroke = context.strokeStyle;
+        var textLineWidth = context.lineWidth;
+        var textBorderColor = ele.pstyle('text-border-color').value;
+        var textBorderStyle = ele.pstyle('text-border-style').value;
+
+        context.strokeStyle = 'rgba(' + textBorderColor[0] + ',' + textBorderColor[1] + ',' + textBorderColor[2] + ',' + borderOpacity * parentOpacity + ')';
+        context.lineWidth = textBorderWidth;
+
+        if (context.setLineDash) {
+          // for very outofdate browsers
+          switch (textBorderStyle) {
+            case 'dotted':
+              context.setLineDash([1, 1]);
+              break;
+            case 'dashed':
+              context.setLineDash([4, 2]);
+              break;
+            case 'double':
+              context.lineWidth = textBorderWidth / 4; // 50% reserved for white between the two borders
+              context.setLineDash([]);
+              break;
+            case 'solid':
+              context.setLineDash([]);
+              break;
+          }
+        }
+
+        context.strokeRect(bgX, bgY, bgW, bgH);
+
+        if (textBorderStyle === 'double') {
+          var whiteWidth = textBorderWidth / 2;
+
+          context.strokeRect(bgX + whiteWidth, bgY + whiteWidth, bgW - whiteWidth * 2, bgH - whiteWidth * 2);
+        }
+
+        if (context.setLineDash) {
+          // for very outofdate browsers
+          context.setLineDash([]);
+        }
+        context.lineWidth = textLineWidth;
+        context.strokeStyle = textStroke;
+      }
+    }
+
+    var lineWidth = 2 * ele.pstyle('text-outline-width').pfValue; // *2 b/c the stroke is drawn centred on the middle
+
+    if (lineWidth > 0) {
+      context.lineWidth = lineWidth;
+    }
+
+    if (ele.pstyle('text-wrap').value === 'wrap') {
+      var lines = util.getPrefixedProperty(rscratch, 'labelWrapCachedLines', prefix);
+      var lineHeight = textH / lines.length;
+
+      switch (valign) {
+        case 'top':
+          textY -= (lines.length - 1) * lineHeight;
+          break;
+        case 'center':
+        case 'bottom':
+          textY -= (lines.length - 1) * lineHeight;
+          break;
+      }
+
+      for (var l = 0; l < lines.length; l++) {
+        if (lineWidth > 0) {
+          context.strokeText(lines[l], textX, textY);
+        }
+
+        context.fillText(lines[l], textX, textY);
+
+        textY += lineHeight;
+      }
+    } else {
+      if (lineWidth > 0) {
+        context.strokeText(text, textX, textY);
+      }
+
+      context.fillText(text, textX, textY);
+    }
+
+    if (theta !== 0) {
+      context.rotate(-theta);
+      context.translate(-orgTextX, -orgTextY);
+    }
+  }
+};
+
+module.exports = CRp;
+
+/***/ }),
+/* 131 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+/* global Path2D */
+
+var is = __webpack_require__(0);
+
+var CRp = {};
+
+CRp.drawNode = function (context, node, shiftToOriginWithBb, drawLabel) {
+  var r = this;
+  var nodeWidth = void 0,
+      nodeHeight = void 0;
+  var _p = node._private;
+  var rs = _p.rscratch;
+  var pos = node.position();
+
+  if (!is.number(pos.x) || !is.number(pos.y)) {
+    return; // can't draw node with undefined position
+  }
+
+  if (!node.visible()) {
+    return;
+  }
+
+  var parentOpacity = node.effectiveOpacity();
+
+  var usePaths = r.usePaths();
+  var path = void 0;
+  var pathCacheHit = false;
+
+  var padding = node.padding();
+
+  nodeWidth = node.width() + 2 * padding;
+  nodeHeight = node.height() + 2 * padding;
+
+  //
+  // setup shift
+
+  var bb = void 0;
+  if (shiftToOriginWithBb) {
+    bb = shiftToOriginWithBb;
+
+    context.translate(-bb.x1, -bb.y1);
+  }
+
+  //
+  // load bg image
+
+  var bgImgProp = node.pstyle('background-image');
+  var urls = bgImgProp.value;
+  var urlDefined = new Array(urls.length);
+  var image = new Array(urls.length);
+  var numImages = 0;
+  for (var i = 0; i < urls.length; i++) {
+    var url = urls[i];
+    var defd = urlDefined[i] = url != null && url !== 'none';
+
+    if (defd) {
+      var bgImgCrossOrigin = node.cy().style().getIndexedStyle(node, 'background-image-crossorigin', 'value', i);
+
+      numImages++;
+
+      // get image, and if not loaded then ask to redraw when later loaded
+      image[i] = r.getCachedImage(url, bgImgCrossOrigin, function () {
+        node.emitAndNotify('background');
+      });
+    }
+  }
+
+  //
+  // setup styles
+
+  var darkness = node.pstyle('background-blacken').value;
+  var borderWidth = node.pstyle('border-width').pfValue;
+  var bgColor = node.pstyle('background-color').value;
+  var bgOpacity = node.pstyle('background-opacity').value * parentOpacity;
+  var borderColor = node.pstyle('border-color').value;
+  var borderStyle = node.pstyle('border-style').value;
+  var borderOpacity = node.pstyle('border-opacity').value * parentOpacity;
+
+  context.lineJoin = 'miter'; // so borders are square with the node shape
+
+  var setupShapeColor = function setupShapeColor() {
+    var bgOpy = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : bgOpacity;
+
+    r.fillStyle(context, bgColor[0], bgColor[1], bgColor[2], bgOpy);
+  };
+
+  var setupBorderColor = function setupBorderColor() {
+    var bdrOpy = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : borderOpacity;
+
+    r.strokeStyle(context, borderColor[0], borderColor[1], borderColor[2], bdrOpy);
+  };
+
+  //
+  // setup shape
+
+  var styleShape = node.pstyle('shape').strValue;
+  var shapePts = node.pstyle('shape-polygon-points').pfValue;
+
+  if (usePaths) {
+    var pathCacheKey = styleShape + '$' + nodeWidth + '$' + nodeHeight + (styleShape === 'polygon' ? '$' + shapePts.join('$') : '');
+
+    context.translate(pos.x, pos.y);
+
+    if (rs.pathCacheKey === pathCacheKey) {
+      path = rs.pathCache;
+      pathCacheHit = true;
+    } else {
+      path = new Path2D();
+      rs.pathCacheKey = pathCacheKey;
+      rs.pathCache = path;
+    }
+  }
+
+  var drawShape = function drawShape() {
+    if (!pathCacheHit) {
+
+      var npos = pos;
+
+      if (usePaths) {
+        npos = {
+          x: 0,
+          y: 0
+        };
+      }
+
+      r.nodeShapes[r.getNodeShape(node)].draw(path || context, npos.x, npos.y, nodeWidth, nodeHeight);
+    }
+
+    if (usePaths) {
+      context.fill(path);
+    } else {
+      context.fill();
+    }
+  };
+
+  var drawImages = function drawImages() {
+    var nodeOpacity = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : parentOpacity;
+
+    var prevBging = _p.backgrounding;
+    var totalCompleted = 0;
+
+    for (var _i = 0; _i < image.length; _i++) {
+      if (urlDefined[_i] && image[_i].complete && !image[_i].error) {
+        totalCompleted++;
+        r.drawInscribedImage(context, image[_i], node, _i, nodeOpacity);
+      }
+    }
+
+    _p.backgrounding = !(totalCompleted === numImages);
+    if (prevBging !== _p.backgrounding) {
+      // update style b/c :backgrounding state changed
+      node.updateStyle(false);
+    }
+  };
+
+  var drawPie = function drawPie() {
+    var redrawShape = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
+    var pieOpacity = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : parentOpacity;
+
+    if (r.hasPie(node)) {
+      r.drawPie(context, node, pieOpacity);
+
+      // redraw/restore path if steps after pie need it
+      if (redrawShape) {
+
+        if (!usePaths) {
+          r.nodeShapes[r.getNodeShape(node)].draw(context, pos.x, pos.y, nodeWidth, nodeHeight);
+        }
+      }
+    }
+  };
+
+  var darken = function darken() {
+    var darkenOpacity = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : parentOpacity;
+
+    var opacity = (darkness > 0 ? darkness : -darkness) * darkenOpacity;
+    var c = darkness > 0 ? 0 : 255;
+
+    if (darkness !== 0) {
+      r.fillStyle(context, c, c, c, opacity);
+
+      if (usePaths) {
+        context.fill(path);
+      } else {
+        context.fill();
+      }
+    }
+  };
+
+  var drawBorder = function drawBorder() {
+    if (borderWidth > 0) {
+
+      context.lineWidth = borderWidth;
+      context.lineCap = 'butt';
+
+      if (context.setLineDash) {
+        // for very outofdate browsers
+        switch (borderStyle) {
+          case 'dotted':
+            context.setLineDash([1, 1]);
+            break;
+
+          case 'dashed':
+            context.setLineDash([4, 2]);
+            break;
+
+          case 'solid':
+          case 'double':
+            context.setLineDash([]);
+            break;
+        }
+      }
+
+      if (usePaths) {
+        context.stroke(path);
+      } else {
+        context.stroke();
+      }
+
+      if (borderStyle === 'double') {
+        context.lineWidth = borderWidth / 3;
+
+        var gco = context.globalCompositeOperation;
+        context.globalCompositeOperation = 'destination-out';
+
+        if (usePaths) {
+          context.stroke(path);
+        } else {
+          context.stroke();
+        }
+
+        context.globalCompositeOperation = gco;
+      }
+
+      // reset in case we changed the border style
+      if (context.setLineDash) {
+        // for very outofdate browsers
+        context.setLineDash([]);
+      }
+    }
+  };
+
+  var drawOverlay = function drawOverlay() {
+    var overlayPadding = node.pstyle('overlay-padding').pfValue;
+    var overlayOpacity = node.pstyle('overlay-opacity').value;
+    var overlayColor = node.pstyle('overlay-color').value;
+
+    if (overlayOpacity > 0) {
+      r.fillStyle(context, overlayColor[0], overlayColor[1], overlayColor[2], overlayOpacity);
+
+      r.nodeShapes['roundrectangle'].draw(context, pos.x, pos.y, nodeWidth + overlayPadding * 2, nodeHeight + overlayPadding * 2);
+
+      context.fill();
+    }
+  };
+
+  var drawText = function drawText() {
+    r.drawElementText(context, node, drawLabel);
+  };
+
+  var ghost = node.pstyle('ghost').value === 'yes';
+
+  if (ghost) {
+    var gx = node.pstyle('ghost-offset-x').pfValue;
+    var gy = node.pstyle('ghost-offset-y').pfValue;
+    var ghostOpacity = node.pstyle('ghost-opacity').value;
+    var effGhostOpacity = ghostOpacity * parentOpacity;
+
+    context.translate(gx, gy);
+
+    setupShapeColor(ghostOpacity * bgOpacity);
+    drawShape();
+    drawImages(effGhostOpacity);
+    drawPie(darkness !== 0 || borderWidth !== 0);
+    darken(effGhostOpacity);
+    setupBorderColor(ghostOpacity * borderOpacity);
+    drawBorder();
+
+    context.translate(-gx, -gy);
+  }
+
+  setupShapeColor();
+  drawShape();
+  drawImages();
+  drawPie(darkness !== 0 || borderWidth !== 0);
+  darken();
+  setupBorderColor();
+  drawBorder();
+
+  if (usePaths) {
+    context.translate(-pos.x, -pos.y);
+  }
+
+  drawText();
+  drawOverlay();
+
+  //
+  // clean up shift
+
+  if (shiftToOriginWithBb) {
+    context.translate(bb.x1, bb.y1);
+  }
+};
+
+// does the node have at least one pie piece?
+CRp.hasPie = function (node) {
+  node = node[0]; // ensure ele ref
+
+  return node._private.hasPie;
+};
+
+CRp.drawPie = function (context, node, nodeOpacity, pos) {
+  node = node[0]; // ensure ele ref
+  pos = pos || node.position();
+
+  var cyStyle = node.cy().style();
+  var pieSize = node.pstyle('pie-size');
+  var x = pos.x;
+  var y = pos.y;
+  var nodeW = node.width();
+  var nodeH = node.height();
+  var radius = Math.min(nodeW, nodeH) / 2; // must fit in node
+  var lastPercent = 0; // what % to continue drawing pie slices from on [0, 1]
+  var usePaths = this.usePaths();
+
+  if (usePaths) {
+    x = 0;
+    y = 0;
+  }
+
+  if (pieSize.units === '%') {
+    radius = radius * pieSize.pfValue;
+  } else if (pieSize.pfValue !== undefined) {
+    radius = pieSize.pfValue / 2;
+  }
+
+  for (var i = 1; i <= cyStyle.pieBackgroundN; i++) {
+    // 1..N
+    var size = node.pstyle('pie-' + i + '-background-size').value;
+    var color = node.pstyle('pie-' + i + '-background-color').value;
+    var opacity = node.pstyle('pie-' + i + '-background-opacity').value * nodeOpacity;
+    var percent = size / 100; // map integer range [0, 100] to [0, 1]
+
+    // percent can't push beyond 1
+    if (percent + lastPercent > 1) {
+      percent = 1 - lastPercent;
+    }
+
+    var angleStart = 1.5 * Math.PI + 2 * Math.PI * lastPercent; // start at 12 o'clock and go clockwise
+    var angleDelta = 2 * Math.PI * percent;
+    var angleEnd = angleStart + angleDelta;
+
+    // ignore if
+    // - zero size
+    // - we're already beyond the full circle
+    // - adding the current slice would go beyond the full circle
+    if (size === 0 || lastPercent >= 1 || lastPercent + percent > 1) {
+      continue;
+    }
+
+    context.beginPath();
+    context.moveTo(x, y);
+    context.arc(x, y, radius, angleStart, angleEnd);
+    context.closePath();
+
+    this.fillStyle(context, color[0], color[1], color[2], opacity);
+
+    context.fill();
+
+    lastPercent += percent;
+  }
+};
+
+module.exports = CRp;
+
+/***/ }),
+/* 132 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var CRp = {};
+
+var util = __webpack_require__(1);
+
+var motionBlurDelay = 100;
+
+// var isFirefox = typeof InstallTrigger !== 'undefined';
+
+CRp.getPixelRatio = function () {
+  var context = this.data.contexts[0];
+
+  if (this.forcedPixelRatio != null) {
+    return this.forcedPixelRatio;
+  }
+
+  var backingStore = context.backingStorePixelRatio || context.webkitBackingStorePixelRatio || context.mozBackingStorePixelRatio || context.msBackingStorePixelRatio || context.oBackingStorePixelRatio || context.backingStorePixelRatio || 1;
+
+  return (window.devicePixelRatio || 1) / backingStore; // eslint-disable-line no-undef
+};
+
+CRp.paintCache = function (context) {
+  var caches = this.paintCaches = this.paintCaches || [];
+  var needToCreateCache = true;
+  var cache;
+
+  for (var i = 0; i < caches.length; i++) {
+    cache = caches[i];
+
+    if (cache.context === context) {
+      needToCreateCache = false;
+      break;
+    }
+  }
+
+  if (needToCreateCache) {
+    cache = {
+      context: context
+    };
+    caches.push(cache);
+  }
+
+  return cache;
+};
+
+CRp.fillStyle = function (context, r, g, b, a) {
+  context.fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
+
+  // turn off for now, seems context does its own caching
+
+  // var cache = this.paintCache(context);
+
+  // var fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
+
+  // if( cache.fillStyle !== fillStyle ){
+  //   context.fillStyle = cache.fillStyle = fillStyle;
+  // }
+};
+
+CRp.strokeStyle = function (context, r, g, b, a) {
+  context.strokeStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
+
+  // turn off for now, seems context does its own caching
+
+  // var cache = this.paintCache(context);
+
+  // var strokeStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')';
+
+  // if( cache.strokeStyle !== strokeStyle ){
+  //   context.strokeStyle = cache.strokeStyle = strokeStyle;
+  // }
+};
+
+// Resize canvas
+CRp.matchCanvasSize = function (container) {
+  var r = this;
+  var data = r.data;
+  var bb = r.findContainerClientCoords();
+  var width = bb[2];
+  var height = bb[3];
+  var pixelRatio = r.getPixelRatio();
+  var mbPxRatio = r.motionBlurPxRatio;
+
+  if (container === r.data.bufferCanvases[r.MOTIONBLUR_BUFFER_NODE] || container === r.data.bufferCanvases[r.MOTIONBLUR_BUFFER_DRAG]) {
+    pixelRatio = mbPxRatio;
+  }
+
+  var canvasWidth = width * pixelRatio;
+  var canvasHeight = height * pixelRatio;
+  var canvas;
+
+  if (canvasWidth === r.canvasWidth && canvasHeight === r.canvasHeight) {
+    return; // save cycles if same
+  }
+
+  r.fontCaches = null; // resizing resets the style
+
+  var canvasContainer = data.canvasContainer;
+  canvasContainer.style.width = width + 'px';
+  canvasContainer.style.height = height + 'px';
+
+  for (var i = 0; i < r.CANVAS_LAYERS; i++) {
+    canvas = data.canvases[i];
+
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
+
+    canvas.style.width = width + 'px';
+    canvas.style.height = height + 'px';
+  }
+
+  for (var i = 0; i < r.BUFFER_COUNT; i++) {
+    canvas = data.bufferCanvases[i];
+
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
+
+    canvas.style.width = width + 'px';
+    canvas.style.height = height + 'px';
+  }
+
+  r.textureMult = 1;
+  if (pixelRatio <= 1) {
+    canvas = data.bufferCanvases[r.TEXTURE_BUFFER];
+
+    r.textureMult = 2;
+    canvas.width = canvasWidth * r.textureMult;
+    canvas.height = canvasHeight * r.textureMult;
+  }
+
+  r.canvasWidth = canvasWidth;
+  r.canvasHeight = canvasHeight;
+};
+
+CRp.renderTo = function (cxt, zoom, pan, pxRatio) {
+  this.render({
+    forcedContext: cxt,
+    forcedZoom: zoom,
+    forcedPan: pan,
+    drawAllLayers: true,
+    forcedPxRatio: pxRatio
+  });
+};
+
+CRp.render = function (options) {
+  options = options || util.staticEmptyObject();
+
+  var forcedContext = options.forcedContext;
+  var drawAllLayers = options.drawAllLayers;
+  var drawOnlyNodeLayer = options.drawOnlyNodeLayer;
+  var forcedZoom = options.forcedZoom;
+  var forcedPan = options.forcedPan;
+  var r = this;
+  var pixelRatio = options.forcedPxRatio === undefined ? this.getPixelRatio() : options.forcedPxRatio;
+  var cy = r.cy;var data = r.data;
+  var needDraw = data.canvasNeedsRedraw;
+  var textureDraw = r.textureOnViewport && !forcedContext && (r.pinching || r.hoverData.dragging || r.swipePanning || r.data.wheelZooming);
+  var motionBlur = options.motionBlur !== undefined ? options.motionBlur : r.motionBlur;
+  var mbPxRatio = r.motionBlurPxRatio;
+  var hasCompoundNodes = cy.hasCompoundNodes();
+  var inNodeDragGesture = r.hoverData.draggingEles;
+  var inBoxSelection = r.hoverData.selecting || r.touchData.selecting ? true : false;
+  motionBlur = motionBlur && !forcedContext && r.motionBlurEnabled && !inBoxSelection;
+  var motionBlurFadeEffect = motionBlur;
+
+  if (!forcedContext) {
+    if (r.prevPxRatio !== pixelRatio) {
+      r.invalidateContainerClientCoordsCache();
+      r.matchCanvasSize(r.container);
+
+      r.redrawHint('eles', true);
+      r.redrawHint('drag', true);
+    }
+
+    r.prevPxRatio = pixelRatio;
+  }
+
+  if (!forcedContext && r.motionBlurTimeout) {
+    clearTimeout(r.motionBlurTimeout);
+  }
+
+  if (motionBlur) {
+    if (r.mbFrames == null) {
+      r.mbFrames = 0;
+    }
+
+    r.mbFrames++;
+
+    if (r.mbFrames < 3) {
+      // need several frames before even high quality motionblur
+      motionBlurFadeEffect = false;
+    }
+
+    // go to lower quality blurry frames when several m/b frames have been rendered (avoids flashing)
+    if (r.mbFrames > r.minMbLowQualFrames) {
+      //r.fullQualityMb = false;
+      r.motionBlurPxRatio = r.mbPxRBlurry;
+    }
+  }
+
+  if (r.clearingMotionBlur) {
+    r.motionBlurPxRatio = 1;
+  }
+
+  // b/c drawToContext() may be async w.r.t. redraw(), keep track of last texture frame
+  // because a rogue async texture frame would clear needDraw
+  if (r.textureDrawLastFrame && !textureDraw) {
+    needDraw[r.NODE] = true;
+    needDraw[r.SELECT_BOX] = true;
+  }
+
+  var coreStyle = cy.style()._private.coreStyle;
+
+  var zoom = cy.zoom();
+  var effectiveZoom = forcedZoom !== undefined ? forcedZoom : zoom;
+  var pan = cy.pan();
+  var effectivePan = {
+    x: pan.x,
+    y: pan.y
+  };
+
+  var vp = {
+    zoom: zoom,
+    pan: {
+      x: pan.x,
+      y: pan.y
+    }
+  };
+  var prevVp = r.prevViewport;
+  var viewportIsDiff = prevVp === undefined || vp.zoom !== prevVp.zoom || vp.pan.x !== prevVp.pan.x || vp.pan.y !== prevVp.pan.y;
+
+  // we want the low quality motionblur only when the viewport is being manipulated etc (where it's not noticed)
+  if (!viewportIsDiff && !(inNodeDragGesture && !hasCompoundNodes)) {
+    r.motionBlurPxRatio = 1;
+  }
+
+  if (forcedPan) {
+    effectivePan = forcedPan;
+  }
+
+  // apply pixel ratio
+
+  effectiveZoom *= pixelRatio;
+  effectivePan.x *= pixelRatio;
+  effectivePan.y *= pixelRatio;
+
+  var eles = r.getCachedZSortedEles();
+
+  function mbclear(context, x, y, w, h) {
+    var gco = context.globalCompositeOperation;
+
+    context.globalCompositeOperation = 'destination-out';
+    r.fillStyle(context, 255, 255, 255, r.motionBlurTransparency);
+    context.fillRect(x, y, w, h);
+
+    context.globalCompositeOperation = gco;
+  }
+
+  function setContextTransform(context, clear) {
+    var ePan, eZoom, w, h;
+
+    if (!r.clearingMotionBlur && (context === data.bufferContexts[r.MOTIONBLUR_BUFFER_NODE] || context === data.bufferContexts[r.MOTIONBLUR_BUFFER_DRAG])) {
+      ePan = {
+        x: pan.x * mbPxRatio,
+        y: pan.y * mbPxRatio
+      };
+
+      eZoom = zoom * mbPxRatio;
+
+      w = r.canvasWidth * mbPxRatio;
+      h = r.canvasHeight * mbPxRatio;
+    } else {
+      ePan = effectivePan;
+      eZoom = effectiveZoom;
+
+      w = r.canvasWidth;
+      h = r.canvasHeight;
+    }
+
+    context.setTransform(1, 0, 0, 1, 0, 0);
+
+    if (clear === 'motionBlur') {
+      mbclear(context, 0, 0, w, h);
+    } else if (!forcedContext && (clear === undefined || clear)) {
+      context.clearRect(0, 0, w, h);
+    }
+
+    if (!drawAllLayers) {
+      context.translate(ePan.x, ePan.y);
+      context.scale(eZoom, eZoom);
+    }
+    if (forcedPan) {
+      context.translate(forcedPan.x, forcedPan.y);
+    }
+    if (forcedZoom) {
+      context.scale(forcedZoom, forcedZoom);
+    }
+  }
+
+  if (!textureDraw) {
+    r.textureDrawLastFrame = false;
+  }
+
+  if (textureDraw) {
+    r.textureDrawLastFrame = true;
+
+    var bb;
+
+    if (!r.textureCache) {
+      r.textureCache = {};
+
+      bb = r.textureCache.bb = cy.mutableElements().boundingBox();
+
+      r.textureCache.texture = r.data.bufferCanvases[r.TEXTURE_BUFFER];
+
+      var cxt = r.data.bufferContexts[r.TEXTURE_BUFFER];
+
+      cxt.setTransform(1, 0, 0, 1, 0, 0);
+      cxt.clearRect(0, 0, r.canvasWidth * r.textureMult, r.canvasHeight * r.textureMult);
+
+      r.render({
+        forcedContext: cxt,
+        drawOnlyNodeLayer: true,
+        forcedPxRatio: pixelRatio * r.textureMult
+      });
+
+      var vp = r.textureCache.viewport = {
+        zoom: cy.zoom(),
+        pan: cy.pan(),
+        width: r.canvasWidth,
+        height: r.canvasHeight
+      };
+
+      vp.mpan = {
+        x: (0 - vp.pan.x) / vp.zoom,
+        y: (0 - vp.pan.y) / vp.zoom
+      };
+    }
+
+    needDraw[r.DRAG] = false;
+    needDraw[r.NODE] = false;
+
+    var context = data.contexts[r.NODE];
+
+    var texture = r.textureCache.texture;
+    var vp = r.textureCache.viewport;
+    bb = r.textureCache.bb;
+
+    context.setTransform(1, 0, 0, 1, 0, 0);
+
+    if (motionBlur) {
+      mbclear(context, 0, 0, vp.width, vp.height);
+    } else {
+      context.clearRect(0, 0, vp.width, vp.height);
+    }
+
+    var outsideBgColor = coreStyle['outside-texture-bg-color'].value;
+    var outsideBgOpacity = coreStyle['outside-texture-bg-opacity'].value;
+    r.fillStyle(context, outsideBgColor[0], outsideBgColor[1], outsideBgColor[2], outsideBgOpacity);
+    context.fillRect(0, 0, vp.width, vp.height);
+
+    var zoom = cy.zoom();
+
+    setContextTransform(context, false);
+
+    context.clearRect(vp.mpan.x, vp.mpan.y, vp.width / vp.zoom / pixelRatio, vp.height / vp.zoom / pixelRatio);
+    context.drawImage(texture, vp.mpan.x, vp.mpan.y, vp.width / vp.zoom / pixelRatio, vp.height / vp.zoom / pixelRatio);
+  } else if (r.textureOnViewport && !forcedContext) {
+    // clear the cache since we don't need it
+    r.textureCache = null;
+  }
+
+  var extent = cy.extent();
+  var vpManip = r.pinching || r.hoverData.dragging || r.swipePanning || r.data.wheelZooming || r.hoverData.draggingEles;
+  var hideEdges = r.hideEdgesOnViewport && vpManip;
+
+  var needMbClear = [];
+
+  needMbClear[r.NODE] = !needDraw[r.NODE] && motionBlur && !r.clearedForMotionBlur[r.NODE] || r.clearingMotionBlur;
+  if (needMbClear[r.NODE]) {
+    r.clearedForMotionBlur[r.NODE] = true;
+  }
+
+  needMbClear[r.DRAG] = !needDraw[r.DRAG] && motionBlur && !r.clearedForMotionBlur[r.DRAG] || r.clearingMotionBlur;
+  if (needMbClear[r.DRAG]) {
+    r.clearedForMotionBlur[r.DRAG] = true;
+  }
+
+  if (needDraw[r.NODE] || drawAllLayers || drawOnlyNodeLayer || needMbClear[r.NODE]) {
+    var useBuffer = motionBlur && !needMbClear[r.NODE] && mbPxRatio !== 1;
+    var context = forcedContext || (useBuffer ? r.data.bufferContexts[r.MOTIONBLUR_BUFFER_NODE] : data.contexts[r.NODE]);
+    var clear = motionBlur && !useBuffer ? 'motionBlur' : undefined;
+
+    setContextTransform(context, clear);
+
+    if (hideEdges) {
+      r.drawCachedNodes(context, eles.nondrag, pixelRatio, extent);
+    } else {
+      r.drawLayeredElements(context, eles.nondrag, pixelRatio, extent);
+    }
+
+    if (r.debug) {
+      r.drawDebugPoints(context, eles.nondrag);
+    }
+
+    if (!drawAllLayers && !motionBlur) {
+      needDraw[r.NODE] = false;
+    }
+  }
+
+  if (!drawOnlyNodeLayer && (needDraw[r.DRAG] || drawAllLayers || needMbClear[r.DRAG])) {
+    var useBuffer = motionBlur && !needMbClear[r.DRAG] && mbPxRatio !== 1;
+    var context = forcedContext || (useBuffer ? r.data.bufferContexts[r.MOTIONBLUR_BUFFER_DRAG] : data.contexts[r.DRAG]);
+
+    setContextTransform(context, motionBlur && !useBuffer ? 'motionBlur' : undefined);
+
+    if (hideEdges) {
+      r.drawCachedNodes(context, eles.drag, pixelRatio, extent);
+    } else {
+      r.drawCachedElements(context, eles.drag, pixelRatio, extent);
+    }
+
+    if (r.debug) {
+      r.drawDebugPoints(context, eles.drag);
+    }
+
+    if (!drawAllLayers && !motionBlur) {
+      needDraw[r.DRAG] = false;
+    }
+  }
+
+  if (r.showFps || !drawOnlyNodeLayer && needDraw[r.SELECT_BOX] && !drawAllLayers) {
+    var context = forcedContext || data.contexts[r.SELECT_BOX];
+
+    setContextTransform(context);
+
+    if (r.selection[4] == 1 && (r.hoverData.selecting || r.touchData.selecting)) {
+      var zoom = r.cy.zoom();
+      var borderWidth = coreStyle['selection-box-border-width'].value / zoom;
+
+      context.lineWidth = borderWidth;
+      context.fillStyle = 'rgba(' + coreStyle['selection-box-color'].value[0] + ',' + coreStyle['selection-box-color'].value[1] + ',' + coreStyle['selection-box-color'].value[2] + ',' + coreStyle['selection-box-opacity'].value + ')';
+
+      context.fillRect(r.selection[0], r.selection[1], r.selection[2] - r.selection[0], r.selection[3] - r.selection[1]);
+
+      if (borderWidth > 0) {
+        context.strokeStyle = 'rgba(' + coreStyle['selection-box-border-color'].value[0] + ',' + coreStyle['selection-box-border-color'].value[1] + ',' + coreStyle['selection-box-border-color'].value[2] + ',' + coreStyle['selection-box-opacity'].value + ')';
+
+        context.strokeRect(r.selection[0], r.selection[1], r.selection[2] - r.selection[0], r.selection[3] - r.selection[1]);
+      }
+    }
+
+    if (data.bgActivePosistion && !r.hoverData.selecting) {
+      var zoom = r.cy.zoom();
+      var pos = data.bgActivePosistion;
+
+      context.fillStyle = 'rgba(' + coreStyle['active-bg-color'].value[0] + ',' + coreStyle['active-bg-color'].value[1] + ',' + coreStyle['active-bg-color'].value[2] + ',' + coreStyle['active-bg-opacity'].value + ')';
+
+      context.beginPath();
+      context.arc(pos.x, pos.y, coreStyle['active-bg-size'].pfValue / zoom, 0, 2 * Math.PI);
+      context.fill();
+    }
+
+    var timeToRender = r.lastRedrawTime;
+    if (r.showFps && timeToRender) {
+      timeToRender = Math.round(timeToRender);
+      var fps = Math.round(1000 / timeToRender);
+
+      context.setTransform(1, 0, 0, 1, 0, 0);
+
+      context.fillStyle = 'rgba(255, 0, 0, 0.75)';
+      context.strokeStyle = 'rgba(255, 0, 0, 0.75)';
+      context.lineWidth = 1;
+      context.fillText('1 frame = ' + timeToRender + ' ms = ' + fps + ' fps', 0, 20);
+
+      var maxFps = 60;
+      context.strokeRect(0, 30, 250, 20);
+      context.fillRect(0, 30, 250 * Math.min(fps / maxFps, 1), 20);
+    }
+
+    if (!drawAllLayers) {
+      needDraw[r.SELECT_BOX] = false;
+    }
+  }
+
+  // motionblur: blit rendered blurry frames
+  if (motionBlur && mbPxRatio !== 1) {
+    var cxtNode = data.contexts[r.NODE];
+    var txtNode = r.data.bufferCanvases[r.MOTIONBLUR_BUFFER_NODE];
+
+    var cxtDrag = data.contexts[r.DRAG];
+    var txtDrag = r.data.bufferCanvases[r.MOTIONBLUR_BUFFER_DRAG];
+
+    var drawMotionBlur = function drawMotionBlur(cxt, txt, needClear) {
+      cxt.setTransform(1, 0, 0, 1, 0, 0);
+
+      if (needClear || !motionBlurFadeEffect) {
+        cxt.clearRect(0, 0, r.canvasWidth, r.canvasHeight);
+      } else {
+        mbclear(cxt, 0, 0, r.canvasWidth, r.canvasHeight);
+      }
+
+      var pxr = mbPxRatio;
+
+      cxt.drawImage(txt, // img
+      0, 0, // sx, sy
+      r.canvasWidth * pxr, r.canvasHeight * pxr, // sw, sh
+      0, 0, // x, y
+      r.canvasWidth, r.canvasHeight // w, h
+      );
+    };
+
+    if (needDraw[r.NODE] || needMbClear[r.NODE]) {
+      drawMotionBlur(cxtNode, txtNode, needMbClear[r.NODE]);
+      needDraw[r.NODE] = false;
+    }
+
+    if (needDraw[r.DRAG] || needMbClear[r.DRAG]) {
+      drawMotionBlur(cxtDrag, txtDrag, needMbClear[r.DRAG]);
+      needDraw[r.DRAG] = false;
+    }
+  }
+
+  r.prevViewport = vp;
+
+  if (r.clearingMotionBlur) {
+    r.clearingMotionBlur = false;
+    r.motionBlurCleared = true;
+    r.motionBlur = true;
+  }
+
+  if (motionBlur) {
+    r.motionBlurTimeout = setTimeout(function () {
+      r.motionBlurTimeout = null;
+
+      r.clearedForMotionBlur[r.NODE] = false;
+      r.clearedForMotionBlur[r.DRAG] = false;
+      r.motionBlur = false;
+      r.clearingMotionBlur = !textureDraw;
+      r.mbFrames = 0;
+
+      needDraw[r.NODE] = true;
+      needDraw[r.DRAG] = true;
+
+      r.redraw();
+    }, motionBlurDelay);
+  }
+
+  if (!forcedContext) {
+    cy.emit('render');
+  }
+};
+
+module.exports = CRp;
+
+/***/ }),
+/* 133 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var math = __webpack_require__(2);
+
+var CRp = {};
+
+// @O Polygon drawing
+CRp.drawPolygonPath = function (context, x, y, width, height, points) {
+
+  var halfW = width / 2;
+  var halfH = height / 2;
+
+  if (context.beginPath) {
+    context.beginPath();
+  }
+
+  context.moveTo(x + halfW * points[0], y + halfH * points[1]);
+
+  for (var i = 1; i < points.length / 2; i++) {
+    context.lineTo(x + halfW * points[i * 2], y + halfH * points[i * 2 + 1]);
+  }
+
+  context.closePath();
+};
+
+// Round rectangle drawing
+CRp.drawRoundRectanglePath = function (context, x, y, width, height) {
+
+  var halfWidth = width / 2;
+  var halfHeight = height / 2;
+  var cornerRadius = math.getRoundRectangleRadius(width, height);
+
+  if (context.beginPath) {
+    context.beginPath();
+  }
+
+  // Start at top middle
+  context.moveTo(x, y - halfHeight);
+  // Arc from middle top to right side
+  context.arcTo(x + halfWidth, y - halfHeight, x + halfWidth, y, cornerRadius);
+  // Arc from right side to bottom
+  context.arcTo(x + halfWidth, y + halfHeight, x, y + halfHeight, cornerRadius);
+  // Arc from bottom to left side
+  context.arcTo(x - halfWidth, y + halfHeight, x - halfWidth, y, cornerRadius);
+  // Arc from left side to topBorder
+  context.arcTo(x - halfWidth, y - halfHeight, x, y - halfHeight, cornerRadius);
+  // Join line
+  context.lineTo(x, y - halfHeight);
+
+  context.closePath();
+};
+
+CRp.drawBottomRoundRectanglePath = function (context, x, y, width, height) {
+
+  var halfWidth = width / 2;
+  var halfHeight = height / 2;
+  var cornerRadius = math.getRoundRectangleRadius(width, height);
+
+  if (context.beginPath) {
+    context.beginPath();
+  }
+
+  // Start at top middle
+  context.moveTo(x, y - halfHeight);
+  context.lineTo(x + halfWidth, y - halfHeight);
+  context.lineTo(x + halfWidth, y);
+
+  context.arcTo(x + halfWidth, y + halfHeight, x, y + halfHeight, cornerRadius);
+  context.arcTo(x - halfWidth, y + halfHeight, x - halfWidth, y, cornerRadius);
+
+  context.lineTo(x - halfWidth, y - halfHeight);
+  context.lineTo(x, y - halfHeight);
+
+  context.closePath();
+};
+
+CRp.drawCutRectanglePath = function (context, x, y, width, height) {
+
+  var halfWidth = width / 2;
+  var halfHeight = height / 2;
+  var cornerLength = math.getCutRectangleCornerLength();
+
+  if (context.beginPath) {
+    context.beginPath();
+  }
+
+  context.moveTo(x - halfWidth + cornerLength, y - halfHeight);
+
+  context.lineTo(x + halfWidth - cornerLength, y - halfHeight);
+  context.lineTo(x + halfWidth, y - halfHeight + cornerLength);
+  context.lineTo(x + halfWidth, y + halfHeight - cornerLength);
+  context.lineTo(x + halfWidth - cornerLength, y + halfHeight);
+  context.lineTo(x - halfWidth + cornerLength, y + halfHeight);
+  context.lineTo(x - halfWidth, y + halfHeight - cornerLength);
+  context.lineTo(x - halfWidth, y - halfHeight + cornerLength);
+
+  context.closePath();
+};
+
+CRp.drawBarrelPath = function (context, x, y, width, height) {
+
+  var halfWidth = width / 2;
+  var halfHeight = height / 2;
+
+  var xBegin = x - halfWidth;
+  var xEnd = x + halfWidth;
+  var yBegin = y - halfHeight;
+  var yEnd = y + halfHeight;
+
+  var barrelCurveConstants = math.getBarrelCurveConstants(width, height);
+  var wOffset = barrelCurveConstants.widthOffset;
+  var hOffset = barrelCurveConstants.heightOffset;
+  var ctrlPtXOffset = barrelCurveConstants.ctrlPtOffsetPct * wOffset;
+
+  if (context.beginPath) {
+    context.beginPath();
+  }
+
+  context.moveTo(xBegin, yBegin + hOffset);
+
+  context.lineTo(xBegin, yEnd - hOffset);
+  context.quadraticCurveTo(xBegin + ctrlPtXOffset, yEnd, xBegin + wOffset, yEnd);
+
+  context.lineTo(xEnd - wOffset, yEnd);
+  context.quadraticCurveTo(xEnd - ctrlPtXOffset, yEnd, xEnd, yEnd - hOffset);
+
+  context.lineTo(xEnd, yBegin + hOffset);
+  context.quadraticCurveTo(xEnd - ctrlPtXOffset, yBegin, xEnd - wOffset, yBegin);
+
+  context.lineTo(xBegin + wOffset, yBegin);
+  context.quadraticCurveTo(xBegin + ctrlPtXOffset, yBegin, xBegin, yBegin + hOffset);
+
+  context.closePath();
+};
+
+var sin0 = Math.sin(0);
+var cos0 = Math.cos(0);
+
+var sin = {};
+var cos = {};
+
+var ellipseStepSize = Math.PI / 40;
+
+for (var i = 0 * Math.PI; i < 2 * Math.PI; i += ellipseStepSize) {
+  sin[i] = Math.sin(i);
+  cos[i] = Math.cos(i);
+}
+
+CRp.drawEllipsePath = function (context, centerX, centerY, width, height) {
+  if (context.beginPath) {
+    context.beginPath();
+  }
+
+  if (context.ellipse) {
+    context.ellipse(centerX, centerY, width / 2, height / 2, 0, 0, 2 * Math.PI);
+  } else {
+    var xPos, yPos;
+    var rw = width / 2;
+    var rh = height / 2;
+    for (var i = 0 * Math.PI; i < 2 * Math.PI; i += ellipseStepSize) {
+      xPos = centerX - rw * sin[i] * sin0 + rw * cos[i] * cos0;
+      yPos = centerY + rh * cos[i] * sin0 + rh * sin[i] * cos0;
+
+      if (i === 0) {
+        context.moveTo(xPos, yPos);
+      } else {
+        context.lineTo(xPos, yPos);
+      }
+    }
+  }
+
+  context.closePath();
+};
+
+module.exports = CRp;
+
+/***/ }),
+/* 134 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var is = __webpack_require__(0);
+
+var CRp = {};
+
+CRp.createBuffer = function (w, h) {
+  var buffer = document.createElement('canvas'); // eslint-disable-line no-undef
+  buffer.width = w;
+  buffer.height = h;
+
+  return [buffer, buffer.getContext('2d')];
+};
+
+CRp.bufferCanvasImage = function (options) {
+  var cy = this.cy;
+  var eles = cy.mutableElements();
+  var bb = eles.boundingBox();
+  var ctrRect = this.findContainerClientCoords();
+  var width = options.full ? Math.ceil(bb.w) : ctrRect[2];
+  var height = options.full ? Math.ceil(bb.h) : ctrRect[3];
+  var specdMaxDims = is.number(options.maxWidth) || is.number(options.maxHeight);
+  var pxRatio = this.getPixelRatio();
+  var scale = 1;
+
+  if (options.scale !== undefined) {
+    width *= options.scale;
+    height *= options.scale;
+
+    scale = options.scale;
+  } else if (specdMaxDims) {
+    var maxScaleW = Infinity;
+    var maxScaleH = Infinity;
+
+    if (is.number(options.maxWidth)) {
+      maxScaleW = scale * options.maxWidth / width;
+    }
+
+    if (is.number(options.maxHeight)) {
+      maxScaleH = scale * options.maxHeight / height;
+    }
+
+    scale = Math.min(maxScaleW, maxScaleH);
+
+    width *= scale;
+    height *= scale;
+  }
+
+  if (!specdMaxDims) {
+    width *= pxRatio;
+    height *= pxRatio;
+    scale *= pxRatio;
+  }
+
+  var buffCanvas = document.createElement('canvas'); // eslint-disable-line no-undef
+
+  buffCanvas.width = width;
+  buffCanvas.height = height;
+
+  buffCanvas.style.width = width + 'px';
+  buffCanvas.style.height = height + 'px';
+
+  var buffCxt = buffCanvas.getContext('2d');
+
+  // Rasterize the layers, but only if container has nonzero size
+  if (width > 0 && height > 0) {
+
+    buffCxt.clearRect(0, 0, width, height);
+
+    buffCxt.globalCompositeOperation = 'source-over';
+
+    var zsortedEles = this.getCachedZSortedEles();
+
+    if (options.full) {
+      // draw the full bounds of the graph
+      buffCxt.translate(-bb.x1 * scale, -bb.y1 * scale);
+      buffCxt.scale(scale, scale);
+
+      this.drawElements(buffCxt, zsortedEles);
+
+      buffCxt.scale(1 / scale, 1 / scale);
+      buffCxt.translate(bb.x1 * scale, bb.y1 * scale);
+    } else {
+      // draw the current view
+      var pan = cy.pan();
+
+      var translation = {
+        x: pan.x * scale,
+        y: pan.y * scale
+      };
+
+      scale *= cy.zoom();
+
+      buffCxt.translate(translation.x, translation.y);
+      buffCxt.scale(scale, scale);
+
+      this.drawElements(buffCxt, zsortedEles);
+
+      buffCxt.scale(1 / scale, 1 / scale);
+      buffCxt.translate(-translation.x, -translation.y);
+    }
+
+    // need to fill bg at end like this in order to fill cleared transparent pixels in jpgs
+    if (options.bg) {
+      buffCxt.globalCompositeOperation = 'destination-over';
+
+      buffCxt.fillStyle = options.bg;
+      buffCxt.rect(0, 0, width, height);
+      buffCxt.fill();
+    }
+  }
+
+  return buffCanvas;
+};
+
+function b64ToBlob(b64, mimeType) {
+  var bytes = atob(b64);
+  var buff = new ArrayBuffer(bytes.length);
+  var buffUint8 = new Uint8Array(buff);
+
+  for (var i = 0; i < bytes.length; i++) {
+    buffUint8[i] = bytes.charCodeAt(i);
+  }
+
+  return new Blob([buff], { type: mimeType });
+}
+
+function b64UriToB64(b64uri) {
+  var i = b64uri.indexOf(',');
+
+  return b64uri.substr(i + 1);
+};
+
+function output(options, canvas, mimeType) {
+  var b64Uri = canvas.toDataURL(mimeType, options.quality);
+
+  switch (options.output) {
+    case 'blob':
+      return b64ToBlob(b64UriToB64(b64Uri), mimeType);
+
+    case 'base64':
+      return b64UriToB64(b64Uri);
+
+    case 'base64uri':
+    default:
+      return b64Uri;
+  }
+}
+
+CRp.png = function (options) {
+  return output(options, this.bufferCanvasImage(options), 'image/png');
+};
+
+CRp.jpg = function (options) {
+  return output(options, this.bufferCanvasImage(options), 'image/jpeg');
+};
+
+module.exports = CRp;
+
+/***/ }),
+/* 135 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -25380,4151 +28940,118 @@ CRp.nodeShapeImpl = function (name, context, centerX, centerY, width, height, po
 module.exports = CRp;
 
 /***/ }),
-/* 114 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-module.exports = [{ name: 'null', impl: __webpack_require__(115) }, { name: 'base', impl: __webpack_require__(97) }, { name: 'canvas', impl: __webpack_require__(111) }];
-
-/***/ }),
-/* 115 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-function NullRenderer(options) {
-  this.options = options;
-  this.notifications = 0; // for testing
-}
-
-var noop = function noop() {};
-
-NullRenderer.prototype = {
-  recalculateRenderedStyle: noop,
-  notify: function notify() {
-    this.notifications++;
-  },
-  init: noop
-};
-
-module.exports = NullRenderer;
-
-/***/ }),
-/* 116 */
+/* 136 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
 var is = __webpack_require__(0);
-var Core = __webpack_require__(12);
-var extension = __webpack_require__(20);
-var Stylesheet = __webpack_require__(21);
-
-var cytoscape = function cytoscape(options) {
-  // jshint ignore:line
-  // if no options specified, use default
-  if (options === undefined) {
-    options = {};
-  }
-
-  // create instance
-  if (is.plainObject(options)) {
-    return new Core(options);
-  }
-
-  // allow for registration of extensions
-  else if (is.string(options)) {
-      return extension.apply(extension, arguments);
-    }
-};
-
-// e.g. cytoscape.use( require('cytoscape-foo'), bar )
-cytoscape.use = function (ext) {
-  var args = Array.prototype.slice.call(arguments, 1); // args to pass to ext
-
-  args.unshift(cytoscape); // cytoscape is first arg to ext
-
-  ext.apply(null, args);
-
-  return this;
-};
-
-// replaced by build system
-cytoscape.version = __webpack_require__(22);
-
-// expose public apis (mostly for extensions)
-cytoscape.stylesheet = cytoscape.Stylesheet = Stylesheet;
-
-module.exports = cytoscape;
-
-/***/ }),
-/* 117 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-function ObjectMap() {
-  this._obj = {};
-}
-
-var p = ObjectMap.prototype;
-
-p.set = function (key, val) {
-  this._obj[key] = val;
-};
-
-p.delete = function (key) {
-  this._obj[key] = null;
-};
-
-p.has = function (key) {
-  return this._obj[key] != null;
-};
-
-p.get = function (key) {
-  return this._obj[key];
-};
-
-// TODO use the stdlib Map in future...
-// module.exports = typeof Map !== 'undefined' ? Map : ObjectMap;
-module.exports = ObjectMap;
-
-/***/ }),
-/* 118 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
-
-var _require = __webpack_require__(17),
-    stateSelectorRegex = _require.stateSelectorRegex;
-
-var tokens = __webpack_require__(121);
 var util = __webpack_require__(1);
-var newQuery = __webpack_require__(11);
+var Style = __webpack_require__(18);
 
-// when a token like a variable has escaped meta characters, we need to clean the backslashes out
-// so that values get compared properly in Selector.filter()
-var cleanMetaChars = function cleanMetaChars(str) {
-  return str.replace(new RegExp('\\\\(' + tokens.metaChar + ')', 'g'), function (match, $1) {
-    return $1;
-  });
+// a dummy stylesheet object that doesn't need a reference to the core
+// (useful for init)
+var Stylesheet = function Stylesheet() {
+  if (!(this instanceof Stylesheet)) {
+    return new Stylesheet();
+  }
+
+  this.length = 0;
 };
 
-var replaceLastQuery = function replaceLastQuery(selector, examiningQuery, replacementQuery) {
-  if (examiningQuery === selector[selector.length - 1]) {
-    selector[selector.length - 1] = replacementQuery;
-  }
+var sheetfn = Stylesheet.prototype;
+
+sheetfn.instanceString = function () {
+  return 'stylesheet';
 };
 
-// NOTE: add new expression syntax here to have it recognised by the parser;
-// - a query contains all adjacent (i.e. no separator in between) expressions;
-// - the current query is stored in selector[i] --- you can use the reference to `this` in the populate function;
-// - you need to check the query objects in Selector.filter() for it actually filter properly, but that's pretty straight forward
-// - when you add something here, also add to Selector.toString()
-var exprs = [{
-  name: 'group',
-  query: true,
-  regex: '(' + tokens.group + ')',
-  populate: function populate(selector, query, _ref) {
-    var _ref2 = _slicedToArray(_ref, 1),
-        group = _ref2[0];
+// just store the selector to be parsed later
+sheetfn.selector = function (selector) {
+  var i = this.length++;
 
-    query.group = group === '*' ? group : group + 's';
-  }
-}, {
-  name: 'state',
-  query: true,
-  regex: stateSelectorRegex,
-  populate: function populate(selector, query, _ref3) {
-    var _ref4 = _slicedToArray(_ref3, 1),
-        state = _ref4[0];
+  this[i] = {
+    selector: selector,
+    properties: []
+  };
 
-    query.colonSelectors.push(state);
-  }
-}, {
-  name: 'id',
-  query: true,
-  regex: '\\#(' + tokens.id + ')',
-  populate: function populate(selector, query, _ref5) {
-    var _ref6 = _slicedToArray(_ref5, 1),
-        id = _ref6[0];
+  return this; // chaining
+};
 
-    query.ids.push(cleanMetaChars(id));
-  }
-}, {
-  name: 'className',
-  query: true,
-  regex: '\\.(' + tokens.className + ')',
-  populate: function populate(selector, query, _ref7) {
-    var _ref8 = _slicedToArray(_ref7, 1),
-        className = _ref8[0];
+// just store the property to be parsed later
+sheetfn.css = function (name, value) {
+  var i = this.length - 1;
 
-    query.classes.push(cleanMetaChars(className));
-  }
-}, {
-  name: 'dataExists',
-  query: true,
-  regex: '\\[\\s*(' + tokens.variable + ')\\s*\\]',
-  populate: function populate(selector, query, _ref9) {
-    var _ref10 = _slicedToArray(_ref9, 1),
-        variable = _ref10[0];
-
-    query.data.push({
-      field: cleanMetaChars(variable)
-    });
-  }
-}, {
-  name: 'dataCompare',
-  query: true,
-  regex: '\\[\\s*(' + tokens.variable + ')\\s*(' + tokens.comparatorOp + ')\\s*(' + tokens.value + ')\\s*\\]',
-  populate: function populate(selector, query, _ref11) {
-    var _ref12 = _slicedToArray(_ref11, 3),
-        variable = _ref12[0],
-        comparatorOp = _ref12[1],
-        value = _ref12[2];
-
-    var valueIsString = new RegExp('^' + tokens.string + '$').exec(value) != null;
-
-    if (valueIsString) {
-      value = value.substring(1, value.length - 1);
-    } else {
-      value = parseFloat(value);
-    }
-
-    query.data.push({
-      field: cleanMetaChars(variable),
-      operator: comparatorOp,
+  if (is.string(name)) {
+    this[i].properties.push({
+      name: name,
       value: value
     });
-  }
-}, {
-  name: 'dataBool',
-  query: true,
-  regex: '\\[\\s*(' + tokens.boolOp + ')\\s*(' + tokens.variable + ')\\s*\\]',
-  populate: function populate(selector, query, _ref13) {
-    var _ref14 = _slicedToArray(_ref13, 2),
-        boolOp = _ref14[0],
-        variable = _ref14[1];
-
-    query.data.push({
-      field: cleanMetaChars(variable),
-      operator: boolOp
-    });
-  }
-}, {
-  name: 'metaCompare',
-  query: true,
-  regex: '\\[\\[\\s*(' + tokens.meta + ')\\s*(' + tokens.comparatorOp + ')\\s*(' + tokens.number + ')\\s*\\]\\]',
-  populate: function populate(selector, query, _ref15) {
-    var _ref16 = _slicedToArray(_ref15, 3),
-        meta = _ref16[0],
-        comparatorOp = _ref16[1],
-        number = _ref16[2];
-
-    query.meta.push({
-      field: cleanMetaChars(meta),
-      operator: comparatorOp,
-      value: parseFloat(number)
-    });
-  }
-}, {
-  name: 'nextQuery',
-  separator: true,
-  regex: tokens.separator,
-  populate: function populate(selector) {
-    // go on to next query
-    var nextQuery = selector[selector.length++] = newQuery();
-    selector.currentSubject = null;
-
-    return nextQuery;
-  }
-}, {
-  name: 'directedEdge',
-  separator: true,
-  regex: tokens.directedEdge,
-  populate: function populate(selector, query) {
-    var edgeQuery = newQuery();
-    var source = query;
-    var target = newQuery();
-
-    edgeQuery.group = 'edges';
-    edgeQuery.target = target;
-    edgeQuery.source = source;
-    edgeQuery.subject = selector.currentSubject;
-
-    // the query in the selector should be the edge rather than the source
-    replaceLastQuery(selector, query, edgeQuery);
-
-    // we're now populating the target query with expressions that follow
-    return target;
-  }
-}, {
-  name: 'undirectedEdge',
-  separator: true,
-  regex: tokens.undirectedEdge,
-  populate: function populate(selector, query) {
-    var edgeQuery = newQuery();
-    var source = query;
-    var target = newQuery();
-
-    edgeQuery.group = 'edges';
-    edgeQuery.connectedNodes = [source, target];
-    edgeQuery.subject = selector.currentSubject;
-
-    // the query in the selector should be the edge rather than the source
-    replaceLastQuery(selector, query, edgeQuery);
-
-    // we're now populating the target query with expressions that follow
-    return target;
-  }
-}, {
-  name: 'child',
-  separator: true,
-  regex: tokens.child,
-  populate: function populate(selector, query) {
-    // this query is the parent of the following query
-    var childQuery = newQuery();
-    childQuery.parent = query;
-    childQuery.subject = selector.currentSubject;
-
-    // it's cheaper to compare children first and go up so replace the parent
-    replaceLastQuery(selector, query, childQuery);
-
-    // we're now populating the child query with expressions that follow
-    return childQuery;
-  }
-}, {
-  name: 'descendant',
-  separator: true,
-  regex: tokens.descendant,
-  populate: function populate(selector, query) {
-    // this query is the ancestor of the following query
-    var descendantQuery = newQuery();
-    descendantQuery.ancestor = query;
-    descendantQuery.subject = selector.currentSubject;
-
-    // it's cheaper to compare descendants first and go up so replace the ancestor
-    replaceLastQuery(selector, query, descendantQuery);
-
-    // we're now populating the descendant query with expressions that follow
-    return descendantQuery;
-  }
-}, {
-  name: 'subject',
-  modifier: true,
-  regex: tokens.subject,
-  populate: function populate(selector, query) {
-    if (selector.currentSubject != null && query.subject != query) {
-      util.error('Redefinition of subject in selector `' + selector.toString() + '`');
-      return false;
-    }
-
-    selector.currentSubject = query;
-    query.subject = query;
-    selector[selector.length - 1].subject = query;
-  }
-}];
-
-exprs.forEach(function (e) {
-  return e.regexObj = new RegExp('^' + e.regex);
-});
-
-module.exports = exprs;
-
-/***/ }),
-/* 119 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var _require = __webpack_require__(17),
-    stateSelectorMatches = _require.stateSelectorMatches;
-
-var is = __webpack_require__(0);
-
-// generic checking for data/metadata
-var operandsMatch = function operandsMatch(query, params) {
-  var allDataMatches = true;
-  for (var k = 0; k < query[params.name].length; k++) {
-    var data = query[params.name][k];
-    var operator = data.operator;
-    var value = data.value;
-    var field = data.field;
-    var _matches = void 0;
-    var fieldVal = params.fieldValue(field);
-
-    if (operator != null && value != null) {
-      var fieldStr = !is.string(fieldVal) && !is.number(fieldVal) ? '' : '' + fieldVal;
-      var valStr = '' + value;
-
-      var caseInsensitive = false;
-      if (operator.indexOf('@') >= 0) {
-        fieldStr = fieldStr.toLowerCase();
-        valStr = valStr.toLowerCase();
-
-        operator = operator.replace('@', '');
-        caseInsensitive = true;
-      }
-
-      var notExpr = false;
-      if (operator.indexOf('!') >= 0) {
-        operator = operator.replace('!', '');
-        notExpr = true;
-      }
-
-      // if we're doing a case insensitive comparison, then we're using a STRING comparison
-      // even if we're comparing numbers
-      if (caseInsensitive) {
-        value = valStr.toLowerCase();
-        fieldVal = fieldStr.toLowerCase();
-      }
-
-      var isIneqCmp = false;
-
-      switch (operator) {
-        case '*=':
-          _matches = fieldStr.indexOf(valStr) >= 0;
-          break;
-        case '$=':
-          _matches = fieldStr.indexOf(valStr, fieldStr.length - valStr.length) >= 0;
-          break;
-        case '^=':
-          _matches = fieldStr.indexOf(valStr) === 0;
-          break;
-        case '=':
-          _matches = fieldVal === value;
-          break;
-        case '>':
-          isIneqCmp = true;
-          _matches = fieldVal > value;
-          break;
-        case '>=':
-          isIneqCmp = true;
-          _matches = fieldVal >= value;
-          break;
-        case '<':
-          isIneqCmp = true;
-          _matches = fieldVal < value;
-          break;
-        case '<=':
-          isIneqCmp = true;
-          _matches = fieldVal <= value;
-          break;
-        default:
-          _matches = false;
-          break;
-      }
-
-      // apply the not op, but null vals for inequalities should always stay non-matching
-      if (notExpr && (fieldVal != null || !isIneqCmp)) {
-        _matches = !_matches;
-      }
-    } else if (operator != null) {
-      switch (operator) {
-        case '?':
-          _matches = fieldVal ? true : false;
-          break;
-        case '!':
-          _matches = fieldVal ? false : true;
-          break;
-        case '^':
-          _matches = fieldVal === undefined;
-          break;
-      }
-    } else {
-      _matches = fieldVal !== undefined;
-    }
-
-    if (!_matches) {
-      allDataMatches = false;
-      break;
-    }
-  } // for
-
-  return allDataMatches;
-}; // operandsMatch
-
-// check parent/child relations
-var confirmRelations = function confirmRelations(query, isNecessary, eles) {
-  if (query != null) {
-    var _matches2 = false;
-
-    if (!isNecessary) {
-      return false;
-    }
-
-    eles = eles(); // save cycles if query == null
-
-    // query must match for at least one element (may be recursive)
-    for (var i = 0; i < eles.length; i++) {
-      if (queryMatches(query, eles[i])) {
-        _matches2 = true;
-        break;
-      }
-    }
-
-    return _matches2;
-  } else {
-    return true;
-  }
-};
-
-var queryMatches = function queryMatches(query, ele) {
-  // make single group-only selectors really cheap to check since they're the most common ones
-  if (query.groupOnly) {
-    return query.group === '*' || query.group === ele.group();
-  }
-
-  // check group
-  if (query.group != null && query.group != '*' && query.group != ele.group()) {
-    return false;
-  }
-
-  var cy = ele.cy();
-  var k = void 0;
-
-  // check colon selectors
-  var allColonSelectorsMatch = true;
-  for (k = 0; k < query.colonSelectors.length; k++) {
-    var sel = query.colonSelectors[k];
-
-    allColonSelectorsMatch = stateSelectorMatches(sel, ele);
-
-    if (!allColonSelectorsMatch) break;
-  }
-  if (!allColonSelectorsMatch) return false;
-
-  // check id
-  var allIdsMatch = true;
-  for (k = 0; k < query.ids.length; k++) {
-    var id = query.ids[k];
-    var actualId = ele.id();
-
-    allIdsMatch = allIdsMatch && id == actualId;
-
-    if (!allIdsMatch) break;
-  }
-  if (!allIdsMatch) return false;
-
-  // check classes
-  var allClassesMatch = true;
-  for (k = 0; k < query.classes.length; k++) {
-    var cls = query.classes[k];
-
-    allClassesMatch = allClassesMatch && ele.hasClass(cls);
-
-    if (!allClassesMatch) break;
-  }
-  if (!allClassesMatch) return false;
-
-  // check data matches
-  var allDataMatches = operandsMatch(query, {
-    name: 'data',
-    fieldValue: function fieldValue(field) {
-      return ele.data(field);
-    }
-  });
-
-  if (!allDataMatches) {
-    return false;
-  }
-
-  // check metadata matches
-  var allMetaMatches = operandsMatch(query, {
-    name: 'meta',
-    fieldValue: function fieldValue(field) {
-      return ele[field]();
-    }
-  });
-
-  if (!allMetaMatches) {
-    return false;
-  }
-
-  // check collection
-  if (query.collection != null) {
-    var matchesAny = query.collection.hasElementWithId(ele.id());
-
-    if (!matchesAny) {
-      return false;
-    }
-  }
-
-  // check filter function
-  if (query.filter != null && ele.collection().some(query.filter)) {
-    return false;
-  }
-
-  var isCompound = cy.hasCompoundNodes();
-  var getSource = function getSource() {
-    return ele.source();
-  };
-  var getTarget = function getTarget() {
-    return ele.target();
-  };
-
-  if (!confirmRelations(query.parent, isCompound, function () {
-    return ele.parent();
-  })) {
-    return false;
-  }
-
-  if (!confirmRelations(query.ancestor, isCompound, function () {
-    return ele.parents();
-  })) {
-    return false;
-  }
-
-  if (!confirmRelations(query.child, isCompound, function () {
-    return ele.children();
-  })) {
-    return false;
-  }
-
-  if (!confirmRelations(query.descendant, isCompound, function () {
-    return ele.descendants();
-  })) {
-    return false;
-  }
-
-  if (!confirmRelations(query.source, true, getSource)) {
-    return false;
-  }
-
-  if (!confirmRelations(query.target, true, getTarget)) {
-    return false;
-  }
-
-  if (query.connectedNodes) {
-    var q0 = query.connectedNodes[0];
-    var q1 = query.connectedNodes[1];
-
-    if (confirmRelations(q0, true, getSource) && confirmRelations(q1, true, getTarget)) {
-      // match
-    } else if (confirmRelations(q0, true, getTarget) && confirmRelations(q1, true, getSource)) {
-      // match
-    } else {
-      return false;
-    }
-  }
-
-  // we've reached the end, so we've matched everything for this query
-  return true;
-}; // queryMatches
-
-// filter an existing collection
-var filter = function filter(collection) {
-  var self = this;
-  var cy = collection.cy();
-
-  // don't bother trying if it's invalid
-  if (self.invalid()) {
-    return cy.collection();
-  }
-
-  // for 1 id #foo queries, just get the element
-  if (self.length === 1 && self[0].length === 1 && self[0].ids.length === 1) {
-    return collection.getElementById(self[0].ids[0]).collection();
-  }
-
-  var selectorFunction = function selectorFunction(element) {
-    for (var j = 0; j < self.length; j++) {
-      var query = self[j];
-
-      if (queryMatches(query, element)) {
-        return true;
-      }
-    }
-
-    return false;
-  };
-
-  if (self.text() == null) {
-    selectorFunction = function selectorFunction() {
-      return true;
-    };
-  }
-
-  var filteredCollection = collection.filter(selectorFunction);
-
-  return filteredCollection;
-}; // filter
-
-// does selector match a single element?
-var matches = function matches(ele) {
-  var self = this;
-
-  // don't bother trying if it's invalid
-  if (self.invalid()) {
-    return false;
-  }
-
-  for (var j = 0; j < self.length; j++) {
-    var query = self[j];
-
-    if (queryMatches(query, ele)) {
-      return true;
-    }
-  }
-
-  return false;
-}; // filter
-
-module.exports = { matches: matches, filter: filter };
-
-/***/ }),
-/* 120 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var util = __webpack_require__(1);
-var exprs = __webpack_require__(118);
-var newQuery = __webpack_require__(11);
-
-// of all the expressions, find the first match in the remaining text
-var consumeExpr = function consumeExpr(remaining) {
-  var expr = void 0;
-  var match = void 0;
-  var name = void 0;
-
-  for (var j = 0; j < exprs.length; j++) {
-    var e = exprs[j];
-    var n = e.name;
-
-    var m = remaining.match(e.regexObj);
-
-    if (m != null) {
-      match = m;
-      expr = e;
-      name = n;
-
-      var consumed = m[0];
-      remaining = remaining.substring(consumed.length);
-
-      break; // we've consumed one expr, so we can return now
-    }
-  }
-
-  return {
-    expr: expr,
-    match: match,
-    name: name,
-    remaining: remaining
-  };
-};
-
-// consume all leading whitespace
-var consumeWhitespace = function consumeWhitespace(remaining) {
-  var match = remaining.match(/^\s+/);
-
-  if (match) {
-    var consumed = match[0];
-    remaining = remaining.substring(consumed.length);
-  }
-
-  return remaining;
-};
-
-var parse = function parse(selector) {
-  var self = this;
-
-  var remaining = self._private.selectorText = selector;
-
-  var currentQuery = self[0] = newQuery();
-  self.length = 1;
-
-  remaining = consumeWhitespace(remaining); // get rid of leading whitespace
-
-  for (;;) {
-    var check = consumeExpr(remaining);
-
-    if (check.expr == null) {
-      util.error('The selector `' + selector + '`is invalid');
-      return false;
-    } else {
-      var args = check.match.slice(1);
-
-      // let the token populate the selector object in currentQuery
-      var ret = check.expr.populate(self, currentQuery, args);
-
-      if (ret === false) {
-        return false; // exit if population failed
-      } else if (ret != null) {
-        currentQuery = ret; // change the current query to be filled if the expr specifies
-      }
-    }
-
-    remaining = check.remaining;
-
-    // we're done when there's nothing left to parse
-    if (remaining.match(/^\s*$/)) {
-      break;
-    }
-  }
-
-  // adjust references for subject
-  for (var j = 0; j < self.length; j++) {
-    var query = self[j];
-
-    if (query.subject != null) {
-      // go up the tree until we reach the subject
-      for (;;) {
-        if (query.subject === query) {
-          break;
-        } // done if subject is self
-
-        if (query.parent != null) {
-          // swap parent/child reference
-          var parent = query.parent;
-          var child = query;
-
-          child.parent = null;
-          parent.child = child;
-
-          query = parent; // go up the tree
-        } else if (query.ancestor != null) {
-          // swap ancestor/descendant
-          var ancestor = query.ancestor;
-          var descendant = query;
-
-          descendant.ancestor = null;
-          ancestor.descendant = descendant;
-
-          query = ancestor; // go up the tree
-        } else if (query.source || query.target || query.connectedNodes) {
-          util.error('The selector `' + self.text() + '` can not contain a subject selector that applies to the source or target of an edge selector');
-          return false;
-        } else {
-          util.error('When adjusting references for the selector `' + self.text() + '`, neither parent nor ancestor was found');
-          return false;
-        }
-      } // for
-
-      self[j] = query.subject; // subject should be the root query
-    } // if
-  } // for
-
-  return true; // success
-};
-
-module.exports = { parse: parse };
-
-/***/ }),
-/* 121 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var util = __webpack_require__(1);
-
-// tokens in the query language
-var tokens = {
-  metaChar: '[\\!\\"\\#\\$\\%\\&\\\'\\(\\)\\*\\+\\,\\.\\/\\:\\;\\<\\=\\>\\?\\@\\[\\]\\^\\`\\{\\|\\}\\~]', // chars we need to escape in let names, etc
-  comparatorOp: '=|\\!=|>|>=|<|<=|\\$=|\\^=|\\*=', // binary comparison op (used in data selectors)
-  boolOp: '\\?|\\!|\\^', // boolean (unary) operators (used in data selectors)
-  string: '"(?:\\\\"|[^"])*"' + '|' + "'(?:\\\\'|[^'])*'", // string literals (used in data selectors) -- doublequotes | singlequotes
-  number: util.regex.number, // number literal (used in data selectors) --- e.g. 0.1234, 1234, 12e123
-  meta: 'degree|indegree|outdegree', // allowed metadata fields (i.e. allowed functions to use from Collection)
-  separator: '\\s*,\\s*', // queries are separated by commas, e.g. edge[foo = 'bar'], node.someClass
-  descendant: '\\s+',
-  child: '\\s+>\\s+',
-  subject: '\\$',
-  group: 'node|edge|\\*',
-  directedEdge: '\\s+->\\s+',
-  undirectedEdge: '\\s+<->\\s+'
-};
-tokens.variable = '(?:[\\w-]|(?:\\\\' + tokens.metaChar + '))+'; // a variable name
-tokens.value = tokens.string + '|' + tokens.number; // a value literal, either a string or number
-tokens.className = tokens.variable; // a class name (follows variable conventions)
-tokens.id = tokens.variable; // an element id (follows variable conventions)
-
-(function () {
-  var ops = void 0,
-      op = void 0,
-      i = void 0;
-
-  // add @ variants to comparatorOp
-  ops = tokens.comparatorOp.split('|');
-  for (i = 0; i < ops.length; i++) {
-    op = ops[i];
-    tokens.comparatorOp += '|@' + op;
-  }
-
-  // add ! variants to comparatorOp
-  ops = tokens.comparatorOp.split('|');
-  for (i = 0; i < ops.length; i++) {
-    op = ops[i];
-
-    if (op.indexOf('!') >= 0) {
-      continue;
-    } // skip ops that explicitly contain !
-    if (op === '=') {
-      continue;
-    } // skip = b/c != is explicitly defined
-
-    tokens.comparatorOp += '|\\!' + op;
-  }
-})();
-
-module.exports = tokens;
-
-/***/ }),
-/* 122 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var util = __webpack_require__(1);
-var is = __webpack_require__(0);
-var Promise = __webpack_require__(5);
-
-var styfn = {};
-
-// (potentially expensive calculation)
-// apply the style to the element based on
-// - its bypass
-// - what selectors match it
-styfn.apply = function (eles) {
-  var self = this;
-  var _p = self._private;
-  var cy = _p.cy;
-  var updatedEles = cy.collection();
-
-  if (_p.newStyle) {
-    // clear style caches
-    _p.contextStyles = {};
-    _p.propDiffs = {};
-
-    self.cleanElements(eles, true);
-  }
-
-  for (var ie = 0; ie < eles.length; ie++) {
-    var ele = eles[ie];
-
-    var cxtMeta = self.getContextMeta(ele);
-
-    if (cxtMeta.empty) {
-      continue;
-    } else {
-      updatedEles.merge(ele);
-    }
-
-    var cxtStyle = self.getContextStyle(cxtMeta);
-    var app = self.applyContextStyle(cxtMeta, cxtStyle, ele);
-
-    if (!_p.newStyle) {
-      self.updateTransitions(ele, app.diffProps);
-    }
-
-    self.updateStyleHints(ele);
-  } // for elements
-
-  _p.newStyle = false;
-
-  return updatedEles;
-};
-
-styfn.getPropertiesDiff = function (oldCxtKey, newCxtKey) {
-  var self = this;
-  var cache = self._private.propDiffs = self._private.propDiffs || {};
-  var dualCxtKey = oldCxtKey + '-' + newCxtKey;
-  var cachedVal = cache[dualCxtKey];
-
-  if (cachedVal) {
-    return cachedVal;
-  }
-
-  var diffProps = [];
-  var addedProp = {};
-
-  for (var i = 0; i < self.length; i++) {
-    var cxt = self[i];
-    var oldHasCxt = oldCxtKey[i] === 't';
-    var newHasCxt = newCxtKey[i] === 't';
-    var cxtHasDiffed = oldHasCxt !== newHasCxt;
-    var cxtHasMappedProps = cxt.mappedProperties.length > 0;
-
-    if (cxtHasDiffed || cxtHasMappedProps) {
-      var props = void 0;
-
-      if (cxtHasDiffed && cxtHasMappedProps) {
-        props = cxt.properties; // suffices b/c mappedProperties is a subset of properties
-      } else if (cxtHasDiffed) {
-        props = cxt.properties; // need to check them all
-      } else if (cxtHasMappedProps) {
-        props = cxt.mappedProperties; // only need to check mapped
-      }
-
-      for (var j = 0; j < props.length; j++) {
-        var prop = props[j];
-        var name = prop.name;
-
-        // if a later context overrides this property, then the fact that this context has switched/diffed doesn't matter
-        // (semi expensive check since it makes this function O(n^2) on context length, but worth it since overall result
-        // is cached)
-        var laterCxtOverrides = false;
-        for (var k = i + 1; k < self.length; k++) {
-          var laterCxt = self[k];
-          var hasLaterCxt = newCxtKey[k] === 't';
-
-          if (!hasLaterCxt) {
-            continue;
-          } // can't override unless the context is active
-
-          laterCxtOverrides = laterCxt.properties[prop.name] != null;
-
-          if (laterCxtOverrides) {
-            break;
-          } // exit early as long as one later context overrides
-        }
-
-        if (!addedProp[name] && !laterCxtOverrides) {
-          addedProp[name] = true;
-          diffProps.push(name);
-        }
-      } // for props
-    } // if
-  } // for contexts
-
-  cache[dualCxtKey] = diffProps;
-  return diffProps;
-};
-
-styfn.getContextMeta = function (ele) {
-  var self = this;
-  var cxtKey = '';
-  var diffProps = void 0;
-  var prevKey = ele._private.styleCxtKey || '';
-
-  if (self._private.newStyle) {
-    prevKey = ''; // since we need to apply all style if a fresh stylesheet
-  }
-
-  // get the cxt key
-  for (var i = 0; i < self.length; i++) {
-    var context = self[i];
-    var contextSelectorMatches = context.selector && context.selector.matches(ele); // NB: context.selector may be null for 'core'
-
-    if (contextSelectorMatches) {
-      cxtKey += 't';
-    } else {
-      cxtKey += 'f';
-    }
-  } // for context
-
-  diffProps = self.getPropertiesDiff(prevKey, cxtKey);
-
-  ele._private.styleCxtKey = cxtKey;
-
-  return {
-    key: cxtKey,
-    diffPropNames: diffProps,
-    empty: diffProps.length === 0
-  };
-};
-
-// gets a computed ele style object based on matched contexts
-styfn.getContextStyle = function (cxtMeta) {
-  var cxtKey = cxtMeta.key;
-  var self = this;
-  var cxtStyles = this._private.contextStyles = this._private.contextStyles || {};
-
-  // if already computed style, returned cached copy
-  if (cxtStyles[cxtKey]) {
-    return cxtStyles[cxtKey];
-  }
-
-  var style = {
-    _private: {
-      key: cxtKey
-    }
-  };
-
-  for (var i = 0; i < self.length; i++) {
-    var cxt = self[i];
-    var hasCxt = cxtKey[i] === 't';
-
-    if (!hasCxt) {
-      continue;
-    }
-
-    for (var j = 0; j < cxt.properties.length; j++) {
-      var prop = cxt.properties[j];
-
-      style[prop.name] = prop;
-    }
-  }
-
-  cxtStyles[cxtKey] = style;
-  return style;
-};
-
-styfn.applyContextStyle = function (cxtMeta, cxtStyle, ele) {
-  var self = this;
-  var diffProps = cxtMeta.diffPropNames;
-  var retDiffProps = {};
-
-  for (var i = 0; i < diffProps.length; i++) {
-    var diffPropName = diffProps[i];
-    var cxtProp = cxtStyle[diffPropName];
-    var eleProp = ele.pstyle(diffPropName);
-
-    if (!cxtProp) {
-      // no context prop means delete
-      if (!eleProp) {
-        continue; // no existing prop means nothing needs to be removed
-        // nb affects initial application on mapped values like control-point-distances
-      } else if (eleProp.bypass) {
-        cxtProp = { name: diffPropName, deleteBypassed: true };
-      } else {
-        cxtProp = { name: diffPropName, delete: true };
-      }
-    }
-
-    // save cycles when the context prop doesn't need to be applied
-    if (eleProp === cxtProp) {
-      continue;
-    }
-
-    var retDiffProp = retDiffProps[diffPropName] = {
-      prev: eleProp
-    };
-
-    self.applyParsedProperty(ele, cxtProp);
-
-    retDiffProp.next = ele.pstyle(diffPropName);
-
-    if (retDiffProp.next && retDiffProp.next.bypass) {
-      retDiffProp.next = retDiffProp.next.bypassed;
-    }
-  }
-
-  return {
-    diffProps: retDiffProps
-  };
-};
-
-styfn.updateStyleHints = function (ele) {
-  var _p = ele._private;
-  var self = this;
-
-  if (ele.removed()) {
-    return;
-  }
-
-  // set whether has pie or not; for greater efficiency
-  var hasPie = false;
-  if (_p.group === 'nodes') {
-    for (var i = 1; i <= self.pieBackgroundN; i++) {
-      // 1..N
-      var _size = ele.pstyle('pie-' + i + '-background-size').value;
-
-      if (_size > 0) {
-        hasPie = true;
-        break;
-      }
-    }
-  }
-
-  _p.hasPie = hasPie;
-
-  var transform = ele.pstyle('text-transform').strValue;
-  var content = ele.pstyle('label').strValue;
-  var srcContent = ele.pstyle('source-label').strValue;
-  var tgtContent = ele.pstyle('target-label').strValue;
-  var fStyle = ele.pstyle('font-style').strValue;
-  var size = ele.pstyle('font-size').pfValue + 'px';
-  var family = ele.pstyle('font-family').strValue;
-  // let letiant = style['font-letiant'].strValue;
-  var weight = ele.pstyle('font-weight').strValue;
-  var valign = ele.pstyle('text-valign').strValue;
-  var halign = ele.pstyle('text-valign').strValue;
-  var oWidth = ele.pstyle('text-outline-width').pfValue;
-  var wrap = ele.pstyle('text-wrap').strValue;
-  var wrapW = ele.pstyle('text-max-width').pfValue;
-  var labelStyleKey = fStyle + '$' + size + '$' + family + '$' + weight + '$' + transform + '$' + valign + '$' + halign + '$' + oWidth + '$' + wrap + '$' + wrapW;
-  _p.labelStyleKey = labelStyleKey;
-  _p.sourceLabelKey = labelStyleKey + '$' + srcContent;
-  _p.targetLabelKey = labelStyleKey + '$' + tgtContent;
-  _p.labelKey = labelStyleKey + '$' + content;
-  _p.fontKey = fStyle + '$' + weight + '$' + size + '$' + family;
-
-  _p.styleKey = Date.now();
-};
-
-// apply a property to the style (for internal use)
-// returns whether application was successful
-//
-// now, this function flattens the property, and here's how:
-//
-// for parsedProp:{ bypass: true, deleteBypass: true }
-// no property is generated, instead the bypass property in the
-// element's style is replaced by what's pointed to by the `bypassed`
-// field in the bypass property (i.e. restoring the property the
-// bypass was overriding)
-//
-// for parsedProp:{ mapped: truthy }
-// the generated flattenedProp:{ mapping: prop }
-//
-// for parsedProp:{ bypass: true }
-// the generated flattenedProp:{ bypassed: parsedProp }
-styfn.applyParsedProperty = function (ele, parsedProp) {
-  var self = this;
-  var prop = parsedProp;
-  var style = ele._private.style;
-  var fieldVal = void 0,
-      flatProp = void 0;
-  var types = self.types;
-  var type = self.properties[prop.name].type;
-  var propIsBypass = prop.bypass;
-  var origProp = style[prop.name];
-  var origPropIsBypass = origProp && origProp.bypass;
-  var _p = ele._private;
-  var flatPropMapping = 'mapping';
-
-  var checkZOrder = function checkZOrder() {
-    self.checkZOrderTrigger(ele, prop.name, origProp ? origProp.value : null, prop.value);
-  };
-
-  // edges connected to compound nodes can not be haystacks
-  if (parsedProp.name === 'curve-style' && parsedProp.value === 'haystack' && ele.isEdge() && (ele.isLoop() || ele.source().isParent() || ele.target().isParent())) {
-    prop = parsedProp = this.parse(parsedProp.name, 'bezier', propIsBypass);
-  }
-
-  if (prop.delete) {
-    // delete the property and use the default value on falsey value
-    style[prop.name] = undefined;
-
-    checkZOrder();
-
-    return true;
-  }
-
-  if (prop.deleteBypassed) {
-    // delete the property that the
-    if (!origProp) {
-      checkZOrder();
-
-      return true; // can't delete if no prop
-    } else if (origProp.bypass) {
-      // delete bypassed
-      origProp.bypassed = undefined;
-
-      checkZOrder();
-
-      return true;
-    } else {
-      return false; // we're unsuccessful deleting the bypassed
-    }
-  }
-
-  // check if we need to delete the current bypass
-  if (prop.deleteBypass) {
-    // then this property is just here to indicate we need to delete
-    if (!origProp) {
-      checkZOrder();
-
-      return true; // property is already not defined
-    } else if (origProp.bypass) {
-      // then replace the bypass property with the original
-      // because the bypassed property was already applied (and therefore parsed), we can just replace it (no reapplying necessary)
-      style[prop.name] = origProp.bypassed;
-
-      checkZOrder();
-
-      return true;
-    } else {
-      return false; // we're unsuccessful deleting the bypass
-    }
-  }
-
-  var printMappingErr = function printMappingErr() {
-    util.error('Do not assign mappings to elements without corresponding data (e.g. ele `' + ele.id() + '` for property `' + prop.name + '` with data field `' + prop.field + '`); try a `[' + prop.field + ']` selector to limit scope to elements with `' + prop.field + '` defined');
-  };
-
-  // put the property in the style objects
-  switch (prop.mapped) {// flatten the property if mapped
-    case types.mapData:
-      {
-        // flatten the field (e.g. data.foo.bar)
-        var fields = prop.field.split('.');
-        var _fieldVal = _p.data;
-
-        for (var i = 0; i < fields.length && _fieldVal; i++) {
-          var field = fields[i];
-          _fieldVal = _fieldVal[field];
-        }
-
-        var percent = void 0;
-        if (!is.number(_fieldVal)) {
-          // then keep the mapping but assume 0% for now
-          percent = 0;
-        } else {
-          percent = (_fieldVal - prop.fieldMin) / (prop.fieldMax - prop.fieldMin);
-        }
-
-        // make sure to bound percent value
-        if (percent < 0) {
-          percent = 0;
-        } else if (percent > 1) {
-          percent = 1;
-        }
-
-        if (type.color) {
-          var r1 = prop.valueMin[0];
-          var r2 = prop.valueMax[0];
-          var g1 = prop.valueMin[1];
-          var g2 = prop.valueMax[1];
-          var b1 = prop.valueMin[2];
-          var b2 = prop.valueMax[2];
-          var a1 = prop.valueMin[3] == null ? 1 : prop.valueMin[3];
-          var a2 = prop.valueMax[3] == null ? 1 : prop.valueMax[3];
-
-          var clr = [Math.round(r1 + (r2 - r1) * percent), Math.round(g1 + (g2 - g1) * percent), Math.round(b1 + (b2 - b1) * percent), Math.round(a1 + (a2 - a1) * percent)];
-
-          flatProp = { // colours are simple, so just create the flat property instead of expensive string parsing
-            bypass: prop.bypass, // we're a bypass if the mapping property is a bypass
-            name: prop.name,
-            value: clr,
-            strValue: 'rgb(' + clr[0] + ', ' + clr[1] + ', ' + clr[2] + ')'
-          };
-        } else if (type.number) {
-          var calcValue = prop.valueMin + (prop.valueMax - prop.valueMin) * percent;
-          flatProp = this.parse(prop.name, calcValue, prop.bypass, flatPropMapping);
-        } else {
-          return false; // can only map to colours and numbers
-        }
-
-        if (!flatProp) {
-          // if we can't flatten the property, then use the origProp so we still keep the mapping itself
-          flatProp = this.parse(prop.name, origProp.strValue, prop.bypass, flatPropMapping);
-        }
-
-        if (!flatProp) {
-          printMappingErr();
-        }
-        flatProp.mapping = prop; // keep a reference to the mapping
-        prop = flatProp; // the flattened (mapped) property is the one we want
-
-        break;
-      }
-
-    // direct mapping
-    case types.data:
-      {
-        // flatten the field (e.g. data.foo.bar)
-        var _fields = prop.field.split('.');
-        var _fieldVal2 = _p.data;
-
-        if (_fieldVal2) {
-          for (var _i = 0; _i < _fields.length; _i++) {
-            var _field = _fields[_i];
-            _fieldVal2 = _fieldVal2[_field];
-          }
-        }
-
-        flatProp = this.parse(prop.name, _fieldVal2, prop.bypass, flatPropMapping);
-
-        if (!flatProp) {
-          // if we can't flatten the property, then use the origProp so we still keep the mapping itself
-          var flatPropVal = origProp ? origProp.strValue : '';
-
-          flatProp = this.parse(prop.name, flatPropVal, prop.bypass, flatPropMapping);
-        }
-
-        if (!flatProp) {
-          printMappingErr();
-        }
-        flatProp.mapping = prop; // keep a reference to the mapping
-        prop = flatProp; // the flattened (mapped) property is the one we want
-
-        break;
-      }
-
-    case types.fn:
-      {
-        var fn = prop.value;
-        var fnRetVal = fn(ele);
-
-        flatProp = this.parse(prop.name, fnRetVal, prop.bypass, flatPropMapping);
-        flatProp.mapping = prop; // keep a reference to the mapping
-        prop = flatProp; // the flattened (mapped) property is the one we want
-
-        break;
-      }
-
-    case undefined:
-      break; // just set the property
-
-    default:
-      return false; // not a valid mapping
-  }
-
-  // if the property is a bypass property, then link the resultant property to the original one
-  if (propIsBypass) {
-    if (origPropIsBypass) {
-      // then this bypass overrides the existing one
-      prop.bypassed = origProp.bypassed; // steal bypassed prop from old bypass
-    } else {
-      // then link the orig prop to the new bypass
-      prop.bypassed = origProp;
-    }
-
-    style[prop.name] = prop; // and set
-  } else {
-    // prop is not bypass
-    if (origPropIsBypass) {
-      // then keep the orig prop (since it's a bypass) and link to the new prop
-      origProp.bypassed = prop;
-    } else {
-      // then just replace the old prop with the new one
-      style[prop.name] = prop;
-    }
-  }
-
-  checkZOrder();
-
-  return true;
-};
-
-styfn.cleanElements = function (eles, keepBypasses) {
-  var self = this;
-  var props = self.properties;
-
-  for (var i = 0; i < eles.length; i++) {
-    var ele = eles[i];
-
-    if (!keepBypasses) {
-      ele._private.style = {};
-    } else {
-      var style = ele._private.style;
-
-      for (var j = 0; j < props.length; j++) {
-        var prop = props[j];
-        var eleProp = style[prop.name];
-
-        if (eleProp) {
-          if (eleProp.bypass) {
-            eleProp.bypassed = null;
-          } else {
-            style[prop.name] = null;
-          }
-        }
-      }
-    }
-  }
-};
-
-// updates the visual style for all elements (useful for manual style modification after init)
-styfn.update = function () {
-  var cy = this._private.cy;
-  var eles = cy.mutableElements();
-
-  eles.updateStyle();
-};
-
-// just update the functional properties (i.e. mappings) in the elements'
-// styles (less expensive than recalculation)
-styfn.updateMappers = function (eles) {
-  var self = this;
-  var cy = this._private.cy;
-  var updatedEles = cy.collection();
-
-  for (var i = 0; i < eles.length; i++) {
-    // for each ele
-    var ele = eles[i];
-    var style = ele._private.style;
-    var updatedEle = false;
-
-    for (var j = 0; j < self.properties.length; j++) {
-      // for each prop
-      var prop = self.properties[j];
-      var propInStyle = style[prop.name];
-
-      if (propInStyle && propInStyle.mapping) {
-        var mapping = propInStyle.mapping;
-
-        this.applyParsedProperty(ele, mapping); // reapply the mapping property
-
-        updatedEle = true;
-      }
-    }
-
-    if (updatedEle) {
-      this.updateStyleHints(ele);
-
-      updatedEles.merge(ele);
-    }
-  }
-
-  return updatedEles;
-};
-
-// diffProps : { name => { prev, next } }
-styfn.updateTransitions = function (ele, diffProps, isBypass) {
-  var self = this;
-  var _p = ele._private;
-  var props = ele.pstyle('transition-property').value;
-  var duration = ele.pstyle('transition-duration').pfValue;
-  var delay = ele.pstyle('transition-delay').pfValue;
-
-  if (props.length > 0 && duration > 0) {
-
-    var style = {};
-
-    // build up the style to animate towards
-    var anyPrev = false;
-    for (var i = 0; i < props.length; i++) {
-      var prop = props[i];
-      var styProp = ele.pstyle(prop);
-      var diffProp = diffProps[prop];
-
-      if (!diffProp) {
-        continue;
-      }
-
-      var prevProp = diffProp.prev;
-      var fromProp = prevProp;
-      var toProp = diffProp.next != null ? diffProp.next : styProp;
-      var diff = false;
-      var initVal = void 0;
-      var initDt = 0.000001; // delta time % value for initVal (allows animating out of init zero opacity)
-
-      if (!fromProp) {
-        continue;
-      }
-
-      // consider px values
-      if (is.number(fromProp.pfValue) && is.number(toProp.pfValue)) {
-        diff = toProp.pfValue - fromProp.pfValue; // nonzero is truthy
-        initVal = fromProp.pfValue + initDt * diff;
-
-        // consider numerical values
-      } else if (is.number(fromProp.value) && is.number(toProp.value)) {
-        diff = toProp.value - fromProp.value; // nonzero is truthy
-        initVal = fromProp.value + initDt * diff;
-
-        // consider colour values
-      } else if (is.array(fromProp.value) && is.array(toProp.value)) {
-        diff = fromProp.value[0] !== toProp.value[0] || fromProp.value[1] !== toProp.value[1] || fromProp.value[2] !== toProp.value[2];
-
-        initVal = fromProp.strValue;
-      }
-
-      // the previous value is good for an animation only if it's different
-      if (diff) {
-        style[prop] = toProp.strValue; // to val
-        this.applyBypass(ele, prop, initVal); // from val
-        anyPrev = true;
-      }
-    } // end if props allow ani
-
-    // can't transition if there's nothing previous to transition from
-    if (!anyPrev) {
-      return;
-    }
-
-    _p.transitioning = true;
-
-    new Promise(function (resolve) {
-      if (delay > 0) {
-        ele.delayAnimation(delay).play().promise().then(resolve);
-      } else {
-        resolve();
-      }
-    }).then(function () {
-      return ele.animation({
-        style: style,
-        duration: duration,
-        easing: ele.pstyle('transition-timing-function').value,
-        queue: false
-      }).play().promise();
-    }).then(function () {
-      // if( !isBypass ){
-      self.removeBypasses(ele, props);
-      ele.emitAndNotify('style');
-      // }
-
-      _p.transitioning = false;
-    });
-  } else if (_p.transitioning) {
-    this.removeBypasses(ele, props);
-    ele.emitAndNotify('style');
-
-    _p.transitioning = false;
-  }
-};
-
-styfn.checkZOrderTrigger = function (ele, name, fromValue, toValue) {
-  var prop = this.properties[name];
-
-  if (prop.triggersZOrder != null && (fromValue == null || prop.triggersZOrder(fromValue, toValue))) {
-    this._private.cy.notify({
-      type: 'zorder',
-      eles: ele
-    });
-  }
-};
-
-module.exports = styfn;
-
-/***/ }),
-/* 123 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var is = __webpack_require__(0);
-var util = __webpack_require__(1);
-
-var styfn = {};
-
-// bypasses are applied to an existing style on an element, and just tacked on temporarily
-// returns true iff application was successful for at least 1 specified property
-styfn.applyBypass = function (eles, name, value, updateTransitions) {
-  var self = this;
-  var props = [];
-  var isBypass = true;
-
-  // put all the properties (can specify one or many) in an array after parsing them
-  if (name === '*' || name === '**') {
-    // apply to all property names
-
-    if (value !== undefined) {
-      for (var i = 0; i < self.properties.length; i++) {
-        var prop = self.properties[i];
-        var _name = prop.name;
-
-        var parsedProp = this.parse(_name, value, true);
-
-        if (parsedProp) {
-          props.push(parsedProp);
-        }
-      }
-    }
-  } else if (is.string(name)) {
-    // then parse the single property
-    var _parsedProp = this.parse(name, value, true);
-
-    if (_parsedProp) {
-      props.push(_parsedProp);
-    }
   } else if (is.plainObject(name)) {
-    // then parse each property
-    var specifiedProps = name;
-    updateTransitions = value;
+    var map = name;
 
-    var names = Object.keys(specifiedProps);
+    for (var j = 0; j < Style.properties.length; j++) {
+      var prop = Style.properties[j];
+      var mapVal = map[prop.name];
 
-    for (var _i = 0; _i < names.length; _i++) {
-      var _name2 = names[_i];
-      var _prop = self.properties[_name2];
-      var _value = specifiedProps[_name2];
-
-      if (_value === undefined) {
-        // try camel case name too
-        _value = specifiedProps[util.dash2camel(_name2)];
+      if (mapVal === undefined) {
+        // also try camel case name
+        mapVal = map[util.dash2camel(prop.name)];
       }
 
-      if (_value !== undefined) {
-        var _parsedProp2 = this.parse(_name2, _value, true);
-
-        if (_parsedProp2) {
-          props.push(_parsedProp2);
-        }
-      }
-    }
-  } else {
-    // can't do anything without well defined properties
-    return false;
-  }
-
-  // we've failed if there are no valid properties
-  if (props.length === 0) {
-    return false;
-  }
-
-  // now, apply the bypass properties on the elements
-  var ret = false; // return true if at least one succesful bypass applied
-  for (var _i2 = 0; _i2 < eles.length; _i2++) {
-    // for each ele
-    var ele = eles[_i2];
-    var diffProps = {};
-    var diffProp = void 0;
-
-    for (var j = 0; j < props.length; j++) {
-      // for each prop
-      var _prop2 = props[j];
-
-      if (updateTransitions) {
-        var prevProp = ele.pstyle(_prop2.name);
-        diffProp = diffProps[_prop2.name] = { prev: prevProp };
-      }
-
-      ret = this.applyParsedProperty(ele, _prop2) || ret;
-
-      if (updateTransitions) {
-        diffProp.next = ele.pstyle(_prop2.name);
-      }
-    } // for props
-
-    if (ret) {
-      this.updateStyleHints(ele);
-    }
-
-    if (updateTransitions) {
-      this.updateTransitions(ele, diffProps, isBypass);
-    }
-  } // for eles
-
-  return ret;
-};
-
-// only useful in specific cases like animation
-styfn.overrideBypass = function (eles, name, value) {
-  name = util.camel2dash(name);
-
-  for (var i = 0; i < eles.length; i++) {
-    var ele = eles[i];
-    var prop = ele._private.style[name];
-    var type = this.properties[name].type;
-    var isColor = type.color;
-    var isMulti = type.mutiple;
-
-    if (!prop || !prop.bypass) {
-      // need a bypass if one doesn't exist
-      this.applyBypass(ele, name, value);
-      continue;
-    }
-
-    var oldValue = prop.pfValue != null ? prop.pfValue : prop.value;
-
-    prop.value = value;
-
-    if (prop.pfValue != null) {
-      prop.pfValue = value;
-    }
-
-    if (isColor) {
-      prop.strValue = 'rgb(' + value.join(',') + ')';
-    } else if (isMulti) {
-      prop.strValue = value.join(' ');
-    } else {
-      prop.strValue = '' + value;
-    }
-
-    this.checkZOrderTrigger(ele, name, oldValue, value);
-  }
-};
-
-styfn.removeAllBypasses = function (eles, updateTransitions) {
-  return this.removeBypasses(eles, this.propertyNames, updateTransitions);
-};
-
-styfn.removeBypasses = function (eles, props, updateTransitions) {
-  var isBypass = true;
-
-  for (var j = 0; j < eles.length; j++) {
-    var ele = eles[j];
-    var diffProps = {};
-
-    for (var i = 0; i < props.length; i++) {
-      var name = props[i];
-      var prop = this.properties[name];
-      var prevProp = ele.pstyle(prop.name);
-
-      if (!prevProp || !prevProp.bypass) {
-        // if a bypass doesn't exist for the prop, nothing needs to be removed
-        continue;
-      }
-
-      var value = ''; // empty => remove bypass
-      var parsedProp = this.parse(name, value, true);
-      var diffProp = diffProps[prop.name] = { prev: prevProp };
-
-      this.applyParsedProperty(ele, parsedProp);
-
-      diffProp.next = ele.pstyle(prop.name);
-    } // for props
-
-    this.updateStyleHints(ele);
-
-    if (updateTransitions) {
-      this.updateTransitions(ele, diffProps, isBypass);
-    }
-  } // for eles
-};
-
-module.exports = styfn;
-
-/***/ }),
-/* 124 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var window = __webpack_require__(4);
-
-var styfn = {};
-
-// gets what an em size corresponds to in pixels relative to a dom element
-styfn.getEmSizeInPixels = function () {
-  var px = this.containerCss('font-size');
-
-  if (px != null) {
-    return parseFloat(px);
-  } else {
-    return 1; // for headless
-  }
-};
-
-// gets css property from the core container
-styfn.containerCss = function (propName) {
-  var cy = this._private.cy;
-  var domElement = cy.container();
-
-  if (window && domElement && window.getComputedStyle) {
-    return window.getComputedStyle(domElement).getPropertyValue(propName);
-  }
-};
-
-module.exports = styfn;
-
-/***/ }),
-/* 125 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var util = __webpack_require__(1);
-var is = __webpack_require__(0);
-
-var styfn = {};
-
-// gets the rendered style for an element
-styfn.getRenderedStyle = function (ele, prop) {
-  if (prop) {
-    return this.getStylePropertyValue(ele, prop, true);
-  } else {
-    return this.getRawStyle(ele, true);
-  }
-};
-
-// gets the raw style for an element
-styfn.getRawStyle = function (ele, isRenderedVal) {
-  var self = this;
-
-  ele = ele[0]; // insure it's an element
-
-  if (ele) {
-    var rstyle = {};
-
-    for (var i = 0; i < self.properties.length; i++) {
-      var prop = self.properties[i];
-      var val = self.getStylePropertyValue(ele, prop.name, isRenderedVal);
-
-      if (val != null) {
-        rstyle[prop.name] = val;
-        rstyle[util.dash2camel(prop.name)] = val;
-      }
-    }
-
-    return rstyle;
-  }
-};
-
-styfn.getIndexedStyle = function (ele, property, subproperty, index) {
-  var pstyle = ele.pstyle(property)[subproperty][index];
-  return pstyle != null ? pstyle : ele.cy().style().getDefaultProperty(property)[subproperty][0];
-};
-
-styfn.getStylePropertyValue = function (ele, propName, isRenderedVal) {
-  var self = this;
-
-  ele = ele[0]; // insure it's an element
-
-  if (ele) {
-    var prop = self.properties[propName];
-
-    if (prop.alias) {
-      prop = prop.pointsTo;
-    }
-
-    var type = prop.type;
-    var styleProp = ele.pstyle(prop.name);
-    var zoom = ele.cy().zoom();
-
-    if (styleProp) {
-      var units = styleProp.units ? type.implicitUnits || 'px' : null;
-      var val = units ? [].concat(styleProp.pfValue).map(function (pfValue) {
-        return pfValue * (isRenderedVal ? zoom : 1) + units;
-      }).join(' ') : styleProp.strValue;
-
-      return val;
-    }
-  }
-};
-
-styfn.getAnimationStartStyle = function (ele, aniProps) {
-  var rstyle = {};
-
-  for (var i = 0; i < aniProps.length; i++) {
-    var aniProp = aniProps[i];
-    var name = aniProp.name;
-
-    var styleProp = ele.pstyle(name);
-
-    if (styleProp !== undefined) {
-      // then make a prop of it
-      if (is.plainObject(styleProp)) {
-        styleProp = this.parse(name, styleProp.strValue);
-      } else {
-        styleProp = this.parse(name, styleProp);
-      }
-    }
-
-    if (styleProp) {
-      rstyle[name] = styleProp;
-    }
-  }
-
-  return rstyle;
-};
-
-styfn.getPropsList = function (propsObj) {
-  var self = this;
-  var rstyle = [];
-  var style = propsObj;
-  var props = self.properties;
-
-  if (style) {
-    var names = Object.keys(style);
-
-    for (var i = 0; i < names.length; i++) {
-      var name = names[i];
-      var val = style[name];
-      var prop = props[name] || props[util.camel2dash(name)];
-      var styleProp = this.parse(prop.name, val);
-
-      if (styleProp) {
-        rstyle.push(styleProp);
+      if (mapVal !== undefined) {
+        var _name = prop.name;
+        var _value = mapVal;
+
+        this[i].properties.push({
+          name: _name,
+          value: _value
+        });
       }
     }
   }
 
-  return rstyle;
+  return this; // chaining
 };
 
-module.exports = styfn;
+sheetfn.style = sheetfn.css;
 
-/***/ }),
-/* 126 */
-/***/ (function(module, exports, __webpack_require__) {
+// generate a real style object from the dummy stylesheet
+sheetfn.generateStyle = function (cy) {
+  var style = new Style(cy);
 
-"use strict";
+  return this.appendToStyle(style);
+};
 
-
-var styfn = {};
-
-styfn.appendFromJson = function (json) {
-  var style = this;
-
-  for (var i = 0; i < json.length; i++) {
-    var context = json[i];
+// append a dummy stylesheet object on a real style object
+sheetfn.appendToStyle = function (style) {
+  for (var i = 0; i < this.length; i++) {
+    var context = this[i];
     var selector = context.selector;
-    var props = context.style || context.css;
-    var names = Object.keys(props);
+    var props = context.properties;
 
     style.selector(selector); // apply selector
 
-    for (var j = 0; j < names.length; j++) {
-      var name = names[j];
-      var value = props[name];
-
-      style.css(name, value); // apply property
-    }
-  }
-
-  return style;
-};
-
-// accessible cy.style() function
-styfn.fromJson = function (json) {
-  var style = this;
-
-  style.resetToDefault();
-  style.appendFromJson(json);
-
-  return style;
-};
-
-// get json from cy.style() api
-styfn.json = function () {
-  var json = [];
-
-  for (var i = this.defaultLength; i < this.length; i++) {
-    var cxt = this[i];
-    var selector = cxt.selector;
-    var props = cxt.properties;
-    var css = {};
-
     for (var j = 0; j < props.length; j++) {
       var prop = props[j];
-      css[prop.name] = prop.strValue;
+
+      style.css(prop.name, prop.value); // apply property
     }
-
-    json.push({
-      selector: !selector ? 'core' : selector.toString(),
-      style: css
-    });
-  }
-
-  return json;
-};
-
-module.exports = styfn;
-
-/***/ }),
-/* 127 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var util = __webpack_require__(1);
-var is = __webpack_require__(0);
-var math = __webpack_require__(2);
-
-var styfn = {};
-
-// a caching layer for property parsing
-styfn.parse = function (name, value, propIsBypass, propIsFlat) {
-  var self = this;
-
-  // function values can't be cached in all cases, and there isn't much benefit of caching them anyway
-  if (is.fn(value)) {
-    return self.parseImplWarn(name, value, propIsBypass, propIsFlat);
-  }
-
-  var flatKey = propIsFlat === 'mapping' || propIsFlat === true || propIsFlat === false || propIsFlat == null ? 'dontcare' : propIsFlat;
-  var argHash = [name, value, propIsBypass, flatKey].join('$');
-  var propCache = self.propCache = self.propCache || {};
-  var ret = void 0;
-
-  if (!(ret = propCache[argHash])) {
-    ret = propCache[argHash] = self.parseImplWarn(name, value, propIsBypass, propIsFlat);
-  }
-
-  // - bypasses can't be shared b/c the value can be changed by animations or otherwise overridden
-  // - mappings can't be shared b/c mappings are per-element
-  if (propIsBypass || propIsFlat === 'mapping') {
-    // need a copy since props are mutated later in their lifecycles
-    ret = util.copy(ret);
-
-    if (ret) {
-      ret.value = util.copy(ret.value); // because it could be an array, e.g. colour
-    }
-  }
-
-  return ret;
-};
-
-styfn.parseImplWarn = function (name, value, propIsBypass, propIsFlat) {
-  var prop = this.parseImpl(name, value, propIsBypass, propIsFlat);
-
-  if (!prop && value != null) {
-    util.error('The style property `%s: %s` is invalid', name, value);
-  }
-
-  return prop;
-};
-
-// parse a property; return null on invalid; return parsed property otherwise
-// fields :
-// - name : the name of the property
-// - value : the parsed, native-typed value of the property
-// - strValue : a string value that represents the property value in valid css
-// - bypass : true iff the property is a bypass property
-styfn.parseImpl = function (name, value, propIsBypass, propIsFlat) {
-  var self = this;
-
-  name = util.camel2dash(name); // make sure the property name is in dash form (e.g. 'property-name' not 'propertyName')
-
-  var property = self.properties[name];
-  var passedValue = value;
-  var types = self.types;
-
-  if (!property) {
-    return null;
-  } // return null on property of unknown name
-  if (value === undefined || value === null) {
-    return null;
-  } // can't assign null
-
-  // the property may be an alias
-  if (property.alias) {
-    property = property.pointsTo;
-    name = property.name;
-  }
-
-  var valueIsString = is.string(value);
-  if (valueIsString) {
-    // trim the value to make parsing easier
-    value = value.trim();
-  }
-
-  var type = property.type;
-  if (!type) {
-    return null;
-  } // no type, no luck
-
-  // check if bypass is null or empty string (i.e. indication to delete bypass property)
-  if (propIsBypass && (value === '' || value === null)) {
-    return {
-      name: name,
-      value: value,
-      bypass: true,
-      deleteBypass: true
-    };
-  }
-
-  // check if value is a function used as a mapper
-  if (is.fn(value)) {
-    return {
-      name: name,
-      value: value,
-      strValue: 'fn',
-      mapped: types.fn,
-      bypass: propIsBypass
-    };
-  }
-
-  // check if value is mapped
-  var data = void 0,
-      mapData = void 0;
-  if (!valueIsString || propIsFlat) {
-    // then don't bother to do the expensive regex checks
-
-  } else if (data = new RegExp(types.data.regex).exec(value)) {
-    if (propIsBypass) {
-      return false;
-    } // mappers not allowed in bypass
-
-    var mapped = types.data;
-
-    return {
-      name: name,
-      value: data,
-      strValue: '' + value,
-      mapped: mapped,
-      field: data[1],
-      bypass: propIsBypass
-    };
-  } else if (mapData = new RegExp(types.mapData.regex).exec(value)) {
-    if (propIsBypass) {
-      return false;
-    } // mappers not allowed in bypass
-    if (type.multiple) {
-      return false;
-    } // impossible to map to num
-
-    var _mapped = types.mapData;
-
-    // we can map only if the type is a colour or a number
-    if (!(type.color || type.number)) {
-      return false;
-    }
-
-    var valueMin = this.parse(name, mapData[4]); // parse to validate
-    if (!valueMin || valueMin.mapped) {
-      return false;
-    } // can't be invalid or mapped
-
-    var valueMax = this.parse(name, mapData[5]); // parse to validate
-    if (!valueMax || valueMax.mapped) {
-      return false;
-    } // can't be invalid or mapped
-
-    // check if valueMin and valueMax are the same
-    if (valueMin.value === valueMax.value) {
-      return false; // can't make much of a mapper without a range
-    } else if (type.color) {
-      var c1 = valueMin.value;
-      var c2 = valueMax.value;
-
-      var same = c1[0] === c2[0] // red
-      && c1[1] === c2[1] // green
-      && c1[2] === c2[2] // blue
-      && ( // optional alpha
-      c1[3] === c2[3] // same alpha outright
-      || (c1[3] == null || c1[3] === 1) && ( // full opacity for colour 1?
-      c2[3] == null || c2[3] === 1) // full opacity for colour 2?
-      );
-
-      if (same) {
-        return false;
-      } // can't make a mapper without a range
-    }
-
-    return {
-      name: name,
-      value: mapData,
-      strValue: '' + value,
-      mapped: _mapped,
-      field: mapData[1],
-      fieldMin: parseFloat(mapData[2]), // min & max are numeric
-      fieldMax: parseFloat(mapData[3]),
-      valueMin: valueMin.value,
-      valueMax: valueMax.value,
-      bypass: propIsBypass
-    };
-  }
-
-  if (type.multiple && propIsFlat !== 'multiple') {
-    var vals = void 0;
-
-    if (valueIsString) {
-      vals = value.split(/\s+/);
-    } else if (is.array(value)) {
-      vals = value;
-    } else {
-      vals = [value];
-    }
-
-    if (type.evenMultiple && vals.length % 2 !== 0) {
-      return null;
-    }
-
-    var valArr = [];
-    var unitsArr = [];
-    var pfValArr = [];
-    var hasEnum = false;
-
-    for (var i = 0; i < vals.length; i++) {
-      var p = self.parse(name, vals[i], propIsBypass, 'multiple');
-
-      hasEnum = hasEnum || is.string(p.value);
-
-      valArr.push(p.value);
-      pfValArr.push(p.pfValue != null ? p.pfValue : p.value);
-      unitsArr.push(p.units);
-    }
-
-    if (type.validate && !type.validate(valArr, unitsArr)) {
-      return null;
-    }
-
-    if (type.singleEnum && hasEnum) {
-      if (valArr.length === 1 && is.string(valArr[0])) {
-        return {
-          name: name,
-          value: valArr[0],
-          strValue: valArr[0],
-          bypass: propIsBypass
-        };
-      } else {
-        return null;
-      }
-    }
-
-    return {
-      name: name,
-      value: valArr,
-      pfValue: pfValArr,
-      strValue: valArr.join(' '),
-      bypass: propIsBypass,
-      units: unitsArr
-    };
-  }
-
-  // several types also allow enums
-  var checkEnums = function checkEnums() {
-    for (var _i = 0; _i < type.enums.length; _i++) {
-      var en = type.enums[_i];
-
-      if (en === value) {
-        return {
-          name: name,
-          value: value,
-          strValue: '' + value,
-          bypass: propIsBypass
-        };
-      }
-    }
-
-    return null;
-  };
-
-  // check the type and return the appropriate object
-  if (type.number) {
-    var units = void 0;
-    var implicitUnits = 'px'; // not set => px
-
-    if (type.units) {
-      // use specified units if set
-      units = type.units;
-    }
-
-    if (type.implicitUnits) {
-      implicitUnits = type.implicitUnits;
-    }
-
-    if (!type.unitless) {
-      if (valueIsString) {
-        var unitsRegex = 'px|em' + (type.allowPercent ? '|\\%' : '');
-        if (units) {
-          unitsRegex = units;
-        } // only allow explicit units if so set
-        var match = value.match('^(' + util.regex.number + ')(' + unitsRegex + ')?' + '$');
-
-        if (match) {
-          value = match[1];
-          units = match[2] || implicitUnits;
-        }
-      } else if (!units || type.implicitUnits) {
-        units = implicitUnits; // implicitly px if unspecified
-      }
-    }
-
-    value = parseFloat(value);
-
-    // if not a number and enums not allowed, then the value is invalid
-    if (isNaN(value) && type.enums === undefined) {
-      return null;
-    }
-
-    // check if this number type also accepts special keywords in place of numbers
-    // (i.e. `left`, `auto`, etc)
-    if (isNaN(value) && type.enums !== undefined) {
-      value = passedValue;
-
-      return checkEnums();
-    }
-
-    // check if value must be an integer
-    if (type.integer && !is.integer(value)) {
-      return null;
-    }
-
-    // check value is within range
-    if (type.min !== undefined && (value < type.min || type.strictMin && value === type.min) || type.max !== undefined && (value > type.max || type.strictMax && value === type.max)) {
-      return null;
-    }
-
-    var ret = {
-      name: name,
-      value: value,
-      strValue: '' + value + (units ? units : ''),
-      units: units,
-      bypass: propIsBypass
-    };
-
-    // normalise value in pixels
-    if (type.unitless || units !== 'px' && units !== 'em') {
-      ret.pfValue = value;
-    } else {
-      ret.pfValue = units === 'px' || !units ? value : this.getEmSizeInPixels() * value;
-    }
-
-    // normalise value in ms
-    if (units === 'ms' || units === 's') {
-      ret.pfValue = units === 'ms' ? value : 1000 * value;
-    }
-
-    // normalise value in rad
-    if (units === 'deg' || units === 'rad') {
-      ret.pfValue = units === 'rad' ? value : math.deg2rad(value);
-    }
-
-    // normalize value in %
-    if (units === '%') {
-      ret.pfValue = value / 100;
-    }
-
-    return ret;
-  } else if (type.propList) {
-
-    var props = [];
-    var propsStr = '' + value;
-
-    if (propsStr === 'none') {
-      // leave empty
-
-    } else {
-      // go over each prop
-
-      var propsSplit = propsStr.split(',');
-      for (var _i2 = 0; _i2 < propsSplit.length; _i2++) {
-        var propName = propsSplit[_i2].trim();
-
-        if (self.properties[propName]) {
-          props.push(propName);
-        }
-      }
-
-      if (props.length === 0) {
-        return null;
-      }
-    }
-
-    return {
-      name: name,
-      value: props,
-      strValue: props.length === 0 ? 'none' : props.join(', '),
-      bypass: propIsBypass
-    };
-  } else if (type.color) {
-    var tuple = util.color2tuple(value);
-
-    if (!tuple) {
-      return null;
-    }
-
-    return {
-      name: name,
-      value: tuple,
-      pfValue: tuple,
-      strValue: '' + value,
-      bypass: propIsBypass
-    };
-  } else if (type.regex || type.regexes) {
-
-    // first check enums
-    if (type.enums) {
-      var enumProp = checkEnums();
-
-      if (enumProp) {
-        return enumProp;
-      }
-    }
-
-    var regexes = type.regexes ? type.regexes : [type.regex];
-
-    for (var _i3 = 0; _i3 < regexes.length; _i3++) {
-      var regex = new RegExp(regexes[_i3]); // make a regex from the type string
-      var m = regex.exec(value);
-
-      if (m) {
-        // regex matches
-        return {
-          name: name,
-          value: type.singleRegexMatchValue ? m[1] : m,
-          strValue: '' + value,
-          bypass: propIsBypass
-        };
-      }
-    }
-
-    return null; // didn't match any
-  } else if (type.string) {
-    // just return
-    return {
-      name: name,
-      value: '' + value,
-      strValue: '' + value,
-      bypass: propIsBypass
-    };
-  } else if (type.enums) {
-    // check enums last because it's a combo type in others
-    return checkEnums();
-  } else {
-    return null; // not a type we can handle
-  }
-};
-
-module.exports = styfn;
-
-/***/ }),
-/* 128 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var util = __webpack_require__(1);
-var is = __webpack_require__(0);
-
-var styfn = {};
-
-(function () {
-  var number = util.regex.number;
-  var rgba = util.regex.rgbaNoBackRefs;
-  var hsla = util.regex.hslaNoBackRefs;
-  var hex3 = util.regex.hex3;
-  var hex6 = util.regex.hex6;
-  var data = function data(prefix) {
-    return '^' + prefix + '\\s*\\(\\s*([\\w\\.]+)\\s*\\)$';
-  };
-  var mapData = function mapData(prefix) {
-    var mapArg = number + '|\\w+|' + rgba + '|' + hsla + '|' + hex3 + '|' + hex6;
-    return '^' + prefix + '\\s*\\(([\\w\\.]+)\\s*\\,\\s*(' + number + ')\\s*\\,\\s*(' + number + ')\\s*,\\s*(' + mapArg + ')\\s*\\,\\s*(' + mapArg + ')\\)$';
-  };
-  var urlRegexes = ['^url\\s*\\(\\s*[\'"]?(.+?)[\'"]?\\s*\\)$', '^(none)$', '^(.+)$'];
-
-  // each visual style property has a type and needs to be validated according to it
-  styfn.types = {
-    time: { number: true, min: 0, units: 's|ms', implicitUnits: 'ms' },
-    percent: { number: true, min: 0, max: 100, units: '%', implicitUnits: '%' },
-    zeroOneNumber: { number: true, min: 0, max: 1, unitless: true },
-    zeroOneNumbers: { number: true, min: 0, max: 1, unitless: true, multiple: true },
-    nOneOneNumber: { number: true, min: -1, max: 1, unitless: true },
-    nonNegativeInt: { number: true, min: 0, integer: true, unitless: true },
-    position: { enums: ['parent', 'origin'] },
-    nodeSize: { number: true, min: 0, enums: ['label'] },
-    number: { number: true, unitless: true },
-    numbers: { number: true, unitless: true, multiple: true },
-    positiveNumber: { number: true, unitless: true, min: 0, strictMin: true },
-    size: { number: true, min: 0 },
-    bidirectionalSize: { number: true }, // allows negative
-    bidirectionalSizes: { number: true, multiple: true }, // allows negative
-    sizeMaybePercent: { number: true, min: 0, allowPercent: true },
-    paddingRelativeTo: { enums: ['width', 'height', 'average', 'min', 'max'] },
-    bgWH: { number: true, min: 0, allowPercent: true, enums: ['auto'], multiple: true },
-    bgPos: { number: true, allowPercent: true, multiple: true },
-    bgRelativeTo: { enums: ['inner', 'include-padding'], multiple: true },
-    bgRepeat: { enums: ['repeat', 'repeat-x', 'repeat-y', 'no-repeat'], multiple: true },
-    bgFit: { enums: ['none', 'contain', 'cover'], multiple: true },
-    bgCrossOrigin: { enums: ['anonymous', 'use-credentials'], multiple: true },
-    bgClip: { enums: ['none', 'node'] },
-    color: { color: true },
-    bool: { enums: ['yes', 'no'] },
-    lineStyle: { enums: ['solid', 'dotted', 'dashed'] },
-    borderStyle: { enums: ['solid', 'dotted', 'dashed', 'double'] },
-    curveStyle: { enums: ['bezier', 'unbundled-bezier', 'haystack', 'segments'] },
-    fontFamily: { regex: '^([\\w- \\"]+(?:\\s*,\\s*[\\w- \\"]+)*)$' },
-    fontletiant: { enums: ['small-caps', 'normal'] },
-    fontStyle: { enums: ['italic', 'normal', 'oblique'] },
-    fontWeight: { enums: ['normal', 'bold', 'bolder', 'lighter', '100', '200', '300', '400', '500', '600', '800', '900', 100, 200, 300, 400, 500, 600, 700, 800, 900] },
-    textDecoration: { enums: ['none', 'underline', 'overline', 'line-through'] },
-    textTransform: { enums: ['none', 'uppercase', 'lowercase'] },
-    textWrap: { enums: ['none', 'wrap', 'ellipsis'] },
-    textBackgroundShape: { enums: ['rectangle', 'roundrectangle'] },
-    nodeShape: { enums: ['rectangle', 'roundrectangle', 'cutrectangle', 'bottomroundrectangle', 'barrel', 'ellipse', 'triangle', 'square', 'pentagon', 'hexagon', 'concavehexagon', 'heptagon', 'octagon', 'tag', 'star', 'diamond', 'vee', 'rhomboid', 'polygon'] },
-    compoundIncludeLabels: { enums: ['include', 'exclude'] },
-    arrowShape: { enums: ['tee', 'triangle', 'triangle-tee', 'triangle-cross', 'triangle-backcurve', 'half-triangle-overshot', 'vee', 'square', 'circle', 'diamond', 'none'] },
-    arrowFill: { enums: ['filled', 'hollow'] },
-    display: { enums: ['element', 'none'] },
-    visibility: { enums: ['hidden', 'visible'] },
-    zCompoundDepth: { enums: ['bottom', 'orphan', 'auto', 'top'] },
-    zIndexCompare: { enums: ['auto', 'manual'] },
-    valign: { enums: ['top', 'center', 'bottom'] },
-    halign: { enums: ['left', 'center', 'right'] },
-    text: { string: true },
-    data: { mapping: true, regex: data('data') },
-    layoutData: { mapping: true, regex: data('layoutData') },
-    scratch: { mapping: true, regex: data('scratch') },
-    mapData: { mapping: true, regex: mapData('mapData') },
-    mapLayoutData: { mapping: true, regex: mapData('mapLayoutData') },
-    mapScratch: { mapping: true, regex: mapData('mapScratch') },
-    fn: { mapping: true, fn: true },
-    url: { regexes: urlRegexes, singleRegexMatchValue: true },
-    urls: { regexes: urlRegexes, singleRegexMatchValue: true, multiple: true },
-    propList: { propList: true },
-    angle: { number: true, units: 'deg|rad', implicitUnits: 'rad' },
-    textRotation: { number: true, units: 'deg|rad', implicitUnits: 'rad', enums: ['none', 'autorotate'] },
-    polygonPointList: { number: true, multiple: true, evenMultiple: true, min: -1, max: 1, unitless: true },
-    edgeDistances: { enums: ['intersection', 'node-position'] },
-    edgeEndpoint: {
-      number: true, multiple: true, units: '%|px|em|deg|rad', implicitUnits: 'px',
-      enums: ['inside-to-node', 'outside-to-node', 'outside-to-line'], singleEnum: true,
-      validate: function validate(valArr, unitsArr) {
-        switch (valArr.length) {
-          case 2:
-            // can be % or px only
-            return unitsArr[0] !== 'deg' && unitsArr[0] !== 'rad' && unitsArr[1] !== 'deg' && unitsArr[1] !== 'rad';
-          case 1:
-            // can be enum, deg, or rad only
-            return is.string(valArr[0]) || unitsArr[0] === 'deg' || unitsArr[0] === 'rad';
-          default:
-            return false;
-        }
-      }
-    },
-    easing: {
-      regexes: ['^(spring)\\s*\\(\\s*(' + number + ')\\s*,\\s*(' + number + ')\\s*\\)$', '^(cubic-bezier)\\s*\\(\\s*(' + number + ')\\s*,\\s*(' + number + ')\\s*,\\s*(' + number + ')\\s*,\\s*(' + number + ')\\s*\\)$'],
-      enums: ['linear', 'ease', 'ease-in', 'ease-out', 'ease-in-out', 'ease-in-sine', 'ease-out-sine', 'ease-in-out-sine', 'ease-in-quad', 'ease-out-quad', 'ease-in-out-quad', 'ease-in-cubic', 'ease-out-cubic', 'ease-in-out-cubic', 'ease-in-quart', 'ease-out-quart', 'ease-in-out-quart', 'ease-in-quint', 'ease-out-quint', 'ease-in-out-quint', 'ease-in-expo', 'ease-out-expo', 'ease-in-out-expo', 'ease-in-circ', 'ease-out-circ', 'ease-in-out-circ']
-    }
-  };
-
-  var zOrderDiff = {
-    zeroNonZero: function zeroNonZero(val1, val2) {
-      if (val1 === 0 && val2 !== 0) {
-        return true;
-      } else if (val1 !== 0 && val2 === 0) {
-        return true;
-      } else {
-        return false;
-      }
-    },
-    anyDiff: function anyDiff(val1, val2) {
-      return val1 !== val2;
-    }
-  };
-
-  var zd = zOrderDiff;
-
-  // define visual style properties
-  var t = styfn.types;
-  var props = styfn.properties = [
-  // main label
-  { name: 'label', type: t.text }, { name: 'text-rotation', type: t.textRotation }, { name: 'text-margin-x', type: t.bidirectionalSize }, { name: 'text-margin-y', type: t.bidirectionalSize },
-
-  // source label
-  { name: 'source-label', type: t.text }, { name: 'source-text-rotation', type: t.textRotation }, { name: 'source-text-margin-x', type: t.bidirectionalSize }, { name: 'source-text-margin-y', type: t.bidirectionalSize }, { name: 'source-text-offset', type: t.size },
-
-  // target label
-  { name: 'target-label', type: t.text }, { name: 'target-text-rotation', type: t.textRotation }, { name: 'target-text-margin-x', type: t.bidirectionalSize }, { name: 'target-text-margin-y', type: t.bidirectionalSize }, { name: 'target-text-offset', type: t.size },
-
-  // common label style
-  { name: 'text-valign', type: t.valign }, { name: 'text-halign', type: t.halign }, { name: 'color', type: t.color }, { name: 'text-outline-color', type: t.color }, { name: 'text-outline-width', type: t.size }, { name: 'text-outline-opacity', type: t.zeroOneNumber }, { name: 'text-opacity', type: t.zeroOneNumber }, { name: 'text-background-color', type: t.color }, { name: 'text-background-opacity', type: t.zeroOneNumber }, { name: 'text-background-padding', type: t.size }, { name: 'text-border-opacity', type: t.zeroOneNumber }, { name: 'text-border-color', type: t.color }, { name: 'text-border-width', type: t.size }, { name: 'text-border-style', type: t.borderStyle }, { name: 'text-background-shape', type: t.textBackgroundShape },
-  // { name: 'text-decoration', type: t.textDecoration }, // not supported in canvas
-  { name: 'text-transform', type: t.textTransform }, { name: 'text-wrap', type: t.textWrap }, { name: 'text-max-width', type: t.size }, { name: 'text-events', type: t.bool }, { name: 'font-family', type: t.fontFamily }, { name: 'font-style', type: t.fontStyle },
-  // { name: 'font-letiant', type: t.fontletiant }, // not useful
-  { name: 'font-weight', type: t.fontWeight }, { name: 'font-size', type: t.size }, { name: 'min-zoomed-font-size', type: t.size },
-
-  // behaviour
-  { name: 'events', type: t.bool },
-
-  // visibility
-  { name: 'display', type: t.display, triggersZOrder: zd.anyDiff }, { name: 'visibility', type: t.visibility, triggersZOrder: zd.anyDiff }, { name: 'opacity', type: t.zeroOneNumber, triggersZOrder: zd.zeroNonZero }, { name: 'z-compound-depth', type: t.zCompoundDepth, triggersZOrder: zd.anyDiff }, { name: 'z-index-compare', type: t.zIndexCompare, triggersZOrder: zd.anyDiff }, { name: 'z-index', type: t.nonNegativeInt, triggersZOrder: zd.anyDiff },
-
-  // overlays
-  { name: 'overlay-padding', type: t.size }, { name: 'overlay-color', type: t.color }, { name: 'overlay-opacity', type: t.zeroOneNumber },
-
-  // transition anis
-  { name: 'transition-property', type: t.propList }, { name: 'transition-duration', type: t.time }, { name: 'transition-delay', type: t.time }, { name: 'transition-timing-function', type: t.easing },
-
-  // node body
-  { name: 'height', type: t.nodeSize }, { name: 'width', type: t.nodeSize }, { name: 'shape', type: t.nodeShape }, { name: 'shape-polygon-points', type: t.polygonPointList }, { name: 'background-color', type: t.color }, { name: 'background-opacity', type: t.zeroOneNumber }, { name: 'background-blacken', type: t.nOneOneNumber }, { name: 'padding', type: t.sizeMaybePercent }, { name: 'padding-relative-to', type: t.paddingRelativeTo },
-
-  // node border
-  { name: 'border-color', type: t.color }, { name: 'border-opacity', type: t.zeroOneNumber }, { name: 'border-width', type: t.size }, { name: 'border-style', type: t.borderStyle },
-
-  // node background images
-  { name: 'background-image', type: t.urls }, { name: 'background-image-crossorigin', type: t.bgCrossOrigin }, { name: 'background-image-opacity', type: t.zeroOneNumbers }, { name: 'background-position-x', type: t.bgPos }, { name: 'background-position-y', type: t.bgPos }, { name: 'background-width-relative-to', type: t.bgRelativeTo }, { name: 'background-height-relative-to', type: t.bgRelativeTo }, { name: 'background-repeat', type: t.bgRepeat }, { name: 'background-fit', type: t.bgFit }, { name: 'background-clip', type: t.bgClip }, { name: 'background-width', type: t.bgWH }, { name: 'background-height', type: t.bgWH },
-
-  // compound props
-  { name: 'position', type: t.position }, { name: 'compound-sizing-wrt-labels', type: t.compoundIncludeLabels }, { name: 'min-width', type: t.size }, { name: 'min-width-bias-left', type: t.sizeMaybePercent }, { name: 'min-width-bias-right', type: t.sizeMaybePercent }, { name: 'min-height', type: t.size }, { name: 'min-height-bias-top', type: t.sizeMaybePercent }, { name: 'min-height-bias-bottom', type: t.sizeMaybePercent },
-
-  // edge line
-  { name: 'line-style', type: t.lineStyle }, { name: 'line-color', type: t.color }, { name: 'curve-style', type: t.curveStyle }, { name: 'haystack-radius', type: t.zeroOneNumber }, { name: 'source-endpoint', type: t.edgeEndpoint }, { name: 'target-endpoint', type: t.edgeEndpoint }, { name: 'control-point-step-size', type: t.size }, { name: 'control-point-distances', type: t.bidirectionalSizes }, { name: 'control-point-weights', type: t.numbers }, { name: 'segment-distances', type: t.bidirectionalSizes }, { name: 'segment-weights', type: t.numbers }, { name: 'edge-distances', type: t.edgeDistances }, { name: 'arrow-scale', type: t.positiveNumber }, { name: 'loop-direction', type: t.angle }, { name: 'loop-sweep', type: t.angle }, { name: 'source-distance-from-node', type: t.size }, { name: 'target-distance-from-node', type: t.size },
-
-  // ghost properties
-  { name: 'ghost', type: t.bool }, { name: 'ghost-offset-x', type: t.bidirectionalSize }, { name: 'ghost-offset-y', type: t.bidirectionalSize }, { name: 'ghost-opacity', type: t.zeroOneNumber },
-
-  // these are just for the core
-  { name: 'selection-box-color', type: t.color }, { name: 'selection-box-opacity', type: t.zeroOneNumber }, { name: 'selection-box-border-color', type: t.color }, { name: 'selection-box-border-width', type: t.size }, { name: 'active-bg-color', type: t.color }, { name: 'active-bg-opacity', type: t.zeroOneNumber }, { name: 'active-bg-size', type: t.size }, { name: 'outside-texture-bg-color', type: t.color }, { name: 'outside-texture-bg-opacity', type: t.zeroOneNumber }];
-
-  // define aliases
-  var aliases = styfn.aliases = [{ name: 'content', pointsTo: 'label' }, { name: 'control-point-distance', pointsTo: 'control-point-distances' }, { name: 'control-point-weight', pointsTo: 'control-point-weights' }, { name: 'edge-text-rotation', pointsTo: 'text-rotation' }, { name: 'padding-left', pointsTo: 'padding' }, { name: 'padding-right', pointsTo: 'padding' }, { name: 'padding-top', pointsTo: 'padding' }, { name: 'padding-bottom', pointsTo: 'padding' }];
-
-  // pie backgrounds for nodes
-  styfn.pieBackgroundN = 16; // because the pie properties are numbered, give access to a constant N (for renderer use)
-  props.push({ name: 'pie-size', type: t.sizeMaybePercent });
-  for (var i = 1; i <= styfn.pieBackgroundN; i++) {
-    props.push({ name: 'pie-' + i + '-background-color', type: t.color });
-    props.push({ name: 'pie-' + i + '-background-size', type: t.percent });
-    props.push({ name: 'pie-' + i + '-background-opacity', type: t.zeroOneNumber });
-  }
-
-  // edge arrows
-  var arrowPrefixes = styfn.arrowPrefixes = ['source', 'mid-source', 'target', 'mid-target'];
-  [{ name: 'arrow-shape', type: t.arrowShape }, { name: 'arrow-color', type: t.color }, { name: 'arrow-fill', type: t.arrowFill }].forEach(function (prop) {
-    arrowPrefixes.forEach(function (prefix) {
-      var name = prefix + '-' + prop.name;
-      var type = prop.type;
-
-      props.push({ name: name, type: type });
-    });
-  }, {});
-
-  // list of property names
-  styfn.propertyNames = props.map(function (p) {
-    return p.name;
-  });
-
-  // allow access of properties by name ( e.g. style.properties.height )
-  for (var _i = 0; _i < props.length; _i++) {
-    var prop = props[_i];
-
-    props[prop.name] = prop; // allow lookup by name
-  }
-
-  // map aliases
-  for (var _i2 = 0; _i2 < aliases.length; _i2++) {
-    var alias = aliases[_i2];
-    var pointsToProp = props[alias.pointsTo];
-    var aliasProp = {
-      name: alias.name,
-      alias: true,
-      pointsTo: pointsToProp
-    };
-
-    // add alias prop for parsing
-    props.push(aliasProp);
-
-    props[alias.name] = aliasProp; // allow lookup by name
-  }
-})();
-
-styfn.getDefaultProperty = function (name) {
-  return this.getDefaultProperties()[name];
-};
-
-styfn.getDefaultProperties = util.memoize(function () {
-  var rawProps = util.extend({
-    // common node/edge props
-    'events': 'yes',
-    'text-events': 'no',
-    'text-valign': 'top',
-    'text-halign': 'center',
-    'color': '#000',
-    'text-outline-color': '#000',
-    'text-outline-width': 0,
-    'text-outline-opacity': 1,
-    'text-opacity': 1,
-    'text-decoration': 'none',
-    'text-transform': 'none',
-    'text-wrap': 'none',
-    'text-max-width': 9999,
-    'text-background-color': '#000',
-    'text-background-opacity': 0,
-    'text-background-shape': 'rectangle',
-    'text-background-padding': 0,
-    'text-border-opacity': 0,
-    'text-border-width': 0,
-    'text-border-style': 'solid',
-    'text-border-color': '#000',
-    'font-family': 'Helvetica Neue, Helvetica, sans-serif',
-    'font-style': 'normal',
-    // 'font-letiant': fontletiant,
-    'font-weight': 'normal',
-    'font-size': 16,
-    'min-zoomed-font-size': 0,
-    'text-rotation': 'none',
-    'source-text-rotation': 'none',
-    'target-text-rotation': 'none',
-    'visibility': 'visible',
-    'display': 'element',
-    'opacity': 1,
-    'z-compound-depth': 'auto',
-    'z-index-compare': 'auto',
-    'z-index': 0,
-    'label': '',
-    'text-margin-x': 0,
-    'text-margin-y': 0,
-    'source-label': '',
-    'source-text-offset': 0,
-    'source-text-margin-x': 0,
-    'source-text-margin-y': 0,
-    'target-label': '',
-    'target-text-offset': 0,
-    'target-text-margin-x': 0,
-    'target-text-margin-y': 0,
-    'overlay-opacity': 0,
-    'overlay-color': '#000',
-    'overlay-padding': 10,
-    'transition-property': 'none',
-    'transition-duration': 0,
-    'transition-delay': 0,
-    'transition-timing-function': 'linear',
-
-    // node props
-    'background-blacken': 0,
-    'background-color': '#999',
-    'background-opacity': 1,
-    'background-image': 'none',
-    'background-image-crossorigin': 'anonymous',
-    'background-image-opacity': 1,
-    'background-position-x': '50%',
-    'background-position-y': '50%',
-    'background-width-relative-to': 'include-padding',
-    'background-height-relative-to': 'include-padding',
-    'background-repeat': 'no-repeat',
-    'background-fit': 'none',
-    'background-clip': 'node',
-    'background-width': 'auto',
-    'background-height': 'auto',
-    'border-color': '#000',
-    'border-opacity': 1,
-    'border-width': 0,
-    'border-style': 'solid',
-    'height': 30,
-    'width': 30,
-    'shape': 'ellipse',
-    'shape-polygon-points': '-1, -1,   1, -1,   1, 1,   -1, 1',
-
-    // ghost props
-    'ghost': 'no',
-    'ghost-offset-y': 0,
-    'ghost-offset-x': 0,
-    'ghost-opacity': 0,
-
-    // compound props
-    'padding': 0,
-    'padding-relative-to': 'width',
-    'position': 'origin',
-    'compound-sizing-wrt-labels': 'include',
-    'min-width': 0,
-    'min-width-bias-left': 0,
-    'min-width-bias-right': 0,
-    'min-height': 0,
-    'min-height-bias-top': 0,
-    'min-height-bias-bottom': 0
-  }, {
-    // node pie bg
-    'pie-size': '100%'
-  }, [{ name: 'pie-{{i}}-background-color', value: 'black' }, { name: 'pie-{{i}}-background-size', value: '0%' }, { name: 'pie-{{i}}-background-opacity', value: 1 }].reduce(function (css, prop) {
-    for (var i = 1; i <= styfn.pieBackgroundN; i++) {
-      var name = prop.name.replace('{{i}}', i);
-      var val = prop.value;
-
-      css[name] = val;
-    }
-
-    return css;
-  }, {}), {
-    // edge props
-    'line-style': 'solid',
-    'line-color': '#999',
-    'control-point-step-size': 40,
-    'control-point-weights': 0.5,
-    'segment-weights': 0.5,
-    'segment-distances': 20,
-    'edge-distances': 'intersection',
-    'curve-style': 'bezier',
-    'haystack-radius': 0,
-    'arrow-scale': 1,
-    'loop-direction': '-45deg',
-    'loop-sweep': '-90deg',
-    'source-distance-from-node': 0,
-    'target-distance-from-node': 0,
-    'source-endpoint': 'outside-to-node',
-    'target-endpoint': 'outside-to-node'
-  }, [{ name: 'arrow-shape', value: 'none' }, { name: 'arrow-color', value: '#999' }, { name: 'arrow-fill', value: 'filled' }].reduce(function (css, prop) {
-    styfn.arrowPrefixes.forEach(function (prefix) {
-      var name = prefix + '-' + prop.name;
-      var val = prop.value;
-
-      css[name] = val;
-    });
-
-    return css;
-  }, {}));
-
-  var parsedProps = {};
-
-  for (var i = 0; i < this.properties.length; i++) {
-    var prop = this.properties[i];
-
-    if (prop.pointsTo) {
-      continue;
-    }
-
-    var name = prop.name;
-    var val = rawProps[name];
-    var parsedProp = this.parse(name, val);
-
-    parsedProps[name] = parsedProp;
-  }
-
-  return parsedProps;
-});
-
-styfn.addDefaultStylesheet = function () {
-  this.selector('$node > node') // compound (parent) node properties
-  .css({
-    'shape': 'rectangle',
-    'padding': 10,
-    'background-color': '#eee',
-    'border-color': '#ccc',
-    'border-width': 1
-  }).selector('edge') // just edge properties
-  .css({
-    'width': 3,
-    'curve-style': 'haystack'
-  }).selector(':parent <-> node').css({
-    'curve-style': 'bezier',
-    'source-endpoint': 'outside-to-line',
-    'target-endpoint': 'outside-to-line'
-  }).selector(':selected').css({
-    'background-color': '#0169D9',
-    'line-color': '#0169D9',
-    'source-arrow-color': '#0169D9',
-    'target-arrow-color': '#0169D9',
-    'mid-source-arrow-color': '#0169D9',
-    'mid-target-arrow-color': '#0169D9'
-  }).selector('node:parent:selected').css({
-    'background-color': '#CCE1F9',
-    'border-color': '#aec8e5'
-  }).selector(':active').css({
-    'overlay-color': 'black',
-    'overlay-padding': 10,
-    'overlay-opacity': 0.25
-  }).selector('core') // just core properties
-  .css({
-    'selection-box-color': '#ddd',
-    'selection-box-opacity': 0.65,
-    'selection-box-border-color': '#aaa',
-    'selection-box-border-width': 1,
-    'active-bg-color': 'black',
-    'active-bg-opacity': 0.15,
-    'active-bg-size': 30,
-    'outside-texture-bg-color': '#000',
-    'outside-texture-bg-opacity': 0.125
-  });
-
-  this.defaultLength = this.length;
-};
-
-module.exports = styfn;
-
-/***/ }),
-/* 129 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var util = __webpack_require__(1);
-var Selector = __webpack_require__(6);
-
-var styfn = {};
-
-styfn.appendFromString = function (string) {
-  var self = this;
-  var style = this;
-  var remaining = '' + string;
-  var selAndBlockStr = void 0;
-  var blockRem = void 0;
-  var propAndValStr = void 0;
-
-  // remove comments from the style string
-  remaining = remaining.replace(/[/][*](\s|.)+?[*][/]/g, '');
-
-  function removeSelAndBlockFromRemaining() {
-    // remove the parsed selector and block from the remaining text to parse
-    if (remaining.length > selAndBlockStr.length) {
-      remaining = remaining.substr(selAndBlockStr.length);
-    } else {
-      remaining = '';
-    }
-  }
-
-  function removePropAndValFromRem() {
-    // remove the parsed property and value from the remaining block text to parse
-    if (blockRem.length > propAndValStr.length) {
-      blockRem = blockRem.substr(propAndValStr.length);
-    } else {
-      blockRem = '';
-    }
-  }
-
-  while (true) {
-    var nothingLeftToParse = remaining.match(/^\s*$/);
-    if (nothingLeftToParse) {
-      break;
-    }
-
-    var selAndBlock = remaining.match(/^\s*((?:.|\s)+?)\s*\{((?:.|\s)+?)\}/);
-
-    if (!selAndBlock) {
-      util.error('Halting stylesheet parsing: String stylesheet contains more to parse but no selector and block found in: ' + remaining);
-      break;
-    }
-
-    selAndBlockStr = selAndBlock[0];
-
-    // parse the selector
-    var selectorStr = selAndBlock[1];
-    if (selectorStr !== 'core') {
-      var selector = new Selector(selectorStr);
-      if (selector._private.invalid) {
-        util.error('Skipping parsing of block: Invalid selector found in string stylesheet: ' + selectorStr);
-
-        // skip this selector and block
-        removeSelAndBlockFromRemaining();
-        continue;
-      }
-    }
-
-    // parse the block of properties and values
-    var blockStr = selAndBlock[2];
-    var invalidBlock = false;
-    blockRem = blockStr;
-    var props = [];
-
-    while (true) {
-      var _nothingLeftToParse = blockRem.match(/^\s*$/);
-      if (_nothingLeftToParse) {
-        break;
-      }
-
-      var propAndVal = blockRem.match(/^\s*(.+?)\s*:\s*(.+?)\s*;/);
-
-      if (!propAndVal) {
-        util.error('Skipping parsing of block: Invalid formatting of style property and value definitions found in:' + blockStr);
-        invalidBlock = true;
-        break;
-      }
-
-      propAndValStr = propAndVal[0];
-      var propStr = propAndVal[1];
-      var valStr = propAndVal[2];
-
-      var prop = self.properties[propStr];
-      if (!prop) {
-        util.error('Skipping property: Invalid property name in: ' + propAndValStr);
-
-        // skip this property in the block
-        removePropAndValFromRem();
-        continue;
-      }
-
-      var parsedProp = style.parse(propStr, valStr);
-
-      if (!parsedProp) {
-        util.error('Skipping property: Invalid property definition in: ' + propAndValStr);
-
-        // skip this property in the block
-        removePropAndValFromRem();
-        continue;
-      }
-
-      props.push({
-        name: propStr,
-        val: valStr
-      });
-      removePropAndValFromRem();
-    }
-
-    if (invalidBlock) {
-      removeSelAndBlockFromRemaining();
-      break;
-    }
-
-    // put the parsed block in the style
-    style.selector(selectorStr);
-    for (var i = 0; i < props.length; i++) {
-      var _prop = props[i];
-      style.css(_prop.name, _prop.val);
-    }
-
-    removeSelAndBlockFromRemaining();
   }
 
   return style;
 };
 
-styfn.fromString = function (string) {
-  var style = this;
-
-  style.resetToDefault();
-  style.appendFromString(string);
-
-  return style;
-};
-
-module.exports = styfn;
-
-/***/ }),
-/* 130 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var is = __webpack_require__(0);
-
-module.exports = {
-  // get [r, g, b] from #abc or #aabbcc
-  hex2tuple: function hex2tuple(hex) {
-    if (!(hex.length === 4 || hex.length === 7) || hex[0] !== '#') {
-      return;
-    }
-
-    var shortHex = hex.length === 4;
-    var r = void 0,
-        g = void 0,
-        b = void 0;
-    var base = 16;
-
-    if (shortHex) {
-      r = parseInt(hex[1] + hex[1], base);
-      g = parseInt(hex[2] + hex[2], base);
-      b = parseInt(hex[3] + hex[3], base);
-    } else {
-      r = parseInt(hex[1] + hex[2], base);
-      g = parseInt(hex[3] + hex[4], base);
-      b = parseInt(hex[5] + hex[6], base);
-    }
-
-    return [r, g, b];
-  },
-
-  // get [r, g, b, a] from hsl(0, 0, 0) or hsla(0, 0, 0, 0)
-  hsl2tuple: function hsl2tuple(hsl) {
-    var ret = void 0;
-    var h = void 0,
-        s = void 0,
-        l = void 0,
-        a = void 0,
-        r = void 0,
-        g = void 0,
-        b = void 0;
-    function hue2rgb(p, q, t) {
-      if (t < 0) t += 1;
-      if (t > 1) t -= 1;
-      if (t < 1 / 6) return p + (q - p) * 6 * t;
-      if (t < 1 / 2) return q;
-      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
-      return p;
-    }
-
-    var m = new RegExp('^' + this.regex.hsla + '$').exec(hsl);
-    if (m) {
-
-      // get hue
-      h = parseInt(m[1]);
-      if (h < 0) {
-        h = (360 - -1 * h % 360) % 360;
-      } else if (h > 360) {
-        h = h % 360;
-      }
-      h /= 360; // normalise on [0, 1]
-
-      s = parseFloat(m[2]);
-      if (s < 0 || s > 100) {
-        return;
-      } // saturation is [0, 100]
-      s = s / 100; // normalise on [0, 1]
-
-      l = parseFloat(m[3]);
-      if (l < 0 || l > 100) {
-        return;
-      } // lightness is [0, 100]
-      l = l / 100; // normalise on [0, 1]
-
-      a = m[4];
-      if (a !== undefined) {
-        a = parseFloat(a);
-
-        if (a < 0 || a > 1) {
-          return;
-        } // alpha is [0, 1]
-      }
-
-      // now, convert to rgb
-      // code from http://mjijackson.com/2008/02/rgb-to-hsl-and-rgb-to-hsv-color-model-conversion-algorithms-in-javascript
-      if (s === 0) {
-        r = g = b = Math.round(l * 255); // achromatic
-      } else {
-        var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-        var p = 2 * l - q;
-        r = Math.round(255 * hue2rgb(p, q, h + 1 / 3));
-        g = Math.round(255 * hue2rgb(p, q, h));
-        b = Math.round(255 * hue2rgb(p, q, h - 1 / 3));
-      }
-
-      ret = [r, g, b, a];
-    }
-
-    return ret;
-  },
-
-  // get [r, g, b, a] from rgb(0, 0, 0) or rgba(0, 0, 0, 0)
-  rgb2tuple: function rgb2tuple(rgb) {
-    var ret = void 0;
-
-    var m = new RegExp('^' + this.regex.rgba + '$').exec(rgb);
-    if (m) {
-      ret = [];
-
-      var isPct = [];
-      for (var i = 1; i <= 3; i++) {
-        var channel = m[i];
-
-        if (channel[channel.length - 1] === '%') {
-          isPct[i] = true;
-        }
-        channel = parseFloat(channel);
-
-        if (isPct[i]) {
-          channel = channel / 100 * 255; // normalise to [0, 255]
-        }
-
-        if (channel < 0 || channel > 255) {
-          return;
-        } // invalid channel value
-
-        ret.push(Math.floor(channel));
-      }
-
-      var atLeastOneIsPct = isPct[1] || isPct[2] || isPct[3];
-      var allArePct = isPct[1] && isPct[2] && isPct[3];
-      if (atLeastOneIsPct && !allArePct) {
-        return;
-      } // must all be percent values if one is
-
-      var alpha = m[4];
-      if (alpha !== undefined) {
-        alpha = parseFloat(alpha);
-
-        if (alpha < 0 || alpha > 1) {
-          return;
-        } // invalid alpha value
-
-        ret.push(alpha);
-      }
-    }
-
-    return ret;
-  },
-
-  colorname2tuple: function colorname2tuple(color) {
-    return this.colors[color.toLowerCase()];
-  },
-
-  color2tuple: function color2tuple(color) {
-    return (is.array(color) ? color : null) || this.colorname2tuple(color) || this.hex2tuple(color) || this.rgb2tuple(color) || this.hsl2tuple(color);
-  },
-
-  colors: {
-    // special colour names
-    transparent: [0, 0, 0, 0], // NB alpha === 0
-
-    // regular colours
-    aliceblue: [240, 248, 255],
-    antiquewhite: [250, 235, 215],
-    aqua: [0, 255, 255],
-    aquamarine: [127, 255, 212],
-    azure: [240, 255, 255],
-    beige: [245, 245, 220],
-    bisque: [255, 228, 196],
-    black: [0, 0, 0],
-    blanchedalmond: [255, 235, 205],
-    blue: [0, 0, 255],
-    blueviolet: [138, 43, 226],
-    brown: [165, 42, 42],
-    burlywood: [222, 184, 135],
-    cadetblue: [95, 158, 160],
-    chartreuse: [127, 255, 0],
-    chocolate: [210, 105, 30],
-    coral: [255, 127, 80],
-    cornflowerblue: [100, 149, 237],
-    cornsilk: [255, 248, 220],
-    crimson: [220, 20, 60],
-    cyan: [0, 255, 255],
-    darkblue: [0, 0, 139],
-    darkcyan: [0, 139, 139],
-    darkgoldenrod: [184, 134, 11],
-    darkgray: [169, 169, 169],
-    darkgreen: [0, 100, 0],
-    darkgrey: [169, 169, 169],
-    darkkhaki: [189, 183, 107],
-    darkmagenta: [139, 0, 139],
-    darkolivegreen: [85, 107, 47],
-    darkorange: [255, 140, 0],
-    darkorchid: [153, 50, 204],
-    darkred: [139, 0, 0],
-    darksalmon: [233, 150, 122],
-    darkseagreen: [143, 188, 143],
-    darkslateblue: [72, 61, 139],
-    darkslategray: [47, 79, 79],
-    darkslategrey: [47, 79, 79],
-    darkturquoise: [0, 206, 209],
-    darkviolet: [148, 0, 211],
-    deeppink: [255, 20, 147],
-    deepskyblue: [0, 191, 255],
-    dimgray: [105, 105, 105],
-    dimgrey: [105, 105, 105],
-    dodgerblue: [30, 144, 255],
-    firebrick: [178, 34, 34],
-    floralwhite: [255, 250, 240],
-    forestgreen: [34, 139, 34],
-    fuchsia: [255, 0, 255],
-    gainsboro: [220, 220, 220],
-    ghostwhite: [248, 248, 255],
-    gold: [255, 215, 0],
-    goldenrod: [218, 165, 32],
-    gray: [128, 128, 128],
-    grey: [128, 128, 128],
-    green: [0, 128, 0],
-    greenyellow: [173, 255, 47],
-    honeydew: [240, 255, 240],
-    hotpink: [255, 105, 180],
-    indianred: [205, 92, 92],
-    indigo: [75, 0, 130],
-    ivory: [255, 255, 240],
-    khaki: [240, 230, 140],
-    lavender: [230, 230, 250],
-    lavenderblush: [255, 240, 245],
-    lawngreen: [124, 252, 0],
-    lemonchiffon: [255, 250, 205],
-    lightblue: [173, 216, 230],
-    lightcoral: [240, 128, 128],
-    lightcyan: [224, 255, 255],
-    lightgoldenrodyellow: [250, 250, 210],
-    lightgray: [211, 211, 211],
-    lightgreen: [144, 238, 144],
-    lightgrey: [211, 211, 211],
-    lightpink: [255, 182, 193],
-    lightsalmon: [255, 160, 122],
-    lightseagreen: [32, 178, 170],
-    lightskyblue: [135, 206, 250],
-    lightslategray: [119, 136, 153],
-    lightslategrey: [119, 136, 153],
-    lightsteelblue: [176, 196, 222],
-    lightyellow: [255, 255, 224],
-    lime: [0, 255, 0],
-    limegreen: [50, 205, 50],
-    linen: [250, 240, 230],
-    magenta: [255, 0, 255],
-    maroon: [128, 0, 0],
-    mediumaquamarine: [102, 205, 170],
-    mediumblue: [0, 0, 205],
-    mediumorchid: [186, 85, 211],
-    mediumpurple: [147, 112, 219],
-    mediumseagreen: [60, 179, 113],
-    mediumslateblue: [123, 104, 238],
-    mediumspringgreen: [0, 250, 154],
-    mediumturquoise: [72, 209, 204],
-    mediumvioletred: [199, 21, 133],
-    midnightblue: [25, 25, 112],
-    mintcream: [245, 255, 250],
-    mistyrose: [255, 228, 225],
-    moccasin: [255, 228, 181],
-    navajowhite: [255, 222, 173],
-    navy: [0, 0, 128],
-    oldlace: [253, 245, 230],
-    olive: [128, 128, 0],
-    olivedrab: [107, 142, 35],
-    orange: [255, 165, 0],
-    orangered: [255, 69, 0],
-    orchid: [218, 112, 214],
-    palegoldenrod: [238, 232, 170],
-    palegreen: [152, 251, 152],
-    paleturquoise: [175, 238, 238],
-    palevioletred: [219, 112, 147],
-    papayawhip: [255, 239, 213],
-    peachpuff: [255, 218, 185],
-    peru: [205, 133, 63],
-    pink: [255, 192, 203],
-    plum: [221, 160, 221],
-    powderblue: [176, 224, 230],
-    purple: [128, 0, 128],
-    red: [255, 0, 0],
-    rosybrown: [188, 143, 143],
-    royalblue: [65, 105, 225],
-    saddlebrown: [139, 69, 19],
-    salmon: [250, 128, 114],
-    sandybrown: [244, 164, 96],
-    seagreen: [46, 139, 87],
-    seashell: [255, 245, 238],
-    sienna: [160, 82, 45],
-    silver: [192, 192, 192],
-    skyblue: [135, 206, 235],
-    slateblue: [106, 90, 205],
-    slategray: [112, 128, 144],
-    slategrey: [112, 128, 144],
-    snow: [255, 250, 250],
-    springgreen: [0, 255, 127],
-    steelblue: [70, 130, 180],
-    tan: [210, 180, 140],
-    teal: [0, 128, 128],
-    thistle: [216, 191, 216],
-    tomato: [255, 99, 71],
-    turquoise: [64, 224, 208],
-    violet: [238, 130, 238],
-    wheat: [245, 222, 179],
-    white: [255, 255, 255],
-    whitesmoke: [245, 245, 245],
-    yellow: [255, 255, 0],
-    yellowgreen: [154, 205, 50]
-  }
-};
-
-/***/ }),
-/* 131 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var is = __webpack_require__(0);
-
-module.exports = {
-  // has anything been set in the map
-  mapEmpty: function mapEmpty(map) {
-    var empty = true;
-
-    if (map != null) {
-      return Object.keys(map).length === 0;
-    }
-
-    return empty;
-  },
-
-  // pushes to the array at the end of a map (map may not be built)
-  pushMap: function pushMap(options) {
-    var array = this.getMap(options);
-
-    if (array == null) {
-      // if empty, put initial array
-      this.setMap(this.extend({}, options, {
-        value: [options.value]
-      }));
-    } else {
-      array.push(options.value);
-    }
-  },
-
-  // sets the value in a map (map may not be built)
-  setMap: function setMap(options) {
-    var obj = options.map;
-    var key = void 0;
-    var keys = options.keys;
-    var l = keys.length;
-
-    for (var i = 0; i < l; i++) {
-      var _key = keys[i];
-
-      if (is.plainObject(_key)) {
-        this.error('Tried to set map with object key');
-      }
-
-      if (i < keys.length - 1) {
-
-        // extend the map if necessary
-        if (obj[_key] == null) {
-          obj[_key] = {};
-        }
-
-        obj = obj[_key];
-      } else {
-        // set the value
-        obj[_key] = options.value;
-      }
-    }
-  },
-
-  // gets the value in a map even if it's not built in places
-  getMap: function getMap(options) {
-    var obj = options.map;
-    var keys = options.keys;
-    var l = keys.length;
-
-    for (var i = 0; i < l; i++) {
-      var key = keys[i];
-
-      if (is.plainObject(key)) {
-        this.error('Tried to get map with object key');
-      }
-
-      obj = obj[key];
-
-      if (obj == null) {
-        return obj;
-      }
-    }
-
-    return obj;
-  },
-
-  // deletes the entry in the map
-  deleteMap: function deleteMap(options) {
-    var obj = options.map;
-    var keys = options.keys;
-    var l = keys.length;
-    var keepChildren = options.keepChildren;
-
-    for (var i = 0; i < l; i++) {
-      var key = keys[i];
-
-      if (is.plainObject(key)) {
-        this.error('Tried to delete map with object key');
-      }
-
-      var lastKey = i === options.keys.length - 1;
-      if (lastKey) {
-
-        if (keepChildren) {
-          // then only delete child fields not in keepChildren
-          var children = Object.keys(obj);
-
-          for (var j = 0; j < children.length; j++) {
-            var child = children[j];
-
-            if (!keepChildren[child]) {
-              obj[child] = undefined;
-            }
-          }
-        } else {
-          obj[key] = undefined;
-        }
-      } else {
-        obj = obj[key];
-      }
-    }
-  }
-};
-
-/***/ }),
-/* 132 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var number = '(?:[-+]?(?:(?:\\d+|\\d*\\.\\d+)(?:[Ee][+-]?\\d+)?))';
-
-var rgba = 'rgb[a]?\\((' + number + '[%]?)\\s*,\\s*(' + number + '[%]?)\\s*,\\s*(' + number + '[%]?)(?:\\s*,\\s*(' + number + '))?\\)';
-var rgbaNoBackRefs = 'rgb[a]?\\((?:' + number + '[%]?)\\s*,\\s*(?:' + number + '[%]?)\\s*,\\s*(?:' + number + '[%]?)(?:\\s*,\\s*(?:' + number + '))?\\)';
-
-var hsla = 'hsl[a]?\\((' + number + ')\\s*,\\s*(' + number + '[%])\\s*,\\s*(' + number + '[%])(?:\\s*,\\s*(' + number + '))?\\)';
-var hslaNoBackRefs = 'hsl[a]?\\((?:' + number + ')\\s*,\\s*(?:' + number + '[%])\\s*,\\s*(?:' + number + '[%])(?:\\s*,\\s*(?:' + number + '))?\\)';
-
-var hex3 = '\\#[0-9a-fA-F]{3}';
-var hex6 = '\\#[0-9a-fA-F]{6}';
-
-module.exports = {
-  regex: {
-    number: number,
-    rgba: rgba,
-    rgbaNoBackRefs: rgbaNoBackRefs,
-    hsla: hsla,
-    hslaNoBackRefs: hslaNoBackRefs,
-    hex3: hex3,
-    hex6: hex6
-  }
-};
-
-/***/ }),
-/* 133 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-function ascending(a, b) {
-  if (a < b) {
-    return -1;
-  } else if (a > b) {
-    return 1;
-  } else {
-    return 0;
-  }
-}
-
-function descending(a, b) {
-  return -1 * ascending(a, b);
-}
-
-module.exports = {
-  sort: {
-    ascending: ascending,
-    descending: descending
-  }
-};
-
-/***/ }),
-/* 134 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var memoize = __webpack_require__(19);
-var is = __webpack_require__(0);
-
-module.exports = {
-
-  camel2dash: memoize(function (str) {
-    return str.replace(/([A-Z])/g, function (v) {
-      return '-' + v.toLowerCase();
-    });
-  }),
-
-  dash2camel: memoize(function (str) {
-    return str.replace(/(-\w)/g, function (v) {
-      return v[1].toUpperCase();
-    });
-  }),
-
-  prependCamel: memoize(function (prefix, str) {
-    return prefix + str[0].toUpperCase() + str.substring(1);
-  }, function (prefix, str) {
-    return prefix + '$' + str;
-  }),
-
-  capitalize: function capitalize(str) {
-    if (is.emptyString(str)) {
-      return str;
-    }
-
-    return str.charAt(0).toUpperCase() + str.substring(1);
-  }
-
-};
-
-/***/ }),
-/* 135 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var window = __webpack_require__(4);
-var performance = window ? window.performance : null;
-
-var util = {};
-
-var pnow = performance && performance.now ? function () {
-  return performance.now();
-} : function () {
-  return Date.now();
-};
-
-var raf = function () {
-  if (window) {
-    if (window.requestAnimationFrame) {
-      return function (fn) {
-        window.requestAnimationFrame(fn);
-      };
-    } else if (window.mozRequestAnimationFrame) {
-      return function (fn) {
-        window.mozRequestAnimationFrame(fn);
-      };
-    } else if (window.webkitRequestAnimationFrame) {
-      return function (fn) {
-        window.webkitRequestAnimationFrame(fn);
-      };
-    } else if (window.msRequestAnimationFrame) {
-      return function (fn) {
-        window.msRequestAnimationFrame(fn);
-      };
-    }
-  }
-
-  return function (fn) {
-    if (fn) {
-      setTimeout(function () {
-        fn(pnow());
-      }, 1000 / 60);
-    }
-  };
-}();
-
-util.requestAnimationFrame = function (fn) {
-  raf(fn);
-};
-
-util.performanceNow = pnow;
-
-util.debounce = __webpack_require__(141);
-
-util.now = function () {
-  return Date.now();
-};
-
-module.exports = util;
-
-/***/ }),
-/* 136 */
-/***/ (function(module, exports) {
-
-// shim for using process in browser
-var process = module.exports = {};
-
-// cached from whatever global is present so that test runners that stub it
-// don't break things.  But we need to wrap it in a try catch in case it is
-// wrapped in strict mode code which doesn't define any globals.  It's inside a
-// function because try/catches deoptimize in certain engines.
-
-var cachedSetTimeout;
-var cachedClearTimeout;
-
-function defaultSetTimout() {
-    throw new Error('setTimeout has not been defined');
-}
-function defaultClearTimeout () {
-    throw new Error('clearTimeout has not been defined');
-}
-(function () {
-    try {
-        if (typeof setTimeout === 'function') {
-            cachedSetTimeout = setTimeout;
-        } else {
-            cachedSetTimeout = defaultSetTimout;
-        }
-    } catch (e) {
-        cachedSetTimeout = defaultSetTimout;
-    }
-    try {
-        if (typeof clearTimeout === 'function') {
-            cachedClearTimeout = clearTimeout;
-        } else {
-            cachedClearTimeout = defaultClearTimeout;
-        }
-    } catch (e) {
-        cachedClearTimeout = defaultClearTimeout;
-    }
-} ())
-function runTimeout(fun) {
-    if (cachedSetTimeout === setTimeout) {
-        //normal enviroments in sane situations
-        return setTimeout(fun, 0);
-    }
-    // if setTimeout wasn't available but was latter defined
-    if ((cachedSetTimeout === defaultSetTimout || !cachedSetTimeout) && setTimeout) {
-        cachedSetTimeout = setTimeout;
-        return setTimeout(fun, 0);
-    }
-    try {
-        // when when somebody has screwed with setTimeout but no I.E. maddness
-        return cachedSetTimeout(fun, 0);
-    } catch(e){
-        try {
-            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
-            return cachedSetTimeout.call(null, fun, 0);
-        } catch(e){
-            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
-            return cachedSetTimeout.call(this, fun, 0);
-        }
-    }
-
-
-}
-function runClearTimeout(marker) {
-    if (cachedClearTimeout === clearTimeout) {
-        //normal enviroments in sane situations
-        return clearTimeout(marker);
-    }
-    // if clearTimeout wasn't available but was latter defined
-    if ((cachedClearTimeout === defaultClearTimeout || !cachedClearTimeout) && clearTimeout) {
-        cachedClearTimeout = clearTimeout;
-        return clearTimeout(marker);
-    }
-    try {
-        // when when somebody has screwed with setTimeout but no I.E. maddness
-        return cachedClearTimeout(marker);
-    } catch (e){
-        try {
-            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
-            return cachedClearTimeout.call(null, marker);
-        } catch (e){
-            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
-            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
-            return cachedClearTimeout.call(this, marker);
-        }
-    }
-
-
-
-}
-var queue = [];
-var draining = false;
-var currentQueue;
-var queueIndex = -1;
-
-function cleanUpNextTick() {
-    if (!draining || !currentQueue) {
-        return;
-    }
-    draining = false;
-    if (currentQueue.length) {
-        queue = currentQueue.concat(queue);
-    } else {
-        queueIndex = -1;
-    }
-    if (queue.length) {
-        drainQueue();
-    }
-}
-
-function drainQueue() {
-    if (draining) {
-        return;
-    }
-    var timeout = runTimeout(cleanUpNextTick);
-    draining = true;
-
-    var len = queue.length;
-    while(len) {
-        currentQueue = queue;
-        queue = [];
-        while (++queueIndex < len) {
-            if (currentQueue) {
-                currentQueue[queueIndex].run();
-            }
-        }
-        queueIndex = -1;
-        len = queue.length;
-    }
-    currentQueue = null;
-    draining = false;
-    runClearTimeout(timeout);
-}
-
-process.nextTick = function (fun) {
-    var args = new Array(arguments.length - 1);
-    if (arguments.length > 1) {
-        for (var i = 1; i < arguments.length; i++) {
-            args[i - 1] = arguments[i];
-        }
-    }
-    queue.push(new Item(fun, args));
-    if (queue.length === 1 && !draining) {
-        runTimeout(drainQueue);
-    }
-};
-
-// v8 likes predictible objects
-function Item(fun, array) {
-    this.fun = fun;
-    this.array = array;
-}
-Item.prototype.run = function () {
-    this.fun.apply(null, this.array);
-};
-process.title = 'browser';
-process.browser = true;
-process.env = {};
-process.argv = [];
-process.version = ''; // empty string to avoid regexp issues
-process.versions = {};
-
-function noop() {}
-
-process.on = noop;
-process.addListener = noop;
-process.once = noop;
-process.off = noop;
-process.removeListener = noop;
-process.removeAllListeners = noop;
-process.emit = noop;
-process.prependListener = noop;
-process.prependOnceListener = noop;
-
-process.listeners = function (name) { return [] }
-
-process.binding = function (name) {
-    throw new Error('process.binding is not supported');
-};
-
-process.cwd = function () { return '/' };
-process.chdir = function (dir) {
-    throw new Error('process.chdir is not supported');
-};
-process.umask = function() { return 0; };
-
+module.exports = Stylesheet;
 
 /***/ }),
 /* 137 */
 /***/ (function(module, exports, __webpack_require__) {
 
-/* WEBPACK VAR INJECTION */(function(global, process) {(function (global, undefined) {
-    "use strict";
-
-    if (global.setImmediate) {
-        return;
-    }
-
-    var nextHandle = 1; // Spec says greater than zero
-    var tasksByHandle = {};
-    var currentlyRunningATask = false;
-    var doc = global.document;
-    var registerImmediate;
-
-    function setImmediate(callback) {
-      // Callback can either be a function or a string
-      if (typeof callback !== "function") {
-        callback = new Function("" + callback);
-      }
-      // Copy function arguments
-      var args = new Array(arguments.length - 1);
-      for (var i = 0; i < args.length; i++) {
-          args[i] = arguments[i + 1];
-      }
-      // Store and register the task
-      var task = { callback: callback, args: args };
-      tasksByHandle[nextHandle] = task;
-      registerImmediate(nextHandle);
-      return nextHandle++;
-    }
-
-    function clearImmediate(handle) {
-        delete tasksByHandle[handle];
-    }
-
-    function run(task) {
-        var callback = task.callback;
-        var args = task.args;
-        switch (args.length) {
-        case 0:
-            callback();
-            break;
-        case 1:
-            callback(args[0]);
-            break;
-        case 2:
-            callback(args[0], args[1]);
-            break;
-        case 3:
-            callback(args[0], args[1], args[2]);
-            break;
-        default:
-            callback.apply(undefined, args);
-            break;
-        }
-    }
-
-    function runIfPresent(handle) {
-        // From the spec: "Wait until any invocations of this algorithm started before this one have completed."
-        // So if we're currently running a task, we'll need to delay this invocation.
-        if (currentlyRunningATask) {
-            // Delay by doing a setTimeout. setImmediate was tried instead, but in Firefox 7 it generated a
-            // "too much recursion" error.
-            setTimeout(runIfPresent, 0, handle);
-        } else {
-            var task = tasksByHandle[handle];
-            if (task) {
-                currentlyRunningATask = true;
-                try {
-                    run(task);
-                } finally {
-                    clearImmediate(handle);
-                    currentlyRunningATask = false;
-                }
-            }
-        }
-    }
-
-    function installNextTickImplementation() {
-        registerImmediate = function(handle) {
-            process.nextTick(function () { runIfPresent(handle); });
-        };
-    }
-
-    function canUsePostMessage() {
-        // The test against `importScripts` prevents this implementation from being installed inside a web worker,
-        // where `global.postMessage` means something completely different and can't be used for this purpose.
-        if (global.postMessage && !global.importScripts) {
-            var postMessageIsAsynchronous = true;
-            var oldOnMessage = global.onmessage;
-            global.onmessage = function() {
-                postMessageIsAsynchronous = false;
-            };
-            global.postMessage("", "*");
-            global.onmessage = oldOnMessage;
-            return postMessageIsAsynchronous;
-        }
-    }
-
-    function installPostMessageImplementation() {
-        // Installs an event handler on `global` for the `message` event: see
-        // * https://developer.mozilla.org/en/DOM/window.postMessage
-        // * http://www.whatwg.org/specs/web-apps/current-work/multipage/comms.html#crossDocumentMessages
-
-        var messagePrefix = "setImmediate$" + Math.random() + "$";
-        var onGlobalMessage = function(event) {
-            if (event.source === global &&
-                typeof event.data === "string" &&
-                event.data.indexOf(messagePrefix) === 0) {
-                runIfPresent(+event.data.slice(messagePrefix.length));
-            }
-        };
-
-        if (global.addEventListener) {
-            global.addEventListener("message", onGlobalMessage, false);
-        } else {
-            global.attachEvent("onmessage", onGlobalMessage);
-        }
-
-        registerImmediate = function(handle) {
-            global.postMessage(messagePrefix + handle, "*");
-        };
-    }
-
-    function installMessageChannelImplementation() {
-        var channel = new MessageChannel();
-        channel.port1.onmessage = function(event) {
-            var handle = event.data;
-            runIfPresent(handle);
-        };
-
-        registerImmediate = function(handle) {
-            channel.port2.postMessage(handle);
-        };
-    }
-
-    function installReadyStateChangeImplementation() {
-        var html = doc.documentElement;
-        registerImmediate = function(handle) {
-            // Create a <script> element; its readystatechange event will be fired asynchronously once it is inserted
-            // into the document. Do so, thus queuing up the task. Remember to clean up once it's been called.
-            var script = doc.createElement("script");
-            script.onreadystatechange = function () {
-                runIfPresent(handle);
-                script.onreadystatechange = null;
-                html.removeChild(script);
-                script = null;
-            };
-            html.appendChild(script);
-        };
-    }
-
-    function installSetTimeoutImplementation() {
-        registerImmediate = function(handle) {
-            setTimeout(runIfPresent, 0, handle);
-        };
-    }
-
-    // If supported, we should attach to the prototype of global, since that is where setTimeout et al. live.
-    var attachTo = Object.getPrototypeOf && Object.getPrototypeOf(global);
-    attachTo = attachTo && attachTo.setTimeout ? attachTo : global;
-
-    // Don't get fooled by e.g. browserify environments.
-    if ({}.toString.call(global.process) === "[object process]") {
-        // For Node.js before 0.9
-        installNextTickImplementation();
-
-    } else if (canUsePostMessage()) {
-        // For non-IE10 modern browsers
-        installPostMessageImplementation();
-
-    } else if (global.MessageChannel) {
-        // For web workers, where supported
-        installMessageChannelImplementation();
-
-    } else if (doc && "onreadystatechange" in doc.createElement("script")) {
-        // For IE 6–8
-        installReadyStateChangeImplementation();
-
-    } else {
-        // For older browsers
-        installSetTimeoutImplementation();
-    }
-
-    attachTo.setImmediate = setImmediate;
-    attachTo.clearImmediate = clearImmediate;
-}(typeof self === "undefined" ? typeof global === "undefined" ? this : global : self));
-
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(139), __webpack_require__(136)))
-
-/***/ }),
-/* 138 */
-/***/ (function(module, exports, __webpack_require__) {
-
-var apply = Function.prototype.apply;
-
-// DOM APIs, for completeness
-
-exports.setTimeout = function() {
-  return new Timeout(apply.call(setTimeout, window, arguments), clearTimeout);
-};
-exports.setInterval = function() {
-  return new Timeout(apply.call(setInterval, window, arguments), clearInterval);
-};
-exports.clearTimeout =
-exports.clearInterval = function(timeout) {
-  if (timeout) {
-    timeout.close();
-  }
-};
-
-function Timeout(id, clearFn) {
-  this._id = id;
-  this._clearFn = clearFn;
-}
-Timeout.prototype.unref = Timeout.prototype.ref = function() {};
-Timeout.prototype.close = function() {
-  this._clearFn.call(window, this._id);
-};
-
-// Does not start the time, just sets up the members needed.
-exports.enroll = function(item, msecs) {
-  clearTimeout(item._idleTimeoutId);
-  item._idleTimeout = msecs;
-};
-
-exports.unenroll = function(item) {
-  clearTimeout(item._idleTimeoutId);
-  item._idleTimeout = -1;
-};
-
-exports._unrefActive = exports.active = function(item) {
-  clearTimeout(item._idleTimeoutId);
-
-  var msecs = item._idleTimeout;
-  if (msecs >= 0) {
-    item._idleTimeoutId = setTimeout(function onTimeout() {
-      if (item._onTimeout)
-        item._onTimeout();
-    }, msecs);
-  }
-};
-
-// setimmediate attaches itself to the global object
-__webpack_require__(137);
-exports.setImmediate = setImmediate;
-exports.clearImmediate = clearImmediate;
+"use strict";
 
 
-/***/ }),
-/* 139 */
-/***/ (function(module, exports) {
-
-var g;
-
-// This works in non-strict mode
-g = (function() {
-	return this;
-})();
-
-try {
-	// This works if eval is allowed (see CSP)
-	g = g || Function("return this")() || (1,eval)("this");
-} catch(e) {
-	// This works if the window reference is available
-	if(typeof window === "object")
-		g = window;
-}
-
-// g can still be undefined, but nothing to do about it...
-// We return undefined, instead of nothing here, so it's
-// easier to handle this case. if(!global) { ...}
-
-module.exports = g;
-
-
-/***/ }),
-/* 140 */
-/***/ (function(module, exports) {
-
-module.exports = __WEBPACK_EXTERNAL_MODULE_140__;
-
-/***/ }),
-/* 141 */
-/***/ (function(module, exports) {
-
-module.exports = __WEBPACK_EXTERNAL_MODULE_141__;
+module.exports = "3.2.9";
 
 /***/ })
 /******/ ]);

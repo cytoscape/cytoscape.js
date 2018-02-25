@@ -15,7 +15,7 @@ let util = {
 
   noop: function(){},
 
-  error: function( msg ){
+  error: function(){
     /* eslint-disable */
     if( console.error ){
       console.error.apply( console, arguments );

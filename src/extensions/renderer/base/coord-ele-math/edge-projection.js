@@ -28,7 +28,7 @@ BRp.storeEdgeProjections = function( edge ){
   _p.rstyle.haystackPts = null;
 
   if( et === 'multibezier' ||  et === 'bezier' ||  et === 'self' ||  et === 'compound' ){
-    var bpts = _p.rstyle.bezierPts = []; // jshint ignore:line
+    _p.rstyle.bezierPts = []; // jshint ignore:line
 
     for( var i = 0; i + 5 < rs.allpts.length; i += 4 ){
       pushBezierPts( this, edge, rs.allpts.slice( i, i + 6 ) );

@@ -311,12 +311,10 @@ CRp.render = function( options ){
   if( textureDraw ){
     r.textureDrawLastFrame = true;
 
-    var bb;
-
     if( !r.textureCache ){
       r.textureCache = {};
 
-      bb = r.textureCache.bb = cy.mutableElements().boundingBox();
+      r.textureCache.bb = cy.mutableElements().boundingBox();
 
       r.textureCache.texture = r.data.bufferCanvases[ r.TEXTURE_BUFFER ];
 
@@ -351,7 +349,6 @@ CRp.render = function( options ){
 
     var texture = r.textureCache.texture;
     var vp = r.textureCache.viewport;
-    bb = r.textureCache.bb;
 
     context.setTransform( 1, 0, 0, 1, 0, 0 );
 

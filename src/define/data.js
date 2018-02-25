@@ -16,10 +16,10 @@ let define = {
       triggerFnName: 'trigger',
       immutableKeys: {}, // key => true if immutable
       updateStyle: false,
-      beforeGet: function( self ){},
-      beforeSet: function( self, obj ){},
-      onSet: function( self ){},
-      canSet: function( self ){ return true; }
+      beforeGet: function(){},
+      beforeSet: function(){},
+      onSet: function(){},
+      canSet: function(){ return true; }
     };
     params = util.extend( {}, defaults, params );
 

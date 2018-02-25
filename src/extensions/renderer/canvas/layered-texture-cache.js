@@ -289,7 +289,7 @@ LTCp.getLayers = function( eles, pxRatio, lvl ){
 
 // a layer may want to use an ele cache of a higher level to avoid blurriness
 // so the layer level might not equal the ele level
-LTCp.getEleLevelForLayerLevel = function( lvl, pxRatio ){
+LTCp.getEleLevelForLayerLevel = function( lvl ){
   return lvl;
 };
 
@@ -449,7 +449,7 @@ LTCp.invalidateElements = function( eles ){
 
   if( eles.length === 0 || !self.haveLayers() ){ return; }
 
-  self.updateElementsInLayers( eles, function invalAssocLayers( layer, ele, req ){
+  self.updateElementsInLayers( eles, function invalAssocLayers( layer ){
     self.invalidateLayer( layer );
   } );
 };
@@ -492,7 +492,7 @@ LTCp.refineElementTextures = function( eles ){
 
   // log('refine', eles.length);
 
-  self.updateElementsInLayers( eles, function refineEachEle( layer, ele, req ){
+  self.updateElementsInLayers( eles, function refineEachEle( layer ){
     var rLyr = layer.replacement;
 
     if( !rLyr ){

@@ -10,11 +10,11 @@ let define = {
     p.trigger = p.emit;
 
     // this is just a wrapper alias of .on()
-    p.pon = p.promiseOn = function( events, selector ){
+    p.pon = p.promiseOn = function(){
       let self = this;
       let args = Array.prototype.slice.call( arguments, 0 );
 
-      return new Promise( function( resolve, reject ){
+      return new Promise( function( resolve ){
         let callback = function( e ){
           self.off.apply( self, offArgs );
 

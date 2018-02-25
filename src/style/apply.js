@@ -283,7 +283,7 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
   let self = this;
   let prop = parsedProp;
   let style = ele._private.style;
-  let fieldVal, flatProp;
+  let flatProp;
   let types = self.types;
   let type = self.properties[ prop.name ].type;
   let propIsBypass = prop.bypass;
@@ -564,7 +564,7 @@ styfn.updateMappers = function( eles ){
 };
 
 // diffProps : { name => { prev, next } }
-styfn.updateTransitions = function( ele, diffProps, isBypass ){
+styfn.updateTransitions = function( ele, diffProps ){
   let self = this;
   let _p = ele._private;
   let props = ele.pstyle( 'transition-property' ).value;

@@ -77,7 +77,7 @@ styfn.css = function(){
   let args = arguments;
 
   switch( args.length ){
-  case 1:
+  case 1: {
     let map = args[0];
 
     for( let i = 0; i < self.properties.length; i++ ){
@@ -94,6 +94,7 @@ styfn.css = function(){
     }
 
     break;
+  }
 
   case 2:
     this.cssRule( args[0], args[1] );

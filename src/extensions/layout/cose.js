@@ -40,7 +40,7 @@ var defaults = {
   // A function that determines whether the node should be animated
   // All nodes animated by default on animate enabled
   // Non-animated nodes are positioned immediately when the layout starts
-  animateFilter: function ( node, i ){ return true; },
+  animateFilter: function (){ return true; },
 
 
   // The layout animates only after this many milliseconds for animate:true
@@ -70,16 +70,16 @@ var defaults = {
   componentSpacing: 40,
 
   // Node repulsion (non overlapping) multiplier
-  nodeRepulsion: function( node ){ return 2048; },
+  nodeRepulsion: function(){ return 2048; },
 
   // Node repulsion (overlapping) multiplier
   nodeOverlap: 4,
 
   // Ideal edge (non nested) length
-  idealEdgeLength: function( edge ){ return 32; },
+  idealEdgeLength: function(){ return 32; },
 
   // Divisor to compute edge forces
-  edgeElasticity: function( edge ){ return 32; },
+  edgeElasticity: function(){ return 32; },
 
   // Nesting factor (multiplier) to compute ideal edge length for nested edges
   nestingFactor: 1.2,
@@ -257,7 +257,7 @@ CoseLayout.prototype.run = function(){
      * @arg cy         : Cytoscape object
      * @arg options    : Layout options
      */
-    var step = function( layoutInfo, options, step ){
+    var step = function( layoutInfo, options ){
       // var s = "\n\n###############################";
       // s += "\nSTEP: " + step;
       // s += "\n###############################\n";
@@ -501,7 +501,7 @@ CoseLayout.prototype.run = function(){
     /**
      * @brief : Calculates all edge forces
      */
-    var calculateEdgeForces = function( layoutInfo, options ){
+    var calculateEdgeForces = function( layoutInfo ){
       // Iterate over all edges
       for( var i = 0; i < layoutInfo.edgeSize; i++ ){
         // Get edge, source & target nodes
@@ -617,7 +617,7 @@ CoseLayout.prototype.run = function(){
      * @arg cy         : cytoscape Object
      * @arg options    : Layout options
      */
-    var propagateForces = function( layoutInfo, options ){
+    var propagateForces = function( layoutInfo ){
       // Inline implementation of a queue, used for traversing the graph in BFS order
       var queue = [];
       var start = 0;   // Points to the start the queue
@@ -668,7 +668,7 @@ CoseLayout.prototype.run = function(){
      * @brief : Updates the layout model positions, based on
      *          the accumulated forces
      */
-    var updatePositions = function( layoutInfo, options ){
+    var updatePositions = function( layoutInfo ){
       // var s = 'Updating positions';
       // logDebug(s);
 
@@ -1321,7 +1321,7 @@ var printLayoutInfo = function( layoutInfo ){
 /**
  * @brief : Randomizes the position of all nodes
  */
-var randomizePositions = function( layoutInfo, cy ){
+var randomizePositions = function( layoutInfo ){
   var width     = layoutInfo.clientWidth;
   var height    = layoutInfo.clientHeight;
 
@@ -1367,7 +1367,7 @@ var refreshPositions = function( layoutInfo, cy, options ){
     coseBB.h = coseBB.y2 - coseBB.y1;
   }
 
-  nodes.positions( function( ele, i ){
+  nodes.positions( function( ele ){
     var lnode = layoutInfo.layoutNodes[ layoutInfo.idToIndex[ ele.data( 'id' ) ] ];
     // s = "Node: " + lnode.id + ". Refreshed position: (" +
     // lnode.positionX + ", " + lnode.positionY + ").";

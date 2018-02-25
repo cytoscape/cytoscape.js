@@ -201,7 +201,7 @@ api.all = function( ps ){
 };
 
 api.resolve = function( val ){
-  return new api(function( resolve, reject ){ resolve( val ); });
+  return new api(function( resolve ){ resolve( val ); });
 };
 
 api.reject = function( val ){

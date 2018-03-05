@@ -62,4 +62,4 @@ BRp.getCachedZSortedEles = function( forceRecalc ){
   return eles;
 };
 
-module.exports = BRp
+module.exports = BRp;

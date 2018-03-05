@@ -19,11 +19,14 @@ NullLayout.prototype.run = function(){
   let layout = this;
 
   // cy is automatically populated for us in the constructor
-  let cy = options.cy; // jshint ignore:line
+  // (disable eslint for next line as this serves as example layout code to external developers)
+  // eslint-disable-next-line no-unused-vars
+  let cy = options.cy;
 
   layout.emit( 'layoutstart' );
 
   // puts all nodes at (0, 0)
+  // n.b. most layouts would use layoutPositions(), instead of positions() and manual events
   eles.nodes().positions( function(){
     return {
       x: 0,

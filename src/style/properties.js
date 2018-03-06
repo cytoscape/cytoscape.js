@@ -65,7 +65,7 @@ let styfn = {};
       'tag', 'star', 'diamond', 'vee', 'rhomboid', 'polygon'
     ] },
     compoundIncludeLabels: { enums: [ 'include', 'exclude' ] },
-    arrowShape: { enums: [ 'tee', 'triangle', 'triangle-tee', 'triangle-cross', 'triangle-backcurve', 'vee', 'square', 'circle', 'diamond', 'none' ] },
+    arrowShape: { enums: [ 'tee', 'triangle', 'triangle-tee', 'triangle-cross', 'triangle-backcurve', 'half-triangle-overshot', 'vee', 'square', 'circle', 'diamond', 'chevron', 'none' ] },
     arrowFill: { enums: [ 'filled', 'hollow' ] },
     display: { enums: [ 'element', 'none' ] },
     visibility: { enums: [ 'hidden', 'visible' ] },

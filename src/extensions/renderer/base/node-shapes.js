@@ -221,9 +221,26 @@ BRp.generateBarrel = function(){
     },
 
     intersectLine: function( nodeX, nodeY, width, height, x, y, padding ){
+      // a fixed t value for the bezier point calculation
+      var constant_t = 0.4;
+
       var bPts = this.generateBarrelBezierPts( width + 2*padding, height + 2*padding, nodeX, nodeY );
 
-      var pts = [].concat(bPts.topLeft, bPts.topRight, bPts.bottomRight, bPts.bottomLeft);
+      var approximateBarrelCurvePts = pts => {
+        var midpoint = math.qbezierPtAt({x: pts[0], y: pts[1]}, {x: pts[2], y: pts[3]}, {x: pts[4], y: pts[5]}, constant_t);
+        return [
+          pts[0],pts[1],
+          midpoint.x, midpoint.y,
+          pts[4], pts[5]
+        ];
+      };
+
+      var pts = [].concat(
+        approximateBarrelCurvePts(bPts.topLeft),
+        approximateBarrelCurvePts(bPts.topRight),
+        approximateBarrelCurvePts(bPts.bottomRight),
+        approximateBarrelCurvePts(bPts.bottomLeft)
+      );
 
       return math.polygonIntersectLine( x, y, pts, nodeX, nodeY );
     },

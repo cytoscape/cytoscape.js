@@ -221,16 +221,21 @@ BRp.generateBarrel = function(){
     },
 
     intersectLine: function( nodeX, nodeY, width, height, x, y, padding ){
-      // a fixed t value for the bezier point calculation
-      var constant_t = 0.4;
+      // use two fixed t values for the bezier curve approximation
+      var t0 = 0.45;
+      var t1 = 1;
 
       var bPts = this.generateBarrelBezierPts( width + 2*padding, height + 2*padding, nodeX, nodeY );
 
       var approximateBarrelCurvePts = pts => {
-        var midpoint = math.qbezierPtAt({x: pts[0], y: pts[1]}, {x: pts[2], y: pts[3]}, {x: pts[4], y: pts[5]}, constant_t);
+        // approximate curve pts based on the two t values
+        var m0 = math.qbezierPtAt({x: pts[0], y: pts[1]}, {x: pts[2], y: pts[3]}, {x: pts[4], y: pts[5]}, t0);
+        var m1 = math.qbezierPtAt({x: pts[0], y: pts[1]}, {x: pts[2], y: pts[3]}, {x: pts[4], y: pts[5]}, t1);
+
         return [
           pts[0],pts[1],
-          midpoint.x, midpoint.y,
+          m0.x, m0.y,
+          m1.x, m1.y,
           pts[4], pts[5]
         ];
       };

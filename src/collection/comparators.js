@@ -1,4 +1,3 @@
-let is = require('../is');
 let Selector = require('../selector');
 
 let elesfn = ({

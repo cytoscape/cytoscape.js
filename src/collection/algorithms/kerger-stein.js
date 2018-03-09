@@ -4,10 +4,8 @@ var elesfn = ({
 
   // Computes the minimum cut of an undirected graph
   // Returns the correct answer with high probability
-  kargerStein: function( options ){
+  kargerStein: function(){
     var eles = this;
-
-    options = options || {};
 
     // Function which colapses 2 (meta) nodes into one
     // Updates the remaining edge lists

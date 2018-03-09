@@ -420,7 +420,7 @@ util.extend( elesfn, {
       self.bfs({
         directed: false,
         roots: root,
-        visit: function( v, e, u, i, depth ){
+        visit: function( v ){
           visitInComponent( v, component );
         }
       } );

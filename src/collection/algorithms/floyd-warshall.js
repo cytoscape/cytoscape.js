@@ -13,7 +13,7 @@ var elesfn = ({
       var weightFn = options.weight;
     } else {
       // If not specified, assume each edge has equal weight (1)
-      var weightFn = function( e ){return 1;};
+      var weightFn = function(){return 1;};
     }
 
     // directed - optional

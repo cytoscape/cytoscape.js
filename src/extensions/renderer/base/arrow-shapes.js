@@ -108,7 +108,7 @@ BRp.registerArrowShapes = function(){
         renderer.arrowShapeImpl( 'polygon' )( context, points );
       },
 
-      spacing: function( edge ){
+      spacing: function(){
         return 0;
       },
 
@@ -145,7 +145,7 @@ BRp.registerArrowShapes = function(){
 
     roughCollide: bbCollide,
 
-    draw: function( context, size, angle, translation, edgeWidth ){
+    draw: function( context, size, angle, translation ){
       var ptsTrans = transformPoints( this.points, size, angle, translation );
       var ctrlPt = this.controlPoint;
       var ctrlPtTrans = transform( ctrlPt[0], ctrlPt[1], size, angle, translation );
@@ -183,7 +183,7 @@ BRp.registerArrowShapes = function(){
       return inside;
     },
 
-    draw: function( context, size, angle, translation, edgeWidth ){
+    draw: function( context, size, angle, translation ){
       var triPts = transformPoints( this.points, size, angle, translation );
       var teePts = transformPoints( this.pointsTee, size, angle, translation );
 
@@ -258,7 +258,7 @@ BRp.registerArrowShapes = function(){
       return inside;
     },
 
-    draw: function( context, size, angle, translation, edgeWidth ){
+    draw: function( context, size, angle, translation ){
       renderer.arrowShapeImpl( this.name )( context, translation.x, translation.y, this.radius * size );
     },
 
@@ -276,11 +276,11 @@ BRp.registerArrowShapes = function(){
       0.15, 0
     ],
 
-    spacing: function( edge ){
+    spacing: function(){
       return 1;
     },
 
-    gap: function( edge ){
+    gap: function(){
       return 1;
     }
   } );

@@ -28,7 +28,6 @@ module.exports = {
   // sets the value in a map (map may not be built)
   setMap: function( options ){
     let obj = options.map;
-    let key;
     let keys = options.keys;
     let l = keys.length;
 

@@ -111,8 +111,8 @@ CRp.bufferCanvasImage = function( options ){
 
 function b64ToBlob( b64, mimeType ){
   var bytes = atob( b64 );
-  var buff = new ArrayBuffer( bytes.length );
-  var buffUint8 = new Uint8Array( buff );
+  var buff = new window.ArrayBuffer( bytes.length );
+  var buffUint8 = new window.Uint8Array( buff );
 
   for( var i = 0; i < bytes.length; i++ ){
     buffUint8[i] = bytes.charCodeAt(i);
@@ -125,7 +125,7 @@ function b64UriToB64( b64uri ){
   var i = b64uri.indexOf(',');
 
   return b64uri.substr( i + 1 );
-};
+}
 
 function output( options, canvas, mimeType ){
   var b64Uri = canvas.toDataURL( mimeType, options.quality );

@@ -37,7 +37,6 @@ CRp.drawElementText = function( context, ele, force ){
     if( !label || !label.value ){ return; }
 
     var textHalign = ele.pstyle( 'text-halign' ).strValue;
-    var textValign = ele.pstyle( 'text-valign' ).strValue;
 
     switch( textHalign ){
       case 'left':
@@ -176,7 +175,6 @@ CRp.drawText = function( context, ele, prefix ){
     var marginY = ele.pstyle( pdash + 'text-margin-y' ).pfValue;
 
     var isEdge = ele.isEdge();
-    var isNode = ele.isNode();
 
     var halign = ele.pstyle( 'text-halign' ).value;
     var valign = ele.pstyle( 'text-valign' ).value;

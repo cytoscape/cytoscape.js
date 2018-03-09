@@ -8,7 +8,7 @@ let defaults = {
   animate: false, // whether to transition the node positions
   animationDuration: 500, // duration of animation in ms if enabled
   animationEasing: undefined, // easing of animation if enabled
-  animateFilter: function ( node, i ){ return true; }, // a function that determines whether the node should be animated.  All nodes animated by default on animate enabled.  Non-animated nodes are positioned immediately when the layout starts
+  animateFilter: function (){ return true; }, // a function that determines whether the node should be animated.  All nodes animated by default on animate enabled.  Non-animated nodes are positioned immediately when the layout starts
   ready: undefined, // callback on layoutready
   stop: undefined, // callback on layoutstop
   transform: function (node, position ){ return position; } // transform a given node position. Useful for changing flow direction in discrete layouts 
@@ -28,7 +28,7 @@ RandomLayout.prototype.run = function(){
     x1: 0, y1: 0, w: cy.width(), h: cy.height()
   } );
 
-  let getPos = function( node, i ){
+  let getPos = function(){
     return {
       x: bb.x1 + Math.round( Math.random() * bb.w ),
       y: bb.y1 + Math.round( Math.random() * bb.h )

@@ -2,6 +2,7 @@
     "env": {
         "commonjs": true,
         "shared-node-browser": true,
+        "browser": true,
         "node": true,
         "mocha": true
     },

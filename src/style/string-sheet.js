@@ -32,6 +32,7 @@ styfn.appendFromString = function( string ){
     }
   }
 
+  // eslint-disable-next-line
   while( true ){
     let nothingLeftToParse = remaining.match( /^\s*$/ );
     if( nothingLeftToParse ){ break; }
@@ -64,6 +65,7 @@ styfn.appendFromString = function( string ){
     blockRem = blockStr;
     let props = [];
 
+    // eslint-disable-next-line
     while( true ){
       let nothingLeftToParse = blockRem.match( /^\s*$/ );
       if( nothingLeftToParse ){ break; }

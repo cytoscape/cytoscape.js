@@ -219,7 +219,7 @@ util.extend( anifn, {
         arr = _p.completes;
     }
 
-    return new Promise( function( resolve, reject ){
+    return new Promise( function( resolve ){
       arr.push( function(){
         resolve();
       } );

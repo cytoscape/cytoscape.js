@@ -1,7 +1,3 @@
-/* global Set */
-
-const undef = typeof undefined;
-
 class ObjectSet {
   constructor( arrayOrObjectSet ){
     this._obj = Object.create(null);

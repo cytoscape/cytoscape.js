@@ -18,9 +18,6 @@ NullLayout.prototype.run = function(){
   let eles = options.eles; // elements to consider in the layout
   let layout = this;
 
-  // cy is automatically populated for us in the constructor
-  let cy = options.cy; // jshint ignore:line
-
   layout.emit( 'layoutstart' );
 
   // puts all nodes at (0, 0)

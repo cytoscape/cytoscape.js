@@ -53,15 +53,11 @@ BRp.findContainerClientCoords = function(){
   var paddingVer = padding.top + padding.bottom;
 
   var borderHor = border.left + border.right;
-  var borderVer = border.top + border.bottom;
 
   var scale = rect.width / ( clientWidth + borderHor );
 
   var unscaledW = clientWidth - paddingHor;
   var unscaledH = clientHeight - paddingVer;
-
-  var scaledW = rect.width - (paddingHor + borderHor) * scale;
-  var scaledH = rect.height - (paddingVer + borderVer) * scale;
 
   var left = rect.left + padding.left + border.left;
   var top = rect.top + padding.top + border.top;
@@ -167,7 +163,6 @@ BRp.findNearestElements = function( x, y, interactiveElementsOnly, isTouch ){
     var width2 = width * 2;
     var src = _p.source;
     var tgt = _p.target;
-    var inEdgeBB = false;
     var sqDist;
 
     if( rs.edgeType === 'segments' || rs.edgeType === 'straight' || rs.edgeType === 'haystack' ){
@@ -175,7 +170,7 @@ BRp.findNearestElements = function( x, y, interactiveElementsOnly, isTouch ){
 
       for( var i = 0; i + 3 < pts.length; i += 2 ){
         if(
-          (inEdgeBB = math.inLineVicinity( x, y, pts[ i ], pts[ i + 1], pts[ i + 2], pts[ i + 3], width2 ))
+          (math.inLineVicinity( x, y, pts[ i ], pts[ i + 1], pts[ i + 2], pts[ i + 3], width2 ))
             &&
           widthSq > ( sqDist = math.sqdistToFiniteLine( x, y, pts[ i ], pts[ i + 1], pts[ i + 2], pts[ i + 3] ) )
         ){
@@ -188,7 +183,7 @@ BRp.findNearestElements = function( x, y, interactiveElementsOnly, isTouch ){
       var pts = rs.allpts;
       for( var i = 0; i + 5 < rs.allpts.length; i += 4 ){
         if(
-          (inEdgeBB = math.inBezierVicinity( x, y, pts[ i ], pts[ i + 1], pts[ i + 2], pts[ i + 3], pts[ i + 4], pts[ i + 5], width2 ))
+          (math.inBezierVicinity( x, y, pts[ i ], pts[ i + 1], pts[ i + 2], pts[ i + 3], pts[ i + 4], pts[ i + 5], width2 ))
             &&
           (widthSq > (sqDist = math.sqdistToQuadraticBezier( x, y, pts[ i ], pts[ i + 1], pts[ i + 2], pts[ i + 3], pts[ i + 4], pts[ i + 5] )) )
         ){

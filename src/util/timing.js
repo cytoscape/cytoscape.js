@@ -24,7 +24,7 @@ var raf = (function(){
         fn( pnow() );
       }, 1000 / 60 );
     }
-  }
+  };
 })();
 
 util.requestAnimationFrame = function( fn ){

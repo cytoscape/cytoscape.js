@@ -222,8 +222,10 @@ BRp.generateBarrel = function(){
 
     intersectLine: function( nodeX, nodeY, width, height, x, y, padding ){
       // use two fixed t values for the bezier curve approximation
-      var t0 = 0.45;
-      var t1 = 1;
+
+      var t0 = 0.15;
+      var t1 = 0.5;
+      var t2 = 0.85;
 
       var bPts = this.generateBarrelBezierPts( width + 2*padding, height + 2*padding, nodeX, nodeY );
 
@@ -231,11 +233,13 @@ BRp.generateBarrel = function(){
         // approximate curve pts based on the two t values
         var m0 = math.qbezierPtAt({x: pts[0], y: pts[1]}, {x: pts[2], y: pts[3]}, {x: pts[4], y: pts[5]}, t0);
         var m1 = math.qbezierPtAt({x: pts[0], y: pts[1]}, {x: pts[2], y: pts[3]}, {x: pts[4], y: pts[5]}, t1);
+        var m2 = math.qbezierPtAt({x: pts[0], y: pts[1]}, {x: pts[2], y: pts[3]}, {x: pts[4], y: pts[5]}, t2);
 
         return [
           pts[0],pts[1],
           m0.x, m0.y,
           m1.x, m1.y,
+          m2.x, m2.y,
           pts[4], pts[5]
         ];
       };

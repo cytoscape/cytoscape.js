@@ -2524,7 +2524,7 @@ elesfn.remove = function (notifyRenderer) {
 
   function add(ele) {
     var alreadyAdded = elesToRemoveIds[ele.id()];
-    if (alreadyAdded) {
+    if (ele.removed() || alreadyAdded) {
       return;
     } else {
       elesToRemoveIds[ele.id()] = true;
@@ -25571,9 +25571,24 @@ BRp.generateBarrel = function () {
     },
 
     intersectLine: function intersectLine(nodeX, nodeY, width, height, x, y, padding) {
+      // use two fixed t values for the bezier curve approximation
+
+      var t0 = 0.15;
+      var t1 = 0.5;
+      var t2 = 0.85;
+
       var bPts = this.generateBarrelBezierPts(width + 2 * padding, height + 2 * padding, nodeX, nodeY);
 
-      var pts = [].concat(bPts.topLeft, bPts.topRight, bPts.bottomRight, bPts.bottomLeft);
+      var approximateBarrelCurvePts = function approximateBarrelCurvePts(pts) {
+        // approximate curve pts based on the two t values
+        var m0 = math.qbezierPtAt({ x: pts[0], y: pts[1] }, { x: pts[2], y: pts[3] }, { x: pts[4], y: pts[5] }, t0);
+        var m1 = math.qbezierPtAt({ x: pts[0], y: pts[1] }, { x: pts[2], y: pts[3] }, { x: pts[4], y: pts[5] }, t1);
+        var m2 = math.qbezierPtAt({ x: pts[0], y: pts[1] }, { x: pts[2], y: pts[3] }, { x: pts[4], y: pts[5] }, t2);
+
+        return [pts[0], pts[1], m0.x, m0.y, m1.x, m1.y, m2.x, m2.y, pts[4], pts[5]];
+      };
+
+      var pts = [].concat(approximateBarrelCurvePts(bPts.topLeft), approximateBarrelCurvePts(bPts.topRight), approximateBarrelCurvePts(bPts.bottomRight), approximateBarrelCurvePts(bPts.bottomLeft));
 
       return math.polygonIntersectLine(x, y, pts, nodeX, nodeY);
     },
@@ -29813,7 +29828,7 @@ module.exports = Stylesheet;
 "use strict";
 
 
-module.exports = "3.2.9";
+module.exports = "3.2.10";
 
 /***/ })
 /******/ ]);

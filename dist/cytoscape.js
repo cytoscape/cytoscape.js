@@ -2,7 +2,7 @@
 
 /*!
 
-Cytoscape.js 2.7.27 (MIT licensed)
+Cytoscape.js 2.7.28 (MIT licensed)
 
 Copyright (c) The Cytoscape Consortium
 
@@ -4617,7 +4617,7 @@ elesfn.remove = function( notifyRenderer ){
 
   function add( ele ){
     var alreadyAdded =  elesToRemoveIds[ ele.id() ];
-    if( alreadyAdded ){
+    if( ele.removed() || alreadyAdded ){
       return;
     } else {
       elesToRemoveIds[ ele.id() ] = true;
@@ -27433,7 +27433,7 @@ util.debounce = function( func, wait, options ){ // ported lodash debounce funct
 module.exports = util;
 
 },{"../is":83,"../window":107}],106:[function(_dereq_,module,exports){
-module.exports = "2.7.27";
+module.exports = "2.7.28";
 
 },{}],107:[function(_dereq_,module,exports){
 module.exports = ( typeof window === 'undefined' ? null : window ); // eslint-disable-line no-undef

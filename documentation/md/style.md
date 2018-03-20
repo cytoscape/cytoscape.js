@@ -518,7 +518,7 @@ The ghost properties allow for creating a ghosting effect, a semitransparent dup
 
 ## Transition animation
 
- * **`transition-property`** : A comma separated list of style properties to animate in this state.
+ * **`transition-property`** : A space-separated list of style properties to animate in this state.
  * **`transition-duration`** : The length of the transition in seconds (e.g. `0.5s`).
  * **`transition-delay`** : The length of the delay in seconds before the transition occurs (e.g. `250ms`).
  * **`transition-timing-function`** : An easing function that controls the animation progress curve; may be one of the following values.  A [visualisation](http://easings.net/) of easings serves as a reference.

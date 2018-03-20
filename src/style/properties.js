@@ -46,6 +46,7 @@ let styfn = {};
     bgCrossOrigin: { enums: [ 'anonymous', 'use-credentials' ], multiple: true },
     bgClip: { enums: [ 'none', 'node' ] },
     color: { color: true },
+    colors: { color: true, multiple: true },
     bool: { enums: [ 'yes', 'no' ] },
     lineStyle: { enums: [ 'solid', 'dotted', 'dashed' ] },
     lineCap: { enums: [ 'butt', 'round', 'square' ] },

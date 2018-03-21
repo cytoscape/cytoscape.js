@@ -353,6 +353,7 @@ For explicit specification of a straight edge with endpoint arrows allowed (`cur
   * `square`
   * `circle`
   * `diamond`
+  * `chevron`
   * `none`
 * **`<pos>-arrow-fill`** : The fill state of the edge's source arrow; may be `filled` or `hollow`.
 * **`arrow-scale`** : Scaling for the arrow size; may be any number >= 0.

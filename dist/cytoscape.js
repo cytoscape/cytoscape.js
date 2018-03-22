@@ -2,7 +2,7 @@
 
 /*!
 
-Cytoscape.js 2.7.28 (MIT licensed)
+Cytoscape.js 2.7.29 (MIT licensed)
 
 Copyright (c) The Cytoscape Consortium
 
@@ -19733,6 +19733,25 @@ function CanvasRenderer( options ){
         // then keep cached ele texture
       } else {
         r.data.eleTxrCache.invalidateElement( ele );
+
+        // NB this block of code should not be ported to 3.3 (unstable branch).
+        // - This check is unneccesary in 3.3 as caches will be stored without respect to opacity.
+        // - This fix may result in lowered performance for compound graphs.
+        // - Ref : Opacity of child node is not updated for certain zoom levels after parent opacity is overriden #2078
+        if( ele.isParent() && de['style'] ){
+          var op1 = rs.prevParentOpacity;
+          var op2 = ele.pstyle('opacity').pfValue;
+
+          rs.prevParentOpacity = op2;
+
+          if( op1 !== op2 ){
+            var descs = ele.descendants();
+
+            for( var j = 0; j < descs.length; j++ ){
+              r.data.eleTxrCache.invalidateElement( descs[j] );
+            }
+          }
+        }
       }
     }
 
@@ -27433,7 +27452,7 @@ util.debounce = function( func, wait, options ){ // ported lodash debounce funct
 module.exports = util;
 
 },{"../is":83,"../window":107}],106:[function(_dereq_,module,exports){
-module.exports = "2.7.28";
+module.exports = "2.7.29";
 
 },{}],107:[function(_dereq_,module,exports){
 module.exports = ( typeof window === 'undefined' ? null : window ); // eslint-disable-line no-undef

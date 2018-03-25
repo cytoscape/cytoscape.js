@@ -90,7 +90,7 @@
     "watch:build:umd": "cross-env NODE_ENV=production FILENAME=cytoscape.umd.js MINIFY=false BABEL=true SOURCEMAPS=false webpack --progress --watch",
     "test": "mocha",
     "test:build": "cross-env TEST_BUILD=true mocha",
-    "test:travis": "run-s build:umd test:build",
+    "test:travis": "run-s build:umd test:build lint",
     "sniper": "sniper .",
     "docs": "run-s docs:build docs:js",
     "docs:js": "cpy build/cytoscape.min.js documentation/js",

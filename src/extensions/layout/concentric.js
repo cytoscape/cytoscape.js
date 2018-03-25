@@ -27,7 +27,7 @@ let defaults = {
   animateFilter: function ( node, i ){ return true; }, // a function that determines whether the node should be animated.  All nodes animated by default on animate enabled.  Non-animated nodes are positioned immediately when the layout starts
   ready: undefined, // callback on layoutready
   stop: undefined, // callback on layoutstop
-  transform: function (node, position ){ return position; } // transform a given node position. Useful for changing flow direction in discrete layouts 
+  transform: function (node, position ){ return position; } // transform a given node position. Useful for changing flow direction in discrete layouts
 };
 
 function ConcentricLayout( options ){
@@ -55,7 +55,6 @@ ConcentricLayout.prototype.run = function(){
   };
 
   let nodeValues = []; // { node, value }
-  let theta = options.startAngle;
   let maxNodeSize = 0;
 
   for( let i = 0; i < nodes.length; i++ ){

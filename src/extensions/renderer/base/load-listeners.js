@@ -622,7 +622,11 @@ BRp.load = function(){
       r.data.bgActivePosistion = undefined;
 
       if( !r.hoverData.selecting ){
-        cy.emit('boxstart');
+        cy.emit( ( {
+          originalEvent: e,
+          type: 'boxstart',
+          position: { x: pos[0], y: pos[1] }
+        } ) );
       }
 
       select[4] = 1;
@@ -966,7 +970,11 @@ BRp.load = function(){
           r.redrawHint( 'eles', true );
         }
 
-        cy.emit('boxend');
+        cy.emit({
+          type: 'boxend',
+          originalEvent: e,
+          position: { x: pos[0], y: pos[1] }
+        });
 
         var eleWouldBeSelected = function( ele ){ return ele.selectable() && !ele.selected(); };
 
@@ -1477,7 +1485,11 @@ BRp.load = function(){
       this.lastThreeTouch = +new Date();
 
       if( !r.touchData.selecting ){
-        cy.emit('boxstart');
+        cy.emit({
+          originalEvent: e,
+          type: 'boxstart',
+          position: { x: now[0], y: now[1] }
+        });
       }
 
       r.touchData.selecting = true;
@@ -1863,7 +1875,11 @@ BRp.load = function(){
 
       r.redrawHint( 'select', true );
 
-      cy.emit('boxend');
+      cy.emit({
+        type: 'boxend',
+        originalEvent: e,
+        position: { x: now[0], y: now[1] }
+      });
 
       var eleWouldBeSelected = function( ele ){ return ele.selectable() && !ele.selected(); };
 

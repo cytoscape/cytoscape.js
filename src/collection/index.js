@@ -522,7 +522,7 @@ elesfn.remove = function( notifyRenderer ){
 
   function add( ele ){
     let alreadyAdded =  elesToRemoveIds[ ele.id() ];
-    if( alreadyAdded ){
+    if( ele.removed() || alreadyAdded ){
       return;
     } else {
       elesToRemoveIds[ ele.id() ] = true;

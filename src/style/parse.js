@@ -189,6 +189,7 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
     let valArr = [];
     let unitsArr = [];
     let pfValArr = [];
+    let strVal = '';
     let hasEnum = false;
 
     for( let i = 0; i < vals.length; i++ ){
@@ -199,6 +200,7 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
       valArr.push( p.value );
       pfValArr.push( p.pfValue != null ? p.pfValue : p.value );
       unitsArr.push( p.units );
+      strVal += (i > 0 ? ' ' : '') + p.strValue;
     }
 
     if( type.validate && !type.validate( valArr, unitsArr ) ){
@@ -222,7 +224,7 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
       name: name,
       value: valArr,
       pfValue: pfValArr,
-      strValue: valArr.join( ' ' ),
+      strValue: strVal,
       bypass: propIsBypass,
       units: unitsArr
     };
@@ -344,12 +346,14 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
 
     } else { // go over each prop
 
-      let propsSplit = propsStr.split( ',' );
+      let propsSplit = propsStr.split( /,|\s+/ );
       for( let i = 0; i < propsSplit.length; i++ ){
         let propName = propsSplit[ i ].trim();
 
         if( self.properties[ propName ] ){
           props.push( propName );
+        } else {
+          util.warn('`' + propName + '` is not a valid property name');
         }
       }
 
@@ -359,7 +363,7 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
     return {
       name: name,
       value: props,
-      strValue: props.length === 0 ? 'none' : props.join( ', ' ),
+      strValue: props.length === 0 ? 'none' : props.join(' '),
       bypass: propIsBypass
     };
 
@@ -372,7 +376,7 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
       name: name,
       value: tuple,
       pfValue: tuple,
-      strValue: '' + value,
+      strValue: 'rgb(' + tuple[0] + ',' + tuple[1] + ',' + tuple[2] + ')', // n.b. no spaces b/c of multiple support
       bypass: propIsBypass
     };
 

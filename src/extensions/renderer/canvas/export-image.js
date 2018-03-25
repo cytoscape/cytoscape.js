@@ -1,3 +1,5 @@
+/* global atob, ArrayBuffer, Uint8Array, Blob */
+
 var is = require( '../../../is' );
 
 var CRp = {};
@@ -125,7 +127,7 @@ function b64UriToB64( b64uri ){
   var i = b64uri.indexOf(',');
 
   return b64uri.substr( i + 1 );
-};
+}
 
 function output( options, canvas, mimeType ){
   var b64Uri = canvas.toDataURL( mimeType, options.quality );

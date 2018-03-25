@@ -356,10 +356,21 @@ For explicit specification of a straight edge with endpoint arrows allowed (`cur
 
 ## Edge arrow
 
- * **`<pos>-arrow-color`** : The colour of the edge's source arrow.
- * **`<pos>-arrow-shape`** : The shape of the edge's source arrow; may be `tee`, `triangle`, `triangle-tee`, `triangle-cross`, `triangle-backcurve`, `square`, `circle`, `diamond`, or `none`.
- * **`<pos>-arrow-fill`** : The fill state of the edge's source arrow; may be `filled` or `hollow`.
- * **`arrow-scale`** : Scaling for the arrow size; may be any number >= 0.
+* **`<pos>-arrow-color`** : The colour of the edge's source arrow.
+* **`<pos>-arrow-shape`** : The shape of the edge's source arrow; may be one of:
+  * `triangle`
+  * `triangle-tee`
+  * `triangle-cross`
+  * `triangle-backcurve`
+  * `vee`
+  * `tee`
+  * `square`
+  * `circle`
+  * `diamond`
+  * `chevron`
+  * `none`
+* **`<pos>-arrow-fill`** : The fill state of the edge's source arrow; may be `filled` or `hollow`.
+* **`arrow-scale`** : Scaling for the arrow size; may be any number >= 0.
 
 For each edge arrow property above, replace `<pos>` with one of
 
@@ -522,7 +533,7 @@ The ghost properties allow for creating a ghosting effect, a semitransparent dup
 
 ## Transition animation
 
- * **`transition-property`** : A comma separated list of style properties to animate in this state.
+ * **`transition-property`** : A space-separated list of style properties to animate in this state.
  * **`transition-duration`** : The length of the transition in seconds (e.g. `0.5s`).
  * **`transition-delay`** : The length of the delay in seconds before the transition occurs (e.g. `250ms`).
  * **`transition-timing-function`** : An easing function that controls the animation progress curve; may be one of the following values.  A [visualisation](http://easings.net/) of easings serves as a reference.

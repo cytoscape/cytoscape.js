@@ -154,7 +154,7 @@ BRp.registerArrowShapes = function(){
     },
 
     gap: function( edge ) {
-      return standardGap(edge) * 0.985;
+      return standardGap(edge) * 0.8;
     }
   } );
 
@@ -244,7 +244,7 @@ BRp.registerArrowShapes = function(){
     ],
 
     gap: function( edge ){
-      return standardGap(edge) * 0.985;
+      return standardGap(edge) * 0.525;
     }
   } );
 
@@ -304,6 +304,21 @@ BRp.registerArrowShapes = function(){
 
     gap: function( edge ){
       return edge.pstyle( 'width' ).pfValue * edge.pstyle( 'arrow-scale' ).value;
+    }
+  } );
+
+  defineArrowShape( 'chevron', {
+    points: [
+      0, 0,
+      -0.15, -0.15,
+      -0.1, -0.2,
+      0, -0.1,
+      0.1, -0.2,
+      0.15, -0.15
+    ],
+
+    gap: function( edge ){
+      return 0.95 * edge.pstyle( 'width' ).pfValue * edge.pstyle( 'arrow-scale' ).value;
     }
   } );
 

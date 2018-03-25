@@ -29,7 +29,7 @@ module.exports = {
         var extent = r.cy.extent();
         var pixelRatio = r.getPixelRatio();
 
-        while( true ){
+        while( true ){ // eslint-disable-line no-constant-condition
           var now = util.performanceNow();
           var duration = now - startTime;
           var frameDuration = now - frameStartTime;

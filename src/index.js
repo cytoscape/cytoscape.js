@@ -3,7 +3,7 @@ let Core = require( './core' );
 let extension = require( './extension' );
 let Stylesheet = require( './stylesheet' );
 
-let cytoscape = function( options ){ // jshint ignore:line
+let cytoscape = function( options ){
   // if no options specified, use default
   if( options === undefined ){
     options = {};

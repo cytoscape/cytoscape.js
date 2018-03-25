@@ -183,13 +183,13 @@ Background:
  * **`background-color`** : The colour of the node's body.
  * **`background-blacken`** : Blackens the node's body for values from 0 to 1; whitens the node's body for values from 0 to -1.
  * **`background-opacity`** : The opacity level of the node's background colour.
- * **`background-color-style`** : The colouring style of the node's body; may be `none` (default), `linear-gradient`, or `radial-gradient`.
+ * **`background-fill`** : The filling style of the node's body; may be `solid` (default), `linear-gradient`, or `radial-gradient`.
 
 Gradient:
- * **`background-gradient-direction`** : In case `background-color-style` is `linear-gradient`, defines the direction of the gradient.
-   * may be `to bottom` (default), `to top`, `to left`, `to right`, `to bottom right`, `to bottom left`, `to top right`, `to top left`..
- * **`background-gradient-stop-1-color`** : The colour of the first gradient stop.
- * **`background-gradient-stop-1-color`** : The colour of the second gradient stop.
+ * **`background-gradient-direction`** : In case `background-fill` is `linear-gradient`, defines the direction of the gradient.
+   * may be `to-bottom` (default), `to-top`, `to-left`, `to-right`, `to-bottom-right`, `to-bottom-left`, `to-top-right`, `to-top-left`..
+ * **`background-gradient-stops-colors`** : The colours of the gradient stops (i.e. `cyan magenta yellow`).
+ * **`background-gradient-stops-positions`** : The positions of the gradient stops (i.e. `0% 50% 100%`). If not specified (or invalid), the stops will divide equally.
 
 
 Border:
@@ -295,12 +295,12 @@ These properties affect the styling of an edge's line:
  * **`line-color`** : The colour of the edge's line.
  * **`line-style`** : The style of the edge's line; may be `solid`, `dotted`, or `dashed`.
  * **`line-cap`** : The cap style of the edge's line; may be `butt` (default), `round`, or `square`.  The cap may or may not be visible, depending on the shape of the node and the relative size of the node and edge.  Caps other than `butt` extend beyond the specified endpoint of the edge.
- * **`line-color-style`** : The colouring style of the edge's line; may be `none` (default), `linear-gradient`, or `radial-gradient`.
+ * **`line-fill`** : The filling style of the edge's line; may be `solid` (default), `linear-gradient`, or `radial-gradient`.
 
 ## Gradient
 
- * **`line-gradient-stop-1-color`** : The colour of the first gradient stop.
- * **`line-gradient-stop-1-color`** : The colour of the second gradient stop.
+ * **`line-gradient-stops-colors`** : The colours of the gradient stops.
+ * **`line-gradient-stops-positions`** : The positions of the gradient stops (i.e. `0% 50% 100%`). If not specified (or invalid), the stops will divide equally.
 
 ## Bezier edges
 

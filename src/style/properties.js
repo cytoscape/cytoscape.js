@@ -24,6 +24,7 @@ let styfn = {};
   styfn.types = {
     time: { number: true, min: 0, units: 's|ms', implicitUnits: 'ms' },
     percent: { number: true, min: 0, max: 100, units: '%', implicitUnits: '%' },
+    percentages: { number: true, min: 0, max: 100, units: '%', implicitUnits: '%', multiple: true },
     zeroOneNumber: { number: true, min: 0, max: 1, unitless: true },
     zeroOneNumbers: { number: true, min: 0, max: 1, unitless: true, multiple: true },
     nOneOneNumber: { number: true, min: -1, max: 1, unitless: true },
@@ -122,9 +123,9 @@ let styfn = {};
       ]
     },
     gradientDirection: { enums: [
-      'to bottom', 'to top', 'to left', 'to right',
-      'to bottom right', 'to bottom left', 'to top right', 'to top left',
-      'to right bottom', 'to left bottom', 'to right top', 'to left top', // different order
+      'to-bottom', 'to-top', 'to-left', 'to-right',
+      'to-bottom-right', 'to-bottom-left', 'to-top-right', 'to-top-left',
+      'to-right-bottom', 'to-left-bottom', 'to-right-top', 'to-left-top', // different order
     ] }
   };
 
@@ -232,8 +233,8 @@ let styfn = {};
 
     // node body gradient
     { name: 'background-gradient-direction', type: t.gradientDirection },
-    { name: 'background-gradient-stop-1-color', type: t.color },
-    { name: 'background-gradient-stop-2-color', type: t.color },
+    { name: 'background-gradient-stops-colors', type: t.colors },
+    { name: 'background-gradient-stops-positions', type: t.percentages },
 
     // node border
     { name: 'border-color', type: t.color },
@@ -287,8 +288,8 @@ let styfn = {};
     { name: 'target-distance-from-node', type: t.size },
 
     // edge gradient
-    { name: 'line-gradient-stop-1-color', type: t.color },
-    { name: 'line-gradient-stop-2-color', type: t.color },
+    { name: 'line-gradient-stops-colors', type: t.colors },
+    { name: 'line-gradient-stops-positions', type: t.percentages },
 
     // ghost properties
     { name: 'ghost', type: t.bool },
@@ -460,9 +461,9 @@ styfn.getDefaultProperties = util.memoize( function(){
     'shape-polygon-points': '-1, -1,   1, -1,   1, 1,   -1, 1',
 
     // node gradient
-    'background-gradient-direction': 'to bottom',
-    'background-gradient-stop-1-color': '#999',
-    'background-gradient-stop-2-color': '#333',
+    'background-gradient-direction': 'to-bottom',
+    'background-gradient-stops-colors': '#999 #333',
+    'background-gradient-stops-positions': '0 100',
 
     // ghost props
     'ghost': 'no',
@@ -503,8 +504,8 @@ styfn.getDefaultProperties = util.memoize( function(){
     'line-color': '#999',
     'line-fill': 'solid',
     'line-cap': 'butt',
-    'line-gradient-stop-1-color': '#999',
-    'line-gradient-stop-2-color': '#333',
+    'line-gradient-stops-colors': '#999 #333',
+    'line-gradient-stops-positions': '0 100',
     'control-point-step-size': 40,
     'control-point-weights': 0.5,
     'segment-weights': 0.5,

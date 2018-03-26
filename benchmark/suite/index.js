@@ -12,15 +12,15 @@ function Suite( name, suiteOpts ){
   var suiteAdd = suite.add;
 
   suite.on('start', function(){
-    console.log('Starting benchmark:', suite.name);
+    console.log('Starting benchmark:', suite.name); // eslint-disable-line no-console
   });
 
   suite.on('cycle', function(event) {
-    console.log(String(event.target));
+    console.log(String(event.target)); // eslint-disable-line no-console
   });
 
   suite.on('complete', function(){
-    console.log( 'Fastest is:' ,this.filter('fastest').map('name')[0] );
+    console.log( 'Fastest is:' ,this.filter('fastest').map('name')[0] ); // eslint-disable-line no-console
   });
 
   suite.add = function( fn ){
@@ -34,21 +34,21 @@ function Suite( name, suiteOpts ){
 
     global.fn = fn;
 
-    suiteAdd.apply( suite, [ name + '::old', function(){ return fn( cy ); }, {
+    suiteAdd.apply( suite, [ name + '::old', function(){ return fn( global.cy ); }, {
       setup: function(){
         global.cy = setup( oldCytoscape );
       },
       teardown: function(){
-        teardown( cy );
+        teardown( global.cy );
       }
     } ] );
 
-    suiteAdd.apply( suite, [ name + '::new', function(){ return fn( cy ); }, {
+    suiteAdd.apply( suite, [ name + '::new', function(){ return fn( global.cy ); }, {
       setup: function(){
         global.cy = setup( newCytoscape );
       },
       teardown: function(){
-        teardown( cy );
+        teardown( global.cy );
       }
     } ] );
 

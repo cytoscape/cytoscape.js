@@ -1,4 +1,4 @@
-let window = require( '../window' );
+import window from '../window';
 
 let styfn = {};
 
@@ -23,4 +23,4 @@ styfn.containerCss = function( propName ){
   }
 };
 
-module.exports = styfn;
+export default styfn;

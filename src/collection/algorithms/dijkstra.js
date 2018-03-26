@@ -1,5 +1,5 @@
-var is = require( '../../is' );
-var Heap = require( '../../heap' );
+import is from '../../is';
+import Heap from '../../heap';
 
 var elesfn = ({
 
@@ -126,4 +126,4 @@ var elesfn = ({
   }
 });
 
-module.exports = elesfn;
+export default elesfn;

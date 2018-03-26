@@ -1,7 +1,7 @@
-var math = require( '../../../math' );
-var util = require( '../../../util' );
-var Heap = require( '../../../heap' );
-var defs = require( './texture-cache-defs' );
+import math from '../../../math';
+import util from '../../../util';
+import Heap from '../../../heap';
+import defs from './texture-cache-defs';
 
 var minTxrH = 25; // the size of the texture cache for small height eles (special case)
 var txrStepH = 50; // the min size of the regular cache, and the size it increases with each step up
@@ -497,4 +497,4 @@ ETCp.setupDequeueing = defs.setupDequeueing({
   }
 });
 
-module.exports = ElementTextureCache;
+export default ElementTextureCache;

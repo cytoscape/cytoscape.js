@@ -1,6 +1,6 @@
-const util = require( '../../util' );
-const math = require( '../../math' );
-const is = require( '../../is' );
+import util from '../../util';
+import math from '../../math';
+import is from '../../is';
 
 const getScratch = ele => ele.scratch('breadthfirst');
 const setScratch = (ele, obj) => ele.scratch('breadthfirst', obj);
@@ -330,4 +330,4 @@ BreadthFirstLayout.prototype.run = function(){
   return this; // chaining
 };
 
-module.exports = BreadthFirstLayout;
+export default BreadthFirstLayout;

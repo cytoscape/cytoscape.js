@@ -1,9 +1,20 @@
-let window = require( '../window' );
-let util = require( '../util' );
-let Collection = require( '../collection' );
-let is = require( '../is' );
-let Promise = require( '../promise' );
-let define = require( '../define' );
+import window from '../window';
+import util from '../util';
+import Collection from '../collection';
+import is from '../is';
+import Promise from '../promise';
+import define from '../define';
+
+import addRemove from './add-remove';
+import animation from './animation';
+import events from './events';
+import exportFormat from './export';
+import layout from './layout';
+import notification from './notification';
+import renderer from './renderer';
+import search from './search';
+import style from './style';
+import viewport from './viewport';
 
 let Core = function( opts ){
   let cy = this;
@@ -450,18 +461,18 @@ util.extend( corefn, {
 corefn.$id = corefn.getElementById;
 
 [
-  require( './add-remove' ),
-  require( './animation' ),
-  require( './events' ),
-  require( './export' ),
-  require( './layout' ),
-  require( './notification' ),
-  require( './renderer' ),
-  require( './search' ),
-  require( './style' ),
-  require( './viewport' )
+  addRemove,
+  animation,
+  events,
+  exportFormat,
+  layout,
+  notification,
+  renderer,
+  search,
+  style,
+  viewport,
 ].forEach( function( props ){
   util.extend( corefn, props );
 } );
 
-module.exports = Core;
+export default Core;

@@ -1,6 +1,6 @@
-const util = require('./util');
-const is = require('./is');
-const Event = require('./event');
+import util from './util';
+import is from './is';
+import Event from './event';
 
 const eventRegex = /^([^.]+)(\.(?:[^.]+))?$/; // regex for matching event strings (e.g. "click.namespace")
 const universalNamespace = '.*'; // matches as if no namespace specified and prevents users from unbinding accidentally
@@ -223,4 +223,4 @@ p.emit = p.trigger = function( events, extraParams, manualCallback ){
   return this;
 };
 
-module.exports = Emitter;
+export default Emitter;

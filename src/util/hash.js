@@ -53,4 +53,4 @@ let hashStringsArray = function( strs ){
   return hash;
 };
 
-module.exports = { hashIterableInts, hashString, hashStrings, hashStringsArray };
+export default { hashIterableInts, hashString, hashStrings, hashStringsArray };

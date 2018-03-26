@@ -1192,4 +1192,4 @@ math.getBarrelCurveConstants = function( width, height ){
 };
 
 
-module.exports = math;
+export default math;

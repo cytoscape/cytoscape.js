@@ -88,8 +88,8 @@
     "watch:build:fast": "cross-env NODE_ENV=development FILENAME=cytoscape.js MINIFY=false BABEL=false SOURCEMAPS=true webpack --progress --watch",
     "watch:build:babel": "cross-env NODE_ENV=development FILENAME=cytoscape.js MINIFY=false BABEL=true SOURCEMAPS=true webpack --progress --watch",
     "watch:build:umd": "cross-env NODE_ENV=production FILENAME=cytoscape.umd.js MINIFY=false BABEL=true SOURCEMAPS=false webpack --progress --watch",
-    "test": "mocha",
-    "test:build": "cross-env TEST_BUILD=true mocha",
+    "test": "mocha -r esm",
+    "test:build": "cross-env TEST_BUILD=true mocha -r esm",
     "test:travis": "run-s build:umd test:build lint",
     "sniper": "sniper .",
     "docs": "run-s docs:build docs:js",
@@ -103,6 +103,7 @@
     "benchmark:single:exec": "node benchmark/single",
     "benchmark:single": "run-s benchmark:download benchmark:single:exec"
   },
+  "esm": "auto",
   "devDependencies": {
     "babel-core": "^6.24.1",
     "babel-loader": "^7.0.0",
@@ -114,6 +115,7 @@
     "cross-env": "^5.1.3",
     "download-cli": "^1.0.5",
     "eslint": "^4.16.0",
+    "esm": "^3.0.8",
     "handlebars": "^4.0.5",
     "highlight.js": "^9.3.0",
     "http-server": "^0.11.1",

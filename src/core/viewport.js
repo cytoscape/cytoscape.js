@@ -1,6 +1,6 @@
-let is = require('../is');
-let window = require('../window');
-let math = require('../math');
+import is from '../is';
+import window from '../window';
+import math from '../math';
 
 let defaultSelectionType = 'single';
 
@@ -608,4 +608,4 @@ corefn.centre = corefn.center;
 corefn.autolockNodes = corefn.autolock;
 corefn.autoungrabifyNodes = corefn.autoungrabify;
 
-module.exports = corefn;
+export default corefn;

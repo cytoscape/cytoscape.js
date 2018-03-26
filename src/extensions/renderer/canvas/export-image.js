@@ -1,6 +1,6 @@
 /* global atob, ArrayBuffer, Uint8Array, Blob */
 
-var is = require( '../../../is' );
+import is from '../../../is';
 
 var CRp = {};
 
@@ -153,4 +153,4 @@ CRp.jpg = function( options ){
   return output( options, this.bufferCanvasImage( options ), 'image/jpeg' );
 };
 
-module.exports = CRp;
+export default CRp;

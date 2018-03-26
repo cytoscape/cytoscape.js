@@ -1,4 +1,5 @@
-let define = require( '../define' );
+import define from '../define';
+
 let fn, elesfn;
 
 fn = elesfn = ({
@@ -82,4 +83,4 @@ fn = elesfn = ({
 fn.attr = fn.data;
 fn.removeAttr = fn.removeData;
 
-module.exports = elesfn;
+export default elesfn;

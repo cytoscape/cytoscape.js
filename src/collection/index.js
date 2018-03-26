@@ -1,9 +1,25 @@
-let util = require('../util');
-let is = require('../is');
-let Map = require('../map');
-let Set = require('../set');
+import util from '../util';
+import is from '../is';
+import Map from '../map';
+import Set from '../set';
 
-let Element = require('./element');
+import Element from './element';
+import algorithms from './algorithms';
+import animation from './animation';
+import classNames from './class';
+import comparators from './comparators';
+import compounds from './compounds';
+import data from './data';
+import degree from './degree';
+import dimensions from './dimensions';
+import events from './events';
+import filter from  './filter';
+import group from './group';
+import iteration from './iteration';
+import layout from './layout';
+import style from './style';
+import switchFunctions from './switch-functions';
+import traversing from './traversing';
 
 // factory for generating edge ids when no id is specified for a new element
 let idFactory = {
@@ -707,25 +723,24 @@ elesfn.move = function( struct ){
 };
 
 [
-  require( './algorithms' ),
-  require( './animation' ),
-  require( './class' ),
-  require( './comparators' ),
-  require( './compounds' ),
-  require( './data' ),
-  require( './degree' ),
-  require( './dimensions' ),
-  require( './events' ),
-  require( './filter' ),
-  require( './group' ),
-  require( './index' ),
-  require( './iteration' ),
-  require( './layout' ),
-  require( './style' ),
-  require( './switch-functions' ),
-  require( './traversing' )
+  algorithms,
+  animation,
+  classNames,
+  comparators,
+  compounds,
+  data,
+  degree,
+  dimensions,
+  events,
+  filter,
+  group,
+  iteration,
+  layout,
+  style,
+  switchFunctions,
+  traversing
 ].forEach( function( props ){
   util.extend( elesfn, props );
 } );
 
-module.exports = Collection;
+export default Collection;

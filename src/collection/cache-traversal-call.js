@@ -1,5 +1,5 @@
-let is = require('../is');
-let util = require('../util');
+import is from '../is';
+import util from '../util';
 
 let cache = function( fn, name ){
   return function traversalCache( arg1, arg2, arg3, arg4 ){
@@ -31,4 +31,4 @@ let cache = function( fn, name ){
   };
 };
 
-module.exports = cache;
+export default cache;

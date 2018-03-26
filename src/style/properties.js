@@ -1,5 +1,5 @@
-let util = require( '../util' );
-let is = require( '../is' );
+import util from '../util';
+import is from '../is';
 
 let styfn = {};
 
@@ -583,4 +583,4 @@ styfn.addDefaultStylesheet = function(){
   this.defaultLength = this.length;
 };
 
-module.exports = styfn;
+export default styfn;

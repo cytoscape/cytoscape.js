@@ -21,7 +21,7 @@ var webpack = require('webpack');
 var isNotNil = function(x){ return x != null; };
 
 module.exports = {
-  entry: './src/index.js',
+  entry: './src/webpack.js',
   output: {
     path: path.resolve(__dirname, 'build'),
     filename: FILENAME,

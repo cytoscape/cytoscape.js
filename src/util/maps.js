@@ -1,6 +1,6 @@
-let is = require( '../is' );
+import is from '../is';
 
-module.exports = {
+export default {
   // has anything been set in the map
   mapEmpty: function( map ){
     let empty = true;

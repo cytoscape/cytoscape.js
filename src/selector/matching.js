@@ -1,5 +1,7 @@
-const { stateSelectorMatches } = require('./state');
-const is = require('../is');
+import state from './state';
+import is from '../is';
+
+const { stateSelectorMatches } = state;
 
 // generic checking for data/metadata
 let operandsMatch = function( query, params ){
@@ -307,4 +309,4 @@ let matches = function( ele ){
   return false;
 }; // filter
 
-module.exports = { matches, filter };
+export default { matches, filter };

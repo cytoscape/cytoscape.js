@@ -1,1 +1,1 @@
-module.exports = require('heap');
+export { default } from 'heap';

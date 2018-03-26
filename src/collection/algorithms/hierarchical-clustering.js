@@ -3,8 +3,8 @@
 
 // Implemented from the reference library: https://harthur.github.io/clusterfck/
 
-const util = require('../../util');
-const clusteringDistance = require('./clustering-distances');
+import util from '../../util';
+import clusteringDistance from './clustering-distances';
 
 const defaults = {
   distance: 'euclidean', // distance metric to compare nodes
@@ -314,4 +314,4 @@ let hierarchicalClustering = function( options ){
   return retClusters;
 };
 
-module.exports = { hierarchicalClustering, hca: hierarchicalClustering };
+export default { hierarchicalClustering, hca: hierarchicalClustering };

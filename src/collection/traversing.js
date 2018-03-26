@@ -1,6 +1,6 @@
-let util = require( '../util' );
-let is = require( '../is' );
-let cache = require('./cache-traversal-call');
+import util from '../util';
+import is from '../is';
+import cache from './cache-traversal-call';
 
 let elesfn = {};
 
@@ -409,4 +409,4 @@ util.extend( elesfn, {
   }
 } );
 
-module.exports = elesfn;
+export default elesfn;

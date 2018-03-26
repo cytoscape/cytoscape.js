@@ -1,7 +1,7 @@
-let is = require( '../is' );
-let util = require( '../util' );
-let Promise = require('../promise');
-let math = require('../math');
+import is from '../is';
+import util from '../util';
+import Promise from '../promise';
+import math from '../math';
 
 let elesfn = ({
   // Calculates and returns node dimensions { x, y } based on options given
@@ -190,4 +190,4 @@ let elesfn = ({
 // aliases:
 elesfn.createLayout = elesfn.makeLayout = elesfn.layout;
 
-module.exports = elesfn;
+export default elesfn;

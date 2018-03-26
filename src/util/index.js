@@ -1,6 +1,15 @@
 /*global console */
 
-let is = require( '../is' );
+import is from '../is';
+import colors from './colors';
+import maps from './maps';
+import memoize from './memoize';
+import regex from './regex';
+import strings from './strings';
+import timing from './timing';
+import sort from './sort';
+import hash from './hash';
+
 let warnSupported = console.warn != null; // eslint-disable-line no-console
 let traceSupported = console.trace != null; // eslint-disable-line no-console
 
@@ -156,16 +165,16 @@ util.setPrefixedProperty = function( obj, propName, prefix, value ){
 };
 
 [
-  require( './colors' ),
-  require( './maps' ),
-  { memoize: require( './memoize' ) },
-  require( './regex' ),
-  require( './strings' ),
-  require( './timing' ),
-  require( './sort' ),
-  require( './hash' )
+  colors,
+  maps,
+  { memoize },
+  regex,
+  strings,
+  timing,
+  sort,
+  hash
 ].forEach( function( req ){
   util.extend( util, req );
 } );
 
-module.exports = util;
+export default util;

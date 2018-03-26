@@ -1,4 +1,4 @@
-const util = require('../util');
+import util from '../util';
 
 let stateSelectors = [
   {
@@ -136,4 +136,4 @@ let stateSelectorMatches = function( sel, ele ){
 
 let stateSelectorRegex = '(' + stateSelectors.map(function( s ){ return s.selector; }).join('|') + ')';
 
-module.exports = { stateSelectors, stateSelectorMatches, stateSelectorRegex };
+export default { stateSelectors, stateSelectorMatches, stateSelectorRegex };

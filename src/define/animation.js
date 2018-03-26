@@ -1,7 +1,7 @@
-let util = require( '../util' );
-let Animation = require( '../animation' );
-let math = require('../math');
-let is = require('../is');
+import util from '../util';
+import Animation from '../animation';
+import math from '../math';
+import is from '../is';
 
 let define = {
 
@@ -237,4 +237,4 @@ let define = {
 
 }; // define
 
-module.exports = define;
+export default define;

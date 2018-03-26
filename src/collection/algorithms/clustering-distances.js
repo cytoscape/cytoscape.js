@@ -1,7 +1,7 @@
 // Common distance metrics for clustering algorithms
 // https://en.wikipedia.org/wiki/Hierarchical_clustering#Metric
 
-const is = require('../../is');
+import is from '../../is';
 
 let identity = x => x;
 let absDiff = ( p, q ) => Math.abs( q - p );
@@ -47,7 +47,7 @@ let distances = {
 distances['squared-euclidean'] = distances['squaredEuclidean'];
 distances['squaredeuclidean'] = distances['squaredEuclidean'];
 
-module.exports = function( method, length, getP, getQ, nodeP, nodeQ ){
+export default function( method, length, getP, getQ, nodeP, nodeQ ){
   let impl;
 
   if( is.fn( method ) ){
@@ -61,4 +61,4 @@ module.exports = function( method, length, getP, getQ, nodeP, nodeQ ){
   } else {
     return impl( length, getP, getQ, nodeP, nodeQ );
   }
-};
+}

@@ -179,4 +179,4 @@ BRp.recalculateRenderedStyle = function( eles, useCache ){
   }
 };
 
-module.exports = BRp;
+export default BRp;

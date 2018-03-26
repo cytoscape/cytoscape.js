@@ -4,16 +4,19 @@
 // e.g.
 // let foo = define.foo({ /* params... */ })
 
-let util = require('../util');
+import util from '../util';
+import animation from './animation';
+import data from './data';
+import events from './events';
 
 let define = {};
 
 [
-  require('./animation'),
-  require('./data'),
-  require('./events')
+  animation,
+  data,
+  events
 ].forEach(function( m ){
   util.assign( define, m );
 });
 
-module.exports = define;
+export default define;

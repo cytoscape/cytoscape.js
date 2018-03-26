@@ -61,4 +61,4 @@ class ObjectSet {
   }
 }
 
-module.exports = typeof Set !== undef ? Set : ObjectSet;
+export default typeof Set !== undef ? Set : ObjectSet;

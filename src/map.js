@@ -30,4 +30,4 @@ class ObjectMap {
   }
 }
 
-module.exports = typeof Map !== 'undefined' ? Map : ObjectMap;
+export default typeof Map !== 'undefined' ? Map : ObjectMap;

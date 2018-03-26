@@ -1,4 +1,4 @@
-let Selector = require('../selector');
+import Selector from '../selector';
 
 let elesfn = ({
   allAre: function( selector ){
@@ -101,4 +101,4 @@ elesfn.allAreNeighbours = elesfn.allAreNeighbors;
 elesfn.has = elesfn.contains;
 elesfn.equal = elesfn.equals;
 
-module.exports = elesfn;
+export default elesfn;

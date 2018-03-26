@@ -1,6 +1,6 @@
-let util = require( '../../util' );
-let math = require( '../../math' );
-let is = require( '../../is' );
+import util from '../../util';
+import math from '../../math';
+import is from '../../is';
 
 let defaults = {
   fit: true, // whether to fit the viewport to the graph
@@ -102,4 +102,4 @@ CircleLayout.prototype.run = function(){
   return this; // chaining
 };
 
-module.exports = CircleLayout;
+export default CircleLayout;

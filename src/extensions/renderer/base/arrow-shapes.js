@@ -1,6 +1,6 @@
-var math = require( '../../../math' );
-var is = require( '../../../is' );
-var util = require( '../../../util' );
+import math from '../../../math';
+import is from '../../../is';
+import util from '../../../util';
 
 var BRp = {};
 
@@ -324,4 +324,4 @@ BRp.registerArrowShapes = function(){
 
 };
 
-module.exports = BRp;
+export default BRp;

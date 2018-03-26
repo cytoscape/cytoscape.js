@@ -12,4 +12,4 @@ NullRenderer.prototype = {
   isHeadless: function(){ return true; }
 };
 
-module.exports = NullRenderer;
+export default NullRenderer;

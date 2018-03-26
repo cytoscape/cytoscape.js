@@ -1,10 +1,10 @@
-let util = require('./util');
-let define = require('./define');
-let Collection = require('./collection');
-let Core = require('./core');
-let incExts = require('./extensions');
-let is = require('./is');
-let Emitter = require('./emitter');
+import util from'./util';
+import define from './define';
+import Collection from './collection';
+import Core from './core';
+import incExts from './extensions';
+import is from './is';
+import Emitter from './emitter';
 
 // registered extensions to cytoscape, indexed by name
 let extensions = {};
@@ -240,4 +240,4 @@ incExts.forEach( function( group ){
   } );
 } );
 
-module.exports = extension;
+export default extension;

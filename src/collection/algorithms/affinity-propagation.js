@@ -4,10 +4,10 @@
 // Implemented from the reference library: https://github.com/juhis/affinity-propagation
 // Additional reference: http://www.psi.toronto.edu/affinitypropagation/faq.html
 
-const util = require('../../util');
-const math = require('../../math');
-const is = require('../../is');
-const clusteringDistance = require('./clustering-distances');
+import util from '../../util';
+import math from '../../math';
+import is from '../../is';
+import clusteringDistance from './clustering-distances';
 
 let defaults = {
   distance: 'euclidean', // distance metric to compare attributes between two nodes
@@ -329,4 +329,4 @@ let affinityPropagation = function( options ) {
   return retClusters;
 };
 
-module.exports = { affinityPropagation, ap: affinityPropagation };
+export default { affinityPropagation, ap: affinityPropagation };

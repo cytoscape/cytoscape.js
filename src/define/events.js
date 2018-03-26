@@ -1,4 +1,4 @@
-let Promise = require( '../promise' );
+import Promise from '../promise';
 
 let define = {
 
@@ -31,4 +31,4 @@ let define = {
 
 }; // define
 
-module.exports = define;
+export default define;

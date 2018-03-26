@@ -1,5 +1,5 @@
-let is = require('../is');
-let util = require('../util');
+import is from '../is';
+import util from '../util';
 
 function styleCache( key, fn, ele ){
   var _p = ele._private;
@@ -445,4 +445,4 @@ elesfn.renderedCss = elesfn.renderedStyle;
 elesfn.removeBypass = elesfn.removeCss = elesfn.removeStyle;
 elesfn.pstyle = elesfn.parsedStyle;
 
-module.exports = elesfn;
+export default elesfn;

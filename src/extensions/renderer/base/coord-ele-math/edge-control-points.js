@@ -1,5 +1,5 @@
-var math = require( '../../../../math' );
-var is = require( '../../../../is' );
+import math from '../../../../math';
+import is from '../../../../is';
 
 var BRp = {};
 
@@ -800,4 +800,4 @@ BRp.getEdgeMidpoint = function( edge ){
   };
 };
 
-module.exports = BRp;
+export default BRp;

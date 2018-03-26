@@ -1,7 +1,7 @@
-let memoize = require( './memoize' );
-let is = require( '../is' );
+import memoize from './memoize';
+import is from '../is';
 
-module.exports = {
+export default {
 
   camel2dash: memoize( function( str ){
     return str.replace( /([A-Z])/g, function( v ){

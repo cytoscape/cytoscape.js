@@ -1,5 +1,5 @@
-let is = require( '../is' );
-let Selector = require( '../selector' );
+import is from '../is';
+import Selector from '../selector';
 
 let elesfn = ({
   nodes: function( selector ){
@@ -365,4 +365,4 @@ fn[ '^' ] = fn[ '(+)' ] = fn[ '(-)' ] = fn.symmetricDifference = fn.symdiff = fn
 fn.fnFilter = fn.filterFn = fn.stdFilter = fn.filter;
 fn.complement = fn.abscomp = fn.absoluteComplement;
 
-module.exports = elesfn;
+export default elesfn;

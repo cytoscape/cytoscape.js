@@ -1,4 +1,4 @@
-var is = require( '../../is' );
+import is from '../../is';
 
 var elesfn = ({
 
@@ -203,4 +203,4 @@ var elesfn = ({
 }); // elesfn
 
 
-module.exports = elesfn;
+export default elesfn;

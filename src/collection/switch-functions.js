@@ -146,4 +146,4 @@ elesfn.inactive = function(){
   }
 };
 
-module.exports = elesfn;
+export default elesfn;

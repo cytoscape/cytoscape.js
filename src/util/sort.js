@@ -12,7 +12,7 @@ function descending( a, b ){
   return -1 * ascending( a, b );
 }
 
-module.exports = {
+export default {
   sort: {
     ascending: ascending,
     descending: descending

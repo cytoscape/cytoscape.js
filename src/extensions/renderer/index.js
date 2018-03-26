@@ -1,5 +1,9 @@
-module.exports = [
-  { name: 'null', impl: require( './null' ) },
-  { name: 'base', impl: require( './base' ) },
-  { name: 'canvas', impl: require( './canvas' ) }
+import nullRenderer from './null';
+import baseRenderer from './base';
+import canvasRenderer from './canvas';
+
+export default [
+  { name: 'null', impl: nullRenderer },
+  { name: 'base', impl: baseRenderer },
+  { name: 'canvas', impl: canvasRenderer }
 ];

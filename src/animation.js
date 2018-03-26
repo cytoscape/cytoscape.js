@@ -1,6 +1,6 @@
-let util = require( './util' );
-let is = require( './is' );
-let Promise = require( './promise' );
+import util from './util';
+import is from './is';
+import Promise from './promise';
 
 let Animation = function( target, opts, opts2 ){
   let _p = this._private = util.extend( {
@@ -230,4 +230,4 @@ util.extend( anifn, {
 
 anifn.complete = anifn.completed;
 
-module.exports = Animation;
+export default Animation;

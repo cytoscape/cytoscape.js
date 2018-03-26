@@ -1,4 +1,4 @@
-module.exports = function memoize( fn, keyFn ){
+export default function memoize( fn, keyFn ){
   if( !keyFn ){
     keyFn = function(){
       if( arguments.length === 1 ){
@@ -34,4 +34,4 @@ module.exports = function memoize( fn, keyFn ){
   memoizedFn.cache = {};
 
   return memoizedFn;
-};
+}

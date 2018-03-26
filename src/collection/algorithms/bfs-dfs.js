@@ -1,4 +1,4 @@
-var is = require( '../../is' );
+import is from '../../is';
 
 var defineSearch = function( params ){
   params = {
@@ -127,4 +127,4 @@ var elesfn = ({
 elesfn.bfs = elesfn.breadthFirstSearch;
 elesfn.dfs = elesfn.depthFirstSearch;
 
-module.exports = elesfn;
+export default elesfn;

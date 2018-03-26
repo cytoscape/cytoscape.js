@@ -1,5 +1,5 @@
-let Set = require('../set');
-let cache = require('./cache-traversal-call');
+import Set from '../set';
+import cache from './cache-traversal-call';
 
 let elesfn = ({
   parent: function( selector ){
@@ -216,4 +216,4 @@ elesfn.forEachUpAndDown = function( fn, includeSelf = true ){
 // aliases
 elesfn.ancestors = elesfn.parents;
 
-module.exports = elesfn;
+export default elesfn;

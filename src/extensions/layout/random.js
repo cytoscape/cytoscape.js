@@ -1,5 +1,5 @@
-let util = require( '../../util' );
-let math = require( '../../math' );
+import util from '../../util';
+import math from '../../math';
 
 let defaults = {
   fit: true, // whether to fit to viewport
@@ -40,4 +40,4 @@ RandomLayout.prototype.run = function(){
   return this; // chaining
 };
 
-module.exports = RandomLayout;
+export default RandomLayout;

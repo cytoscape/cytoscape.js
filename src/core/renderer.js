@@ -1,5 +1,5 @@
-let is = require( '../is' );
-let util = require( '../util' );
+import is from '../is';
+import util from '../util';
 
 let corefn = ({
 
@@ -99,4 +99,4 @@ let corefn = ({
 
 corefn.invalidateDimensions = corefn.resize;
 
-module.exports = corefn;
+export default corefn;

@@ -203,6 +203,12 @@ A padding defines an addition to a node's dimension.  For example, `padding` add
   * **`min`** : calculate padding as a percentage of the minimum of the node width and height.
   * **`max`** : calculate padding as a percentage of the maximum of the node width and height.
 
+Shadow:
+
+ * **`box-shadow`** : The offset of the shadow and blur (`<h-offset> <v-offset> <blur>`).
+ * **`box-shadow-color`** : The colour of the node's shadow.
+ * **`box-shadow-opacity`** : The opacity of the node's shadow.
+
 Compound parent sizing:
 
  * **`compound-sizing-wrt-labels`** : Whether to include labels of descendants in sizing a compound node; may be `include` or `exclude`.
@@ -486,6 +492,12 @@ Border:
  * **`text-border-width`** : The width of the border around the label.
  * **`text-border-style`** : The style of the border around the label; may be `solid`, `dotted`, `dashed`, or `double`.
  * **`text-border-color`** : The colour of the border around the label.
+
+Shadow:
+
+ * **`text-shadow`** : The offset of the shadow and blur (`<h-offset> <v-offset> <blur>`).
+ * **`text-shadow-color`** : The colour of the label's shadow.
+ * **`text-shadow-opacity`** : The opacity of the label's shadow.
 
 Interactivity:
 

@@ -73,8 +73,26 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
   let borderColor = node.pstyle('border-color').value;
   let borderStyle = node.pstyle('border-style').value;
   let borderOpacity = node.pstyle('border-opacity').value * parentOpacity;
+  let boxShadow = node.pstyle('box-shadow');
+  let boxShadowColor = node.pstyle('box-shadow-color').value;
+  let boxShadowOpacity = node.pstyle('box-shadow-opacity').value * parentOpacity;
 
   context.lineJoin = 'miter'; // so borders are square with the node shape
+
+  const setupShadow = ( shadow, shadowColor, shadowOpacity ) => {
+    context.shadowOffsetX = shadow[0];
+    context.shadowOffsetY = (shadow[1] || 0);
+    context.shadowBlur = (shadow[2] || 0);
+    context.shadowColor = null;
+    r.shadowColor(context, shadowColor[0], shadowColor[1], shadowColor[2], shadowOpacity );
+  };
+
+  const resetShadow = () => {
+    context.shadowOffsetX = 0;
+    context.shadowOffsetY = 0;
+    context.shadowBlur = 0;
+    context.shadowColor = null;
+  };
 
   let setupShapeColor = ( bgOpy = bgOpacity ) => {
     r.fillStyle( context, bgColor[0], bgColor[1], bgColor[2], bgOpy );
@@ -278,8 +296,12 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
 
     context.translate( gx, gy );
 
+    if ( boxShadow ) {
+      setupShadow(boxShadow.pfValue, boxShadowColor, boxShadowOpacity);
+    }
     setupShapeColor( ghostOpacity * bgOpacity );
     drawShape();
+    resetShadow();
     drawImages( effGhostOpacity );
     drawPie( darkness !== 0 || borderWidth !== 0 );
     darken( effGhostOpacity );
@@ -289,8 +311,12 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
     context.translate( -gx, -gy );
   }
 
+  if ( boxShadow ) {
+    setupShadow(boxShadow.pfValue, boxShadowColor, boxShadowOpacity);
+  }
   setupShapeColor();
   drawShape();
+  resetShadow();
   drawImages();
   drawPie( darkness !== 0 || borderWidth !== 0 );
   darken();

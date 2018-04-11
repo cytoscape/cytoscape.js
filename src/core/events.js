@@ -21,11 +21,9 @@ let emitterOptions = {
 
     return true;
   },
-  eventFields: function( cy ){
-    return {
-      cy: cy,
-      target: cy
-    };
+  addEventFields: function( cy, evt ){
+    evt.cy = cy;
+    evt.target = cy;
   },
   callbackContext: function( cy, listener, eventObj ){
     return listener.qualifier != null ? eventObj.target : cy;

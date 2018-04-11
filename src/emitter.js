@@ -12,8 +12,7 @@ const defaults = {
   eventMatches: function( /*context, listener, eventObj*/ ){
     return true;
   },
-  eventFields: function( /*context*/ ){
-    return {};
+  addEventFields: function( /*context, evt*/ ){
   },
   callbackContext: function( context/*, listener, eventObj*/ ){
     return context;
@@ -74,7 +73,9 @@ let forEachEvent = function( self, handler, events, qualifier, callback, conf, c
 };
 
 let makeEventObj = function( self, obj ){
-  return new Event( obj.type, util.assign( obj, self.eventFields( self.context ) ) );
+  self.addEventFields( self.context, obj );
+
+  return new Event( obj.type, obj );
 };
 
 let forEachEventObj = function( self, handler, events ){

@@ -122,10 +122,16 @@ cytoscape({
 ## Property types
 
  * Colours may be specified by name (e.g. `red`), hex (e.g. `#ff0000` or `#f00`), RGB (e.g. `rgb(255, 0, 0)`), or HSL (e.g. `hsl(0, 100%, 50%)`).
- * Values requiring a number, such as a length, can be specified in pixel values (e.g. `24px`), unitless values that are implicitly in pixels (`24`), or em values (e.g. `2em`).  Sizes are specified in [model co-ordinates](#notation/position), so on-screen (rendered) sizes are as specified at zoom 1.
- * Opacity values are specified as numbers ranging on `0 <= opacity <= 1`.
- * Time is measured in units of ms or s.
+ * Values requiring a number, such as a length, can be specified in pixel values (e.g. `24px`), unitless values that are implicitly in pixels (e.g. `24`), or em values (e.g. `2em`).  Sizes are specified in [model co-ordinates](#notation/position), so on-screen (rendered) sizes are as specified at zoom 1.
+ * Opacity values are specified as numbers ranging on `0 <= opacity <= 1` (e.g `0.5`).
+ * Time is measured in units of ms or s (e.g. `250ms`).
  * Angles are measured in radians (e.g. `3.14rad`) or degrees (e.g. `180deg`).
+ * Properties that specify a list of values may be formatted in one of the following formats:
+   * A space-separated string (e.g. `'red rgb(0,255,0) blue'`)
+     * Note that for lists of colours, this means that you can not use spaces within `rgb()` or `hsl()`.
+     * This is the only format possible in string stylesheets (usually an external file).
+   * A JS array (e.g. `['red', 'rgb(0, 255, 0)', 'blue']`)
+     * This format may be used in the chained function stylesheets and in JSON stylesheets.
 
 
 
@@ -136,7 +142,7 @@ In addition to specifying the value of a property outright, the developer may al
 <span class="important-indicator"></span> If a mapping is defined, either define the mapped data for all elements or use selectors to limit the mapping to elements that have the mapped data defined.  For example, the selector `[foo]` will apply only to elements with the data field `foo` defined.
 
 * **`data()`** specifies a direct mapping to an element's data field.  For example, `data(descr)` would map a property to the value in an element's `descr` field in its data (i.e. `ele.data("descr")`).  This is useful for mapping to properties like label text content (the `content` property).
-* **`mapData()`** specifies a linear mapping to an element's data field.  For example, `mapData(weight, 0, 100, blue, red)` maps an element's weight to gradients between blue and red for weights between 0 and 100.  An element with `ele.data("weight") === 0` would  be mapped to blue, for instance.  Elements whose values fall outside of the specified range are mapped to the extremity values.  In the previous example, an element with `ele.data("weight") === -1` would be mapped to blue.
+* **`mapData()`** specifies a linear mapping to an element's data field.  For example, `mapData(weight, 0, 100, blue, red)` maps an element's weight to colours between blue and red for weights between 0 and 100.  An element with `ele.data("weight") === 0` would  be mapped to blue, for instance.  Elements whose values fall outside of the specified range are mapped to the extremity values.  In the previous example, an element with `ele.data("weight") === -1` would be mapped to blue.
 * **`function( ele ){ ... }`** A function may be passed as the value of a style property.  The function has a single `ele` argument which specifies the element for which the style property value is being calculated.  
   * **Do** specify a valid value for the corresponding style property for all elements that its corresponding selector block applies.
   * **Do not** create cyclic dependencies (i.e. one style property reads the value of another style property).
@@ -186,10 +192,18 @@ Background:
  * **`background-fill`** : The filling style of the node's body; may be `solid` (default), `linear-gradient`, or `radial-gradient`.
 
 Gradient:
- * **`background-gradient-direction`** : In case `background-fill` is `linear-gradient`, defines the direction of the gradient.
-   * may be `to-bottom` (default), `to-top`, `to-left`, `to-right`, `to-bottom-right`, `to-bottom-left`, `to-top-right`, `to-top-left`..
- * **`background-gradient-stops-colors`** : The colours of the gradient stops (i.e. `cyan magenta yellow`).
- * **`background-gradient-stops-positions`** : The positions of the gradient stops (i.e. `0% 50% 100%`). If not specified (or invalid), the stops will divide equally.
+
+ * **`background-gradient-stop-colors`** : The colours of the background gradient stops (e.g. `cyan magenta yellow`).
+ * **`background-gradient-stop-positions`** : The positions of the background gradient stops (e.g. `0% 50% 100%`). If not specified or invalid, the stops will divide equally.
+ * **`background-gradient-direction`** : For `background-fill: linear-gradient`, this property defines the direction of the background gradient.  The following values are accepted:
+   * `to-bottom` (default)
+   * `to-top`
+   * `to-left`
+   * `to-right`
+   * `to-bottom-right`
+   * `to-bottom-left`
+   * `to-top-right`
+   * `to-top-left`
 
 
 Border:
@@ -295,12 +309,12 @@ These properties affect the styling of an edge's line:
  * **`line-color`** : The colour of the edge's line.
  * **`line-style`** : The style of the edge's line; may be `solid`, `dotted`, or `dashed`.
  * **`line-cap`** : The cap style of the edge's line; may be `butt` (default), `round`, or `square`.  The cap may or may not be visible, depending on the shape of the node and the relative size of the node and edge.  Caps other than `butt` extend beyond the specified endpoint of the edge.
- * **`line-fill`** : The filling style of the edge's line; may be `solid` (default), `linear-gradient`, or `radial-gradient`.
+ * **`line-fill`** : The filling style of the edge's line; may be `solid` (default), `linear-gradient` (source to target), or `radial-gradient` (midpoint outwards).
 
 ## Gradient
 
- * **`line-gradient-stops-colors`** : The colours of the gradient stops.
- * **`line-gradient-stops-positions`** : The positions of the gradient stops (i.e. `0% 50% 100%`). If not specified (or invalid), the stops will divide equally.
+ * **`line-gradient-stop-colors`** : The colours of the gradient stops (e.g. `cyan magenta yellow`).
+ * **`line-gradient-stop-positions`** : The positions of the gradient stops (e.g. `0% 50% 100%`). If not specified (or invalid), the stops will divide equally.
 
 ## Bezier edges
 

@@ -1,6 +1,7 @@
 var CRp = {};
 
 var util = require( '../../../util' );
+var math = require( '../../../math' );
 
 var motionBlurDelay = 100;
 
@@ -47,21 +48,21 @@ CRp.paintCache = function( context ){
   return cache;
 };
 
-const pointsDistance = function( x1, y1, x2, y2 ) {
-  return Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
-};
-
-const createGradientStyleFor = function( context, shapeStyleName, ele, fill, opacity ){
+CRp.createGradientStyleFor = function( context, shapeStyleName, ele, fill, opacity ){
   let gradientStyle;
   let usePaths = this.usePaths();
 
-  let colors = ele.pstyle(shapeStyleName + '-gradient-stops-colors').value,
-    positions = ele.pstyle(shapeStyleName + '-gradient-stops-positions').value;
+  let colors = ele.pstyle(shapeStyleName + '-gradient-stop-colors').value,
+    positions = ele.pstyle(shapeStyleName + '-gradient-stop-positions').pfValue;
 
   if (fill === 'radial-gradient') {
     if (ele.isEdge()) {
-      let start = ele.sourceEndpoint(), end = ele.targetEndpoint();
-      gradientStyle = context.createRadialGradient(start.x, start.y, 0, start.x, start.y, pointsDistance(start.x, start.y, end.x, end.y));
+      let start = ele.sourceEndpoint(), end = ele.targetEndpoint(), mid = ele.midpoint();
+
+      let d1 = math.dist( start, mid );
+      let d2 = math.dist( end, mid );
+
+      gradientStyle = context.createRadialGradient(mid.x, mid.y, 0, mid.x, mid.y, Math.max(d1, d2));
     } else {
       let pos = usePaths ? {x: 0, y: 0 } : ele.position(),
         width = ele.width(), height = ele.height();
@@ -71,6 +72,7 @@ const createGradientStyleFor = function( context, shapeStyleName, ele, fill, opa
   else {
     if (ele.isEdge()) {
       let start = ele.sourceEndpoint(), end = ele.targetEndpoint();
+
       gradientStyle = context.createLinearGradient(start.x, start.y, end.x, end.y);
     } else {
       let pos = usePaths ? {x: 0, y: 0 } : ele.position(),
@@ -114,15 +116,15 @@ const createGradientStyleFor = function( context, shapeStyleName, ele, fill, opa
   let hasPositions = positions.length === colors.length;
 
   let length = colors.length;
-  for (let i = 0; i < length ; i++) {
-    gradientStyle.addColorStop(hasPositions ? positions[i] / 100 : i / (length - 1), 'rgba(' + colors[i][0] + ',' + colors[i][1] + ',' + colors[i][2] + ',' + opacity + ')');
+  for (let i = 0; i < length; i++) {
+    gradientStyle.addColorStop(hasPositions ? positions[i] : i / (length - 1), 'rgba(' + colors[i][0] + ',' + colors[i][1] + ',' + colors[i][2] + ',' + opacity + ')');
   }
 
   return gradientStyle;
 };
 
 CRp.gradientFillStyle = function( context, ele, fill, opacity ){
-  const gradientStyle = createGradientStyleFor.call(this, context, 'background', ele, fill ,opacity);
+  const gradientStyle = this.createGradientStyleFor(context, 'background', ele, fill, opacity);
   if (!gradientStyle) return null; // error
   context.fillStyle = gradientStyle;
 };
@@ -145,15 +147,14 @@ CRp.eleFillStyle = function( context, ele, opacity ){
 
   if (backgroundFill === 'linear-gradient' || backgroundFill === 'radial-gradient') {
     this.gradientFillStyle(context, ele, backgroundFill, opacity);
-  }
-  else {
+  } else {
     let backgroundColor = ele.pstyle('background-color').value;
     this.colorFillStyle( context, backgroundColor[0], backgroundColor[1], backgroundColor[2], opacity );
   }
 };
 
 CRp.gradientStrokeStyle = function( context, ele, fill, opacity ){
-  const gradientStyle = createGradientStyleFor.call(this, context, 'line', ele, fill ,opacity);
+  const gradientStyle = this.createGradientStyleFor(context, 'line', ele, fill ,opacity);
   if (!gradientStyle) return null; // error
   context.strokeStyle = gradientStyle;
 };
@@ -176,8 +177,7 @@ CRp.eleStrokeStyle = function( context, ele, opacity ){
 
   if (lineFill === 'linear-gradient' || lineFill === 'radial-gradient') {
     this.gradientStrokeStyle(context, ele, lineFill, opacity);
-  }
-  else {
+  } else {
     let lineColor = ele.pstyle('line-color').value;
     this.colorStrokeStyle( context, lineColor[0], lineColor[1], lineColor[2], opacity );
   }

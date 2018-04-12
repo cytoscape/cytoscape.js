@@ -233,8 +233,8 @@ let styfn = {};
 
     // node body gradient
     { name: 'background-gradient-direction', type: t.gradientDirection },
-    { name: 'background-gradient-stops-colors', type: t.colors },
-    { name: 'background-gradient-stops-positions', type: t.percentages },
+    { name: 'background-gradient-stop-colors', type: t.colors },
+    { name: 'background-gradient-stop-positions', type: t.percentages },
 
     // node border
     { name: 'border-color', type: t.color },
@@ -288,8 +288,8 @@ let styfn = {};
     { name: 'target-distance-from-node', type: t.size },
 
     // edge gradient
-    { name: 'line-gradient-stops-colors', type: t.colors },
-    { name: 'line-gradient-stops-positions', type: t.percentages },
+    { name: 'line-gradient-stop-colors', type: t.colors },
+    { name: 'line-gradient-stop-positions', type: t.percentages },
 
     // ghost properties
     { name: 'ghost', type: t.bool },
@@ -462,8 +462,8 @@ styfn.getDefaultProperties = util.memoize( function(){
 
     // node gradient
     'background-gradient-direction': 'to-bottom',
-    'background-gradient-stops-colors': '#999 #333',
-    'background-gradient-stops-positions': '0 100',
+    'background-gradient-stop-colors': '#999',
+    'background-gradient-stop-positions': '0%',
 
     // ghost props
     'ghost': 'no',
@@ -504,8 +504,8 @@ styfn.getDefaultProperties = util.memoize( function(){
     'line-color': '#999',
     'line-fill': 'solid',
     'line-cap': 'butt',
-    'line-gradient-stops-colors': '#999 #333',
-    'line-gradient-stops-positions': '0 100',
+    'line-gradient-stop-colors': '#999',
+    'line-gradient-stop-positions': '0%',
     'control-point-step-size': 40,
     'control-point-weights': 0.5,
     'segment-weights': 0.5,

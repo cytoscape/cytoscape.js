@@ -24,6 +24,7 @@ let styfn = {};
   styfn.types = {
     time: { number: true, min: 0, units: 's|ms', implicitUnits: 'ms' },
     percent: { number: true, min: 0, max: 100, units: '%', implicitUnits: '%' },
+    percentages: { number: true, min: 0, max: 100, units: '%', implicitUnits: '%', multiple: true },
     zeroOneNumber: { number: true, min: 0, max: 1, unitless: true },
     zeroOneNumbers: { number: true, min: 0, max: 1, unitless: true, multiple: true },
     nOneOneNumber: { number: true, min: -1, max: 1, unitless: true },
@@ -47,6 +48,7 @@ let styfn = {};
     bgClip: { enums: [ 'none', 'node' ] },
     color: { color: true },
     colors: { color: true, multiple: true },
+    fill: { enums: ['solid', 'linear-gradient', 'radial-gradient'] },
     bool: { enums: [ 'yes', 'no' ] },
     lineStyle: { enums: [ 'solid', 'dotted', 'dashed' ] },
     lineCap: { enums: [ 'butt', 'round', 'square' ] },
@@ -119,7 +121,12 @@ let styfn = {};
         'ease-in-expo', 'ease-out-expo', 'ease-in-out-expo',
         'ease-in-circ', 'ease-out-circ', 'ease-in-out-circ'
       ]
-    }
+    },
+    gradientDirection: { enums: [
+      'to-bottom', 'to-top', 'to-left', 'to-right',
+      'to-bottom-right', 'to-bottom-left', 'to-top-right', 'to-top-left',
+      'to-right-bottom', 'to-left-bottom', 'to-right-top', 'to-left-top', // different order
+    ] }
   };
 
   let zOrderDiff = {
@@ -218,10 +225,16 @@ let styfn = {};
     { name: 'shape', type: t.nodeShape },
     { name: 'shape-polygon-points', type: t.polygonPointList },
     { name: 'background-color', type: t.color },
+    { name: 'background-fill', type: t.fill },
     { name: 'background-opacity', type: t.zeroOneNumber },
     { name: 'background-blacken', type: t.nOneOneNumber },
     { name: 'padding', type: t.sizeMaybePercent },
     { name: 'padding-relative-to', type: t.paddingRelativeTo },
+
+    // node body gradient
+    { name: 'background-gradient-direction', type: t.gradientDirection },
+    { name: 'background-gradient-stops-colors', type: t.colors },
+    { name: 'background-gradient-stops-positions', type: t.percentages },
 
     // node border
     { name: 'border-color', type: t.color },
@@ -256,6 +269,7 @@ let styfn = {};
     // edge line
     { name: 'line-style', type: t.lineStyle },
     { name: 'line-color', type: t.color },
+    { name: 'line-fill', type: t.fill },
     { name: 'line-cap', type: t.lineCap },
     { name: 'curve-style', type: t.curveStyle },
     { name: 'haystack-radius', type: t.zeroOneNumber },
@@ -272,6 +286,10 @@ let styfn = {};
     { name: 'loop-sweep', type: t.angle },
     { name: 'source-distance-from-node', type: t.size },
     { name: 'target-distance-from-node', type: t.size },
+
+    // edge gradient
+    { name: 'line-gradient-stops-colors', type: t.colors },
+    { name: 'line-gradient-stops-positions', type: t.percentages },
 
     // ghost properties
     { name: 'ghost', type: t.bool },
@@ -419,6 +437,7 @@ styfn.getDefaultProperties = util.memoize( function(){
     // node props
     'background-blacken': 0,
     'background-color': '#999',
+    'background-fill': 'solid',
     'background-opacity': 1,
     'background-image': 'none',
     'background-image-crossorigin': 'anonymous',
@@ -440,6 +459,11 @@ styfn.getDefaultProperties = util.memoize( function(){
     'width': 30,
     'shape': 'ellipse',
     'shape-polygon-points': '-1, -1,   1, -1,   1, 1,   -1, 1',
+
+    // node gradient
+    'background-gradient-direction': 'to-bottom',
+    'background-gradient-stops-colors': '#999 #333',
+    'background-gradient-stops-positions': '0 100',
 
     // ghost props
     'ghost': 'no',
@@ -478,7 +502,10 @@ styfn.getDefaultProperties = util.memoize( function(){
     // edge props
     'line-style': 'solid',
     'line-color': '#999',
+    'line-fill': 'solid',
     'line-cap': 'butt',
+    'line-gradient-stops-colors': '#999 #333',
+    'line-gradient-stops-positions': '0 100',
     'control-point-step-size': 40,
     'control-point-weights': 0.5,
     'segment-weights': 0.5,

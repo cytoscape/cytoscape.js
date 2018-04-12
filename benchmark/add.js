@@ -16,7 +16,7 @@ for( var i = 0; i < N; i++ ){
       data: { source: 'node-'+(i-1), target: 'node-'+(i) }
     });
   }
-};
+}
 
 global.elesJson = JSON.stringify( eles );
 
@@ -25,7 +25,7 @@ suite
     cy.add( eles );
   }, {
     setup: function( cytoscape ){
-      global.eles = JSON.parse( elesJson );
+      global.eles = JSON.parse( global.elesJson );
 
       return cytoscape();
     }

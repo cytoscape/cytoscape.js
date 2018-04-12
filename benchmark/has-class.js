@@ -8,7 +8,7 @@ var suite = new Suite('eles.hasClass()', {
 
     a = cy.nodes();
 
-    return cy
+    return cy;
   }
 });
 

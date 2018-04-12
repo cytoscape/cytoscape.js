@@ -68,7 +68,7 @@
   },
   "main": "dist/cytoscape.umd.js",
   "scripts": {
-    "lint": "eslint src",
+    "lint": "eslint src benchmark",
     "build": "run-s build:*",
     "build:unmin": "cross-env NODE_ENV=development FILENAME=cytoscape.js MINIFY=false BABEL=true SOURCEMAPS=false webpack",
     "build:min": "cross-env NODE_ENV=development FILENAME=cytoscape.min.js MINIFY=true BABEL=true SOURCEMAPS=false webpack",

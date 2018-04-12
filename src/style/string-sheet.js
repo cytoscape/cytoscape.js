@@ -1,5 +1,5 @@
-let util = require( '../util' );
-let Selector = require( '../selector' );
+import util from '../util';
+import Selector from '../selector';
 
 let styfn = {};
 
@@ -133,4 +133,4 @@ styfn.fromString = function( string ){
   return style;
 };
 
-module.exports = styfn;
+export default styfn;

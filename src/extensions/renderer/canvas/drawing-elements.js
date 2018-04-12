@@ -1,4 +1,4 @@
-let math = require( '../../../math' );
+import math from '../../../math';
 
 let CRp = {};
 
@@ -111,4 +111,4 @@ if( process.env.NODE_ENV !== 'production' ){
   };
 }
 
-module.exports = CRp;
+export default CRp;

@@ -1,5 +1,5 @@
-var is = require( '../../is' );
-var util = require( '../../util' );
+import is from '../../is';
+import util from '../../util';
 
 var elesfn = ({
 
@@ -189,4 +189,4 @@ var elesfn = ({
 
 }); // elesfn
 
-module.exports = elesfn;
+export default elesfn;

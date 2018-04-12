@@ -25,4 +25,4 @@ let elesfn = ({
 });
 
 
-module.exports = elesfn;
+export default elesfn;

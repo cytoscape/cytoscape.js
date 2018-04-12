@@ -1,4 +1,5 @@
-let util = require('../../util');
+import util from '../../util';
+
 let fn, elesfn;
 
 fn = elesfn = {};
@@ -103,4 +104,4 @@ elesfn.padding = function(){
   }
 };
 
-module.exports = elesfn;
+export default elesfn;

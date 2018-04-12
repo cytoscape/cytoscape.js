@@ -1,5 +1,5 @@
-let is = require( '../is' );
-let Style = require( '../style' );
+import is from '../is';
+import Style from '../style';
 
 let corefn = ({
 
@@ -33,4 +33,4 @@ let corefn = ({
   }
 });
 
-module.exports = corefn;
+export default corefn;

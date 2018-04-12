@@ -1,5 +1,5 @@
-let util = require( '../util' );
-let is = require( '../is' );
+import util from '../util';
+import is from '../is';
 
 let define = {
 
@@ -191,4 +191,4 @@ let define = {
   }, // removeData
 }; // define
 
-module.exports = define;
+export default define;

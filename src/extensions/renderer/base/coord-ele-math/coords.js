@@ -1,8 +1,6 @@
-var window = require( '../../../../window' );
-var math = require( '../../../../math' );
-var util = require( '../../../../util' );
-var window = require( '../../../../window' );
-
+import window from '../../../../window';
+import math from '../../../../math';
+import util from '../../../../util';
 
 var BRp = {};
 
@@ -392,4 +390,4 @@ BRp.getAllInBox = function( x1, y1, x2, y2 ){
   return box;
 };
 
-module.exports = BRp;
+export default BRp;

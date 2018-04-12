@@ -6,8 +6,8 @@
 // References for fuzzy c-means: Ross, Fuzzy Logic w/Engineering Applications (2010), pages 352-353
 //                               http://yaikhom.com/2013/03/16/implementing-the-fuzzy-c-means-algorithm.html
 
-const clusteringDistance = require('./clustering-distances');
-const util = require('../../util');
+import clusteringDistance from './clustering-distances';
+import util from '../../util';
 
 let defaults = {
   k: 2,
@@ -473,6 +473,6 @@ let fuzzyCMeans = function( options ) {
   };
 };
 
-module.exports = {
+export default {
   kMeans, kMedoids, fuzzyCMeans, fcm: fuzzyCMeans
 };

@@ -1,7 +1,7 @@
-let is = require( '../is' );
-let util = require( '../util' );
-let Collection = require( '../collection' );
-let Element = require( '../collection/element' );
+import is from '../is';
+import util from '../util';
+import Collection from '../collection';
+import Element from '../collection/element';
 
 let corefn = {
   add: function( opts ){
@@ -79,4 +79,4 @@ let corefn = {
   }
 };
 
-module.exports = corefn;
+export default corefn;

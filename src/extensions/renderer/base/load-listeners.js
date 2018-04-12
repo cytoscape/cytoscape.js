@@ -1,6 +1,6 @@
-var is = require( '../../../is' );
-var util = require( '../../../util' );
-var math = require( '../../../math' );
+import is from '../../../is';
+import util from '../../../util';
+import math from '../../../math';
 
 var BRp = {};
 
@@ -2119,4 +2119,4 @@ BRp.load = function(){
   }
 };
 
-module.exports = BRp;
+export default BRp;

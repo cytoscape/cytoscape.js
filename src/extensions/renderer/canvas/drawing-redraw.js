@@ -1,7 +1,7 @@
-var CRp = {};
+import util from '../../../util';
+import math from '../../../math';
 
-var util = require( '../../../util' );
-var math = require( '../../../math' );
+var CRp = {};
 
 var motionBlurDelay = 100;
 
@@ -681,4 +681,4 @@ CRp.render = function( options ){
 
 };
 
-module.exports = CRp;
+export default CRp;

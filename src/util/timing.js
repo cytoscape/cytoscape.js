@@ -1,4 +1,6 @@
-var window = require( '../window' );
+import window from '../window';
+import debounce from 'lodash.debounce';
+
 var performance = window ? window.performance : null;
 
 var util = {};
@@ -33,10 +35,10 @@ util.requestAnimationFrame = function( fn ){
 
 util.performanceNow = pnow;
 
-util.debounce = require('lodash.debounce');
+util.debounce = debounce;
 
 util.now = function(){
   return Date.now();
 };
 
-module.exports = util;
+export default util;

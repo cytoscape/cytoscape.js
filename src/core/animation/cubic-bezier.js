@@ -155,4 +155,4 @@ function generateCubicBezier(mX1, mY1, mX2, mY2) {
   return f;
 }
 
-module.exports = generateCubicBezier;
+export default generateCubicBezier;

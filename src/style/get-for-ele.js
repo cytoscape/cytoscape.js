@@ -1,5 +1,5 @@
-let util = require( '../util' );
-let is = require( '../is' );
+import util from '../util';
+import is from '../is';
 
 let styfn = {};
 
@@ -160,4 +160,4 @@ styfn.getPropertiesHash = function( ele, propNames, seed ){
   return util.hashIterableInts( getPropIntIterator( ele, propNames, seed ) );
 };
 
-module.exports = styfn;
+export default styfn;

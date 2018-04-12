@@ -1,4 +1,4 @@
-const math = require('../../math');
+import math from '../../math';
 
 const ifEdge = (ele, getValue) => {
   if( ele.isEdge() ){
@@ -40,7 +40,7 @@ const pts = {
 
 const renderedName = name => 'rendered' + name[0].toUpperCase() + name.substr(1);
 
-module.exports = Object.keys( pts ).reduce( ( obj, name ) => {
+export default Object.keys( pts ).reduce( ( obj, name ) => {
   let spec = pts[ name ];
   let rName = renderedName( name );
 

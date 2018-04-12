@@ -85,4 +85,4 @@ let generateSpringRK4 = (function(){
   };
 }());
 
-module.exports = generateSpringRK4;
+export default generateSpringRK4;

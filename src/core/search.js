@@ -1,5 +1,5 @@
-let is = require( '../is' );
-let Collection = require( '../collection' );
+import is from '../is';
+import Collection from '../collection';
 
 let corefn = ({
 
@@ -66,4 +66,4 @@ let corefn = ({
 // aliases
 corefn.elements = corefn.filter = corefn.$;
 
-module.exports = corefn;
+export default corefn;

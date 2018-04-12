@@ -1,4 +1,4 @@
-let define = require( '../define' );
+import define from '../define';
 
 let elesfn = ({
   animate: define.animate(),
@@ -10,4 +10,4 @@ let elesfn = ({
   stop: define.stop()
 });
 
-module.exports = elesfn;
+export default elesfn;

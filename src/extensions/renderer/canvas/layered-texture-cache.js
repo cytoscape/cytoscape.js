@@ -1,8 +1,8 @@
-var util = require( '../../../util' );
-var math = require( '../../../math' );
-var Heap = require( '../../../heap' );
-var is = require( '../../../is' );
-var defs = require( './texture-cache-defs' );
+import util from '../../../util';
+import math from '../../../math';
+import Heap from '../../../heap';
+import is from '../../../is';
+import defs from './texture-cache-defs';
 
 var defNumLayers = 1; // default number of layers to use
 var minLvl = -4; // when scaling smaller than that we don't need to re-render
@@ -683,4 +683,4 @@ LTCp.setupDequeueing = defs.setupDequeueing({
   }
 });
 
-module.exports = LayeredTextureCache;
+export default LayeredTextureCache;

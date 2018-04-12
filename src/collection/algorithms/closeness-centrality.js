@@ -1,4 +1,4 @@
-var is = require( '../../is' );
+import is from '../../is';
 
 var elesfn = ({
 
@@ -125,4 +125,4 @@ var elesfn = ({
 elesfn.cc = elesfn.closenessCentrality;
 elesfn.ccn = elesfn.closenessCentralityNormalised = elesfn.closenessCentralityNormalized;
 
-module.exports = elesfn;
+export default elesfn;

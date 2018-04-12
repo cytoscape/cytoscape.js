@@ -1,6 +1,6 @@
-let is = require( '../is' );
+import is from '../is';
 
-module.exports = {
+export default {
   // get [r, g, b] from #abc or #aabbcc
   hex2tuple: function( hex ){
     if( !(hex.length === 4 || hex.length === 7) || hex[0] !== '#' ){ return; }

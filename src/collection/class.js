@@ -1,5 +1,5 @@
-let Set = require('../set');
-let is = require('../is');
+import Set from '../set';
+import is from '../is';
 
 let elesfn = ({
   classes: function( classes ){
@@ -129,4 +129,4 @@ let elesfn = ({
   }
 });
 
-module.exports = elesfn;
+export default elesfn;

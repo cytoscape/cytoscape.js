@@ -1,5 +1,5 @@
-let step = require('./step');
-let startAnimation = require('./start');
+import step from './step';
+import startAnimation from './start';
 
 function stepAll( now, cy ){
   let eles = cy._private.aniEles;
@@ -130,4 +130,4 @@ function stepAll( now, cy ){
 
 } // stepAll
 
-module.exports = stepAll;
+export default stepAll;

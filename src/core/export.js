@@ -20,4 +20,4 @@ let corefn = ({
 
 corefn.jpeg = corefn.jpg;
 
-module.exports = corefn;
+export default corefn;

@@ -1,6 +1,6 @@
-const util = require('../util');
-const exprs = require('./expressions');
-const newQuery = require('./new-query');
+import util from '../util';
+import exprs from './expressions';
+import newQuery from './new-query';
 
 // of all the expressions, find the first match in the remaining text
 let consumeExpr = function( remaining ){
@@ -125,4 +125,4 @@ let parse = function( selector ){
   return true; // success
 };
 
-module.exports = { parse };
+export default { parse };

@@ -1,6 +1,6 @@
-let easings = require('./easings');
-let ease = require('./ease');
-let is = require('../../is');
+import easings from './easings';
+import ease from './ease';
+import is from '../../is';
 
 function step( self, ani, now, isCore ){
   let isEles = !isCore;
@@ -158,4 +158,4 @@ function valid( start, end ){
   return false;
 }
 
-module.exports = step;
+export default step;

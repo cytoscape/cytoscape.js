@@ -24,4 +24,4 @@ let newQuery = function(){
   };
 };
 
-module.exports = newQuery;
+export default newQuery;

@@ -9,7 +9,7 @@ let hslaNoBackRefs = 'hsl[a]?\\((?:' + number + ')\\s*,\\s*(?:' + number + '[%])
 let hex3 = '\\#[0-9a-fA-F]{3}';
 let hex6 = '\\#[0-9a-fA-F]{6}';
 
-module.exports = {
+export default {
   regex: {
     number: number,
     rgba: rgba,

@@ -1,5 +1,5 @@
-let util = require( '../../util' );
-let math = require( '../../math' );
+import util from '../../util';
+import math from '../../math';
 
 let defaults = {
   fit: true, // whether to fit the viewport to the graph
@@ -244,4 +244,4 @@ GridLayout.prototype.run = function(){
 
 };
 
-module.exports = GridLayout;
+export default GridLayout;

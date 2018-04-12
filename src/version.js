@@ -1,1 +1,1 @@
-module.exports = process.env.VERSION || 'snapshot';
+export default process.env.VERSION || 'snapshot';

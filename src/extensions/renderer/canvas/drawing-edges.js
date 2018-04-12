@@ -1,6 +1,6 @@
 /* global Path2D */
 
-let util = require('../../../util');
+import util from '../../../util';
 
 let CRp = {};
 
@@ -306,4 +306,4 @@ CRp.drawArrowShape = function( edge, context, fill, edgeWidth, shape, x, y, angl
   }
 };
 
-module.exports = CRp;
+export default CRp;

@@ -1,7 +1,9 @@
-const { stateSelectorRegex } = require('./state');
-const tokens = require('./tokens');
-const util = require('../util');
-const newQuery = require('./new-query');
+import state from './state';
+import tokens from './tokens';
+import util from '../util';
+import newQuery from './new-query';
+
+const { stateSelectorRegex } = state;
 
 // when a token like a variable has escaped meta characters, we need to clean the backslashes out
 // so that values get compared properly in Selector.filter()
@@ -227,4 +229,4 @@ let exprs = [
 
 exprs.forEach( e => e.regexObj = new RegExp( '^' + e.regex ) );
 
-module.exports = exprs;
+export default exprs;

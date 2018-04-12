@@ -143,4 +143,4 @@ CRp.drawInscribedImage = function( context, img, node, index, nodeOpacity ){
 
 };
 
-module.exports = CRp;
+export default CRp;

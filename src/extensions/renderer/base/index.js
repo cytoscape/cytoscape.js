@@ -1,6 +1,13 @@
-var is = require('../../../is');
-var util = require('../../../util');
-var window = require('../../../window');
+import is from '../../../is';
+import util from '../../../util';
+import window from '../../../window';
+
+import arrowShapes from './arrow-shapes';
+import coordEleMath from './coord-ele-math';
+import images from './images';
+import loadListeners from './load-listeners';
+import nodeShapes from './node-shapes';
+import redraw from './redraw';
 
 var BaseRenderer = function( options ){ this.init( options ); };
 var BR = BaseRenderer;
@@ -201,14 +208,14 @@ BRp.isHeadless = function(){
 };
 
 [
-  require( './arrow-shapes' ),
-  require( './coord-ele-math' ),
-  require( './images' ),
-  require( './load-listeners' ),
-  require( './node-shapes' ),
-  require( './redraw' )
+  arrowShapes,
+  coordEleMath,
+  images,
+  loadListeners,
+  nodeShapes,
+  redraw
 ].forEach( function( props ){
   util.extend( BRp, props );
 } );
 
-module.exports = BR;
+export default BR;

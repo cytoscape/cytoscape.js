@@ -1,6 +1,7 @@
 /*global HTMLElement DocumentTouch */
 
-let window = require( './window' );
+import window from './window';
+
 let navigator = window ? window.navigator : null;
 let document = window ? window.document : null;
 
@@ -176,4 +177,4 @@ let is = {
   }
 };
 
-module.exports = is;
+export default is;

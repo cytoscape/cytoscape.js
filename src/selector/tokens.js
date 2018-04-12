@@ -1,4 +1,4 @@
-const util = require('../util');
+import util from '../util';
 
 // tokens in the query language
 const tokens = {
@@ -43,4 +43,4 @@ tokens.id = tokens.variable; // an element id (follows variable conventions)
   }
 })();
 
-module.exports = tokens;
+export default tokens;

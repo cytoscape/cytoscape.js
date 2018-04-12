@@ -1,4 +1,4 @@
-let util = require( '../../util' );
+import util from '../../util';
 
 // default layout options
 let defaults = {
@@ -50,4 +50,4 @@ NullLayout.prototype.stop = function(){
   return this; // chaining
 };
 
-module.exports = NullLayout;
+export default NullLayout;

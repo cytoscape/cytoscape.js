@@ -43,9 +43,7 @@ let elesfn = ({
     let _p = this._private;
 
     if( !_p.emitter ){
-      _p.emitter = new Emitter( util.assign( {
-        context: this
-      }, emitterOptions ) );
+      _p.emitter = new Emitter( emitterOptions, this );
     }
 
     return this;

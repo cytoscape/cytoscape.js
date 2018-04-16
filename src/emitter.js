@@ -30,9 +30,17 @@ const defaults = {
   context: this
 };
 
-function Emitter( opts ){
-  util.assign( this, defaults, opts );
+let defaultsKeys = Object.keys( defaults );
 
+function Emitter( opts, context ){
+  // micro-optimisation vs Object.assign() -- reduces Element instantiation time
+  for( let i = 0; i < defaultsKeys.length; i++ ){
+    let key = defaultsKeys[i];
+
+    this[key] = opts[key] || defaults[key];
+  }
+
+  this.context = context || this.context;
   this.listeners = [];
   this.emitting = 0;
 }

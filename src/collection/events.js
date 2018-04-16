@@ -1,7 +1,6 @@
 import Emitter from '../emitter';
 import define from '../define';
 import is from '../is';
-import util from '../util';
 import Selector from '../selector';
 
 let emitterOptions = {
@@ -56,9 +55,7 @@ let elesfn = ({
       let _p = ele._private;
 
       if( !_p.emitter ){
-        _p.emitter = new Emitter( util.assign( {
-          context: ele
-        }, emitterOptions ) );
+        _p.emitter = new Emitter( emitterOptions, ele );
       }
     }
 

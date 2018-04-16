@@ -12,6 +12,7 @@ import util from '../../util';
 let defaults = {
   k: 2,
   m: 2,
+  sensitivityThreshold: 0.0001,
   distance: 'euclidean',
   maxIterations: 10,
   attributes: [],
@@ -96,25 +97,19 @@ let buildCluster = function( centroid, nodes, assignment ) {
   return cluster;
 };
 
-let hasConverged = function( v1, v2, roundFactor ) {
-  if ( typeof v1 === 'object' || typeof v2 === 'object' ) { // type matrices
-    for ( let i = 0; i < v1.length; i++ ) {
-      for (let j = 0; j < v1[i].length; j++ ) {
-        let v1_elem = Math.round(v1[i][j] * Math.pow(10, roundFactor)) / Math.pow(10, roundFactor); // truncate to 'roundFactor' decimal places
-        let v2_elem = Math.round(v2[i][j] * Math.pow(10, roundFactor)) / Math.pow(10, roundFactor);
+let haveValuesConverged = function( v1, v2, sensitivityThreshold ){
+  return Math.abs( v2 - v1 ) <= sensitivityThreshold;
+};
 
-        if (v1_elem !== v2_elem) {
-          return false;
-        }
-      }
+let haveMatricesConverged = function( v1, v2, sensitivityThreshold ) {
+  for ( let i = 0; i < v1.length; i++ ) {
+    for (let j = 0; j < v1[i].length; j++ ) {
+      let diff = Math.abs( v1[i][j] - v2[i][j] );
+
+      if( diff > sensitivityThreshold ){ return false; }
     }
-    return true;
   }
-  else {
-    v1 = Math.round(v1 * Math.pow(10, roundFactor)) / Math.pow(10, roundFactor); // truncate to 'roundFactor' decimal places
-    v2 = Math.round(v2 * Math.pow(10, roundFactor)) / Math.pow(10, roundFactor);
-    return v1 === v2;
-  }
+  return true;
 };
 
 let seenBefore = function ( node, medoids, n ) {
@@ -230,7 +225,7 @@ let kMeans = function( options ){
         newCentroid[d] = sum[d] / cluster.length;
 
         // Check to see if algorithm has converged, i.e. when centroids no longer change
-        if ( !hasConverged(newCentroid[d], centroid[d], 4) ) { // approximates to 4 decimal places
+        if ( !haveValuesConverged(newCentroid[d], centroid[d], opts.sensitivityThreshold) ) {
           isStillMoving = true;
         }
       }
@@ -411,7 +406,6 @@ let fuzzyCMeans = function( options ) {
   let weight;
 
   // Step 1: Initialize letiables.
-  //initFCM( U, _U, centroids, weight, nodes, opts );
   _U = new Array(nodes.length);
   for ( let i = 0; i < nodes.length; i++ ) { // N x C matrix
     _U[i] = new Array(opts.k);
@@ -457,7 +451,7 @@ let fuzzyCMeans = function( options ) {
     updateMembership( U, _U, centroids, nodes, opts );
 
     // Step 4: Check for convergence.
-    if ( !hasConverged( U, _U, 4 ) ) {
+    if ( !haveMatricesConverged( U, _U, opts.sensitivityThreshold ) ) {
       isStillMoving = true;
     }
 

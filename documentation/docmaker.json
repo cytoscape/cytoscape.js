@@ -3277,7 +3277,8 @@
                         ] },
                         { "name": "function( nodeP, nodeQ )", "descr": "A custom function that returns the distance between `nodeP` and `nodeQ`.  This allows for specifying the distance matrix directly, forgoing attributes." }
                       ] },
-                      { "name": "maxIterations", "descr": "The maximum number of iterations of the algorithm to run (default `10`).", "optional": true }
+                      { "name": "maxIterations", "descr": "The maximum number of iterations of the algorithm to run (default `10`).", "optional": true },
+                      { "name": "sensitivityThreshold", "descr": "The coefficients difference threshold used to determine whether the algorithm has converged (default `0.001`).", "optional": true }
                     ] }
                   ]
                 }
@@ -3340,7 +3341,8 @@
                         ] },
                         { "name": "function( nodeP, nodeQ )", "descr": "A custom function that returns the distance between `nodeP` and `nodeQ`.  This allows for specifying the distance matrix directly, forgoing attributes." }
                       ] },
-                      { "name": "maxIterations", "descr": "The maximum number of iterations of the algorithm to run (default `10`).", "optional": true }
+                      { "name": "maxIterations", "descr": "The maximum number of iterations of the algorithm to run (default `10`).", "optional": true },
+                      { "name": "sensitivityThreshold", "descr": "The coefficient difference threshold used to determine whether the algorithm has converged (default `0.001`).", "optional": true }
                     ] }
                   ]
                 }

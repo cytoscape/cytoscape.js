@@ -16,8 +16,8 @@ describe('Algorithms', function(){
     var expectedClusters;
     var clusters;
 
-    before(function(done) {
-      cytoscape({
+    before(function() {
+      cy = cytoscape({
         elements: {
           nodes: [{
               data: {
@@ -132,57 +132,62 @@ describe('Algorithms', function(){
               }
             }
           ]
-        },
-        ready: function() {
-          cy = this;
-          nodes = cy.nodes();
-
-          n1 = cy.$('#1');
-          n2 = cy.$('#2');
-          n3 = cy.$('#3');
-          n4 = cy.$('#4');
-          n5 = cy.$('#5');
-          n6 = cy.$('#6');
-          n7 = cy.$('#7');
-          n8 = cy.$('#8');
-          n9 = cy.$('#9');
-          n10 = cy.$('#10');
-          n11 = cy.$('#11');
-          n12 = cy.$('#12');
-          n13 = cy.$('#13');
-          n14 = cy.$('#14');
-          n15 = cy.$('#15');
-          n16 = cy.$('#16');
-
-          options = {
-            m: 2,
-            distance: 'manhattan',
-            maxIterations: 10,
-            attributes: [
-              function(node) {
-                return node.data('attrA');
-              },
-              function(node) {
-                return node.data('attrB');
-              }
-            ],
-            testMode: true
-          };
-
-          expectedClusters = [{
-              elements: [n1, n2, n3, n4, n5, n6, n7, n8]
-            },
-            {
-              elements: [n9, n10, n11, n12, n13, n14, n15, n16]
-            }
-          ];
-
-          results = cy.elements().fuzzyCMeans(options);
-          clusters = results.clusters;
-
-          done();
         }
       });
+
+      // increase the distance between the expected clusters to ensure the correct result
+      // TODO with this turned off, should we always get the expected result anyway?
+      for( var i = 9; i <= 16; i++ ){
+        var id = '' + i;
+        var el = cy.getElementById(id);
+
+        el.data('attrA', el.data('attrA') + 6);
+      }
+
+      nodes = cy.nodes();
+
+      n1 = cy.$('#1');
+      n2 = cy.$('#2');
+      n3 = cy.$('#3');
+      n4 = cy.$('#4');
+      n5 = cy.$('#5');
+      n6 = cy.$('#6');
+      n7 = cy.$('#7');
+      n8 = cy.$('#8');
+      n9 = cy.$('#9');
+      n10 = cy.$('#10');
+      n11 = cy.$('#11');
+      n12 = cy.$('#12');
+      n13 = cy.$('#13');
+      n14 = cy.$('#14');
+      n15 = cy.$('#15');
+      n16 = cy.$('#16');
+
+      options = {
+        m: 2,
+        distance: 'manhattan',
+        maxIterations: 10,
+        attributes: [
+          function(node) {
+            return node.data('attrA');
+          },
+          function(node) {
+            return node.data('attrB');
+          }
+        ],
+        testMode: true
+      };
+
+      expectedClusters = [{
+          elements: [n1, n2, n3, n4, n5, n6, n7, n8]
+        },
+        {
+          elements: [n9, n10, n11, n12, n13, n14, n15, n16]
+        }
+      ];
+
+      results = cy.elements().fuzzyCMeans(options);
+      clusters = results.clusters;
     });
 
     function classify(node, clusters) {
@@ -247,19 +252,25 @@ describe('Algorithms', function(){
       // Example: [ [1,2,3] , [4,5,6] ] swapped to [ [4,5,6] , [1,2,3] ]
       // However, the same nodes should still be grouped together.
 
-      for (var i = 0; i < 10; i++) {
+      for (var i = 0; i < 1000; i++) {
         var clusters2 = cy.elements().fuzzyCMeans(options).clusters;
 
         expect(clusters2).to.exist;
         expect(clusters2.length).to.equal(clusters.length);
 
-        if (clusters[0][0].id() != clusters2[0][0].id()) {
-          expect(clusters[0].same( clusters2[1] )).to.be.true;
-          expect(clusters[1].same( clusters2[0] )).to.be.true;
-        } else {
-          expect(clusters[0].same( clusters2[0] )).to.be.true;
-          expect(clusters[1].same( clusters2[1] )).to.be.true;
-        }
+        var sortAsNum = function( a, b ){
+          return (+a) - (+b);
+        };
+
+        var getId = function(el){ return el.id(); };
+
+        var asString = function( clusters ){
+          return clusters.map(function( cluster ){
+            return cluster.map( getId ).sort( sortAsNum ).join(',');
+          }).sort().join(' | ');
+        };
+
+        expect( asString(clusters2) ).to.equal( asString(clusters) );
       }
     });
 

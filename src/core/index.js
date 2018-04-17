@@ -338,7 +338,9 @@ util.extend( corefn, {
               ele.json( json );
             } else { // otherwise should be added
               if( gr ){
-                cy.add( util.extend( { group: gr }, json ) );
+                json.group = gr;
+
+                cy.add( json );
               } else {
                 cy.add( json );
               }

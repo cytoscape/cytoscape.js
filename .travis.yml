@@ -5,6 +5,5 @@ node_js:
   - "6"
   - "7"
   - "8"
-  - "stable"
 sudo: false
 script: npm run test-travis

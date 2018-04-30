@@ -27,7 +27,7 @@ const defaults = {
   parent: function( /*context*/ ){
     return null;
   },
-  context: this
+  context: null
 };
 
 let defaultsKeys = Object.keys( defaults );

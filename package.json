@@ -70,6 +70,9 @@
   "scripts": {
     "lint": "eslint src benchmark",
     "build": "rollup -c",
+    "build:unmin": "cross-env FILE=cytoscape.js rollup -c",
+    "build:min": "cross-env FILE=cytoscape.min.js rollup -c",
+    "build:umd": "cross-env FILE=cytoscape.umd.js rollup -c",
     "clean": "rimraf build/*",
     "copyright": "update license",
     "dist:copy": "cpy build/cytoscape.js build/cytoscape.min.js build/cytoscape.umd.js dist",
@@ -82,7 +85,7 @@
     "watch:fast": "run-p watch:sync watch:http watch:build:fast",
     "watch:babel": "run-p watch:sync watch:http watch:build:babel",
     "watch:umd": "run-p watch:build:umd",
-    "watch:build:fast": "cross-env FILE=cytoscape.js BABEL=false rollup -c -w",
+    "watch:build:fast": "cross-env FILE=cytoscape.js SOURCEMAPS=true BABEL=false rollup -c -w",
     "watch:build:babel": "cross-env FILE=cytoscape.js SOURCEMAPS=true rollup -c -w",
     "watch:build:umd": "cross-env FILE=cytoscape.umd.js rollup -c -w",
     "test": "mocha -r esm",

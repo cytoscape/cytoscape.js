@@ -7,10 +7,12 @@ import pkg from './package.json';
 
 const FILE = process.env.FILE;
 const SOURCEMAPS = process.env.SOURCEMAPS === 'true'; // default false
-const BABEL = process.env.BABEL !== 'false' // default true
-const VERSION = process.env.VERSION || 'snapshot'
+const BABEL = process.env.BABEL !== 'false'; // default true
+const VERSION = process.env.VERSION || 'snapshot';
 
 const input = './src/index.js';
+
+const name = 'cytoscape';
 
 const getBabelOptions = () => ({
   exclude: '**/node_modules/**',
@@ -23,7 +25,7 @@ const configs = [
     output: {
       file: 'build/cytoscape.js',
       format: 'umd',
-      name: 'cytoscape',
+      name,
       sourcemap: SOURCEMAPS ? 'inline' : false
     },
     plugins: [
@@ -42,7 +44,7 @@ const configs = [
     output: {
       file: 'build/cytoscape.min.js',
       format: 'umd',
-      name: 'cytoscape'
+      name
     },
     plugins: [
       nodeResolve(),
@@ -66,7 +68,7 @@ const configs = [
     output: {
       file: 'build/cytoscape.umd.js',
       format: 'umd',
-      name: 'cytoscape',
+      name,
       sourcemap: SOURCEMAPS ? 'inline' : false,
       globals: {
         'heap': 'Heap',

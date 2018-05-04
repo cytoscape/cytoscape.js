@@ -85,8 +85,7 @@ styfn.css = function(){
   let self = this;
   let args = arguments;
 
-  switch( args.length ){
-  case 1: {
+  if( args.length === 1 ){
     let map = args[0];
 
     for( let i = 0; i < self.properties.length; i++ ){
@@ -102,15 +101,11 @@ styfn.css = function(){
       }
     }
 
-    break;
-  }
-  case 2:
+  } else if( args.length === 2 ){
     this.cssRule( args[0], args[1] );
-    break;
-
-  default:
-    break; // do nothing if args are invalid
   }
+
+  // do nothing if args are invalid
 
   return this; // chaining
 };
@@ -186,5 +181,8 @@ Style.fromString = function( cy, string ){
 
 Style.types = styfn.types;
 Style.properties = styfn.properties;
+Style.propertyGroups = styfn.propertyGroups;
+Style.propertyGroupNames = styfn.propertyGroupNames;
+Style.propertyGroupKeys = styfn.propertyGroupKeys;
 
 export default Style;

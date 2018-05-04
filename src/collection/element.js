@@ -47,6 +47,7 @@ let Element = function( cy, params, restore ){
     style: {}, // properties as set by the style
     rstyle: {}, // properties for style sent from the renderer to the core
     styleCxts: [], // applied style contexts from the styler
+    styleKeys: {}, // per-group keys of style property values
     removed: true, // whether it's inside the vis; true if removed (set true here since we call restore)
     selected: params.selected ? true : false, // whether it's selected
     selectable: params.selectable === undefined ? true : ( params.selectable ? true : false ), // whether it's selectable

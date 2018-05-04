@@ -1,7 +1,7 @@
 import util from '../util';
 import is from '../is';
 
-let styfn = {};
+const styfn = {};
 
 (function(){
   let number = util.regex.number;
@@ -147,36 +147,52 @@ let styfn = {};
   let zd = zOrderDiff;
 
   // define visual style properties
+  //
+  // - n.b. adding a new group of props may require updates to updateStyleHints()
+  // - adding new props to an existing group gets handled automatically
+
   let t = styfn.types;
-  let props = styfn.properties = [
-    // main label
+
+  let mainLabel = [
     { name: 'label', type: t.text },
     { name: 'text-rotation', type: t.textRotation },
     { name: 'text-margin-x', type: t.bidirectionalSize },
-    { name: 'text-margin-y', type: t.bidirectionalSize },
+    { name: 'text-margin-y', type: t.bidirectionalSize }
+  ];
 
-    // source label
+  let sourceLabel = [
     { name: 'source-label', type: t.text },
     { name: 'source-text-rotation', type: t.textRotation },
     { name: 'source-text-margin-x', type: t.bidirectionalSize },
     { name: 'source-text-margin-y', type: t.bidirectionalSize },
-    { name: 'source-text-offset', type: t.size },
+    { name: 'source-text-offset', type: t.size }
+  ];
 
-    // target label
+  let targetLabel = [
     { name: 'target-label', type: t.text },
     { name: 'target-text-rotation', type: t.textRotation },
     { name: 'target-text-margin-x', type: t.bidirectionalSize },
     { name: 'target-text-margin-y', type: t.bidirectionalSize },
-    { name: 'target-text-offset', type: t.size },
+    { name: 'target-text-offset', type: t.size }
+  ];
 
-    // common label style
+  let labelDimensions = [
+    { name: 'font-family', type: t.fontFamily },
+    { name: 'font-style', type: t.fontStyle },
+    { name: 'font-weight', type: t.fontWeight },
+    { name: 'font-size', type: t.size },
+    { name: 'text-transform', type: t.textTransform },
+    { name: 'text-wrap', type: t.textWrap },
+    { name: 'text-max-width', type: t.size },
+    { name: 'text-outline-width', type: t.size }
+  ];
+
+  let commonLabel = [
     { name: 'text-valign', type: t.valign },
     { name: 'text-halign', type: t.halign },
     { name: 'color', type: t.color },
     { name: 'text-outline-color', type: t.color },
-    { name: 'text-outline-width', type: t.size },
     { name: 'text-outline-opacity', type: t.zeroOneNumber },
-    { name: 'text-opacity', type: t.zeroOneNumber },
     { name: 'text-background-color', type: t.color },
     { name: 'text-background-opacity', type: t.zeroOneNumber },
     { name: 'text-background-padding', type: t.size },
@@ -184,42 +200,39 @@ let styfn = {};
     { name: 'text-border-color', type: t.color },
     { name: 'text-border-width', type: t.size },
     { name: 'text-border-style', type: t.borderStyle },
-    { name: 'text-background-shape', type: t.textBackgroundShape},
-    // { name: 'text-decoration', type: t.textDecoration }, // not supported in canvas
-    { name: 'text-transform', type: t.textTransform },
-    { name: 'text-wrap', type: t.textWrap },
-    { name: 'text-max-width', type: t.size },
-    { name: 'text-events', type: t.bool },
-    { name: 'font-family', type: t.fontFamily },
-    { name: 'font-style', type: t.fontStyle },
-    // { name: 'font-letiant', type: t.fontletiant }, // not useful
-    { name: 'font-weight', type: t.fontWeight },
-    { name: 'font-size', type: t.size },
-    { name: 'min-zoomed-font-size', type: t.size },
+    { name: 'text-background-shape', type: t.textBackgroundShape}
+  ];
 
-    // behaviour
+  let behavior = [
     { name: 'events', type: t.bool },
+    { name: 'text-events', type: t.bool }
+  ];
 
-    // visibility
+  let visibility = [
     { name: 'display', type: t.display, triggersZOrder: zd.anyDiff },
     { name: 'visibility', type: t.visibility, triggersZOrder: zd.anyDiff },
     { name: 'opacity', type: t.zeroOneNumber, triggersZOrder: zd.zeroNonZero },
+    { name: 'text-opacity', type: t.zeroOneNumber },
+    { name: 'min-zoomed-font-size', type: t.size },
     { name: 'z-compound-depth', type: t.zCompoundDepth, triggersZOrder: zd.anyDiff },
     { name: 'z-index-compare', type: t.zIndexCompare, triggersZOrder: zd.anyDiff },
-    { name: 'z-index', type: t.nonNegativeInt, triggersZOrder: zd.anyDiff },
+    { name: 'z-index', type: t.nonNegativeInt, triggersZOrder: zd.anyDiff }
+  ];
 
-    // overlays
+  let overlay = [
     { name: 'overlay-padding', type: t.size },
     { name: 'overlay-color', type: t.color },
-    { name: 'overlay-opacity', type: t.zeroOneNumber },
+    { name: 'overlay-opacity', type: t.zeroOneNumber }
+  ];
 
-    // transition anis
+  let transition = [
     { name: 'transition-property', type: t.propList },
     { name: 'transition-duration', type: t.time },
     { name: 'transition-delay', type: t.time },
-    { name: 'transition-timing-function', type: t.easing },
+    { name: 'transition-timing-function', type: t.easing }
+  ];
 
-    // node body
+  let nodeBody = [
     { name: 'height', type: t.nodeSize },
     { name: 'width', type: t.nodeSize },
     { name: 'shape', type: t.nodeShape },
@@ -229,20 +242,17 @@ let styfn = {};
     { name: 'background-opacity', type: t.zeroOneNumber },
     { name: 'background-blacken', type: t.nOneOneNumber },
     { name: 'padding', type: t.sizeMaybePercent },
-    { name: 'padding-relative-to', type: t.paddingRelativeTo },
+    { name: 'padding-relative-to', type: t.paddingRelativeTo }
+  ];
 
-    // node body gradient
-    { name: 'background-gradient-direction', type: t.gradientDirection },
-    { name: 'background-gradient-stop-colors', type: t.colors },
-    { name: 'background-gradient-stop-positions', type: t.percentages },
-
-    // node border
+  let nodeBorder = [
     { name: 'border-color', type: t.color },
     { name: 'border-opacity', type: t.zeroOneNumber },
     { name: 'border-width', type: t.size },
-    { name: 'border-style', type: t.borderStyle },
+    { name: 'border-style', type: t.borderStyle }
+  ];
 
-    // node background images
+  let backgroundImage = [
     { name: 'background-image', type: t.urls },
     { name: 'background-image-crossorigin', type: t.bgCrossOrigin },
     { name: 'background-image-opacity', type: t.zeroOneNumbers },
@@ -254,9 +264,10 @@ let styfn = {};
     { name: 'background-fit', type: t.bgFit },
     { name: 'background-clip', type: t.bgClip },
     { name: 'background-width', type: t.bgWH },
-    { name: 'background-height', type: t.bgWH },
+    { name: 'background-height', type: t.bgWH }
+  ];
 
-    // compound props
+  let compound = [
     { name: 'position', type: t.position },
     { name: 'compound-sizing-wrt-labels', type: t.compoundIncludeLabels },
     { name: 'min-width', type: t.size },
@@ -264,9 +275,10 @@ let styfn = {};
     { name: 'min-width-bias-right', type: t.sizeMaybePercent },
     { name: 'min-height', type: t.size },
     { name: 'min-height-bias-top', type: t.sizeMaybePercent },
-    { name: 'min-height-bias-bottom', type: t.sizeMaybePercent },
+    { name: 'min-height-bias-bottom', type: t.sizeMaybePercent }
+  ];
 
-    // edge line
+  let edgeLine = [
     { name: 'line-style', type: t.lineStyle },
     { name: 'line-color', type: t.color },
     { name: 'line-fill', type: t.fill },
@@ -285,19 +297,17 @@ let styfn = {};
     { name: 'loop-direction', type: t.angle },
     { name: 'loop-sweep', type: t.angle },
     { name: 'source-distance-from-node', type: t.size },
-    { name: 'target-distance-from-node', type: t.size },
+    { name: 'target-distance-from-node', type: t.size }
+  ];
 
-    // edge gradient
-    { name: 'line-gradient-stop-colors', type: t.colors },
-    { name: 'line-gradient-stop-positions', type: t.percentages },
-
-    // ghost properties
+  let ghost = [
     { name: 'ghost', type: t.bool },
     { name: 'ghost-offset-x', type: t.bidirectionalSize },
     { name: 'ghost-offset-y', type: t.bidirectionalSize },
-    { name: 'ghost-opacity', type: t.zeroOneNumber },
+    { name: 'ghost-opacity', type: t.zeroOneNumber }
+  ];
 
-    // these are just for the core
+  let core = [
     { name: 'selection-box-color', type: t.color },
     { name: 'selection-box-opacity', type: t.zeroOneNumber },
     { name: 'selection-box-border-color', type: t.color },
@@ -308,6 +318,100 @@ let styfn = {};
     { name: 'outside-texture-bg-color', type: t.color },
     { name: 'outside-texture-bg-opacity', type: t.zeroOneNumber }
   ];
+
+  // pie backgrounds for nodes
+  let pie = [];
+  styfn.pieBackgroundN = 16; // because the pie properties are numbered, give access to a constant N (for renderer use)
+  pie.push( { name: 'pie-size', type: t.sizeMaybePercent } );
+  for( let i = 1; i <= styfn.pieBackgroundN; i++ ){
+    pie.push( { name: 'pie-' + i + '-background-color', type: t.color } );
+    pie.push( { name: 'pie-' + i + '-background-size', type: t.percent } );
+    pie.push( { name: 'pie-' + i + '-background-opacity', type: t.zeroOneNumber } );
+  }
+
+  // edge arrows
+  let edgeArrow = [];
+  let arrowPrefixes = styfn.arrowPrefixes = [ 'source', 'mid-source', 'target', 'mid-target' ];
+  [
+    { name: 'arrow-shape', type: t.arrowShape },
+    { name: 'arrow-color', type: t.color },
+    { name: 'arrow-fill', type: t.arrowFill }
+  ].forEach( function( prop ){
+    arrowPrefixes.forEach( function( prefix ){
+      let name = prefix + '-' + prop.name;
+      let type = prop.type;
+
+      edgeArrow.push( { name: name, type: type } );
+    } );
+  }, {} );
+
+  let props = styfn.properties = [
+    // common to all eles
+    ...behavior,
+    ...transition,
+    ...visibility,
+    ...overlay,
+    ...ghost,
+
+    // labels
+    ...commonLabel,
+    ...labelDimensions,
+    ...mainLabel,
+    ...sourceLabel,
+    ...targetLabel,
+
+    // node props
+    ...nodeBody,
+    ...nodeBorder,
+    ...backgroundImage,
+    ...pie,
+    ...compound,
+
+    // edge props
+    ...edgeLine,
+    ...edgeArrow,
+
+    ...core
+  ];
+
+  let propGroups = styfn.propertyGroups = {
+    // common to all eles
+    behavior,
+    transition,
+    visibility,
+    overlay,
+    ghost,
+
+    // labels
+    commonLabel,
+    labelDimensions,
+    mainLabel,
+    sourceLabel,
+    targetLabel,
+
+    // node props
+    nodeBody,
+    nodeBorder,
+    backgroundImage,
+    pie,
+    compound,
+
+    // edge props
+    edgeLine,
+    edgeArrow,
+
+    core
+  };
+
+  let propGroupNames = styfn.propertyGroupNames = {};
+
+  let propGroupKeys = styfn.propertyGroupKeys = Object.keys( propGroups );
+
+  propGroupKeys.forEach( key => {
+    propGroupNames[ key ] = propGroups[ key ].map( prop => prop.name );
+
+    propGroups[ key ].forEach( prop => prop.groupKey = key );
+  } );
 
   // define aliases
   let aliases = styfn.aliases = [
@@ -320,30 +424,6 @@ let styfn = {};
     { name: 'padding-top', pointsTo: 'padding' },
     { name: 'padding-bottom', pointsTo: 'padding' }
   ];
-
-  // pie backgrounds for nodes
-  styfn.pieBackgroundN = 16; // because the pie properties are numbered, give access to a constant N (for renderer use)
-  props.push( { name: 'pie-size', type: t.sizeMaybePercent } );
-  for( let i = 1; i <= styfn.pieBackgroundN; i++ ){
-    props.push( { name: 'pie-' + i + '-background-color', type: t.color } );
-    props.push( { name: 'pie-' + i + '-background-size', type: t.percent } );
-    props.push( { name: 'pie-' + i + '-background-opacity', type: t.zeroOneNumber } );
-  }
-
-  // edge arrows
-  let arrowPrefixes = styfn.arrowPrefixes = [ 'source', 'mid-source', 'target', 'mid-target' ];
-  [
-    { name: 'arrow-shape', type: t.arrowShape },
-    { name: 'arrow-color', type: t.color },
-    { name: 'arrow-fill', type: t.arrowFill }
-  ].forEach( function( prop ){
-    arrowPrefixes.forEach( function( prefix ){
-      let name = prefix + '-' + prop.name;
-      let type = prop.type;
-
-      props.push( { name: name, type: type } );
-    } );
-  }, {} );
 
   // list of property names
   styfn.propertyNames = props.map( function( p ){ return p.name; } );

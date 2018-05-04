@@ -13,6 +13,30 @@ let hashIterableInts = function( iterator, seed = 5381 ){ // djb2/string-hash
   return hash >>> 0;
 };
 
+let hashInt = function( num, seed = 5381 ){ // djb2/string-hash
+  return ( (seed * 33) ^ num ) >>> 0;
+};
+
+let hashIntsArray = function( ints, seed ){
+  let entry = { value: 0, done: false };
+  let i = 0;
+  let length = ints.length;
+
+  let iterator = {
+    next(){
+      if( i < length ){
+        entry.value = ints[i++];
+      } else {
+        entry.done = true;
+      }
+
+      return entry;
+    }
+  };
+
+  return hashIterableInts( iterator, seed );
+};
+
 let hashString = function( str, seed ){
   let entry = { value: 0, done: false };
   let i = 0;
@@ -53,4 +77,4 @@ let hashStringsArray = function( strs ){
   return hash;
 };
 
-export default { hashIterableInts, hashString, hashStrings, hashStringsArray };
+export default { hashIterableInts, hashString, hashStrings, hashStringsArray, hashIntsArray, hashInt };

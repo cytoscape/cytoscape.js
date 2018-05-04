@@ -126,12 +126,13 @@ let getPropIntIterator = ( ele, propNames ) => {
   let strValue = null;
   let strIndex = 0;
   let strLength = 0;
+  let empty = '';
 
   let next = () => {
     if( propIndex < nProps ){
       if( prop === null ){
         prop = ele.pstyle( propNames[ propIndex ] );
-        strValue = prop.strValue;
+        strValue = prop != null ? prop.strValue : empty; // some props have meaningful null values, like control-point-distances
         strIndex = 0;
         strLength = strValue.length;
       }
@@ -156,8 +157,53 @@ let getPropIntIterator = ( ele, propNames ) => {
   return iter;
 };
 
-styfn.getPropertiesHash = function( ele, propNames, seed ){
+// TODO remove unused fns
+styfn.getPropertiesHashDirect = function( ele, propNames, seed ){
+  let hash = seed;
+  let name, val, strVal, chVal;
+  let emptyStr = '';
+  let i, j;
+
+  for( i = 0; i < propNames.length; i++ ){
+    name = propNames[i];
+    val = ele.pstyle( name );
+    strVal = val != null ? val.strValue : emptyStr; // some props have meaningful null values, like control-point-distances
+
+    for( j = 0; j < strVal.length; j++ ){
+      chVal = strVal.charCodeAt(j);
+      hash = util.hashInt( chVal, hash );
+    }
+  }
+
+  return hash;
+};
+
+styfn.getNonDefaultPropertiesHash = function( ele, propNames, seed ){
+  let hash = seed;
+  let name, val, strVal, chVal;
+  let i, j;
+
+  for( i = 0; i < propNames.length; i++ ){
+    name = propNames[i];
+    val = ele.pstyle( name, false );
+
+    if( val == null ){ continue; }
+
+    strVal = val.strValue;
+
+    for( j = 0; j < strVal.length; j++ ){
+      chVal = strVal.charCodeAt(j);
+      hash = util.hashInt( chVal, hash );
+    }
+  }
+
+  return hash;
+};
+
+styfn.getPropertiesHashIter = function( ele, propNames, seed ){
   return util.hashIterableInts( getPropIntIterator( ele, propNames, seed ) );
 };
+
+styfn.getPropertiesHash = styfn.getNonDefaultPropertiesHash;
 
 export default styfn;

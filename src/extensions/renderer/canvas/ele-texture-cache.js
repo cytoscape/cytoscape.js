@@ -2,50 +2,52 @@ import math from '../../../math';
 import util from '../../../util';
 import Heap from '../../../heap';
 import defs from './texture-cache-defs';
+import ElementTextureCacheLookup from './ele-texture-cache-lookup';
 
-var minTxrH = 25; // the size of the texture cache for small height eles (special case)
-var txrStepH = 50; // the min size of the regular cache, and the size it increases with each step up
-var minLvl = -4; // when scaling smaller than that we don't need to re-render
-var maxLvl = 2; // when larger than this scale just render directly (caching is not helpful)
-var maxZoom = 3.99; // beyond this zoom level, layered textures are not used
-var eleTxrSpacing = 8; // spacing between elements on textures to avoid blitting overlaps
-var defTxrWidth = 1024; // default/minimum texture width
-var maxTxrW = 1024; // the maximum width of a texture
-var maxTxrH = 1024;  // the maximum height of a texture
-var minUtility = 0.5; // if usage of texture is less than this, it is retired
-var maxFullness = 0.8; // fullness of texture after which queue removal is checked
-var maxFullnessChecks = 10; // dequeued after this many checks
-var allowEdgeTxrCaching = false; // whether edges can be cached as textures (TODO maybe better on if webgl supported?)
-var allowParentTxrCaching = false; // whether parent nodes can be cached as textures (TODO maybe better on if webgl supported?)
-var deqCost = 0.15; // % of add'l rendering cost allowed for dequeuing ele caches each frame
-var deqAvgCost = 0.1; // % of add'l rendering cost compared to average overall redraw time
-var deqNoDrawCost = 0.9; // % of avg frame time that can be used for dequeueing when not drawing
-var deqFastCost = 0.9; // % of frame time to be used when >60fps
-var deqRedrawThreshold = 100; // time to batch redraws together from dequeueing to allow more dequeueing calcs to happen in the meanwhile
-var maxDeqSize = 1; // number of eles to dequeue and render at higher texture in each batch
+const minTxrH = 25; // the size of the texture cache for small height eles (special case)
+const txrStepH = 50; // the min size of the regular cache, and the size it increases with each step up
+const minLvl = -4; // when scaling smaller than that we don't need to re-render
+const maxLvl = 2; // when larger than this scale just render directly (caching is not helpful)
+const maxZoom = 3.99; // beyond this zoom level, layered textures are not used
+const eleTxrSpacing = 8; // spacing between elements on textures to avoid blitting overlaps
+const defTxrWidth = 1024; // default/minimum texture width
+const maxTxrW = 1024; // the maximum width of a texture
+const maxTxrH = 1024;  // the maximum height of a texture
+const minUtility = 0.5; // if usage of texture is less than this, it is retired
+const maxFullness = 0.8; // fullness of texture after which queue removal is checked
+const maxFullnessChecks = 10; // dequeued after this many checks
+const allowEdgeTxrCaching = false; // whether edges can be cached as textures (TODO maybe better on if webgl supported?)
+const allowParentTxrCaching = false; // whether parent nodes can be cached as textures (TODO maybe better on if webgl supported?)
+const deqCost = 0.15; // % of add'l rendering cost allowed for dequeuing ele caches each frame
+const deqAvgCost = 0.1; // % of add'l rendering cost compared to average overall redraw time
+const deqNoDrawCost = 0.9; // % of avg frame time that can be used for dequeueing when not drawing
+const deqFastCost = 0.9; // % of frame time to be used when >60fps
+const deqRedrawThreshold = 100; // time to batch redraws together from dequeueing to allow more dequeueing calcs to happen in the meanwhile
+const maxDeqSize = 1; // number of eles to dequeue and render at higher texture in each batch
 
-var getTxrReasons = {
+const getTxrReasons = {
   dequeue: 'dequeue',
   downscale: 'downscale',
   highQuality: 'highQuality'
 };
 
-var ElementTextureCache = function( renderer ){
-  var self = this;
+const ElementTextureCache = function( renderer ){
+  let self = this;
 
   self.renderer = renderer;
   self.onDequeues = [];
+  self.lookup = new ElementTextureCacheLookup( ele => ele[0]._private.styleKey );
 
   self.setupDequeueing();
 };
 
-var ETCp = ElementTextureCache.prototype;
+const ETCp = ElementTextureCache.prototype;
 
 ETCp.reasons = getTxrReasons;
 
 // the list of textures in which new subtextures for elements can be placed
 ETCp.getTextureQueue = function( txrH ){
-  var self = this;
+  let self = this;
   self.eleImgCaches = self.eleImgCaches || {};
 
   return ( self.eleImgCaches[ txrH ] = self.eleImgCaches[ txrH ] || [] );
@@ -53,19 +55,19 @@ ETCp.getTextureQueue = function( txrH ){
 
 // the list of usused textures which can be recycled (in use in texture queue)
 ETCp.getRetiredTextureQueue = function( txrH ){
-  var self = this;
+  let self = this;
 
-  var rtxtrQs = self.eleImgCaches.retired = self.eleImgCaches.retired || {};
-  var rtxtrQ = rtxtrQs[ txrH ] = rtxtrQs[ txrH ] || [];
+  let rtxtrQs = self.eleImgCaches.retired = self.eleImgCaches.retired || {};
+  let rtxtrQ = rtxtrQs[ txrH ] = rtxtrQs[ txrH ] || [];
 
   return rtxtrQ;
 };
 
 // queue of element draw requests at different scale levels
 ETCp.getElementQueue = function(){
-  var self = this;
+  let self = this;
 
-  var q = self.eleCacheQueue = self.eleCacheQueue || new Heap(function( a, b ){
+  let q = self.eleCacheQueue = self.eleCacheQueue || new Heap(function( a, b ){
     return b.reqs - a.reqs;
   });
 
@@ -74,18 +76,18 @@ ETCp.getElementQueue = function(){
 
 // queue of element draw requests at different scale levels (element id lookup)
 ETCp.getElementIdToQueue = function(){
-  var self = this;
+  let self = this;
 
-  var id2q = self.eleIdToCacheQueue = self.eleIdToCacheQueue || {};
+  let id2q = self.eleIdToCacheQueue = self.eleIdToCacheQueue || {};
 
   return id2q;
 };
 
 ETCp.getElement = function( ele, bb, pxRatio, lvl, reason ){
-  var self = this;
-  var r = this.renderer;
-  var rs = ele._private.rscratch;
-  var zoom = r.cy.zoom();
+  let self = this;
+  let r = this.renderer;
+  let zoom = r.cy.zoom();
+  let lookup = this.lookup;
 
   if( bb.w === 0 || bb.h === 0 || !ele.visible() ){ return null; }
 
@@ -99,17 +101,16 @@ ETCp.getElement = function( ele, bb, pxRatio, lvl, reason ){
     return null;
   }
 
-  var scale = Math.pow( 2, lvl );
-  var eleScaledH = bb.h * scale;
-  var eleScaledW = bb.w * scale;
-  var caches = rs.imgCaches = rs.imgCaches || {};
-  var eleCache = caches[lvl];
+  let scale = Math.pow( 2, lvl );
+  let eleScaledH = bb.h * scale;
+  let eleScaledW = bb.w * scale;
+  let eleCache = lookup.get( ele, lvl );
 
   if( eleCache ){
     return eleCache;
   }
 
-  var txrH; // which texture height this ele belongs to
+  let txrH; // which texture height this ele belongs to
 
   if( eleScaledH <= minTxrH ){
     txrH = minTxrH;
@@ -128,12 +129,12 @@ ETCp.getElement = function( ele, bb, pxRatio, lvl, reason ){
     return null; // caching large elements is not efficient
   }
 
-  var txrQ = self.getTextureQueue( txrH );
+  let txrQ = self.getTextureQueue( txrH );
 
   // first try the second last one in case it has space at the end
-  var txr = txrQ[ txrQ.length - 2 ];
+  let txr = txrQ[ txrQ.length - 2 ];
 
-  var addNewTxr = function(){
+  let addNewTxr = function(){
     return self.recycleTexture( txrH, eleScaledW ) || self.addTexture( txrH, eleScaledW );
   };
 
@@ -152,25 +153,25 @@ ETCp.getElement = function( ele, bb, pxRatio, lvl, reason ){
     txr = addNewTxr();
   }
 
-  var scaledLabelShown = r.eleTextBiggerThanMin( ele, scale );
-  var scalableFrom = function( otherCache ){
+  let scaledLabelShown = r.eleTextBiggerThanMin( ele, scale );
+  let scalableFrom = function( otherCache ){
     return otherCache && otherCache.scaledLabelShown === scaledLabelShown;
   };
 
-  var deqing = reason && reason === getTxrReasons.dequeue;
-  var highQualityReq = reason && reason === getTxrReasons.highQuality;
-  var downscaleReq = reason && reason === getTxrReasons.downscale;
+  let deqing = reason && reason === getTxrReasons.dequeue;
+  let highQualityReq = reason && reason === getTxrReasons.highQuality;
+  let downscaleReq = reason && reason === getTxrReasons.downscale;
 
-  var higherCache; // the nearest cache with a higher level
-  for( var l = lvl + 1; l <= maxLvl; l++ ){
-    var c = caches[l];
+  let higherCache; // the nearest cache with a higher level
+  for( let l = lvl + 1; l <= maxLvl; l++ ){
+    let c = lookup.get( ele, l );
 
     if( c ){ higherCache = c; break; }
   }
 
-  var oneUpCache = higherCache && higherCache.level === lvl + 1 ? higherCache : null;
+  let oneUpCache = higherCache && higherCache.level === lvl + 1 ? higherCache : null;
 
-  var downscale = function(){
+  let downscale = function(){
     txr.context.drawImage(
       oneUpCache.texture.canvas,
       oneUpCache.x, 0,
@@ -193,7 +194,7 @@ ETCp.getElement = function( ele, bb, pxRatio, lvl, reason ){
     // to cheaply scale towards the smaller level
 
     if( highQualityReq ){
-      for( var l = higherCache.level; l > lvl; l-- ){
+      for( let l = higherCache.level; l > lvl; l-- ){
         oneUpCache = self.getElement( ele, bb, pxRatio, l, getTxrReasons.downscale );
       }
 
@@ -206,10 +207,10 @@ ETCp.getElement = function( ele, bb, pxRatio, lvl, reason ){
     }
   } else {
 
-    var lowerCache; // the nearest cache with a lower level
+    let lowerCache; // the nearest cache with a lower level
     if( !deqing && !highQualityReq && !downscaleReq ){
-      for( var l = lvl - 1; l >= minLvl; l-- ){
-        var c = caches[l];
+      for( let l = lvl - 1; l >= minLvl; l-- ){
+        let c = lookup.get( ele, l );
 
         if( c ){ lowerCache = c; break; }
       }
@@ -232,8 +233,7 @@ ETCp.getElement = function( ele, bb, pxRatio, lvl, reason ){
     txr.context.translate( -txr.usedWidth, 0 );
   }
 
-  eleCache = caches[lvl] = {
-    ele: ele,
+  eleCache = {
     x: txr.usedWidth,
     texture: txr,
     level: lvl,
@@ -247,37 +247,46 @@ ETCp.getElement = function( ele, bb, pxRatio, lvl, reason ){
 
   txr.eleCaches.push( eleCache );
 
+  lookup.set( ele, lvl, eleCache );
+
   self.checkTextureFullness( txr );
 
   return eleCache;
 };
 
 ETCp.invalidateElement = function( ele ){
-  var self = this;
-  var caches = ele._private.rscratch.imgCaches;
+  let self = this;
+  let lookup = self.lookup;
+  let caches = [];
 
-  if( caches ){
-    for( var lvl = minLvl; lvl <= maxLvl; lvl++ ){
-      var cache = caches[ lvl ];
+  for( let lvl = minLvl; lvl <= maxLvl; lvl++ ){
+    let cache = lookup.get( ele, lvl );
 
-      if( cache ){
-        var txr = cache.texture;
-
-        // remove space from the texture it belongs to
-        txr.invalidatedWidth += cache.width;
-
-        // remove refs with the element
-        caches[ lvl ] = null;
-        util.removeFromArray( txr.eleCaches, cache );
-
-        // remove from queue since the old req was for the old state
-        self.removeFromQueue( ele );
-
-        // might have to remove the entire texture if it's not efficiently using its space
-        self.checkTextureUtility( txr );
-      }
+    if( cache ){
+      caches.push( cache );
     }
   }
+
+  let noCacheRefsRemaining = lookup.invalidate( ele );
+
+  if( noCacheRefsRemaining ){
+    for( let i = 0; i < caches.length; i++ ){
+      let cache = caches[i];
+      let txr = cache.texture;
+
+      // remove space from the texture it belongs to
+      txr.invalidatedWidth += cache.width;
+
+      // remove refs with the element
+      util.removeFromArray( txr.eleCaches, cache );
+
+      // might have to remove the entire texture if it's not efficiently using its space
+      self.checkTextureUtility( txr );
+    }
+  }
+
+  // remove from queue since the old req was for the old state
+  self.removeFromQueue( ele );
 };
 
 ETCp.checkTextureUtility = function( txr ){
@@ -291,8 +300,8 @@ ETCp.checkTextureFullness = function( txr ){
   // if texture has been mostly filled and passed over several times, remove
   // it from the queue so we don't need to waste time looking at it to put new things
 
-  var self = this;
-  var txrQ = self.getTextureQueue( txr.height );
+  let self = this;
+  let txrQ = self.getTextureQueue( txr.height );
 
   if( txr.usedWidth / txr.width > maxFullness && txr.fullnessChecks >= maxFullnessChecks ){
     util.removeFromArray( txrQ, txr );
@@ -302,9 +311,10 @@ ETCp.checkTextureFullness = function( txr ){
 };
 
 ETCp.retireTexture = function( txr ){
-  var self = this;
-  var txrH = txr.height;
-  var txrQ = self.getTextureQueue( txrH );
+  let self = this;
+  let txrH = txr.height;
+  let txrQ = self.getTextureQueue( txrH );
+  let lookup = this.lookup;
 
   // retire the texture from the active / searchable queue:
 
@@ -314,32 +324,27 @@ ETCp.retireTexture = function( txr ){
 
   // remove the refs from the eles to the caches:
 
-  var eleCaches = txr.eleCaches;
+  let eleCaches = txr.eleCaches;
 
-  for( var i = 0; i < eleCaches.length; i++ ){
-    var eleCache = eleCaches[i];
-    var ele = eleCache.ele;
-    var lvl = eleCache.level;
-    var imgCaches = ele._private.rscratch.imgCaches;
+  for( let i = 0; i < eleCaches.length; i++ ){
+    let eleCache = eleCaches[i];
 
-    if( imgCaches ){
-      imgCaches[ lvl ] = null;
-    }
+    lookup.deleteCache( eleCache.key, eleCache.level );
   }
 
   util.clearArray( eleCaches );
 
   // add the texture to a retired queue so it can be recycled in future:
 
-  var rtxtrQ = self.getRetiredTextureQueue( txrH );
+  let rtxtrQ = self.getRetiredTextureQueue( txrH );
 
   rtxtrQ.push( txr );
 };
 
 ETCp.addTexture = function( txrH, minW ){
-  var self = this;
-  var txrQ = self.getTextureQueue( txrH );
-  var txr = {};
+  let self = this;
+  let txrQ = self.getTextureQueue( txrH );
+  let txr = {};
 
   txrQ.push( txr );
 
@@ -361,12 +366,12 @@ ETCp.addTexture = function( txrH, minW ){
 };
 
 ETCp.recycleTexture = function( txrH, minW ){
-  var self = this;
-  var txrQ = self.getTextureQueue( txrH );
-  var rtxtrQ = self.getRetiredTextureQueue( txrH );
+  let self = this;
+  let txrQ = self.getTextureQueue( txrH );
+  let rtxtrQ = self.getRetiredTextureQueue( txrH );
 
-  for( var i = 0; i < rtxtrQ.length; i++ ){
-    var txr = rtxtrQ[i];
+  for( let i = 0; i < rtxtrQ.length; i++ ){
+    let txr = rtxtrQ[i];
 
     if( txr.width >= minW ){
       txr.retired = false;
@@ -389,11 +394,11 @@ ETCp.recycleTexture = function( txrH, minW ){
 };
 
 ETCp.queueElement = function( ele, lvl ){
-  var self = this;
-  var q = self.getElementQueue();
-  var id2q = self.getElementIdToQueue();
-  var id = ele.id();
-  var existingReq = id2q[ id ];
+  let self = this;
+  let q = self.getElementQueue();
+  let id2q = self.getElementIdToQueue();
+  let id = ele.id();
+  let existingReq = id2q[ id ];
 
   if( existingReq ){ // use the max lvl b/c in between lvls are cheap to make
     existingReq.level = Math.max( existingReq.level, lvl );
@@ -401,7 +406,7 @@ ETCp.queueElement = function( ele, lvl ){
 
     q.updateItem( existingReq );
   } else {
-    var req = {
+    let req = {
       ele: ele,
       level: lvl,
       reqs: 1
@@ -414,27 +419,26 @@ ETCp.queueElement = function( ele, lvl ){
 };
 
 ETCp.dequeue = function( pxRatio /*, extent*/ ){
-  var self = this;
-  var q = self.getElementQueue();
-  var id2q = self.getElementIdToQueue();
-  var dequeued = [];
+  let self = this;
+  let q = self.getElementQueue();
+  let id2q = self.getElementIdToQueue();
+  let dequeued = [];
+  let lookup = self.lookup;
 
-  for( var i = 0; i < maxDeqSize; i++ ){
+  for( let i = 0; i < maxDeqSize; i++ ){
     if( q.size() > 0 ){
-      var req = q.pop();
-      var ele = req.ele;
-      var caches = ele._private.rscratch.imgCaches;
+      let req = q.pop();
+      let ele = req.ele;
+      let cacheExists = lookup.has(ele, req.level);
 
       // dequeueing isn't necessary when an existing cache exists
-      if( caches[ req.level ] != null ){
-        continue;
-      }
+      if( cacheExists ){ continue; }
 
       id2q[ ele.id() ] = null;
 
       dequeued.push( req );
 
-      var bb = ele.boundingBox();
+      let bb = ele.boundingBox();
 
       self.getElement( ele, bb, pxRatio, req.level, getTxrReasons.dequeue );
     } else {
@@ -446,10 +450,10 @@ ETCp.dequeue = function( pxRatio /*, extent*/ ){
 };
 
 ETCp.removeFromQueue = function( ele ){
-  var self = this;
-  var q = self.getElementQueue();
-  var id2q = self.getElementIdToQueue();
-  var req = id2q[ ele.id() ];
+  let self = this;
+  let q = self.getElementQueue();
+  let id2q = self.getElementIdToQueue();
+  let req = id2q[ ele.id() ];
 
   if( req != null ){
     // bring to front of queue
@@ -475,15 +479,15 @@ ETCp.setupDequeueing = defs.setupDequeueing({
     return self.dequeue( pxRatio, extent );
   },
   onDeqd: function( self, deqd ){
-    for( var i = 0; i < self.onDequeues.length; i++ ){
-      var fn = self.onDequeues[i];
+    for( let i = 0; i < self.onDequeues.length; i++ ){
+      let fn = self.onDequeues[i];
 
       fn( deqd );
     }
   },
   shouldRedraw: function( self, deqd, pxRatio, extent ){
-    for( var i = 0; i < deqd.length; i++ ){
-      var bb = deqd[i].ele.boundingBox();
+    for( let i = 0; i < deqd.length; i++ ){
+      let bb = deqd[i].ele.boundingBox();
 
       if( math.boundingBoxesIntersect( bb, extent ) ){
         return true;

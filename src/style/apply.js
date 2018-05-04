@@ -2,7 +2,11 @@ import util from '../util';
 import is from '../is';
 import Promise from '../promise';
 
-let styfn = {};
+const styfn = {};
+
+// keys for style blocks, e.g. ttfftt
+const TRUE = 't';
+const FALSE = 'f';
 
 // (potentially expensive calculation)
 // apply the style to the element based on
@@ -63,8 +67,8 @@ styfn.getPropertiesDiff = function( oldCxtKey, newCxtKey ){
 
   for( let i = 0; i < self.length; i++ ){
     let cxt = self[ i ];
-    let oldHasCxt = oldCxtKey[ i ] === 't';
-    let newHasCxt = newCxtKey[ i ] === 't';
+    let oldHasCxt = oldCxtKey[ i ] === TRUE;
+    let newHasCxt = newCxtKey[ i ] === TRUE;
     let cxtHasDiffed = oldHasCxt !== newHasCxt;
     let cxtHasMappedProps = cxt.mappedProperties.length > 0;
 
@@ -89,7 +93,7 @@ styfn.getPropertiesDiff = function( oldCxtKey, newCxtKey ){
         let laterCxtOverrides = false;
         for( let k = i + 1; k < self.length; k++ ){
           let laterCxt = self[ k ];
-          let hasLaterCxt = newCxtKey[ k ] === 't';
+          let hasLaterCxt = newCxtKey[ k ] === TRUE;
 
           if( !hasLaterCxt ){ continue; } // can't override unless the context is active
 
@@ -127,9 +131,9 @@ styfn.getContextMeta = function( ele ){
     let contextSelectorMatches = context.selector && context.selector.matches( ele ); // NB: context.selector may be null for 'core'
 
     if( contextSelectorMatches ){
-      cxtKey += 't';
+      cxtKey += TRUE;
     } else {
-      cxtKey += 'f';
+      cxtKey += FALSE;
     }
   } // for context
 
@@ -161,7 +165,7 @@ styfn.getContextStyle = function( cxtMeta ){
 
   for( let i = 0; i < self.length; i++ ){
     let cxt = self[ i ];
-    let hasCxt = cxtKey[ i ] === 't';
+    let hasCxt = cxtKey[ i ] === TRUE;
 
     if( !hasCxt ){ continue; }
 
@@ -218,47 +222,103 @@ styfn.applyContextStyle = function( cxtMeta, cxtStyle, ele ){
   };
 };
 
-// each of the three lists implicitly builds on top of the preceeding lists
-const fontProperties = ['font-style', 'font-size', 'font-family', 'font-weight'];
-const labelDimPropNames = ['text-transform', 'text-outline-width', 'text-wrap', 'text-max-width'];
-const labelStylePropNames = [];
-
-const labelPropNames = ['label'];
-const sourceLabelPropNames = ['source-label'];
-const targetLabelPropNames = ['target-label'];
-
 styfn.updateStyleHints = function(ele){
   let _p = ele._private;
   let self = this;
+  let propNames = self.propertyGroupNames;
+  let propGrKeys = self.propertyGroupKeys;
+  let propHash = ( ele, propNames, seedKey ) => self.getPropertiesHash( ele, propNames, seedKey );
 
   if( ele.removed() ){ return; }
 
   let isNode = _p.group === 'nodes';
 
-  // set whether has pie or not; for greater efficiency
-  let hasPie = false;
-  if( isNode ){
-    for( let i = 1; i <= self.pieBackgroundN; i++ ){ // 1..N
-      let size = ele.pstyle( 'pie-' + i + '-background-size' ).value;
+  // group and overall style key
+  //
 
-      if( size > 0 ){
-        hasPie = true;
-        break;
-      }
+  // let styleKey;
+  //
+  // for( let i = 0; i < propGrKeys.length; i++ ){
+  //   let grKey = propGrKeys[i];
+  //   let names = propNames[ propGrKeys[i] ];
+  //   let hash = propHash( ele, names );
+  //
+  //   if( styleKey == null ){
+  //     styleKey = hash;
+  //   } else {
+  //     styleKey = util.hashInt( hash, styleKey );
+  //   }
+  //
+  //   _p.styleKeys[ grKey ] = hash;
+  // }
+  //
+  // _p.styleKey = styleKey;
+  //
+
+  // get the style key hashes per prop group
+  // but lazily -- only use non-default prop values to reduce the number of hashes
+  //
+
+  let overriddenStyles = ele._private.style;
+
+  propNames = Object.keys( overriddenStyles );
+
+  for( let i = 0; i < propGrKeys.length; i++ ){
+    let grKey = propGrKeys[i];
+
+    _p.styleKeys[ grKey ] = 0;
+  }
+
+  for( let i = 0; i < propNames.length; i++ ){
+    let name = propNames[i];
+    let val = overriddenStyles[ name ];
+
+    if( val == null ){ continue; }
+
+    let grKey = this.properties[name].groupKey;
+    let strVal = val.strValue;
+
+    for( let j = 0; j < strVal.length; j++ ){
+      let chVal = strVal.charCodeAt(j);
+
+      _p.styleKeys[ grKey ] = util.hashInt( chVal, _p.styleKeys[ grKey ] );
     }
   }
 
-  _p.hasPie = hasPie;
+  // overall style key
+  //
 
-  _p.fontKey = self.getPropertiesHash( ele, fontProperties );
-  _p.labelDimsKey = self.getPropertiesHash( ele, labelDimPropNames, _p.fontKey );
-  _p.labelStyleKey = self.getPropertiesHash( ele, labelStylePropNames, _p.labelDimsKey );
+  let hash = 0;
 
-  _p.labelKey = self.getPropertiesHash( ele, labelPropNames, _p.labelStyleKey );
+  for( let i = 0; i < propGrKeys.length; i++ ){
+    let grKey = propGrKeys[i];
+    let grHash = _p.styleKeys[ grKey ];
+
+    hash = util.hashInt( grHash, hash );
+  }
+
+  _p.styleKey = hash;
+
+  // label dims
+  //
+
+  let labelDimsKey = _p.labelDimsKey = _p.styleKeys.labelDimensions;
+
+  _p.labelKey = propHash( ele, ['label'], labelDimsKey );
 
   if( !isNode ){
-    _p.sourceLabelKey = self.getPropertiesHash( ele, sourceLabelPropNames, _p.labelStyleKey );
-    _p.targetLabelKey = self.getPropertiesHash( ele, targetLabelPropNames, _p.labelStyleKey );
+    _p.sourceLabelKey = propHash( ele, ['source-label'], labelDimsKey );
+    _p.targetLabelKey = propHash( ele, ['target-label'], labelDimsKey );
+  }
+
+  // node
+  //
+
+  if( isNode ){
+    let { nodeBody, nodeBorder, backgroundImage, compound, pie } = _p.styleKey;
+
+    _p.nodeKey = util.hashIntsArray([ nodeBorder, backgroundImage, compound, pie ], nodeBody);
+    _p.hasPie = pie != 0;
   }
 };
 

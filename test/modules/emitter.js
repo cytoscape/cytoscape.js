@@ -1,14 +1,7 @@
 var expect = require('chai').expect;
-var cytoscape = require('../src/test.js', cytoscape);
+var Emitter = require('../../src/emitter');
 
 describe('Emitter', function(){
-
-  if( typeof window !== 'undefined' ){
-    return; // can't do these tests in browser due to require()
-  }
-
-  var Emitter = require('../src/emitter');
-
   var em;
   var pem;
 
@@ -28,13 +21,13 @@ describe('Emitter', function(){
   });
 
   it('calls handler on emit', function( done ){
-    em.on('foo', function(){ done() });
+    em.on('foo', function(){ done(); });
 
     em.emit('foo');
   });
 
   it('calls listener on namespaced emit', function( done ){
-    em.on('foo.bar', function(){ done() });
+    em.on('foo.bar', function(){ done(); });
 
     em.emit('foo.bar');
   });

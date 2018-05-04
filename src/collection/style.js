@@ -137,14 +137,22 @@ let elesfn = ({
   },
 
   // get the internal parsed style object for the specified property
-  parsedStyle: function( property ){
+  parsedStyle: function( property, includeNonDefault = true ){
     let ele = this[0];
     let cy = ele.cy();
 
     if( !cy.styleEnabled() ){ return; }
 
     if( ele ){
-      return ele._private.style[ property ] || cy.style().getDefaultProperty( property );
+      let overriddenStyle = ele._private.style[ property ];
+
+      if( overriddenStyle != null ){
+        return overriddenStyle;
+      } else if( includeNonDefault ){
+        return cy.style().getDefaultProperty( property );
+      } else {
+        return null;
+      }
     }
   },
 

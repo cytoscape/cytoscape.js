@@ -34,7 +34,7 @@ const configs = [
       BABEL ? babel(getBabelOptions()) : {},
       replace({
         'process.env.NODE_ENV': JSON.stringify('development'),
-        'process.env.VERSION': VERSION 
+        'process.env.VERSION': JSON.stringify(VERSION)
       })
     ]
   },

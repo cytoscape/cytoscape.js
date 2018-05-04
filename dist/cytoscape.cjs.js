@@ -13290,6 +13290,18 @@ function getEasedValue(type, start, end, percent, easingFn) {
   return val;
 }
 
+function getValue(prop, spec) {
+  if (prop.pfValue != null || prop.value != null) {
+    if (prop.pfValue != null && (spec == null || spec.type.units !== '%')) {
+      return prop.pfValue;
+    } else {
+      return prop.value;
+    }
+  } else {
+    return prop;
+  }
+}
+
 function ease(startProp, endProp, percent, easingFn, propSpec) {
   var type = propSpec != null ? propSpec.type : null;
 
@@ -13299,20 +13311,8 @@ function ease(startProp, endProp, percent, easingFn, propSpec) {
     percent = 1;
   }
 
-  var start = void 0,
-      end = void 0;
-
-  if (startProp.pfValue != null || startProp.value != null) {
-    start = startProp.pfValue != null ? startProp.pfValue : startProp.value;
-  } else {
-    start = startProp;
-  }
-
-  if (endProp.pfValue != null || endProp.value != null) {
-    end = endProp.pfValue != null ? endProp.pfValue : endProp.value;
-  } else {
-    end = endProp;
-  }
+  var start = getValue(startProp, propSpec);
+  var end = getValue(endProp, propSpec);
 
   if (is.number(start) && is.number(end)) {
     return getEasedValue(type, start, end, percent, easingFn);
@@ -26857,13 +26857,13 @@ CRp.drawEdge = function (context, edge, shiftToOriginWithBb, drawLabel) {
   var rs = edge._private.rscratch;
   var usePaths = r.usePaths();
 
-  // if bezier ctrl pts can not be calculated, then die
-  if (rs.badLine || isNaN(rs.allpts[0])) {
-    // isNaN in case edge is impossible and browser bugs (e.g. safari)
+  if (!edge.visible()) {
     return;
   }
 
-  if (!edge.visible()) {
+  // if bezier ctrl pts can not be calculated, then die
+  if (rs.badLine || rs.allpts == null || isNaN(rs.allpts[0])) {
+    // isNaN in case edge is impossible and browser bugs (e.g. safari)
     return;
   }
 
@@ -29085,7 +29085,7 @@ module.exports = Stylesheet;
 "use strict";
 
 
-module.exports = "3.2.11";
+module.exports = "3.2.12";
 
 /***/ })
 /******/ ]);

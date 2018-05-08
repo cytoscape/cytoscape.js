@@ -1,5 +1,6 @@
 import math from '../../../../math';
 import * as is from '../../../../is';
+import util from '../../../../util';
 
 var BRp = {};
 
@@ -630,6 +631,15 @@ BRp.findEdgeControlPoints = function( edges ){
             this.findEndpoints( edge );
           }
 
+        }
+
+        if( !is.number(rs.startX) || !is.number(rs.startY) || !is.number(rs.endX) || !is.number(rs.endY) ){
+          if( !rs.loggedErr ){
+            rs.loggedErr = true;
+            util.warn('Edge `' + edge.id() + '` has invalid endpoints and so it is impossible to draw.  Adjust your edge style (e.g. control points) accordingly or use an alternative edge type.  This is expected behaviour when the source node and the target node overlap.');
+          }
+        } else {
+          rs.loggedErr = false;
         }
 
         if( rs.edgeType === 'multibezier' || rs.edgeType === 'bezier' || rs.edgeType === 'self' || rs.edgeType === 'compound' ){

@@ -1,7 +1,7 @@
 // Common distance metrics for clustering algorithms
 // https://en.wikipedia.org/wiki/Hierarchical_clustering#Metric
 
-import is from '../../is';
+import * as is from '../../is';
 
 let identity = x => x;
 let absDiff = ( p, q ) => Math.abs( q - p );

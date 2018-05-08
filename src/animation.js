@@ -1,5 +1,5 @@
 import util from './util';
-import is from './is';
+import * as is from './is';
 import Promise from './promise';
 
 let Animation = function( target, opts, opts2 ){

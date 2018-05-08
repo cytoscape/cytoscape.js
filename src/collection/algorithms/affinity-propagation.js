@@ -6,7 +6,7 @@
 
 import util from '../../util';
 import math from '../../math';
-import is from '../../is';
+import * as is from '../../is';
 import clusteringDistance from './clustering-distances';
 
 let defaults = {

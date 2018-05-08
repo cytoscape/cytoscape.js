@@ -1,4 +1,4 @@
-import is from './is';
+import * as is from './is';
 import Core from './core';
 import extension from './extension';
 import Stylesheet from './stylesheet';

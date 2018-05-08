@@ -5,7 +5,7 @@ Modifications tracked on Github.
 */
 
 import util from '../../../util';
-import is from '../../../is';
+import * as is from '../../../is';
 import ElementTextureCache from './ele-texture-cache';
 import LayeredTextureCache from './layered-texture-cache';
 

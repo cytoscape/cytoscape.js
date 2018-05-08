@@ -1,7 +1,7 @@
 import util from '../../../util';
 import math from '../../../math';
 import Heap from '../../../heap';
-import is from '../../../is';
+import * as is from '../../../is';
 import defs from './texture-cache-defs';
 
 var defNumLayers = 1; // default number of layers to use

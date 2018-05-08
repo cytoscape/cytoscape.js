@@ -1,4 +1,4 @@
-import is from '../is';
+import * as is from '../is';
 
 export default {
   // has anything been set in the map

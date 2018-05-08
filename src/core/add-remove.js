@@ -1,4 +1,4 @@
-import is from '../is';
+import * as is from '../is';
 import util from '../util';
 import Collection from '../collection';
 import Element from '../collection/element';

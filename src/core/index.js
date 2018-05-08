@@ -1,7 +1,7 @@
 import window from '../window';
 import util from '../util';
 import Collection from '../collection';
-import is from '../is';
+import * as is from '../is';
 import Promise from '../promise';
 import define from '../define';
 

@@ -1,6 +1,6 @@
 import util from '../../util';
 import math from '../../math';
-import is from '../../is';
+import * as is from '../../is';
 
 const getScratch = ele => ele.scratch('breadthfirst');
 const setScratch = (ele, obj) => ele.scratch('breadthfirst', obj);

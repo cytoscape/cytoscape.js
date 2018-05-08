@@ -1,4 +1,4 @@
-import is from '../../is';
+import * as is from '../../is';
 import Heap from '../../heap';
 
 var elesfn = ({

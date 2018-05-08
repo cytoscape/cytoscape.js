@@ -1,5 +1,5 @@
 import state from './state';
-import is from '../is';
+import * as is from '../is';
 
 const { stateSelectorMatches } = state;
 

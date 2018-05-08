@@ -1,4 +1,4 @@
-import is from '../is';
+import * as is from '../is';
 
 export default {
   // get [r, g, b] from #abc or #aabbcc

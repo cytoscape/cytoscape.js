@@ -1,5 +1,5 @@
 import define from '../../define';
-import is from '../../is';
+import * as is from '../../is';
 import math from '../../math';
 
 let fn, elesfn;

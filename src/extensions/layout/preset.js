@@ -1,5 +1,5 @@
 import util from '../../util';
-import is from '../../is';
+import * as is from '../../is';
 
 let defaults = {
   positions: undefined, // map of (node id) => (position obj); or function(node){ return somPos; }

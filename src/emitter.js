@@ -1,5 +1,5 @@
 import util from './util';
-import is from './is';
+import * as is from './is';
 import Event from './event';
 
 const eventRegex = /^([^.]+)(\.(?:[^.]+))?$/; // regex for matching event strings (e.g. "click.namespace")

@@ -1,5 +1,5 @@
 import util from '../util';
-import is from '../is';
+import * as is from '../is';
 import Set from '../set';
 
 // represents a node or an edge

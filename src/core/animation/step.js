@@ -1,6 +1,6 @@
 import easings from './easings';
 import ease from './ease';
-import is from '../../is';
+import * as is from '../../is';
 
 function step( self, ani, now, isCore ){
   let isEles = !isCore;

@@ -1,4 +1,4 @@
-import is from '../is' ;
+import * as is from '../is' ;
 import zIndexSort from './zsort' ;
 import util from '../util';
 

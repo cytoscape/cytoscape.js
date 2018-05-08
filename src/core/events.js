@@ -1,6 +1,6 @@
 import Emitter from '../emitter';
 import define from '../define';
-import is from '../is';
+import * as is from '../is';
 import Selector from '../selector';
 
 let emitterOptions = {

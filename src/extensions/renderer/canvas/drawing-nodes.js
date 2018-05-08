@@ -1,6 +1,6 @@
 /* global Path2D */
 
-import is from '../../../is';
+import * as is from '../../../is';
 import util from '../../../util';
 
 let CRp = {};

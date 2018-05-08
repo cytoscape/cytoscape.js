@@ -1,4 +1,4 @@
-import is from '../../is';
+import * as is from '../../is';
 
 var elesfn = ({
 

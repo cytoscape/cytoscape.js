@@ -1,5 +1,5 @@
 import util from '../util';
-import is from '../is';
+import * as is from '../is';
 
 let corefn = ({
 

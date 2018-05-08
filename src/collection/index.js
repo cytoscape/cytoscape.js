@@ -1,5 +1,5 @@
 import util from '../util';
-import is from '../is';
+import * as is from '../is';
 import Map from '../map';
 import Set from '../set';
 

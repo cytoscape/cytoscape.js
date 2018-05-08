@@ -3,7 +3,7 @@ import define from './define';
 import Collection from './collection';
 import Core from './core';
 import incExts from './extensions';
-import is from './is';
+import * as is from './is';
 import Emitter from './emitter';
 
 // registered extensions to cytoscape, indexed by name

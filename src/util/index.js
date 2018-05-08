@@ -1,6 +1,6 @@
 /*global console */
 
-import is from '../is';
+import * as is from '../is';
 import colors from './colors';
 import maps from './maps';
 import memoize from './memoize';

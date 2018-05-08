@@ -1,4 +1,4 @@
-import is from '../is';
+import * as is from '../is';
 import util from '../util';
 
 let cache = function( fn, name ){

@@ -1,4 +1,4 @@
-import is from '../is';
+import * as is from '../is';
 import util from '../util';
 import Promise from '../promise';
 import math from '../math';

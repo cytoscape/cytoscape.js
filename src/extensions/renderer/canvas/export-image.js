@@ -1,6 +1,6 @@
 /* global atob, ArrayBuffer, Uint8Array, Blob */
 
-import is from '../../../is';
+import * as is from '../../../is';
 
 var CRp = {};
 

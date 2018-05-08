@@ -1,4 +1,4 @@
-import is from '../../is';
+import * as is from '../../is';
 
 function getEasedValue( type, start, end, percent, easingFn ){
   if( percent === 1 ){

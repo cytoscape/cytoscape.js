@@ -1,4 +1,4 @@
-import util from '../util';
+import * as util from '../util';
 
 // tokens in the query language
 const tokens = {

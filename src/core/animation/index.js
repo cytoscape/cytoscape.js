@@ -1,5 +1,5 @@
 import define from '../../define';
-import util from '../../util';
+import * as util from '../../util';
 import stepAll from './step-all';
 
 let corefn = ({

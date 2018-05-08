@@ -3,7 +3,7 @@
 
 // Implemented from the reference library: https://harthur.github.io/clusterfck/
 
-import util from '../../util';
+import * as util from '../../util';
 import clusteringDistance from './clustering-distances';
 
 const defaults = {

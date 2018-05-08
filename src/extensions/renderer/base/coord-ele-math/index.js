@@ -1,4 +1,4 @@
-import util from '../../../../util';
+import * as util from '../../../../util';
 
 import coords from './coords';
 import edgeArrows from './edge-arrows';

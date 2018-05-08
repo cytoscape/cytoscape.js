@@ -4,7 +4,7 @@
 // e.g.
 // let foo = define.foo({ /* params... */ })
 
-import util from '../util';
+import * as util from '../util';
 import animation from './animation';
 import data from './data';
 import events from './events';

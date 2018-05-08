@@ -1,5 +1,5 @@
 import * as is from '../../is';
-import util from '../../util';
+import * as util from '../../util';
 import math from '../../math';
 
 let fn, elesfn;
@@ -632,11 +632,11 @@ let defBbOptsKey = getKey( defBbOpts );
 
 function filledBbOpts( options ){
   return {
-    includeNodes: util.default( options.includeNodes, defBbOpts.includeNodes ),
-    includeEdges: util.default( options.includeEdges, defBbOpts.includeEdges ),
-    includeLabels: util.default( options.includeLabels, defBbOpts.includeLabels ),
-    includeOverlays: util.default( options.includeOverlays, defBbOpts.includeOverlays ),
-    useCache: util.default( options.useCache, defBbOpts.useCache )
+    includeNodes: util.defaultValue( options.includeNodes, defBbOpts.includeNodes ),
+    includeEdges: util.defaultValue( options.includeEdges, defBbOpts.includeEdges ),
+    includeLabels: util.defaultValue( options.includeLabels, defBbOpts.includeLabels ),
+    includeOverlays: util.defaultValue( options.includeOverlays, defBbOpts.includeOverlays ),
+    useCache: util.defaultValue( options.useCache, defBbOpts.useCache )
   };
 }
 

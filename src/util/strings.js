@@ -1,32 +1,28 @@
-import memoize from './memoize';
 import * as is from '../is';
+import { memoize } from './memoize';
 
-export default {
+export const camel2dash = memoize(str => {
+  return str.replace( /([A-Z])/g, v => {
+    return '-' + v.toLowerCase();
+  } );
+});
 
-  camel2dash: memoize( function( str ){
-    return str.replace( /([A-Z])/g, function( v ){
-      return '-' + v.toLowerCase();
-    } );
-  } ),
+export const dash2camel = memoize(str => {
+  return str.replace( /(-\w)/g, v => {
+    return v[1].toUpperCase();
+  } );
+});
 
-  dash2camel: memoize( function( str ){
-    return str.replace( /(-\w)/g, function( v ){
-      return v[1].toUpperCase();
-    } );
-  } ),
+export const prependCamel = memoize(( prefix, str ) => {
+  return prefix + str[0].toUpperCase() + str.substring(1);
+}, ( prefix, str ) => {
+  return prefix + '$' + str;
+});
 
-  prependCamel: memoize( function( prefix, str ){
-    return prefix + str[0].toUpperCase() + str.substring(1);
-  }, function( prefix, str ){
-    return prefix + '$' + str;
-  } ),
-
-  capitalize: function( str ){
-    if( is.emptyString( str ) ){
-      return str;
-    }
-
-    return str.charAt( 0 ).toUpperCase() + str.substring( 1 );
+export const capitalize = str => {
+  if( is.emptyString( str ) ){
+    return str;
   }
 
+  return str.charAt( 0 ).toUpperCase() + str.substring( 1 );
 };

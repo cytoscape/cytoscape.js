@@ -1,5 +1,5 @@
 import window from '../window';
-import util from '../util';
+import * as util from '../util';
 import Collection from '../collection';
 import * as is from '../is';
 import Promise from '../promise';

@@ -1,4 +1,4 @@
-import util from '../../util';
+import * as util from '../../util';
 import position from './position';
 import bounds from './bounds';
 import widthHeight from './width-height';

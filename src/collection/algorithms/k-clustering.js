@@ -7,7 +7,7 @@
 //                               http://yaikhom.com/2013/03/16/implementing-the-fuzzy-c-means-algorithm.html
 
 import clusteringDistance from './clustering-distances';
-import util from '../../util';
+import * as util from '../../util';
 
 let defaults = {
   k: 2,

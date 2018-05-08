@@ -1,6 +1,6 @@
 import Map from '../../../map';
 import Set from'../../../set';
-import util from '../../../util';
+import * as util from '../../../util';
 
 // Allows lookups for (ele, lvl) => cache.
 // Uses keys so elements may share the same cache.

@@ -4,7 +4,7 @@
 // Implemented from Stijn van Dongen's (author of MCL algorithm) documentation: http://micans.org/mcl/
 // and lecture notes: https://www.cs.ucsb.edu/~xyan/classes/CS595D-2009winter/MCL_Presentation2.pdf
 
-import util from '../../util';
+import * as util from '../../util';
 
 /* eslint-disable no-unused-vars */
 let defaults = {

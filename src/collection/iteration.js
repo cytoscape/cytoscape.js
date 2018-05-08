@@ -1,6 +1,6 @@
 import * as is from '../is' ;
 import zIndexSort from './zsort' ;
-import util from '../util';
+import * as util from '../util';
 
 let elesfn = ({
   forEach: function( fn, thisArg ){

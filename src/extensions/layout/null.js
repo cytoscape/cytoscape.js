@@ -1,4 +1,4 @@
-import util from '../../util';
+import * as util from '../../util';
 
 // default layout options
 let defaults = {

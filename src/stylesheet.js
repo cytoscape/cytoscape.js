@@ -1,5 +1,5 @@
 import * as is from './is';
-import util from './util';
+import * as util from './util';
 import Style from './style';
 
 // a dummy stylesheet object that doesn't need a reference to the core

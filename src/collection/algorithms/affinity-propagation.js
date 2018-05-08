@@ -4,7 +4,7 @@
 // Implemented from the reference library: https://github.com/juhis/affinity-propagation
 // Additional reference: http://www.psi.toronto.edu/affinitypropagation/faq.html
 
-import util from '../../util';
+import * as util from '../../util';
 import math from '../../math';
 import * as is from '../../is';
 import clusteringDistance from './clustering-distances';

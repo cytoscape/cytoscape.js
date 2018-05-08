@@ -1,4 +1,4 @@
-import util from '../../../util';
+import * as util from '../../../util';
 import math from '../../../math';
 
 var CRp = {};

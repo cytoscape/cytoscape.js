@@ -5,17 +5,20 @@ import replace from 'rollup-plugin-replace';
 import uglify from 'rollup-plugin-uglify';
 import { sizeSnapshot } from 'rollup-plugin-size-snapshot';
 
+const VERSION = process.env.VERSION || 'snapshot'; // default snapshot
 const FILE = process.env.FILE;
 const SOURCEMAPS = process.env.SOURCEMAPS === 'true'; // default false
 const BABEL = process.env.BABEL !== 'false'; // default true
+const NODE_ENV = process.env.NODE_ENV === 'development' ? 'development' : 'production'; // default prod
 
 const input = './src/index.js';
 
 const name = 'cytoscape';
 
 const envVariables = {
-  'process.env.VERSION': JSON.stringify(process.env.VERSION || 'snapshot')
-}
+  'process.env.VERSION': JSON.stringify(VERSION),
+  'process.env.NODE_ENV': JSON.stringify(NODE_ENV)
+};
 
 const getBabelOptions = () => ({
   exclude: '**/node_modules/**',
@@ -39,9 +42,7 @@ const configs = [
       nodeResolve(),
       commonjs({ include: '**/node_modules/**' }),
       BABEL ? babel(getBabelOptions()) : {},
-      replace(Object.assign({}, envVariables, {
-        'process.env.NODE_ENV': JSON.stringify('development')
-      })),
+      replace(envVariables),
       !FILE ? sizeSnapshot() : {}
     ]
   },
@@ -57,9 +58,7 @@ const configs = [
       nodeResolve(),
       commonjs({ include: '**/node_modules/**' }),
       BABEL ? babel(getBabelOptions()) : {},
-      replace(Object.assign({}, envVariables, {
-        'process.env.NODE_ENV': JSON.stringify('production')
-      })),
+      replace(envVariables),
       !FILE ? sizeSnapshot() : {},
       uglify({
         compress: {

@@ -630,15 +630,7 @@ let defBbOpts = {
 
 let defBbOptsKey = getKey( defBbOpts );
 
-function filledBbOpts( options ){
-  return {
-    includeNodes: util.defaultValue( options.includeNodes, defBbOpts.includeNodes ),
-    includeEdges: util.defaultValue( options.includeEdges, defBbOpts.includeEdges ),
-    includeLabels: util.defaultValue( options.includeLabels, defBbOpts.includeLabels ),
-    includeOverlays: util.defaultValue( options.includeOverlays, defBbOpts.includeOverlays ),
-    useCache: util.defaultValue( options.useCache, defBbOpts.useCache )
-  };
-}
+const filledBbOpts = util.defaults( defBbOpts );
 
 elesfn.boundingBox = function( options ){
   // the main usecase is ele.boundingBox() for a single element with no/def options

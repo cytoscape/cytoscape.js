@@ -9,7 +9,7 @@
 import clusteringDistance from './clustering-distances';
 import * as util from '../../util';
 
-let defaults = {
+let defaults = util.defaults({
   k: 2,
   m: 2,
   sensitivityThreshold: 0.0001,
@@ -18,9 +18,9 @@ let defaults = {
   attributes: [],
   testMode: false,
   testCentroids: null
-};
+});
 
-var setOptions = ( opts, options ) => util.assign( opts, defaults, options );
+var setOptions = ( options ) => defaults( options );
 
 if( process.env.NODE_ENV !== 'production' ){ /* eslint-disable no-console, no-unused-vars */
   var printMatrix = function( M ) { // used for debugging purposes only
@@ -159,10 +159,9 @@ let kMeans = function( options ){
   let cy    = this.cy();
   let nodes = this.nodes();
   let node  = null;
-  let opts  = {};
 
   // Set parameters of algorithm: # of clusters, distance metric, etc.
-  setOptions( opts, options );
+  let opts = setOptions( options );
 
   // Begin k-means algorithm
   let clusters   = new Array(opts.k);
@@ -244,10 +243,7 @@ let kMedoids = function( options ) {
   let cy    = this.cy();
   let nodes = this.nodes();
   let node  = null;
-  let opts  = {};
-
-  // Set parameters of algorithm: # of clusters, distance metric, etc.
-  setOptions( opts, options );
+  let opts  = setOptions( options );
 
   // Begin k-medoids algorithm
   let clusters = new Array(opts.k);
@@ -393,10 +389,7 @@ let assign = function( nodes, U, opts, cy ) {
 let fuzzyCMeans = function( options ) {
   let cy    = this.cy();
   let nodes = this.nodes();
-  let opts  = {};
-
-  // Set parameters of algorithm: # of clusters, fuzziness coefficient, etc.
-  setOptions( opts, options );
+  let opts  = setOptions( options );
 
   // Begin fuzzy c-means algorithm
   let clusters;

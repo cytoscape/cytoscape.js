@@ -7,7 +7,7 @@
 import * as util from '../../util';
 
 /* eslint-disable no-unused-vars */
-let defaults = {
+let defaults = util.defaults({
   expandFactor: 2,      // affects time of computation and cluster granularity to some extent: M * M
   inflateFactor: 2,     // affects cluster granularity (the greater the value, the more clusters): M(i,j) / E(j)
   multFactor: 1,        // optional self loops for each node. Use a neutral value to improve cluster computations.
@@ -17,10 +17,10 @@ let defaults = {
       return 1;
     }
   ]
-};
+});
 /* eslint-enable */
 
-let setOptions = ( opts, options ) => util.assign( opts, defaults, options );
+let setOptions = ( options ) => defaults( options );
 
 /* eslint-disable no-unused-vars, no-console */
 if( process.env.NODE_ENV !== 'production' ){
@@ -161,10 +161,9 @@ let markovClustering = function( options ) {
   let nodes = this.nodes();
   let edges = this.edges();
   let cy = this.cy();
-  let opts = {};
-
+  
   // Set parameters of algorithm:
-  setOptions( opts, options );
+  let opts = setOptions( options );
 
   // Map each node to its position in node array
   let id2position = {};

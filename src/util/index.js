@@ -93,13 +93,21 @@ const _staticEmptyObject = {};
 
 export const staticEmptyObject = () => _staticEmptyObject;
 
+export const defaults = defaults => {
+  let keys = Object.keys( defaults );
 
-export const defaultValue = function( val, def ){
-  if( val === undefined ){
-    return def;
-  } else {
-    return val;
-  }
+  return opts => {
+    let filledOpts = {};
+
+    for( let i = 0; i < keys.length; i++ ){
+      let key = keys[i];
+      let optVal = opts[key];
+
+      filledOpts[key] = optVal === undefined ? defaults[key] : optVal;
+    }
+
+    return filledOpts;
+  };
 };
 
 export const removeFromArray = ( arr, ele, manyCopies ) => {

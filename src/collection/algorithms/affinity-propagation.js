@@ -9,7 +9,7 @@ import * as math from '../../math';
 import * as is from '../../is';
 import clusteringDistance from './clustering-distances';
 
-let defaults = {
+let defaults = util.defaults({
   distance: 'euclidean', // distance metric to compare attributes between two nodes
   preference: 'median', // suitability of a data point to serve as an exemplar
   damping: 0.8, // damping factor between [0.5, 1)
@@ -18,9 +18,9 @@ let defaults = {
   attributes: [ // functions to quantify the similarity between any two points
     // e.g. node => node.data('weight')
   ]
-};
+});
 
-let setOptions = function( opts, options ) {
+let setOptions = function( options ) {
   let dmp = options.damping;
   let pref = options.preference;
 
@@ -33,7 +33,7 @@ let setOptions = function( opts, options ) {
     util.error(`Preference must be one of [${validPrefs.map( p => `'${p}'` ).join(', ')}] or a number.  Got: ${pref}`);
   }
 
-  return util.assign( opts, defaults, options );
+  return defaults( options );
 };
 
 if( process.env.NODE_ENV !== 'production' ){ /* eslint-disable no-console, no-unused-vars */
@@ -152,10 +152,7 @@ let assign = function( n, S, exemplars ) {
 let affinityPropagation = function( options ) {
   let cy    = this.cy();
   let nodes = this.nodes();
-  let opts  = {};
-
-  // Set parameters of algorithm:
-  setOptions( opts, options );
+  let opts  = setOptions( options );
 
   // Map each node to its position in node array
   let id2position = {};

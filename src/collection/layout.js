@@ -3,12 +3,14 @@ import * as util from '../util';
 import Promise from '../promise';
 import * as math from '../math';
 
+const getLayoutDimensionOptions = util.defaults({
+  nodeDimensionsIncludeLabels: false
+});
+
 let elesfn = ({
   // Calculates and returns node dimensions { x, y } based on options given
   layoutDimensions: function( options ){
-    options = util.assign( {
-      nodeDimensionsIncludeLabels: true
-    }, options );
+    options = getLayoutDimensionOptions( options );
 
     if( options.nodeDimensionsIncludeLabels ){
       let bbDim = this.boundingBox();

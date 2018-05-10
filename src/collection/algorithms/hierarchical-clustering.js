@@ -6,7 +6,7 @@
 import * as util from '../../util';
 import clusteringDistance from './clustering-distances';
 
-const defaults = {
+const defaults = util.defaults({
   distance: 'euclidean', // distance metric to compare nodes
   linkage: 'min', // linkage criterion : how to determine the distance between clusters of nodes
   mode: 'threshold',
@@ -16,15 +16,15 @@ const defaults = {
     addDendrogram: false, // whether to add the dendrogram to the graph for viz
     dendrogramDepth: 0, // depth at which dendrogram branches are merged into the returned clusters
   attributes: [] // array of attr functions
-};
+});
 
 const linkageAliases = {
   'single': 'min',
   'complete': 'max'
 };
 
-let setOptions = ( opts, options ) => {
-  util.assign( opts, defaults, options );
+let setOptions = ( options ) => {
+  let opts = defaults( options );
 
   let preferredAlias = linkageAliases[ opts.linkage ];
 
@@ -236,10 +236,9 @@ if( process.env.NODE_ENV !== 'production' ){ /* eslint-disable no-console, no-un
 let hierarchicalClustering = function( options ){
   let cy    = this.cy();
   let nodes = this.nodes();
-  let opts = {};
 
   // Set parameters of algorithm: linkage type, distance metric, etc.
-  setOptions( opts, options );
+  let opts = setOptions( options );
 
   let attrs = opts.attributes;
   let getDist = (n1, n2) => clusteringDistance( opts.distance, attrs.length, i => attrs[i](n1), i => attrs[i](n2) );

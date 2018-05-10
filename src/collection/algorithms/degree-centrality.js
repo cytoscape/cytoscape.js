@@ -1,63 +1,66 @@
 import * as is from '../../is';
 import * as util from '../../util';
 
-var elesfn = ({
+const defaults = util.defaults({
+  root: null,
+  weight: edge => 1,
+  directed: false,
+  alpha: 0
+});
 
+let elesfn = ({
   degreeCentralityNormalized: function( options ){
-    options = options || {};
+    options = defaults( options );
 
-    var cy = this.cy();
+    let cy = this.cy();
+    let nodes = this.nodes();
+    let numNodes = nodes.length;
 
-    // directed - optional
-    if( options.directed != null ){
-      var directed = options.directed;
-    } else {
-      var directed = false;
-    }
+    if( !options.directed ){
+      let degrees = {};
+      let maxDegree = 0;
 
-    var nodes = this.nodes();
-    var numNodes = nodes.length;
+      for( let i = 0; i < numNodes; i++ ){
+        let node = nodes[ i ];
 
-    if( !directed ){
-      var degrees = {};
-      var maxDegree = 0;
-
-      for( var i = 0; i < numNodes; i++ ){
-        var node = nodes[ i ];
         // add current node to the current options object and call degreeCentrality
-        var currDegree = this.degreeCentrality( util.extend( {}, options, {root: node} ) );
-        if( maxDegree < currDegree.degree )
+        options.root = node;
+
+        let currDegree = this.degreeCentrality( options );
+
+        if( maxDegree < currDegree.degree ){
           maxDegree = currDegree.degree;
+        }
 
         degrees[ node.id() ] = currDegree.degree;
       }
 
       return {
         degree: function( node ){
-          if( maxDegree == 0 )
-            return 0;
+          if( maxDegree === 0 ){ return 0; }
 
           if( is.string( node ) ){
             // from is a selector string
-            var node = (cy.filter( node )[0]).id();
-          } else {
-            // from is a node
-            var node = node.id();
+            node = cy.filter( node );
           }
 
-          return degrees[ node ] / maxDegree;
+          return degrees[ node.id() ] / maxDegree;
         }
       };
     } else {
-      var indegrees = {};
-      var outdegrees = {};
-      var maxIndegree = 0;
-      var maxOutdegree = 0;
+      let indegrees = {};
+      let outdegrees = {};
+      let maxIndegree = 0;
+      let maxOutdegree = 0;
 
-      for( var i = 0; i < numNodes; i++ ){
-        var node = nodes[ i ];
+      for( let i = 0; i < numNodes; i++ ){
+        let node = nodes[ i ];
+        let id = node.id();
+
         // add current node to the current options object and call degreeCentrality
-        var currDegree = this.degreeCentrality( util.extend( {}, options, {root: node} ) );
+        options.root = node;
+
+        let currDegree = this.degreeCentrality( options );
 
         if( maxIndegree < currDegree.indegree )
           maxIndegree = currDegree.indegree;
@@ -65,38 +68,30 @@ var elesfn = ({
         if( maxOutdegree < currDegree.outdegree )
           maxOutdegree = currDegree.outdegree;
 
-        indegrees[ node.id() ] = currDegree.indegree;
-        outdegrees[ node.id() ] = currDegree.outdegree;
+        indegrees[ id ] = currDegree.indegree;
+        outdegrees[ id ] = currDegree.outdegree;
       }
 
       return {
         indegree: function( node ){
-          if ( maxIndegree == 0 )
-            return 0;
+          if ( maxIndegree == 0 ){ return 0; }
 
           if( is.string( node ) ){
             // from is a selector string
-            var node = (cy.filter( node )[0]).id();
-          } else {
-            // from is a node
-            var node = node.id();
+            node = cy.filter( node );
           }
 
-          return indegrees[ node ] / maxIndegree;
+          return indegrees[ node.id() ] / maxIndegree;
         },
         outdegree: function( node ){
-          if ( maxOutdegree == 0 )
-            return 0;
+          if ( maxOutdegree === 0 ){ return 0; }
 
           if( is.string( node ) ){
             // from is a selector string
-            var node = (cy.filter( node )[0]).id();
-          } else {
-            // from is a node
-            var node = node.id();
+            node = cy.filter( node );
           }
 
-          return outdegrees[ node ] / maxOutdegree;
+          return outdegrees[ node.id() ] / maxOutdegree;
         }
 
       };
@@ -108,74 +103,50 @@ var elesfn = ({
   // "Node centrality in weighted networks: Generalizing degree and shortest paths"
   // check the heading 2 "Degree"
   degreeCentrality: function( options ){
-    options = options || {};
+    options = defaults( options );
 
-    var callingEles = this;
+    let callingEles = this;
+    let { root, weight, directed, alpha } = options;
 
     // root - mandatory!
-    if( options != null && options.root != null ){
-      var root = is.string( options.root ) ? this.filter( options.root )[0] : options.root[0];
+    if( is.string( root ) ){
+      root = this.filter( root )[0];
+    } else if( root != null ){
+      root = root[0];
     } else {
       return undefined;
     }
 
-    // weight - optional
-    if( options.weight != null && is.fn( options.weight ) ){
-      var weightFn = options.weight;
-    } else {
-      // If not specified, assume each edge has equal weight (1)
-      var weightFn = function( e ){
-        return 1;
-      };
-    }
-
-    // directed - optional
-    if( options.directed != null ){
-      var directed = options.directed;
-    } else {
-      var directed = false;
-    }
-
-    // alpha - optional
-    if( options.alpha != null && is.number( options.alpha ) ){
-      var alpha = options.alpha;
-    } else {
-      alpha = 0;
-    }
-
-
     if( !directed ){
-      var connEdges = root.connectedEdges().intersection( callingEles );
-      var k = connEdges.length;
-      var s = 0;
+      let connEdges = root.connectedEdges().intersection( callingEles );
+      let k = connEdges.length;
+      let s = 0;
 
       // Now, sum edge weights
-      for( var i = 0; i < connEdges.length; i++ ){
-        var edge = connEdges[ i ];
-        s += weightFn( edge );
+      for( let i = 0; i < connEdges.length; i++ ){
+        s += weight( connEdges[i] );
       }
 
       return {
         degree: Math.pow( k, 1 - alpha ) * Math.pow( s, alpha )
       };
     } else {
-      var incoming = root.connectedEdges( 'edge[target = "' + root.id() + '"]' ).intersection( callingEles );
-      var outgoing = root.connectedEdges( 'edge[source = "' + root.id() + '"]' ).intersection( callingEles );
-      var k_in = incoming.length;
-      var k_out = outgoing.length;
-      var s_in = 0;
-      var s_out = 0;
+      let edges = root.connectedEdges();
+      let incoming = edges.filter( edge => edge.target().same(root) && callingEles.has(edge) );
+      let outgoing = edges.filter( edge => edge.source().same(root) && callingEles.has(edge) );
+      let k_in = incoming.length;
+      let k_out = outgoing.length;
+      let s_in = 0;
+      let s_out = 0;
 
       // Now, sum incoming edge weights
-      for( var i = 0; i < incoming.length; i++ ){
-        var edge = incoming[ i ];
-        s_in += weightFn( edge );
+      for( let i = 0; i < incoming.length; i++ ){
+        s_in += weight( incoming[i] );
       }
 
       // Now, sum outgoing edge weights
-      for( var i = 0; i < outgoing.length; i++ ){
-        var edge = outgoing[ i ];
-        s_out += weightFn( edge );
+      for( let i = 0; i < outgoing.length; i++ ){
+        s_out += weight( outgoing[i] );
       }
 
       return {

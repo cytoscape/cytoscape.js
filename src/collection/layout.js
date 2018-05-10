@@ -1,5 +1,5 @@
 import * as is from '../is';
-import util from '../util';
+import * as util from '../util';
 import Promise from '../promise';
 import math from '../math';
 

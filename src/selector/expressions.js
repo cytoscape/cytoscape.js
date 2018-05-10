@@ -1,6 +1,6 @@
 import state from './state';
 import tokens from './tokens';
-import util from '../util';
+import * as util from '../util';
 import newQuery from './new-query';
 
 const { stateSelectorRegex } = state;

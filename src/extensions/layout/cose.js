@@ -8,7 +8,7 @@ http://dl.acm.org/citation.cfm?id=1498047
 Modifications tracked on Github.
 */
 
-import util from '../../util';
+import * as util from '../../util';
 import math from '../../math';
 import * as is from '../../is';
 import Promise from '../../promise';

@@ -1,5 +1,5 @@
 import * as is from '../is';
-import util from '../util';
+import * as util from '../util';
 
 let cache = function( fn, name ){
   return function traversalCache( arg1, arg2, arg3, arg4 ){

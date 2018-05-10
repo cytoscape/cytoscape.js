@@ -1,4 +1,4 @@
-export default function memoize( fn, keyFn ){
+export const memoize = ( fn, keyFn ) => {
   if( !keyFn ){
     keyFn = function(){
       if( arguments.length === 1 ){
@@ -34,4 +34,4 @@ export default function memoize( fn, keyFn ){
   memoizedFn.cache = {};
 
   return memoizedFn;
-}
+};

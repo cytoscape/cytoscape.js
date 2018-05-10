@@ -1,5 +1,5 @@
 import * as is from '../../../is';
-import util from '../../../util';
+import * as util from '../../../util';
 import window from '../../../window';
 
 import arrowShapes from './arrow-shapes';

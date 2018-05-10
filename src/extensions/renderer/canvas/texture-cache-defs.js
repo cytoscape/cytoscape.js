@@ -1,4 +1,4 @@
-import util from '../../../util';
+import * as util from '../../../util';
 
 var fullFpsTime = 1000/60; // assume 60 frames per second
 

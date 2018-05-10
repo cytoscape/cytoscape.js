@@ -1,5 +1,5 @@
 import math from '../../../math';
-import util from '../../../util';
+import * as util from '../../../util';
 import Heap from '../../../heap';
 import defs from './texture-cache-defs';
 import ElementTextureCacheLookup from './ele-texture-cache-lookup';

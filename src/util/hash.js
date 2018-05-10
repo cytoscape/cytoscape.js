@@ -1,4 +1,4 @@
-let hashIterableInts = function( iterator, seed = 5381 ){ // djb2/string-hash
+export const hashIterableInts = function( iterator, seed = 5381 ){ // djb2/string-hash
   let hash = seed;
   let entry;
 
@@ -13,11 +13,11 @@ let hashIterableInts = function( iterator, seed = 5381 ){ // djb2/string-hash
   return hash >>> 0;
 };
 
-let hashInt = function( num, seed = 5381 ){ // djb2/string-hash
+export const hashInt = function( num, seed = 5381 ){ // djb2/string-hash
   return ( (seed * 33) ^ num ) >>> 0;
 };
 
-let hashIntsArray = function( ints, seed ){
+export const hashIntsArray = function( ints, seed ){
   let entry = { value: 0, done: false };
   let i = 0;
   let length = ints.length;
@@ -37,7 +37,7 @@ let hashIntsArray = function( ints, seed ){
   return hashIterableInts( iterator, seed );
 };
 
-let hashString = function( str, seed ){
+export const hashString = function( str, seed ){
   let entry = { value: 0, done: false };
   let i = 0;
   let length = str.length;
@@ -57,11 +57,11 @@ let hashString = function( str, seed ){
   return hashIterableInts( iterator, seed );
 };
 
-let hashStrings = function(){
+export const hashStrings = function(){
   return hashStringsArray( arguments );
 };
 
-let hashStringsArray = function( strs ){
+export const hashStringsArray = function( strs ){
   let hash;
 
   for( let i = 0; i < strs.length; i++ ){
@@ -76,5 +76,3 @@ let hashStringsArray = function( strs ){
 
   return hash;
 };
-
-export default { hashIterableInts, hashString, hashStrings, hashStringsArray, hashIntsArray, hashInt };

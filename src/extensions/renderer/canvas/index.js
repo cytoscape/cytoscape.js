@@ -4,7 +4,7 @@ The canvas renderer was written by Yue Dong.
 Modifications tracked on Github.
 */
 
-import util from '../../../util';
+import * as util from '../../../util';
 import * as is from '../../../is';
 import ElementTextureCache from './ele-texture-cache';
 import LayeredTextureCache from './layered-texture-cache';

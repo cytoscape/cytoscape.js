@@ -1,4 +1,4 @@
-import util from '../util';
+import * as util from '../util';
 import exprs from './expressions';
 import newQuery from './new-query';
 

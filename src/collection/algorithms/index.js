@@ -1,4 +1,4 @@
-import util from '../../util';
+import * as util from '../../util';
 import bfsDfs from './bfs-dfs';
 import dijkstra from './dijkstra';
 import kruskal from './kruskal';

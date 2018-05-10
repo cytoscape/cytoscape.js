@@ -1,4 +1,4 @@
-import util from'./util';
+import * as util from'./util';
 import define from './define';
 import Collection from './collection';
 import Core from './core';

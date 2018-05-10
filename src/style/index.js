@@ -1,5 +1,5 @@
 import * as is from '../is';
-import util from '../util';
+import * as util from '../util';
 import Selector from '../selector';
 
 import apply from './apply';

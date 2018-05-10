@@ -3,9 +3,7 @@ import debounce from 'lodash.debounce';
 
 var performance = window ? window.performance : null;
 
-var util = {};
-
-var pnow = performance && performance.now ? function(){ return performance.now(); } : function(){ return Date.now(); };
+var pnow = performance && performance.now ? () => performance.now() : () => Date.now();
 
 var raf = (function(){
   if( window ) {
@@ -29,16 +27,10 @@ var raf = (function(){
   };
 })();
 
-util.requestAnimationFrame = function( fn ){
-  raf( fn );
-};
+export const requestAnimationFrame = fn => raf( fn );
 
-util.performanceNow = pnow;
+export const performanceNow = pnow;
 
-util.debounce = debounce;
+export const now = () => Date.now();
 
-util.now = function(){
-  return Date.now();
-};
-
-export default util;
+export { debounce };

@@ -1,6 +1,6 @@
 import * as util from '../util';
 import Animation from '../animation';
-import math from '../math';
+import * as math from '../math';
 import * as is from '../is';
 
 let define = {

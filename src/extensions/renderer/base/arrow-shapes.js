@@ -1,4 +1,4 @@
-import math from '../../../math';
+import * as math from '../../../math';
 import * as is from '../../../is';
 import * as util from '../../../util';
 

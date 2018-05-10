@@ -1,6 +1,6 @@
 import define from '../../define';
 import * as is from '../../is';
-import math from '../../math';
+import * as math from '../../math';
 
 let fn, elesfn;
 

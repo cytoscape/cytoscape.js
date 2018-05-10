@@ -1,5 +1,5 @@
 import * as util from '../../util';
-import math from '../../math';
+import * as math from '../../math';
 
 let defaults = {
   fit: true, // whether to fit to viewport

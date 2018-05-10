@@ -1,35 +1,25 @@
-let math = {};
+export const arePositionsSame = ( p1, p2 ) =>
+  p1.x === p2.x && p1.y === p2.y;
 
-math.arePositionsSame = function( p1, p2 ){
-  return p1.x === p2.x && p1.y === p2.y;
-};
+export const copyPosition = p =>
+  ({ x: p.x, y: p.y });
 
-math.copyPosition = function( p ){
-  return { x: p.x, y: p.y };
-};
+export const modelToRenderedPosition = ( p, zoom, pan ) => ({
+  x: p.x * zoom + pan.x,
+  y: p.y * zoom + pan.y
+});
 
-math.modelToRenderedPosition = function( p, zoom, pan ){
-  return {
-    x: p.x * zoom + pan.x,
-    y: p.y * zoom + pan.y
-  };
-};
+export const renderedToModelPosition = ( p, zoom, pan ) => ({
+  x: ( p.x - pan.x ) / zoom,
+  y: ( p.y - pan.y ) / zoom
+});
 
-math.renderedToModelPosition = function( p, zoom, pan ){
-  return {
-    x: ( p.x - pan.x ) / zoom,
-    y: ( p.y - pan.y ) / zoom
-  };
-};
+export const array2point = arr => ({
+  x: arr[0],
+  y: arr[1]
+});
 
-math.array2point = function( arr ){
-  return {
-    x: arr[0],
-    y: arr[1]
-  };
-};
-
-math.min = function( arr, begin = 0, end = arr.length ){
+export const min = ( arr, begin = 0, end = arr.length ) => {
   let min = Infinity;
 
   for( let i = begin; i < end; i++ ){
@@ -43,7 +33,7 @@ math.min = function( arr, begin = 0, end = arr.length ){
   return min;
 };
 
-math.max = function( arr, begin = 0, end = arr.length ){
+export const max = ( arr, begin = 0, end = arr.length ) => {
   let max = -Infinity;
 
   for( let i = begin; i < end; i++ ){
@@ -57,7 +47,7 @@ math.max = function( arr, begin = 0, end = arr.length ){
   return max;
 };
 
-math.mean = function( arr, begin = 0, end = arr.length ){
+export const mean = ( arr, begin = 0, end = arr.length ) => {
   let total = 0;
   let n = 0;
 
@@ -73,7 +63,7 @@ math.mean = function( arr, begin = 0, end = arr.length ){
   return total / n;
 };
 
-math.median = function( arr, begin = 0, end = arr.length, copy = true, sort = true, includeHoles = true ){
+export const median = ( arr, begin = 0, end = arr.length, copy = true, sort = true, includeHoles = true ) => {
   if( copy ){
     arr = arr.slice( begin, end );
   } else {
@@ -115,19 +105,15 @@ math.median = function( arr, begin = 0, end = arr.length, copy = true, sort = tr
   }
 };
 
-math.deg2rad = function( deg ){
-  return Math.PI * deg / 180;
-};
+export const deg2rad = deg =>
+  Math.PI * deg / 180;
 
-math.getAngleFromDisp = function( dispX, dispY ){
-  return Math.atan2( dispY, dispX ) - Math.PI / 2;
-};
+export const getAngleFromDisp = ( dispX, dispY ) =>
+  Math.atan2( dispY, dispX ) - Math.PI / 2;
 
-math.log2 = Math.log2 || function( n ){
-  return Math.log( n ) / Math.log( 2 );
-};
+export const log2 = Math.log2 || (n => Math.log( n ) / Math.log( 2 ));
 
-math.signum = function( x ){
+export const signum = x => {
   if( x > 0 ){
     return 1;
   } else if( x < 0 ){
@@ -137,11 +123,10 @@ math.signum = function( x ){
   }
 };
 
-math.dist = function( p1, p2 ){
-  return Math.sqrt( math.sqdist( p1, p2 ) );
-};
+export const dist = ( p1, p2 ) =>
+  Math.sqrt( sqdist( p1, p2 ) );
 
-math.sqdist = function( p1, p2 ){
+export const sqdist = ( p1, p2 ) => {
   let dx = p2.x - p1.x;
   let dy = p2.y - p1.y;
 
@@ -149,24 +134,21 @@ math.sqdist = function( p1, p2 ){
 };
 
 // from http://en.wikipedia.org/wiki/Bézier_curve#Quadratic_curves
-math.qbezierAt = function( p0, p1, p2, t ){
-  return (1 - t) * (1 - t) * p0 + 2 * (1 - t) * t * p1 + t * t * p2;
-};
+export const qbezierAt = ( p0, p1, p2, t ) =>
+  (1 - t) * (1 - t) * p0 + 2 * (1 - t) * t * p1 + t * t * p2;
 
-math.qbezierPtAt = function( p0, p1, p2, t ){
-  return {
-    x: math.qbezierAt( p0.x, p1.x, p2.x, t ),
-    y: math.qbezierAt( p0.y, p1.y, p2.y, t )
-  };
-};
+export const qbezierPtAt = ( p0, p1, p2, t ) => ({
+  x: qbezierAt( p0.x, p1.x, p2.x, t ),
+  y: qbezierAt( p0.y, p1.y, p2.y, t )
+});
 
-math.lineAt = function( p0, p1, t, d ){
+export const lineAt = ( p0, p1, t, d ) => {
   let vec = {
     x: p1.x - p0.x,
     y: p1.y - p0.y
   };
 
-  let vecDist = math.dist( p0, p1 );
+  let vecDist = dist( p0, p1 );
 
   let normVec = {
     x: vec.x / vecDist,
@@ -183,25 +165,23 @@ math.lineAt = function( p0, p1, t, d ){
   };
 };
 
-math.lineAtDist = function( p0, p1, d ){
-  return math.lineAt( p0, p1, undefined, d );
-};
+export const lineAtDist = ( p0, p1, d ) =>
+  lineAt( p0, p1, undefined, d );
 
 // get angle at A via cosine law
-math.triangleAngle = function( A, B, C ){
-  let a = math.dist( B, C );
-  let b = math.dist( A, C );
-  let c = math.dist( A, B );
+export const triangleAngle = ( A, B, C ) => {
+  let a = dist( B, C );
+  let b = dist( A, C );
+  let c = dist( A, B );
 
   return Math.acos( (a*a + b*b - c*c)/(2*a*b) );
 };
 
-math.bound = function( min, val, max ){
-  return Math.max( min, Math.min( max, val ) );
-};
+export const bound = ( min, val, max ) =>
+  Math.max( min, Math.min( max, val ) );
 
 // makes a full bb (x1, y1, x2, y2, w, h) from implicit params
-math.makeBoundingBox = function( bb ){
+export const makeBoundingBox = bb => {
   if( bb == null ){
     return {
       x1: Infinity,
@@ -234,7 +214,7 @@ math.makeBoundingBox = function( bb ){
   }
 };
 
-math.updateBoundingBox = function( bb1, bb2 ){
+export const updateBoundingBox = ( bb1, bb2 ) => {
   // update bb1 with bb2 bounds
 
   bb1.x1 = Math.min( bb1.x1, bb2.x1 );
@@ -246,7 +226,7 @@ math.updateBoundingBox = function( bb1, bb2 ){
   bb1.h = bb1.y2 - bb1.y1;
 };
 
-math.expandBoundingBoxByPoint = function( bb, x, y ){
+export const expandBoundingBoxByPoint = ( bb, x, y ) => {
   bb.x1 = Math.min( bb.x1, x );
   bb.x2 = Math.max( bb.x2, x );
   bb.w = bb.x2 - bb.x1;
@@ -256,7 +236,7 @@ math.expandBoundingBoxByPoint = function( bb, x, y ){
   bb.h = bb.y2 - bb.y1;
 };
 
-math.expandBoundingBox = function( bb, padding ){
+export const expandBoundingBox = ( bb, padding ) => {
   bb.x1 -= padding;
   bb.x2 += padding;
   bb.y1 -= padding;
@@ -267,7 +247,7 @@ math.expandBoundingBox = function( bb, padding ){
   return bb;
 };
 
-math.boundingBoxesIntersect = function( bb1, bb2 ){
+export const boundingBoxesIntersect = ( bb1, bb2 ) => {
   // case: one bb to right of other
   if( bb1.x1 > bb2.x2 ){ return false; }
   if( bb2.x1 > bb1.x2 ){ return false; }
@@ -288,25 +268,20 @@ math.boundingBoxesIntersect = function( bb1, bb2 ){
   return true;
 };
 
-math.inBoundingBox = function( bb, x, y ){
-  return bb.x1 <= x && x <= bb.x2 && bb.y1 <= y && y <= bb.y2;
-};
+export const inBoundingBox = ( bb, x, y ) =>
+  bb.x1 <= x && x <= bb.x2 && bb.y1 <= y && y <= bb.y2;
 
-math.pointInBoundingBox = function( bb, pt ){
-  return this.inBoundingBox( bb, pt.x, pt.y );
-};
+export const pointInBoundingBox = ( bb, pt ) =>
+  inBoundingBox( bb, pt.x, pt.y );
 
-math.boundingBoxInBoundingBox = function( bb1, bb2 ){
-  return (
-       math.inBoundingBox( bb1, bb2.x1, bb2.y1 )
-    && math.inBoundingBox( bb1, bb2.x2, bb2.y2 )
-  );
-};
+export const boundingBoxInBoundingBox = ( bb1, bb2 ) => (
+     inBoundingBox( bb1, bb2.x1, bb2.y1 )
+  && inBoundingBox( bb1, bb2.x2, bb2.y2 )
+);
 
-math.roundRectangleIntersectLine = function(
-  x, y, nodeX, nodeY, width, height, padding ){
+export const roundRectangleIntersectLine = ( x, y, nodeX, nodeY, width, height, padding ) => {
 
-  let cornerRadius = this.getRoundRectangleRadius( width, height );
+  let cornerRadius = getRoundRectangleRadius( width, height );
 
   let halfWidth = width / 2;
   let halfHeight = height / 2;
@@ -321,7 +296,7 @@ math.roundRectangleIntersectLine = function(
     let topEndX = nodeX + halfWidth - cornerRadius + padding;
     let topEndY = topStartY;
 
-    straightLineIntersections = this.finiteLinesIntersect(
+    straightLineIntersections = finiteLinesIntersect(
       x, y, nodeX, nodeY, topStartX, topStartY, topEndX, topEndY, false );
 
     if( straightLineIntersections.length > 0 ){
@@ -336,7 +311,7 @@ math.roundRectangleIntersectLine = function(
     let rightEndX = rightStartX;
     let rightEndY = nodeY + halfHeight - cornerRadius + padding;
 
-    straightLineIntersections = this.finiteLinesIntersect(
+    straightLineIntersections = finiteLinesIntersect(
       x, y, nodeX, nodeY, rightStartX, rightStartY, rightEndX, rightEndY, false );
 
     if( straightLineIntersections.length > 0 ){
@@ -351,7 +326,7 @@ math.roundRectangleIntersectLine = function(
     let bottomEndX = nodeX + halfWidth - cornerRadius + padding;
     let bottomEndY = bottomStartY;
 
-    straightLineIntersections = this.finiteLinesIntersect(
+    straightLineIntersections = finiteLinesIntersect(
       x, y, nodeX, nodeY, bottomStartX, bottomStartY, bottomEndX, bottomEndY, false );
 
     if( straightLineIntersections.length > 0 ){
@@ -366,7 +341,7 @@ math.roundRectangleIntersectLine = function(
     let leftEndX = leftStartX;
     let leftEndY = nodeY + halfHeight - cornerRadius + padding;
 
-    straightLineIntersections = this.finiteLinesIntersect(
+    straightLineIntersections = finiteLinesIntersect(
       x, y, nodeX, nodeY, leftStartX, leftStartY, leftEndX, leftEndY, false );
 
     if( straightLineIntersections.length > 0 ){
@@ -381,7 +356,7 @@ math.roundRectangleIntersectLine = function(
   {
     let topLeftCenterX = nodeX - halfWidth + cornerRadius;
     let topLeftCenterY = nodeY - halfHeight + cornerRadius;
-    arcIntersections = this.intersectLineCircle(
+    arcIntersections = intersectLineCircle(
       x, y, nodeX, nodeY,
       topLeftCenterX, topLeftCenterY, cornerRadius + padding );
 
@@ -397,7 +372,7 @@ math.roundRectangleIntersectLine = function(
   {
     let topRightCenterX = nodeX + halfWidth - cornerRadius;
     let topRightCenterY = nodeY - halfHeight + cornerRadius;
-    arcIntersections = this.intersectLineCircle(
+    arcIntersections = intersectLineCircle(
       x, y, nodeX, nodeY,
       topRightCenterX, topRightCenterY, cornerRadius + padding );
 
@@ -413,7 +388,7 @@ math.roundRectangleIntersectLine = function(
   {
     let bottomRightCenterX = nodeX + halfWidth - cornerRadius;
     let bottomRightCenterY = nodeY + halfHeight - cornerRadius;
-    arcIntersections = this.intersectLineCircle(
+    arcIntersections = intersectLineCircle(
       x, y, nodeX, nodeY,
       bottomRightCenterX, bottomRightCenterY, cornerRadius + padding );
 
@@ -429,7 +404,7 @@ math.roundRectangleIntersectLine = function(
   {
     let bottomLeftCenterX = nodeX - halfWidth + cornerRadius;
     let bottomLeftCenterY = nodeY + halfHeight - cornerRadius;
-    arcIntersections = this.intersectLineCircle(
+    arcIntersections = intersectLineCircle(
       x, y, nodeX, nodeY,
       bottomLeftCenterX, bottomLeftCenterY, cornerRadius + padding );
 
@@ -444,7 +419,7 @@ math.roundRectangleIntersectLine = function(
   return []; // if nothing
 };
 
-math.inLineVicinity = function( x, y, lx1, ly1, lx2, ly2, tolerance ){
+export const inLineVicinity = ( x, y, lx1, ly1, lx2, ly2, tolerance ) => {
   let t = tolerance;
 
   let x1 = Math.min( lx1, lx2 );
@@ -456,8 +431,7 @@ math.inLineVicinity = function( x, y, lx1, ly1, lx2, ly2, tolerance ){
     && y1 - t <= y && y <= y2 + t;
 };
 
-math.inBezierVicinity = function(
-  x, y, x1, y1, x2, y2, x3, y3, tolerance ){
+export const inBezierVicinity = ( x, y, x1, y1, x2, y2, x3, y3, tolerance ) => {
 
   let bb = {
     x1: Math.min( x1, x3, x2 ) - tolerance,
@@ -476,7 +450,8 @@ math.inBezierVicinity = function(
   }
 
 };
-math.solveQuadratic = function( a, b, c, val ){
+
+export const solveQuadratic = ( a, b, c, val ) => {
   c -= val;
 
   var r = b * b - 4 * a * c;
@@ -491,7 +466,7 @@ math.solveQuadratic = function( a, b, c, val ){
   return [ root1, root2 ];
 };
 
-math.solveCubic = function( a, b, c, d, result ){
+export const solveCubic = ( a, b, c, d, result ) => {
 
   // Solves a cubic function, returns root in form [r1, i1, r2, i2, r3, i3], where
   // r is the real component, i is the imaginary component
@@ -547,8 +522,7 @@ math.solveCubic = function( a, b, c, d, result ){
   return;
 };
 
-math.sqdistToQuadraticBezier = function(
-  x, y, x1, y1, x2, y2, x3, y3 ){
+export const sqdistToQuadraticBezier = ( x, y, x1, y1, x2, y2, x3, y3 ) => {
 
   // Find minimum distance by using the minimum of the distance
   // function between the given point and the curve
@@ -574,7 +548,7 @@ math.sqdistToQuadraticBezier = function(
   let roots = [];
 
   // Use the cubic solving algorithm
-  this.solveCubic( a, b, c, d, roots );
+  solveCubic( a, b, c, d, roots );
 
   let zeroThreshold = 0.0000001;
 
@@ -617,7 +591,7 @@ math.sqdistToQuadraticBezier = function(
   return minDistanceSquared;
 };
 
-math.sqdistToFiniteLine = function( x, y, x1, y1, x2, y2 ){
+export const sqdistToFiniteLine = ( x, y, x1, y1, x2, y2 ) => {
   let offset = [ x - x1, y - y1 ];
   let line = [ x2 - x1, y2 - y1 ];
 
@@ -638,7 +612,7 @@ math.sqdistToFiniteLine = function( x, y, x1, y1, x2, y2 ){
   return hypSq - adjSq;
 };
 
-math.pointInsidePolygonPoints = function( x, y, points ){
+export const pointInsidePolygonPoints = ( x, y, points ) => {
   let x1, y1, x2, y2;
   let y3;
 
@@ -685,8 +659,7 @@ math.pointInsidePolygonPoints = function( x, y, points ){
   }
 };
 
-math.pointInsidePolygon = function(
-  x, y, basePoints, centerX, centerY, width, height, direction, padding ){
+export const pointInsidePolygon = ( x, y, basePoints, centerX, centerY, width, height, direction, padding ) => {
 
   //let direction = arguments[6];
   let transformedPoints = new Array( basePoints.length );
@@ -726,19 +699,19 @@ math.pointInsidePolygon = function(
   let points;
 
   if( padding > 0 ){
-    let expandedLineSet = this.expandPolygon(
+    let expandedLineSet = expandPolygon(
       transformedPoints,
       -padding );
 
-    points = this.joinLines( expandedLineSet );
+    points = joinLines( expandedLineSet );
   } else {
     points = transformedPoints;
   }
 
-  return math.pointInsidePolygonPoints( x, y, points );
+  return pointInsidePolygonPoints( x, y, points );
 };
 
-math.joinLines = function( lineSet ){
+export const joinLines = ( lineSet ) => {
 
   let vertices = new Array( lineSet.length / 2 );
 
@@ -763,7 +736,7 @@ math.joinLines = function( lineSet ){
       nextLineEndY = lineSet[3];
     }
 
-    let intersection = this.finiteLinesIntersect(
+    let intersection = finiteLinesIntersect(
       currentLineStartX, currentLineStartY,
       currentLineEndX, currentLineEndY,
       nextLineStartX, nextLineStartY,
@@ -777,7 +750,7 @@ math.joinLines = function( lineSet ){
   return vertices;
 };
 
-math.expandPolygon = function( points, pad ){
+export const expandPolygon = ( points, pad ) => {
 
   let expandedLineSet = new Array( points.length * 2 );
 
@@ -816,8 +789,7 @@ math.expandPolygon = function( points, pad ){
   return expandedLineSet;
 };
 
-math.intersectLineEllipse = function(
-  x, y, centerX, centerY, ellipseWradius, ellipseHradius ){
+export const intersectLineEllipse = ( x, y, centerX, centerY, ellipseWradius, ellipseHradius ) => {
 
   let dispX = centerX - x;
   let dispY = centerY - y;
@@ -838,8 +810,7 @@ math.intersectLineEllipse = function(
   return [ (centerX - x) * lenProportion + x, (centerY - y) * lenProportion + y ];
 };
 
-math.checkInEllipse = function(
-  x, y, width, height, centerX, centerY, padding ){
+export const checkInEllipse = ( x, y, width, height, centerX, centerY, padding ) => {
   x -= centerX;
   y -= centerY;
 
@@ -850,8 +821,7 @@ math.checkInEllipse = function(
 };
 
 // Returns intersections of increasing distance from line's start point
-math.intersectLineCircle = function(
-  x1, y1, x2, y2, centerX, centerY, radius ){
+export const intersectLineCircle = ( x1, y1, x2, y2, centerX, centerY, radius ) => {
 
   // Calculate d, direction vector of line
   let d = [ x2 - x1, y2 - y1 ]; // Direction vector of line
@@ -907,8 +877,7 @@ math.intersectLineCircle = function(
 
 };
 
-math.findCircleNearPoint = function( centerX, centerY,
-  radius, farX, farY ){
+export const findCircleNearPoint = ( centerX, centerY, radius, farX, farY ) => {
 
   let displacementX = farX - centerX;
   let displacementY = farY - centerY;
@@ -922,7 +891,7 @@ math.findCircleNearPoint = function( centerX, centerY,
     centerY + unitDisplacementY * radius ];
 };
 
-math.findMaxSqDistanceToOrigin = function( points ){
+export const findMaxSqDistanceToOrigin = ( points ) => {
   let maxSqDistance = 0.000001;
   let sqDistance;
 
@@ -939,7 +908,7 @@ math.findMaxSqDistanceToOrigin = function( points ){
   return maxSqDistance;
 };
 
-math.midOfThree = function( a, b, c ){
+export const midOfThree = ( a, b, c ) => {
   if( (b <= a && a <= c) || (c <= a && a <= b) ){
     return a;
   } else if( (a <= b && b <= c) || (c <= b && b <= a) ){
@@ -950,11 +919,11 @@ math.midOfThree = function( a, b, c ){
 };
 
 // (x1,y1)=>(x2,y2) intersect with (x3,y3)=>(x4,y4)
-math.finiteLinesIntersect = function(
+export const finiteLinesIntersect = (
   x1, y1, x2, y2,
   x3, y3, x4, y4,
   infiniteLines
-){
+) => {
 
   let dx13 = x1 - x3;
   let dx21 = x2 - x1;
@@ -992,17 +961,17 @@ math.finiteLinesIntersect = function(
       // Parallel, coincident lines. Check if overlap
 
       // Check endpoint of second line
-      if( this.midOfThree( x1, x2, x4 ) === x4 ){
+      if( midOfThree( x1, x2, x4 ) === x4 ){
         return [ x4, y4 ];
       }
 
       // Check start point of second line
-      if( this.midOfThree( x1, x2, x3 ) === x3 ){
+      if( midOfThree( x1, x2, x3 ) === x3 ){
         return [ x3, y3 ];
       }
 
       // Endpoint of first line
-      if( this.midOfThree( x3, x4, x2 ) === x2 ){
+      if( midOfThree( x3, x4, x2 ) === x2 ){
         return [ x2, y2 ];
       }
 
@@ -1020,8 +989,7 @@ math.finiteLinesIntersect = function(
 //
 // math.polygonIntersectLine( x, y, basePoints, centerX, centerY )
 // intersect the points (no transform)
-math.polygonIntersectLine = function(
-  x, y, basePoints, centerX, centerY, width, height, padding ){
+export const polygonIntersectLine = ( x, y, basePoints, centerX, centerY, width, height, padding ) => {
 
   let intersections = [];
   let intersection;
@@ -1042,11 +1010,11 @@ math.polygonIntersectLine = function(
     }
 
     if( padding > 0 ){
-      let expandedLineSet = math.expandPolygon(
+      let expandedLineSet = expandPolygon(
         transformedPoints,
         -padding );
 
-      points = math.joinLines( expandedLineSet );
+      points = joinLines( expandedLineSet );
     } else {
       points = transformedPoints;
     }
@@ -1069,7 +1037,7 @@ math.polygonIntersectLine = function(
       nextY = points[1];
     }
 
-    intersection = this.finiteLinesIntersect(
+    intersection = finiteLinesIntersect(
       x, y, centerX, centerY,
       currentX, currentY,
       nextX, nextY );
@@ -1082,8 +1050,7 @@ math.polygonIntersectLine = function(
   return intersections;
 };
 
-math.shortenIntersection = function(
-  intersection, offset, amount ){
+export const shortenIntersection = ( intersection, offset, amount ) => {
 
   let disp = [ intersection[0] - offset[0], intersection[1] - offset[1] ];
 
@@ -1098,14 +1065,14 @@ math.shortenIntersection = function(
   return [ offset[0] + lenRatio * disp[0], offset[1] + lenRatio * disp[1] ];
 };
 
-math.generateUnitNgonPointsFitToSquare = function( sides, rotationRadians ){
-  let points = math.generateUnitNgonPoints( sides, rotationRadians );
-  points = math.fitPolygonToSquare( points );
+export const generateUnitNgonPointsFitToSquare = ( sides, rotationRadians ) => {
+  let points = generateUnitNgonPoints( sides, rotationRadians );
+  points = fitPolygonToSquare( points );
 
   return points;
 };
 
-math.fitPolygonToSquare = function( points ){
+export const fitPolygonToSquare = ( points ) => {
   let x, y;
   let sides = points.length / 2;
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -1143,7 +1110,7 @@ math.fitPolygonToSquare = function( points ){
   return points;
 };
 
-math.generateUnitNgonPoints = function( sides, rotationRadians ){
+export const generateUnitNgonPoints = ( sides, rotationRadians ) => {
 
   let increment = 1.0 / sides * 2 * Math.PI;
   let startAngle = sides % 2 === 0 ?
@@ -1164,32 +1131,21 @@ math.generateUnitNgonPoints = function( sides, rotationRadians ){
   return points;
 };
 
-math.getRoundRectangleRadius = function( width, height ){
+// Set the default radius, unless half of width or height is smaller than default
+export const getRoundRectangleRadius = ( width, height ) =>
+  Math.min( width / 4, height / 4, 8 );
 
-  // Set the default radius, unless half of width or height is smaller than default
-  return Math.min( width / 4, height / 4, 8 );
-};
+export const getCutRectangleCornerLength = () => 8;
 
-math.getCutRectangleCornerLength = function(){
-  return 8;
-};
+export const bezierPtsToQuadCoeff = ( p0, p1, p2 ) => [
+  p0 - 2 * p1 + p2,
+  2 * ( p1 - p0 ),
+  p0
+];
 
-math.bezierPtsToQuadCoeff = function( p0, p1, p2 ){
-  return [
-    p0 - 2 * p1 + p2,
-    2 * ( p1 - p0 ),
-    p0
-  ];
-};
-
-math.getBarrelCurveConstants = function( width, height ){
-  // get curve width, height, and control point position offsets as a percentage of node height / width
-  return {
-    heightOffset: Math.min(15, 0.05 * height),
-    widthOffset: Math.min(100, 0.25 * width),
-    ctrlPtOffsetPct: 0.05
-  };
-};
-
-
-export default math;
+// get curve width, height, and control point position offsets as a percentage of node height / width
+export const getBarrelCurveConstants = ( width, height ) => ({
+  heightOffset: Math.min(15, 0.05 * height),
+  widthOffset: Math.min(100, 0.25 * width),
+  ctrlPtOffsetPct: 0.05
+});

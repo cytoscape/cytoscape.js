@@ -1,6 +1,6 @@
 import * as is from '../../../is';
 import * as util from '../../../util';
-import math from '../../../math';
+import * as math from '../../../math';
 
 var BRp = {};
 

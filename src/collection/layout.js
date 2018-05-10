@@ -1,7 +1,7 @@
 import * as is from '../is';
 import * as util from '../util';
 import Promise from '../promise';
-import math from '../math';
+import * as math from '../math';
 
 let elesfn = ({
   // Calculates and returns node dimensions { x, y } based on options given

@@ -5,7 +5,7 @@
 // Additional reference: http://www.psi.toronto.edu/affinitypropagation/faq.html
 
 import * as util from '../../util';
-import math from '../../math';
+import * as math from '../../math';
 import * as is from '../../is';
 import clusteringDistance from './clustering-distances';
 

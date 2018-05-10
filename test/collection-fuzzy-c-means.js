@@ -252,6 +252,8 @@ describe('Algorithms', function(){
       // Example: [ [1,2,3] , [4,5,6] ] swapped to [ [4,5,6] , [1,2,3] ]
       // However, the same nodes should still be grouped together.
 
+      this.timeout(10000);
+
       for (var i = 0; i < 1000; i++) {
         var clusters2 = cy.elements().fuzzyCMeans(options).clusters;
 

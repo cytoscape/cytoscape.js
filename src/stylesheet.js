@@ -1,6 +1,6 @@
 import * as is from './is';
-import * as util from './util';
 import Style from './style';
+import { dash2camel } from './util';
 
 // a dummy stylesheet object that doesn't need a reference to the core
 // (useful for init)
@@ -41,24 +41,25 @@ sheetfn.css = function( name, value ){
     } );
   } else if( is.plainObject( name ) ){
     let map = name;
+    let propNames = Object.keys( map );
 
-    for( let j = 0; j < Style.properties.length; j++ ){
-      let prop = Style.properties[ j ];
-      let mapVal = map[ prop.name ];
+    for( let j = 0; j < propNames.length; j++ ){
+      let key = propNames[ j ];
+      let mapVal = map[ propNames ];
 
-      if( mapVal === undefined ){ // also try camel case name
-        mapVal = map[ util.dash2camel( prop.name ) ];
-      }
+      if( mapVal == null ){ continue; }
 
-      if( mapVal !== undefined ){
-        let name = prop.name;
-        let value = mapVal;
+      let prop = Style.properties[key] || Style.properties[dash2camel(key)];
 
-        this[ i ].properties.push( {
-          name: name,
-          value: value
-        } );
-      }
+      if( prop == null ){ continue; }
+
+      let name = prop.name;
+      let value = mapVal;
+
+      this[ i ].properties.push( {
+        name: name,
+        value: value
+      } );
     }
   }
 

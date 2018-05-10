@@ -594,7 +594,6 @@ styfn.update = function(){
 // just update the functional properties (i.e. mappings) in the elements'
 // styles (less expensive than recalculation)
 styfn.updateMappers = function( eles ){
-  let self = this;
   let cy = this._private.cy;
   let updatedEles = cy.collection();
 
@@ -602,12 +601,13 @@ styfn.updateMappers = function( eles ){
     let ele = eles[ i ];
     let style = ele._private.style;
     let updatedEle = false;
+    let propNames = Object.keys(style);
 
-    for( let j = 0; j < self.properties.length; j++ ){ // for each prop
-      let prop = self.properties[ j ];
-      let propInStyle = style[ prop.name ];
+    for( let j = 0; j < propNames.length; j++ ){ // for each prop
+      let propName = propNames[ j ];
+      let propInStyle = style[ propName ];
 
-      if( propInStyle && propInStyle.mapping ){
+      if( propInStyle != null && propInStyle.mapping ){
         let mapping = propInStyle.mapping;
 
         this.applyParsedProperty( ele, mapping ); // reapply the mapping property

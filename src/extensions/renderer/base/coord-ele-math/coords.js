@@ -1,5 +1,5 @@
 import window from '../../../../window';
-import math from '../../../../math';
+import * as math from '../../../../math';
 import * as util from '../../../../util';
 
 var BRp = {};

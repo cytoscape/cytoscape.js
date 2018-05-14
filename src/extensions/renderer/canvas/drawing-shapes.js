@@ -1,4 +1,4 @@
-import math from '../../../math';
+import * as math from '../../../math';
 
 var CRp = {};
 

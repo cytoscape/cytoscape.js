@@ -1,4 +1,4 @@
-import math from '../../../math';
+import * as math from '../../../math';
 import * as util from '../../../util';
 import Heap from '../../../heap';
 import defs from './texture-cache-defs';

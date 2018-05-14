@@ -1,6 +1,6 @@
 import * as util from '../util';
 import * as is from '../is';
-import math from '../math';
+import * as math from '../math';
 
 let styfn = {};
 

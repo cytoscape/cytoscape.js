@@ -4,11 +4,6 @@
     "minified": 317897,
     "gzipped": 98067
   },
-  "build/cytoscape.min.js": {
-    "bundled": 854989,
-    "minified": 317897,
-    "gzipped": 98067
-  },
   "build/cytoscape.cjs.js": {
     "bundled": 787562,
     "minified": 331520,

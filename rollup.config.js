@@ -59,7 +59,6 @@ const configs = [
       commonjs({ include: '**/node_modules/**' }),
       BABEL ? babel(getBabelOptions()) : {},
       replace(envVariables),
-      !FILE ? sizeSnapshot() : {},
       uglify({
         compress: {
           warnings: false,

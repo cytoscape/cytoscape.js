@@ -157,7 +157,10 @@ CoseLayout.prototype.run = function(){
     },
     stop: function(){
       return this;
-    }
+    },
+    stopped: function(){
+      return true;
+    },
   };
 
   function broadcast( message ){ // for false thread

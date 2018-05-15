@@ -229,5 +229,7 @@ util.extend( anifn, {
 } );
 
 anifn.complete = anifn.completed;
+anifn.run = anifn.play;
+anifn.running = anifn.playing;
 
 export default Animation;

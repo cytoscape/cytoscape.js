@@ -3733,12 +3733,14 @@
           "fns": [
             {
               "name": "ani.play",
+              "pureAliases": ["ani.run"],
               "descr": "Requests that the animation be played, starting on the next frame.  If the animation is complete, it restarts from the beginning.",
               "md": "animation/play"
             },
 
             {
               "name": "ani.playing",
+              "pureAliases": ["ani.running"],
               "descr": "Get whether the animation is currently playing."
             },
 

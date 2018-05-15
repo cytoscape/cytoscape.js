@@ -755,7 +755,7 @@ elesfn.boundingBoxAt = function( fn ){
   return bb;
 };
 
-fn.boundingbox = fn.boundingBox;
+fn.boundingbox = fn.bb = fn.boundingBox;
 fn.renderedBoundingbox = fn.renderedBoundingBox;
 
 export default elesfn;

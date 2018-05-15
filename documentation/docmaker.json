@@ -1581,7 +1581,7 @@
 
             {
               "name": "eles.boundingBox",
-              "pureAliases": [ "eles.boundingbox" ],
+              "pureAliases": [ "eles.boundingbox", "eles.bb" ],
               "descr": "Get the bounding box of the elements.",
               "formats": [
                 {

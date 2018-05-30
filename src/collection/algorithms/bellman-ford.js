@@ -99,26 +99,30 @@ var elesfn = ({
       // Check for negative weight cycles
       var negativeWeightCycles = [];
       var negativeWeightCycleIndexes = [];
-      for( var e = 0; e < edges.length; e++ ){
-        var sourceIndex = id2position[ edges[ e ].source().id() ];
-        var targetIndex = id2position[ edges[ e ].target().id() ];
-        var weight = weightFn( edges[ e ] );
+      var edgesArray = Array.prototype.slice.apply( edges );
+      for( var e = 0; e < edgesArray.length; e++ ){
+        var sourceIndex = id2position[ edgesArray[ e ].source().id() ];
+        var targetIndex = id2position[ edgesArray[ e ].target().id() ];
+        var weight = weightFn( edgesArray[ e ] );
 
         if( cost[ sourceIndex ] + weight < cost[ targetIndex ] ){
           if( options.findNegativeWeightCycles ){
             var indexes = [ targetIndex ];
+            var edgeIndexes = [ e ];
             var index;
             var smallestIndex = targetIndex;
             for( index = sourceIndex; indexes.indexOf( index ) == -1; index = predecessor[ index ] ){
               indexes.unshift( index );
+              edgeIndexes.unshift( edgesArray.indexOf( predEdge[ index ] ) );
               if( index < smallestIndex ){
                 smallestIndex = index;
               }
             }
-            indexes = indexes.slice(
-              indexes.indexOf( smallestIndex ), indexes.indexOf( index ) + 1
-            ).concat( indexes.slice( 0, indexes.indexOf( smallestIndex ) ) );
-            var cycleIndexes = indexes.join( "," );
+            indexes = indexes.slice( 0, indexes.indexOf( index ) + 1 );
+            edgeIndexes = edgeIndexes.slice(
+              indexes.indexOf( smallestIndex ), indexes.length
+            ).concat( edgeIndexes.slice( 0, indexes.indexOf( smallestIndex ) ) );
+            var cycleIndexes = edgeIndexes.join( "," );
             if( negativeWeightCycleIndexes.indexOf( cycleIndexes ) == -1 ){
               var negativeWeightCycle = [];
               for( var p = 0; p < indexes.length; ++p ){

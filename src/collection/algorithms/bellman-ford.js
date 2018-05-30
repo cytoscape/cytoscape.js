@@ -97,17 +97,55 @@ var elesfn = ({
 
     if( flag ){
       // Check for negative weight cycles
+      var negativeWeightCycles = [];
+      var negativeWeightCycleIndexes = [];
       for( var e = 0; e < edges.length; e++ ){
         var sourceIndex = id2position[ edges[ e ].source().id() ];
         var targetIndex = id2position[ edges[ e ].target().id() ];
         var weight = weightFn( edges[ e ] );
 
         if( cost[ sourceIndex ] + weight < cost[ targetIndex ] ){
-          util.warn( 'Graph contains a negative weight cycle for Bellman-Ford' );
-          return { pathTo: undefined,
-               distanceTo: undefined,
-               hasNegativeWeightCycle: true};
+          if( options.findNegativeWeightCycles ){
+            var indexes = [ targetIndex ];
+            var index;
+            var smallestIndex = targetIndex;
+            for( index = sourceIndex; indexes.indexOf( index ) == -1; index = predecessor[ index ] ){
+              indexes.unshift( index );
+              if( index < smallestIndex ){
+                smallestIndex = index;
+              }
+            }
+            indexes = indexes.slice(
+              indexes.indexOf( smallestIndex ), indexes.indexOf( index ) + 1
+            ).concat( indexes.slice( 0, indexes.indexOf( smallestIndex ) ) );
+            var cycleIndexes = indexes.join( "," );
+            if( negativeWeightCycleIndexes.indexOf( cycleIndexes ) == -1 ){
+              var negativeWeightCycle = [];
+              for( var p = 0; p < indexes.length; ++p ){
+                index = indexes[ p ];
+                negativeWeightCycle.push( predEdge[ index ] );
+                negativeWeightCycle.push( nodes[ index ] );
+              }
+              negativeWeightCycles.push( negativeWeightCycle );
+              negativeWeightCycleIndexes.push( cycleIndexes );
+            }
+          } else {
+            util.error( 'Graph contains a negative weight cycle for Bellman-Ford' );
+            return {
+              pathTo: undefined,
+              distanceTo: undefined,
+              hasNegativeWeightCycle: true
+            };
+          }
         }
+      }
+      if( negativeWeightCycles.length > 0 ){
+        return {
+          pathTo: undefined,
+          distanceTo: undefined,
+          hasNegativeWeightCycle: true,
+          negativeWeightCycles: negativeWeightCycles
+        };
       }
     }
 

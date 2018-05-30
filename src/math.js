@@ -660,8 +660,6 @@ export const pointInsidePolygonPoints = ( x, y, points ) => {
 };
 
 export const pointInsidePolygon = ( x, y, basePoints, centerX, centerY, width, height, direction, padding ) => {
-
-  //let direction = arguments[6];
   let transformedPoints = new Array( basePoints.length );
 
   // Gives negative angle
@@ -997,7 +995,7 @@ export const polygonIntersectLine = ( x, y, basePoints, centerX, centerY, width,
   let transformedPoints = new Array( basePoints.length );
 
   let doTransform = true;
-  if( arguments.length === 5 ){
+  if( width == null ){
     doTransform = false;
   }
 

@@ -96,24 +96,10 @@
 
             {
               "name": "cy.collection",
-              "descr": "Return a new collection.",
+              "descr": "Return a new, empty collection.",
               "formats": [
                 {
                   "descr": "Get an empty collection."
-                },
-
-                {
-                  "descr": "Get a collection from elements in the graph matching the specified selector.",
-                  "args": [
-                    { "name": "selector", "descr": "Elements matching this selector are in the returned collection." }
-                  ]
-                },
-
-                {
-                  "descr": "Get a collection from an array of elements.",
-                  "args": [
-                    { "name": "elesArray", "descr": "The elements in this array are in the returned collection." }
-                  ]
                 }
               ],
               "md": "core/collection"

@@ -90,7 +90,7 @@
     "watch:build:umd": "cross-env FILE=umd SOURCEMAPS=true NODE_ENV=development rollup -c -w",
     "test": "mocha -r esm",
     "test:build": "cross-env TEST_BUILD=true mocha -r esm",
-    "test:travis": "cross-env SNAPSHOT=match run-s build test:build lint",
+    "test:travis": "run-s build test:build lint",
     "sniper": "sniper .",
     "docs": "run-s docs:build docs:js",
     "docs:js": "cpy build/cytoscape.min.js documentation/js",

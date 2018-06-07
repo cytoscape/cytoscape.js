@@ -33,7 +33,16 @@ describe('Core graph manipulation', function(){
             { data: { id: "n1n2", source: "n1", target: "n2", weight: 0.33 }, classes: "uh" },
             { data: { id: "n2n3", source: "n2", target: "n3", weight: 0.66 }, classes: "huh" }
         ]
-      }
+      },
+
+      style: [
+        {
+          selector: 'node',
+          style: {
+            'background-width': '50% 50%' // expected to be in first block for tests
+          }
+        }
+      ]
     });
   });
 
@@ -457,6 +466,16 @@ describe('Core graph manipulation', function(){
       expect( cy.userPanningEnabled() ).to.equal( true );
     });
 
+  });
+
+  describe('cy.style()', function(){
+    describe('cy.style.json()', function(){
+      it('property with multiple values is serialised including units', function(){
+        var json = cy.style().json();
+
+        expect( json[0].style['background-width'] === '50% 50%' );
+      });
+    });
   });
 
 });

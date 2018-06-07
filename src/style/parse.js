@@ -220,7 +220,7 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
       name: name,
       value: valArr,
       pfValue: pfValArr,
-      strValue: valArr.join( ' ' ),
+      strValue: valArr.map( (val, i) => val + (unitsArr[i] || '') ).join(' '),
       bypass: propIsBypass,
       units: unitsArr
     };

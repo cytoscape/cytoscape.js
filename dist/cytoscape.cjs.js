@@ -15687,9 +15687,9 @@ styfn.parseImpl = function (name, value, propIsBypass, propIsFlat) {
   if (!property) {
     return null;
   } // return null on property of unknown name
-  if (value === undefined || value === null) {
+  if (value === undefined) {
     return null;
-  } // can't assign null
+  } // can't assign undefined
 
   // the property may be an alias
   if (property.alias) {
@@ -15861,7 +15861,9 @@ styfn.parseImpl = function (name, value, propIsBypass, propIsFlat) {
       name: name,
       value: valArr,
       pfValue: pfValArr,
-      strValue: valArr.join(' '),
+      strValue: valArr.map(function (val, i) {
+        return val + (unitsArr[i] || '');
+      }).join(' '),
       bypass: propIsBypass,
       units: unitsArr
     };
@@ -17937,6 +17939,9 @@ CoseLayout.prototype.run = function () {
     },
     stop: function stop() {
       return this;
+    },
+    stopped: function stopped() {
+      return true;
     }
   };
 
@@ -29085,7 +29090,7 @@ module.exports = Stylesheet;
 "use strict";
 
 
-module.exports = "3.2.12";
+module.exports = "3.2.13";
 
 /***/ })
 /******/ ]);

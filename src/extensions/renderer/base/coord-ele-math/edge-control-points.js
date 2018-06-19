@@ -786,7 +786,7 @@ BRp.getControlPoints = function( edge ){
   let rs = edge[0]._private.rscratch;
   let type = rs.edgeType;
 
-  if( type === 'bezier' || type === 'multibezier' ){
+  if( type === 'bezier' || type === 'multibezier' || type === 'self' ){
     return getPts( rs.ctrlpts );
   }
 };

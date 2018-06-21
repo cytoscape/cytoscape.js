@@ -103,10 +103,10 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
 
   // check if value is mapped
   let data, mapData;
-  if( !valueIsString || propIsFlat ){
+  if( !valueIsString || propIsFlat || value.length < 7 || value[1] !== 'a' ){
     // then don't bother to do the expensive regex checks
 
-  } else if(( data = new RegExp( types.data.regex ).exec( value ) )){
+  } else if(value.length >= 7 && value[0] === 'd' && ( data = new RegExp( types.data.regex ).exec( value ) )){
     if( propIsBypass ){ return false; } // mappers not allowed in bypass
 
     let mapped = types.data;
@@ -120,7 +120,7 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
       bypass: propIsBypass
     };
 
-  } else if(( mapData = new RegExp( types.mapData.regex ).exec( value ) )){
+  } else if(value.length >= 10 && value[0] === 'm' && ( mapData = new RegExp( types.mapData.regex ).exec( value ) )){
     if( propIsBypass ){ return false; } // mappers not allowed in bypass
     if( type.multiple ){ return false; } // impossible to map to num
 

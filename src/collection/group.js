@@ -8,11 +8,11 @@ let elesfn = ({
   },
 
   isLoop: function(){
-    return this.isEdge() && this.source().id() === this.target().id();
+    return this.isEdge() && this.source()[0] === this.target()[0];
   },
 
   isSimple: function(){
-    return this.isEdge() && this.source().id() !== this.target().id();
+    return this.isEdge() && this.source()[0] !== this.target()[0];
   },
 
   group: function(){

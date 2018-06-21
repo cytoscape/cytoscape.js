@@ -456,7 +456,13 @@ styfn.getDefaultProperty = function( name ){
   return this.getDefaultProperties()[ name ];
 };
 
-styfn.getDefaultProperties = util.memoize( function(){
+styfn.getDefaultProperties = function(){
+  let _p = this._private;
+
+  if( _p.defaultProperties != null ){
+    return _p.defaultProperties;
+  }
+
   let rawProps = util.extend( {
     // common node/edge props
     'events': 'yes',
@@ -629,8 +635,10 @@ styfn.getDefaultProperties = util.memoize( function(){
     parsedProps[ name ] = parsedProp;
   }
 
-  return parsedProps;
-} );
+  _p.defaultProperties = parsedProps;
+
+  return _p.defaultProperties;
+};
 
 styfn.addDefaultStylesheet = function(){
   this

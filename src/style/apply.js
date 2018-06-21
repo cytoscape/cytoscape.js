@@ -556,9 +556,6 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
 };
 
 styfn.cleanElements = function( eles, keepBypasses ){
-  let self = this;
-  let props = self.properties;
-
   for( let i = 0; i < eles.length; i++ ){
     let ele = eles[i];
 
@@ -566,16 +563,17 @@ styfn.cleanElements = function( eles, keepBypasses ){
       ele._private.style = {};
     } else {
       let style = ele._private.style;
+      let propNames = Object.keys(style);
 
-      for( let j = 0; j < props.length; j++ ){
-        let prop = props[j];
-        let eleProp = style[ prop.name ];
+      for( let j = 0; j < propNames.length; j++ ){
+        let propName = propNames[j];
+        let eleProp = style[ propName ];
 
-        if( eleProp ){
+        if( eleProp != null ){
           if( eleProp.bypass ){
             eleProp.bypassed = null;
           } else {
-            style[ prop.name ] = null;
+            style[ propName ] = null;
           }
         }
       }

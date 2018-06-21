@@ -106,11 +106,9 @@ let operandsMatch = function( query, params ){
 }; // operandsMatch
 
 // check parent/child relations
-let confirmRelations = function( query, isNecessary, eles ){
+let confirmRelations = function( query, eles ){
   if( query != null ){
     let matches = false;
-
-    if( !isNecessary ){ return false; }
 
     eles = eles(); // save cycles if query == null
 
@@ -155,11 +153,11 @@ let queryMatches = function( query, ele ){
 
   // check id
   let allIdsMatch = true;
+  let eleId = ele.id();
   for( k = 0; k < query.ids.length; k++ ){
     let id = query.ids[ k ];
-    let actualId = ele.id();
 
-    allIdsMatch = allIdsMatch && (id == actualId);
+    allIdsMatch = allIdsMatch && (id == eleId);
 
     if( !allIdsMatch ) break;
   }
@@ -202,7 +200,7 @@ let queryMatches = function( query, ele ){
 
   // check collection
   if( query.collection != null ){
-    let matchesAny = query.collection.hasElementWithId( ele.id() );
+    let matchesAny = query.collection.hasElementWithId( eleId );
 
     if( !matchesAny ){
       return false;
@@ -217,36 +215,45 @@ let queryMatches = function( query, ele ){
   let isCompound = cy.hasCompoundNodes();
   let getSource = () => ele.source();
   let getTarget = () => ele.target();
+  let isEdge = ele.isEdge();
 
-  if( !confirmRelations( query.parent, isCompound, () => ele.parent() ) ){ return false; }
+  if( isCompound ){
+    if( !confirmRelations( query.parent, () => ele.parent() ) ){ return false; }
 
-  if( !confirmRelations( query.ancestor, isCompound, () => ele.parents() ) ){ return false; }
+    if( !confirmRelations( query.ancestor, () => ele.parents() ) ){ return false; }
 
-  if( !confirmRelations( query.child, isCompound, () => ele.children() ) ){ return false; }
+    if( !confirmRelations( query.child, () => ele.children() ) ){ return false; }
 
-  if( !confirmRelations( query.descendant, isCompound, () => ele.descendants() ) ){ return false; }
+    if( !confirmRelations( query.descendant, () => ele.descendants() ) ){ return false; }
+  } else {
+    return false;
+  }
 
-  if( !confirmRelations( query.source, true, getSource ) ){ return false; }
+  if( isEdge ){
+    if( !confirmRelations( query.source, getSource ) ){ return false; }
 
-  if( !confirmRelations( query.target, true, getTarget ) ){ return false; }
+    if( !confirmRelations( query.target, getTarget ) ){ return false; }
 
-  if( query.connectedNodes ){
-    let q0 = query.connectedNodes[0];
-    let q1 = query.connectedNodes[1];
+    if( query.connectedNodes != null ){
+      let q0 = query.connectedNodes[0];
+      let q1 = query.connectedNodes[1];
 
-    if(
-      confirmRelations( q0, true, getSource ) &&
-      confirmRelations( q1, true, getTarget )
-    ){
-      // match
-    } else if(
-      confirmRelations( q0, true, getTarget ) &&
-      confirmRelations( q1, true, getSource )
-    ){
-      // match
-    } else {
-      return false;
+      if(
+        confirmRelations( q0, getSource ) &&
+        confirmRelations( q1, getTarget )
+      ){
+        // match
+      } else if(
+        confirmRelations( q0, getTarget ) &&
+        confirmRelations( q1, getSource )
+      ){
+        // match
+      } else {
+        return false;
+      }
     }
+  } else {
+    return false;
   }
 
   // we've reached the end, so we've matched everything for this query

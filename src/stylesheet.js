@@ -45,7 +45,7 @@ sheetfn.css = function( name, value ){
 
     for( let j = 0; j < propNames.length; j++ ){
       let key = propNames[ j ];
-      let mapVal = map[ propNames ];
+      let mapVal = map[ key ];
 
       if( mapVal == null ){ continue; }
 

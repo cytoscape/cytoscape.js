@@ -21427,7 +21427,7 @@ BRp.getControlPoints = function (edge) {
   var rs = edge[0]._private.rscratch;
   var type = rs.edgeType;
 
-  if (type === 'bezier' || type === 'multibezier') {
+  if (type === 'bezier' || type === 'multibezier' || type === 'self' || type === 'compound') {
     return getPts(rs.ctrlpts);
   }
 };
@@ -29090,7 +29090,7 @@ module.exports = Stylesheet;
 "use strict";
 
 
-module.exports = "3.2.13";
+module.exports = "3.2.14";
 
 /***/ })
 /******/ ]);

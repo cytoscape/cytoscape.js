@@ -4,6 +4,7 @@ let is = require( '../../is' );
 
 let defaults = {
   fit: true, // whether to fit the viewport to the graph
+  rotate: 0, // whether to rotate the final graph by any specific angle (degrees)
   directed: false, // whether the tree is directed downwards (or edges can point in any direction if false)
   padding: 30, // padding on fit
   circle: false, // put depths in concentric circles if true, put depths top down if false
@@ -426,6 +427,20 @@ BreadthFirstLayout.prototype.run = function(){
       let node = depth[ j ];
 
       pos[ node.id() ] = getPosition( node, i === depths.length - 1 );
+    }
+  }
+
+  if (Number.isFinite(options.rotate) && options.rotate !== 0) {
+    // Rotate all the elements in `pos` to match the desired rotation
+    let theta = options.rotate * Math.PI / 180;
+    let cosTheta = Math.cos(theta);
+    let sinTheta = Math.sin(theta);
+    for (let nodeId in pos) {
+      let p = pos[ nodeId ];
+      pos[ nodeId ] = {
+        x: p.x * cosTheta - p.y * sinTheta,
+        y: p.x * sinTheta + p.y * cosTheta
+      }
     }
   }
 

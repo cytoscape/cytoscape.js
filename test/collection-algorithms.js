@@ -606,10 +606,15 @@ describe('Algorithms', function(){
 
 
   it('eles.bellmanFord(): detection of negative weight cycle', function() {
-      var options = { root: a,
-		      directed: false,
-		      weight: function( ele ) {return -1 * ele.data('weight');}
-		    };
+      var options = {
+        root: a,
+        directed: false,
+        weight: function( ele ){ return ele.data('weight'); }
+      };
+
+      ce.data('weight', -6);
+      cd.data('weight', -2);
+
       var res = cy.elements().bellmanFord(options);
 
       // No negative weight cycles

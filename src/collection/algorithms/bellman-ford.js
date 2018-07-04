@@ -1,189 +1,172 @@
 import * as is from '../../is';
 import * as util from '../../util';
+import Map from '../../map';
 
-var elesfn = ({
+let elesfn = ({
 
   // Implemented from pseudocode from wikipedia
   bellmanFord: function( options ){
-    var eles = this;
+    let eles = this;
 
     options = options || {};
 
     // Weight function - optional
+    let weightFn;
     if( options.weight != null && is.fn( options.weight ) ){
-      var weightFn = options.weight;
+      weightFn = options.weight;
     } else {
       // If not specified, assume each edge has equal weight (1)
-      var weightFn = function( e ){return 1;};
+      weightFn = () => 1;
     }
 
     // directed - optional
+    let directed;
     if( options.directed != null ){
-      var directed = options.directed;
+      directed = options.directed;
     } else {
-      var directed = false;
+      directed = false;
     }
 
     // root - mandatory!
+    let root;
     if( options.root != null ){
       if( is.string( options.root ) ){
         // use it as a selector, e.g. "#rootID
-        var source = this.filter( options.root )[0];
+        root = this.filter( options.root )[0];
       } else {
-        var source = options.root[0];
+        root = options.root[0];
       }
     } else {
       return undefined;
     }
 
-    var cy = this._private.cy;
-    var edges = this.edges().stdFilter( function( e ){ return !e.isLoop(); } );
-    var nodes = this.nodes();
-    var numNodes = nodes.length;
+    let cy = this.cy();
+    let isSimple = edge => edge.isSimple();
+    let edges = this.edges(isSimple);
+    let nodes = this.nodes();
+    let numNodes = nodes.length;
+    let numEdges = edges.length;
+    let infoMap = new Map();
+    let hasNegativeWeightCycle = false;
+    let negativeWeightCycles = [];
 
-    // mapping: node id -> position in nodes array
-    var id2position = {};
-    for( var i = 0; i < numNodes; i++ ){
-      id2position[ nodes[ i ].id() ] = i;
-    }
+    let getInfo = node => {
+      let obj = infoMap.get( node.id() );
 
-    // Initializations
-    var cost = [];
-    var predecessor = [];
-    var predEdge = [];
+      if( !obj ){
+        obj = {};
 
-    for( var i = 0; i < numNodes; i++ ){
-      if( nodes[ i ].id() === source.id() ){
-        cost[ i ] = 0;
-      } else {
-        cost[ i ] = Infinity;
+        infoMap.set( node.id(), obj );
       }
-      predecessor[ i ] = undefined;
+
+      return obj;
+    };
+
+    let getNodeFromTo = to => (is.string(to) ? cy.$(to) : to)[0];
+
+    let distanceTo = to => getInfo( getNodeFromTo(to) ).dist;
+
+    let pathTo = (to, thisStart = root) => {
+      let end = getNodeFromTo(to);
+      let path = [];
+      let node = end;
+
+      for( ;; ){
+        if( node == null ){ return this.spawn(); }
+
+        let { edge, pred } = getInfo( node );
+
+        path.unshift( node[0] );
+
+        if( node.same(thisStart) && path.length > 0 ){ break; }
+
+        if( edge != null ){
+          path.unshift( edge );
+        }
+
+        node = pred;
+      }
+
+      return eles.spawn( path );
+    };
+
+    // Initializations { dist, pred, edge }
+    for( let i = 0; i < numNodes; i++ ){
+      let node = nodes[i];
+      let info = getInfo( node );
+
+      if( node.same(root) ){
+        info.dist = 0;
+      } else {
+        info.dist = Infinity;
+      }
+
+      info.pred = null;
+      info.edge = null;
     }
 
     // Edges relaxation
-    var flag = false;
-    for( var i = 1; i < numNodes; i++ ){
-      flag = false;
-      for( var e = 0; e < edges.length; e++ ){
-        var sourceIndex = id2position[ edges[ e ].source().id() ];
-        var targetIndex = id2position[ edges[ e ].target().id() ];
-        var weight = weightFn( edges[ e ] );
+    let replacedEdge = false;
 
-        var temp = cost[ sourceIndex ] + weight;
-        if( temp < cost[ targetIndex ] ){
-          cost[ targetIndex ] = temp;
-          predecessor[ targetIndex ] = sourceIndex;
-          predEdge[ targetIndex ] = edges[ e ];
-          flag = true;
-        }
+    let checkForEdgeReplacement = (node1, node2, edge, info1, info2, weight) => {
+      let dist = info1.dist + weight;
+
+      if( dist < info2.dist && !edge.same(info1.edge) ){
+        info2.dist = dist;
+        info2.pred = node1;
+        info2.edge = edge;
+        replacedEdge = true;
+      }
+    };
+
+    for( let i = 1; i < numNodes; i++ ){
+      replacedEdge = false;
+
+      for( let e = 0; e < edges.length; e++ ){
+        let edge = edges[e];
+        let src = edge.source();
+        let tgt = edge.target();
+        let weight = weightFn(edge);
+        let srcInfo = getInfo(src);
+        let tgtInfo = getInfo(tgt);
+
+        checkForEdgeReplacement(src, tgt, edge, srcInfo, tgtInfo, weight);
 
         // If undirected graph, we need to take into account the 'reverse' edge
         if( !directed ){
-          var temp = cost[ targetIndex ] + weight;
-          if( temp < cost[ sourceIndex ] ){
-            cost[ sourceIndex ] = temp;
-            predecessor[ sourceIndex ] = targetIndex;
-            predEdge[ sourceIndex ] = edges[ e ];
-            flag = true;
-          }
+          checkForEdgeReplacement(tgt, src, edge, tgtInfo, srcInfo, weight);
         }
       }
 
-      if( !flag ){
-        break;
-      }
+      if( !replacedEdge ){ break; }
     }
 
-    if( flag ){
+    if( replacedEdge ){
       // Check for negative weight cycles
-      for( var e = 0; e < edges.length; e++ ){
-        var sourceIndex = id2position[ edges[ e ].source().id() ];
-        var targetIndex = id2position[ edges[ e ].target().id() ];
-        var weight = weightFn( edges[ e ] );
+      for( let e = 0; e < numEdges; e++ ){
+        let edge = edges[e];
+        let src = edge.source();
+        let tgt = edge.target();
+        let weight = weightFn(edge);
+        let srcDist = getInfo(src).dist;
+        let tgtDist = getInfo(tgt).dist;
 
-        if( cost[ sourceIndex ] + weight < cost[ targetIndex ] ){
-          util.warn( 'Graph contains a negative weight cycle for Bellman-Ford' );
-          return { pathTo: undefined,
-               distanceTo: undefined,
-               hasNegativeWeightCycle: true};
+        if( srcDist + weight < tgtDist || (!directed && tgtDist + weight < srcDist) ){
+          util.warn('Graph contains a negative weight cycle for Bellman-Ford');
+
+          hasNegativeWeightCycle = true;
+
+          break;
         }
       }
     }
 
-    // Build result object
-    var position2id = [];
-    for( var i = 0; i < numNodes; i++ ){
-      position2id.push( nodes[ i ].id() );
-    }
-
-
-    var res = {
-      distanceTo: function( to ){
-        if( is.string( to ) ){
-          // to is a selector string
-          var toId = (cy.filter( to )[0]).id();
-        } else {
-          // to is a node
-          var toId = to.id();
-        }
-
-        return cost[ id2position[ toId ] ];
-      },
-
-      pathTo: function( to ){
-
-        var reconstructPathAux = function( predecessor, fromPos, toPos, position2id, acumPath, predEdge ){
-          for( ;; ){
-            // Add toId to path
-            acumPath.push( cy.getElementById( position2id[ toPos ] ) );
-            acumPath.push( predEdge[ toPos ] );
-
-            if( fromPos === toPos ){
-              // reached starting node
-              return acumPath;
-            }
-
-            // If no path exists, discart acumulated path and return undefined
-            var predPos = predecessor[ toPos ];
-            if( typeof predPos === 'undefined' ){
-              return undefined;
-            }
-
-            toPos = predPos;
-          }
-
-        };
-
-        if( is.string( to ) ){
-          // to is a selector string
-          var toId = (cy.filter( to )[0]).id();
-        } else {
-          // to is a node
-          var toId = to.id();
-        }
-        var path = [];
-
-        // This returns a reversed path
-        var res =  reconstructPathAux( predecessor,
-                      id2position[ source.id() ],
-                      id2position[ toId ],
-                      position2id,
-                      path,
-                      predEdge );
-
-        // Get it in the correct order and return it
-        if( res != null ){
-          res.reverse();
-        }
-
-        return eles.spawn( res );
-      },
-
-      hasNegativeWeightCycle: false
+    return {
+      distanceTo,
+      pathTo,
+      hasNegativeWeightCycle,
+      negativeWeightCycles
     };
-
-    return res;
 
   } // bellmanFord
 

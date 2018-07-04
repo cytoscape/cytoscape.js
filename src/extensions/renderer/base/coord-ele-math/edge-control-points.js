@@ -4,6 +4,139 @@ import * as util from '../../../../util';
 
 var BRp = {};
 
+BRp.findHaystackPoints = function( edges ){
+  for( var i = 0; i < edges.length; i++ ){
+    var edge = edges[i];
+    var _p = edge._private;
+    var rs = _p.rscratch;
+
+    if( !rs.haystack ){
+      var angle = Math.random() * 2 * Math.PI;
+
+      rs.source = {
+        x: Math.cos( angle ),
+        y: Math.sin( angle )
+      };
+
+      var angle = Math.random() * 2 * Math.PI;
+
+      rs.target = {
+        x: Math.cos( angle ),
+        y: Math.sin( angle )
+      };
+
+    }
+
+    var src = _p.source;
+    var tgt = _p.target;
+    var srcPos = src.position();
+    var tgtPos = tgt.position();
+    var srcW = src.width();
+    var tgtW = tgt.width();
+    var srcH = src.height();
+    var tgtH = tgt.height();
+    var radius = edge.pstyle( 'haystack-radius' ).value;
+    var halfRadius = radius / 2; // b/c have to half width/height
+
+    rs.haystackPts = rs.allpts = [
+      rs.source.x * srcW * halfRadius + srcPos.x,
+      rs.source.y * srcH * halfRadius + srcPos.y,
+      rs.target.x * tgtW * halfRadius + tgtPos.x,
+      rs.target.y * tgtH * halfRadius + tgtPos.y
+    ];
+
+    rs.midX = (rs.allpts[0] + rs.allpts[2]) / 2;
+    rs.midY = (rs.allpts[1] + rs.allpts[3]) / 2;
+
+    // always override as haystack in case set to different type previously
+    rs.edgeType = rs.lastCurveStyle = 'haystack';
+    rs.haystack = true;
+
+    this.storeEdgeProjections( edge );
+    this.calculateArrowAngles( edge );
+    this.recalculateEdgeLabelProjections( edge );
+    this.calculateLabelAngles( edge );
+  }
+};
+
+BRp.storeAllpts = function( edge ){
+  var rs = edge._private.rscratch;
+
+  if( rs.edgeType === 'multibezier' || rs.edgeType === 'bezier' || rs.edgeType === 'self' || rs.edgeType === 'compound' ){
+    rs.allpts = [];
+
+    rs.allpts.push( rs.startX, rs.startY );
+
+    for( var b = 0; b + 1 < rs.ctrlpts.length; b += 2 ){
+      // ctrl pt itself
+      rs.allpts.push( rs.ctrlpts[ b ], rs.ctrlpts[ b + 1] );
+
+      // the midpt between ctrlpts as intermediate destination pts
+      if( b + 3 < rs.ctrlpts.length ){
+        rs.allpts.push( (rs.ctrlpts[ b ] + rs.ctrlpts[ b + 2]) / 2, (rs.ctrlpts[ b + 1] + rs.ctrlpts[ b + 3]) / 2 );
+      }
+    }
+
+    rs.allpts.push( rs.endX, rs.endY );
+
+    var m, mt;
+    if( rs.ctrlpts.length / 2 % 2 === 0 ){
+      m = rs.allpts.length / 2 - 1;
+
+      rs.midX = rs.allpts[ m ];
+      rs.midY = rs.allpts[ m + 1];
+    } else {
+      m = rs.allpts.length / 2 - 3;
+      mt = 0.5;
+
+      rs.midX = math.qbezierAt( rs.allpts[ m ], rs.allpts[ m + 2], rs.allpts[ m + 4], mt );
+      rs.midY = math.qbezierAt( rs.allpts[ m + 1], rs.allpts[ m + 3], rs.allpts[ m + 5], mt );
+    }
+
+  } else if( rs.edgeType === 'straight' ){
+    // need to calc these after endpts
+    rs.allpts = [ rs.startX, rs.startY, rs.endX, rs.endY ];
+
+    // default midpt for labels etc
+    rs.midX = ( rs.startX + rs.endX + rs.arrowStartX + rs.arrowEndX ) / 4;
+    rs.midY = ( rs.startY + rs.endY + rs.arrowStartY + rs.arrowEndY ) / 4;
+
+  } else if( rs.edgeType === 'segments' ){
+    rs.allpts = [];
+    rs.allpts.push( rs.startX, rs.startY );
+    rs.allpts.push.apply( rs.allpts, rs.segpts );
+    rs.allpts.push( rs.endX, rs.endY );
+
+    if( rs.segpts.length % 4 === 0 ){
+      var i2 = rs.segpts.length / 2;
+      var i1 = i2 - 2;
+
+      rs.midX = ( rs.segpts[ i1 ] + rs.segpts[ i2 ] ) / 2;
+      rs.midY = ( rs.segpts[ i1 + 1] + rs.segpts[ i2 + 1] ) / 2;
+    } else {
+      var i1 = rs.segpts.length / 2 - 1;
+
+      rs.midX = rs.segpts[ i1 ];
+      rs.midY = rs.segpts[ i1 + 1];
+    }
+
+
+  }
+};
+
+BRp.checkForInvalidEdgeWarning = function( edge ){
+  var rs = edge._private.rscratch;
+
+  if( !is.number(rs.startX) || !is.number(rs.startY) || !is.number(rs.endX) || !is.number(rs.endY) ){
+    if( !rs.loggedErr ){
+      rs.loggedErr = true;
+      util.warn('Edge `' + edge.id() + '` has invalid endpoints and so it is impossible to draw.  Adjust your edge style (e.g. control points) accordingly or use an alternative edge type.  This is expected behaviour when the source node and the target node overlap.');
+    }
+  } else {
+    rs.loggedErr = false;
+  }
+};
+
 BRp.findEdgeControlPoints = function( edges ){
   if( !edges || edges.length === 0 ){ return; }
 
@@ -74,10 +207,16 @@ BRp.findEdgeControlPoints = function( edges ){
     pairId = pairIds[ p ];
     var pairEdges = hashTable[ pairId ];
 
-    // for each pair id, the edges should be sorted by index
-    pairEdges.sort( function( edge1, edge2 ){
-      return edge1.poolIndex() - edge2.poolIndex();
-    } );
+    if( !pairEdges.hasUnbundled ){
+      let pllEdges = pairEdges[0].parallelEdges();
+
+      util.clearArray( pairEdges );
+
+      pllEdges.forEach( edge => pairEdges.push(edge) );
+
+      // for each pair id, the edges should be sorted by index
+      pairEdges.sort( (edge1, edge2) => edge1.poolIndex() - edge2.poolIndex() );
+    }
 
     src = pairEdges[0]._private.source;
     tgt = pairEdges[0]._private.target;
@@ -633,76 +772,8 @@ BRp.findEdgeControlPoints = function( edges ){
 
         }
 
-        if( !is.number(rs.startX) || !is.number(rs.startY) || !is.number(rs.endX) || !is.number(rs.endY) ){
-          if( !rs.loggedErr ){
-            rs.loggedErr = true;
-            util.warn('Edge `' + edge.id() + '` has invalid endpoints and so it is impossible to draw.  Adjust your edge style (e.g. control points) accordingly or use an alternative edge type.  This is expected behaviour when the source node and the target node overlap.');
-          }
-        } else {
-          rs.loggedErr = false;
-        }
-
-        if( rs.edgeType === 'multibezier' || rs.edgeType === 'bezier' || rs.edgeType === 'self' || rs.edgeType === 'compound' ){
-          rs.allpts = [];
-
-          rs.allpts.push( rs.startX, rs.startY );
-
-          for( var b = 0; b + 1 < rs.ctrlpts.length; b += 2 ){
-            // ctrl pt itself
-            rs.allpts.push( rs.ctrlpts[ b ], rs.ctrlpts[ b + 1] );
-
-            // the midpt between ctrlpts as intermediate destination pts
-            if( b + 3 < rs.ctrlpts.length ){
-              rs.allpts.push( (rs.ctrlpts[ b ] + rs.ctrlpts[ b + 2]) / 2, (rs.ctrlpts[ b + 1] + rs.ctrlpts[ b + 3]) / 2 );
-            }
-          }
-
-          rs.allpts.push( rs.endX, rs.endY );
-
-          var m, mt;
-          if( rs.ctrlpts.length / 2 % 2 === 0 ){
-            m = rs.allpts.length / 2 - 1;
-
-            rs.midX = rs.allpts[ m ];
-            rs.midY = rs.allpts[ m + 1];
-          } else {
-            m = rs.allpts.length / 2 - 3;
-            mt = 0.5;
-
-            rs.midX = math.qbezierAt( rs.allpts[ m ], rs.allpts[ m + 2], rs.allpts[ m + 4], mt );
-            rs.midY = math.qbezierAt( rs.allpts[ m + 1], rs.allpts[ m + 3], rs.allpts[ m + 5], mt );
-          }
-
-        } else if( rs.edgeType === 'straight' ){
-          // need to calc these after endpts
-          rs.allpts = [ rs.startX, rs.startY, rs.endX, rs.endY ];
-
-          // default midpt for labels etc
-          rs.midX = ( rs.startX + rs.endX + rs.arrowStartX + rs.arrowEndX ) / 4;
-          rs.midY = ( rs.startY + rs.endY + rs.arrowStartY + rs.arrowEndY ) / 4;
-
-        } else if( rs.edgeType === 'segments' ){
-          rs.allpts = [];
-          rs.allpts.push( rs.startX, rs.startY );
-          rs.allpts.push.apply( rs.allpts, rs.segpts );
-          rs.allpts.push( rs.endX, rs.endY );
-
-          if( rs.segpts.length % 4 === 0 ){
-            var i2 = rs.segpts.length / 2;
-            var i1 = i2 - 2;
-
-            rs.midX = ( rs.segpts[ i1 ] + rs.segpts[ i2 ] ) / 2;
-            rs.midY = ( rs.segpts[ i1 + 1] + rs.segpts[ i2 + 1] ) / 2;
-          } else {
-            var i1 = rs.segpts.length / 2 - 1;
-
-            rs.midX = rs.segpts[ i1 ];
-            rs.midY = rs.segpts[ i1 + 1];
-          }
-
-
-        }
-
+        this.checkForInvalidEdgeWarning( edge );
+        this.storeAllpts( edge );
         this.storeEdgeProjections( edge );
         this.calculateArrowAngles( edge );
       } // if point cache miss
@@ -713,59 +784,7 @@ BRp.findEdgeControlPoints = function( edges ){
     } // for pair edges
   } // for pair ids
 
-  for( var i = 0; i < haystackEdges.length; i++ ){
-    var edge = haystackEdges[ i ];
-    var _p = edge._private;
-    var rscratch = _p.rscratch;
-    var rs = rscratch;
-
-    if( !rscratch.haystack ){
-      var angle = Math.random() * 2 * Math.PI;
-
-      rscratch.source = {
-        x: Math.cos( angle ),
-        y: Math.sin( angle )
-      };
-
-      var angle = Math.random() * 2 * Math.PI;
-
-      rscratch.target = {
-        x: Math.cos( angle ),
-        y: Math.sin( angle )
-      };
-
-    }
-
-    var src = _p.source;
-    var tgt = _p.target;
-    var srcPos = src.position();
-    var tgtPos = tgt.position();
-    var srcW = src.width();
-    var tgtW = tgt.width();
-    var srcH = src.height();
-    var tgtH = tgt.height();
-    var radius = edge.pstyle( 'haystack-radius' ).value;
-    var halfRadius = radius / 2; // b/c have to half width/height
-
-    rs.haystackPts = rs.allpts = [
-      rs.source.x * srcW * halfRadius + srcPos.x,
-      rs.source.y * srcH * halfRadius + srcPos.y,
-      rs.target.x * tgtW * halfRadius + tgtPos.x,
-      rs.target.y * tgtH * halfRadius + tgtPos.y
-    ];
-
-    rs.midX = (rs.allpts[0] + rs.allpts[2]) / 2;
-    rs.midY = (rs.allpts[1] + rs.allpts[3]) / 2;
-
-    // always override as haystack in case set to different type previously
-    rscratch.edgeType = rscratch.lastCurveStyle = 'haystack';
-    rscratch.haystack = true;
-
-    this.storeEdgeProjections( edge );
-    this.calculateArrowAngles( edge );
-    this.recalculateEdgeLabelProjections( edge );
-    this.calculateLabelAngles( edge );
-  }
+  this.findHaystackPoints( haystackEdges );
 };
 
 function getPts( pts ){

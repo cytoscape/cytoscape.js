@@ -792,29 +792,27 @@ BRp.load = function(){
               addNodesToDrag( cy.collection( draggedElements ), { inDragLayer: true } );
             }
 
+            let totalShift = { x: 0, y: 0 };
+
+            if( is.number( disp[0] ) && is.number( disp[1] ) ){
+              totalShift.x += disp[0];
+              totalShift.y += disp[1];
+
+              if( justStartedDrag ){
+                var dragDelta = r.hoverData.dragDelta;
+
+                if( dragDelta && is.number( dragDelta[0] ) && is.number( dragDelta[1] ) ){
+                  totalShift.x += dragDelta[0];
+                  totalShift.y += dragDelta[1];
+                }
+              }
+            }
+
             for( var i = 0; i < draggedElements.length; i++ ){
               var dEle = draggedElements[ i ];
 
-              // Locked nodes not draggable, as well as non-visible nodes
               if( r.nodeIsDraggable( dEle ) && dEle.grabbed() ){
-                var dPos = dEle.position();
-
                 toTrigger.push( dEle );
-
-                if( is.number( disp[0] ) && is.number( disp[1] ) ){
-                  dPos.x += disp[0];
-                  dPos.y += disp[1];
-
-                  if( justStartedDrag ){
-                    var dragDelta = r.hoverData.dragDelta;
-
-                    if( dragDelta && is.number( dragDelta[0] ) && is.number( dragDelta[1] ) ){
-                      dPos.x += dragDelta[0];
-                      dPos.y += dragDelta[1];
-                    }
-                  }
-                }
-
               }
             }
 
@@ -822,8 +820,12 @@ BRp.load = function(){
 
             var tcol = cy.collection( toTrigger );
 
-            tcol.dirtyCompoundBoundsCache();
-            tcol.emit( 'position drag' );
+            // TODO apply same change to touch
+            //
+            ( tcol
+              .silentShift( totalShift )
+              .emit('position drag')
+            );
 
             r.redrawHint( 'drag', true );
             r.redraw();

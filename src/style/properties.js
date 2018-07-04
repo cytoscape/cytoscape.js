@@ -129,22 +129,24 @@ const styfn = {};
     ] }
   };
 
-  let zOrderDiff = {
+  // TODO diffs for arrays
+  // TODO diffs using pfValue
+  let diff = {
     zeroNonZero: function( val1, val2 ){
-      if( val1 === 0 && val2 !== 0 ){
+      if( ( val1 == null || val2 == null ) && val1 !== val2 ){
+        return true; // null cases could represent any value
+      } if( val1 == 0 && val2 != 0 ){
         return true;
-      } else if( val1 !== 0 && val2 === 0 ){
+      } else if( val1 != 0 && val2 == 0 ){
         return true;
       } else {
         return false;
       }
     },
-    anyDiff: function( val1, val2 ){
-      return val1 !== val2;
+    any: function( val1, val2 ){
+      return val1 != val2;
     }
   };
-
-  let zd = zOrderDiff;
 
   // define visual style properties
   //
@@ -154,53 +156,53 @@ const styfn = {};
   let t = styfn.types;
 
   let mainLabel = [
-    { name: 'label', type: t.text },
-    { name: 'text-rotation', type: t.textRotation },
-    { name: 'text-margin-x', type: t.bidirectionalSize },
-    { name: 'text-margin-y', type: t.bidirectionalSize }
+    { name: 'label', type: t.text, triggersBounds: diff.any },
+    { name: 'text-rotation', type: t.textRotation, triggersBounds: diff.any },
+    { name: 'text-margin-x', type: t.bidirectionalSize, triggersBounds: diff.any },
+    { name: 'text-margin-y', type: t.bidirectionalSize, triggersBounds: diff.any }
   ];
 
   let sourceLabel = [
-    { name: 'source-label', type: t.text },
-    { name: 'source-text-rotation', type: t.textRotation },
-    { name: 'source-text-margin-x', type: t.bidirectionalSize },
-    { name: 'source-text-margin-y', type: t.bidirectionalSize },
-    { name: 'source-text-offset', type: t.size }
+    { name: 'source-label', type: t.text, triggersBounds: diff.any },
+    { name: 'source-text-rotation', type: t.textRotation, triggersBounds: diff.any },
+    { name: 'source-text-margin-x', type: t.bidirectionalSize, triggersBounds: diff.any },
+    { name: 'source-text-margin-y', type: t.bidirectionalSize, triggersBounds: diff.any },
+    { name: 'source-text-offset', type: t.size, triggersBounds: diff.any }
   ];
 
   let targetLabel = [
-    { name: 'target-label', type: t.text },
-    { name: 'target-text-rotation', type: t.textRotation },
-    { name: 'target-text-margin-x', type: t.bidirectionalSize },
-    { name: 'target-text-margin-y', type: t.bidirectionalSize },
-    { name: 'target-text-offset', type: t.size }
+    { name: 'target-label', type: t.text, triggersBounds: diff.any },
+    { name: 'target-text-rotation', type: t.textRotation, triggersBounds: diff.any },
+    { name: 'target-text-margin-x', type: t.bidirectionalSize, triggersBounds: diff.any },
+    { name: 'target-text-margin-y', type: t.bidirectionalSize, triggersBounds: diff.any },
+    { name: 'target-text-offset', type: t.size, triggersBounds: diff.any }
   ];
 
   let labelDimensions = [
-    { name: 'font-family', type: t.fontFamily },
-    { name: 'font-style', type: t.fontStyle },
-    { name: 'font-weight', type: t.fontWeight },
-    { name: 'font-size', type: t.size },
-    { name: 'text-transform', type: t.textTransform },
-    { name: 'text-wrap', type: t.textWrap },
-    { name: 'text-max-width', type: t.size },
-    { name: 'text-outline-width', type: t.size }
+    { name: 'font-family', type: t.fontFamily, triggersBounds: diff.any },
+    { name: 'font-style', type: t.fontStyle, triggersBounds: diff.any },
+    { name: 'font-weight', type: t.fontWeight, triggersBounds: diff.any },
+    { name: 'font-size', type: t.size, triggersBounds: diff.any },
+    { name: 'text-transform', type: t.textTransform, triggersBounds: diff.any },
+    { name: 'text-wrap', type: t.textWrap, triggersBounds: diff.any },
+    { name: 'text-max-width', type: t.size, triggersBounds: diff.any },
+    { name: 'text-outline-width', type: t.size, triggersBounds: diff.any }
   ];
 
   let commonLabel = [
-    { name: 'text-valign', type: t.valign },
-    { name: 'text-halign', type: t.halign },
+    { name: 'text-valign', type: t.valign, triggersBounds: diff.any },
+    { name: 'text-halign', type: t.halign, triggersBounds: diff.any },
     { name: 'color', type: t.color },
     { name: 'text-outline-color', type: t.color },
     { name: 'text-outline-opacity', type: t.zeroOneNumber },
     { name: 'text-background-color', type: t.color },
     { name: 'text-background-opacity', type: t.zeroOneNumber },
-    { name: 'text-background-padding', type: t.size },
+    { name: 'text-background-padding', type: t.size, triggersBounds: diff.any },
     { name: 'text-border-opacity', type: t.zeroOneNumber },
     { name: 'text-border-color', type: t.color },
-    { name: 'text-border-width', type: t.size },
-    { name: 'text-border-style', type: t.borderStyle },
-    { name: 'text-background-shape', type: t.textBackgroundShape}
+    { name: 'text-border-width', type: t.size, triggersBounds: diff.any },
+    { name: 'text-border-style', type: t.borderStyle, triggersBounds: diff.any },
+    { name: 'text-background-shape', type: t.textBackgroundShape, triggersBounds: diff.any }
   ];
 
   let behavior = [
@@ -209,20 +211,20 @@ const styfn = {};
   ];
 
   let visibility = [
-    { name: 'display', type: t.display, triggersZOrder: zd.anyDiff },
-    { name: 'visibility', type: t.visibility, triggersZOrder: zd.anyDiff },
-    { name: 'opacity', type: t.zeroOneNumber, triggersZOrder: zd.zeroNonZero },
+    { name: 'display', type: t.display, triggersZOrder: diff.any, triggersBounds: diff.any },
+    { name: 'visibility', type: t.visibility, triggersZOrder: diff.any },
+    { name: 'opacity', type: t.zeroOneNumber, triggersZOrder: diff.zeroNonZero },
     { name: 'text-opacity', type: t.zeroOneNumber },
     { name: 'min-zoomed-font-size', type: t.size },
-    { name: 'z-compound-depth', type: t.zCompoundDepth, triggersZOrder: zd.anyDiff },
-    { name: 'z-index-compare', type: t.zIndexCompare, triggersZOrder: zd.anyDiff },
-    { name: 'z-index', type: t.nonNegativeInt, triggersZOrder: zd.anyDiff }
+    { name: 'z-compound-depth', type: t.zCompoundDepth, triggersZOrder: diff.any },
+    { name: 'z-index-compare', type: t.zIndexCompare, triggersZOrder: diff.any },
+    { name: 'z-index', type: t.nonNegativeInt, triggersZOrder: diff.any }
   ];
 
   let overlay = [
-    { name: 'overlay-padding', type: t.size },
+    { name: 'overlay-padding', type: t.size, triggersBounds: diff.any },
     { name: 'overlay-color', type: t.color },
-    { name: 'overlay-opacity', type: t.zeroOneNumber }
+    { name: 'overlay-opacity', type: t.zeroOneNumber, triggersBounds: diff.zeroNonZero }
   ];
 
   let transition = [
@@ -233,22 +235,22 @@ const styfn = {};
   ];
 
   let nodeBody = [
-    { name: 'height', type: t.nodeSize },
-    { name: 'width', type: t.nodeSize },
-    { name: 'shape', type: t.nodeShape },
-    { name: 'shape-polygon-points', type: t.polygonPointList },
+    { name: 'height', type: t.nodeSize, triggersBounds: diff.any },
+    { name: 'width', type: t.nodeSize, triggersBounds: diff.any },
+    { name: 'shape', type: t.nodeShape, triggersBounds: diff.any },
+    { name: 'shape-polygon-points', type: t.polygonPointList, triggersBounds: diff.any },
     { name: 'background-color', type: t.color },
     { name: 'background-fill', type: t.fill },
     { name: 'background-opacity', type: t.zeroOneNumber },
     { name: 'background-blacken', type: t.nOneOneNumber },
-    { name: 'padding', type: t.sizeMaybePercent },
-    { name: 'padding-relative-to', type: t.paddingRelativeTo }
+    { name: 'padding', type: t.sizeMaybePercent, triggersBounds: diff.any },
+    { name: 'padding-relative-to', type: t.paddingRelativeTo, triggersBounds: diff.any }
   ];
 
   let nodeBorder = [
     { name: 'border-color', type: t.color },
     { name: 'border-opacity', type: t.zeroOneNumber },
-    { name: 'border-width', type: t.size },
+    { name: 'border-width', type: t.size, triggersBounds: diff.any },
     { name: 'border-style', type: t.borderStyle }
   ];
 
@@ -268,14 +270,14 @@ const styfn = {};
   ];
 
   let compound = [
-    { name: 'position', type: t.position },
-    { name: 'compound-sizing-wrt-labels', type: t.compoundIncludeLabels },
-    { name: 'min-width', type: t.size },
-    { name: 'min-width-bias-left', type: t.sizeMaybePercent },
-    { name: 'min-width-bias-right', type: t.sizeMaybePercent },
-    { name: 'min-height', type: t.size },
-    { name: 'min-height-bias-top', type: t.sizeMaybePercent },
-    { name: 'min-height-bias-bottom', type: t.sizeMaybePercent }
+    { name: 'position', type: t.position, triggersBounds: diff.any },
+    { name: 'compound-sizing-wrt-labels', type: t.compoundIncludeLabels, triggersBounds: diff.any },
+    { name: 'min-width', type: t.size, triggersBounds: diff.any },
+    { name: 'min-width-bias-left', type: t.sizeMaybePercent, triggersBounds: diff.any },
+    { name: 'min-width-bias-right', type: t.sizeMaybePercent, triggersBounds: diff.any },
+    { name: 'min-height', type: t.size, triggersBounds: diff.any },
+    { name: 'min-height-bias-top', type: t.sizeMaybePercent, triggersBounds: diff.any },
+    { name: 'min-height-bias-bottom', type: t.sizeMaybePercent, triggersBounds: diff.any }
   ];
 
   let edgeLine = [
@@ -283,27 +285,27 @@ const styfn = {};
     { name: 'line-color', type: t.color },
     { name: 'line-fill', type: t.fill },
     { name: 'line-cap', type: t.lineCap },
-    { name: 'curve-style', type: t.curveStyle },
-    { name: 'haystack-radius', type: t.zeroOneNumber },
-    { name: 'source-endpoint', type: t.edgeEndpoint },
-    { name: 'target-endpoint', type: t.edgeEndpoint },
-    { name: 'control-point-step-size', type: t.size },
-    { name: 'control-point-distances', type: t.bidirectionalSizes },
-    { name: 'control-point-weights', type: t.numbers },
-    { name: 'segment-distances', type: t.bidirectionalSizes },
-    { name: 'segment-weights', type: t.numbers },
-    { name: 'edge-distances', type: t.edgeDistances },
-    { name: 'arrow-scale', type: t.positiveNumber },
-    { name: 'loop-direction', type: t.angle },
-    { name: 'loop-sweep', type: t.angle },
-    { name: 'source-distance-from-node', type: t.size },
-    { name: 'target-distance-from-node', type: t.size }
+    { name: 'curve-style', type: t.curveStyle, triggersBounds: diff.any },
+    { name: 'haystack-radius', type: t.zeroOneNumber, triggersBounds: diff.any },
+    { name: 'source-endpoint', type: t.edgeEndpoint, triggersBounds: diff.any },
+    { name: 'target-endpoint', type: t.edgeEndpoint, triggersBounds: diff.any },
+    { name: 'control-point-step-size', type: t.size, triggersBounds: diff.any },
+    { name: 'control-point-distances', type: t.bidirectionalSizes, triggersBounds: diff.any },
+    { name: 'control-point-weights', type: t.numbers, triggersBounds: diff.any },
+    { name: 'segment-distances', type: t.bidirectionalSizes, triggersBounds: diff.any },
+    { name: 'segment-weights', type: t.numbers, triggersBounds: diff.any },
+    { name: 'edge-distances', type: t.edgeDistances, triggersBounds: diff.any },
+    { name: 'arrow-scale', type: t.positiveNumber, triggersBounds: diff.any },
+    { name: 'loop-direction', type: t.angle, triggersBounds: diff.any },
+    { name: 'loop-sweep', type: t.angle, triggersBounds: diff.any },
+    { name: 'source-distance-from-node', type: t.size, triggersBounds: diff.any },
+    { name: 'target-distance-from-node', type: t.size, triggersBounds: diff.any }
   ];
 
   let ghost = [
-    { name: 'ghost', type: t.bool },
-    { name: 'ghost-offset-x', type: t.bidirectionalSize },
-    { name: 'ghost-offset-y', type: t.bidirectionalSize },
+    { name: 'ghost', type: t.bool, triggersBounds: diff.any },
+    { name: 'ghost-offset-x', type: t.bidirectionalSize, triggersBounds: diff.any },
+    { name: 'ghost-offset-y', type: t.bidirectionalSize, triggersBounds: diff.any },
     { name: 'ghost-opacity', type: t.zeroOneNumber }
   ];
 
@@ -464,6 +466,17 @@ styfn.getDefaultProperties = function(){
   }
 
   let rawProps = util.extend( {
+    // core props
+    'selection-box-color': '#ddd',
+    'selection-box-opacity': 0.65,
+    'selection-box-border-color': '#aaa',
+    'selection-box-border-width': 1,
+    'active-bg-color': 'black',
+    'active-bg-opacity': 0.15,
+    'active-bg-size': 30,
+    'outside-texture-bg-color': '#000',
+    'outside-texture-bg-opacity': 0.125,
+
     // common node/edge props
     'events': 'yes',
     'text-events': 'no',
@@ -597,7 +610,7 @@ styfn.getDefaultProperties = function(){
     'segment-weights': 0.5,
     'segment-distances': 20,
     'edge-distances': 'intersection',
-    'curve-style': 'bezier',
+    'curve-style': 'haystack',
     'haystack-radius': 0,
     'arrow-scale': 1,
     'loop-direction': '-45deg',
@@ -642,7 +655,7 @@ styfn.getDefaultProperties = function(){
 
 styfn.addDefaultStylesheet = function(){
   this
-    .selector( '$node > node' ) // compound (parent) node properties
+    .selector( ':parent' )
       .css( {
         'shape': 'rectangle',
         'padding': 10,
@@ -650,10 +663,13 @@ styfn.addDefaultStylesheet = function(){
         'border-color': '#ccc',
         'border-width': 1
       } )
-    .selector( 'edge' ) // just edge properties
+    .selector( 'edge' )
       .css( {
-        'width': 3,
-        'curve-style': 'haystack'
+        'width': 3
+      } )
+    .selector( ':loop' )
+      .css( {
+        'curve-style': 'bezier'
       } )
     .selector( ':parent <-> node' )
       .css( {
@@ -670,7 +686,7 @@ styfn.addDefaultStylesheet = function(){
         'mid-source-arrow-color': '#0169D9',
         'mid-target-arrow-color': '#0169D9'
       } )
-    .selector( 'node:parent:selected' )
+    .selector( ':parent:selected' )
       .css( {
         'background-color': '#CCE1F9',
         'border-color': '#aec8e5'
@@ -680,18 +696,6 @@ styfn.addDefaultStylesheet = function(){
         'overlay-color': 'black',
         'overlay-padding': 10,
         'overlay-opacity': 0.25
-      } )
-    .selector( 'core' ) // just core properties
-      .css( {
-        'selection-box-color': '#ddd',
-        'selection-box-opacity': 0.65,
-        'selection-box-border-color': '#aaa',
-        'selection-box-border-width': 1,
-        'active-bg-color': 'black',
-        'active-bg-opacity': 0.15,
-        'active-bg-size': 30,
-        'outside-texture-bg-color': '#000',
-        'outside-texture-bg-opacity': 0.125
       } )
   ;
 

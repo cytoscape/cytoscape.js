@@ -159,9 +159,7 @@ let corefn = ({
       break; // invalid
     }
 
-    this.notify( { // notify the renderer that the viewport changed
-      type: 'viewport'
-    } );
+    this.notify('viewport');
 
     return this; // chaining
   },
@@ -210,9 +208,7 @@ let corefn = ({
       break; // invalid
     }
 
-    this.notify( { // notify the renderer that the viewport changed
-      type: 'viewport'
-    } );
+    this.notify('viewport');
 
     return this; // chaining
   },
@@ -227,9 +223,7 @@ let corefn = ({
 
       this.emit( 'pan zoom viewport' );
 
-      this.notify( { // notify the renderer that the viewport changed
-        type: 'viewport'
-      } );
+      this.notify('viewport');
     }
 
     return this; // chaining
@@ -418,9 +412,7 @@ let corefn = ({
 
       this.emit( 'zoom' + ( vp.panned ? ' pan' : '' ) + ' viewport' );
 
-      this.notify( { // notify the renderer that the viewport changed
-        type: 'viewport'
-      } );
+      this.notify('viewport');
 
       return this; // chaining
     }
@@ -474,9 +466,7 @@ let corefn = ({
       events.push( 'viewport' );
       this.emit( events.join( ' ' ) );
 
-      this.notify( {
-        type: 'viewport'
-      } );
+      this.notify('viewport');
     }
 
     return this; // chaining
@@ -490,9 +480,7 @@ let corefn = ({
 
       this.emit( 'pan viewport' );
 
-      this.notify( { // notify the renderer that the viewport changed
-        type: 'viewport'
-      } );
+      this.notify('viewport');
     }
 
     return this; // chaining

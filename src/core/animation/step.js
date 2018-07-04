@@ -76,17 +76,17 @@ function step( self, ani, now, isCore ){
     let endPos = ani_p.position;
 
     if( endPos && isEles && !self.locked() ){
-      let pos = self.position();
+      let newPos = {};
 
       if( valid( startPos.x, endPos.x ) ){
-        pos.x = ease( startPos.x, endPos.x, percent, easing );
+        newPos.x = ease( startPos.x, endPos.x, percent, easing );
       }
 
       if( valid( startPos.y, endPos.y ) ){
-        pos.y = ease( startPos.y, endPos.y, percent, easing );
+        newPos.y = ease( startPos.y, endPos.y, percent, easing );
       }
 
-      self.emit('position');
+      self.position( newPos );
     }
 
     let startPan = ani_p.startPan;

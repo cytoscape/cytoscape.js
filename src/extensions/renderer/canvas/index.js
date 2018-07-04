@@ -96,21 +96,8 @@ function CanvasRenderer( options ){
   r.data.lyrTxrCache = new LayeredTextureCache( r, r.data.eleTxrCache );
 
   r.onUpdateEleCalcs(function invalidateTextureCaches( willDraw, eles ){
-    for( var i = 0; i < eles.length; i++ ){
-      var ele = eles[i];
-      var rs = ele._private.rstyle;
-      var de = rs.dirtyEvents;
-
-      if( ele.isNode() && de && de.length === 1 && de['position'] ){
-        // then keep cached ele texture
-      } else {
-        r.data.eleTxrCache.invalidateElement( ele );
-      }
-    }
-
-    if( eles.length > 0 ){
-      r.data.lyrTxrCache.invalidateElements( eles );
-    }
+    r.data.eleTxrCache.invalidateElements( eles );
+    r.data.lyrTxrCache.invalidateElements( eles );
   });
 }
 

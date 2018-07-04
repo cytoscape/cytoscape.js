@@ -1,4 +1,3 @@
-import * as is from '../../../is';
 import * as util from '../../../util';
 import window from '../../../window';
 
@@ -115,46 +114,31 @@ BRp.init = function( options ){
   r.registerCalculationListeners();
 };
 
-BRp.notify = function( params ){
-  var types;
+BRp.notify = function( eventName, eles ){
   var r = this;
 
   // the renderer can't be notified after it's destroyed
   if( this.destroyed ){ return; }
 
-  if( is.array( params.type ) ){
-    types = params.type;
-
-  } else {
-    types = [ params.type ];
-  }
-
-  var has = {};
-  for( var i = 0; i < types.length; i++ ){
-    var type = types[ i ];
-
-    has[ type ] = true;
-  } // for
-
-  if( has['init'] ){
+  if( eventName === 'init' ){
     r.load();
     return;
   }
 
-  if( has['destroy'] ){
+  if( eventName === 'destroy' ){
     r.destroy();
     return;
   }
 
-  if( has['add'] || has['remove'] || has['load'] || has['zorder'] || has['mount'] ){
+  if( eventName === 'add' || eventName === 'remove' || eventName === 'load' || eventName === 'zorder' || eventName === 'mount' ){
     r.invalidateCachedZSortedEles();
   }
 
-  if( has['viewport'] ){
+  if( eventName === 'viewport' ){
     r.redrawHint( 'select', true );
   }
 
-  if( has['load'] || has['resize'] || has['mount'] ){
+  if( eventName === 'load' || eventName === 'resize' || eventName === 'mount' ){
     r.invalidateContainerClientCoordsCache();
     r.matchCanvasSize( r.container );
   }

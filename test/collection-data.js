@@ -284,41 +284,4 @@ describe('Collection data', function(){
 
   });
 
-  describe('cy.batch()', function(){
-
-    it('limits notifications to 1', function(){
-      var numNots = cy.renderer().notifications;
-      cy.batch(function(){
-        cy.$('#n1')
-          .addClass('foo')
-          .removeClass('bar')
-          .data('foo', 'bar')
-          .select()
-        ;
-      });
-      expect( cy.renderer().notifications ).to.equal( numNots + 1 );
-    });
-
-    it('can also be used async style', function(done){
-      var numNots = cy.renderer().notifications;
-      cy.startBatch();
-
-      setTimeout(function(){
-        cy.$('#n1')
-          .addClass('foo')
-          .removeClass('bar')
-          .data('foo', 'bar')
-          .select()
-        ;
-
-        cy.endBatch();
-        expect( cy.renderer().notifications ).to.equal( numNots + 1 );
-
-        done();
-      }, 10);
-
-    });
-
-  });
-
 });

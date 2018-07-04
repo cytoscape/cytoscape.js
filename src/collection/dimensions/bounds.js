@@ -36,7 +36,7 @@ elesfn.dirtyCompoundBoundsCache = function(){
     ele._private.compoundBoundsClean = false;
 
     if( ele.isParent() ){
-      ele.emit('bounds');
+      ele.emitAndNotify('bounds');
     }
   } );
 
@@ -181,7 +181,7 @@ elesfn.updateCompoundBounds = function(){
     if( !_p.compoundBoundsClean ){
       update( ele );
 
-      if( !cy._private.batchingStyle ){
+      if( !cy.batching() ){
         _p.compoundBoundsClean = true;
       }
     }
@@ -600,21 +600,35 @@ let getKey = function( opts ){
   return key;
 };
 
+let getBoundingBoxPosKey = ele => {
+  if( ele.isEdge() ){
+    let p1 = ele.source().position();
+    let p2 = ele.target().position();
+    let round = x => Math.round(x);
+
+    return util.hashIntsArray([ p1.x, p1.y, p2.x, p2.y ].map(round));
+  } else {
+    return 0;
+  }
+};
+
 let cachedBoundingBoxImpl = function( ele, opts ){
   let _p = ele._private;
   let bb;
-  let headless = ele.cy().headless();
-  let key = opts === defBbOpts ? defBbOptsKey : getKey( opts );
+  let key = opts == null ? defBbOptsKey : getKey( opts );
+  let usingDefOpts = key === defBbOptsKey;
+  let currPosKey = getBoundingBoxPosKey( ele );
+  let useCache = opts.useCache && usingDefOpts && _p.bbCachePosKey === currPosKey;
 
-  if( !opts.useCache || headless || !_p.bbCache || !_p.bbCache[key] ){
+  if( !useCache || _p.bbCache == null ){
     bb = boundingBoxImpl( ele, opts );
 
-    if( !headless ){
-      _p.bbCache = _p.bbCache || [];
-      _p.bbCache[key] = bb;
+    if( usingDefOpts ){
+      _p.bbCache = bb;
+      _p.bbCachePosKey = currPosKey;
     }
   } else {
-    bb = _p.bbCache[key];
+    bb = _p.bbCache;
   }
 
   return bb;
@@ -628,7 +642,7 @@ let defBbOpts = {
   useCache: true
 };
 
-let defBbOptsKey = getKey( defBbOpts );
+const defBbOptsKey = getKey( defBbOpts );
 
 const filledBbOpts = util.defaults( defBbOpts );
 
@@ -636,7 +650,7 @@ elesfn.boundingBox = function( options ){
   // the main usecase is ele.boundingBox() for a single element with no/def options
   // specified s.t. the cache is used, so check for this case to make it faster by
   // avoiding the overhead of the rest of the function
-  if( this.length === 1 && this[0]._private.bbCache && (options === undefined || options.useCache === undefined || options.useCache === true) ){
+  if( this.length === 1 && this[0]._private.bbCache != null && (options === undefined || options.useCache === undefined || options.useCache === true) ){
     if( options === undefined ){
       options = defBbOpts;
     } else {
@@ -667,20 +681,8 @@ elesfn.boundingBox = function( options ){
 
   this.updateCompoundBounds();
 
-  let updatedEdge = {}; // use to avoid duplicated edge updates
-
   for( let i = 0; i < eles.length; i++ ){
     let ele = eles[i];
-
-    if( styleEnabled && ele.isEdge() && ele.pstyle('curve-style').strValue === 'bezier' && !updatedEdge[ ele.id() ] ){
-      let edges = ele.parallelEdges();
-
-      for( let j = 0; j < edges.length; j++ ){ // make all as updated
-        updatedEdge[ edges[j].id() ] = true;
-      }
-
-      edges.recalculateRenderedStyle( opts.useCache ); // n.b. ele.parallelEdges() single is cached
-    }
 
     updateBoundsFromBox( bounds, cachedBoundingBoxImpl( ele, opts ) );
   }
@@ -693,6 +695,36 @@ elesfn.boundingBox = function( options ){
   bounds.h = noninf( bounds.y2 - bounds.y1 );
 
   return bounds;
+};
+
+elesfn.dirtyBoundingBoxCache = function(){
+  for( let i = 0; i < this.length; i++ ){
+    this[i]._private.bbCache = null;
+  }
+
+  this.emitAndNotify('bounds');
+
+  return this;
+};
+
+elesfn.shiftCachedBoundingBox = function( delta ){
+  for( let i = 0; i < this.length; i++ ){
+    let ele = this[i];
+    let _p = ele._private;
+    let bb = _p.bbCache;
+
+    if( bb != null ){
+      bb.x1 += delta.x;
+      bb.x2 += delta.x;
+      bb.y1 += delta.y;
+      bb.y2 += delta.y;
+    }
+  }
+
+  // TODO separate 'shiftbounds' event for perf
+  this.emitAndNotify('bounds');
+
+  return this;
 };
 
 // private helper to get bounding box for custom node positions

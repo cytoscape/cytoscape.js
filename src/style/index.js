@@ -60,8 +60,8 @@ styfn.resetToDefault = function(){
 };
 
 // builds a style object for the 'core' selector
-styfn.core = function(){
-  return this._private.coreStyle;
+styfn.core = function( propName ){
+  return this._private.coreStyle[ propName ] || this.getDefaultProperty( propName );
 };
 
 // create a new context from the specified selector string and switch to that context

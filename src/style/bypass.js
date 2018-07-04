@@ -106,29 +106,27 @@ styfn.overrideBypass = function( eles, name, value ){
     let type = this.properties[ name ].type;
     let isColor = type.color;
     let isMulti = type.mutiple;
+    let oldValue = !prop ? null : prop.pfValue != null ? prop.pfValue : prop.value;
 
     if( !prop || !prop.bypass ){ // need a bypass if one doesn't exist
       this.applyBypass( ele, name, value );
-      continue;
-    }
-
-    let oldValue = prop.pfValue != null ? prop.pfValue : prop.value;
-
-    prop.value = value;
-
-    if( prop.pfValue != null ){
-      prop.pfValue = value;
-    }
-
-    if( isColor ){
-      prop.strValue = 'rgb(' + value.join( ',' ) + ')';
-    } else if( isMulti ){
-      prop.strValue = value.join( ' ' );
     } else {
-      prop.strValue = '' + value;
+      prop.value = value;
+
+      if( prop.pfValue != null ){
+        prop.pfValue = value;
+      }
+
+      if( isColor ){
+        prop.strValue = 'rgb(' + value.join( ',' ) + ')';
+      } else if( isMulti ){
+        prop.strValue = value.join( ' ' );
+      } else {
+        prop.strValue = '' + value;
+      }
     }
 
-    this.checkZOrderTrigger( ele, name, oldValue, value );
+    this.checkTriggers( ele, name, oldValue, value );
   }
 };
 

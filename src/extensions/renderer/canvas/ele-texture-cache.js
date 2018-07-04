@@ -254,10 +254,20 @@ ETCp.getElement = function( ele, bb, pxRatio, lvl, reason ){
   return eleCache;
 };
 
+ETCp.invalidateElements = function( eles ){
+  for( let i = 0; i < eles.length; i++ ){
+    this.invalidateElement(eles[i]);
+  }
+};
+
 ETCp.invalidateElement = function( ele ){
   let self = this;
   let lookup = self.lookup;
   let caches = [];
+
+  if( !lookup.keyHasChangedFor(ele) ){
+    return; // override the invalidation request if the element key has not changed
+  }
 
   for( let lvl = minLvl; lvl <= maxLvl; lvl++ ){
     let cache = lookup.get( ele, lvl );

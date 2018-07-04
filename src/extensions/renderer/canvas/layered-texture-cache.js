@@ -443,6 +443,8 @@ LTCp.haveLayers = function(){
 LTCp.invalidateElements = function( eles ){
   var self = this;
 
+  if( eles.length === 0 ){ return; }
+
   self.lastInvalidationTime = util.performanceNow();
 
   // log('update invalidate layer time from eles');

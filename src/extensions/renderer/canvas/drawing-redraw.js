@@ -324,7 +324,7 @@ CRp.render = function( options ){
     needDraw[ r.SELECT_BOX ] = true;
   }
 
-  var coreStyle = cy.style()._private.coreStyle;
+  var style = cy.style();
 
   var zoom = cy.zoom();
   var effectiveZoom = forcedZoom !== undefined ? forcedZoom : zoom;
@@ -466,8 +466,8 @@ CRp.render = function( options ){
       context.clearRect( 0, 0, vp.width, vp.height );
     }
 
-    var outsideBgColor = coreStyle[ 'outside-texture-bg-color' ].value;
-    var outsideBgOpacity = coreStyle[ 'outside-texture-bg-opacity' ].value;
+    var outsideBgColor = style.core( 'outside-texture-bg-color' ).value;
+    var outsideBgOpacity = style.core( 'outside-texture-bg-opacity' ).value;
     r.colorFillStyle( context, outsideBgColor[0], outsideBgColor[1], outsideBgColor[2], outsideBgOpacity );
     context.fillRect( 0, 0, vp.width, vp.height );
 
@@ -544,14 +544,14 @@ CRp.render = function( options ){
 
     if( r.selection[4] == 1 && ( r.hoverData.selecting || r.touchData.selecting ) ){
       var zoom = r.cy.zoom();
-      var borderWidth = coreStyle[ 'selection-box-border-width' ].value / zoom;
+      var borderWidth = style.core( 'selection-box-border-width' ).value / zoom;
 
       context.lineWidth = borderWidth;
       context.fillStyle = 'rgba('
-        + coreStyle[ 'selection-box-color' ].value[0] + ','
-        + coreStyle[ 'selection-box-color' ].value[1] + ','
-        + coreStyle[ 'selection-box-color' ].value[2] + ','
-        + coreStyle[ 'selection-box-opacity' ].value + ')';
+        + style.core( 'selection-box-color' ).value[0] + ','
+        + style.core( 'selection-box-color' ).value[1] + ','
+        + style.core( 'selection-box-color' ).value[2] + ','
+        + style.core( 'selection-box-opacity' ).value + ')';
 
       context.fillRect(
         r.selection[0],
@@ -561,10 +561,10 @@ CRp.render = function( options ){
 
       if( borderWidth > 0 ){
         context.strokeStyle = 'rgba('
-          + coreStyle[ 'selection-box-border-color' ].value[0] + ','
-          + coreStyle[ 'selection-box-border-color' ].value[1] + ','
-          + coreStyle[ 'selection-box-border-color' ].value[2] + ','
-          + coreStyle[ 'selection-box-opacity' ].value + ')';
+          + style.core( 'selection-box-border-color' ).value[0] + ','
+          + style.core( 'selection-box-border-color' ).value[1] + ','
+          + style.core( 'selection-box-border-color' ).value[2] + ','
+          + style.core( 'selection-box-opacity' ).value + ')';
 
         context.strokeRect(
           r.selection[0],
@@ -579,13 +579,13 @@ CRp.render = function( options ){
       var pos = data.bgActivePosistion;
 
       context.fillStyle = 'rgba('
-        + coreStyle[ 'active-bg-color' ].value[0] + ','
-        + coreStyle[ 'active-bg-color' ].value[1] + ','
-        + coreStyle[ 'active-bg-color' ].value[2] + ','
-        + coreStyle[ 'active-bg-opacity' ].value + ')';
+        + style.core( 'active-bg-color' ).value[0] + ','
+        + style.core( 'active-bg-color' ).value[1] + ','
+        + style.core( 'active-bg-color' ).value[2] + ','
+        + style.core( 'active-bg-opacity' ).value + ')';
 
       context.beginPath();
-      context.arc( pos.x, pos.y, coreStyle[ 'active-bg-size' ].pfValue / zoom, 0, 2 * Math.PI );
+      context.arc( pos.x, pos.y, style.core( 'active-bg-size' ).pfValue / zoom, 0, 2 * Math.PI );
       context.fill();
     }
 

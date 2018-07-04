@@ -214,7 +214,18 @@ export const makeBoundingBox = bb => {
   }
 };
 
-export const updateBoundingBox = ( bb1, bb2 ) => {
+export const shiftBoundingBox = function( bb, dx, dy ){
+  return {
+    x1: bb.x1 + dx,
+    x2: bb.x2 + dx,
+    y1: bb.y1 + dy,
+    y2: bb.y2 + dy,
+    w: bb.w,
+    h: bb.h
+  };
+};
+
+export const updateBoundingBox = function( bb1, bb2 ){
   // update bb1 with bb2 bounds
 
   bb1.x1 = Math.min( bb1.x1, bb2.x1 );

@@ -80,6 +80,14 @@ let elesfn = ({
     this.emitter().emit( events, extraParams );
 
     return this;
+  },
+
+  emitAndNotify: function( event, eles ){
+    this.emit( event );
+
+    this.notify( event, eles );
+
+    return this;
   }
 });
 

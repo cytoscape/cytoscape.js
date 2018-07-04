@@ -110,16 +110,9 @@ function stepAll( now, cy ){
   // notify renderer
   if( ranEleAni || ranCoreAni ){
     if( eles.length > 0 ){
-      eles.dirtyCompoundBoundsCache();
-
-      cy.notify({
-        type: 'draw',
-        eles: eles
-      });
+      cy.notify('draw', eles);
     } else {
-      cy.notify({
-        type: 'draw'
-      });
+      cy.notify('draw');
     }
   }
 

@@ -83,7 +83,7 @@ let elesfn = ({
 
     if( !cy.styleEnabled() ){ return this; }
 
-    if( cy._private.batchingStyle ){
+    if( cy.batching() ){
       let bEles = cy._private.batchStyleEles;
 
       bEles.merge( this );
@@ -103,9 +103,6 @@ let elesfn = ({
 
     let changedEles = style.apply( updatedEles );
 
-    changedEles.dirtyStyleCache();
-    changedEles.dirtyCompoundBoundsCache();
-
     if( notifyRenderer ){
       changedEles.emitAndNotify( 'style' ); // let renderer know we changed style
     } else {
@@ -124,9 +121,6 @@ let elesfn = ({
     if( !cy.styleEnabled() ){ return this; }
 
     let changedEles = style.updateMappers( this );
-
-    changedEles.dirtyStyleCache();
-    changedEles.dirtyCompoundBoundsCache();
 
     if( notifyRenderer ){
       changedEles.emitAndNotify( 'style' ); // let renderer know we changed style
@@ -204,9 +198,6 @@ let elesfn = ({
       let props = name;
       style.applyBypass( this, props, updateTransitions );
 
-      this.dirtyStyleCache();
-      this.dirtyCompoundBoundsCache();
-
       this.emitAndNotify( 'style' ); // let the renderer know we've updated style
 
     } else if( is.string( name ) ){
@@ -222,9 +213,6 @@ let elesfn = ({
 
       } else { // then set the bypass with the property value
         style.applyBypass( this, name, value, updateTransitions );
-
-        this.dirtyStyleCache();
-        this.dirtyCompoundBoundsCache();
 
         this.emitAndNotify( 'style' ); // let the renderer know we've updated style
       }
@@ -266,9 +254,6 @@ let elesfn = ({
         style.removeBypasses( ele, names, updateTransitions );
       }
     }
-
-    this.dirtyStyleCache();
-    this.dirtyCompoundBoundsCache();
 
     this.emitAndNotify( 'style' ); // let the renderer know we've updated style
 

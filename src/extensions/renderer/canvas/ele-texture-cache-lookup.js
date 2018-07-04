@@ -71,6 +71,14 @@ class ElementTextureCacheLookup {
     this.keyForId.delete(id);
   }
 
+  keyHasChangedFor(ele){
+    let id = ele.id();
+    let prevKey = this.keyForId.get(id);
+    let newKey = this.getKey(ele);
+
+    return prevKey === newKey;
+  }
+
   getCachesAt(lvl){
     let { cachesByLvl, lvls } = this;
     let caches = cachesByLvl.get(lvl);
@@ -153,6 +161,12 @@ class ElementTextureCacheLookup {
     }
 
     return removeCache;
+  }
+
+  invalidateIfKeyHasChanged(ele){
+    if( this.keyHasChangedFor(ele) ){
+      return this.invalidate(ele);
+    }
   }
 }
 

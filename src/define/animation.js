@@ -226,10 +226,7 @@ let define = {
       }
 
       // we have to notify (the animation loop doesn't do it for us on `stop`)
-      cy.notify( {
-        eles: this,
-        type: 'draw'
-      } );
+      cy.notify('draw');
 
       return this;
     };

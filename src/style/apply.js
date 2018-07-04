@@ -32,8 +32,6 @@ styfn.apply = function( eles ){
 
     if( cxtMeta.empty ){
       continue;
-    } else {
-      updatedEles.merge( ele );
     }
 
     let cxtStyle = self.getContextStyle( cxtMeta );
@@ -43,7 +41,11 @@ styfn.apply = function( eles ){
       self.updateTransitions( ele, app.diffProps );
     }
 
-    self.updateStyleHints( ele );
+    let hintsDiff = self.updateStyleHints( ele );
+
+    if( hintsDiff ){
+      updatedEles.merge( ele );
+    }
 
   } // for elements
 
@@ -228,32 +230,11 @@ styfn.updateStyleHints = function(ele){
   let propNames = self.propertyGroupNames;
   let propGrKeys = self.propertyGroupKeys;
   let propHash = ( ele, propNames, seedKey ) => self.getPropertiesHash( ele, propNames, seedKey );
+  let oldStyleKey = _p.styleKey;
 
-  if( ele.removed() ){ return; }
+  if( ele.removed() ){ return false; }
 
   let isNode = _p.group === 'nodes';
-
-  // group and overall style key
-  //
-
-  // let styleKey;
-  //
-  // for( let i = 0; i < propGrKeys.length; i++ ){
-  //   let grKey = propGrKeys[i];
-  //   let names = propNames[ propGrKeys[i] ];
-  //   let hash = propHash( ele, names );
-  //
-  //   if( styleKey == null ){
-  //     styleKey = hash;
-  //   } else {
-  //     styleKey = util.hashInt( hash, styleKey );
-  //   }
-  //
-  //   _p.styleKeys[ grKey ] = hash;
-  // }
-  //
-  // _p.styleKey = styleKey;
-  //
 
   // get the style key hashes per prop group
   // but lazily -- only use non-default prop values to reduce the number of hashes
@@ -320,6 +301,8 @@ styfn.updateStyleHints = function(ele){
     _p.nodeKey = util.hashIntsArray([ nodeBorder, backgroundImage, compound, pie ], nodeBody);
     _p.hasPie = pie != 0;
   }
+
+  return oldStyleKey !== _p.styleKey;
 };
 
 // apply a property to the style (for internal use)
@@ -351,8 +334,21 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
   let _p = ele._private;
   let flatPropMapping = 'mapping';
 
-  let checkZOrder = function(){
-    self.checkZOrderTrigger( ele, prop.name, origProp ? origProp.value : null, prop.value );
+  let checkTriggers = () => {
+    let getVal = p => {
+      if( p == null ){
+        return null;
+      }
+
+      return p.value;
+    };
+
+    // TODO use pfValue
+
+    let fromVal = getVal(origProp);
+    let toVal = getVal(prop);
+
+    self.checkTriggers( ele, prop.name, fromVal, toVal );
   };
 
   // edges connected to compound nodes can not be haystacks
@@ -368,21 +364,21 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
   if( prop.delete ){ // delete the property and use the default value on falsey value
     style[ prop.name ] = undefined;
 
-    checkZOrder();
+    checkTriggers();
 
     return true;
   }
 
   if( prop.deleteBypassed ){ // delete the property that the
     if( !origProp ){
-      checkZOrder();
+      checkTriggers();
 
       return true; // can't delete if no prop
 
     } else if( origProp.bypass ){ // delete bypassed
       origProp.bypassed = undefined;
 
-      checkZOrder();
+      checkTriggers();
 
       return true;
 
@@ -394,7 +390,7 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
   // check if we need to delete the current bypass
   if( prop.deleteBypass ){ // then this property is just here to indicate we need to delete
     if( !origProp ){
-      checkZOrder();
+      checkTriggers();
 
       return true; // property is already not defined
 
@@ -402,7 +398,7 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
       // because the bypassed property was already applied (and therefore parsed), we can just replace it (no reapplying necessary)
       style[ prop.name ] = origProp.bypassed;
 
-      checkZOrder();
+      checkTriggers();
 
       return true;
 
@@ -550,7 +546,7 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
     }
   }
 
-  checkZOrder();
+  checkTriggers();
 
   return true;
 };
@@ -615,9 +611,11 @@ styfn.updateMappers = function( eles ){
     }
 
     if( updatedEle ){
-      this.updateStyleHints( ele );
+      let hintDiff = this.updateStyleHints( ele );
 
-      updatedEles.merge( ele );
+      if( hintDiff ){
+        updatedEles.merge( ele );
+      }
     }
   }
 
@@ -718,15 +716,33 @@ styfn.updateTransitions = function( ele, diffProps ){
   }
 };
 
-styfn.checkZOrderTrigger = function( ele, name, fromValue, toValue ){
+styfn.checkTrigger = function( ele, name, fromValue, toValue, getTrigger, onTrigger ){
   let prop = this.properties[ name ];
+  let triggerCheck = getTrigger( prop );
 
-  if( prop.triggersZOrder != null && ( fromValue == null || prop.triggersZOrder( fromValue, toValue ) ) ){
-    this._private.cy.notify({
-      type: 'zorder',
-      eles: ele
-    });
+  if( triggerCheck != null && triggerCheck( fromValue, toValue ) ){
+    onTrigger();
   }
+};
+
+styfn.checkZOrderTrigger = function( ele, name, fromValue, toValue ){
+  this.checkTrigger( ele, name, fromValue, toValue, prop => prop.triggersZOrder, () => {
+    this._private.cy.notify('zorder', ele);
+  });
+};
+
+styfn.checkBoundsTrigger = function( ele, name, fromValue, toValue ){
+  this.checkTrigger( ele, name, fromValue, toValue, prop => prop.triggersBounds, () => {
+    ele.dirtyCompoundBoundsCache();
+    ele.dirtyBoundingBoxCache();
+  } );
+};
+
+styfn.checkTriggers = function( ele, name, fromValue, toValue ){
+  ele.dirtyStyleCache();
+
+  this.checkZOrderTrigger( ele, name, fromValue, toValue );
+  this.checkBoundsTrigger( ele, name, fromValue, toValue );
 };
 
 export default styfn;

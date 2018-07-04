@@ -1,68 +1,69 @@
 import define from '../../define';
 import * as is from '../../is';
 import * as math from '../../math';
+import * as util from '../../util';
 
 let fn, elesfn;
 
-let beforePositionSet = function( eles, newPos ){
+let beforePositionSet = function( eles, newPos, silent ){
   for( let i = 0; i < eles.length; i++ ){
     let ele = eles[i];
 
-    if( ele.isParent() && !ele.locked() ){
+    if( !ele.locked() ){
       let oldPos = ele._private.position;
+
       let delta = {
-        x: newPos.x - oldPos.x,
-        y: newPos.y - oldPos.y
+        x: newPos.x != null ? newPos.x - oldPos.x : 0,
+        y: newPos.y != null ? newPos.y - oldPos.y : 0
       };
 
-      eles.children().shift( delta );
+      if( ele.isParent() ){
+        ele.children().shift( delta, silent );
+      }
+
+      ele.shiftCachedBoundingBox( delta );
     }
+  }
+};
+
+let positionDef = {
+  field: 'position',
+  bindingEvent: 'position',
+  allowBinding: true,
+  allowSetting: true,
+  settingEvent: 'position',
+  settingTriggersEvent: true,
+  triggerFnName: 'emitAndNotify',
+  allowGetting: true,
+  validKeys: [ 'x', 'y' ],
+  beforeGet: function( ele ){
+    ele.updateCompoundBounds();
+  },
+  beforeSet: function( eles, newPos ){
+    beforePositionSet( eles, newPos, false );
+  },
+  onSet: function( eles ){
+    eles.dirtyCompoundBoundsCache();
+  },
+  canSet: function( ele ){
+    return !ele.locked();
   }
 };
 
 fn = elesfn = ({
 
-  position: define.data( {
-    field: 'position',
-    bindingEvent: 'position',
-    allowBinding: true,
-    allowSetting: true,
-    settingEvent: 'position',
-    settingTriggersEvent: true,
-    triggerFnName: 'emitAndNotify',
-    allowGetting: true,
-    validKeys: [ 'x', 'y' ],
-    beforeGet: function( ele ){
-      ele.updateCompoundBounds();
-    },
-    beforeSet: beforePositionSet,
-    onSet: function( eles ){
-      eles.dirtyCompoundBoundsCache();
-    },
-    canSet: function( ele ){
-      return !ele.locked();
-    }
-  } ),
+  position: define.data( positionDef ),
 
   // position but no notification to renderer
-  silentPosition: define.data( {
-    field: 'position',
-    bindingEvent: 'position',
+  silentPosition: define.data( util.assign( {}, positionDef, {
     allowBinding: false,
     allowSetting: true,
-    settingEvent: 'position',
     settingTriggersEvent: false,
-    triggerFnName: 'trigger',
     allowGetting: false,
-    validKeys: [ 'x', 'y' ],
-    beforeSet: beforePositionSet,
-    onSet: function( eles ){
-      eles.dirtyCompoundBoundsCache();
-    },
-    canSet: function( ele ){
-      return !ele.locked();
+    beforeSet: function( eles, newPos ){
+      beforePositionSet( eles, newPos, true );
     }
-  } ),
+  } ) ),
 
   positions: function( pos, silent ){
     if( is.plainObject( pos ) ){
@@ -101,11 +102,12 @@ fn = elesfn = ({
     return this.positions( pos, true );
   },
 
-  shift: function( dim, val ){
+  shift: function( dim, val, silent ){
     let delta;
 
     if( is.plainObject( dim ) ){
       delta = dim;
+      silent = val;
     } else if( is.string( dim ) && is.number( val ) ){
       delta = { x: 0, y: 0 };
 
@@ -113,15 +115,36 @@ fn = elesfn = ({
     }
 
     if( delta != null ){
+      let cy = this.cy();
+
+      cy.startBatch();
+
       for( let i = 0; i < this.length; i++ ){
         let ele = this[i];
         let pos = ele.position();
-
-        ele.position({
+        let newPos = {
           x: pos.x + delta.x,
           y: pos.y + delta.y
-        });
+        };
+
+        if( silent ){
+          ele.silentPosition( newPos );
+        } else {
+          ele.position( newPos );
+        }
       }
+
+      cy.endBatch();
+    }
+
+    return this;
+  },
+
+  silentShift: function( dim, val ){
+    if( is.plainObject( dim ) ){
+      this.shift( dim, true );
+    } else if( is.string( dim ) && is.number( val ) ){
+      this.shift( dim, val, true );
     }
 
     return this;

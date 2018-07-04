@@ -485,7 +485,7 @@ elesfn.restore = function( notifyRenderer ){
       toUpdateStyle = restored;
     }
 
-    toUpdateStyle.dirtyCompoundBoundsCache().updateStyle( notifyRenderer );
+    toUpdateStyle.dirtyCompoundBoundsCache().dirtyBoundingBoxCache().updateStyle( notifyRenderer );
 
     if( notifyRenderer ){
       restored.emitAndNotify( 'add' );
@@ -642,13 +642,10 @@ elesfn.remove = function( notifyRenderer ){
     // must manually notify since trigger won't do this automatically once removed
 
     if( notifyRenderer ){
-      this.cy().notify( {
-        type: 'remove',
-        eles: removedElements
-      } );
+      removedElements.emitAndNotify('remove');
+    } else {
+      removedElements.emit('remove');
     }
-
-    removedElements.emit( 'remove' );
   }
 
   // the parents who were modified by the removal need their style updated

@@ -138,13 +138,8 @@ let Core = function( opts ){
       cy.notifications( true );
       cy.emit( e ); // we missed this event by turning notifications off, so pass it on
 
-      cy.notify( {
-        type: 'load',
-        eles: cy.mutableElements()
-      } );
-
       cy.one( 'load', onload );
-      cy.emit( 'load' );
+      cy.emitAndNotify( 'load' );
     } ).one( 'layoutstop', function(){
       cy.one( 'done', ondone );
       cy.emit( 'done' );

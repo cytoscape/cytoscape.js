@@ -1,18 +1,14 @@
 let corefn = ({
-  notify: function( params ){
+  notify: function( eventName, eventEles ){
     let _p = this._private;
 
-    if( _p.batchingNotify ){
-      let bEles = _p.batchNotifyEles;
-      let bTypes = _p.batchNotifyTypes;
+    if( this.batching() ){
+      _p.batchNotifications = _p.batchNotifications || {};
 
-      if( params.eles ){
-        bEles.merge( params.eles );
-      }
+      let eles = _p.batchNotifications[ eventName ] = _p.batchNotifications[ eventName ] || this.collection();
 
-      if( !bTypes.ids[ params.type ] ){
-        bTypes.push( params.type );
-        bTypes.ids[ params.type ] = true;
+      if( eventEles != null ){
+        eles.merge( eventEles );
       }
 
       return; // notifications are disabled during batching
@@ -25,7 +21,7 @@ let corefn = ({
     // exit if destroy() called on core or renderer in between frames #1499 #1528
     if( this.isDestroyed() || !renderer ){ return; }
 
-    renderer.notify( params );
+    renderer.notify( eventName, eventEles );
   },
 
   notifications: function( bool ){
@@ -36,6 +32,8 @@ let corefn = ({
     } else {
       p.notificationsEnabled = bool ? true : false;
     }
+
+    return this;
   },
 
   noNotifications: function( callback ){
@@ -56,11 +54,8 @@ let corefn = ({
     }
 
     if( _p.batchCount === 0 ){
-      _p.batchingStyle = _p.batchingNotify = true;
       _p.batchStyleEles = this.collection();
-      _p.batchNotifyEles = this.collection();
-      _p.batchNotifyTypes = [];
-      _p.batchNotifyTypes.ids = {};
+      _p.batchNotifications = {};
     }
 
     _p.batchCount++;
@@ -71,18 +66,25 @@ let corefn = ({
   endBatch: function(){
     let _p = this._private;
 
+    if( _p.batchCount === 0 ){ return this; }
+
     _p.batchCount--;
 
     if( _p.batchCount === 0 ){
       // update style for dirty eles
-      _p.batchingStyle = false;
       _p.batchStyleEles.updateStyle();
 
+      let renderer = this.renderer();
+
       // notify the renderer of queued eles and event types
-      _p.batchingNotify = false;
-      this.notify( {
-        type: _p.batchNotifyTypes,
-        eles: _p.batchNotifyEles
+      Object.keys( _p.batchNotifications ).forEach( eventName => {
+        let eles = _p.batchNotifications[eventName];
+
+        if( eles.empty() ){
+          renderer.notify( eventName );
+        } else {
+          renderer.notify( eventName, eles );
+        }
       } );
     }
 

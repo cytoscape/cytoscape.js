@@ -106,6 +106,9 @@ describe('Collection compound nodes', function(){
     expect( n2.position() ).to.not.deep.equal( p1 );
   });
 
+  // TODO leave this test failing for now
+  // - more tests to be added
+  // - headless case needs more tweaking
   it('child.position() moves parent boundingbox', function(){
     var w = n2.boundingBox().w;
     var h = n2.boundingBox().h;

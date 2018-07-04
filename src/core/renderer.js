@@ -15,9 +15,7 @@ let corefn = ({
   },
 
   forceRender: function(){
-    this.notify( {
-      type: 'draw'
-    } );
+    this.notify('draw');
 
     return this;
   },
@@ -25,11 +23,7 @@ let corefn = ({
   resize: function(){
     this.invalidateSize();
 
-    this.notify( {
-      type: 'resize'
-    } );
-
-    this.emit( 'resize' );
+    this.emitAndNotify('resize');
 
     return this;
   },
@@ -60,13 +54,13 @@ let corefn = ({
 
     cy._private.renderer = new RendererProto( rOpts );
 
-    this.notify({ type: 'init' });
+    this.notify('init');
   },
 
   destroyRenderer: function(){
     let cy = this;
 
-    cy.notify( { type: 'destroy' } ); // destroy the renderer
+    cy.notify('destroy'); // destroy the renderer
 
     let domEle = cy.container();
     if( domEle ){

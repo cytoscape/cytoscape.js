@@ -121,10 +121,7 @@ let elesfn = ({
     if( this.length === 0 ){ return; } // empty collections don't need to notify anything
 
     // notify renderer
-    this.cy().notify( {
-      type: event,
-      eles: this
-    } );
+    this.cy().notify( event, this );
 
     this.emit( event, extraParams );
 

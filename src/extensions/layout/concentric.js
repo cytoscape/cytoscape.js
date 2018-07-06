@@ -27,7 +27,9 @@ let defaults = {
   animateFilter: function ( node, i ){ return true; }, // a function that determines whether the node should be animated.  All nodes animated by default on animate enabled.  Non-animated nodes are positioned immediately when the layout starts
   ready: undefined, // callback on layoutready
   stop: undefined, // callback on layoutstop
-  transform: function (node, position ){ return position; } // transform a given node position. Useful for changing flow direction in discrete layouts
+  transform: function (node, position ){ return position; }, // transform a given node position. Useful for changing flow direction in discrete layouts
+  sort: undefined, // a sorting function to order the nodes; e.g. function(a, b){ return a.data('weight') - b.data('weight') }
+  ignoreHiddenElements: false // if true, it will only layout visible nodes
 };
 
 function ConcentricLayout( options ){
@@ -44,6 +46,14 @@ ConcentricLayout.prototype.run = function(){
 
   let eles = options.eles;
   let nodes = eles.nodes().not( ':parent' );
+
+  if(options.ignoreHiddenElements){
+    nodes = nodes.not(':hidden');
+  }
+
+  if( options.sort ){
+    nodes = nodes.sort( options.sort );
+  }
 
   let bb = math.makeBoundingBox( options.boundingBox ? options.boundingBox : {
     x1: 0, y1: 0, w: cy.width(), h: cy.height()

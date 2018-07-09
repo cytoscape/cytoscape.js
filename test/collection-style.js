@@ -55,6 +55,26 @@ describe('Collection style', function(){
         },
 
         {
+          selector: '.transition-prop',
+          style: {
+            'transition-property': 'width, background-color',
+            'transition-timing-function': 'linear',
+            'transition-duration': 50
+          }
+        },
+
+        {
+          selector: '.transition-multiple',
+          style: {
+            'transition-property': 'width, background-color',
+            'transition-timing-function': 'linear',
+            'transition-duration': 50,
+            'width': 300,
+            'background-color': 'black'
+          }
+        },
+
+        {
           selector: '#n2n3',
           style: {
             'curve-style': 'bezier'
@@ -982,7 +1002,7 @@ describe('Collection style', function(){
     it('ani.play() not stopped by stylesheet transition', function(){
       var n = n1;
 
-      n.addClass('transition', 100);
+      n.addClass('transition');
 
       return n.animation({
         position: { x: 50, y: 50 },
@@ -1040,6 +1060,60 @@ describe('Collection style', function(){
 
         expect( pan1 ).to.not.deep.equal( pan2 );
       });
+    });
+
+    it('transition applied by class', function(done){
+      var n = n1;
+
+      n.addClass('transition');
+
+      setTimeout(function(){
+        expect( n.width() ).to.equal( 300 );
+
+        done();
+      }, 100);
+    });
+
+    it('2-prop transition applied by class', function(done){
+      var n = n1;
+
+      n.addClass('transition-multiple');
+
+      setTimeout(function(){
+        expect( n.width() ).to.equal( 300 );
+        expect( n.numericStyle('background-color') ).to.deep.equal([0, 0, 0]);
+
+        done();
+      }, 100);
+    });
+
+    it('transition applied by class in both directions', function(done){
+      var n = n1;
+      var w = n.width();
+
+      n.addClass('transition-prop');
+      n.addClass('transition');
+
+      setTimeout(function(){
+        expect( n.width() ).to.equal( 300 );
+
+        n.removeClass('transition');
+      }, 100);
+
+      // in middle of animation, value should be between endpoints
+      // (may need larger timeframes for slow testing machines)
+      setTimeout(function(){
+        expect( n.width() ).to.be.greaterThan( w );
+        expect( n.width() ).to.be.lessThan( 300 );
+
+        n.removeClass('transition');
+      }, 125);
+
+      setTimeout(function(){
+        expect( n.width() ).to.equal( w );
+
+        done();
+      }, 200);
     });
 
   });

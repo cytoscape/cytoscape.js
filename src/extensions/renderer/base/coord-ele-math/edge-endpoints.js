@@ -108,9 +108,9 @@ BRp.findEndpoints = function( edge ){
   } else if( tgtManEndptVal === 'outside-to-line' ){
     intersect = rs.tgtIntn; // use cached value from ctrlpt calc
   } else {
-    if( tgtManEndptVal === 'outside-to-node' ){
+    if( tgtManEndptVal === 'outside-to-node' || tgtManEndptVal === 'outside-to-node-or-label' ){
       p1_i = p1;
-    } else if( tgtManEndptVal === 'outside-to-line' ){
+    } else if( tgtManEndptVal === 'outside-to-line' || tgtManEndptVal === 'outside-to-line-or-label' ){
       p1_i = [ srcPos.x, srcPos.y ];
     }
 
@@ -123,6 +123,46 @@ BRp.findEndpoints = function( edge ){
       p1_i[1],
       0
     );
+
+    if( tgtManEndptVal === 'outside-to-node-or-label' || tgtManEndptVal === 'outside-to-line-or-label' ){
+      let trs = target._private.rscratch;
+      let lw = trs.labelWidth;
+      let lh = trs.labelHeight;
+      let lx = trs.labelX;
+      let ly = trs.labelY;
+
+      let va = target.pstyle('text-valign').value;
+      if( va === 'top' ){
+        ly -= lh/2;
+      } else if( va === 'bottom' ){
+        ly += lh/2;
+      }
+
+      let ha = target.pstyle('text-halign').value;
+      if( ha === 'left' ){
+        lx -= lw/2;
+      } else if( ha === 'right' ){
+        lx += lw/2;
+      }
+
+      let labelIntersect = r.nodeShapes['rectangle'].intersectLine(
+        lx,
+        ly,
+        lw,
+        lh,
+        p1_i[0],
+        p1_i[1],
+        0
+      );
+
+      let refPt = srcPos;
+      let intSqdist = math.sqdist( refPt, math.array2point(intersect) );
+      let labIntSqdist = math.sqdist( refPt, math.array2point(labelIntersect) );
+
+      if( labIntSqdist < intSqdist ){
+        intersect = labelIntersect;
+      }
+    }
   }
 
   let arrowEnd = math.shortenIntersection(
@@ -149,9 +189,9 @@ BRp.findEndpoints = function( edge ){
   } else if( srcManEndptVal === 'outside-to-line' ){
     intersect = rs.srcIntn; // use cached value from ctrlpt calc
   } else {
-    if( srcManEndptVal === 'outside-to-node' ){
+    if( srcManEndptVal === 'outside-to-node' || srcManEndptVal === 'outside-to-node-or-label' ){
       p2_i = p2;
-    } else if( srcManEndptVal === 'outside-to-line' ){
+    } else if( srcManEndptVal === 'outside-to-line' || srcManEndptVal === 'outside-to-line-or-label' ){
       p2_i = [ tgtPos.x, tgtPos.y ];
     }
 
@@ -164,6 +204,46 @@ BRp.findEndpoints = function( edge ){
       p2_i[1],
       0
     );
+
+    if( srcManEndptVal === 'outside-to-node-or-label' || srcManEndptVal === 'outside-to-line-or-label' ){
+      let srs = source._private.rscratch;
+      let lw = srs.labelWidth;
+      let lh = srs.labelHeight;
+      let lx = srs.labelX;
+      let ly = srs.labelY;
+
+      let va = source.pstyle('text-valign').value;
+      if( va === 'top' ){
+        ly -= lh/2;
+      } else if( va === 'bottom' ){
+        ly += lh/2;
+      }
+
+      let ha = source.pstyle('text-halign').value;
+      if( ha === 'left' ){
+        lx -= lw/2;
+      } else if( ha === 'right' ){
+        lx += lw/2;
+      }
+
+      let labelIntersect = r.nodeShapes['rectangle'].intersectLine(
+        lx,
+        ly,
+        lw,
+        lh,
+        p2_i[0],
+        p2_i[1],
+        0
+      );
+
+      let refPt = tgtPos;
+      let intSqdist = math.sqdist( refPt, math.array2point(intersect) );
+      let labIntSqdist = math.sqdist( refPt, math.array2point(labelIntersect) );
+
+      if( labIntSqdist < intSqdist ){
+        intersect = labelIntersect;
+      }
+    }
   }
 
   let arrowStart = math.shortenIntersection(

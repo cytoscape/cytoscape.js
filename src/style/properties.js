@@ -93,7 +93,7 @@ const styfn = {};
     edgeDistances: { enums: ['intersection', 'node-position'] },
     edgeEndpoint: {
       number: true, multiple: true, units: '%|px|em|deg|rad', implicitUnits: 'px',
-      enums: [ 'inside-to-node', 'outside-to-node', 'outside-to-line' ], singleEnum: true,
+      enums: [ 'inside-to-node', 'outside-to-node', 'outside-to-node-or-label', 'outside-to-line', 'outside-to-line-or-label' ], singleEnum: true,
       validate: function( valArr, unitsArr ){
         switch( valArr.length ){
           case 2: // can be % or px only

@@ -143,7 +143,7 @@ In addition to specifying the value of a property outright, the developer may al
 
 * **`data()`** specifies a direct mapping to an element's data field.  For example, `data(descr)` would map a property to the value in an element's `descr` field in its data (i.e. `ele.data("descr")`).  This is useful for mapping to properties like label text content (the `content` property).
 * **`mapData()`** specifies a linear mapping to an element's data field.  For example, `mapData(weight, 0, 100, blue, red)` maps an element's weight to colours between blue and red for weights between 0 and 100.  An element with `ele.data("weight") === 0` would  be mapped to blue, for instance.  Elements whose values fall outside of the specified range are mapped to the extremity values.  In the previous example, an element with `ele.data("weight") === -1` would be mapped to blue.
-* **`function( ele ){ ... }`** A function may be passed as the value of a style property.  The function has a single `ele` argument which specifies the element for which the style property value is being calculated.  
+* **`function( ele ){ ... }`** A function may be passed as the value of a style property.  The function has a single `ele` argument which specifies the element for which the style property value is being calculated.
   * **Do** specify a valid value for the corresponding style property for all elements that its corresponding selector block applies.
   * **Do not** create cyclic dependencies (i.e. one style property reads the value of another style property).
   * **Do** use pure functions that depend on only
@@ -242,7 +242,7 @@ Compound parent sizing:
 
 A background image may be applied to a node's body.  The following properties support multiple values (space separated or array) with associated indices.
 
- * **`background-image`** : The URL that points to the image that should be used as the node's background.  PNG, JPG, and SVG are supported formats.  
+ * **`background-image`** : The URL that points to the image that should be used as the node's background.  PNG, JPG, and SVG are supported formats.
   * You may use a [data URI](https://en.wikipedia.org/wiki/Data_URI_scheme) to use embedded images, thereby saving a HTTP request.
   * Can specify multiple background images by separating each image with a space (space delimited format), but if using a non-string stylesheet, then using arrays are preferred.
     * The images will be applied to the node's body in the order given, layering one on top of each other.
@@ -402,9 +402,11 @@ Only mid arrows are supported on haystack edges.
 
 - A special, named value may be used.
   - `outside-to-node` (default) indicates that the edge should be placed automatically to point towards the node's position and be placed on the outside of the node's shape.
+  - `outside-to-node-or-label` uses the same rules as `outside-to-node` with the added rule that if the node's label would intersect the edge before the node's body, then the edge points to that intersection point.  This avoids overlap of edges with node labels.
   - `inside-to-node` indicates the edge should go all the way inside the node and point directly on the node's position.  This is the same as specifying `0 0`.
   - `outside-to-line` indicates the edge endpoint should be placed outside the node's shape where it would intersect the imaginary line from the source position to the target position.  This value is useful for automatically  avoiding invalid cases for bezier edges, especially with compound nodes.
-- Two numbers may specify the endpoint.  The numbers indicate a position relative to the source node's position.  The numbers can be specified as percent values (e.g. `50%`, which are relative to the node's width and height respectively) or as absolute distances (e.g. `100px` or `2em`).  
+  - `outside-to-line-or-label` uses the same rules as `outside-to-line` with the added rule that if the node's label would intersect the imaginary line before the node's body, then the edge points to that intersection point.  This avoids overlap of edges with node labels.
+- Two numbers may specify the endpoint.  The numbers indicate a position relative to the source node's position.  The numbers can be specified as percent values (e.g. `50%`, which are relative to the node's width and height respectively) or as absolute distances (e.g. `100px` or `2em`).
 - A single angle value (e.g. `90deg` or `1.57rad`) may specify that the endpoint should be placed at where the line formed from the node's position with the specified angle would intersect the node's shape.  The angle starts at 12 o'clock and progresses clockwise.
 
 The endpoints for edges can be shifted away from the source and target node:
@@ -563,19 +565,19 @@ The ghost properties allow for creating a ghosting effect, a semitransparent dup
    * `ease-in-out-sine`,
    * `ease-in-quad`,
    * `ease-out-quad`,
-   * `ease-in-out-quad`,  
+   * `ease-in-out-quad`,
    * `ease-in-cubic`,
    * `ease-out-cubic`,
-   * `ease-in-out-cubic`,  
+   * `ease-in-out-cubic`,
    * `ease-in-quart`,
    * `ease-out-quart`,
-   * `ease-in-out-quart`,  
+   * `ease-in-out-quart`,
    * `ease-in-quint`,
    * `ease-out-quint`,
    * `ease-in-out-quint`,
    * `ease-in-expo`,
    * `ease-out-expo`,
-   * `ease-in-out-expo`,  
+   * `ease-in-out-expo`,
    * `ease-in-circ`,
    * `ease-out-circ`,
    * `ease-in-out-circ`.

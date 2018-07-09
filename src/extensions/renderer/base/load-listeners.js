@@ -820,8 +820,6 @@ BRp.load = function(){
 
             var tcol = cy.collection( toTrigger );
 
-            // TODO apply same change to touch
-            //
             ( tcol
               .silentShift( totalShift )
               .emit('position drag')
@@ -1636,28 +1634,22 @@ BRp.load = function(){
             addNodesToDrag( cy.collection( draggedEles ), { inDragLayer: true } );
           }
 
-          for( var k = 0; k < draggedEles.length; k++ ){
-            var draggedEle = draggedEles[ k ];
+          r.dragData.didDrag = true;
 
-            if( r.nodeIsDraggable( draggedEle ) && draggedEle.grabbed() ){
-              r.dragData.didDrag = true;
-              var dPos = draggedEle.position();
+          var totalShift = { x: 0, y: 0 };
 
-              if( is.number( disp[0] ) && is.number( disp[1] ) ){
-                dPos.x += disp[0];
-                dPos.y += disp[1];
-              }
+          if( is.number( disp[0] ) && is.number( disp[1] ) ){
+            totalShift.x += disp[0];
+            totalShift.y += disp[1];
 
-              if( justStartedDrag ){
-                r.redrawHint( 'eles', true );
+            if( justStartedDrag ){
+              r.redrawHint( 'eles', true );
 
-                var dragDelta = r.touchData.dragDelta;
+              var dragDelta = r.touchData.dragDelta;
 
-                if( dragDelta && is.number( dragDelta[0] ) && is.number( dragDelta[1] ) ){
-                  dPos.x += dragDelta[0];
-                  dPos.y += dragDelta[1];
-                }
-
+              if( dragDelta && is.number( dragDelta[0] ) && is.number( dragDelta[1] ) ){
+                totalShift.x += dragDelta[0];
+                totalShift.y += dragDelta[1];
               }
             }
           }
@@ -1668,6 +1660,11 @@ BRp.load = function(){
           tcol.emit( 'position drag' );
 
           r.hoverData.draggingEles = true;
+
+          ( tcol
+            .silentShift( totalShift )
+            .emit('position drag')
+          );
 
           r.redrawHint( 'drag', true );
 

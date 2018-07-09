@@ -33,9 +33,12 @@ elesfn.dirtyCompoundBoundsCache = function(){
   if( !cy.styleEnabled() || !cy.hasCompoundNodes() ){ return this; }
 
   this.forEachUp( ele => {
-    ele._private.compoundBoundsClean = false;
+    let _p = ele._private;
+    _p.compoundBoundsClean = false;
 
     if( ele.isParent() ){
+      _p.bbCache = null;
+
       ele.emitAndNotify('bounds');
     }
   } );

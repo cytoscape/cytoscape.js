@@ -106,16 +106,20 @@ describe('Collection compound nodes', function(){
     expect( n2.position() ).to.not.deep.equal( p1 );
   });
 
-  // TODO leave this test failing for now
+  // TODO
   // - more tests to be added
-  // - headless case needs more tweaking
   it('child.position() moves parent boundingbox', function(){
-    var w = n2.boundingBox().w;
-    var h = n2.boundingBox().h;
+    var bb1 = n2.boundingBox();
+    var w1 = bb1.w;
+    var h1 = bb1.h;
 
     n4.position({ x: -200, y: -200 });
 
-    expect( n2.boundingBox().w ).to.not.equal( w );
-    expect( n2.boundingBox().h ).to.not.equal( h );
+    var bb2 = n2.boundingBox();
+    var w2 = bb2.w;
+    var h2 = bb2.h;
+
+    expect( w2 ).to.not.equal( w1 );
+    expect( h2 ).to.not.equal( h1 );
   });
 });

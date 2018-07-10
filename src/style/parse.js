@@ -42,7 +42,7 @@ styfn.parseImplWarn = function( name, value, propIsBypass, propIsFlat ){
   let prop = this.parseImpl( name, value, propIsBypass, propIsFlat );
 
   if( !prop && value != null ){
-    util.warn(`The style property \`${name}: value\` is invalid`);
+    util.warn(`The style property \`${name}: ${value}\` is invalid`);
   }
 
   return prop;

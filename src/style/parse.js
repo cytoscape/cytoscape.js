@@ -346,7 +346,7 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
 
     } else { // go over each prop
 
-      let propsSplit = propsStr.split( /,|\s+/ );
+      let propsSplit = propsStr.split( /\s*,\s*|\s+/ );
       for( let i = 0; i < propsSplit.length; i++ ){
         let propName = propsSplit[ i ].trim();
 

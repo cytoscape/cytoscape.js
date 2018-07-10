@@ -1,8 +1,7 @@
 language: node_js
 node_js:
   - "6"
-  - "7"
   - "8"
-  - "node"
+  - "10"
 sudo: false
 script: npm run test:travis

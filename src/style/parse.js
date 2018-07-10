@@ -136,8 +136,10 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
     if( !valueMax || valueMax.mapped ){ return false; } // can't be invalid or mapped
 
     // check if valueMin and valueMax are the same
-    if( valueMin.value === valueMax.value ){
-      return false; // can't make much of a mapper without a range
+    if( valueMin.pfValue === valueMax.pfValue || valueMin.strValue === valueMax.strValue ){
+      util.warn('`' + name + ': ' + value + '` is not a valid mapper because the output range is zero; converting to `' + name + ': ' + valueMin.strValue + '`');
+
+      return this.parse(name, valueMin.strValue); // can't make much of a mapper without a range
 
     } else if( type.color ){
       let c1 = valueMin.value;

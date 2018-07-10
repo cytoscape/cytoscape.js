@@ -433,7 +433,13 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
       util.warn('Do not use continuous mappers without specifying numeric data (i.e. `' + prop.field + ': ' + fieldVal + '` for `' + ele.id() + '` is non-numeric)');
       return false;
     } else {
-      percent = (fieldVal - prop.fieldMin) / (prop.fieldMax - prop.fieldMin);
+      let fieldWidth = prop.fieldMax - prop.fieldMin;
+
+      if( fieldWidth === 0 ){ // safety check -- not strictly necessary as no props of zero range should be passed here
+        percent = 0;
+      } else {
+        percent = (fieldVal - prop.fieldMin) / fieldWidth;
+      }
     }
 
     // make sure to bound percent value

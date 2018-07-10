@@ -106,8 +106,14 @@ describe('Collection compound nodes', function(){
     expect( n2.position() ).to.not.deep.equal( p1 );
   });
 
-  // TODO
-  // - more tests to be added
+  it('child.position() moves ancestor', function(){
+    var p1 = Object.assign({}, n1.position());
+
+    n4.position({ x: -200, y: -200 });
+
+    expect( n1.position() ).to.not.deep.equal( p1 );
+  });
+
   it('child.position() moves parent boundingbox', function(){
     var bb1 = n2.boundingBox();
     var w1 = bb1.w;
@@ -121,5 +127,38 @@ describe('Collection compound nodes', function(){
 
     expect( w2 ).to.not.equal( w1 );
     expect( h2 ).to.not.equal( h1 );
+  });
+
+  it('child.position() moves ancestor boundingbox', function(){
+    var bb1 = n1.boundingBox();
+    var w1 = bb1.w;
+    var h1 = bb1.h;
+
+    n4.position({ x: -200, y: -200 });
+
+    var bb2 = n1.boundingBox();
+    var w2 = bb2.w;
+    var h2 = bb2.h;
+
+    expect( w2 ).to.not.equal( w1 );
+    expect( h2 ).to.not.equal( h1 );
+  });
+
+  it('node.position() moves self boundingbox', function(){
+    var bb1 = Object.assign({}, n4.boundingBox());
+
+    var delta = 100;
+    var p1 = Object.assign({}, n4.position());
+    var p2 = { x: p1.x + delta, y: p1.y + delta };
+
+    n4.position(p2);
+
+    var bb2 = n4.boundingBox();
+    expect( bb2.w ).to.equal( bb1.w );
+    expect( bb2.h ).to.equal( bb1.h );
+    expect( bb2.x1 ).to.equal( bb1.x1 + delta );
+    expect( bb2.x2 ).to.equal( bb1.x2 + delta );
+    expect( bb2.y1 ).to.equal( bb1.y1 + delta );
+    expect( bb2.y2 ).to.equal( bb1.y2 + delta );
   });
 });

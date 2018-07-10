@@ -57,7 +57,7 @@ describe('Collection style', function(){
         {
           selector: '.transition-prop',
           style: {
-            'transition-property': 'width background-color',
+            'transition-property': 'width, background-color',
             'transition-timing-function': 'linear',
             'transition-duration': 50
           }
@@ -66,7 +66,7 @@ describe('Collection style', function(){
         {
           selector: '.transition-multiple',
           style: {
-            'transition-property': 'width background-color',
+            'transition-property': 'width, background-color',
             'transition-timing-function': 'linear',
             'transition-duration': 50,
             'width': 300,

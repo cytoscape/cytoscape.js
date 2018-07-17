@@ -1761,7 +1761,9 @@ BRp.load = function(){
     var capture = r.touchData.capture;
 
     if( capture ){
-      r.touchData.capture = false;
+      if( e.touches.length === 0 ){
+        r.touchData.capture = false;
+      }
 
       e.preventDefault();
     } else {

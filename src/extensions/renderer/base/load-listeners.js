@@ -1764,8 +1764,14 @@ BRp.load = function(){
     for( var j = 0; j < now.length; j++ ){ earlier[ j ] = now[ j ]; }
     //r.redraw();
 
-  }, false );
+    // the active bg indicator should be removed when making a swipe that is neither for dragging nodes or panning
+    if( capture && e.touches.length > 0 && !r.hoverData.draggingEles && !r.swipePanning && r.data.bgActivePosistion != null ){
+      r.data.bgActivePosistion = undefined;
+      r.redrawHint( 'select', true );
+      r.redraw();
+    }
 
+  }, false );
   var touchcancelHandler;
   r.registerBinding( window, 'touchcancel', touchcancelHandler = function( e ){ // eslint-disable-line no-unused-vars
     var start = r.touchData.start;

@@ -25055,8 +25055,14 @@ BRp.load = function () {
       earlier[j] = now[j];
     }
     //r.redraw();
-  }, false);
 
+    // the active bg indicator should be removed when making a swipe that is neither for dragging nodes or panning
+    if (capture && e.touches.length > 0 && !r.hoverData.draggingEles && !r.swipePanning && r.data.bgActivePosistion != null) {
+      r.data.bgActivePosistion = undefined;
+      r.redrawHint('select', true);
+      r.redraw();
+    }
+  }, false);
   var touchcancelHandler;
   r.registerBinding(window, 'touchcancel', touchcancelHandler = function touchcancelHandler(e) {
     // eslint-disable-line no-undef
@@ -25077,7 +25083,9 @@ BRp.load = function () {
     var capture = r.touchData.capture;
 
     if (capture) {
-      r.touchData.capture = false;
+      if (e.touches.length === 0) {
+        r.touchData.capture = false;
+      }
 
       e.preventDefault();
     } else {
@@ -29852,7 +29860,7 @@ module.exports = Stylesheet;
 "use strict";
 
 
-module.exports = "3.2.14";
+module.exports = "3.2.15";
 
 /***/ })
 /******/ ]);

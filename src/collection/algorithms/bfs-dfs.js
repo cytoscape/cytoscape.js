@@ -1,6 +1,6 @@
 import * as is from '../../is';
 
-var defineSearch = function( params ){
+let defineSearch = function( params ){
   params = {
     bfs: params.bfs || !params.dfs,
     dfs: params.dfs || !params.bfs
@@ -8,7 +8,7 @@ var defineSearch = function( params ){
 
   // from pseudocode on wikipedia
   return function searchFn( roots, fn, directed ){
-    var options;
+    let options;
     if( is.plainObject( roots ) && !is.elementOrCollection( roots ) ){
       options = roots;
       roots = options.roots || options.root;
@@ -19,48 +19,53 @@ var defineSearch = function( params ){
     directed = arguments.length === 2 && !is.fn( fn ) ? fn : directed;
     fn = is.fn( fn ) ? fn : function(){};
 
-    var cy = this._private.cy;
-    var v = roots = is.string( roots ) ? this.filter( roots ) : roots;
-    var Q = [];
-    var connectedNodes = [];
-    var connectedBy = {};
-    var id2depth = {};
-    var V = {};
-    var j = 0;
-    var found;
-    var nodes = this.nodes();
-    var edges = this.edges();
+    let cy = this._private.cy;
+    let v = roots = is.string( roots ) ? this.filter( roots ) : roots;
+    let Q = [];
+    let connectedNodes = [];
+    let connectedBy = {};
+    let id2depth = {};
+    let V = {};
+    let j = 0;
+    let found;
+    let { nodes, edges } = this.byGroup();
 
     // enqueue v
-    for( var i = 0; i < v.length; i++ ){
-      if( v[ i ].isNode() ){
-        Q.unshift( v[ i ] );
+    for( let i = 0; i < v.length; i++ ){
+      let vi = v[i];
+      let viId = vi.id();
+
+      if( vi.isNode() ){
+        Q.unshift( vi );
 
         if( params.bfs ){
-          V[ v[ i ].id() ] = true;
+          V[ viId ] = true;
 
-          connectedNodes.push( v[ i ] );
+          connectedNodes.push( vi );
         }
 
-        id2depth[ v[ i ].id() ] = 0;
+        id2depth[ viId ] = 0;
       }
     }
 
     while( Q.length !== 0 ){
-      var v = params.bfs ? Q.shift() : Q.pop();
+      let v = params.bfs ? Q.shift() : Q.pop();
+      let vId = v.id();
 
       if( params.dfs ){
-        if( V[ v.id() ] ){ continue; }
+        if( V[ vId ] ){ continue; }
 
-        V[ v.id() ] = true;
+        V[ vId ] = true;
 
         connectedNodes.push( v );
       }
 
-      var depth = id2depth[ v.id() ];
-      var prevEdge = connectedBy[ v.id() ];
-      var prevNode = prevEdge == null ? undefined : prevEdge.connectedNodes().not( v )[0];
-      var ret;
+      let depth = id2depth[ vId ];
+      let prevEdge = connectedBy[ vId ];
+      let src = prevEdge != null ? prevEdge.source() : null;
+      let tgt = prevEdge != null ? prevEdge.target() : null;
+      let prevNode = prevEdge == null ? undefined : ( v.same(src) ? tgt[0] : src[0] );
+      let ret;
 
       ret = fn( v, prevEdge, prevNode, j++, depth );
 
@@ -73,52 +78,53 @@ var defineSearch = function( params ){
         break;
       }
 
-      var vwEdges = v.connectedEdges( directed ? function( ele ){ return ele.data( 'source' ) === v.id(); } : undefined ).intersect( edges );
-      for( var i = 0; i < vwEdges.length; i++ ){
-        var e = vwEdges[ i ];
-        var w = e.connectedNodes( function( n ){ return n.id() !== v.id(); } ).intersect( nodes );
+      let vwEdges = v.connectedEdges().filter(e => (!directed || e.source().same(v)) && edges.has(e));
+      for( let i = 0; i < vwEdges.length; i++ ){
+        let e = vwEdges[ i ];
+        let w = e.connectedNodes().filter(n => !n.same(v) && nodes.has(n));
+        let wId = w.id();
 
-        if( w.length !== 0 && !V[ w.id() ] ){
+        if( w.length !== 0 && !V[ wId ] ){
           w = w[0];
 
           Q.push( w );
 
           if( params.bfs ){
-            V[ w.id() ] = true;
+            V[ wId ] = true;
 
             connectedNodes.push( w );
           }
 
-          connectedBy[ w.id() ] = e;
+          connectedBy[ wId ] = e;
 
-          id2depth[ w.id() ] = id2depth[ v.id() ] + 1;
+          id2depth[ wId ] = id2depth[ vId ] + 1;
         }
       }
 
     }
 
-    var connectedEles = [];
+    let connectedEles = cy.collection();
 
-    for( var i = 0; i < connectedNodes.length; i++ ){
-      var node = connectedNodes[ i ];
-      var edge = connectedBy[ node.id() ];
+    for( let i = 0; i < connectedNodes.length; i++ ){
+      let node = connectedNodes[ i ];
+      let edge = connectedBy[ node.id() ];
 
-      if( edge ){
-        connectedEles.push( edge );
+      if( edge != null ){
+        connectedEles.merge( edge );
       }
 
-      connectedEles.push( node );
+      connectedEles.merge( node );
     }
 
     return {
-      path: cy.collection( connectedEles, { unique: true } ),
+      path: cy.collection( connectedEles ),
       found: cy.collection( found )
     };
   };
 };
 
 // search, spanning trees, etc
-var elesfn = ({
+let elesfn = ({
   breadthFirstSearch: defineSearch( { bfs: true } ),
   depthFirstSearch: defineSearch( { dfs: true } )
 });

@@ -1,64 +1,27 @@
-import * as is from '../../is';
 import Heap from '../../heap';
 import Set from '../../set';
+import { defaults } from '../../util';
+
+const aStarDefaults = defaults({
+  root: null,
+  goal: null,
+  weight: edge => 1,
+  heuristic: edge => 0,
+  directed: false
+});
 
 let elesfn = ({
 
   // Implemented from pseudocode from wikipedia
   aStar: function( options ){
-    options = options || {};
+    let cy = this.cy();
+    let { root, goal, heuristic, directed, weight } = aStarDefaults(options);
 
-    let cy = this._private.cy;
+    root = cy.collection(root)[0];
+    goal = cy.collection(goal)[0];
 
-    // root - mandatory!
-    let source;
-    if( options != null && options.root != null ){
-      source = is.string( options.root ) ?
-        // use it as a selector, e.g. "#rootID
-        this.filter( options.root )[0] :
-        options.root[0];
-    } else {
-      return undefined;
-    }
-
-    // goal - mandatory!
-    let target;
-    if( options.goal != null ){
-      target = is.string( options.goal ) ?
-        // use it as a selector, e.g. "#goalID
-        this.filter( options.goal )[0] :
-        options.goal[0];
-    } else {
-      return undefined;
-    }
-
-    // Heuristic function - optional
-    let heuristic;
-    if( options.heuristic != null && is.fn( options.heuristic ) ){
-      heuristic = options.heuristic;
-    } else {
-      heuristic = function(){ return 0; }; // use constant if unspecified
-    }
-
-    // Weight function - optional
-    let weightFn;
-    if( options.weight != null && is.fn( options.weight ) ){
-      weightFn = options.weight;
-    } else {
-      // If not specified, assume each edge has equal weight (1)
-      weightFn = function( e ){return 1;};
-    }
-
-    // directed - optional
-    let directed;
-    if( options.directed != null ){
-      directed = options.directed;
-    } else {
-      directed = false;
-    }
-
-    let sid = source.id();
-    let tid = target.id();
+    let sid = root.id();
+    let tid = goal.id();
 
     let gScore = {};
     let fScore = {};
@@ -83,10 +46,10 @@ let elesfn = ({
 
     let isInOpenSet = id => openSetIds.has(id);
 
-    addToOpenSet(source, sid);
+    addToOpenSet(root, sid);
 
     gScore[ sid ] = 0;
-    fScore[ sid ] = heuristic( source );
+    fScore[ sid ] = heuristic( root );
 
     // Counter
     let steps = 0;
@@ -99,7 +62,7 @@ let elesfn = ({
       // If we've found our goal, then we are done
       if( cMinId === tid ){
         let path = [];
-        let pathNode = target;
+        let pathNode = goal;
         let pathNodeId = tid;
         let pathEdge = cameFromEdge[pathNodeId];
 
@@ -157,7 +120,7 @@ let elesfn = ({
         }
 
         // New tentative score for node w
-        let tempScore = gScore[ cMinId ] + weightFn( e );
+        let tempScore = gScore[ cMinId ] + weight( e );
 
         // Update gScore for node w if:
         //   w not present in openSet

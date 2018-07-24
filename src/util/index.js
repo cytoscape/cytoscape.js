@@ -101,7 +101,7 @@ export const defaults = defaults => {
 
     for( let i = 0; i < keys.length; i++ ){
       let key = keys[i];
-      let optVal = opts[key];
+      let optVal = opts == null ? undefined : opts[key];
 
       filledOpts[key] = optVal === undefined ? defaults[key] : optVal;
     }

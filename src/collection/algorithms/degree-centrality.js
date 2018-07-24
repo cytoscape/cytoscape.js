@@ -105,17 +105,11 @@ let elesfn = ({
   degreeCentrality: function( options ){
     options = defaults( options );
 
+    let cy = this.cy();
     let callingEles = this;
     let { root, weight, directed, alpha } = options;
 
-    // root - mandatory!
-    if( is.string( root ) ){
-      root = this.filter( root )[0];
-    } else if( root != null ){
-      root = root[0];
-    } else {
-      return undefined;
-    }
+    root = cy.collection(root)[0];
 
     if( !directed ){
       let connEdges = root.connectedEdges().intersection( callingEles );

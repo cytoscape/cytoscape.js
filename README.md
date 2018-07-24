@@ -101,7 +101,10 @@ Run `npm run <target>` in the console.  The main targets are:
 If the `TRAVIS` or `TEST_BUILD` environment variables are defined, then `mocha` or `gulp test` will test `build/cytoscape.umd.js`.  Otherwise, the unbundled, unbabelified, raw source is tested.  This keeps local tests very quick to run on modern versions of node while ensuring we can test old versions of node as well.  The library can be built on `node>=4`, but it can be tested on `node>=0.10`.
 
  * `test` : run the Mocha unit tests
+ * `test:build` : run the Mocha unit tests (on a built bundle)
  * `lint` : lint the js sources via eslint
+ * `ci` : run tests and linting
+ * `ci:build` : run tests and linting (on a built bundle)
  * `benchmark` : run all benchmarks
  * `benchmark:single` : run benchmarks only for the suite specified in `benchmark/single`
  * `sniper` : runs a biojs sniper server that hosts demos

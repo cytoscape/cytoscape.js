@@ -41,14 +41,22 @@ let elesfn = ({
     }
 
     let cy = this.cy();
-    let isSimple = edge => edge.isSimple();
-    let edges = this.edges(isSimple);
-    let nodes = this.nodes();
+    let { edges, nodes } = this.byGroup();
     let numNodes = nodes.length;
-    let numEdges = edges.length;
     let infoMap = new Map();
     let hasNegativeWeightCycle = false;
     let negativeWeightCycles = [];
+
+    // remove loops
+    for( let i = edges.length - 1; i >= 0; i-- ){
+      let edge = edges[i];
+
+      if( edge.isLoop() ){
+        edges.unmerge(edge);
+      }
+    }
+
+    let numEdges = edges.length;
 
     let getInfo = node => {
       let obj = infoMap.get( node.id() );

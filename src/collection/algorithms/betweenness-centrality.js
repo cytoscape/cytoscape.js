@@ -1,32 +1,25 @@
-import * as is from '../../is';
 import Heap from '../../heap';
+import * as util from '../../util';
 
-var elesfn = ({
+const defaults = util.defaults({
+  weight: null,
+  directed: false
+});
+
+let elesfn = ({
 
   // Implemented from the algorithm in the paper "On Variants of Shortest-Path Betweenness Centrality and their Generic Computation" by Ulrik Brandes
   betweennessCentrality: function( options ){
-    options = options || {};
-
-    // Weight - optional
-    var weighted, weightFn;
-    if( is.fn( options.weight ) ){
-      weightFn = options.weight;
-      weighted = true;
-    } else {
-      weighted = false;
-    }
-
-    // Directed - default false
-    var directed = options.directed != null ? options.directed : false;
-
-    var cy = this._private.cy;
+    let { directed, weight } = defaults(options);
+    let weighted = weight != null;
+    let cy = this.cy();
 
     // starting
-    var V = this.nodes();
-    var A = {};
-    var _C = {};
-    var max = 0;
-    var C = {
+    let V = this.nodes();
+    let A = {};
+    let _C = {};
+    let max = 0;
+    let C = {
       set: function( key, val ){
         _C[ key ] = val;
 
@@ -37,9 +30,9 @@ var elesfn = ({
     };
 
     // A contains the neighborhoods of every node
-    for( var i = 0; i < V.length; i++ ){
-      var v = V[ i ];
-      var vid = v.id();
+    for( let i = 0; i < V.length; i++ ){
+      let v = V[ i ];
+      let vid = v.id();
 
       if( directed ){
         A[ vid ] = v.outgoers().nodes(); // get outgoers of every node
@@ -50,19 +43,19 @@ var elesfn = ({
       C.set( vid, 0 );
     }
 
-    for( var s = 0; s < V.length; s++ ){
-      var sid = V[s].id();
-      var S = []; // stack
-      var P = {};
-      var g = {};
-      var d = {};
-      var Q = new Heap(function( a, b ){
+    for( let s = 0; s < V.length; s++ ){
+      let sid = V[s].id();
+      let S = []; // stack
+      let P = {};
+      let g = {};
+      let d = {};
+      let Q = new Heap(function( a, b ){
         return d[a] - d[b];
       }); // queue
 
       // init dictionaries
-      for( var i = 0; i < V.length; i++ ){
-        var vid = V[ i ].id();
+      for( let i = 0; i < V.length; i++ ){
+        let vid = V[ i ].id();
 
         P[ vid ] = [];
         g[ vid ] = 0;
@@ -75,23 +68,23 @@ var elesfn = ({
       Q.push( sid );
 
       while( !Q.empty() ){
-        var v = Q.pop();
+        let v = Q.pop();
 
         S.push( v );
 
         if( weighted ){
-          for( var j = 0; j < A[v].length; j++ ){
-            var w = A[v][j];
-            var vEle = cy.getElementById( v );
+          for( let j = 0; j < A[v].length; j++ ){
+            let w = A[v][j];
+            let vEle = cy.getElementById( v );
 
-            var edge;
+            let edge;
             if( vEle.edgesTo( w ).length > 0 ){
               edge = vEle.edgesTo( w )[0];
             } else {
               edge = w.edgesTo( vEle )[0];
             }
 
-            var edgeWeight = weightFn( edge );
+            let edgeWeight = weight( edge );
 
             w = w.id();
 
@@ -114,8 +107,8 @@ var elesfn = ({
             }
           }
         } else {
-          for( var j = 0; j < A[v].length; j++ ){
-            var w = A[v][j].id();
+          for( let j = 0; j < A[v].length; j++ ){
+            let w = A[v][j].id();
 
             if( d[w] == Infinity ){
               Q.push( w );
@@ -131,16 +124,16 @@ var elesfn = ({
         }
       }
 
-      var e = {};
-      for( var i = 0; i < V.length; i++ ){
+      let e = {};
+      for( let i = 0; i < V.length; i++ ){
         e[ V[ i ].id() ] = 0;
       }
 
       while( S.length > 0 ){
-        var w = S.pop();
+        let w = S.pop();
 
-        for( var j = 0; j < P[w].length; j++ ){
-          var v = P[w][j];
+        for( let j = 0; j < P[w].length; j++ ){
+          let v = P[w][j];
 
           e[v] = e[v] + (g[v] / g[w]) * (1 + e[w]);
 
@@ -151,28 +144,19 @@ var elesfn = ({
       }
     }
 
-    var ret = {
+    let ret = {
       betweenness: function( node ){
-        if( is.string( node ) ){
-          var node = cy.filter( node ).id();
-        } else {
-          var node = node.id();
-        }
+        let id = cy.collection(node).id();
 
-        return C.get( node );
+        return C.get( id );
       },
 
       betweennessNormalized: function( node ){
-        if ( max == 0 )
-          return 0;
+        if ( max == 0 ){ return 0; }
 
-        if( is.string( node ) ){
-          var node = cy.filter( node ).id();
-        } else {
-          var node = node.id();
-        }
+        let id = cy.collection(node).id();
 
-        return C.get( node ) / max;
+        return C.get( id ) / max;
       }
     };
 

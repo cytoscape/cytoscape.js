@@ -18,100 +18,95 @@ let elesfn = ({
     let { nodes, edges } = this.byGroup();
     edges.filter( e => !e.isLoop() );
 
-    let numNodes = nodes.length;
+    let N = nodes.length;
+    let Nsq = N * N;
 
     let indexOf = node => nodes.indexOf(node);
     let atIndex = i => nodes[i];
 
     // Initialize distance matrix
-    let dist = [];
-    for( let i = 0; i < numNodes; i++ ){
-      let newRow = new Array( numNodes );
-      for( let j = 0; j < numNodes; j++ ){
-        if( i === j ){
-          newRow[ j ] = 0;
-        } else {
-          newRow[ j ] = Infinity;
-        }
+    let dist = new Array(Nsq);
+    for( let n = 0; n < Nsq; n++ ){
+      let j = n % N;
+      let i = (n - j) / N;
+
+      if( i === j ){
+        dist[n] = 0;
+      } else {
+        dist[n] = Infinity;
       }
-      dist.push( newRow );
     }
 
     // Initialize matrix used for path reconstruction
     // Initialize distance matrix
-    let next = [];
-    let edgeNext = [];
-
-    let initMatrix = function( next ){
-      for( let i = 0; i < numNodes; i++ ){
-        let newRow = new Array( numNodes );
-
-        for( let j = 0; j < numNodes; j++ ){
-          newRow[ j ] = undefined;
-        }
-
-        next.push( newRow );
-      }
-    };
-
-    initMatrix( next );
-    initMatrix( edgeNext );
+    let next = new Array(Nsq);
+    let edgeNext = new Array(Nsq);
 
     // Process edges
     for( let i = 0; i < edges.length; i++ ){
       let edge = edges[i];
       let s = indexOf( edge.source() );
       let t = indexOf( edge.target() );
+      let st = s * N + t; // source to target index
       let weight = weightFn( edge );
 
       // Check if already process another edge between same 2 nodes
-      if( dist[s][t] > weight ){
-        dist[s][t] = weight;
-        next[s][t] = t;
-        edgeNext[s][t] = edge;
+      if( dist[st] > weight ){
+        dist[st] = weight;
+        next[st] = t;
+        edgeNext[st] = edge;
       }
 
       // If undirected graph, process 'reversed' edge
-      if( !directed && dist[t][s] > weight ){
-        dist[t][s] = weight;
-        next[t][s] = s;
-        edgeNext[t][s] = edge;
+      if( !directed ){
+        let ts = t * N + s; // target to source index
+
+        if( !directed && dist[ts] > weight ){
+          dist[ts] = weight;
+          next[ts] = s;
+          edgeNext[ts] = edge;
+        }
       }
     }
 
     // Main loop
-    for( let k = 0; k < numNodes; k++ ){
-      for( let i = 0; i < numNodes; i++ ){
-        for( let j = 0; j < numNodes; j++ ){
-          if( dist[i][k] + dist[k][j] < dist[i][j] ){
-            dist[i][j] = dist[i][k] + dist[k][j];
-            next[i][j] = next[i][k];
+    for( let k = 0; k < N; k++ ){
+
+      for( let i = 0; i < N; i++ ){
+        let ik = i * N + k;
+
+        for( let j = 0; j < N; j++ ){
+          let ij = i * N + j;
+          let kj = k * N + j;
+
+          if( dist[ik] + dist[kj] < dist[ij] ){
+            dist[ij] = dist[ik] + dist[kj];
+            next[ij] = next[ik];
           }
         }
       }
     }
 
     let getArgEle = ele => ( is.string(ele) ? cy.filter(ele) : ele )[0];
+    let indexOfArgEle = ele => indexOf(getArgEle(ele));
 
     let res = {
       distance: function( from, to ){
-        from = getArgEle(from);
-        to = getArgEle(to);
+        let i = indexOfArgEle(from);
+        let j = indexOfArgEle(to);
 
-        return dist[ indexOf(from) ][ indexOf(to) ];
+        return dist[ i * N + j ];
       },
 
       path: function( from, to ){
-        from = getArgEle(from);
-        to = getArgEle(to);
+        let i = indexOfArgEle(from);
+        let j = indexOfArgEle(to);
 
-        let i = indexOf(from);
-        let j = indexOf(to);
         let fromNode = atIndex(i);
 
         if( i === j ){ return fromNode.collection(); }
 
-        if( next[i][j] == null ){ return cy.collection(); }
+        if( next[i * N + j] == null ){ return cy.collection(); }
 
         let path = cy.collection();
         let prev = i;
@@ -121,8 +116,8 @@ let elesfn = ({
 
         while( i !== j ){
           prev = i;
-          i = next[i][j];
-          edge = edgeNext[prev][i];
+          i = next[i * N + j];
+          edge = edgeNext[prev * N + i];
 
           path.merge( edge );
           path.merge( atIndex(i) );

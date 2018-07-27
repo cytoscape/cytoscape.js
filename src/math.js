@@ -133,6 +133,25 @@ export const sqdist = ( p1, p2 ) => {
   return dx * dx + dy * dy;
 };
 
+export const inPlaceSumNormalize = v => {
+  let length = v.length;
+
+  // First, get sum of all elements
+  let total = 0;
+  for( let i = 0; i < length; i++ ){
+    total += v[i];
+  }
+
+  // Now, divide each by the sum of all elements
+  for( let i = 0; i < length; i++ ){
+    v[i] = v[i] / total;
+  }
+
+  return v;
+};
+
+export const normalize = v => inPlaceSumNormalize( v.slice() );
+
 // from http://en.wikipedia.org/wiki/Bézier_curve#Quadratic_curves
 export const qbezierAt = ( p0, p1, p2, t ) =>
   (1 - t) * (1 - t) * p0 + 2 * (1 - t) * t * p1 + t * t * p2;

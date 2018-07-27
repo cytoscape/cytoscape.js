@@ -1,61 +1,49 @@
-import * as is from '../../is';
-
-// search, spanning trees, etc
-var elesfn = ({
+let elesfn = ({
 
   // kruskal's algorithm (finds min spanning tree, assuming undirected graph)
   // implemented from pseudocode from wikipedia
   kruskal: function( weightFn ){
-    var cy = this.cy();
+    weightFn = weightFn || ( edge => 1 );
 
-    weightFn = is.fn( weightFn ) ? weightFn : function(){ return 1; }; // if not specified, assume each edge has equal weight (1)
+    let { nodes, edges } = this.byGroup();
+    let numNodes = nodes.length;
+    let forest = new Array(numNodes);
+    let A = nodes; // assumes byGroup() creates new collections that can be safely mutated
 
-    function findSet( ele ){
-      for( var i = 0; i < forest.length; i++ ){
-        var eles = forest[ i ];
+    let findSetIndex = ele => {
+      for( let i = 0; i < forest.length; i++ ){
+        let eles = forest[i];
 
-        if( eles.anySame( ele ) ){
-          return {
-            eles: eles,
-            index: i
-          };
-        }
+        if( eles.has(ele) ){ return i; }
       }
+    };
+
+    // start with one forest per node
+    for( let i = 0; i < numNodes; i++ ){
+      forest[i] = this.spawn( nodes[i] );
     }
 
-    var A = cy.collection( cy, [] );
-    var forest = [];
-    var nodes = this.nodes();
+    let S = edges.sort( (a, b) => weightFn(a) - weightFn(b) );
 
-    for( var i = 0; i < nodes.length; i++ ){
-      forest.push( nodes[ i ].collection() );
-    }
+    for( let i = 0; i < S.length; i++ ){
+      let edge = S[i];
+      let u = edge.source()[0];
+      let v = edge.target()[0];
+      let setUIndex = findSetIndex(u);
+      let setVIndex = findSetIndex(v);
+      let setU = forest[ setUIndex ];
+      let setV = forest[ setVIndex ];
 
-    var edges = this.edges();
-    var S = edges.toArray().sort( function( a, b ){
-      var weightA = weightFn( a );
-      var weightB = weightFn( b );
-
-      return weightA - weightB;
-    } );
-
-    for( var i = 0; i < S.length; i++ ){
-      var edge = S[ i ];
-      var u = edge.source()[0];
-      var v = edge.target()[0];
-      var setU = findSet( u );
-      var setV = findSet( v );
-
-      if( setU.index !== setV.index ){
-        A = A.add( edge );
+      if( setUIndex !== setVIndex ){
+        A.merge( edge );
 
         // combine forests for u and v
-        forest[ setU.index ] = setU.eles.add( setV.eles );
-        forest.splice( setV.index, 1 );
+        setU.merge( setV );
+        forest.splice( setVIndex, 1 );
       }
     }
 
-    return nodes.add( A );
+    return A;
   }
 });
 

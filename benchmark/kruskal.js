@@ -7,8 +7,7 @@ var suite = new Suite('eles.kruskal()', {
 
 suite
   .add( function( cy ) {
-    cy.elements().kruskal({
-    });
+    cy.elements().kruskal();
   })
 ;
 

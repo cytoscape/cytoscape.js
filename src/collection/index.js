@@ -183,6 +183,10 @@ elesfn.indexOf = function( ele ){
   return this._private.map.get( id ).index;
 };
 
+elesfn.indexOfId = function( id ){
+  return this._private.map.get( id ).index;
+};
+
 elesfn.json = function( obj ){
   let ele = this.element();
   let cy = this.cy();

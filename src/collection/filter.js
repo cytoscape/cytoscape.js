@@ -12,9 +12,8 @@ let elesfn = ({
 
   // internal helper to get nodes and edges as separate collections with single iteration over elements
   byGroup: function(){
-    let cy = this.cy();
-    let nodes = cy.collection();
-    let edges = cy.collection();
+    let nodes = this.spawn();
+    let edges = this.spawn();
 
     for( let i = 0; i < this.length; i++ ){
       let ele = this[i];

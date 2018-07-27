@@ -42,12 +42,19 @@ let elesfn = ({
   },
 
   same: function( collection ){
+    // cheap collection ref check
+    if( this === collection ){ return true; }
+
     collection = this.cy().collection( collection );
 
-    // cheap extra check
-    if( this.length !== collection.length ){
-      return false;
-    }
+    let thisLength = this.length;
+    let collectionLength = collection.length;
+
+    // cheap length check
+    if( thisLength !== collectionLength ){ return false; }
+
+    // cheap element ref check
+    if( thisLength === 1 ){ return this[0] === collection[0]; }
 
     return this.every(function( ele ){
       return collection.hasElementWithId( ele.id() );
@@ -60,20 +67,6 @@ let elesfn = ({
     return this.some(function( ele ){
       return collection.hasElementWithId( ele.id() );
     });
-  },
-
-  equals: function( collection ){
-    if( this === collection ){ return true; }
-
-    collection = this.cy().collection( collection );
-
-    if( this.length !== collection.length ){ return false; }
-
-    for( let i = 0; i < this.length; i++ ){
-      if( !this[i].same( collection[i] ) ){ return false; }
-    }
-
-    return true;
   },
 
   allAreNeighbors: function( collection ){
@@ -99,6 +92,6 @@ let elesfn = ({
 
 elesfn.allAreNeighbours = elesfn.allAreNeighbors;
 elesfn.has = elesfn.contains;
-elesfn.equal = elesfn.equals;
+elesfn.equal = elesfn.equals = elesfn.same;
 
 export default elesfn;

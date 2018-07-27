@@ -1,185 +1,129 @@
 import * as is from '../../is';
+import { defaults } from '../../util';
 
-var elesfn = ({
+const floydWarshallDefaults = defaults({
+  weight: edge => 1,
+  directed: false
+});
+
+let elesfn = ({
 
   // Implemented from pseudocode from wikipedia
   floydWarshall: function( options ){
-    options = options || {};
+    let cy = this.cy();
 
-    var cy = this.cy();
+    let { weight, directed } = floydWarshallDefaults(options);
+    let weightFn = weight;
 
-    // Weight function - optional
-    if( options.weight != null && is.fn( options.weight ) ){
-      var weightFn = options.weight;
-    } else {
-      // If not specified, assume each edge has equal weight (1)
-      var weightFn = function( e ){return 1;};
-    }
+    let { nodes, edges } = this.byGroup();
+    edges.filter( e => !e.isLoop() );
 
-    // directed - optional
-    if( options.directed != null ){
-      var directed = options.directed;
-    } else {
-      var directed = false;
-    }
+    let N = nodes.length;
+    let Nsq = N * N;
 
-    var edges = this.edges().stdFilter( function( e ){ return !e.isLoop(); } );
-    var nodes = this.nodes();
-    var numNodes = nodes.length;
-
-    // mapping: node id -> position in nodes array
-    var id2position = {};
-    for( var i = 0; i < numNodes; i++ ){
-      id2position[ nodes[ i ].id() ] = i;
-    }
+    let indexOf = node => nodes.indexOf(node);
+    let atIndex = i => nodes[i];
 
     // Initialize distance matrix
-    var dist = [];
-    for( var i = 0; i < numNodes; i++ ){
-      var newRow = new Array( numNodes );
-      for( var j = 0; j < numNodes; j++ ){
-        if( i == j ){
-          newRow[ j ] = 0;
-        } else {
-          newRow[ j ] = Infinity;
-        }
+    let dist = new Array(Nsq);
+    for( let n = 0; n < Nsq; n++ ){
+      let j = n % N;
+      let i = (n - j) / N;
+
+      if( i === j ){
+        dist[n] = 0;
+      } else {
+        dist[n] = Infinity;
       }
-      dist.push( newRow );
     }
 
     // Initialize matrix used for path reconstruction
     // Initialize distance matrix
-    var next = [];
-    var edgeNext = [];
-
-    var initMatrix = function( next ){
-      for( var i = 0; i < numNodes; i++ ){
-        var newRow = new Array( numNodes );
-        for( var j = 0; j < numNodes; j++ ){
-          newRow[ j ] = undefined;
-        }
-        next.push( newRow );
-      }
-    };
-
-    initMatrix( next );
-    initMatrix( edgeNext );
+    let next = new Array(Nsq);
+    let edgeNext = new Array(Nsq);
 
     // Process edges
-    for( var i = 0; i < edges.length ; i++ ){
-      var sourceIndex = id2position[ edges[ i ].source().id() ];
-      var targetIndex = id2position[ edges[ i ].target().id() ];
-      var weight = weightFn( edges[ i ] );
+    for( let i = 0; i < edges.length; i++ ){
+      let edge = edges[i];
+      let s = indexOf( edge.source() );
+      let t = indexOf( edge.target() );
+      let st = s * N + t; // source to target index
+      let weight = weightFn( edge );
 
       // Check if already process another edge between same 2 nodes
-      if( dist[ sourceIndex ][ targetIndex ] > weight ){
-        dist[ sourceIndex ][ targetIndex ] = weight;
-        next[ sourceIndex ][ targetIndex ] = targetIndex;
-        edgeNext[ sourceIndex ][ targetIndex ] = edges[ i ];
+      if( dist[st] > weight ){
+        dist[st] = weight;
+        next[st] = t;
+        edgeNext[st] = edge;
       }
-    }
 
-    // If undirected graph, process 'reversed' edges
-    if( !directed ){
-      for( var i = 0; i < edges.length ; i++ ){
-        var sourceIndex = id2position[ edges[ i ].target().id() ];
-        var targetIndex = id2position[ edges[ i ].source().id() ];
-        var weight = weightFn( edges[ i ] );
+      // If undirected graph, process 'reversed' edge
+      if( !directed ){
+        let ts = t * N + s; // target to source index
 
-        // Check if already process another edge between same 2 nodes
-        if( dist[ sourceIndex ][ targetIndex ] > weight ){
-          dist[ sourceIndex ][ targetIndex ] = weight;
-          next[ sourceIndex ][ targetIndex ] = targetIndex;
-          edgeNext[ sourceIndex ][ targetIndex ] = edges[ i ];
+        if( !directed && dist[ts] > weight ){
+          dist[ts] = weight;
+          next[ts] = s;
+          edgeNext[ts] = edge;
         }
       }
     }
 
     // Main loop
-    for( var k = 0; k < numNodes; k++ ){
-      for( var i = 0; i < numNodes; i++ ){
-        for( var j = 0; j < numNodes; j++ ){
-          if( dist[ i ][ k ] + dist[ k ][ j ] < dist[ i ][ j ] ){
-            dist[ i ][ j ] = dist[ i ][ k ] + dist[ k ][ j ];
-            next[ i ][ j ] = next[ i ][ k ];
+    for( let k = 0; k < N; k++ ){
+
+      for( let i = 0; i < N; i++ ){
+        let ik = i * N + k;
+
+        for( let j = 0; j < N; j++ ){
+          let ij = i * N + j;
+          let kj = k * N + j;
+
+          if( dist[ik] + dist[kj] < dist[ij] ){
+            dist[ij] = dist[ik] + dist[kj];
+            next[ij] = next[ik];
           }
         }
       }
     }
 
-    // Build result object
-    var position2id = [];
-    for( var i = 0; i < numNodes; i++ ){
-      position2id.push( nodes[ i ].id() );
-    }
+    let getArgEle = ele => ( is.string(ele) ? cy.filter(ele) : ele )[0];
+    let indexOfArgEle = ele => indexOf(getArgEle(ele));
 
-    var res = {
+    let res = {
       distance: function( from, to ){
-        if( is.string( from ) ){
-          // from is a selector string
-          var fromId = (cy.filter( from )[0]).id();
-        } else {
-          // from is a node
-          var fromId = from.id();
-        }
+        let i = indexOfArgEle(from);
+        let j = indexOfArgEle(to);
 
-        if( is.string( to ) ){
-          // to is a selector string
-          var toId = (cy.filter( to )[0]).id();
-        } else {
-          // to is a node
-          var toId = to.id();
-        }
-
-        return dist[ id2position[ fromId ] ][ id2position[ toId ] ];
+        return dist[ i * N + j ];
       },
 
       path: function( from, to ){
-        var reconstructPathAux = function( from, to, next, position2id, edgeNext ){
-          if( from === to ){
-            return cy.getElementById( position2id[ from ] );
-          }
-          if( next[ from ][ to ] === undefined ){
-            return undefined;
-          }
+        let i = indexOfArgEle(from);
+        let j = indexOfArgEle(to);
 
-          var path = [ cy.getElementById( position2id[ from ] ) ];
-          var prev = from;
-          while( from !== to ){
-            prev = from;
-            from = next[ from ][ to ];
+        let fromNode = atIndex(i);
 
-            var edge = edgeNext[ prev ][ from ];
-            path.push( edge );
+        if( i === j ){ return fromNode.collection(); }
 
-            path.push( cy.getElementById( position2id[ from ] ) );
-          }
-          return path;
-        };
+        if( next[i * N + j] == null ){ return cy.collection(); }
 
-        if( is.string( from ) ){
-          // from is a selector string
-          var fromId = (cy.filter( from )[0]).id();
-        } else {
-          // from is a node
-          var fromId = from.id();
+        let path = cy.collection();
+        let prev = i;
+        let edge;
+
+        path.merge( fromNode );
+
+        while( i !== j ){
+          prev = i;
+          i = next[i * N + j];
+          edge = edgeNext[prev * N + i];
+
+          path.merge( edge );
+          path.merge( atIndex(i) );
         }
 
-        if( is.string( to ) ){
-          // to is a selector string
-          var toId = (cy.filter( to )[0]).id();
-        } else {
-          // to is a node
-          var toId = to.id();
-        }
-
-        var pathArr = reconstructPathAux( id2position[ fromId ],
-                      id2position[ toId ],
-                      next,
-                      position2id,
-                      edgeNext );
-
-        return cy.collection( pathArr );
+        return path;
       }
     };
 

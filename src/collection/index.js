@@ -172,9 +172,15 @@ elesfn.$id = elesfn.getElementById;
 elesfn.poolIndex = function(){
   let cy = this._private.cy;
   let eles = cy._private.elements;
-  let id = this._private.data.id;
+  let id = this[0]._private.data.id;
 
   return eles._private.map.get( id ).index;
+};
+
+elesfn.indexOf = function( ele ){
+  let id = ele[0]._private.data.id;
+
+  return this._private.map.get( id ).index;
 };
 
 elesfn.json = function( obj ){

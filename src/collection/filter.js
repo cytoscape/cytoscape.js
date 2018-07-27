@@ -10,6 +10,25 @@ let elesfn = ({
     return this.filter( ele => ele.isEdge() ).filter( selector );
   },
 
+  // internal helper to get nodes and edges as separate collections with single iteration over elements
+  byGroup: function(){
+    let cy = this.cy();
+    let nodes = cy.collection();
+    let edges = cy.collection();
+
+    for( let i = 0; i < this.length; i++ ){
+      let ele = this[i];
+
+      if( ele.isNode() ){
+        nodes.merge(ele);
+      } else {
+        edges.merge(ele);
+      }
+    }
+
+    return { nodes, edges };
+  },
+
   filter: function( filter, thisArg ){
     if( filter === undefined ){ // check this first b/c it's the most common/performant case
       return this;

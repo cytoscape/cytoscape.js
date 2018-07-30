@@ -248,20 +248,11 @@ let elesfn = ({
     return this; // chaining
   },
 
-  // remove single ele in place in calling collection
-  unmergeOne: function( ele ){
-    ele = ele[0];
-
+  unmergeAt: function( i ){
+    let ele = this[i];
+    let id = ele.id();
     let _p = this._private;
-    let id = ele._private.data.id;
     let map = _p.map;
-    let entry =  map.get( id );
-
-    if( !entry ){
-      return this; // no need to remove
-    }
-
-    let i = entry.index;
 
     // remove ele
     this[ i ] = undefined;
@@ -286,6 +277,26 @@ let elesfn = ({
     return this;
   },
 
+  // remove single ele in place in calling collection
+  unmergeOne: function( ele ){
+    ele = ele[0];
+
+    let _p = this._private;
+    let id = ele._private.data.id;
+    let map = _p.map;
+    let entry =  map.get( id );
+
+    if( !entry ){
+      return this; // no need to remove
+    }
+
+    let i = entry.index;
+
+    this.unmergeAt(i);
+
+    return this;
+  },
+
   // remove eles in place on calling collection
   unmerge: function( toRemove ){
     let cy = this._private.cy;
@@ -304,6 +315,18 @@ let elesfn = ({
     }
 
     return this; // chaining
+  },
+
+  unmergeBy: function( toRmFn ){
+    for( let i = this.length - 1; i >= 0; i-- ){
+      let ele = this[i];
+
+      if( toRmFn(ele) ){
+        this.unmergeAt(i);
+      }
+    }
+
+    return this;
   },
 
   map: function( mapFn, thisArg ){

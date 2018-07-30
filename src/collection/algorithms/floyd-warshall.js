@@ -16,7 +16,6 @@ let elesfn = ({
     let weightFn = weight;
 
     let { nodes, edges } = this.byGroup();
-    edges.filter( e => !e.isLoop() );
 
     let N = nodes.length;
     let Nsq = N * N;
@@ -45,8 +44,13 @@ let elesfn = ({
     // Process edges
     for( let i = 0; i < edges.length; i++ ){
       let edge = edges[i];
-      let s = indexOf( edge.source() );
-      let t = indexOf( edge.target() );
+      let src = edge.source()[0];
+      let tgt = edge.target()[0];
+
+      if( src === tgt ){ continue; } // exclude loops
+
+      let s = indexOf( src );
+      let t = indexOf( tgt );
       let st = s * N + t; // source to target index
       let weight = weightFn( edge );
 

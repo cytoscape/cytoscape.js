@@ -24,14 +24,7 @@ let elesfn = ({
 
     root = cy.collection(root)[0]; // in case selector passed
 
-    // remove loops
-    for( let i = edges.length - 1; i >= 0; i-- ){
-      let edge = edges[i];
-
-      if( edge.isLoop() ){
-        edges.unmerge(edge);
-      }
-    }
+    edges.unmergeBy( edge => edge.isLoop() );
 
     let numEdges = edges.length;
 
@@ -107,7 +100,7 @@ let elesfn = ({
     for( let i = 1; i < numNodes; i++ ){
       replacedEdge = false;
 
-      for( let e = 0; e < edges.length; e++ ){
+      for( let e = 0; e < numEdges; e++ ){
         let edge = edges[e];
         let src = edge.source();
         let tgt = edge.target();

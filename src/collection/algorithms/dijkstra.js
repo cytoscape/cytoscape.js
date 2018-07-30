@@ -27,7 +27,7 @@ let elesfn = ({
     let knownDist = {};
 
     let { nodes, edges } = this.byGroup();
-    edges = edges.filter( ele => !ele.isLoop() );
+    edges.unmergeBy( ele => ele.isLoop() );
 
     let getDist = node => dist[ node.id() ];
 

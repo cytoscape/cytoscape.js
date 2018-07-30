@@ -1,14 +1,21 @@
+var eles, root;
+
 var Suite = require('./suite');
 var suite = new Suite('eles.betweennessCentrality()', {
   setup: function( cytoscape ){
-    return cytoscape({ elements: require('./graphs/gal') });
+    var cy = cytoscape({ elements: require('./graphs/gal') });
+
+    eles = cy.elements();
+    root = cy.$('#269');
+
+    return cy;
   }
 });
 
 suite
   .add( function( cy ) {
-    cy.elements().betweennessCentrality({
-      root: cy.$('#269')
+    eles.betweennessCentrality({
+      root: root
     });
   })
 ;

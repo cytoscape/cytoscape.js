@@ -1,12 +1,11 @@
-var eles, root;
+var eles;
 
 var Suite = require('./suite');
-var suite = new Suite('eles.closenessCentrality()', {
+var suite = new Suite('eles.kargerStein()', {
   setup: function( cytoscape ){
     var cy = cytoscape({ elements: require('./graphs/gal') });
 
-    eles = cy.elements();
-    root = cy.$('#367');
+    eles = cy.elements().components()[0]; // Karger-Stein can run only on connected (sub)graphs
 
     return cy;
   }
@@ -14,9 +13,7 @@ var suite = new Suite('eles.closenessCentrality()', {
 
 suite
   .add( function( cy ) {
-    eles.closenessCentrality({
-      root: root
-    });
+    eles.kargerStein({});
   })
 ;
 

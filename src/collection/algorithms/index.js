@@ -5,7 +5,7 @@ import kruskal from './kruskal';
 import aStar from './a-star';
 import floydWarshall from './floyd-warshall';
 import bellmanFord from './bellman-ford';
-import kergerStein from './kerger-stein';
+import kargerStein from './karger-stein';
 import pageRank from './page-rank';
 import degreeCentrality from './degree-centrality';
 import closenessCentrality from './closeness-centrality';
@@ -24,7 +24,7 @@ var elesfn = {};
   aStar,
   floydWarshall,
   bellmanFord,
-  kergerStein,
+  kargerStein,
   pageRank,
   degreeCentrality,
   closenessCentrality,

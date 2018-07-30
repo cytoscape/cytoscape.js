@@ -1,14 +1,21 @@
+var eles, root;
+
 var Suite = require('./suite');
 var suite = new Suite('eles.bfs()', {
   setup: function( cytoscape ){
-    return cytoscape({ elements: require('./graphs/gal') });
+    var cy = cytoscape({ elements: require('./graphs/gal') });
+
+    eles = cy.elements();
+    root = cy.$('#367');
+
+    return cy;
   }
 });
 
 suite
   .add( function( cy ) {
-    cy.elements().bfs({
-      root: cy.$('#367')
+    eles.bfs({
+      root: root
     });
   })
 ;

@@ -1,14 +1,21 @@
+var eles, root;
+
 var Suite = require('./suite');
 var suite = new Suite('eles.dijkstra()', {
   setup: function( cytoscape ){
-    return cytoscape({ elements: require('./graphs/gal') });
+    var cy = cytoscape({ elements: require('./graphs/gal') });
+
+    eles = cy.elements();
+    root = cy.$('#367');
+
+    return cy;
   }
 });
 
 suite
   .add( function( cy ) {
-    cy.elements().dijkstra({
-      root: cy.$('#367')
+    eles.dijkstra({
+      root: root
     });
   })
 ;

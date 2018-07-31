@@ -384,7 +384,11 @@ button.outline {
 }
 
 .gallery-name {
+	line-height: 1.5;
+}
 
+.gallery-link {
+	border-radius: 0.25em;
 }
 
 .gallery-embed,

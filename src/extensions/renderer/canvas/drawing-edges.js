@@ -110,7 +110,7 @@ CRp.drawEdgePath = function( edge, context, pts, type ){
   let pathCacheHit = false;
   let usePaths = this.usePaths();
   let dashStyle = edge.pstyle('dash-style').pfValue;
-  let lineDashOffset = edge.pstyle('line-dash-offset').value;
+  let lineDashOffset = edge.pstyle('line-dash-offset').pfValue;
 
   if( usePaths ){
     let pathCacheKey = pts.join( '$' );

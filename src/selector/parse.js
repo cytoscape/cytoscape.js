@@ -1,9 +1,15 @@
-import * as util from '../util';
+import { warn } from '../util';
+import * as is from '../is';
 import exprs from './expressions';
 import newQuery from './new-query';
+import Type from './type';
 
-// of all the expressions, find the first match in the remaining text
-let consumeExpr = function( remaining ){
+/**
+ * Of all the expressions, find the first match in the remaining text.
+ * @param {string} remaining The remaining text to parse
+ * @returns The matched expression and the newly remaining text `{ expr, match, name, remaining }`
+ */
+const consumeExpr = ( remaining ) => {
   let expr;
   let match;
   let name;
@@ -35,8 +41,12 @@ let consumeExpr = function( remaining ){
 };
 
 
-// consume all leading whitespace
-let consumeWhitespace = function( remaining ){
+/**
+ * Consume all the leading whitespace
+ * @param {string} remaining The text to consume
+ * @returns The text with the leading whitespace removed
+ */
+const consumeWhitespace = ( remaining ) => {
   let match = remaining.match( /^\s+/ );
 
   if( match ){
@@ -47,10 +57,15 @@ let consumeWhitespace = function( remaining ){
   return remaining;
 };
 
-let parse = function( selector ){
+/**
+ * Parse the string and store the parsed representation in the Selector.
+ * @param {string} selector The selector string
+ * @returns `true` if the selector was successfully parsed, `false` otherwise
+ */
+const parse = function( selector ){
   let self = this;
 
-  let remaining = self._private.selectorText = selector;
+  let remaining = self.inputText = selector;
 
   let currentQuery = self[0] = newQuery();
   self.length = 1;
@@ -58,16 +73,16 @@ let parse = function( selector ){
   remaining = consumeWhitespace( remaining ); // get rid of leading whitespace
 
   for( ;; ){
-    let check = consumeExpr( remaining );
+    let exprInfo = consumeExpr( remaining );
 
-    if( check.expr == null ){
-      util.warn( 'The selector `' + selector + '`is invalid' );
+    if( exprInfo.expr == null ){
+      warn( 'The selector `' + selector + '`is invalid' );
       return false;
     } else {
-      let args = check.match.slice( 1 );
+      let args = exprInfo.match.slice( 1 );
 
       // let the token populate the selector object in currentQuery
-      let ret = check.expr.populate( self, currentQuery, args );
+      let ret = exprInfo.expr.populate( self, currentQuery, args );
 
       if( ret === false ){
         return false; // exit if population failed
@@ -76,7 +91,7 @@ let parse = function( selector ){
       }
     }
 
-    remaining = check.remaining;
+    remaining = exprInfo.remaining;
 
     // we're done when there's nothing left to parse
     if( remaining.match( /^\s*$/ ) ){
@@ -84,45 +99,155 @@ let parse = function( selector ){
     }
   }
 
-  // adjust references for subject
-  for( let j = 0; j < self.length; j++ ){
-    let query = self[ j ];
+  let lastQ = self[self.length - 1];
 
-    if( query.subject != null ){
-      // go up the tree until we reach the subject
-      for( ;; ){
-        if( query.subject === query ){ break; } // done if subject is self
+  if( self.currentSubject != null ){
+    lastQ.subject = self.currentSubject;
+  }
 
-        if( query.parent != null ){ // swap parent/child reference
-          let parent = query.parent;
-          let child = query;
+  lastQ.edgeCount = self.edgeCount;
+  lastQ.compoundCount = self.compoundCount;
 
-          child.parent = null;
-          parent.child = child;
+  for( let i = 0; i < self.length; i++ ){
+    let q = self[i];
 
-          query = parent; // go up the tree
-        } else if( query.ancestor != null ){ // swap ancestor/descendant
-          let ancestor = query.ancestor;
-          let descendant = query;
+    // in future, this could potentially be allowed if there were operator precedence and detection of invalid combinations
+    if( q.compoundCount > 0 && q.edgeCount > 0 ){
+      warn( 'The selector `' + selector + '`is invalid because it uses both a compound selector and an edge selector' );
+      return false;
+    }
 
-          descendant.ancestor = null;
-          ancestor.descendant = descendant;
-
-          query = ancestor; // go up the tree
-        } else if( query.source || query.target || query.connectedNodes ){
-          util.warn( 'The selector `' + self.text() + '` can not contain a subject selector that applies to the source or target of an edge selector' );
-          return false;
-        } else {
-          util.warn( 'When adjusting references for the selector `' + self.text() + '`, neither parent nor ancestor was found' );
-          return false;
-        }
-      } // for
-
-      self[ j ] = query.subject; // subject should be the root query
-    } // if
-  } // for
+    // in future, this could potentially be allowed with an explicit subject selector
+    if( q.edgeCount > 1 ){
+      warn( 'The selector `' + selector + '`is invalid because it uses multiple edge selectors' );
+      return false;
+    }
+  }
 
   return true; // success
 };
 
-export default { parse };
+/**
+ * Get the selector represented as a string.  This value uses default formatting,
+ * so things like spacing may differ from the input text passed to the constructor.
+ * @returns {string} The selector string
+ */
+export const toString = function(){
+  if( this.toStringCache != null ){
+    return this.toStringCache;
+  }
+
+  let clean = function( obj ){
+    if( obj == null ){
+      return '';
+    } else {
+      return obj;
+    }
+  };
+
+  let cleanVal = function( val ){
+    if( is.string( val ) ){
+      return '"' + val + '"';
+    } else {
+      return clean( val );
+    }
+  };
+
+  let space = ( val ) => {
+    return ' ' + val + ' ';
+  };
+
+  let checkToString = ( check, subject ) => {
+    let { type, value } = check;
+
+    switch( type ){
+      case Type.GROUP: {
+        let group = clean( value );
+
+        return group.substring( 0, group.length - 1 );
+      }
+
+      case Type.DATA_COMPARE: {
+        let { field, operator } = check;
+
+        return '[' + field + space( clean( operator ) ) + cleanVal( value ) + ']';
+      }
+
+      case Type.DATA_BOOL: {
+        let { operator, field } = check;
+
+        return '[' + clean( operator ) + field + ']';
+      }
+
+      case Type.DATA_EXIST: {
+        let { field } = check;
+
+        return '[' + field + ']';
+      }
+
+      case Type.META_COMPARE: {
+        let { operator, field } = check;
+
+        return '[[' + field + space( clean( operator ) ) + cleanVal( value ) + ']]';
+      }
+
+      case Type.STATE: {
+        return value;
+      }
+
+      case Type.ID: {
+        return '#' + value;
+      }
+
+      case Type.CLASS: {
+        return '.' + value;
+      }
+
+      case Type.PARENT:
+      case Type.CHILD: {
+        return queryToString(check.parent, subject) + space('>') + queryToString(check.child, subject);
+      }
+
+      case Type.ANCESTOR:
+      case Type.DESCENDANT: {
+        return queryToString(check.ancestor, subject) + ' ' + queryToString(check.descendant, subject);
+      }
+
+      case Type.COMPOUND_SPLIT: {
+        let lhs = queryToString(check.left, subject);
+        let sub = queryToString(check.subject, subject);
+        let rhs = queryToString(check.right, subject);
+
+        return lhs + (lhs.length > 0 ? ' ' : '') + sub + rhs;
+      }
+
+      case Type.TRUE: {
+        return '';
+      }
+    }
+  };
+
+  let queryToString = ( query, subject ) => {
+    return query.checks.reduce((str, chk, i) => {
+      return str + (subject === query && i === 0 ? '$' : '') + checkToString(chk, subject);
+    }, '');
+  };
+
+  let str = '';
+
+  for( let i = 0; i < this.length; i++ ){
+    let query = this[ i ];
+
+    str += queryToString( query, query.subject );
+
+    if( this.length > 1 && i < this.length - 1 ){
+      str += ', ';
+    }
+  }
+
+  this.toStringCache = str;
+
+  return str;
+};
+
+export default { parse, toString };

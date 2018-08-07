@@ -4,9 +4,6 @@ var cytoscape = require('../src/test.js', cytoscape);
 describe('Selectors', function(){
 
   var cy;
-  var n1, n2, nparent, n1n2, nparentLoop;
-  var eles;
-
   beforeEach(function(){
     cy = cytoscape({
       styleEnabled: true,
@@ -15,7 +12,8 @@ describe('Selectors', function(){
         nodes: [
           { data: { id: 'n1', foo: 'one', weight: 1, 'weird.name': 1, 'weird.name2': 'weird.val', emptystr: '' }, classes: 'cls1 cls2' },
           { data: { id: 'n2', foo: 'two', parent: 'nparent', weight: 2, 'weird.name3': '"blah"^blah<blah>#blah' }, classes: 'cls1' },
-          { data: { id: 'nparent', weight: 3 }, classes: 'cls2' }
+          { data: { id: 'nparent', parent: 'nparent2', weight: 3 }, classes: 'cls2' },
+          { data: { id: 'nparent2' } }
         ],
 
         edges: [
@@ -25,25 +23,13 @@ describe('Selectors', function(){
       }
     });
 
-    n1 = cy.getElementById('n1');
-    n2 = cy.getElementById('n2');
-    nparent = cy.getElementById('nparent');
-    n1n2 = cy.getElementById('n1n2');
-    nparentLoop = cy.getElementById('nparentLoop');
-
-    n1.select();
-    n2.unselectify();
-    nparent.lock();
-    n1n2.hide();
-    n1n2.css('opacity', 0);
-
-    eles = {
-      n1: n1,
-      n2: n2,
-      n1n2: n1n2,
-      nparent: nparent,
-      nparentLoop: nparentLoop
-    };
+    cy.getElementById('n1').select();
+    cy.getElementById('n2').unselectify();
+    cy.getElementById('nparent').lock();
+    cy.getElementById('n1n2').style({
+      display: 'none',
+      opacity: 0
+    });
   });
 
   afterEach(function(){
@@ -57,23 +43,21 @@ describe('Selectors', function(){
       return col.map(function( ele ){
         return '#' + ele.id();
       }).sort().join(', ');
-    }
+    };
 
     it(selector, function(){
-      var col = cy.collection();
+      var eles = [];
 
       for( var i = 1; i < args.length; i++ ){
-        var ele = eles[ args[i] ];
-
-        col = col.add(ele);
+        eles.push( cy.getElementById(args[i]) );
       }
 
-      expect( getIds( cy.$(selector) ) ).to.equal( getIds( col ) );
+      expect( getIds( cy.$(selector) ) ).to.equal( getIds( eles ) );
     });
   };
 
   // general
-  itSelects('node', 'n1', 'n2', 'nparent');
+  itSelects('node', 'n1', 'n2', 'nparent', 'nparent2');
   itSelects('edge', 'n1n2', 'nparentLoop');
   itSelects('#n1', 'n1');
   itSelects('#n1, #n2', 'n1', 'n2');
@@ -83,10 +67,10 @@ describe('Selectors', function(){
   itSelects('[weight]', 'n1', 'n2', 'nparent', 'n1n2');
   itSelects('[?foo]', 'n1', 'n2');
   itSelects('[?foo]', 'n1', 'n2');
-  itSelects('[!foo]', 'n1n2', 'nparentLoop', 'nparent');
-  itSelects('[^foo]', 'nparent', 'nparentLoop');
+  itSelects('[!foo]', 'n1n2', 'nparentLoop', 'nparent', 'nparent2');
+  itSelects('[^foo]', 'nparent', 'nparentLoop', 'nparent2');
   itSelects('[foo = "one"]', 'n1');
-  itSelects('[foo != "one"]', 'n2', 'nparent', 'n1n2', 'nparentLoop');
+  itSelects('[foo != "one"]', 'n2', 'nparent', 'n1n2', 'nparent2', 'nparentLoop');
   itSelects('[foo > "one"]', 'n2');
   itSelects('[foo < "two"]', 'n1');
   itSelects('[foo <= "two"]', 'n1', 'n2');
@@ -97,14 +81,14 @@ describe('Selectors', function(){
   itSelects('[foo $= "e"]', 'n1');
   itSelects('[foo @= "ONE"]', 'n1');
   itSelects('[weight = 2]', 'n2');
-  itSelects('[weight != 2]', 'n1', 'nparent', 'n1n2', 'nparentLoop');
+  itSelects('[weight != 2]', 'n1', 'nparent', 'nparent2', 'n1n2', 'nparentLoop');
   itSelects('[weight > 2]', 'nparent');
   itSelects('[weight >= 2]', 'nparent', 'n2');
   itSelects('[weight < 2]', 'n1', 'n1n2');
   itSelects('[weight <= 2]', 'n1', 'n2', 'n1n2');
   itSelects('[weight !< 2]', 'n2', 'nparent');
   itSelects('[emptystr = ""]', 'n1');
-  itSelects('[emptystr != ""]', 'n2', 'nparent', 'n1n2', 'nparentLoop');
+  itSelects('[emptystr != ""]', 'n2', 'nparent', 'nparent2', 'n1n2', 'nparentLoop');
 
   // metadata
   itSelects('[[degree = 1]]', 'n1', 'n2');
@@ -113,28 +97,37 @@ describe('Selectors', function(){
 
   // selection
   itSelects(':selected', 'n1');
-  itSelects(':unselected', 'n2', 'n1n2', 'nparent', 'nparentLoop');
-  itSelects(':selectable', 'n1', 'nparent', 'n1n2', 'nparentLoop');
+  itSelects(':unselected', 'n2', 'n1n2', 'nparent', 'nparent2', 'nparentLoop');
+  itSelects(':selectable', 'n1', 'nparent', 'nparent2', 'n1n2', 'nparentLoop');
   itSelects(':unselectable', 'n2');
 
   // locking
   itSelects(':locked', 'nparent');
-  itSelects(':unlocked', 'n1', 'n2', 'n1n2', 'nparentLoop');
+  itSelects(':unlocked', 'n1', 'n2', 'nparent2', 'n1n2', 'nparentLoop');
 
   // visible
-  itSelects(':visible', 'n1', 'n2', 'nparent', 'nparentLoop');
+  itSelects(':visible', 'n1', 'n2', 'nparent', 'nparent2', 'nparentLoop');
   itSelects(':hidden', 'n1n2');
   itSelects(':transparent', 'n1n2');
 
   // compound
-  itSelects(':parent', 'nparent');
+  itSelects(':parent', 'nparent', 'nparent2');
   itSelects(':childless', 'n1', 'n2');
-  itSelects(':child', 'n2');
-  itSelects(':nonorphan', 'n2');
-  itSelects(':orphan', 'n1', 'nparent');
-  itSelects('#nparent node', 'n2');
+  itSelects(':child', 'n2', 'nparent');
+  itSelects(':nonorphan', 'n2', 'nparent');
+  itSelects(':orphan', 'n1', 'nparent2');
   itSelects('#nparent > node', 'n2');
-  itSelects('$node > node', 'nparent');
+  itSelects('#nparent node', 'n2');
+  itSelects('$node > node', 'nparent', 'nparent2');
+  itSelects('$node node', 'nparent', 'nparent2');
+  itSelects('node > $node > node', 'nparent');
+  itSelects('node $node node', 'nparent');
+  itSelects('$node > node > node', 'nparent2');
+  itSelects('$node node node', 'nparent2');
+  itSelects('node > node > $node', 'n2');
+  itSelects('node node $node', 'n2');
+  itSelects('node > node > node', 'n2');
+  itSelects('node node node', 'n2');
 
   // edges
   itSelects(':loop', 'nparentLoop');
@@ -147,6 +140,10 @@ describe('Selectors', function(){
   itSelects('node <-> #n1', 'n1n2');
   itSelects('node <-> [foo = "one"]', 'n1n2');
   itSelects('node <-> [weight = 1]', 'n1n2');
+  itSelects('#n2 <-> $node', 'n1');
+  itSelects('$node <-> #n1', 'n2');
+  itSelects('$node -> #n2', 'n1');
+  itSelects('#n1 -> $node', 'n2');
 
   // metachars
   itSelects('[weird\\.name = 1]', 'n1');

@@ -1,6 +1,6 @@
 import * as util from '../util';
 
-let stateSelectors = [
+export const stateSelectors = [
   {
     selector: ':selected',
     matches: function( ele ){ return ele.selected(); }
@@ -117,23 +117,21 @@ let stateSelectors = [
   return util.sort.descending( a.selector, b.selector );
 });
 
-let stateSelectorMatches = function( sel, ele ){
-  let lookup = stateSelectorMatches.lookup = stateSelectorMatches.lookup || (function(){
-    let selToFn = {};
-    let s;
+let lookup = (function(){
+  let selToFn = {};
+  let s;
 
-    for( let i = 0; i < stateSelectors.length; i++ ){
-      s = stateSelectors[i];
+  for( let i = 0; i < stateSelectors.length; i++ ){
+    s = stateSelectors[i];
 
-      selToFn[ s.selector ] = s.matches;
-    }
+    selToFn[ s.selector ] = s.matches;
+  }
 
-    return selToFn;
-  })();
+  return selToFn;
+})();
 
+export const stateSelectorMatches = function( sel, ele ){
   return lookup[ sel ]( ele );
 };
 
-let stateSelectorRegex = '(' + stateSelectors.map(function( s ){ return s.selector; }).join('|') + ')';
-
-export default { stateSelectors, stateSelectorMatches, stateSelectorRegex };
+export const stateSelectorRegex = '(' + stateSelectors.map(s => s.selector).join('|') + ')';

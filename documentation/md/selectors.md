@@ -51,52 +51,52 @@ Matches element with the matching ID (e.g. `#foo` is the same as `[id = 'foo']`)
 
 ## Data
 
-**`[name]`**  
+**`[name]`**
 Matches elements if they have the specified data attribute defined, i.e. not `undefined` (e.g. `[foo]` for an attribute named "foo").  Here, `null` is considered a defined value.
 
-**`[^name]`**  
+**`[^name]`**
 Matches elements if the specified data attribute is not defined, i.e. `undefined` (e.g `[^foo]`).  Here, `null` is considered a defined value.
 
-**`[?name]`**  
+**`[?name]`**
 Matches elements if the specified data attribute is a [truthy](http://javascriptweblog.wordpress.com/2011/02/07/truth-equality-and-javascript/) value (e.g. `[?foo]`).
 
-**`[!name]`**  
+**`[!name]`**
 Matches elements if the specified data attribute is a [falsey](http://javascriptweblog.wordpress.com/2011/02/07/truth-equality-and-javascript/) value (e.g. `[!foo]`).
 
-**`[name = value]`**  
+**`[name = value]`**
 Matches elements if their data attribute matches a specified value (e.g. `[foo = 'bar']` or `[num = 2]`).
 
-**`[name != value]`**  
+**`[name != value]`**
 Matches elements if their data attribute doesn't match a specified value (e.g. `[foo != 'bar']` or `[num != 2]`).
 
-**`[name > value]`**  
+**`[name > value]`**
 Matches elements if their data attribute is greater than a specified value (e.g. `[foo > 'bar']` or `[num > 2]`).
 
-**`[name >= value]`**  
+**`[name >= value]`**
 Matches elements if their data attribute is greater than or equal to a specified value (e.g. `[foo >= 'bar']` or `[num >= 2]`).
 
-**`[name < value]`**  
+**`[name < value]`**
 Matches elements if their data attribute is less than a specified value (e.g. `[foo < 'bar']` or `[num < 2]`).
 
-**`[name <= value]`**  
+**`[name <= value]`**
 Matches elements if their data attribute is less than or equal to a specified value (e.g. `[foo <= 'bar']` or `[num <= 2]`).
 
-**`[name *= value]`**  
+**`[name *= value]`**
 Matches elements if their data attribute contains the specified value as a substring (e.g. `[foo *= 'bar']`).
 
-**`[name ^= value]`**  
+**`[name ^= value]`**
 Matches elements if their data attribute starts with the specified value (e.g. `[foo ^= 'bar']`).
 
-**`[name $= value]`**  
+**`[name $= value]`**
 Matches elements if their data attribute ends with the specified value (e.g. `[foo $= 'bar']`).
 
-**`@` (data attribute operator modifier)**  
+**`@` (data attribute operator modifier)**
 Prepended to an operator so that is case insensitive (e.g. `[foo @$= 'ar']`, `[foo @>= 'a']`, `[foo @= 'bar']`)
 
-**`!` (data attribute operator modifier)**  
+**`!` (data attribute operator modifier)**
 Prepended to an operator so that it is negated (e.g. `[foo !$= 'ar']`, `[foo !>= 'a']`)
 
-**`[[]]` (metadata brackets)**  
+**`[[]]` (metadata brackets)**
 Use double square brackets in place of square ones to match against metadata instead of data (e.g. `[[degree > 2]]` matches elements of degree greater than 2).  The properties that are supported include `degree`, `indegree`, and `outdegree`.
 
 ## Edges
@@ -107,16 +107,19 @@ Matches edges for which the source and target subselectors match (e.g. `.src -> 
 **`<->` (undirected edge selector)**
 Matches edges for which the connected node subselectors match (e.g. `.foo <-> .bar`)
 
+**`$` (subject selector)**
+Sets the subject of the selector (e.g. `$node -> node` to select the source nodes instead of the edges).
+
 ## Compound nodes
 
-**`>` (child selector)**  
+**`>` (child selector)**
 Matches direct children of the parent node (e.g. `node > node`).
 
-**<code>&nbsp;</code> (descendant selector)**  
+**<code>&nbsp;</code> (descendant selector)**
 Matches descendants of the parent node (e.g. `node node`).
 
-**`$` (subject selector)**  
-Sets the subject of the selector (e.g. `$node > node` to select the parent nodes instead of the children).  A subject selector may not be used with an edge selector, because the edge ought to be the subject.
+**`$` (subject selector)**
+Sets the subject of the selector (e.g. `$node > node` to select the parent nodes instead of the children).
 
 
 ## State

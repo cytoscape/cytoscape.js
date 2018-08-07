@@ -1,5 +1,5 @@
 var expect = require('chai').expect;
-var Emitter = require('../../src/emitter');
+var Emitter = require('../../src/emitter').default;
 
 describe('Emitter', function(){
   var em;

@@ -35,8 +35,6 @@ const styfn = {};
     numbers: { number: true, unitless: true, multiple: true },
     positiveNumber: { number: true, unitless: true, min: 0, strictMin: true },
     size: { number: true, min: 0 },
-    dashStyle: { number: true, min: 0, multiple: true },
-    lineDashOffset: { number: true },
     bidirectionalSize: { number: true }, // allows negative
     bidirectionalSizes: { number: true, multiple: true }, // allows negative
     sizeMaybePercent: { number: true, min: 0, allowPercent: true },
@@ -287,8 +285,8 @@ const styfn = {};
     { name: 'line-color', type: t.color },
     { name: 'line-fill', type: t.fill },
     { name: 'line-cap', type: t.lineCap },
-    { name: 'dash-style', type: t.dashStyle },
-    { name: 'line-dash-offset', type: t.lineDashOffset },
+    { name: 'line-dash-pattern', type: t.numbers },
+    { name: 'line-dash-offset', type: t.number },
     { name: 'curve-style', type: t.curveStyle, triggersBounds: diff.any },
     { name: 'haystack-radius', type: t.zeroOneNumber, triggersBounds: diff.any },
     { name: 'source-endpoint', type: t.edgeEndpoint, triggersBounds: diff.any },
@@ -623,7 +621,7 @@ styfn.getDefaultProperties = function(){
     'target-distance-from-node': 0,
     'source-endpoint': 'outside-to-node',
     'target-endpoint': 'outside-to-node',
-    'dash-style': [6, 3],
+    'line-dash-pattern': [6, 3],
     'line-dash-offset': 0,
   }, [
     { name: 'arrow-shape', value: 'none' },

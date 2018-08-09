@@ -109,7 +109,7 @@ CRp.drawEdgePath = function( edge, context, pts, type ){
   let path;
   let pathCacheHit = false;
   let usePaths = this.usePaths();
-  let dashStyle = edge.pstyle('dash-style').pfValue;
+  let lineDashPattern = edge.pstyle('line-dash-pattern').pfValue;
   let lineDashOffset = edge.pstyle('line-dash-offset').pfValue;
 
   if( usePaths ){
@@ -133,7 +133,7 @@ CRp.drawEdgePath = function( edge, context, pts, type ){
         break;
 
       case 'dashed':
-        canvasCxt.setLineDash( dashStyle );
+        canvasCxt.setLineDash( lineDashPattern );
         canvasCxt.lineDashOffset = lineDashOffset;
         break;
 

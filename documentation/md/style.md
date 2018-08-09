@@ -310,6 +310,8 @@ These properties affect the styling of an edge's line:
  * **`line-style`** : The style of the edge's line; may be `solid`, `dotted`, or `dashed`.
  * **`line-cap`** : The cap style of the edge's line; may be `butt` (default), `round`, or `square`.  The cap may or may not be visible, depending on the shape of the node and the relative size of the node and edge.  Caps other than `butt` extend beyond the specified endpoint of the edge.
  * **`line-fill`** : The filling style of the edge's line; may be `solid` (default), `linear-gradient` (source to target), or `radial-gradient` (midpoint outwards).
+ * **`line-dash-pattern`** : The `dashed` line pattern which specifies alternating lengths of lines and gaps. (e.g. `[6, 3]` or `6`).
+ * **`line-dash-offset`** : The `dashed` line offset. It is useful for creating edge animations.
 
 ## Gradient
 

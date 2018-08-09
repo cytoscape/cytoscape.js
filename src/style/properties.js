@@ -285,6 +285,8 @@ const styfn = {};
     { name: 'line-color', type: t.color },
     { name: 'line-fill', type: t.fill },
     { name: 'line-cap', type: t.lineCap },
+    { name: 'line-dash-pattern', type: t.numbers },
+    { name: 'line-dash-offset', type: t.number },
     { name: 'curve-style', type: t.curveStyle, triggersBounds: diff.any },
     { name: 'haystack-radius', type: t.zeroOneNumber, triggersBounds: diff.any },
     { name: 'source-endpoint', type: t.edgeEndpoint, triggersBounds: diff.any },
@@ -618,7 +620,9 @@ styfn.getDefaultProperties = function(){
     'source-distance-from-node': 0,
     'target-distance-from-node': 0,
     'source-endpoint': 'outside-to-node',
-    'target-endpoint': 'outside-to-node'
+    'target-endpoint': 'outside-to-node',
+    'line-dash-pattern': [6, 3],
+    'line-dash-offset': 0,
   }, [
     { name: 'arrow-shape', value: 'none' },
     { name: 'arrow-color', value: '#999' },

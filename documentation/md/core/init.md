@@ -59,8 +59,8 @@ An instance of Cytoscape.js has a number of options that can be set on initialis
   <a href="#init-opts/textureOnViewport">textureOnViewport</a>: false,
   <a href="#init-opts/motionBlur">motionBlur</a>: false,
   <a href="#init-opts/motionBlurOpacity">motionBlurOpacity</a>: 0.2,
-  <a href="#init-opts/wheelSensitivity">wheelSensitivity</a></a>: 1,
-  <a href="#init-opts/pixelRatio">pixelRatio</a></a>: 'auto'
+  <a href="#init-opts/wheelSensitivity">wheelSensitivity</a>: 1,
+  <a href="#init-opts/pixelRatio">pixelRatio</a>: 'auto'
 });
 </code></pre>
 
@@ -134,7 +134,7 @@ An instance of Cytoscape.js has a number of options that can be set on initialis
 **`headless`** : A convenience option that initialises the instance to run headlessly.  You do not need to set this in environments that are implicitly headless (e.g. Node.js).  However, it is handy to set `headless: true` if you want a headless instance in a browser.
 
 <span id="init-opts/styleEnabled"></span>
-**`styleEnabled`** : A boolean that indicates whether styling should be used.  For headless (i.e. outside the browser) environments, display is not necessary and so neither is styling necessary --- thereby speeding up your code.  You can manually enable styling in headless environments if you require it for a special case.  Note that it does not make sense to disable style if you plan on rendering the graph.
+**`styleEnabled`** : A boolean that indicates whether styling should be used.  For headless (i.e. outside the browser) environments, display is not necessary and so neither is styling necessary --- thereby speeding up your code.  You can manually enable styling in headless environments if you require it for a special case.  Note that it does not make sense to disable style if you plan on rendering the graph.  Also note that `cy.destroy()` must be called to clean up a style-enabled, headless instance.
 
 <span id="init-opts/hideEdgesOnViewport"></span>
 **`hideEdgesOnViewport`** : A rendering hint that when set to `true` makes the renderer not render edges while the viewport is being manipulated.  This makes panning, zooming, dragging, et cetera more responsive for large graphs.  This option is now largely moot, as a result of performance enhancements.

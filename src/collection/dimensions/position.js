@@ -17,7 +17,7 @@ let beforePositionSet = function( eles, newPos, silent ){
         y: newPos.y != null ? newPos.y - oldPos.y : 0
       };
 
-      if( ele.isParent() ){
+      if( ele.isParent() && !(delta.x === 0 && delta.y === 0) ){
         ele.children().shift( delta, silent );
       }
 

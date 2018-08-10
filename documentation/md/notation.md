@@ -1,6 +1,6 @@
 ## Graph model
 
-Cytoscape.js supports many different graph theory usecases.  It supports directed graphs, undirected graphs, mixed graphs, loops, multigraphs, compound graphs (a type of hypergraph), and so on.  
+Cytoscape.js supports many different graph theory usecases.  It supports directed graphs, undirected graphs, mixed graphs, loops, multigraphs, compound graphs (a type of hypergraph), and so on.
 
 We are regularly making additions and enhancements to the library, and we gladly accept [feature requests](https://github.com/cytoscape/cytoscape.js/issues/new) and pull requests.
 
@@ -11,7 +11,7 @@ There are two components in the architecture that a developer need concern himse
 
 The core provides several functions to access elements in the graph.  Each of these functions returns a collection, a set of elements in the graph.  Functions are available on collections that allow the developer to filter the collection, perform operations on the collection, traverse the graph about the collection, get data about elements in the collection, and so on.
 
-<span class="important-indicator"></span> Note that a collection is immutable by default, meaning that the set of elements within a collection can not be changed.  The API returns a new collection with different elements when necessary, instead of mutating the existing collection.  This allows the developer to safely use set theory operations on collections, use collections functionally, and so on.  Note that because a collection is just a list of elements, it is inexpensive to create new collections.  
+<span class="important-indicator"></span> Note that a collection is immutable by default, meaning that the set of elements within a collection can not be changed.  The API returns a new collection with different elements when necessary, instead of mutating the existing collection.  This allows the developer to safely use set theory operations on collections, use collections functionally, and so on.  Note that because a collection is just a list of elements, it is inexpensive to create new collections.
 
 <span class="important-indicator"></span> For very performance intensive code, a collection can be treated as mutable with [`eles.merge()`](#eles.merge) and [`eles.unmerge()`](#eles.unmerge).  Most apps should never need these functions.
 
@@ -95,6 +95,7 @@ cytoscape({
       data: { // element data (put json serialisable dev data here)
         id: 'n1', // mandatory (string or number) id for each element, assigned automatically on undefined
         parent: 'nparent', // indicates the compound node parent id; not defined => no parent
+        // (`parent` can be effectively changed by `eles.move()`)
       },
 
       // scratchpad data (usually temp or nonserialisable data)
@@ -138,6 +139,7 @@ cytoscape({
         // inferred as an edge because `source` and `target` are specified:
         source: 'n1', // the source node id (edge comes from this node)
         target: 'n2'  // the target node id (edge goes to this node)
+        // (`source` and `target` can be effectively changed by `eles.move()`)
       }
     }
   ],

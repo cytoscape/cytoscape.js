@@ -33,10 +33,10 @@ elesfn.dirtyCompoundBoundsCache = function(){
   if( !cy.styleEnabled() || !cy.hasCompoundNodes() ){ return this; }
 
   this.forEachUp( ele => {
-    let _p = ele._private;
-    _p.compoundBoundsClean = false;
-
     if( ele.isParent() ){
+      let _p = ele._private;
+
+      _p.compoundBoundsClean = false;
       _p.bbCache = null;
 
       ele.emitAndNotify('bounds');
@@ -724,7 +724,6 @@ elesfn.shiftCachedBoundingBox = function( delta ){
     }
   }
 
-  // TODO separate 'shiftbounds' event for perf
   this.emitAndNotify('bounds');
 
   return this;

@@ -125,26 +125,6 @@ BRp.load = function(){
     return allowPassthrough;
   };
 
-  var getDragListIds = function( opts ){
-    var listHasId;
-
-    if( opts.addToList && r.cy.hasCompoundNodes() ){ // only needed for compound graphs
-      if( !opts.addToList.hasId ){ // build ids lookup if doesn't already exist
-        opts.addToList.hasId = {};
-
-        for( var i = 0; i < opts.addToList.length; i++ ){
-          var ele = opts.addToList[ i ];
-
-          opts.addToList.hasId[ ele.id() ] = true;
-        }
-      }
-
-      listHasId = opts.addToList.hasId;
-    }
-
-    return listHasId || {};
-  };
-
   var setGrabbed = function( ele ){
     ele[0]._private.grabbed = true;
   };
@@ -170,12 +150,11 @@ BRp.load = function(){
   };
 
   var addToDragList = function( ele, opts ){
-    var listHasId = getDragListIds( opts );
+    var list = opts.addToList;
+    var listHasEle = list.has(ele);
 
-    if( !listHasId[ ele.id() ] ){
-      opts.addToList.push( ele );
-      listHasId[ ele.id() ] = true;
-
+    if( !listHasEle ){
+      list.merge( ele );
       setGrabbed( ele );
     }
   };
@@ -197,9 +176,7 @@ BRp.load = function(){
     }
 
     if( opts.addToList ){
-      innerNodes.forEach(function( ele ){
-        addToDragList( ele, opts );
-      });
+      opts.addToList.unmerge(innerNodes);
     }
   };
 
@@ -237,8 +214,6 @@ BRp.load = function(){
 
   var freeDraggedElements = function( grabbedEles ){
     if( !grabbedEles ){ return; }
-
-    grabbedEles.hasId = {}; // clear the id list
 
     // just go over all elements rather than doing a bunch of (possibly expensive) traversals
     r.getCachedZSortedEles().forEach(function( ele ){
@@ -502,13 +477,13 @@ BRp.load = function(){
 
             if( !near.selected() ){
 
-              draggedElements = r.dragData.possibleDragElements = [];
+              draggedElements = r.dragData.possibleDragElements = cy.collection();
               addNodeToDrag( near, { addToList: draggedElements } );
 
               near.emit( makeEvent('grabon') ).emit( makeEvent('grab') );
 
             } else {
-              draggedElements = r.dragData.possibleDragElements = [  ];
+              draggedElements = r.dragData.possibleDragElements = cy.collection();
 
               var selectedNodes = cy.$( function( ele ){ return ele.isNode() && ele.selected() && r.nodeIsGrabbable( ele ); } );
 
@@ -763,14 +738,12 @@ BRp.load = function(){
             if( down && down.grabbed() ){
               freeDraggedElements( draggedElements );
 
-              let dElesCol = cy.collection( draggedElements );
-
               down.emit('freeon');
-              dElesCol.emit('free');
+              draggedElements.emit('free');
 
               if( r.dragData.didDrag ){
                 down.emit('dragfreeon');
-                dElesCol.emit('dragfree');
+                draggedElements.emit('dragfree');
               }
             }
 
@@ -785,11 +758,11 @@ BRp.load = function(){
 
             r.dragData.didDrag = true; // indicate that we actually did drag the node
 
-            var toTrigger = [];
+            var toTrigger = cy.collection();
 
             // now, add the elements to the drag layer if not done already
             if( !r.hoverData.draggingEles ){
-              addNodesToDrag( cy.collection( draggedElements ), { inDragLayer: true } );
+              addNodesToDrag( draggedElements, { inDragLayer: true } );
             }
 
             let totalShift = { x: 0, y: 0 };
@@ -812,15 +785,13 @@ BRp.load = function(){
               var dEle = draggedElements[ i ];
 
               if( r.nodeIsDraggable( dEle ) && dEle.grabbed() ){
-                toTrigger.push( dEle );
+                toTrigger.merge( dEle );
               }
             }
 
             r.hoverData.draggingEles = true;
 
-            var tcol = cy.collection( toTrigger );
-
-            ( tcol
+            ( toTrigger
               .silentShift( totalShift )
               .emit('position drag')
             );
@@ -916,7 +887,7 @@ BRp.load = function(){
           r.redrawHint( 'eles', true );
         }
 
-        r.dragData.possibleDragElements = draggedElements = [];
+        r.dragData.possibleDragElements = draggedElements = cy.collection();
       }
 
       triggerEvents( near, [ 'mouseup', 'tapend', 'vmouseup' ], e, { x: pos[0], y: pos[1] } );
@@ -1014,14 +985,12 @@ BRp.load = function(){
         freeDraggedElements( draggedElements );
 
         if( downWasGrabbed ){
-          let dElesCol = cy.collection( draggedElements );
-
           down.emit('freeon');
-          dElesCol.emit('free');
+          draggedElements.emit('free');
 
           if( r.dragData.didDrag ){
             down.emit('dragfreeon');
-            dElesCol.emit('dragfree');
+            draggedElements.emit('dragfree');
           }
         }
       }
@@ -1544,14 +1513,6 @@ BRp.load = function(){
         var tx = (df1x + df2x) / 2;
         var ty = (df1y + df2y) / 2;
 
-        // adjust factor by the speed multiplier
-        // var speed = 1.5;
-        // if( factor > 1 ){
-        //   factor = (factor - 1) * speed + 1;
-        // } else {
-        //   factor = 1 - (1 - factor) * speed;
-        // }
-
         // now calculate the zoom
         var zoom1 = cy.zoom();
         var zoom2 = zoom1 * factor;
@@ -1575,18 +1536,16 @@ BRp.load = function(){
           r.redrawHint( 'drag', true );
           r.redrawHint( 'eles', true );
 
-          let dElesCol = cy.collection( draggedEles );
-
           start
             .unactivate()
             .emit('freeon')
           ;
 
-          dElesCol.emit('free');
+          draggedEles.emit('free');
 
           if( r.dragData.didDrag ){
             start.emit('dragfreeon');
-            dElesCol.emit('dragfree');
+            draggedEles.emit('dragfree');
           }
         }
 
@@ -1631,7 +1590,7 @@ BRp.load = function(){
           var justStartedDrag = !r.dragData.didDrag;
 
           if( justStartedDrag ){
-            addNodesToDrag( cy.collection( draggedEles ), { inDragLayer: true } );
+            addNodesToDrag( draggedEles , { inDragLayer: true } );
           }
 
           r.dragData.didDrag = true;
@@ -1654,14 +1613,9 @@ BRp.load = function(){
             }
           }
 
-          var tcol = cy.collection( draggedEles );
-
-          tcol.dirtyCompoundBoundsCache();
-          tcol.emit( 'position drag' );
-
           r.hoverData.draggingEles = true;
 
-          ( tcol
+          ( draggedEles
             .silentShift( totalShift )
             .emit('position drag')
           );
@@ -1762,7 +1716,6 @@ BRp.load = function(){
     }
 
     for( var j = 0; j < now.length; j++ ){ earlier[ j ] = now[ j ]; }
-    //r.redraw();
 
     // the active bg indicator should be removed when making a swipe that is neither for dragging nodes or panning
     if( capture && e.touches.length > 0 && !r.hoverData.draggingEles && !r.swipePanning && r.data.bgActivePosistion != null ){
@@ -1920,14 +1873,12 @@ BRp.load = function(){
         r.redrawHint( 'eles', true );
 
         if( startWasGrabbed ){
-          let dElesCol = cy.collection( draggedEles );
-
           start.emit('freeon');
-          dElesCol.emit('free');
+          draggedEles.emit('free');
 
           if( r.dragData.didDrag ){
             start.emit('dragfreeon');
-            dElesCol.emit('dragfree');
+            draggedEles.emit('dragfree');
           }
         }
 

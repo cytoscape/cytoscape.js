@@ -4,13 +4,20 @@ This section will familiarise you with the basic steps necessary to start using 
 
 ## Including Cytoscape.js
 
-If you are using a HTML environment, then include Cytoscape.js in a `<script>` tag, e.g.:
+If you are using a simple HTML environment (without a build system), then include Cytoscape.js in a `<script>` tag, e.g.:
 
 ```html
-<script src="cytoscape.js"></script>
+<script src="cytoscape.min.js"></script>
 ```
 
 To use Cytoscape.js from a CDN, use [CDNJS](https://cdnjs.com/libraries/cytoscape).  Please do not hotlink to copies of Cytoscape.js from the documentation --- they're just for the demos.
+
+The available files are available under [`cytoscape/dist/`](https://github.com/cytoscape/cytoscape.js/tree/master/dist) in the npm package:
+
+- `cytoscape.min.js` : A minified UMD build with all dependencies included in the bundle.  This file is useful for small pages, supplementary material for an academic paper for example.
+- `cytoscape.umd.js` : A non-minified UMD build with all dependencies included in the bundle.  This file is useful for debugging on small pages, supplementary material for an academic paper for example.
+- `cytoscape.cjs.js` : A non-minified CJS (Node.js) build without any bundled dependencies.  This is intended to be consumed automatically by Node.js or a bundler like Webpack via `require('cytoscape')`.
+- `cytoscape.esm.js` : A non-minified ESM (`import` / `export`) build without any bundled dependencies.  This is intended to be consumed automatically by Node.js or a bundler like Webpack via `import cytoscape from 'cytoscape'`.
 
 <span class="important-indicator"></span> Note that Cytoscape.js uses the dimensions of your HTML DOM element container for layouts and rendering at initialisation.  Thus, it is very important to place your CSS stylesheets in the `<head>` before any Cytoscape.js-related code.  Otherwise, dimensions may be sporadically reported incorrectly, resulting in undesired behaviour.
 
@@ -28,6 +35,12 @@ To install Cytoscape.js via npm:
 
 ```bash
 npm install cytoscape
+```
+
+To use Cytoscape.js in a ESM environment with npm (e.g. Webpack or Node.js with the [`esm`](https://www.npmjs.com/package/esm) package):
+
+```js
+import cytoscape from 'cytoscape';
 ```
 
 To use Cytoscape.js in a CommonJS environment like Node.js:

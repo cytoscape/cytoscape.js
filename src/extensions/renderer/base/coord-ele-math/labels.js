@@ -307,6 +307,9 @@ BRp.getLabelText = function( ele, prefix ){
     }
   };
 
+  // for empty text, skip all processing
+  if( !text ){ return ''; }
+
   if( textTransform == 'none' ){
     // passthrough
   } else if( textTransform == 'uppercase' ){

@@ -334,29 +334,36 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
   let _p = ele._private;
   let flatPropMapping = 'mapping';
 
-  let checkTriggers = () => {
-    let getVal = p => {
-      if( p == null ){
-        return null;
-      }
-
+  let getVal = p => {
+    if( p == null ){
+      return null;
+    } else if( p.pfValue != null ){
+      return p.pfValue;
+    } else {
       return p.value;
-    };
+    }
+  };
 
-    // TODO use pfValue
-
+  let checkTriggers = () => {
     let fromVal = getVal(origProp);
     let toVal = getVal(prop);
 
     self.checkTriggers( ele, prop.name, fromVal, toVal );
   };
 
-  // edges connected to compound nodes can not be haystacks
+  // edge sanity checks to prevent the client from making serious mistakes
   if(
     parsedProp.name === 'curve-style'
-    && parsedProp.value === 'haystack'
     && ele.isEdge()
-    && ( ele.isLoop() || ele.source().isParent() || ele.target().isParent() )
+    && (
+      ( // loops must be bundled beziers
+        parsedProp.value !== 'bezier'
+        && ele.isLoop()
+      ) || ( // edges connected to compound nodes can not be haystacks
+        parsedProp.value === 'haystack'
+        && ( ele.source().isParent() || ele.target().isParent() )
+      )
+    )
   ){
     prop = parsedProp = this.parse( parsedProp.name, 'bezier', propIsBypass );
   }

@@ -55,7 +55,6 @@ const styfn = {};
     borderStyle: { enums: [ 'solid', 'dotted', 'dashed', 'double' ] },
     curveStyle: { enums: [ 'bezier', 'unbundled-bezier', 'haystack', 'segments', 'straight' ] },
     fontFamily: { regex: '^([\\w- \\"]+(?:\\s*,\\s*[\\w- \\"]+)*)$' },
-    fontletiant: { enums: [ 'small-caps', 'normal' ] },
     fontStyle: { enums: [ 'italic', 'normal', 'oblique' ] },
     fontWeight: { enums: [ 'normal', 'bold', 'bolder', 'lighter', '100', '200', '300', '400', '500', '600', '800', '900', 100, 200, 300, 400, 500, 600, 700, 800, 900 ] },
     textDecoration: { enums: [ 'none', 'underline', 'overline', 'line-through' ] },
@@ -129,8 +128,6 @@ const styfn = {};
     ] }
   };
 
-  // TODO diffs for arrays
-  // TODO diffs using pfValue
   let diff = {
     zeroNonZero: function( val1, val2 ){
       if( ( val1 == null || val2 == null ) && val1 !== val2 ){
@@ -503,7 +500,6 @@ styfn.getDefaultProperties = function(){
     'text-border-color': '#000',
     'font-family': 'Helvetica Neue, Helvetica, sans-serif',
     'font-style': 'normal',
-    // 'font-letiant': fontletiant,
     'font-weight': 'normal',
     'font-size': 16,
     'min-zoomed-font-size': 0,

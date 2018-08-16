@@ -22023,6 +22023,11 @@ BRp.getLabelText = function (ele, prefix) {
     }
   };
 
+  // for empty text, skip all processing
+  if (!text) {
+    return '';
+  }
+
   if (textTransform == 'none') {
     // passthrough
   } else if (textTransform == 'uppercase') {
@@ -27509,7 +27514,7 @@ CRp.drawText = function (context, ele, prefix) {
     textX += marginX;
     textY += marginY;
 
-    var rotation = ele.pstyle('text-rotation');
+    var rotation = ele.pstyle(pdash + 'text-rotation');
     var theta;
 
     if (rotation.strValue === 'autorotate') {
@@ -29098,7 +29103,7 @@ module.exports = Stylesheet;
 "use strict";
 
 
-module.exports = "3.2.15";
+module.exports = "3.2.16";
 
 /***/ })
 /******/ ]);

@@ -82,7 +82,7 @@
     "release": "run-s copyright dist docs",
     "postpublish": "run-s docs:push",
     "watch": "run-s watch:fast",
-    "watch:sync": "livereload build",
+    "watch:sync": "livereload \"build, debug\"",
     "watch:http": "http-server -s -c -1 -o",
     "watch:fast": "run-p watch:sync watch:http watch:build:fast",
     "watch:umd": "run-p watch:sync watch:http watch:build:umd",

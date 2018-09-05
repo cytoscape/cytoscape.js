@@ -29,51 +29,14 @@
 			<div id="open-navigation-bg"></div>
 
 			<h1 id="top" class="title">Cytoscape.js</h1>
+
 			<div class="subtitle">
 				Graph theory (network) library for visualisation and analysis
 			</div>
 
-			<div class="buttons-subtitle">
-				<a class="button green" target="_blank" href="https://github.com/cytoscape/cytoscape.js"><span class="fa fa-github-alt"></span> GitHub</a>
-
-				<a id="download-button" target="_blank" class="button green" href="https://github.com/cytoscape/cytoscape.js/tree/master/dist"><span class="fa fa-download"></span> Download {{version}}</a>
-			</div>
-
-			<div class="links">
-				<a href="#extensions"><span class="fa fa-puzzle-piece"></span> Extensions</a> &nbsp;
-				<a target="_blank" href="http://blog.js.cytoscape.org"><span class="fa fa-newspaper-o"></span> News &amp; tutorials</a> &nbsp;
-				<a target="_blank" href="https://twitter.com/cytoscapejs"><span class="fa fa-twitter"></span> Twitter</a> &nbsp;
-				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues/new"><span class="fa fa-bug"></span> File a GitHub issue</a> &nbsp;
-				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js/blob/master/CONTRIBUTING.md"><span class="fa fa-code-fork"></span> Contribute</a> &nbsp;
-				<a target="_blank" href="http://stackoverflow.com/questions/tagged/cytoscape.js"><span class="fa fa-stack-overflow"></span> Search previous questions via Stack Overflow</a> (or <a target="_blank" href="http://stackoverflow.com/questions/ask?tags=cytoscape.js">ask a different question</a>) &nbsp;
-			</div>
-
-			<div class="links likes">
-				<span class="like-label">Like Cytoscape.js?</span> &nbsp;
-				<form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_blank">
-					<input name="cmd" value="_s-xclick" type="hidden" />
-					<input name="hosted_button_id" value="UYUEWUL7FNZ3S" type="hidden" />
-					<button type="submit" class="outline">Donate</button>
-				</form> &nbsp;
-				<a target="_blank" href="https://github.com/cytoscape/cytoscape.js"><span class="fa fa-star"></span> Star it on GitHub</a> &nbsp;
-				<a target="_blank" href="https://twitter.com/intent/tweet?status=Cytoscape.js,%20a%20graph%20%28a.k.a.%20network%29%20library%20for%20analysis%20and%20visualisation%20js.cytoscape.org"><span class="fa fa-twitter"></span> Share it on Twitter</a> &nbsp;
-				<a target="_blank" href="https://plus.google.com/share?url=js.cytoscape.org&text=Cytoscape.js,%20a%20graph%20%28a.k.a.%20network%29%20library%20for%20analysis%20and%20visualisation"><span class="fa fa-google-plus"></span> Share it on Google+</a>
-				<div class="footnote">Donations are tax deductible to a 501(c)(3) nonprofit organization, The Cytoscape Consoritum, Tax ID: 20-4909879.</div>
-			</div>
-
-			<div class="links likes">
-				Use Cytoscape.js? &nbsp; <a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues/914"> <span class="fa fa-comments"></span> Let us know</a>
-			</div>
-
-			<!-- enable during gsoc period
-			<div class="links likes">
-				Are you a student interested in Google Summer of Code? &nbsp; <a target="_blank" href="http://nrnb.org/gsoc.html"><span class="fa fa-sun"></span> Participate with Cytoscape.js</a>
-			</div>
-			-->
-
 			<div id="documentation">
 			{{#each sections}}
-				<h1 id="{{id}}">{{name}} {{{bookmark}}}</h1>
+				{{#if name}}<h1 id="{{id}}">{{name}} {{{bookmark}}}</h1>{{/if}}
 
 				{{#if html}}
 					{{{html}}}
@@ -106,13 +69,13 @@
 					{{#each demos}}
 						<div class="gallery-demo">
 
-							<a class="gallery-link" target="_blank" href="{{viewUrl}}">
+							<a class="gallery-link" href="{{viewUrl}}">
 								<span class="gallery-preview" style="background-image: url('{{imgUrl}}');"></span>
 							</a>
 
 							<div class="gallery-title">
-								<a target="_blank" href="{{githubUrl}}">
-									<span class="gallery-name"><span class="fa fa-github-alt"></span> {{name}}</span>
+								<a href="{{githubUrl}}">
+									<span class="gallery-name"><span class="fa fa-github"></span> {{name}}</span>
 								</a>
 							</div>
 
@@ -323,7 +286,6 @@
 		</div>
 
 		<script src="js/cytoscape.min.js"></script>
-		<script src="js/load.js"></script>
 		<script src="js/script.js"></script>
 
 		<script type="text/javascript">

@@ -155,10 +155,6 @@ button {
 	cursor: pointer;
 }
 
-button:active {
-	box-shadow: 0 0 0 8px rgba(0, 0, 0, 0.5);
-}
-
 button.outline {
 	border: 1px solid #4183C4;
 	color: #4183C4;
@@ -591,11 +587,10 @@ button.outline {
 }
 
 .links {
-	font-weight: 400;
+	margin: 1em 0;
 }
 
-.links a {
-	white-space: nowrap;
+.link-button {
 }
 
 .likes {
@@ -675,6 +670,10 @@ a.toclink {
 	border-bottom: 2px solid rgba(65, 131, 196, 0.2);
 }
 
+.links a {
+	border: 0;
+}
+
 .button {
 	font: inherit;
 	border: 0;
@@ -692,7 +691,7 @@ a.toclink {
 	padding: 0.0625em 0.125em;
 }
 
-.button.hollow {
+.button.outline {
 	border: 1px solid #4183C4;
 	background: transparent;
 	color: #4183C4;
@@ -706,12 +705,6 @@ a.toclink {
 	border: 1px solid #41C483;
 	color: #41C483;
 	background-color: transparent;
-}
-
-a:active,
-.button:active,
-.link:active {
-	box-shadow: 0 0 0 8px rgba(0, 0, 0, 0.5);
 }
 
 .plain-link {

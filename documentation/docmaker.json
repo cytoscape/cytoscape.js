@@ -26,6 +26,10 @@
 
   "sections": [
     {
+      "md": "links"
+    },
+
+    {
       "name": "Demos",
       "md": "demos",
       "demos": [
@@ -3823,12 +3827,6 @@
           ]
         }
       ]
-    },
-
-    {
-      "name": "Architecture",
-      "md": "architecture",
-      "demo": { "id": "architecture", "name": "A diagramme of the architecture of Cytoscape.js, made using Cytoscape.js" }
     },
 
     {

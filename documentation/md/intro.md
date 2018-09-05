@@ -6,16 +6,24 @@
  * Designed for users first, for both frontfacing app usecases *and* developer usecases
  * Highly optimised
  * Compatible with
-  * All modern browsers (At least ES5 and canvas support are required; feature detection is used for optional performance enhancements)
-  * CommonJS/Node.js
-  * AMD/Require.js
-  * jQuery
-  * npm
-  * Bower
-  * Meteor/Atmosphere
-  * The [R language](https://www.r-project.org/) via [RCyjs](http://www.bioconductor.org/packages/release/bioc/html/RCyjs.html)
+  * All modern browsers
+  * Legacy browsers with ES5 and canvas support
+    * ES5 and canvas support are required, and feature detection is used for optional performance enhancements.
+    * Browsers circa 2012 support ES5 fully: IE10, Chrome 23, Firefox 21, Safari 6 ([caniuse](https://caniuse.com/#feat=es5))
+    * Browsers with partial but sufficient ES5 support have also been known to work, such as IE9 and Firefox 4.
+  * Module systems
+    * ES modules
+    * UMD
+      * CommonJS/Node.js
+      * Globals
+      * AMD/Require.js
+  * Package managers
+    * npm
+    * yarn
+    * bower
+* Supports the [R language](https://www.r-project.org/) via [RCyjs](http://www.bioconductor.org/packages/release/bioc/html/RCyjs.html)
  * Supports rendering images of graphs on Node.js with [Cytosnap](https://github.com/cytoscape/cytosnap)
- * Has a full suite of unit tests that can be run in the browser or the terminal
+ * Has a full suite of tests that can be run in the browser or the terminal
  * Documentation includes live code examples, doubling as an interactive requirements specification; example graphs may also be freely modified in your browser's JS console
  * Fully serialisable and deserialisable via JSON
  * Uses layouts for automatically or manually positioning nodes
@@ -76,6 +84,7 @@
   * [University of Southern California, San Diego](http://www.ucsd.edu/) : [Visualization of structurally related compounds in Mass Spectrometry with Molecular Networks at GNPS](http://gnps.ucsd.edu/ProteoSAFe/result.jsp?view=network_displayer&componentindex=67&task=c95481f0c53d42e78a61bf899e9f9adb#%7B%7D)
   * [Virginia Tech](http://www.vt.edu/index.html) [T. M. Murali's Research Group](http://bioinformatics.cs.vt.edu/~murali/) : [GraphSpace](http://graphspace.org)
   * [Visual Interaction GmbH](http://www.mygaze.com/)
+  * Do you use Cytoscape.js? [Let us know](https://github.com/cytoscape/cytoscape.js/issues/914)
 
 
 

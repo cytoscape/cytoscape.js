@@ -36,17 +36,6 @@ try {
 
 config.version = process.env.VERSION || 'snapshot';
 
-// load the demo file
-try {
-  config.demojs = fs.readFileSync( path.join(__dirname, demoFile), 'utf8');
-
-  config.demojs = config.demojs.match(/\/\/\<demo\>\s*((?:\s|.)+?)\s*\/\/\<\/demo\>/)[1];
-
-  config.demojs = hljs.highlight('js', config.demojs).value;
-} catch(e){
-  throw '`' + demoFile + '` could not be read and parsed: ' + e;
-}
-
 function linkifyArg( arg ){
   var link = config.fnArgLinks[ arg.name ];
 

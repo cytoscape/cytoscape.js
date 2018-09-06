@@ -6,6 +6,7 @@ Modifications tracked on Github.
 
 import * as util from '../../../util';
 import * as is from '../../../is';
+import { makeBoundingBox } from '../../../math';
 import ElementTextureCache from './ele-texture-cache';
 import LayeredTextureCache from './layered-texture-cache';
 
@@ -92,13 +93,75 @@ function CanvasRenderer( options ){
 
   r.pathsEnabled = true;
 
-  r.data.eleTxrCache = new ElementTextureCache( r );
-  r.data.lyrTxrCache = new LayeredTextureCache( r, r.data.eleTxrCache );
+  let emptyBb = makeBoundingBox();
+
+  let getStyleKey = ele => ele[0]._private.nodeKey;
+  let drawElement = (context, ele, bb, scaledLabelShown) => r.drawElement( context, ele, bb, false );
+  let getElementBox = ele => { ele.boundingBox(); return ele[0]._private.overlayBounds; };
+
+  let getLabelKey = ele => ele[0]._private.labelStyleKey;
+  let getSourceLabelKey = ele => ele[0]._private.sourceLabelStyleKey;
+  let getTargetLabelKey = ele => ele[0]._private.targetLabelStyleKey;
+  let drawLabel = (context, ele, bb, scaledLabelShown) => r.drawElementText( context, ele, bb, scaledLabelShown, 'main' );
+  let drawSourceLabel = (context, ele, bb, scaledLabelShown) => r.drawElementText( context, ele, bb, scaledLabelShown, 'source' );
+  let drawTargetLabel = (context, ele, bb, scaledLabelShown) => r.drawElementText( context, ele, bb, scaledLabelShown, 'target' );
+  let getLabelBox = ele => { ele.boundingBox(); return ele[0]._private.labelBounds.main || emptyBb; };
+  let getSourceLabelBox = ele => { ele.boundingBox(); return ele[0]._private.labelBounds.source || emptyBb; };
+  let getTargetLabelBox = ele => { ele.boundingBox(); return ele[0]._private.labelBounds.target || emptyBb; };
+  let isLabelVisibleAtScale = (ele, scaledLabelShown) => scaledLabelShown;
+
+  let eleTxrCache = r.data.eleTxrCache = new ElementTextureCache( r, {
+    getKey: getStyleKey,
+    drawElement: drawElement,
+    getBoundingBox: getElementBox,
+    allowEdgeTxrCaching: false,
+    allowParentTxrCaching: false
+  } );
+
+  let lblTxrCache = r.data.lblTxrCache = new ElementTextureCache( r, {
+    getKey: getLabelKey,
+    drawElement: drawLabel,
+    getBoundingBox: getLabelBox,
+    isVisible: isLabelVisibleAtScale
+  } );
+
+  let slbTxrCache = r.data.slbTxrCache = new ElementTextureCache( r, {
+    getKey: getSourceLabelKey,
+    drawElement: drawSourceLabel,
+    getBoundingBox: getSourceLabelBox,
+    isVisible: isLabelVisibleAtScale
+  } );
+
+  let tlbTxrCache = r.data.tlbTxrCache = new ElementTextureCache( r, {
+    getKey: getTargetLabelKey,
+    drawElement: drawTargetLabel,
+    getBoundingBox: getTargetLabelBox,
+    isVisible: isLabelVisibleAtScale
+  } );
+
+  let lyrTxrCache = r.data.lyrTxrCache = new LayeredTextureCache( r );
 
   r.onUpdateEleCalcs(function invalidateTextureCaches( willDraw, eles ){
-    r.data.eleTxrCache.invalidateElements( eles );
-    r.data.lyrTxrCache.invalidateElements( eles );
+    // each cache should check for sub-key diff to see that the update affects that cache particularly
+    eleTxrCache.invalidateElements( eles );
+    lblTxrCache.invalidateElements( eles );
+    slbTxrCache.invalidateElements( eles );
+    tlbTxrCache.invalidateElements( eles );
+
+    // any change invalidates the layers
+    lyrTxrCache.invalidateElements( eles );
   });
+
+  let refineInLayers = reqs => {
+    for( var i = 0; i < reqs.length; i++ ){
+      lyrTxrCache.enqueueElementRefinement( reqs[i].ele );
+    }
+  };
+
+  eleTxrCache.onDequeue(refineInLayers);
+  lblTxrCache.onDequeue(refineInLayers);
+  slbTxrCache.onDequeue(refineInLayers);
+  tlbTxrCache.onDequeue(refineInLayers);
 }
 
 CRp.redrawHint = function( group, bool ){
@@ -130,6 +193,24 @@ CRp.path2dEnabled = function( on ){
 
 CRp.usePaths = function(){
   return pathsImpld && this.pathsEnabled;
+};
+
+CRp.setImgSmoothing = function( context, bool ){
+  if( context.imageSmoothingEnabled != null ){
+    context.imageSmoothingEnabled = bool;
+  } else {
+    context.webkitImageSmoothingEnabled = bool;
+    context.mozImageSmoothingEnabled = bool;
+    context.msImageSmoothingEnabled = bool;
+  }
+};
+
+CRp.getImgSmoothing = function( context ){
+  if( context.imageSmoothingEnabled != null ){
+    return context.imageSmoothingEnabled;
+  } else {
+    return context.webkitImageSmoothingEnabled || context.mozImageSmoothingEnabled || context.msImageSmoothingEnabled;
+  }
 };
 
 [

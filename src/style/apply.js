@@ -250,19 +250,35 @@ styfn.updateStyleHints = function(ele){
     _p.styleKeys[ grKey ] = 0;
   }
 
+  let updateGrKey = (val, grKey) => _p.styleKeys[ grKey ] = util.hashInt( val, _p.styleKeys[ grKey ] );
+
   for( let i = 0; i < propNames.length; i++ ){
     let name = propNames[i];
-    let val = overriddenStyles[ name ];
+    let parsedProp = overriddenStyles[ name ];
 
-    if( val == null ){ continue; }
+    if( parsedProp == null ){ continue; }
 
-    let grKey = this.properties[name].groupKey;
-    let strVal = val.strValue;
+    let propInfo = this.properties[name];
+    let type = propInfo.type;
+    let grKey = propInfo.groupKey;
 
-    for( let j = 0; j < strVal.length; j++ ){
-      let chVal = strVal.charCodeAt(j);
+    if( type.number ){
+      // use pfValue if available (e.g. normalised units)
+      let v = parsedProp.pfValue != null ? parsedProp.pfValue : parsedProp.value;
 
-      _p.styleKeys[ grKey ] = util.hashInt( chVal, _p.styleKeys[ grKey ] );
+      if( type.multiple ){
+        for(let i = 0; i < v.length; i++){
+          updateGrKey(v[i], grKey);
+        }
+      } else {
+        updateGrKey(v, grKey);
+      }
+    } else {
+      let strVal = parsedProp.strValue;
+
+      for( let j = 0; j < strVal.length; j++ ){
+        updateGrKey(strVal.charCodeAt(j), grKey);
+      }
     }
   }
 
@@ -286,19 +302,23 @@ styfn.updateStyleHints = function(ele){
   let labelDimsKey = _p.labelDimsKey = _p.styleKeys.labelDimensions;
 
   _p.labelKey = propHash( ele, ['label'], labelDimsKey );
+  _p.labelStyleKey = util.hashInt( _p.styleKeys.commonLabel, _p.labelKey );
 
   if( !isNode ){
     _p.sourceLabelKey = propHash( ele, ['source-label'], labelDimsKey );
+    _p.sourceLabelStyleKey = util.hashInt( _p.styleKeys.commonLabel, _p.sourceLabelKey );
+
     _p.targetLabelKey = propHash( ele, ['target-label'], labelDimsKey );
+    _p.targetLabelStyleKey = util.hashInt( _p.styleKeys.commonLabel, _p.targetLabelKey );
   }
 
   // node
   //
 
   if( isNode ){
-    let { nodeBody, nodeBorder, backgroundImage, compound, pie } = _p.styleKey;
+    let { nodeBody, nodeBorder, backgroundImage, compound, pie, overlay } = _p.styleKeys;
 
-    _p.nodeKey = util.hashIntsArray([ nodeBorder, backgroundImage, compound, pie ], nodeBody);
+    _p.nodeKey = util.hashIntsArray([ nodeBorder, backgroundImage, compound, pie, overlay ], nodeBody);
     _p.hasPie = pie != 0;
   }
 

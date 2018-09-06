@@ -22,13 +22,13 @@ CRp.eleTextBiggerThanMin = function( ele, scale ){
   return true;
 };
 
-CRp.drawElementText = function( context, ele, force ){
+CRp.drawElementText = function( context, ele, shiftToOriginWithBb, force, prefix ){
   var r = this;
 
-  if( force === undefined ){
+  if( force == null ){
     if( !r.eleTextBiggerThanMin( ele ) ){ return; }
-  } else {
-    if( !force ){ return; }
+  } else if( force === false ){
+    return;
   }
 
   if( ele.isNode() ){
@@ -69,17 +69,31 @@ CRp.drawElementText = function( context, ele, force ){
     context.textBaseline = 'bottom';
   }
 
+  let applyRotation = !shiftToOriginWithBb;
 
-  r.drawText( context, ele );
+  let bb;
+  if( shiftToOriginWithBb ){
+    bb = shiftToOriginWithBb;
 
-  if( ele.isEdge() ){
-    r.drawText( context, ele, 'source' );
+    context.translate( -bb.x1, -bb.y1 );
+  }
 
-    r.drawText( context, ele, 'target' );
+  if( prefix == null ){
+    r.drawText( context, ele, null, applyRotation );
+
+    if( ele.isEdge() ){
+      r.drawText( context, ele, 'source', applyRotation );
+
+      r.drawText( context, ele, 'target', applyRotation );
+    }
+  } else {
+    r.drawText( context, ele, prefix, applyRotation );
+  }
+
+  if( shiftToOriginWithBb ){
+    context.translate( bb.x1, bb.y1 );
   }
 };
-
-CRp.drawNodeText = CRp.drawEdgeText = CRp.drawElementText;
 
 CRp.getFontCache = function( context ){
   var cache;
@@ -125,6 +139,7 @@ CRp.setupTextStyle = function( context, ele ){
   this.colorStrokeStyle( context, outlineColor[ 0 ], outlineColor[ 1 ], outlineColor[ 2 ], outlineOpacity );
 };
 
+// TODO ensure re-used
 function roundRect( ctx, x, y, width, height, radius ){
   var radius = radius || 5;
   ctx.beginPath();
@@ -141,14 +156,35 @@ function roundRect( ctx, x, y, width, height, radius ){
   ctx.fill();
 }
 
-// Draw text
-CRp.drawText = function( context, ele, prefix ){
+CRp.getTextAngle = function( ele, prefix ){
+  let theta;
+  let _p = ele._private;
+  let rscratch = _p.rscratch;
+  let pdash = prefix ? prefix + '-' : '';
+  var rotation = ele.pstyle( pdash + 'text-rotation' );
+  let textAngle = util.getPrefixedProperty( rscratch, 'labelAngle', prefix );
+
+  if( rotation.strValue === 'autorotate' ){
+    theta = ele.isEdge() ? textAngle : 0;
+  } else if( rotation.strValue === 'none' ){
+    theta = 0;
+  } else {
+    theta = rotation.pfValue;
+  }
+
+  return theta;
+};
+
+CRp.drawText = function( context, ele, prefix, applyRotation = true ){
   var _p = ele._private;
   var rscratch = _p.rscratch;
   var parentOpacity = ele.effectiveOpacity();
   if( parentOpacity === 0 || ele.pstyle( 'text-opacity' ).value === 0 ){
     return;
   }
+
+  // use 'main' as an alias for the main label (i.e. null prefix)
+  if( prefix === 'main' ){ prefix = null; }
 
   var textX = util.getPrefixedProperty( rscratch, 'labelX', prefix );
   var textY = util.getPrefixedProperty( rscratch, 'labelY', prefix );
@@ -160,7 +196,6 @@ CRp.drawText = function( context, ele, prefix ){
     var pdash = prefix ? prefix + '-' : '';
     var textW = util.getPrefixedProperty( rscratch, 'labelWidth', prefix );
     var textH = util.getPrefixedProperty( rscratch, 'labelHeight', prefix );
-    var textAngle = util.getPrefixedProperty( rscratch, 'labelAngle', prefix );
     var marginX = ele.pstyle( pdash + 'text-margin-x' ).pfValue;
     var marginY = ele.pstyle( pdash + 'text-margin-y' ).pfValue;
 
@@ -177,15 +212,12 @@ CRp.drawText = function( context, ele, prefix ){
     textX += marginX;
     textY += marginY;
 
-    var rotation = ele.pstyle( pdash + 'text-rotation' );
     var theta;
 
-    if( rotation.strValue === 'autorotate' ){
-      theta = isEdge ? textAngle : 0;
-    } else if( rotation.strValue === 'none' ){
+    if( !applyRotation ){
       theta = 0;
     } else {
-      theta = rotation.pfValue;
+      theta = this.getTextAngle(ele, prefix);
     }
 
     if( theta !== 0 ){

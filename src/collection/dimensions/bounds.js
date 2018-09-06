@@ -1,6 +1,6 @@
 import * as is from '../../is';
-import * as util from '../../util';
-import * as math from '../../math';
+import { defaults, getPrefixedProperty, hashIntsArray } from '../../util';
+import { expandBoundingBox, makeBoundingBox, assignBoundingBox, assignShiftToBoundingBox, clearBoundingBox } from '../../math';
 
 let fn, elesfn;
 
@@ -219,7 +219,7 @@ let updateBoundsFromBox = function( b, b2 ){
 };
 
 let prefixedProperty = function( obj, field, prefix ){
-  return util.getPrefixedProperty( obj, field, prefix );
+  return getPrefixedProperty( obj, field, prefix );
 };
 
 let updateBoundsFromArrow = function( bounds, ele, prefix ){
@@ -244,7 +244,18 @@ let updateBoundsFromArrow = function( bounds, ele, prefix ){
       y = rstyle.midY;
     }
 
-    updateBounds( bounds, x - halfArW, y - halfArW, x + halfArW, y + halfArW );
+    // always store the individual arrow bounds
+    let bbs = _p.arrowBounds = _p.arrowBounds || {};
+    let bb = bbs[prefix] = bbs[prefix] || {};
+    bb.x1 = x - halfArW;
+    bb.y1 = y - halfArW;
+    bb.x2 = x + halfArW;
+    bb.y2 = y + halfArW;
+    bb.w = bb.x2 - bb.x1;
+    bb.h = bb.y2 - bb.y1;
+    expandBoundingBox(bb, 1);
+
+    updateBounds( bounds, bb.x1, bb.y1, bb.x2, bb.y2 );
   }
 };
 
@@ -326,6 +337,18 @@ let updateBoundsFromLabel = function( bounds, ele, prefix ){
       }
     }
 
+    // always store the unrotated label bounds separately
+    let bbPrefix = prefix || 'main';
+    let bbs = _p.labelBounds;
+    let bb = bbs[bbPrefix] = bbs[bbPrefix] || {};
+    bb.x1 = lx1;
+    bb.y1 = ly1;
+    bb.x2 = lx2;
+    bb.y2 = ly2;
+    bb.w = lx2 - lx1;
+    bb.h = ly2 - ly1;
+    expandBoundingBox(bb, 1); // expand to work around browser dimension inaccuracies
+
     let isAutorotate = ( isEdge && rotation.strValue === 'autorotate' );
     let isPfValue = ( rotation.pfValue != null && rotation.pfValue !== 0 );
 
@@ -361,6 +384,7 @@ let updateBoundsFromLabel = function( bounds, ele, prefix ){
     ly2 += marginY + Math.max( outlineWidth, halfBorderWidth );
 
     updateBounds( bounds, lx1, ly1, lx2, ly2 );
+    updateBounds( _p.labelBounds.all, lx1, ly1, lx2, ly2 );
   }
 
   return bounds;
@@ -372,12 +396,7 @@ let boundingBoxImpl = function( ele, options ){
   let styleEnabled = cy.styleEnabled();
   let headless = cy.headless();
 
-  let bounds = {
-    x1: Infinity,
-    y1: Infinity,
-    x2: -Infinity,
-    y2: -Infinity
-  };
+  let bounds = makeBoundingBox();
 
   let _p = ele._private;
   let display = styleEnabled ? ele.pstyle( 'display' ).value : 'element';
@@ -386,6 +405,7 @@ let boundingBoxImpl = function( ele, options ){
   let ex1, ex2, ey1, ey2; // extrema of body / lines
   let x, y; // node pos
   let displayed = display !== 'none';
+  let rstyle = _p.rstyle;
 
   if( displayed ){
     let overlayOpacity = 0;
@@ -419,16 +439,14 @@ let boundingBoxImpl = function( ele, options ){
       // handle node dimensions
       /////////////////////////
 
-      ex1 = x - halfW - overlayPadding;
-      ex2 = x + halfW + overlayPadding;
-      ey1 = y - halfH - overlayPadding;
-      ey2 = y + halfH + overlayPadding;
+      ex1 = x - halfW;
+      ex2 = x + halfW;
+      ey1 = y - halfH;
+      ey2 = y + halfH;
 
       updateBounds( bounds, ex1, ey1, ex2, ey2 );
 
     } else if( isEdge && options.includeEdges ){
-      let rstyle = _p.rstyle || {};
-
       // handle edge dimensions (rough box estimate)
       //////////////////////////////////////////////
       if( styleEnabled && !headless ){
@@ -524,7 +542,6 @@ let boundingBoxImpl = function( ele, options ){
 
     } // edges
 
-
     // handle edge arrow size
     /////////////////////////
 
@@ -549,11 +566,15 @@ let boundingBoxImpl = function( ele, options ){
       }
     }
 
+    // always store the body bounds separately from the labels
+    let bbBody = _p.bodyBounds = _p.bodyBounds || {};
+    assignBoundingBox(bbBody, bounds);
+    expandBoundingBox(bbBody, 1); // expand to work around browser dimension inaccuracies
+
     // overlay
     //////////
 
     if( styleEnabled ){
-
       ex1 = bounds.x1;
       ex2 = bounds.x2;
       ey1 = bounds.y1;
@@ -562,8 +583,21 @@ let boundingBoxImpl = function( ele, options ){
       updateBounds( bounds, ex1 - overlayPadding, ey1 - overlayPadding, ex2 + overlayPadding, ey2 + overlayPadding );
     }
 
+    // always store the body bounds separately from the labels
+    let bbOverlay = _p.overlayBounds = _p.overlayBounds || {};
+    assignBoundingBox(bbOverlay, bounds);
+    expandBoundingBox(bbOverlay, 1); // expand to work around browser dimension inaccuracies
+
     // handle label dimensions
     //////////////////////////
+
+    let bbLabels = _p.labelBounds = _p.labelBounds || {};
+
+    if( bbLabels.all != null ){
+      clearBoundingBox(bbLabels.all);
+    } else {
+      bbLabels.all = makeBoundingBox();
+    }
 
     if( styleEnabled && options.includeLabels ){
       updateBoundsFromLabel( bounds, ele, null, options );
@@ -572,8 +606,14 @@ let boundingBoxImpl = function( ele, options ){
         updateBoundsFromLabel( bounds, ele, 'source', options );
         updateBoundsFromLabel( bounds, ele, 'target', options );
       }
+
+      let bbAll = bbLabels.all;
+
+      bbAll.w = bbAll.x2 - bbAll.x1;
+      bbAll.h = bbAll.y2 - bbAll.y1;
     } // style enabled for labels
   } // if displayed
+
 
   bounds.x1 = noninf( bounds.x1 );
   bounds.y1 = noninf( bounds.y1 );
@@ -583,9 +623,7 @@ let boundingBoxImpl = function( ele, options ){
   bounds.h = noninf( bounds.y2 - bounds.y1 );
 
   // expand bounds by 1 because antialiasing can increase the visual/effective size by 1 on all sides
-  if( bounds.w > 0 && bounds.h > 0 && displayed ){
-    math.expandBoundingBox( bounds, 1 );
-  }
+  expandBoundingBox( bounds, bounds.w > 0 && bounds.h > 0 && displayed ? 1 : 0 );
 
   return bounds;
 };
@@ -609,7 +647,7 @@ let getBoundingBoxPosKey = ele => {
     let p2 = ele.target().position();
     let round = x => Math.round(x);
 
-    return util.hashIntsArray([ p1.x, p1.y, p2.x, p2.y ].map(round));
+    return hashIntsArray([ p1.x, p1.y, p2.x, p2.y ].map(round));
   } else {
     return 0;
   }
@@ -621,17 +659,68 @@ let cachedBoundingBoxImpl = function( ele, opts ){
   let key = opts == null ? defBbOptsKey : getKey( opts );
   let usingDefOpts = key === defBbOptsKey;
   let currPosKey = getBoundingBoxPosKey( ele );
-  let useCache = opts.useCache && usingDefOpts && _p.bbCachePosKey === currPosKey;
+  let useCache = opts.useCache && _p.bbCachePosKey === currPosKey;
+  let needRecalc = !useCache || _p.bbCache == null;
 
-  if( !useCache || _p.bbCache == null ){
-    bb = boundingBoxImpl( ele, opts );
+  if( needRecalc ){
+    bb = boundingBoxImpl( ele, defBbOpts );
 
-    if( usingDefOpts ){
-      _p.bbCache = bb;
-      _p.bbCachePosKey = currPosKey;
-    }
+    _p.bbCache = bb;
+    _p.bbCachePosKey = currPosKey;
   } else {
     bb = _p.bbCache;
+  }
+
+  if( !needRecalc && (_p.bbCacheShift.x !== 0 || _p.bbCacheShift.y !== 0) ){
+    let shift = assignShiftToBoundingBox;
+    let delta = _p.bbCacheShift;
+    let safeShift = (bb, delta) => { if( bb != null ){ shift(bb, delta); } };
+
+    shift( bb, delta );
+
+    let { bodyBounds, overlayBounds, labelBounds, arrowBounds } = _p;
+
+    safeShift( bodyBounds, delta );
+    safeShift( overlayBounds, delta );
+
+    if( arrowBounds != null ){
+      safeShift( arrowBounds.source, delta );
+      safeShift( arrowBounds.target, delta );
+      safeShift( arrowBounds['mid-source'], delta );
+      safeShift( arrowBounds['mid-target'], delta );
+    }
+
+    if( labelBounds != null ){
+      safeShift( labelBounds.main, delta );
+      safeShift( labelBounds.all, delta );
+      safeShift( labelBounds.source, delta );
+      safeShift( labelBounds.target, delta );
+    }
+  }
+
+  // always reset the shift, because we either applied the shift or cleared it by doing a fresh recalc
+  _p.bbCacheShift.x = _p.bbCacheShift.y = 0;
+
+  // not using def opts => need to build up bb from combination of sub bbs
+  if( !usingDefOpts ){
+    let isNode = ele.isNode();
+
+    bb = makeBoundingBox();
+
+    if( (opts.includeNodes && isNode) || (opts.includeEdges && !isNode) ){
+      if( opts.includeOverlays ){
+        updateBoundsFromBox(bb, _p.overlayBounds);
+      } else {
+        updateBoundsFromBox(bb, _p.bodyBounds);
+      }
+    }
+
+    if( opts.includeLabels ){
+      updateBoundsFromBox(bb, _p.labelBounds.all);
+    }
+
+    bb.w = bb.x2 - bb.x1;
+    bb.h = bb.y2 - bb.y1;
   }
 
   return bb;
@@ -647,7 +736,7 @@ let defBbOpts = {
 
 const defBbOptsKey = getKey( defBbOpts );
 
-const filledBbOpts = util.defaults( defBbOpts );
+const filledBbOpts = defaults( defBbOpts );
 
 elesfn.boundingBox = function( options ){
   // the main usecase is ele.boundingBox() for a single element with no/def options
@@ -663,14 +752,9 @@ elesfn.boundingBox = function( options ){
     return cachedBoundingBoxImpl( this[0], options );
   }
 
-  let bounds = {
-    x1: Infinity,
-    y1: Infinity,
-    x2: -Infinity,
-    y2: -Infinity
-  };
+  let bounds = makeBoundingBox();
 
-  options = options || util.staticEmptyObject();
+  options = options || defBbOpts;
 
   let opts = filledBbOpts( options );
 
@@ -702,7 +786,10 @@ elesfn.boundingBox = function( options ){
 
 elesfn.dirtyBoundingBoxCache = function(){
   for( let i = 0; i < this.length; i++ ){
-    this[i]._private.bbCache = null;
+    let _p = this[i]._private;
+
+    _p.bbCache = null;
+    _p.bbCacheShift.x = _p.bbCacheShift.y = 0;
   }
 
   this.emitAndNotify('bounds');
@@ -717,10 +804,8 @@ elesfn.shiftCachedBoundingBox = function( delta ){
     let bb = _p.bbCache;
 
     if( bb != null ){
-      bb.x1 += delta.x;
-      bb.x2 += delta.x;
-      bb.y1 += delta.y;
-      bb.y2 += delta.y;
+      _p.bbCacheShift.x += delta.x;
+      _p.bbCacheShift.y += delta.y;
     }
   }
 

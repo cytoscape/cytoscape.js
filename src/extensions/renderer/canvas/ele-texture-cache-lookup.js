@@ -76,7 +76,7 @@ class ElementTextureCacheLookup {
     let prevKey = this.keyForId.get(id);
     let newKey = this.getKey(ele);
 
-    return prevKey === newKey;
+    return prevKey !== newKey;
   }
 
   getCachesAt(lvl){
@@ -146,21 +146,14 @@ class ElementTextureCacheLookup {
     this.lvls.forEach( lvl => this.deleteCache(key, lvl) );
   }
 
-  // returns whether cache is removed (n.b. other eles may need the cache with the same key)
+  // returns true if no other eles reference the invalidated cache (n.b. other eles may need the cache with the same key)
   invalidate(ele){
     let id = ele.id();
     let key = this.keyForId.get(id); // n.b. use stored key rather than current (potential key)
 
     this.deleteKeyMappingFor(ele);
 
-    let numOtherIds = this.getNumberOfIdsForKey(key);
-    let removeCache = numOtherIds === 0; // no other eles with the same key
-
-    if( removeCache ){
-      this.invalidateKey(key);
-    }
-
-    return removeCache;
+    return this.getNumberOfIdsForKey(key) === 0;
   }
 
   invalidateIfKeyHasChanged(ele){

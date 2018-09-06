@@ -263,7 +263,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
   };
 
   let drawText = () => {
-    r.drawElementText( context, node, drawLabel );
+    r.drawElementText( context, node, null, drawLabel );
   };
 
   let ghost = node.pstyle('ghost').value === 'yes';

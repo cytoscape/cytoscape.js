@@ -12,19 +12,79 @@ CRp.drawElement = function( context, ele, shiftToOriginWithBb, showLabel ){
   }
 };
 
-CRp.drawCachedElement = function( context, ele, pxRatio, extent ){
+CRp.drawCachedElementPortion = function( context, ele, eleTxrCache, pxRatio, lvl, reason, directDrawFallback, getRotation ){
   let r = this;
+  let bb = eleTxrCache.getBoundingBox(ele);
+
+  if( bb.w === 0 || bb.h === 0 ){ return; } // ignore zero size case
+
+  let eleCache = eleTxrCache.getElement( ele, bb, pxRatio, lvl, reason );
+
+  if( eleCache != null ){
+    let theta = getRotation(r, ele);
+    let { x1, y1, w, h } = bb;
+    let x, y, sx, sy, smooth;
+
+    if( theta !== 0 ){
+      let halfW = w/2;
+      let halfH = h/2;
+
+      sx = x1 + halfW;
+      sy = y1 + halfH;
+
+      context.translate(sx, sy);
+      context.rotate(theta);
+
+      smooth = r.getImgSmoothing(context);
+
+      if( !smooth ){ r.setImgSmoothing(context, true); }
+
+      x = -halfW;
+      y = -halfH;
+    } else {
+      x = x1;
+      y = y1;
+    }
+
+    context.drawImage( eleCache.texture.canvas, eleCache.x, 0, eleCache.width, eleCache.height, x, y, bb.w, bb.h );
+
+    if( theta !== 0 ){
+      context.rotate(-theta);
+      context.translate(-sx, -sy);
+
+      if( !smooth ){ r.setImgSmoothing(context, false); }
+    }
+  } else {
+    directDrawFallback( r, context, ele );
+  }
+};
+
+const directDrawBody = (r, context, ele) => r.drawElement( context, ele, undefined, false );
+const directDrawLabel = (r, context, ele) => r.drawElementText( context, ele, null, true, 'main' );
+const directDrawSourceLabel = (r, context, ele) => r.drawElementText( context, ele, null, true, 'source' );
+const directDrawTargetLabel = (r, context, ele) => r.drawElementText( context, ele, null, true, 'target' );
+
+const getZeroRotation = () => 0;
+const getLabelRotation = (r, ele) => r.getTextAngle(ele, null);
+const getSourceLabelRotation = (r, ele) => r.getTextAngle(ele, 'source');
+const getTargetLabelRotation = (r, ele) => r.getTextAngle(ele, 'target');
+
+CRp.drawCachedElement = function( context, ele, pxRatio, extent, lvl, requestHighQuality ){
+  let r = this;
+  let { eleTxrCache, lblTxrCache, slbTxrCache, tlbTxrCache } = r.data;
+
   let bb = ele.boundingBox();
+  let reason = requestHighQuality === true ? eleTxrCache.reasons.highQuality : null;
 
   if( bb.w === 0 || bb.h === 0 ){ return; }
 
   if( !extent || math.boundingBoxesIntersect( bb, extent ) ){
-    let cache = r.data.eleTxrCache.getElement( ele, bb, pxRatio );
+    r.drawCachedElementPortion( context, ele, eleTxrCache, pxRatio, lvl, reason, directDrawBody, getZeroRotation );
+    r.drawCachedElementPortion( context, ele, lblTxrCache, pxRatio, lvl, reason, directDrawLabel, getLabelRotation );
 
-    if( cache != null ){
-      context.drawImage( cache.texture.canvas, cache.x, 0, cache.width, cache.height, bb.x1, bb.y1, bb.w, bb.h );
-    } else { // if the element is not cacheable, then draw directly
-      r.drawElement( context, ele );
+    if( ele.isEdge() ){
+      r.drawCachedElementPortion( context, ele, slbTxrCache, pxRatio, lvl, reason, directDrawSourceLabel, getSourceLabelRotation );
+      r.drawCachedElementPortion( context, ele, tlbTxrCache, pxRatio, lvl, reason, directDrawTargetLabel, getTargetLabelRotation );
     }
   }
 };

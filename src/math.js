@@ -233,6 +233,15 @@ export const makeBoundingBox = bb => {
   }
 };
 
+export const clearBoundingBox = bb => {
+  bb.x1 = Infinity;
+  bb.y1 = Infinity;
+  bb.x2 = -Infinity;
+  bb.y2 = -Infinity;
+  bb.w = 0;
+  bb.h = 0;
+};
+
 export const shiftBoundingBox = function( bb, dx, dy ){
   return {
     x1: bb.x1 + dx,
@@ -266,7 +275,7 @@ export const expandBoundingBoxByPoint = ( bb, x, y ) => {
   bb.h = bb.y2 - bb.y1;
 };
 
-export const expandBoundingBox = ( bb, padding ) => {
+export const expandBoundingBox = ( bb, padding = 0 ) => {
   bb.x1 -= padding;
   bb.x2 += padding;
   bb.y1 -= padding;
@@ -275,6 +284,34 @@ export const expandBoundingBox = ( bb, padding ) => {
   bb.h = bb.y2 - bb.y1;
 
   return bb;
+};
+
+const expandToInt = x => x > 0 ? Math.ceil(x) : Math.floor(x);
+
+export const expandBoundingBoxToInts = ( bb, padding = 0 ) => {
+  bb.x1 = expandToInt(bb.x1 - padding);
+  bb.y1 = expandToInt(bb.y1 - padding);
+  bb.x2 = expandToInt(bb.x2 + padding);
+  bb.y2 = expandToInt(bb.y2 + padding);
+  bb.w = bb.x2 - bb.x1;
+  bb.h = bb.y2 - bb.y1;
+};
+
+// assign the values of bb2 into bb1
+export const assignBoundingBox = ( bb1, bb2 ) => {
+  bb1.x1 = bb2.x1;
+  bb1.y1 = bb2.y1;
+  bb1.x2 = bb2.x2;
+  bb1.y2 = bb2.y2;
+  bb1.w = bb1.x2 - bb1.x1;
+  bb1.h = bb1.y2 - bb1.y1;
+};
+
+export const assignShiftToBoundingBox = ( bb, delta ) => {
+  bb.x1 += delta.x;
+  bb.x2 += delta.x;
+  bb.y1 += delta.y;
+  bb.y2 += delta.y;
 };
 
 export const boundingBoxesIntersect = ( bb1, bb2 ) => {

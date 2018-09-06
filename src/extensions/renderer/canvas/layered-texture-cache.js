@@ -25,10 +25,10 @@ var useEleTxrCaching = true; // whether to use individual ele texture caching un
 
 // var log = function(){ console.log.apply( console, arguments ); };
 
-var LayeredTextureCache = function( renderer, eleTxrCache ){
+var LayeredTextureCache = function( renderer ){
   var self = this;
-
   var r = self.renderer = renderer;
+  var cy = r.cy;
 
   self.layersByLevel = {}; // e.g. 2 => [ layer1, layer2, ..., layerN ]
 
@@ -37,6 +37,14 @@ var LayeredTextureCache = function( renderer, eleTxrCache ){
   self.lastInvalidationTime = util.performanceNow() - 2*invalidThreshold;
 
   self.skipping = false;
+
+  self.eleTxrDeqs = cy.collection();
+
+  self.scheduleElementRefinement = util.debounce( function(){
+    self.refineElementTextures( self.eleTxrDeqs );
+
+    self.eleTxrDeqs.unmerge( self.eleTxrDeqs );
+  }, refineEleDebounceTime );
 
   r.beforeRender(function( willDraw, now ){
     if( now - self.lastInvalidationTime <= invalidThreshold ){
@@ -51,10 +59,6 @@ var LayeredTextureCache = function( renderer, eleTxrCache ){
   };
 
   self.layersQueue = new Heap( qSort );
-
-  self.eleTxrCache = eleTxrCache;
-
-  self.setupEleCacheInvalidation();
 
   self.setupDequeueing();
 };
@@ -293,16 +297,6 @@ LTCp.getEleLevelForLayerLevel = function( lvl, pxRatio ){
   return lvl;
 };
 
-function imgSmoothing( context, bool ){
-  if( context.imageSmoothingEnabled != null ){
-    context.imageSmoothingEnabled = bool;
-  } else {
-    context.webkitImageSmoothingEnabled = bool;
-    context.mozImageSmoothingEnabled = bool;
-    context.msImageSmoothingEnabled = bool;
-  }
-}
-
 LTCp.drawEleInLayer = function( layer, ele, lvl, pxRatio ){
   var self = this;
   var r = this.renderer;
@@ -311,22 +305,17 @@ LTCp.drawEleInLayer = function( layer, ele, lvl, pxRatio ){
 
   if( bb.w === 0 || bb.h === 0 || !ele.visible() ){ return; }
 
-  var eleCache = self.eleTxrCache;
-  var reason = useHighQualityEleTxrReqs ? eleCache.reasons.highQuality : undefined;
-
   lvl = self.getEleLevelForLayerLevel( lvl, pxRatio );
 
-  var cache = useEleTxrCaching ? eleCache.getElement( ele, bb, null, lvl, reason ) : null;
+  if( disableEleImgSmoothing ){ r.setImgSmoothing( context, false ); }
 
-  if( cache ){
-    if( disableEleImgSmoothing ){ imgSmoothing( context, false ); }
-
-    context.drawImage( cache.texture.canvas, cache.x, 0, cache.width, cache.height, bb.x1, bb.y1, bb.w, bb.h );
-
-    if( disableEleImgSmoothing ){ imgSmoothing( context, true ); }
+  if( useEleTxrCaching ){
+    r.drawCachedElement( context, ele, null, null, lvl, useHighQualityEleTxrReqs );
   } else { // if the element is not cacheable, then draw directly
     r.drawElement( context, ele );
   }
+
+  if( disableEleImgSmoothing ){ r.setImgSmoothing( context, true ); }
 };
 
 LTCp.levelIsComplete = function( lvl, eles ){
@@ -515,25 +504,11 @@ LTCp.refineElementTextures = function( eles ){
   } );
 };
 
-LTCp.setupEleCacheInvalidation = function(){
-  var self = this;
-  var eleDeqs = [];
-
+LTCp.enqueueElementRefinement = function( ele ){
   if( !useEleTxrCaching ){ return; }
 
-  var updatedElesInLayers = util.debounce( function(){
-    self.refineElementTextures( eleDeqs );
-
-    eleDeqs = [];
-  }, refineEleDebounceTime );
-
-  self.eleTxrCache.onDequeue(function( reqs ){
-    for( var i = 0; i < reqs.length; i++ ){
-      eleDeqs.push( reqs[i] );
-    }
-
-    updatedElesInLayers();
-  });
+  this.eleTxrDeqs.merge( ele );
+  this.scheduleElementRefinement();
 };
 
 LTCp.queueLayer = function( layer, ele ){

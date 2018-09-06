@@ -71,7 +71,7 @@ CRp.drawEdge = function( context, edge, shiftToOriginWithBb, drawLabel ){
   };
 
   let drawText = () => {
-    r.drawElementText( context, edge, drawLabel );
+    r.drawElementText( context, edge, null, drawLabel );
   };
 
   context.lineJoin = 'round';

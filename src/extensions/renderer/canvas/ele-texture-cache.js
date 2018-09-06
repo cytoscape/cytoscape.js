@@ -1,5 +1,5 @@
 import * as math from '../../../math';
-import * as util from '../../../util';
+import { trueify, removeFromArray, clearArray, MAX_INT, assign, defaults } from '../../../util';
 import Heap from '../../../heap';
 import defs from './texture-cache-defs';
 import ElementTextureCacheLookup from './ele-texture-cache-lookup';
@@ -7,17 +7,15 @@ import ElementTextureCacheLookup from './ele-texture-cache-lookup';
 const minTxrH = 25; // the size of the texture cache for small height eles (special case)
 const txrStepH = 50; // the min size of the regular cache, and the size it increases with each step up
 const minLvl = -4; // when scaling smaller than that we don't need to re-render
-const maxLvl = 2; // when larger than this scale just render directly (caching is not helpful)
-const maxZoom = 3.99; // beyond this zoom level, layered textures are not used
+const maxLvl = 3; // when larger than this scale just render directly (caching is not helpful)
+const maxZoom = 7.99; // beyond this zoom level, layered textures are not used
 const eleTxrSpacing = 8; // spacing between elements on textures to avoid blitting overlaps
 const defTxrWidth = 1024; // default/minimum texture width
 const maxTxrW = 1024; // the maximum width of a texture
 const maxTxrH = 1024;  // the maximum height of a texture
-const minUtility = 0.5; // if usage of texture is less than this, it is retired
+const minUtility = 0.2; // if usage of texture is less than this, it is retired
 const maxFullness = 0.8; // fullness of texture after which queue removal is checked
 const maxFullnessChecks = 10; // dequeued after this many checks
-const allowEdgeTxrCaching = false; // whether edges can be cached as textures (TODO maybe better on if webgl supported?)
-const allowParentTxrCaching = false; // whether parent nodes can be cached as textures (TODO maybe better on if webgl supported?)
 const deqCost = 0.15; // % of add'l rendering cost allowed for dequeuing ele caches each frame
 const deqAvgCost = 0.1; // % of add'l rendering cost compared to average overall redraw time
 const deqNoDrawCost = 0.9; // % of avg frame time that can be used for dequeueing when not drawing
@@ -31,12 +29,26 @@ const getTxrReasons = {
   highQuality: 'highQuality'
 };
 
-const ElementTextureCache = function( renderer ){
+const initDefaults = defaults({
+  getKey: null,
+  drawElement: null,
+  getBoundingBox: null,
+  isVisible: trueify,
+  allowEdgeTxrCaching: true,
+  allowParentTxrCaching: true
+});
+
+const ElementTextureCache = function( renderer, initOptions ){
   let self = this;
 
   self.renderer = renderer;
   self.onDequeues = [];
-  self.lookup = new ElementTextureCacheLookup( ele => ele[0]._private.styleKey );
+
+  let opts = initDefaults(initOptions);
+
+  assign(self, opts);
+
+  self.lookup = new ElementTextureCacheLookup(opts.getKey);
 
   self.setupDequeueing();
 };
@@ -104,7 +116,17 @@ ETCp.getElement = function( ele, bb, pxRatio, lvl, reason ){
   let scale = Math.pow( 2, lvl );
   let eleScaledH = bb.h * scale;
   let eleScaledW = bb.w * scale;
+  let scaledLabelShown = r.eleTextBiggerThanMin( ele, scale );
+
+  if( !this.isVisible(ele, scaledLabelShown) ){ return null; }
+
   let eleCache = lookup.get( ele, lvl );
+
+  // if this get was on an unused/invalidated cache, then restore the texture usage metric
+  if( eleCache && eleCache.invalidated ){
+    eleCache.invalidated = false;
+    eleCache.texture.invalidatedWidth -= eleCache.width;
+  }
 
   if( eleCache ){
     return eleCache;
@@ -123,8 +145,8 @@ ETCp.getElement = function( ele, bb, pxRatio, lvl, reason ){
   if(
     eleScaledH > maxTxrH
     || eleScaledW > maxTxrW
-    || ( !allowEdgeTxrCaching && ele.isEdge() )
-    || ( !allowParentTxrCaching && ele.isParent() )
+    || ( !self.allowEdgeTxrCaching && ele.isEdge() )
+    || ( !self.allowParentTxrCaching && ele.isParent() )
   ){
     return null; // caching large elements is not efficient
   }
@@ -153,7 +175,6 @@ ETCp.getElement = function( ele, bb, pxRatio, lvl, reason ){
     txr = addNewTxr();
   }
 
-  let scaledLabelShown = r.eleTextBiggerThanMin( ele, scale );
   let scalableFrom = function( otherCache ){
     return otherCache && otherCache.scaledLabelShown === scaledLabelShown;
   };
@@ -227,7 +248,7 @@ ETCp.getElement = function( ele, bb, pxRatio, lvl, reason ){
     txr.context.translate( txr.usedWidth, 0 );
     txr.context.scale( scale, scale );
 
-    r.drawElement( txr.context, ele, bb, scaledLabelShown );
+    this.drawElement( txr.context, ele, bb, scaledLabelShown );
 
     txr.context.scale( 1/scale, 1/scale );
     txr.context.translate( -txr.usedWidth, 0 );
@@ -277,9 +298,9 @@ ETCp.invalidateElement = function( ele ){
     }
   }
 
-  let noCacheRefsRemaining = lookup.invalidate( ele );
+  let noOtherElesUseCache = lookup.invalidate( ele );
 
-  if( noCacheRefsRemaining ){
+  if( noOtherElesUseCache ){
     for( let i = 0; i < caches.length; i++ ){
       let cache = caches[i];
       let txr = cache.texture;
@@ -287,10 +308,10 @@ ETCp.invalidateElement = function( ele ){
       // remove space from the texture it belongs to
       txr.invalidatedWidth += cache.width;
 
-      // remove refs with the element
-      util.removeFromArray( txr.eleCaches, cache );
+      // mark the cache as invalidated
+      cache.invalidated = true;
 
-      // might have to remove the entire texture if it's not efficiently using its space
+      // retire the texture if its utility is low
       self.checkTextureUtility( txr );
     }
   }
@@ -314,7 +335,7 @@ ETCp.checkTextureFullness = function( txr ){
   let txrQ = self.getTextureQueue( txr.height );
 
   if( txr.usedWidth / txr.width > maxFullness && txr.fullnessChecks >= maxFullnessChecks ){
-    util.removeFromArray( txrQ, txr );
+    removeFromArray( txrQ, txr );
   } else {
     txr.fullnessChecks++;
   }
@@ -328,7 +349,7 @@ ETCp.retireTexture = function( txr ){
 
   // retire the texture from the active / searchable queue:
 
-  util.removeFromArray( txrQ, txr );
+  removeFromArray( txrQ, txr );
 
   txr.retired = true;
 
@@ -342,7 +363,7 @@ ETCp.retireTexture = function( txr ){
     lookup.deleteCache( eleCache.key, eleCache.level );
   }
 
-  util.clearArray( eleCaches );
+  clearArray( eleCaches );
 
   // add the texture to a retired queue so it can be recycled in future:
 
@@ -390,12 +411,12 @@ ETCp.recycleTexture = function( txrH, minW ){
       txr.invalidatedWidth = 0;
       txr.fullnessChecks = 0;
 
-      util.clearArray( txr.eleCaches );
+      clearArray( txr.eleCaches );
 
       txr.context.setTransform( 1, 0, 0, 1, 0, 0 );
       txr.context.clearRect( 0, 0, txr.width, txr.height );
 
-      util.removeFromArray( rtxtrQ, txr );
+      removeFromArray( rtxtrQ, txr );
       txrQ.push( txr );
 
       return txr;
@@ -448,7 +469,7 @@ ETCp.dequeue = function( pxRatio /*, extent*/ ){
 
       dequeued.push( req );
 
-      let bb = ele.boundingBox();
+      let bb = self.getBoundingBox( ele );
 
       self.getElement( ele, bb, pxRatio, req.level, getTxrReasons.dequeue );
     } else {
@@ -463,21 +484,22 @@ ETCp.removeFromQueue = function( ele ){
   let self = this;
   let q = self.getElementQueue();
   let id2q = self.getElementIdToQueue();
-  let req = id2q[ ele.id() ];
+  let id = ele.id();
+  let req = id2q[ id ];
 
   if( req != null ){
     // bring to front of queue
-    req.reqs = util.MAX_INT;
+    req.reqs = MAX_INT;
     q.updateItem( req );
 
     q.pop(); // remove from queue
 
-    id2q[ ele.id() ] = null; // remove from lookup map
+    id2q[ id ] = null; // remove from lookup map
   }
 };
 
 ETCp.onDequeue = function( fn ){ this.onDequeues.push( fn ); };
-ETCp.offDequeue = function( fn ){ util.removeFromArray( this.onDequeues, fn ); };
+ETCp.offDequeue = function( fn ){ removeFromArray( this.onDequeues, fn ); };
 
 ETCp.setupDequeueing = defs.setupDequeueing({
   deqRedrawThreshold: deqRedrawThreshold,

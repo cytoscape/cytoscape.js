@@ -66,7 +66,9 @@ let Element = function( cy, params, restore ){
     children: [], // array of children
     parent: null, // parent ref
     traversalCache: {}, // cache of output of traversal functions
-    backgrounding: false // whether background images are loading
+    backgrounding: false, // whether background images are loading
+    bbCache: null, // cache of the current bounding box
+    bbCacheShift: { x: 0, y: 0 } // shift applied to cached bb to be applied on next get
   };
 
   // renderedPosition overrides if specified

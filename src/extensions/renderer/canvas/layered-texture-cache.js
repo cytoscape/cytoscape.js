@@ -74,10 +74,7 @@ LTCp.makeLayer = function( bb, lvl ){
   var w = Math.ceil( bb.w * scale );
   var h = Math.ceil( bb.h * scale );
 
-  var canvas = document.createElement('canvas'); // eslint-disable-line no-undef
-
-  canvas.width = w;
-  canvas.height = h;
+  var canvas = this.renderer.makeOffscreenCanvas(w, h);
 
   var layer = {
     id: (layerIdPool = ++layerIdPool % MAX_INT ),

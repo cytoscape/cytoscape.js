@@ -213,6 +213,20 @@ CRp.getImgSmoothing = function( context ){
   }
 };
 
+CRp.makeOffscreenCanvas = function(width, height){
+  let canvas;
+
+  if( typeof OffscreenCanvas !== typeof undefined ){
+    canvas = new OffscreenCanvas(width, height);
+  } else {
+    canvas = document.createElement('canvas'); // eslint-disable-line no-undef
+    canvas.width = width;
+    canvas.height = height;
+  }
+
+  return canvas;
+};
+
 [
   arrowShapes,
   drawingElements,

@@ -387,9 +387,7 @@ ETCp.addTexture = function( txrH, minW ){
   txr.invalidatedWidth = 0;
   txr.fullnessChecks = 0;
 
-  txr.canvas = document.createElement('canvas'); // eslint-disable-line no-undef
-  txr.canvas.width = txr.width;
-  txr.canvas.height = txr.height;
+  txr.canvas = self.renderer.makeOffscreenCanvas(txr.width, txr.height);
 
   txr.context = txr.canvas.getContext('2d');
 

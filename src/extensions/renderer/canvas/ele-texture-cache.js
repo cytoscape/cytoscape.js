@@ -87,12 +87,12 @@ ETCp.getElementQueue = function(){
 };
 
 // queue of element draw requests at different scale levels (element id lookup)
-ETCp.getElementIdToQueue = function(){
+ETCp.getElementKeyToQueue = function(){
   let self = this;
 
-  let id2q = self.eleIdToCacheQueue = self.eleIdToCacheQueue || {};
+  let k2q = self.eleKeyToCacheQueue = self.eleKeyToCacheQueue || {};
 
-  return id2q;
+  return k2q;
 };
 
 ETCp.getElement = function( ele, bb, pxRatio, lvl, reason ){
@@ -425,45 +425,52 @@ ETCp.recycleTexture = function( txrH, minW ){
 ETCp.queueElement = function( ele, lvl ){
   let self = this;
   let q = self.getElementQueue();
-  let id2q = self.getElementIdToQueue();
-  let id = ele.id();
-  let existingReq = id2q[ id ];
+  let k2q = self.getElementKeyToQueue();
+  let key = this.getKey(ele);
+  let existingReq = k2q[key];
 
-  if( existingReq ){ // use the max lvl b/c in between lvls are cheap to make
+  if( existingReq ){
+    // use the max lvl b/c in between lvls are cheap to make
     existingReq.level = Math.max( existingReq.level, lvl );
+
+    existingReq.eles.merge(ele);
+
     existingReq.reqs++;
 
     q.updateItem( existingReq );
   } else {
     let req = {
-      ele: ele,
+      eles: ele.spawn().merge(ele),
       level: lvl,
-      reqs: 1
+      reqs: 1,
+      key
     };
 
     q.push( req );
 
-    id2q[ id ] = req;
+    k2q[key] = req;
   }
 };
 
 ETCp.dequeue = function( pxRatio /*, extent*/ ){
   let self = this;
   let q = self.getElementQueue();
-  let id2q = self.getElementIdToQueue();
+  let k2q = self.getElementKeyToQueue();
   let dequeued = [];
   let lookup = self.lookup;
 
   for( let i = 0; i < maxDeqSize; i++ ){
     if( q.size() > 0 ){
       let req = q.pop();
-      let ele = req.ele;
-      let cacheExists = lookup.has(ele, req.level);
+      let key = req.key;
+      let ele = req.eles[0]; // all eles have the same key
+      let cacheExists = lookup.hasCache(ele, req.level);
 
-      // dequeueing isn't necessary when an existing cache exists
+      // clear out the key to req lookup
+      k2q[key] = null;
+
+      // dequeueing isn't necessary with an existing cache
       if( cacheExists ){ continue; }
-
-      id2q[ ele.id() ] = null;
 
       dequeued.push( req );
 
@@ -481,18 +488,20 @@ ETCp.dequeue = function( pxRatio /*, extent*/ ){
 ETCp.removeFromQueue = function( ele ){
   let self = this;
   let q = self.getElementQueue();
-  let id2q = self.getElementIdToQueue();
-  let id = ele.id();
-  let req = id2q[ id ];
+  let k2q = self.getElementKeyToQueue();
+  let key = this.getKey(ele);
+  let req = k2q[key];
 
-  if( req != null ){
+  if( req != null && req.eles.length === 1 ){ // remove if last ele in the req
     // bring to front of queue
     req.reqs = MAX_INT;
-    q.updateItem( req );
+    q.updateItem(req);
 
     q.pop(); // remove from queue
 
-    id2q[ id ] = null; // remove from lookup map
+    k2q[key] = null; // remove from lookup map
+  } else { // otherwise just remove ele from req
+    req.eles.unmerge(ele);
   }
 };
 

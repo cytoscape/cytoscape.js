@@ -54,6 +54,33 @@ BRp.recalculateNodeLabelProjection = function( node ){
   this.applyLabelDimensions( node );
 };
 
+var lineAngleFromDelta = function( dx, dy ){
+  var angle = Math.atan( dy / dx );
+
+  if( dx === 0 && angle < 0 ){
+    angle = angle * -1;
+  }
+
+  return angle;
+};
+
+var lineAngle = function( p0, p1 ){
+  var dx = p1.x - p0.x;
+  var dy = p1.y - p0.y;
+
+  return lineAngleFromDelta( dx, dy );
+};
+
+var bezierAngle = function( p0, p1, p2, t ){
+  var t0 = math.bound( 0, t - 0.001, 1 );
+  var t1 = math.bound( 0, t + 0.001, 1 );
+
+  var lp0 = math.qbezierPtAt( p0, p1, p2, t0 );
+  var lp1 = math.qbezierPtAt( p0, p1, p2, t1 );
+
+  return lineAngle( lp0, lp1 );
+};
+
 BRp.recalculateEdgeLabelProjections = function( edge ){
   var p;
   var _p = edge._private;
@@ -85,6 +112,9 @@ BRp.recalculateEdgeLabelProjections = function( edge ){
 
   setRs( 'labelX', null, p.x );
   setRs( 'labelY', null, p.y );
+
+  var midAngle = lineAngleFromDelta(rs.midDispX, rs.midDispY);
+  setRs( 'labelAutoAngle', null, midAngle );
 
   var createControlPointInfo = function(){
     if( createControlPointInfo.cache ){ return createControlPointInfo.cache; } // use cache so only 1x per edge
@@ -167,23 +197,6 @@ BRp.recalculateEdgeLabelProjections = function( edge ){
     if( !content[ prefix ] ){ return; }
 
     var offset = edge.pstyle(prefix+'-text-offset').pfValue;
-
-    var lineAngle = function( p0, p1 ){
-      var dx = p1.x - p0.x;
-      var dy = p1.y - p0.y;
-
-      return Math.atan( dy / dx );
-    };
-
-    var bezierAngle = function( p0, p1, p2, t ){
-      var t0 = math.bound( 0, t - 0.001, 1 );
-      var t1 = math.bound( 0, t + 0.001, 1 );
-
-      var lp0 = math.qbezierPtAt( p0, p1, p2, t0 );
-      var lp1 = math.qbezierPtAt( p0, p1, p2, t1 );
-
-      return lineAngle( lp0, lp1 );
-    };
 
     switch( rs.edgeType ){
       case 'self':
@@ -473,7 +486,7 @@ BRp.calculateLabelAngles = function( ele ){
   if( rotStr === 'none' ){
     rs.labelAngle = rs.sourceLabelAngle = rs.targetLabelAngle = 0;
   } else if( isEdge && rotStr === 'autorotate' ){
-    rs.labelAngle = Math.atan( rs.midDispY / rs.midDispX );
+    rs.labelAngle = rs.labelAutoAngle;
     rs.sourceLabelAngle = rs.sourceLabelAutoAngle;
     rs.targetLabelAngle = rs.targetLabelAutoAngle;
   } else if( rotStr === 'autorotate' ){

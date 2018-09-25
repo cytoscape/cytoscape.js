@@ -49,7 +49,7 @@ styfn.appendFromString = function( string ){
     let selectorStr = selAndBlock[1];
     if( selectorStr !== 'core' ){
       let selector = new Selector( selectorStr );
-      if( selector._private.invalid ){
+      if( selector.invalid ){
         util.warn( 'Skipping parsing of block: Invalid selector found in string stylesheet: ' + selectorStr );
 
         // skip this selector and block

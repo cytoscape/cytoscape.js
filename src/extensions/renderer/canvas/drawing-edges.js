@@ -48,7 +48,7 @@ CRp.drawEdge = function( context, edge, shiftToOriginWithBb, drawLabel ){
   };
 
   let drawOverlay = ( strokeOpacity = overlayOpacity ) => {
-    if( strokeOpacity === 0 ){ return; }
+    if( strokeOpacity === 0 || overlayWidth === 0 ){ return; }
 
     context.lineWidth = overlayWidth;
 

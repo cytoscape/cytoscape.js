@@ -281,6 +281,12 @@ BRp.load = function(){
     }
   };
 
+  var blurActiveDomElement = function(){
+    if( document.activeElement != null && document.activeElement.blur != null ){
+      document.activeElement.blur();
+    }
+  };
+
   var haveMutationsApi = typeof MutationObserver !== 'undefined';
 
   // watch for when the cy container is removed from the dom
@@ -398,6 +404,9 @@ BRp.load = function(){
     if( !eventInContainer(e) ){ return; }
 
     e.preventDefault();
+
+    blurActiveDomElement();
+
     r.hoverData.capture = true;
     r.hoverData.which = e.which;
 
@@ -1131,6 +1140,8 @@ BRp.load = function(){
   var touchstartHandler;
   r.registerBinding( r.container, 'touchstart', touchstartHandler = function( e ){
     if( !eventInContainer(e) ){ return; }
+
+    blurActiveDomElement();
 
     r.touchData.capture = true;
     r.data.bgActivePosistion = undefined;

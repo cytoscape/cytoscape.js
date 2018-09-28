@@ -4,6 +4,8 @@ The canvas renderer was written by Yue Dong.
 Modifications tracked on Github.
 */
 
+/* global OffscreenCanvas */
+
 import * as util from '../../../util';
 import * as is from '../../../is';
 import { makeBoundingBox } from '../../../math';

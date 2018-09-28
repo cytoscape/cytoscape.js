@@ -492,16 +492,18 @@ ETCp.removeFromQueue = function( ele ){
   let key = this.getKey(ele);
   let req = k2q[key];
 
-  if( req != null && req.eles.length === 1 ){ // remove if last ele in the req
-    // bring to front of queue
-    req.reqs = MAX_INT;
-    q.updateItem(req);
+  if( req != null ){
+    if( req.eles.length === 1 ){ // remove if last ele in the req
+      // bring to front of queue
+      req.reqs = MAX_INT;
+      q.updateItem(req);
 
-    q.pop(); // remove from queue
+      q.pop(); // remove from queue
 
-    k2q[key] = null; // remove from lookup map
-  } else { // otherwise just remove ele from req
-    req.eles.unmerge(ele);
+      k2q[key] = null; // remove from lookup map
+    } else { // otherwise just remove ele from req
+      req.eles.unmerge(ele);
+    }
   }
 };
 

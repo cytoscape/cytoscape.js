@@ -1239,7 +1239,7 @@ BRp.load = function(){
 
         if( r.nodeIsGrabbable( near ) ){
 
-          var draggedEles = r.dragData.touchDragEles = [];
+          var draggedEles = r.dragData.touchDragEles = cy.collection();
           var selectedNodes = null;
 
           r.redrawHint( 'eles', true );

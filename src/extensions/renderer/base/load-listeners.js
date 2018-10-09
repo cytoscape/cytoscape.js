@@ -85,6 +85,8 @@ BRp.nodeIsGrabbable = function( node ){
 BRp.load = function(){
   var r = this;
 
+  var isSelected = ele => ele.selected();
+
   var triggerEvents = function( target, names, e, position ){
     if( target == null ){
       target = r.cy;
@@ -890,7 +892,7 @@ BRp.load = function(){
         && !isMultSelKeyDown( e )
       ){
 
-        cy.$( function( ele ){ return ele.selected(); } ).unselect();
+        cy.$(isSelected).unselect();
 
         if( draggedElements.length > 0 ){
           r.redrawHint( 'eles', true );
@@ -924,7 +926,7 @@ BRp.load = function(){
             }
           } else {
             if( !multSelKeyDown ){
-              cy.$( ':selected' ).unmerge( near ).unselect();
+              cy.$(isSelected).unmerge( near ).unselect();
               near.select();
             }
           }
@@ -959,7 +961,7 @@ BRp.load = function(){
           ;
         } else {
           if( !multSelKeyDown ){
-            cy.$( ':selected' ).unmerge( box ).unselect();
+            cy.$(isSelected).unmerge(box).unselect();
           }
 
           box
@@ -1304,11 +1306,6 @@ BRp.load = function(){
             && !r.touchData.selecting // box selection shouldn't allow taphold through
         ){
           triggerEvents( r.touchData.start, [ 'taphold' ], e, { x: now[0], y: now[1] } );
-
-          if( !r.touchData.start ){
-            cy.$( ':selected' ).unselect();
-          }
-
         }
       }, r.tapholdDuration );
     }
@@ -1921,7 +1918,7 @@ BRp.load = function(){
       ){
 
         if( cy.selectionType() === 'single' ){
-          cy.$( ':selected' ).unmerge( start ).unselect();
+          cy.$(isSelected).unmerge( start ).unselect();
           start.select();
         } else {
           if( start.selected() ){
@@ -1937,6 +1934,10 @@ BRp.load = function(){
       // Tap event, roughly same as mouse click event for touch
       if( !r.touchData.singleTouchMoved ){
         triggerEvents( start, [ 'tap', 'vclick' ], e, { x: now[0], y: now[1] } );
+
+        if( !start ){
+          cy.$(':selected').unselect();
+        }
       }
 
       r.touchData.singleTouchMoved = true;

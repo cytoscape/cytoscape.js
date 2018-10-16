@@ -2,9 +2,6 @@ import * as util from '../../util';
 import * as math from '../../math';
 import * as is from '../../is';
 
-const getScratch = ele => ele.scratch('breadthfirst');
-const setScratch = (ele, obj) => ele.scratch('breadthfirst', obj);
-
 /* eslint-disable no-unused-vars */
 const defaults = {
   fit: true, // whether to fit the viewport to the graph
@@ -17,6 +14,7 @@ const defaults = {
   avoidOverlap: true, // prevents node overlap, may overflow boundingBox if not enough space
   nodeDimensionsIncludeLabels: false, // Excludes the label when calculating node bounding boxes for the layout algorithm
   roots: undefined, // the roots of the trees
+  maximal: false, // whether to shift nodes down their natural BFS depths in order to avoid upwards edges (DAGS only)
   animate: false, // whether to transition the node positions
   animationDuration: 500, // duration of animation in ms if enabled
   animationEasing: undefined, // easing of animation if enabled,
@@ -26,6 +24,9 @@ const defaults = {
   transform: function (node, position ){ return position; } // transform a given node position. Useful for changing flow direction in discrete layouts
 };
 /* eslint-enable */
+
+const getInfo = ele => ele.scratch('breadthfirst');
+const setInfo = (ele, obj) => ele.scratch('breadthfirst', obj);
 
 function BreadthFirstLayout( options ){
   this.options = util.extend( {}, defaults, options );
@@ -39,6 +40,8 @@ BreadthFirstLayout.prototype.run = function(){
   let eles = options.eles;
   let nodes = eles.nodes().filter( n => !n.isParent() );
   let graph = eles;
+  let directed = options.directed;
+  let maximal = options.maximal || options.maximalAdjustments > 0; // maximalAdjustments for compat. w/ old code
 
   let bb = math.makeBoundingBox( options.boundingBox ? options.boundingBox : {
     x1: 0, y1: 0, w: cy.width(), h: cy.height()
@@ -61,7 +64,7 @@ BreadthFirstLayout.prototype.run = function(){
     roots = cy.$( options.roots );
 
   } else {
-    if( options.directed ){
+    if( directed ){
       roots = nodes.roots();
     } else {
       let components = eles.components();
@@ -80,7 +83,6 @@ BreadthFirstLayout.prototype.run = function(){
     }
   }
 
-
   let depths = [];
   let foundByBfs = {};
 
@@ -93,14 +95,14 @@ BreadthFirstLayout.prototype.run = function(){
 
     depths[d].push( ele );
 
-    setScratch( ele, {
+    setInfo( ele, {
       index: i,
       depth: d
     } );
   };
 
   let changeDepth = ( ele, newDepth ) => {
-    let { depth, index } = getScratch( ele );
+    let { depth, index } = getInfo( ele );
 
     depths[ depth ][ index ] = null;
 
@@ -146,7 +148,7 @@ BreadthFirstLayout.prototype.run = function(){
         continue;
       }
 
-      setScratch(ele, {
+      setInfo(ele, {
         depth: i,
         index: j
       });
@@ -159,29 +161,53 @@ BreadthFirstLayout.prototype.run = function(){
     }
   };
 
-  // for the directed case, make sure the edges all go down (i.e. depth i => depth i + 1)
-  if( options.directed ){
-    for( let i = 0; i < depths.length; i++ ){
-      let eles = depths[i];
+  let adjustMaximally = function( ele, shifted ){
+    let eInfo = getInfo( ele );
+    let incomers = ele.incomers().filter( el => el.isNode() && eles.has(el) );
+    let maxDepth = -1;
+    let id = ele.id();
 
-      for( let j = 0; j < eles.length; j++ ){
-        let ele = eles[j];
-        let eInfo = getScratch( ele );
-        let incomers = ele.incomers();
-        let maxDepth = -1;
+    for( let k = 0; k < incomers.length; k++ ){
+      let incmr = incomers[k];
+      let iInfo = getInfo( incmr );
 
-        for( let k = 0; k < incomers.length; k++ ){
-          let incmr = incomers[k];
-          let iInfo = getScratch( incmr );
+      maxDepth = Math.max( maxDepth, iInfo.depth );
+    }
 
-          if( incmr.isNode() ){
-            maxDepth = Math.max( maxDepth, iInfo.depth );
-          }
-        }
+    if( eInfo.depth <= maxDepth ){
+      if( shifted[id] ){
+        return null;
+      }
 
-        if( eInfo.depth <= maxDepth ){
-          changeDepth( ele, maxDepth + 1 );
-        }
+      changeDepth( ele, maxDepth + 1 );
+      shifted[id] = true;
+
+      return true;
+    }
+
+    return false;
+  };
+
+  // for the directed case, try to make the edges all go down (i.e. depth i => depth i + 1)
+  if( directed && maximal ){
+    let Q = [];
+    let shifted = {};
+
+    let enqueue = n => Q.push(n);
+    let dequeue = () => Q.shift();
+
+    nodes.forEach( n => Q.push(n) );
+
+    while( Q.length > 0 ){
+      let ele = dequeue();
+      let didShift = adjustMaximally( ele, shifted );
+
+      if( didShift ){
+        ele.outgoers().filter( el => el.isNode() && eles.has(el) ).forEach( enqueue );
+      } else if( didShift === null ){
+        util.warn('Detected double maximal shift for node `' + ele.id() + '`.  Bailing maximal adjustment due to cycle.  Use `options.maximal: true` only on DAGs.');
+
+        break; // exit on failure
       }
     }
   }
@@ -208,7 +234,7 @@ BreadthFirstLayout.prototype.run = function(){
       return cachedWeightedPercent[ ele.id() ];
     }
 
-    let eleDepth = getScratch( ele ).depth;
+    let eleDepth = getInfo( ele ).depth;
     let neighbors = ele.neighborhood();
     let percent = 0;
     let samples = 0;
@@ -216,11 +242,11 @@ BreadthFirstLayout.prototype.run = function(){
     for( let i = 0; i < neighbors.length; i++ ){
       let neighbor = neighbors[ i ];
 
-      if( neighbor.isEdge() || neighbor.isParent() || !nodes.contains( neighbor ) ){
+      if( neighbor.isEdge() || neighbor.isParent() || !nodes.has( neighbor ) ){
         continue;
       }
 
-      let bf = getScratch( neighbor );
+      let bf = getInfo( neighbor );
       let index = bf.index;
       let depth = bf.depth;
 
@@ -292,9 +318,7 @@ BreadthFirstLayout.prototype.run = function(){
   let maxDepthSize = depths.reduce( (max, eles) => Math.max(max, eles.length), 0 );
 
   let getPosition = function( ele ){
-    let info = getScratch( ele );
-    let depth = info.depth;
-    let index = info.index;
+    let { depth, index } = getInfo( ele );
     let depthSize = depths[ depth ].length;
 
     let distanceX = Math.max( bb.w / ( (options.grid ? maxDepthSize : depthSize) + 1 ), minDistance );

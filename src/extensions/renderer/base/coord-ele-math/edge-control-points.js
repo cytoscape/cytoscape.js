@@ -295,6 +295,8 @@ BRp.findEdgeControlPoints = function( edges ){
       var ctrlptDist = ctrlptDists ? ctrlptDists.pfValue[0] : undefined;
       var ctrlptWeight = ctrlptWs.value[0];
       var edgeDistances = edge.pstyle('edge-distances').value;
+      var srcDistFNode = edge.pstyle('source-distance-from-node').pfValue;
+      var tgtDistFNode = edge.pstyle('target-distance-from-node').pfValue;
       var segmentWs = edge.pstyle( 'segment-weights' );
       var segmentDs = edge.pstyle( 'segment-distances' );
       var segmentsN = Math.min( segmentWs.pfValue.length, segmentDs.pfValue.length );
@@ -342,6 +344,12 @@ BRp.findEdgeControlPoints = function( edges ){
       var edgeDistances1 = rs.lastEdgeDistances;
       var edgeDistances2 = edgeDistances;
 
+      var srcDistFNode1 = rs.lastSrcDistFNode;
+      var srcDistFNode2 = srcDistFNode;
+
+      var tgtDistFNode1 = rs.lastTgtDistFNode;
+      var tgtDistFNode2 = tgtDistFNode;
+
       var srcEndpt1 = rs.lastSrcEndpt;
       var srcEndpt2 = srcEndpt;
 
@@ -379,6 +387,8 @@ BRp.findEdgeControlPoints = function( edges ){
       &&  loopDir1 === loopDir2
       &&  loopSwp1 === loopSwp2
       &&  edgeDistances1 === edgeDistances2
+      &&  srcDistFNode1 === srcDistFNode2
+      &&  tgtDistFNode1 === tgtDistFNode2
       &&  srcEndpt1 === srcEndpt2
       &&  tgtEndpt1 === tgtEndpt2
       &&  srcArr1 === srcArr2
@@ -409,6 +419,8 @@ BRp.findEdgeControlPoints = function( edges ){
         rs.lastLoopDir = loopDir2;
         rs.lastLoopSwp = loopSwp2;
         rs.lastEdgeDistances = edgeDistances2;
+        rs.lastSrcDistFNode = srcDistFNode2;
+        rs.lastTgtDistFNode = tgtDistFNode2;
         rs.lastSrcEndpt = srcEndpt2;
         rs.lastTgtEndpt = tgtEndpt2;
         rs.lastSrcArr = srcArr2;

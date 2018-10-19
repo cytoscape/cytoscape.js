@@ -20889,6 +20889,8 @@ BRp.findEdgeControlPoints = function (edges) {
       var ctrlptDist = ctrlptDists ? ctrlptDists.pfValue[0] : undefined;
       var ctrlptWeight = ctrlptWs.value[0];
       var edgeDistances = edge.pstyle('edge-distances').value;
+      var srcDistFNode = edge.pstyle('source-distance-from-node').pfValue;
+      var tgtDistFNode = edge.pstyle('target-distance-from-node').pfValue;
       var segmentWs = edge.pstyle('segment-weights');
       var segmentDs = edge.pstyle('segment-distances');
       var segmentsN = Math.min(segmentWs.pfValue.length, segmentDs.pfValue.length);
@@ -20936,6 +20938,12 @@ BRp.findEdgeControlPoints = function (edges) {
       var edgeDistances1 = rs.lastEdgeDistances;
       var edgeDistances2 = edgeDistances;
 
+      var srcDistFNode1 = rs.lastSrcDistFNode;
+      var srcDistFNode2 = srcDistFNode;
+
+      var tgtDistFNode1 = rs.lastTgtDistFNode;
+      var tgtDistFNode2 = tgtDistFNode;
+
       var srcEndpt1 = rs.lastSrcEndpt;
       var srcEndpt2 = srcEndpt;
 
@@ -20962,7 +20970,7 @@ BRp.findEdgeControlPoints = function (edges) {
 
       var ptCacheHit;
 
-      if (srcX1 === srcX2 && srcY1 === srcY2 && srcW1 === srcW2 && srcH1 === srcH2 && tgtX1 === tgtX2 && tgtY1 === tgtY2 && tgtW1 === tgtW2 && tgtH1 === tgtH2 && curveStyle1 === curveStyle2 && ctrlptDists1 === ctrlptDists2 && ctrlptWs1 === ctrlptWs2 && segmentWs1 === segmentWs2 && segmentDs1 === segmentDs2 && stepSize1 === stepSize2 && loopDir1 === loopDir2 && loopSwp1 === loopSwp2 && edgeDistances1 === edgeDistances2 && srcEndpt1 === srcEndpt2 && tgtEndpt1 === tgtEndpt2 && srcArr1 === srcArr2 && tgtArr1 === tgtArr2 && lineW1 === lineW2 && arrScl1 === arrScl2 && (edgeIndex1 === edgeIndex2 && numEdges1 === numEdges2 || edgeIsUnbundled)) {
+      if (srcX1 === srcX2 && srcY1 === srcY2 && srcW1 === srcW2 && srcH1 === srcH2 && tgtX1 === tgtX2 && tgtY1 === tgtY2 && tgtW1 === tgtW2 && tgtH1 === tgtH2 && curveStyle1 === curveStyle2 && ctrlptDists1 === ctrlptDists2 && ctrlptWs1 === ctrlptWs2 && segmentWs1 === segmentWs2 && segmentDs1 === segmentDs2 && stepSize1 === stepSize2 && loopDir1 === loopDir2 && loopSwp1 === loopSwp2 && edgeDistances1 === edgeDistances2 && srcDistFNode1 === srcDistFNode2 && tgtDistFNode1 === tgtDistFNode2 && srcEndpt1 === srcEndpt2 && tgtEndpt1 === tgtEndpt2 && srcArr1 === srcArr2 && tgtArr1 === tgtArr2 && lineW1 === lineW2 && arrScl1 === arrScl2 && (edgeIndex1 === edgeIndex2 && numEdges1 === numEdges2 || edgeIsUnbundled)) {
         ptCacheHit = true; // then the control points haven't changed and we can skip calculating them
       } else {
         ptCacheHit = false;
@@ -20986,6 +20994,8 @@ BRp.findEdgeControlPoints = function (edges) {
         rs.lastLoopDir = loopDir2;
         rs.lastLoopSwp = loopSwp2;
         rs.lastEdgeDistances = edgeDistances2;
+        rs.lastSrcDistFNode = srcDistFNode2;
+        rs.lastTgtDistFNode = tgtDistFNode2;
         rs.lastSrcEndpt = srcEndpt2;
         rs.lastTgtEndpt = tgtEndpt2;
         rs.lastSrcArr = srcArr2;
@@ -29127,7 +29137,7 @@ module.exports = Stylesheet;
 "use strict";
 
 
-module.exports = "3.2.17";
+module.exports = "3.2.18";
 
 /***/ })
 /******/ ]);

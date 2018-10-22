@@ -100,6 +100,12 @@ function CanvasRenderer( options ){
   let getStyleKey = ele => ele[0]._private.nodeKey;
   let drawElement = (context, ele, bb, scaledLabelShown) => r.drawElement( context, ele, bb, false );
   let getElementBox = ele => { ele.boundingBox(); return ele[0]._private.overlayBounds; };
+  let backgroundTimestampHasChanged = ele => {
+    let _p = ele[0]._private;
+    let same = _p.oldBackgroundTimestamp === _p.backgroundTimestamp;
+
+    return !same;
+  };
 
   let getLabelKey = ele => ele[0]._private.labelStyleKey;
   let getSourceLabelKey = ele => ele[0]._private.sourceLabelStyleKey;
@@ -114,6 +120,7 @@ function CanvasRenderer( options ){
 
   let eleTxrCache = r.data.eleTxrCache = new ElementTextureCache( r, {
     getKey: getStyleKey,
+    doesEleInvalidateKey: backgroundTimestampHasChanged,
     drawElement: drawElement,
     getBoundingBox: getElementBox,
     allowEdgeTxrCaching: false,
@@ -152,6 +159,13 @@ function CanvasRenderer( options ){
 
     // any change invalidates the layers
     lyrTxrCache.invalidateElements( eles );
+
+    // update the old bg timestamp so diffs can be done in the ele txr caches
+    for( let i = 0; i < eles.length; i++ ){
+      let _p = eles[i]._private;
+
+      _p.oldBackgroundTimestamp = _p.backgroundTimestamp;
+    }
   });
 
   let refineInLayers = reqs => {

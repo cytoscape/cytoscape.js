@@ -5,12 +5,13 @@ import * as util from '../../../util';
 // Allows lookups for (ele, lvl) => cache.
 // Uses keys so elements may share the same cache.
 class ElementTextureCacheLookup {
-  constructor(getKey){
+  constructor(getKey, doesEleInvalidateKey = util.falsify){
     this.idsByKey = new Map();
     this.keyForId = new Map();
     this.cachesByLvl = new Map();
     this.lvls = [];
     this.getKey = getKey;
+    this.doesEleInvalidateKey = doesEleInvalidateKey;
   }
 
   getIdsFor(key){
@@ -77,6 +78,10 @@ class ElementTextureCacheLookup {
     let newKey = this.getKey(ele);
 
     return prevKey !== newKey;
+  }
+
+  isInvalid(ele){
+    return this.keyHasChangedFor(ele) || this.doesEleInvalidateKey(ele);
   }
 
   getCachesAt(lvl){
@@ -153,13 +158,13 @@ class ElementTextureCacheLookup {
 
     this.deleteKeyMappingFor(ele);
 
-    return this.getNumberOfIdsForKey(key) === 0;
-  }
+    let entireKeyInvalidated = this.doesEleInvalidateKey(ele);
 
-  invalidateIfKeyHasChanged(ele){
-    if( this.keyHasChangedFor(ele) ){
-      return this.invalidate(ele);
+    if( entireKeyInvalidated ){ // clear mapping for current key
+      this.invalidateKey(key);
     }
+
+    return entireKeyInvalidated || this.getNumberOfIdsForKey(key) === 0;
   }
 }
 

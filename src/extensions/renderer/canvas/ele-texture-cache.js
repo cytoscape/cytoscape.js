@@ -1,5 +1,5 @@
 import * as math from '../../../math';
-import { trueify, removeFromArray, clearArray, MAX_INT, assign, defaults } from '../../../util';
+import { trueify, falsify, removeFromArray, clearArray, MAX_INT, assign, defaults } from '../../../util';
 import Heap from '../../../heap';
 import defs from './texture-cache-defs';
 import ElementTextureCacheLookup from './ele-texture-cache-lookup';
@@ -31,6 +31,7 @@ const getTxrReasons = {
 
 const initDefaults = defaults({
   getKey: null,
+  doesEleInvalidateKey: falsify,
   drawElement: null,
   getBoundingBox: null,
   isVisible: trueify,
@@ -48,7 +49,7 @@ const ElementTextureCache = function( renderer, initOptions ){
 
   assign(self, opts);
 
-  self.lookup = new ElementTextureCacheLookup(opts.getKey);
+  self.lookup = new ElementTextureCacheLookup(opts.getKey, opts.doesEleInvalidateKey);
 
   self.setupDequeueing();
 };
@@ -285,8 +286,9 @@ ETCp.invalidateElement = function( ele ){
   let self = this;
   let lookup = self.lookup;
   let caches = [];
+  let invalid = lookup.isInvalid(ele);
 
-  if( !lookup.keyHasChangedFor(ele) ){
+  if( !invalid ){
     return; // override the invalidation request if the element key has not changed
   }
 
@@ -298,7 +300,7 @@ ETCp.invalidateElement = function( ele ){
     }
   }
 
-  let noOtherElesUseCache = lookup.invalidate( ele );
+  let noOtherElesUseCache = lookup.invalidate(ele);
 
   if( noOtherElesUseCache ){
     for( let i = 0; i < caches.length; i++ ){

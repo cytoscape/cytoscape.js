@@ -104,6 +104,13 @@ ETCp.getElement = function( ele, bb, pxRatio, lvl, reason ){
 
   if( bb.w === 0 || bb.h === 0 || !ele.visible() ){ return null; }
 
+  if(
+    ( !self.allowEdgeTxrCaching && ele.isEdge() )
+    || ( !self.allowParentTxrCaching && ele.isParent() )
+  ){
+    return null;
+  }
+
   if( lvl == null ){
     lvl = Math.ceil( math.log2( zoom * pxRatio ) );
   }
@@ -143,12 +150,7 @@ ETCp.getElement = function( ele, bb, pxRatio, lvl, reason ){
     txrH = Math.ceil( eleScaledH / txrStepH ) * txrStepH;
   }
 
-  if(
-    eleScaledH > maxTxrH
-    || eleScaledW > maxTxrW
-    || ( !self.allowEdgeTxrCaching && ele.isEdge() )
-    || ( !self.allowParentTxrCaching && ele.isParent() )
-  ){
+  if( eleScaledH > maxTxrH || eleScaledW > maxTxrW ){
     return null; // caching large elements is not efficient
   }
 

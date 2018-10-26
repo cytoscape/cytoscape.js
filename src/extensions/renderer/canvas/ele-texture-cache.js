@@ -532,10 +532,14 @@ ETCp.setupDequeueing = defs.setupDequeueing({
   },
   shouldRedraw: function( self, deqd, pxRatio, extent ){
     for( let i = 0; i < deqd.length; i++ ){
-      let bb = deqd[i].ele.boundingBox();
+      let eles = deqd[i].eles;
 
-      if( math.boundingBoxesIntersect( bb, extent ) ){
-        return true;
+      for( let j = 0; j < eles.length; j++ ){
+        let bb = eles[j].boundingBox();
+
+        if( math.boundingBoxesIntersect( bb, extent ) ){
+          return true;
+        }
       }
     }
 

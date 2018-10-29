@@ -21037,7 +21037,7 @@ BRp.findNearestElements = function (x, y, interactiveElementsOnly, isTouch) {
       if (nearEdge) {
         // then replace existing edge
         // can replace only if same z-index
-        if (nearEdge.pstyle('z-index').value === ele.pstyle('z-index').value) {
+        if (nearEdge.pstyle('z-compound-depth').value === ele.pstyle('z-compound-depth').value && nearEdge.pstyle('z-compound-depth').value === ele.pstyle('z-compound-depth').value) {
           for (var i = 0; i < near.length; i++) {
             if (near[i].isEdge()) {
               near[i] = ele;
@@ -29899,7 +29899,7 @@ module.exports = Stylesheet;
 "use strict";
 
 
-module.exports = "3.2.18";
+module.exports = "3.2.19";
 
 /***/ })
 /******/ ]);

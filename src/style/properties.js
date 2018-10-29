@@ -240,6 +240,9 @@ const styfn = {};
     { name: 'background-fill', type: t.fill },
     { name: 'background-opacity', type: t.zeroOneNumber },
     { name: 'background-blacken', type: t.nOneOneNumber },
+    { name: 'background-gradient-stop-colors', type: t.colors },
+    { name: 'background-gradient-stop-positions', type: t.percentages },
+    { name: 'background-gradient-direction', type: t.gradientDirection },
     { name: 'padding', type: t.sizeMaybePercent, triggersBounds: diff.any },
     { name: 'padding-relative-to', type: t.paddingRelativeTo, triggersBounds: diff.any }
   ];
@@ -284,6 +287,8 @@ const styfn = {};
     { name: 'line-cap', type: t.lineCap },
     { name: 'line-dash-pattern', type: t.numbers },
     { name: 'line-dash-offset', type: t.number },
+    { name: 'line-gradient-stop-colors', type: t.colors },
+    { name: 'line-gradient-stop-positions', type: t.percentages },
     { name: 'curve-style', type: t.curveStyle, triggersBounds: diff.any },
     { name: 'haystack-radius', type: t.zeroOneNumber, triggersBounds: diff.any },
     { name: 'source-endpoint', type: t.edgeEndpoint, triggersBounds: diff.any },

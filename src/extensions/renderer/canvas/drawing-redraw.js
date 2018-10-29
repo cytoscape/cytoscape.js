@@ -68,8 +68,7 @@ CRp.createGradientStyleFor = function( context, shapeStyleName, ele, fill, opaci
         width = ele.width(), height = ele.height();
       gradientStyle = context.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, Math.max(width, height));
     }
-  }
-  else {
+  } else {
     if (ele.isEdge()) {
       let start = ele.sourceEndpoint(), end = ele.targetEndpoint();
 

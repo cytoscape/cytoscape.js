@@ -4,8 +4,6 @@ var cy;
 
 var loadCy = function(){
 
-//<demo>
-
 // initialise cytoscape.js on a html dom element with some options:
 cy = cytoscape( options = {
   container: document.getElementById('cy'),
@@ -18,7 +16,7 @@ cy = cytoscape( options = {
   style: [
     {
       selector: 'node',
-      css: {
+      style: {
         'content': 'data(name)',
         'font-family': 'helvetica',
         'font-size': 14,
@@ -34,7 +32,7 @@ cy = cytoscape( options = {
 
     {
       selector: ':selected',
-      css: {
+      style: {
         'background-color': '#000',
         'line-color': '#000',
         'target-arrow-color': '#000',
@@ -44,7 +42,7 @@ cy = cytoscape( options = {
 
     {
       selector: 'edge',
-      css: {
+      style: {
         'width': 2,
         'curve-style': 'bezier',
         'target-arrow-shape': 'triangle'
@@ -53,7 +51,7 @@ cy = cytoscape( options = {
 
     {
       selector: '.foo',
-      css: {
+      style: {
         'border-width': 4,
         'border-color': 'red'
       }
@@ -61,15 +59,12 @@ cy = cytoscape( options = {
   ],
 
   // specify the elements in the graph
-  elements: {
-    nodes: [
+  elements: [
       { data: { id: 'j', name: 'Jerry', weight: 65, height: 174 } },
       { data: { id: 'e', name: 'Elaine', weight: 48, height: 160 } },
       { data: { id: 'k', name: 'Kramer', weight: 75, height: 185 } },
-      { data: { id: 'g', name: 'George', weight: 70, height: 150 } }
-    ],
+      { data: { id: 'g', name: 'George', weight: 70, height: 150 } },
 
-    edges: [
       { data: { source: 'j', target: 'e', id: 'je', closeness: 0.85 } },
       { data: { source: 'j', target: 'k', id: 'jk', closeness: 0.5 } },
       { data: { source: 'j', target: 'g', id: 'jg', closeness: 0.7 } },
@@ -82,16 +77,8 @@ cy = cytoscape( options = {
       { data: { source: 'k', target: 'g', id: 'kg', closeness: 0.9 } },
 
       { data: { source: 'g', target: 'j', id: 'gj', closeness: 0.8 } }
-    ],
-  },
-
-
-  ready: function(){
-    // when layout has set initial node positions etc
-  }
+  ]
 } );
-
-//</demo>
 
 };
 
@@ -129,11 +116,7 @@ loadCy();
     }
   };
 
-  // setTimeout(function(){
-  //   cytoscape.defaults( window.options );
-  // }, 100);
-
-  // fix for webkit
+  // fix for old safari/chrome
   ('wheel mousewheel DOMMouseScroll MozMousePixelScroll scroll').split(' ').forEach(function( evt ){
     $('#navigation').addEventListener(evt, function(e) {
       e.stopPropagation();
@@ -154,7 +137,7 @@ loadCy();
   $('#navigation a').addEventListener('click', function() {
     var scroll = $('#navigation').scrollTop;
 
-    // force navigation to rerender, because some browsers (looking at you, chrome)
+    // force navigation to rerender, because some browsers (like old chrome)
     // don't render properly after clicking one of the links
     setTimeout(function() {
       $nav.scrollTop = (scroll + 10);
@@ -347,14 +330,7 @@ loadCy();
 
       showCy($run);
 
-      var bb = $('#cy').getBoundingClientRect();
-      var scrollDelta = bb.bottom - window.innerHeight;
-
       var text = $pre.innerText;
-
-      if( scrollDelta > 0 ){
-        window.scroll(0, window.scrollY + scrollDelta);
-      }
 
       setTimeout(function(){
         var ret = eval(text);
@@ -379,7 +355,7 @@ loadCy();
             .stop(true)
 
             .animate({
-              css: css
+              style: css
             })
 
             .delay(delay, function() {
@@ -387,7 +363,7 @@ loadCy();
             })
 
             .animate({
-              css: css
+              style: css
             })
 
             .delay(delay, function() {
@@ -395,7 +371,7 @@ loadCy();
             })
 
             .animate({
-              css: css
+              style: css
             })
 
             .delay(delay, function() {
@@ -404,12 +380,6 @@ loadCy();
         }
       }, 500);
     });
-  });
-
-  $('#download-button').addEventListener('click', function() {
-    if (_gaq) {
-      _gaq.push(['_trackEvent', 'Actions', 'Download']);
-    }
   });
 
 })();

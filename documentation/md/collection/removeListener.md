@@ -4,21 +4,21 @@
 var j = cy.$('#j');
 var handler = function(){ console.log('tap') };
 
-// bind
+// listen
 j.on('tap', handler);
 
-// bind some other handler
+// listen with some other handler
 j.on('tap', function(){
   console.log('some other handler');
 });
 
 j.emit('tap'); // 'tap' & 'some other handler'
 
-// unbind the renferenced handler
+// remove the renferenced listener handler
 j.removeListener('tap', handler);
 
 j.emit('tap'); // some other handler
 
-// unbind all tap handlers (including unnamed handler)
+// remove all tap listener handlers (including unnamed handler)
 j.removeListener('tap');
 ```

@@ -49,6 +49,13 @@ form {
 	background: rgba(255, 255, 255, 0.66);
 }
 
+#png-eg,
+#jpg-eg {
+	width: 15em;
+	height: 15em;
+	border: 1px solid #ddd;
+}
+
 #cy {
 	position: absolute;
 	z-index: 999;
@@ -269,9 +276,10 @@ button.outline {
 	left: 0.25em;
 	right: 0;
 	font: inherit;
-	font-family: FontAwesome, Helvetica Neue, Adobe Helvetica, Helvetica, DejaVu Sans, Arial, sans-serif;
+	font-family: Helvetica Neue, Adobe Helvetica, Helvetica, DejaVu Sans, Arial, FontAwesome, sans-serif;
 	margin: 0;
 	padding: 0 0.5em;
+	height: 1.5em;
 	padding-right: 1.4em;
 	border-radius: 1em;
 	background: #f5f5f5;
@@ -920,7 +928,7 @@ and (orientation:landscape) {
 	right: 0;
 	bottom: 0;
 	background: rgba(0, 0, 0, 0.5);
-	z-index: 9999;
+	z-index: -1;
 	opacity: 0;
 	pointer-events: none;
 
@@ -934,6 +942,7 @@ and (orientation:landscape) {
 .navigation-open .toc-search {
 	opacity: 1;
 	pointer-events: auto;
+	z-index: 9999;
 }
 
 @media only screen

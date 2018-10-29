@@ -1,19 +1,18 @@
 [{
   "selector": "node",
   "style": {
-    "height": 40,
-    "width": 40,
-    "background-color": "#333",
-    "label": "data(type)",
     "text-valign": "center",
     "text-halign": "left"
   }
 }, {
+  "selector": "node[type]",
+  "style": {
+    "label": "data(type)"
+  }
+}, {
   "selector": "edge",
   "style": {
-    "width": 3,
-    "opacity": 0.666,
-    "line-color": "#888"
+    "width": 3
   }
 }, {
   "selector": "edge.bezier",

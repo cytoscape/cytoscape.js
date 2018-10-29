@@ -1,6 +1,6 @@
 ## Examples
 
-Bind to events that bubble up from elements matching the specified `node` selector:
+Listen to events that bubble up from elements matching the specified `node` selector:
 ```js
 cy.on('tap', 'node', function(evt){
   var node = evt.target;
@@ -8,7 +8,7 @@ cy.on('tap', 'node', function(evt){
 });
 ```
 
-Bind to all tap events that the core receives:
+Listen to all tap events that the core receives:
 
 ```js
 cy.on('tap', function(event){
@@ -17,7 +17,7 @@ cy.on('tap', function(event){
   var evtTarget = event.target;
 
   if( evtTarget === cy ){
-  	console.log('tap on background');
+    console.log('tap on background');
   } else {
     console.log('tap on some element');
   }

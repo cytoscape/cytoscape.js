@@ -2,9 +2,6 @@
   {
     "selector": "node",
     "style": {
-      "height": 40,
-      "width": 40,
-      "background-color": "#ccc",
       "label": "data(label)"
     }
   },
@@ -13,8 +10,7 @@
     "selector": "edge",
     "style": {
       "label": "data(label)",
-      "width": 3,
-      "line-color": "#ccc"
+      "width": 3
     }
   },
 
@@ -116,7 +112,8 @@
     "selector": ".background",
     "style": {
       "text-background-opacity": 1,
-      "text-background-color": "#ccc",
+      "color": "#fff",
+      "text-background-color": "#888",
       "text-background-shape": "roundrectangle",
       "text-border-color": "#000",
       "text-border-width": 1,
@@ -127,7 +124,8 @@
   {
     "selector": ".outline",
     "style": {
-      "text-outline-color": "#ccc",
+      "color": "#fff",
+      "text-outline-color": "#888",
       "text-outline-width": 3
     }
   }

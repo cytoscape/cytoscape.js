@@ -256,7 +256,7 @@ util.extend( corefn, {
   },
 
   container: function(){
-    return this._private.container;
+    return this._private.container || null;
   },
 
   mount: function( container, rendererOptions ){

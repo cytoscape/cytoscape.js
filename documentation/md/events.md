@@ -22,12 +22,12 @@ Fields for only layout events:
 
 ## Event bubbling
 
-All events that occur on elements get bubbled up to [compound parents](#notation/compound-nodes) and then to the core.  You must take this into consideration when binding to the core so you can differentiate between events that happened on the background and ones that happened on elements.  Use the `eventObj.target` field, which indicates the originator of the event (i.e. `eventObj.target === cy || eventObj.target === someEle`).
+All events that occur on elements get bubbled up to [compound parents](#notation/compound-nodes) and then to the core.  You must take this into consideration when listening to the core so you can differentiate between events that happened on the background and ones that happened on elements.  Use the `eventObj.target` field, which indicates the originator of the event (i.e. `eventObj.target === cy || eventObj.target === someEle`).
 
 
 ## User input device events
 
-These are normal browser events that you can bind to via Cytoscape.js.  You can bind these events to the core and to collections.
+These are normal browser events that you can listen to via Cytoscape.js.  You can listen to these events on the core and on collections.
 
  * `mousedown` : when the mouse button is pressed
  * `mouseup` : when the mouse button is released
@@ -39,7 +39,7 @@ These are normal browser events that you can bind to via Cytoscape.js.  You can 
  * `touchmove` : when one or more fingers are moved on the screen
  * `touchend` : when one or more fingers are removed from the screen
 
-There are also some higher level events that you can use so you don't have to bind to different events for mouse-input devices and for touch devices.
+There are also some higher level events that you can use so you don't have to listen to different events for mouse-input devices and for touch devices.
 
  * `tapstart` or `vmousedown` : normalised tap start event (either `mousedown` or `touchstart`)
  * `tapdrag` or `vmousemove` : normalised move event (either `touchmove` or `mousemove`)
@@ -62,7 +62,7 @@ There are also some higher level events that you can use so you don't have to bi
 
 ## Collection events
 
-These events are custom to Cytoscape.js.  You can bind to these events for collections.
+These events are custom to Cytoscape.js.  You can listen to these events for collections.
 
  * `add` : when an element is added to the graph
  * `remove` : when an element is removed from the graph

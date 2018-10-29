@@ -42,27 +42,6 @@
 					{{{html}}}
 				{{/if}}
 
-				{{#if demo}}
-
-					<div class="gallery-full-demo">
-						<div class="gallery-full-padder"></div>
-
-						<a class="gallery-full-link" target="_blank" href="{{demo.viewUrl}}">
-							<span class="gallery-full-preview" style="background-image: url('{{demo.imgUrl}}');"></span>
-						</a>
-
-						<button class="run"><span class="fa fa-play"></span></button>
-
-					</div>
-
-					{{#if demo.name}}
-						<div class="gallery-full-title">
-							<span class="gallery-full-name">{{demo.name}}</span>
-						</div>
-					{{/if}}
-
-				{{/if}}
-
 				{{#if demos}}
 
 					<div class="gallery-demos">
@@ -286,6 +265,11 @@
 		</div>
 
 		<script src="js/cytoscape.min.js"></script>
+
+		<!-- polyfills so the docs work on old browsers, like IE -->
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.2.20171210/classList.min.js"></script>
+
+		<!-- the docs js -->
 		<script src="js/script.js"></script>
 
 		<script type="text/javascript">

@@ -10,7 +10,7 @@ Add a node from a plain object.
 
 ```js
 cy.add({
-	group: "nodes",
+	group: 'nodes',
 	data: { weight: 75 },
 	position: { x: 200, y: 200 }
 });
@@ -21,8 +21,8 @@ Add nodes and edges to the graph as plain objects:
 ```js
 // can use reference to eles later
 var eles = cy.add([
-  { group: "nodes", data: { id: "n0" }, position: { x: 100, y: 100 } },
-  { group: "nodes", data: { id: "n1" }, position: { x: 200, y: 200 } },
-  { group: "edges", data: { id: "e0", source: "n0", target: "n1" } }
+  { group: 'nodes', data: { id: 'n0' }, position: { x: 100, y: 100 } },
+  { group: 'nodes', data: { id: 'n1' }, position: { x: 200, y: 200 } },
+  { group: 'edges', data: { id: 'e0', source: 'n0', target: 'n1' } }
 ]);
 ```

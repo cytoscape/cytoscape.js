@@ -16,4 +16,4 @@ document.querySelector('#jpg-eg').setAttribute('src', jpg64);
 
 Example image tag:
 
-<img id="jpg-eg" style="border: 1px solid #ddd; min-width: 3em; min-height: 3em;"></img>
+<img id="jpg-eg"></img>

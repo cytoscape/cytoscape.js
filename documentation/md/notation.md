@@ -2,16 +2,16 @@
 
 Cytoscape.js supports many different graph theory usecases.  It supports directed graphs, undirected graphs, mixed graphs, loops, multigraphs, compound graphs (a type of hypergraph), and so on.
 
-We are regularly making additions and enhancements to the library, and we gladly accept [feature requests](https://github.com/cytoscape/cytoscape.js/issues/new) and pull requests.
+We are regularly making additions and enhancements to the library, and we gladly accept [feature requests](https://github.com/cytoscape/cytoscape.js/issues/new) and [pull requests](https://github.com/cytoscape/cytoscape.js/blob/master/CONTRIBUTING.md).
 
 
 ## Architecture & API
 
-There are two components in the architecture that a developer need concern himself in order to use Cytoscape.js, the core (i.e. a graph instance) and the collection.  In Cytoscape.js, the core is a developer's main entry point into the library.  From the core, a developer can run layouts, alter the viewport, and perform other operations on the graph as a whole.
+There are two components in the architecture that a programmer need concern himself in order to use Cytoscape.js, the core (i.e. a graph instance) and the collection.  In Cytoscape.js, the core is a programmer's main entry point into the library.  From the core, a programmer can run layouts, alter the viewport, and perform other operations on the graph as a whole.
 
-The core provides several functions to access elements in the graph.  Each of these functions returns a collection, a set of elements in the graph.  Functions are available on collections that allow the developer to filter the collection, perform operations on the collection, traverse the graph about the collection, get data about elements in the collection, and so on.
+The core provides several functions to access elements in the graph.  Each of these functions returns a collection, a set of elements in the graph.  Functions are available on collections that allow the programmer to filter the collection, perform operations on the collection, traverse the graph about the collection, get data about elements in the collection, and so on.
 
-<span class="important-indicator"></span> Note that a collection is immutable by default, meaning that the set of elements within a collection can not be changed.  The API returns a new collection with different elements when necessary, instead of mutating the existing collection.  This allows the developer to safely use set theory operations on collections, use collections functionally, and so on.  Note that because a collection is just a list of elements, it is inexpensive to create new collections.
+<span class="important-indicator"></span> Note that a collection is immutable by default, meaning that the set of elements within a collection can not be changed.  The API returns a new collection with different elements when necessary, instead of mutating the existing collection.  This allows the programmer to safely use set theory operations on collections, use collections functionally, and so on.  Note that because a collection is just a list of elements, it is relatively inexpensive to create new collections.
 
 <span class="important-indicator"></span> For very performance intensive code, a collection can be treated as mutable with [`eles.merge()`](#eles.merge) and [`eles.unmerge()`](#eles.unmerge).  Most apps should never need these functions.
 
@@ -39,7 +39,7 @@ For functions that return a value, note that calling a singular --- `ele`, `node
 
 ## Object ownership
 
-When passing objects to Cytoscape.js for creating elements, animations, layouts, etc., the objects are considered owned by Cytoscape.  Objects like elements have several levels to them, and doing deep copies of those objects every time they are passed to Cytoscape creates additional expense.  When desired, the dev can copy objects manually before passing them to Cytoscape.  However, copying is not necessary for most developers most of the time.
+When passing objects to Cytoscape.js for creating elements, animations, layouts, etc., the objects are considered owned by Cytoscape.  Objects like elements have several levels to them, and doing deep copies of those objects every time they are passed to Cytoscape creates additional expense.  When desired, the programmer can copy objects manually before passing them to Cytoscape.  However, copying is not necessary for most programmers most of the time.
 
 
 ## Gestures
@@ -57,7 +57,7 @@ Cytoscape.js supports several gestures:
  * Box selection : touch (three finger swipe) & desktop (modifier key + mousedown then drag)
  * Grab and drag nodes : touch & desktop
 
-All gesture actions can be controlled by the dev, toggling them on or off whenever needed.
+All gesture actions can be controlled by the programmer, toggling them on or off whenever needed.
 
 
 ## Position
@@ -66,7 +66,7 @@ A node's position refers to the centre point of its body.
 
 There is an important distinction to make for position:  A position may be a _model_ position or a _rendered_ position.
 
-A model position --- as its name suggests --- is the position stored in the model for an element.  An element's model position remains constant, despite changes to zoom and pan.  Numeric style property values are specified in model co-ordinates, e.g. an node with width 20px will be 20 pixels wide at zoom 1.
+A model position --- as its name suggests --- is the position stored in the model for an element.  An element's model position remains constant, despite changes to zoom and pan.  Numeric style property values are specified in model co-ordinates, e.g. a node with width 20px will be 20 pixels wide at zoom 1.
 
 A rendered position is an on-screen location relative to the viewport.  For example, a rendered position of `{ x: 100, y: 100 }` specifies a point 100 pixels to the right and 100 pixels down from the top-left corner of the viewport.  The model position and rendered position are the same at zoom 1 and pan (0, 0).
 
@@ -85,7 +85,7 @@ cytoscape({
 
   container: document.getElementById('cy'),
 
-  elements: [
+  elements: [ // flat array of nodes and edges
     { // node n1
       group: 'nodes', // 'nodes' for a node, 'edges' for an edge
       // NB the group field can be automatically inferred for you but specifying it
@@ -130,7 +130,7 @@ cytoscape({
     },
 
     { // node nparent
-      data: { id: 'nparent', position: { x: 200, y: 100 } }
+      data: { id: 'nparent' }
     },
 
     { // edge e1
@@ -168,7 +168,7 @@ Compound nodes are an addition to the traditional graph model.  A compound node 
 
 Compound nodes are specified via the `parent` field in an element's `data`.  Similar to the `source` and `target` fields of edges, the `parent` field is immutable:  A node's parent can be specified when the node is added to the graph, and after that point, this parent-child relationship is immutable.  However, you can effectively move child nodes via [`eles.move()`](#collection/graph-manipulation/eles.move).
 
-A compound parent node does not have independent dimensions (position and size), as those values are automatically inferred by the positions and dimensions of the descendant nodes.
+<span class="important-indicator"></span> A compound parent node does not have independent dimensions (position and size), as those values are automatically inferred by the positions and dimensions of the descendant nodes.
 
 As far as the API is concerned, compound nodes are treated just like regular nodes --- except in [explicitly compound functions](#collection/compound-nodes) like `node.parent()`.  This means that traditional graph theory functions like `eles.dijkstra()` and `eles.neighborhood()` do not make special allowances for compound nodes, so you may need to make different calls to the API depending on your usecase.
 

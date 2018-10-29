@@ -14,7 +14,7 @@ var cy = cytoscape({
 });
 ```
 
-Note that in order to guarantee custom font usage, the fonts in question must be loaded before Cytoscape is initialised.
+Note that in order to guarantee custom font usage (WOFF/WOFF2), the fonts in question must be loaded before Cytoscape is initialised.
 
 The following sections go over the options in more detail.
 
@@ -76,7 +76,7 @@ An instance of Cytoscape.js has a number of options that can be set on initialis
 **`style`** : The [stylesheet](#style) used to style the graph.  For convenience, this option can alternatively be specified as a promise that resolves to the stylesheet.
 
 <span id="init-opts/layout"></span>
-**`layout`** : A plain object that specifies layout options.  Which layout is initially run is specified by the `name` field.  Refer to a [layout's documentation](#layouts) for the options it supports.  If you want to specify your node positions yourself in your elements JSON, you can use the `preset` layout --- by default it does not set any positions, leaving your nodes in their current positions (e.g. specified in `options.elements` at initialisation time).
+**`layout`** : A plain object that specifies layout options.  Which layout is initially run is specified by the `name` field.  Refer to a [layout's documentation](#layouts) for the options it supports.  If you want to specify your node positions yourself in your elements JSON, you can use the `preset` layout --- by default it does not set any positions, leaving your nodes in their current positions (i.e. specified in `options.elements` at initialisation time).
 
 
 ### Initial viewport state
@@ -116,7 +116,7 @@ An instance of Cytoscape.js has a number of options that can be set on initialis
 
 <span id="init-opts/touchTapThreshold"></span>
 <span id="init-opts/desktopTapThreshold"></span>
-**`touchTapThreshold`** & **`desktopTapThreshold`** : A nonnegative integer that indicates the maximum allowable distance that a user may move during a tap gesture, on touch devices and desktop devices respectively.  This makes tapping easier for users.  These values have sane defaults, so it is not advised to change these options unless you have very good reason for doing so.  Larger values will almost certainly have undesirable consequences.
+**`touchTapThreshold`** & **`desktopTapThreshold`** : A non-negative integer that indicates the maximum allowable distance that a user may move during a tap gesture, on touch devices and desktop devices respectively.  This makes tapping easier for users.  These values have sane defaults, so it is not advised to change these options unless you have very good reason for doing so.  Large values will almost certainly have undesirable consequences.
 
 <span id="init-opts/autoungrabify"></span>
 **`autoungrabify`** : Whether nodes should be ungrabified (not grabbable by user) by default (if `true`, overrides individual node state).
@@ -134,7 +134,7 @@ An instance of Cytoscape.js has a number of options that can be set on initialis
 **`headless`** : A convenience option that initialises the instance to run headlessly.  You do not need to set this in environments that are implicitly headless (e.g. Node.js).  However, it is handy to set `headless: true` if you want a headless instance in a browser.
 
 <span id="init-opts/styleEnabled"></span>
-**`styleEnabled`** : A boolean that indicates whether styling should be used.  For headless (i.e. outside the browser) environments, display is not necessary and so neither is styling necessary --- thereby speeding up your code.  You can manually enable styling in headless environments if you require it for a special case.  Note that it does not make sense to disable style if you plan on rendering the graph.  Also note that `cy.destroy()` must be called to clean up a style-enabled, headless instance.
+**`styleEnabled`** : A boolean that indicates whether styling should be used.  For headless (i.e. outside the browser) environments, display is not necessary and so neither is styling necessary --- thereby speeding up your code.  You can manually enable styling in headless environments if you require it for a special case.  Note that it does not make sense to disable style if you plan on rendering the graph.  Also note that [`cy.destroy()`](#cy.destroy) must be called to clean up a style-enabled, headless instance.
 
 <span id="init-opts/hideEdgesOnViewport"></span>
 **`hideEdgesOnViewport`** : A rendering hint that when set to `true` makes the renderer not render edges while the viewport is being manipulated.  This makes panning, zooming, dragging, et cetera more responsive for large graphs.  This option is now largely moot, as a result of performance enhancements.

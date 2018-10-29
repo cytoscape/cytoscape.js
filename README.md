@@ -12,7 +12,7 @@
 [![unstable branch tests](https://img.shields.io/travis/cytoscape/cytoscape.js/unstable.svg?maxAge=1&label=unstable%20branch)](https://travis-ci.org/cytoscape/cytoscape.js)
 
 
-Graph theory (a.k.a. network) library for analysis and visualisation : [http://js.cytoscape.org](http://js.cytoscape.org)
+Graph theory (network) library for visualisation and analysis : [http://js.cytoscape.org](http://js.cytoscape.org)
 
 
 

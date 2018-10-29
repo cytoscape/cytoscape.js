@@ -22,7 +22,7 @@ cy.zoom({
 });
 ```
 
-For obvious reasons, you can zoom about a position or a rendered position but not both.  You should specify only one of `options.position` or `options.renderedPosition`.
+You can zoom about a position or a rendered position but not both.  You should specify only one of `options.position` or `options.renderedPosition`.
 
 ## Examples
 
@@ -45,9 +45,8 @@ cy.zoom(1/0); // infinity is outside of the valid range and
 
 Zoom about a node
 ```js
-var pos = cy.nodes("#j").position();
 cy.zoom({
   level: 1.5,
-  position: pos
+  position: cy.getElementById('j').position()
 });
 ```

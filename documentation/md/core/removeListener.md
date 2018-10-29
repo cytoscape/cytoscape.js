@@ -5,7 +5,7 @@ For all handlers:
 ```js
 cy.on('tap', function(){ /* ... */ });
 
-// unbind all tap handlers, including the one above
+// remove all tap listener handlers, including the one above
 cy.removeListener('tap');
 ```
 
@@ -22,6 +22,6 @@ var otherHandler = function(){
 };
 cy.on('tap', otherHandler);
 
-// just unbind handler
+// just remove handler
 cy.removeListener('tap', handler);
 ```

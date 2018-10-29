@@ -6,11 +6,11 @@ var cy = cytoscape({
 
   style: cytoscape.stylesheet()
     .selector('node')
-      .css({
+      .style({
         'content': 'data(id)'
       })
     .selector('edge')
-      .css({
+      .style({
         'curve-style': 'bezier',
         'target-arrow-shape': 'triangle',
         'width': 4,
@@ -18,7 +18,7 @@ var cy = cytoscape({
         'target-arrow-color': '#ddd'
       })
     .selector('.highlighted')
-      .css({
+      .style({
         'background-color': '#61bffc',
         'line-color': '#61bffc',
         'target-arrow-color': '#61bffc',

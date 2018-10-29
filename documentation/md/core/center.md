@@ -6,6 +6,6 @@ If no collection is specified, then the graph is centred on all nodes and edges 
 
 Centre the graph on node `j`:
 ```js
-var j = cy.$("#j");
+var j = cy.$('#j');
 cy.center( j );
 ```

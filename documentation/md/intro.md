@@ -10,7 +10,8 @@
   * Legacy browsers with ES5 and canvas support
     * ES5 and canvas support are required, and feature detection is used for optional performance enhancements.
     * Browsers circa 2012 support ES5 fully: IE10, Chrome 23, Firefox 21, Safari 6 ([caniuse](https://caniuse.com/#feat=es5))
-    * Browsers with partial but sufficient ES5 support have also been known to work, such as IE9 and Firefox 4.
+    * Browsers with partial but sufficient ES5 support also work, such as IE9 and Firefox 4.
+    * The documentation and examples are not optimised for old browsers, although the library itself is.
   * Module systems
     * ES modules
     * UMD
@@ -23,7 +24,7 @@
     * bower
 * Supports the [R language](https://www.r-project.org/) via [RCyjs](http://www.bioconductor.org/packages/release/bioc/html/RCyjs.html)
  * Supports rendering images of graphs on Node.js with [Cytosnap](https://github.com/cytoscape/cytosnap)
- * Has a full suite of tests that can be run in the browser or the terminal
+ * Has a large suite of tests that can be run in the browser or the terminal
  * Documentation includes live code examples, doubling as an interactive requirements specification; example graphs may also be freely modified in your browser's JS console
  * Fully serialisable and deserialisable via JSON
  * Uses layouts for automatically or manually positioning nodes
@@ -37,7 +38,7 @@
  * Includes graph theory algorithms, from BFS to PageRank
  * Animatable graph elements and viewport
  * Fully extendable (and extensions can be autoscaffolded for you)
- * Well maintained, with only a sliver of active bug time (i.e. minimised time to bugfix)
+ * Well maintained
  * Listed by [Zenodo](https://doi.org/10.5281/zenodo.831800) for per-version DOIs
  * Listed by [OMIC Tools](https://omictools.com/cytoscape-js-tool)
  * Used by
@@ -58,7 +59,9 @@
   * [dSysMap](http://dsysmap.irbbarcelona.org)
   * [Elsevier](https://www.elsevier.com)
   * [Excel](https://products.office.com/en-us/excel) : [GIGRAPH](https://gigraph.io)
+  * [Facebook](https://www.facebook.com) : [Metro](https://facebook.github.io/metro/) visualiser
   * [Ganister](http://www.ganister.eu/)
+  * [Google](https://google.com) : [TensorFlow](https://www.tensorflow.org) visualiser
   * [GCHQ](https://www.gchq.gov.uk/) : [Gaffer](https://gchq.github.io/gaffer-doc/)
   * [GeneMANIA](http://genemania.org)
   * [Graphlytic](http://graphlytic.sk/)
@@ -79,6 +82,7 @@
   * [Threat Crowd](https://www.threatcrowd.org/)
   * [Trace](https://trace.risingstack.com/)
   * [University of Cambridge](http://www.cam.ac.uk/) : [Intermine](http://intermine.org/)
+  * [University of Electronic Science and Technology of China](http://en.uestc.edu.cn/) : [Microbal Synthetic Lethal and Rescue Database](http://cefg.uestc.edu.cn/Mslr/)
   * [University of Leipzig, Institute for Medical Informatics, Statistics and Epidemiology (IMISE)](http://www.imise.uni-leipzig.de/en) : [SNIK research project](http://www.snik.eu/)
   * [University of Maryland](https://umd.edu/) : [Center for Bioinformatics and Computational Biology](http://cbcb.umd.edu/) : [MetagenomeScope](https://marbl.github.io/MetagenomeScope/)
   * [University of Southern California, San Diego](http://www.ucsd.edu/) : [Visualization of structurally related compounds in Mass Spectrometry with Molecular Networks at GNPS](http://gnps.ucsd.edu/ProteoSAFe/result.jsp?view=network_displayer&componentindex=67&task=c95481f0c53d42e78a61bf899e9f9adb#%7B%7D)
@@ -107,7 +111,6 @@ The library was created at the [Donnelly Centre](http://thedonnellycentre.utoron
  * npm : `npm install cytoscape`
  * bower : `bower install cytoscape`
  * jspm : `jspm install npm:cytoscape`
- * meteor : `npm install cytoscape`
 
 
 

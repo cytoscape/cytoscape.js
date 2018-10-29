@@ -27,15 +27,10 @@ fetch('data.json', {mode: 'no-cors'})
           })
         .selector('edge')
           .css({
-            'opacity': '0.666',
+            'opacity': '0.333',
             'width': 'mapData(weight, 0, 100, 1, 6)',
             'curve-style': 'haystack' // fast edges!
-          })
-        .selector(':selected')
-         .css({
-           'background-color': 'black',
-           'opacity': 1
-         }),
+          }),
 
       layout: {
         name: 'concentric',

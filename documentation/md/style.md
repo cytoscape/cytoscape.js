@@ -182,7 +182,7 @@ Shape:
     * `tag`
     * `vee`
     * `polygon` (custom polygon specified via `shape-polygon-points`).
- * **`shape-polygon-points`** : A space-separated list of numbers ranging on [-1, 1], representing alternating x and y values (i.e. `x1 y1   x2 y2,   x3 y3 ...`).  This represents the points in the polygon for the node's shape.  The bounding box of the node is given by (-1, -1), (1, -1), (1, 1), (-1, 1).
+ * **`shape-polygon-points`** : An array (or a space-separated string) of numbers ranging on [-1, 1], representing alternating x and y values (i.e. `x1 y1   x2 y2,   x3 y3 ...`).  This represents the points in the polygon for the node's shape.  The bounding box of the node is given by (-1, -1), (1, -1), (1, 1), (-1, 1).  The node's position is the origin (0, 0).
 
 Background:
 
@@ -322,6 +322,8 @@ These properties affect the styling of an edge's line:
 
 For automatic, bundled bezier edges (`curve-style: bezier`):
 
+A bezier edge is bundled with all other parallel bezier edges.  Each bezier edge is a quadratic bezier curve, separated from the others by varying the control point.  If there is an odd number of parallel edges in a bundle, then the centre edge is drawn as a straight line.
+
  * **`control-point-step-size`** : From the line perpendicular from source to target, this value specifies the distance between successive bezier edges.
  * **`control-point-distance`** : A single value that overrides `control-point-step-size` with a manual value.  Because it overrides the step size, bezier edges with the same value will overlap.  Thus, it's best to use this as a one-off value for particular edges if need be.
  * **`control-point-weight`** : A single value that weights control points along the line from source to target.  The value usually ranges on [0, 1], with 0 towards the source node and 1 towards the target node --- but larger or smaller values can also be used.
@@ -331,6 +333,8 @@ For automatic, bundled bezier edges (`curve-style: bezier`):
 ## Loop edges
 
 For loops (i.e. same source and target):
+
+A loop is normally drawn as a pair of bezier curves, one bezier going away from the node and the second bezier going back towards the node.
 
  * **`loop-direction`** : Determines the angle that loops extend from the node in cases when the source and target node of an edge is the same.  The angle is specified from the 12 o'clock position and it progresses clockwise for increasing positive values. The default is `-45deg` (extending to the upper left).
  * **`loop-sweep`** : Determines the angle between the leaving and returning edges in loops. Positive values result in clockwise looping and negative values result in counter-clockwise looping. Default is `-90deg`.
@@ -342,6 +346,8 @@ Note that loops may only be `bezier` or `unbundled-bezier` for their `curve-styl
 
 For bezier edges with manual control points (`curve-style: unbundled-bezier`):
 
+An unbundled bezier edge is made of a series of one or more quadratic bezier curves.  The control points of the bezier curves are specified manually, using a co-ordinate system relative to the source and target node.  This maintains the overall curve shape regardless of the positions of the connected nodes.
+
 * **`control-point-distances`** : A series of values that specify for each control point the distance perpendicular to a line formed from source to target, e.g. `-20 20 -20`.
 * **`control-point-weights`** : A series of values that weights control points along a line from source to target, e.g. `0.25 0.5 0.75`.  A value usually ranges on [0, 1], with 0 towards the source node and 1 towards the target node --- but larger or smaller values can also be used.
 * **`edge-distances`** : With value `intersection` (default), the line from source to target for `control-point-weights` is from the outside of the source node's shape to the outside of the target node's shape.  With value `node-position`, the line is from the source position to the target position.  The `node-position` option makes calculating edge points easier --- but it should be used carefully because you can create invalid points that `intersection` would have automatically corrected.
@@ -349,16 +355,20 @@ For bezier edges with manual control points (`curve-style: unbundled-bezier`):
 
 ## Haystack edges
 
-<span class="important-indicator"></span> Loop edges and compound parent nodes are not supported by haystack edges.  Haystack edges are a more performant replacement for plain, straight line edges.
-
 For fast, straight line edges (`curve-style: haystack`):
 
-* **`haystack-radius`** : A value between 0 and 1 inclusive that indicates the relative radius used to position haystack edges on their connected nodes.  The outside of the node is at 1, and the centre of the node is at 0.
+Haystack edges are a more performant replacement for plain, straight line edges.  A haystack edge is drawn as a straight line from the source node to the target node, randomly placed along some angle from each node's centre.  In this manner, many parallel haystack edges make a tight bundle, especially when semitransparent.  This makes haystack edges an effective way to visualise graphs with a high number of parallel edges.
+
+<span class="important-indicator"></span> Loop edges and compound parent nodes are not supported by haystack edges.  Also note that source and target arrows are not supported for haystack edges, as the arrows would be behind the node body.  Mid arrows, however, are supported.
+
+* **`haystack-radius`** : A value between 0 and 1 inclusive that indicates the relative radius used to position haystack edges on their connected nodes.  The outside of the node is at 1, and the centre of the node is at 0.  For simple graphs, a radius of 0 makes sense.
 
 
 ## Segments edges
 
 For edges made of several straight lines (`curve-style: segments`):
+
+A segment edge is made of a series of one or more straight lines, using a co-ordinate system relative to the source and target nodes.  This maintains the overall line pattern regardless of the orientation of the positions of the source and target nodes.
 
 * **`segment-distances`** : A series of values that specify for each segment point the distance perpendicular to a line formed from source to target, e.g. `-20 20 -20`.
 * **`segment-weights`** : A series of values that weights segment points along a line from source to target, e.g. `0.25 0.5 0.75`.  A value usually ranges on [0, 1], with 0 towards the source node and 1 towards the target node --- but larger or smaller values can also be used.
@@ -367,7 +377,7 @@ For edges made of several straight lines (`curve-style: segments`):
 
 ## Straight edges
 
-For explicit specification of a straight edge with endpoint arrows allowed (`curve-style: straight`)
+A straight edge (`curve-style: straight`) is drawn as a single straight line from the outside of the source node shape to the outside of the target node shape.  Endpoint and midpoint arrows are supported on straight edges.  Straight edges are not generally suitable for multigraphs.
 
 
 ## Edge arrow

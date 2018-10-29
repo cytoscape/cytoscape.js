@@ -7,8 +7,7 @@
     container: document.getElementById('cy'),
 
     layout: {
-      name: 'grid',
-      columns: 4
+      name: 'grid'
     },
 
     style: fetch('cy-style.json').then(toJson),

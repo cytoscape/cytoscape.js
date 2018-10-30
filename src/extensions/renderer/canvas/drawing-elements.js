@@ -2,13 +2,23 @@ import * as math from '../../../math';
 
 let CRp = {};
 
-CRp.drawElement = function( context, ele, shiftToOriginWithBb, showLabel ){
+CRp.drawElement = function( context, ele, shiftToOriginWithBb, showLabel, showOverlay ){
   let r = this;
 
   if( ele.isNode() ){
-    r.drawNode( context, ele, shiftToOriginWithBb, showLabel );
+    r.drawNode( context, ele, shiftToOriginWithBb, showLabel, showOverlay );
   } else {
-    r.drawEdge( context, ele, shiftToOriginWithBb, showLabel );
+    r.drawEdge( context, ele, shiftToOriginWithBb, showLabel, showOverlay );
+  }
+};
+
+CRp.drawElementOverlay = function( context, ele ){
+  let r = this;
+
+  if( ele.isNode() ){
+    r.drawNodeOverlay( context, ele );
+  } else {
+    r.drawEdgeOverlay( context, ele );
   }
 };
 
@@ -59,7 +69,7 @@ CRp.drawCachedElementPortion = function( context, ele, eleTxrCache, pxRatio, lvl
   }
 };
 
-const directDrawBody = (r, context, ele) => r.drawElement( context, ele, undefined, false );
+const directDrawBody = (r, context, ele) => r.drawElement( context, ele, undefined, false, false );
 const directDrawLabel = (r, context, ele) => r.drawElementText( context, ele, null, true, 'main' );
 const directDrawSourceLabel = (r, context, ele) => r.drawElementText( context, ele, null, true, 'source' );
 const directDrawTargetLabel = (r, context, ele) => r.drawElementText( context, ele, null, true, 'target' );
@@ -86,6 +96,8 @@ CRp.drawCachedElement = function( context, ele, pxRatio, extent, lvl, requestHig
       r.drawCachedElementPortion( context, ele, slbTxrCache, pxRatio, lvl, reason, directDrawSourceLabel, getSourceLabelRotation );
       r.drawCachedElementPortion( context, ele, tlbTxrCache, pxRatio, lvl, reason, directDrawTargetLabel, getTargetLabelRotation );
     }
+
+    r.drawElementOverlay( context, ele );
   }
 };
 

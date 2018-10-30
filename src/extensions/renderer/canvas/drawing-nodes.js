@@ -5,7 +5,7 @@ import * as util from '../../../util';
 
 let CRp = {};
 
-CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
+CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, shouldDrawOverlay = true ){
   let r = this;
   let nodeWidth, nodeHeight;
   let _p = node._private;
@@ -245,22 +245,8 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
   };
 
   let drawOverlay = () => {
-    let overlayPadding = node.pstyle( 'overlay-padding' ).pfValue;
-    let overlayOpacity = node.pstyle( 'overlay-opacity' ).value;
-    let overlayColor = node.pstyle( 'overlay-color' ).value;
-
-    if( overlayOpacity > 0 ){
-      r.colorFillStyle( context, overlayColor[0], overlayColor[1], overlayColor[2], overlayOpacity );
-
-      r.nodeShapes[ 'roundrectangle' ].draw(
-        context,
-        pos.x,
-        pos.y,
-        nodeWidth + overlayPadding * 2,
-        nodeHeight + overlayPadding * 2
-      );
-
-      context.fill();
+    if( shouldDrawOverlay ){
+      r.drawNodeOverlay( context, node, pos, nodeWidth, nodeHeight );
     }
   };
 
@@ -302,6 +288,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
   }
 
   drawText();
+
   drawOverlay();
 
   //
@@ -311,6 +298,37 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel ){
     context.translate( bb.x1, bb.y1 );
   }
 
+};
+
+CRp.drawNodeOverlay = function( context, node, pos, nodeWidth, nodeHeight ){
+  let r = this;
+
+  let overlayPadding = node.pstyle( 'overlay-padding' ).pfValue;
+  let overlayOpacity = node.pstyle( 'overlay-opacity' ).value;
+  let overlayColor = node.pstyle( 'overlay-color' ).value;
+
+  if( overlayOpacity > 0 ){
+    pos = pos || node.position();
+
+    if( nodeWidth == null || nodeHeight == null ){
+      let padding = node.padding();
+
+      nodeWidth = node.width() + 2 * padding;
+      nodeHeight = node.height() + 2 * padding;
+    }
+
+    r.colorFillStyle( context, overlayColor[0], overlayColor[1], overlayColor[2], overlayOpacity );
+
+    r.nodeShapes[ 'roundrectangle' ].draw(
+      context,
+      pos.x,
+      pos.y,
+      nodeWidth + overlayPadding * 2,
+      nodeHeight + overlayPadding * 2
+    );
+
+    context.fill();
+  }
 };
 
 // does the node have at least one pie piece?

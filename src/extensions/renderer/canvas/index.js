@@ -98,8 +98,8 @@ function CanvasRenderer( options ){
   let emptyBb = makeBoundingBox();
 
   let getStyleKey = ele => ele[0]._private.nodeKey;
-  let drawElement = (context, ele, bb, scaledLabelShown) => r.drawElement( context, ele, bb, false );
-  let getElementBox = ele => { ele.boundingBox(); return ele[0]._private.overlayBounds; };
+  let drawElement = (context, ele, bb, scaledLabelShown) => r.drawElement( context, ele, bb, false, false );
+  let getElementBox = ele => { ele.boundingBox(); return ele[0]._private.bodyBounds; };
   let backgroundTimestampHasChanged = ele => {
     let _p = ele[0]._private;
     let same = _p.oldBackgroundTimestamp === _p.backgroundTimestamp;

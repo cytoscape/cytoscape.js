@@ -4,10 +4,9 @@ import * as util from '../../../util';
 
 let CRp = {};
 
-CRp.drawEdge = function( context, edge, shiftToOriginWithBb, drawLabel ){
+CRp.drawEdge = function( context, edge, shiftToOriginWithBb, drawLabel = true, shouldDrawOverlay = true ){
   let r = this;
   let rs = edge._private.rscratch;
-  let usePaths = r.usePaths();
 
   if( !edge.visible() ){ return; }
 
@@ -23,10 +22,6 @@ CRp.drawEdge = function( context, edge, shiftToOriginWithBb, drawLabel ){
     context.translate( -bb.x1, -bb.y1 );
   }
 
-  let overlayPadding = edge.pstyle('overlay-padding').pfValue;
-  let overlayWidth = 2 * overlayPadding;
-  let overlayOpacity = edge.pstyle('overlay-opacity').value;
-  let overlayColor = edge.pstyle('overlay-color').value;
   let opacity = edge.pstyle('opacity').value;
   let lineStyle = edge.pstyle('line-style').value;
   let edgeWidth = edge.pstyle('width').pfValue;
@@ -47,25 +42,10 @@ CRp.drawEdge = function( context, edge, shiftToOriginWithBb, drawLabel ){
     context.lineCap = 'butt'; // reset for other drawing functions
   };
 
-  let drawOverlay = ( strokeOpacity = overlayOpacity ) => {
-    if( strokeOpacity === 0 || overlayWidth === 0 ){ return; }
+  let drawOverlay = () => {
+    if( !shouldDrawOverlay ){ return; }
 
-    context.lineWidth = overlayWidth;
-
-    if( rs.edgeType === 'self' && !usePaths ){
-      context.lineCap = 'butt';
-    } else {
-      context.lineCap = 'round';
-    }
-
-    r.colorStrokeStyle( context, overlayColor[0], overlayColor[1], overlayColor[2], strokeOpacity );
-
-    r.drawEdgePath(
-      edge,
-      context,
-      rs.allpts,
-      'solid'
-    );
+    r.drawEdgeOverlay( context, edge );
   };
 
   let drawArrows = ( arrowOpacity = opacity ) => {
@@ -102,6 +82,36 @@ CRp.drawEdge = function( context, edge, shiftToOriginWithBb, drawLabel ){
   if( shiftToOriginWithBb ){
     context.translate( bb.x1, bb.y1 );
   }
+};
+
+CRp.drawEdgeOverlay = function( context, edge ){
+  let r = this;
+  let usePaths = r.usePaths();
+  let rs = edge._private.rscratch;
+
+  let overlayPadding = edge.pstyle('overlay-padding').pfValue;
+  let overlayWidth = 2 * overlayPadding;
+  let overlayOpacity = edge.pstyle('overlay-opacity').value;
+  let overlayColor = edge.pstyle('overlay-color').value;
+
+  if( overlayOpacity === 0 ){ return; }
+
+  context.lineWidth = overlayWidth;
+
+  if( rs.edgeType === 'self' && !usePaths ){
+    context.lineCap = 'butt';
+  } else {
+    context.lineCap = 'round';
+  }
+
+  r.colorStrokeStyle( context, overlayColor[0], overlayColor[1], overlayColor[2], overlayOpacity );
+
+  r.drawEdgePath(
+    edge,
+    context,
+    rs.allpts,
+    'solid'
+  );
 };
 
 

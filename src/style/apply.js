@@ -316,9 +316,9 @@ styfn.updateStyleHints = function(ele){
   //
 
   if( isNode ){
-    let { nodeBody, nodeBorder, backgroundImage, compound, pie, overlay } = _p.styleKeys;
+    let { nodeBody, nodeBorder, backgroundImage, compound, pie } = _p.styleKeys;
 
-    _p.nodeKey = util.hashIntsArray([ nodeBorder, backgroundImage, compound, pie, overlay ], nodeBody);
+    _p.nodeKey = util.hashIntsArray([ nodeBorder, backgroundImage, compound, pie ], nodeBody);
     _p.hasPie = pie != 0;
   }
 

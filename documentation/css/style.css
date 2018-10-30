@@ -32,6 +32,10 @@ form {
 	margin: 0.77em 0;
 }
 
+.links a {
+	border: 0;
+}
+
 #orphaned-cy-container {
 	position: absolute;
 	left: -99999px;
@@ -594,27 +598,6 @@ button.outline {
 	font-weight: 400;
 }
 
-.links {
-	margin: 1em 0;
-}
-
-.link-button {
-}
-
-.likes {
-	margin-top: 1em;
-	font-weight: 400;
-}
-
-.like-label {
-	color: #000;
-}
-
-.buttons-subtitle {
-	margin: 1em 0;
-	font-size: 1em;
-}
-
 h1 {
 	font-size: 2em;
 	margin: 1em 0 0.5em 0;
@@ -676,10 +659,6 @@ a,
 a.light,
 a.toclink {
 	border-bottom: 2px solid rgba(65, 131, 196, 0.2);
-}
-
-.links a {
-	border: 0;
 }
 
 .button {

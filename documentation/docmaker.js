@@ -1,23 +1,19 @@
-/* eslint-disable */
+/* eslint-disable no-console, no-useless-escape */
 
-var fs = require('fs');
-// var Converter = require('./js/Markdown.Converter').Converter;
-// var converter = new Converter();
-var marked = require('marked');
-// var mdConvertor = require('node-markdown').Markdown;
-var Handlebars = require('handlebars');
-var jsonlint = require('jsonlint');
-var hljs = require('highlight.js');
-var encoding = 'utf8';
-var config;
-var configFile = './docmaker.json';
-var demoFile = './js/load.js';
-var mdRend = new marked.Renderer();
-var path = require('path');
+let fs = require('fs');
+let marked = require('marked');
+let Handlebars = require('handlebars');
+let jsonlint = require('jsonlint');
+let hljs = require('highlight.js');
+let encoding = 'utf8';
+let config;
+let configFile = './docmaker.json';
+let mdRend = new marked.Renderer();
+let path = require('path');
 
-var rendCode = mdRend.code;
+let rendCode = mdRend.code;
 mdRend.code = function(code, lang){
-  var button = '';
+  let button = '';
 
   if( lang === 'js' ){
     button = '<button class="run run-inline-code"><span class="fa fa-play"></span></button>';
@@ -37,7 +33,7 @@ try {
 config.version = process.env.VERSION || 'snapshot';
 
 function linkifyArg( arg ){
-  var link = config.fnArgLinks[ arg.name ];
+  let link = config.fnArgLinks[ arg.name ];
 
   if( link ){
     arg.linkedName = '<a href="'+ link +'">' + arg.name + '</a>';
@@ -46,24 +42,24 @@ function linkifyArg( arg ){
   }
 }
 
-// var html = converter.makeHtml("**I am bold!**");
-// var html = Handlebars.compile();
+// let html = converter.makeHtml("**I am bold!**");
+// let html = Handlebars.compile();
 
 function md2html( file ){
   file = file.substr( file.length - 3 ) === '.md' ? file : file + '.md'; // add extension if need be
 
-  var md;
+  let md;
   try{
     md = fs.readFileSync( path.join(__dirname, './md', file) , 'utf8');
   } catch(e){
     throw 'A markdown file named `' + file + '` was referenced but could not be read';
   }
 
-  // var html = converter.makeHtml( md );
-  //var html = mdConvertor( md );
-  var html = marked( md, {
+  // let html = converter.makeHtml( md );
+  //let html = mdConvertor( md );
+  let html = marked( md, {
     highlight: function(code, lang){
-      var ret;
+      let ret;
 
       if( lang ){
         ret = hljs.highlight(lang, code).value;
@@ -77,7 +73,9 @@ function md2html( file ){
 
     smartypants: true,
 
-    renderer: mdRend
+    renderer: mdRend,
+
+    gfm: true
   } );
 
 
@@ -98,15 +96,15 @@ function makeBookmark( id ){
 }
 
 function parseSubsections( section ){
-  var parentName = section.name;
-  var html = section.html;
-  var matches = html.match(/\<h2.*?\>.+?\<\/h2\>/g);
-  var psubs = [];
+  let parentName = section.name;
+  let html = section.html;
+  let matches = html.match(/\<h2.*?\>.+?\<\/h2\>/g);
+  let psubs = [];
 
-  for( var i = 0; matches && i < matches.length; i++ ){
-    var match = matches[i];
-    var name = match.match(/\<h2.*?\>(.+)\<\/h2\>/)[1];
-    var id = toUrl(parentName) + '/' + toUrl(name);
+  for( let i = 0; matches && i < matches.length; i++ ){
+    let match = matches[i];
+    let name = match.match(/\<h2.*?\>(.+)\<\/h2\>/)[1];
+    let id = toUrl(parentName) + '/' + toUrl(name);
 
     psubs.push({
       name: name,
@@ -126,7 +124,7 @@ function populateDemo( demo ){
     demo.githubUrl = 'https://github.com/' + demo.github;
 
     if( !demo.viewUrl ){ // use github pages url if unspecified
-      var gh = demo.github.match(/([^/]+)\/([^/]+)/);
+      let gh = demo.github.match(/([^/]+)\/([^/]+)/);
 
       demo.viewUrl = 'https://' + gh[1] + '.github.io/' + gh[2];
     }
@@ -138,14 +136,30 @@ function populateDemo( demo ){
   demo.imgUrl = 'img/demos/' + demo.id + '.png';
 }
 
+function processFields( fields ){
+  for( let i = 0; fields && i < fields.length; i++ ){
+    let field = fields[i];
+
+    field.descr = marked( field.descr  || '' );
+
+    linkifyArg( field );
+
+    let subfields = field.fields;
+
+    if( subfields ){
+      processFields( subfields );
+    }
+  }
+}
+
 function compileAliases( section, fn ){
   if( fn.pureAliases ){
-    var procdAliases = [];
+    let procdAliases = [];
 
-    for( var k = 0; k < fn.pureAliases.length; k++ ){
-      var pa = '' + fn.pureAliases[k];
+    for( let k = 0; k < fn.pureAliases.length; k++ ){
+      let pa = '' + fn.pureAliases[k];
 
-      procdAliases.push(a = {
+      procdAliases.push({
         name: pa,
         id: section.id + '/' + pa
       });
@@ -156,11 +170,11 @@ function compileAliases( section, fn ){
 }
 
 function compileConfig( config ){
-  var sections = config.sections;
-  var parent = config;
+  let sections = config.sections;
+  let parent = config;
 
-  for( var i = 0; sections && i < sections.length; i++ ){
-    var section = sections[i];
+  for( let i = 0; sections && i < sections.length; i++ ){
+    let section = sections[i];
 
     if( section.layout ){ section.name = section.layout.name; }
 
@@ -170,9 +184,9 @@ function compileConfig( config ){
     if( section.md ){
       section.html = md2html( section.md );
 
-      var psubs = parseSubsections( section );
+      let psubs = parseSubsections( section );
 
-      var subs = section.sections = section.sections || [];
+      let subs = section.sections = section.sections || [];
       section.sections = subs.concat( psubs );
     }
 
@@ -181,10 +195,10 @@ function compileConfig( config ){
     }
 
     if( section.demos ){
-      var demos = section.demos;
+      let demos = section.demos;
 
-      for( var j = 0; j < demos.length; j++ ){
-        var demo = demos[j];
+      for( let j = 0; j < demos.length; j++ ){
+        let demo = demos[j];
 
         populateDemo( demo );
       }
@@ -195,7 +209,7 @@ function compileConfig( config ){
     }
 
     if( section.layout ){
-      var layout = section.layout;
+      let layout = section.layout;
 
       section.name = layout.name;
       layout.code = fs.readFileSync( path.join(__dirname, '../src/extensions/layout/' + layout.name + '.js'), 'utf8' );
@@ -203,7 +217,7 @@ function compileConfig( config ){
       try {
         layout.options = layout.code.match(/defaults\s*\=\s*(\{(?:.|\s)+?\}\;)/)[1];
 
-        var lopts = layout.options;
+        let lopts = layout.options;
 
         // cleanup indent
         lopts = lopts.replace(/\n[ ]{4}/g, '\n  ');
@@ -213,7 +227,7 @@ function compileConfig( config ){
         lopts = lopts.replace(/\{/, '{\n  name: \'' + layout.name + '\',\n');
 
         // wrap w/ code
-        lopts = 'var options = ' + lopts + '\n\ncy.layout( options );';
+        lopts = 'let options = ' + lopts + '\n\ncy.layout( options );';
 
         // highlight
         lopts = hljs.highlight('js', lopts).value;
@@ -224,27 +238,10 @@ function compileConfig( config ){
       }
     }
 
-
-    function processFields( fields ){
-      for( var i = 0; fields && i < fields.length; i++ ){
-        var field = fields[i];
-
-        field.descr = marked( field.descr  || '' );
-
-        linkifyArg( field );
-
-        var subfields = field.fields;
-
-        if( subfields ){
-          processFields( subfields );
-        }
-      }
-    }
-
     if( section.fns ){
-      var fns = section.fns;
-      for( var j = 0; j < fns.length; j++ ){
-        var fn = fns[j];
+      let fns = section.fns;
+      for( let j = 0; j < fns.length; j++ ){
+        let fn = fns[j];
 
         fn.altIds = [];
 
@@ -270,12 +267,12 @@ function compileConfig( config ){
           });
         }
 
-        var formatsHaveDiffNames = false;
+        let formatsHaveDiffNames = false;
         if( fn.formats ){
-          var formats = fn.formats;
+          let formats = fn.formats;
 
-          for( var k = 0; k < formats.length; k++ ){
-            var format = formats[k];
+          for( let k = 0; k < formats.length; k++ ){
+            let format = formats[k];
 
             format.name = format.name || fn.name; // copy name to format if not specified
             format.descr = marked( format.descr || '' );
@@ -284,8 +281,8 @@ function compileConfig( config ){
             fn.altIds.push( format.name );
 
             if( format.args ){
-              for( var m = 0; m < format.args.length; m++ ){
-                var arg = format.args[m];
+              for( let m = 0; m < format.args.length; m++ ){
+                let arg = format.args[m];
 
                 linkifyArg( arg );
 
@@ -327,12 +324,12 @@ function compileConfig( config ){
 function writeDocs(){
   compileConfig( config );
 
-  var htmlTemplate = fs.readFileSync( path.join(__dirname, './template.html'), encoding);
-  var template = Handlebars.compile( htmlTemplate );
-  var context = config;
-  var html = template( context );
+  let htmlTemplate = fs.readFileSync( path.join(__dirname, './template.html'), encoding);
+  let template = Handlebars.compile( htmlTemplate );
+  let context = config;
+  let html = template( context );
 
   fs.writeFileSync( path.join(__dirname, 'index.html'), html, encoding);
-};
+}
 
 writeDocs();

@@ -4,6 +4,8 @@ import babel from 'rollup-plugin-babel';
 import replace from 'rollup-plugin-replace';
 import { uglify } from 'rollup-plugin-uglify';
 import { sizeSnapshot } from 'rollup-plugin-size-snapshot';
+import license from 'rollup-plugin-license';
+import path from 'path';
 
 const VERSION = process.env.VERSION || 'snapshot'; // default snapshot
 const FILE = process.env.FILE;
@@ -29,6 +31,13 @@ const getBabelOptions = () => ({
 // Ignore all node_modules dependencies
 const isExternal = id => !id.startsWith('\0') && !id.startsWith('.') && !id.startsWith('/');
 
+const licenseHeaderOptions = {
+  sourceMap: true,
+  banner: {
+    file: path.join(__dirname, 'LICENSE')
+  }
+};
+
 const configs = [
   {
     input,
@@ -43,6 +52,7 @@ const configs = [
       commonjs({ include: '**/node_modules/**' }),
       BABEL ? babel(getBabelOptions()) : {},
       replace(envVariables),
+      license(licenseHeaderOptions),
       !FILE ? sizeSnapshot({ matchSnapshot }) : {}
     ]
   },
@@ -59,6 +69,7 @@ const configs = [
       commonjs({ include: '**/node_modules/**' }),
       BABEL ? babel(getBabelOptions()) : {},
       replace(envVariables),
+      license(licenseHeaderOptions),
       uglify({
         compress: {
           warnings: false,
@@ -76,6 +87,7 @@ const configs = [
       nodeResolve(),
       BABEL ? babel(getBabelOptions()) : {},
       replace(envVariables),
+      license(licenseHeaderOptions),
       !FILE ? sizeSnapshot({ matchSnapshot }) : {}
     ]
   },
@@ -88,6 +100,7 @@ const configs = [
       nodeResolve(),
       BABEL ? babel(getBabelOptions()) : {},
       replace(envVariables),
+      license(licenseHeaderOptions),
       !FILE ? sizeSnapshot({ matchSnapshot }) : {}
     ]
   }

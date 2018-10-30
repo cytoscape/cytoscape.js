@@ -148,32 +148,32 @@ describe('Collection position & dimensions', function(){
 
     it('width', function(){
       expect( cy.$('#n1').width() ).to.not.equal(0);
-      expect( cy.$('#n1').width() ).to.be.defined;
+      expect( cy.$('#n1').width() ).to.exist;
     });
 
     it('height', function(){
       expect( cy.$('#n1').width() ).to.not.equal(0);
-      expect( cy.$('#n1').width() ).to.be.defined;
+      expect( cy.$('#n1').width() ).to.exist;
     });
 
     it('position', function(){
-      expect( cy.$('#n1').position().x ).to.be.defined;
-      expect( cy.$('#n1').position().y ).to.be.defined;
+      expect( cy.$('#n1').position().x ).to.exist;
+      expect( cy.$('#n1').position().y ).to.exist;
     });
 
     it('boundingbox', function(){
       var bb = cy.$('#n1').boundingBox();
 
-      expect( bb.w ).to.be.defined;
+      expect( bb.w ).to.exist;
       expect( bb.w ).to.not.equal(0);
 
-      expect( bb.h ).to.be.defined;
+      expect( bb.h ).to.exist;
       expect( bb.h ).to.not.equal(0);
 
-      expect( bb.x1 ).to.be.defined;
-      expect( bb.x2 ).to.be.defined;
-      expect( bb.y1 ).to.be.defined;
-      expect( bb.y2 ).to.be.defined;
+      expect( bb.x1 ).to.exist;
+      expect( bb.x2 ).to.exist;
+      expect( bb.y1 ).to.exist;
+      expect( bb.y2 ).to.exist;
     });
 
   });

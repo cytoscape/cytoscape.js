@@ -90,11 +90,11 @@ describe('Collection data', function(){
       var n = cy.$('#n4').removeData();
       var e = cy.$('#n1n2').removeData();
 
-      expect( n.data('id') ).to.be.defined;
-      expect( n.data('parent') ).to.be.defined;
-      expect( e.data('id') ).to.be.defined;
-      expect( e.data('source') ).to.be.defined;
-      expect( e.data('target') ).to.be.defined;
+      expect( n.data('id') ).to.exist;
+      expect( n.data('parent') ).to.exist;
+      expect( e.data('id') ).to.exist;
+      expect( e.data('source') ).to.exist;
+      expect( e.data('target') ).to.exist;
     });
 
   });
@@ -116,9 +116,10 @@ describe('Collection data', function(){
       var json = n1.json();
 
       expect( json ).to.have.property('group', 'nodes');
-      expect( json ).to.have.deep.property('data.id', 'n1');
-      expect( json ).to.have.deep.property('data.foo', 'one');
-      expect( json ).to.have.deep.property('data.weight', 0.25);
+      expect( json ).to.have.property('data');
+      expect( json.data ).to.have.property('id', 'n1');
+      expect( json.data ).to.have.property('foo', 'one');
+      expect( json.data ).to.have.property('weight', 0.25);
       expect( json ).to.have.property('position');
       expect( json ).to.have.property('selected', n1.selected());
       expect( json ).to.have.property('selectable', n1.selectable());

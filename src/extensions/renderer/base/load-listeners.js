@@ -26,6 +26,8 @@ BRp.binder = function( tgt ){
       var opts = Object.defineProperty( {}, 'passive', {
         get: function(){
           supportsPassive = true;
+
+          return true;
         }
       } );
 

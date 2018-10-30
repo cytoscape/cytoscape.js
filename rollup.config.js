@@ -2,7 +2,7 @@ import nodeResolve from 'rollup-plugin-node-resolve';
 import commonjs from 'rollup-plugin-commonjs';
 import babel from 'rollup-plugin-babel';
 import replace from 'rollup-plugin-replace';
-import uglify from 'rollup-plugin-uglify';
+import { uglify } from 'rollup-plugin-uglify';
 import { sizeSnapshot } from 'rollup-plugin-size-snapshot';
 
 const VERSION = process.env.VERSION || 'snapshot'; // default snapshot
@@ -23,8 +23,7 @@ const envVariables = {
 
 const getBabelOptions = () => ({
   exclude: '**/node_modules/**',
-  // inject in the bundle babel helpers
-  plugins: ['external-helpers']
+  externalHelpers: true
 });
 
 // Ignore all node_modules dependencies

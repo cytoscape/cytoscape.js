@@ -103,7 +103,7 @@ describe('Collection style', function(){
 
       expect( style ).to.be.an('object');
       expect( style ).to.have.property('background-color');
-      expect( style['background-color'] ).to.be.defined;
+      expect( style['background-color'] ).to.exist;
     });
 
     it('eles.style(name, val) gets and sets the specified property', function(){
@@ -179,7 +179,7 @@ describe('Collection style', function(){
 
       expect( style ).to.be.an('object');
       expect( style ).to.have.property('label');
-      expect( style['label'] ).to.be.defined;
+      expect( style['label'] ).to.exist;
       expect( style['label'] ).to.equal( 'n1' );
     });
 
@@ -188,14 +188,14 @@ describe('Collection style', function(){
 
       expect( style ).to.be.an('object');
       expect( style ).to.have.property('label');
-      expect( style['label'] ).to.be.defined;
+      expect( style['label'] ).to.exist;
       expect( style['label'] ).to.equal( 'n2' );
     });
 
     it('ele.numericStyle() returns size as a number', function(){
       var ret = cy.$('#n1').style('width', '30px').numericStyle('width');
 
-      expect( ret ).to.be.a.number;
+      expect( ret ).to.be.finite;
       expect( ret ).to.equal( 30 );
       expect( cy.$('#n1').numericStyleUnits('width') ).to.equal('px');
     });
@@ -203,7 +203,7 @@ describe('Collection style', function(){
     it('ele.numericStyle() returns colour as [r, g, b]', function(){
       var ret = cy.$('#n1').style('background-color', 'rgb(0, 1, 2)').numericStyle('background-color');
 
-      expect( ret ).to.be.an.array;
+      expect( ret ).to.be.an.instanceof(Array);
       expect( ret ).to.have.property('length', 3);
       expect( ret[0] ).to.equal( 0 );
       expect( ret[1] ).to.equal( 1 );
@@ -214,7 +214,7 @@ describe('Collection style', function(){
     it('ele.numericStyle() returns red as [255, 0, 0]', function(){
       var ret = cy.$('#n1').style('background-color', 'red').numericStyle('background-color');
 
-      expect( ret ).to.be.an.array;
+      expect( ret ).to.be.an.instanceOf(Array);
       expect( ret ).to.have.property('length', 3);
       expect( ret[0] ).to.equal( 255 );
       expect( ret[1] ).to.equal( 0 );
@@ -225,7 +225,7 @@ describe('Collection style', function(){
     it('ele.numericStyle() returns opacity as number', function(){
       var ret = cy.$('#n1').style('opacity', 0.5).numericStyle('opacity');
 
-      expect( ret ).to.be.a.number;
+      expect( ret ).to.be.finite;
       expect( ret ).to.equal( 0.5 );
       expect( cy.$('#n1').numericStyleUnits('opacity') ).to.not.exist;
     });
@@ -233,7 +233,7 @@ describe('Collection style', function(){
     it('ele.numericStyle() returns pixel value for padding', function(){
       var ret = cy.$('#n1').style('padding', '10px').numericStyle('padding');
 
-      expect( ret ).to.be.a.number;
+      expect( ret ).to.be.finite;
       expect( ret ).to.equal( 10 );
       expect( cy.$('#n1').numericStyleUnits('padding') ).to.equal('px');
     });
@@ -241,7 +241,7 @@ describe('Collection style', function(){
     it('ele.numericStyle() returns percent value for padding', function(){
       var ret = cy.$('#n1').style('padding', '50%').numericStyle('padding');
 
-      expect( ret ).to.be.a.number;
+      expect( ret ).to.be.finite;
       expect( ret ).to.equal( 0.5 );
       expect( cy.$('#n1').numericStyleUnits('padding') ).to.equal('%');
     });

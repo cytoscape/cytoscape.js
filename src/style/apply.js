@@ -435,7 +435,7 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
   }
 
   let printMappingErr = function(){
-    util.warn( 'Do not assign mappings to elements without corresponding data (e.g. ele `' + ele.id() + '` for property `' + prop.name + '` with data field `' + prop.field + '`); try a `[' + prop.field + ']` selector to limit scope to elements with `' + prop.field + '` defined' );
+    util.warn( 'Do not assign mappings to elements without corresponding data (i.e. ele `' + ele.id() + '` has no mapping for property `' + prop.name + '` with data field `' + prop.field + '`); try a `[' + prop.field + ']` selector to limit scope to elements with `' + prop.field + '` defined' );
   };
 
   // put the property in the style objects
@@ -452,7 +452,7 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
 
     if( fieldVal == null ){
       printMappingErr();
-      return;
+      return false;
     }
 
     let percent;
@@ -530,7 +530,9 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
       fieldVal = fieldVal[ field ];
     }
 
-    flatProp = this.parse( prop.name, fieldVal, prop.bypass, flatPropMapping );
+    if( fieldVal != null ){
+      flatProp = this.parse( prop.name, fieldVal, prop.bypass, flatPropMapping );
+    }
 
     if( !flatProp ){ // if we can't flatten the property, then don't apply and fall back on the existing style
       printMappingErr();
@@ -547,7 +549,18 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
     let fn = prop.value;
     let fnRetVal = fn( ele );
 
+    if( fnRetVal == null ){
+      util.warn('Custom function mappers may not return null (i.e. `' + prop.name + '` for ele `' + ele.id() + '` is null)');
+      return false;
+    }
+
     flatProp = this.parse( prop.name, fnRetVal, prop.bypass, flatPropMapping );
+
+    if( !flatProp ){
+      util.warn('Custom function mappers may not return invalid values for the property type (i.e. `' + prop.name + '` for ele `' + ele.id() + '` is invalid)');
+      return false;
+    }
+
     flatProp.mapping = prop; // keep a reference to the mapping
     prop = flatProp; // the flattened (mapped) property is the one we want
 

@@ -337,6 +337,12 @@ let updateBoundsFromLabel = function( bounds, ele, prefix ){
       }
     }
 
+    // shift by margin and expand by outline and border
+    lx1 += marginX - Math.max( outlineWidth, halfBorderWidth );
+    lx2 += marginX + Math.max( outlineWidth, halfBorderWidth );
+    ly1 += marginY - Math.max( outlineWidth, halfBorderWidth );
+    ly2 += marginY + Math.max( outlineWidth, halfBorderWidth );
+
     // always store the unrotated label bounds separately
     let bbPrefix = prefix || 'main';
     let bbs = _p.labelBounds;
@@ -356,14 +362,16 @@ let updateBoundsFromLabel = function( bounds, ele, prefix ){
       let theta = isAutorotate ? prefixedProperty( _p.rstyle, 'labelAngle', prefix ) : rotation.pfValue;
       let cos = Math.cos( theta );
       let sin = Math.sin( theta );
+      let xMid = (lx1 + lx2)/2;
+      let yMid = (ly1 + ly2)/2;
 
       let rotate = function( x, y ){
-        x = x - labelX;
-        y = y - labelY;
+        x = x - xMid;
+        y = y - yMid;
 
         return {
-          x: x * cos - y * sin + labelX,
-          y: x * sin + y * cos + labelY
+          x: x * cos - y * sin + xMid,
+          y: x * sin + y * cos + yMid
         };
       };
 
@@ -377,11 +385,6 @@ let updateBoundsFromLabel = function( bounds, ele, prefix ){
       ly1 = Math.min( px1y1.y, px1y2.y, px2y1.y, px2y2.y );
       ly2 = Math.max( px1y1.y, px1y2.y, px2y1.y, px2y2.y );
     }
-
-    lx1 += marginX - Math.max( outlineWidth, halfBorderWidth );
-    lx2 += marginX + Math.max( outlineWidth, halfBorderWidth );
-    ly1 += marginY - Math.max( outlineWidth, halfBorderWidth );
-    ly2 += marginY + Math.max( outlineWidth, halfBorderWidth );
 
     updateBounds( bounds, lx1, ly1, lx2, ly2 );
     updateBounds( _p.labelBounds.all, lx1, ly1, lx2, ly2 );

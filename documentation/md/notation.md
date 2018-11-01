@@ -161,6 +161,46 @@ cytoscape({
 });
 ```
 
+The elements JSON may alternatively be in the following format, keyed by group:
+
+```js
+cytoscape({
+  container: document.getElementById('cy'),
+
+  elements: {
+    nodes: [
+      {
+        data: { id: 'a' }
+      },
+
+      {
+        data: { id: 'b' }
+      }
+    ],
+    edges: [
+      {
+        data: { id: 'ab', source: 'a', target: 'b' }
+      }
+    ]
+  },
+
+  layout: {
+    name: 'grid',
+    rows: 1
+  },
+
+  // so we can see the ids
+  style: [
+    {
+      selector: 'node',
+      style: {
+        'label': 'data(id)'
+      }
+    }
+  ]
+});
+```
+
 
 ## Compound nodes
 

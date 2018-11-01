@@ -396,19 +396,25 @@ util.extend( corefn, {
       cy.endBatch();
 
       return this; // chaining
-    } else if( obj === undefined ){ // get
+    } else { // get
+      let flat = !!obj;
       let json = {};
 
-      json.elements = {};
-      eles.forEach( function( ele ){
-        let group = ele.group();
+      if( flat ){
+        json.elements = this.elements().map( ele => ele.json() );
+      } else {
+        json.elements = {};
 
-        if( !json.elements[ group ] ){
-          json.elements[ group ] = [];
-        }
+        eles.forEach( function( ele ){
+          let group = ele.group();
 
-        json.elements[ group ].push( ele.json() );
-      } );
+          if( !json.elements[ group ] ){
+            json.elements[ group ] = [];
+          }
+
+          json.elements[ group ].push( ele.json() );
+        } );
+      }
 
       if( this._private.styleEnabled ){
         json.style = cy.style().json();

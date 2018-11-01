@@ -1,4 +1,4 @@
-# Cytoscape.js
+<div style="text-align: center;"><img style="width: 200px; height: 200px;" src="https://raw.githubusercontent.com/cytoscape/cytoscape.js/master/documentation/img/cytoscape-logo.png"></img></div>
 
 [![GitHub repo](https://img.shields.io/badge/Repo-GitHub-yellow.svg)](https://github.com/cytoscape/cytoscape.js)
 [![Twitter updates](https://img.shields.io/badge/Updates-Twitter-yellow.svg)](https://twitter.com/cytoscapejs)
@@ -11,10 +11,9 @@
 [![master branch tests](https://img.shields.io/travis/cytoscape/cytoscape.js/master.svg?maxAge=1&label=master%20branch)](https://travis-ci.org/cytoscape/cytoscape.js)
 [![unstable branch tests](https://img.shields.io/travis/cytoscape/cytoscape.js/unstable.svg?maxAge=1&label=unstable%20branch)](https://travis-ci.org/cytoscape/cytoscape.js) [![Greenkeeper badge](https://badges.greenkeeper.io/cytoscape/cytoscape.js.svg)](https://greenkeeper.io/)
 
+# Cytoscape.js
 
 Graph theory (network) library for visualisation and analysis : [http://js.cytoscape.org](http://js.cytoscape.org)
-
-
 
 ## Description
 
@@ -84,7 +83,7 @@ Run `npm run <target>` in the console.  The main targets are:
  * `build`: do all builds of the library (unmin, min, umd)
  * `build:unmin` : do the unminified build with bundled dependencies (for simple html pages, good for novices)
  * `build:min` : do the unminified build with bundled dependencies (for simple html pages, good for novices)
- * `build:umd` : do the umd (cjd/amd/globals) build
+ * `build:umd` : do the umd (cjs/amd/globals) build
  * `clean` : clean the `build` directory
  * `docs` : build the docs into `documentation`
  * `release` : build all release artefacts
@@ -97,11 +96,11 @@ Run `npm run <target>` in the console.  The main targets are:
  * `watch:umd` : automatically build prod umd bundle (no sourcemap, with babel)
    * good for testing cytoscape in another project (with a `"cytoscape": "file:./path/to/cytoscape"` reference in your project's `package.json`)
    * no http server
- * `dist` : update the distribution js for npm, bower, etc.
+ * `dist` : update the distribution js for npm etc.
 
 **Testing:**
 
-If the `TRAVIS` or `TEST_BUILD` environment variables are defined, then `mocha` or `gulp test` will test `build/cytoscape.umd.js`.  Otherwise, the unbundled, unbabelified, raw source is tested.  This keeps local tests very quick to run on modern versions of node while ensuring we can test old versions of node as well.  The library can be built on `node>=4`, but it can be tested on `node>=0.10`.
+If the `TRAVIS` or `TEST_BUILD` environment variables are defined, then `mocha` or `gulp test` will test `build/cytoscape.umd.js`.  Otherwise, the unbundled, unbabelified, raw source is tested.  This keeps local tests very quick to run on modern versions of node while ensuring we can test old versions of node as well.  The library can be built on `node>=6`, but it can be tested on `node>=0.10`.
 
  * `test` : run the Mocha unit tests
  * `test:build` : run the Mocha unit tests (on a built bundle)
@@ -119,7 +118,7 @@ If the `TRAVIS` or `TEST_BUILD` environment variables are defined, then `mocha` 
  1. Do each backport patch release before the corresponding current release.  This ensures that npm lists the current version as the latest one.
  1. Make sure the docs are updated with the list of releases in `documentation/md/intro.md`
  1. Update the `VERSION` environment variable, e.g. `export VERSION=1.2.3`
- 1. Confirm all tests passing: `npm run test` (see also `test/index.html` for browser testing)
+ 1. Confirm all the tests are passing: `npm run test` (see also `test/index.html` for browser testing)
  1. Prepare a release: `npm run release`
  1. Review the files that were just built in the previous step.  Try out the newly-built docs and demos.
  1. Add the the release to git: `git add . && git commit -m "Build $VERSION"`

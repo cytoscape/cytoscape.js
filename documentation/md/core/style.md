@@ -26,6 +26,29 @@ cy.style()
 ;
 ```
 
+Set a completely new stylesheet (without the default stylesheet as a base):
+
+```js
+cy.style()
+  .clear() // start a fresh stylesheet without even the default stylesheet
+
+  // define all basic styles for node
+  .selector('node')
+    .style('background-color', 'magenta')
+
+  // define all basic styles for edge
+  .selector('edge')
+  	.style({
+      'width': 3,
+      'line-color': 'yellow'
+    })
+
+  // ...
+
+  .update() // indicate the end of your new stylesheet so that it can be updated on elements
+;
+```
+
 Add to the existing stylesheet:
 ```js
 cy.style()

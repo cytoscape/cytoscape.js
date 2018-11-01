@@ -325,6 +325,21 @@ styfn.updateStyleHints = function(ele){
   return oldStyleKey !== _p.styleKey;
 };
 
+styfn.clearStyleHints = function(ele){
+  let _p = ele._private;
+
+  _p.styleKeys = {};
+  _p.styleKey = null;
+  _p.labelKey = null;
+  _p.labelStyleKey = null;
+  _p.sourceLabelKey = null;
+  _p.sourceLabelStyleKey = null;
+  _p.targetLabelKey = null;
+  _p.targetLabelStyleKey = null;
+  _p.nodeKey = null;
+  _p.hasPie = null;
+};
+
 // apply a property to the style (for internal use)
 // returns whether application was successful
 //
@@ -600,6 +615,11 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
 styfn.cleanElements = function( eles, keepBypasses ){
   for( let i = 0; i < eles.length; i++ ){
     let ele = eles[i];
+
+    this.clearStyleHints(ele);
+
+    ele.dirtyCompoundBoundsCache();
+    ele.dirtyBoundingBoxCache();
 
     if( !keepBypasses ){
       ele._private.style = {};

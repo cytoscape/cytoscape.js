@@ -295,7 +295,7 @@ ETCp.invalidateElement = function( ele ){
   }
 
   for( let lvl = minLvl; lvl <= maxLvl; lvl++ ){
-    let cache = lookup.get( ele, lvl );
+    let cache = lookup.getForCachedKey( ele, lvl );
 
     if( cache ){
       caches.push( cache );

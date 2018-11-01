@@ -114,6 +114,13 @@ class ElementTextureCacheLookup {
     return cache;
   }
 
+  getForCachedKey(ele, lvl){
+    let key = this.keyForId.get(ele.id()); // n.b. use cached key, not newly computed key
+    let cache = this.getCache(key, lvl);
+
+    return cache;
+  }
+
   hasCache(key, lvl){
     return this.getCachesAt(lvl).has(key);
   }

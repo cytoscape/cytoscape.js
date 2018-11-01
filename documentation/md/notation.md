@@ -153,7 +153,7 @@ cytoscape({
     {
       selector: 'node',
       style: {
-        'content': 'data(id)'
+        'label': 'data(id)'
       }
     }
   ]

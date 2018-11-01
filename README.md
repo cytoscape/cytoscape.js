@@ -1,4 +1,4 @@
-<div style="text-align: center;"><img style="width: 200px; height: 200px;" src="https://raw.githubusercontent.com/cytoscape/cytoscape.js/master/documentation/img/cytoscape-logo.png"></img></div>
+<div style="text-align: center;" align="center"><img style="width: 200px; height: 200px;" src="https://raw.githubusercontent.com/cytoscape/cytoscape.js/master/documentation/img/cytoscape-logo.png" width="200" height="200"></img></div>
 
 [![GitHub repo](https://img.shields.io/badge/Repo-GitHub-yellow.svg)](https://github.com/cytoscape/cytoscape.js)
 [![Twitter updates](https://img.shields.io/badge/Updates-Twitter-yellow.svg)](https://twitter.com/cytoscapejs)

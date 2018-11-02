@@ -234,6 +234,59 @@ describe('Collection data', function(){
       expect( evts ).to.equal(1);
     });
 
+    it('moves edge source', function(){
+      var n1n2 = cy.$('#n1n2');
+
+      n1n2.json({ data: { source: 'n3' } });
+
+      expect( cy.$('#n1n2').source().id() ).to.equal('n3');
+    });
+
+    it('moves edge target', function(){
+      var n1n2 = cy.$('#n1n2');
+
+      n1n2.json({ data: { target: 'n3' } });
+
+      expect( cy.$('#n1n2').target().id() ).to.equal('n3');
+    });
+
+    it('moves edge source and target', function(){
+      var n1n2 = cy.$('#n1n2');
+
+      n1n2.json({ data: { source: 'n3', target: 'n4' } });
+
+      expect( cy.$('#n1n2').source().id() ).to.equal('n3');
+      expect( cy.$('#n1n2').target().id() ).to.equal('n4');
+    });
+
+    it('moves edge source and target and selected state', function(){
+      var n1n2 = cy.$('#n1n2');
+
+      // changing the source or target removes the old ele and adds a new one
+      // so make sure that the selected state is applied to the new ele
+      n1n2.json({ data: { source: 'n3', target: 'n4' }, selected: true });
+
+      expect( cy.$('#n1n2').source().id() ).to.equal('n3');
+      expect( cy.$('#n1n2').target().id() ).to.equal('n4');
+      expect( cy.$('#n1n2').selected() ).to.be.true;
+    });
+
+    it('moves node parent', function(){
+      cy.$('#n4').json({ data: { parent: 'n1' } });
+
+      expect( cy.$('#n4').parent().id() ).to.equal('n1');
+    });
+
+    it('moves node parent and position', function(){
+      // changing parent removes the old ele and adds a new one
+      // so make sure that position is applied to the new ele
+      cy.$('#n4').json({ data: { parent: 'n1' }, position: { x: 1234, y: 5678 } });
+
+      expect( cy.$('#n4').parent().id() ).to.equal('n1');
+      expect( cy.$('#n4').position() ).to.deep.equal({ x: 1234, y: 5678 });
+    });
+
+
   });
 
   describe('eles.group()', function(){

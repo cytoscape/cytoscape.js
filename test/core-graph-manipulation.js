@@ -340,6 +340,47 @@ describe('Core graph manipulation', function(){
       expect( cb ).to.equal(1);
     });
 
+    it('cy.json() moves edge', function(){
+      cy.json({
+        elements: [
+          { group: 'nodes', data: { id: "n1", foo: "one", weight: 0.25 }, classes: "odd one" },
+          { group: 'nodes', data: { id: "n2", foo: "two", weight: 0.5 }, classes: "even two" },
+          { group: 'nodes', data: { id: "n3", foo: "three", weight: 0.75 }, classes: "odd three" },
+          { group: 'edges', data: { id: "n1n2", source: "n1", target: "n2", weight: 0.33 }, classes: "uh" },
+          { group: 'edges', data: { id: "n2n3", source: "n1", target: "n3", weight: 0.66 }, classes: "huh" }
+        ]
+      });
+
+      expect( cy.$('#n1').length ).to.equal(1);
+      expect( cy.$('#n2').length ).to.equal(1);
+      expect( cy.$('#n3').length ).to.equal(1);
+      expect( cy.$('#n1n2').length ).to.equal(1);
+      expect( cy.$('#n2n3').length ).to.equal(1);
+
+      expect( cy.$('#n2n3').source().id() ).to.equal('n1');
+      expect( cy.$('#n2n3').target().id() ).to.equal('n3');
+    });
+
+    it('cy.json() moves node to new parent', function(){
+      cy.json({
+        elements: [
+          { group: 'nodes', data: { id: "n1", foo: "one", weight: 0.25 }, classes: "odd one" },
+          { group: 'nodes', data: { id: "n2", foo: "two", weight: 0.5 }, classes: "even two" },
+          { group: 'nodes', data: { id: "n3", foo: "three", weight: 0.75, parent: 'n1' }, classes: "odd three" },
+          { group: 'edges', data: { id: "n1n2", source: "n1", target: "n2", weight: 0.33 }, classes: "uh" },
+          { group: 'edges', data: { id: "n2n3", source: "n2", target: "n3", weight: 0.66 }, classes: "huh" }
+        ]
+      });
+
+      expect( cy.$('#n1').length ).to.equal(1);
+      expect( cy.$('#n2').length ).to.equal(1);
+      expect( cy.$('#n3').length ).to.equal(1);
+      expect( cy.$('#n1n2').length ).to.equal(1);
+      expect( cy.$('#n2n3').length ).to.equal(1);
+
+      expect( cy.$('#n3').parent().id() ).to.equal('n1');
+    });
+
     it('cy.json() adds elements with preceding edge', function(){
       var cb = 0;
       cy.on('add', function(){ cb++; });

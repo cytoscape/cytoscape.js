@@ -177,6 +177,35 @@ elesfn.json = function( obj ){
 
     if( obj.data ){
       ele.data( obj.data );
+
+      let data = p.data;
+
+      if( ele.isEdge() ){ // source and target are immutable via data()
+        let move = false;
+        let spec = {};
+        let src = obj.data.source;
+        let tgt = obj.data.target;
+
+        if( src != null && src !== data.source ){
+          spec.source = src;
+          move = true;
+        }
+
+        if( tgt != null && tgt !== data.target ){
+          spec.target = tgt;
+          move = true;
+        }
+
+        if( move ){
+          ele = ele.move(spec);
+        }
+      } else { // parent is immutable via data()
+        let parent = obj.data.parent;
+
+        if( parent != null && parent !== data.parent ){
+          ele = ele.move({ parent });
+        }
+      }
     }
 
     if( obj.position ){

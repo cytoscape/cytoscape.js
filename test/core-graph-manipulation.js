@@ -340,6 +340,25 @@ describe('Core graph manipulation', function(){
       expect( cb ).to.equal(1);
     });
 
+    it('cy.json() adds elements with preceding edge', function(){
+      var cb = 0;
+      cy.on('add', function(){ cb++; });
+
+      cy.json({
+        elements: [
+          { data: { id: "ab", source: "a", target: "b" } },
+          { data: { id: "a" } },
+          { data: { id: "b" } }
+        ]
+      });
+
+      expect( cy.$('#a').length ).to.equal(1);
+      expect( cy.$('#b').length ).to.equal(1);
+      expect( cy.$('#ab').length ).to.equal(1);
+
+      expect( cb ).to.equal(3);
+    });
+
     it('cy.json() removes element', function(){
       var cb = 0;
       cy.on('remove', function(){ cb++; });

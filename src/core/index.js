@@ -322,6 +322,8 @@ util.extend( corefn, {
         let idInJson = {};
 
         let updateEles = function( jsons, gr ){
+          let toAdd = [];
+
           for( let i = 0; i < jsons.length; i++ ){
             let json = jsons[ i ];
             let id = json.data.id;
@@ -335,12 +337,14 @@ util.extend( corefn, {
               if( gr ){
                 json.group = gr;
 
-                cy.add( json );
+                toAdd.push( json );
               } else {
-                cy.add( json );
+                toAdd.push( json );
               }
             }
           }
+
+          cy.add( toAdd );
         };
 
         if( is.array( obj.elements ) ){ // elements: []

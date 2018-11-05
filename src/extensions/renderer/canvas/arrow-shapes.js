@@ -2,87 +2,68 @@ var CRp = {};
 
 var impl;
 
+function polygon( context, points ){
+  for( var i = 0; i < points.length; i++ ){
+    var pt = points[ i ];
+
+    context.lineTo( pt.x, pt.y );
+  }
+}
+
+function triangleBackcurve( context, points, controlPoint ){
+  var firstPt;
+
+  for( var i = 0; i < points.length; i++ ){
+    var pt = points[ i ];
+
+    if( i === 0 ){
+      firstPt = pt;
+    }
+
+    context.lineTo( pt.x, pt.y );
+  }
+
+  context.quadraticCurveTo( controlPoint.x, controlPoint.y, firstPt.x, firstPt.y );
+}
+
+function triangleTee( context, trianglePoints, teePoints ){
+  if( context.beginPath ){ context.beginPath(); }
+
+  var triPts = trianglePoints;
+  for( var i = 0; i < triPts.length; i++ ){
+    var pt = triPts[ i ];
+
+    context.lineTo( pt.x, pt.y );
+  }
+
+  var teePts = teePoints;
+  var firstTeePt = teePoints[0];
+  context.moveTo( firstTeePt.x, firstTeePt.y );
+
+  for( var i = 1; i < teePts.length; i++ ){
+    var pt = teePts[ i ];
+
+    context.lineTo( pt.x, pt.y );
+  }
+
+  if( context.closePath ){ context.closePath(); }
+}
+
+function circle( context, rx, ry, r ){
+  context.arc( rx, ry, r, 0, Math.PI * 2, false );
+}
+
 CRp.arrowShapeImpl = function( name ){
   return ( impl || (impl = {
-    'polygon': function( context, points ){
-      for( var i = 0; i < points.length; i++ ){
-        var pt = points[ i ];
+    'polygon': polygon,
 
-        context.lineTo( pt.x, pt.y );
-      }
-    },
+    'triangle-backcurve': triangleBackcurve,
 
-    'triangle-backcurve': function( context, points, controlPoint ){
-      var firstPt;
+    'triangle-tee': triangleTee,
 
-      for( var i = 0; i < points.length; i++ ){
-        var pt = points[ i ];
+    'triangle-cross': triangleTee,
 
-        if( i === 0 ){
-          firstPt = pt;
-        }
-
-        context.lineTo( pt.x, pt.y );
-      }
-
-      context.quadraticCurveTo( controlPoint.x, controlPoint.y, firstPt.x, firstPt.y );
-    },
-
-    'triangle-tee': function( context, trianglePoints, teePoints ){
-      if( context.beginPath ){ context.beginPath(); }
-
-        var triPts = trianglePoints;
-        for( var i = 0; i < triPts.length; i++ ){
-          var pt = triPts[ i ];
-
-          context.lineTo( pt.x, pt.y );
-        }
-
-      if( context.closePath ){ context.closePath(); }
-
-      if( context.beginPath ){ context.beginPath(); }
-
-        var teePts = teePoints;
-        var firstTeePt = teePoints[0];
-        context.moveTo( firstTeePt.x, firstTeePt.y );
-
-        for( var i = 0; i < teePts.length; i++ ){
-          var pt = teePts[ i ];
-
-          context.lineTo( pt.x, pt.y );
-        }
-      if( context.closePath ){ context.closePath(); }
-    },
-
-    'triangle-cross': function( context, trianglePoints, crossLinePoints ){
-      if( context.beginPath ){ context.beginPath(); }
-
-        var triPts = trianglePoints;
-        for( var i = 0; i < triPts.length; i++ ){
-          var pt = triPts[ i ];
-
-          context.lineTo( pt.x, pt.y );
-        }
-
-      if( context.closePath ){ context.closePath(); }
-
-      if( context.beginPath ){ context.beginPath(); }
-
-        var teePts = crossLinePoints;
-        var firstTeePt = crossLinePoints[0];
-        context.moveTo( firstTeePt.x, firstTeePt.y );
-
-        for( var i = 0; i < teePts.length; i++ ){
-          var pt = teePts[ i ];
-
-          context.lineTo( pt.x, pt.y );
-        }
-      if( context.closePath ){ context.closePath(); }
-    },
-
-    'circle': function( context, rx, ry, r ){
-      context.arc( rx, ry, r, 0, Math.PI * 2, false );
-    }
+    'circle': circle
   }) )[ name ];
 };
 

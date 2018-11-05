@@ -161,10 +161,10 @@ BRp.registerArrowShapes = function(){
 
   defineArrowShape( 'triangle-tee', {
     points: [
-      -0.15, -0.3,
       0, 0,
       0.15, -0.3,
-      -0.15, -0.3
+      -0.15, -0.3,
+      0, 0
     ],
 
     pointsTee: [
@@ -193,10 +193,10 @@ BRp.registerArrowShapes = function(){
 
   defineArrowShape( 'triangle-cross', {
     points: [
-      -0.15, -0.3,
       0, 0,
       0.15, -0.3,
-      -0.15, -0.3
+      -0.15, -0.3,
+      0, 0
     ],
 
     baseCrossLinePts: [

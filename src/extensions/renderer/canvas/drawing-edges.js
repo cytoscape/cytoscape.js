@@ -252,7 +252,7 @@ CRp.drawArrowhead = function( context, edge, prefix, x, y, angle, opacity ){
 
 CRp.drawArrowShape = function( edge, context, fill, edgeWidth, shape, x, y, angle ){
   let r = this;
-  let usePaths = this.usePaths();
+  let usePaths = this.usePaths() && shape !== 'triangle-cross';
   let pathCacheHit = false;
   let path;
   let canvasContext = context;

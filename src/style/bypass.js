@@ -124,6 +124,8 @@ styfn.overrideBypass = function( eles, name, value ){
       } else {
         prop.strValue = '' + value;
       }
+
+      this.updateStyleHints( ele );
     }
 
     this.checkTriggers( ele, name, oldValue, value );

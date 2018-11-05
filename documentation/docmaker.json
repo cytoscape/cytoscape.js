@@ -58,6 +58,7 @@
         { "name": "Animated BFS", "id": "animated-bfs" },
         { "name": "Node types", "id": "node-types" },
         { "name": "Edge types", "id": "edge-types" },
+        { "name": "Edge arrow types", "id": "edge-arrows" },
         { "name": "Labels", "id": "labels" },
         { "name": "Compound nodes", "id": "compound-nodes" },
         { "name": "Linkout example", "id": "linkout-example" },

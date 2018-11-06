@@ -2170,6 +2170,37 @@ elesfn.json = function (obj) {
 
     if (obj.data) {
       ele.data(obj.data);
+
+      var data = p.data;
+
+      if (ele.isEdge()) {
+        // source and target are immutable via data()
+        var move = false;
+        var spec = {};
+        var src = obj.data.source;
+        var tgt = obj.data.target;
+
+        if (src != null && src !== data.source) {
+          spec.source = src;
+          move = true;
+        }
+
+        if (tgt != null && tgt !== data.target) {
+          spec.target = tgt;
+          move = true;
+        }
+
+        if (move) {
+          ele = ele.move(spec);
+        }
+      } else {
+        // parent is immutable via data()
+        var parent = obj.data.parent;
+
+        if (parent != null && parent !== data.parent) {
+          ele = ele.move({ parent: parent });
+        }
+      }
     }
 
     if (obj.position) {
@@ -3408,6 +3439,8 @@ util.extend(corefn, {
         var idInJson = {};
 
         var updateEles = function updateEles(jsons, gr) {
+          var toAdd = [];
+
           for (var i = 0; i < jsons.length; i++) {
             var json = jsons[i];
             var id = json.data.id;
@@ -3421,12 +3454,14 @@ util.extend(corefn, {
             } else {
               // otherwise should be added
               if (gr) {
-                cy.add(util.extend({ group: gr }, json));
+                toAdd.push(util.extend({ group: gr }, json));
               } else {
-                cy.add(json);
+                toAdd.push(json);
               }
             }
           }
+
+          cy.add(toAdd);
         };
 
         if (is.array(obj.elements)) {
@@ -29137,7 +29172,7 @@ module.exports = Stylesheet;
 "use strict";
 
 
-module.exports = "3.2.19";
+module.exports = "3.2.20";
 
 /***/ })
 /******/ ]);

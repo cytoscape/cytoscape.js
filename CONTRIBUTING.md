@@ -2,7 +2,7 @@
 
 Cytoscape.js is an open source project, and we greatly appreciate any and all contributions.
 
-A blog post is available [on blog.js.cytoscape.org](http://blog.js.cytoscape.org/2017/05/09/contributing/) geared towards first-time contributors with more in-depth instructions on the project's structure, the process of creating and merging changes to the code, and more.
+A blog post is available [on blog.js.cytoscape.org](http://blog.js.cytoscape.org/2017/06/13/contributing/) geared towards first-time contributors with more in-depth instructions on the project's structure, the process of creating and merging changes to the code, and more.
 
 If you'd like to contribute code to Cytoscape.js but you're not sure exactly what you'd like to implement, take a look at our [current milestones](https://github.com/cytoscape/cytoscape.js/milestones) to see what features we have planned in future --- or anything labelled [`help-wanted`](https://github.com/cytoscape/cytoscape.js/issues?q=is%3Aopen+is%3Aissue+label%3Ahelp-wanted).  Of course, we also welcome your own ideas.
 

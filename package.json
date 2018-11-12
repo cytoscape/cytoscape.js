@@ -78,7 +78,7 @@
     "clean": "rimraf build/*",
     "copyright": "update license",
     "dist:copy": "cpy build/cytoscape.umd.js build/cytoscape.min.js build/cytoscape.cjs.js build/cytoscape.esm.js dist",
-    "dist": "run-s build dist:*",
+    "dist": "cross-env NODE_ENV=production run-s build dist:*",
     "release": "run-s copyright dist docs",
     "postpublish": "run-s docs:push",
     "watch": "run-s watch:fast",

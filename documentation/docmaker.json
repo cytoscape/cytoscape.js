@@ -269,7 +269,8 @@
                     { "name": "namespace", "descr": "A namespace string." }
                   ]
                 }
-              ]
+              ],
+              "md": "collection/removeScratch"
             }
           ]
         },
@@ -629,7 +630,7 @@
 
             {
               "name": "cy.extent",
-              "descr": "Get the extent of the viewport, a bounding box in model coordinates that lets you know what model positions are visible in the viewport.",
+              "descr": "Get the extent of the viewport, a bounding box in model co-ordinates that lets you know what model positions are visible in the viewport.",
               "md": "core/extent"
             },
 
@@ -1017,11 +1018,11 @@
 
             {
               "name": "eles.move",
-              "descr": "Effectively move edges to different nodes or move nodes to different parent node.  The modified (actually new) elements are returned.",
+              "descr": "Replace the specified elements with copies that have been moved as specified (i.e. new `source`, `target`, or `parent`).  The new elements are returned.",
               "formats": [
                 {
                   "name": "edges.move",
-                  "descr": "Move edges to different nodes.",
+                  "descr": "Change the source, target, or both source and target.",
                   "args": [ {
                     "name": "location",
                     "descr": "Where the edges are moved.  You can specify a new source, a new target, or both.",
@@ -1034,7 +1035,7 @@
 
                 {
                   "name": "nodes.move",
-                  "descr": "Move nodes to different parent node.",
+                  "descr": "Change the parent.",
                   "args": [ {
                     "name": "location",
                     "descr": "Where the nodes are moved.",
@@ -1157,7 +1158,7 @@
               "formats": [
                 {
                   "name": "ele.data",
-                  "descr": "Get all data for the element."
+                  "descr": "Get the entire data object."
                 },
 
                 {
@@ -1291,12 +1292,12 @@
 
             {
               "name": "edge.isLoop",
-              "descr": "Get whether the edge is a loop (i.e. source same as target)."
+              "descr": "Get whether the edge is a loop (i.e. same source and target)."
             },
 
             {
               "name": "edge.isSimple",
-              "descr": "Get whether the edge is simple (i.e. source different than target)."
+              "descr": "Get whether the edge is simple (i.e. different source and target)."
             }
 
           ]
@@ -1399,7 +1400,7 @@
             {
               "name": "node.position",
               "pureAliases": [ "node.modelPosition", "node.point" ],
-              "descr": "Get or set the (model) position of a node.",
+              "descr": "Get or set the [model position](#notation/position) of a node.",
               "formats": [
                 {
                   "descr": "Get the entire position object."
@@ -1432,7 +1433,7 @@
 
             {
               "name": "nodes.shift",
-              "descr": "Shift the positions of the nodes by a given model position vector.",
+              "descr": "Shift the positions of the nodes by a given [model position](#notation/position) vector.",
               "formats": [
                 {
                   "descr": "Shift the nodes by one of `'x'` or `'y'`.",
@@ -1448,13 +1449,14 @@
                     { "name": "pos", "descr": "An object specifying name-value pairs representing dimensions to shift." }
                   ]
                 }
-              ]
+              ],
+              "md": "collection/shift"
             },
 
             {
               "name": "nodes.positions",
               "pureAliases": [ "nodes.modelPositions", "nodes.points" ],
-              "descr": "Set the (model) positions of several nodes with a function.",
+              "descr": "Set the [model positions](#notation/position) of several nodes with a function.",
               "formats": [
                 {
                   "descr": "Set the positions via a function.",
@@ -1483,7 +1485,7 @@
             {
               "name": "node.renderedPosition",
               "pureAliases": [ "node.renderedPoint" ],
-              "descr": "Get or set the rendered (on-screen) position of a node.",
+              "descr": "Get or set the [rendered (on-screen) position](#notation/position) of a node.",
               "formats": [
                 {
                   "descr": "Get the entire rendered position object."
@@ -1516,7 +1518,7 @@
             {
               "name": "node.relativePosition",
               "pureAliases": [ "node.relativePoint" ],
-              "descr": "Get or set the position of a node, relative to its compound parent.",
+              "descr": "Get or set the [model position](#notation/position) of a node, relative to its compound parent.",
               "formats": [
                 {
                   "descr": "Get the entire relative position object."
@@ -1550,10 +1552,10 @@
               "name": "ele.width",
               "descr": "Get the width of the element.",
               "formats": [
-                { "name": "ele.width", "descr": "Get the width of the element." },
-                { "name": "ele.outerWidth", "descr": "Get the outer width of the element (includes width, padding, & border)." },
-                { "name": "ele.renderedWidth", "descr": "Get the width of the element in rendered dimensions." },
-                { "name": "ele.renderedOuterWidth", "descr": "Get the outer width of the element (includes width, padding, & border) in rendered dimensions." }
+                { "name": "ele.width", "descr": "Get the width of the element in [model dimensions](#notation/position)." },
+                { "name": "ele.outerWidth", "descr": "Get the outer width of the element in [model dimensions](#notation/position) (includes width, padding, & border)." },
+                { "name": "ele.renderedWidth", "descr": "Get the width of the element in [rendered dimensions](#notation/position)." },
+                { "name": "ele.renderedOuterWidth", "descr": "Get the outer width of the element in [rendered dimensions](#notation/position) (includes width, padding, & border) in rendered dimensions." }
               ]
             },
 
@@ -1561,21 +1563,21 @@
               "name": "ele.height",
               "descr": "Get the height of the element.",
               "formats": [
-                { "name": "ele.height", "descr": "Get the height of the element." },
-                { "name": "ele.outerHeight", "descr": "Get the outer height of the element (includes height, padding, & border)." },
-                { "name": "ele.renderedHeight", "descr": "Get the height of the element in rendered dimensions." },
-                { "name": "ele.renderedOuterHeight", "descr": "Get the outer height of the element (includes height, padding, & border) in rendered dimensions." }
+                { "name": "ele.height", "descr": "Get the height of the element in [model dimensions](#notation/position)." },
+                { "name": "ele.outerHeight", "descr": "Get the outer height of the element in [model dimensions](#notation/position) (includes height, padding, & border)." },
+                { "name": "ele.renderedHeight", "descr": "Get the height of the element in [rendered dimensions](#notation/position)." },
+                { "name": "ele.renderedOuterHeight", "descr": "Get the outer height of the element in [rendered dimensions](#notation/position) (includes height, padding, & border) in rendered dimensions." }
               ]
             },
 
             {
               "name": "eles.boundingBox",
               "pureAliases": [ "eles.boundingbox", "eles.bb" ],
-              "descr": "Get the bounding box of the elements.",
+              "descr": "Get the bounding box of the elements (in [model co-ordinates](#notation/position)).",
               "formats": [
                 {
                   "name": "eles.boundingBox",
-                  "descr": "Get the bounding box of the elements in model coordinates.",
+                  "descr": "Get the bounding box of the elements in [model co-ordinates](#notation/position).",
                   "args": [
                     {
                       "name": "options",
@@ -1596,11 +1598,11 @@
             {
               "name": "eles.renderedBoundingBox",
               "pureAliases": [ "eles.renderedBoundingbox" ],
-              "descr": "Get the rendered bounding box of the elements.",
+              "descr": "Get the [rendered](#notation/position) bounding box of the elements.",
               "formats": [
                 {
                   "name": "eles.renderedBoundingBox",
-                  "descr": "Get the bounding box of the elements in rendered coordinates.",
+                  "descr": "Get the bounding box of the elements in rendered co-ordinates.",
                   "args": [
                     {
                       "name": "options",
@@ -1674,11 +1676,11 @@
               "formats": [
                 {
                   "name": "edge.controlPoints",
-                  "descr": "Get the control points in [model coordinates](#notation/position)."
+                  "descr": "Get the control points in [model co-ordinates](#notation/position)."
                 },
                 {
                   "name": "edge.renderedControlPoints",
-                  "descr": "Get the control points in [rendered coordinates](#notation/position)."
+                  "descr": "Get the control points in [rendered co-ordinates](#notation/position)."
                 }
               ],
               "md": "collection/controlPoints"
@@ -1690,11 +1692,11 @@
               "formats": [
                 {
                   "name": "edge.segmentPoints",
-                  "descr": "Get the segment points in [model coordinates](#notation/position)."
+                  "descr": "Get the segment points in [model co-ordinates](#notation/position)."
                 },
                 {
                   "name": "edge.renderedSegmentPoints",
-                  "descr": "Get the segment points in [rendered coordinates](#notation/position)."
+                  "descr": "Get the segment points in [rendered co-ordinates](#notation/position)."
                 }
               ],
               "md": "collection/segmentPoints"
@@ -1702,15 +1704,15 @@
 
             {
               "name": "edge.sourceEndpoint",
-              "descr": "Get the model position of where the edge ends, towards the source node.",
+              "descr": "Get the position of where the edge ends, towards the source node.",
               "formats": [
                 {
                   "name": "edge.sourceEndpoint",
-                  "descr": "Get the source endpoint in [model coordinates](#notation/position)."
+                  "descr": "Get the source endpoint in [model co-ordinates](#notation/position)."
                 },
                 {
                   "name": "edge.renderedSourceEndpoint",
-                  "descr": "Get the target endpoint in [rendered coordinates](#notation/position)."
+                  "descr": "Get the target endpoint in [rendered co-ordinates](#notation/position)."
                 }
               ]
             },
@@ -1721,11 +1723,11 @@
               "formats": [
                 {
                   "name": "edge.targetEndpoint",
-                  "descr": "Get the target endpoint in [model coordinates](#notation/position)."
+                  "descr": "Get the target endpoint in [model co-ordinates](#notation/position)."
                 },
                 {
                   "name": "edge.renderedTargetEndpoint",
-                  "descr": "Get the target endpoint in [rendered coordinates](#notation/position)."
+                  "descr": "Get the target endpoint in [rendered co-ordinates](#notation/position)."
                 }
               ]
             },
@@ -1736,11 +1738,11 @@
               "formats": [
                 {
                   "name": "edge.midpoint",
-                  "descr": "Get the midpoint in [model coordinates](#notation/position)."
+                  "descr": "Get the midpoint in [model co-ordinates](#notation/position)."
                 },
                 {
                   "name": "edge.renderedMidpoint",
-                  "descr": "Get the midpoint in [rendered coordinates](#notation/position)."
+                  "descr": "Get the midpoint in [rendered co-ordinates](#notation/position)."
                 }
               ],
               "md": "collection/midpoint.md"
@@ -1800,7 +1802,7 @@
 
             {
               "name": "node.layoutDimensions",
-              "descr": "Returns the node width and height. Meant for use in layout positioning to do overlap detection.",
+              "descr": "Get the node width and height.  This function is intended for use in layout positioning to do overlap detection.",
               "extFn": true,
               "formats": [
                 {
@@ -1827,14 +1829,14 @@
 
             {
               "name": "eles.select",
-              "descr": "Make the elements selected (NB other elements outside the collection are not affected).",
+              "descr": "Make the elements selected.  Elements outside the collection are not affected.",
               "md": "collection/select"
             },
 
             {
               "name": "eles.unselect",
               "pureAliases": ["eles.deselect"],
-              "descr": "Make the elements not selected (NB other elements outside the collection are not affected).",
+              "descr": "Make the elements not selected. Elements outside the collection are not affected.",
               "md": "collection/unselect"
             },
 
@@ -1862,7 +1864,7 @@
           "fns": [
             {
               "name": "eles.addClass",
-              "descr": "Add classes to elements.",
+              "descr": "Add classes to elements.  The classes should be specified in the [stylesheet](#style) in order to have an effect on the rendered style of the elements.",
               "formats": [
                 {
                   "args": [ { "name": "classes", "descr": "An array (or a space-separated string) of class names to add to the elements." } ]
@@ -1873,7 +1875,7 @@
 
             {
               "name": "eles.removeClass",
-              "descr": "Remove classes from elements.",
+              "descr": "Remove classes from elements.  The classes should be specified in the [stylesheet](#style) in order to have an effect on the rendered style of the elements.",
               "formats": [
                 {
                   "args": [ { "name": "classes", "descr": "An array (or a space-separated string) of class names to remove from the elements." } ]
@@ -1884,7 +1886,7 @@
 
             {
               "name": "eles.toggleClass",
-              "descr": "Toggle whether the elements have the specified classes.",
+              "descr": "Toggle whether the elements have the specified classes.  The classes should be specified in the [stylesheet](#style) in order to have an effect on the rendered style of the elements.",
               "formats": [
                 {
                   "args": [
@@ -1985,7 +1987,7 @@
             {
               "name": "ele.renderedStyle",
               "pureAliases": [ "eles.renderedCss" ],
-              "descr": "Get the style of the element in rendered dimensions.",
+              "descr": "Get the style of the element in [rendered dimensions](#notation/position).",
               "formats": [
                 {
                   "descr": "Get a name-value pair object containing rendered visual style properties and their values for the element."
@@ -2017,7 +2019,7 @@
 
             {
               "name": "ele.visible",
-              "descr": "Get whether the element is visible (i.e. `display: element` and `visibility: visible`).",
+              "descr": "Get whether the element is [visible](#style/visibility) (i.e. `display: element` and `visibility: visible`).",
               "formats": [
                 { "name": "ele.visible", "descr": "Get whether the element is visible." },
                 { "name": "ele.hidden", "descr": "Get whether the element is hidden." }
@@ -2058,7 +2060,7 @@
                         { "name": "renderedPosition", "descr": "A rendered position to which the elements will be animated." },
                         { "name": "style", "descr": "An object containing name-value pairs of style properties to animate." },
                         { "name": "duration", "descr": "The duration of the animation in milliseconds." },
-                        { "name": "queue", "descr": "A boolean indicating whether to queue the animation." },
+                        { "name": "queue", "descr": "A boolean indicating whether to queue the animation (default `true`)." },
                         { "name": "complete", "descr": "A function to call when the animation is done." },
                         { "name": "step", "descr": "A function to call each time the animation steps." },
                         { "name": "easing", "descr": "A [`transition-timing-function`](#style/transition-animation) easing style string that shapes the animation progress curve." }
@@ -2094,7 +2096,7 @@
 
             {
               "name": "eles.delay",
-              "descr": "Add a delay between animations for the elements.",
+              "descr": "Add a delay between queued animations for the elements.",
               "formats": [
                 {
                   "args": [

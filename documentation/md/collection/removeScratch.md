@@ -1,0 +1,1 @@
+Note that `ele.removeScratch()` sets the scratchpad object for the specified namespace to `undefined`.  This allows you to use meaningful `null` values.

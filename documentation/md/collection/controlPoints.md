@@ -6,6 +6,6 @@ This function works for bundled beziers, but it is not applicable to the middle,
 
 The number of returned points for each curve style is as follows:
 
-- `curve-style: bezier`(simple edge) : 1 point for a single quadratic bezier
+- `curve-style: bezier` (simple edge) : 1 point for a single quadratic bezier
 - `curve-style: bezier` (loop) : 2 points for two quadratic beziers
 - `curve-style: unbundled-bezier` : n points for n quadratic beziers, as the number of control points is defined by `control-point-distances` and `control-point-weights`

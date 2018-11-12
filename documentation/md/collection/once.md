@@ -5,7 +5,7 @@ For each event specified to this function, the handler function is triggered onc
 ## Examples
 
 ```js
-cy.$('node').once('click', function(e){
+cy.nodes().once('click', function(e){
   var ele = e.target;
   console.log('clicked ' + ele.id());
 });

@@ -8,6 +8,8 @@ The following fields are immutable:
  * `source` & `target` : These fields define an edge's relationship to nodes, and this relationship can not be changed after creation.
  * `parent` : The `parent` field defines the parent (compound) node.
 
+Instead of modifying those fields, you can replace an element with a modified clone using [`ele.move()`](#ele.move).
+
 ## Examples
 
 ```js

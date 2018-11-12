@@ -11,7 +11,7 @@
     * ES5 and canvas support are required, and feature detection is used for optional performance enhancements.
     * Browsers circa 2012 support ES5 fully: IE10, Chrome 23, Firefox 21, Safari 6 ([caniuse](https://caniuse.com/#feat=es5))
     * Browsers with partial but sufficient ES5 support also work, such as IE9 and Firefox 4.
-    * The documentation and examples are not optimised for old browsers, although the library itself is.
+    * The documentation and examples are not optimised for old browsers, although the library itself is.  Some demos may not work in old browsers in order to keep the demo code simple.
   * Module systems
     * ES modules
     * UMD
@@ -61,7 +61,7 @@
   * [Excel](https://products.office.com/en-us/excel) : [GIGRAPH](https://gigraph.io)
   * [Facebook](https://www.facebook.com) : [Metro](https://facebook.github.io/metro/) visualiser
   * [Ganister](http://www.ganister.eu/)
-  * [Google](https://google.com) : [TensorFlow](https://www.tensorflow.org) visualiser
+  * [Google](https://google.com) : [TensorFlow](https://www.tensorflow.org) : SyntaxNet : DRAGNN visualiser
   * [GCHQ](https://www.gchq.gov.uk/) : [Gaffer](https://gchq.github.io/gaffer-doc/)
   * [GeneMANIA](http://genemania.org)
   * [Graphlytic](http://graphlytic.sk/)

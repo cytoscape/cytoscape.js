@@ -1,6 +1,6 @@
 ## Details
 
-- Sizes (e.g. `width`) are in pixels.
+- Sizes (e.g. `width`) are in [model](#notation/position) pixels.
 - Times (e.g. `transition-duration`) are in milliseconds.
 - Angles (e.g. `text-rotation`) are in radians.
 - Plain numbers (e.g. `opacity`) are unitless.

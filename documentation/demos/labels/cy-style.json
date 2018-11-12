@@ -1,13 +1,13 @@
 [
   {
-    "selector": "node",
+    "selector": "node[label]",
     "style": {
       "label": "data(label)"
     }
   },
 
   {
-    "selector": "edge",
+    "selector": "edge[label]",
     "style": {
       "label": "data(label)",
       "width": 3

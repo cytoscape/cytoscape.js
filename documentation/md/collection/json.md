@@ -8,9 +8,13 @@ Note that it is much faster to simply specify the diff-patch objects to `ele.jso
 
 ## Examples
 
+Print the JSON for an element:
+
 ```js
 console.log( cy.$('#j').json() );
 ```
+
+Make an element selected:
 
 ```js
 cy.$('#j').json({ selected: true });

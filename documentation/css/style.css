@@ -280,7 +280,6 @@ button.outline {
 	left: 0.25em;
 	right: 0;
 	font: inherit;
-	font-family: Helvetica Neue, Adobe Helvetica, Helvetica, DejaVu Sans, Arial, FontAwesome, sans-serif;
 	margin: 0;
 	padding: 0 0.5em;
 	height: 1.5em;
@@ -476,16 +475,16 @@ button.outline {
 #content:before {
 	content : '';
 	display: block;
-    position: absolute;
-    top: 0;
-    right: 0;
-	width: 10em;
-	height: 10em;
+	position: absolute;
+	top: 0;
+	right: -0.5em;
+	width: 8em;
+	height: 8em;
 	background-image: url('../img/cytoscape-logo.svg');
 	background-size: 100% 100%;
 	background-position: top left;
 	background-repeat: no-repeat;
-	opacity: 0.04;
+	opacity: 0.15;
 	z-index: -1;
 }
 

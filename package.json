@@ -67,7 +67,6 @@
     "node": ">=0.10"
   },
   "main": "dist/cytoscape.cjs.js",
-  "module": "dist/cytoscape.esm.js",
   "scripts": {
     "lint": "eslint src benchmark",
     "build": "rollup -c",
@@ -105,7 +104,6 @@
     "benchmark:single:exec": "node benchmark/single",
     "benchmark:single": "run-s benchmark:download benchmark:single:exec"
   },
-  "esm": "auto",
   "devDependencies": {
     "@babel/core": "^7.1.2",
     "@babel/preset-env": "^7.1.0",

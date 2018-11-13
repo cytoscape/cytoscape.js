@@ -8,3 +8,4 @@ node_modules
 snippets
 benchmark
 CONTRIBUTING.md
+.babelrc

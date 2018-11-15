@@ -1070,7 +1070,10 @@ var Element = function Element(cy, params, restore) {
     // indicates this is an element
     data: params.data || {},
     // data object
-    position: params.position || {},
+    position: params.position || {
+      x: 0,
+      y: 0
+    },
     // (x, y) position pair
     autoWidth: undefined,
     // width and height of nodes calculated by the renderer when set to special 'auto' value
@@ -1132,7 +1135,15 @@ var Element = function Element(cy, params, restore) {
       y: 0 // shift applied to cached bb to be applied on next get
 
     }
-  }; // renderedPosition overrides if specified
+  };
+
+  if (_p.position.x == null) {
+    _p.position.x = 0;
+  }
+
+  if (_p.position.y == null) {
+    _p.position.y = 0;
+  } // renderedPosition overrides if specified
 
 
   if (params.renderedPosition) {
@@ -8420,14 +8431,15 @@ elesfn$j.dirtyCompoundBoundsCache = function () {
 };
 
 elesfn$j.updateCompoundBounds = function () {
-  var cy = this.cy(); // save cycles for non compound graphs or when style disabled
+  var force = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
+  var cy = this.cy(); // not possible to do on non-compound graphs or with the style disabled
 
   if (!cy.styleEnabled() || !cy.hasCompoundNodes()) {
     return this;
   } // save cycles when batching -- but bounds will be stale (or not exist yet)
 
 
-  if (cy.batching()) {
+  if (!force && cy.batching()) {
     return this;
   }
 
@@ -9032,6 +9044,7 @@ var cachedBoundingBoxImpl = function cachedBoundingBoxImpl(ele, opts) {
   if (needRecalc) {
     bb = boundingBoxImpl(ele, defBbOpts);
     _p.bbCache = bb;
+    _p.bbCacheShift.x = _p.bbCacheShift.y = 0;
     _p.bbCachePosKey = currPosKey;
   } else {
     bb = _p.bbCache;
@@ -9152,6 +9165,7 @@ elesfn$j.dirtyBoundingBoxCache = function () {
     var _p = this[i]._private;
     _p.bbCache = null;
     _p.bbCacheShift.x = _p.bbCacheShift.y = 0;
+    _p.bbCachePosKey = null;
   }
 
   this.emitAndNotify('bounds');
@@ -9180,6 +9194,14 @@ elesfn$j.shiftCachedBoundingBox = function (delta) {
 
 elesfn$j.boundingBoxAt = function (fn$$1) {
   var nodes = this.nodes();
+  var cy = this.cy();
+  var hasCompoundNodes = cy.hasCompoundNodes();
+
+  if (hasCompoundNodes) {
+    nodes = nodes.filter(function (node) {
+      return !node.isParent();
+    });
+  }
 
   if (plainObject(fn$$1)) {
     var obj = fn$$1;
@@ -9187,44 +9209,28 @@ elesfn$j.boundingBoxAt = function (fn$$1) {
     fn$$1 = function fn$$1() {
       return obj;
     };
-  } // save the current position and set the new one, per node
-
-
-  for (var i = 0; i < nodes.length; i++) {
-    var n = nodes[i];
-    var _p = n._private;
-    var pos = _p.position;
-    var newPos = fn$$1.call(n, n, i);
-    _p.bbAtOldPos = {
-      x: pos.x,
-      y: pos.y
-    };
-
-    if (newPos) {
-      pos.x = newPos.x;
-      pos.y = newPos.y;
-    }
   }
 
-  this.emit('dirty'); // let the renderer know we've manually dirtied rendered dim calcs
+  var storeOldPos = function storeOldPos(node, i) {
+    return node._private.bbAtOldPos = fn$$1(node, i);
+  };
 
-  nodes.dirtyCompoundBoundsCache().updateCompoundBounds();
+  var getOldPos = function getOldPos(node) {
+    return node._private.bbAtOldPos;
+  };
+
+  cy.startBatch();
+  nodes.forEach(storeOldPos).silentPositions(fn$$1);
+
+  if (hasCompoundNodes) {
+    this.updateCompoundBounds(true); // force update b/c we're inside a batch cycle
+  }
+
   var bb = this.boundingBox({
     useCache: false
-  }); // restore the original position, per node
-
-  for (var _i = 0; _i < nodes.length; _i++) {
-    var _n = nodes[_i];
-    var _p2 = _n._private;
-    var _pos = _n._private.position;
-    var old = _p2.bbAtOldPos;
-    _pos.x = old.x;
-    _pos.y = old.y;
-  }
-
-  nodes.dirtyCompoundBoundsCache();
-  this.emit('dirty'); // let the renderer know we've manually dirtied rendered dim calcs
-
+  });
+  nodes.silentPositions(getOldPos);
+  cy.endBatch();
   return bb;
 };
 
@@ -10507,7 +10513,7 @@ var elesfn$p = {
     }
   },
   // using standard layout options, apply position function (w/ or w/o animation)
-  layoutPositions: function layoutPositions(layout, options, fn$$1) {
+  layoutPositions: function layoutPositions(layout, options, fn) {
     var nodes = this.nodes();
     var cy = this.cy();
     var layoutEles = options.eles; // nodes & edges
@@ -10516,7 +10522,7 @@ var elesfn$p = {
       return node.id() + '$' + i;
     };
 
-    var fnMem = memoize(fn$$1, getMemoizeKey); // memoized version of position function
+    var fnMem = memoize(fn, getMemoizeKey); // memoized version of position function
 
     layout.emit({
       type: 'layoutstart',
@@ -10561,14 +10567,6 @@ var elesfn$p = {
     var bb = spacingBb();
     var getFinalPos = memoize(function (node, i) {
       var newPos = fnMem(node, i);
-      var pos = node.position();
-
-      if (!number(pos.x) || !number(pos.y)) {
-        node.silentPosition({
-          x: 0,
-          y: 0
-        });
-      }
 
       if (useSpacingFactor) {
         var spacing = Math.abs(options.spacingFactor);
@@ -10595,7 +10593,6 @@ var elesfn$p = {
             easing: options.animationEasing
           });
           layout.animations.push(ani);
-          ani.play();
         } else {
           node.position(newPos);
         }
@@ -10611,7 +10608,6 @@ var elesfn$p = {
           easing: options.animationEasing
         });
         layout.animations.push(fitAni);
-        fitAni.play();
       } else if (options.zoom !== undefined && options.pan !== undefined) {
         var zoomPanAni = cy.animation({
           zoom: options.zoom,
@@ -10620,9 +10616,11 @@ var elesfn$p = {
           easing: options.animationEasing
         });
         layout.animations.push(zoomPanAni);
-        zoomPanAni.play();
       }
 
+      layout.animations.forEach(function (ani) {
+        return ani.play();
+      });
       layout.one('layoutready', options.ready);
       layout.emit({
         type: 'layoutready',

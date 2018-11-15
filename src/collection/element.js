@@ -37,7 +37,7 @@ let Element = function( cy, params, restore ){
     cy: cy,
     single: true, // indicates this is an element
     data: params.data || {}, // data object
-    position: params.position || {}, // (x, y) position pair
+    position: params.position || { x: 0, y: 0 }, // (x, y) position pair
     autoWidth: undefined, // width and height of nodes calculated by the renderer when set to special 'auto' value
     autoHeight: undefined,
     autoPadding: undefined,
@@ -70,6 +70,9 @@ let Element = function( cy, params, restore ){
     bbCache: null, // cache of the current bounding box
     bbCacheShift: { x: 0, y: 0 } // shift applied to cached bb to be applied on next get
   };
+
+  if( _p.position.x == null ){ _p.position.x = 0; }
+  if( _p.position.y == null ){ _p.position.y = 0; }
 
   // renderedPosition overrides if specified
   if( params.renderedPosition ){

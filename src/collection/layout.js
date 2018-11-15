@@ -77,11 +77,6 @@ let elesfn = ({
 
     let getFinalPos = util.memoize( function( node, i ){
       let newPos = fnMem( node, i );
-      let pos = node.position();
-
-      if( !is.number( pos.x ) || !is.number( pos.y ) ){
-        node.silentPosition( { x: 0, y: 0 } );
-      }
 
       if( useSpacingFactor ){
         let spacing = Math.abs( options.spacingFactor );

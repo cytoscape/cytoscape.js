@@ -1,6 +1,6 @@
 import * as is from '../../is';
+import { assignBoundingBox, assignShiftToBoundingBox, clearBoundingBox, expandBoundingBox, makeBoundingBox } from '../../math';
 import { defaults, getPrefixedProperty, hashIntsArray } from '../../util';
-import { expandBoundingBox, makeBoundingBox, assignBoundingBox, assignShiftToBoundingBox, clearBoundingBox } from '../../math';
 
 let fn, elesfn;
 
@@ -46,14 +46,14 @@ elesfn.dirtyCompoundBoundsCache = function(){
   return this;
 };
 
-elesfn.updateCompoundBounds = function(){
+elesfn.updateCompoundBounds = function(force = false){
   let cy = this.cy();
 
-  // save cycles for non compound graphs or when style disabled
+  // not possible to do on non-compound graphs or with the style disabled
   if( !cy.styleEnabled() || !cy.hasCompoundNodes() ){ return this; }
 
   // save cycles when batching -- but bounds will be stale (or not exist yet)
-  if( cy.batching() ){ return this; }
+  if( !force && cy.batching() ){ return this; }
 
   let updated = [];
 
@@ -669,6 +669,7 @@ let cachedBoundingBoxImpl = function( ele, opts ){
     bb = boundingBoxImpl( ele, defBbOpts );
 
     _p.bbCache = bb;
+    _p.bbCacheShift.x = _p.bbCacheShift.y = 0;
     _p.bbCachePosKey = currPosKey;
   } else {
     bb = _p.bbCache;
@@ -793,6 +794,7 @@ elesfn.dirtyBoundingBoxCache = function(){
 
     _p.bbCache = null;
     _p.bbCacheShift.x = _p.bbCacheShift.y = 0;
+    _p.bbCachePosKey = null;
   }
 
   this.emitAndNotify('bounds');
@@ -823,6 +825,12 @@ elesfn.shiftCachedBoundingBox = function( delta ){
 // - try to use for only things like discrete layouts where the node position would change anyway
 elesfn.boundingBoxAt = function( fn ){
   let nodes = this.nodes();
+  let cy = this.cy();
+  let hasCompoundNodes = cy.hasCompoundNodes();
+
+  if( hasCompoundNodes ){
+    nodes = nodes.filter(node => !node.isParent());
+  }
 
   if( is.plainObject( fn ) ){
     let obj = fn;
@@ -830,41 +838,26 @@ elesfn.boundingBoxAt = function( fn ){
     fn = function(){ return obj; };
   }
 
-  // save the current position and set the new one, per node
-  for( let i = 0; i < nodes.length; i++ ){
-    let n = nodes[i];
-    let _p = n._private;
-    let pos = _p.position;
-    let newPos = fn.call( n, n, i );
+  let storeOldPos = (node, i) => node._private.bbAtOldPos = fn(node, i);
+  let getOldPos = (node) => node._private.bbAtOldPos;
 
-    _p.bbAtOldPos = { x: pos.x, y: pos.y };
+  cy.startBatch();
 
-    if( newPos ){
-      pos.x = newPos.x;
-      pos.y = newPos.y;
-    }
+  (
+    nodes
+    .forEach(storeOldPos)
+    .silentPositions(fn)
+  );
+
+  if( hasCompoundNodes ){
+    this.updateCompoundBounds(true); // force update b/c we're inside a batch cycle
   }
-
-  this.emit('dirty'); // let the renderer know we've manually dirtied rendered dim calcs
-
-  nodes.dirtyCompoundBoundsCache().updateCompoundBounds();
 
   let bb = this.boundingBox({ useCache: false });
 
-  // restore the original position, per node
-  for( let i = 0; i < nodes.length; i++ ){
-    let n = nodes[i];
-    let _p = n._private;
-    let pos = n._private.position;
-    let old = _p.bbAtOldPos;
+  nodes.silentPositions(getOldPos);
 
-    pos.x = old.x;
-    pos.y = old.y;
-  }
-
-  nodes.dirtyCompoundBoundsCache();
-
-  this.emit('dirty'); // let the renderer know we've manually dirtied rendered dim calcs
+  cy.endBatch();
 
   return bb;
 };

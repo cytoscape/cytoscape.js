@@ -1,4 +1,3 @@
-import * as is from '../is';
 import * as util from '../util';
 import Promise from '../promise';
 import * as math from '../math';
@@ -105,8 +104,6 @@ let elesfn = ({
           } );
 
           layout.animations.push( ani );
-
-          ani.play();
         } else {
           node.position( newPos );
         }
@@ -124,8 +121,6 @@ let elesfn = ({
         });
 
         layout.animations.push( fitAni );
-
-        fitAni.play();
       } else if( options.zoom !== undefined && options.pan !== undefined ){
         let zoomPanAni = cy.animation({
           zoom: options.zoom,
@@ -135,9 +130,9 @@ let elesfn = ({
         });
 
         layout.animations.push( zoomPanAni );
-
-        zoomPanAni.play();
       }
+
+      layout.animations.forEach(ani => ani.play());
 
       layout.one( 'layoutready', options.ready );
       layout.emit( { type: 'layoutready', layout: layout } );

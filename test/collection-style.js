@@ -1163,6 +1163,49 @@ describe('Collection style', function(){
       expect( bb.w ).is.above(0);
       expect( bb.h ).is.above(0);
     });
+
+    it('updates bounding box properly with animated position', function(){
+      var n = cy.nodes().first();
+      var ani = n.animation({ position: { x: 1000, y: 1000 }, duration: 10 });
+      var p = ani.promise('complete');
+
+      ani.play();
+
+      return p.then(function(){
+        let bb = n.boundingBox();
+        let x = (bb.x1 + bb.x2)/2;
+        let y = (bb.y1 + bb.y2)/2;
+        let pos = n.position();
+
+        expect(x).to.equal(pos.x);
+        expect(y).to.equal(pos.y);
+      });
+    });
+
+    it('updates bounding box properly with animated layout', function(done){
+      var layout = cy.layout({
+        name: 'circle',
+        animate: true,
+        animationDuration: 10,
+        boundingBox: { x1: 0, x2: 1000, y1: 0, y2: 1000, w: 1000, h: 1000 }
+      });
+
+      layout.on('layoutstop', function(){
+        cy.nodes().forEach(function(n){
+          let bb = n.boundingBox();
+          let x = (bb.x1 + bb.x2)/2;
+          let y = (bb.y1 + bb.y2)/2;
+          let pos = n.position();
+
+          expect(x, 'x of ' + n.id()).to.equal(pos.x);
+          expect(y, 'y of ' + n.id()).to.equal(pos.y);
+        });
+
+        done();
+      });
+
+      layout.run();
+    });
   });
 
 });

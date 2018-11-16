@@ -26765,7 +26765,7 @@
 
       txr.context.translate(txr.usedWidth, 0);
       txr.context.scale(scale, scale);
-      this.drawElement(txr.context, ele, bb, scaledLabelShown);
+      this.drawElement(txr.context, ele, bb, scaledLabelShown, false);
       txr.context.scale(1 / scale, 1 / scale);
       txr.context.translate(-txr.usedWidth, 0);
     }
@@ -27728,13 +27728,13 @@
 
   var CRp$1 = {};
 
-  CRp$1.drawElement = function (context, ele, shiftToOriginWithBb, showLabel, showOverlay) {
+  CRp$1.drawElement = function (context, ele, shiftToOriginWithBb, showLabel, showOverlay, showOpacity) {
     var r = this;
 
     if (ele.isNode()) {
-      r.drawNode(context, ele, shiftToOriginWithBb, showLabel, showOverlay);
+      r.drawNode(context, ele, shiftToOriginWithBb, showLabel, showOverlay, showOpacity);
     } else {
-      r.drawEdge(context, ele, shiftToOriginWithBb, showLabel, showOverlay);
+      r.drawEdge(context, ele, shiftToOriginWithBb, showLabel, showOverlay, showOpacity);
     }
   };
 
@@ -27748,7 +27748,7 @@
     }
   };
 
-  CRp$1.drawCachedElementPortion = function (context, ele, eleTxrCache, pxRatio, lvl, reason, directDrawFallback, getRotation) {
+  CRp$1.drawCachedElementPortion = function (context, ele, eleTxrCache, pxRatio, lvl, reason, getRotation) {
     var r = this;
     var bb = eleTxrCache.getBoundingBox(ele);
 
@@ -27760,6 +27760,12 @@
     var eleCache = eleTxrCache.getElement(ele, bb, pxRatio, lvl, reason);
 
     if (eleCache != null) {
+      var opacity = ele.pstyle('opacity').pfValue;
+
+      if (opacity === 0) {
+        return;
+      }
+
       var theta = getRotation(r, ele);
       var x1 = bb.x1,
           y1 = bb.y1,
@@ -27787,7 +27793,18 @@
         y = y1;
       }
 
+      var oldGlobalAlpha;
+
+      if (opacity !== 1) {
+        oldGlobalAlpha = context.globalAlpha;
+        context.globalAlpha = oldGlobalAlpha * opacity;
+      }
+
       context.drawImage(eleCache.texture.canvas, eleCache.x, 0, eleCache.width, eleCache.height, x, y, bb.w, bb.h);
+
+      if (opacity !== 1) {
+        context.globalAlpha = oldGlobalAlpha;
+      }
 
       if (theta !== 0) {
         context.rotate(-theta);
@@ -27798,24 +27815,8 @@
         }
       }
     } else {
-      directDrawFallback(r, context, ele);
+      eleTxrCache.drawElement(context, ele); // direct draw fallback
     }
-  };
-
-  var directDrawBody = function directDrawBody(r, context, ele) {
-    return r.drawElement(context, ele, undefined, false, false);
-  };
-
-  var directDrawLabel = function directDrawLabel(r, context, ele) {
-    return r.drawElementText(context, ele, null, true, 'main');
-  };
-
-  var directDrawSourceLabel = function directDrawSourceLabel(r, context, ele) {
-    return r.drawElementText(context, ele, null, true, 'source');
-  };
-
-  var directDrawTargetLabel = function directDrawTargetLabel(r, context, ele) {
-    return r.drawElementText(context, ele, null, true, 'target');
   };
 
   var getZeroRotation = function getZeroRotation() {
@@ -27849,12 +27850,12 @@
     }
 
     if (!extent || boundingBoxesIntersect(bb, extent)) {
-      r.drawCachedElementPortion(context, ele, eleTxrCache, pxRatio, lvl, reason, directDrawBody, getZeroRotation);
-      r.drawCachedElementPortion(context, ele, lblTxrCache, pxRatio, lvl, reason, directDrawLabel, getLabelRotation);
+      r.drawCachedElementPortion(context, ele, eleTxrCache, pxRatio, lvl, reason, getZeroRotation);
+      r.drawCachedElementPortion(context, ele, lblTxrCache, pxRatio, lvl, reason, getLabelRotation);
 
       if (ele.isEdge()) {
-        r.drawCachedElementPortion(context, ele, slbTxrCache, pxRatio, lvl, reason, directDrawSourceLabel, getSourceLabelRotation);
-        r.drawCachedElementPortion(context, ele, tlbTxrCache, pxRatio, lvl, reason, directDrawTargetLabel, getTargetLabelRotation);
+        r.drawCachedElementPortion(context, ele, slbTxrCache, pxRatio, lvl, reason, getSourceLabelRotation);
+        r.drawCachedElementPortion(context, ele, tlbTxrCache, pxRatio, lvl, reason, getTargetLabelRotation);
       }
 
       r.drawElementOverlay(context, ele);
@@ -27920,6 +27921,7 @@
   CRp$2.drawEdge = function (context, edge, shiftToOriginWithBb) {
     var drawLabel = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : true;
     var shouldDrawOverlay = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : true;
+    var shouldDrawOpacity = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : true;
     var r = this;
     var rs = edge._private.rscratch;
 
@@ -27940,7 +27942,7 @@
       context.translate(-bb.x1, -bb.y1);
     }
 
-    var opacity = edge.pstyle('opacity').value;
+    var opacity = shouldDrawOpacity ? edge.pstyle('opacity').value : 1;
     var lineStyle = edge.pstyle('line-style').value;
     var edgeWidth = edge.pstyle('width').pfValue;
     var lineCap = edge.pstyle('line-cap').value;
@@ -27996,18 +27998,22 @@
   };
 
   CRp$2.drawEdgeOverlay = function (context, edge) {
-    var r = this;
-    var usePaths = r.usePaths();
-    var rs = edge._private.rscratch;
-    var overlayPadding = edge.pstyle('overlay-padding').pfValue;
-    var overlayWidth = 2 * overlayPadding;
+    if (!edge.visible()) {
+      return;
+    }
+
     var overlayOpacity = edge.pstyle('overlay-opacity').value;
-    var overlayColor = edge.pstyle('overlay-color').value;
 
     if (overlayOpacity === 0) {
       return;
     }
 
+    var r = this;
+    var usePaths = r.usePaths();
+    var rs = edge._private.rscratch;
+    var overlayPadding = edge.pstyle('overlay-padding').pfValue;
+    var overlayWidth = 2 * overlayPadding;
+    var overlayColor = edge.pstyle('overlay-color').value;
     context.lineWidth = overlayWidth;
 
     if (rs.edgeType === 'self' && !usePaths) {
@@ -28394,6 +28400,7 @@
   };
 
   CRp$4.drawElementText = function (context, ele, shiftToOriginWithBb, force, prefix) {
+    var useEleOpacity = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : true;
     var r = this;
 
     if (force == null) {
@@ -28450,14 +28457,14 @@
     }
 
     if (prefix == null) {
-      r.drawText(context, ele, null, applyRotation);
+      r.drawText(context, ele, null, applyRotation, useEleOpacity);
 
       if (ele.isEdge()) {
-        r.drawText(context, ele, 'source', applyRotation);
-        r.drawText(context, ele, 'target', applyRotation);
+        r.drawText(context, ele, 'source', applyRotation, useEleOpacity);
+        r.drawText(context, ele, 'target', applyRotation, useEleOpacity);
       }
     } else {
-      r.drawText(context, ele, prefix, applyRotation);
+      r.drawText(context, ele, prefix, applyRotation, useEleOpacity);
     }
 
     if (shiftToOriginWithBb) {
@@ -28487,13 +28494,13 @@
 
 
   CRp$4.setupTextStyle = function (context, ele) {
+    var useEleOpacity = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : true;
     // Font style
-    var parentOpacity = ele.effectiveOpacity();
     var labelStyle = ele.pstyle('font-style').strValue;
     var labelSize = ele.pstyle('font-size').pfValue + 'px';
     var labelFamily = ele.pstyle('font-family').strValue;
     var labelWeight = ele.pstyle('font-weight').strValue;
-    var opacity = ele.pstyle('text-opacity').value * ele.pstyle('opacity').value * parentOpacity;
+    var opacity = ele.pstyle('text-opacity').value * (useEleOpacity ? ele.effectiveOpacity() : 1);
     var outlineOpacity = ele.pstyle('text-outline-opacity').value * opacity;
     var color = ele.pstyle('color').value;
     var outlineColor = ele.pstyle('text-outline-color').value;
@@ -28542,9 +28549,10 @@
 
   CRp$4.drawText = function (context, ele, prefix) {
     var applyRotation = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : true;
+    var useEleOpacity = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : true;
     var _p = ele._private;
     var rscratch = _p.rscratch;
-    var parentOpacity = ele.effectiveOpacity();
+    var parentOpacity = useEleOpacity ? ele.effectiveOpacity() : 1;
 
     if (parentOpacity === 0 || ele.pstyle('text-opacity').value === 0) {
       return;
@@ -28560,7 +28568,7 @@
     var text = this.getLabelText(ele, prefix);
 
     if (text != null && text !== '' && !isNaN(textX) && !isNaN(textY)) {
-      this.setupTextStyle(context, ele);
+      this.setupTextStyle(context, ele, useEleOpacity);
       var pdash = prefix ? prefix + '-' : '';
       var textW = getPrefixedProperty(rscratch, 'labelWidth', prefix);
       var textH = getPrefixedProperty(rscratch, 'labelHeight', prefix);
@@ -28745,6 +28753,7 @@
   CRp$5.drawNode = function (context, node, shiftToOriginWithBb) {
     var drawLabel = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : true;
     var shouldDrawOverlay = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : true;
+    var shouldDrawOpacity = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : true;
     var r = this;
     var nodeWidth, nodeHeight;
     var _p = node._private;
@@ -28759,7 +28768,7 @@
       return;
     }
 
-    var parentOpacity = node.effectiveOpacity();
+    var eleOpacity = shouldDrawOpacity ? node.effectiveOpacity() : 1;
     var usePaths = r.usePaths();
     var path;
     var pathCacheHit = false;
@@ -28802,10 +28811,10 @@
 
     var darkness = node.pstyle('background-blacken').value;
     var borderWidth = node.pstyle('border-width').pfValue;
-    var bgOpacity = node.pstyle('background-opacity').value * parentOpacity;
+    var bgOpacity = node.pstyle('background-opacity').value * eleOpacity;
     var borderColor = node.pstyle('border-color').value;
     var borderStyle = node.pstyle('border-style').value;
-    var borderOpacity = node.pstyle('border-opacity').value * parentOpacity;
+    var borderOpacity = node.pstyle('border-opacity').value * eleOpacity;
     context.lineJoin = 'miter'; // so borders are square with the node shape
 
     var setupShapeColor = function setupShapeColor() {
@@ -28861,7 +28870,7 @@
     };
 
     var drawImages = function drawImages() {
-      var nodeOpacity = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : parentOpacity;
+      var nodeOpacity = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : eleOpacity;
       var prevBging = _p.backgrounding;
       var totalCompleted = 0;
 
@@ -28882,7 +28891,7 @@
 
     var drawPie = function drawPie() {
       var redrawShape = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
-      var pieOpacity = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : parentOpacity;
+      var pieOpacity = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : eleOpacity;
 
       if (r.hasPie(node)) {
         r.drawPie(context, node, pieOpacity); // redraw/restore path if steps after pie need it
@@ -28896,7 +28905,7 @@
     };
 
     var darken = function darken() {
-      var darkenOpacity = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : parentOpacity;
+      var darkenOpacity = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : eleOpacity;
       var opacity = (darkness > 0 ? darkness : -darkness) * darkenOpacity;
       var c = darkness > 0 ? 0 : 255;
 
@@ -28978,7 +28987,7 @@
       var gx = node.pstyle('ghost-offset-x').pfValue;
       var gy = node.pstyle('ghost-offset-y').pfValue;
       var ghostOpacity = node.pstyle('ghost-opacity').value;
-      var effGhostOpacity = ghostOpacity * parentOpacity;
+      var effGhostOpacity = ghostOpacity * eleOpacity;
       context.translate(gx, gy);
       setupShapeColor(ghostOpacity * bgOpacity);
       drawShape();
@@ -29013,6 +29022,11 @@
 
   CRp$5.drawNodeOverlay = function (context, node, pos, nodeWidth, nodeHeight) {
     var r = this;
+
+    if (!node.visible()) {
+      return;
+    }
+
     var overlayPadding = node.pstyle('overlay-padding').pfValue;
     var overlayOpacity = node.pstyle('overlay-opacity').value;
     var overlayColor = node.pstyle('overlay-color').value;
@@ -30108,8 +30122,8 @@
       return ele[0]._private.nodeKey;
     };
 
-    var drawElement = function drawElement(context, ele, bb, scaledLabelShown) {
-      return r.drawElement(context, ele, bb, false, false);
+    var drawElement = function drawElement(context, ele, bb, scaledLabelShown, useEleOpacity) {
+      return r.drawElement(context, ele, bb, false, false, useEleOpacity);
     };
 
     var getElementBox = function getElementBox(ele) {
@@ -30135,16 +30149,16 @@
       return ele[0]._private.targetLabelStyleKey;
     };
 
-    var drawLabel = function drawLabel(context, ele, bb, scaledLabelShown) {
-      return r.drawElementText(context, ele, bb, scaledLabelShown, 'main');
+    var drawLabel = function drawLabel(context, ele, bb, scaledLabelShown, useEleOpacity) {
+      return r.drawElementText(context, ele, bb, scaledLabelShown, 'main', useEleOpacity);
     };
 
-    var drawSourceLabel = function drawSourceLabel(context, ele, bb, scaledLabelShown) {
-      return r.drawElementText(context, ele, bb, scaledLabelShown, 'source');
+    var drawSourceLabel = function drawSourceLabel(context, ele, bb, scaledLabelShown, useEleOpacity) {
+      return r.drawElementText(context, ele, bb, scaledLabelShown, 'source', useEleOpacity);
     };
 
-    var drawTargetLabel = function drawTargetLabel(context, ele, bb, scaledLabelShown) {
-      return r.drawElementText(context, ele, bb, scaledLabelShown, 'target');
+    var drawTargetLabel = function drawTargetLabel(context, ele, bb, scaledLabelShown, useEleOpacity) {
+      return r.drawElementText(context, ele, bb, scaledLabelShown, 'target', useEleOpacity);
     };
 
     var getLabelBox = function getLabelBox(ele) {

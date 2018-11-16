@@ -2,13 +2,13 @@ import * as math from '../../../math';
 
 let CRp = {};
 
-CRp.drawElement = function( context, ele, shiftToOriginWithBb, showLabel, showOverlay ){
+CRp.drawElement = function( context, ele, shiftToOriginWithBb, showLabel, showOverlay, showOpacity ){
   let r = this;
 
   if( ele.isNode() ){
-    r.drawNode( context, ele, shiftToOriginWithBb, showLabel, showOverlay );
+    r.drawNode( context, ele, shiftToOriginWithBb, showLabel, showOverlay, showOpacity );
   } else {
-    r.drawEdge( context, ele, shiftToOriginWithBb, showLabel, showOverlay );
+    r.drawEdge( context, ele, shiftToOriginWithBb, showLabel, showOverlay, showOpacity );
   }
 };
 
@@ -22,7 +22,7 @@ CRp.drawElementOverlay = function( context, ele ){
   }
 };
 
-CRp.drawCachedElementPortion = function( context, ele, eleTxrCache, pxRatio, lvl, reason, directDrawFallback, getRotation ){
+CRp.drawCachedElementPortion = function( context, ele, eleTxrCache, pxRatio, lvl, reason, getRotation ){
   let r = this;
   let bb = eleTxrCache.getBoundingBox(ele);
 
@@ -31,6 +31,10 @@ CRp.drawCachedElementPortion = function( context, ele, eleTxrCache, pxRatio, lvl
   let eleCache = eleTxrCache.getElement( ele, bb, pxRatio, lvl, reason );
 
   if( eleCache != null ){
+    let opacity = ele.pstyle('opacity').pfValue;
+
+    if( opacity === 0 ){ return; }
+
     let theta = getRotation(r, ele);
     let { x1, y1, w, h } = bb;
     let x, y, sx, sy, smooth;
@@ -56,7 +60,18 @@ CRp.drawCachedElementPortion = function( context, ele, eleTxrCache, pxRatio, lvl
       y = y1;
     }
 
+    let oldGlobalAlpha;
+
+    if( opacity !== 1 ){
+      oldGlobalAlpha = context.globalAlpha;
+      context.globalAlpha = oldGlobalAlpha * opacity;
+    }
+
     context.drawImage( eleCache.texture.canvas, eleCache.x, 0, eleCache.width, eleCache.height, x, y, bb.w, bb.h );
+
+    if( opacity !== 1 ){
+      context.globalAlpha = oldGlobalAlpha;
+    }
 
     if( theta !== 0 ){
       context.rotate(-theta);
@@ -65,14 +80,9 @@ CRp.drawCachedElementPortion = function( context, ele, eleTxrCache, pxRatio, lvl
       if( !smooth ){ r.setImgSmoothing(context, false); }
     }
   } else {
-    directDrawFallback( r, context, ele );
+    eleTxrCache.drawElement( context, ele ); // direct draw fallback
   }
 };
-
-const directDrawBody = (r, context, ele) => r.drawElement( context, ele, undefined, false, false );
-const directDrawLabel = (r, context, ele) => r.drawElementText( context, ele, null, true, 'main' );
-const directDrawSourceLabel = (r, context, ele) => r.drawElementText( context, ele, null, true, 'source' );
-const directDrawTargetLabel = (r, context, ele) => r.drawElementText( context, ele, null, true, 'target' );
 
 const getZeroRotation = () => 0;
 const getLabelRotation = (r, ele) => r.getTextAngle(ele, null);
@@ -89,12 +99,12 @@ CRp.drawCachedElement = function( context, ele, pxRatio, extent, lvl, requestHig
   if( bb.w === 0 || bb.h === 0 ){ return; }
 
   if( !extent || math.boundingBoxesIntersect( bb, extent ) ){
-    r.drawCachedElementPortion( context, ele, eleTxrCache, pxRatio, lvl, reason, directDrawBody, getZeroRotation );
-    r.drawCachedElementPortion( context, ele, lblTxrCache, pxRatio, lvl, reason, directDrawLabel, getLabelRotation );
+    r.drawCachedElementPortion( context, ele, eleTxrCache, pxRatio, lvl, reason, getZeroRotation );
+    r.drawCachedElementPortion( context, ele, lblTxrCache, pxRatio, lvl, reason, getLabelRotation );
 
     if( ele.isEdge() ){
-      r.drawCachedElementPortion( context, ele, slbTxrCache, pxRatio, lvl, reason, directDrawSourceLabel, getSourceLabelRotation );
-      r.drawCachedElementPortion( context, ele, tlbTxrCache, pxRatio, lvl, reason, directDrawTargetLabel, getTargetLabelRotation );
+      r.drawCachedElementPortion( context, ele, slbTxrCache, pxRatio, lvl, reason, getSourceLabelRotation );
+      r.drawCachedElementPortion( context, ele, tlbTxrCache, pxRatio, lvl, reason, getTargetLabelRotation );
     }
 
     r.drawElementOverlay( context, ele );

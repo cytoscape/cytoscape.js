@@ -5,7 +5,7 @@ import * as util from '../../../util';
 
 let CRp = {};
 
-CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, shouldDrawOverlay = true ){
+CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, shouldDrawOverlay = true, shouldDrawOpacity = true ){
   let r = this;
   let nodeWidth, nodeHeight;
   let _p = node._private;
@@ -18,7 +18,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
 
   if( !node.visible() ){ return; }
 
-  let parentOpacity = node.effectiveOpacity();
+  let eleOpacity = shouldDrawOpacity ? node.effectiveOpacity() : 1;
 
   let usePaths = r.usePaths();
   let path;
@@ -70,10 +70,10 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
 
   let darkness = node.pstyle('background-blacken').value;
   let borderWidth = node.pstyle('border-width').pfValue;
-  let bgOpacity = node.pstyle('background-opacity').value * parentOpacity;
+  let bgOpacity = node.pstyle('background-opacity').value * eleOpacity;
   let borderColor = node.pstyle('border-color').value;
   let borderStyle = node.pstyle('border-style').value;
-  let borderOpacity = node.pstyle('border-opacity').value * parentOpacity;
+  let borderOpacity = node.pstyle('border-opacity').value * eleOpacity;
 
   context.lineJoin = 'miter'; // so borders are square with the node shape
 
@@ -141,7 +141,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
     }
   };
 
-  let drawImages = ( nodeOpacity = parentOpacity ) => {
+  let drawImages = ( nodeOpacity = eleOpacity ) => {
     let prevBging = _p.backgrounding;
     let totalCompleted = 0;
 
@@ -158,7 +158,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
     }
   };
 
-  let drawPie = ( redrawShape = false, pieOpacity = parentOpacity ) => {
+  let drawPie = ( redrawShape = false, pieOpacity = eleOpacity ) => {
     if( r.hasPie( node ) ){
       r.drawPie( context, node, pieOpacity );
 
@@ -177,7 +177,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
     }
   };
 
-  let darken = ( darkenOpacity = parentOpacity ) => {
+  let darken = ( darkenOpacity = eleOpacity ) => {
     let opacity = ( darkness > 0 ? darkness : -darkness ) * darkenOpacity;
     let c = darkness > 0 ? 0 : 255;
 
@@ -260,7 +260,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
     let gx = node.pstyle('ghost-offset-x').pfValue;
     let gy = node.pstyle('ghost-offset-y').pfValue;
     let ghostOpacity = node.pstyle('ghost-opacity').value;
-    let effGhostOpacity = ghostOpacity * parentOpacity;
+    let effGhostOpacity = ghostOpacity * eleOpacity;
 
     context.translate( gx, gy );
 
@@ -302,6 +302,8 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
 
 CRp.drawNodeOverlay = function( context, node, pos, nodeWidth, nodeHeight ){
   let r = this;
+
+  if( !node.visible() ){ return; }
 
   let overlayPadding = node.pstyle( 'overlay-padding' ).pfValue;
   let overlayOpacity = node.pstyle( 'overlay-opacity' ).value;

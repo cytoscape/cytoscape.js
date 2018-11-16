@@ -4,7 +4,7 @@ import * as util from '../../../util';
 
 let CRp = {};
 
-CRp.drawEdge = function( context, edge, shiftToOriginWithBb, drawLabel = true, shouldDrawOverlay = true ){
+CRp.drawEdge = function( context, edge, shiftToOriginWithBb, drawLabel = true, shouldDrawOverlay = true, shouldDrawOpacity = true ){
   let r = this;
   let rs = edge._private.rscratch;
 
@@ -22,7 +22,7 @@ CRp.drawEdge = function( context, edge, shiftToOriginWithBb, drawLabel = true, s
     context.translate( -bb.x1, -bb.y1 );
   }
 
-  let opacity = edge.pstyle('opacity').value;
+  let opacity = shouldDrawOpacity ? edge.pstyle('opacity').value : 1;
   let lineStyle = edge.pstyle('line-style').value;
   let edgeWidth = edge.pstyle('width').pfValue;
   let lineCap = edge.pstyle('line-cap').value;
@@ -85,16 +85,19 @@ CRp.drawEdge = function( context, edge, shiftToOriginWithBb, drawLabel = true, s
 };
 
 CRp.drawEdgeOverlay = function( context, edge ){
+  if( !edge.visible() ){ return; }
+
+  let overlayOpacity = edge.pstyle('overlay-opacity').value;
+
+  if( overlayOpacity === 0 ){ return; }
+
   let r = this;
   let usePaths = r.usePaths();
   let rs = edge._private.rscratch;
 
   let overlayPadding = edge.pstyle('overlay-padding').pfValue;
   let overlayWidth = 2 * overlayPadding;
-  let overlayOpacity = edge.pstyle('overlay-opacity').value;
   let overlayColor = edge.pstyle('overlay-color').value;
-
-  if( overlayOpacity === 0 ){ return; }
 
   context.lineWidth = overlayWidth;
 

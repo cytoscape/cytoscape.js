@@ -251,7 +251,7 @@ ETCp.getElement = function( ele, bb, pxRatio, lvl, reason ){
     txr.context.translate( txr.usedWidth, 0 );
     txr.context.scale( scale, scale );
 
-    this.drawElement( txr.context, ele, bb, scaledLabelShown );
+    this.drawElement( txr.context, ele, bb, scaledLabelShown, false );
 
     txr.context.scale( 1/scale, 1/scale );
     txr.context.translate( -txr.usedWidth, 0 );

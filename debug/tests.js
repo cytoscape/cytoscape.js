@@ -591,4 +591,31 @@
     }
   });
 
+  var faded = false;
+
+  test({
+    name: "fadeAni",
+    displayName: "Animate element opacity",
+    description: "Tap background to toggle",
+    setup: function(){
+      cy.on('tap', function(e){
+        if( e.target !== cy ){ return; }
+
+        faded = !faded;
+
+        cy.elements().animate({
+          style: {
+            'opacity': faded ? 0.5 : 1
+          },
+          duration: 1000
+        });
+      });
+    },
+
+    teardown: function(){
+      cy.off('tap');
+      cy.elements().removeStyle();
+    }
+  });
+
 })();

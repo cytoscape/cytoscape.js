@@ -22,7 +22,7 @@ CRp.eleTextBiggerThanMin = function( ele, scale ){
   return true;
 };
 
-CRp.drawElementText = function( context, ele, shiftToOriginWithBb, force, prefix ){
+CRp.drawElementText = function( context, ele, shiftToOriginWithBb, force, prefix, useEleOpacity = true ){
   var r = this;
 
   if( force == null ){
@@ -79,15 +79,15 @@ CRp.drawElementText = function( context, ele, shiftToOriginWithBb, force, prefix
   }
 
   if( prefix == null ){
-    r.drawText( context, ele, null, applyRotation );
+    r.drawText( context, ele, null, applyRotation, useEleOpacity );
 
     if( ele.isEdge() ){
-      r.drawText( context, ele, 'source', applyRotation );
+      r.drawText( context, ele, 'source', applyRotation, useEleOpacity );
 
-      r.drawText( context, ele, 'target', applyRotation );
+      r.drawText( context, ele, 'target', applyRotation, useEleOpacity );
     }
   } else {
-    r.drawText( context, ele, prefix, applyRotation );
+    r.drawText( context, ele, prefix, applyRotation, useEleOpacity );
   }
 
   if( shiftToOriginWithBb ){
@@ -118,14 +118,13 @@ CRp.getFontCache = function( context ){
 
 // set up canvas context with font
 // returns transformed text string
-CRp.setupTextStyle = function( context, ele ){
+CRp.setupTextStyle = function( context, ele, useEleOpacity = true ){
   // Font style
-  var parentOpacity = ele.effectiveOpacity();
   var labelStyle = ele.pstyle( 'font-style' ).strValue;
   var labelSize = ele.pstyle( 'font-size' ).pfValue + 'px';
   var labelFamily = ele.pstyle( 'font-family' ).strValue;
   var labelWeight = ele.pstyle( 'font-weight' ).strValue;
-  var opacity = ele.pstyle( 'text-opacity' ).value * ele.pstyle( 'opacity' ).value * parentOpacity;
+  var opacity = ele.pstyle('text-opacity').value * (useEleOpacity ? ele.effectiveOpacity() : 1);
   var outlineOpacity = ele.pstyle( 'text-outline-opacity' ).value * opacity;
   var color = ele.pstyle( 'color' ).value;
   var outlineColor = ele.pstyle( 'text-outline-color' ).value;
@@ -175,10 +174,11 @@ CRp.getTextAngle = function( ele, prefix ){
   return theta;
 };
 
-CRp.drawText = function( context, ele, prefix, applyRotation = true ){
+CRp.drawText = function( context, ele, prefix, applyRotation = true, useEleOpacity = true ){
   var _p = ele._private;
   var rscratch = _p.rscratch;
-  var parentOpacity = ele.effectiveOpacity();
+  var parentOpacity = useEleOpacity ? ele.effectiveOpacity() : 1;
+
   if( parentOpacity === 0 || ele.pstyle( 'text-opacity' ).value === 0 ){
     return;
   }
@@ -191,7 +191,7 @@ CRp.drawText = function( context, ele, prefix, applyRotation = true ){
   var text = this.getLabelText( ele, prefix );
 
   if( text != null && text !== '' && !isNaN( textX ) && !isNaN( textY ) ){
-    this.setupTextStyle( context, ele );
+    this.setupTextStyle( context, ele, useEleOpacity );
 
     var pdash = prefix ? prefix + '-' : '';
     var textW = util.getPrefixedProperty( rscratch, 'labelWidth', prefix );

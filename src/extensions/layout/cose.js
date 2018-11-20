@@ -24,7 +24,7 @@ var defaults = {
 
   // Called on `layoutstop`
   stop: function(){},
-  
+
   // Whether to animate while running the layout
   // true : Animate continuously as the layout is running
   // false : Just show the end result
@@ -918,7 +918,7 @@ CoseLayout.prototype.run = function(){
     do {
       var f = 0;
 
-      while( f < options.refresh && i < options.numIter ){
+      while( (f < options.refresh || options.refresh === 0) && i < options.numIter ){
         var loopRet = mainLoop( i );
         if( !loopRet ){ break; }
 

@@ -918,7 +918,7 @@ CoseLayout.prototype.run = function(){
     do {
       var f = 0;
 
-      while( f < options.refresh && i < options.numIter ){
+      while( (f < options.refresh || options.refresh === 0) && i < options.numIter ){
         var loopRet = mainLoop( i );
         if( !loopRet ){ break; }
 

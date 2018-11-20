@@ -48,7 +48,6 @@ var defaults = {
   animationThreshold: 250,
 
   // Number of iterations between consecutive screen positions update
-  // (0 -> only updated on the end)
   refresh: 20,
 
   // Whether to fit the network view after when done

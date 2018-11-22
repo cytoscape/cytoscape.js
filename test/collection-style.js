@@ -33,7 +33,10 @@ describe('Collection style', function(){
         {
           selector: '#n1',
           style: {
-            label: useFn(function(){ return 'n1'; })
+            label: useFn(function(){ return 'n1'; }),
+            width: 20,
+            'background-image': ['/test/image.png', '/test/image2.png'],
+            opacity: 0.5
           }
         },
 
@@ -190,6 +193,18 @@ describe('Collection style', function(){
       expect( style ).to.have.property('label');
       expect( style['label'] ).to.exist;
       expect( style['label'] ).to.equal( 'n2' );
+    });
+
+    it('ele.style(propName) works for string array property value', function(){
+      expect( cy.$('#n1').style('background-image') ).to.deep.equal( '/test/image.png /test/image2.png' );
+    });
+
+    it('ele.style(propName) works for pixel property value', function(){
+      expect( cy.$('#n1').style('width') ).to.equal('20px');
+    });
+
+    it('ele.style(propName) works for unitless property value', function(){
+      expect( cy.$('#n1').style('opacity') ).to.equal('0.5');
     });
 
     it('ele.numericStyle() returns size as a number', function(){

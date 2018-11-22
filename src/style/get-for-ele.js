@@ -54,16 +54,36 @@ styfn.getStylePropertyValue = function( ele, propName, isRenderedVal ){
 
     let type = prop.type;
     let styleProp = ele.pstyle( prop.name );
-    let zoom = ele.cy().zoom();
 
     if( styleProp ){
-      let units = styleProp.units ? type.implicitUnits || 'px' : null;
-      let val = units ? [].concat( styleProp.pfValue ).map( function( pfValue ){
-        return ( pfValue * (isRenderedVal ? zoom : 1) ) + units;
-      } ).join( ' ' ) : styleProp.strValue;
+      let { value, units, strValue } = styleProp;
 
-      return val;
+      if( isRenderedVal && type.number && value != null && is.number(value) ){
+        let zoom = ele.cy().zoom();
+        let getRenderedValue = val => val * zoom;
+        let getValueStringWithUnits = (val, units) => getRenderedValue(val) + units;
+        let isArrayValue = is.array(value);
+        let haveUnits = isArrayValue ? units.every(u => u != null) : units != null;
+
+        if( haveUnits ){
+          if( isArrayValue ){
+            return value.map( (v, i) => getValueStringWithUnits(v, units[i]) ).join(' ');
+          } else {
+            return getValueStringWithUnits(value, units);
+          }
+        } else {
+          if( isArrayValue ){
+            return value.map(v => is.string(v) ? v : '' + getRenderedValue(v)).join(' ');
+          } else {
+            return '' + getRenderedValue(value);
+          }
+        }
+      } else if( strValue != null ){
+        return strValue;
+      }
     }
+
+    return null;
   }
 };
 

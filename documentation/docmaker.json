@@ -1985,22 +1985,6 @@
             },
 
             {
-              "name": "ele.renderedStyle",
-              "pureAliases": [ "eles.renderedCss" ],
-              "descr": "Get the style of the element in [rendered dimensions](#notation/position).",
-              "formats": [
-                {
-                  "descr": "Get a name-value pair object containing rendered visual style properties and their values for the element."
-                },
-
-                {
-                  "descr": "Get a particular rendered style property value.",
-                  "args": [ { "name": "name", "descr": "The name of the visual style property to get." } ]
-                }
-              ]
-            },
-
-            {
               "name": "ele.numericStyle",
               "descr": "Get the numeric value of a style property in preferred units that can be used for calculations.",
               "formats": [

@@ -54,7 +54,7 @@
     "bower",
     "jquery"
   ],
-  "main": "dist/cytoscape.js",
+  "main": "dist/cytoscape.umd.js",
   "ignore": [
     "documentation",
     "src",

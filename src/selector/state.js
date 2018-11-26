@@ -90,6 +90,16 @@ export const stateSelectors = [
     matches: function( ele ){ return ele.isChild(); }
   },
   {
+    selector: ':compound',
+    matches: function( ele ){
+      if( ele.isNode() ){
+        return ele.isParent();
+      } else {
+        return ele.source().isParent() || ele.target().isParent();
+      }
+    }
+  },
+  {
     selector: ':loop',
     matches: function( ele ){ return ele.isLoop(); }
   },

@@ -6535,6 +6535,15 @@ var stateSelectors = [{
     return ele.isChild();
   }
 }, {
+  selector: ':compound',
+  matches: function matches(ele) {
+    if (ele.isNode()) {
+      return ele.isParent();
+    } else {
+      return ele.source().isParent() || ele.target().isParent();
+    }
+  }
+}, {
   selector: ':loop',
   matches: function matches(ele) {
     return ele.isLoop();
@@ -7127,14 +7136,15 @@ var parse = function parse(selector) {
     var q = self[i]; // in future, this could potentially be allowed if there were operator precedence and detection of invalid combinations
 
     if (q.compoundCount > 0 && q.edgeCount > 0) {
-      warn('The selector `' + selector + '`is invalid because it uses both a compound selector and an edge selector');
+      warn('The selector `' + selector + '` is invalid because it uses both a compound selector and an edge selector');
       return false;
-    } // in future, this could potentially be allowed with an explicit subject selector
-
+    }
 
     if (q.edgeCount > 1) {
-      warn('The selector `' + selector + '`is invalid because it uses multiple edge selectors');
+      warn('The selector `' + selector + '` is invalid because it uses multiple edge selectors');
       return false;
+    } else if (q.edgeCount === 1) {
+      warn('The selector `' + selector + '` is deprecated.  Edge selectors do not take effect on changes to source and target nodes after an edge is added, for performance reasons.  Use a class or data selector on edges instead, updating the class or data of an edge when your app detects a change in source or target nodes.');
     }
   }
 
@@ -16134,7 +16144,7 @@ styfn$6.addDefaultStylesheet = function () {
     'width': 3
   }).selector(':loop').css({
     'curve-style': 'bezier'
-  }).selector(':parent <-> node').css({
+  }).selector('edge:compound').css({
     'curve-style': 'bezier',
     'source-endpoint': 'outside-to-line',
     'target-endpoint': 'outside-to-line'

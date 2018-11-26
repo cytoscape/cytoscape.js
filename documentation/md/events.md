@@ -1,6 +1,6 @@
 ## Event object
 
-Events passed to handler callbacks are similar to [jQuery event objects](http://api.jquery.com/category/events/event-object/) in that they wrap native event objects, mimicking their API.
+Events passed to handler callbacks are similar to [jQuery event objects](http://api.jquery.com/category/events/event-object/) and [React synthetic events](https://reactjs.org/docs/events.html) in that they wrap native event objects, mimicking their API.
 
 Fields:
 

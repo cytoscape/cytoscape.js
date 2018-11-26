@@ -6258,7 +6258,7 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 
 
 
-							<div class="descr"><p>Get an array of control point positions for a <code>curve-style: bezier</code> or <code>curve-style: unbundled-bezier</code> edge.</p>
+							<div class="descr"><p>Get an array of control point positions for a <a href="#style/bezier-edges"><code>curve-style: bezier</code></a> or <a href="http://localhost:8888/cytoscape.js/documentation/#style/unbundled-bezier-edges"><code>curve-style: unbundled-bezier</code></a> edge.</p>
 </div>
 
 							<div class="formats">
@@ -6284,13 +6284,13 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 
 							<div class="details">
 									<h3 id="details">Details</h3>
-<p>While the control points may be specified relatively in the CSS, this function returns the absolute model positions of the control points. The points are specified in the order of source-to-target direction.</p>
+<p>While the control points may be specified relatively in the CSS, this function returns the absolute <a href="#notation/position">model positions</a> of the control points. The points are specified in the order of source-to-target direction.</p>
 <p>This function works for bundled beziers, but it is not applicable to the middle, straight-line edge in the bundle.</p>
 <p>The number of returned points for each curve style is as follows:</p>
 <ul>
 <li><code>curve-style: bezier</code> (simple edge) : 1 point for a single quadratic bezier</li>
 <li><code>curve-style: bezier</code> (loop) : 2 points for two quadratic beziers</li>
-<li><code>curve-style: unbundled-bezier</code> : n points for n quadratic beziers, as the number of control points is defined by <code>control-point-distances</code> and <code>control-point-weights</code></li>
+<li><code>curve-style: unbundled-bezier</code> : n points for n quadratic beziers, as the number of control points is defined by <a href="#style/bezier-edges"><code>control-point-distances</code> and <code>control-point-weights</code></a></li>
 </ul>
 
 							</div>
@@ -6303,7 +6303,7 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 
 
 
-							<div class="descr"><p>Get an array of segment point positions (i.e. bend points) for a <code>curve-style: segments</code> edge.</p>
+							<div class="descr"><p>Get an array of segment point positions (i.e. bend points) for a <a href="#style/segments-edges"><code>curve-style: segments</code></a> edge.</p>
 </div>
 
 							<div class="formats">
@@ -6329,7 +6329,7 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 
 							<div class="details">
 									<h3 id="details">Details</h3>
-<p>While the segment points may be specified relatively in the stylesheet, this function returns the absolute model positions of the segment points. The points are specified in the order of source-to-target direction.</p>
+<p>While the segment points may be specified relatively in the stylesheet, this function returns the absolute <a href="#notation/position">model positions</a> of the segment points. The points are specified in the order of source-to-target direction.</p>
 
 							</div>
 						</div>
@@ -6438,9 +6438,9 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 							<div class="details">
 									<h3 id="details">Details</h3>
 <p>The midpoint is, by default, where the edge’s label is centred. It is also the position towards which mid arrows point.</p>
-<p>For <code>curve-style: unbundled-bezier</code> edges, the midpoint is the middle extremum if the number of control points is odd.  </p>
+<p>For <a href="#style/unbundled-bezier-edges"><code>curve-style: unbundled-bezier</code></a> edges, the midpoint is the middle extremum if the number of control points is odd.</p>
 <p>For an even number of control points, the midpoint is where the two middle-most control points meet.  This is the middle inflection point for bilaterally symmetric or skew symmetric edges, for example.</p>
-<p>For <code>curve-style: segments</code> edges, the midpoint is the middle segment point if the number of segment points is odd.  For an even number of segment points, the overall midpoint is the midpoint of the middle-most line segment (i.e. the mean of the middle two segment points).</p>
+<p>For <a href="#style/segments-edges"><code>curve-style: segments</code></a> edges, the midpoint is the middle segment point if the number of segment points is odd.  For an even number of segment points, the overall midpoint is the midpoint of the middle-most line segment (i.e. the mean of the middle two segment points).</p>
 
 							</div>
 						</div>
@@ -6566,7 +6566,7 @@ layout.run();</code></pre>
 							</div>
 
 							<div class="details">
-									<p><span class="important-indicator">This function is intended to be used only by layout extensions.  Your app should not call this function directly.</span></p>
+									<p><span class="important-indicator"></span>This function is intended to be used only by layout extensions.  Your app should not call this function directly.</p>
 <p>This function is called by discrete (synchronous) layouts to update the graph with new node positions.</p>
 <p>A discrete layout is only responsible for calculating new node positions.  Setting these positions and performing animations, modifying the viewport, changing zoom level, etc. are handled by <code>layoutPositions()</code> — which is called by each layout at the end of its <code>run()</code> method.</p>
 <p>The <code>options</code> object is passed to <code>layoutPositions()</code> when called by a layout extension and consists of many of the common properties shared between layouts:</p>
@@ -7108,55 +7108,6 @@ layout.run();</code></pre>
 <p>Only <a href="#style">defined visual style properties</a> are supported.</p>
 <p>If you would like to remove a particular overridden style property, you can set <code>null</code> or <code>&#39;&#39;</code> (the empty string) to it.</p>
 
-							</div>
-						</div>
-						<div class="function">
-							<div class="name" id="ele.renderedStyle">
-								<span class="fn-name">ele.renderedStyle()</span>  <a href="#ele.renderedStyle"><span class="fa fa-bookmark"></span></a>
-								<span id="collection/style/ele.renderedStyle">&nbsp;</span><span id="collection/style/eles.renderedCss">&nbsp;</span><span id="eles.renderedCss">&nbsp;</span><span id="collection/style/ele.renderedStyle">&nbsp;</span><span id="ele.renderedStyle">&nbsp;</span><span id="collection/style/ele.renderedStyle">&nbsp;</span><span id="ele.renderedStyle">&nbsp;</span>
-							</div>
-
-
-							<div class="pure-aliases">
-								<span class="important-indicator"></span> Aliases:
-
-									<span class="pure-alias">
-										<code id="collection/style/eles.renderedCss" class="pure-alias-name">eles.renderedCss()</code><span class="pure-alias-comma">,</span>
-									</span>
-							</div>
-
-							<div class="descr"><p>Get the style of the element in <a href="#notation/position">rendered dimensions</a>.</p>
-</div>
-
-							<div class="formats">
-									<div class="format">
-											<div class="name">ele.renderedStyle()</div>
-
-
-										<div class="descr"><p>Get a name-value pair object containing rendered visual style properties and their values for the element.</p>
-</div>
-										<ul class="args">
-										</ul>
-									</div>
-									<div class="format">
-											<div class="name">ele.renderedStyle( <span class="args-summary"><span class="comma">,&nbsp;</span>name</span> )</div>
-
-
-										<div class="descr"><p>Get a particular rendered style property value.</p>
-</div>
-										<ul class="args">
-												<li>
-													<span class="name">name</span>
-													
-													<span class="descr"><p>The name of the visual style property to get.</p>
-</span>
-
-												</li>
-										</ul>
-									</div>
-							</div>
-
-							<div class="details">
 							</div>
 						</div>
 						<div class="function">
@@ -12502,13 +12453,6 @@ Prepended to an operator so that is case insensitive (e.g. <code>[foo @$= &#39;a
 Prepended to an operator so that it is negated (e.g. <code>[foo !$= &#39;ar&#39;]</code>, <code>[foo !&gt;= &#39;a&#39;]</code>)</p>
 <p><strong><code>[[]]</code> (metadata brackets)</strong>
 Use double square brackets in place of square ones to match against metadata instead of data (e.g. <code>[[degree &gt; 2]]</code> matches elements of degree greater than 2).  The properties that are supported include <code>degree</code>, <code>indegree</code>, and <code>outdegree</code>.</p>
-<h2 id="selectors/edges">Edges <a href="#selectors/edges"><span class="fa fa-bookmark"></span></a></h2>
-<p><strong><code>-&gt;</code> (directed edge selector)</strong>
-Matches edges for which the source and target subselectors match (e.g. <code>.src -&gt; .tgt</code>)</p>
-<p><strong><code>&lt;-&gt;</code> (undirected edge selector)</strong>
-Matches edges for which the connected node subselectors match (e.g. <code>.foo &lt;-&gt; .bar</code>)</p>
-<p><strong><code>$</code> (subject selector)</strong>
-Sets the subject of the selector (e.g. <code>$node -&gt; node</code> to select the source nodes instead of the edges).</p>
 <h2 id="selectors/compound-nodes">Compound nodes <a href="#selectors/compound-nodes"><span class="fa fa-bookmark"></span></a></h2>
 <p><strong><code>&gt;</code> (child selector)</strong>
 Matches direct children of the parent node (e.g. <code>node &gt; node</code>).</p>
@@ -12563,6 +12507,7 @@ Sets the subject of the selector (e.g. <code>$node &gt; node</code> to select th
 <li><strong><code>:childless</code></strong> : Matches childless nodes (they have zero child nodes).</li>
 <li><strong><code>:child</code></strong> or <strong><code>:nonorphan</code></strong>: Matches child nodes (they each have a parent).</li>
 <li><strong><code>:orphan</code></strong> : Matches orphan nodes (they each have no parent).</li>
+<li><strong><code>:compound</code></strong> : Matches parent nodes.  Also matches edges connected to parent nodes (they each have at least one parent node among source and target).</li>
 </ul>
 <p><strong>Edges</strong></p>
 <ul>
@@ -12796,7 +12741,7 @@ Sets the subject of the selector (e.g. <code>$node &gt; node</code> to select th
 </li>
 </ul>
 </li>
-<li>** <code>background-image-crossorigin</code>**: All images are loaded with a <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/img#attr-crossorigin"><code>crossorigin</code></a> attribute which may be <code>anonymous</code> or <code>use-credentials</code>. The default is set to <code>anonymous</code>.</li>
+<li><strong><code>background-image-crossorigin</code></strong>: All images are loaded with a <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/img#attr-crossorigin"><code>crossorigin</code></a> attribute which may be <code>anonymous</code> or <code>use-credentials</code>. The default is set to <code>anonymous</code>.</li>
 <li><strong><code>background-image-opacity</code></strong> : The opacity of the background image.</li>
 <li><strong><code>background-width</code></strong> : Specifies the width of the image.  A percent value (e.g. <code>50%</code>) may be used to set the image width relative to the node width.  If used in combination with <code>background-fit</code>, then this value overrides the width of the image in calculating the fitting — thereby overriding the aspect ratio.  The <code>auto</code> value is used by default, which uses the width of the image.</li>
 <li><strong><code>background-height</code></strong> : Specifies the height of the image.  A percent value (e.g. <code>50%</code>) may be used to set the image height relative to the node height.  If used in combination with <code>background-fit</code>, then this value overrides the height of the image in calculating the fitting — thereby overriding the aspect ratio.  The <code>auto</code> value is used by default, which uses the height of the image.</li>
@@ -12847,7 +12792,7 @@ Sets the subject of the selector (e.g. <code>$node &gt; node</code> to select th
 </ul>
 <h2 id="style/bezier-edges">Bezier edges <a href="#style/bezier-edges"><span class="fa fa-bookmark"></span></a></h2>
 <p>For automatic, bundled bezier edges (<code>curve-style: bezier</code>):</p>
-<p>A bezier edge is bundled with all other parallel bezier edges.  Each bezier edge is a quadratic bezier curve, separated from the others by varying the control point.  If there is an odd number of parallel edges in a bundle, then the centre edge is drawn as a straight line.</p>
+<p>A bezier edge is bundled with all other parallel bezier edges.  Each bezier edge is a <a href="https://en.wikipedia.org/wiki/B%C3%A9zier_curve#Quadratic_B%C3%A9zier_curves">quadratic bezier curve</a>, separated from the others by varying the control point.  If there is an odd number of parallel edges in a bundle, then the centre edge is drawn as a straight line.</p>
 <ul>
 <li><strong><code>control-point-step-size</code></strong> : From the line perpendicular from source to target, this value specifies the distance between successive bezier edges.</li>
 <li><strong><code>control-point-distance</code></strong> : A single value that overrides <code>control-point-step-size</code> with a manual value.  Because it overrides the step size, bezier edges with the same value will overlap.  Thus, it’s best to use this as a one-off value for particular edges if need be.</li>
@@ -12856,7 +12801,7 @@ Sets the subject of the selector (e.g. <code>$node &gt; node</code> to select th
 </ul>
 <h2 id="style/loop-edges">Loop edges <a href="#style/loop-edges"><span class="fa fa-bookmark"></span></a></h2>
 <p>For loops (i.e. same source and target):</p>
-<p>A loop is normally drawn as a pair of bezier curves, one bezier going away from the node and the second bezier going back towards the node.</p>
+<p>A loop is normally drawn as a pair of <a href="https://en.wikipedia.org/wiki/B%C3%A9zier_curve#Quadratic_B%C3%A9zier_curves">quadratic bezier curves</a>, one bezier going away from the node and the second bezier going back towards the node.</p>
 <ul>
 <li><strong><code>loop-direction</code></strong> : Determines the angle that loops extend from the node in cases when the source and target node of an edge is the same.  The angle is specified from the 12 o’clock position and it progresses clockwise for increasing positive values. The default is <code>-45deg</code> (extending to the upper left).</li>
 <li><strong><code>loop-sweep</code></strong> : Determines the angle between the leaving and returning edges in loops. Positive values result in clockwise looping and negative values result in counter-clockwise looping. Default is <code>-90deg</code>.</li>
@@ -12864,7 +12809,8 @@ Sets the subject of the selector (e.g. <code>$node &gt; node</code> to select th
 <p>Note that loops may only be <code>bezier</code> or <code>unbundled-bezier</code> for their <code>curve-style</code>.</p>
 <h2 id="style/unbundled-bezier-edges">Unbundled bezier edges <a href="#style/unbundled-bezier-edges"><span class="fa fa-bookmark"></span></a></h2>
 <p>For bezier edges with manual control points (<code>curve-style: unbundled-bezier</code>):</p>
-<p>An unbundled bezier edge is made of a series of one or more quadratic bezier curves.  The control points of the bezier curves are specified manually, using a co-ordinate system relative to the source and target node.  This maintains the overall curve shape regardless of the positions of the connected nodes.</p>
+<p>An unbundled bezier edge is made of a series of one or more <a href="https://en.wikipedia.org/wiki/B%C3%A9zier_curve#Quadratic_B%C3%A9zier_curves">quadratic bezier curves</a> — one control point per curve.  The control points of the bezier curves are specified manually, using a co-ordinate system relative to the source and target node.  This maintains the overall curve shape regardless of the positions of the connected nodes.</p>
+<p>When two or more control points are specified for an unbundled bezier edge, each adjacent pair of bezier curves is joined at the midpoint of the two control points.  This makes most curves join smoothly.</p>
 <ul>
 <li><strong><code>control-point-distances</code></strong> : A series of values that specify for each control point the distance perpendicular to a line formed from source to target, e.g. <code>-20 20 -20</code>.</li>
 <li><strong><code>control-point-weights</code></strong> : A series of values that weights control points along a line from source to target, e.g. <code>0.25 0.5 0.75</code>.  A value usually ranges on [0, 1], with 0 towards the source node and 1 towards the target node — but larger or smaller values can also be used.</li>
@@ -13134,7 +13080,7 @@ Sets the subject of the selector (e.g. <code>$node &gt; node</code> to select th
 				<h1 id="events">Events <a href="#events"><span class="fa fa-bookmark"></span></a></h1>
 
 					<h2 id="events/event-object">Event object <a href="#events/event-object"><span class="fa fa-bookmark"></span></a></h2>
-<p>Events passed to handler callbacks are similar to <a href="http://api.jquery.com/category/events/event-object/">jQuery event objects</a> in that they wrap native event objects, mimicking their API.</p>
+<p>Events passed to handler callbacks are similar to <a href="http://api.jquery.com/category/events/event-object/">jQuery event objects</a> and <a href="https://reactjs.org/docs/events.html">React synthetic events</a> in that they wrap native event objects, mimicking their API.</p>
 <p>Fields:</p>
 <ul>
 <li><code>cy</code> : a reference to the corresponding core instance</li>
@@ -13496,7 +13442,6 @@ cy.layout( options );</code></pre>
   animationThreshold: <span class="hljs-number">250</span>,
 
   <span class="hljs-comment">// Number of iterations between consecutive screen positions update</span>
-  <span class="hljs-comment">// (0 -&gt; only updated on the end)</span>
   refresh: <span class="hljs-number">20</span>,
 
   <span class="hljs-comment">// Whether to fit the network view after when done</span>
@@ -14819,7 +14764,6 @@ cytoscape.use( ext );</code></pre>
 							<div class="section lvl3"><a class="toclink" href="#eles.flashClass">eles.flashClass() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#ele.hasClass">ele.hasClass() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#eles.style">eles.style() et al</a></div>
-							<div class="section lvl3"><a class="toclink" href="#ele.renderedStyle">ele.renderedStyle() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#ele.numericStyle">ele.numericStyle() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#ele.numericStyleUnits">ele.numericStyleUnits() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#ele.visible">ele.visible() et al</a></div>
@@ -15020,11 +14964,6 @@ cytoscape.use( ext );</code></pre>
 						<div class="section lvl2">
 							
 							<a class="toclink" href="#selectors/data">Data</a>
-						</div>
-
-						<div class="section lvl2">
-							
-							<a class="toclink" href="#selectors/edges">Edges</a>
 						</div>
 
 						<div class="section lvl2">

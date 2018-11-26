@@ -1,4 +1,4 @@
-<span class="important-indicator">This function is intended to be used only by layout extensions.  Your app should not call this function directly.</span>
+<span class="important-indicator"></span>This function is intended to be used only by layout extensions.  Your app should not call this function directly.
 
 This function is called by discrete (synchronous) layouts to update the graph with new node positions.
 

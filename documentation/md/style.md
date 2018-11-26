@@ -258,7 +258,7 @@ A background image may be applied to a node's body.  The following properties su
     ```
     var data = 'data:image/svg+xml;utf8,' + encodeURIComponent(svgFile);
     ```
- * ** `background-image-crossorigin`**: All images are loaded with a [`crossorigin`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/img#attr-crossorigin) attribute which may be `anonymous` or `use-credentials`. The default is set to `anonymous`.
+ * **`background-image-crossorigin`**: All images are loaded with a [`crossorigin`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/img#attr-crossorigin) attribute which may be `anonymous` or `use-credentials`. The default is set to `anonymous`.
  * **`background-image-opacity`** : The opacity of the background image.
  * **`background-width`** : Specifies the width of the image.  A percent value (e.g. `50%`) may be used to set the image width relative to the node width.  If used in combination with `background-fit`, then this value overrides the width of the image in calculating the fitting --- thereby overriding the aspect ratio.  The `auto` value is used by default, which uses the width of the image.
  * **`background-height`** : Specifies the height of the image.  A percent value (e.g. `50%`) may be used to set the image height relative to the node height.  If used in combination with `background-fit`, then this value overrides the height of the image in calculating the fitting --- thereby overriding the aspect ratio.  The `auto` value is used by default, which uses the height of the image.
@@ -322,7 +322,7 @@ These properties affect the styling of an edge's line:
 
 For automatic, bundled bezier edges (`curve-style: bezier`):
 
-A bezier edge is bundled with all other parallel bezier edges.  Each bezier edge is a quadratic bezier curve, separated from the others by varying the control point.  If there is an odd number of parallel edges in a bundle, then the centre edge is drawn as a straight line.
+A bezier edge is bundled with all other parallel bezier edges.  Each bezier edge is a [quadratic bezier curve](https://en.wikipedia.org/wiki/Bézier_curve#Quadratic_Bézier_curves), separated from the others by varying the control point.  If there is an odd number of parallel edges in a bundle, then the centre edge is drawn as a straight line.
 
  * **`control-point-step-size`** : From the line perpendicular from source to target, this value specifies the distance between successive bezier edges.
  * **`control-point-distance`** : A single value that overrides `control-point-step-size` with a manual value.  Because it overrides the step size, bezier edges with the same value will overlap.  Thus, it's best to use this as a one-off value for particular edges if need be.
@@ -334,7 +334,7 @@ A bezier edge is bundled with all other parallel bezier edges.  Each bezier edge
 
 For loops (i.e. same source and target):
 
-A loop is normally drawn as a pair of bezier curves, one bezier going away from the node and the second bezier going back towards the node.
+A loop is normally drawn as a pair of [quadratic bezier curves](https://en.wikipedia.org/wiki/Bézier_curve#Quadratic_Bézier_curves), one bezier going away from the node and the second bezier going back towards the node.
 
  * **`loop-direction`** : Determines the angle that loops extend from the node in cases when the source and target node of an edge is the same.  The angle is specified from the 12 o'clock position and it progresses clockwise for increasing positive values. The default is `-45deg` (extending to the upper left).
  * **`loop-sweep`** : Determines the angle between the leaving and returning edges in loops. Positive values result in clockwise looping and negative values result in counter-clockwise looping. Default is `-90deg`.
@@ -346,7 +346,9 @@ Note that loops may only be `bezier` or `unbundled-bezier` for their `curve-styl
 
 For bezier edges with manual control points (`curve-style: unbundled-bezier`):
 
-An unbundled bezier edge is made of a series of one or more quadratic bezier curves.  The control points of the bezier curves are specified manually, using a co-ordinate system relative to the source and target node.  This maintains the overall curve shape regardless of the positions of the connected nodes.
+An unbundled bezier edge is made of a series of one or more [quadratic bezier curves](https://en.wikipedia.org/wiki/Bézier_curve#Quadratic_Bézier_curves) --- one control point per curve.  The control points of the bezier curves are specified manually, using a co-ordinate system relative to the source and target node.  This maintains the overall curve shape regardless of the positions of the connected nodes.
+
+When two or more control points are specified for an unbundled bezier edge, each adjacent pair of bezier curves is joined at the midpoint of the two control points.  This makes most curves join smoothly.
 
 * **`control-point-distances`** : A series of values that specify for each control point the distance perpendicular to a line formed from source to target, e.g. `-20 20 -20`.
 * **`control-point-weights`** : A series of values that weights control points along a line from source to target, e.g. `0.25 0.5 0.75`.  A value usually ranges on [0, 1], with 0 towards the source node and 1 towards the target node --- but larger or smaller values can also be used.

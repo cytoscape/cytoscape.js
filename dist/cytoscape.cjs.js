@@ -6539,6 +6539,15 @@ var stateSelectors = [{
     return ele.isChild();
   }
 }, {
+  selector: ':compound',
+  matches: function matches(ele) {
+    if (ele.isNode()) {
+      return ele.isParent();
+    } else {
+      return ele.source().isParent() || ele.target().isParent();
+    }
+  }
+}, {
   selector: ':loop',
   matches: function matches(ele) {
     return ele.isLoop();
@@ -7131,14 +7140,15 @@ var parse = function parse(selector) {
     var q = self[i]; // in future, this could potentially be allowed if there were operator precedence and detection of invalid combinations
 
     if (q.compoundCount > 0 && q.edgeCount > 0) {
-      warn('The selector `' + selector + '`is invalid because it uses both a compound selector and an edge selector');
+      warn('The selector `' + selector + '` is invalid because it uses both a compound selector and an edge selector');
       return false;
-    } // in future, this could potentially be allowed with an explicit subject selector
-
+    }
 
     if (q.edgeCount > 1) {
-      warn('The selector `' + selector + '`is invalid because it uses multiple edge selectors');
+      warn('The selector `' + selector + '` is invalid because it uses multiple edge selectors');
       return false;
+    } else if (q.edgeCount === 1) {
+      warn('The selector `' + selector + '` is deprecated.  Edge selectors do not take effect on changes to source and target nodes after an edge is added, for performance reasons.  Use a class or data selector on edges instead, updating the class or data of an edge when your app detects a change in source or target nodes.');
     }
   }
 
@@ -14684,15 +14694,51 @@ styfn$3.getStylePropertyValue = function (ele, propName, isRenderedVal) {
 
     var type = prop.type;
     var styleProp = ele.pstyle(prop.name);
-    var zoom = ele.cy().zoom();
 
     if (styleProp) {
-      var units = styleProp.units ? type.implicitUnits || 'px' : null;
-      var val = units ? [].concat(styleProp.pfValue).map(function (pfValue) {
-        return pfValue * (isRenderedVal ? zoom : 1) + units;
-      }).join(' ') : styleProp.strValue;
-      return val;
+      var value = styleProp.value,
+          units = styleProp.units,
+          strValue = styleProp.strValue;
+
+      if (isRenderedVal && type.number && value != null && number(value)) {
+        var zoom = ele.cy().zoom();
+
+        var getRenderedValue = function getRenderedValue(val) {
+          return val * zoom;
+        };
+
+        var getValueStringWithUnits = function getValueStringWithUnits(val, units) {
+          return getRenderedValue(val) + units;
+        };
+
+        var isArrayValue = array(value);
+        var haveUnits = isArrayValue ? units.every(function (u) {
+          return u != null;
+        }) : units != null;
+
+        if (haveUnits) {
+          if (isArrayValue) {
+            return value.map(function (v, i) {
+              return getValueStringWithUnits(v, units[i]);
+            }).join(' ');
+          } else {
+            return getValueStringWithUnits(value, units);
+          }
+        } else {
+          if (isArrayValue) {
+            return value.map(function (v) {
+              return string(v) ? v : '' + getRenderedValue(v);
+            }).join(' ');
+          } else {
+            return '' + getRenderedValue(value);
+          }
+        }
+      } else if (strValue != null) {
+        return strValue;
+      }
     }
+
+    return null;
   }
 };
 
@@ -16102,7 +16148,7 @@ styfn$6.addDefaultStylesheet = function () {
     'width': 3
   }).selector(':loop').css({
     'curve-style': 'bezier'
-  }).selector(':parent <-> node').css({
+  }).selector('edge:compound').css({
     'curve-style': 'bezier',
     'source-endpoint': 'outside-to-line',
     'target-endpoint': 'outside-to-line'
@@ -18522,7 +18568,6 @@ var defaults$c = {
   // (prevents flashing on fast runs)
   animationThreshold: 250,
   // Number of iterations between consecutive screen positions update
-  // (0 -> only updated on the end)
   refresh: 20,
   // Whether to fit the network view after when done
   fit: true,
@@ -19345,7 +19390,7 @@ CoseLayout.prototype.run = function () {
     do {
       var f = 0;
 
-      while (f < options.refresh && i < options.numIter) {
+      while ((f < options.refresh || options.refresh === 0) && i < options.numIter) {
         var loopRet = mainLoop(i);
 
         if (!loopRet) {

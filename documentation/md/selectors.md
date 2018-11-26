@@ -99,17 +99,6 @@ Prepended to an operator so that it is negated (e.g. `[foo !$= 'ar']`, `[foo !>=
 **`[[]]` (metadata brackets)**
 Use double square brackets in place of square ones to match against metadata instead of data (e.g. `[[degree > 2]]` matches elements of degree greater than 2).  The properties that are supported include `degree`, `indegree`, and `outdegree`.
 
-## Edges
-
-**`->` (directed edge selector)**
-Matches edges for which the source and target subselectors match (e.g. `.src -> .tgt`)
-
-**`<->` (undirected edge selector)**
-Matches edges for which the connected node subselectors match (e.g. `.foo <-> .bar`)
-
-**`$` (subject selector)**
-Sets the subject of the selector (e.g. `$node -> node` to select the source nodes instead of the edges).
-
 ## Compound nodes
 
 **`>` (child selector)**
@@ -175,6 +164,7 @@ Sets the subject of the selector (e.g. `$node > node` to select the parent nodes
 * **`:childless`** : Matches childless nodes (they have zero child nodes).
 * **`:child`** or **`:nonorphan`**: Matches child nodes (they each have a parent).
 * **`:orphan`** : Matches orphan nodes (they each have no parent).
+* **`:compound`** : Matches parent nodes.  Also matches edges connected to parent nodes (they each have at least one parent node among source and target).
 
 **Edges**
 

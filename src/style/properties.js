@@ -676,7 +676,7 @@ styfn.addDefaultStylesheet = function(){
       .css( {
         'curve-style': 'bezier'
       } )
-    .selector( ':parent <-> node' )
+    .selector( 'edge:compound' )
       .css( {
         'curve-style': 'bezier',
         'source-endpoint': 'outside-to-line',

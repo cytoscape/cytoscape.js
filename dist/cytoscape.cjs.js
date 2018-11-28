@@ -14924,16 +14924,49 @@ styfn.getStylePropertyValue = function (ele, propName, isRenderedVal) {
 
     var type = prop.type;
     var styleProp = ele.pstyle(prop.name);
-    var zoom = ele.cy().zoom();
 
     if (styleProp) {
-      var units = styleProp.units ? type.implicitUnits || 'px' : null;
-      var val = units ? [].concat(styleProp.pfValue).map(function (pfValue) {
-        return pfValue * (isRenderedVal ? zoom : 1) + units;
-      }).join(' ') : styleProp.strValue;
+      var value = styleProp.value,
+          units = styleProp.units,
+          strValue = styleProp.strValue;
 
-      return val;
+
+      if (isRenderedVal && type.number && value != null && is.number(value)) {
+        var zoom = ele.cy().zoom();
+        var getRenderedValue = function getRenderedValue(val) {
+          return val * zoom;
+        };
+        var getValueStringWithUnits = function getValueStringWithUnits(val, units) {
+          return getRenderedValue(val) + units;
+        };
+        var isArrayValue = is.array(value);
+        var haveUnits = isArrayValue ? units.every(function (u) {
+          return u != null;
+        }) : units != null;
+
+        if (haveUnits) {
+          if (isArrayValue) {
+            return value.map(function (v, i) {
+              return getValueStringWithUnits(v, units[i]);
+            }).join(' ');
+          } else {
+            return getValueStringWithUnits(value, units);
+          }
+        } else {
+          if (isArrayValue) {
+            return value.map(function (v) {
+              return is.string(v) ? v : '' + getRenderedValue(v);
+            }).join(' ');
+          } else {
+            return '' + getRenderedValue(value);
+          }
+        }
+      } else if (strValue != null) {
+        return strValue;
+      }
     }
+
+    return null;
   }
 };
 
@@ -18734,7 +18767,7 @@ CoseLayout.prototype.run = function () {
     do {
       var f = 0;
 
-      while (f < options.refresh && i < options.numIter) {
+      while ((f < options.refresh || options.refresh === 0) && i < options.numIter) {
         var loopRet = mainLoop(i);
         if (!loopRet) {
           break;
@@ -29172,7 +29205,7 @@ module.exports = Stylesheet;
 "use strict";
 
 
-module.exports = "3.2.20";
+module.exports = "3.2.21";
 
 /***/ })
 /******/ ]);

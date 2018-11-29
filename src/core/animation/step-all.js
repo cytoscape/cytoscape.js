@@ -76,6 +76,10 @@ function stepAll( now, cy ){
 
       callbacks( ani_p.frames );
 
+      if( ani_p.step != null ){
+        ani_p.step(now);
+      }
+
       if( ani.completed() ){
         current.splice( i, 1 );
 

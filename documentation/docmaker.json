@@ -744,9 +744,9 @@
                         },
                         { "name": "duration", "descr": "The duration of the animation in milliseconds." },
                         { "name": "queue", "descr": "A boolean indicating whether to queue the animation (default `true`).  Queued animations on the core run in order until the queue is empty." },
+                        { "name": "easing", "descr": "A [`transition-timing-function`](#style/transition-animation) easing style string that shapes the animation progress curve." },
                         { "name": "complete", "descr": "A function to call when the animation is done." },
-                        { "name": "step", "descr": "A function to call each time the animation steps." },
-                        { "name": "easing", "descr": "A [`transition-timing-function`](#style/transition-animation) easing style string that shapes the animation progress curve." }
+                        { "name": "step", "descr": "A function to call each time the animation steps." }
                       ]
                     }
                   ]
@@ -792,7 +792,9 @@
                           ]
                         },
                         { "name": "duration", "descr": "The duration of the animation in milliseconds." },
-                        { "name": "easing", "descr": "A [`transition-timing-function`](#style/transition-animation) easing style string that shapes the animation progress curve." }
+                        { "name": "easing", "descr": "A [`transition-timing-function`](#style/transition-animation) easing style string that shapes the animation progress curve." },
+                        { "name": "complete", "descr": "A function to call when the animation is done." },
+                        { "name": "step", "descr": "A function to call each time the animation steps." }
                       ]
                     }
                   ]
@@ -2045,9 +2047,9 @@
                         { "name": "style", "descr": "An object containing name-value pairs of style properties to animate." },
                         { "name": "duration", "descr": "The duration of the animation in milliseconds." },
                         { "name": "queue", "descr": "A boolean indicating whether to queue the animation (default `true`)." },
+                        { "name": "easing", "descr": "A [`transition-timing-function`](#style/transition-animation) easing style string that shapes the animation progress curve." },
                         { "name": "complete", "descr": "A function to call when the animation is done." },
-                        { "name": "step", "descr": "A function to call each time the animation steps." },
-                        { "name": "easing", "descr": "A [`transition-timing-function`](#style/transition-animation) easing style string that shapes the animation progress curve." }
+                        { "name": "step", "descr": "A function to call each time the animation steps." }
                       ]
                     }
                   ]
@@ -2070,7 +2072,9 @@
                         { "name": "renderedPosition", "descr": "A rendered position to which the elements will be animated." },
                         { "name": "style", "descr": "An object containing name-value pairs of style properties to animate." },
                         { "name": "duration", "descr": "The duration of the animation in milliseconds." },
-                        { "name": "easing", "descr": "A [`transition-timing-function`](#style/transition-animation) easing style string that shapes the animation progress curve." }
+                        { "name": "easing", "descr": "A [`transition-timing-function`](#style/transition-animation) easing style string that shapes the animation progress curve." },
+                        { "name": "complete", "descr": "A function to call when the animation is done." },
+                        { "name": "step", "descr": "A function to call each time the animation steps." }
                       ]
                     }
                   ]

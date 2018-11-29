@@ -674,6 +674,27 @@ describe('Collection style', function(){
       });
     });
 
+    it('ele.animate() calls step function', function( next ){
+      var stepCalls = 0;
+
+      n1.animate({
+        style: { width: 200 },
+        step: function(){
+          var w = parseFloat(n1.style().width);
+
+          expect(w).to.be.at.most(200);
+          expect(w).to.be.at.least(20);
+
+          stepCalls++;
+        },
+        complete: function(){
+          expect(stepCalls).to.be.above(0);
+          next();
+        },
+        duration: 100
+      });
+    });
+
     it('eles.animate() results in end style', function( next ){
       var c = 0;
       function complete(){

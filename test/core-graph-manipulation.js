@@ -422,6 +422,62 @@ describe('Core graph manipulation', function(){
       expect( cb ).to.equal(2);
     });
 
+    it('cy.json() removes parent', function(){
+      // clean up before test:
+      cy.elements().remove();
+      cy.add([
+        { data: { id: 'a' } },
+        { data: { id: 'b', parent: 'a' } },
+        { data: { id: 'c', parent: 'a' } },
+        { data: { id: 'e', source: 'b', target: 'c' } }
+      ]);
+
+      cy.json({
+        elements: [
+          // a is gone, rest same
+          { data: { id: 'b' } },
+          { data: { id: 'c' } },
+          { data: { id: 'e', source: 'b', target: 'c' } }
+        ]
+      });
+
+      expect( cy.$('#a').empty(), 'node a not in graph' ).to.be.true;
+      expect( cy.$('#b').nonempty(), 'node b in graph' ).to.be.true;
+      expect( cy.$('#c').nonempty(), 'node c in graph' ).to.be.true;
+      expect( cy.$('#e').nonempty(), 'edge e in graph' ).to.be.true;
+    });
+
+    it('cy.json() removes parent and uses new parent', function(){
+      // clean up before test:
+      cy.elements().remove();
+      cy.add([
+        { data: { id: 'a' } },
+        { data: { id: 'b', parent: 'a' } },
+        { data: { id: 'c', parent: 'b' } },
+        { data: { id: 'd', parent: 'b' } },
+        { data: { id: 'e', source: 'c', target: 'd' } },
+        { data: { id: 'f', source: 'a', target: 'd' } }
+      ]);
+
+      cy.json({
+        elements: [
+          { data: { id: 'a' } },
+          // b is gone
+          { data: { id: 'c', parent: 'a' } }, // new parent a
+          { data: { id: 'd', parent: 'a' } }, // new parent a
+          { data: { id: 'e', source: 'c', target: 'd' } },
+          { data: { id: 'f', source: 'a', target: 'd' } }
+        ]
+      });
+
+      expect( cy.$('#a').nonempty(), 'node a in graph' ).to.be.true;
+      expect( cy.$('#b').empty(), 'node b not in graph' ).to.be.true;
+      expect( cy.$('#c').nonempty(), 'node c in graph' ).to.be.true;
+      expect( cy.$('#d').nonempty(), 'node c in graph' ).to.be.true;
+      expect( cy.$('#e').nonempty(), 'edge e in graph' ).to.be.true;
+      expect( cy.$('#f').nonempty(), 'edge f in graph' ).to.be.true;
+    });
+
     it('cy.json() removes element via alt syntax', function(){
       var cb = 0;
       cy.on('remove', function(){ cb++; });

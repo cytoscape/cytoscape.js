@@ -336,9 +336,20 @@ util.extend( corefn, {
         }
 
         // elements not specified in json should be removed
-        eles.stdFilter( function( ele ){
-          return !idInJson[ ele.id() ];
-        } ).remove();
+        for( let i = 0; i < eles.length; i++ ){
+          let ele = eles[i];
+          let remove = !idInJson[ ele.id() ];
+
+          if( remove ){
+            if( ele.isParent() ){
+              ele.children().move({ parent: null }); // so that children are not removed w/ parent
+
+              ele.remove(); // remove parent
+            } else {
+              ele.remove();
+            }
+          }
+        }
       }
 
       if( obj.style ){

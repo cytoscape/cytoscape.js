@@ -298,6 +298,7 @@ util.extend( corefn, {
 
         let updateEles = function( jsons, gr ){
           let toAdd = [];
+          let toMod = [];
 
           for( let i = 0; i < jsons.length; i++ ){
             let json = jsons[ i ];
@@ -307,7 +308,7 @@ util.extend( corefn, {
             idInJson[ id ] = true;
 
             if( ele.length !== 0 ){ // existing element should be updated
-              ele.json( json );
+              toMod.push({ ele, json });
             } else { // otherwise should be added
               if( gr ){
                 toAdd.push( util.extend( { group: gr }, json ) );
@@ -318,6 +319,12 @@ util.extend( corefn, {
           }
 
           cy.add( toAdd );
+
+          for( let i = 0; i < toMod.length; i++ ){
+            let { ele, json } = toMod[i];
+
+            ele.json(json);
+          }
         };
 
         if( is.array( obj.elements ) ){ // elements: []

@@ -476,6 +476,8 @@ describe('Core graph manipulation', function(){
       expect( cy.$('#d').nonempty(), 'node c in graph' ).to.be.true;
       expect( cy.$('#e').nonempty(), 'edge e in graph' ).to.be.true;
       expect( cy.$('#f').nonempty(), 'edge f in graph' ).to.be.true;
+      expect( cy.$('#c').parent().id(), 'c parent' ).to.equal('a');
+      expect( cy.$('#d').parent().id(), 'd parent' ).to.equal('a');
     });
 
     it('cy.json() removes element via alt syntax', function(){

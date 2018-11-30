@@ -422,6 +422,35 @@ describe('Core graph manipulation', function(){
       expect( cb ).to.equal(2);
     });
 
+    it('cy.json() removes element via alt syntax', function(){
+      var cb = 0;
+      cy.on('remove', function(){ cb++; });
+
+      cy.json({
+        elements: {
+          nodes: [
+              { data: { id: "n1", foo: "one", weight: 0.25 }, classes: "odd one" },
+              { data: { id: "n2", foo: "two", weight: 0.5 }, classes: "even two" }
+          ],
+
+          edges: [
+              { data: { id: "n1n2", source: "n1", target: "n2", weight: 0.33 }, classes: "uh" },
+              { data: { id: "n2n3", source: "n2", target: "n3", weight: 0.66 }, classes: "huh" }
+          ]
+        }
+      });
+
+      expect( cy.$('#n1').length ).to.equal(1);
+      expect( cy.$('#n2').length ).to.equal(1);
+      expect( cy.$('#n3').length ).to.equal(0);
+      expect( cy.$('#n1n2').length ).to.equal(1);
+      expect( cy.$('#n2n3').length ).to.equal(0); // because connected
+
+      expect( cy.$('#n1').data('foo') ).to.equal('one');
+
+      expect( cb ).to.equal(2);
+    });
+
     it('cy.json() removes parent', function(){
       // clean up before test:
       cy.elements().remove();
@@ -445,6 +474,80 @@ describe('Core graph manipulation', function(){
       expect( cy.$('#b').nonempty(), 'node b in graph' ).to.be.true;
       expect( cy.$('#c').nonempty(), 'node c in graph' ).to.be.true;
       expect( cy.$('#e').nonempty(), 'edge e in graph' ).to.be.true;
+      expect( cy.$('#b').isOrphan(), 'b is orphan' ).to.be.true;
+      expect( cy.$('#c').isOrphan(), 'c is orphan' ).to.be.true;
+    });
+
+    it('cy.json() orphans children', function(){
+      // clean up before test:
+      cy.elements().remove();
+      cy.add([
+        { data: { id: 'a' } },
+        { data: { id: 'b', parent: 'a' } },
+        { data: { id: 'c', parent: 'a' } },
+        { data: { id: 'e', source: 'b', target: 'c' } }
+      ]);
+
+      cy.json({
+        elements: [
+          { data: { id: 'a' } },
+          { data: { id: 'b' } },
+          { data: { id: 'c' } },
+          { data: { id: 'e', source: 'b', target: 'c' } }
+        ]
+      });
+
+      expect( cy.$('#a').nonempty(), 'node a in graph' ).to.be.true;
+      expect( cy.$('#b').nonempty(), 'node b in graph' ).to.be.true;
+      expect( cy.$('#c').nonempty(), 'node c in graph' ).to.be.true;
+      expect( cy.$('#e').nonempty(), 'edge e in graph' ).to.be.true;
+      expect( cy.$('#a').isParent(), 'a is parent' ).to.be.false;
+      expect( cy.$('#b').isOrphan(), 'b is orphan' ).to.be.true;
+      expect( cy.$('#c').isOrphan(), 'c is orphan' ).to.be.true;
+    });
+
+    it('cy.json() sets existing node as parent', function(){
+      // clean up before test:
+      cy.elements().remove();
+      cy.add([
+        { data: { id: 'a' } },
+        { data: { id: 'b' } }
+      ]);
+
+      cy.json({
+        elements: [
+          { data: { id: 'a', parent: 'b' } },
+          { data: { id: 'b' } }
+        ]
+      });
+
+      expect( cy.$('#a').nonempty(), 'node a in graph' ).to.be.true;
+      expect( cy.$('#b').nonempty(), 'node b in graph' ).to.be.true;
+      expect( cy.$('#a').parent().id(), 'parent of a' ).to.equal('b');
+    });
+
+    it('cy.json() sets a newly added node as parent', function(){
+      // clean up before test:
+      cy.elements().remove();
+      cy.add([
+        { data: { id: 'a' } },
+        { data: { id: 'b' } },
+      ]);
+
+      cy.json({
+        elements: [
+          { data: { id: 'a', parent: 'c' } },
+          { data: { id: 'b' } },
+          { data: { id: 'c' } }
+        ]
+      });
+
+      expect( cy.$('#a').nonempty(), 'node a in graph' ).to.be.true;
+      expect( cy.$('#b').nonempty(), 'node b in graph' ).to.be.true;
+      expect( cy.$('#c').nonempty(), 'node c in graph' ).to.be.true;
+      expect( cy.$('#a').parent().id(), 'parent of a' ).to.equal('c');
+      expect( cy.$('#b').isChild(), 'b is child' ).to.be.false;
+      expect( cy.$('#c').isParent(), 'c is parent' ).to.be.true;
     });
 
     it('cy.json() removes parent and uses new parent', function(){
@@ -478,35 +581,6 @@ describe('Core graph manipulation', function(){
       expect( cy.$('#f').nonempty(), 'edge f in graph' ).to.be.true;
       expect( cy.$('#c').parent().id(), 'c parent' ).to.equal('a');
       expect( cy.$('#d').parent().id(), 'd parent' ).to.equal('a');
-    });
-
-    it('cy.json() removes element via alt syntax', function(){
-      var cb = 0;
-      cy.on('remove', function(){ cb++; });
-
-      cy.json({
-        elements: {
-          nodes: [
-              { data: { id: "n1", foo: "one", weight: 0.25 }, classes: "odd one" },
-              { data: { id: "n2", foo: "two", weight: 0.5 }, classes: "even two" }
-          ],
-
-          edges: [
-              { data: { id: "n1n2", source: "n1", target: "n2", weight: 0.33 }, classes: "uh" },
-              { data: { id: "n2n3", source: "n2", target: "n3", weight: 0.66 }, classes: "huh" }
-          ]
-        }
-      });
-
-      expect( cy.$('#n1').length ).to.equal(1);
-      expect( cy.$('#n2').length ).to.equal(1);
-      expect( cy.$('#n3').length ).to.equal(0);
-      expect( cy.$('#n1n2').length ).to.equal(1);
-      expect( cy.$('#n2n3').length ).to.equal(0); // because connected
-
-      expect( cy.$('#n1').data('foo') ).to.equal('one');
-
-      expect( cb ).to.equal(2);
     });
 
     it('cy.json() updates style', function(){

@@ -228,7 +228,11 @@ elesfn.json = function( obj ){
       } else { // parent is immutable via data()
         let parent = obj.data.parent;
 
-        if( parent != null && parent !== data.parent ){
+        if( (parent != null || data.parent != null) && parent !== data.parent ){
+          if( parent === undefined ){ // can't set undefined imperatively, so use null
+            parent = null;
+          }
+
           ele = ele.move({ parent });
         }
       }

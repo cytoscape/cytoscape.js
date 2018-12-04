@@ -1,0 +1,30 @@
+[{
+  "selector": "node",
+  "style": {
+    "text-valign": "center",
+    "text-halign": "left",
+    "width": 16,
+    "height": 16
+  }
+}, {
+  "selector": "node[type]",
+  "style": {
+    "label": "data(type)"
+  }
+}, {
+  "selector": "edge",
+  "style": {
+    "width": 1,
+    "curve-style": "straight"
+  }
+}, {
+  "selector": "edge[arrow]",
+  "style": {
+    "target-arrow-shape": "data(arrow)"
+  }
+}, {
+  "selector": "edge.hollow",
+  "style": {
+    "target-arrow-fill": "hollow"
+  }
+}]

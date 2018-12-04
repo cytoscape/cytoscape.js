@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<meta http-equiv="content-type" content="text/html;charset=UTF-8">
+		<link rel="canonical" href="http://js.cytoscape.org" />
+		<meta name="description" content="Graph theory / network library for analysis and visualisation - compatible with CommonJS/Node.js/Browserify/Webpack, AMD/Require.js, npm, Bower, jspm, Meteor/Atmosphere, jQuery, and plain JS/JavaScript">
+		<meta name="author" content="Max Franz">
+		<meta name="robots" content="all" />
+		<meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimal-ui">
+
+		<link rel="shortcut icon" href="img/cytoscape-logo.png" />
+		<link rel="shortcut icon" href="img/cytoscape-logo.svg" type="image/svg" />
+
+		<title>Cytoscape.js</title>
+
+		<link rel="stylesheet" href="css/reset.css">
+		<link rel="stylesheet" href="css/font-awesome.css">
+		<link rel="stylesheet" href="css/highlight/github.css">
+		<link rel="stylesheet" href="css/style.css">
+
+	</head>
+
+	<body>
+
+		<div id="content">
+
+			<a id="open-navigation" class="activatable plain-link"><span class="fa fa-bars"></span></a>
+			<div id="open-navigation-bg"></div>
+
+			<h1 id="top" class="title">Cytoscape.js</h1>
+
+			<div class="subtitle">
+				Graph theory (network) library for visualisation and analysis
+			</div>
+
+			<div id="documentation">
+			{{#each sections}}
+				{{#if name}}<h1 id="{{id}}">{{name}} {{{bookmark}}}</h1>{{/if}}
+
+				{{#if html}}
+					{{{html}}}
+				{{/if}}
+
+				{{#if demos}}
+
+					<div class="gallery-demos">
+					{{#each demos}}
+						<div class="gallery-demo">
+
+							<a class="gallery-link" href="{{viewUrl}}">
+								<span class="gallery-preview" style="background-image: url('{{imgUrl}}');"></span>
+							</a>
+
+							<div class="gallery-title">
+								<a href="{{githubUrl}}">
+									<span class="gallery-name"><span class="fa fa-github"></span> {{name}}</span>
+								</a>
+							</div>
+
+						</div>
+					{{/each}}
+					</div>
+
+				{{/if}}
+
+				{{#each sections}}
+				{{#if fromMd}}
+				{{else}}
+					<h2 id="{{id}}">{{name}} {{{bookmark}}}</h2>
+
+					{{#if extensions}}
+						<ul>
+						{{#each extensions}}
+							<li><a target="_blank" href="{{url}}"><code>{{name}}</code></a> : {{descr}}</li>
+						{{/each}}
+						</ul>
+					{{/if}}
+
+					{{#if html}}
+						{{{html}}}
+					{{/if}}
+
+					{{#if layout}}
+						<h3>Options</h3>
+						<pre><code class="lang-js">{{{layout.optionsFormatted}}}</code></pre>
+						<button class="run run-inline-code"><span class="fa fa-play"></span></button>
+					{{/if}}
+
+					{{#each fns}}
+						<div class="function">
+							<div class="name" id="{{id}}">
+								<span class="fn-name">{{name}}()</span> {{#if aliases}}et al{{/if}} {{{bookmark}}}
+								{{#each altIds}}<span id="{{.}}">&nbsp;</span>{{/each}}
+							</div>
+
+							{{#if extFn}}
+								<div class="ext-function-note">
+									<span class="fa fa-puzzle-piece important"></span> <a href="#extensions">Extension</a> function: This function is intended for use in extensions.
+								</div>
+							{{/if}}
+
+							{{#if processedPureAliases}}
+							<div class="pure-aliases">
+								<span class="important-indicator"></span> Aliases:
+
+								{{#each processedPureAliases}}
+									<span class="pure-alias">
+										<code id="{{id}}" class="pure-alias-name">{{name}}()</code><span class="pure-alias-comma">,</span>
+									</span>
+								{{/each}}
+							</div>
+							{{/if}}
+
+							<div class="descr">{{{descr}}}</div>
+
+							{{#if formats}}
+							<div class="formats">
+								{{#each formats}}
+									<div class="format">
+										{{#if args}}
+											<div class="name">{{name}}( <span class="args-summary">{{#each args}}{{#if optional}} [{{/if}}<span class="comma">,&nbsp;</span>{{{name}}}{{#if optional}}]{{/if}}{{/each}}</span> )</div>
+										{{else}}
+											<div class="name">{{name}}()</div>
+										{{/if}}
+
+										{{#if processedPureAliases}}
+										<div class="pure-aliases">
+											<span class="important-indicator"></span> Aliases:
+
+											{{#each processedPureAliases}}
+												<span class="pure-alias">
+													<span id="{{id}}" class="pure-alias-name">{{name}}()</span><span class="pure-alias-comma">,</span>
+												</span>
+											{{/each}}
+										</div>
+										{{/if}}
+
+										<div class="descr">{{{descr}}}</div>
+										<ul class="args">
+											{{#each args}}
+												<li>
+													<span class="name">{{{linkedName}}}</span>
+													{{#if optional}}<span class="optional">[optional]</span>{{/if}}
+													<span class="descr">{{{descr}}}</span>
+
+													{{#if fields}}
+													<ul class="fields">
+														{{#each fields}}
+															<li>
+																<span class="name">{{{linkedName}}}</span>
+																{{#if optional}}<span class="optional">[optional]</span>{{/if}}
+																<span class="descr">{{{descr}}}</span>
+															</li>
+
+															{{#if fields}}
+															<ul class="fields">
+																{{#each fields}}
+																<li>
+																	<span class="name">{{{linkedName}}}</span>
+																	{{#if optional}}<span class="optional">[optional]</span>{{/if}}
+																	<span class="descr">{{{descr}}}</span>
+																</li>
+
+																{{#if fields}}
+																<ul class="fields">
+																	{{#each fields}}
+																	<li>
+																		<span class="name">{{{linkedName}}}</span>
+																		{{#if optional}}<span class="optional">[optional]</span>{{/if}}
+																		<span class="descr">{{{descr}}}</span>
+																	</li>
+																	{{/each}}
+																</ul>
+																{{/if}}
+
+																{{/each}}
+															</ul>
+															{{/if}}
+														{{/each}}
+													</ul>
+													{{/if}}
+												</li>
+											{{/each}}
+										</ul>
+									</div>
+								{{/each}}
+							</div>
+							{{/if}}
+
+							<div class="details">
+								{{#if html}}
+									{{{html}}}
+								{{/if}}
+							</div>
+						</div>
+					{{/each}}
+
+				{{/if}}
+				{{/each}}
+			{{/each}}
+			</div>
+
+			<p><span class="fa fa-sign-blank"></span></p>
+
+		</div>
+
+		<div class="toc-search">
+			<input id="toc-input" type="text" placeholder="Find sections"></input>
+			<a id="toc-clear" class="plain-link"><span class="fa fa-times"></span></a>
+			<a id="toc-top" href="#top" class="plain-link"><span class="fa fa-arrow-up"></span></a>
+		</div>
+
+		<div id="navigation">
+			<div id="toc-sections" class="toc-sections">
+
+				{{#each sections}}
+					<div class="section lvl1">
+						{{#if sections}}<span class="expander">
+							<span class="fa fa-caret-down expanded-icon"></span>
+							<span class="fa fa-caret-right collapsed-icon"></span>
+						</span>{{/if}}
+						<a class="toclink" href="#{{id}}">{{& name}}</a>
+					</div>
+
+					{{#each sections}}
+						<div class="section lvl2">
+							{{#if fns}}<span class="expander">
+								<span class="fa fa-caret-down expanded-icon"></span>
+								<span class="fa fa-caret-right collapsed-icon"></span>
+							</span>{{/if}}
+							<a class="toclink" href="#{{id}}">{{& name}}</a>
+						</div>
+
+						{{#each fns}}
+							<div class="section lvl3"><a class="toclink" href="#{{id}}">{{name}}() {{#if aliases}}et al{{/if}}</a></div>
+						{{/each}}
+					{{/each}}
+				{{/each}}
+
+			</div>
+
+			<p><span class="fa fa-sign-blank"></span></p>
+		</div>
+
+
+		<div id="orphaned-cy-container">
+			<div id="cy-etc" class="hidden">
+				<div id="cy-arrow">
+					<span class="fa fa-arrow-down"></span>
+				</div>
+				<div id="cy-title"><pre class="content"></pre></div>
+				<div id="cy-label" class="hidden"><code>window.cy</code></div>
+				<div id="cy" class="hidden"></div>
+				<div id="cy-refresh" class="hidden">
+					<span class="link plain-link fa fa-refresh"></span>
+				</div>
+				<div id="cy-show">
+					<span class="link plain-link fa fa-plus"></span>
+				</div>
+				<div id="cy-hide" class="hidden">
+					<span class="link plain-link fa fa-minus"></span>
+				</div>
+			</div>
+		</div>
+
+		<script src="js/cytoscape.min.js"></script>
+
+		<!-- polyfills so the docs work on old browsers, like IE -->
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.2.20171210/classList.min.js"></script>
+
+		<!-- the docs js -->
+		<script src="js/script.js"></script>
+
+		<script type="text/javascript">
+
+		var _gaq = _gaq || [];
+		_gaq.push(['_setAccount', 'UA-155159-11']);
+		_gaq.push(['_trackPageview']);
+
+		(function() {
+		var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+		ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+		var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+		})();
+
+		</script>
+
+	</body>
+</html>

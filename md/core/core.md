@@ -1,0 +1,1 @@
+The core object is your interface to a graph.  It is your entry point to Cytoscape.js:  All of the library's features are accessed through this object.

@@ -12655,7 +12655,12 @@
           // parent is immutable via data()
           var parent = obj.data.parent;
 
-          if (parent != null && parent !== _data2.parent) {
+          if ((parent != null || _data2.parent != null) && parent !== _data2.parent) {
+            if (parent === undefined) {
+              // can't set undefined imperatively, so use null
+              parent = null;
+            }
+
             ele = ele.move({
               parent: parent
             });
@@ -13910,6 +13915,10 @@
         }
 
         callbacks(ani_p.frames);
+
+        if (ani_p.step != null) {
+          ani_p.step(now);
+        }
 
         if (ani.completed()) {
           current.splice(_i, 1);
@@ -18430,6 +18439,7 @@
 
           var updateEles = function updateEles(jsons, gr) {
             var toAdd = [];
+            var toMod = [];
 
             for (var i = 0; i < jsons.length; i++) {
               var json = jsons[i];
@@ -18439,7 +18449,10 @@
 
               if (ele.length !== 0) {
                 // existing element should be updated
-                ele.json(json);
+                toMod.push({
+                  ele: ele,
+                  json: json
+                });
               } else {
                 // otherwise should be added
                 if (gr) {
@@ -18452,6 +18465,14 @@
             }
 
             cy.add(toAdd);
+
+            for (var _i = 0; _i < toMod.length; _i++) {
+              var _toMod$_i = toMod[_i],
+                  _ele = _toMod$_i.ele,
+                  _json = _toMod$_i.json;
+
+              _ele.json(_json);
+            }
           };
 
           if (array(obj.elements)) {
@@ -18472,9 +18493,22 @@
           } // elements not specified in json should be removed
 
 
-          eles.stdFilter(function (ele) {
-            return !idInJson[ele.id()];
-          }).remove();
+          for (var _i2 = 0; _i2 < eles.length; _i2++) {
+            var ele = eles[_i2];
+            var remove = !idInJson[ele.id()];
+
+            if (remove) {
+              if (ele.isParent()) {
+                ele.children().move({
+                  parent: null
+                }); // so that children are not removed w/ parent
+
+                ele.remove(); // remove parent
+              } else {
+                ele.remove();
+              }
+            }
+          }
         }
 
         if (obj.style) {
@@ -18493,8 +18527,8 @@
 
         var fields = ['minZoom', 'maxZoom', 'zoomingEnabled', 'userZoomingEnabled', 'panningEnabled', 'userPanningEnabled', 'boxSelectionEnabled', 'autolock', 'autoungrabify', 'autounselectify'];
 
-        for (var _i = 0; _i < fields.length; _i++) {
-          var f = fields[_i];
+        for (var _i3 = 0; _i3 < fields.length; _i3++) {
+          var f = fields[_i3];
 
           if (obj[f] != null) {
             cy[f](obj[f]);
@@ -30694,7 +30728,7 @@
     return style$$1;
   };
 
-  var version = "snapshot";
+  var version = "3.3.0";
 
   var cytoscape = function cytoscape(options) {
     // if no options specified, use default

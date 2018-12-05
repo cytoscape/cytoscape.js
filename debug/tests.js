@@ -618,4 +618,59 @@
     }
   });
 
+  test({
+    name: "pngblob",
+    displayName: "Export big PNG image via promise",
+    description: "Tap background to save the file",
+    setup: function(){
+      cy.on('tap', function(e){
+        if( e.target !== cy ){ return; }
+
+        console.time('pngblob');
+
+        var save = function(blob){
+          console.timeEnd('pngblob');
+
+          saveAs(blob, 'blob-promise.png');
+        };
+
+        var N = 10000;
+
+        cy.png({ output: 'blob-promise', maxWidth: N, maxHeight: N }).then(save);
+      });
+    },
+
+    teardown: function(){
+      cy.off('tap');
+    }
+  });
+
+  test({
+    name: "png64",
+    displayName: "Export big PNG image via base64 blob",
+    description: "Tap background to save the file",
+    setup: function(){
+      cy.on('tap', function(e){
+        if( e.target !== cy ){ return; }
+
+        console.time('png64');
+
+        var save = function(blob){
+          saveAs(blob, 'base64-blob.png');
+        };
+
+        var N = 10000;
+
+        var blob = cy.png({ output: 'blob', maxWidth: N, maxHeight: N });
+
+        console.timeEnd('png64');
+
+        save( blob );
+      });
+    },
+
+    teardown: function(){
+      cy.off('tap');
+    }
+  });
 })();

@@ -1,6 +1,7 @@
 /* global atob, ArrayBuffer, Uint8Array, Blob */
 
 import * as is from '../../../is';
+import Promise from '../../../promise';
 
 var CRp = {};
 
@@ -130,18 +131,33 @@ function b64UriToB64( b64uri ){
 }
 
 function output( options, canvas, mimeType ){
-  var b64Uri = canvas.toDataURL( mimeType, options.quality );
+  let getB64Uri = () => canvas.toDataURL( mimeType, options.quality );
 
   switch( options.output ){
+    case 'blob-promise':
+      return new Promise((resolve, reject) => {
+        try {
+          canvas.toBlob(blob => {
+            if( blob != null ){
+              resolve(blob);
+            } else {
+              reject( new Error('`canvas.toBlob()` sent a null value in its callback') );
+            }
+          }, mimeType, options.quality);
+        } catch( err ){
+          reject(err);
+        }
+      });
+
     case 'blob':
-      return b64ToBlob( b64UriToB64( b64Uri ), mimeType );
+      return b64ToBlob( b64UriToB64( getB64Uri() ), mimeType );
 
     case 'base64':
-      return b64UriToB64( b64Uri );
+      return b64UriToB64( getB64Uri() );
 
     case 'base64uri':
     default:
-      return b64Uri;
+      return getB64Uri();
   }
 }
 

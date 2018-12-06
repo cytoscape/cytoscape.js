@@ -451,6 +451,27 @@ describe('Core graph manipulation', function(){
       expect( cb ).to.equal(2);
     });
 
+    it('cy.json() can remove all elements', function() {
+        // Issue #2231
+        var cb = 0;
+        cy.on('remove', function() { cb++ });
+
+        cy.json({
+            elements: {
+              nodes: [],
+              edges: []
+            }
+        });
+
+        expect( cy.$('#n1').length ).to.equal(0);
+        expect( cy.$('#n2').length ).to.equal(0);
+        expect( cy.$('#n3').length ).to.equal(0);
+        expect( cy.$('#n1n2').length ).to.equal(0);
+        expect( cy.$('#n2n3').length ).to.equal(0);
+
+        expect( cb ).to.equal(5); // 3 nodes and 2 edges
+    });
+
     it('cy.json() removes parent', function(){
       // clean up before test:
       cy.elements().remove();

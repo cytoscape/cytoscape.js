@@ -252,6 +252,13 @@ styfn.updateStyleHints = function(ele){
 
   let updateGrKey = (val, grKey) => _p.styleKeys[ grKey ] = util.hashInt( val, _p.styleKeys[ grKey ] );
 
+  // - hashing works on 32 bit ints b/c we use bitwise ops
+  // - small numbers get cut off (e.g. 0.123 is seen as 0 by the hashing function)
+  // - raise up small numbers so more significant digits are seen by hashing
+  // - make small numbers negative to avoid collisions -- most style values are positive numbers
+  // - works in practice and it's relatively cheap
+  let cleanNum = val => (-128 < val && val < 128) && Math.floor(val) !== val ? -((val * 1024) | 0) : val;
+
   for( let i = 0; i < propNames.length; i++ ){
     let name = propNames[i];
     let parsedProp = overriddenStyles[ name ];
@@ -262,16 +269,18 @@ styfn.updateStyleHints = function(ele){
     let type = propInfo.type;
     let grKey = propInfo.groupKey;
 
+    // numbers are cheaper to hash than strings
+    // 1 hash op vs n hash ops (for length n string)
     if( type.number ){
       // use pfValue if available (e.g. normalised units)
       let v = parsedProp.pfValue != null ? parsedProp.pfValue : parsedProp.value;
 
       if( type.multiple ){
         for(let i = 0; i < v.length; i++){
-          updateGrKey(v[i], grKey);
+          updateGrKey(cleanNum(v[i]), grKey);
         }
       } else {
-        updateGrKey(v, grKey);
+        updateGrKey(cleanNum(v), grKey);
       }
     } else {
       let strVal = parsedProp.strValue;

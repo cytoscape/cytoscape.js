@@ -454,7 +454,7 @@ describe('Core graph manipulation', function(){
     it('cy.json() can remove all elements', function() {
         // Issue #2231
         var cb = 0;
-        cy.on('remove', function() { cb++ });
+        cy.on('remove', function() { cb++; });
 
         cy.json({
             elements: {
@@ -470,6 +470,28 @@ describe('Core graph manipulation', function(){
         expect( cy.$('#n2n3').length ).to.equal(0);
 
         expect( cb ).to.equal(5); // 3 nodes and 2 edges
+    });
+
+    it('cy.json() removes all but last element', function(){
+      // clean up before test:
+      cy.elements().remove();
+      cy.add([
+        { data: { id: 'a' } },
+        { data: { id: 'b' } },
+        { data: { id: 'c' } },
+        { data: { id: 'd' } }
+      ]);
+
+      cy.json({
+        elements: [
+          { data: { id: 'd' } }
+        ]
+      });
+
+      expect( cy.$('#a').empty(), 'node a not in graph' ).to.be.true;
+      expect( cy.$('#b').empty(), 'node b not in graph' ).to.be.true;
+      expect( cy.$('#c').empty(), 'node c not in graph' ).to.be.true;
+      expect( cy.$('#d').nonempty(), 'node d in graph' ).to.be.true;
     });
 
     it('cy.json() removes parent', function(){

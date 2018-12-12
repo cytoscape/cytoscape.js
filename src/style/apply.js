@@ -578,7 +578,7 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
 
   case types.fn: {
     let fn = prop.value;
-    let fnRetVal = fn( ele );
+    let fnRetVal = prop.fnValue || fn( ele ); // check for cached value before calling function
 
     if( fnRetVal == null ){
       util.warn('Custom function mappers may not return null (i.e. `' + prop.name + '` for ele `' + ele.id() + '` is null)');

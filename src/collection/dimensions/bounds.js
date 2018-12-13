@@ -648,9 +648,9 @@ let getBoundingBoxPosKey = ele => {
   if( ele.isEdge() ){
     let p1 = ele.source().position();
     let p2 = ele.target().position();
-    let round = x => Math.round(x);
+    let r = x => Math.round(x);
 
-    return hashIntsArray([ p1.x, p1.y, p2.x, p2.y ].map(round));
+    return hashIntsArray([ r(p1.x), r(p1.y), r(p2.x), r(p2.y) ]);
   } else {
     return 0;
   }
@@ -662,10 +662,15 @@ let cachedBoundingBoxImpl = function( ele, opts ){
   let key = opts == null ? defBbOptsKey : getKey( opts );
   let usingDefOpts = key === defBbOptsKey;
   let currPosKey = getBoundingBoxPosKey( ele );
-  let useCache = opts.useCache && _p.bbCachePosKey === currPosKey;
+  let isPosKeySame = _p.bbCachePosKey === currPosKey;
+  let useCache = opts.useCache && isPosKeySame;
   let needRecalc = !useCache || _p.bbCache == null;
 
   if( needRecalc ){
+    if( !isPosKeySame ){
+      ele.recalculateRenderedStyle( false );
+    }
+
     bb = boundingBoxImpl( ele, defBbOpts );
 
     _p.bbCache = bb;
@@ -767,7 +772,15 @@ elesfn.boundingBox = function( options ){
   let styleEnabled = cy.styleEnabled();
 
   if( styleEnabled ){
-    this.recalculateRenderedStyle( opts.useCache );
+    for( let i = 0; i < eles.length; i++ ){
+      let ele = eles[i];
+      let _p = ele._private;
+      let currPosKey = getBoundingBoxPosKey( ele );
+      let isPosKeySame = _p.bbCachePosKey === currPosKey;
+      let useCache = opts.useCache && isPosKeySame;
+
+      ele.recalculateRenderedStyle( useCache );
+    }
   }
 
   this.updateCompoundBounds();

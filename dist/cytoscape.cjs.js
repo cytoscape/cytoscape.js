@@ -9036,11 +9036,11 @@ var getBoundingBoxPosKey = function getBoundingBoxPosKey(ele) {
     var p1 = ele.source().position();
     var p2 = ele.target().position();
 
-    var round = function round(x) {
+    var r = function r(x) {
       return Math.round(x);
     };
 
-    return hashIntsArray([p1.x, p1.y, p2.x, p2.y].map(round));
+    return hashIntsArray([r(p1.x), r(p1.y), r(p2.x), r(p2.y)]);
   } else {
     return 0;
   }
@@ -9052,10 +9052,15 @@ var cachedBoundingBoxImpl = function cachedBoundingBoxImpl(ele, opts) {
   var key = opts == null ? defBbOptsKey : getKey(opts);
   var usingDefOpts = key === defBbOptsKey;
   var currPosKey = getBoundingBoxPosKey(ele);
-  var useCache = opts.useCache && _p.bbCachePosKey === currPosKey;
+  var isPosKeySame = _p.bbCachePosKey === currPosKey;
+  var useCache = opts.useCache && isPosKeySame;
   var needRecalc = !useCache || _p.bbCache == null;
 
   if (needRecalc) {
+    if (!isPosKeySame) {
+      ele.recalculateRenderedStyle(false);
+    }
+
     bb = boundingBoxImpl(ele, defBbOpts);
     _p.bbCache = bb;
     _p.bbCacheShift.x = _p.bbCacheShift.y = 0;
@@ -9155,14 +9160,21 @@ elesfn$j.boundingBox = function (options) {
   var styleEnabled = cy.styleEnabled();
 
   if (styleEnabled) {
-    this.recalculateRenderedStyle(opts.useCache);
+    for (var i = 0; i < eles.length; i++) {
+      var ele = eles[i];
+      var _p = ele._private;
+      var currPosKey = getBoundingBoxPosKey(ele);
+      var isPosKeySame = _p.bbCachePosKey === currPosKey;
+      var useCache = opts.useCache && isPosKeySame;
+      ele.recalculateRenderedStyle(useCache);
+    }
   }
 
   this.updateCompoundBounds();
 
-  for (var i = 0; i < eles.length; i++) {
-    var ele = eles[i];
-    updateBoundsFromBox(bounds, cachedBoundingBoxImpl(ele, opts));
+  for (var _i = 0; _i < eles.length; _i++) {
+    var _ele = eles[_i];
+    updateBoundsFromBox(bounds, cachedBoundingBoxImpl(_ele, opts));
   }
 
   bounds.x1 = noninf(bounds.x1);
@@ -13899,6 +13911,15 @@ styfn.updateStyleHints = function (ele) {
 
   var updateGrKey = function updateGrKey(val, grKey) {
     return _p.styleKeys[grKey] = hashInt(val, _p.styleKeys[grKey]);
+  }; // - hashing works on 32 bit ints b/c we use bitwise ops
+  // - small numbers get cut off (e.g. 0.123 is seen as 0 by the hashing function)
+  // - raise up small numbers so more significant digits are seen by hashing
+  // - make small numbers negative to avoid collisions -- most style values are positive numbers
+  // - works in practice and it's relatively cheap
+
+
+  var cleanNum = function cleanNum(val) {
+    return -128 < val && val < 128 && Math.floor(val) !== val ? -(val * 1024 | 0) : val;
   };
 
   for (var _i = 0; _i < propNames.length; _i++) {
@@ -13911,7 +13932,8 @@ styfn.updateStyleHints = function (ele) {
 
     var propInfo = this.properties[name];
     var type = propInfo.type;
-    var _grKey = propInfo.groupKey;
+    var _grKey = propInfo.groupKey; // numbers are cheaper to hash than strings
+    // 1 hash op vs n hash ops (for length n string)
 
     if (type.number) {
       // use pfValue if available (e.g. normalised units)
@@ -13919,10 +13941,10 @@ styfn.updateStyleHints = function (ele) {
 
       if (type.multiple) {
         for (var _i2 = 0; _i2 < v.length; _i2++) {
-          updateGrKey(v[_i2], _grKey);
+          updateGrKey(cleanNum(v[_i2]), _grKey);
         }
       } else {
-        updateGrKey(v, _grKey);
+        updateGrKey(cleanNum(v), _grKey);
       }
     } else {
       var strVal = parsedProp.strValue;
@@ -17734,22 +17756,19 @@ extend(corefn$9, {
         } // elements not specified in json should be removed
 
 
-        for (var _i2 = 0; _i2 < eles.length; _i2++) {
-          var ele = eles[_i2];
-          var remove = !idInJson[ele.id()];
+        eles.stdFilter(function (ele) {
+          return !idInJson[ele.id()];
+        }).forEach(function (ele) {
+          if (ele.isParent()) {
+            ele.children().move({
+              parent: null
+            }); // so that children are not removed w/ parent
 
-          if (remove) {
-            if (ele.isParent()) {
-              ele.children().move({
-                parent: null
-              }); // so that children are not removed w/ parent
-
-              ele.remove(); // remove parent
-            } else {
-              ele.remove();
-            }
+            ele.remove(); // remove parent
+          } else {
+            ele.remove();
           }
-        }
+        });
       }
 
       if (obj.style) {
@@ -17768,8 +17787,8 @@ extend(corefn$9, {
 
       var fields = ['minZoom', 'maxZoom', 'zoomingEnabled', 'userZoomingEnabled', 'panningEnabled', 'userPanningEnabled', 'boxSelectionEnabled', 'autolock', 'autoungrabify', 'autounselectify'];
 
-      for (var _i3 = 0; _i3 < fields.length; _i3++) {
-        var f = fields[_i3];
+      for (var _i2 = 0; _i2 < fields.length; _i2++) {
+        var f = fields[_i2];
 
         if (obj[f] != null) {
           cy[f](obj[f]);
@@ -29969,7 +29988,7 @@ sheetfn.appendToStyle = function (style$$1) {
   return style$$1;
 };
 
-var version = "3.3.0";
+var version = "3.3.1";
 
 var cytoscape = function cytoscape(options) {
   // if no options specified, use default

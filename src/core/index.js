@@ -369,18 +369,25 @@ util.extend( corefn, {
           }
         }
 
-        // elements not specified in json should be removed
-        eles.stdFilter( function( ele ){
-          return !idInJson[ ele.id() ];
-        } ).forEach( function ( ele ){
-          if( ele.isParent() ){
-            ele.children().move({ parent: null }); // so that children are not removed w/ parent
+        let filterElesToRemove = function (eles) {
+          return eles.stdFilter( function( ele ){
+              return !idInJson[ ele.id() ];
+          }).toArray();
+        };
 
-            ele.remove(); // remove parent
-          } else {
+        let elesToRemove = filterElesToRemove(eles);
+
+        // elements not specified in json should be removed
+        for( let i = 0; i < elesToRemove.length; i++ ){
+            let ele = elesToRemove[i];
+
+            if( ele.isParent() ) {
+              // Elements are not "moved" they are copied, extend elesToRemoveList
+              let children = ele.children().move({ parent: null }); // so that children are not removed w/ parent
+              util.push(elesToRemove, filterElesToRemove(children));
+            }
             ele.remove();
-          }
-        } );
+        }
       }
 
       if( obj.style ){

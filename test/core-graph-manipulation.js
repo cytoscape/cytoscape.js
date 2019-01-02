@@ -521,6 +521,29 @@ describe('Core graph manipulation', function(){
       expect( cy.$('#c').isOrphan(), 'c is orphan' ).to.be.true;
     });
 
+      it('cy.json() removes parent and children', function(){
+          // clean up before test:
+          cy.elements().remove();
+          cy.add([
+              { data: { id: 'a' } },
+              { data: { id: 'b', parent: 'a' } },
+              { data: { id: 'c', parent: 'a' } },
+              { data: { id: 'd' } }
+          ]);
+
+          cy.json({
+              elements: [
+                  // a, b and c are gone
+                  { data: { id: 'd' } }
+              ]
+          });
+
+          expect( cy.$('#a').empty(), 'node a not in graph' ).to.be.true;
+          expect( cy.$('#b').empty(), 'node b not in graph' ).to.be.true;
+          expect( cy.$('#c').empty(), 'node c not in graph' ).to.be.true;
+          expect( cy.$('#d').nonempty(), 'node d in graph' ).to.be.true;
+      });
+
     it('cy.json() orphans children', function(){
       // clean up before test:
       cy.elements().remove();

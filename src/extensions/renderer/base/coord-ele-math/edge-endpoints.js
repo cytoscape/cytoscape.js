@@ -275,6 +275,8 @@ BRp.findEndpoints = function( edge ){
 BRp.getSourceEndpoint = function( edge ){
   let rs = edge[0]._private.rscratch;
 
+  this.recalculateRenderedStyle( edge );
+
   switch( rs.edgeType ){
     case 'haystack':
       return {
@@ -291,6 +293,8 @@ BRp.getSourceEndpoint = function( edge ){
 
 BRp.getTargetEndpoint = function( edge ){
   let rs = edge[0]._private.rscratch;
+
+  this.recalculateRenderedStyle( edge );
 
   switch( rs.edgeType ){
     case 'haystack':

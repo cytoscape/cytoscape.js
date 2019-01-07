@@ -819,6 +819,8 @@ BRp.getSegmentPoints = function( edge ){
   let type = rs.edgeType;
 
   if( type === 'segments' ){
+    this.recalculateRenderedStyle( edge );
+
     return getPts( rs.segpts );
   }
 };
@@ -828,12 +830,16 @@ BRp.getControlPoints = function( edge ){
   let type = rs.edgeType;
 
   if( type === 'bezier' || type === 'multibezier' || type === 'self' || type === 'compound' ){
+    this.recalculateRenderedStyle( edge );
+
     return getPts( rs.ctrlpts );
   }
 };
 
 BRp.getEdgeMidpoint = function( edge ){
   let rs = edge[0]._private.rscratch;
+
+  this.recalculateRenderedStyle( edge );
 
   return {
     x: rs.midX,

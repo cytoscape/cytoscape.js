@@ -306,7 +306,7 @@ let corefn = ({
       _p.maxZoom = max;
     } else if( is.number( min ) && max === undefined && min <= _p.maxZoom ){
       _p.minZoom = min;
-    } else if( is.number( max ) && min === undefined && max <= _p.minZoom ){
+    } else if( is.number( max ) && min === undefined && max >= _p.minZoom ){
       _p.maxZoom = max;
     }
 

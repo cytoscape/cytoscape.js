@@ -1,5 +1,13 @@
-import * as is from '../is';
 import * as util from '../util';
+
+let rendererDefaults = util.defaults({
+  motionBlur: false,
+  motionBlurOpacity: 0.05,
+  pixelRatio: undefined,
+  desktopTapThreshold: 4,
+  touchTapThreshold: 8,
+  wheelSensitivity: 1
+});
 
 let corefn = ({
 
@@ -37,20 +45,13 @@ let corefn = ({
       return;
     }
 
-    let defaults = {
-      motionBlur: false,
-      motionBlurOpacity: 0.05,
-      pixelRatio: undefined,
-      desktopTapThreshold: 4,
-      touchTapThreshold: 8,
-      wheelSensitivity: 1
-    };
+    if( options.wheelSensitivity !== undefined ){
+      util.warn(`You have set a custom wheel sensitivity.  This will make your app zoom unnaturally when using mainstream mice.  You should change this value from the default only if you can guarantee that all your users will use the same hardware and OS configuration as your current machine.`);
+    }
 
-    let rOpts = util.extend( {}, defaults, options, {
-      cy: cy,
-      wheelSensitivity: is.number( options.wheelSensitivity ) && options.wheelSensitivity > 0 ? options.wheelSensitivity : defaults.wheelSensitivity,
-      pixelRatio: is.number( options.pixelRatio ) && options.pixelRatio > 0 ? options.pixelRatio : defaults.pixelRatio
-     } );
+    let rOpts = rendererDefaults(options);
+
+    rOpts.cy = cy;
 
     cy._private.renderer = new RendererProto( rOpts );
 

@@ -117,7 +117,8 @@ let Core = function( opts ){
   }
 
   // create the renderer
-  cy.initRenderer( options.renderer );
+  let rendererOptions = util.assign({}, options, options.renderer); // allow rendering hints in top level options
+  cy.initRenderer( rendererOptions );
 
   let setElesAndLayout = function( elements, onload, ondone ){
     cy.notifications( false );

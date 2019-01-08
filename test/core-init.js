@@ -260,5 +260,20 @@ describe('Core initialisation', function(){
       done();
     });
   });
+  
+  it('sets maxZoom', function(done){
+    var cy = cytoscape({
+      maxZoom: 1.25,
+      headless: true,
+      styleEnabled: true,
+      elements: { nodes: [], edges: [] }
+    });
+
+    cy.ready(function(){
+      expect( cy.maxZoom() ).to.equal( 1.25 );
+      cy.destroy();
+      done();
+    });
+  });
 
 });

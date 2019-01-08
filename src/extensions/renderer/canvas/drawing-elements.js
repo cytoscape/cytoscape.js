@@ -96,7 +96,7 @@ CRp.drawCachedElement = function( context, ele, pxRatio, extent, lvl, requestHig
   let bb = ele.boundingBox();
   let reason = requestHighQuality === true ? eleTxrCache.reasons.highQuality : null;
 
-  if( bb.w === 0 || bb.h === 0 ){ return; }
+  if( bb.w === 0 || bb.h === 0 || !ele.visible() ){ return; }
 
   if( !extent || math.boundingBoxesIntersect( bb, extent ) ){
     r.drawCachedElementPortion( context, ele, eleTxrCache, pxRatio, lvl, reason, getZeroRotation );

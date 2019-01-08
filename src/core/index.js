@@ -371,15 +371,18 @@ util.extend( corefn, {
 
         let parentsToRemove = cy.collection();
 
-        eles.stdFilter( function( ele ){
-            return !idInJson[ ele.id() ];
-        } ).forEach( function ( ele ) {
-          if ( ele.isParent() ) {
+        (eles
+          .filter(ele => !idInJson[ ele.id() ])
+          .forEach(ele => {
+            if( idInJson[ ele.id() ] ){ return true; }
+
+            if ( ele.isParent() ) {
               parentsToRemove.merge(ele);
-          } else {
-            ele.remove();
-          }
-        } );
+            } else {
+              ele.remove();
+            }
+          })
+        );
 
         parentsToRemove.forEach( function ( ele ) {
           ele.children().move({ parent: null }); // so that children are not removed w/

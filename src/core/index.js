@@ -375,8 +375,6 @@ util.extend( corefn, {
         (eles
           .filter(ele => !idInJson[ ele.id() ])
           .forEach(ele => {
-            if( idInJson[ ele.id() ] ){ return true; }
-
             if ( ele.isParent() ) {
               parentsToRemove.merge(ele);
             } else {

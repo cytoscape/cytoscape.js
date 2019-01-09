@@ -314,6 +314,7 @@ util.extend( corefn, {
     let cy = this;
     let _p = cy._private;
     let eles = cy.mutableElements();
+    let getFreshRef = ele => cy.getElementById(ele.id());
 
     if( is.plainObject( obj ) ){ // set
 
@@ -370,18 +371,24 @@ util.extend( corefn, {
           }
         }
 
-        // elements not specified in json should be removed
-        eles.stdFilter( function( ele ){
-          return !idInJson[ ele.id() ];
-        } ).forEach( function ( ele ){
-          if( ele.isParent() ){
-            ele.children().move({ parent: null }); // so that children are not removed w/ parent
+        let parentsToRemove = cy.collection();
 
-            ele.remove(); // remove parent
-          } else {
-            ele.remove();
-          }
-        } );
+        (eles
+          .filter(ele => !idInJson[ ele.id() ])
+          .forEach(ele => {
+            if ( ele.isParent() ) {
+              parentsToRemove.merge(ele);
+            } else {
+              ele.remove();
+            }
+          })
+        );
+
+        // so that children are not removed w/parent
+        parentsToRemove.forEach(ele => ele.children().move({ parent: null }));
+
+        // intermediate parents may be moved by prior line, so make sure we remove by fresh refs
+        parentsToRemove.forEach(ele => getFreshRef(ele).remove());
       }
 
       if( obj.style ){

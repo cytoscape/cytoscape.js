@@ -67,6 +67,7 @@
     "node": ">=0.10"
   },
   "main": "dist/cytoscape.cjs.js",
+  "module": "dist/cytoscape.esm.js",
   "scripts": {
     "lint": "eslint src benchmark",
     "build": "rollup -c",

@@ -159,6 +159,22 @@ function CanvasRenderer( options ){
       }
     }
 
+    let theta = ele.numericStyle('text-rotation');
+    let marginX = ele.pstyle('text-margin-x').pfValue;
+    let marginY = ele.pstyle('text-margin-y').pfValue;
+    if (theta != 0) {
+        // Rotate the margin [x,y]' using the rotation angle to find out how much to move in each direction.
+        let localMarginX = marginX;
+        let localMarginY = marginY;
+        let cosTheta = Math.cos(theta);
+        let sinTheta = Math.sin(theta);
+        marginX = cosTheta * localMarginX - sinTheta * localMarginY;
+        marginY = sinTheta * localMarginX + cosTheta * localMarginY;
+    }
+
+    p.x -= marginX;
+    p.y -= marginY;
+
     return p;
   };
 

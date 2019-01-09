@@ -567,6 +567,33 @@ describe('Core graph manipulation', function(){
         expect( cy.$('#d').nonempty(), 'node d in graph' ).to.be.true;
     });
 
+    it('cy.json() removes middle parent of depth 2', function(){
+        // clean up before test:
+        cy.elements().remove();
+        cy.add([
+            { data: { id: 'a' } },
+            { data: { id: 'b', parent: 'a' } },
+            { data: { id: 'c', parent: 'b' } },
+            { data: { id: 'd' } }
+        ]);
+
+        cy.json({
+            elements: [
+                // Remove 'b' and parent of 'c' is 'a' now
+                { data: { id: 'a' } },
+                { data: { id: 'c', parent: 'a' } },
+                { data: { id: 'd' } }
+            ]
+        });
+
+        expect( cy.$('#a').nonempty(), 'node a in graph' ).to.be.true;
+        expect( cy.$('#b').empty(), 'node b not in graph' ).to.be.true;
+        expect( cy.$('#c').nonempty(), 'node c in graph' ).to.be.true;
+        expect( cy.$('#d').nonempty(), 'node d in graph' ).to.be.true;
+        expect( cy.$('#a').isParent(), 'a is parent' ).to.be.true;
+        expect( cy.$('#c').parent().id(), 'parent of c is a' ).to.equal('a');
+    });
+
     it('cy.json() orphans children', function(){
       // clean up before test:
       cy.elements().remove();

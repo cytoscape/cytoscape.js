@@ -126,16 +126,29 @@ function CanvasRenderer( options ){
   let isLabelVisibleAtScale = (ele, scaledLabelShown) => scaledLabelShown;
 
   let getElementRotationPoint = ele => getBoxCenter( getElementBox(ele) );
-  let getLabelRotationPoint = ele => { let rs = ele[0]._private.rscratch; return { x: rs.labelX, y: rs.labelY }; };
-  let getSourceLabelRotationPoint = ele => getBoxCenter( getSourceLabelBox(ele) );
-  let getTargetLabelRotationPoint = ele => getBoxCenter( getTargetLabelBox(ele) );
+
+  let addTextMargin = (pt, ele) => {
+    return {
+      x: pt.x + ele.pstyle('text-margin-x').pfValue,
+      y: pt.y + ele.pstyle('text-margin-y').pfValue
+    };
+  };
+
+  let getRsPt = (ele, x, y) => {
+    let rs = ele[0]._private.rscratch;
+
+    return { x: rs[x], y: rs[y] };
+  };
+
+  let getLabelRotationPoint = ele => addTextMargin(getRsPt(ele, 'labelX', 'labelY'), ele);
+  let getSourceLabelRotationPoint = ele => addTextMargin(getRsPt(ele, 'sourceLabelX', 'sourceLabelY'), ele);
+  let getTargetLabelRotationPoint = ele => addTextMargin(getRsPt(ele, 'sourceLabelX', 'sourceLabelY'), ele);
 
   let getElementRotationOffset = ele => getCenterOffset( getElementBox(ele) );
-  let getLabelRotationOffset = ele => getCenterOffset( getLabelBox(ele) ); // TODO
   let getSourceLabelRotationOffset = ele => getCenterOffset( getSourceLabelBox(ele) );
   let getTargetLabelRotationOffset = ele => getCenterOffset( getTargetLabelBox(ele) );
 
-  getLabelRotationOffset = ele => {
+  let getLabelRotationOffset = ele => {
     let bb = getLabelBox(ele);
     let p = getCenterOffset( getLabelBox(ele) );
 

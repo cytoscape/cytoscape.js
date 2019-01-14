@@ -97,9 +97,10 @@ function CanvasRenderer( options ){
 
   let emptyBb = makeBoundingBox();
 
-  let getStyleKey = ele => ele[0]._private.nodeKey;
-  let drawElement = (context, ele, bb, scaledLabelShown, useEleOpacity) => r.drawElement( context, ele, bb, false, false, useEleOpacity );
-  let getElementBox = ele => { ele.boundingBox(); return ele[0]._private.bodyBounds; };
+  let getBoxCenter = bb => ({ x: (bb.x1 + bb.x2)/2, y: (bb.y1 + bb.y2)/2 });
+
+  let getCenterOffset = bb => ({ x: -bb.w/2, y: -bb.h/2 });
+
   let backgroundTimestampHasChanged = ele => {
     let _p = ele[0]._private;
     let same = _p.oldBackgroundTimestamp === _p.backgroundTimestamp;
@@ -107,22 +108,80 @@ function CanvasRenderer( options ){
     return !same;
   };
 
+  let getStyleKey = ele => ele[0]._private.nodeKey;
   let getLabelKey = ele => ele[0]._private.labelStyleKey;
   let getSourceLabelKey = ele => ele[0]._private.sourceLabelStyleKey;
   let getTargetLabelKey = ele => ele[0]._private.targetLabelStyleKey;
+
+  let drawElement = (context, ele, bb, scaledLabelShown, useEleOpacity) => r.drawElement( context, ele, bb, false, false, useEleOpacity );
   let drawLabel = (context, ele, bb, scaledLabelShown, useEleOpacity) => r.drawElementText( context, ele, bb, scaledLabelShown, 'main', useEleOpacity );
   let drawSourceLabel = (context, ele, bb, scaledLabelShown, useEleOpacity) => r.drawElementText( context, ele, bb, scaledLabelShown, 'source', useEleOpacity );
   let drawTargetLabel = (context, ele, bb, scaledLabelShown, useEleOpacity) => r.drawElementText( context, ele, bb, scaledLabelShown, 'target', useEleOpacity );
+
+  let getElementBox = ele => { ele.boundingBox(); return ele[0]._private.bodyBounds; };
   let getLabelBox = ele => { ele.boundingBox(); return ele[0]._private.labelBounds.main || emptyBb; };
   let getSourceLabelBox = ele => { ele.boundingBox(); return ele[0]._private.labelBounds.source || emptyBb; };
   let getTargetLabelBox = ele => { ele.boundingBox(); return ele[0]._private.labelBounds.target || emptyBb; };
+
   let isLabelVisibleAtScale = (ele, scaledLabelShown) => scaledLabelShown;
+
+  let getElementRotationPoint = ele => getBoxCenter( getElementBox(ele) );
+
+  let addTextMargin = (pt, ele) => {
+    return {
+      x: pt.x + ele.pstyle('text-margin-x').pfValue,
+      y: pt.y + ele.pstyle('text-margin-y').pfValue
+    };
+  };
+
+  let getRsPt = (ele, x, y) => {
+    let rs = ele[0]._private.rscratch;
+
+    return { x: rs[x], y: rs[y] };
+  };
+
+  let getLabelRotationPoint = ele => addTextMargin(getRsPt(ele, 'labelX', 'labelY'), ele);
+  let getSourceLabelRotationPoint = ele => addTextMargin(getRsPt(ele, 'sourceLabelX', 'sourceLabelY'), ele);
+  let getTargetLabelRotationPoint = ele => addTextMargin(getRsPt(ele, 'sourceLabelX', 'sourceLabelY'), ele);
+
+  let getElementRotationOffset = ele => getCenterOffset( getElementBox(ele) );
+  let getSourceLabelRotationOffset = ele => getCenterOffset( getSourceLabelBox(ele) );
+  let getTargetLabelRotationOffset = ele => getCenterOffset( getTargetLabelBox(ele) );
+
+  let getLabelRotationOffset = ele => {
+    let bb = getLabelBox(ele);
+    let p = getCenterOffset( getLabelBox(ele) );
+
+    if( ele.isNode() ){
+      switch( ele.pstyle('text-halign').value ){
+        case 'left':
+          p.x = -bb.w;
+          break;
+        case 'right':
+          p.x = 0;
+          break;
+      }
+
+      switch( ele.pstyle('text-valign').value ){
+        case 'top':
+          p.y = -bb.h;
+          break;
+        case 'bottom':
+          p.y = 0;
+          break;
+      }
+    }
+
+    return p;
+  };
 
   let eleTxrCache = r.data.eleTxrCache = new ElementTextureCache( r, {
     getKey: getStyleKey,
     doesEleInvalidateKey: backgroundTimestampHasChanged,
     drawElement: drawElement,
     getBoundingBox: getElementBox,
+    getRotationPoint: getElementRotationPoint,
+    getRotationOffset: getElementRotationOffset,
     allowEdgeTxrCaching: false,
     allowParentTxrCaching: false
   } );
@@ -131,6 +190,8 @@ function CanvasRenderer( options ){
     getKey: getLabelKey,
     drawElement: drawLabel,
     getBoundingBox: getLabelBox,
+    getRotationPoint: getLabelRotationPoint,
+    getRotationOffset: getLabelRotationOffset,
     isVisible: isLabelVisibleAtScale
   } );
 
@@ -138,6 +199,8 @@ function CanvasRenderer( options ){
     getKey: getSourceLabelKey,
     drawElement: drawSourceLabel,
     getBoundingBox: getSourceLabelBox,
+    getRotationPoint: getSourceLabelRotationPoint,
+    getRotationOffset: getSourceLabelRotationOffset,
     isVisible: isLabelVisibleAtScale
   } );
 
@@ -145,6 +208,8 @@ function CanvasRenderer( options ){
     getKey: getTargetLabelKey,
     drawElement: drawTargetLabel,
     getBoundingBox: getTargetLabelBox,
+    getRotationPoint: getTargetLabelRotationPoint,
+    getRotationOffset: getTargetLabelRotationOffset,
     isVisible: isLabelVisibleAtScale
   } );
 

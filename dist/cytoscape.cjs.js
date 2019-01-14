@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2016-2018, The Cytoscape Consortium.
+ * Copyright (c) 2016-2019, The Cytoscape Consortium.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the “Software”), to deal in
@@ -8768,16 +8768,39 @@ var updateBoundsFromLabel = function updateBoundsFromLabel(bounds, ele, prefix) 
     if (isAutorotate || isPfValue) {
       var theta = isAutorotate ? prefixedProperty(_p.rstyle, 'labelAngle', prefix) : rotation.pfValue;
       var cos = Math.cos(theta);
-      var sin = Math.sin(theta);
-      var xMid = (lx1 + lx2) / 2;
-      var yMid = (ly1 + ly2) / 2;
+      var sin = Math.sin(theta); // rotation point (default value for center-center)
+
+      var xo = (lx1 + lx2) / 2;
+      var yo = (ly1 + ly2) / 2;
+
+      if (!isEdge) {
+        switch (halign.value) {
+          case 'left':
+            xo = lx2;
+            break;
+
+          case 'right':
+            xo = lx1;
+            break;
+        }
+
+        switch (valign.value) {
+          case 'top':
+            yo = ly2;
+            break;
+
+          case 'bottom':
+            yo = ly1;
+            break;
+        }
+      }
 
       var rotate = function rotate(x, y) {
-        x = x - xMid;
-        y = y - yMid;
+        x = x - xo;
+        y = y - yo;
         return {
-          x: x * cos - y * sin + xMid,
-          y: x * sin + y * cos + yMid
+          x: x * cos - y * sin + xo,
+          y: x * sin + y * cos + yo
         };
       };
 
@@ -13516,6 +13539,14 @@ var corefn$4 = {
   }
 };
 
+var rendererDefaults = defaults({
+  motionBlur: false,
+  motionBlurOpacity: 0.05,
+  pixelRatio: undefined,
+  desktopTapThreshold: 4,
+  touchTapThreshold: 8,
+  wheelSensitivity: 1
+});
 var corefn$5 = {
   renderTo: function renderTo(context, zoom, pan, pxRatio) {
     var r = this._private.renderer;
@@ -13543,19 +13574,12 @@ var corefn$5 = {
       return;
     }
 
-    var defaults$$1 = {
-      motionBlur: false,
-      motionBlurOpacity: 0.05,
-      pixelRatio: undefined,
-      desktopTapThreshold: 4,
-      touchTapThreshold: 8,
-      wheelSensitivity: 1
-    };
-    var rOpts = extend({}, defaults$$1, options, {
-      cy: cy,
-      wheelSensitivity: number(options.wheelSensitivity) && options.wheelSensitivity > 0 ? options.wheelSensitivity : defaults$$1.wheelSensitivity,
-      pixelRatio: number(options.pixelRatio) && options.pixelRatio > 0 ? options.pixelRatio : defaults$$1.pixelRatio
-    });
+    if (options.wheelSensitivity !== undefined) {
+      warn("You have set a custom wheel sensitivity.  This will make your app zoom unnaturally when using mainstream mice.  You should change this value from the default only if you can guarantee that all your users will use the same hardware and OS configuration as your current machine.");
+    }
+
+    var rOpts = rendererDefaults(options);
+    rOpts.cy = cy;
     cy._private.renderer = new RendererProto(rOpts);
     this.notify('init');
   },
@@ -13583,11 +13607,11 @@ var corefn$5 = {
       _p.animation.queue = [];
     });
   },
-  onRender: function onRender(fn$$1) {
-    return this.on('render', fn$$1);
+  onRender: function onRender(fn) {
+    return this.on('render', fn);
   },
-  offRender: function offRender(fn$$1) {
-    return this.off('render', fn$$1);
+  offRender: function offRender(fn) {
+    return this.off('render', fn);
   }
 };
 corefn$5.invalidateDimensions = corefn$5.resize;
@@ -17116,7 +17140,7 @@ var corefn$8 = {
       _p.maxZoom = max$$1;
     } else if (number(min$$1) && max$$1 === undefined && min$$1 <= _p.maxZoom) {
       _p.minZoom = min$$1;
-    } else if (number(max$$1) && min$$1 === undefined && max$$1 <= _p.minZoom) {
+    } else if (number(max$$1) && min$$1 === undefined && max$$1 >= _p.minZoom) {
       _p.maxZoom = max$$1;
     }
 
@@ -17524,7 +17548,9 @@ var Core = function Core(opts) {
   } // create the renderer
 
 
-  cy.initRenderer(options.renderer);
+  var rendererOptions = extend({}, options, options.renderer); // allow rendering hints in top level options
+
+  cy.initRenderer(rendererOptions);
 
   var setElesAndLayout = function setElesAndLayout(elements, onload, ondone) {
     cy.notifications(false); // remove old elements
@@ -17693,6 +17719,10 @@ extend(corefn$9, {
     var _p = cy._private;
     var eles = cy.mutableElements();
 
+    var getFreshRef = function getFreshRef(ele) {
+      return cy.getElementById(ele.id());
+    };
+
     if (plainObject(obj)) {
       // set
       cy.startBatch();
@@ -17753,21 +17783,27 @@ extend(corefn$9, {
               updateEles(elements, gr);
             }
           }
-        } // elements not specified in json should be removed
+        }
 
-
-        eles.stdFilter(function (ele) {
+        var parentsToRemove = cy.collection();
+        eles.filter(function (ele) {
           return !idInJson[ele.id()];
         }).forEach(function (ele) {
           if (ele.isParent()) {
-            ele.children().move({
-              parent: null
-            }); // so that children are not removed w/ parent
-
-            ele.remove(); // remove parent
+            parentsToRemove.merge(ele);
           } else {
             ele.remove();
           }
+        }); // so that children are not removed w/parent
+
+        parentsToRemove.forEach(function (ele) {
+          return ele.children().move({
+            parent: null
+          });
+        }); // intermediate parents may be moved by prior line, so make sure we remove by fresh refs
+
+        parentsToRemove.forEach(function (ele) {
+          return getFreshRef(ele).remove();
         });
       }
 
@@ -21754,6 +21790,7 @@ BRp$3.getSegmentPoints = function (edge) {
   var type = rs.edgeType;
 
   if (type === 'segments') {
+    this.recalculateRenderedStyle(edge);
     return getPts(rs.segpts);
   }
 };
@@ -21763,12 +21800,14 @@ BRp$3.getControlPoints = function (edge) {
   var type = rs.edgeType;
 
   if (type === 'bezier' || type === 'multibezier' || type === 'self' || type === 'compound') {
+    this.recalculateRenderedStyle(edge);
     return getPts(rs.ctrlpts);
   }
 };
 
 BRp$3.getEdgeMidpoint = function (edge) {
   var rs = edge[0]._private.rscratch;
+  this.recalculateRenderedStyle(edge);
   return {
     x: rs.midX,
     y: rs.midY
@@ -21976,6 +22015,7 @@ BRp$4.findEndpoints = function (edge) {
 
 BRp$4.getSourceEndpoint = function (edge) {
   var rs = edge[0]._private.rscratch;
+  this.recalculateRenderedStyle(edge);
 
   switch (rs.edgeType) {
     case 'haystack':
@@ -21994,6 +22034,7 @@ BRp$4.getSourceEndpoint = function (edge) {
 
 BRp$4.getTargetEndpoint = function (edge) {
   var rs = edge[0]._private.rscratch;
+  this.recalculateRenderedStyle(edge);
 
   switch (rs.edgeType) {
     case 'haystack':
@@ -25909,6 +25950,8 @@ var initDefaults = defaults({
   doesEleInvalidateKey: falsify,
   drawElement: null,
   getBoundingBox: null,
+  getRotationPoint: null,
+  getRotationOffset: null,
   isVisible: trueify,
   allowEdgeTxrCaching: true,
   allowParentTxrCaching: true
@@ -27113,10 +27156,9 @@ CRp$1.drawCachedElementPortion = function (context, ele, eleTxrCache, pxRatio, l
     var x, y, sx, sy, smooth;
 
     if (theta !== 0) {
-      var halfW = w / 2;
-      var halfH = h / 2;
-      sx = x1 + halfW;
-      sy = y1 + halfH;
+      var rotPt = eleTxrCache.getRotationPoint(ele);
+      sx = rotPt.x;
+      sy = rotPt.y;
       context.translate(sx, sy);
       context.rotate(theta);
       smooth = r.getImgSmoothing(context);
@@ -27125,8 +27167,9 @@ CRp$1.drawCachedElementPortion = function (context, ele, eleTxrCache, pxRatio, l
         r.setImgSmoothing(context, true);
       }
 
-      x = -halfW;
-      y = -halfH;
+      var off = eleTxrCache.getRotationOffset(ele);
+      x = off.x;
+      y = off.y;
     } else {
       x = x1;
       y = y1;
@@ -27139,7 +27182,7 @@ CRp$1.drawCachedElementPortion = function (context, ele, eleTxrCache, pxRatio, l
       context.globalAlpha = oldGlobalAlpha * opacity;
     }
 
-    context.drawImage(eleCache.texture.canvas, eleCache.x, 0, eleCache.width, eleCache.height, x, y, bb.w, bb.h);
+    context.drawImage(eleCache.texture.canvas, eleCache.x, 0, eleCache.width, eleCache.height, x, y, w, h);
 
     if (opacity !== 1) {
       context.globalAlpha = oldGlobalAlpha;
@@ -27184,7 +27227,7 @@ CRp$1.drawCachedElement = function (context, ele, pxRatio, extent, lvl, requestH
   var bb = ele.boundingBox();
   var reason = requestHighQuality === true ? eleTxrCache.reasons.highQuality : null;
 
-  if (bb.w === 0 || bb.h === 0) {
+  if (bb.w === 0 || bb.h === 0 || !ele.visible()) {
     return;
   }
 
@@ -29457,23 +29500,28 @@ function CanvasRenderer(options) {
   r.pathsEnabled = true;
   var emptyBb = makeBoundingBox();
 
-  var getStyleKey = function getStyleKey(ele) {
-    return ele[0]._private.nodeKey;
+  var getBoxCenter = function getBoxCenter(bb) {
+    return {
+      x: (bb.x1 + bb.x2) / 2,
+      y: (bb.y1 + bb.y2) / 2
+    };
   };
 
-  var drawElement = function drawElement(context, ele, bb, scaledLabelShown, useEleOpacity) {
-    return r.drawElement(context, ele, bb, false, false, useEleOpacity);
-  };
-
-  var getElementBox = function getElementBox(ele) {
-    ele.boundingBox();
-    return ele[0]._private.bodyBounds;
+  var getCenterOffset = function getCenterOffset(bb) {
+    return {
+      x: -bb.w / 2,
+      y: -bb.h / 2
+    };
   };
 
   var backgroundTimestampHasChanged = function backgroundTimestampHasChanged(ele) {
     var _p = ele[0]._private;
     var same = _p.oldBackgroundTimestamp === _p.backgroundTimestamp;
     return !same;
+  };
+
+  var getStyleKey = function getStyleKey(ele) {
+    return ele[0]._private.nodeKey;
   };
 
   var getLabelKey = function getLabelKey(ele) {
@@ -29488,6 +29536,10 @@ function CanvasRenderer(options) {
     return ele[0]._private.targetLabelStyleKey;
   };
 
+  var drawElement = function drawElement(context, ele, bb, scaledLabelShown, useEleOpacity) {
+    return r.drawElement(context, ele, bb, false, false, useEleOpacity);
+  };
+
   var drawLabel = function drawLabel(context, ele, bb, scaledLabelShown, useEleOpacity) {
     return r.drawElementText(context, ele, bb, scaledLabelShown, 'main', useEleOpacity);
   };
@@ -29498,6 +29550,11 @@ function CanvasRenderer(options) {
 
   var drawTargetLabel = function drawTargetLabel(context, ele, bb, scaledLabelShown, useEleOpacity) {
     return r.drawElementText(context, ele, bb, scaledLabelShown, 'target', useEleOpacity);
+  };
+
+  var getElementBox = function getElementBox(ele) {
+    ele.boundingBox();
+    return ele[0]._private.bodyBounds;
   };
 
   var getLabelBox = function getLabelBox(ele) {
@@ -29519,11 +29576,85 @@ function CanvasRenderer(options) {
     return scaledLabelShown;
   };
 
+  var getElementRotationPoint = function getElementRotationPoint(ele) {
+    return getBoxCenter(getElementBox(ele));
+  };
+
+  var addTextMargin = function addTextMargin(pt, ele) {
+    return {
+      x: pt.x + ele.pstyle('text-margin-x').pfValue,
+      y: pt.y + ele.pstyle('text-margin-y').pfValue
+    };
+  };
+
+  var getRsPt = function getRsPt(ele, x, y) {
+    var rs = ele[0]._private.rscratch;
+    return {
+      x: rs[x],
+      y: rs[y]
+    };
+  };
+
+  var getLabelRotationPoint = function getLabelRotationPoint(ele) {
+    return addTextMargin(getRsPt(ele, 'labelX', 'labelY'), ele);
+  };
+
+  var getSourceLabelRotationPoint = function getSourceLabelRotationPoint(ele) {
+    return addTextMargin(getRsPt(ele, 'sourceLabelX', 'sourceLabelY'), ele);
+  };
+
+  var getTargetLabelRotationPoint = function getTargetLabelRotationPoint(ele) {
+    return addTextMargin(getRsPt(ele, 'sourceLabelX', 'sourceLabelY'), ele);
+  };
+
+  var getElementRotationOffset = function getElementRotationOffset(ele) {
+    return getCenterOffset(getElementBox(ele));
+  };
+
+  var getSourceLabelRotationOffset = function getSourceLabelRotationOffset(ele) {
+    return getCenterOffset(getSourceLabelBox(ele));
+  };
+
+  var getTargetLabelRotationOffset = function getTargetLabelRotationOffset(ele) {
+    return getCenterOffset(getTargetLabelBox(ele));
+  };
+
+  var getLabelRotationOffset = function getLabelRotationOffset(ele) {
+    var bb = getLabelBox(ele);
+    var p = getCenterOffset(getLabelBox(ele));
+
+    if (ele.isNode()) {
+      switch (ele.pstyle('text-halign').value) {
+        case 'left':
+          p.x = -bb.w;
+          break;
+
+        case 'right':
+          p.x = 0;
+          break;
+      }
+
+      switch (ele.pstyle('text-valign').value) {
+        case 'top':
+          p.y = -bb.h;
+          break;
+
+        case 'bottom':
+          p.y = 0;
+          break;
+      }
+    }
+
+    return p;
+  };
+
   var eleTxrCache = r.data.eleTxrCache = new ElementTextureCache(r, {
     getKey: getStyleKey,
     doesEleInvalidateKey: backgroundTimestampHasChanged,
     drawElement: drawElement,
     getBoundingBox: getElementBox,
+    getRotationPoint: getElementRotationPoint,
+    getRotationOffset: getElementRotationOffset,
     allowEdgeTxrCaching: false,
     allowParentTxrCaching: false
   });
@@ -29531,18 +29662,24 @@ function CanvasRenderer(options) {
     getKey: getLabelKey,
     drawElement: drawLabel,
     getBoundingBox: getLabelBox,
+    getRotationPoint: getLabelRotationPoint,
+    getRotationOffset: getLabelRotationOffset,
     isVisible: isLabelVisibleAtScale
   });
   var slbTxrCache = r.data.slbTxrCache = new ElementTextureCache(r, {
     getKey: getSourceLabelKey,
     drawElement: drawSourceLabel,
     getBoundingBox: getSourceLabelBox,
+    getRotationPoint: getSourceLabelRotationPoint,
+    getRotationOffset: getSourceLabelRotationOffset,
     isVisible: isLabelVisibleAtScale
   });
   var tlbTxrCache = r.data.tlbTxrCache = new ElementTextureCache(r, {
     getKey: getTargetLabelKey,
     drawElement: drawTargetLabel,
     getBoundingBox: getTargetLabelBox,
+    getRotationPoint: getTargetLabelRotationPoint,
+    getRotationOffset: getTargetLabelRotationOffset,
     isVisible: isLabelVisibleAtScale
   });
   var lyrTxrCache = r.data.lyrTxrCache = new LayeredTextureCache(r);
@@ -29988,7 +30125,7 @@ sheetfn.appendToStyle = function (style$$1) {
   return style$$1;
 };
 
-var version = "3.3.1";
+var version = "3.3.2";
 
 var cytoscape = function cytoscape(options) {
   // if no options specified, use default

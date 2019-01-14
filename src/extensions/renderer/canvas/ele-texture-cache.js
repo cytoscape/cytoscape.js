@@ -34,6 +34,8 @@ const initDefaults = defaults({
   doesEleInvalidateKey: falsify,
   drawElement: null,
   getBoundingBox: null,
+  getRotationPoint: null,
+  getRotationOffset: null,
   isVisible: trueify,
   allowEdgeTxrCaching: true,
   allowParentTxrCaching: true

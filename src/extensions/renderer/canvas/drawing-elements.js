@@ -40,11 +40,10 @@ CRp.drawCachedElementPortion = function( context, ele, eleTxrCache, pxRatio, lvl
     let x, y, sx, sy, smooth;
 
     if( theta !== 0 ){
-      let halfW = w/2;
-      let halfH = h/2;
+      let rotPt = eleTxrCache.getRotationPoint(ele);
 
-      sx = x1 + halfW;
-      sy = y1 + halfH;
+      sx = rotPt.x;
+      sy = rotPt.y;
 
       context.translate(sx, sy);
       context.rotate(theta);
@@ -53,8 +52,10 @@ CRp.drawCachedElementPortion = function( context, ele, eleTxrCache, pxRatio, lvl
 
       if( !smooth ){ r.setImgSmoothing(context, true); }
 
-      x = -halfW;
-      y = -halfH;
+      let off = eleTxrCache.getRotationOffset(ele);
+
+      x = off.x;
+      y = off.y;
     } else {
       x = x1;
       y = y1;
@@ -67,7 +68,7 @@ CRp.drawCachedElementPortion = function( context, ele, eleTxrCache, pxRatio, lvl
       context.globalAlpha = oldGlobalAlpha * opacity;
     }
 
-    context.drawImage( eleCache.texture.canvas, eleCache.x, 0, eleCache.width, eleCache.height, x, y, bb.w, bb.h );
+    context.drawImage( eleCache.texture.canvas, eleCache.x, 0, eleCache.width, eleCache.height, x, y, w, h );
 
     if( opacity !== 1 ){
       context.globalAlpha = oldGlobalAlpha;

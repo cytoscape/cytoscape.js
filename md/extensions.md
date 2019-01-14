@@ -28,10 +28,13 @@ The extensions below are a curated list.  To add your extension, [please submit 
  * <i class="fa fa-fw fa-user"></i> [`cxtmenu`](https://github.com/cytoscape/cytoscape.js-cxtmenu) : A circular context menu that allows for one-swipe commands on the graph.
  * <i class="fa fa-fw fa-user"></i> [`edge-bend-editing`](https://github.com/iVis-at-Bilkent/cytoscape.js-edge-bend-editing) : UI for editing edge bends (segment edges and bezier edges)
  * <i class="fa fa-fw fa-users"></i> [`edge-editation`](https://github.com/frankiex/cytoscape.js-edge-editation) : Adds handles to nodes and allows creation of different types of edges
+ * <i class="fa fa-fw fa-users"></i> [`edge-connections`](https://github.com/jri/cytoscape-edge-connections) : Allows edges to visually connect other edges, according to the Associative Model of Data.
  * <i class="fa fa-fw fa-user"></i> [`edgehandles`](https://github.com/cytoscape/cytoscape.js-edgehandles) : UI for connecting nodes with edges.
+ * <i class="fa fa-fw fa-users"></i> [`even-parent`](https://github.com/mo0om/cytoscape-even-parent) : Layout which resizes children to fit under parent no matter how many there are.
  * <i class="fa fa-fw fa-user"></i> [`expand-collapse`](https://github.com/iVis-at-Bilkent/cytoscape.js-expand-collapse) : Provides an API for expanding and collapsing compound parent nodes
  * <i class="fa fa-fw fa-user"></i> [`grid-guide`](https://github.com/iVis-at-Bilkent/cytoscape.js-grid-guide) : Adds grid and snapping functionality to Cytoscape graphs
  * <i class="fa fa-fw fa-user"></i> [`navigator`](https://github.com/cytoscape/cytoscape.js-navigator) : A bird's eye view widget of the graph.
+ * <i class="fa fa-fw fa-users"></i> [`no-overlap`](https://mo0om.github.io/cytoscape-no-overlap) : Prevents nodes from overlapping on drag.
  * <i class="fa fa-fw fa-users"></i> [`node-html-label`](https://github.com/kaluginserg/cytoscape-node-html-label) : Allows HTML to be specified as the labels for nodes.
  * <i class="fa fa-fw fa-user"></i> [`node-resize`](https://github.com/iVis-at-Bilkent/cytoscape.js-node-resize) : A highly customisable node resizing extension with a traditional UI.
  * <i class="fa fa-fw fa-users"></i> [`noderesize`](https://github.com/curupaco/cytoscape.js-noderesize) : A minimalistic node resize control.
@@ -58,6 +61,7 @@ The extensions below are a curated list.  To add your extension, [please submit 
 
 
 ## API extensions
+ * <i class="fa fa-fw fa-users"></i> [`all-paths`](https://github.com/daniel-dx/cytoscape-all-paths) : Gets all longest, directed paths.
  * <i class="fa fa-fw fa-user"></i> [`clipboard`](https://github.com/iVis-at-Bilkent/cytoscape.js-clipboard) : Adds copy-paste utilities to Cytoscape.js
  * <i class="fa fa-fw fa-user"></i> [`graphml`](https://github.com/iVis-at-Bilkent/cytoscape.js-graphml) : Adds GraphML import and export functionality to Cytoscape.js
  * <i class="fa fa-fw fa-user"></i> [`undo-redo`](https://github.com/iVis-at-Bilkent/cytoscape.js-undo-redo) : Adds undo-redo APIs to Cytoscape.js

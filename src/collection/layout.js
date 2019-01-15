@@ -31,7 +31,7 @@ let elesfn = ({
     let nodes = this.nodes();
     let cy = this.cy();
     let layoutEles = options.eles; // nodes & edges
-    let getMemoizeKey = ( node, i ) => node.id() + '$' + i;
+    let getMemoizeKey = node => node.id();
     let fnMem = util.memoize( fn, getMemoizeKey ); // memoized version of position function
 
     layout.emit( { type: 'layoutstart', layout: layout } );

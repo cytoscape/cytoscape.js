@@ -618,4 +618,25 @@
     }
   });
 
+
+  test({
+    name: "randomLayoutAni",
+    displayName: "Animate random layout",
+    description: "Tap background to run layout",
+    setup: function(){
+      cy.on('tap', function(e){
+        if( e.target !== cy ){ return; }
+
+        cy.layout({
+          name: 'random',
+          animate: true,
+          animationDuration: 1000
+        }).run();
+      });
+    },
+
+    teardown: function(){
+      cy.off('tap');
+    }
+  });
 })();

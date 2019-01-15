@@ -74,7 +74,7 @@ styfn.getPropertiesDiff = function( oldCxtKey, newCxtKey ){
     let cxtHasDiffed = oldHasCxt !== newHasCxt;
     let cxtHasMappedProps = cxt.mappedProperties.length > 0;
 
-    if( cxtHasDiffed || cxtHasMappedProps ){
+    if( cxtHasDiffed || ( newHasCxt && cxtHasMappedProps )){
       let props;
 
       if( cxtHasDiffed && cxtHasMappedProps ){
@@ -205,6 +205,13 @@ styfn.applyContextStyle = function( cxtMeta, cxtStyle, ele ){
 
     // save cycles when the context prop doesn't need to be applied
     if( eleProp === cxtProp ){ continue; }
+
+    // save cycles when a mapped context prop doesn't need to be applied
+    if( is.fn( cxtProp.value )) {
+      cxtProp.fnValue = cxtProp.value( ele ); // temporarily cache the value in case of a miss
+
+      if( cxtProp.fnValue === eleProp.previousValue ){ continue; }
+    }
 
     let retDiffProp = retDiffProps[ diffPropName ] = {
       prev: eleProp
@@ -571,7 +578,7 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
 
   case types.fn: {
     let fn = prop.value;
-    let fnRetVal = fn( ele );
+    let fnRetVal = prop.fnValue || fn( ele ); // check for cached value before calling function
 
     if( fnRetVal == null ){
       util.warn('Custom function mappers may not return null (i.e. `' + prop.name + '` for ele `' + ele.id() + '` is null)');

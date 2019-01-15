@@ -32,7 +32,7 @@ const getBabelOptions = () => ({
 const isExternal = id => !id.startsWith('\0') && !id.startsWith('.') && !id.startsWith('/');
 
 const licenseHeaderOptions = {
-  sourceMap: true,
+  sourcemap: true,
   banner: {
     file: path.join(__dirname, 'LICENSE')
   }

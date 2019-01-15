@@ -362,16 +362,40 @@ let updateBoundsFromLabel = function( bounds, ele, prefix ){
       let theta = isAutorotate ? prefixedProperty( _p.rstyle, 'labelAngle', prefix ) : rotation.pfValue;
       let cos = Math.cos( theta );
       let sin = Math.sin( theta );
-      let xMid = (lx1 + lx2)/2;
-      let yMid = (ly1 + ly2)/2;
+
+      // rotation point (default value for center-center)
+      let xo = (lx1 + lx2)/2;
+      let yo = (ly1 + ly2)/2;
+
+      if( !isEdge ){
+        switch( halign.value ){
+          case 'left':
+            xo = lx2;
+            break;
+
+          case 'right':
+            xo = lx1;
+            break;
+        }
+
+        switch( valign.value ){
+          case 'top':
+            yo = ly2;
+            break;
+
+          case 'bottom':
+            yo = ly1;
+            break;
+        }
+      }
 
       let rotate = function( x, y ){
-        x = x - xMid;
-        y = y - yMid;
+        x = x - xo;
+        y = y - yo;
 
         return {
-          x: x * cos - y * sin + xMid,
-          y: x * sin + y * cos + yMid
+          x: x * cos - y * sin + xo,
+          y: x * sin + y * cos + yo
         };
       };
 

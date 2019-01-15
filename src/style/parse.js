@@ -35,11 +35,6 @@ styfn.parse = function( name, value, propIsBypass, propIsFlat ){
     }
   }
 
-  // cache the original, unparsed value for comparison on the next iteration
-  if( ret ){
-    ret.previousValue = util.copy( value );
-  }
-
   return ret;
 };
 

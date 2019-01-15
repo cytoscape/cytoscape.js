@@ -2,7 +2,7 @@ import nodeResolve from 'rollup-plugin-node-resolve';
 import commonjs from 'rollup-plugin-commonjs';
 import babel from 'rollup-plugin-babel';
 import replace from 'rollup-plugin-replace';
-import { uglify } from 'rollup-plugin-uglify';
+import { terser } from "rollup-plugin-terser";
 import { sizeSnapshot } from 'rollup-plugin-size-snapshot';
 import license from 'rollup-plugin-license';
 import path from 'path';
@@ -69,13 +69,10 @@ const configs = [
       commonjs({ include: '**/node_modules/**' }),
       BABEL ? babel(getBabelOptions()) : {},
       replace(envVariables),
-      license(licenseHeaderOptions),
-      uglify({
-        compress: {
-          warnings: false,
-          drop_console: false
-        }
-      })
+      terser({
+        sourcemap: false
+      }),
+      license(licenseHeaderOptions)
     ]
   },
 

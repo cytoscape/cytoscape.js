@@ -186,6 +186,7 @@ styfn.applyContextStyle = function( cxtMeta, cxtStyle, ele ){
   let self = this;
   let diffProps = cxtMeta.diffPropNames;
   let retDiffProps = {};
+  let types = self.types;
 
   for( let i = 0; i < diffProps.length; i++ ){
     let diffPropName = diffProps[ i ];
@@ -207,7 +208,7 @@ styfn.applyContextStyle = function( cxtMeta, cxtStyle, ele ){
     if( eleProp === cxtProp ){ continue; }
 
     // save cycles when a mapped context prop doesn't need to be applied
-    if( is.fn( cxtProp.value )) {
+    if( cxtProp.mapped === types.fn ) {
       cxtProp.fnValue = cxtProp.value( ele ); // temporarily cache the value in case of a miss
 
       if( cxtProp.fnValue === eleProp.previousValue ){ continue; }

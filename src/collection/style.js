@@ -112,24 +112,6 @@ let elesfn = ({
     return this; // chaining
   },
 
-  // just update the mappers in the elements' styles; cheaper than eles.updateStyle()
-  updateMappers: function( notifyRenderer ){
-    let cy = this._private.cy;
-    let style = cy.style();
-    notifyRenderer = notifyRenderer || notifyRenderer === undefined ? true : false;
-
-    if( !cy.styleEnabled() ){ return this; }
-
-    let changedEles = style.updateMappers( this );
-
-    if( notifyRenderer ){
-      changedEles.emitAndNotify( 'style' ); // let renderer know we changed style
-    } else {
-      changedEles.emit( 'style' ); // just fire the event
-    }
-    return this; // chaining
-  },
-
   // get the internal parsed style object for the specified property
   parsedStyle: function( property, includeNonDefault = true ){
     let ele = this[0];

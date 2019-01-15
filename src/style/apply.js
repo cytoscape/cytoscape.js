@@ -673,43 +673,6 @@ styfn.update = function(){
   eles.updateStyle();
 };
 
-// just update the functional properties (i.e. mappings) in the elements'
-// styles (less expensive than recalculation)
-styfn.updateMappers = function( eles ){
-  let cy = this._private.cy;
-  let updatedEles = cy.collection();
-
-  for( let i = 0; i < eles.length; i++ ){ // for each ele
-    let ele = eles[ i ];
-    let style = ele._private.style;
-    let updatedEle = false;
-    let propNames = Object.keys(style);
-
-    for( let j = 0; j < propNames.length; j++ ){ // for each prop
-      let propName = propNames[ j ];
-      let propInStyle = style[ propName ];
-
-      if( propInStyle != null && propInStyle.mapping ){
-        let mapping = propInStyle.mapping;
-
-        this.applyParsedProperty( ele, mapping ); // reapply the mapping property
-
-        updatedEle = true;
-      }
-    }
-
-    if( updatedEle ){
-      let hintDiff = this.updateStyleHints( ele );
-
-      if( hintDiff ){
-        updatedEles.merge( ele );
-      }
-    }
-  }
-
-  return updatedEles;
-};
-
 // diffProps : { name => { prev, next } }
 styfn.updateTransitions = function( ele, diffProps ){
   let self = this;

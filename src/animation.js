@@ -3,6 +3,9 @@ import * as is from './is';
 import Promise from './promise';
 
 let Animation = function( target, opts, opts2 ){
+  let isCore = is.core(target);
+  let isEle = !isCore;
+
   let _p = this._private = util.extend( {
     duration: 1000
   }, opts, opts2 );
@@ -19,6 +22,28 @@ let Animation = function( target, opts, opts2 ){
 
   if( _p.complete && is.fn( _p.complete ) ){
     _p.completes.push( _p.complete );
+  }
+
+  if( isEle ){
+    let pos = target.position();
+
+    _p.startPosition = _p.startPosition || {
+      x: pos.x,
+      y: pos.y
+    };
+
+    _p.startStyle = _p.startStyle || target.cy().style().getAnimationStartStyle( target, _p.style );
+  }
+
+  if( isCore ){
+    let pan = target.pan();
+
+    _p.startPan = {
+      x: pan.x,
+      y: pan.y
+    };
+
+    _p.startZoom = target.zoom();
   }
 
   // for future timeline/animations impl

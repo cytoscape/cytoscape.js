@@ -911,7 +911,7 @@
                       "name": "options",
                       "descr": "The export options.",
                       "fields": [
-                        { "name": "output", "descr": "Whether the output should be `'base64uri'` (default), `'base64'`, or `'blob'`." },
+                        { "name": "output", "descr": "Whether the output should be `'base64uri'` (default), `'base64'`, `'blob'`, or `'blob-promise'` (a promise that resolves to the blob is returned)." },
                         { "name": "bg", "descr": "The background colour of the image (transparent by default)." },
                         { "name": "full", "descr": "Whether to export the current viewport view (`false`, default) or the entire graph (`true`)." },
                         { "name": "scale", "descr": "This value specifies a positive number that scales the size of the resultant image." },
@@ -936,7 +936,7 @@
                       "name": "options",
                       "descr": "The export options.",
                       "fields": [
-                        { "name": "output", "descr": "Whether the output should be `'base64uri'` (default), `'base64'`, or `'blob'`." },
+                        { "name": "output", "descr": "Whether the output should be `'base64uri'` (default), `'base64'`, `'blob'`, or `'blob-promise'` (a promise that resolves to the blob is returned)." },
                         { "name": "bg", "descr": "The background colour of the image (white by default)." },
                         { "name": "full", "descr": "Whether to export the current viewport view (`false`, default) or the entire graph (`true`)." },
                         { "name": "scale", "descr": "This value specifies a positive number that scales the size of the resultant image." },

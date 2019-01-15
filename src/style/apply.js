@@ -74,7 +74,7 @@ styfn.getPropertiesDiff = function( oldCxtKey, newCxtKey ){
     let cxtHasDiffed = oldHasCxt !== newHasCxt;
     let cxtHasMappedProps = cxt.mappedProperties.length > 0;
 
-    if( cxtHasDiffed || cxtHasMappedProps ){
+    if( cxtHasDiffed || ( newHasCxt && cxtHasMappedProps )){
       let props;
 
       if( cxtHasDiffed && cxtHasMappedProps ){
@@ -186,6 +186,7 @@ styfn.applyContextStyle = function( cxtMeta, cxtStyle, ele ){
   let self = this;
   let diffProps = cxtMeta.diffPropNames;
   let retDiffProps = {};
+  let types = self.types;
 
   for( let i = 0; i < diffProps.length; i++ ){
     let diffPropName = diffProps[ i ];
@@ -205,6 +206,16 @@ styfn.applyContextStyle = function( cxtMeta, cxtStyle, ele ){
 
     // save cycles when the context prop doesn't need to be applied
     if( eleProp === cxtProp ){ continue; }
+
+    // save cycles when a mapped context prop doesn't need to be applied
+    if(
+      cxtProp.mapped === types.fn && // context prop is function mapper
+      eleProp.mapping === cxtProp // the current prop on the ele is a flat prop value for the function mapper
+    ){
+      cxtProp.fnValue = cxtProp.value( ele ); // temporarily cache the value in case of a miss
+
+      if( cxtProp.fnValue === cxtProp.prevFnValue ){ continue; }
+    }
 
     let retDiffProp = retDiffProps[ diffPropName ] = {
       prev: eleProp
@@ -571,7 +582,9 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
 
   case types.fn: {
     let fn = prop.value;
-    let fnRetVal = fn( ele );
+    let fnRetVal = prop.fnValue || fn( ele ); // check for cached value before calling function
+
+    prop.prevFnValue = fnRetVal;
 
     if( fnRetVal == null ){
       util.warn('Custom function mappers may not return null (i.e. `' + prop.name + '` for ele `' + ele.id() + '` is null)');
@@ -658,43 +671,6 @@ styfn.update = function(){
   let eles = cy.mutableElements();
 
   eles.updateStyle();
-};
-
-// just update the functional properties (i.e. mappings) in the elements'
-// styles (less expensive than recalculation)
-styfn.updateMappers = function( eles ){
-  let cy = this._private.cy;
-  let updatedEles = cy.collection();
-
-  for( let i = 0; i < eles.length; i++ ){ // for each ele
-    let ele = eles[ i ];
-    let style = ele._private.style;
-    let updatedEle = false;
-    let propNames = Object.keys(style);
-
-    for( let j = 0; j < propNames.length; j++ ){ // for each prop
-      let propName = propNames[ j ];
-      let propInStyle = style[ propName ];
-
-      if( propInStyle != null && propInStyle.mapping ){
-        let mapping = propInStyle.mapping;
-
-        this.applyParsedProperty( ele, mapping ); // reapply the mapping property
-
-        updatedEle = true;
-      }
-    }
-
-    if( updatedEle ){
-      let hintDiff = this.updateStyleHints( ele );
-
-      if( hintDiff ){
-        updatedEles.merge( ele );
-      }
-    }
-  }
-
-  return updatedEles;
 };
 
 // diffProps : { name => { prev, next } }

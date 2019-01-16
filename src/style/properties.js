@@ -244,7 +244,8 @@ const styfn = {};
     { name: 'background-gradient-stop-positions', type: t.percentages },
     { name: 'background-gradient-direction', type: t.gradientDirection },
     { name: 'padding', type: t.sizeMaybePercent, triggersBounds: diff.any },
-    { name: 'padding-relative-to', type: t.paddingRelativeTo, triggersBounds: diff.any }
+    { name: 'padding-relative-to', type: t.paddingRelativeTo, triggersBounds: diff.any },
+    { name: 'bounds-expansion', type: t.size, triggersBounds: diff.any }
   ];
 
   let nodeBorder = [
@@ -561,6 +562,7 @@ styfn.getDefaultProperties = function(){
     'width': 30,
     'shape': 'ellipse',
     'shape-polygon-points': '-1, -1,   1, -1,   1, 1,   -1, 1',
+    'bounds-expansion': 0,
 
     // node gradient
     'background-gradient-direction': 'to-bottom',

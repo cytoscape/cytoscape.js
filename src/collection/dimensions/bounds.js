@@ -212,6 +212,8 @@ let updateBounds = function( b, x1, y1, x2, y2 ){
   b.x2 = x2 > b.x2 ? x2 : b.x2;
   b.y1 = y1 < b.y1 ? y1 : b.y1;
   b.y2 = y2 > b.y2 ? y2 : b.y2;
+  b.w = b.x2 - b.x1;
+  b.h = b.y2 - b.y1;
 };
 
 let updateBoundsFromBox = function( b, b2 ){
@@ -433,6 +435,7 @@ let boundingBoxImpl = function( ele, options ){
   let x, y; // node pos
   let displayed = display !== 'none';
   let rstyle = _p.rstyle;
+  let manualExpansion = isNode ? ele.pstyle('bounds-expansion').pfValue : 0;
 
   if( displayed ){
     let overlayOpacity = 0;
@@ -596,6 +599,7 @@ let boundingBoxImpl = function( ele, options ){
     // always store the body bounds separately from the labels
     let bbBody = _p.bodyBounds = _p.bodyBounds || {};
     assignBoundingBox(bbBody, bounds);
+    expandBoundingBox(bbBody, manualExpansion);
     expandBoundingBox(bbBody, 1); // expand to work around browser dimension inaccuracies
 
     // overlay
@@ -613,6 +617,7 @@ let boundingBoxImpl = function( ele, options ){
     // always store the body bounds separately from the labels
     let bbOverlay = _p.overlayBounds = _p.overlayBounds || {};
     assignBoundingBox(bbOverlay, bounds);
+    expandBoundingBox(bbOverlay, manualExpansion);
     expandBoundingBox(bbOverlay, 1); // expand to work around browser dimension inaccuracies
 
     // handle label dimensions
@@ -633,11 +638,6 @@ let boundingBoxImpl = function( ele, options ){
         updateBoundsFromLabel( bounds, ele, 'source', options );
         updateBoundsFromLabel( bounds, ele, 'target', options );
       }
-
-      let bbAll = bbLabels.all;
-
-      bbAll.w = bbAll.x2 - bbAll.x1;
-      bbAll.h = bbAll.y2 - bbAll.y1;
     } // style enabled for labels
   } // if displayed
 
@@ -649,8 +649,14 @@ let boundingBoxImpl = function( ele, options ){
   bounds.w = noninf( bounds.x2 - bounds.x1 );
   bounds.h = noninf( bounds.y2 - bounds.y1 );
 
-  // expand bounds by 1 because antialiasing can increase the visual/effective size by 1 on all sides
-  expandBoundingBox( bounds, bounds.w > 0 && bounds.h > 0 && displayed ? 1 : 0 );
+  
+
+  if( bounds.w > 0 && bounds.h > 0 && displayed ){
+    expandBoundingBox( bounds, manualExpansion );
+
+    // expand bounds by 1 because antialiasing can increase the visual/effective size by 1 on all sides
+    expandBoundingBox( bounds, 1 );
+  }
 
   return bounds;
 };

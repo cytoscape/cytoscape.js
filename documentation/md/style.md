@@ -272,6 +272,7 @@ A background image may be applied to a node's body.  The following properties su
 The following properties apply to all images of a node:
 
  * **`background-clip`** : How background image clipping is handled; may be `node` for clipped to node shape or `none` for no clipping.
+ * **`bounds-expansion`** : Specifies a padding size (e.g. `20px`) that expands the bounding box of the node in all directions.  This allows for images to be drawn outside of the normal bounding box of the node when `background-clip` is `none`.  This is useful for small decorations just outside of the node.
 
 The following is an example of valid background image styling using JSON. The example images are taken from Wikimedia Commons with the Creative Commons license.
 ```

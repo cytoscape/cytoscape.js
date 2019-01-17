@@ -5,8 +5,9 @@ import * as util from '../util';
 let elesfn = ({
   forEach: function( fn, thisArg ){
     if( is.fn( fn ) ){
+      let N = this.length;
 
-      for( let i = 0; i < this.length; i++ ){
+      for( let i = 0; i < N; i++ ){
         let ele = this[ i ];
         let ret = thisArg ? fn.apply( thisArg, [ ele, i, this ] ) : fn( ele, i, this );
 

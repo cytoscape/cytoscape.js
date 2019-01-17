@@ -435,7 +435,7 @@ let boundingBoxImpl = function( ele, options ){
   let x, y; // node pos
   let displayed = display !== 'none';
   let rstyle = _p.rstyle;
-  let manualExpansion = isNode ? ele.pstyle('bounds-expansion').pfValue : 0;
+  let manualExpansion = isNode && styleEnabled ? ele.pstyle('bounds-expansion').pfValue : 0;
 
   if( displayed ){
     let overlayOpacity = 0;

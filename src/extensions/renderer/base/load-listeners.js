@@ -886,23 +886,6 @@ BRp.load = function(){
 
     } else if( r.hoverData.which === 1 ){
 
-      // Deselect all elements if nothing is currently under the mouse cursor and we aren't dragging something
-      if( (down == null) // not mousedown on node
-        && !r.dragData.didDrag // didn't move the node around
-        && !r.hoverData.selecting // not box selection
-        && !r.hoverData.dragged // didn't pan
-        && !isMultSelKeyDown( e )
-      ){
-
-        cy.$(isSelected).unselect();
-
-        if( draggedElements.length > 0 ){
-          r.redrawHint( 'eles', true );
-        }
-
-        r.dragData.possibleDragElements = draggedElements = cy.collection();
-      }
-
       triggerEvents( near, [ 'mouseup', 'tapend', 'vmouseup' ], e, { x: pos[0], y: pos[1] } );
 
       if(
@@ -914,6 +897,23 @@ BRp.load = function(){
         triggerEvents( down, ['click', 'tap', 'vclick'], e, { x: pos[0], y: pos[1] } );
       }
 
+      // Deselect all elements if nothing is currently under the mouse cursor and we aren't dragging something
+      if( (down == null) // not mousedown on node
+        && !r.dragData.didDrag // didn't move the node around
+        && !r.hoverData.selecting // not box selection
+        && !r.hoverData.dragged // didn't pan
+        && !isMultSelKeyDown( e )
+      ){
+
+        cy.$(isSelected).unselect(['tapunselect']);
+
+        if( draggedElements.length > 0 ){
+          r.redrawHint( 'eles', true );
+        }
+
+        r.dragData.possibleDragElements = draggedElements = cy.collection();
+      }
+
       // Single selection
       if( near == down && !r.dragData.didDrag && !r.hoverData.selecting ){
         if( near != null && near._private.selectable ){
@@ -922,14 +922,14 @@ BRp.load = function(){
             // if panning, don't change selection state
           } else if( cy.selectionType() === 'additive' || multSelKeyDown ){
             if( near.selected() ){
-              near.unselect();
+              near.unselect(['tapunselect']);
             } else {
-              near.select();
+              near.select(['tapselect']);
             }
           } else {
             if( !multSelKeyDown ){
-              cy.$(isSelected).unmerge( near ).unselect();
-              near.select();
+              cy.$(isSelected).unmerge( near ).unselect(['tapunselect']);
+              near.select(['tapselect']);
             }
           }
 
@@ -1911,6 +1911,15 @@ BRp.load = function(){
       var dist2 = dx2 + dy2;
       var rdist2 = dist2 * zoom * zoom;
 
+      // Tap event, roughly same as mouse click event for touch
+      if( !r.touchData.singleTouchMoved ){
+        if( !start ){
+          cy.$(':selected').unselect(['tapunselect']);
+        }
+
+        triggerEvents( start, [ 'tap', 'vclick' ], e, { x: now[0], y: now[1] } );
+      }
+
       // Prepare to select the currently touched node, only if it hasn't been dragged past a certain distance
       if( start != null
           && !r.dragData.didDrag // didn't drag nodes around
@@ -1920,26 +1929,17 @@ BRp.load = function(){
       ){
 
         if( cy.selectionType() === 'single' ){
-          cy.$(isSelected).unmerge( start ).unselect();
-          start.select();
+          cy.$(isSelected).unmerge( start ).unselect(['tapunselect']);
+          start.select(['tapselect']);
         } else {
           if( start.selected() ){
-            start.unselect();
+            start.unselect(['tapunselect']);
           } else {
-            start.select();
+            start.select(['tapselect']);
           }
         }
 
         r.redrawHint( 'eles', true );
-      }
-
-      // Tap event, roughly same as mouse click event for touch
-      if( !r.touchData.singleTouchMoved ){
-        triggerEvents( start, [ 'tap', 'vclick' ], e, { x: now[0], y: now[1] } );
-
-        if( !start ){
-          cy.$(':selected').unselect();
-        }
       }
 
       r.touchData.singleTouchMoved = true;

@@ -1,4 +1,6 @@
-let elesfn = {};
+import * as is from '../is';
+
+const elesfn = {};
 
 function defineSwitchFunction( params ){
   return function(){
@@ -13,13 +15,16 @@ function defineSwitchFunction( params ){
     }
 
     // e.g. cy.nodes().select( handler )
-    else if( args.length === 1 ){
+    else if( args.length === 1 && is.fn(args[0]) ){
       let handler = args[0];
       this.on( params.event, handler );
     }
 
     // e.g. cy.nodes().select()
-    else if( args.length === 0 ){
+    // e.g. (private) cy.nodes().select(['tapselect'])
+    else if( args.length === 0 || (args.length === 1 && is.array(args[0])) ){
+      let addlEvents = args.length === 1 ? args[0] : null;
+
       for( let i = 0; i < this.length; i++ ){
         let ele = this[ i ];
         let able = !params.ableField || ele._private[ params.ableField ];
@@ -47,6 +52,10 @@ function defineSwitchFunction( params ){
       let changedColl = this.spawn( changedEles );
       changedColl.updateStyle(); // change of state => possible change of style
       changedColl.emit( params.event );
+
+      if( addlEvents ){
+        changedColl.emit( addlEvents );
+      }
     }
 
     return this;

@@ -61,7 +61,7 @@ let forEachEvent = function( self, handler, events, qualifier, callback, conf, c
     }
   }
 
-  let eventList = events.split(/\s+/);
+  let eventList = is.array(events) ? events : events.split(/\s+/);
 
   for( let i = 0; i < eventList.length; i++ ){
     let evt = eventList[i];
@@ -97,7 +97,7 @@ let forEachEventObj = function( self, handler, events ){
     return;
   }
 
-  let eventList = events.split(/\s+/);
+  let eventList = is.array(events) ? events : events.split(/\s+/);
 
   for( let i = 0; i < eventList.length; i++ ){
     let evt = eventList[i];

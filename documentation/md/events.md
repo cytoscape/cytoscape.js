@@ -68,6 +68,10 @@ These events are custom to Cytoscape.js.  You can listen to these events for col
  * `remove` : when an element is removed from the graph
  * `select` : when an element is selected
  * `unselect` : when an element is unselected
+ * `tapselect` : when an element is selected by a tap gesture
+ * `tapunselect` : when an element is unselected by a tap elsewhere
+ * `boxselect` : triggered on elements when selected by box selection
+ * `box` : triggered on elements when inside the box on `boxend`
  * `lock` : when an element is locked
  * `unlock` : when an element is unlocked
  * `grabon` : when an element is grabbed directly (including only the one node directly under the cursor or the user's finger)

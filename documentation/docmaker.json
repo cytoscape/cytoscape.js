@@ -348,7 +348,7 @@
               "formats": [
                 {
                   "args": [
-                    { "name": "events", "descr": "A space separated list of event names to emit." },
+                    { "name": "events", "descr": "A list of event names to emit (either a space-separated string or an array)" },
                     { "name": "extraParams", "descr": "An array of additional parameters to pass to the handler.", "optional": true }
                   ]
                 }
@@ -1139,7 +1139,7 @@
               "formats": [
                 {
                   "args": [
-                    { "name": "events", "descr": "A space separated list of event names to emit." },
+                    { "name": "events", "descr": "A list of event names to emit (either a space-separated string or an array)" },
                     { "name": "extraParams", "descr": "An array of additional parameters to pass to the handler.", "optional": true }
                   ]
                 }
@@ -3707,7 +3707,7 @@
               "formats": [
                 {
                   "args": [
-                    { "name": "events", "descr": "A space separated list of event names to emit." },
+                    { "name": "events", "descr": "A list of event names to emit (either a space-separated string or an array)." },
                     { "name": "extraParams", "descr": "An array of additional parameters to pass to the handler.", "optional": true }
                   ]
                 }

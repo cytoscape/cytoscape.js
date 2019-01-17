@@ -2717,7 +2717,24 @@
 
             {
               "name": "eles.components",
-              "descr": "Get the connected components, considering only the elements in the calling collection.  An array of collections is returned, with each collection representing a component."
+              "descr": "Get the connected components.",
+              "formats": [
+                {
+                  "name": "eles.components",
+                  "descr": "Get the connected components, considering only the elements in the calling collection.  An array of collections is returned, with each collection representing a component."
+                },
+                {
+                  "name": "eles.componentsOf",
+                  "descr": "Get the connected components to which the passed elements belong.  The components consider only the subgraph made by the elements in the calling collection.  An array of collections is returned, with each collection representing a component.",
+                  "args": [
+                    { "name": "root", "descr": "The components that contain these elements are returned." }
+                  ]
+                },
+                {
+                  "name": "ele.component",
+                  "descr": "Get the connected component for the calling element.  The component considers all elements in the graph."
+                }
+              ]
             },
 
             {

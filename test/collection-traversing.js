@@ -313,4 +313,25 @@ describe('Collection traversing', function(){
     expect( cs.length ).to.equal(0);
   });
 
+  it('ele.components() with graph of 2 components', function(){
+    var cy = cytoscape({
+      elements: [
+        { data: { id: 'n1' } },
+        { data: { id: 'n2' } },
+        { data: { id: 'n1n2', source: 'n1', target: 'n2' } },
+
+        { data: { id: 'n3' } },
+        { data: { id: 'n4' } },
+        { data: { id: 'n3n4', source: 'n3', target: 'n4' } }
+      ]
+    });
+
+    var comp = cy.$('#n1').component();
+    var expected = cy.$('#n1, #n2, #n1n2');
+
+    expect( comp.length ).to.equal(3);
+
+    expect( comp.same(expected) ).to.be.true;
+  });
+
 });

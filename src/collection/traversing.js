@@ -367,14 +367,18 @@ function defineParallelEdgesFunction( params ){
 /////////////////
 
 util.extend( elesfn, {
-  components: function(){
+  components: function(root){
     let self = this;
     let cy = self.cy();
-    let visited = self.spawn();
-    let unvisited = self.nodes().spawnSelf();
+    let visited = cy.collection();
+    let unvisited = root == null ? self.nodes() : root.nodes();
     let components = [];
 
-    let visitInComponent = function( node, component ){
+    if( root != null && unvisited.empty() ){ // root may contain only edges
+      unvisited = root.sources(); // doesn't matter which node to use (undirected), so just use the source sides
+    }
+
+    let visitInComponent = ( node, component ) => {
       visited.merge( node );
       unvisited.unmerge( node );
       component.merge( node );
@@ -382,31 +386,39 @@ util.extend( elesfn, {
 
     if( unvisited.empty() ){ return self.spawn(); }
 
-    do {
-      let component = cy.collection();
-      components.push( component );
+    do { // each iteration yields a component
+      let cmpt = cy.collection();
+      components.push( cmpt );
 
       let root = unvisited[0];
-      visitInComponent( root, component );
+      visitInComponent( root, cmpt );
 
       self.bfs({
         directed: false,
         roots: root,
-        visit: function( v, e, u, i, depth ){
-          visitInComponent( v, component );
-        }
+        visit: v => visitInComponent( v, cmpt )
       } );
+
+      cmpt.forEach(node => {
+        node.connectedEdges().forEach(e => { // connectedEdges() usually cached
+          if( cmpt.has(e.source()) && cmpt.has(e.target()) ){ // has() is cheap
+            cmpt.merge(e); // forEach() only considers nodes -- sets N at call time
+          }
+        });
+      });
 
     } while( unvisited.length > 0 );
 
-    return components.map(function( component ){
-      let connectedEdges = component.connectedEdges().stdFilter(function( edge ){
-        return component.anySame( edge.source() ) && component.anySame( edge.target() );
-      });
+    return components;
+  },
 
-      return component.union( connectedEdges );
-    });
+  component: function(){
+    let ele = this[0];
+
+    return ele.cy().mutableElements().components( ele )[0];
   }
 } );
+
+elesfn.componentsOf = elesfn.components;
 
 export default elesfn;

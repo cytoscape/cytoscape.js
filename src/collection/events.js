@@ -67,40 +67,48 @@ let elesfn = ({
   },
 
   on: function( events, selector, callback ){
+    let argSel = argSelector(selector);
+
     for( let i = 0; i < this.length; i++ ){
       let ele = this[i];
 
-      ele.emitter().on( events, argSelector(selector), callback );
+      ele.emitter().on( events, argSel, callback );
     }
 
     return this;
   },
 
   removeListener: function( events, selector, callback ){
+    let argSel = argSelector(selector);
+
     for( let i = 0; i < this.length; i++ ){
       let ele = this[i];
 
-      ele.emitter().removeListener( events, argSelector(selector), callback );
+      ele.emitter().removeListener( events, argSel, callback );
     }
 
     return this;
   },
 
   one: function( events, selector, callback ){
+    let argSel = argSelector(selector);
+
     for( let i = 0; i < this.length; i++ ){
       let ele = this[i];
 
-      ele.emitter().one( events, argSelector(selector), callback );
+      ele.emitter().one( events, argSel, callback );
     }
 
     return this;
   },
 
   once: function( events, selector, callback ){
+    let argSel = argSelector(selector);
+
     for( let i = 0; i < this.length; i++ ){
       let ele = this[i];
 
-      ele.emitter().on( events, argSelector(selector), callback, {
+      ele.emitter().on( events, argSel, callback, {
         once: true,
         onceCollection: this
       } );

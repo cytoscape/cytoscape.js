@@ -5474,6 +5474,9 @@ api.reject = function (val) {
 var Promise$1 = typeof Promise !== 'undefined' ? Promise : api; // eslint-disable-line no-undef
 
 var Animation = function Animation(target, opts, opts2) {
+  var isCore = core(target);
+  var isEle = !isCore;
+
   var _p = this._private = extend({
     duration: 1000
   }, opts, opts2);
@@ -5490,6 +5493,24 @@ var Animation = function Animation(target, opts, opts2) {
 
   if (_p.complete && fn(_p.complete)) {
     _p.completes.push(_p.complete);
+  }
+
+  if (isEle) {
+    var pos = target.position();
+    _p.startPosition = _p.startPosition || {
+      x: pos.x,
+      y: pos.y
+    };
+    _p.startStyle = _p.startStyle || target.cy().style().getAnimationStartStyle(target, _p.style);
+  }
+
+  if (isCore) {
+    var pan = target.pan();
+    _p.startPan = {
+      x: pan.x,
+      y: pan.y
+    };
+    _p.startZoom = target.zoom();
   } // for future timeline/animations impl
 
 
@@ -10567,8 +10588,8 @@ var elesfn$p = {
     var cy = this.cy();
     var layoutEles = options.eles; // nodes & edges
 
-    var getMemoizeKey = function getMemoizeKey(node, i) {
-      return node.id() + '$' + i;
+    var getMemoizeKey = function getMemoizeKey(node) {
+      return node.id();
     };
 
     var fnMem = memoize(fn, getMemoizeKey); // memoized version of position function
@@ -13091,30 +13112,7 @@ function valid(start, end) {
 }
 
 function startAnimation(self, ani, now, isCore) {
-  var isEles = !isCore;
-  var ele = self;
   var ani_p = ani._private;
-  var cy = isCore ? self : self.cy();
-  var style = cy.style();
-
-  if (isEles) {
-    var pos = ele.position();
-    ani_p.startPosition = ani_p.startPosition || {
-      x: pos.x,
-      y: pos.y
-    };
-    ani_p.startStyle = ani_p.startStyle || style.getAnimationStartStyle(ele, ani_p.style);
-  }
-
-  if (isCore) {
-    var pan = cy._private.pan;
-    ani_p.startPan = ani_p.startPan || {
-      x: pan.x,
-      y: pan.y
-    };
-    ani_p.startZoom = ani_p.startZoom != null ? ani_p.startZoom : cy._private.zoom;
-  }
-
   ani_p.started = true;
   ani_p.startTime = now - ani_p.progress * ani_p.duration;
 }
@@ -30125,7 +30123,7 @@ sheetfn.appendToStyle = function (style$$1) {
   return style$$1;
 };
 
-var version = "3.3.2";
+var version = "3.3.3";
 
 var cytoscape = function cytoscape(options) {
   // if no options specified, use default

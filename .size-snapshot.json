@@ -1,25 +1,25 @@
 {
   "build/cytoscape.umd.js": {
-    "bundled": 887661,
-    "minified": 328855,
-    "gzipped": 102237
+    "bundled": 887520,
+    "minified": 328780,
+    "gzipped": 102224
   },
   "build/cytoscape.cjs.js": {
-    "bundled": 817540,
-    "minified": 345792,
-    "gzipped": 104228
+    "bundled": 817403,
+    "minified": 345722,
+    "gzipped": 104217
   },
   "build/cytoscape.esm.js": {
-    "bundled": 817367,
-    "minified": 345655,
-    "gzipped": 104197,
+    "bundled": 817230,
+    "minified": 345585,
+    "gzipped": 104184,
     "treeshaked": {
       "rollup": {
-        "code": 323609,
+        "code": 323534,
         "import_statements": 51
       },
       "webpack": {
-        "code": 325752
+        "code": 325677
       }
     }
   }

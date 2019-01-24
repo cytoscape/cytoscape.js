@@ -326,14 +326,10 @@ elesfn.clone = function(){
 };
 elesfn.copy = elesfn.clone;
 
-elesfn.restore = function( notifyRenderer ){
+elesfn.restore = function( notifyRenderer = true, addToPool = true ){
   let self = this;
   let cy = self.cy();
   let cy_p = cy._private;
-
-  if( notifyRenderer === undefined ){
-    notifyRenderer = true;
-  }
 
   // create arrays of nodes and edges, since we need to
   // restore the nodes first
@@ -343,7 +339,7 @@ elesfn.restore = function( notifyRenderer ){
   for( let i = 0, l = self.length; i < l; i++ ){
     let ele = self[ i ];
 
-    if( !ele.removed() ){
+    if( addToPool && !ele.removed() ){
       // don't need to handle this ele
       continue;
     }
@@ -375,7 +371,10 @@ elesfn.restore = function( notifyRenderer ){
     ele.clearTraversalCache();
 
     // set id and validate
-    if( data.id === undefined ){
+    if( !addToPool && !_private.removed ){
+      // already in graph, so nothing required
+
+    } else if( data.id === undefined ){
       data.id = idFactory.generate( cy, ele );
 
     } else if( is.number( data.id ) ){
@@ -454,7 +453,10 @@ elesfn.restore = function( notifyRenderer ){
     _private.map.set( id, { ele: ele, index: 0 } );
 
     _private.removed = false;
-    cy.addToPool( ele );
+
+    if( addToPool ){
+      cy.addToPool( ele );
+    }
   } // for each element
 
   // do compound node sanity checks
@@ -532,7 +534,7 @@ elesfn.restore = function( notifyRenderer ){
 
     if( notifyRenderer ){
       restored.emitAndNotify( 'add' );
-    } else {
+    } else if( addToPool ){
       restored.emit( 'add' );
     }
   }
@@ -550,16 +552,12 @@ elesfn.inside = function(){
   return ele && !ele._private.removed;
 };
 
-elesfn.remove = function( notifyRenderer ){
+elesfn.remove = function( notifyRenderer = true, removeFromPool = true ){
   let self = this;
   let removed = [];
   let elesToRemove = [];
   let elesToRemoveIds = {};
   let cy = self._private.cy;
-
-  if( notifyRenderer === undefined ){
-    notifyRenderer = true;
-  }
 
   // add connected edges
   function addConnectedEdges( node ){
@@ -568,7 +566,6 @@ elesfn.remove = function( notifyRenderer ){
       add( edges[ i ] );
     }
   }
-
 
   // add descendant nodes
   function addChildren( node ){
@@ -581,7 +578,7 @@ elesfn.remove = function( notifyRenderer ){
 
   function add( ele ){
     let alreadyAdded =  elesToRemoveIds[ ele.id() ];
-    if( ele.removed() || alreadyAdded ){
+    if( (removeFromPool && ele.removed()) || alreadyAdded ){
       return;
     } else {
       elesToRemoveIds[ ele.id() ] = true;
@@ -630,7 +627,9 @@ elesfn.remove = function( notifyRenderer ){
     let children = parent._private.children;
     let pid = parent.id();
 
-    util.removeFromArray( children, ele );
+    util.removeFromArray( children, ele ); // remove parent => child ref
+
+    ele._private.parent = null; // remove child => parent ref
 
     if( !alteredParents.ids[ pid ] ){
       alteredParents.ids[ pid ] = true;
@@ -640,13 +639,17 @@ elesfn.remove = function( notifyRenderer ){
 
   self.dirtyCompoundBoundsCache();
 
-  cy.removeFromPool( elesToRemove ); // remove from core pool
+  if( removeFromPool ){
+    cy.removeFromPool( elesToRemove ); // remove from core pool
+  }
 
   for( let i = 0; i < elesToRemove.length; i++ ){
     let ele = elesToRemove[ i ];
 
-    // mark as removed
-    ele._private.removed = true;
+    if( removeFromPool ){
+      // mark as removed
+      ele._private.removed = true;
+    }
 
     // add to list of removed elements
     removed.push( ele );
@@ -681,12 +684,13 @@ elesfn.remove = function( notifyRenderer ){
   }
 
   let removedElements = new Collection( this.cy(), removed );
+
   if( removedElements.size() > 0 ){
     // must manually notify since trigger won't do this automatically once removed
 
     if( notifyRenderer ){
       removedElements.emitAndNotify('remove');
-    } else {
+    } else if( removeFromPool ){
       removedElements.emit('remove');
     }
   }
@@ -695,42 +699,48 @@ elesfn.remove = function( notifyRenderer ){
   for( let i = 0; i < alteredParents.length; i++ ){
     let ele = alteredParents[ i ];
 
-    if( !ele.removed() ){
+    if( !removeFromPool || !ele.removed() ){
       ele.updateStyle();
     }
   }
 
-  return new Collection( cy, removed );
+  return removedElements;
 };
 
 elesfn.move = function( struct ){
   let cy = this._private.cy;
+  let eles = this;
+
+  // just clean up refs, caches, etc. in the same way as when removing and then restoring
+  // (our calls to remove/restore do not remove from the graph or make events)
+  let notifyRenderer = false;
+  let modifyPool = false;
 
   if( struct.source !== undefined || struct.target !== undefined ){
     let srcId = struct.source;
     let tgtId = struct.target;
-    let srcExists = cy.hasElementWithId( srcId );
-    let tgtExists = cy.hasElementWithId( tgtId );
+    let srcExists = srcId != null && cy.hasElementWithId( srcId );
+    let tgtExists = tgtId != null && cy.hasElementWithId( tgtId );
 
     if( srcExists || tgtExists ){
-      let jsons = this.jsons();
+      cy.batch(() => { // avoid duplicate style updates
+        eles.remove( notifyRenderer, modifyPool ); // clean up refs etc.
 
-      this.remove();
+        for( let i = 0; i < eles.length; i++ ){
+          let ele = eles[i];
+          let data = ele._private.data;
 
-      for( let i = 0; i < jsons.length; i++ ){
-        let json = jsons[i];
-        let ele = this[i];
+          if( ele.isEdge() ){
+            if( srcExists ){ data.source = srcId; }
 
-        if( json.group === 'edges' ){
-          if( srcExists ){ json.data.source = srcId; }
-
-          if( tgtExists ){ json.data.target = tgtId; }
-
-          json.scratch = ele._private.scratch;
+            if( tgtExists ){ data.target = tgtId; }
+          }
         }
-      }
 
-      return cy.add( jsons );
+        eles.restore( notifyRenderer, modifyPool ); // make new refs, style, etc.
+      });
+
+      eles.emitAndNotify('move');
     }
 
   } else if( struct.parent !== undefined ){ // move node to new parent
@@ -738,28 +748,28 @@ elesfn.move = function( struct ){
     let parentExists = parentId === null || cy.hasElementWithId( parentId );
 
     if( parentExists ){
-      let jsons = this.jsons();
-      let descs = this.descendants();
-      let descsEtcJsons = descs.union( descs.union( this ).connectedEdges() ).jsons();
+      let pidToAssign = parentId === null ? undefined : parentId;
 
-      this.remove(); // NB: also removes descendants and their connected edges
+      cy.batch(() => { // avoid duplicate style updates
+        let updated = eles.remove( notifyRenderer, modifyPool ); // clean up refs etc.
 
-      for( let i = 0; i < jsons.length; i++ ){
-        let json = jsons[i];
-        let ele = this[i];
+        for( let i = 0; i < eles.length; i++ ){
+          let ele = eles[i];
+          let data = ele._private.data;
 
-        if( json.group === 'nodes' ){
-          json.data.parent = parentId === null ? undefined : parentId;
-
-          json.scratch = ele._private.scratch;
+          if( ele.isNode() ){
+            data.parent = pidToAssign;
+          }
         }
-      }
 
-      return cy.add( jsons.concat( descsEtcJsons ) );
+        updated.restore( notifyRenderer, modifyPool ); // make new refs, style, etc.
+      });
+
+      eles.emitAndNotify('move');
     }
   }
 
-  return this; // if nothing done
+  return this;
 };
 
 [

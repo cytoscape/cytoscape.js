@@ -206,7 +206,7 @@ cytoscape({
 
 Compound nodes are an addition to the traditional graph model.  A compound node contains a number of child nodes, similar to how a HTML DOM element can contain a number of child elements.
 
-Compound nodes are specified via the `parent` field in an element's `data`.  Similar to the `source` and `target` fields of edges, the `parent` field is immutable:  A node's parent can be specified when the node is added to the graph, and after that point, this parent-child relationship is immutable.  However, you can effectively move child nodes via [`eles.move()`](#collection/graph-manipulation/eles.move).
+Compound nodes are specified via the `parent` field in an element's `data`.  Similar to the `source` and `target` fields of edges, the `parent` field is normally immutable:  A node's parent can be specified when the node is added to the graph, and after that point, this parent-child relationship is immutable via `ele.data()`.  However, you can  move child nodes via [`eles.move()`](#collection/graph-manipulation/eles.move).
 
 <span class="important-indicator"></span> A compound parent node does not have independent dimensions (position and size), as those values are automatically inferred by the positions and dimensions of the descendant nodes.
 

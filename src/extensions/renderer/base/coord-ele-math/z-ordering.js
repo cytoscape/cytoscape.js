@@ -42,15 +42,11 @@ BRp.invalidateCachedZSortedEles = function(){
 
 BRp.getCachedZSortedEles = function( forceRecalc ){
   if( forceRecalc || !this.cachedZSortedEles ){
-    //console.time('cachezorder')
-
     var eles = this.cy.mutableElements().toArray();
 
     eles.sort( zIndexSort );
 
-    eles.interactive = eles.filter(function( ele ){
-      return ele.interactive();
-    });
+    eles.interactive = eles.filter(ele => ele.interactive());
 
     this.cachedZSortedEles = eles;
 

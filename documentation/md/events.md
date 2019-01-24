@@ -66,6 +66,9 @@ These events are custom to Cytoscape.js.  You can listen to these events for col
 
  * `add` : when an element is added to the graph
  * `remove` : when an element is removed from the graph
+ * `move` : when an element is moved w.r.t. topology
+   * nodes: when the compound `parent` is changed
+   * edges: when the `source` or `target` is changed
  * `select` : when an element is selected
  * `unselect` : when an element is unselected
  * `tapselect` : when an element is selected by a tap gesture

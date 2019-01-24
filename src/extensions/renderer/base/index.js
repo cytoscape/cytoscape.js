@@ -116,6 +116,7 @@ BRp.init = function( options ){
 
 BRp.notify = function( eventName, eles ){
   var r = this;
+  var cy = r.cy;
 
   // the renderer can't be notified after it's destroyed
   if( this.destroyed ){ return; }
@@ -130,7 +131,13 @@ BRp.notify = function( eventName, eles ){
     return;
   }
 
-  if( eventName === 'add' || eventName === 'remove' || eventName === 'load' || eventName === 'zorder' || eventName === 'mount' ){
+  if(
+    eventName === 'add' || eventName === 'remove'
+    || (eventName === 'move' && cy.hasCompoundNodes())
+    || eventName === 'load'
+    || eventName === 'zorder'
+    || eventName === 'mount'
+  ){
     r.invalidateCachedZSortedEles();
   }
 

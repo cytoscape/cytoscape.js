@@ -267,7 +267,9 @@ const styfn = {};
     { name: 'background-fit', type: t.bgFit },
     { name: 'background-clip', type: t.bgClip },
     { name: 'background-width', type: t.bgWH },
-    { name: 'background-height', type: t.bgWH }
+    { name: 'background-height', type: t.bgWH },
+    { name: 'background-offset-x', type: t.bgPos },
+    { name: 'background-offset-y', type: t.bgPos }
   ];
 
   let compound = [
@@ -547,6 +549,8 @@ styfn.getDefaultProperties = function(){
     'background-image-opacity': 1,
     'background-position-x': '50%',
     'background-position-y': '50%',
+    'background-offset-x': 0,
+    'background-offset-y': 0,
     'background-width-relative-to': 'include-padding',
     'background-height-relative-to': 'include-padding',
     'background-repeat': 'no-repeat',

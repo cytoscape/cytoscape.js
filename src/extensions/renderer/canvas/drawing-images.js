@@ -78,17 +78,37 @@ CRp.drawInscribedImage = function( context, img, node, index, nodeOpacity ){
   }
 
   var x = (nodeX - nodeTW / 2); // left
-  if( getIndexedStyle( node, 'background-position-x', 'units', index ) === '%' ){
-    x += (nodeTW - w) * getIndexedStyle( node, 'background-position-x', 'pfValue', index );
+  var posXUnits = getIndexedStyle( node, 'background-position-x', 'units', index );
+  var posXPfVal = getIndexedStyle( node, 'background-position-x', 'pfValue', index );
+  if( posXUnits === '%' ){
+    x += (nodeTW - w) * posXPfVal;
   } else {
-    x += getIndexedStyle( node, 'background-position-x', 'pfValue', index );
+    x += posXPfVal;
+  }
+
+  var offXUnits = getIndexedStyle( node, 'background-offset-x', 'units', index );
+  var offXPfVal = getIndexedStyle( node, 'background-offset-x', 'pfValue', index );
+  if( offXUnits === '%' ){
+    x += (nodeTW - w) * offXPfVal;
+  } else {
+    x += offXPfVal;
   }
 
   var y = (nodeY - nodeTH / 2); // top
-  if( getIndexedStyle( node, 'background-position-y', 'units', index ) === '%' ){
-    y += (nodeTH - h) * getIndexedStyle( node, 'background-position-y', 'pfValue', index );
+  var posYUnits = getIndexedStyle( node, 'background-position-y', 'units', index );
+  var posYPfVal = getIndexedStyle( node, 'background-position-y', 'pfValue', index );
+  if( posYUnits === '%' ){
+    y += (nodeTH - h) * posYPfVal;
   } else {
-    y += getIndexedStyle( node, 'background-position-y', 'pfValue', index );
+    y += posYPfVal;
+  }
+
+  var offYUnits = getIndexedStyle( node, 'background-offset-y', 'units', index );
+  var offYPfVal = getIndexedStyle( node, 'background-offset-y', 'pfValue', index );
+  if( offYUnits === '%' ){
+    y += (nodeTH - h) * offYPfVal;
+  } else {
+    y += offYPfVal;
   }
 
   if( rs.pathCache ){

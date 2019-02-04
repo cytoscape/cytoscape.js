@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2016-2018, The Cytoscape Consortium.
+ * Copyright (c) 2016-2019, The Cytoscape Consortium.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the “Software”), to deal in
@@ -5474,6 +5474,9 @@ api.reject = function (val) {
 var Promise$1 = typeof Promise !== 'undefined' ? Promise : api; // eslint-disable-line no-undef
 
 var Animation = function Animation(target, opts, opts2) {
+  var isCore = core(target);
+  var isEle = !isCore;
+
   var _p = this._private = extend({
     duration: 1000
   }, opts, opts2);
@@ -5490,6 +5493,24 @@ var Animation = function Animation(target, opts, opts2) {
 
   if (_p.complete && fn(_p.complete)) {
     _p.completes.push(_p.complete);
+  }
+
+  if (isEle) {
+    var pos = target.position();
+    _p.startPosition = _p.startPosition || {
+      x: pos.x,
+      y: pos.y
+    };
+    _p.startStyle = _p.startStyle || target.cy().style().getAnimationStartStyle(target, _p.style);
+  }
+
+  if (isCore) {
+    var pan = target.pan();
+    _p.startPan = {
+      x: pan.x,
+      y: pan.y
+    };
+    _p.startZoom = target.zoom();
   } // for future timeline/animations impl
 
 
@@ -8618,6 +8639,8 @@ var updateBounds = function updateBounds(b, x1, y1, x2, y2) {
   b.x2 = x2 > b.x2 ? x2 : b.x2;
   b.y1 = y1 < b.y1 ? y1 : b.y1;
   b.y2 = y2 > b.y2 ? y2 : b.y2;
+  b.w = b.x2 - b.x1;
+  b.h = b.y2 - b.y1;
 };
 
 var updateBoundsFromBox = function updateBoundsFromBox(b, b2) {
@@ -8768,16 +8791,39 @@ var updateBoundsFromLabel = function updateBoundsFromLabel(bounds, ele, prefix) 
     if (isAutorotate || isPfValue) {
       var theta = isAutorotate ? prefixedProperty(_p.rstyle, 'labelAngle', prefix) : rotation.pfValue;
       var cos = Math.cos(theta);
-      var sin = Math.sin(theta);
-      var xMid = (lx1 + lx2) / 2;
-      var yMid = (ly1 + ly2) / 2;
+      var sin = Math.sin(theta); // rotation point (default value for center-center)
+
+      var xo = (lx1 + lx2) / 2;
+      var yo = (ly1 + ly2) / 2;
+
+      if (!isEdge) {
+        switch (halign.value) {
+          case 'left':
+            xo = lx2;
+            break;
+
+          case 'right':
+            xo = lx1;
+            break;
+        }
+
+        switch (valign.value) {
+          case 'top':
+            yo = ly2;
+            break;
+
+          case 'bottom':
+            yo = ly1;
+            break;
+        }
+      }
 
       var rotate = function rotate(x, y) {
-        x = x - xMid;
-        y = y - yMid;
+        x = x - xo;
+        y = y - yo;
         return {
-          x: x * cos - y * sin + xMid,
-          y: x * sin + y * cos + yMid
+          x: x * cos - y * sin + xo,
+          y: x * sin + y * cos + yo
         };
       };
 
@@ -8814,6 +8860,7 @@ var boundingBoxImpl = function boundingBoxImpl(ele, options) {
 
   var displayed = display !== 'none';
   var rstyle = _p.rstyle;
+  var manualExpansion = isNode && styleEnabled ? ele.pstyle('bounds-expansion').pfValue : 0;
 
   if (displayed) {
     var overlayOpacity = 0;
@@ -8962,6 +9009,7 @@ var boundingBoxImpl = function boundingBoxImpl(ele, options) {
 
     var bbBody = _p.bodyBounds = _p.bodyBounds || {};
     assignBoundingBox(bbBody, bounds);
+    expandBoundingBox(bbBody, manualExpansion);
     expandBoundingBox(bbBody, 1); // expand to work around browser dimension inaccuracies
     // overlay
     //////////
@@ -8977,6 +9025,7 @@ var boundingBoxImpl = function boundingBoxImpl(ele, options) {
 
     var bbOverlay = _p.overlayBounds = _p.overlayBounds || {};
     assignBoundingBox(bbOverlay, bounds);
+    expandBoundingBox(bbOverlay, manualExpansion);
     expandBoundingBox(bbOverlay, 1); // expand to work around browser dimension inaccuracies
     // handle label dimensions
     //////////////////////////
@@ -8996,10 +9045,6 @@ var boundingBoxImpl = function boundingBoxImpl(ele, options) {
         updateBoundsFromLabel(bounds, ele, 'source', options);
         updateBoundsFromLabel(bounds, ele, 'target', options);
       }
-
-      var bbAll = bbLabels.all;
-      bbAll.w = bbAll.x2 - bbAll.x1;
-      bbAll.h = bbAll.y2 - bbAll.y1;
     } // style enabled for labels
 
   } // if displayed
@@ -9010,9 +9055,14 @@ var boundingBoxImpl = function boundingBoxImpl(ele, options) {
   bounds.x2 = noninf(bounds.x2);
   bounds.y2 = noninf(bounds.y2);
   bounds.w = noninf(bounds.x2 - bounds.x1);
-  bounds.h = noninf(bounds.y2 - bounds.y1); // expand bounds by 1 because antialiasing can increase the visual/effective size by 1 on all sides
+  bounds.h = noninf(bounds.y2 - bounds.y1);
 
-  expandBoundingBox(bounds, bounds.w > 0 && bounds.h > 0 && displayed ? 1 : 0);
+  if (bounds.w > 0 && bounds.h > 0 && displayed) {
+    expandBoundingBox(bounds, manualExpansion); // expand bounds by 1 because antialiasing can increase the visual/effective size by 1 on all sides
+
+    expandBoundingBox(bounds, 1);
+  }
+
   return bounds;
 };
 
@@ -9036,11 +9086,11 @@ var getBoundingBoxPosKey = function getBoundingBoxPosKey(ele) {
     var p1 = ele.source().position();
     var p2 = ele.target().position();
 
-    var round = function round(x) {
+    var r = function r(x) {
       return Math.round(x);
     };
 
-    return hashIntsArray([p1.x, p1.y, p2.x, p2.y].map(round));
+    return hashIntsArray([r(p1.x), r(p1.y), r(p2.x), r(p2.y)]);
   } else {
     return 0;
   }
@@ -9052,10 +9102,15 @@ var cachedBoundingBoxImpl = function cachedBoundingBoxImpl(ele, opts) {
   var key = opts == null ? defBbOptsKey : getKey(opts);
   var usingDefOpts = key === defBbOptsKey;
   var currPosKey = getBoundingBoxPosKey(ele);
-  var useCache = opts.useCache && _p.bbCachePosKey === currPosKey;
+  var isPosKeySame = _p.bbCachePosKey === currPosKey;
+  var useCache = opts.useCache && isPosKeySame;
   var needRecalc = !useCache || _p.bbCache == null;
 
   if (needRecalc) {
+    if (!isPosKeySame) {
+      ele.recalculateRenderedStyle(false);
+    }
+
     bb = boundingBoxImpl(ele, defBbOpts);
     _p.bbCache = bb;
     _p.bbCacheShift.x = _p.bbCacheShift.y = 0;
@@ -9155,14 +9210,21 @@ elesfn$j.boundingBox = function (options) {
   var styleEnabled = cy.styleEnabled();
 
   if (styleEnabled) {
-    this.recalculateRenderedStyle(opts.useCache);
+    for (var i = 0; i < eles.length; i++) {
+      var ele = eles[i];
+      var _p = ele._private;
+      var currPosKey = getBoundingBoxPosKey(ele);
+      var isPosKeySame = _p.bbCachePosKey === currPosKey;
+      var useCache = opts.useCache && isPosKeySame;
+      ele.recalculateRenderedStyle(useCache);
+    }
   }
 
   this.updateCompoundBounds();
 
-  for (var i = 0; i < eles.length; i++) {
-    var ele = eles[i];
-    updateBoundsFromBox(bounds, cachedBoundingBoxImpl(ele, opts));
+  for (var _i = 0; _i < eles.length; _i++) {
+    var _ele = eles[_i];
+    updateBoundsFromBox(bounds, cachedBoundingBoxImpl(_ele, opts));
   }
 
   bounds.x1 = noninf(bounds.x1);
@@ -9618,7 +9680,7 @@ var forEachEvent = function forEachEvent(self, handler, events, qualifier, callb
     }
   }
 
-  var eventList = events.split(/\s+/);
+  var eventList = array(events) ? events : events.split(/\s+/);
 
   for (var i = 0; i < eventList.length; i++) {
     var evt = eventList[i];
@@ -9656,7 +9718,7 @@ var forEachEventObj = function forEachEventObj(self, handler, events) {
     return;
   }
 
-  var eventList = events.split(/\s+/);
+  var eventList = array(events) ? events : events.split(/\s+/);
 
   for (var i = 0; i < eventList.length; i++) {
     var evt = eventList[i];
@@ -9863,33 +9925,41 @@ var elesfn$l = {
     return this._private.emitter;
   },
   on: function on(events, selector, callback) {
+    var argSel = argSelector(selector);
+
     for (var i = 0; i < this.length; i++) {
       var ele = this[i];
-      ele.emitter().on(events, argSelector(selector), callback);
+      ele.emitter().on(events, argSel, callback);
     }
 
     return this;
   },
   removeListener: function removeListener(events, selector, callback) {
+    var argSel = argSelector(selector);
+
     for (var i = 0; i < this.length; i++) {
       var ele = this[i];
-      ele.emitter().removeListener(events, argSelector(selector), callback);
+      ele.emitter().removeListener(events, argSel, callback);
     }
 
     return this;
   },
   one: function one(events, selector, callback) {
+    var argSel = argSelector(selector);
+
     for (var i = 0; i < this.length; i++) {
       var ele = this[i];
-      ele.emitter().one(events, argSelector(selector), callback);
+      ele.emitter().one(events, argSel, callback);
     }
 
     return this;
   },
   once: function once(events, selector, callback) {
+    var argSel = argSelector(selector);
+
     for (var i = 0; i < this.length; i++) {
       var ele = this[i];
-      ele.emitter().on(events, argSelector(selector), callback, {
+      ele.emitter().on(events, argSel, callback, {
         once: true,
         onceCollection: this
       });
@@ -10398,7 +10468,9 @@ var zIndexSort = function zIndexSort(a, b) {
 var elesfn$o = {
   forEach: function forEach(fn$$1, thisArg) {
     if (fn(fn$$1)) {
-      for (var i = 0; i < this.length; i++) {
+      var N = this.length;
+
+      for (var i = 0; i < N; i++) {
         var ele = this[i];
         var ret = thisArg ? fn$$1.apply(thisArg, [ele, i, this]) : fn$$1(ele, i, this);
 
@@ -10532,8 +10604,8 @@ var elesfn$p = {
     var cy = this.cy();
     var layoutEles = options.eles; // nodes & edges
 
-    var getMemoizeKey = function getMemoizeKey(node, i) {
-      return node.id() + '$' + i;
+    var getMemoizeKey = function getMemoizeKey(node) {
+      return node.id();
     };
 
     var fnMem = memoize(fn, getMemoizeKey); // memoized version of position function
@@ -10782,26 +10854,6 @@ var elesfn$q = {
     }
 
     var changedEles = style$$1.apply(updatedEles);
-
-    if (notifyRenderer) {
-      changedEles.emitAndNotify('style'); // let renderer know we changed style
-    } else {
-      changedEles.emit('style'); // just fire the event
-    }
-
-    return this; // chaining
-  },
-  // just update the mappers in the elements' styles; cheaper than eles.updateStyle()
-  updateMappers: function updateMappers(notifyRenderer) {
-    var cy = this._private.cy;
-    var style$$1 = cy.style();
-    notifyRenderer = notifyRenderer || notifyRenderer === undefined ? true : false;
-
-    if (!cy.styleEnabled()) {
-      return this;
-    }
-
-    var changedEles = style$$1.updateMappers(this);
 
     if (notifyRenderer) {
       changedEles.emitAndNotify('style'); // let renderer know we changed style
@@ -11123,11 +11175,14 @@ function defineSwitchFunction(params) {
       var handler = args[1];
       this.on(params.event, data, handler);
     } // e.g. cy.nodes().select( handler )
-    else if (args.length === 1) {
+    else if (args.length === 1 && fn(args[0])) {
         var _handler = args[0];
         this.on(params.event, _handler);
       } // e.g. cy.nodes().select()
-      else if (args.length === 0) {
+      // e.g. (private) cy.nodes().select(['tapselect'])
+      else if (args.length === 0 || args.length === 1 && array(args[0])) {
+          var addlEvents = args.length === 1 ? args[0] : null;
+
           for (var i = 0; i < this.length; i++) {
             var ele = this[i];
             var able = !params.ableField || ele._private[params.ableField];
@@ -11159,6 +11214,10 @@ function defineSwitchFunction(params) {
           changedColl.updateStyle(); // change of state => possible change of style
 
           changedColl.emit(params.event);
+
+          if (addlEvents) {
+            changedColl.emit(addlEvents);
+          }
         }
 
     return this;
@@ -11639,12 +11698,17 @@ function defineParallelEdgesFunction(params) {
 
 
 extend(elesfn$s, {
-  components: function components() {
+  components: function components(root) {
     var self = this;
     var cy = self.cy();
-    var visited = self.spawn();
-    var unvisited = self.nodes().spawnSelf();
+    var visited = cy.collection();
+    var unvisited = root == null ? self.nodes() : root.nodes();
     var components = [];
+
+    if (root != null && unvisited.empty()) {
+      // root may contain only edges
+      unvisited = root.sources(); // doesn't matter which node to use (undirected), so just use the source sides
+    }
 
     var visitInComponent = function visitInComponent(node, component) {
       visited.merge(node);
@@ -11657,16 +11721,26 @@ extend(elesfn$s, {
     }
 
     var _loop = function _loop() {
-      var component = cy.collection();
-      components.push(component);
+      // each iteration yields a component
+      var cmpt = cy.collection();
+      components.push(cmpt);
       var root = unvisited[0];
-      visitInComponent(root, component);
+      visitInComponent(root, cmpt);
       self.bfs({
         directed: false,
         roots: root,
-        visit: function visit(v, e, u, i, depth) {
-          visitInComponent(v, component);
+        visit: function visit(v) {
+          return visitInComponent(v, cmpt);
         }
+      });
+      cmpt.forEach(function (node) {
+        node.connectedEdges().forEach(function (e) {
+          // connectedEdges() usually cached
+          if (cmpt.has(e.source()) && cmpt.has(e.target())) {
+            // has() is cheap
+            cmpt.merge(e); // forEach() only considers nodes -- sets N at call time
+          }
+        });
       });
     };
 
@@ -11674,14 +11748,14 @@ extend(elesfn$s, {
       _loop();
     } while (unvisited.length > 0);
 
-    return components.map(function (component) {
-      var connectedEdges = component.connectedEdges().stdFilter(function (edge) {
-        return component.anySame(edge.source()) && component.anySame(edge.target());
-      });
-      return component.union(connectedEdges);
-    });
+    return components;
+  },
+  component: function component() {
+    var ele = this[0];
+    return ele.cy().mutableElements().components(ele)[0];
   }
 });
+elesfn$s.componentsOf = elesfn$s.components;
 
 var idFactory = {
   generate: function generate(cy, element$$1, tryThisId) {
@@ -11989,16 +12063,13 @@ elesfn$t.clone = function () {
 
 elesfn$t.copy = elesfn$t.clone;
 
-elesfn$t.restore = function (notifyRenderer) {
+elesfn$t.restore = function () {
+  var notifyRenderer = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : true;
+  var addToPool = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
   var self = this;
   var cy = self.cy();
-  var cy_p = cy._private;
-
-  if (notifyRenderer === undefined) {
-    notifyRenderer = true;
-  } // create arrays of nodes and edges, since we need to
+  var cy_p = cy._private; // create arrays of nodes and edges, since we need to
   // restore the nodes first
-
 
   var nodes = [];
   var edges = [];
@@ -12007,7 +12078,7 @@ elesfn$t.restore = function (notifyRenderer) {
   for (var _i2 = 0, l = self.length; _i2 < l; _i2++) {
     var ele = self[_i2];
 
-    if (!ele.removed()) {
+    if (addToPool && !ele.removed()) {
       // don't need to handle this ele
       continue;
     } // keep nodes first in the array and edges after
@@ -12039,7 +12110,7 @@ elesfn$t.restore = function (notifyRenderer) {
     _ele.clearTraversalCache(); // set id and validate
 
 
-    if (_data3.id === undefined) {
+    if (!addToPool && !_private.removed) ; else if (_data3.id === undefined) {
       _data3.id = idFactory.generate(cy, _ele);
     } else if (number(_data3.id)) {
       _data3.id = '' + _data3.id; // now it's a string
@@ -12123,7 +12194,10 @@ elesfn$t.restore = function (notifyRenderer) {
     });
 
     _private.removed = false;
-    cy.addToPool(_ele);
+
+    if (addToPool) {
+      cy.addToPool(_ele);
+    }
   } // for each element
   // do compound node sanity checks
 
@@ -12210,7 +12284,7 @@ elesfn$t.restore = function (notifyRenderer) {
 
     if (notifyRenderer) {
       restored.emitAndNotify('add');
-    } else {
+    } else if (addToPool) {
       restored.emit('add');
     }
   }
@@ -12228,17 +12302,14 @@ elesfn$t.inside = function () {
   return ele && !ele._private.removed;
 };
 
-elesfn$t.remove = function (notifyRenderer) {
+elesfn$t.remove = function () {
+  var notifyRenderer = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : true;
+  var removeFromPool = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
   var self = this;
   var removed = [];
   var elesToRemove = [];
   var elesToRemoveIds = {};
-  var cy = self._private.cy;
-
-  if (notifyRenderer === undefined) {
-    notifyRenderer = true;
-  } // add connected edges
-
+  var cy = self._private.cy; // add connected edges
 
   function addConnectedEdges(node) {
     var edges = node._private.edges;
@@ -12260,7 +12331,7 @@ elesfn$t.remove = function (notifyRenderer) {
   function add(ele) {
     var alreadyAdded = elesToRemoveIds[ele.id()];
 
-    if (ele.removed() || alreadyAdded) {
+    if (removeFromPool && ele.removed() || alreadyAdded) {
       return;
     } else {
       elesToRemoveIds[ele.id()] = true;
@@ -12303,7 +12374,9 @@ elesfn$t.remove = function (notifyRenderer) {
     parent = parent[0];
     var children = parent._private.children;
     var pid = parent.id();
-    removeFromArray(children, ele);
+    removeFromArray(children, ele); // remove parent => child ref
+
+    ele._private.parent = null; // remove child => parent ref
 
     if (!alteredParents.ids[pid]) {
       alteredParents.ids[pid] = true;
@@ -12312,12 +12385,19 @@ elesfn$t.remove = function (notifyRenderer) {
   }
 
   self.dirtyCompoundBoundsCache();
-  cy.removeFromPool(elesToRemove); // remove from core pool
+
+  if (removeFromPool) {
+    cy.removeFromPool(elesToRemove); // remove from core pool
+  }
 
   for (var _i5 = 0; _i5 < elesToRemove.length; _i5++) {
-    var _ele3 = elesToRemove[_i5]; // mark as removed
+    var _ele3 = elesToRemove[_i5];
 
-    _ele3._private.removed = true; // add to list of removed elements
+    if (removeFromPool) {
+      // mark as removed
+      _ele3._private.removed = true;
+    } // add to list of removed elements
+
 
     removed.push(_ele3);
 
@@ -12359,7 +12439,7 @@ elesfn$t.remove = function (notifyRenderer) {
     // must manually notify since trigger won't do this automatically once removed
     if (notifyRenderer) {
       removedElements.emitAndNotify('remove');
-    } else {
+    } else if (removeFromPool) {
       removedElements.emit('remove');
     }
   } // the parents who were modified by the removal need their style updated
@@ -12368,45 +12448,51 @@ elesfn$t.remove = function (notifyRenderer) {
   for (var _i7 = 0; _i7 < alteredParents.length; _i7++) {
     var _ele5 = alteredParents[_i7];
 
-    if (!_ele5.removed()) {
+    if (!removeFromPool || !_ele5.removed()) {
       _ele5.updateStyle();
     }
   }
 
-  return new Collection(cy, removed);
+  return removedElements;
 };
 
 elesfn$t.move = function (struct) {
   var cy = this._private.cy;
+  var eles = this; // just clean up refs, caches, etc. in the same way as when removing and then restoring
+  // (our calls to remove/restore do not remove from the graph or make events)
+
+  var notifyRenderer = false;
+  var modifyPool = false;
 
   if (struct.source !== undefined || struct.target !== undefined) {
     var srcId = struct.source;
     var tgtId = struct.target;
-    var srcExists = cy.hasElementWithId(srcId);
-    var tgtExists = cy.hasElementWithId(tgtId);
+    var srcExists = srcId != null && cy.hasElementWithId(srcId);
+    var tgtExists = tgtId != null && cy.hasElementWithId(tgtId);
 
     if (srcExists || tgtExists) {
-      var jsons = this.jsons();
-      this.remove();
+      cy.batch(function () {
+        // avoid duplicate style updates
+        eles.remove(notifyRenderer, modifyPool); // clean up refs etc.
 
-      for (var i = 0; i < jsons.length; i++) {
-        var json = jsons[i];
-        var ele = this[i];
+        for (var i = 0; i < eles.length; i++) {
+          var ele = eles[i];
+          var _data5 = ele._private.data;
 
-        if (json.group === 'edges') {
-          if (srcExists) {
-            json.data.source = srcId;
+          if (ele.isEdge()) {
+            if (srcExists) {
+              _data5.source = srcId;
+            }
+
+            if (tgtExists) {
+              _data5.target = tgtId;
+            }
           }
-
-          if (tgtExists) {
-            json.data.target = tgtId;
-          }
-
-          json.scratch = ele._private.scratch;
         }
-      }
 
-      return cy.add(jsons);
+        eles.restore(notifyRenderer, modifyPool); // make new refs, style, etc.
+      });
+      eles.emitAndNotify('move');
     }
   } else if (struct.parent !== undefined) {
     // move node to new parent
@@ -12414,27 +12500,27 @@ elesfn$t.move = function (struct) {
     var parentExists = parentId === null || cy.hasElementWithId(parentId);
 
     if (parentExists) {
-      var _jsons = this.jsons();
+      var pidToAssign = parentId === null ? undefined : parentId;
+      cy.batch(function () {
+        // avoid duplicate style updates
+        var updated = eles.remove(notifyRenderer, modifyPool); // clean up refs etc.
 
-      var descs = this.descendants();
-      var descsEtcJsons = descs.union(descs.union(this).connectedEdges()).jsons();
-      this.remove(); // NB: also removes descendants and their connected edges
+        for (var i = 0; i < eles.length; i++) {
+          var ele = eles[i];
+          var _data6 = ele._private.data;
 
-      for (var _i8 = 0; _i8 < _jsons.length; _i8++) {
-        var _json = _jsons[_i8];
-        var _ele6 = this[_i8];
-
-        if (_json.group === 'nodes') {
-          _json.data.parent = parentId === null ? undefined : parentId;
-          _json.scratch = _ele6._private.scratch;
+          if (ele.isNode()) {
+            _data6.parent = pidToAssign;
+          }
         }
-      }
 
-      return cy.add(_jsons.concat(descsEtcJsons));
+        updated.restore(notifyRenderer, modifyPool); // make new refs, style, etc.
+      });
+      eles.emitAndNotify('move');
     }
   }
 
-  return this; // if nothing done
+  return this;
 };
 
 [elesfn$b, elesfn$c, elesfn$d, elesfn$e, elesfn$f, data$1, elesfn$h, dimensions, elesfn$l, elesfn$m, elesfn$n, elesfn$o, elesfn$p, elesfn$q, elesfn$r, elesfn$s].forEach(function (props) {
@@ -13056,30 +13142,7 @@ function valid(start, end) {
 }
 
 function startAnimation(self, ani, now, isCore) {
-  var isEles = !isCore;
-  var ele = self;
   var ani_p = ani._private;
-  var cy = isCore ? self : self.cy();
-  var style = cy.style();
-
-  if (isEles) {
-    var pos = ele.position();
-    ani_p.startPosition = ani_p.startPosition || {
-      x: pos.x,
-      y: pos.y
-    };
-    ani_p.startStyle = ani_p.startStyle || style.getAnimationStartStyle(ele, ani_p.style);
-  }
-
-  if (isCore) {
-    var pan = cy._private.pan;
-    ani_p.startPan = ani_p.startPan || {
-      x: pan.x,
-      y: pan.y
-    };
-    ani_p.startZoom = ani_p.startZoom != null ? ani_p.startZoom : cy._private.zoom;
-  }
-
   ani_p.started = true;
   ani_p.startTime = now - ani_p.progress * ani_p.duration;
 }
@@ -13504,6 +13567,14 @@ var corefn$4 = {
   }
 };
 
+var rendererDefaults = defaults({
+  motionBlur: false,
+  motionBlurOpacity: 0.05,
+  pixelRatio: undefined,
+  desktopTapThreshold: 4,
+  touchTapThreshold: 8,
+  wheelSensitivity: 1
+});
 var corefn$5 = {
   renderTo: function renderTo(context, zoom, pan, pxRatio) {
     var r = this._private.renderer;
@@ -13531,19 +13602,12 @@ var corefn$5 = {
       return;
     }
 
-    var defaults$$1 = {
-      motionBlur: false,
-      motionBlurOpacity: 0.05,
-      pixelRatio: undefined,
-      desktopTapThreshold: 4,
-      touchTapThreshold: 8,
-      wheelSensitivity: 1
-    };
-    var rOpts = extend({}, defaults$$1, options, {
-      cy: cy,
-      wheelSensitivity: number(options.wheelSensitivity) && options.wheelSensitivity > 0 ? options.wheelSensitivity : defaults$$1.wheelSensitivity,
-      pixelRatio: number(options.pixelRatio) && options.pixelRatio > 0 ? options.pixelRatio : defaults$$1.pixelRatio
-    });
+    if (options.wheelSensitivity !== undefined) {
+      warn("You have set a custom wheel sensitivity.  This will make your app zoom unnaturally when using mainstream mice.  You should change this value from the default only if you can guarantee that all your users will use the same hardware and OS configuration as your current machine.");
+    }
+
+    var rOpts = rendererDefaults(options);
+    rOpts.cy = cy;
     cy._private.renderer = new RendererProto(rOpts);
     this.notify('init');
   },
@@ -13571,11 +13635,11 @@ var corefn$5 = {
       _p.animation.queue = [];
     });
   },
-  onRender: function onRender(fn$$1) {
-    return this.on('render', fn$$1);
+  onRender: function onRender(fn) {
+    return this.on('render', fn);
   },
-  offRender: function offRender(fn$$1) {
-    return this.off('render', fn$$1);
+  offRender: function offRender(fn) {
+    return this.off('render', fn);
   }
 };
 corefn$5.invalidateDimensions = corefn$5.resize;
@@ -13703,7 +13767,7 @@ styfn.getPropertiesDiff = function (oldCxtKey, newCxtKey) {
     var cxtHasDiffed = oldHasCxt !== newHasCxt;
     var cxtHasMappedProps = cxt.mappedProperties.length > 0;
 
-    if (cxtHasDiffed || cxtHasMappedProps) {
+    if (cxtHasDiffed || newHasCxt && cxtHasMappedProps) {
       var props = void 0;
 
       if (cxtHasDiffed && cxtHasMappedProps) {
@@ -13824,6 +13888,7 @@ styfn.applyContextStyle = function (cxtMeta, cxtStyle, ele) {
   var self = this;
   var diffProps = cxtMeta.diffPropNames;
   var retDiffProps = {};
+  var types = self.types;
 
   for (var i = 0; i < diffProps.length; i++) {
     var diffPropName = diffProps[i];
@@ -13851,7 +13916,18 @@ styfn.applyContextStyle = function (cxtMeta, cxtStyle, ele) {
 
     if (eleProp === cxtProp) {
       continue;
-    }
+    } // save cycles when a mapped context prop doesn't need to be applied
+
+
+    if (cxtProp.mapped === types.fn && // context prop is function mapper
+    eleProp.mapping === cxtProp // the current prop on the ele is a flat prop value for the function mapper
+    ) {
+        cxtProp.fnValue = cxtProp.value(ele); // temporarily cache the value in case of a miss
+
+        if (cxtProp.fnValue === cxtProp.prevFnValue) {
+          continue;
+        }
+      }
 
     var retDiffProp = retDiffProps[diffPropName] = {
       prev: eleProp
@@ -13899,6 +13975,15 @@ styfn.updateStyleHints = function (ele) {
 
   var updateGrKey = function updateGrKey(val, grKey) {
     return _p.styleKeys[grKey] = hashInt(val, _p.styleKeys[grKey]);
+  }; // - hashing works on 32 bit ints b/c we use bitwise ops
+  // - small numbers get cut off (e.g. 0.123 is seen as 0 by the hashing function)
+  // - raise up small numbers so more significant digits are seen by hashing
+  // - make small numbers negative to avoid collisions -- most style values are positive numbers
+  // - works in practice and it's relatively cheap
+
+
+  var cleanNum = function cleanNum(val) {
+    return -128 < val && val < 128 && Math.floor(val) !== val ? -(val * 1024 | 0) : val;
   };
 
   for (var _i = 0; _i < propNames.length; _i++) {
@@ -13911,7 +13996,8 @@ styfn.updateStyleHints = function (ele) {
 
     var propInfo = this.properties[name];
     var type = propInfo.type;
-    var _grKey = propInfo.groupKey;
+    var _grKey = propInfo.groupKey; // numbers are cheaper to hash than strings
+    // 1 hash op vs n hash ops (for length n string)
 
     if (type.number) {
       // use pfValue if available (e.g. normalised units)
@@ -13919,10 +14005,10 @@ styfn.updateStyleHints = function (ele) {
 
       if (type.multiple) {
         for (var _i2 = 0; _i2 < v.length; _i2++) {
-          updateGrKey(v[_i2], _grKey);
+          updateGrKey(cleanNum(v[_i2]), _grKey);
         }
       } else {
-        updateGrKey(v, _grKey);
+        updateGrKey(cleanNum(v), _grKey);
       }
     } else {
       var strVal = parsedProp.strValue;
@@ -14196,7 +14282,9 @@ styfn.applyParsedProperty = function (ele, parsedProp) {
     case types.fn:
       {
         var fn$$1 = prop.value;
-        var fnRetVal = fn$$1(ele);
+        var fnRetVal = prop.fnValue || fn$$1(ele); // check for cached value before calling function
+
+        prop.prevFnValue = fnRetVal;
 
         if (fnRetVal == null) {
           warn('Custom function mappers may not return null (i.e. `' + prop.name + '` for ele `' + ele.id() + '` is null)');
@@ -14286,44 +14374,6 @@ styfn.update = function () {
   var cy = this._private.cy;
   var eles = cy.mutableElements();
   eles.updateStyle();
-}; // just update the functional properties (i.e. mappings) in the elements'
-// styles (less expensive than recalculation)
-
-
-styfn.updateMappers = function (eles) {
-  var cy = this._private.cy;
-  var updatedEles = cy.collection();
-
-  for (var i = 0; i < eles.length; i++) {
-    // for each ele
-    var ele = eles[i];
-    var style$$1 = ele._private.style;
-    var updatedEle = false;
-    var propNames = Object.keys(style$$1);
-
-    for (var j = 0; j < propNames.length; j++) {
-      // for each prop
-      var propName = propNames[j];
-      var propInStyle = style$$1[propName];
-
-      if (propInStyle != null && propInStyle.mapping) {
-        var mapping = propInStyle.mapping;
-        this.applyParsedProperty(ele, mapping); // reapply the mapping property
-
-        updatedEle = true;
-      }
-    }
-
-    if (updatedEle) {
-      var hintDiff = this.updateStyleHints(ele);
-
-      if (hintDiff) {
-        updatedEles.merge(ele);
-      }
-    }
-  }
-
-  return updatedEles;
 }; // diffProps : { name => { prev, next } }
 
 
@@ -15599,6 +15649,10 @@ var styfn$6 = {};
     name: 'padding-relative-to',
     type: t.paddingRelativeTo,
     triggersBounds: diff.any
+  }, {
+    name: 'bounds-expansion',
+    type: t.size,
+    triggersBounds: diff.any
   }];
   var nodeBorder = [{
     name: 'border-color',
@@ -15650,6 +15704,12 @@ var styfn$6 = {};
   }, {
     name: 'background-height',
     type: t.bgWH
+  }, {
+    name: 'background-offset-x',
+    type: t.bgPos
+  }, {
+    name: 'background-offset-y',
+    type: t.bgPos
   }];
   var compound = [{
     name: 'position',
@@ -16031,6 +16091,8 @@ styfn$6.getDefaultProperties = function () {
     'background-image-opacity': 1,
     'background-position-x': '50%',
     'background-position-y': '50%',
+    'background-offset-x': 0,
+    'background-offset-y': 0,
     'background-width-relative-to': 'include-padding',
     'background-height-relative-to': 'include-padding',
     'background-repeat': 'no-repeat',
@@ -16046,6 +16108,7 @@ styfn$6.getDefaultProperties = function () {
     'width': 30,
     'shape': 'ellipse',
     'shape-polygon-points': '-1, -1,   1, -1,   1, 1,   -1, 1',
+    'bounds-expansion': 0,
     // node gradient
     'background-gradient-direction': 'to-bottom',
     'background-gradient-stop-colors': '#999',
@@ -17094,7 +17157,7 @@ var corefn$8 = {
       _p.maxZoom = max$$1;
     } else if (number(min$$1) && max$$1 === undefined && min$$1 <= _p.maxZoom) {
       _p.minZoom = min$$1;
-    } else if (number(max$$1) && min$$1 === undefined && max$$1 <= _p.minZoom) {
+    } else if (number(max$$1) && min$$1 === undefined && max$$1 >= _p.minZoom) {
       _p.maxZoom = max$$1;
     }
 
@@ -17502,7 +17565,9 @@ var Core = function Core(opts) {
   } // create the renderer
 
 
-  cy.initRenderer(options.renderer);
+  var rendererOptions = extend({}, options, options.renderer); // allow rendering hints in top level options
+
+  cy.initRenderer(rendererOptions);
 
   var setElesAndLayout = function setElesAndLayout(elements, onload, ondone) {
     cy.notifications(false); // remove old elements
@@ -17671,6 +17736,10 @@ extend(corefn$9, {
     var _p = cy._private;
     var eles = cy.mutableElements();
 
+    var getFreshRef = function getFreshRef(ele) {
+      return cy.getElementById(ele.id());
+    };
+
     if (plainObject(obj)) {
       // set
       cy.startBatch();
@@ -17731,25 +17800,28 @@ extend(corefn$9, {
               updateEles(elements, gr);
             }
           }
-        } // elements not specified in json should be removed
-
-
-        for (var _i2 = 0; _i2 < eles.length; _i2++) {
-          var ele = eles[_i2];
-          var remove = !idInJson[ele.id()];
-
-          if (remove) {
-            if (ele.isParent()) {
-              ele.children().move({
-                parent: null
-              }); // so that children are not removed w/ parent
-
-              ele.remove(); // remove parent
-            } else {
-              ele.remove();
-            }
-          }
         }
+
+        var parentsToRemove = cy.collection();
+        eles.filter(function (ele) {
+          return !idInJson[ele.id()];
+        }).forEach(function (ele) {
+          if (ele.isParent()) {
+            parentsToRemove.merge(ele);
+          } else {
+            ele.remove();
+          }
+        }); // so that children are not removed w/parent
+
+        parentsToRemove.forEach(function (ele) {
+          return ele.children().move({
+            parent: null
+          });
+        }); // intermediate parents may be moved by prior line, so make sure we remove by fresh refs
+
+        parentsToRemove.forEach(function (ele) {
+          return getFreshRef(ele).remove();
+        });
       }
 
       if (obj.style) {
@@ -17768,8 +17840,8 @@ extend(corefn$9, {
 
       var fields = ['minZoom', 'maxZoom', 'zoomingEnabled', 'userZoomingEnabled', 'panningEnabled', 'userPanningEnabled', 'boxSelectionEnabled', 'autolock', 'autoungrabify', 'autounselectify'];
 
-      for (var _i3 = 0; _i3 < fields.length; _i3++) {
-        var f = fields[_i3];
+      for (var _i2 = 0; _i2 < fields.length; _i2++) {
+        var f = fields[_i2];
 
         if (obj[f] != null) {
           cy[f](obj[f]);
@@ -21735,6 +21807,7 @@ BRp$3.getSegmentPoints = function (edge) {
   var type = rs.edgeType;
 
   if (type === 'segments') {
+    this.recalculateRenderedStyle(edge);
     return getPts(rs.segpts);
   }
 };
@@ -21744,12 +21817,14 @@ BRp$3.getControlPoints = function (edge) {
   var type = rs.edgeType;
 
   if (type === 'bezier' || type === 'multibezier' || type === 'self' || type === 'compound') {
+    this.recalculateRenderedStyle(edge);
     return getPts(rs.ctrlpts);
   }
 };
 
 BRp$3.getEdgeMidpoint = function (edge) {
   var rs = edge[0]._private.rscratch;
+  this.recalculateRenderedStyle(edge);
   return {
     x: rs.midX,
     y: rs.midY
@@ -21957,6 +22032,7 @@ BRp$4.findEndpoints = function (edge) {
 
 BRp$4.getSourceEndpoint = function (edge) {
   var rs = edge[0]._private.rscratch;
+  this.recalculateRenderedStyle(edge);
 
   switch (rs.edgeType) {
     case 'haystack':
@@ -21975,6 +22051,7 @@ BRp$4.getSourceEndpoint = function (edge) {
 
 BRp$4.getTargetEndpoint = function (edge) {
   var rs = edge[0]._private.rscratch;
+  this.recalculateRenderedStyle(edge);
 
   switch (rs.edgeType) {
     case 'haystack':
@@ -22752,7 +22829,6 @@ BRp$9.invalidateCachedZSortedEles = function () {
 
 BRp$9.getCachedZSortedEles = function (forceRecalc) {
   if (forceRecalc || !this.cachedZSortedEles) {
-    //console.time('cachezorder')
     var eles = this.cy.mutableElements().toArray();
     eles.sort(zIndexSort);
     eles.interactive = eles.filter(function (ele) {
@@ -23684,21 +23760,6 @@ BRp$c.load = function () {
       r.hoverData.cxtDragged = false;
       r.hoverData.which = null;
     } else if (r.hoverData.which === 1) {
-      // Deselect all elements if nothing is currently under the mouse cursor and we aren't dragging something
-      if (down == null && // not mousedown on node
-      !r.dragData.didDrag // didn't move the node around
-      && !r.hoverData.selecting // not box selection
-      && !r.hoverData.dragged // didn't pan
-      && !isMultSelKeyDown(e)) {
-        cy.$(isSelected).unselect();
-
-        if (draggedElements.length > 0) {
-          r.redrawHint('eles', true);
-        }
-
-        r.dragData.possibleDragElements = draggedElements = cy.collection();
-      }
-
       triggerEvents(near, ['mouseup', 'tapend', 'vmouseup'], e, {
         x: pos[0],
         y: pos[1]
@@ -23713,21 +23774,36 @@ BRp$c.load = function () {
             x: pos[0],
             y: pos[1]
           });
-        } // Single selection
+        } // Deselect all elements if nothing is currently under the mouse cursor and we aren't dragging something
+
+
+      if (down == null && // not mousedown on node
+      !r.dragData.didDrag // didn't move the node around
+      && !r.hoverData.selecting // not box selection
+      && !r.hoverData.dragged // didn't pan
+      && !isMultSelKeyDown(e)) {
+        cy.$(isSelected).unselect(['tapunselect']);
+
+        if (draggedElements.length > 0) {
+          r.redrawHint('eles', true);
+        }
+
+        r.dragData.possibleDragElements = draggedElements = cy.collection();
+      } // Single selection
 
 
       if (near == down && !r.dragData.didDrag && !r.hoverData.selecting) {
         if (near != null && near._private.selectable) {
           if (r.hoverData.dragging) ; else if (cy.selectionType() === 'additive' || multSelKeyDown) {
             if (near.selected()) {
-              near.unselect();
+              near.unselect(['tapunselect']);
             } else {
-              near.select();
+              near.select(['tapselect']);
             }
           } else {
             if (!multSelKeyDown) {
-              cy.$(isSelected).unmerge(near).unselect();
-              near.select();
+              cy.$(isSelected).unmerge(near).unselect(['tapunselect']);
+              near.select(['tapselect']);
             }
           }
 
@@ -24730,36 +24806,36 @@ BRp$c.load = function () {
       var dy = r.touchData.startPosition[1] - now$$1[1];
       var dy2 = dy * dy;
       var dist2 = dx2 + dy2;
-      var rdist2 = dist2 * zoom * zoom; // Prepare to select the currently touched node, only if it hasn't been dragged past a certain distance
+      var rdist2 = dist2 * zoom * zoom; // Tap event, roughly same as mouse click event for touch
+
+      if (!r.touchData.singleTouchMoved) {
+        if (!start) {
+          cy.$(':selected').unselect(['tapunselect']);
+        }
+
+        triggerEvents(start, ['tap', 'vclick'], e, {
+          x: now$$1[0],
+          y: now$$1[1]
+        });
+      } // Prepare to select the currently touched node, only if it hasn't been dragged past a certain distance
+
 
       if (start != null && !r.dragData.didDrag // didn't drag nodes around
       && start._private.selectable && rdist2 < r.touchTapThreshold2 && !r.pinching // pinch to zoom should not affect selection
       ) {
           if (cy.selectionType() === 'single') {
-            cy.$(isSelected).unmerge(start).unselect();
-            start.select();
+            cy.$(isSelected).unmerge(start).unselect(['tapunselect']);
+            start.select(['tapselect']);
           } else {
             if (start.selected()) {
-              start.unselect();
+              start.unselect(['tapunselect']);
             } else {
-              start.select();
+              start.select(['tapselect']);
             }
           }
 
           r.redrawHint('eles', true);
-        } // Tap event, roughly same as mouse click event for touch
-
-
-      if (!r.touchData.singleTouchMoved) {
-        triggerEvents(start, ['tap', 'vclick'], e, {
-          x: now$$1[0],
-          y: now$$1[1]
-        });
-
-        if (!start) {
-          cy.$(':selected').unselect();
         }
-      }
 
       r.touchData.singleTouchMoved = true;
     }
@@ -25495,7 +25571,8 @@ BRp$f.init = function (options) {
 };
 
 BRp$f.notify = function (eventName, eles) {
-  var r = this; // the renderer can't be notified after it's destroyed
+  var r = this;
+  var cy = r.cy; // the renderer can't be notified after it's destroyed
 
   if (this.destroyed) {
     return;
@@ -25511,7 +25588,7 @@ BRp$f.notify = function (eventName, eles) {
     return;
   }
 
-  if (eventName === 'add' || eventName === 'remove' || eventName === 'load' || eventName === 'zorder' || eventName === 'mount') {
+  if (eventName === 'add' || eventName === 'remove' || eventName === 'move' && cy.hasCompoundNodes() || eventName === 'load' || eventName === 'zorder' || eventName === 'mount') {
     r.invalidateCachedZSortedEles();
   }
 
@@ -25890,6 +25967,8 @@ var initDefaults = defaults({
   doesEleInvalidateKey: falsify,
   drawElement: null,
   getBoundingBox: null,
+  getRotationPoint: null,
+  getRotationOffset: null,
   isVisible: trueify,
   allowEdgeTxrCaching: true,
   allowParentTxrCaching: true
@@ -27094,10 +27173,9 @@ CRp$1.drawCachedElementPortion = function (context, ele, eleTxrCache, pxRatio, l
     var x, y, sx, sy, smooth;
 
     if (theta !== 0) {
-      var halfW = w / 2;
-      var halfH = h / 2;
-      sx = x1 + halfW;
-      sy = y1 + halfH;
+      var rotPt = eleTxrCache.getRotationPoint(ele);
+      sx = rotPt.x;
+      sy = rotPt.y;
       context.translate(sx, sy);
       context.rotate(theta);
       smooth = r.getImgSmoothing(context);
@@ -27106,8 +27184,9 @@ CRp$1.drawCachedElementPortion = function (context, ele, eleTxrCache, pxRatio, l
         r.setImgSmoothing(context, true);
       }
 
-      x = -halfW;
-      y = -halfH;
+      var off = eleTxrCache.getRotationOffset(ele);
+      x = off.x;
+      y = off.y;
     } else {
       x = x1;
       y = y1;
@@ -27120,7 +27199,7 @@ CRp$1.drawCachedElementPortion = function (context, ele, eleTxrCache, pxRatio, l
       context.globalAlpha = oldGlobalAlpha * opacity;
     }
 
-    context.drawImage(eleCache.texture.canvas, eleCache.x, 0, eleCache.width, eleCache.height, x, y, bb.w, bb.h);
+    context.drawImage(eleCache.texture.canvas, eleCache.x, 0, eleCache.width, eleCache.height, x, y, w, h);
 
     if (opacity !== 1) {
       context.globalAlpha = oldGlobalAlpha;
@@ -27165,7 +27244,7 @@ CRp$1.drawCachedElement = function (context, ele, pxRatio, extent, lvl, requestH
   var bb = ele.boundingBox();
   var reason = requestHighQuality === true ? eleTxrCache.reasons.highQuality : null;
 
-  if (bb.w === 0 || bb.h === 0) {
+  if (bb.w === 0 || bb.h === 0 || !ele.visible()) {
     return;
   }
 
@@ -27645,18 +27724,42 @@ CRp$3.drawInscribedImage = function (context, img, node, index, nodeOpacity) {
 
   var x = nodeX - nodeTW / 2; // left
 
-  if (getIndexedStyle(node, 'background-position-x', 'units', index) === '%') {
-    x += (nodeTW - w) * getIndexedStyle(node, 'background-position-x', 'pfValue', index);
+  var posXUnits = getIndexedStyle(node, 'background-position-x', 'units', index);
+  var posXPfVal = getIndexedStyle(node, 'background-position-x', 'pfValue', index);
+
+  if (posXUnits === '%') {
+    x += (nodeTW - w) * posXPfVal;
   } else {
-    x += getIndexedStyle(node, 'background-position-x', 'pfValue', index);
+    x += posXPfVal;
+  }
+
+  var offXUnits = getIndexedStyle(node, 'background-offset-x', 'units', index);
+  var offXPfVal = getIndexedStyle(node, 'background-offset-x', 'pfValue', index);
+
+  if (offXUnits === '%') {
+    x += (nodeTW - w) * offXPfVal;
+  } else {
+    x += offXPfVal;
   }
 
   var y = nodeY - nodeTH / 2; // top
 
-  if (getIndexedStyle(node, 'background-position-y', 'units', index) === '%') {
-    y += (nodeTH - h) * getIndexedStyle(node, 'background-position-y', 'pfValue', index);
+  var posYUnits = getIndexedStyle(node, 'background-position-y', 'units', index);
+  var posYPfVal = getIndexedStyle(node, 'background-position-y', 'pfValue', index);
+
+  if (posYUnits === '%') {
+    y += (nodeTH - h) * posYPfVal;
   } else {
-    y += getIndexedStyle(node, 'background-position-y', 'pfValue', index);
+    y += posYPfVal;
+  }
+
+  var offYUnits = getIndexedStyle(node, 'background-offset-y', 'units', index);
+  var offYPfVal = getIndexedStyle(node, 'background-offset-y', 'pfValue', index);
+
+  if (offYUnits === '%') {
+    y += (nodeTH - h) * offYPfVal;
+  } else {
+    y += offYPfVal;
   }
 
   if (rs.pathCache) {
@@ -29321,18 +29424,35 @@ function b64UriToB64(b64uri) {
 }
 
 function output(options, canvas, mimeType) {
-  var b64Uri = canvas.toDataURL(mimeType, options.quality);
+  var getB64Uri = function getB64Uri() {
+    return canvas.toDataURL(mimeType, options.quality);
+  };
 
   switch (options.output) {
+    case 'blob-promise':
+      return new Promise$1(function (resolve, reject) {
+        try {
+          canvas.toBlob(function (blob) {
+            if (blob != null) {
+              resolve(blob);
+            } else {
+              reject(new Error('`canvas.toBlob()` sent a null value in its callback'));
+            }
+          }, mimeType, options.quality);
+        } catch (err) {
+          reject(err);
+        }
+      });
+
     case 'blob':
-      return b64ToBlob(b64UriToB64(b64Uri), mimeType);
+      return b64ToBlob(b64UriToB64(getB64Uri()), mimeType);
 
     case 'base64':
-      return b64UriToB64(b64Uri);
+      return b64UriToB64(getB64Uri());
 
     case 'base64uri':
     default:
-      return b64Uri;
+      return getB64Uri();
   }
 }
 
@@ -29438,23 +29558,28 @@ function CanvasRenderer(options) {
   r.pathsEnabled = true;
   var emptyBb = makeBoundingBox();
 
-  var getStyleKey = function getStyleKey(ele) {
-    return ele[0]._private.nodeKey;
+  var getBoxCenter = function getBoxCenter(bb) {
+    return {
+      x: (bb.x1 + bb.x2) / 2,
+      y: (bb.y1 + bb.y2) / 2
+    };
   };
 
-  var drawElement = function drawElement(context, ele, bb, scaledLabelShown, useEleOpacity) {
-    return r.drawElement(context, ele, bb, false, false, useEleOpacity);
-  };
-
-  var getElementBox = function getElementBox(ele) {
-    ele.boundingBox();
-    return ele[0]._private.bodyBounds;
+  var getCenterOffset = function getCenterOffset(bb) {
+    return {
+      x: -bb.w / 2,
+      y: -bb.h / 2
+    };
   };
 
   var backgroundTimestampHasChanged = function backgroundTimestampHasChanged(ele) {
     var _p = ele[0]._private;
     var same = _p.oldBackgroundTimestamp === _p.backgroundTimestamp;
     return !same;
+  };
+
+  var getStyleKey = function getStyleKey(ele) {
+    return ele[0]._private.nodeKey;
   };
 
   var getLabelKey = function getLabelKey(ele) {
@@ -29469,6 +29594,10 @@ function CanvasRenderer(options) {
     return ele[0]._private.targetLabelStyleKey;
   };
 
+  var drawElement = function drawElement(context, ele, bb, scaledLabelShown, useEleOpacity) {
+    return r.drawElement(context, ele, bb, false, false, useEleOpacity);
+  };
+
   var drawLabel = function drawLabel(context, ele, bb, scaledLabelShown, useEleOpacity) {
     return r.drawElementText(context, ele, bb, scaledLabelShown, 'main', useEleOpacity);
   };
@@ -29479,6 +29608,11 @@ function CanvasRenderer(options) {
 
   var drawTargetLabel = function drawTargetLabel(context, ele, bb, scaledLabelShown, useEleOpacity) {
     return r.drawElementText(context, ele, bb, scaledLabelShown, 'target', useEleOpacity);
+  };
+
+  var getElementBox = function getElementBox(ele) {
+    ele.boundingBox();
+    return ele[0]._private.bodyBounds;
   };
 
   var getLabelBox = function getLabelBox(ele) {
@@ -29500,11 +29634,85 @@ function CanvasRenderer(options) {
     return scaledLabelShown;
   };
 
+  var getElementRotationPoint = function getElementRotationPoint(ele) {
+    return getBoxCenter(getElementBox(ele));
+  };
+
+  var addTextMargin = function addTextMargin(pt, ele) {
+    return {
+      x: pt.x + ele.pstyle('text-margin-x').pfValue,
+      y: pt.y + ele.pstyle('text-margin-y').pfValue
+    };
+  };
+
+  var getRsPt = function getRsPt(ele, x, y) {
+    var rs = ele[0]._private.rscratch;
+    return {
+      x: rs[x],
+      y: rs[y]
+    };
+  };
+
+  var getLabelRotationPoint = function getLabelRotationPoint(ele) {
+    return addTextMargin(getRsPt(ele, 'labelX', 'labelY'), ele);
+  };
+
+  var getSourceLabelRotationPoint = function getSourceLabelRotationPoint(ele) {
+    return addTextMargin(getRsPt(ele, 'sourceLabelX', 'sourceLabelY'), ele);
+  };
+
+  var getTargetLabelRotationPoint = function getTargetLabelRotationPoint(ele) {
+    return addTextMargin(getRsPt(ele, 'sourceLabelX', 'sourceLabelY'), ele);
+  };
+
+  var getElementRotationOffset = function getElementRotationOffset(ele) {
+    return getCenterOffset(getElementBox(ele));
+  };
+
+  var getSourceLabelRotationOffset = function getSourceLabelRotationOffset(ele) {
+    return getCenterOffset(getSourceLabelBox(ele));
+  };
+
+  var getTargetLabelRotationOffset = function getTargetLabelRotationOffset(ele) {
+    return getCenterOffset(getTargetLabelBox(ele));
+  };
+
+  var getLabelRotationOffset = function getLabelRotationOffset(ele) {
+    var bb = getLabelBox(ele);
+    var p = getCenterOffset(getLabelBox(ele));
+
+    if (ele.isNode()) {
+      switch (ele.pstyle('text-halign').value) {
+        case 'left':
+          p.x = -bb.w;
+          break;
+
+        case 'right':
+          p.x = 0;
+          break;
+      }
+
+      switch (ele.pstyle('text-valign').value) {
+        case 'top':
+          p.y = -bb.h;
+          break;
+
+        case 'bottom':
+          p.y = 0;
+          break;
+      }
+    }
+
+    return p;
+  };
+
   var eleTxrCache = r.data.eleTxrCache = new ElementTextureCache(r, {
     getKey: getStyleKey,
     doesEleInvalidateKey: backgroundTimestampHasChanged,
     drawElement: drawElement,
     getBoundingBox: getElementBox,
+    getRotationPoint: getElementRotationPoint,
+    getRotationOffset: getElementRotationOffset,
     allowEdgeTxrCaching: false,
     allowParentTxrCaching: false
   });
@@ -29512,18 +29720,24 @@ function CanvasRenderer(options) {
     getKey: getLabelKey,
     drawElement: drawLabel,
     getBoundingBox: getLabelBox,
+    getRotationPoint: getLabelRotationPoint,
+    getRotationOffset: getLabelRotationOffset,
     isVisible: isLabelVisibleAtScale
   });
   var slbTxrCache = r.data.slbTxrCache = new ElementTextureCache(r, {
     getKey: getSourceLabelKey,
     drawElement: drawSourceLabel,
     getBoundingBox: getSourceLabelBox,
+    getRotationPoint: getSourceLabelRotationPoint,
+    getRotationOffset: getSourceLabelRotationOffset,
     isVisible: isLabelVisibleAtScale
   });
   var tlbTxrCache = r.data.tlbTxrCache = new ElementTextureCache(r, {
     getKey: getTargetLabelKey,
     drawElement: drawTargetLabel,
     getBoundingBox: getTargetLabelBox,
+    getRotationPoint: getTargetLabelRotationPoint,
+    getRotationOffset: getTargetLabelRotationOffset,
     isVisible: isLabelVisibleAtScale
   });
   var lyrTxrCache = r.data.lyrTxrCache = new LayeredTextureCache(r);
@@ -29969,7 +30183,7 @@ sheetfn.appendToStyle = function (style$$1) {
   return style$$1;
 };
 
-var version = "3.3.0";
+var version = "3.4.0";
 
 var cytoscape = function cytoscape(options) {
   // if no options specified, use default

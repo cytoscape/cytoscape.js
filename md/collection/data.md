@@ -2,13 +2,13 @@
 
 Only JSON-serialisable data may be put in `ele.data()`.  For temporary data or non-serialisable data, use [`ele.scratch()`](#ele.scratch).
 
-The following fields are immutable:
+The following fields are normally immutable:
 
  * `id` : The `id` field is used to uniquely identify an element in the graph.
  * `source` & `target` : These fields define an edge's relationship to nodes, and this relationship can not be changed after creation.
  * `parent` : The `parent` field defines the parent (compound) node.
 
-Instead of modifying those fields, you can replace an element with a modified clone using [`ele.move()`](#ele.move).
+In order to modify those fields, which alter graph topology, you must use [`ele.move()`](#ele.move).
 
 ## Examples
 

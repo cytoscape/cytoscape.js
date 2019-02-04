@@ -92,6 +92,8 @@ In the JSON or function stylesheet formats, it is possible to specify a function
 
 <span class="important-indicator"></span> Note that if using functions as style values, it will not be possible to serialise and deserialise your stylesheet to JSON proper.
 
+<span class="important-indicator"></span> The function should not read any other style values, nor should it mutate state for elements or for the graph.  Generally, it should depend only on reading `ele.data()` or `ele.scratch()`.
+
 Example:
 
 ```js
@@ -145,12 +147,12 @@ In addition to specifying the value of a property outright, the developer may al
 * **`mapData()`** specifies a linear mapping to an element's data field.  For example, `mapData(weight, 0, 100, blue, red)` maps an element's weight to colours between blue and red for weights between 0 and 100.  An element with `ele.data("weight") === 0` would  be mapped to blue, for instance.  Elements whose values fall outside of the specified range are mapped to the extremity values.  In the previous example, an element with `ele.data("weight") === -1` would be mapped to blue.
 * **`function( ele ){ ... }`** A function may be passed as the value of a style property.  The function has a single `ele` argument which specifies the element for which the style property value is being calculated.
   * **Do** specify a valid value for the corresponding style property for all elements that its corresponding selector block applies.
-  * **Do not** create cyclic dependencies (i.e. one style property reads the value of another style property).
   * **Do** use pure functions that depend on only
     * `ele.data()`,
     * `ele.scratch()`, or
     * basic state that could alternatively be represented with selectors (e.g. `ele.selected()` is OK because there's a `:selected` selector).
-  * **Do** use caching, e.g.  with [`_.memoize()`](https://lodash.com/docs#memoize), for expensive property functions.  If the functions are pure, then `_.memoize()` works perfectly.
+  * **Do not** mutate the graph state for `cy` or for any `ele` inside your mapper function.
+  * **Do not** create cyclic dependencies (i.e. one style property reads the value of another style property).  Your style function should not call functions like `ele.style()` or `ele.numericStyle()`.
   * **Do not** use functions if you can use built-in mappers and selectors to express the same thing.  If you use a function, you lose built-in style performance enhancements and you'll have to optimise and cache the function yourself.
 
 
@@ -244,19 +246,44 @@ A background image may be applied to a node's body.  The following properties su
 
  * **`background-image`** : The URL that points to the image that should be used as the node's background.  PNG, JPG, and SVG are supported formats.
   * You may use a [data URI](https://en.wikipedia.org/wiki/Data_URI_scheme) to use embedded images, thereby saving a HTTP request.
-  * Can specify multiple background images by separating each image with a space (space delimited format), but if using a non-string stylesheet, then using arrays are preferred.
+  * You can specify multiple background images by separating each image with a space (space delimited format), but if using a non-string stylesheet, then using arrays are preferred.
     * The images will be applied to the node's body in the order given, layering one on top of each other.
     * When specifying properties for multiple images, if the property for a given image is not provided, then the default value is used as fallback.
-  * SVG image considerations
+  * To put an image outside of the bounds of a node's body, it is necessary to specify `background-clip: none` and `bounds-expansion: n` for images that go `n` pixels beyond the bounding box of the node.  Note that values of `n` should be relatively small for performance.
+  * SVG image considerations:
     * Using the `viewbox` attribute in SVG images may cause render problems in Firefox.
     * SVG images do not work consistently in Internet Explorer.
     * Always include this XML header in each SVG image:
     ```
     <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE svg>
     ```
-    * Use [encodeURIComponent](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/encodeURIComponent) to load SVG data.
+    * Use [encodeURIComponent](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/encodeURIComponent) on SVG data URIs.
     ```
     var data = 'data:image/svg+xml;utf8,' + encodeURIComponent(svgFile);
+    ```
+    * Do not use base 64 encoding for SVG within a data URI.
+    * Web fonts (e.g. WOFF, WOFF2) may not work within SVG `<text>` elements in some browsers.  For best cross-browser compatibility, use native SVG versions of your icons --- usually defined as `<path>` elements.
+    * If you memoize function mappers to generate SVGs procedurally, you may want to have your function return an object like `{ svg, width, height }`.  This allows you to use the dimensions of the image for other style properties, like node width and height.  E.g.:
+    ```
+    var makeSvg = memoize( function(ele){
+      // impl...
+
+      return { svg: s, width: w, height: h };
+    } );
+
+    // ...
+
+    // init stylesheet
+    style: [
+      {
+        selector: 'node',
+        style: {
+          'background-image': function(ele){ return makeSvg(ele).svg; },
+          'width': function(ele){ return makeSvg(ele).width; },
+          'height': function(ele){ return makeSvg(ele).height; }
+        }
+      }
+    ]
     ```
  * **`background-image-crossorigin`**: All images are loaded with a [`crossorigin`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/img#attr-crossorigin) attribute which may be `anonymous` or `use-credentials`. The default is set to `anonymous`.
  * **`background-image-opacity`** : The opacity of the background image.
@@ -266,12 +293,15 @@ A background image may be applied to a node's body.  The following properties su
  * **`background-repeat`** : Whether to repeat the background image; may be `no-repeat`, `repeat-x`, `repeat-y`, or `repeat`.
  * **`background-position-x`** : The x position of the background image, measured in percent (e.g. `50%`) or pixels (e.g. `10px`).
  * **`background-position-y`** : The y position of the background image, measured in percent (e.g. `50%`) or pixels (e.g. `10px`).
+ * **`background-offset-x`** : The x offset of the background image, measured in percent (e.g. `50%`) or pixels (e.g. `10px`).
+ * **`background-offset-y`** : The y offset of the background image, measured in percent (e.g. `50%`) or pixels (e.g. `10px`).
  * **`background-width-relative-to`** : Changes whether the width is calculated relative to the width of the node or the width in addition to the padding; may be `inner` or `include-padding`. If not specified, `include-padding` is used by default.
  * **`background-height-relative-to`** : Changes whether the height is calculated relative to the height of the node or the height in addition to the padding; may be `inner` or `include-padding`. If not specified, `include-padding` is used by default.
 
 The following properties apply to all images of a node:
 
  * **`background-clip`** : How background image clipping is handled; may be `node` for clipped to node shape or `none` for no clipping.
+ * **`bounds-expansion`** : Specifies a padding size (e.g. `20px`) that expands the bounding box of the node in all directions.  This allows for images to be drawn outside of the normal bounding box of the node when `background-clip` is `none`.  This is useful for small decorations just outside of the node.
 
 The following is an example of valid background image styling using JSON. The example images are taken from Wikimedia Commons with the Creative Commons license.
 ```

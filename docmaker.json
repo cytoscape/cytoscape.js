@@ -348,7 +348,7 @@
               "formats": [
                 {
                   "args": [
-                    { "name": "events", "descr": "A space separated list of event names to emit." },
+                    { "name": "events", "descr": "A list of event names to emit (either a space-separated string or an array)" },
                     { "name": "extraParams", "descr": "An array of additional parameters to pass to the handler.", "optional": true }
                   ]
                 }
@@ -911,7 +911,7 @@
                       "name": "options",
                       "descr": "The export options.",
                       "fields": [
-                        { "name": "output", "descr": "Whether the output should be `'base64uri'` (default), `'base64'`, or `'blob'`." },
+                        { "name": "output", "descr": "Whether the output should be `'base64uri'` (default), `'base64'`, `'blob'`, or `'blob-promise'` (a promise that resolves to the blob is returned)." },
                         { "name": "bg", "descr": "The background colour of the image (transparent by default)." },
                         { "name": "full", "descr": "Whether to export the current viewport view (`false`, default) or the entire graph (`true`)." },
                         { "name": "scale", "descr": "This value specifies a positive number that scales the size of the resultant image." },
@@ -936,7 +936,7 @@
                       "name": "options",
                       "descr": "The export options.",
                       "fields": [
-                        { "name": "output", "descr": "Whether the output should be `'base64uri'` (default), `'base64'`, or `'blob'`." },
+                        { "name": "output", "descr": "Whether the output should be `'base64uri'` (default), `'base64'`, `'blob'`, or `'blob-promise'` (a promise that resolves to the blob is returned)." },
                         { "name": "bg", "descr": "The background colour of the image (white by default)." },
                         { "name": "full", "descr": "Whether to export the current viewport view (`false`, default) or the entire graph (`true`)." },
                         { "name": "scale", "descr": "This value specifies a positive number that scales the size of the resultant image." },
@@ -1020,7 +1020,7 @@
 
             {
               "name": "eles.move",
-              "descr": "Replace the specified elements with copies that have been moved as specified (i.e. new `source`, `target`, or `parent`).  The new elements are returned.",
+              "descr": "Move the elements with respect to graph topology (i.e. new `source`, `target`, or `parent`).",
               "formats": [
                 {
                   "name": "edges.move",
@@ -1139,7 +1139,7 @@
               "formats": [
                 {
                   "args": [
-                    { "name": "events", "descr": "A space separated list of event names to emit." },
+                    { "name": "events", "descr": "A list of event names to emit (either a space-separated string or an array)" },
                     { "name": "extraParams", "descr": "An array of additional parameters to pass to the handler.", "optional": true }
                   ]
                 }
@@ -2717,7 +2717,24 @@
 
             {
               "name": "eles.components",
-              "descr": "Get the connected components, considering only the elements in the calling collection.  An array of collections is returned, with each collection representing a component."
+              "descr": "Get the connected components.",
+              "formats": [
+                {
+                  "name": "eles.components",
+                  "descr": "Get the connected components, considering only the elements in the calling collection.  An array of collections is returned, with each collection representing a component."
+                },
+                {
+                  "name": "eles.componentsOf",
+                  "descr": "Get the connected components to which the passed elements belong.  The components consider only the subgraph made by the elements in the calling collection.  An array of collections is returned, with each collection representing a component.",
+                  "args": [
+                    { "name": "root", "descr": "The components that contain these elements are returned." }
+                  ]
+                },
+                {
+                  "name": "ele.component",
+                  "descr": "Get the connected component for the calling element.  The component considers all elements in the graph."
+                }
+              ]
             },
 
             {
@@ -3690,7 +3707,7 @@
               "formats": [
                 {
                   "args": [
-                    { "name": "events", "descr": "A space separated list of event names to emit." },
+                    { "name": "events", "descr": "A list of event names to emit (either a space-separated string or an array)." },
                     { "name": "extraParams", "descr": "An array of additional parameters to pass to the handler.", "optional": true }
                   ]
                 }

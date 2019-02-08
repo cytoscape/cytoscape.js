@@ -45,7 +45,7 @@ Feature request
 Write out an overview of what you need to do to reproduce the issue.
 
 Fork/clone this JSBin demo and reproduce your issue so that your issue can be addressed quickly:
-http://jsbin.com/teworah
+http://jsbin.com/fiqugiq
 
 If your code to reproduce is only two or three lines, you can write it in the issue instead.  Format your code in backtick code blocks like this:
 

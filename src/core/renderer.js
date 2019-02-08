@@ -1,6 +1,8 @@
 import * as util from '../util';
 
 let rendererDefaults = util.defaults({
+  hideEdgesOnViewport: false,
+  textureOnViewport: false,
   motionBlur: false,
   motionBlurOpacity: 0.05,
   pixelRatio: undefined,

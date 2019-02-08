@@ -43,6 +43,7 @@ var beforeRenderCallbacks = function( r, willDraw, startTime ){
 
 BRp.startRenderLoop = function(){
   var r = this;
+  var cy = r.cy;
 
   if( r.renderLoopStarted ){
     return;
@@ -53,7 +54,11 @@ BRp.startRenderLoop = function(){
   var renderFn = function( requestTime ){
     if( r.destroyed ){ return; }
 
-    if( r.requestedFrame && !r.skipFrame ){
+    if( cy.batching() ){
+      // mid-batch, none of these should run
+      // - pre frame hooks (calculations, texture caches, style, etc.)
+      // - any drawing
+    } else if( r.requestedFrame && !r.skipFrame ){
       beforeRenderCallbacks( r, true, requestTime );
 
       var startTime = util.performanceNow();

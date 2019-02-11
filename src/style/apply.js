@@ -209,12 +209,14 @@ styfn.applyContextStyle = function( cxtMeta, cxtStyle, ele ){
 
     // save cycles when a mapped context prop doesn't need to be applied
     if(
-      cxtProp.mapped === types.fn && // context prop is function mapper
-      eleProp.mapping === cxtProp // the current prop on the ele is a flat prop value for the function mapper
-    ){
-      cxtProp.fnValue = cxtProp.value( ele ); // temporarily cache the value in case of a miss
+      cxtProp.mapped === types.fn // context prop is function mapper
+      && eleProp.mapping != null // ele prop is a concrete value from from a mapper
+      && eleProp.mapping.value === cxtProp.value // the current prop on the ele is a flat prop value for the function mapper
+    ){ // NB don't write to cxtProp, as it's shared among eles (stored in stylesheet)
+      let mapping = eleProp.mapping; // can write to mapping, as it's a per-ele copy
+      let fnValue = mapping.fnValue = cxtProp.value( ele ); // temporarily cache the value in case of a miss
 
-      if( cxtProp.fnValue === cxtProp.prevFnValue ){ continue; }
+      if( fnValue === mapping.prevFnValue ){ continue; }
     }
 
     let retDiffProp = retDiffProps[ diffPropName ] = {
@@ -582,7 +584,7 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
 
   case types.fn: {
     let fn = prop.value;
-    let fnRetVal = prop.fnValue || fn( ele ); // check for cached value before calling function
+    let fnRetVal = prop.fnValue != null ? prop.fnValue : fn( ele ); // check for cached value before calling function
 
     prop.prevFnValue = fnRetVal;
 
@@ -598,7 +600,7 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
       return false;
     }
 
-    flatProp.mapping = prop; // keep a reference to the mapping
+    flatProp.mapping = util.copy( prop ); // keep a reference to the mapping
     prop = flatProp; // the flattened (mapped) property is the one we want
 
     break;

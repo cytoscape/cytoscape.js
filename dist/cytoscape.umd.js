@@ -14297,6 +14297,8 @@
   };
 
   var rendererDefaults = defaults({
+    hideEdgesOnViewport: false,
+    textureOnViewport: false,
     motionBlur: false,
     motionBlurOpacity: 0.05,
     pixelRatio: undefined,
@@ -26157,6 +26159,7 @@
 
   BRp$e.startRenderLoop = function () {
     var r = this;
+    var cy = r.cy;
 
     if (r.renderLoopStarted) {
       return;
@@ -26169,7 +26172,7 @@
         return;
       }
 
-      if (r.requestedFrame && !r.skipFrame) {
+      if (cy.batching()) ; else if (r.requestedFrame && !r.skipFrame) {
         beforeRenderCallbacks(r, true, requestTime);
         var startTime = performanceNow();
         r.render(r.renderOptions);
@@ -30882,7 +30885,7 @@
     return style$$1;
   };
 
-  var version = "3.3.3";
+  var version = "3.3.4";
 
   var cytoscape = function cytoscape(options) {
     // if no options specified, use default

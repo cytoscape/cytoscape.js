@@ -13568,6 +13568,8 @@ var corefn$4 = {
 };
 
 var rendererDefaults = defaults({
+  hideEdgesOnViewport: false,
+  textureOnViewport: false,
   motionBlur: false,
   motionBlurOpacity: 0.05,
   pixelRatio: undefined,
@@ -13919,12 +13921,16 @@ styfn.applyContextStyle = function (cxtMeta, cxtStyle, ele) {
     } // save cycles when a mapped context prop doesn't need to be applied
 
 
-    if (cxtProp.mapped === types.fn && // context prop is function mapper
-    eleProp.mapping === cxtProp // the current prop on the ele is a flat prop value for the function mapper
+    if (cxtProp.mapped === types.fn // context prop is function mapper
+    && eleProp.mapping != null // ele prop is a concrete value from from a mapper
+    && eleProp.mapping.value === cxtProp.value // the current prop on the ele is a flat prop value for the function mapper
     ) {
-        cxtProp.fnValue = cxtProp.value(ele); // temporarily cache the value in case of a miss
+        // NB don't write to cxtProp, as it's shared among eles (stored in stylesheet)
+        var mapping = eleProp.mapping; // can write to mapping, as it's a per-ele copy
 
-        if (cxtProp.fnValue === cxtProp.prevFnValue) {
+        var fnValue = mapping.fnValue = cxtProp.value(ele); // temporarily cache the value in case of a miss
+
+        if (fnValue === mapping.prevFnValue) {
           continue;
         }
       }
@@ -14282,7 +14288,7 @@ styfn.applyParsedProperty = function (ele, parsedProp) {
     case types.fn:
       {
         var fn$$1 = prop.value;
-        var fnRetVal = prop.fnValue || fn$$1(ele); // check for cached value before calling function
+        var fnRetVal = prop.fnValue != null ? prop.fnValue : fn$$1(ele); // check for cached value before calling function
 
         prop.prevFnValue = fnRetVal;
 
@@ -14298,7 +14304,7 @@ styfn.applyParsedProperty = function (ele, parsedProp) {
           return false;
         }
 
-        flatProp.mapping = prop; // keep a reference to the mapping
+        flatProp.mapping = copy(prop); // keep a reference to the mapping
 
         prop = flatProp; // the flattened (mapped) property is the one we want
 
@@ -25416,6 +25422,7 @@ var beforeRenderCallbacks = function beforeRenderCallbacks(r, willDraw, startTim
 
 BRp$e.startRenderLoop = function () {
   var r = this;
+  var cy = r.cy;
 
   if (r.renderLoopStarted) {
     return;
@@ -25428,7 +25435,7 @@ BRp$e.startRenderLoop = function () {
       return;
     }
 
-    if (r.requestedFrame && !r.skipFrame) {
+    if (cy.batching()) ; else if (r.requestedFrame && !r.skipFrame) {
       beforeRenderCallbacks(r, true, requestTime);
       var startTime = performanceNow();
       r.render(r.renderOptions);
@@ -30183,7 +30190,7 @@ sheetfn.appendToStyle = function (style$$1) {
   return style$$1;
 };
 
-var version = "3.4.0";
+var version = "3.4.1";
 
 var cytoscape = function cytoscape(options) {
   // if no options specified, use default

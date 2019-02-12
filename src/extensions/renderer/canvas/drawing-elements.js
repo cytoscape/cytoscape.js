@@ -177,6 +177,7 @@ if( process.env.NODE_ENV !== 'production' ){
       if( ele.isNode() ){
         let p = ele.position();
 
+        draw( rs.labelX, rs.labelY, 'red' );
         draw( p.x, p.y, 'magenta' );
       } else {
         let pts = rs.allpts;

@@ -8,7 +8,9 @@ let rendererDefaults = util.defaults({
   pixelRatio: undefined,
   desktopTapThreshold: 4,
   touchTapThreshold: 8,
-  wheelSensitivity: 1
+  wheelSensitivity: 1,
+  debug: false,
+  showFps: false
 });
 
 let corefn = ({

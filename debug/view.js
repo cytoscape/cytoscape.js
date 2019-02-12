@@ -90,8 +90,8 @@
 		cy.panBy({ x: -1 });
 	});
 
-	var showBB = function( eles ){
-		var bb = eles.renderedBoundingBox();
+	var showBB = function( eles, opts ){
+		var bb = eles.renderedBoundingBox(opts);
 
 		var $bb = $('#bb');
 
@@ -122,6 +122,16 @@
 
 	$("#hide-bb").addEventListener('click', function(){
 		$('#bb').style.display = 'none';
+	});
+
+	$("#show-bb-lbl").addEventListener('click', function(){
+		var eles = cy.$(':selected');
+
+		if( eles.length === 0 ){
+			eles = cy.elements();
+		}
+
+		showBB( eles, { includeNodes: false, includeEdges: false, includeOverlays: false, includeLabels: true } );
 	});
 
 	$('#mount').addEventListener('click', function(){

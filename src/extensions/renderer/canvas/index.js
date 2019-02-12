@@ -142,7 +142,7 @@ function CanvasRenderer( options ){
 
   let getLabelRotationPoint = ele => addTextMargin(getRsPt(ele, 'labelX', 'labelY'), ele);
   let getSourceLabelRotationPoint = ele => addTextMargin(getRsPt(ele, 'sourceLabelX', 'sourceLabelY'), ele);
-  let getTargetLabelRotationPoint = ele => addTextMargin(getRsPt(ele, 'sourceLabelX', 'sourceLabelY'), ele);
+  let getTargetLabelRotationPoint = ele => addTextMargin(getRsPt(ele, 'targetLabelX', 'targetLabelY'), ele);
 
   let getElementRotationOffset = ele => getCenterOffset( getElementBox(ele) );
   let getSourceLabelRotationOffset = ele => getCenterOffset( getSourceLabelBox(ele) );

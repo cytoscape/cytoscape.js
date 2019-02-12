@@ -472,23 +472,36 @@ BRp.calculateLabelDimensions = function( ele, text ){
 };
 
 
-BRp.calculateLabelAngles = function( ele ){
+BRp.calculateLabelAngle = function( ele, prefix ){
   var _p = ele._private;
   var rs = _p.rscratch;
   var isEdge = ele.isEdge();
-  var rot = ele.pstyle( 'text-rotation' );
+  var prefixDash = prefix ? prefix + '-' : '';
+  var rot = ele.pstyle( prefixDash + 'text-rotation' );
   var rotStr = rot.strValue;
 
   if( rotStr === 'none' ){
-    rs.labelAngle = rs.sourceLabelAngle = rs.targetLabelAngle = 0;
+    return 0;
   } else if( isEdge && rotStr === 'autorotate' ){
-    rs.labelAngle = rs.labelAutoAngle;
-    rs.sourceLabelAngle = rs.sourceLabelAutoAngle;
-    rs.targetLabelAngle = rs.targetLabelAutoAngle;
+    return rs.labelAutoAngle;
   } else if( rotStr === 'autorotate' ){
-    rs.labelAngle = rs.sourceLabelAngle = rs.targetLabelAngle = 0;
+    return 0;
   } else {
-    rs.labelAngle = rs.sourceLabelAngle = rs.targetLabelAngle = rot.pfValue;
+    return rot.pfValue;
+  }
+};
+
+BRp.calculateLabelAngles = function( ele ){
+  var r = this;
+  var isEdge = ele.isEdge();
+  var _p = ele._private;
+  var rs = _p.rscratch;
+
+  rs.labelAngle = r.calculateLabelAngle(ele);
+
+  if( isEdge ){
+    rs.sourceLabelAngle = r.calculateLabelAngle(ele, 'source');
+    rs.targetLabelAngle = r.calculateLabelAngle(ele, 'target');
   }
 };
 

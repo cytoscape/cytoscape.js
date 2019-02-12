@@ -3,11 +3,19 @@ import * as is from '../is';
 
 let elesfn = ({
   classes: function( classes ){
-    if( !is.array( classes ) ){
+    let self = this;
+
+    if( classes === undefined ){
+      let ret = [];
+
+      self[0]._private.classes.forEach(cls => ret.push(cls));
+
+      return ret;
+    } else if( !is.array( classes ) ){
       // extract classes from string
       classes = ( classes || '' ).match( /\S+/g ) || [];
     }
-    let self = this;
+
     let changed = [];
     let classesSet = new Set( classes );
 
@@ -128,5 +136,7 @@ let elesfn = ({
     return self;
   }
 });
+
+elesfn.className = elesfn.classNames = elesfn.classes;
 
 export default elesfn;

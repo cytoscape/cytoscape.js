@@ -683,6 +683,14 @@ describe('Collection style', function(){
       expect( n1.hasClass('baz') ).to.be.false;
     });
 
+    it('eles.classes() gets list of classes', function(){
+      var classes = ['foo', 'bar', 'baz'];
+
+      classes.forEach(function( c ){ n1.addClass(c); });
+
+      expect( n1.classes().sort() ).to.deep.equal( classes.sort() );
+    });
+
     it('eles.addClass() adds class to json', function(){
       n1.addClass('foo');
 

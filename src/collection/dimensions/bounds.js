@@ -1,5 +1,5 @@
 import * as is from '../../is';
-import { assignBoundingBox, assignShiftToBoundingBox, clearBoundingBox, expandBoundingBox, makeBoundingBox } from '../../math';
+import { assignBoundingBox, assignShiftToBoundingBox, clearBoundingBox, expandBoundingBox, makeBoundingBox, copyBoundingBox } from '../../math';
 import { defaults, getPrefixedProperty, hashIntsArray } from '../../util';
 
 let fn, elesfn;
@@ -649,8 +649,6 @@ let boundingBoxImpl = function( ele, options ){
   bounds.w = noninf( bounds.x2 - bounds.x1 );
   bounds.h = noninf( bounds.y2 - bounds.y1 );
 
-  
-
   if( bounds.w > 0 && bounds.h > 0 && displayed ){
     expandBoundingBox( bounds, manualExpansion );
 
@@ -896,7 +894,7 @@ elesfn.boundingBoxAt = function( fn ){
     this.updateCompoundBounds(true); // force update b/c we're inside a batch cycle
   }
 
-  let bb = this.boundingBox({ useCache: false });
+  let bb = copyBoundingBox( this.boundingBox({ useCache: false }) );
 
   nodes.silentPositions(getOldPos);
 

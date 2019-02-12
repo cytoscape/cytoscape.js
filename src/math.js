@@ -233,6 +233,10 @@ export const makeBoundingBox = bb => {
   }
 };
 
+export const copyBoundingBox = bb => {
+  return { x1: bb.x1, x2: bb.x2, w: bb.w, y1: bb.y1, y2: bb.y2, h: bb.h };
+};
+
 export const clearBoundingBox = bb => {
   bb.x1 = Infinity;
   bb.y1 = Infinity;

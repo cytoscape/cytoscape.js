@@ -29,6 +29,12 @@ export default {
         var extent = r.cy.extent();
         var pixelRatio = r.getPixelRatio();
 
+        // if we aren't in a tick that causes a draw, then the rendered style
+        // queue won't automatically be flushed before dequeueing starts
+        if( !willDraw ){
+          r.flushRenderedStyleQueue();
+        }
+
         while( true ){ // eslint-disable-line no-constant-condition
           var now = util.performanceNow();
           var duration = now - startTime;

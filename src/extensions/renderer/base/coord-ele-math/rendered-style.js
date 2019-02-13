@@ -53,6 +53,10 @@ BRp.registerCalculationListeners = function(){
     }
   };
 
+  r.flushRenderedStyleQueue = function(){
+    updateEleCalcs(true);
+  };
+
   r.beforeRender( updateEleCalcs, r.beforeRenderPriorities.eleCalcs );
 };
 

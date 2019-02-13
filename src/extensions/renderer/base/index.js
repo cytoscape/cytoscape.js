@@ -106,7 +106,8 @@ BRp.init = function( options ){
     animations:   400,
     eleCalcs:     300,
     eleTxrDeq:    200,
-    lyrTxrDeq:    100
+    lyrTxrDeq:    150,
+    lyrTxrSkip:   100,
   };
 
   r.registerNodeShapes();

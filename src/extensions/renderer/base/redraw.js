@@ -23,7 +23,9 @@ BRp.beforeRender = function( fn, priority ){
   // the renderer can't add tick callbacks when destroyed
   if( this.destroyed ){ return; }
 
-  priority = priority || 0;
+  if( priority == null ){
+    util.error('Priority is not optional for beforeRender');
+  }
 
   var cbs = this.beforeRenderCallbacks;
 

@@ -52,7 +52,7 @@ var LayeredTextureCache = function( renderer ){
     } else {
       self.skipping = false;
     }
-  });
+  }, r.beforeRenderPriorities.lyrTxrSkip);
 
   var qSort = function(a, b){
     return b.reqs - a.reqs;

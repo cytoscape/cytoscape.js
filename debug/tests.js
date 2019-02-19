@@ -129,11 +129,8 @@
     displayName: "Random position on click",
     description: "Put node to random position on click",
     setup: function(){
-
-      var $cy = $("#cytoscape");
-
-      var w = $cy.width();
-      var h = $cy.height();
+      var w = cy.width();
+      var h = cy.height();
 
       cy.nodes().bind("click", function(){
         var node = this;

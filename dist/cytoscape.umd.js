@@ -2950,6 +2950,12 @@
     }
   }; // elesfn
 
+  var copyPosition = function copyPosition(p) {
+    return {
+      x: p.x,
+      y: p.y
+    };
+  };
   var modelToRenderedPosition = function modelToRenderedPosition(p, zoom, pan) {
     return {
       x: p.x * zoom + pan.x,
@@ -21017,7 +21023,7 @@
     // callback on layoutstop
     transform: function transform(node, position) {
       return position;
-    } // transform a given node position. Useful for changing flow direction in discrete layouts 
+    } // transform a given node position. Useful for changing flow direction in discrete layouts
 
   };
 
@@ -21033,7 +21039,7 @@
 
     function getPosition(node) {
       if (options.positions == null) {
-        return null;
+        return copyPosition(node.position());
       }
 
       if (posIsFn) {
@@ -23350,23 +23356,35 @@
     };
   };
 
-  BRp$6.calculateLabelAngles = function (ele) {
+  BRp$6.calculateLabelAngle = function (ele, prefix) {
     var _p = ele._private;
     var rs = _p.rscratch;
     var isEdge = ele.isEdge();
-    var rot = ele.pstyle('text-rotation');
+    var prefixDash = prefix ? prefix + '-' : '';
+    var rot = ele.pstyle(prefixDash + 'text-rotation');
     var rotStr = rot.strValue;
 
     if (rotStr === 'none') {
-      rs.labelAngle = rs.sourceLabelAngle = rs.targetLabelAngle = 0;
+      return 0;
     } else if (isEdge && rotStr === 'autorotate') {
-      rs.labelAngle = rs.labelAutoAngle;
-      rs.sourceLabelAngle = rs.sourceLabelAutoAngle;
-      rs.targetLabelAngle = rs.targetLabelAutoAngle;
+      return rs.labelAutoAngle;
     } else if (rotStr === 'autorotate') {
-      rs.labelAngle = rs.sourceLabelAngle = rs.targetLabelAngle = 0;
+      return 0;
     } else {
-      rs.labelAngle = rs.sourceLabelAngle = rs.targetLabelAngle = rot.pfValue;
+      return rot.pfValue;
+    }
+  };
+
+  BRp$6.calculateLabelAngles = function (ele) {
+    var r = this;
+    var isEdge = ele.isEdge();
+    var _p = ele._private;
+    var rs = _p.rscratch;
+    rs.labelAngle = r.calculateLabelAngle(ele);
+
+    if (isEdge) {
+      rs.sourceLabelAngle = r.calculateLabelAngle(ele, 'source');
+      rs.targetLabelAngle = r.calculateLabelAngle(ele, 'target');
     }
   };
 
@@ -23450,6 +23468,10 @@
         r.recalculateRenderedStyle(elesToUpdate);
         elesToUpdate = cy.collection();
       }
+    };
+
+    r.flushRenderedStyleQueue = function () {
+      updateEleCalcs(true);
     };
 
     r.beforeRender(updateEleCalcs, r.beforeRenderPriorities.eleCalcs);
@@ -26416,7 +26438,12 @@
           var renderTime = r.lastRedrawTime;
           var deqd = [];
           var extent = r.cy.extent();
-          var pixelRatio = r.getPixelRatio();
+          var pixelRatio = r.getPixelRatio(); // if we aren't in a tick that causes a draw, then the rendered style
+          // queue won't automatically be flushed before dequeueing starts
+
+          if (!willDraw) {
+            r.flushRenderedStyleQueue();
+          }
 
           while (true) {
             // eslint-disable-line no-constant-condition
@@ -30364,7 +30391,7 @@
     };
 
     var getTargetLabelRotationPoint = function getTargetLabelRotationPoint(ele) {
-      return addTextMargin(getRsPt(ele, 'sourceLabelX', 'sourceLabelY'), ele);
+      return addTextMargin(getRsPt(ele, 'targetLabelX', 'targetLabelY'), ele);
     };
 
     var getElementRotationOffset = function getElementRotationOffset(ele) {
@@ -30885,7 +30912,7 @@
     return style$$1;
   };
 
-  var version = "3.3.4";
+  var version = "3.3.5";
 
   var cytoscape = function cytoscape(options) {
     // if no options specified, use default

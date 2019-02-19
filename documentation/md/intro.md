@@ -68,6 +68,7 @@
   * [ICSI Haystack Project](https://haystack.mobi/panopticon/)
   * [InfoTrack](http://www.infotrack.com.au/)
   * [The Kanji Map](http://thekanjimap.com/)
+  * [Machine2Learn](https://www.machine2learn.com) : [Deep Learning Model Generator](https://www.machine2learn.com/deep-learning-model-generator/)
   * [Musicalized](http://en.musicalized.com/full)
   * [NDEx](http://www.ndexbio.org/)
   * [OHDSI](http://www.ohdsi.org/)

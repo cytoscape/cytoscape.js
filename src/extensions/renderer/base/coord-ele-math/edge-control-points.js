@@ -478,9 +478,12 @@ BRp.findEdgeControlPoints = function( edges ){
 
 
       } else if(
-        !edgeIsUnbundled
-        && pairEdges.length % 2 === 1
-        && i === Math.floor( pairEdges.length / 2 )
+        curveStyle === 'straight'
+        || (
+          !edgeIsUnbundled
+          && pairEdges.length % 2 === 1
+          && i === Math.floor( pairEdges.length / 2 )
+        )
       ){
         // Straight edge within bundle
 

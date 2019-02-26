@@ -64,7 +64,7 @@ BRp.findSegmentsPoints = function( edge, pairInfo ){
   // Segments (multiple straight lines)
 
   const rs = edge._private.rscratch;
-  const { posPts, midptSrcPts, vectorNormInverse } = pairInfo;
+  const { posPts, intersectionPts, vectorNormInverse } = pairInfo;
   const edgeDistances = edge.pstyle('edge-distances').value;
   const segmentWs = edge.pstyle( 'segment-weights' );
   const segmentDs = edge.pstyle( 'segment-distances' );
@@ -80,7 +80,7 @@ BRp.findSegmentsPoints = function( edge, pairInfo ){
     let w1 = 1 - w;
     let w2 = w;
 
-    let midptPts = edgeDistances === 'node-position' ? posPts : midptSrcPts;
+    let midptPts = edgeDistances === 'node-position' ? posPts : intersectionPts;
 
     let adjustedMidpt = {
       x: midptPts.x1 * w1 + midptPts.x2 * w2,
@@ -191,7 +191,7 @@ BRp.findStraightEdgePoints = function( edge ){
 
 BRp.findBezierPoints = function( edge, pairInfo, i, edgeIsUnbundled ){
   const rs = edge._private.rscratch;
-  const { vectorNormInverse, posPts, midptSrcPts } = pairInfo;
+  const { vectorNormInverse, posPts, intersectionPts } = pairInfo;
   const edgeDistances = edge.pstyle('edge-distances').value;
   const stepSize = edge.pstyle('control-point-step-size').pfValue;
   const ctrlptDists = edge.pstyle('control-point-distances');
@@ -229,7 +229,7 @@ BRp.findBezierPoints = function( edge, pairInfo, i, edgeIsUnbundled ){
     let w1 = 1 - ctrlptWeight;
     let w2 = ctrlptWeight;
 
-    let midptPts = edgeDistances === 'node-position' ? posPts : midptSrcPts;
+    let midptPts = edgeDistances === 'node-position' ? posPts : intersectionPts;
 
     let adjustedMidpt = {
       x: midptPts.x1 * w1 + midptPts.x2 * w2,
@@ -572,7 +572,7 @@ BRp.findEdgeControlPoints = function( edges ){
 
         let tgtIntn = pairInfo.tgtIntn = tgtOutside;
 
-        let midptSrcPts = pairInfo.midptSrcPts = {
+        let intersectionPts = pairInfo.intersectionPts = {
           x1: srcOutside[0],
           x2: tgtOutside[0],
           y1: srcOutside[1],
@@ -635,9 +635,9 @@ BRp.findEdgeControlPoints = function( edges ){
             x1: posPts.x2, y1: posPts.y2,
             x2: posPts.x1, y2: posPts.y1
           },
-          midptSrcPts: {
-            x1: midptSrcPts.x2, y1: midptSrcPts.y2,
-            x2: midptSrcPts.x1, y2: midptSrcPts.y1
+          intersectionPts: {
+            x1: intersectionPts.x2, y1: intersectionPts.y2,
+            x2: intersectionPts.x1, y2: intersectionPts.y1
           },
           vector: { x: -vector.x, y: -vector.y },
           vectorNorm: { x: -vectorNorm.x, y: -vectorNorm.y },

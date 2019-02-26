@@ -36,7 +36,7 @@ BRp.findHaystackPoints = function( edges ){
     let tgtW = tgt.width();
     let srcH = src.height();
     let tgtH = tgt.height();
-    let radius = edge.pstyle( 'haystack-radius' ).value;
+    let radius = edge.pstyle('haystack-radius').value;
     let halfRadius = radius / 2; // b/c have to half width/height
 
     rs.haystackPts = rs.allpts = [
@@ -57,6 +57,300 @@ BRp.findHaystackPoints = function( edges ){
     this.calculateArrowAngles( edge );
     this.recalculateEdgeLabelProjections( edge );
     this.calculateLabelAngles( edge );
+  }
+};
+
+BRp.findSegmentsPoints = function( edge, pairInfo ){
+  // Segments (multiple straight lines)
+
+  const rs = edge._private.rscratch;
+  const { posPts, midptSrcPts, vectorNormInverse } = pairInfo;
+  const edgeDistances = edge.pstyle('edge-distances').value;
+  const segmentWs = edge.pstyle( 'segment-weights' );
+  const segmentDs = edge.pstyle( 'segment-distances' );
+  const segmentsN = Math.min( segmentWs.pfValue.length, segmentDs.pfValue.length );
+
+  rs.edgeType = 'segments';
+  rs.segpts = [];
+
+  for( let s = 0; s < segmentsN; s++ ){
+    let w = segmentWs.pfValue[ s ];
+    let d = segmentDs.pfValue[ s ];
+
+    let w1 = 1 - w;
+    let w2 = w;
+
+    let midptPts = edgeDistances === 'node-position' ? posPts : midptSrcPts;
+
+    let adjustedMidpt = {
+      x: midptPts.x1 * w1 + midptPts.x2 * w2,
+      y: midptPts.y1 * w1 + midptPts.y2 * w2
+    };
+
+    rs.segpts.push(
+      adjustedMidpt.x + vectorNormInverse.x * d,
+      adjustedMidpt.y + vectorNormInverse.y * d
+    );
+  }
+
+};
+
+BRp.findLoopPoints = function( edge, pairInfo, i, edgeIsUnbundled ){
+  // Self-edge
+
+  const rs = edge._private.rscratch;
+  const { dirCounts, srcPos } = pairInfo;
+  const ctrlptDists = edge.pstyle( 'control-point-distances' );
+  const ctrlptDist = ctrlptDists ? ctrlptDists.pfValue[0] : undefined;
+  const loopDir = edge.pstyle('loop-direction').pfValue;
+  const loopSwp = edge.pstyle('loop-sweep').pfValue;
+  const stepSize = edge.pstyle( 'control-point-step-size' ).pfValue;
+
+  rs.edgeType = 'self';
+
+  let j = i;
+  let loopDist = stepSize;
+
+  if( edgeIsUnbundled ){
+    j = 0;
+    loopDist = ctrlptDist;
+  }
+
+  let loopAngle = loopDir - Math.PI / 2;
+  let outAngle =  loopAngle - loopSwp / 2;
+  let inAngle =  loopAngle + loopSwp / 2;
+
+  // increase by step size for overlapping loops, keyed on direction and sweep values
+  let dc = String(loopDir + '_' + loopSwp);
+  j = dirCounts[dc] === undefined ? dirCounts[dc] = 0 : ++dirCounts[dc];
+
+  rs.ctrlpts = [
+    srcPos.x + Math.cos(outAngle) * 1.4 * loopDist * (j / 3 + 1),
+    srcPos.y + Math.sin(outAngle) * 1.4 * loopDist * (j / 3 + 1),
+    srcPos.x + Math.cos(inAngle) * 1.4 * loopDist * (j / 3 + 1),
+    srcPos.y + Math.sin(inAngle) * 1.4 * loopDist * (j / 3 + 1)
+  ];
+};
+
+BRp.findCompoundLoopPoints = function( edge, pairInfo, i, edgeIsUnbundled ){
+  // Compound edge
+
+  rs.edgeType = 'compound';
+
+  const rs = edge._private.rscratch;
+  const { srcPos, tgtPos, srcW, srcH, tgtW, tgtH } = pairInfo;
+  const stepSize = edge.pstyle('control-point-step-size').pfValue;
+  const ctrlptDists = edge.pstyle('control-point-distances');
+  const ctrlptDist = ctrlptDists ? ctrlptDists.pfValue[0] : undefined;
+
+  let j = i;
+  let loopDist = stepSize;
+
+  if( edgeIsUnbundled ){
+    j = 0;
+    loopDist = ctrlptDist;
+  }
+
+  let loopW = 50;
+
+  let loopaPos = {
+    x: srcPos.x - srcW / 2,
+    y: srcPos.y - srcH / 2
+  };
+
+  let loopbPos = {
+    x: tgtPos.x - tgtW / 2,
+    y: tgtPos.y - tgtH / 2
+  };
+
+  let loopPos = {
+    x: Math.min( loopaPos.x, loopbPos.x ),
+    y: Math.min( loopaPos.y, loopbPos.y )
+  };
+
+  // avoids cases with impossible beziers
+  let minCompoundStretch = 0.5;
+  let compoundStretchA = Math.max( minCompoundStretch, Math.log( srcW * 0.01 ) );
+  let compoundStretchB = Math.max( minCompoundStretch, Math.log( tgtW * 0.01 ) );
+
+  rs.ctrlpts = [
+    loopPos.x,
+    loopPos.y - (1 + Math.pow( loopW, 1.12 ) / 100) * loopDist * (j / 3 + 1) * compoundStretchA,
+
+    loopPos.x - (1 + Math.pow( loopW, 1.12 ) / 100) * loopDist * (j / 3 + 1) * compoundStretchB,
+    loopPos.y
+  ];
+
+};
+
+BRp.findStraightEdgePoints = function( edge ){
+  // Straight edge within bundle
+
+  edge._private.rscratch.edgeType = 'straight';
+};
+
+BRp.findBezierPoints = function( edge, pairInfo, i, edgeIsUnbundled ){
+  const rs = edge._private.rscratch;
+  const { vectorNormInverse, posPts, midptSrcPts } = pairInfo;
+  const edgeDistances = edge.pstyle('edge-distances').value;
+  const stepSize = edge.pstyle('control-point-step-size').pfValue;
+  const ctrlptDists = edge.pstyle('control-point-distances');
+  const ctrlptWs = edge.pstyle('control-point-weights');
+  const bezierN = ctrlptDists && ctrlptWs ? Math.min( ctrlptDists.value.length, ctrlptWs.value.length ) : 1;
+
+  let ctrlptDist = ctrlptDists ? ctrlptDists.pfValue[0] : undefined;
+  let ctrlptWeight = ctrlptWs.value[0];
+
+  // (Multi)bezier
+
+  const multi = edgeIsUnbundled;
+
+  rs.edgeType = multi ? 'multibezier' : 'bezier';
+  rs.ctrlpts = [];
+
+  for( let b = 0; b < bezierN; b++ ){
+    let normctrlptDist = (0.5 - pairInfo.eles.length / 2 + i) * stepSize;
+    let manctrlptDist;
+    let sign = math.signum( normctrlptDist );
+
+    if( multi ){
+      ctrlptDist = ctrlptDists ? ctrlptDists.pfValue[ b ] : stepSize; // fall back on step size
+      ctrlptWeight = ctrlptWs.value[ b ];
+    }
+
+    if( edgeIsUnbundled ){ // multi or single unbundled
+      manctrlptDist = ctrlptDist;
+    } else {
+      manctrlptDist = ctrlptDist !== undefined ? sign * ctrlptDist : undefined;
+    }
+
+    let distanceFromMidpoint = manctrlptDist !== undefined ? manctrlptDist : normctrlptDist;
+
+    let w1 = 1 - ctrlptWeight;
+    let w2 = ctrlptWeight;
+
+    let midptPts = edgeDistances === 'node-position' ? posPts : midptSrcPts;
+
+    let adjustedMidpt = {
+      x: midptPts.x1 * w1 + midptPts.x2 * w2,
+      y: midptPts.y1 * w1 + midptPts.y2 * w2
+    };
+
+    rs.ctrlpts.push(
+      adjustedMidpt.x + vectorNormInverse.x * distanceFromMidpoint,
+      adjustedMidpt.y + vectorNormInverse.y * distanceFromMidpoint
+    );
+  }
+};
+
+BRp.tryToCorrectInvalidPoints = function( edge, pairInfo ){
+  const rs = edge._private.rscratch;
+
+  // can only correct beziers for now...
+  if( rs.edgeType === 'bezier' ){
+    const { srcPos, tgtPos, srcW, srcH, tgtW, tgtH, srcShape, tgtShape } = pairInfo;
+
+    let badStart = !is.number( rs.startX ) || !is.number( rs.startY );
+    let badAStart = !is.number( rs.arrowStartX ) || !is.number( rs.arrowStartY );
+    let badEnd = !is.number( rs.endX ) || !is.number( rs.endY );
+    let badAEnd = !is.number( rs.arrowEndX ) || !is.number( rs.arrowEndY );
+
+    let minCpADistFactor = 3;
+    let arrowW = this.getArrowWidth( edge.pstyle( 'width' ).pfValue, edge.pstyle( 'arrow-scale' ).value )
+      * this.arrowShapeWidth;
+    let minCpADist = minCpADistFactor * arrowW;
+
+    let startACpDist = math.dist( { x: rs.ctrlpts[0], y: rs.ctrlpts[1] }, { x: rs.startX, y: rs.startY } );
+    let closeStartACp = startACpDist < minCpADist;
+    let endACpDist = math.dist( { x: rs.ctrlpts[0], y: rs.ctrlpts[1] }, { x: rs.endX, y: rs.endY } );
+    let closeEndACp = endACpDist < minCpADist;
+
+    let overlapping = false;
+
+    if( badStart || badAStart || closeStartACp ){
+      overlapping = true;
+
+      // project control point along line from src centre to outside the src shape
+      // (otherwise intersection will yield nothing)
+      let cpD = { // delta
+        x: rs.ctrlpts[0] - srcPos.x,
+        y: rs.ctrlpts[1] - srcPos.y
+      };
+      let cpL = Math.sqrt( cpD.x * cpD.x + cpD.y * cpD.y ); // length of line
+      let cpM = { // normalised delta
+        x: cpD.x / cpL,
+        y: cpD.y / cpL
+      };
+      let radius = Math.max( srcW, srcH );
+      let cpProj = { // *2 radius guarantees outside shape
+        x: rs.ctrlpts[0] + cpM.x * 2 * radius,
+        y: rs.ctrlpts[1] + cpM.y * 2 * radius
+      };
+
+      let srcCtrlPtIntn = srcShape.intersectLine(
+        srcPos.x,
+        srcPos.y,
+        srcW,
+        srcH,
+        cpProj.x,
+        cpProj.y,
+        0
+      );
+
+      if( closeStartACp ){
+        rs.ctrlpts[0] = rs.ctrlpts[0] + cpM.x * (minCpADist - startACpDist);
+        rs.ctrlpts[1] = rs.ctrlpts[1] + cpM.y * (minCpADist - startACpDist);
+      } else {
+        rs.ctrlpts[0] = srcCtrlPtIntn[0] + cpM.x * minCpADist;
+        rs.ctrlpts[1] = srcCtrlPtIntn[1] + cpM.y * minCpADist;
+      }
+    }
+
+    if( badEnd || badAEnd || closeEndACp ){
+      overlapping = true;
+
+      // project control point along line from tgt centre to outside the tgt shape
+      // (otherwise intersection will yield nothing)
+      let cpD = { // delta
+        x: rs.ctrlpts[0] - tgtPos.x,
+        y: rs.ctrlpts[1] - tgtPos.y
+      };
+      let cpL = Math.sqrt( cpD.x * cpD.x + cpD.y * cpD.y ); // length of line
+      let cpM = { // normalised delta
+        x: cpD.x / cpL,
+        y: cpD.y / cpL
+      };
+      let radius = Math.max( srcW, srcH );
+      let cpProj = { // *2 radius guarantees outside shape
+        x: rs.ctrlpts[0] + cpM.x * 2 * radius,
+        y: rs.ctrlpts[1] + cpM.y * 2 * radius
+      };
+
+      let tgtCtrlPtIntn = tgtShape.intersectLine(
+        tgtPos.x,
+        tgtPos.y,
+        tgtW,
+        tgtH,
+        cpProj.x,
+        cpProj.y,
+        0
+      );
+
+      if( closeEndACp ){
+        rs.ctrlpts[0] = rs.ctrlpts[0] + cpM.x * (minCpADist - endACpDist);
+        rs.ctrlpts[1] = rs.ctrlpts[1] + cpM.y * (minCpADist - endACpDist);
+      } else {
+        rs.ctrlpts[0] = tgtCtrlPtIntn[0] + cpM.x * minCpADist;
+        rs.ctrlpts[1] = tgtCtrlPtIntn[1] + cpM.y * minCpADist;
+      }
+
+    }
+
+    if( overlapping ){
+      // recalc endpts
+      this.findEndpoints( edge );
+    }
+
   }
 };
 
@@ -126,15 +420,15 @@ BRp.storeAllpts = function( edge ){
 };
 
 BRp.checkForInvalidEdgeWarning = function( edge ){
-  let rs = edge._private.rscratch;
+  let rs = edge[0]._private.rscratch;
 
-  if( !is.number(rs.startX) || !is.number(rs.startY) || !is.number(rs.endX) || !is.number(rs.endY) ){
+  if( rs.nodesOverlap || (is.number(rs.startX) && is.number(rs.startY) && is.number(rs.endX) && is.number(rs.endY)) ){
+    rs.loggedErr = false;
+  } else {
     if( !rs.loggedErr ){
       rs.loggedErr = true;
       util.warn('Edge `' + edge.id() + '` has invalid endpoints and so it is impossible to draw.  Adjust your edge style (e.g. control points) accordingly or use an alternative edge type.  This is expected behaviour when the source node and the target node overlap.');
     }
-  } else {
-    rs.loggedErr = false;
   }
 };
 
@@ -150,11 +444,9 @@ BRp.findEdgeControlPoints = function( edges ){
 
   // create a table of edge (src, tgt) => list of edges between them
   for( let i = 0; i < edges.length; i++ ){
-    let edge = edges[ i ];
+    let edge = edges[i];
     let _p = edge._private;
-    let curveStyle = edge.pstyle( 'curve-style' ).value;
-    let edgeIsUnbundled = curveStyle === 'unbundled-bezier' || curveStyle === 'segments' || curveStyle === 'straight';
-    let edgeIsBezier = curveStyle === 'unbundled-bezier' || curveStyle === 'bezier';
+    let curveStyle = edge.pstyle('curve-style').value;
 
     // ignore edges who are not to be displayed
     // they shouldn't take up space
@@ -167,6 +459,8 @@ BRp.findEdgeControlPoints = function( edges ){
       continue;
     }
 
+    let edgeIsUnbundled = curveStyle === 'unbundled-bezier' || curveStyle === 'segments' || curveStyle === 'straight';
+    let edgeIsBezier = curveStyle === 'unbundled-bezier' || curveStyle === 'bezier';
     let srcIndex = _p.source.poolIndex();
     let tgtIndex = _p.target.poolIndex();
 
@@ -176,13 +470,13 @@ BRp.findEdgeControlPoints = function( edges ){
     let tableEntry = hashTable.get( pairId );
 
     if( tableEntry == null ){
-      tableEntry = [];
+      tableEntry = { eles: [] };
 
       hashTable.set( pairId, tableEntry );
       pairIds.push( pairId );
     }
 
-    tableEntry.push( edge );
+    tableEntry.eles.push( edge );
 
     if( edgeIsUnbundled ){
       tableEntry.hasUnbundled = true;
@@ -193,30 +487,28 @@ BRp.findEdgeControlPoints = function( edges ){
     }
   }
 
-  let src, tgt, srcPos, tgtPos, srcW, srcH, tgtW, tgtH, srcShape, tgtShape;
-  let vectorNormInverse;
-  let badBezier;
-
   // for each pair (src, tgt), create the ctrl pts
   // Nested for loop is OK; total number of iterations for both loops = edgeCount
   for( let p = 0; p < pairIds.length; p++ ){
     let pairId = pairIds[ p ];
-    let pairEdges = hashTable.get( pairId );
+    let pairInfo = hashTable.get( pairId );
+    let swappedpairInfo;
 
-    if( !pairEdges.hasUnbundled ){
+    if( !pairInfo.hasUnbundled ){
       let isBundledBezier = edge => edge.pstyle( 'curve-style' ).value === 'bezier';
-      let pllEdges = pairEdges[0].parallelEdges().filter(isBundledBezier);
+      let pllEdges = pairInfo.eles[0].parallelEdges().filter(isBundledBezier);
 
-      util.clearArray( pairEdges );
+      util.clearArray( pairInfo.eles );
 
-      pllEdges.forEach( edge => pairEdges.push(edge) );
+      pllEdges.forEach( edge => pairInfo.eles.push(edge) );
 
       // for each pair id, the edges should be sorted by index
-      pairEdges.sort( (edge1, edge2) => edge1.poolIndex() - edge2.poolIndex() );
+      pairInfo.eles.sort( (edge1, edge2) => edge1.poolIndex() - edge2.poolIndex() );
     }
 
-    src = pairEdges[0]._private.source;
-    tgt = pairEdges[0]._private.target;
+    let firstEdge = pairInfo.eles[0];
+    let src = firstEdge.source();
+    let tgt = firstEdge.target();
 
     // make sure src/tgt distinction is consistent w.r.t. pairId
     if( src.poolIndex() > tgt.poolIndex() ){
@@ -225,25 +517,19 @@ BRp.findEdgeControlPoints = function( edges ){
       tgt = temp;
     }
 
-    srcPos = src.position();
-    tgtPos = tgt.position();
+    let srcPos = pairInfo.srcPos = src.position();
+    let tgtPos = pairInfo.tgtPos = tgt.position();
 
-    srcW = src.outerWidth();
-    srcH = src.outerHeight();
+    let srcW = pairInfo.srcW = src.outerWidth();
+    let srcH = pairInfo.srcH = src.outerHeight();
 
-    tgtW = tgt.outerWidth();
-    tgtH = tgt.outerHeight();
+    let tgtW = pairInfo.tgtW = tgt.outerWidth();
+    let tgtH = pairInfo.tgtH = tgt.outerHeight();
 
-    srcShape = r.nodeShapes[ this.getNodeShape( src ) ];
-    tgtShape = r.nodeShapes[ this.getNodeShape( tgt ) ];
+    let srcShape = pairInfo.srcShape = r.nodeShapes[ this.getNodeShape( src ) ];
+    let tgtShape = pairInfo.tgtShape = r.nodeShapes[ this.getNodeShape( tgt ) ];
 
-    badBezier = false;
-
-    let edge;
-    let edge_p;
-    let rs;
-
-    let dirCounts = {
+    pairInfo.dirCounts = {
       'north': 0,
       'west': 0,
       'south': 0,
@@ -254,409 +540,151 @@ BRp.findEdgeControlPoints = function( edges ){
       'southeast': 0
     };
 
-    for( let i = 0; i < pairEdges.length; i++ ){
-      edge = pairEdges[ i ];
-      edge_p = edge._private;
-      rs = edge_p.rscratch;
-
-      let curveStyle = edge.pstyle( 'curve-style' ).value;
-
-      let edgeIsUnbundled = curveStyle === 'unbundled-bezier' || curveStyle === 'segments';
+    for( let i = 0; i < pairInfo.eles.length; i++ ){
+      const edge = pairInfo.eles[i];
+      const rs = edge[0]._private.rscratch;
+      const curveStyle = edge.pstyle( 'curve-style' ).value;
+      const edgeIsUnbundled = curveStyle === 'unbundled-bezier' || curveStyle === 'segments';
 
       // whether the normalised pair order is the reverse of the edge's src-tgt order
-      let edgeIsSwapped = !src.same(edge.source());
+      const edgeIsSwapped = !src.same(edge.source());
 
-      let ctrlptDists = edge.pstyle( 'control-point-distances' );
-      let loopDir = edge.pstyle('loop-direction').pfValue;
-      let loopSwp = edge.pstyle('loop-sweep').pfValue;
-      let ctrlptWs = edge.pstyle( 'control-point-weights' );
-      let bezierN = ctrlptDists && ctrlptWs ? Math.min( ctrlptDists.value.length, ctrlptWs.value.length ) : 1;
-      let stepSize = edge.pstyle( 'control-point-step-size' ).pfValue;
-      let ctrlptDist = ctrlptDists ? ctrlptDists.pfValue[0] : undefined;
-      let ctrlptWeight = ctrlptWs.value[0];
-      let edgeDistances = edge.pstyle('edge-distances').value;
-      let segmentWs = edge.pstyle( 'segment-weights' );
-      let segmentDs = edge.pstyle( 'segment-distances' );
-      let segmentsN = Math.min( segmentWs.pfValue.length, segmentDs.pfValue.length );
-
-      if( badBezier ){
-        rs.badBezier = true;
-      } else {
-        rs.badBezier = false;
-      }
-
-      if( !pairEdges.calculatedIntersection && src !== tgt && ( pairEdges.hasBezier || pairEdges.hasUnbundled ) ){
-
-        pairEdges.calculatedIntersection = true;
+      if( !pairInfo.calculatedIntersection && src !== tgt && ( pairInfo.hasBezier || pairInfo.hasUnbundled ) ){
+        pairInfo.calculatedIntersection = true;
 
         // pt outside src shape to calc distance/displacement from src to tgt
         let srcOutside = srcShape.intersectLine(
-          srcPos.x,
-          srcPos.y,
-          srcW,
-          srcH,
-          tgtPos.x,
-          tgtPos.y,
+          srcPos.x, srcPos.y,
+          srcW, srcH,
+          tgtPos.x, tgtPos.y,
           0
         );
 
-        pairEdges.srcIntn = srcOutside;
+        let srcIntn = pairInfo.srcIntn = srcOutside;
 
         // pt outside tgt shape to calc distance/displacement from src to tgt
         let tgtOutside = tgtShape.intersectLine(
-          tgtPos.x,
-          tgtPos.y,
-          tgtW,
-          tgtH,
-          srcPos.x,
-          srcPos.y,
+          tgtPos.x, tgtPos.y,
+          tgtW, tgtH,
+          srcPos.x, srcPos.y,
           0
         );
 
-        pairEdges.tgtIntn = tgtOutside;
+        let tgtIntn = pairInfo.tgtIntn = tgtOutside;
 
-        let midptSrcPts = {
+        let midptSrcPts = pairInfo.midptSrcPts = {
           x1: srcOutside[0],
           x2: tgtOutside[0],
           y1: srcOutside[1],
           y2: tgtOutside[1]
         };
 
-        pairEdges.midptSrcPts = midptSrcPts;
-
-        let posPts = {
+        let posPts = pairInfo.posPts = {
           x1: srcPos.x,
           x2: tgtPos.x,
           y1: srcPos.y,
           y2: tgtPos.y
         };
 
-        pairEdges.posPts = posPts;
-
         let dy = ( tgtOutside[1] - srcOutside[1] );
         let dx = ( tgtOutside[0] - srcOutside[0] );
         let l = Math.sqrt( dx * dx + dy * dy );
 
-        let vector = {
+        let vector = pairInfo.vector = {
           x: dx,
           y: dy
         };
 
-        let vectorNorm = {
+        let vectorNorm = pairInfo.vectorNorm = {
           x: vector.x / l,
           y: vector.y / l
         };
-        vectorNormInverse = {
+
+        let vectorNormInverse = {
           x: -vectorNorm.y,
           y: vectorNorm.x
         };
 
-
         // if node shapes overlap, then no ctrl pts to draw
-        if(
-          tgtShape.checkPoint( srcOutside[0], srcOutside[1], 0, tgtW, tgtH, tgtPos.x, tgtPos.y )  &&
-          srcShape.checkPoint( tgtOutside[0], tgtOutside[1], 0, srcW, srcH, srcPos.x, srcPos.y )
-        ){
-          vectorNormInverse = {};
-          badBezier = true;
-        }
+        pairInfo.nodesOverlap = (
+          !is.number(l)
+          || tgtShape.checkPoint( srcOutside[0], srcOutside[1], 0, tgtW, tgtH, tgtPos.x, tgtPos.y )
+          || srcShape.checkPoint( tgtOutside[0], tgtOutside[1], 0, srcW, srcH, srcPos.x, srcPos.y )
+        );
 
+        pairInfo.vectorNormInverse = vectorNormInverse;
+
+        swappedpairInfo = {
+          nodesOverlap: pairInfo.nodesOverlap,
+          dirCounts: pairInfo.dirCounts,
+          calculatedIntersection: true,
+          hasBezier: pairInfo.hasBezier,
+          hasUnbundled: pairInfo.hasUnbundled,
+          eles: pairInfo.eles,
+          srcPos: tgtPos,
+          tgtPos: srcPos,
+          srcW: tgtW,
+          srcH: tgtH,
+          tgtW: srcW,
+          tgtH: srcH,
+          srcIntn: tgtIntn,
+          tgtIntn: srcIntn,
+          srcShape: tgtShape,
+          tgtShape: srcShape,
+          posPts: [ posPts.x2, posPts.y2, posPts.x1, posPts.x2 ],
+          midptSrcPts: [midptSrcPts.x2, midptSrcPts.y2, midptSrcPts.x1, midptSrcPts.y1],
+          vector: { x: -vector.x, y: -vector.y },
+          vectorNorm: { x: -vectorNorm.x, y: -vectorNorm.y },
+          vectorNormInverse: { x: -vectorNormInverse.x, y: -vectorNormInverse.y }
+        };
       }
 
-      if( !edgeIsSwapped ){
-        rs.srcIntn = pairEdges.srcIntn;
-        rs.tgtIntn = pairEdges.tgtIntn;
-      } else { // ensure that the per-edge cached value for intersections are correct for swapped bundled edges
-        rs.srcIntn = pairEdges.tgtIntn;
-        rs.tgtIntn = pairEdges.srcIntn;
-      }
+      rs.nodesOverlap = pairInfo.nodesOverlap;
+
+      const passedPairInfo = edgeIsSwapped ? swappedpairInfo : pairInfo;
 
       if( src === tgt ){
-        // Self-edge
-
-        rs.edgeType = 'self';
-
-        let j = i;
-        let loopDist = stepSize;
-
-        if( edgeIsUnbundled ){
-          j = 0;
-          loopDist = ctrlptDist;
-        }
-
-        let loopAngle = loopDir - Math.PI / 2;
-        let outAngle =  loopAngle - loopSwp / 2;
-        let inAngle =  loopAngle + loopSwp / 2;
-
-        // increase by step size for overlapping loops, keyed on direction and sweep values
-        let dc = String(loopDir + '_' + loopSwp);
-        j = dirCounts[dc] === undefined ? dirCounts[dc] = 0 : ++dirCounts[dc];
-
-        rs.ctrlpts = [
-          srcPos.x + Math.cos(outAngle) * 1.4 * loopDist * (j / 3 + 1),
-          srcPos.y + Math.sin(outAngle) * 1.4 * loopDist * (j / 3 + 1),
-          srcPos.x + Math.cos(inAngle) * 1.4 * loopDist * (j / 3 + 1),
-          srcPos.y + Math.sin(inAngle) * 1.4 * loopDist * (j / 3 + 1)
-        ];
+        this.findLoopPoints(edge, passedPairInfo, i, edgeIsUnbundled);
 
       } else if(
         hasCompounds &&
         ( src.isParent() || src.isChild() || tgt.isParent() || tgt.isChild() ) &&
         ( src.parents().anySame( tgt ) || tgt.parents().anySame( src ) )
       ){
-        // Compound edge
-
-        rs.edgeType = 'compound';
-
-        // because the line approximation doesn't apply for compound beziers
-        // (loop/self edges are already elided b/c of cheap src==tgt check)
-        rs.badBezier = false;
-
-        let j = i;
-        let loopDist = stepSize;
-
-        if( edgeIsUnbundled ){
-          j = 0;
-          loopDist = ctrlptDist;
-        }
-
-        let loopW = 50;
-
-        let loopaPos = {
-          x: srcPos.x - srcW / 2,
-          y: srcPos.y - srcH / 2
-        };
-
-        let loopbPos = {
-          x: tgtPos.x - tgtW / 2,
-          y: tgtPos.y - tgtH / 2
-        };
-
-        let loopPos = {
-          x: Math.min( loopaPos.x, loopbPos.x ),
-          y: Math.min( loopaPos.y, loopbPos.y )
-        };
-
-        // avoids cases with impossible beziers
-        let minCompoundStretch = 0.5;
-        let compoundStretchA = Math.max( minCompoundStretch, Math.log( srcW * 0.01 ) );
-        let compoundStretchB = Math.max( minCompoundStretch, Math.log( tgtW * 0.01 ) );
-
-        rs.ctrlpts = [
-          loopPos.x,
-          loopPos.y - (1 + Math.pow( loopW, 1.12 ) / 100) * loopDist * (j / 3 + 1) * compoundStretchA,
-
-          loopPos.x - (1 + Math.pow( loopW, 1.12 ) / 100) * loopDist * (j / 3 + 1) * compoundStretchB,
-          loopPos.y
-        ];
+        this.findCompoundLoopPoints(edge, passedPairInfo, i, edgeIsUnbundled);
 
       } else if( curveStyle === 'segments' ){
-        // Segments (multiple straight lines)
-
-        rs.edgeType = 'segments';
-        rs.segpts = [];
-
-        for( let s = 0; s < segmentsN; s++ ){
-          let w = segmentWs.pfValue[ s ];
-          let d = segmentDs.pfValue[ s ];
-
-          let w1 = 1 - w;
-          let w2 = w;
-
-          let midptPts = edgeDistances === 'node-position' ? pairEdges.posPts : pairEdges.midptSrcPts;
-
-          let adjustedMidpt = {
-            x: midptPts.x1 * w1 + midptPts.x2 * w2,
-            y: midptPts.y1 * w1 + midptPts.y2 * w2
-          };
-
-          rs.segpts.push(
-            adjustedMidpt.x + vectorNormInverse.x * d,
-            adjustedMidpt.y + vectorNormInverse.y * d
-          );
-        }
-
+        this.findSegmentsPoints(edge, passedPairInfo);
 
       } else if(
         curveStyle === 'straight'
         || (
           !edgeIsUnbundled
-          && pairEdges.length % 2 === 1
-          && i === Math.floor( pairEdges.length / 2 )
+          && pairInfo.eles.length % 2 === 1
+          && i === Math.floor( pairInfo.eles.length / 2 )
         )
       ){
-        // Straight edge within bundle
-
-        rs.edgeType = 'straight';
+        this.findStraightEdgePoints(edge);
 
       } else {
-        // (Multi)bezier
-
-        let multi = edgeIsUnbundled;
-
-        rs.edgeType = multi ? 'multibezier' : 'bezier';
-        rs.ctrlpts = [];
-
-        for( let b = 0; b < bezierN; b++ ){
-          let normctrlptDist = (0.5 - pairEdges.length / 2 + i) * stepSize;
-          let manctrlptDist;
-          let sign = math.signum( normctrlptDist );
-
-          if( multi ){
-            ctrlptDist = ctrlptDists ? ctrlptDists.pfValue[ b ] : stepSize; // fall back on step size
-            ctrlptWeight = ctrlptWs.value[ b ];
-          }
-
-          if( edgeIsUnbundled ){ // multi or single unbundled
-            manctrlptDist = ctrlptDist;
-          } else {
-            manctrlptDist = ctrlptDist !== undefined ? sign * ctrlptDist : undefined;
-          }
-
-          let distanceFromMidpoint = manctrlptDist !== undefined ? manctrlptDist : normctrlptDist;
-
-          let w1 = 1 - ctrlptWeight;
-          let w2 = ctrlptWeight;
-
-          if( edgeIsSwapped ){
-            let temp = w1;
-            w1 = w2;
-            w2 = temp;
-          }
-
-          let midptPts = edgeDistances === 'node-position' ? pairEdges.posPts : pairEdges.midptSrcPts;
-
-          let adjustedMidpt = {
-            x: midptPts.x1 * w1 + midptPts.x2 * w2,
-            y: midptPts.y1 * w1 + midptPts.y2 * w2
-          };
-
-          rs.ctrlpts.push(
-            adjustedMidpt.x + vectorNormInverse.x * distanceFromMidpoint,
-            adjustedMidpt.y + vectorNormInverse.y * distanceFromMidpoint
-          );
-        }
-
+        this.findBezierPoints(edge, passedPairInfo, i, edgeIsUnbundled);
       }
 
-      // find endpts for edge
       this.findEndpoints( edge );
 
-      let badStart = !is.number( rs.startX ) || !is.number( rs.startY );
-      let badAStart = !is.number( rs.arrowStartX ) || !is.number( rs.arrowStartY );
-      let badEnd = !is.number( rs.endX ) || !is.number( rs.endY );
-      let badAEnd = !is.number( rs.arrowEndX ) || !is.number( rs.arrowEndY );
-
-      let minCpADistFactor = 3;
-      let arrowW = this.getArrowWidth( edge.pstyle( 'width' ).pfValue, edge.pstyle( 'arrow-scale' ).value )
-        * this.arrowShapeWidth;
-      let minCpADist = minCpADistFactor * arrowW;
-
-      if( rs.edgeType === 'bezier' ){
-        let startACpDist = math.dist( { x: rs.ctrlpts[0], y: rs.ctrlpts[1] }, { x: rs.startX, y: rs.startY } );
-        let closeStartACp = startACpDist < minCpADist;
-        let endACpDist = math.dist( { x: rs.ctrlpts[0], y: rs.ctrlpts[1] }, { x: rs.endX, y: rs.endY } );
-        let closeEndACp = endACpDist < minCpADist;
-
-        let overlapping = false;
-
-        if( badStart || badAStart || closeStartACp ){
-          overlapping = true;
-
-          // project control point along line from src centre to outside the src shape
-          // (otherwise intersection will yield nothing)
-          let cpD = { // delta
-            x: rs.ctrlpts[0] - srcPos.x,
-            y: rs.ctrlpts[1] - srcPos.y
-          };
-          let cpL = Math.sqrt( cpD.x * cpD.x + cpD.y * cpD.y ); // length of line
-          let cpM = { // normalised delta
-            x: cpD.x / cpL,
-            y: cpD.y / cpL
-          };
-          let radius = Math.max( srcW, srcH );
-          let cpProj = { // *2 radius guarantees outside shape
-            x: rs.ctrlpts[0] + cpM.x * 2 * radius,
-            y: rs.ctrlpts[1] + cpM.y * 2 * radius
-          };
-
-          let srcCtrlPtIntn = srcShape.intersectLine(
-            srcPos.x,
-            srcPos.y,
-            srcW,
-            srcH,
-            cpProj.x,
-            cpProj.y,
-            0
-          );
-
-          if( closeStartACp ){
-            rs.ctrlpts[0] = rs.ctrlpts[0] + cpM.x * (minCpADist - startACpDist);
-            rs.ctrlpts[1] = rs.ctrlpts[1] + cpM.y * (minCpADist - startACpDist);
-          } else {
-            rs.ctrlpts[0] = srcCtrlPtIntn[0] + cpM.x * minCpADist;
-            rs.ctrlpts[1] = srcCtrlPtIntn[1] + cpM.y * minCpADist;
-          }
-        }
-
-        if( badEnd || badAEnd || closeEndACp ){
-          overlapping = true;
-
-          // project control point along line from tgt centre to outside the tgt shape
-          // (otherwise intersection will yield nothing)
-          let cpD = { // delta
-            x: rs.ctrlpts[0] - tgtPos.x,
-            y: rs.ctrlpts[1] - tgtPos.y
-          };
-          let cpL = Math.sqrt( cpD.x * cpD.x + cpD.y * cpD.y ); // length of line
-          let cpM = { // normalised delta
-            x: cpD.x / cpL,
-            y: cpD.y / cpL
-          };
-          let radius = Math.max( srcW, srcH );
-          let cpProj = { // *2 radius guarantees outside shape
-            x: rs.ctrlpts[0] + cpM.x * 2 * radius,
-            y: rs.ctrlpts[1] + cpM.y * 2 * radius
-          };
-
-          let tgtCtrlPtIntn = tgtShape.intersectLine(
-            tgtPos.x,
-            tgtPos.y,
-            tgtW,
-            tgtH,
-            cpProj.x,
-            cpProj.y,
-            0
-          );
-
-          if( closeEndACp ){
-            rs.ctrlpts[0] = rs.ctrlpts[0] + cpM.x * (minCpADist - endACpDist);
-            rs.ctrlpts[1] = rs.ctrlpts[1] + cpM.y * (minCpADist - endACpDist);
-          } else {
-            rs.ctrlpts[0] = tgtCtrlPtIntn[0] + cpM.x * minCpADist;
-            rs.ctrlpts[1] = tgtCtrlPtIntn[1] + cpM.y * minCpADist;
-          }
-
-        }
-
-        if( overlapping ){
-          // recalc endpts
-          this.findEndpoints( edge );
-        }
-
-      }
+      this.tryToCorrectInvalidPoints( edge, passedPairInfo );
 
       this.checkForInvalidEdgeWarning( edge );
+
       this.storeAllpts( edge );
       this.storeEdgeProjections( edge );
       this.calculateArrowAngles( edge );
-
       this.recalculateEdgeLabelProjections( edge );
       this.calculateLabelAngles( edge );
-
     } // for pair edges
   } // for pair ids
 
+  // haystacks avoid the expense of pairInfo stuff (intersections etc.)
   this.findHaystackPoints( haystackEdges );
 };
 

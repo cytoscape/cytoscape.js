@@ -189,7 +189,7 @@ BRp.findStraightEdgePoints = function( edge ){
   edge._private.rscratch.edgeType = 'straight';
 };
 
-BRp.findBezierPoints = function( edge, pairInfo, i, edgeIsUnbundled ){
+BRp.findBezierPoints = function( edge, pairInfo, i, edgeIsUnbundled, edgeIsSwapped ){
   const rs = edge._private.rscratch;
   const { vectorNormInverse, posPts, intersectionPts } = pairInfo;
   const edgeDistances = edge.pstyle('edge-distances').value;
@@ -209,7 +209,7 @@ BRp.findBezierPoints = function( edge, pairInfo, i, edgeIsUnbundled ){
   rs.ctrlpts = [];
 
   for( let b = 0; b < bezierN; b++ ){
-    let normctrlptDist = (0.5 - pairInfo.eles.length / 2 + i) * stepSize;
+    let normctrlptDist = (0.5 - pairInfo.eles.length / 2 + i) * stepSize * (edgeIsSwapped ? -1 : 1);
     let manctrlptDist;
     let sign = math.signum( normctrlptDist );
 
@@ -673,7 +673,7 @@ BRp.findEdgeControlPoints = function( edges ){
         this.findStraightEdgePoints(edge);
 
       } else {
-        this.findBezierPoints(edge, passedPairInfo, i, edgeIsUnbundled);
+        this.findBezierPoints(edge, passedPairInfo, i, edgeIsUnbundled, edgeIsSwapped);
       }
 
       this.findEndpoints( edge );

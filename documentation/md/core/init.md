@@ -39,6 +39,7 @@ An instance of Cytoscape.js has a number of options that can be set on initialis
   // interaction options:
   <a href="#init-opts/minZoom">minZoom</a>: 1e-50,
   <a href="#init-opts/maxZoom">maxZoom</a>: 1e50,
+  <a href="#init-opts/warnings">warnings</a>: true,
   <a href="#init-opts/zoomingEnabled">zoomingEnabled</a>: true,
   <a href="#init-opts/userZoomingEnabled">userZoomingEnabled</a>: true,
   <a href="#init-opts/panningEnabled">panningEnabled</a>: true,
@@ -153,3 +154,11 @@ An instance of Cytoscape.js has a number of options that can be set on initialis
 
 <span id="init-opts/pixelRatio"></span>
 **`pixelRatio`** : Overrides the screen pixel ratio with a manually set value (`1.0` recommended, if set).  This can be used to increase performance on high density displays by reducing the effective area that needs to be rendered, though this is much less necessary on more recent browser releases.  If you want to use the hardware's actual pixel ratio, you can set `pixelRatio: 'auto'` (default).
+
+### Configurations
+
+<span id="init-opts/warnings"></span>
+**`warnings`** : By default (`true`), Cytoscape.js logs all warnings designed to warn developers about
+bad data, caveats, and deprecated behaviours. If you wish to suppress most warnings Cytoscape prints
+to console, set to `false`. In production, we recommend setting to something like
+`process.env.NODE_ENV !== 'production'`.

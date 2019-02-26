@@ -49,7 +49,7 @@ let corefn = ({
       return;
     }
 
-    if( options.wheelSensitivity !== undefined ){
+    if( options.wheelSensitivity !== undefined && options.warnings ){
       util.warn(`You have set a custom wheel sensitivity.  This will make your app zoom unnaturally when using mainstream mice.  You should change this value from the default only if you can guarantee that all your users will use the same hardware and OS configuration as your current machine.`);
     }
 

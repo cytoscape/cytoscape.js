@@ -40,8 +40,9 @@ styfn.parse = function( name, value, propIsBypass, propIsFlat ){
 
 styfn.parseImplWarn = function( name, value, propIsBypass, propIsFlat ){
   let prop = this.parseImpl( name, value, propIsBypass, propIsFlat );
+  const cy = this._private.cy;
 
-  if( !prop && value != null ){
+  if( !prop && value != null && cy.options().warnings ){
     util.warn(`The style property \`${name}: ${value}\` is invalid`);
   }
 
@@ -56,6 +57,7 @@ styfn.parseImplWarn = function( name, value, propIsBypass, propIsFlat ){
 // - bypass : true iff the property is a bypass property
 styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
   let self = this;
+  const cy = this._private.cy;
 
   name = util.camel2dash( name ); // make sure the property name is in dash form (e.g. 'property-name' not 'propertyName')
 
@@ -137,7 +139,9 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
 
     // check if valueMin and valueMax are the same
     if( valueMin.pfValue === valueMax.pfValue || valueMin.strValue === valueMax.strValue ){
-      util.warn('`' + name + ': ' + value + '` is not a valid mapper because the output range is zero; converting to `' + name + ': ' + valueMin.strValue + '`');
+      if ( cy.options().warnings ) {
+        util.warn('`' + name + ': ' + value + '` is not a valid mapper because the output range is zero; converting to `' + name + ': ' + valueMin.strValue + '`');
+      }
 
       return this.parse(name, valueMin.strValue); // can't make much of a mapper without a range
 
@@ -354,7 +358,7 @@ styfn.parseImpl = function( name, value, propIsBypass, propIsFlat ){
 
         if( self.properties[ propName ] ){
           props.push( propName );
-        } else {
+        } else if( cy.options().warnings ) {
           util.warn('`' + propName + '` is not a valid property name');
         }
       }

@@ -204,7 +204,7 @@ BreadthFirstLayout.prototype.run = function(){
 
       if( didShift ){
         ele.outgoers().filter( el => el.isNode() && eles.has(el) ).forEach( enqueue );
-      } else if( didShift === null ){
+      } else if( didShift === null && cy.options().warnings ){
         util.warn('Detected double maximal shift for node `' + ele.id() + '`.  Bailing maximal adjustment due to cycle.  Use `options.maximal: true` only on DAGs.');
 
         break; // exit on failure

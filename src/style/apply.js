@@ -380,6 +380,7 @@ styfn.clearStyleHints = function(ele){
 // the generated flattenedProp:{ bypassed: parsedProp }
 styfn.applyParsedProperty = function( ele, parsedProp ){
   let self = this;
+  let cy = self._private.cy;
   let prop = parsedProp;
   let style = ele._private.style;
   let flatProp;
@@ -472,7 +473,9 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
   }
 
   let printMappingErr = function(){
-    util.warn( 'Do not assign mappings to elements without corresponding data (i.e. ele `' + ele.id() + '` has no mapping for property `' + prop.name + '` with data field `' + prop.field + '`); try a `[' + prop.field + ']` selector to limit scope to elements with `' + prop.field + '` defined' );
+    if( cy.options().warnings ) {
+      util.warn( 'Do not assign mappings to elements without corresponding data (i.e. ele `' + ele.id() + '` has no mapping for property `' + prop.name + '` with data field `' + prop.field + '`); try a `[' + prop.field + ']` selector to limit scope to elements with `' + prop.field + '` defined' );
+    }
   };
 
   // put the property in the style objects
@@ -494,7 +497,9 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
 
     let percent;
     if( !is.number( fieldVal ) ){ // then don't apply and fall back on the existing style
-      util.warn('Do not use continuous mappers without specifying numeric data (i.e. `' + prop.field + ': ' + fieldVal + '` for `' + ele.id() + '` is non-numeric)');
+      if( cy.options().warnings ) {
+        util.warn('Do not use continuous mappers without specifying numeric data (i.e. `' + prop.field + ': ' + fieldVal + '` for `' + ele.id() + '` is non-numeric)');
+      }
       return false;
     } else {
       let fieldWidth = prop.fieldMax - prop.fieldMin;
@@ -589,14 +594,18 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
     prop.prevFnValue = fnRetVal;
 
     if( fnRetVal == null ){
-      util.warn('Custom function mappers may not return null (i.e. `' + prop.name + '` for ele `' + ele.id() + '` is null)');
+      if( cy.options().warnings ) {
+        util.warn('Custom function mappers may not return null (i.e. `' + prop.name + '` for ele `' + ele.id() + '` is null)');
+      }
       return false;
     }
 
     flatProp = this.parse( prop.name, fnRetVal, prop.bypass, flatPropMapping );
 
     if( !flatProp ){
-      util.warn('Custom function mappers may not return invalid values for the property type (i.e. `' + prop.name + '` for ele `' + ele.id() + '` is invalid)');
+      if( cy.options().warnings ) {
+        util.warn('Custom function mappers may not return invalid values for the property type (i.e. `' + prop.name + '` for ele `' + ele.id() + '` is invalid)');
+      }
       return false;
     }
 

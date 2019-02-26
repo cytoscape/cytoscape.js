@@ -90,7 +90,8 @@ let Core = function( opts ){
       current: [],
       queue: []
     },
-    hasCompoundNodes: false
+    hasCompoundNodes: false,
+    warnings: defVal( true, options.warnings ), // whether to log warnings in instance
   };
 
   this.createEmitter();

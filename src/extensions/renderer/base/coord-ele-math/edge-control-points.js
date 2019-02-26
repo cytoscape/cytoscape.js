@@ -125,12 +125,16 @@ BRp.storeAllpts = function( edge ){
 };
 
 BRp.checkForInvalidEdgeWarning = function( edge ){
+  var r = this;
+  var cy = r.cy;
   var rs = edge._private.rscratch;
 
   if( !is.number(rs.startX) || !is.number(rs.startY) || !is.number(rs.endX) || !is.number(rs.endY) ){
     if( !rs.loggedErr ){
       rs.loggedErr = true;
-      util.warn('Edge `' + edge.id() + '` has invalid endpoints and so it is impossible to draw.  Adjust your edge style (e.g. control points) accordingly or use an alternative edge type.  This is expected behaviour when the source node and the target node overlap.');
+      if( cy.options().warnings ) {
+        util.warn('Edge `' + edge.id() + '` has invalid endpoints and so it is impossible to draw.  Adjust your edge style (e.g. control points) accordingly or use an alternative edge type.  This is expected behaviour when the source node and the target node overlap.');
+      }
     }
   } else {
     rs.loggedErr = false;

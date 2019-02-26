@@ -631,8 +631,14 @@ BRp.findEdgeControlPoints = function( edges ){
           tgtIntn: srcIntn,
           srcShape: tgtShape,
           tgtShape: srcShape,
-          posPts: [ posPts.x2, posPts.y2, posPts.x1, posPts.x2 ],
-          midptSrcPts: [midptSrcPts.x2, midptSrcPts.y2, midptSrcPts.x1, midptSrcPts.y1],
+          posPts: {
+            x1: posPts.x2, y1: posPts.y2,
+            x2: posPts.x1, y2: posPts.y1
+          },
+          midptSrcPts: {
+            x1: midptSrcPts.x2, y1: midptSrcPts.y2,
+            x2: midptSrcPts.x1, y2: midptSrcPts.y1
+          },
           vector: { x: -vector.x, y: -vector.y },
           vectorNorm: { x: -vectorNorm.x, y: -vectorNorm.y },
           vectorNormInverse: { x: -vectorNormInverse.x, y: -vectorNormInverse.y }

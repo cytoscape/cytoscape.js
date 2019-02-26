@@ -5,6 +5,11 @@
     "text-halign": "left"
   }
 }, {
+  "selector": "node[?flipLabel]",
+  "style": {
+    "text-halign": "right"
+  }
+}, {
   "selector": "node[type]",
   "style": {
     "label": "data(type)"
@@ -46,5 +51,13 @@
     "curve-style": "segments",
     "segment-distances": [ 40, -40 ],
     "segment-weights": [0.250 , 0.75]
+  }
+}, {
+  "selector": "edge.taxi",
+  "style": {
+    "curve-style": "taxi",
+    "taxi-direction": "downward",
+    "taxi-turn": 20,
+    "taxi-turn-min-distance": 5
   }
 }]

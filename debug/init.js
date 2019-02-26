@@ -7,37 +7,42 @@ var cy, defaultSty, options;
   defaultSty  = cytoscape.stylesheet()
 
       .selector('node')
-        .css({
+        .style({
           'label': 'data(id)'
         })
 
       .selector('edge')
-        .css({
+        .style({
           'source-arrow-shape': 'triangle-backcurve',
           'target-arrow-shape': 'triangle',
           'mid-target-arrow-shape': 'triangle',
           'mid-source-arrow-shape': 'triangle-backcurve'
         })
       .selector('#ab')
-        .css({
+        .style({
           'curve-style': 'unbundled-bezier',
           'control-point-distances': [ 20, -100, 20 ],
           'control-point-weights': [ 0.25, 0.5, 0.75 ],
         })
       .selector('#bc')
-        .css({
+        .style({
           'curve-style': 'segments',
           'segment-distances': [ 20, -80 ],
           'segment-weights': [ 0.25, 0.5 ],
         })
       .selector('[source = "c"][target = "e"]')
-        .css({
+        .style({
           'curve-style': 'haystack',
           'haystack-radius': 0.5
         })
       .selector('[source = "d"][target = "e"]')
-        .css({
+        .style({
           'curve-style': 'bezier'
+        })
+      .selector('[source = "b"][target = "f"]')
+        .style({
+          'curve-style': 'taxi',
+          'taxi-direction': 'vertical'
         })
   ;
 
@@ -62,7 +67,8 @@ var cy, defaultSty, options;
         { data: { id: 'b', weight: 30 } },
         { data: { id: 'c', weight: 20 } },
         { data: { id: 'd', weight: 10 } },
-        { data: { id: 'e', weight: 75 } }
+        { data: { id: 'e', weight: 75 } },
+        { data: { id: 'f', weight: 100 } }
       ],
 
       edges: [
@@ -80,7 +86,8 @@ var cy, defaultSty, options;
         { data: { id: 'de2', weight: 7, source: 'd', target: 'e' } },
         { data: { id: 'de3', weight: 7, source: 'd', target: 'e' } },
         { data: { id: 'de4', weight: 7, source: 'd', target: 'e' } },
-        { data: { id: 'de5', weight: 7, source: 'd', target: 'e' } }
+        { data: { id: 'de5', weight: 7, source: 'd', target: 'e' } },
+        { data: { id: 'bf', weight: 3, source: 'b', target: 'f' } }
       ]
     }
   };

@@ -127,7 +127,7 @@ cytoscape({
  * Values requiring a number, such as a length, can be specified in pixel values (e.g. `24px`), unitless values that are implicitly in pixels (e.g. `24`), or em values (e.g. `2em`).  Sizes are specified in [model co-ordinates](#notation/position), so on-screen (rendered) sizes are as specified at zoom 1.
  * Opacity values are specified as numbers ranging on `0 <= opacity <= 1` (e.g `0.5`).
  * Time is measured in units of ms or s (e.g. `250ms`).
- * Angles are measured in radians (e.g. `3.14rad`) or degrees (e.g. `180deg`).
+ * Angles are measured in radians (e.g. `3.14rad`) or degrees (e.g. `180deg`), clockwise.
  * Properties that specify a list of values may be formatted in one of the following formats:
    * A space-separated string (e.g. `'red rgb(0,255,0) blue'`)
      * Note that for lists of colours, this means that you can not use spaces within `rgb()` or `hsl()`.
@@ -533,6 +533,7 @@ Margins:
 Rotating text:
 
  * **`text-rotation`** : A rotation angle that is applied to the label.
+  * Rotations are clockwise.
   * For edges, the special value `autorotate` can be used to align the label to the edge.
   * For nodes, the label is rotated along its anchor point on the node, so a label margin may help for some usecases.
   * The special value `none` can be used to denote `0deg`.

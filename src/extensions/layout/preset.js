@@ -1,5 +1,6 @@
 import * as util from '../../util';
 import * as is from '../../is';
+import { copyPosition } from '../../math';
 
 let defaults = {
   positions: undefined, // map of (node id) => (position obj); or function(node){ return somPos; }
@@ -13,7 +14,7 @@ let defaults = {
   animateFilter: function ( node, i ){ return true; }, // a function that determines whether the node should be animated.  All nodes animated by default on animate enabled.  Non-animated nodes are positioned immediately when the layout starts
   ready: undefined, // callback on layoutready
   stop: undefined, // callback on layoutstop
-  transform: function (node, position ){ return position; } // transform a given node position. Useful for changing flow direction in discrete layouts 
+  transform: function (node, position ){ return position; } // transform a given node position. Useful for changing flow direction in discrete layouts
 };
 
 function PresetLayout( options ){
@@ -29,7 +30,7 @@ PresetLayout.prototype.run = function(){
 
   function getPosition( node ){
     if( options.positions == null ){
-      return null;
+      return copyPosition( node.position() );
     }
 
     if( posIsFn ){

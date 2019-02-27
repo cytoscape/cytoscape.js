@@ -15,6 +15,7 @@ export * from './hash';
 
 export { strings, extend, extend as assign, memoize, regex, sort };
 
+let warningsEnabled = true;
 let warnSupported = console.warn != null; // eslint-disable-line no-console
 let traceSupported = console.trace != null; // eslint-disable-line no-console
 
@@ -32,7 +33,17 @@ export const error = msg => {
   throw new Error( msg );
 };
 
+export const warnings = enabled => {
+  if( enabled !== undefined ){
+    warningsEnabled = !!enabled;
+  } else {
+    return warningsEnabled;
+  }
+};
+
 export const warn = msg => { /* eslint-disable no-console */
+  if( !warnings() ){ return; }
+
   if( warnSupported ){
     console.warn( msg );
   } else {

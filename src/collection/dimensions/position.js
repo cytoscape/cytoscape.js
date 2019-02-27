@@ -106,7 +106,11 @@ fn = elesfn = ({
     let delta;
 
     if( is.plainObject( dim ) ){
-      delta = dim;
+      delta = {
+        x: is.number(dim.x) ? dim.x : 0,
+        y: is.number(dim.y) ? dim.y : 0
+      };
+
       silent = val;
     } else if( is.string( dim ) && is.number( val ) ){
       delta = { x: 0, y: 0 };

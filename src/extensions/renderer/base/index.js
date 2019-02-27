@@ -1,4 +1,5 @@
 import * as util from '../../../util';
+import * as is from '../../../is';
 import window from '../../../window';
 
 import arrowShapes from './arrow-shapes';
@@ -85,7 +86,7 @@ BRp.init = function( options ){
   r.textureOnViewport = options.textureOnViewport;
   r.wheelSensitivity = options.wheelSensitivity;
   r.motionBlurEnabled = options.motionBlur; // on by default
-  r.forcedPixelRatio = options.pixelRatio;
+  r.forcedPixelRatio = is.number(options.pixelRatio) ? options.pixelRatio : null;
   r.motionBlur = options.motionBlur; // for initial kick off
   r.motionBlurOpacity = options.motionBlurOpacity;
   r.motionBlurTransparency = 1 - r.motionBlurOpacity;

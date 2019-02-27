@@ -113,6 +113,53 @@ describe('Collection position & dimensions', function(){
     });
   });
 
+  describe('eles.shift()', function(){
+    it('shifts only one dimension in passed object', function(){
+      var n1 = cy.$('#n1');
+      var n1p = cy.$('#n1').position();
+      var p = { x: n1p.x, y: n1p.y };
+
+      n1.shift({ x: 100 });
+
+      expect(n1.position().x).to.equal(p.x + 100);
+      expect(n1.position().y).to.equal(p.y);
+    });
+
+    it('shifts only one dimension with multiple args', function(){
+      var n1 = cy.$('#n1');
+      var n1p = cy.$('#n1').position();
+      var p = { x: n1p.x, y: n1p.y };
+
+      n1.shift('x', 100);
+
+      expect(n1.position().x).to.equal(p.x + 100);
+      expect(n1.position().y).to.equal(p.y);
+    });
+
+    it('shifts both dimensions in passed object', function(){
+      var n1 = cy.$('#n1');
+      var n1p = cy.$('#n1').position();
+      var p = { x: n1p.x, y: n1p.y };
+
+      n1.shift({ x: 100, y: 200 });
+
+      expect(n1.position().x).to.equal(p.x + 100);
+      expect(n1.position().y).to.equal(p.y + 200);
+    });
+
+    it('shifts both dimensions with multiple args', function(){
+      var n1 = cy.$('#n1');
+      var n1p = cy.$('#n1').position();
+      var p = { x: n1p.x, y: n1p.y };
+
+      n1.shift('x', 100);
+      n1.shift('y', 200);
+
+      expect(n1.position().x).to.equal(p.x + 100);
+      expect(n1.position().y).to.equal(p.y + 200);
+    });
+  });
+
   describe('eles.lock() etc', function(){
 
     it('should prevent position changes', function(){

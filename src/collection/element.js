@@ -105,7 +105,7 @@ let Element = function( cy, params, restore ){
   if( bypass ){
     util.warn('Setting a `style` bypass at element creation is deprecated');
 
-    cy.style().applyBypass( this, bypass );
+    this.style(bypass);
   }
 
   if( restore === undefined || restore ){

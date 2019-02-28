@@ -99,14 +99,14 @@ let Element = function( cy, params, restore ){
     _p.classes.add(cls);
   }
 
+  this.createEmitter();
+
   let bypass = params.style || params.css;
   if( bypass ){
     util.warn('Setting a `style` bypass at element creation is deprecated');
 
     cy.style().applyBypass( this, bypass );
   }
-
-  this.createEmitter();
 
   if( restore === undefined || restore ){
     this.restore();

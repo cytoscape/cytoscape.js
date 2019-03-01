@@ -31,7 +31,7 @@ CRp.drawCachedElementPortion = function( context, ele, eleTxrCache, pxRatio, lvl
   let eleCache = eleTxrCache.getElement( ele, bb, pxRatio, lvl, reason );
 
   if( eleCache != null ){
-    let opacity = ele.pstyle('opacity').pfValue;
+    let opacity = ele.effectiveOpacity();
 
     if( opacity === 0 ){ return; }
 

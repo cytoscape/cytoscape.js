@@ -284,14 +284,16 @@ BRp.findTaxiPoints = function( edge, pairInfo ){
   const dx = subDWH(pdx, dw);
   const dy = subDWH(pdy, dh);
 
+  let isExplicitDir = false;
+
   if( taxiDir === AUTO ){
     taxiDir = Math.abs(dx) > Math.abs(dy) ? HORIZONTAL : VERTICAL;
-  }
-
-  if( taxiDir === UPWARD || taxiDir === DOWNWARD ){
+  } else if( taxiDir === UPWARD || taxiDir === DOWNWARD ){
     taxiDir = VERTICAL;
+    isExplicitDir = true;
   } else if( taxiDir === LEFTWARD || taxiDir === RIGHTWARD ){
     taxiDir = HORIZONTAL;
+    isExplicitDir = true;
   }
 
   const isVert = taxiDir === VERTICAL;
@@ -301,10 +303,13 @@ BRp.findTaxiPoints = function( edge, pairInfo ){
 
   let forcedDir = false;
   if(
-    (rawTaxiDir === DOWNWARD && pl < 0)
-    || (rawTaxiDir === UPWARD && pl > 0)
-    || (rawTaxiDir === LEFTWARD && pl > 0)
-    || (rawTaxiDir === RIGHTWARD && pl < 0)
+    !(isExplicitDir && turnIsPercent) // forcing in this case would cause weird growing in the opposite direction
+    && (
+      (rawTaxiDir === DOWNWARD && pl < 0)
+      || (rawTaxiDir === UPWARD && pl > 0)
+      || (rawTaxiDir === LEFTWARD && pl > 0)
+      || (rawTaxiDir === RIGHTWARD && pl < 0)
+    )
   ){
     sgnL *= -1;
     l = sgnL * Math.abs(l);

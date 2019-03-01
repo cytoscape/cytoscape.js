@@ -420,20 +420,24 @@ For hierarchical, bundled edges (`curve-style: taxi`, [demo](demos/edge-types)):
 
 A taxi edge (`curve-style: taxi`) is drawn as a series of right-angled lines (i.e. in [taxicab geometry](https://en.wikipedia.org/wiki/Taxicab_geometry)).  The edge has a primary direction along either the x-axis or y-axis, which can be used to bundle edges in a hierarchy.  That is, taxi edges are appropriate for trees and DAGs that are laid out in a hierarchical manner.
 
-A taxi edge has at most two visible turns:  Starting from the source node, the edge goes in the primary direction for the specified distance.  The edge then turns, going towards the target along the secondary axis.  The first turn can be specified in order to bundle the edges of successor nodes.  The second turn is implicit, based on the first turn, going the remaining distance along the main axis.
+A taxi edge has at most two visible turns:  Starting from the source node, the edge goes in the primary direction for the specified distance.  The edge then turns, going towards the target along the secondary axis.  The first turn can be specified in order to bundle the edges of outgoing nodes.  The second turn is implicit, based on the first turn, going the remaining distance along the main axis.
 
-When a taxi edge would be impossible to draw along the regular turning plan --- i.e. one or more turns is too close the source or target --- it is re-routed.  The re-routing is carried out on a best-effort basis:  Re-routing prioritises the specified direction for bundling over the specified turn distance.  A `downward` edge, for example, will avoid going in the upward direction where possible.  In practice, re-routing should not take place for well laid out graphs.  It is only when the source and target are very close together that re-routing is applied.
+When a taxi edge would be impossible to draw along the regular turning plan --- i.e. one or more turns is too close the source or target --- it is re-routed.  The re-routing is carried out on a best-effort basis:  Re-routing prioritises the specified direction for bundling over the specified turn distance.  A `downward` edge, for example, will avoid going in the upward direction where possible.  In practice, re-routing should not take place for graphs that are well laid out.
 
 * **`taxi-direction`** : The main direction of the edge, the direction starting out from the source node; may be one of:
   * `auto` : Automatically use `vertical` or `horizontal`, based on whether the vertical or horizontal distance is largest.
   * `vertical` : Automatically use `downward` or `upward`, based on the vertical direction from source to target.
-  * `downward` : Bundle successors downwards.
-  * `upward` : Bundle successors upwards.
+  * `downward` : Bundle outgoers downwards.
+  * `upward` : Bundle outgoers upwards.
   * `horizontal` : Automatically use `righward` or `leftward`, based on the horizontal direction from source to target.
-  * `rightward` : Bundle successors righwards.
-  * `leftward` : Bundle successors leftwards.
-* **`taxi-turn`** : The distance along the primary axis where the first turn is applied.  This value may be an absolute distance (e.g. `20px`) or it may be a relative distance between the source and target (e.g. `50%`).
-* **`taxi-turn-min-distance`** : The minimum distance along the primary axis that is maintained between the nodes and the turns.  This value only takes on absolute values (e.g. `5px`).  This property makes the taxi edge be re-routed when the turns would be otherwise too close to the source or target.  As such, it also helps to avoid turns overlapping edge endpoint arrows.
+  * `rightward` : Bundle outgoers righwards.
+  * `leftward` : Bundle outgoers leftwards.
+* **`taxi-turn`** : The distance along the primary axis where the first turn is applied.
+  * This value may be an absolute distance (e.g. `20px`) or it may be a relative distance between the source and target (e.g. `50%`).
+  * Note that bundling may not work with an explicit direction (`upward`, `downward`, `leftward`, or `rightward`) in tandem with a turn distance specified in percent units.
+* **`taxi-turn-min-distance`** : The minimum distance along the primary axis that is maintained between the nodes and the turns.
+  * This value only takes on absolute values (e.g. `5px`).
+  * This property makes the taxi edge be re-routed when the turns would be otherwise too close to the source or target.  As such, it also helps to avoid turns overlapping edge endpoint arrows.
 * **`edge-distances`** : With value `intersection` (default), the distances (`taxi-turn` and `taxi-turn-min-distance`) are considered from the outside of the source's bounds to the outside of the target's bounds.  With value `node-position`, the distances are considered from the source position to the target position.  The `node-position` option makes calculating edge points easier --- but it should be used carefully because you can create invalid points that `intersection` would have automatically corrected.
 
 

@@ -73,11 +73,11 @@ function CanvasRenderer( options ){
     'user-select': 'none',
     '-webkit-tap-highlight-color': 'rgba(0,0,0,0)',
     'outline-style': 'none',
-  }
+  };
 
   if(is.ms()) {
-    styleMap['-ms-touch-action'] = 'none'
-    styleMap['touch-action'] = 'none'
+    styleMap['-ms-touch-action'] = 'none';
+    styleMap['touch-action'] = 'none';
   }
 
   for( var i = 0; i < CRp.CANVAS_LAYERS; i++ ){

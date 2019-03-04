@@ -38,7 +38,11 @@ BRp.registerCalculationListeners = function(){
       var fns = r.onUpdateEleCalcsFns;
 
       for( var i = 0; i < elesToUpdate.length; i++ ){
-        enqueue( elesToUpdate[i].connectedEdges() );
+        var ele = elesToUpdate[i];
+
+        if( ele.isNode() && !ele._private.rstyle.clean ){
+          enqueue( ele.connectedEdges() );
+        }
       }
 
       if( fns ){ for( var i = 0; i < fns.length; i++ ){

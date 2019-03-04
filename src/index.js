@@ -3,6 +3,7 @@ import Core from './core';
 import extension from './extension';
 import Stylesheet from './stylesheet';
 import version from './version';
+import { warnings } from './util';
 
 let cytoscape = function( options ){
   // if no options specified, use default
@@ -30,6 +31,10 @@ cytoscape.use = function( ext ){
   ext.apply( null, args );
 
   return this;
+};
+
+cytoscape.warnings = function(bool){
+  return warnings(bool);
 };
 
 // replaced by build system

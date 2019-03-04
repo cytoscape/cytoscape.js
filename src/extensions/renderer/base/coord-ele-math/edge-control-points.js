@@ -651,8 +651,7 @@ BRp.findEdgeControlPoints = function( edges ){
     let swappedpairInfo;
 
     if( !pairInfo.hasUnbundled ){
-      let isBundledBezier = edge => edge.pstyle( 'curve-style' ).value === 'bezier';
-      let pllEdges = pairInfo.eles[0].parallelEdges().filter(isBundledBezier);
+      let pllEdges = pairInfo.eles[0].parallelEdges().filter(e => e.isBundledBezier());
 
       util.clearArray( pairInfo.eles );
 

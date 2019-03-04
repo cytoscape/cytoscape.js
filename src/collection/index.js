@@ -725,6 +725,7 @@ elesfn.move = function( struct ){
     if( srcExists || tgtExists ){
       cy.batch(() => { // avoid duplicate style updates
         eles.remove( notifyRenderer, modifyPool ); // clean up refs etc.
+        eles.emitAndNotify('moveout');
 
         for( let i = 0; i < eles.length; i++ ){
           let ele = eles[i];
@@ -752,6 +753,7 @@ elesfn.move = function( struct ){
 
       cy.batch(() => { // avoid duplicate style updates
         let updated = eles.remove( notifyRenderer, modifyPool ); // clean up refs etc.
+        updated.emitAndNotify('moveout');
 
         for( let i = 0; i < eles.length; i++ ){
           let ele = eles[i];

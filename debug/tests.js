@@ -691,4 +691,57 @@
       cy.off('tap');
     }
   });
+
+  var de = cy.$('#de');
+  var deToggle = false;
+
+  test({
+    name: "rmBez",
+    displayName: "Remove bundled bezier",
+    description: "Tap background to toggle removing edge `de`",
+    setup: function(){
+      deToggle = false;
+
+      cy.on('tap', function(e){
+        if( e.target !== cy ){ return; }
+
+        deToggle = !deToggle;
+
+        if( deToggle ){
+          de.remove();
+        } else {
+          de.restore();
+        }
+      });
+    },
+    teardown: function(){
+      cy.off('tap');
+      de.restore();
+    }
+  });
+
+  test({
+    name: "mvBez",
+    displayName: "Move bundled bezier",
+    description: "Tap background to toggle moving edge `de` to source `e` target `f`",
+    setup: function(){
+      deToggle = false;
+
+      cy.on('tap', function(e){
+        if( e.target !== cy ){ return; }
+
+        deToggle = !deToggle;
+
+        if( deToggle ){
+          de.move({ source: 'e', target: 'f' });
+        } else {
+          de.move({ source: 'd', target: 'e' });
+        }
+      });
+    },
+    teardown: function(){
+      cy.off('tap');
+      de.move({ source: 'd', target: 'e' });
+    }
+  });
 })();

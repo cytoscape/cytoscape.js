@@ -291,4 +291,17 @@ describe('Core initialisation', function(){
     });
   });
 
+  it('does not throw when setting a bypass at init (headless)', function(){
+    cytoscape({
+      elements: [
+        {
+          data: { id: 'foo' },
+          style: {
+            'border-width': 10
+          }
+        }
+      ]
+    });
+  });
+
 });

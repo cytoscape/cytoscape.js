@@ -161,6 +161,17 @@ describe('Core graph manipulation', function(){
 
     });
 
+    it('adds with a bypass that alters bounds', function(){
+      cy.add({
+        data: { id: 'foo' },
+        style: {
+          'border-width': 10
+        }
+      });
+
+      expect( cy.$('#foo').numericStyle('border-width') ).to.equal(10);
+    });
+
   });
 
   describe('eles.restore()', function(){

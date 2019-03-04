@@ -50,7 +50,7 @@ BRp.findHaystackPoints = function( edges ){
     rs.midY = (rs.allpts[1] + rs.allpts[3]) / 2;
 
     // always override as haystack in case set to different type previously
-    rs.edgeType = rs.lastCurveStyle = 'haystack';
+    rs.edgeType = 'haystack';
     rs.haystack = true;
 
     this.storeEdgeProjections( edge );

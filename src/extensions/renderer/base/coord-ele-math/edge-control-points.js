@@ -135,9 +135,10 @@ BRp.findLoopPoints = function( edge, pairInfo, i, edgeIsUnbundled ){
 BRp.findCompoundLoopPoints = function( edge, pairInfo, i, edgeIsUnbundled ){
   // Compound edge
 
+  const rs = edge._private.rscratch;
+
   rs.edgeType = 'compound';
 
-  const rs = edge._private.rscratch;
   const { srcPos, tgtPos, srcW, srcH, tgtW, tgtH } = pairInfo;
   const stepSize = edge.pstyle('control-point-step-size').pfValue;
   const ctrlptDists = edge.pstyle('control-point-distances');
@@ -801,18 +802,20 @@ BRp.findEdgeControlPoints = function( edges ){
       }
 
       rs.nodesOverlap = pairInfo.nodesOverlap;
+      rs.srcIntn = pairInfo.srcIntn;
+      rs.tgtIntn = pairInfo.tgtIntn;
 
       const passedPairInfo = edgeIsSwapped ? swappedpairInfo : pairInfo;
 
-      if( src === tgt ){
-        this.findLoopPoints(edge, passedPairInfo, i, edgeIsUnbundled);
-
-      } else if(
+      if(
         hasCompounds &&
         ( src.isParent() || src.isChild() || tgt.isParent() || tgt.isChild() ) &&
-        ( src.parents().anySame( tgt ) || tgt.parents().anySame( src ) )
+        ( src.parents().anySame(tgt) || tgt.parents().anySame(src) || src.same(tgt) )
       ){
         this.findCompoundLoopPoints(edge, passedPairInfo, i, edgeIsUnbundled);
+
+      } else if( src === tgt ){
+        this.findLoopPoints(edge, passedPairInfo, i, edgeIsUnbundled);
 
       } else if( curveStyle === 'segments' ){
         this.findSegmentsPoints(edge, passedPairInfo);

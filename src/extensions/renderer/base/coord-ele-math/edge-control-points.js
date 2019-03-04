@@ -208,7 +208,7 @@ BRp.findEdgeControlPoints = function( edges ){
     var pairEdges = hashTable[ pairId ];
 
     if( !pairEdges.hasUnbundled ){
-      let pllEdges = pairEdges[0].parallelEdges();
+      let pllEdges = pairEdges[0].parallelEdges().filter(e => e.isBundledBezier());
 
       util.clearArray( pairEdges );
 

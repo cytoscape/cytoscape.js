@@ -31,6 +31,14 @@ BRp.registerCalculationListeners = function(){
 
       enqueue( ele, false );
     })
+
+    .on('remove.* moveout.*', function onRemove( e ){
+      var ele = e.target;
+
+      if( ele.isEdge() && ele.isBundledBezier() ){
+        enqueue(ele.parallelEdges().filter(edge => edge.isBundledBezier()));
+      }
+    })
   ;
 
   var updateEleCalcs = function( willDraw ){

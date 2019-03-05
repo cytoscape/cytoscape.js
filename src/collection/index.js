@@ -611,9 +611,9 @@ elesfn.remove = function( notifyRenderer = true, removeFromPool = true ){
     node.clearTraversalCache();
   }
 
-  function removeParallelRefs( edge ){
+  function removeParallelRef( pllEdge ){
     // removing an edge invalidates the traversal caches for the parallel edges
-    edge.parallelEdges().clearTraversalCache();
+    pllEdge.clearTraversalCache();
   }
 
   let alteredParents = [];
@@ -645,18 +645,24 @@ elesfn.remove = function( notifyRenderer = true, removeFromPool = true ){
   for( let i = 0; i < elesToRemove.length; i++ ){
     let ele = elesToRemove[ i ];
 
-    if( removeFromPool ){
-      // mark as removed
-      ele._private.removed = true;
-    }
-
     if( ele.isEdge() ){ // remove references to this edge in its connected nodes
       let src = ele.source()[0];
       let tgt = ele.target()[0];
 
       removeEdgeRef( src, ele );
       removeEdgeRef( tgt, ele );
-      removeParallelRefs( ele );
+
+      let pllEdges = ele.parallelEdges();
+
+      for( let j = 0; j < pllEdges.length; j++ ){
+        let pllEdge = pllEdges[j];
+
+        removeParallelRef(pllEdge);
+
+        if( pllEdge.isBundledBezier() ){
+          pllEdge.dirtyBoundingBoxCache();
+        }
+      }
 
     } else { // remove reference to parent
       let parent = ele.parent();
@@ -664,6 +670,11 @@ elesfn.remove = function( notifyRenderer = true, removeFromPool = true ){
       if( parent.length !== 0 ){
         removeChildRef( parent, ele );
       }
+    }
+
+    if( removeFromPool ){
+      // mark as removed
+      ele._private.removed = true;
     }
   }
 

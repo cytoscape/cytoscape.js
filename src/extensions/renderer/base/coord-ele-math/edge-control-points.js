@@ -607,7 +607,7 @@ BRp.findEdgeControlPoints = function( edges ){
 
     // ignore edges who are not to be displayed
     // they shouldn't take up space
-    if( edge.pstyle( 'display').value === 'none' ){
+    if( edge.removed() || !edge.takesUpSpace() ){
       continue;
     }
 

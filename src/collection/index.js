@@ -554,7 +554,6 @@ elesfn.inside = function(){
 
 elesfn.remove = function( notifyRenderer = true, removeFromPool = true ){
   let self = this;
-  let removed = [];
   let elesToRemove = [];
   let elesToRemoveIds = {};
   let cy = self._private.cy;
@@ -651,9 +650,6 @@ elesfn.remove = function( notifyRenderer = true, removeFromPool = true ){
       ele._private.removed = true;
     }
 
-    // add to list of removed elements
-    removed.push( ele );
-
     if( ele.isEdge() ){ // remove references to this edge in its connected nodes
       let src = ele.source()[0];
       let tgt = ele.target()[0];
@@ -683,7 +679,7 @@ elesfn.remove = function( notifyRenderer = true, removeFromPool = true ){
     }
   }
 
-  let removedElements = new Collection( this.cy(), removed );
+  let removedElements = new Collection( this.cy(), elesToRemove );
 
   if( removedElements.size() > 0 ){
     // must manually notify since trigger won't do this automatically once removed

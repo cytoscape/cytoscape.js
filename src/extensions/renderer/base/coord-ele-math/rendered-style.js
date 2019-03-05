@@ -132,8 +132,6 @@ BRp.recalculateRenderedStyle = function( eles, useCache ){
     var rstyle = _p.rstyle;
     var rs = _p.rscratch;
 
-    this.recalculateEdgeLabelProjections( ele );
-
     // update rstyle positions
     rstyle.srcX = rs.arrowStartX;
     rstyle.srcY = rs.arrowStartY;

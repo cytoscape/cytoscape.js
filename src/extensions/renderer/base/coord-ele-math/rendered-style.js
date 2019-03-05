@@ -21,23 +21,15 @@ BRp.registerCalculationListeners = function(){
 
   r.binder( cy )
     .on('bounds.* dirty.*', function onDirtyBounds( e ){
-      var node = e.target;
+      var ele = e.target;
 
-      enqueue( node );
+      enqueue( ele );
     })
 
     .on('style.* background.*', function onDirtyStyle( e ){
       var ele = e.target;
 
       enqueue( ele, false );
-    })
-
-    .on('remove.*', function onRemove( e ){
-      var ele = e.target;
-
-      if( ele.isEdge() && ele.isBundledBezier() ){
-        enqueue(ele.parallelEdges().filter(edge => edge.isBundledBezier()));
-      }
     })
   ;
 

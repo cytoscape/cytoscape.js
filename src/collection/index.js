@@ -552,7 +552,6 @@ elesfn.inside = function(){
 
 elesfn.remove = function( notifyRenderer ){
   let self = this;
-  let removed = [];
   let elesToRemove = [];
   let elesToRemoveIds = {};
   let cy = self._private.cy;
@@ -615,9 +614,9 @@ elesfn.remove = function( notifyRenderer ){
     node.clearTraversalCache();
   }
 
-  function removeParallelRefs( edge ){
+  function removeParallelRef( pllEdge ){
     // removing an edge invalidates the traversal caches for the parallel edges
-    edge.parallelEdges().clearTraversalCache();
+    pllEdge.clearTraversalCache();
   }
 
   let alteredParents = [];
@@ -645,19 +644,24 @@ elesfn.remove = function( notifyRenderer ){
   for( let i = 0; i < elesToRemove.length; i++ ){
     let ele = elesToRemove[ i ];
 
-    // mark as removed
-    ele._private.removed = true;
-
-    // add to list of removed elements
-    removed.push( ele );
-
     if( ele.isEdge() ){ // remove references to this edge in its connected nodes
       let src = ele.source()[0];
       let tgt = ele.target()[0];
 
       removeEdgeRef( src, ele );
       removeEdgeRef( tgt, ele );
-      removeParallelRefs( ele );
+
+      let pllEdges = ele.parallelEdges();
+
+      for( let j = 0; j < pllEdges.length; j++ ){
+        let pllEdge = pllEdges[j];
+
+        removeParallelRef(pllEdge);
+
+        if( pllEdge.isBundledBezier() ){
+          pllEdge.dirtyBoundingBoxCache();
+        }
+      }
 
     } else { // remove reference to parent
       let parent = ele.parent();
@@ -666,6 +670,8 @@ elesfn.remove = function( notifyRenderer ){
         removeChildRef( parent, ele );
       }
     }
+
+    ele._private.removed = true;
   }
 
   // check to see if we have a compound graph or not
@@ -680,7 +686,8 @@ elesfn.remove = function( notifyRenderer ){
     }
   }
 
-  let removedElements = new Collection( this.cy(), removed );
+  let removedElements = new Collection( this.cy(), elesToRemove );
+
   if( removedElements.size() > 0 ){
     // must manually notify since trigger won't do this automatically once removed
 
@@ -700,7 +707,7 @@ elesfn.remove = function( notifyRenderer ){
     }
   }
 
-  return new Collection( cy, removed );
+  return removedElements;
 };
 
 elesfn.move = function( struct ){

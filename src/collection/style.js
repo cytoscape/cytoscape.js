@@ -415,7 +415,7 @@ elesfn.hidden = function(){
 };
 
 elesfn.isBundledBezier = cachePrototypeStyleFunction('isBundledBezier', function(){
-  return this.pstyle('curve-style').value === 'bezier' && this.takesUpSpace();
+  return !this.removed() && this.pstyle('curve-style').value === 'bezier' && this.takesUpSpace();
 });
 
 elesfn.bypass = elesfn.css = elesfn.style;

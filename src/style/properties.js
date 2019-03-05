@@ -208,7 +208,7 @@ const styfn = {};
   ];
 
   let visibility = [
-    { name: 'display', type: t.display, triggersZOrder: diff.any, triggersBounds: diff.any },
+    { name: 'display', type: t.display, triggersZOrder: diff.any, triggersBounds: diff.any, triggersBoundsOfParallelBeziers: true },
     { name: 'visibility', type: t.visibility, triggersZOrder: diff.any },
     { name: 'opacity', type: t.zeroOneNumber, triggersZOrder: diff.zeroNonZero },
     { name: 'text-opacity', type: t.zeroOneNumber },
@@ -292,7 +292,7 @@ const styfn = {};
     { name: 'line-dash-offset', type: t.number },
     { name: 'line-gradient-stop-colors', type: t.colors },
     { name: 'line-gradient-stop-positions', type: t.percentages },
-    { name: 'curve-style', type: t.curveStyle, triggersBounds: diff.any },
+    { name: 'curve-style', type: t.curveStyle, triggersBounds: diff.any, triggersBoundsOfParallelBeziers: true },
     { name: 'haystack-radius', type: t.zeroOneNumber, triggersBounds: diff.any },
     { name: 'source-endpoint', type: t.edgeEndpoint, triggersBounds: diff.any },
     { name: 'target-endpoint', type: t.edgeEndpoint, triggersBounds: diff.any },

@@ -696,7 +696,7 @@ let cachedBoundingBoxImpl = function( ele, opts ){
 
   if( needRecalc ){
     if( !isPosKeySame ){
-      ele.recalculateRenderedStyle( false );
+      ele.recalculateRenderedStyle();
     }
 
     bb = boundingBoxImpl( ele, defBbOpts );

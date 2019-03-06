@@ -1178,14 +1178,13 @@ var Element = function Element(cy, params, restore) {
     _p.classes.add(cls);
   }
 
+  this.createEmitter();
   var bypass = params.style || params.css;
 
   if (bypass) {
     warn('Setting a `style` bypass at element creation is deprecated');
-    cy.style().applyBypass(this, bypass);
+    this.style(bypass);
   }
-
-  this.createEmitter();
 
   if (restore === undefined || restore) {
     this.restore();
@@ -8263,7 +8262,10 @@ fn$2 = elesfn$i = {
     var delta;
 
     if (plainObject(dim)) {
-      delta = dim;
+      delta = {
+        x: number(dim.x) ? dim.x : 0,
+        y: number(dim.y) ? dim.y : 0
+      };
       silent = val;
     } else if (string(dim) && number(val)) {
       delta = {
@@ -11164,6 +11166,9 @@ elesfn$q.hidden = function () {
   }
 };
 
+elesfn$q.isBundledBezier = cachePrototypeStyleFunction('isBundledBezier', function () {
+  return !this.removed() && this.pstyle('curve-style').value === 'bezier' && this.takesUpSpace();
+});
 elesfn$q.bypass = elesfn$q.css = elesfn$q.style;
 elesfn$q.renderedCss = elesfn$q.renderedStyle;
 elesfn$q.removeBypass = elesfn$q.removeCss = elesfn$q.removeStyle;
@@ -12312,7 +12317,6 @@ elesfn$t.remove = function () {
   var notifyRenderer = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : true;
   var removeFromPool = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
   var self = this;
-  var removed = [];
   var elesToRemove = [];
   var elesToRemoveIds = {};
   var cy = self._private.cy; // add connected edges
@@ -12367,9 +12371,9 @@ elesfn$t.remove = function () {
     node.clearTraversalCache();
   }
 
-  function removeParallelRefs(edge) {
+  function removeParallelRef(pllEdge) {
     // removing an edge invalidates the traversal caches for the parallel edges
-    edge.parallelEdges().clearTraversalCache();
+    pllEdge.clearTraversalCache();
   }
 
   var alteredParents = [];
@@ -12399,14 +12403,6 @@ elesfn$t.remove = function () {
   for (var _i5 = 0; _i5 < elesToRemove.length; _i5++) {
     var _ele3 = elesToRemove[_i5];
 
-    if (removeFromPool) {
-      // mark as removed
-      _ele3._private.removed = true;
-    } // add to list of removed elements
-
-
-    removed.push(_ele3);
-
     if (_ele3.isEdge()) {
       // remove references to this edge in its connected nodes
       var src = _ele3.source()[0];
@@ -12415,7 +12411,17 @@ elesfn$t.remove = function () {
 
       removeEdgeRef(src, _ele3);
       removeEdgeRef(tgt, _ele3);
-      removeParallelRefs(_ele3);
+
+      var pllEdges = _ele3.parallelEdges();
+
+      for (var j = 0; j < pllEdges.length; j++) {
+        var pllEdge = pllEdges[j];
+        removeParallelRef(pllEdge);
+
+        if (pllEdge.isBundledBezier()) {
+          pllEdge.dirtyBoundingBoxCache();
+        }
+      }
     } else {
       // remove reference to parent
       var parent = _ele3.parent();
@@ -12423,6 +12429,11 @@ elesfn$t.remove = function () {
       if (parent.length !== 0) {
         removeChildRef(parent, _ele3);
       }
+    }
+
+    if (removeFromPool) {
+      // mark as removed
+      _ele3._private.removed = true;
     }
   } // check to see if we have a compound graph or not
 
@@ -12439,7 +12450,7 @@ elesfn$t.remove = function () {
     }
   }
 
-  var removedElements = new Collection(this.cy(), removed);
+  var removedElements = new Collection(this.cy(), elesToRemove);
 
   if (removedElements.size() > 0) {
     // must manually notify since trigger won't do this automatically once removed
@@ -12481,6 +12492,8 @@ elesfn$t.move = function (struct) {
         // avoid duplicate style updates
         eles.remove(notifyRenderer, modifyPool); // clean up refs etc.
 
+        eles.emitAndNotify('moveout');
+
         for (var i = 0; i < eles.length; i++) {
           var ele = eles[i];
           var _data5 = ele._private.data;
@@ -12510,6 +12523,8 @@ elesfn$t.move = function (struct) {
       cy.batch(function () {
         // avoid duplicate style updates
         var updated = eles.remove(notifyRenderer, modifyPool); // clean up refs etc.
+
+        updated.emitAndNotify('moveout');
 
         for (var i = 0; i < eles.length; i++) {
           var ele = eles[i];
@@ -14484,7 +14499,7 @@ styfn.checkTrigger = function (ele, name, fromValue, toValue, getTrigger, onTrig
   var triggerCheck = getTrigger(prop);
 
   if (triggerCheck != null && triggerCheck(fromValue, toValue)) {
-    onTrigger();
+    onTrigger(prop);
   }
 };
 
@@ -14501,9 +14516,21 @@ styfn.checkZOrderTrigger = function (ele, name, fromValue, toValue) {
 styfn.checkBoundsTrigger = function (ele, name, fromValue, toValue) {
   this.checkTrigger(ele, name, fromValue, toValue, function (prop) {
     return prop.triggersBounds;
-  }, function () {
+  }, function (prop) {
     ele.dirtyCompoundBoundsCache();
-    ele.dirtyBoundingBoxCache();
+    ele.dirtyBoundingBoxCache(); // if the prop change makes the bb of pll bezier edges invalid,
+    // then dirty the pll edge bb cache as well
+
+    if ( // only for beziers -- so performance of other edges isn't affected
+    (ele.pstyle('curve-style').value === 'bezier' // already a bezier
+    // was just now changed to or from a bezier:
+    || name === 'curve-style' && (fromValue === 'bezier' || toValue === 'bezier')) && prop.triggersBoundsOfParallelBeziers) {
+      ele.parallelEdges().forEach(function (pllEdge) {
+        if (pllEdge.isBundledBezier()) {
+          pllEdge.dirtyBoundingBoxCache();
+        }
+      });
+    }
   });
 };
 
@@ -15563,7 +15590,8 @@ var styfn$6 = {};
     name: 'display',
     type: t.display,
     triggersZOrder: diff.any,
-    triggersBounds: diff.any
+    triggersBounds: diff.any,
+    triggersBoundsOfParallelBeziers: true
   }, {
     name: 'visibility',
     type: t.visibility,
@@ -15783,7 +15811,8 @@ var styfn$6 = {};
   }, {
     name: 'curve-style',
     type: t.curveStyle,
-    triggersBounds: diff.any
+    triggersBounds: diff.any,
+    triggersBoundsOfParallelBeziers: true
   }, {
     name: 'haystack-radius',
     type: t.zeroOneNumber,
@@ -21300,7 +21329,7 @@ BRp$3.findEdgeControlPoints = function (edges) {
     var edgeIsBezier = curveStyle === 'unbundled-bezier' || curveStyle === 'bezier'; // ignore edges who are not to be displayed
     // they shouldn't take up space
 
-    if (edge.pstyle('display').value === 'none') {
+    if (edge.removed() || !edge.takesUpSpace()) {
       continue;
     }
 
@@ -21345,7 +21374,9 @@ BRp$3.findEdgeControlPoints = function (edges) {
     var pairEdges = hashTable[pairId];
 
     if (!pairEdges.hasUnbundled) {
-      var pllEdges = pairEdges[0].parallelEdges();
+      var pllEdges = pairEdges[0].parallelEdges().filter(function (e) {
+        return e.isBundledBezier();
+      });
       clearArray(pairEdges);
       pllEdges.forEach(function (edge) {
         return pairEdges.push(edge);
@@ -22707,8 +22738,8 @@ BRp$8.registerCalculationListeners = function () {
   };
 
   r.binder(cy).on('bounds.* dirty.*', function onDirtyBounds(e) {
-    var node = e.target;
-    enqueue(node);
+    var ele = e.target;
+    enqueue(ele);
   }).on('style.* background.*', function onDirtyStyle(e) {
     var ele = e.target;
     enqueue(ele, false);
@@ -25520,10 +25551,10 @@ BRp$f.init = function (options) {
     }
 
     if (!stylesheetAlreadyExists) {
-      var stylesheet = document.createElement('style');
-      stylesheet.id = stylesheetId;
-      stylesheet.innerHTML = '.' + className + ' { position: relative; }';
-      head.insertBefore(stylesheet, head.children[0]); // first so lowest priority
+      var stylesheet$$1 = document.createElement('style');
+      stylesheet$$1.id = stylesheetId;
+      stylesheet$$1.innerHTML = '.' + className + ' { position: relative; }';
+      head.insertBefore(stylesheet$$1, head.children[0]); // first so lowest priority
     }
 
     var computedStyle = window$1.getComputedStyle(ctr);
@@ -25569,7 +25600,7 @@ BRp$f.init = function (options) {
   r.wheelSensitivity = options.wheelSensitivity;
   r.motionBlurEnabled = options.motionBlur; // on by default
 
-  r.forcedPixelRatio = options.pixelRatio;
+  r.forcedPixelRatio = number(options.pixelRatio) ? options.pixelRatio : null;
   r.motionBlur = options.motionBlur; // for initial kick off
 
   r.motionBlurOpacity = options.motionBlurOpacity;
@@ -27193,7 +27224,7 @@ CRp$1.drawCachedElementPortion = function (context, ele, eleTxrCache, pxRatio, l
   var eleCache = eleTxrCache.getElement(ele, bb, pxRatio, lvl, reason);
 
   if (eleCache != null) {
-    var opacity = ele.pstyle('opacity').pfValue;
+    var opacity = ele.effectiveOpacity();
 
     if (opacity === 0) {
       return;
@@ -30217,7 +30248,7 @@ sheetfn.appendToStyle = function (style$$1) {
   return style$$1;
 };
 
-var version = "3.4.2";
+var version = "3.4.3";
 
 var cytoscape = function cytoscape(options) {
   // if no options specified, use default

@@ -801,11 +801,11 @@ BRp.findEdgeControlPoints = function( edges ){
         };
       }
 
-      rs.nodesOverlap = pairInfo.nodesOverlap;
-      rs.srcIntn = pairInfo.srcIntn;
-      rs.tgtIntn = pairInfo.tgtIntn;
-
       const passedPairInfo = edgeIsSwapped ? swappedpairInfo : pairInfo;
+
+      rs.nodesOverlap = passedPairInfo.nodesOverlap;
+      rs.srcIntn = passedPairInfo.srcIntn;
+      rs.tgtIntn = passedPairInfo.tgtIntn;
 
       if(
         hasCompounds &&

@@ -62,11 +62,14 @@ The extensions below are a curated list.  To add your extension, [please submit 
 
 
 ## API extensions
+
  * <i class="fa fa-fw fa-users"></i> [`all-paths`](https://github.com/daniel-dx/cytoscape-all-paths) : Gets all longest, directed paths.
- * <i class="fa fa-fw fa-user"></i> [`clipboard`](https://github.com/iVis-at-Bilkent/cytoscape.js-clipboard) : Adds copy-paste utilities to Cytoscape.js
- * <i class="fa fa-fw fa-user"></i> [`graphml`](https://github.com/iVis-at-Bilkent/cytoscape.js-graphml) : Adds GraphML import and export functionality to Cytoscape.js
- * <i class="fa fa-fw fa-user"></i> [`undo-redo`](https://github.com/iVis-at-Bilkent/cytoscape.js-undo-redo) : Adds undo-redo APIs to Cytoscape.js
- * <i class="fa fa-fw fa-user"></i> [`view-utilities`](https://github.com/iVis-at-Bilkent/cytoscape.js-view-utilities) : Adds search and highlight APIs to Cytoscape.js
+ * <i class="fa fa-fw fa-user"></i> [`clipboard`](https://github.com/iVis-at-Bilkent/cytoscape.js-clipboard) : Adds copy-paste utilities to Cytoscape.js.
+ * <i class="fa fa-fw fa-user"></i> [`graphml`](https://github.com/iVis-at-Bilkent/cytoscape.js-graphml) : Adds GraphML import and export functionality to Cytoscape.js.
+ * <i class="fa fa-fw fa-user"></i> [`sbgn-stylesheet`](https://github.com/PathwayCommons/cytoscape-sbgn-stylesheet) : A stylesheet preset for [SBGN](https://sbgn.github.io/sbgn/).
+ * <i class="fa fa-fw fa-user"></i> [`sbgnml-to-cytoscape`](https://github.com/PathwayCommons/sbgnml-to-cytoscape) : Converts XML-based [SBGN](https://sbgn.github.io/sbgn/) files to Cytoscape.js JSON.
+ * <i class="fa fa-fw fa-user"></i> [`undo-redo`](https://github.com/iVis-at-Bilkent/cytoscape.js-undo-redo) : Adds undo-redo APIs to Cytoscape.js.
+ * <i class="fa fa-fw fa-user"></i> [`view-utilities`](https://github.com/iVis-at-Bilkent/cytoscape.js-view-utilities) : Adds search and highlight APIs to Cytoscape.js.
 
 
 ## Registration

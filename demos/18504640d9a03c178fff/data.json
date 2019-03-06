@@ -9,37 +9,34 @@
   }
 }, {
   "data": {
-    "id": "e01",
     "source": "n01",
     "target": "n02"
   },
   "classes": "bezier"
 }, {
   "data": {
-    "id": "e02",
     "source": "n01",
     "target": "n02"
   },
   "classes": "bezier"
 }, {
   "data": {
-    "id": "e03",
     "source": "n02",
     "target": "n01"
   },
   "classes": "bezier"
 }, {
   "data": {
-    "id": "n03",
-    "type": "unbundled-bezier"
+    "id": "n03"
   }
 }, {
   "data": {
-    "id": "n04"
+    "id": "n04",
+    "type": "unbundled-bezier",
+    "flipLabel": true
   }
 }, {
   "data": {
-    "id": "e04",
     "source": "n03",
     "target": "n04"
   },
@@ -55,11 +52,26 @@
   }
 }, {
   "data": {
-    "id": "e05",
     "source": "n05",
     "target": "n06"
   },
   "classes": "multi-unbundled-bezier"
+}, {
+  "data": {
+    "id": "n14"
+  }
+}, {
+  "data": {
+    "id": "n15",
+    "type": "straight",
+    "flipLabel": true
+  }
+}, {
+  "data": {
+    "source": "n14",
+    "target": "n15"
+  },
+  "classes": "straight"
 }, {
   "data": {
     "id": "n07",
@@ -78,39 +90,73 @@
   "classes": "haystack"
 }, {
   "data": {
-    "id": "e07",
     "source": "n08",
     "target": "n07"
   },
   "classes": "haystack"
 }, {
   "data": {
-    "id": "e08",
     "source": "n08",
     "target": "n07"
   },
   "classes": "haystack"
 }, {
   "data": {
-    "id": "e09",
     "source": "n08",
     "target": "n07"
   },
   "classes": "haystack"
 }, {
   "data": {
-    "id": "n09",
-    "type": "segments"
+    "id": "n09"
   }
 }, {
   "data": {
-    "id": "n10"
+    "id": "n10",
+    "type": "segments",
+    "flipLabel": true
   }
 }, {
   "data": {
-    "id": "e10",
     "source": "n09",
     "target": "n10"
   },
   "classes": "segments"
+}, {
+  "data": {
+    "id": "n11"
+  }
+}, {
+  "data": {
+    "id": "n12"
+  }
+}, {
+  "data": {
+    "id": "n13",
+    "type": "taxi"
+  }
+}, {
+  "data": {
+    "source": "n13",
+    "target": "n11"
+  },
+  "classes": "taxi"
+}, {
+  "data": {
+    "source": "n13",
+    "target": "n12"
+  },
+  "classes": "taxi"
+}, {
+  "data": {
+    "id": "n16",
+    "type": "loop",
+    "flipLabel": true
+  }
+}, {
+  "data": {
+    "source": "n16",
+    "target": "n16"
+  },
+  "classes": "loop"
 }]

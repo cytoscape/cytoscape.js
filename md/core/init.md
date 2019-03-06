@@ -16,6 +16,8 @@ var cy = cytoscape({
 
 Note that in order to guarantee custom font usage (WOFF/WOFF2), the fonts in question must be loaded before Cytoscape is initialised.
 
+Note that Cytoscape.js will print warning messages to the console to help programmers avoid mistakes.  If you want to disable these messages, call `cytoscape.warnings(false)` to turn warnings off completely.  You can turn them back on with `cytoscape.warnings(true)`, and you can get the current state with `cytoscape.warnings()`.  It is recommended that you leave warnings enabled at least for development builds of your app.
+
 The following sections go over the options in more detail.
 
 

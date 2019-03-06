@@ -127,7 +127,7 @@ cytoscape({
  * Values requiring a number, such as a length, can be specified in pixel values (e.g. `24px`), unitless values that are implicitly in pixels (e.g. `24`), or em values (e.g. `2em`).  Sizes are specified in [model co-ordinates](#notation/position), so on-screen (rendered) sizes are as specified at zoom 1.
  * Opacity values are specified as numbers ranging on `0 <= opacity <= 1` (e.g `0.5`).
  * Time is measured in units of ms or s (e.g. `250ms`).
- * Angles are measured in radians (e.g. `3.14rad`) or degrees (e.g. `180deg`).
+ * Angles are measured in radians (e.g. `3.14rad`) or degrees (e.g. `180deg`), clockwise.
  * Properties that specify a list of values may be formatted in one of the following formats:
    * A space-separated string (e.g. `'red rgb(0,255,0) blue'`)
      * Note that for lists of colours, this means that you can not use spaces within `rgb()` or `hsl()`.
@@ -319,7 +319,7 @@ The following is an example of valid background image styling using JSON. The ex
 
 ## Pie chart background
 
-These properties allow you to create pie chart backgrounds on nodes.  Note that 16 slices maximum are supported per node, so in the properties `1 <= i <= 16`.  Of course, you must specify a numerical value for each property in place of `i`.  Each nonzero sized slice is placed in order of `i`, starting from the 12 o'clock position and working clockwise.
+These properties allow you to create pie chart backgrounds on nodes ([demo](demos/pie-style)).  Note that 16 slices maximum are supported per node, so in the properties `1 <= i <= 16`.  Of course, you must specify a numerical value for each property in place of `i`.  Each nonzero sized slice is placed in order of `i`, starting from the 12 o'clock position and working clockwise.
 
 You may find it useful to reserve a number to a particular colour for all nodes in your stylesheet.  Then you can specify values for `pie-i-background-size` accordingly for each node via a [mapper](#style/mappers).  This would allow you to create consistently coloured pie charts in each node of the graph based on element data.
 
@@ -335,7 +335,7 @@ You may find it useful to reserve a number to a particular colour for all nodes 
 These properties affect the styling of an edge's line:
 
  * **`width`** : The width of an edge's line.
- * **`curve-style`** : The curving method used to separate two or more edges between two nodes; may be [`haystack`](#style/haystack-edges) (default, very fast, bundled straight edges for which loops and compounds are unsupported), [`straight`](#style/straight-edges) (straight edges with all arrows supported), [`bezier`](#style/bezier-edges) (bundled curved edges), [`unbundled-bezier`](#style/unbundled-bezier-edges) (curved edges for use with manual control points), or [`segments`](#style/segments-edges) (a series of straight lines).  Note that `haystack` edges work best with `ellipse`, `rectangle`, or similar nodes.  Smaller node shapes, like `triangle`, will not be as aesthetically pleasing.  Also note that edge arrows are unsupported for `haystack` edges.
+ * **`curve-style`** : The curving method used to separate two or more edges between two nodes ([demo](demos/edge-types)); may be [`haystack`](#style/haystack-edges) (default, very fast, bundled straight edges for which loops and compounds are unsupported), [`straight`](#style/straight-edges) (straight edges with all arrows supported), [`bezier`](#style/bezier-edges) (bundled curved edges), [`unbundled-bezier`](#style/unbundled-bezier-edges) (curved edges for use with manual control points),  [`segments`](#style/segments-edges) (a series of straight lines), [`taxi`](#style/taxi-edges) (right-angled lines, hierarchically bundled).  Note that `haystack` edges work best with `ellipse`, `rectangle`, or similar nodes.  Smaller node shapes, like `triangle`, will not be as aesthetically pleasing.  Also note that edge endpoint arrows are unsupported for `haystack` edges.
  * **`line-color`** : The colour of the edge's line.
  * **`line-style`** : The style of the edge's line; may be `solid`, `dotted`, or `dashed`.
  * **`line-cap`** : The cap style of the edge's line; may be `butt` (default), `round`, or `square`.  The cap may or may not be visible, depending on the shape of the node and the relative size of the node and edge.  Caps other than `butt` extend beyond the specified endpoint of the edge.
@@ -350,7 +350,7 @@ These properties affect the styling of an edge's line:
 
 ## Bezier edges
 
-For automatic, bundled bezier edges (`curve-style: bezier`):
+For automatic, bundled bezier edges (`curve-style: bezier`, [demo](demos/edge-types)):
 
 A bezier edge is bundled with all other parallel bezier edges.  Each bezier edge is a [quadratic bezier curve](https://en.wikipedia.org/wiki/Bézier_curve#Quadratic_Bézier_curves), separated from the others by varying the control point.  If there is an odd number of parallel edges in a bundle, then the centre edge is drawn as a straight line.
 
@@ -362,7 +362,7 @@ A bezier edge is bundled with all other parallel bezier edges.  Each bezier edge
 
 ## Loop edges
 
-For loops (i.e. same source and target):
+For loops (i.e. same source and target, [demo](demos/edge-types)):
 
 A loop is normally drawn as a pair of [quadratic bezier curves](https://en.wikipedia.org/wiki/Bézier_curve#Quadratic_Bézier_curves), one bezier going away from the node and the second bezier going back towards the node.
 
@@ -374,7 +374,7 @@ Note that loops may only be `bezier` or `unbundled-bezier` for their `curve-styl
 
 ## Unbundled bezier edges
 
-For bezier edges with manual control points (`curve-style: unbundled-bezier`):
+For bezier edges with manual control points (`curve-style: unbundled-bezier`, [demo](demos/edge-types)):
 
 An unbundled bezier edge is made of a series of one or more [quadratic bezier curves](https://en.wikipedia.org/wiki/Bézier_curve#Quadratic_Bézier_curves) --- one control point per curve.  The control points of the bezier curves are specified manually, using a co-ordinate system relative to the source and target node.  This maintains the overall curve shape regardless of the positions of the connected nodes.
 
@@ -387,7 +387,7 @@ When two or more control points are specified for an unbundled bezier edge, each
 
 ## Haystack edges
 
-For fast, straight line edges (`curve-style: haystack`):
+For fast, straight line edges (`curve-style: haystack`, [demo](demos/edge-types)):
 
 Haystack edges are a more performant replacement for plain, straight line edges.  A haystack edge is drawn as a straight line from the source node to the target node, randomly placed along some angle from each node's centre.  In this manner, many parallel haystack edges make a tight bundle, especially when semitransparent.  This makes haystack edges an effective way to visualise graphs with a high number of parallel edges.
 
@@ -398,7 +398,7 @@ Haystack edges are a more performant replacement for plain, straight line edges.
 
 ## Segments edges
 
-For edges made of several straight lines (`curve-style: segments`):
+For edges made of several straight lines (`curve-style: segments`, [demo](demos/edge-types)):
 
 A segment edge is made of a series of one or more straight lines, using a co-ordinate system relative to the source and target nodes.  This maintains the overall line pattern regardless of the orientation of the positions of the source and target nodes.
 
@@ -409,13 +409,42 @@ A segment edge is made of a series of one or more straight lines, using a co-ord
 
 ## Straight edges
 
+For straight line edges (`curve-style: straight`, [demo](demos/edge-types)):
+
 A straight edge (`curve-style: straight`) is drawn as a single straight line from the outside of the source node shape to the outside of the target node shape.  Endpoint and midpoint arrows are supported on straight edges.  Straight edges are not generally suitable for multigraphs.
+
+
+## Taxi edges
+
+For hierarchical, bundled edges (`curve-style: taxi`, [demo](demos/edge-types)):
+
+A taxi edge (`curve-style: taxi`) is drawn as a series of right-angled lines (i.e. in [taxicab geometry](https://en.wikipedia.org/wiki/Taxicab_geometry)).  The edge has a primary direction along either the x-axis or y-axis, which can be used to bundle edges in a hierarchy.  That is, taxi edges are appropriate for trees and DAGs that are laid out in a hierarchical manner.
+
+A taxi edge has at most two visible turns:  Starting from the source node, the edge goes in the primary direction for the specified distance.  The edge then turns, going towards the target along the secondary axis.  The first turn can be specified in order to bundle the edges of outgoing nodes.  The second turn is implicit, based on the first turn, going the remaining distance along the main axis.
+
+When a taxi edge would be impossible to draw along the regular turning plan --- i.e. one or more turns is too close the source or target --- it is re-routed.  The re-routing is carried out on a best-effort basis:  Re-routing prioritises the specified direction for bundling over the specified turn distance.  A `downward` edge, for example, will avoid going in the upward direction where possible.  In practice, re-routing should not take place for graphs that are well laid out.
+
+* **`taxi-direction`** : The main direction of the edge, the direction starting out from the source node; may be one of:
+  * `auto` : Automatically use `vertical` or `horizontal`, based on whether the vertical or horizontal distance is largest.
+  * `vertical` : Automatically use `downward` or `upward`, based on the vertical direction from source to target.
+  * `downward` : Bundle outgoers downwards.
+  * `upward` : Bundle outgoers upwards.
+  * `horizontal` : Automatically use `righward` or `leftward`, based on the horizontal direction from source to target.
+  * `rightward` : Bundle outgoers righwards.
+  * `leftward` : Bundle outgoers leftwards.
+* **`taxi-turn`** : The distance along the primary axis where the first turn is applied.
+  * This value may be an absolute distance (e.g. `20px`) or it may be a relative distance between the source and target (e.g. `50%`).
+  * Note that bundling may not work with an explicit direction (`upward`, `downward`, `leftward`, or `rightward`) in tandem with a turn distance specified in percent units.
+* **`taxi-turn-min-distance`** : The minimum distance along the primary axis that is maintained between the nodes and the turns.
+  * This value only takes on absolute values (e.g. `5px`).
+  * This property makes the taxi edge be re-routed when the turns would be otherwise too close to the source or target.  As such, it also helps to avoid turns overlapping edge endpoint arrows.
+* **`edge-distances`** : With value `intersection` (default), the distances (`taxi-turn` and `taxi-turn-min-distance`) are considered from the outside of the source's bounds to the outside of the target's bounds.  With value `node-position`, the distances are considered from the source position to the target position.  The `node-position` option makes calculating edge points easier --- but it should be used carefully because you can create invalid points that `intersection` would have automatically corrected.
 
 
 ## Edge arrow
 
 * **`<pos>-arrow-color`** : The colour of the edge's source arrow.
-* **`<pos>-arrow-shape`** : The shape of the edge's source arrow; may be one of:
+* **`<pos>-arrow-shape`** : The shape of the edge's source arrow ([demo](demos/edge-arrows)); may be one of:
   * `triangle`
   * `triangle-tee`
   * `triangle-cross`
@@ -491,7 +520,7 @@ Elements are drawn in a specific order based on compound depth (low to high), th
 
 Label text:
 
- * **`label`** : The text to display for an element's label.
+ * **`label`** : The text to display for an element's label ([demo](demos/labels)).
  * **`source-label`** : The text to display for an edge's source label.
  * **`target-label`** : The text to display for an edge's target label.
 
@@ -533,6 +562,7 @@ Margins:
 Rotating text:
 
  * **`text-rotation`** : A rotation angle that is applied to the label.
+  * Rotations are clockwise.
   * For edges, the special value `autorotate` can be used to align the label to the edge.
   * For nodes, the label is rotated along its anchor point on the node, so a label margin may help for some usecases.
   * The special value `none` can be used to denote `0deg`.

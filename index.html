@@ -48,7 +48,7 @@
 <a href="https://zenodo.org/badge/latestdoi/2255947"><img src="https://zenodo.org/badge/2255947.svg" alt="DOI"></a>
 <a href="https://www.npmjs.com/package/cytoscape"><img src="https://img.shields.io/npm/v/cytoscape.svg" alt="npm"></a>
 <a href="https://github.com/cytoscape/cytoscape.js/tree/master/dist"><img src="https://img.shields.io/npm/v/cytoscape.svg?label=Download" alt="Download"></a>
-<a href="#extensions"><img src="https://img.shields.io/badge/Extensions-40-blue.svg" alt="Extensions"></a>
+<a href="#extensions"><img src="https://img.shields.io/badge/Extensions-42-blue.svg" alt="Extensions"></a>
 <a href="https://www.npmjs.com/package/cytoscape"><img src="https://img.shields.io/npm/dm/cytoscape.svg?label=npm%20installs" alt="npm installs"></a>
 <a href="https://travis-ci.org/cytoscape/cytoscape.js"><img src="https://img.shields.io/travis/cytoscape/cytoscape.js/master.svg?label=master%20branch" alt="master branch tests"></a>
 <a href="https://travis-ci.org/cytoscape/cytoscape.js"><img src="https://img.shields.io/travis/cytoscape/cytoscape.js/unstable.svg?label=unstable%20branch" alt="unstable branch tests"></a>
@@ -577,12 +577,19 @@
 </ul>
 <h2 id="introduction/releases">Releases <a href="#introduction/releases"><span class="fa fa-bookmark"></span></a></h2>
 <ul>
+<li>3.5<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.5.0+is%3Aclosed">3.5.0</a></li>
+</ul>
+</li>
 <li>3.4<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.4.3+is%3Aclosed">3.4.3</a></li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.4.2+is%3Aclosed">3.4.2</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.4.1+is%3Aclosed">3.4.1</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.4.0+is%3Aclosed">3.4.0</a></li>
 </ul>
 </li>
 <li>3.3<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.3.6+is%3Aclosed">3.3.6</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.3.5+is%3Aclosed">3.3.5</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.3.4+is%3Aclosed">3.3.4</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.3.3+is%3Aclosed">3.3.3</a></li>
@@ -996,7 +1003,7 @@
 <h2 id="getting-started/including-cytoscape.js">Including Cytoscape.js <a href="#getting-started/including-cytoscape.js"><span class="fa fa-bookmark"></span></a></h2>
 <p>If you are using a simple HTML environment (without a build system), then include Cytoscape.js in a <code>&lt;script&gt;</code> tag, e.g.:</p>
 <pre><code class="language-html"><span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"cytoscape.min.js"</span>&gt;</span><span class="undefined"></span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span></code></pre>
-<p>To use Cytoscape.js from a CDN, use <a href="https://cdnjs.com/libraries/cytoscape">CDNJS</a> or <a href="https://unpkg.com">Unpkg</a>.  Please do not hotlink to copies of Cytoscape.js from the documentation — they’re just for the demos.</p>
+<p>To use Cytoscape.js from a CDN, use <a href="https://cdnjs.com/libraries/cytoscape">CDNJS</a> or <a href="https://unpkg.com">Unpkg</a> (<a href="https://unpkg.com/cytoscape/dist/">in the dist directory</a>).  Please do not hotlink to copies of Cytoscape.js from the documentation — they’re just for the demos.</p>
 <p>The available files are available under <a href="https://github.com/cytoscape/cytoscape.js/tree/master/dist"><code>cytoscape/dist/</code></a> in the npm package:</p>
 <ul>
 <li><code>cytoscape.min.js</code> : A minified UMD build with all dependencies included in the bundle.  This file is useful for small pages, supplementary material for an academic paper for example.</li>
@@ -1102,6 +1109,7 @@
   <span class="hljs-attr">container</span>: <span class="hljs-built_in">document</span>.getElementById(<span class="hljs-string">'cy'</span>)
 });</code></pre>
 <button class="run run-inline-code"><span class="fa fa-play"></span></button><p>Note that in order to guarantee custom font usage (WOFF/WOFF2), the fonts in question must be loaded before Cytoscape is initialised.</p>
+<p>Note that Cytoscape.js will print warning messages to the console to help programmers avoid mistakes.  If you want to disable these messages, call <code>cytoscape.warnings(false)</code> to turn warnings off completely.  You can turn them back on with <code>cytoscape.warnings(true)</code>, and you can get the current state with <code>cytoscape.warnings()</code>.  It is recommended that you leave warnings enabled at least for development builds of your app.</p>
 <p>The following sections go over the options in more detail.</p>
 <h3 id="initialisation-options">Initialisation options</h3>
 <p>An instance of Cytoscape.js has a number of options that can be set on initialisation.  They are outlined below with their default values.</p>
@@ -6901,21 +6909,41 @@ layout.run();</code></pre>
 						</div>
 						<div class="function">
 							<div class="name" id="eles.classes">
-								<span class="fn-name">eles.classes()</span>  <a href="#eles.classes"><span class="fa fa-bookmark"></span></a>
-								<span id="collection/style/eles.classes">&nbsp;</span><span id="collection/style/eles.classes">&nbsp;</span><span id="eles.classes">&nbsp;</span>
+								<span class="fn-name">eles.classes()</span> et al <a href="#eles.classes"><span class="fa fa-bookmark"></span></a>
+								<span id="collection/style/eles.classes">&nbsp;</span><span id="collection/style/eles.className">&nbsp;</span><span id="eles.className">&nbsp;</span><span id="collection/style/eles.classNames">&nbsp;</span><span id="eles.classNames">&nbsp;</span><span id="collection/style/ele.classes()">&nbsp;</span><span id="ele.classes()">&nbsp;</span><span id="collection/style/eles.classes()">&nbsp;</span><span id="eles.classes()">&nbsp;</span>
 							</div>
 
 
+							<div class="pure-aliases">
+								<span class="important-indicator"></span> Aliases:
 
-							<div class="descr"><p>Replace the current list of classes on the elements with the specified list.</p>
+									<span class="pure-alias">
+										<code id="collection/style/eles.className" class="pure-alias-name">eles.className()</code><span class="pure-alias-comma">,</span>
+									</span>
+									<span class="pure-alias">
+										<code id="collection/style/eles.classNames" class="pure-alias-name">eles.classNames()</code><span class="pure-alias-comma">,</span>
+									</span>
+							</div>
+
+							<div class="descr"><p>Get or replace the current list of classes on the elements with the specified list.</p>
 </div>
 
 							<div class="formats">
 									<div class="format">
-											<div class="name">eles.classes( <span class="args-summary"><span class="comma">,&nbsp;</span>classes</span> )</div>
+											<div class="name">ele.classes()()</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Get the list of classes as an array for the element.</p>
+</div>
+										<ul class="args">
+										</ul>
+									</div>
+									<div class="format">
+											<div class="name">eles.classes()( <span class="args-summary"><span class="comma">,&nbsp;</span>classes</span> )</div>
+
+
+										<div class="descr"><p>Replace the list of classes for all elements in the collection.</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name">classes</span>
@@ -12686,7 +12714,7 @@ Sets the subject of the selector (e.g. <code>$node &gt; node</code> to select th
 <li>Values requiring a number, such as a length, can be specified in pixel values (e.g. <code>24px</code>), unitless values that are implicitly in pixels (e.g. <code>24</code>), or em values (e.g. <code>2em</code>).  Sizes are specified in <a href="#notation/position">model co-ordinates</a>, so on-screen (rendered) sizes are as specified at zoom 1.</li>
 <li>Opacity values are specified as numbers ranging on <code>0 &lt;= opacity &lt;= 1</code> (e.g <code>0.5</code>).</li>
 <li>Time is measured in units of ms or s (e.g. <code>250ms</code>).</li>
-<li>Angles are measured in radians (e.g. <code>3.14rad</code>) or degrees (e.g. <code>180deg</code>).</li>
+<li>Angles are measured in radians (e.g. <code>3.14rad</code>) or degrees (e.g. <code>180deg</code>), clockwise.</li>
 <li>Properties that specify a list of values may be formatted in one of the following formats:<ul>
 <li>A space-separated string (e.g. <code>&#39;red rgb(0,255,0) blue&#39;</code>)<ul>
 <li>Note that for lists of colours, this means that you can not use spaces within <code>rgb()</code> or <code>hsl()</code>.</li>
@@ -12892,7 +12920,7 @@ style: [
   'background-fit': 'cover cover',
   `background-image-opacity`: <span class="hljs-number">0.5</span>
 }</code></pre><h2 id="style/pie-chart-background">Pie chart background <a href="#style/pie-chart-background"><span class="fa fa-bookmark"></span></a></h2>
-<p>These properties allow you to create pie chart backgrounds on nodes.  Note that 16 slices maximum are supported per node, so in the properties <code>1 &lt;= i &lt;= 16</code>.  Of course, you must specify a numerical value for each property in place of <code>i</code>.  Each nonzero sized slice is placed in order of <code>i</code>, starting from the 12 o’clock position and working clockwise.</p>
+<p>These properties allow you to create pie chart backgrounds on nodes (<a href="demos/pie-style">demo</a>).  Note that 16 slices maximum are supported per node, so in the properties <code>1 &lt;= i &lt;= 16</code>.  Of course, you must specify a numerical value for each property in place of <code>i</code>.  Each nonzero sized slice is placed in order of <code>i</code>, starting from the 12 o’clock position and working clockwise.</p>
 <p>You may find it useful to reserve a number to a particular colour for all nodes in your stylesheet.  Then you can specify values for <code>pie-i-background-size</code> accordingly for each node via a <a href="#style/mappers">mapper</a>.  This would allow you to create consistently coloured pie charts in each node of the graph based on element data.</p>
 <ul>
 <li><strong><code>pie-size</code></strong> : The diameter of the pie, measured as a percent of node size (e.g. <code>100%</code>) or an absolute length (e.g. <code>25px</code>).</li>
@@ -12904,7 +12932,7 @@ style: [
 <p>These properties affect the styling of an edge’s line:</p>
 <ul>
 <li><strong><code>width</code></strong> : The width of an edge’s line.</li>
-<li><strong><code>curve-style</code></strong> : The curving method used to separate two or more edges between two nodes; may be <a href="#style/haystack-edges"><code>haystack</code></a> (default, very fast, bundled straight edges for which loops and compounds are unsupported), <a href="#style/straight-edges"><code>straight</code></a> (straight edges with all arrows supported), <a href="#style/bezier-edges"><code>bezier</code></a> (bundled curved edges), <a href="#style/unbundled-bezier-edges"><code>unbundled-bezier</code></a> (curved edges for use with manual control points), or <a href="#style/segments-edges"><code>segments</code></a> (a series of straight lines).  Note that <code>haystack</code> edges work best with <code>ellipse</code>, <code>rectangle</code>, or similar nodes.  Smaller node shapes, like <code>triangle</code>, will not be as aesthetically pleasing.  Also note that edge arrows are unsupported for <code>haystack</code> edges.</li>
+<li><strong><code>curve-style</code></strong> : The curving method used to separate two or more edges between two nodes (<a href="demos/edge-types">demo</a>); may be <a href="#style/haystack-edges"><code>haystack</code></a> (default, very fast, bundled straight edges for which loops and compounds are unsupported), <a href="#style/straight-edges"><code>straight</code></a> (straight edges with all arrows supported), <a href="#style/bezier-edges"><code>bezier</code></a> (bundled curved edges), <a href="#style/unbundled-bezier-edges"><code>unbundled-bezier</code></a> (curved edges for use with manual control points),  <a href="#style/segments-edges"><code>segments</code></a> (a series of straight lines), <a href="#style/taxi-edges"><code>taxi</code></a> (right-angled lines, hierarchically bundled).  Note that <code>haystack</code> edges work best with <code>ellipse</code>, <code>rectangle</code>, or similar nodes.  Smaller node shapes, like <code>triangle</code>, will not be as aesthetically pleasing.  Also note that edge endpoint arrows are unsupported for <code>haystack</code> edges.</li>
 <li><strong><code>line-color</code></strong> : The colour of the edge’s line.</li>
 <li><strong><code>line-style</code></strong> : The style of the edge’s line; may be <code>solid</code>, <code>dotted</code>, or <code>dashed</code>.</li>
 <li><strong><code>line-cap</code></strong> : The cap style of the edge’s line; may be <code>butt</code> (default), <code>round</code>, or <code>square</code>.  The cap may or may not be visible, depending on the shape of the node and the relative size of the node and edge.  Caps other than <code>butt</code> extend beyond the specified endpoint of the edge.</li>
@@ -12918,7 +12946,7 @@ style: [
 <li><strong><code>line-gradient-stop-positions</code></strong> : The positions of the gradient stops (e.g. <code>0% 50% 100%</code>). If not specified (or invalid), the stops will divide equally.</li>
 </ul>
 <h2 id="style/bezier-edges">Bezier edges <a href="#style/bezier-edges"><span class="fa fa-bookmark"></span></a></h2>
-<p>For automatic, bundled bezier edges (<code>curve-style: bezier</code>):</p>
+<p>For automatic, bundled bezier edges (<code>curve-style: bezier</code>, <a href="demos/edge-types">demo</a>):</p>
 <p>A bezier edge is bundled with all other parallel bezier edges.  Each bezier edge is a <a href="https://en.wikipedia.org/wiki/B%C3%A9zier_curve#Quadratic_B%C3%A9zier_curves">quadratic bezier curve</a>, separated from the others by varying the control point.  If there is an odd number of parallel edges in a bundle, then the centre edge is drawn as a straight line.</p>
 <ul>
 <li><strong><code>control-point-step-size</code></strong> : From the line perpendicular from source to target, this value specifies the distance between successive bezier edges.</li>
@@ -12927,7 +12955,7 @@ style: [
 <li><strong><code>edge-distances</code></strong> : With value <code>intersection</code> (default), the line from source to target for <code>control-point-weight</code> is from the outside of the source node’s shape to the outside of the target node’s shape.  With value <code>node-position</code>, the line is from the source position to the target position.  The <code>node-position</code> option makes calculating edge points easier — but it should be used carefully because you can create invalid points that <code>intersection</code> would have automatically corrected.</li>
 </ul>
 <h2 id="style/loop-edges">Loop edges <a href="#style/loop-edges"><span class="fa fa-bookmark"></span></a></h2>
-<p>For loops (i.e. same source and target):</p>
+<p>For loops (i.e. same source and target, <a href="demos/edge-types">demo</a>):</p>
 <p>A loop is normally drawn as a pair of <a href="https://en.wikipedia.org/wiki/B%C3%A9zier_curve#Quadratic_B%C3%A9zier_curves">quadratic bezier curves</a>, one bezier going away from the node and the second bezier going back towards the node.</p>
 <ul>
 <li><strong><code>loop-direction</code></strong> : Determines the angle that loops extend from the node in cases when the source and target node of an edge is the same.  The angle is specified from the 12 o’clock position and it progresses clockwise for increasing positive values. The default is <code>-45deg</code> (extending to the upper left).</li>
@@ -12935,7 +12963,7 @@ style: [
 </ul>
 <p>Note that loops may only be <code>bezier</code> or <code>unbundled-bezier</code> for their <code>curve-style</code>.</p>
 <h2 id="style/unbundled-bezier-edges">Unbundled bezier edges <a href="#style/unbundled-bezier-edges"><span class="fa fa-bookmark"></span></a></h2>
-<p>For bezier edges with manual control points (<code>curve-style: unbundled-bezier</code>):</p>
+<p>For bezier edges with manual control points (<code>curve-style: unbundled-bezier</code>, <a href="demos/edge-types">demo</a>):</p>
 <p>An unbundled bezier edge is made of a series of one or more <a href="https://en.wikipedia.org/wiki/B%C3%A9zier_curve#Quadratic_B%C3%A9zier_curves">quadratic bezier curves</a> — one control point per curve.  The control points of the bezier curves are specified manually, using a co-ordinate system relative to the source and target node.  This maintains the overall curve shape regardless of the positions of the connected nodes.</p>
 <p>When two or more control points are specified for an unbundled bezier edge, each adjacent pair of bezier curves is joined at the midpoint of the two control points.  This makes most curves join smoothly.</p>
 <ul>
@@ -12944,14 +12972,14 @@ style: [
 <li><strong><code>edge-distances</code></strong> : With value <code>intersection</code> (default), the line from source to target for <code>control-point-weights</code> is from the outside of the source node’s shape to the outside of the target node’s shape.  With value <code>node-position</code>, the line is from the source position to the target position.  The <code>node-position</code> option makes calculating edge points easier — but it should be used carefully because you can create invalid points that <code>intersection</code> would have automatically corrected.</li>
 </ul>
 <h2 id="style/haystack-edges">Haystack edges <a href="#style/haystack-edges"><span class="fa fa-bookmark"></span></a></h2>
-<p>For fast, straight line edges (<code>curve-style: haystack</code>):</p>
+<p>For fast, straight line edges (<code>curve-style: haystack</code>, <a href="demos/edge-types">demo</a>):</p>
 <p>Haystack edges are a more performant replacement for plain, straight line edges.  A haystack edge is drawn as a straight line from the source node to the target node, randomly placed along some angle from each node’s centre.  In this manner, many parallel haystack edges make a tight bundle, especially when semitransparent.  This makes haystack edges an effective way to visualise graphs with a high number of parallel edges.</p>
 <p><span class="important-indicator"></span> Loop edges and compound parent nodes are not supported by haystack edges.  Also note that source and target arrows are not supported for haystack edges, as the arrows would be behind the node body.  Mid arrows, however, are supported.</p>
 <ul>
 <li><strong><code>haystack-radius</code></strong> : A value between 0 and 1 inclusive that indicates the relative radius used to position haystack edges on their connected nodes.  The outside of the node is at 1, and the centre of the node is at 0.  For simple graphs, a radius of 0 makes sense.</li>
 </ul>
 <h2 id="style/segments-edges">Segments edges <a href="#style/segments-edges"><span class="fa fa-bookmark"></span></a></h2>
-<p>For edges made of several straight lines (<code>curve-style: segments</code>):</p>
+<p>For edges made of several straight lines (<code>curve-style: segments</code>, <a href="demos/edge-types">demo</a>):</p>
 <p>A segment edge is made of a series of one or more straight lines, using a co-ordinate system relative to the source and target nodes.  This maintains the overall line pattern regardless of the orientation of the positions of the source and target nodes.</p>
 <ul>
 <li><strong><code>segment-distances</code></strong> : A series of values that specify for each segment point the distance perpendicular to a line formed from source to target, e.g. <code>-20 20 -20</code>.</li>
@@ -12959,11 +12987,40 @@ style: [
 <li><strong><code>edge-distances</code></strong> : With value <code>intersection</code> (default), the line from source to target for <code>segment-weights</code> is from the outside of the source node’s shape to the outside of the target node’s shape.  With value <code>node-position</code>, the line is from the source position to the target position.  The <code>node-position</code> option makes calculating edge points easier — but it should be used carefully because you can create invalid points that <code>intersection</code> would have automatically corrected.</li>
 </ul>
 <h2 id="style/straight-edges">Straight edges <a href="#style/straight-edges"><span class="fa fa-bookmark"></span></a></h2>
+<p>For straight line edges (<code>curve-style: straight</code>, <a href="demos/edge-types">demo</a>):</p>
 <p>A straight edge (<code>curve-style: straight</code>) is drawn as a single straight line from the outside of the source node shape to the outside of the target node shape.  Endpoint and midpoint arrows are supported on straight edges.  Straight edges are not generally suitable for multigraphs.</p>
+<h2 id="style/taxi-edges">Taxi edges <a href="#style/taxi-edges"><span class="fa fa-bookmark"></span></a></h2>
+<p>For hierarchical, bundled edges (<code>curve-style: taxi</code>, <a href="demos/edge-types">demo</a>):</p>
+<p>A taxi edge (<code>curve-style: taxi</code>) is drawn as a series of right-angled lines (i.e. in <a href="https://en.wikipedia.org/wiki/Taxicab_geometry">taxicab geometry</a>).  The edge has a primary direction along either the x-axis or y-axis, which can be used to bundle edges in a hierarchy.  That is, taxi edges are appropriate for trees and DAGs that are laid out in a hierarchical manner.</p>
+<p>A taxi edge has at most two visible turns:  Starting from the source node, the edge goes in the primary direction for the specified distance.  The edge then turns, going towards the target along the secondary axis.  The first turn can be specified in order to bundle the edges of outgoing nodes.  The second turn is implicit, based on the first turn, going the remaining distance along the main axis.</p>
+<p>When a taxi edge would be impossible to draw along the regular turning plan — i.e. one or more turns is too close the source or target — it is re-routed.  The re-routing is carried out on a best-effort basis:  Re-routing prioritises the specified direction for bundling over the specified turn distance.  A <code>downward</code> edge, for example, will avoid going in the upward direction where possible.  In practice, re-routing should not take place for graphs that are well laid out.</p>
+<ul>
+<li><strong><code>taxi-direction</code></strong> : The main direction of the edge, the direction starting out from the source node; may be one of:<ul>
+<li><code>auto</code> : Automatically use <code>vertical</code> or <code>horizontal</code>, based on whether the vertical or horizontal distance is largest.</li>
+<li><code>vertical</code> : Automatically use <code>downward</code> or <code>upward</code>, based on the vertical direction from source to target.</li>
+<li><code>downward</code> : Bundle outgoers downwards.</li>
+<li><code>upward</code> : Bundle outgoers upwards.</li>
+<li><code>horizontal</code> : Automatically use <code>righward</code> or <code>leftward</code>, based on the horizontal direction from source to target.</li>
+<li><code>rightward</code> : Bundle outgoers righwards.</li>
+<li><code>leftward</code> : Bundle outgoers leftwards.</li>
+</ul>
+</li>
+<li><strong><code>taxi-turn</code></strong> : The distance along the primary axis where the first turn is applied.<ul>
+<li>This value may be an absolute distance (e.g. <code>20px</code>) or it may be a relative distance between the source and target (e.g. <code>50%</code>).</li>
+<li>Note that bundling may not work with an explicit direction (<code>upward</code>, <code>downward</code>, <code>leftward</code>, or <code>rightward</code>) in tandem with a turn distance specified in percent units.</li>
+</ul>
+</li>
+<li><strong><code>taxi-turn-min-distance</code></strong> : The minimum distance along the primary axis that is maintained between the nodes and the turns.<ul>
+<li>This value only takes on absolute values (e.g. <code>5px</code>).</li>
+<li>This property makes the taxi edge be re-routed when the turns would be otherwise too close to the source or target.  As such, it also helps to avoid turns overlapping edge endpoint arrows.</li>
+</ul>
+</li>
+<li><strong><code>edge-distances</code></strong> : With value <code>intersection</code> (default), the distances (<code>taxi-turn</code> and <code>taxi-turn-min-distance</code>) are considered from the outside of the source’s bounds to the outside of the target’s bounds.  With value <code>node-position</code>, the distances are considered from the source position to the target position.  The <code>node-position</code> option makes calculating edge points easier — but it should be used carefully because you can create invalid points that <code>intersection</code> would have automatically corrected.</li>
+</ul>
 <h2 id="style/edge-arrow">Edge arrow <a href="#style/edge-arrow"><span class="fa fa-bookmark"></span></a></h2>
 <ul>
 <li><strong><code>&lt;pos&gt;-arrow-color</code></strong> : The colour of the edge’s source arrow.</li>
-<li><strong><code>&lt;pos&gt;-arrow-shape</code></strong> : The shape of the edge’s source arrow; may be one of:<ul>
+<li><strong><code>&lt;pos&gt;-arrow-shape</code></strong> : The shape of the edge’s source arrow (<a href="demos/edge-arrows">demo</a>); may be one of:<ul>
 <li><code>triangle</code></li>
 <li><code>triangle-tee</code></li>
 <li><code>triangle-cross</code></li>
@@ -13048,7 +13105,7 @@ style: [
 <h2 id="style/labels">Labels <a href="#style/labels"><span class="fa fa-bookmark"></span></a></h2>
 <p>Label text:</p>
 <ul>
-<li><strong><code>label</code></strong> : The text to display for an element’s label.</li>
+<li><strong><code>label</code></strong> : The text to display for an element’s label (<a href="demos/labels">demo</a>).</li>
 <li><strong><code>source-label</code></strong> : The text to display for an edge’s source label.</li>
 <li><strong><code>target-label</code></strong> : The text to display for an edge’s target label.</li>
 </ul>
@@ -13090,6 +13147,7 @@ style: [
 <p>Rotating text:</p>
 <ul>
 <li><strong><code>text-rotation</code></strong> : A rotation angle that is applied to the label.<ul>
+<li>Rotations are clockwise.</li>
 <li>For edges, the special value <code>autorotate</code> can be used to align the label to the edge.</li>
 <li>For nodes, the label is rotated along its anchor point on the node, so a label margin may help for some usecases.</li>
 <li>The special value <code>none</code> can be used to denote <code>0deg</code>.</li>
@@ -14429,10 +14487,12 @@ cytoscape.use( ext );</code></pre>
 <h2 id="extensions/api-extensions">API extensions <a href="#extensions/api-extensions"><span class="fa fa-bookmark"></span></a></h2>
 <ul>
 <li><i class="fa fa-fw fa-users"></i> <a href="https://github.com/daniel-dx/cytoscape-all-paths"><code>all-paths</code></a> : Gets all longest, directed paths.</li>
-<li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/iVis-at-Bilkent/cytoscape.js-clipboard"><code>clipboard</code></a> : Adds copy-paste utilities to Cytoscape.js</li>
-<li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/iVis-at-Bilkent/cytoscape.js-graphml"><code>graphml</code></a> : Adds GraphML import and export functionality to Cytoscape.js</li>
-<li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/iVis-at-Bilkent/cytoscape.js-undo-redo"><code>undo-redo</code></a> : Adds undo-redo APIs to Cytoscape.js</li>
-<li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/iVis-at-Bilkent/cytoscape.js-view-utilities"><code>view-utilities</code></a> : Adds search and highlight APIs to Cytoscape.js</li>
+<li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/iVis-at-Bilkent/cytoscape.js-clipboard"><code>clipboard</code></a> : Adds copy-paste utilities to Cytoscape.js.</li>
+<li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/iVis-at-Bilkent/cytoscape.js-graphml"><code>graphml</code></a> : Adds GraphML import and export functionality to Cytoscape.js.</li>
+<li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/PathwayCommons/cytoscape-sbgn-stylesheet"><code>sbgn-stylesheet</code></a> : A stylesheet preset for <a href="https://sbgn.github.io/sbgn/">SBGN</a>.</li>
+<li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/PathwayCommons/sbgnml-to-cytoscape"><code>sbgnml-to-cytoscape</code></a> : Converts XML-based <a href="https://sbgn.github.io/sbgn/">SBGN</a> files to Cytoscape.js JSON.</li>
+<li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/iVis-at-Bilkent/cytoscape.js-undo-redo"><code>undo-redo</code></a> : Adds undo-redo APIs to Cytoscape.js.</li>
+<li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/iVis-at-Bilkent/cytoscape.js-view-utilities"><code>view-utilities</code></a> : Adds search and highlight APIs to Cytoscape.js.</li>
 </ul>
 <h2 id="extensions/registration">Registration <a href="#extensions/registration"><span class="fa fa-bookmark"></span></a></h2>
 <p>To register an extension, make the following call: <code>cytoscape( type, name, extension );</code></p>
@@ -14901,7 +14961,7 @@ cytoscape.use( ext );</code></pre>
 							<div class="section lvl3"><a class="toclink" href="#eles.addClass">eles.addClass() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#eles.removeClass">eles.removeClass() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#eles.toggleClass">eles.toggleClass() </a></div>
-							<div class="section lvl3"><a class="toclink" href="#eles.classes">eles.classes() </a></div>
+							<div class="section lvl3"><a class="toclink" href="#eles.classes">eles.classes() et al</a></div>
 							<div class="section lvl3"><a class="toclink" href="#eles.flashClass">eles.flashClass() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#ele.hasClass">ele.hasClass() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#eles.style">eles.style() et al</a></div>
@@ -15193,6 +15253,11 @@ cytoscape.use( ext );</code></pre>
 						<div class="section lvl2">
 							
 							<a class="toclink" href="#style/straight-edges">Straight edges</a>
+						</div>
+
+						<div class="section lvl2">
+							
+							<a class="toclink" href="#style/taxi-edges">Taxi edges</a>
 						</div>
 
 						<div class="section lvl2">

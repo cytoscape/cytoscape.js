@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2016-2018, The Cytoscape Consortium.
+ * Copyright (c) 2016-2019, The Cytoscape Consortium.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the “Software”), to deal in
@@ -790,6 +790,7 @@ var hashStringsArray = function hashStringsArray(strs) {
 };
 
 /*global console */
+var warningsEnabled = true;
 var warnSupported = console.warn != null; // eslint-disable-line no-console
 
 var traceSupported = console.trace != null; // eslint-disable-line no-console
@@ -808,8 +809,19 @@ var noop = function noop() {};
 var error = function error(msg) {
   throw new Error(msg);
 };
+var warnings = function warnings(enabled) {
+  if (enabled !== undefined) {
+    warningsEnabled = !!enabled;
+  } else {
+    return warningsEnabled;
+  }
+};
 var warn = function warn(msg) {
   /* eslint-disable no-console */
+  if (!warnings()) {
+    return;
+  }
+
   if (warnSupported) {
     console.warn(msg);
   } else {
@@ -1178,14 +1190,13 @@ var Element = function Element(cy, params, restore) {
     _p.classes.add(cls);
   }
 
+  this.createEmitter();
   var bypass = params.style || params.css;
 
   if (bypass) {
     warn('Setting a `style` bypass at element creation is deprecated');
-    cy.style().applyBypass(this, bypass);
+    this.style(bypass);
   }
-
-  this.createEmitter();
 
   if (restore === undefined || restore) {
     this.restore();
@@ -2191,6 +2202,12 @@ var elesfn$6 = {
   }
 }; // elesfn
 
+var copyPosition = function copyPosition(p) {
+  return {
+    x: p.x,
+    y: p.y
+  };
+};
 var modelToRenderedPosition = function modelToRenderedPosition(p, zoom, pan) {
   return {
     x: p.x * zoom + pan.x,
@@ -2411,6 +2428,16 @@ var makeBoundingBox = function makeBoundingBox(bb) {
       };
     }
   }
+};
+var copyBoundingBox = function copyBoundingBox(bb) {
+  return {
+    x1: bb.x1,
+    x2: bb.x2,
+    w: bb.w,
+    y1: bb.y1,
+    y2: bb.y2,
+    h: bb.h
+  };
 };
 var clearBoundingBox = function clearBoundingBox(bb) {
   bb.x1 = Infinity;
@@ -5474,6 +5501,9 @@ api.reject = function (val) {
 var Promise$1 = typeof Promise !== 'undefined' ? Promise : api; // eslint-disable-line no-undef
 
 var Animation = function Animation(target, opts, opts2) {
+  var isCore = core(target);
+  var isEle = !isCore;
+
   var _p = this._private = extend({
     duration: 1000
   }, opts, opts2);
@@ -5490,6 +5520,24 @@ var Animation = function Animation(target, opts, opts2) {
 
   if (_p.complete && fn(_p.complete)) {
     _p.completes.push(_p.complete);
+  }
+
+  if (isEle) {
+    var pos = target.position();
+    _p.startPosition = _p.startPosition || {
+      x: pos.x,
+      y: pos.y
+    };
+    _p.startStyle = _p.startStyle || target.cy().style().getAnimationStartStyle(target, _p.style);
+  }
+
+  if (isCore) {
+    var pan = target.pan();
+    _p.startPan = {
+      x: pan.x,
+      y: pan.y
+    };
+    _p.startZoom = target.zoom();
   } // for future timeline/animations impl
 
 
@@ -6173,12 +6221,21 @@ var elesfn$c = {
 
 var elesfn$d = {
   classes: function classes(_classes) {
-    if (!array(_classes)) {
+    var self = this;
+
+    if (_classes === undefined) {
+      var ret = [];
+
+      self[0]._private.classes.forEach(function (cls) {
+        return ret.push(cls);
+      });
+
+      return ret;
+    } else if (!array(_classes)) {
       // extract classes from string
       _classes = (_classes || '').match(/\S+/g) || [];
     }
 
-    var self = this;
     var changed = [];
     var classesSet = new Set$1(_classes); // check and update each ele
 
@@ -6286,6 +6343,7 @@ var elesfn$d = {
     return self;
   }
 };
+elesfn$d.className = elesfn$d.classNames = elesfn$d.classes;
 
 var tokens = {
   metaChar: '[\\!\\"\\#\\$\\%\\&\\\'\\(\\)\\*\\+\\,\\.\\/\\:\\;\\<\\=\\>\\?\\@\\[\\]\\^\\`\\{\\|\\}\\~]',
@@ -8236,7 +8294,10 @@ fn$2 = elesfn$i = {
     var delta;
 
     if (plainObject(dim)) {
-      delta = dim;
+      delta = {
+        x: number(dim.x) ? dim.x : 0,
+        y: number(dim.y) ? dim.y : 0
+      };
       silent = val;
     } else if (string(dim) && number(val)) {
       delta = {
@@ -8618,6 +8679,8 @@ var updateBounds = function updateBounds(b, x1, y1, x2, y2) {
   b.x2 = x2 > b.x2 ? x2 : b.x2;
   b.y1 = y1 < b.y1 ? y1 : b.y1;
   b.y2 = y2 > b.y2 ? y2 : b.y2;
+  b.w = b.x2 - b.x1;
+  b.h = b.y2 - b.y1;
 };
 
 var updateBoundsFromBox = function updateBoundsFromBox(b, b2) {
@@ -8768,16 +8831,39 @@ var updateBoundsFromLabel = function updateBoundsFromLabel(bounds, ele, prefix) 
     if (isAutorotate || isPfValue) {
       var theta = isAutorotate ? prefixedProperty(_p.rstyle, 'labelAngle', prefix) : rotation.pfValue;
       var cos = Math.cos(theta);
-      var sin = Math.sin(theta);
-      var xMid = (lx1 + lx2) / 2;
-      var yMid = (ly1 + ly2) / 2;
+      var sin = Math.sin(theta); // rotation point (default value for center-center)
+
+      var xo = (lx1 + lx2) / 2;
+      var yo = (ly1 + ly2) / 2;
+
+      if (!isEdge) {
+        switch (halign.value) {
+          case 'left':
+            xo = lx2;
+            break;
+
+          case 'right':
+            xo = lx1;
+            break;
+        }
+
+        switch (valign.value) {
+          case 'top':
+            yo = ly2;
+            break;
+
+          case 'bottom':
+            yo = ly1;
+            break;
+        }
+      }
 
       var rotate = function rotate(x, y) {
-        x = x - xMid;
-        y = y - yMid;
+        x = x - xo;
+        y = y - yo;
         return {
-          x: x * cos - y * sin + xMid,
-          y: x * sin + y * cos + yMid
+          x: x * cos - y * sin + xo,
+          y: x * sin + y * cos + yo
         };
       };
 
@@ -8814,6 +8900,7 @@ var boundingBoxImpl = function boundingBoxImpl(ele, options) {
 
   var displayed = display !== 'none';
   var rstyle = _p.rstyle;
+  var manualExpansion = isNode && styleEnabled ? ele.pstyle('bounds-expansion').pfValue : 0;
 
   if (displayed) {
     var overlayOpacity = 0;
@@ -8962,6 +9049,7 @@ var boundingBoxImpl = function boundingBoxImpl(ele, options) {
 
     var bbBody = _p.bodyBounds = _p.bodyBounds || {};
     assignBoundingBox(bbBody, bounds);
+    expandBoundingBox(bbBody, manualExpansion);
     expandBoundingBox(bbBody, 1); // expand to work around browser dimension inaccuracies
     // overlay
     //////////
@@ -8977,6 +9065,7 @@ var boundingBoxImpl = function boundingBoxImpl(ele, options) {
 
     var bbOverlay = _p.overlayBounds = _p.overlayBounds || {};
     assignBoundingBox(bbOverlay, bounds);
+    expandBoundingBox(bbOverlay, manualExpansion);
     expandBoundingBox(bbOverlay, 1); // expand to work around browser dimension inaccuracies
     // handle label dimensions
     //////////////////////////
@@ -8996,10 +9085,6 @@ var boundingBoxImpl = function boundingBoxImpl(ele, options) {
         updateBoundsFromLabel(bounds, ele, 'source', options);
         updateBoundsFromLabel(bounds, ele, 'target', options);
       }
-
-      var bbAll = bbLabels.all;
-      bbAll.w = bbAll.x2 - bbAll.x1;
-      bbAll.h = bbAll.y2 - bbAll.y1;
     } // style enabled for labels
 
   } // if displayed
@@ -9010,9 +9095,14 @@ var boundingBoxImpl = function boundingBoxImpl(ele, options) {
   bounds.x2 = noninf(bounds.x2);
   bounds.y2 = noninf(bounds.y2);
   bounds.w = noninf(bounds.x2 - bounds.x1);
-  bounds.h = noninf(bounds.y2 - bounds.y1); // expand bounds by 1 because antialiasing can increase the visual/effective size by 1 on all sides
+  bounds.h = noninf(bounds.y2 - bounds.y1);
 
-  expandBoundingBox(bounds, bounds.w > 0 && bounds.h > 0 && displayed ? 1 : 0);
+  if (bounds.w > 0 && bounds.h > 0 && displayed) {
+    expandBoundingBox(bounds, manualExpansion); // expand bounds by 1 because antialiasing can increase the visual/effective size by 1 on all sides
+
+    expandBoundingBox(bounds, 1);
+  }
+
   return bounds;
 };
 
@@ -9036,11 +9126,11 @@ var getBoundingBoxPosKey = function getBoundingBoxPosKey(ele) {
     var p1 = ele.source().position();
     var p2 = ele.target().position();
 
-    var round = function round(x) {
+    var r = function r(x) {
       return Math.round(x);
     };
 
-    return hashIntsArray([p1.x, p1.y, p2.x, p2.y].map(round));
+    return hashIntsArray([r(p1.x), r(p1.y), r(p2.x), r(p2.y)]);
   } else {
     return 0;
   }
@@ -9052,10 +9142,15 @@ var cachedBoundingBoxImpl = function cachedBoundingBoxImpl(ele, opts) {
   var key = opts == null ? defBbOptsKey : getKey(opts);
   var usingDefOpts = key === defBbOptsKey;
   var currPosKey = getBoundingBoxPosKey(ele);
-  var useCache = opts.useCache && _p.bbCachePosKey === currPosKey;
+  var isPosKeySame = _p.bbCachePosKey === currPosKey;
+  var useCache = opts.useCache && isPosKeySame;
   var needRecalc = !useCache || _p.bbCache == null;
 
   if (needRecalc) {
+    if (!isPosKeySame) {
+      ele.recalculateRenderedStyle();
+    }
+
     bb = boundingBoxImpl(ele, defBbOpts);
     _p.bbCache = bb;
     _p.bbCacheShift.x = _p.bbCacheShift.y = 0;
@@ -9155,14 +9250,21 @@ elesfn$j.boundingBox = function (options) {
   var styleEnabled = cy.styleEnabled();
 
   if (styleEnabled) {
-    this.recalculateRenderedStyle(opts.useCache);
+    for (var i = 0; i < eles.length; i++) {
+      var ele = eles[i];
+      var _p = ele._private;
+      var currPosKey = getBoundingBoxPosKey(ele);
+      var isPosKeySame = _p.bbCachePosKey === currPosKey;
+      var useCache = opts.useCache && isPosKeySame;
+      ele.recalculateRenderedStyle(useCache);
+    }
   }
 
   this.updateCompoundBounds();
 
-  for (var i = 0; i < eles.length; i++) {
-    var ele = eles[i];
-    updateBoundsFromBox(bounds, cachedBoundingBoxImpl(ele, opts));
+  for (var _i = 0; _i < eles.length; _i++) {
+    var _ele = eles[_i];
+    updateBoundsFromBox(bounds, cachedBoundingBoxImpl(_ele, opts));
   }
 
   bounds.x1 = noninf(bounds.x1);
@@ -9240,9 +9342,9 @@ elesfn$j.boundingBoxAt = function (fn$$1) {
     this.updateCompoundBounds(true); // force update b/c we're inside a batch cycle
   }
 
-  var bb = this.boundingBox({
+  var bb = copyBoundingBox(this.boundingBox({
     useCache: false
-  });
+  }));
   nodes.silentPositions(getOldPos);
   cy.endBatch();
   return bb;
@@ -9618,7 +9720,7 @@ var forEachEvent = function forEachEvent(self, handler, events, qualifier, callb
     }
   }
 
-  var eventList = events.split(/\s+/);
+  var eventList = array(events) ? events : events.split(/\s+/);
 
   for (var i = 0; i < eventList.length; i++) {
     var evt = eventList[i];
@@ -9656,7 +9758,7 @@ var forEachEventObj = function forEachEventObj(self, handler, events) {
     return;
   }
 
-  var eventList = events.split(/\s+/);
+  var eventList = array(events) ? events : events.split(/\s+/);
 
   for (var i = 0; i < eventList.length; i++) {
     var evt = eventList[i];
@@ -9863,33 +9965,41 @@ var elesfn$l = {
     return this._private.emitter;
   },
   on: function on(events, selector, callback) {
+    var argSel = argSelector(selector);
+
     for (var i = 0; i < this.length; i++) {
       var ele = this[i];
-      ele.emitter().on(events, argSelector(selector), callback);
+      ele.emitter().on(events, argSel, callback);
     }
 
     return this;
   },
   removeListener: function removeListener(events, selector, callback) {
+    var argSel = argSelector(selector);
+
     for (var i = 0; i < this.length; i++) {
       var ele = this[i];
-      ele.emitter().removeListener(events, argSelector(selector), callback);
+      ele.emitter().removeListener(events, argSel, callback);
     }
 
     return this;
   },
   one: function one(events, selector, callback) {
+    var argSel = argSelector(selector);
+
     for (var i = 0; i < this.length; i++) {
       var ele = this[i];
-      ele.emitter().one(events, argSelector(selector), callback);
+      ele.emitter().one(events, argSel, callback);
     }
 
     return this;
   },
   once: function once(events, selector, callback) {
+    var argSel = argSelector(selector);
+
     for (var i = 0; i < this.length; i++) {
       var ele = this[i];
-      ele.emitter().on(events, argSelector(selector), callback, {
+      ele.emitter().on(events, argSel, callback, {
         once: true,
         onceCollection: this
       });
@@ -10398,7 +10508,9 @@ var zIndexSort = function zIndexSort(a, b) {
 var elesfn$o = {
   forEach: function forEach(fn$$1, thisArg) {
     if (fn(fn$$1)) {
-      for (var i = 0; i < this.length; i++) {
+      var N = this.length;
+
+      for (var i = 0; i < N; i++) {
         var ele = this[i];
         var ret = thisArg ? fn$$1.apply(thisArg, [ele, i, this]) : fn$$1(ele, i, this);
 
@@ -10532,8 +10644,8 @@ var elesfn$p = {
     var cy = this.cy();
     var layoutEles = options.eles; // nodes & edges
 
-    var getMemoizeKey = function getMemoizeKey(node, i) {
-      return node.id() + '$' + i;
+    var getMemoizeKey = function getMemoizeKey(node) {
+      return node.id();
     };
 
     var fnMem = memoize(fn, getMemoizeKey); // memoized version of position function
@@ -10782,26 +10894,6 @@ var elesfn$q = {
     }
 
     var changedEles = style$$1.apply(updatedEles);
-
-    if (notifyRenderer) {
-      changedEles.emitAndNotify('style'); // let renderer know we changed style
-    } else {
-      changedEles.emit('style'); // just fire the event
-    }
-
-    return this; // chaining
-  },
-  // just update the mappers in the elements' styles; cheaper than eles.updateStyle()
-  updateMappers: function updateMappers(notifyRenderer) {
-    var cy = this._private.cy;
-    var style$$1 = cy.style();
-    notifyRenderer = notifyRenderer || notifyRenderer === undefined ? true : false;
-
-    if (!cy.styleEnabled()) {
-      return this;
-    }
-
-    var changedEles = style$$1.updateMappers(this);
 
     if (notifyRenderer) {
       changedEles.emitAndNotify('style'); // let renderer know we changed style
@@ -11106,6 +11198,9 @@ elesfn$q.hidden = function () {
   }
 };
 
+elesfn$q.isBundledBezier = cachePrototypeStyleFunction('isBundledBezier', function () {
+  return !this.removed() && this.pstyle('curve-style').value === 'bezier' && this.takesUpSpace();
+});
 elesfn$q.bypass = elesfn$q.css = elesfn$q.style;
 elesfn$q.renderedCss = elesfn$q.renderedStyle;
 elesfn$q.removeBypass = elesfn$q.removeCss = elesfn$q.removeStyle;
@@ -11123,11 +11218,14 @@ function defineSwitchFunction(params) {
       var handler = args[1];
       this.on(params.event, data, handler);
     } // e.g. cy.nodes().select( handler )
-    else if (args.length === 1) {
+    else if (args.length === 1 && fn(args[0])) {
         var _handler = args[0];
         this.on(params.event, _handler);
       } // e.g. cy.nodes().select()
-      else if (args.length === 0) {
+      // e.g. (private) cy.nodes().select(['tapselect'])
+      else if (args.length === 0 || args.length === 1 && array(args[0])) {
+          var addlEvents = args.length === 1 ? args[0] : null;
+
           for (var i = 0; i < this.length; i++) {
             var ele = this[i];
             var able = !params.ableField || ele._private[params.ableField];
@@ -11159,6 +11257,10 @@ function defineSwitchFunction(params) {
           changedColl.updateStyle(); // change of state => possible change of style
 
           changedColl.emit(params.event);
+
+          if (addlEvents) {
+            changedColl.emit(addlEvents);
+          }
         }
 
     return this;
@@ -11639,12 +11741,17 @@ function defineParallelEdgesFunction(params) {
 
 
 extend(elesfn$s, {
-  components: function components() {
+  components: function components(root) {
     var self = this;
     var cy = self.cy();
-    var visited = self.spawn();
-    var unvisited = self.nodes().spawnSelf();
+    var visited = cy.collection();
+    var unvisited = root == null ? self.nodes() : root.nodes();
     var components = [];
+
+    if (root != null && unvisited.empty()) {
+      // root may contain only edges
+      unvisited = root.sources(); // doesn't matter which node to use (undirected), so just use the source sides
+    }
 
     var visitInComponent = function visitInComponent(node, component) {
       visited.merge(node);
@@ -11657,16 +11764,26 @@ extend(elesfn$s, {
     }
 
     var _loop = function _loop() {
-      var component = cy.collection();
-      components.push(component);
+      // each iteration yields a component
+      var cmpt = cy.collection();
+      components.push(cmpt);
       var root = unvisited[0];
-      visitInComponent(root, component);
+      visitInComponent(root, cmpt);
       self.bfs({
         directed: false,
         roots: root,
-        visit: function visit(v, e, u, i, depth) {
-          visitInComponent(v, component);
+        visit: function visit(v) {
+          return visitInComponent(v, cmpt);
         }
+      });
+      cmpt.forEach(function (node) {
+        node.connectedEdges().forEach(function (e) {
+          // connectedEdges() usually cached
+          if (cmpt.has(e.source()) && cmpt.has(e.target())) {
+            // has() is cheap
+            cmpt.merge(e); // forEach() only considers nodes -- sets N at call time
+          }
+        });
       });
     };
 
@@ -11674,14 +11791,14 @@ extend(elesfn$s, {
       _loop();
     } while (unvisited.length > 0);
 
-    return components.map(function (component) {
-      var connectedEdges = component.connectedEdges().stdFilter(function (edge) {
-        return component.anySame(edge.source()) && component.anySame(edge.target());
-      });
-      return component.union(connectedEdges);
-    });
+    return components;
+  },
+  component: function component() {
+    var ele = this[0];
+    return ele.cy().mutableElements().components(ele)[0];
   }
 });
+elesfn$s.componentsOf = elesfn$s.components;
 
 var idFactory = {
   generate: function generate(cy, element$$1, tryThisId) {
@@ -11989,16 +12106,13 @@ elesfn$t.clone = function () {
 
 elesfn$t.copy = elesfn$t.clone;
 
-elesfn$t.restore = function (notifyRenderer) {
+elesfn$t.restore = function () {
+  var notifyRenderer = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : true;
+  var addToPool = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
   var self = this;
   var cy = self.cy();
-  var cy_p = cy._private;
-
-  if (notifyRenderer === undefined) {
-    notifyRenderer = true;
-  } // create arrays of nodes and edges, since we need to
+  var cy_p = cy._private; // create arrays of nodes and edges, since we need to
   // restore the nodes first
-
 
   var nodes = [];
   var edges = [];
@@ -12007,7 +12121,7 @@ elesfn$t.restore = function (notifyRenderer) {
   for (var _i2 = 0, l = self.length; _i2 < l; _i2++) {
     var ele = self[_i2];
 
-    if (!ele.removed()) {
+    if (addToPool && !ele.removed()) {
       // don't need to handle this ele
       continue;
     } // keep nodes first in the array and edges after
@@ -12039,7 +12153,7 @@ elesfn$t.restore = function (notifyRenderer) {
     _ele.clearTraversalCache(); // set id and validate
 
 
-    if (_data3.id === undefined) {
+    if (!addToPool && !_private.removed) ; else if (_data3.id === undefined) {
       _data3.id = idFactory.generate(cy, _ele);
     } else if (number(_data3.id)) {
       _data3.id = '' + _data3.id; // now it's a string
@@ -12123,7 +12237,10 @@ elesfn$t.restore = function (notifyRenderer) {
     });
 
     _private.removed = false;
-    cy.addToPool(_ele);
+
+    if (addToPool) {
+      cy.addToPool(_ele);
+    }
   } // for each element
   // do compound node sanity checks
 
@@ -12210,7 +12327,7 @@ elesfn$t.restore = function (notifyRenderer) {
 
     if (notifyRenderer) {
       restored.emitAndNotify('add');
-    } else {
+    } else if (addToPool) {
       restored.emit('add');
     }
   }
@@ -12228,17 +12345,13 @@ elesfn$t.inside = function () {
   return ele && !ele._private.removed;
 };
 
-elesfn$t.remove = function (notifyRenderer) {
+elesfn$t.remove = function () {
+  var notifyRenderer = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : true;
+  var removeFromPool = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
   var self = this;
-  var removed = [];
   var elesToRemove = [];
   var elesToRemoveIds = {};
-  var cy = self._private.cy;
-
-  if (notifyRenderer === undefined) {
-    notifyRenderer = true;
-  } // add connected edges
-
+  var cy = self._private.cy; // add connected edges
 
   function addConnectedEdges(node) {
     var edges = node._private.edges;
@@ -12260,7 +12373,7 @@ elesfn$t.remove = function (notifyRenderer) {
   function add(ele) {
     var alreadyAdded = elesToRemoveIds[ele.id()];
 
-    if (ele.removed() || alreadyAdded) {
+    if (removeFromPool && ele.removed() || alreadyAdded) {
       return;
     } else {
       elesToRemoveIds[ele.id()] = true;
@@ -12290,9 +12403,9 @@ elesfn$t.remove = function (notifyRenderer) {
     node.clearTraversalCache();
   }
 
-  function removeParallelRefs(edge) {
+  function removeParallelRef(pllEdge) {
     // removing an edge invalidates the traversal caches for the parallel edges
-    edge.parallelEdges().clearTraversalCache();
+    pllEdge.clearTraversalCache();
   }
 
   var alteredParents = [];
@@ -12303,7 +12416,9 @@ elesfn$t.remove = function (notifyRenderer) {
     parent = parent[0];
     var children = parent._private.children;
     var pid = parent.id();
-    removeFromArray(children, ele);
+    removeFromArray(children, ele); // remove parent => child ref
+
+    ele._private.parent = null; // remove child => parent ref
 
     if (!alteredParents.ids[pid]) {
       alteredParents.ids[pid] = true;
@@ -12312,14 +12427,13 @@ elesfn$t.remove = function (notifyRenderer) {
   }
 
   self.dirtyCompoundBoundsCache();
-  cy.removeFromPool(elesToRemove); // remove from core pool
+
+  if (removeFromPool) {
+    cy.removeFromPool(elesToRemove); // remove from core pool
+  }
 
   for (var _i5 = 0; _i5 < elesToRemove.length; _i5++) {
-    var _ele3 = elesToRemove[_i5]; // mark as removed
-
-    _ele3._private.removed = true; // add to list of removed elements
-
-    removed.push(_ele3);
+    var _ele3 = elesToRemove[_i5];
 
     if (_ele3.isEdge()) {
       // remove references to this edge in its connected nodes
@@ -12329,7 +12443,17 @@ elesfn$t.remove = function (notifyRenderer) {
 
       removeEdgeRef(src, _ele3);
       removeEdgeRef(tgt, _ele3);
-      removeParallelRefs(_ele3);
+
+      var pllEdges = _ele3.parallelEdges();
+
+      for (var j = 0; j < pllEdges.length; j++) {
+        var pllEdge = pllEdges[j];
+        removeParallelRef(pllEdge);
+
+        if (pllEdge.isBundledBezier()) {
+          pllEdge.dirtyBoundingBoxCache();
+        }
+      }
     } else {
       // remove reference to parent
       var parent = _ele3.parent();
@@ -12337,6 +12461,11 @@ elesfn$t.remove = function (notifyRenderer) {
       if (parent.length !== 0) {
         removeChildRef(parent, _ele3);
       }
+    }
+
+    if (removeFromPool) {
+      // mark as removed
+      _ele3._private.removed = true;
     }
   } // check to see if we have a compound graph or not
 
@@ -12353,13 +12482,13 @@ elesfn$t.remove = function (notifyRenderer) {
     }
   }
 
-  var removedElements = new Collection(this.cy(), removed);
+  var removedElements = new Collection(this.cy(), elesToRemove);
 
   if (removedElements.size() > 0) {
     // must manually notify since trigger won't do this automatically once removed
     if (notifyRenderer) {
       removedElements.emitAndNotify('remove');
-    } else {
+    } else if (removeFromPool) {
       removedElements.emit('remove');
     }
   } // the parents who were modified by the removal need their style updated
@@ -12368,45 +12497,53 @@ elesfn$t.remove = function (notifyRenderer) {
   for (var _i7 = 0; _i7 < alteredParents.length; _i7++) {
     var _ele5 = alteredParents[_i7];
 
-    if (!_ele5.removed()) {
+    if (!removeFromPool || !_ele5.removed()) {
       _ele5.updateStyle();
     }
   }
 
-  return new Collection(cy, removed);
+  return removedElements;
 };
 
 elesfn$t.move = function (struct) {
   var cy = this._private.cy;
+  var eles = this; // just clean up refs, caches, etc. in the same way as when removing and then restoring
+  // (our calls to remove/restore do not remove from the graph or make events)
+
+  var notifyRenderer = false;
+  var modifyPool = false;
 
   if (struct.source !== undefined || struct.target !== undefined) {
     var srcId = struct.source;
     var tgtId = struct.target;
-    var srcExists = cy.hasElementWithId(srcId);
-    var tgtExists = cy.hasElementWithId(tgtId);
+    var srcExists = srcId != null && cy.hasElementWithId(srcId);
+    var tgtExists = tgtId != null && cy.hasElementWithId(tgtId);
 
     if (srcExists || tgtExists) {
-      var jsons = this.jsons();
-      this.remove();
+      cy.batch(function () {
+        // avoid duplicate style updates
+        eles.remove(notifyRenderer, modifyPool); // clean up refs etc.
 
-      for (var i = 0; i < jsons.length; i++) {
-        var json = jsons[i];
-        var ele = this[i];
+        eles.emitAndNotify('moveout');
 
-        if (json.group === 'edges') {
-          if (srcExists) {
-            json.data.source = srcId;
+        for (var i = 0; i < eles.length; i++) {
+          var ele = eles[i];
+          var _data5 = ele._private.data;
+
+          if (ele.isEdge()) {
+            if (srcExists) {
+              _data5.source = srcId;
+            }
+
+            if (tgtExists) {
+              _data5.target = tgtId;
+            }
           }
-
-          if (tgtExists) {
-            json.data.target = tgtId;
-          }
-
-          json.scratch = ele._private.scratch;
         }
-      }
 
-      return cy.add(jsons);
+        eles.restore(notifyRenderer, modifyPool); // make new refs, style, etc.
+      });
+      eles.emitAndNotify('move');
     }
   } else if (struct.parent !== undefined) {
     // move node to new parent
@@ -12414,27 +12551,29 @@ elesfn$t.move = function (struct) {
     var parentExists = parentId === null || cy.hasElementWithId(parentId);
 
     if (parentExists) {
-      var _jsons = this.jsons();
+      var pidToAssign = parentId === null ? undefined : parentId;
+      cy.batch(function () {
+        // avoid duplicate style updates
+        var updated = eles.remove(notifyRenderer, modifyPool); // clean up refs etc.
 
-      var descs = this.descendants();
-      var descsEtcJsons = descs.union(descs.union(this).connectedEdges()).jsons();
-      this.remove(); // NB: also removes descendants and their connected edges
+        updated.emitAndNotify('moveout');
 
-      for (var _i8 = 0; _i8 < _jsons.length; _i8++) {
-        var _json = _jsons[_i8];
-        var _ele6 = this[_i8];
+        for (var i = 0; i < eles.length; i++) {
+          var ele = eles[i];
+          var _data6 = ele._private.data;
 
-        if (_json.group === 'nodes') {
-          _json.data.parent = parentId === null ? undefined : parentId;
-          _json.scratch = _ele6._private.scratch;
+          if (ele.isNode()) {
+            _data6.parent = pidToAssign;
+          }
         }
-      }
 
-      return cy.add(_jsons.concat(descsEtcJsons));
+        updated.restore(notifyRenderer, modifyPool); // make new refs, style, etc.
+      });
+      eles.emitAndNotify('move');
     }
   }
 
-  return this; // if nothing done
+  return this;
 };
 
 [elesfn$b, elesfn$c, elesfn$d, elesfn$e, elesfn$f, data$1, elesfn$h, dimensions, elesfn$l, elesfn$m, elesfn$n, elesfn$o, elesfn$p, elesfn$q, elesfn$r, elesfn$s].forEach(function (props) {
@@ -13056,30 +13195,7 @@ function valid(start, end) {
 }
 
 function startAnimation(self, ani, now, isCore) {
-  var isEles = !isCore;
-  var ele = self;
   var ani_p = ani._private;
-  var cy = isCore ? self : self.cy();
-  var style = cy.style();
-
-  if (isEles) {
-    var pos = ele.position();
-    ani_p.startPosition = ani_p.startPosition || {
-      x: pos.x,
-      y: pos.y
-    };
-    ani_p.startStyle = ani_p.startStyle || style.getAnimationStartStyle(ele, ani_p.style);
-  }
-
-  if (isCore) {
-    var pan = cy._private.pan;
-    ani_p.startPan = ani_p.startPan || {
-      x: pan.x,
-      y: pan.y
-    };
-    ani_p.startZoom = ani_p.startZoom != null ? ani_p.startZoom : cy._private.zoom;
-  }
-
   ani_p.started = true;
   ani_p.startTime = now - ani_p.progress * ani_p.duration;
 }
@@ -13504,6 +13620,18 @@ var corefn$4 = {
   }
 };
 
+var rendererDefaults = defaults({
+  hideEdgesOnViewport: false,
+  textureOnViewport: false,
+  motionBlur: false,
+  motionBlurOpacity: 0.05,
+  pixelRatio: undefined,
+  desktopTapThreshold: 4,
+  touchTapThreshold: 8,
+  wheelSensitivity: 1,
+  debug: false,
+  showFps: false
+});
 var corefn$5 = {
   renderTo: function renderTo(context, zoom, pan, pxRatio) {
     var r = this._private.renderer;
@@ -13531,19 +13659,12 @@ var corefn$5 = {
       return;
     }
 
-    var defaults$$1 = {
-      motionBlur: false,
-      motionBlurOpacity: 0.05,
-      pixelRatio: undefined,
-      desktopTapThreshold: 4,
-      touchTapThreshold: 8,
-      wheelSensitivity: 1
-    };
-    var rOpts = extend({}, defaults$$1, options, {
-      cy: cy,
-      wheelSensitivity: number(options.wheelSensitivity) && options.wheelSensitivity > 0 ? options.wheelSensitivity : defaults$$1.wheelSensitivity,
-      pixelRatio: number(options.pixelRatio) && options.pixelRatio > 0 ? options.pixelRatio : defaults$$1.pixelRatio
-    });
+    if (options.wheelSensitivity !== undefined) {
+      warn("You have set a custom wheel sensitivity.  This will make your app zoom unnaturally when using mainstream mice.  You should change this value from the default only if you can guarantee that all your users will use the same hardware and OS configuration as your current machine.");
+    }
+
+    var rOpts = rendererDefaults(options);
+    rOpts.cy = cy;
     cy._private.renderer = new RendererProto(rOpts);
     this.notify('init');
   },
@@ -13571,11 +13692,11 @@ var corefn$5 = {
       _p.animation.queue = [];
     });
   },
-  onRender: function onRender(fn$$1) {
-    return this.on('render', fn$$1);
+  onRender: function onRender(fn) {
+    return this.on('render', fn);
   },
-  offRender: function offRender(fn$$1) {
-    return this.off('render', fn$$1);
+  offRender: function offRender(fn) {
+    return this.off('render', fn);
   }
 };
 corefn$5.invalidateDimensions = corefn$5.resize;
@@ -13703,7 +13824,7 @@ styfn.getPropertiesDiff = function (oldCxtKey, newCxtKey) {
     var cxtHasDiffed = oldHasCxt !== newHasCxt;
     var cxtHasMappedProps = cxt.mappedProperties.length > 0;
 
-    if (cxtHasDiffed || cxtHasMappedProps) {
+    if (cxtHasDiffed || newHasCxt && cxtHasMappedProps) {
       var props = void 0;
 
       if (cxtHasDiffed && cxtHasMappedProps) {
@@ -13824,6 +13945,7 @@ styfn.applyContextStyle = function (cxtMeta, cxtStyle, ele) {
   var self = this;
   var diffProps = cxtMeta.diffPropNames;
   var retDiffProps = {};
+  var types = self.types;
 
   for (var i = 0; i < diffProps.length; i++) {
     var diffPropName = diffProps[i];
@@ -13851,7 +13973,22 @@ styfn.applyContextStyle = function (cxtMeta, cxtStyle, ele) {
 
     if (eleProp === cxtProp) {
       continue;
-    }
+    } // save cycles when a mapped context prop doesn't need to be applied
+
+
+    if (cxtProp.mapped === types.fn // context prop is function mapper
+    && eleProp.mapping != null // ele prop is a concrete value from from a mapper
+    && eleProp.mapping.value === cxtProp.value // the current prop on the ele is a flat prop value for the function mapper
+    ) {
+        // NB don't write to cxtProp, as it's shared among eles (stored in stylesheet)
+        var mapping = eleProp.mapping; // can write to mapping, as it's a per-ele copy
+
+        var fnValue = mapping.fnValue = cxtProp.value(ele); // temporarily cache the value in case of a miss
+
+        if (fnValue === mapping.prevFnValue) {
+          continue;
+        }
+      }
 
     var retDiffProp = retDiffProps[diffPropName] = {
       prev: eleProp
@@ -13899,6 +14036,15 @@ styfn.updateStyleHints = function (ele) {
 
   var updateGrKey = function updateGrKey(val, grKey) {
     return _p.styleKeys[grKey] = hashInt(val, _p.styleKeys[grKey]);
+  }; // - hashing works on 32 bit ints b/c we use bitwise ops
+  // - small numbers get cut off (e.g. 0.123 is seen as 0 by the hashing function)
+  // - raise up small numbers so more significant digits are seen by hashing
+  // - make small numbers negative to avoid collisions -- most style values are positive numbers
+  // - works in practice and it's relatively cheap
+
+
+  var cleanNum = function cleanNum(val) {
+    return -128 < val && val < 128 && Math.floor(val) !== val ? -(val * 1024 | 0) : val;
   };
 
   for (var _i = 0; _i < propNames.length; _i++) {
@@ -13911,7 +14057,8 @@ styfn.updateStyleHints = function (ele) {
 
     var propInfo = this.properties[name];
     var type = propInfo.type;
-    var _grKey = propInfo.groupKey;
+    var _grKey = propInfo.groupKey; // numbers are cheaper to hash than strings
+    // 1 hash op vs n hash ops (for length n string)
 
     if (type.number) {
       // use pfValue if available (e.g. normalised units)
@@ -13919,10 +14066,10 @@ styfn.updateStyleHints = function (ele) {
 
       if (type.multiple) {
         for (var _i2 = 0; _i2 < v.length; _i2++) {
-          updateGrKey(v[_i2], _grKey);
+          updateGrKey(cleanNum(v[_i2]), _grKey);
         }
       } else {
-        updateGrKey(v, _grKey);
+        updateGrKey(cleanNum(v), _grKey);
       }
     } else {
       var strVal = parsedProp.strValue;
@@ -14196,7 +14343,9 @@ styfn.applyParsedProperty = function (ele, parsedProp) {
     case types.fn:
       {
         var fn$$1 = prop.value;
-        var fnRetVal = fn$$1(ele);
+        var fnRetVal = prop.fnValue != null ? prop.fnValue : fn$$1(ele); // check for cached value before calling function
+
+        prop.prevFnValue = fnRetVal;
 
         if (fnRetVal == null) {
           warn('Custom function mappers may not return null (i.e. `' + prop.name + '` for ele `' + ele.id() + '` is null)');
@@ -14210,7 +14359,7 @@ styfn.applyParsedProperty = function (ele, parsedProp) {
           return false;
         }
 
-        flatProp.mapping = prop; // keep a reference to the mapping
+        flatProp.mapping = copy(prop); // keep a reference to the mapping
 
         prop = flatProp; // the flattened (mapped) property is the one we want
 
@@ -14286,44 +14435,6 @@ styfn.update = function () {
   var cy = this._private.cy;
   var eles = cy.mutableElements();
   eles.updateStyle();
-}; // just update the functional properties (i.e. mappings) in the elements'
-// styles (less expensive than recalculation)
-
-
-styfn.updateMappers = function (eles) {
-  var cy = this._private.cy;
-  var updatedEles = cy.collection();
-
-  for (var i = 0; i < eles.length; i++) {
-    // for each ele
-    var ele = eles[i];
-    var style$$1 = ele._private.style;
-    var updatedEle = false;
-    var propNames = Object.keys(style$$1);
-
-    for (var j = 0; j < propNames.length; j++) {
-      // for each prop
-      var propName = propNames[j];
-      var propInStyle = style$$1[propName];
-
-      if (propInStyle != null && propInStyle.mapping) {
-        var mapping = propInStyle.mapping;
-        this.applyParsedProperty(ele, mapping); // reapply the mapping property
-
-        updatedEle = true;
-      }
-    }
-
-    if (updatedEle) {
-      var hintDiff = this.updateStyleHints(ele);
-
-      if (hintDiff) {
-        updatedEles.merge(ele);
-      }
-    }
-  }
-
-  return updatedEles;
 }; // diffProps : { name => { prev, next } }
 
 
@@ -14422,7 +14533,7 @@ styfn.checkTrigger = function (ele, name, fromValue, toValue, getTrigger, onTrig
   var triggerCheck = getTrigger(prop);
 
   if (triggerCheck != null && triggerCheck(fromValue, toValue)) {
-    onTrigger();
+    onTrigger(prop);
   }
 };
 
@@ -14439,9 +14550,21 @@ styfn.checkZOrderTrigger = function (ele, name, fromValue, toValue) {
 styfn.checkBoundsTrigger = function (ele, name, fromValue, toValue) {
   this.checkTrigger(ele, name, fromValue, toValue, function (prop) {
     return prop.triggersBounds;
-  }, function () {
+  }, function (prop) {
     ele.dirtyCompoundBoundsCache();
-    ele.dirtyBoundingBoxCache();
+    ele.dirtyBoundingBoxCache(); // if the prop change makes the bb of pll bezier edges invalid,
+    // then dirty the pll edge bb cache as well
+
+    if ( // only for beziers -- so performance of other edges isn't affected
+    (ele.pstyle('curve-style').value === 'bezier' // already a bezier
+    // was just now changed to or from a bezier:
+    || name === 'curve-style' && (fromValue === 'bezier' || toValue === 'bezier')) && prop.triggersBoundsOfParallelBeziers) {
+      ele.parallelEdges().forEach(function (pllEdge) {
+        if (pllEdge.isBundledBezier()) {
+          pllEdge.dirtyBoundingBoxCache();
+        }
+      });
+    }
   });
 };
 
@@ -15124,6 +15247,9 @@ var styfn$6 = {};
       min: 0,
       allowPercent: true
     },
+    axisDirection: {
+      enums: ['horizontal', 'leftward', 'rightward', 'vertical', 'upward', 'downward', 'auto']
+    },
     paddingRelativeTo: {
       enums: ['width', 'height', 'average', 'min', 'max']
     },
@@ -15181,7 +15307,7 @@ var styfn$6 = {};
       enums: ['solid', 'dotted', 'dashed', 'double']
     },
     curveStyle: {
-      enums: ['bezier', 'unbundled-bezier', 'haystack', 'segments', 'straight']
+      enums: ['bezier', 'unbundled-bezier', 'haystack', 'segments', 'straight', 'taxi']
     },
     fontFamily: {
       regex: '^([\\w- \\"]+(?:\\s*,\\s*[\\w- \\"]+)*)$'
@@ -15501,7 +15627,8 @@ var styfn$6 = {};
     name: 'display',
     type: t.display,
     triggersZOrder: diff.any,
-    triggersBounds: diff.any
+    triggersBounds: diff.any,
+    triggersBoundsOfParallelBeziers: true
   }, {
     name: 'visibility',
     type: t.visibility,
@@ -15599,6 +15726,10 @@ var styfn$6 = {};
     name: 'padding-relative-to',
     type: t.paddingRelativeTo,
     triggersBounds: diff.any
+  }, {
+    name: 'bounds-expansion',
+    type: t.size,
+    triggersBounds: diff.any
   }];
   var nodeBorder = [{
     name: 'border-color',
@@ -15650,6 +15781,12 @@ var styfn$6 = {};
   }, {
     name: 'background-height',
     type: t.bgWH
+  }, {
+    name: 'background-offset-x',
+    type: t.bgPos
+  }, {
+    name: 'background-offset-y',
+    type: t.bgPos
   }];
   var compound = [{
     name: 'position',
@@ -15711,7 +15848,8 @@ var styfn$6 = {};
   }, {
     name: 'curve-style',
     type: t.curveStyle,
-    triggersBounds: diff.any
+    triggersBounds: diff.any,
+    triggersBoundsOfParallelBeziers: true
   }, {
     name: 'haystack-radius',
     type: t.zeroOneNumber,
@@ -15743,6 +15881,18 @@ var styfn$6 = {};
   }, {
     name: 'segment-weights',
     type: t.numbers,
+    triggersBounds: diff.any
+  }, {
+    name: 'taxi-turn',
+    type: t.sizeMaybePercent,
+    triggersBounds: diff.any
+  }, {
+    name: 'taxi-turn-min-distance',
+    type: t.size,
+    triggersBounds: diff.any
+  }, {
+    name: 'taxi-direction',
+    type: t.axisDirection,
     triggersBounds: diff.any
   }, {
     name: 'edge-distances',
@@ -15859,7 +16009,7 @@ var styfn$6 = {};
       });
     });
   }, {});
-  var props = styfn$6.properties = behavior.concat(transition, visibility, overlay, ghost, commonLabel, labelDimensions, mainLabel, sourceLabel, targetLabel, nodeBody, nodeBorder, backgroundImage, pie, compound, edgeLine, edgeArrow, core$$1);
+  var props = styfn$6.properties = [].concat(behavior, transition, visibility, overlay, ghost, commonLabel, labelDimensions, mainLabel, sourceLabel, targetLabel, nodeBody, nodeBorder, backgroundImage, pie, compound, edgeLine, edgeArrow, core$$1);
   var propGroups = styfn$6.propertyGroups = {
     // common to all eles
     behavior: behavior,
@@ -16031,6 +16181,8 @@ styfn$6.getDefaultProperties = function () {
     'background-image-opacity': 1,
     'background-position-x': '50%',
     'background-position-y': '50%',
+    'background-offset-x': 0,
+    'background-offset-y': 0,
     'background-width-relative-to': 'include-padding',
     'background-height-relative-to': 'include-padding',
     'background-repeat': 'no-repeat',
@@ -16046,6 +16198,7 @@ styfn$6.getDefaultProperties = function () {
     'width': 30,
     'shape': 'ellipse',
     'shape-polygon-points': '-1, -1,   1, -1,   1, 1,   -1, 1',
+    'bounds-expansion': 0,
     // node gradient
     'background-gradient-direction': 'to-bottom',
     'background-gradient-stop-colors': '#999',
@@ -16098,6 +16251,9 @@ styfn$6.getDefaultProperties = function () {
     'control-point-weights': 0.5,
     'segment-weights': 0.5,
     'segment-distances': 20,
+    'taxi-turn': '50%',
+    'taxi-turn-min-distance': 10,
+    'taxi-direction': 'auto',
     'edge-distances': 'intersection',
     'curve-style': 'haystack',
     'haystack-radius': 0,
@@ -17094,7 +17250,7 @@ var corefn$8 = {
       _p.maxZoom = max$$1;
     } else if (number(min$$1) && max$$1 === undefined && min$$1 <= _p.maxZoom) {
       _p.minZoom = min$$1;
-    } else if (number(max$$1) && min$$1 === undefined && max$$1 <= _p.minZoom) {
+    } else if (number(max$$1) && min$$1 === undefined && max$$1 >= _p.minZoom) {
       _p.maxZoom = max$$1;
     }
 
@@ -17502,7 +17658,9 @@ var Core = function Core(opts) {
   } // create the renderer
 
 
-  cy.initRenderer(options.renderer);
+  var rendererOptions = extend({}, options, options.renderer); // allow rendering hints in top level options
+
+  cy.initRenderer(rendererOptions);
 
   var setElesAndLayout = function setElesAndLayout(elements, onload, ondone) {
     cy.notifications(false); // remove old elements
@@ -17671,6 +17829,10 @@ extend(corefn$9, {
     var _p = cy._private;
     var eles = cy.mutableElements();
 
+    var getFreshRef = function getFreshRef(ele) {
+      return cy.getElementById(ele.id());
+    };
+
     if (plainObject(obj)) {
       // set
       cy.startBatch();
@@ -17731,25 +17893,28 @@ extend(corefn$9, {
               updateEles(elements, gr);
             }
           }
-        } // elements not specified in json should be removed
-
-
-        for (var _i2 = 0; _i2 < eles.length; _i2++) {
-          var ele = eles[_i2];
-          var remove = !idInJson[ele.id()];
-
-          if (remove) {
-            if (ele.isParent()) {
-              ele.children().move({
-                parent: null
-              }); // so that children are not removed w/ parent
-
-              ele.remove(); // remove parent
-            } else {
-              ele.remove();
-            }
-          }
         }
+
+        var parentsToRemove = cy.collection();
+        eles.filter(function (ele) {
+          return !idInJson[ele.id()];
+        }).forEach(function (ele) {
+          if (ele.isParent()) {
+            parentsToRemove.merge(ele);
+          } else {
+            ele.remove();
+          }
+        }); // so that children are not removed w/parent
+
+        parentsToRemove.forEach(function (ele) {
+          return ele.children().move({
+            parent: null
+          });
+        }); // intermediate parents may be moved by prior line, so make sure we remove by fresh refs
+
+        parentsToRemove.forEach(function (ele) {
+          return getFreshRef(ele).remove();
+        });
       }
 
       if (obj.style) {
@@ -17768,8 +17933,8 @@ extend(corefn$9, {
 
       var fields = ['minZoom', 'maxZoom', 'zoomingEnabled', 'userZoomingEnabled', 'panningEnabled', 'userPanningEnabled', 'boxSelectionEnabled', 'autolock', 'autoungrabify', 'autounselectify'];
 
-      for (var _i3 = 0; _i3 < fields.length; _i3++) {
-        var f = fields[_i3];
+      for (var _i2 = 0; _i2 < fields.length; _i2++) {
+        var f = fields[_i2];
 
         if (obj[f] != null) {
           cy[f](obj[f]);
@@ -20203,7 +20368,7 @@ var defaults$f = {
   // callback on layoutstop
   transform: function transform(node, position) {
     return position;
-  } // transform a given node position. Useful for changing flow direction in discrete layouts 
+  } // transform a given node position. Useful for changing flow direction in discrete layouts
 
 };
 
@@ -20219,7 +20384,7 @@ PresetLayout.prototype.run = function () {
 
   function getPosition(node) {
     if (options.positions == null) {
-      return null;
+      return copyPosition(node.position());
     }
 
     if (posIsFn) {
@@ -21095,7 +21260,7 @@ BRp$3.findHaystackPoints = function (edges) {
         x: Math.cos(angle),
         y: Math.sin(angle)
       };
-      var angle = Math.random() * 2 * Math.PI;
+      angle = Math.random() * 2 * Math.PI;
       rs.target = {
         x: Math.cos(angle),
         y: Math.sin(angle)
@@ -21117,12 +21282,416 @@ BRp$3.findHaystackPoints = function (edges) {
     rs.midX = (rs.allpts[0] + rs.allpts[2]) / 2;
     rs.midY = (rs.allpts[1] + rs.allpts[3]) / 2; // always override as haystack in case set to different type previously
 
-    rs.edgeType = rs.lastCurveStyle = 'haystack';
+    rs.edgeType = 'haystack';
     rs.haystack = true;
     this.storeEdgeProjections(edge);
     this.calculateArrowAngles(edge);
     this.recalculateEdgeLabelProjections(edge);
     this.calculateLabelAngles(edge);
+  }
+};
+
+BRp$3.findSegmentsPoints = function (edge, pairInfo) {
+  // Segments (multiple straight lines)
+  var rs = edge._private.rscratch;
+  var posPts = pairInfo.posPts,
+      intersectionPts = pairInfo.intersectionPts,
+      vectorNormInverse = pairInfo.vectorNormInverse;
+  var edgeDistances = edge.pstyle('edge-distances').value;
+  var segmentWs = edge.pstyle('segment-weights');
+  var segmentDs = edge.pstyle('segment-distances');
+  var segmentsN = Math.min(segmentWs.pfValue.length, segmentDs.pfValue.length);
+  rs.edgeType = 'segments';
+  rs.segpts = [];
+
+  for (var s = 0; s < segmentsN; s++) {
+    var w = segmentWs.pfValue[s];
+    var d = segmentDs.pfValue[s];
+    var w1 = 1 - w;
+    var w2 = w;
+    var midptPts = edgeDistances === 'node-position' ? posPts : intersectionPts;
+    var adjustedMidpt = {
+      x: midptPts.x1 * w1 + midptPts.x2 * w2,
+      y: midptPts.y1 * w1 + midptPts.y2 * w2
+    };
+    rs.segpts.push(adjustedMidpt.x + vectorNormInverse.x * d, adjustedMidpt.y + vectorNormInverse.y * d);
+  }
+};
+
+BRp$3.findLoopPoints = function (edge, pairInfo, i, edgeIsUnbundled) {
+  // Self-edge
+  var rs = edge._private.rscratch;
+  var dirCounts = pairInfo.dirCounts,
+      srcPos = pairInfo.srcPos;
+  var ctrlptDists = edge.pstyle('control-point-distances');
+  var ctrlptDist = ctrlptDists ? ctrlptDists.pfValue[0] : undefined;
+  var loopDir = edge.pstyle('loop-direction').pfValue;
+  var loopSwp = edge.pstyle('loop-sweep').pfValue;
+  var stepSize = edge.pstyle('control-point-step-size').pfValue;
+  rs.edgeType = 'self';
+  var j = i;
+  var loopDist = stepSize;
+
+  if (edgeIsUnbundled) {
+    j = 0;
+    loopDist = ctrlptDist;
+  }
+
+  var loopAngle = loopDir - Math.PI / 2;
+  var outAngle = loopAngle - loopSwp / 2;
+  var inAngle = loopAngle + loopSwp / 2; // increase by step size for overlapping loops, keyed on direction and sweep values
+
+  var dc = String(loopDir + '_' + loopSwp);
+  j = dirCounts[dc] === undefined ? dirCounts[dc] = 0 : ++dirCounts[dc];
+  rs.ctrlpts = [srcPos.x + Math.cos(outAngle) * 1.4 * loopDist * (j / 3 + 1), srcPos.y + Math.sin(outAngle) * 1.4 * loopDist * (j / 3 + 1), srcPos.x + Math.cos(inAngle) * 1.4 * loopDist * (j / 3 + 1), srcPos.y + Math.sin(inAngle) * 1.4 * loopDist * (j / 3 + 1)];
+};
+
+BRp$3.findCompoundLoopPoints = function (edge, pairInfo, i, edgeIsUnbundled) {
+  // Compound edge
+  var rs = edge._private.rscratch;
+  rs.edgeType = 'compound';
+  var srcPos = pairInfo.srcPos,
+      tgtPos = pairInfo.tgtPos,
+      srcW = pairInfo.srcW,
+      srcH = pairInfo.srcH,
+      tgtW = pairInfo.tgtW,
+      tgtH = pairInfo.tgtH;
+  var stepSize = edge.pstyle('control-point-step-size').pfValue;
+  var ctrlptDists = edge.pstyle('control-point-distances');
+  var ctrlptDist = ctrlptDists ? ctrlptDists.pfValue[0] : undefined;
+  var j = i;
+  var loopDist = stepSize;
+
+  if (edgeIsUnbundled) {
+    j = 0;
+    loopDist = ctrlptDist;
+  }
+
+  var loopW = 50;
+  var loopaPos = {
+    x: srcPos.x - srcW / 2,
+    y: srcPos.y - srcH / 2
+  };
+  var loopbPos = {
+    x: tgtPos.x - tgtW / 2,
+    y: tgtPos.y - tgtH / 2
+  };
+  var loopPos = {
+    x: Math.min(loopaPos.x, loopbPos.x),
+    y: Math.min(loopaPos.y, loopbPos.y)
+  }; // avoids cases with impossible beziers
+
+  var minCompoundStretch = 0.5;
+  var compoundStretchA = Math.max(minCompoundStretch, Math.log(srcW * 0.01));
+  var compoundStretchB = Math.max(minCompoundStretch, Math.log(tgtW * 0.01));
+  rs.ctrlpts = [loopPos.x, loopPos.y - (1 + Math.pow(loopW, 1.12) / 100) * loopDist * (j / 3 + 1) * compoundStretchA, loopPos.x - (1 + Math.pow(loopW, 1.12) / 100) * loopDist * (j / 3 + 1) * compoundStretchB, loopPos.y];
+};
+
+BRp$3.findStraightEdgePoints = function (edge) {
+  // Straight edge within bundle
+  edge._private.rscratch.edgeType = 'straight';
+};
+
+BRp$3.findBezierPoints = function (edge, pairInfo, i, edgeIsUnbundled, edgeIsSwapped) {
+  var rs = edge._private.rscratch;
+  var vectorNormInverse = pairInfo.vectorNormInverse,
+      posPts = pairInfo.posPts,
+      intersectionPts = pairInfo.intersectionPts;
+  var edgeDistances = edge.pstyle('edge-distances').value;
+  var stepSize = edge.pstyle('control-point-step-size').pfValue;
+  var ctrlptDists = edge.pstyle('control-point-distances');
+  var ctrlptWs = edge.pstyle('control-point-weights');
+  var bezierN = ctrlptDists && ctrlptWs ? Math.min(ctrlptDists.value.length, ctrlptWs.value.length) : 1;
+  var ctrlptDist = ctrlptDists ? ctrlptDists.pfValue[0] : undefined;
+  var ctrlptWeight = ctrlptWs.value[0]; // (Multi)bezier
+
+  var multi = edgeIsUnbundled;
+  rs.edgeType = multi ? 'multibezier' : 'bezier';
+  rs.ctrlpts = [];
+
+  for (var b = 0; b < bezierN; b++) {
+    var normctrlptDist = (0.5 - pairInfo.eles.length / 2 + i) * stepSize * (edgeIsSwapped ? -1 : 1);
+    var manctrlptDist = void 0;
+    var sign = signum(normctrlptDist);
+
+    if (multi) {
+      ctrlptDist = ctrlptDists ? ctrlptDists.pfValue[b] : stepSize; // fall back on step size
+
+      ctrlptWeight = ctrlptWs.value[b];
+    }
+
+    if (edgeIsUnbundled) {
+      // multi or single unbundled
+      manctrlptDist = ctrlptDist;
+    } else {
+      manctrlptDist = ctrlptDist !== undefined ? sign * ctrlptDist : undefined;
+    }
+
+    var distanceFromMidpoint = manctrlptDist !== undefined ? manctrlptDist : normctrlptDist;
+    var w1 = 1 - ctrlptWeight;
+    var w2 = ctrlptWeight;
+    var midptPts = edgeDistances === 'node-position' ? posPts : intersectionPts;
+    var adjustedMidpt = {
+      x: midptPts.x1 * w1 + midptPts.x2 * w2,
+      y: midptPts.y1 * w1 + midptPts.y2 * w2
+    };
+    rs.ctrlpts.push(adjustedMidpt.x + vectorNormInverse.x * distanceFromMidpoint, adjustedMidpt.y + vectorNormInverse.y * distanceFromMidpoint);
+  }
+};
+
+BRp$3.findTaxiPoints = function (edge, pairInfo) {
+  // Taxicab geometry with two turns maximum
+  var rs = edge._private.rscratch;
+  rs.edgeType = 'segments';
+  var VERTICAL = 'vertical';
+  var HORIZONTAL = 'horizontal';
+  var LEFTWARD = 'leftward';
+  var RIGHTWARD = 'rightward';
+  var DOWNWARD = 'downward';
+  var UPWARD = 'upward';
+  var AUTO = 'auto';
+  var posPts = pairInfo.posPts,
+      srcW = pairInfo.srcW,
+      srcH = pairInfo.srcH,
+      tgtW = pairInfo.tgtW,
+      tgtH = pairInfo.tgtH;
+  var edgeDistances = edge.pstyle('edge-distances').value;
+  var dIncludesNodeBody = edgeDistances !== 'node-position';
+  var taxiDir = edge.pstyle('taxi-direction').value;
+  var rawTaxiDir = taxiDir; // unprocessed value
+
+  var taxiTurn = edge.pstyle('taxi-turn');
+  var taxiTurnPfVal = taxiTurn.pfValue;
+  var minD = edge.pstyle('taxi-turn-min-distance').pfValue;
+  var turnIsPercent = taxiTurn.units === '%';
+  var dw = dIncludesNodeBody ? (srcW + tgtW) / 2 : 0;
+  var dh = dIncludesNodeBody ? (srcH + tgtH) / 2 : 0;
+  var pdx = posPts.x2 - posPts.x1;
+  var pdy = posPts.y2 - posPts.y1; // take away the effective w/h from the magnitude of the delta value
+
+  var subDWH = function subDWH(dxy, dwh) {
+    if (dxy > 0) {
+      return Math.max(dxy - dwh, 0);
+    } else {
+      return Math.min(dxy + dwh, 0);
+    }
+  };
+
+  var dx = subDWH(pdx, dw);
+  var dy = subDWH(pdy, dh);
+  var isExplicitDir = false;
+
+  if (taxiDir === AUTO) {
+    taxiDir = Math.abs(dx) > Math.abs(dy) ? HORIZONTAL : VERTICAL;
+  } else if (taxiDir === UPWARD || taxiDir === DOWNWARD) {
+    taxiDir = VERTICAL;
+    isExplicitDir = true;
+  } else if (taxiDir === LEFTWARD || taxiDir === RIGHTWARD) {
+    taxiDir = HORIZONTAL;
+    isExplicitDir = true;
+  }
+
+  var isVert = taxiDir === VERTICAL;
+  var l = isVert ? dy : dx;
+  var pl = isVert ? pdy : pdx;
+  var sgnL = signum(pl);
+  var forcedDir = false;
+
+  if (!(isExplicitDir && turnIsPercent) // forcing in this case would cause weird growing in the opposite direction
+  && (rawTaxiDir === DOWNWARD && pl < 0 || rawTaxiDir === UPWARD && pl > 0 || rawTaxiDir === LEFTWARD && pl > 0 || rawTaxiDir === RIGHTWARD && pl < 0)) {
+    sgnL *= -1;
+    l = sgnL * Math.abs(l);
+    forcedDir = true;
+  }
+
+  var d = turnIsPercent ? taxiTurnPfVal * l : taxiTurnPfVal * sgnL;
+
+  var getIsTooClose = function getIsTooClose(d) {
+    return Math.abs(d) < minD || Math.abs(d) >= Math.abs(l);
+  };
+
+  var isTooCloseSrc = getIsTooClose(d);
+  var isTooCloseTgt = getIsTooClose(l - d);
+  var isTooClose = isTooCloseSrc || isTooCloseTgt;
+
+  if (isTooClose && !forcedDir) {
+    // non-ideal routing
+    if (isVert) {
+      // vertical fallbacks
+      var lShapeInsideSrc = Math.abs(pl) <= srcH / 2;
+      var lShapeInsideTgt = Math.abs(pdx) <= tgtW / 2;
+
+      if (lShapeInsideSrc) {
+        // horizontal Z-shape (direction not respected)
+        var x = (posPts.x1 + posPts.x2) / 2;
+        var y1 = posPts.y1,
+            y2 = posPts.y2;
+        rs.segpts = [x, y1, x, y2];
+      } else if (lShapeInsideTgt) {
+        // vertical Z-shape (distance not respected)
+        var y = (posPts.y1 + posPts.y2) / 2;
+        var x1 = posPts.x1,
+            x2 = posPts.x2;
+        rs.segpts = [x1, y, x2, y];
+      } else {
+        // L-shape fallback (turn distance not respected, but works well with tree siblings)
+        rs.segpts = [posPts.x1, posPts.y2];
+      }
+    } else {
+      // horizontal fallbacks
+      var _lShapeInsideSrc = Math.abs(pl) <= srcW / 2;
+
+      var _lShapeInsideTgt = Math.abs(pdy) <= tgtH / 2;
+
+      if (_lShapeInsideSrc) {
+        // vertical Z-shape (direction not respected)
+        var _y = (posPts.y1 + posPts.y2) / 2;
+
+        var _x = posPts.x1,
+            _x2 = posPts.x2;
+        rs.segpts = [_x, _y, _x2, _y];
+      } else if (_lShapeInsideTgt) {
+        // horizontal Z-shape (turn distance not respected)
+        var _x3 = (posPts.x1 + posPts.x2) / 2;
+
+        var _y2 = posPts.y1,
+            _y3 = posPts.y2;
+        rs.segpts = [_x3, _y2, _x3, _y3];
+      } else {
+        // L-shape (turn distance not respected, but works well for tree siblings)
+        rs.segpts = [posPts.x2, posPts.y1];
+      }
+    }
+  } else {
+    // ideal routing
+    if (isVert) {
+      var _y4 = posPts.y1 + d + (dIncludesNodeBody ? srcH / 2 * sgnL : 0);
+
+      var _x4 = posPts.x1,
+          _x5 = posPts.x2;
+      rs.segpts = [_x4, _y4, _x5, _y4];
+    } else {
+      // horizontal
+      var _x6 = posPts.x1 + d + (dIncludesNodeBody ? srcW / 2 * sgnL : 0);
+
+      var _y5 = posPts.y1,
+          _y6 = posPts.y2;
+      rs.segpts = [_x6, _y5, _x6, _y6];
+    }
+  }
+};
+
+BRp$3.tryToCorrectInvalidPoints = function (edge, pairInfo) {
+  var rs = edge._private.rscratch; // can only correct beziers for now...
+
+  if (rs.edgeType === 'bezier') {
+    var srcPos = pairInfo.srcPos,
+        tgtPos = pairInfo.tgtPos,
+        srcW = pairInfo.srcW,
+        srcH = pairInfo.srcH,
+        tgtW = pairInfo.tgtW,
+        tgtH = pairInfo.tgtH,
+        srcShape = pairInfo.srcShape,
+        tgtShape = pairInfo.tgtShape;
+    var badStart = !number(rs.startX) || !number(rs.startY);
+    var badAStart = !number(rs.arrowStartX) || !number(rs.arrowStartY);
+    var badEnd = !number(rs.endX) || !number(rs.endY);
+    var badAEnd = !number(rs.arrowEndX) || !number(rs.arrowEndY);
+    var minCpADistFactor = 3;
+    var arrowW = this.getArrowWidth(edge.pstyle('width').pfValue, edge.pstyle('arrow-scale').value) * this.arrowShapeWidth;
+    var minCpADist = minCpADistFactor * arrowW;
+    var startACpDist = dist({
+      x: rs.ctrlpts[0],
+      y: rs.ctrlpts[1]
+    }, {
+      x: rs.startX,
+      y: rs.startY
+    });
+    var closeStartACp = startACpDist < minCpADist;
+    var endACpDist = dist({
+      x: rs.ctrlpts[0],
+      y: rs.ctrlpts[1]
+    }, {
+      x: rs.endX,
+      y: rs.endY
+    });
+    var closeEndACp = endACpDist < minCpADist;
+    var overlapping = false;
+
+    if (badStart || badAStart || closeStartACp) {
+      overlapping = true; // project control point along line from src centre to outside the src shape
+      // (otherwise intersection will yield nothing)
+
+      var cpD = {
+        // delta
+        x: rs.ctrlpts[0] - srcPos.x,
+        y: rs.ctrlpts[1] - srcPos.y
+      };
+      var cpL = Math.sqrt(cpD.x * cpD.x + cpD.y * cpD.y); // length of line
+
+      var cpM = {
+        // normalised delta
+        x: cpD.x / cpL,
+        y: cpD.y / cpL
+      };
+      var radius = Math.max(srcW, srcH);
+      var cpProj = {
+        // *2 radius guarantees outside shape
+        x: rs.ctrlpts[0] + cpM.x * 2 * radius,
+        y: rs.ctrlpts[1] + cpM.y * 2 * radius
+      };
+      var srcCtrlPtIntn = srcShape.intersectLine(srcPos.x, srcPos.y, srcW, srcH, cpProj.x, cpProj.y, 0);
+
+      if (closeStartACp) {
+        rs.ctrlpts[0] = rs.ctrlpts[0] + cpM.x * (minCpADist - startACpDist);
+        rs.ctrlpts[1] = rs.ctrlpts[1] + cpM.y * (minCpADist - startACpDist);
+      } else {
+        rs.ctrlpts[0] = srcCtrlPtIntn[0] + cpM.x * minCpADist;
+        rs.ctrlpts[1] = srcCtrlPtIntn[1] + cpM.y * minCpADist;
+      }
+    }
+
+    if (badEnd || badAEnd || closeEndACp) {
+      overlapping = true; // project control point along line from tgt centre to outside the tgt shape
+      // (otherwise intersection will yield nothing)
+
+      var _cpD = {
+        // delta
+        x: rs.ctrlpts[0] - tgtPos.x,
+        y: rs.ctrlpts[1] - tgtPos.y
+      };
+
+      var _cpL = Math.sqrt(_cpD.x * _cpD.x + _cpD.y * _cpD.y); // length of line
+
+
+      var _cpM = {
+        // normalised delta
+        x: _cpD.x / _cpL,
+        y: _cpD.y / _cpL
+      };
+
+      var _radius = Math.max(srcW, srcH);
+
+      var _cpProj = {
+        // *2 radius guarantees outside shape
+        x: rs.ctrlpts[0] + _cpM.x * 2 * _radius,
+        y: rs.ctrlpts[1] + _cpM.y * 2 * _radius
+      };
+      var tgtCtrlPtIntn = tgtShape.intersectLine(tgtPos.x, tgtPos.y, tgtW, tgtH, _cpProj.x, _cpProj.y, 0);
+
+      if (closeEndACp) {
+        rs.ctrlpts[0] = rs.ctrlpts[0] + _cpM.x * (minCpADist - endACpDist);
+        rs.ctrlpts[1] = rs.ctrlpts[1] + _cpM.y * (minCpADist - endACpDist);
+      } else {
+        rs.ctrlpts[0] = tgtCtrlPtIntn[0] + _cpM.x * minCpADist;
+        rs.ctrlpts[1] = tgtCtrlPtIntn[1] + _cpM.y * minCpADist;
+      }
+    }
+
+    if (overlapping) {
+      // recalc endpts
+      this.findEndpoints(edge);
+    }
   }
 };
 
@@ -21173,27 +21742,30 @@ BRp$3.storeAllpts = function (edge) {
       rs.midX = (rs.segpts[i1] + rs.segpts[i2]) / 2;
       rs.midY = (rs.segpts[i1 + 1] + rs.segpts[i2 + 1]) / 2;
     } else {
-      var i1 = rs.segpts.length / 2 - 1;
-      rs.midX = rs.segpts[i1];
-      rs.midY = rs.segpts[i1 + 1];
+      var _i = rs.segpts.length / 2 - 1;
+
+      rs.midX = rs.segpts[_i];
+      rs.midY = rs.segpts[_i + 1];
     }
   }
 };
 
 BRp$3.checkForInvalidEdgeWarning = function (edge) {
-  var rs = edge._private.rscratch;
+  var rs = edge[0]._private.rscratch;
 
-  if (!number(rs.startX) || !number(rs.startY) || !number(rs.endX) || !number(rs.endY)) {
+  if (rs.nodesOverlap || number(rs.startX) && number(rs.startY) && number(rs.endX) && number(rs.endY)) {
+    rs.loggedErr = false;
+  } else {
     if (!rs.loggedErr) {
       rs.loggedErr = true;
       warn('Edge `' + edge.id() + '` has invalid endpoints and so it is impossible to draw.  Adjust your edge style (e.g. control points) accordingly or use an alternative edge type.  This is expected behaviour when the source node and the target node overlap.');
     }
-  } else {
-    rs.loggedErr = false;
   }
 };
 
 BRp$3.findEdgeControlPoints = function (edges) {
+  var _this = this;
+
   if (!edges || edges.length === 0) {
     return;
   }
@@ -21201,22 +21773,17 @@ BRp$3.findEdgeControlPoints = function (edges) {
   var r = this;
   var cy = r.cy;
   var hasCompounds = cy.hasCompoundNodes();
-  var hashTable = {};
+  var hashTable = new Map$1();
   var pairIds = [];
   var haystackEdges = []; // create a table of edge (src, tgt) => list of edges between them
-
-  var pairId;
 
   for (var i = 0; i < edges.length; i++) {
     var edge = edges[i];
     var _p = edge._private;
-    var data = _p.data;
-    var curveStyle = edge.pstyle('curve-style').value;
-    var edgeIsUnbundled = curveStyle === 'unbundled-bezier' || curveStyle === 'segments' || curveStyle === 'straight';
-    var edgeIsBezier = curveStyle === 'unbundled-bezier' || curveStyle === 'bezier'; // ignore edges who are not to be displayed
+    var curveStyle = edge.pstyle('curve-style').value; // ignore edges who are not to be displayed
     // they shouldn't take up space
 
-    if (edge.pstyle('display').value === 'none') {
+    if (edge.removed() || !edge.takesUpSpace()) {
       continue;
     }
 
@@ -21225,22 +21792,26 @@ BRp$3.findEdgeControlPoints = function (edges) {
       continue;
     }
 
-    var srcId = data.source;
-    var tgtId = data.target;
-    pairId = srcId > tgtId ? tgtId + '$-$' + srcId : srcId + '$-$' + tgtId;
+    var edgeIsUnbundled = curveStyle === 'unbundled-bezier' || curveStyle === 'segments' || curveStyle === 'straight' || curveStyle === 'taxi';
+    var edgeIsBezier = curveStyle === 'unbundled-bezier' || curveStyle === 'bezier';
 
-    if (edgeIsUnbundled) {
-      pairId = 'unbundled' + '$-$' + data.id;
-    }
+    var srcIndex = _p.source.poolIndex();
 
-    var tableEntry = hashTable[pairId];
+    var tgtIndex = _p.target.poolIndex();
+
+    var hash = (edgeIsUnbundled ? -1 : 1) * hashIntsArray([srcIndex, tgtIndex].sort());
+    var pairId = hash;
+    var tableEntry = hashTable.get(pairId);
 
     if (tableEntry == null) {
-      tableEntry = hashTable[pairId] = [];
+      tableEntry = {
+        eles: []
+      };
+      hashTable.set(pairId, tableEntry);
       pairIds.push(pairId);
     }
 
-    tableEntry.push(edge);
+    tableEntry.eles.push(edge);
 
     if (edgeIsUnbundled) {
       tableEntry.hasUnbundled = true;
@@ -21249,51 +21820,51 @@ BRp$3.findEdgeControlPoints = function (edges) {
     if (edgeIsBezier) {
       tableEntry.hasBezier = true;
     }
-  }
-
-  var src, tgt, srcPos, tgtPos, srcW, srcH, tgtW, tgtH, srcShape, tgtShape;
-  var vectorNormInverse;
-  var badBezier; // for each pair (src, tgt), create the ctrl pts
+  } // for each pair (src, tgt), create the ctrl pts
   // Nested for loop is OK; total number of iterations for both loops = edgeCount
 
-  for (var p = 0; p < pairIds.length; p++) {
-    pairId = pairIds[p];
-    var pairEdges = hashTable[pairId];
 
-    if (!pairEdges.hasUnbundled) {
-      var pllEdges = pairEdges[0].parallelEdges();
-      clearArray(pairEdges);
+  var _loop = function _loop(p) {
+    var pairId = pairIds[p];
+    var pairInfo = hashTable.get(pairId);
+    var swappedpairInfo = void 0;
+
+    if (!pairInfo.hasUnbundled) {
+      var pllEdges = pairInfo.eles[0].parallelEdges().filter(function (e) {
+        return e.isBundledBezier();
+      });
+      clearArray(pairInfo.eles);
       pllEdges.forEach(function (edge) {
-        return pairEdges.push(edge);
+        return pairInfo.eles.push(edge);
       }); // for each pair id, the edges should be sorted by index
 
-      pairEdges.sort(function (edge1, edge2) {
+      pairInfo.eles.sort(function (edge1, edge2) {
         return edge1.poolIndex() - edge2.poolIndex();
       });
     }
 
-    src = pairEdges[0]._private.source;
-    tgt = pairEdges[0]._private.target; // make sure src/tgt distinction is consistent for bundled edges
+    var firstEdge = pairInfo.eles[0];
+    var src = firstEdge.source();
+    var tgt = firstEdge.target(); // make sure src/tgt distinction is consistent w.r.t. pairId
 
-    if (!pairEdges.hasUnbundled && src.id() > tgt.id()) {
+    if (src.poolIndex() > tgt.poolIndex()) {
       var temp = src;
       src = tgt;
       tgt = temp;
     }
 
-    srcPos = src.position();
-    tgtPos = tgt.position();
-    srcW = src.outerWidth();
-    srcH = src.outerHeight();
-    tgtW = tgt.outerWidth();
-    tgtH = tgt.outerHeight();
-    srcShape = r.nodeShapes[this.getNodeShape(src)];
-    tgtShape = r.nodeShapes[this.getNodeShape(tgt)];
-    badBezier = false;
-    var edge;
-    var edge_p;
-    var rs;
-    var dirCounts = {
+    var srcPos = pairInfo.srcPos = src.position();
+    var tgtPos = pairInfo.tgtPos = tgt.position();
+    var srcW = pairInfo.srcW = src.outerWidth();
+    var srcH = pairInfo.srcH = src.outerHeight();
+    var tgtW = pairInfo.tgtW = tgt.outerWidth();
+    var tgtH = pairInfo.tgtH = tgt.outerHeight();
+
+    var srcShape = pairInfo.srcShape = r.nodeShapes[_this.getNodeShape(src)];
+
+    var tgtShape = pairInfo.tgtShape = r.nodeShapes[_this.getNodeShape(tgt)];
+
+    pairInfo.dirCounts = {
       'north': 0,
       'west': 0,
       'south': 0,
@@ -21303,409 +21874,142 @@ BRp$3.findEdgeControlPoints = function (edges) {
       'northeast': 0,
       'southeast': 0
     };
-    var srcX2 = srcPos.x;
-    var srcY2 = srcPos.y;
-    var srcW2 = srcW;
-    var srcH2 = srcH;
-    var tgtX2 = tgtPos.x;
-    var tgtY2 = tgtPos.y;
-    var tgtW2 = tgtW;
-    var tgtH2 = tgtH;
-    var numEdges2 = pairEdges.length;
 
-    for (var i = 0; i < pairEdges.length; i++) {
-      edge = pairEdges[i];
-      edge_p = edge._private;
-      rs = edge_p.rscratch;
-      var edgeIndex1 = rs.lastEdgeIndex;
-      var edgeIndex2 = i;
-      var numEdges1 = rs.lastNumEdges;
-      var curveStyle = edge.pstyle('curve-style').value;
-      var edgeIsUnbundled = curveStyle === 'unbundled-bezier' || curveStyle === 'segments'; // whether the normalised pair order is the reverse of the edge's src-tgt order
+    for (var _i2 = 0; _i2 < pairInfo.eles.length; _i2++) {
+      var _edge = pairInfo.eles[_i2];
+      var rs = _edge[0]._private.rscratch;
 
-      var edgeIsSwapped = src.id() !== edge.source().id();
-      var ctrlptDists = edge.pstyle('control-point-distances');
-      var loopDir = edge.pstyle('loop-direction').pfValue;
-      var loopSwp = edge.pstyle('loop-sweep').pfValue;
-      var ctrlptWs = edge.pstyle('control-point-weights');
-      var bezierN = ctrlptDists && ctrlptWs ? Math.min(ctrlptDists.value.length, ctrlptWs.value.length) : 1;
-      var stepSize = edge.pstyle('control-point-step-size').pfValue;
-      var ctrlptDist = ctrlptDists ? ctrlptDists.pfValue[0] : undefined;
-      var ctrlptWeight = ctrlptWs.value[0];
-      var edgeDistances = edge.pstyle('edge-distances').value;
-      var srcDistFNode = edge.pstyle('source-distance-from-node').pfValue;
-      var tgtDistFNode = edge.pstyle('target-distance-from-node').pfValue;
-      var segmentWs = edge.pstyle('segment-weights');
-      var segmentDs = edge.pstyle('segment-distances');
-      var segmentsN = Math.min(segmentWs.pfValue.length, segmentDs.pfValue.length);
-      var srcEndpt = edge.pstyle('source-endpoint').value;
-      var tgtEndpt = edge.pstyle('target-endpoint').value;
-      var srcArrShape = edge.pstyle('source-arrow-shape').value;
-      var tgtArrShape = edge.pstyle('target-arrow-shape').value;
-      var arrowScale = edge.pstyle('arrow-scale').value;
-      var lineWidth = edge.pstyle('width').pfValue;
-      var srcX1 = rs.lastSrcCtlPtX;
-      var srcY1 = rs.lastSrcCtlPtY;
-      var srcW1 = rs.lastSrcCtlPtW;
-      var srcH1 = rs.lastSrcCtlPtH;
-      var tgtX1 = rs.lastTgtCtlPtX;
-      var tgtY1 = rs.lastTgtCtlPtY;
-      var tgtW1 = rs.lastTgtCtlPtW;
-      var tgtH1 = rs.lastTgtCtlPtH;
-      var curveStyle1 = rs.lastCurveStyle;
-      var curveStyle2 = curveStyle;
-      var ctrlptDists1 = rs.lastCtrlptDists;
-      var ctrlptDists2 = ctrlptDists ? ctrlptDists.strValue : null;
-      var ctrlptWs1 = rs.lastCtrlptWs;
-      var ctrlptWs2 = ctrlptWs.strValue;
-      var segmentWs1 = rs.lastSegmentWs;
-      var segmentWs2 = segmentWs.strValue;
-      var segmentDs1 = rs.lastSegmentDs;
-      var segmentDs2 = segmentDs.strValue;
-      var stepSize1 = rs.lastStepSize;
-      var stepSize2 = stepSize;
-      var loopDir1 = rs.lastLoopDir;
-      var loopDir2 = loopDir;
-      var loopSwp1 = rs.lastLoopSwp;
-      var loopSwp2 = loopSwp;
-      var edgeDistances1 = rs.lastEdgeDistances;
-      var edgeDistances2 = edgeDistances;
-      var srcDistFNode1 = rs.lastSrcDistFNode;
-      var srcDistFNode2 = srcDistFNode;
-      var tgtDistFNode1 = rs.lastTgtDistFNode;
-      var tgtDistFNode2 = tgtDistFNode;
-      var srcEndpt1 = rs.lastSrcEndpt;
-      var srcEndpt2 = srcEndpt;
-      var tgtEndpt1 = rs.lastTgtEndpt;
-      var tgtEndpt2 = tgtEndpt;
-      var srcArr1 = rs.lastSrcArr;
-      var srcArr2 = srcArrShape;
-      var tgtArr1 = rs.lastTgtArr;
-      var tgtArr2 = tgtArrShape;
-      var lineW1 = rs.lastLineW;
-      var lineW2 = lineWidth;
-      var arrScl1 = rs.lastArrScl;
-      var arrScl2 = arrowScale;
+      var _curveStyle = _edge.pstyle('curve-style').value;
 
-      if (badBezier) {
-        rs.badBezier = true;
-      } else {
-        rs.badBezier = false;
+      var _edgeIsUnbundled = _curveStyle === 'unbundled-bezier' || _curveStyle === 'segments' || _curveStyle === 'taxi'; // whether the normalised pair order is the reverse of the edge's src-tgt order
+
+
+      var edgeIsSwapped = !src.same(_edge.source());
+
+      if (!pairInfo.calculatedIntersection && src !== tgt && (pairInfo.hasBezier || pairInfo.hasUnbundled)) {
+        pairInfo.calculatedIntersection = true; // pt outside src shape to calc distance/displacement from src to tgt
+
+        var srcOutside = srcShape.intersectLine(srcPos.x, srcPos.y, srcW, srcH, tgtPos.x, tgtPos.y, 0);
+        var srcIntn = pairInfo.srcIntn = srcOutside; // pt outside tgt shape to calc distance/displacement from src to tgt
+
+        var tgtOutside = tgtShape.intersectLine(tgtPos.x, tgtPos.y, tgtW, tgtH, srcPos.x, srcPos.y, 0);
+        var tgtIntn = pairInfo.tgtIntn = tgtOutside;
+        var intersectionPts = pairInfo.intersectionPts = {
+          x1: srcOutside[0],
+          x2: tgtOutside[0],
+          y1: srcOutside[1],
+          y2: tgtOutside[1]
+        };
+        var posPts = pairInfo.posPts = {
+          x1: srcPos.x,
+          x2: tgtPos.x,
+          y1: srcPos.y,
+          y2: tgtPos.y
+        };
+        var dy = tgtOutside[1] - srcOutside[1];
+        var dx = tgtOutside[0] - srcOutside[0];
+        var l = Math.sqrt(dx * dx + dy * dy);
+        var vector = pairInfo.vector = {
+          x: dx,
+          y: dy
+        };
+        var vectorNorm = pairInfo.vectorNorm = {
+          x: vector.x / l,
+          y: vector.y / l
+        };
+        var vectorNormInverse = {
+          x: -vectorNorm.y,
+          y: vectorNorm.x
+        }; // if node shapes overlap, then no ctrl pts to draw
+
+        pairInfo.nodesOverlap = !number(l) || tgtShape.checkPoint(srcOutside[0], srcOutside[1], 0, tgtW, tgtH, tgtPos.x, tgtPos.y) || srcShape.checkPoint(tgtOutside[0], tgtOutside[1], 0, srcW, srcH, srcPos.x, srcPos.y);
+        pairInfo.vectorNormInverse = vectorNormInverse;
+        swappedpairInfo = {
+          nodesOverlap: pairInfo.nodesOverlap,
+          dirCounts: pairInfo.dirCounts,
+          calculatedIntersection: true,
+          hasBezier: pairInfo.hasBezier,
+          hasUnbundled: pairInfo.hasUnbundled,
+          eles: pairInfo.eles,
+          srcPos: tgtPos,
+          tgtPos: srcPos,
+          srcW: tgtW,
+          srcH: tgtH,
+          tgtW: srcW,
+          tgtH: srcH,
+          srcIntn: tgtIntn,
+          tgtIntn: srcIntn,
+          srcShape: tgtShape,
+          tgtShape: srcShape,
+          posPts: {
+            x1: posPts.x2,
+            y1: posPts.y2,
+            x2: posPts.x1,
+            y2: posPts.y1
+          },
+          intersectionPts: {
+            x1: intersectionPts.x2,
+            y1: intersectionPts.y2,
+            x2: intersectionPts.x1,
+            y2: intersectionPts.y1
+          },
+          vector: {
+            x: -vector.x,
+            y: -vector.y
+          },
+          vectorNorm: {
+            x: -vectorNorm.x,
+            y: -vectorNorm.y
+          },
+          vectorNormInverse: {
+            x: -vectorNormInverse.x,
+            y: -vectorNormInverse.y
+          }
+        };
       }
 
-      var ptCacheHit;
+      var passedPairInfo = edgeIsSwapped ? swappedpairInfo : pairInfo;
+      rs.nodesOverlap = passedPairInfo.nodesOverlap;
+      rs.srcIntn = passedPairInfo.srcIntn;
+      rs.tgtIntn = passedPairInfo.tgtIntn;
 
-      if (srcX1 === srcX2 && srcY1 === srcY2 && srcW1 === srcW2 && srcH1 === srcH2 && tgtX1 === tgtX2 && tgtY1 === tgtY2 && tgtW1 === tgtW2 && tgtH1 === tgtH2 && curveStyle1 === curveStyle2 && ctrlptDists1 === ctrlptDists2 && ctrlptWs1 === ctrlptWs2 && segmentWs1 === segmentWs2 && segmentDs1 === segmentDs2 && stepSize1 === stepSize2 && loopDir1 === loopDir2 && loopSwp1 === loopSwp2 && edgeDistances1 === edgeDistances2 && srcDistFNode1 === srcDistFNode2 && tgtDistFNode1 === tgtDistFNode2 && srcEndpt1 === srcEndpt2 && tgtEndpt1 === tgtEndpt2 && srcArr1 === srcArr2 && tgtArr1 === tgtArr2 && lineW1 === lineW2 && arrScl1 === arrScl2 && (edgeIndex1 === edgeIndex2 && numEdges1 === numEdges2 || edgeIsUnbundled)) {
-        ptCacheHit = true; // then the control points haven't changed and we can skip calculating them
+      if (hasCompounds && (src.isParent() || src.isChild() || tgt.isParent() || tgt.isChild()) && (src.parents().anySame(tgt) || tgt.parents().anySame(src) || src.same(tgt))) {
+        _this.findCompoundLoopPoints(_edge, passedPairInfo, _i2, _edgeIsUnbundled);
+      } else if (src === tgt) {
+        _this.findLoopPoints(_edge, passedPairInfo, _i2, _edgeIsUnbundled);
+      } else if (_curveStyle === 'segments') {
+        _this.findSegmentsPoints(_edge, passedPairInfo);
+      } else if (_curveStyle === 'taxi') {
+        _this.findTaxiPoints(_edge, passedPairInfo);
+      } else if (_curveStyle === 'straight' || !_edgeIsUnbundled && pairInfo.eles.length % 2 === 1 && _i2 === Math.floor(pairInfo.eles.length / 2)) {
+        _this.findStraightEdgePoints(_edge);
       } else {
-        ptCacheHit = false;
-        rs.lastSrcCtlPtX = srcX2;
-        rs.lastSrcCtlPtY = srcY2;
-        rs.lastSrcCtlPtW = srcW2;
-        rs.lastSrcCtlPtH = srcH2;
-        rs.lastTgtCtlPtX = tgtX2;
-        rs.lastTgtCtlPtY = tgtY2;
-        rs.lastTgtCtlPtW = tgtW2;
-        rs.lastTgtCtlPtH = tgtH2;
-        rs.lastEdgeIndex = edgeIndex2;
-        rs.lastNumEdges = numEdges2;
-        rs.lastCurveStyle = curveStyle2;
-        rs.lastCtrlptDists = ctrlptDists2;
-        rs.lastCtrlptWs = ctrlptWs2;
-        rs.lastSegmentDs = segmentDs2;
-        rs.lastSegmentWs = segmentWs2;
-        rs.lastStepSize = stepSize2;
-        rs.lastLoopDir = loopDir2;
-        rs.lastLoopSwp = loopSwp2;
-        rs.lastEdgeDistances = edgeDistances2;
-        rs.lastSrcDistFNode = srcDistFNode2;
-        rs.lastTgtDistFNode = tgtDistFNode2;
-        rs.lastSrcEndpt = srcEndpt2;
-        rs.lastTgtEndpt = tgtEndpt2;
-        rs.lastSrcArr = srcArr2;
-        rs.lastTgtArr = tgtArr2;
-        rs.lastLineW = lineW2;
-        rs.lastArrScl = arrScl2;
+        _this.findBezierPoints(_edge, passedPairInfo, _i2, _edgeIsUnbundled, edgeIsSwapped);
       }
 
-      if (!ptCacheHit) {
-        if (!pairEdges.calculatedIntersection && src !== tgt && (pairEdges.hasBezier || pairEdges.hasUnbundled)) {
-          pairEdges.calculatedIntersection = true; // pt outside src shape to calc distance/displacement from src to tgt
+      _this.findEndpoints(_edge);
 
-          var srcOutside = srcShape.intersectLine(srcPos.x, srcPos.y, srcW, srcH, tgtPos.x, tgtPos.y, 0);
-          pairEdges.srcIntn = srcOutside; // pt outside tgt shape to calc distance/displacement from src to tgt
+      _this.tryToCorrectInvalidPoints(_edge, passedPairInfo);
 
-          var tgtOutside = tgtShape.intersectLine(tgtPos.x, tgtPos.y, tgtW, tgtH, srcPos.x, srcPos.y, 0);
-          pairEdges.tgtIntn = tgtOutside;
-          var midptSrcPts = {
-            x1: srcOutside[0],
-            x2: tgtOutside[0],
-            y1: srcOutside[1],
-            y2: tgtOutside[1]
-          };
-          var posPts = {
-            x1: srcPos.x,
-            x2: tgtPos.x,
-            y1: srcPos.y,
-            y2: tgtPos.y
-          };
-          var dy = tgtOutside[1] - srcOutside[1];
-          var dx = tgtOutside[0] - srcOutside[0];
-          var l = Math.sqrt(dx * dx + dy * dy);
-          var vector = {
-            x: dx,
-            y: dy
-          };
-          var vectorNorm = {
-            x: vector.x / l,
-            y: vector.y / l
-          };
-          vectorNormInverse = {
-            x: -vectorNorm.y,
-            y: vectorNorm.x
-          }; // if node shapes overlap, then no ctrl pts to draw
+      _this.checkForInvalidEdgeWarning(_edge);
 
-          if (tgtShape.checkPoint(srcOutside[0], srcOutside[1], 0, tgtW, tgtH, tgtPos.x, tgtPos.y) && srcShape.checkPoint(tgtOutside[0], tgtOutside[1], 0, srcW, srcH, srcPos.x, srcPos.y)) {
-            vectorNormInverse = {};
-            badBezier = true;
-          }
-        }
+      _this.storeAllpts(_edge);
 
-        if (!edgeIsSwapped) {
-          rs.srcIntn = pairEdges.srcIntn;
-          rs.tgtIntn = pairEdges.tgtIntn;
-        } else {
-          // ensure that the per-edge cached value for intersections are correct for swapped bundled edges
-          rs.srcIntn = pairEdges.tgtIntn;
-          rs.tgtIntn = pairEdges.srcIntn;
-        }
+      _this.storeEdgeProjections(_edge);
 
-        if (src === tgt) {
-          // Self-edge
-          rs.edgeType = 'self';
-          var j = i;
-          var loopDist = stepSize;
+      _this.calculateArrowAngles(_edge);
 
-          if (edgeIsUnbundled) {
-            j = 0;
-            loopDist = ctrlptDist;
-          }
+      _this.recalculateEdgeLabelProjections(_edge);
 
-          var loopAngle = loopDir - Math.PI / 2;
-          var outAngle = loopAngle - loopSwp / 2;
-          var inAngle = loopAngle + loopSwp / 2; // increase by step size for overlapping loops, keyed on direction and sweep values
-
-          var dc = String(loopDir + '_' + loopSwp);
-          j = dirCounts[dc] === undefined ? dirCounts[dc] = 0 : ++dirCounts[dc];
-          rs.ctrlpts = [srcPos.x + Math.cos(outAngle) * 1.4 * loopDist * (j / 3 + 1), srcPos.y + Math.sin(outAngle) * 1.4 * loopDist * (j / 3 + 1), srcPos.x + Math.cos(inAngle) * 1.4 * loopDist * (j / 3 + 1), srcPos.y + Math.sin(inAngle) * 1.4 * loopDist * (j / 3 + 1)];
-        } else if (hasCompounds && (src.isParent() || src.isChild() || tgt.isParent() || tgt.isChild()) && (src.parents().anySame(tgt) || tgt.parents().anySame(src))) {
-          // Compound edge
-          rs.edgeType = 'compound'; // because the line approximation doesn't apply for compound beziers
-          // (loop/self edges are already elided b/c of cheap src==tgt check)
-
-          rs.badBezier = false;
-          var j = i;
-          var loopDist = stepSize;
-
-          if (edgeIsUnbundled) {
-            j = 0;
-            loopDist = ctrlptDist;
-          }
-
-          var loopW = 50;
-          var loopaPos = {
-            x: srcPos.x - srcW / 2,
-            y: srcPos.y - srcH / 2
-          };
-          var loopbPos = {
-            x: tgtPos.x - tgtW / 2,
-            y: tgtPos.y - tgtH / 2
-          };
-          var loopPos = {
-            x: Math.min(loopaPos.x, loopbPos.x),
-            y: Math.min(loopaPos.y, loopbPos.y)
-          }; // avoids cases with impossible beziers
-
-          var minCompoundStretch = 0.5;
-          var compoundStretchA = Math.max(minCompoundStretch, Math.log(srcW * 0.01));
-          var compoundStretchB = Math.max(minCompoundStretch, Math.log(tgtW * 0.01));
-          rs.ctrlpts = [loopPos.x, loopPos.y - (1 + Math.pow(loopW, 1.12) / 100) * loopDist * (j / 3 + 1) * compoundStretchA, loopPos.x - (1 + Math.pow(loopW, 1.12) / 100) * loopDist * (j / 3 + 1) * compoundStretchB, loopPos.y];
-        } else if (curveStyle === 'segments') {
-          // Segments (multiple straight lines)
-          rs.edgeType = 'segments';
-          rs.segpts = [];
-
-          for (var s = 0; s < segmentsN; s++) {
-            var w = segmentWs.pfValue[s];
-            var d = segmentDs.pfValue[s];
-            var w1 = 1 - w;
-            var w2 = w;
-            var midptPts = edgeDistances === 'node-position' ? posPts : midptSrcPts;
-            var adjustedMidpt = {
-              x: midptPts.x1 * w1 + midptPts.x2 * w2,
-              y: midptPts.y1 * w1 + midptPts.y2 * w2
-            };
-            rs.segpts.push(adjustedMidpt.x + vectorNormInverse.x * d, adjustedMidpt.y + vectorNormInverse.y * d);
-          } // Straight edge
-
-        } else if (pairEdges.length % 2 === 1 && i === Math.floor(pairEdges.length / 2) && !edgeIsUnbundled) {
-          rs.edgeType = 'straight';
-        } else {
-          // (Multi)bezier
-          var multi = edgeIsUnbundled;
-          rs.edgeType = multi ? 'multibezier' : 'bezier';
-          rs.ctrlpts = [];
-
-          for (var b = 0; b < bezierN; b++) {
-            var normctrlptDist = (0.5 - pairEdges.length / 2 + i) * stepSize;
-            var manctrlptDist;
-            var sign = signum(normctrlptDist);
-
-            if (multi) {
-              ctrlptDist = ctrlptDists ? ctrlptDists.pfValue[b] : stepSize; // fall back on step size
-
-              ctrlptWeight = ctrlptWs.value[b];
-            }
-
-            if (edgeIsUnbundled) {
-              // multi or single unbundled
-              manctrlptDist = ctrlptDist;
-            } else {
-              manctrlptDist = ctrlptDist !== undefined ? sign * ctrlptDist : undefined;
-            }
-
-            var distanceFromMidpoint = manctrlptDist !== undefined ? manctrlptDist : normctrlptDist;
-            var w1 = 1 - ctrlptWeight;
-            var w2 = ctrlptWeight;
-
-            if (edgeIsSwapped) {
-              var temp = w1;
-              w1 = w2;
-              w2 = temp;
-            }
-
-            var midptPts = edgeDistances === 'node-position' ? posPts : midptSrcPts;
-            var adjustedMidpt = {
-              x: midptPts.x1 * w1 + midptPts.x2 * w2,
-              y: midptPts.y1 * w1 + midptPts.y2 * w2
-            };
-            rs.ctrlpts.push(adjustedMidpt.x + vectorNormInverse.x * distanceFromMidpoint, adjustedMidpt.y + vectorNormInverse.y * distanceFromMidpoint);
-          }
-        } // find endpts for edge
-
-
-        this.findEndpoints(edge);
-        var badStart = !number(rs.startX) || !number(rs.startY);
-        var badAStart = !number(rs.arrowStartX) || !number(rs.arrowStartY);
-        var badEnd = !number(rs.endX) || !number(rs.endY);
-        var badAEnd = !number(rs.arrowEndX) || !number(rs.arrowEndY);
-        var minCpADistFactor = 3;
-        var arrowW = this.getArrowWidth(edge.pstyle('width').pfValue, edge.pstyle('arrow-scale').value) * this.arrowShapeWidth;
-        var minCpADist = minCpADistFactor * arrowW;
-
-        if (rs.edgeType === 'bezier') {
-          var startACpDist = dist({
-            x: rs.ctrlpts[0],
-            y: rs.ctrlpts[1]
-          }, {
-            x: rs.startX,
-            y: rs.startY
-          });
-          var closeStartACp = startACpDist < minCpADist;
-          var endACpDist = dist({
-            x: rs.ctrlpts[0],
-            y: rs.ctrlpts[1]
-          }, {
-            x: rs.endX,
-            y: rs.endY
-          });
-          var closeEndACp = endACpDist < minCpADist;
-          var overlapping = false;
-
-          if (badStart || badAStart || closeStartACp) {
-            overlapping = true; // project control point along line from src centre to outside the src shape
-            // (otherwise intersection will yield nothing)
-
-            var cpD = {
-              // delta
-              x: rs.ctrlpts[0] - srcPos.x,
-              y: rs.ctrlpts[1] - srcPos.y
-            };
-            var cpL = Math.sqrt(cpD.x * cpD.x + cpD.y * cpD.y); // length of line
-
-            var cpM = {
-              // normalised delta
-              x: cpD.x / cpL,
-              y: cpD.y / cpL
-            };
-            var radius = Math.max(srcW, srcH);
-            var cpProj = {
-              // *2 radius guarantees outside shape
-              x: rs.ctrlpts[0] + cpM.x * 2 * radius,
-              y: rs.ctrlpts[1] + cpM.y * 2 * radius
-            };
-            var srcCtrlPtIntn = srcShape.intersectLine(srcPos.x, srcPos.y, srcW, srcH, cpProj.x, cpProj.y, 0);
-
-            if (closeStartACp) {
-              rs.ctrlpts[0] = rs.ctrlpts[0] + cpM.x * (minCpADist - startACpDist);
-              rs.ctrlpts[1] = rs.ctrlpts[1] + cpM.y * (minCpADist - startACpDist);
-            } else {
-              rs.ctrlpts[0] = srcCtrlPtIntn[0] + cpM.x * minCpADist;
-              rs.ctrlpts[1] = srcCtrlPtIntn[1] + cpM.y * minCpADist;
-            }
-          }
-
-          if (badEnd || badAEnd || closeEndACp) {
-            overlapping = true; // project control point along line from tgt centre to outside the tgt shape
-            // (otherwise intersection will yield nothing)
-
-            var cpD = {
-              // delta
-              x: rs.ctrlpts[0] - tgtPos.x,
-              y: rs.ctrlpts[1] - tgtPos.y
-            };
-            var cpL = Math.sqrt(cpD.x * cpD.x + cpD.y * cpD.y); // length of line
-
-            var cpM = {
-              // normalised delta
-              x: cpD.x / cpL,
-              y: cpD.y / cpL
-            };
-            var radius = Math.max(srcW, srcH);
-            var cpProj = {
-              // *2 radius guarantees outside shape
-              x: rs.ctrlpts[0] + cpM.x * 2 * radius,
-              y: rs.ctrlpts[1] + cpM.y * 2 * radius
-            };
-            var tgtCtrlPtIntn = tgtShape.intersectLine(tgtPos.x, tgtPos.y, tgtW, tgtH, cpProj.x, cpProj.y, 0);
-
-            if (closeEndACp) {
-              rs.ctrlpts[0] = rs.ctrlpts[0] + cpM.x * (minCpADist - endACpDist);
-              rs.ctrlpts[1] = rs.ctrlpts[1] + cpM.y * (minCpADist - endACpDist);
-            } else {
-              rs.ctrlpts[0] = tgtCtrlPtIntn[0] + cpM.x * minCpADist;
-              rs.ctrlpts[1] = tgtCtrlPtIntn[1] + cpM.y * minCpADist;
-            }
-          }
-
-          if (overlapping) {
-            // recalc endpts
-            this.findEndpoints(edge);
-          }
-        }
-
-        this.checkForInvalidEdgeWarning(edge);
-        this.storeAllpts(edge);
-        this.storeEdgeProjections(edge);
-        this.calculateArrowAngles(edge);
-      } // if point cache miss
-
-
-      this.recalculateEdgeLabelProjections(edge);
-      this.calculateLabelAngles(edge);
+      _this.calculateLabelAngles(_edge);
     } // for pair edges
 
+  };
+
+  for (var p = 0; p < pairIds.length; p++) {
+    _loop(p);
   } // for pair ids
+  // haystacks avoid the expense of pairInfo stuff (intersections etc.)
 
 
   this.findHaystackPoints(haystackEdges);
@@ -21735,6 +22039,7 @@ BRp$3.getSegmentPoints = function (edge) {
   var type = rs.edgeType;
 
   if (type === 'segments') {
+    this.recalculateRenderedStyle(edge);
     return getPts(rs.segpts);
   }
 };
@@ -21744,12 +22049,14 @@ BRp$3.getControlPoints = function (edge) {
   var type = rs.edgeType;
 
   if (type === 'bezier' || type === 'multibezier' || type === 'self' || type === 'compound') {
+    this.recalculateRenderedStyle(edge);
     return getPts(rs.ctrlpts);
   }
 };
 
 BRp$3.getEdgeMidpoint = function (edge) {
   var rs = edge[0]._private.rscratch;
+  this.recalculateRenderedStyle(edge);
   return {
     x: rs.midX,
     y: rs.midY
@@ -21957,6 +22264,7 @@ BRp$4.findEndpoints = function (edge) {
 
 BRp$4.getSourceEndpoint = function (edge) {
   var rs = edge[0]._private.rscratch;
+  this.recalculateRenderedStyle(edge);
 
   switch (rs.edgeType) {
     case 'haystack':
@@ -21975,6 +22283,7 @@ BRp$4.getSourceEndpoint = function (edge) {
 
 BRp$4.getTargetEndpoint = function (edge) {
   var rs = edge[0]._private.rscratch;
+  this.recalculateRenderedStyle(edge);
 
   switch (rs.edgeType) {
     case 'haystack':
@@ -22531,23 +22840,35 @@ BRp$6.calculateLabelDimensions = function (ele, text) {
   };
 };
 
-BRp$6.calculateLabelAngles = function (ele) {
+BRp$6.calculateLabelAngle = function (ele, prefix) {
   var _p = ele._private;
   var rs = _p.rscratch;
   var isEdge = ele.isEdge();
-  var rot = ele.pstyle('text-rotation');
+  var prefixDash = prefix ? prefix + '-' : '';
+  var rot = ele.pstyle(prefixDash + 'text-rotation');
   var rotStr = rot.strValue;
 
   if (rotStr === 'none') {
-    rs.labelAngle = rs.sourceLabelAngle = rs.targetLabelAngle = 0;
+    return 0;
   } else if (isEdge && rotStr === 'autorotate') {
-    rs.labelAngle = rs.labelAutoAngle;
-    rs.sourceLabelAngle = rs.sourceLabelAutoAngle;
-    rs.targetLabelAngle = rs.targetLabelAutoAngle;
+    return rs.labelAutoAngle;
   } else if (rotStr === 'autorotate') {
-    rs.labelAngle = rs.sourceLabelAngle = rs.targetLabelAngle = 0;
+    return 0;
   } else {
-    rs.labelAngle = rs.sourceLabelAngle = rs.targetLabelAngle = rot.pfValue;
+    return rot.pfValue;
+  }
+};
+
+BRp$6.calculateLabelAngles = function (ele) {
+  var r = this;
+  var isEdge = ele.isEdge();
+  var _p = ele._private;
+  var rs = _p.rscratch;
+  rs.labelAngle = r.calculateLabelAngle(ele);
+
+  if (isEdge) {
+    rs.sourceLabelAngle = r.calculateLabelAngle(ele, 'source');
+    rs.targetLabelAngle = r.calculateLabelAngle(ele, 'target');
   }
 };
 
@@ -22606,8 +22927,8 @@ BRp$8.registerCalculationListeners = function () {
   };
 
   r.binder(cy).on('bounds.* dirty.*', function onDirtyBounds(e) {
-    var node = e.target;
-    enqueue(node);
+    var ele = e.target;
+    enqueue(ele);
   }).on('style.* background.*', function onDirtyStyle(e) {
     var ele = e.target;
     enqueue(ele, false);
@@ -22618,7 +22939,11 @@ BRp$8.registerCalculationListeners = function () {
       var fns = r.onUpdateEleCalcsFns;
 
       for (var i = 0; i < elesToUpdate.length; i++) {
-        enqueue(elesToUpdate[i].connectedEdges());
+        var ele = elesToUpdate[i];
+
+        if (ele.isNode() && !ele._private.rstyle.clean) {
+          enqueue(ele.connectedEdges());
+        }
       }
 
       if (fns) {
@@ -22631,6 +22956,10 @@ BRp$8.registerCalculationListeners = function () {
       r.recalculateRenderedStyle(elesToUpdate);
       elesToUpdate = cy.collection();
     }
+  };
+
+  r.flushRenderedStyleQueue = function () {
+    updateEleCalcs(true);
   };
 
   r.beforeRender(updateEleCalcs, r.beforeRenderPriorities.eleCalcs);
@@ -22697,8 +23026,7 @@ BRp$8.recalculateRenderedStyle = function (eles, useCache) {
     var ele = edges[i];
     var _p = ele._private;
     var rstyle = _p.rstyle;
-    var rs = _p.rscratch;
-    this.recalculateEdgeLabelProjections(ele); // update rstyle positions
+    var rs = _p.rscratch; // update rstyle positions
 
     rstyle.srcX = rs.arrowStartX;
     rstyle.srcY = rs.arrowStartY;
@@ -22752,7 +23080,6 @@ BRp$9.invalidateCachedZSortedEles = function () {
 
 BRp$9.getCachedZSortedEles = function (forceRecalc) {
   if (forceRecalc || !this.cachedZSortedEles) {
-    //console.time('cachezorder')
     var eles = this.cy.mutableElements().toArray();
     eles.sort(zIndexSort);
     eles.interactive = eles.filter(function (ele) {
@@ -23684,21 +24011,6 @@ BRp$c.load = function () {
       r.hoverData.cxtDragged = false;
       r.hoverData.which = null;
     } else if (r.hoverData.which === 1) {
-      // Deselect all elements if nothing is currently under the mouse cursor and we aren't dragging something
-      if (down == null && // not mousedown on node
-      !r.dragData.didDrag // didn't move the node around
-      && !r.hoverData.selecting // not box selection
-      && !r.hoverData.dragged // didn't pan
-      && !isMultSelKeyDown(e)) {
-        cy.$(isSelected).unselect();
-
-        if (draggedElements.length > 0) {
-          r.redrawHint('eles', true);
-        }
-
-        r.dragData.possibleDragElements = draggedElements = cy.collection();
-      }
-
       triggerEvents(near, ['mouseup', 'tapend', 'vmouseup'], e, {
         x: pos[0],
         y: pos[1]
@@ -23713,21 +24025,36 @@ BRp$c.load = function () {
             x: pos[0],
             y: pos[1]
           });
-        } // Single selection
+        } // Deselect all elements if nothing is currently under the mouse cursor and we aren't dragging something
+
+
+      if (down == null && // not mousedown on node
+      !r.dragData.didDrag // didn't move the node around
+      && !r.hoverData.selecting // not box selection
+      && !r.hoverData.dragged // didn't pan
+      && !isMultSelKeyDown(e)) {
+        cy.$(isSelected).unselect(['tapunselect']);
+
+        if (draggedElements.length > 0) {
+          r.redrawHint('eles', true);
+        }
+
+        r.dragData.possibleDragElements = draggedElements = cy.collection();
+      } // Single selection
 
 
       if (near == down && !r.dragData.didDrag && !r.hoverData.selecting) {
         if (near != null && near._private.selectable) {
           if (r.hoverData.dragging) ; else if (cy.selectionType() === 'additive' || multSelKeyDown) {
             if (near.selected()) {
-              near.unselect();
+              near.unselect(['tapunselect']);
             } else {
-              near.select();
+              near.select(['tapselect']);
             }
           } else {
             if (!multSelKeyDown) {
-              cy.$(isSelected).unmerge(near).unselect();
-              near.select();
+              cy.$(isSelected).unmerge(near).unselect(['tapunselect']);
+              near.select(['tapselect']);
             }
           }
 
@@ -24730,36 +25057,36 @@ BRp$c.load = function () {
       var dy = r.touchData.startPosition[1] - now$$1[1];
       var dy2 = dy * dy;
       var dist2 = dx2 + dy2;
-      var rdist2 = dist2 * zoom * zoom; // Prepare to select the currently touched node, only if it hasn't been dragged past a certain distance
+      var rdist2 = dist2 * zoom * zoom; // Tap event, roughly same as mouse click event for touch
+
+      if (!r.touchData.singleTouchMoved) {
+        if (!start) {
+          cy.$(':selected').unselect(['tapunselect']);
+        }
+
+        triggerEvents(start, ['tap', 'vclick'], e, {
+          x: now$$1[0],
+          y: now$$1[1]
+        });
+      } // Prepare to select the currently touched node, only if it hasn't been dragged past a certain distance
+
 
       if (start != null && !r.dragData.didDrag // didn't drag nodes around
       && start._private.selectable && rdist2 < r.touchTapThreshold2 && !r.pinching // pinch to zoom should not affect selection
       ) {
           if (cy.selectionType() === 'single') {
-            cy.$(isSelected).unmerge(start).unselect();
-            start.select();
+            cy.$(isSelected).unmerge(start).unselect(['tapunselect']);
+            start.select(['tapselect']);
           } else {
             if (start.selected()) {
-              start.unselect();
+              start.unselect(['tapunselect']);
             } else {
-              start.select();
+              start.select(['tapselect']);
             }
           }
 
           r.redrawHint('eles', true);
-        } // Tap event, roughly same as mouse click event for touch
-
-
-      if (!r.touchData.singleTouchMoved) {
-        triggerEvents(start, ['tap', 'vclick'], e, {
-          x: now$$1[0],
-          y: now$$1[1]
-        });
-
-        if (!start) {
-          cy.$(':selected').unselect();
         }
-      }
 
       r.touchData.singleTouchMoved = true;
     }
@@ -25318,7 +25645,10 @@ BRp$e.beforeRender = function (fn, priority) {
     return;
   }
 
-  priority = priority || 0;
+  if (priority == null) {
+    error('Priority is not optional for beforeRender');
+  }
+
   var cbs = this.beforeRenderCallbacks;
   cbs.push({
     fn: fn,
@@ -25340,6 +25670,7 @@ var beforeRenderCallbacks = function beforeRenderCallbacks(r, willDraw, startTim
 
 BRp$e.startRenderLoop = function () {
   var r = this;
+  var cy = r.cy;
 
   if (r.renderLoopStarted) {
     return;
@@ -25352,7 +25683,7 @@ BRp$e.startRenderLoop = function () {
       return;
     }
 
-    if (r.requestedFrame && !r.skipFrame) {
+    if (cy.batching()) ; else if (r.requestedFrame && !r.skipFrame) {
       beforeRenderCallbacks(r, true, requestTime);
       var startTime = performanceNow();
       r.render(r.renderOptions);
@@ -25415,10 +25746,10 @@ BRp$f.init = function (options) {
     }
 
     if (!stylesheetAlreadyExists) {
-      var stylesheet = document.createElement('style');
-      stylesheet.id = stylesheetId;
-      stylesheet.innerHTML = '.' + className + ' { position: relative; }';
-      head.insertBefore(stylesheet, head.children[0]); // first so lowest priority
+      var stylesheet$$1 = document.createElement('style');
+      stylesheet$$1.id = stylesheetId;
+      stylesheet$$1.innerHTML = '.' + className + ' { position: relative; }';
+      head.insertBefore(stylesheet$$1, head.children[0]); // first so lowest priority
     }
 
     var computedStyle = window$1.getComputedStyle(ctr);
@@ -25464,7 +25795,7 @@ BRp$f.init = function (options) {
   r.wheelSensitivity = options.wheelSensitivity;
   r.motionBlurEnabled = options.motionBlur; // on by default
 
-  r.forcedPixelRatio = options.pixelRatio;
+  r.forcedPixelRatio = number(options.pixelRatio) ? options.pixelRatio : null;
   r.motionBlur = options.motionBlur; // for initial kick off
 
   r.motionBlurOpacity = options.motionBlurOpacity;
@@ -25487,7 +25818,8 @@ BRp$f.init = function (options) {
     animations: 400,
     eleCalcs: 300,
     eleTxrDeq: 200,
-    lyrTxrDeq: 100
+    lyrTxrDeq: 150,
+    lyrTxrSkip: 100
   };
   r.registerNodeShapes();
   r.registerArrowShapes();
@@ -25495,7 +25827,8 @@ BRp$f.init = function (options) {
 };
 
 BRp$f.notify = function (eventName, eles) {
-  var r = this; // the renderer can't be notified after it's destroyed
+  var r = this;
+  var cy = r.cy; // the renderer can't be notified after it's destroyed
 
   if (this.destroyed) {
     return;
@@ -25511,7 +25844,7 @@ BRp$f.notify = function (eventName, eles) {
     return;
   }
 
-  if (eventName === 'add' || eventName === 'remove' || eventName === 'load' || eventName === 'zorder' || eventName === 'mount') {
+  if (eventName === 'add' || eventName === 'remove' || eventName === 'move' && cy.hasCompoundNodes() || eventName === 'load' || eventName === 'zorder' || eventName === 'mount') {
     r.invalidateCachedZSortedEles();
   }
 
@@ -25596,7 +25929,12 @@ var defs = {
         var renderTime = r.lastRedrawTime;
         var deqd = [];
         var extent = r.cy.extent();
-        var pixelRatio = r.getPixelRatio();
+        var pixelRatio = r.getPixelRatio(); // if we aren't in a tick that causes a draw, then the rendered style
+        // queue won't automatically be flushed before dequeueing starts
+
+        if (!willDraw) {
+          r.flushRenderedStyleQueue();
+        }
 
         while (true) {
           // eslint-disable-line no-constant-condition
@@ -25890,6 +26228,8 @@ var initDefaults = defaults({
   doesEleInvalidateKey: falsify,
   drawElement: null,
   getBoundingBox: null,
+  getRotationPoint: null,
+  getRotationOffset: null,
   isVisible: trueify,
   allowEdgeTxrCaching: true,
   allowParentTxrCaching: true
@@ -26404,7 +26744,7 @@ var LayeredTextureCache = function LayeredTextureCache(renderer) {
     } else {
       self.skipping = false;
     }
-  });
+  }, r.beforeRenderPriorities.lyrTxrSkip);
 
   var qSort = function qSort(a, b) {
     return b.reqs - a.reqs;
@@ -27080,7 +27420,7 @@ CRp$1.drawCachedElementPortion = function (context, ele, eleTxrCache, pxRatio, l
   var eleCache = eleTxrCache.getElement(ele, bb, pxRatio, lvl, reason);
 
   if (eleCache != null) {
-    var opacity = ele.pstyle('opacity').pfValue;
+    var opacity = ele.effectiveOpacity();
 
     if (opacity === 0) {
       return;
@@ -27094,10 +27434,9 @@ CRp$1.drawCachedElementPortion = function (context, ele, eleTxrCache, pxRatio, l
     var x, y, sx, sy, smooth;
 
     if (theta !== 0) {
-      var halfW = w / 2;
-      var halfH = h / 2;
-      sx = x1 + halfW;
-      sy = y1 + halfH;
+      var rotPt = eleTxrCache.getRotationPoint(ele);
+      sx = rotPt.x;
+      sy = rotPt.y;
       context.translate(sx, sy);
       context.rotate(theta);
       smooth = r.getImgSmoothing(context);
@@ -27106,8 +27445,9 @@ CRp$1.drawCachedElementPortion = function (context, ele, eleTxrCache, pxRatio, l
         r.setImgSmoothing(context, true);
       }
 
-      x = -halfW;
-      y = -halfH;
+      var off = eleTxrCache.getRotationOffset(ele);
+      x = off.x;
+      y = off.y;
     } else {
       x = x1;
       y = y1;
@@ -27120,7 +27460,7 @@ CRp$1.drawCachedElementPortion = function (context, ele, eleTxrCache, pxRatio, l
       context.globalAlpha = oldGlobalAlpha * opacity;
     }
 
-    context.drawImage(eleCache.texture.canvas, eleCache.x, 0, eleCache.width, eleCache.height, x, y, bb.w, bb.h);
+    context.drawImage(eleCache.texture.canvas, eleCache.x, 0, eleCache.width, eleCache.height, x, y, w, h);
 
     if (opacity !== 1) {
       context.globalAlpha = oldGlobalAlpha;
@@ -27165,7 +27505,7 @@ CRp$1.drawCachedElement = function (context, ele, pxRatio, extent, lvl, requestH
   var bb = ele.boundingBox();
   var reason = requestHighQuality === true ? eleTxrCache.reasons.highQuality : null;
 
-  if (bb.w === 0 || bb.h === 0) {
+  if (bb.w === 0 || bb.h === 0 || !ele.visible()) {
     return;
   }
 
@@ -27645,18 +27985,42 @@ CRp$3.drawInscribedImage = function (context, img, node, index, nodeOpacity) {
 
   var x = nodeX - nodeTW / 2; // left
 
-  if (getIndexedStyle(node, 'background-position-x', 'units', index) === '%') {
-    x += (nodeTW - w) * getIndexedStyle(node, 'background-position-x', 'pfValue', index);
+  var posXUnits = getIndexedStyle(node, 'background-position-x', 'units', index);
+  var posXPfVal = getIndexedStyle(node, 'background-position-x', 'pfValue', index);
+
+  if (posXUnits === '%') {
+    x += (nodeTW - w) * posXPfVal;
   } else {
-    x += getIndexedStyle(node, 'background-position-x', 'pfValue', index);
+    x += posXPfVal;
+  }
+
+  var offXUnits = getIndexedStyle(node, 'background-offset-x', 'units', index);
+  var offXPfVal = getIndexedStyle(node, 'background-offset-x', 'pfValue', index);
+
+  if (offXUnits === '%') {
+    x += (nodeTW - w) * offXPfVal;
+  } else {
+    x += offXPfVal;
   }
 
   var y = nodeY - nodeTH / 2; // top
 
-  if (getIndexedStyle(node, 'background-position-y', 'units', index) === '%') {
-    y += (nodeTH - h) * getIndexedStyle(node, 'background-position-y', 'pfValue', index);
+  var posYUnits = getIndexedStyle(node, 'background-position-y', 'units', index);
+  var posYPfVal = getIndexedStyle(node, 'background-position-y', 'pfValue', index);
+
+  if (posYUnits === '%') {
+    y += (nodeTH - h) * posYPfVal;
   } else {
-    y += getIndexedStyle(node, 'background-position-y', 'pfValue', index);
+    y += posYPfVal;
+  }
+
+  var offYUnits = getIndexedStyle(node, 'background-offset-y', 'units', index);
+  var offYPfVal = getIndexedStyle(node, 'background-offset-y', 'pfValue', index);
+
+  if (offYUnits === '%') {
+    y += (nodeTH - h) * offYPfVal;
+  } else {
+    y += offYPfVal;
   }
 
   if (rs.pathCache) {
@@ -29321,18 +29685,35 @@ function b64UriToB64(b64uri) {
 }
 
 function output(options, canvas, mimeType) {
-  var b64Uri = canvas.toDataURL(mimeType, options.quality);
+  var getB64Uri = function getB64Uri() {
+    return canvas.toDataURL(mimeType, options.quality);
+  };
 
   switch (options.output) {
+    case 'blob-promise':
+      return new Promise$1(function (resolve, reject) {
+        try {
+          canvas.toBlob(function (blob) {
+            if (blob != null) {
+              resolve(blob);
+            } else {
+              reject(new Error('`canvas.toBlob()` sent a null value in its callback'));
+            }
+          }, mimeType, options.quality);
+        } catch (err) {
+          reject(err);
+        }
+      });
+
     case 'blob':
-      return b64ToBlob(b64UriToB64(b64Uri), mimeType);
+      return b64ToBlob(b64UriToB64(getB64Uri()), mimeType);
 
     case 'base64':
-      return b64UriToB64(b64Uri);
+      return b64UriToB64(getB64Uri());
 
     case 'base64uri':
     default:
-      return b64Uri;
+      return getB64Uri();
   }
 }
 
@@ -29438,23 +29819,28 @@ function CanvasRenderer(options) {
   r.pathsEnabled = true;
   var emptyBb = makeBoundingBox();
 
-  var getStyleKey = function getStyleKey(ele) {
-    return ele[0]._private.nodeKey;
+  var getBoxCenter = function getBoxCenter(bb) {
+    return {
+      x: (bb.x1 + bb.x2) / 2,
+      y: (bb.y1 + bb.y2) / 2
+    };
   };
 
-  var drawElement = function drawElement(context, ele, bb, scaledLabelShown, useEleOpacity) {
-    return r.drawElement(context, ele, bb, false, false, useEleOpacity);
-  };
-
-  var getElementBox = function getElementBox(ele) {
-    ele.boundingBox();
-    return ele[0]._private.bodyBounds;
+  var getCenterOffset = function getCenterOffset(bb) {
+    return {
+      x: -bb.w / 2,
+      y: -bb.h / 2
+    };
   };
 
   var backgroundTimestampHasChanged = function backgroundTimestampHasChanged(ele) {
     var _p = ele[0]._private;
     var same = _p.oldBackgroundTimestamp === _p.backgroundTimestamp;
     return !same;
+  };
+
+  var getStyleKey = function getStyleKey(ele) {
+    return ele[0]._private.nodeKey;
   };
 
   var getLabelKey = function getLabelKey(ele) {
@@ -29469,6 +29855,10 @@ function CanvasRenderer(options) {
     return ele[0]._private.targetLabelStyleKey;
   };
 
+  var drawElement = function drawElement(context, ele, bb, scaledLabelShown, useEleOpacity) {
+    return r.drawElement(context, ele, bb, false, false, useEleOpacity);
+  };
+
   var drawLabel = function drawLabel(context, ele, bb, scaledLabelShown, useEleOpacity) {
     return r.drawElementText(context, ele, bb, scaledLabelShown, 'main', useEleOpacity);
   };
@@ -29479,6 +29869,11 @@ function CanvasRenderer(options) {
 
   var drawTargetLabel = function drawTargetLabel(context, ele, bb, scaledLabelShown, useEleOpacity) {
     return r.drawElementText(context, ele, bb, scaledLabelShown, 'target', useEleOpacity);
+  };
+
+  var getElementBox = function getElementBox(ele) {
+    ele.boundingBox();
+    return ele[0]._private.bodyBounds;
   };
 
   var getLabelBox = function getLabelBox(ele) {
@@ -29500,11 +29895,85 @@ function CanvasRenderer(options) {
     return scaledLabelShown;
   };
 
+  var getElementRotationPoint = function getElementRotationPoint(ele) {
+    return getBoxCenter(getElementBox(ele));
+  };
+
+  var addTextMargin = function addTextMargin(pt, ele) {
+    return {
+      x: pt.x + ele.pstyle('text-margin-x').pfValue,
+      y: pt.y + ele.pstyle('text-margin-y').pfValue
+    };
+  };
+
+  var getRsPt = function getRsPt(ele, x, y) {
+    var rs = ele[0]._private.rscratch;
+    return {
+      x: rs[x],
+      y: rs[y]
+    };
+  };
+
+  var getLabelRotationPoint = function getLabelRotationPoint(ele) {
+    return addTextMargin(getRsPt(ele, 'labelX', 'labelY'), ele);
+  };
+
+  var getSourceLabelRotationPoint = function getSourceLabelRotationPoint(ele) {
+    return addTextMargin(getRsPt(ele, 'sourceLabelX', 'sourceLabelY'), ele);
+  };
+
+  var getTargetLabelRotationPoint = function getTargetLabelRotationPoint(ele) {
+    return addTextMargin(getRsPt(ele, 'targetLabelX', 'targetLabelY'), ele);
+  };
+
+  var getElementRotationOffset = function getElementRotationOffset(ele) {
+    return getCenterOffset(getElementBox(ele));
+  };
+
+  var getSourceLabelRotationOffset = function getSourceLabelRotationOffset(ele) {
+    return getCenterOffset(getSourceLabelBox(ele));
+  };
+
+  var getTargetLabelRotationOffset = function getTargetLabelRotationOffset(ele) {
+    return getCenterOffset(getTargetLabelBox(ele));
+  };
+
+  var getLabelRotationOffset = function getLabelRotationOffset(ele) {
+    var bb = getLabelBox(ele);
+    var p = getCenterOffset(getLabelBox(ele));
+
+    if (ele.isNode()) {
+      switch (ele.pstyle('text-halign').value) {
+        case 'left':
+          p.x = -bb.w;
+          break;
+
+        case 'right':
+          p.x = 0;
+          break;
+      }
+
+      switch (ele.pstyle('text-valign').value) {
+        case 'top':
+          p.y = -bb.h;
+          break;
+
+        case 'bottom':
+          p.y = 0;
+          break;
+      }
+    }
+
+    return p;
+  };
+
   var eleTxrCache = r.data.eleTxrCache = new ElementTextureCache(r, {
     getKey: getStyleKey,
     doesEleInvalidateKey: backgroundTimestampHasChanged,
     drawElement: drawElement,
     getBoundingBox: getElementBox,
+    getRotationPoint: getElementRotationPoint,
+    getRotationOffset: getElementRotationOffset,
     allowEdgeTxrCaching: false,
     allowParentTxrCaching: false
   });
@@ -29512,18 +29981,24 @@ function CanvasRenderer(options) {
     getKey: getLabelKey,
     drawElement: drawLabel,
     getBoundingBox: getLabelBox,
+    getRotationPoint: getLabelRotationPoint,
+    getRotationOffset: getLabelRotationOffset,
     isVisible: isLabelVisibleAtScale
   });
   var slbTxrCache = r.data.slbTxrCache = new ElementTextureCache(r, {
     getKey: getSourceLabelKey,
     drawElement: drawSourceLabel,
     getBoundingBox: getSourceLabelBox,
+    getRotationPoint: getSourceLabelRotationPoint,
+    getRotationOffset: getSourceLabelRotationOffset,
     isVisible: isLabelVisibleAtScale
   });
   var tlbTxrCache = r.data.tlbTxrCache = new ElementTextureCache(r, {
     getKey: getTargetLabelKey,
     drawElement: drawTargetLabel,
     getBoundingBox: getTargetLabelBox,
+    getRotationPoint: getTargetLabelRotationPoint,
+    getRotationOffset: getTargetLabelRotationOffset,
     isVisible: isLabelVisibleAtScale
   });
   var lyrTxrCache = r.data.lyrTxrCache = new LayeredTextureCache(r);
@@ -29969,7 +30444,7 @@ sheetfn.appendToStyle = function (style$$1) {
   return style$$1;
 };
 
-var version = "3.3.0";
+var version = "3.5.0";
 
 var cytoscape = function cytoscape(options) {
   // if no options specified, use default
@@ -29994,6 +30469,10 @@ cytoscape.use = function (ext) {
 
   ext.apply(null, args);
   return this;
+};
+
+cytoscape.warnings = function (bool$$1) {
+  return warnings(bool$$1);
 }; // replaced by build system
 
 

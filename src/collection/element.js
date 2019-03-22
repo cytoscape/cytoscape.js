@@ -68,7 +68,15 @@ let Element = function( cy, params, restore ){
     traversalCache: {}, // cache of output of traversal functions
     backgrounding: false, // whether background images are loading
     bbCache: null, // cache of the current bounding box
-    bbCacheShift: { x: 0, y: 0 } // shift applied to cached bb to be applied on next get
+    bbCacheShift: { x: 0, y: 0 }, // shift applied to cached bb to be applied on next get
+    bodyBounds: null, // bounds cache of element body, w/o overlay
+    overlayBounds: null, // bounds cache of element body, including overlay
+    labelBounds: { // bounds cache of labels
+      all: null,
+      source: null,
+      target: null,
+      main: null
+    }
   };
 
   if( _p.position.x == null ){ _p.position.x = 0; }

@@ -217,6 +217,8 @@ let updateBounds = function( b, x1, y1, x2, y2 ){
 };
 
 let updateBoundsFromBox = function( b, b2 ){
+  if( b2 == null ){ return b; }
+
   return updateBounds( b, b2.x1, b2.y1, b2.x2, b2.y2 );
 };
 

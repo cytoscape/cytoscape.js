@@ -1250,6 +1250,35 @@ describe('Collection style', function(){
 
       layout.run();
     });
+
+    it('gets bounding box of parent with hidden child', function(){
+      cy.elements().remove();
+
+      cy.style().fromJson([
+        {
+          selector: '#n3',
+          style: {
+            'display': 'none'
+          }
+        }
+      ]);
+
+      cy.add([
+        { data: { id: 'n1' } },
+        { data: { id: 'n2', parent: 'n1' } },
+        { data: { id: 'n3', parent: 'n1' } }
+      ]);
+
+      var bb = cy.$('#n1').boundingBox();
+
+      expect(bb).to.exist;
+      expect(bb.w).to.exist;
+      expect(bb.h).to.exist;
+      expect(bb.x1).to.exist;
+      expect(bb.x2).to.exist;
+      expect(bb.y1).to.exist;
+      expect(bb.y2).to.exist;
+    });
   });
 
 });

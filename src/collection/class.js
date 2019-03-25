@@ -1,8 +1,13 @@
 import Set from '../set';
 import * as is from '../is';
+import * as util from '../util';
 
 let elesfn = ({
   classes: function( classes ){
+    if(classes == null){
+      util.warn('To upgrade to cytoscape>=3.5.0 and to remove this warning, replace all no-argument calls to `ele.classes()` with `ele.classes(\'\')`.  There was a typo in the docs, and you should not be using `ele.classes()` as a setter with no arguments.  Your existing code will continue to work on cytoscape@3.4, but using `ele.classes(\'\') instead will work on both 3.4 and 3.5.  Sorry for the confusion.');
+    }
+
     if( !is.array( classes ) ){
       // extract classes from string
       classes = ( classes || '' ).match( /\S+/g ) || [];

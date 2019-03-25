@@ -3,7 +3,7 @@
 Remove all classes:
 
 ```js
-cy.nodes().classes(); // no classes
+cy.nodes().classes(''); // no classes
 ```
 
 Replace classes:

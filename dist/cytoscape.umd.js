@@ -1531,8 +1531,19 @@
       // cache of the current bounding box
       bbCacheShift: {
         x: 0,
-        y: 0 // shift applied to cached bb to be applied on next get
-
+        y: 0
+      },
+      // shift applied to cached bb to be applied on next get
+      bodyBounds: null,
+      // bounds cache of element body, w/o overlay
+      overlayBounds: null,
+      // bounds cache of element body, including overlay
+      labelBounds: {
+        // bounds cache of labels
+        all: null,
+        source: null,
+        target: null,
+        main: null
       }
     };
 
@@ -9443,6 +9454,10 @@
   };
 
   var updateBoundsFromBox = function updateBoundsFromBox(b, b2) {
+    if (b2 == null) {
+      return b;
+    }
+
     return updateBounds(b, b2.x1, b2.y1, b2.x2, b2.y2);
   };
 
@@ -31203,7 +31218,7 @@
     return style$$1;
   };
 
-  var version = "3.5.0";
+  var version = "3.5.1";
 
   var cytoscape = function cytoscape(options) {
     // if no options specified, use default

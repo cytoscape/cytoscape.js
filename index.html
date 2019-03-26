@@ -578,10 +578,12 @@
 <h2 id="introduction/releases">Releases <a href="#introduction/releases"><span class="fa fa-bookmark"></span></a></h2>
 <ul>
 <li>3.5<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.5.1+is%3Aclosed">3.5.1</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.5.0+is%3Aclosed">3.5.0</a></li>
 </ul>
 </li>
 <li>3.4<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.4.4+is%3Aclosed">3.4.4</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.4.3+is%3Aclosed">3.4.3</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.4.2+is%3Aclosed">3.4.2</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.4.1+is%3Aclosed">3.4.1</a></li>
@@ -6910,7 +6912,7 @@ layout.run();</code></pre>
 						<div class="function">
 							<div class="name" id="eles.classes">
 								<span class="fn-name">eles.classes()</span> et al <a href="#eles.classes"><span class="fa fa-bookmark"></span></a>
-								<span id="collection/style/eles.classes">&nbsp;</span><span id="collection/style/eles.className">&nbsp;</span><span id="eles.className">&nbsp;</span><span id="collection/style/eles.classNames">&nbsp;</span><span id="eles.classNames">&nbsp;</span><span id="collection/style/ele.classes()">&nbsp;</span><span id="ele.classes()">&nbsp;</span><span id="collection/style/eles.classes()">&nbsp;</span><span id="eles.classes()">&nbsp;</span>
+								<span id="collection/style/eles.classes">&nbsp;</span><span id="collection/style/eles.className">&nbsp;</span><span id="eles.className">&nbsp;</span><span id="collection/style/eles.classNames">&nbsp;</span><span id="eles.classNames">&nbsp;</span><span id="collection/style/ele.classes">&nbsp;</span><span id="ele.classes">&nbsp;</span><span id="collection/style/eles.classes">&nbsp;</span><span id="eles.classes">&nbsp;</span>
 							</div>
 
 
@@ -6930,7 +6932,7 @@ layout.run();</code></pre>
 
 							<div class="formats">
 									<div class="format">
-											<div class="name">ele.classes()()</div>
+											<div class="name">ele.classes()</div>
 
 
 										<div class="descr"><p>Get the list of classes as an array for the element.</p>
@@ -6939,7 +6941,7 @@ layout.run();</code></pre>
 										</ul>
 									</div>
 									<div class="format">
-											<div class="name">eles.classes()( <span class="args-summary"><span class="comma">,&nbsp;</span>classes</span> )</div>
+											<div class="name">eles.classes( <span class="args-summary"><span class="comma">,&nbsp;</span>classes</span> )</div>
 
 
 										<div class="descr"><p>Replace the list of classes for all elements in the collection.</p>
@@ -6959,9 +6961,11 @@ layout.run();</code></pre>
 							<div class="details">
 									<h3 id="examples">Examples</h3>
 <p>Remove all classes:</p>
-<pre><code class="language-js">cy.nodes().classes(); <span class="hljs-comment">// no classes</span></code></pre>
+<pre><code class="language-js">cy.nodes().classes([]); <span class="hljs-comment">// array</span>
+cy.nodes().classes(<span class="hljs-string">''</span>); <span class="hljs-comment">// space-separated string</span></code></pre>
 <button class="run run-inline-code"><span class="fa fa-play"></span></button><p>Replace classes:</p>
-<pre><code class="language-js">cy.nodes().classes(<span class="hljs-string">'foo'</span>);</code></pre>
+<pre><code class="language-js">cy.nodes().classes([<span class="hljs-string">'foo'</span>]); <span class="hljs-comment">// array</span>
+cy.nodes().classes(<span class="hljs-string">'foo'</span>); <span class="hljs-comment">// space-separated string</span></code></pre>
 <button class="run run-inline-code"><span class="fa fa-play"></span></button>
 							</div>
 						</div>

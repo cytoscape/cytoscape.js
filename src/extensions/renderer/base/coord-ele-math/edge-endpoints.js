@@ -64,19 +64,23 @@ BRp.findEndpoints = function( edge ){
   let tgtDist = edge.pstyle( 'target-distance-from-node' ).pfValue;
   let srcDist = edge.pstyle( 'source-distance-from-node' ).pfValue;
 
+  let curveStyle = edge.pstyle('curve-style').value;
+
   let rs = edge._private.rscratch;
 
   let et = rs.edgeType;
+  let taxi = curveStyle === 'taxi';
   let self = et === 'self' || et === 'compound';
   let bezier = et === 'bezier' || et === 'multibezier' || self;
   let multi = et !== 'bezier';
   let lines = et === 'straight' || et === 'segments';
   let segments = et === 'segments';
   let hasEndpts = bezier || multi || lines;
+  let overrideEndpts = self || taxi;
   let srcManEndpt = edge.pstyle('source-endpoint');
-  let srcManEndptVal = self ? 'outside-to-node' : srcManEndpt.value;
+  let srcManEndptVal = overrideEndpts ? 'outside-to-node' : srcManEndpt.value;
   let tgtManEndpt = edge.pstyle('target-endpoint');
-  let tgtManEndptVal = self ? 'outside-to-node' : tgtManEndpt.value;
+  let tgtManEndptVal = overrideEndpts ? 'outside-to-node' : tgtManEndpt.value;
 
   rs.srcManEndpt = srcManEndpt;
   rs.tgtManEndpt = tgtManEndpt;

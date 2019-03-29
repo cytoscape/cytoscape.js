@@ -424,6 +424,8 @@ A taxi edge has at most two visible turns:  Starting from the source node, the e
 
 When a taxi edge would be impossible to draw along the regular turning plan --- i.e. one or more turns is too close the source or target --- it is re-routed.  The re-routing is carried out on a best-effort basis:  Re-routing prioritises the specified direction for bundling over the specified turn distance.  A `downward` edge, for example, will avoid going in the upward direction where possible.  In practice, re-routing should not take place for graphs that are well laid out.
 
+<span class="important-indicator"></span> Only `outside-to-node` endpoints are supported for a taxi edge, i.e. `source-endpoint: outside-to-node` and `target-endpoint: outside-to-node`.
+
 * **`taxi-direction`** : The main direction of the edge, the direction starting out from the source node; may be one of:
   * `auto` : Automatically use `vertical` or `horizontal`, based on whether the vertical or horizontal distance is largest.
   * `vertical` : Automatically use `downward` or `upward`, based on the vertical direction from source to target.

@@ -808,7 +808,7 @@ BRp.findEdgeControlPoints = function( edges ){
       rs.tgtIntn = passedPairInfo.tgtIntn;
 
       if(
-        hasCompounds &&
+        edge.pstyle( 'target-endpoint' ).value !== 'inside-to-node' && hasCompounds &&
         ( src.isParent() || src.isChild() || tgt.isParent() || tgt.isChild() ) &&
         ( src.parents().anySame(tgt) || tgt.parents().anySame(src) || src.same(tgt) )
       ){

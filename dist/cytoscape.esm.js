@@ -22117,18 +22117,21 @@ BRp$4.findEndpoints = function (edge) {
   var srcArShape = edge.pstyle('source-arrow-shape').value;
   var tgtDist = edge.pstyle('target-distance-from-node').pfValue;
   var srcDist = edge.pstyle('source-distance-from-node').pfValue;
+  var curveStyle = edge.pstyle('curve-style').value;
   var rs = edge._private.rscratch;
   var et = rs.edgeType;
+  var taxi = curveStyle === 'taxi';
   var self = et === 'self' || et === 'compound';
   var bezier = et === 'bezier' || et === 'multibezier' || self;
   var multi = et !== 'bezier';
   var lines = et === 'straight' || et === 'segments';
   var segments = et === 'segments';
   var hasEndpts = bezier || multi || lines;
+  var overrideEndpts = self || taxi;
   var srcManEndpt = edge.pstyle('source-endpoint');
-  var srcManEndptVal = self ? 'outside-to-node' : srcManEndpt.value;
+  var srcManEndptVal = overrideEndpts ? 'outside-to-node' : srcManEndpt.value;
   var tgtManEndpt = edge.pstyle('target-endpoint');
-  var tgtManEndptVal = self ? 'outside-to-node' : tgtManEndpt.value;
+  var tgtManEndptVal = overrideEndpts ? 'outside-to-node' : tgtManEndpt.value;
   rs.srcManEndpt = srcManEndpt;
   rs.tgtManEndpt = tgtManEndpt;
   var p1; // last known point of edge on target side
@@ -30455,7 +30458,7 @@ sheetfn.appendToStyle = function (style$$1) {
   return style$$1;
 };
 
-var version = "3.5.1";
+var version = "3.5.2";
 
 var cytoscape = function cytoscape(options) {
   // if no options specified, use default

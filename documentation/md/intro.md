@@ -65,6 +65,7 @@
   * [GCHQ](https://www.gchq.gov.uk/) : [Gaffer](https://gchq.github.io/gaffer-doc/)
   * [GeneMANIA](http://genemania.org)
   * [Graphlytic](http://graphlytic.sk/)
+  * [Harvard](https://www.harvard.edu) : [BioPlex](http://bioplex.hms.harvard.edu/bioplexDisplay)
   * [ICSI Haystack Project](https://haystack.mobi/panopticon/)
   * [InfoTrack](http://www.infotrack.com.au/)
   * [The Kanji Map](http://thekanjimap.com/)

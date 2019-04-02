@@ -50,26 +50,38 @@ function CanvasRenderer( options ){
     bufferContexts: new Array( CRp.CANVAS_LAYERS ),
   };
 
-  var tapHlOff = '-webkit-tap-highlight-color: rgba(0,0,0,0);';
-
+  var tapHlOffAttr = '-webkit-tap-highlight-color';
+  var tapHlOffStyle = 'rgba(0,0,0,0)';
   r.data.canvasContainer = document.createElement( 'div' ); // eslint-disable-line no-undef
   var containerStyle = r.data.canvasContainer.style;
-  r.data.canvasContainer.setAttribute( 'style', tapHlOff );
+  r.data.canvasContainer.style[tapHlOffAttr] = tapHlOffStyle;
   containerStyle.position = 'relative';
   containerStyle.zIndex = '0';
   containerStyle.overflow = 'hidden';
 
   var container = options.cy.container();
   container.appendChild( r.data.canvasContainer );
+  container.style[tapHlOffAttr] = tapHlOffStyle;
 
-  if( (container.getAttribute('style') || '').indexOf(tapHlOff) < 0 ){
-    container.setAttribute( 'style', ( container.getAttribute( 'style' ) || '' ) + tapHlOff );
+  var styleMap = {
+    '-webkit-user-select': 'none',
+    '-moz-user-select': '-moz-none',
+    'user-select': 'none',
+    '-webkit-tap-highlight-color': 'rgba(0,0,0,0)',
+    'outline-style': 'none',
+  };
+
+  if(is.ms()) {
+    styleMap['-ms-touch-action'] = 'none';
+    styleMap['touch-action'] = 'none';
   }
 
   for( var i = 0; i < CRp.CANVAS_LAYERS; i++ ){
     var canvas = r.data.canvases[ i ] = document.createElement( 'canvas' );  // eslint-disable-line no-undef
     r.data.contexts[ i ] = canvas.getContext( '2d' );
-    canvas.setAttribute( 'style', '-webkit-user-select: none; -moz-user-select: -moz-none; user-select: none; -webkit-tap-highlight-color: rgba(0,0,0,0); outline-style: none;' + ( is.ms() ? ' -ms-touch-action: none; touch-action: none; ' : '' ) );
+    Object.keys(styleMap).forEach((k) => {
+      canvas.style[k] = styleMap[k];
+    });
     canvas.style.position = 'absolute';
     canvas.setAttribute( 'data-id', 'layer' + i );
     canvas.style.zIndex = String( CRp.CANVAS_LAYERS - i );

@@ -50,7 +50,6 @@ function CanvasRenderer( options ){
     bufferContexts: new Array( CRp.CANVAS_LAYERS ),
   };
 
-  var tapHlOff = '-webkit-tap-highlight-color: rgba(0,0,0,0);';
   var tapHlOffAttr = '-webkit-tap-highlight-color';
   var tapHlOffStyle = 'rgba(0,0,0,0)';
   r.data.canvasContainer = document.createElement( 'div' ); // eslint-disable-line no-undef
@@ -62,10 +61,7 @@ function CanvasRenderer( options ){
 
   var container = options.cy.container();
   container.appendChild( r.data.canvasContainer );
-
-  if( (container.getAttribute('style') || '').indexOf(tapHlOff) < 0 ){
-    container.style[tapHlOffAttr] = tapHlOffStyle;
-  }
+  container.style[tapHlOffAttr] = tapHlOffStyle;
 
   var styleMap = {
     '-webkit-user-select': 'none',

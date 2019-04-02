@@ -79,9 +79,9 @@ function CanvasRenderer( options ){
   for( var i = 0; i < CRp.CANVAS_LAYERS; i++ ){
     var canvas = r.data.canvases[ i ] = document.createElement( 'canvas' );  // eslint-disable-line no-undef
     r.data.contexts[ i ] = canvas.getContext( '2d' );
-    for(const [k,v] of Object.entries(styleMap)) {
-      canvas.style[k] = v;
-    }
+    Object.keys(styleMap).forEach((k) => {
+      canvas.style[k] = styleMap[k];
+    });
     canvas.style.position = 'absolute';
     canvas.setAttribute( 'data-id', 'layer' + i );
     canvas.style.zIndex = String( CRp.CANVAS_LAYERS - i );

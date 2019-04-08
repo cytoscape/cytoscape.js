@@ -36,21 +36,9 @@ CRp.drawElementText = function( context, ele, shiftToOriginWithBb, force, prefix
 
     if( !label || !label.value ){ return; }
 
-    let textHalign = ele.pstyle( 'text-halign' ).strValue;
+    let justification = r.getLabelJustification(ele);
 
-    switch( textHalign ){
-      case 'left':
-        context.textAlign = 'right';
-        break;
-
-      case 'right':
-        context.textAlign = 'left';
-        break;
-
-      default: // e.g. center
-        context.textAlign = 'center';
-    }
-
+    context.textAlign = justification;
     context.textBaseline = 'bottom';
   } else {
     let label = ele.pstyle( 'label' );
@@ -332,6 +320,30 @@ CRp.drawText = function( context, ele, prefix, applyRotation = true, useEleOpaci
     if( ele.pstyle( 'text-wrap' ).value === 'wrap' ){
       let lines = util.getPrefixedProperty( rscratch, 'labelWrapCachedLines', prefix );
       let lineHeight = textH / lines.length;
+      let halfTextW = textW/2;
+      let justification = this.getLabelJustification(ele);
+
+      if( justification === 'auto' ){
+        // then it's already ok, so skip all the other ifs
+      } else if( halign === 'left' ){ // auto justification : right
+        if( justification === 'left' ){
+          textX += -textW;
+        } else if( justification === 'center' ){
+          textX += -halfTextW;
+        } // else same as auto
+      } else if( halign === 'center' ){ // auto justfication : center
+        if( justification === 'left' ){
+          textX += -halfTextW;
+        } else if( justification === 'right' ){
+          textX += halfTextW;
+        } // else same as auto
+      } else if( halign === 'right' ){ // auto justification : left
+        if( justification === 'center' ){
+          textX += halfTextW;
+        } else if( justification === 'right' ){
+          textX += textW;
+        } // else same as auto
+      }
 
       switch( valign ){
         case 'top':

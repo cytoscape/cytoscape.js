@@ -77,6 +77,7 @@ const styfn = {};
     zIndexCompare: { enums: [ 'auto', 'manual' ] },
     valign: { enums: [ 'top', 'center', 'bottom' ] },
     halign: { enums: [ 'left', 'center', 'right' ] },
+    justification: { enums: [ 'left', 'center', 'right', 'auto' ] },
     text: { string: true },
     data: { mapping: true, regex: data( 'data' ) },
     layoutData: { mapping: true, regex: data( 'layoutData' ) },
@@ -202,7 +203,8 @@ const styfn = {};
     { name: 'text-border-color', type: t.color },
     { name: 'text-border-width', type: t.size, triggersBounds: diff.any },
     { name: 'text-border-style', type: t.borderStyle, triggersBounds: diff.any },
-    { name: 'text-background-shape', type: t.textBackgroundShape, triggersBounds: diff.any }
+    { name: 'text-background-shape', type: t.textBackgroundShape, triggersBounds: diff.any },
+    { name: 'text-justification', type: t.justification }
   ];
 
   let behavior = [
@@ -495,6 +497,7 @@ styfn.getDefaultProperties = function(){
     'text-events': 'no',
     'text-valign': 'top',
     'text-halign': 'center',
+    'text-justification': 'auto',
     'color': '#000',
     'text-outline-color': '#000',
     'text-outline-width': 0,

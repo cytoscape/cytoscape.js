@@ -420,6 +420,28 @@ BRp.getLabelText = function( ele, prefix ){
   return text;
 };
 
+BRp.getLabelJustification = function(ele){
+  let justification = ele.pstyle('text-justification').strValue;
+  let textHalign = ele.pstyle('text-halign').strValue;
+
+  if( justification === 'auto' ){
+    if( ele.isNode() ){
+      switch( textHalign ){
+        case 'left':
+          return 'right';
+        case 'right':
+          return 'left';
+        default:
+          return 'center';
+      }
+    } else {
+      return 'center';
+    }
+  } else {
+    return justification;
+  }
+};
+
 BRp.calculateLabelDimensions = function( ele, text ){
   let r = this;
 

@@ -539,8 +539,9 @@ Basic font styling:
 
 Wrapping text:
 
- * **`text-wrap`** : A wrapping style to apply to the label text; may be `none` for no wrapping (including manual newlines: `\n`), `wrap` for manual and/or autowrapping or `ellipsis` to truncate the string and append '...' based on `text-max-width`.
+ * **`text-wrap`** : A wrapping style to apply to the label text; may be `none` for no wrapping (including manual newlines: `\n`), `wrap` for manual and/or autowrapping, or `ellipsis` to truncate the string and append '...' based on `text-max-width`.  Note that with `wrap`, text will always wrap on newlines (`\n`) and text may wrap on any breakable whitespace character --- including [zero-width spaces](https://en.wikipedia.org/wiki/Zero-width_space) (`\u200b`).
  * **`text-max-width`** : The maximum width for wrapped text, applied when `text-wrap` is set to `wrap` or `ellipsis`.  For only manual newlines (i.e. `\n`), set a very large value like `1000px` such that only your newline characters would apply.
+ * **`text-overflow-wrap`** : The characters that may be used for possible wrapping locations when a line overflows `text-max-width`; may be `whitespace` (default) or `anywhere`.  Note that `anywhere` is suited to [CJK](https://en.wikipedia.org/wiki/CJK_characters), where the characters are in a grid and no whitespace exists.  Using `anywhere` with text in the Latin alphabet, for example, will split words at arbitrary locations.
 
 Node label alignment:
 

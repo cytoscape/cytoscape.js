@@ -61,6 +61,7 @@ const styfn = {};
     textDecoration: { enums: [ 'none', 'underline', 'overline', 'line-through' ] },
     textTransform: { enums: [ 'none', 'uppercase', 'lowercase' ] },
     textWrap: { enums: [ 'none', 'wrap', 'ellipsis' ] },
+    textOverflowWrap: { enums: [ 'whitespace', 'anywhere' ] },
     textBackgroundShape: { enums: [ 'rectangle', 'roundrectangle', 'round-rectangle' ]},
     nodeShape: { enums: [
       'rectangle', 'roundrectangle', 'round-rectangle', 'cutrectangle', 'cut-rectangle', 'bottomroundrectangle', 'bottom-round-rectangle', 'barrel',
@@ -183,6 +184,7 @@ const styfn = {};
     { name: 'font-size', type: t.size, triggersBounds: diff.any },
     { name: 'text-transform', type: t.textTransform, triggersBounds: diff.any },
     { name: 'text-wrap', type: t.textWrap, triggersBounds: diff.any },
+    { name: 'text-overflow-wrap', type: t.textOverflowWrap, triggersBounds: diff.any },
     { name: 'text-max-width', type: t.size, triggersBounds: diff.any },
     { name: 'text-outline-width', type: t.size, triggersBounds: diff.any }
   ];
@@ -501,6 +503,7 @@ styfn.getDefaultProperties = function(){
     'text-decoration': 'none',
     'text-transform': 'none',
     'text-wrap': 'none',
+    'text-overflow-wrap': 'whitespace',
     'text-max-width': 9999,
     'text-background-color': '#000',
     'text-background-opacity': 0,

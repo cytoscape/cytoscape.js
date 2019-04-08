@@ -2,23 +2,23 @@ import * as math from '../../../../math';
 import * as is from '../../../../is';
 import * as util from '../../../../util';
 
-var BRp = {};
+let BRp = {};
 
 BRp.recalculateNodeLabelProjection = function( node ){
-  var content = node.pstyle( 'label' ).strValue;
+  let content = node.pstyle( 'label' ).strValue;
 
   if( is.emptyString(content) ){ return; }
 
-  var textX, textY;
-  var _p = node._private;
-  var nodeWidth = node.width();
-  var nodeHeight = node.height();
-  var padding = node.padding();
-  var nodePos = node.position();
-  var textHalign = node.pstyle( 'text-halign' ).strValue;
-  var textValign = node.pstyle( 'text-valign' ).strValue;
-  var rs = _p.rscratch;
-  var rstyle = _p.rstyle;
+  let textX, textY;
+  let _p = node._private;
+  let nodeWidth = node.width();
+  let nodeHeight = node.height();
+  let padding = node.padding();
+  let nodePos = node.position();
+  let textHalign = node.pstyle( 'text-halign' ).strValue;
+  let textValign = node.pstyle( 'text-valign' ).strValue;
+  let rs = _p.rscratch;
+  let rstyle = _p.rstyle;
 
   switch( textHalign ){
     case 'left':
@@ -54,8 +54,8 @@ BRp.recalculateNodeLabelProjection = function( node ){
   this.applyLabelDimensions( node );
 };
 
-var lineAngleFromDelta = function( dx, dy ){
-  var angle = Math.atan( dy / dx );
+let lineAngleFromDelta = function( dx, dy ){
+  let angle = Math.atan( dy / dx );
 
   if( dx === 0 && angle < 0 ){
     angle = angle * -1;
@@ -64,29 +64,29 @@ var lineAngleFromDelta = function( dx, dy ){
   return angle;
 };
 
-var lineAngle = function( p0, p1 ){
-  var dx = p1.x - p0.x;
-  var dy = p1.y - p0.y;
+let lineAngle = function( p0, p1 ){
+  let dx = p1.x - p0.x;
+  let dy = p1.y - p0.y;
 
   return lineAngleFromDelta( dx, dy );
 };
 
-var bezierAngle = function( p0, p1, p2, t ){
-  var t0 = math.bound( 0, t - 0.001, 1 );
-  var t1 = math.bound( 0, t + 0.001, 1 );
+let bezierAngle = function( p0, p1, p2, t ){
+  let t0 = math.bound( 0, t - 0.001, 1 );
+  let t1 = math.bound( 0, t + 0.001, 1 );
 
-  var lp0 = math.qbezierPtAt( p0, p1, p2, t0 );
-  var lp1 = math.qbezierPtAt( p0, p1, p2, t1 );
+  let lp0 = math.qbezierPtAt( p0, p1, p2, t0 );
+  let lp1 = math.qbezierPtAt( p0, p1, p2, t1 );
 
   return lineAngle( lp0, lp1 );
 };
 
 BRp.recalculateEdgeLabelProjections = function( edge ){
-  var p;
-  var _p = edge._private;
-  var rs = _p.rscratch;
-  var r = this;
-  var content = {
+  let p;
+  let _p = edge._private;
+  let rs = _p.rscratch;
+  let r = this;
+  let content = {
     mid: edge.pstyle('label').strValue,
     source: edge.pstyle('source-label').strValue,
     target: edge.pstyle('target-label').strValue
@@ -105,7 +105,7 @@ BRp.recalculateEdgeLabelProjections = function( edge ){
     y: rs.midY
   };
 
-  var setRs = function( propName, prefix, value ){
+  let setRs = function( propName, prefix, value ){
     util.setPrefixedProperty( _p.rscratch, propName, prefix, value );
     util.setPrefixedProperty( _p.rstyle, propName, prefix, value );
   };
@@ -113,19 +113,19 @@ BRp.recalculateEdgeLabelProjections = function( edge ){
   setRs( 'labelX', null, p.x );
   setRs( 'labelY', null, p.y );
 
-  var midAngle = lineAngleFromDelta(rs.midDispX, rs.midDispY);
+  let midAngle = lineAngleFromDelta(rs.midDispX, rs.midDispY);
   setRs( 'labelAutoAngle', null, midAngle );
 
-  var createControlPointInfo = function(){
+  let createControlPointInfo = function(){
     if( createControlPointInfo.cache ){ return createControlPointInfo.cache; } // use cache so only 1x per edge
 
-    var ctrlpts = [];
+    let ctrlpts = [];
 
     // store each ctrlpt info init
-    for( var i = 0; i + 5 < rs.allpts.length; i += 4 ){
-      var p0 = { x: rs.allpts[i], y: rs.allpts[i+1] };
-      var p1 = { x: rs.allpts[i+2], y: rs.allpts[i+3] }; // ctrlpt
-      var p2 = { x: rs.allpts[i+4], y: rs.allpts[i+5] };
+    for( let i = 0; i + 5 < rs.allpts.length; i += 4 ){
+      let p0 = { x: rs.allpts[i], y: rs.allpts[i+1] };
+      let p1 = { x: rs.allpts[i+2], y: rs.allpts[i+3] }; // ctrlpt
+      let p2 = { x: rs.allpts[i+4], y: rs.allpts[i+5] };
 
       ctrlpts.push({
         p0: p0,
@@ -137,13 +137,13 @@ BRp.recalculateEdgeLabelProjections = function( edge ){
       });
     }
 
-    var bpts = _p.rstyle.bezierPts;
-    var nProjs = r.bezierProjPcts.length;
+    let bpts = _p.rstyle.bezierPts;
+    let nProjs = r.bezierProjPcts.length;
 
     function addSegment( cp, p0, p1, t0, t1 ){
-      var length = math.dist( p0, p1 );
-      var prevSegment = cp.segments[ cp.segments.length - 1 ];
-      var segment = {
+      let length = math.dist( p0, p1 );
+      let prevSegment = cp.segments[ cp.segments.length - 1 ];
+      let segment = {
         p0: p0,
         p1: p1,
         t0: t0,
@@ -158,9 +158,9 @@ BRp.recalculateEdgeLabelProjections = function( edge ){
     }
 
     // update each ctrlpt with segment info
-    for( var i = 0; i < ctrlpts.length; i++ ){
-      var cp = ctrlpts[i];
-      var prevCp = ctrlpts[i - 1];
+    for( let i = 0; i < ctrlpts.length; i++ ){
+      let cp = ctrlpts[i];
+      let prevCp = ctrlpts[i - 1];
 
       if( prevCp ){
         cp.startDist = prevCp.startDist + prevCp.length;
@@ -172,7 +172,7 @@ BRp.recalculateEdgeLabelProjections = function( edge ){
         0,       r.bezierProjPcts[ 0 ]
       ); // first
 
-      for( var j = 0; j < nProjs - 1; j++ ){
+      for( let j = 0; j < nProjs - 1; j++ ){
         addSegment(
           cp,
           bpts[ i * nProjs + j ],   bpts[ i * nProjs + j + 1 ],
@@ -190,31 +190,31 @@ BRp.recalculateEdgeLabelProjections = function( edge ){
     return ( createControlPointInfo.cache = ctrlpts );
   };
 
-  var calculateEndProjection = function( prefix ){
-    var angle;
-    var isSrc = prefix === 'source';
+  let calculateEndProjection = function( prefix ){
+    let angle;
+    let isSrc = prefix === 'source';
 
     if( !content[ prefix ] ){ return; }
 
-    var offset = edge.pstyle(prefix+'-text-offset').pfValue;
+    let offset = edge.pstyle(prefix+'-text-offset').pfValue;
 
     switch( rs.edgeType ){
       case 'self':
       case 'compound':
       case 'bezier':
-      case 'multibezier':
-        var cps = createControlPointInfo();
-        var selected;
-        var startDist = 0;
-        var totalDist = 0;
+      case 'multibezier': {
+        let cps = createControlPointInfo();
+        let selected;
+        let startDist = 0;
+        let totalDist = 0;
 
         // find the segment we're on
-        for( var i = 0; i < cps.length; i++ ){
-          var cp = cps[ isSrc ? i : cps.length - 1 - i ];
+        for( let i = 0; i < cps.length; i++ ){
+          let cp = cps[ isSrc ? i : cps.length - 1 - i ];
 
-          for( var j = 0; j < cp.segments.length; j++ ){
-            var seg = cp.segments[ isSrc ? j : cp.segments.length - 1 - j ];
-            var lastSeg = i === cps.length - 1 && j === cp.segments.length - 1;
+          for( let j = 0; j < cp.segments.length; j++ ){
+            let seg = cp.segments[ isSrc ? j : cp.segments.length - 1 - j ];
+            let lastSeg = i === cps.length - 1 && j === cp.segments.length - 1;
 
             startDist = totalDist;
             totalDist += seg.length;
@@ -228,26 +228,26 @@ BRp.recalculateEdgeLabelProjections = function( edge ){
           if( selected ){ break; }
         }
 
-        var cp = selected.cp;
-        var seg = selected.segment;
-        var tSegment = ( offset - startDist ) / ( seg.length );
-        var segDt = seg.t1 - seg.t0;
-        var t = isSrc ? seg.t0 + segDt * tSegment : seg.t1 - segDt * tSegment;
+        let cp = selected.cp;
+        let seg = selected.segment;
+        let tSegment = ( offset - startDist ) / ( seg.length );
+        let segDt = seg.t1 - seg.t0;
+        let t = isSrc ? seg.t0 + segDt * tSegment : seg.t1 - segDt * tSegment;
 
         t = math.bound( 0, t, 1 );
         p = math.qbezierPtAt( cp.p0, cp.p1, cp.p2, t );
         angle = bezierAngle( cp.p0, cp.p1, cp.p2, t, p );
 
         break;
-
+      }
       case 'straight':
       case 'segments':
-      case 'haystack':
-        var d = 0, di, d0;
-        var p0, p1;
-        var l = rs.allpts.length;
+      case 'haystack': {
+        let d = 0, di, d0;
+        let p0, p1;
+        let l = rs.allpts.length;
 
-        for( var i = 0; i + 3 < l; i += 2 ){
+        for( let i = 0; i + 3 < l; i += 2 ){
           if( isSrc ){
             p0 = { x: rs.allpts[i],     y: rs.allpts[i+1] };
             p1 = { x: rs.allpts[i+2],   y: rs.allpts[i+3] };
@@ -263,14 +263,15 @@ BRp.recalculateEdgeLabelProjections = function( edge ){
           if( d >= offset ){ break; }
         }
 
-        var pD = offset - d0;
-        var t = pD / di;
+        let pD = offset - d0;
+        let t = pD / di;
 
         t  = math.bound( 0, t, 1 );
         p = math.lineAt( p0, p1, t );
         angle = lineAngle( p0, p1 );
 
         break;
+      }
     }
 
     setRs( 'labelX', prefix, p.x );
@@ -294,10 +295,10 @@ BRp.applyLabelDimensions = function( ele ){
 };
 
 BRp.applyPrefixedLabelDimensions = function( ele, prefix ){
-  var _p = ele._private;
+  let _p = ele._private;
 
-  var text = this.getLabelText( ele, prefix );
-  var labelDims = this.calculateLabelDimensions( ele, text );
+  let text = this.getLabelText( ele, prefix );
+  let labelDims = this.calculateLabelDimensions( ele, text );
 
   util.setPrefixedProperty( _p.rstyle,   'labelWidth', prefix, labelDims.width );
   util.setPrefixedProperty( _p.rscratch, 'labelWidth', prefix, labelDims.width );
@@ -307,11 +308,11 @@ BRp.applyPrefixedLabelDimensions = function( ele, prefix ){
 };
 
 BRp.getLabelText = function( ele, prefix ){
-  var _p = ele._private;
-  var pfd = prefix ? prefix + '-' : '';
-  var text = ele.pstyle( pfd + 'label' ).strValue;
-  var textTransform = ele.pstyle( 'text-transform' ).value;
-  var rscratch = function( propName, value ){
+  let _p = ele._private;
+  let pfd = prefix ? prefix + '-' : '';
+  let text = ele.pstyle( pfd + 'label' ).strValue;
+  let textTransform = ele.pstyle( 'text-transform' ).value;
+  let rscratch = function( propName, value ){
     if( value ){
       util.setPrefixedProperty( _p.rscratch, propName, prefix, value );
       return value;
@@ -331,49 +332,57 @@ BRp.getLabelText = function( ele, prefix ){
     text = text.toLowerCase();
   }
 
-  var wrapStyle = ele.pstyle( 'text-wrap' ).value;
+  let wrapStyle = ele.pstyle( 'text-wrap' ).value;
 
   if( wrapStyle === 'wrap' ){
-    //console.log('wrap');
-
-    var labelKey = rscratch( 'labelKey' );
+    let labelKey = rscratch( 'labelKey' );
 
     // save recalc if the label is the same as before
     if( labelKey != null && rscratch( 'labelWrapKey' ) === labelKey ){
-      // console.log('wrap cache hit');
       return rscratch( 'labelWrapCachedText' );
     }
-    // console.log('wrap cache miss');
 
-    var lines = text.split( '\n' );
-    var maxW = ele.pstyle( 'text-max-width' ).pfValue;
-    var wrappedLines = [];
+    let zwsp = '\u200b';
+    let lines = text.split('\n');
+    let maxW = ele.pstyle('text-max-width').pfValue;
+    let overflow = ele.pstyle('text-overflow-wrap').value;
+    let overflowAny = overflow === 'anywhere';
+    let wrappedLines = [];
+    let wordsRegex = /[\s\u200b]+/;
+    let wordSeparator = overflowAny ? '' : ' ';
 
-    for( var l = 0; l < lines.length; l++ ){
-      var line = lines[ l ];
-      var lineDims = this.calculateLabelDimensions( ele, line );
-      var lineW = lineDims.width;
+    for( let l = 0; l < lines.length; l++ ){
+      let line = lines[ l ];
+
+      let lineDims = this.calculateLabelDimensions( ele, line );
+      let lineW = lineDims.width;
+
+      if( overflowAny ){
+        let processedLine = line.split('').join(zwsp);
+
+        line = processedLine;
+      }
 
       if( lineW > maxW ){ // line is too long
-        var words = line.split( /\s+/ ); // NB: assume collapsed whitespace into single space
-        var subline = '';
+        let words = line.split(wordsRegex);
+        let subline = '';
 
-        for( var w = 0; w < words.length; w++ ){
-          var word = words[ w ];
-          var testLine = subline.length === 0 ? word : subline + ' ' + word;
-          var testDims = this.calculateLabelDimensions( ele, testLine );
-          var testW = testDims.width;
+        for( let w = 0; w < words.length; w++ ){
+          let word = words[ w ];
+          let testLine = subline.length === 0 ? word : subline + wordSeparator + word;
+          let testDims = this.calculateLabelDimensions( ele, testLine );
+          let testW = testDims.width;
 
           if( testW <= maxW ){ // word fits on current line
-            subline += word + ' ';
+            subline += word + wordSeparator;
           } else { // word starts new line
             wrappedLines.push( subline );
-            subline = word + ' ';
+            subline = word + wordSeparator;
           }
         }
 
         // if there's remaining text, put it in a wrapped line
-        if( !subline.match( /^\s+$/ ) ){
+        if( !subline.match( /^[\s\u200b]+$/ ) ){
           wrappedLines.push( subline );
         }
       } else { // line is already short enough
@@ -385,15 +394,14 @@ BRp.getLabelText = function( ele, prefix ){
     text = rscratch( 'labelWrapCachedText', wrappedLines.join( '\n' ) );
     rscratch( 'labelWrapKey', labelKey );
 
-    // console.log(text)
   } else if( wrapStyle === 'ellipsis' ){
-    var maxW = ele.pstyle( 'text-max-width' ).pfValue;
-    var ellipsized = '';
-    var ellipsis = '\u2026';
-    var incLastCh = false;
+    let maxW = ele.pstyle( 'text-max-width' ).pfValue;
+    let ellipsized = '';
+    let ellipsis = '\u2026';
+    let incLastCh = false;
 
-    for( var i = 0; i < text.length; i++ ){
-      var widthWithNextCh = this.calculateLabelDimensions( ele, ellipsized + text[i] + ellipsis ).width;
+    for( let i = 0; i < text.length; i++ ){
+      let widthWithNextCh = this.calculateLabelDimensions( ele, ellipsized + text[i] + ellipsis ).width;
 
       if( widthWithNextCh > maxW ){ break; }
 
@@ -413,32 +421,32 @@ BRp.getLabelText = function( ele, prefix ){
 };
 
 BRp.calculateLabelDimensions = function( ele, text ){
-  var r = this;
+  let r = this;
 
-  var cacheKey = util.hashString( text, ele._private.labelDimsKey );
+  let cacheKey = util.hashString( text, ele._private.labelDimsKey );
 
-  var cache = r.labelDimCache || (r.labelDimCache = []);
+  let cache = r.labelDimCache || (r.labelDimCache = []);
 
-  var existingVal = cache[ cacheKey ];
+  let existingVal = cache[ cacheKey ];
 
   if( existingVal != null ){
     return existingVal;
   }
 
-  var sizeMult = 1; // increase the scale to increase accuracy w.r.t. zoomed text
-  var fStyle = ele.pstyle( 'font-style' ).strValue;
-  var size = ( sizeMult * ele.pstyle( 'font-size' ).pfValue ) + 'px';
-  var family = ele.pstyle( 'font-family' ).strValue;
-  var weight = ele.pstyle( 'font-weight' ).strValue;
+  let sizeMult = 1; // increase the scale to increase accuracy w.r.t. zoomed text
+  let fStyle = ele.pstyle( 'font-style' ).strValue;
+  let size = ( sizeMult * ele.pstyle( 'font-size' ).pfValue ) + 'px';
+  let family = ele.pstyle( 'font-family' ).strValue;
+  let weight = ele.pstyle( 'font-weight' ).strValue;
 
-  var div = this.labelCalcDiv;
+  let div = this.labelCalcDiv;
 
   if( !div ){
     div = this.labelCalcDiv = document.createElement( 'div' ); // eslint-disable-line no-undef
     document.body.appendChild( div ); // eslint-disable-line no-undef
   }
 
-  var ds = div.style;
+  let ds = div.style;
 
   // from ele style
   ds.fontFamily = family;
@@ -473,12 +481,12 @@ BRp.calculateLabelDimensions = function( ele, text ){
 
 
 BRp.calculateLabelAngle = function( ele, prefix ){
-  var _p = ele._private;
-  var rs = _p.rscratch;
-  var isEdge = ele.isEdge();
-  var prefixDash = prefix ? prefix + '-' : '';
-  var rot = ele.pstyle( prefixDash + 'text-rotation' );
-  var rotStr = rot.strValue;
+  let _p = ele._private;
+  let rs = _p.rscratch;
+  let isEdge = ele.isEdge();
+  let prefixDash = prefix ? prefix + '-' : '';
+  let rot = ele.pstyle( prefixDash + 'text-rotation' );
+  let rotStr = rot.strValue;
 
   if( rotStr === 'none' ){
     return 0;
@@ -492,10 +500,10 @@ BRp.calculateLabelAngle = function( ele, prefix ){
 };
 
 BRp.calculateLabelAngles = function( ele ){
-  var r = this;
-  var isEdge = ele.isEdge();
-  var _p = ele._private;
-  var rs = _p.rscratch;
+  let r = this;
+  let isEdge = ele.isEdge();
+  let _p = ele._private;
+  let rs = _p.rscratch;
 
   rs.labelAngle = r.calculateLabelAngle(ele);
 

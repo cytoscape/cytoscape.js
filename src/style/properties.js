@@ -231,9 +231,17 @@ const styfn = {};
     { name: 'transition-timing-function', type: t.easing }
   ];
 
+  let nodeSizeHashOverride = (ele, parsedProp) => {
+    if( parsedProp.value === 'label' ){
+      return -ele.poolIndex(); // no hash key hits is using label size (hitrate for perf probably low anyway)
+    } else {
+      return parsedProp.pfValue;
+    }
+  };
+
   let nodeBody = [
-    { name: 'height', type: t.nodeSize, triggersBounds: diff.any },
-    { name: 'width', type: t.nodeSize, triggersBounds: diff.any },
+    { name: 'height', type: t.nodeSize, triggersBounds: diff.any, hashOverride: nodeSizeHashOverride },
+    { name: 'width', type: t.nodeSize, triggersBounds: diff.any, hashOverride: nodeSizeHashOverride },
     { name: 'shape', type: t.nodeShape, triggersBounds: diff.any },
     { name: 'shape-polygon-points', type: t.polygonPointList, triggersBounds: diff.any },
     { name: 'background-color', type: t.color },

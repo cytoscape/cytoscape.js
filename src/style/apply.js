@@ -265,6 +265,12 @@ styfn.updateStyleHints = function(ele){
 
   let updateGrKey = (val, grKey) => _p.styleKeys[ grKey ] = util.hashInt( val, _p.styleKeys[ grKey ] );
 
+  let updateGrKeyWStr = (strVal, grKey) => {
+    for( let j = 0; j < strVal.length; j++ ){
+      updateGrKey(strVal.charCodeAt(j), grKey);
+    }
+  };
+
   // - hashing works on 32 bit ints b/c we use bitwise ops
   // - small numbers get cut off (e.g. 0.123 is seen as 0 by the hashing function)
   // - raise up small numbers so more significant digits are seen by hashing
@@ -281,12 +287,25 @@ styfn.updateStyleHints = function(ele){
     let propInfo = this.properties[name];
     let type = propInfo.type;
     let grKey = propInfo.groupKey;
+    let normalizedNumberVal;
+
+    if( propInfo.hashOverride != null ){
+      normalizedNumberVal = propInfo.hashOverride(ele, parsedProp);
+    } else if( parsedProp.pfValue != null ){
+      normalizedNumberVal = parsedProp.pfValue;
+    }
+
+    // might not be a number if it allows enums
+    let numberVal = propInfo.enums == null ? parsedProp.value : null;
+    let haveNormNum = normalizedNumberVal != null;
+    let haveUnitedNum = numberVal != null;
+    let haveNum = haveNormNum || haveUnitedNum;
+    let units = parsedProp.units;
 
     // numbers are cheaper to hash than strings
     // 1 hash op vs n hash ops (for length n string)
-    if( type.number ){
-      // use pfValue if available (e.g. normalised units)
-      let v = parsedProp.pfValue != null ? parsedProp.pfValue : parsedProp.value;
+    if( type.number && haveNum ){
+      let v = haveNormNum ? normalizedNumberVal : numberVal;
 
       if( type.multiple ){
         for(let i = 0; i < v.length; i++){
@@ -295,12 +314,12 @@ styfn.updateStyleHints = function(ele){
       } else {
         updateGrKey(cleanNum(v), grKey);
       }
-    } else {
-      let strVal = parsedProp.strValue;
 
-      for( let j = 0; j < strVal.length; j++ ){
-        updateGrKey(strVal.charCodeAt(j), grKey);
+      if( !haveNormNum && units != null ){
+        updateGrKeyWStr(units);
       }
+    } else {
+      updateGrKeyWStr(parsedProp.strValue);
     }
   }
 

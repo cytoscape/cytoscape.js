@@ -65,10 +65,13 @@
   * [GCHQ](https://www.gchq.gov.uk/) : [Gaffer](https://gchq.github.io/gaffer-doc/)
   * [GeneMANIA](http://genemania.org)
   * [Graphlytic](http://graphlytic.sk/)
+  * [Harvard](https://www.harvard.edu) : [BioPlex](http://bioplex.hms.harvard.edu/bioplexDisplay)
   * [ICSI Haystack Project](https://haystack.mobi/panopticon/)
   * [InfoTrack](http://www.infotrack.com.au/)
+  * [Intercax](http://intercax.com/)
   * [The Kanji Map](http://thekanjimap.com/)
   * [Machine2Learn](https://www.machine2learn.com) : [Deep Learning Model Generator](https://www.machine2learn.com/deep-learning-model-generator/)
+  * [Max Plank Institute of Molecular Cell Physiology](https://www.mpimp-golm.mpg.de) : [CoNekT](http://conekt.mpimp-golm.mpg.de/pub/)
   * [Musicalized](http://en.musicalized.com/full)
   * [NDEx](http://www.ndexbio.org/)
   * [OHDSI](http://www.ohdsi.org/)
@@ -119,10 +122,12 @@ The library was created at the [Donnelly Centre](http://thedonnellycentre.utoron
 
 ## Releases
 - 3.5
+ - [3.5.3](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.5.3+is%3Aclosed)
  - [3.5.2](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.5.2+is%3Aclosed)
  - [3.5.1](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.5.1+is%3Aclosed)
  - [3.5.0](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.5.0+is%3Aclosed)
 - 3.4
+ - [3.4.5](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.4.5+is%3Aclosed)
  - [3.4.4](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.4.4+is%3Aclosed)
  - [3.4.3](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.4.3+is%3Aclosed)
  - [3.4.2](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.4.2+is%3Aclosed)

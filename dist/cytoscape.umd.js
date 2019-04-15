@@ -14810,6 +14810,12 @@
 
     var updateGrKey = function updateGrKey(val, grKey) {
       return _p.styleKeys[grKey] = hashInt(val, _p.styleKeys[grKey]);
+    };
+
+    var updateGrKeyWStr = function updateGrKeyWStr(strVal, grKey) {
+      for (var j = 0; j < strVal.length; j++) {
+        updateGrKey(strVal.charCodeAt(j), grKey);
+      }
     }; // - hashing works on 32 bit ints b/c we use bitwise ops
     // - small numbers get cut off (e.g. 0.123 is seen as 0 by the hashing function)
     // - raise up small numbers so more significant digits are seen by hashing
@@ -14831,12 +14837,25 @@
 
       var propInfo = this.properties[name];
       var type = propInfo.type;
-      var _grKey = propInfo.groupKey; // numbers are cheaper to hash than strings
+      var _grKey = propInfo.groupKey;
+      var normalizedNumberVal = void 0;
+
+      if (propInfo.hashOverride != null) {
+        normalizedNumberVal = propInfo.hashOverride(ele, parsedProp);
+      } else if (parsedProp.pfValue != null) {
+        normalizedNumberVal = parsedProp.pfValue;
+      } // might not be a number if it allows enums
+
+
+      var numberVal = propInfo.enums == null ? parsedProp.value : null;
+      var haveNormNum = normalizedNumberVal != null;
+      var haveUnitedNum = numberVal != null;
+      var haveNum = haveNormNum || haveUnitedNum;
+      var units = parsedProp.units; // numbers are cheaper to hash than strings
       // 1 hash op vs n hash ops (for length n string)
 
-      if (type.number) {
-        // use pfValue if available (e.g. normalised units)
-        var v = parsedProp.pfValue != null ? parsedProp.pfValue : parsedProp.value;
+      if (type.number && haveNum) {
+        var v = haveNormNum ? normalizedNumberVal : numberVal;
 
         if (type.multiple) {
           for (var _i2 = 0; _i2 < v.length; _i2++) {
@@ -14845,12 +14864,12 @@
         } else {
           updateGrKey(cleanNum(v), _grKey);
         }
-      } else {
-        var strVal = parsedProp.strValue;
 
-        for (var j = 0; j < strVal.length; j++) {
-          updateGrKey(strVal.charCodeAt(j), _grKey);
+        if (!haveNormNum && units != null) {
+          updateGrKeyWStr(units);
         }
+      } else {
+        updateGrKeyWStr(parsedProp.strValue);
       }
     } // overall style key
     //
@@ -16455,14 +16474,25 @@
       name: 'transition-timing-function',
       type: t.easing
     }];
+
+    var nodeSizeHashOverride = function nodeSizeHashOverride(ele, parsedProp) {
+      if (parsedProp.value === 'label') {
+        return -ele.poolIndex(); // no hash key hits is using label size (hitrate for perf probably low anyway)
+      } else {
+        return parsedProp.pfValue;
+      }
+    };
+
     var nodeBody = [{
       name: 'height',
       type: t.nodeSize,
-      triggersBounds: diff.any
+      triggersBounds: diff.any,
+      hashOverride: nodeSizeHashOverride
     }, {
       name: 'width',
       type: t.nodeSize,
-      triggersBounds: diff.any
+      triggersBounds: diff.any,
+      hashOverride: nodeSizeHashOverride
     }, {
       name: 'shape',
       type: t.nodeShape,
@@ -31221,7 +31251,7 @@
     return style$$1;
   };
 
-  var version = "3.5.2";
+  var version = "3.5.3";
 
   var cytoscape = function cytoscape(options) {
     // if no options specified, use default

@@ -77,7 +77,9 @@ elesfn.updateCompoundBounds = function(force = false){
       }
     };
 
-    let bb = children.boundingBox( {
+    let takesUpSpace = ele => ele.pstyle('display').value === 'element';
+
+    let bb = children.filter(takesUpSpace).boundingBox( {
       includeLabels: includeLabels,
       includeOverlays: false,
 

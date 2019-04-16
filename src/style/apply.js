@@ -316,10 +316,10 @@ styfn.updateStyleHints = function(ele){
       }
 
       if( !haveNormNum && units != null ){
-        updateGrKeyWStr(units);
+        updateGrKeyWStr(units, grKey);
       }
     } else {
-      updateGrKeyWStr(parsedProp.strValue);
+      updateGrKeyWStr(parsedProp.strValue, grKey);
     }
   }
 

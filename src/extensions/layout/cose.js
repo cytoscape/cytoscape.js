@@ -952,11 +952,10 @@ CoseLayout.prototype.run = function(){
         }
       });
     } else {
-      options.eles.nodes().layoutPositions( layout, options, function( node ){
-        var lnode = layoutInfo.layoutNodes[ layoutInfo.idToIndex[ node.data( 'id' ) ] ];
+      var nodes = options.eles.nodes();
+      var getScaledPos = getScaleInBoundsFn(layoutInfo, options, nodes);
 
-        return { x: lnode.positionX, y: lnode.positionY };
-      } );
+      nodes.layoutPositions(layout, options, getScaledPos);
     }
   };
 
@@ -1339,19 +1338,7 @@ var randomizePositions = function( layoutInfo, cy ){
   }
 };
 
-
-/**
- * @brief          : Updates the positions of nodes in the network
- * @arg layoutInfo : LayoutInfo object
- * @arg cy         : Cytoscape object
- * @arg options    : Layout options
- */
-var refreshPositions = function( layoutInfo, cy, options ){
-  // var s = 'Refreshing positions';
-  // logDebug(s);
-
-  var layout = options.layout;
-  var nodes = options.eles.nodes();
+var getScaleInBoundsFn = function( layoutInfo, options, nodes ){
   var bb = layoutInfo.boundingBox;
   var coseBB = { x1: Infinity, x2: -Infinity, y1: Infinity, y2: -Infinity };
 
@@ -1370,11 +1357,8 @@ var refreshPositions = function( layoutInfo, cy, options ){
     coseBB.h = coseBB.y2 - coseBB.y1;
   }
 
-  nodes.positions( function( ele, i ){
+  return function( ele, i ){
     var lnode = layoutInfo.layoutNodes[ layoutInfo.idToIndex[ ele.data( 'id' ) ] ];
-    // s = "Node: " + lnode.id + ". Refreshed position: (" +
-    // lnode.positionX + ", " + lnode.positionY + ").";
-    // logDebug(s);
 
     if( options.boundingBox ){ // then add extra bounding box constraint
       var pctX = (lnode.positionX - coseBB.x1) / coseBB.w;
@@ -1390,7 +1374,24 @@ var refreshPositions = function( layoutInfo, cy, options ){
         y: lnode.positionY
       };
     }
-  } );
+  };
+};
+
+/**
+ * @brief          : Updates the positions of nodes in the network
+ * @arg layoutInfo : LayoutInfo object
+ * @arg cy         : Cytoscape object
+ * @arg options    : Layout options
+ */
+var refreshPositions = function( layoutInfo, cy, options ){
+  // var s = 'Refreshing positions';
+  // logDebug(s);
+
+  var layout = options.layout;
+  var nodes = options.eles.nodes();
+  var getScaledPos = getScaleInBoundsFn(layoutInfo, options, nodes);
+
+  nodes.positions(getScaledPos);
 
   // Trigger layoutReady only on first call
   if( true !== layoutInfo.ready ){

@@ -354,15 +354,15 @@ const styfn = {};
   let edgeArrow = [];
   let arrowPrefixes = styfn.arrowPrefixes = [ 'source', 'mid-source', 'target', 'mid-target' ];
   [
-    { name: 'arrow-shape', type: t.arrowShape },
+    { name: 'arrow-shape', type: t.arrowShape, triggersBounds: diff.any },
     { name: 'arrow-color', type: t.color },
     { name: 'arrow-fill', type: t.arrowFill }
   ].forEach( function( prop ){
     arrowPrefixes.forEach( function( prefix ){
       let name = prefix + '-' + prop.name;
-      let type = prop.type;
+      let { type, triggersBounds } = prop;
 
-      edgeArrow.push( { name: name, type: type } );
+      edgeArrow.push( { name, type, triggersBounds } );
     } );
   }, {} );
 

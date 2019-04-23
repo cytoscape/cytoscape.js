@@ -9280,7 +9280,12 @@
           bottom: parent.pstyle('min-height-bias-bottom')
         }
       };
-      var bb = children.boundingBox({
+
+      var takesUpSpace = function takesUpSpace(ele) {
+        return ele.pstyle('display').value === 'element';
+      };
+
+      var bb = children.filter(takesUpSpace).boundingBox({
         includeLabels: includeLabels,
         includeOverlays: false,
         // updating the compound bounds happens outside of the regular
@@ -14836,10 +14841,10 @@
         }
 
         if (!haveNormNum && units != null) {
-          updateGrKeyWStr(units);
+          updateGrKeyWStr(units, _grKey);
         }
       } else {
-        updateGrKeyWStr(parsedProp.strValue);
+        updateGrKeyWStr(parsedProp.strValue, _grKey);
       }
     } // overall style key
     //
@@ -16751,7 +16756,8 @@
     var arrowPrefixes = styfn$6.arrowPrefixes = ['source', 'mid-source', 'target', 'mid-target'];
     [{
       name: 'arrow-shape',
-      type: t.arrowShape
+      type: t.arrowShape,
+      triggersBounds: diff.any
     }, {
       name: 'arrow-color',
       type: t.color
@@ -16761,14 +16767,16 @@
     }].forEach(function (prop) {
       arrowPrefixes.forEach(function (prefix) {
         var name = prefix + '-' + prop.name;
-        var type = prop.type;
+        var type = prop.type,
+            triggersBounds = prop.triggersBounds;
         edgeArrow.push({
           name: name,
-          type: type
+          type: type,
+          triggersBounds: triggersBounds
         });
       });
     }, {});
-    var props = styfn$6.properties = behavior.concat(transition, visibility, overlay, ghost, commonLabel, labelDimensions, mainLabel, sourceLabel, targetLabel, nodeBody, nodeBorder, backgroundImage, pie, compound, edgeLine, edgeArrow, core$$1);
+    var props = styfn$6.properties = [].concat(behavior, transition, visibility, overlay, ghost, commonLabel, labelDimensions, mainLabel, sourceLabel, targetLabel, nodeBody, nodeBorder, backgroundImage, pie, compound, edgeLine, edgeArrow, core$$1);
     var propGroups = styfn$6.propertyGroups = {
       // common to all eles
       behavior: behavior,
@@ -20384,13 +20392,9 @@
           }
         });
       } else {
-        options.eles.nodes().layoutPositions(layout, options, function (node) {
-          var lnode = layoutInfo.layoutNodes[layoutInfo.idToIndex[node.data('id')]];
-          return {
-            x: lnode.positionX,
-            y: lnode.positionY
-          };
-        });
+        var nodes = options.eles.nodes();
+        var getScaledPos = getScaleInBoundsFn(layoutInfo, options, nodes);
+        nodes.layoutPositions(layout, options, getScaledPos);
       }
     };
 
@@ -20715,19 +20719,8 @@
       }
     }
   };
-  /**
-   * @brief          : Updates the positions of nodes in the network
-   * @arg layoutInfo : LayoutInfo object
-   * @arg cy         : Cytoscape object
-   * @arg options    : Layout options
-   */
 
-
-  var refreshPositions = function refreshPositions(layoutInfo, cy, options) {
-    // var s = 'Refreshing positions';
-    // logDebug(s);
-    var layout = options.layout;
-    var nodes = options.eles.nodes();
+  var getScaleInBoundsFn = function getScaleInBoundsFn(layoutInfo, options, nodes) {
     var bb = layoutInfo.boundingBox;
     var coseBB = {
       x1: Infinity,
@@ -20748,10 +20741,8 @@
       coseBB.h = coseBB.y2 - coseBB.y1;
     }
 
-    nodes.positions(function (ele, i) {
-      var lnode = layoutInfo.layoutNodes[layoutInfo.idToIndex[ele.data('id')]]; // s = "Node: " + lnode.id + ". Refreshed position: (" +
-      // lnode.positionX + ", " + lnode.positionY + ").";
-      // logDebug(s);
+    return function (ele, i) {
+      var lnode = layoutInfo.layoutNodes[layoutInfo.idToIndex[ele.data('id')]];
 
       if (options.boundingBox) {
         // then add extra bounding box constraint
@@ -20767,7 +20758,23 @@
           y: lnode.positionY
         };
       }
-    }); // Trigger layoutReady only on first call
+    };
+  };
+  /**
+   * @brief          : Updates the positions of nodes in the network
+   * @arg layoutInfo : LayoutInfo object
+   * @arg cy         : Cytoscape object
+   * @arg options    : Layout options
+   */
+
+
+  var refreshPositions = function refreshPositions(layoutInfo, cy, options) {
+    // var s = 'Refreshing positions';
+    // logDebug(s);
+    var layout = options.layout;
+    var nodes = options.eles.nodes();
+    var getScaledPos = getScaleInBoundsFn(layoutInfo, options, nodes);
+    nodes.positions(getScaledPos); // Trigger layoutReady only on first call
 
     if (true !== layoutInfo.ready) {
       // s = 'Triggering layoutready';
@@ -31056,7 +31063,7 @@
     return style$$1;
   };
 
-  var version = "3.4.5";
+  var version = "3.4.6";
 
   var cytoscape = function cytoscape(options) {
     // if no options specified, use default

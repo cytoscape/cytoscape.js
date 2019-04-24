@@ -42,7 +42,7 @@ let mergeClosest = function( clusters, index, dists, mins, opts ) {
   let dist;
   let attrs = opts.attributes;
 
-  let getDist = (n1, n2) => clusteringDistance( opts.distance, attrs.length, i => attrs[i](n1), i => attrs[i](n2) );
+  let getDist = (n1, n2) => clusteringDistance( opts.distance, attrs.length, i => attrs[i](n1), i => attrs[i](n2), n1, n2 );
 
   for ( let i = 0; i < clusters.length; i++ ) {
     let key  = clusters[i].key;
@@ -241,7 +241,7 @@ let hierarchicalClustering = function( options ){
   let opts = setOptions( options );
 
   let attrs = opts.attributes;
-  let getDist = (n1, n2) => clusteringDistance( opts.distance, attrs.length, i => attrs[i](n1), i => attrs[i](n2) );
+  let getDist = (n1, n2) => clusteringDistance( opts.distance, attrs.length, i => attrs[i](n1), i => attrs[i](n2), n1, n2 );
 
   // Begin hierarchical algorithm
   let clusters = [];

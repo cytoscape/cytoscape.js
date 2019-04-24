@@ -37,10 +37,13 @@ if( process.env.NODE_ENV !== 'production' ){ /* eslint-disable no-console, no-un
 } /* eslint-enable */
 
 let getDist = function(type, node, centroid, attributes, mode){
-  let getP = mode === 'kMedoids' ? ( i => attributes[i](centroid) ) : ( i => centroid[i] );
+  let noNodeP = mode !== 'kMedoids';
+  let getP = noNodeP ? ( i => centroid[i] ) : ( i => attributes[i](centroid) );
   let getQ = i => attributes[i](node);
+  let nodeP = centroid;
+  let nodeQ = node;
 
-  return clusteringDistance( type, attributes.length, getP, getQ );
+  return clusteringDistance( type, attributes.length, getP, getQ, nodeP, nodeQ );
 };
 
 let randomCentroids = function( nodes, k, attributes ) {

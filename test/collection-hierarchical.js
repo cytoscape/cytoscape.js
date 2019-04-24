@@ -228,6 +228,47 @@ describe('Algorithms', function(){
         expect(clustersAtLevel10[4][0].id()).to.equal('F');
         expect(clustersAtLevel10[5][0].id()).to.equal('D');
       });
+
+      it('allows a custom 2-arg distance function', function(){
+        var clustersAtLevel2 = cy.elements().hierarchicalClustering({
+          linkage: 'min',
+          distance: function(nodeP, nodeQ){
+            expect(nodeP).to.exist;
+            expect(nodeQ).to.exist;
+
+            // are the args collection-like?
+            expect(nodeP.id()).to.exist;
+            expect(nodeQ.id()).to.exist;
+
+            var x1p = nodeP.data('X1');
+            var x1q = nodeQ.data('X1');
+            var x2p = nodeP.data('X2');
+            var x2q = nodeQ.data('X2');
+
+            var dx1 = (x1p - x1q);
+            var dx2 = (x2p - x2q);
+
+            return Math.sqrt( (dx1 * dx1) + (dx2 * dx2) );
+          },
+          mode: 'dendrogram',
+          dendrogramDepth: 2,
+          addDendrogram: false
+        });
+
+        expect(clustersAtLevel2).to.exist;
+
+        // expect same result as 'Check level 2 of dendrogram'
+
+        // At level 2, we expect the algorithm (for this example) to return 4 clusters
+        expect(clustersAtLevel2.length).to.equal(4);
+
+        expect(clustersAtLevel2[0][0].id()).to.equal('B');
+        expect(clustersAtLevel2[1][0].id()).to.equal('A');
+        expect(clustersAtLevel2[2][0].id()).to.equal('C');
+        expect(clustersAtLevel2[3][0].id()).to.equal('E');
+        expect(clustersAtLevel2[3][1].id()).to.equal('F');
+        expect(clustersAtLevel2[3][2].id()).to.equal('D');
+      });
     }
 
   });

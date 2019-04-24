@@ -299,12 +299,22 @@ BRp.applyPrefixedLabelDimensions = function( ele, prefix ){
 
   let text = this.getLabelText( ele, prefix );
   let labelDims = this.calculateLabelDimensions( ele, text );
+  let lineHeight = ele.pstyle('line-height').pfValue;
+  let textWrap = ele.pstyle('text-wrap').strValue;
+  let numLines = textWrap !== 'wrap' ? 1 : (util.getPrefixedProperty( _p.rscratch, 'labelWrapCachedLines', prefix ).length || 1);
+  let normPerLineHeight = labelDims.height / numLines;
+  let labelLineHeight = normPerLineHeight * lineHeight;
 
-  util.setPrefixedProperty( _p.rstyle,   'labelWidth', prefix, labelDims.width );
-  util.setPrefixedProperty( _p.rscratch, 'labelWidth', prefix, labelDims.width );
+  let width = labelDims.width;
+  let height = labelDims.height + (numLines - 1) * (lineHeight - 1) * normPerLineHeight;
 
-  util.setPrefixedProperty( _p.rstyle,   'labelHeight', prefix, labelDims.height );
-  util.setPrefixedProperty( _p.rscratch, 'labelHeight', prefix, labelDims.height );
+  util.setPrefixedProperty( _p.rstyle,   'labelWidth', prefix, width );
+  util.setPrefixedProperty( _p.rscratch, 'labelWidth', prefix, width );
+
+  util.setPrefixedProperty( _p.rstyle,   'labelHeight', prefix, height );
+  util.setPrefixedProperty( _p.rscratch, 'labelHeight', prefix, height );
+
+  _p.rscratch.labelLineHeight = labelLineHeight;
 };
 
 BRp.getLabelText = function( ele, prefix ){
@@ -456,10 +466,11 @@ BRp.calculateLabelDimensions = function( ele, text ){
   }
 
   let sizeMult = 1; // increase the scale to increase accuracy w.r.t. zoomed text
-  let fStyle = ele.pstyle( 'font-style' ).strValue;
-  let size = ( sizeMult * ele.pstyle( 'font-size' ).pfValue ) + 'px';
-  let family = ele.pstyle( 'font-family' ).strValue;
-  let weight = ele.pstyle( 'font-weight' ).strValue;
+  let fStyle = ele.pstyle('font-style').strValue;
+  let size = (sizeMult * ele.pstyle('font-size').pfValue) + 'px';
+  let family = ele.pstyle('font-family').strValue;
+  let weight = ele.pstyle('font-weight').strValue;
+  let lineHeight = ele.pstyle('line-height').pfValue;
 
   let div = this.labelCalcDiv;
 

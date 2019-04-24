@@ -187,7 +187,8 @@ const styfn = {};
     { name: 'text-wrap', type: t.textWrap, triggersBounds: diff.any },
     { name: 'text-overflow-wrap', type: t.textOverflowWrap, triggersBounds: diff.any },
     { name: 'text-max-width', type: t.size, triggersBounds: diff.any },
-    { name: 'text-outline-width', type: t.size, triggersBounds: diff.any }
+    { name: 'text-outline-width', type: t.size, triggersBounds: diff.any },
+    { name: 'line-height', type: t.positiveNumber, triggersBounds: diff.any }
   ];
 
   let commonLabel = [
@@ -506,6 +507,7 @@ styfn.getDefaultProperties = function(){
     'text-valign': 'top',
     'text-halign': 'center',
     'text-justification': 'auto',
+    'line-height': 1,
     'color': '#000',
     'text-outline-color': '#000',
     'text-outline-width': 0,

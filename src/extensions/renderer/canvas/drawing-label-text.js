@@ -319,7 +319,7 @@ CRp.drawText = function( context, ele, prefix, applyRotation = true, useEleOpaci
 
     if( ele.pstyle( 'text-wrap' ).value === 'wrap' ){
       let lines = util.getPrefixedProperty( rscratch, 'labelWrapCachedLines', prefix );
-      let lineHeight = textH / lines.length;
+      let lineHeight = _p.rscratch.labelLineHeight;
       let halfTextW = textW/2;
       let justification = this.getLabelJustification(ele);
 

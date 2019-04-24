@@ -233,5 +233,42 @@ describe('Algorithms', function(){
 
     });
 
+    it('allows a custom 2-arg distance function', function(){
+      var cltrs = cy.elements().kMedoids({
+        k: 2,
+        maxIterations: 10,
+        testMode: true,
+        testCentroids: [n2, n8],
+        distance: function(nodeP, nodeQ){
+          expect(nodeP).to.exist;
+          expect(nodeQ).to.exist;
+
+          // are the args collection-like?
+          expect(nodeP.id()).to.exist;
+          expect(nodeQ.id()).to.exist;
+
+          var da = Math.abs(nodeP.data('attrA') - nodeQ.data('attrA'));
+          var db = Math.abs(nodeP.data('attrB') - nodeQ.data('attrB'));
+
+          return da + db;
+        }
+      });
+
+      var cltrIExpected = function(i){
+        var expected = expectedClusters[i].elements.reduce(function(eles, ele){
+          return eles.merge(ele);
+        }, cy.collection());
+        var actual = cltrs[i];
+
+        return expected.same(actual);
+      };
+
+      expect(cltrs).to.exist;
+      expect(cltrs.length).to.equal(2);
+
+      expect(cltrIExpected(0), '0th cluster expected').to.be.true;
+      expect(cltrIExpected(1), '1st cluster expected').to.be.true;
+    });
+
   });
 });

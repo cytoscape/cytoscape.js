@@ -80,7 +80,7 @@ let Collection = function( cy, elements, options ){
   this.length = 0;
 
   for( let i = 0, l = elements.length; i < l; i++ ){
-    let element = elements[ i ];
+    let element = elements[i][0]; // [0] in case elements is an array of collections, rather than array of elements
     if( element == null ){  continue; }
 
     let id = element._private.data.id;

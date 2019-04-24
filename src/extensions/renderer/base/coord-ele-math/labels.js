@@ -470,7 +470,6 @@ BRp.calculateLabelDimensions = function( ele, text ){
   let size = (sizeMult * ele.pstyle('font-size').pfValue) + 'px';
   let family = ele.pstyle('font-family').strValue;
   let weight = ele.pstyle('font-weight').strValue;
-  let lineHeight = ele.pstyle('line-height').pfValue;
 
   let div = this.labelCalcDiv;
 

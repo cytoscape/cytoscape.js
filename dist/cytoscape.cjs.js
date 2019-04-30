@@ -4098,17 +4098,20 @@ var setOptions$1 = function setOptions(options) {
 
 
 var getDist = function getDist(type, node, centroid, attributes, mode) {
-  var getP = mode === 'kMedoids' ? function (i) {
-    return attributes[i](centroid);
-  } : function (i) {
+  var noNodeP = mode !== 'kMedoids';
+  var getP = noNodeP ? function (i) {
     return centroid[i];
+  } : function (i) {
+    return attributes[i](centroid);
   };
 
   var getQ = function getQ(i) {
     return attributes[i](node);
   };
 
-  return clusteringDistance(type, attributes.length, getP, getQ);
+  var nodeP = centroid;
+  var nodeQ = node;
+  return clusteringDistance(type, attributes.length, getP, getQ, nodeP, nodeQ);
 };
 
 var randomCentroids = function randomCentroids(nodes, k, attributes) {
@@ -4593,7 +4596,7 @@ var mergeClosest = function mergeClosest(clusters, index, dists, mins, opts) {
       return attrs[i](n1);
     }, function (i) {
       return attrs[i](n2);
-    });
+    }, n1, n2);
   };
 
   for (var i = 0; i < clusters.length; i++) {
@@ -4773,7 +4776,7 @@ var hierarchicalClustering = function hierarchicalClustering(options) {
       return attrs[i](n1);
     }, function (i) {
       return attrs[i](n2);
-    });
+    }, n1, n2);
   }; // Begin hierarchical algorithm
 
 
@@ -30304,7 +30307,7 @@ sheetfn.appendToStyle = function (style$$1) {
   return style$$1;
 };
 
-var version = "3.4.6";
+var version = "3.4.7";
 
 var cytoscape = function cytoscape(options) {
   // if no options specified, use default

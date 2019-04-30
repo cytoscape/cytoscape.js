@@ -172,6 +172,7 @@ describe('Core graph manipulation', function(){
       expect( cy.$('#foo').numericStyle('border-width') ).to.equal(10);
     });
 
+
   });
 
   describe('eles.restore()', function(){
@@ -229,6 +230,42 @@ describe('Core graph manipulation', function(){
         expect( n1n2.removed() ).to.be.false;
       }
 
+    });
+
+    it('removes a parallel edge headlessly', function(){
+      // re. headlessly calling edge.isBundledBezier() #2377
+
+      var cy = cytoscape({
+        headless: true,
+        styleEnabled: false, // important
+        elements: [
+          { data: { id: 'a' } },
+          { data: { id: 'b' } },
+          {
+            data: {
+              id: 'ab2',
+              source: 'a',
+              target: 'b'
+            }
+          },
+          {
+            data: {
+              id: 'ab1',
+              source: 'a',
+              target: 'b'
+            }
+          }]
+      });
+
+      cy.edges()[0].remove();
+
+      expect(cy.edges().length, 'number of edges (A)').to.equal(1);
+      expect(cy.nodes().length, 'number of nodes (A)').to.equal(2);
+
+      cy.edges()[0].remove();
+
+      expect(cy.edges().length, 'number of edges (B)').to.equal(0);
+      expect(cy.nodes().length, 'number of nodes (B)').to.equal(2);
     });
 
     it('removes via selector', function(){

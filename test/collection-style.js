@@ -547,6 +547,44 @@ describe('Collection style', function(){
 
       expect( cy.$('#c').visible() ).to.be.true;
     });
+
+    it('ele.isBundledBezier() true for `curve-style: bezier`', function(){
+      var edges = cy.add([
+        { data: { id: 'bez1', source: 'n1', target: 'n2' } },
+        { data: { id: 'bez2', source: 'n1', target: 'n2' } },
+        { data: { id: 'bez3', source: 'n1', target: 'n2' } }
+      ]);
+
+      edges.style('curve-style', 'bezier');
+
+      edges.forEach(function(edge){
+        expect(edge.isBundledBezier(), edge.id()).to.be.true;
+      });
+    });
+
+    it('ele.isBundledBezier() false for style disabled', function(){
+      var cy = cytoscape({
+        headless: true,
+        styleEnabled: false,
+        elements: [
+          { data: { id: 'n1' } },
+          { data: { id: 'n2' } }
+        ]
+      });
+
+      var edges = cy.add([
+        { data: { id: 'bez1', source: 'n1', target: 'n2' } },
+        { data: { id: 'bez2', source: 'n1', target: 'n2' } },
+        { data: { id: 'bez3', source: 'n1', target: 'n2' } }
+      ]);
+
+      // this should be a nop
+      edges.style('curve-style', 'bezier');
+
+      edges.forEach(function(edge){
+        expect(edge.isBundledBezier(), edge.id()).to.be.false;
+      });
+    });
   });
 
   describe('eles.addClass() etc', function(){

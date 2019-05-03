@@ -226,6 +226,11 @@
             },
 
             {
+              "name": "cy.isDestroyed",
+              "descr": "Get whether the instance of Cytoscape.js has been destroyed or not."
+            },
+
+            {
               "name": "cy.scratch",
               "extFn": true,
               "descr": "Set or get scratchpad data, where temporary or non-JSON data can be stored.  App-level scratchpad data should use namespaces prefixed with underscore, like `'_foo'`.  This is analogous to the more common [`ele.scratch()`](#ele.scratch) but for graph global data.",

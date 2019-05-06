@@ -29,10 +29,16 @@ It is important to note that strings need to be enclosed by quotation marks:
 cy.filter('node[name = "Jerry"]'); // but this does
 ```
 
-Note that metacharacters ( ^ $ \ / ( ) | ? + * [ ] { } , . ) need to be escaped:
+Note that some characters need to be escaped for IDs, field names, and so on:
 
 ```js
 cy.filter('#some\\$funky\\@id');
+```
+
+Some examples of these characters include `( ^ $ \ / ( ) | ? + * [ ] { } , . )`.  Try to avoid using non-alpha-numeric characters for field names and IDs to keep things simple.  If you must use special characters for IDs, use a data selector rather than an ID selector:
+
+```js
+cy.filter('[id = "some$funky@id"]');
 ```
 
 

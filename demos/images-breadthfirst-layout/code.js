@@ -34,35 +34,35 @@ var cy = cytoscape({
       })
     .selector('#bird')
       .css({
-        'background-image': 'https://farm8.staticflickr.com/7272/7633179468_3e19e45a0c_b.jpg'
+        'background-image': 'https://live.staticflickr.com/7272/7633179468_3e19e45a0c_b.jpg'
       })
     .selector('#cat')
       .css({
-        'background-image': 'https://farm2.staticflickr.com/1261/1413379559_412a540d29_b.jpg'
+        'background-image': 'https://live.staticflickr.com/1261/1413379559_412a540d29_b.jpg'
       })
     .selector('#ladybug')
       .css({
-        'background-image': 'https://farm4.staticflickr.com/3063/2751740612_af11fb090b_b.jpg'
+        'background-image': 'https://live.staticflickr.com/3063/2751740612_af11fb090b_b.jpg'
       })
   .selector('#aphid')
       .css({
-        'background-image': 'https://farm9.staticflickr.com/8316/8003798443_32d01257c8_b.jpg'
+        'background-image': 'https://live.staticflickr.com/8316/8003798443_32d01257c8_b.jpg'
       })
   .selector('#rose')
       .css({
-        'background-image': 'https://farm6.staticflickr.com/5109/5817854163_eaccd688f5_b.jpg'
+        'background-image': 'https://live.staticflickr.com/5109/5817854163_eaccd688f5_b.jpg'
       })
   .selector('#grasshopper')
       .css({
-        'background-image': 'https://farm7.staticflickr.com/6098/6224655456_f4c3c98589_b.jpg'
+        'background-image': 'https://live.staticflickr.com/6098/6224655456_f4c3c98589_b.jpg'
       })
   .selector('#plant')
       .css({
-        'background-image': 'https://farm1.staticflickr.com/231/524893064_f49a4d1d10_z.jpg'
+        'background-image': 'https://live.staticflickr.com/3866/14420309584_78bf471658_b.jpg'
       })
   .selector('#wheat')
       .css({
-        'background-image': 'https://farm3.staticflickr.com/2660/3715569167_7e978e8319_b.jpg'
+        'background-image': 'https://live.staticflickr.com/2660/3715569167_7e978e8319_b.jpg'
       }),
 
   elements: {

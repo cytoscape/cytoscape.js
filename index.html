@@ -633,7 +633,12 @@
 </ul>
 <h2 id="introduction/releases">Releases <a href="#introduction/releases"><span class="fa fa-bookmark"></span></a></h2>
 <ul>
+<li>3.6<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.6.0+is%3Aclosed">3.6.0</a></li>
+</ul>
+</li>
 <li>3.5<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.5.6+is%3Aclosed">3.5.6</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.5.5+is%3Aclosed">3.5.5</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.5.4+is%3Aclosed">3.5.4</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.5.3+is%3Aclosed">3.5.3</a></li>
@@ -643,6 +648,7 @@
 </ul>
 </li>
 <li>3.4<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.4.8+is%3Aclosed">3.4.8</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.4.7+is%3Aclosed">3.4.7</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.4.6+is%3Aclosed">3.4.6</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.4.5+is%3Aclosed">3.4.5</a></li>
@@ -12544,8 +12550,10 @@ cy.elements(<span class="hljs-string">'node#j, edge[source = "j"]'</span>);</cod
 <button class="run run-inline-code"><span class="fa fa-play"></span></button><p>It is important to note that strings need to be enclosed by quotation marks:</p>
 <pre><code class="language-js"><span class="hljs-comment">//cy.filter('node[name = Jerry]'); // this doesn't work</span>
 cy.filter(<span class="hljs-string">'node[name = "Jerry"]'</span>); <span class="hljs-comment">// but this does</span></code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>Note that metacharacters ( ^ $ \ / ( ) | ? + * [ ] { } , . ) need to be escaped:</p>
+<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>Note that some characters need to be escaped for IDs, field names, and so on:</p>
 <pre><code class="language-js">cy.filter(<span class="hljs-string">'#some\\$funky\\@id'</span>);</code></pre>
+<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>Some examples of these characters include <code>( ^ $ \ / ( ) | ? + * [ ] { } , . )</code>.  Try to avoid using non-alpha-numeric characters for field names and IDs to keep things simple.  If you must use special characters for IDs, use a data selector rather than an ID selector:</p>
+<pre><code class="language-js">cy.filter(<span class="hljs-string">'[id = "some$funky@id"]'</span>);</code></pre>
 <button class="run run-inline-code"><span class="fa fa-play"></span></button><h2 id="selectors/group-class-amp-id">Group, class, &amp; ID <a href="#selectors/group-class-amp-id"><span class="fa fa-bookmark"></span></a></h2>
 <p><strong><code>node</code>,  <code>edge</code>, or <code>*</code> (group selector)</strong>
 Matches elements based on group (<code>node</code> for nodes, <code>edge</code> for edges, <code>*</code> for all).</p>
@@ -13150,8 +13158,11 @@ style: [
 </ul>
 <p>Wrapping text:</p>
 <ul>
-<li><strong><code>text-wrap</code></strong> : A wrapping style to apply to the label text; may be <code>none</code> for no wrapping (including manual newlines: <code>\n</code>), <code>wrap</code> for manual and/or autowrapping or <code>ellipsis</code> to truncate the string and append ‘…’ based on <code>text-max-width</code>.</li>
+<li><strong><code>text-wrap</code></strong> : A wrapping style to apply to the label text; may be <code>none</code> for no wrapping (including manual newlines: <code>\n</code>), <code>wrap</code> for manual and/or autowrapping, or <code>ellipsis</code> to truncate the string and append ‘…’ based on <code>text-max-width</code>.  Note that with <code>wrap</code>, text will always wrap on newlines (<code>\n</code>) and text may wrap on any breakable whitespace character — including <a href="https://en.wikipedia.org/wiki/Zero-width_space">zero-width spaces</a> (<code>\u200b</code>).</li>
 <li><strong><code>text-max-width</code></strong> : The maximum width for wrapped text, applied when <code>text-wrap</code> is set to <code>wrap</code> or <code>ellipsis</code>.  For only manual newlines (i.e. <code>\n</code>), set a very large value like <code>1000px</code> such that only your newline characters would apply.</li>
+<li><strong><code>text-overflow-wrap</code></strong> : The characters that may be used for possible wrapping locations when a line overflows <code>text-max-width</code>; may be <code>whitespace</code> (default) or <code>anywhere</code>.  Note that <code>anywhere</code> is suited to <a href="https://en.wikipedia.org/wiki/CJK_characters">CJK</a>, where the characters are in a grid and no whitespace exists.  Using <code>anywhere</code> with text in the Latin alphabet, for example, will split words at arbitrary locations.</li>
+<li><code>text-justification</code>** : The justification of multiline (wrapped) labels; may be <code>left</code>, <code>center</code>, <code>right</code>, or <code>auto</code> (default).  The <code>auto</code> value makes it so that a node’s label is justified along the node — e.g. a label on the right side of a node is left justified.</li>
+<li><strong><code>line-height</code></strong> : The line height of multiline text, as a relative, unitless value.  It specifies the vertical spacing between each line.  With value <code>1</code> (default), the lines are stacked directly on top of one another with no additional whitespace between them.  With value <code>2</code>, for example, there is whitespace between each line equal to the visible height of a line of text.</li>
 </ul>
 <p>Node label alignment:</p>
 <ul>

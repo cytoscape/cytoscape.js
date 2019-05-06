@@ -11222,6 +11222,10 @@ elesfn$q.hidden = function () {
 };
 
 elesfn$q.isBundledBezier = cachePrototypeStyleFunction('isBundledBezier', function () {
+  if (!this.cy().styleEnabled()) {
+    return false;
+  }
+
   return !this.removed() && this.pstyle('curve-style').value === 'bezier' && this.takesUpSpace();
 });
 elesfn$q.bypass = elesfn$q.css = elesfn$q.style;
@@ -30502,7 +30506,7 @@ sheetfn.appendToStyle = function (style$$1) {
   return style$$1;
 };
 
-var version = "3.5.5";
+var version = "3.5.6";
 
 var cytoscape = function cytoscape(options) {
   // if no options specified, use default

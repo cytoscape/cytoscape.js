@@ -11953,6 +11953,10 @@
   };
 
   elesfn$q.isBundledBezier = cachePrototypeStyleFunction('isBundledBezier', function () {
+    if (!this.cy().styleEnabled()) {
+      return false;
+    }
+
     return !this.removed() && this.pstyle('curve-style').value === 'bezier' && this.takesUpSpace();
   });
   elesfn$q.bypass = elesfn$q.css = elesfn$q.style;
@@ -16779,7 +16783,7 @@
         });
       });
     }, {});
-    var props = styfn$6.properties = [].concat(behavior, transition, visibility, overlay, ghost, commonLabel, labelDimensions, mainLabel, sourceLabel, targetLabel, nodeBody, nodeBorder, backgroundImage, pie, compound, edgeLine, edgeArrow, core$$1);
+    var props = styfn$6.properties = behavior.concat(transition, visibility, overlay, ghost, commonLabel, labelDimensions, mainLabel, sourceLabel, targetLabel, nodeBody, nodeBorder, backgroundImage, pie, compound, edgeLine, edgeArrow, core$$1);
     var propGroups = styfn$6.propertyGroups = {
       // common to all eles
       behavior: behavior,
@@ -31066,7 +31070,7 @@
     return style$$1;
   };
 
-  var version = "3.4.7";
+  var version = "3.4.8";
 
   var cytoscape = function cytoscape(options) {
     // if no options specified, use default

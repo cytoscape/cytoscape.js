@@ -226,7 +226,7 @@
             },
 
             {
-              "name": "cy.isDestroyed",
+              "name": "cy.destroyed",
               "descr": "Get whether the instance of Cytoscape.js has been destroyed or not."
             },
 

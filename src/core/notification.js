@@ -23,7 +23,7 @@ let corefn = ({
     let renderer = this.renderer();
 
     // exit if destroy() called on core or renderer in between frames #1499 #1528
-    if( this.isDestroyed() || !renderer ){ return; }
+    if( this.destroyed() || !renderer ){ return; }
 
     renderer.notify( params );
   },

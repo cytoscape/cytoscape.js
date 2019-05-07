@@ -281,6 +281,8 @@ util.extend( corefn, {
     _p.container = container;
     _p.styleEnabled = true;
 
+    cy.invalidateSize();
+
     cy.initRenderer( rOpts );
 
     cy.startAnimationLoop();

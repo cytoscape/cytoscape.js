@@ -195,7 +195,7 @@ util.extend( corefn, {
     return this._private.ready;
   },
 
-  isDestroyed: function(){
+  destroyed: function(){
     return this._private.destroyed;
   },
 
@@ -211,7 +211,7 @@ util.extend( corefn, {
 
   destroy: function(){
     let cy = this;
-    if( cy.isDestroyed() ) return;
+    if( cy.destroyed() ) return;
 
     cy.stopAnimationLoop();
 

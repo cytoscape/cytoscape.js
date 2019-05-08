@@ -301,7 +301,8 @@ BRp.applyPrefixedLabelDimensions = function( ele, prefix ){
   let labelDims = this.calculateLabelDimensions( ele, text );
   let lineHeight = ele.pstyle('line-height').pfValue;
   let textWrap = ele.pstyle('text-wrap').strValue;
-  let numLines = textWrap !== 'wrap' ? 1 : (util.getPrefixedProperty( _p.rscratch, 'labelWrapCachedLines', prefix ).length || 1);
+  let lines = util.getPrefixedProperty( _p.rscratch, 'labelWrapCachedLines', prefix ) || [];
+  let numLines = textWrap !== 'wrap' ? 1 : Math.max(lines.length, 1);
   let normPerLineHeight = labelDims.height / numLines;
   let labelLineHeight = normPerLineHeight * lineHeight;
 
@@ -314,7 +315,7 @@ BRp.applyPrefixedLabelDimensions = function( ele, prefix ){
   util.setPrefixedProperty( _p.rstyle,   'labelHeight', prefix, height );
   util.setPrefixedProperty( _p.rscratch, 'labelHeight', prefix, height );
 
-  _p.rscratch.labelLineHeight = labelLineHeight;
+  util.setPrefixedProperty( _p.rscratch, 'labelLineHeight', prefix, labelLineHeight );
 };
 
 BRp.getLabelText = function( ele, prefix ){

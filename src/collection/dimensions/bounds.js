@@ -296,8 +296,8 @@ let updateBoundsFromLabel = function( bounds, ele, prefix ){
     let halfBorderWidth = borderWidth / 2;
     let padding = ele.pstyle( 'text-background-padding' ).pfValue;
 
-    let lh = labelHeight + 2 * padding;
-    let lw = labelWidth + 2 * padding;
+    let lh = labelHeight;
+    let lw = labelWidth;
     let lw_2 = lw / 2;
     let lh_2 = lh / 2;
     let lx1, lx2, ly1, ly2;
@@ -344,10 +344,10 @@ let updateBoundsFromLabel = function( bounds, ele, prefix ){
     }
 
     // shift by margin and expand by outline and border
-    lx1 += marginX - Math.max( outlineWidth, halfBorderWidth );
-    lx2 += marginX + Math.max( outlineWidth, halfBorderWidth );
-    ly1 += marginY - Math.max( outlineWidth, halfBorderWidth );
-    ly2 += marginY + Math.max( outlineWidth, halfBorderWidth );
+    lx1 += marginX - Math.max( outlineWidth, halfBorderWidth ) - padding;
+    lx2 += marginX + Math.max( outlineWidth, halfBorderWidth ) + padding;
+    ly1 += marginY - Math.max( outlineWidth, halfBorderWidth ) - padding;
+    ly2 += marginY + Math.max( outlineWidth, halfBorderWidth ) + padding;
 
     // always store the unrotated label bounds separately
     let bbPrefix = prefix || 'main';

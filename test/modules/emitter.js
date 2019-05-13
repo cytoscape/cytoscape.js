@@ -1,5 +1,5 @@
-var expect = require('chai').expect;
-var Emitter = require('../../src/emitter').default;
+import { expect } from 'chai';
+import Emitter from '../../src/emitter';
 
 describe('Emitter', function(){
   var em;
@@ -116,6 +116,50 @@ describe('Emitter', function(){
     em.on('foo', lis2);
 
     em.removeListener('foo', lis1);
+
+    em.emit('foo');
+
+    expect( emit1 ).to.be.false;
+    expect( emit2 ).to.be.true;
+  });
+
+  it('namespace * not removed for general event', function(){
+    var emit1 = false, emit2 = false;
+
+    var lis1 = function(){
+      emit1 = true;
+    };
+
+    var lis2 = function(){
+      emit2 = true;
+    };
+
+    em.on('foo', lis1);
+    em.on('foo.*', lis2);
+
+    em.removeListener('foo');
+
+    em.emit('foo');
+
+    expect( emit1 ).to.be.false;
+    expect( emit2 ).to.be.true;
+  });
+
+  it('does not remove namespace * events when removing all listeners', function(){
+    var emit1 = false, emit2 = false;
+
+    var lis1 = function(){
+      emit1 = true;
+    };
+
+    var lis2 = function(){
+      emit2 = true;
+    };
+
+    em.on('foo', lis1);
+    em.on('foo.*', lis2);
+
+    em.removeAllListeners();
 
     em.emit('foo');
 

@@ -31,8 +31,9 @@ const defaults = {
 };
 
 let defaultsKeys = Object.keys( defaults );
+let emptyOpts = {};
 
-function Emitter( opts, context ){
+function Emitter( opts = emptyOpts, context ){
   // micro-optimisation vs Object.assign() -- reduces Element instantiation time
   for( let i = 0; i < defaultsKeys.length; i++ ){
     let key = defaultsKeys[i];
@@ -154,7 +155,7 @@ p.removeListener = p.off = function( events, qualifier, callback, conf ){
     forEachEvent( this, function( self, event, type, namespace, qualifier, callback/*, conf*/ ){
       if(
         ( listener.type === type ) &&
-        ( !namespace || listener.namespace === namespace ) &&
+        ( (!namespace && listener.namespace !== '.*') || listener.namespace === namespace ) &&
         ( !qualifier || self.qualifierCompare( listener.qualifier, qualifier ) ) &&
         ( !callback || listener.callback === callback )
       ){

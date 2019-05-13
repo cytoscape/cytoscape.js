@@ -653,6 +653,23 @@ describe('Events', function(){
       expect(Nb).to.equal(0);
     });
 
+    it('does not remove * namespace for event foo', function(){
+      var flag1 = false;
+      var flag2 = false;
+      var lis1 = function(){ flag1 = true; };
+      var lis2 = function(){ flag2 = true; };
+
+      cy.on('foo', lis1);
+      cy.on('foo.*', lis2);
+
+      cy.removeListener('foo');
+
+      cy.emit('foo');
+
+      expect(flag1).to.be.false;
+      expect(flag2).to.be.true;
+    });
+
   });
 
   describe('cy.trigger()', function(){
@@ -1011,6 +1028,24 @@ describe('Events', function(){
       expect(i, 'i').to.equal(2);
       expect(pre, 'pre').to.equal(2);
       expect(post, 'post').to.equal(2);
+    });
+
+    it('does not remove * namespace for event foo', function(){
+      var n = cy.nodes()[0];
+      var flag1 = false;
+      var flag2 = false;
+      var lis1 = function(){ flag1 = true; };
+      var lis2 = function(){ flag2 = true; };
+
+      n.on('foo', lis1);
+      n.on('foo.*', lis2);
+
+      n.removeListener('foo');
+
+      n.emit('foo');
+
+      expect(flag1).to.be.false;
+      expect(flag2).to.be.true;
     });
 
   });

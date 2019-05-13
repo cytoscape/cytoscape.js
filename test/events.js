@@ -442,7 +442,7 @@ describe('Events', function(){
       expect(fooBar).to.be.true;
     });
 
-    it('allows underscore in event namespace', function(){
+    it('allows dash in event namespace', function(){
       var bar = false;
       var barBaz = false;
       var foo = false;
@@ -460,7 +460,7 @@ describe('Events', function(){
       expect(barBaz, 'foo.bar-baz').to.be.true;
     });
 
-    it('allows dash in event name', function(){
+    it('allows underscore in event name', function(){
       var foo = false;
       var fooBar = false;
 

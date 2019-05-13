@@ -291,7 +291,7 @@
             {
               "name": "cy.on",
               "pureAliases": ["cy.bind", "cy.listen", "cy.addListener"],
-              "descr": "Listen to events that occur in the graph.",
+              "descr": "Listen to events that occur on the core.",
               "formats": [
                 {
                   "args": [
@@ -321,7 +321,7 @@
 
             {
               "name": "cy.one",
-              "descr": "Listen to events that occur in the graph, and run the handler only once.",
+              "descr": "Listen to events that occur on the core, and run the handler only once.",
               "formats": [
                 {
                   "args": [
@@ -337,7 +337,7 @@
             {
               "name": "cy.removeListener",
               "pureAliases": ["cy.off", "cy.unbind", "cy.unlisten"],
-              "descr": "Remove event handlers.",
+              "descr": "Remove event handlers on the core.",
               "formats": [
                 {
                   "args": [
@@ -348,6 +348,11 @@
                 }
               ],
               "md": "core/removeListener"
+            },
+
+            {
+              "name": "cy.removeAllListeners",
+              "descr": "Remove all event handlers on the core."
             },
 
             {
@@ -1139,6 +1144,11 @@
                 }
               ],
               "md": "collection/removeListener"
+            },
+
+            {
+              "name": "eles.removeAllListeners",
+              "descr": "Remove all event handlers on the elements."
             },
 
             {
@@ -3708,6 +3718,11 @@
                 }
               ],
               "md": "layout/removeListener"
+            },
+
+            {
+              "name": "layout.removeAllListeners",
+              "descr": "Remove all event handlers on the layout."
             },
 
             {

@@ -64,6 +64,12 @@ let elesfn = ({
     return this;
   },
 
+  removeAllListeners: function(){
+    this.emitter().removeAllListeners();
+
+    return this;
+  },
+
   one: function( events, selector, callback ){
     this.emitter().one( events, argSelector(selector), callback );
 

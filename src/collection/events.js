@@ -90,6 +90,16 @@ let elesfn = ({
     return this;
   },
 
+  removeAllListeners: function(){
+    for( let i = 0; i < this.length; i++ ){
+      let ele = this[i];
+
+      ele.emitter().removeAllListeners();
+    }
+
+    return this;
+  },
+
   one: function( events, selector, callback ){
     let argSel = argSelector(selector);
 

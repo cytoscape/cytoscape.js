@@ -670,6 +670,41 @@ describe('Events', function(){
       expect(flag2).to.be.true;
     });
 
+    it('does not remove * namespace for all events', function(){
+      var flag1 = false;
+      var flag2 = false;
+      var lis1 = function(){ flag1 = true; };
+      var lis2 = function(){ flag2 = true; };
+
+      cy.on('foo', lis1);
+      cy.on('foo.*', lis2);
+
+      cy.removeAllListeners();
+
+      cy.emit('foo');
+
+      expect(flag1).to.be.false;
+      expect(flag2).to.be.true;
+    });
+
+    it('removes all event types', function(){
+      var flag1 = false;
+      var flag2 = false;
+      var lis1 = function(){ flag1 = true; };
+      var lis2 = function(){ flag2 = true; };
+
+      cy.on('foo', lis1);
+      cy.on('bar', lis2);
+
+      cy.removeAllListeners();
+
+      cy.emit('foo');
+      cy.emit('bar');
+
+      expect(flag1).to.be.false;
+      expect(flag2).to.be.false;
+    });
+
   });
 
   describe('cy.trigger()', function(){
@@ -1046,6 +1081,43 @@ describe('Events', function(){
 
       expect(flag1).to.be.false;
       expect(flag2).to.be.true;
+    });
+
+    it('does not remove * namespace for all events', function(){
+      var n = cy.nodes()[0];
+      var flag1 = false;
+      var flag2 = false;
+      var lis1 = function(){ flag1 = true; };
+      var lis2 = function(){ flag2 = true; };
+
+      n.on('foo', lis1);
+      n.on('foo.*', lis2);
+
+      n.removeAllListeners();
+
+      n.emit('foo');
+
+      expect(flag1).to.be.false;
+      expect(flag2).to.be.true;
+    });
+
+    it('removes all event types', function(){
+      var n = cy.nodes()[0];
+      var flag1 = false;
+      var flag2 = false;
+      var lis1 = function(){ flag1 = true; };
+      var lis2 = function(){ flag2 = true; };
+
+      n.on('foo', lis1);
+      n.on('bar', lis2);
+
+      n.removeAllListeners();
+
+      n.emit('foo');
+      n.emit('bar');
+
+      expect(flag1).to.be.false;
+      expect(flag2).to.be.false;
     });
 
   });

@@ -126,6 +126,7 @@ function setExtension( type, name, registrant ){
       one: function( evt, cb ){ this.emitter().one( evt, cb ); return this; },
       once: function( evt, cb ){ this.emitter().one( evt, cb ); return this; },
       removeListener: function( evt, cb ){ this.emitter().removeListener( evt, cb ); return this; },
+      removeAllListeners: function(){ this.emitter().removeAllListeners(); return this; },
       emit: function( evt, params ){ this.emitter().emit( evt, params ); return this; }
     } );
 

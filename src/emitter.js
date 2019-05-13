@@ -154,7 +154,7 @@ p.removeListener = p.off = function( events, qualifier, callback, conf ){
 
     forEachEvent( this, function( self, event, type, namespace, qualifier, callback/*, conf*/ ){
       if(
-        ( listener.type === type ) &&
+        ( listener.type === type || events === '*' ) &&
         ( (!namespace && listener.namespace !== '.*') || listener.namespace === namespace ) &&
         ( !qualifier || self.qualifierCompare( listener.qualifier, qualifier ) ) &&
         ( !callback || listener.callback === callback )
@@ -167,6 +167,10 @@ p.removeListener = p.off = function( events, qualifier, callback, conf ){
   }
 
   return this;
+};
+
+p.removeAllListeners = function(){
+  return this.removeListener('*');
 };
 
 p.emit = p.trigger = function( events, extraParams, manualCallback ){

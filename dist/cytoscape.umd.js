@@ -9672,8 +9672,8 @@
       var borderWidth = ele.pstyle('text-border-width').pfValue;
       var halfBorderWidth = borderWidth / 2;
       var padding = ele.pstyle('text-background-padding').pfValue;
-      var lh = labelHeight + 2 * padding;
-      var lw = labelWidth + 2 * padding;
+      var lh = labelHeight;
+      var lw = labelWidth;
       var lw_2 = lw / 2;
       var lh_2 = lh / 2;
       var lx1, lx2, ly1, ly2;
@@ -9720,10 +9720,10 @@
       } // shift by margin and expand by outline and border
 
 
-      lx1 += marginX - Math.max(outlineWidth, halfBorderWidth);
-      lx2 += marginX + Math.max(outlineWidth, halfBorderWidth);
-      ly1 += marginY - Math.max(outlineWidth, halfBorderWidth);
-      ly2 += marginY + Math.max(outlineWidth, halfBorderWidth); // always store the unrotated label bounds separately
+      lx1 += marginX - Math.max(outlineWidth, halfBorderWidth) - padding;
+      lx2 += marginX + Math.max(outlineWidth, halfBorderWidth) + padding;
+      ly1 += marginY - Math.max(outlineWidth, halfBorderWidth) - padding;
+      ly2 += marginY + Math.max(outlineWidth, halfBorderWidth) + padding; // always store the unrotated label bounds separately
 
       var bbPrefix = prefix || 'main';
       var bbs = _p.labelBounds;
@@ -18773,6 +18773,7 @@
       cy.destroyRenderer();
       _p.container = container;
       _p.styleEnabled = true;
+      cy.invalidateSize();
       cy.initRenderer(rOpts);
       cy.startAnimationLoop();
       cy.style(options.style);
@@ -23644,7 +23645,8 @@
     var labelDims = this.calculateLabelDimensions(ele, text);
     var lineHeight = ele.pstyle('line-height').pfValue;
     var textWrap = ele.pstyle('text-wrap').strValue;
-    var numLines = textWrap !== 'wrap' ? 1 : getPrefixedProperty(_p.rscratch, 'labelWrapCachedLines', prefix).length || 1;
+    var lines = getPrefixedProperty(_p.rscratch, 'labelWrapCachedLines', prefix) || [];
+    var numLines = textWrap !== 'wrap' ? 1 : Math.max(lines.length, 1);
     var normPerLineHeight = labelDims.height / numLines;
     var labelLineHeight = normPerLineHeight * lineHeight;
     var width = labelDims.width;
@@ -23653,7 +23655,7 @@
     setPrefixedProperty(_p.rscratch, 'labelWidth', prefix, width);
     setPrefixedProperty(_p.rstyle, 'labelHeight', prefix, height);
     setPrefixedProperty(_p.rscratch, 'labelHeight', prefix, height);
-    _p.rscratch.labelLineHeight = labelLineHeight;
+    setPrefixedProperty(_p.rscratch, 'labelLineHeight', prefix, labelLineHeight);
   };
 
   BRp$6.getLabelText = function (ele, prefix) {
@@ -29398,7 +29400,7 @@
 
       if (ele.pstyle('text-wrap').value === 'wrap') {
         var lines = getPrefixedProperty(rscratch, 'labelWrapCachedLines', prefix);
-        var lineHeight = _p.rscratch.labelLineHeight;
+        var lineHeight = getPrefixedProperty(rscratch, 'labelLineHeight', prefix);
         var halfTextW = textW / 2;
         var justification = this.getLabelJustification(ele);
 
@@ -31487,7 +31489,7 @@
     return style;
   };
 
-  var version = "3.6.0";
+  var version = "3.6.1";
 
   var cytoscape = function cytoscape(options) {
     // if no options specified, use default

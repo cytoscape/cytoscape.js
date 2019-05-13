@@ -20,6 +20,7 @@ The extensions below are a curated list.  To add your extension, [please submit 
 
 ## UI extensions
 
+ * <i class="fa fa-fw fa-users"></i> [`anywhere-panning`](https://github.com/lambdalisue/cytoscape-anywhere-panning) : Allow panning when dragging on nodes or edges.
  * <i class="fa fa-fw fa-user"></i> [`automove`](https://github.com/cytoscape/cytoscape.js-automove) : Automatically update node positions based on specified rules (e.g. synching node movements, constraining movements, etc.)
  * <i class="fa fa-fw fa-user"></i> [`autopan-on-drag`](https://github.com/iVis-at-Bilkent/cytoscape.js-autopan-on-drag) : Automatically pan the viewport when nodes are dragged outside of the viewport bounds.
  * <i class="fa fa-fw fa-users"></i> [`canvas`](https://github.com/classcraft/cytoscape.js-canvas) : An extension to create a canvas over or under a Cytoscape graph. Useful for customizing nodes/edges, drawing backgrounds, etc.
@@ -53,6 +54,7 @@ The extensions below are a curated list.  To add your extension, [please submit 
  * <i class="fa fa-fw fa-user"></i> [`avsdf`](https://github.com/iVis-at-Bilkent/cytoscape.js-avsdf) : The AVSDF layout.  It organises nodes in a circle and tries to minimise edge crossings as much as possible.
  * <i class="fa fa-fw fa-user"></i> [`cose-bilkent`](https://github.com/cytoscape/cytoscape.js-cose-bilkent) : The CoSE layout by Bilkent with enhanced compound node placement.  CoSE Bilkent gives near-perfect end results.  However, it's more expensive than the version of CoSE directly included with Cytoscape.js.
  * <i class="fa fa-fw fa-user"></i> [`dagre`](https://github.com/cytoscape/cytoscape.js-dagre) : The Dagre layout for DAGs and trees.
+ * <i class="fa fa-fw fa-users"></i> [`elk`](https://github.com/jfstephe/cytoscape.js-elk) : [ELK](https://github.com/OpenKieler/elkjs) layout algorithm adapter for Cytoscape.js.
  * <i class="fa fa-fw fa-user"></i> [`euler`](https://github.com/cytoscape/cytoscape.js-euler) : Euler is a fast, small file-size, high-quality force-directed (physics simulation) layout.  It is excellent for non-compound graphs, and it has basic support for compound graphs.
  * <i class="fa fa-fw fa-user"></i> [`fcose`](https://github.com/iVis-at-Bilkent/cytoscape.js-fcose) : The fCoSE layout is a faster version of the CoSE-Bilkent layout.  It supports compound and non-compound graphs, giving top-tier end results and high performance for a force-directed layout.
  * <i class="fa fa-fw fa-user"></i> [`klay`](https://github.com/cytoscape/cytoscape.js-klay) : Klay is a layout that works well for most types of graphs.  It gives good results for ordinary graphs, and it handles DAGs and compound graphs very nicely.
@@ -66,11 +68,20 @@ The extensions below are a curated list.  To add your extension, [please submit 
 
  * <i class="fa fa-fw fa-users"></i> [`all-paths`](https://github.com/daniel-dx/cytoscape-all-paths) : Gets all longest, directed paths.
  * <i class="fa fa-fw fa-user"></i> [`clipboard`](https://github.com/iVis-at-Bilkent/cytoscape.js-clipboard) : Adds copy-paste utilities to Cytoscape.js.
+ * <i class="fa fa-fw fa-users"></i> [`dblclick`](https://github.com/lambdalisue/cytoscape-dblclick) : Adds a `dblclick` event to Cytoscape.js.
  * <i class="fa fa-fw fa-user"></i> [`graphml`](https://github.com/iVis-at-Bilkent/cytoscape.js-graphml) : Adds GraphML import and export functionality to Cytoscape.js.
- * <i class="fa fa-fw fa-user"></i> [`sbgn-stylesheet`](https://github.com/PathwayCommons/cytoscape-sbgn-stylesheet) : A stylesheet preset for [SBGN](https://sbgn.github.io/sbgn/).
- * <i class="fa fa-fw fa-user"></i> [`sbgnml-to-cytoscape`](https://github.com/PathwayCommons/sbgnml-to-cytoscape) : Converts XML-based [SBGN](https://sbgn.github.io/sbgn/) files to Cytoscape.js JSON.
  * <i class="fa fa-fw fa-user"></i> [`undo-redo`](https://github.com/iVis-at-Bilkent/cytoscape.js-undo-redo) : Adds undo-redo APIs to Cytoscape.js.
  * <i class="fa fa-fw fa-user"></i> [`view-utilities`](https://github.com/iVis-at-Bilkent/cytoscape.js-view-utilities) : Adds search and highlight APIs to Cytoscape.js.
+
+## Utility packages
+
+ * <i class="fa fa-fw fa-user"></i> [`cytosnap`](https://github.com/cytoscape/cytosnap) : A Node.js package that renders images of Cytoscape.js graphs on the server using Puppeteer.
+ * <i class="fa fa-fw fa-users"></i> [`ngx-cytoscape`](https://github.com/calvinvette/ngx-cytoscape) : An Angular 5+ component for Cytoscape.js.
+ * <i class="fa fa-fw fa-user"></i> [`react-cytoscapejs`](https://github.com/plotly/react-cytoscapejs) : A [React](https://reactjs.org) component for Cytoscape.js network visualisations.
+ * <i class="fa fa-fw fa-users"></i> [`sif.js`](https://github.com/jmvillaveces/sif.js) : A javascript library to parse simple interaction file (SIF) files.
+ * <i class="fa fa-fw fa-user"></i> [`sbgn-stylesheet`](https://github.com/PathwayCommons/cytoscape-sbgn-stylesheet) : A stylesheet preset for [SBGN](https://sbgn.github.io/sbgn/).
+ * <i class="fa fa-fw fa-user"></i> [`sbgnml-to-cytoscape`](https://github.com/PathwayCommons/sbgnml-to-cytoscape) : Converts XML-based [SBGN](https://sbgn.github.io/sbgn/) files to Cytoscape.js JSON.
+ * <i class="fa fa-fw fa-users"></i> [`vue-cytoscape`](https://www.npmjs.com/package/vue-cytoscape) : A [Vue](https://vuejs.org) component for Cytoscape.js.
 
 
 ## Registration

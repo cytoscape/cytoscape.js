@@ -44,6 +44,7 @@
  * Used by
   * [Active Value Advisors](http://www.activevalue.eu/) : [How-4](http://www.how-4.com/)
   * [Agile Protein Interactomes DataServer](http://apid.dep.usal.es/)
+  * [Almanax](https://alman.ax/#/about)
   * [Aras](http://www.aras.com/)
   * [Ben-Gurion University of the Negev](http://bgu.ac.il/)
    * [DiffNet](http://netbio.bgu.ac.il/diffnet/)
@@ -73,6 +74,7 @@
   * [Machine2Learn](https://www.machine2learn.com) : [Deep Learning Model Generator](https://www.machine2learn.com/deep-learning-model-generator/)
   * [Max Plank Institute of Molecular Cell Physiology](https://www.mpimp-golm.mpg.de) : [CoNekT](http://conekt.mpimp-golm.mpg.de/pub/)
   * [Musicalized](http://en.musicalized.com/full)
+  * [New Relic](https://newrelic.com/platform)
   * [NDEx](http://www.ndexbio.org/)
   * [OHDSI](http://www.ohdsi.org/)
   * [Pathway Commons](http://www.pathwaycommons.org)

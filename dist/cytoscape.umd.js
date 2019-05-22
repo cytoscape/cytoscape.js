@@ -1603,18 +1603,18 @@
       dfs: params.dfs || !params.bfs
     }; // from pseudocode on wikipedia
 
-    return function searchFn(roots, fn$1, directed) {
+    return function searchFn(roots, fn$$1, directed) {
       var options;
 
       if (plainObject(roots) && !elementOrCollection(roots)) {
         options = roots;
         roots = options.roots || options.root;
-        fn$1 = options.visit;
+        fn$$1 = options.visit;
         directed = options.directed;
       }
 
-      directed = arguments.length === 2 && !fn(fn$1) ? fn$1 : directed;
-      fn$1 = fn(fn$1) ? fn$1 : function () {};
+      directed = arguments.length === 2 && !fn(fn$$1) ? fn$$1 : directed;
+      fn$$1 = fn(fn$$1) ? fn$$1 : function () {};
       var cy = this._private.cy;
       var v = roots = string(roots) ? this.filter(roots) : roots;
       var Q = [];
@@ -1665,7 +1665,7 @@
         var tgt = prevEdge != null ? prevEdge.target() : null;
         var prevNode = prevEdge == null ? undefined : v.same(src) ? tgt[0] : src[0];
         var ret = void 0;
-        ret = fn$1(v, prevEdge, prevNode, j++, depth);
+        ret = fn$$1(v, prevEdge, prevNode, j++, depth);
 
         if (ret === true) {
           found = v;
@@ -2972,9 +2972,6 @@
     }
   }; // elesfn
 
-  var arePositionsSame = function arePositionsSame(p1, p2) {
-    return p1.x === p2.x && p1.y === p2.y;
-  };
   var copyPosition = function copyPosition(p) {
     return {
       x: p.x,
@@ -3139,9 +3136,6 @@
 
     return v;
   };
-  var normalize = function normalize(v) {
-    return inPlaceSumNormalize(v.slice());
-  }; // from http://en.wikipedia.org/wiki/Bézier_curve#Quadratic_curves
 
   var qbezierAt = function qbezierAt(p0, p1, p2, t) {
     return (1 - t) * (1 - t) * p0 + 2 * (1 - t) * t * p1 + t * t * p2;
@@ -3168,16 +3162,6 @@
       x: p0.x + normVec.x * d,
       y: p0.y + normVec.y * d
     };
-  };
-  var lineAtDist = function lineAtDist(p0, p1, d) {
-    return lineAt(p0, p1, undefined, d);
-  }; // get angle at A via cosine law
-
-  var triangleAngle = function triangleAngle(A, B, C) {
-    var a = dist(B, C);
-    var b = dist(A, C);
-    var c = dist(A, B);
-    return Math.acos((a * a + b * b - c * c) / (2 * a * b));
   };
   var bound = function bound(min, val, max) {
     return Math.max(min, Math.min(max, val));
@@ -3233,16 +3217,6 @@
     bb.w = 0;
     bb.h = 0;
   };
-  var shiftBoundingBox = function shiftBoundingBox(bb, dx, dy) {
-    return {
-      x1: bb.x1 + dx,
-      x2: bb.x2 + dx,
-      y1: bb.y1 + dy,
-      y2: bb.y2 + dy,
-      w: bb.w,
-      h: bb.h
-    };
-  };
   var updateBoundingBox = function updateBoundingBox(bb1, bb2) {
     // update bb1 with bb2 bounds
     bb1.x1 = Math.min(bb1.x1, bb2.x1);
@@ -3270,20 +3244,6 @@
     bb.h = bb.y2 - bb.y1;
     return bb;
   };
-
-  var expandToInt = function expandToInt(x) {
-    return x > 0 ? Math.ceil(x) : Math.floor(x);
-  };
-
-  var expandBoundingBoxToInts = function expandBoundingBoxToInts(bb) {
-    var padding = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
-    bb.x1 = expandToInt(bb.x1 - padding);
-    bb.y1 = expandToInt(bb.y1 - padding);
-    bb.x2 = expandToInt(bb.x2 + padding);
-    bb.y2 = expandToInt(bb.y2 + padding);
-    bb.w = bb.x2 - bb.x1;
-    bb.h = bb.y2 - bb.y1;
-  }; // assign the values of bb2 into bb1
 
   var assignBoundingBox = function assignBoundingBox(bb1, bb2) {
     bb1.x1 = bb2.x1;
@@ -3802,28 +3762,6 @@
       return [nearIntersectionX, nearIntersectionY];
     }
   };
-  var findCircleNearPoint = function findCircleNearPoint(centerX, centerY, radius, farX, farY) {
-    var displacementX = farX - centerX;
-    var displacementY = farY - centerY;
-    var distance = Math.sqrt(displacementX * displacementX + displacementY * displacementY);
-    var unitDisplacementX = displacementX / distance;
-    var unitDisplacementY = displacementY / distance;
-    return [centerX + unitDisplacementX * radius, centerY + unitDisplacementY * radius];
-  };
-  var findMaxSqDistanceToOrigin = function findMaxSqDistanceToOrigin(points) {
-    var maxSqDistance = 0.000001;
-    var sqDistance;
-
-    for (var i = 0; i < points.length / 2; i++) {
-      sqDistance = points[i * 2] * points[i * 2] + points[i * 2 + 1] * points[i * 2 + 1];
-
-      if (sqDistance > maxSqDistance) {
-        maxSqDistance = sqDistance;
-      }
-    }
-
-    return maxSqDistance;
-  };
   var midOfThree = function midOfThree(a, b, c) {
     if (b <= a && a <= c || c <= a && a <= b) {
       return a;
@@ -4032,73 +3970,6 @@
       ctrlPtOffsetPct: 0.05
     };
   };
-
-  var math = /*#__PURE__*/Object.freeze({
-    arePositionsSame: arePositionsSame,
-    copyPosition: copyPosition,
-    modelToRenderedPosition: modelToRenderedPosition,
-    renderedToModelPosition: renderedToModelPosition,
-    array2point: array2point,
-    min: min,
-    max: max,
-    mean: mean,
-    median: median,
-    deg2rad: deg2rad,
-    getAngleFromDisp: getAngleFromDisp,
-    log2: log2,
-    signum: signum,
-    dist: dist,
-    sqdist: sqdist,
-    inPlaceSumNormalize: inPlaceSumNormalize,
-    normalize: normalize,
-    qbezierAt: qbezierAt,
-    qbezierPtAt: qbezierPtAt,
-    lineAt: lineAt,
-    lineAtDist: lineAtDist,
-    triangleAngle: triangleAngle,
-    bound: bound,
-    makeBoundingBox: makeBoundingBox,
-    copyBoundingBox: copyBoundingBox,
-    clearBoundingBox: clearBoundingBox,
-    shiftBoundingBox: shiftBoundingBox,
-    updateBoundingBox: updateBoundingBox,
-    expandBoundingBoxByPoint: expandBoundingBoxByPoint,
-    expandBoundingBox: expandBoundingBox,
-    expandBoundingBoxToInts: expandBoundingBoxToInts,
-    assignBoundingBox: assignBoundingBox,
-    assignShiftToBoundingBox: assignShiftToBoundingBox,
-    boundingBoxesIntersect: boundingBoxesIntersect,
-    inBoundingBox: inBoundingBox,
-    pointInBoundingBox: pointInBoundingBox,
-    boundingBoxInBoundingBox: boundingBoxInBoundingBox,
-    roundRectangleIntersectLine: roundRectangleIntersectLine,
-    inLineVicinity: inLineVicinity,
-    inBezierVicinity: inBezierVicinity,
-    solveQuadratic: solveQuadratic,
-    solveCubic: solveCubic,
-    sqdistToQuadraticBezier: sqdistToQuadraticBezier,
-    sqdistToFiniteLine: sqdistToFiniteLine,
-    pointInsidePolygonPoints: pointInsidePolygonPoints,
-    pointInsidePolygon: pointInsidePolygon,
-    joinLines: joinLines,
-    expandPolygon: expandPolygon,
-    intersectLineEllipse: intersectLineEllipse,
-    checkInEllipse: checkInEllipse,
-    intersectLineCircle: intersectLineCircle,
-    findCircleNearPoint: findCircleNearPoint,
-    findMaxSqDistanceToOrigin: findMaxSqDistanceToOrigin,
-    midOfThree: midOfThree,
-    finiteLinesIntersect: finiteLinesIntersect,
-    polygonIntersectLine: polygonIntersectLine,
-    shortenIntersection: shortenIntersection,
-    generateUnitNgonPointsFitToSquare: generateUnitNgonPointsFitToSquare,
-    fitPolygonToSquare: fitPolygonToSquare,
-    generateUnitNgonPoints: generateUnitNgonPoints,
-    getRoundRectangleRadius: getRoundRectangleRadius,
-    getCutRectangleCornerLength: getCutRectangleCornerLength,
-    bezierPtsToQuadCoeff: bezierPtsToQuadCoeff,
-    getBarrelCurveConstants: getBarrelCurveConstants
-  });
 
   var pageRankDefaults = defaults({
     dampingFactor: 0.8,
@@ -5853,14 +5724,14 @@
 
     for (var i = 0; i < n; i++) {
       var index = -1;
-      var max = -Infinity;
+      var max$$1 = -Infinity;
 
       for (var ei = 0; ei < exemplars.length; ei++) {
         var e = exemplars[ei];
 
-        if (S[i * n + e] > max) {
+        if (S[i * n + e] > max$$1) {
           index = e;
-          max = S[i * n + e];
+          max$$1 = S[i * n + e];
         }
       }
 
@@ -5995,7 +5866,7 @@
       // main algorithmic loop
       // Update R responsibility matrix
       for (var _i8 = 0; _i8 < n; _i8++) {
-        var max = -Infinity,
+        var max$$1 = -Infinity,
             max2 = -Infinity,
             maxI = -1,
             AS = 0.0;
@@ -6004,9 +5875,9 @@
           old[_j] = R[_i8 * n + _j];
           AS = A[_i8 * n + _j] + S[_i8 * n + _j];
 
-          if (AS >= max) {
-            max2 = max;
-            max = AS;
+          if (AS >= max$$1) {
+            max2 = max$$1;
+            max$$1 = AS;
             maxI = _j;
           } else if (AS > max2) {
             max2 = AS;
@@ -6014,7 +5885,7 @@
         }
 
         for (var _j2 = 0; _j2 < n; _j2++) {
-          R[_i8 * n + _j2] = (1 - opts.damping) * (S[_i8 * n + _j2] - max) + opts.damping * old[_j2];
+          R[_i8 * n + _j2] = (1 - opts.damping) * (S[_i8 * n + _j2] - max$$1) + opts.damping * old[_j2];
         }
 
         R[_i8 * n + maxI] = (1 - opts.damping) * (S[_i8 * n + maxI] - max2) + opts.damping * old[maxI];
@@ -6603,7 +6474,7 @@
 
       return this;
     },
-    promise: function promise(type) {
+    promise: function promise$$1(type) {
       var _p = this._private;
       var arr;
 
@@ -6717,7 +6588,7 @@
           return this;
         }
 
-        var style = cy.style();
+        var style$$1 = cy.style();
         properties = extend({}, properties, params);
         var propertiesEmpty = Object.keys(properties).length === 0;
 
@@ -6740,7 +6611,7 @@
         }
 
         if (isEles) {
-          properties.style = style.getPropsList(properties.style || properties.css);
+          properties.style = style$$1.getPropsList(properties.style || properties.css);
           properties.css = undefined;
         }
 
@@ -6881,7 +6752,7 @@
   var define$1 = {
     // access data field
     data: function data(params) {
-      var defaults = {
+      var defaults$$1 = {
         field: 'data',
         bindingEvent: 'data',
         allowBinding: false,
@@ -6900,7 +6771,7 @@
           return true;
         }
       };
-      params = extend({}, defaults, params);
+      params = extend({}, defaults$$1, params);
       return function dataImpl(name, value) {
         var p = params;
         var self = this;
@@ -6991,8 +6862,8 @@
 
         } else if (p.allowBinding && fn(name)) {
           // bind to event
-          var fn$1 = name;
-          self.on(p.bindingEvent, fn$1); // .data()
+          var fn$$1 = name;
+          self.on(p.bindingEvent, fn$$1); // .data()
         } else if (p.allowGetting && name === undefined) {
           // get whole object
           var _ret;
@@ -7011,7 +6882,7 @@
     // data
     // remove data field
     removeData: function removeData(params) {
-      var defaults = {
+      var defaults$$1 = {
         field: 'data',
         event: 'data',
         triggerFnName: 'trigger',
@@ -7019,7 +6890,7 @@
         immutableKeys: {} // key => true if immutable
 
       };
-      params = extend({}, defaults, params);
+      params = extend({}, defaults$$1, params);
       return function removeDataImpl(names) {
         var p = params;
         var self = this;
@@ -8515,7 +8386,7 @@
   // does selector match a single element?
 
 
-  var matches$1 = function matches$1(ele) {
+  var matches$1 = function matches$$1(ele) {
     var self = this;
 
     for (var j = 0; j < self.length; j++) {
@@ -8675,7 +8546,7 @@
   elesfn$e.has = elesfn$e.contains;
   elesfn$e.equal = elesfn$e.equals = elesfn$e.same;
 
-  var cache = function cache(fn, name) {
+  var cache = function cache(fn$$1, name) {
     return function traversalCache(arg1, arg2, arg3, arg4) {
       var selectorOrEles = arg1;
       var eles = this;
@@ -8697,10 +8568,10 @@
         if (cacheHit) {
           return cacheHit;
         } else {
-          return ch[hash] = fn.call(eles, arg1, arg2, arg3, arg4);
+          return ch[hash] = fn$$1.call(eles, arg1, arg2, arg3, arg4);
         }
       } else {
-        return fn.call(eles, arg1, arg2, arg3, arg4);
+        return fn$$1.call(eles, arg1, arg2, arg3, arg4);
       }
     };
   };
@@ -9428,7 +9299,7 @@
       var _p = parent._private;
       var children = parent.children();
       var includeLabels = parent.pstyle('compound-sizing-wrt-labels').value === 'include';
-      var min = {
+      var min$$1 = {
         width: {
           val: parent.pstyle('min-width').pfValue,
           left: parent.pstyle('min-width-bias-left'),
@@ -9510,40 +9381,40 @@
         }
       }
 
-      var leftVal = min.width.left.value;
+      var leftVal = min$$1.width.left.value;
 
-      if (min.width.left.units === 'px' && min.width.val > 0) {
-        leftVal = leftVal * 100 / min.width.val;
+      if (min$$1.width.left.units === 'px' && min$$1.width.val > 0) {
+        leftVal = leftVal * 100 / min$$1.width.val;
       }
 
-      var rightVal = min.width.right.value;
+      var rightVal = min$$1.width.right.value;
 
-      if (min.width.right.units === 'px' && min.width.val > 0) {
-        rightVal = rightVal * 100 / min.width.val;
+      if (min$$1.width.right.units === 'px' && min$$1.width.val > 0) {
+        rightVal = rightVal * 100 / min$$1.width.val;
       }
 
-      var topVal = min.height.top.value;
+      var topVal = min$$1.height.top.value;
 
-      if (min.height.top.units === 'px' && min.height.val > 0) {
-        topVal = topVal * 100 / min.height.val;
+      if (min$$1.height.top.units === 'px' && min$$1.height.val > 0) {
+        topVal = topVal * 100 / min$$1.height.val;
       }
 
-      var bottomVal = min.height.bottom.value;
+      var bottomVal = min$$1.height.bottom.value;
 
-      if (min.height.bottom.units === 'px' && min.height.val > 0) {
-        bottomVal = bottomVal * 100 / min.height.val;
+      if (min$$1.height.bottom.units === 'px' && min$$1.height.val > 0) {
+        bottomVal = bottomVal * 100 / min$$1.height.val;
       }
 
-      var widthBiasDiffs = computeBiasValues(min.width.val - bb.w, leftVal, rightVal);
+      var widthBiasDiffs = computeBiasValues(min$$1.width.val - bb.w, leftVal, rightVal);
       var diffLeft = widthBiasDiffs.biasDiff;
       var diffRight = widthBiasDiffs.biasComplementDiff;
-      var heightBiasDiffs = computeBiasValues(min.height.val - bb.h, topVal, bottomVal);
+      var heightBiasDiffs = computeBiasValues(min$$1.height.val - bb.h, topVal, bottomVal);
       var diffTop = heightBiasDiffs.biasDiff;
       var diffBottom = heightBiasDiffs.biasComplementDiff;
       _p.autoPadding = computePaddingValues(bb.w, bb.h, parent.pstyle('padding'), parent.pstyle('padding-relative-to').value);
-      _p.autoWidth = Math.max(bb.w, min.width.val);
+      _p.autoWidth = Math.max(bb.w, min$$1.width.val);
       pos.x = (-diffLeft + bb.x1 + bb.x2 + diffRight) / 2;
-      _p.autoHeight = Math.max(bb.h, min.height.val);
+      _p.autoHeight = Math.max(bb.h, min$$1.height.val);
       pos.y = (-diffTop + bb.y1 + bb.y2 + diffBottom) / 2;
     }
 
@@ -10219,7 +10090,7 @@
   // - try to use for only things like discrete layouts where the node position would change anyway
 
 
-  elesfn$j.boundingBoxAt = function (fn) {
+  elesfn$j.boundingBoxAt = function (fn$$1) {
     var nodes = this.nodes();
     var cy = this.cy();
     var hasCompoundNodes = cy.hasCompoundNodes();
@@ -10230,16 +10101,16 @@
       });
     }
 
-    if (plainObject(fn)) {
-      var obj = fn;
+    if (plainObject(fn$$1)) {
+      var obj = fn$$1;
 
-      fn = function fn() {
+      fn$$1 = function fn$$1() {
         return obj;
       };
     }
 
     var storeOldPos = function storeOldPos(node, i) {
-      return node._private.bbAtOldPos = fn(node, i);
+      return node._private.bbAtOldPos = fn$$1(node, i);
     };
 
     var getOldPos = function getOldPos(node) {
@@ -10247,7 +10118,7 @@
     };
 
     cy.startBatch();
-    nodes.forEach(storeOldPos).silentPositions(fn);
+    nodes.forEach(storeOldPos).silentPositions(fn$$1);
 
     if (hasCompoundNodes) {
       this.updateCompoundBounds(true); // force update b/c we're inside a batch cycle
@@ -10602,8 +10473,12 @@
     context: null
   };
   var defaultsKeys = Object.keys(defaults$8);
+  var emptyOpts = {};
 
-  function Emitter(opts, context) {
+  function Emitter() {
+    var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : emptyOpts;
+    var context = arguments.length > 1 ? arguments[1] : undefined;
+
     // micro-optimisation vs Object.assign() -- reduces Element instantiation time
     for (var i = 0; i < defaultsKeys.length; i++) {
       var key = defaultsKeys[i];
@@ -10694,10 +10569,10 @@
   };
 
   p.on = p.addListener = function (events, qualifier, callback, conf, confOverrides) {
-    forEachEvent(this, function (self, event, type, namespace, qualifier, callback, conf) {
+    forEachEvent(this, function (self, event$$1, type, namespace, qualifier, callback, conf) {
       if (fn(callback)) {
         self.listeners.push({
-          event: event,
+          event: event$$1,
           // full event string
           callback: callback,
           // callback to run
@@ -10732,10 +10607,10 @@
 
     var _loop = function _loop(i) {
       var listener = listeners[i];
-      forEachEvent(_this, function (self, event, type, namespace, qualifier, callback
+      forEachEvent(_this, function (self, event$$1, type, namespace, qualifier, callback
       /*, conf*/
       ) {
-        if (listener.type === type && (!namespace || listener.namespace === namespace) && (!qualifier || self.qualifierCompare(listener.qualifier, qualifier)) && (!callback || listener.callback === callback)) {
+        if (listener.type === type && (!namespace && listener.namespace !== '.*' || listener.namespace === namespace) && (!qualifier || self.qualifierCompare(listener.qualifier, qualifier)) && (!callback || listener.callback === callback)) {
           listeners.splice(i, 1);
           return false;
         }
@@ -10924,7 +10799,7 @@
 
       return this;
     },
-    emitAndNotify: function emitAndNotify(event, extraParams) {
+    emitAndNotify: function emitAndNotify(event$$1, extraParams) {
       // for internal use only
       if (this.length === 0) {
         return;
@@ -10932,8 +10807,8 @@
       // notify renderer
 
 
-      this.cy().notify(event, this);
-      this.emit(event, extraParams);
+      this.cy().notify(event$$1, this);
+      this.emit(event$$1, extraParams);
       return this;
     }
   };
@@ -11006,11 +10881,11 @@
         var rMap = toRemove._private.map;
 
         for (var i = 0; i < this.length; i++) {
-          var element = this[i];
-          var remove = rMap.has(element.id());
+          var element$$1 = this[i];
+          var remove = rMap.has(element$$1.id());
 
           if (!remove) {
-            elements.push(element);
+            elements.push(element$$1);
           }
         }
 
@@ -11269,12 +11144,12 @@
 
       return arr;
     },
-    reduce: function reduce(fn, initialValue) {
+    reduce: function reduce(fn$$1, initialValue) {
       var val = initialValue;
       var eles = this;
 
       for (var i = 0; i < eles.length; i++) {
-        val = fn(val, eles[i], i, eles);
+        val = fn$$1(val, eles[i], i, eles);
       }
 
       return val;
@@ -11417,13 +11292,13 @@
   };
 
   var elesfn$o = {
-    forEach: function forEach(fn$1, thisArg) {
-      if (fn(fn$1)) {
+    forEach: function forEach(fn$$1, thisArg) {
+      if (fn(fn$$1)) {
         var N = this.length;
 
         for (var i = 0; i < N; i++) {
           var ele = this[i];
-          var ret = thisArg ? fn$1.apply(thisArg, [ele, i, this]) : fn$1(ele, i, this);
+          var ret = thisArg ? fn$$1.apply(thisArg, [ele, i, this]) : fn$$1(ele, i, this);
 
           if (ret === false) {
             break;
@@ -11435,16 +11310,16 @@
       return this;
     },
     toArray: function toArray() {
-      var array = [];
+      var array$$1 = [];
 
       for (var i = 0; i < this.length; i++) {
-        array.push(this[i]);
+        array$$1.push(this[i]);
       }
 
-      return array;
+      return array$$1;
     },
     slice: function slice(start, end) {
-      var array = [];
+      var array$$1 = [];
       var thisSize = this.length;
 
       if (end == null) {
@@ -11464,10 +11339,10 @@
       }
 
       for (var i = start; i >= 0 && i < end && i < thisSize; i++) {
-        array.push(this[i]);
+        array$$1.push(this[i]);
       }
 
-      return this.spawn(array);
+      return this.spawn(array$$1);
     },
     size: function size() {
       return this.length;
@@ -11487,7 +11362,7 @@
     nonempty: function nonempty() {
       return !this.empty();
     },
-    sort: function sort(sortFn) {
+    sort: function sort$$1(sortFn) {
       if (!fn(sortFn)) {
         return this;
       }
@@ -11711,7 +11586,7 @@
 
   elesfn$p.createLayout = elesfn$p.makeLayout = elesfn$p.layout;
 
-  function styleCache(key, fn, ele) {
+  function styleCache(key, fn$$1, ele) {
     var _p = ele._private;
     var cache = _p.styleCache = _p.styleCache || [];
     var val;
@@ -11719,23 +11594,23 @@
     if ((val = cache[key]) != null) {
       return val;
     } else {
-      val = cache[key] = fn(ele);
+      val = cache[key] = fn$$1(ele);
       return val;
     }
   }
 
-  function cacheStyleFunction(key, fn) {
+  function cacheStyleFunction(key, fn$$1) {
     key = hashString(key);
     return function cachedStyleFunction(ele) {
-      return styleCache(key, fn, ele);
+      return styleCache(key, fn$$1, ele);
     };
   }
 
-  function cachePrototypeStyleFunction(key, fn) {
+  function cachePrototypeStyleFunction(key, fn$$1) {
     key = hashString(key);
 
     var selfFn = function selfFn(ele) {
-      return fn.call(ele);
+      return fn$$1.call(ele);
     };
 
     return function cachedPrototypeStyleFunction() {
@@ -11795,7 +11670,7 @@
       }
 
       var hasCompounds = cy.hasCompoundNodes();
-      var style = cy.style();
+      var style$$1 = cy.style();
       var updatedEles = this;
       notifyRenderer = notifyRenderer || notifyRenderer === undefined ? true : false;
 
@@ -11804,7 +11679,7 @@
         updatedEles = this.spawnSelf().merge(this.descendants()).merge(this.parents());
       }
 
-      var changedEles = style.apply(updatedEles);
+      var changedEles = style$$1.apply(updatedEles);
 
       if (notifyRenderer) {
         changedEles.emitAndNotify('style'); // let renderer know we changed style
@@ -11875,7 +11750,7 @@
       }
     },
     // read the calculated css style of the element or override the style (via a bypass)
-    style: function style(name, value) {
+    style: function style$$1(name, value) {
       var cy = this.cy();
 
       if (!cy.styleEnabled()) {
@@ -11883,12 +11758,12 @@
       }
 
       var updateTransitions = false;
-      var style = cy.style();
+      var style$$1 = cy.style();
 
       if (plainObject(name)) {
         // then extend the bypass
         var props = name;
-        style.applyBypass(this, props, updateTransitions);
+        style$$1.applyBypass(this, props, updateTransitions);
         this.emitAndNotify('style'); // let the renderer know we've updated style
       } else if (string(name)) {
         if (value === undefined) {
@@ -11896,21 +11771,21 @@
           var ele = this[0];
 
           if (ele) {
-            return style.getStylePropertyValue(ele, name);
+            return style$$1.getStylePropertyValue(ele, name);
           } else {
             // empty collection => can't get any value
             return;
           }
         } else {
           // then set the bypass with the property value
-          style.applyBypass(this, name, value, updateTransitions);
+          style$$1.applyBypass(this, name, value, updateTransitions);
           this.emitAndNotify('style'); // let the renderer know we've updated style
         }
       } else if (name === undefined) {
         var _ele = this[0];
 
         if (_ele) {
-          return style.getRawStyle(_ele);
+          return style$$1.getRawStyle(_ele);
         } else {
           // empty collection => can't get any value
           return;
@@ -11927,20 +11802,20 @@
       }
 
       var updateTransitions = false;
-      var style = cy.style();
+      var style$$1 = cy.style();
       var eles = this;
 
       if (names === undefined) {
         for (var i = 0; i < eles.length; i++) {
           var ele = eles[i];
-          style.removeAllBypasses(ele, updateTransitions);
+          style$$1.removeAllBypasses(ele, updateTransitions);
         }
       } else {
         names = names.split(/\s+/);
 
         for (var _i = 0; _i < eles.length; _i++) {
           var _ele2 = eles[_i];
-          style.removeBypasses(_ele2, names, updateTransitions);
+          style$$1.removeBypasses(_ele2, names, updateTransitions);
         }
       }
 
@@ -12615,10 +12490,10 @@
   });
 
   function defineParallelEdgesFunction(params) {
-    var defaults = {
+    var defaults$$1 = {
       codirected: false
     };
-    params = extend({}, defaults, params);
+    params = extend({}, defaults$$1, params);
     return function parallelEdgesImpl(selector) {
       // micro-optimised for renderer
       var elements = [];
@@ -12716,7 +12591,7 @@
   elesfn$s.componentsOf = elesfn$s.components;
 
   var idFactory = {
-    generate: function generate(cy, element, tryThisId) {
+    generate: function generate(cy, element$$1, tryThisId) {
       var id = tryThisId != null ? tryThisId : uuid();
 
       while (cy.hasElementWithId(id)) {
@@ -12770,20 +12645,20 @@
     this.length = 0;
 
     for (var _i = 0, _l = elements.length; _i < _l; _i++) {
-      var element$1 = elements[_i];
+      var element$$1 = elements[_i];
 
-      if (element$1 == null) {
+      if (element$$1 == null) {
         continue;
       }
 
-      var id = element$1._private.data.id;
+      var id = element$$1._private.data.id;
 
       if (options == null || options.unique && !map.has(id)) {
         map.set(id, {
           index: this.length,
-          ele: element$1
+          ele: element$$1
         });
-        this[this.length] = element$1;
+        this[this.length] = element$$1;
         this.length++;
       }
     }
@@ -13011,9 +12886,9 @@
     for (var i = 0; i < this.length; i++) {
       var ele = this[i];
       var json = ele.json();
-      var clone = new Element(cy, json, false); // NB no restore
+      var clone$$1 = new Element(cy, json, false); // NB no restore
 
-      elesArr.push(clone);
+      elesArr.push(clone$$1);
     }
 
     return new Collection(cy, elesArr);
@@ -13551,13 +13426,13 @@
 
       return elements;
     },
-    remove: function remove(collection) {
-      if (elementOrCollection(collection)) ; else if (string(collection)) {
-        var selector = collection;
-        collection = this.$(selector);
+    remove: function remove(collection$$1) {
+      if (elementOrCollection(collection$$1)) ; else if (string(collection$$1)) {
+        var selector = collection$$1;
+        collection$$1 = this.$(selector);
       }
 
-      return collection.remove();
+      return collection$$1.remove();
     }
   };
 
@@ -13957,7 +13832,7 @@
     var pEasing = ani_p.easing;
     var startTime = ani_p.startTime;
     var cy = isCore ? self : self.cy();
-    var style = cy.style();
+    var style$$1 = cy.style();
 
     if (!ani_p.easingImpl) {
       if (pEasing == null) {
@@ -13968,7 +13843,7 @@
         var easingVals;
 
         if (string(pEasing)) {
-          var easingProp = style.parse('transition-timing-function', pEasing);
+          var easingProp = style$$1.parse('transition-timing-function', pEasing);
           easingVals = easingProp.value;
         } else {
           // then assume preparsed array
@@ -14080,9 +13955,9 @@
           var _name = prop.name;
           var end = prop;
           var start = ani_p.startStyle[_name];
-          var propSpec = style.properties[start.name];
+          var propSpec = style$$1.properties[start.name];
           var easedVal = ease(start, end, percent, easing, propSpec);
-          style.overrideBypass(self, _name, easedVal);
+          style$$1.overrideBypass(self, _name, easedVal);
         } // for props
 
 
@@ -14361,9 +14236,9 @@
       this.emitter().emit(events, extraParams);
       return this;
     },
-    emitAndNotify: function emitAndNotify(event, eles) {
-      this.emit(event);
-      this.notify(event, eles);
+    emitAndNotify: function emitAndNotify(event$$1, eles) {
+      this.emit(event$$1);
+      this.notify(event$$1, eles);
       return this;
     }
   };
@@ -14621,7 +14496,7 @@
     // - empty collection on no args
     // - collection of elements in the graph on selector arg
     // - guarantee a returned collection when elements or collection specified
-    collection: function collection(eles, opts) {
+    collection: function collection$$1(eles, opts) {
       if (string(eles)) {
         return this.$(eles);
       } else if (elementOrCollection(eles)) {
@@ -14832,7 +14707,7 @@
       return cxtStyles[cxtKey];
     }
 
-    var style = {
+    var style$$1 = {
       _private: {
         key: cxtKey
       }
@@ -14848,12 +14723,12 @@
 
       for (var j = 0; j < cxt.properties.length; j++) {
         var prop = cxt.properties[j];
-        style[prop.name] = prop;
+        style$$1[prop.name] = prop;
       }
     }
 
-    cxtStyles[cxtKey] = style;
-    return style;
+    cxtStyles[cxtKey] = style$$1;
+    return style$$1;
   };
 
   styfn.applyContextStyle = function (cxtMeta, cxtStyle, ele) {
@@ -15087,12 +14962,12 @@
   styfn.applyParsedProperty = function (ele, parsedProp) {
     var self = this;
     var prop = parsedProp;
-    var style = ele._private.style;
+    var style$$1 = ele._private.style;
     var flatProp;
     var types = self.types;
     var type = self.properties[prop.name].type;
     var propIsBypass = prop.bypass;
-    var origProp = style[prop.name];
+    var origProp = style$$1[prop.name];
     var origPropIsBypass = origProp && origProp.bypass;
     var _p = ele._private;
     var flatPropMapping = 'mapping';
@@ -15122,7 +14997,7 @@
 
     if (prop.delete) {
       // delete the property and use the default value on falsey value
-      style[prop.name] = undefined;
+      style$$1[prop.name] = undefined;
       checkTriggers();
       return true;
     }
@@ -15151,7 +15026,7 @@
       } else if (origProp.bypass) {
         // then replace the bypass property with the original
         // because the bypassed property was already applied (and therefore parsed), we can just replace it (no reapplying necessary)
-        style[prop.name] = origProp.bypassed;
+        style$$1[prop.name] = origProp.bypassed;
         checkTriggers();
         return true;
       } else {
@@ -15276,8 +15151,8 @@
 
       case types.fn:
         {
-          var fn = prop.value;
-          var fnRetVal = prop.fnValue != null ? prop.fnValue : fn(ele); // check for cached value before calling function
+          var fn$$1 = prop.value;
+          var fnRetVal = prop.fnValue != null ? prop.fnValue : fn$$1(ele); // check for cached value before calling function
 
           prop.prevFnValue = fnRetVal;
 
@@ -15319,7 +15194,7 @@
         prop.bypassed = origProp;
       }
 
-      style[prop.name] = prop; // and set
+      style$$1[prop.name] = prop; // and set
     } else {
       // prop is not bypass
       if (origPropIsBypass) {
@@ -15327,7 +15202,7 @@
         origProp.bypassed = prop;
       } else {
         // then just replace the old prop with the new one
-        style[prop.name] = prop;
+        style$$1[prop.name] = prop;
       }
     }
 
@@ -15345,18 +15220,18 @@
       if (!keepBypasses) {
         ele._private.style = {};
       } else {
-        var style = ele._private.style;
-        var propNames = Object.keys(style);
+        var style$$1 = ele._private.style;
+        var propNames = Object.keys(style$$1);
 
         for (var j = 0; j < propNames.length; j++) {
           var propName = propNames[j];
-          var eleProp = style[propName];
+          var eleProp = style$$1[propName];
 
           if (eleProp != null) {
             if (eleProp.bypass) {
               eleProp.bypassed = null;
             } else {
-              style[propName] = null;
+              style$$1[propName] = null;
             }
           }
         }
@@ -15380,7 +15255,7 @@
     var delay = ele.pstyle('transition-delay').pfValue;
 
     if (props.length > 0 && duration > 0) {
-      var style = {}; // build up the style to animate towards
+      var style$$1 = {}; // build up the style to animate towards
 
       var anyPrev = false;
 
@@ -15420,7 +15295,7 @@
 
 
         if (diff) {
-          style[prop] = toProp.strValue; // to val
+          style$$1[prop] = toProp.strValue; // to val
 
           this.applyBypass(ele, prop, initVal); // from val
 
@@ -15443,7 +15318,7 @@
         }
       }).then(function () {
         return ele.animation({
-          style: style,
+          style: style$$1,
           duration: duration,
           easing: ele.pstyle('transition-timing-function').value,
           queue: false
@@ -15836,15 +15711,15 @@
   styfn$3.getPropsList = function (propsObj) {
     var self = this;
     var rstyle = [];
-    var style = propsObj;
+    var style$$1 = propsObj;
     var props = self.properties;
 
-    if (style) {
-      var names = Object.keys(style);
+    if (style$$1) {
+      var names = Object.keys(style$$1);
 
       for (var i = 0; i < names.length; i++) {
         var name = names[i];
-        var val = style[name];
+        var val = style$$1[name];
         var prop = props[name] || props[camel2dash(name)];
         var styleProp = this.parse(prop.name, val);
 
@@ -16076,19 +15951,19 @@
   var styfn$6 = {};
 
   (function () {
-    var number = number$1;
-    var rgba = rgbaNoBackRefs;
-    var hsla = hslaNoBackRefs;
-    var hex3$1 = hex3;
-    var hex6$1 = hex6;
+    var number$$1 = number$1;
+    var rgba$$1 = rgbaNoBackRefs;
+    var hsla$$1 = hslaNoBackRefs;
+    var hex3$$1 = hex3;
+    var hex6$$1 = hex6;
 
     var data = function data(prefix) {
       return '^' + prefix + '\\s*\\(\\s*([\\w\\.]+)\\s*\\)$';
     };
 
     var mapData = function mapData(prefix) {
-      var mapArg = number + '|\\w+|' + rgba + '|' + hsla + '|' + hex3$1 + '|' + hex6$1;
-      return '^' + prefix + '\\s*\\(([\\w\\.]+)\\s*\\,\\s*(' + number + ')\\s*\\,\\s*(' + number + ')\\s*,\\s*(' + mapArg + ')\\s*\\,\\s*(' + mapArg + ')\\)$';
+      var mapArg = number$$1 + '|\\w+|' + rgba$$1 + '|' + hsla$$1 + '|' + hex3$$1 + '|' + hex6$$1;
+      return '^' + prefix + '\\s*\\(([\\w\\.]+)\\s*\\,\\s*(' + number$$1 + ')\\s*\\,\\s*(' + number$$1 + ')\\s*,\\s*(' + mapArg + ')\\s*\\,\\s*(' + mapArg + ')\\)$';
     };
 
     var urlRegexes = ['^url\\s*\\(\\s*[\'"]?(.+?)[\'"]?\\s*\\)$', '^(none)$', '^(.+)$']; // each visual style property has a type and needs to be validated according to it
@@ -16382,7 +16257,7 @@
         }
       },
       easing: {
-        regexes: ['^(spring)\\s*\\(\\s*(' + number + ')\\s*,\\s*(' + number + ')\\s*\\)$', '^(cubic-bezier)\\s*\\(\\s*(' + number + ')\\s*,\\s*(' + number + ')\\s*,\\s*(' + number + ')\\s*,\\s*(' + number + ')\\s*\\)$'],
+        regexes: ['^(spring)\\s*\\(\\s*(' + number$$1 + ')\\s*,\\s*(' + number$$1 + ')\\s*\\)$', '^(cubic-bezier)\\s*\\(\\s*(' + number$$1 + ')\\s*,\\s*(' + number$$1 + ')\\s*,\\s*(' + number$$1 + ')\\s*,\\s*(' + number$$1 + ')\\s*\\)$'],
         enums: ['linear', 'ease', 'ease-in', 'ease-out', 'ease-in-out', 'ease-in-sine', 'ease-out-sine', 'ease-in-out-sine', 'ease-in-quad', 'ease-out-quad', 'ease-in-out-quad', 'ease-in-cubic', 'ease-out-cubic', 'ease-in-out-cubic', 'ease-in-quart', 'ease-out-quart', 'ease-in-out-quart', 'ease-in-quint', 'ease-out-quint', 'ease-in-out-quint', 'ease-in-expo', 'ease-out-expo', 'ease-in-out-expo', 'ease-in-circ', 'ease-out-circ', 'ease-in-out-circ']
       },
       gradientDirection: {
@@ -16880,7 +16755,7 @@
       name: 'ghost-opacity',
       type: t.zeroOneNumber
     }];
-    var core = [{
+    var core$$1 = [{
       name: 'selection-box-color',
       type: t.color
     }, {
@@ -16957,7 +16832,7 @@
         });
       });
     }, {});
-    var props = styfn$6.properties = [].concat(behavior, transition, visibility, overlay, ghost, commonLabel, labelDimensions, mainLabel, sourceLabel, targetLabel, nodeBody, nodeBorder, backgroundImage, pie, compound, edgeLine, edgeArrow, core);
+    var props = styfn$6.properties = [].concat(behavior, transition, visibility, overlay, ghost, commonLabel, labelDimensions, mainLabel, sourceLabel, targetLabel, nodeBody, nodeBorder, backgroundImage, pie, compound, edgeLine, edgeArrow, core$$1);
     var propGroups = styfn$6.propertyGroups = {
       // common to all eles
       behavior: behavior,
@@ -16980,7 +16855,7 @@
       // edge props
       edgeLine: edgeLine,
       edgeArrow: edgeArrow,
-      core: core
+      core: core$$1
     };
     var propGroupNames = styfn$6.propertyGroupNames = {};
     var propGroupKeys = styfn$6.propertyGroupKeys = Object.keys(propGroups);
@@ -17697,9 +17572,9 @@
       var regexes = type.regexes ? type.regexes : [type.regex];
 
       for (var _i3 = 0; _i3 < regexes.length; _i3++) {
-        var regex = new RegExp(regexes[_i3]); // make a regex from the type string
+        var regex$$1 = new RegExp(regexes[_i3]); // make a regex from the type string
 
-        var m = regex.exec(value);
+        var m = regex$$1.exec(value);
 
         if (m) {
           // regex matches
@@ -17849,13 +17724,13 @@
     return this; // chaining
   };
 
-  styfn$8.append = function (style) {
-    if (stylesheet(style)) {
-      style.appendToStyle(this);
-    } else if (array(style)) {
-      this.appendFromJson(style);
-    } else if (string(style)) {
-      this.appendFromString(style);
+  styfn$8.append = function (style$$1) {
+    if (stylesheet(style$$1)) {
+      style$$1.appendToStyle(this);
+    } else if (array(style$$1)) {
+      this.appendFromJson(style$$1);
+    } else if (string(style$$1)) {
+      this.appendFromString(style$$1);
     } // you probably wouldn't want to append a Style, since you'd duplicate the default parts
 
 
@@ -17864,13 +17739,13 @@
 
 
   Style.fromJson = function (cy, json) {
-    var style = new Style(cy);
-    style.fromJson(json);
-    return style;
+    var style$$1 = new Style(cy);
+    style$$1.fromJson(json);
+    return style$$1;
   };
 
-  Style.fromString = function (cy, string) {
-    return new Style(cy).fromString(string);
+  Style.fromString = function (cy, string$$1) {
+    return new Style(cy).fromString(string$$1);
   };
 
   [styfn, styfn$1, styfn$2, styfn$3, styfn$4, styfn$5, styfn$6, styfn$7].forEach(function (props) {
@@ -17883,7 +17758,7 @@
   Style.propertyGroupKeys = styfn$8.propertyGroupKeys;
 
   var corefn$7 = {
-    style: function style(newStyle) {
+    style: function style$$1(newStyle) {
       if (newStyle) {
         var s = this.setStyle(newStyle);
         s.update();
@@ -17891,15 +17766,15 @@
 
       return this._private.style;
     },
-    setStyle: function setStyle(style) {
+    setStyle: function setStyle(style$$1) {
       var _p = this._private;
 
-      if (stylesheet(style)) {
-        _p.style = style.generateStyle(this);
-      } else if (array(style)) {
-        _p.style = Style.fromJson(this, style);
-      } else if (string(style)) {
-        _p.style = Style.fromString(this, style);
+      if (stylesheet(style$$1)) {
+        _p.style = style$$1.generateStyle(this);
+      } else if (array(style$$1)) {
+        _p.style = Style.fromJson(this, style$$1);
+      } else if (string(style$$1)) {
+        _p.style = Style.fromString(this, style$$1);
       } else {
         _p.style = Style(this);
       }
@@ -17910,27 +17785,27 @@
 
   var defaultSelectionType = 'single';
   var corefn$8 = {
-    autolock: function autolock(bool) {
-      if (bool !== undefined) {
-        this._private.autolock = bool ? true : false;
+    autolock: function autolock(bool$$1) {
+      if (bool$$1 !== undefined) {
+        this._private.autolock = bool$$1 ? true : false;
       } else {
         return this._private.autolock;
       }
 
       return this; // chaining
     },
-    autoungrabify: function autoungrabify(bool) {
-      if (bool !== undefined) {
-        this._private.autoungrabify = bool ? true : false;
+    autoungrabify: function autoungrabify(bool$$1) {
+      if (bool$$1 !== undefined) {
+        this._private.autoungrabify = bool$$1 ? true : false;
       } else {
         return this._private.autoungrabify;
       }
 
       return this; // chaining
     },
-    autounselectify: function autounselectify(bool) {
-      if (bool !== undefined) {
-        this._private.autounselectify = bool ? true : false;
+    autounselectify: function autounselectify(bool$$1) {
+      if (bool$$1 !== undefined) {
+        this._private.autounselectify = bool$$1 ? true : false;
       } else {
         return this._private.autounselectify;
       }
@@ -17954,45 +17829,45 @@
 
       return this;
     },
-    panningEnabled: function panningEnabled(bool) {
-      if (bool !== undefined) {
-        this._private.panningEnabled = bool ? true : false;
+    panningEnabled: function panningEnabled(bool$$1) {
+      if (bool$$1 !== undefined) {
+        this._private.panningEnabled = bool$$1 ? true : false;
       } else {
         return this._private.panningEnabled;
       }
 
       return this; // chaining
     },
-    userPanningEnabled: function userPanningEnabled(bool) {
-      if (bool !== undefined) {
-        this._private.userPanningEnabled = bool ? true : false;
+    userPanningEnabled: function userPanningEnabled(bool$$1) {
+      if (bool$$1 !== undefined) {
+        this._private.userPanningEnabled = bool$$1 ? true : false;
       } else {
         return this._private.userPanningEnabled;
       }
 
       return this; // chaining
     },
-    zoomingEnabled: function zoomingEnabled(bool) {
-      if (bool !== undefined) {
-        this._private.zoomingEnabled = bool ? true : false;
+    zoomingEnabled: function zoomingEnabled(bool$$1) {
+      if (bool$$1 !== undefined) {
+        this._private.zoomingEnabled = bool$$1 ? true : false;
       } else {
         return this._private.zoomingEnabled;
       }
 
       return this; // chaining
     },
-    userZoomingEnabled: function userZoomingEnabled(bool) {
-      if (bool !== undefined) {
-        this._private.userZoomingEnabled = bool ? true : false;
+    userZoomingEnabled: function userZoomingEnabled(bool$$1) {
+      if (bool$$1 !== undefined) {
+        this._private.userZoomingEnabled = bool$$1 ? true : false;
       } else {
         return this._private.userZoomingEnabled;
       }
 
       return this; // chaining
     },
-    boxSelectionEnabled: function boxSelectionEnabled(bool) {
-      if (bool !== undefined) {
-        this._private.boxSelectionEnabled = bool ? true : false;
+    boxSelectionEnabled: function boxSelectionEnabled(bool$$1) {
+      if (bool$$1 !== undefined) {
+        this._private.boxSelectionEnabled = bool$$1 ? true : false;
       } else {
         return this._private.boxSelectionEnabled;
       }
@@ -18184,22 +18059,22 @@
 
       return;
     },
-    zoomRange: function zoomRange(min, max) {
+    zoomRange: function zoomRange(min$$1, max$$1) {
       var _p = this._private;
 
-      if (max == null) {
-        var opts = min;
-        min = opts.min;
-        max = opts.max;
+      if (max$$1 == null) {
+        var opts = min$$1;
+        min$$1 = opts.min;
+        max$$1 = opts.max;
       }
 
-      if (number(min) && number(max) && min <= max) {
-        _p.minZoom = min;
-        _p.maxZoom = max;
-      } else if (number(min) && max === undefined && min <= _p.maxZoom) {
-        _p.minZoom = min;
-      } else if (number(max) && min === undefined && max >= _p.minZoom) {
-        _p.maxZoom = max;
+      if (number(min$$1) && number(max$$1) && min$$1 <= max$$1) {
+        _p.minZoom = min$$1;
+        _p.maxZoom = max$$1;
+      } else if (number(min$$1) && max$$1 === undefined && min$$1 <= _p.maxZoom) {
+        _p.minZoom = min$$1;
+      } else if (number(max$$1) && min$$1 === undefined && max$$1 >= _p.minZoom) {
+        _p.maxZoom = max$$1;
       }
 
       return this;
@@ -18435,10 +18310,10 @@
       var _p = this._private;
       var container = _p.container;
       return _p.sizeCache = _p.sizeCache || (container ? function () {
-        var style = window$1.getComputedStyle(container);
+        var style$$1 = window$1.getComputedStyle(container);
 
         var val = function val(name) {
-          return parseFloat(style.getPropertyValue(name));
+          return parseFloat(style$$1.getPropertyValue(name));
         };
 
         return {
@@ -18660,8 +18535,8 @@
 
 
         for (var i = 0; i < readies.length; i++) {
-          var fn$1 = readies[i];
-          cy.on('ready', fn$1);
+          var fn$$1 = readies[i];
+          cy.on('ready', fn$$1);
         }
 
         if (reg) {
@@ -18686,11 +18561,11 @@
     isDestroyed: function isDestroyed() {
       return this._private.destroyed;
     },
-    ready: function ready(fn) {
+    ready: function ready(fn$$1) {
       if (this.isReady()) {
-        this.emitter().emit('ready', [], fn); // just calls fn as though triggered via ready event
+        this.emitter().emit('ready', [], fn$$1); // just calls fn as though triggered via ready event
       } else {
-        this.on('ready', fn);
+        this.on('ready', fn$$1);
       }
 
       return this;
@@ -19310,8 +19185,8 @@
       x: bb.x1 + bb.w / 2,
       y: bb.x1 + bb.h / 2
     };
-    var maxDepthSize = depths.reduce(function (max, eles) {
-      return Math.max(max, eles.length);
+    var maxDepthSize = depths.reduce(function (max$$1, eles) {
+      return Math.max(max$$1, eles.length);
     }, 0);
 
     var getPosition = function getPosition(ele) {
@@ -19776,7 +19651,7 @@
     var options = this.options;
     var cy = options.cy;
     var layout = this;
-    var thread = this.thread;
+    var thread$$1 = this.thread;
     var Thread = options.weaver ? options.weaver.Thread : null;
     var falseThread = {
       // use false thread as polyfill
@@ -19833,8 +19708,8 @@
       falseThread.trigger(e);
     }
 
-    if (!thread || thread.stopped()) {
-      thread = this.thread = Thread ? new Thread() : falseThread;
+    if (!thread$$1 || thread$$1.stopped()) {
+      thread$$1 = this.thread = Thread ? new Thread() : falseThread;
     }
 
     layout.stopped = false;
@@ -19895,12 +19770,12 @@
       });
     };
 
-    thread.on('message', function (e) {
+    thread$$1.on('message', function (e) {
       var layoutNodes = e.message;
       layoutInfo.layoutNodes = layoutNodes;
       refresh();
     });
-    thread.pass({
+    thread$$1.pass({
       layoutInfo: layoutInfo,
       options: {
         animate: options.animate,
@@ -19968,8 +19843,8 @@
         }
       };
 
-      var randomDistance = function randomDistance(max) {
-        return -max + 2 * max * Math.random();
+      var randomDistance = function randomDistance(max$$1) {
+        return -max$$1 + 2 * max$$1 * Math.random();
       };
       /**
        * @brief : Compute the node repulsion forces between a pair of nodes
@@ -20366,14 +20241,14 @@
        */
 
 
-      var limitForce = function limitForce(forceX, forceY, max) {
+      var limitForce = function limitForce(forceX, forceY, max$$1) {
         // var s = "Limiting force: (" + forceX + ", " + forceY + "). Max: " + max;
         var force = Math.sqrt(forceX * forceX + forceY * forceY);
 
-        if (force > max) {
+        if (force > max$$1) {
           var res = {
-            x: max * forceX / force,
-            y: max * forceY / force
+            x: max$$1 * forceX / force,
+            y: max$$1 * forceY / force
           };
         } else {
           var res = {
@@ -20559,7 +20434,7 @@
     }).then(function (layoutInfoUpdated) {
       layoutInfo.layoutNodes = layoutInfoUpdated.layoutNodes; // get the positions
 
-      thread.stop();
+      thread$$1.stop();
       done();
     });
 
@@ -21058,9 +20933,9 @@
         if (val == null) {
           return Math.min(rows, cols);
         } else {
-          var min = Math.min(rows, cols);
+          var min$$1 = Math.min(rows, cols);
 
-          if (min == rows) {
+          if (min$$1 == rows) {
             rows = val;
           } else {
             cols = val;
@@ -21072,9 +20947,9 @@
         if (val == null) {
           return Math.max(rows, cols);
         } else {
-          var max = Math.max(rows, cols);
+          var max$$1 = Math.max(rows, cols);
 
-          if (max == rows) {
+          if (max$$1 == rows) {
             rows = val;
           } else {
             cols = val;
@@ -23254,7 +23129,7 @@
   var BRp$5 = {};
 
   function pushBezierPts(r, edge, pts) {
-    var qbezierAt$1 = function qbezierAt$1(p1, p2, p3, t) {
+    var qbezierAt$$1 = function qbezierAt$$1(p1, p2, p3, t) {
       return qbezierAt(p1, p2, p3, t);
     };
 
@@ -23264,8 +23139,8 @@
     for (var i = 0; i < r.bezierProjPcts.length; i++) {
       var p = r.bezierProjPcts[i];
       bpts.push({
-        x: qbezierAt$1(pts[0], pts[2], pts[4], p),
-        y: qbezierAt$1(pts[1], pts[3], pts[5], p)
+        x: qbezierAt$$1(pts[0], pts[2], pts[4], p),
+        y: qbezierAt$$1(pts[1], pts[3], pts[5], p)
       });
     }
   }
@@ -24088,7 +23963,7 @@
   var BRp$c = {};
   /* global document, window */
 
-  BRp$c.registerBinding = function (target, event, handler, useCapture) {
+  BRp$c.registerBinding = function (target, event$$1, handler, useCapture) {
     // eslint-disable-line no-unused-vars
     var args = Array.prototype.slice.apply(arguments, [1]); // copy
 
@@ -24118,7 +23993,7 @@
       r.supportsPassiveEvents = supportsPassive;
     }
 
-    var on = function on(event, handler, useCapture) {
+    var on = function on(event$$1, handler, useCapture) {
       var args = Array.prototype.slice.call(arguments);
 
       if (tgtIsDom && r.supportsPassiveEvents) {
@@ -24390,9 +24265,9 @@
 
     r.registerBinding(window, 'resize', onResize); // eslint-disable-line no-undef
 
-    var forEachUp = function forEachUp(domEle, fn) {
+    var forEachUp = function forEachUp(domEle, fn$$1) {
       while (domEle != null) {
-        fn(domEle);
+        fn$$1(domEle);
         domEle = domEle.parentNode;
       }
     };
@@ -26697,10 +26572,10 @@
       }
 
       if (!stylesheetAlreadyExists) {
-        var stylesheet = document.createElement('style');
-        stylesheet.id = stylesheetId;
-        stylesheet.innerHTML = '.' + className + ' { position: relative; }';
-        head.insertBefore(stylesheet, head.children[0]); // first so lowest priority
+        var stylesheet$$1 = document.createElement('style');
+        stylesheet$$1.id = stylesheetId;
+        stylesheet$$1.innerHTML = '.' + className + ' { position: relative; }';
+        head.insertBefore(stylesheet$$1, head.children[0]); // first so lowest priority
       }
 
       var computedStyle = window$1.getComputedStyle(ctr);
@@ -29790,7 +29665,7 @@
   CRp$6.createGradientStyleFor = function (context, shapeStyleName, ele, fill, opacity) {
     var gradientStyle;
     var usePaths = this.usePaths();
-    var colors = ele.pstyle(shapeStyleName + '-gradient-stop-colors').value,
+    var colors$$1 = ele.pstyle(shapeStyleName + '-gradient-stop-colors').value,
         positions = ele.pstyle(shapeStyleName + '-gradient-stop-positions').pfValue;
 
     if (fill === 'radial-gradient') {
@@ -29870,11 +29745,11 @@
 
     if (!gradientStyle) return null; // invalid gradient style
 
-    var hasPositions = positions.length === colors.length;
-    var length = colors.length;
+    var hasPositions = positions.length === colors$$1.length;
+    var length = colors$$1.length;
 
     for (var i = 0; i < length; i++) {
-      gradientStyle.addColorStop(hasPositions ? positions[i] : i / (length - 1), 'rgba(' + colors[i][0] + ',' + colors[i][1] + ',' + colors[i][2] + ',' + opacity + ')');
+      gradientStyle.addColorStop(hasPositions ? positions[i] : i / (length - 1), 'rgba(' + colors$$1[i][0] + ',' + colors$$1[i][1] + ',' + colors$$1[i][2] + ',' + opacity + ')');
     }
 
     return gradientStyle;
@@ -30980,20 +30855,20 @@
     tlbTxrCache.onDequeue(refineInLayers);
   }
 
-  CRp$a.redrawHint = function (group, bool) {
+  CRp$a.redrawHint = function (group, bool$$1) {
     var r = this;
 
     switch (group) {
       case 'eles':
-        r.data.canvasNeedsRedraw[CRp$a.NODE] = bool;
+        r.data.canvasNeedsRedraw[CRp$a.NODE] = bool$$1;
         break;
 
       case 'drag':
-        r.data.canvasNeedsRedraw[CRp$a.DRAG] = bool;
+        r.data.canvasNeedsRedraw[CRp$a.DRAG] = bool$$1;
         break;
 
       case 'select':
-        r.data.canvasNeedsRedraw[CRp$a.SELECT_BOX] = bool;
+        r.data.canvasNeedsRedraw[CRp$a.SELECT_BOX] = bool$$1;
         break;
     }
   }; // whether to use Path2D caching for drawing
@@ -31013,13 +30888,13 @@
     return pathsImpld && this.pathsEnabled;
   };
 
-  CRp$a.setImgSmoothing = function (context, bool) {
+  CRp$a.setImgSmoothing = function (context, bool$$1) {
     if (context.imageSmoothingEnabled != null) {
-      context.imageSmoothingEnabled = bool;
+      context.imageSmoothingEnabled = bool$$1;
     } else {
-      context.webkitImageSmoothingEnabled = bool;
-      context.mozImageSmoothingEnabled = bool;
-      context.msImageSmoothingEnabled = bool;
+      context.webkitImageSmoothingEnabled = bool$$1;
+      context.mozImageSmoothingEnabled = bool$$1;
+      context.msImageSmoothingEnabled = bool$$1;
     }
   };
 
@@ -31374,28 +31249,28 @@
   sheetfn.style = sheetfn.css; // generate a real style object from the dummy stylesheet
 
   sheetfn.generateStyle = function (cy) {
-    var style = new Style(cy);
-    return this.appendToStyle(style);
+    var style$$1 = new Style(cy);
+    return this.appendToStyle(style$$1);
   }; // append a dummy stylesheet object on a real style object
 
 
-  sheetfn.appendToStyle = function (style) {
+  sheetfn.appendToStyle = function (style$$1) {
     for (var i = 0; i < this.length; i++) {
       var context = this[i];
       var selector = context.selector;
       var props = context.properties;
-      style.selector(selector); // apply selector
+      style$$1.selector(selector); // apply selector
 
       for (var j = 0; j < props.length; j++) {
         var prop = props[j];
-        style.css(prop.name, prop.value); // apply property
+        style$$1.css(prop.name, prop.value); // apply property
       }
     }
 
-    return style;
+    return style$$1;
   };
 
-  var version = "3.5.7";
+  var version = "3.5.8";
 
   var cytoscape = function cytoscape(options) {
     // if no options specified, use default
@@ -31422,8 +31297,8 @@
     return this;
   };
 
-  cytoscape.warnings = function (bool) {
-    return warnings(bool);
+  cytoscape.warnings = function (bool$$1) {
+    return warnings(bool$$1);
   }; // replaced by build system
 
 

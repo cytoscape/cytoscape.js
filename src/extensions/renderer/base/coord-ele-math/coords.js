@@ -247,12 +247,36 @@ BRp.findNearestElements = function( x, y, interactiveElementsOnly, isTouch ){
     if( !eventsEnabled || !text ){ return; }
 
     var rstyle = _p.rstyle;
+
+    // vertical and horizontal align affect labelX/Y being center of the label or not
+    var va = ele.pstyle('text-valign').strValue;
+    var ha = ele.pstyle('text-halign').strValue;
+
     var bw = ele.pstyle('text-border-width').pfValue;
     var pw = ele.pstyle('text-background-padding').pfValue;
     var lw = preprop( rstyle, 'labelWidth', prefix ) + bw + 2*th + 2*pw;
     var lh = preprop( rstyle, 'labelHeight', prefix ) + bw + 2*th + 2*pw;
     var lx = preprop( rstyle, 'labelX', prefix );
     var ly = preprop( rstyle, 'labelY', prefix );
+
+    // Ensure lx and ly are the center of the label
+    switch (va) {
+      case 'top':
+        ly -= lh / 2;
+        break;
+      case 'bottom':
+        ly += lh / 2;
+        break;
+    }
+
+    switch (ha) {
+      case 'left':
+        lx -= lw / 2;
+        break;
+      case 'right':
+        lx += lw / 2;
+        break;
+    }
 
     var theta = preprop( _p.rscratch, 'labelAngle', prefix );
 

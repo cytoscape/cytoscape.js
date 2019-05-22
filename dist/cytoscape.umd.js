@@ -10602,8 +10602,12 @@
     context: null
   };
   var defaultsKeys = Object.keys(defaults$8);
+  var emptyOpts = {};
 
-  function Emitter(opts, context) {
+  function Emitter() {
+    var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : emptyOpts;
+    var context = arguments.length > 1 ? arguments[1] : undefined;
+
     // micro-optimisation vs Object.assign() -- reduces Element instantiation time
     for (var i = 0; i < defaultsKeys.length; i++) {
       var key = defaultsKeys[i];
@@ -10735,7 +10739,7 @@
       forEachEvent(_this, function (self, event, type, namespace, qualifier, callback
       /*, conf*/
       ) {
-        if (listener.type === type && (!namespace || listener.namespace === namespace) && (!qualifier || self.qualifierCompare(listener.qualifier, qualifier)) && (!callback || listener.callback === callback)) {
+        if (listener.type === type && (!namespace && listener.namespace !== '.*' || listener.namespace === namespace) && (!qualifier || self.qualifierCompare(listener.qualifier, qualifier)) && (!callback || listener.callback === callback)) {
           listeners.splice(i, 1);
           return false;
         }
@@ -31489,7 +31493,7 @@
     return style;
   };
 
-  var version = "3.6.1";
+  var version = "3.6.2";
 
   var cytoscape = function cytoscape(options) {
     // if no options specified, use default

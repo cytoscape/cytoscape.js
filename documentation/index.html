@@ -28,7 +28,7 @@
 			<a id="open-navigation" class="activatable plain-link"><span class="fa fa-bars"></span></a>
 			<div id="open-navigation-bg"></div>
 
-			<h1 id="top" class="title">Cytoscape.js</h1>
+			<h1 id="top" class="title"><span class="title-logo"></span>Cytoscape.js</h1>
 
 			<div class="subtitle">
 				Graph theory (network) library for visualisation and analysis
@@ -49,7 +49,7 @@
 <a href="#introduction/citation"><img src="https://img.shields.io/badge/Cite-Oxford%20Bioinformatics%20Article-blue.svg" alt="Cite"></a>
 <a href="https://www.npmjs.com/package/cytoscape"><img src="https://img.shields.io/npm/v/cytoscape.svg" alt="npm"></a>
 <a href="https://github.com/cytoscape/cytoscape.js/tree/master/dist"><img src="https://img.shields.io/npm/v/cytoscape.svg?label=Download" alt="Download"></a>
-<a href="#extensions"><img src="https://img.shields.io/badge/Extensions-44-blue.svg" alt="Extensions"></a>
+<a href="#extensions"><img src="https://img.shields.io/badge/Extensions-51-blue.svg" alt="Extensions"></a>
 <a href="https://www.npmjs.com/package/cytoscape"><img src="https://img.shields.io/npm/dm/cytoscape.svg?label=npm%20installs" alt="npm installs"></a>
 <a href="https://travis-ci.org/cytoscape/cytoscape.js"><img src="https://img.shields.io/travis/cytoscape/cytoscape.js/master.svg?label=master%20branch" alt="master branch tests"></a>
 <a href="https://travis-ci.org/cytoscape/cytoscape.js"><img src="https://img.shields.io/travis/cytoscape/cytoscape.js/unstable.svg?label=unstable%20branch" alt="unstable branch tests"></a>
@@ -565,6 +565,7 @@
 <li>Used by<ul>
 <li><a href="http://www.activevalue.eu/">Active Value Advisors</a> : <a href="http://www.how-4.com/">How-4</a></li>
 <li><a href="http://apid.dep.usal.es/">Agile Protein Interactomes DataServer</a></li>
+<li><a href="https://alman.ax/#/about">Almanax</a></li>
 <li><a href="http://www.aras.com/">Aras</a></li>
 <li><a href="http://bgu.ac.il/">Ben-Gurion University of the Negev</a></li>
 <li><a href="http://netbio.bgu.ac.il/diffnet/">DiffNet</a></li>
@@ -594,6 +595,7 @@
 <li><a href="https://www.machine2learn.com">Machine2Learn</a> : <a href="https://www.machine2learn.com/deep-learning-model-generator/">Deep Learning Model Generator</a></li>
 <li><a href="https://www.mpimp-golm.mpg.de">Max Plank Institute of Molecular Cell Physiology</a> : <a href="http://conekt.mpimp-golm.mpg.de/pub/">CoNekT</a></li>
 <li><a href="http://en.musicalized.com/full">Musicalized</a></li>
+<li><a href="https://newrelic.com/platform">New Relic</a></li>
 <li><a href="http://www.ndexbio.org/">NDEx</a></li>
 <li><a href="http://www.ohdsi.org/">OHDSI</a></li>
 <li><a href="http://www.pathwaycommons.org">Pathway Commons</a></li>
@@ -634,11 +636,13 @@
 <h2 id="introduction/releases">Releases <a href="#introduction/releases"><span class="fa fa-bookmark"></span></a></h2>
 <ul>
 <li>3.6<ul>
-<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.6.0+is%3Aclosed">3.6.0</a></li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.6.2+is%3Aclosed">3.6.2</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.6.1+is%3Aclosed">3.6.1</a></li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.6.0+is%3Aclosed">3.6.0</a></li>
 </ul>
 </li>
 <li>3.5<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.5.8+is%3Aclosed">3.5.8</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.5.7+is%3Aclosed">3.5.7</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.5.6+is%3Aclosed">3.5.6</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.5.5+is%3Aclosed">3.5.5</a></li>
@@ -14487,6 +14491,7 @@ cytoscape.use( ext );</code></pre>
 <p><i class="fa fa-fw fa-users"></i> denotes a third-party extension, one that is maintained by outside developers.</p>
 <h2 id="extensions/ui-extensions">UI extensions <a href="#extensions/ui-extensions"><span class="fa fa-bookmark"></span></a></h2>
 <ul>
+<li><i class="fa fa-fw fa-users"></i> <a href="https://github.com/lambdalisue/cytoscape-anywhere-panning"><code>anywhere-panning</code></a> : Allow panning when dragging on nodes or edges.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/cytoscape/cytoscape.js-automove"><code>automove</code></a> : Automatically update node positions based on specified rules (e.g. synching node movements, constraining movements, etc.)</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/iVis-at-Bilkent/cytoscape.js-autopan-on-drag"><code>autopan-on-drag</code></a> : Automatically pan the viewport when nodes are dragged outside of the viewport bounds.</li>
 <li><i class="fa fa-fw fa-users"></i> <a href="https://github.com/classcraft/cytoscape.js-canvas"><code>canvas</code></a> : An extension to create a canvas over or under a Cytoscape graph. Useful for customizing nodes/edges, drawing backgrounds, etc.</li>
@@ -14519,6 +14524,7 @@ cytoscape.use( ext );</code></pre>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/iVis-at-Bilkent/cytoscape.js-avsdf"><code>avsdf</code></a> : The AVSDF layout.  It organises nodes in a circle and tries to minimise edge crossings as much as possible.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/cytoscape/cytoscape.js-cose-bilkent"><code>cose-bilkent</code></a> : The CoSE layout by Bilkent with enhanced compound node placement.  CoSE Bilkent gives near-perfect end results.  However, it’s more expensive than the version of CoSE directly included with Cytoscape.js.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/cytoscape/cytoscape.js-dagre"><code>dagre</code></a> : The Dagre layout for DAGs and trees.</li>
+<li><i class="fa fa-fw fa-users"></i> <a href="https://github.com/jfstephe/cytoscape.js-elk"><code>elk</code></a> : <a href="https://github.com/OpenKieler/elkjs">ELK</a> layout algorithm adapter for Cytoscape.js.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/cytoscape/cytoscape.js-euler"><code>euler</code></a> : Euler is a fast, small file-size, high-quality force-directed (physics simulation) layout.  It is excellent for non-compound graphs, and it has basic support for compound graphs.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/iVis-at-Bilkent/cytoscape.js-fcose"><code>fcose</code></a> : The fCoSE layout is a faster version of the CoSE-Bilkent layout.  It supports compound and non-compound graphs, giving top-tier end results and high performance for a force-directed layout.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/cytoscape/cytoscape.js-klay"><code>klay</code></a> : Klay is a layout that works well for most types of graphs.  It gives good results for ordinary graphs, and it handles DAGs and compound graphs very nicely.</li>
@@ -14531,11 +14537,20 @@ cytoscape.use( ext );</code></pre>
 <ul>
 <li><i class="fa fa-fw fa-users"></i> <a href="https://github.com/daniel-dx/cytoscape-all-paths"><code>all-paths</code></a> : Gets all longest, directed paths.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/iVis-at-Bilkent/cytoscape.js-clipboard"><code>clipboard</code></a> : Adds copy-paste utilities to Cytoscape.js.</li>
+<li><i class="fa fa-fw fa-users"></i> <a href="https://github.com/lambdalisue/cytoscape-dblclick"><code>dblclick</code></a> : Adds a <code>dblclick</code> event to Cytoscape.js.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/iVis-at-Bilkent/cytoscape.js-graphml"><code>graphml</code></a> : Adds GraphML import and export functionality to Cytoscape.js.</li>
-<li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/PathwayCommons/cytoscape-sbgn-stylesheet"><code>sbgn-stylesheet</code></a> : A stylesheet preset for <a href="https://sbgn.github.io/sbgn/">SBGN</a>.</li>
-<li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/PathwayCommons/sbgnml-to-cytoscape"><code>sbgnml-to-cytoscape</code></a> : Converts XML-based <a href="https://sbgn.github.io/sbgn/">SBGN</a> files to Cytoscape.js JSON.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/iVis-at-Bilkent/cytoscape.js-undo-redo"><code>undo-redo</code></a> : Adds undo-redo APIs to Cytoscape.js.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/iVis-at-Bilkent/cytoscape.js-view-utilities"><code>view-utilities</code></a> : Adds search and highlight APIs to Cytoscape.js.</li>
+</ul>
+<h2 id="extensions/utility-packages">Utility packages <a href="#extensions/utility-packages"><span class="fa fa-bookmark"></span></a></h2>
+<ul>
+<li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/cytoscape/cytosnap"><code>cytosnap</code></a> : A Node.js package that renders images of Cytoscape.js graphs on the server using Puppeteer.</li>
+<li><i class="fa fa-fw fa-users"></i> <a href="https://github.com/calvinvette/ngx-cytoscape"><code>ngx-cytoscape</code></a> : An Angular 5+ component for Cytoscape.js.</li>
+<li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/plotly/react-cytoscapejs"><code>react-cytoscapejs</code></a> : A <a href="https://reactjs.org">React</a> component for Cytoscape.js network visualisations.</li>
+<li><i class="fa fa-fw fa-users"></i> <a href="https://github.com/jmvillaveces/sif.js"><code>sif.js</code></a> : A javascript library to parse simple interaction file (SIF) files.</li>
+<li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/PathwayCommons/cytoscape-sbgn-stylesheet"><code>sbgn-stylesheet</code></a> : A stylesheet preset for <a href="https://sbgn.github.io/sbgn/">SBGN</a>.</li>
+<li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/PathwayCommons/sbgnml-to-cytoscape"><code>sbgnml-to-cytoscape</code></a> : Converts XML-based <a href="https://sbgn.github.io/sbgn/">SBGN</a> files to Cytoscape.js JSON.</li>
+<li><i class="fa fa-fw fa-users"></i> <a href="https://www.npmjs.com/package/vue-cytoscape"><code>vue-cytoscape</code></a> : A <a href="https://vuejs.org">Vue</a> component for Cytoscape.js.</li>
 </ul>
 <h2 id="extensions/registration">Registration <a href="#extensions/registration"><span class="fa fa-bookmark"></span></a></h2>
 <p>To register an extension, make the following call: <code>cytoscape( type, name, extension );</code></p>
@@ -15499,6 +15514,11 @@ cytoscape.use( ext );</code></pre>
 						<div class="section lvl2">
 							
 							<a class="toclink" href="#extensions/api-extensions">API extensions</a>
+						</div>
+
+						<div class="section lvl2">
+							
+							<a class="toclink" href="#extensions/utility-packages">Utility packages</a>
 						</div>
 
 						<div class="section lvl2">

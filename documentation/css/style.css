@@ -472,20 +472,15 @@ button.outline {
 	margin-left: 18.5em;
 }
 
-#content:before {
-	content : '';
-	display: block;
-	position: absolute;
-	top: 0;
-	right: -0.5em;
-	width: 8em;
-	height: 8em;
+.title-logo {
+	display: inline-block;
+	width: 0.75em;
+	height: 0.75em;
 	background-image: url('../img/cytoscape-logo.svg');
 	background-size: 100% 100%;
 	background-position: top left;
 	background-repeat: no-repeat;
-	opacity: 0.15;
-	z-index: -1;
+	margin-right: 0.125em;
 }
 
 #demo, #demo-source {

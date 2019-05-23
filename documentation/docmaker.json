@@ -1791,6 +1791,24 @@
             {
               "name": "ele.active",
               "descr": "Gets whether the element is active (e.g. on user tap, grab, etc)."
+            },
+
+            {
+              "name": "ele.pannable",
+              "descr": "Gets whether the element allows passthrough panning.",
+              "md": "collection/pannable"
+            },
+
+            {
+              "name": "eles.panify",
+              "descr": "Enables passthrough panning on the elements.",
+              "md": "collection/panify"
+            },
+
+            {
+              "name": "eles.unpanify",
+              "descr": "Disables passthrough panning on the elements.",
+              "md": "collection/unpanify"
             }
 
           ]

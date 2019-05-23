@@ -116,6 +116,8 @@ cytoscape({
 
       grabbable: true, // whether the node can be grabbed and moved by the user
 
+      pannable: false, // whether dragging the node causes panning instead of grabbing
+
       classes: ['foo', 'bar'] // an array (or a space separated string) of class names that the element has
     },
 
@@ -140,7 +142,9 @@ cytoscape({
         source: 'n1', // the source node id (edge comes from this node)
         target: 'n2'  // the target node id (edge goes to this node)
         // (`source` and `target` can be effectively changed by `eles.move()`)
-      }
+      },
+
+      pannable: true // whether dragging on the edge causes panning
     }
   ],
 

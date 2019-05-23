@@ -108,7 +108,7 @@ defineSwitchSet( {
 defineSwitchSet( {
   field: 'grabbable',
   overrideField: function( ele ){
-    return ele.cy().autoungrabify() ? false : undefined;
+    return ele.cy().autoungrabify() || ele.pannable() ? false : undefined;
   },
   on: 'grabify',
   off: 'ungrabify'
@@ -146,6 +146,12 @@ defineSwitchSet( {
   field: 'active',
   on: 'activate',
   off: 'unactivate'
+} );
+
+defineSwitchSet( {
+  field: 'pannable',
+  on: 'panify',
+  off: 'unpanify'
 } );
 
 elesfn.inactive = function(){

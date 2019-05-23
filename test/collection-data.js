@@ -4,7 +4,7 @@ var cytoscape = require('../src/test.js', cytoscape);
 describe('Collection data', function(){
 
   var cy;
-  var n1;
+  var n1, n1n2;
 
   // test setup
   beforeEach(function(){
@@ -31,6 +31,7 @@ describe('Collection data', function(){
     });
 
     n1 = cy.$('#n1');
+    n1n2 = cy.$('#n1n2');
   });
 
 
@@ -125,6 +126,7 @@ describe('Collection data', function(){
       expect( json ).to.have.property('selectable', n1.selectable());
       expect( json ).to.have.property('locked', n1.locked());
       expect( json ).to.have.property('grabbable', n1.grabbable());
+      expect( json ).to.have.property('pannable', n1.pannable());
       expect( json ).to.have.property('classes');
       expect( json.classes === 'odd one' || json.classes === 'one odd' ).to.be.true;
 
@@ -231,6 +233,30 @@ describe('Collection data', function(){
       n1.json({ grabbable: false });
 
       expect( n1.grabbable() ).to.be.false;
+
+      expect( evts ).to.equal(1);
+    });
+
+    it('sets pannable', function(){
+      n1n2.unpanify();
+
+      var evts = 0;
+      n1n2.on('panify', function(){ evts++; });
+
+      n1n2.json({ pannable: true });
+
+      expect( n1n2.pannable() ).to.be.true;
+
+      expect( evts ).to.equal(1);
+    });
+
+    it('sets unpannable', function(){
+      var evts = 0;
+      n1n2.on('unpanify', function(){ evts++; });
+
+      n1n2.json({ pannable: false });
+
+      expect( n1n2.pannable() ).to.be.false;
 
       expect( evts ).to.equal(1);
     });

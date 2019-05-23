@@ -112,8 +112,8 @@ BRp.load = function(){
   var allowPanningPassthrough = function( down, downs ){
     var allowPassthrough = true;
 
-    if( r.cy.hasCompoundNodes() && down && down.isEdge() ){
-      // a compound node below the edge => no passthrough panning
+    if( r.cy.hasCompoundNodes() && down && down.pannable() ){
+      // a grabbable compound node below the ele => no passthrough panning
       for( var i = 0; downs && i < downs.length; i++ ){
         var down = downs[i];
 
@@ -532,7 +532,7 @@ BRp.load = function(){
         r.redrawHint( 'select', true );
 
         r.redraw();
-      } else if( near.isEdge() ){
+      } else if( near.pannable() ){
         select[4] = 1; // for future pan
       }
 
@@ -700,7 +700,7 @@ BRp.load = function(){
 
     // Checks primary button down & out of time & mouse not moved much
     } else if(
-        select[4] == 1 && (down == null || down.isEdge())
+        select[4] == 1 && (down == null || down.pannable())
     ){
 
       if( isOverThresholdDrag ){
@@ -723,12 +723,12 @@ BRp.load = function(){
           }
         }
 
-        if( down && down.isEdge() && down.active() ){ down.unactivate(); }
+        if( down && down.pannable() && down.active() ){ down.unactivate(); }
 
       }
 
     } else {
-      if( down && down.isEdge() && down.active() ){ down.unactivate(); }
+      if( down && down.pannable() && down.active() ){ down.unactivate(); }
 
       if( ( !down || !down.grabbed() ) && near != last ){
 
@@ -1681,7 +1681,7 @@ BRp.load = function(){
       // panning
       if(
           capture
-          && ( start == null || start.isEdge() )
+          && ( start == null || start.pannable() )
           && cy.panningEnabled() && cy.userPanningEnabled()
       ){
 

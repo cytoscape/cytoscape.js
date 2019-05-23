@@ -276,6 +276,8 @@ elesfn.json = function( obj ){
 
     checkSwitch( 'grabbable', 'grabify', 'ungrabify' );
 
+    checkSwitch( 'pannable', 'panify', 'unpanify' );
+
     if( obj.classes != null ){
       ele.classes( obj.classes );
     }
@@ -295,6 +297,7 @@ elesfn.json = function( obj ){
       selectable: p.selectable,
       locked: p.locked,
       grabbable: p.grabbable,
+      pannable: p.pannable,
       classes: null
     };
 

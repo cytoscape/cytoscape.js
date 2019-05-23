@@ -54,6 +54,7 @@ let Element = function( cy, params, restore ){
     locked: params.locked ? true : false, // whether the element is locked (cannot be moved)
     grabbed: false, // whether the element is grabbed by the mouse; renderer sets this privately
     grabbable: params.grabbable === undefined ? true : ( params.grabbable ? true : false ), // whether the element can be grabbed
+    pannable: params.pannable === undefined ? (group === 'edges' ? true : false) : ( params.pannable ? true : false ), // whether the element has passthrough panning enabled
     active: false, // whether the element is active from user interaction
     classes: new Set(), // map ( className => true )
     animation: { // object for currently-running animations

@@ -870,6 +870,29 @@ describe('Core graph manipulation', function(){
       expect( cy.userPanningEnabled() ).to.equal( true );
     });
 
+    it('cy.json() gets data', function(){
+      cy.data({ foo: 'bar' });
+
+      var json = cy.json();
+
+      expect(json.data.foo).to.equal('bar');
+    });
+
+    it('cy.json() sets data', function(){
+      cy.json({ data: { foo: 'bar' } });
+
+      expect(cy.data('foo')).to.equal('bar');
+    });
+  });
+
+  describe('cy.data()', function(){ // only basic test for now b/c shared impl w/ eles...
+    it('sets and gets data', function(){
+      cy.data({ foo: 'bar' });
+
+      expect(cy.data('foo')).to.equal('bar');
+    });
+
+    // TODO more tests in future
   });
 
   describe('cy.style()', function(){

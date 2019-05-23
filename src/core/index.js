@@ -3,7 +3,6 @@ import * as util from '../util';
 import Collection from '../collection';
 import * as is from '../is';
 import Promise from '../promise';
-import define from '../define';
 
 import addRemove from './add-remove';
 import animation from './animation';
@@ -15,6 +14,7 @@ import renderer from './renderer';
 import search from './search';
 import style from './style';
 import viewport from './viewport';
+import data from './data';
 
 let Core = function( opts ){
   let cy = this;
@@ -65,6 +65,7 @@ let Core = function( opts ){
     elements: new Collection( this ), // elements in the graph
     listeners: [], // list of listeners
     aniEles: new Collection( this ), // elements being animated
+    data: {}, // data for the core
     scratch: {}, // scratch object for core
     layout: null,
     renderer: null,
@@ -407,6 +408,10 @@ util.extend( corefn, {
         }
       }
 
+      if( obj.data ){
+        cy.data( obj.data );
+      }
+
       let fields = [
         'minZoom', 'maxZoom', 'zoomingEnabled', 'userZoomingEnabled',
         'panningEnabled', 'userPanningEnabled',
@@ -449,6 +454,8 @@ util.extend( corefn, {
         json.style = cy.style().json();
       }
 
+      json.data =  util.copy( cy.data() );
+
       let options = _p.options;
 
       json.zoomingEnabled = _p.zoomingEnabled;
@@ -468,25 +475,7 @@ util.extend( corefn, {
 
       return json;
     }
-  },
-
-  scratch: define.data( {
-    field: 'scratch',
-    bindingEvent: 'scratch',
-    allowBinding: true,
-    allowSetting: true,
-    settingEvent: 'scratch',
-    settingTriggersEvent: true,
-    triggerFnName: 'trigger',
-    allowGetting: true
-  } ),
-
-  removeScratch: define.removeData( {
-    field: 'scratch',
-    event: 'scratch',
-    triggerFnName: 'trigger',
-    triggerEvent: true
-  } )
+  }
 
 } );
 
@@ -503,6 +492,7 @@ corefn.$id = corefn.getElementById;
   search,
   style,
   viewport,
+  data
 ].forEach( function( props ){
   util.extend( corefn, props );
 } );

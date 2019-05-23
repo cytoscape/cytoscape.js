@@ -244,25 +244,23 @@ BRp.findNearestElements = function( x, y, interactiveElementsOnly, isTouch ){
       prefixDash = '';
     }
 
+    var bb = _p.labelBounds[prefix || 'main'];
+
     var text = ele.pstyle( prefixDash + 'label' ).value;
     var eventsEnabled = ele.pstyle( 'text-events' ).strValue === 'yes';
 
     if( !eventsEnabled || !text ){ return; }
 
     var rstyle = _p.rstyle;
-    var bw = ele.pstyle('text-border-width').pfValue;
-    var pw = ele.pstyle('text-background-padding').pfValue;
-    var lw = preprop( rstyle, 'labelWidth', prefix ) + bw + 2*th + 2*pw;
-    var lh = preprop( rstyle, 'labelHeight', prefix ) + bw + 2*th + 2*pw;
     var lx = preprop( rstyle, 'labelX', prefix );
     var ly = preprop( rstyle, 'labelY', prefix );
 
     var theta = preprop( _p.rscratch, 'labelAngle', prefix );
 
-    var lx1 = lx - lw / 2;
-    var lx2 = lx + lw / 2;
-    var ly1 = ly - lh / 2;
-    var ly2 = ly + lh / 2;
+    var lx1 = bb.x1 - th;
+    var lx2 = bb.x2 + th;
+    var ly1 = bb.y1 - th;
+    var ly2 = bb.y2 + th;
 
     if( theta ){
       var cos = Math.cos( theta );
@@ -295,15 +293,6 @@ BRp.findNearestElements = function( x, y, interactiveElementsOnly, isTouch ){
         return true;
       }
     } else { // do a cheaper bb check
-      var bb = {
-        w: lw,
-        h: lh,
-        x1: lx1,
-        x2: lx2,
-        y1: ly1,
-        y2: ly2
-      };
-
       if( math.inBoundingBox( bb, x, y ) ){
         addEle( ele );
         return true;

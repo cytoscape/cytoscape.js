@@ -1,6 +1,7 @@
 import easings from './easings';
 import ease from './ease';
 import * as is from '../../is';
+import {bound} from '../../math';
 
 function step( self, ani, now, isCore ){
   let isEles = !isCore;
@@ -110,7 +111,7 @@ function step( self, ani, now, isCore ){
     let animatingZoom = endZoom != null && isCore;
     if( animatingZoom ){
       if( valid( startZoom, endZoom ) ){
-        _p.zoom = ease( startZoom, endZoom, percent, easing );
+        _p.zoom = bound( _p.minZoom, ease( startZoom, endZoom, percent, easing ), _p.maxZoom );
       }
 
       self.emit( 'zoom' );

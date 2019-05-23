@@ -157,10 +157,14 @@ elesfn.unique = function(){
 };
 
 elesfn.hasElementWithId = function( id ){
+  id = '' + id; // id must be string
+
   return this._private.map.has( id );
 };
 
 elesfn.getElementById = function( id ){
+  id = '' + id; // id must be string
+
   let cy = this._private.cy;
   let entry = this._private.map.get( id );
 
@@ -184,6 +188,8 @@ elesfn.indexOf = function( ele ){
 };
 
 elesfn.indexOfId = function( id ){
+  id = '' + id; // id must be string
+
   return this._private.map.get( id ).index;
 };
 
@@ -212,13 +218,13 @@ elesfn.json = function( obj ){
         let src = obj.data.source;
         let tgt = obj.data.target;
 
-        if( src != null && src !== data.source ){
-          spec.source = src;
+        if( src != null && src != data.source ){
+          spec.source = '' + src; // id must be string
           move = true;
         }
 
-        if( tgt != null && tgt !== data.target ){
-          spec.target = tgt;
+        if( tgt != null && tgt != data.target ){
+          spec.target = '' + tgt; // id must be string
           move = true;
         }
 
@@ -228,9 +234,13 @@ elesfn.json = function( obj ){
       } else { // parent is immutable via data()
         let parent = obj.data.parent;
 
-        if( (parent != null || data.parent != null) && parent !== data.parent ){
+        if( (parent != null || data.parent != null) && parent != data.parent ){
           if( parent === undefined ){ // can't set undefined imperatively, so use null
             parent = null;
+          }
+
+          if( parent != null ){
+            parent = '' + parent; // id must be string
           }
 
           ele = ele.move({ parent });
@@ -723,9 +733,11 @@ elesfn.move = function( struct ){
   let notifyRenderer = false;
   let modifyPool = false;
 
+  let toString = id => id == null ? id : '' + id; // id must be string
+
   if( struct.source !== undefined || struct.target !== undefined ){
-    let srcId = struct.source;
-    let tgtId = struct.target;
+    let srcId = toString(struct.source);
+    let tgtId = toString(struct.target);
     let srcExists = srcId != null && cy.hasElementWithId( srcId );
     let tgtExists = tgtId != null && cy.hasElementWithId( tgtId );
 
@@ -752,7 +764,7 @@ elesfn.move = function( struct ){
     }
 
   } else if( struct.parent !== undefined ){ // move node to new parent
-    let parentId = struct.parent;
+    let parentId = toString(struct.parent);
     let parentExists = parentId === null || cy.hasElementWithId( parentId );
 
     if( parentExists ){

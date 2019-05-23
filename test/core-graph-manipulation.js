@@ -325,6 +325,54 @@ describe('Core graph manipulation', function(){
       expect( eles.filter('#foo').empty() ).to.be.true;
     });
 
+    it('cy.getElementById() gets element for string id', function(){
+      var ele = cy.getElementById('n1');
+
+      expect(ele.nonempty()).to.be.true;
+      expect(ele.data('foo')).to.equal('one');
+    });
+
+    it('cy.getElementById() gets element for int id', function(){
+      cy.add({ data: { id: 4, foo: "four", weight: 1 }, classes: "even four" });
+
+      var ele = cy.getElementById(4);
+
+      expect(ele.nonempty()).to.be.true;
+      expect(ele.data('foo')).to.equal('four');
+    });
+
+    it('cy.getElementById() gets empty collection for non-matching string id', function(){
+      var ele = cy.getElementById('n123');
+
+      expect(ele.empty()).to.be.true;
+    });
+
+    it('cy.getElementById() gets empty collection for non-matching int id', function(){
+      cy.add({ data: { id: 4, foo: "four", weight: 1 }, classes: "even four" });
+
+      var ele = cy.getElementById(123);
+
+      expect(ele.empty()).to.be.true;
+    });
+
+    it('cy.hasElementWithId() returns true for string id', function(){
+      expect(cy.hasElementWithId('n1')).to.be.true;
+    });
+
+    it('cy.hasElementWithId() returns true for int id', function(){
+      cy.add({ data: { id: 4, foo: "four", weight: 1 }, classes: "even four" });
+
+      expect(cy.hasElementWithId(4)).to.be.true;
+    });
+
+    it('cy.hasElementWithId() returns false for non-matching string id', function(){
+      expect(cy.hasElementWithId('n123')).to.be.false;
+    });
+
+    it('cy.hasElementWithId() returns true for non-matching int id', function(){
+      expect(cy.hasElementWithId(123)).to.be.false;
+    });
+
   });
 
   describe('cy.json()', function(){

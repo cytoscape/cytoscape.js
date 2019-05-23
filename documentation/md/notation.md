@@ -93,7 +93,7 @@ cytoscape({
 
 
       data: { // element data (put json serialisable dev data here)
-        id: 'n1', // mandatory (string or number) id for each element, assigned automatically on undefined
+        id: 'n1', // mandatory (string) id for each element, assigned automatically on undefined
         parent: 'nparent', // indicates the compound node parent id; not defined => no parent
         // (`parent` can be effectively changed by `eles.move()`)
       },

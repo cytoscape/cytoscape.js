@@ -331,7 +331,7 @@ util.extend( corefn, {
 
           for( let i = 0; i < jsons.length; i++ ){
             let json = jsons[ i ];
-            let id = json.data.id;
+            let id = '' + json.data.id; // id must be string
             let ele = cy.getElementById( id );
 
             idInJson[ id ] = true;

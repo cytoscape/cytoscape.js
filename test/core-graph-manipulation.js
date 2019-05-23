@@ -834,4 +834,19 @@ describe('Core graph manipulation', function(){
     });
   });
 
+  describe('cy.zoom()', function(){
+    describe('cy.zoom(number)', function() {
+      it('should not return a negative value', function() {
+        cy.zoom(-10);
+        expect(cy.zoom() >= 0).to.equal(true);
+      });
+    });
+
+    describe('cy.zoom({level: number})', function() {
+      it('should not return a negative value', function() {
+        cy.zoom({level: -10});
+        expect(cy.zoom() >= 0).to.equal(true);
+      });
+    });
+  });
 });

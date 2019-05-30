@@ -454,8 +454,13 @@ elesfn.restore = function( notifyRenderer = true, addToPool = true ){
       let src = cy.getElementById( data.source );
       let tgt = cy.getElementById( data.target );
 
-      src._private.edges.push( edge );
-      tgt._private.edges.push( edge );
+      // only one edge in node if loop
+      if (src.same(tgt)) {
+          src._private.edges.push( edge );
+      } else {
+          src._private.edges.push( edge );
+          tgt._private.edges.push( edge );
+      }
 
       edge._private.source = src;
       edge._private.target = tgt;

@@ -1,28 +1,28 @@
-var expect = require('chai').expect;
-var util = require('../../src/util');
+import { expect } from 'chai';
+import { hashString, hashInt, hashIntsArray } from '../../src/util';
 
 describe('util', function(){
 
   describe('hash', function(){
     it('gives same result with seed for one-char strings', function(){
-      var h1 = util.hashString('a');
-      var h2 = util.hashString('b', h1);
-      var h3 = util.hashString('ab');
+      var h1 = hashString('a');
+      var h2 = hashString('b', h1);
+      var h3 = hashString('ab');
 
       expect(h2).to.equal(h3);
     });
 
     it('gives same result with seed for multi-char strings', function(){
-      var h1 = util.hashString('foo');
-      var h2 = util.hashString('bar', h1);
-      var h3 = util.hashString('foobar');
+      var h1 = hashString('foo');
+      var h2 = hashString('bar', h1);
+      var h3 = hashString('foobar');
 
       expect(h2).to.equal(h3);
     });
 
     it('gives different results for strings of opposite order', function(){
-      var h1 = util.hashString('foobar');
-      var h2 = util.hashString('raboof');
+      var h1 = hashString('foobar');
+      var h2 = hashString('raboof');
 
       expect(h1).to.not.equal(h2);
     });
@@ -32,10 +32,10 @@ describe('util', function(){
       var a = 846302;
       var b = 466025;
 
-      var h1 = util.hashInt(a);
-      var h2 = util.hashInt(b, h1);
+      var h1 = hashInt(a);
+      var h2 = hashInt(b, h1);
 
-      var h3 = util.hashIntsArray([a, b]);
+      var h3 = hashIntsArray([a, b]);
 
       expect(h2).to.equal(h3);
     });
@@ -47,7 +47,7 @@ describe('util', function(){
       var hashes = {};
 
       for( var i = min; i <= max; i++ ){
-        var h = util.hashInt(i);
+        var h = hashInt(i);
 
         expect( hashes[h] ).to.not.exist;
 

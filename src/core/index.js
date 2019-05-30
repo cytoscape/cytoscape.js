@@ -260,15 +260,12 @@ util.extend( corefn, {
     return this._private.container || null;
   },
 
-  mount: function( container, rendererOptions ){
+  mount: function( container ){
     if( container == null ){ return; }
 
     let cy = this;
     let _p = cy._private;
     let options = _p.options;
-
-    let rOpts = rendererOptions ? rendererOptions : { name: 'canvas' };
-    options.renderer = rOpts;
 
     if( !is.htmlElement( container ) && is.htmlElement( container[0] ) ){
       container = container[0];
@@ -283,7 +280,7 @@ util.extend( corefn, {
 
     cy.invalidateSize();
 
-    cy.initRenderer( rOpts );
+    cy.initRenderer( util.assign({}, options, options.renderer) );
 
     cy.startAnimationLoop();
 

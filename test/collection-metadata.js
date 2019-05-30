@@ -91,4 +91,13 @@ describe('Collection metadata', function(){
     expect( cy.nodes().maxOutdegree() ).to.equal( 2 );
   });
 
+  it('node.degree() for loop', function(){
+    cy.add([
+      { data: { id: 'n6' } },
+      { data: { id: 'n6n6', source: 'n6', target: 'n6' } }
+    ]);
+
+    expect( cy.getElementById('n6').degree() ).to.equal(2);
+  });
+
 });

@@ -92,8 +92,8 @@ describe('Selectors', function(){
 
   // metadata
   itSelects('[[degree = 1]]', 'n1', 'n2');
-  itSelects('[[indegree = 1]]', 'n2');
-  itSelects('[[outdegree = 1]]', 'n1');
+  itSelects('[[indegree = 1]]', 'n2', 'nparent');
+  itSelects('[[outdegree = 1]]', 'n1', 'nparent');
 
   // selection
   itSelects(':selected', 'n1');

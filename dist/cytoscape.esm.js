@@ -11963,10 +11963,14 @@ elesfn$t.unique = function () {
 };
 
 elesfn$t.hasElementWithId = function (id) {
+  id = '' + id; // id must be string
+
   return this._private.map.has(id);
 };
 
 elesfn$t.getElementById = function (id) {
+  id = '' + id; // id must be string
+
   var cy = this._private.cy;
 
   var entry = this._private.map.get(id);
@@ -11989,6 +11993,8 @@ elesfn$t.indexOf = function (ele) {
 };
 
 elesfn$t.indexOfId = function (id) {
+  id = '' + id; // id must be string
+
   return this._private.map.get(id).index;
 };
 
@@ -12023,13 +12029,15 @@ elesfn$t.json = function (obj) {
         var src = obj.data.source;
         var tgt = obj.data.target;
 
-        if (src != null && src !== _data2.source) {
-          spec.source = src;
+        if (src != null && src != _data2.source) {
+          spec.source = '' + src; // id must be string
+
           move = true;
         }
 
-        if (tgt != null && tgt !== _data2.target) {
-          spec.target = tgt;
+        if (tgt != null && tgt != _data2.target) {
+          spec.target = '' + tgt; // id must be string
+
           move = true;
         }
 
@@ -12040,10 +12048,14 @@ elesfn$t.json = function (obj) {
         // parent is immutable via data()
         var parent = obj.data.parent;
 
-        if ((parent != null || _data2.parent != null) && parent !== _data2.parent) {
+        if ((parent != null || _data2.parent != null) && parent != _data2.parent) {
           if (parent === undefined) {
             // can't set undefined imperatively, so use null
             parent = null;
+          }
+
+          if (parent != null) {
+            parent = '' + parent; // id must be string
           }
 
           ele = ele.move({
@@ -12244,11 +12256,15 @@ elesfn$t.restore = function () {
 
 
       var src = cy.getElementById(_data3.source);
-      var tgt = cy.getElementById(_data3.target);
+      var tgt = cy.getElementById(_data3.target); // only one edge in node if loop
 
-      src._private.edges.push(edge);
+      if (src.same(tgt)) {
+        src._private.edges.push(edge);
+      } else {
+        src._private.edges.push(edge);
 
-      tgt._private.edges.push(edge);
+        tgt._private.edges.push(edge);
+      }
 
       edge._private.source = src;
       edge._private.target = tgt;
@@ -12540,9 +12556,14 @@ elesfn$t.move = function (struct) {
   var notifyRenderer = false;
   var modifyPool = false;
 
+  var toString = function toString(id) {
+    return id == null ? id : '' + id;
+  }; // id must be string
+
+
   if (struct.source !== undefined || struct.target !== undefined) {
-    var srcId = struct.source;
-    var tgtId = struct.target;
+    var srcId = toString(struct.source);
+    var tgtId = toString(struct.target);
     var srcExists = srcId != null && cy.hasElementWithId(srcId);
     var tgtExists = tgtId != null && cy.hasElementWithId(tgtId);
 
@@ -12574,7 +12595,7 @@ elesfn$t.move = function (struct) {
     }
   } else if (struct.parent !== undefined) {
     // move node to new parent
-    var parentId = struct.parent;
+    var parentId = toString(struct.parent);
     var parentExists = parentId === null || cy.hasElementWithId(parentId);
 
     if (parentExists) {
@@ -13174,7 +13195,7 @@ function step(self, ani, now, isCore) {
 
     if (animatingZoom) {
       if (valid(startZoom, endZoom)) {
-        _p.zoom = ease(startZoom, endZoom, percent, easing);
+        _p.zoom = bound(_p.minZoom, ease(startZoom, endZoom, percent, easing), _p.maxZoom);
       }
 
       self.emit('zoom');
@@ -17844,7 +17865,7 @@ extend(corefn$9, {
   container: function container() {
     return this._private.container || null;
   },
-  mount: function mount(container, rendererOptions) {
+  mount: function mount(container) {
     if (container == null) {
       return;
     }
@@ -17852,10 +17873,6 @@ extend(corefn$9, {
     var cy = this;
     var _p = cy._private;
     var options = _p.options;
-    var rOpts = rendererOptions ? rendererOptions : {
-      name: 'canvas'
-    };
-    options.renderer = rOpts;
 
     if (!htmlElement(container) && htmlElement(container[0])) {
       container = container[0];
@@ -17866,7 +17883,7 @@ extend(corefn$9, {
     _p.container = container;
     _p.styleEnabled = true;
     cy.invalidateSize();
-    cy.initRenderer(rOpts);
+    cy.initRenderer(extend({}, options, options.renderer));
     cy.startAnimationLoop();
     cy.style(options.style);
     cy.emit('mount');
@@ -17907,7 +17924,8 @@ extend(corefn$9, {
 
           for (var i = 0; i < jsons.length; i++) {
             var json = jsons[i];
-            var id = json.data.id;
+            var id = '' + json.data.id; // id must be string
+
             var ele = cy.getElementById(id);
             idInJson[id] = true;
 
@@ -21003,6 +21021,7 @@ BRp$1.findNearestElements = function (x, y, interactiveElementsOnly, isTouch) {
       prefixDash = '';
     }
 
+    var bb = _p.labelBounds[prefix || 'main'];
     var text = ele.pstyle(prefixDash + 'label').value;
     var eventsEnabled = ele.pstyle('text-events').strValue === 'yes';
 
@@ -21011,17 +21030,13 @@ BRp$1.findNearestElements = function (x, y, interactiveElementsOnly, isTouch) {
     }
 
     var rstyle = _p.rstyle;
-    var bw = ele.pstyle('text-border-width').pfValue;
-    var pw = ele.pstyle('text-background-padding').pfValue;
-    var lw = preprop(rstyle, 'labelWidth', prefix) + bw + 2 * th + 2 * pw;
-    var lh = preprop(rstyle, 'labelHeight', prefix) + bw + 2 * th + 2 * pw;
     var lx = preprop(rstyle, 'labelX', prefix);
     var ly = preprop(rstyle, 'labelY', prefix);
     var theta = preprop(_p.rscratch, 'labelAngle', prefix);
-    var lx1 = lx - lw / 2;
-    var lx2 = lx + lw / 2;
-    var ly1 = ly - lh / 2;
-    var ly2 = ly + lh / 2;
+    var lx1 = bb.x1 - th;
+    var lx2 = bb.x2 + th;
+    var ly1 = bb.y1 - th;
+    var ly2 = bb.y2 + th;
 
     if (theta) {
       var cos = Math.cos(theta);
@@ -21048,15 +21063,6 @@ BRp$1.findNearestElements = function (x, y, interactiveElementsOnly, isTouch) {
       }
     } else {
       // do a cheaper bb check
-      var bb = {
-        w: lw,
-        h: lh,
-        x1: lx1,
-        x2: lx2,
-        y1: ly1,
-        y2: ly2
-      };
-
       if (inBoundingBox(bb, x, y)) {
         addEle(ele);
         return true;
@@ -30507,7 +30513,7 @@ sheetfn.appendToStyle = function (style$$1) {
   return style$$1;
 };
 
-var version = "3.5.8";
+var version = "3.5.9";
 
 var cytoscape = function cytoscape(options) {
   // if no options specified, use default

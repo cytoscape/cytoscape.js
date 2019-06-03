@@ -635,13 +635,19 @@
 </ul>
 <h2 id="introduction/releases">Releases <a href="#introduction/releases"><span class="fa fa-bookmark"></span></a></h2>
 <ul>
+<li>3.7<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.7.0+is%3Aclosed">3.7.0</a></li>
+</ul>
+</li>
 <li>3.6<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.6.3+is%3Aclosed">3.6.3</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.6.2+is%3Aclosed">3.6.2</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.6.1+is%3Aclosed">3.6.1</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.6.0+is%3Aclosed">3.6.0</a></li>
 </ul>
 </li>
 <li>3.5<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.5.9+is%3Aclosed">3.5.9</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.5.8+is%3Aclosed">3.5.8</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.5.7+is%3Aclosed">3.5.7</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.5.6+is%3Aclosed">3.5.6</a></li>
@@ -956,7 +962,7 @@
 
 
       data: { <span class="hljs-comment">// element data (put json serialisable dev data here)</span>
-        id: <span class="hljs-string">'n1'</span>, <span class="hljs-comment">// mandatory (string or number) id for each element, assigned automatically on undefined</span>
+        id: <span class="hljs-string">'n1'</span>, <span class="hljs-comment">// mandatory (string) id for each element, assigned automatically on undefined</span>
         parent: <span class="hljs-string">'nparent'</span>, <span class="hljs-comment">// indicates the compound node parent id; not defined =&gt; no parent</span>
         <span class="hljs-comment">// (`parent` can be effectively changed by `eles.move()`)</span>
       },
@@ -978,6 +984,8 @@
       locked: <span class="hljs-literal">false</span>, <span class="hljs-comment">// when locked a node's position is immutable (default false)</span>
 
       grabbable: <span class="hljs-literal">true</span>, <span class="hljs-comment">// whether the node can be grabbed and moved by the user</span>
+
+      pannable: <span class="hljs-literal">false</span>, <span class="hljs-comment">// whether dragging the node causes panning instead of grabbing</span>
 
       classes: [<span class="hljs-string">'foo'</span>, <span class="hljs-string">'bar'</span>] <span class="hljs-comment">// an array (or a space separated string) of class names that the element has</span>
     },
@@ -1003,7 +1011,9 @@
         source: <span class="hljs-string">'n1'</span>, <span class="hljs-comment">// the source node id (edge comes from this node)</span>
         target: <span class="hljs-string">'n2'</span>  <span class="hljs-comment">// the target node id (edge goes to this node)</span>
         <span class="hljs-comment">// (`source` and `target` can be effectively changed by `eles.move()`)</span>
-      }
+      },
+
+      <span class="hljs-attr">pannable</span>: <span class="hljs-literal">true</span> <span class="hljs-comment">// whether dragging on the edge causes panning</span>
     }
   ],
 
@@ -1658,7 +1668,7 @@ cy.nodes().on(<span class="hljs-string">'click'</span>, <span class="hljs-functi
 
 							<div class="details">
 									<h3 id="details">Details</h3>
-<p>If no elements in the graph match the selector, an empty <a href="Collection">collection</a> is returned.</p>
+<p>If no elements in the graph match the selector, an empty <a href="#collection">collection</a> is returned.</p>
 <p>The function <code>cy.$()</code> acts as an alias to <code>cy.filter()</code>:  It lets you type less characters.  It is analogous to the jQuery <code>$</code> alias used to search the document</p>
 <h3 id="examples">Examples</h3>
 <p>Get nodes with weight greater than 50:</p>
@@ -1838,9 +1848,167 @@ cy.endBatch();</code></pre>
 							</div>
 						</div>
 						<div class="function">
+							<div class="name" id="cy.destroyed">
+								<span class="fn-name">cy.destroyed()</span>  <a href="#cy.destroyed"><span class="fa fa-bookmark"></span></a>
+								<span id="core/graph-manipulation/cy.destroyed">&nbsp;</span>
+							</div>
+
+
+
+							<div class="descr"><p>Get whether the instance of Cytoscape.js has been destroyed or not.</p>
+</div>
+
+
+							<div class="details">
+							</div>
+						</div>
+
+					<h2 id="core/data">Data <a href="#core/data"><span class="fa fa-bookmark"></span></a></h2>
+
+
+
+
+						<div class="function">
+							<div class="name" id="cy.data">
+								<span class="fn-name">cy.data()</span>  <a href="#cy.data"><span class="fa fa-bookmark"></span></a>
+								<span id="core/data/cy.data">&nbsp;</span><span id="core/data/cy.attr">&nbsp;</span><span id="cy.attr">&nbsp;</span><span id="core/data/cy.data">&nbsp;</span><span id="cy.data">&nbsp;</span><span id="core/data/cy.data">&nbsp;</span><span id="cy.data">&nbsp;</span><span id="core/data/cy.data">&nbsp;</span><span id="cy.data">&nbsp;</span><span id="core/data/cy.data">&nbsp;</span><span id="cy.data">&nbsp;</span>
+							</div>
+
+
+							<div class="pure-aliases">
+								<span class="important-indicator"></span> Aliases:
+
+									<span class="pure-alias">
+										<code id="core/data/cy.attr" class="pure-alias-name">cy.attr()</code><span class="pure-alias-comma">,</span>
+									</span>
+							</div>
+
+							<div class="descr"><p>Read and write developer-defined data associated with the graph.</p>
+</div>
+
+							<div class="formats">
+									<div class="format">
+											<div class="name">cy.data()</div>
+
+
+										<div class="descr"><p>Get the entire data object.</p>
+</div>
+										<ul class="args">
+										</ul>
+									</div>
+									<div class="format">
+											<div class="name">cy.data( <span class="args-summary"><span class="comma">,&nbsp;</span>name</span> )</div>
+
+
+										<div class="descr"><p>Get a particular data field.</p>
+</div>
+										<ul class="args">
+												<li>
+													<span class="name">name</span>
+													
+													<span class="descr"><p>The name of the field to get.</p>
+</span>
+
+												</li>
+										</ul>
+									</div>
+									<div class="format">
+											<div class="name">cy.data( <span class="args-summary"><span class="comma">,&nbsp;</span>name<span class="comma">,&nbsp;</span>value</span> )</div>
+
+
+										<div class="descr"><p>Set a particular data field.</p>
+</div>
+										<ul class="args">
+												<li>
+													<span class="name">name</span>
+													
+													<span class="descr"><p>The name of the field to set.</p>
+</span>
+
+												</li>
+												<li>
+													<span class="name">value</span>
+													
+													<span class="descr"><p>The value to set for the field.</p>
+</span>
+
+												</li>
+										</ul>
+									</div>
+									<div class="format">
+											<div class="name">cy.data( <span class="args-summary"><span class="comma">,&nbsp;</span>obj</span> )</div>
+
+
+										<div class="descr"><p>Update multiple data fields at once via an object.</p>
+</div>
+										<ul class="args">
+												<li>
+													<span class="name">obj</span>
+													
+													<span class="descr"><p>The object containing name-value pairs to update data fields.</p>
+</span>
+
+												</li>
+										</ul>
+									</div>
+							</div>
+
+							<div class="details">
+							</div>
+						</div>
+						<div class="function">
+							<div class="name" id="cy.removeData">
+								<span class="fn-name">cy.removeData()</span>  <a href="#cy.removeData"><span class="fa fa-bookmark"></span></a>
+								<span id="core/data/cy.removeData">&nbsp;</span><span id="core/data/cy.removeAttr">&nbsp;</span><span id="cy.removeAttr">&nbsp;</span><span id="core/data/cy.removeData">&nbsp;</span><span id="cy.removeData">&nbsp;</span><span id="core/data/cy.removeData">&nbsp;</span><span id="cy.removeData">&nbsp;</span>
+							</div>
+
+
+							<div class="pure-aliases">
+								<span class="important-indicator"></span> Aliases:
+
+									<span class="pure-alias">
+										<code id="core/data/cy.removeAttr" class="pure-alias-name">cy.removeAttr()</code><span class="pure-alias-comma">,</span>
+									</span>
+							</div>
+
+							<div class="descr"><p>Remove developer-defined data associated with the elements.</p>
+</div>
+
+							<div class="formats">
+									<div class="format">
+											<div class="name">cy.removeData()</div>
+
+
+										<div class="descr"><p>Removes all mutable data fields for the elements.</p>
+</div>
+										<ul class="args">
+										</ul>
+									</div>
+									<div class="format">
+											<div class="name">cy.removeData( <span class="args-summary"><span class="comma">,&nbsp;</span>names</span> )</div>
+
+
+										<div class="descr"><p>Removes the specified mutable data fields for the elements.</p>
+</div>
+										<ul class="args">
+												<li>
+													<span class="name">names</span>
+													
+													<span class="descr"><p>A space-separated list of fields to delete.</p>
+</span>
+
+												</li>
+										</ul>
+									</div>
+							</div>
+
+							<div class="details">
+							</div>
+						</div>
+						<div class="function">
 							<div class="name" id="cy.scratch">
 								<span class="fn-name">cy.scratch()</span>  <a href="#cy.scratch"><span class="fa fa-bookmark"></span></a>
-								<span id="core/graph-manipulation/cy.scratch">&nbsp;</span><span id="core/graph-manipulation/cy.scratch">&nbsp;</span><span id="cy.scratch">&nbsp;</span><span id="core/graph-manipulation/cy.scratch">&nbsp;</span><span id="cy.scratch">&nbsp;</span><span id="core/graph-manipulation/cy.scratch">&nbsp;</span><span id="cy.scratch">&nbsp;</span>
+								<span id="core/data/cy.scratch">&nbsp;</span><span id="core/data/cy.scratch">&nbsp;</span><span id="cy.scratch">&nbsp;</span><span id="core/data/cy.scratch">&nbsp;</span><span id="cy.scratch">&nbsp;</span><span id="core/data/cy.scratch">&nbsp;</span><span id="cy.scratch">&nbsp;</span>
 							</div>
 
 								<div class="ext-function-note">
@@ -1908,7 +2076,7 @@ cy.endBatch();</code></pre>
 						<div class="function">
 							<div class="name" id="cy.removeScratch">
 								<span class="fn-name">cy.removeScratch()</span>  <a href="#cy.removeScratch"><span class="fa fa-bookmark"></span></a>
-								<span id="core/graph-manipulation/cy.removeScratch">&nbsp;</span><span id="core/graph-manipulation/cy.removeScratch">&nbsp;</span><span id="cy.removeScratch">&nbsp;</span>
+								<span id="core/data/cy.removeScratch">&nbsp;</span><span id="core/data/cy.removeScratch">&nbsp;</span><span id="cy.removeScratch">&nbsp;</span>
 							</div>
 
 								<div class="ext-function-note">
@@ -1970,7 +2138,7 @@ cy.endBatch();</code></pre>
 									</span>
 							</div>
 
-							<div class="descr"><p>Listen to events that occur in the graph.</p>
+							<div class="descr"><p>Listen to events that occur on the core.</p>
 </div>
 
 							<div class="formats">
@@ -2095,7 +2263,7 @@ cy.endBatch();</code></pre>
 
 
 
-							<div class="descr"><p>Listen to events that occur in the graph, and run the handler only once.</p>
+							<div class="descr"><p>Listen to events that occur on the core, and run the handler only once.</p>
 </div>
 
 							<div class="formats">
@@ -2171,7 +2339,7 @@ cy.$(<span class="hljs-string">'node'</span>).eq(<span class="hljs-number">1</sp
 									</span>
 							</div>
 
-							<div class="descr"><p>Remove event handlers.</p>
+							<div class="descr"><p>Remove event handlers on the core.</p>
 </div>
 
 							<div class="formats">
@@ -2227,6 +2395,21 @@ cy.on(<span class="hljs-string">'tap'</span>, otherHandler);
 <span class="hljs-comment">// just remove handler</span>
 cy.removeListener(<span class="hljs-string">'tap'</span>, handler);</code></pre>
 <button class="run run-inline-code"><span class="fa fa-play"></span></button>
+							</div>
+						</div>
+						<div class="function">
+							<div class="name" id="cy.removeAllListeners">
+								<span class="fn-name">cy.removeAllListeners()</span>  <a href="#cy.removeAllListeners"><span class="fa fa-bookmark"></span></a>
+								<span id="core/events/cy.removeAllListeners">&nbsp;</span>
+							</div>
+
+
+
+							<div class="descr"><p>Remove all event handlers on the core.</p>
+</div>
+
+
+							<div class="details">
 							</div>
 						</div>
 						<div class="function">
@@ -3830,6 +4013,51 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 							</div>
 						</div>
 
+					<h2 id="core/eles.data">eles.data <a href="#core/eles.data"><span class="fa fa-bookmark"></span></a></h2>
+
+
+						<h2 id="eles.data/details">Details <a href="#eles.data/details"><span class="fa fa-bookmark"></span></a></h2>
+<p>Only JSON-serialisable data may be put in <code>ele.data()</code>.  For temporary data or non-serialisable data, use <a href="#ele.scratch"><code>ele.scratch()</code></a>.</p>
+<p>The following fields are normally immutable:</p>
+<ul>
+<li><code>id</code> : The <code>id</code> field is used to uniquely identify an element in the graph.</li>
+<li><code>source</code> &amp; <code>target</code> : These fields define an edge’s relationship to nodes, and this relationship can not be changed after creation.</li>
+<li><code>parent</code> : The <code>parent</code> field defines the parent (compound) node.</li>
+</ul>
+<p>In order to modify those fields, which alter graph topology, you must use <a href="#ele.move"><code>ele.move()</code></a>.</p>
+<h2 id="eles.data/examples">Examples <a href="#eles.data/examples"><span class="fa fa-bookmark"></span></a></h2>
+<pre><code class="language-js"><span class="hljs-keyword">var</span> j = cy.$(<span class="hljs-string">'#j'</span>);
+
+<span class="hljs-comment">// set the weight field in data</span>
+j.data(<span class="hljs-string">'weight'</span>, <span class="hljs-number">60</span>);
+
+<span class="hljs-comment">// set several fields at once</span>
+j.data({
+  <span class="hljs-attr">name</span>: <span class="hljs-string">'Jerry Jerry Dingleberry'</span>,
+  <span class="hljs-attr">height</span>: <span class="hljs-number">176</span>
+});
+
+<span class="hljs-keyword">var</span> weight = j.data(<span class="hljs-string">'weight'</span>);</code></pre>
+<button class="run run-inline-code"><span class="fa fa-play"></span></button>
+
+
+
+					<h2 id="core/eles.removedata">eles.removeData <a href="#core/eles.removedata"><span class="fa fa-bookmark"></span></a></h2>
+
+
+						<h2 id="eles.removedata/details">Details <a href="#eles.removedata/details"><span class="fa fa-bookmark"></span></a></h2>
+<p>Using <code>ele.removeData()</code> sets the specified fields to <code>undefined</code>.  This allows you to use a meaningful <code>null</code> value in your element data.</p>
+<p>The following data fields are normally immutable, and so they can not be removed:</p>
+<ul>
+<li><code>id</code> : The <code>id</code> field is used to uniquely identify an element in the graph.</li>
+<li><code>source</code> &amp; <code>target</code> : These fields define an edge’s relationship to nodes, and this relationship can not be changed after creation.</li>
+<li><code>parent</code> : The <code>parent</code> field defines the parent (compound) node.</li>
+</ul>
+<p>To modify the topology of the graph without adding or removing elements, you must use <a href="#ele.move"><code>ele.move()</code></a>.  Even so, only <code>parent</code> may be removed by <code>ele.move()</code>.  An edge always requires a valid source and target.</p>
+
+
+
+
 					<h2 id="core/layout">Layout <a href="#core/layout"><span class="fa fa-bookmark"></span></a></h2>
 
 
@@ -4824,6 +5052,21 @@ j.emit(<span class="hljs-string">'tap'</span>); <span class="hljs-comment">// so
 <span class="hljs-comment">// remove all tap listener handlers (including unnamed handler)</span>
 j.removeListener(<span class="hljs-string">'tap'</span>);</code></pre>
 <button class="run run-inline-code"><span class="fa fa-play"></span></button>
+							</div>
+						</div>
+						<div class="function">
+							<div class="name" id="eles.removeAllListeners">
+								<span class="fn-name">eles.removeAllListeners()</span>  <a href="#eles.removeAllListeners"><span class="fa fa-bookmark"></span></a>
+								<span id="collection/events/eles.removeAllListeners">&nbsp;</span>
+							</div>
+
+
+
+							<div class="descr"><p>Remove all event handlers on the elements.</p>
+</div>
+
+
+							<div class="details">
 							</div>
 						</div>
 						<div class="function">
@@ -6356,6 +6599,61 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 
 
 							<div class="details">
+							</div>
+						</div>
+						<div class="function">
+							<div class="name" id="ele.pannable">
+								<span class="fn-name">ele.pannable()</span>  <a href="#ele.pannable"><span class="fa fa-bookmark"></span></a>
+								<span id="collection/position--dimensions/ele.pannable">&nbsp;</span>
+							</div>
+
+
+
+							<div class="descr"><p>Gets whether the element allows passthrough panning.</p>
+</div>
+
+
+							<div class="details">
+									<h3 id="description">Description</h3>
+<p>A pannable element allows passthrough panning:  The user can pan the graph when dragging on the element.  Thus, a pannable element is necessarily ungrabbable.</p>
+<p>By default, an edge is pannable and a node is not pannable.</p>
+
+							</div>
+						</div>
+						<div class="function">
+							<div class="name" id="eles.panify">
+								<span class="fn-name">eles.panify()</span>  <a href="#eles.panify"><span class="fa fa-bookmark"></span></a>
+								<span id="collection/position--dimensions/eles.panify">&nbsp;</span>
+							</div>
+
+
+
+							<div class="descr"><p>Enables passthrough panning on the elements.</p>
+</div>
+
+
+							<div class="details">
+									<h3 id="examples">Examples</h3>
+<pre><code class="language-js">cy.$(<span class="hljs-string">'#j'</span>).panify();</code></pre>
+<button class="run run-inline-code"><span class="fa fa-play"></span></button>
+							</div>
+						</div>
+						<div class="function">
+							<div class="name" id="eles.unpanify">
+								<span class="fn-name">eles.unpanify()</span>  <a href="#eles.unpanify"><span class="fa fa-bookmark"></span></a>
+								<span id="collection/position--dimensions/eles.unpanify">&nbsp;</span>
+							</div>
+
+
+
+							<div class="descr"><p>Disables passthrough panning on the elements.</p>
+</div>
+
+
+							<div class="details">
+									<h3 id="examples">Examples</h3>
+<pre><code class="language-js">cy.$(<span class="hljs-string">'#j'</span>).unpanify();</code></pre>
+<button class="run run-inline-code"><span class="fa fa-play"></span></button>
 							</div>
 						</div>
 
@@ -13730,10 +14028,7 @@ cy.layout( options );</code></pre>
   coolingFactor: <span class="hljs-number">0.99</span>,
 
   <span class="hljs-comment">// Lower temperature threshold (below this point the layout will end)</span>
-  minTemp: <span class="hljs-number">1.0</span>,
-
-  <span class="hljs-comment">// Pass a reference to weaver to use threads for calculations</span>
-  weaver: <span class="hljs-literal">false</span>
+  minTemp: <span class="hljs-number">1.0</span>
 };
 
 cy.layout( options );</code></pre>
@@ -14029,6 +14324,21 @@ layout.run();</code></pre>
 										</ul>
 									</div>
 							</div>
+
+							<div class="details">
+							</div>
+						</div>
+						<div class="function">
+							<div class="name" id="layout.removeAllListeners">
+								<span class="fn-name">layout.removeAllListeners()</span>  <a href="#layout.removeAllListeners"><span class="fa fa-bookmark"></span></a>
+								<span id="layouts/layout-events/layout.removeAllListeners">&nbsp;</span>
+							</div>
+
+
+
+							<div class="descr"><p>Remove all event handlers on the layout.</p>
+</div>
+
 
 							<div class="details">
 							</div>
@@ -14788,6 +15098,17 @@ cytoscape.use( ext );</code></pre>
 							<div class="section lvl3"><a class="toclink" href="#cy.mount">cy.mount() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#cy.unmount">cy.unmount() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#cy.destroy">cy.destroy() </a></div>
+							<div class="section lvl3"><a class="toclink" href="#cy.destroyed">cy.destroyed() </a></div>
+						<div class="section lvl2">
+							<span class="expander">
+								<span class="fa fa-caret-down expanded-icon"></span>
+								<span class="fa fa-caret-right collapsed-icon"></span>
+							</span>
+							<a class="toclink" href="#core/data">Data</a>
+						</div>
+
+							<div class="section lvl3"><a class="toclink" href="#cy.data">cy.data() </a></div>
+							<div class="section lvl3"><a class="toclink" href="#cy.removeData">cy.removeData() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#cy.scratch">cy.scratch() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#cy.removeScratch">cy.removeScratch() </a></div>
 						<div class="section lvl2">
@@ -14802,6 +15123,7 @@ cytoscape.use( ext );</code></pre>
 							<div class="section lvl3"><a class="toclink" href="#cy.promiseOn">cy.promiseOn() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#cy.one">cy.one() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#cy.removeListener">cy.removeListener() </a></div>
+							<div class="section lvl3"><a class="toclink" href="#cy.removeAllListeners">cy.removeAllListeners() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#cy.emit">cy.emit() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#cy.ready">cy.ready() </a></div>
 						<div class="section lvl2">
@@ -14850,6 +15172,16 @@ cytoscape.use( ext );</code></pre>
 							<div class="section lvl3"><a class="toclink" href="#cy.delayAnimation">cy.delayAnimation() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#cy.stop">cy.stop() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#cy.clearQueue">cy.clearQueue() </a></div>
+						<div class="section lvl2">
+							
+							<a class="toclink" href="#core/eles.data">eles.data</a>
+						</div>
+
+						<div class="section lvl2">
+							
+							<a class="toclink" href="#core/eles.removedata">eles.removeData</a>
+						</div>
+
 						<div class="section lvl2">
 							<span class="expander">
 								<span class="fa fa-caret-down expanded-icon"></span>
@@ -14915,6 +15247,7 @@ cytoscape.use( ext );</code></pre>
 							<div class="section lvl3"><a class="toclink" href="#eles.one">eles.one() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#eles.once">eles.once() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#eles.removeListener">eles.removeListener() </a></div>
+							<div class="section lvl3"><a class="toclink" href="#eles.removeAllListeners">eles.removeAllListeners() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#eles.emit">eles.emit() </a></div>
 						<div class="section lvl2">
 							<span class="expander">
@@ -14970,6 +15303,9 @@ cytoscape.use( ext );</code></pre>
 							<div class="section lvl3"><a class="toclink" href="#nodes.lock">nodes.lock() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#nodes.unlock">nodes.unlock() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#ele.active">ele.active() </a></div>
+							<div class="section lvl3"><a class="toclink" href="#ele.pannable">ele.pannable() </a></div>
+							<div class="section lvl3"><a class="toclink" href="#eles.panify">eles.panify() </a></div>
+							<div class="section lvl3"><a class="toclink" href="#eles.unpanify">eles.unpanify() </a></div>
 						<div class="section lvl2">
 							<span class="expander">
 								<span class="fa fa-caret-down expanded-icon"></span>
@@ -15466,6 +15802,7 @@ cytoscape.use( ext );</code></pre>
 							<div class="section lvl3"><a class="toclink" href="#layout.promiseOn">layout.promiseOn() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#layout.one">layout.one() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#layout.removeListener">layout.removeListener() </a></div>
+							<div class="section lvl3"><a class="toclink" href="#layout.removeAllListeners">layout.removeAllListeners() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#layout.emit">layout.emit() </a></div>
 					<div class="section lvl1">
 						<span class="expander">

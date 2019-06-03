@@ -1,6 +1,6 @@
 ## Details
 
-If no elements in the graph match the selector, an empty [collection](Collection) is returned.
+If no elements in the graph match the selector, an empty [collection](#collection) is returned.
 
 The function `cy.$()` acts as an alias to `cy.filter()`:  It lets you type less characters.  It is analogous to the jQuery `$` alias used to search the document
 

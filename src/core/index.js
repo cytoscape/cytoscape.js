@@ -280,7 +280,10 @@ util.extend( corefn, {
 
     cy.invalidateSize();
 
-    cy.initRenderer( util.assign({}, options, options.renderer) );
+    cy.initRenderer( util.assign({}, options, options.renderer, {
+      // allow custom renderer name to be re-used, otherwise use canvas
+      name: options.renderer.name === 'null' ? 'canvas' : options.renderer.name
+    }) );
 
     cy.startAnimationLoop();
 

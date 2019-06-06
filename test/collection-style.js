@@ -5,12 +5,6 @@ describe('Collection style', function(){
 
   var cy;
 
-  var useFn = function( fn ){
-    return function( arg ){
-      return fn( arg );
-    };
-  };
-
   // test setup
   beforeEach(function(){
     cy = cytoscape({
@@ -33,7 +27,7 @@ describe('Collection style', function(){
         {
           selector: '#n1',
           style: {
-            label: useFn(function(){ return 'n1'; }),
+            label: function(){ return 'n1'; },
             width: 20,
             'background-image': ['/test/image.png', '/test/image2.png'],
             opacity: 0.5
@@ -43,7 +37,7 @@ describe('Collection style', function(){
         {
           selector: '#n2',
           style: {
-            label: useFn(function(){ return 'n2'; })
+            label: function(){ return 'n2'; }
           }
         },
 
@@ -584,6 +578,23 @@ describe('Collection style', function(){
       edges.forEach(function(edge){
         expect(edge.isBundledBezier(), edge.id()).to.be.false;
       });
+    });
+
+    it('ele.style() reads OK for mapped override prop', function(){
+      cy.style().fromJson([
+        {
+          selector: '#n1n2',
+          style: {
+            'curve-style': 'unbundled-bezier',
+            'control-point-distances': function(ele){ return [32, 128]; },
+            'control-point-weights': [0.5, 0.75]
+          }
+        }
+      ]).update();
+
+      var d = cy.$('#n1n2').numericStyle('control-point-distances');
+
+      expect(d, 'control-point-distances').to.deep.equal([32, 128]);
     });
   });
 

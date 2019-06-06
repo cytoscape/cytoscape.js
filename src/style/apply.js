@@ -210,6 +210,7 @@ styfn.applyContextStyle = function( cxtMeta, cxtStyle, ele ){
     // save cycles when a mapped context prop doesn't need to be applied
     if(
       cxtProp.mapped === types.fn // context prop is function mapper
+      && eleProp != null // some props can be null even by default (e.g. a prop that overrides another one)
       && eleProp.mapping != null // ele prop is a concrete value from from a mapper
       && eleProp.mapping.value === cxtProp.value // the current prop on the ele is a flat prop value for the function mapper
     ){ // NB don't write to cxtProp, as it's shared among eles (stored in stylesheet)

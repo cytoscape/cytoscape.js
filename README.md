@@ -91,7 +91,7 @@ Run `npm run <target>` in the console.  The main targets are:
  * `build:umd` : do the umd (cjs/amd/globals) build
  * `clean` : clean the `build` directory
  * `docs` : build the docs into `documentation`
- * `release` : build all release artefacts
+ * `release` : build all release artifacts
  * `watch` : automatically build lib for debugging (with sourcemap, no babel, very quick)
    * good for general testing on `debug/index.html`
    * served on `http://localhost:8080` or the first available port thereafter, with livereload on `debug/index.html`

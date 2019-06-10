@@ -14179,6 +14179,7 @@ styfn.applyContextStyle = function (cxtMeta, cxtStyle, ele) {
 
 
     if (cxtProp.mapped === types.fn // context prop is function mapper
+    && eleProp != null // some props can be null even by default (e.g. a prop that overrides another one)
     && eleProp.mapping != null // ele prop is a concrete value from from a mapper
     && eleProp.mapping.value === cxtProp.value // the current prop on the ele is a flat prop value for the function mapper
     ) {
@@ -18097,7 +18098,10 @@ extend(corefn$9, {
     _p.container = container;
     _p.styleEnabled = true;
     cy.invalidateSize();
-    cy.initRenderer(extend({}, options, options.renderer));
+    cy.initRenderer(extend({}, options, options.renderer, {
+      // allow custom renderer name to be re-used, otherwise use canvas
+      name: options.renderer.name === 'null' ? 'canvas' : options.renderer.name
+    }));
     cy.startAnimationLoop();
     cy.style(options.style);
     cy.emit('mount');
@@ -30706,7 +30710,7 @@ sheetfn.appendToStyle = function (style) {
   return style;
 };
 
-var version = "3.7.0";
+var version = "3.7.1";
 
 var cytoscape = function cytoscape(options) {
   // if no options specified, use default

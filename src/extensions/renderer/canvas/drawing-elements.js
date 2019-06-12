@@ -22,7 +22,7 @@ CRp.drawElementOverlay = function( context, ele ){
   }
 };
 
-CRp.drawCachedElementPortion = function( context, ele, eleTxrCache, pxRatio, lvl, reason, getRotation ){
+CRp.drawCachedElementPortion = function( context, ele, eleTxrCache, pxRatio, lvl, reason, getRotation, getOpacity ){
   let r = this;
   let bb = eleTxrCache.getBoundingBox(ele);
 
@@ -31,7 +31,7 @@ CRp.drawCachedElementPortion = function( context, ele, eleTxrCache, pxRatio, lvl
   let eleCache = eleTxrCache.getElement( ele, bb, pxRatio, lvl, reason );
 
   if( eleCache != null ){
-    let opacity = ele.effectiveOpacity();
+    let opacity = getOpacity(r, ele);
 
     if( opacity === 0 ){ return; }
 
@@ -89,6 +89,8 @@ const getZeroRotation = () => 0;
 const getLabelRotation = (r, ele) => r.getTextAngle(ele, null);
 const getSourceLabelRotation = (r, ele) => r.getTextAngle(ele, 'source');
 const getTargetLabelRotation = (r, ele) => r.getTextAngle(ele, 'target');
+const getOpacity = (r, ele) => ele.effectiveOpacity();
+const getTextOpacity = (e, ele) => ele.pstyle('text-opacity').pfValue * ele.effectiveOpacity();
 
 CRp.drawCachedElement = function( context, ele, pxRatio, extent, lvl, requestHighQuality ){
   let r = this;
@@ -100,12 +102,12 @@ CRp.drawCachedElement = function( context, ele, pxRatio, extent, lvl, requestHig
   if( bb.w === 0 || bb.h === 0 || !ele.visible() ){ return; }
 
   if( !extent || math.boundingBoxesIntersect( bb, extent ) ){
-    r.drawCachedElementPortion( context, ele, eleTxrCache, pxRatio, lvl, reason, getZeroRotation );
-    r.drawCachedElementPortion( context, ele, lblTxrCache, pxRatio, lvl, reason, getLabelRotation );
+    r.drawCachedElementPortion( context, ele, eleTxrCache, pxRatio, lvl, reason, getZeroRotation, getOpacity );
+    r.drawCachedElementPortion( context, ele, lblTxrCache, pxRatio, lvl, reason, getLabelRotation, getTextOpacity );
 
     if( ele.isEdge() ){
-      r.drawCachedElementPortion( context, ele, slbTxrCache, pxRatio, lvl, reason, getSourceLabelRotation );
-      r.drawCachedElementPortion( context, ele, tlbTxrCache, pxRatio, lvl, reason, getTargetLabelRotation );
+      r.drawCachedElementPortion( context, ele, slbTxrCache, pxRatio, lvl, reason, getSourceLabelRotation, getTextOpacity );
+      r.drawCachedElementPortion( context, ele, tlbTxrCache, pxRatio, lvl, reason, getTargetLabelRotation, getTextOpacity );
     }
 
     r.drawElementOverlay( context, ele );

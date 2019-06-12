@@ -8,7 +8,7 @@ CRp.drawEdge = function( context, edge, shiftToOriginWithBb, drawLabel = true, s
   let r = this;
   let rs = edge._private.rscratch;
 
-  if( !edge.visible() ){ return; }
+  if( shouldDrawOpacity && !edge.visible() ){ return; }
 
   // if bezier ctrl pts can not be calculated, then die
   if( rs.badLine || rs.allpts == null || isNaN(rs.allpts[0]) ){ // isNaN in case edge is impossible and browser bugs (e.g. safari)

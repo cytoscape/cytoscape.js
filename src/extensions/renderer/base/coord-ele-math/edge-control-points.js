@@ -595,7 +595,30 @@ BRp.findEdgeControlPoints = function( edges ){
   let r = this;
   let cy = r.cy;
   let hasCompounds = cy.hasCompoundNodes();
-  let hashTable = new Map();
+
+  let hashTable = {
+    map: new Map(),
+    get: function(pairId){
+      let map2 = this.map.get(pairId[0]);
+
+      if( map2 != null ){
+        return map2.get(pairId[1]);
+      } else {
+        return null;
+      }
+    },
+    set: function(pairId, val){
+      let map2 = this.map.get(pairId[0]);
+
+      if( map2 == null ){
+        map2 = new Map();
+        this.map.set(pairId[0], map2);
+      }
+
+      map2.set(pairId[1], val);
+    }
+  };
+
   let pairIds = [];
   let haystackEdges = [];
 
@@ -618,11 +641,12 @@ BRp.findEdgeControlPoints = function( edges ){
 
     let edgeIsUnbundled = curveStyle === 'unbundled-bezier' || curveStyle === 'segments' || curveStyle === 'straight' || curveStyle === 'taxi';
     let edgeIsBezier = curveStyle === 'unbundled-bezier' || curveStyle === 'bezier';
-    let srcIndex = _p.source.poolIndex();
-    let tgtIndex = _p.target.poolIndex();
+    let src = _p.source;
+    let tgt = _p.target;
+    let srcIndex = src.poolIndex();
+    let tgtIndex = tgt.poolIndex();
 
-    let hash = (edgeIsUnbundled ? -1 : 1) * util.hashIntsArray([ srcIndex, tgtIndex ].sort());
-    let pairId = hash;
+    let pairId = [ srcIndex, tgtIndex ].sort();
 
     let tableEntry = hashTable.get( pairId );
 

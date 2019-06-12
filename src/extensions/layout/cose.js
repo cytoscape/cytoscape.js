@@ -1302,8 +1302,8 @@ var separateComponents = function( layoutInfo, options ){
       var n = c[ j ];
 
       if( !n.isLocked ){
-        n.positionX += x;
-        n.positionY += y;
+        n.positionX += (x - c.x1);
+        n.positionY += (y - c.y1);
       }
     }
 

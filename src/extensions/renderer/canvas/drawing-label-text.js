@@ -26,7 +26,7 @@ CRp.drawElementText = function( context, ele, shiftToOriginWithBb, force, prefix
   let r = this;
 
   if( force == null ){
-    if( !r.eleTextBiggerThanMin( ele ) ){ return; }
+    if( useEleOpacity && !r.eleTextBiggerThanMin( ele ) ){ return; }
   } else if( force === false ){
     return;
   }
@@ -112,7 +112,7 @@ CRp.setupTextStyle = function( context, ele, useEleOpacity = true ){
   let labelSize = ele.pstyle( 'font-size' ).pfValue + 'px';
   let labelFamily = ele.pstyle( 'font-family' ).strValue;
   let labelWeight = ele.pstyle( 'font-weight' ).strValue;
-  let opacity = ele.pstyle('text-opacity').value * (useEleOpacity ? ele.effectiveOpacity() : 1);
+  let opacity = (useEleOpacity ? ele.effectiveOpacity() * ele.pstyle('text-opacity').value : 1);
   let outlineOpacity = ele.pstyle( 'text-outline-opacity' ).value * opacity;
   let color = ele.pstyle( 'color' ).value;
   let outlineColor = ele.pstyle( 'text-outline-color' ).value;
@@ -166,7 +166,7 @@ CRp.drawText = function( context, ele, prefix, applyRotation = true, useEleOpaci
   let rscratch = _p.rscratch;
   let parentOpacity = useEleOpacity ? ele.effectiveOpacity() : 1;
 
-  if( parentOpacity === 0 || ele.pstyle( 'text-opacity' ).value === 0 ){
+  if( useEleOpacity && (parentOpacity === 0 || ele.pstyle( 'text-opacity' ).value === 0) ){
     return;
   }
 

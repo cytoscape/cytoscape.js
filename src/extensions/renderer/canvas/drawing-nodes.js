@@ -16,7 +16,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
     return; // can't draw node with undefined position
   }
 
-  if( !node.visible() ){ return; }
+  if( shouldDrawOpacity && !node.visible() ){ return; }
 
   let eleOpacity = shouldDrawOpacity ? node.effectiveOpacity() : 1;
 

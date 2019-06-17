@@ -20967,8 +20967,8 @@
         var n = c[j];
 
         if (!n.isLocked) {
-          n.positionX += x;
-          n.positionY += y;
+          n.positionX += x - c.x1;
+          n.positionY += y - c.y1;
         }
       }
 
@@ -22721,7 +22721,28 @@
     var r = this;
     var cy = r.cy;
     var hasCompounds = cy.hasCompoundNodes();
-    var hashTable = new Map$1();
+    var hashTable = {
+      map: new Map$1(),
+      get: function get(pairId) {
+        var map2 = this.map.get(pairId[0]);
+
+        if (map2 != null) {
+          return map2.get(pairId[1]);
+        } else {
+          return null;
+        }
+      },
+      set: function set(pairId, val) {
+        var map2 = this.map.get(pairId[0]);
+
+        if (map2 == null) {
+          map2 = new Map$1();
+          this.map.set(pairId[0], map2);
+        }
+
+        map2.set(pairId[1], val);
+      }
+    };
     var pairIds = [];
     var haystackEdges = []; // create a table of edge (src, tgt) => list of edges between them
 
@@ -22742,13 +22763,11 @@
 
       var edgeIsUnbundled = curveStyle === 'unbundled-bezier' || curveStyle === 'segments' || curveStyle === 'straight' || curveStyle === 'taxi';
       var edgeIsBezier = curveStyle === 'unbundled-bezier' || curveStyle === 'bezier';
-
-      var srcIndex = _p.source.poolIndex();
-
-      var tgtIndex = _p.target.poolIndex();
-
-      var hash = (edgeIsUnbundled ? -1 : 1) * hashIntsArray([srcIndex, tgtIndex].sort());
-      var pairId = hash;
+      var src = _p.source;
+      var tgt = _p.target;
+      var srcIndex = src.poolIndex();
+      var tgtIndex = tgt.poolIndex();
+      var pairId = [srcIndex, tgtIndex].sort();
       var tableEntry = hashTable.get(pairId);
 
       if (tableEntry == null) {
@@ -28404,7 +28423,7 @@
     }
   };
 
-  CRp$1.drawCachedElementPortion = function (context, ele, eleTxrCache, pxRatio, lvl, reason, getRotation) {
+  CRp$1.drawCachedElementPortion = function (context, ele, eleTxrCache, pxRatio, lvl, reason, getRotation, getOpacity) {
     var r = this;
     var bb = eleTxrCache.getBoundingBox(ele);
 
@@ -28416,7 +28435,7 @@
     var eleCache = eleTxrCache.getElement(ele, bb, pxRatio, lvl, reason);
 
     if (eleCache != null) {
-      var opacity = ele.effectiveOpacity();
+      var opacity = getOpacity(r, ele);
 
       if (opacity === 0) {
         return;
@@ -28491,6 +28510,14 @@
     return r.getTextAngle(ele, 'target');
   };
 
+  var getOpacity = function getOpacity(r, ele) {
+    return ele.effectiveOpacity();
+  };
+
+  var getTextOpacity = function getTextOpacity(e, ele) {
+    return ele.pstyle('text-opacity').pfValue * ele.effectiveOpacity();
+  };
+
   CRp$1.drawCachedElement = function (context, ele, pxRatio, extent, lvl, requestHighQuality) {
     var r = this;
     var _r$data = r.data,
@@ -28506,12 +28533,12 @@
     }
 
     if (!extent || boundingBoxesIntersect(bb, extent)) {
-      r.drawCachedElementPortion(context, ele, eleTxrCache, pxRatio, lvl, reason, getZeroRotation);
-      r.drawCachedElementPortion(context, ele, lblTxrCache, pxRatio, lvl, reason, getLabelRotation);
+      r.drawCachedElementPortion(context, ele, eleTxrCache, pxRatio, lvl, reason, getZeroRotation, getOpacity);
+      r.drawCachedElementPortion(context, ele, lblTxrCache, pxRatio, lvl, reason, getLabelRotation, getTextOpacity);
 
       if (ele.isEdge()) {
-        r.drawCachedElementPortion(context, ele, slbTxrCache, pxRatio, lvl, reason, getSourceLabelRotation);
-        r.drawCachedElementPortion(context, ele, tlbTxrCache, pxRatio, lvl, reason, getTargetLabelRotation);
+        r.drawCachedElementPortion(context, ele, slbTxrCache, pxRatio, lvl, reason, getSourceLabelRotation, getTextOpacity);
+        r.drawCachedElementPortion(context, ele, tlbTxrCache, pxRatio, lvl, reason, getTargetLabelRotation, getTextOpacity);
       }
 
       r.drawElementOverlay(context, ele);
@@ -28581,7 +28608,7 @@
     var r = this;
     var rs = edge._private.rscratch;
 
-    if (!edge.visible()) {
+    if (shouldDrawOpacity && !edge.visible()) {
       return;
     } // if bezier ctrl pts can not be calculated, then die
 
@@ -29084,7 +29111,7 @@
     var r = this;
 
     if (force == null) {
-      if (!r.eleTextBiggerThanMin(ele)) {
+      if (useEleOpacity && !r.eleTextBiggerThanMin(ele)) {
         return;
       }
     } else if (force === false) {
@@ -29167,7 +29194,7 @@
     var labelSize = ele.pstyle('font-size').pfValue + 'px';
     var labelFamily = ele.pstyle('font-family').strValue;
     var labelWeight = ele.pstyle('font-weight').strValue;
-    var opacity = ele.pstyle('text-opacity').value * (useEleOpacity ? ele.effectiveOpacity() : 1);
+    var opacity = useEleOpacity ? ele.effectiveOpacity() * ele.pstyle('text-opacity').value : 1;
     var outlineOpacity = ele.pstyle('text-outline-opacity').value * opacity;
     var color = ele.pstyle('color').value;
     var outlineColor = ele.pstyle('text-outline-color').value;
@@ -29221,7 +29248,7 @@
     var rscratch = _p.rscratch;
     var parentOpacity = useEleOpacity ? ele.effectiveOpacity() : 1;
 
-    if (parentOpacity === 0 || ele.pstyle('text-opacity').value === 0) {
+    if (useEleOpacity && (parentOpacity === 0 || ele.pstyle('text-opacity').value === 0)) {
       return;
     } // use 'main' as an alias for the main label (i.e. null prefix)
 
@@ -29461,7 +29488,7 @@
       return; // can't draw node with undefined position
     }
 
-    if (!node.visible()) {
+    if (shouldDrawOpacity && !node.visible()) {
       return;
     }
 
@@ -31473,7 +31500,7 @@
     return style;
   };
 
-  var version = "3.7.1";
+  var version = "3.7.2";
 
   var cytoscape = function cytoscape(options) {
     // if no options specified, use default

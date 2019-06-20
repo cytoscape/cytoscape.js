@@ -24,7 +24,7 @@ CRp.drawInscribedImage = function( context, img, node, index, nodeOpacity ){
   var nodeTW = nodeW + ( getIndexedStyle( node, 'background-width-relative-to', 'value', index ) === 'inner' ? 0 : paddingX2 );
   var nodeTH = nodeH + ( getIndexedStyle( node, 'background-height-relative-to', 'value', index ) === 'inner' ? 0 : paddingX2 );
   var rs = node._private.rscratch;
-  var clip = node.pstyle( 'background-clip' ).value;
+  var clip = getIndexedStyle( node, 'background-clip', 'value', index );
   var shouldClip = clip === 'node';
   var imgOpacity = getIndexedStyle( node, 'background-image-opacity', 'value', index ) * nodeOpacity;
 

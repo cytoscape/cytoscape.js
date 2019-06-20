@@ -15,6 +15,7 @@ BRp.registerCalculationListeners = function(){
         var rstyle = _p.rstyle;
 
         rstyle.clean = false;
+        rstyle.cleanConnected = false;
       }
     }
   };
@@ -39,9 +40,12 @@ BRp.registerCalculationListeners = function(){
 
       for( var i = 0; i < elesToUpdate.length; i++ ){
         var ele = elesToUpdate[i];
+        var rstyle = ele._private.rstyle;
 
-        if( ele.isNode() && !ele._private.rstyle.clean ){
+        if( ele.isNode() && !rstyle.cleanConnected ){
           enqueue( ele.connectedEdges() );
+
+          rstyle.cleanConnected = true;
         }
       }
 

@@ -120,7 +120,7 @@ The library was created at the [Donnelly Centre](http://thedonnellycentre.utoron
  * bower : `bower install cytoscape`
  * jspm : `jspm install npm:cytoscape`
 
-
+For all information about including Cytoscape (including without a bundler), see [Including Cytoscape.js](http://js.cytoscape.org/#getting-started/including-cytoscape.js).
 
 ## Releases
 - 3.7

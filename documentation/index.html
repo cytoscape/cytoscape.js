@@ -636,12 +636,14 @@
 <h2 id="introduction/releases">Releases <a href="#introduction/releases"><span class="fa fa-bookmark"></span></a></h2>
 <ul>
 <li>3.7<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.7.3+is%3Aclosed">3.7.3</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.7.2+is%3Aclosed">3.7.2</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.7.1+is%3Aclosed">3.7.1</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.7.0+is%3Aclosed">3.7.0</a></li>
 </ul>
 </li>
 <li>3.6<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.6.6+is%3Aclosed">3.6.6</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.6.5+is%3Aclosed">3.6.5</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.6.4+is%3Aclosed">3.6.4</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.6.3+is%3Aclosed">3.6.3</a></li>
@@ -13203,25 +13205,28 @@ Sets the subject of the selector (e.g. <code>$node &gt; node</code> to select th
 <li><p>Web fonts (e.g. WOFF, WOFF2) may not work within SVG <code>&lt;text&gt;</code> elements in some browsers.  For best cross-browser compatibility, use native SVG versions of your icons — usually defined as <code>&lt;path&gt;</code> elements.</p>
 </li>
 <li><p>If you memoize function mappers to generate SVGs procedurally, you may want to have your function return an object like <code>{ svg, width, height }</code>.  This allows you to use the dimensions of the image for other style properties, like node width and height.  E.g.:</p>
-<pre><code><span class="hljs-keyword">var</span> makeSvg = memoize( <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(ele)</span></span>{
-<span class="hljs-comment">// impl...</span>
+<pre><code><span class="hljs-keyword">var</span> makeSvg = memoize(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(ele)</span></span>{
+  <span class="hljs-comment">// impl...</span>
 
-<span class="hljs-keyword">return</span> { svg: s, width: w, height: h };
-} );
-</code></pre></li>
+  <span class="hljs-keyword">return</span> { svg: s, width: w, height: h };
+});
+<span class="hljs-comment">//</span>
+<span class="hljs-comment">// ...</span>
+<span class="hljs-comment">//</span>
+<span class="hljs-comment">// init stylesheet</span>
+<span class="hljs-keyword">var</span> options = {
+  style: [
+    {
+      selector: <span class="hljs-string">'node'</span>,
+      style: {
+        <span class="hljs-string">'background-image'</span>: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(ele)</span></span>{ <span class="hljs-keyword">return</span> makeSvg(ele).svg; },
+        <span class="hljs-string">'width'</span>: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(ele)</span></span>{ <span class="hljs-keyword">return</span> makeSvg(ele).width; },
+        <span class="hljs-string">'height'</span>: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(ele)</span></span>{ <span class="hljs-keyword">return</span> makeSvg(ele).height; }
+      }
+    }
+  ]
+};</code></pre></li>
 </ul>
-<p>// …</p>
-<p>// init stylesheet
-style: [
- {
-   selector: ‘node’,
-   style: {</p>
-<pre><code> <span class="hljs-string">'background-image'</span>: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(ele)</span></span>{ <span class="hljs-keyword">return</span> makeSvg(ele).svg; },
- <span class="hljs-string">'width'</span>: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(ele)</span></span>{ <span class="hljs-keyword">return</span> makeSvg(ele).width; },
- <span class="hljs-string">'height'</span>: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(ele)</span></span>{ <span class="hljs-keyword">return</span> makeSvg(ele).height; }</code></pre><p>   }
- }
-]
-```</p>
 </li>
 </ul>
 </li>
@@ -13262,7 +13267,7 @@ style: [
     'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fc/Pigeon_silhouette_<span class="hljs-number">4874</span>.svg/<span class="hljs-number">1000</span>px-Pigeon_silhouette_<span class="hljs-number">4874</span>.svg.png'
   ],
   'background-fit': 'cover cover',
-  `background-image-opacity`: <span class="hljs-number">0.5</span>
+  'background-image-opacity': <span class="hljs-number">0.5</span>
 }</code></pre><h2 id="style/pie-chart-background">Pie chart background <a href="#style/pie-chart-background"><span class="fa fa-bookmark"></span></a></h2>
 <p>These properties allow you to create pie chart backgrounds on nodes (<a href="demos/pie-style">demo</a>).  Note that 16 slices maximum are supported per node, so in the properties <code>1 &lt;= i &lt;= 16</code>.  Of course, you must specify a numerical value for each property in place of <code>i</code>.  Each nonzero sized slice is placed in order of <code>i</code>, starting from the 12 o’clock position and working clockwise.</p>
 <p>You may find it useful to reserve a number to a particular colour for all nodes in your stylesheet.  Then you can specify values for <code>pie-i-background-size</code> accordingly for each node via a <a href="#style/mappers">mapper</a>.  This would allow you to create consistently coloured pie charts in each node of the graph based on element data.</p>

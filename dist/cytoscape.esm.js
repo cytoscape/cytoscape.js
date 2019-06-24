@@ -23174,6 +23174,7 @@ BRp$8.registerCalculationListeners = function () {
         var _p = ele._private;
         var rstyle = _p.rstyle;
         rstyle.clean = false;
+        rstyle.cleanConnected = false;
       }
     }
   };
@@ -23192,9 +23193,11 @@ BRp$8.registerCalculationListeners = function () {
 
       for (var i = 0; i < elesToUpdate.length; i++) {
         var ele = elesToUpdate[i];
+        var rstyle = ele._private.rstyle;
 
-        if (ele.isNode() && !ele._private.rstyle.clean) {
+        if (ele.isNode() && !rstyle.cleanConnected) {
           enqueue(ele.connectedEdges());
+          rstyle.cleanConnected = true;
         }
       }
 
@@ -30737,7 +30740,7 @@ sheetfn.appendToStyle = function (style) {
   return style;
 };
 
-var version = "3.7.2";
+var version = "3.7.3";
 
 var cytoscape = function cytoscape(options) {
   // if no options specified, use default

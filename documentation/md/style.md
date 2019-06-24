@@ -299,10 +299,10 @@ A background image may be applied to a node's body.  The following properties su
 * **`background-offset-y`** : The y offset of the background image, measured in percent (e.g. `50%`) or pixels (e.g. `10px`).
 * **`background-width-relative-to`** : Changes whether the width is calculated relative to the width of the node or the width in addition to the padding; may be `inner` or `include-padding`. If not specified, `include-padding` is used by default.
 * **`background-height-relative-to`** : Changes whether the height is calculated relative to the height of the node or the height in addition to the padding; may be `inner` or `include-padding`. If not specified, `include-padding` is used by default.
+* **`background-clip`** : How background image clipping is handled; may be `node` for clipped to node shape or `none` for no clipping.
 
 The following properties apply to all images of a node:
 
-* **`background-clip`** : How background image clipping is handled; may be `node` for clipped to node shape or `none` for no clipping.
 * **`bounds-expansion`** : Specifies a padding size (e.g. `20px`) that expands the bounding box of the node in all directions.  This allows for images to be drawn outside of the normal bounding box of the node when `background-clip` is `none`.  This is useful for small decorations just outside of the node.
 
 The following is an example of valid background image styling using JSON. The example images are taken from Wikimedia Commons with the Creative Commons license.

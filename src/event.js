@@ -48,6 +48,7 @@ Event.prototype = {
       this.type = props.type != null ? props.type : this.type;
       this.cy = props.cy;
       this.target = props.target;
+      this.targetType = props.targetType;
       this.position = props.position;
       this.renderedPosition = props.renderedPosition;
       this.namespace = props.namespace;

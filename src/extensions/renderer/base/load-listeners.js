@@ -1956,7 +1956,13 @@ BRp.load = function(){
     }
 
     if( e.touches.length < 2 ){
+      if( e.touches.length === 1 ){
+        // the old start global pos'n may not be the same finger that remains
+        r.touchData.startGPosition = [ e.touches[0].clientX, e.touches[0].clientY ];
+      }
+
       r.pinching = false;
+
       r.redrawHint( 'eles', true );
       r.redraw();
     }

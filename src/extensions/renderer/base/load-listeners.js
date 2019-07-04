@@ -1690,6 +1690,10 @@ BRp.load = function(){
         if( allowPassthrough ){
           e.preventDefault();
 
+          if( !r.data.bgActivePosistion ){
+            r.data.bgActivePosistion = math.array2point( r.touchData.startPosition );
+          }
+
           if( r.swipePanning ){
             cy.panBy( {
               x: disp[0] * zoom,
@@ -1706,10 +1710,6 @@ BRp.load = function(){
 
             if( start ){
               start.unactivate();
-
-              if( !r.data.bgActivePosistion ){
-                r.data.bgActivePosistion = math.array2point( r.touchData.startPosition );
-              }
 
               r.redrawHint( 'select', true );
 

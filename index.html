@@ -43,18 +43,19 @@
 <a href="https://twitter.com/cytoscapejs"><img src="https://img.shields.io/badge/Updates-Twitter-yellow.svg" alt="Twitter updates"></a>
 <a href="https://blog.js.cytoscape.org"><img src="https://img.shields.io/badge/News%20and%20tutorials-Blog-yellow.svg" alt="News and tutorials"></a>
 <a href="https://stackoverflow.com/questions/tagged/cytoscape.js"><img src="https://img.shields.io/badge/Questions-StackOverflow-yellow.svg" alt="Questions at StackOverflow"></a>
-<a href="http://stackoverflow.com/questions/ask?tags=cytoscape.js"><img src="https://img.shields.io/badge/Ask%20a%20question-StackOverflow-yellow.svg" alt="Ask a question at StackOverflow"></a>
+<a href="http://stackoverflow.com/questions/ask?tags=cytoscape.js,javascript"><img src="https://img.shields.io/badge/Ask%20a%20question-StackOverflow-yellow.svg" alt="Ask a question at StackOverflow"></a>
 <a href="https://raw.githubusercontent.com/cytoscape/cytoscape.js/master/LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="GitHub license"></a>
 <a href="https://zenodo.org/badge/latestdoi/2255947"><img src="https://zenodo.org/badge/2255947.svg" alt="DOI"></a>
 <a href="#introduction/citation"><img src="https://img.shields.io/badge/Cite-Oxford%20Bioinformatics%20Article-blue.svg" alt="Cite"></a>
 <a href="https://www.npmjs.com/package/cytoscape"><img src="https://img.shields.io/npm/v/cytoscape.svg" alt="npm"></a>
 <a href="https://github.com/cytoscape/cytoscape.js/tree/master/dist"><img src="https://img.shields.io/npm/v/cytoscape.svg?label=Download" alt="Download"></a>
-<a href="#extensions"><img src="https://img.shields.io/badge/Extensions-51-blue.svg" alt="Extensions"></a>
+<a href="#extensions"><img src="https://img.shields.io/badge/Extensions-52-blue.svg" alt="Extensions"></a>
 <a href="https://www.npmjs.com/package/cytoscape"><img src="https://img.shields.io/npm/dm/cytoscape.svg?label=npm%20installs" alt="npm installs"></a>
 <a href="https://travis-ci.org/cytoscape/cytoscape.js"><img src="https://img.shields.io/travis/cytoscape/cytoscape.js/master.svg?label=master%20branch" alt="master branch tests"></a>
 <a href="https://travis-ci.org/cytoscape/cytoscape.js"><img src="https://img.shields.io/travis/cytoscape/cytoscape.js/unstable.svg?label=unstable%20branch" alt="unstable branch tests"></a>
 <a href="https://greenkeeper.io/"><img src="https://badges.greenkeeper.io/cytoscape/cytoscape.js.svg" alt="Greenkeeper badge"></a></p>
 </div>
+
 
 
 				<h1 id="demos">Demos <a href="#demos"><span class="fa fa-bookmark"></span></a></h1>
@@ -227,6 +228,19 @@
 							<div class="gallery-title">
 								<a href="https://github.com/iVis-at-Bilkent/cytoscape.js-avsdf">
 									<span class="gallery-name"><span class="fa fa-github"></span> AVSDF layout</span>
+								</a>
+							</div>
+
+						</div>
+						<div class="gallery-demo">
+
+							<a class="gallery-link" href="https://ivis-at-bilkent.github.io/cytoscape.js-cise/demo.html">
+								<span class="gallery-preview" style="background-image: url('img/demos/cise-layout.png');"></span>
+							</a>
+
+							<div class="gallery-title">
+								<a href="https://github.com/iVis-at-Bilkent/cytoscape.js-cise">
+									<span class="gallery-name"><span class="fa fa-github"></span> CiSE layout</span>
 								</a>
 							</div>
 
@@ -608,6 +622,7 @@
 <li><a href="https://www.stringify.com/">Stringify</a></li>
 <li><a href="https://www.threatcrowd.org/">Threat Crowd</a></li>
 <li><a href="https://trace.risingstack.com/">Trace</a></li>
+<li><a href="https://www.ub.edu">University of Barcelona</a> : <a href="https://compgen.bio.ub.edu/PlanNET">PlanNET</a></li>
 <li><a href="http://www.cam.ac.uk/">University of Cambridge</a> : <a href="http://intermine.org/">Intermine</a></li>
 <li><a href="http://en.uestc.edu.cn/">University of Electronic Science and Technology of China</a> : <a href="http://cefg.uestc.edu.cn/Mslr/">Microbal Synthetic Lethal and Rescue Database</a></li>
 <li><a href="http://www.imise.uni-leipzig.de/en">University of Leipzig, Institute for Medical Informatics, Statistics and Epidemiology (IMISE)</a> : <a href="http://www.snik.eu/">SNIK research project</a></li>
@@ -635,6 +650,10 @@
 </ul>
 <h2 id="introduction/releases">Releases <a href="#introduction/releases"><span class="fa fa-bookmark"></span></a></h2>
 <ul>
+<li>3.8<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.8.0+is%3Aclosed">3.8.0</a></li>
+</ul>
+</li>
 <li>3.7<ul>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.7.3+is%3Aclosed">3.7.3</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.7.2+is%3Aclosed">3.7.2</a></li>
@@ -10786,7 +10805,7 @@ path.select();</code></pre>
 															<li>
 																<span class="name">weight: function(edge)</span>
 																<span class="optional">[optional]</span>
-																<span class="descr"><p>A function that returns the positive numeric weight for the edge.</p>
+																<span class="descr"><p>A function that returns the positive numeric weight for the edge.  The weight indicates the cost of going from one node to another node.</p>
 </span>
 															</li>
 
@@ -10864,7 +10883,7 @@ path.select();</code></pre>
 															<li>
 																<span class="name">weight: function(edge)</span>
 																<span class="optional">[optional]</span>
-																<span class="descr"><p>A function that returns the positive numeric weight for the edge.</p>
+																<span class="descr"><p>A function that returns the positive numeric weight for the edge.  The weight indicates the cost of going from one node to another node.</p>
 </span>
 															</li>
 
@@ -10936,7 +10955,7 @@ aStar.path.select();</code></pre>
 															<li>
 																<span class="name">weight: function(edge)</span>
 																<span class="optional">[optional]</span>
-																<span class="descr"><p>A function that returns the positive numeric weight for the edge.</p>
+																<span class="descr"><p>A function that returns the numeric weight for the edge.  The weight indicates the cost of going from one node to another node.  The weight may be positive or negative, but no negative cycles are allowed.</p>
 </span>
 															</li>
 
@@ -11007,7 +11026,7 @@ fw.path(<span class="hljs-string">'#k'</span>, <span class="hljs-string">'#g'</s
 															<li>
 																<span class="name">weight: function(edge)</span>
 																<span class="optional">[optional]</span>
-																<span class="descr"><p>A function that returns the positive numeric weight for the edge.</p>
+																<span class="descr"><p>A function that returns the numeric weight for the edge.  The weight indicates the cost of going from one node to another node.  The weight may be positive or negative.</p>
 </span>
 															</li>
 
@@ -11171,7 +11190,7 @@ ks.cut.select();</code></pre>
 															<li>
 																<span class="name">weight: function(edge)</span>
 																<span class="optional">[optional]</span>
-																<span class="descr"><p>A function that returns the weight for the edge.</p>
+																<span class="descr"><p>A function that returns the positive weight for the edge.  The weight indicates the importance of the edge, with a high value representing high importance.</p>
 </span>
 															</li>
 
@@ -11248,7 +11267,7 @@ ks.cut.select();</code></pre>
 															<li>
 																<span class="name">weight: function(edge)</span>
 																<span class="optional">[optional]</span>
-																<span class="descr"><p>A function that returns the weight for the edge.</p>
+																<span class="descr"><p>A function that returns the positive weight for the edge.  The weight indicates the importance of the edge, with a high value representing high importance.</p>
 </span>
 															</li>
 
@@ -11334,7 +11353,7 @@ ks.cut.select();</code></pre>
 															<li>
 																<span class="name">weight: function(edge)</span>
 																<span class="optional">[optional]</span>
-																<span class="descr"><p>A function that returns the weight for the edge.</p>
+																<span class="descr"><p>A function that returns the positive weight for the edge.  The weight indicates the importance of the edge, with a high value representing high importance.</p>
 </span>
 															</li>
 
@@ -11403,7 +11422,7 @@ ks.cut.select();</code></pre>
 															<li>
 																<span class="name">weight: function(edge)</span>
 																<span class="optional">[optional]</span>
-																<span class="descr"><p>A function that returns the weight for the edge.</p>
+																<span class="descr"><p>A function that returns the positive weight for the edge.  The weight indicates the importance of the edge, with a high value representing high importance.</p>
 </span>
 															</li>
 
@@ -11474,7 +11493,7 @@ ks.cut.select();</code></pre>
 															<li>
 																<span class="name">weight: function(edge)</span>
 																<span class="optional">[optional]</span>
-																<span class="descr"><p>A function that returns the weight for the edge.</p>
+																<span class="descr"><p>A function that returns the positive weight for the edge.  The weight indicates the importance of the edge, with a high value representing high importance.</p>
 </span>
 															</li>
 
@@ -13254,10 +13273,11 @@ Sets the subject of the selector (e.g. <code>$node &gt; node</code> to select th
 </li>
 <li><p><strong><code>background-height-relative-to</code></strong> : Changes whether the height is calculated relative to the height of the node or the height in addition to the padding; may be <code>inner</code> or <code>include-padding</code>. If not specified, <code>include-padding</code> is used by default.</p>
 </li>
+<li><p><strong><code>background-clip</code></strong> : How background image clipping is handled; may be <code>node</code> for clipped to node shape or <code>none</code> for no clipping.</p>
+</li>
 </ul>
 <p>The following properties apply to all images of a node:</p>
 <ul>
-<li><strong><code>background-clip</code></strong> : How background image clipping is handled; may be <code>node</code> for clipped to node shape or <code>none</code> for no clipping.</li>
 <li><strong><code>bounds-expansion</code></strong> : Specifies a padding size (e.g. <code>20px</code>) that expands the bounding box of the node in all directions.  This allows for images to be drawn outside of the normal bounding box of the node when <code>background-clip</code> is <code>none</code>.  This is useful for small decorations just outside of the node.</li>
 </ul>
 <p>The following is an example of valid background image styling using JSON. The example images are taken from Wikimedia Commons with the Creative Commons license.</p>
@@ -14841,7 +14861,8 @@ cytoscape.use( ext );</code></pre>
 <ul>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/cytoscape/cytoscape.js-cola"><code>cola</code></a> : The Cola.js physics simulation layout.  Cola makes beautiful layout results, it animates very smoothly, and it has great options for controlling the layout.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/iVis-at-Bilkent/cytoscape.js-avsdf"><code>avsdf</code></a> : The AVSDF layout.  It organises nodes in a circle and tries to minimise edge crossings as much as possible.</li>
-<li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/cytoscape/cytoscape.js-cose-bilkent"><code>cose-bilkent</code></a> : The CoSE layout by Bilkent with enhanced compound node placement.  CoSE Bilkent gives near-perfect end results.  However, it’s more expensive than the version of CoSE directly included with Cytoscape.js.</li>
+<li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/iVis-at-Bilkent/cytoscape.js-cise"><code>cise</code></a> : The CiSE layout creates circular clusters and uses a physics simulation to create distance between the clusters.</li>
+<li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/cytoscape/cytoscape.js-cose-bilkent"><code>cose-bilkent</code></a> : The CoSE layout by Bilkent with enhanced compound node placement.  CoSE Bilkent gives near-perfect end results.  However, it’s more expensive than both <code>cose</code> and <code>fcose</code>.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/cytoscape/cytoscape.js-dagre"><code>dagre</code></a> : The Dagre layout for DAGs and trees.</li>
 <li><i class="fa fa-fw fa-users"></i> <a href="https://github.com/jfstephe/cytoscape.js-elk"><code>elk</code></a> : <a href="https://github.com/OpenKieler/elkjs">ELK</a> layout algorithm adapter for Cytoscape.js.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/cytoscape/cytoscape.js-euler"><code>euler</code></a> : Euler is a fast, small file-size, high-quality force-directed (physics simulation) layout.  It is excellent for non-compound graphs, and it has basic support for compound graphs.</li>

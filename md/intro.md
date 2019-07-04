@@ -87,6 +87,7 @@
   * [Stringify](https://www.stringify.com/)
   * [Threat Crowd](https://www.threatcrowd.org/)
   * [Trace](https://trace.risingstack.com/)
+  * [University of Barcelona](https://www.ub.edu) : [PlanNET](https://compgen.bio.ub.edu/PlanNET)
   * [University of Cambridge](http://www.cam.ac.uk/) : [Intermine](http://intermine.org/)
   * [University of Electronic Science and Technology of China](http://en.uestc.edu.cn/) : [Microbal Synthetic Lethal and Rescue Database](http://cefg.uestc.edu.cn/Mslr/)
   * [University of Leipzig, Institute for Medical Informatics, Statistics and Epidemiology (IMISE)](http://www.imise.uni-leipzig.de/en) : [SNIK research project](http://www.snik.eu/)
@@ -123,6 +124,8 @@ The library was created at the [Donnelly Centre](http://thedonnellycentre.utoron
 
 
 ## Releases
+- 3.8
+ - [3.8.0](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.8.0+is%3Aclosed)
 - 3.7
  - [3.7.3](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.7.3+is%3Aclosed)
  - [3.7.2](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.7.2+is%3Aclosed)

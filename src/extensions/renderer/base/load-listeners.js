@@ -1231,6 +1231,12 @@ BRp.load = function(){
 
     if( e.touches[2] ){
       // ignore
+
+      // safari on ios pans the page otherwise (normally you should be able to preventdefault on touchmove...)
+      if( cy.boxSelectionEnabled() ){
+        e.preventDefault();
+      }
+
     } else if( e.touches[1] ){
       // ignore
     } else if( e.touches[0] ){
@@ -1462,8 +1468,8 @@ BRp.load = function(){
       }
 
       r.touchData.selecting = true;
-
-      r.redrawHint( 'select', true );
+      r.touchData.didSelect = true;
+      select[4] = 1;
 
       if( !select || select.length === 0 || select[0] === undefined ){
         select[0] = (now[0] + now[2] + now[4]) / 3;
@@ -1475,13 +1481,15 @@ BRp.load = function(){
         select[3] = (now[1] + now[3] + now[5]) / 3;
       }
 
-      select[4] = 1;
-      r.touchData.selecting = true;
-
+      r.redrawHint( 'select', true );
       r.redraw();
 
     // pinch to zoom
-    } else if( capture && e.touches[1] && cy.zoomingEnabled() && cy.panningEnabled() && cy.userZoomingEnabled() && cy.userPanningEnabled() ){ // two fingers => pinch to zoom
+    } else if(
+      capture && e.touches[1]
+      && !r.touchData.didSelect // don't allow box selection to degrade to pinch-to-zoom
+      && cy.zoomingEnabled() && cy.panningEnabled() && cy.userZoomingEnabled() && cy.userPanningEnabled()
+    ){ // two fingers => pinch to zoom
       e.preventDefault();
 
       r.data.bgActivePosistion = undefined;
@@ -1581,7 +1589,10 @@ BRp.load = function(){
       if( e.touches[1] ){ var pos = r.projectIntoViewport( e.touches[1].clientX, e.touches[1].clientY ); now[2] = pos[0]; now[3] = pos[1]; }
       if( e.touches[2] ){ var pos = r.projectIntoViewport( e.touches[2].clientX, e.touches[2].clientY ); now[4] = pos[0]; now[5] = pos[1]; }
 
-    } else if( e.touches[0] ){
+    } else if(
+      e.touches[0]
+      && !r.touchData.didSelect // don't allow box selection to degrade to single finger events like panning
+    ){
       var start = r.touchData.start;
       var last = r.touchData.last;
       var near;
@@ -1949,12 +1960,13 @@ BRp.load = function(){
 
     for( var j = 0; j < now.length; j++ ){ earlier[ j ] = now[ j ]; }
 
-    r.dragData.didDrag = false; // reset for next mousedown
+    r.dragData.didDrag = false; // reset for next touchstart
 
     if( e.touches.length === 0 ){
       r.touchData.dragDelta = [];
       r.touchData.startPosition = null;
       r.touchData.startGPosition = null;
+      r.touchData.didSelect = false;
     }
 
     if( e.touches.length < 2 ){

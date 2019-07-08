@@ -25298,6 +25298,7 @@
 
 
       if (e.touches[1]) {
+        r.touchData.singleTouchMoved = true;
         freeDraggedElements(r.dragData.touchDragEles);
         var offsets = r.findContainerClientCoords();
         offsetLeft = offsets[0];
@@ -25366,7 +25367,13 @@
         }
       }
 
-      if (e.touches[2]) ; else if (e.touches[1]) ; else if (e.touches[0]) {
+      if (e.touches[2]) {
+        // ignore
+        // safari on ios pans the page otherwise (normally you should be able to preventdefault on touchmove...)
+        if (cy.boxSelectionEnabled()) {
+          e.preventDefault();
+        }
+      } else if (e.touches[1]) ; else if (e.touches[0]) {
         var nears = r.findNearestElements(now[0], now[1], true, true);
         var near = nears[0];
 
@@ -25619,7 +25626,8 @@
         }
 
         r.touchData.selecting = true;
-        r.redrawHint('select', true);
+        r.touchData.didSelect = true;
+        select[4] = 1;
 
         if (!select || select.length === 0 || select[0] === undefined) {
           select[0] = (now[0] + now[2] + now[4]) / 3;
@@ -25631,10 +25639,10 @@
           select[3] = (now[1] + now[3] + now[5]) / 3;
         }
 
-        select[4] = 1;
-        r.touchData.selecting = true;
+        r.redrawHint('select', true);
         r.redraw(); // pinch to zoom
-      } else if (capture && e.touches[1] && cy.zoomingEnabled() && cy.panningEnabled() && cy.userZoomingEnabled() && cy.userPanningEnabled()) {
+      } else if (capture && e.touches[1] && !r.touchData.didSelect // don't allow box selection to degrade to pinch-to-zoom
+      && cy.zoomingEnabled() && cy.panningEnabled() && cy.userZoomingEnabled() && cy.userPanningEnabled()) {
         // two fingers => pinch to zoom
         e.preventDefault();
         r.data.bgActivePosistion = undefined;
@@ -25733,156 +25741,156 @@
           now[4] = pos[0];
           now[5] = pos[1];
         }
-      } else if (e.touches[0]) {
-        var start = r.touchData.start;
-        var last = r.touchData.last;
-        var near;
+      } else if (e.touches[0] && !r.touchData.didSelect // don't allow box selection to degrade to single finger events like panning
+      ) {
+          var start = r.touchData.start;
+          var last = r.touchData.last;
+          var near;
 
-        if (!r.hoverData.draggingEles && !r.swipePanning) {
-          near = r.findNearestElement(now[0], now[1], true, true);
-        }
+          if (!r.hoverData.draggingEles && !r.swipePanning) {
+            near = r.findNearestElement(now[0], now[1], true, true);
+          }
 
-        if (capture && start != null) {
-          e.preventDefault();
-        } // dragging nodes
+          if (capture && start != null) {
+            e.preventDefault();
+          } // dragging nodes
 
 
-        if (capture && start != null && r.nodeIsDraggable(start)) {
-          if (isOverThresholdDrag) {
-            // then dragging can happen
-            var draggedEles = r.dragData.touchDragEles;
-            var justStartedDrag = !r.dragData.didDrag;
-
-            if (justStartedDrag) {
-              addNodesToDrag(draggedEles, {
-                inDragLayer: true
-              });
-            }
-
-            r.dragData.didDrag = true;
-            var totalShift = {
-              x: 0,
-              y: 0
-            };
-
-            if (number(disp[0]) && number(disp[1])) {
-              totalShift.x += disp[0];
-              totalShift.y += disp[1];
+          if (capture && start != null && r.nodeIsDraggable(start)) {
+            if (isOverThresholdDrag) {
+              // then dragging can happen
+              var draggedEles = r.dragData.touchDragEles;
+              var justStartedDrag = !r.dragData.didDrag;
 
               if (justStartedDrag) {
+                addNodesToDrag(draggedEles, {
+                  inDragLayer: true
+                });
+              }
+
+              r.dragData.didDrag = true;
+              var totalShift = {
+                x: 0,
+                y: 0
+              };
+
+              if (number(disp[0]) && number(disp[1])) {
+                totalShift.x += disp[0];
+                totalShift.y += disp[1];
+
+                if (justStartedDrag) {
+                  r.redrawHint('eles', true);
+                  var dragDelta = r.touchData.dragDelta;
+
+                  if (dragDelta && number(dragDelta[0]) && number(dragDelta[1])) {
+                    totalShift.x += dragDelta[0];
+                    totalShift.y += dragDelta[1];
+                  }
+                }
+              }
+
+              r.hoverData.draggingEles = true;
+              draggedEles.silentShift(totalShift).emit('position drag');
+              r.redrawHint('drag', true);
+
+              if (r.touchData.startPosition[0] == earlier[0] && r.touchData.startPosition[1] == earlier[1]) {
                 r.redrawHint('eles', true);
-                var dragDelta = r.touchData.dragDelta;
-
-                if (dragDelta && number(dragDelta[0]) && number(dragDelta[1])) {
-                  totalShift.x += dragDelta[0];
-                  totalShift.y += dragDelta[1];
-                }
               }
-            }
 
-            r.hoverData.draggingEles = true;
-            draggedEles.silentShift(totalShift).emit('position drag');
-            r.redrawHint('drag', true);
-
-            if (r.touchData.startPosition[0] == earlier[0] && r.touchData.startPosition[1] == earlier[1]) {
-              r.redrawHint('eles', true);
-            }
-
-            r.redraw();
-          } else {
-            // otherise keep track of drag delta for later
-            var dragDelta = r.touchData.dragDelta = r.touchData.dragDelta || [];
-
-            if (dragDelta.length === 0) {
-              dragDelta.push(disp[0]);
-              dragDelta.push(disp[1]);
+              r.redraw();
             } else {
-              dragDelta[0] += disp[0];
-              dragDelta[1] += disp[1];
-            }
-          }
-        } // touchmove
+              // otherise keep track of drag delta for later
+              var dragDelta = r.touchData.dragDelta = r.touchData.dragDelta || [];
 
-
-        {
-          triggerEvents(start || near, ['touchmove', 'tapdrag', 'vmousemove'], e, {
-            x: now[0],
-            y: now[1]
-          });
-
-          if ((!start || !start.grabbed()) && near != last) {
-            if (last) {
-              last.emit({
-                originalEvent: e,
-                type: 'tapdragout',
-                position: {
-                  x: now[0],
-                  y: now[1]
-                }
-              });
-            }
-
-            if (near) {
-              near.emit({
-                originalEvent: e,
-                type: 'tapdragover',
-                position: {
-                  x: now[0],
-                  y: now[1]
-                }
-              });
-            }
-          }
-
-          r.touchData.last = near;
-        } // check to cancel taphold
-
-        if (capture) {
-          for (var i = 0; i < now.length; i++) {
-            if (now[i] && r.touchData.startPosition[i] && isOverThresholdDrag) {
-              r.touchData.singleTouchMoved = true;
-            }
-          }
-        } // panning
-
-
-        if (capture && (start == null || start.pannable()) && cy.panningEnabled() && cy.userPanningEnabled()) {
-          var allowPassthrough = allowPanningPassthrough(start, r.touchData.starts);
-
-          if (allowPassthrough) {
-            e.preventDefault();
-
-            if (r.swipePanning) {
-              cy.panBy({
-                x: disp[0] * zoom,
-                y: disp[1] * zoom
-              });
-            } else if (isOverThresholdDrag) {
-              r.swipePanning = true;
-              cy.panBy({
-                x: dx * zoom,
-                y: dy * zoom
-              });
-
-              if (start) {
-                start.unactivate();
-
-                if (!r.data.bgActivePosistion) {
-                  r.data.bgActivePosistion = array2point(r.touchData.startPosition);
-                }
-
-                r.redrawHint('select', true);
-                r.touchData.start = null;
+              if (dragDelta.length === 0) {
+                dragDelta.push(disp[0]);
+                dragDelta.push(disp[1]);
+              } else {
+                dragDelta[0] += disp[0];
+                dragDelta[1] += disp[1];
               }
             }
-          } // Re-project
+          } // touchmove
 
 
-          var pos = r.projectIntoViewport(e.touches[0].clientX, e.touches[0].clientY);
-          now[0] = pos[0];
-          now[1] = pos[1];
+          {
+            triggerEvents(start || near, ['touchmove', 'tapdrag', 'vmousemove'], e, {
+              x: now[0],
+              y: now[1]
+            });
+
+            if ((!start || !start.grabbed()) && near != last) {
+              if (last) {
+                last.emit({
+                  originalEvent: e,
+                  type: 'tapdragout',
+                  position: {
+                    x: now[0],
+                    y: now[1]
+                  }
+                });
+              }
+
+              if (near) {
+                near.emit({
+                  originalEvent: e,
+                  type: 'tapdragover',
+                  position: {
+                    x: now[0],
+                    y: now[1]
+                  }
+                });
+              }
+            }
+
+            r.touchData.last = near;
+          } // check to cancel taphold
+
+          if (capture) {
+            for (var i = 0; i < now.length; i++) {
+              if (now[i] && r.touchData.startPosition[i] && isOverThresholdDrag) {
+                r.touchData.singleTouchMoved = true;
+              }
+            }
+          } // panning
+
+
+          if (capture && (start == null || start.pannable()) && cy.panningEnabled() && cy.userPanningEnabled()) {
+            var allowPassthrough = allowPanningPassthrough(start, r.touchData.starts);
+
+            if (allowPassthrough) {
+              e.preventDefault();
+
+              if (!r.data.bgActivePosistion) {
+                r.data.bgActivePosistion = array2point(r.touchData.startPosition);
+              }
+
+              if (r.swipePanning) {
+                cy.panBy({
+                  x: disp[0] * zoom,
+                  y: disp[1] * zoom
+                });
+              } else if (isOverThresholdDrag) {
+                r.swipePanning = true;
+                cy.panBy({
+                  x: dx * zoom,
+                  y: dy * zoom
+                });
+
+                if (start) {
+                  start.unactivate();
+                  r.redrawHint('select', true);
+                  r.touchData.start = null;
+                }
+              }
+            } // Re-project
+
+
+            var pos = r.projectIntoViewport(e.touches[0].clientX, e.touches[0].clientY);
+            now[0] = pos[0];
+            now[1] = pos[1];
+          }
         }
-      }
 
       for (var j = 0; j < now.length; j++) {
         earlier[j] = now[j];
@@ -26113,15 +26121,21 @@
         earlier[j] = now[j];
       }
 
-      r.dragData.didDrag = false; // reset for next mousedown
+      r.dragData.didDrag = false; // reset for next touchstart
 
       if (e.touches.length === 0) {
         r.touchData.dragDelta = [];
         r.touchData.startPosition = null;
         r.touchData.startGPosition = null;
+        r.touchData.didSelect = false;
       }
 
       if (e.touches.length < 2) {
+        if (e.touches.length === 1) {
+          // the old start global pos'n may not be the same finger that remains
+          r.touchData.startGPosition = [e.touches[0].clientX, e.touches[0].clientY];
+        }
+
         r.pinching = false;
         r.redrawHint('eles', true);
         r.redraw();
@@ -31503,7 +31517,7 @@
     return style;
   };
 
-  var version = "3.7.3";
+  var version = "3.7.4";
 
   var cytoscape = function cytoscape(options) {
     // if no options specified, use default

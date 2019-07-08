@@ -1151,6 +1151,8 @@ BRp.load = function(){
     // record starting points for pinch-to-zoom
     if( e.touches[1] ){
 
+      r.touchData.singleTouchMoved = true;
+
       freeDraggedElements( r.dragData.touchDragEles );
 
       var offsets = r.findContainerClientCoords();

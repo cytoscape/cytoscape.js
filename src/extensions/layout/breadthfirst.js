@@ -258,7 +258,7 @@ BreadthFirstLayout.prototype.run = function(){
       let nDepth = depths[ depth ].length;
 
       if( depth < eleDepth ){ // only get influenced by elements above
-        percent += index / ( nDepth - 1 );
+        percent += index / nDepth;
         samples++;
       }
     }

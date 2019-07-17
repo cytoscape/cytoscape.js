@@ -77,7 +77,7 @@ elesfn.updateCompoundBounds = function(force = false){
       }
     };
 
-    let takesUpSpace = ele => ele.pstyle('display').value === 'element';
+    let takesUpSpace = ele => ele.takesUpSpace();
 
     let bb = children.filter(takesUpSpace).boundingBox( {
       includeLabels: includeLabels,
@@ -432,12 +432,11 @@ let boundingBoxImpl = function( ele, options ){
   let bounds = makeBoundingBox();
 
   let _p = ele._private;
-  let display = styleEnabled ? ele.pstyle( 'display' ).value : 'element';
   let isNode = ele.isNode();
   let isEdge = ele.isEdge();
   let ex1, ex2, ey1, ey2; // extrema of body / lines
   let x, y; // node pos
-  let displayed = display !== 'none';
+  let displayed = !styleEnabled || ele.takesUpSpace();
   let rstyle = _p.rstyle;
   let manualExpansion = isNode && styleEnabled ? ele.pstyle('bounds-expansion').pfValue : 0;
 

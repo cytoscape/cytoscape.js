@@ -55,8 +55,6 @@ elesfn.updateCompoundBounds = function(force = false){
   // save cycles when batching -- but bounds will be stale (or not exist yet)
   if( !force && cy.batching() ){ return this; }
 
-  let updated = [];
-
   function update( parent ){
     if( !parent.isParent() ){ return; }
 
@@ -77,9 +75,7 @@ elesfn.updateCompoundBounds = function(force = false){
       }
     };
 
-    let takesUpSpace = ele => ele.takesUpSpace();
-
-    let bb = children.filter(takesUpSpace).boundingBox( {
+    let bb = children.boundingBox( {
       includeLabels: includeLabels,
       includeOverlays: false,
 
@@ -175,8 +171,6 @@ elesfn.updateCompoundBounds = function(force = false){
 
     _p.autoHeight = Math.max(bb.h, min.height.val);
     pos.y = (- diffTop + bb.y1 + bb.y2 + diffBottom) / 2;
-
-    updated.push( parent );
   }
 
   for( let i = 0; i < this.length; i++ ){
@@ -436,11 +430,24 @@ let boundingBoxImpl = function( ele, options ){
   let isEdge = ele.isEdge();
   let ex1, ex2, ey1, ey2; // extrema of body / lines
   let x, y; // node pos
-  let displayed = !styleEnabled || ele.takesUpSpace();
   let rstyle = _p.rstyle;
   let manualExpansion = isNode && styleEnabled ? ele.pstyle('bounds-expansion').pfValue : 0;
 
-  if( displayed ){
+  // must use `display` prop only, as reading `compound.width()` causes recursion
+  // (other factors like width values will be considered later in this function anyway)
+  let isDisplayed = ele => ele.pstyle('display').value !== 'none';
+
+  let displayed = (
+    !styleEnabled
+    || (
+      isDisplayed(ele)
+
+      // must take into account connected nodes b/c of implicit edge hiding on display:none node
+      && ( !isEdge || ( isDisplayed(ele.source()) && isDisplayed(ele.target()) ) )
+    )
+  );
+
+  if( displayed ){ // displayed suffices, since we will find zero area eles anyway
     let overlayOpacity = 0;
     let overlayPadding = 0;
 

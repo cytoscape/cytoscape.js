@@ -11,19 +11,30 @@ let elesfn = ({
   layoutDimensions: function( options ){
     options = getLayoutDimensionOptions( options );
 
-    if( options.nodeDimensionsIncludeLabels ){
+    let dims;
+
+    if( !this.takesUpSpace() ){
+      dims = { w: 0, h: 0 };
+    } else if( options.nodeDimensionsIncludeLabels ){
       let bbDim = this.boundingBox();
-      return {
+
+      dims = {
         w: bbDim.w,
         h: bbDim.h
       };
-    }
-    else {
-      return {
+    } else {
+      dims = {
         w: this.outerWidth(),
         h: this.outerHeight()
       };
     }
+
+    // sanitise the dimensions for external layouts (avoid division by zero)
+    if( dims.w === 0 || dims.h === 0 ){
+      dims.w = dims.h = 1;
+    }
+
+    return dims;
   },
 
   // using standard layout options, apply position function (w/ or w/o animation)

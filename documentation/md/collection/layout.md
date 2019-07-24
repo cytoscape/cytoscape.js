@@ -8,9 +8,21 @@ This function creates and returns a [layout object](#layouts).  You may want to 
 
 ## Examples
 
+Assign random positions to all nodes:
+
 ```js
 var layout = cy.elements().layout({
   name: 'random'
+});
+
+layout.run();
+```
+
+Apply a circle layout to only the shown elements:
+
+```js
+var layout = cy.elements().not(':invisible, :transparent').layout({
+  name: 'circle'
 });
 
 layout.run();

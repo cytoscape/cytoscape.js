@@ -966,7 +966,7 @@ function () {
 var Map$1 = typeof Map !== 'undefined' ? Map : ObjectMap;
 
 /* global Set */
-var undef = "undefined";
+var undef =  "undefined" ;
 
 var ObjectSet =
 /*#__PURE__*/
@@ -2211,9 +2211,6 @@ var elesfn$6 = {
   }
 }; // elesfn
 
-var arePositionsSame = function arePositionsSame(p1, p2) {
-  return p1.x === p2.x && p1.y === p2.y;
-};
 var copyPosition = function copyPosition(p) {
   return {
     x: p.x,
@@ -2378,9 +2375,6 @@ var inPlaceSumNormalize = function inPlaceSumNormalize(v) {
 
   return v;
 };
-var normalize = function normalize(v) {
-  return inPlaceSumNormalize(v.slice());
-}; // from http://en.wikipedia.org/wiki/Bézier_curve#Quadratic_curves
 
 var qbezierAt = function qbezierAt(p0, p1, p2, t) {
   return (1 - t) * (1 - t) * p0 + 2 * (1 - t) * t * p1 + t * t * p2;
@@ -2407,16 +2401,6 @@ var lineAt = function lineAt(p0, p1, t, d) {
     x: p0.x + normVec.x * d,
     y: p0.y + normVec.y * d
   };
-};
-var lineAtDist = function lineAtDist(p0, p1, d) {
-  return lineAt(p0, p1, undefined, d);
-}; // get angle at A via cosine law
-
-var triangleAngle = function triangleAngle(A, B, C) {
-  var a = dist(B, C);
-  var b = dist(A, C);
-  var c = dist(A, B);
-  return Math.acos((a * a + b * b - c * c) / (2 * a * b));
 };
 var bound = function bound(min, val, max) {
   return Math.max(min, Math.min(max, val));
@@ -2472,16 +2456,6 @@ var clearBoundingBox = function clearBoundingBox(bb) {
   bb.w = 0;
   bb.h = 0;
 };
-var shiftBoundingBox = function shiftBoundingBox(bb, dx, dy) {
-  return {
-    x1: bb.x1 + dx,
-    x2: bb.x2 + dx,
-    y1: bb.y1 + dy,
-    y2: bb.y2 + dy,
-    w: bb.w,
-    h: bb.h
-  };
-};
 var updateBoundingBox = function updateBoundingBox(bb1, bb2) {
   // update bb1 with bb2 bounds
   bb1.x1 = Math.min(bb1.x1, bb2.x1);
@@ -2509,20 +2483,6 @@ var expandBoundingBox = function expandBoundingBox(bb) {
   bb.h = bb.y2 - bb.y1;
   return bb;
 };
-
-var expandToInt = function expandToInt(x) {
-  return x > 0 ? Math.ceil(x) : Math.floor(x);
-};
-
-var expandBoundingBoxToInts = function expandBoundingBoxToInts(bb) {
-  var padding = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
-  bb.x1 = expandToInt(bb.x1 - padding);
-  bb.y1 = expandToInt(bb.y1 - padding);
-  bb.x2 = expandToInt(bb.x2 + padding);
-  bb.y2 = expandToInt(bb.y2 + padding);
-  bb.w = bb.x2 - bb.x1;
-  bb.h = bb.y2 - bb.y1;
-}; // assign the values of bb2 into bb1
 
 var assignBoundingBox = function assignBoundingBox(bb1, bb2) {
   bb1.x1 = bb2.x1;
@@ -3041,28 +3001,6 @@ var intersectLineCircle = function intersectLineCircle(x1, y1, x2, y2, centerX, 
     return [nearIntersectionX, nearIntersectionY];
   }
 };
-var findCircleNearPoint = function findCircleNearPoint(centerX, centerY, radius, farX, farY) {
-  var displacementX = farX - centerX;
-  var displacementY = farY - centerY;
-  var distance = Math.sqrt(displacementX * displacementX + displacementY * displacementY);
-  var unitDisplacementX = displacementX / distance;
-  var unitDisplacementY = displacementY / distance;
-  return [centerX + unitDisplacementX * radius, centerY + unitDisplacementY * radius];
-};
-var findMaxSqDistanceToOrigin = function findMaxSqDistanceToOrigin(points) {
-  var maxSqDistance = 0.000001;
-  var sqDistance;
-
-  for (var i = 0; i < points.length / 2; i++) {
-    sqDistance = points[i * 2] * points[i * 2] + points[i * 2 + 1] * points[i * 2 + 1];
-
-    if (sqDistance > maxSqDistance) {
-      maxSqDistance = sqDistance;
-    }
-  }
-
-  return maxSqDistance;
-};
 var midOfThree = function midOfThree(a, b, c) {
   if (b <= a && a <= c || c <= a && a <= b) {
     return a;
@@ -3271,73 +3209,6 @@ var getBarrelCurveConstants = function getBarrelCurveConstants(width, height) {
     ctrlPtOffsetPct: 0.05
   };
 };
-
-var math = /*#__PURE__*/Object.freeze({
-  arePositionsSame: arePositionsSame,
-  copyPosition: copyPosition,
-  modelToRenderedPosition: modelToRenderedPosition,
-  renderedToModelPosition: renderedToModelPosition,
-  array2point: array2point,
-  min: min,
-  max: max,
-  mean: mean,
-  median: median,
-  deg2rad: deg2rad,
-  getAngleFromDisp: getAngleFromDisp,
-  log2: log2,
-  signum: signum,
-  dist: dist,
-  sqdist: sqdist,
-  inPlaceSumNormalize: inPlaceSumNormalize,
-  normalize: normalize,
-  qbezierAt: qbezierAt,
-  qbezierPtAt: qbezierPtAt,
-  lineAt: lineAt,
-  lineAtDist: lineAtDist,
-  triangleAngle: triangleAngle,
-  bound: bound,
-  makeBoundingBox: makeBoundingBox,
-  copyBoundingBox: copyBoundingBox,
-  clearBoundingBox: clearBoundingBox,
-  shiftBoundingBox: shiftBoundingBox,
-  updateBoundingBox: updateBoundingBox,
-  expandBoundingBoxByPoint: expandBoundingBoxByPoint,
-  expandBoundingBox: expandBoundingBox,
-  expandBoundingBoxToInts: expandBoundingBoxToInts,
-  assignBoundingBox: assignBoundingBox,
-  assignShiftToBoundingBox: assignShiftToBoundingBox,
-  boundingBoxesIntersect: boundingBoxesIntersect,
-  inBoundingBox: inBoundingBox,
-  pointInBoundingBox: pointInBoundingBox,
-  boundingBoxInBoundingBox: boundingBoxInBoundingBox,
-  roundRectangleIntersectLine: roundRectangleIntersectLine,
-  inLineVicinity: inLineVicinity,
-  inBezierVicinity: inBezierVicinity,
-  solveQuadratic: solveQuadratic,
-  solveCubic: solveCubic,
-  sqdistToQuadraticBezier: sqdistToQuadraticBezier,
-  sqdistToFiniteLine: sqdistToFiniteLine,
-  pointInsidePolygonPoints: pointInsidePolygonPoints,
-  pointInsidePolygon: pointInsidePolygon,
-  joinLines: joinLines,
-  expandPolygon: expandPolygon,
-  intersectLineEllipse: intersectLineEllipse,
-  checkInEllipse: checkInEllipse,
-  intersectLineCircle: intersectLineCircle,
-  findCircleNearPoint: findCircleNearPoint,
-  findMaxSqDistanceToOrigin: findMaxSqDistanceToOrigin,
-  midOfThree: midOfThree,
-  finiteLinesIntersect: finiteLinesIntersect,
-  polygonIntersectLine: polygonIntersectLine,
-  shortenIntersection: shortenIntersection,
-  generateUnitNgonPointsFitToSquare: generateUnitNgonPointsFitToSquare,
-  fitPolygonToSquare: fitPolygonToSquare,
-  generateUnitNgonPoints: generateUnitNgonPoints,
-  getRoundRectangleRadius: getRoundRectangleRadius,
-  getCutRectangleCornerLength: getCutRectangleCornerLength,
-  bezierPtsToQuadCoeff: bezierPtsToQuadCoeff,
-  getBarrelCurveConstants: getBarrelCurveConstants
-});
 
 var pageRankDefaults = defaults({
   dampingFactor: 0.8,
@@ -3964,7 +3835,7 @@ var addLoops = function addLoops(M, n, val) {
   }
 };
 
-var normalize$1 = function normalize(M, n) {
+var normalize = function normalize(M, n) {
   var sum;
 
   for (var col = 0; col < n; col++) {
@@ -4021,7 +3892,7 @@ var inflate = function inflate(M, n, inflateFactor
     _M[i] = Math.pow(M[i], inflateFactor);
   }
 
-  normalize$1(_M, n);
+  normalize(_M, n);
   return _M;
 };
 
@@ -4121,7 +3992,7 @@ var markovClustering = function markovClustering(options) {
 
   addLoops(M, n, opts.multFactor); // Step 2: M = normalize( M );
 
-  normalize$1(M, n);
+  normalize(M, n);
   var isStillMoving = true;
   var iterations = 0;
 
@@ -4396,9 +4267,7 @@ var kMeans = function kMeans(options) {
 
   if (opts.testMode) {
     if (typeof opts.testCentroids === 'number') {
-      // TODO: implement a seeded random number generator.
-      var seed = opts.testCentroids;
-      centroids = randomCentroids(nodes, opts.k, opts.attributes, seed);
+      centroids = randomCentroids(nodes, opts.k, opts.attributes);
     } else if (_typeof(opts.testCentroids) === 'object') {
       centroids = opts.testCentroids;
     } else {
@@ -4841,8 +4710,8 @@ var getAllChildren = function getAllChildren(root, arr, cy) {
   if (root.value) {
     arr.push(root.value);
   } else {
-    if (root.left) getAllChildren(root.left, arr, cy);
-    if (root.right) getAllChildren(root.right, arr, cy);
+    if (root.left) getAllChildren(root.left, arr);
+    if (root.right) getAllChildren(root.right, arr);
   }
 };
 
@@ -4886,8 +4755,8 @@ var buildClustersFromTree = function buildClustersFromTree(root, k, cy) {
 
   if (k === 0) {
     // don't cut tree, simply return all nodes as 1 single cluster
-    if (root.left) getAllChildren(root.left, left, cy);
-    if (root.right) getAllChildren(root.right, right, cy);
+    if (root.left) getAllChildren(root.left, left);
+    if (root.right) getAllChildren(root.right, right);
     leaves = left.concat(right);
     return [cy.collection(leaves)];
   } else if (k === 1) {
@@ -4896,8 +4765,8 @@ var buildClustersFromTree = function buildClustersFromTree(root, k, cy) {
       // leaf node
       return [cy.collection(root.value)];
     } else {
-      if (root.left) getAllChildren(root.left, left, cy);
-      if (root.right) getAllChildren(root.right, right, cy);
+      if (root.left) getAllChildren(root.left, left);
+      if (root.right) getAllChildren(root.right, right);
       return [cy.collection(left), cy.collection(right)];
     }
   } else {
@@ -5314,7 +5183,7 @@ var affinityPropagation = function affinityPropagation(options) {
 
   var exemplarsIndices = findExemplars(n, R, A); // Assign nodes to clusters
 
-  var clusterIndices = assign$2(n, S, exemplarsIndices, nodes, id2position);
+  var clusterIndices = assign$2(n, S, exemplarsIndices);
   var clusters = {};
 
   for (var c = 0; c < exemplarsIndices.length; c++) {
@@ -7651,7 +7520,7 @@ match[Type.DATA_BOOL] = function (check, ele) {
 match[Type.DATA_EXIST] = function (check, ele) {
   var field = check.field,
       operator = check.operator;
-  return existCmp(data(ele, field), operator);
+  return existCmp(data(ele, field));
 };
 
 match[Type.UNDIRECTED_EDGE] = function (check, ele) {
@@ -7800,7 +7669,7 @@ var Selector = function Selector(selector) {
       this.invalid = true;
     }
   } else {
-    error('A selector must be created from a string; found ', selector);
+    error('A selector must be created from a string; found ');
   }
 };
 
@@ -8679,12 +8548,7 @@ elesfn$j.updateCompoundBounds = function () {
         bottom: parent.pstyle('min-height-bias-bottom')
       }
     };
-
-    var takesUpSpace = function takesUpSpace(ele) {
-      return ele.pstyle('display').value === 'element';
-    };
-
-    var bb = children.filter(takesUpSpace).boundingBox({
+    var bb = children.boundingBox({
       includeLabels: includeLabels,
       includeOverlays: false,
       // updating the compound bounds happens outside of the regular
@@ -9041,18 +8905,25 @@ var boundingBoxImpl = function boundingBoxImpl(ele, options) {
   var headless = cy.headless();
   var bounds = makeBoundingBox();
   var _p = ele._private;
-  var display = styleEnabled ? ele.pstyle('display').value : 'element';
   var isNode = ele.isNode();
   var isEdge = ele.isEdge();
   var ex1, ex2, ey1, ey2; // extrema of body / lines
 
   var x, y; // node pos
 
-  var displayed = display !== 'none';
   var rstyle = _p.rstyle;
-  var manualExpansion = isNode && styleEnabled ? ele.pstyle('bounds-expansion').pfValue : 0;
+  var manualExpansion = isNode && styleEnabled ? ele.pstyle('bounds-expansion').pfValue : 0; // must use `display` prop only, as reading `compound.width()` causes recursion
+  // (other factors like width values will be considered later in this function anyway)
+
+  var isDisplayed = function isDisplayed(ele) {
+    return ele.pstyle('display').value !== 'none';
+  };
+
+  var displayed = !styleEnabled || isDisplayed(ele) // must take into account connected nodes b/c of implicit edge hiding on display:none node
+  && (!isEdge || isDisplayed(ele.source()) && isDisplayed(ele.target()));
 
   if (displayed) {
+    // displayed suffices, since we will find zero area eles anyway
     var overlayOpacity = 0;
     var overlayPadding = 0;
 
@@ -9178,10 +9049,10 @@ var boundingBoxImpl = function boundingBoxImpl(ele, options) {
 
 
     if (styleEnabled && options.includeEdges && isEdge) {
-      updateBoundsFromArrow(bounds, ele, 'mid-source', options);
-      updateBoundsFromArrow(bounds, ele, 'mid-target', options);
-      updateBoundsFromArrow(bounds, ele, 'source', options);
-      updateBoundsFromArrow(bounds, ele, 'target', options);
+      updateBoundsFromArrow(bounds, ele, 'mid-source');
+      updateBoundsFromArrow(bounds, ele, 'mid-target');
+      updateBoundsFromArrow(bounds, ele, 'source');
+      updateBoundsFromArrow(bounds, ele, 'target');
     } // ghost
     ////////
 
@@ -9229,11 +9100,11 @@ var boundingBoxImpl = function boundingBoxImpl(ele, options) {
     }
 
     if (styleEnabled && options.includeLabels) {
-      updateBoundsFromLabel(bounds, ele, null, options);
+      updateBoundsFromLabel(bounds, ele, null);
 
       if (isEdge) {
-        updateBoundsFromLabel(bounds, ele, 'source', options);
-        updateBoundsFromLabel(bounds, ele, 'target', options);
+        updateBoundsFromLabel(bounds, ele, 'source');
+        updateBoundsFromLabel(bounds, ele, 'target');
       }
     } // style enabled for labels
 
@@ -10790,19 +10661,32 @@ var elesfn$p = {
   // Calculates and returns node dimensions { x, y } based on options given
   layoutDimensions: function layoutDimensions(options) {
     options = getLayoutDimensionOptions(options);
+    var dims;
 
-    if (options.nodeDimensionsIncludeLabels) {
+    if (!this.takesUpSpace()) {
+      dims = {
+        w: 0,
+        h: 0
+      };
+    } else if (options.nodeDimensionsIncludeLabels) {
       var bbDim = this.boundingBox();
-      return {
+      dims = {
         w: bbDim.w,
         h: bbDim.h
       };
     } else {
-      return {
+      dims = {
         w: this.outerWidth(),
         h: this.outerHeight()
       };
+    } // sanitise the dimensions for external layouts (avoid division by zero)
+
+
+    if (dims.w === 0 || dims.h === 0) {
+      dims.w = dims.h = 1;
     }
+
+    return dims;
   },
   // using standard layout options, apply position function (w/ or w/o animation)
   layoutPositions: function layoutPositions(layout, options, fn) {
@@ -13460,7 +13344,7 @@ function stepAll(now, cy) {
       }
 
       if (!ani_p.started) {
-        startAnimation(ele, ani, now, isCore);
+        startAnimation(ele, ani, now);
       }
 
       step(ele, ani, now, isCore);
@@ -18591,7 +18475,7 @@ BreadthFirstLayout.prototype.run = function () {
 
       if (depth < eleDepth) {
         // only get influenced by elements above
-        percent += index / (nDepth - 1);
+        percent += index / nDepth;
         samples++;
       }
     }
@@ -19136,7 +19020,7 @@ CoseLayout.prototype.run = function () {
 
 
   if (options.randomize) {
-    randomizePositions(layoutInfo, cy);
+    randomizePositions(layoutInfo);
   }
 
   var startTime = performanceNow();
@@ -19156,7 +19040,7 @@ CoseLayout.prototype.run = function () {
     } // Do one step in the phisical simulation
 
 
-    step$1(layoutInfo, options, i); // Update temperature
+    step$1(layoutInfo, options); // Update temperature
 
     layoutInfo.temperature = layoutInfo.temperature * options.coolingFactor; // logDebug("New temperature: " + layoutInfo.temperature);
 
@@ -19637,13 +19521,13 @@ var step$1 = function step(layoutInfo, options, _step) {
   // Calculate node repulsions
   calculateNodeForces(layoutInfo, options); // Calculate edge forces
 
-  calculateEdgeForces(layoutInfo, options); // Calculate gravity forces
+  calculateEdgeForces(layoutInfo); // Calculate gravity forces
 
   calculateGravityForces(layoutInfo, options); // Propagate forces from parent to child
 
-  propagateForces(layoutInfo, options); // Update positions based on calculated forces
+  propagateForces(layoutInfo); // Update positions based on calculated forces
 
-  updatePositions(layoutInfo, options);
+  updatePositions(layoutInfo);
 };
 /**
  * @brief : Computes the node repulsion forces
@@ -22801,7 +22685,7 @@ BRp$6.recalculateEdgeLabelProjections = function (edge) {
           var t = isSrc ? seg.t0 + segDt * tSegment : seg.t1 - segDt * tSegment;
           t = bound(0, t, 1);
           p = qbezierPtAt(cp.p0, cp.p1, cp.p2, t);
-          angle = bezierAngle(cp.p0, cp.p1, cp.p2, t, p);
+          angle = bezierAngle(cp.p0, cp.p1, cp.p2, t);
           break;
         }
 
@@ -27170,7 +27054,7 @@ LTCp.getLayers = function (eles, pxRatio, lvl) {
 
   var layer = null;
   var maxElesPerLayer = eles.length / defNumLayers;
-  var allowLazyQueueing = !firstGet;
+  var allowLazyQueueing =  !firstGet;
 
   for (var i = 0; i < eles.length; i++) {
     var ele = eles[i];
@@ -30389,7 +30273,7 @@ CRp$a.getImgSmoothing = function (context) {
 CRp$a.makeOffscreenCanvas = function (width, height) {
   var canvas;
 
-  if ((typeof OffscreenCanvas === "undefined" ? "undefined" : _typeof(OffscreenCanvas)) !== ("undefined")) {
+  if ((typeof OffscreenCanvas === "undefined" ? "undefined" : _typeof(OffscreenCanvas)) !== ( "undefined" )) {
     canvas = new OffscreenCanvas(width, height);
   } else {
     canvas = document.createElement('canvas'); // eslint-disable-line no-undef
@@ -30754,7 +30638,7 @@ sheetfn.appendToStyle = function (style) {
   return style;
 };
 
-var version = "3.7.4";
+var version = "3.7.5";
 
 var cytoscape = function cytoscape(options) {
   // if no options specified, use default

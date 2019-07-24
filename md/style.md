@@ -500,16 +500,22 @@ Endpoint modification is not supported for `curve-style: haystack` edges for per
   * A `display: none` element does not take up space.
     * A `display: none` bundled bezier edge does not take up space in its bundle.
     * A `display: none` node hides its connected edges.
+    * A `display: none` node is considered a point rather than an area in layouts, affecting things like overlap avoidance.
+    * A `display: none` element is not taken into consideration for viewport fitting.
   * A `display: none` element is not interactive.
 * **`visibility`** : Whether the element is visible; may be `visible` or `hidden`.
   * A `visibility: hidden` element does take up space.
     * A `visibility: hidden` bundled bezier edge does take up space in its bundle.
     * A `visibility: hidden` node does not hide its connected edges.
+    * A `visibility: hidden` element is considered normally by layouts.
+    * A `visibility: hidden` element is taken into consideration for viewport fitting.
   * A `visibility: hidden` element is not interactive.
 * **`opacity`** : The opacity of the element, ranging from 0 to 1.  Note that the opacity of a compound node parent affects the effective opacity of its children.
   * An `opacity: 0` element does take up space.
     * An `opacity: 0` bundled bezier edge does take up space in its bundle.
     * An `opacity: 0` node does not hide its connected edges.
+    * An `opacity: 0` element is considered normally by layouts.
+    * An `opacity: 0` element is taken into consideration for viewport fitting.
   * An `opacity: 0` element is interactive.
 * **`z-index`** : An integer value that affects the relative draw order of elements.  In general, an element with a higher `z-index` will be drawn on top of an element with a lower `z-index`.  Note that edges are under nodes despite `z-index`, except when necessary for compound nodes.
 

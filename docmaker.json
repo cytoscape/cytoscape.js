@@ -1680,7 +1680,7 @@
 
             {
               "name": "ele.width",
-              "descr": "Get the width of the element.",
+              "descr": "Get the width of the element.  The raw width of the element is returned, independent of whether the element is visibile.",
               "formats": [
                 { "name": "ele.width", "descr": "Get the width of the element in [model dimensions](#notation/position)." },
                 { "name": "ele.outerWidth", "descr": "Get the outer width of the element in [model dimensions](#notation/position) (includes width, padding, & border)." },
@@ -1691,7 +1691,7 @@
 
             {
               "name": "ele.height",
-              "descr": "Get the height of the element.",
+              "descr": "Get the height of the element.  The raw height of the element is returned, independent of whether the element is visibile.",
               "formats": [
                 { "name": "ele.height", "descr": "Get the height of the element in [model dimensions](#notation/position)." },
                 { "name": "ele.outerHeight", "descr": "Get the outer height of the element in [model dimensions](#notation/position) (includes height, padding, & border)." },

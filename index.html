@@ -651,11 +651,13 @@
 <h2 id="introduction/releases">Releases <a href="#introduction/releases"><span class="fa fa-bookmark"></span></a></h2>
 <ul>
 <li>3.8<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.8.2+is%3Aclosed">3.8.2</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.8.1+is%3Aclosed">3.8.1</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.8.0+is%3Aclosed">3.8.0</a></li>
 </ul>
 </li>
 <li>3.7<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.7.5+is%3Aclosed">3.7.5</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.7.4+is%3Aclosed">3.7.4</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.7.3+is%3Aclosed">3.7.3</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.7.2+is%3Aclosed">3.7.2</a></li>
@@ -6247,7 +6249,7 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 
 
 
-							<div class="descr"><p>Get the width of the element.</p>
+							<div class="descr"><p>Get the width of the element.  The raw width of the element is returned, independent of whether the element is visibile.</p>
 </div>
 
 							<div class="formats">
@@ -6300,7 +6302,7 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 
 
 
-							<div class="descr"><p>Get the height of the element.</p>
+							<div class="descr"><p>Get the height of the element.  The raw height of the element is returned, independent of whether the element is visibile.</p>
 </div>
 
 							<div class="formats">
@@ -6418,6 +6420,7 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 							<div class="details">
 									<h3 id="details">Details</h3>
 <p>This function returns a plain object with the fields <code>x1</code>, <code>x2</code>, <code>y1</code>, <code>y2</code>, <code>w</code>, and <code>h</code> defined.</p>
+<p>An element that does not take up space (e.g. <code>display: none</code>) has a bounding box of zero <code>w</code> and <code>h</code>.  The <code>x1</code>, <code>x2</code>, <code>y1</code>, and <code>y2</code> values will have no meaning for those zero-area elements.  To get the position of a <code>display: none</code> node, use <a href="#node.position"><code>node.position()</code></a> instead.</p>
 <p>Note that the <code>includeOverlays</code> option necessarily includes the dimensions of the body of the element.  So using <code>includeOverlays: true</code> with <code>includeNodes: false</code>, for example, does not make sense.  The case where the <code>includeOverlays</code> option is only useful in getting the non-overlay dimensions of an element, e.g. <code>{ includeOverlays: false, includeNodes: true }</code>.</p>
 
 							</div>
@@ -6492,6 +6495,7 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 							<div class="details">
 									<h3 id="details">Details</h3>
 <p>This function returns a plain object with the fields <code>x1</code>, <code>x2</code>, <code>y1</code>, <code>y2</code>, <code>w</code>, and <code>h</code> defined.</p>
+<p>An element that does not take up space (e.g. <code>display: none</code>) has a bounding box of zero <code>w</code> and <code>h</code>.  The <code>x1</code>, <code>x2</code>, <code>y1</code>, and <code>y2</code> values will have no meaning for those zero-area elements.  To get the position of a <code>display: none</code> node, use <a href="#node.position"><code>node.position()</code></a> instead.</p>
 <p>Note that the <code>includeOverlays</code> option necessarily includes the dimensions of the body of the element.  So using <code>includeOverlays: true</code> with <code>includeNodes: false</code>, for example, does not make sense.  The case where the <code>includeOverlays</code> option is only useful in getting the non-overlay dimensions of an element, e.g. <code>{ includeOverlays: false, includeNodes: true }</code>.</p>
 
 							</div>
@@ -6934,8 +6938,15 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 <p>This function creates and returns a <a href="#layouts">layout object</a>.  You may want to keep a reference to the layout for more advanced usecases, such as running multiple layouts simultaneously.</p>
 <p><span class="important-indicator"></span> Note that you must call <a href="#layouts/layout-manipulation/layout.run"><code>layout.run()</code></a> in order for it to affect the graph.</p>
 <h3 id="examples">Examples</h3>
+<p>Assign random positions to all nodes:</p>
 <pre><code class="language-js"><span class="hljs-keyword">var</span> layout = cy.elements().layout({
   <span class="hljs-attr">name</span>: <span class="hljs-string">'random'</span>
+});
+
+layout.run();</code></pre>
+<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>Apply a circle layout to only the shown elements:</p>
+<pre><code class="language-js"><span class="hljs-keyword">var</span> layout = cy.elements().not(<span class="hljs-string">':invisible, :transparent'</span>).layout({
+  <span class="hljs-attr">name</span>: <span class="hljs-string">'circle'</span>
 });
 
 layout.run();</code></pre>
@@ -13443,6 +13454,8 @@ Sets the subject of the selector (e.g. <code>$node &gt; node</code> to select th
 <li>A <code>display: none</code> element does not take up space.<ul>
 <li>A <code>display: none</code> bundled bezier edge does not take up space in its bundle.</li>
 <li>A <code>display: none</code> node hides its connected edges.</li>
+<li>A <code>display: none</code> node is considered a point rather than an area in layouts, affecting things like overlap avoidance.</li>
+<li>A <code>display: none</code> element is not taken into consideration for viewport fitting.</li>
 </ul>
 </li>
 <li>A <code>display: none</code> element is not interactive.</li>
@@ -13452,6 +13465,8 @@ Sets the subject of the selector (e.g. <code>$node &gt; node</code> to select th
 <li>A <code>visibility: hidden</code> element does take up space.<ul>
 <li>A <code>visibility: hidden</code> bundled bezier edge does take up space in its bundle.</li>
 <li>A <code>visibility: hidden</code> node does not hide its connected edges.</li>
+<li>A <code>visibility: hidden</code> element is considered normally by layouts.</li>
+<li>A <code>visibility: hidden</code> element is taken into consideration for viewport fitting.</li>
 </ul>
 </li>
 <li>A <code>visibility: hidden</code> element is not interactive.</li>
@@ -13461,6 +13476,8 @@ Sets the subject of the selector (e.g. <code>$node &gt; node</code> to select th
 <li>An <code>opacity: 0</code> element does take up space.<ul>
 <li>An <code>opacity: 0</code> bundled bezier edge does take up space in its bundle.</li>
 <li>An <code>opacity: 0</code> node does not hide its connected edges.</li>
+<li>An <code>opacity: 0</code> element is considered normally by layouts.</li>
+<li>An <code>opacity: 0</code> element is taken into consideration for viewport fitting.</li>
 </ul>
 </li>
 <li>An <code>opacity: 0</code> element is interactive.</li>
@@ -13748,6 +13765,7 @@ Sets the subject of the selector (e.g. <code>$node &gt; node</code> to select th
 <p>Several layouts are included with Cytoscape.js by default, and their options are described in the sections that follow with the default values specified.  Note that you must set <code>options.name</code> to the name of the layout to specify which one you want to run.</p>
 <p>Each layout has its own algorithm for setting the position for each node.  This algorithm influences the overall shape of the graph and the lengths of the edges.  A layout’s algorithm can be customised by setting its options.  Therefore, edge lengths can be controlled by setting the layout options appropriately.</p>
 <p>For force-directed (physics) layouts, there is generally an option to set a weight to each edge to affect the relative edge lengths.  Edge length can also be affected by options like spacing factors, angles, and overlap avoidance.  Setting edge length depends on the particular layout, and some layouts will allow for more precise edge lengths than others.</p>
+<p>A layout runs on the subgraph that you specify.  All elements in the graph are used for <a href="#cy.layout"><code>cy.layout()</code></a>.  The specified subset of elements is used for <a href="#eles.layout"><code>eles.layout()</code></a>.  In either case, the state of each element does not affect whether the element is considered in the layout.  For example, an <a href="#style/visibility">invisible node</a> is repositioned by a layout if the node is included in the layout’s set of elements.  You may use <code>eles.layout()</code> to address complex use-cases, like running a different layout on each component.</p>
 
 
 

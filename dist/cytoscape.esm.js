@@ -8548,12 +8548,7 @@ elesfn$j.updateCompoundBounds = function () {
         bottom: parent.pstyle('min-height-bias-bottom')
       }
     };
-
-    var takesUpSpace = function takesUpSpace(ele) {
-      return ele.pstyle('display').value === 'element';
-    };
-
-    var bb = children.filter(takesUpSpace).boundingBox({
+    var bb = children.boundingBox({
       includeLabels: includeLabels,
       includeOverlays: false,
       // updating the compound bounds happens outside of the regular
@@ -8910,18 +8905,25 @@ var boundingBoxImpl = function boundingBoxImpl(ele, options) {
   var headless = cy.headless();
   var bounds = makeBoundingBox();
   var _p = ele._private;
-  var display = styleEnabled ? ele.pstyle('display').value : 'element';
   var isNode = ele.isNode();
   var isEdge = ele.isEdge();
   var ex1, ex2, ey1, ey2; // extrema of body / lines
 
   var x, y; // node pos
 
-  var displayed = display !== 'none';
   var rstyle = _p.rstyle;
-  var manualExpansion = isNode && styleEnabled ? ele.pstyle('bounds-expansion').pfValue : 0;
+  var manualExpansion = isNode && styleEnabled ? ele.pstyle('bounds-expansion').pfValue : 0; // must use `display` prop only, as reading `compound.width()` causes recursion
+  // (other factors like width values will be considered later in this function anyway)
+
+  var isDisplayed = function isDisplayed(ele) {
+    return ele.pstyle('display').value !== 'none';
+  };
+
+  var displayed = !styleEnabled || isDisplayed(ele) // must take into account connected nodes b/c of implicit edge hiding on display:none node
+  && (!isEdge || isDisplayed(ele.source()) && isDisplayed(ele.target()));
 
   if (displayed) {
+    // displayed suffices, since we will find zero area eles anyway
     var overlayOpacity = 0;
     var overlayPadding = 0;
 
@@ -10659,19 +10661,32 @@ var elesfn$p = {
   // Calculates and returns node dimensions { x, y } based on options given
   layoutDimensions: function layoutDimensions(options) {
     options = getLayoutDimensionOptions(options);
+    var dims;
 
-    if (options.nodeDimensionsIncludeLabels) {
+    if (!this.takesUpSpace()) {
+      dims = {
+        w: 0,
+        h: 0
+      };
+    } else if (options.nodeDimensionsIncludeLabels) {
       var bbDim = this.boundingBox();
-      return {
+      dims = {
         w: bbDim.w,
         h: bbDim.h
       };
     } else {
-      return {
+      dims = {
         w: this.outerWidth(),
         h: this.outerHeight()
       };
+    } // sanitise the dimensions for external layouts (avoid division by zero)
+
+
+    if (dims.w === 0 || dims.h === 0) {
+      dims.w = dims.h = 1;
     }
+
+    return dims;
   },
   // using standard layout options, apply position function (w/ or w/o animation)
   layoutPositions: function layoutPositions(layout, options, fn) {
@@ -18461,7 +18476,7 @@ BreadthFirstLayout.prototype.run = function () {
 
       if (depth < eleDepth) {
         // only get influenced by elements above
-        percent += index / (nDepth - 1);
+        percent += index / nDepth;
         samples++;
       }
     }
@@ -30624,7 +30639,7 @@ sheetfn.appendToStyle = function (style) {
   return style;
 };
 
-var version = "3.8.1";
+var version = "3.8.2";
 
 var cytoscape = function cytoscape(options) {
   // if no options specified, use default

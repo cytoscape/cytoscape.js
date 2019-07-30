@@ -187,6 +187,10 @@ BRp.destroy = function(){
     r.styleObserver.disconnect();
   }
 
+  if( r.resizeObserver ){
+    r.resizeObserver.disconnect();
+  }
+
   if( r.labelCalcDiv ){
     try {
       document.body.removeChild( r.labelCalcDiv ); // eslint-disable-line no-undef

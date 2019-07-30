@@ -274,6 +274,7 @@ BRp.load = function(){
   };
 
   var haveMutationsApi = typeof MutationObserver !== 'undefined';
+  var haveResizeObserverApi = typeof ResizeObserver !== 'undefined';
 
   // watch for when the cy container is removed from the dom
   if( haveMutationsApi ){
@@ -314,6 +315,12 @@ BRp.load = function(){
 
   // auto resize
   r.registerBinding( window, 'resize', onResize ); // eslint-disable-line no-undef
+
+  if( haveResizeObserverApi ){
+    r.resizeObserver = new ResizeObserver(onResize);
+
+    r.resizeObserver.observe( r.container );
+  }
 
   var forEachUp = function( domEle, fn ){
     while( domEle != null ){

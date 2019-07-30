@@ -77,6 +77,12 @@ let Element = function( cy, params, restore ){
       source: null,
       target: null,
       main: null
+    },
+    arrowBounds: { // bounds cache of edge arrows
+      source: null,
+      target: null,
+      'mid-source': null,
+      'mid-target': null
     }
   };
 

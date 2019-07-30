@@ -786,6 +786,8 @@ const defBbOptsKey = getKey( defBbOpts );
 const filledBbOpts = defaults( defBbOpts );
 
 elesfn.boundingBox = function( options ){
+  let bounds;
+
   // the main usecase is ele.boundingBox() for a single element with no/def options
   // specified s.t. the cache is used, so check for this case to make it faster by
   // avoiding the overhead of the rest of the function
@@ -796,37 +798,37 @@ elesfn.boundingBox = function( options ){
       options = filledBbOpts( options );
     }
 
-    return cachedBoundingBoxImpl( this[0], options );
-  }
+    bounds = cachedBoundingBoxImpl( this[0], options );
+  } else {
+    bounds = makeBoundingBox();
 
-  let bounds = makeBoundingBox();
+    options = options || defBbOpts;
 
-  options = options || defBbOpts;
+    let opts = filledBbOpts( options );
 
-  let opts = filledBbOpts( options );
+    let eles = this;
+    let cy = eles.cy();
+    let styleEnabled = cy.styleEnabled();
 
-  let eles = this;
-  let cy = eles.cy();
-  let styleEnabled = cy.styleEnabled();
+    if( styleEnabled ){
+      for( let i = 0; i < eles.length; i++ ){
+        let ele = eles[i];
+        let _p = ele._private;
+        let currPosKey = getBoundingBoxPosKey( ele );
+        let isPosKeySame = _p.bbCachePosKey === currPosKey;
+        let useCache = opts.useCache && isPosKeySame;
 
-  if( styleEnabled ){
+        ele.recalculateRenderedStyle( useCache );
+      }
+    }
+
+    this.updateCompoundBounds();
+
     for( let i = 0; i < eles.length; i++ ){
       let ele = eles[i];
-      let _p = ele._private;
-      let currPosKey = getBoundingBoxPosKey( ele );
-      let isPosKeySame = _p.bbCachePosKey === currPosKey;
-      let useCache = opts.useCache && isPosKeySame;
 
-      ele.recalculateRenderedStyle( useCache );
+      updateBoundsFromBox( bounds, cachedBoundingBoxImpl( ele, opts ) );
     }
-  }
-
-  this.updateCompoundBounds();
-
-  for( let i = 0; i < eles.length; i++ ){
-    let ele = eles[i];
-
-    updateBoundsFromBox( bounds, cachedBoundingBoxImpl( ele, opts ) );
   }
 
   bounds.x1 = noninf( bounds.x1 );
@@ -846,6 +848,16 @@ elesfn.dirtyBoundingBoxCache = function(){
     _p.bbCache = null;
     _p.bbCacheShift.x = _p.bbCacheShift.y = 0;
     _p.bbCachePosKey = null;
+    _p.bodyBounds = null;
+    _p.overlayBounds = null;
+    _p.labelBounds.all = null;
+    _p.labelBounds.source = null;
+    _p.labelBounds.target = null;
+    _p.labelBounds.main = null;
+    _p.arrowBounds.source = null;
+    _p.arrowBounds.target = null;
+    _p.arrowBounds['mid-source'] = null;
+    _p.arrowBounds['mid-target'] = null;
   }
 
   this.emitAndNotify('bounds');

@@ -61,6 +61,7 @@
   * [Elsevier](https://www.elsevier.com)
   * [Excel](https://products.office.com/en-us/excel) : [GIGRAPH](https://gigraph.io)
   * [Facebook](https://www.facebook.com) : [Metro](https://facebook.github.io/metro/) visualiser
+  * [Fediverse](https://www.fediverse.space/)
   * [Ganister](http://www.ganister.eu/)
   * [Google](https://google.com) : [TensorFlow](https://www.tensorflow.org) : SyntaxNet : DRAGNN visualiser
   * [GCHQ](https://www.gchq.gov.uk/) : [Gaffer](https://gchq.github.io/gaffer-doc/)

@@ -4,7 +4,7 @@ import * as math from '../../../math';
 
 var BRp = {};
 
-/* global document, window */
+/* global document, window, ResizeObserver, MutationObserver */
 
 BRp.registerBinding = function( target, event, handler, useCapture ){ // eslint-disable-line no-unused-vars
   var args = Array.prototype.slice.apply( arguments, [1] ); // copy
@@ -317,7 +317,7 @@ BRp.load = function(){
   r.registerBinding( window, 'resize', onResize ); // eslint-disable-line no-undef
 
   if( haveResizeObserverApi ){
-    r.resizeObserver = new ResizeObserver(onResize);
+    r.resizeObserver = new ResizeObserver(onResize); // eslint-disable-line no-undef
 
     r.resizeObserver.observe( r.container );
   }

@@ -482,7 +482,7 @@ CRp.render = function( options ){
   }
 
   var extent = cy.extent();
-  var vpManip = (r.pinching || r.hoverData.dragging || r.swipePanning || r.data.wheelZooming || r.hoverData.draggingEles);
+  var vpManip = (r.pinching || r.hoverData.dragging || r.swipePanning || r.data.wheelZooming || r.hoverData.draggingEles || r.cy.animated());
   var hideEdges = r.hideEdgesOnViewport && vpManip;
 
   var needMbClear = [];

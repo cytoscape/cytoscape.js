@@ -10,7 +10,14 @@ If you are using a simple HTML environment (without a build system), then includ
 <script src="cytoscape.min.js"></script>
 ```
 
-To use Cytoscape.js from a CDN, use [PageCDN](https://pagecdn.com/lib/cytoscape), [CDNJS](https://cdnjs.com/libraries/cytoscape) or [Unpkg](https://unpkg.com/cytoscape/dist/).  Please do not hotlink to copies of Cytoscape.js from the documentation --- they're just for the demos.
+To use Cytoscape.js from a CDN, use one of the following CDNs:
+
+- [CDNJS](https://cdnjs.com/libraries/cytoscape)
+- [jsDelivr](https://www.jsdelivr.com/package/npm/cytoscape?path=dist)
+- [PageCDN](https://pagecdn.com/lib/cytoscape)
+- [Unpkg](https://unpkg.com/cytoscape/dist/)
+
+Please do not hotlink to copies of Cytoscape.js from the documentation --- they're just for the demos.
 
 The available files are available under [`cytoscape/dist/`](https://github.com/cytoscape/cytoscape.js/tree/master/dist) in the npm package:
 

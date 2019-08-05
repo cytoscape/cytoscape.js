@@ -18,7 +18,7 @@
 
 # Cytoscape.js
 
-Graph theory (network) library for visualisation and analysis : [http://js.cytoscape.org](http://js.cytoscape.org)
+Graph theory (network) library for visualisation and analysis : [https://js.cytoscape.org](https://js.cytoscape.org)
 
 ## Description
 
@@ -32,7 +32,7 @@ You can get started with Cytoscape.js with one line:
 var cy = cytoscape({ elements: myElements, container: myDiv });
 ```
 
-Learn more about the features of Cytoscape.js by reading [its documentation](http://js.cytoscape.org).
+Learn more about the features of Cytoscape.js by reading [its documentation](https://js.cytoscape.org).
 
 
 
@@ -40,7 +40,7 @@ Learn more about the features of Cytoscape.js by reading [its documentation](htt
 
 ## Documentation
 
-You can find the documentation and downloads on the [project website](http://js.cytoscape.org).
+You can find the documentation and downloads on the [project website](https://js.cytoscape.org).
 
 
 
@@ -65,9 +65,9 @@ To cite Cytoscape.js in a paper, please cite the Oxford Bioinformatics issue:
 
 Franz M, Lopes CT, Huck G, Dong Y, Sumer O, Bader GD
 
-[Bioinformatics (2016) 32 (2): 309-311 first published online September 28, 2015 doi:10.1093/bioinformatics/btv557 (PDF)](http://bioinformatics.oxfordjournals.org/content/32/2/309)
+[Bioinformatics (2016) 32 (2): 309-311 first published online September 28, 2015 doi:10.1093/bioinformatics/btv557 (PDF)](https://bioinformatics.oxfordjournals.org/content/32/2/309)
 
-[PubMed Abstract](http://www.ncbi.nlm.nih.gov/pubmed/26415722)
+[PubMed Abstract](https://www.ncbi.nlm.nih.gov/pubmed/26415722)
 
 
 

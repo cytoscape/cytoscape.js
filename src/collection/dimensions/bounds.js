@@ -507,7 +507,7 @@ let boundingBoxImpl = function( ele, options ){
       // precise haystacks
       ////////////////////
       if( styleEnabled && !headless && ele.pstyle( 'curve-style' ).strValue === 'haystack' ){
-        let hpts = rstyle.haystackPts || [];
+        let hpts = rstyle.haystackPts || [{ x:0, y:0 },{ x:0, y:0 }];
 
         ex1 = hpts[0].x;
         ey1 = hpts[0].y;

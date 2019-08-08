@@ -596,6 +596,7 @@
 <li><a href="https://www.elsevier.com">Elsevier</a></li>
 <li><a href="https://products.office.com/en-us/excel">Excel</a> : <a href="https://gigraph.io">GIGRAPH</a></li>
 <li><a href="https://www.facebook.com">Facebook</a> : <a href="https://facebook.github.io/metro/">Metro</a> visualiser</li>
+<li><a href="https://www.fediverse.space/">Fediverse</a></li>
 <li><a href="http://www.ganister.eu/">Ganister</a></li>
 <li><a href="https://google.com">Google</a> : <a href="https://www.tensorflow.org">TensorFlow</a> : SyntaxNet : DRAGNN visualiser</li>
 <li><a href="https://www.gchq.gov.uk/">GCHQ</a> : <a href="https://gchq.github.io/gaffer-doc/">Gaffer</a></li>
@@ -650,13 +651,19 @@
 </ul>
 <h2 id="introduction/releases">Releases <a href="#introduction/releases"><span class="fa fa-bookmark"></span></a></h2>
 <ul>
+<li>3.9<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.9.0+is%3Aclosed">3.9.0</a></li>
+</ul>
+</li>
 <li>3.8<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.8.3+is%3Aclosed">3.8.3</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.8.2+is%3Aclosed">3.8.2</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.8.1+is%3Aclosed">3.8.1</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.8.0+is%3Aclosed">3.8.0</a></li>
 </ul>
 </li>
 <li>3.7<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.7.6+is%3Aclosed">3.7.6</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.7.5+is%3Aclosed">3.7.5</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.7.4+is%3Aclosed">3.7.4</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.7.3+is%3Aclosed">3.7.3</a></li>
@@ -1120,7 +1127,14 @@
 <h2 id="getting-started/including-cytoscape.js">Including Cytoscape.js <a href="#getting-started/including-cytoscape.js"><span class="fa fa-bookmark"></span></a></h2>
 <p>If you are using a simple HTML environment (without a build system), then include Cytoscape.js in a <code>&lt;script&gt;</code> tag, e.g.:</p>
 <pre><code class="language-html"><span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"cytoscape.min.js"</span>&gt;</span><span class="undefined"></span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span></code></pre>
-<p>To use Cytoscape.js from a CDN, use <a href="https://cdnjs.com/libraries/cytoscape">CDNJS</a> or <a href="https://unpkg.com">Unpkg</a> (<a href="https://unpkg.com/cytoscape/dist/">in the dist directory</a>).  Please do not hotlink to copies of Cytoscape.js from the documentation — they’re just for the demos.</p>
+<p>To use Cytoscape.js from a CDN, use one of the following CDNs:</p>
+<ul>
+<li><a href="https://cdnjs.com/libraries/cytoscape">CDNJS</a></li>
+<li><a href="https://www.jsdelivr.com/package/npm/cytoscape?path=dist">jsDelivr</a></li>
+<li><a href="https://pagecdn.com/lib/cytoscape">PageCDN</a></li>
+<li><a href="https://unpkg.com/cytoscape/dist/">Unpkg</a></li>
+</ul>
+<p>Please do not hotlink to copies of Cytoscape.js from the documentation — they’re just for the demos.</p>
 <p>The available files are available under <a href="https://github.com/cytoscape/cytoscape.js/tree/master/dist"><code>cytoscape/dist/</code></a> in the npm package:</p>
 <ul>
 <li><code>cytoscape.min.js</code> : A minified UMD build with all dependencies included in the bundle.  This file is useful for small pages, supplementary material for an academic paper for example.</li>

@@ -1546,6 +1546,13 @@
         source: null,
         target: null,
         main: null
+      },
+      arrowBounds: {
+        // bounds cache of edge arrows
+        source: null,
+        target: null,
+        'mid-source': null,
+        'mid-target': null
       }
     };
 
@@ -10013,9 +10020,10 @@
   var filledBbOpts = defaults(defBbOpts);
 
   elesfn$j.boundingBox = function (options) {
-    // the main usecase is ele.boundingBox() for a single element with no/def options
+    var bounds; // the main usecase is ele.boundingBox() for a single element with no/def options
     // specified s.t. the cache is used, so check for this case to make it faster by
     // avoiding the overhead of the rest of the function
+
     if (this.length === 1 && this[0]._private.bbCache != null && (options === undefined || options.useCache === undefined || options.useCache === true)) {
       if (options === undefined) {
         options = defBbOpts;
@@ -10023,32 +10031,32 @@
         options = filledBbOpts(options);
       }
 
-      return cachedBoundingBoxImpl(this[0], options);
-    }
+      bounds = cachedBoundingBoxImpl(this[0], options);
+    } else {
+      bounds = makeBoundingBox();
+      options = options || defBbOpts;
+      var opts = filledBbOpts(options);
+      var eles = this;
+      var cy = eles.cy();
+      var styleEnabled = cy.styleEnabled();
 
-    var bounds = makeBoundingBox();
-    options = options || defBbOpts;
-    var opts = filledBbOpts(options);
-    var eles = this;
-    var cy = eles.cy();
-    var styleEnabled = cy.styleEnabled();
-
-    if (styleEnabled) {
-      for (var i = 0; i < eles.length; i++) {
-        var ele = eles[i];
-        var _p = ele._private;
-        var currPosKey = getBoundingBoxPosKey(ele);
-        var isPosKeySame = _p.bbCachePosKey === currPosKey;
-        var useCache = opts.useCache && isPosKeySame;
-        ele.recalculateRenderedStyle(useCache);
+      if (styleEnabled) {
+        for (var i = 0; i < eles.length; i++) {
+          var ele = eles[i];
+          var _p = ele._private;
+          var currPosKey = getBoundingBoxPosKey(ele);
+          var isPosKeySame = _p.bbCachePosKey === currPosKey;
+          var useCache = opts.useCache && isPosKeySame;
+          ele.recalculateRenderedStyle(useCache);
+        }
       }
-    }
 
-    this.updateCompoundBounds();
+      this.updateCompoundBounds();
 
-    for (var _i = 0; _i < eles.length; _i++) {
-      var _ele = eles[_i];
-      updateBoundsFromBox(bounds, cachedBoundingBoxImpl(_ele, opts));
+      for (var _i = 0; _i < eles.length; _i++) {
+        var _ele = eles[_i];
+        updateBoundsFromBox(bounds, cachedBoundingBoxImpl(_ele, opts));
+      }
     }
 
     bounds.x1 = noninf(bounds.x1);
@@ -10066,6 +10074,16 @@
       _p.bbCache = null;
       _p.bbCacheShift.x = _p.bbCacheShift.y = 0;
       _p.bbCachePosKey = null;
+      _p.bodyBounds = null;
+      _p.overlayBounds = null;
+      _p.labelBounds.all = null;
+      _p.labelBounds.source = null;
+      _p.labelBounds.target = null;
+      _p.labelBounds.main = null;
+      _p.arrowBounds.source = null;
+      _p.arrowBounds.target = null;
+      _p.arrowBounds['mid-source'] = null;
+      _p.arrowBounds['mid-target'] = null;
     }
 
     this.emitAndNotify('bounds');
@@ -31402,7 +31420,7 @@
     return style;
   };
 
-  var version = "3.8.2";
+  var version = "3.8.3";
 
   var cytoscape = function cytoscape(options) {
     // if no options specified, use default

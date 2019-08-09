@@ -8,6 +8,10 @@
   }
 }, {
   "data": {
+    "type": "round-triangle"
+  }
+}, {
+  "data": {
     "type": "rectangle"
   }
 }, {

@@ -6,6 +6,9 @@ CRp.nodeShapeImpl = function( name, context, centerX, centerY, width, height, po
       return this.drawEllipsePath( context, centerX, centerY, width, height );
     case 'polygon':
       return this.drawPolygonPath( context, centerX, centerY, width, height, points );
+    case 'roundtriangle':
+    case 'round-triangle':
+      return this.drawRoundTrianglePath(context, centerX, centerY, width, height, points );
     case 'roundrectangle':
     case 'round-rectangle':
       return this.drawRoundRectanglePath( context, centerX, centerY, width, height );

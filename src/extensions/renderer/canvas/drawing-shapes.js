@@ -20,6 +20,30 @@ CRp.drawPolygonPath = function(
   context.closePath();
 };
 
+CRp.drawRoundTrianglePath = function(
+  context, x, y, width, height) {
+
+  var cornerRadius = math.getRoundTriangleRadius( width, height );
+  var halfWidth = width / 2;
+  var halfHeight = height / 2;
+  var quarterWidth = width / 4;
+
+  if( context.beginPath ){ context.beginPath(); }
+
+  // Start at bottom middle
+  context.moveTo( x, y + halfHeight );
+  // Arc from bottom middle to left middle
+  context.arcTo(x - halfWidth, y + halfHeight, x - quarterWidth, y, cornerRadius);
+  // Arc from bottom left to right middle
+  context.arcTo(x, y - halfHeight, x + quarterWidth, y, cornerRadius);
+  // Arc from bottom right to bottom middle
+  context.arcTo(x + halfWidth, y + halfHeight, x, y + halfHeight, cornerRadius);
+  // Join line
+  context.lineTo(x, y + halfHeight);
+
+  context.closePath();
+};
+
 // Round rectangle drawing
 CRp.drawRoundRectanglePath = function(
   context, x, y, width, height ){

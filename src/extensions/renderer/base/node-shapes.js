@@ -59,6 +59,48 @@ BRp.generateEllipse = function(){
   } );
 };
 
+BRp.generateRoundTriangle = function(){
+  return ( this.nodeShapes['round-triangle'] = this.nodeShapes['roundtriangle'] = {
+    renderer: this,
+
+    name: 'round-triangle',
+
+    points: math.generateUnitNgonPointsFitToSquare(3, 0 ),
+
+    draw: function(context, centerX, centerY, width, height ){
+      this.renderer.nodeShapeImpl( this.name, context, centerX, centerY, width, height );
+    },
+
+    intersectLine: function( nodeX, nodeY, width, height, x, y, padding ){
+      return math.roundTriangleIntersectLine(
+          x, y,
+          nodeX,
+          nodeY,
+          width, height,
+          padding )
+      ;
+    },
+
+    checkPoint: function(
+        x, y, padding, width, height, centerX, centerY ){
+
+      var cornerRadius = math.getRoundTriangleRadius( width, height );
+      var diam = cornerRadius * 2;
+
+      // Check box
+      if ( math.pointInsidePolygon(x, y, this.points,
+          centerX, centerY + cornerRadius * 0.5, width - diam, height - cornerRadius, [0, -1], padding ) ){
+        return true;
+      }
+
+      // Todo: Add checks for the cirles around the edges
+
+      return false;
+    }
+  } );
+};
+
+
 BRp.generateRoundRectangle = function(){
   return ( this.nodeShapes['round-rectangle'] = this.nodeShapes['roundrectangle'] = {
     renderer: this,
@@ -454,6 +496,8 @@ BRp.registerNodeShapes = function(){
   this.generateEllipse();
 
   this.generatePolygon( 'triangle', math.generateUnitNgonPointsFitToSquare( 3, 0 ) );
+
+  this.generateRoundTriangle();
 
   this.generatePolygon( 'rectangle', math.generateUnitNgonPointsFitToSquare( 4, 0 ) );
   nodeShapes[ 'square' ] = nodeShapes[ 'rectangle' ];

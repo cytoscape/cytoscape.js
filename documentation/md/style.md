@@ -168,6 +168,7 @@ Shape:
  * **`shape`** : The shape of the node's body.  Note that each shape fits within the specified `width` and `height`, and so you may have to adjust `width` and `height` if you desire an equilateral shape (i.e. `width !== height` for several equilateral shapes).  Only `*rectangle` shapes are supported by compounds, because the dimensions of a compound are defined by the bounding box of the children.  The following values are accepted:
     * `ellipse`
     * `triangle`
+    * `round-triangle`
     * `rectangle`
     * `round-rectangle`
     * `bottom-round-rectangle`

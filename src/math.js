@@ -290,6 +290,27 @@ export const expandBoundingBox = ( bb, padding = 0 ) => {
   return bb;
 };
 
+export const expandBoundingBoxSides = (bb, padding = [0, 0, 0, 0] ) => {
+  let top, right, bottom, left;
+  if (padding.length === 1) {
+    top = right = bottom = left = padding[0];
+  } else if (padding.length === 2) {
+    top = bottom = padding[0];
+    left = right = padding[1];
+  } else if (padding.length === 4) {
+    [top, right, bottom, left] = padding;
+  }
+
+  bb.x1 -= left;
+  bb.x2 += right;
+  bb.y1 -= top;
+  bb.y2 += bottom;
+  bb.w = bb.x2 - bb.x1;
+  bb.h = bb.y2 - bb.y1;
+
+  return bb;
+};
+
 const expandToInt = x => x > 0 ? Math.ceil(x) : Math.floor(x);
 
 export const expandBoundingBoxToInts = ( bb, padding = 0 ) => {

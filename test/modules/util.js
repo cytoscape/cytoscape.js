@@ -68,142 +68,20 @@ describe('util', function(){
       }
     });
 
-    if( process.env.TRAVIS ){
-      // run this test only on travis because it's slow
+    it('hash is unique for common values', function(){
+      var v = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 15, 16, 18, 20, 22, 24, 25, 30, 32, 35, 36, 40, 42, 45, 48, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100 ];
+      var N = v.length;
 
-      it('hash is unique per two-uint combos on 0...1000', function(){
-        this.timeout(5 * 60 * 1000);
+      for( var i = 0; i < N; i++ ){
+        var vi = v[i];
+        var hi = hashInt(vi);
 
-        var min = 0;
-        var max = 1000;
-        var hashes = {};
-        var i, j, h, arr = [0, 0];
+        for( var j = i + 1; j < N; j++ ){
+          var vj = v[j];
+          var hj = hashInt(vj);
 
-        for( i = min; i <= max; i++ ){
-          for( j = min; j <= max; j++ ){
-            arr[0] = i;
-            arr[1] = j;
-
-            h = hashIntsArray(arr);
-
-            expect(hashes[h]).to.not.exist;
-
-            hashes[h] = true;
-          }
+          expect(hi, 'vi ' + vi).to.not.equal(hj, 'vj ' + vj);
         }
-      });
-    }
-
-    it('hash is unique for random int pairs', function(){
-      var N = 100000;
-      var min = 0;
-      var max = 100;
-      var hashes = {};
-      var i, h, arr = [0, 0];
-      var existing;
-      var a, b, A, B;
-
-      for( i = 0; i < N; i++ ){
-        arr = [randInt(min, max), randInt(min, max)];
-
-        h = hashIntsArray(arr);
-
-        existing = hashes[h];
-
-        if( existing != null ){
-          a = arr[0];
-          b = arr[1];
-          A = existing.arr[0];
-          B = existing.arr[1];
-
-          if( (a !== A || b !== B) ){
-            throw new Error(a + ',' + b + ' collides with ' + A + ',' + B);
-          }
-        }
-
-        hashes[h] = { arr: arr, val: h };
-      }
-    });
-
-    function testMTuple(M){
-      it('hash is unique for random int ' + M + '-tuple', function(){
-        var N = 100000;
-        var min1 = 0;
-        var max1 = 100;
-        var min2 = 2147483647 - 1024;
-        var max2 = 2147483647;
-        var hashes = {};
-        var i, h, arr = [0, 0];
-        var existing;
-        var t1, t2;
-        var low;
-  
-        var getTupleString = function(arr){ return arr.join(','); };
-  
-        for( i = 0; i < N; i++ ){
-          arr = [];
-
-          for( var j = 0; j < M; j++ ){
-            low = Math.random() < 0.8;
-            arr.push( low ? randInt(min1, max1) : randInt(min2, max2) );
-          }
-  
-          h = hashIntsArray(arr);
-  
-          existing = hashes[h];
-  
-          if( existing != null ){
-            t1 = getTupleString(arr);
-            t2 = getTupleString(existing.arr);
-  
-            console.log(t1, t2)
-
-            if( t1 !== t2 ){
-              throw new Error(t1 + ' matches ' + t2 + ' with value ' + h);
-            }
-          }
-  
-          hashes[h] = { arr: arr, val: h };
-        }
-      });
-    }
-
-    (function(){
-      for( var i = 3; i <= 10; i++ ){
-        testMTuple(i);
-      }
-    })(); 
-
-    it('hash is unique for random low-high int pairs', function(){
-      var N = 1000;
-      var min1 = 0;
-      var max1 = 100;
-      var min2 = 2147483647 - 1024;
-      var max2 = 2147483647;
-      var hashes = {};
-      var i, h, arr = [0, 0];
-      var existing;
-      var a, b, A, B;
-
-      for( i = 0; i < N; i++ ){
-        arr = [randInt(min1, max1), randInt(min2, max2)];
-
-        h = hashIntsArray(arr);
-
-        existing = hashes[h];
-
-        if( existing != null ){
-          a = arr[0];
-          b = arr[1];
-          A = existing.arr[0];
-          B = existing.arr[1];
-
-          if( (a !== A || b !== B) ){
-            throw new Error(a + ',' + b + ' collides with ' + A + ',' + B);
-          }
-        }
-
-        hashes[h] = { arr: arr, val: h };
       }
     });
 

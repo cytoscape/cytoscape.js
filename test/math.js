@@ -1,6 +1,6 @@
-import { expandBoundingBoxSides, makeBoundingBox } from "../src/math";
-import {describe} from "mocha";
-let expect = require('chai').expect;
+var math = require("../src/math");
+var describe = require("mocha").describe;
+var expect = require("chai").expect;
 
 describe('Math', function(){
 
@@ -9,7 +9,7 @@ describe('Math', function(){
         let bb;
 
         beforeEach(function(){
-           bb = makeBoundingBox();
+           bb = math.makeBoundingBox();
            bb.x1 = 0;
            bb.y1 = -5;
            bb.x2 = 10;
@@ -19,7 +19,7 @@ describe('Math', function(){
         });
 
         it('expandBoundingBoxSides([number])', function(){
-            expandBoundingBoxSides(bb, [10]);
+            math.expandBoundingBoxSides(bb, [10]);
             expect( bb.x1 ).equals( -10 );
             expect( bb.y1 ).equals( -15 );
             expect( bb.x2 ).equals( 20 );
@@ -29,7 +29,7 @@ describe('Math', function(){
         });
 
         it('expandBoundingBoxSides([number, number])', function(){
-            expandBoundingBoxSides(bb, [1, 2]);
+            math.expandBoundingBoxSides(bb, [1, 2]);
             expect( bb.x1 ).equals( -2 );
             expect( bb.y1 ).equals( -6 );
             expect( bb.x2 ).equals( 12 );
@@ -39,7 +39,7 @@ describe('Math', function(){
         });
 
         it('expandBoundingBoxSides([number, number, number, number])', function(){
-            expandBoundingBoxSides(bb, [1, 2, 3 ,4]);
+            math.expandBoundingBoxSides(bb, [1, 2, 3 ,4]);
             expect( bb.x1 ).equals( -4 );
             expect( bb.y1 ).equals( -6 );
             expect( bb.x2 ).equals( 12 );

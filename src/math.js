@@ -290,7 +290,7 @@ export const expandBoundingBox = ( bb, padding = 0 ) => {
   return bb;
 };
 
-export const expandBoundingBoxSides = (bb, padding = [0, 0, 0, 0] ) => {
+export const expandBoundingBoxSides = (bb, padding = [0] ) => {
   let top, right, bottom, left;
   if (padding.length === 1) {
     top = right = bottom = left = padding[0];

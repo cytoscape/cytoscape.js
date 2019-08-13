@@ -277,7 +277,7 @@ styfn.updateStyleHints = function(ele){
   // - raise up small numbers so more significant digits are seen by hashing
   // - make small numbers larger than a normal value to avoid collisions
   // - works in practice and it's relatively cheap
-  let N = 2147483647;
+  let N = 2000000000;
   let cleanNum = val => (-128 < val && val < 128) && Math.floor(val) !== val ? N - ((val * 1024) | 0) : val;
 
   for( let i = 0; i < propNames.length; i++ ){

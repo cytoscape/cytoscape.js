@@ -1,18 +1,4 @@
-const DJB2_MULT = 31;
-const DJB2_SEED = 5381;
-
-const PRIME1 = 668265263;
-const PRIME2 = 374761393;
-
-// marsenne primes
-const PRIME3 = 2147483647;
-const PRIME4 = 524287;
-const PRIME5 = 127;
-
-const DEFAULT_SEED = PRIME1;
-const MULT = PRIME4;
-// const DEFAULT_SEED = DJB2_SEED;
-// const MULT = DJB2_MULT;
+const DEFAULT_SEED = 5381;
 
 export const hashIterableInts = function( iterator, seed = DEFAULT_SEED ){ // djb2/string-hash
   let hash = seed;
@@ -23,14 +9,14 @@ export const hashIterableInts = function( iterator, seed = DEFAULT_SEED ){ // dj
 
     if( entry.done ){ break; }
 
-    hash = (hash * MULT) ^ entry.value;
+    hash = ((hash << 5) + hash + entry.value) | 0;
   }
 
-  return hash >>> 0;
+  return hash;
 };
 
 export const hashInt = function( num, seed = DEFAULT_SEED ){ // djb2/string-hash
-  return ( (seed * MULT) ^ num ) >>> 0;
+  return ((seed << 5) + seed + num) | 0;
 };
 
 export const hashIntsArray = function( ints, seed ){

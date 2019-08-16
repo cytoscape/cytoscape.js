@@ -20,28 +20,37 @@ CRp.drawPolygonPath = function(
   context.closePath();
 };
 
-CRp.drawRoundTrianglePath = function(
-  context, x, y, width, height) {
+CRp.drawRoundPolygonPath = function(
+    context, x, y, width, height, points ){
 
-  var cornerRadius = math.getRoundTriangleRadius( width, height );
-  var halfWidth = width / 2;
-  var halfHeight = height / 2;
-  var quarterWidth = width / 4;
+    var halfW = width / 2;
+    var halfH = height / 2;
+    var cornerRadius = math.getRoundPolygonRadius( width, height );
 
-  if( context.beginPath ){ context.beginPath(); }
+    const midPoint = ( i0, i1 ) => {
+        return {
+            x: x + halfW * 0.5 * ( points[ i0 * 2 ] + points[ i1 * 2 ] ),
+            y: y + halfH * 0.5 * ( points[ i0 * 2 + 1 ] + points[ i1 * 2 + 1 ] )
+        };
+    };
 
-  // Start at bottom middle
-  context.moveTo( x, y + halfHeight );
-  // Arc from bottom middle to left middle
-  context.arcTo(x - halfWidth, y + halfHeight, x - quarterWidth, y, cornerRadius);
-  // Arc from bottom left to right middle
-  context.arcTo(x, y - halfHeight, x + quarterWidth, y, cornerRadius);
-  // Arc from bottom right to bottom middle
-  context.arcTo(x + halfWidth, y + halfHeight, x, y + halfHeight, cornerRadius);
-  // Join line
-  context.lineTo(x, y + halfHeight);
+    if( context.beginPath ){ context.beginPath(); }
 
-  context.closePath();
+    const lastIndex = (points.length / 2) - 1;
+
+    // We start from the mid point between the last and the first
+    let m = midPoint(lastIndex, 0);
+    context.moveTo( m.x, m.y );
+
+    for( var i = 0; i < (points.length / 2) - 1; i++ ){
+        m = midPoint(i, i + 1);
+        context.arcTo(x + halfW * points[i * 2], y + halfH *  points[i * 2 + 1], m.x, m.y, cornerRadius);
+    }
+
+    m = midPoint(lastIndex, 0);
+    context.arcTo(x + halfW * points[lastIndex * 2], y + halfH * points[lastIndex * 2 + 1], m.x, m.y, cornerRadius);
+
+    context.closePath();
 };
 
 // Round rectangle drawing

@@ -59,47 +59,36 @@ BRp.generateEllipse = function(){
   } );
 };
 
-BRp.generateRoundTriangle = function(){
-  return ( this.nodeShapes['round-triangle'] = this.nodeShapes['roundtriangle'] = {
+BRp.generateRoundPolygon = function( name, points ){
+  return ( this.nodeShapes[ name ] = {
     renderer: this,
 
-    name: 'round-triangle',
+    name: name,
 
-    points: math.generateUnitNgonPointsFitToSquare(3, 0 ),
+    points: points,
 
-    draw: function(context, centerX, centerY, width, height ){
-      this.renderer.nodeShapeImpl( this.name, context, centerX, centerY, width, height );
+    draw: function( context, centerX, centerY, width, height ){
+      this.renderer.nodeShapeImpl( 'round-polygon', context, centerX, centerY, width, height, this.points );
     },
 
     intersectLine: function( nodeX, nodeY, width, height, x, y, padding ){
-      return math.roundTriangleIntersectLine(
+      return math.polygonIntersectLine(
           x, y,
+          this.points,
           nodeX,
           nodeY,
-          width, height,
+          width / 2, height / 2,
           padding )
-      ;
+          ;
     },
 
-    checkPoint: function(
-        x, y, padding, width, height, centerX, centerY ){
-
-      var cornerRadius = math.getRoundTriangleRadius( width, height );
-      var diam = cornerRadius * 2;
-
-      // Check box
-      if ( math.pointInsidePolygon(x, y, this.points,
-          centerX, centerY + cornerRadius * 0.5, width - diam, height - cornerRadius, [0, -1], padding ) ){
-        return true;
-      }
-
-      // Todo: Add checks for the cirles around the edges
-
-      return false;
+    checkPoint: function( x, y, padding, width, height, centerX, centerY ){
+      return math.pointInsidePolygon( x, y, this.points,
+          centerX, centerY, width, height, [0, -1], padding )
+          ;
     }
   } );
 };
-
 
 BRp.generateRoundRectangle = function(){
   return ( this.nodeShapes['round-rectangle'] = this.nodeShapes['roundrectangle'] = {
@@ -497,7 +486,7 @@ BRp.registerNodeShapes = function(){
 
   this.generatePolygon( 'triangle', math.generateUnitNgonPointsFitToSquare( 3, 0 ) );
 
-  this.generateRoundTriangle();
+  this.generateRoundPolygon('round-triangle', math.generateUnitNgonPointsFitToSquare(3, 0));
 
   this.generatePolygon( 'rectangle', math.generateUnitNgonPointsFitToSquare( 4, 0 ) );
   nodeShapes[ 'square' ] = nodeShapes[ 'rectangle' ];

@@ -371,119 +371,6 @@ export const boundingBoxInBoundingBox = ( bb1, bb2 ) => (
   && inBoundingBox( bb1, bb2.x2, bb2.y2 )
 );
 
-export const roundTriangleIntersectLine = ( x, y, nodeX, nodeY, width, height, padding ) => {
-
-  let cornerRadius = getRoundTriangleRadius( width, height );
-
-  let halfWidth = width / 2;
-  let halfHeight = height / 2;
-
-  // Check intersections with straight line segments
-  let straightLineIntersections;
-
-  // Bottom segment left to right
-  {
-    let bottomStartX = nodeX - halfWidth + cornerRadius - padding;
-    let bottomStartY = nodeY + halfHeight + padding;
-    let bottomEndX = nodeX + halfWidth - cornerRadius + padding;
-    let bottomEndY = bottomStartY;
-
-    straightLineIntersections = finiteLinesIntersect(
-        x, y, nodeX, nodeY, bottomStartX, bottomStartY, bottomEndX, bottomEndY, false );
-
-    if( straightLineIntersections.length > 0 ){
-      return straightLineIntersections;
-    }
-  }
-
-  // Left segment left/bottom to right/top
-  {
-    let leftStartX = nodeX - halfWidth + cornerRadius - padding;
-    let leftStartY = nodeY + halfHeight - cornerRadius + padding;
-    let leftEndX = nodeX - cornerRadius;
-    let leftEndY = nodeY - halfHeight + cornerRadius - padding;
-
-    straightLineIntersections = finiteLinesIntersect(
-        x, y, nodeX, nodeY, leftStartX, leftStartY, leftEndX, leftEndY, false );
-
-    if( straightLineIntersections.length > 0 ){
-      return straightLineIntersections;
-    }
-  }
-
-  // Right segment left/top to right/bottom
-  {
-    let rightStartX = nodeX + cornerRadius;
-    let rightStartY = nodeY - halfHeight + cornerRadius - padding;
-    let rightEndX = nodeX + halfWidth - cornerRadius + padding;
-    let rightEndY = nodeY + halfHeight - cornerRadius + padding;
-
-    straightLineIntersections = finiteLinesIntersect(
-        x, y, nodeX, nodeY, rightStartX, rightStartY, rightEndX, rightEndY, false );
-
-    if( straightLineIntersections.length > 0 ){
-      return straightLineIntersections;
-    }
-  }
-
-  // Check intersections with arc segments
-  let arcIntersections;
-
-  // Top
-  {
-    let topCenterX = nodeX;
-    let topCenterY = nodeY - halfHeight + cornerRadius;
-    arcIntersections = intersectLineCircle(
-        x, y, nodeX, nodeY,
-        topCenterX, topCenterY, cornerRadius + padding );
-
-    // Ensure the intersection is on the desired third of the circle
-    // Todo: Check this validation
-    if( arcIntersections.length > 0
-        && arcIntersections[0] <= topCenterX
-        && arcIntersections[1] <= topCenterY ){
-      return [ arcIntersections[0], arcIntersections[1] ];
-    }
-  }
-
-  // Left
-  {
-    let leftCenterX = nodeX - halfWidth + cornerRadius;
-    let leftCenterY = nodeY + halfHeight - cornerRadius;
-    arcIntersections = intersectLineCircle(
-        x, y, nodeX, nodeY,
-        leftCenterX, leftCenterY, cornerRadius + padding );
-
-    // Ensure the intersection is on the desired third of the circle
-    // Todo: Check this validation
-    if( arcIntersections.length > 0
-        && arcIntersections[0] <= leftCenterX
-        && arcIntersections[1] <= leftCenterY ){
-      return [ arcIntersections[0], arcIntersections[1] ];
-    }
-  }
-
-  // Right
-  {
-    let rightCenterX = nodeX + halfWidth - cornerRadius;
-    let rightCenterY = nodeY + halfHeight - cornerRadius;
-    arcIntersections = intersectLineCircle(
-        x, y, nodeX, nodeY,
-        rightCenterX, rightCenterY, cornerRadius + padding );
-
-    // Ensure the intersection is on the desired third of the circle
-    // Todo: Check this validation
-    if( arcIntersections.length > 0
-        && arcIntersections[0] <= rightCenterX
-        && arcIntersections[1] <= rightCenterY ){
-      return [ arcIntersections[0], arcIntersections[1] ];
-    }
-  }
-
-  return []; // if nothing
-
-};
-
 export const roundRectangleIntersectLine = ( x, y, nodeX, nodeY, width, height, padding ) => {
 
   let cornerRadius = getRoundRectangleRadius( width, height );
@@ -1346,7 +1233,7 @@ export const getRoundRectangleRadius = ( width, height ) =>
   Math.min( width / 4, height / 4, 8 );
 
 // Set the default radius
-export const getRoundTriangleRadius = ( width, height ) =>
+export const getRoundPolygonRadius = (width, height ) =>
     Math.min( width / 10, height / 10, 8 );
 
 export const getCutRectangleCornerLength = () => 8;

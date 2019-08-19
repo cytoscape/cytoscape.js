@@ -275,9 +275,10 @@ styfn.updateStyleHints = function(ele){
   // - hashing works on 32 bit ints b/c we use bitwise ops
   // - small numbers get cut off (e.g. 0.123 is seen as 0 by the hashing function)
   // - raise up small numbers so more significant digits are seen by hashing
-  // - make small numbers negative to avoid collisions -- most style values are positive numbers
+  // - make small numbers larger than a normal value to avoid collisions
   // - works in practice and it's relatively cheap
-  let cleanNum = val => (-128 < val && val < 128) && Math.floor(val) !== val ? -((val * 1024) | 0) : val;
+  let N = 2000000000;
+  let cleanNum = val => (-128 < val && val < 128) && Math.floor(val) !== val ? N - ((val * 1024) | 0) : val;
 
   for( let i = 0; i < propNames.length; i++ ){
     let name = propNames[i];

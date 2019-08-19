@@ -1,5 +1,9 @@
 import { expect } from 'chai';
-import { hashString, hashInt, hashIntsArray } from '../../src/util';
+import { hashString, hashInt, hashIntsArray, hashStrings } from '../../src/util';
+
+var randInt = function(min, max){
+  return Math.round(Math.random() * (max - min) + min);
+};
 
 describe('util', function(){
 
@@ -53,6 +57,48 @@ describe('util', function(){
 
         hashes[h] = true;
       }
+    });
+
+    it('hash is different for negative numbers', function(){
+      for( var i = 1; i < 1000; i++ ){
+        var h = hashInt(i);
+        var hn = hashInt(-i);
+
+        expect(h, 'hash '+i).to.not.equal(hn, 'hash -'+i);
+      }
+    });
+
+    it('hash is unique for common values', function(){
+      var v = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 15, 16, 18, 20, 22, 24, 25, 30, 32, 35, 36, 40, 42, 45, 48, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100 ];
+      var N = v.length;
+
+      for( var i = 0; i < N; i++ ){
+        var vi = v[i];
+        var hi = hashInt(vi);
+
+        for( var j = i + 1; j < N; j++ ){
+          var vj = v[j];
+          var hj = hashInt(vj);
+
+          expect(hi, 'vi ' + vi).to.not.equal(hj, 'vj ' + vj);
+        }
+      }
+    });
+
+    it('hash is unique for simulated style', function(){
+      var h1 = hashString('ellipse');
+      h1 = hashInt(30, h1);
+      h1 = hashInt(30, h1);
+      h1 = hashString('blue', h1);
+
+      var h2 = hashString('ellipse');
+      h2 = hashInt(35, h2);
+      h2 = hashInt(35, h2);
+      h2 = hashString('red', h2);
+      h2 = hashInt(2, h2);
+      h2 = hashString('green', h2);
+
+      expect(h1).to.not.equal(h2);
     });
   });
 

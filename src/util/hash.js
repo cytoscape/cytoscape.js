@@ -1,4 +1,6 @@
-export const hashIterableInts = function( iterator, seed = 5381 ){ // djb2/string-hash
+const DEFAULT_SEED = 5381;
+
+export const hashIterableInts = function( iterator, seed = DEFAULT_SEED ){ // djb2/string-hash
   let hash = seed;
   let entry;
 
@@ -7,14 +9,14 @@ export const hashIterableInts = function( iterator, seed = 5381 ){ // djb2/strin
 
     if( entry.done ){ break; }
 
-    hash = (hash * 33) ^ entry.value;
+    hash = ((hash << 5) + hash + entry.value) | 0;
   }
 
-  return hash >>> 0;
+  return hash;
 };
 
-export const hashInt = function( num, seed = 5381 ){ // djb2/string-hash
-  return ( (seed * 33) ^ num ) >>> 0;
+export const hashInt = function( num, seed = DEFAULT_SEED ){ // djb2/string-hash
+  return ((seed << 5) + seed + num) | 0;
 };
 
 export const hashIntsArray = function( ints, seed ){

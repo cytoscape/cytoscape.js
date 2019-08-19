@@ -566,6 +566,13 @@ export const solveCubic = ( a, b, c, d, result ) => {
   // An implementation of the Cardano method from the year 1545
   // http://en.wikipedia.org/wiki/Cubic_function#The_nature_of_the_roots
 
+  var epsilon = 0.00001;
+
+  // avoid division by zero while keeping the overall expression close in value
+  if( a === 0 ){
+    a = epsilon;
+  }
+
   b /= a;
   c /= a;
   d /= a;

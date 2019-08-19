@@ -1,5 +1,5 @@
 import * as is from '../../is';
-import { assignBoundingBox, assignShiftToBoundingBox, clearBoundingBox, expandBoundingBox, makeBoundingBox, copyBoundingBox } from '../../math';
+import { assignBoundingBox, expandBoundingBoxSides, assignShiftToBoundingBox, clearBoundingBox, expandBoundingBox, makeBoundingBox, copyBoundingBox } from '../../math';
 import { defaults, getPrefixedProperty, hashIntsArray } from '../../util';
 
 let fn, elesfn;
@@ -431,7 +431,7 @@ let boundingBoxImpl = function( ele, options ){
   let ex1, ex2, ey1, ey2; // extrema of body / lines
   let x, y; // node pos
   let rstyle = _p.rstyle;
-  let manualExpansion = isNode && styleEnabled ? ele.pstyle('bounds-expansion').pfValue : 0;
+  let manualExpansion = isNode && styleEnabled ? ele.pstyle('bounds-expansion').pfValue : [0];
 
   // must use `display` prop only, as reading `compound.width()` causes recursion
   // (other factors like width values will be considered later in this function anyway)
@@ -609,7 +609,7 @@ let boundingBoxImpl = function( ele, options ){
     // always store the body bounds separately from the labels
     let bbBody = _p.bodyBounds = _p.bodyBounds || {};
     assignBoundingBox(bbBody, bounds);
-    expandBoundingBox(bbBody, manualExpansion);
+    expandBoundingBoxSides(bbBody, manualExpansion);
     expandBoundingBox(bbBody, 1); // expand to work around browser dimension inaccuracies
 
     // overlay
@@ -627,7 +627,7 @@ let boundingBoxImpl = function( ele, options ){
     // always store the body bounds separately from the labels
     let bbOverlay = _p.overlayBounds = _p.overlayBounds || {};
     assignBoundingBox(bbOverlay, bounds);
-    expandBoundingBox(bbOverlay, manualExpansion);
+    expandBoundingBoxSides(bbOverlay, manualExpansion);
     expandBoundingBox(bbOverlay, 1); // expand to work around browser dimension inaccuracies
 
     // handle label dimensions
@@ -660,7 +660,7 @@ let boundingBoxImpl = function( ele, options ){
   bounds.h = noninf( bounds.y2 - bounds.y1 );
 
   if( bounds.w > 0 && bounds.h > 0 && displayed ){
-    expandBoundingBox( bounds, manualExpansion );
+    expandBoundingBoxSides( bounds, manualExpansion );
 
     // expand bounds by 1 because antialiasing can increase the visual/effective size by 1 on all sides
     expandBoundingBox( bounds, 1 );

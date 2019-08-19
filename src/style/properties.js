@@ -128,7 +128,15 @@ const styfn = {};
       'to-bottom', 'to-top', 'to-left', 'to-right',
       'to-bottom-right', 'to-bottom-left', 'to-top-right', 'to-top-left',
       'to-right-bottom', 'to-left-bottom', 'to-right-top', 'to-left-top', // different order
-    ] }
+    ] },
+    boundsExpansion: {
+      number:true,
+      multiple:true,
+      min: 0,
+      validate: function( valArr ) {
+        return [1,2,4].includes(valArr.length);
+      }
+    }
   };
 
   let diff = {
@@ -259,7 +267,7 @@ const styfn = {};
     { name: 'background-gradient-direction', type: t.gradientDirection },
     { name: 'padding', type: t.sizeMaybePercent, triggersBounds: diff.any },
     { name: 'padding-relative-to', type: t.paddingRelativeTo, triggersBounds: diff.any },
-    { name: 'bounds-expansion', type: t.size, triggersBounds: diff.any }
+    { name: 'bounds-expansion', type: t.boundsExpansion, triggersBounds: diff.any }
   ];
 
   let nodeBorder = [

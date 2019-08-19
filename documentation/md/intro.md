@@ -71,6 +71,7 @@
   * [ICSI Haystack Project](https://haystack.mobi/panopticon/)
   * [InfoTrack](http://www.infotrack.com.au/)
   * [Intercax](http://intercax.com/)
+  * [Lore](http://lore.chuci.info)
   * [The Kanji Map](http://thekanjimap.com/)
   * [Machine2Learn](https://www.machine2learn.com) : [Deep Learning Model Generator](https://www.machine2learn.com/deep-learning-model-generator/)
   * [Max Plank Institute of Molecular Cell Physiology](https://www.mpimp-golm.mpg.de) : [CoNekT](http://conekt.mpimp-golm.mpg.de/pub/)

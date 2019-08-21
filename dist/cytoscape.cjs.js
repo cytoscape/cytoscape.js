@@ -707,8 +707,9 @@ var requestAnimationFrame = function requestAnimationFrame(fn) {
 };
 var performanceNow = pnow;
 
+var DEFAULT_SEED = 5381;
 var hashIterableInts = function hashIterableInts(iterator) {
-  var seed = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 5381;
+  var seed = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : DEFAULT_SEED;
   // djb2/string-hash
   var hash = seed;
   var entry;
@@ -720,15 +721,15 @@ var hashIterableInts = function hashIterableInts(iterator) {
       break;
     }
 
-    hash = hash * 33 ^ entry.value;
+    hash = (hash << 5) + hash + entry.value | 0;
   }
 
-  return hash >>> 0;
+  return hash;
 };
 var hashInt = function hashInt(num) {
-  var seed = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 5381;
+  var seed = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : DEFAULT_SEED;
   // djb2/string-hash
-  return (seed * 33 ^ num) >>> 0;
+  return (seed << 5) + seed + num | 0;
 };
 var hashIntsArray = function hashIntsArray(ints, seed) {
   var entry = {
@@ -2699,6 +2700,12 @@ var solveCubic = function solveCubic(a, b, c, d, result) {
   // r is the real component, i is the imaginary component
   // An implementation of the Cardano method from the year 1545
   // http://en.wikipedia.org/wiki/Cubic_function#The_nature_of_the_roots
+  var epsilon = 0.00001; // avoid division by zero while keeping the overall expression close in value
+
+  if (a === 0) {
+    a = epsilon;
+  }
+
   b /= a;
   c /= a;
   d /= a;
@@ -14154,12 +14161,14 @@ styfn.updateStyleHints = function (ele) {
   }; // - hashing works on 32 bit ints b/c we use bitwise ops
   // - small numbers get cut off (e.g. 0.123 is seen as 0 by the hashing function)
   // - raise up small numbers so more significant digits are seen by hashing
-  // - make small numbers negative to avoid collisions -- most style values are positive numbers
+  // - make small numbers larger than a normal value to avoid collisions
   // - works in practice and it's relatively cheap
 
 
+  var N = 2000000000;
+
   var cleanNum = function cleanNum(val) {
-    return -128 < val && val < 128 && Math.floor(val) !== val ? -(val * 1024 | 0) : val;
+    return -128 < val && val < 128 && Math.floor(val) !== val ? N - (val * 1024 | 0) : val;
   };
 
   for (var _i = 0; _i < propNames.length; _i++) {
@@ -22084,7 +22093,7 @@ BRp$3.findEdgeControlPoints = function (edges) {
       rs.srcIntn = passedPairInfo.srcIntn;
       rs.tgtIntn = passedPairInfo.tgtIntn;
 
-      if (hasCompounds && (src.isParent() || src.isChild() || tgt.isParent() || tgt.isChild()) && (src.parents().anySame(tgt) || tgt.parents().anySame(src) || src.same(tgt))) {
+      if (hasCompounds && (src.isParent() || src.isChild() || tgt.isParent() || tgt.isChild()) && (src.parents().anySame(tgt) || tgt.parents().anySame(src) || src.same(tgt) && src.isParent())) {
         _this.findCompoundLoopPoints(_edge, passedPairInfo, _i2, _edgeIsUnbundled);
       } else if (src === tgt) {
         _this.findLoopPoints(_edge, passedPairInfo, _i2, _edgeIsUnbundled);
@@ -30672,7 +30681,7 @@ sheetfn.appendToStyle = function (style) {
   return style;
 };
 
-var version = "3.9.0";
+var version = "3.9.1";
 
 var cytoscape = function cytoscape(options) {
   // if no options specified, use default

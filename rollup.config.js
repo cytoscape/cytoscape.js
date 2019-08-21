@@ -34,7 +34,9 @@ const isExternal = id => !id.startsWith('\0') && !id.startsWith('.') && !id.star
 const licenseHeaderOptions = {
   sourcemap: true,
   banner: {
-    file: path.join(__dirname, 'LICENSE')
+    content: {
+      file: path.join(__dirname, 'LICENSE')
+    }
   }
 };
 

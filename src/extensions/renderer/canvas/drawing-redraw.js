@@ -65,7 +65,7 @@ CRp.createGradientStyleFor = function( context, shapeStyleName, ele, fill, opaci
       gradientStyle = context.createRadialGradient(mid.x, mid.y, 0, mid.x, mid.y, Math.max(d1, d2));
     } else {
       let pos = usePaths ? {x: 0, y: 0 } : ele.position(),
-        width = ele.width(), height = ele.height();
+        width = ele.paddedWidth(), height = ele.paddedHeight();
       gradientStyle = context.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, Math.max(width, height));
     }
   } else {
@@ -74,10 +74,8 @@ CRp.createGradientStyleFor = function( context, shapeStyleName, ele, fill, opaci
 
       gradientStyle = context.createLinearGradient(start.x, start.y, end.x, end.y);
     } else {
-      let padding = ele.padding();
-      let doublePadding = 2 * padding;
       let pos = usePaths ? { x: 0, y: 0 } : ele.position(),
-        width = ele.width() + doublePadding, height = ele.height() + doublePadding,
+        width = ele.paddedWidth(), height = ele.paddedHeight(),
         halfWidth = width / 2, halfHeight = height / 2;
       let direction = ele.pstyle('background-gradient-direction').value;
 

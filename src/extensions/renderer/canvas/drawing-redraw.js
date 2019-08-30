@@ -86,10 +86,10 @@ CRp.createGradientStyleFor = function( context, shapeStyleName, ele, fill, opaci
           gradientStyle = context.createLinearGradient(pos.x, pos.y + halfHeight, pos.x, pos.y - halfHeight);
           break;
         case 'to-left':
-          gradientStyle = context.createLinearGradient(pos.x - halfWidth, pos.y, pos.x + halfWidth, pos.y);
+          gradientStyle = context.createLinearGradient(pos.x + halfWidth, pos.y, pos.x - halfWidth, pos.y);
           break;
         case 'to-right':
-          gradientStyle = context.createLinearGradient(pos.x + halfWidth, pos.y, pos.x - halfWidth, pos.y);
+            gradientStyle = context.createLinearGradient(pos.x - halfWidth, pos.y, pos.x + halfWidth, pos.y);
           break;
         case 'to-bottom-right':
         case 'to-right-bottom':

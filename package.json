@@ -45,7 +45,28 @@
     {
       "name": "Joseph Stahl",
       "email": "joseph@josephstahl.com"
+    },
+    {
+      "name": "Tony Mullen",
+      "url": "https://github.com/tonymullen"
+    },
+    {
+      "name": "Alexander Li",
+      "url": "https://github.com/alexcli"
+    },
+    {
+      "name": "Manfred Cheung",
+      "url": "https://github.com/mj3cheun"
+    },
+    {
+      "name": "Bogdan Chadkin",
+      "url": "https://github.com/TrySound"
+    },
+    {
+      "name": "Josejulio Martínez",
+      "url": "https://github.com/josejulio"
     }
+
   ],
   "keywords": [
     "graph",

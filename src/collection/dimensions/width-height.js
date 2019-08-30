@@ -104,4 +104,16 @@ elesfn.padding = function(){
   }
 };
 
+elesfn.paddedHeight = function(){
+  let ele = this[0];
+
+  return ele.height() + (2 * ele.padding());
+};
+
+elesfn.paddedWidth = function(){
+  let ele = this[0];
+
+  return ele.width() + (2 * ele.padding());
+};
+
 export default elesfn;

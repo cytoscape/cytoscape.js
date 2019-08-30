@@ -74,10 +74,13 @@ CRp.createGradientStyleFor = function( context, shapeStyleName, ele, fill, opaci
 
       gradientStyle = context.createLinearGradient(start.x, start.y, end.x, end.y);
     } else {
-      let pos = usePaths ? {x: 0, y: 0 } : ele.position(),
-        width = ele.width(), height = ele.height(),
+      let padding = ele.padding();
+      let doublePadding = 2 * padding;
+      let pos = usePaths ? { x: 0, y: 0 } : ele.position(),
+        width = ele.width() + doublePadding, height = ele.height() + doublePadding,
         halfWidth = width / 2, halfHeight = height / 2;
       let direction = ele.pstyle('background-gradient-direction').value;
+
       switch (direction) {
         case 'to-bottom':
           gradientStyle = context.createLinearGradient(pos.x, pos.y - halfHeight, pos.x, pos.y + halfHeight);

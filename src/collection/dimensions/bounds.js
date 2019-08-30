@@ -642,11 +642,18 @@ let boundingBoxImpl = function( ele, options ){
     }
 
     if( styleEnabled && options.includeLabels ){
-      updateBoundsFromLabel( bounds, ele, null, options );
+      if( options.includeMainLabels ){
+        updateBoundsFromLabel( bounds, ele, null, options );
+      }
 
       if( isEdge ){
-        updateBoundsFromLabel( bounds, ele, 'source', options );
-        updateBoundsFromLabel( bounds, ele, 'target', options );
+        if( options.includeSourceLabels ){
+          updateBoundsFromLabel( bounds, ele, 'source', options );
+        }
+
+        if( options.includeTargetLabels ){
+          updateBoundsFromLabel( bounds, ele, 'target', options );
+        }
       }
     } // style enabled for labels
   } // if displayed
@@ -677,6 +684,9 @@ let getKey = function( opts ){
   key += tf( opts.incudeNodes );
   key += tf( opts.includeEdges );
   key += tf( opts.includeLabels );
+  key += tf( opts.includeMainLabels );
+  key += tf( opts.includeSourceLabels );
+  key += tf( opts.includeTargetLabels );
   key += tf( opts.includeOverlays );
 
   return key;
@@ -697,6 +707,7 @@ let getBoundingBoxPosKey = ele => {
 let cachedBoundingBoxImpl = function( ele, opts ){
   let _p = ele._private;
   let bb;
+  let isEdge = ele.isEdge();
   let key = opts == null ? defBbOptsKey : getKey( opts );
   let usingDefOpts = key === defBbOptsKey;
   let currPosKey = getBoundingBoxPosKey( ele );
@@ -763,7 +774,21 @@ let cachedBoundingBoxImpl = function( ele, opts ){
     }
 
     if( opts.includeLabels ){
-      updateBoundsFromBox(bb, _p.labelBounds.all);
+      if( opts.includeMainLabels && (!isEdge || (opts.includeSourceLabels && opts.includeTargetLabels)) ){
+        updateBoundsFromBox(bb, _p.labelBounds.all);
+      } else {
+        if( opts.includeMainLabels ){
+          updateBoundsFromBox(bb, _p.labelBounds.main);
+        }
+
+        if( opts.includeSourceLabels ){
+          updateBoundsFromBox(bb, _p.labelBounds.source);
+        }
+
+        if( opts.includeTargetLabels ){
+          updateBoundsFromBox(bb, _p.labelBounds.target);
+        }
+      }
     }
 
     bb.w = bb.x2 - bb.x1;
@@ -777,6 +802,9 @@ let defBbOpts = {
   includeNodes: true,
   includeEdges: true,
   includeLabels: true,
+  includeMainLabels: true,
+  includeSourceLabels: true,
+  includeTargetLabels: true,
   includeOverlays: true,
   useCache: true
 };

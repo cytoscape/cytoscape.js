@@ -134,6 +134,36 @@
 		showBB( eles, { includeNodes: false, includeEdges: false, includeOverlays: false, includeLabels: true } );
 	});
 
+	$("#show-bb-lbl-main").addEventListener('click', function(){
+		var eles = cy.$(':selected');
+
+		if( eles.length === 0 ){
+			eles = cy.elements();
+		}
+
+		showBB( eles, { includeNodes: false, includeEdges: false, includeOverlays: false, includeLabels: true, includeMainLabels: true, includeSourceLabels: false, includeTargetLabels: false } );
+	});
+
+	$("#show-bb-lbl-src").addEventListener('click', function(){
+		var eles = cy.$(':selected');
+
+		if( eles.length === 0 ){
+			eles = cy.elements();
+		}
+
+		showBB( eles, { includeNodes: false, includeEdges: false, includeOverlays: false, includeLabels: true, includeMainLabels: false, includeSourceLabels: true, includeTargetLabels: false } );
+	});
+
+	$("#show-bb-lbl-tgt").addEventListener('click', function(){
+		var eles = cy.$(':selected');
+
+		if( eles.length === 0 ){
+			eles = cy.elements();
+		}
+
+		showBB( eles, { includeNodes: false, includeEdges: false, includeOverlays: false, includeLabels: true, includeMainLabels: false, includeSourceLabels: false, includeTargetLabels: true } );
+	});
+
 	$('#mount').addEventListener('click', function(){
 		cy.mount( $('#cytoscape') );
 	});

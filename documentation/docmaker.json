@@ -657,7 +657,7 @@
 
             {
               "name": "cy.boxSelectionEnabled",
-              "descr": "Get or set whether box selection is enabled.   If enabled along with panning, the user must hold one of shift, control, meta, or alt down to initiate box selection.",
+              "descr": "Get or set whether box selection is enabled.   If enabled along with panning, the user must hold down one of shift, control, alt, or command to initiate box selection.",
               "formats": [
                 {
                   "descr": "Get whether box selection is enabled."

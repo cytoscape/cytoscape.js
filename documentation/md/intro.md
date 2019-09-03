@@ -39,6 +39,8 @@
  * Animatable graph elements and viewport
  * Fully extendable (and extensions can be autoscaffolded for you)
  * Well maintained
+   * Weekly patch release cadence
+   * Monthly feature release cadence
  * Listed by [Zenodo](https://doi.org/10.5281/zenodo.831800) for per-version DOIs
  * Listed by [OMIC Tools](https://omictools.com/cytoscape-js-tool)
  * Used by
@@ -129,10 +131,15 @@ The library was created at the [Donnelly Centre](http://thedonnellycentre.utoron
 
 
 ## Releases
+
+- 3.10
+ - [3.10.0](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.10.0+is%3Aclosed)
 - 3.9
+ - [3.9.2](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.9.2+is%3Aclosed)
  - [3.9.1](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.9.1+is%3Aclosed)
  - [3.9.0](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.9.0+is%3Aclosed)
 - 3.8
+ - [3.8.5](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.8.5+is%3Aclosed)
  - [3.8.4](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.8.4+is%3Aclosed)
  - [3.8.3](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.8.3+is%3Aclosed)
  - [3.8.2](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.8.2+is%3Aclosed)

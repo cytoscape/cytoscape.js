@@ -9501,6 +9501,16 @@ elesfn$k.padding = function () {
   }
 };
 
+elesfn$k.paddedHeight = function () {
+  var ele = this[0];
+  return ele.height() + 2 * ele.padding();
+};
+
+elesfn$k.paddedWidth = function () {
+  var ele = this[0];
+  return ele.width() + 2 * ele.padding();
+};
+
 var widthHeight = elesfn$k;
 
 var ifEdge = function ifEdge(ele, getValue) {
@@ -29072,8 +29082,8 @@ CRp$6.createGradientStyleFor = function (context, shapeStyleName, ele, fill, opa
         x: 0,
         y: 0
       } : ele.position(),
-          width = ele.width(),
-          height = ele.height();
+          width = ele.paddedWidth(),
+          height = ele.paddedHeight();
       gradientStyle = context.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, Math.max(width, height));
     }
   } else {
@@ -29087,8 +29097,8 @@ CRp$6.createGradientStyleFor = function (context, shapeStyleName, ele, fill, opa
         x: 0,
         y: 0
       } : ele.position(),
-          _width = ele.width(),
-          _height = ele.height(),
+          _width = ele.paddedWidth(),
+          _height = ele.paddedHeight(),
           halfWidth = _width / 2,
           halfHeight = _height / 2;
 
@@ -29104,11 +29114,11 @@ CRp$6.createGradientStyleFor = function (context, shapeStyleName, ele, fill, opa
           break;
 
         case 'to-left':
-          gradientStyle = context.createLinearGradient(_pos.x - halfWidth, _pos.y, _pos.x + halfWidth, _pos.y);
+          gradientStyle = context.createLinearGradient(_pos.x + halfWidth, _pos.y, _pos.x - halfWidth, _pos.y);
           break;
 
         case 'to-right':
-          gradientStyle = context.createLinearGradient(_pos.x + halfWidth, _pos.y, _pos.x - halfWidth, _pos.y);
+          gradientStyle = context.createLinearGradient(_pos.x - halfWidth, _pos.y, _pos.x + halfWidth, _pos.y);
           break;
 
         case 'to-bottom-right':
@@ -30677,7 +30687,7 @@ sheetfn.appendToStyle = function (style) {
   return style;
 };
 
-var version = "3.9.1";
+var version = "3.9.2";
 
 var cytoscape = function cytoscape(options) {
   // if no options specified, use default

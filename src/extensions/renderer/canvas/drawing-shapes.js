@@ -23,32 +23,41 @@ CRp.drawPolygonPath = function(
 CRp.drawRoundPolygonPath = function(
     context, x, y, width, height, points ){
 
-    var halfW = width / 2;
-    var halfH = height / 2;
-    var cornerRadius = math.getRoundPolygonRadius( width, height );
-
-    const midPoint = ( i0, i1 ) => {
-        return {
-            x: x + halfW * 0.5 * ( points[ i0 * 2 ] + points[ i1 * 2 ] ),
-            y: y + halfH * 0.5 * ( points[ i0 * 2 + 1 ] + points[ i1 * 2 + 1 ] )
-        };
-    };
+    const halfW = width / 2;
+    const halfH = height / 2;
+    const cornerRadius = math.getRoundPolygonRadius( width, height );
 
     if( context.beginPath ){ context.beginPath(); }
 
-    const lastIndex = (points.length / 2) - 1;
+    for ( let i = 0; i < points.length / 4; i++ ){
+        let sourceUv, destUv;
+        if ( i === 0 ) {
+            sourceUv = points.length - 2;
+        } else {
+            sourceUv = i * 4 - 2;
+        }
+        destUv = i * 4 + 2;
 
-    // We start from the mid point between the last and the first
-    let m = midPoint(lastIndex, 0);
-    context.moveTo( m.x, m.y );
+        const px = x + halfW * points[ i * 4 ];
+        const py = y + halfH * points[ i * 4 + 1 ];
 
-    for( var i = 0; i < (points.length / 2) - 1; i++ ){
-        m = midPoint(i, i + 1);
-        context.arcTo(x + halfW * points[i * 2], y + halfH *  points[i * 2 + 1], m.x, m.y, cornerRadius);
+
+        const cosTheta = (-points[ sourceUv ] * points[ destUv ] - points[ sourceUv + 1 ] * points[ destUv + 1]);
+        const offset = cornerRadius / Math.tan(Math.acos(cosTheta) / 2);
+
+        const cp0x = px - offset * points[ sourceUv ];
+        const cp0y = py - offset * points[ sourceUv + 1 ];
+        const cp1x = px + offset * points[ destUv ];
+        const cp1y = py + offset * points[ destUv + 1 ];
+
+        if (i === 0) {
+            context.moveTo( cp0x, cp0y );
+        } else {
+            context.lineTo( cp0x, cp0y );
+        }
+
+        context.arcTo( px, py, cp1x, cp1y, cornerRadius );
     }
-
-    m = midPoint(lastIndex, 0);
-    context.arcTo(x + halfW * points[lastIndex * 2], y + halfH * points[lastIndex * 2 + 1], m.x, m.y, cornerRadius);
 
     context.closePath();
 };

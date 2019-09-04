@@ -808,6 +808,49 @@ export const pointInsidePolygon = ( x, y, basePoints, centerX, centerY, width, h
   return pointInsidePolygonPoints( x, y, points );
 };
 
+export const pointInsideRoundPolygon = ( x, y, basePoints, centerX, centerY, width, height ) => {
+  const cutPolygonPoints = new Array( basePoints.length);
+  const halfW = width / 2;
+  const halfH = height / 2;
+  const cornerRadius = getRoundPolygonRadius(width, height);
+  const squaredCornerRadius = cornerRadius * cornerRadius;
+
+  for ( let i = 0; i < basePoints.length / 4; i++ ){
+    let sourceUv, destUv;
+    if ( i === 0 ) {
+      sourceUv = basePoints.length - 2;
+    } else {
+      sourceUv = i * 4 - 2;
+    }
+    destUv = i * 4 + 2;
+
+    const px = centerX + halfW * basePoints[ i * 4 ];
+    const py = centerY + halfH * basePoints[ i * 4 + 1 ];
+    const cosTheta = (-basePoints[ sourceUv ] * basePoints[ destUv ] - basePoints[ sourceUv + 1 ] * basePoints[ destUv + 1]);
+    const offset = cornerRadius / Math.tan(Math.acos(cosTheta) / 2);
+
+    const cp0x = px - offset * basePoints[ sourceUv ];
+    const cp0y = py - offset * basePoints[ sourceUv + 1 ];
+    const cp1x = px + offset * basePoints[ destUv ];
+    const cp1y = py + offset * basePoints[ destUv + 1 ];
+    cutPolygonPoints[ i * 4] = cp0x;
+    cutPolygonPoints[ i * 4 + 1] = cp0y;
+    cutPolygonPoints[ i * 4 + 2] = cp1x;
+    cutPolygonPoints[ i * 4 + 3] = cp1y;
+
+    // Check intersection with rounded corner
+    const cx = cp0x + basePoints[sourceUv + 1] * cornerRadius;
+    const cy = cp0y - basePoints[sourceUv] * cornerRadius;
+
+    const squaredDistance = Math.pow(cx  - x, 2) + Math.pow(cy - y, 2);
+    if (squaredDistance <= squaredCornerRadius) {
+      return true;
+    }
+  }
+
+  return pointInsidePolygonPoints(x, y, cutPolygonPoints);
+};
+
 export const joinLines = ( lineSet ) => {
 
   let vertices = new Array( lineSet.length / 2 );
@@ -1142,6 +1185,84 @@ export const polygonIntersectLine = ( x, y, basePoints, centerX, centerY, width,
     if( intersection.length !== 0 ){
       intersections.push( intersection[0], intersection[1] );
     }
+  }
+
+  return intersections;
+};
+
+export const roundPolygonIntersectLine = ( x, y, basePoints, centerX, centerY, width, height, padding ) => {
+  let intersections = [];
+  let intersection;
+  let lines = new Array(basePoints.length);
+  const halfW = width / 2;
+  const halfH = height / 2;
+  const cornerRadius = getRoundPolygonRadius(width, height);
+
+  for ( let i = 0; i < basePoints.length / 4; i++ ){
+    let sourceUv, destUv;
+    if ( i === 0 ) {
+      sourceUv = basePoints.length - 2;
+    } else {
+      sourceUv = i * 4 - 2;
+    }
+    destUv = i * 4 + 2;
+
+    const px = centerX + halfW * basePoints[ i * 4 ];
+    const py = centerY + halfH * basePoints[ i * 4 + 1 ];
+
+
+    const cosTheta = (-basePoints[ sourceUv ] * basePoints[ destUv ] - basePoints[ sourceUv + 1 ] * basePoints[ destUv + 1]);
+    const offset = cornerRadius / Math.tan(Math.acos(cosTheta) / 2);
+
+    const cp0x = px - offset * basePoints[ sourceUv ];
+    const cp0y = py - offset * basePoints[ sourceUv + 1 ];
+    const cp1x = px + offset * basePoints[ destUv ];
+    const cp1y = py + offset * basePoints[ destUv + 1 ];
+
+    if (i === 0) {
+      lines[basePoints.length - 2] = cp0x;
+      lines[basePoints.length - 1] = cp0y;
+    } else {
+      lines[i * 4 - 2] = cp0x;
+      lines[i * 4 - 1] = cp0y;
+    }
+
+    lines[i * 4] = cp1x;
+    lines[i * 4 + 1] = cp1y;
+
+    // Check intersection with circle
+    const cx = cp0x + basePoints[sourceUv + 1] * cornerRadius;
+    const cy = cp0y - basePoints[sourceUv] * cornerRadius;
+    intersection = intersectLineCircle(x, y, centerX, centerY, cx, cy, cornerRadius);
+
+    if( intersection.length !== 0 ){
+      intersections.push( intersection[0], intersection[1] );
+    }
+  }
+
+  for( let i = 0; i < lines.length / 4; i++ ) {
+    intersection = finiteLinesIntersect(
+        x, y, centerX, centerY,
+        lines[i * 4], lines[i * 4 + 1],
+        lines[i * 4 + 2], lines[i * 4 + 3], false );
+
+    if( intersection.length !== 0 ){
+      intersections.push( intersection[0], intersection[1] );
+    }
+  }
+
+  if (intersections.length > 2) {
+    let lowestIntersection = [ intersections[0], intersections[1] ];
+    let lowestSquaredDistance = Math.pow(lowestIntersection[0] - x, 2) + Math.pow(lowestIntersection[1] - y, 2);
+    for ( let i = 1; i < intersections.length / 2; i++){
+      const squaredDistance = Math.pow(intersections[ i * 2 ] - x, 2) + Math.pow(intersections[ i * 2 + 1 ] - y, 2);
+      if ( squaredDistance <= lowestSquaredDistance ){
+        lowestIntersection[0] = intersections[ i * 2 ];
+        lowestIntersection[1] = intersections[ i * 2 + 1 ];
+        lowestSquaredDistance = squaredDistance;
+      }
+    }
+    return lowestIntersection;
   }
 
   return intersections;

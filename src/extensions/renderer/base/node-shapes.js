@@ -60,31 +60,59 @@ BRp.generateEllipse = function(){
 };
 
 BRp.generateRoundPolygon = function( name, points ){
+
+  // Pre-compute control points
+  // Since these points depend on the radius length (which in turns depend on the width/height of the node) we will only pre-compute
+  // the unit vectors.
+  // For simplicity the layout will be:
+  // [ p0, UnitVectorP0P1, p1, UniVectorP1P2, ..., pn, UnitVectorPnP0 ]
+  const allPoints = new Array( points.length * 2 );
+
+  for ( let i = 0; i < points.length / 2; i++ ){
+    const sourceIndex = i * 2;
+    let destIndex;
+    if (i < points.length / 2 - 1) {
+      destIndex = (i + 1) * 2;
+    } else {
+      destIndex = 0;
+    }
+
+    allPoints[ i * 4 ] = points[ sourceIndex ];
+    allPoints[ i * 4 + 1 ] = points[ sourceIndex + 1 ];
+
+    const xDest = points[ destIndex ] - points[ sourceIndex ];
+    const yDest = points[ destIndex + 1] - points[ sourceIndex + 1 ];
+    const norm = Math.sqrt(xDest * xDest + yDest * yDest);
+
+    allPoints[ i * 4 + 2 ] = xDest / norm;
+    allPoints[ i * 4 + 3 ] = yDest / norm;
+  }
+
   return ( this.nodeShapes[ name ] = {
     renderer: this,
 
     name: name,
 
-    points: points,
+    points: allPoints,
 
     draw: function( context, centerX, centerY, width, height ){
       this.renderer.nodeShapeImpl( 'round-polygon', context, centerX, centerY, width, height, this.points );
     },
 
     intersectLine: function( nodeX, nodeY, width, height, x, y, padding ){
-      return math.polygonIntersectLine(
+        return math.roundPolygonIntersectLine(
           x, y,
           this.points,
           nodeX,
           nodeY,
-          width / 2, height / 2,
+          width, height,
           padding )
           ;
     },
 
     checkPoint: function( x, y, padding, width, height, centerX, centerY ){
-      return math.pointInsidePolygon( x, y, this.points,
-          centerX, centerY, width, height, [0, -1], padding )
+      return math.pointInsideRoundPolygon( x, y, this.points,
+          centerX, centerY, width, height)
           ;
     }
   } );

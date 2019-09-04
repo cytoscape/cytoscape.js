@@ -707,8 +707,9 @@ var requestAnimationFrame = function requestAnimationFrame(fn) {
 };
 var performanceNow = pnow;
 
+var DEFAULT_SEED = 5381;
 var hashIterableInts = function hashIterableInts(iterator) {
-  var seed = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 5381;
+  var seed = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : DEFAULT_SEED;
   // djb2/string-hash
   var hash = seed;
   var entry;
@@ -720,15 +721,15 @@ var hashIterableInts = function hashIterableInts(iterator) {
       break;
     }
 
-    hash = hash * 33 ^ entry.value;
+    hash = (hash << 5) + hash + entry.value | 0;
   }
 
-  return hash >>> 0;
+  return hash;
 };
 var hashInt = function hashInt(num) {
-  var seed = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 5381;
+  var seed = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : DEFAULT_SEED;
   // djb2/string-hash
-  return (seed * 33 ^ num) >>> 0;
+  return (seed << 5) + seed + num | 0;
 };
 var hashIntsArray = function hashIntsArray(ints, seed) {
   var entry = {
@@ -970,7 +971,7 @@ function () {
 var Map$1 = typeof Map !== 'undefined' ? Map : ObjectMap;
 
 /* global Set */
-var undef = "undefined";
+var undef =  "undefined" ;
 
 var ObjectSet =
 /*#__PURE__*/
@@ -1121,6 +1122,8 @@ var Element = function Element(cy, params, restore) {
     // whether the element is grabbed by the mouse; renderer sets this privately
     grabbable: params.grabbable === undefined ? true : params.grabbable ? true : false,
     // whether the element can be grabbed
+    pannable: params.pannable === undefined ? group === 'edges' ? true : false : params.pannable ? true : false,
+    // whether the element has passthrough panning enabled
     active: false,
     // whether the element is active from user interaction
     classes: new Set$1(),
@@ -1148,8 +1151,26 @@ var Element = function Element(cy, params, restore) {
     // cache of the current bounding box
     bbCacheShift: {
       x: 0,
-      y: 0 // shift applied to cached bb to be applied on next get
-
+      y: 0
+    },
+    // shift applied to cached bb to be applied on next get
+    bodyBounds: null,
+    // bounds cache of element body, w/o overlay
+    overlayBounds: null,
+    // bounds cache of element body, including overlay
+    labelBounds: {
+      // bounds cache of labels
+      all: null,
+      source: null,
+      target: null,
+      main: null
+    },
+    arrowBounds: {
+      // bounds cache of edge arrows
+      source: null,
+      target: null,
+      'mid-source': null,
+      'mid-target': null
     }
   };
 
@@ -1209,18 +1230,18 @@ var defineSearch = function defineSearch(params) {
     dfs: params.dfs || !params.bfs
   }; // from pseudocode on wikipedia
 
-  return function searchFn(roots, fn$$1, directed) {
+  return function searchFn(roots, fn$1, directed) {
     var options;
 
     if (plainObject(roots) && !elementOrCollection(roots)) {
       options = roots;
       roots = options.roots || options.root;
-      fn$$1 = options.visit;
+      fn$1 = options.visit;
       directed = options.directed;
     }
 
-    directed = arguments.length === 2 && !fn(fn$$1) ? fn$$1 : directed;
-    fn$$1 = fn(fn$$1) ? fn$$1 : function () {};
+    directed = arguments.length === 2 && !fn(fn$1) ? fn$1 : directed;
+    fn$1 = fn(fn$1) ? fn$1 : function () {};
     var cy = this._private.cy;
     var v = roots = string(roots) ? this.filter(roots) : roots;
     var Q = [];
@@ -1271,7 +1292,7 @@ var defineSearch = function defineSearch(params) {
       var tgt = prevEdge != null ? prevEdge.target() : null;
       var prevNode = prevEdge == null ? undefined : v.same(src) ? tgt[0] : src[0];
       var ret = void 0;
-      ret = fn$$1(v, prevEdge, prevNode, j++, depth);
+      ret = fn$1(v, prevEdge, prevNode, j++, depth);
 
       if (ret === true) {
         found = v;
@@ -1594,7 +1615,7 @@ var elesfn$3 = {
     var popFromOpenSet = function popFromOpenSet() {
       cMin = openSet.pop();
       cMinId = cMin.id();
-      openSetIds.delete(cMinId);
+      openSetIds["delete"](cMinId);
     };
 
     var isInOpenSet = function isInOpenSet(id) {
@@ -2474,6 +2495,32 @@ var expandBoundingBox = function expandBoundingBox(bb) {
   bb.h = bb.y2 - bb.y1;
   return bb;
 };
+var expandBoundingBoxSides = function expandBoundingBoxSides(bb) {
+  var padding = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [0];
+  var top, right, bottom, left;
+
+  if (padding.length === 1) {
+    top = right = bottom = left = padding[0];
+  } else if (padding.length === 2) {
+    top = bottom = padding[0];
+    left = right = padding[1];
+  } else if (padding.length === 4) {
+    var _padding = _slicedToArray(padding, 4);
+
+    top = _padding[0];
+    right = _padding[1];
+    bottom = _padding[2];
+    left = _padding[3];
+  }
+
+  bb.x1 -= left;
+  bb.x2 += right;
+  bb.y1 -= top;
+  bb.y2 += bottom;
+  bb.w = bb.x2 - bb.x1;
+  bb.h = bb.y2 - bb.y1;
+  return bb;
+};
 
 var assignBoundingBox = function assignBoundingBox(bb1, bb2) {
   bb1.x1 = bb2.x1;
@@ -2679,6 +2726,12 @@ var solveCubic = function solveCubic(a, b, c, d, result) {
   // r is the real component, i is the imaginary component
   // An implementation of the Cardano method from the year 1545
   // http://en.wikipedia.org/wiki/Cubic_function#The_nature_of_the_roots
+  var epsilon = 0.00001; // avoid division by zero while keeping the overall expression close in value
+
+  if (a === 0) {
+    a = epsilon;
+  }
+
   b /= a;
   c /= a;
   d /= a;
@@ -3826,7 +3879,7 @@ var addLoops = function addLoops(M, n, val) {
   }
 };
 
-var normalize$1 = function normalize(M, n) {
+var normalize = function normalize(M, n) {
   var sum;
 
   for (var col = 0; col < n; col++) {
@@ -3883,7 +3936,7 @@ var inflate = function inflate(M, n, inflateFactor
     _M[i] = Math.pow(M[i], inflateFactor);
   }
 
-  normalize$1(_M, n);
+  normalize(_M, n);
   return _M;
 };
 
@@ -3983,7 +4036,7 @@ var markovClustering = function markovClustering(options) {
 
   addLoops(M, n, opts.multFactor); // Step 2: M = normalize( M );
 
-  normalize$1(M, n);
+  normalize(M, n);
   var isStillMoving = true;
   var iterations = 0;
 
@@ -4109,17 +4162,20 @@ var setOptions$1 = function setOptions(options) {
 
 
 var getDist = function getDist(type, node, centroid, attributes, mode) {
-  var getP = mode === 'kMedoids' ? function (i) {
-    return attributes[i](centroid);
-  } : function (i) {
+  var noNodeP = mode !== 'kMedoids';
+  var getP = noNodeP ? function (i) {
     return centroid[i];
+  } : function (i) {
+    return attributes[i](centroid);
   };
 
   var getQ = function getQ(i) {
     return attributes[i](node);
   };
 
-  return clusteringDistance(type, attributes.length, getP, getQ);
+  var nodeP = centroid;
+  var nodeQ = node;
+  return clusteringDistance(type, attributes.length, getP, getQ, nodeP, nodeQ);
 };
 
 var randomCentroids = function randomCentroids(nodes, k, attributes) {
@@ -4255,9 +4311,7 @@ var kMeans = function kMeans(options) {
 
   if (opts.testMode) {
     if (typeof opts.testCentroids === 'number') {
-      // TODO: implement a seeded random number generator.
-      var seed = opts.testCentroids;
-      centroids = randomCentroids(nodes, opts.k, opts.attributes, seed);
+      centroids = randomCentroids(nodes, opts.k, opts.attributes);
     } else if (_typeof(opts.testCentroids) === 'object') {
       centroids = opts.testCentroids;
     } else {
@@ -4604,7 +4658,7 @@ var mergeClosest = function mergeClosest(clusters, index, dists, mins, opts) {
       return attrs[i](n1);
     }, function (i) {
       return attrs[i](n2);
-    });
+    }, n1, n2);
   };
 
   for (var i = 0; i < clusters.length; i++) {
@@ -4700,8 +4754,8 @@ var getAllChildren = function getAllChildren(root, arr, cy) {
   if (root.value) {
     arr.push(root.value);
   } else {
-    if (root.left) getAllChildren(root.left, arr, cy);
-    if (root.right) getAllChildren(root.right, arr, cy);
+    if (root.left) getAllChildren(root.left, arr);
+    if (root.right) getAllChildren(root.right, arr);
   }
 };
 
@@ -4745,8 +4799,8 @@ var buildClustersFromTree = function buildClustersFromTree(root, k, cy) {
 
   if (k === 0) {
     // don't cut tree, simply return all nodes as 1 single cluster
-    if (root.left) getAllChildren(root.left, left, cy);
-    if (root.right) getAllChildren(root.right, right, cy);
+    if (root.left) getAllChildren(root.left, left);
+    if (root.right) getAllChildren(root.right, right);
     leaves = left.concat(right);
     return [cy.collection(leaves)];
   } else if (k === 1) {
@@ -4755,8 +4809,8 @@ var buildClustersFromTree = function buildClustersFromTree(root, k, cy) {
       // leaf node
       return [cy.collection(root.value)];
     } else {
-      if (root.left) getAllChildren(root.left, left, cy);
-      if (root.right) getAllChildren(root.right, right, cy);
+      if (root.left) getAllChildren(root.left, left);
+      if (root.right) getAllChildren(root.right, right);
       return [cy.collection(left), cy.collection(right)];
     }
   } else {
@@ -4784,7 +4838,7 @@ var hierarchicalClustering = function hierarchicalClustering(options) {
       return attrs[i](n1);
     }, function (i) {
       return attrs[i](n2);
-    });
+    }, n1, n2);
   }; // Begin hierarchical algorithm
 
 
@@ -4951,14 +5005,14 @@ var assignClusters = function assignClusters(n, S, exemplars) {
 
   for (var i = 0; i < n; i++) {
     var index = -1;
-    var max$$1 = -Infinity;
+    var max = -Infinity;
 
     for (var ei = 0; ei < exemplars.length; ei++) {
       var e = exemplars[ei];
 
-      if (S[i * n + e] > max$$1) {
+      if (S[i * n + e] > max) {
         index = e;
-        max$$1 = S[i * n + e];
+        max = S[i * n + e];
       }
     }
 
@@ -5093,7 +5147,7 @@ var affinityPropagation = function affinityPropagation(options) {
     // main algorithmic loop
     // Update R responsibility matrix
     for (var _i8 = 0; _i8 < n; _i8++) {
-      var max$$1 = -Infinity,
+      var max = -Infinity,
           max2 = -Infinity,
           maxI = -1,
           AS = 0.0;
@@ -5102,9 +5156,9 @@ var affinityPropagation = function affinityPropagation(options) {
         old[_j] = R[_i8 * n + _j];
         AS = A[_i8 * n + _j] + S[_i8 * n + _j];
 
-        if (AS >= max$$1) {
-          max2 = max$$1;
-          max$$1 = AS;
+        if (AS >= max) {
+          max2 = max;
+          max = AS;
           maxI = _j;
         } else if (AS > max2) {
           max2 = AS;
@@ -5112,7 +5166,7 @@ var affinityPropagation = function affinityPropagation(options) {
       }
 
       for (var _j2 = 0; _j2 < n; _j2++) {
-        R[_i8 * n + _j2] = (1 - opts.damping) * (S[_i8 * n + _j2] - max$$1) + opts.damping * old[_j2];
+        R[_i8 * n + _j2] = (1 - opts.damping) * (S[_i8 * n + _j2] - max) + opts.damping * old[_j2];
       }
 
       R[_i8 * n + maxI] = (1 - opts.damping) * (S[_i8 * n + maxI] - max2) + opts.damping * old[maxI];
@@ -5173,7 +5227,7 @@ var affinityPropagation = function affinityPropagation(options) {
 
   var exemplarsIndices = findExemplars(n, R, A); // Assign nodes to clusters
 
-  var clusterIndices = assign$2(n, S, exemplarsIndices, nodes, id2position);
+  var clusterIndices = assign$2(n, S, exemplarsIndices);
   var clusters = {};
 
   for (var c = 0; c < exemplarsIndices.length; c++) {
@@ -5701,7 +5755,7 @@ extend(anifn, {
 
     return this;
   },
-  promise: function promise$$1(type) {
+  promise: function promise(type) {
     var _p = this._private;
     var arr;
 
@@ -5815,7 +5869,7 @@ var define = {
         return this;
       }
 
-      var style$$1 = cy.style();
+      var style = cy.style();
       properties = extend({}, properties, params);
       var propertiesEmpty = Object.keys(properties).length === 0;
 
@@ -5838,7 +5892,7 @@ var define = {
       }
 
       if (isEles) {
-        properties.style = style$$1.getPropsList(properties.style || properties.css);
+        properties.style = style.getPropsList(properties.style || properties.css);
         properties.css = undefined;
       }
 
@@ -5979,7 +6033,7 @@ var define = {
 var define$1 = {
   // access data field
   data: function data(params) {
-    var defaults$$1 = {
+    var defaults = {
       field: 'data',
       bindingEvent: 'data',
       allowBinding: false,
@@ -5998,7 +6052,7 @@ var define$1 = {
         return true;
       }
     };
-    params = extend({}, defaults$$1, params);
+    params = extend({}, defaults, params);
     return function dataImpl(name, value) {
       var p = params;
       var self = this;
@@ -6089,8 +6143,8 @@ var define$1 = {
 
       } else if (p.allowBinding && fn(name)) {
         // bind to event
-        var fn$$1 = name;
-        self.on(p.bindingEvent, fn$$1); // .data()
+        var fn$1 = name;
+        self.on(p.bindingEvent, fn$1); // .data()
       } else if (p.allowGetting && name === undefined) {
         // get whole object
         var _ret;
@@ -6109,7 +6163,7 @@ var define$1 = {
   // data
   // remove data field
   removeData: function removeData(params) {
-    var defaults$$1 = {
+    var defaults = {
       field: 'data',
       event: 'data',
       triggerFnName: 'trigger',
@@ -6117,7 +6171,7 @@ var define$1 = {
       immutableKeys: {} // key => true if immutable
 
     };
-    params = extend({}, defaults$$1, params);
+    params = extend({}, defaults, params);
     return function removeDataImpl(names) {
       var p = params;
       var self = this;
@@ -6304,7 +6358,7 @@ var elesfn$d = {
           eleClasses.add(cls);
           changedNow = true;
         } else if (!toggle || toggleUndefd && hasClass) {
-          eleClasses.delete(cls);
+          eleClasses["delete"](cls);
           changedNow = true;
         }
 
@@ -7510,7 +7564,7 @@ match[Type.DATA_BOOL] = function (check, ele) {
 match[Type.DATA_EXIST] = function (check, ele) {
   var field = check.field,
       operator = check.operator;
-  return existCmp(data(ele, field), operator);
+  return existCmp(data(ele, field));
 };
 
 match[Type.UNDIRECTED_EDGE] = function (check, ele) {
@@ -7613,7 +7667,7 @@ var filter = function filter(collection) {
 // does selector match a single element?
 
 
-var matches$1 = function matches$$1(ele) {
+var matches$1 = function matches$1(ele) {
   var self = this;
 
   for (var j = 0; j < self.length; j++) {
@@ -7659,7 +7713,7 @@ var Selector = function Selector(selector) {
       this.invalid = true;
     }
   } else {
-    error('A selector must be created from a string; found ', selector);
+    error('A selector must be created from a string; found ');
   }
 };
 
@@ -7773,7 +7827,7 @@ elesfn$e.allAreNeighbours = elesfn$e.allAreNeighbors;
 elesfn$e.has = elesfn$e.contains;
 elesfn$e.equal = elesfn$e.equals = elesfn$e.same;
 
-var cache = function cache(fn$$1, name) {
+var cache = function cache(fn, name) {
   return function traversalCache(arg1, arg2, arg3, arg4) {
     var selectorOrEles = arg1;
     var eles = this;
@@ -7795,10 +7849,10 @@ var cache = function cache(fn$$1, name) {
       if (cacheHit) {
         return cacheHit;
       } else {
-        return ch[hash] = fn$$1.call(eles, arg1, arg2, arg3, arg4);
+        return ch[hash] = fn.call(eles, arg1, arg2, arg3, arg4);
       }
     } else {
-      return fn$$1.call(eles, arg1, arg2, arg3, arg4);
+      return fn.call(eles, arg1, arg2, arg3, arg4);
     }
   };
 };
@@ -8526,7 +8580,7 @@ elesfn$j.updateCompoundBounds = function () {
     var _p = parent._private;
     var children = parent.children();
     var includeLabels = parent.pstyle('compound-sizing-wrt-labels').value === 'include';
-    var min$$1 = {
+    var min = {
       width: {
         val: parent.pstyle('min-width').pfValue,
         left: parent.pstyle('min-width-bias-left'),
@@ -8603,40 +8657,40 @@ elesfn$j.updateCompoundBounds = function () {
       }
     }
 
-    var leftVal = min$$1.width.left.value;
+    var leftVal = min.width.left.value;
 
-    if (min$$1.width.left.units === 'px' && min$$1.width.val > 0) {
-      leftVal = leftVal * 100 / min$$1.width.val;
+    if (min.width.left.units === 'px' && min.width.val > 0) {
+      leftVal = leftVal * 100 / min.width.val;
     }
 
-    var rightVal = min$$1.width.right.value;
+    var rightVal = min.width.right.value;
 
-    if (min$$1.width.right.units === 'px' && min$$1.width.val > 0) {
-      rightVal = rightVal * 100 / min$$1.width.val;
+    if (min.width.right.units === 'px' && min.width.val > 0) {
+      rightVal = rightVal * 100 / min.width.val;
     }
 
-    var topVal = min$$1.height.top.value;
+    var topVal = min.height.top.value;
 
-    if (min$$1.height.top.units === 'px' && min$$1.height.val > 0) {
-      topVal = topVal * 100 / min$$1.height.val;
+    if (min.height.top.units === 'px' && min.height.val > 0) {
+      topVal = topVal * 100 / min.height.val;
     }
 
-    var bottomVal = min$$1.height.bottom.value;
+    var bottomVal = min.height.bottom.value;
 
-    if (min$$1.height.bottom.units === 'px' && min$$1.height.val > 0) {
-      bottomVal = bottomVal * 100 / min$$1.height.val;
+    if (min.height.bottom.units === 'px' && min.height.val > 0) {
+      bottomVal = bottomVal * 100 / min.height.val;
     }
 
-    var widthBiasDiffs = computeBiasValues(min$$1.width.val - bb.w, leftVal, rightVal);
+    var widthBiasDiffs = computeBiasValues(min.width.val - bb.w, leftVal, rightVal);
     var diffLeft = widthBiasDiffs.biasDiff;
     var diffRight = widthBiasDiffs.biasComplementDiff;
-    var heightBiasDiffs = computeBiasValues(min$$1.height.val - bb.h, topVal, bottomVal);
+    var heightBiasDiffs = computeBiasValues(min.height.val - bb.h, topVal, bottomVal);
     var diffTop = heightBiasDiffs.biasDiff;
     var diffBottom = heightBiasDiffs.biasComplementDiff;
     _p.autoPadding = computePaddingValues(bb.w, bb.h, parent.pstyle('padding'), parent.pstyle('padding-relative-to').value);
-    _p.autoWidth = Math.max(bb.w, min$$1.width.val);
+    _p.autoWidth = Math.max(bb.w, min.width.val);
     pos.x = (-diffLeft + bb.x1 + bb.x2 + diffRight) / 2;
-    _p.autoHeight = Math.max(bb.h, min$$1.height.val);
+    _p.autoHeight = Math.max(bb.h, min.height.val);
     pos.y = (-diffTop + bb.y1 + bb.y2 + diffBottom) / 2;
   }
 
@@ -8684,6 +8738,10 @@ var updateBounds = function updateBounds(b, x1, y1, x2, y2) {
 };
 
 var updateBoundsFromBox = function updateBoundsFromBox(b, b2) {
+  if (b2 == null) {
+    return b;
+  }
+
   return updateBounds(b, b2.x1, b2.y1, b2.x2, b2.y2);
 };
 
@@ -8761,8 +8819,8 @@ var updateBoundsFromLabel = function updateBoundsFromLabel(bounds, ele, prefix) 
     var borderWidth = ele.pstyle('text-border-width').pfValue;
     var halfBorderWidth = borderWidth / 2;
     var padding = ele.pstyle('text-background-padding').pfValue;
-    var lh = labelHeight + 2 * padding;
-    var lw = labelWidth + 2 * padding;
+    var lh = labelHeight;
+    var lw = labelWidth;
     var lw_2 = lw / 2;
     var lh_2 = lh / 2;
     var lx1, lx2, ly1, ly2;
@@ -8809,10 +8867,10 @@ var updateBoundsFromLabel = function updateBoundsFromLabel(bounds, ele, prefix) 
     } // shift by margin and expand by outline and border
 
 
-    lx1 += marginX - Math.max(outlineWidth, halfBorderWidth);
-    lx2 += marginX + Math.max(outlineWidth, halfBorderWidth);
-    ly1 += marginY - Math.max(outlineWidth, halfBorderWidth);
-    ly2 += marginY + Math.max(outlineWidth, halfBorderWidth); // always store the unrotated label bounds separately
+    lx1 += marginX - Math.max(outlineWidth, halfBorderWidth) - padding;
+    lx2 += marginX + Math.max(outlineWidth, halfBorderWidth) + padding;
+    ly1 += marginY - Math.max(outlineWidth, halfBorderWidth) - padding;
+    ly2 += marginY + Math.max(outlineWidth, halfBorderWidth) + padding; // always store the unrotated label bounds separately
 
     var bbPrefix = prefix || 'main';
     var bbs = _p.labelBounds;
@@ -8891,18 +8949,25 @@ var boundingBoxImpl = function boundingBoxImpl(ele, options) {
   var headless = cy.headless();
   var bounds = makeBoundingBox();
   var _p = ele._private;
-  var display = styleEnabled ? ele.pstyle('display').value : 'element';
   var isNode = ele.isNode();
   var isEdge = ele.isEdge();
   var ex1, ex2, ey1, ey2; // extrema of body / lines
 
   var x, y; // node pos
 
-  var displayed = display !== 'none';
   var rstyle = _p.rstyle;
-  var manualExpansion = isNode && styleEnabled ? ele.pstyle('bounds-expansion').pfValue : 0;
+  var manualExpansion = isNode && styleEnabled ? ele.pstyle('bounds-expansion').pfValue : [0]; // must use `display` prop only, as reading `compound.width()` causes recursion
+  // (other factors like width values will be considered later in this function anyway)
+
+  var isDisplayed = function isDisplayed(ele) {
+    return ele.pstyle('display').value !== 'none';
+  };
+
+  var displayed = !styleEnabled || isDisplayed(ele) // must take into account connected nodes b/c of implicit edge hiding on display:none node
+  && (!isEdge || isDisplayed(ele.source()) && isDisplayed(ele.target()));
 
   if (displayed) {
+    // displayed suffices, since we will find zero area eles anyway
     var overlayOpacity = 0;
     var overlayPadding = 0;
 
@@ -9028,10 +9093,10 @@ var boundingBoxImpl = function boundingBoxImpl(ele, options) {
 
 
     if (styleEnabled && options.includeEdges && isEdge) {
-      updateBoundsFromArrow(bounds, ele, 'mid-source', options);
-      updateBoundsFromArrow(bounds, ele, 'mid-target', options);
-      updateBoundsFromArrow(bounds, ele, 'source', options);
-      updateBoundsFromArrow(bounds, ele, 'target', options);
+      updateBoundsFromArrow(bounds, ele, 'mid-source');
+      updateBoundsFromArrow(bounds, ele, 'mid-target');
+      updateBoundsFromArrow(bounds, ele, 'source');
+      updateBoundsFromArrow(bounds, ele, 'target');
     } // ghost
     ////////
 
@@ -9049,7 +9114,7 @@ var boundingBoxImpl = function boundingBoxImpl(ele, options) {
 
     var bbBody = _p.bodyBounds = _p.bodyBounds || {};
     assignBoundingBox(bbBody, bounds);
-    expandBoundingBox(bbBody, manualExpansion);
+    expandBoundingBoxSides(bbBody, manualExpansion);
     expandBoundingBox(bbBody, 1); // expand to work around browser dimension inaccuracies
     // overlay
     //////////
@@ -9065,7 +9130,7 @@ var boundingBoxImpl = function boundingBoxImpl(ele, options) {
 
     var bbOverlay = _p.overlayBounds = _p.overlayBounds || {};
     assignBoundingBox(bbOverlay, bounds);
-    expandBoundingBox(bbOverlay, manualExpansion);
+    expandBoundingBoxSides(bbOverlay, manualExpansion);
     expandBoundingBox(bbOverlay, 1); // expand to work around browser dimension inaccuracies
     // handle label dimensions
     //////////////////////////
@@ -9079,11 +9144,18 @@ var boundingBoxImpl = function boundingBoxImpl(ele, options) {
     }
 
     if (styleEnabled && options.includeLabels) {
-      updateBoundsFromLabel(bounds, ele, null, options);
+      if (options.includeMainLabels) {
+        updateBoundsFromLabel(bounds, ele, null);
+      }
 
       if (isEdge) {
-        updateBoundsFromLabel(bounds, ele, 'source', options);
-        updateBoundsFromLabel(bounds, ele, 'target', options);
+        if (options.includeSourceLabels) {
+          updateBoundsFromLabel(bounds, ele, 'source');
+        }
+
+        if (options.includeTargetLabels) {
+          updateBoundsFromLabel(bounds, ele, 'target');
+        }
       }
     } // style enabled for labels
 
@@ -9098,7 +9170,7 @@ var boundingBoxImpl = function boundingBoxImpl(ele, options) {
   bounds.h = noninf(bounds.y2 - bounds.y1);
 
   if (bounds.w > 0 && bounds.h > 0 && displayed) {
-    expandBoundingBox(bounds, manualExpansion); // expand bounds by 1 because antialiasing can increase the visual/effective size by 1 on all sides
+    expandBoundingBoxSides(bounds, manualExpansion); // expand bounds by 1 because antialiasing can increase the visual/effective size by 1 on all sides
 
     expandBoundingBox(bounds, 1);
   }
@@ -9117,6 +9189,9 @@ var getKey = function getKey(opts) {
   key += tf(opts.incudeNodes);
   key += tf(opts.includeEdges);
   key += tf(opts.includeLabels);
+  key += tf(opts.includeMainLabels);
+  key += tf(opts.includeSourceLabels);
+  key += tf(opts.includeTargetLabels);
   key += tf(opts.includeOverlays);
   return key;
 };
@@ -9139,6 +9214,7 @@ var getBoundingBoxPosKey = function getBoundingBoxPosKey(ele) {
 var cachedBoundingBoxImpl = function cachedBoundingBoxImpl(ele, opts) {
   var _p = ele._private;
   var bb;
+  var isEdge = ele.isEdge();
   var key = opts == null ? defBbOptsKey : getKey(opts);
   var usingDefOpts = key === defBbOptsKey;
   var currPosKey = getBoundingBoxPosKey(ele);
@@ -9208,7 +9284,21 @@ var cachedBoundingBoxImpl = function cachedBoundingBoxImpl(ele, opts) {
     }
 
     if (opts.includeLabels) {
-      updateBoundsFromBox(bb, _p.labelBounds.all);
+      if (opts.includeMainLabels && (!isEdge || opts.includeSourceLabels && opts.includeTargetLabels)) {
+        updateBoundsFromBox(bb, _p.labelBounds.all);
+      } else {
+        if (opts.includeMainLabels) {
+          updateBoundsFromBox(bb, _p.labelBounds.main);
+        }
+
+        if (opts.includeSourceLabels) {
+          updateBoundsFromBox(bb, _p.labelBounds.source);
+        }
+
+        if (opts.includeTargetLabels) {
+          updateBoundsFromBox(bb, _p.labelBounds.target);
+        }
+      }
     }
 
     bb.w = bb.x2 - bb.x1;
@@ -9222,6 +9312,9 @@ var defBbOpts = {
   includeNodes: true,
   includeEdges: true,
   includeLabels: true,
+  includeMainLabels: true,
+  includeSourceLabels: true,
+  includeTargetLabels: true,
   includeOverlays: true,
   useCache: true
 };
@@ -9229,9 +9322,10 @@ var defBbOptsKey = getKey(defBbOpts);
 var filledBbOpts = defaults(defBbOpts);
 
 elesfn$j.boundingBox = function (options) {
-  // the main usecase is ele.boundingBox() for a single element with no/def options
+  var bounds; // the main usecase is ele.boundingBox() for a single element with no/def options
   // specified s.t. the cache is used, so check for this case to make it faster by
   // avoiding the overhead of the rest of the function
+
   if (this.length === 1 && this[0]._private.bbCache != null && (options === undefined || options.useCache === undefined || options.useCache === true)) {
     if (options === undefined) {
       options = defBbOpts;
@@ -9239,32 +9333,32 @@ elesfn$j.boundingBox = function (options) {
       options = filledBbOpts(options);
     }
 
-    return cachedBoundingBoxImpl(this[0], options);
-  }
+    bounds = cachedBoundingBoxImpl(this[0], options);
+  } else {
+    bounds = makeBoundingBox();
+    options = options || defBbOpts;
+    var opts = filledBbOpts(options);
+    var eles = this;
+    var cy = eles.cy();
+    var styleEnabled = cy.styleEnabled();
 
-  var bounds = makeBoundingBox();
-  options = options || defBbOpts;
-  var opts = filledBbOpts(options);
-  var eles = this;
-  var cy = eles.cy();
-  var styleEnabled = cy.styleEnabled();
-
-  if (styleEnabled) {
-    for (var i = 0; i < eles.length; i++) {
-      var ele = eles[i];
-      var _p = ele._private;
-      var currPosKey = getBoundingBoxPosKey(ele);
-      var isPosKeySame = _p.bbCachePosKey === currPosKey;
-      var useCache = opts.useCache && isPosKeySame;
-      ele.recalculateRenderedStyle(useCache);
+    if (styleEnabled) {
+      for (var i = 0; i < eles.length; i++) {
+        var ele = eles[i];
+        var _p = ele._private;
+        var currPosKey = getBoundingBoxPosKey(ele);
+        var isPosKeySame = _p.bbCachePosKey === currPosKey;
+        var useCache = opts.useCache && isPosKeySame;
+        ele.recalculateRenderedStyle(useCache);
+      }
     }
-  }
 
-  this.updateCompoundBounds();
+    this.updateCompoundBounds();
 
-  for (var _i = 0; _i < eles.length; _i++) {
-    var _ele = eles[_i];
-    updateBoundsFromBox(bounds, cachedBoundingBoxImpl(_ele, opts));
+    for (var _i = 0; _i < eles.length; _i++) {
+      var _ele = eles[_i];
+      updateBoundsFromBox(bounds, cachedBoundingBoxImpl(_ele, opts));
+    }
   }
 
   bounds.x1 = noninf(bounds.x1);
@@ -9282,6 +9376,16 @@ elesfn$j.dirtyBoundingBoxCache = function () {
     _p.bbCache = null;
     _p.bbCacheShift.x = _p.bbCacheShift.y = 0;
     _p.bbCachePosKey = null;
+    _p.bodyBounds = null;
+    _p.overlayBounds = null;
+    _p.labelBounds.all = null;
+    _p.labelBounds.source = null;
+    _p.labelBounds.target = null;
+    _p.labelBounds.main = null;
+    _p.arrowBounds.source = null;
+    _p.arrowBounds.target = null;
+    _p.arrowBounds['mid-source'] = null;
+    _p.arrowBounds['mid-target'] = null;
   }
 
   this.emitAndNotify('bounds');
@@ -9308,7 +9412,7 @@ elesfn$j.shiftCachedBoundingBox = function (delta) {
 // - try to use for only things like discrete layouts where the node position would change anyway
 
 
-elesfn$j.boundingBoxAt = function (fn$$1) {
+elesfn$j.boundingBoxAt = function (fn) {
   var nodes = this.nodes();
   var cy = this.cy();
   var hasCompoundNodes = cy.hasCompoundNodes();
@@ -9319,16 +9423,16 @@ elesfn$j.boundingBoxAt = function (fn$$1) {
     });
   }
 
-  if (plainObject(fn$$1)) {
-    var obj = fn$$1;
+  if (plainObject(fn)) {
+    var obj = fn;
 
-    fn$$1 = function fn$$1() {
+    fn = function fn() {
       return obj;
     };
   }
 
   var storeOldPos = function storeOldPos(node, i) {
-    return node._private.bbAtOldPos = fn$$1(node, i);
+    return node._private.bbAtOldPos = fn(node, i);
   };
 
   var getOldPos = function getOldPos(node) {
@@ -9336,7 +9440,7 @@ elesfn$j.boundingBoxAt = function (fn$$1) {
   };
 
   cy.startBatch();
-  nodes.forEach(storeOldPos).silentPositions(fn$$1);
+  nodes.forEach(storeOldPos).silentPositions(fn);
 
   if (hasCompoundNodes) {
     this.updateCompoundBounds(true); // force update b/c we're inside a batch cycle
@@ -9453,6 +9557,16 @@ elesfn$k.padding = function () {
   } else {
     return ele.pstyle('padding').pfValue;
   }
+};
+
+elesfn$k.paddedHeight = function () {
+  var ele = this[0];
+  return ele.height() + 2 * ele.padding();
+};
+
+elesfn$k.paddedWidth = function () {
+  var ele = this[0];
+  return ele.width() + 2 * ele.padding();
 };
 
 var widthHeight = elesfn$k;
@@ -9691,8 +9805,12 @@ var defaults$8 = {
   context: null
 };
 var defaultsKeys = Object.keys(defaults$8);
+var emptyOpts = {};
 
-function Emitter(opts, context) {
+function Emitter() {
+  var opts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : emptyOpts;
+  var context = arguments.length > 1 ? arguments[1] : undefined;
+
   // micro-optimisation vs Object.assign() -- reduces Element instantiation time
   for (var i = 0; i < defaultsKeys.length; i++) {
     var key = defaultsKeys[i];
@@ -9783,10 +9901,10 @@ var forEachEventObj = function forEachEventObj(self, handler, events) {
 };
 
 p.on = p.addListener = function (events, qualifier, callback, conf, confOverrides) {
-  forEachEvent(this, function (self, event$$1, type, namespace, qualifier, callback, conf) {
+  forEachEvent(this, function (self, event, type, namespace, qualifier, callback, conf) {
     if (fn(callback)) {
       self.listeners.push({
-        event: event$$1,
+        event: event,
         // full event string
         callback: callback,
         // callback to run
@@ -9821,10 +9939,10 @@ p.removeListener = p.off = function (events, qualifier, callback, conf) {
 
   var _loop = function _loop(i) {
     var listener = listeners[i];
-    forEachEvent(_this, function (self, event$$1, type, namespace, qualifier, callback
+    forEachEvent(_this, function (self, event, type, namespace, qualifier, callback
     /*, conf*/
     ) {
-      if (listener.type === type && (!namespace || listener.namespace === namespace) && (!qualifier || self.qualifierCompare(listener.qualifier, qualifier)) && (!callback || listener.callback === callback)) {
+      if ((listener.type === type || events === '*') && (!namespace && listener.namespace !== '.*' || listener.namespace === namespace) && (!qualifier || self.qualifierCompare(listener.qualifier, qualifier)) && (!callback || listener.callback === callback)) {
         listeners.splice(i, 1);
         return false;
       }
@@ -9836,6 +9954,10 @@ p.removeListener = p.off = function (events, qualifier, callback, conf) {
   }
 
   return this;
+};
+
+p.removeAllListeners = function () {
+  return this.removeListener('*');
 };
 
 p.emit = p.trigger = function (events, extraParams, manualCallback) {
@@ -9984,6 +10106,14 @@ var elesfn$l = {
 
     return this;
   },
+  removeAllListeners: function removeAllListeners() {
+    for (var i = 0; i < this.length; i++) {
+      var ele = this[i];
+      ele.emitter().removeAllListeners();
+    }
+
+    return this;
+  },
   one: function one(events, selector, callback) {
     var argSel = argSelector(selector);
 
@@ -10013,7 +10143,7 @@ var elesfn$l = {
 
     return this;
   },
-  emitAndNotify: function emitAndNotify(event$$1, extraParams) {
+  emitAndNotify: function emitAndNotify(event, extraParams) {
     // for internal use only
     if (this.length === 0) {
       return;
@@ -10021,8 +10151,8 @@ var elesfn$l = {
     // notify renderer
 
 
-    this.cy().notify(event$$1, this);
-    this.emit(event$$1, extraParams);
+    this.cy().notify(event, this);
+    this.emit(event, extraParams);
     return this;
   }
 };
@@ -10095,11 +10225,11 @@ var elesfn$m = {
       var rMap = toRemove._private.map;
 
       for (var i = 0; i < this.length; i++) {
-        var element$$1 = this[i];
-        var remove = rMap.has(element$$1.id());
+        var element = this[i];
+        var remove = rMap.has(element.id());
 
         if (!remove) {
-          elements.push(element$$1);
+          elements.push(element);
         }
       }
 
@@ -10281,7 +10411,7 @@ var elesfn$m = {
     var map = _p.map; // remove ele
 
     this[i] = undefined;
-    map.delete(id);
+    map["delete"](id);
     var unmergedLastEle = i === this.length - 1; // replace empty spot with last ele in collection
 
     if (this.length > 1 && !unmergedLastEle) {
@@ -10358,12 +10488,12 @@ var elesfn$m = {
 
     return arr;
   },
-  reduce: function reduce(fn$$1, initialValue) {
+  reduce: function reduce(fn, initialValue) {
     var val = initialValue;
     var eles = this;
 
     for (var i = 0; i < eles.length; i++) {
-      val = fn$$1(val, eles[i], i, eles);
+      val = fn(val, eles[i], i, eles);
     }
 
     return val;
@@ -10506,13 +10636,13 @@ var zIndexSort = function zIndexSort(a, b) {
 };
 
 var elesfn$o = {
-  forEach: function forEach(fn$$1, thisArg) {
-    if (fn(fn$$1)) {
+  forEach: function forEach(fn$1, thisArg) {
+    if (fn(fn$1)) {
       var N = this.length;
 
       for (var i = 0; i < N; i++) {
         var ele = this[i];
-        var ret = thisArg ? fn$$1.apply(thisArg, [ele, i, this]) : fn$$1(ele, i, this);
+        var ret = thisArg ? fn$1.apply(thisArg, [ele, i, this]) : fn$1(ele, i, this);
 
         if (ret === false) {
           break;
@@ -10524,16 +10654,16 @@ var elesfn$o = {
     return this;
   },
   toArray: function toArray() {
-    var array$$1 = [];
+    var array = [];
 
     for (var i = 0; i < this.length; i++) {
-      array$$1.push(this[i]);
+      array.push(this[i]);
     }
 
-    return array$$1;
+    return array;
   },
   slice: function slice(start, end) {
-    var array$$1 = [];
+    var array = [];
     var thisSize = this.length;
 
     if (end == null) {
@@ -10553,10 +10683,10 @@ var elesfn$o = {
     }
 
     for (var i = start; i >= 0 && i < end && i < thisSize; i++) {
-      array$$1.push(this[i]);
+      array.push(this[i]);
     }
 
-    return this.spawn(array$$1);
+    return this.spawn(array);
   },
   size: function size() {
     return this.length;
@@ -10576,7 +10706,7 @@ var elesfn$o = {
   nonempty: function nonempty() {
     return !this.empty();
   },
-  sort: function sort$$1(sortFn) {
+  sort: function sort(sortFn) {
     if (!fn(sortFn)) {
       return this;
     }
@@ -10624,19 +10754,32 @@ var elesfn$p = {
   // Calculates and returns node dimensions { x, y } based on options given
   layoutDimensions: function layoutDimensions(options) {
     options = getLayoutDimensionOptions(options);
+    var dims;
 
-    if (options.nodeDimensionsIncludeLabels) {
+    if (!this.takesUpSpace()) {
+      dims = {
+        w: 0,
+        h: 0
+      };
+    } else if (options.nodeDimensionsIncludeLabels) {
       var bbDim = this.boundingBox();
-      return {
+      dims = {
         w: bbDim.w,
         h: bbDim.h
       };
     } else {
-      return {
+      dims = {
         w: this.outerWidth(),
         h: this.outerHeight()
       };
+    } // sanitise the dimensions for external layouts (avoid division by zero)
+
+
+    if (dims.w === 0 || dims.h === 0) {
+      dims.w = dims.h = 1;
     }
+
+    return dims;
   },
   // using standard layout options, apply position function (w/ or w/o animation)
   layoutPositions: function layoutPositions(layout, options, fn) {
@@ -10800,7 +10943,7 @@ var elesfn$p = {
 
 elesfn$p.createLayout = elesfn$p.makeLayout = elesfn$p.layout;
 
-function styleCache(key, fn$$1, ele) {
+function styleCache(key, fn, ele) {
   var _p = ele._private;
   var cache = _p.styleCache = _p.styleCache || [];
   var val;
@@ -10808,23 +10951,23 @@ function styleCache(key, fn$$1, ele) {
   if ((val = cache[key]) != null) {
     return val;
   } else {
-    val = cache[key] = fn$$1(ele);
+    val = cache[key] = fn(ele);
     return val;
   }
 }
 
-function cacheStyleFunction(key, fn$$1) {
+function cacheStyleFunction(key, fn) {
   key = hashString(key);
   return function cachedStyleFunction(ele) {
-    return styleCache(key, fn$$1, ele);
+    return styleCache(key, fn, ele);
   };
 }
 
-function cachePrototypeStyleFunction(key, fn$$1) {
+function cachePrototypeStyleFunction(key, fn) {
   key = hashString(key);
 
   var selfFn = function selfFn(ele) {
-    return fn$$1.call(ele);
+    return fn.call(ele);
   };
 
   return function cachedPrototypeStyleFunction() {
@@ -10884,7 +11027,7 @@ var elesfn$q = {
     }
 
     var hasCompounds = cy.hasCompoundNodes();
-    var style$$1 = cy.style();
+    var style = cy.style();
     var updatedEles = this;
     notifyRenderer = notifyRenderer || notifyRenderer === undefined ? true : false;
 
@@ -10893,7 +11036,7 @@ var elesfn$q = {
       updatedEles = this.spawnSelf().merge(this.descendants()).merge(this.parents());
     }
 
-    var changedEles = style$$1.apply(updatedEles);
+    var changedEles = style.apply(updatedEles);
 
     if (notifyRenderer) {
       changedEles.emitAndNotify('style'); // let renderer know we changed style
@@ -10964,7 +11107,7 @@ var elesfn$q = {
     }
   },
   // read the calculated css style of the element or override the style (via a bypass)
-  style: function style$$1(name, value) {
+  style: function style(name, value) {
     var cy = this.cy();
 
     if (!cy.styleEnabled()) {
@@ -10972,12 +11115,12 @@ var elesfn$q = {
     }
 
     var updateTransitions = false;
-    var style$$1 = cy.style();
+    var style = cy.style();
 
     if (plainObject(name)) {
       // then extend the bypass
       var props = name;
-      style$$1.applyBypass(this, props, updateTransitions);
+      style.applyBypass(this, props, updateTransitions);
       this.emitAndNotify('style'); // let the renderer know we've updated style
     } else if (string(name)) {
       if (value === undefined) {
@@ -10985,21 +11128,21 @@ var elesfn$q = {
         var ele = this[0];
 
         if (ele) {
-          return style$$1.getStylePropertyValue(ele, name);
+          return style.getStylePropertyValue(ele, name);
         } else {
           // empty collection => can't get any value
           return;
         }
       } else {
         // then set the bypass with the property value
-        style$$1.applyBypass(this, name, value, updateTransitions);
+        style.applyBypass(this, name, value, updateTransitions);
         this.emitAndNotify('style'); // let the renderer know we've updated style
       }
     } else if (name === undefined) {
       var _ele = this[0];
 
       if (_ele) {
-        return style$$1.getRawStyle(_ele);
+        return style.getRawStyle(_ele);
       } else {
         // empty collection => can't get any value
         return;
@@ -11016,20 +11159,20 @@ var elesfn$q = {
     }
 
     var updateTransitions = false;
-    var style$$1 = cy.style();
+    var style = cy.style();
     var eles = this;
 
     if (names === undefined) {
       for (var i = 0; i < eles.length; i++) {
         var ele = eles[i];
-        style$$1.removeAllBypasses(ele, updateTransitions);
+        style.removeAllBypasses(ele, updateTransitions);
       }
     } else {
       names = names.split(/\s+/);
 
       for (var _i = 0; _i < eles.length; _i++) {
         var _ele2 = eles[_i];
-        style$$1.removeBypasses(_ele2, names, updateTransitions);
+        style.removeBypasses(_ele2, names, updateTransitions);
       }
     }
 
@@ -11199,6 +11342,10 @@ elesfn$q.hidden = function () {
 };
 
 elesfn$q.isBundledBezier = cachePrototypeStyleFunction('isBundledBezier', function () {
+  if (!this.cy().styleEnabled()) {
+    return false;
+  }
+
   return !this.removed() && this.pstyle('curve-style').value === 'bezier' && this.takesUpSpace();
 });
 elesfn$q.bypass = elesfn$q.css = elesfn$q.style;
@@ -11311,7 +11458,7 @@ defineSwitchSet({
 defineSwitchSet({
   field: 'grabbable',
   overrideField: function overrideField(ele) {
-    return ele.cy().autoungrabify() ? false : undefined;
+    return ele.cy().autoungrabify() || ele.pannable() ? false : undefined;
   },
   on: 'grabify',
   off: 'ungrabify'
@@ -11347,6 +11494,11 @@ defineSwitchSet({
   field: 'active',
   on: 'activate',
   off: 'unactivate'
+});
+defineSwitchSet({
+  field: 'pannable',
+  on: 'panify',
+  off: 'unpanify'
 });
 
 elesfn$r.inactive = function () {
@@ -11700,10 +11852,10 @@ extend(elesfn$s, {
 });
 
 function defineParallelEdgesFunction(params) {
-  var defaults$$1 = {
+  var defaults = {
     codirected: false
   };
-  params = extend({}, defaults$$1, params);
+  params = extend({}, defaults, params);
   return function parallelEdgesImpl(selector) {
     // micro-optimised for renderer
     var elements = [];
@@ -11801,7 +11953,7 @@ extend(elesfn$s, {
 elesfn$s.componentsOf = elesfn$s.components;
 
 var idFactory = {
-  generate: function generate(cy, element$$1, tryThisId) {
+  generate: function generate(cy, element, tryThisId) {
     var id = tryThisId != null ? tryThisId : uuid();
 
     while (cy.hasElementWithId(id)) {
@@ -11855,20 +12007,20 @@ var Collection = function Collection(cy, elements, options) {
   this.length = 0;
 
   for (var _i = 0, _l = elements.length; _i < _l; _i++) {
-    var element$$1 = elements[_i];
+    var element$1 = elements[_i][0]; // [0] in case elements is an array of collections, rather than array of elements
 
-    if (element$$1 == null) {
+    if (element$1 == null) {
       continue;
     }
 
-    var id = element$$1._private.data.id;
+    var id = element$1._private.data.id;
 
     if (options == null || options.unique && !map.has(id)) {
       map.set(id, {
         index: this.length,
-        ele: element$$1
+        ele: element$1
       });
-      this[this.length] = element$$1;
+      this[this.length] = element$1;
       this.length++;
     }
   }
@@ -11936,10 +12088,14 @@ elesfn$t.unique = function () {
 };
 
 elesfn$t.hasElementWithId = function (id) {
+  id = '' + id; // id must be string
+
   return this._private.map.has(id);
 };
 
 elesfn$t.getElementById = function (id) {
+  id = '' + id; // id must be string
+
   var cy = this._private.cy;
 
   var entry = this._private.map.get(id);
@@ -11962,6 +12118,8 @@ elesfn$t.indexOf = function (ele) {
 };
 
 elesfn$t.indexOfId = function (id) {
+  id = '' + id; // id must be string
+
   return this._private.map.get(id).index;
 };
 
@@ -11996,13 +12154,15 @@ elesfn$t.json = function (obj) {
         var src = obj.data.source;
         var tgt = obj.data.target;
 
-        if (src != null && src !== _data2.source) {
-          spec.source = src;
+        if (src != null && src != _data2.source) {
+          spec.source = '' + src; // id must be string
+
           move = true;
         }
 
-        if (tgt != null && tgt !== _data2.target) {
-          spec.target = tgt;
+        if (tgt != null && tgt != _data2.target) {
+          spec.target = '' + tgt; // id must be string
+
           move = true;
         }
 
@@ -12013,10 +12173,14 @@ elesfn$t.json = function (obj) {
         // parent is immutable via data()
         var parent = obj.data.parent;
 
-        if ((parent != null || _data2.parent != null) && parent !== _data2.parent) {
+        if ((parent != null || _data2.parent != null) && parent != _data2.parent) {
           if (parent === undefined) {
             // can't set undefined imperatively, so use null
             parent = null;
+          }
+
+          if (parent != null) {
+            parent = '' + parent; // id must be string
           }
 
           ele = ele.move({
@@ -12048,6 +12212,7 @@ elesfn$t.json = function (obj) {
     checkSwitch('selectable', 'selectify', 'unselectify');
     checkSwitch('locked', 'lock', 'unlock');
     checkSwitch('grabbable', 'grabify', 'ungrabify');
+    checkSwitch('pannable', 'panify', 'unpanify');
 
     if (obj.classes != null) {
       ele.classes(obj.classes);
@@ -12066,6 +12231,7 @@ elesfn$t.json = function (obj) {
       selectable: p.selectable,
       locked: p.locked,
       grabbable: p.grabbable,
+      pannable: p.pannable,
       classes: null
     };
     json.classes = '';
@@ -12096,9 +12262,9 @@ elesfn$t.clone = function () {
   for (var i = 0; i < this.length; i++) {
     var ele = this[i];
     var json = ele.json();
-    var clone$$1 = new Element(cy, json, false); // NB no restore
+    var clone = new Element(cy, json, false); // NB no restore
 
-    elesArr.push(clone$$1);
+    elesArr.push(clone);
   }
 
   return new Collection(cy, elesArr);
@@ -12217,11 +12383,15 @@ elesfn$t.restore = function () {
 
 
       var src = cy.getElementById(_data3.source);
-      var tgt = cy.getElementById(_data3.target);
+      var tgt = cy.getElementById(_data3.target); // only one edge in node if loop
 
-      src._private.edges.push(edge);
+      if (src.same(tgt)) {
+        src._private.edges.push(edge);
+      } else {
+        src._private.edges.push(edge);
 
-      tgt._private.edges.push(edge);
+        tgt._private.edges.push(edge);
+      }
 
       edge._private.source = src;
       edge._private.target = tgt;
@@ -12513,9 +12683,14 @@ elesfn$t.move = function (struct) {
   var notifyRenderer = false;
   var modifyPool = false;
 
+  var toString = function toString(id) {
+    return id == null ? id : '' + id;
+  }; // id must be string
+
+
   if (struct.source !== undefined || struct.target !== undefined) {
-    var srcId = struct.source;
-    var tgtId = struct.target;
+    var srcId = toString(struct.source);
+    var tgtId = toString(struct.target);
     var srcExists = srcId != null && cy.hasElementWithId(srcId);
     var tgtExists = tgtId != null && cy.hasElementWithId(tgtId);
 
@@ -12547,7 +12722,7 @@ elesfn$t.move = function (struct) {
     }
   } else if (struct.parent !== undefined) {
     // move node to new parent
-    var parentId = struct.parent;
+    var parentId = toString(struct.parent);
     var parentExists = parentId === null || cy.hasElementWithId(parentId);
 
     if (parentExists) {
@@ -12636,13 +12811,13 @@ var corefn = {
 
     return elements;
   },
-  remove: function remove(collection$$1) {
-    if (elementOrCollection(collection$$1)) ; else if (string(collection$$1)) {
-      var selector = collection$$1;
-      collection$$1 = this.$(selector);
+  remove: function remove(collection) {
+    if (elementOrCollection(collection)) ; else if (string(collection)) {
+      var selector = collection;
+      collection = this.$(selector);
     }
 
-    return collection$$1.remove();
+    return collection.remove();
   }
 };
 
@@ -13042,7 +13217,7 @@ function step(self, ani, now, isCore) {
   var pEasing = ani_p.easing;
   var startTime = ani_p.startTime;
   var cy = isCore ? self : self.cy();
-  var style$$1 = cy.style();
+  var style = cy.style();
 
   if (!ani_p.easingImpl) {
     if (pEasing == null) {
@@ -13053,7 +13228,7 @@ function step(self, ani, now, isCore) {
       var easingVals;
 
       if (string(pEasing)) {
-        var easingProp = style$$1.parse('transition-timing-function', pEasing);
+        var easingProp = style.parse('transition-timing-function', pEasing);
         easingVals = easingProp.value;
       } else {
         // then assume preparsed array
@@ -13147,7 +13322,7 @@ function step(self, ani, now, isCore) {
 
     if (animatingZoom) {
       if (valid(startZoom, endZoom)) {
-        _p.zoom = ease(startZoom, endZoom, percent, easing);
+        _p.zoom = bound(_p.minZoom, ease(startZoom, endZoom, percent, easing), _p.maxZoom);
       }
 
       self.emit('zoom');
@@ -13165,9 +13340,9 @@ function step(self, ani, now, isCore) {
         var _name = prop.name;
         var end = prop;
         var start = ani_p.startStyle[_name];
-        var propSpec = style$$1.properties[start.name];
+        var propSpec = style.properties[start.name];
         var easedVal = ease(start, end, percent, easing, propSpec);
-        style$$1.overrideBypass(self, _name, easedVal);
+        style.overrideBypass(self, _name, easedVal);
       } // for props
 
 
@@ -13262,7 +13437,7 @@ function stepAll(now, cy) {
       }
 
       if (!ani_p.started) {
-        startAnimation(ele, ani, now, isCore);
+        startAnimation(ele, ani, now);
       }
 
       step(ele, ani, now, isCore);
@@ -13359,8 +13534,8 @@ var corefn$1 = {
         return;
       }
 
-      requestAnimationFrame(function animationStep(now$$1) {
-        stepAll(now$$1, cy);
+      requestAnimationFrame(function animationStep(now) {
+        stepAll(now, cy);
         headlessStep();
       });
     }
@@ -13369,8 +13544,8 @@ var corefn$1 = {
 
     if (renderer && renderer.beforeRender) {
       // let the renderer schedule animations
-      renderer.beforeRender(function rendererAnimationStep(willDraw, now$$1) {
-        stepAll(now$$1, cy);
+      renderer.beforeRender(function rendererAnimationStep(willDraw, now) {
+        stepAll(now, cy);
       }, renderer.beforeRenderPriorities.animations);
     } else {
       // manage the animation loop ourselves
@@ -13434,6 +13609,10 @@ var elesfn$u = {
     this.emitter().removeListener(events, argSelector$1(selector), callback);
     return this;
   },
+  removeAllListeners: function removeAllListeners() {
+    this.emitter().removeAllListeners();
+    return this;
+  },
   one: function one(events, selector, callback) {
     this.emitter().one(events, argSelector$1(selector), callback);
     return this;
@@ -13446,9 +13625,9 @@ var elesfn$u = {
     this.emitter().emit(events, extraParams);
     return this;
   },
-  emitAndNotify: function emitAndNotify(event$$1, eles) {
-    this.emit(event$$1);
-    this.notify(event$$1, eles);
+  emitAndNotify: function emitAndNotify(event, eles) {
+    this.emit(event);
+    this.notify(event, eles);
     return this;
   }
 };
@@ -13530,7 +13709,7 @@ var corefn$4 = {
 
     var renderer = this.renderer(); // exit if destroy() called on core or renderer in between frames #1499 #1528
 
-    if (this.isDestroyed() || !renderer) {
+    if (this.destroyed() || !renderer) {
       return;
     }
 
@@ -13706,7 +13885,7 @@ var corefn$6 = {
   // - empty collection on no args
   // - collection of elements in the graph on selector arg
   // - guarantee a returned collection when elements or collection specified
-  collection: function collection$$1(eles, opts) {
+  collection: function collection(eles, opts) {
     if (string(eles)) {
       return this.$(eles);
     } else if (elementOrCollection(eles)) {
@@ -13917,7 +14096,7 @@ styfn.getContextStyle = function (cxtMeta) {
     return cxtStyles[cxtKey];
   }
 
-  var style$$1 = {
+  var style = {
     _private: {
       key: cxtKey
     }
@@ -13933,12 +14112,12 @@ styfn.getContextStyle = function (cxtMeta) {
 
     for (var j = 0; j < cxt.properties.length; j++) {
       var prop = cxt.properties[j];
-      style$$1[prop.name] = prop;
+      style[prop.name] = prop;
     }
   }
 
-  cxtStyles[cxtKey] = style$$1;
-  return style$$1;
+  cxtStyles[cxtKey] = style;
+  return style;
 };
 
 styfn.applyContextStyle = function (cxtMeta, cxtStyle, ele) {
@@ -13965,7 +14144,7 @@ styfn.applyContextStyle = function (cxtMeta, cxtStyle, ele) {
       } else {
         cxtProp = {
           name: diffPropName,
-          delete: true
+          "delete": true
         };
       }
     } // save cycles when the context prop doesn't need to be applied
@@ -13977,6 +14156,7 @@ styfn.applyContextStyle = function (cxtMeta, cxtStyle, ele) {
 
 
     if (cxtProp.mapped === types.fn // context prop is function mapper
+    && eleProp != null // some props can be null even by default (e.g. a prop that overrides another one)
     && eleProp.mapping != null // ele prop is a concrete value from from a mapper
     && eleProp.mapping.value === cxtProp.value // the current prop on the ele is a flat prop value for the function mapper
     ) {
@@ -14036,15 +14216,23 @@ styfn.updateStyleHints = function (ele) {
 
   var updateGrKey = function updateGrKey(val, grKey) {
     return _p.styleKeys[grKey] = hashInt(val, _p.styleKeys[grKey]);
+  };
+
+  var updateGrKeyWStr = function updateGrKeyWStr(strVal, grKey) {
+    for (var j = 0; j < strVal.length; j++) {
+      updateGrKey(strVal.charCodeAt(j), grKey);
+    }
   }; // - hashing works on 32 bit ints b/c we use bitwise ops
   // - small numbers get cut off (e.g. 0.123 is seen as 0 by the hashing function)
   // - raise up small numbers so more significant digits are seen by hashing
-  // - make small numbers negative to avoid collisions -- most style values are positive numbers
+  // - make small numbers larger than a normal value to avoid collisions
   // - works in practice and it's relatively cheap
 
 
+  var N = 2000000000;
+
   var cleanNum = function cleanNum(val) {
-    return -128 < val && val < 128 && Math.floor(val) !== val ? -(val * 1024 | 0) : val;
+    return -128 < val && val < 128 && Math.floor(val) !== val ? N - (val * 1024 | 0) : val;
   };
 
   for (var _i = 0; _i < propNames.length; _i++) {
@@ -14057,12 +14245,25 @@ styfn.updateStyleHints = function (ele) {
 
     var propInfo = this.properties[name];
     var type = propInfo.type;
-    var _grKey = propInfo.groupKey; // numbers are cheaper to hash than strings
+    var _grKey = propInfo.groupKey;
+    var normalizedNumberVal = void 0;
+
+    if (propInfo.hashOverride != null) {
+      normalizedNumberVal = propInfo.hashOverride(ele, parsedProp);
+    } else if (parsedProp.pfValue != null) {
+      normalizedNumberVal = parsedProp.pfValue;
+    } // might not be a number if it allows enums
+
+
+    var numberVal = propInfo.enums == null ? parsedProp.value : null;
+    var haveNormNum = normalizedNumberVal != null;
+    var haveUnitedNum = numberVal != null;
+    var haveNum = haveNormNum || haveUnitedNum;
+    var units = parsedProp.units; // numbers are cheaper to hash than strings
     // 1 hash op vs n hash ops (for length n string)
 
-    if (type.number) {
-      // use pfValue if available (e.g. normalised units)
-      var v = parsedProp.pfValue != null ? parsedProp.pfValue : parsedProp.value;
+    if (type.number && haveNum) {
+      var v = haveNormNum ? normalizedNumberVal : numberVal;
 
       if (type.multiple) {
         for (var _i2 = 0; _i2 < v.length; _i2++) {
@@ -14071,12 +14272,12 @@ styfn.updateStyleHints = function (ele) {
       } else {
         updateGrKey(cleanNum(v), _grKey);
       }
-    } else {
-      var strVal = parsedProp.strValue;
 
-      for (var j = 0; j < strVal.length; j++) {
-        updateGrKey(strVal.charCodeAt(j), _grKey);
+      if (!haveNormNum && units != null) {
+        updateGrKeyWStr(units, _grKey);
       }
+    } else {
+      updateGrKeyWStr(parsedProp.strValue, _grKey);
     }
   } // overall style key
   //
@@ -14153,12 +14354,12 @@ styfn.clearStyleHints = function (ele) {
 styfn.applyParsedProperty = function (ele, parsedProp) {
   var self = this;
   var prop = parsedProp;
-  var style$$1 = ele._private.style;
+  var style = ele._private.style;
   var flatProp;
   var types = self.types;
   var type = self.properties[prop.name].type;
   var propIsBypass = prop.bypass;
-  var origProp = style$$1[prop.name];
+  var origProp = style[prop.name];
   var origPropIsBypass = origProp && origProp.bypass;
   var _p = ele._private;
   var flatPropMapping = 'mapping';
@@ -14186,9 +14387,9 @@ styfn.applyParsedProperty = function (ele, parsedProp) {
     prop = parsedProp = this.parse(parsedProp.name, 'bezier', propIsBypass);
   }
 
-  if (prop.delete) {
+  if (prop["delete"]) {
     // delete the property and use the default value on falsey value
-    style$$1[prop.name] = undefined;
+    style[prop.name] = undefined;
     checkTriggers();
     return true;
   }
@@ -14217,7 +14418,7 @@ styfn.applyParsedProperty = function (ele, parsedProp) {
     } else if (origProp.bypass) {
       // then replace the bypass property with the original
       // because the bypassed property was already applied (and therefore parsed), we can just replace it (no reapplying necessary)
-      style$$1[prop.name] = origProp.bypassed;
+      style[prop.name] = origProp.bypassed;
       checkTriggers();
       return true;
     } else {
@@ -14342,8 +14543,8 @@ styfn.applyParsedProperty = function (ele, parsedProp) {
 
     case types.fn:
       {
-        var fn$$1 = prop.value;
-        var fnRetVal = prop.fnValue != null ? prop.fnValue : fn$$1(ele); // check for cached value before calling function
+        var fn = prop.value;
+        var fnRetVal = prop.fnValue != null ? prop.fnValue : fn(ele); // check for cached value before calling function
 
         prop.prevFnValue = fnRetVal;
 
@@ -14385,7 +14586,7 @@ styfn.applyParsedProperty = function (ele, parsedProp) {
       prop.bypassed = origProp;
     }
 
-    style$$1[prop.name] = prop; // and set
+    style[prop.name] = prop; // and set
   } else {
     // prop is not bypass
     if (origPropIsBypass) {
@@ -14393,7 +14594,7 @@ styfn.applyParsedProperty = function (ele, parsedProp) {
       origProp.bypassed = prop;
     } else {
       // then just replace the old prop with the new one
-      style$$1[prop.name] = prop;
+      style[prop.name] = prop;
     }
   }
 
@@ -14411,18 +14612,18 @@ styfn.cleanElements = function (eles, keepBypasses) {
     if (!keepBypasses) {
       ele._private.style = {};
     } else {
-      var style$$1 = ele._private.style;
-      var propNames = Object.keys(style$$1);
+      var style = ele._private.style;
+      var propNames = Object.keys(style);
 
       for (var j = 0; j < propNames.length; j++) {
         var propName = propNames[j];
-        var eleProp = style$$1[propName];
+        var eleProp = style[propName];
 
         if (eleProp != null) {
           if (eleProp.bypass) {
             eleProp.bypassed = null;
           } else {
-            style$$1[propName] = null;
+            style[propName] = null;
           }
         }
       }
@@ -14446,7 +14647,7 @@ styfn.updateTransitions = function (ele, diffProps) {
   var delay = ele.pstyle('transition-delay').pfValue;
 
   if (props.length > 0 && duration > 0) {
-    var style$$1 = {}; // build up the style to animate towards
+    var style = {}; // build up the style to animate towards
 
     var anyPrev = false;
 
@@ -14486,7 +14687,7 @@ styfn.updateTransitions = function (ele, diffProps) {
 
 
       if (diff) {
-        style$$1[prop] = toProp.strValue; // to val
+        style[prop] = toProp.strValue; // to val
 
         this.applyBypass(ele, prop, initVal); // from val
 
@@ -14509,7 +14710,7 @@ styfn.updateTransitions = function (ele, diffProps) {
       }
     }).then(function () {
       return ele.animation({
-        style: style$$1,
+        style: style,
         duration: duration,
         easing: ele.pstyle('transition-timing-function').value,
         queue: false
@@ -14902,15 +15103,15 @@ styfn$3.getAnimationStartStyle = function (ele, aniProps) {
 styfn$3.getPropsList = function (propsObj) {
   var self = this;
   var rstyle = [];
-  var style$$1 = propsObj;
+  var style = propsObj;
   var props = self.properties;
 
-  if (style$$1) {
-    var names = Object.keys(style$$1);
+  if (style) {
+    var names = Object.keys(style);
 
     for (var i = 0; i < names.length; i++) {
       var name = names[i];
-      var val = style$$1[name];
+      var val = style[name];
       var prop = props[name] || props[camel2dash(name)];
       var styleProp = this.parse(prop.name, val);
 
@@ -15142,19 +15343,19 @@ styfn$5.fromString = function (string) {
 var styfn$6 = {};
 
 (function () {
-  var number$$1 = number$1;
-  var rgba$$1 = rgbaNoBackRefs;
-  var hsla$$1 = hslaNoBackRefs;
-  var hex3$$1 = hex3;
-  var hex6$$1 = hex6;
+  var number = number$1;
+  var rgba = rgbaNoBackRefs;
+  var hsla = hslaNoBackRefs;
+  var hex3$1 = hex3;
+  var hex6$1 = hex6;
 
   var data = function data(prefix) {
     return '^' + prefix + '\\s*\\(\\s*([\\w\\.]+)\\s*\\)$';
   };
 
   var mapData = function mapData(prefix) {
-    var mapArg = number$$1 + '|\\w+|' + rgba$$1 + '|' + hsla$$1 + '|' + hex3$$1 + '|' + hex6$$1;
-    return '^' + prefix + '\\s*\\(([\\w\\.]+)\\s*\\,\\s*(' + number$$1 + ')\\s*\\,\\s*(' + number$$1 + ')\\s*,\\s*(' + mapArg + ')\\s*\\,\\s*(' + mapArg + ')\\)$';
+    var mapArg = number + '|\\w+|' + rgba + '|' + hsla + '|' + hex3$1 + '|' + hex6$1;
+    return '^' + prefix + '\\s*\\(([\\w\\.]+)\\s*\\,\\s*(' + number + ')\\s*\\,\\s*(' + number + ')\\s*,\\s*(' + mapArg + ')\\s*\\,\\s*(' + mapArg + ')\\)$';
   };
 
   var urlRegexes = ['^url\\s*\\(\\s*[\'"]?(.+?)[\'"]?\\s*\\)$', '^(none)$', '^(.+)$']; // each visual style property has a type and needs to be validated according to it
@@ -15282,7 +15483,8 @@ var styfn$6 = {};
       multiple: true
     },
     bgClip: {
-      enums: ['none', 'node']
+      enums: ['none', 'node'],
+      multiple: true
     },
     color: {
       color: true
@@ -15327,6 +15529,9 @@ var styfn$6 = {};
     textWrap: {
       enums: ['none', 'wrap', 'ellipsis']
     },
+    textOverflowWrap: {
+      enums: ['whitespace', 'anywhere']
+    },
     textBackgroundShape: {
       enums: ['rectangle', 'roundrectangle', 'round-rectangle']
     },
@@ -15359,6 +15564,9 @@ var styfn$6 = {};
     },
     halign: {
       enums: ['left', 'center', 'right']
+    },
+    justification: {
+      enums: ['left', 'center', 'right', 'auto']
     },
     text: {
       string: true
@@ -15448,11 +15656,20 @@ var styfn$6 = {};
       }
     },
     easing: {
-      regexes: ['^(spring)\\s*\\(\\s*(' + number$$1 + ')\\s*,\\s*(' + number$$1 + ')\\s*\\)$', '^(cubic-bezier)\\s*\\(\\s*(' + number$$1 + ')\\s*,\\s*(' + number$$1 + ')\\s*,\\s*(' + number$$1 + ')\\s*,\\s*(' + number$$1 + ')\\s*\\)$'],
+      regexes: ['^(spring)\\s*\\(\\s*(' + number + ')\\s*,\\s*(' + number + ')\\s*\\)$', '^(cubic-bezier)\\s*\\(\\s*(' + number + ')\\s*,\\s*(' + number + ')\\s*,\\s*(' + number + ')\\s*,\\s*(' + number + ')\\s*\\)$'],
       enums: ['linear', 'ease', 'ease-in', 'ease-out', 'ease-in-out', 'ease-in-sine', 'ease-out-sine', 'ease-in-out-sine', 'ease-in-quad', 'ease-out-quad', 'ease-in-out-quad', 'ease-in-cubic', 'ease-out-cubic', 'ease-in-out-cubic', 'ease-in-quart', 'ease-out-quart', 'ease-in-out-quart', 'ease-in-quint', 'ease-out-quint', 'ease-in-out-quint', 'ease-in-expo', 'ease-out-expo', 'ease-in-out-expo', 'ease-in-circ', 'ease-out-circ', 'ease-in-out-circ']
     },
     gradientDirection: {
       enums: ['to-bottom', 'to-top', 'to-left', 'to-right', 'to-bottom-right', 'to-bottom-left', 'to-top-right', 'to-top-left', 'to-right-bottom', 'to-left-bottom', 'to-right-top', 'to-left-top']
+    },
+    boundsExpansion: {
+      number: true,
+      multiple: true,
+      min: 0,
+      validate: function validate(valArr) {
+        var length = valArr.length;
+        return length === 1 || length === 2 || length === 4;
+      }
     }
   };
   var diff = {
@@ -15562,12 +15779,20 @@ var styfn$6 = {};
     type: t.textWrap,
     triggersBounds: diff.any
   }, {
+    name: 'text-overflow-wrap',
+    type: t.textOverflowWrap,
+    triggersBounds: diff.any
+  }, {
     name: 'text-max-width',
     type: t.size,
     triggersBounds: diff.any
   }, {
     name: 'text-outline-width',
     type: t.size,
+    triggersBounds: diff.any
+  }, {
+    name: 'line-height',
+    type: t.positiveNumber,
     triggersBounds: diff.any
   }];
   var commonLabel = [{
@@ -15615,6 +15840,9 @@ var styfn$6 = {};
     name: 'text-background-shape',
     type: t.textBackgroundShape,
     triggersBounds: diff.any
+  }, {
+    name: 'text-justification',
+    type: t.justification
   }];
   var behavior = [{
     name: 'events',
@@ -15681,14 +15909,25 @@ var styfn$6 = {};
     name: 'transition-timing-function',
     type: t.easing
   }];
+
+  var nodeSizeHashOverride = function nodeSizeHashOverride(ele, parsedProp) {
+    if (parsedProp.value === 'label') {
+      return -ele.poolIndex(); // no hash key hits is using label size (hitrate for perf probably low anyway)
+    } else {
+      return parsedProp.pfValue;
+    }
+  };
+
   var nodeBody = [{
     name: 'height',
     type: t.nodeSize,
-    triggersBounds: diff.any
+    triggersBounds: diff.any,
+    hashOverride: nodeSizeHashOverride
   }, {
     name: 'width',
     type: t.nodeSize,
-    triggersBounds: diff.any
+    triggersBounds: diff.any,
+    hashOverride: nodeSizeHashOverride
   }, {
     name: 'shape',
     type: t.nodeShape,
@@ -15728,7 +15967,7 @@ var styfn$6 = {};
     triggersBounds: diff.any
   }, {
     name: 'bounds-expansion',
-    type: t.size,
+    type: t.boundsExpansion,
     triggersBounds: diff.any
   }];
   var nodeBorder = [{
@@ -15935,7 +16174,7 @@ var styfn$6 = {};
     name: 'ghost-opacity',
     type: t.zeroOneNumber
   }];
-  var core$$1 = [{
+  var core = [{
     name: 'selection-box-color',
     type: t.color
   }, {
@@ -15992,7 +16231,8 @@ var styfn$6 = {};
   var arrowPrefixes = styfn$6.arrowPrefixes = ['source', 'mid-source', 'target', 'mid-target'];
   [{
     name: 'arrow-shape',
-    type: t.arrowShape
+    type: t.arrowShape,
+    triggersBounds: diff.any
   }, {
     name: 'arrow-color',
     type: t.color
@@ -16002,14 +16242,16 @@ var styfn$6 = {};
   }].forEach(function (prop) {
     arrowPrefixes.forEach(function (prefix) {
       var name = prefix + '-' + prop.name;
-      var type = prop.type;
+      var type = prop.type,
+          triggersBounds = prop.triggersBounds;
       edgeArrow.push({
         name: name,
-        type: type
+        type: type,
+        triggersBounds: triggersBounds
       });
     });
   }, {});
-  var props = styfn$6.properties = [].concat(behavior, transition, visibility, overlay, ghost, commonLabel, labelDimensions, mainLabel, sourceLabel, targetLabel, nodeBody, nodeBorder, backgroundImage, pie, compound, edgeLine, edgeArrow, core$$1);
+  var props = styfn$6.properties = [].concat(behavior, transition, visibility, overlay, ghost, commonLabel, labelDimensions, mainLabel, sourceLabel, targetLabel, nodeBody, nodeBorder, backgroundImage, pie, compound, edgeLine, edgeArrow, core);
   var propGroups = styfn$6.propertyGroups = {
     // common to all eles
     behavior: behavior,
@@ -16032,7 +16274,7 @@ var styfn$6 = {};
     // edge props
     edgeLine: edgeLine,
     edgeArrow: edgeArrow,
-    core: core$$1
+    core: core
   };
   var propGroupNames = styfn$6.propertyGroupNames = {};
   var propGroupKeys = styfn$6.propertyGroupKeys = Object.keys(propGroups);
@@ -16122,6 +16364,8 @@ styfn$6.getDefaultProperties = function () {
     'text-events': 'no',
     'text-valign': 'top',
     'text-halign': 'center',
+    'text-justification': 'auto',
+    'line-height': 1,
     'color': '#000',
     'text-outline-color': '#000',
     'text-outline-width': 0,
@@ -16130,6 +16374,7 @@ styfn$6.getDefaultProperties = function () {
     'text-decoration': 'none',
     'text-transform': 'none',
     'text-wrap': 'none',
+    'text-overflow-wrap': 'whitespace',
     'text-max-width': 9999,
     'text-background-color': '#000',
     'text-background-opacity': 0,
@@ -16749,9 +16994,9 @@ styfn$7.parseImpl = function (name, value, propIsBypass, propIsFlat) {
     var regexes = type.regexes ? type.regexes : [type.regex];
 
     for (var _i3 = 0; _i3 < regexes.length; _i3++) {
-      var regex$$1 = new RegExp(regexes[_i3]); // make a regex from the type string
+      var regex = new RegExp(regexes[_i3]); // make a regex from the type string
 
-      var m = regex$$1.exec(value);
+      var m = regex.exec(value);
 
       if (m) {
         // regex matches
@@ -16901,13 +17146,13 @@ styfn$8.cssRule = function (name, value) {
   return this; // chaining
 };
 
-styfn$8.append = function (style$$1) {
-  if (stylesheet(style$$1)) {
-    style$$1.appendToStyle(this);
-  } else if (array(style$$1)) {
-    this.appendFromJson(style$$1);
-  } else if (string(style$$1)) {
-    this.appendFromString(style$$1);
+styfn$8.append = function (style) {
+  if (stylesheet(style)) {
+    style.appendToStyle(this);
+  } else if (array(style)) {
+    this.appendFromJson(style);
+  } else if (string(style)) {
+    this.appendFromString(style);
   } // you probably wouldn't want to append a Style, since you'd duplicate the default parts
 
 
@@ -16916,13 +17161,13 @@ styfn$8.append = function (style$$1) {
 
 
 Style.fromJson = function (cy, json) {
-  var style$$1 = new Style(cy);
-  style$$1.fromJson(json);
-  return style$$1;
+  var style = new Style(cy);
+  style.fromJson(json);
+  return style;
 };
 
-Style.fromString = function (cy, string$$1) {
-  return new Style(cy).fromString(string$$1);
+Style.fromString = function (cy, string) {
+  return new Style(cy).fromString(string);
 };
 
 [styfn, styfn$1, styfn$2, styfn$3, styfn$4, styfn$5, styfn$6, styfn$7].forEach(function (props) {
@@ -16935,7 +17180,7 @@ Style.propertyGroupNames = styfn$8.propertyGroupNames;
 Style.propertyGroupKeys = styfn$8.propertyGroupKeys;
 
 var corefn$7 = {
-  style: function style$$1(newStyle) {
+  style: function style(newStyle) {
     if (newStyle) {
       var s = this.setStyle(newStyle);
       s.update();
@@ -16943,15 +17188,15 @@ var corefn$7 = {
 
     return this._private.style;
   },
-  setStyle: function setStyle(style$$1) {
+  setStyle: function setStyle(style) {
     var _p = this._private;
 
-    if (stylesheet(style$$1)) {
-      _p.style = style$$1.generateStyle(this);
-    } else if (array(style$$1)) {
-      _p.style = Style.fromJson(this, style$$1);
-    } else if (string(style$$1)) {
-      _p.style = Style.fromString(this, style$$1);
+    if (stylesheet(style)) {
+      _p.style = style.generateStyle(this);
+    } else if (array(style)) {
+      _p.style = Style.fromJson(this, style);
+    } else if (string(style)) {
+      _p.style = Style.fromString(this, style);
     } else {
       _p.style = Style(this);
     }
@@ -16962,27 +17207,27 @@ var corefn$7 = {
 
 var defaultSelectionType = 'single';
 var corefn$8 = {
-  autolock: function autolock(bool$$1) {
-    if (bool$$1 !== undefined) {
-      this._private.autolock = bool$$1 ? true : false;
+  autolock: function autolock(bool) {
+    if (bool !== undefined) {
+      this._private.autolock = bool ? true : false;
     } else {
       return this._private.autolock;
     }
 
     return this; // chaining
   },
-  autoungrabify: function autoungrabify(bool$$1) {
-    if (bool$$1 !== undefined) {
-      this._private.autoungrabify = bool$$1 ? true : false;
+  autoungrabify: function autoungrabify(bool) {
+    if (bool !== undefined) {
+      this._private.autoungrabify = bool ? true : false;
     } else {
       return this._private.autoungrabify;
     }
 
     return this; // chaining
   },
-  autounselectify: function autounselectify(bool$$1) {
-    if (bool$$1 !== undefined) {
-      this._private.autounselectify = bool$$1 ? true : false;
+  autounselectify: function autounselectify(bool) {
+    if (bool !== undefined) {
+      this._private.autounselectify = bool ? true : false;
     } else {
       return this._private.autounselectify;
     }
@@ -17006,45 +17251,45 @@ var corefn$8 = {
 
     return this;
   },
-  panningEnabled: function panningEnabled(bool$$1) {
-    if (bool$$1 !== undefined) {
-      this._private.panningEnabled = bool$$1 ? true : false;
+  panningEnabled: function panningEnabled(bool) {
+    if (bool !== undefined) {
+      this._private.panningEnabled = bool ? true : false;
     } else {
       return this._private.panningEnabled;
     }
 
     return this; // chaining
   },
-  userPanningEnabled: function userPanningEnabled(bool$$1) {
-    if (bool$$1 !== undefined) {
-      this._private.userPanningEnabled = bool$$1 ? true : false;
+  userPanningEnabled: function userPanningEnabled(bool) {
+    if (bool !== undefined) {
+      this._private.userPanningEnabled = bool ? true : false;
     } else {
       return this._private.userPanningEnabled;
     }
 
     return this; // chaining
   },
-  zoomingEnabled: function zoomingEnabled(bool$$1) {
-    if (bool$$1 !== undefined) {
-      this._private.zoomingEnabled = bool$$1 ? true : false;
+  zoomingEnabled: function zoomingEnabled(bool) {
+    if (bool !== undefined) {
+      this._private.zoomingEnabled = bool ? true : false;
     } else {
       return this._private.zoomingEnabled;
     }
 
     return this; // chaining
   },
-  userZoomingEnabled: function userZoomingEnabled(bool$$1) {
-    if (bool$$1 !== undefined) {
-      this._private.userZoomingEnabled = bool$$1 ? true : false;
+  userZoomingEnabled: function userZoomingEnabled(bool) {
+    if (bool !== undefined) {
+      this._private.userZoomingEnabled = bool ? true : false;
     } else {
       return this._private.userZoomingEnabled;
     }
 
     return this; // chaining
   },
-  boxSelectionEnabled: function boxSelectionEnabled(bool$$1) {
-    if (bool$$1 !== undefined) {
-      this._private.boxSelectionEnabled = bool$$1 ? true : false;
+  boxSelectionEnabled: function boxSelectionEnabled(bool) {
+    if (bool !== undefined) {
+      this._private.boxSelectionEnabled = bool ? true : false;
     } else {
       return this._private.boxSelectionEnabled;
     }
@@ -17236,22 +17481,22 @@ var corefn$8 = {
 
     return;
   },
-  zoomRange: function zoomRange(min$$1, max$$1) {
+  zoomRange: function zoomRange(min, max) {
     var _p = this._private;
 
-    if (max$$1 == null) {
-      var opts = min$$1;
-      min$$1 = opts.min;
-      max$$1 = opts.max;
+    if (max == null) {
+      var opts = min;
+      min = opts.min;
+      max = opts.max;
     }
 
-    if (number(min$$1) && number(max$$1) && min$$1 <= max$$1) {
-      _p.minZoom = min$$1;
-      _p.maxZoom = max$$1;
-    } else if (number(min$$1) && max$$1 === undefined && min$$1 <= _p.maxZoom) {
-      _p.minZoom = min$$1;
-    } else if (number(max$$1) && min$$1 === undefined && max$$1 >= _p.minZoom) {
-      _p.maxZoom = max$$1;
+    if (number(min) && number(max) && min <= max) {
+      _p.minZoom = min;
+      _p.maxZoom = max;
+    } else if (number(min) && max === undefined && min <= _p.maxZoom) {
+      _p.minZoom = min;
+    } else if (number(max) && min === undefined && max >= _p.minZoom) {
+      _p.maxZoom = max;
     }
 
     return this;
@@ -17487,10 +17732,10 @@ var corefn$8 = {
     var _p = this._private;
     var container = _p.container;
     return _p.sizeCache = _p.sizeCache || (container ? function () {
-      var style$$1 = window$1.getComputedStyle(container);
+      var style = window$1.getComputedStyle(container);
 
       var val = function val(name) {
-        return parseFloat(style$$1.getPropertyValue(name));
+        return parseFloat(style.getPropertyValue(name));
       };
 
       return {
@@ -17541,6 +17786,44 @@ corefn$8.centre = corefn$8.center; // backwards compatibility
 
 corefn$8.autolockNodes = corefn$8.autolock;
 corefn$8.autoungrabifyNodes = corefn$8.autoungrabify;
+
+var fn$6 = {
+  data: define$3.data({
+    field: 'data',
+    bindingEvent: 'data',
+    allowBinding: true,
+    allowSetting: true,
+    settingEvent: 'data',
+    settingTriggersEvent: true,
+    triggerFnName: 'trigger',
+    allowGetting: true
+  }),
+  removeData: define$3.removeData({
+    field: 'data',
+    event: 'data',
+    triggerFnName: 'trigger',
+    triggerEvent: true
+  }),
+  scratch: define$3.data({
+    field: 'scratch',
+    bindingEvent: 'scratch',
+    allowBinding: true,
+    allowSetting: true,
+    settingEvent: 'scratch',
+    settingTriggersEvent: true,
+    triggerFnName: 'trigger',
+    allowGetting: true
+  }),
+  removeScratch: define$3.removeData({
+    field: 'scratch',
+    event: 'scratch',
+    triggerFnName: 'trigger',
+    triggerEvent: true
+  })
+}; // aliases
+
+fn$6.attr = fn$6.data;
+fn$6.removeAttr = fn$6.removeData;
 
 var Core = function Core(opts) {
   var cy = this;
@@ -17601,6 +17884,8 @@ var Core = function Core(opts) {
     // list of listeners
     aniEles: new Collection(this),
     // elements being animated
+    data: {},
+    // data for the core
     scratch: {},
     // scratch object for core
     layout: null,
@@ -17712,8 +17997,8 @@ var Core = function Core(opts) {
 
 
       for (var i = 0; i < readies.length; i++) {
-        var fn$$1 = readies[i];
-        cy.on('ready', fn$$1);
+        var fn$1 = readies[i];
+        cy.on('ready', fn$1);
       }
 
       if (reg) {
@@ -17735,21 +18020,21 @@ extend(corefn$9, {
   isReady: function isReady() {
     return this._private.ready;
   },
-  isDestroyed: function isDestroyed() {
+  destroyed: function destroyed() {
     return this._private.destroyed;
   },
-  ready: function ready(fn$$1) {
+  ready: function ready(fn) {
     if (this.isReady()) {
-      this.emitter().emit('ready', [], fn$$1); // just calls fn as though triggered via ready event
+      this.emitter().emit('ready', [], fn); // just calls fn as though triggered via ready event
     } else {
-      this.on('ready', fn$$1);
+      this.on('ready', fn);
     }
 
     return this;
   },
   destroy: function destroy() {
     var cy = this;
-    if (cy.isDestroyed()) return;
+    if (cy.destroyed()) return;
     cy.stopAnimationLoop();
     cy.destroyRenderer();
     this.emit('destroy');
@@ -17784,7 +18069,7 @@ extend(corefn$9, {
   container: function container() {
     return this._private.container || null;
   },
-  mount: function mount(container, rendererOptions) {
+  mount: function mount(container) {
     if (container == null) {
       return;
     }
@@ -17792,10 +18077,6 @@ extend(corefn$9, {
     var cy = this;
     var _p = cy._private;
     var options = _p.options;
-    var rOpts = rendererOptions ? rendererOptions : {
-      name: 'canvas'
-    };
-    options.renderer = rOpts;
 
     if (!htmlElement(container) && htmlElement(container[0])) {
       container = container[0];
@@ -17805,7 +18086,11 @@ extend(corefn$9, {
     cy.destroyRenderer();
     _p.container = container;
     _p.styleEnabled = true;
-    cy.initRenderer(rOpts);
+    cy.invalidateSize();
+    cy.initRenderer(extend({}, options, options.renderer, {
+      // allow custom renderer name to be re-used, otherwise use canvas
+      name: options.renderer.name === 'null' ? 'canvas' : options.renderer.name
+    }));
     cy.startAnimationLoop();
     cy.style(options.style);
     cy.emit('mount');
@@ -17846,7 +18131,8 @@ extend(corefn$9, {
 
           for (var i = 0; i < jsons.length; i++) {
             var json = jsons[i];
-            var id = json.data.id;
+            var id = '' + json.data.id; // id must be string
+
             var ele = cy.getElementById(id);
             idInJson[id] = true;
 
@@ -17931,6 +18217,10 @@ extend(corefn$9, {
         }
       }
 
+      if (obj.data) {
+        cy.data(obj.data);
+      }
+
       var fields = ['minZoom', 'maxZoom', 'zoomingEnabled', 'userZoomingEnabled', 'panningEnabled', 'userPanningEnabled', 'boxSelectionEnabled', 'autolock', 'autoungrabify', 'autounselectify'];
 
       for (var _i2 = 0; _i2 < fields.length; _i2++) {
@@ -17969,6 +18259,7 @@ extend(corefn$9, {
         json.style = cy.style().json();
       }
 
+      json.data = copy(cy.data());
       var options = _p.options;
       json.zoomingEnabled = _p.zoomingEnabled;
       json.userZoomingEnabled = _p.userZoomingEnabled;
@@ -17986,26 +18277,10 @@ extend(corefn$9, {
       json.motionBlur = options.motionBlur;
       return json;
     }
-  },
-  scratch: define$3.data({
-    field: 'scratch',
-    bindingEvent: 'scratch',
-    allowBinding: true,
-    allowSetting: true,
-    settingEvent: 'scratch',
-    settingTriggersEvent: true,
-    triggerFnName: 'trigger',
-    allowGetting: true
-  }),
-  removeScratch: define$3.removeData({
-    field: 'scratch',
-    event: 'scratch',
-    triggerFnName: 'trigger',
-    triggerEvent: true
-  })
+  }
 });
 corefn$9.$id = corefn$9.getElementById;
-[corefn, corefn$1, elesfn$u, corefn$2, corefn$3, corefn$4, corefn$5, corefn$6, corefn$7, corefn$8].forEach(function (props) {
+[corefn, corefn$1, elesfn$u, corefn$2, corefn$3, corefn$4, corefn$5, corefn$6, corefn$7, corefn$8, fn$6].forEach(function (props) {
   extend(corefn$9, props);
 });
 
@@ -18305,7 +18580,7 @@ BreadthFirstLayout.prototype.run = function () {
 
       if (depth < eleDepth) {
         // only get influenced by elements above
-        percent += index / (nDepth - 1);
+        percent += index / nDepth;
         samples++;
       }
     }
@@ -18361,8 +18636,8 @@ BreadthFirstLayout.prototype.run = function () {
     x: bb.x1 + bb.w / 2,
     y: bb.x1 + bb.h / 2
   };
-  var maxDepthSize = depths.reduce(function (max$$1, eles) {
-    return Math.max(max$$1, eles.length);
+  var maxDepthSize = depths.reduce(function (max, eles) {
+    return Math.max(max, eles.length);
   }, 0);
 
   var getPosition = function getPosition(ele) {
@@ -18805,9 +19080,7 @@ var defaults$c = {
   // Cooling factor (how the temperature is reduced between consecutive iterations
   coolingFactor: 0.99,
   // Lower temperature threshold (below this point the layout will end)
-  minTemp: 1.0,
-  // Pass a reference to weaver to use threads for calculations
-  weaver: false
+  minTemp: 1.0
 };
 /**
  * @brief       : constructor
@@ -18827,67 +19100,6 @@ CoseLayout.prototype.run = function () {
   var options = this.options;
   var cy = options.cy;
   var layout = this;
-  var thread$$1 = this.thread;
-  var Thread = options.weaver ? options.weaver.Thread : null;
-  var falseThread = {
-    // use false thread as polyfill
-    listeners: [],
-    on: function on(e, cb) {
-      this.listeners.push({
-        event: e,
-        callback: cb
-      });
-      return this;
-    },
-    trigger: function trigger(e) {
-      if (string(e)) {
-        e = {
-          type: e
-        };
-      }
-
-      var matchesEvent = function matchesEvent(l) {
-        return l.event === e.type;
-      };
-
-      var trigger = function trigger(l) {
-        l.callback(e);
-      };
-
-      this.listeners.filter(matchesEvent).forEach(trigger);
-      return this;
-    },
-    pass: function pass(data) {
-      this.pass = data;
-      return this;
-    },
-    run: function run(cb) {
-      var pass = this.pass;
-      return new Promise$1(function (resolve) {
-        resolve(cb(pass));
-      });
-    },
-    stop: function stop() {
-      return this;
-    },
-    stopped: function stopped() {
-      return true;
-    }
-  };
-
-  function broadcast(message) {
-    // for false thread
-    var e = {
-      type: 'message',
-      message: message
-    };
-    falseThread.trigger(e);
-  }
-
-  if (!thread$$1 || thread$$1.stopped()) {
-    thread$$1 = this.thread = Thread ? new Thread() : falseThread;
-  }
-
   layout.stopped = false;
 
   if (options.animate === true || options.animate === false) {
@@ -18913,730 +19125,92 @@ CoseLayout.prototype.run = function () {
 
 
   if (options.randomize) {
-    randomizePositions(layoutInfo, cy);
+    randomizePositions(layoutInfo);
   }
 
-  var startTime = Date.now();
-  var refreshRequested = false;
+  var startTime = performanceNow();
 
-  var refresh = function refresh(rOpts) {
-    rOpts = rOpts || {};
+  var refresh = function refresh() {
+    refreshPositions(layoutInfo, cy, options); // Fit the graph if necessary
 
-    if (refreshRequested && !rOpts.next) {
-      return;
+    if (true === options.fit) {
+      cy.fit(options.padding);
     }
-
-    if (!rOpts.force && Date.now() - startTime < options.animationThreshold) {
-      return;
-    }
-
-    refreshRequested = true;
-    requestAnimationFrame(function () {
-      refreshPositions(layoutInfo, cy, options); // Fit the graph if necessary
-
-      if (true === options.fit) {
-        cy.fit(options.padding);
-      }
-
-      refreshRequested = false;
-
-      if (rOpts.next) {
-        rOpts.next();
-      }
-    });
   };
 
-  thread$$1.on('message', function (e) {
-    var layoutNodes = e.message;
-    layoutInfo.layoutNodes = layoutNodes;
-    refresh();
-  });
-  thread$$1.pass({
-    layoutInfo: layoutInfo,
-    options: {
-      animate: options.animate,
-      refresh: options.refresh,
-      componentSpacing: options.componentSpacing,
-      nodeOverlap: options.nodeOverlap,
-      nestingFactor: options.nestingFactor,
-      gravity: options.gravity,
-      numIter: options.numIter,
-      initialTemp: options.initialTemp,
-      coolingFactor: options.coolingFactor,
-      minTemp: options.minTemp
+  var mainLoop = function mainLoop(i) {
+    if (layout.stopped || i >= options.numIter) {
+      // logDebug("Layout manually stopped. Stopping computation in step " + i);
+      return false;
+    } // Do one step in the phisical simulation
+
+
+    step$1(layoutInfo, options); // Update temperature
+
+    layoutInfo.temperature = layoutInfo.temperature * options.coolingFactor; // logDebug("New temperature: " + layoutInfo.temperature);
+
+    if (layoutInfo.temperature < options.minTemp) {
+      // logDebug("Temperature drop below minimum threshold. Stopping computation in step " + i);
+      return false;
     }
-  }).run(function (pass) {
-    var layoutInfo = pass.layoutInfo;
-    var options = pass.options;
-    /**
-     * @brief          : Performs one iteration of the physical simulation
-     * @arg layoutInfo : LayoutInfo object already initialized
-     * @arg cy         : Cytoscape object
-     * @arg options    : Layout options
-     */
 
-    var step = function step(layoutInfo, options, _step) {
-      // var s = "\n\n###############################";
-      // s += "\nSTEP: " + step;
-      // s += "\n###############################\n";
-      // logDebug(s);
-      // Calculate node repulsions
-      calculateNodeForces(layoutInfo, options); // Calculate edge forces
-
-      calculateEdgeForces(layoutInfo, options); // Calculate gravity forces
-
-      calculateGravityForces(layoutInfo, options); // Propagate forces from parent to child
-
-      propagateForces(layoutInfo, options); // Update positions based on calculated forces
-
-      updatePositions(layoutInfo, options);
-    };
-    /**
-     * @brief : Computes the node repulsion forces
-     */
-
-
-    var calculateNodeForces = function calculateNodeForces(layoutInfo, options) {
-      // Go through each of the graphs in graphSet
-      // Nodes only repel each other if they belong to the same graph
-      // var s = 'calculateNodeForces';
-      // logDebug(s);
-      for (var i = 0; i < layoutInfo.graphSet.length; i++) {
-        var graph = layoutInfo.graphSet[i];
-        var numNodes = graph.length; // s = "Set: " + graph.toString();
-        // logDebug(s);
-        // Now get all the pairs of nodes
-        // Only get each pair once, (A, B) = (B, A)
-
-        for (var j = 0; j < numNodes; j++) {
-          var node1 = layoutInfo.layoutNodes[layoutInfo.idToIndex[graph[j]]];
-
-          for (var k = j + 1; k < numNodes; k++) {
-            var node2 = layoutInfo.layoutNodes[layoutInfo.idToIndex[graph[k]]];
-            nodeRepulsion(node1, node2, layoutInfo, options);
-          }
-        }
-      }
-    };
-
-    var randomDistance = function randomDistance(max$$1) {
-      return -max$$1 + 2 * max$$1 * Math.random();
-    };
-    /**
-     * @brief : Compute the node repulsion forces between a pair of nodes
-     */
-
-
-    var nodeRepulsion = function nodeRepulsion(node1, node2, layoutInfo, options) {
-      // var s = "Node repulsion. Node1: " + node1.id + " Node2: " + node2.id;
-      var cmptId1 = node1.cmptId;
-      var cmptId2 = node2.cmptId;
-
-      if (cmptId1 !== cmptId2 && !layoutInfo.isCompound) {
-        return;
-      } // Get direction of line connecting both node centers
-
-
-      var directionX = node2.positionX - node1.positionX;
-      var directionY = node2.positionY - node1.positionY;
-      var maxRandDist = 1; // s += "\ndirectionX: " + directionX + ", directionY: " + directionY;
-      // If both centers are the same, apply a random force
-
-      if (0 === directionX && 0 === directionY) {
-        directionX = randomDistance(maxRandDist);
-        directionY = randomDistance(maxRandDist);
-      }
-
-      var overlap = nodesOverlap(node1, node2, directionX, directionY);
-
-      if (overlap > 0) {
-        // s += "\nNodes DO overlap.";
-        // s += "\nOverlap: " + overlap;
-        // If nodes overlap, repulsion force is proportional
-        // to the overlap
-        var force = options.nodeOverlap * overlap; // Compute the module and components of the force vector
-
-        var distance = Math.sqrt(directionX * directionX + directionY * directionY); // s += "\nDistance: " + distance;
-
-        var forceX = force * directionX / distance;
-        var forceY = force * directionY / distance;
-      } else {
-        // s += "\nNodes do NOT overlap.";
-        // If there's no overlap, force is inversely proportional
-        // to squared distance
-        // Get clipping points for both nodes
-        var point1 = findClippingPoint(node1, directionX, directionY);
-        var point2 = findClippingPoint(node2, -1 * directionX, -1 * directionY); // Use clipping points to compute distance
-
-        var distanceX = point2.x - point1.x;
-        var distanceY = point2.y - point1.y;
-        var distanceSqr = distanceX * distanceX + distanceY * distanceY;
-        var distance = Math.sqrt(distanceSqr); // s += "\nDistance: " + distance;
-        // Compute the module and components of the force vector
-
-        var force = (node1.nodeRepulsion + node2.nodeRepulsion) / distanceSqr;
-        var forceX = force * distanceX / distance;
-        var forceY = force * distanceY / distance;
-      } // Apply force
-
-
-      if (!node1.isLocked) {
-        node1.offsetX -= forceX;
-        node1.offsetY -= forceY;
-      }
-
-      if (!node2.isLocked) {
-        node2.offsetX += forceX;
-        node2.offsetY += forceY;
-      } // s += "\nForceX: " + forceX + " ForceY: " + forceY;
-      // logDebug(s);
-
-
-      return;
-    };
-    /**
-     * @brief  : Determines whether two nodes overlap or not
-     * @return : Amount of overlapping (0 => no overlap)
-     */
-
-
-    var nodesOverlap = function nodesOverlap(node1, node2, dX, dY) {
-      if (dX > 0) {
-        var overlapX = node1.maxX - node2.minX;
-      } else {
-        var overlapX = node2.maxX - node1.minX;
-      }
-
-      if (dY > 0) {
-        var overlapY = node1.maxY - node2.minY;
-      } else {
-        var overlapY = node2.maxY - node1.minY;
-      }
-
-      if (overlapX >= 0 && overlapY >= 0) {
-        return Math.sqrt(overlapX * overlapX + overlapY * overlapY);
-      } else {
-        return 0;
-      }
-    };
-    /**
-     * @brief : Finds the point in which an edge (direction dX, dY) intersects
-     *          the rectangular bounding box of it's source/target node
-     */
-
-
-    var findClippingPoint = function findClippingPoint(node, dX, dY) {
-      // Shorcuts
-      var X = node.positionX;
-      var Y = node.positionY;
-      var H = node.height || 1;
-      var W = node.width || 1;
-      var dirSlope = dY / dX;
-      var nodeSlope = H / W; // var s = 'Computing clipping point of node ' + node.id +
-      //   " . Height:  " + H + ", Width: " + W +
-      //   "\nDirection " + dX + ", " + dY;
-      //
-      // Compute intersection
-
-      var res = {}; // Case: Vertical direction (up)
-
-      if (0 === dX && 0 < dY) {
-        res.x = X; // s += "\nUp direction";
-
-        res.y = Y + H / 2;
-        return res;
-      } // Case: Vertical direction (down)
-
-
-      if (0 === dX && 0 > dY) {
-        res.x = X;
-        res.y = Y + H / 2; // s += "\nDown direction";
-
-        return res;
-      } // Case: Intersects the right border
-
-
-      if (0 < dX && -1 * nodeSlope <= dirSlope && dirSlope <= nodeSlope) {
-        res.x = X + W / 2;
-        res.y = Y + W * dY / 2 / dX; // s += "\nRightborder";
-
-        return res;
-      } // Case: Intersects the left border
-
-
-      if (0 > dX && -1 * nodeSlope <= dirSlope && dirSlope <= nodeSlope) {
-        res.x = X - W / 2;
-        res.y = Y - W * dY / 2 / dX; // s += "\nLeftborder";
-
-        return res;
-      } // Case: Intersects the top border
-
-
-      if (0 < dY && (dirSlope <= -1 * nodeSlope || dirSlope >= nodeSlope)) {
-        res.x = X + H * dX / 2 / dY;
-        res.y = Y + H / 2; // s += "\nTop border";
-
-        return res;
-      } // Case: Intersects the bottom border
-
-
-      if (0 > dY && (dirSlope <= -1 * nodeSlope || dirSlope >= nodeSlope)) {
-        res.x = X - H * dX / 2 / dY;
-        res.y = Y - H / 2; // s += "\nBottom border";
-
-        return res;
-      } // s += "\nClipping point found at " + res.x + ", " + res.y;
-      // logDebug(s);
-
-
-      return res;
-    };
-    /**
-     * @brief : Calculates all edge forces
-     */
-
-
-    var calculateEdgeForces = function calculateEdgeForces(layoutInfo, options) {
-      // Iterate over all edges
-      for (var i = 0; i < layoutInfo.edgeSize; i++) {
-        // Get edge, source & target nodes
-        var edge = layoutInfo.layoutEdges[i];
-        var sourceIx = layoutInfo.idToIndex[edge.sourceId];
-        var source = layoutInfo.layoutNodes[sourceIx];
-        var targetIx = layoutInfo.idToIndex[edge.targetId];
-        var target = layoutInfo.layoutNodes[targetIx]; // Get direction of line connecting both node centers
-
-        var directionX = target.positionX - source.positionX;
-        var directionY = target.positionY - source.positionY; // If both centers are the same, do nothing.
-        // A random force has already been applied as node repulsion
-
-        if (0 === directionX && 0 === directionY) {
-          continue;
-        } // Get clipping points for both nodes
-
-
-        var point1 = findClippingPoint(source, directionX, directionY);
-        var point2 = findClippingPoint(target, -1 * directionX, -1 * directionY);
-        var lx = point2.x - point1.x;
-        var ly = point2.y - point1.y;
-        var l = Math.sqrt(lx * lx + ly * ly);
-        var force = Math.pow(edge.idealLength - l, 2) / edge.elasticity;
-
-        if (0 !== l) {
-          var forceX = force * lx / l;
-          var forceY = force * ly / l;
-        } else {
-          var forceX = 0;
-          var forceY = 0;
-        } // Add this force to target and source nodes
-
-
-        if (!source.isLocked) {
-          source.offsetX += forceX;
-          source.offsetY += forceY;
-        }
-
-        if (!target.isLocked) {
-          target.offsetX -= forceX;
-          target.offsetY -= forceY;
-        } // var s = 'Edge force between nodes ' + source.id + ' and ' + target.id;
-        // s += "\nDistance: " + l + " Force: (" + forceX + ", " + forceY + ")";
-        // logDebug(s);
-
-      }
-    };
-    /**
-     * @brief : Computes gravity forces for all nodes
-     */
-
-
-    var calculateGravityForces = function calculateGravityForces(layoutInfo, options) {
-      var distThreshold = 1; // var s = 'calculateGravityForces';
-      // logDebug(s);
-
-      for (var i = 0; i < layoutInfo.graphSet.length; i++) {
-        var graph = layoutInfo.graphSet[i];
-        var numNodes = graph.length; // s = "Set: " + graph.toString();
-        // logDebug(s);
-        // Compute graph center
-
-        if (0 === i) {
-          var centerX = layoutInfo.clientHeight / 2;
-          var centerY = layoutInfo.clientWidth / 2;
-        } else {
-          // Get Parent node for this graph, and use its position as center
-          var temp = layoutInfo.layoutNodes[layoutInfo.idToIndex[graph[0]]];
-          var parent = layoutInfo.layoutNodes[layoutInfo.idToIndex[temp.parentId]];
-          var centerX = parent.positionX;
-          var centerY = parent.positionY;
-        } // s = "Center found at: " + centerX + ", " + centerY;
-        // logDebug(s);
-        // Apply force to all nodes in graph
-
-
-        for (var j = 0; j < numNodes; j++) {
-          var node = layoutInfo.layoutNodes[layoutInfo.idToIndex[graph[j]]]; // s = "Node: " + node.id;
-
-          if (node.isLocked) {
-            continue;
-          }
-
-          var dx = centerX - node.positionX;
-          var dy = centerY - node.positionY;
-          var d = Math.sqrt(dx * dx + dy * dy);
-
-          if (d > distThreshold) {
-            var fx = options.gravity * dx / d;
-            var fy = options.gravity * dy / d;
-            node.offsetX += fx;
-            node.offsetY += fy; // s += ": Applied force: " + fx + ", " + fy;
-          } // s += ": skypped since it's too close to center";
-            // logDebug(s);
-
-        }
-      }
-    };
-    /**
-     * @brief          : This function propagates the existing offsets from
-     *                   parent nodes to its descendents.
-     * @arg layoutInfo : layoutInfo Object
-     * @arg cy         : cytoscape Object
-     * @arg options    : Layout options
-     */
-
-
-    var propagateForces = function propagateForces(layoutInfo, options) {
-      // Inline implementation of a queue, used for traversing the graph in BFS order
-      var queue = [];
-      var start = 0; // Points to the start the queue
-
-      var end = -1; // Points to the end of the queue
-      // logDebug('propagateForces');
-      // Start by visiting the nodes in the root graph
-
-      queue.push.apply(queue, layoutInfo.graphSet[0]);
-      end += layoutInfo.graphSet[0].length; // Traverse the graph, level by level,
-
-      while (start <= end) {
-        // Get the node to visit and remove it from queue
-        var nodeId = queue[start++];
-        var nodeIndex = layoutInfo.idToIndex[nodeId];
-        var node = layoutInfo.layoutNodes[nodeIndex];
-        var children = node.children; // We only need to process the node if it's compound
-
-        if (0 < children.length && !node.isLocked) {
-          var offX = node.offsetX;
-          var offY = node.offsetY; // var s = "Propagating offset from parent node : " + node.id +
-          //   ". OffsetX: " + offX + ". OffsetY: " + offY;
-          // s += "\n Children: " + children.toString();
-          // logDebug(s);
-
-          for (var i = 0; i < children.length; i++) {
-            var childNode = layoutInfo.layoutNodes[layoutInfo.idToIndex[children[i]]]; // Propagate offset
-
-            childNode.offsetX += offX;
-            childNode.offsetY += offY; // Add children to queue to be visited
-
-            queue[++end] = children[i];
-          } // Reset parent offsets
-
-
-          node.offsetX = 0;
-          node.offsetY = 0;
-        }
-      }
-    };
-    /**
-     * @brief : Updates the layout model positions, based on
-     *          the accumulated forces
-     */
-
-
-    var updatePositions = function updatePositions(layoutInfo, options) {
-      // var s = 'Updating positions';
-      // logDebug(s);
-      // Reset boundaries for compound nodes
-      for (var i = 0; i < layoutInfo.nodeSize; i++) {
-        var n = layoutInfo.layoutNodes[i];
-
-        if (0 < n.children.length) {
-          // logDebug("Resetting boundaries of compound node: " + n.id);
-          n.maxX = undefined;
-          n.minX = undefined;
-          n.maxY = undefined;
-          n.minY = undefined;
-        }
-      }
-
-      for (var i = 0; i < layoutInfo.nodeSize; i++) {
-        var n = layoutInfo.layoutNodes[i];
-
-        if (0 < n.children.length || n.isLocked) {
-          // No need to set compound or locked node position
-          // logDebug("Skipping position update of node: " + n.id);
-          continue;
-        } // s = "Node: " + n.id + " Previous position: (" +
-        // n.positionX + ", " + n.positionY + ").";
-        // Limit displacement in order to improve stability
-
-
-        var tempForce = limitForce(n.offsetX, n.offsetY, layoutInfo.temperature);
-        n.positionX += tempForce.x;
-        n.positionY += tempForce.y;
-        n.offsetX = 0;
-        n.offsetY = 0;
-        n.minX = n.positionX - n.width;
-        n.maxX = n.positionX + n.width;
-        n.minY = n.positionY - n.height;
-        n.maxY = n.positionY + n.height; // s += " New Position: (" + n.positionX + ", " + n.positionY + ").";
-        // logDebug(s);
-        // Update ancestry boudaries
-
-        updateAncestryBoundaries(n, layoutInfo);
-      } // Update size, position of compund nodes
-
-
-      for (var i = 0; i < layoutInfo.nodeSize; i++) {
-        var n = layoutInfo.layoutNodes[i];
-
-        if (0 < n.children.length && !n.isLocked) {
-          n.positionX = (n.maxX + n.minX) / 2;
-          n.positionY = (n.maxY + n.minY) / 2;
-          n.width = n.maxX - n.minX;
-          n.height = n.maxY - n.minY; // s = "Updating position, size of compound node " + n.id;
-          // s += "\nPositionX: " + n.positionX + ", PositionY: " + n.positionY;
-          // s += "\nWidth: " + n.width + ", Height: " + n.height;
-          // logDebug(s);
-        }
-      }
-    };
-    /**
-     * @brief : Limits a force (forceX, forceY) to be not
-     *          greater (in modulo) than max.
-     8          Preserves force direction.
-     */
-
-
-    var limitForce = function limitForce(forceX, forceY, max$$1) {
-      // var s = "Limiting force: (" + forceX + ", " + forceY + "). Max: " + max;
-      var force = Math.sqrt(forceX * forceX + forceY * forceY);
-
-      if (force > max$$1) {
-        var res = {
-          x: max$$1 * forceX / force,
-          y: max$$1 * forceY / force
-        };
-      } else {
-        var res = {
-          x: forceX,
-          y: forceY
-        };
-      } // s += ".\nResult: (" + res.x + ", " + res.y + ")";
-      // logDebug(s);
-
-
-      return res;
-    };
-    /**
-     * @brief : Function used for keeping track of compound node
-     *          sizes, since they should bound all their subnodes.
-     */
-
-
-    var updateAncestryBoundaries = function updateAncestryBoundaries(node, layoutInfo) {
-      // var s = "Propagating new position/size of node " + node.id;
-      var parentId = node.parentId;
-
-      if (null == parentId) {
-        // If there's no parent, we are done
-        // s += ". No parent node.";
-        // logDebug(s);
-        return;
-      } // Get Parent Node
-
-
-      var p = layoutInfo.layoutNodes[layoutInfo.idToIndex[parentId]];
-      var flag = false; // MaxX
-
-      if (null == p.maxX || node.maxX + p.padRight > p.maxX) {
-        p.maxX = node.maxX + p.padRight;
-        flag = true; // s += "\nNew maxX for parent node " + p.id + ": " + p.maxX;
-      } // MinX
-
-
-      if (null == p.minX || node.minX - p.padLeft < p.minX) {
-        p.minX = node.minX - p.padLeft;
-        flag = true; // s += "\nNew minX for parent node " + p.id + ": " + p.minX;
-      } // MaxY
-
-
-      if (null == p.maxY || node.maxY + p.padBottom > p.maxY) {
-        p.maxY = node.maxY + p.padBottom;
-        flag = true; // s += "\nNew maxY for parent node " + p.id + ": " + p.maxY;
-      } // MinY
-
-
-      if (null == p.minY || node.minY - p.padTop < p.minY) {
-        p.minY = node.minY - p.padTop;
-        flag = true; // s += "\nNew minY for parent node " + p.id + ": " + p.minY;
-      } // If updated boundaries, propagate changes upward
-
-
-      if (flag) {
-        // logDebug(s);
-        return updateAncestryBoundaries(p, layoutInfo);
-      } // s += ". No changes in boundaries/position of parent node " + p.id;
-      // logDebug(s);
-
-
-      return;
-    };
-
-    var separateComponents = function separateComponents(layutInfo, options) {
-      var nodes = layoutInfo.layoutNodes;
-      var components = [];
-
-      for (var i = 0; i < nodes.length; i++) {
-        var node = nodes[i];
-        var cid = node.cmptId;
-        var component = components[cid] = components[cid] || [];
-        component.push(node);
-      }
-
-      var totalA = 0;
-
-      for (var i = 0; i < components.length; i++) {
-        var c = components[i];
-
-        if (!c) {
-          continue;
-        }
-
-        c.x1 = Infinity;
-        c.x2 = -Infinity;
-        c.y1 = Infinity;
-        c.y2 = -Infinity;
-
-        for (var j = 0; j < c.length; j++) {
-          var n = c[j];
-          c.x1 = Math.min(c.x1, n.positionX - n.width / 2);
-          c.x2 = Math.max(c.x2, n.positionX + n.width / 2);
-          c.y1 = Math.min(c.y1, n.positionY - n.height / 2);
-          c.y2 = Math.max(c.y2, n.positionY + n.height / 2);
-        }
-
-        c.w = c.x2 - c.x1;
-        c.h = c.y2 - c.y1;
-        totalA += c.w * c.h;
-      }
-
-      components.sort(function (c1, c2) {
-        return c2.w * c2.h - c1.w * c1.h;
-      });
-      var x = 0;
-      var y = 0;
-      var usedW = 0;
-      var rowH = 0;
-      var maxRowW = Math.sqrt(totalA) * layoutInfo.clientWidth / layoutInfo.clientHeight;
-
-      for (var i = 0; i < components.length; i++) {
-        var c = components[i];
-
-        if (!c) {
-          continue;
-        }
-
-        for (var j = 0; j < c.length; j++) {
-          var n = c[j];
-
-          if (!n.isLocked) {
-            n.positionX += x;
-            n.positionY += y;
-          }
-        }
-
-        x += c.w + options.componentSpacing;
-        usedW += c.w + options.componentSpacing;
-        rowH = Math.max(rowH, c.h);
-
-        if (usedW > maxRowW) {
-          y += rowH + options.componentSpacing;
-          x = 0;
-          usedW = 0;
-          rowH = 0;
-        }
-      }
-    };
-
-    var mainLoop = function mainLoop(i) {
-
-
-      step(layoutInfo, options, i); // Update temperature
-
-      layoutInfo.temperature = layoutInfo.temperature * options.coolingFactor; // logDebug("New temperature: " + layoutInfo.temperature);
-
-      if (layoutInfo.temperature < options.minTemp) {
-        // logDebug("Temperature drop below minimum threshold. Stopping computation in step " + i);
-        return false;
-      }
-
-      return true;
-    };
-
-    var i = 0;
-    var loopRet;
-
-    do {
-      var f = 0;
-
-      while ((f < options.refresh || options.refresh === 0) && i < options.numIter) {
-        var loopRet = mainLoop(i);
-
-        if (!loopRet) {
-          break;
-        }
-
-        f++;
-        i++;
-      }
-
-      if (options.animate === true) {
-        broadcast(layoutInfo.layoutNodes); // eslint-disable-line no-undef
-      }
-    } while (loopRet && i + 1 < options.numIter);
-
-    separateComponents(layoutInfo, options);
-    return layoutInfo;
-  }).then(function (layoutInfoUpdated) {
-    layoutInfo.layoutNodes = layoutInfoUpdated.layoutNodes; // get the positions
-
-    thread$$1.stop();
-    done();
-  });
+    return true;
+  };
 
   var done = function done() {
     if (options.animate === true || options.animate === false) {
-      refresh({
-        force: true,
-        next: function next() {
-          // Layout has finished
-          layout.one('layoutstop', options.stop);
-          layout.emit({
-            type: 'layoutstop',
-            layout: layout
-          });
-        }
+      refresh(); // Layout has finished
+
+      layout.one('layoutstop', options.stop);
+      layout.emit({
+        type: 'layoutstop',
+        layout: layout
       });
     } else {
-      options.eles.nodes().layoutPositions(layout, options, function (node) {
-        var lnode = layoutInfo.layoutNodes[layoutInfo.idToIndex[node.data('id')]];
-        return {
-          x: lnode.positionX,
-          y: lnode.positionY
-        };
-      });
+      var nodes = options.eles.nodes();
+      var getScaledPos = getScaleInBoundsFn(layoutInfo, options, nodes);
+      nodes.layoutPositions(layout, options, getScaledPos);
     }
   };
+
+  var i = 0;
+  var loopRet = true;
+
+  if (options.animate === true) {
+    var frame = function frame() {
+      var f = 0;
+
+      while (loopRet && f < options.refresh) {
+        loopRet = mainLoop(i);
+        i++;
+        f++;
+      }
+
+      if (!loopRet) {
+        // it's done
+        separateComponents(layoutInfo, options);
+        done();
+      } else {
+        var now = performanceNow();
+
+        if (now - startTime >= options.animationThreshold) {
+          refresh();
+        }
+
+        requestAnimationFrame(frame);
+      }
+    };
+
+    frame();
+  } else {
+    while (loopRet) {
+      loopRet = mainLoop(i);
+      i++;
+    }
+
+    separateComponents(layoutInfo, options);
+    done();
+  }
 
   return this; // chaining
 };
@@ -19959,19 +19533,8 @@ var randomizePositions = function randomizePositions(layoutInfo, cy) {
     }
   }
 };
-/**
- * @brief          : Updates the positions of nodes in the network
- * @arg layoutInfo : LayoutInfo object
- * @arg cy         : Cytoscape object
- * @arg options    : Layout options
- */
 
-
-var refreshPositions = function refreshPositions(layoutInfo, cy, options) {
-  // var s = 'Refreshing positions';
-  // logDebug(s);
-  var layout = options.layout;
-  var nodes = options.eles.nodes();
+var getScaleInBoundsFn = function getScaleInBoundsFn(layoutInfo, options, nodes) {
   var bb = layoutInfo.boundingBox;
   var coseBB = {
     x1: Infinity,
@@ -19992,10 +19555,8 @@ var refreshPositions = function refreshPositions(layoutInfo, cy, options) {
     coseBB.h = coseBB.y2 - coseBB.y1;
   }
 
-  nodes.positions(function (ele, i) {
-    var lnode = layoutInfo.layoutNodes[layoutInfo.idToIndex[ele.data('id')]]; // s = "Node: " + lnode.id + ". Refreshed position: (" +
-    // lnode.positionX + ", " + lnode.positionY + ").";
-    // logDebug(s);
+  return function (ele, i) {
+    var lnode = layoutInfo.layoutNodes[layoutInfo.idToIndex[ele.data('id')]];
 
     if (options.boundingBox) {
       // then add extra bounding box constraint
@@ -20011,7 +19572,23 @@ var refreshPositions = function refreshPositions(layoutInfo, cy, options) {
         y: lnode.positionY
       };
     }
-  }); // Trigger layoutReady only on first call
+  };
+};
+/**
+ * @brief          : Updates the positions of nodes in the network
+ * @arg layoutInfo : LayoutInfo object
+ * @arg cy         : Cytoscape object
+ * @arg options    : Layout options
+ */
+
+
+var refreshPositions = function refreshPositions(layoutInfo, cy, options) {
+  // var s = 'Refreshing positions';
+  // logDebug(s);
+  var layout = options.layout;
+  var nodes = options.eles.nodes();
+  var getScaledPos = getScaleInBoundsFn(layoutInfo, options, nodes);
+  nodes.positions(getScaledPos); // Trigger layoutReady only on first call
 
   if (true !== layoutInfo.ready) {
     // s = 'Triggering layoutready';
@@ -20022,6 +19599,615 @@ var refreshPositions = function refreshPositions(layoutInfo, cy, options) {
       type: 'layoutready',
       layout: this
     });
+  }
+};
+/**
+ * @brief : Logs a debug message in JS console, if DEBUG is ON
+ */
+// var logDebug = function(text) {
+//   if (DEBUG) {
+//     console.debug(text);
+//   }
+// };
+
+/**
+ * @brief          : Performs one iteration of the physical simulation
+ * @arg layoutInfo : LayoutInfo object already initialized
+ * @arg cy         : Cytoscape object
+ * @arg options    : Layout options
+ */
+
+
+var step$1 = function step(layoutInfo, options, _step) {
+  // var s = "\n\n###############################";
+  // s += "\nSTEP: " + step;
+  // s += "\n###############################\n";
+  // logDebug(s);
+  // Calculate node repulsions
+  calculateNodeForces(layoutInfo, options); // Calculate edge forces
+
+  calculateEdgeForces(layoutInfo); // Calculate gravity forces
+
+  calculateGravityForces(layoutInfo, options); // Propagate forces from parent to child
+
+  propagateForces(layoutInfo); // Update positions based on calculated forces
+
+  updatePositions(layoutInfo);
+};
+/**
+ * @brief : Computes the node repulsion forces
+ */
+
+
+var calculateNodeForces = function calculateNodeForces(layoutInfo, options) {
+  // Go through each of the graphs in graphSet
+  // Nodes only repel each other if they belong to the same graph
+  // var s = 'calculateNodeForces';
+  // logDebug(s);
+  for (var i = 0; i < layoutInfo.graphSet.length; i++) {
+    var graph = layoutInfo.graphSet[i];
+    var numNodes = graph.length; // s = "Set: " + graph.toString();
+    // logDebug(s);
+    // Now get all the pairs of nodes
+    // Only get each pair once, (A, B) = (B, A)
+
+    for (var j = 0; j < numNodes; j++) {
+      var node1 = layoutInfo.layoutNodes[layoutInfo.idToIndex[graph[j]]];
+
+      for (var k = j + 1; k < numNodes; k++) {
+        var node2 = layoutInfo.layoutNodes[layoutInfo.idToIndex[graph[k]]];
+        nodeRepulsion(node1, node2, layoutInfo, options);
+      }
+    }
+  }
+};
+
+var randomDistance = function randomDistance(max) {
+  return -max + 2 * max * Math.random();
+};
+/**
+ * @brief : Compute the node repulsion forces between a pair of nodes
+ */
+
+
+var nodeRepulsion = function nodeRepulsion(node1, node2, layoutInfo, options) {
+  // var s = "Node repulsion. Node1: " + node1.id + " Node2: " + node2.id;
+  var cmptId1 = node1.cmptId;
+  var cmptId2 = node2.cmptId;
+
+  if (cmptId1 !== cmptId2 && !layoutInfo.isCompound) {
+    return;
+  } // Get direction of line connecting both node centers
+
+
+  var directionX = node2.positionX - node1.positionX;
+  var directionY = node2.positionY - node1.positionY;
+  var maxRandDist = 1; // s += "\ndirectionX: " + directionX + ", directionY: " + directionY;
+  // If both centers are the same, apply a random force
+
+  if (0 === directionX && 0 === directionY) {
+    directionX = randomDistance(maxRandDist);
+    directionY = randomDistance(maxRandDist);
+  }
+
+  var overlap = nodesOverlap(node1, node2, directionX, directionY);
+
+  if (overlap > 0) {
+    // s += "\nNodes DO overlap.";
+    // s += "\nOverlap: " + overlap;
+    // If nodes overlap, repulsion force is proportional
+    // to the overlap
+    var force = options.nodeOverlap * overlap; // Compute the module and components of the force vector
+
+    var distance = Math.sqrt(directionX * directionX + directionY * directionY); // s += "\nDistance: " + distance;
+
+    var forceX = force * directionX / distance;
+    var forceY = force * directionY / distance;
+  } else {
+    // s += "\nNodes do NOT overlap.";
+    // If there's no overlap, force is inversely proportional
+    // to squared distance
+    // Get clipping points for both nodes
+    var point1 = findClippingPoint(node1, directionX, directionY);
+    var point2 = findClippingPoint(node2, -1 * directionX, -1 * directionY); // Use clipping points to compute distance
+
+    var distanceX = point2.x - point1.x;
+    var distanceY = point2.y - point1.y;
+    var distanceSqr = distanceX * distanceX + distanceY * distanceY;
+    var distance = Math.sqrt(distanceSqr); // s += "\nDistance: " + distance;
+    // Compute the module and components of the force vector
+
+    var force = (node1.nodeRepulsion + node2.nodeRepulsion) / distanceSqr;
+    var forceX = force * distanceX / distance;
+    var forceY = force * distanceY / distance;
+  } // Apply force
+
+
+  if (!node1.isLocked) {
+    node1.offsetX -= forceX;
+    node1.offsetY -= forceY;
+  }
+
+  if (!node2.isLocked) {
+    node2.offsetX += forceX;
+    node2.offsetY += forceY;
+  } // s += "\nForceX: " + forceX + " ForceY: " + forceY;
+  // logDebug(s);
+
+
+  return;
+};
+/**
+ * @brief  : Determines whether two nodes overlap or not
+ * @return : Amount of overlapping (0 => no overlap)
+ */
+
+
+var nodesOverlap = function nodesOverlap(node1, node2, dX, dY) {
+  if (dX > 0) {
+    var overlapX = node1.maxX - node2.minX;
+  } else {
+    var overlapX = node2.maxX - node1.minX;
+  }
+
+  if (dY > 0) {
+    var overlapY = node1.maxY - node2.minY;
+  } else {
+    var overlapY = node2.maxY - node1.minY;
+  }
+
+  if (overlapX >= 0 && overlapY >= 0) {
+    return Math.sqrt(overlapX * overlapX + overlapY * overlapY);
+  } else {
+    return 0;
+  }
+};
+/**
+ * @brief : Finds the point in which an edge (direction dX, dY) intersects
+ *          the rectangular bounding box of it's source/target node
+ */
+
+
+var findClippingPoint = function findClippingPoint(node, dX, dY) {
+  // Shorcuts
+  var X = node.positionX;
+  var Y = node.positionY;
+  var H = node.height || 1;
+  var W = node.width || 1;
+  var dirSlope = dY / dX;
+  var nodeSlope = H / W; // var s = 'Computing clipping point of node ' + node.id +
+  //   " . Height:  " + H + ", Width: " + W +
+  //   "\nDirection " + dX + ", " + dY;
+  //
+  // Compute intersection
+
+  var res = {}; // Case: Vertical direction (up)
+
+  if (0 === dX && 0 < dY) {
+    res.x = X; // s += "\nUp direction";
+
+    res.y = Y + H / 2;
+    return res;
+  } // Case: Vertical direction (down)
+
+
+  if (0 === dX && 0 > dY) {
+    res.x = X;
+    res.y = Y + H / 2; // s += "\nDown direction";
+
+    return res;
+  } // Case: Intersects the right border
+
+
+  if (0 < dX && -1 * nodeSlope <= dirSlope && dirSlope <= nodeSlope) {
+    res.x = X + W / 2;
+    res.y = Y + W * dY / 2 / dX; // s += "\nRightborder";
+
+    return res;
+  } // Case: Intersects the left border
+
+
+  if (0 > dX && -1 * nodeSlope <= dirSlope && dirSlope <= nodeSlope) {
+    res.x = X - W / 2;
+    res.y = Y - W * dY / 2 / dX; // s += "\nLeftborder";
+
+    return res;
+  } // Case: Intersects the top border
+
+
+  if (0 < dY && (dirSlope <= -1 * nodeSlope || dirSlope >= nodeSlope)) {
+    res.x = X + H * dX / 2 / dY;
+    res.y = Y + H / 2; // s += "\nTop border";
+
+    return res;
+  } // Case: Intersects the bottom border
+
+
+  if (0 > dY && (dirSlope <= -1 * nodeSlope || dirSlope >= nodeSlope)) {
+    res.x = X - H * dX / 2 / dY;
+    res.y = Y - H / 2; // s += "\nBottom border";
+
+    return res;
+  } // s += "\nClipping point found at " + res.x + ", " + res.y;
+  // logDebug(s);
+
+
+  return res;
+};
+/**
+ * @brief : Calculates all edge forces
+ */
+
+
+var calculateEdgeForces = function calculateEdgeForces(layoutInfo, options) {
+  // Iterate over all edges
+  for (var i = 0; i < layoutInfo.edgeSize; i++) {
+    // Get edge, source & target nodes
+    var edge = layoutInfo.layoutEdges[i];
+    var sourceIx = layoutInfo.idToIndex[edge.sourceId];
+    var source = layoutInfo.layoutNodes[sourceIx];
+    var targetIx = layoutInfo.idToIndex[edge.targetId];
+    var target = layoutInfo.layoutNodes[targetIx]; // Get direction of line connecting both node centers
+
+    var directionX = target.positionX - source.positionX;
+    var directionY = target.positionY - source.positionY; // If both centers are the same, do nothing.
+    // A random force has already been applied as node repulsion
+
+    if (0 === directionX && 0 === directionY) {
+      continue;
+    } // Get clipping points for both nodes
+
+
+    var point1 = findClippingPoint(source, directionX, directionY);
+    var point2 = findClippingPoint(target, -1 * directionX, -1 * directionY);
+    var lx = point2.x - point1.x;
+    var ly = point2.y - point1.y;
+    var l = Math.sqrt(lx * lx + ly * ly);
+    var force = Math.pow(edge.idealLength - l, 2) / edge.elasticity;
+
+    if (0 !== l) {
+      var forceX = force * lx / l;
+      var forceY = force * ly / l;
+    } else {
+      var forceX = 0;
+      var forceY = 0;
+    } // Add this force to target and source nodes
+
+
+    if (!source.isLocked) {
+      source.offsetX += forceX;
+      source.offsetY += forceY;
+    }
+
+    if (!target.isLocked) {
+      target.offsetX -= forceX;
+      target.offsetY -= forceY;
+    } // var s = 'Edge force between nodes ' + source.id + ' and ' + target.id;
+    // s += "\nDistance: " + l + " Force: (" + forceX + ", " + forceY + ")";
+    // logDebug(s);
+
+  }
+};
+/**
+ * @brief : Computes gravity forces for all nodes
+ */
+
+
+var calculateGravityForces = function calculateGravityForces(layoutInfo, options) {
+  var distThreshold = 1; // var s = 'calculateGravityForces';
+  // logDebug(s);
+
+  for (var i = 0; i < layoutInfo.graphSet.length; i++) {
+    var graph = layoutInfo.graphSet[i];
+    var numNodes = graph.length; // s = "Set: " + graph.toString();
+    // logDebug(s);
+    // Compute graph center
+
+    if (0 === i) {
+      var centerX = layoutInfo.clientHeight / 2;
+      var centerY = layoutInfo.clientWidth / 2;
+    } else {
+      // Get Parent node for this graph, and use its position as center
+      var temp = layoutInfo.layoutNodes[layoutInfo.idToIndex[graph[0]]];
+      var parent = layoutInfo.layoutNodes[layoutInfo.idToIndex[temp.parentId]];
+      var centerX = parent.positionX;
+      var centerY = parent.positionY;
+    } // s = "Center found at: " + centerX + ", " + centerY;
+    // logDebug(s);
+    // Apply force to all nodes in graph
+
+
+    for (var j = 0; j < numNodes; j++) {
+      var node = layoutInfo.layoutNodes[layoutInfo.idToIndex[graph[j]]]; // s = "Node: " + node.id;
+
+      if (node.isLocked) {
+        continue;
+      }
+
+      var dx = centerX - node.positionX;
+      var dy = centerY - node.positionY;
+      var d = Math.sqrt(dx * dx + dy * dy);
+
+      if (d > distThreshold) {
+        var fx = options.gravity * dx / d;
+        var fy = options.gravity * dy / d;
+        node.offsetX += fx;
+        node.offsetY += fy; // s += ": Applied force: " + fx + ", " + fy;
+      } // s += ": skypped since it's too close to center";
+        // logDebug(s);
+
+    }
+  }
+};
+/**
+ * @brief          : This function propagates the existing offsets from
+ *                   parent nodes to its descendents.
+ * @arg layoutInfo : layoutInfo Object
+ * @arg cy         : cytoscape Object
+ * @arg options    : Layout options
+ */
+
+
+var propagateForces = function propagateForces(layoutInfo, options) {
+  // Inline implementation of a queue, used for traversing the graph in BFS order
+  var queue = [];
+  var start = 0; // Points to the start the queue
+
+  var end = -1; // Points to the end of the queue
+  // logDebug('propagateForces');
+  // Start by visiting the nodes in the root graph
+
+  queue.push.apply(queue, layoutInfo.graphSet[0]);
+  end += layoutInfo.graphSet[0].length; // Traverse the graph, level by level,
+
+  while (start <= end) {
+    // Get the node to visit and remove it from queue
+    var nodeId = queue[start++];
+    var nodeIndex = layoutInfo.idToIndex[nodeId];
+    var node = layoutInfo.layoutNodes[nodeIndex];
+    var children = node.children; // We only need to process the node if it's compound
+
+    if (0 < children.length && !node.isLocked) {
+      var offX = node.offsetX;
+      var offY = node.offsetY; // var s = "Propagating offset from parent node : " + node.id +
+      //   ". OffsetX: " + offX + ". OffsetY: " + offY;
+      // s += "\n Children: " + children.toString();
+      // logDebug(s);
+
+      for (var i = 0; i < children.length; i++) {
+        var childNode = layoutInfo.layoutNodes[layoutInfo.idToIndex[children[i]]]; // Propagate offset
+
+        childNode.offsetX += offX;
+        childNode.offsetY += offY; // Add children to queue to be visited
+
+        queue[++end] = children[i];
+      } // Reset parent offsets
+
+
+      node.offsetX = 0;
+      node.offsetY = 0;
+    }
+  }
+};
+/**
+ * @brief : Updates the layout model positions, based on
+ *          the accumulated forces
+ */
+
+
+var updatePositions = function updatePositions(layoutInfo, options) {
+  // var s = 'Updating positions';
+  // logDebug(s);
+  // Reset boundaries for compound nodes
+  for (var i = 0; i < layoutInfo.nodeSize; i++) {
+    var n = layoutInfo.layoutNodes[i];
+
+    if (0 < n.children.length) {
+      // logDebug("Resetting boundaries of compound node: " + n.id);
+      n.maxX = undefined;
+      n.minX = undefined;
+      n.maxY = undefined;
+      n.minY = undefined;
+    }
+  }
+
+  for (var i = 0; i < layoutInfo.nodeSize; i++) {
+    var n = layoutInfo.layoutNodes[i];
+
+    if (0 < n.children.length || n.isLocked) {
+      // No need to set compound or locked node position
+      // logDebug("Skipping position update of node: " + n.id);
+      continue;
+    } // s = "Node: " + n.id + " Previous position: (" +
+    // n.positionX + ", " + n.positionY + ").";
+    // Limit displacement in order to improve stability
+
+
+    var tempForce = limitForce(n.offsetX, n.offsetY, layoutInfo.temperature);
+    n.positionX += tempForce.x;
+    n.positionY += tempForce.y;
+    n.offsetX = 0;
+    n.offsetY = 0;
+    n.minX = n.positionX - n.width;
+    n.maxX = n.positionX + n.width;
+    n.minY = n.positionY - n.height;
+    n.maxY = n.positionY + n.height; // s += " New Position: (" + n.positionX + ", " + n.positionY + ").";
+    // logDebug(s);
+    // Update ancestry boudaries
+
+    updateAncestryBoundaries(n, layoutInfo);
+  } // Update size, position of compund nodes
+
+
+  for (var i = 0; i < layoutInfo.nodeSize; i++) {
+    var n = layoutInfo.layoutNodes[i];
+
+    if (0 < n.children.length && !n.isLocked) {
+      n.positionX = (n.maxX + n.minX) / 2;
+      n.positionY = (n.maxY + n.minY) / 2;
+      n.width = n.maxX - n.minX;
+      n.height = n.maxY - n.minY; // s = "Updating position, size of compound node " + n.id;
+      // s += "\nPositionX: " + n.positionX + ", PositionY: " + n.positionY;
+      // s += "\nWidth: " + n.width + ", Height: " + n.height;
+      // logDebug(s);
+    }
+  }
+};
+/**
+ * @brief : Limits a force (forceX, forceY) to be not
+ *          greater (in modulo) than max.
+ 8          Preserves force direction.
+  */
+
+
+var limitForce = function limitForce(forceX, forceY, max) {
+  // var s = "Limiting force: (" + forceX + ", " + forceY + "). Max: " + max;
+  var force = Math.sqrt(forceX * forceX + forceY * forceY);
+
+  if (force > max) {
+    var res = {
+      x: max * forceX / force,
+      y: max * forceY / force
+    };
+  } else {
+    var res = {
+      x: forceX,
+      y: forceY
+    };
+  } // s += ".\nResult: (" + res.x + ", " + res.y + ")";
+  // logDebug(s);
+
+
+  return res;
+};
+/**
+ * @brief : Function used for keeping track of compound node
+ *          sizes, since they should bound all their subnodes.
+ */
+
+
+var updateAncestryBoundaries = function updateAncestryBoundaries(node, layoutInfo) {
+  // var s = "Propagating new position/size of node " + node.id;
+  var parentId = node.parentId;
+
+  if (null == parentId) {
+    // If there's no parent, we are done
+    // s += ". No parent node.";
+    // logDebug(s);
+    return;
+  } // Get Parent Node
+
+
+  var p = layoutInfo.layoutNodes[layoutInfo.idToIndex[parentId]];
+  var flag = false; // MaxX
+
+  if (null == p.maxX || node.maxX + p.padRight > p.maxX) {
+    p.maxX = node.maxX + p.padRight;
+    flag = true; // s += "\nNew maxX for parent node " + p.id + ": " + p.maxX;
+  } // MinX
+
+
+  if (null == p.minX || node.minX - p.padLeft < p.minX) {
+    p.minX = node.minX - p.padLeft;
+    flag = true; // s += "\nNew minX for parent node " + p.id + ": " + p.minX;
+  } // MaxY
+
+
+  if (null == p.maxY || node.maxY + p.padBottom > p.maxY) {
+    p.maxY = node.maxY + p.padBottom;
+    flag = true; // s += "\nNew maxY for parent node " + p.id + ": " + p.maxY;
+  } // MinY
+
+
+  if (null == p.minY || node.minY - p.padTop < p.minY) {
+    p.minY = node.minY - p.padTop;
+    flag = true; // s += "\nNew minY for parent node " + p.id + ": " + p.minY;
+  } // If updated boundaries, propagate changes upward
+
+
+  if (flag) {
+    // logDebug(s);
+    return updateAncestryBoundaries(p, layoutInfo);
+  } // s += ". No changes in boundaries/position of parent node " + p.id;
+  // logDebug(s);
+
+
+  return;
+};
+
+var separateComponents = function separateComponents(layoutInfo, options) {
+  var nodes = layoutInfo.layoutNodes;
+  var components = [];
+
+  for (var i = 0; i < nodes.length; i++) {
+    var node = nodes[i];
+    var cid = node.cmptId;
+    var component = components[cid] = components[cid] || [];
+    component.push(node);
+  }
+
+  var totalA = 0;
+
+  for (var i = 0; i < components.length; i++) {
+    var c = components[i];
+
+    if (!c) {
+      continue;
+    }
+
+    c.x1 = Infinity;
+    c.x2 = -Infinity;
+    c.y1 = Infinity;
+    c.y2 = -Infinity;
+
+    for (var j = 0; j < c.length; j++) {
+      var n = c[j];
+      c.x1 = Math.min(c.x1, n.positionX - n.width / 2);
+      c.x2 = Math.max(c.x2, n.positionX + n.width / 2);
+      c.y1 = Math.min(c.y1, n.positionY - n.height / 2);
+      c.y2 = Math.max(c.y2, n.positionY + n.height / 2);
+    }
+
+    c.w = c.x2 - c.x1;
+    c.h = c.y2 - c.y1;
+    totalA += c.w * c.h;
+  }
+
+  components.sort(function (c1, c2) {
+    return c2.w * c2.h - c1.w * c1.h;
+  });
+  var x = 0;
+  var y = 0;
+  var usedW = 0;
+  var rowH = 0;
+  var maxRowW = Math.sqrt(totalA) * layoutInfo.clientWidth / layoutInfo.clientHeight;
+
+  for (var i = 0; i < components.length; i++) {
+    var c = components[i];
+
+    if (!c) {
+      continue;
+    }
+
+    for (var j = 0; j < c.length; j++) {
+      var n = c[j];
+
+      if (!n.isLocked) {
+        n.positionX += x - c.x1;
+        n.positionY += y - c.y1;
+      }
+    }
+
+    x += c.w + options.componentSpacing;
+    usedW += c.w + options.componentSpacing;
+    rowH = Math.max(rowH, c.h);
+
+    if (usedW > maxRowW) {
+      y += rowH + options.componentSpacing;
+      x = 0;
+      usedW = 0;
+      rowH = 0;
+    }
   }
 };
 
@@ -20110,9 +20296,9 @@ GridLayout.prototype.run = function () {
       if (val == null) {
         return Math.min(rows, cols);
       } else {
-        var min$$1 = Math.min(rows, cols);
+        var min = Math.min(rows, cols);
 
-        if (min$$1 == rows) {
+        if (min == rows) {
           rows = val;
         } else {
           cols = val;
@@ -20124,9 +20310,9 @@ GridLayout.prototype.run = function () {
       if (val == null) {
         return Math.max(rows, cols);
       } else {
-        var max$$1 = Math.max(rows, cols);
+        var max = Math.max(rows, cols);
 
-        if (max$$1 == rows) {
+        if (max == rows) {
           rows = val;
         } else {
           cols = val;
@@ -20943,6 +21129,7 @@ BRp$1.findNearestElements = function (x, y, interactiveElementsOnly, isTouch) {
       prefixDash = '';
     }
 
+    var bb = _p.labelBounds[prefix || 'main'];
     var text = ele.pstyle(prefixDash + 'label').value;
     var eventsEnabled = ele.pstyle('text-events').strValue === 'yes';
 
@@ -20951,17 +21138,13 @@ BRp$1.findNearestElements = function (x, y, interactiveElementsOnly, isTouch) {
     }
 
     var rstyle = _p.rstyle;
-    var bw = ele.pstyle('text-border-width').pfValue;
-    var pw = ele.pstyle('text-background-padding').pfValue;
-    var lw = preprop(rstyle, 'labelWidth', prefix) + bw + 2 * th + 2 * pw;
-    var lh = preprop(rstyle, 'labelHeight', prefix) + bw + 2 * th + 2 * pw;
     var lx = preprop(rstyle, 'labelX', prefix);
     var ly = preprop(rstyle, 'labelY', prefix);
     var theta = preprop(_p.rscratch, 'labelAngle', prefix);
-    var lx1 = lx - lw / 2;
-    var lx2 = lx + lw / 2;
-    var ly1 = ly - lh / 2;
-    var ly2 = ly + lh / 2;
+    var lx1 = bb.x1 - th;
+    var lx2 = bb.x2 + th;
+    var ly1 = bb.y1 - th;
+    var ly2 = bb.y2 + th;
 
     if (theta) {
       var cos = Math.cos(theta);
@@ -20988,15 +21171,6 @@ BRp$1.findNearestElements = function (x, y, interactiveElementsOnly, isTouch) {
       }
     } else {
       // do a cheaper bb check
-      var bb = {
-        w: lw,
-        h: lh,
-        x1: lx1,
-        x2: lx2,
-        y1: ly1,
-        y2: ly2
-      };
-
       if (inBoundingBox(bb, x, y)) {
         addEle(ele);
         return true;
@@ -21773,7 +21947,28 @@ BRp$3.findEdgeControlPoints = function (edges) {
   var r = this;
   var cy = r.cy;
   var hasCompounds = cy.hasCompoundNodes();
-  var hashTable = new Map$1();
+  var hashTable = {
+    map: new Map$1(),
+    get: function get(pairId) {
+      var map2 = this.map.get(pairId[0]);
+
+      if (map2 != null) {
+        return map2.get(pairId[1]);
+      } else {
+        return null;
+      }
+    },
+    set: function set(pairId, val) {
+      var map2 = this.map.get(pairId[0]);
+
+      if (map2 == null) {
+        map2 = new Map$1();
+        this.map.set(pairId[0], map2);
+      }
+
+      map2.set(pairId[1], val);
+    }
+  };
   var pairIds = [];
   var haystackEdges = []; // create a table of edge (src, tgt) => list of edges between them
 
@@ -21794,13 +21989,11 @@ BRp$3.findEdgeControlPoints = function (edges) {
 
     var edgeIsUnbundled = curveStyle === 'unbundled-bezier' || curveStyle === 'segments' || curveStyle === 'straight' || curveStyle === 'taxi';
     var edgeIsBezier = curveStyle === 'unbundled-bezier' || curveStyle === 'bezier';
-
-    var srcIndex = _p.source.poolIndex();
-
-    var tgtIndex = _p.target.poolIndex();
-
-    var hash = (edgeIsUnbundled ? -1 : 1) * hashIntsArray([srcIndex, tgtIndex].sort());
-    var pairId = hash;
+    var src = _p.source;
+    var tgt = _p.target;
+    var srcIndex = src.poolIndex();
+    var tgtIndex = tgt.poolIndex();
+    var pairId = [srcIndex, tgtIndex].sort();
     var tableEntry = hashTable.get(pairId);
 
     if (tableEntry == null) {
@@ -21973,7 +22166,7 @@ BRp$3.findEdgeControlPoints = function (edges) {
       rs.srcIntn = passedPairInfo.srcIntn;
       rs.tgtIntn = passedPairInfo.tgtIntn;
 
-      if (hasCompounds && (src.isParent() || src.isChild() || tgt.isParent() || tgt.isChild()) && (src.parents().anySame(tgt) || tgt.parents().anySame(src) || src.same(tgt))) {
+      if (hasCompounds && (src.isParent() || src.isChild() || tgt.isParent() || tgt.isChild()) && (src.parents().anySame(tgt) || tgt.parents().anySame(src) || src.same(tgt) && src.isParent())) {
         _this.findCompoundLoopPoints(_edge, passedPairInfo, _i2, _edgeIsUnbundled);
       } else if (src === tgt) {
         _this.findLoopPoints(_edge, passedPairInfo, _i2, _edgeIsUnbundled);
@@ -22106,18 +22299,21 @@ BRp$4.findEndpoints = function (edge) {
   var srcArShape = edge.pstyle('source-arrow-shape').value;
   var tgtDist = edge.pstyle('target-distance-from-node').pfValue;
   var srcDist = edge.pstyle('source-distance-from-node').pfValue;
+  var curveStyle = edge.pstyle('curve-style').value;
   var rs = edge._private.rscratch;
   var et = rs.edgeType;
+  var taxi = curveStyle === 'taxi';
   var self = et === 'self' || et === 'compound';
   var bezier = et === 'bezier' || et === 'multibezier' || self;
   var multi = et !== 'bezier';
   var lines = et === 'straight' || et === 'segments';
   var segments = et === 'segments';
   var hasEndpts = bezier || multi || lines;
+  var overrideEndpts = self || taxi;
   var srcManEndpt = edge.pstyle('source-endpoint');
-  var srcManEndptVal = self ? 'outside-to-node' : srcManEndpt.value;
+  var srcManEndptVal = overrideEndpts ? 'outside-to-node' : srcManEndpt.value;
   var tgtManEndpt = edge.pstyle('target-endpoint');
-  var tgtManEndptVal = self ? 'outside-to-node' : tgtManEndpt.value;
+  var tgtManEndptVal = overrideEndpts ? 'outside-to-node' : tgtManEndpt.value;
   rs.srcManEndpt = srcManEndpt;
   rs.tgtManEndpt = tgtManEndpt;
   var p1; // last known point of edge on target side
@@ -22303,7 +22499,7 @@ BRp$4.getTargetEndpoint = function (edge) {
 var BRp$5 = {};
 
 function pushBezierPts(r, edge, pts) {
-  var qbezierAt$$1 = function qbezierAt$$1(p1, p2, p3, t) {
+  var qbezierAt$1 = function qbezierAt$1(p1, p2, p3, t) {
     return qbezierAt(p1, p2, p3, t);
   };
 
@@ -22313,8 +22509,8 @@ function pushBezierPts(r, edge, pts) {
   for (var i = 0; i < r.bezierProjPcts.length; i++) {
     var p = r.bezierProjPcts[i];
     bpts.push({
-      x: qbezierAt$$1(pts[0], pts[2], pts[4], p),
-      y: qbezierAt$$1(pts[1], pts[3], pts[5], p)
+      x: qbezierAt$1(pts[0], pts[2], pts[4], p),
+      y: qbezierAt$1(pts[1], pts[3], pts[5], p)
     });
   }
 }
@@ -22523,21 +22719,21 @@ BRp$6.recalculateEdgeLabelProjections = function (edge) {
     } // update each ctrlpt with segment info
 
 
-    for (var i = 0; i < ctrlpts.length; i++) {
-      var cp = ctrlpts[i];
-      var prevCp = ctrlpts[i - 1];
+    for (var _i = 0; _i < ctrlpts.length; _i++) {
+      var cp = ctrlpts[_i];
+      var prevCp = ctrlpts[_i - 1];
 
       if (prevCp) {
         cp.startDist = prevCp.startDist + prevCp.length;
       }
 
-      addSegment(cp, cp.p0, bpts[i * nProjs], 0, r.bezierProjPcts[0]); // first
+      addSegment(cp, cp.p0, bpts[_i * nProjs], 0, r.bezierProjPcts[0]); // first
 
       for (var j = 0; j < nProjs - 1; j++) {
-        addSegment(cp, bpts[i * nProjs + j], bpts[i * nProjs + j + 1], r.bezierProjPcts[j], r.bezierProjPcts[j + 1]);
+        addSegment(cp, bpts[_i * nProjs + j], bpts[_i * nProjs + j + 1], r.bezierProjPcts[j], r.bezierProjPcts[j + 1]);
       }
 
-      addSegment(cp, bpts[i * nProjs + nProjs - 1], cp.p2, r.bezierProjPcts[nProjs - 1], 1); // last
+      addSegment(cp, bpts[_i * nProjs + nProjs - 1], cp.p2, r.bezierProjPcts[nProjs - 1], 1); // last
     }
 
     return createControlPointInfo.cache = ctrlpts;
@@ -22558,89 +22754,95 @@ BRp$6.recalculateEdgeLabelProjections = function (edge) {
       case 'compound':
       case 'bezier':
       case 'multibezier':
-        var cps = createControlPointInfo();
-        var selected;
-        var startDist = 0;
-        var totalDist = 0; // find the segment we're on
+        {
+          var cps = createControlPointInfo();
+          var selected;
+          var startDist = 0;
+          var totalDist = 0; // find the segment we're on
 
-        for (var i = 0; i < cps.length; i++) {
-          var cp = cps[isSrc ? i : cps.length - 1 - i];
+          for (var i = 0; i < cps.length; i++) {
+            var _cp = cps[isSrc ? i : cps.length - 1 - i];
 
-          for (var j = 0; j < cp.segments.length; j++) {
-            var seg = cp.segments[isSrc ? j : cp.segments.length - 1 - j];
-            var lastSeg = i === cps.length - 1 && j === cp.segments.length - 1;
-            startDist = totalDist;
-            totalDist += seg.length;
+            for (var j = 0; j < _cp.segments.length; j++) {
+              var _seg = _cp.segments[isSrc ? j : _cp.segments.length - 1 - j];
+              var lastSeg = i === cps.length - 1 && j === _cp.segments.length - 1;
+              startDist = totalDist;
+              totalDist += _seg.length;
 
-            if (totalDist >= offset || lastSeg) {
-              selected = {
-                cp: cp,
-                segment: seg
-              };
+              if (totalDist >= offset || lastSeg) {
+                selected = {
+                  cp: _cp,
+                  segment: _seg
+                };
+                break;
+              }
+            }
+
+            if (selected) {
               break;
             }
           }
 
-          if (selected) {
-            break;
-          }
+          var cp = selected.cp;
+          var seg = selected.segment;
+          var tSegment = (offset - startDist) / seg.length;
+          var segDt = seg.t1 - seg.t0;
+          var t = isSrc ? seg.t0 + segDt * tSegment : seg.t1 - segDt * tSegment;
+          t = bound(0, t, 1);
+          p = qbezierPtAt(cp.p0, cp.p1, cp.p2, t);
+          angle = bezierAngle(cp.p0, cp.p1, cp.p2, t);
+          break;
         }
-
-        var cp = selected.cp;
-        var seg = selected.segment;
-        var tSegment = (offset - startDist) / seg.length;
-        var segDt = seg.t1 - seg.t0;
-        var t = isSrc ? seg.t0 + segDt * tSegment : seg.t1 - segDt * tSegment;
-        t = bound(0, t, 1);
-        p = qbezierPtAt(cp.p0, cp.p1, cp.p2, t);
-        angle = bezierAngle(cp.p0, cp.p1, cp.p2, t, p);
-        break;
 
       case 'straight':
       case 'segments':
       case 'haystack':
-        var d = 0,
-            di,
-            d0;
-        var p0, p1;
-        var l = rs.allpts.length;
+        {
+          var d = 0,
+              di,
+              d0;
+          var p0, p1;
+          var l = rs.allpts.length;
 
-        for (var i = 0; i + 3 < l; i += 2) {
-          if (isSrc) {
-            p0 = {
-              x: rs.allpts[i],
-              y: rs.allpts[i + 1]
-            };
-            p1 = {
-              x: rs.allpts[i + 2],
-              y: rs.allpts[i + 3]
-            };
-          } else {
-            p0 = {
-              x: rs.allpts[l - 2 - i],
-              y: rs.allpts[l - 1 - i]
-            };
-            p1 = {
-              x: rs.allpts[l - 4 - i],
-              y: rs.allpts[l - 3 - i]
-            };
+          for (var _i2 = 0; _i2 + 3 < l; _i2 += 2) {
+            if (isSrc) {
+              p0 = {
+                x: rs.allpts[_i2],
+                y: rs.allpts[_i2 + 1]
+              };
+              p1 = {
+                x: rs.allpts[_i2 + 2],
+                y: rs.allpts[_i2 + 3]
+              };
+            } else {
+              p0 = {
+                x: rs.allpts[l - 2 - _i2],
+                y: rs.allpts[l - 1 - _i2]
+              };
+              p1 = {
+                x: rs.allpts[l - 4 - _i2],
+                y: rs.allpts[l - 3 - _i2]
+              };
+            }
+
+            di = dist(p0, p1);
+            d0 = d;
+            d += di;
+
+            if (d >= offset) {
+              break;
+            }
           }
 
-          di = dist(p0, p1);
-          d0 = d;
-          d += di;
+          var pD = offset - d0;
 
-          if (d >= offset) {
-            break;
-          }
+          var _t = pD / di;
+
+          _t = bound(0, _t, 1);
+          p = lineAt(p0, p1, _t);
+          angle = lineAngle(p0, p1);
+          break;
         }
-
-        var pD = offset - d0;
-        var t = pD / di;
-        t = bound(0, t, 1);
-        p = lineAt(p0, p1, t);
-        angle = lineAngle(p0, p1);
-        break;
     }
 
     setRs('labelX', prefix, p.x);
@@ -22666,10 +22868,19 @@ BRp$6.applyPrefixedLabelDimensions = function (ele, prefix) {
   var _p = ele._private;
   var text = this.getLabelText(ele, prefix);
   var labelDims = this.calculateLabelDimensions(ele, text);
-  setPrefixedProperty(_p.rstyle, 'labelWidth', prefix, labelDims.width);
-  setPrefixedProperty(_p.rscratch, 'labelWidth', prefix, labelDims.width);
-  setPrefixedProperty(_p.rstyle, 'labelHeight', prefix, labelDims.height);
-  setPrefixedProperty(_p.rscratch, 'labelHeight', prefix, labelDims.height);
+  var lineHeight = ele.pstyle('line-height').pfValue;
+  var textWrap = ele.pstyle('text-wrap').strValue;
+  var lines = getPrefixedProperty(_p.rscratch, 'labelWrapCachedLines', prefix) || [];
+  var numLines = textWrap !== 'wrap' ? 1 : Math.max(lines.length, 1);
+  var normPerLineHeight = labelDims.height / numLines;
+  var labelLineHeight = normPerLineHeight * lineHeight;
+  var width = labelDims.width;
+  var height = labelDims.height + (numLines - 1) * (lineHeight - 1) * normPerLineHeight;
+  setPrefixedProperty(_p.rstyle, 'labelWidth', prefix, width);
+  setPrefixedProperty(_p.rscratch, 'labelWidth', prefix, width);
+  setPrefixedProperty(_p.rstyle, 'labelHeight', prefix, height);
+  setPrefixedProperty(_p.rscratch, 'labelHeight', prefix, height);
+  setPrefixedProperty(_p.rscratch, 'labelLineHeight', prefix, labelLineHeight);
 };
 
 BRp$6.getLabelText = function (ele, prefix) {
@@ -22701,48 +22912,54 @@ BRp$6.getLabelText = function (ele, prefix) {
   var wrapStyle = ele.pstyle('text-wrap').value;
 
   if (wrapStyle === 'wrap') {
-    //console.log('wrap');
     var labelKey = rscratch('labelKey'); // save recalc if the label is the same as before
 
     if (labelKey != null && rscratch('labelWrapKey') === labelKey) {
-      // console.log('wrap cache hit');
       return rscratch('labelWrapCachedText');
-    } // console.log('wrap cache miss');
+    }
 
-
+    var zwsp = "\u200B";
     var lines = text.split('\n');
     var maxW = ele.pstyle('text-max-width').pfValue;
+    var overflow = ele.pstyle('text-overflow-wrap').value;
+    var overflowAny = overflow === 'anywhere';
     var wrappedLines = [];
+    var wordsRegex = /[\s\u200b]+/;
+    var wordSeparator = overflowAny ? '' : ' ';
 
     for (var l = 0; l < lines.length; l++) {
       var line = lines[l];
       var lineDims = this.calculateLabelDimensions(ele, line);
       var lineW = lineDims.width;
 
+      if (overflowAny) {
+        var processedLine = line.split('').join(zwsp);
+        line = processedLine;
+      }
+
       if (lineW > maxW) {
         // line is too long
-        var words = line.split(/\s+/); // NB: assume collapsed whitespace into single space
-
+        var words = line.split(wordsRegex);
         var subline = '';
 
         for (var w = 0; w < words.length; w++) {
           var word = words[w];
-          var testLine = subline.length === 0 ? word : subline + ' ' + word;
+          var testLine = subline.length === 0 ? word : subline + wordSeparator + word;
           var testDims = this.calculateLabelDimensions(ele, testLine);
           var testW = testDims.width;
 
           if (testW <= maxW) {
             // word fits on current line
-            subline += word + ' ';
+            subline += word + wordSeparator;
           } else {
             // word starts new line
             wrappedLines.push(subline);
-            subline = word + ' ';
+            subline = word + wordSeparator;
           }
         } // if there's remaining text, put it in a wrapped line
 
 
-        if (!subline.match(/^\s+$/)) {
+        if (!subline.match(/^[\s\u200b]+$/)) {
           wrappedLines.push(subline);
         }
       } else {
@@ -22754,9 +22971,9 @@ BRp$6.getLabelText = function (ele, prefix) {
 
     rscratch('labelWrapCachedLines', wrappedLines);
     text = rscratch('labelWrapCachedText', wrappedLines.join('\n'));
-    rscratch('labelWrapKey', labelKey); // console.log(text)
+    rscratch('labelWrapKey', labelKey);
   } else if (wrapStyle === 'ellipsis') {
-    var maxW = ele.pstyle('text-max-width').pfValue;
+    var _maxW = ele.pstyle('text-max-width').pfValue;
     var ellipsized = '';
     var ellipsis = "\u2026";
     var incLastCh = false;
@@ -22764,7 +22981,7 @@ BRp$6.getLabelText = function (ele, prefix) {
     for (var i = 0; i < text.length; i++) {
       var widthWithNextCh = this.calculateLabelDimensions(ele, ellipsized + text[i] + ellipsis).width;
 
-      if (widthWithNextCh > maxW) {
+      if (widthWithNextCh > _maxW) {
         break;
       }
 
@@ -22784,6 +23001,30 @@ BRp$6.getLabelText = function (ele, prefix) {
 
 
   return text;
+};
+
+BRp$6.getLabelJustification = function (ele) {
+  var justification = ele.pstyle('text-justification').strValue;
+  var textHalign = ele.pstyle('text-halign').strValue;
+
+  if (justification === 'auto') {
+    if (ele.isNode()) {
+      switch (textHalign) {
+        case 'left':
+          return 'right';
+
+        case 'right':
+          return 'left';
+
+        default:
+          return 'center';
+      }
+    } else {
+      return 'center';
+    }
+  } else {
+    return justification;
+  }
 };
 
 BRp$6.calculateLabelDimensions = function (ele, text) {
@@ -22922,6 +23163,7 @@ BRp$8.registerCalculationListeners = function () {
         var _p = ele._private;
         var rstyle = _p.rstyle;
         rstyle.clean = false;
+        rstyle.cleanConnected = false;
       }
     }
   };
@@ -22940,9 +23182,11 @@ BRp$8.registerCalculationListeners = function () {
 
       for (var i = 0; i < elesToUpdate.length; i++) {
         var ele = elesToUpdate[i];
+        var rstyle = ele._private.rstyle;
 
-        if (ele.isNode() && !ele._private.rstyle.clean) {
+        if (ele.isNode() && !rstyle.cleanConnected) {
           enqueue(ele.connectedEdges());
+          rstyle.cleanConnected = true;
         }
       }
 
@@ -23135,9 +23379,9 @@ BRp$b.getCachedImage = function (url, crossOrigin, onLoad) {
 };
 
 var BRp$c = {};
-/* global document, window */
+/* global document, window, ResizeObserver, MutationObserver */
 
-BRp$c.registerBinding = function (target, event$$1, handler, useCapture) {
+BRp$c.registerBinding = function (target, event, handler, useCapture) {
   // eslint-disable-line no-unused-vars
   var args = Array.prototype.slice.apply(arguments, [1]); // copy
 
@@ -23167,7 +23411,7 @@ BRp$c.binder = function (tgt) {
     r.supportsPassiveEvents = supportsPassive;
   }
 
-  var on = function on(event$$1, handler, useCapture) {
+  var on = function on(event, handler, useCapture) {
     var args = Array.prototype.slice.call(arguments);
 
     if (tgtIsDom && r.supportsPassiveEvents) {
@@ -23232,8 +23476,8 @@ BRp$c.load = function () {
   var allowPanningPassthrough = function allowPanningPassthrough(down, downs) {
     var allowPassthrough = true;
 
-    if (r.cy.hasCompoundNodes() && down && down.isEdge()) {
-      // a compound node below the edge => no passthrough panning
+    if (r.cy.hasCompoundNodes() && down && down.pannable()) {
+      // a grabbable compound node below the ele => no passthrough panning
       for (var i = 0; downs && i < downs.length; i++) {
         var down = downs[i];
 
@@ -23390,7 +23634,8 @@ BRp$c.load = function () {
     }
   };
 
-  var haveMutationsApi = typeof MutationObserver !== 'undefined'; // watch for when the cy container is removed from the dom
+  var haveMutationsApi = typeof MutationObserver !== 'undefined';
+  var haveResizeObserverApi = typeof ResizeObserver !== 'undefined'; // watch for when the cy container is removed from the dom
 
   if (haveMutationsApi) {
     r.removeObserver = new MutationObserver(function (mutns) {
@@ -23439,9 +23684,15 @@ BRp$c.load = function () {
 
   r.registerBinding(window, 'resize', onResize); // eslint-disable-line no-undef
 
-  var forEachUp = function forEachUp(domEle, fn$$1) {
+  if (haveResizeObserverApi) {
+    r.resizeObserver = new ResizeObserver(onResize); // eslint-disable-line no-undef
+
+    r.resizeObserver.observe(r.container);
+  }
+
+  var forEachUp = function forEachUp(domEle, fn) {
     while (domEle != null) {
-      fn$$1(domEle);
+      fn(domEle);
       domEle = domEle.parentNode;
     }
   };
@@ -23650,7 +23901,7 @@ BRp$c.load = function () {
         };
         r.redrawHint('select', true);
         r.redraw();
-      } else if (near.isEdge()) {
+      } else if (near.pannable()) {
         select[4] = 1; // for future pan
       }
 
@@ -23816,7 +24067,7 @@ BRp$c.load = function () {
 
 
       pos = r.projectIntoViewport(e.clientX, e.clientY); // Checks primary button down & out of time & mouse not moved much
-    } else if (select[4] == 1 && (down == null || down.isEdge())) {
+    } else if (select[4] == 1 && (down == null || down.pannable())) {
       if (isOverThresholdDrag) {
         if (!r.hoverData.dragging && cy.boxSelectionEnabled() && (multSelKeyDown || !cy.panningEnabled() || !cy.userPanningEnabled())) {
           goIntoBoxMode();
@@ -23833,12 +24084,12 @@ BRp$c.load = function () {
           }
         }
 
-        if (down && down.isEdge() && down.active()) {
+        if (down && down.pannable() && down.active()) {
           down.unactivate();
         }
       }
     } else {
-      if (down && down.isEdge() && down.active()) {
+      if (down && down.pannable() && down.active()) {
         down.unactivate();
       }
 
@@ -24257,29 +24508,30 @@ BRp$c.load = function () {
     r.touchData.capture = true;
     r.data.bgActivePosistion = undefined;
     var cy = r.cy;
-    var now$$1 = r.touchData.now;
+    var now = r.touchData.now;
     var earlier = r.touchData.earlier;
 
     if (e.touches[0]) {
       var pos = r.projectIntoViewport(e.touches[0].clientX, e.touches[0].clientY);
-      now$$1[0] = pos[0];
-      now$$1[1] = pos[1];
+      now[0] = pos[0];
+      now[1] = pos[1];
     }
 
     if (e.touches[1]) {
       var pos = r.projectIntoViewport(e.touches[1].clientX, e.touches[1].clientY);
-      now$$1[2] = pos[0];
-      now$$1[3] = pos[1];
+      now[2] = pos[0];
+      now[3] = pos[1];
     }
 
     if (e.touches[2]) {
       var pos = r.projectIntoViewport(e.touches[2].clientX, e.touches[2].clientY);
-      now$$1[4] = pos[0];
-      now$$1[5] = pos[1];
+      now[4] = pos[0];
+      now[5] = pos[1];
     } // record starting points for pinch-to-zoom
 
 
     if (e.touches[1]) {
+      r.touchData.singleTouchMoved = true;
       freeDraggedElements(r.dragData.touchDragEles);
       var offsets = r.findContainerClientCoords();
       offsetLeft = offsets[0];
@@ -24302,16 +24554,16 @@ BRp$c.load = function () {
       var cxtDistThresholdSq = cxtDistThreshold * cxtDistThreshold;
 
       if (distance1Sq < cxtDistThresholdSq && !e.touches[2]) {
-        var near1 = r.findNearestElement(now$$1[0], now$$1[1], true, true);
-        var near2 = r.findNearestElement(now$$1[2], now$$1[3], true, true);
+        var near1 = r.findNearestElement(now[0], now[1], true, true);
+        var near2 = r.findNearestElement(now[2], now[3], true, true);
 
         if (near1 && near1.isNode()) {
           near1.activate().emit({
             originalEvent: e,
             type: 'cxttapstart',
             position: {
-              x: now$$1[0],
-              y: now$$1[1]
+              x: now[0],
+              y: now[1]
             }
           });
           r.touchData.start = near1;
@@ -24320,8 +24572,8 @@ BRp$c.load = function () {
             originalEvent: e,
             type: 'cxttapstart',
             position: {
-              x: now$$1[0],
-              y: now$$1[1]
+              x: now[0],
+              y: now[1]
             }
           });
           r.touchData.start = near2;
@@ -24330,8 +24582,8 @@ BRp$c.load = function () {
             originalEvent: e,
             type: 'cxttapstart',
             position: {
-              x: now$$1[0],
-              y: now$$1[1]
+              x: now[0],
+              y: now[1]
             }
           });
         }
@@ -24348,8 +24600,14 @@ BRp$c.load = function () {
       }
     }
 
-    if (e.touches[2]) ; else if (e.touches[1]) ; else if (e.touches[0]) {
-      var nears = r.findNearestElements(now$$1[0], now$$1[1], true, true);
+    if (e.touches[2]) {
+      // ignore
+      // safari on ios pans the page otherwise (normally you should be able to preventdefault on touchmove...)
+      if (cy.boxSelectionEnabled()) {
+        e.preventDefault();
+      }
+    } else if (e.touches[1]) ; else if (e.touches[0]) {
+      var nears = r.findNearestElements(now[0], now[1], true, true);
       var near = nears[0];
 
       if (near != null) {
@@ -24384,8 +24642,8 @@ BRp$c.load = function () {
               originalEvent: e,
               type: type,
               position: {
-                x: now$$1[0],
-                y: now$$1[1]
+                x: now[0],
+                y: now[1]
               }
             };
           };
@@ -24403,8 +24661,8 @@ BRp$c.load = function () {
       }
 
       triggerEvents(near, ['touchstart', 'tapstart', 'vmousedown'], e, {
-        x: now$$1[0],
-        y: now$$1[1]
+        x: now[0],
+        y: now[1]
       });
 
       if (near == null) {
@@ -24426,8 +24684,8 @@ BRp$c.load = function () {
         && !r.touchData.selecting // box selection shouldn't allow taphold through
         ) {
             triggerEvents(r.touchData.start, ['taphold'], e, {
-              x: now$$1[0],
-              y: now$$1[1]
+              x: now[0],
+              y: now[1]
             });
           }
       }, r.tapholdDuration);
@@ -24436,8 +24694,8 @@ BRp$c.load = function () {
     if (e.touches.length >= 1) {
       var sPos = r.touchData.startPosition = [];
 
-      for (var i = 0; i < now$$1.length; i++) {
-        sPos[i] = earlier[i] = now$$1[i];
+      for (var i = 0; i < now.length; i++) {
+        sPos[i] = earlier[i] = now[i];
       }
 
       var touch0 = e.touches[0];
@@ -24455,26 +24713,26 @@ BRp$c.load = function () {
 
     var select = r.selection;
     var cy = r.cy;
-    var now$$1 = r.touchData.now;
+    var now = r.touchData.now;
     var earlier = r.touchData.earlier;
     var zoom = cy.zoom();
 
     if (e.touches[0]) {
       var pos = r.projectIntoViewport(e.touches[0].clientX, e.touches[0].clientY);
-      now$$1[0] = pos[0];
-      now$$1[1] = pos[1];
+      now[0] = pos[0];
+      now[1] = pos[1];
     }
 
     if (e.touches[1]) {
       var pos = r.projectIntoViewport(e.touches[1].clientX, e.touches[1].clientY);
-      now$$1[2] = pos[0];
-      now$$1[3] = pos[1];
+      now[2] = pos[0];
+      now[3] = pos[1];
     }
 
     if (e.touches[2]) {
       var pos = r.projectIntoViewport(e.touches[2].clientX, e.touches[2].clientY);
-      now$$1[4] = pos[0];
-      now$$1[5] = pos[1];
+      now[4] = pos[0];
+      now[5] = pos[1];
     }
 
     var startGPos = r.touchData.startGPosition;
@@ -24483,8 +24741,8 @@ BRp$c.load = function () {
     if (capture && e.touches[0] && startGPos) {
       var disp = [];
 
-      for (var j = 0; j < now$$1.length; j++) {
-        disp[j] = now$$1[j] - earlier[j];
+      for (var j = 0; j < now.length; j++) {
+        disp[j] = now[j] - earlier[j];
       }
 
       var dx = e.touches[0].clientX - startGPos[0];
@@ -24518,8 +24776,8 @@ BRp$c.load = function () {
           originalEvent: e,
           type: 'cxttapend',
           position: {
-            x: now$$1[0],
-            y: now$$1[1]
+            x: now[0],
+            y: now[1]
           }
         };
 
@@ -24538,8 +24796,8 @@ BRp$c.load = function () {
         originalEvent: e,
         type: 'cxtdrag',
         position: {
-          x: now$$1[0],
-          y: now$$1[1]
+          x: now[0],
+          y: now[1]
         }
       };
       r.data.bgActivePosistion = undefined;
@@ -24556,7 +24814,7 @@ BRp$c.load = function () {
       }
 
       r.touchData.cxtDragged = true;
-      var near = r.findNearestElement(now$$1[0], now$$1[1], true, true);
+      var near = r.findNearestElement(now[0], now[1], true, true);
 
       if (!r.touchData.cxtOver || near !== r.touchData.cxtOver) {
         if (r.touchData.cxtOver) {
@@ -24564,8 +24822,8 @@ BRp$c.load = function () {
             originalEvent: e,
             type: 'cxtdragout',
             position: {
-              x: now$$1[0],
-              y: now$$1[1]
+              x: now[0],
+              y: now[1]
             }
           });
         }
@@ -24577,8 +24835,8 @@ BRp$c.load = function () {
             originalEvent: e,
             type: 'cxtdragover',
             position: {
-              x: now$$1[0],
-              y: now$$1[1]
+              x: now[0],
+              y: now[1]
             }
           });
         }
@@ -24594,29 +24852,30 @@ BRp$c.load = function () {
           originalEvent: e,
           type: 'boxstart',
           position: {
-            x: now$$1[0],
-            y: now$$1[1]
+            x: now[0],
+            y: now[1]
           }
         });
       }
 
       r.touchData.selecting = true;
-      r.redrawHint('select', true);
+      r.touchData.didSelect = true;
+      select[4] = 1;
 
       if (!select || select.length === 0 || select[0] === undefined) {
-        select[0] = (now$$1[0] + now$$1[2] + now$$1[4]) / 3;
-        select[1] = (now$$1[1] + now$$1[3] + now$$1[5]) / 3;
-        select[2] = (now$$1[0] + now$$1[2] + now$$1[4]) / 3 + 1;
-        select[3] = (now$$1[1] + now$$1[3] + now$$1[5]) / 3 + 1;
+        select[0] = (now[0] + now[2] + now[4]) / 3;
+        select[1] = (now[1] + now[3] + now[5]) / 3;
+        select[2] = (now[0] + now[2] + now[4]) / 3 + 1;
+        select[3] = (now[1] + now[3] + now[5]) / 3 + 1;
       } else {
-        select[2] = (now$$1[0] + now$$1[2] + now$$1[4]) / 3;
-        select[3] = (now$$1[1] + now$$1[3] + now$$1[5]) / 3;
+        select[2] = (now[0] + now[2] + now[4]) / 3;
+        select[3] = (now[1] + now[3] + now[5]) / 3;
       }
 
-      select[4] = 1;
-      r.touchData.selecting = true;
+      r.redrawHint('select', true);
       r.redraw(); // pinch to zoom
-    } else if (capture && e.touches[1] && cy.zoomingEnabled() && cy.panningEnabled() && cy.userZoomingEnabled() && cy.userPanningEnabled()) {
+    } else if (capture && e.touches[1] && !r.touchData.didSelect // don't allow box selection to degrade to pinch-to-zoom
+    && cy.zoomingEnabled() && cy.panningEnabled() && cy.userZoomingEnabled() && cy.userPanningEnabled()) {
       // two fingers => pinch to zoom
       e.preventDefault();
       r.data.bgActivePosistion = undefined;
@@ -24700,174 +24959,174 @@ BRp$c.load = function () {
 
       if (e.touches[0]) {
         var pos = r.projectIntoViewport(e.touches[0].clientX, e.touches[0].clientY);
-        now$$1[0] = pos[0];
-        now$$1[1] = pos[1];
+        now[0] = pos[0];
+        now[1] = pos[1];
       }
 
       if (e.touches[1]) {
         var pos = r.projectIntoViewport(e.touches[1].clientX, e.touches[1].clientY);
-        now$$1[2] = pos[0];
-        now$$1[3] = pos[1];
+        now[2] = pos[0];
+        now[3] = pos[1];
       }
 
       if (e.touches[2]) {
         var pos = r.projectIntoViewport(e.touches[2].clientX, e.touches[2].clientY);
-        now$$1[4] = pos[0];
-        now$$1[5] = pos[1];
+        now[4] = pos[0];
+        now[5] = pos[1];
       }
-    } else if (e.touches[0]) {
-      var start = r.touchData.start;
-      var last = r.touchData.last;
-      var near;
+    } else if (e.touches[0] && !r.touchData.didSelect // don't allow box selection to degrade to single finger events like panning
+    ) {
+        var start = r.touchData.start;
+        var last = r.touchData.last;
+        var near;
 
-      if (!r.hoverData.draggingEles && !r.swipePanning) {
-        near = r.findNearestElement(now$$1[0], now$$1[1], true, true);
-      }
+        if (!r.hoverData.draggingEles && !r.swipePanning) {
+          near = r.findNearestElement(now[0], now[1], true, true);
+        }
 
-      if (capture && start != null) {
-        e.preventDefault();
-      } // dragging nodes
+        if (capture && start != null) {
+          e.preventDefault();
+        } // dragging nodes
 
 
-      if (capture && start != null && r.nodeIsDraggable(start)) {
-        if (isOverThresholdDrag) {
-          // then dragging can happen
-          var draggedEles = r.dragData.touchDragEles;
-          var justStartedDrag = !r.dragData.didDrag;
-
-          if (justStartedDrag) {
-            addNodesToDrag(draggedEles, {
-              inDragLayer: true
-            });
-          }
-
-          r.dragData.didDrag = true;
-          var totalShift = {
-            x: 0,
-            y: 0
-          };
-
-          if (number(disp[0]) && number(disp[1])) {
-            totalShift.x += disp[0];
-            totalShift.y += disp[1];
+        if (capture && start != null && r.nodeIsDraggable(start)) {
+          if (isOverThresholdDrag) {
+            // then dragging can happen
+            var draggedEles = r.dragData.touchDragEles;
+            var justStartedDrag = !r.dragData.didDrag;
 
             if (justStartedDrag) {
+              addNodesToDrag(draggedEles, {
+                inDragLayer: true
+              });
+            }
+
+            r.dragData.didDrag = true;
+            var totalShift = {
+              x: 0,
+              y: 0
+            };
+
+            if (number(disp[0]) && number(disp[1])) {
+              totalShift.x += disp[0];
+              totalShift.y += disp[1];
+
+              if (justStartedDrag) {
+                r.redrawHint('eles', true);
+                var dragDelta = r.touchData.dragDelta;
+
+                if (dragDelta && number(dragDelta[0]) && number(dragDelta[1])) {
+                  totalShift.x += dragDelta[0];
+                  totalShift.y += dragDelta[1];
+                }
+              }
+            }
+
+            r.hoverData.draggingEles = true;
+            draggedEles.silentShift(totalShift).emit('position drag');
+            r.redrawHint('drag', true);
+
+            if (r.touchData.startPosition[0] == earlier[0] && r.touchData.startPosition[1] == earlier[1]) {
               r.redrawHint('eles', true);
-              var dragDelta = r.touchData.dragDelta;
-
-              if (dragDelta && number(dragDelta[0]) && number(dragDelta[1])) {
-                totalShift.x += dragDelta[0];
-                totalShift.y += dragDelta[1];
-              }
             }
-          }
 
-          r.hoverData.draggingEles = true;
-          draggedEles.silentShift(totalShift).emit('position drag');
-          r.redrawHint('drag', true);
-
-          if (r.touchData.startPosition[0] == earlier[0] && r.touchData.startPosition[1] == earlier[1]) {
-            r.redrawHint('eles', true);
-          }
-
-          r.redraw();
-        } else {
-          // otherise keep track of drag delta for later
-          var dragDelta = r.touchData.dragDelta = r.touchData.dragDelta || [];
-
-          if (dragDelta.length === 0) {
-            dragDelta.push(disp[0]);
-            dragDelta.push(disp[1]);
+            r.redraw();
           } else {
-            dragDelta[0] += disp[0];
-            dragDelta[1] += disp[1];
-          }
-        }
-      } // touchmove
+            // otherise keep track of drag delta for later
+            var dragDelta = r.touchData.dragDelta = r.touchData.dragDelta || [];
 
-
-      {
-        triggerEvents(start || near, ['touchmove', 'tapdrag', 'vmousemove'], e, {
-          x: now$$1[0],
-          y: now$$1[1]
-        });
-
-        if ((!start || !start.grabbed()) && near != last) {
-          if (last) {
-            last.emit({
-              originalEvent: e,
-              type: 'tapdragout',
-              position: {
-                x: now$$1[0],
-                y: now$$1[1]
-              }
-            });
-          }
-
-          if (near) {
-            near.emit({
-              originalEvent: e,
-              type: 'tapdragover',
-              position: {
-                x: now$$1[0],
-                y: now$$1[1]
-              }
-            });
-          }
-        }
-
-        r.touchData.last = near;
-      } // check to cancel taphold
-
-      if (capture) {
-        for (var i = 0; i < now$$1.length; i++) {
-          if (now$$1[i] && r.touchData.startPosition[i] && isOverThresholdDrag) {
-            r.touchData.singleTouchMoved = true;
-          }
-        }
-      } // panning
-
-
-      if (capture && (start == null || start.isEdge()) && cy.panningEnabled() && cy.userPanningEnabled()) {
-        var allowPassthrough = allowPanningPassthrough(start, r.touchData.starts);
-
-        if (allowPassthrough) {
-          e.preventDefault();
-
-          if (r.swipePanning) {
-            cy.panBy({
-              x: disp[0] * zoom,
-              y: disp[1] * zoom
-            });
-          } else if (isOverThresholdDrag) {
-            r.swipePanning = true;
-            cy.panBy({
-              x: dx * zoom,
-              y: dy * zoom
-            });
-
-            if (start) {
-              start.unactivate();
-
-              if (!r.data.bgActivePosistion) {
-                r.data.bgActivePosistion = array2point(r.touchData.startPosition);
-              }
-
-              r.redrawHint('select', true);
-              r.touchData.start = null;
+            if (dragDelta.length === 0) {
+              dragDelta.push(disp[0]);
+              dragDelta.push(disp[1]);
+            } else {
+              dragDelta[0] += disp[0];
+              dragDelta[1] += disp[1];
             }
           }
-        } // Re-project
+        } // touchmove
 
 
-        var pos = r.projectIntoViewport(e.touches[0].clientX, e.touches[0].clientY);
-        now$$1[0] = pos[0];
-        now$$1[1] = pos[1];
+        {
+          triggerEvents(start || near, ['touchmove', 'tapdrag', 'vmousemove'], e, {
+            x: now[0],
+            y: now[1]
+          });
+
+          if ((!start || !start.grabbed()) && near != last) {
+            if (last) {
+              last.emit({
+                originalEvent: e,
+                type: 'tapdragout',
+                position: {
+                  x: now[0],
+                  y: now[1]
+                }
+              });
+            }
+
+            if (near) {
+              near.emit({
+                originalEvent: e,
+                type: 'tapdragover',
+                position: {
+                  x: now[0],
+                  y: now[1]
+                }
+              });
+            }
+          }
+
+          r.touchData.last = near;
+        } // check to cancel taphold
+
+        if (capture) {
+          for (var i = 0; i < now.length; i++) {
+            if (now[i] && r.touchData.startPosition[i] && isOverThresholdDrag) {
+              r.touchData.singleTouchMoved = true;
+            }
+          }
+        } // panning
+
+
+        if (capture && (start == null || start.pannable()) && cy.panningEnabled() && cy.userPanningEnabled()) {
+          var allowPassthrough = allowPanningPassthrough(start, r.touchData.starts);
+
+          if (allowPassthrough) {
+            e.preventDefault();
+
+            if (!r.data.bgActivePosistion) {
+              r.data.bgActivePosistion = array2point(r.touchData.startPosition);
+            }
+
+            if (r.swipePanning) {
+              cy.panBy({
+                x: disp[0] * zoom,
+                y: disp[1] * zoom
+              });
+            } else if (isOverThresholdDrag) {
+              r.swipePanning = true;
+              cy.panBy({
+                x: dx * zoom,
+                y: dy * zoom
+              });
+
+              if (start) {
+                start.unactivate();
+                r.redrawHint('select', true);
+                r.touchData.start = null;
+              }
+            }
+          } // Re-project
+
+
+          var pos = r.projectIntoViewport(e.touches[0].clientX, e.touches[0].clientY);
+          now[0] = pos[0];
+          now[1] = pos[1];
+        }
       }
-    }
 
-    for (var j = 0; j < now$$1.length; j++) {
-      earlier[j] = now$$1[j];
+    for (var j = 0; j < now.length; j++) {
+      earlier[j] = now[j];
     } // the active bg indicator should be removed when making a swipe that is neither for dragging nodes or panning
 
 
@@ -24908,25 +25167,25 @@ BRp$c.load = function () {
     r.hoverData.draggingEles = false;
     var cy = r.cy;
     var zoom = cy.zoom();
-    var now$$1 = r.touchData.now;
+    var now = r.touchData.now;
     var earlier = r.touchData.earlier;
 
     if (e.touches[0]) {
       var pos = r.projectIntoViewport(e.touches[0].clientX, e.touches[0].clientY);
-      now$$1[0] = pos[0];
-      now$$1[1] = pos[1];
+      now[0] = pos[0];
+      now[1] = pos[1];
     }
 
     if (e.touches[1]) {
       var pos = r.projectIntoViewport(e.touches[1].clientX, e.touches[1].clientY);
-      now$$1[2] = pos[0];
-      now$$1[3] = pos[1];
+      now[2] = pos[0];
+      now[3] = pos[1];
     }
 
     if (e.touches[2]) {
       var pos = r.projectIntoViewport(e.touches[2].clientX, e.touches[2].clientY);
-      now$$1[4] = pos[0];
-      now$$1[5] = pos[1];
+      now[4] = pos[0];
+      now[5] = pos[1];
     }
 
     if (start) {
@@ -24940,8 +25199,8 @@ BRp$c.load = function () {
         originalEvent: e,
         type: 'cxttapend',
         position: {
-          x: now$$1[0],
-          y: now$$1[1]
+          x: now[0],
+          y: now[1]
         }
       };
 
@@ -24956,8 +25215,8 @@ BRp$c.load = function () {
           originalEvent: e,
           type: 'cxttap',
           position: {
-            x: now$$1[0],
-            y: now$$1[1]
+            x: now[0],
+            y: now[1]
           }
         };
 
@@ -24992,8 +25251,8 @@ BRp$c.load = function () {
         type: 'boxend',
         originalEvent: e,
         position: {
-          x: now$$1[0],
-          y: now$$1[1]
+          x: now[0],
+          y: now[1]
         }
       });
 
@@ -25039,22 +25298,22 @@ BRp$c.load = function () {
         }
 
         triggerEvents(start, ['touchend', 'tapend', 'vmouseup', 'tapdragout'], e, {
-          x: now$$1[0],
-          y: now$$1[1]
+          x: now[0],
+          y: now[1]
         });
         start.unactivate();
         r.touchData.start = null;
       } else {
-        var near = r.findNearestElement(now$$1[0], now$$1[1], true, true);
+        var near = r.findNearestElement(now[0], now[1], true, true);
         triggerEvents(near, ['touchend', 'tapend', 'vmouseup', 'tapdragout'], e, {
-          x: now$$1[0],
-          y: now$$1[1]
+          x: now[0],
+          y: now[1]
         });
       }
 
-      var dx = r.touchData.startPosition[0] - now$$1[0];
+      var dx = r.touchData.startPosition[0] - now[0];
       var dx2 = dx * dx;
-      var dy = r.touchData.startPosition[1] - now$$1[1];
+      var dy = r.touchData.startPosition[1] - now[1];
       var dy2 = dy * dy;
       var dist2 = dx2 + dy2;
       var rdist2 = dist2 * zoom * zoom; // Tap event, roughly same as mouse click event for touch
@@ -25065,8 +25324,8 @@ BRp$c.load = function () {
         }
 
         triggerEvents(start, ['tap', 'vclick'], e, {
-          x: now$$1[0],
-          y: now$$1[1]
+          x: now[0],
+          y: now[1]
         });
       } // Prepare to select the currently touched node, only if it hasn't been dragged past a certain distance
 
@@ -25091,19 +25350,25 @@ BRp$c.load = function () {
       r.touchData.singleTouchMoved = true;
     }
 
-    for (var j = 0; j < now$$1.length; j++) {
-      earlier[j] = now$$1[j];
+    for (var j = 0; j < now.length; j++) {
+      earlier[j] = now[j];
     }
 
-    r.dragData.didDrag = false; // reset for next mousedown
+    r.dragData.didDrag = false; // reset for next touchstart
 
     if (e.touches.length === 0) {
       r.touchData.dragDelta = [];
       r.touchData.startPosition = null;
       r.touchData.startGPosition = null;
+      r.touchData.didSelect = false;
     }
 
     if (e.touches.length < 2) {
+      if (e.touches.length === 1) {
+        // the old start global pos'n may not be the same finger that remains
+        r.touchData.startGPosition = [e.touches[0].clientX, e.touches[0].clientY];
+      }
+
       r.pinching = false;
       r.redrawHint('eles', true);
       r.redraw();
@@ -25746,10 +26011,10 @@ BRp$f.init = function (options) {
     }
 
     if (!stylesheetAlreadyExists) {
-      var stylesheet$$1 = document.createElement('style');
-      stylesheet$$1.id = stylesheetId;
-      stylesheet$$1.innerHTML = '.' + className + ' { position: relative; }';
-      head.insertBefore(stylesheet$$1, head.children[0]); // first so lowest priority
+      var stylesheet = document.createElement('style');
+      stylesheet.id = stylesheetId;
+      stylesheet.innerHTML = '.' + className + ' { position: relative; }';
+      head.insertBefore(stylesheet, head.children[0]); // first so lowest priority
     }
 
     var computedStyle = window$1.getComputedStyle(ctr);
@@ -25887,6 +26152,10 @@ BRp$f.destroy = function () {
     r.styleObserver.disconnect();
   }
 
+  if (r.resizeObserver) {
+    r.resizeObserver.disconnect();
+  }
+
   if (r.labelCalcDiv) {
     try {
       document.body.removeChild(r.labelCalcDiv); // eslint-disable-line no-undef
@@ -25938,9 +26207,9 @@ var defs = {
 
         while (true) {
           // eslint-disable-line no-constant-condition
-          var now$$1 = performanceNow();
-          var duration = now$$1 - startTime;
-          var frameDuration = now$$1 - frameStartTime;
+          var now = performanceNow();
+          var duration = now - startTime;
+          var frameDuration = now - frameStartTime;
 
           if (renderTime < fullFpsTime) {
             // if we're rendering faster than the ideal fps, then do dequeueing
@@ -26033,7 +26302,7 @@ function () {
     key: "deleteIdForKey",
     value: function deleteIdForKey(key, id) {
       if (key != null) {
-        this.getIdsFor(key).delete(id);
+        this.getIdsFor(key)["delete"](id);
       }
     }
   }, {
@@ -26061,7 +26330,7 @@ function () {
       var id = ele.id();
       var prevKey = this.keyForId.get(id);
       this.deleteIdForKey(prevKey, id);
-      this.keyForId.delete(id);
+      this.keyForId["delete"](id);
     }
   }, {
     key: "keyHasChangedFor",
@@ -26143,7 +26412,7 @@ function () {
   }, {
     key: "deleteCache",
     value: function deleteCache(key, lvl) {
-      this.getCachesAt(lvl).delete(key);
+      this.getCachesAt(lvl)["delete"](key);
     }
   }, {
     key: "delete",
@@ -26738,8 +27007,8 @@ var LayeredTextureCache = function LayeredTextureCache(renderer) {
     self.refineElementTextures(self.eleTxrDeqs);
     self.eleTxrDeqs.unmerge(self.eleTxrDeqs);
   }, refineEleDebounceTime);
-  r.beforeRender(function (willDraw, now$$1) {
-    if (now$$1 - self.lastInvalidationTime <= invalidThreshold) {
+  r.beforeRender(function (willDraw, now) {
+    if (now - self.lastInvalidationTime <= invalidThreshold) {
       self.skipping = true;
     } else {
       self.skipping = false;
@@ -26901,7 +27170,7 @@ LTCp.getLayers = function (eles, pxRatio, lvl) {
 
   var layer = null;
   var maxElesPerLayer = eles.length / defNumLayers;
-  var allowLazyQueueing = !firstGet;
+  var allowLazyQueueing =  !firstGet;
 
   for (var i = 0; i < eles.length; i++) {
     var ele = eles[i];
@@ -27408,7 +27677,7 @@ CRp$1.drawElementOverlay = function (context, ele) {
   }
 };
 
-CRp$1.drawCachedElementPortion = function (context, ele, eleTxrCache, pxRatio, lvl, reason, getRotation) {
+CRp$1.drawCachedElementPortion = function (context, ele, eleTxrCache, pxRatio, lvl, reason, getRotation, getOpacity) {
   var r = this;
   var bb = eleTxrCache.getBoundingBox(ele);
 
@@ -27420,7 +27689,7 @@ CRp$1.drawCachedElementPortion = function (context, ele, eleTxrCache, pxRatio, l
   var eleCache = eleTxrCache.getElement(ele, bb, pxRatio, lvl, reason);
 
   if (eleCache != null) {
-    var opacity = ele.effectiveOpacity();
+    var opacity = getOpacity(r, ele);
 
     if (opacity === 0) {
       return;
@@ -27495,6 +27764,14 @@ var getTargetLabelRotation = function getTargetLabelRotation(r, ele) {
   return r.getTextAngle(ele, 'target');
 };
 
+var getOpacity = function getOpacity(r, ele) {
+  return ele.effectiveOpacity();
+};
+
+var getTextOpacity = function getTextOpacity(e, ele) {
+  return ele.pstyle('text-opacity').pfValue * ele.effectiveOpacity();
+};
+
 CRp$1.drawCachedElement = function (context, ele, pxRatio, extent, lvl, requestHighQuality) {
   var r = this;
   var _r$data = r.data,
@@ -27510,12 +27787,12 @@ CRp$1.drawCachedElement = function (context, ele, pxRatio, extent, lvl, requestH
   }
 
   if (!extent || boundingBoxesIntersect(bb, extent)) {
-    r.drawCachedElementPortion(context, ele, eleTxrCache, pxRatio, lvl, reason, getZeroRotation);
-    r.drawCachedElementPortion(context, ele, lblTxrCache, pxRatio, lvl, reason, getLabelRotation);
+    r.drawCachedElementPortion(context, ele, eleTxrCache, pxRatio, lvl, reason, getZeroRotation, getOpacity);
+    r.drawCachedElementPortion(context, ele, lblTxrCache, pxRatio, lvl, reason, getLabelRotation, getTextOpacity);
 
     if (ele.isEdge()) {
-      r.drawCachedElementPortion(context, ele, slbTxrCache, pxRatio, lvl, reason, getSourceLabelRotation);
-      r.drawCachedElementPortion(context, ele, tlbTxrCache, pxRatio, lvl, reason, getTargetLabelRotation);
+      r.drawCachedElementPortion(context, ele, slbTxrCache, pxRatio, lvl, reason, getSourceLabelRotation, getTextOpacity);
+      r.drawCachedElementPortion(context, ele, tlbTxrCache, pxRatio, lvl, reason, getTargetLabelRotation, getTextOpacity);
     }
 
     r.drawElementOverlay(context, ele);
@@ -27585,7 +27862,7 @@ CRp$2.drawEdge = function (context, edge, shiftToOriginWithBb) {
   var r = this;
   var rs = edge._private.rscratch;
 
-  if (!edge.visible()) {
+  if (shouldDrawOpacity && !edge.visible()) {
     return;
   } // if bezier ctrl pts can not be calculated, then die
 
@@ -27936,7 +28213,7 @@ CRp$3.drawInscribedImage = function (context, img, node, index, nodeOpacity) {
   var nodeTW = nodeW + (getIndexedStyle(node, 'background-width-relative-to', 'value', index) === 'inner' ? 0 : paddingX2);
   var nodeTH = nodeH + (getIndexedStyle(node, 'background-height-relative-to', 'value', index) === 'inner' ? 0 : paddingX2);
   var rs = node._private.rscratch;
-  var clip = node.pstyle('background-clip').value;
+  var clip = getIndexedStyle(node, 'background-clip', 'value', index);
   var shouldClip = clip === 'node';
   var imgOpacity = getIndexedStyle(node, 'background-image-opacity', 'value', index) * nodeOpacity;
   var imgW = img.width || img.cachedW;
@@ -28088,7 +28365,7 @@ CRp$4.drawElementText = function (context, ele, shiftToOriginWithBb, force, pref
   var r = this;
 
   if (force == null) {
-    if (!r.eleTextBiggerThanMin(ele)) {
+    if (useEleOpacity && !r.eleTextBiggerThanMin(ele)) {
       return;
     }
   } else if (force === false) {
@@ -28102,29 +28379,16 @@ CRp$4.drawElementText = function (context, ele, shiftToOriginWithBb, force, pref
       return;
     }
 
-    var textHalign = ele.pstyle('text-halign').strValue;
-
-    switch (textHalign) {
-      case 'left':
-        context.textAlign = 'right';
-        break;
-
-      case 'right':
-        context.textAlign = 'left';
-        break;
-
-      default:
-        // e.g. center
-        context.textAlign = 'center';
-    }
-
+    var justification = r.getLabelJustification(ele);
+    context.textAlign = justification;
     context.textBaseline = 'bottom';
   } else {
-    var label = ele.pstyle('label');
+    var _label = ele.pstyle('label');
+
     var srcLabel = ele.pstyle('source-label');
     var tgtLabel = ele.pstyle('target-label');
 
-    if ((!label || !label.value) && (!srcLabel || !srcLabel.value) && (!tgtLabel || !tgtLabel.value)) {
+    if ((!_label || !_label.value) && (!srcLabel || !srcLabel.value) && (!tgtLabel || !tgtLabel.value)) {
       return;
     }
 
@@ -28184,7 +28448,7 @@ CRp$4.setupTextStyle = function (context, ele) {
   var labelSize = ele.pstyle('font-size').pfValue + 'px';
   var labelFamily = ele.pstyle('font-family').strValue;
   var labelWeight = ele.pstyle('font-weight').strValue;
-  var opacity = ele.pstyle('text-opacity').value * (useEleOpacity ? ele.effectiveOpacity() : 1);
+  var opacity = useEleOpacity ? ele.effectiveOpacity() * ele.pstyle('text-opacity').value : 1;
   var outlineOpacity = ele.pstyle('text-outline-opacity').value * opacity;
   var color = ele.pstyle('color').value;
   var outlineColor = ele.pstyle('text-outline-color').value;
@@ -28196,8 +28460,8 @@ CRp$4.setupTextStyle = function (context, ele) {
 }; // TODO ensure re-used
 
 
-function roundRect(ctx, x, y, width, height, radius) {
-  var radius = radius || 5;
+function roundRect(ctx, x, y, width, height) {
+  var radius = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : 5;
   ctx.beginPath();
   ctx.moveTo(x + radius, y);
   ctx.lineTo(x + width - radius, y);
@@ -28238,7 +28502,7 @@ CRp$4.drawText = function (context, ele, prefix) {
   var rscratch = _p.rscratch;
   var parentOpacity = useEleOpacity ? ele.effectiveOpacity() : 1;
 
-  if (parentOpacity === 0 || ele.pstyle('text-opacity').value === 0) {
+  if (useEleOpacity && (parentOpacity === 0 || ele.pstyle('text-opacity').value === 0)) {
     return;
   } // use 'main' as an alias for the main label (i.e. null prefix)
 
@@ -28249,6 +28513,8 @@ CRp$4.drawText = function (context, ele, prefix) {
 
   var textX = getPrefixedProperty(rscratch, 'labelX', prefix);
   var textY = getPrefixedProperty(rscratch, 'labelY', prefix);
+  var orgTextX, orgTextY; // used for rotation
+
   var text = this.getLabelText(ele, prefix);
 
   if (text != null && text !== '' && !isNaN(textX) && !isNaN(textY)) {
@@ -28278,8 +28544,8 @@ CRp$4.drawText = function (context, ele, prefix) {
     }
 
     if (theta !== 0) {
-      var orgTextX = textX;
-      var orgTextY = textY;
+      orgTextX = textX;
+      orgTextY = textY;
       context.translate(orgTextX, orgTextY);
       context.rotate(theta);
       textX = 0;
@@ -28395,7 +28661,35 @@ CRp$4.drawText = function (context, ele, prefix) {
 
     if (ele.pstyle('text-wrap').value === 'wrap') {
       var lines = getPrefixedProperty(rscratch, 'labelWrapCachedLines', prefix);
-      var lineHeight = textH / lines.length;
+      var lineHeight = getPrefixedProperty(rscratch, 'labelLineHeight', prefix);
+      var halfTextW = textW / 2;
+      var justification = this.getLabelJustification(ele);
+
+      if (justification === 'auto') ; else if (halign === 'left') {
+        // auto justification : right
+        if (justification === 'left') {
+          textX += -textW;
+        } else if (justification === 'center') {
+          textX += -halfTextW;
+        } // else same as auto
+
+      } else if (halign === 'center') {
+        // auto justfication : center
+        if (justification === 'left') {
+          textX += -halfTextW;
+        } else if (justification === 'right') {
+          textX += halfTextW;
+        } // else same as auto
+
+      } else if (halign === 'right') {
+        // auto justification : left
+        if (justification === 'center') {
+          textX += halfTextW;
+        } else if (justification === 'right') {
+          textX += textW;
+        } // else same as auto
+
+      }
 
       switch (valign) {
         case 'top':
@@ -28448,7 +28742,7 @@ CRp$5.drawNode = function (context, node, shiftToOriginWithBb) {
     return; // can't draw node with undefined position
   }
 
-  if (!node.visible()) {
+  if (shouldDrawOpacity && !node.visible()) {
     return;
   }
 
@@ -28839,7 +29133,7 @@ CRp$6.paintCache = function (context) {
 CRp$6.createGradientStyleFor = function (context, shapeStyleName, ele, fill, opacity) {
   var gradientStyle;
   var usePaths = this.usePaths();
-  var colors$$1 = ele.pstyle(shapeStyleName + '-gradient-stop-colors').value,
+  var colors = ele.pstyle(shapeStyleName + '-gradient-stop-colors').value,
       positions = ele.pstyle(shapeStyleName + '-gradient-stop-positions').pfValue;
 
   if (fill === 'radial-gradient') {
@@ -28855,8 +29149,8 @@ CRp$6.createGradientStyleFor = function (context, shapeStyleName, ele, fill, opa
         x: 0,
         y: 0
       } : ele.position(),
-          width = ele.width(),
-          height = ele.height();
+          width = ele.paddedWidth(),
+          height = ele.paddedHeight();
       gradientStyle = context.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, Math.max(width, height));
     }
   } else {
@@ -28870,8 +29164,8 @@ CRp$6.createGradientStyleFor = function (context, shapeStyleName, ele, fill, opa
         x: 0,
         y: 0
       } : ele.position(),
-          _width = ele.width(),
-          _height = ele.height(),
+          _width = ele.paddedWidth(),
+          _height = ele.paddedHeight(),
           halfWidth = _width / 2,
           halfHeight = _height / 2;
 
@@ -28887,11 +29181,11 @@ CRp$6.createGradientStyleFor = function (context, shapeStyleName, ele, fill, opa
           break;
 
         case 'to-left':
-          gradientStyle = context.createLinearGradient(_pos.x - halfWidth, _pos.y, _pos.x + halfWidth, _pos.y);
+          gradientStyle = context.createLinearGradient(_pos.x + halfWidth, _pos.y, _pos.x - halfWidth, _pos.y);
           break;
 
         case 'to-right':
-          gradientStyle = context.createLinearGradient(_pos.x + halfWidth, _pos.y, _pos.x - halfWidth, _pos.y);
+          gradientStyle = context.createLinearGradient(_pos.x - halfWidth, _pos.y, _pos.x + halfWidth, _pos.y);
           break;
 
         case 'to-bottom-right':
@@ -28919,11 +29213,11 @@ CRp$6.createGradientStyleFor = function (context, shapeStyleName, ele, fill, opa
 
   if (!gradientStyle) return null; // invalid gradient style
 
-  var hasPositions = positions.length === colors$$1.length;
-  var length = colors$$1.length;
+  var hasPositions = positions.length === colors.length;
+  var length = colors.length;
 
   for (var i = 0; i < length; i++) {
-    gradientStyle.addColorStop(hasPositions ? positions[i] : i / (length - 1), 'rgba(' + colors$$1[i][0] + ',' + colors$$1[i][1] + ',' + colors$$1[i][2] + ',' + opacity + ')');
+    gradientStyle.addColorStop(hasPositions ? positions[i] : i / (length - 1), 'rgba(' + colors[i][0] + ',' + colors[i][1] + ',' + colors[i][2] + ',' + opacity + ')');
   }
 
   return gradientStyle;
@@ -29254,7 +29548,7 @@ CRp$6.render = function (options) {
   }
 
   var extent = cy.extent();
-  var vpManip = r.pinching || r.hoverData.dragging || r.swipePanning || r.data.wheelZooming || r.hoverData.draggingEles;
+  var vpManip = r.pinching || r.hoverData.dragging || r.swipePanning || r.data.wheelZooming || r.hoverData.draggingEles || r.cy.animated();
   var hideEdges = r.hideEdgesOnViewport && vpManip;
   var needMbClear = [];
   needMbClear[r.NODE] = !needDraw[r.NODE] && motionBlur && !r.clearedForMotionBlur[r.NODE] || r.clearingMotionBlur;
@@ -29774,26 +30068,38 @@ function CanvasRenderer(options) {
     bufferCanvases: new Array(CRp$a.BUFFER_COUNT),
     bufferContexts: new Array(CRp$a.CANVAS_LAYERS)
   };
-  var tapHlOff = '-webkit-tap-highlight-color: rgba(0,0,0,0);';
+  var tapHlOffAttr = '-webkit-tap-highlight-color';
+  var tapHlOffStyle = 'rgba(0,0,0,0)';
   r.data.canvasContainer = document.createElement('div'); // eslint-disable-line no-undef
 
   var containerStyle = r.data.canvasContainer.style;
-  r.data.canvasContainer.setAttribute('style', tapHlOff);
+  r.data.canvasContainer.style[tapHlOffAttr] = tapHlOffStyle;
   containerStyle.position = 'relative';
   containerStyle.zIndex = '0';
   containerStyle.overflow = 'hidden';
   var container = options.cy.container();
   container.appendChild(r.data.canvasContainer);
+  container.style[tapHlOffAttr] = tapHlOffStyle;
+  var styleMap = {
+    '-webkit-user-select': 'none',
+    '-moz-user-select': '-moz-none',
+    'user-select': 'none',
+    '-webkit-tap-highlight-color': 'rgba(0,0,0,0)',
+    'outline-style': 'none'
+  };
 
-  if ((container.getAttribute('style') || '').indexOf(tapHlOff) < 0) {
-    container.setAttribute('style', (container.getAttribute('style') || '') + tapHlOff);
+  if (ms()) {
+    styleMap['-ms-touch-action'] = 'none';
+    styleMap['touch-action'] = 'none';
   }
 
   for (var i = 0; i < CRp$a.CANVAS_LAYERS; i++) {
     var canvas = r.data.canvases[i] = document.createElement('canvas'); // eslint-disable-line no-undef
 
     r.data.contexts[i] = canvas.getContext('2d');
-    canvas.setAttribute('style', '-webkit-user-select: none; -moz-user-select: -moz-none; user-select: none; -webkit-tap-highlight-color: rgba(0,0,0,0); outline-style: none;' + (ms() ? ' -ms-touch-action: none; touch-action: none; ' : ''));
+    Object.keys(styleMap).forEach(function (k) {
+      canvas.style[k] = styleMap[k];
+    });
     canvas.style.position = 'absolute';
     canvas.setAttribute('data-id', 'layer' + i);
     canvas.style.zIndex = String(CRp$a.CANVAS_LAYERS - i);
@@ -30029,20 +30335,20 @@ function CanvasRenderer(options) {
   tlbTxrCache.onDequeue(refineInLayers);
 }
 
-CRp$a.redrawHint = function (group, bool$$1) {
+CRp$a.redrawHint = function (group, bool) {
   var r = this;
 
   switch (group) {
     case 'eles':
-      r.data.canvasNeedsRedraw[CRp$a.NODE] = bool$$1;
+      r.data.canvasNeedsRedraw[CRp$a.NODE] = bool;
       break;
 
     case 'drag':
-      r.data.canvasNeedsRedraw[CRp$a.DRAG] = bool$$1;
+      r.data.canvasNeedsRedraw[CRp$a.DRAG] = bool;
       break;
 
     case 'select':
-      r.data.canvasNeedsRedraw[CRp$a.SELECT_BOX] = bool$$1;
+      r.data.canvasNeedsRedraw[CRp$a.SELECT_BOX] = bool;
       break;
   }
 }; // whether to use Path2D caching for drawing
@@ -30062,13 +30368,13 @@ CRp$a.usePaths = function () {
   return pathsImpld && this.pathsEnabled;
 };
 
-CRp$a.setImgSmoothing = function (context, bool$$1) {
+CRp$a.setImgSmoothing = function (context, bool) {
   if (context.imageSmoothingEnabled != null) {
-    context.imageSmoothingEnabled = bool$$1;
+    context.imageSmoothingEnabled = bool;
   } else {
-    context.webkitImageSmoothingEnabled = bool$$1;
-    context.mozImageSmoothingEnabled = bool$$1;
-    context.msImageSmoothingEnabled = bool$$1;
+    context.webkitImageSmoothingEnabled = bool;
+    context.mozImageSmoothingEnabled = bool;
+    context.msImageSmoothingEnabled = bool;
   }
 };
 
@@ -30083,7 +30389,7 @@ CRp$a.getImgSmoothing = function (context) {
 CRp$a.makeOffscreenCanvas = function (width, height) {
   var canvas;
 
-  if ((typeof OffscreenCanvas === "undefined" ? "undefined" : _typeof(OffscreenCanvas)) !== ("undefined")) {
+  if ((typeof OffscreenCanvas === "undefined" ? "undefined" : _typeof(OffscreenCanvas)) !== ( "undefined" )) {
     canvas = new OffscreenCanvas(width, height);
   } else {
     canvas = document.createElement('canvas'); // eslint-disable-line no-undef
@@ -30255,6 +30561,10 @@ function setExtension(type, name, registrant) {
         this.emitter().removeListener(evt, cb);
         return this;
       },
+      removeAllListeners: function removeAllListeners() {
+        this.emitter().removeAllListeners();
+        return this;
+      },
       emit: function emit(evt, params) {
         this.emitter().emit(evt, params);
         return this;
@@ -30423,28 +30733,28 @@ sheetfn.css = function (name, value) {
 sheetfn.style = sheetfn.css; // generate a real style object from the dummy stylesheet
 
 sheetfn.generateStyle = function (cy) {
-  var style$$1 = new Style(cy);
-  return this.appendToStyle(style$$1);
+  var style = new Style(cy);
+  return this.appendToStyle(style);
 }; // append a dummy stylesheet object on a real style object
 
 
-sheetfn.appendToStyle = function (style$$1) {
+sheetfn.appendToStyle = function (style) {
   for (var i = 0; i < this.length; i++) {
     var context = this[i];
     var selector = context.selector;
     var props = context.properties;
-    style$$1.selector(selector); // apply selector
+    style.selector(selector); // apply selector
 
     for (var j = 0; j < props.length; j++) {
       var prop = props[j];
-      style$$1.css(prop.name, prop.value); // apply property
+      style.css(prop.name, prop.value); // apply property
     }
   }
 
-  return style$$1;
+  return style;
 };
 
-var version = "3.5.0";
+var version = "3.10.0";
 
 var cytoscape = function cytoscape(options) {
   // if no options specified, use default
@@ -30471,8 +30781,8 @@ cytoscape.use = function (ext) {
   return this;
 };
 
-cytoscape.warnings = function (bool$$1) {
-  return warnings(bool$$1);
+cytoscape.warnings = function (bool) {
+  return warnings(bool);
 }; // replaced by build system
 
 

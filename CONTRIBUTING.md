@@ -46,4 +46,6 @@ You can run `eslint --fix` to automatically format the code to more or less matc
 
 Tests go in the `./test` directory, as Mocha tests usually do.  They are just a flat list of `.js` files that Mocha runs.  If your change is a bugfix, please add a unit test that would fail without your fix.  If your change is a new feature, please add unit tests accordingly.  If your change is visual/rendering-related, then unit tests are not possible.
 
-Please run `gulp test` or `mocha` to make sure all the unit tests are passing before you make your pull request.
+Please run `npm test` or `mocha` to make sure all the unit tests are passing before you make your pull request.
+
+We also have support for running the Mocha tests in IE9+ and other old browsers.  You can run the tests in a [Windows IE VM](https://developer.microsoft.com/en-us/microsoft-edge/tools/vms/) while running `npm run watch:umd`.  Go to `http://youripaddress:8081/test/ie.html` in IE to open the Mocha test page.

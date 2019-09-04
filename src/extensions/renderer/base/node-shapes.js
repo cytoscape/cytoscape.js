@@ -513,8 +513,7 @@ BRp.registerNodeShapes = function(){
   this.generateEllipse();
 
   this.generatePolygon( 'triangle', math.generateUnitNgonPointsFitToSquare( 3, 0 ) );
-
-  this.generateRoundPolygon('round-triangle', math.generateUnitNgonPointsFitToSquare(3, 0));
+  this.generateRoundPolygon( 'round-triangle', math.generateUnitNgonPointsFitToSquare( 3, 0 ) );
 
   this.generatePolygon( 'rectangle', math.generateUnitNgonPointsFitToSquare( 4, 0 ) );
   nodeShapes[ 'square' ] = nodeShapes[ 'rectangle' ];
@@ -527,20 +526,28 @@ BRp.registerNodeShapes = function(){
 
   this.generateBottomRoundrectangle();
 
-  this.generatePolygon( 'diamond', [
-    0, 1,
-    1, 0,
-    0, -1,
-    -1, 0
-  ] );
+  {
+    const diamondPoints = [
+      0, 1,
+      1, 0,
+      0, -1,
+      -1, 0
+    ];
+    this.generatePolygon( 'diamond', diamondPoints );
+    this.generateRoundPolygon( 'round-diamond', diamondPoints );
+  }
 
   this.generatePolygon( 'pentagon', math.generateUnitNgonPointsFitToSquare( 5, 0 ) );
+  this.generateRoundPolygon( 'round-pentagon', math.generateUnitNgonPointsFitToSquare( 5, 0) );
 
   this.generatePolygon( 'hexagon', math.generateUnitNgonPointsFitToSquare( 6, 0 ) );
+  this.generateRoundPolygon( 'round-hexagon', math.generateUnitNgonPointsFitToSquare( 6, 0) );
 
   this.generatePolygon( 'heptagon', math.generateUnitNgonPointsFitToSquare( 7, 0 ) );
+  this.generateRoundPolygon( 'round-heptagon', math.generateUnitNgonPointsFitToSquare( 7, 0) );
 
   this.generatePolygon( 'octagon', math.generateUnitNgonPointsFitToSquare( 8, 0 ) );
+  this.generateRoundPolygon( 'round-octagon', math.generateUnitNgonPointsFitToSquare( 8, 0) );
 
   var star5Points = new Array( 20 );
   {
@@ -592,13 +599,17 @@ BRp.registerNodeShapes = function(){
     1, -0.95
   ] );
 
-  this.generatePolygon( 'tag', [
-    -1, -1,
-    0.25, -1,
-    1, 0,
-    0.25,1,
-    -1, 1
-  ]);
+  {
+    const tagPoints = [
+      -1, -1,
+      0.25, -1,
+      1, 0,
+      0.25,1,
+      -1, 1
+    ];
+    this.generatePolygon( 'tag', tagPoints );
+    this.generateRoundPolygon( 'round-tag', tagPoints );
+  }
 
   nodeShapes.makePolygon = function( points ){
 

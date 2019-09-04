@@ -12,6 +12,21 @@
     <script>
       var $ = function( sel ){ return document.querySelector(sel); };
       var $$ = function( sel ){ return document.querySelectorAll(sel); };
+
+      // patches for IE:
+
+      if( NodeList.prototype.forEach == null ){
+        NodeList.prototype.forEach = function(fn){
+          var l = this.length;
+          var i, el;
+
+          for(i = 0; i < l; i++){
+            el = this[i];
+
+            fn(el, i, this);
+          }
+        };
+      }
     </script>
 
 

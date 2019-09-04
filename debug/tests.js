@@ -3,17 +3,17 @@
 (function(){
 
   var assign = function( tgt ){
-    let args = arguments;
+    var args = arguments;
 
-    for( let i = 1; i < args.length; i++ ){
-      let obj = args[ i ];
+    for( var i = 1; i < args.length; i++ ){
+      var obj = args[ i ];
 
       if( obj == null ){ continue; }
 
-      let keys = Object.keys( obj );
+      var keys = Object.keys( obj );
 
-      for( let j = 0; j < keys.length; j++ ){
-        let k = keys[j];
+      for( var j = 0; j < keys.length; j++ ){
+        var k = keys[j];
 
         tgt[ k ] = obj[ k ];
       }

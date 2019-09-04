@@ -3,6 +3,13 @@ var cytoscape = require('../src/test.js', cytoscape);
 
 describe('Collection compound nodes', function(){
 
+  var copyPosition = function(p){
+    return {
+      x: p.x,
+      y: p.y
+    };
+  };
+
   var copyBounds = function(bb){
     return {
       x1: bb.x1,
@@ -118,7 +125,7 @@ describe('Collection compound nodes', function(){
   });
 
   it('child.position() moves ancestor', function(){
-    var p1 = Object.assign({}, n1.position());
+    var p1 = copyPosition(n1.position());
 
     n4.position({ x: -200, y: -200 });
 
@@ -156,10 +163,9 @@ describe('Collection compound nodes', function(){
   });
 
   it('node.position() moves self boundingbox', function(){
-    var bb1 = Object.assign({}, n4.boundingBox());
-
+    var bb1 = copyBounds(n4.boundingBox());
     var delta = 100;
-    var p1 = Object.assign({}, n4.position());
+    var p1 = copyPosition(n4.position());
     var p2 = { x: p1.x + delta, y: p1.y + delta };
 
     n4.position(p2);

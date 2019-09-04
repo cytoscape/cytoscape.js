@@ -1265,10 +1265,10 @@ describe('Collection style', function(){
       ani.play();
 
       return p.then(function(){
-        let bb = n.boundingBox();
-        let x = (bb.x1 + bb.x2)/2;
-        let y = (bb.y1 + bb.y2)/2;
-        let pos = n.position();
+        var bb = n.boundingBox();
+        var x = (bb.x1 + bb.x2)/2;
+        var y = (bb.y1 + bb.y2)/2;
+        var pos = n.position();
 
         expect(x).to.equal(pos.x);
         expect(y).to.equal(pos.y);
@@ -1285,10 +1285,10 @@ describe('Collection style', function(){
 
       layout.on('layoutstop', function(){
         cy.nodes().forEach(function(n){
-          let bb = n.boundingBox();
-          let x = (bb.x1 + bb.x2)/2;
-          let y = (bb.y1 + bb.y2)/2;
-          let pos = n.position();
+          var bb = n.boundingBox();
+          var x = (bb.x1 + bb.x2)/2;
+          var y = (bb.y1 + bb.y2)/2;
+          var pos = n.position();
 
           expect(x, 'x of ' + n.id()).to.equal(pos.x);
           expect(y, 'y of ' + n.id()).to.equal(pos.y);

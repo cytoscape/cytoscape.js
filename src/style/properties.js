@@ -134,7 +134,9 @@ const styfn = {};
       multiple:true,
       min: 0,
       validate: function( valArr ) {
-        return [1,2,4].includes(valArr.length);
+        const length = valArr.length;
+
+        return length === 1 || length === 2 || length === 4;
       }
     }
   };

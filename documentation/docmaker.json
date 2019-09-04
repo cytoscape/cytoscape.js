@@ -3565,7 +3565,7 @@
                       ] },
                       { "name": "damping", "descr": "A damping factor on [0.5, 1) (default `0.8`).", "optional": true },
                       { "name": "minIterations", "descr": "The minimum number of iteraions the algorithm will run before stopping (default `100`).", "optional": true },
-                      { "name": "minIterations", "descr": "The maximum number of iteraions the algorithm will run before stopping (default `1000`).", "optional": true }
+                      { "name": "maxIterations", "descr": "The maximum number of iteraions the algorithm will run before stopping (default `1000`).", "optional": true }
                     ] }
                   ]
                 }

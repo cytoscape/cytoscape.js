@@ -573,7 +573,11 @@
 <li>Includes graph theory algorithms, from BFS to PageRank</li>
 <li>Animatable graph elements and viewport</li>
 <li>Fully extendable (and extensions can be autoscaffolded for you)</li>
-<li>Well maintained</li>
+<li>Well maintained<ul>
+<li>Weekly patch release cadence</li>
+<li>Monthly feature release cadence</li>
+</ul>
+</li>
 <li>Listed by <a href="https://doi.org/10.5281/zenodo.831800">Zenodo</a> for per-version DOIs</li>
 <li>Listed by <a href="https://omictools.com/cytoscape-js-tool">OMIC Tools</a></li>
 <li>Used by<ul>
@@ -614,6 +618,7 @@
 <li><a href="http://en.musicalized.com/full">Musicalized</a></li>
 <li><a href="https://newrelic.com/platform">New Relic</a></li>
 <li><a href="http://www.ndexbio.org/">NDEx</a></li>
+<li><a href="https://www.nsa.gov/">NSA</a> : <a href="https://github.com/nsacyber/WALKOFF">WALKOFF</a></li>
 <li><a href="http://www.ohdsi.org/">OHDSI</a></li>
 <li><a href="http://www.pathwaycommons.org">Pathway Commons</a></li>
 <li><a href="https://github.com/idekerlab/py2cytoscape">py2cytoscape</a></li>
@@ -628,6 +633,7 @@
 <li><a href="https://www.ub.edu">University of Barcelona</a> : <a href="https://compgen.bio.ub.edu/PlanNET">PlanNET</a></li>
 <li><a href="http://www.cam.ac.uk/">University of Cambridge</a> : <a href="http://intermine.org/">Intermine</a></li>
 <li><a href="http://en.uestc.edu.cn/">University of Electronic Science and Technology of China</a> : <a href="http://cefg.uestc.edu.cn/Mslr/">Microbal Synthetic Lethal and Rescue Database</a></li>
+<li><a href="https://www.uni-heidelberg.de">University of Heidelberg</a> : <a href="https://mampf.mathi.uni-heidelberg.de/">MaMpf</a></li>
 <li><a href="http://www.imise.uni-leipzig.de/en">University of Leipzig, Institute for Medical Informatics, Statistics and Epidemiology (IMISE)</a> : <a href="http://www.snik.eu/">SNIK research project</a></li>
 <li><a href="https://umd.edu/">University of Maryland</a> : <a href="http://cbcb.umd.edu/">Center for Bioinformatics and Computational Biology</a> : <a href="https://marbl.github.io/MetagenomeScope/">MetagenomeScope</a></li>
 <li><a href="http://www.ucsd.edu/">University of Southern California, San Diego</a> : <a href="http://gnps.ucsd.edu/ProteoSAFe/result.jsp?view=network_displayer&amp;componentindex=67&amp;task=c95481f0c53d42e78a61bf899e9f9adb#%7B%7D">Visualization of structurally related compounds in Mass Spectrometry with Molecular Networks at GNPS</a></li>
@@ -653,12 +659,18 @@
 </ul>
 <h2 id="introduction/releases">Releases <a href="#introduction/releases"><span class="fa fa-bookmark"></span></a></h2>
 <ul>
+<li>3.10<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.10.0+is%3Aclosed">3.10.0</a></li>
+</ul>
+</li>
 <li>3.9<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.9.2+is%3Aclosed">3.9.2</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.9.1+is%3Aclosed">3.9.1</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.9.0+is%3Aclosed">3.9.0</a></li>
 </ul>
 </li>
 <li>3.8<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.8.5+is%3Aclosed">3.8.5</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.8.4+is%3Aclosed">3.8.4</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.8.3+is%3Aclosed">3.8.3</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.8.2+is%3Aclosed">3.8.2</a></li>
@@ -1267,7 +1279,7 @@
   <a href="#init-opts/userZoomingEnabled">userZoomingEnabled</a>: true,
   <a href="#init-opts/panningEnabled">panningEnabled</a>: true,
   <a href="#init-opts/userPanningEnabled">userPanningEnabled</a>: true,
-  <a href="#init-opts/boxSelectionEnabled">boxSelectionEnabled</a>: false,
+  <a href="#init-opts/boxSelectionEnabled">boxSelectionEnabled</a>: true,
   <a href="#init-opts/selectionType">selectionType</a>: 'single',
   <a href="#init-opts/touchTapThreshold">touchTapThreshold</a>: 8,
   <a href="#init-opts/desktopTapThreshold">desktopTapThreshold</a>: 4,
@@ -1316,7 +1328,7 @@
 <p><span id="init-opts/userPanningEnabled"></span>
 <strong><code>userPanningEnabled</code></strong> : Whether user events (e.g. dragging the graph background) are allowed to pan the graph.  Programmatic changes to pan are unaffected by this option.</p>
 <p><span id="init-opts/boxSelectionEnabled"></span>
-<strong><code>boxSelectionEnabled</code></strong> : Whether box selection (i.e. drag a box overlay around, and release it to select) is enabled.  If enabled, the user must taphold to pan the graph.</p>
+<strong><code>boxSelectionEnabled</code></strong> : Whether box selection (i.e. drag a box overlay around, and release it to select) is enabled.  If enabled while panning is also enabled, the user must use a modifier key (shift, alt, control, or command) to use box selection.</p>
 <p><span id="init-opts/selectionType"></span>
 <strong><code>selectionType</code></strong> : A string indicating the selection behaviour from user input.  For <code>&#39;additive&#39;</code>, a new selection made by the user adds to the set of currently selected elements.  For <code>&#39;single&#39;</code>, a new selection made by the user becomes the entire set of currently selected elements (i.e. the previous elements are unselected).</p>
 <p><span id="init-opts/touchTapThreshold"></span>
@@ -3260,7 +3272,7 @@ setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</spa
 
 
 
-							<div class="descr"><p>Get or set whether box selection is enabled.   If enabled along with panning, the user must hold one of shift, control, meta, or alt down to initiate box selection.</p>
+							<div class="descr"><p>Get or set whether box selection is enabled.   If enabled along with panning, the user must hold down one of shift, control, alt, or command to initiate box selection.</p>
 </div>
 
 							<div class="formats">
@@ -6418,7 +6430,28 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 															<li>
 																<span class="name">includeLabels</span>
 																
-																<span class="descr"><p>A boolean indicating whether to include labels in the bounding box (default <code>true</code>).</p>
+																<span class="descr"><p>A boolean indicating whether to include labels overall in the bounding box (default <code>true</code>).  This option overrides all other label options if <code>false</code>.</p>
+</span>
+															</li>
+
+															<li>
+																<span class="name">includeMainLabels</span>
+																
+																<span class="descr"><p>A boolean indicating whether to include main (node or edge) <code>label</code>s in the bounding box (default <code>true</code>).</p>
+</span>
+															</li>
+
+															<li>
+																<span class="name">includeSourceLabels</span>
+																
+																<span class="descr"><p>A boolean indicating whether to include (edge) <code>source-label</code>s in the bounding box (default <code>true</code>).</p>
+</span>
+															</li>
+
+															<li>
+																<span class="name">includeTargetLabels</span>
+																
+																<span class="descr"><p>A boolean indicating whether to include (edge) <code>target-label</code>s in the bounding box (default <code>true</code>).</p>
 </span>
 															</li>
 
@@ -6493,7 +6526,28 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 															<li>
 																<span class="name">includeLabels</span>
 																
-																<span class="descr"><p>A boolean indicating whether to include labels in the bounding box (default <code>true</code>).</p>
+																<span class="descr"><p>A boolean indicating whether to include labels overall in the bounding box (default <code>true</code>).  This option overrides all other label options if <code>false</code>.</p>
+</span>
+															</li>
+
+															<li>
+																<span class="name">includeMainLabels</span>
+																
+																<span class="descr"><p>A boolean indicating whether to include main (node or edge) <code>label</code>s in the bounding box (default <code>true</code>).</p>
+</span>
+															</li>
+
+															<li>
+																<span class="name">includeSourceLabels</span>
+																
+																<span class="descr"><p>A boolean indicating whether to include (edge) <code>source-label</code>s in the bounding box (default <code>true</code>).</p>
+</span>
+															</li>
+
+															<li>
+																<span class="name">includeTargetLabels</span>
+																
+																<span class="descr"><p>A boolean indicating whether to include (edge) <code>target-label</code>s in the bounding box (default <code>true</code>).</p>
 </span>
 															</li>
 
@@ -12535,7 +12589,7 @@ ks.cut.select();</code></pre>
 															</li>
 
 															<li>
-																<span class="name">minIterations</span>
+																<span class="name">maxIterations</span>
 																<span class="optional">[optional]</span>
 																<span class="descr"><p>The maximum number of iteraions the algorithm will run before stopping (default <code>1000</code>).</p>
 </span>
@@ -13309,7 +13363,7 @@ Sets the subject of the selector (e.g. <code>$node &gt; node</code> to select th
 </ul>
 <p>The following properties apply to all images of a node:</p>
 <ul>
-<li><strong><code>bounds-expansion</code></strong> : Specifies a padding size (e.g. <code>20px</code>) that expands the bounding box of the node in all directions.  This allows for images to be drawn outside of the normal bounding box of the node when <code>background-clip</code> is <code>none</code>.  This is useful for small decorations just outside of the node.</li>
+<li><strong><code>bounds-expansion</code></strong> : Specifies a padding size (e.g. <code>20px</code>) that expands the bounding box of the node in all directions.  This allows for images to be drawn outside of the normal bounding box of the node when <code>background-clip</code> is <code>none</code>.  This is useful for small decorations just outside of the node. <code>bounds-expansions</code> accepts 1 value (for all directions), 2 values, (<code>[topAndBottom, leftAndRight]</code>) or 4 values (<code>[top, right, bottom, left]</code>).</li>
 </ul>
 <p>The following is an example of valid background image styling using JSON. The example images are taken from Wikimedia Commons with the Creative Commons license.</p>
 <pre><code>{

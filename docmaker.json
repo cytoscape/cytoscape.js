@@ -657,7 +657,7 @@
 
             {
               "name": "cy.boxSelectionEnabled",
-              "descr": "Get or set whether box selection is enabled.   If enabled along with panning, the user must hold one of shift, control, meta, or alt down to initiate box selection.",
+              "descr": "Get or set whether box selection is enabled.   If enabled along with panning, the user must hold down one of shift, control, alt, or command to initiate box selection.",
               "formats": [
                 {
                   "descr": "Get whether box selection is enabled."
@@ -1715,7 +1715,10 @@
                       "fields": [
                         { "name": "includeNodes", "descr": "A boolean indicating whether to include nodes in the bounding box (default `true`)." },
                         { "name": "includeEdges", "descr": "A boolean indicating whether to include edges in the bounding box (default `true`)." },
-                        { "name": "includeLabels", "descr": "A boolean indicating whether to include labels in the bounding box (default `true`)." },
+                        { "name": "includeLabels", "descr": "A boolean indicating whether to include labels overall in the bounding box (default `true`).  This option overrides all other label options if `false`." },
+                        { "name": "includeMainLabels", "descr": "A boolean indicating whether to include main (node or edge) `label`s in the bounding box (default `true`)." },
+                        { "name": "includeSourceLabels", "descr": "A boolean indicating whether to include (edge) `source-label`s in the bounding box (default `true`)." },
+                        { "name": "includeTargetLabels", "descr": "A boolean indicating whether to include (edge) `target-label`s in the bounding box (default `true`)." },
                         { "name": "includeOverlays", "descr": "A boolean indicating whether to include overlays (such as the one which appears when a node is clicked) in the bounding box (default `true`)." }
                       ]
                     }
@@ -1740,7 +1743,10 @@
                       "fields": [
                         { "name": "includeNodes", "descr": "A boolean indicating whether to include nodes in the bounding box (default `true`)." },
                         { "name": "includeEdges", "descr": "A boolean indicating whether to include edges in the bounding box (default `true`)." },
-                        { "name": "includeLabels", "descr": "A boolean indicating whether to include labels in the bounding box (default `true`)." },
+                        { "name": "includeLabels", "descr": "A boolean indicating whether to include labels overall in the bounding box (default `true`).  This option overrides all other label options if `false`." },
+                        { "name": "includeMainLabels", "descr": "A boolean indicating whether to include main (node or edge) `label`s in the bounding box (default `true`)." },
+                        { "name": "includeSourceLabels", "descr": "A boolean indicating whether to include (edge) `source-label`s in the bounding box (default `true`)." },
+                        { "name": "includeTargetLabels", "descr": "A boolean indicating whether to include (edge) `target-label`s in the bounding box (default `true`)." },
                         { "name": "includeOverlays", "descr": "A boolean indicating whether to include overlays (such as the one which appears when a node is clicked) in the bounding box (default `true`)." }
                       ]
                     }
@@ -3559,7 +3565,7 @@
                       ] },
                       { "name": "damping", "descr": "A damping factor on [0.5, 1) (default `0.8`).", "optional": true },
                       { "name": "minIterations", "descr": "The minimum number of iteraions the algorithm will run before stopping (default `100`).", "optional": true },
-                      { "name": "minIterations", "descr": "The maximum number of iteraions the algorithm will run before stopping (default `1000`).", "optional": true }
+                      { "name": "maxIterations", "descr": "The maximum number of iteraions the algorithm will run before stopping (default `1000`).", "optional": true }
                     ] }
                   ]
                 }

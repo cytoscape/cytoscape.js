@@ -39,6 +39,8 @@
  * Animatable graph elements and viewport
  * Fully extendable (and extensions can be autoscaffolded for you)
  * Well maintained
+   * Weekly patch release cadence
+   * Monthly feature release cadence
  * Listed by [Zenodo](https://doi.org/10.5281/zenodo.831800) for per-version DOIs
  * Listed by [OMIC Tools](https://omictools.com/cytoscape-js-tool)
  * Used by
@@ -79,6 +81,7 @@
   * [Musicalized](http://en.musicalized.com/full)
   * [New Relic](https://newrelic.com/platform)
   * [NDEx](http://www.ndexbio.org/)
+  * [NSA](https://www.nsa.gov/) : [WALKOFF](https://github.com/nsacyber/WALKOFF)
   * [OHDSI](http://www.ohdsi.org/)
   * [Pathway Commons](http://www.pathwaycommons.org)
   * [py2cytoscape](https://github.com/idekerlab/py2cytoscape)
@@ -93,6 +96,7 @@
   * [University of Barcelona](https://www.ub.edu) : [PlanNET](https://compgen.bio.ub.edu/PlanNET)
   * [University of Cambridge](http://www.cam.ac.uk/) : [Intermine](http://intermine.org/)
   * [University of Electronic Science and Technology of China](http://en.uestc.edu.cn/) : [Microbal Synthetic Lethal and Rescue Database](http://cefg.uestc.edu.cn/Mslr/)
+  * [University of Heidelberg](https://www.uni-heidelberg.de) : [MaMpf](https://mampf.mathi.uni-heidelberg.de/)
   * [University of Leipzig, Institute for Medical Informatics, Statistics and Epidemiology (IMISE)](http://www.imise.uni-leipzig.de/en) : [SNIK research project](http://www.snik.eu/)
   * [University of Maryland](https://umd.edu/) : [Center for Bioinformatics and Computational Biology](http://cbcb.umd.edu/) : [MetagenomeScope](https://marbl.github.io/MetagenomeScope/)
   * [University of Southern California, San Diego](http://www.ucsd.edu/) : [Visualization of structurally related compounds in Mass Spectrometry with Molecular Networks at GNPS](http://gnps.ucsd.edu/ProteoSAFe/result.jsp?view=network_displayer&componentindex=67&task=c95481f0c53d42e78a61bf899e9f9adb#%7B%7D)
@@ -127,10 +131,15 @@ The library was created at the [Donnelly Centre](http://thedonnellycentre.utoron
 
 
 ## Releases
+
+- 3.10
+ - [3.10.0](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.10.0+is%3Aclosed)
 - 3.9
+ - [3.9.2](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.9.2+is%3Aclosed)
  - [3.9.1](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.9.1+is%3Aclosed)
  - [3.9.0](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.9.0+is%3Aclosed)
 - 3.8
+ - [3.8.5](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.8.5+is%3Aclosed)
  - [3.8.4](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.8.4+is%3Aclosed)
  - [3.8.3](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.8.3+is%3Aclosed)
  - [3.8.2](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.8.2+is%3Aclosed)

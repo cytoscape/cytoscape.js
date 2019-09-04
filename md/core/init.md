@@ -45,7 +45,7 @@ An instance of Cytoscape.js has a number of options that can be set on initialis
   <a href="#init-opts/userZoomingEnabled">userZoomingEnabled</a>: true,
   <a href="#init-opts/panningEnabled">panningEnabled</a>: true,
   <a href="#init-opts/userPanningEnabled">userPanningEnabled</a>: true,
-  <a href="#init-opts/boxSelectionEnabled">boxSelectionEnabled</a>: false,
+  <a href="#init-opts/boxSelectionEnabled">boxSelectionEnabled</a>: true,
   <a href="#init-opts/selectionType">selectionType</a>: 'single',
   <a href="#init-opts/touchTapThreshold">touchTapThreshold</a>: 8,
   <a href="#init-opts/desktopTapThreshold">desktopTapThreshold</a>: 4,
@@ -111,7 +111,7 @@ An instance of Cytoscape.js has a number of options that can be set on initialis
 **`userPanningEnabled`** : Whether user events (e.g. dragging the graph background) are allowed to pan the graph.  Programmatic changes to pan are unaffected by this option.
 
 <span id="init-opts/boxSelectionEnabled"></span>
-**`boxSelectionEnabled`** : Whether box selection (i.e. drag a box overlay around, and release it to select) is enabled.  If enabled, the user must taphold to pan the graph.
+**`boxSelectionEnabled`** : Whether box selection (i.e. drag a box overlay around, and release it to select) is enabled.  If enabled while panning is also enabled, the user must use a modifier key (shift, alt, control, or command) to use box selection.
 
 <span id="init-opts/selectionType"></span>
 **`selectionType`** : A string indicating the selection behaviour from user input.  For `'additive'`, a new selection made by the user adds to the set of currently selected elements.  For `'single'`, a new selection made by the user becomes the entire set of currently selected elements (i.e. the previous elements are unselected).

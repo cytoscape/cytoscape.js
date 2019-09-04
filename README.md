@@ -125,9 +125,9 @@ If the `TRAVIS` or `TEST_BUILD` environment variables are defined, then `mocha` 
  1. Update the `VERSION` environment variable, e.g. `export VERSION=1.2.3`
  1. Confirm all the tests are passing: `npm run test` (see also `test/index.html` for browser testing)
  1. Confirm all the tests are passing in IE9:
-   1. `npm run watch:umd`
-   1. Open an [IE9 VM](https://developer.microsoft.com/en-us/microsoft-edge/tools/vms/)
-   1. Open `http://yourip:8081/test/ie.html` in IE
+     1. `npm run watch:umd`
+     1. Open an [IE9 VM](https://developer.microsoft.com/en-us/microsoft-edge/tools/vms/)
+     1. Open `http://yourip:8081/test/ie.html` in IE
  1. Prepare a release: `npm run release`
  1. Review the files that were just built in the previous step.  Try out the newly-built docs and demos.
  1. Add the the release to git: `git add . && git commit -m "Build $VERSION"`

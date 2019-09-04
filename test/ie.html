@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Cy.js Mocha Tests for IE etc.</title>
+
+  <link rel="stylesheet" href="lib/mocha.css" />
+
+  <script src="lib/chai-ie.js"></script>
+  <script src="lib/bluebird.js"></script>
+
+  <script src="../build/cytoscape.umd.js"></script>
+
+  <script>
+    window.require = function( name, fallbackVal ){
+      if( fallbackVal ){ return fallbackVal; }
+
+      return window[ name ];
+    };
+  </script>
+</head>
+
+  <body>
+    <h1>Old browser test page</h1>
+    <p>
+      This page has older versions of Mocha and Chai in order to work with old browsers like IE.
+      It also includes Babel in case someone writes tests that aren't ES5 compatible.
+      Babel and its polyfills only apply to the test code itself.
+      Cytoscape is built using Babel and Cytoscape uses its own internal polyfills where necessary.
+      Running Babel in old browsers like IE is very slow, so please be patient.
+    </p>
+    <p>
+      If you are running these tests in a slow VM, some of the style-related tests may fail.
+      Those tests are timing-dependent, and old browsers may not support requestAnimationFrame().
+      Refresh and try again if you get a style test failure, or click a section to run only the failing subset of tests.
+    </p>
+    <div id="mocha"></div>
+    <script src="lib/mocha-ie.js"></script>
+    <script>mocha.setup('bdd')</script>
+    <script>mocha.timeout(10000)</script>
+
+    <!-- use babel in case someone makes test code that isn't compatible with old browsers like ie -->
+    <script src="lib/babel-polyfill.js"></script>
+    <script src="lib/babel-standalone.js"></script>
+
+    <script type="text/babel" src="collection-affinity-propagation.js"></script>
+    <script type="text/babel" src="collection-algorithms.js"></script>
+    <script type="text/babel" src="collection-astar.js"></script>
+    <script type="text/babel" src="collection-building-and-filtering.js"></script>
+    <script type="text/babel" src="collection-comparison.js"></script>
+    <script type="text/babel" src="collection-compound-nodes.js"></script>
+    <script type="text/babel" src="collection-data.js"></script>
+    <script type="text/babel" src="collection-fuzzy-c-means.js"></script>
+    <script type="text/babel" src="collection-graph-manipulation.js"></script>
+    <script type="text/babel" src="collection-hierarchical.js"></script>
+    <script type="text/babel" src="collection-iteration.js"></script>
+    <script type="text/babel" src="collection-k-means.js"></script>
+    <script type="text/babel" src="collection-k-medoids.js"></script>
+    <script type="text/babel" src="collection-markov-clustering.js"></script>
+    <script type="text/babel" src="collection-metadata.js"></script>
+    <script type="text/babel" src="collection-position-and-dimensions.js"></script>
+    <script type="text/babel" src="collection-selection.js"></script>
+    <script type="text/babel" src="collection-style.js"></script>
+    <script type="text/babel" src="collection-traversing.js"></script>
+    <script type="text/babel" src="core-export.js"></script>
+    <script type="text/babel" src="core-graph-manipulation.js"></script>
+    <script type="text/babel" src="core-init.js"></script>
+    <script type="text/babel" src="events.js"></script>
+    <script type="text/babel" src="extensions.js"></script>
+    <script type="text/babel" src="selectors.js"></script>
+
+    <script type="text/babel">mocha.run();</script>
+
+    <div id="cy"></div>
+
+  </body>
+</html>

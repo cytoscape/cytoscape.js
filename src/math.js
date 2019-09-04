@@ -838,9 +838,16 @@ export const pointInsideRoundPolygon = ( x, y, basePoints, centerX, centerY, wid
     cutPolygonPoints[ i * 4 + 2] = cp1x;
     cutPolygonPoints[ i * 4 + 3] = cp1y;
 
-    // Check intersection with rounded corner
-    const cx = cp0x + basePoints[sourceUv + 1] * cornerRadius;
-    const cy = cp0y - basePoints[sourceUv] * cornerRadius;
+    let orthx = basePoints[ sourceUv + 1 ];
+    let orthy = -basePoints[ sourceUv ];
+    const cosAlpha = orthx * basePoints[ destUv ] + orthy * basePoints [ destUv + 1 ];
+    if (cosAlpha < 0) {
+      orthx *= -1;
+      orthy *= -1;
+    }
+
+    const cx = cp0x + orthx * cornerRadius;
+    const cy = cp0y + orthy * cornerRadius;
 
     const squaredDistance = Math.pow(cx  - x, 2) + Math.pow(cy - y, 2);
     if (squaredDistance <= squaredCornerRadius) {
@@ -1230,9 +1237,17 @@ export const roundPolygonIntersectLine = ( x, y, basePoints, centerX, centerY, w
     lines[i * 4] = cp1x;
     lines[i * 4 + 1] = cp1y;
 
-    // Check intersection with circle
-    const cx = cp0x + basePoints[sourceUv + 1] * cornerRadius;
-    const cy = cp0y - basePoints[sourceUv] * cornerRadius;
+    let orthx = basePoints[ sourceUv + 1 ];
+    let orthy = -basePoints[ sourceUv ];
+    const cosAlpha = orthx * basePoints[ destUv ] + orthy * basePoints [ destUv + 1 ];
+    if (cosAlpha < 0) {
+      orthx *= -1;
+      orthy *= -1;
+    }
+
+    const cx = cp0x + orthx * cornerRadius;
+    const cy = cp0y + orthy * cornerRadius;
+
     intersection = intersectLineCircle(x, y, centerX, centerY, cx, cy, cornerRadius);
 
     if( intersection.length !== 0 ){

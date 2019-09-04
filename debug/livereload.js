@@ -5,5 +5,5 @@ window.addEventListener('DOMContentLoaded', function(){
 
   script.src = 'http://' + location.hostname + ':35729/livereload.js';
 
-  document.head.prepend( script );
+  document.head.appendChild( script );
 });

@@ -168,6 +168,7 @@ Shape:
  * **`shape`** : The shape of the node's body.  Note that each shape fits within the specified `width` and `height`, and so you may have to adjust `width` and `height` if you desire an equilateral shape (i.e. `width !== height` for several equilateral shapes).  Only `*rectangle` shapes are supported by compounds, because the dimensions of a compound are defined by the bounding box of the children.  The following values are accepted:
     * `ellipse`
     * `triangle`
+    * `round-triangle`
     * `rectangle`
     * `round-rectangle`
     * `bottom-round-rectangle`
@@ -175,13 +176,19 @@ Shape:
     * `barrel`
     * `rhomboid`
     * `diamond`
+    * `round-diamond`
     * `pentagon`
+    * `round-pentagon`
     * `hexagon`
+    * `round-hexagon`
     * `concave-hexagon`
     * `heptagon`
+    * `round-heptagon`
     * `octagon`
+    * `round-octagon`
     * `star`
     * `tag`
+    * `round-tag`
     * `vee`
     * `polygon` (custom polygon specified via `shape-polygon-points`).
  * **`shape-polygon-points`** : An array (or a space-separated string) of numbers ranging on [-1, 1], representing alternating x and y values (i.e. `x1 y1   x2 y2,   x3 y3 ...`).  This represents the points in the polygon for the node's shape.  The bounding box of the node is given by (-1, -1), (1, -1), (1, 1), (-1, 1).  The node's position is the origin (0, 0).

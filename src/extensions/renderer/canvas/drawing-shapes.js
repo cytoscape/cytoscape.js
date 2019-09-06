@@ -20,6 +20,48 @@ CRp.drawPolygonPath = function(
   context.closePath();
 };
 
+CRp.drawRoundPolygonPath = function(
+    context, x, y, width, height, points ){
+
+    const halfW = width / 2;
+    const halfH = height / 2;
+    const cornerRadius = math.getRoundPolygonRadius( width, height );
+
+    if( context.beginPath ){ context.beginPath(); }
+
+    for ( let i = 0; i < points.length / 4; i++ ){
+        let sourceUv, destUv;
+        if ( i === 0 ) {
+            sourceUv = points.length - 2;
+        } else {
+            sourceUv = i * 4 - 2;
+        }
+        destUv = i * 4 + 2;
+
+        const px = x + halfW * points[ i * 4 ];
+        const py = y + halfH * points[ i * 4 + 1 ];
+
+
+        const cosTheta = (-points[ sourceUv ] * points[ destUv ] - points[ sourceUv + 1 ] * points[ destUv + 1]);
+        const offset = cornerRadius / Math.tan(Math.acos(cosTheta) / 2);
+
+        const cp0x = px - offset * points[ sourceUv ];
+        const cp0y = py - offset * points[ sourceUv + 1 ];
+        const cp1x = px + offset * points[ destUv ];
+        const cp1y = py + offset * points[ destUv + 1 ];
+
+        if (i === 0) {
+            context.moveTo( cp0x, cp0y );
+        } else {
+            context.lineTo( cp0x, cp0y );
+        }
+
+        context.arcTo( px, py, cp1x, cp1y, cornerRadius );
+    }
+
+    context.closePath();
+};
+
 // Round rectangle drawing
 CRp.drawRoundRectanglePath = function(
   context, x, y, width, height ){

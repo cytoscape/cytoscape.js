@@ -65,8 +65,8 @@ const styfn = {};
     textBackgroundShape: { enums: [ 'rectangle', 'roundrectangle', 'round-rectangle' ]},
     nodeShape: { enums: [
       'rectangle', 'roundrectangle', 'round-rectangle', 'cutrectangle', 'cut-rectangle', 'bottomroundrectangle', 'bottom-round-rectangle', 'barrel',
-      'ellipse', 'triangle', 'square', 'pentagon', 'hexagon', 'concavehexagon', 'concave-hexagon', 'heptagon', 'octagon',
-      'tag', 'star', 'diamond', 'vee', 'rhomboid', 'polygon'
+      'ellipse', 'triangle', 'round-triangle', 'square', 'pentagon', 'round-pentagon', 'hexagon', 'round-hexagon', 'concavehexagon', 'concave-hexagon', 'heptagon', 'round-heptagon', 'octagon', 'round-octagon',
+      'tag', 'round-tag', 'star', 'diamond', 'round-diamond', 'vee', 'rhomboid', 'polygon',
     ] },
     compoundIncludeLabels: { enums: [ 'include', 'exclude' ] },
     arrowShape: { enums: [ 'tee', 'triangle', 'triangle-tee', 'triangle-cross', 'triangle-backcurve', 'vee', 'square', 'circle', 'diamond', 'chevron', 'none' ] },

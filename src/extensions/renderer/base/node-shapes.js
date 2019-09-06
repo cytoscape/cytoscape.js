@@ -59,6 +59,65 @@ BRp.generateEllipse = function(){
   } );
 };
 
+BRp.generateRoundPolygon = function( name, points ){
+
+  // Pre-compute control points
+  // Since these points depend on the radius length (which in turns depend on the width/height of the node) we will only pre-compute
+  // the unit vectors.
+  // For simplicity the layout will be:
+  // [ p0, UnitVectorP0P1, p1, UniVectorP1P2, ..., pn, UnitVectorPnP0 ]
+  const allPoints = new Array( points.length * 2 );
+
+  for ( let i = 0; i < points.length / 2; i++ ){
+    const sourceIndex = i * 2;
+    let destIndex;
+    if (i < points.length / 2 - 1) {
+      destIndex = (i + 1) * 2;
+    } else {
+      destIndex = 0;
+    }
+
+    allPoints[ i * 4 ] = points[ sourceIndex ];
+    allPoints[ i * 4 + 1 ] = points[ sourceIndex + 1 ];
+
+    const xDest = points[ destIndex ] - points[ sourceIndex ];
+    const yDest = points[ destIndex + 1] - points[ sourceIndex + 1 ];
+    const norm = Math.sqrt(xDest * xDest + yDest * yDest);
+
+    allPoints[ i * 4 + 2 ] = xDest / norm;
+    allPoints[ i * 4 + 3 ] = yDest / norm;
+  }
+
+  return ( this.nodeShapes[ name ] = {
+    renderer: this,
+
+    name: name,
+
+    points: allPoints,
+
+    draw: function( context, centerX, centerY, width, height ){
+      this.renderer.nodeShapeImpl( 'round-polygon', context, centerX, centerY, width, height, this.points );
+    },
+
+    intersectLine: function( nodeX, nodeY, width, height, x, y, padding ){
+        return math.roundPolygonIntersectLine(
+          x, y,
+          this.points,
+          nodeX,
+          nodeY,
+          width, height,
+          padding )
+          ;
+    },
+
+    checkPoint: function( x, y, padding, width, height, centerX, centerY ){
+      return math.pointInsideRoundPolygon( x, y, this.points,
+          centerX, centerY, width, height)
+          ;
+    }
+  } );
+};
+
 BRp.generateRoundRectangle = function(){
   return ( this.nodeShapes['round-rectangle'] = this.nodeShapes['roundrectangle'] = {
     renderer: this,
@@ -454,6 +513,7 @@ BRp.registerNodeShapes = function(){
   this.generateEllipse();
 
   this.generatePolygon( 'triangle', math.generateUnitNgonPointsFitToSquare( 3, 0 ) );
+  this.generateRoundPolygon( 'round-triangle', math.generateUnitNgonPointsFitToSquare( 3, 0 ) );
 
   this.generatePolygon( 'rectangle', math.generateUnitNgonPointsFitToSquare( 4, 0 ) );
   nodeShapes[ 'square' ] = nodeShapes[ 'rectangle' ];
@@ -466,20 +526,28 @@ BRp.registerNodeShapes = function(){
 
   this.generateBottomRoundrectangle();
 
-  this.generatePolygon( 'diamond', [
-    0, 1,
-    1, 0,
-    0, -1,
-    -1, 0
-  ] );
+  {
+    const diamondPoints = [
+      0, 1,
+      1, 0,
+      0, -1,
+      -1, 0
+    ];
+    this.generatePolygon( 'diamond', diamondPoints );
+    this.generateRoundPolygon( 'round-diamond', diamondPoints );
+  }
 
   this.generatePolygon( 'pentagon', math.generateUnitNgonPointsFitToSquare( 5, 0 ) );
+  this.generateRoundPolygon( 'round-pentagon', math.generateUnitNgonPointsFitToSquare( 5, 0) );
 
   this.generatePolygon( 'hexagon', math.generateUnitNgonPointsFitToSquare( 6, 0 ) );
+  this.generateRoundPolygon( 'round-hexagon', math.generateUnitNgonPointsFitToSquare( 6, 0) );
 
   this.generatePolygon( 'heptagon', math.generateUnitNgonPointsFitToSquare( 7, 0 ) );
+  this.generateRoundPolygon( 'round-heptagon', math.generateUnitNgonPointsFitToSquare( 7, 0) );
 
   this.generatePolygon( 'octagon', math.generateUnitNgonPointsFitToSquare( 8, 0 ) );
+  this.generateRoundPolygon( 'round-octagon', math.generateUnitNgonPointsFitToSquare( 8, 0) );
 
   var star5Points = new Array( 20 );
   {
@@ -531,13 +599,17 @@ BRp.registerNodeShapes = function(){
     1, -0.95
   ] );
 
-  this.generatePolygon( 'tag', [
-    -1, -1,
-    0.25, -1,
-    1, 0,
-    0.25,1,
-    -1, 1
-  ]);
+  {
+    const tagPoints = [
+      -1, -1,
+      0.25, -1,
+      1, 0,
+      0.25,1,
+      -1, 1
+    ];
+    this.generatePolygon( 'tag', tagPoints );
+    this.generateRoundPolygon( 'round-tag', tagPoints );
+  }
 
   nodeShapes.makePolygon = function( points ){
 

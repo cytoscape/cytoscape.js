@@ -410,6 +410,15 @@ let updateBoundsFromLabel = function( bounds, ele, prefix ){
       ly2 = Math.max( px1y1.y, px1y2.y, px2y1.y, px2y2.y );
     }
 
+    let bbPrefixRot = bbPrefix + 'Rot';
+    let bbRot = bbs[bbPrefixRot] = bbs[bbPrefixRot] || {};
+    bbRot.x1 = lx1;
+    bbRot.y1 = ly1;
+    bbRot.x2 = lx2;
+    bbRot.y2 = ly2;
+    bbRot.w = lx2 - lx1;
+    bbRot.h = ly2 - ly1;
+
     updateBounds( bounds, lx1, ly1, lx2, ly2 );
     updateBounds( _p.labelBounds.all, lx1, ly1, lx2, ly2 );
   }
@@ -778,15 +787,15 @@ let cachedBoundingBoxImpl = function( ele, opts ){
         updateBoundsFromBox(bb, _p.labelBounds.all);
       } else {
         if( opts.includeMainLabels ){
-          updateBoundsFromBox(bb, _p.labelBounds.main);
+          updateBoundsFromBox(bb, _p.labelBounds.mainRot);
         }
 
         if( opts.includeSourceLabels ){
-          updateBoundsFromBox(bb, _p.labelBounds.source);
+          updateBoundsFromBox(bb, _p.labelBounds.sourceRot);
         }
 
         if( opts.includeTargetLabels ){
-          updateBoundsFromBox(bb, _p.labelBounds.target);
+          updateBoundsFromBox(bb, _p.labelBounds.targetRot);
         }
       }
     }
@@ -882,6 +891,9 @@ elesfn.dirtyBoundingBoxCache = function(){
     _p.labelBounds.source = null;
     _p.labelBounds.target = null;
     _p.labelBounds.main = null;
+    _p.labelBounds.sourceRot = null;
+    _p.labelBounds.targetRot = null;
+    _p.labelBounds.mainRot = null;
     _p.arrowBounds.source = null;
     _p.arrowBounds.target = null;
     _p.arrowBounds['mid-source'] = null;

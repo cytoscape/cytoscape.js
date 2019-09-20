@@ -387,7 +387,9 @@ BRp.getLabelText = function( ele, prefix ){
           if( testW <= maxW ){ // word fits on current line
             subline += word + wordSeparator;
           } else { // word starts new line
-            wrappedLines.push( subline );
+            if( subline ){
+              wrappedLines.push( subline );
+            }
             subline = word + wordSeparator;
           }
         }

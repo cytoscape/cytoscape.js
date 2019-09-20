@@ -139,10 +139,12 @@ function CanvasRenderer( options ){
 
   let getElementRotationPoint = ele => getBoxCenter( getElementBox(ele) );
 
-  let addTextMargin = (pt, ele) => {
+  let addTextMargin = (prefix, pt, ele) => {
+    let pre = prefix ? prefix + '-' : '';
+
     return {
-      x: pt.x + ele.pstyle('text-margin-x').pfValue,
-      y: pt.y + ele.pstyle('text-margin-y').pfValue
+      x: pt.x + ele.pstyle(pre + 'text-margin-x').pfValue,
+      y: pt.y + ele.pstyle(pre + 'text-margin-y').pfValue
     };
   };
 
@@ -152,9 +154,9 @@ function CanvasRenderer( options ){
     return { x: rs[x], y: rs[y] };
   };
 
-  let getLabelRotationPoint = ele => addTextMargin(getRsPt(ele, 'labelX', 'labelY'), ele);
-  let getSourceLabelRotationPoint = ele => addTextMargin(getRsPt(ele, 'sourceLabelX', 'sourceLabelY'), ele);
-  let getTargetLabelRotationPoint = ele => addTextMargin(getRsPt(ele, 'targetLabelX', 'targetLabelY'), ele);
+  let getLabelRotationPoint = ele => addTextMargin('', getRsPt(ele, 'labelX', 'labelY'), ele);
+  let getSourceLabelRotationPoint = ele => addTextMargin('source', getRsPt(ele, 'sourceLabelX', 'sourceLabelY'), ele);
+  let getTargetLabelRotationPoint = ele => addTextMargin('target', getRsPt(ele, 'targetLabelX', 'targetLabelY'), ele);
 
   let getElementRotationOffset = ele => getCenterOffset( getElementBox(ele) );
   let getSourceLabelRotationOffset = ele => getCenterOffset( getSourceLabelBox(ele) );

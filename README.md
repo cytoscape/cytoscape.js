@@ -135,6 +135,7 @@ If the `TRAVIS` or `TEST_BUILD` environment variables are defined, then `mocha` 
  1. Push the release changes: `git push && git push --tags`
  1. Publish the release to npm: `npm publish .`
  1. [Create a release](https://github.com/cytoscape/cytoscape.js/releases/new) for Zenodo from the latest tag
+ 1. For feature releases:  Create a release announcement on the [blog](https://github.com/cytoscape/cytoscape.js-blog).  Share the announcement on mailing lists and social media.
 
 
 

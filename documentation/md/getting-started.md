@@ -22,6 +22,7 @@ Please do not hotlink to copies of Cytoscape.js from the documentation --- they'
 The available files are available under [`cytoscape/dist/`](https://github.com/cytoscape/cytoscape.js/tree/master/dist) in the npm package:
 
 - `cytoscape.min.js` : A minified UMD build with all dependencies included in the bundle.  This file is useful for small pages, supplementary material for an academic paper for example.
+- `cytoscape.mes.js` : A minified ESM (`import` / `export`) build with all dependencies included in the bundle.  This file serves the same purpose as the above, but it can be imported as an ES6 module without the need for a bundler.
 - `cytoscape.umd.js` : A non-minified UMD build with all dependencies included in the bundle.  This file is useful for debugging on small pages, supplementary material for an academic paper for example.
 - `cytoscape.cjs.js` : A non-minified CJS (Node.js) build without any bundled dependencies.  This is intended to be consumed automatically by Node.js or a bundler like Webpack via `require('cytoscape')`.
 - `cytoscape.esm.js` : A non-minified ESM (`import` / `export`) build without any bundled dependencies.  This is intended to be consumed automatically by Node.js or a bundler like Webpack via `import cytoscape from 'cytoscape'`.

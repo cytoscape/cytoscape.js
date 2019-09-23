@@ -1826,7 +1826,7 @@
           "fns": [
             {
               "name": "edge.controlPoints",
-              "descr": "Get an array of control point positions for a [`curve-style: bezier`](#style/bezier-edges) or [`curve-style: unbundled-bezier`](http://localhost:8888/cytoscape.js/documentation/#style/unbundled-bezier-edges) edge.",
+              "descr": "Get an array of control point positions for a [`curve-style: bezier`](#style/bezier-edges) or [`curve-style: unbundled-bezier`](#style/unbundled-bezier-edges) edge.",
               "formats": [
                 {
                   "name": "edge.controlPoints",

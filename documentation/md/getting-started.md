@@ -4,10 +4,14 @@ This section will familiarise you with the basic steps necessary to start using 
 
 ## Including Cytoscape.js
 
-If you are using a simple HTML environment (without a build system), then include Cytoscape.js in a `<script>` tag, e.g.:
+If you are using a simple HTML environment (without a build system), then source Cytoscape.js in a `<script>` tag or [`import`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import) it as an ES6 module, e.g.:
 
 ```html
 <script src="cytoscape.min.js"></script>
+<!--Or as an ES6 module-->
+<script type="module">
+import cytoscape from "./dist/cytoscape.esm.min.js";
+</script>
 ```
 
 To use Cytoscape.js from a CDN, use one of the following CDNs:
@@ -22,8 +26,8 @@ Please do not hotlink to copies of Cytoscape.js from the documentation --- they'
 The available files are available under [`cytoscape/dist/`](https://github.com/cytoscape/cytoscape.js/tree/master/dist) in the npm package:
 
 - `cytoscape.min.js` : A minified UMD build with all dependencies included in the bundle.  This file is useful for small pages, supplementary material for an academic paper for example.
-- `cytoscape.mes.js` : A minified ESM (`import` / `export`) build with all dependencies included in the bundle.  This file serves the same purpose as the above, but it can be imported as an ES6 module without the need for a bundler.
 - `cytoscape.umd.js` : A non-minified UMD build with all dependencies included in the bundle.  This file is useful for debugging on small pages, supplementary material for an academic paper for example.
+- `cytoscape.esm.min.js` : A minified ESM (`import` / `export`) build with all dependencies included in the bundle.  This file serves the same purpose as the above, but it can be imported as an ES6 module without the need for a bundler.
 - `cytoscape.cjs.js` : A non-minified CJS (Node.js) build without any bundled dependencies.  This is intended to be consumed automatically by Node.js or a bundler like Webpack via `require('cytoscape')`.
 - `cytoscape.esm.js` : A non-minified ESM (`import` / `export`) build without any bundled dependencies.  This is intended to be consumed automatically by Node.js or a bundler like Webpack via `import cytoscape from 'cytoscape'`.
 

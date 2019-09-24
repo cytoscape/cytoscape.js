@@ -80,6 +80,24 @@ const configs = [
 
   {
     input,
+    output: {
+      file: 'build/cytoscape.esm.min.js',
+      format: 'es',
+      sourcemap: true
+    },
+    plugins: [
+      nodeResolve(),
+      commonjs({ include: '**/node_modules/**' }),
+      BABEL ? babel(getBabelOptions()) : {},
+      replace(envVariables),
+      license(licenseHeaderOptions),
+      terser(),
+      !FILE ? sizeSnapshot({ matchSnapshot }) : {}
+    ]
+  },
+
+  {
+    input,
     output: { file: 'build/cytoscape.cjs.js', format: 'cjs' },
     external: isExternal,
     plugins: [
@@ -100,22 +118,6 @@ const configs = [
       BABEL ? babel(getBabelOptions()) : {},
       replace(envVariables),
       license(licenseHeaderOptions),
-      !FILE ? sizeSnapshot({ matchSnapshot }) : {}
-    ]
-  },
-
-  {
-    input,
-    output: { file: 'build/cytoscape.mes.js', format: 'es' },
-    plugins: [
-      nodeResolve(),
-      commonjs({ include: '**/node_modules/**' }),
-      BABEL ? babel(getBabelOptions()) : {},
-      replace(envVariables),
-      license(licenseHeaderOptions),
-      terser({
-        sourcemap: true
-      }),
       !FILE ? sizeSnapshot({ matchSnapshot }) : {}
     ]
   }

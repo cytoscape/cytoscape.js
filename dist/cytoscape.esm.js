@@ -22886,7 +22886,10 @@ BRp$6.getLabelText = function (ele, prefix) {
             subline += word + wordSeparator;
           } else {
             // word starts new line
-            wrappedLines.push(subline);
+            if (subline) {
+              wrappedLines.push(subline);
+            }
+
             subline = word + wordSeparator;
           }
         } // if there's remaining text, put it in a wrapped line
@@ -30138,10 +30141,11 @@ function CanvasRenderer(options) {
     return getBoxCenter(getElementBox(ele));
   };
 
-  var addTextMargin = function addTextMargin(pt, ele) {
+  var addTextMargin = function addTextMargin(prefix, pt, ele) {
+    var pre = prefix ? prefix + '-' : '';
     return {
-      x: pt.x + ele.pstyle('text-margin-x').pfValue,
-      y: pt.y + ele.pstyle('text-margin-y').pfValue
+      x: pt.x + ele.pstyle(pre + 'text-margin-x').pfValue,
+      y: pt.y + ele.pstyle(pre + 'text-margin-y').pfValue
     };
   };
 
@@ -30154,15 +30158,15 @@ function CanvasRenderer(options) {
   };
 
   var getLabelRotationPoint = function getLabelRotationPoint(ele) {
-    return addTextMargin(getRsPt(ele, 'labelX', 'labelY'), ele);
+    return addTextMargin('', getRsPt(ele, 'labelX', 'labelY'), ele);
   };
 
   var getSourceLabelRotationPoint = function getSourceLabelRotationPoint(ele) {
-    return addTextMargin(getRsPt(ele, 'sourceLabelX', 'sourceLabelY'), ele);
+    return addTextMargin('source', getRsPt(ele, 'sourceLabelX', 'sourceLabelY'), ele);
   };
 
   var getTargetLabelRotationPoint = function getTargetLabelRotationPoint(ele) {
-    return addTextMargin(getRsPt(ele, 'targetLabelX', 'targetLabelY'), ele);
+    return addTextMargin('target', getRsPt(ele, 'targetLabelX', 'targetLabelY'), ele);
   };
 
   var getElementRotationOffset = function getElementRotationOffset(ele) {
@@ -30687,7 +30691,7 @@ sheetfn.appendToStyle = function (style) {
   return style;
 };
 
-var version = "3.9.2";
+var version = "3.9.3";
 
 var cytoscape = function cytoscape(options) {
   // if no options specified, use default

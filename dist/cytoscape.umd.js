@@ -9694,6 +9694,14 @@
         ly2 = Math.max(px1y1.y, px1y2.y, px2y1.y, px2y2.y);
       }
 
+      var bbPrefixRot = bbPrefix + 'Rot';
+      var bbRot = bbs[bbPrefixRot] = bbs[bbPrefixRot] || {};
+      bbRot.x1 = lx1;
+      bbRot.y1 = ly1;
+      bbRot.x2 = lx2;
+      bbRot.y2 = ly2;
+      bbRot.w = lx2 - lx1;
+      bbRot.h = ly2 - ly1;
       updateBounds(bounds, lx1, ly1, lx2, ly2);
       updateBounds(_p.labelBounds.all, lx1, ly1, lx2, ly2);
     }
@@ -10047,15 +10055,15 @@
           updateBoundsFromBox(bb, _p.labelBounds.all);
         } else {
           if (opts.includeMainLabels) {
-            updateBoundsFromBox(bb, _p.labelBounds.main);
+            updateBoundsFromBox(bb, _p.labelBounds.mainRot);
           }
 
           if (opts.includeSourceLabels) {
-            updateBoundsFromBox(bb, _p.labelBounds.source);
+            updateBoundsFromBox(bb, _p.labelBounds.sourceRot);
           }
 
           if (opts.includeTargetLabels) {
-            updateBoundsFromBox(bb, _p.labelBounds.target);
+            updateBoundsFromBox(bb, _p.labelBounds.targetRot);
           }
         }
       }
@@ -10141,6 +10149,9 @@
       _p.labelBounds.source = null;
       _p.labelBounds.target = null;
       _p.labelBounds.main = null;
+      _p.labelBounds.sourceRot = null;
+      _p.labelBounds.targetRot = null;
+      _p.labelBounds.mainRot = null;
       _p.arrowBounds.source = null;
       _p.arrowBounds.target = null;
       _p.arrowBounds['mid-source'] = null;
@@ -23712,7 +23723,10 @@
               subline += word + wordSeparator;
             } else {
               // word starts new line
-              wrappedLines.push(subline);
+              if (subline) {
+                wrappedLines.push(subline);
+              }
+
               subline = word + wordSeparator;
             }
           } // if there's remaining text, put it in a wrapped line
@@ -30964,10 +30978,11 @@
       return getBoxCenter(getElementBox(ele));
     };
 
-    var addTextMargin = function addTextMargin(pt, ele) {
+    var addTextMargin = function addTextMargin(prefix, pt, ele) {
+      var pre = prefix ? prefix + '-' : '';
       return {
-        x: pt.x + ele.pstyle('text-margin-x').pfValue,
-        y: pt.y + ele.pstyle('text-margin-y').pfValue
+        x: pt.x + ele.pstyle(pre + 'text-margin-x').pfValue,
+        y: pt.y + ele.pstyle(pre + 'text-margin-y').pfValue
       };
     };
 
@@ -30980,15 +30995,15 @@
     };
 
     var getLabelRotationPoint = function getLabelRotationPoint(ele) {
-      return addTextMargin(getRsPt(ele, 'labelX', 'labelY'), ele);
+      return addTextMargin('', getRsPt(ele, 'labelX', 'labelY'), ele);
     };
 
     var getSourceLabelRotationPoint = function getSourceLabelRotationPoint(ele) {
-      return addTextMargin(getRsPt(ele, 'sourceLabelX', 'sourceLabelY'), ele);
+      return addTextMargin('source', getRsPt(ele, 'sourceLabelX', 'sourceLabelY'), ele);
     };
 
     var getTargetLabelRotationPoint = function getTargetLabelRotationPoint(ele) {
-      return addTextMargin(getRsPt(ele, 'targetLabelX', 'targetLabelY'), ele);
+      return addTextMargin('target', getRsPt(ele, 'targetLabelX', 'targetLabelY'), ele);
     };
 
     var getElementRotationOffset = function getElementRotationOffset(ele) {
@@ -31513,7 +31528,7 @@
     return style;
   };
 
-  var version = "3.10.0";
+  var version = "3.10.1";
 
   var cytoscape = function cytoscape(options) {
     // if no options specified, use default

@@ -112,7 +112,7 @@
     "watch:build:umd": "cross-env FILE=umd SOURCEMAPS=true NODE_ENV=development rollup -c -w",
     "watch:build:cjs": "cross-env FILE=cjs SOURCEMAPS=true NODE_ENV=development rollup -c -w",
     "test": "mocha -r esm --recursive",
-    "test:build": "cross-env TEST_BUILD=true mocha",
+    "test:build": "cross-env TEST_BUILD=true mocha -r esm",
     "test:modules": "mocha -r esm test/modules",
     "ci:build": "run-s build test:build test:modules lint",
     "ci": "run-s test test:modules lint",

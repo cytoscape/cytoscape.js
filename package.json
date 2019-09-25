@@ -89,6 +89,7 @@
   "main": "dist/cytoscape.cjs.js",
   "unpkg": "dist/cytoscape.min.js",
   "jsdelivr": "dist/cytoscape.min.js",
+  "module": "dist/cytoscape.esm.js",
   "scripts": {
     "lint": "eslint src benchmark",
     "build": "rollup -c",
@@ -98,7 +99,7 @@
     "build:min": "cross-env FILE=min rollup -c",
     "clean": "rimraf build/*",
     "copyright": "node -r esm license-update",
-    "dist:copy": "cpy build/cytoscape.umd.js build/cytoscape.min.js build/cytoscape.cjs.js build/cytoscape.esm.js build/cytoscape.esm.min.js build/cytoscape.esm.min.js.map dist",
+    "dist:copy": "cpy build/cytoscape.umd.js build/cytoscape.min.js build/cytoscape.esm.min.js build/cytoscape.cjs.js build/cytoscape.esm.js dist",
     "dist": "cross-env NODE_ENV=production run-s build dist:*",
     "release": "run-s copyright dist docs",
     "postpublish": "run-s docs:push",
@@ -158,6 +159,6 @@
   },
   "dependencies": {
     "heap": "^0.2.6",
-    "lodash.debounce": "^4.0.8"
+    "lodash-es": "^4.17.15"
   }
 }

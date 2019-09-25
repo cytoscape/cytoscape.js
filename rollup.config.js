@@ -126,5 +126,5 @@ const configs = [
 ];
 
 export default FILE
-  ? configs.filter(config => config.output.file.includes(FILE))
+  ? configs.filter(config => config.output.file.endsWith(FILE + '.js'))
   : configs;

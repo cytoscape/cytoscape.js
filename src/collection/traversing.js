@@ -401,7 +401,7 @@ util.extend( elesfn, {
 
       cmpt.forEach(node => {
         node.connectedEdges().forEach(e => { // connectedEdges() usually cached
-          if( cmpt.has(e.source()) && cmpt.has(e.target()) ){ // has() is cheap
+          if( self.has(e) && cmpt.has(e.source()) && cmpt.has(e.target()) ){ // has() is cheap
             cmpt.merge(e); // forEach() only considers nodes -- sets N at call time
           }
         });

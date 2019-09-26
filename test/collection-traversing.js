@@ -250,6 +250,7 @@ describe('Collection traversing', function(){
         { data: { id: 'n1' } },
         { data: { id: 'n2' } },
         { data: { id: 'n1n2', source: 'n1', target: 'n2' } },
+        { data: { id: 'n1n1', source: 'n1', target: 'n1' } },
 
         { data: { id: 'n3' } },
         { data: { id: 'n4' } },

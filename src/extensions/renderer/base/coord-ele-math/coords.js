@@ -244,6 +244,7 @@ BRp.findNearestElements = function( x, y, interactiveElementsOnly, isTouch ){
       prefixDash = '';
     }
 
+    ele.boundingBox();
     var bb = _p.labelBounds[prefix || 'main'];
 
     var text = ele.pstyle( prefixDash + 'label' ).value;

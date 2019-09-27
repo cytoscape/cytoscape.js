@@ -30,7 +30,6 @@ const getBabelOptions = () => ({
 
 // Ignore all node_modules dependencies
 const isExternal = id => !id.startsWith('\0') && !id.startsWith('.') && !id.startsWith('/');
-const isES6Module = id => id !== "heap";
 
 const licenseHeaderOptions = {
   sourcemap: true,
@@ -83,17 +82,17 @@ const configs = [
     input,
     output: {
       file: 'build/cytoscape.esm.min.js',
-      format: 'es'
+      format: 'es',
+      sourcemap: true
     },
     plugins: [
       nodeResolve(),
       commonjs({ include: '**/node_modules/**' }),
       BABEL ? babel(getBabelOptions()) : {},
       replace(envVariables),
-      terser({
-        sourcemap: false
-      }),
-      license(licenseHeaderOptions)
+      license(licenseHeaderOptions),
+      terser(),
+      !FILE ? sizeSnapshot({ matchSnapshot }) : {}
     ]
   },
 
@@ -113,10 +112,9 @@ const configs = [
   {
     input,
     output: { file: 'build/cytoscape.esm.js', format: 'es' },
-    external: id => isExternal(id) && isES6Module(id),
+    external: isExternal,
     plugins: [
       nodeResolve(),
-      commonjs({ include: '**/node_modules/**' }),
       BABEL ? babel(getBabelOptions()) : {},
       replace(envVariables),
       license(licenseHeaderOptions),

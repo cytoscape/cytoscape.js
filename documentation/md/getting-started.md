@@ -29,7 +29,7 @@ The available files are available under [`cytoscape/dist/`](https://github.com/c
 - `cytoscape.umd.js` : A non-minified UMD build with all dependencies included in the bundle.  This file is useful for debugging on small pages, supplementary material for an academic paper for example.
 - `cytoscape.esm.min.js` : A minified ESM (`import` / `export`) build with all dependencies included in the bundle.  This file serves the same purpose as the above, but it can be imported as an ES6 module without the need for a bundler.
 - `cytoscape.cjs.js` : A non-minified CJS (Node.js) build without any bundled dependencies.  This is intended to be consumed automatically by Node.js or a bundler like Webpack via `require('cytoscape')`.
-- `cytoscape.esm.js` : A non-minified ESM (`import` / `export`) build with only non-ESM-ready dependencies bundled.  This is intended to be consumed automatically by Node.js or a bundler like Webpack via `import cytoscape from 'cytoscape'`, but can also be used in a browser via unpkg.com's [module parameter](https://unpkg.com/#query-params).
+- `cytoscape.esm.js` : A non-minified ESM (`import` / `export`) build without any bundled dependencies.  This is intended to be consumed automatically by Node.js or a bundler like Webpack via `import cytoscape from 'cytoscape'`.
 
 <span class="important-indicator"></span> Note that Cytoscape.js uses the dimensions of your HTML DOM element container for layouts and rendering at initialisation.  Thus, it is very important to place your CSS stylesheets in the `<head>` before any Cytoscape.js-related code.  Otherwise, dimensions may be sporadically reported incorrectly, resulting in undesired behaviour.
 

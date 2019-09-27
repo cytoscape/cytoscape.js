@@ -8,9 +8,11 @@ If you are using a simple HTML environment (without a build system), then source
 
 ```html
 <script src="cytoscape.min.js"></script>
-<!--Or as an ES6 module-->
+```
+or
+```html
 <script type="module">
-import cytoscape from "./dist/cytoscape.esm.min.js";
+import cytoscape from "./cytoscape.esm.min.js";
 </script>
 ```
 

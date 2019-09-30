@@ -496,9 +496,14 @@ let boundingBoxImpl = function( ele, options ){
       updateBounds( bounds, ex1, ey1, ex2, ey2 );
 
     } else if( isEdge && options.includeEdges ){
-      // handle edge dimensions (rough box estimate)
-      //////////////////////////////////////////////
+
       if( styleEnabled && !headless ){
+        let curveStyle = ele.pstyle( 'curve-style').strValue;
+
+
+        // handle edge dimensions (rough box estimate)
+        //////////////////////////////////////////////
+
         ex1 = Math.min( rstyle.srcX, rstyle.midX, rstyle.tgtX );
         ex2 = Math.max( rstyle.srcX, rstyle.midX, rstyle.tgtX );
         ey1 = Math.min( rstyle.srcY, rstyle.midY, rstyle.tgtY );
@@ -511,17 +516,80 @@ let boundingBoxImpl = function( ele, options ){
         ey2 += wHalf;
 
         updateBounds( bounds, ex1, ey1, ex2, ey2 );
-      }
 
-      // precise haystacks
-      ////////////////////
-      if( styleEnabled && !headless && ele.pstyle( 'curve-style' ).strValue === 'haystack' ){
-        let hpts = rstyle.haystackPts || [];
 
-        ex1 = hpts[0].x;
-        ey1 = hpts[0].y;
-        ex2 = hpts[1].x;
-        ey2 = hpts[1].y;
+        // precise edges
+        ////////////////
+
+        if( curveStyle === 'haystack' ){
+          let hpts = rstyle.haystackPts;
+
+          if( hpts && hpts.length === 2 ){
+            ex1 = hpts[0].x;
+            ey1 = hpts[0].y;
+            ex2 = hpts[1].x;
+            ey2 = hpts[1].y;
+
+            if( ex1 > ex2 ){
+              let temp = ex1;
+              ex1 = ex2;
+              ex2 = temp;
+            }
+
+            if( ey1 > ey2 ){
+              let temp = ey1;
+              ey1 = ey2;
+              ey2 = temp;
+            }
+
+            updateBounds( bounds, ex1 - wHalf, ey1 - wHalf, ex2 + wHalf, ey2 + wHalf );
+          }
+
+        } else if(
+          curveStyle === 'bezier' || curveStyle === 'unbundled-bezier'
+          || curveStyle === 'segments' || curveStyle === 'taxi'
+        ){
+          let pts;
+
+          switch( curveStyle ){
+            case 'bezier':
+            case 'unbundled-bezier':
+              pts = rstyle.bezierPts;
+              break;
+            case 'segments':
+            case 'taxi':
+              pts = rstyle.linePts;
+              break;
+          }
+
+          if( pts != null ){
+            for( let j = 0; j < pts.length; j++ ){
+              let pt = pts[ j ];
+
+              ex1 = pt.x - wHalf;
+              ex2 = pt.x + wHalf;
+              ey1 = pt.y - wHalf;
+              ey2 = pt.y + wHalf;
+
+              updateBounds( bounds, ex1, ey1, ex2, ey2 );
+            }
+          }
+        } // bezier-like or segment-like edge
+      } else { // headless or style disabled
+
+        // fallback on source and target positions
+        //////////////////////////////////////////
+
+        let n1 = ele.source();
+        let n1pos = n1.position();
+
+        let n2 = ele.target();
+        let n2pos = n2.position();
+
+        ex1 = n1pos.x;
+        ex2 = n2pos.x;
+        ey1 = n1pos.y;
+        ey2 = n2pos.y;
 
         if( ex1 > ex2 ){
           let temp = ex1;
@@ -535,59 +603,14 @@ let boundingBoxImpl = function( ele, options ){
           ey2 = temp;
         }
 
-        updateBounds( bounds, ex1 - wHalf, ey1 - wHalf, ex2 + wHalf, ey2 + wHalf );
+        // take into account edge width
+        ex1 -= wHalf;
+        ex2 += wHalf;
+        ey1 -= wHalf;
+        ey2 += wHalf;
 
-      // handle points along edge
-      ///////////////////////////
-      } else {
-        let pts = rstyle.bezierPts || rstyle.linePts || [];
-
-        for( let j = 0; j < pts.length; j++ ){
-          let pt = pts[ j ];
-
-          ex1 = pt.x - wHalf;
-          ex2 = pt.x + wHalf;
-          ey1 = pt.y - wHalf;
-          ey2 = pt.y + wHalf;
-
-          updateBounds( bounds, ex1, ey1, ex2, ey2 );
-        }
-
-        // fallback on source and target positions
-        //////////////////////////////////////////
-        if( pts.length === 0 ){
-          let n1 = ele.source();
-          let n1pos = n1.position();
-
-          let n2 = ele.target();
-          let n2pos = n2.position();
-
-          ex1 = n1pos.x;
-          ex2 = n2pos.x;
-          ey1 = n1pos.y;
-          ey2 = n2pos.y;
-
-          if( ex1 > ex2 ){
-            let temp = ex1;
-            ex1 = ex2;
-            ex2 = temp;
-          }
-
-          if( ey1 > ey2 ){
-            let temp = ey1;
-            ey1 = ey2;
-            ey2 = temp;
-          }
-
-          // take into account edge width
-          ex1 -= wHalf;
-          ex2 += wHalf;
-          ey1 -= wHalf;
-          ey2 += wHalf;
-
-          updateBounds( bounds, ex1, ey1, ex2, ey2 );
-        }
-      }
+        updateBounds( bounds, ex1, ey1, ex2, ey2 );
+      } // headless or style disabled
 
     } // edges
 

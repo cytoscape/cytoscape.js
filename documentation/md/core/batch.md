@@ -1,5 +1,7 @@
 ## Details
 
+<span class="important-indicator"></span> Do not add batching to your app unless you have identified an applicable performance bottleneck.  There are restrictions on what kind of code you can run in a batch.
+
 Normally, when you modify elements, each modification can trigger a style calculation and a redraw --- depending on timing for a redraw.  For example, the following will cause two style calculations and at least one draw:
 
 ```js
@@ -18,10 +20,26 @@ This is not a problem for a handful of operations on a handful of elements, but 
 
 Thus, this function is useful for making many changes to elements at once.  When the specified callback function is complete, only elements that require it have their style updated and the renderer makes at most a single redraw.
 
-This makes for very efficient modifications to elements, but it has some caveats.  While inside the batch callback,
+This makes for very efficient modifications to elements, but it has some caveats inside a batch:
 
-* you can not reliably read element style or dimensions (it may have changed, or computed values may be out of date),
-* you probably do not want to use `eles.style()` et cetera because they force a style bypass rather than a recalculation.
+* You can not reliably read element style or dimensions (it may have changed, or computed values may be out of date).
+* You probably do not want to use `eles.style()` et cetera because they force a style bypass rather than a recalculation.
+* You can not apply any style-dependent operation within the batch if you have already modified style within the same batch.  Common style-dependent operations include:
+  * Layout: `cy.layout()`, `eles.layout()`, etc.
+  * Reading style: `ele.style()`, `ele.numericStyle()`, etc.
+  * Reading dimensions: `ele.midpoint()`, `ele.boundingBox()`, etc.
+  * Animation: `ele.animation()`, `cy.animate()`, etc.
+  * And so on...
+
+A batch should correspond to a single visual operation.  Usually a batch should contain calls only to the following functions:
+
+- Modifying state: `eles.data()`, `eles.scratch()`, `eles.addClass()`, `eles.removeClass()`, etc.
+- Building collections: `eles.union()`, `eles.difference()`, `eles.intersection()`, etc.
+- Comparison: `eles.same()`, `eles.some()`, etc.
+- Iteration: `eles.forEach()`, `eles.empty()`, etc.
+- Traversal: `node.outgoers()`, `eles.bfs()`, etc.
+- Algorithms: `eles.dijkstra()`, `eles.degreeCentrality()`, etc.
+
 
 
 ## Examples

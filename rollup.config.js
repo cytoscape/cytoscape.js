@@ -80,6 +80,24 @@ const configs = [
 
   {
     input,
+    output: {
+      file: 'build/cytoscape.esm.min.js',
+      format: 'es',
+      sourcemap: true
+    },
+    plugins: [
+      nodeResolve(),
+      commonjs({ include: '**/node_modules/**' }),
+      BABEL ? babel(getBabelOptions()) : {},
+      replace(envVariables),
+      license(licenseHeaderOptions),
+      terser(),
+      !FILE ? sizeSnapshot({ matchSnapshot }) : {}
+    ]
+  },
+
+  {
+    input,
     output: { file: 'build/cytoscape.cjs.js', format: 'cjs' },
     external: isExternal,
     plugins: [
@@ -106,5 +124,5 @@ const configs = [
 ];
 
 export default FILE
-  ? configs.filter(config => config.output.file.includes(FILE))
+  ? configs.filter(config => config.output.file.endsWith(FILE + '.js'))
   : configs;

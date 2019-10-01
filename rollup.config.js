@@ -82,8 +82,7 @@ const configs = [
     input,
     output: {
       file: 'build/cytoscape.esm.min.js',
-      format: 'es',
-      sourcemap: true
+      format: 'es'
     },
     plugins: [
       nodeResolve(),

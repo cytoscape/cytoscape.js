@@ -11938,7 +11938,7 @@ extend(elesfn$s, {
       cmpt.forEach(function (node) {
         node.connectedEdges().forEach(function (e) {
           // connectedEdges() usually cached
-          if (cmpt.has(e.source()) && cmpt.has(e.target())) {
+          if (self.has(e) && cmpt.has(e.source()) && cmpt.has(e.target())) {
             // has() is cheap
             cmpt.merge(e); // forEach() only considers nodes -- sets N at call time
           }
@@ -21136,6 +21136,7 @@ BRp$1.findNearestElements = function (x, y, interactiveElementsOnly, isTouch) {
       prefixDash = '';
     }
 
+    ele.boundingBox();
     var bb = _p.labelBounds[prefix || 'main'];
     var text = ele.pstyle(prefixDash + 'label').value;
     var eventsEnabled = ele.pstyle('text-events').strValue === 'yes';
@@ -30765,7 +30766,7 @@ sheetfn.appendToStyle = function (style) {
   return style;
 };
 
-var version = "3.10.1";
+var version = "3.10.2";
 
 var cytoscape = function cytoscape(options) {
   // if no options specified, use default

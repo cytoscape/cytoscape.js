@@ -28,7 +28,7 @@
 			<a id="open-navigation" class="activatable plain-link"><span class="fa fa-bars"></span></a>
 			<div id="open-navigation-bg"></div>
 
-			<h1 id="top" class="title">Cytoscape.js</h1>
+			<h1 id="top" class="title"><span class="title-logo"></span>Cytoscape.js</h1>
 
 			<div class="subtitle">
 				Graph theory (network) library for visualisation and analysis
@@ -43,17 +43,19 @@
 <a href="https://twitter.com/cytoscapejs"><img src="https://img.shields.io/badge/Updates-Twitter-yellow.svg" alt="Twitter updates"></a>
 <a href="https://blog.js.cytoscape.org"><img src="https://img.shields.io/badge/News%20and%20tutorials-Blog-yellow.svg" alt="News and tutorials"></a>
 <a href="https://stackoverflow.com/questions/tagged/cytoscape.js"><img src="https://img.shields.io/badge/Questions-StackOverflow-yellow.svg" alt="Questions at StackOverflow"></a>
-<a href="http://stackoverflow.com/questions/ask?tags=cytoscape.js"><img src="https://img.shields.io/badge/Ask%20a%20question-StackOverflow-yellow.svg" alt="Ask a question at StackOverflow"></a>
+<a href="http://stackoverflow.com/questions/ask?tags=cytoscape.js,javascript"><img src="https://img.shields.io/badge/Ask%20a%20question-StackOverflow-yellow.svg" alt="Ask a question at StackOverflow"></a>
 <a href="https://raw.githubusercontent.com/cytoscape/cytoscape.js/master/LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="GitHub license"></a>
 <a href="https://zenodo.org/badge/latestdoi/2255947"><img src="https://zenodo.org/badge/2255947.svg" alt="DOI"></a>
+<a href="#introduction/citation"><img src="https://img.shields.io/badge/Cite-Oxford%20Bioinformatics%20Article-blue.svg" alt="Cite"></a>
 <a href="https://www.npmjs.com/package/cytoscape"><img src="https://img.shields.io/npm/v/cytoscape.svg" alt="npm"></a>
 <a href="https://github.com/cytoscape/cytoscape.js/tree/master/dist"><img src="https://img.shields.io/npm/v/cytoscape.svg?label=Download" alt="Download"></a>
-<a href="#extensions"><img src="https://img.shields.io/badge/Extensions-42-blue.svg" alt="Extensions"></a>
+<a href="#extensions"><img src="https://img.shields.io/badge/Extensions-52-blue.svg" alt="Extensions"></a>
 <a href="https://www.npmjs.com/package/cytoscape"><img src="https://img.shields.io/npm/dm/cytoscape.svg?label=npm%20installs" alt="npm installs"></a>
 <a href="https://travis-ci.org/cytoscape/cytoscape.js"><img src="https://img.shields.io/travis/cytoscape/cytoscape.js/master.svg?label=master%20branch" alt="master branch tests"></a>
 <a href="https://travis-ci.org/cytoscape/cytoscape.js"><img src="https://img.shields.io/travis/cytoscape/cytoscape.js/unstable.svg?label=unstable%20branch" alt="unstable branch tests"></a>
 <a href="https://greenkeeper.io/"><img src="https://badges.greenkeeper.io/cytoscape/cytoscape.js.svg" alt="Greenkeeper badge"></a></p>
 </div>
+
 
 
 				<h1 id="demos">Demos <a href="#demos"><span class="fa fa-bookmark"></span></a></h1>
@@ -180,6 +182,19 @@
 						</div>
 						<div class="gallery-demo">
 
+							<a class="gallery-link" href="https://cytoscape.github.io/cytoscape.js-compound-drag-and-drop">
+								<span class="gallery-preview" style="background-image: url('img/demos/compound-drag-and-drop.png');"></span>
+							</a>
+
+							<div class="gallery-title">
+								<a href="https://github.com/cytoscape/cytoscape.js-compound-drag-and-drop">
+									<span class="gallery-name"><span class="fa fa-github"></span> Compound drag-and-drop extension</span>
+								</a>
+							</div>
+
+						</div>
+						<div class="gallery-demo">
+
 							<a class="gallery-link" href="demos/circle-layout">
 								<span class="gallery-preview" style="background-image: url('img/demos/circle-layout.png');"></span>
 							</a>
@@ -200,6 +215,32 @@
 							<div class="gallery-title">
 								<a href="https://github.com/cytoscape/cytoscape.js/tree/master/documentation/demos/concentric-layout">
 									<span class="gallery-name"><span class="fa fa-github"></span> Concentric layout</span>
+								</a>
+							</div>
+
+						</div>
+						<div class="gallery-demo">
+
+							<a class="gallery-link" href="https://ivis-at-bilkent.github.io/cytoscape.js-avsdf/demo.html">
+								<span class="gallery-preview" style="background-image: url('img/demos/avsdf-layout.png');"></span>
+							</a>
+
+							<div class="gallery-title">
+								<a href="https://github.com/iVis-at-Bilkent/cytoscape.js-avsdf">
+									<span class="gallery-name"><span class="fa fa-github"></span> AVSDF layout</span>
+								</a>
+							</div>
+
+						</div>
+						<div class="gallery-demo">
+
+							<a class="gallery-link" href="https://ivis-at-bilkent.github.io/cytoscape.js-cise/demo.html">
+								<span class="gallery-preview" style="background-image: url('img/demos/cise-layout.png');"></span>
+							</a>
+
+							<div class="gallery-title">
+								<a href="https://github.com/iVis-at-Bilkent/cytoscape.js-cise">
+									<span class="gallery-name"><span class="fa fa-github"></span> CiSE layout</span>
 								</a>
 							</div>
 
@@ -252,6 +293,32 @@
 							<div class="gallery-title">
 								<a href="https://github.com/cytoscape/cytoscape.js-cose-bilkent">
 									<span class="gallery-name"><span class="fa fa-github"></span> CoSE Bilkent layout (compound)</span>
+								</a>
+							</div>
+
+						</div>
+						<div class="gallery-demo">
+
+							<a class="gallery-link" href="https://ivis-at-bilkent.github.io/cytoscape.js-fcose/demo.html">
+								<span class="gallery-preview" style="background-image: url('img/demos/fcose-layout.png');"></span>
+							</a>
+
+							<div class="gallery-title">
+								<a href="https://github.com/iVis-at-Bilkent/cytoscape.js-fcose">
+									<span class="gallery-name"><span class="fa fa-github"></span> fCoSE layout</span>
+								</a>
+							</div>
+
+						</div>
+						<div class="gallery-demo">
+
+							<a class="gallery-link" href="https://ivis-at-bilkent.github.io/cytoscape.js-fcose/demo-compound.html">
+								<span class="gallery-preview" style="background-image: url('img/demos/fcose-layout-compound.png');"></span>
+							</a>
+
+							<div class="gallery-title">
+								<a href="https://github.com/iVis-at-Bilkent/cytoscape.js-fcose">
+									<span class="gallery-name"><span class="fa fa-github"></span> fCoSE layout (compound)</span>
 								</a>
 							</div>
 
@@ -506,12 +573,17 @@
 <li>Includes graph theory algorithms, from BFS to PageRank</li>
 <li>Animatable graph elements and viewport</li>
 <li>Fully extendable (and extensions can be autoscaffolded for you)</li>
-<li>Well maintained</li>
+<li>Well maintained<ul>
+<li>Weekly patch release cadence</li>
+<li>Monthly feature release cadence</li>
+</ul>
+</li>
 <li>Listed by <a href="https://doi.org/10.5281/zenodo.831800">Zenodo</a> for per-version DOIs</li>
 <li>Listed by <a href="https://omictools.com/cytoscape-js-tool">OMIC Tools</a></li>
 <li>Used by<ul>
 <li><a href="http://www.activevalue.eu/">Active Value Advisors</a> : <a href="http://www.how-4.com/">How-4</a></li>
 <li><a href="http://apid.dep.usal.es/">Agile Protein Interactomes DataServer</a></li>
+<li><a href="https://alman.ax/#/about">Almanax</a></li>
 <li><a href="http://www.aras.com/">Aras</a></li>
 <li><a href="http://bgu.ac.il/">Ben-Gurion University of the Negev</a></li>
 <li><a href="http://netbio.bgu.ac.il/diffnet/">DiffNet</a></li>
@@ -528,17 +600,25 @@
 <li><a href="https://www.elsevier.com">Elsevier</a></li>
 <li><a href="https://products.office.com/en-us/excel">Excel</a> : <a href="https://gigraph.io">GIGRAPH</a></li>
 <li><a href="https://www.facebook.com">Facebook</a> : <a href="https://facebook.github.io/metro/">Metro</a> visualiser</li>
+<li><a href="https://www.fediverse.space/">Fediverse</a></li>
 <li><a href="http://www.ganister.eu/">Ganister</a></li>
 <li><a href="https://google.com">Google</a> : <a href="https://www.tensorflow.org">TensorFlow</a> : SyntaxNet : DRAGNN visualiser</li>
 <li><a href="https://www.gchq.gov.uk/">GCHQ</a> : <a href="https://gchq.github.io/gaffer-doc/">Gaffer</a></li>
 <li><a href="http://genemania.org">GeneMANIA</a></li>
 <li><a href="http://graphlytic.sk/">Graphlytic</a></li>
+<li><a href="https://www.harvard.edu">Harvard</a> : <a href="http://bioplex.hms.harvard.edu/bioplexDisplay">BioPlex</a></li>
 <li><a href="https://haystack.mobi/panopticon/">ICSI Haystack Project</a></li>
 <li><a href="http://www.infotrack.com.au/">InfoTrack</a></li>
+<li><a href="http://intercax.com/">Intercax</a></li>
+<li><a href="https://www.kiali.io/">Kiali</a></li>
+<li><a href="http://lore.chuci.info">Lore</a></li>
 <li><a href="http://thekanjimap.com/">The Kanji Map</a></li>
 <li><a href="https://www.machine2learn.com">Machine2Learn</a> : <a href="https://www.machine2learn.com/deep-learning-model-generator/">Deep Learning Model Generator</a></li>
+<li><a href="https://www.mpimp-golm.mpg.de">Max Plank Institute of Molecular Cell Physiology</a> : <a href="http://conekt.mpimp-golm.mpg.de/pub/">CoNekT</a></li>
 <li><a href="http://en.musicalized.com/full">Musicalized</a></li>
+<li><a href="https://newrelic.com/platform">New Relic</a></li>
 <li><a href="http://www.ndexbio.org/">NDEx</a></li>
+<li><a href="https://www.nsa.gov/">NSA</a> : <a href="https://github.com/nsacyber/WALKOFF">WALKOFF</a></li>
 <li><a href="http://www.ohdsi.org/">OHDSI</a></li>
 <li><a href="http://www.pathwaycommons.org">Pathway Commons</a></li>
 <li><a href="https://github.com/idekerlab/py2cytoscape">py2cytoscape</a></li>
@@ -550,8 +630,10 @@
 <li><a href="https://www.stringify.com/">Stringify</a></li>
 <li><a href="https://www.threatcrowd.org/">Threat Crowd</a></li>
 <li><a href="https://trace.risingstack.com/">Trace</a></li>
+<li><a href="https://www.ub.edu">University of Barcelona</a> : <a href="https://compgen.bio.ub.edu/PlanNET">PlanNET</a></li>
 <li><a href="http://www.cam.ac.uk/">University of Cambridge</a> : <a href="http://intermine.org/">Intermine</a></li>
 <li><a href="http://en.uestc.edu.cn/">University of Electronic Science and Technology of China</a> : <a href="http://cefg.uestc.edu.cn/Mslr/">Microbal Synthetic Lethal and Rescue Database</a></li>
+<li><a href="https://www.uni-heidelberg.de">University of Heidelberg</a> : <a href="https://mampf.mathi.uni-heidelberg.de/">MaMpf</a></li>
 <li><a href="http://www.imise.uni-leipzig.de/en">University of Leipzig, Institute for Medical Informatics, Statistics and Epidemiology (IMISE)</a> : <a href="http://www.snik.eu/">SNIK research project</a></li>
 <li><a href="https://umd.edu/">University of Maryland</a> : <a href="http://cbcb.umd.edu/">Center for Bioinformatics and Computational Biology</a> : <a href="https://marbl.github.io/MetagenomeScope/">MetagenomeScope</a></li>
 <li><a href="http://www.ucsd.edu/">University of Southern California, San Diego</a> : <a href="http://gnps.ucsd.edu/ProteoSAFe/result.jsp?view=network_displayer&amp;componentindex=67&amp;task=c95481f0c53d42e78a61bf899e9f9adb#%7B%7D">Visualization of structurally related compounds in Mass Spectrometry with Molecular Networks at GNPS</a></li>
@@ -577,11 +659,74 @@
 </ul>
 <h2 id="introduction/releases">Releases <a href="#introduction/releases"><span class="fa fa-bookmark"></span></a></h2>
 <ul>
+<li>3.11<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.11.0+is%3Aclosed">3.11.0</a></li>
+</ul>
+</li>
+<li>3.10<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.10.2+is%3Aclosed">3.10.2</a></li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.10.1+is%3Aclosed">3.10.1</a></li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.10.0+is%3Aclosed">3.10.0</a></li>
+</ul>
+</li>
+<li>3.9<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.9.4+is%3Aclosed">3.9.4</a></li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.9.3+is%3Aclosed">3.9.3</a></li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.9.2+is%3Aclosed">3.9.2</a></li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.9.1+is%3Aclosed">3.9.1</a></li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.9.0+is%3Aclosed">3.9.0</a></li>
+</ul>
+</li>
+<li>3.8<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.8.5+is%3Aclosed">3.8.5</a></li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.8.4+is%3Aclosed">3.8.4</a></li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.8.3+is%3Aclosed">3.8.3</a></li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.8.2+is%3Aclosed">3.8.2</a></li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.8.1+is%3Aclosed">3.8.1</a></li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.8.0+is%3Aclosed">3.8.0</a></li>
+</ul>
+</li>
+<li>3.7<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.7.6+is%3Aclosed">3.7.6</a></li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.7.5+is%3Aclosed">3.7.5</a></li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.7.4+is%3Aclosed">3.7.4</a></li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.7.3+is%3Aclosed">3.7.3</a></li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.7.2+is%3Aclosed">3.7.2</a></li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.7.1+is%3Aclosed">3.7.1</a></li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.7.0+is%3Aclosed">3.7.0</a></li>
+</ul>
+</li>
+<li>3.6<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.6.6+is%3Aclosed">3.6.6</a></li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.6.5+is%3Aclosed">3.6.5</a></li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.6.4+is%3Aclosed">3.6.4</a></li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.6.3+is%3Aclosed">3.6.3</a></li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.6.2+is%3Aclosed">3.6.2</a></li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.6.1+is%3Aclosed">3.6.1</a></li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.6.0+is%3Aclosed">3.6.0</a></li>
+</ul>
+</li>
 <li>3.5<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.5.9+is%3Aclosed">3.5.9</a></li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.5.8+is%3Aclosed">3.5.8</a></li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.5.7+is%3Aclosed">3.5.7</a></li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.5.6+is%3Aclosed">3.5.6</a></li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.5.5+is%3Aclosed">3.5.5</a></li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.5.4+is%3Aclosed">3.5.4</a></li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.5.3+is%3Aclosed">3.5.3</a></li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.5.2+is%3Aclosed">3.5.2</a></li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.5.1+is%3Aclosed">3.5.1</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.5.0+is%3Aclosed">3.5.0</a></li>
 </ul>
 </li>
 <li>3.4<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.4.9+is%3Aclosed">3.4.9</a></li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.4.8+is%3Aclosed">3.4.8</a></li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.4.7+is%3Aclosed">3.4.7</a></li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.4.6+is%3Aclosed">3.4.6</a></li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.4.5+is%3Aclosed">3.4.5</a></li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.4.4+is%3Aclosed">3.4.4</a></li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.4.3+is%3Aclosed">3.4.3</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.4.2+is%3Aclosed">3.4.2</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.4.1+is%3Aclosed">3.4.1</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.4.0+is%3Aclosed">3.4.0</a></li>
@@ -877,7 +1022,7 @@
 
 
       data: { <span class="hljs-comment">// element data (put json serialisable dev data here)</span>
-        id: <span class="hljs-string">'n1'</span>, <span class="hljs-comment">// mandatory (string or number) id for each element, assigned automatically on undefined</span>
+        id: <span class="hljs-string">'n1'</span>, <span class="hljs-comment">// mandatory (string) id for each element, assigned automatically on undefined</span>
         parent: <span class="hljs-string">'nparent'</span>, <span class="hljs-comment">// indicates the compound node parent id; not defined =&gt; no parent</span>
         <span class="hljs-comment">// (`parent` can be effectively changed by `eles.move()`)</span>
       },
@@ -899,6 +1044,8 @@
       locked: <span class="hljs-literal">false</span>, <span class="hljs-comment">// when locked a node's position is immutable (default false)</span>
 
       grabbable: <span class="hljs-literal">true</span>, <span class="hljs-comment">// whether the node can be grabbed and moved by the user</span>
+
+      pannable: <span class="hljs-literal">false</span>, <span class="hljs-comment">// whether dragging the node causes panning instead of grabbing</span>
 
       classes: [<span class="hljs-string">'foo'</span>, <span class="hljs-string">'bar'</span>] <span class="hljs-comment">// an array (or a space separated string) of class names that the element has</span>
     },
@@ -924,7 +1071,9 @@
         source: <span class="hljs-string">'n1'</span>, <span class="hljs-comment">// the source node id (edge comes from this node)</span>
         target: <span class="hljs-string">'n2'</span>  <span class="hljs-comment">// the target node id (edge goes to this node)</span>
         <span class="hljs-comment">// (`source` and `target` can be effectively changed by `eles.move()`)</span>
-      }
+      },
+
+      <span class="hljs-attr">pannable</span>: <span class="hljs-literal">true</span> <span class="hljs-comment">// whether dragging on the edge causes panning</span>
     }
   ],
 
@@ -1000,13 +1149,25 @@
 
 					<p>This section will familiarise you with the basic steps necessary to start using Cytoscape.js.</p>
 <h2 id="getting-started/including-cytoscape.js">Including Cytoscape.js <a href="#getting-started/including-cytoscape.js"><span class="fa fa-bookmark"></span></a></h2>
-<p>If you are using a simple HTML environment (without a build system), then include Cytoscape.js in a <code>&lt;script&gt;</code> tag, e.g.:</p>
+<p>If you are using a simple HTML environment (without a build system), then source Cytoscape.js in a <code>&lt;script&gt;</code> tag or <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import"><code>import</code></a> it as an ES6 module, e.g.:</p>
 <pre><code class="language-html"><span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"cytoscape.min.js"</span>&gt;</span><span class="undefined"></span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span></code></pre>
-<p>To use Cytoscape.js from a CDN, use <a href="https://cdnjs.com/libraries/cytoscape">CDNJS</a> or <a href="https://unpkg.com">Unpkg</a> (<a href="https://unpkg.com/cytoscape/dist/">in the dist directory</a>).  Please do not hotlink to copies of Cytoscape.js from the documentation — they’re just for the demos.</p>
+<p>or</p>
+<pre><code class="language-html"><span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"module"</span>&gt;</span><span class="javascript">
+<span class="hljs-keyword">import</span> cytoscape <span class="hljs-keyword">from</span> <span class="hljs-string">"./cytoscape.esm.min.js"</span>;
+</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span></code></pre>
+<p>To use Cytoscape.js from a CDN, use one of the following CDNs:</p>
+<ul>
+<li><a href="https://cdnjs.com/libraries/cytoscape">CDNJS</a></li>
+<li><a href="https://www.jsdelivr.com/package/npm/cytoscape?path=dist">jsDelivr</a></li>
+<li><a href="https://pagecdn.com/lib/cytoscape">PageCDN</a></li>
+<li><a href="https://unpkg.com/cytoscape/dist/">Unpkg</a></li>
+</ul>
+<p>Please do not hotlink to copies of Cytoscape.js from the documentation — they’re just for the demos.</p>
 <p>The available files are available under <a href="https://github.com/cytoscape/cytoscape.js/tree/master/dist"><code>cytoscape/dist/</code></a> in the npm package:</p>
 <ul>
 <li><code>cytoscape.min.js</code> : A minified UMD build with all dependencies included in the bundle.  This file is useful for small pages, supplementary material for an academic paper for example.</li>
 <li><code>cytoscape.umd.js</code> : A non-minified UMD build with all dependencies included in the bundle.  This file is useful for debugging on small pages, supplementary material for an academic paper for example.</li>
+<li><code>cytoscape.esm.min.js</code> : A minified ESM (<code>import</code> / <code>export</code>) build with all dependencies included in the bundle.  This file serves the same purpose as the above, but it can be imported as an ES6 module without the need for a bundler.</li>
 <li><code>cytoscape.cjs.js</code> : A non-minified CJS (Node.js) build without any bundled dependencies.  This is intended to be consumed automatically by Node.js or a bundler like Webpack via <code>require(&#39;cytoscape&#39;)</code>.</li>
 <li><code>cytoscape.esm.js</code> : A non-minified ESM (<code>import</code> / <code>export</code>) build without any bundled dependencies.  This is intended to be consumed automatically by Node.js or a bundler like Webpack via <code>import cytoscape from &#39;cytoscape&#39;</code>.</li>
 </ul>
@@ -1131,7 +1292,7 @@
   <a href="#init-opts/userZoomingEnabled">userZoomingEnabled</a>: true,
   <a href="#init-opts/panningEnabled">panningEnabled</a>: true,
   <a href="#init-opts/userPanningEnabled">userPanningEnabled</a>: true,
-  <a href="#init-opts/boxSelectionEnabled">boxSelectionEnabled</a>: false,
+  <a href="#init-opts/boxSelectionEnabled">boxSelectionEnabled</a>: true,
   <a href="#init-opts/selectionType">selectionType</a>: 'single',
   <a href="#init-opts/touchTapThreshold">touchTapThreshold</a>: 8,
   <a href="#init-opts/desktopTapThreshold">desktopTapThreshold</a>: 4,
@@ -1180,7 +1341,7 @@
 <p><span id="init-opts/userPanningEnabled"></span>
 <strong><code>userPanningEnabled</code></strong> : Whether user events (e.g. dragging the graph background) are allowed to pan the graph.  Programmatic changes to pan are unaffected by this option.</p>
 <p><span id="init-opts/boxSelectionEnabled"></span>
-<strong><code>boxSelectionEnabled</code></strong> : Whether box selection (i.e. drag a box overlay around, and release it to select) is enabled.  If enabled, the user must taphold to pan the graph.</p>
+<strong><code>boxSelectionEnabled</code></strong> : Whether box selection (i.e. drag a box overlay around, and release it to select) is enabled.  If enabled while panning is also enabled, the user must use a modifier key (shift, alt, control, or command) to use box selection.</p>
 <p><span id="init-opts/selectionType"></span>
 <strong><code>selectionType</code></strong> : A string indicating the selection behaviour from user input.  For <code>&#39;additive&#39;</code>, a new selection made by the user adds to the set of currently selected elements.  For <code>&#39;single&#39;</code>, a new selection made by the user becomes the entire set of currently selected elements (i.e. the previous elements are unselected).</p>
 <p><span id="init-opts/touchTapThreshold"></span>
@@ -1579,7 +1740,7 @@ cy.nodes().on(<span class="hljs-string">'click'</span>, <span class="hljs-functi
 
 							<div class="details">
 									<h3 id="details">Details</h3>
-<p>If no elements in the graph match the selector, an empty <a href="Collection">collection</a> is returned.</p>
+<p>If no elements in the graph match the selector, an empty <a href="#collection">collection</a> is returned.</p>
 <p>The function <code>cy.$()</code> acts as an alias to <code>cy.filter()</code>:  It lets you type less characters.  It is analogous to the jQuery <code>$</code> alias used to search the document</p>
 <h3 id="examples">Examples</h3>
 <p>Get nodes with weight greater than 50:</p>
@@ -1645,6 +1806,7 @@ cy.filter(<span class="hljs-string">'[weight &gt; 50]'</span>); <span class="hlj
 
 							<div class="details">
 									<h3 id="details">Details</h3>
+<p><span class="important-indicator"></span> Do not add batching to your app unless you have identified an applicable performance bottleneck.  There are restrictions on what kind of code you can run in a batch.</p>
 <p>Normally, when you modify elements, each modification can trigger a style calculation and a redraw — depending on timing for a redraw.  For example, the following will cause two style calculations and at least one draw:</p>
 <pre><code class="language-js">cy.$(<span class="hljs-string">'#j'</span>)
   .data(<span class="hljs-string">'weight'</span>, <span class="hljs-string">'70'</span>)   <span class="hljs-comment">// style update</span>
@@ -1657,10 +1819,27 @@ cy.filter(<span class="hljs-string">'[weight &gt; 50]'</span>); <span class="hlj
 ;</code></pre>
 <button class="run run-inline-code"><span class="fa fa-play"></span></button><p>This is not a problem for a handful of operations on a handful of elements, but for many operations on many elements you end up with redundant style calculations and probably redundant redraws.  In the worst case, you have <code>eles.length * numOps</code> style updates and redraws — and both style updates and redraws can be expensive.  In the worst case when using <code>cy.batch()</code>, you limit the style updates to <code>eles.length</code> and you limit the redraws to just one.</p>
 <p>Thus, this function is useful for making many changes to elements at once.  When the specified callback function is complete, only elements that require it have their style updated and the renderer makes at most a single redraw.</p>
-<p>This makes for very efficient modifications to elements, but it has some caveats.  While inside the batch callback,</p>
+<p>This makes for very efficient modifications to elements, but it has some caveats inside a batch:</p>
 <ul>
-<li>you can not reliably read element style or dimensions (it may have changed, or computed values may be out of date),</li>
-<li>you probably do not want to use <code>eles.style()</code> et cetera because they force a style bypass rather than a recalculation.</li>
+<li>You can not reliably read element style or dimensions (it may have changed, or computed values may be out of date).</li>
+<li>You probably do not want to use <code>eles.style()</code> et cetera because they force a style bypass rather than a recalculation.</li>
+<li>You can not apply any style-dependent operation within the batch if you have already modified style within the same batch.  Common style-dependent operations include:<ul>
+<li>Layout: <code>cy.layout()</code>, <code>eles.layout()</code>, etc.</li>
+<li>Reading style: <code>ele.style()</code>, <code>ele.numericStyle()</code>, etc.</li>
+<li>Reading dimensions: <code>ele.midpoint()</code>, <code>ele.boundingBox()</code>, etc.</li>
+<li>Animation: <code>ele.animation()</code>, <code>cy.animate()</code>, etc.</li>
+<li>And so on…</li>
+</ul>
+</li>
+</ul>
+<p>A batch should correspond to a single visual operation.  Usually a batch should contain calls only to the following functions:</p>
+<ul>
+<li>Modifying state: <code>eles.data()</code>, <code>eles.scratch()</code>, <code>eles.addClass()</code>, <code>eles.removeClass()</code>, etc.</li>
+<li>Building collections: <code>eles.union()</code>, <code>eles.difference()</code>, <code>eles.intersection()</code>, etc.</li>
+<li>Comparison: <code>eles.same()</code>, <code>eles.some()</code>, etc.</li>
+<li>Iteration: <code>eles.forEach()</code>, <code>eles.empty()</code>, etc.</li>
+<li>Traversal: <code>node.outgoers()</code>, <code>eles.bfs()</code>, etc.</li>
+<li>Algorithms: <code>eles.dijkstra()</code>, <code>eles.degreeCentrality()</code>, etc.</li>
 </ul>
 <h3 id="examples">Examples</h3>
 <p>Synchronous style:</p>
@@ -1759,9 +1938,167 @@ cy.endBatch();</code></pre>
 							</div>
 						</div>
 						<div class="function">
+							<div class="name" id="cy.destroyed">
+								<span class="fn-name">cy.destroyed()</span>  <a href="#cy.destroyed"><span class="fa fa-bookmark"></span></a>
+								<span id="core/graph-manipulation/cy.destroyed">&nbsp;</span>
+							</div>
+
+
+
+							<div class="descr"><p>Get whether the instance of Cytoscape.js has been destroyed or not.</p>
+</div>
+
+
+							<div class="details">
+							</div>
+						</div>
+
+					<h2 id="core/data">Data <a href="#core/data"><span class="fa fa-bookmark"></span></a></h2>
+
+
+
+
+						<div class="function">
+							<div class="name" id="cy.data">
+								<span class="fn-name">cy.data()</span>  <a href="#cy.data"><span class="fa fa-bookmark"></span></a>
+								<span id="core/data/cy.data">&nbsp;</span><span id="core/data/cy.attr">&nbsp;</span><span id="cy.attr">&nbsp;</span><span id="core/data/cy.data">&nbsp;</span><span id="cy.data">&nbsp;</span><span id="core/data/cy.data">&nbsp;</span><span id="cy.data">&nbsp;</span><span id="core/data/cy.data">&nbsp;</span><span id="cy.data">&nbsp;</span><span id="core/data/cy.data">&nbsp;</span><span id="cy.data">&nbsp;</span>
+							</div>
+
+
+							<div class="pure-aliases">
+								<span class="important-indicator"></span> Aliases:
+
+									<span class="pure-alias">
+										<code id="core/data/cy.attr" class="pure-alias-name">cy.attr()</code><span class="pure-alias-comma">,</span>
+									</span>
+							</div>
+
+							<div class="descr"><p>Read and write developer-defined data associated with the graph.</p>
+</div>
+
+							<div class="formats">
+									<div class="format">
+											<div class="name">cy.data()</div>
+
+
+										<div class="descr"><p>Get the entire data object.</p>
+</div>
+										<ul class="args">
+										</ul>
+									</div>
+									<div class="format">
+											<div class="name">cy.data( <span class="args-summary"><span class="comma">,&nbsp;</span>name</span> )</div>
+
+
+										<div class="descr"><p>Get a particular data field.</p>
+</div>
+										<ul class="args">
+												<li>
+													<span class="name">name</span>
+													
+													<span class="descr"><p>The name of the field to get.</p>
+</span>
+
+												</li>
+										</ul>
+									</div>
+									<div class="format">
+											<div class="name">cy.data( <span class="args-summary"><span class="comma">,&nbsp;</span>name<span class="comma">,&nbsp;</span>value</span> )</div>
+
+
+										<div class="descr"><p>Set a particular data field.</p>
+</div>
+										<ul class="args">
+												<li>
+													<span class="name">name</span>
+													
+													<span class="descr"><p>The name of the field to set.</p>
+</span>
+
+												</li>
+												<li>
+													<span class="name">value</span>
+													
+													<span class="descr"><p>The value to set for the field.</p>
+</span>
+
+												</li>
+										</ul>
+									</div>
+									<div class="format">
+											<div class="name">cy.data( <span class="args-summary"><span class="comma">,&nbsp;</span>obj</span> )</div>
+
+
+										<div class="descr"><p>Update multiple data fields at once via an object.</p>
+</div>
+										<ul class="args">
+												<li>
+													<span class="name">obj</span>
+													
+													<span class="descr"><p>The object containing name-value pairs to update data fields.</p>
+</span>
+
+												</li>
+										</ul>
+									</div>
+							</div>
+
+							<div class="details">
+							</div>
+						</div>
+						<div class="function">
+							<div class="name" id="cy.removeData">
+								<span class="fn-name">cy.removeData()</span>  <a href="#cy.removeData"><span class="fa fa-bookmark"></span></a>
+								<span id="core/data/cy.removeData">&nbsp;</span><span id="core/data/cy.removeAttr">&nbsp;</span><span id="cy.removeAttr">&nbsp;</span><span id="core/data/cy.removeData">&nbsp;</span><span id="cy.removeData">&nbsp;</span><span id="core/data/cy.removeData">&nbsp;</span><span id="cy.removeData">&nbsp;</span>
+							</div>
+
+
+							<div class="pure-aliases">
+								<span class="important-indicator"></span> Aliases:
+
+									<span class="pure-alias">
+										<code id="core/data/cy.removeAttr" class="pure-alias-name">cy.removeAttr()</code><span class="pure-alias-comma">,</span>
+									</span>
+							</div>
+
+							<div class="descr"><p>Remove developer-defined data associated with the elements.</p>
+</div>
+
+							<div class="formats">
+									<div class="format">
+											<div class="name">cy.removeData()</div>
+
+
+										<div class="descr"><p>Removes all mutable data fields for the elements.</p>
+</div>
+										<ul class="args">
+										</ul>
+									</div>
+									<div class="format">
+											<div class="name">cy.removeData( <span class="args-summary"><span class="comma">,&nbsp;</span>names</span> )</div>
+
+
+										<div class="descr"><p>Removes the specified mutable data fields for the elements.</p>
+</div>
+										<ul class="args">
+												<li>
+													<span class="name">names</span>
+													
+													<span class="descr"><p>A space-separated list of fields to delete.</p>
+</span>
+
+												</li>
+										</ul>
+									</div>
+							</div>
+
+							<div class="details">
+							</div>
+						</div>
+						<div class="function">
 							<div class="name" id="cy.scratch">
 								<span class="fn-name">cy.scratch()</span>  <a href="#cy.scratch"><span class="fa fa-bookmark"></span></a>
-								<span id="core/graph-manipulation/cy.scratch">&nbsp;</span><span id="core/graph-manipulation/cy.scratch">&nbsp;</span><span id="cy.scratch">&nbsp;</span><span id="core/graph-manipulation/cy.scratch">&nbsp;</span><span id="cy.scratch">&nbsp;</span><span id="core/graph-manipulation/cy.scratch">&nbsp;</span><span id="cy.scratch">&nbsp;</span>
+								<span id="core/data/cy.scratch">&nbsp;</span><span id="core/data/cy.scratch">&nbsp;</span><span id="cy.scratch">&nbsp;</span><span id="core/data/cy.scratch">&nbsp;</span><span id="cy.scratch">&nbsp;</span><span id="core/data/cy.scratch">&nbsp;</span><span id="cy.scratch">&nbsp;</span>
 							</div>
 
 								<div class="ext-function-note">
@@ -1829,7 +2166,7 @@ cy.endBatch();</code></pre>
 						<div class="function">
 							<div class="name" id="cy.removeScratch">
 								<span class="fn-name">cy.removeScratch()</span>  <a href="#cy.removeScratch"><span class="fa fa-bookmark"></span></a>
-								<span id="core/graph-manipulation/cy.removeScratch">&nbsp;</span><span id="core/graph-manipulation/cy.removeScratch">&nbsp;</span><span id="cy.removeScratch">&nbsp;</span>
+								<span id="core/data/cy.removeScratch">&nbsp;</span><span id="core/data/cy.removeScratch">&nbsp;</span><span id="cy.removeScratch">&nbsp;</span>
 							</div>
 
 								<div class="ext-function-note">
@@ -1891,7 +2228,7 @@ cy.endBatch();</code></pre>
 									</span>
 							</div>
 
-							<div class="descr"><p>Listen to events that occur in the graph.</p>
+							<div class="descr"><p>Listen to events that occur on the core.</p>
 </div>
 
 							<div class="formats">
@@ -2016,7 +2353,7 @@ cy.endBatch();</code></pre>
 
 
 
-							<div class="descr"><p>Listen to events that occur in the graph, and run the handler only once.</p>
+							<div class="descr"><p>Listen to events that occur on the core, and run the handler only once.</p>
 </div>
 
 							<div class="formats">
@@ -2092,7 +2429,7 @@ cy.$(<span class="hljs-string">'node'</span>).eq(<span class="hljs-number">1</sp
 									</span>
 							</div>
 
-							<div class="descr"><p>Remove event handlers.</p>
+							<div class="descr"><p>Remove event handlers on the core.</p>
 </div>
 
 							<div class="formats">
@@ -2148,6 +2485,21 @@ cy.on(<span class="hljs-string">'tap'</span>, otherHandler);
 <span class="hljs-comment">// just remove handler</span>
 cy.removeListener(<span class="hljs-string">'tap'</span>, handler);</code></pre>
 <button class="run run-inline-code"><span class="fa fa-play"></span></button>
+							</div>
+						</div>
+						<div class="function">
+							<div class="name" id="cy.removeAllListeners">
+								<span class="fn-name">cy.removeAllListeners()</span>  <a href="#cy.removeAllListeners"><span class="fa fa-bookmark"></span></a>
+								<span id="core/events/cy.removeAllListeners">&nbsp;</span>
+							</div>
+
+
+
+							<div class="descr"><p>Remove all event handlers on the core.</p>
+</div>
+
+
+							<div class="details">
 							</div>
 						</div>
 						<div class="function">
@@ -2951,7 +3303,7 @@ setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</spa
 
 
 
-							<div class="descr"><p>Get or set whether box selection is enabled.   If enabled along with panning, the user must hold one of shift, control, meta, or alt down to initiate box selection.</p>
+							<div class="descr"><p>Get or set whether box selection is enabled.   If enabled along with panning, the user must hold down one of shift, control, alt, or command to initiate box selection.</p>
 </div>
 
 							<div class="formats">
@@ -3750,6 +4102,51 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 							<div class="details">
 							</div>
 						</div>
+
+					<h2 id="core/eles.data">eles.data <a href="#core/eles.data"><span class="fa fa-bookmark"></span></a></h2>
+
+
+						<h2 id="eles.data/details">Details <a href="#eles.data/details"><span class="fa fa-bookmark"></span></a></h2>
+<p>Only JSON-serialisable data may be put in <code>ele.data()</code>.  For temporary data or non-serialisable data, use <a href="#ele.scratch"><code>ele.scratch()</code></a>.</p>
+<p>The following fields are normally immutable:</p>
+<ul>
+<li><code>id</code> : The <code>id</code> field is used to uniquely identify an element in the graph.</li>
+<li><code>source</code> &amp; <code>target</code> : These fields define an edge’s relationship to nodes, and this relationship can not be changed after creation.</li>
+<li><code>parent</code> : The <code>parent</code> field defines the parent (compound) node.</li>
+</ul>
+<p>In order to modify those fields, which alter graph topology, you must use <a href="#ele.move"><code>ele.move()</code></a>.</p>
+<h2 id="eles.data/examples">Examples <a href="#eles.data/examples"><span class="fa fa-bookmark"></span></a></h2>
+<pre><code class="language-js"><span class="hljs-keyword">var</span> j = cy.$(<span class="hljs-string">'#j'</span>);
+
+<span class="hljs-comment">// set the weight field in data</span>
+j.data(<span class="hljs-string">'weight'</span>, <span class="hljs-number">60</span>);
+
+<span class="hljs-comment">// set several fields at once</span>
+j.data({
+  <span class="hljs-attr">name</span>: <span class="hljs-string">'Jerry Jerry Dingleberry'</span>,
+  <span class="hljs-attr">height</span>: <span class="hljs-number">176</span>
+});
+
+<span class="hljs-keyword">var</span> weight = j.data(<span class="hljs-string">'weight'</span>);</code></pre>
+<button class="run run-inline-code"><span class="fa fa-play"></span></button>
+
+
+
+					<h2 id="core/eles.removedata">eles.removeData <a href="#core/eles.removedata"><span class="fa fa-bookmark"></span></a></h2>
+
+
+						<h2 id="eles.removedata/details">Details <a href="#eles.removedata/details"><span class="fa fa-bookmark"></span></a></h2>
+<p>Using <code>ele.removeData()</code> sets the specified fields to <code>undefined</code>.  This allows you to use a meaningful <code>null</code> value in your element data.</p>
+<p>The following data fields are normally immutable, and so they can not be removed:</p>
+<ul>
+<li><code>id</code> : The <code>id</code> field is used to uniquely identify an element in the graph.</li>
+<li><code>source</code> &amp; <code>target</code> : These fields define an edge’s relationship to nodes, and this relationship can not be changed after creation.</li>
+<li><code>parent</code> : The <code>parent</code> field defines the parent (compound) node.</li>
+</ul>
+<p>To modify the topology of the graph without adding or removing elements, you must use <a href="#ele.move"><code>ele.move()</code></a>.  Even so, only <code>parent</code> may be removed by <code>ele.move()</code>.  An edge always requires a valid source and target.</p>
+
+
+
 
 					<h2 id="core/layout">Layout <a href="#core/layout"><span class="fa fa-bookmark"></span></a></h2>
 
@@ -4745,6 +5142,21 @@ j.emit(<span class="hljs-string">'tap'</span>); <span class="hljs-comment">// so
 <span class="hljs-comment">// remove all tap listener handlers (including unnamed handler)</span>
 j.removeListener(<span class="hljs-string">'tap'</span>);</code></pre>
 <button class="run run-inline-code"><span class="fa fa-play"></span></button>
+							</div>
+						</div>
+						<div class="function">
+							<div class="name" id="eles.removeAllListeners">
+								<span class="fn-name">eles.removeAllListeners()</span>  <a href="#eles.removeAllListeners"><span class="fa fa-bookmark"></span></a>
+								<span id="collection/events/eles.removeAllListeners">&nbsp;</span>
+							</div>
+
+
+
+							<div class="descr"><p>Remove all event handlers on the elements.</p>
+</div>
+
+
+							<div class="details">
 							</div>
 						</div>
 						<div class="function">
@@ -5898,7 +6310,7 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 
 
 
-							<div class="descr"><p>Get the width of the element.</p>
+							<div class="descr"><p>Get the width of the element.  The raw width of the element is returned, independent of whether the element is visibile.</p>
 </div>
 
 							<div class="formats">
@@ -5951,7 +6363,7 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 
 
 
-							<div class="descr"><p>Get the height of the element.</p>
+							<div class="descr"><p>Get the height of the element.  The raw height of the element is returned, independent of whether the element is visibile.</p>
 </div>
 
 							<div class="formats">
@@ -6049,7 +6461,28 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 															<li>
 																<span class="name">includeLabels</span>
 																
-																<span class="descr"><p>A boolean indicating whether to include labels in the bounding box (default <code>true</code>).</p>
+																<span class="descr"><p>A boolean indicating whether to include labels overall in the bounding box (default <code>true</code>).  This option overrides all other label options if <code>false</code>.</p>
+</span>
+															</li>
+
+															<li>
+																<span class="name">includeMainLabels</span>
+																
+																<span class="descr"><p>A boolean indicating whether to include main (node or edge) <code>label</code>s in the bounding box (default <code>true</code>).</p>
+</span>
+															</li>
+
+															<li>
+																<span class="name">includeSourceLabels</span>
+																
+																<span class="descr"><p>A boolean indicating whether to include (edge) <code>source-label</code>s in the bounding box (default <code>true</code>).</p>
+</span>
+															</li>
+
+															<li>
+																<span class="name">includeTargetLabels</span>
+																
+																<span class="descr"><p>A boolean indicating whether to include (edge) <code>target-label</code>s in the bounding box (default <code>true</code>).</p>
 </span>
 															</li>
 
@@ -6069,6 +6502,7 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 							<div class="details">
 									<h3 id="details">Details</h3>
 <p>This function returns a plain object with the fields <code>x1</code>, <code>x2</code>, <code>y1</code>, <code>y2</code>, <code>w</code>, and <code>h</code> defined.</p>
+<p>An element that does not take up space (e.g. <code>display: none</code>) has a bounding box of zero <code>w</code> and <code>h</code>.  The <code>x1</code>, <code>x2</code>, <code>y1</code>, and <code>y2</code> values will have no meaning for those zero-area elements.  To get the position of a <code>display: none</code> node, use <a href="#node.position"><code>node.position()</code></a> instead.</p>
 <p>Note that the <code>includeOverlays</code> option necessarily includes the dimensions of the body of the element.  So using <code>includeOverlays: true</code> with <code>includeNodes: false</code>, for example, does not make sense.  The case where the <code>includeOverlays</code> option is only useful in getting the non-overlay dimensions of an element, e.g. <code>{ includeOverlays: false, includeNodes: true }</code>.</p>
 
 							</div>
@@ -6123,7 +6557,28 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 															<li>
 																<span class="name">includeLabels</span>
 																
-																<span class="descr"><p>A boolean indicating whether to include labels in the bounding box (default <code>true</code>).</p>
+																<span class="descr"><p>A boolean indicating whether to include labels overall in the bounding box (default <code>true</code>).  This option overrides all other label options if <code>false</code>.</p>
+</span>
+															</li>
+
+															<li>
+																<span class="name">includeMainLabels</span>
+																
+																<span class="descr"><p>A boolean indicating whether to include main (node or edge) <code>label</code>s in the bounding box (default <code>true</code>).</p>
+</span>
+															</li>
+
+															<li>
+																<span class="name">includeSourceLabels</span>
+																
+																<span class="descr"><p>A boolean indicating whether to include (edge) <code>source-label</code>s in the bounding box (default <code>true</code>).</p>
+</span>
+															</li>
+
+															<li>
+																<span class="name">includeTargetLabels</span>
+																
+																<span class="descr"><p>A boolean indicating whether to include (edge) <code>target-label</code>s in the bounding box (default <code>true</code>).</p>
 </span>
 															</li>
 
@@ -6143,6 +6598,7 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 							<div class="details">
 									<h3 id="details">Details</h3>
 <p>This function returns a plain object with the fields <code>x1</code>, <code>x2</code>, <code>y1</code>, <code>y2</code>, <code>w</code>, and <code>h</code> defined.</p>
+<p>An element that does not take up space (e.g. <code>display: none</code>) has a bounding box of zero <code>w</code> and <code>h</code>.  The <code>x1</code>, <code>x2</code>, <code>y1</code>, and <code>y2</code> values will have no meaning for those zero-area elements.  To get the position of a <code>display: none</code> node, use <a href="#node.position"><code>node.position()</code></a> instead.</p>
 <p>Note that the <code>includeOverlays</code> option necessarily includes the dimensions of the body of the element.  So using <code>includeOverlays: true</code> with <code>includeNodes: false</code>, for example, does not make sense.  The case where the <code>includeOverlays</code> option is only useful in getting the non-overlay dimensions of an element, e.g. <code>{ includeOverlays: false, includeNodes: true }</code>.</p>
 
 							</div>
@@ -6279,6 +6735,61 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 							<div class="details">
 							</div>
 						</div>
+						<div class="function">
+							<div class="name" id="ele.pannable">
+								<span class="fn-name">ele.pannable()</span>  <a href="#ele.pannable"><span class="fa fa-bookmark"></span></a>
+								<span id="collection/position--dimensions/ele.pannable">&nbsp;</span>
+							</div>
+
+
+
+							<div class="descr"><p>Gets whether the element allows passthrough panning.</p>
+</div>
+
+
+							<div class="details">
+									<h3 id="description">Description</h3>
+<p>A pannable element allows passthrough panning:  The user can pan the graph when dragging on the element.  Thus, a pannable element is necessarily ungrabbable.</p>
+<p>By default, an edge is pannable and a node is not pannable.</p>
+
+							</div>
+						</div>
+						<div class="function">
+							<div class="name" id="eles.panify">
+								<span class="fn-name">eles.panify()</span>  <a href="#eles.panify"><span class="fa fa-bookmark"></span></a>
+								<span id="collection/position--dimensions/eles.panify">&nbsp;</span>
+							</div>
+
+
+
+							<div class="descr"><p>Enables passthrough panning on the elements.</p>
+</div>
+
+
+							<div class="details">
+									<h3 id="examples">Examples</h3>
+<pre><code class="language-js">cy.$(<span class="hljs-string">'#j'</span>).panify();</code></pre>
+<button class="run run-inline-code"><span class="fa fa-play"></span></button>
+							</div>
+						</div>
+						<div class="function">
+							<div class="name" id="eles.unpanify">
+								<span class="fn-name">eles.unpanify()</span>  <a href="#eles.unpanify"><span class="fa fa-bookmark"></span></a>
+								<span id="collection/position--dimensions/eles.unpanify">&nbsp;</span>
+							</div>
+
+
+
+							<div class="descr"><p>Disables passthrough panning on the elements.</p>
+</div>
+
+
+							<div class="details">
+									<h3 id="examples">Examples</h3>
+<pre><code class="language-js">cy.$(<span class="hljs-string">'#j'</span>).unpanify();</code></pre>
+<button class="run run-inline-code"><span class="fa fa-play"></span></button>
+							</div>
+						</div>
 
 					<h2 id="collection/edge-points">Edge points <a href="#collection/edge-points"><span class="fa fa-bookmark"></span></a></h2>
 
@@ -6293,7 +6804,7 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 
 
 
-							<div class="descr"><p>Get an array of control point positions for a <a href="#style/bezier-edges"><code>curve-style: bezier</code></a> or <a href="http://localhost:8888/cytoscape.js/documentation/#style/unbundled-bezier-edges"><code>curve-style: unbundled-bezier</code></a> edge.</p>
+							<div class="descr"><p>Get an array of control point positions for a <a href="#style/bezier-edges"><code>curve-style: bezier</code></a> or <a href="#style/unbundled-bezier-edges"><code>curve-style: unbundled-bezier</code></a> edge.</p>
 </div>
 
 							<div class="formats">
@@ -6530,8 +7041,15 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 <p>This function creates and returns a <a href="#layouts">layout object</a>.  You may want to keep a reference to the layout for more advanced usecases, such as running multiple layouts simultaneously.</p>
 <p><span class="important-indicator"></span> Note that you must call <a href="#layouts/layout-manipulation/layout.run"><code>layout.run()</code></a> in order for it to affect the graph.</p>
 <h3 id="examples">Examples</h3>
+<p>Assign random positions to all nodes:</p>
 <pre><code class="language-js"><span class="hljs-keyword">var</span> layout = cy.elements().layout({
   <span class="hljs-attr">name</span>: <span class="hljs-string">'random'</span>
+});
+
+layout.run();</code></pre>
+<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>Apply a circle layout to only the shown elements:</p>
+<pre><code class="language-js"><span class="hljs-keyword">var</span> layout = cy.elements().not(<span class="hljs-string">':invisible, :transparent'</span>).layout({
+  <span class="hljs-attr">name</span>: <span class="hljs-string">'circle'</span>
 });
 
 layout.run();</code></pre>
@@ -6909,7 +7427,7 @@ layout.run();</code></pre>
 						<div class="function">
 							<div class="name" id="eles.classes">
 								<span class="fn-name">eles.classes()</span> et al <a href="#eles.classes"><span class="fa fa-bookmark"></span></a>
-								<span id="collection/style/eles.classes">&nbsp;</span><span id="collection/style/eles.className">&nbsp;</span><span id="eles.className">&nbsp;</span><span id="collection/style/eles.classNames">&nbsp;</span><span id="eles.classNames">&nbsp;</span><span id="collection/style/ele.classes()">&nbsp;</span><span id="ele.classes()">&nbsp;</span><span id="collection/style/eles.classes()">&nbsp;</span><span id="eles.classes()">&nbsp;</span>
+								<span id="collection/style/eles.classes">&nbsp;</span><span id="collection/style/eles.className">&nbsp;</span><span id="eles.className">&nbsp;</span><span id="collection/style/eles.classNames">&nbsp;</span><span id="eles.classNames">&nbsp;</span><span id="collection/style/ele.classes">&nbsp;</span><span id="ele.classes">&nbsp;</span><span id="collection/style/eles.classes">&nbsp;</span><span id="eles.classes">&nbsp;</span>
 							</div>
 
 
@@ -6929,7 +7447,7 @@ layout.run();</code></pre>
 
 							<div class="formats">
 									<div class="format">
-											<div class="name">ele.classes()()</div>
+											<div class="name">ele.classes()</div>
 
 
 										<div class="descr"><p>Get the list of classes as an array for the element.</p>
@@ -6938,7 +7456,7 @@ layout.run();</code></pre>
 										</ul>
 									</div>
 									<div class="format">
-											<div class="name">eles.classes()( <span class="args-summary"><span class="comma">,&nbsp;</span>classes</span> )</div>
+											<div class="name">eles.classes( <span class="args-summary"><span class="comma">,&nbsp;</span>classes</span> )</div>
 
 
 										<div class="descr"><p>Replace the list of classes for all elements in the collection.</p>
@@ -6958,9 +7476,11 @@ layout.run();</code></pre>
 							<div class="details">
 									<h3 id="examples">Examples</h3>
 <p>Remove all classes:</p>
-<pre><code class="language-js">cy.nodes().classes(); <span class="hljs-comment">// no classes</span></code></pre>
+<pre><code class="language-js">cy.nodes().classes([]); <span class="hljs-comment">// array</span>
+cy.nodes().classes(<span class="hljs-string">''</span>); <span class="hljs-comment">// space-separated string</span></code></pre>
 <button class="run run-inline-code"><span class="fa fa-play"></span></button><p>Replace classes:</p>
-<pre><code class="language-js">cy.nodes().classes(<span class="hljs-string">'foo'</span>);</code></pre>
+<pre><code class="language-js">cy.nodes().classes([<span class="hljs-string">'foo'</span>]); <span class="hljs-comment">// array</span>
+cy.nodes().classes(<span class="hljs-string">'foo'</span>); <span class="hljs-comment">// space-separated string</span></code></pre>
 <button class="run run-inline-code"><span class="fa fa-play"></span></button>
 							</div>
 						</div>
@@ -10401,7 +10921,7 @@ path.select();</code></pre>
 															<li>
 																<span class="name">weight: function(edge)</span>
 																<span class="optional">[optional]</span>
-																<span class="descr"><p>A function that returns the positive numeric weight for the edge.</p>
+																<span class="descr"><p>A function that returns the positive numeric weight for the edge.  The weight indicates the cost of going from one node to another node.</p>
 </span>
 															</li>
 
@@ -10479,7 +10999,7 @@ path.select();</code></pre>
 															<li>
 																<span class="name">weight: function(edge)</span>
 																<span class="optional">[optional]</span>
-																<span class="descr"><p>A function that returns the positive numeric weight for the edge.</p>
+																<span class="descr"><p>A function that returns the positive numeric weight for the edge.  The weight indicates the cost of going from one node to another node.</p>
 </span>
 															</li>
 
@@ -10551,7 +11071,7 @@ aStar.path.select();</code></pre>
 															<li>
 																<span class="name">weight: function(edge)</span>
 																<span class="optional">[optional]</span>
-																<span class="descr"><p>A function that returns the positive numeric weight for the edge.</p>
+																<span class="descr"><p>A function that returns the numeric weight for the edge.  The weight indicates the cost of going from one node to another node.  The weight may be positive or negative, but no negative cycles are allowed.</p>
 </span>
 															</li>
 
@@ -10622,7 +11142,7 @@ fw.path(<span class="hljs-string">'#k'</span>, <span class="hljs-string">'#g'</s
 															<li>
 																<span class="name">weight: function(edge)</span>
 																<span class="optional">[optional]</span>
-																<span class="descr"><p>A function that returns the positive numeric weight for the edge.</p>
+																<span class="descr"><p>A function that returns the numeric weight for the edge.  The weight indicates the cost of going from one node to another node.  The weight may be positive or negative.</p>
 </span>
 															</li>
 
@@ -10786,7 +11306,7 @@ ks.cut.select();</code></pre>
 															<li>
 																<span class="name">weight: function(edge)</span>
 																<span class="optional">[optional]</span>
-																<span class="descr"><p>A function that returns the weight for the edge.</p>
+																<span class="descr"><p>A function that returns the positive weight for the edge.  The weight indicates the importance of the edge, with a high value representing high importance.</p>
 </span>
 															</li>
 
@@ -10863,7 +11383,7 @@ ks.cut.select();</code></pre>
 															<li>
 																<span class="name">weight: function(edge)</span>
 																<span class="optional">[optional]</span>
-																<span class="descr"><p>A function that returns the weight for the edge.</p>
+																<span class="descr"><p>A function that returns the positive weight for the edge.  The weight indicates the importance of the edge, with a high value representing high importance.</p>
 </span>
 															</li>
 
@@ -10949,7 +11469,7 @@ ks.cut.select();</code></pre>
 															<li>
 																<span class="name">weight: function(edge)</span>
 																<span class="optional">[optional]</span>
-																<span class="descr"><p>A function that returns the weight for the edge.</p>
+																<span class="descr"><p>A function that returns the positive weight for the edge.  The weight indicates the importance of the edge, with a high value representing high importance.</p>
 </span>
 															</li>
 
@@ -11018,7 +11538,7 @@ ks.cut.select();</code></pre>
 															<li>
 																<span class="name">weight: function(edge)</span>
 																<span class="optional">[optional]</span>
-																<span class="descr"><p>A function that returns the weight for the edge.</p>
+																<span class="descr"><p>A function that returns the positive weight for the edge.  The weight indicates the importance of the edge, with a high value representing high importance.</p>
 </span>
 															</li>
 
@@ -11089,7 +11609,7 @@ ks.cut.select();</code></pre>
 															<li>
 																<span class="name">weight: function(edge)</span>
 																<span class="optional">[optional]</span>
-																<span class="descr"><p>A function that returns the weight for the edge.</p>
+																<span class="descr"><p>A function that returns the positive weight for the edge.  The weight indicates the importance of the edge, with a high value representing high importance.</p>
 </span>
 															</li>
 
@@ -11383,27 +11903,7 @@ ks.cut.select();</code></pre>
 																		<span class="descr"><p>A function that returns the ith value of the <code>q</code> vector.</p>
 </span>
 																	</li>
-																	<li>
-																		<span class="name">nodeP</span>
-																		<span class="optional">[optional]</span>
-																		<span class="descr"><p>An optionally-used reference to the node associated with the <code>p</code> attribute vector.  It is useful for affecting the weights with information outside of the attributes, such as connectivity.</p>
-</span>
-																	</li>
-																	<li>
-																		<span class="name">nodeQ</span>
-																		<span class="optional">[optional]</span>
-																		<span class="descr"><p>An optionally-used reference to the node associated with the <code>q</code> attribute vector.  It is useful for affecting the weights with information outside of the attributes, such as connectivity.</p>
-</span>
-																	</li>
 																</ul>
-
-																<li>
-																	<span class="name">function( nodeP, nodeQ )</span>
-																	
-																	<span class="descr"><p>A custom function that returns the distance between <code>nodeP</code> and <code>nodeQ</code>.  This allows for specifying the distance matrix directly, forgoing attributes.</p>
-</span>
-																</li>
-
 
 															</ul>
 															<li>
@@ -11709,27 +12209,7 @@ ks.cut.select();</code></pre>
 																		<span class="descr"><p>A function that returns the ith value of the <code>q</code> vector.</p>
 </span>
 																	</li>
-																	<li>
-																		<span class="name">nodeP</span>
-																		<span class="optional">[optional]</span>
-																		<span class="descr"><p>An optionally-used reference to the node associated with the <code>p</code> attribute vector.  It is useful for affecting the weights with information outside of the attributes, such as connectivity.</p>
-</span>
-																	</li>
-																	<li>
-																		<span class="name">nodeQ</span>
-																		<span class="optional">[optional]</span>
-																		<span class="descr"><p>An optionally-used reference to the node associated with the <code>q</code> attribute vector.  It is useful for affecting the weights with information outside of the attributes, such as connectivity.</p>
-</span>
-																	</li>
 																</ul>
-
-																<li>
-																	<span class="name">function( nodeP, nodeQ )</span>
-																	
-																	<span class="descr"><p>A custom function that returns the distance between <code>nodeP</code> and <code>nodeQ</code>.  This allows for specifying the distance matrix directly, forgoing attributes.</p>
-</span>
-																</li>
-
 
 															</ul>
 															<li>
@@ -12140,7 +12620,7 @@ ks.cut.select();</code></pre>
 															</li>
 
 															<li>
-																<span class="name">minIterations</span>
+																<span class="name">maxIterations</span>
 																<span class="optional">[optional]</span>
 																<span class="descr"><p>The maximum number of iteraions the algorithm will run before stopping (default <code>1000</code>).</p>
 </span>
@@ -12516,8 +12996,10 @@ cy.elements(<span class="hljs-string">'node#j, edge[source = "j"]'</span>);</cod
 <button class="run run-inline-code"><span class="fa fa-play"></span></button><p>It is important to note that strings need to be enclosed by quotation marks:</p>
 <pre><code class="language-js"><span class="hljs-comment">//cy.filter('node[name = Jerry]'); // this doesn't work</span>
 cy.filter(<span class="hljs-string">'node[name = "Jerry"]'</span>); <span class="hljs-comment">// but this does</span></code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>Note that metacharacters ( ^ $ \ / ( ) | ? + * [ ] { } , . ) need to be escaped:</p>
+<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>Note that some characters need to be escaped for IDs, field names, and so on:</p>
 <pre><code class="language-js">cy.filter(<span class="hljs-string">'#some\\$funky\\@id'</span>);</code></pre>
+<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>Some examples of these characters include <code>( ^ $ \ / ( ) | ? + * [ ] { } , . )</code>.  Try to avoid using non-alpha-numeric characters for field names and IDs to keep things simple.  If you must use special characters for IDs, use a data selector rather than an ID selector:</p>
+<pre><code class="language-js">cy.filter(<span class="hljs-string">'[id = "some$funky@id"]'</span>);</code></pre>
 <button class="run run-inline-code"><span class="fa fa-play"></span></button><h2 id="selectors/group-class-amp-id">Group, class, &amp; ID <a href="#selectors/group-class-amp-id"><span class="fa fa-bookmark"></span></a></h2>
 <p><strong><code>node</code>,  <code>edge</code>, or <code>*</code> (group selector)</strong>
 Matches elements based on group (<code>node</code> for nodes, <code>edge</code> for edges, <code>*</code> for all).</p>
@@ -12755,6 +13237,7 @@ Sets the subject of the selector (e.g. <code>$node &gt; node</code> to select th
 <li><strong><code>shape</code></strong> : The shape of the node’s body.  Note that each shape fits within the specified <code>width</code> and <code>height</code>, and so you may have to adjust <code>width</code> and <code>height</code> if you desire an equilateral shape (i.e. <code>width !== height</code> for several equilateral shapes).  Only <code>*rectangle</code> shapes are supported by compounds, because the dimensions of a compound are defined by the bounding box of the children.  The following values are accepted:<ul>
 <li><code>ellipse</code></li>
 <li><code>triangle</code></li>
+<li><code>round-triangle</code></li>
 <li><code>rectangle</code></li>
 <li><code>round-rectangle</code></li>
 <li><code>bottom-round-rectangle</code></li>
@@ -12762,13 +13245,19 @@ Sets the subject of the selector (e.g. <code>$node &gt; node</code> to select th
 <li><code>barrel</code></li>
 <li><code>rhomboid</code></li>
 <li><code>diamond</code></li>
+<li><code>round-diamond</code></li>
 <li><code>pentagon</code></li>
+<li><code>round-pentagon</code></li>
 <li><code>hexagon</code></li>
+<li><code>round-hexagon</code></li>
 <li><code>concave-hexagon</code></li>
 <li><code>heptagon</code></li>
+<li><code>round-heptagon</code></li>
 <li><code>octagon</code></li>
+<li><code>round-octagon</code></li>
 <li><code>star</code></li>
 <li><code>tag</code></li>
+<li><code>round-tag</code></li>
 <li><code>vee</code></li>
 <li><code>polygon</code> (custom polygon specified via <code>shape-polygon-points</code>).</li>
 </ul>
@@ -12858,25 +13347,28 @@ Sets the subject of the selector (e.g. <code>$node &gt; node</code> to select th
 <li><p>Web fonts (e.g. WOFF, WOFF2) may not work within SVG <code>&lt;text&gt;</code> elements in some browsers.  For best cross-browser compatibility, use native SVG versions of your icons — usually defined as <code>&lt;path&gt;</code> elements.</p>
 </li>
 <li><p>If you memoize function mappers to generate SVGs procedurally, you may want to have your function return an object like <code>{ svg, width, height }</code>.  This allows you to use the dimensions of the image for other style properties, like node width and height.  E.g.:</p>
-<pre><code><span class="hljs-keyword">var</span> makeSvg = memoize( <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(ele)</span></span>{
-<span class="hljs-comment">// impl...</span>
+<pre><code><span class="hljs-keyword">var</span> makeSvg = memoize(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(ele)</span></span>{
+  <span class="hljs-comment">// impl...</span>
 
-<span class="hljs-keyword">return</span> { svg: s, width: w, height: h };
-} );
-</code></pre></li>
+  <span class="hljs-keyword">return</span> { svg: s, width: w, height: h };
+});
+<span class="hljs-comment">//</span>
+<span class="hljs-comment">// ...</span>
+<span class="hljs-comment">//</span>
+<span class="hljs-comment">// init stylesheet</span>
+<span class="hljs-keyword">var</span> options = {
+  style: [
+    {
+      selector: <span class="hljs-string">'node'</span>,
+      style: {
+        <span class="hljs-string">'background-image'</span>: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(ele)</span></span>{ <span class="hljs-keyword">return</span> makeSvg(ele).svg; },
+        <span class="hljs-string">'width'</span>: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(ele)</span></span>{ <span class="hljs-keyword">return</span> makeSvg(ele).width; },
+        <span class="hljs-string">'height'</span>: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(ele)</span></span>{ <span class="hljs-keyword">return</span> makeSvg(ele).height; }
+      }
+    }
+  ]
+};</code></pre></li>
 </ul>
-<p>// …</p>
-<p>// init stylesheet
-style: [
- {
-   selector: ‘node’,
-   style: {</p>
-<pre><code> <span class="hljs-string">'background-image'</span>: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(ele)</span></span>{ <span class="hljs-keyword">return</span> makeSvg(ele).svg; },
- <span class="hljs-string">'width'</span>: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(ele)</span></span>{ <span class="hljs-keyword">return</span> makeSvg(ele).width; },
- <span class="hljs-string">'height'</span>: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(ele)</span></span>{ <span class="hljs-keyword">return</span> makeSvg(ele).height; }</code></pre><p>   }
- }
-]
-```</p>
 </li>
 </ul>
 </li>
@@ -12904,11 +13396,12 @@ style: [
 </li>
 <li><p><strong><code>background-height-relative-to</code></strong> : Changes whether the height is calculated relative to the height of the node or the height in addition to the padding; may be <code>inner</code> or <code>include-padding</code>. If not specified, <code>include-padding</code> is used by default.</p>
 </li>
+<li><p><strong><code>background-clip</code></strong> : How background image clipping is handled; may be <code>node</code> for clipped to node shape or <code>none</code> for no clipping.</p>
+</li>
 </ul>
 <p>The following properties apply to all images of a node:</p>
 <ul>
-<li><strong><code>background-clip</code></strong> : How background image clipping is handled; may be <code>node</code> for clipped to node shape or <code>none</code> for no clipping.</li>
-<li><strong><code>bounds-expansion</code></strong> : Specifies a padding size (e.g. <code>20px</code>) that expands the bounding box of the node in all directions.  This allows for images to be drawn outside of the normal bounding box of the node when <code>background-clip</code> is <code>none</code>.  This is useful for small decorations just outside of the node.</li>
+<li><strong><code>bounds-expansion</code></strong> : Specifies a padding size (e.g. <code>20px</code>) that expands the bounding box of the node in all directions.  This allows for images to be drawn outside of the normal bounding box of the node when <code>background-clip</code> is <code>none</code>.  This is useful for small decorations just outside of the node. <code>bounds-expansions</code> accepts 1 value (for all directions), 2 values, (<code>[topAndBottom, leftAndRight]</code>) or 4 values (<code>[top, right, bottom, left]</code>).</li>
 </ul>
 <p>The following is an example of valid background image styling using JSON. The example images are taken from Wikimedia Commons with the Creative Commons license.</p>
 <pre><code>{
@@ -12917,7 +13410,7 @@ style: [
     'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fc/Pigeon_silhouette_<span class="hljs-number">4874</span>.svg/<span class="hljs-number">1000</span>px-Pigeon_silhouette_<span class="hljs-number">4874</span>.svg.png'
   ],
   'background-fit': 'cover cover',
-  `background-image-opacity`: <span class="hljs-number">0.5</span>
+  'background-image-opacity': <span class="hljs-number">0.5</span>
 }</code></pre><h2 id="style/pie-chart-background">Pie chart background <a href="#style/pie-chart-background"><span class="fa fa-bookmark"></span></a></h2>
 <p>These properties allow you to create pie chart backgrounds on nodes (<a href="demos/pie-style">demo</a>).  Note that 16 slices maximum are supported per node, so in the properties <code>1 &lt;= i &lt;= 16</code>.  Of course, you must specify a numerical value for each property in place of <code>i</code>.  Each nonzero sized slice is placed in order of <code>i</code>, starting from the 12 o’clock position and working clockwise.</p>
 <p>You may find it useful to reserve a number to a particular colour for all nodes in your stylesheet.  Then you can specify values for <code>pie-i-background-size</code> accordingly for each node via a <a href="#style/mappers">mapper</a>.  This would allow you to create consistently coloured pie charts in each node of the graph based on element data.</p>
@@ -12993,6 +13486,7 @@ style: [
 <p>A taxi edge (<code>curve-style: taxi</code>) is drawn as a series of right-angled lines (i.e. in <a href="https://en.wikipedia.org/wiki/Taxicab_geometry">taxicab geometry</a>).  The edge has a primary direction along either the x-axis or y-axis, which can be used to bundle edges in a hierarchy.  That is, taxi edges are appropriate for trees and DAGs that are laid out in a hierarchical manner.</p>
 <p>A taxi edge has at most two visible turns:  Starting from the source node, the edge goes in the primary direction for the specified distance.  The edge then turns, going towards the target along the secondary axis.  The first turn can be specified in order to bundle the edges of outgoing nodes.  The second turn is implicit, based on the first turn, going the remaining distance along the main axis.</p>
 <p>When a taxi edge would be impossible to draw along the regular turning plan — i.e. one or more turns is too close the source or target — it is re-routed.  The re-routing is carried out on a best-effort basis:  Re-routing prioritises the specified direction for bundling over the specified turn distance.  A <code>downward</code> edge, for example, will avoid going in the upward direction where possible.  In practice, re-routing should not take place for graphs that are well laid out.</p>
+<p><span class="important-indicator"></span> Only <code>outside-to-node</code> endpoints are supported for a taxi edge, i.e. <code>source-endpoint: outside-to-node</code> and <code>target-endpoint: outside-to-node</code>.</p>
 <ul>
 <li><strong><code>taxi-direction</code></strong> : The main direction of the edge, the direction starting out from the source node; may be one of:<ul>
 <li><code>auto</code> : Automatically use <code>vertical</code> or <code>horizontal</code>, based on whether the vertical or horizontal distance is largest.</li>
@@ -13070,6 +13564,8 @@ style: [
 <li>A <code>display: none</code> element does not take up space.<ul>
 <li>A <code>display: none</code> bundled bezier edge does not take up space in its bundle.</li>
 <li>A <code>display: none</code> node hides its connected edges.</li>
+<li>A <code>display: none</code> node is considered a point rather than an area in layouts, affecting things like overlap avoidance.</li>
+<li>A <code>display: none</code> element is not taken into consideration for viewport fitting.</li>
 </ul>
 </li>
 <li>A <code>display: none</code> element is not interactive.</li>
@@ -13079,6 +13575,8 @@ style: [
 <li>A <code>visibility: hidden</code> element does take up space.<ul>
 <li>A <code>visibility: hidden</code> bundled bezier edge does take up space in its bundle.</li>
 <li>A <code>visibility: hidden</code> node does not hide its connected edges.</li>
+<li>A <code>visibility: hidden</code> element is considered normally by layouts.</li>
+<li>A <code>visibility: hidden</code> element is taken into consideration for viewport fitting.</li>
 </ul>
 </li>
 <li>A <code>visibility: hidden</code> element is not interactive.</li>
@@ -13088,6 +13586,8 @@ style: [
 <li>An <code>opacity: 0</code> element does take up space.<ul>
 <li>An <code>opacity: 0</code> bundled bezier edge does take up space in its bundle.</li>
 <li>An <code>opacity: 0</code> node does not hide its connected edges.</li>
+<li>An <code>opacity: 0</code> element is considered normally by layouts.</li>
+<li>An <code>opacity: 0</code> element is taken into consideration for viewport fitting.</li>
 </ul>
 </li>
 <li>An <code>opacity: 0</code> element is interactive.</li>
@@ -13121,8 +13621,11 @@ style: [
 </ul>
 <p>Wrapping text:</p>
 <ul>
-<li><strong><code>text-wrap</code></strong> : A wrapping style to apply to the label text; may be <code>none</code> for no wrapping (including manual newlines: <code>\n</code>), <code>wrap</code> for manual and/or autowrapping or <code>ellipsis</code> to truncate the string and append ‘…’ based on <code>text-max-width</code>.</li>
+<li><strong><code>text-wrap</code></strong> : A wrapping style to apply to the label text; may be <code>none</code> for no wrapping (including manual newlines: <code>\n</code>), <code>wrap</code> for manual and/or autowrapping, or <code>ellipsis</code> to truncate the string and append ‘…’ based on <code>text-max-width</code>.  Note that with <code>wrap</code>, text will always wrap on newlines (<code>\n</code>) and text may wrap on any breakable whitespace character — including <a href="https://en.wikipedia.org/wiki/Zero-width_space">zero-width spaces</a> (<code>\u200b</code>).</li>
 <li><strong><code>text-max-width</code></strong> : The maximum width for wrapped text, applied when <code>text-wrap</code> is set to <code>wrap</code> or <code>ellipsis</code>.  For only manual newlines (i.e. <code>\n</code>), set a very large value like <code>1000px</code> such that only your newline characters would apply.</li>
+<li><strong><code>text-overflow-wrap</code></strong> : The characters that may be used for possible wrapping locations when a line overflows <code>text-max-width</code>; may be <code>whitespace</code> (default) or <code>anywhere</code>.  Note that <code>anywhere</code> is suited to <a href="https://en.wikipedia.org/wiki/CJK_characters">CJK</a>, where the characters are in a grid and no whitespace exists.  Using <code>anywhere</code> with text in the Latin alphabet, for example, will split words at arbitrary locations.</li>
+<li><code>text-justification</code>** : The justification of multiline (wrapped) labels; may be <code>left</code>, <code>center</code>, <code>right</code>, or <code>auto</code> (default).  The <code>auto</code> value makes it so that a node’s label is justified along the node — e.g. a label on the right side of a node is left justified.</li>
+<li><strong><code>line-height</code></strong> : The line height of multiline text, as a relative, unitless value.  It specifies the vertical spacing between each line.  With value <code>1</code> (default), the lines are stacked directly on top of one another with no additional whitespace between them.  With value <code>2</code>, for example, there is whitespace between each line equal to the visible height of a line of text.</li>
 </ul>
 <p>Node label alignment:</p>
 <ul>
@@ -13372,6 +13875,8 @@ style: [
 <p>Several layouts are included with Cytoscape.js by default, and their options are described in the sections that follow with the default values specified.  Note that you must set <code>options.name</code> to the name of the layout to specify which one you want to run.</p>
 <p>Each layout has its own algorithm for setting the position for each node.  This algorithm influences the overall shape of the graph and the lengths of the edges.  A layout’s algorithm can be customised by setting its options.  Therefore, edge lengths can be controlled by setting the layout options appropriately.</p>
 <p>For force-directed (physics) layouts, there is generally an option to set a weight to each edge to affect the relative edge lengths.  Edge length can also be affected by options like spacing factors, angles, and overlap avoidance.  Setting edge length depends on the particular layout, and some layouts will allow for more precise edge lengths than others.</p>
+<p>A layout runs on the subgraph that you specify.  All elements in the graph are used for <a href="#cy.layout"><code>cy.layout()</code></a>.  The specified subset of elements is used for <a href="#eles.layout"><code>eles.layout()</code></a>.  In either case, the state of each element does not affect whether the element is considered in the layout.  For example, an <a href="#style/visibility">invisible node</a> is repositioned by a layout if the node is included in the layout’s set of elements.  You may use <code>eles.layout()</code> to address complex use-cases, like running a different layout on each component.</p>
+<p>When running a headless instance, you may need to specify the <code>boundingBox</code> in order to indicate to the layout the area in which it can place nodes.  In a rendered instance, the bounds may be inferred by the size of the HTML DOM element <code>container</code>.</p>
 
 
 
@@ -13683,10 +14188,7 @@ cy.layout( options );</code></pre>
   coolingFactor: <span class="hljs-number">0.99</span>,
 
   <span class="hljs-comment">// Lower temperature threshold (below this point the layout will end)</span>
-  minTemp: <span class="hljs-number">1.0</span>,
-
-  <span class="hljs-comment">// Pass a reference to weaver to use threads for calculations</span>
-  weaver: <span class="hljs-literal">false</span>
+  minTemp: <span class="hljs-number">1.0</span>
 };
 
 cy.layout( options );</code></pre>
@@ -13982,6 +14484,21 @@ layout.run();</code></pre>
 										</ul>
 									</div>
 							</div>
+
+							<div class="details">
+							</div>
+						</div>
+						<div class="function">
+							<div class="name" id="layout.removeAllListeners">
+								<span class="fn-name">layout.removeAllListeners()</span>  <a href="#layout.removeAllListeners"><span class="fa fa-bookmark"></span></a>
+								<span id="layouts/layout-events/layout.removeAllListeners">&nbsp;</span>
+							</div>
+
+
+
+							<div class="descr"><p>Remove all event handlers on the layout.</p>
+</div>
+
 
 							<div class="details">
 							</div>
@@ -14444,6 +14961,7 @@ cytoscape.use( ext );</code></pre>
 <p><i class="fa fa-fw fa-users"></i> denotes a third-party extension, one that is maintained by outside developers.</p>
 <h2 id="extensions/ui-extensions">UI extensions <a href="#extensions/ui-extensions"><span class="fa fa-bookmark"></span></a></h2>
 <ul>
+<li><i class="fa fa-fw fa-users"></i> <a href="https://github.com/lambdalisue/cytoscape-anywhere-panning"><code>anywhere-panning</code></a> : Allow panning when dragging on nodes or edges.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/cytoscape/cytoscape.js-automove"><code>automove</code></a> : Automatically update node positions based on specified rules (e.g. synching node movements, constraining movements, etc.)</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/iVis-at-Bilkent/cytoscape.js-autopan-on-drag"><code>autopan-on-drag</code></a> : Automatically pan the viewport when nodes are dragged outside of the viewport bounds.</li>
 <li><i class="fa fa-fw fa-users"></i> <a href="https://github.com/classcraft/cytoscape.js-canvas"><code>canvas</code></a> : An extension to create a canvas over or under a Cytoscape graph. Useful for customizing nodes/edges, drawing backgrounds, etc.</li>
@@ -14472,11 +14990,14 @@ cytoscape.use( ext );</code></pre>
 </ul>
 <h2 id="extensions/layout-extensions">Layout extensions <a href="#extensions/layout-extensions"><span class="fa fa-bookmark"></span></a></h2>
 <ul>
-<li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/cytoscape/cytoscape.js-arbor"><code>arbor</code></a> : The Arbor physics simulation layout.  It’s a basic physics layout.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/cytoscape/cytoscape.js-cola"><code>cola</code></a> : The Cola.js physics simulation layout.  Cola makes beautiful layout results, it animates very smoothly, and it has great options for controlling the layout.</li>
-<li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/cytoscape/cytoscape.js-cose-bilkent"><code>cose-bilkent</code></a> : The CoSE layout by Bilkent with enhanced compound node placement.  CoSE Bilkent gives near-perfect end results.  However, it’s more expensive than the version of CoSE directly included with Cytoscape.js.</li>
+<li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/iVis-at-Bilkent/cytoscape.js-avsdf"><code>avsdf</code></a> : The AVSDF layout.  It organises nodes in a circle and tries to minimise edge crossings as much as possible.</li>
+<li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/iVis-at-Bilkent/cytoscape.js-cise"><code>cise</code></a> : The CiSE layout creates circular clusters and uses a physics simulation to create distance between the clusters.</li>
+<li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/cytoscape/cytoscape.js-cose-bilkent"><code>cose-bilkent</code></a> : The CoSE layout by Bilkent with enhanced compound node placement.  CoSE Bilkent gives near-perfect end results.  However, it’s more expensive than both <code>cose</code> and <code>fcose</code>.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/cytoscape/cytoscape.js-dagre"><code>dagre</code></a> : The Dagre layout for DAGs and trees.</li>
+<li><i class="fa fa-fw fa-users"></i> <a href="https://github.com/jfstephe/cytoscape.js-elk"><code>elk</code></a> : <a href="https://github.com/OpenKieler/elkjs">ELK</a> layout algorithm adapter for Cytoscape.js.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/cytoscape/cytoscape.js-euler"><code>euler</code></a> : Euler is a fast, small file-size, high-quality force-directed (physics simulation) layout.  It is excellent for non-compound graphs, and it has basic support for compound graphs.</li>
+<li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/iVis-at-Bilkent/cytoscape.js-fcose"><code>fcose</code></a> : The fCoSE layout is a faster version of the CoSE-Bilkent layout.  It supports compound and non-compound graphs, giving top-tier end results and high performance for a force-directed layout.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/cytoscape/cytoscape.js-klay"><code>klay</code></a> : Klay is a layout that works well for most types of graphs.  It gives good results for ordinary graphs, and it handles DAGs and compound graphs very nicely.</li>
 <li><i class="fa fa-fw fa-users"></i> <a href="https://github.com/Nickolasmv/cytoscape-ngraph.forcelayout"><code>ngraph.forcelayout</code></a> : A physics simulation layout that works particularly well on planar graphs.  It is relatively fast.</li>
 <li><i class="fa fa-fw fa-users"></i> <a href="https://github.com/monprin/polywas"><code>polywas</code></a> : A layout for GWAS (genome-wide association study) data illustrating inter-locus relationships.</li>
@@ -14487,11 +15008,20 @@ cytoscape.use( ext );</code></pre>
 <ul>
 <li><i class="fa fa-fw fa-users"></i> <a href="https://github.com/daniel-dx/cytoscape-all-paths"><code>all-paths</code></a> : Gets all longest, directed paths.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/iVis-at-Bilkent/cytoscape.js-clipboard"><code>clipboard</code></a> : Adds copy-paste utilities to Cytoscape.js.</li>
+<li><i class="fa fa-fw fa-users"></i> <a href="https://github.com/lambdalisue/cytoscape-dblclick"><code>dblclick</code></a> : Adds a <code>dblclick</code> event to Cytoscape.js.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/iVis-at-Bilkent/cytoscape.js-graphml"><code>graphml</code></a> : Adds GraphML import and export functionality to Cytoscape.js.</li>
-<li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/PathwayCommons/cytoscape-sbgn-stylesheet"><code>sbgn-stylesheet</code></a> : A stylesheet preset for <a href="https://sbgn.github.io/sbgn/">SBGN</a>.</li>
-<li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/PathwayCommons/sbgnml-to-cytoscape"><code>sbgnml-to-cytoscape</code></a> : Converts XML-based <a href="https://sbgn.github.io/sbgn/">SBGN</a> files to Cytoscape.js JSON.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/iVis-at-Bilkent/cytoscape.js-undo-redo"><code>undo-redo</code></a> : Adds undo-redo APIs to Cytoscape.js.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/iVis-at-Bilkent/cytoscape.js-view-utilities"><code>view-utilities</code></a> : Adds search and highlight APIs to Cytoscape.js.</li>
+</ul>
+<h2 id="extensions/utility-packages">Utility packages <a href="#extensions/utility-packages"><span class="fa fa-bookmark"></span></a></h2>
+<ul>
+<li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/cytoscape/cytosnap"><code>cytosnap</code></a> : A Node.js package that renders images of Cytoscape.js graphs on the server using Puppeteer.</li>
+<li><i class="fa fa-fw fa-users"></i> <a href="https://github.com/calvinvette/ngx-cytoscape"><code>ngx-cytoscape</code></a> : An Angular 5+ component for Cytoscape.js.</li>
+<li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/plotly/react-cytoscapejs"><code>react-cytoscapejs</code></a> : A <a href="https://reactjs.org">React</a> component for Cytoscape.js network visualisations.</li>
+<li><i class="fa fa-fw fa-users"></i> <a href="https://github.com/jmvillaveces/sif.js"><code>sif.js</code></a> : A javascript library to parse simple interaction file (SIF) files.</li>
+<li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/PathwayCommons/cytoscape-sbgn-stylesheet"><code>sbgn-stylesheet</code></a> : A stylesheet preset for <a href="https://sbgn.github.io/sbgn/">SBGN</a>.</li>
+<li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/PathwayCommons/sbgnml-to-cytoscape"><code>sbgnml-to-cytoscape</code></a> : Converts XML-based <a href="https://sbgn.github.io/sbgn/">SBGN</a> files to Cytoscape.js JSON.</li>
+<li><i class="fa fa-fw fa-users"></i> <a href="https://www.npmjs.com/package/vue-cytoscape"><code>vue-cytoscape</code></a> : A <a href="https://vuejs.org">Vue</a> component for Cytoscape.js.</li>
 </ul>
 <h2 id="extensions/registration">Registration <a href="#extensions/registration"><span class="fa fa-bookmark"></span></a></h2>
 <p>To register an extension, make the following call: <code>cytoscape( type, name, extension );</code></p>
@@ -14729,6 +15259,17 @@ cytoscape.use( ext );</code></pre>
 							<div class="section lvl3"><a class="toclink" href="#cy.mount">cy.mount() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#cy.unmount">cy.unmount() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#cy.destroy">cy.destroy() </a></div>
+							<div class="section lvl3"><a class="toclink" href="#cy.destroyed">cy.destroyed() </a></div>
+						<div class="section lvl2">
+							<span class="expander">
+								<span class="fa fa-caret-down expanded-icon"></span>
+								<span class="fa fa-caret-right collapsed-icon"></span>
+							</span>
+							<a class="toclink" href="#core/data">Data</a>
+						</div>
+
+							<div class="section lvl3"><a class="toclink" href="#cy.data">cy.data() </a></div>
+							<div class="section lvl3"><a class="toclink" href="#cy.removeData">cy.removeData() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#cy.scratch">cy.scratch() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#cy.removeScratch">cy.removeScratch() </a></div>
 						<div class="section lvl2">
@@ -14743,6 +15284,7 @@ cytoscape.use( ext );</code></pre>
 							<div class="section lvl3"><a class="toclink" href="#cy.promiseOn">cy.promiseOn() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#cy.one">cy.one() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#cy.removeListener">cy.removeListener() </a></div>
+							<div class="section lvl3"><a class="toclink" href="#cy.removeAllListeners">cy.removeAllListeners() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#cy.emit">cy.emit() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#cy.ready">cy.ready() </a></div>
 						<div class="section lvl2">
@@ -14791,6 +15333,16 @@ cytoscape.use( ext );</code></pre>
 							<div class="section lvl3"><a class="toclink" href="#cy.delayAnimation">cy.delayAnimation() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#cy.stop">cy.stop() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#cy.clearQueue">cy.clearQueue() </a></div>
+						<div class="section lvl2">
+							
+							<a class="toclink" href="#core/eles.data">eles.data</a>
+						</div>
+
+						<div class="section lvl2">
+							
+							<a class="toclink" href="#core/eles.removedata">eles.removeData</a>
+						</div>
+
 						<div class="section lvl2">
 							<span class="expander">
 								<span class="fa fa-caret-down expanded-icon"></span>
@@ -14856,6 +15408,7 @@ cytoscape.use( ext );</code></pre>
 							<div class="section lvl3"><a class="toclink" href="#eles.one">eles.one() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#eles.once">eles.once() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#eles.removeListener">eles.removeListener() </a></div>
+							<div class="section lvl3"><a class="toclink" href="#eles.removeAllListeners">eles.removeAllListeners() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#eles.emit">eles.emit() </a></div>
 						<div class="section lvl2">
 							<span class="expander">
@@ -14911,6 +15464,9 @@ cytoscape.use( ext );</code></pre>
 							<div class="section lvl3"><a class="toclink" href="#nodes.lock">nodes.lock() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#nodes.unlock">nodes.unlock() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#ele.active">ele.active() </a></div>
+							<div class="section lvl3"><a class="toclink" href="#ele.pannable">ele.pannable() </a></div>
+							<div class="section lvl3"><a class="toclink" href="#eles.panify">eles.panify() </a></div>
+							<div class="section lvl3"><a class="toclink" href="#eles.unpanify">eles.unpanify() </a></div>
 						<div class="section lvl2">
 							<span class="expander">
 								<span class="fa fa-caret-down expanded-icon"></span>
@@ -15407,6 +15963,7 @@ cytoscape.use( ext );</code></pre>
 							<div class="section lvl3"><a class="toclink" href="#layout.promiseOn">layout.promiseOn() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#layout.one">layout.one() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#layout.removeListener">layout.removeListener() </a></div>
+							<div class="section lvl3"><a class="toclink" href="#layout.removeAllListeners">layout.removeAllListeners() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#layout.emit">layout.emit() </a></div>
 					<div class="section lvl1">
 						<span class="expander">
@@ -15455,6 +16012,11 @@ cytoscape.use( ext );</code></pre>
 						<div class="section lvl2">
 							
 							<a class="toclink" href="#extensions/api-extensions">API extensions</a>
+						</div>
+
+						<div class="section lvl2">
+							
+							<a class="toclink" href="#extensions/utility-packages">Utility packages</a>
 						</div>
 
 						<div class="section lvl2">

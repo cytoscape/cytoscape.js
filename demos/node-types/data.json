@@ -8,6 +8,10 @@
   }
 }, {
   "data": {
+    "type": "round-triangle"
+  }
+}, {
+  "data": {
     "type": "rectangle"
   }
 }, {
@@ -36,11 +40,23 @@
   }
 }, {
   "data": {
+    "type": "round-diamond"
+  }
+}, {
+  "data": {
     "type": "pentagon"
   }
 }, {
   "data": {
+    "type": "round-pentagon"
+  }
+}, {
+  "data": {
     "type": "hexagon"
+  }
+}, {
+  "data": {
+    "type": "round-hexagon"
   }
 }, {
   "data": {
@@ -52,7 +68,15 @@
   }
 }, {
   "data": {
+    "type": "round-heptagon"
+  }
+}, {
+  "data": {
     "type": "octagon"
+  }
+}, {
+  "data": {
+    "type": "round-octagon"
   }
 }, {
   "data": {
@@ -61,6 +85,10 @@
 }, {
   "data": {
     "type": "tag"
+  }
+}, {
+  "data": {
+    "type": "round-tag"
   }
 }, {
   "data": {

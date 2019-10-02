@@ -659,12 +659,18 @@
 </ul>
 <h2 id="introduction/releases">Releases <a href="#introduction/releases"><span class="fa fa-bookmark"></span></a></h2>
 <ul>
+<li>3.11<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.11.0+is%3Aclosed">3.11.0</a></li>
+</ul>
+</li>
 <li>3.10<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.10.2+is%3Aclosed">3.10.2</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.10.1+is%3Aclosed">3.10.1</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.10.0+is%3Aclosed">3.10.0</a></li>
 </ul>
 </li>
 <li>3.9<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.9.4+is%3Aclosed">3.9.4</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.9.3+is%3Aclosed">3.9.3</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.9.2+is%3Aclosed">3.9.2</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.9.1+is%3Aclosed">3.9.1</a></li>
@@ -1143,8 +1149,12 @@
 
 					<p>This section will familiarise you with the basic steps necessary to start using Cytoscape.js.</p>
 <h2 id="getting-started/including-cytoscape.js">Including Cytoscape.js <a href="#getting-started/including-cytoscape.js"><span class="fa fa-bookmark"></span></a></h2>
-<p>If you are using a simple HTML environment (without a build system), then include Cytoscape.js in a <code>&lt;script&gt;</code> tag, e.g.:</p>
+<p>If you are using a simple HTML environment (without a build system), then source Cytoscape.js in a <code>&lt;script&gt;</code> tag or <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import"><code>import</code></a> it as an ES6 module, e.g.:</p>
 <pre><code class="language-html"><span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"cytoscape.min.js"</span>&gt;</span><span class="undefined"></span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span></code></pre>
+<p>or</p>
+<pre><code class="language-html"><span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">type</span>=<span class="hljs-string">"module"</span>&gt;</span><span class="javascript">
+<span class="hljs-keyword">import</span> cytoscape <span class="hljs-keyword">from</span> <span class="hljs-string">"./cytoscape.esm.min.js"</span>;
+</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span></code></pre>
 <p>To use Cytoscape.js from a CDN, use one of the following CDNs:</p>
 <ul>
 <li><a href="https://cdnjs.com/libraries/cytoscape">CDNJS</a></li>
@@ -1157,6 +1167,7 @@
 <ul>
 <li><code>cytoscape.min.js</code> : A minified UMD build with all dependencies included in the bundle.  This file is useful for small pages, supplementary material for an academic paper for example.</li>
 <li><code>cytoscape.umd.js</code> : A non-minified UMD build with all dependencies included in the bundle.  This file is useful for debugging on small pages, supplementary material for an academic paper for example.</li>
+<li><code>cytoscape.esm.min.js</code> : A minified ESM (<code>import</code> / <code>export</code>) build with all dependencies included in the bundle.  This file serves the same purpose as the above, but it can be imported as an ES6 module without the need for a bundler.</li>
 <li><code>cytoscape.cjs.js</code> : A non-minified CJS (Node.js) build without any bundled dependencies.  This is intended to be consumed automatically by Node.js or a bundler like Webpack via <code>require(&#39;cytoscape&#39;)</code>.</li>
 <li><code>cytoscape.esm.js</code> : A non-minified ESM (<code>import</code> / <code>export</code>) build without any bundled dependencies.  This is intended to be consumed automatically by Node.js or a bundler like Webpack via <code>import cytoscape from &#39;cytoscape&#39;</code>.</li>
 </ul>
@@ -1795,6 +1806,7 @@ cy.filter(<span class="hljs-string">'[weight &gt; 50]'</span>); <span class="hlj
 
 							<div class="details">
 									<h3 id="details">Details</h3>
+<p><span class="important-indicator"></span> Do not add batching to your app unless you have identified an applicable performance bottleneck.  There are restrictions on what kind of code you can run in a batch.</p>
 <p>Normally, when you modify elements, each modification can trigger a style calculation and a redraw — depending on timing for a redraw.  For example, the following will cause two style calculations and at least one draw:</p>
 <pre><code class="language-js">cy.$(<span class="hljs-string">'#j'</span>)
   .data(<span class="hljs-string">'weight'</span>, <span class="hljs-string">'70'</span>)   <span class="hljs-comment">// style update</span>
@@ -1807,10 +1819,27 @@ cy.filter(<span class="hljs-string">'[weight &gt; 50]'</span>); <span class="hlj
 ;</code></pre>
 <button class="run run-inline-code"><span class="fa fa-play"></span></button><p>This is not a problem for a handful of operations on a handful of elements, but for many operations on many elements you end up with redundant style calculations and probably redundant redraws.  In the worst case, you have <code>eles.length * numOps</code> style updates and redraws — and both style updates and redraws can be expensive.  In the worst case when using <code>cy.batch()</code>, you limit the style updates to <code>eles.length</code> and you limit the redraws to just one.</p>
 <p>Thus, this function is useful for making many changes to elements at once.  When the specified callback function is complete, only elements that require it have their style updated and the renderer makes at most a single redraw.</p>
-<p>This makes for very efficient modifications to elements, but it has some caveats.  While inside the batch callback,</p>
+<p>This makes for very efficient modifications to elements, but it has some caveats inside a batch:</p>
 <ul>
-<li>you can not reliably read element style or dimensions (it may have changed, or computed values may be out of date),</li>
-<li>you probably do not want to use <code>eles.style()</code> et cetera because they force a style bypass rather than a recalculation.</li>
+<li>You can not reliably read element style or dimensions (it may have changed, or computed values may be out of date).</li>
+<li>You probably do not want to use <code>eles.style()</code> et cetera because they force a style bypass rather than a recalculation.</li>
+<li>You can not apply any style-dependent operation within the batch if you have already modified style within the same batch.  Common style-dependent operations include:<ul>
+<li>Layout: <code>cy.layout()</code>, <code>eles.layout()</code>, etc.</li>
+<li>Reading style: <code>ele.style()</code>, <code>ele.numericStyle()</code>, etc.</li>
+<li>Reading dimensions: <code>ele.midpoint()</code>, <code>ele.boundingBox()</code>, etc.</li>
+<li>Animation: <code>ele.animation()</code>, <code>cy.animate()</code>, etc.</li>
+<li>And so on…</li>
+</ul>
+</li>
+</ul>
+<p>A batch should correspond to a single visual operation.  Usually a batch should contain calls only to the following functions:</p>
+<ul>
+<li>Modifying state: <code>eles.data()</code>, <code>eles.scratch()</code>, <code>eles.addClass()</code>, <code>eles.removeClass()</code>, etc.</li>
+<li>Building collections: <code>eles.union()</code>, <code>eles.difference()</code>, <code>eles.intersection()</code>, etc.</li>
+<li>Comparison: <code>eles.same()</code>, <code>eles.some()</code>, etc.</li>
+<li>Iteration: <code>eles.forEach()</code>, <code>eles.empty()</code>, etc.</li>
+<li>Traversal: <code>node.outgoers()</code>, <code>eles.bfs()</code>, etc.</li>
+<li>Algorithms: <code>eles.dijkstra()</code>, <code>eles.degreeCentrality()</code>, etc.</li>
 </ul>
 <h3 id="examples">Examples</h3>
 <p>Synchronous style:</p>
@@ -13208,6 +13237,7 @@ Sets the subject of the selector (e.g. <code>$node &gt; node</code> to select th
 <li><strong><code>shape</code></strong> : The shape of the node’s body.  Note that each shape fits within the specified <code>width</code> and <code>height</code>, and so you may have to adjust <code>width</code> and <code>height</code> if you desire an equilateral shape (i.e. <code>width !== height</code> for several equilateral shapes).  Only <code>*rectangle</code> shapes are supported by compounds, because the dimensions of a compound are defined by the bounding box of the children.  The following values are accepted:<ul>
 <li><code>ellipse</code></li>
 <li><code>triangle</code></li>
+<li><code>round-triangle</code></li>
 <li><code>rectangle</code></li>
 <li><code>round-rectangle</code></li>
 <li><code>bottom-round-rectangle</code></li>
@@ -13215,13 +13245,19 @@ Sets the subject of the selector (e.g. <code>$node &gt; node</code> to select th
 <li><code>barrel</code></li>
 <li><code>rhomboid</code></li>
 <li><code>diamond</code></li>
+<li><code>round-diamond</code></li>
 <li><code>pentagon</code></li>
+<li><code>round-pentagon</code></li>
 <li><code>hexagon</code></li>
+<li><code>round-hexagon</code></li>
 <li><code>concave-hexagon</code></li>
 <li><code>heptagon</code></li>
+<li><code>round-heptagon</code></li>
 <li><code>octagon</code></li>
+<li><code>round-octagon</code></li>
 <li><code>star</code></li>
 <li><code>tag</code></li>
+<li><code>round-tag</code></li>
 <li><code>vee</code></li>
 <li><code>polygon</code> (custom polygon specified via <code>shape-polygon-points</code>).</li>
 </ul>
@@ -13840,6 +13876,7 @@ Sets the subject of the selector (e.g. <code>$node &gt; node</code> to select th
 <p>Each layout has its own algorithm for setting the position for each node.  This algorithm influences the overall shape of the graph and the lengths of the edges.  A layout’s algorithm can be customised by setting its options.  Therefore, edge lengths can be controlled by setting the layout options appropriately.</p>
 <p>For force-directed (physics) layouts, there is generally an option to set a weight to each edge to affect the relative edge lengths.  Edge length can also be affected by options like spacing factors, angles, and overlap avoidance.  Setting edge length depends on the particular layout, and some layouts will allow for more precise edge lengths than others.</p>
 <p>A layout runs on the subgraph that you specify.  All elements in the graph are used for <a href="#cy.layout"><code>cy.layout()</code></a>.  The specified subset of elements is used for <a href="#eles.layout"><code>eles.layout()</code></a>.  In either case, the state of each element does not affect whether the element is considered in the layout.  For example, an <a href="#style/visibility">invisible node</a> is repositioned by a layout if the node is included in the layout’s set of elements.  You may use <code>eles.layout()</code> to address complex use-cases, like running a different layout on each component.</p>
+<p>When running a headless instance, you may need to specify the <code>boundingBox</code> in order to indicate to the layout the area in which it can place nodes.  In a rendered instance, the bounds may be inferred by the size of the HTML DOM element <code>container</code>.</p>
 
 
 

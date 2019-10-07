@@ -53,7 +53,7 @@ Future versions of Cytoscape.js are planned in the [milestones of the Github iss
 
 ## Contributing to Cytoscape.js
 
-Please refer to [CONTRIBUTING.md](CONTRIBUTING.md).
+Please refer to [.github/CONTRIBUTING.md](CONTRIBUTING.md).
 
 
 

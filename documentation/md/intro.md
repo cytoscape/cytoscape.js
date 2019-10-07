@@ -89,6 +89,8 @@
   * [Sainsbury Laboratory](http://www.tsl.ac.uk/) : [PINet](http://pinet.tsl.ac.uk/)
   * Southwest Harbor Public Library, Maine : [Digital Archive](http://swhplibrary.net/archive/) : [AvantRelationships](https://github.com/gsoules/AvantRelationships)
   * [Sotera Defense Solutions, Inc.](http://www.soteradefense.com/) : [Graphene](http://sotera.github.io/graphene/)
+  * [Spin in het Web](http://www.spininhetweb.nl/) : [DynaLearn](https://dynalearn.nl)
+  * [SRI International](https://www.sri.com) : [BioCyc](http://biocyc.org/) : [Pathway Collages](https://biocyc.org/pathway-collage-info)
   * [Steemit](https://steemit.com/)
   * [Stringify](https://www.stringify.com/)
   * [Threat Crowd](https://www.threatcrowd.org/)

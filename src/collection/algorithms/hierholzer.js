@@ -2,7 +2,7 @@ import * as is from '../../is';
 import { defaults } from '../../util';
 
 const hierholzerDefaults = defaults({
-  root: false,
+  root: undefined,
   directed: false
 });
 
@@ -18,7 +18,7 @@ let elesfn = ({
     let oddIn;
     let oddOut;
     let startVertex;
-    if (root) startVertex = root.slice(1);
+    if (root) startVertex = is.string(root) ? this.filter(root)[0].id() : root[0].id();
     let nodes = {};
     let edges = {};
 
@@ -66,15 +66,12 @@ let elesfn = ({
     }
 
     let result = {
-      pathExists: false,
-      circuitExists: false,
-      connected: undefined,
+      found: false,
       trail: undefined
     };
 
     if (dflag) return result;
     else if (oddOut && oddIn) {
-      result.pathExists = true;
       if (directed) {
         if (startVertex && (oddOut != startVertex)) {
           return result;
@@ -88,7 +85,6 @@ let elesfn = ({
         }
       }
     } else {
-      result.circuitExists = true;
       if (!startVertex) startVertex = eles[0].id();
     }
 
@@ -128,11 +124,10 @@ let elesfn = ({
 
     for (let d in nodes) {
       if (nodes[d].length) {
-        result.connected = false;
         return result;
       }
     }
-    result.connected = true;
+    result.found = true;
     result.trail = this.spawn( trail );
     return result;
   },

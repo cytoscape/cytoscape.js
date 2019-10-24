@@ -14,6 +14,7 @@ import markovClustering from './markov-clustering';
 import kClustering from './k-clustering';
 import hierarchicalClustering from './hierarchical-clustering';
 import affinityPropagation from './affinity-propagation';
+import hierholzer from './hierholzer';
 
 var elesfn = {};
 
@@ -32,7 +33,8 @@ var elesfn = {};
   markovClustering,
   kClustering,
   hierarchicalClustering,
-  affinityPropagation
+  affinityPropagation,
+  hierholzer
 ].forEach(function(props) {
   util.extend(elesfn, props);
 });

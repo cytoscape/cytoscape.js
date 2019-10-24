@@ -28,7 +28,7 @@ New features go in the `unstable` branch, which is used for the next (breaking/m
 
 To propose a change, [fork](https://help.github.com/articles/fork-a-repo/) the cytoscape.js repository on Github, make a change, and then submit a [pull request](https://help.github.com/articles/creating-a-pull-request/) so that the proposed changes can be reviewed.
 
-The source is organised in relatively the same as the documentation, under `./src`.  Try to maintain that organisation as best you can.  You are free to create new files and `require()` them using the [CommonJS/Node.js](https://nodejs.org/api/modules.html#modules_module_require_id) style.
+The source is organised in relatively the same as the documentation, under `./src`.  Try to maintain that organisation as best you can.  You are free to create new files and `require()` them using ESM [`import`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import) and [`export`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/export).
 
 
 
@@ -36,7 +36,7 @@ The source is organised in relatively the same as the documentation, under `./sr
 
 Cytoscape.js is transpiled with Babel, so ES2015/ES6+ language features can be used.
 
-Use two spaces for indentation, and single-quoted strings are preferred.  The main thing is to  try to keep your code neat and similarly formatted as the rest of the code.  There isn't a strict styleguide.  We do use [eslint](http://eslint.org/), so you can use `eslint` in the terminal or use eslint support in your editor.
+Use two spaces for indentation, and single-quoted strings are preferred.  The main thing is to try to keep your code neat and readable.  There isn't a strict styleguide; it's more important that your code is easily understood and well tested.  We do use [eslint](http://eslint.org/), so you can use `eslint` in the terminal or use eslint support in your editor.
 
 You can run `eslint --fix` to automatically format the code to more or less match the style we use.  It will only catch basic things, though.
 
@@ -44,7 +44,9 @@ You can run `eslint --fix` to automatically format the code to more or less matc
 
 ## Testing
 
-Tests go in the `./test` directory, as Mocha tests usually do.  They are just a flat list of `.js` files that Mocha runs.  If your change is a bugfix, please add a unit test that would fail without your fix.  If your change is a new feature, please add unit tests accordingly.  If your change is visual/rendering-related, then unit tests are not possible.
+Tests go in the `./test` directory, as Mocha tests usually do.  They are just a flat list of `.js` files that Mocha runs.  If your change is a bugfix, please add a test case that would fail without your fix.  If your change is a new feature, please add  tests accordingly.
+
+If your change is visual/rendering-related, then Mocha tests are not pragmatic.  Use the debug page in the `debug` directory to try out visual changes.  That page contains a sidebar with buttons and dropdowns that make visual and interactive testing easy.
 
 Please run `npm test` or `mocha` to make sure all the unit tests are passing before you make your pull request.
 

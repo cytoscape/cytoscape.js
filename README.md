@@ -55,6 +55,8 @@ Future versions of Cytoscape.js are planned in the [milestones of the Github iss
 
 Please refer to [CONTRIBUTING.md](.github/CONTRIBUTING.md).
 
+Feature releases are made at the start of each month, while patch releases are made at the start of each week.  This allows for rapid releases of first- and third-party contributions.
+
 
 
 ## Citation

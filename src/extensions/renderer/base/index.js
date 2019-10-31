@@ -82,7 +82,6 @@ BRp.init = function( options ){
   r.debug = options.debug;
 
   r.hideEdgesOnViewport = options.hideEdgesOnViewport;
-  r.hideLabelsOnViewport = options.hideLabelsOnViewport;
   r.textureOnViewport = options.textureOnViewport;
   r.wheelSensitivity = options.wheelSensitivity;
   r.motionBlurEnabled = options.motionBlur; // on by default

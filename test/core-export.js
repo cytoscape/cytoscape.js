@@ -100,4 +100,20 @@ describe('Core export', function(){
   itExportsSelector('node > node');
   itExportsSelector(':selected');
   itExportsSelector('$node:selected > node[?foo][bar > 2][baz *= "bat"][[degree > 1]]:locked');
+
+  it('png export fails on headless instance', function(){
+    var exportImage = function(){
+      cy.png();
+    };
+
+    expect(exportImage).to.throw;
+  });
+
+  it('jpg export fails on headless instance', function(){
+    var exportImage = function(){
+      cy.jpg();
+    };
+
+    expect(exportImage).to.throw;
+  });
 });

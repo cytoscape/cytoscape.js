@@ -83,6 +83,7 @@
   * [NDEx](http://www.ndexbio.org/)
   * [NSA](https://www.nsa.gov/) : [WALKOFF](https://github.com/nsacyber/WALKOFF)
   * [OHDSI](http://www.ohdsi.org/)
+  * [Panaya](https://www.panaya.com) : [Panaya ForeSight](https://www.panaya.com/product/salesforce-foresight/)
   * [Pathway Commons](http://www.pathwaycommons.org)
   * [py2cytoscape](https://github.com/idekerlab/py2cytoscape)
   * [Rezza](http://rezza.io)

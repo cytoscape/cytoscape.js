@@ -76,7 +76,7 @@ Franz M, Lopes CT, Huck G, Dong Y, Sumer O, Bader GD
 
 ## Build dependencies
 
-Install `node`, `npm` and `gulp` (optional).  Of course, `npm install` before using `gulp` or `npm run`.
+Install `node` and `npm`.  Run `npm install` before using `npm run`.
 
 
 
@@ -107,7 +107,7 @@ Run `npm run <target>` in the console.  The main targets are:
 
 **Testing:**
 
-If the `TRAVIS` or `TEST_BUILD` environment variables are defined, then `mocha` or `gulp test` will test `build/cytoscape.umd.js`.  Otherwise, the unbundled, unbabelified, raw source is tested.  This keeps local tests very quick to run on modern versions of node while ensuring we can test old versions of node as well.  The library can be built on `node>=6`, but it can be tested on `node>=0.10`.
+If the `TRAVIS` or `TEST_BUILD` environment variables are defined, then `mocha` or `npm test` will test `build/cytoscape.umd.js`.  Otherwise, the unbundled, unbabelified, raw source is tested.  This keeps local tests very quick to run on modern versions of node while ensuring we can test old versions of node as well.  The library can be built on `node>=6`, but it can be tested on `node>=0.10`.
 
  * `test` : run the Mocha unit tests
  * `test:build` : run the Mocha unit tests (on a built bundle)

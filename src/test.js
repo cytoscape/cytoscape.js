@@ -3,7 +3,7 @@ This file tells the Mocha tests what build of Cytoscape to use.
 */
 
 // For Travis or manual build tests, use the CJS build
-// NB : Must do `gulp build-cjs` before `mocha` or `gulp-test`
+// NB : Must do `npm run build:cjs` before `npm test`
 if( process.env.TRAVIS || process.env.TEST_BUILD ){
   module.exports = require('../build/cytoscape.cjs.js');
 

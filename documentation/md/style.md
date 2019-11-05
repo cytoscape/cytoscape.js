@@ -605,7 +605,7 @@ Background:
 
  * **`text-background-color`** : A colour to apply on the text background.
  * **`text-background-opacity`** : The opacity of the label background; the background is disabled for `0` (default value).
- * **`text-background-shape`** : The shape to use for the label background, can be `rectangle` or `roundrectangle`.
+ * **`text-background-shape`** : The shape to use for the label background, can be `rectangle` or `round-rectangle`.
  * **`text-background-padding`** : A padding on the background of the label (e.g `5px`); zero padding is used by default.
 
 Border:

@@ -259,7 +259,7 @@ CRp.drawText = function( context, ele, prefix, applyRotation = true, useEleOpaci
 
         context.fillStyle = 'rgba(' + textBackgroundColor[ 0 ] + ',' + textBackgroundColor[ 1 ] + ',' + textBackgroundColor[ 2 ] + ',' + backgroundOpacity * parentOpacity + ')';
         let styleShape = ele.pstyle( 'text-background-shape' ).strValue;
-        if( styleShape == 'roundrectangle' ){
+        if( styleShape.indexOf('round') === 0 ){
           roundRect( context, bgX, bgY, bgW, bgH, 2 );
         } else {
           context.fillRect( bgX, bgY, bgW, bgH );

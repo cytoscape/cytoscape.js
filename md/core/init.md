@@ -57,7 +57,6 @@ An instance of Cytoscape.js has a number of options that can be set on initialis
   <a href="#init-opts/headless">headless</a>: false,
   <a href="#init-opts/styleEnabled">styleEnabled</a>: true,
   <a href="#init-opts/hideEdgesOnViewport">hideEdgesOnViewport</a>: false,
-  <a href="#init-opts/hideLabelsOnViewport">hideLabelsOnViewport</a>: false,
   <a href="#init-opts/textureOnViewport">textureOnViewport</a>: false,
   <a href="#init-opts/motionBlur">motionBlur</a>: false,
   <a href="#init-opts/motionBlurOpacity">motionBlurOpacity</a>: 0.2,

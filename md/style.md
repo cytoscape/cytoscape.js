@@ -361,9 +361,9 @@ These properties affect the styling of an edge's line:
 
 For automatic, bundled bezier edges (`curve-style: bezier`, [demo](demos/edge-types)):
 
-A bezier edge is bundled with all other parallel bezier edges.  Each bezier edge is a [quadratic bezier curve](https://en.wikipedia.org/wiki/Bézier_curve#Quadratic_Bézier_curves), separated from the others by varying the control point.  If there is an odd number of parallel edges in a bundle, then the centre edge is drawn as a straight line.
+A bezier edge is bundled with all other parallel bezier edges.  Each bezier edge is a [quadratic bezier curve](https://en.wikipedia.org/wiki/Bézier_curve#Quadratic_Bézier_curves), separated from the others by varying the  curvature.  If there is an odd number of parallel edges in a bundle, then the centre edge is drawn as a straight line.
 
- * **`control-point-step-size`** : From the line perpendicular from source to target, this value specifies the distance between successive bezier edges.
+ * **`control-point-step-size`** : Along the line perpendicular from source to target, this value specifies the distance between successive bezier edges.
  * **`control-point-distance`** : A single value that overrides `control-point-step-size` with a manual value.  Because it overrides the step size, bezier edges with the same value will overlap.  Thus, it's best to use this as a one-off value for particular edges if need be.
  * **`control-point-weight`** : A single value that weights control points along the line from source to target.  The value usually ranges on [0, 1], with 0 towards the source node and 1 towards the target node --- but larger or smaller values can also be used.
  * **`edge-distances`** : With value `intersection` (default), the line from source to target for `control-point-weight` is from the outside of the source node's shape to the outside of the target node's shape.  With value `node-position`, the line is from the source position to the target position.  The `node-position` option makes calculating edge points easier --- but it should be used carefully because you can create invalid points that `intersection` would have automatically corrected.
@@ -385,9 +385,13 @@ Note that loops may only be `bezier` or `unbundled-bezier` for their `curve-styl
 
 For bezier edges with manual control points (`curve-style: unbundled-bezier`, [demo](demos/edge-types)):
 
-An unbundled bezier edge is made of a series of one or more [quadratic bezier curves](https://en.wikipedia.org/wiki/Bézier_curve#Quadratic_Bézier_curves) --- one control point per curve.  The control points of the bezier curves are specified manually, using a co-ordinate system relative to the source and target node.  This maintains the overall curve shape regardless of the positions of the connected nodes.
+An unbundled bezier edge is made of a series of one or more [quadratic bezier curves](https://en.wikipedia.org/wiki/Bézier_curve#Quadratic_Bézier_curves) --- one control point per curve.  The control points of unbundled bezier curves are specified manually, using a co-ordinate system relative to the source and target node.  This maintains the overall curve shape regardless of the positions of the connected nodes.
 
-When two or more control points are specified for an unbundled bezier edge, each adjacent pair of bezier curves is joined at the midpoint of the two control points.  This makes most curves join smoothly.
+A quadratic bezier curve is specified by three points.  Those points include the start point (P0), the centre control point (P1), and the end point (P2).  Traditionally, all three points are called "control points", but only the centre control point (P1) is referred to as the "control point" within this documentation for brevity and clarity.
+
+The start point (P0) for the first quadratic bezier curve in the series is specified by `source-endpoint`.  The end point (P2) for the last quadratic bezier curve in the series is specified by `target-endpoint`.
+
+When two or more control points are specified for an unbundled bezier edge, each adjacent pair of bezier curves is joined at the midpoint of the two control points.  In other words, the start point (P0) and end point (P2) for a quadratic bezier curve in the middle of the series are set implicitly.  This makes most curves join smoothly.
 
 * **`control-point-distances`** : A series of values that specify for each control point the distance perpendicular to a line formed from source to target, e.g. `-20 20 -20`.
 * **`control-point-weights`** : A series of values that weights control points along a line from source to target, e.g. `0.25 0.5 0.75`.  A value usually ranges on [0, 1], with 0 towards the source node and 1 towards the target node --- but larger or smaller values can also be used.
@@ -490,8 +494,8 @@ Only mid arrows are supported on haystack edges.
   - `inside-to-node` indicates the edge should go all the way inside the node and point directly on the node's position.  This is the same as specifying `0 0`.
   - `outside-to-line` indicates the edge endpoint should be placed outside the node's shape where it would intersect the imaginary line from the source position to the target position.  This value is useful for automatically  avoiding invalid cases for bezier edges, especially with compound nodes.
   - `outside-to-line-or-label` uses the same rules as `outside-to-line` with the added rule that if the node's label would intersect the imaginary line before the node's body, then the edge points to that intersection point.  This avoids overlap of edges with node labels.
-- Two numbers may specify the endpoint.  The numbers indicate a position relative to the source node's position.  The numbers can be specified as percent values (e.g. `50%`, which are relative to the node's width and height respectively) or as absolute distances (e.g. `100px` or `2em`).
-- A single angle value (e.g. `90deg` or `1.57rad`) may specify that the endpoint should be placed at where the line formed from the node's position with the specified angle would intersect the node's shape.  The angle starts at 12 o'clock and progresses clockwise.
+- Two numbers may specify the endpoint.  The numbers indicate a position relative to the node's position.  The numbers can be specified as percent values (e.g. `50%`, which are relative to the node's width and height respectively) or as absolute distances (e.g. `100px` or `2em`).
+- A single angle value (e.g. `90deg` or `1.57rad`) may specify that the endpoint should be placed on the node's border at the specified angle.  The angle starts at 12 o'clock and progresses clockwise.
 
 The endpoints for edges can be shifted away from the source and target node:
 
@@ -528,7 +532,7 @@ Endpoint modification is not supported for `curve-style: haystack` edges for per
 
 Elements are drawn in a specific order based on compound depth (low to high), the element type (typically nodes above edges), and z-index (low to high).  These styles affect the ordering:
 
-* **`z-compound-depth`** : May be `bottom`, `orphan`, `auto` (default), or `top`.  The first drawn is `bottom`, the second is `orphan`, which is the same depth as the root of the compound graph, followed by the default of `auto` which draws in depth order from root to leaves of the compound graph.  The last drawn is `top`.
+* **`z-compound-depth`** : May be `bottom`, `orphan`, `auto` (default), or `top`.  The first drawn is `bottom`, the second is `orphan`, which is the same depth as the root of the compound graph, followed by the default of `auto` which draws in depth order from root to leaves of the compound graph.  The last drawn is `top`.  It does not usually make sense to set this value for non-compound graphs.
 * **`z-index-compare`**: May be `auto` (default) or `manual`.  The `auto` setting draws edges under nodes, whereas `manual` ignores this convention and draws solely based on the `z-index` value.
 * **`z-index`** : An integer value that affects the relative draw order of elements.  In general, an element with a higher `z-index` will be drawn on top of an element with a lower `z-index` within the same depth.
 
@@ -601,7 +605,7 @@ Background:
 
  * **`text-background-color`** : A colour to apply on the text background.
  * **`text-background-opacity`** : The opacity of the label background; the background is disabled for `0` (default value).
- * **`text-background-shape`** : The shape to use for the label background, can be `rectangle` or `roundrectangle`.
+ * **`text-background-shape`** : The shape to use for the label background, can be `rectangle` or `round-rectangle`.
  * **`text-background-padding`** : A padding on the background of the label (e.g `5px`); zero padding is used by default.
 
 Border:
@@ -644,12 +648,12 @@ The ghost properties allow for creating a ghosting effect, a semitransparent dup
 ## Transition animation
 
  * **`transition-property`** : A space-separated list of style properties to animate in this state.
- * **`transition-duration`** : The length of the transition in seconds (e.g. `0.5s`).
- * **`transition-delay`** : The length of the delay in seconds before the transition occurs (e.g. `250ms`).
+ * **`transition-duration`** : The length of the transition (e.g. `0.5s`).
+ * **`transition-delay`** : The length of the delay before the transition occurs (e.g. `250ms`).
  * **`transition-timing-function`** : An easing function that controls the animation progress curve; may be one of the following values.  A [visualisation](http://easings.net/) of easings serves as a reference.
    * `linear` (default),
-   * `spring( tension, friction )` (the [demo](http://codepen.io/anon/pen/ZbzbbZ) has details for parameter values),
-   * `cubic-bezier( x1, y1, x2, y2 )` (the [demo](http://cubic-bezier.com) has details for parameter values),
+   * `spring( tension, friction )`
+   * `cubic-bezier( x1, y1, x2, y2 )` (a [demo](http://cubic-bezier.com) has details for parameter values),
    * `ease`,
    * `ease-in`,
    * `ease-out`,

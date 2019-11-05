@@ -43,7 +43,7 @@
 <a href="https://twitter.com/cytoscapejs"><img src="https://img.shields.io/badge/Updates-Twitter-yellow.svg" alt="Twitter updates"></a>
 <a href="https://blog.js.cytoscape.org"><img src="https://img.shields.io/badge/News%20and%20tutorials-Blog-yellow.svg" alt="News and tutorials"></a>
 <a href="https://stackoverflow.com/questions/tagged/cytoscape.js"><img src="https://img.shields.io/badge/Questions-StackOverflow-yellow.svg" alt="Questions at StackOverflow"></a>
-<a href="http://stackoverflow.com/questions/ask?tags=cytoscape.js,javascript"><img src="https://img.shields.io/badge/Ask%20a%20question-StackOverflow-yellow.svg" alt="Ask a question at StackOverflow"></a>
+<a href="https://stackoverflow.com/questions/ask?tags=cytoscape.js,javascript"><img src="https://img.shields.io/badge/Ask%20a%20question-StackOverflow-yellow.svg" alt="Ask a question at StackOverflow"></a>
 <a href="https://raw.githubusercontent.com/cytoscape/cytoscape.js/master/LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="GitHub license"></a>
 <a href="https://zenodo.org/badge/latestdoi/2255947"><img src="https://zenodo.org/badge/2255947.svg" alt="DOI"></a>
 <a href="#introduction/citation"><img src="https://img.shields.io/badge/Cite-Oxford%20Bioinformatics%20Article-blue.svg" alt="Cite"></a>
@@ -620,16 +620,20 @@
 <li><a href="http://www.ndexbio.org/">NDEx</a></li>
 <li><a href="https://www.nsa.gov/">NSA</a> : <a href="https://github.com/nsacyber/WALKOFF">WALKOFF</a></li>
 <li><a href="http://www.ohdsi.org/">OHDSI</a></li>
+<li><a href="https://www.panaya.com">Panaya</a> : <a href="https://www.panaya.com/product/salesforce-foresight/">Panaya ForeSight</a></li>
 <li><a href="http://www.pathwaycommons.org">Pathway Commons</a></li>
 <li><a href="https://github.com/idekerlab/py2cytoscape">py2cytoscape</a></li>
 <li><a href="http://rezza.io">Rezza</a></li>
 <li><a href="http://www.tsl.ac.uk/">Sainsbury Laboratory</a> : <a href="http://pinet.tsl.ac.uk/">PINet</a></li>
 <li>Southwest Harbor Public Library, Maine : <a href="http://swhplibrary.net/archive/">Digital Archive</a> : <a href="https://github.com/gsoules/AvantRelationships">AvantRelationships</a></li>
 <li><a href="http://www.soteradefense.com/">Sotera Defense Solutions, Inc.</a> : <a href="http://sotera.github.io/graphene/">Graphene</a></li>
+<li><a href="http://www.spininhetweb.nl/">Spin in het Web</a> : <a href="https://dynalearn.nl">DynaLearn</a></li>
+<li><a href="https://www.sri.com">SRI International</a> : <a href="http://biocyc.org/">BioCyc</a> : <a href="https://biocyc.org/pathway-collage-info">Pathway Collages</a></li>
 <li><a href="https://steemit.com/">Steemit</a></li>
 <li><a href="https://www.stringify.com/">Stringify</a></li>
 <li><a href="https://www.threatcrowd.org/">Threat Crowd</a></li>
 <li><a href="https://trace.risingstack.com/">Trace</a></li>
+<li><a href="https://www.unist.ac.kr/">UNIST</a> : <a href="https://sites.google.com/site/bigunist2/">Bioinformatics Group</a> : <a href="https://github.com/unistbig/GScluster">GScluster</a> &amp; <a href="https://github.com/unistbig/shinyCyJS">shinyCyJS</a></li>
 <li><a href="https://www.ub.edu">University of Barcelona</a> : <a href="https://compgen.bio.ub.edu/PlanNET">PlanNET</a></li>
 <li><a href="http://www.cam.ac.uk/">University of Cambridge</a> : <a href="http://intermine.org/">Intermine</a></li>
 <li><a href="http://en.uestc.edu.cn/">University of Electronic Science and Technology of China</a> : <a href="http://cefg.uestc.edu.cn/Mslr/">Microbal Synthetic Lethal and Rescue Database</a></li>
@@ -659,6 +663,10 @@
 </ul>
 <h2 id="introduction/releases">Releases <a href="#introduction/releases"><span class="fa fa-bookmark"></span></a></h2>
 <ul>
+<li>3.12<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.12.0+is%3Aclosed">3.12.0</a></li>
+</ul>
+</li>
 <li>3.11<ul>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.11.0+is%3Aclosed">3.11.0</a></li>
 </ul>
@@ -1304,7 +1312,6 @@
   <a href="#init-opts/headless">headless</a>: false,
   <a href="#init-opts/styleEnabled">styleEnabled</a>: true,
   <a href="#init-opts/hideEdgesOnViewport">hideEdgesOnViewport</a>: false,
-  <a href="#init-opts/hideLabelsOnViewport">hideLabelsOnViewport</a>: false,
   <a href="#init-opts/textureOnViewport">textureOnViewport</a>: false,
   <a href="#init-opts/motionBlur">motionBlur</a>: false,
   <a href="#init-opts/motionBlurOpacity">motionBlurOpacity</a>: 0.2,
@@ -4103,51 +4110,6 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 							</div>
 						</div>
 
-					<h2 id="core/eles.data">eles.data <a href="#core/eles.data"><span class="fa fa-bookmark"></span></a></h2>
-
-
-						<h2 id="eles.data/details">Details <a href="#eles.data/details"><span class="fa fa-bookmark"></span></a></h2>
-<p>Only JSON-serialisable data may be put in <code>ele.data()</code>.  For temporary data or non-serialisable data, use <a href="#ele.scratch"><code>ele.scratch()</code></a>.</p>
-<p>The following fields are normally immutable:</p>
-<ul>
-<li><code>id</code> : The <code>id</code> field is used to uniquely identify an element in the graph.</li>
-<li><code>source</code> &amp; <code>target</code> : These fields define an edge’s relationship to nodes, and this relationship can not be changed after creation.</li>
-<li><code>parent</code> : The <code>parent</code> field defines the parent (compound) node.</li>
-</ul>
-<p>In order to modify those fields, which alter graph topology, you must use <a href="#ele.move"><code>ele.move()</code></a>.</p>
-<h2 id="eles.data/examples">Examples <a href="#eles.data/examples"><span class="fa fa-bookmark"></span></a></h2>
-<pre><code class="language-js"><span class="hljs-keyword">var</span> j = cy.$(<span class="hljs-string">'#j'</span>);
-
-<span class="hljs-comment">// set the weight field in data</span>
-j.data(<span class="hljs-string">'weight'</span>, <span class="hljs-number">60</span>);
-
-<span class="hljs-comment">// set several fields at once</span>
-j.data({
-  <span class="hljs-attr">name</span>: <span class="hljs-string">'Jerry Jerry Dingleberry'</span>,
-  <span class="hljs-attr">height</span>: <span class="hljs-number">176</span>
-});
-
-<span class="hljs-keyword">var</span> weight = j.data(<span class="hljs-string">'weight'</span>);</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button>
-
-
-
-					<h2 id="core/eles.removedata">eles.removeData <a href="#core/eles.removedata"><span class="fa fa-bookmark"></span></a></h2>
-
-
-						<h2 id="eles.removedata/details">Details <a href="#eles.removedata/details"><span class="fa fa-bookmark"></span></a></h2>
-<p>Using <code>ele.removeData()</code> sets the specified fields to <code>undefined</code>.  This allows you to use a meaningful <code>null</code> value in your element data.</p>
-<p>The following data fields are normally immutable, and so they can not be removed:</p>
-<ul>
-<li><code>id</code> : The <code>id</code> field is used to uniquely identify an element in the graph.</li>
-<li><code>source</code> &amp; <code>target</code> : These fields define an edge’s relationship to nodes, and this relationship can not be changed after creation.</li>
-<li><code>parent</code> : The <code>parent</code> field defines the parent (compound) node.</li>
-</ul>
-<p>To modify the topology of the graph without adding or removing elements, you must use <a href="#ele.move"><code>ele.move()</code></a>.  Even so, only <code>parent</code> may be removed by <code>ele.move()</code>.  An edge always requires a valid source and target.</p>
-
-
-
-
 					<h2 id="core/layout">Layout <a href="#core/layout"><span class="fa fa-bookmark"></span></a></h2>
 
 
@@ -4406,7 +4368,7 @@ cy.style( stringStylesheet );</code></pre>
 
 							<div class="details">
 									<h3 id="details">Details</h3>
-<p>By default, the export takes into account the current screen pixel density so that the image is of the same quality of the screen.  If the <code>maxWidth</code> or <code>maxHeight</code> options are specified, then the screen pixel density is ignored so that the image can fit in the specified dimensions.</p>
+<p>This function exports the currently-rendered graph as an image, so you may not call this function on a headless instance.  By default, the export takes into account the current screen pixel density so that the image is of the same quality of the screen.  If the <code>maxWidth</code> or <code>maxHeight</code> options are specified, then the screen pixel density is ignored so that the image can fit in the specified dimensions.</p>
 <p><span class="important-indicator"></span> Specifying <code>output:&#39;blob-promise&#39;</code> is the only way to make this function non-blocking.  Other outputs may hang the browser until finished, especially for a large image.</p>
 <h3 id="examples">Examples</h3>
 <pre><code class="language-js"><span class="hljs-keyword">var</span> png64 = cy.png();
@@ -4507,7 +4469,7 @@ cy.style( stringStylesheet );</code></pre>
 
 							<div class="details">
 									<h3 id="details">Details</h3>
-<p>By default, the export takes into account the current screen pixel density so that the image is of the same quality of the screen.  If the <code>maxWidth</code> or <code>maxHeight</code> options are specified, then the screen pixel density is ignored so that the image can fit in the specified dimensions.</p>
+<p>This function exports the currently-rendered graph as an image, so you may not call this function on a headless instance.  By default, the export takes into account the current screen pixel density so that the image is of the same quality of the screen.  If the <code>maxWidth</code> or <code>maxHeight</code> options are specified, then the screen pixel density is ignored so that the image can fit in the specified dimensions.</p>
 <p><span class="important-indicator"></span> Specifying <code>output:&#39;blob-promise&#39;</code> is the only way to make this function non-blocking.  Other outputs may hang the browser until finished, especially for a large image.</p>
 <p><span class="important-indicator"></span> The JPEG format is lossy, whereas PNG is not.  This means that <code>cy.jpg()</code> is useful for cases where filesize is more important than pixel-perfect images.  JPEG compression will make your images (especially edge lines) blurry and distorted.</p>
 <h3 id="examples">Examples</h3>
@@ -6830,13 +6792,19 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 
 							<div class="details">
 									<h3 id="details">Details</h3>
-<p>While the control points may be specified relatively in the CSS, this function returns the absolute <a href="#notation/position">model positions</a> of the control points. The points are specified in the order of source-to-target direction.</p>
-<p>This function works for bundled beziers, but it is not applicable to the middle, straight-line edge in the bundle.</p>
+<p>Each bezier edge consists of one or more quadratic bezier curves.</p>
+<p>A <a href="https://en.wikipedia.org/wiki/B%C3%A9zier_curve#Quadratic_B%C3%A9zier_curves">quadratic bezier curve</a> is specified by three points.  Those points include the start point (P0), the centre control point (P1), and the end point (P2).  Traditionally, all three points are called “control points”, but only the centre control point (P1) is referred to as the “control point” within this documentation for brevity and clarity.  This function returns the centre control point, as other points are available by functions like <code>edge.targetEndpoint()</code>.</p>
 <p>The number of returned points for each curve style is as follows:</p>
 <ul>
 <li><code>curve-style: bezier</code> (simple edge) : 1 point for a single quadratic bezier</li>
 <li><code>curve-style: bezier</code> (loop) : 2 points for two quadratic beziers</li>
-<li><code>curve-style: unbundled-bezier</code> : n points for n quadratic beziers, as the number of control points is defined by <a href="#style/bezier-edges"><code>control-point-distances</code> and <code>control-point-weights</code></a></li>
+<li><code>curve-style: unbundled-bezier</code> : n points for n quadratic beziers, as the number of control points is defined by <a href="#style/unbundled-bezier-edges"><code>control-point-distances</code> and <code>control-point-weights</code></a></li>
+</ul>
+<p>Notes:</p>
+<ul>
+<li>While the control points may be specified relatively in the CSS, this function returns the absolute <a href="#notation/position">model positions</a> of the control points. The points are specified in the order of source-to-target direction.</li>
+<li>This function works for bundled beziers, but it is not applicable to the middle, straight-line edge in the bundle.</li>
+<li>For an unbundled bezier edge, the point that joins two successive bezier curves in the series is given by the midpoint (mean) of the two control points.  That join point specifies P2 for the first bezier, and it specifies P0 for the second bezier.</li>
 </ul>
 
 							</div>
@@ -6984,8 +6952,7 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 							<div class="details">
 									<h3 id="details">Details</h3>
 <p>The midpoint is, by default, where the edge’s label is centred. It is also the position towards which mid arrows point.</p>
-<p>For <a href="#style/unbundled-bezier-edges"><code>curve-style: unbundled-bezier</code></a> edges, the midpoint is the middle extremum if the number of control points is odd.</p>
-<p>For an even number of control points, the midpoint is where the two middle-most control points meet.  This is the middle inflection point for bilaterally symmetric or skew symmetric edges, for example.</p>
+<p>For <a href="#style/unbundled-bezier-edges"><code>curve-style: unbundled-bezier</code></a> edges, the midpoint is the middle extremum if the number of control points is odd.  For an even number of control points, the midpoint is where the two middle-most control points meet.  This is the middle inflection point for bilaterally symmetric or skew symmetric edges, for example.</p>
 <p>For <a href="#style/segments-edges"><code>curve-style: segments</code></a> edges, the midpoint is the middle segment point if the number of segment points is odd.  For an even number of segment points, the overall midpoint is the midpoint of the middle-most line segment (i.e. the mean of the middle two segment points).</p>
 
 							</div>
@@ -11183,6 +11150,70 @@ bf.pathTo(<span class="hljs-string">'#g'</span>).select();</code></pre>
 <button class="run run-inline-code"><span class="fa fa-play"></span></button>
 							</div>
 						</div>
+						<div class="function">
+							<div class="name" id="eles.hierholzer">
+								<span class="fn-name">eles.hierholzer()</span>  <a href="#eles.hierholzer"><span class="fa fa-bookmark"></span></a>
+								<span id="collection/search/eles.hierholzer">&nbsp;</span><span id="collection/search/eles.hierholzer">&nbsp;</span><span id="eles.hierholzer">&nbsp;</span>
+							</div>
+
+
+
+							<div class="descr"><p>Perform the <a href="https://en.wikipedia.org/wiki/Eulerian_path#Hierholzer&#39;s_algorithm">Hierholzer</a> search algorithm on the elements in the collection. This finds Eulerian trails and circuits.</p>
+</div>
+
+							<div class="formats">
+									<div class="format">
+											<div class="name">eles.hierholzer( <span class="args-summary"><span class="comma">,&nbsp;</span>options</span> )</div>
+
+
+										<div class="descr"></div>
+										<ul class="args">
+												<li>
+													<span class="name">options</span>
+													
+													<span class="descr"></span>
+
+													<ul class="fields">
+															<li>
+																<span class="name"><a href="#collection">root</a></span>
+																<span class="optional">[optional]</span>
+																<span class="descr"><p>The root node (selector or collection) where the search starts.</p>
+</span>
+															</li>
+
+															<li>
+																<span class="name">directed</span>
+																<span class="optional">[optional]</span>
+																<span class="descr"><p>A boolean indicating whether the algorithm should only go along edges from source to target (default <code>false</code>).</p>
+</span>
+															</li>
+
+													</ul>
+												</li>
+										</ul>
+									</div>
+							</div>
+
+							<div class="details">
+									<h3 id="details">Details</h3>
+<p>Note that this function performs Hierholzer’s algorithm on only the subset of the graph in the calling collection.</p>
+<p>This function returns an object of the following form:</p>
+<pre><code class="language-js">{
+  found, <span class="hljs-comment">/* true or false */</span>
+  trail <span class="hljs-comment">/* Ordered collection of elements in the Eulerian trail or cycle, if found */</span>
+}</code></pre>
+<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>Regarding optional options:</p>
+<ul>
+<li>If no root node is provided, the first node in the collection will be taken as the starting node in the algorithm.</li>
+<li>The graph is assumed to be undirected unless specified otherwise.</li>
+</ul>
+<h3 id="examples">Examples</h3>
+<pre><code class="language-js"><span class="hljs-keyword">var</span> hierholzer = cy.elements().hierholzer({ <span class="hljs-attr">root</span>: <span class="hljs-string">"#j"</span>, <span class="hljs-attr">directed</span>: <span class="hljs-literal">true</span> });
+
+hierholzer.trail.select();</code></pre>
+<button class="run run-inline-code"><span class="fa fa-play"></span></button>
+							</div>
+						</div>
 
 					<h2 id="collection/spanning">Spanning <a href="#collection/spanning"><span class="fa fa-bookmark"></span></a></h2>
 
@@ -13439,9 +13470,9 @@ Sets the subject of the selector (e.g. <code>$node &gt; node</code> to select th
 </ul>
 <h2 id="style/bezier-edges">Bezier edges <a href="#style/bezier-edges"><span class="fa fa-bookmark"></span></a></h2>
 <p>For automatic, bundled bezier edges (<code>curve-style: bezier</code>, <a href="demos/edge-types">demo</a>):</p>
-<p>A bezier edge is bundled with all other parallel bezier edges.  Each bezier edge is a <a href="https://en.wikipedia.org/wiki/B%C3%A9zier_curve#Quadratic_B%C3%A9zier_curves">quadratic bezier curve</a>, separated from the others by varying the control point.  If there is an odd number of parallel edges in a bundle, then the centre edge is drawn as a straight line.</p>
+<p>A bezier edge is bundled with all other parallel bezier edges.  Each bezier edge is a <a href="https://en.wikipedia.org/wiki/B%C3%A9zier_curve#Quadratic_B%C3%A9zier_curves">quadratic bezier curve</a>, separated from the others by varying the  curvature.  If there is an odd number of parallel edges in a bundle, then the centre edge is drawn as a straight line.</p>
 <ul>
-<li><strong><code>control-point-step-size</code></strong> : From the line perpendicular from source to target, this value specifies the distance between successive bezier edges.</li>
+<li><strong><code>control-point-step-size</code></strong> : Along the line perpendicular from source to target, this value specifies the distance between successive bezier edges.</li>
 <li><strong><code>control-point-distance</code></strong> : A single value that overrides <code>control-point-step-size</code> with a manual value.  Because it overrides the step size, bezier edges with the same value will overlap.  Thus, it’s best to use this as a one-off value for particular edges if need be.</li>
 <li><strong><code>control-point-weight</code></strong> : A single value that weights control points along the line from source to target.  The value usually ranges on [0, 1], with 0 towards the source node and 1 towards the target node — but larger or smaller values can also be used.</li>
 <li><strong><code>edge-distances</code></strong> : With value <code>intersection</code> (default), the line from source to target for <code>control-point-weight</code> is from the outside of the source node’s shape to the outside of the target node’s shape.  With value <code>node-position</code>, the line is from the source position to the target position.  The <code>node-position</code> option makes calculating edge points easier — but it should be used carefully because you can create invalid points that <code>intersection</code> would have automatically corrected.</li>
@@ -13456,8 +13487,10 @@ Sets the subject of the selector (e.g. <code>$node &gt; node</code> to select th
 <p>Note that loops may only be <code>bezier</code> or <code>unbundled-bezier</code> for their <code>curve-style</code>.</p>
 <h2 id="style/unbundled-bezier-edges">Unbundled bezier edges <a href="#style/unbundled-bezier-edges"><span class="fa fa-bookmark"></span></a></h2>
 <p>For bezier edges with manual control points (<code>curve-style: unbundled-bezier</code>, <a href="demos/edge-types">demo</a>):</p>
-<p>An unbundled bezier edge is made of a series of one or more <a href="https://en.wikipedia.org/wiki/B%C3%A9zier_curve#Quadratic_B%C3%A9zier_curves">quadratic bezier curves</a> — one control point per curve.  The control points of the bezier curves are specified manually, using a co-ordinate system relative to the source and target node.  This maintains the overall curve shape regardless of the positions of the connected nodes.</p>
-<p>When two or more control points are specified for an unbundled bezier edge, each adjacent pair of bezier curves is joined at the midpoint of the two control points.  This makes most curves join smoothly.</p>
+<p>An unbundled bezier edge is made of a series of one or more <a href="https://en.wikipedia.org/wiki/B%C3%A9zier_curve#Quadratic_B%C3%A9zier_curves">quadratic bezier curves</a> — one control point per curve.  The control points of unbundled bezier curves are specified manually, using a co-ordinate system relative to the source and target node.  This maintains the overall curve shape regardless of the positions of the connected nodes.</p>
+<p>A quadratic bezier curve is specified by three points.  Those points include the start point (P0), the centre control point (P1), and the end point (P2).  Traditionally, all three points are called “control points”, but only the centre control point (P1) is referred to as the “control point” within this documentation for brevity and clarity.</p>
+<p>The start point (P0) for the first quadratic bezier curve in the series is specified by <code>source-endpoint</code>.  The end point (P2) for the last quadratic bezier curve in the series is specified by <code>target-endpoint</code>.</p>
+<p>When two or more control points are specified for an unbundled bezier edge, each adjacent pair of bezier curves is joined at the midpoint of the two control points.  In other words, the start point (P0) and end point (P2) for a quadratic bezier curve in the middle of the series are set implicitly.  This makes most curves join smoothly.</p>
 <ul>
 <li><strong><code>control-point-distances</code></strong> : A series of values that specify for each control point the distance perpendicular to a line formed from source to target, e.g. <code>-20 20 -20</code>.</li>
 <li><strong><code>control-point-weights</code></strong> : A series of values that weights control points along a line from source to target, e.g. <code>0.25 0.5 0.75</code>.  A value usually ranges on [0, 1], with 0 towards the source node and 1 towards the target node — but larger or smaller values can also be used.</li>
@@ -13549,8 +13582,8 @@ Sets the subject of the selector (e.g. <code>$node &gt; node</code> to select th
 <li><code>outside-to-line-or-label</code> uses the same rules as <code>outside-to-line</code> with the added rule that if the node’s label would intersect the imaginary line before the node’s body, then the edge points to that intersection point.  This avoids overlap of edges with node labels.</li>
 </ul>
 </li>
-<li>Two numbers may specify the endpoint.  The numbers indicate a position relative to the source node’s position.  The numbers can be specified as percent values (e.g. <code>50%</code>, which are relative to the node’s width and height respectively) or as absolute distances (e.g. <code>100px</code> or <code>2em</code>).</li>
-<li>A single angle value (e.g. <code>90deg</code> or <code>1.57rad</code>) may specify that the endpoint should be placed at where the line formed from the node’s position with the specified angle would intersect the node’s shape.  The angle starts at 12 o’clock and progresses clockwise.</li>
+<li>Two numbers may specify the endpoint.  The numbers indicate a position relative to the node’s position.  The numbers can be specified as percent values (e.g. <code>50%</code>, which are relative to the node’s width and height respectively) or as absolute distances (e.g. <code>100px</code> or <code>2em</code>).</li>
+<li>A single angle value (e.g. <code>90deg</code> or <code>1.57rad</code>) may specify that the endpoint should be placed on the node’s border at the specified angle.  The angle starts at 12 o’clock and progresses clockwise.</li>
 </ul>
 <p>The endpoints for edges can be shifted away from the source and target node:</p>
 <ul>
@@ -13597,7 +13630,7 @@ Sets the subject of the selector (e.g. <code>$node &gt; node</code> to select th
 </ul>
 <p>Elements are drawn in a specific order based on compound depth (low to high), the element type (typically nodes above edges), and z-index (low to high).  These styles affect the ordering:</p>
 <ul>
-<li><strong><code>z-compound-depth</code></strong> : May be <code>bottom</code>, <code>orphan</code>, <code>auto</code> (default), or <code>top</code>.  The first drawn is <code>bottom</code>, the second is <code>orphan</code>, which is the same depth as the root of the compound graph, followed by the default of <code>auto</code> which draws in depth order from root to leaves of the compound graph.  The last drawn is <code>top</code>.</li>
+<li><strong><code>z-compound-depth</code></strong> : May be <code>bottom</code>, <code>orphan</code>, <code>auto</code> (default), or <code>top</code>.  The first drawn is <code>bottom</code>, the second is <code>orphan</code>, which is the same depth as the root of the compound graph, followed by the default of <code>auto</code> which draws in depth order from root to leaves of the compound graph.  The last drawn is <code>top</code>.  It does not usually make sense to set this value for non-compound graphs.</li>
 <li><strong><code>z-index-compare</code></strong>: May be <code>auto</code> (default) or <code>manual</code>.  The <code>auto</code> setting draws edges under nodes, whereas <code>manual</code> ignores this convention and draws solely based on the <code>z-index</code> value.</li>
 <li><strong><code>z-index</code></strong> : An integer value that affects the relative draw order of elements.  In general, an element with a higher <code>z-index</code> will be drawn on top of an element with a lower <code>z-index</code> within the same depth.</li>
 </ul>
@@ -13669,7 +13702,7 @@ Sets the subject of the selector (e.g. <code>$node &gt; node</code> to select th
 <ul>
 <li><strong><code>text-background-color</code></strong> : A colour to apply on the text background.</li>
 <li><strong><code>text-background-opacity</code></strong> : The opacity of the label background; the background is disabled for <code>0</code> (default value).</li>
-<li><strong><code>text-background-shape</code></strong> : The shape to use for the label background, can be <code>rectangle</code> or <code>roundrectangle</code>.</li>
+<li><strong><code>text-background-shape</code></strong> : The shape to use for the label background, can be <code>rectangle</code> or <code>round-rectangle</code>.</li>
 <li><strong><code>text-background-padding</code></strong> : A padding on the background of the label (e.g <code>5px</code>); zero padding is used by default.</li>
 </ul>
 <p>Border:</p>
@@ -13707,12 +13740,12 @@ Sets the subject of the selector (e.g. <code>$node &gt; node</code> to select th
 <h2 id="style/transition-animation">Transition animation <a href="#style/transition-animation"><span class="fa fa-bookmark"></span></a></h2>
 <ul>
 <li><strong><code>transition-property</code></strong> : A space-separated list of style properties to animate in this state.</li>
-<li><strong><code>transition-duration</code></strong> : The length of the transition in seconds (e.g. <code>0.5s</code>).</li>
-<li><strong><code>transition-delay</code></strong> : The length of the delay in seconds before the transition occurs (e.g. <code>250ms</code>).</li>
+<li><strong><code>transition-duration</code></strong> : The length of the transition (e.g. <code>0.5s</code>).</li>
+<li><strong><code>transition-delay</code></strong> : The length of the delay before the transition occurs (e.g. <code>250ms</code>).</li>
 <li><strong><code>transition-timing-function</code></strong> : An easing function that controls the animation progress curve; may be one of the following values.  A <a href="http://easings.net/">visualisation</a> of easings serves as a reference.<ul>
 <li><code>linear</code> (default),</li>
-<li><code>spring( tension, friction )</code> (the <a href="http://codepen.io/anon/pen/ZbzbbZ">demo</a> has details for parameter values),</li>
-<li><code>cubic-bezier( x1, y1, x2, y2 )</code> (the <a href="http://cubic-bezier.com">demo</a> has details for parameter values),</li>
+<li><code>spring( tension, friction )</code></li>
+<li><code>cubic-bezier( x1, y1, x2, y2 )</code> (a <a href="http://cubic-bezier.com">demo</a> has details for parameter values),</li>
 <li><code>ease</code>,</li>
 <li><code>ease-in</code>,</li>
 <li><code>ease-out</code>,</li>
@@ -15075,7 +15108,7 @@ cytoscape.use( ext );</code></pre>
 </ul>
 </li>
 <li><strong>Simplify node style</strong> : Certain styles for nodes can be expensive.<ul>
-<li>Background images are very expensive in certain cases.  The most performant background images are non-repeating (<code>background-repeat: no-repeat</code>) and non-clipped (<code>background-clip: none</code>).  For simple node shapes like squares or circles, you can use <code>background-fit</code> for scaling and preclip your images to simulate software clipping (e.g. with <a href="https://github.com/scalableminds/gulp-image-resize">Gulp</a> so it’s automated).  In lieu of preclipping, you could make clever use of PNGs with transparent backgrounds.</li>
+<li>Background images are very expensive in certain cases.  The most performant background images are non-repeating (<code>background-repeat: no-repeat</code>) and non-clipped (<code>background-clip: none</code>).  For simple node shapes like squares or circles, you can use <code>background-fit</code> for scaling and preclip your images to simulate software clipping (e.g. with <a href="https://imagemagick.org">Image Magick</a> so it’s automated).  In lieu of preclipping, you could make clever use of PNGs with transparent backgrounds.</li>
 <li>Node borders can be slightly expensive, so you can experiment with removing them to see if it makes a noticeable difference for your use case.</li>
 </ul>
 </li>
@@ -15333,16 +15366,6 @@ cytoscape.use( ext );</code></pre>
 							<div class="section lvl3"><a class="toclink" href="#cy.delayAnimation">cy.delayAnimation() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#cy.stop">cy.stop() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#cy.clearQueue">cy.clearQueue() </a></div>
-						<div class="section lvl2">
-							
-							<a class="toclink" href="#core/eles.data">eles.data</a>
-						</div>
-
-						<div class="section lvl2">
-							
-							<a class="toclink" href="#core/eles.removedata">eles.removeData</a>
-						</div>
-
 						<div class="section lvl2">
 							<span class="expander">
 								<span class="fa fa-caret-down expanded-icon"></span>
@@ -15633,6 +15656,7 @@ cytoscape.use( ext );</code></pre>
 							<div class="section lvl3"><a class="toclink" href="#eles.aStar">eles.aStar() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#eles.floydWarshall">eles.floydWarshall() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#eles.bellmanFord">eles.bellmanFord() </a></div>
+							<div class="section lvl3"><a class="toclink" href="#eles.hierholzer">eles.hierholzer() </a></div>
 						<div class="section lvl2">
 							<span class="expander">
 								<span class="fa fa-caret-down expanded-icon"></span>

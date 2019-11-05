@@ -919,57 +919,6 @@
               "descr": "Remove all queued animations for the viewport."
             }
           ]
-        },{
-          "name": "eles.data",
-          "pureAliases": [ "eles.attr" ],
-          "descr": "Read and write developer-defined data associated with the elements.",
-          "formatsSameFn": true,
-          "formats": [
-            {
-              "name": "ele.data",
-              "descr": "Get the entire data object."
-            },
-
-            {
-              "name": "ele.data",
-              "descr": "Get a particular data field for the element.",
-              "args": [ { "name": "name", "descr": "The name of the field to get." } ]
-            },
-
-            {
-              "name": "ele.data",
-              "descr": "Set a particular data field for the element.",
-              "args": [
-                { "name": "name", "descr": "The name of the field to set." },
-                { "name": "value", "descr": "The value to set for the field." }
-              ]
-            },
-
-            {
-              "name": "ele.data",
-              "descr": "Update multiple data fields at once via an object.",
-              "args": [
-                { "name": "obj", "descr": "The object containing name-value pairs to update data fields." }
-              ]
-            }
-          ],
-          "md": "collection/data"
-        },
-
-        {
-          "name": "eles.removeData",
-          "pureAliases": [ "eles.removeAttr" ],
-          "descr": "Remove developer-defined data associated with the elements.",
-          "formats": [
-            { "descr": "Removes all mutable data fields for the elements." },
-            {
-              "descr": "Removes the specified mutable data fields for the elements.",
-              "args": [
-                { "name": "names", "descr": "A space-separated list of fields to delete." }
-              ]
-            }
-          ],
-          "md": "collection/removeData"
         },
 
         {
@@ -3235,6 +3184,22 @@
                 }
               ],
               "md": "collection/bellmanFord"
+            },
+
+            {
+              "name": "eles.hierholzer",
+              "descr": "Perform the [Hierholzer](https://en.wikipedia.org/wiki/Eulerian_path#Hierholzer's_algorithm) search algorithm on the elements in the collection. This finds Eulerian trails and circuits.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "options", "fields": [
+                      { "name": "root", "descr": "The root node (selector or collection) where the search starts.", "optional": true },
+                      { "name": "directed", "descr": "A boolean indicating whether the algorithm should only go along edges from source to target (default `false`).", "optional": true }
+                    ] }
+                  ]
+                }
+              ],
+              "md": "collection/hierholzer"
             }
 
           ]

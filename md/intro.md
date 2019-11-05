@@ -83,16 +83,20 @@
   * [NDEx](http://www.ndexbio.org/)
   * [NSA](https://www.nsa.gov/) : [WALKOFF](https://github.com/nsacyber/WALKOFF)
   * [OHDSI](http://www.ohdsi.org/)
+  * [Panaya](https://www.panaya.com) : [Panaya ForeSight](https://www.panaya.com/product/salesforce-foresight/)
   * [Pathway Commons](http://www.pathwaycommons.org)
   * [py2cytoscape](https://github.com/idekerlab/py2cytoscape)
   * [Rezza](http://rezza.io)
   * [Sainsbury Laboratory](http://www.tsl.ac.uk/) : [PINet](http://pinet.tsl.ac.uk/)
   * Southwest Harbor Public Library, Maine : [Digital Archive](http://swhplibrary.net/archive/) : [AvantRelationships](https://github.com/gsoules/AvantRelationships)
   * [Sotera Defense Solutions, Inc.](http://www.soteradefense.com/) : [Graphene](http://sotera.github.io/graphene/)
+  * [Spin in het Web](http://www.spininhetweb.nl/) : [DynaLearn](https://dynalearn.nl)
+  * [SRI International](https://www.sri.com) : [BioCyc](http://biocyc.org/) : [Pathway Collages](https://biocyc.org/pathway-collage-info)
   * [Steemit](https://steemit.com/)
   * [Stringify](https://www.stringify.com/)
   * [Threat Crowd](https://www.threatcrowd.org/)
   * [Trace](https://trace.risingstack.com/)
+  * [UNIST](https://www.unist.ac.kr/) : [Bioinformatics Group](https://sites.google.com/site/bigunist2/) : [GScluster](https://github.com/unistbig/GScluster) & [shinyCyJS](https://github.com/unistbig/shinyCyJS)
   * [University of Barcelona](https://www.ub.edu) : [PlanNET](https://compgen.bio.ub.edu/PlanNET)
   * [University of Cambridge](http://www.cam.ac.uk/) : [Intermine](http://intermine.org/)
   * [University of Electronic Science and Technology of China](http://en.uestc.edu.cn/) : [Microbal Synthetic Lethal and Rescue Database](http://cefg.uestc.edu.cn/Mslr/)
@@ -132,6 +136,8 @@ The library was created at the [Donnelly Centre](http://thedonnellycentre.utoron
 
 ## Releases
 
+- 3.12
+ - [3.12.0](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.12.0+is%3Aclosed)
 - 3.11
  - [3.11.0](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.11.0+is%3Aclosed)
 - 3.10

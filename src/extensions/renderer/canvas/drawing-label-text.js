@@ -41,14 +41,17 @@ CRp.drawElementText = function( context, ele, shiftToOriginWithBb, force, prefix
     context.textAlign = justification;
     context.textBaseline = 'bottom';
   } else {
+    let badLine = ele.element()._private.rscratch.badLine;
     let label = ele.pstyle( 'label' );
     let srcLabel = ele.pstyle( 'source-label' );
     let tgtLabel = ele.pstyle( 'target-label' );
 
     if(
-      ( !label || !label.value )
-      && ( !srcLabel || !srcLabel.value )
-      && ( !tgtLabel || !tgtLabel.value )
+      badLine || (
+        ( !label || !label.value )
+        && ( !srcLabel || !srcLabel.value )
+        && ( !tgtLabel || !tgtLabel.value )
+      )
     ){
       return;
     }

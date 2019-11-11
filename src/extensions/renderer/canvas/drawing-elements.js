@@ -102,10 +102,16 @@ CRp.drawCachedElement = function( context, ele, pxRatio, extent, lvl, requestHig
   if( bb.w === 0 || bb.h === 0 || !ele.visible() ){ return; }
 
   if( !extent || math.boundingBoxesIntersect( bb, extent ) ){
-    r.drawCachedElementPortion( context, ele, eleTxrCache, pxRatio, lvl, reason, getZeroRotation, getOpacity );
-    r.drawCachedElementPortion( context, ele, lblTxrCache, pxRatio, lvl, reason, getLabelRotation, getTextOpacity );
+    let isEdge = ele.isEdge();
+    let badLine = ele.element()._private.rscratch.badLine;
 
-    if( ele.isEdge() ){
+    r.drawCachedElementPortion( context, ele, eleTxrCache, pxRatio, lvl, reason, getZeroRotation, getOpacity );
+    
+    if( !isEdge || !badLine ){
+      r.drawCachedElementPortion( context, ele, lblTxrCache, pxRatio, lvl, reason, getLabelRotation, getTextOpacity );
+    }
+
+    if( isEdge && !badLine ){
       r.drawCachedElementPortion( context, ele, slbTxrCache, pxRatio, lvl, reason, getSourceLabelRotation, getTextOpacity );
       r.drawCachedElementPortion( context, ele, tlbTxrCache, pxRatio, lvl, reason, getTargetLabelRotation, getTextOpacity );
     }

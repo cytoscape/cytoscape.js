@@ -9530,7 +9530,12 @@ var cachedBoundingBoxImpl = function cachedBoundingBoxImpl(ele, opts) {
   var currPosKey = getBoundingBoxPosKey(ele);
   var isPosKeySame = _p.bbCachePosKey === currPosKey;
   var useCache = opts.useCache && isPosKeySame;
-  var needRecalc = !useCache || _p.bbCache == null;
+
+  var isDirty = function isDirty(ele) {
+    return ele._private.bbCache == null;
+  };
+
+  var needRecalc = !useCache || isDirty(ele) || isEdge && isDirty(ele.source()) || isDirty(ele.target());
 
   if (needRecalc) {
     if (!isPosKeySame) {
@@ -28165,10 +28170,17 @@ CRp$1.drawCachedElement = function (context, ele, pxRatio, extent, lvl, requestH
   }
 
   if (!extent || boundingBoxesIntersect(bb, extent)) {
-    r.drawCachedElementPortion(context, ele, eleTxrCache, pxRatio, lvl, reason, getZeroRotation, getOpacity);
-    r.drawCachedElementPortion(context, ele, lblTxrCache, pxRatio, lvl, reason, getLabelRotation, getTextOpacity);
+    var isEdge = ele.isEdge();
 
-    if (ele.isEdge()) {
+    var badLine = ele.element()._private.rscratch.badLine;
+
+    r.drawCachedElementPortion(context, ele, eleTxrCache, pxRatio, lvl, reason, getZeroRotation, getOpacity);
+
+    if (!isEdge || !badLine) {
+      r.drawCachedElementPortion(context, ele, lblTxrCache, pxRatio, lvl, reason, getLabelRotation, getTextOpacity);
+    }
+
+    if (isEdge && !badLine) {
       r.drawCachedElementPortion(context, ele, slbTxrCache, pxRatio, lvl, reason, getSourceLabelRotation, getTextOpacity);
       r.drawCachedElementPortion(context, ele, tlbTxrCache, pxRatio, lvl, reason, getTargetLabelRotation, getTextOpacity);
     }
@@ -28761,12 +28773,14 @@ CRp$4.drawElementText = function (context, ele, shiftToOriginWithBb, force, pref
     context.textAlign = justification;
     context.textBaseline = 'bottom';
   } else {
+    var badLine = ele.element()._private.rscratch.badLine;
+
     var _label = ele.pstyle('label');
 
     var srcLabel = ele.pstyle('source-label');
     var tgtLabel = ele.pstyle('target-label');
 
-    if ((!_label || !_label.value) && (!srcLabel || !srcLabel.value) && (!tgtLabel || !tgtLabel.value)) {
+    if (badLine || (!_label || !_label.value) && (!srcLabel || !srcLabel.value) && (!tgtLabel || !tgtLabel.value)) {
       return;
     }
 
@@ -31177,7 +31191,7 @@ sheetfn.appendToStyle = function (style) {
   return style;
 };
 
-var version = "3.12.0";
+var version = "3.12.1";
 
 var cytoscape = function cytoscape(options) {
   // if no options specified, use default

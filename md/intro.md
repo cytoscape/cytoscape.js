@@ -69,7 +69,8 @@
   * [GCHQ](https://www.gchq.gov.uk/) : [Gaffer](https://gchq.github.io/gaffer-doc/)
   * [GeneMANIA](http://genemania.org)
   * [Graphlytic](http://graphlytic.sk/)
-  * [Harvard](https://www.harvard.edu) : [BioPlex](http://bioplex.hms.harvard.edu/bioplexDisplay)
+  * [Hacker Target](https://hackertarget.com/) : [Domain Profiler](https://hackertarget.com/domain-profiler/)
+  * [Harvard University](https://www.harvard.edu) : [BioPlex](http://bioplex.hms.harvard.edu/bioplexDisplay)
   * [ICSI Haystack Project](https://haystack.mobi/panopticon/)
   * [InfoTrack](http://www.infotrack.com.au/)
   * [Intercax](http://intercax.com/)
@@ -137,8 +138,10 @@ The library was created at the [Donnelly Centre](http://thedonnellycentre.utoron
 ## Releases
 
 - 3.12
+ - [3.12.1](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.12.1+is%3Aclosed)
  - [3.12.0](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.12.0+is%3Aclosed)
 - 3.11
+ - [3.11.1](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.11.1+is%3Aclosed)
  - [3.11.0](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.11.0+is%3Aclosed)
 - 3.10
  - [3.10.2](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.10.2+is%3Aclosed)

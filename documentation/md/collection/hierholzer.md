@@ -20,7 +20,7 @@ Regarding optional options:
 ## Examples
 
 ```js
-var hierholzer = cy.elements().hierholzer({ root: "#j", directed: true });
+var hierholzer = cy.elements().hierholzer({ root: "#k", directed: true });
 
 hierholzer.trail.select();
 ```

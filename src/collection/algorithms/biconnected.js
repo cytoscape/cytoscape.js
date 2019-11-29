@@ -5,19 +5,19 @@ let elesfn = ({
     let nodes = {};
     let id = 0;
     let edgeCount = 0;
-    let cuts = [];
+    let blocks = [];
     let stack = [];
     let visitedEdges = {};
 
-    const buildCut = (x, y) => {
+    const buildBlock = (x, y) => {
       let i = stack.length-1;
-      let cut = [];
+      let block = [];
       while (stack[i].x != x || stack[i].y != y) {
-        cut.push(stack.pop().edgeId);
+        block.push(stack.pop().edge);
         i--;
       }
-      cut.push(stack.pop().edgeId);
-      cuts.push(Array.from(cut));
+      block.push(stack.pop().edge);
+      blocks.push(this.spawn(block));
     };
 
     const biconnectedSearch = (root, currentNode, parent) => {
@@ -41,7 +41,7 @@ let elesfn = ({
             stack.push({
               x : currentNode,
               y : otherNodeId,
-              edgeId : edgeId
+              edge : this.getElementById(edgeId)
             });
           }
 
@@ -50,7 +50,7 @@ let elesfn = ({
             nodes[currentNode].low = Math.min(nodes[currentNode].low, nodes[otherNodeId].low);
             if (nodes[currentNode].id <= nodes[otherNodeId].low) {
               nodes[currentNode].cutVertex = true;
-              buildCut(currentNode, otherNodeId);
+              buildBlock(currentNode, otherNodeId);
             }
           } else {
             nodes[currentNode].low = Math.min(nodes[currentNode].low, nodes[otherNodeId].id);
@@ -73,12 +73,6 @@ let elesfn = ({
     let cutVertices = Object.keys(nodes)
       .filter(id => nodes[id].cutVertex)
       .map(id => this.getElementById(id));
-
-    let blocks = [];
-    cuts.forEach(cut => {
-      cut = cut.map(edge => this.getElementById(edge));
-      blocks.push(this.spawn(cut));
-    });
 
     return {
       cutVertices: this.spawn(cutVertices),

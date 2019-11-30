@@ -107,4 +107,11 @@ describe('Collection iteration', function(){
     expect( cy.nodes().slice(1, -1).same( cy.$('#n2') ) ).to.be.true;
   });
 
+  it('eles [Symbol.iterator]', function() {
+    expect( [ ...cy.collection() ] ).to.deep.equal( [] );
+    expect( [ ...cy.elements() ].map( ele => ele.id() ) ).to.deep.equal( [ "n1", "n2", "n3", "n1n2", "n2n3" ] );
+    expect( [ ...cy.nodes() ].map( ele => ele.id() ) ).to.deep.equal( [ "n1", "n2", "n3" ] );
+    expect( [ ...cy.edges() ].map( ele => ele.id() ) ).to.deep.equal( [ "n1n2", "n2n3" ] );
+  });
+
 });

@@ -105,6 +105,20 @@ let Collection = function( cy, elements, options ){
   if( createdElements ){
     this.restore();
   }
+
+  // define an iterable behaviour, e.g. for...of, spread syntax
+  this[Symbol.iterator] = function() {
+    return {
+      next: function() {
+        this._values = this._valueIterator.next();
+        !this._values.done ? this._values.value = this._values.value.ele : null;
+        return this._values;
+      },
+      _valueIterator: map.values(),
+      _values: undefined
+    };
+  };
+
 };
 
 // Functions

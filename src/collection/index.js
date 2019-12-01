@@ -107,7 +107,7 @@ let Collection = function( cy, elements, options ){
   }
 
   // define an iterable behaviour, e.g. for...of, spread syntax
-  this[Symbol.iterator] = function() {
+  this[Symbol.iterator] = function() { // eslint-disable-line no-undef
     return {
       next: function() {
         this._values = this._valueIterator.next();

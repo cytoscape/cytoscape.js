@@ -146,7 +146,7 @@
     "gh-pages": "^2.1.1",
     "handlebars": "^4.1.2",
     "highlight.js": "^9.15.6",
-    "http-server": "^0.11.1",
+    "http-server": "^0.12.0",
     "jsonlint": "^1.6.2",
     "livereload": "^0.7.0",
     "marked": "^0.7.0",

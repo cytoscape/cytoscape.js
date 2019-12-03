@@ -105,7 +105,7 @@
   * [University of Leipzig, Institute for Medical Informatics, Statistics and Epidemiology (IMISE)](http://www.imise.uni-leipzig.de/en) : [SNIK research project](http://www.snik.eu/)
   * [University of Maryland](https://umd.edu/) : [Center for Bioinformatics and Computational Biology](http://cbcb.umd.edu/) : [MetagenomeScope](https://marbl.github.io/MetagenomeScope/)
   * [University of Southern California, San Diego](http://www.ucsd.edu/) : [Visualization of structurally related compounds in Mass Spectrometry with Molecular Networks at GNPS](http://gnps.ucsd.edu/ProteoSAFe/result.jsp?view=network_displayer&componentindex=67&task=c95481f0c53d42e78a61bf899e9f9adb#%7B%7D)
-  * [Vanderbilt University](https://www.vanderbilt.edu) : [pysbjupyter](https://viz-pysb-widget.readthedocs.io)
+  * [Vanderbilt University](https://www.vanderbilt.edu) : [PyViPR](https://github.com/LoLab-VU/pyvipr)
   * [Virginia Tech](http://www.vt.edu/index.html) [T. M. Murali's Research Group](http://bioinformatics.cs.vt.edu/~murali/) : [GraphSpace](http://graphspace.org)
   * [Visual Interaction GmbH](http://www.mygaze.com/)
   * xD Bio Inc. : [Truwl](https://truwl.com)

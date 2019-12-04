@@ -122,4 +122,29 @@ let elesfn = ({
 
 elesfn.each = elesfn.forEach;
 
+// implement an iterator only for those instances which support Symbol.iterator
+if (typeof Symbol != "undefined" && typeof Symbol.iterator != "undefined") { // eslint-disable-line no-undef
+  elesfn[Symbol.iterator] = function() { // eslint-disable-line no-undef
+    let entry = { value: undefined, done: false };
+    let i = 0;
+    let length = this.length;
+
+    return {
+      next: () => {
+        if ( i < length ) {
+          entry.value = this[i++];
+        } else {
+          entry.value = undefined;
+          entry.done = true;
+        }
+
+        return entry;
+      },
+      [Symbol.iterator]: function() { // eslint-disable-line no-undef
+        return this;
+      }
+    };
+  };
+}
+
 export default elesfn;

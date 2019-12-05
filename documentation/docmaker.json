@@ -3236,9 +3236,10 @@
             },
 
             {
-              "name": "eles.biconnected",
-              "descr": "Finds the [biconnected components](https://en.wikipedia.org/wiki/Biconnected_component) in a graph, as well as their respective cut vertices, using an algorithm due to Hopcroft and Tarjan.",
-              "md": "collection/biconnected"
+              "name": "eles.hopcroftTarjan",
+              "pureAliases": [ "eles.ht" ],
+              "descr": "Finds the [biconnected components](https://en.wikipedia.org/wiki/Biconnected_component) in an undirected graph, as well as their respective cut vertices, using an algorithm due to Hopcroft and Tarjan.",
+              "md": "collection/hopcroftTarjan"
             }
 
           ]

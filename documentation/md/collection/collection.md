@@ -8,4 +8,4 @@ console.log( cy.nodes()[0].data("weight") + ' == ' + weight ); // weight is the 
 
 You can ensure that you're reading from the element you want by using a [selector](#selectors) to narrow down the collection to one element (i.e. `eles.size() === 1`) or the [`eles.eq()`](#collection/iteration/eles.eq) function.
 
-Collections are iterable for modern browsers which support the [iteration protocols](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols). This allows for the use of features such as the spread operator, for-of loops, and destructuring. For more in-depth information about the protocols see [here](https://exploringjs.com/es6/ch_iteration.html).
+Also note that collections are iterable for modern browsers which support the [iteration protocols](https://exploringjs.com/es6/ch_iteration.html). This enables the use of features such as the spread operator, for-of loops, and destructuring.

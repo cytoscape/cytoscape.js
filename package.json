@@ -138,7 +138,7 @@
     "benchmark": "^2.1.4",
     "bluebird": "^3.5.0",
     "chai": "^4.1.2",
-    "cpy-cli": "^2.0.0",
+    "cpy-cli": "^3.0.0",
     "cross-env": "^6.0.0",
     "download-cli": "^1.0.5",
     "eslint": "^6.0.0",

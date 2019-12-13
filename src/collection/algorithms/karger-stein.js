@@ -174,7 +174,7 @@ const elesfn = ({
       });
 
       return component;
-    }
+    };
 
     const components = [
       constructComponent(partition1),

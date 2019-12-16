@@ -3,4 +3,4 @@ node_js:
   - "8"
   - "10"
 sudo: false
-script: npm run ci:build
+script: npm run travis

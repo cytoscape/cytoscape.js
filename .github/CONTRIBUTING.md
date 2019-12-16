@@ -48,6 +48,6 @@ Tests go in the `./test` directory, as Mocha tests usually do.  They are just a 
 
 If your change is visual/rendering-related, then Mocha tests are not pragmatic.  Use the debug page in the `debug` directory to try out visual changes.  That page contains a sidebar with buttons and dropdowns that make visual and interactive testing easy.
 
-Please run `npm test` or `mocha` to make sure all the unit tests are passing before you make your pull request.
+Please run `npm test` to make sure all the unit tests are passing before you make your pull request.
 
 We also have support for running the Mocha tests in IE9+ and other old browsers.  You can run the tests in a [Windows IE VM](https://developer.microsoft.com/en-us/microsoft-edge/tools/vms/) while running `npm run watch:umd`.  Go to `http://youripaddress:8081/test/ie.html` in IE to open the Mocha test page.

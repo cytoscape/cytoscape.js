@@ -107,16 +107,19 @@ Run `npm run <target>` in the console.  The main targets are:
 
 **Testing:**
 
-If the `TRAVIS` or `TEST_BUILD` environment variables are defined, then `mocha` or `npm test` will test `build/cytoscape.umd.js`.  Otherwise, the unbundled, unbabelified, raw source is tested.  This keeps local tests very quick to run on modern versions of node while ensuring we can test old versions of node as well.  The library can be built on `node>=6`, but it can be tested on `node>=0.10`.
+The default test scripts run directly agasinst the source code.  Tests can alternatively be run on a built bundle.  The library can be built on `node>=6`, but the library's bundle can be tested on `node>=0.10`.
 
- * `test` : run the Mocha unit tests
- * `test:build` : run the Mocha unit tests (on a built bundle)
+ * `test` : run all testing & linting
+ * `test:js` : run the mocha tests on the public API of the lib (directly on source files)
+   * `npm run test:js -- -g "my test name"` runs tests on only the matching test cases
+ * `test:build` : run the mocha tests on the public API of the lib (on a built bundle) 
+   * `npm run build` should be run beforehand on a recent version of node
+   * `npm run test:build -- -g "my test name"` runs build tests on only the matching test cases
+ * `test:modules` : run unit tests on private, internal API
+   * `npm run test:modules -- -g "my test name"` runs modules tests on only the matching test cases
  * `lint` : lint the js sources via eslint
- * `ci` : run tests and linting
- * `ci:build` : run tests and linting (on a built bundle)
  * `benchmark` : run all benchmarks
  * `benchmark:single` : run benchmarks only for the suite specified in `benchmark/single`
- * `sniper` : runs a biojs sniper server that hosts demos
 
 
 
@@ -143,4 +146,4 @@ If the `TRAVIS` or `TEST_BUILD` environment variables are defined, then `mocha` 
 
 ## Tests
 
-Mocha tests are found in the [test directory](https://github.com/cytoscape/cytoscape.js/tree/master/test).  The tests can be run in the browser or they can be run via Node.js (`npm test` or `mocha`).
+Mocha tests are found in the [test directory](https://github.com/cytoscape/cytoscape.js/tree/master/test).  The tests can be run in the browser or they can be run via Node.js (`npm run test:js`).

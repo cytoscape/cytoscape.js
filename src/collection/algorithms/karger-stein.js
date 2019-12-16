@@ -182,7 +182,12 @@ const elesfn = ({
 
     let ret = {
       cut,
-      components
+      components,
+
+      // n.b. partitions are included to be compatible with the old api spec
+      // (could be removed in a future major version)
+      partition1,
+      partition2
     };
 
     return ret;

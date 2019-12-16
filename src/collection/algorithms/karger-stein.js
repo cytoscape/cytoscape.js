@@ -157,10 +157,33 @@ const elesfn = ({
       }
     }
 
+    // construct components corresponding to each disjoint subset of nodes
+    const constructComponent = (subset) => {
+      const component = this.spawn();
+
+      subset.forEach(node => {
+        component.merge(node);
+        node.connectedEdges()
+          .difference(cut) // ensure edge is not in cut
+          .forEach(edge => {
+            // ensure edge is within calling collection
+            if (this.contains(edge)) {
+              component.merge(edge);
+            }
+        });
+      });
+
+      return component;
+    };
+
+    const components = [
+      constructComponent(partition1),
+      constructComponent(partition2)
+    ];
+
     let ret = {
       cut,
-      partition1,
-      partition2,
+      components
     };
 
     return ret;

@@ -3233,7 +3233,15 @@
               "name": "eles.kargerStein",
               "descr": "Finds the minimum cut in a graph using the [Karger-Stein](https://en.wikipedia.org/wiki/Karger%27s_algorithm#Karger.E2.80.93Stein_algorithm) algorithm. The optimal result is found with a high probability, but without guarantee.",
               "md": "collection/kargerStein"
+            },
+
+            {
+              "name": "eles.hopcroftTarjan",
+              "pureAliases": [ "eles.ht" ],
+              "descr": "Finds the [biconnected components](https://en.wikipedia.org/wiki/Biconnected_component) in an undirected graph, as well as their respective cut vertices, using an algorithm due to Hopcroft and Tarjan.",
+              "md": "collection/hopcroftTarjan"
             }
+
           ]
         },
 

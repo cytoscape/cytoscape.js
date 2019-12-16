@@ -2,7 +2,7 @@ var expect = require('chai').expect;
 var cytoscape = require('../src/test.js', cytoscape);
 
 describe('Algorithms', function(){
-  describe('eles.hopcroftTarjan()', function(){
+  describe('eles.hopcroftTarjanBiconnected()', function(){
 
     var cy0, cy1;
 
@@ -87,15 +87,15 @@ describe('Algorithms', function(){
       return ele.id();
     }
 
-    it('eles.hopcroftTarjan(): no cut vertices, one biconnected component', function(){
-      var res = cy0.hopcroftTarjan();
+    it('eles.htbc(): no cut vertices, one biconnected component', function(){
+      var res = cy0.htbc();
       expect( res.cut.map( ele2id ) ).to.deep.equal( [] );
       expect( res.components.length ).to.equal( 1 );
       expect( res.components[0].map( ele2id ) ).to.deep.equal( [ "0-9", "0-11", "0-4", "0-3", "0-10", "0-0", "0-8", "0-7", "0-2", "0-6", "0-1", "0-5" ] );
     });
 
-    it('eles.hopcroftTarjan(): multiple biconnected components', function(){
-      var res = cy1.hopcroftTarjan();
+    it('eles.htbc(): multiple biconnected components', function(){
+      var res = cy1.htbc();
       expect( res.cut.map( ele2id ) ).to.deep.equal( [ "1-2", "1-7", "1-8", "1-10" ] );
       expect( res.components.length ).to.equal( 8 );
       expect( res.components[0].map( ele2id ) ).to.deep.equal( [ "1-0" ] );

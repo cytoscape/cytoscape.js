@@ -1,4 +1,4 @@
-let hopcroftTarjan = function() {
+let hopcroftTarjanBiconnected = function() {
 
   let eles = this;
   let nodes = {};
@@ -120,4 +120,9 @@ let hopcroftTarjan = function() {
 
 };
 
-export default { hopcroftTarjan, ht: hopcroftTarjan };
+export default { 
+  hopcroftTarjanBiconnected, 
+  htbc: hopcroftTarjanBiconnected, 
+  htb: hopcroftTarjanBiconnected,
+  hopcroftTarjanBiconnectedComponents: hopcroftTarjanBiconnected
+};

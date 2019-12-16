@@ -157,10 +157,37 @@ const elesfn = ({
       }
     }
 
+    // construct components corresponding to each disjoint subset of nodes
+    const constructComponent = (subset) => {
+      const component = this.spawn();
+
+      subset.forEach(node => {
+        component.merge(node);
+
+        node.connectedEdges().forEach(edge => {
+          // ensure edge is within calling collection and edge is not in cut
+          if (this.contains(edge) && !cut.contains(edge)) {
+            component.merge(edge);
+          }
+        });
+      });
+
+      return component;
+    };
+
+    const components = [
+      constructComponent(partition1),
+      constructComponent(partition2)
+    ];
+
     let ret = {
       cut,
+      components,
+
+      // n.b. partitions are included to be compatible with the old api spec
+      // (could be removed in a future major version)
       partition1,
-      partition2,
+      partition2
     };
 
     return ret;

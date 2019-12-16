@@ -163,13 +163,12 @@ const elesfn = ({
 
       subset.forEach(node => {
         component.merge(node);
-        node.connectedEdges()
-          .difference(cut) // ensure edge is not in cut
-          .forEach(edge => {
-            // ensure edge is within calling collection
-            if (this.contains(edge)) {
-              component.merge(edge);
-            }
+
+        node.connectedEdges().forEach(edge => {
+          // ensure edge is within calling collection and edge is not in cut
+          if (this.contains(edge) && !cut.contains(edge)) {
+            component.merge(edge);
+          }
         });
       });
 

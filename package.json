@@ -142,7 +142,7 @@
     "cross-env": "^6.0.0",
     "download-cli": "^1.0.5",
     "eslint": "^6.0.0",
-    "esm": "^3.0.8",
+    "esm": "^3.2.25",
     "gh-pages": "^2.1.1",
     "handlebars": "^4.5.3",
     "highlight.js": "^9.15.6",

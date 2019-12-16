@@ -77,7 +77,7 @@ describe('Collection iteration', function(){
     eles.forEach(function( ele, i ){
       ele.data( 'foo', vals[i] );
     });
-    
+
     var callback = function( prev, ele, i, eles ){
       expect( index++, 'i' ).to.equal( i );
 
@@ -105,6 +105,18 @@ describe('Collection iteration', function(){
     expect( cy.nodes().slice(1).same( cy.$('#n2, #n3') ) ).to.be.true;
     expect( cy.nodes().slice(1, 2).same( cy.$('#n2') ) ).to.be.true;
     expect( cy.nodes().slice(1, -1).same( cy.$('#n2') ) ).to.be.true;
+  });
+
+  it('eles [Symbol.iterator]', function() {
+    expect( [ ...cy.collection() ] ).to.deep.equal( [] );
+    expect( [ ...cy.elements() ].map( ele => ele.id() ) ).to.deep.equal( [ "n1", "n2", "n3", "n1n2", "n2n3" ] );
+    expect( [ ...cy.nodes() ].map( ele => ele.id() ) ).to.deep.equal( [ "n1", "n2", "n3" ] );
+    expect( [ ...cy.edges() ].map( ele => ele.id() ) ).to.deep.equal( [ "n1n2", "n2n3" ] );
+
+    const it = cy.elements()[Symbol.iterator]();
+    for (let entry of it) if (entry.id() === "n3") break;
+    expect( [ ...it ].map( ele => ele.id() ) ).to.deep.equal( [ "n1n2", "n2n3" ] );
+    expect( [ ...it ] ).to.deep.equal( [] );
   });
 
 });

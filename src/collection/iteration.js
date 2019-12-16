@@ -122,4 +122,34 @@ let elesfn = ({
 
 elesfn.each = elesfn.forEach;
 
+const defineSymbolIterator = () => {
+  const typeofUndef = typeof undefined;
+  const isIteratorSupported = typeof Symbol != typeofUndef && typeof Symbol.iterator != typeofUndef; // eslint-disable-line no-undef
+
+  if (isIteratorSupported) {
+    elesfn[Symbol.iterator] = function() { // eslint-disable-line no-undef
+      let entry = { value: undefined, done: false };
+      let i = 0;
+      let length = this.length;
+
+      return {
+        next: () => {
+          if ( i < length ) {
+            entry.value = this[i++];
+          } else {
+            entry.value = undefined;
+            entry.done = true;
+          }
+
+          return entry;
+        },
+        [Symbol.iterator]: function() { // eslint-disable-line no-undef
+          return this;
+        }
+      };
+    };
+  }
+};
+defineSymbolIterator();
+
 export default elesfn;

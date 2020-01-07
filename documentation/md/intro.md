@@ -65,6 +65,7 @@
   * [Facebook](https://www.facebook.com) : [Metro](https://facebook.github.io/metro/) visualiser
   * [Fediverse](https://www.fediverse.space/)
   * [Ganister](http://www.ganister.eu/)
+  * [GLB301 Simulation](https://cytoscape-demo.netlify.com/)
   * [Google](https://google.com) : [TensorFlow](https://www.tensorflow.org) : SyntaxNet : DRAGNN visualiser
   * [GCHQ](https://www.gchq.gov.uk/) : [Gaffer](https://gchq.github.io/gaffer-doc/)
   * [GeneMANIA](http://genemania.org)
@@ -88,6 +89,7 @@
   * [Pathway Commons](http://www.pathwaycommons.org)
   * [py2cytoscape](https://github.com/idekerlab/py2cytoscape)
   * [Rezza](http://rezza.io)
+  * [Research Institute for Fragrance Materials](https://www.rifm.org) : [RIFM Database](https://rifmdatabase.rifm.org/rifmweb/)
   * [Sainsbury Laboratory](http://www.tsl.ac.uk/) : [PINet](http://pinet.tsl.ac.uk/)
   * Southwest Harbor Public Library, Maine : [Digital Archive](http://swhplibrary.net/archive/) : [AvantRelationships](https://github.com/gsoules/AvantRelationships)
   * [Sotera Defense Solutions, Inc.](http://www.soteradefense.com/) : [Graphene](http://sotera.github.io/graphene/)

@@ -706,6 +706,10 @@ ul {
 	list-style-type: disc;
 }
 
+ul p {
+	margin: 0;
+}
+
 code,
 pre {
 	font-family: Consolas, "Liberation Mono", Courier, monospace;

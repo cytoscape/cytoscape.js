@@ -50,19 +50,20 @@ The extensions below are a curated list.  To add your extension, [please submit 
 
 ## Layout extensions
 
- * <i class="fa fa-fw fa-user"></i> [`cola`](https://github.com/cytoscape/cytoscape.js-cola) : The Cola.js physics simulation layout.  Cola makes beautiful layout results, it animates very smoothly, and it has great options for controlling the layout.
+ * <i class="fa fa-fw fa-user"></i> [`cola`](https://github.com/cytoscape/cytoscape.js-cola) : The Cola.js physics simulation (force-directed) layout.  Cola makes beautiful layout results, it animates very smoothly, and it has great options for controlling the layout.  It is focussed on giving aesthetically pleasing results for relatively small graphs.
  * <i class="fa fa-fw fa-user"></i> [`avsdf`](https://github.com/iVis-at-Bilkent/cytoscape.js-avsdf) : The AVSDF layout.  It organises nodes in a circle and tries to minimise edge crossings as much as possible.
- * <i class="fa fa-fw fa-user"></i> [`cise`](https://github.com/iVis-at-Bilkent/cytoscape.js-cise) : The CiSE layout creates circular clusters and uses a physics simulation to create distance between the clusters.
- * <i class="fa fa-fw fa-user"></i> [`cose-bilkent`](https://github.com/cytoscape/cytoscape.js-cose-bilkent) : The CoSE layout by Bilkent with enhanced compound node placement.  CoSE Bilkent gives near-perfect end results.  However, it's more expensive than both `cose` and `fcose`.
- * <i class="fa fa-fw fa-user"></i> [`dagre`](https://github.com/cytoscape/cytoscape.js-dagre) : The Dagre layout for DAGs and trees.
- * <i class="fa fa-fw fa-users"></i> [`elk`](https://github.com/jfstephe/cytoscape.js-elk) : [ELK](https://github.com/OpenKieler/elkjs) layout algorithm adapter for Cytoscape.js.
- * <i class="fa fa-fw fa-user"></i> [`euler`](https://github.com/cytoscape/cytoscape.js-euler) : Euler is a fast, small file-size, high-quality force-directed (physics simulation) layout.  It is excellent for non-compound graphs, and it has basic support for compound graphs.
- * <i class="fa fa-fw fa-user"></i> [`fcose`](https://github.com/iVis-at-Bilkent/cytoscape.js-fcose) : The fCoSE layout is a faster version of the CoSE-Bilkent layout.  It supports compound and non-compound graphs, giving top-tier end results and high performance for a force-directed layout.
+ * <i class="fa fa-fw fa-user"></i> [`cise`](https://github.com/iVis-at-Bilkent/cytoscape.js-cise) : The CiSE layout creates circular clusters and uses a physics simulation (force-directed algorithm) to create distance between the clusters.
+ * <i class="fa fa-fw fa-user"></i> [`cose-bilkent`](https://github.com/cytoscape/cytoscape.js-cose-bilkent) : The CoSE layout by Bilkent with enhanced compound node placement.  CoSE Bilkent is a physics simulation (force-directed) layout that gives near-perfect end results.  However, it's more expensive than both `cose` and `fcose`.
+ * <i class="fa fa-fw fa-users"></i> [`d3-force`](https://github.com/shichuanpo/cytoscape.js-d3-force) : The D3 force layout.  It uses a basic physics simulation (force-directed) algorithm that generates good results for small, simple graphs.
+ * <i class="fa fa-fw fa-user"></i> [`dagre`](https://github.com/cytoscape/cytoscape.js-dagre) : The Dagre layout for DAGs and trees.  It organises the graph in a hierarchy.
+ * <i class="fa fa-fw fa-user"></i> [`elk`](https://github.com/cytoscape/cytoscape.js-elk) : [ELK](https://github.com/OpenKieler/elkjs) layout algorithm adapter for Cytoscape.js.  It contains several layout algorithms.
+ * <i class="fa fa-fw fa-user"></i> [`euler`](https://github.com/cytoscape/cytoscape.js-euler) : Euler is a fast, small file-size, high-quality force-directed (physics simulation) layout.  It is good for non-compound graphs, and it has basic support for compound graphs.
+ * <i class="fa fa-fw fa-user"></i> [`fcose`](https://github.com/iVis-at-Bilkent/cytoscape.js-fcose) : The fCoSE layout is a faster version of the CoSE-Bilkent layout.  It supports compound and non-compound graphs, giving top-tier end results and high performance for a force-directed layout.  If you want to use a force-directed layout, fCoSE should be the first layout you try.
  * <i class="fa fa-fw fa-user"></i> [`klay`](https://github.com/cytoscape/cytoscape.js-klay) : Klay is a layout that works well for most types of graphs.  It gives good results for ordinary graphs, and it handles DAGs and compound graphs very nicely.
  * <i class="fa fa-fw fa-users"></i> [`ngraph.forcelayout`](https://github.com/Nickolasmv/cytoscape-ngraph.forcelayout) : A physics simulation layout that works particularly well on planar graphs.  It is relatively fast.
  * <i class="fa fa-fw fa-users"></i> [`polywas`](https://github.com/monprin/polywas) : A layout for GWAS (genome-wide association study) data illustrating inter-locus relationships.
- * <i class="fa fa-fw fa-user"></i> [`spread`](https://github.com/cytoscape/cytoscape.js-spread) : The speedy Spread physics simulation layout.  It tries to use all the viewport space, but it can be configured to produce a tighter result.  It uses Fruchterman-Reingold initially, and it uses Gansner and North for the spread phase.
- * <i class="fa fa-fw fa-user"></i> [`springy`](https://github.com/cytoscape/cytoscape.js-springy) : The Springy physics simulation layout.  It's a basic physics layout.
+ * <i class="fa fa-fw fa-user"></i> [`spread`](https://github.com/cytoscape/cytoscape.js-spread) : The Spread physics simulation (force-directed) layout tries to use all the viewport space, but it can be configured to produce a tighter result.  It uses the CoSE algorithm initially, and it uses Gansner and North for the spread phase.
+ * <i class="fa fa-fw fa-user"></i> [`springy`](https://github.com/cytoscape/cytoscape.js-springy) : The Springy physics simulation layout.  It's a basic physics (force-directed) layout.
 
 
 ## API extensions

@@ -258,8 +258,6 @@ A background image may be applied to a node's body.  The following properties su
     * When specifying properties for multiple images, if the property for a given image is not provided, then the default value is used as fallback.
   * To put an image outside of the bounds of a node's body, it is necessary to specify `background-clip: none` and `bounds-expansion: n` for images that go `n` pixels beyond the bounding box of the node.  Note that values of `n` should be relatively small for performance.
   * SVG image considerations:
-    * Using the `viewbox` attribute in SVG images may cause render problems in Firefox.
-    * SVG images do not work consistently in Internet Explorer.
     * Always include this XML header in each SVG image:
     ```
     <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE svg>
@@ -294,6 +292,9 @@ A background image may be applied to a node's body.  The following properties su
         ]
     };
     ```
+    * Using the `viewbox` attribute in SVG images may cause rendering problems in Firefox.
+    * SVG images may not work consistently in Internet Explorer.
+    * The [`cytoscape-sbgn-stylesheet`](https://github.com/PathwayCommons/cytoscape-sbgn-stylesheet) package serves as a good example for the use of SVG images in a stylesheet.  That stylesheet [creates decorations](https://pathwaycommons.github.io/cytoscape-sbgn-stylesheet/) on nodes in line with the [SBGN standard](https://sbgn.github.io).
 * **`background-image-crossorigin`**: All images are loaded with a [`crossorigin`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/img#attr-crossorigin) attribute which may be `anonymous` or `use-credentials`. The default is set to `anonymous`.
 * **`background-image-opacity`** : The opacity of the background image.
 * **`background-width`** : Specifies the width of the image.  A percent value (e.g. `50%`) may be used to set the image width relative to the node width.  If used in combination with `background-fit`, then this value overrides the width of the image in calculating the fitting --- thereby overriding the aspect ratio.  The `auto` value is used by default, which uses the width of the image.

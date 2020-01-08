@@ -134,37 +134,48 @@ BRp.findEndpoints = function( edge ){
       let lh = trs.labelHeight;
       let lx = trs.labelX;
       let ly = trs.labelY;
+      let lw2 = lw/2;
+      let lh2 = lh/2;
 
       let va = target.pstyle('text-valign').value;
       if( va === 'top' ){
-        ly -= lh/2;
+        ly -= lh2;
       } else if( va === 'bottom' ){
-        ly += lh/2;
+        ly += lh2;
       }
 
       let ha = target.pstyle('text-halign').value;
       if( ha === 'left' ){
-        lx -= lw/2;
+        lx -= lw2;
       } else if( ha === 'right' ){
-        lx += lw/2;
+        lx += lw2;
       }
 
-      let labelIntersect = r.nodeShapes['rectangle'].intersectLine(
-        lx,
-        ly,
-        lw,
-        lh,
-        p1_i[0],
-        p1_i[1],
-        0
-      );
+      let labelIntersect = math.polygonIntersectLine(p1_i[0], p1_i[1], [
+        lx - lw2, ly - lh2,
+        lx + lw2, ly - lh2,
+        lx + lw2, ly + lh2,
+        lx - lw2, ly + lh2
+      ], tgtPos.x, tgtPos.y);
 
-      let refPt = srcPos;
-      let intSqdist = math.sqdist( refPt, math.array2point(intersect) );
-      let labIntSqdist = math.sqdist( refPt, math.array2point(labelIntersect) );
+      if( labelIntersect.length > 0 ){
+        let refPt = srcPos;
+        let intSqdist = math.sqdist( refPt, math.array2point(intersect) );
+        let labIntSqdist = math.sqdist( refPt, math.array2point(labelIntersect) );
+        let minSqDist = intSqdist;
 
-      if( labIntSqdist < intSqdist ){
-        intersect = labelIntersect;
+        if( labIntSqdist < intSqdist ){
+          intersect = labelIntersect;
+          minSqDist = labIntSqdist;
+        }
+
+        if( labelIntersect.length > 2 ){
+          let labInt2SqDist = math.sqdist( refPt, { x: labelIntersect[2], y: labelIntersect[3] } );
+
+          if( labInt2SqDist < minSqDist ){
+            intersect = [ labelIntersect[2], labelIntersect[3] ];
+          }
+        }
       }
     }
   }
@@ -215,37 +226,48 @@ BRp.findEndpoints = function( edge ){
       let lh = srs.labelHeight;
       let lx = srs.labelX;
       let ly = srs.labelY;
+      let lw2 = lw/2;
+      let lh2 = lh/2;
 
       let va = source.pstyle('text-valign').value;
       if( va === 'top' ){
-        ly -= lh/2;
+        ly -= lh2;
       } else if( va === 'bottom' ){
-        ly += lh/2;
+        ly += lh2;
       }
 
       let ha = source.pstyle('text-halign').value;
       if( ha === 'left' ){
-        lx -= lw/2;
+        lx -= lw2;
       } else if( ha === 'right' ){
-        lx += lw/2;
+        lx += lw2;
       }
 
-      let labelIntersect = r.nodeShapes['rectangle'].intersectLine(
-        lx,
-        ly,
-        lw,
-        lh,
-        p2_i[0],
-        p2_i[1],
-        0
-      );
+      let labelIntersect = math.polygonIntersectLine(p2_i[0], p2_i[1], [
+        lx - lw2, ly - lh2,
+        lx + lw2, ly - lh2,
+        lx + lw2, ly + lh2,
+        lx - lw2, ly + lh2
+      ], srcPos.x, srcPos.y);
 
-      let refPt = tgtPos;
-      let intSqdist = math.sqdist( refPt, math.array2point(intersect) );
-      let labIntSqdist = math.sqdist( refPt, math.array2point(labelIntersect) );
+      if( labelIntersect.length > 0 ){
+        let refPt = tgtPos;
+        let intSqdist = math.sqdist( refPt, math.array2point(intersect) );
+        let labIntSqdist = math.sqdist( refPt, math.array2point(labelIntersect) );
+        let minSqDist = intSqdist;
 
-      if( labIntSqdist < intSqdist ){
-        intersect = labelIntersect;
+        if( labIntSqdist < intSqdist ){
+          intersect = [ labelIntersect[0], labelIntersect[1] ];
+          minSqDist = labIntSqdist;
+        }
+
+        if( labelIntersect.length > 2 ){
+          let labInt2SqDist = math.sqdist( refPt, { x: labelIntersect[2], y: labelIntersect[3] } );
+
+          if( labInt2SqDist < minSqDist ){
+            intersect = [ labelIntersect[2], labelIntersect[3] ];
+          }
+        }
       }
     }
   }

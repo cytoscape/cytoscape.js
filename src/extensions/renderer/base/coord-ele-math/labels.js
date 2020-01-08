@@ -499,11 +499,9 @@ BRp.calculateLabelDimensions = function( ele, text ){
   ds.padding = '0';
   ds.lineHeight = '1';
 
-  if( ele.pstyle( 'text-wrap' ).value === 'wrap' ){
-    ds.whiteSpace = 'pre'; // so newlines are taken into account
-  } else {
-    ds.whiteSpace = 'normal';
-  }
+  // - newlines must be taken into account for text-wrap:wrap
+  // - since spaces are not collapsed, each space must be taken into account
+  ds.whiteSpace = 'pre';
 
   // put label content in div
   div.textContent = text;

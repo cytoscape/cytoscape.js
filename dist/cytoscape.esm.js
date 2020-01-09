@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2016-2019, The Cytoscape Consortium.
+ * Copyright (c) 2016-2020, The Cytoscape Consortium.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the “Software”), to deal in
@@ -17667,9 +17667,6 @@ var corefn$8 = {
 
         this.emit('pan viewport');
         break;
-
-      default:
-        break;
       // invalid
     }
 
@@ -17716,9 +17713,6 @@ var corefn$8 = {
         }
 
         this.emit('pan viewport');
-        break;
-
-      default:
         break;
       // invalid
     }
@@ -22682,29 +22676,47 @@ BRp$4.findEndpoints = function (edge) {
       var lh = trs.labelHeight;
       var lx = trs.labelX;
       var ly = trs.labelY;
+      var lw2 = lw / 2;
+      var lh2 = lh / 2;
       var va = target.pstyle('text-valign').value;
 
       if (va === 'top') {
-        ly -= lh / 2;
+        ly -= lh2;
       } else if (va === 'bottom') {
-        ly += lh / 2;
+        ly += lh2;
       }
 
       var ha = target.pstyle('text-halign').value;
 
       if (ha === 'left') {
-        lx -= lw / 2;
+        lx -= lw2;
       } else if (ha === 'right') {
-        lx += lw / 2;
+        lx += lw2;
       }
 
-      var labelIntersect = r.nodeShapes['rectangle'].intersectLine(lx, ly, lw, lh, p1_i[0], p1_i[1], 0);
-      var refPt = srcPos;
-      var intSqdist = sqdist(refPt, array2point(intersect));
-      var labIntSqdist = sqdist(refPt, array2point(labelIntersect));
+      var labelIntersect = polygonIntersectLine(p1_i[0], p1_i[1], [lx - lw2, ly - lh2, lx + lw2, ly - lh2, lx + lw2, ly + lh2, lx - lw2, ly + lh2], tgtPos.x, tgtPos.y);
 
-      if (labIntSqdist < intSqdist) {
-        intersect = labelIntersect;
+      if (labelIntersect.length > 0) {
+        var refPt = srcPos;
+        var intSqdist = sqdist(refPt, array2point(intersect));
+        var labIntSqdist = sqdist(refPt, array2point(labelIntersect));
+        var minSqDist = intSqdist;
+
+        if (labIntSqdist < intSqdist) {
+          intersect = labelIntersect;
+          minSqDist = labIntSqdist;
+        }
+
+        if (labelIntersect.length > 2) {
+          var labInt2SqDist = sqdist(refPt, {
+            x: labelIntersect[2],
+            y: labelIntersect[3]
+          });
+
+          if (labInt2SqDist < minSqDist) {
+            intersect = [labelIntersect[2], labelIntersect[3]];
+          }
+        }
       }
     }
   }
@@ -22737,32 +22749,53 @@ BRp$4.findEndpoints = function (edge) {
       var _lh = srs.labelHeight;
       var _lx = srs.labelX;
       var _ly = srs.labelY;
+
+      var _lw2 = _lw / 2;
+
+      var _lh2 = _lh / 2;
+
       var _va = source.pstyle('text-valign').value;
 
       if (_va === 'top') {
-        _ly -= _lh / 2;
+        _ly -= _lh2;
       } else if (_va === 'bottom') {
-        _ly += _lh / 2;
+        _ly += _lh2;
       }
 
       var _ha = source.pstyle('text-halign').value;
 
       if (_ha === 'left') {
-        _lx -= _lw / 2;
+        _lx -= _lw2;
       } else if (_ha === 'right') {
-        _lx += _lw / 2;
+        _lx += _lw2;
       }
 
-      var _labelIntersect = r.nodeShapes['rectangle'].intersectLine(_lx, _ly, _lw, _lh, p2_i[0], p2_i[1], 0);
+      var _labelIntersect = polygonIntersectLine(p2_i[0], p2_i[1], [_lx - _lw2, _ly - _lh2, _lx + _lw2, _ly - _lh2, _lx + _lw2, _ly + _lh2, _lx - _lw2, _ly + _lh2], srcPos.x, srcPos.y);
 
-      var _refPt = tgtPos;
+      if (_labelIntersect.length > 0) {
+        var _refPt = tgtPos;
 
-      var _intSqdist = sqdist(_refPt, array2point(intersect));
+        var _intSqdist = sqdist(_refPt, array2point(intersect));
 
-      var _labIntSqdist = sqdist(_refPt, array2point(_labelIntersect));
+        var _labIntSqdist = sqdist(_refPt, array2point(_labelIntersect));
 
-      if (_labIntSqdist < _intSqdist) {
-        intersect = _labelIntersect;
+        var _minSqDist = _intSqdist;
+
+        if (_labIntSqdist < _intSqdist) {
+          intersect = [_labelIntersect[0], _labelIntersect[1]];
+          _minSqDist = _labIntSqdist;
+        }
+
+        if (_labelIntersect.length > 2) {
+          var _labInt2SqDist = sqdist(_refPt, {
+            x: _labelIntersect[2],
+            y: _labelIntersect[3]
+          });
+
+          if (_labInt2SqDist < _minSqDist) {
+            intersect = [_labelIntersect[2], _labelIntersect[3]];
+          }
+        }
       }
     }
   }
@@ -23393,14 +23426,10 @@ BRp$6.calculateLabelDimensions = function (ele, text) {
   ds.visibility = 'hidden';
   ds.pointerEvents = 'none';
   ds.padding = '0';
-  ds.lineHeight = '1';
+  ds.lineHeight = '1'; // - newlines must be taken into account for text-wrap:wrap
+  // - since spaces are not collapsed, each space must be taken into account
 
-  if (ele.pstyle('text-wrap').value === 'wrap') {
-    ds.whiteSpace = 'pre'; // so newlines are taken into account
-  } else {
-    ds.whiteSpace = 'normal';
-  } // put label content in div
-
+  ds.whiteSpace = 'pre'; // put label content in div
 
   div.textContent = text;
   return cache[cacheKey] = {
@@ -28973,9 +29002,6 @@ CRp$4.drawText = function (context, ele, prefix) {
         case 'center':
           bgX -= textW / 2;
           break;
-
-        case 'right':
-          break;
       }
 
       var bgY = textY - textH - backgroundPadding;
@@ -31191,7 +31217,7 @@ sheetfn.appendToStyle = function (style) {
   return style;
 };
 
-var version = "3.12.1";
+var version = "3.12.2";
 
 var cytoscape = function cytoscape(options) {
   // if no options specified, use default

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2016-2019, The Cytoscape Consortium.
+ * Copyright (c) 2016-2020, The Cytoscape Consortium.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the “Software”), to deal in
@@ -24,7 +24,7 @@
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
   (global = global || self, global.cytoscape = factory());
-}(this, function () { 'use strict';
+}(this, (function () { 'use strict';
 
   function _typeof(obj) {
     if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") {
@@ -2884,6 +2884,8 @@
     // Computes the minimum cut of an undirected graph
     // Returns the correct answer with high probability
     kargerStein: function kargerStein() {
+      var _this = this;
+
       var _this$byGroup = this.byGroup(),
           nodes = _this$byGroup.nodes,
           edges = _this$byGroup.edges;
@@ -2971,10 +2973,30 @@
         } else {
           partition2.merge(node);
         }
-      }
+      } // construct components corresponding to each disjoint subset of nodes
 
+
+      var constructComponent = function constructComponent(subset) {
+        var component = _this.spawn();
+
+        subset.forEach(function (node) {
+          component.merge(node);
+          node.connectedEdges().forEach(function (edge) {
+            // ensure edge is within calling collection and edge is not in cut
+            if (_this.contains(edge) && !cut.contains(edge)) {
+              component.merge(edge);
+            }
+          });
+        });
+        return component;
+      };
+
+      var components = [constructComponent(partition1), constructComponent(partition2)];
       var ret = {
         cut: cut,
+        components: components,
+        // n.b. partitions are included to be compatible with the old api spec
+        // (could be removed in a future major version)
         partition1: partition1,
         partition2: partition2
       };
@@ -6307,8 +6329,134 @@
     }
   };
 
+  var hopcroftTarjanBiconnected = function hopcroftTarjanBiconnected() {
+    var eles = this;
+    var nodes = {};
+    var id = 0;
+    var edgeCount = 0;
+    var components = [];
+    var stack = [];
+    var visitedEdges = {};
+    var loops = {};
+
+    var buildComponent = function buildComponent(x, y) {
+      var i = stack.length - 1;
+      var cutset = [];
+      var visitedNodes = {};
+      var component = [];
+
+      while (stack[i].x != x || stack[i].y != y) {
+        cutset.push(stack.pop().edge);
+        i--;
+      }
+
+      cutset.push(stack.pop().edge);
+      cutset.forEach(function (edge) {
+        component.push(edge);
+        var connectedNodes = edge.connectedNodes().intersection(eles);
+        connectedNodes.forEach(function (node) {
+          var nodeId = node.id();
+
+          if (!(nodeId in visitedNodes)) {
+            visitedNodes[nodeId] = true;
+
+            if (nodeId in loops) {
+              loops[nodeId].forEach(function (loop) {
+                return component.push(loop);
+              });
+            }
+
+            component.push(node);
+          }
+        });
+      });
+      components.push(eles.spawn(component));
+    };
+
+    var biconnectedSearch = function biconnectedSearch(root, currentNode, parent) {
+      if (root == parent) edgeCount += 1;
+      nodes[currentNode] = {
+        id: id,
+        low: id++,
+        cutVertex: false
+      };
+      var edges = eles.getElementById(currentNode).connectedEdges().intersection(eles);
+
+      if (edges.size() === 0) {
+        components.push(eles.spawn(eles.getElementById(currentNode)));
+      } else {
+        var sourceId, targetId, otherNodeId, edgeId, isEdgeLoop;
+        edges.forEach(function (edge) {
+          sourceId = edge.source().id();
+          targetId = edge.target().id();
+          otherNodeId = sourceId == currentNode ? targetId : sourceId;
+          isEdgeLoop = edge.isLoop();
+
+          if (isEdgeLoop) {
+            if (sourceId in loops) {
+              loops.push(edge);
+            } else {
+              loops[sourceId] = [edge];
+            }
+          } else if (otherNodeId != parent) {
+            edgeId = edge.id();
+
+            if (!visitedEdges[edgeId]) {
+              visitedEdges[edgeId] = true;
+              stack.push({
+                x: currentNode,
+                y: otherNodeId,
+                edge: eles.getElementById(edgeId)
+              });
+            }
+
+            if (!(otherNodeId in nodes)) {
+              biconnectedSearch(root, otherNodeId, currentNode);
+              nodes[currentNode].low = Math.min(nodes[currentNode].low, nodes[otherNodeId].low);
+
+              if (nodes[currentNode].id <= nodes[otherNodeId].low) {
+                nodes[currentNode].cutVertex = true;
+                buildComponent(currentNode, otherNodeId);
+              }
+            } else {
+              nodes[currentNode].low = Math.min(nodes[currentNode].low, nodes[otherNodeId].id);
+            }
+          }
+        });
+      }
+    };
+
+    eles.forEach(function (ele) {
+      if (ele.isNode()) {
+        var nodeId = ele.id();
+
+        if (!(nodeId in nodes)) {
+          edgeCount = 0;
+          biconnectedSearch(nodeId, nodeId, "");
+          nodes[nodeId].cutVertex = edgeCount > 1;
+        }
+      }
+    });
+    var cutVertices = Object.keys(nodes).filter(function (id) {
+      return nodes[id].cutVertex;
+    }).map(function (id) {
+      return eles.getElementById(id);
+    });
+    return {
+      cut: eles.spawn(cutVertices),
+      components: components
+    };
+  };
+
+  var hopcroftTarjanBiconnected$1 = {
+    hopcroftTarjanBiconnected: hopcroftTarjanBiconnected,
+    htbc: hopcroftTarjanBiconnected,
+    htb: hopcroftTarjanBiconnected,
+    hopcroftTarjanBiconnectedComponents: hopcroftTarjanBiconnected
+  };
+
   var elesfn$c = {};
-  [elesfn, elesfn$1, elesfn$2, elesfn$3, elesfn$4, elesfn$5, elesfn$6, elesfn$7, elesfn$8, elesfn$9, elesfn$a, markovClustering$1, kClustering, hierarchicalClustering$1, affinityPropagation$1, elesfn$b].forEach(function (props) {
+  [elesfn, elesfn$1, elesfn$2, elesfn$3, elesfn$4, elesfn$5, elesfn$6, elesfn$7, elesfn$8, elesfn$9, elesfn$a, markovClustering$1, kClustering, hierarchicalClustering$1, affinityPropagation$1, elesfn$b, hopcroftTarjanBiconnected$1].forEach(function (props) {
     extend(elesfn$c, props);
   });
 
@@ -10293,7 +10441,12 @@
     var currPosKey = getBoundingBoxPosKey(ele);
     var isPosKeySame = _p.bbCachePosKey === currPosKey;
     var useCache = opts.useCache && isPosKeySame;
-    var needRecalc = !useCache || _p.bbCache == null;
+
+    var isDirty = function isDirty(ele) {
+      return ele._private.bbCache == null;
+    };
+
+    var needRecalc = !useCache || isDirty(ele) || isEdge && isDirty(ele.source()) || isDirty(ele.target());
 
     if (needRecalc) {
       if (!isPosKeySame) {
@@ -11822,6 +11975,42 @@
     }
   };
   elesfn$p.each = elesfn$p.forEach;
+
+  var defineSymbolIterator = function defineSymbolIterator() {
+    var typeofUndef =  "undefined" ;
+    var isIteratorSupported = (typeof Symbol === "undefined" ? "undefined" : _typeof(Symbol)) != typeofUndef && _typeof(Symbol.iterator) != typeofUndef; // eslint-disable-line no-undef
+
+    if (isIteratorSupported) {
+      elesfn$p[Symbol.iterator] = function () {
+        var _this = this;
+
+        // eslint-disable-line no-undef
+        var entry = {
+          value: undefined,
+          done: false
+        };
+        var i = 0;
+        var length = this.length;
+        return _defineProperty({
+          next: function next() {
+            if (i < length) {
+              entry.value = _this[i++];
+            } else {
+              entry.value = undefined;
+              entry.done = true;
+            }
+
+            return entry;
+          }
+        }, Symbol.iterator, function () {
+          // eslint-disable-line no-undef
+          return this;
+        });
+      };
+    }
+  };
+
+  defineSymbolIterator();
 
   var getLayoutDimensionOptions = defaults({
     nodeDimensionsIncludeLabels: false
@@ -18425,9 +18614,6 @@
 
           this.emit('pan viewport');
           break;
-
-        default:
-          break;
         // invalid
       }
 
@@ -18474,9 +18660,6 @@
           }
 
           this.emit('pan viewport');
-          break;
-
-        default:
           break;
         // invalid
       }
@@ -23440,29 +23623,47 @@
         var lh = trs.labelHeight;
         var lx = trs.labelX;
         var ly = trs.labelY;
+        var lw2 = lw / 2;
+        var lh2 = lh / 2;
         var va = target.pstyle('text-valign').value;
 
         if (va === 'top') {
-          ly -= lh / 2;
+          ly -= lh2;
         } else if (va === 'bottom') {
-          ly += lh / 2;
+          ly += lh2;
         }
 
         var ha = target.pstyle('text-halign').value;
 
         if (ha === 'left') {
-          lx -= lw / 2;
+          lx -= lw2;
         } else if (ha === 'right') {
-          lx += lw / 2;
+          lx += lw2;
         }
 
-        var labelIntersect = r.nodeShapes['rectangle'].intersectLine(lx, ly, lw, lh, p1_i[0], p1_i[1], 0);
-        var refPt = srcPos;
-        var intSqdist = sqdist(refPt, array2point(intersect));
-        var labIntSqdist = sqdist(refPt, array2point(labelIntersect));
+        var labelIntersect = polygonIntersectLine(p1_i[0], p1_i[1], [lx - lw2, ly - lh2, lx + lw2, ly - lh2, lx + lw2, ly + lh2, lx - lw2, ly + lh2], tgtPos.x, tgtPos.y);
 
-        if (labIntSqdist < intSqdist) {
-          intersect = labelIntersect;
+        if (labelIntersect.length > 0) {
+          var refPt = srcPos;
+          var intSqdist = sqdist(refPt, array2point(intersect));
+          var labIntSqdist = sqdist(refPt, array2point(labelIntersect));
+          var minSqDist = intSqdist;
+
+          if (labIntSqdist < intSqdist) {
+            intersect = labelIntersect;
+            minSqDist = labIntSqdist;
+          }
+
+          if (labelIntersect.length > 2) {
+            var labInt2SqDist = sqdist(refPt, {
+              x: labelIntersect[2],
+              y: labelIntersect[3]
+            });
+
+            if (labInt2SqDist < minSqDist) {
+              intersect = [labelIntersect[2], labelIntersect[3]];
+            }
+          }
         }
       }
     }
@@ -23495,32 +23696,53 @@
         var _lh = srs.labelHeight;
         var _lx = srs.labelX;
         var _ly = srs.labelY;
+
+        var _lw2 = _lw / 2;
+
+        var _lh2 = _lh / 2;
+
         var _va = source.pstyle('text-valign').value;
 
         if (_va === 'top') {
-          _ly -= _lh / 2;
+          _ly -= _lh2;
         } else if (_va === 'bottom') {
-          _ly += _lh / 2;
+          _ly += _lh2;
         }
 
         var _ha = source.pstyle('text-halign').value;
 
         if (_ha === 'left') {
-          _lx -= _lw / 2;
+          _lx -= _lw2;
         } else if (_ha === 'right') {
-          _lx += _lw / 2;
+          _lx += _lw2;
         }
 
-        var _labelIntersect = r.nodeShapes['rectangle'].intersectLine(_lx, _ly, _lw, _lh, p2_i[0], p2_i[1], 0);
+        var _labelIntersect = polygonIntersectLine(p2_i[0], p2_i[1], [_lx - _lw2, _ly - _lh2, _lx + _lw2, _ly - _lh2, _lx + _lw2, _ly + _lh2, _lx - _lw2, _ly + _lh2], srcPos.x, srcPos.y);
 
-        var _refPt = tgtPos;
+        if (_labelIntersect.length > 0) {
+          var _refPt = tgtPos;
 
-        var _intSqdist = sqdist(_refPt, array2point(intersect));
+          var _intSqdist = sqdist(_refPt, array2point(intersect));
 
-        var _labIntSqdist = sqdist(_refPt, array2point(_labelIntersect));
+          var _labIntSqdist = sqdist(_refPt, array2point(_labelIntersect));
 
-        if (_labIntSqdist < _intSqdist) {
-          intersect = _labelIntersect;
+          var _minSqDist = _intSqdist;
+
+          if (_labIntSqdist < _intSqdist) {
+            intersect = [_labelIntersect[0], _labelIntersect[1]];
+            _minSqDist = _labIntSqdist;
+          }
+
+          if (_labelIntersect.length > 2) {
+            var _labInt2SqDist = sqdist(_refPt, {
+              x: _labelIntersect[2],
+              y: _labelIntersect[3]
+            });
+
+            if (_labInt2SqDist < _minSqDist) {
+              intersect = [_labelIntersect[2], _labelIntersect[3]];
+            }
+          }
         }
       }
     }
@@ -24151,14 +24373,10 @@
     ds.visibility = 'hidden';
     ds.pointerEvents = 'none';
     ds.padding = '0';
-    ds.lineHeight = '1';
+    ds.lineHeight = '1'; // - newlines must be taken into account for text-wrap:wrap
+    // - since spaces are not collapsed, each space must be taken into account
 
-    if (ele.pstyle('text-wrap').value === 'wrap') {
-      ds.whiteSpace = 'pre'; // so newlines are taken into account
-    } else {
-      ds.whiteSpace = 'normal';
-    } // put label content in div
-
+    ds.whiteSpace = 'pre'; // put label content in div
 
     div.textContent = text;
     return cache[cacheKey] = {
@@ -28928,10 +29146,17 @@
     }
 
     if (!extent || boundingBoxesIntersect(bb, extent)) {
-      r.drawCachedElementPortion(context, ele, eleTxrCache, pxRatio, lvl, reason, getZeroRotation, getOpacity);
-      r.drawCachedElementPortion(context, ele, lblTxrCache, pxRatio, lvl, reason, getLabelRotation, getTextOpacity);
+      var isEdge = ele.isEdge();
 
-      if (ele.isEdge()) {
+      var badLine = ele.element()._private.rscratch.badLine;
+
+      r.drawCachedElementPortion(context, ele, eleTxrCache, pxRatio, lvl, reason, getZeroRotation, getOpacity);
+
+      if (!isEdge || !badLine) {
+        r.drawCachedElementPortion(context, ele, lblTxrCache, pxRatio, lvl, reason, getLabelRotation, getTextOpacity);
+      }
+
+      if (isEdge && !badLine) {
         r.drawCachedElementPortion(context, ele, slbTxrCache, pxRatio, lvl, reason, getSourceLabelRotation, getTextOpacity);
         r.drawCachedElementPortion(context, ele, tlbTxrCache, pxRatio, lvl, reason, getTargetLabelRotation, getTextOpacity);
       }
@@ -29524,12 +29749,14 @@
       context.textAlign = justification;
       context.textBaseline = 'bottom';
     } else {
+      var badLine = ele.element()._private.rscratch.badLine;
+
       var _label = ele.pstyle('label');
 
       var srcLabel = ele.pstyle('source-label');
       var tgtLabel = ele.pstyle('target-label');
 
-      if ((!_label || !_label.value) && (!srcLabel || !srcLabel.value) && (!tgtLabel || !tgtLabel.value)) {
+      if (badLine || (!_label || !_label.value) && (!srcLabel || !srcLabel.value) && (!tgtLabel || !tgtLabel.value)) {
         return;
       }
 
@@ -29721,9 +29948,6 @@
 
           case 'center':
             bgX -= textW / 2;
-            break;
-
-          case 'right':
             break;
         }
 
@@ -31940,7 +32164,7 @@
     return style;
   };
 
-  var version = "3.12.0";
+  var version = "3.13.0";
 
   var cytoscape = function cytoscape(options) {
     // if no options specified, use default
@@ -31978,4 +32202,4 @@
 
   return cytoscape;
 
-}));
+})));

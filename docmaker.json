@@ -36,12 +36,12 @@
         { "name": "Cola.js gene-gene graph", "id": "colajs-graph" },
         { "name": "Tokyo railways", "id": "tokyo-railways" },
         { "name": "Wine & cheese", "id": "wine-cheese-map", "github": "cytoscape/wineandcheesemap", "viewUrl": "http://wineandcheesemap.com" },
-        { "name": "Performance tuning", "id": "performance-tuning" },
+        { "name": "SBGN stylesheet", "id": "sbgn-stylesheet", "github": "PathwayCommons/cytoscape-sbgn-stylesheet" },
         { "name": "Popper.js extension", "id": "popper", "github": "cytoscape/cytoscape.js-popper" },
         { "name": "Popper.js extension & Tippy.js tooltips", "id": "popper-tippy", "github": "cytoscape/cytoscape.js-popper", "viewUrl": "https://cytoscape.github.io/cytoscape.js-popper/demo-tippy.html" },
         { "name": "Automove extension", "id": "automove", "github": "cytoscape/cytoscape.js-automove" },
         { "name": "Cxtmenu extension", "id": "cxtmenu", "github": "cytoscape/cytoscape.js-cxtmenu" },
-        { "name": "Edgehandles extension", "id": "edgehandles", "github": "cytoscape/cytoscape.js-edgehandles" },
+        { "name": "Edgehandles extension", "id": "edgehandles", "github": "cytoscape/cytoscape.js-edgehandles", "viewUrl": "https://cytoscape.org/cytoscape.js-edgehandles/demo-snap.html" },
         { "name": "Compound drag-and-drop extension", "id": "compound-drag-and-drop", "github": "cytoscape/cytoscape.js-compound-drag-and-drop" },
         { "name": "Circle layout", "id": "circle-layout" },
         { "name": "Concentric layout", "id": "concentric-layout" },
@@ -3233,7 +3233,15 @@
               "name": "eles.kargerStein",
               "descr": "Finds the minimum cut in a graph using the [Karger-Stein](https://en.wikipedia.org/wiki/Karger%27s_algorithm#Karger.E2.80.93Stein_algorithm) algorithm. The optimal result is found with a high probability, but without guarantee.",
               "md": "collection/kargerStein"
+            },
+
+            {
+              "name": "eles.hopcroftTarjanBiconnected",
+              "pureAliases": [ "eles.hopcroftTarjanBiconnectedComponents", "eles.htb", "eles.htbc" ],
+              "descr": "Finds the [biconnected components](https://en.wikipedia.org/wiki/Biconnected_component) in an undirected graph, as well as their respective cut vertices, using an algorithm due to Hopcroft and Tarjan.",
+              "md": "collection/hopcroftTarjanBiconnected"
             }
+
           ]
         },
 

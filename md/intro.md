@@ -65,6 +65,7 @@
   * [Facebook](https://www.facebook.com) : [Metro](https://facebook.github.io/metro/) visualiser
   * [Fediverse](https://www.fediverse.space/)
   * [Ganister](http://www.ganister.eu/)
+  * [GLB301 Simulation](https://cytoscape-demo.netlify.com/)
   * [Google](https://google.com) : [TensorFlow](https://www.tensorflow.org) : SyntaxNet : DRAGNN visualiser
   * [GCHQ](https://www.gchq.gov.uk/) : [Gaffer](https://gchq.github.io/gaffer-doc/)
   * [GeneMANIA](http://genemania.org)
@@ -88,6 +89,7 @@
   * [Pathway Commons](http://www.pathwaycommons.org)
   * [py2cytoscape](https://github.com/idekerlab/py2cytoscape)
   * [Rezza](http://rezza.io)
+  * [Research Institute for Fragrance Materials](https://www.rifm.org) : [RIFM Database](https://rifmdatabase.rifm.org/rifmweb/)
   * [Sainsbury Laboratory](http://www.tsl.ac.uk/) : [PINet](http://pinet.tsl.ac.uk/)
   * Southwest Harbor Public Library, Maine : [Digital Archive](http://swhplibrary.net/archive/) : [AvantRelationships](https://github.com/gsoules/AvantRelationships)
   * [Sotera Defense Solutions, Inc.](http://www.soteradefense.com/) : [Graphene](http://sotera.github.io/graphene/)
@@ -105,7 +107,7 @@
   * [University of Leipzig, Institute for Medical Informatics, Statistics and Epidemiology (IMISE)](http://www.imise.uni-leipzig.de/en) : [SNIK research project](http://www.snik.eu/)
   * [University of Maryland](https://umd.edu/) : [Center for Bioinformatics and Computational Biology](http://cbcb.umd.edu/) : [MetagenomeScope](https://marbl.github.io/MetagenomeScope/)
   * [University of Southern California, San Diego](http://www.ucsd.edu/) : [Visualization of structurally related compounds in Mass Spectrometry with Molecular Networks at GNPS](http://gnps.ucsd.edu/ProteoSAFe/result.jsp?view=network_displayer&componentindex=67&task=c95481f0c53d42e78a61bf899e9f9adb#%7B%7D)
-  * [Vanderbilt University](https://www.vanderbilt.edu) : [pysbjupyter](https://viz-pysb-widget.readthedocs.io)
+  * [Vanderbilt University](https://www.vanderbilt.edu) : [PyViPR](https://github.com/LoLab-VU/pyvipr)
   * [Virginia Tech](http://www.vt.edu/index.html) [T. M. Murali's Research Group](http://bioinformatics.cs.vt.edu/~murali/) : [GraphSpace](http://graphspace.org)
   * [Visual Interaction GmbH](http://www.mygaze.com/)
   * xD Bio Inc. : [Truwl](https://truwl.com)
@@ -137,10 +139,14 @@ The library was created at the [Donnelly Centre](http://thedonnellycentre.utoron
 
 ## Releases
 
+- 3.13
+ - [3.13.0](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.13.0+is%3Aclosed)
 - 3.12
+ - [3.12.2](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.12.2+is%3Aclosed)
  - [3.12.1](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.12.1+is%3Aclosed)
  - [3.12.0](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.12.0+is%3Aclosed)
 - 3.11
+ - [3.11.2](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.11.2+is%3Aclosed)
  - [3.11.1](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.11.1+is%3Aclosed)
  - [3.11.0](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.11.0+is%3Aclosed)
 - 3.10

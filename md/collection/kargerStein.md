@@ -5,9 +5,12 @@ This function returns an object of the following form:
 
 ```js
 {
-  cut, /* Collection of edges that are in the cut */
-  partition1, /* Collection of nodes that are in the first partition */
-  partition2 /* Collection of nodes that are in the second partition */
+  /* Collection of edges that are in the cut */
+  cut,
+
+  /* Array of collections corresponding to the components
+  containing each disjoint subset of nodes defined by the cut */
+  components
 }
 ```
 

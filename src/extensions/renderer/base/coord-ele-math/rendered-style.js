@@ -1,18 +1,18 @@
-var BRp = {};
+let BRp = {};
 
 BRp.registerCalculationListeners = function(){
-  var cy = this.cy;
-  var elesToUpdate = cy.collection();
-  var r = this;
+  let cy = this.cy;
+  let elesToUpdate = cy.collection();
+  let r = this;
 
-  var enqueue = function( eles, dirtyStyleCaches = true ){
+  let enqueue = function( eles, dirtyStyleCaches = true ){
     elesToUpdate.merge( eles );
 
     if( dirtyStyleCaches ){
-      for( var i = 0; i < eles.length; i++ ){
-        var ele = eles[i];
-        var _p = ele._private;
-        var rstyle = _p.rstyle;
+      for( let i = 0; i < eles.length; i++ ){
+        let ele = eles[i];
+        let _p = ele._private;
+        let rstyle = _p.rstyle;
 
         rstyle.clean = false;
         rstyle.cleanConnected = false;
@@ -22,25 +22,25 @@ BRp.registerCalculationListeners = function(){
 
   r.binder( cy )
     .on('bounds.* dirty.*', function onDirtyBounds( e ){
-      var ele = e.target;
+      let ele = e.target;
 
       enqueue( ele );
     })
 
     .on('style.* background.*', function onDirtyStyle( e ){
-      var ele = e.target;
+      let ele = e.target;
 
       enqueue( ele, false );
     })
   ;
 
-  var updateEleCalcs = function( willDraw ){
+  let updateEleCalcs = function( willDraw ){
     if( willDraw ){
-      var fns = r.onUpdateEleCalcsFns;
+      let fns = r.onUpdateEleCalcsFns;
 
-      for( var i = 0; i < elesToUpdate.length; i++ ){
-        var ele = elesToUpdate[i];
-        var rstyle = ele._private.rstyle;
+      for( let i = 0; i < elesToUpdate.length; i++ ){
+        let ele = elesToUpdate[i];
+        let rstyle = ele._private.rstyle;
 
         if( ele.isNode() && !rstyle.cleanConnected ){
           enqueue( ele.connectedEdges() );
@@ -49,8 +49,8 @@ BRp.registerCalculationListeners = function(){
         }
       }
 
-      if( fns ){ for( var i = 0; i < fns.length; i++ ){
-        var fn = fns[i];
+      if( fns ){ for( let i = 0; i < fns.length; i++ ){
+        let fn = fns[i];
 
         fn( willDraw, elesToUpdate );
       } }
@@ -69,14 +69,14 @@ BRp.registerCalculationListeners = function(){
 };
 
 BRp.onUpdateEleCalcs = function( fn ){
-  var fns = this.onUpdateEleCalcsFns = this.onUpdateEleCalcsFns || [];
+  let fns = this.onUpdateEleCalcsFns = this.onUpdateEleCalcsFns || [];
 
   fns.push( fn );
 };
 
 BRp.recalculateRenderedStyle = function( eles, useCache ){
-  var edges = [];
-  var nodes = [];
+  let edges = [];
+  let nodes = [];
 
   // the renderer can't be used for calcs when destroyed, e.g. ele.boundingBox()
   if( this.destroyed ){ return; }
@@ -84,10 +84,10 @@ BRp.recalculateRenderedStyle = function( eles, useCache ){
   // use cache by default for perf
   if( useCache === undefined ){ useCache = true; }
 
-  for( var i = 0; i < eles.length; i++ ){
-    var ele = eles[ i ];
-    var _p = ele._private;
-    var rstyle = _p.rstyle;
+  for( let i = 0; i < eles.length; i++ ){
+    let ele = eles[ i ];
+    let _p = ele._private;
+    let rstyle = _p.rstyle;
 
     // only update if dirty and in graph
     if( (useCache && rstyle.clean) || ele.removed() ){ continue; }
@@ -105,11 +105,11 @@ BRp.recalculateRenderedStyle = function( eles, useCache ){
   }
 
   // update node data from projections
-  for( var i = 0; i < nodes.length; i++ ){
-    var ele = nodes[i];
-    var _p = ele._private;
-    var rstyle = _p.rstyle;
-    var pos = ele.position();
+  for( let i = 0; i < nodes.length; i++ ){
+    let ele = nodes[i];
+    let _p = ele._private;
+    let rstyle = _p.rstyle;
+    let pos = ele.position();
 
     this.recalculateNodeLabelProjection( ele );
 
@@ -122,11 +122,11 @@ BRp.recalculateRenderedStyle = function( eles, useCache ){
   this.recalculateEdgeProjections( edges );
 
   // update edge data from projections
-  for( var i = 0; i < edges.length; i++ ){
-    var ele = edges[ i ];
-    var _p = ele._private;
-    var rstyle = _p.rstyle;
-    var rs = _p.rscratch;
+  for( let i = 0; i < edges.length; i++ ){
+    let ele = edges[ i ];
+    let _p = ele._private;
+    let rstyle = _p.rstyle;
+    let rs = _p.rscratch;
 
     // update rstyle positions
     rstyle.srcX = rs.arrowStartX;

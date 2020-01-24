@@ -75,8 +75,10 @@ BRp.onUpdateEleCalcs = function( fn ){
 };
 
 BRp.recalculateRenderedStyle = function( eles, useCache ){
-  var edges = [];
-  var nodes = [];
+  let isCleanConnected = ele => ele._private.rstyle.cleanConnected;
+
+  let edges = [];
+  let nodes = [];
 
   // the renderer can't be used for calcs when destroyed, e.g. ele.boundingBox()
   if( this.destroyed ){ return; }
@@ -88,6 +90,12 @@ BRp.recalculateRenderedStyle = function( eles, useCache ){
     var ele = eles[ i ];
     var _p = ele._private;
     var rstyle = _p.rstyle;
+
+    // an edge may be implicitly dirty b/c of one of its connected nodes
+    // (and a request for recalc may come in between frames)
+    if( ele.isEdge() && (!isCleanConnected(ele.source()) || !isCleanConnected(ele.target())) ){
+      rstyle.clean = false;
+    }
 
     // only update if dirty and in graph
     if( (useCache && rstyle.clean) || ele.removed() ){ continue; }

@@ -16,6 +16,7 @@ import hierarchicalClustering from './hierarchical-clustering';
 import affinityPropagation from './affinity-propagation';
 import hierholzer from './hierholzer';
 import hopcroftTarjanBiconnected from './hopcroft-tarjan-biconnected';
+import tarjanStronglyConnected from './tarjan-strongly-connected';
 
 var elesfn = {};
 
@@ -36,7 +37,8 @@ var elesfn = {};
   hierarchicalClustering,
   affinityPropagation,
   hierholzer,
-  hopcroftTarjanBiconnected
+  hopcroftTarjanBiconnected,
+  tarjanStronglyConnected
 ].forEach(function(props) {
   util.extend(elesfn, props);
 });

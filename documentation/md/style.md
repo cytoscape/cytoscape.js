@@ -449,7 +449,7 @@ When a taxi edge would be impossible to draw along the regular turning plan --- 
   * `rightward` : Bundle outgoers righwards.
   * `leftward` : Bundle outgoers leftwards.
 * **`taxi-turn`** : The distance along the primary axis where the first turn is applied.
-  * This value may be an absolute distance (e.g. `20px`) or it may be a relative distance between the source and target (e.g. `50%`).
+  * This value may be an absolute distance - positive number (e.g. `20px`) to indicate distance from the source or negative number (e.g. `-20px`) to indicate distance from the target or it may be a relative distance between the source and target (e.g. `50%`).
   * Note that bundling may not work with an explicit direction (`upward`, `downward`, `leftward`, or `rightward`) in tandem with a turn distance specified in percent units.
 * **`taxi-turn-min-distance`** : The minimum distance along the primary axis that is maintained between the nodes and the turns.
   * This value only takes on absolute values (e.g. `5px`).

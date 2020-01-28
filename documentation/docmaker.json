@@ -3240,6 +3240,13 @@
               "pureAliases": [ "eles.hopcroftTarjanBiconnectedComponents", "eles.htb", "eles.htbc" ],
               "descr": "Finds the [biconnected components](https://en.wikipedia.org/wiki/Biconnected_component) in an undirected graph, as well as their respective cut vertices, using an algorithm due to Hopcroft and Tarjan.",
               "md": "collection/hopcroftTarjanBiconnected"
+            },
+
+            {
+              "name": "eles.tarjanStronglyConnected",
+              "pureAliases": [ "eles.tarjanStronglyConnectedComponents", "eles.tsc", "eles.tscc" ],
+              "descr": "Finds the [strongly connected components](https://en.wikipedia.org/wiki/Strongly_connected_component) of a directed graph using Tarjan's algorithm.",
+              "md": "collection/tarjanStronglyConnected"
             }
 
           ]

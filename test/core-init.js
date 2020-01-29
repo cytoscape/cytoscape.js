@@ -40,33 +40,42 @@ describe('Core initialisation', function(){
     });
   });
 
-  it('does not create an edge with bad source and target', function(){
-    var init = function(){
-      cytoscape({
-        headless: true,
+  it('does not create an edge with bad source and target', function (done) {
+    cytoscape({
+      headless: true,
 
-        elements: {
-          edges: [ { data: { source: "n1", target: "n2" } } ]
-        }
-      });
-    };
+      elements: {
+        nodes: [ { data: { id: "n1" } }, { data: { id: "n2" } } ],
+        edges: [ { data: { id: "n1->n2", source: "n1", target: "n2" } }, { data: { id: "n2->n3", source: "n2", target: "n3" } } ]
+      },
+      ready: function(){
+        var cy = this;
 
-    expect(init).to.throw();
+        expect( cy.nodes().size() ).to.equal(2);
+        expect( cy.edges().map((el) => el.id()) ).to.eql(["n1->n2"]);
+
+        done();
+      }
+    });
   });
 
-  it('does not create an edge with bad target', function(){
-    var init = function(){
-      cytoscape({
-        headless: true,
+  it('does not create an edge with bad target', function (done) {
+    cytoscape({
+      headless: true,
 
-        elements: {
-          nodes: [ { data: { id: "n1" } } ],
-          edges: [ { data: { source: "n1", target: "n2" } } ]
-        }
-      });
-    };
+      elements: {
+        nodes: [ { data: { id: "n1" } }, { data: { id: "n2" } } ],
+        edges: [ { data: { id: "n1->n2", source: "n1", target: "n2" } }, { data: { id: "n1->n3", source: "n1", target: "n3" } } ]
+      },
+      ready: function(){
+        var cy = this;
 
-    expect(init).to.throw();
+        expect( cy.nodes().size() ).to.equal(2);
+        expect( cy.edges().map((el) => el.id()) ).to.eql(["n1->n2"]);
+
+        done();
+      }
+    });
   });
 
   it('creates an edge that specifies good source and target', function(done){

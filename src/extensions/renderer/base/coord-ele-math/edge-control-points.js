@@ -265,9 +265,9 @@ BRp.findTaxiPoints = function( edge, pairInfo ){
   let taxiDir = edge.pstyle('taxi-direction').value;
   let rawTaxiDir = taxiDir; // unprocessed value
   const taxiTurn = edge.pstyle('taxi-turn');
-  const taxiTurnPfVal = taxiTurn.pfValue;
-  let minD = edge.pstyle('taxi-turn-min-distance').pfValue;
   const turnIsPercent = taxiTurn.units === '%';
+  const taxiTurnPfVal = turnIsPercent && taxiTurn.pfValue < 0 ? 1 + taxiTurn.pfValue : taxiTurn.pfValue;
+  let minD = edge.pstyle('taxi-turn-min-distance').pfValue;
   const dw = (dIncludesNodeBody ? (srcW + tgtW)/2 : 0);
   const dh = (dIncludesNodeBody ? (srcH + tgtH)/2 : 0);
   const pdx = posPts.x2 - posPts.x1;

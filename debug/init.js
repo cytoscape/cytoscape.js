@@ -43,7 +43,7 @@ var cy, defaultSty, options;
         .style({
           'curve-style': 'taxi',
           'taxi-direction': 'vertical',
-          'taxi-turn': '-30px',
+          'taxi-turn': '-50%',
           'edge-distances': 'node-position'
         })
   ;

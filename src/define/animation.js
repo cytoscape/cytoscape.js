@@ -156,6 +156,8 @@ let define = {
           if( vp.zoomed ){ properties.zoom = vp.zoom; }
 
           if( vp.panned ){ properties.pan = vp.pan; }
+        } else {
+          properties.zoom = null; // an inavalid zoom (e.g. no delta) gets automatically destroyed
         }
       }
 

@@ -41,10 +41,7 @@ var cy, defaultSty, options;
         })
       .selector('[source = "b"][target = "f"]')
         .style({
-          'curve-style': 'taxi',
-          'taxi-direction': 'vertical',
-          'taxi-turn': '-50%',
-          'edge-distances': 'node-position'
+          'curve-style': 'taxi'
         })
   ;
 

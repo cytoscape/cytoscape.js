@@ -5,6 +5,10 @@ function getEasedValue( type, start, end, percent, easingFn ){
     return end;
   }
 
+  if( start === end ){
+    return end;
+  }
+
   let val = easingFn( start, end, percent );
 
   if( type == null ){

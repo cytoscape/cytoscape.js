@@ -41,8 +41,7 @@ var cy, defaultSty, options;
         })
       .selector('[source = "b"][target = "f"]')
         .style({
-          'curve-style': 'taxi',
-          'taxi-direction': 'vertical'
+          'curve-style': 'taxi'
         })
   ;
 

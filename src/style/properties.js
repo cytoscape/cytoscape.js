@@ -36,6 +36,7 @@ const styfn = {};
     positiveNumber: { number: true, unitless: true, min: 0, strictMin: true },
     size: { number: true, min: 0 },
     bidirectionalSize: { number: true }, // allows negative
+    bidirectionalSizeMaybePercent: { number: true, allowPercent: true }, // allows negative
     bidirectionalSizes: { number: true, multiple: true }, // allows negative
     sizeMaybePercent: { number: true, min: 0, allowPercent: true },
     axisDirection: { enums: ['horizontal', 'leftward', 'rightward', 'vertical', 'upward', 'downward', 'auto'] },
@@ -325,7 +326,7 @@ const styfn = {};
     { name: 'control-point-weights', type: t.numbers, triggersBounds: diff.any },
     { name: 'segment-distances', type: t.bidirectionalSizes, triggersBounds: diff.any },
     { name: 'segment-weights', type: t.numbers, triggersBounds: diff.any },
-    { name: 'taxi-turn', type: t.sizeMaybePercent, triggersBounds: diff.any },
+    { name: 'taxi-turn', type: t.bidirectionalSizeMaybePercent, triggersBounds: diff.any },
     { name: 'taxi-turn-min-distance', type: t.size, triggersBounds: diff.any },
     { name: 'taxi-direction', type: t.axisDirection, triggersBounds: diff.any },
     { name: 'edge-distances', type: t.edgeDistances, triggersBounds: diff.any },

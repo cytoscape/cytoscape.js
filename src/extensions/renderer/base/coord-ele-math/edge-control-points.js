@@ -265,9 +265,9 @@ BRp.findTaxiPoints = function( edge, pairInfo ){
   let taxiDir = edge.pstyle('taxi-direction').value;
   let rawTaxiDir = taxiDir; // unprocessed value
   const taxiTurn = edge.pstyle('taxi-turn');
-  const taxiTurnPfVal = taxiTurn.pfValue;
-  let minD = edge.pstyle('taxi-turn-min-distance').pfValue;
   const turnIsPercent = taxiTurn.units === '%';
+  const taxiTurnPfVal = turnIsPercent && taxiTurn.pfValue < 0 ? 1 + taxiTurn.pfValue : taxiTurn.pfValue;
+  let minD = edge.pstyle('taxi-turn-min-distance').pfValue;
   const dw = (dIncludesNodeBody ? (srcW + tgtW)/2 : 0);
   const dh = (dIncludesNodeBody ? (srcH + tgtH)/2 : 0);
   const pdx = posPts.x2 - posPts.x1;
@@ -322,7 +322,7 @@ BRp.findTaxiPoints = function( edge, pairInfo ){
 
   const getIsTooClose = d => Math.abs(d) < minD || Math.abs(d) >= Math.abs(l);
   const isTooCloseSrc = getIsTooClose(d);
-  const isTooCloseTgt =  getIsTooClose(l - d);
+  const isTooCloseTgt =  getIsTooClose(l - Math.abs(d));
   const isTooClose = isTooCloseSrc || isTooCloseTgt;
 
   if( isTooClose && !forcedDir ){ // non-ideal routing
@@ -381,7 +381,7 @@ BRp.findTaxiPoints = function( edge, pairInfo ){
     }
   } else { // ideal routing
     if( isVert ){
-      let y = posPts.y1 + d + (dIncludesNodeBody ? srcH/2 * sgnL : 0);
+      let y = (d < 0 ? posPts.y2 : posPts.y1) + d + (dIncludesNodeBody ? srcH/2 * sgnL : 0);
       let { x1, x2 } = posPts;
 
       rs.segpts = [
@@ -389,7 +389,7 @@ BRp.findTaxiPoints = function( edge, pairInfo ){
         x2, y
       ];
     } else { // horizontal
-      let x = posPts.x1 + d + (dIncludesNodeBody ? srcW/2 * sgnL : 0);
+      let x = (d < 0 ? posPts.x2 : posPts.x1) + d + (dIncludesNodeBody ? srcW/2 * sgnL : 0);
       let { y1, y2 } = posPts;
 
       rs.segpts = [

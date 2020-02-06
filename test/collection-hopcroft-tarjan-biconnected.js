@@ -4,7 +4,7 @@ var cytoscape = require('../src/test.js', cytoscape);
 describe('Algorithms', function(){
   describe('eles.hopcroftTarjanBiconnected()', function(){
 
-    var cy0, cy1;
+    var cy0, cy1, cy2;
 
     beforeEach(function(done) {
       cytoscape({
@@ -34,7 +34,11 @@ describe('Algorithms', function(){
             { data: { id: '1-15' } },
             { data: { id: '1-16' } },
             { data: { id: '1-17' } },
-            { data: { id: '1-18' } }
+            { data: { id: '1-18' } },
+
+            { data: { id: '2-0' } },
+            { data: { id: '2-1' } },
+            { data: { id: '2-2' } },
           ],
 
           edges: [
@@ -71,13 +75,21 @@ describe('Algorithms', function(){
             { data: { source: '1-12', target: '1-13', id: '1-41' } },
             { data: { source: '1-13', target: '1-14', id: '1-42' } },
             { data: { source: '1-13', target: '1-15', id: '1-43' } },
-            { data: { source: '1-17', target: '1-18', id: '1-44' } }
+            { data: { source: '1-17', target: '1-18', id: '1-44' } },
+
+            { data: { id: '2-3', source: '2-2', target: '2-1' } },
+            { data: { id: '2-4', source: '2-1', target: '2-0' } },
+            { data: { id: '2-5', source: '2-1', target: '2-1' } },
+            { data: { id: '2-6', source: '2-0', target: '2-1' } },
+            { data: { id: '2-7', source: '2-0', target: '2-2' } },
+            { data: { id: '2-8', source: '2-0', target: '2-0' } }
           ]
         },
 
         ready: function(){
           cy0 = this.filter(ele => ele.id()[0] == "0");
           cy1 = this.filter(ele => ele.id()[0] == "1");
+          cy2 = this.filter(ele => ele.id()[0] == "2");
           done();
         }
       });
@@ -88,10 +100,18 @@ describe('Algorithms', function(){
     }
 
     it('eles.htbc(): no cut vertices, one biconnected component', function(){
-      var res = cy0.htbc();
-      expect( res.cut.map( ele2id ) ).to.deep.equal( [] );
-      expect( res.components.length ).to.equal( 1 );
-      expect( res.components[0].map( ele2id ) ).to.deep.equal( [ "0-9", "0-11", "0-4", "0-3", "0-10", "0-0", "0-8", "0-7", "0-2", "0-6", "0-1", "0-5" ] );
+      var res0 = cy0.htbc();
+      var res1 = cy2.htbc();
+      expect( res0.cut.map( ele2id ) ).to.deep.equal( [] );
+      expect( res0.components.length ).to.equal( 1 );
+      expect( res0.components[0].length ).to.equal( cy0.length );
+      expect( res0.components[0].map( ele2id ) ).to.deep.equal( [ "0-9", "0-4", "0-8", "0-10", "0-11", "0-3", "0-7", "0-0", "0-2", "0-6", "0-1", "0-5"] );
+
+      expect( res1.cut.map( ele2id ) ).to.deep.equal( [] );
+      expect( res1.components.length ).to.equal( 1 );
+      expect( res1.components[0].length ).to.equal( cy2.length );
+      expect( res1.components[0].map( ele2id ) ).to.deep.equal( [ "2-5", "2-1", "2-3", "2-4", "2-6", "2-7", "2-0", "2-8", "2-2" ] );
+
     });
 
     it('eles.htbc(): multiple biconnected components', function(){
@@ -102,9 +122,9 @@ describe('Algorithms', function(){
       expect( res.components[1].map( ele2id ) ).to.deep.equal( [ "1-21", "1-2", "1-4", "1-24", "1-3", "1-20" ] );
       expect( res.components[2].map( ele2id ) ).to.deep.equal( [ "1-38", "1-10", "1-16" ] );
       expect( res.components[3].map( ele2id ) ).to.deep.equal( [ "1-40", "1-10", "1-18", "1-44", "1-17", "1-39" ] );
-      expect( res.components[4].map( ele2id ) ).to.deep.equal( [ "1-34", "1-8", "1-15", "1-43", "1-13", "1-33", "1-14", "1-42", "1-41", "1-12", "1-32" ] );
-      expect( res.components[5].map( ele2id ) ).to.deep.equal( [ "1-36", "1-9", "1-11", "1-31", "1-8", "1-29", "1-7", "1-37", "1-10", "1-35", "1-30", "1-28" ] );
-      expect( res.components[6].map( ele2id ) ).to.deep.equal( [ "1-26", "1-5", "1-7", "1-27", "1-6", "1-23", "1-2", "1-25", "1-22" ] );
+      expect( res.components[4].map( ele2id ) ).to.deep.equal( [ "1-34", "1-8", "1-15", "1-43", "1-13", "1-41", "1-42", "1-33", "1-14", "1-12", "1-32" ] );
+      expect( res.components[5].map( ele2id ) ).to.deep.equal( [ "1-36", "1-9", "1-30", "1-35", "1-11", "1-29", "1-31", "1-37", "1-8", "1-7", "1-10", "1-28" ] );
+      expect( res.components[6].map( ele2id ) ).to.deep.equal( [ "1-26", "1-5", "1-22", "1-25", "1-7", "1-27", "1-6", "1-23", "1-2"] );
       expect( res.components[7].map( ele2id ) ).to.deep.equal( [ "1-19", "1-1", "1-2" ] );
     });
 

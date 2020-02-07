@@ -5574,13 +5574,11 @@ var hopcroftTarjanBiconnected = function hopcroftTarjanBiconnected() {
   var components = [];
   var stack = [];
   var visitedEdges = {};
-  var loops = {};
 
   var buildComponent = function buildComponent(x, y) {
     var i = stack.length - 1;
     var cutset = [];
-    var visitedNodes = {};
-    var component = [];
+    var component = eles.spawn();
 
     while (stack[i].x != x || stack[i].y != y) {
       cutset.push(stack.pop().edge);
@@ -5589,29 +5587,27 @@ var hopcroftTarjanBiconnected = function hopcroftTarjanBiconnected() {
 
     cutset.push(stack.pop().edge);
     cutset.forEach(function (edge) {
-      component.push(edge);
       var connectedNodes = edge.connectedNodes().intersection(eles);
+      component.merge(edge);
       connectedNodes.forEach(function (node) {
         var nodeId = node.id();
+        var connectedEdges = node.connectedEdges().intersection(eles);
+        component.merge(node);
 
-        if (!(nodeId in visitedNodes)) {
-          visitedNodes[nodeId] = true;
-
-          if (nodeId in loops) {
-            loops[nodeId].forEach(function (loop) {
-              return component.push(loop);
-            });
-          }
-
-          component.push(node);
+        if (!nodes[nodeId].cutVertex) {
+          component.merge(connectedEdges);
+        } else {
+          component.merge(connectedEdges.filter(function (edge) {
+            return edge.isLoop();
+          }));
         }
       });
     });
-    components.push(eles.spawn(component));
+    components.push(component);
   };
 
   var biconnectedSearch = function biconnectedSearch(root, currentNode, parent) {
-    if (root == parent) edgeCount += 1;
+    if (root === parent) edgeCount += 1;
     nodes[currentNode] = {
       id: id,
       low: id++,
@@ -5622,20 +5618,13 @@ var hopcroftTarjanBiconnected = function hopcroftTarjanBiconnected() {
     if (edges.size() === 0) {
       components.push(eles.spawn(eles.getElementById(currentNode)));
     } else {
-      var sourceId, targetId, otherNodeId, edgeId, isEdgeLoop;
+      var sourceId, targetId, otherNodeId, edgeId;
       edges.forEach(function (edge) {
         sourceId = edge.source().id();
         targetId = edge.target().id();
-        otherNodeId = sourceId == currentNode ? targetId : sourceId;
-        isEdgeLoop = edge.isLoop();
+        otherNodeId = sourceId === currentNode ? targetId : sourceId;
 
-        if (isEdgeLoop) {
-          if (sourceId in loops) {
-            loops.push(edge);
-          } else {
-            loops[sourceId] = [edge];
-          }
-        } else if (otherNodeId != parent) {
+        if (otherNodeId !== parent) {
           edgeId = edge.id();
 
           if (!visitedEdges[edgeId]) {
@@ -5643,7 +5632,7 @@ var hopcroftTarjanBiconnected = function hopcroftTarjanBiconnected() {
             stack.push({
               x: currentNode,
               y: otherNodeId,
-              edge: eles.getElementById(edgeId)
+              edge: edge
             });
           }
 
@@ -5669,7 +5658,7 @@ var hopcroftTarjanBiconnected = function hopcroftTarjanBiconnected() {
 
       if (!(nodeId in nodes)) {
         edgeCount = 0;
-        biconnectedSearch(nodeId, nodeId, "");
+        biconnectedSearch(nodeId, nodeId);
         nodes[nodeId].cutVertex = edgeCount > 1;
       }
     }
@@ -6380,6 +6369,8 @@ var define = {
           if (vp.panned) {
             properties.pan = vp.pan;
           }
+        } else {
+          properties.zoom = null; // an inavalid zoom (e.g. no delta) gets automatically destroyed
         }
       }
 
@@ -13641,6 +13632,10 @@ var easings = {
 
 function getEasedValue(type, start, end, percent, easingFn) {
   if (percent === 1) {
+    return end;
+  }
+
+  if (start === end) {
     return end;
   }
 
@@ -23756,6 +23751,10 @@ BRp$8.onUpdateEleCalcs = function (fn) {
 };
 
 BRp$8.recalculateRenderedStyle = function (eles, useCache) {
+  var isCleanConnected = function isCleanConnected(ele) {
+    return ele._private.rstyle.cleanConnected;
+  };
+
   var edges = [];
   var nodes = []; // the renderer can't be used for calcs when destroyed, e.g. ele.boundingBox()
 
@@ -23771,7 +23770,13 @@ BRp$8.recalculateRenderedStyle = function (eles, useCache) {
   for (var i = 0; i < eles.length; i++) {
     var ele = eles[i];
     var _p = ele._private;
-    var rstyle = _p.rstyle; // only update if dirty and in graph
+    var rstyle = _p.rstyle; // an edge may be implicitly dirty b/c of one of its connected nodes
+    // (and a request for recalc may come in between frames)
+
+    if (ele.isEdge() && (!isCleanConnected(ele.source()) || !isCleanConnected(ele.target()))) {
+      rstyle.clean = false;
+    } // only update if dirty and in graph
+
 
     if (useCache && rstyle.clean || ele.removed()) {
       continue;
@@ -31401,7 +31406,7 @@ sheetfn.appendToStyle = function (style) {
   return style;
 };
 
-var version = "3.13.0";
+var version = "3.13.1";
 
 var cytoscape = function cytoscape(options) {
   // if no options specified, use default

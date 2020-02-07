@@ -5578,13 +5578,11 @@ var hopcroftTarjanBiconnected = function hopcroftTarjanBiconnected() {
   var components = [];
   var stack = [];
   var visitedEdges = {};
-  var loops = {};
 
   var buildComponent = function buildComponent(x, y) {
     var i = stack.length - 1;
     var cutset = [];
-    var visitedNodes = {};
-    var component = [];
+    var component = eles.spawn();
 
     while (stack[i].x != x || stack[i].y != y) {
       cutset.push(stack.pop().edge);
@@ -5593,29 +5591,27 @@ var hopcroftTarjanBiconnected = function hopcroftTarjanBiconnected() {
 
     cutset.push(stack.pop().edge);
     cutset.forEach(function (edge) {
-      component.push(edge);
       var connectedNodes = edge.connectedNodes().intersection(eles);
+      component.merge(edge);
       connectedNodes.forEach(function (node) {
         var nodeId = node.id();
+        var connectedEdges = node.connectedEdges().intersection(eles);
+        component.merge(node);
 
-        if (!(nodeId in visitedNodes)) {
-          visitedNodes[nodeId] = true;
-
-          if (nodeId in loops) {
-            loops[nodeId].forEach(function (loop) {
-              return component.push(loop);
-            });
-          }
-
-          component.push(node);
+        if (!nodes[nodeId].cutVertex) {
+          component.merge(connectedEdges);
+        } else {
+          component.merge(connectedEdges.filter(function (edge) {
+            return edge.isLoop();
+          }));
         }
       });
     });
-    components.push(eles.spawn(component));
+    components.push(component);
   };
 
   var biconnectedSearch = function biconnectedSearch(root, currentNode, parent) {
-    if (root == parent) edgeCount += 1;
+    if (root === parent) edgeCount += 1;
     nodes[currentNode] = {
       id: id,
       low: id++,
@@ -5626,20 +5622,13 @@ var hopcroftTarjanBiconnected = function hopcroftTarjanBiconnected() {
     if (edges.size() === 0) {
       components.push(eles.spawn(eles.getElementById(currentNode)));
     } else {
-      var sourceId, targetId, otherNodeId, edgeId, isEdgeLoop;
+      var sourceId, targetId, otherNodeId, edgeId;
       edges.forEach(function (edge) {
         sourceId = edge.source().id();
         targetId = edge.target().id();
-        otherNodeId = sourceId == currentNode ? targetId : sourceId;
-        isEdgeLoop = edge.isLoop();
+        otherNodeId = sourceId === currentNode ? targetId : sourceId;
 
-        if (isEdgeLoop) {
-          if (sourceId in loops) {
-            loops.push(edge);
-          } else {
-            loops[sourceId] = [edge];
-          }
-        } else if (otherNodeId != parent) {
+        if (otherNodeId !== parent) {
           edgeId = edge.id();
 
           if (!visitedEdges[edgeId]) {
@@ -5647,7 +5636,7 @@ var hopcroftTarjanBiconnected = function hopcroftTarjanBiconnected() {
             stack.push({
               x: currentNode,
               y: otherNodeId,
-              edge: eles.getElementById(edgeId)
+              edge: edge
             });
           }
 
@@ -5673,7 +5662,7 @@ var hopcroftTarjanBiconnected = function hopcroftTarjanBiconnected() {
 
       if (!(nodeId in nodes)) {
         edgeCount = 0;
-        biconnectedSearch(nodeId, nodeId, "");
+        biconnectedSearch(nodeId, nodeId);
         nodes[nodeId].cutVertex = edgeCount > 1;
       }
     }
@@ -5696,8 +5685,81 @@ var hopcroftTarjanBiconnected$1 = {
   hopcroftTarjanBiconnectedComponents: hopcroftTarjanBiconnected
 };
 
+var tarjanStronglyConnected = function tarjanStronglyConnected() {
+  var eles = this;
+  var nodes = {};
+  var index = 0;
+  var components = [];
+  var stack = [];
+  var cut = eles.spawn(eles);
+
+  var stronglyConnectedSearch = function stronglyConnectedSearch(sourceNodeId) {
+    stack.push(sourceNodeId);
+    nodes[sourceNodeId] = {
+      index: index,
+      low: index++,
+      explored: false
+    };
+    var connectedEdges = eles.getElementById(sourceNodeId).connectedEdges().intersection(eles);
+    connectedEdges.forEach(function (edge) {
+      var targetNodeId = edge.target().id();
+
+      if (targetNodeId !== sourceNodeId) {
+        if (!(targetNodeId in nodes)) {
+          stronglyConnectedSearch(targetNodeId);
+        }
+
+        if (!nodes[targetNodeId].explored) {
+          nodes[sourceNodeId].low = Math.min(nodes[sourceNodeId].low, nodes[targetNodeId].low);
+        }
+      }
+    });
+
+    if (nodes[sourceNodeId].index === nodes[sourceNodeId].low) {
+      var componentNodes = eles.spawn();
+
+      for (;;) {
+        var nodeId = stack.pop();
+        componentNodes.merge(eles.getElementById(nodeId));
+        nodes[nodeId].low = nodes[sourceNodeId].index;
+        nodes[nodeId].explored = true;
+
+        if (nodeId === sourceNodeId) {
+          break;
+        }
+      }
+
+      var componentEdges = componentNodes.edgesWith(componentNodes);
+      var component = componentNodes.merge(componentEdges);
+      components.push(component);
+      cut = cut.difference(component);
+    }
+  };
+
+  eles.forEach(function (ele) {
+    if (ele.isNode()) {
+      var nodeId = ele.id();
+
+      if (!(nodeId in nodes)) {
+        stronglyConnectedSearch(nodeId);
+      }
+    }
+  });
+  return {
+    cut: cut,
+    components: components
+  };
+};
+
+var tarjanStronglyConnected$1 = {
+  tarjanStronglyConnected: tarjanStronglyConnected,
+  tsc: tarjanStronglyConnected,
+  tscc: tarjanStronglyConnected,
+  tarjanStronglyConnectedComponents: tarjanStronglyConnected
+};
+
 var elesfn$c = {};
-[elesfn, elesfn$1, elesfn$2, elesfn$3, elesfn$4, elesfn$5, elesfn$6, elesfn$7, elesfn$8, elesfn$9, elesfn$a, markovClustering$1, kClustering, hierarchicalClustering$1, affinityPropagation$1, elesfn$b, hopcroftTarjanBiconnected$1].forEach(function (props) {
+[elesfn, elesfn$1, elesfn$2, elesfn$3, elesfn$4, elesfn$5, elesfn$6, elesfn$7, elesfn$8, elesfn$9, elesfn$a, markovClustering$1, kClustering, hierarchicalClustering$1, affinityPropagation$1, elesfn$b, hopcroftTarjanBiconnected$1, tarjanStronglyConnected$1].forEach(function (props) {
   extend(elesfn$c, props);
 });
 
@@ -6384,6 +6446,8 @@ var define = {
           if (vp.panned) {
             properties.pan = vp.pan;
           }
+        } else {
+          properties.zoom = null; // an inavalid zoom (e.g. no delta) gets automatically destroyed
         }
       }
 
@@ -13648,6 +13712,10 @@ function getEasedValue(type, start, end, percent, easingFn) {
     return end;
   }
 
+  if (start === end) {
+    return end;
+  }
+
   var val = easingFn(start, end, percent);
 
   if (type == null) {
@@ -15944,6 +16012,11 @@ var styfn$6 = {};
       number: true
     },
     // allows negative
+    bidirectionalSizeMaybePercent: {
+      number: true,
+      allowPercent: true
+    },
+    // allows negative
     bidirectionalSizes: {
       number: true,
       multiple: true
@@ -16629,7 +16702,7 @@ var styfn$6 = {};
     triggersBounds: diff.any
   }, {
     name: 'taxi-turn',
-    type: t.sizeMaybePercent,
+    type: t.bidirectionalSizeMaybePercent,
     triggersBounds: diff.any
   }, {
     name: 'taxi-turn-min-distance',
@@ -22142,9 +22215,9 @@ BRp$3.findTaxiPoints = function (edge, pairInfo) {
   var rawTaxiDir = taxiDir; // unprocessed value
 
   var taxiTurn = edge.pstyle('taxi-turn');
-  var taxiTurnPfVal = taxiTurn.pfValue;
-  var minD = edge.pstyle('taxi-turn-min-distance').pfValue;
   var turnIsPercent = taxiTurn.units === '%';
+  var taxiTurnPfVal = turnIsPercent && taxiTurn.pfValue < 0 ? 1 + taxiTurn.pfValue : taxiTurn.pfValue;
+  var minD = edge.pstyle('taxi-turn-min-distance').pfValue;
   var dw = dIncludesNodeBody ? (srcW + tgtW) / 2 : 0;
   var dh = dIncludesNodeBody ? (srcH + tgtH) / 2 : 0;
   var pdx = posPts.x2 - posPts.x1;
@@ -22192,7 +22265,7 @@ BRp$3.findTaxiPoints = function (edge, pairInfo) {
   };
 
   var isTooCloseSrc = getIsTooClose(d);
-  var isTooCloseTgt = getIsTooClose(l - d);
+  var isTooCloseTgt = getIsTooClose(l - Math.abs(d));
   var isTooClose = isTooCloseSrc || isTooCloseTgt;
 
   if (isTooClose && !forcedDir) {
@@ -22246,14 +22319,14 @@ BRp$3.findTaxiPoints = function (edge, pairInfo) {
   } else {
     // ideal routing
     if (isVert) {
-      var _y4 = posPts.y1 + d + (dIncludesNodeBody ? srcH / 2 * sgnL : 0);
+      var _y4 = (d < 0 ? posPts.y2 : posPts.y1) + d + (dIncludesNodeBody ? srcH / 2 * sgnL : 0);
 
       var _x4 = posPts.x1,
           _x5 = posPts.x2;
       rs.segpts = [_x4, _y4, _x5, _y4];
     } else {
       // horizontal
-      var _x6 = posPts.x1 + d + (dIncludesNodeBody ? srcW / 2 * sgnL : 0);
+      var _x6 = (d < 0 ? posPts.x2 : posPts.x1) + d + (dIncludesNodeBody ? srcW / 2 * sgnL : 0);
 
       var _y5 = posPts.y1,
           _y6 = posPts.y2;
@@ -23736,8 +23809,8 @@ BRp$8.registerCalculationListeners = function () {
       }
 
       if (fns) {
-        for (var i = 0; i < fns.length; i++) {
-          var fn = fns[i];
+        for (var _i = 0; _i < fns.length; _i++) {
+          var fn = fns[_i];
           fn(willDraw, elesToUpdate);
         }
       }
@@ -23760,6 +23833,10 @@ BRp$8.onUpdateEleCalcs = function (fn) {
 };
 
 BRp$8.recalculateRenderedStyle = function (eles, useCache) {
+  var isCleanConnected = function isCleanConnected(ele) {
+    return ele._private.rstyle.cleanConnected;
+  };
+
   var edges = [];
   var nodes = []; // the renderer can't be used for calcs when destroyed, e.g. ele.boundingBox()
 
@@ -23775,7 +23852,13 @@ BRp$8.recalculateRenderedStyle = function (eles, useCache) {
   for (var i = 0; i < eles.length; i++) {
     var ele = eles[i];
     var _p = ele._private;
-    var rstyle = _p.rstyle; // only update if dirty and in graph
+    var rstyle = _p.rstyle; // an edge may be implicitly dirty b/c of one of its connected nodes
+    // (and a request for recalc may come in between frames)
+
+    if (ele.isEdge() && (!isCleanConnected(ele.source()) || !isCleanConnected(ele.target()))) {
+      rstyle.clean = false;
+    } // only update if dirty and in graph
+
 
     if (useCache && rstyle.clean || ele.removed()) {
       continue;
@@ -23797,35 +23880,37 @@ BRp$8.recalculateRenderedStyle = function (eles, useCache) {
   } // update node data from projections
 
 
-  for (var i = 0; i < nodes.length; i++) {
-    var ele = nodes[i];
-    var _p = ele._private;
-    var rstyle = _p.rstyle;
-    var pos = ele.position();
-    this.recalculateNodeLabelProjection(ele);
-    rstyle.nodeX = pos.x;
-    rstyle.nodeY = pos.y;
-    rstyle.nodeW = ele.pstyle('width').pfValue;
-    rstyle.nodeH = ele.pstyle('height').pfValue;
+  for (var _i2 = 0; _i2 < nodes.length; _i2++) {
+    var _ele = nodes[_i2];
+    var _p2 = _ele._private;
+    var _rstyle = _p2.rstyle;
+
+    var pos = _ele.position();
+
+    this.recalculateNodeLabelProjection(_ele);
+    _rstyle.nodeX = pos.x;
+    _rstyle.nodeY = pos.y;
+    _rstyle.nodeW = _ele.pstyle('width').pfValue;
+    _rstyle.nodeH = _ele.pstyle('height').pfValue;
   }
 
   this.recalculateEdgeProjections(edges); // update edge data from projections
 
-  for (var i = 0; i < edges.length; i++) {
-    var ele = edges[i];
-    var _p = ele._private;
-    var rstyle = _p.rstyle;
-    var rs = _p.rscratch; // update rstyle positions
+  for (var _i3 = 0; _i3 < edges.length; _i3++) {
+    var _ele2 = edges[_i3];
+    var _p3 = _ele2._private;
+    var _rstyle2 = _p3.rstyle;
+    var rs = _p3.rscratch; // update rstyle positions
 
-    rstyle.srcX = rs.arrowStartX;
-    rstyle.srcY = rs.arrowStartY;
-    rstyle.tgtX = rs.arrowEndX;
-    rstyle.tgtY = rs.arrowEndY;
-    rstyle.midX = rs.midX;
-    rstyle.midY = rs.midY;
-    rstyle.labelAngle = rs.labelAngle;
-    rstyle.sourceLabelAngle = rs.sourceLabelAngle;
-    rstyle.targetLabelAngle = rs.targetLabelAngle;
+    _rstyle2.srcX = rs.arrowStartX;
+    _rstyle2.srcY = rs.arrowStartY;
+    _rstyle2.tgtX = rs.arrowEndX;
+    _rstyle2.tgtY = rs.arrowEndY;
+    _rstyle2.midX = rs.midX;
+    _rstyle2.midY = rs.midY;
+    _rstyle2.labelAngle = rs.labelAngle;
+    _rstyle2.sourceLabelAngle = rs.sourceLabelAngle;
+    _rstyle2.targetLabelAngle = rs.targetLabelAngle;
   }
 };
 
@@ -31405,7 +31490,7 @@ sheetfn.appendToStyle = function (style) {
   return style;
 };
 
-var version = "3.13.0";
+var version = "3.14.0";
 
 var cytoscape = function cytoscape(options) {
   // if no options specified, use default

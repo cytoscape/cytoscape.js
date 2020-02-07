@@ -6236,6 +6236,8 @@ var define = {
           if (vp.panned) {
             properties.pan = vp.pan;
           }
+        } else {
+          properties.zoom = null; // an inavalid zoom (e.g. no delta) gets automatically destroyed
         }
       }
 
@@ -13464,6 +13466,10 @@ function getEasedValue(type, start, end, percent, easingFn) {
     return end;
   }
 
+  if (start === end) {
+    return end;
+  }
+
   var val = easingFn(start, end, percent);
 
   if (type == null) {
@@ -17671,6 +17677,9 @@ var corefn$8 = {
 
         this.emit('pan viewport');
         break;
+
+      default:
+        break;
       // invalid
     }
 
@@ -17717,6 +17726,9 @@ var corefn$8 = {
         }
 
         this.emit('pan viewport');
+        break;
+
+      default:
         break;
       // invalid
     }
@@ -23576,6 +23588,10 @@ BRp$8.onUpdateEleCalcs = function (fn) {
 };
 
 BRp$8.recalculateRenderedStyle = function (eles, useCache) {
+  var isCleanConnected = function isCleanConnected(ele) {
+    return ele._private.rstyle.cleanConnected;
+  };
+
   var edges = [];
   var nodes = []; // the renderer can't be used for calcs when destroyed, e.g. ele.boundingBox()
 
@@ -23591,7 +23607,13 @@ BRp$8.recalculateRenderedStyle = function (eles, useCache) {
   for (var i = 0; i < eles.length; i++) {
     var ele = eles[i];
     var _p = ele._private;
-    var rstyle = _p.rstyle; // only update if dirty and in graph
+    var rstyle = _p.rstyle; // an edge may be implicitly dirty b/c of one of its connected nodes
+    // (and a request for recalc may come in between frames)
+
+    if (ele.isEdge() && (!isCleanConnected(ele.source()) || !isCleanConnected(ele.target()))) {
+      rstyle.clean = false;
+    } // only update if dirty and in graph
+
 
     if (useCache && rstyle.clean || ele.removed()) {
       continue;
@@ -29006,6 +29028,9 @@ CRp$4.drawText = function (context, ele, prefix) {
         case 'center':
           bgX -= textW / 2;
           break;
+
+        case 'right':
+          break;
       }
 
       var bgY = textY - textH - backgroundPadding;
@@ -31221,7 +31246,7 @@ sheetfn.appendToStyle = function (style) {
   return style;
 };
 
-var version = "3.12.2";
+var version = "3.12.3";
 
 var cytoscape = function cytoscape(options) {
   // if no options specified, use default

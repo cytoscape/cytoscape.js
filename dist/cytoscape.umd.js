@@ -24,7 +24,7 @@
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
   (global = global || self, global.cytoscape = factory());
-}(this, (function () { 'use strict';
+}(this, function () { 'use strict';
 
   function _typeof(obj) {
     if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") {
@@ -6995,6 +6995,8 @@
             if (vp.panned) {
               properties.pan = vp.pan;
             }
+          } else {
+            properties.zoom = null; // an inavalid zoom (e.g. no delta) gets automatically destroyed
           }
         }
 
@@ -14223,6 +14225,10 @@
       return end;
     }
 
+    if (start === end) {
+      return end;
+    }
+
     var val = easingFn(start, end, percent);
 
     if (type == null) {
@@ -18430,6 +18436,9 @@
 
           this.emit('pan viewport');
           break;
+
+        default:
+          break;
         // invalid
       }
 
@@ -18476,6 +18485,9 @@
           }
 
           this.emit('pan viewport');
+          break;
+
+        default:
           break;
         // invalid
       }
@@ -24335,6 +24347,10 @@
   };
 
   BRp$8.recalculateRenderedStyle = function (eles, useCache) {
+    var isCleanConnected = function isCleanConnected(ele) {
+      return ele._private.rstyle.cleanConnected;
+    };
+
     var edges = [];
     var nodes = []; // the renderer can't be used for calcs when destroyed, e.g. ele.boundingBox()
 
@@ -24350,7 +24366,13 @@
     for (var i = 0; i < eles.length; i++) {
       var ele = eles[i];
       var _p = ele._private;
-      var rstyle = _p.rstyle; // only update if dirty and in graph
+      var rstyle = _p.rstyle; // an edge may be implicitly dirty b/c of one of its connected nodes
+      // (and a request for recalc may come in between frames)
+
+      if (ele.isEdge() && (!isCleanConnected(ele.source()) || !isCleanConnected(ele.target()))) {
+        rstyle.clean = false;
+      } // only update if dirty and in graph
+
 
       if (useCache && rstyle.clean || ele.removed()) {
         continue;
@@ -29765,6 +29787,9 @@
           case 'center':
             bgX -= textW / 2;
             break;
+
+          case 'right':
+            break;
         }
 
         var bgY = textY - textH - backgroundPadding;
@@ -31980,7 +32005,7 @@
     return style;
   };
 
-  var version = "3.12.2";
+  var version = "3.12.3";
 
   var cytoscape = function cytoscape(options) {
     // if no options specified, use default
@@ -32018,4 +32043,4 @@
 
   return cytoscape;
 
-})));
+}));

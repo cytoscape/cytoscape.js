@@ -666,11 +666,17 @@
 </ul>
 <h2 id="introduction/releases">Releases <a href="#introduction/releases"><span class="fa fa-bookmark"></span></a></h2>
 <ul>
+<li>3.14<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.14.0+is%3Aclosed">3.14.0</a></li>
+</ul>
+</li>
 <li>3.13<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.13.1+is%3Aclosed">3.13.1</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.13.0+is%3Aclosed">3.13.0</a></li>
 </ul>
 </li>
 <li>3.12<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.12.3+is%3Aclosed">3.12.3</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.12.2+is%3Aclosed">3.12.2</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.12.1+is%3Aclosed">3.12.1</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.12.0+is%3Aclosed">3.12.0</a></li>
@@ -11339,9 +11345,49 @@ ks.cut.select();</code></pre>
   components <span class="hljs-comment">/* An array of collections corresponding to each biconnected component */</span>
 }</code></pre>
 <button class="run run-inline-code"><span class="fa fa-play"></span></button><h3 id="examples">Examples</h3>
-<pre><code class="language-js"><span class="hljs-keyword">var</span> ht = cy.elements().hopcroftTarjan();
+<pre><code class="language-js"><span class="hljs-keyword">var</span> ht = cy.elements().htbc();
 
 ht.components[<span class="hljs-number">0</span>].select();</code></pre>
+<button class="run run-inline-code"><span class="fa fa-play"></span></button>
+							</div>
+						</div>
+						<div class="function">
+							<div class="name" id="eles.tarjanStronglyConnected">
+								<span class="fn-name">eles.tarjanStronglyConnected()</span>  <a href="#eles.tarjanStronglyConnected"><span class="fa fa-bookmark"></span></a>
+								<span id="collection/cut/eles.tarjanStronglyConnected">&nbsp;</span><span id="collection/cut/eles.tarjanStronglyConnectedComponents">&nbsp;</span><span id="eles.tarjanStronglyConnectedComponents">&nbsp;</span><span id="collection/cut/eles.tsc">&nbsp;</span><span id="eles.tsc">&nbsp;</span><span id="collection/cut/eles.tscc">&nbsp;</span><span id="eles.tscc">&nbsp;</span>
+							</div>
+
+
+							<div class="pure-aliases">
+								<span class="important-indicator"></span> Aliases:
+
+									<span class="pure-alias">
+										<code id="collection/cut/eles.tarjanStronglyConnectedComponents" class="pure-alias-name">eles.tarjanStronglyConnectedComponents()</code><span class="pure-alias-comma">,</span>
+									</span>
+									<span class="pure-alias">
+										<code id="collection/cut/eles.tsc" class="pure-alias-name">eles.tsc()</code><span class="pure-alias-comma">,</span>
+									</span>
+									<span class="pure-alias">
+										<code id="collection/cut/eles.tscc" class="pure-alias-name">eles.tscc()</code><span class="pure-alias-comma">,</span>
+									</span>
+							</div>
+
+							<div class="descr"><p>Finds the <a href="https://en.wikipedia.org/wiki/Strongly_connected_component">strongly connected components</a> of a directed graph using Tarjan&#39;s algorithm.</p>
+</div>
+
+
+							<div class="details">
+									<h3 id="details">Details</h3>
+<p>Note that this function identifies strongly connected components only within the subset of the graph in the calling collection.</p>
+<p>This function returns an object of the following form:</p>
+<pre><code class="language-js">{
+  cut, <span class="hljs-comment">/* Collection of edges which adjoin pairs of strongly connected components */</span>
+  components <span class="hljs-comment">/* Array of collections corresponding to each strongly connected component */</span>
+}</code></pre>
+<button class="run run-inline-code"><span class="fa fa-play"></span></button><h3 id="examples">Examples</h3>
+<pre><code class="language-js"><span class="hljs-keyword">var</span> tsc = cy.elements().tarjanStronglyConnected();
+
+tsc.components[<span class="hljs-number">0</span>].select();</code></pre>
 <button class="run run-inline-code"><span class="fa fa-play"></span></button>
 							</div>
 						</div>
@@ -13590,6 +13636,7 @@ Sets the subject of the selector (e.g. <code>$node &gt; node</code> to select th
 </li>
 <li><strong><code>taxi-turn</code></strong> : The distance along the primary axis where the first turn is applied.<ul>
 <li>This value may be an absolute distance (e.g. <code>20px</code>) or it may be a relative distance between the source and target (e.g. <code>50%</code>).</li>
+<li>A negative value may be specified to indicate a distance in the oppostite, target to source direction (e.g. <code>-20px</code>).</li>
 <li>Note that bundling may not work with an explicit direction (<code>upward</code>, <code>downward</code>, <code>leftward</code>, or <code>rightward</code>) in tandem with a turn distance specified in percent units.</li>
 </ul>
 </li>
@@ -15734,6 +15781,7 @@ cytoscape.use( ext );</code></pre>
 
 							<div class="section lvl3"><a class="toclink" href="#eles.kargerStein">eles.kargerStein() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#eles.hopcroftTarjanBiconnected">eles.hopcroftTarjanBiconnected() </a></div>
+							<div class="section lvl3"><a class="toclink" href="#eles.tarjanStronglyConnected">eles.tarjanStronglyConnected() </a></div>
 						<div class="section lvl2">
 							<span class="expander">
 								<span class="fa fa-caret-down expanded-icon"></span>

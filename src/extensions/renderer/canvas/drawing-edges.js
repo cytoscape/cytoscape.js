@@ -278,17 +278,15 @@ CRp.drawArrowShape = function( edge, context, fill, edgeWidth, shape, x, y, angl
     }
   }
 
-  if( context.beginPath ){ context.beginPath(); }
-
   if( !pathCacheHit ){
+    if( context.beginPath ){ context.beginPath(); }
     if( usePaths ){ // store in the path cache with values easily manipulated later
       shapeImpl.draw( context, 1, 0, { x: 0, y: 0 }, 1 );
     } else {
       shapeImpl.draw( context, size, angle, translation, edgeWidth );
     }
+    if( context.closePath ){ context.closePath(); }
   }
-
-  if( context.closePath ){ context.closePath(); }
 
   context = canvasContext;
 

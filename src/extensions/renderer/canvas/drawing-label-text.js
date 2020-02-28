@@ -145,6 +145,36 @@ function roundRect( ctx, x, y, width, height, radius = 5 ){
   ctx.fill();
 }
 
+function ellipse( ctx, x, y, width, height ) {
+  ctx.beginPath();
+  ctx.ellipse(x + width / 2, y + height / 2, width / 2, height / 2, 0, 0, 2 * Math.PI);
+  ctx.fill();
+}
+
+function circle( ctx, x, y, width, height, sizeMode = 'max' ) {
+  let diameter;
+  switch ( sizeMode ) {
+    case 'width':
+      diameter = width;
+      break;
+    case 'height':
+      diameter = height;
+      break;
+    case 'min':
+      diameter = Math.min(width, height);
+      break;
+    default:
+      diameter = Math.max(width, height);
+      break;
+  }
+  const centerX = x + diameter / 2 + (width - diameter) / 2;
+  const centerY = y + diameter / 2 + (height - diameter) / 2;
+
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, diameter / 2, 0, 2 * Math.PI);
+  ctx.fill();
+}
+
 CRp.getTextAngle = function( ele, prefix ){
   let theta;
   let _p = ele._private;
@@ -264,6 +294,11 @@ CRp.drawText = function( context, ele, prefix, applyRotation = true, useEleOpaci
         let styleShape = ele.pstyle( 'text-background-shape' ).strValue;
         if( styleShape.indexOf('round') === 0 ){
           roundRect( context, bgX, bgY, bgW, bgH, 2 );
+        } else if ( styleShape == 'ellipse' ) {
+          ellipse( context, bgX, bgY, bgW, bgH );
+        } else if (styleShape === 'circle' ) {
+          let circleSize = ele.pstyle( 'text-background-shape-circle-size' ).strValue;
+          circle( context, bgX, bgY, bgW, bgH, circleSize );
         } else {
           context.fillRect( bgX, bgY, bgW, bgH );
         }

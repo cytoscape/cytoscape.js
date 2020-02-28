@@ -63,7 +63,8 @@ const styfn = {};
     textTransform: { enums: [ 'none', 'uppercase', 'lowercase' ] },
     textWrap: { enums: [ 'none', 'wrap', 'ellipsis' ] },
     textOverflowWrap: { enums: [ 'whitespace', 'anywhere' ] },
-    textBackgroundShape: { enums: [ 'rectangle', 'roundrectangle', 'round-rectangle' ]},
+    textBackgroundShape: { enums: [ 'rectangle', 'roundrectangle', 'round-rectangle', 'ellipse', 'circle' ]},
+    textBackgroundCircleSize: { enums: [ 'width', 'height', 'min', 'max' ]},
     nodeShape: { enums: [
       'rectangle', 'roundrectangle', 'round-rectangle', 'cutrectangle', 'cut-rectangle', 'bottomroundrectangle', 'bottom-round-rectangle', 'barrel',
       'ellipse', 'triangle', 'round-triangle', 'square', 'pentagon', 'round-pentagon', 'hexagon', 'round-hexagon', 'concavehexagon', 'concave-hexagon', 'heptagon', 'round-heptagon', 'octagon', 'round-octagon',
@@ -216,6 +217,7 @@ const styfn = {};
     { name: 'text-border-width', type: t.size, triggersBounds: diff.any },
     { name: 'text-border-style', type: t.borderStyle, triggersBounds: diff.any },
     { name: 'text-background-shape', type: t.textBackgroundShape, triggersBounds: diff.any },
+    { name: 'text-background-shape-circle-size', type: t.textBackgroundCircleSize, triggersBounds: diff.any },
     { name: 'text-justification', type: t.justification }
   ];
 
@@ -532,6 +534,7 @@ styfn.getDefaultProperties = function(){
     'text-background-color': '#000',
     'text-background-opacity': 0,
     'text-background-shape': 'rectangle',
+    'text-background-shape-circle-size': 'max',
     'text-background-padding': 0,
     'text-border-opacity': 0,
     'text-border-width': 0,

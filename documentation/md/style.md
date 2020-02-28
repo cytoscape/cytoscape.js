@@ -618,6 +618,14 @@ Border:
  * **`text-border-style`** : The style of the border around the label; may be `solid`, `dotted`, `dashed`, or `double`.
  * **`text-border-color`** : The colour of the border around the label.
 
+Shadow:
+
+* **`text-shadow-opacity`**: The opacity of the label shadow; the shadow is disabled for `0` (default value).
+* **`text-shadow-color`**: A colour to apply on the label shadow.
+* **`text-shadow-blur`**:  The blur level for the label shadow; no blurring occurs for `0` (default value).
+* **`text-shadow-offset-x`**: The horizontal offset of the label shadow relative to the label. Negative values move the shadow to the left, the shadow is horizontally centered behind the label for `0` (default value).
+* **`text-shadow-offset-y`**: The vertical offset of the label shadow relative to the label. Negative values move the shadow to the top, the shadow is vertically centered behind the label for `0` (default value).
+
 Interactivity:
 
  * **`min-zoomed-font-size`** : If zooming makes the effective font size of the label smaller than this, then no label is shown.  Note that because of performance optimisations, the label may be shown at font sizes slightly smaller than this value.  This effect is more pronounced at larger screen pixel ratios.  However, it is guaranteed that the label will be shown at sizes equal to or greater than the value specified.

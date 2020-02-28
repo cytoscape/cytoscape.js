@@ -34,6 +34,7 @@ const styfn = {};
     number: { number: true, unitless: true },
     numbers: { number: true, unitless: true, multiple: true },
     positiveNumber: { number: true, unitless: true, min: 0, strictMin: true },
+    nonNegativeNumber: { number: true, min: 0, unitless: true },
     size: { number: true, min: 0 },
     bidirectionalSize: { number: true }, // allows negative
     bidirectionalSizes: { number: true, multiple: true }, // allows negative
@@ -215,6 +216,12 @@ const styfn = {};
     { name: 'text-border-width', type: t.size, triggersBounds: diff.any },
     { name: 'text-border-style', type: t.borderStyle, triggersBounds: diff.any },
     { name: 'text-background-shape', type: t.textBackgroundShape, triggersBounds: diff.any },
+    { name: 'text-shadow-opacity', type: t.zeroOneNumber },
+    { name: 'text-shadow-color', type: t.color },
+    { name: 'text-shadow-blur', type: t.nonNegativeNumber },
+    { name: 'text-shadow-offset-x', type: t.bidirectionalSize },
+    { name: 'text-shadow-offset-y', type: t.bidirectionalSize },
+    { name: 'text-border-width', type: t.size, triggersBounds: diff.any },
     { name: 'text-justification', type: t.justification }
   ];
 

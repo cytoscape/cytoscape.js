@@ -261,11 +261,26 @@ CRp.drawText = function( context, ele, prefix, applyRotation = true, useEleOpaci
         let textBackgroundColor = ele.pstyle( 'text-background-color' ).value;
 
         context.fillStyle = 'rgba(' + textBackgroundColor[ 0 ] + ',' + textBackgroundColor[ 1 ] + ',' + textBackgroundColor[ 2 ] + ',' + backgroundOpacity * parentOpacity + ')';
+        
+        let textShadowOpacity = ele.pstyle( 'text-shadow-opacity' ).value;
+        if ( textShadowOpacity > 0 ) {
+          let textShadowColor = ele.pstyle( 'text-shadow-color' ).value;
+
+          context.save();
+          context.shadowColor = 'rgba(' + textShadowColor[ 0 ] + ',' + textShadowColor[ 1 ] + ',' + textShadowColor[ 2 ] + ',' + textShadowOpacity * parentOpacity + ')';
+          context.shadowBlur = ele.pstyle( 'text-shadow-blur' ).value;
+          context.shadowOffsetX = ele.pstyle( 'text-shadow-offset-x' ).pfValue;
+          context.shadowOffsetY = ele.pstyle( 'text-shadow-offset-y' ).pfValue;
+        }
+        
         let styleShape = ele.pstyle( 'text-background-shape' ).strValue;
         if( styleShape.indexOf('round') === 0 ){
           roundRect( context, bgX, bgY, bgW, bgH, 2 );
         } else {
           context.fillRect( bgX, bgY, bgW, bgH );
+        }
+        if ( textShadowOpacity > 0 ) {
+          context.restore();
         }
         context.fillStyle = textFill;
       }

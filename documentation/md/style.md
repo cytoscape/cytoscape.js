@@ -607,12 +607,13 @@ Background:
 
  * **`text-background-color`** : A colour to apply on the text background.
  * **`text-background-opacity`** : The opacity of the label background; the background is disabled for `0` (default value).
- * **`text-background-shape`** : The shape to use for the label background, can be `rectangle` or `round-rectangle`.
+ * **`text-background-shape`** : The shape to use for the label background, can be `rectangle`, `round-rectangle`, `ellipse` or `circle`.
+ * **`text-background-shape-circle-size`** : Method for determining circle size (only applicable for `text-background-shape = 'circle'`). Can be `height`, `width`, `min` or `max` (default value).
  * **`text-background-padding`** : A padding on the background of the label (e.g `5px`); zero padding is used by default.
 
 Border:
 
- * **`text-border-opacity`** : The width of the border around the label; the border is disabled for `0` (default value).
+ * **`text-border-opacity`** : The width of the border around the label; the border is disabled for `0` (default value). The border is always rectangular, so this should not be combined non-rectangular background shapes.
  * **`text-border-width`** : The width of the border around the label.
  * **`text-border-style`** : The style of the border around the label; may be `solid`, `dotted`, `dashed`, or `double`.
  * **`text-border-color`** : The colour of the border around the label.

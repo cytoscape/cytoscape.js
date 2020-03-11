@@ -1,6 +1,7 @@
-const DEFAULT_SEED = 5381;
+const DEFAULT_SEED = 9261;
+const K = 65599; // 37 also works pretty well
 
-export const hashIterableInts = function( iterator, seed = DEFAULT_SEED ){ // djb2/string-hash
+export const hashIterableInts = function( iterator, seed = DEFAULT_SEED ){ // sdbm/string-hash
   let hash = seed;
   let entry;
 
@@ -9,14 +10,14 @@ export const hashIterableInts = function( iterator, seed = DEFAULT_SEED ){ // dj
 
     if( entry.done ){ break; }
 
-    hash = ((hash << 5) + hash + entry.value) | 0;
+    hash = ((hash * K) + entry.value) | 0;
   }
 
   return hash;
 };
 
-export const hashInt = function( num, seed = DEFAULT_SEED ){ // djb2/string-hash
-  return ((seed << 5) + seed + num) | 0;
+export const hashInt = function( num, seed = DEFAULT_SEED ){ // sdbm/string-hash
+  return ((seed * K) + num) | 0;
 };
 
 export const hashIntsArray = function( ints, seed ){

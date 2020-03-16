@@ -81,6 +81,7 @@
   * [Machine2Learn](https://www.machine2learn.com) : [Deep Learning Model Generator](https://www.machine2learn.com/deep-learning-model-generator/)
   * [Max Plank Institute of Molecular Cell Physiology](https://www.mpimp-golm.mpg.de) : [CoNekT](http://conekt.mpimp-golm.mpg.de/pub/)
   * [Musicalized](http://en.musicalized.com/full)
+  * [Naver](https://www.naver.com/) : [Pinpoint](https://naver.github.io/pinpoint/)
   * [New Relic](https://newrelic.com/platform)
   * [NDEx](http://www.ndexbio.org/)
   * [NSA](https://www.nsa.gov/) : [WALKOFF](https://github.com/nsacyber/WALKOFF)

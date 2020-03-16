@@ -87,10 +87,10 @@ Run `npm run <target>` in the console.  The main targets are:
 
 **Building:**
 
- * `build`: do all builds of the library (unmin, min, umd)
- * `build:unmin` : do the unminified build with bundled dependencies (for simple html pages, good for novices)
+ * `build`: do all builds of the library (umd, min, umd, esm)
  * `build:min` : do the unminified build with bundled dependencies (for simple html pages, good for novices)
  * `build:umd` : do the umd (cjs/amd/globals) build
+ * `build:esm` : do the esm (ES 2015 modules) build
  * `clean` : clean the `build` directory
  * `docs` : build the docs into `documentation`
  * `release` : build all release artifacts

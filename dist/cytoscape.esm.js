@@ -28819,11 +28819,11 @@ CRp$2.drawArrowShape = function (edge, context, fill, edgeWidth, shape, x, y, an
     }
   }
 
-  if (context.beginPath) {
-    context.beginPath();
-  }
-
   if (!pathCacheHit) {
+    if (context.beginPath) {
+      context.beginPath();
+    }
+
     if (usePaths) {
       // store in the path cache with values easily manipulated later
       shapeImpl.draw(context, 1, 0, {
@@ -28833,10 +28833,10 @@ CRp$2.drawArrowShape = function (edge, context, fill, edgeWidth, shape, x, y, an
     } else {
       shapeImpl.draw(context, size, angle, translation, edgeWidth);
     }
-  }
 
-  if (context.closePath) {
-    context.closePath();
+    if (context.closePath) {
+      context.closePath();
+    }
   }
 
   context = canvasContext;
@@ -31486,7 +31486,7 @@ sheetfn.appendToStyle = function (style) {
   return style;
 };
 
-var version = "3.14.0";
+var version = "3.14.1";
 
 var cytoscape = function cytoscape(options) {
   // if no options specified, use default

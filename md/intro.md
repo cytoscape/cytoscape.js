@@ -81,6 +81,7 @@
   * [Machine2Learn](https://www.machine2learn.com) : [Deep Learning Model Generator](https://www.machine2learn.com/deep-learning-model-generator/)
   * [Max Plank Institute of Molecular Cell Physiology](https://www.mpimp-golm.mpg.de) : [CoNekT](http://conekt.mpimp-golm.mpg.de/pub/)
   * [Musicalized](http://en.musicalized.com/full)
+  * [Naver](https://www.naver.com/) : [Pinpoint](https://naver.github.io/pinpoint/)
   * [New Relic](https://newrelic.com/platform)
   * [NDEx](http://www.ndexbio.org/)
   * [NSA](https://www.nsa.gov/) : [WALKOFF](https://github.com/nsacyber/WALKOFF)
@@ -140,8 +141,10 @@ The library was created at the [Donnelly Centre](http://thedonnellycentre.utoron
 ## Releases
 
 - 3.14
+ - [3.14.1](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.14.1+is%3Aclosed)
  - [3.14.0](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.14.0+is%3Aclosed)
 - 3.13
+ - [3.13.2](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.13.2+is%3Aclosed)
  - [3.13.1](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.13.1+is%3Aclosed)
  - [3.13.0](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.13.0+is%3Aclosed)
 - 3.12

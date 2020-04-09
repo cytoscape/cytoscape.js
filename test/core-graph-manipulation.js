@@ -690,7 +690,7 @@ describe('Core graph manipulation', function(){
         expect( cy.$('#c').parent().id(), 'parent of c is a' ).to.equal('a');
     });
 
-    it('cy.json() orphans children', function(){
+    it('cy.json() orphans children via null', function(){
       // clean up before test:
       cy.elements().remove();
       cy.add([
@@ -703,8 +703,36 @@ describe('Core graph manipulation', function(){
       cy.json({
         elements: [
           { data: { id: 'a' } },
-          { data: { id: 'b' } },
-          { data: { id: 'c' } },
+          { data: { id: 'b', parent: null } },
+          { data: { id: 'c', parent: null } },
+          { data: { id: 'e', source: 'b', target: 'c' } }
+        ]
+      });
+
+      expect( cy.$('#a').nonempty(), 'node a in graph' ).to.be.true;
+      expect( cy.$('#b').nonempty(), 'node b in graph' ).to.be.true;
+      expect( cy.$('#c').nonempty(), 'node c in graph' ).to.be.true;
+      expect( cy.$('#e').nonempty(), 'edge e in graph' ).to.be.true;
+      expect( cy.$('#a').isParent(), 'a is parent' ).to.be.false;
+      expect( cy.$('#b').isOrphan(), 'b is orphan' ).to.be.true;
+      expect( cy.$('#c').isOrphan(), 'c is orphan' ).to.be.true;
+    });
+
+    it('cy.json() orphans children via undefined', function(){
+      // clean up before test:
+      cy.elements().remove();
+      cy.add([
+        { data: { id: 'a' } },
+        { data: { id: 'b', parent: 'a' } },
+        { data: { id: 'c', parent: 'a' } },
+        { data: { id: 'e', source: 'b', target: 'c' } }
+      ]);
+
+      cy.json({
+        elements: [
+          { data: { id: 'a' } },
+          { data: { id: 'b', parent: undefined } },
+          { data: { id: 'c', parent: undefined } },
           { data: { id: 'e', source: 'b', target: 'c' } }
         ]
       });

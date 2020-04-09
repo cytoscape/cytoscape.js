@@ -232,9 +232,10 @@ elesfn.json = function( obj ){
           ele = ele.move(spec);
         }
       } else { // parent is immutable via data()
+        let newParentValSpecd = 'parent' in obj.data;
         let parent = obj.data.parent;
 
-        if( (parent != null || data.parent != null) && parent != data.parent ){
+        if( newParentValSpecd && (parent != null || data.parent != null) && parent != data.parent ){
           if( parent === undefined ){ // can't set undefined imperatively, so use null
             parent = null;
           }

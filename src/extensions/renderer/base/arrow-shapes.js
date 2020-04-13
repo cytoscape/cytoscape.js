@@ -158,7 +158,6 @@ BRp.registerArrowShapes = function(){
     }
   } );
 
-
   defineArrowShape( 'triangle-tee', {
     points: [
       0, 0,
@@ -188,6 +187,24 @@ BRp.registerArrowShapes = function(){
       var teePts = transformPoints( this.pointsTee, size, angle, translation );
 
       renderer.arrowShapeImpl( this.name )( context, triPts, teePts );
+    }
+  } );
+
+  defineArrowShape( 'triangle-circle', {
+    radius: 0.15,
+    pointsTr: [0, -0.15, 0.15, -0.45, -0.15, -0.45, 0, -0.15],
+    collide: function collide(x, y, size, angle, translation, edgeWidth, padding) {
+      var t = translation;
+      var circleInside = Math.pow(t.x - x, 2) + Math.pow(t.y - y, 2) <= Math.pow((size + 2 * padding) * this.radius, 2);
+      var triPts = pointsToArr(transformPoints(this.points, size + 2 * padding, angle, translation));
+      return math.pointInsidePolygonPoints(x, y, triPts) || circleInside;
+    },
+    draw: function draw(context, size, angle, translation, edgeWidth) {        
+      var triPts = transformPoints(this.pointsTr, size, angle, translation);
+      renderer.arrowShapeImpl(this.name)(context, triPts, translation.x, translation.y, this.radius * size);
+    },
+    spacing: function spacing(edge) {
+      return renderer.getArrowWidth(edge.pstyle('width').pfValue, edge.pstyle('arrow-scale').value) * this.radius;
     }
   } );
 

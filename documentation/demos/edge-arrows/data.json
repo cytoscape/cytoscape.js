@@ -7,9 +7,9 @@
   { "data": { "id": "n3" } },
   { "data": { "id": "e1", "source": "n2", "target": "n3", "arrow": "triangle-tee" } },
 
-  { "data": { "id": "n4", "type": "triangle-circle" } },
+  { "data": { "id": "n4", "type": "circle-triangle" } },
   { "data": { "id": "n5" } },
-  { "data": { "id": "e2", "source": "n4", "target": "n5", "arrow": "triangle-circle" } },
+  { "data": { "id": "e2", "source": "n4", "target": "n5", "arrow": "circle-triangle" } },
 
   { "data": { "id": "n6", "type": "triangle-cross" } },
   { "data": { "id": "n7" } },

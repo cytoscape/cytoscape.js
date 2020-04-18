@@ -190,7 +190,7 @@ BRp.registerArrowShapes = function(){
     }
   } );
 
-  defineArrowShape( 'triangle-circle', {
+  defineArrowShape( 'circle-triangle', {
     radius: 0.15,
     pointsTr: [0, -0.15, 0.15, -0.45, -0.15, -0.45, 0, -0.15],
     collide: function collide(x, y, size, angle, translation, edgeWidth, padding) {

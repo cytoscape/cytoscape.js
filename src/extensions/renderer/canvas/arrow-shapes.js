@@ -49,7 +49,7 @@ function triangleTee( context, trianglePoints, teePoints ){
   if( context.closePath ){ context.closePath(); }
 }
 
-function triangleCircle(context, trianglePoints, rx, ry, r) {
+function circleTriangle(context, trianglePoints, rx, ry, r) {
   if (context.beginPath) { context.beginPath(); }
   context.arc(rx, ry, r, 0, Math.PI * 2, false);    
   var triPts = trianglePoints;
@@ -76,7 +76,7 @@ CRp.arrowShapeImpl = function( name ){
 
     'triangle-tee': triangleTee,
 
-    'triangle-circle' : triangleCircle,
+    'circle-triangle' : circleTriangle,
 
     'triangle-cross': triangleTee,
 

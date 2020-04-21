@@ -76,6 +76,7 @@ let Core = function( opts ){
     zoomingEnabled: defVal( true, options.zoomingEnabled ),
     userZoomingEnabled: defVal( true, options.userZoomingEnabled ),
     panningEnabled: defVal( true, options.panningEnabled ),
+    panningWithRightMouseButton: defVal( false, options.panningWithRightMouseButton ),
     userPanningEnabled: defVal( true, options.userPanningEnabled ),
     boxSelectionEnabled: defVal( true, options.boxSelectionEnabled ),
     autolock: defVal( false, options.autolock, options.autolockNodes ),
@@ -415,6 +416,7 @@ util.extend( corefn, {
       let fields = [
         'minZoom', 'maxZoom', 'zoomingEnabled', 'userZoomingEnabled',
         'panningEnabled', 'userPanningEnabled',
+        'panningWithRightMouseButton',
         'boxSelectionEnabled',
         'autolock', 'autoungrabify', 'autounselectify'
       ];
@@ -464,6 +466,7 @@ util.extend( corefn, {
       json.minZoom = _p.minZoom;
       json.maxZoom = _p.maxZoom;
       json.panningEnabled = _p.panningEnabled;
+      json.panningWithRightMouseButton = _p.panningWithRightMouseButton;
       json.userPanningEnabled = _p.userPanningEnabled;
       json.pan = util.copy( _p.pan );
       json.boxSelectionEnabled = _p.boxSelectionEnabled;

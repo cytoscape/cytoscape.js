@@ -34,6 +34,14 @@
 		cy.userPanningEnabled(false);
 	});
 
+	$("#enable-panning-with-right-mouse-button").addEventListener('click', function(){
+		cy.panningWithRightMouseButton(true);
+	});
+
+	$("#disable-panning-with-right-mouse-button").addEventListener('click', function(){
+		cy.panningWithRightMouseButton(false);
+	});
+
 	$("#enable-zooming").addEventListener('click', function(){
 		cy.zoomingEnabled(true);
 	});

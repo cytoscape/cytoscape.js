@@ -74,6 +74,16 @@ let corefn = ({
     return this; // chaining
   },
 
+  panningWithRightMouseButton: function( bool ){
+    if( bool !== undefined ){
+      this._private.panningWithRightMouseButton = bool ? true : false;
+    } else {
+      return this._private.panningWithRightMouseButton;
+    }
+
+    return this; // chaining
+  },
+  
   zoomingEnabled: function( bool ){
     if( bool !== undefined ){
       this._private.zoomingEnabled = bool ? true : false;

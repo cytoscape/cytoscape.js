@@ -455,13 +455,31 @@ BRp.load = function(){
         position: { x: pos[0], y: pos[1] }
       };
 
-      if( near ){
-        near.activate();
-        near.emit( cxtEvt );
+      if (cy.panningWithRightMouseButton()) {
+          cy.emit( cxtEvt );
+          
+          r.hoverData.down = near;
+          r.hoverData.downs = nears;
+          triggerEvents( near, [ 'mousedown', 'tapstart', 'vmousedown' ], e, { x: pos[0], y: pos[1] } );
 
-        r.hoverData.down = near;
+          select[4] = 1;
+
+          r.data.bgActivePosistion = {
+            x: pos[0],
+            y: pos[1]
+          };
+
+          r.redrawHint( 'select', true );
+          r.redraw();
       } else {
-        cy.emit( cxtEvt );
+        if( near ){
+          near.activate();
+          near.emit( cxtEvt );
+  
+          r.hoverData.down = near;
+        } else {
+          cy.emit( cxtEvt );
+        }
       }
 
       r.hoverData.downTime = (new Date()).getTime();
@@ -528,21 +546,23 @@ BRp.load = function(){
 
       triggerEvents( near, [ 'mousedown', 'tapstart', 'vmousedown' ], e, { x: pos[0], y: pos[1] } );
 
-      if( near == null ){
-        select[4] = 1;
+        if( near == null ){
+          select[4] = 1;
 
-        r.data.bgActivePosistion = {
-          x: pos[0],
-          y: pos[1]
-        };
+          if (!cy.panningWithRightMouseButton()) {
+            r.data.bgActivePosistion = {
+              x: pos[0],
+              y: pos[1]
+            };
 
-        r.redrawHint( 'select', true );
+            r.redrawHint( 'select', true );
 
-        r.redraw();
-      } else if( near.pannable() ){
-        select[4] = 1; // for future pan
-      }
-
+            r.redraw();
+          }
+        } else if( near.pannable() ){
+          select[4] = 1; // for future pan
+        }
+        
       checkForTaphold();
 
     }
@@ -632,7 +652,7 @@ BRp.load = function(){
     };
 
     // trigger context drag if rmouse down
-    if( r.hoverData.which === 3 ){
+    if( r.hoverData.which === 3 && select[4] != 1 && !r.hoverData.dragging ){
       // but only if over threshold
       if( isOverThresholdDrag ){
         var cxtEvt = ( {
@@ -706,16 +726,20 @@ BRp.load = function(){
       pos = r.projectIntoViewport( e.clientX, e.clientY );
 
     // Checks primary button down & out of time & mouse not moved much
-    } else if(
-        select[4] == 1 && (down == null || down.pannable())
-    ){
+    } else if( select[4] == 1 && (down == null || down.pannable() || cy.panningWithRightMouseButton()) ) {
 
       if( isOverThresholdDrag ){
 
-        if( !r.hoverData.dragging && cy.boxSelectionEnabled() && ( multSelKeyDown || !cy.panningEnabled() || !cy.userPanningEnabled() ) ){
+        if( !r.hoverData.dragging &&
+            cy.boxSelectionEnabled() &&
+            r.hoverData.which === 1 &&
+            (!cy.panningEnabled() || !cy.userPanningEnabled() || multSelKeyDown || cy.panningWithRightMouseButton())) {
           goIntoBoxMode();
 
-        } else if( !r.hoverData.selecting && cy.panningEnabled() && cy.userPanningEnabled() ){
+        } else if( !r.hoverData.selecting &&
+                   cy.panningEnabled() && 
+                   cy.userPanningEnabled() && 
+                   ((r.hoverData.which === 1 && !cy.panningWithRightMouseButton()) || (r.hoverData.which === 3 && cy.panningWithRightMouseButton()))){
           var allowPassthrough = allowPanningPassthrough( down, r.hoverData.downs );
 
           if( allowPassthrough ){
@@ -860,7 +884,7 @@ BRp.load = function(){
     if( down ){
       down.unactivate();
     }
-
+    
     if( r.hoverData.which === 3 ){
       var cxtEvt = ( {
         originalEvent: e,
@@ -890,11 +914,13 @@ BRp.load = function(){
 
       r.hoverData.cxtDragged = false;
       r.hoverData.which = null;
+    } 
 
-    } else if( r.hoverData.which === 1 ){
-
+    if( r.hoverData.which === 1 || (!select[4] && cy.panningWithRightMouseButton()) ) {
       triggerEvents( near, [ 'mouseup', 'tapend', 'vmouseup' ], e, { x: pos[0], y: pos[1] } );
+    }
 
+    if( r.hoverData.which === 1 ){
       if(
         !r.dragData.didDrag // didn't move a node around
         && !r.hoverData.dragged // didn't pan
@@ -986,6 +1012,9 @@ BRp.load = function(){
 
       }
 
+    }
+
+    if( r.hoverData.which === 1 || cy.panningWithRightMouseButton() ){
       // Cancel drag pan
       if( r.hoverData.dragging ){
         r.hoverData.dragging = false;
@@ -1015,7 +1044,7 @@ BRp.load = function(){
         }
       }
 
-    } // else not right mouse
+    }
 
     select[4] = 0; r.hoverData.down = null;
 

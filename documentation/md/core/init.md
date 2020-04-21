@@ -45,6 +45,7 @@ An instance of Cytoscape.js has a number of options that can be set on initialis
   <a href="#init-opts/userZoomingEnabled">userZoomingEnabled</a>: true,
   <a href="#init-opts/panningEnabled">panningEnabled</a>: true,
   <a href="#init-opts/userPanningEnabled">userPanningEnabled</a>: true,
+  <a href="#init-opts/panningWithRightMouseButton">panningWithRightMouseButton</a>: false,
   <a href="#init-opts/boxSelectionEnabled">boxSelectionEnabled</a>: true,
   <a href="#init-opts/selectionType">selectionType</a>: 'single',
   <a href="#init-opts/touchTapThreshold">touchTapThreshold</a>: 8,

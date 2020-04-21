@@ -548,6 +548,24 @@
             },
 
             {
+              "name": "cy.panningWithRightMouseButton",
+              "descr": "Get or set whether panning by user should be done with left mouse button (default) or right mouse button.",
+              "formats": [
+                {
+                  "descr": "Get whether user panning is done with left mouse button (false) or right mouse button (true)."
+                },
+
+                {
+                  "descr": "Set whether user panning is done with left mouse button (false) or right mouse button (true)..",
+                  "args": [
+                    { "name": "bool", "descr": "A truthy value enables user panning with right mouse button; a falsey value enables user panning with left mouse button." }
+                  ]
+                }
+              ],
+              "md": "core/panningWithRightMouseButton"
+            },
+
+            {
               "name": "cy.zoom",
               "descr": "Get or set the zoom level of the graph.",
               "formats": [

@@ -145,7 +145,7 @@
     "esm": "^3.2.25",
     "gh-pages": "^2.1.1",
     "handlebars": "^4.5.3",
-    "highlight.js": "^9.15.6",
+    "highlight.js": "^10.0.0",
     "http-server": "^0.12.0",
     "jsonlint": "^1.6.2",
     "livereload": "^0.9.1",

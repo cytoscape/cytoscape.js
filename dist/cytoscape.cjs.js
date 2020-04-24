@@ -12741,9 +12741,10 @@ elesfn$u.json = function (obj) {
         }
       } else {
         // parent is immutable via data()
+        var newParentValSpecd = 'parent' in obj.data;
         var parent = obj.data.parent;
 
-        if ((parent != null || _data2.parent != null) && parent != _data2.parent) {
+        if (newParentValSpecd && (parent != null || _data2.parent != null) && parent != _data2.parent) {
           if (parent === undefined) {
             // can't set undefined imperatively, so use null
             parent = null;
@@ -31490,7 +31491,7 @@ sheetfn.appendToStyle = function (style) {
   return style;
 };
 
-var version = "3.14.1";
+var version = "3.14.2";
 
 var cytoscape = function cytoscape(options) {
   // if no options specified, use default

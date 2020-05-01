@@ -1037,9 +1037,11 @@ BRp.load = function(){
     if( r.scrollingPage ){ return; } // while scrolling, ignore wheel-to-zoom
 
     var cy = r.cy;
+    var zoom = cy.zoom();
+    var pan = cy.pan();
     var pos = r.projectIntoViewport( e.clientX, e.clientY );
-    var rpos = [ pos[0] * cy.zoom() + cy.pan().x,
-                  pos[1] * cy.zoom() + cy.pan().y ];
+    var rpos = [ pos[0] * zoom + pan.x,
+                  pos[1] * zoom + pan.y ];
 
     if( r.hoverData.draggingEles || r.hoverData.dragging || r.hoverData.cxtStarted || inBoxSelection() ){ // if pan dragging or cxt dragging, wheel movements make no zoom
       e.preventDefault();
@@ -1075,8 +1077,14 @@ BRp.load = function(){
         diff *= 33;
       }
 
+      var newZoom = cy.zoom() * Math.pow( 10, diff );
+
+      if( e.type === 'gesturechange' ){
+        newZoom = r.gestureStartZoom * e.scale;
+      }
+
       cy.zoom( {
-        level: cy.zoom() * Math.pow( 10, diff ),
+        level: newZoom,
         renderedPosition: { x: rpos[0], y: rpos[1] }
       } );
     }
@@ -1099,6 +1107,21 @@ BRp.load = function(){
     r.scrollingPageTimeout = setTimeout( function(){
       r.scrollingPage = false;
     }, 250 );
+  }, true );
+
+  // desktop safari pinch to zoom start
+  r.registerBinding( r.container, 'gesturestart', function gestureStartHandler(e){
+    r.gestureStartZoom = r.cy.zoom();
+
+    if( !r.hasTouchStarted ){ // don't affect touch devices like iphone
+      e.preventDefault();
+    }
+  }, true );
+
+  r.registerBinding( r.container, 'gesturechange', function(e){
+    if( !r.hasTouchStarted ){ // don't affect touch devices like iphone
+      wheelHandler(e);
+    }
   }, true );
 
   // Functions to help with handling mouseout/mouseover on the Cytoscape container
@@ -1140,6 +1163,8 @@ BRp.load = function(){
 
   var touchstartHandler;
   r.registerBinding( r.container, 'touchstart', touchstartHandler = function( e ){
+    r.hasTouchStarted = true;
+    
     if( !eventInContainer(e) ){ return; }
 
     blurActiveDomElement();

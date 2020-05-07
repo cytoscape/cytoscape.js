@@ -153,7 +153,7 @@
     "mocha": "^7.0.1",
     "npm-run-all": "^4.1.5",
     "rimraf": "^3.0.0",
-    "rollup": "^1.27.8",
+    "rollup": "^2.8.2",
     "rollup-plugin-babel": "^4.3.0",
     "rollup-plugin-commonjs": "^10.0.0",
     "rollup-plugin-license": "^0.13.0",

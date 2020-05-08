@@ -357,7 +357,7 @@ styfn.updateStyleHints = function(ele){
   _p.labelDimsKey = util.combineHashesArray(sk.labelDimensions);
 
   let labelKeys = propHash( ele, ['label'], sk.labelDimensions );
-  console.log(labelKeys);
+  
   _p.labelKey = util.combineHashesArray(labelKeys);
   _p.labelStyleKey = util.combineHashesArray(util.hashArrays(sk.commonLabel, labelKeys));
 

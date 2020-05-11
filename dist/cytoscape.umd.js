@@ -1090,10 +1090,13 @@
   };
   var performanceNow = pnow;
 
-  var DEFAULT_SEED = 5381;
+  var DEFAULT_HASH_SEED = 9261;
+  var K = 65599; // 37 also works pretty well
+
+  var DEFAULT_HASH_SEED_ALT = 5381;
   var hashIterableInts = function hashIterableInts(iterator) {
-    var seed = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : DEFAULT_SEED;
-    // djb2/string-hash
+    var seed = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : DEFAULT_HASH_SEED;
+    // sdbm/string-hash
     var hash = seed;
     var entry;
 
@@ -1104,15 +1107,29 @@
         break;
       }
 
-      hash = (hash << 5) + hash + entry.value | 0;
+      hash = hash * K + entry.value | 0;
     }
 
     return hash;
   };
   var hashInt = function hashInt(num) {
-    var seed = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : DEFAULT_SEED;
+    var seed = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : DEFAULT_HASH_SEED;
+    // sdbm/string-hash
+    return seed * K + num | 0;
+  };
+  var hashIntAlt = function hashIntAlt(num) {
+    var seed = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : DEFAULT_HASH_SEED_ALT;
     // djb2/string-hash
     return (seed << 5) + seed + num | 0;
+  };
+  var combineHashes = function combineHashes(hash1, hash2) {
+    return hash1 * 0x200000 + hash2;
+  };
+  var combineHashesArray = function combineHashesArray(hashes) {
+    return hashes[0] * 0x200000 + hashes[1];
+  };
+  var hashArrays = function hashArrays(hashes1, hashes2) {
+    return [hashInt(hashes1[0], hashes2[0]), hashIntAlt(hashes1[1], hashes2[1])];
   };
   var hashIntsArray = function hashIntsArray(ints, seed) {
     var entry = {
@@ -13500,9 +13517,10 @@
           }
         } else {
           // parent is immutable via data()
+          var newParentValSpecd = 'parent' in obj.data;
           var parent = obj.data.parent;
 
-          if ((parent != null || _data2.parent != null) && parent != _data2.parent) {
+          if (newParentValSpecd && (parent != null || _data2.parent != null) && parent != _data2.parent) {
             if (parent === undefined) {
               // can't set undefined imperatively, so use null
               parent = null;
@@ -15544,16 +15562,27 @@
 
     for (var i = 0; i < propGrKeys.length; i++) {
       var grKey = propGrKeys[i];
-      _p.styleKeys[grKey] = 0;
+      _p.styleKeys[grKey] = [DEFAULT_HASH_SEED, DEFAULT_HASH_SEED_ALT];
     }
 
+    var updateGrKey1 = function updateGrKey1(val, grKey) {
+      return _p.styleKeys[grKey][0] = hashInt(val, _p.styleKeys[grKey][0]);
+    };
+
+    var updateGrKey2 = function updateGrKey2(val, grKey) {
+      return _p.styleKeys[grKey][1] = hashIntAlt(val, _p.styleKeys[grKey][1]);
+    };
+
     var updateGrKey = function updateGrKey(val, grKey) {
-      return _p.styleKeys[grKey] = hashInt(val, _p.styleKeys[grKey]);
+      updateGrKey1(val, grKey);
+      updateGrKey2(val, grKey);
     };
 
     var updateGrKeyWStr = function updateGrKeyWStr(strVal, grKey) {
       for (var j = 0; j < strVal.length; j++) {
-        updateGrKey(strVal.charCodeAt(j), grKey);
+        var ch = strVal.charCodeAt(j);
+        updateGrKey1(ch, grKey);
+        updateGrKey2(ch, grKey);
       }
     }; // - hashing works on 32 bit ints b/c we use bitwise ops
     // - small numbers get cut off (e.g. 0.123 is seen as 0 by the hashing function)
@@ -15616,26 +15645,31 @@
     //
 
 
-    var hash = 0;
+    var hash = [DEFAULT_HASH_SEED, DEFAULT_HASH_SEED_ALT];
 
     for (var _i3 = 0; _i3 < propGrKeys.length; _i3++) {
       var _grKey2 = propGrKeys[_i3];
       var grHash = _p.styleKeys[_grKey2];
-      hash = hashInt(grHash, hash);
+      hash[0] = hashInt(grHash[0], hash[0]);
+      hash[1] = hashIntAlt(grHash[1], hash[1]);
     }
 
-    _p.styleKey = hash; // label dims
+    _p.styleKey = combineHashes(hash[0], hash[1]); // label dims
     //
 
-    var labelDimsKey = _p.labelDimsKey = _p.styleKeys.labelDimensions;
-    _p.labelKey = propHash(ele, ['label'], labelDimsKey);
-    _p.labelStyleKey = hashInt(_p.styleKeys.commonLabel, _p.labelKey);
+    var sk = _p.styleKeys;
+    _p.labelDimsKey = combineHashesArray(sk.labelDimensions);
+    var labelKeys = propHash(ele, ['label'], sk.labelDimensions);
+    _p.labelKey = combineHashesArray(labelKeys);
+    _p.labelStyleKey = combineHashesArray(hashArrays(sk.commonLabel, labelKeys));
 
     if (!isNode) {
-      _p.sourceLabelKey = propHash(ele, ['source-label'], labelDimsKey);
-      _p.sourceLabelStyleKey = hashInt(_p.styleKeys.commonLabel, _p.sourceLabelKey);
-      _p.targetLabelKey = propHash(ele, ['target-label'], labelDimsKey);
-      _p.targetLabelStyleKey = hashInt(_p.styleKeys.commonLabel, _p.targetLabelKey);
+      var sourceLabelKeys = propHash(ele, ['source-label'], sk.labelDimensions);
+      _p.sourceLabelKey = combineHashesArray(sourceLabelKeys);
+      _p.sourceLabelStyleKey = combineHashesArray(hashArrays(sk.commonLabel, sourceLabelKeys));
+      var targetLabelKeys = propHash(ele, ['target-label'], sk.labelDimensions);
+      _p.targetLabelKey = combineHashesArray(targetLabelKeys);
+      _p.targetLabelStyleKey = combineHashesArray(hashArrays(sk.commonLabel, targetLabelKeys));
     } // node
     //
 
@@ -15647,8 +15681,9 @@
           backgroundImage = _p$styleKeys.backgroundImage,
           compound = _p$styleKeys.compound,
           pie = _p$styleKeys.pie;
-      _p.nodeKey = hashIntsArray([nodeBorder, backgroundImage, compound, pie], nodeBody);
-      _p.hasPie = pie != 0;
+      var nodeKeys = [nodeBorder, backgroundImage, compound, pie].reduce(hashArrays, nodeBody);
+      _p.nodeKey = combineHashesArray(nodeKeys);
+      _p.hasPie = pie[0] !== DEFAULT_HASH_SEED && pie[1] !== DEFAULT_HASH_SEED_ALT;
     }
 
     return oldStyleKey !== _p.styleKey;
@@ -16458,7 +16493,7 @@
   };
 
   styfn$3.getNonDefaultPropertiesHash = function (ele, propNames, seed) {
-    var hash = seed;
+    var hash = seed.slice();
     var name, val, strVal, chVal;
     var i, j;
 
@@ -16469,13 +16504,15 @@
       if (val == null) {
         continue;
       } else if (val.pfValue != null) {
-        hash = hashInt(chVal, hash);
+        hash[0] = hashInt(chVal, hash[0]);
+        hash[1] = hashIntAlt(chVal, hash[1]);
       } else {
         strVal = val.strValue;
 
         for (j = 0; j < strVal.length; j++) {
           chVal = strVal.charCodeAt(j);
-          hash = hashInt(chVal, hash);
+          hash[0] = hashInt(chVal, hash[0]);
+          hash[1] = hashIntAlt(chVal, hash[1]);
         }
       }
     }
@@ -16880,7 +16917,7 @@
         enums: ['include', 'exclude']
       },
       arrowShape: {
-        enums: ['tee', 'triangle', 'triangle-tee', 'triangle-cross', 'triangle-backcurve', 'vee', 'square', 'circle', 'diamond', 'chevron', 'none']
+        enums: ['tee', 'triangle', 'triangle-tee', 'circle-triangle', 'triangle-cross', 'triangle-backcurve', 'vee', 'square', 'circle', 'diamond', 'chevron', 'none']
       },
       arrowFill: {
         enums: ['filled', 'hollow']
@@ -22165,6 +22202,23 @@
         renderer.arrowShapeImpl(this.name)(context, triPts, teePts);
       }
     });
+    defineArrowShape('circle-triangle', {
+      radius: 0.15,
+      pointsTr: [0, -0.15, 0.15, -0.45, -0.15, -0.45, 0, -0.15],
+      collide: function collide(x, y, size, angle, translation, edgeWidth, padding) {
+        var t = translation;
+        var circleInside = Math.pow(t.x - x, 2) + Math.pow(t.y - y, 2) <= Math.pow((size + 2 * padding) * this.radius, 2);
+        var triPts = pointsToArr(transformPoints(this.points, size + 2 * padding, angle, translation));
+        return pointInsidePolygonPoints(x, y, triPts) || circleInside;
+      },
+      draw: function draw(context, size, angle, translation, edgeWidth) {
+        var triPts = transformPoints(this.pointsTr, size, angle, translation);
+        renderer.arrowShapeImpl(this.name)(context, triPts, translation.x, translation.y, this.radius * size);
+      },
+      spacing: function spacing(edge) {
+        return renderer.getArrowWidth(edge.pstyle('width').pfValue, edge.pstyle('arrow-scale').value) * this.radius;
+      }
+    });
     defineArrowShape('triangle-cross', {
       points: [0, 0, 0.15, -0.3, -0.15, -0.3, 0, 0],
       baseCrossLinePts: [-0.15, -0.4, // first half of the rectangle
@@ -25784,8 +25838,10 @@
 
 
       var cy = r.cy;
+      var zoom = cy.zoom();
+      var pan = cy.pan();
       var pos = r.projectIntoViewport(e.clientX, e.clientY);
-      var rpos = [pos[0] * cy.zoom() + cy.pan().x, pos[1] * cy.zoom() + cy.pan().y];
+      var rpos = [pos[0] * zoom + pan.x, pos[1] * zoom + pan.y];
 
       if (r.hoverData.draggingEles || r.hoverData.dragging || r.hoverData.cxtStarted || inBoxSelection()) {
         // if pan dragging or cxt dragging, wheel movements make no zoom
@@ -25820,8 +25876,14 @@
           diff *= 33;
         }
 
+        var newZoom = cy.zoom() * Math.pow(10, diff);
+
+        if (e.type === 'gesturechange') {
+          newZoom = r.gestureStartZoom * e.scale;
+        }
+
         cy.zoom({
-          level: cy.zoom() * Math.pow(10, diff),
+          level: newZoom,
           renderedPosition: {
             x: rpos[0],
             y: rpos[1]
@@ -25844,6 +25906,21 @@
       r.scrollingPageTimeout = setTimeout(function () {
         r.scrollingPage = false;
       }, 250);
+    }, true); // desktop safari pinch to zoom start
+
+    r.registerBinding(r.container, 'gesturestart', function gestureStartHandler(e) {
+      r.gestureStartZoom = r.cy.zoom();
+
+      if (!r.hasTouchStarted) {
+        // don't affect touch devices like iphone
+        e.preventDefault();
+      }
+    }, true);
+    r.registerBinding(r.container, 'gesturechange', function (e) {
+      if (!r.hasTouchStarted) {
+        // don't affect touch devices like iphone
+        wheelHandler(e);
+      }
     }, true); // Functions to help with handling mouseout/mouseover on the Cytoscape container
     // Handle mouseout on Cytoscape container
 
@@ -25889,6 +25966,8 @@
 
     var touchstartHandler;
     r.registerBinding(r.container, 'touchstart', touchstartHandler = function touchstartHandler(e) {
+      r.hasTouchStarted = true;
+
       if (!eventInContainer(e)) {
         return;
       }
@@ -29085,6 +29164,26 @@
     }
   }
 
+  function circleTriangle(context, trianglePoints, rx, ry, r) {
+    if (context.beginPath) {
+      context.beginPath();
+    }
+
+    context.arc(rx, ry, r, 0, Math.PI * 2, false);
+    var triPts = trianglePoints;
+    var firstTrPt = triPts[0];
+    context.moveTo(firstTrPt.x, firstTrPt.y);
+
+    for (var i = 0; i < triPts.length; i++) {
+      var pt = triPts[i];
+      context.lineTo(pt.x, pt.y);
+    }
+
+    if (context.closePath) {
+      context.closePath();
+    }
+  }
+
   function circle(context, rx, ry, r) {
     context.arc(rx, ry, r, 0, Math.PI * 2, false);
   }
@@ -29094,6 +29193,7 @@
       'polygon': polygon,
       'triangle-backcurve': triangleBackcurve,
       'triangle-tee': triangleTee,
+      'circle-triangle': circleTriangle,
       'triangle-cross': triangleTee,
       'circle': circle
     }))[name];
@@ -29582,11 +29682,11 @@
       }
     }
 
-    if (context.beginPath) {
-      context.beginPath();
-    }
-
     if (!pathCacheHit) {
+      if (context.beginPath) {
+        context.beginPath();
+      }
+
       if (usePaths) {
         // store in the path cache with values easily manipulated later
         shapeImpl.draw(context, 1, 0, {
@@ -29596,10 +29696,10 @@
       } else {
         shapeImpl.draw(context, size, angle, translation, edgeWidth);
       }
-    }
 
-    if (context.closePath) {
-      context.closePath();
+      if (context.closePath) {
+        context.closePath();
+      }
     }
 
     context = canvasContext;
@@ -32249,7 +32349,7 @@
     return style;
   };
 
-  var version = "3.14.0";
+  var version = "3.15.0";
 
   var cytoscape = function cytoscape(options) {
     // if no options specified, use default

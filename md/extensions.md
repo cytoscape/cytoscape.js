@@ -95,12 +95,48 @@ The value of `type` can take on the following values:
  * `'core'` : The extension adds a core function.
  * `'collection'` : The extension adds a collection function.
  * `'layout'` : The extension registers a layout prototype.
- * `'renderer'` : The extension registers a renderer prototype.
 
-The `name` argument indicates the name of the extension.  For example, `cytoscape( 'collection', 'fooBar', function(){ return 'baz'; } )` registers `eles.fooBar()`.
+The `name` argument indicates the name of the extension, e.g.: the following code registers `eles.fooBar()`:
+
+```
+cytoscape('collection', 'fooBar', function(){
+  return 'baz';
+});`
+```
 
 
 
-## Autoscaffolding
+## Project setup
 
-There is [a Slush project for Cytoscape.js](https://github.com/cytoscape/slush-cytoscape-extension) such that the full project scaffolding for a new extension is automatically generated for you.  By following the included instructions, you can easily create Cytoscape.js extensions that are well organised, easily maintained, and published.
+1. Create a repository on GitHub for your extension's code
+1. Use [rollup-starter-lib](https://github.com/rollup/rollup-starter-lib) to create the project's scaffolding.  Alternatively, manually generate the project configuration files with your favourite bundler.
+1. Use [Babel](https://babeljs.io) if you want to support older browsers with your extension.  The `rollup-starter-lib` repo has an example in the [`babel` branch](https://github.com/rollup/rollup-starter-lib/tree/babel).
+1. The default export of your extension should be a registration function, e.g.:
+  ```
+  export default function register(cytoscape){
+    cytoscape('collection', 'fooBar', fooBarFunction);
+  }
+  ```
+1. You may want to support automatic registration for consumers who use traditional `<script>` tags to use your extension, i.e.:
+  ```
+  if(typeof window.cytoscape !== 'undefined'){
+    register(window.cytoscape);
+  }
+  ```
+1. Document your extension's API in a `README.md` file in the root directory of your respository.
+1. [Publish your extension to npm](https://docs.npmjs.com/cli/publish).
+1. [Submit a request](https://github.com/cytoscape/cytoscape.js/issues/new?labels=documentation&title=List%20extension%20:%20%3Cyour%20extension%20name%3E&body=Please%20enter%20your%20Github%20URL%20and%20a%20one-line%20description) to have your extension listed in the documentation.
+
+## Layout prototype
+
+- `constructor(options)` : Create the layout
+  - `options` : The layout options, special fields include:
+    - `options.cy` : The Cytoscape graph
+    - `options.eles` : The collection of elements passed to the layout
+- `run()` : Run the layout
+  - `run()` calls `eles.layoutPositions()` to set the final layout positions, if the layout is discrete.
+  - `run()` starts the async layout, if the layout is continuous (e.g. a force-directed layout, which runs over several layout iterations).
+  - A continuous layout may use a [worker](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers) for layout calculations or it may run several layout iterations per call of [`requestAnimationFrame()`](https://developer.mozilla.org/en-US/docs/Web/API/window/requestAnimationFrame).
+  - Each visible iteration of a continuous layout may set [`nodes.positions()`](#nodes.positions).
+- `stop()` : Stop the layout
+  - This function is specified only for continuous layouts.

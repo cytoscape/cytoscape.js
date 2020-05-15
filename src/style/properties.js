@@ -156,6 +156,12 @@ const styfn = {};
     },
     any: function( val1, val2 ){
       return val1 != val2;
+    },
+    emptyNonEmpty: function( str1, str2 ){
+      const empty1 = is.emptyString(str1);
+      const empty2 = is.emptyString(str2);
+
+      return (empty1 && !empty2) || (!empty1 && empty2);
     }
   };
 
@@ -167,7 +173,7 @@ const styfn = {};
   let t = styfn.types;
 
   let mainLabel = [
-    { name: 'label', type: t.text, triggersBounds: diff.any },
+    { name: 'label', type: t.text, triggersBounds: diff.any, triggersZOrder: diff.emptyNonEmpty },
     { name: 'text-rotation', type: t.textRotation, triggersBounds: diff.any },
     { name: 'text-margin-x', type: t.bidirectionalSize, triggersBounds: diff.any },
     { name: 'text-margin-y', type: t.bidirectionalSize, triggersBounds: diff.any }

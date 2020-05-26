@@ -11,16 +11,6 @@ function stepAll( now, cy ){
     let queue = _p.animation.queue;
     let ranAnis = false;
 
-    // cancel all animations on display:none ele
-    if( !isCore && ele.pstyle('display').value === 'none' ){
-      // put all current and queue animations in this tick's current list
-      // and empty the lists for the element
-      current = current.splice( 0, current.length ).concat( queue.splice( 0, queue.length ) );
-
-      // stop all animations
-      for( let i = 0; i < current.length; i++ ){ current[i].stop(); }
-    }
-
     // if nothing currently animating, get something from the queue
     if( current.length === 0 ){
       let next = queue.shift();

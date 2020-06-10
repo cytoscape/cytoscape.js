@@ -701,21 +701,12 @@ strong {
 	font-weight: 500;
 }
 
-ul,
-ol {
-	margin-left: 1.5em;
-}
-
 ul {
+	margin-left: 1.5em;
 	list-style-type: disc;
 }
 
-ol {
-	list-style-type: decimal;
-}
-
-ul p,
-ol p {
+ul p {
 	margin: 0;
 }
 

@@ -10,5 +10,3 @@ For force-directed (physics) layouts, there is generally an option to set a weig
 A layout runs on the subgraph that you specify.  All elements in the graph are used for [`cy.layout()`](#cy.layout).  The specified subset of elements is used for [`eles.layout()`](#eles.layout).  In either case, the state of each element does not affect whether the element is considered in the layout.  For example, an [invisible node](#style/visibility) is repositioned by a layout if the node is included in the layout's set of elements.  You may use `eles.layout()` to address complex use-cases, like running a different layout on each component.
 
 When running a headless instance, you may need to specify the `boundingBox` in order to indicate to the layout the area in which it can place nodes.  In a rendered instance, the bounds may be inferred by the size of the HTML DOM element `container`.
-
-Refer to [the blog for an in-depth layout tutorial](https://blog.js.cytoscape.org/2020/05/11/layouts).

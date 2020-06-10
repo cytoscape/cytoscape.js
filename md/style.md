@@ -464,6 +464,7 @@ When a taxi edge would be impossible to draw along the regular turning plan --- 
 * **`<pos>-arrow-shape`** : The shape of the edge's source arrow ([demo](demos/edge-arrows)); may be one of:
   * `triangle`
   * `triangle-tee`
+  * `circle-triangle`
   * `triangle-cross`
   * `triangle-backcurve`
   * `vee`

@@ -54,6 +54,7 @@
   * [BioGRID](http://thebiogrid.org/)
   * [BlueSail CRM](https://bluesailcrm.com/)
   * [Classcraft](https://www.classcraft.com/)
+  * CJFP & Associates: [Sherlock](https://sherlock.scalingo.io/)
   * [Cray Inc.](http://www.cray.com)
   * [CyberSift](https://cybersift.io)
   * [CyNetShare](http://cynetshare.ucsd.edu/)

@@ -14734,18 +14734,7 @@
       var _p = ele._private;
       var current = _p.animation.current;
       var queue = _p.animation.queue;
-      var ranAnis = false; // cancel all animations on display:none ele
-
-      if (!isCore && ele.pstyle('display').value === 'none') {
-        // put all current and queue animations in this tick's current list
-        // and empty the lists for the element
-        current = current.splice(0, current.length).concat(queue.splice(0, queue.length)); // stop all animations
-
-        for (var i = 0; i < current.length; i++) {
-          current[i].stop();
-        }
-      } // if nothing currently animating, get something from the queue
-
+      var ranAnis = false; // if nothing currently animating, get something from the queue
 
       if (current.length === 0) {
         var next = queue.shift();
@@ -14765,12 +14754,12 @@
       }; // step and remove if done
 
 
-      for (var _i = current.length - 1; _i >= 0; _i--) {
-        var ani = current[_i];
+      for (var i = current.length - 1; i >= 0; i--) {
+        var ani = current[i];
         var ani_p = ani._private;
 
         if (ani_p.stopped) {
-          current.splice(_i, 1);
+          current.splice(i, 1);
           ani_p.hooked = false;
           ani_p.playing = false;
           ani_p.started = false;
@@ -14804,7 +14793,7 @@
         }
 
         if (ani.completed()) {
-          current.splice(_i, 1);
+          current.splice(i, 1);
           ani_p.hooked = false;
           ani_p.playing = false;
           ani_p.started = false;
@@ -17063,6 +17052,11 @@
       },
       any: function any(val1, val2) {
         return val1 != val2;
+      },
+      emptyNonEmpty: function emptyNonEmpty(str1, str2) {
+        var empty1 = emptyString(str1);
+        var empty2 = emptyString(str2);
+        return empty1 && !empty2 || !empty1 && empty2;
       }
     }; // define visual style properties
     //
@@ -17073,7 +17067,8 @@
     var mainLabel = [{
       name: 'label',
       type: t.text,
-      triggersBounds: diff.any
+      triggersBounds: diff.any,
+      triggersZOrder: diff.emptyNonEmpty
     }, {
       name: 'text-rotation',
       type: t.textRotation,
@@ -23029,7 +23024,9 @@
 
     var taxiTurn = edge.pstyle('taxi-turn');
     var turnIsPercent = taxiTurn.units === '%';
-    var taxiTurnPfVal = turnIsPercent && taxiTurn.pfValue < 0 ? 1 + taxiTurn.pfValue : taxiTurn.pfValue;
+    var taxiTurnPfVal = taxiTurn.pfValue;
+    var turnIsNegative = taxiTurnPfVal < 0; // i.e. from target side
+
     var minD = edge.pstyle('taxi-turn-min-distance').pfValue;
     var dw = dIncludesNodeBody ? (srcW + tgtW) / 2 : 0;
     var dh = dIncludesNodeBody ? (srcH + tgtH) / 2 : 0;
@@ -23048,12 +23045,12 @@
     var dy = subDWH(pdy, dh);
     var isExplicitDir = false;
 
-    if (taxiDir === AUTO) {
+    if (rawTaxiDir === AUTO) {
       taxiDir = Math.abs(dx) > Math.abs(dy) ? HORIZONTAL : VERTICAL;
-    } else if (taxiDir === UPWARD || taxiDir === DOWNWARD) {
+    } else if (rawTaxiDir === UPWARD || rawTaxiDir === DOWNWARD) {
       taxiDir = VERTICAL;
       isExplicitDir = true;
-    } else if (taxiDir === LEFTWARD || taxiDir === RIGHTWARD) {
+    } else if (rawTaxiDir === LEFTWARD || rawTaxiDir === RIGHTWARD) {
       taxiDir = HORIZONTAL;
       isExplicitDir = true;
     }
@@ -23064,21 +23061,29 @@
     var sgnL = signum(pl);
     var forcedDir = false;
 
-    if (!(isExplicitDir && turnIsPercent) // forcing in this case would cause weird growing in the opposite direction
+    if (!(isExplicitDir && (turnIsPercent || turnIsNegative)) // forcing in this case would cause weird growing in the opposite direction
     && (rawTaxiDir === DOWNWARD && pl < 0 || rawTaxiDir === UPWARD && pl > 0 || rawTaxiDir === LEFTWARD && pl > 0 || rawTaxiDir === RIGHTWARD && pl < 0)) {
       sgnL *= -1;
       l = sgnL * Math.abs(l);
       forcedDir = true;
     }
 
-    var d = turnIsPercent ? taxiTurnPfVal * l : taxiTurnPfVal * sgnL;
+    var d;
+
+    if (turnIsPercent) {
+      var p = taxiTurnPfVal < 0 ? 1 + taxiTurnPfVal : taxiTurnPfVal;
+      d = p * l;
+    } else {
+      var k = taxiTurnPfVal < 0 ? l : 0;
+      d = k + taxiTurnPfVal * sgnL;
+    }
 
     var getIsTooClose = function getIsTooClose(d) {
       return Math.abs(d) < minD || Math.abs(d) >= Math.abs(l);
     };
 
     var isTooCloseSrc = getIsTooClose(d);
-    var isTooCloseTgt = getIsTooClose(l - Math.abs(d));
+    var isTooCloseTgt = getIsTooClose(Math.abs(l) - Math.abs(d));
     var isTooClose = isTooCloseSrc || isTooCloseTgt;
 
     if (isTooClose && !forcedDir) {
@@ -23132,14 +23137,14 @@
     } else {
       // ideal routing
       if (isVert) {
-        var _y4 = (d < 0 ? posPts.y2 : posPts.y1) + d + (dIncludesNodeBody ? srcH / 2 * sgnL : 0);
+        var _y4 = posPts.y1 + d + (dIncludesNodeBody ? srcH / 2 * sgnL : 0);
 
         var _x4 = posPts.x1,
             _x5 = posPts.x2;
         rs.segpts = [_x4, _y4, _x5, _y4];
       } else {
         // horizontal
-        var _x6 = (d < 0 ? posPts.x2 : posPts.x1) + d + (dIncludesNodeBody ? srcW / 2 * sgnL : 0);
+        var _x6 = posPts.x1 + d + (dIncludesNodeBody ? srcW / 2 * sgnL : 0);
 
         var _y5 = posPts.y1,
             _y6 = posPts.y2;
@@ -24562,7 +24567,7 @@
     }
 
     if (node.isParent()) {
-      if (shape === 'rectangle' || shape === 'roundrectangle' || shape === 'cutrectangle' || shape === 'barrel') {
+      if (shape === 'rectangle' || shape === 'roundrectangle' || shape === 'round-rectangle' || shape === 'cutrectangle' || shape === 'cut-rectangle' || shape === 'barrel') {
         return shape;
       } else {
         return 'rectangle';
@@ -32349,7 +32354,7 @@
     return style;
   };
 
-  var version = "3.15.0";
+  var version = "3.15.1";
 
   var cytoscape = function cytoscape(options) {
     // if no options specified, use default

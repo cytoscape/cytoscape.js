@@ -315,16 +315,10 @@ styfn.updateStyleHints = function(ele){
 
     // numbers are cheaper to hash than strings
     // 1 hash op vs n hash ops (for length n string)
-    if( type.number && haveNum ){
+    if( type.number && haveNum && !type.multiple ){
       let v = haveNormNum ? normalizedNumberVal : numberVal;
 
-      if( type.multiple ){
-        for(let i = 0; i < v.length; i++){
-          updateGrKey(cleanNum(v[i]), grKey);
-        }
-      } else {
-        updateGrKey(cleanNum(v), grKey);
-      }
+      updateGrKey(cleanNum(v), grKey);
 
       if( !haveNormNum && units != null ){
         updateGrKeyWStr(units, grKey);
@@ -377,7 +371,10 @@ styfn.updateStyleHints = function(ele){
   if( isNode ){
     let { nodeBody, nodeBorder, backgroundImage, compound, pie } = _p.styleKeys;
 
-    let nodeKeys = [nodeBorder, backgroundImage, compound, pie ].reduce(util.hashArrays, nodeBody);
+    let nodeKeys = [nodeBody, nodeBorder, backgroundImage, compound, pie ].reduce(util.hashArrays, [
+      util.DEFAULT_HASH_SEED,
+      util.DEFAULT_HASH_SEED_ALT
+    ]);
     _p.nodeKey = util.combineHashesArray(nodeKeys);
     
     _p.hasPie = pie[0] !== util.DEFAULT_HASH_SEED && pie[1] !== util.DEFAULT_HASH_SEED_ALT;

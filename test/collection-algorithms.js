@@ -995,4 +995,25 @@ describe('Algorithms', function(){
     expect( res.betweenness(d) ).to.equal(0);
     expect( res.betweenness(e) ).to.equal(0);
   });
+
+  it('eles.betweennessCentrality() unweighted directed: multiple shortest paths', function(){
+    cy.remove(ae);
+    cy.remove(bc);
+    cy.remove(cd);
+    cy.remove(ce);
+    cy.add([
+      { group: 'edges', data: { id: 'ad', source: 'a', target: 'd' } },
+      { group: 'edges', data: { id: 'ec', source: 'e', target: 'c' } }
+    ]);
+
+    var res = cy.elements().betweennessCentrality({
+      directed:true
+    });
+
+    expect( res.betweenness(a) ).to.equal(0);
+    expect( res.betweenness(b) ).to.equal(1);
+    expect( res.betweenness(c) ).to.equal(0);
+    expect( res.betweenness(d) ).to.equal(1);
+    expect( res.betweenness(e) ).to.equal(3);
+  });
 });

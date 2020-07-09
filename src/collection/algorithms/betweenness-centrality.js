@@ -136,10 +136,10 @@ let elesfn = ({
           let v = P[w][j];
 
           e[v] = e[v] + (g[v] / g[w]) * (1 + e[w]);
+        }
 
-          if( w != V[s].id() ){
-            C.set( w, C.get( w ) + e[w] );
-          }
+        if( w != V[s].id() ){
+          C.set( w, C.get( w ) + e[w] );
         }
       }
     }

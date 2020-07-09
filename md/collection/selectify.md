@@ -1,5 +1,5 @@
 ## Examples
 
 ```js
-cy.$('#j').selectify();
+cy.$('#j').unselectify();
 ```

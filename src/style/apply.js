@@ -828,10 +828,7 @@ styfn.checkBoundsTrigger = function( ele, name, fromValue, toValue ){
     // if the prop change makes the bb of pll bezier edges invalid,
     // then dirty the pll edge bb cache as well
     if( // only for beziers -- so performance of other edges isn't affected
-      ( ele.pstyle('curve-style').value === 'bezier' // already a bezier
-        // was just now changed to or from a bezier:
-        || (name === 'curve-style' && (fromValue === 'bezier' || toValue === 'bezier'))
-      )
+      ( name === 'curve-style' && (fromValue === 'bezier' || toValue === 'bezier') )
       && prop.triggersBoundsOfParallelBeziers
     ){
       ele.parallelEdges().forEach(pllEdge => {

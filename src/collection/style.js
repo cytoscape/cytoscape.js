@@ -1,5 +1,6 @@
 import * as is from '../is';
 import * as util from '../util';
+import { indexOf } from 'benchmark';
 
 function styleCache( key, fn, ele ){
   var _p = ele._private;
@@ -101,13 +102,16 @@ let elesfn = ({
       updatedEles = this.spawnSelf().merge( this.descendants() ).merge( this.parents() );
     }
 
-    let changedEles = style.apply( updatedEles );
+    // let changedEles = style.apply( updatedEles );
+    let changedEles = updatedEles;
 
     if( notifyRenderer ){
       changedEles.emitAndNotify( 'style' ); // let renderer know we changed style
     } else {
       changedEles.emit( 'style' ); // just fire the event
     }
+
+    updatedEles.forEach(ele => ele._private.styleDirty = true);
 
     return this; // chaining
   },
@@ -120,6 +124,13 @@ let elesfn = ({
     if( !cy.styleEnabled() ){ return; }
 
     if( ele ){
+      if( ele._private.styleDirty ){
+        ele._private.styleDirty = false;
+
+        cy.style().apply(ele);
+        ele.emitAndNotify('style');
+      }
+
       let overriddenStyle = ele._private.style[ property ];
 
       if( overriddenStyle != null ){

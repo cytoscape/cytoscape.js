@@ -4737,10 +4737,10 @@
           for (var _j2 = 0; _j2 < P[_w2].length; _j2++) {
             var _v2 = P[_w2][_j2];
             e[_v2] = e[_v2] + g[_v2] / g[_w2] * (1 + e[_w2]);
+          }
 
-            if (_w2 != V[s].id()) {
-              C.set(_w2, C.get(_w2) + e[_w2]);
-            }
+          if (_w2 != V[s].id()) {
+            C.set(_w2, C.get(_w2) + e[_w2]);
           }
         }
       };
@@ -15613,16 +15613,9 @@
       var units = parsedProp.units; // numbers are cheaper to hash than strings
       // 1 hash op vs n hash ops (for length n string)
 
-      if (type.number && haveNum) {
+      if (type.number && haveNum && !type.multiple) {
         var v = haveNormNum ? normalizedNumberVal : numberVal;
-
-        if (type.multiple) {
-          for (var _i2 = 0; _i2 < v.length; _i2++) {
-            updateGrKey(cleanNum(v[_i2]), _grKey);
-          }
-        } else {
-          updateGrKey(cleanNum(v), _grKey);
-        }
+        updateGrKey(cleanNum(v), _grKey);
 
         if (!haveNormNum && units != null) {
           updateGrKeyWStr(units, _grKey);
@@ -15636,8 +15629,8 @@
 
     var hash = [DEFAULT_HASH_SEED, DEFAULT_HASH_SEED_ALT];
 
-    for (var _i3 = 0; _i3 < propGrKeys.length; _i3++) {
-      var _grKey2 = propGrKeys[_i3];
+    for (var _i2 = 0; _i2 < propGrKeys.length; _i2++) {
+      var _grKey2 = propGrKeys[_i2];
       var grHash = _p.styleKeys[_grKey2];
       hash[0] = hashInt(grHash[0], hash[0]);
       hash[1] = hashIntAlt(grHash[1], hash[1]);
@@ -15670,7 +15663,7 @@
           backgroundImage = _p$styleKeys.backgroundImage,
           compound = _p$styleKeys.compound,
           pie = _p$styleKeys.pie;
-      var nodeKeys = [nodeBorder, backgroundImage, compound, pie].reduce(hashArrays, nodeBody);
+      var nodeKeys = [nodeBody, nodeBorder, backgroundImage, compound, pie].reduce(hashArrays, [DEFAULT_HASH_SEED, DEFAULT_HASH_SEED_ALT]);
       _p.nodeKey = combineHashesArray(nodeKeys);
       _p.hasPie = pie[0] !== DEFAULT_HASH_SEED && pie[1] !== DEFAULT_HASH_SEED_ALT;
     }
@@ -15876,8 +15869,8 @@
 
           var _fieldVal = _p.data;
 
-          for (var _i4 = 0; _i4 < _fields.length && _fieldVal; _i4++) {
-            var _field = _fields[_i4];
+          for (var _i3 = 0; _i3 < _fields.length && _fieldVal; _i3++) {
+            var _field = _fields[_i3];
             _fieldVal = _fieldVal[_field];
           }
 
@@ -32354,7 +32347,7 @@
     return style;
   };
 
-  var version = "3.15.1";
+  var version = "3.15.2";
 
   var cytoscape = function cytoscape(options) {
     // if no options specified, use default

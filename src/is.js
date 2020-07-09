@@ -24,7 +24,7 @@ export const fn = obj =>
   obj != null && typeof obj === typeoffn;
 
 export const array = obj =>
-  Array.isArray ? Array.isArray( obj ) : obj != null && obj instanceof Array;
+  !(elementOrCollection(obj)) && (Array.isArray ? Array.isArray( obj ) : obj != null && obj instanceof Array);
 
 export const plainObject = obj =>
   obj != null && typeof obj === typeofobj && !array( obj ) && obj.constructor === Object;

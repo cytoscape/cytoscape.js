@@ -40,7 +40,7 @@ let defineDagExtremity = function( params ){
       }
     }
 
-    return this.spawn( ret, { unique: true } ).filter( selector );
+    return this.spawn( ret, true ).filter( selector );
   };
 };
 
@@ -70,7 +70,7 @@ let defineDagOneHop = function( params ){
       }
     }
 
-    return this.spawn( oEles, { unique: true } ).filter( selector );
+    return this.spawn( oEles, true ).filter( selector );
   };
 };
 
@@ -102,7 +102,7 @@ let defineDagAllHops = function( params ){
       eles = next;
     }
 
-    return this.spawn( sEles, { unique: true } ).filter( selector );
+    return this.spawn( sEles, true ).filter( selector );
   };
 };
 
@@ -165,7 +165,7 @@ util.extend( elesfn, {
 
     }
 
-    return ( this.spawn( elements, { unique: true } ) ).filter( selector );
+    return ( this.spawn( elements, true ) ).filter( selector );
   }, 'neighborhood'),
 
   closedNeighborhood: function( selector ){
@@ -230,7 +230,7 @@ function defineSourceFunction( params ){
       }
     }
 
-    return this.spawn( sources, { unique: true } ).filter( selector );
+    return this.spawn( sources, true ).filter( selector );
   };
 }
 
@@ -276,7 +276,7 @@ function defineEdgesWithFunction( params ){
       }
     }
 
-    return this.spawn( elements, { unique: true } );
+    return this.spawn( elements, true );
   };
 }
 
@@ -297,7 +297,7 @@ util.extend( elesfn, {
       }
     }
 
-    return this.spawn( retEles, { unique: true } ).filter( selector );
+    return this.spawn( retEles, true ).filter( selector );
   }, 'connectedEdges'),
 
   connectedNodes: cache(function( selector ){
@@ -312,7 +312,7 @@ util.extend( elesfn, {
       retEles.push( edge.target()[0] );
     }
 
-    return this.spawn( retEles, { unique: true } ).filter( selector );
+    return this.spawn( retEles, true ).filter( selector );
   }, 'connectedNodes'),
 
   parallelEdges: cache( defineParallelEdgesFunction(), 'parallelEdges' ),
@@ -358,7 +358,7 @@ function defineParallelEdgesFunction( params ){
       }
     }
 
-    return this.spawn( elements, { unique: true } ).filter( selector );
+    return this.spawn( elements, true ).filter( selector );
   };
 
 }

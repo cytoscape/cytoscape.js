@@ -7,7 +7,7 @@ var suite = new Suite('new Collection()', {
 
 suite
   .add( function( cy ) {
-    var eles = cy.elements();
+    var eles = cy.elements().spawn();
 
     // make sure the collection is used so it's not optimised out
 

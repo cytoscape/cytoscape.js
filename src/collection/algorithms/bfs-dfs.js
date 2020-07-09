@@ -110,10 +110,10 @@ let defineSearch = function( params ){
       let edge = connectedBy[ node.id() ];
 
       if( edge != null ){
-        connectedEles.merge( edge );
+        connectedEles.push( edge );
       }
 
-      connectedEles.merge( node );
+      connectedEles.push( node );
     }
 
     return {

@@ -44,7 +44,7 @@ styfn.apply = function( eles ){
     let hintsDiff = self.updateStyleHints( ele );
 
     if( hintsDiff ){
-      updatedEles.merge( ele );
+      updatedEles.push( ele );
     }
 
   } // for elements

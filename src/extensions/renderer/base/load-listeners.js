@@ -805,7 +805,7 @@ BRp.load = function(){
               var dEle = draggedElements[ i ];
 
               if( r.nodeIsDraggable( dEle ) && dEle.grabbed() ){
-                toTrigger.merge( dEle );
+                toTrigger.push( dEle );
               }
             }
 

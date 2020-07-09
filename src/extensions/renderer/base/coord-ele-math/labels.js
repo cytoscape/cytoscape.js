@@ -468,47 +468,50 @@ BRp.calculateLabelDimensions = function( ele, text ){
     return existingVal;
   }
 
-  let sizeMult = 1; // increase the scale to increase accuracy w.r.t. zoomed text
+  let padding = 6; // add padding around text dims, as the measurement isn't that accurate
   let fStyle = ele.pstyle('font-style').strValue;
-  let size = (sizeMult * ele.pstyle('font-size').pfValue) + 'px';
+  let size = ele.pstyle('font-size').pfValue;
   let family = ele.pstyle('font-family').strValue;
   let weight = ele.pstyle('font-weight').strValue;
 
-  let div = this.labelCalcDiv;
+  let canvas = this.labelCalcCanvas;
+  let c2d = this.labelCalcCanvasContext;
 
-  if( !div ){
-    div = this.labelCalcDiv = document.createElement( 'div' ); // eslint-disable-line no-undef
-    document.body.appendChild( div ); // eslint-disable-line no-undef
+  if( !canvas ){
+    canvas = this.labelCalcCanvas = document.createElement('canvas');
+    c2d = this.labelCalcCanvasContext = canvas.getContext('2d');
+
+    let ds = canvas.style;
+    ds.position = 'absolute';
+    ds.left = '-9999px';
+    ds.top = '-9999px';
+    ds.zIndex = '-1';
+    ds.visibility = 'hidden';
+    ds.pointerEvents = 'none';
   }
 
-  let ds = div.style;
+  c2d.font = `${fStyle} ${weight} ${size}px ${family}`;
 
-  // from ele style
-  ds.fontFamily = family;
-  ds.fontStyle = fStyle;
-  ds.fontSize = size;
-  ds.fontWeight = weight;
+  let width = 0;
+  let height = 0;
+  let lines = text.split('\n');
 
-  // forced style
-  ds.position = 'absolute';
-  ds.left = '-9999px';
-  ds.top = '-9999px';
-  ds.zIndex = '-1';
-  ds.visibility = 'hidden';
-  ds.pointerEvents = 'none';
-  ds.padding = '0';
-  ds.lineHeight = '1';
+  for( let i = 0; i < lines.length; i++ ){
+    let line = lines[i];
+    let metrics = c2d.measureText(line);
+    let w = Math.ceil(metrics.width);
+    let h = size;
 
-  // - newlines must be taken into account for text-wrap:wrap
-  // - since spaces are not collapsed, each space must be taken into account
-  ds.whiteSpace = 'pre';
+    width = Math.max(w, width);
+    height += h;
+  }
 
-  // put label content in div
-  div.textContent = text;
+  width += padding;
+  height += padding;
 
   return ( cache[ cacheKey ] = {
-    width: Math.ceil( div.clientWidth / sizeMult ),
-    height: Math.ceil( div.clientHeight / sizeMult )
+    width,
+    height
   } );
 };
 

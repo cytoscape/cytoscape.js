@@ -1,6 +1,5 @@
 import * as is from '../is';
 import * as util from '../util';
-import { indexOf } from 'benchmark';
 
 function styleCache( key, fn, ele ){
   var _p = ele._private;
@@ -93,7 +92,6 @@ let elesfn = ({
     }
 
     let hasCompounds = cy.hasCompoundNodes();
-    let style = cy.style();
     let updatedEles = this;
 
     notifyRenderer = notifyRenderer || notifyRenderer === undefined ? true : false;

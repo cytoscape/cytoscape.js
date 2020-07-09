@@ -2,6 +2,8 @@ import * as math from '../../../../math';
 import * as is from '../../../../is';
 import * as util from '../../../../util';
 
+/* global document */
+
 let BRp = {};
 
 BRp.recalculateNodeLabelProjection = function( node ){

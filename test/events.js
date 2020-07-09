@@ -134,16 +134,6 @@ describe('Events', function(){
       expect( triggers ).to.equal(1);
     });
 
-    it('`style`', function(){
-      n1.on('style', handler);
-
-      n1.css({
-        'background-color': 'red'
-      });
-
-      expect( triggers ).to.equal(1);
-    });
-
   });
 
 

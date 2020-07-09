@@ -371,13 +371,13 @@ styfn.updateStyleHints = function(ele){
   if( isNode ){
     let { nodeBody, nodeBorder, backgroundImage, compound, pie } = _p.styleKeys;
 
-    let nodeKeys = [nodeBody, nodeBorder, backgroundImage, compound, pie ].reduce(util.hashArrays, [
+    let nodeKeys = [ nodeBody, nodeBorder, backgroundImage, compound, pie ].filter(k => k != null).reduce(util.hashArrays, [
       util.DEFAULT_HASH_SEED,
       util.DEFAULT_HASH_SEED_ALT
     ]);
     _p.nodeKey = util.combineHashesArray(nodeKeys);
     
-    _p.hasPie = pie[0] !== util.DEFAULT_HASH_SEED && pie[1] !== util.DEFAULT_HASH_SEED_ALT;
+    _p.hasPie = pie != null && pie[0] !== util.DEFAULT_HASH_SEED && pie[1] !== util.DEFAULT_HASH_SEED_ALT;
   }
 
   return oldStyleKey !== _p.styleKey;

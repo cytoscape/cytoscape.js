@@ -4720,10 +4720,10 @@
           for (var _j2 = 0; _j2 < P[_w2].length; _j2++) {
             var _v2 = P[_w2][_j2];
             e[_v2] = e[_v2] + g[_v2] / g[_w2] * (1 + e[_w2]);
+          }
 
-            if (_w2 != V[s].id()) {
-              C.set(_w2, C.get(_w2) + e[_w2]);
-            }
+          if (_w2 != V[s].id()) {
+            C.set(_w2, C.get(_w2) + e[_w2]);
           }
         }
       };
@@ -32255,7 +32255,7 @@
     return style;
   };
 
-  var version = "3.14.3";
+  var version = "3.14.4";
 
   var cytoscape = function cytoscape(options) {
     // if no options specified, use default

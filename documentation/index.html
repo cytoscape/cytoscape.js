@@ -14197,7 +14197,7 @@ cy.layout( options );</code></pre>
   <span class="hljs-attr">concentric</span>: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"> node </span>)</span>{ <span class="hljs-comment">// returns numeric value for each node, placing higher nodes in levels towards the centre</span>
   <span class="hljs-keyword">return</span> node.degree();
   },
-  <span class="hljs-attr">levelWidth</span>: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"> nodes </span>)</span>{ <span class="hljs-comment">// the letiation of concentric values in each level</span>
+  <span class="hljs-attr">levelWidth</span>: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"> nodes </span>)</span>{ <span class="hljs-comment">// the variation of concentric values in each level</span>
   <span class="hljs-keyword">return</span> nodes.maxDegree() / <span class="hljs-number">4</span>;
   },
   <span class="hljs-attr">animate</span>: <span class="hljs-literal">false</span>, <span class="hljs-comment">// whether to transition the node positions</span>

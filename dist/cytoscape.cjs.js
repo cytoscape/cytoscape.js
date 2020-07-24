@@ -19435,7 +19435,7 @@ var defaults$b = {
     return node.degree();
   },
   levelWidth: function levelWidth(nodes) {
-    // the letiation of concentric values in each level
+    // the variation of concentric values in each level
     return nodes.maxDegree() / 4;
   },
   animate: false,

@@ -49,7 +49,7 @@
 <a href="#introduction/citation"><img src="https://img.shields.io/badge/Cite-Oxford%20Bioinformatics%20Article-blue.svg" alt="Cite"></a>
 <a href="https://www.npmjs.com/package/cytoscape"><img src="https://img.shields.io/npm/v/cytoscape.svg" alt="npm"></a>
 <a href="https://github.com/cytoscape/cytoscape.js/tree/master/dist"><img src="https://img.shields.io/npm/v/cytoscape.svg?label=Download" alt="Download"></a>
-<a href="#extensions"><img src="https://img.shields.io/badge/Extensions-52-blue.svg" alt="Extensions"></a>
+<a href="#extensions"><img src="https://img.shields.io/badge/Extensions-58-blue.svg" alt="Extensions"></a>
 <a href="https://www.npmjs.com/package/cytoscape"><img src="https://img.shields.io/npm/dm/cytoscape.svg?label=npm%20installs" alt="npm installs"></a>
 <a href="https://travis-ci.org/cytoscape/cytoscape.js"><img src="https://img.shields.io/travis/cytoscape/cytoscape.js/master.svg?label=master%20branch" alt="master branch tests"></a>
 <a href="https://travis-ci.org/cytoscape/cytoscape.js"><img src="https://img.shields.io/travis/cytoscape/cytoscape.js/unstable.svg?label=unstable%20branch" alt="unstable branch tests"></a>
@@ -591,12 +591,14 @@
 <li><a href="http://thebiogrid.org/">BioGRID</a></li>
 <li><a href="https://bluesailcrm.com/">BlueSail CRM</a></li>
 <li><a href="https://www.classcraft.com/">Classcraft</a></li>
+<li>CJFP &amp; Associates: <a href="https://sherlock.scalingo.io/">Sherlock</a></li>
 <li><a href="http://www.cray.com">Cray Inc.</a></li>
 <li><a href="https://cybersift.io">CyberSift</a></li>
 <li><a href="http://cynetshare.ucsd.edu/">CyNetShare</a></li>
 <li><a href="http://www.darpa.mil">DARPA</a></li>
 <li><a href="https://duo.com/labs">Duo Labs</a> : <a href="https://github.com/duo-labs/cloudmapper">CloudMapper</a></li>
 <li><a href="http://dsysmap.irbbarcelona.org">dSysMap</a></li>
+<li><a href="https://www.elastic.co/">Elastic</a> : <a href="https://www.elastic.co/guide/en/kibana/current/service-maps.html">Elastic APM Service Map</a></li>
 <li><a href="https://www.elsevier.com">Elsevier</a></li>
 <li><a href="https://products.office.com/en-us/excel">Excel</a> : <a href="https://gigraph.io">GIGRAPH</a></li>
 <li><a href="https://www.facebook.com">Facebook</a> : <a href="https://facebook.github.io/metro/">Metro</a> visualiser</li>
@@ -626,6 +628,7 @@
 <li><a href="https://www.panaya.com">Panaya</a> : <a href="https://www.panaya.com/product/salesforce-foresight/">Panaya ForeSight</a></li>
 <li><a href="http://www.pathwaycommons.org">Pathway Commons</a></li>
 <li><a href="https://github.com/idekerlab/py2cytoscape">py2cytoscape</a></li>
+<li><a href="https://radity.com/">Radity</a></li>
 <li><a href="http://rezza.io">Rezza</a></li>
 <li><a href="https://www.rifm.org">Research Institute for Fragrance Materials</a> : <a href="https://rifmdatabase.rifm.org/rifmweb/">RIFM Database</a></li>
 <li><a href="http://www.tsl.ac.uk/">Sainsbury Laboratory</a> : <a href="http://pinet.tsl.ac.uk/">PINet</a></li>
@@ -667,11 +670,20 @@
 </ul>
 <h2 id="introduction/releases">Releases <a href="#introduction/releases"><span class="fa fa-bookmark"></span></a></h2>
 <ul>
+<li>3.16<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.16.0+is%3Aclosed">3.16.0</a></li>
+</ul>
+</li>
 <li>3.15<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.15.3+is%3Aclosed">3.15.3</a></li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.15.2+is%3Aclosed">3.15.2</a></li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.15.1+is%3Aclosed">3.15.1</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.15.0+is%3Aclosed">3.15.0</a></li>
 </ul>
 </li>
 <li>3.14<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.14.4+is%3Aclosed">3.14.4</a></li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.14.3+is%3Aclosed">3.14.3</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.14.2+is%3Aclosed">3.14.2</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.14.1+is%3Aclosed">3.14.1</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.14.0+is%3Aclosed">3.14.0</a></li>
@@ -4868,7 +4880,9 @@ ej = ej.move({
 							</div>
 
 							<div class="details">
-									<h3 id="examples">Examples</h3>
+									<h3 id="details">Details</h3>
+<p>Events are bound only to the currently existing elements; they must exist at the time your code makes the call to <code>eles.on()</code>. Alternatively, use core event handlers (<code>cy.on()</code>) to attach event handlers.</p>
+<h3 id="examples">Examples</h3>
 <pre><code class="language-js">cy.$(<span class="hljs-string">'#j'</span>).on(<span class="hljs-string">'tap'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">evt</span>)</span>{
   <span class="hljs-built_in">console</span>.log( <span class="hljs-string">'tap '</span> + evt.target.id() );
 });</code></pre>
@@ -7274,7 +7288,7 @@ layout.run();</code></pre>
 
 							<div class="details">
 									<h3 id="examples">Examples</h3>
-<pre><code class="language-js">cy.$(<span class="hljs-string">'#j'</span>).unselectify();</code></pre>
+<pre><code class="language-js">cy.$(<span class="hljs-string">'#j'</span>).selectify();</code></pre>
 <button class="run run-inline-code"><span class="fa fa-play"></span></button>
 							</div>
 						</div>
@@ -13374,8 +13388,8 @@ Sets the subject of the selector (e.g. <code>$node &gt; node</code> to select th
 <h2 id="style/node-body">Node body <a href="#style/node-body"><span class="fa fa-bookmark"></span></a></h2>
 <p>Shape:</p>
 <ul>
-<li><strong><code>width</code></strong> : The width of the node’s body.  This property can take on the special value <code>label</code> so the width is automatically based on the node’s label.</li>
-<li><strong><code>height</code></strong> : The height of the node’s body.  This property can take on the special value <code>label</code> so the height is automatically based on the node’s label.</li>
+<li><strong><code>width</code></strong> : The width of the node’s body.</li>
+<li><strong><code>height</code></strong> : The height of the node’s body.</li>
 <li><strong><code>shape</code></strong> : The shape of the node’s body.  Note that each shape fits within the specified <code>width</code> and <code>height</code>, and so you may have to adjust <code>width</code> and <code>height</code> if you desire an equilateral shape (i.e. <code>width !== height</code> for several equilateral shapes).  Only <code>*rectangle</code> shapes are supported by compounds, because the dimensions of a compound are defined by the bounding box of the children.  The following values are accepted:<ul>
 <li><code>ellipse</code></li>
 <li><code>triangle</code></li>
@@ -13437,7 +13451,7 @@ Sets the subject of the selector (e.g. <code>$node &gt; node</code> to select th
 <li><strong><code>border-opacity</code></strong> : The opacity of the node’s border.</li>
 </ul>
 <p>Padding:</p>
-<p>A padding defines an addition to a node’s dimension.  For example, <code>padding</code> adds to a node’s outer (i.e. total) width and height.  This can be used to add spacing around the label of <code>width: label; height: label;</code> nodes, or it can be used to add spacing between a compound node parent and its children.</p>
+<p>A padding defines an addition to a node’s dimension.  For example, <code>padding</code> adds to a node’s outer (i.e. total) width and height.  This can be used to add spacing between a compound node parent and its children.</p>
 <ul>
 <li><strong><code>padding</code></strong> : The amount of padding around all sides of the node. Either percentage or pixel value can be specified. For example, both <code>50%</code> and <code>50px</code> are acceptable values. By default, percentage padding is calculated as a percentage of node width.</li>
 <li><strong><code>padding-relative-to</code></strong> : Determines how padding is calculated if and only if the percentage unit is used. Accepts one of the keywords specified below.<ul>
@@ -15113,23 +15127,27 @@ cytoscape.use( ext );</code></pre>
 <li><i class="fa fa-fw fa-users"></i> <a href="https://github.com/lambdalisue/cytoscape-anywhere-panning"><code>anywhere-panning</code></a> : Allow panning when dragging on nodes or edges.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/cytoscape/cytoscape.js-automove"><code>automove</code></a> : Automatically update node positions based on specified rules (e.g. synching node movements, constraining movements, etc.)</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/iVis-at-Bilkent/cytoscape.js-autopan-on-drag"><code>autopan-on-drag</code></a> : Automatically pan the viewport when nodes are dragged outside of the viewport bounds.</li>
+<li><i class="fa fa-fw fa-users"></i> <a href="https://github.com/sgratzl/cytoscape.js-bubblesets"><code>bubblesets</code></a> : Visually group a set of elements via a <a href="https://ieeexplore.ieee.org/document/5290706">bubble set</a>.</li>
 <li><i class="fa fa-fw fa-users"></i> <a href="https://github.com/classcraft/cytoscape.js-canvas"><code>canvas</code></a> : An extension to create a canvas over or under a Cytoscape graph. Useful for customizing nodes/edges, drawing backgrounds, etc.</li>
 <li><i class="fa fa-fw fa-users"></i> <a href="https://github.com/silviafrias/cerebral-web"><code>cerebralweb</code></a> : Enable fast and interactive visualisation of molecular interaction networks stratified based on subcellular localisation or other custom annotation.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/cytoscape/cytoscape.js-compound-drag-and-drop"><code>compound-drag-and-drop</code></a> : Compound node drag-and-drop UI for adding and removing children</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/iVis-at-Bilkent/cytoscape.js-context-menus"><code>context-menus</code></a> : A traditional right click menu</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/cytoscape/cytoscape.js-cxtmenu"><code>cxtmenu</code></a> : A circular context menu that allows for one-swipe commands on the graph.</li>
-<li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/iVis-at-Bilkent/cytoscape.js-edge-bend-editing"><code>edge-bend-editing</code></a> : UI for editing edge bends (segment edges and bezier edges)</li>
+<li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/iVis-at-Bilkent/cytoscape.js-edge-editing"><code>edge-editing</code></a> : UI for editing edge bends (segment edges and bezier edges)</li>
 <li><i class="fa fa-fw fa-users"></i> <a href="https://github.com/frankiex/cytoscape.js-edge-editation"><code>edge-editation</code></a> : Adds handles to nodes and allows creation of different types of edges</li>
 <li><i class="fa fa-fw fa-users"></i> <a href="https://github.com/jri/cytoscape-edge-connections"><code>edge-connections</code></a> : Allows edges to visually connect other edges, according to the Associative Model of Data.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/cytoscape/cytoscape.js-edgehandles"><code>edgehandles</code></a> : UI for connecting nodes with edges.</li>
 <li><i class="fa fa-fw fa-users"></i> <a href="https://github.com/mo0om/cytoscape-even-parent"><code>even-parent</code></a> : Layout which resizes children to fit under parent no matter how many there are.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/iVis-at-Bilkent/cytoscape.js-expand-collapse"><code>expand-collapse</code></a> : Provides an API for expanding and collapsing compound parent nodes</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/iVis-at-Bilkent/cytoscape.js-grid-guide"><code>grid-guide</code></a> : Adds grid and snapping functionality to Cytoscape graphs</li>
+<li><i class="fa fa-fw fa-users"></i> <a href="https://github.com/zakjan/cytoscape-lasso"><code>lasso</code></a> : Lasso selection UI</li>
+<li><i class="fa fa-fw fa-users"></i> <a href="https://github.com/sgratzl/cytoscape.js-layers"><code>layers</code></a> : Simplifies the creation and management of additional layers in SVG, HTML, or Canvas format with additional utilities to render elements per node or edge.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/cytoscape/cytoscape.js-navigator"><code>navigator</code></a> : A bird’s eye view widget of the graph.</li>
 <li><i class="fa fa-fw fa-users"></i> <a href="https://mo0om.github.io/cytoscape-no-overlap"><code>no-overlap</code></a> : Prevents nodes from overlapping on drag.</li>
 <li><i class="fa fa-fw fa-users"></i> <a href="https://github.com/kaluginserg/cytoscape-node-html-label"><code>node-html-label</code></a> : Allows HTML to be specified as the labels for nodes.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/iVis-at-Bilkent/cytoscape.js-node-resize"><code>node-resize</code></a> : A highly customisable node resizing extension with a traditional UI.</li>
 <li><i class="fa fa-fw fa-users"></i> <a href="https://github.com/curupaco/cytoscape.js-noderesize"><code>noderesize</code></a> : A minimalistic node resize control.</li>
+<li><i class="fa fa-fw fa-users"></i> <a href="https://github.com/sgratzl/cytoscape.js-overlays"><code>overlays</code></a> : Overlays that shows bars, histograms, sparklines, binary sparklines, symbols (categorical data), or boxplots next to nodes.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/cytoscape/cytoscape.js-panzoom"><code>panzoom</code></a> : A panzoom UI widget.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/cytoscape/cytoscape.js-popper"><code>popper</code></a> : A wrapper for <a href="https://popper.js.org/">Popper.js</a> that lets you position divs relative to Cytoscape elements (can be used with <a href="https://atomiks.github.io/tippyjs/">Tippy.js</a> to create tooltips).</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/cytoscape/cytoscape.js-qtip"><code>qtip</code></a> : A wrapper that lets you use qTips on graph elements or the graph background.</li>
@@ -15160,6 +15178,7 @@ cytoscape.use( ext );</code></pre>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/iVis-at-Bilkent/cytoscape.js-clipboard"><code>clipboard</code></a> : Adds copy-paste utilities to Cytoscape.js.</li>
 <li><i class="fa fa-fw fa-users"></i> <a href="https://github.com/lambdalisue/cytoscape-dblclick"><code>dblclick</code></a> : Adds a <code>dblclick</code> event to Cytoscape.js.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/iVis-at-Bilkent/cytoscape.js-graphml"><code>graphml</code></a> : Adds GraphML import and export functionality to Cytoscape.js.</li>
+<li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/iVis-at-Bilkent/cytoscape.js-layout-utilities"><code>layout-utilities</code></a> : Provides miscellenaous layout utilities in order to manage the placement of nodes or components without layout information.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/iVis-at-Bilkent/cytoscape.js-undo-redo"><code>undo-redo</code></a> : Adds undo-redo APIs to Cytoscape.js.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/iVis-at-Bilkent/cytoscape.js-view-utilities"><code>view-utilities</code></a> : Adds search and highlight APIs to Cytoscape.js.</li>
 </ul>

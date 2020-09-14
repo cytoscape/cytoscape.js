@@ -76,6 +76,7 @@ The extensions below are a curated list.  To add your extension, [please submit 
  * <i class="fa fa-fw fa-user"></i> [`clipboard`](https://github.com/iVis-at-Bilkent/cytoscape.js-clipboard) : Adds copy-paste utilities to Cytoscape.js.
  * <i class="fa fa-fw fa-users"></i> [`dblclick`](https://github.com/lambdalisue/cytoscape-dblclick) : Adds a `dblclick` event to Cytoscape.js.
  * <i class="fa fa-fw fa-user"></i> [`graphml`](https://github.com/iVis-at-Bilkent/cytoscape.js-graphml) : Adds GraphML import and export functionality to Cytoscape.js.
+ * <i class="fa fa-fw fa-user"></i> [`layout-utilities`](https://github.com/iVis-at-Bilkent/cytoscape.js-layout-utilities) : Provides miscellenaous layout utilities in order to manage the placement of nodes or components without layout information.
  * <i class="fa fa-fw fa-user"></i> [`undo-redo`](https://github.com/iVis-at-Bilkent/cytoscape.js-undo-redo) : Adds undo-redo APIs to Cytoscape.js.
  * <i class="fa fa-fw fa-user"></i> [`view-utilities`](https://github.com/iVis-at-Bilkent/cytoscape.js-view-utilities) : Adds search and highlight APIs to Cytoscape.js.
 

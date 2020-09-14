@@ -45,6 +45,10 @@ styfn.parseImplWarn = function( name, value, propIsBypass, propIsFlat ){
     util.warn(`The style property \`${name}: ${value}\` is invalid`);
   }
 
+  if( prop && (prop.name === 'width' || prop.name === 'height') && value === 'label' ){
+    util.warn('The style value of `label` is deprecated for `' + prop.name + '`');
+  }
+
   return prop;
 };
 

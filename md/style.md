@@ -163,8 +163,8 @@ In addition to specifying the value of a property outright, the developer may al
 
 Shape:
 
- * **`width`** : The width of the node's body.  This property can take on the special value `label` so the width is automatically based on the node's label.
- * **`height`** : The height of the node's body.  This property can take on the special value `label` so the height is automatically based on the node's label.
+ * **`width`** : The width of the node's body.
+ * **`height`** : The height of the node's body.
  * **`shape`** : The shape of the node's body.  Note that each shape fits within the specified `width` and `height`, and so you may have to adjust `width` and `height` if you desire an equilateral shape (i.e. `width !== height` for several equilateral shapes).  Only `*rectangle` shapes are supported by compounds, because the dimensions of a compound are defined by the bounding box of the children.  The following values are accepted:
     * `ellipse`
     * `triangle`
@@ -224,7 +224,7 @@ Border:
 
 Padding:
 
-A padding defines an addition to a node's dimension.  For example, `padding` adds to a node's outer (i.e. total) width and height.  This can be used to add spacing around the label of `width: label; height: label;` nodes, or it can be used to add spacing between a compound node parent and its children.
+A padding defines an addition to a node's dimension.  For example, `padding` adds to a node's outer (i.e. total) width and height.  This can be used to add spacing between a compound node parent and its children.
 
 * **`padding`** : The amount of padding around all sides of the node. Either percentage or pixel value can be specified. For example, both `50%` and `50px` are acceptable values. By default, percentage padding is calculated as a percentage of node width.
 * **`padding-relative-to`** : Determines how padding is calculated if and only if the percentage unit is used. Accepts one of the keywords specified below.

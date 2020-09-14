@@ -61,6 +61,7 @@
   * [DARPA](http://www.darpa.mil)
   * [Duo Labs](https://duo.com/labs) : [CloudMapper](https://github.com/duo-labs/cloudmapper)
   * [dSysMap](http://dsysmap.irbbarcelona.org)
+  * [Elastic](https://www.elastic.co/) : [Elastic APM Service Map](https://www.elastic.co/guide/en/kibana/current/service-maps.html)
   * [Elsevier](https://www.elsevier.com)
   * [Excel](https://products.office.com/en-us/excel) : [GIGRAPH](https://gigraph.io)
   * [Facebook](https://www.facebook.com) : [Metro](https://facebook.github.io/metro/) visualiser
@@ -90,6 +91,7 @@
   * [Panaya](https://www.panaya.com) : [Panaya ForeSight](https://www.panaya.com/product/salesforce-foresight/)
   * [Pathway Commons](http://www.pathwaycommons.org)
   * [py2cytoscape](https://github.com/idekerlab/py2cytoscape)
+  * [Radity](https://radity.com/)
   * [Rezza](http://rezza.io)
   * [Research Institute for Fragrance Materials](https://www.rifm.org) : [RIFM Database](https://rifmdatabase.rifm.org/rifmweb/)
   * [Sainsbury Laboratory](http://www.tsl.ac.uk/) : [PINet](http://pinet.tsl.ac.uk/)
@@ -141,8 +143,11 @@ The library was created at the [Donnelly Centre](http://thedonnellycentre.utoron
 
 ## Releases
 
+- 3.16
+ - [3.16.0](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.16.0+is%3Aclosed)
 - 3.15
- - [3.15.2](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.15.+is%3Aclosed)
+ - [3.15.3](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.15.3+is%3Aclosed)
+ - [3.15.2](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.15.2+is%3Aclosed)
  - [3.15.1](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.15.1+is%3Aclosed)
  - [3.15.0](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.15.0+is%3Aclosed)
 - 3.14

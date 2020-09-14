@@ -36,11 +36,13 @@ The extensions below are a curated list.  To add your extension, [please submit 
  * <i class="fa fa-fw fa-users"></i> [`even-parent`](https://github.com/mo0om/cytoscape-even-parent) : Layout which resizes children to fit under parent no matter how many there are.
  * <i class="fa fa-fw fa-user"></i> [`expand-collapse`](https://github.com/iVis-at-Bilkent/cytoscape.js-expand-collapse) : Provides an API for expanding and collapsing compound parent nodes
  * <i class="fa fa-fw fa-user"></i> [`grid-guide`](https://github.com/iVis-at-Bilkent/cytoscape.js-grid-guide) : Adds grid and snapping functionality to Cytoscape graphs
+ * <i class="fa fa-fw fa-users"></i> [`layers`](https://github.com/sgratzl/cytoscape.js-layers) : Simplifies the creation and management of additional layers in SVG, HTML, or Canvas format with additional utilities to render elements per node or edge.
  * <i class="fa fa-fw fa-user"></i> [`navigator`](https://github.com/cytoscape/cytoscape.js-navigator) : A bird's eye view widget of the graph.
  * <i class="fa fa-fw fa-users"></i> [`no-overlap`](https://mo0om.github.io/cytoscape-no-overlap) : Prevents nodes from overlapping on drag.
  * <i class="fa fa-fw fa-users"></i> [`node-html-label`](https://github.com/kaluginserg/cytoscape-node-html-label) : Allows HTML to be specified as the labels for nodes.
  * <i class="fa fa-fw fa-user"></i> [`node-resize`](https://github.com/iVis-at-Bilkent/cytoscape.js-node-resize) : A highly customisable node resizing extension with a traditional UI.
  * <i class="fa fa-fw fa-users"></i> [`noderesize`](https://github.com/curupaco/cytoscape.js-noderesize) : A minimalistic node resize control.
+ * <i class="fa fa-fw fa-users"></i> [`overlays`](https://github.com/sgratzl/cytoscape.js-overlays) : Overlays that shows bars, histograms, sparklines, binary sparklines, symbols (categorical data), or boxplots next to nodes.
  * <i class="fa fa-fw fa-user"></i> [`panzoom`](https://github.com/cytoscape/cytoscape.js-panzoom) : A panzoom UI widget.
  * <i class="fa fa-fw fa-user"></i> [`popper`](https://github.com/cytoscape/cytoscape.js-popper) : A wrapper for [Popper.js](https://popper.js.org/) that lets you position divs relative to Cytoscape elements (can be used with [Tippy.js](https://atomiks.github.io/tippyjs/) to create tooltips).
  * <i class="fa fa-fw fa-user"></i> [`qtip`](https://github.com/cytoscape/cytoscape.js-qtip) : A wrapper that lets you use qTips on graph elements or the graph background.

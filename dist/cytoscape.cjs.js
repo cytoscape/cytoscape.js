@@ -15447,7 +15447,7 @@ styfn$1.applyBypass = function (eles, name, value, updateTransitions) {
         };
       }
 
-      ret = this.applyParsedProperty(ele, _prop) || ret;
+      ret = this.applyParsedProperty(ele, copy(_prop)) || ret;
 
       if (updateTransitions) {
         diffProp.next = ele.pstyle(_prop.name);
@@ -31588,7 +31588,7 @@ sheetfn.appendToStyle = function (style) {
   return style;
 };
 
-var version = "3.15.2";
+var version = "3.15.3";
 
 var cytoscape = function cytoscape(options) {
   // if no options specified, use default

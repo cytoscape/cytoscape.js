@@ -18,16 +18,8 @@ styfn.apply = function( eles ){
   let cy = _p.cy;
   let updatedEles = cy.collection();
 
-  if( _p.newStyle ){ // clear style caches
-    _p.contextStyles = {};
-    _p.propDiffs = {};
-
-    self.cleanElements( eles, true );
-  }
-
   for( let ie = 0; ie < eles.length; ie++ ){
     let ele = eles[ ie ];
-
     let cxtMeta = self.getContextMeta( ele );
 
     if( cxtMeta.empty ){
@@ -37,8 +29,10 @@ styfn.apply = function( eles ){
     let cxtStyle = self.getContextStyle( cxtMeta );
     let app = self.applyContextStyle( cxtMeta, cxtStyle, ele );
 
-    if( !_p.newStyle ){
+    if( ele._private.appliedInitStyle ){
       self.updateTransitions( ele, app.diffProps );
+    } else {
+      ele._private.appliedInitStyle = true;
     }
 
     let hintsDiff = self.updateStyleHints( ele );
@@ -48,8 +42,6 @@ styfn.apply = function( eles ){
     }
 
   } // for elements
-
-  _p.newStyle = false;
 
   return updatedEles;
 };
@@ -122,10 +114,6 @@ styfn.getContextMeta = function( ele ){
   let cxtKey = '';
   let diffProps;
   let prevKey = ele._private.styleCxtKey || '';
-
-  if( self._private.newStyle ){
-    prevKey = ''; // since we need to apply all style if a fresh stylesheet
-  }
 
   // get the cxt key
   for( let i = 0; i < self.length; i++ ){
@@ -386,6 +374,7 @@ styfn.updateStyleHints = function(ele){
 styfn.clearStyleHints = function(ele){
   let _p = ele._private;
 
+  _p.styleCxtKey = '';
   _p.styleKeys = {};
   _p.styleKey = null;
   _p.labelKey = null;

@@ -123,9 +123,10 @@ let elesfn = ({
 
     if( ele ){
       if( ele._private.styleDirty ){
+        cy.style().apply(ele);
+
         ele._private.styleDirty = false;
 
-        cy.style().apply(ele);
         ele.emitAndNotify('style');
       }
 

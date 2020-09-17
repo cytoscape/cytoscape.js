@@ -123,9 +123,10 @@ let elesfn = ({
 
     if( ele ){
       if( ele._private.styleDirty ){
-        cy.style().apply(ele);
-
+        // n.b. this flag should be set before apply() to avoid potential infinite recursion
         ele._private.styleDirty = false;
+
+        cy.style().apply(ele);
 
         ele.emitAndNotify('style');
       }

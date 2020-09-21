@@ -139,7 +139,7 @@
     return obj != null && _typeof(obj) === typeoffn;
   };
   var array = function array(obj) {
-    return Array.isArray ? Array.isArray(obj) : obj != null && obj instanceof Array;
+    return !elementOrCollection(obj) && (Array.isArray ? Array.isArray(obj) : obj != null && obj instanceof Array);
   };
   var plainObject = function plainObject(obj) {
     return obj != null && _typeof(obj) === typeofobj && !array(obj) && obj.constructor === Object;
@@ -1453,8 +1453,8 @@
 
   var Set$1 = (typeof Set === "undefined" ? "undefined" : _typeof(Set)) !== undef ? Set : ObjectSet;
 
-  var Element = function Element(cy, params, restore) {
-    restore = restore === undefined || restore ? true : false;
+  var Element = function Element(cy, params) {
+    var restore = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : true;
 
     if (cy === undefined || params === undefined || !core(cy)) {
       error('An element must have a core reference and parameters set');
@@ -1748,10 +1748,10 @@
         var edge = connectedBy[node.id()];
 
         if (edge != null) {
-          connectedEles.merge(edge);
+          connectedEles.push(edge);
         }
 
-        connectedEles.merge(node);
+        connectedEles.push(node);
       }
 
       return {
@@ -4737,10 +4737,10 @@
           for (var _j2 = 0; _j2 < P[_w2].length; _j2++) {
             var _v2 = P[_w2][_j2];
             e[_v2] = e[_v2] + g[_v2] / g[_w2] * (1 + e[_w2]);
+          }
 
-            if (_w2 != V[s].id()) {
-              C.set(_w2, C.get(_w2) + e[_w2]);
-            }
+          if (_w2 != V[s].id()) {
+            C.set(_w2, C.get(_w2) + e[_w2]);
           }
         }
       };
@@ -6341,7 +6341,7 @@
       }
 
       result.found = true;
-      result.trail = this.spawn(trail);
+      result.trail = this.spawn(trail, true);
       return result;
     }
   };
@@ -9155,9 +9155,7 @@
         }
       }
 
-      return this.spawn(parents, {
-        unique: true
-      }).filter(selector);
+      return this.spawn(parents, true).filter(selector);
     },
     parents: function parents(selector) {
       var parents = [];
@@ -9172,9 +9170,7 @@
         eles = eles.parent();
       }
 
-      return this.spawn(parents, {
-        unique: true
-      }).filter(selector);
+      return this.spawn(parents, true).filter(selector);
     },
     commonAncestors: function commonAncestors(selector) {
       var ancestors;
@@ -9210,9 +9206,7 @@
         }
       }
 
-      return this.spawn(children, {
-        unique: true
-      }).filter(selector);
+      return this.spawn(children, true).filter(selector);
     }, 'children'),
     siblings: function siblings(selector) {
       return this.parent().children().not(this).filter(selector);
@@ -9260,9 +9254,7 @@
       }
 
       add(this.children());
-      return this.spawn(elements, {
-        unique: true
-      }).filter(selector);
+      return this.spawn(elements, true).filter(selector);
     }
   };
 
@@ -11488,9 +11480,9 @@
         var ele = this[i];
 
         if (ele.isNode()) {
-          nodes.merge(ele);
+          nodes.push(ele);
         } else {
-          edges.merge(ele);
+          edges.push(ele);
         }
       }
 
@@ -11514,7 +11506,7 @@
           var include = thisArg ? _filter.apply(thisArg, [ele, i, eles]) : _filter(ele, i, eles);
 
           if (include) {
-            filterEles.merge(ele);
+            filterEles.push(ele);
           }
         }
 
@@ -11531,19 +11523,18 @@
           toRemove = this.filter(toRemove);
         }
 
-        var elements = [];
-        var rMap = toRemove._private.map;
+        var elements = this.spawn();
 
         for (var i = 0; i < this.length; i++) {
           var element = this[i];
-          var remove = rMap.has(element.id());
+          var remove = toRemove.has(element);
 
           if (!remove) {
             elements.push(element);
           }
         }
 
-        return this.spawn(elements);
+        return elements;
       }
     },
     absoluteComplement: function absoluteComplement() {
@@ -11557,23 +11548,22 @@
         return this.filter(selector);
       }
 
-      var elements = [];
+      var elements = this.spawn();
       var col1 = this;
       var col2 = other;
       var col1Smaller = this.length < other.length;
-      var map2 = col1Smaller ? col2._private.map : col1._private.map;
-      var col = col1Smaller ? col1 : col2;
+      var colS = col1Smaller ? col1 : col2;
+      var colL = col1Smaller ? col2 : col1;
 
-      for (var i = 0; i < col.length; i++) {
-        var id = col[i]._private.data.id;
-        var entry = map2.get(id);
+      for (var i = 0; i < colS.length; i++) {
+        var ele = colS[i];
 
-        if (entry) {
-          elements.push(entry.ele);
+        if (colL.has(ele)) {
+          elements.push(ele);
         }
       }
 
-      return this.spawn(elements);
+      return elements;
     },
     xor: function xor(other) {
       var cy = this._private.cy;
@@ -11582,7 +11572,7 @@
         other = cy.$(other);
       }
 
-      var elements = [];
+      var elements = this.spawn();
       var col1 = this;
       var col2 = other;
 
@@ -11600,7 +11590,7 @@
 
       add(col1, col2);
       add(col2, col1);
-      return this.spawn(elements);
+      return elements;
     },
     diff: function diff(other) {
       var cy = this._private.cy;
@@ -11609,9 +11599,9 @@
         other = cy.$(other);
       }
 
-      var left = [];
-      var right = [];
-      var both = [];
+      var left = this.spawn();
+      var right = this.spawn();
+      var both = this.spawn();
       var col1 = this;
       var col2 = other;
 
@@ -11622,7 +11612,7 @@
           var inOther = other.hasElementWithId(id);
 
           if (inOther) {
-            both.push(ele);
+            both.merge(ele);
           } else {
             retEles.push(ele);
           }
@@ -11632,15 +11622,9 @@
       add(col1, col2, left);
       add(col2, col1, right);
       return {
-        left: this.spawn(left, {
-          unique: true
-        }),
-        right: this.spawn(right, {
-          unique: true
-        }),
-        both: this.spawn(both, {
-          unique: true
-        })
+        left: left,
+        right: right,
+        both: both
       };
     },
     add: function add(toAdd) {
@@ -11655,23 +11639,18 @@
         toAdd = cy.mutableElements().filter(selector);
       }
 
-      var elements = [];
+      var elements = this.spawnSelf();
 
-      for (var i = 0; i < this.length; i++) {
-        elements.push(this[i]);
-      }
-
-      var map = this._private.map;
-
-      for (var _i = 0; _i < toAdd.length; _i++) {
-        var add = !map.has(toAdd[_i].id());
+      for (var i = 0; i < toAdd.length; i++) {
+        var ele = toAdd[i];
+        var add = !this.has(ele);
 
         if (add) {
-          elements.push(toAdd[_i]);
+          elements.push(ele);
         }
       }
 
-      return this.spawn(elements);
+      return elements;
     },
     // in place merge on calling collection
     merge: function merge(toAdd) {
@@ -11700,14 +11679,6 @@
           map.set(id, {
             ele: toAddEle,
             index: index
-          });
-        } else {
-          // replace
-          var _index = map.get(id).index;
-          this[_index] = toAddEle;
-          map.set(id, {
-            ele: toAddEle,
-            index: _index
           });
         }
       }
@@ -12373,16 +12344,16 @@
       }
 
       var hasCompounds = cy.hasCompoundNodes();
-      var style = cy.style();
       var updatedEles = this;
       notifyRenderer = notifyRenderer || notifyRenderer === undefined ? true : false;
 
       if (hasCompounds) {
         // then add everything up and down for compound selector checks
         updatedEles = this.spawnSelf().merge(this.descendants()).merge(this.parents());
-      }
+      } // let changedEles = style.apply( updatedEles );
 
-      var changedEles = style.apply(updatedEles);
+
+      var changedEles = updatedEles;
 
       if (notifyRenderer) {
         changedEles.emitAndNotify('style'); // let renderer know we changed style
@@ -12390,6 +12361,9 @@
         changedEles.emit('style'); // just fire the event
       }
 
+      updatedEles.forEach(function (ele) {
+        return ele._private.styleDirty = true;
+      });
       return this; // chaining
     },
     // get the internal parsed style object for the specified property
@@ -12403,6 +12377,13 @@
       }
 
       if (ele) {
+        if (ele._private.styleDirty) {
+          // n.b. this flag should be set before apply() to avoid potential infinite recursion
+          ele._private.styleDirty = false;
+          cy.style().apply(ele);
+          ele.emitAndNotify('style');
+        }
+
         var overriddenStyle = ele._private.style[property];
 
         if (overriddenStyle != null) {
@@ -12889,9 +12870,7 @@
         }
       }
 
-      return this.spawn(ret, {
-        unique: true
-      }).filter(selector);
+      return this.spawn(ret, true).filter(selector);
     };
   };
 
@@ -12924,9 +12903,7 @@
         }
       }
 
-      return this.spawn(oEles, {
-        unique: true
-      }).filter(selector);
+      return this.spawn(oEles, true).filter(selector);
     };
   };
 
@@ -12965,9 +12942,7 @@
         eles = next;
       }
 
-      return this.spawn(sEles, {
-        unique: true
-      }).filter(selector);
+      return this.spawn(sEles, true).filter(selector);
     };
   };
 
@@ -13032,9 +13007,7 @@
         }
       }
 
-      return this.spawn(elements, {
-        unique: true
-      }).filter(selector);
+      return this.spawn(elements, true).filter(selector);
     }, 'neighborhood'),
     closedNeighborhood: function closedNeighborhood(selector) {
       return this.neighborhood().add(this).filter(selector);
@@ -13091,9 +13064,7 @@
         }
       }
 
-      return this.spawn(sources, {
-        unique: true
-      }).filter(selector);
+      return this.spawn(sources, true).filter(selector);
     };
   }
 
@@ -13142,9 +13113,7 @@
         }
       }
 
-      return this.spawn(elements, {
-        unique: true
-      });
+      return this.spawn(elements, true);
     };
   }
 
@@ -13168,9 +13137,7 @@
         }
       }
 
-      return this.spawn(retEles, {
-        unique: true
-      }).filter(selector);
+      return this.spawn(retEles, true).filter(selector);
     }, 'connectedEdges'),
     connectedNodes: cache(function (selector) {
       var retEles = [];
@@ -13187,9 +13154,7 @@
         retEles.push(edge.target()[0]);
       }
 
-      return this.spawn(retEles, {
-        unique: true
-      }).filter(selector);
+      return this.spawn(retEles, true).filter(selector);
     }, 'connectedNodes'),
     parallelEdges: cache(defineParallelEdgesFunction(), 'parallelEdges'),
     codirectedEdges: cache(defineParallelEdgesFunction({
@@ -13230,9 +13195,7 @@
         }
       }
 
-      return this.spawn(elements, {
-        unique: true
-      }).filter(selector);
+      return this.spawn(elements, true).filter(selector);
     };
   } // Misc functions
   /////////////////
@@ -13298,20 +13261,10 @@
   });
   elesfn$t.componentsOf = elesfn$t.components;
 
-  var idFactory = {
-    generate: function generate(cy, element, tryThisId) {
-      var id = tryThisId != null ? tryThisId : uuid();
+  var Collection = function Collection(cy, elements) {
+    var unique = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
 
-      while (cy.hasElementWithId(id)) {
-        id = uuid();
-      }
-
-      return id;
-    }
-  }; // represents a set of nodes, edges, or both together
-
-  var Collection = function Collection(cy, elements, options) {
-    if (cy === undefined || !core(cy)) {
+    if (cy === undefined) {
       error('A collection must have a reference to the core');
       return;
     }
@@ -13337,7 +13290,7 @@
         var _data = json.data; // make sure newly created elements have valid ids
 
         if (_data.id == null) {
-          _data.id = idFactory.generate(cy, json);
+          _data.id = uuid();
         } else if (cy.hasElementWithId(_data.id) || elesIds.has(_data.id)) {
           continue; // can't create element if prior id already exists
         }
@@ -13361,20 +13314,53 @@
 
       var id = element$1._private.data.id;
 
-      if (options == null || options.unique && !map.has(id)) {
-        map.set(id, {
-          index: this.length,
-          ele: element$1
-        });
+      if (!unique || !map.has(id)) {
+        if (unique) {
+          map.set(id, {
+            index: this.length,
+            ele: element$1
+          });
+        }
+
         this[this.length] = element$1;
         this.length++;
       }
     }
 
     this._private = {
+      eles: this,
       cy: cy,
-      map: map
-    }; // restore the elements if we created them from json
+
+      get map() {
+        if (this.lazyMap == null) {
+          this.rebuildMap();
+        }
+
+        return this.lazyMap;
+      },
+
+      set map(m) {
+        this.lazyMap = m;
+      },
+
+      rebuildMap: function rebuildMap() {
+        var m = this.lazyMap = new Map$1();
+        var eles = this.eles;
+
+        for (var _i2 = 0; _i2 < eles.length; _i2++) {
+          var _ele = eles[_i2];
+          m.set(_ele.id(), {
+            index: _i2,
+            ele: _ele
+          });
+        }
+      }
+    };
+
+    if (unique) {
+      this._private.map = map;
+    } // restore the elements if we created them from json
+
 
     if (createdElements) {
       this.restore();
@@ -13385,21 +13371,14 @@
   // and use elefn and elesfn as shorthands to the prototypes
 
 
-  var elesfn$u = Element.prototype = Collection.prototype;
+  var elesfn$u = Element.prototype = Collection.prototype = Object.create(Array.prototype);
 
   elesfn$u.instanceString = function () {
     return 'collection';
   };
 
-  elesfn$u.spawn = function (cy, eles, opts) {
-    if (!core(cy)) {
-      // cy is optional
-      opts = eles;
-      eles = cy;
-      cy = this.cy();
-    }
-
-    return new Collection(cy, eles, opts);
+  elesfn$u.spawn = function (eles, unique) {
+    return new Collection(this.cy(), eles, unique);
   };
 
   elesfn$u.spawnSelf = function () {
@@ -13428,9 +13407,7 @@
   };
 
   elesfn$u.unique = function () {
-    return new Collection(this._private.cy, this, {
-      unique: true
-    });
+    return new Collection(this._private.cy, this, true);
   };
 
   elesfn$u.hasElementWithId = function (id) {
@@ -13631,8 +13608,8 @@
     var edges = [];
     var elements;
 
-    for (var _i2 = 0, l = self.length; _i2 < l; _i2++) {
-      var ele = self[_i2];
+    for (var _i3 = 0, l = self.length; _i3 < l; _i3++) {
+      var ele = self[_i3];
 
       if (addToPool && !ele.removed()) {
         // don't need to handle this ele
@@ -13659,15 +13636,15 @@
 
 
     for (i = 0; i < elements.length; i++) {
-      var _ele = elements[i];
-      var _private = _ele._private;
+      var _ele2 = elements[i];
+      var _private = _ele2._private;
       var _data3 = _private.data; // the traversal cache should start fresh when ele is added
 
-      _ele.clearTraversalCache(); // set id and validate
+      _ele2.clearTraversalCache(); // set id and validate
 
 
       if (!addToPool && !_private.removed) ; else if (_data3.id === undefined) {
-        _data3.id = idFactory.generate(cy, _ele);
+        _data3.id = uuid();
       } else if (number(_data3.id)) {
         _data3.id = '' + _data3.id; // now it's a string
       } else if (emptyString(_data3.id) || !string(_data3.id)) {
@@ -13684,7 +13661,7 @@
 
       var id = _data3.id; // id is finalised, now let's keep a ref
 
-      if (_ele.isNode()) {
+      if (_ele2.isNode()) {
         // extra checks for nodes
         var pos = _private.position; // make sure the nodes have a defined position
 
@@ -13697,9 +13674,9 @@
         }
       }
 
-      if (_ele.isEdge()) {
+      if (_ele2.isEdge()) {
         // extra checks for edges
-        var edge = _ele;
+        var edge = _ele2;
         var fields = ['source', 'target'];
         var fieldsLength = fields.length;
         var badSourceOrTarget = false;
@@ -13749,22 +13726,22 @@
       _private.map = new Map$1();
 
       _private.map.set(id, {
-        ele: _ele,
+        ele: _ele2,
         index: 0
       });
 
       _private.removed = false;
 
       if (addToPool) {
-        cy.addToPool(_ele);
+        cy.addToPool(_ele2);
       }
     } // for each element
     // do compound node sanity checks
 
 
-    for (var _i3 = 0; _i3 < nodes.length; _i3++) {
+    for (var _i4 = 0; _i4 < nodes.length; _i4++) {
       // each node
-      var node = nodes[_i3];
+      var node = nodes[_i4];
       var _data4 = node._private.data;
 
       if (number(_data4.parent)) {
@@ -13814,22 +13791,22 @@
 
 
     if (elements.length > 0) {
-      var restored = new Collection(cy, elements);
+      var restored = elements.length === self.length ? self : new Collection(cy, elements);
 
-      for (var _i4 = 0; _i4 < restored.length; _i4++) {
-        var _ele2 = restored[_i4];
+      for (var _i5 = 0; _i5 < restored.length; _i5++) {
+        var _ele3 = restored[_i5];
 
-        if (_ele2.isNode()) {
+        if (_ele3.isNode()) {
           continue;
         } // adding an edge invalidates the traversal caches for the parallel edges
 
 
-        _ele2.parallelEdges().clearTraversalCache(); // adding an edge invalidates the traversal cache for the connected nodes
+        _ele3.parallelEdges().clearTraversalCache(); // adding an edge invalidates the traversal cache for the connected nodes
 
 
-        _ele2.source().clearTraversalCache();
+        _ele3.source().clearTraversalCache();
 
-        _ele2.target().clearTraversalCache();
+        _ele3.target().clearTraversalCache();
       }
 
       var toUpdateStyle;
@@ -13949,19 +13926,19 @@
       cy.removeFromPool(elesToRemove); // remove from core pool
     }
 
-    for (var _i5 = 0; _i5 < elesToRemove.length; _i5++) {
-      var _ele3 = elesToRemove[_i5];
+    for (var _i6 = 0; _i6 < elesToRemove.length; _i6++) {
+      var _ele4 = elesToRemove[_i6];
 
-      if (_ele3.isEdge()) {
+      if (_ele4.isEdge()) {
         // remove references to this edge in its connected nodes
-        var src = _ele3.source()[0];
+        var src = _ele4.source()[0];
 
-        var tgt = _ele3.target()[0];
+        var tgt = _ele4.target()[0];
 
-        removeEdgeRef(src, _ele3);
-        removeEdgeRef(tgt, _ele3);
+        removeEdgeRef(src, _ele4);
+        removeEdgeRef(tgt, _ele4);
 
-        var pllEdges = _ele3.parallelEdges();
+        var pllEdges = _ele4.parallelEdges();
 
         for (var j = 0; j < pllEdges.length; j++) {
           var pllEdge = pllEdges[j];
@@ -13973,16 +13950,16 @@
         }
       } else {
         // remove reference to parent
-        var parent = _ele3.parent();
+        var parent = _ele4.parent();
 
         if (parent.length !== 0) {
-          removeChildRef(parent, _ele3);
+          removeChildRef(parent, _ele4);
         }
       }
 
       if (removeFromPool) {
         // mark as removed
-        _ele3._private.removed = true;
+        _ele4._private.removed = true;
       }
     } // check to see if we have a compound graph or not
 
@@ -13990,10 +13967,10 @@
     var elesStillInside = cy._private.elements;
     cy._private.hasCompoundNodes = false;
 
-    for (var _i6 = 0; _i6 < elesStillInside.length; _i6++) {
-      var _ele4 = elesStillInside[_i6];
+    for (var _i7 = 0; _i7 < elesStillInside.length; _i7++) {
+      var _ele5 = elesStillInside[_i7];
 
-      if (_ele4.isParent()) {
+      if (_ele5.isParent()) {
         cy._private.hasCompoundNodes = true;
         break;
       }
@@ -14011,11 +13988,11 @@
     } // the parents who were modified by the removal need their style updated
 
 
-    for (var _i7 = 0; _i7 < alteredParents.length; _i7++) {
-      var _ele5 = alteredParents[_i7];
+    for (var _i8 = 0; _i8 < alteredParents.length; _i8++) {
+      var _ele6 = alteredParents[_i8];
 
-      if (!removeFromPool || !_ele5.removed()) {
-        _ele5.updateStyle();
+      if (!removeFromPool || !_ele6.removed()) {
+        _ele6.updateStyle();
       }
     }
 
@@ -14734,18 +14711,7 @@
       var _p = ele._private;
       var current = _p.animation.current;
       var queue = _p.animation.queue;
-      var ranAnis = false; // cancel all animations on display:none ele
-
-      if (!isCore && ele.pstyle('display').value === 'none') {
-        // put all current and queue animations in this tick's current list
-        // and empty the lists for the element
-        current = current.splice(0, current.length).concat(queue.splice(0, queue.length)); // stop all animations
-
-        for (var i = 0; i < current.length; i++) {
-          current[i].stop();
-        }
-      } // if nothing currently animating, get something from the queue
-
+      var ranAnis = false; // if nothing currently animating, get something from the queue
 
       if (current.length === 0) {
         var next = queue.shift();
@@ -14765,12 +14731,12 @@
       }; // step and remove if done
 
 
-      for (var _i = current.length - 1; _i >= 0; _i--) {
-        var ani = current[_i];
+      for (var i = current.length - 1; i >= 0; i--) {
+        var ani = current[i];
         var ani_p = ani._private;
 
         if (ani_p.stopped) {
-          current.splice(_i, 1);
+          current.splice(i, 1);
           ani_p.hooked = false;
           ani_p.playing = false;
           ani_p.started = false;
@@ -14804,7 +14770,7 @@
         }
 
         if (ani.completed()) {
-          current.splice(_i, 1);
+          current.splice(i, 1);
           ani_p.hooked = false;
           ani_p.playing = false;
           ani_p.started = false;
@@ -15300,13 +15266,6 @@
     var cy = _p.cy;
     var updatedEles = cy.collection();
 
-    if (_p.newStyle) {
-      // clear style caches
-      _p.contextStyles = {};
-      _p.propDiffs = {};
-      self.cleanElements(eles, true);
-    }
-
     for (var ie = 0; ie < eles.length; ie++) {
       var ele = eles[ie];
       var cxtMeta = self.getContextMeta(ele);
@@ -15318,19 +15277,20 @@
       var cxtStyle = self.getContextStyle(cxtMeta);
       var app = self.applyContextStyle(cxtMeta, cxtStyle, ele);
 
-      if (!_p.newStyle) {
+      if (ele._private.appliedInitStyle) {
         self.updateTransitions(ele, app.diffProps);
+      } else {
+        ele._private.appliedInitStyle = true;
       }
 
       var hintsDiff = self.updateStyleHints(ele);
 
       if (hintsDiff) {
-        updatedEles.merge(ele);
+        updatedEles.push(ele);
       }
     } // for elements
 
 
-    _p.newStyle = false;
     return updatedEles;
   };
 
@@ -15409,12 +15369,7 @@
     var self = this;
     var cxtKey = '';
     var diffProps;
-    var prevKey = ele._private.styleCxtKey || '';
-
-    if (self._private.newStyle) {
-      prevKey = ''; // since we need to apply all style if a fresh stylesheet
-    } // get the cxt key
-
+    var prevKey = ele._private.styleCxtKey || ''; // get the cxt key
 
     for (var i = 0; i < self.length; i++) {
       var context = self[i];
@@ -15624,16 +15579,9 @@
       var units = parsedProp.units; // numbers are cheaper to hash than strings
       // 1 hash op vs n hash ops (for length n string)
 
-      if (type.number && haveNum) {
+      if (type.number && haveNum && !type.multiple) {
         var v = haveNormNum ? normalizedNumberVal : numberVal;
-
-        if (type.multiple) {
-          for (var _i2 = 0; _i2 < v.length; _i2++) {
-            updateGrKey(cleanNum(v[_i2]), _grKey);
-          }
-        } else {
-          updateGrKey(cleanNum(v), _grKey);
-        }
+        updateGrKey(cleanNum(v), _grKey);
 
         if (!haveNormNum && units != null) {
           updateGrKeyWStr(units, _grKey);
@@ -15647,8 +15595,8 @@
 
     var hash = [DEFAULT_HASH_SEED, DEFAULT_HASH_SEED_ALT];
 
-    for (var _i3 = 0; _i3 < propGrKeys.length; _i3++) {
-      var _grKey2 = propGrKeys[_i3];
+    for (var _i2 = 0; _i2 < propGrKeys.length; _i2++) {
+      var _grKey2 = propGrKeys[_i2];
       var grHash = _p.styleKeys[_grKey2];
       hash[0] = hashInt(grHash[0], hash[0]);
       hash[1] = hashIntAlt(grHash[1], hash[1]);
@@ -15681,9 +15629,11 @@
           backgroundImage = _p$styleKeys.backgroundImage,
           compound = _p$styleKeys.compound,
           pie = _p$styleKeys.pie;
-      var nodeKeys = [nodeBorder, backgroundImage, compound, pie].reduce(hashArrays, nodeBody);
+      var nodeKeys = [nodeBody, nodeBorder, backgroundImage, compound, pie].filter(function (k) {
+        return k != null;
+      }).reduce(hashArrays, [DEFAULT_HASH_SEED, DEFAULT_HASH_SEED_ALT]);
       _p.nodeKey = combineHashesArray(nodeKeys);
-      _p.hasPie = pie[0] !== DEFAULT_HASH_SEED && pie[1] !== DEFAULT_HASH_SEED_ALT;
+      _p.hasPie = pie != null && pie[0] !== DEFAULT_HASH_SEED && pie[1] !== DEFAULT_HASH_SEED_ALT;
     }
 
     return oldStyleKey !== _p.styleKey;
@@ -15691,6 +15641,7 @@
 
   styfn.clearStyleHints = function (ele) {
     var _p = ele._private;
+    _p.styleCxtKey = '';
     _p.styleKeys = {};
     _p.styleKey = null;
     _p.labelKey = null;
@@ -15887,8 +15838,8 @@
 
           var _fieldVal = _p.data;
 
-          for (var _i4 = 0; _i4 < _fields.length && _fieldVal; _i4++) {
-            var _field = _fields[_i4];
+          for (var _i3 = 0; _i3 < _fields.length && _fieldVal; _i3++) {
+            var _field = _fields[_i3];
             _fieldVal = _fieldVal[_field];
           }
 
@@ -16125,9 +16076,7 @@
       // then dirty the pll edge bb cache as well
 
       if ( // only for beziers -- so performance of other edges isn't affected
-      (ele.pstyle('curve-style').value === 'bezier' // already a bezier
-      // was just now changed to or from a bezier:
-      || name === 'curve-style' && (fromValue === 'bezier' || toValue === 'bezier')) && prop.triggersBoundsOfParallelBeziers) {
+      name === 'curve-style' && (fromValue === 'bezier' || toValue === 'bezier') && prop.triggersBoundsOfParallelBeziers) {
         ele.parallelEdges().forEach(function (pllEdge) {
           if (pllEdge.isBundledBezier()) {
             pllEdge.dirtyBoundingBoxCache();
@@ -16224,7 +16173,7 @@
           };
         }
 
-        ret = this.applyParsedProperty(ele, _prop) || ret;
+        ret = this.applyParsedProperty(ele, copy(_prop)) || ret;
 
         if (updateTransitions) {
           diffProp.next = ele.pstyle(_prop.name);
@@ -17063,6 +17012,11 @@
       },
       any: function any(val1, val2) {
         return val1 != val2;
+      },
+      emptyNonEmpty: function emptyNonEmpty(str1, str2) {
+        var empty1 = emptyString(str1);
+        var empty2 = emptyString(str2);
+        return empty1 && !empty2 || !empty1 && empty2;
       }
     }; // define visual style properties
     //
@@ -17073,7 +17027,8 @@
     var mainLabel = [{
       name: 'label',
       type: t.text,
-      triggersBounds: diff.any
+      triggersBounds: diff.any,
+      triggersZOrder: diff.emptyNonEmpty
     }, {
       name: 'text-rotation',
       type: t.textRotation,
@@ -17996,6 +17951,10 @@
       warn("The style property `".concat(name, ": ").concat(value, "` is invalid"));
     }
 
+    if (prop && (prop.name === 'width' || prop.name === 'height') && value === 'label') {
+      warn('The style value of `label` is deprecated for `' + prop.name + '`');
+    }
+
     return prop;
   }; // parse a property; return null on invalid; return parsed property otherwise
   // fields :
@@ -18427,13 +18386,23 @@
 
 
   styfn$8.clear = function () {
+    var _p = this._private;
+    var cy = _p.cy;
+    var eles = cy.elements();
+
     for (var i = 0; i < this.length; i++) {
       this[i] = undefined;
     }
 
     this.length = 0;
-    var _p = this._private;
-    _p.newStyle = true;
+    _p.contextStyles = {};
+    _p.propDiffs = {};
+    this.cleanElements(eles, true);
+    eles.forEach(function (ele) {
+      var ele_p = ele[0]._private;
+      ele_p.styleDirty = true;
+      ele_p.appliedInitStyle = false;
+    });
     return this; // chaining
   };
 
@@ -23029,7 +22998,9 @@
 
     var taxiTurn = edge.pstyle('taxi-turn');
     var turnIsPercent = taxiTurn.units === '%';
-    var taxiTurnPfVal = turnIsPercent && taxiTurn.pfValue < 0 ? 1 + taxiTurn.pfValue : taxiTurn.pfValue;
+    var taxiTurnPfVal = taxiTurn.pfValue;
+    var turnIsNegative = taxiTurnPfVal < 0; // i.e. from target side
+
     var minD = edge.pstyle('taxi-turn-min-distance').pfValue;
     var dw = dIncludesNodeBody ? (srcW + tgtW) / 2 : 0;
     var dh = dIncludesNodeBody ? (srcH + tgtH) / 2 : 0;
@@ -23048,12 +23019,12 @@
     var dy = subDWH(pdy, dh);
     var isExplicitDir = false;
 
-    if (taxiDir === AUTO) {
+    if (rawTaxiDir === AUTO) {
       taxiDir = Math.abs(dx) > Math.abs(dy) ? HORIZONTAL : VERTICAL;
-    } else if (taxiDir === UPWARD || taxiDir === DOWNWARD) {
+    } else if (rawTaxiDir === UPWARD || rawTaxiDir === DOWNWARD) {
       taxiDir = VERTICAL;
       isExplicitDir = true;
-    } else if (taxiDir === LEFTWARD || taxiDir === RIGHTWARD) {
+    } else if (rawTaxiDir === LEFTWARD || rawTaxiDir === RIGHTWARD) {
       taxiDir = HORIZONTAL;
       isExplicitDir = true;
     }
@@ -23064,21 +23035,29 @@
     var sgnL = signum(pl);
     var forcedDir = false;
 
-    if (!(isExplicitDir && turnIsPercent) // forcing in this case would cause weird growing in the opposite direction
+    if (!(isExplicitDir && (turnIsPercent || turnIsNegative)) // forcing in this case would cause weird growing in the opposite direction
     && (rawTaxiDir === DOWNWARD && pl < 0 || rawTaxiDir === UPWARD && pl > 0 || rawTaxiDir === LEFTWARD && pl > 0 || rawTaxiDir === RIGHTWARD && pl < 0)) {
       sgnL *= -1;
       l = sgnL * Math.abs(l);
       forcedDir = true;
     }
 
-    var d = turnIsPercent ? taxiTurnPfVal * l : taxiTurnPfVal * sgnL;
+    var d;
+
+    if (turnIsPercent) {
+      var p = taxiTurnPfVal < 0 ? 1 + taxiTurnPfVal : taxiTurnPfVal;
+      d = p * l;
+    } else {
+      var k = taxiTurnPfVal < 0 ? l : 0;
+      d = k + taxiTurnPfVal * sgnL;
+    }
 
     var getIsTooClose = function getIsTooClose(d) {
       return Math.abs(d) < minD || Math.abs(d) >= Math.abs(l);
     };
 
     var isTooCloseSrc = getIsTooClose(d);
-    var isTooCloseTgt = getIsTooClose(l - Math.abs(d));
+    var isTooCloseTgt = getIsTooClose(Math.abs(l) - Math.abs(d));
     var isTooClose = isTooCloseSrc || isTooCloseTgt;
 
     if (isTooClose && !forcedDir) {
@@ -23132,14 +23111,14 @@
     } else {
       // ideal routing
       if (isVert) {
-        var _y4 = (d < 0 ? posPts.y2 : posPts.y1) + d + (dIncludesNodeBody ? srcH / 2 * sgnL : 0);
+        var _y4 = posPts.y1 + d + (dIncludesNodeBody ? srcH / 2 * sgnL : 0);
 
         var _x4 = posPts.x1,
             _x5 = posPts.x2;
         rs.segpts = [_x4, _y4, _x5, _y4];
       } else {
         // horizontal
-        var _x6 = (d < 0 ? posPts.x2 : posPts.x1) + d + (dIncludesNodeBody ? srcW / 2 * sgnL : 0);
+        var _x6 = posPts.x1 + d + (dIncludesNodeBody ? srcW / 2 * sgnL : 0);
 
         var _y5 = posPts.y1,
             _y6 = posPts.y2;
@@ -23989,6 +23968,8 @@
     this.findEdgeControlPoints(edges);
   };
 
+  /* global document */
+
   var BRp$6 = {};
 
   BRp$6.recalculateNodeLabelProjection = function (node) {
@@ -24472,43 +24453,46 @@
       return existingVal;
     }
 
-    var sizeMult = 1; // increase the scale to increase accuracy w.r.t. zoomed text
+    var padding = 6; // add padding around text dims, as the measurement isn't that accurate
 
     var fStyle = ele.pstyle('font-style').strValue;
-    var size = sizeMult * ele.pstyle('font-size').pfValue + 'px';
+    var size = ele.pstyle('font-size').pfValue;
     var family = ele.pstyle('font-family').strValue;
     var weight = ele.pstyle('font-weight').strValue;
-    var div = this.labelCalcDiv;
+    var canvas = this.labelCalcCanvas;
+    var c2d = this.labelCalcCanvasContext;
 
-    if (!div) {
-      div = this.labelCalcDiv = document.createElement('div'); // eslint-disable-line no-undef
-
-      document.body.appendChild(div); // eslint-disable-line no-undef
+    if (!canvas) {
+      canvas = this.labelCalcCanvas = document.createElement('canvas');
+      c2d = this.labelCalcCanvasContext = canvas.getContext('2d');
+      var ds = canvas.style;
+      ds.position = 'absolute';
+      ds.left = '-9999px';
+      ds.top = '-9999px';
+      ds.zIndex = '-1';
+      ds.visibility = 'hidden';
+      ds.pointerEvents = 'none';
     }
 
-    var ds = div.style; // from ele style
+    c2d.font = "".concat(fStyle, " ").concat(weight, " ").concat(size, "px ").concat(family);
+    var width = 0;
+    var height = 0;
+    var lines = text.split('\n');
 
-    ds.fontFamily = family;
-    ds.fontStyle = fStyle;
-    ds.fontSize = size;
-    ds.fontWeight = weight; // forced style
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i];
+      var metrics = c2d.measureText(line);
+      var w = Math.ceil(metrics.width);
+      var h = size;
+      width = Math.max(w, width);
+      height += h;
+    }
 
-    ds.position = 'absolute';
-    ds.left = '-9999px';
-    ds.top = '-9999px';
-    ds.zIndex = '-1';
-    ds.visibility = 'hidden';
-    ds.pointerEvents = 'none';
-    ds.padding = '0';
-    ds.lineHeight = '1'; // - newlines must be taken into account for text-wrap:wrap
-    // - since spaces are not collapsed, each space must be taken into account
-
-    ds.whiteSpace = 'pre'; // put label content in div
-
-    div.textContent = text;
+    width += padding;
+    height += padding;
     return cache[cacheKey] = {
-      width: Math.ceil(div.clientWidth / sizeMult),
-      height: Math.ceil(div.clientHeight / sizeMult)
+      width: width,
+      height: height
     };
   };
 
@@ -24562,7 +24546,7 @@
     }
 
     if (node.isParent()) {
-      if (shape === 'rectangle' || shape === 'roundrectangle' || shape === 'cutrectangle' || shape === 'barrel') {
+      if (shape === 'rectangle' || shape === 'roundrectangle' || shape === 'round-rectangle' || shape === 'cutrectangle' || shape === 'cut-rectangle' || shape === 'barrel') {
         return shape;
       } else {
         return 'rectangle';
@@ -25612,7 +25596,7 @@
                 var dEle = draggedElements[i];
 
                 if (r.nodeIsDraggable(dEle) && dEle.grabbed()) {
-                  toTrigger.merge(dEle);
+                  toTrigger.push(dEle);
                 }
               }
 
@@ -32349,7 +32333,7 @@
     return style;
   };
 
-  var version = "3.15.0";
+  var version = "3.16.1";
 
   var cytoscape = function cytoscape(options) {
     // if no options specified, use default

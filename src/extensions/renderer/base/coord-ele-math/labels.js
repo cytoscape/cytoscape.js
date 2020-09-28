@@ -470,7 +470,7 @@ BRp.calculateLabelDimensions = function( ele, text ){
     return existingVal;
   }
 
-  let padding = 6; // add padding around text dims, as the measurement isn't that accurate
+  let padding = 0; // add padding around text dims, as the measurement isn't that accurate
   let fStyle = ele.pstyle('font-style').strValue;
   let size = ele.pstyle('font-size').pfValue;
   let family = ele.pstyle('font-family').strValue;

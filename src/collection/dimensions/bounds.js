@@ -289,6 +289,7 @@ let updateBoundsFromLabel = function( bounds, ele, prefix ){
     let borderWidth = ele.pstyle( 'text-border-width' ).pfValue;
     let halfBorderWidth = borderWidth / 2;
     let padding = ele.pstyle( 'text-background-padding' ).pfValue;
+    let marginOfError = 2; // expand to work around browser dimension inaccuracies
 
     let lh = labelHeight;
     let lw = labelWidth;
@@ -338,10 +339,10 @@ let updateBoundsFromLabel = function( bounds, ele, prefix ){
     }
 
     // shift by margin and expand by outline and border
-    lx1 += marginX - Math.max( outlineWidth, halfBorderWidth ) - padding;
-    lx2 += marginX + Math.max( outlineWidth, halfBorderWidth ) + padding;
-    ly1 += marginY - Math.max( outlineWidth, halfBorderWidth ) - padding;
-    ly2 += marginY + Math.max( outlineWidth, halfBorderWidth ) + padding;
+    lx1 += marginX - Math.max( outlineWidth, halfBorderWidth ) - padding - marginOfError;
+    lx2 += marginX + Math.max( outlineWidth, halfBorderWidth ) + padding + marginOfError;
+    ly1 += marginY - Math.max( outlineWidth, halfBorderWidth ) - padding - marginOfError;
+    ly2 += marginY + Math.max( outlineWidth, halfBorderWidth ) + padding + marginOfError;
 
     // always store the unrotated label bounds separately
     let bbPrefix = prefix || 'main';
@@ -353,7 +354,6 @@ let updateBoundsFromLabel = function( bounds, ele, prefix ){
     bb.y2 = ly2;
     bb.w = lx2 - lx1;
     bb.h = ly2 - ly1;
-    expandBoundingBox(bb, 1); // expand to work around browser dimension inaccuracies
 
     let isAutorotate = ( isEdge && rotation.strValue === 'autorotate' );
     let isPfValue = ( rotation.pfValue != null && rotation.pfValue !== 0 );

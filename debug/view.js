@@ -90,7 +90,7 @@
 		cy.panBy({ x: -1 });
 	});
 
-	var showBB = function( eles, opts ){
+	var showBB = window.showBB = function( eles, opts ){
 		var bb = eles.renderedBoundingBox(opts);
 
 		var $bb = $('#bb');
@@ -162,6 +162,16 @@
 		}
 
 		showBB( eles, { includeNodes: false, includeEdges: false, includeOverlays: false, includeLabels: true, includeMainLabels: false, includeSourceLabels: false, includeTargetLabels: true } );
+	});
+
+	$("#show-bb-body").addEventListener('click', function(){
+		var eles = cy.$(':selected');
+
+		if( eles.length === 0 ){
+			eles = cy.elements();
+		}
+
+		showBB( eles, { includeNodes: true, includeEdges: true, includeOverlays: false, includeLabels: false, includeMainLabels: false, includeSourceLabels: false, includeTargetLabels: false } );
 	});
 
 	$('#mount').addEventListener('click', function(){

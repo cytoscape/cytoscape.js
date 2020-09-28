@@ -745,12 +745,12 @@ let cachedBoundingBoxImpl = function( ele, opts ){
   let currPosKey = getBoundingBoxPosKey( ele );
   let isPosKeySame = _p.bbCachePosKey === currPosKey;
   let useCache = opts.useCache && isPosKeySame;
-  let isDirty = ele => ele._private.bbCache == null;
+  let isDirty = ele => ele._private.bbCache == null || ele._private.styleDirty;
   let needRecalc = !useCache || isDirty(ele) || (isEdge && isDirty(ele.source()) || isDirty(ele.target()));
 
   if( needRecalc ){
     if( !isPosKeySame ){
-      ele.recalculateRenderedStyle();
+      ele.recalculateRenderedStyle(useCache);
     }
 
     bb = boundingBoxImpl( ele, defBbOpts );
@@ -852,7 +852,7 @@ elesfn.boundingBox = function( options ){
   // the main usecase is ele.boundingBox() for a single element with no/def options
   // specified s.t. the cache is used, so check for this case to make it faster by
   // avoiding the overhead of the rest of the function
-  if( this.length === 1 && this[0]._private.bbCache != null && (options === undefined || options.useCache === undefined || options.useCache === true) ){
+  if( this.length === 1 && this[0]._private.bbCache != null && !this[0]._private.styleDirty && (options === undefined || options.useCache === undefined || options.useCache === true) ){
     if( options === undefined ){
       options = defBbOpts;
     } else {
@@ -877,7 +877,7 @@ elesfn.boundingBox = function( options ){
         let _p = ele._private;
         let currPosKey = getBoundingBoxPosKey( ele );
         let isPosKeySame = _p.bbCachePosKey === currPosKey;
-        let useCache = opts.useCache && isPosKeySame;
+        let useCache = opts.useCache && isPosKeySame && !_p.styleDirty;
 
         ele.recalculateRenderedStyle( useCache );
       }

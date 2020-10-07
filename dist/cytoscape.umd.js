@@ -10088,6 +10088,8 @@
       var borderWidth = ele.pstyle('text-border-width').pfValue;
       var halfBorderWidth = borderWidth / 2;
       var padding = ele.pstyle('text-background-padding').pfValue;
+      var marginOfError = 2; // expand to work around browser dimension inaccuracies
+
       var lh = labelHeight;
       var lw = labelWidth;
       var lw_2 = lw / 2;
@@ -10136,10 +10138,10 @@
       } // shift by margin and expand by outline and border
 
 
-      lx1 += marginX - Math.max(outlineWidth, halfBorderWidth) - padding;
-      lx2 += marginX + Math.max(outlineWidth, halfBorderWidth) + padding;
-      ly1 += marginY - Math.max(outlineWidth, halfBorderWidth) - padding;
-      ly2 += marginY + Math.max(outlineWidth, halfBorderWidth) + padding; // always store the unrotated label bounds separately
+      lx1 += marginX - Math.max(outlineWidth, halfBorderWidth) - padding - marginOfError;
+      lx2 += marginX + Math.max(outlineWidth, halfBorderWidth) + padding + marginOfError;
+      ly1 += marginY - Math.max(outlineWidth, halfBorderWidth) - padding - marginOfError;
+      ly2 += marginY + Math.max(outlineWidth, halfBorderWidth) + padding + marginOfError; // always store the unrotated label bounds separately
 
       var bbPrefix = prefix || 'main';
       var bbs = _p.labelBounds;
@@ -10150,8 +10152,6 @@
       bb.y2 = ly2;
       bb.w = lx2 - lx1;
       bb.h = ly2 - ly1;
-      expandBoundingBox(bb, 1); // expand to work around browser dimension inaccuracies
-
       var isAutorotate = isEdge && rotation.strValue === 'autorotate';
       var isPfValue = rotation.pfValue != null && rotation.pfValue !== 0;
 
@@ -10516,14 +10516,14 @@
     var useCache = opts.useCache && isPosKeySame;
 
     var isDirty = function isDirty(ele) {
-      return ele._private.bbCache == null;
+      return ele._private.bbCache == null || ele._private.styleDirty;
     };
 
     var needRecalc = !useCache || isDirty(ele) || isEdge && isDirty(ele.source()) || isDirty(ele.target());
 
     if (needRecalc) {
       if (!isPosKeySame) {
-        ele.recalculateRenderedStyle();
+        ele.recalculateRenderedStyle(useCache);
       }
 
       bb = boundingBoxImpl(ele, defBbOpts);
@@ -10625,7 +10625,7 @@
     // specified s.t. the cache is used, so check for this case to make it faster by
     // avoiding the overhead of the rest of the function
 
-    if (this.length === 1 && this[0]._private.bbCache != null && (options === undefined || options.useCache === undefined || options.useCache === true)) {
+    if (this.length === 1 && this[0]._private.bbCache != null && !this[0]._private.styleDirty && (options === undefined || options.useCache === undefined || options.useCache === true)) {
       if (options === undefined) {
         options = defBbOpts;
       } else {
@@ -10647,7 +10647,7 @@
           var _p = ele._private;
           var currPosKey = getBoundingBoxPosKey(ele);
           var isPosKeySame = _p.bbCachePosKey === currPosKey;
-          var useCache = opts.useCache && isPosKeySame;
+          var useCache = opts.useCache && isPosKeySame && !_p.styleDirty;
           ele.recalculateRenderedStyle(useCache);
         }
       }
@@ -24453,7 +24453,7 @@
       return existingVal;
     }
 
-    var padding = 6; // add padding around text dims, as the measurement isn't that accurate
+    var padding = 0; // add padding around text dims, as the measurement isn't that accurate
 
     var fStyle = ele.pstyle('font-style').strValue;
     var size = ele.pstyle('font-size').pfValue;
@@ -32333,7 +32333,7 @@
     return style;
   };
 
-  var version = "3.16.1";
+  var version = "3.16.2";
 
   var cytoscape = function cytoscape(options) {
     // if no options specified, use default

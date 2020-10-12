@@ -4,6 +4,19 @@ import Collection from '../collection';
 import Element from '../collection/element';
 
 let corefn = {
+    /**
+   * @typedef {object} cy_add
+   * @property {object} eleObj - A plain object that specifies the element.
+   * @property {object} eleObjs - An array of elements specified by plain objects.
+   * @property {object} eles - A collection of elements.
+   */
+
+    /**
+   * Add elements to the graph and return them
+   * @memberof cy
+   * @param {...cy_add} opts - Add a specified element to the graph. | Add the specified elements to the graph. | Add the specified elements to the graph.
+   * @namespace cy.add
+   */
   add: function( opts ){
 
     let elements;
@@ -67,6 +80,18 @@ let corefn = {
     return elements;
   },
 
+    /**
+   * @typedef {object} cy_remove
+   * @property {object} eles -A collection of elements to remove.
+   * @property {object} selector - Elements matching this selector are removed.
+   */
+
+    /**
+   * Remove elements from the graph and return them.
+   * @memberof cy
+   * @param {...cy_remove} x - Remove the specified elements. | Remove elements in the graph matching the specified selector.
+   * @namespace cy.remove
+   */
   remove: function( collection ){
     if( is.elementOrCollection( collection ) ){
       // already have right ref

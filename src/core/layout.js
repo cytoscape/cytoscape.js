@@ -3,6 +3,19 @@ import * as is from '../is';
 
 let corefn = ({
 
+    /**
+   * @typedef {object} cy_layout
+   * @property {object} options - The layout options.
+   */
+
+
+    /**
+   * Get a new layout, which can be used to algorithmically position the nodes in the graph
+   * @memberof cy
+   * @alias cy.createLayout|cy.makeLayout
+   * @param {...cy_layout} options - Get layouts
+   * @namespace cy.layout
+   */
   layout: function( options ){
     let cy = this;
 

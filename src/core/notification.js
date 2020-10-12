@@ -91,6 +91,17 @@ let corefn = ({
     return this;
   },
 
+    /**
+   * @typedef {object} cy_batch
+   * @property {object} function() -  A callback within which you can make batch updates to elements.
+   */
+
+  /**
+   * Allow for manipulation of elements without triggering multiple style calculations or multiple redraws.
+   * @sub_functions cy.batch|cy.startBatch|cy.endBatch
+   * @param {...cy_batch} callback - callback | Starts batching manually (useful for asynchronous cases). | Ends batching manually (useful for asynchronous cases).
+   * @namespace cy.batch
+   */
   batch: function( callback ){
     this.startBatch();
     callback();

@@ -380,6 +380,18 @@ util.extend( corefn, {
     return util.copy( this._private.options );
   },
 
+  /**
+ * @typedef {object} cy_json
+ * @property {object} flatEles - Whether the resulant JSON should include the elements as a flat array (`true`) or as two keyed arrays by group (`false`, default).
+ * @property {object} cyJson - The object with the fields corresponding to the states that should be changed.
+*/
+
+  /**
+ * Import or export the graph in the same JSON format used at initialisation.
+ * @memberof cy
+ * @param {...cy_json} obj - Export the graph as JSON. | Import the graph as JSON, updating only the fields specified.
+ * @namespace cy.json
+ */
   json: function( obj ){
     let cy = this;
     let _p = cy._private;

@@ -126,6 +126,30 @@
         "descr": "Remove the instance from its current container."
     },
     {
+        "name": "cy.json",
+        "descr": "Import or export the graph in the same JSON format used at initialisation.",
+        "formats": [
+            {
+                "descr": "Export the graph as JSON.",
+                "args": [
+                    {
+                        "name": "flatEles",
+                        "descr": "Whether the resulant JSON should include the elements as a flat array (`true`) or as two keyed arrays by group (`false`, default)."
+                    }
+                ]
+            },
+            {
+                "descr": "Import the graph as JSON, updating only the fields specified.",
+                "args": [
+                    {
+                        "name": "cyJson",
+                        "descr": "The object with the fields corresponding to the states that should be changed."
+                    }
+                ]
+            }
+        ]
+    },
+    {
         "name": "cy.layout",
         "pureAliases": [
             "cy.createLayout",
@@ -169,6 +193,95 @@
         ]
     },
     {
+        "name": "cy.collection",
+        "descr": "Return a new, empty collection.",
+        "formats": [
+            {
+                "descr": "Get an empty collection."
+            }
+        ]
+    },
+    {
+        "name": "cy.$",
+        "descr": "Get elements in the graph matching a selector or a filter function.",
+        "formats": [
+            {
+                "name": "cy.$",
+                "descr": "Get elements in the graph matching the specified selector.",
+                "args": [
+                    {
+                        "name": "selector",
+                        "descr": "The selector the elements should match."
+                    }
+                ]
+            },
+            {
+                "name": "cy.elements",
+                "descr": "Get elements in the graph matching the specified selector.",
+                "args": [
+                    {
+                        "name": "selector",
+                        "descr": "The selector the elements should match."
+                    }
+                ]
+            },
+            {
+                "name": "cy.nodes",
+                "descr": "Get nodes in the graph matching the specified selector.",
+                "args": [
+                    {
+                        "name": "selector",
+                        "descr": "The selector the nodes should match."
+                    }
+                ]
+            },
+            {
+                "name": "cy.edges",
+                "descr": "Get edges in the graph matching the specified selector.",
+                "args": [
+                    {
+                        "name": "selector",
+                        "descr": "The selector the edges should match."
+                    }
+                ]
+            },
+            {
+                "name": "cy.filter",
+                "descr": "Get elements in the graph matching the specified selector.",
+                "args": [
+                    {
+                        "name": "selector",
+                        "descr": "The selector the elements should match."
+                    }
+                ]
+            },
+            {
+                "name": "cy.filter",
+                "descr": "Get elements in the graph matching the specified filter function.",
+                "args": [
+                    {
+                        "name": "function(ele,i,eles)",
+                        "fields": [
+                            {
+                                "name": "ele",
+                                "descr": "The current element under consideration for filtering."
+                            },
+                            {
+                                "name": "i",
+                                "descr": "The counter used for iteration over the elements in the graph."
+                            },
+                            {
+                                "name": "eles",
+                                "descr": "The collection of elements being filtered"
+                            }
+                        ],
+                        "descr": "The filter function that returns true for elements that should be returned."
+                    }
+                ]
+            }
+        ]
+    },
+    {
         "name": "cy.style",
         "descr": "Get the entry point to modify the visual style of the graph after initialisation.",
         "formats": [
@@ -185,5 +298,355 @@
                 ]
             }
         ]
+    },
+    {
+        "name": "cy.autolock",
+        "descr": "Get or set whether nodes are automatically locked (i.e. if `true`, nodes are locked despite their individual state).",
+        "formats": [
+            {
+                "descr": "Get whether autolocking is enabled."
+            },
+            {
+                "descr": "Set whether autolocking is enabled.",
+                "args": [
+                    {
+                        "name": "bool",
+                        "descr": "A truthy value enables autolocking; a falsey value disables it."
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "cy.autoungrabify",
+        "descr": "Get or set whether nodes are automatically ungrabified (i.e. if `true`, nodes are ungrabbale despite their individual state).",
+        "formats": [
+            {
+                "descr": "Get whether autoungrabifying is enabled."
+            },
+            {
+                "descr": "Set whether autoungrabifying is enabled.",
+                "args": [
+                    {
+                        "name": "bool",
+                        "descr": "A truthy value enables autoungrabifying; a falsey value disables it."
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "cy.autounselectify",
+        "descr": "Get or set whether nodes are automatically unselectified (i.e. if `true`, nodes are ungrabbale despite their individual state).",
+        "formats": [
+            {
+                "descr": "Get whether autounselectifying is enabled."
+            },
+            {
+                "descr": "Set whether autounselectifying is enabled.",
+                "args": [
+                    {
+                        "name": "bool",
+                        "descr": "A truthy value enables autounselectifying; a falsey value disables it."
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "cy.selectionType",
+        "descr": "Get or set the selection type.  The `'single'` selection type is the default, tapping an element selects that element and deselects the previous elements.  The `'additive' selection type toggles the selection state of an element when tapped.`",
+        "formats": [
+            {
+                "descr": "Get the selection type string."
+            },
+            {
+                "descr": "Set the selection type.",
+                "args": [
+                    {
+                        "name": "type",
+                        "descr": "The selection type string; one of `'single'` (default) or `'additive'`."
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "cy.panningEnabled",
+        "descr": "Get or set whether panning is enabled.",
+        "formats": [
+            {
+                "descr": "Get whether panning is enabled."
+            },
+            {
+                "descr": "Set whether panning is enabled",
+                "args": [
+                    {
+                        "name": "bool",
+                        "descr": "A truthy value enables panning; a falsey value disables it."
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "cy.userPanningEnabled",
+        "descr": "Get or set whether panning by user events (e.g. dragging the graph background) is enabled.",
+        "formats": [
+            {
+                "descr": "Get whether user panning is enabled."
+            },
+            {
+                "descr": "Set whether user panning is enabled",
+                "args": [
+                    {
+                        "name": "bool",
+                        "descr": "A truthy value enables panning; a falsey value disables it."
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "cy.zoomingEnabled",
+        "descr": "Get or set whether zooming is enabled.",
+        "formats": [
+            {
+                "descr": "Get whether zooming is enabled."
+            },
+            {
+                "descr": "Set whether zooming is enabled",
+                "args": [
+                    {
+                        "name": "bool",
+                        "descr": "A truthy value enables zooming; a falsey value disables it."
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "cy.userZoomingEnabled",
+        "descr": "Get or set whether user zooming by user events (e.g. mouse wheel, pinch-to-zoom) is enabled.",
+        "formats": [
+            {
+                "descr": "Get whether user zooming is enabled."
+            },
+            {
+                "descr": "Set whether zooming is enabled",
+                "args": [
+                    {
+                        "name": "bool",
+                        "descr": "A truthy value enables user zooming; a falsey value disables it."
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "cy.boxSelectionEnabled",
+        "descr": "Get or set whether box selection is enabled. If enabled along with panning, the user must hold down one of shift, control, alt, or command to initiate box selection.",
+        "formats": [
+            {
+                "descr": "Get whether box selection is enabled."
+            },
+            {
+                "descr": "Set whether box selection is enabled.",
+                "args": [
+                    {
+                        "name": "bool",
+                        "descr": "A truthy value enables box selection; a falsey value disables it."
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "cy.pan",
+        "descr": "Get or set the panning position of the graph.",
+        "formats": [
+            {
+                "descr": "Get the current panning position."
+            },
+            {
+                "descr": "Set the current panning position.",
+                "args": [
+                    {
+                        "name": "renderedPosition",
+                        "descr": "The rendered position to pan the graph to."
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "cy.panBy",
+        "descr": "Relatively pan the graph by a specified rendered position vector.",
+        "formats": [
+            {
+                "descr": "The rendered position",
+                "args": [
+                    {
+                        "name": "renderedPosition",
+                        "descr": "The rendered position vector to pan the graph by."
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "cy.fit",
+        "descr": "Pan and zooms the graph to fit to a collection.",
+        "formats": [
+            {
+                "descr": "Fit to all elements in the graph."
+            },
+            {
+                "descr": "Fit to the specified elements.",
+                "args": [
+                    {
+                        "name": "eles",
+                        "descr": "The collection to fit to."
+                    },
+                    {
+                        "name": "padding",
+                        "descr": "An amount of padding (in rendered pixels) to have around the graph (default 0)."
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "cy.minZoom",
+        "descr": "Get or set the minimum zoom level.",
+        "formats": [
+            {
+                "descr": "Get the minimum zoom level."
+            },
+            {
+                "descr": "Set the minimum zoom level.",
+                "args": [
+                    {
+                        "name": "zoom",
+                        "descr": "The new minimum zoom level to use."
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "cy.maxZoom",
+        "descr": "Get or set the maximum zoom level.",
+        "formats": [
+            {
+                "descr": "Get the maximum zoom level."
+            },
+            {
+                "descr": "Set the maximum zoom level.",
+                "args": [
+                    {
+                        "name": "zoom",
+                        "descr": "The new maximum zoom level to use."
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "cy.zoom",
+        "descr": "Get or set the zoom level of the graph.",
+        "formats": [
+            {
+                "descr": "Get the zoom level."
+            },
+            {
+                "descr": "Set the zoom level.",
+                "args": [
+                    {
+                        "name": "level",
+                        "descr": "The zoom level to set."
+                    }
+                ]
+            },
+            {
+                "descr": "Set the zoom level.",
+                "args": [
+                    {
+                        "name": "options",
+                        "fields": [
+                            {
+                                "name": "level",
+                                "descr": "The zoom level to set."
+                            },
+                            {
+                                "name": "position",
+                                "descr": "The position about which to zoom."
+                            },
+                            {
+                                "name": "renderedPosition",
+                                "descr": "The rendered position about which to zoom."
+                            }
+                        ],
+                        "descr": "The options for zooming."
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "cy.viewport",
+        "descr": "Set the viewport state (pan & zoom) in one call.",
+        "formats": [
+            {
+                "descr": "Set viewport",
+                "args": [
+                    {
+                        "name": "zoom",
+                        "descr": "The zoom level to set."
+                    },
+                    {
+                        "name": "pan",
+                        "descr": "The pan to set (a rendered position)."
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "cy.center",
+        "pureAliases": [
+            "cy.centre"
+        ],
+        "descr": "Pan the graph to the centre of a collection.",
+        "formats": [
+            {
+                "descr": "Centre on all elements in the graph."
+            },
+            {
+                "descr": "Centre on the specified elements.",
+                "args": [
+                    {
+                        "name": "eles",
+                        "descr": "The collection to centre upon."
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "cy.reset",
+        "descr": "Reset the graph to the default zoom level and panning position."
+    },
+    {
+        "name": "cy.width",
+        "descr": "Get the on-screen width of the viewport in pixels."
+    },
+    {
+        "name": "cy.height",
+        "descr": "Get the on-screen height of the viewport in pixels."
+    },
+    {
+        "name": "cy.extent",
+        "descr": "Get the extent of the viewport, a bounding box in model co-ordinates that lets you know what model positions are visible in the viewport."
     }
 ]

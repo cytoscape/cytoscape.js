@@ -303,8 +303,7 @@
                                 {
                                     "descr": "Get an empty collection."
                                 }
-                            ],
-                            "md": "core/collection"
+                            ]
                         },
                         {
                             "name": "cy.getElementById",
@@ -383,8 +382,7 @@
                                     "descr": "Get elements in the graph matching the specified filter function.",
                                     "args": [
                                         {
-                                            "name": "function(ele, i, eles)",
-                                            "descr": "The filter function that returns true for elements that should be returned.",
+                                            "name": "function(ele,i,eles)",
                                             "fields": [
                                                 {
                                                     "name": "ele",
@@ -398,12 +396,12 @@
                                                     "name": "eles",
                                                     "descr": "The collection of elements being filtered"
                                                 }
-                                            ]
+                                            ],
+                                            "descr": "The filter function that returns true for elements that should be returned."
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "core/elements"
+                            ]
                         },
                         {
                             "name": "cy.batch",
@@ -777,8 +775,7 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "core/center"
+                            ]
                         },
                         {
                             "name": "cy.fit",
@@ -792,28 +789,19 @@
                                     "args": [
                                         {
                                             "name": "eles",
-                                            "descr": "The collection to fit to.",
-                                            "optional": true
+                                            "descr": "The collection to fit to."
                                         },
                                         {
                                             "name": "padding",
-                                            "descr": "An amount of padding (in rendered pixels) to have around the graph  (default `0`).",
-                                            "optional": true
+                                            "descr": "An amount of padding (in rendered pixels) to have around the graph (default 0)."
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "core/fit"
+                            ]
                         },
                         {
                             "name": "cy.reset",
-                            "descr": "Reset the graph to the default zoom level and panning position.",
-                            "formats": [
-                                {
-                                    "descr": "Resets the zoom and pan."
-                                }
-                            ],
-                            "md": "core/reset"
+                            "descr": "Reset the graph to the default zoom level and panning position."
                         },
                         {
                             "name": "cy.pan",
@@ -831,14 +819,14 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "core/pan"
+                            ]
                         },
                         {
                             "name": "cy.panBy",
                             "descr": "Relatively pan the graph by a specified rendered position vector.",
                             "formats": [
                                 {
+                                    "descr": "The rendered position",
                                     "args": [
                                         {
                                             "name": "renderedPosition",
@@ -846,8 +834,7 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "core/panBy"
+                            ]
                         },
                         {
                             "name": "cy.panningEnabled",
@@ -857,7 +844,7 @@
                                     "descr": "Get whether panning is enabled."
                                 },
                                 {
-                                    "descr": "Set whether panning is enabled.",
+                                    "descr": "Set whether panning is enabled",
                                     "args": [
                                         {
                                             "name": "bool",
@@ -865,8 +852,7 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "core/panningEnabled"
+                            ]
                         },
                         {
                             "name": "cy.userPanningEnabled",
@@ -876,16 +862,15 @@
                                     "descr": "Get whether user panning is enabled."
                                 },
                                 {
-                                    "descr": "Set whether user panning is enabled.",
+                                    "descr": "Set whether user panning is enabled",
                                     "args": [
                                         {
                                             "name": "bool",
-                                            "descr": "A truthy value enables user panning; a falsey value disables it."
+                                            "descr": "A truthy value enables panning; a falsey value disables it."
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "core/userPanningEnabled"
+                            ]
                         },
                         {
                             "name": "cy.zoom",
@@ -908,7 +893,6 @@
                                     "args": [
                                         {
                                             "name": "options",
-                                            "descr": "The options for zooming.",
                                             "fields": [
                                                 {
                                                     "name": "level",
@@ -922,12 +906,12 @@
                                                     "name": "renderedPosition",
                                                     "descr": "The rendered position about which to zoom."
                                                 }
-                                            ]
+                                            ],
+                                            "descr": "The options for zooming."
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "core/zoom"
+                            ]
                         },
                         {
                             "name": "cy.zoomingEnabled",
@@ -937,7 +921,7 @@
                                     "descr": "Get whether zooming is enabled."
                                 },
                                 {
-                                    "descr": "Set whether zooming is enabled.",
+                                    "descr": "Set whether zooming is enabled",
                                     "args": [
                                         {
                                             "name": "bool",
@@ -945,18 +929,17 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "core/zoomingEnabled"
+                            ]
                         },
                         {
                             "name": "cy.userZoomingEnabled",
-                            "descr": "Get or set whether zooming by user events (e.g. mouse wheel, pinch-to-zoom) is enabled.",
+                            "descr": "Get or set whether user zooming by user events (e.g. mouse wheel, pinch-to-zoom) is enabled.",
                             "formats": [
                                 {
                                     "descr": "Get whether user zooming is enabled."
                                 },
                                 {
-                                    "descr": "Set whether user zooming is enabled.",
+                                    "descr": "Set whether zooming is enabled",
                                     "args": [
                                         {
                                             "name": "bool",
@@ -964,8 +947,7 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "core/userZoomingEnabled"
+                            ]
                         },
                         {
                             "name": "cy.minZoom",
@@ -1008,6 +990,7 @@
                             "descr": "Set the viewport state (pan & zoom) in one call.",
                             "formats": [
                                 {
+                                    "descr": "Set viewport",
                                     "args": [
                                         {
                                             "name": "zoom",
@@ -1019,12 +1002,11 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "core/viewport"
+                            ]
                         },
                         {
                             "name": "cy.boxSelectionEnabled",
-                            "descr": "Get or set whether box selection is enabled.   If enabled along with panning, the user must hold down one of shift, control, alt, or command to initiate box selection.",
+                            "descr": "Get or set whether box selection is enabled. If enabled along with panning, the user must hold down one of shift, control, alt, or command to initiate box selection.",
                             "formats": [
                                 {
                                     "descr": "Get whether box selection is enabled."
@@ -1038,8 +1020,7 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "core/boxSelectionEnabled"
+                            ]
                         },
                         {
                             "name": "cy.selectionType",
@@ -1069,8 +1050,7 @@
                         },
                         {
                             "name": "cy.extent",
-                            "descr": "Get the extent of the viewport, a bounding box in model co-ordinates that lets you know what model positions are visible in the viewport.",
-                            "md": "core/extent"
+                            "descr": "Get the extent of the viewport, a bounding box in model co-ordinates that lets you know what model positions are visible in the viewport."
                         },
                         {
                             "name": "cy.autolock",
@@ -1088,8 +1068,7 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "core/autolock"
+                            ]
                         },
                         {
                             "name": "cy.autoungrabify",
@@ -1103,16 +1082,15 @@
                                     "args": [
                                         {
                                             "name": "bool",
-                                            "descr": "A truthy value enables autoungrabbifying; a falsey value disables it."
+                                            "descr": "A truthy value enables autoungrabifying; a falsey value disables it."
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "core/autoungrabify"
+                            ]
                         },
                         {
                             "name": "cy.autounselectify",
-                            "descr": "Get or set whether nodes are automatically unselectified (i.e. if `true`, nodes are unselectable despite their individual state).",
+                            "descr": "Get or set whether nodes are automatically unselectified (i.e. if `true`, nodes are ungrabbale despite their individual state).",
                             "formats": [
                                 {
                                     "descr": "Get whether autounselectifying is enabled."
@@ -1126,8 +1104,7 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "core/autounselectify"
+                            ]
                         },
                         {
                             "name": "cy.resize",
@@ -1534,8 +1511,7 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "core/json"
+                            ]
                         }
                     ]
                 }

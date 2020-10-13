@@ -1405,7 +1405,7 @@
 
 
 
-							<div class="descr"><p>Add elements to the graph and return them.</p>
+							<div class="descr"><p>Add elements to the graph and return them</p>
 </div>
 
 							<div class="formats">
@@ -1460,24 +1460,6 @@
 							</div>
 
 							<div class="details">
-									<h3 id="details">Details</h3>
-<p>If plain element objects are used, then <a href="#core/initialisation">the same format used at initialisation</a> must be followed.</p>
-<p>If a collection of existing elements is specified to a different core instance, then copies of those elements are added, which allows for elements to be effectively transferred between instances of Cytoscape.js.</p>
-<h3 id="examples">Examples</h3>
-<p>Add a node from a plain object.</p>
-<pre><code class="language-js">cy.add({
-    <span class="hljs-attr">group</span>: <span class="hljs-string">'nodes'</span>,
-    <span class="hljs-attr">data</span>: { <span class="hljs-attr">weight</span>: <span class="hljs-number">75</span> },
-    <span class="hljs-attr">position</span>: { <span class="hljs-attr">x</span>: <span class="hljs-number">200</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">200</span> }
-});</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>Add nodes and edges to the graph as plain objects:</p>
-<pre><code class="language-js"><span class="hljs-comment">// can use reference to eles later</span>
-<span class="hljs-keyword">var</span> eles = cy.add([
-  { <span class="hljs-attr">group</span>: <span class="hljs-string">'nodes'</span>, <span class="hljs-attr">data</span>: { <span class="hljs-attr">id</span>: <span class="hljs-string">'n0'</span> }, <span class="hljs-attr">position</span>: { <span class="hljs-attr">x</span>: <span class="hljs-number">100</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">100</span> } },
-  { <span class="hljs-attr">group</span>: <span class="hljs-string">'nodes'</span>, <span class="hljs-attr">data</span>: { <span class="hljs-attr">id</span>: <span class="hljs-string">'n1'</span> }, <span class="hljs-attr">position</span>: { <span class="hljs-attr">x</span>: <span class="hljs-number">200</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">200</span> } },
-  { <span class="hljs-attr">group</span>: <span class="hljs-string">'edges'</span>, <span class="hljs-attr">data</span>: { <span class="hljs-attr">id</span>: <span class="hljs-string">'e0'</span>, <span class="hljs-attr">source</span>: <span class="hljs-string">'n0'</span>, <span class="hljs-attr">target</span>: <span class="hljs-string">'n1'</span> } }
-]);</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button>
 							</div>
 						</div>
 						<div class="function">
@@ -1527,19 +1509,6 @@
 							</div>
 
 							<div class="details">
-									<h3 id="details">Details</h3>
-<p><span class='important-indicator'></span> Note that removing a node necessarily removes its connected edges.</p>
-<p>Though the elements specified to this function are removed from the graph, they may still exist in memory.  However, almost all functions will not work on removed elements.  For example, the <code>eles.neighborhood()</code> function will fail for a removed element:  An element outside of the context of the graph can not have a neighbourhood defined.  A removed element exists only so you can restore it back to the originating core instance or to a new instance.</p>
-<h3 id="examples">Examples</h3>
-<p>Remove an element:</p>
-<pre><code class="language-js"><span class="hljs-keyword">var</span> j = cy.$(<span class="hljs-string">'#j'</span>);
-cy.remove( j );</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>Remove a collection:</p>
-<pre><code class="language-js"><span class="hljs-keyword">var</span> collection = cy.elements(<span class="hljs-string">'node[weight &gt; 50]'</span>);
-cy.remove( collection );</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>Remove elements matching a selector:</p>
-<pre><code class="language-js">cy.remove(<span class="hljs-string">'node[weight &gt; 50]'</span>); <span class="hljs-comment">// remove nodes with weight greater than 50</span></code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button>
 							</div>
 						</div>
 						<div class="function">
@@ -1566,17 +1535,6 @@ cy.remove( collection );</code></pre>
 							</div>
 
 							<div class="details">
-									<h3 id="details">Details</h3>
-<p>This function is useful for building up collections.</p>
-<h3 id="examples">Examples</h3>
-<p>Keep a collection of nodes that have been clicked:</p>
-<pre><code class="language-js"><span class="hljs-keyword">var</span> collection = cy.collection();
-cy.nodes().on(<span class="hljs-string">'click'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">e</span>)</span>{
-  <span class="hljs-keyword">var</span> clickedNode = e.target;
-
-  collection = collection.union(clickedNode);
-});</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button>
 							</div>
 						</div>
 						<div class="function">
@@ -1594,7 +1552,7 @@ cy.nodes().on(<span class="hljs-string">'click'</span>, <span class="hljs-functi
 									</span>
 							</div>
 
-							<div class="descr"><p>Get an element from its ID in a very performant way.</p>
+							<div class="descr"><p>Get an element from its ID in a very performant way</p>
 </div>
 
 							<div class="formats">
@@ -1602,7 +1560,8 @@ cy.nodes().on(<span class="hljs-string">'click'</span>, <span class="hljs-functi
 											<div class="name">cy.getElementById( <span class="args-summary"><span class="comma">,&nbsp;</span>id</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Get ID</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name">id</span>
@@ -1616,11 +1575,6 @@ cy.nodes().on(<span class="hljs-string">'click'</span>, <span class="hljs-functi
 							</div>
 
 							<div class="details">
-									<h3 id="examples">Examples</h3>
-<pre><code class="language-js">cy.getElementById(<span class="hljs-string">'j'</span>);</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>Using the shorter alias:</p>
-<pre><code class="language-js">cy.$id(<span class="hljs-string">'j'</span>);</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button>
 							</div>
 						</div>
 						<div class="function">
@@ -1716,14 +1670,14 @@ cy.nodes().on(<span class="hljs-string">'click'</span>, <span class="hljs-functi
 										</ul>
 									</div>
 									<div class="format">
-											<div class="name">cy.filter( <span class="args-summary"><span class="comma">,&nbsp;</span>function(ele, i, eles)</span> )</div>
+											<div class="name">cy.filter( <span class="args-summary"><span class="comma">,&nbsp;</span>function(ele,i,eles)</span> )</div>
 
 
 										<div class="descr"><p>Get elements in the graph matching the specified filter function.</p>
 </div>
 										<ul class="args">
 												<li>
-													<span class="name">function(ele, i, eles)</span>
+													<span class="name">function(ele,i,eles)</span>
 													
 													<span class="descr"><p>The filter function that returns true for elements that should be returned.</p>
 </span>
@@ -1757,22 +1711,6 @@ cy.nodes().on(<span class="hljs-string">'click'</span>, <span class="hljs-functi
 							</div>
 
 							<div class="details">
-									<h3 id="details">Details</h3>
-<p>If no elements in the graph match the selector, an empty <a href="#collection">collection</a> is returned.</p>
-<p>The function <code>cy.$()</code> acts as an alias to <code>cy.filter()</code>:  It lets you type less characters.  It is analogous to the jQuery <code>$</code> alias used to search the document</p>
-<h3 id="examples">Examples</h3>
-<p>Get nodes with weight greater than 50:</p>
-<pre><code class="language-js">cy.nodes(<span class="hljs-string">'[weight &gt; 50]'</span>);</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>Get edges with source node <code>n0</code>:</p>
-<pre><code class="language-js">cy.edges(<span class="hljs-string">'[source = "j"]'</span>);</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>Get all nodes and edges with weight greater than 50:</p>
-<pre><code class="language-js">cy.elements(<span class="hljs-string">'[weight &gt; 50]'</span>);
-cy.filter(<span class="hljs-string">'[weight &gt; 50]'</span>); <span class="hljs-comment">// works the same as the above line</span></code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>Get nodes with weight greater than 50 with a filter function:</p>
-<pre><code class="language-js">cy.filter(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">element, i</span>)</span>{
-  <span class="hljs-keyword">return</span> element.isNode() &amp;&amp; element.data(<span class="hljs-string">'weight'</span>) &gt; <span class="hljs-number">50</span>;
-});</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button>
 							</div>
 						</div>
 						<div class="function">
@@ -1791,7 +1729,8 @@ cy.filter(<span class="hljs-string">'[weight &gt; 50]'</span>); <span class="hlj
 											<div class="name">cy.batch( <span class="args-summary"><span class="comma">,&nbsp;</span>function()</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>callback</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name">function()</span>
@@ -1823,62 +1762,6 @@ cy.filter(<span class="hljs-string">'[weight &gt; 50]'</span>); <span class="hlj
 							</div>
 
 							<div class="details">
-									<h3 id="details">Details</h3>
-<p><span class="important-indicator"></span> Do not add batching to your app unless you have identified an applicable performance bottleneck.  There are restrictions on what kind of code you can run in a batch.</p>
-<p>Normally, when you modify elements, each modification can trigger a style calculation and a redraw — depending on timing for a redraw.  For example, the following will cause two style calculations and at least one draw:</p>
-<pre><code class="language-js">cy.$(<span class="hljs-string">'#j'</span>)
-  .data(<span class="hljs-string">'weight'</span>, <span class="hljs-string">'70'</span>)   <span class="hljs-comment">// style update</span>
-  .addClass(<span class="hljs-string">'funny'</span>)      <span class="hljs-comment">// style update AGAIN</span>
-  .removeClass(<span class="hljs-string">'serious'</span>) <span class="hljs-comment">// style update YET AGAIN</span>
-
-  <span class="hljs-comment">// at least 1 redraw here</span>
-  <span class="hljs-comment">// possibly 3 total depending on speed of above operations</span>
-  <span class="hljs-comment">// (for one ele almost certainly 1 redraw, but consider many eles)</span>
-;</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>This is not a problem for a handful of operations on a handful of elements, but for many operations on many elements you end up with redundant style calculations and probably redundant redraws.  In the worst case, you have <code>eles.length * numOps</code> style updates and redraws — and both style updates and redraws can be expensive.  In the worst case when using <code>cy.batch()</code>, you limit the style updates to <code>eles.length</code> and you limit the redraws to just one.</p>
-<p>Thus, this function is useful for making many changes to elements at once.  When the specified callback function is complete, only elements that require it have their style updated and the renderer makes at most a single redraw.</p>
-<p>This makes for very efficient modifications to elements, but it has some caveats inside a batch:</p>
-<ul>
-<li>You can not reliably read element style or dimensions (it may have changed, or computed values may be out of date).</li>
-<li>You probably do not want to use <code>eles.style()</code> et cetera because they force a style bypass rather than a recalculation.</li>
-<li>You can not apply any style-dependent operation within the batch if you have already modified style within the same batch.  Common style-dependent operations include:<ul>
-<li>Layout: <code>cy.layout()</code>, <code>eles.layout()</code>, etc.</li>
-<li>Reading style: <code>ele.style()</code>, <code>ele.numericStyle()</code>, etc.</li>
-<li>Reading dimensions: <code>ele.midpoint()</code>, <code>ele.boundingBox()</code>, etc.</li>
-<li>Animation: <code>ele.animation()</code>, <code>cy.animate()</code>, etc.</li>
-<li>And so on…</li>
-</ul>
-</li>
-</ul>
-<p>A batch should correspond to a single visual operation.  Usually a batch should contain calls only to the following functions:</p>
-<ul>
-<li>Modifying state: <code>eles.data()</code>, <code>eles.scratch()</code>, <code>eles.addClass()</code>, <code>eles.removeClass()</code>, etc.</li>
-<li>Building collections: <code>eles.union()</code>, <code>eles.difference()</code>, <code>eles.intersection()</code>, etc.</li>
-<li>Comparison: <code>eles.same()</code>, <code>eles.some()</code>, etc.</li>
-<li>Iteration: <code>eles.forEach()</code>, <code>eles.empty()</code>, etc.</li>
-<li>Traversal: <code>node.outgoers()</code>, <code>eles.bfs()</code>, etc.</li>
-<li>Algorithms: <code>eles.dijkstra()</code>, <code>eles.degreeCentrality()</code>, etc.</li>
-</ul>
-<h3 id="examples">Examples</h3>
-<p>Synchronous style:</p>
-<pre><code class="language-js">cy.batch(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>)</span>{
-  cy.$(<span class="hljs-string">'#j'</span>)
-    .data(<span class="hljs-string">'weight'</span>, <span class="hljs-string">'70'</span>)
-    .addClass(<span class="hljs-string">'funny'</span>)
-    .removeClass(<span class="hljs-string">'serious'</span>)
-  ;
-});</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>Asynchronous style:</p>
-<pre><code class="language-js">cy.startBatch();
-
-cy.$(<span class="hljs-string">'#j'</span>)
-  .data(<span class="hljs-string">'weight'</span>, <span class="hljs-string">'70'</span>)
-  .addClass(<span class="hljs-string">'funny'</span>)
-  .removeClass(<span class="hljs-string">'serious'</span>)
-;
-
-cy.endBatch();</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button>
 							</div>
 						</div>
 						<div class="function">
@@ -1897,7 +1780,8 @@ cy.endBatch();</code></pre>
 											<div class="name">cy.mount( <span class="args-summary"><span class="comma">,&nbsp;</span>container</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>To mount</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name">container</span>
@@ -1911,9 +1795,6 @@ cy.endBatch();</code></pre>
 							</div>
 
 							<div class="details">
-									<h3 id="details">Details</h3>
-<p>If the core instance is headless prior to calling <code>cy.mount()</code>, then the instance will no longer be headless and the visualisation will be shown in the specified container.  If the core instance is non-headless prior to calling <code>cy.mount()</code>, then the visualisation is swapped from the prior container to the specified container.</p>
-
 							</div>
 						</div>
 						<div class="function">
@@ -1929,9 +1810,6 @@ cy.endBatch();</code></pre>
 
 
 							<div class="details">
-									<h3 id="details">Details</h3>
-<p>This function sets the instance to be headless after unmounting from the current container.</p>
-
 							</div>
 						</div>
 						<div class="function">
@@ -1947,12 +1825,6 @@ cy.endBatch();</code></pre>
 
 
 							<div class="details">
-									<h3 id="details">Details</h3>
-<p>The <code>cy.destroy()</code> function is not necessary but can be convenient in some cases.  It cleans up references and rendering loops such that the memory used by an instance can be garbage collected.</p>
-<p>If you remove the container DOM element from the page, then the instance is cleaned up automatically.  Similarly, calling <code>cy.destroy()</code> does this cleanup and removes all the container’s children from the page.</p>
-<p>When running Cytoscape.js headlessly, using <code>cy.destroy()</code> is necessary only if you’ve explicitly enabled style functionality.</p>
-<p>To drop the memory used by an instance, it is necessary to drop all of your own references to that instance so it can be garbage collected.</p>
-
 							</div>
 						</div>
 						<div class="function">
@@ -2581,15 +2453,15 @@ cy.emit(<span class="hljs-string">'tap'</span>, [<span class="hljs-string">'foo'
 
 
 
-							<div class="descr"><p>Run a callback as soon as the graph becomes ready (i.e. intitial data loaded and initial layout completed).  If the graph is already ready, then the callback is called immediately.  If data is loaded synchronously and the layout used is discrete/synchronous/unanimated/unspecified, then you don&#39;t need <code>cy.ready()</code>.</p>
-</div>
+							<div class="descr"></div>
 
 							<div class="formats">
 									<div class="format">
 											<div class="name">cy.ready( <span class="args-summary"><span class="comma">,&nbsp;</span>function(event)</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Run a callback as soon as the graph becomes ready (i.e. intitial data loaded and initial layout completed).  If the graph is already ready, then the callback is called immediately.  If data is loaded synchronously and the layout used is discrete/synchronous/unanimated/unspecified, then you don&#39;t need <code>cy.ready()</code>.</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name">function(event)</span>
@@ -2628,7 +2500,7 @@ cy.emit(<span class="hljs-string">'tap'</span>, [<span class="hljs-string">'foo'
 
 
 
-							<div class="descr"><p>Get the HTML DOM element in which the graph is visualised.  A null value is returned if the instance is headless.</p>
+							<div class="descr"><p>Get the HTML DOM element in which the graph is visualised. A null value is returned if the instance is headless.</p>
 </div>
 
 
@@ -2682,13 +2554,6 @@ cy.emit(<span class="hljs-string">'tap'</span>, [<span class="hljs-string">'foo'
 							</div>
 
 							<div class="details">
-									<h3 id="details">Details</h3>
-<p>If no collection is specified, then the graph is centred on all nodes and edges in the graph.</p>
-<h3 id="examples">Examples</h3>
-<p>Centre the graph on node <code>j</code>:</p>
-<pre><code class="language-js"><span class="hljs-keyword">var</span> j = cy.$(<span class="hljs-string">'#j'</span>);
-cy.center( j );</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button>
 							</div>
 						</div>
 						<div class="function">
@@ -2713,7 +2578,7 @@ cy.center( j );</code></pre>
 										</ul>
 									</div>
 									<div class="format">
-											<div class="name">cy.fit( <span class="args-summary"> [<span class="comma">,&nbsp;</span>eles] [<span class="comma">,&nbsp;</span>padding]</span> )</div>
+											<div class="name">cy.fit( <span class="args-summary"><span class="comma">,&nbsp;</span>eles<span class="comma">,&nbsp;</span>padding</span> )</div>
 
 
 										<div class="descr"><p>Fit to the specified elements.</p>
@@ -2721,15 +2586,15 @@ cy.center( j );</code></pre>
 										<ul class="args">
 												<li>
 													<span class="name"><a href="#collection">eles</a></span>
-													<span class="optional">[optional]</span>
+													
 													<span class="descr"><p>The collection to fit to.</p>
 </span>
 
 												</li>
 												<li>
 													<span class="name">padding</span>
-													<span class="optional">[optional]</span>
-													<span class="descr"><p>An amount of padding (in rendered pixels) to have around the graph  (default <code>0</code>).</p>
+													
+													<span class="descr"><p>An amount of padding (in rendered pixels) to have around the graph (default 0).</p>
 </span>
 
 												</li>
@@ -2738,18 +2603,12 @@ cy.center( j );</code></pre>
 							</div>
 
 							<div class="details">
-									<h3 id="details">Details</h3>
-<p>If no collection is specified, then the graph is fit to all nodes and edges in the graph.</p>
-<h3 id="examples">Examples</h3>
-<p>Fit the graph on nodes <code>j</code> and <code>e</code>:</p>
-<pre><code class="language-js">cy.fit( cy.$(<span class="hljs-string">'#j, #e'</span>) );</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button>
 							</div>
 						</div>
 						<div class="function">
 							<div class="name" id="cy.reset">
 								<span class="fn-name">cy.reset()</span>  <a href="#cy.reset"><span class="fa fa-bookmark"></span></a>
-								<span id="core/viewport-manipulation/cy.reset">&nbsp;</span><span id="core/viewport-manipulation/cy.reset">&nbsp;</span><span id="cy.reset">&nbsp;</span>
+								<span id="core/viewport-manipulation/cy.reset">&nbsp;</span>
 							</div>
 
 
@@ -2757,35 +2616,8 @@ cy.center( j );</code></pre>
 							<div class="descr"><p>Reset the graph to the default zoom level and panning position.</p>
 </div>
 
-							<div class="formats">
-									<div class="format">
-											<div class="name">cy.reset()</div>
-
-
-										<div class="descr"><p>Resets the zoom and pan.</p>
-</div>
-										<ul class="args">
-										</ul>
-									</div>
-							</div>
 
 							<div class="details">
-									<h3 id="details">Details</h3>
-<p>This resets the viewport to the origin (0, 0) at zoom level 1.</p>
-<h3 id="examples">Examples</h3>
-<pre><code class="language-js">setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>)</span>{
-  cy.pan({ <span class="hljs-attr">x</span>: <span class="hljs-number">50</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">-100</span> });
-}, <span class="hljs-number">1000</span> );
-
-setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>)</span>{
-  cy.zoom( <span class="hljs-number">2</span> );
-}, <span class="hljs-number">2000</span> );
-
-setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>)</span>{
-  cy.reset();
-}, <span class="hljs-number">3000</span> );
-</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button>
 							</div>
 						</div>
 						<div class="function">
@@ -2828,17 +2660,6 @@ setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</spa
 							</div>
 
 							<div class="details">
-									<h3 id="details">Details</h3>
-<p>This function pans the graph viewport origin to the specified rendered pixel position.</p>
-<h3 id="examples">Examples</h3>
-<p>Pan the graph to (100, 100) rendered pixels.</p>
-<pre><code class="language-js">cy.pan({
-  <span class="hljs-attr">x</span>: <span class="hljs-number">100</span>,
-  <span class="hljs-attr">y</span>: <span class="hljs-number">100</span> 
-});
-
-<span class="hljs-built_in">console</span>.log( cy.pan() ); <span class="hljs-comment">// prints { x: 100, y: 100 }</span></code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button>
 							</div>
 						</div>
 						<div class="function">
@@ -2857,7 +2678,8 @@ setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</spa
 											<div class="name">cy.panBy( <span class="args-summary"><span class="comma">,&nbsp;</span>renderedPosition</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>The rendered position</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name"><a href="#notation/position">renderedPosition</a></span>
@@ -2871,15 +2693,6 @@ setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</spa
 							</div>
 
 							<div class="details">
-									<h3 id="details">Details</h3>
-<p>This function shifts the viewport relatively by the specified position in rendered pixels.  That is, specifying a shift of 100 to the right means a translation of 100 on-screen pixels to the right.</p>
-<h3 id="examples">Examples</h3>
-<p>Pan the graph 100 pixels to the right.</p>
-<pre><code class="language-js">cy.panBy({
-  <span class="hljs-attr">x</span>: <span class="hljs-number">100</span>,
-  <span class="hljs-attr">y</span>: <span class="hljs-number">0</span> 
-});</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button>
 							</div>
 						</div>
 						<div class="function">
@@ -2907,7 +2720,7 @@ setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</spa
 											<div class="name">cy.panningEnabled( <span class="args-summary"><span class="comma">,&nbsp;</span>bool</span> )</div>
 
 
-										<div class="descr"><p>Set whether panning is enabled.</p>
+										<div class="descr"><p>Set whether panning is enabled</p>
 </div>
 										<ul class="args">
 												<li>
@@ -2922,12 +2735,6 @@ setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</spa
 							</div>
 
 							<div class="details">
-									<h3 id="examples">Examples</h3>
-<p>Enable:</p>
-<pre><code class="language-js">cy.panningEnabled( <span class="hljs-literal">true</span> );</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>Disable:</p>
-<pre><code class="language-js">cy.panningEnabled( <span class="hljs-literal">false</span> );</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button>
 							</div>
 						</div>
 						<div class="function">
@@ -2955,13 +2762,13 @@ setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</spa
 											<div class="name">cy.userPanningEnabled( <span class="args-summary"><span class="comma">,&nbsp;</span>bool</span> )</div>
 
 
-										<div class="descr"><p>Set whether user panning is enabled.</p>
+										<div class="descr"><p>Set whether user panning is enabled</p>
 </div>
 										<ul class="args">
 												<li>
 													<span class="name">bool</span>
 													
-													<span class="descr"><p>A truthy value enables user panning; a falsey value disables it.</p>
+													<span class="descr"><p>A truthy value enables panning; a falsey value disables it.</p>
 </span>
 
 												</li>
@@ -2970,12 +2777,6 @@ setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</spa
 							</div>
 
 							<div class="details">
-									<h3 id="examples">Examples</h3>
-<p>Enable:</p>
-<pre><code class="language-js">cy.userPanningEnabled( <span class="hljs-literal">true</span> );</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>Disable:</p>
-<pre><code class="language-js">cy.userPanningEnabled( <span class="hljs-literal">false</span> );</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button>
 							</div>
 						</div>
 						<div class="function">
@@ -3057,35 +2858,6 @@ setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</spa
 							</div>
 
 							<div class="details">
-									<h3 id="details">Details</h3>
-<p>The zoom level must be a positive number.  Zoom levels that are not numbers are ignored; zoom levels that are numbers but outside of the range of valid zoom levels are considered to be the closest, valid zoom level.</p>
-<p>When zooming about a point via <code>cy.zoom( options )</code>, the options are defined as follows.</p>
-<p>For zooming about a rendered position (i.e. a position on-screen):</p>
-<pre><code class="language-js">cy.zoom({
-  <span class="hljs-attr">level</span>: <span class="hljs-number">2.0</span>, <span class="hljs-comment">// the zoom level</span>
-  renderedPosition: { <span class="hljs-attr">x</span>: <span class="hljs-number">100</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">100</span> }
-});</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>For zooming about a model position:</p>
-<pre><code class="language-js">cy.zoom({
-  <span class="hljs-attr">level</span>: <span class="hljs-number">2.0</span>, <span class="hljs-comment">// the zoom level</span>
-  position: { <span class="hljs-attr">x</span>: <span class="hljs-number">0</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">0</span> }
-});</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>You can zoom about a position or a rendered position but not both.  You should specify only one of <code>options.position</code> or <code>options.renderedPosition</code>.</p>
-<h3 id="examples">Examples</h3>
-<p>Zoom in to factor 2</p>
-<pre><code class="language-js">cy.zoom(<span class="hljs-number">2</span>);</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>Zoom in to the minimum zoom factor</p>
-<pre><code class="language-js">cy.zoom(<span class="hljs-number">0</span>); <span class="hljs-comment">// 0 is outside of the valid range and</span>
-            <span class="hljs-comment">// its closest valid level is the min</span></code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>Zoom in to the maximum zoom factor</p>
-<pre><code class="language-js">cy.zoom(<span class="hljs-number">1</span>/<span class="hljs-number">0</span>); <span class="hljs-comment">// infinity is outside of the valid range and</span>
-              <span class="hljs-comment">// its closest valid level is the max</span></code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>Zoom about a node</p>
-<pre><code class="language-js">cy.zoom({
-  <span class="hljs-attr">level</span>: <span class="hljs-number">1.5</span>,
-  <span class="hljs-attr">position</span>: cy.getElementById(<span class="hljs-string">'j'</span>).position()
-});</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button>
 							</div>
 						</div>
 						<div class="function">
@@ -3113,7 +2885,7 @@ setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</spa
 											<div class="name">cy.zoomingEnabled( <span class="args-summary"><span class="comma">,&nbsp;</span>bool</span> )</div>
 
 
-										<div class="descr"><p>Set whether zooming is enabled.</p>
+										<div class="descr"><p>Set whether zooming is enabled</p>
 </div>
 										<ul class="args">
 												<li>
@@ -3128,12 +2900,6 @@ setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</spa
 							</div>
 
 							<div class="details">
-									<h3 id="examples">Examples</h3>
-<p>Enable:</p>
-<pre><code class="language-js">cy.zoomingEnabled( <span class="hljs-literal">true</span> );</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>Disable:</p>
-<pre><code class="language-js">cy.zoomingEnabled( <span class="hljs-literal">false</span> );</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button>
 							</div>
 						</div>
 						<div class="function">
@@ -3144,7 +2910,7 @@ setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</spa
 
 
 
-							<div class="descr"><p>Get or set whether zooming by user events (e.g. mouse wheel, pinch-to-zoom) is enabled.</p>
+							<div class="descr"><p>Get or set whether user zooming by user events (e.g. mouse wheel, pinch-to-zoom) is enabled.</p>
 </div>
 
 							<div class="formats">
@@ -3161,7 +2927,7 @@ setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</spa
 											<div class="name">cy.userZoomingEnabled( <span class="args-summary"><span class="comma">,&nbsp;</span>bool</span> )</div>
 
 
-										<div class="descr"><p>Set whether user zooming is enabled.</p>
+										<div class="descr"><p>Set whether zooming is enabled</p>
 </div>
 										<ul class="args">
 												<li>
@@ -3176,12 +2942,6 @@ setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</spa
 							</div>
 
 							<div class="details">
-									<h3 id="examples">Examples</h3>
-<p>Enable:</p>
-<pre><code class="language-js">cy.userZoomingEnabled( <span class="hljs-literal">true</span> );</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>Disable:</p>
-<pre><code class="language-js">cy.userZoomingEnabled( <span class="hljs-literal">false</span> );</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button>
 							</div>
 						</div>
 						<div class="function">
@@ -3284,7 +3044,8 @@ setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</spa
 											<div class="name">cy.viewport( <span class="args-summary"><span class="comma">,&nbsp;</span>zoom<span class="comma">,&nbsp;</span>pan</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Set viewport</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name">zoom</span>
@@ -3305,12 +3066,6 @@ setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</spa
 							</div>
 
 							<div class="details">
-									<h3 id="examples">Examples</h3>
-<pre><code class="language-js">cy.viewport({
-  <span class="hljs-attr">zoom</span>: <span class="hljs-number">2</span>,
-  <span class="hljs-attr">pan</span>: { <span class="hljs-attr">x</span>: <span class="hljs-number">100</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">100</span> }
-});</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button>
 							</div>
 						</div>
 						<div class="function">
@@ -3321,7 +3076,7 @@ setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</spa
 
 
 
-							<div class="descr"><p>Get or set whether box selection is enabled.   If enabled along with panning, the user must hold down one of shift, control, alt, or command to initiate box selection.</p>
+							<div class="descr"><p>Get or set whether box selection is enabled. If enabled along with panning, the user must hold down one of shift, control, alt, or command to initiate box selection.</p>
 </div>
 
 							<div class="formats">
@@ -3353,12 +3108,6 @@ setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</spa
 							</div>
 
 							<div class="details">
-									<h3 id="examples">Examples</h3>
-<p>Enable:</p>
-<pre><code class="language-js">cy.boxSelectionEnabled( <span class="hljs-literal">true</span> );</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>Disable:</p>
-<pre><code class="language-js">cy.boxSelectionEnabled( <span class="hljs-literal">false</span> );</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button>
 							</div>
 						</div>
 						<div class="function">
@@ -3446,9 +3195,6 @@ setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</spa
 
 
 							<div class="details">
-									<h3 id="details">Details</h3>
-<p>This function returns a plain object bounding box with format <code>{ x1, y1, x2, y2, w, h }</code>.</p>
-
 							</div>
 						</div>
 						<div class="function">
@@ -3491,12 +3237,6 @@ setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</spa
 							</div>
 
 							<div class="details">
-									<h3 id="examples">Examples</h3>
-<p>Enable:</p>
-<pre><code class="language-js">cy.autolock( <span class="hljs-literal">true</span> );</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>Disable:</p>
-<pre><code class="language-js">cy.autolock( <span class="hljs-literal">false</span> );</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button>
 							</div>
 						</div>
 						<div class="function">
@@ -3530,7 +3270,7 @@ setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</spa
 												<li>
 													<span class="name">bool</span>
 													
-													<span class="descr"><p>A truthy value enables autoungrabbifying; a falsey value disables it.</p>
+													<span class="descr"><p>A truthy value enables autoungrabifying; a falsey value disables it.</p>
 </span>
 
 												</li>
@@ -3539,12 +3279,6 @@ setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</spa
 							</div>
 
 							<div class="details">
-									<h3 id="examples">Examples</h3>
-<p>Enable:</p>
-<pre><code class="language-js">cy.autoungrabify( <span class="hljs-literal">true</span> );</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>Disable:</p>
-<pre><code class="language-js">cy.autoungrabify( <span class="hljs-literal">false</span> );</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button>
 							</div>
 						</div>
 						<div class="function">
@@ -3555,7 +3289,7 @@ setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</spa
 
 
 
-							<div class="descr"><p>Get or set whether nodes are automatically unselectified (i.e. if <code>true</code>, nodes are unselectable despite their individual state).</p>
+							<div class="descr"><p>Get or set whether nodes are automatically unselectified (i.e. if <code>true</code>, nodes are ungrabbale despite their individual state).</p>
 </div>
 
 							<div class="formats">
@@ -3587,12 +3321,6 @@ setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</spa
 							</div>
 
 							<div class="details">
-									<h3 id="examples">Examples</h3>
-<p>Enable:</p>
-<pre><code class="language-js">cy.autounselectify( <span class="hljs-literal">true</span> );</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>Disable:</p>
-<pre><code class="language-js">cy.autounselectify( <span class="hljs-literal">false</span> );</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button>
 							</div>
 						</div>
 						<div class="function">
@@ -4144,7 +3872,7 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 									</span>
 							</div>
 
-							<div class="descr"><p>Get a new layout, which can be used to algorithmically position the nodes in the graph.</p>
+							<div class="descr"><p>Get a new layout, which can be used to algorithmically position the nodes in the graph</p>
 </div>
 
 							<div class="formats">
@@ -4152,7 +3880,8 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 											<div class="name">cy.layout( <span class="args-summary"><span class="comma">,&nbsp;</span>options</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Get layouts</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name">options</span>
@@ -4166,17 +3895,6 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 							</div>
 
 							<div class="details">
-									<p>You must specify <code>options.name</code> with the name of the layout you wish to use.</p>
-<p>This function creates and returns a <a href="#layouts">layout object</a>.  You may want to keep a reference to the layout for more advanced usecases, such as running multiple layouts simultaneously.</p>
-<p><span class="important-indicator"></span> Note that you must call <a href="#layouts/layout-manipulation/layout.run"><code>layout.run()</code></a> in order for it to affect the graph.</p>
-<p>The layout includes all elements in the graph at the moment <code>cy.layout()</code> is called, as <code>cy.layout()</code> is equivalent to <code>cy.elements().layout()</code>.  You can use <a href="#collection/layout/eles.layout"><code>eles.layout()</code></a> to run a layout on a subset of the elements in the graph.</p>
-<h3 id="examples">Examples</h3>
-<pre><code class="language-js"><span class="hljs-keyword">var</span> layout = cy.layout({
-  <span class="hljs-attr">name</span>: <span class="hljs-string">'random'</span>
-});
-
-layout.run();</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button>
 							</div>
 						</div>
 
@@ -4225,77 +3943,6 @@ layout.run();</code></pre>
 							</div>
 
 							<div class="details">
-									<h3 id="details">Details</h3>
-<p>You can use this function to gain access to the visual style (stylesheet) after initialisation.  This is useful if you need to change the entire stylesheet at runtime.</p>
-<p>Set a new style by reference:</p>
-<pre><code class="language-js"><span class="hljs-comment">// here a string stylesheet is used, but you could also use json or a cytoscape.stylesheet() object</span>
-<span class="hljs-keyword">var</span> stringStylesheet = <span class="hljs-string">'node { background-color: cyan; }'</span>;
-cy.style( stringStylesheet );</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>Set an entirely new style to the graph, specifying <a href="#selectors">selectors</a> and <a href="#style">style properties</a> via function calls:</p>
-<pre><code class="language-js">cy.style()
-  .resetToDefault() <span class="hljs-comment">// start a fresh default stylesheet</span>
-
-  <span class="hljs-comment">// and then define new styles</span>
-  .selector(<span class="hljs-string">'node'</span>)
-      .style(<span class="hljs-string">'background-color'</span>, <span class="hljs-string">'magenta'</span>)
-
-  <span class="hljs-comment">// ...</span>
-
-  .update() <span class="hljs-comment">// indicate the end of your new stylesheet so that it can be updated on elements</span>
-;</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>Set a completely new stylesheet (without the default stylesheet as a base):</p>
-<pre><code class="language-js">cy.style()
-  .clear() <span class="hljs-comment">// start a fresh stylesheet without even the default stylesheet</span>
-
-  <span class="hljs-comment">// define all basic styles for node</span>
-  .selector(<span class="hljs-string">'node'</span>)
-    .style(<span class="hljs-string">'background-color'</span>, <span class="hljs-string">'magenta'</span>)
-
-  <span class="hljs-comment">// define all basic styles for edge</span>
-  .selector(<span class="hljs-string">'edge'</span>)
-      .style({
-      <span class="hljs-string">'width'</span>: <span class="hljs-number">3</span>,
-      <span class="hljs-string">'line-color'</span>: <span class="hljs-string">'yellow'</span>
-    })
-
-  <span class="hljs-comment">// ...</span>
-
-  .update() <span class="hljs-comment">// indicate the end of your new stylesheet so that it can be updated on elements</span>
-;</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>Add to the existing stylesheet:</p>
-<pre><code class="language-js">cy.style()
-  .selector(<span class="hljs-string">'node'</span>)
-    .style({
-      <span class="hljs-string">'background-color'</span>: <span class="hljs-string">'yellow'</span>
-    })
-
-  .update() <span class="hljs-comment">// indicate the end of your new stylesheet so that it can be updated on elements</span>
-;</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>Set the style from plain JSON:</p>
-<pre><code class="language-js">cy.style()
-  .fromJson([
-    {
-      <span class="hljs-attr">selector</span>: <span class="hljs-string">'node'</span>,
-      <span class="hljs-attr">style</span>: {
-        <span class="hljs-string">'background-color'</span>: <span class="hljs-string">'red'</span>
-      }
-    }
-
-    <span class="hljs-comment">// , ...</span>
-  ])
-
-  .update() <span class="hljs-comment">// indicate the end of your new stylesheet so that it can be updated on elements</span>
-;</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>Set the style from a style string (that you would probably pull from a file on your server):</p>
-<pre><code class="language-js">cy.style()
-  .fromString(<span class="hljs-string">'node { background-color: blue; }'</span>)
-
-  .update() <span class="hljs-comment">// update the elements in the graph with the new style</span>
-;</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>Get the current style as JSON:</p>
-<pre><code class="language-js"><span class="hljs-keyword">var</span> styleJson = cy.style().json();
-<span class="hljs-keyword">var</span> serializedJson = <span class="hljs-built_in">JSON</span>.stringify( styleJson );</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button>
 							</div>
 						</div>
 
@@ -4540,28 +4187,6 @@ cy.style( stringStylesheet );</code></pre>
 							</div>
 
 							<div class="details">
-									<h3 id="details">Details</h3>
-<p>This function returns the same object that is used for <a href="#core/initialisation">initialisation</a>.  You will find this function useful if you would like to save the entire state of the graph, either for your own purposes or for future restoration of that graph state.</p>
-<p>This function can also be used to set graph state as in <code>cy.json( cyJson )</code>, where each field in <code>cyJson</code> is to be mutated in the graph.  For each field defined in <code>cyJson</code>, <code>cy</code> is updated to match with the corresponding events emitted.   This allows for declarative changes on the graph to be made.</p>
-<p>For <code>cy.json( cyJson )</code>, all mutable <a href="#core/initialisation">initialisation options</a> are supported.</p>
-<p>When setting <code>cy.json({ elements: ... })</code></p>
-<ul>
-<li>the included elements are mutated as specified (i.e. as they would be by <a href="#collection/data/ele.json"><code>ele.json( eleJson )</code></a>),</li>
-<li>the included elements not in the graph are added, and</li>
-<li>the not included elements are removed from the graph.</li>
-</ul>
-<p>When setting <code>cy.json({ style: ... })</code></p>
-<ul>
-<li>the entire stylesheet is replaced, and</li>
-<li>the style is recalculated for each element.</li>
-</ul>
-<p>Updating the stylesheet is expensive.  Similarly, it can potentially be expensive to update the existing elements for large graphs — as each element needs to be considered, and potentially each field per element.  For elements, a much cheaper option is to selectively call <code>ele.json(...)</code> with only the fields that need to be updated.</p>
-<h3 id="examples">Examples</h3>
-<pre><code class="language-js"><span class="hljs-built_in">console</span>.log( cy.json() );</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button><pre><code class="language-js">cy.json({
-  <span class="hljs-attr">zoom</span>: <span class="hljs-number">2</span>
-});</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button>
 							</div>
 						</div>
 
@@ -11345,6 +10970,46 @@ ht.components[<span class="hljs-number">0</span>].select();</code></pre>
 <button class="run run-inline-code"><span class="fa fa-play"></span></button>
 							</div>
 						</div>
+						<div class="function">
+							<div class="name" id="eles.tarjanStronglyConnected">
+								<span class="fn-name">eles.tarjanStronglyConnected()</span>  <a href="#eles.tarjanStronglyConnected"><span class="fa fa-bookmark"></span></a>
+								<span id="collection/cut/eles.tarjanStronglyConnected">&nbsp;</span><span id="collection/cut/eles.tarjanStronglyConnectedComponents">&nbsp;</span><span id="eles.tarjanStronglyConnectedComponents">&nbsp;</span><span id="collection/cut/eles.tsc">&nbsp;</span><span id="eles.tsc">&nbsp;</span><span id="collection/cut/eles.tscc">&nbsp;</span><span id="eles.tscc">&nbsp;</span>
+							</div>
+
+
+							<div class="pure-aliases">
+								<span class="important-indicator"></span> Aliases:
+
+									<span class="pure-alias">
+										<code id="collection/cut/eles.tarjanStronglyConnectedComponents" class="pure-alias-name">eles.tarjanStronglyConnectedComponents()</code><span class="pure-alias-comma">,</span>
+									</span>
+									<span class="pure-alias">
+										<code id="collection/cut/eles.tsc" class="pure-alias-name">eles.tsc()</code><span class="pure-alias-comma">,</span>
+									</span>
+									<span class="pure-alias">
+										<code id="collection/cut/eles.tscc" class="pure-alias-name">eles.tscc()</code><span class="pure-alias-comma">,</span>
+									</span>
+							</div>
+
+							<div class="descr"><p>Finds the <a href="https://en.wikipedia.org/wiki/Strongly_connected_component">strongly connected components</a> of a directed graph using Tarjan&#39;s algorithm.</p>
+</div>
+
+
+							<div class="details">
+									<h3 id="details">Details</h3>
+<p>Note that this function identifies strongly connected components only within the subset of the graph in the calling collection.</p>
+<p>This function returns an object of the following form:</p>
+<pre><code class="language-js">{
+  cut, <span class="hljs-comment">/* Collection of edges which adjoin pairs of strongly connected components */</span>
+  components <span class="hljs-comment">/* Array of collections corresponding to each strongly connected component */</span>
+}</code></pre>
+<button class="run run-inline-code"><span class="fa fa-play"></span></button><h3 id="examples">Examples</h3>
+<pre><code class="language-js"><span class="hljs-keyword">var</span> tsc = cy.elements().tarjanStronglyConnected();
+
+tsc.components[<span class="hljs-number">0</span>].select();</code></pre>
+<button class="run run-inline-code"><span class="fa fa-play"></span></button>
+							</div>
+						</div>
 
 					<h2 id="collection/centrality">Centrality <a href="#collection/centrality"><span class="fa fa-bookmark"></span></a></h2>
 
@@ -13590,6 +13255,7 @@ Sets the subject of the selector (e.g. <code>$node &gt; node</code> to select th
 </li>
 <li><strong><code>taxi-turn</code></strong> : The distance along the primary axis where the first turn is applied.<ul>
 <li>This value may be an absolute distance (e.g. <code>20px</code>) or it may be a relative distance between the source and target (e.g. <code>50%</code>).</li>
+<li>A negative value may be specified to indicate a distance in the oppostite, target to source direction (e.g. <code>-20px</code>).</li>
 <li>Note that bundling may not work with an explicit direction (<code>upward</code>, <code>downward</code>, <code>leftward</code>, or <code>rightward</code>) in tandem with a turn distance specified in percent units.</li>
 </ul>
 </li>
@@ -15734,6 +15400,7 @@ cytoscape.use( ext );</code></pre>
 
 							<div class="section lvl3"><a class="toclink" href="#eles.kargerStein">eles.kargerStein() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#eles.hopcroftTarjanBiconnected">eles.hopcroftTarjanBiconnected() </a></div>
+							<div class="section lvl3"><a class="toclink" href="#eles.tarjanStronglyConnected">eles.tarjanStronglyConnected() </a></div>
 						<div class="section lvl2">
 							<span class="expander">
 								<span class="fa fa-caret-down expanded-icon"></span>

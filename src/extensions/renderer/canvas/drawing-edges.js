@@ -23,11 +23,17 @@ CRp.drawEdge = function( context, edge, shiftToOriginWithBb, drawLabel = true, s
   }
 
   let opacity = shouldDrawOpacity ? edge.pstyle('opacity').value : 1;
+  let lineOpacity = shouldDrawOpacity ? edge.pstyle('line-opacity').value : 1;
+  
   let lineStyle = edge.pstyle('line-style').value;
   let edgeWidth = edge.pstyle('width').pfValue;
   let lineCap = edge.pstyle('line-cap').value;
+  
+  let effectiveLineOpacity = opacity * lineOpacity;
+  // separate arrow opacity would require arrow-opacity property
+  let effectiveArrowOpacity = opacity * lineOpacity;
 
-  let drawLine = ( strokeOpacity = opacity ) => {
+  let drawLine = ( strokeOpacity = effectiveLineOpacity) => {
     context.lineWidth = edgeWidth;
     context.lineCap = lineCap;
 
@@ -48,7 +54,7 @@ CRp.drawEdge = function( context, edge, shiftToOriginWithBb, drawLabel = true, s
     r.drawEdgeOverlay( context, edge );
   };
 
-  let drawArrows = ( arrowOpacity = opacity ) => {
+  let drawArrows = ( arrowOpacity = effectiveArrowOpacity) => {
     r.drawArrowheads( context, edge, arrowOpacity );
   };
 
@@ -64,7 +70,7 @@ CRp.drawEdge = function( context, edge, shiftToOriginWithBb, drawLabel = true, s
     let gx = edge.pstyle('ghost-offset-x').pfValue;
     let gy = edge.pstyle('ghost-offset-y').pfValue;
     let ghostOpacity = edge.pstyle('ghost-opacity').value;
-    let effectiveGhostOpacity = opacity * ghostOpacity;
+    let effectiveGhostOpacity = effectiveLineOpacity * ghostOpacity;
 
     context.translate( gx, gy );
 

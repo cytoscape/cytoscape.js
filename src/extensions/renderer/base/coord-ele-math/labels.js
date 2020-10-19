@@ -413,6 +413,10 @@ BRp.getLabelText = function( ele, prefix ){
     let ellipsis = '\u2026';
     let incLastCh = false;
 
+    if (this.calculateLabelDimensions(ele, text).width < maxW) { // the label already fits
+      return text;
+    }
+
     for( let i = 0; i < text.length; i++ ){
       let widthWithNextCh = this.calculateLabelDimensions( ele, ellipsized + text[i] + ellipsis ).width;
 

@@ -127,7 +127,7 @@
     "docs:js": "cpy build/cytoscape.min.js documentation/js",
     "docs:build": "node documentation/docmaker.js",
     "docs:push": "gh-pages -d documentation",
-    "benchmark": "run-s benchmark:single",
+    "benchmark": "run-s benchmark:all",
     "benchmark:download": "download https://raw.githubusercontent.com/cytoscape/cytoscape.js/master/dist/cytoscape.cjs.js --out build --filename cytoscape.benchmark.js",
     "benchmark:all:exec": "node benchmark/all",
     "benchmark:all": "run-s benchmark:download benchmark:all:exec",

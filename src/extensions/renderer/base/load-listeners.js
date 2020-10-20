@@ -117,7 +117,8 @@ BRp.load = function(){
       for( var i = 0; downs && i < downs.length; i++ ){
         var down = downs[i];
 
-        if( down.isNode() && down.isParent() ){
+        //if any parent node in event hierarchy isn't pannable, reject passthrough
+        if( down.isNode() && down.isParent() && !down.pannable() ){
           allowPassthrough = false;
           break;
         }

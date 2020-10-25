@@ -1,9 +1,10 @@
-var fs=require('fs');
-var data=fs.readFileSync('docmaker.json', 'utf8');
+var fs= require('fs');
+var path = require('path');
+var data=fs.readFileSync( path.join(__dirname, './docmaker.json'), 'utf8');
 var dockmaker_elements=JSON.parse(data);
 
 const { exec } = require('child_process');
-exec('jsdoc -X ../src/core/*.js > jsdocAST.json', (err, stdout, stderr) => {
+exec('jsdoc -X ./src/[c,d,e,u]*/*.js > ./documentation/jsdocAST.json', { "shell": "/bin/bash" },(err, stdout, stderr) => {
   if (err) {
     //some err occurred
     console.error(err)
@@ -18,9 +19,9 @@ function sleepFor( sleepDuration ){
     var now = new Date().getTime();
     while(new Date().getTime() < now + sleepDuration){ /* do nothing */ } 
 }
-sleepFor(2000)
+sleepFor(4000)
 
-var data_AST=fs.readFileSync('jsdocAST.json', 'utf8');
+var data_AST=fs.readFileSync( path.join(__dirname, './jsdocAST.json'), 'utf8');
 var words=JSON.parse(data_AST);
 
 var fns = [];
@@ -158,7 +159,7 @@ for(var i in words)
 }
 
 // save generated file
-fs.writeFile ("jsdocAnnotations.json", JSON.stringify(fns, null, 4), function(err) {
+fs.writeFile ( path.join(__dirname, "./jsdocAnnotations.json"), JSON.stringify(fns, null, 4), function(err) {
     if (err) throw err;
     console.log('complete');
 });
@@ -190,7 +191,8 @@ for(var i in dockmaker_elements.sections)
 }
 
 // save generated file
-fs.writeFile ("docmaker.json", JSON.stringify(dockmaker_elements, null,4), function(err) {
+fs.writeFile ( path.join(__dirname, "./docmaker.json"), JSON.stringify(dockmaker_elements, null,4), function(err) {
     if (err) throw err;
     console.log('complete');
 });
+

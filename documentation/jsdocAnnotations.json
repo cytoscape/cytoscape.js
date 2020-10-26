@@ -30,7 +30,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "core/add"
     },
     {
         "name": "cy.remove",
@@ -54,7 +55,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "core/remove"
     },
     {
         "name": "cy.destroyed",
@@ -82,7 +84,8 @@
     },
     {
         "name": "cy.destroy",
-        "descr": "A convenience function to explicitly destroy the instance."
+        "descr": "A convenience function to explicitly destroy the instance.",
+        "md": "core/destroy"
     },
     {
         "name": "cy.getElementById",
@@ -100,7 +103,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "core/getElementById"
     },
     {
         "name": "cy.container",
@@ -119,11 +123,13 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "core/mount"
     },
     {
         "name": "cy.unmount",
-        "descr": "Remove the instance from its current container."
+        "descr": "Remove the instance from its current container.",
+        "md": "core/unmount"
     },
     {
         "name": "cy.json",
@@ -147,7 +153,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "core/json"
     },
     {
         "name": "cy.layout",
@@ -166,7 +173,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "core/layout"
     },
     {
         "name": "cy.batch",
@@ -190,7 +198,8 @@
                 "name": "cy.endBatch",
                 "descr": "Ends batching manually (useful for asynchronous cases)."
             }
-        ]
+        ],
+        "md": "core/batch"
     },
     {
         "name": "cy.collection",
@@ -199,7 +208,8 @@
             {
                 "descr": "Get an empty collection."
             }
-        ]
+        ],
+        "md": "core/collection"
     },
     {
         "name": "cy.$",
@@ -297,7 +307,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "core/style"
     },
     {
         "name": "cy.autolock",
@@ -315,7 +326,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "core/autolock"
     },
     {
         "name": "cy.autoungrabify",
@@ -333,7 +345,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "core/autoungrabify"
     },
     {
         "name": "cy.autounselectify",
@@ -351,7 +364,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "core/autounselectify"
     },
     {
         "name": "cy.selectionType",
@@ -387,7 +401,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "core/panningEnabled"
     },
     {
         "name": "cy.userPanningEnabled",
@@ -405,7 +420,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "core/userPanningEnabled"
     },
     {
         "name": "cy.zoomingEnabled",
@@ -423,7 +439,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "core/zoomingEnabled"
     },
     {
         "name": "cy.userZoomingEnabled",
@@ -441,7 +458,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "core/userZoomingEnabled"
     },
     {
         "name": "cy.boxSelectionEnabled",
@@ -459,7 +477,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "core/boxSelectionEnabled"
     },
     {
         "name": "cy.pan",
@@ -477,7 +496,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "core/pan"
     },
     {
         "name": "cy.panBy",
@@ -492,7 +512,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "core/panBy"
     },
     {
         "name": "cy.fit",
@@ -514,7 +535,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "core/fit"
     },
     {
         "name": "cy.minZoom",
@@ -591,7 +613,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "core/zoom"
     },
     {
         "name": "cy.viewport",
@@ -610,7 +633,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "core/viewport"
     },
     {
         "name": "cy.center",
@@ -631,11 +655,13 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "core/center"
     },
     {
         "name": "cy.reset",
-        "descr": "Reset the graph to the default zoom level and panning position."
+        "descr": "Reset the graph to the default zoom level and panning position.",
+        "md": "core/reset"
     },
     {
         "name": "cy.width",
@@ -647,6 +673,7 @@
     },
     {
         "name": "cy.extent",
-        "descr": "Get the extent of the viewport, a bounding box in model co-ordinates that lets you know what model positions are visible in the viewport."
+        "descr": "Get the extent of the viewport, a bounding box in model co-ordinates that lets you know what model positions are visible in the viewport.",
+        "md": "core/extent"
     }
 ]

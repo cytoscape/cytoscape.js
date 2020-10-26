@@ -151,6 +151,35 @@ for(var i in words)
             {
                 delete func["formats"];
             }
+
+            // check for md files
+            var mdFiles = {
+                "animation" : [],
+                "collection" : [],
+                "core" : [],
+                "layout" : [],
+                "layouts" : []
+            }
+            const directoryPath = path.join(__dirname, 'md');           
+            for( var x in mdFiles )
+            {
+                var sub_folders = path.join(directoryPath, x);
+                fs.readdirSync(sub_folders).forEach(file => {
+                    mdFiles[x].push(file);
+                  });
+            }
+            var search_md_file = words[i].longname.split(".")[1] + '.md';
+            for( var x in mdFiles )
+            {
+                for( var y in mdFiles[x] )
+                {
+                    if( search_md_file == mdFiles[x][y] )
+                    {
+                        func.md = x + "/" + words[i].longname.split(".")[1];
+                        break;
+                    }
+                }
+            }
             
             fns.push(func);
         }
@@ -168,7 +197,7 @@ var mappings=fns;
 
 for(var i in dockmaker_elements.sections)
 {
-    if(dockmaker_elements.sections[i].name != undefined && dockmaker_elements.sections[i].name == 'Core')
+    if(dockmaker_elements.sections[i].name != undefined && ( dockmaker_elements.sections[i].name == 'Core' || dockmaker_elements.sections[i].name == 'Collection' ))
     {
         for( var j in dockmaker_elements.sections[i].sections)
         {

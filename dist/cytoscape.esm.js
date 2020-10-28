@@ -23648,6 +23648,11 @@ BRp$6.getLabelText = function (ele, prefix) {
     var ellipsis = "\u2026";
     var incLastCh = false;
 
+    if (this.calculateLabelDimensions(ele, text).width < _maxW) {
+      // the label already fits
+      return text;
+    }
+
     for (var i = 0; i < text.length; i++) {
       var widthWithNextCh = this.calculateLabelDimensions(ele, ellipsized + text[i] + ellipsis).width;
 
@@ -24157,9 +24162,9 @@ BRp$c.load = function () {
     if (r.cy.hasCompoundNodes() && down && down.pannable()) {
       // a grabbable compound node below the ele => no passthrough panning
       for (var i = 0; downs && i < downs.length; i++) {
-        var down = downs[i];
+        var down = downs[i]; //if any parent node in event hierarchy isn't pannable, reject passthrough
 
-        if (down.isNode() && down.isParent()) {
+        if (down.isNode() && down.isParent() && !down.pannable()) {
           allowPassthrough = false;
           break;
         }
@@ -31584,7 +31589,7 @@ sheetfn.appendToStyle = function (style) {
   return style;
 };
 
-var version = "3.15.3";
+var version = "3.15.4";
 
 var cytoscape = function cytoscape(options) {
   // if no options specified, use default

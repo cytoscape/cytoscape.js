@@ -4,7 +4,7 @@ var data=fs.readFileSync( path.join(__dirname, './docmaker.json'), 'utf8');
 var dockmaker_elements=JSON.parse(data);
 
 const { exec } = require('child_process');
-exec('jsdoc -X ./src/[c,d,e,u]*/*.js > ./documentation/jsdocAST.json', { "shell": "/bin/bash" },(err, stdout, stderr) => {
+exec('jsdoc -X ./src/[c,d,e,u]*/*.js > ./documentation/AST/core_AST.json && jsdoc -X ./src/animation.js > ./documentation/AST/animation_AST.json', { "shell": "/bin/bash" },(err, stdout, stderr) => {
   if (err) {
     //some err occurred
     console.error(err)
@@ -21,8 +21,20 @@ function sleepFor( sleepDuration ){
 }
 sleepFor(4000)
 
-var data_AST=fs.readFileSync( path.join(__dirname, './jsdocAST.json'), 'utf8');
-var words=JSON.parse(data_AST);
+var core_AST=fs.readFileSync( path.join(__dirname, './AST/core_AST.json'), 'utf8');
+var animation_AST=fs.readFileSync( path.join(__dirname, './AST/animation_AST.json'), 'utf8');
+var words=JSON.parse(core_AST);
+var animation_words=JSON.parse(animation_AST);
+
+for(var idx in animation_words)
+{
+    words.push(animation_words[idx]);
+}
+
+fs.writeFile ( path.join(__dirname, "./jsdocAST.json"), JSON.stringify(words, null, 4), function(err) {
+    if (err) throw err;
+    console.log('complete');
+});
 
 var fns = [];
 
@@ -60,12 +72,21 @@ for(var i in words)
                 args.name = words[i].properties[j].name;
             }
             
-            args.descr = words[i].properties[j].description;
+            // checking for optional parameters
+            if(words[i].properties[j].description && words[i].properties[j].description.includes("[optional]"))
+            {
+                args.descr = words[i].properties[j].description.split("[optional] ")[1];
+                args.optional = true;
+            }
+            else
+            {
+                args.descr = words[i].properties[j].description;
+            }
             types[words[i].name].push(args);
         }
     }
 }
-console.log(types);
+// console.log(types);
 for(var i in words)
 {
     var func = {};
@@ -153,33 +174,33 @@ for(var i in words)
             }
 
             // check for md files
-            var mdFiles = {
-                "animation" : [],
-                "collection" : [],
-                "core" : [],
-                "layout" : [],
-                "layouts" : []
-            }
-            const directoryPath = path.join(__dirname, 'md');           
-            for( var x in mdFiles )
-            {
-                var sub_folders = path.join(directoryPath, x);
-                fs.readdirSync(sub_folders).forEach(file => {
-                    mdFiles[x].push(file);
-                  });
-            }
-            var search_md_file = words[i].longname.split(".")[1] + '.md';
-            for( var x in mdFiles )
-            {
-                for( var y in mdFiles[x] )
-                {
-                    if( search_md_file == mdFiles[x][y] )
-                    {
-                        func.md = x + "/" + words[i].longname.split(".")[1];
-                        break;
-                    }
-                }
-            }
+            // var mdFiles = {
+            //     "animation" : [],
+            //     "collection" : [],
+            //     "core" : [],
+            //     "layout" : [],
+            //     "layouts" : []
+            // }
+            // const directoryPath = path.join(__dirname, 'md');           
+            // for( var x in mdFiles )
+            // {
+            //     var sub_folders = path.join(directoryPath, x);
+            //     fs.readdirSync(sub_folders).forEach(file => {
+            //         mdFiles[x].push(file);
+            //       });
+            // }
+            // var search_md_file = words[i].longname.split(".")[1] + '.md';
+            // for( var x in mdFiles )
+            // {
+            //     for( var y in mdFiles[x] )
+            //     {
+            //         if( search_md_file == mdFiles[x][y] )
+            //         {
+            //             func.md = x + "/" + words[i].longname.split(".")[1];
+            //             break;
+            //         }
+            //     }
+            // }
             
             fns.push(func);
         }
@@ -197,7 +218,7 @@ var mappings=fns;
 
 for(var i in dockmaker_elements.sections)
 {
-    if(dockmaker_elements.sections[i].name != undefined && ( dockmaker_elements.sections[i].name == 'Core' || dockmaker_elements.sections[i].name == 'Collection' ))
+    if(dockmaker_elements.sections[i].name != undefined && ( dockmaker_elements.sections[i].name == 'Core' || dockmaker_elements.sections[i].name == 'Collection' || dockmaker_elements.sections[i].name == 'Animations' ))
     {
         for( var j in dockmaker_elements.sections[i].sections)
         {

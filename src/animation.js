@@ -132,6 +132,11 @@ util.extend( anifn, {
     return this;
   },
 
+    /**
+ * Stop the animation, maintaining the current progress and removing the animation from any associated queues.
+ * @memberof ani
+ * @namespace ani.stop
+ */
   stop: function(){
     let _p = this._private;
 

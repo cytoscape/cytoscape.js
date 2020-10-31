@@ -270,8 +270,7 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "core/add"
+                            ]
                         },
                         {
                             "name": "cy.remove",
@@ -295,8 +294,7 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "core/remove"
+                            ]
                         },
                         {
                             "name": "cy.collection",
@@ -305,8 +303,7 @@
                                 {
                                     "descr": "Get an empty collection."
                                 }
-                            ],
-                            "md": "core/collection"
+                            ]
                         },
                         {
                             "name": "cy.getElementById",
@@ -324,8 +321,7 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "core/getElementById"
+                            ]
                         },
                         {
                             "name": "cy.$",
@@ -429,8 +425,7 @@
                                     "name": "cy.endBatch",
                                     "descr": "Ends batching manually (useful for asynchronous cases)."
                                 }
-                            ],
-                            "md": "core/batch"
+                            ]
                         },
                         {
                             "name": "cy.mount",
@@ -445,18 +440,15 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "core/mount"
+                            ]
                         },
                         {
                             "name": "cy.unmount",
-                            "descr": "Remove the instance from its current container.",
-                            "md": "core/unmount"
+                            "descr": "Remove the instance from its current container."
                         },
                         {
                             "name": "cy.destroy",
-                            "descr": "A convenience function to explicitly destroy the instance.",
-                            "md": "core/destroy"
+                            "descr": "A convenience function to explicitly destroy the instance."
                         },
                         {
                             "name": "cy.destroyed",
@@ -783,8 +775,7 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "core/center"
+                            ]
                         },
                         {
                             "name": "cy.fit",
@@ -806,13 +797,11 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "core/fit"
+                            ]
                         },
                         {
                             "name": "cy.reset",
-                            "descr": "Reset the graph to the default zoom level and panning position.",
-                            "md": "core/reset"
+                            "descr": "Reset the graph to the default zoom level and panning position."
                         },
                         {
                             "name": "cy.pan",
@@ -830,8 +819,7 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "core/pan"
+                            ]
                         },
                         {
                             "name": "cy.panBy",
@@ -846,8 +834,7 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "core/panBy"
+                            ]
                         },
                         {
                             "name": "cy.panningEnabled",
@@ -865,8 +852,7 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "core/panningEnabled"
+                            ]
                         },
                         {
                             "name": "cy.userPanningEnabled",
@@ -884,8 +870,7 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "core/userPanningEnabled"
+                            ]
                         },
                         {
                             "name": "cy.zoom",
@@ -926,8 +911,7 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "core/zoom"
+                            ]
                         },
                         {
                             "name": "cy.zoomingEnabled",
@@ -945,8 +929,7 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "core/zoomingEnabled"
+                            ]
                         },
                         {
                             "name": "cy.userZoomingEnabled",
@@ -964,8 +947,7 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "core/userZoomingEnabled"
+                            ]
                         },
                         {
                             "name": "cy.minZoom",
@@ -1020,8 +1002,7 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "core/viewport"
+                            ]
                         },
                         {
                             "name": "cy.boxSelectionEnabled",
@@ -1039,8 +1020,7 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "core/boxSelectionEnabled"
+                            ]
                         },
                         {
                             "name": "cy.selectionType",
@@ -1070,8 +1050,7 @@
                         },
                         {
                             "name": "cy.extent",
-                            "descr": "Get the extent of the viewport, a bounding box in model co-ordinates that lets you know what model positions are visible in the viewport.",
-                            "md": "core/extent"
+                            "descr": "Get the extent of the viewport, a bounding box in model co-ordinates that lets you know what model positions are visible in the viewport."
                         },
                         {
                             "name": "cy.autolock",
@@ -1089,8 +1068,7 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "core/autolock"
+                            ]
                         },
                         {
                             "name": "cy.autoungrabify",
@@ -1108,8 +1086,7 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "core/autoungrabify"
+                            ]
                         },
                         {
                             "name": "cy.autounselectify",
@@ -1127,8 +1104,7 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "core/autounselectify"
+                            ]
                         },
                         {
                             "name": "cy.resize",
@@ -1394,8 +1370,7 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "core/layout"
+                            ]
                         }
                     ]
                 },
@@ -1418,8 +1393,7 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "core/style"
+                            ]
                         }
                     ]
                 },
@@ -1537,8 +1511,7 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "core/json"
+                            ]
                         }
                     ]
                 }
@@ -2581,6 +2554,7 @@
                             "descr": "Get a new layout, which can be used to algorithmically position the nodes in the collection.",
                             "formats": [
                                 {
+                                    "descr": "The layouting comparison function.",
                                     "args": [
                                         {
                                             "name": "options",
@@ -2588,15 +2562,15 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "collection/layout"
+                            ]
                         },
                         {
                             "name": "nodes.layoutPositions",
+                            "extFn": "true",
                             "descr": "Position the nodes for a discrete/synchronous layout.",
-                            "extFn": true,
                             "formats": [
                                 {
+                                    "descr": "Position the nodes.",
                                     "args": [
                                         {
                                             "name": "layout",
@@ -2607,8 +2581,7 @@
                                             "descr": "The layout options object."
                                         },
                                         {
-                                            "name": "function(ele, i)",
-                                            "descr": "A function that returns the new position for the specified node.",
+                                            "name": "function(ele,i)",
                                             "fields": [
                                                 {
                                                     "name": "ele",
@@ -2618,19 +2591,20 @@
                                                     "name": "i",
                                                     "descr": "The index of the current node while iterating over the nodes in the layout."
                                                 }
-                                            ]
+                                            ],
+                                            "descr": "A function that returns the new position for the specified node."
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "collection/layoutPositions"
+                            ]
                         },
                         {
                             "name": "node.layoutDimensions",
-                            "descr": "Get the node width and height.  This function is intended for use in layout positioning to do overlap detection.",
-                            "extFn": true,
+                            "extFn": "true",
+                            "descr": "Get the node width and height. This function is intended for use in layout positioning to do overlap detection.",
                             "formats": [
                                 {
+                                    "descr": "The node layoutDimensionsing function.",
                                     "args": [
                                         {
                                             "name": "options",
@@ -2638,8 +2612,7 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "collection/layoutDimensions"
+                            ]
                         }
                     ]
                 },
@@ -2687,6 +2660,7 @@
                             "descr": "Add classes to elements.  The classes should be specified in the [stylesheet](#style) in order to have an effect on the rendered style of the elements.",
                             "formats": [
                                 {
+                                    "descr": "Adding Class",
                                     "args": [
                                         {
                                             "name": "classes",
@@ -2694,29 +2668,29 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "collection/addClass"
+                            ]
                         },
                         {
                             "name": "eles.removeClass",
                             "descr": "Remove classes from elements.  The classes should be specified in the [stylesheet](#style) in order to have an effect on the rendered style of the elements.",
                             "formats": [
                                 {
+                                    "descr": "Adding Class",
                                     "args": [
                                         {
                                             "name": "classes",
-                                            "descr": "An array (or a space-separated string) of class names to remove from the elements."
+                                            "descr": "An array (or a space-separated string) of class names to add to the elements."
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "collection/removeClass"
+                            ]
                         },
                         {
                             "name": "eles.toggleClass",
                             "descr": "Toggle whether the elements have the specified classes.  The classes should be specified in the [stylesheet](#style) in order to have an effect on the rendered style of the elements.",
                             "formats": [
                                 {
+                                    "descr": "Toggle Event",
                                     "args": [
                                         {
                                             "name": "classes",
@@ -2729,8 +2703,7 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "collection/toggleClass"
+                            ]
                         },
                         {
                             "name": "eles.classes",
@@ -2754,14 +2727,14 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "collection/classes"
+                            ]
                         },
                         {
                             "name": "eles.flashClass",
                             "descr": "Add classes to the elements, and then remove the classes after a specified duration.",
                             "formats": [
                                 {
+                                    "descr": "flash Event",
                                     "args": [
                                         {
                                             "name": "classes",
@@ -2769,13 +2742,12 @@
                                         },
                                         {
                                             "name": "duration",
-                                            "descr": "The duration in milliseconds that the classes should be added on the elements.  After the duration, the classes are removed.",
+                                            "descr": "The duration in milliseconds that the classes should be added on the elements. After the duration, the classes are removed.",
                                             "optional": true
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "collection/flashClass"
+                            ]
                         },
                         {
                             "name": "ele.hasClass",
@@ -2797,8 +2769,8 @@
                             "pureAliases": [
                                 "eles.css"
                             ],
+                            "formatsSameFn": "true",
                             "descr": "Get or override the style of the element.",
-                            "formatsSameFn": true,
                             "formats": [
                                 {
                                     "name": "ele.style",
@@ -2852,14 +2824,14 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "collection/style"
+                            ]
                         },
                         {
                             "name": "ele.numericStyle",
                             "descr": "Get the numeric value of a style property in preferred units that can be used for calculations.",
                             "formats": [
                                 {
+                                    "descr": "The numericStyle function.",
                                     "args": [
                                         {
                                             "name": "name",
@@ -2867,14 +2839,14 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "collection/numericStyle"
+                            ]
                         },
                         {
                             "name": "ele.numericStyleUnits",
                             "descr": "Get the units that `ele.numericStyle()` is expressed in, for a particular property.",
                             "formats": [
                                 {
+                                    "descr": "The numericStyleUnits function.",
                                     "args": [
                                         {
                                             "name": "name",
@@ -3074,6 +3046,7 @@
                             "descr": "Determine whether this collection contains exactly the same elements as another collection.",
                             "formats": [
                                 {
+                                    "descr": "Determine same collection",
                                     "args": [
                                         {
                                             "name": "eles",
@@ -3081,14 +3054,14 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "collection/same"
+                            ]
                         },
                         {
                             "name": "eles.anySame",
                             "descr": "Determine whether this collection contains any of the same elements as another collection.",
                             "formats": [
                                 {
+                                    "descr": "Determine any same collection",
                                     "args": [
                                         {
                                             "name": "eles",
@@ -3096,8 +3069,7 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "collection/anySame"
+                            ]
                         },
                         {
                             "name": "eles.contains",
@@ -3107,6 +3079,7 @@
                             "descr": "Determine whether this collection contains all of the elements of another collection.",
                             "formats": [
                                 {
+                                    "descr": "Determine another collection",
                                     "args": [
                                         {
                                             "name": "eles",
@@ -3114,8 +3087,7 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "collection/contains"
+                            ]
                         },
                         {
                             "name": "eles.allAreNeighbors",
@@ -3125,6 +3097,7 @@
                             "descr": "Determine whether all elements in the specified collection are in the neighbourhood of the calling collection.",
                             "formats": [
                                 {
+                                    "descr": "Determine neighbourhood collection",
                                     "args": [
                                         {
                                             "name": "eles",
@@ -3132,14 +3105,14 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "collection/allAreNeighbors"
+                            ]
                         },
                         {
                             "name": "eles.is",
                             "descr": "Determine whether any element in this collection matches a selector.",
                             "formats": [
                                 {
+                                    "descr": "Matching Selector",
                                     "args": [
                                         {
                                             "name": "selector",
@@ -3147,14 +3120,14 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "collection/is"
+                            ]
                         },
                         {
                             "name": "eles.allAre",
                             "descr": "Determine whether all elements in the collection match a selector.",
                             "formats": [
                                 {
+                                    "descr": "Matching Selector",
                                     "args": [
                                         {
                                             "name": "selector",
@@ -3162,22 +3135,21 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "collection/allAre"
+                            ]
                         },
                         {
                             "name": "eles.some",
                             "descr": "Determine whether any element in this collection satisfies the specified test function.",
                             "formats": [
                                 {
+                                    "descr": "Listen to events that bubble up from elements matching the specified node selector:",
                                     "args": [
                                         {
-                                            "name": "function(ele, i, eles)",
-                                            "descr": "The test function that returns truthy values for elements that satisfy the test and falsey values for elements that do not satisfy the test.",
+                                            "name": "function(ele,i,eles)",
                                             "fields": [
                                                 {
                                                     "name": "ele",
-                                                    "descr": "The current element."
+                                                    "descr": "The event object."
                                                 },
                                                 {
                                                     "name": "i",
@@ -3187,31 +3159,31 @@
                                                     "name": "eles",
                                                     "descr": "The collection of elements being tested."
                                                 }
-                                            ]
+                                            ],
+                                            "descr": "The test function that returns truthy values for elements that satisfy the test and falsey values for elements that do not satisfy the test."
                                         },
                                         {
                                             "name": "thisArg",
                                             "descr": "The value for `this` within the test function.",
-                                            "optional": "true"
+                                            "optional": true
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "collection/some"
+                            ]
                         },
                         {
                             "name": "eles.every",
                             "descr": "Determine whether all elements in this collection satisfy the specified test function.",
                             "formats": [
                                 {
+                                    "descr": "Determine test function",
                                     "args": [
                                         {
-                                            "name": "function(ele, i, eles)",
-                                            "descr": "The test function that returns truthy values for elements that satisfy the test and falsey values for elements that do not satisfy the test.",
+                                            "name": "function(ele,i,eles)",
                                             "fields": [
                                                 {
                                                     "name": "ele",
-                                                    "descr": "The current element."
+                                                    "descr": "The event object."
                                                 },
                                                 {
                                                     "name": "i",
@@ -3221,17 +3193,17 @@
                                                     "name": "eles",
                                                     "descr": "The collection of elements being tested."
                                                 }
-                                            ]
+                                            ],
+                                            "descr": "The test function that returns truthy values for elements that satisfy the test and falsey values for elements that do not satisfy the test."
                                         },
                                         {
                                             "name": "thisArg",
                                             "descr": "The value for `this` within the test function.",
-                                            "optional": "true"
+                                            "optional": true
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "collection/every"
+                            ]
                         }
                     ]
                 },
@@ -3240,8 +3212,7 @@
                     "fns": [
                         {
                             "name": "eles.size",
-                            "descr": "Get the number of elements in the collection.",
-                            "md": "collection/size"
+                            "descr": "Get the number of elements in the collection."
                         },
                         {
                             "name": "eles.empty",
@@ -3265,10 +3236,10 @@
                             "descr": "Iterate over the elements in the collection.",
                             "formats": [
                                 {
+                                    "descr": "Determine forEach function",
                                     "args": [
                                         {
-                                            "name": "function(ele, i, eles)",
-                                            "descr": "The function executed each iteration.",
+                                            "name": "function(ele,i,eles)",
                                             "fields": [
                                                 {
                                                     "name": "ele",
@@ -3280,25 +3251,27 @@
                                                 },
                                                 {
                                                     "name": "eles",
-                                                    "descr": "The collection of elements being iterated."
+                                                    "descr": "The collection of elements being searched."
                                                 }
-                                            ]
+                                            ],
+                                            "descr": "The function executed each iteration."
                                         },
                                         {
                                             "name": "thisArg",
                                             "descr": "The value for `this` within the iterating function.",
-                                            "optional": "true"
+                                            "optional": true
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "collection/forEach"
+                            ]
                         },
                         {
                             "name": "eles.eq",
                             "descr": "Get an element at a particular index in the collection.",
                             "formats": [
                                 {
+                                    "name": "eles.eq",
+                                    "descr": "Get the index of the element.",
                                     "args": [
                                         {
                                             "name": "index",
@@ -3314,18 +3287,18 @@
                                     "name": "eles.last",
                                     "descr": "Get the last element in the collection."
                                 }
-                            ],
-                            "md": "collection/eq"
+                            ]
                         },
                         {
                             "name": "eles.slice",
                             "descr": "Get a subset of the elements in the collection based on specified indices.",
                             "formats": [
                                 {
+                                    "descr": "Slice",
                                     "args": [
                                         {
                                             "name": "start",
-                                            "descr": "An integer that specifies where to start the selection.  The first element has an index of 0.  Use negative numbers to select from the end of an array.",
+                                            "descr": "An integer that specifies where to start the selection. The first element has an index of 0. Use negative numbers to select from the end of an array.",
                                             "optional": true
                                         },
                                         {
@@ -3498,6 +3471,7 @@
                             "descr": "Perform a traditional left/right diff on the two collections.",
                             "formats": [
                                 {
+                                    "descr": "diff Event",
                                     "args": [
                                         {
                                             "name": "eles",
@@ -3506,15 +3480,15 @@
                                     ]
                                 },
                                 {
+                                    "descr": "diff Event",
                                     "args": [
                                         {
                                             "name": "selector",
-                                            "descr": "A selector representing the elements on the right side of the diff.  All elements in the graph matching the selector are used as the passed collection."
+                                            "descr": "A selector representing the elements on the right side of the diff. All elements in the graph matching the selector are used as the passed collection."
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "collection/diff"
+                            ]
                         },
                         {
                             "name": "eles.merge",
@@ -3544,6 +3518,7 @@
                             "descr": "Perform an in-place operation on the calling collection to remove the given elements.",
                             "formats": [
                                 {
+                                    "descr": "unmerge Event",
                                     "args": [
                                         {
                                             "name": "eles",
@@ -3552,15 +3527,15 @@
                                     ]
                                 },
                                 {
+                                    "descr": "unmerge Event",
                                     "args": [
                                         {
                                             "name": "selector",
-                                            "descr": "A selector representing the elements to remove.  All elements in the graph matching the selector are used as the passed collection."
+                                            "descr": "A selector representing the elements to remove. All elements in the graph matching the selector are used as the passed collection."
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "collection/unmerge"
+                            ]
                         },
                         {
                             "name": "eles.filter",
@@ -3631,25 +3606,25 @@
                             "descr": "Get a new collection containing the elements sorted by the specified comparison function.",
                             "formats": [
                                 {
+                                    "descr": "The sorting comparison function.",
                                     "args": [
                                         {
-                                            "name": "function(ele1, ele2)",
-                                            "descr": "The sorting comparison function that returns a negative number for `ele1` before `ele2`, 0 for `ele1` same as `ele2`, or a positive number for `ele1` after `ele2`."
+                                            "name": "function(ele1,ele2)",
+                                            "descr": "Get a new collection containing the elements sorted by the specified comparison function."
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "collection/sort"
+                            ]
                         },
                         {
                             "name": "eles.map",
                             "descr": "Get an array containing values mapped from the collection.",
                             "formats": [
                                 {
+                                    "descr": "Determine test function",
                                     "args": [
                                         {
-                                            "name": "function(ele, i, eles)",
-                                            "descr": "The function that returns the mapped value for each element.",
+                                            "name": "function(ele,i,eles)",
                                             "fields": [
                                                 {
                                                     "name": "ele",
@@ -3663,27 +3638,27 @@
                                                     "name": "eles",
                                                     "descr": "The collection of elements being mapped."
                                                 }
-                                            ]
+                                            ],
+                                            "descr": "The function that returns the mapped value for each element."
                                         },
                                         {
                                             "name": "thisArg",
                                             "descr": "The value for `this` within the iterating function.",
-                                            "optional": "true"
+                                            "optional": true
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "collection/map"
+                            ]
                         },
                         {
                             "name": "eles.reduce",
                             "descr": "Reduce a single value by applying a function against an accumulator and each value of the collection.",
                             "formats": [
                                 {
+                                    "descr": "Determine reduce function",
                                     "args": [
                                         {
-                                            "name": "function(prevVal, ele, i, eles)",
-                                            "descr": "The function that returns the accumulated value given the previous value and the current element.",
+                                            "name": "function(prevVal,ele,i,eles)",
                                             "fields": [
                                                 {
                                                     "name": "prevVal",
@@ -3701,22 +3676,22 @@
                                                     "name": "eles",
                                                     "descr": "The collection of elements being reduced."
                                                 }
-                                            ]
+                                            ],
+                                            "descr": "The function that returns the accumulated value given the previous value and the current element."
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "collection/reduce"
+                            ]
                         },
                         {
                             "name": "eles.min",
-                            "descr": "Find a minimum value in a collection.",
+                            "descr": "Find a minimum value and the corresponding element.",
                             "formats": [
                                 {
+                                    "descr": "Determine min function",
                                     "args": [
                                         {
-                                            "name": "function(ele, i, eles)",
-                                            "descr": "The function that returns the value to compare for each element.",
+                                            "name": "function(ele,i,eles)",
                                             "fields": [
                                                 {
                                                     "name": "ele",
@@ -3730,27 +3705,27 @@
                                                     "name": "eles",
                                                     "descr": "The collection of elements being searched."
                                                 }
-                                            ]
+                                            ],
+                                            "descr": "The function that returns the value to compare for each element."
                                         },
                                         {
                                             "name": "thisArg",
                                             "descr": "The value for `this` within the iterating function.",
-                                            "optional": "true"
+                                            "optional": true
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "collection/min"
+                            ]
                         },
                         {
                             "name": "eles.max",
                             "descr": "Find a maximum value and the corresponding element.",
                             "formats": [
                                 {
+                                    "descr": "Determine max function",
                                     "args": [
                                         {
-                                            "name": "function(ele, i, eles)",
-                                            "descr": "The function that returns the value to compare for each element.",
+                                            "name": "function(ele,i,eles)",
                                             "fields": [
                                                 {
                                                     "name": "ele",
@@ -3764,17 +3739,17 @@
                                                     "name": "eles",
                                                     "descr": "The collection of elements being searched."
                                                 }
-                                            ]
+                                            ],
+                                            "descr": "The function that returns the value to compare for each element."
                                         },
                                         {
                                             "name": "thisArg",
                                             "descr": "The value for `this` within the iterating function.",
-                                            "optional": "true"
+                                            "optional": true
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "collection/max"
+                            ]
                         }
                     ]
                 },
@@ -3937,6 +3912,7 @@
                             "descr": "Get source node of this edge.",
                             "formats": [
                                 {
+                                    "descr": "Get ID",
                                     "args": [
                                         {
                                             "name": "selector",
@@ -3945,8 +3921,7 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "collection/source"
+                            ]
                         },
                         {
                             "name": "edges.sources",
@@ -3969,6 +3944,7 @@
                             "descr": "Get target node of this edge.",
                             "formats": [
                                 {
+                                    "descr": "Get ID",
                                     "args": [
                                         {
                                             "name": "selector",
@@ -3977,8 +3953,7 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "collection/target"
+                            ]
                         },
                         {
                             "name": "edges.targets",
@@ -4033,6 +4008,7 @@
                             "descr": "From the set of calling nodes, get the nodes which are roots (i.e. no incoming edges, as in a directed acyclic graph).",
                             "formats": [
                                 {
+                                    "descr": "Get ID",
                                     "args": [
                                         {
                                             "name": "selector",
@@ -4048,6 +4024,7 @@
                             "descr": "From the set of calling nodes, get the nodes which are leaves (i.e. no outgoing edges, as in a directed acyclic graph).",
                             "formats": [
                                 {
+                                    "descr": "Get ID",
                                     "args": [
                                         {
                                             "name": "selector",
@@ -4063,6 +4040,7 @@
                             "descr": "Get edges (and their targets) coming out of the nodes in the collection.",
                             "formats": [
                                 {
+                                    "descr": "Get ID",
                                     "args": [
                                         {
                                             "name": "selector",
@@ -4071,14 +4049,14 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "collection/outgoers"
+                            ]
                         },
                         {
                             "name": "nodes.successors",
                             "descr": "Recursively get edges (and their targets) coming out of the nodes in the collection (i.e. the outgoers, the outgoers' outgoers, ...).",
                             "formats": [
                                 {
+                                    "descr": "Get ID",
                                     "args": [
                                         {
                                             "name": "selector",
@@ -4087,14 +4065,14 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "collection/successors"
+                            ]
                         },
                         {
                             "name": "nodes.incomers",
                             "descr": "Get edges (and their sources) coming into the nodes in the collection.",
                             "formats": [
                                 {
+                                    "descr": "Get ID",
                                     "args": [
                                         {
                                             "name": "selector",
@@ -4103,14 +4081,14 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "collection/incomers"
+                            ]
                         },
                         {
                             "name": "nodes.predecessors",
                             "descr": "Recursively get edges (and their sources) coming into the nodes in the collection (i.e. the incomers, the incomers' incomers, ...).",
                             "formats": [
                                 {
+                                    "descr": "Get ID",
                                     "args": [
                                         {
                                             "name": "selector",
@@ -4119,8 +4097,7 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "collection/predecessors"
+                            ]
                         }
                     ]
                 },
@@ -5174,6 +5151,7 @@
                             "descr": "Get the compound parent node of each node in the collection.",
                             "formats": [
                                 {
+                                    "descr": "Get Parent Node.",
                                     "args": [
                                         {
                                             "name": "selector",
@@ -5207,6 +5185,7 @@
                             "descr": "Get all compound ancestors common to all the nodes in the collection, starting with the closest and getting progressively farther.",
                             "formats": [
                                 {
+                                    "descr": "Get commonAncestors Node.",
                                     "args": [
                                         {
                                             "name": "selector",
@@ -5215,14 +5194,14 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "collection/commonAncestors"
+                            ]
                         },
                         {
                             "name": "nodes.orphans",
                             "descr": "Get all orphan (i.e. has no compound parent) nodes in the calling collection.",
                             "formats": [
                                 {
+                                    "descr": "Get orphans Node.",
                                     "args": [
                                         {
                                             "name": "selector",
@@ -5235,9 +5214,10 @@
                         },
                         {
                             "name": "nodes.nonorphans",
-                            "descr": "Get all nonorphan (i.e. has a compound parent) nodes in the calling collection.",
+                            "descr": "Get all nonorphan (i.e. has no compound parent) nodes in the calling collection.",
                             "formats": [
                                 {
+                                    "descr": "Get nonorphans Node.",
                                     "args": [
                                         {
                                             "name": "selector",
@@ -5253,6 +5233,7 @@
                             "descr": "Get all compound child (i.e. direct descendant) nodes of each node in the collection.",
                             "formats": [
                                 {
+                                    "descr": "Get children Node.",
                                     "args": [
                                         {
                                             "name": "selector",
@@ -5268,6 +5249,7 @@
                             "descr": "Get all compound descendant (i.e. children, children's children, etc.) nodes of each node in the collection.",
                             "formats": [
                                 {
+                                    "descr": "Get descendants Node.",
                                     "args": [
                                         {
                                             "name": "selector",
@@ -5283,6 +5265,7 @@
                             "descr": "Get all sibling (i.e. same compound parent) nodes of each node in the collection.",
                             "formats": [
                                 {
+                                    "descr": "Get siblings Node.",
                                     "args": [
                                         {
                                             "name": "selector",
@@ -5595,8 +5578,7 @@
                         },
                         {
                             "name": "ani.stop",
-                            "descr": "Stop the animation, maintaining the current progress and removing the animation from any associated queues.",
-                            "md": "animation/stop"
+                            "descr": "Stop the animation, maintaining the current progress and removing the animation from any associated queues."
                         },
                         {
                             "name": "ani.completed",

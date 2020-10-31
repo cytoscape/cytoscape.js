@@ -2,6 +2,21 @@ import Set from '../set';
 import * as is from '../is';
 
 let elesfn = ({
+
+  /**
+ * @typedef {object} eles_classes
+ * @property {object} NULL
+ * @property {object} classes - An array (or a space-separated string) of class names that replaces the current class list.
+ */
+
+  /**
+ * Get or replace the current list of classes on the elements with the specified list.
+ * @memberof eles
+ * @alias eles.className|eles.classNames
+ * @sub_functions ele.classes|eles.classes
+ * @param {...eles_classes} classes - Get the list of classes as an array for the element. | Replace the list of classes for all elements in the collection.
+ * @namespace eles.classes
+ */
   classes: function( classes ){
     let self = this;
 
@@ -60,15 +75,54 @@ let elesfn = ({
     return self;
   },
 
+  /**
+ * @typedef {object} eles_addClass
+ * @property {object} classes - An array (or a space-separated string) of class names to add to the elements.
+ */
+
+  /**
+ * Add classes to elements.  The classes should be specified in the [stylesheet](#style) in order to have an effect on the rendered style of the elements.
+ * @memberof eles
+ * @param {...eles_addClass} classes - Adding Class
+ * @namespace eles.addClass
+ */
   addClass: function( classes ){
     return this.toggleClass( classes, true );
   },
 
+  /**
+ * @typedef {object} eles_hasClass
+ * @property {object} className - The name of the class to test for.
+ */
+
+  /**
+ * Get whether an element has a particular class.
+ * @memberof eles
+ * @param {...eles_hasClass} className - Adding Class
+ * @namespace eles.hasClass
+ */
   hasClass: function( className ){
     let ele = this[0];
     return ( ele != null && ele._private.classes.has(className) );
   },
 
+  /**
+ * @typedef {object} eles_toggleClass_type
+ * @property {object} classes - An array (or a space-separated string) of class names to toggle on the elements.
+ * @property {object} toggle - [optional] Instead of automatically toggling, adds the classes on truthy values or removes them on falsey values.
+ */
+
+/**
+ * @typedef {object} eles_toggleClass
+ * @property {eles_toggleClass_type} eles_toggleClass_type
+ */
+
+/**
+ * Toggle whether the elements have the specified classes.  The classes should be specified in the [stylesheet](#style) in order to have an effect on the rendered style of the elements.
+ * @memberof eles
+ * @param {...eles_toggleClass} toggle - Toggle Event
+ * @namespace eles.toggleClass
+ */ 
   toggleClass: function( classes, toggle ){
     if( !is.array( classes ) ){
       // extract classes from string
@@ -115,10 +169,38 @@ let elesfn = ({
     return self;
   },
 
+  /**
+ * @typedef {object} eles_removeClass
+ * @property {object} classes - An array (or a space-separated string) of class names to add to the elements.
+ */
+
+  /**
+ * Remove classes from elements.  The classes should be specified in the [stylesheet](#style) in order to have an effect on the rendered style of the elements.
+ * @memberof eles
+ * @param {...eles_removeClass} classes - Adding Class
+ * @namespace eles.removeClass
+ */
   removeClass: function( classes ){
     return this.toggleClass( classes, false );
   },
 
+  /**
+ * @typedef {object} eles_flashClass_type
+ * @property {object} classes - An array (or a space-separated string) of class names to flash on the elements.
+ * @property {object} duration - [optional] The duration in milliseconds that the classes should be added on the elements. After the duration, the classes are removed.
+ */
+
+/**
+ * @typedef {object} eles_flashClass
+ * @property {eles_flashClass_type} eles_flashClass_type
+ */
+
+/**
+ * Add classes to the elements, and then remove the classes after a specified duration.
+ * @memberof eles
+ * @param {...eles_flashClass} duration - flash Event
+ * @namespace eles.flashClass
+ */
   flashClass: function( classes, duration ){
     let self = this;
 

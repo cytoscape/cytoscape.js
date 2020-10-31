@@ -1,5 +1,1065 @@
 [
     {
+        "name": "eles.classes",
+        "pureAliases": [
+            "eles.className",
+            "eles.classNames"
+        ],
+        "descr": "Get or replace the current list of classes on the elements with the specified list.",
+        "formats": [
+            {
+                "name": "ele.classes",
+                "descr": "Get the list of classes as an array for the element."
+            },
+            {
+                "name": "eles.classes",
+                "descr": "Replace the list of classes for all elements in the collection.",
+                "args": [
+                    {
+                        "name": "classes",
+                        "descr": "An array (or a space-separated string) of class names that replaces the current class list."
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "eles.addClass",
+        "descr": "Add classes to elements.  The classes should be specified in the [stylesheet](#style) in order to have an effect on the rendered style of the elements.",
+        "formats": [
+            {
+                "descr": "Adding Class",
+                "args": [
+                    {
+                        "name": "classes",
+                        "descr": "An array (or a space-separated string) of class names to add to the elements."
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "eles.hasClass",
+        "descr": "Get whether an element has a particular class.",
+        "formats": [
+            {
+                "descr": "Adding Class",
+                "args": [
+                    {
+                        "name": "className",
+                        "descr": "The name of the class to test for."
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "eles.toggleClass",
+        "descr": "Toggle whether the elements have the specified classes.  The classes should be specified in the [stylesheet](#style) in order to have an effect on the rendered style of the elements.",
+        "formats": [
+            {
+                "descr": "Toggle Event",
+                "args": [
+                    {
+                        "name": "classes",
+                        "descr": "An array (or a space-separated string) of class names to toggle on the elements."
+                    },
+                    {
+                        "name": "toggle",
+                        "descr": "Instead of automatically toggling, adds the classes on truthy values or removes them on falsey values.",
+                        "optional": true
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "eles.removeClass",
+        "descr": "Remove classes from elements.  The classes should be specified in the [stylesheet](#style) in order to have an effect on the rendered style of the elements.",
+        "formats": [
+            {
+                "descr": "Adding Class",
+                "args": [
+                    {
+                        "name": "classes",
+                        "descr": "An array (or a space-separated string) of class names to add to the elements."
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "eles.flashClass",
+        "descr": "Add classes to the elements, and then remove the classes after a specified duration.",
+        "formats": [
+            {
+                "descr": "flash Event",
+                "args": [
+                    {
+                        "name": "classes",
+                        "descr": "An array (or a space-separated string) of class names to flash on the elements."
+                    },
+                    {
+                        "name": "duration",
+                        "descr": "The duration in milliseconds that the classes should be added on the elements. After the duration, the classes are removed.",
+                        "optional": true
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "eles.allAre",
+        "descr": "Determine whether all elements in the collection match a selector.",
+        "formats": [
+            {
+                "descr": "Matching Selector",
+                "args": [
+                    {
+                        "name": "selector",
+                        "descr": "The selector to match against."
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "eles.is",
+        "descr": "Determine whether any element in this collection matches a selector.",
+        "formats": [
+            {
+                "descr": "Matching Selector",
+                "args": [
+                    {
+                        "name": "selector",
+                        "descr": "The selector to match against."
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "eles.some",
+        "descr": "Determine whether any element in this collection satisfies the specified test function.",
+        "formats": [
+            {
+                "descr": "Listen to events that bubble up from elements matching the specified node selector:",
+                "args": [
+                    {
+                        "name": "function(ele,i,eles)",
+                        "fields": [
+                            {
+                                "name": "ele",
+                                "descr": "The event object."
+                            },
+                            {
+                                "name": "i",
+                                "descr": "The index of the current element."
+                            },
+                            {
+                                "name": "eles",
+                                "descr": "The collection of elements being tested."
+                            }
+                        ],
+                        "descr": "The test function that returns truthy values for elements that satisfy the test and falsey values for elements that do not satisfy the test."
+                    },
+                    {
+                        "name": "thisArg",
+                        "descr": "The value for `this` within the test function.",
+                        "optional": true
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "eles.every",
+        "descr": "Determine whether all elements in this collection satisfy the specified test function.",
+        "formats": [
+            {
+                "descr": "Determine test function",
+                "args": [
+                    {
+                        "name": "function(ele,i,eles)",
+                        "fields": [
+                            {
+                                "name": "ele",
+                                "descr": "The event object."
+                            },
+                            {
+                                "name": "i",
+                                "descr": "The index of the current element."
+                            },
+                            {
+                                "name": "eles",
+                                "descr": "The collection of elements being tested."
+                            }
+                        ],
+                        "descr": "The test function that returns truthy values for elements that satisfy the test and falsey values for elements that do not satisfy the test."
+                    },
+                    {
+                        "name": "thisArg",
+                        "descr": "The value for `this` within the test function.",
+                        "optional": true
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "eles.same",
+        "descr": "Determine whether this collection contains exactly the same elements as another collection.",
+        "formats": [
+            {
+                "descr": "Determine same collection",
+                "args": [
+                    {
+                        "name": "eles",
+                        "descr": "The other elements to compare to."
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "eles.anySame",
+        "descr": "Determine whether this collection contains any of the same elements as another collection.",
+        "formats": [
+            {
+                "descr": "Determine any same collection",
+                "args": [
+                    {
+                        "name": "eles",
+                        "descr": "The other elements to compare to."
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "eles.allAreNeighbors",
+        "pureAliases": [
+            "eles.allAreNeighbours"
+        ],
+        "descr": "Determine whether all elements in the specified collection are in the neighbourhood of the calling collection.",
+        "formats": [
+            {
+                "descr": "Determine neighbourhood collection",
+                "args": [
+                    {
+                        "name": "eles",
+                        "descr": "The other elements to compare to."
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "eles.contains",
+        "pureAliases": [
+            "eles.has"
+        ],
+        "descr": "Determine whether this collection contains all of the elements of another collection.",
+        "formats": [
+            {
+                "descr": "Determine another collection",
+                "args": [
+                    {
+                        "name": "eles",
+                        "descr": "The other elements to compare to."
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "nodes.parent",
+        "descr": "Get the compound parent node of each node in the collection.",
+        "formats": [
+            {
+                "descr": "Get Parent Node.",
+                "args": [
+                    {
+                        "name": "selector",
+                        "descr": "A selector used to filter the resultant collection.",
+                        "optional": true
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "nodes.commonAncestors",
+        "descr": "Get all compound ancestors common to all the nodes in the collection, starting with the closest and getting progressively farther.",
+        "formats": [
+            {
+                "descr": "Get commonAncestors Node.",
+                "args": [
+                    {
+                        "name": "selector",
+                        "descr": "A selector used to filter the resultant collection.",
+                        "optional": true
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "nodes.orphans",
+        "descr": "Get all orphan (i.e. has no compound parent) nodes in the calling collection.",
+        "formats": [
+            {
+                "descr": "Get orphans Node.",
+                "args": [
+                    {
+                        "name": "selector",
+                        "descr": "A selector used to filter the resultant collection.",
+                        "optional": true
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "nodes.nonorphans",
+        "descr": "Get all nonorphan (i.e. has no compound parent) nodes in the calling collection.",
+        "formats": [
+            {
+                "descr": "Get nonorphans Node.",
+                "args": [
+                    {
+                        "name": "selector",
+                        "descr": "A selector used to filter the resultant collection.",
+                        "optional": true
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "nodes.children",
+        "descr": "Get all compound child (i.e. direct descendant) nodes of each node in the collection.",
+        "formats": [
+            {
+                "descr": "Get children Node.",
+                "args": [
+                    {
+                        "name": "selector",
+                        "descr": "A selector used to filter the resultant collection.",
+                        "optional": true
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "nodes.siblings",
+        "descr": "Get all sibling (i.e. same compound parent) nodes of each node in the collection.",
+        "formats": [
+            {
+                "descr": "Get siblings Node.",
+                "args": [
+                    {
+                        "name": "selector",
+                        "descr": "A selector used to filter the resultant collection.",
+                        "optional": true
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "nodes.isParent",
+        "descr": "Get whether the node is a compound parent (i.e. a node containing one or more child nodes)"
+    },
+    {
+        "name": "nodes.isChildless",
+        "descr": "Get whether the node is childless (i.e. a node with no child nodes)"
+    },
+    {
+        "name": "nodes.isChild",
+        "descr": "Get whether the node is a compound child (i.e. contained within a node)"
+    },
+    {
+        "name": "nodes.isOrphan",
+        "descr": "Get whether the node is an orphan (i.e. a node with no parent)"
+    },
+    {
+        "name": "nodes.descendants",
+        "descr": "Get all compound descendant (i.e. children, children's children, etc.) nodes of each node in the collection.",
+        "formats": [
+            {
+                "descr": "Get descendants Node.",
+                "args": [
+                    {
+                        "name": "selector",
+                        "descr": "A selector used to filter the resultant collection.",
+                        "optional": true
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "nodes.absoluteComplement",
+        "pureAliases": [
+            "eles.abscomp",
+            "eles.complement"
+        ],
+        "descr": "Get all elements in the graph that are not in the calling collection."
+    },
+    {
+        "name": "eles.diff",
+        "descr": "Perform a traditional left/right diff on the two collections.",
+        "formats": [
+            {
+                "descr": "diff Event",
+                "args": [
+                    {
+                        "name": "eles",
+                        "descr": "The elements on the right side of the diff."
+                    }
+                ]
+            },
+            {
+                "descr": "diff Event",
+                "args": [
+                    {
+                        "name": "selector",
+                        "descr": "A selector representing the elements on the right side of the diff. All elements in the graph matching the selector are used as the passed collection."
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "eles.unmerge",
+        "descr": "Perform an in-place operation on the calling collection to remove the given elements.",
+        "formats": [
+            {
+                "descr": "unmerge Event",
+                "args": [
+                    {
+                        "name": "eles",
+                        "descr": "The elements to remove in-place."
+                    }
+                ]
+            },
+            {
+                "descr": "unmerge Event",
+                "args": [
+                    {
+                        "name": "selector",
+                        "descr": "A selector representing the elements to remove. All elements in the graph matching the selector are used as the passed collection."
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "eles.map",
+        "descr": "Get an array containing values mapped from the collection.",
+        "formats": [
+            {
+                "descr": "Determine test function",
+                "args": [
+                    {
+                        "name": "function(ele,i,eles)",
+                        "fields": [
+                            {
+                                "name": "ele",
+                                "descr": "The current element."
+                            },
+                            {
+                                "name": "i",
+                                "descr": "The index of the current element."
+                            },
+                            {
+                                "name": "eles",
+                                "descr": "The collection of elements being mapped."
+                            }
+                        ],
+                        "descr": "The function that returns the mapped value for each element."
+                    },
+                    {
+                        "name": "thisArg",
+                        "descr": "The value for `this` within the iterating function.",
+                        "optional": true
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "eles.reduce",
+        "descr": "Reduce a single value by applying a function against an accumulator and each value of the collection.",
+        "formats": [
+            {
+                "descr": "Determine reduce function",
+                "args": [
+                    {
+                        "name": "function(prevVal,ele,i,eles)",
+                        "fields": [
+                            {
+                                "name": "prevVal",
+                                "descr": "The value accumulated from previous elements."
+                            },
+                            {
+                                "name": "ele",
+                                "descr": "The current element."
+                            },
+                            {
+                                "name": "i",
+                                "descr": "The index of the current element."
+                            },
+                            {
+                                "name": "eles",
+                                "descr": "The collection of elements being reduced."
+                            }
+                        ],
+                        "descr": "The function that returns the accumulated value given the previous value and the current element."
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "eles.max",
+        "descr": "Find a maximum value and the corresponding element.",
+        "formats": [
+            {
+                "descr": "Determine max function",
+                "args": [
+                    {
+                        "name": "function(ele,i,eles)",
+                        "fields": [
+                            {
+                                "name": "ele",
+                                "descr": "The current element."
+                            },
+                            {
+                                "name": "i",
+                                "descr": "The index of the current element."
+                            },
+                            {
+                                "name": "eles",
+                                "descr": "The collection of elements being searched."
+                            }
+                        ],
+                        "descr": "The function that returns the value to compare for each element."
+                    },
+                    {
+                        "name": "thisArg",
+                        "descr": "The value for `this` within the iterating function.",
+                        "optional": true
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "eles.min",
+        "descr": "Find a minimum value and the corresponding element.",
+        "formats": [
+            {
+                "descr": "Determine min function",
+                "args": [
+                    {
+                        "name": "function(ele,i,eles)",
+                        "fields": [
+                            {
+                                "name": "ele",
+                                "descr": "The current element."
+                            },
+                            {
+                                "name": "i",
+                                "descr": "The index of the current element."
+                            },
+                            {
+                                "name": "eles",
+                                "descr": "The collection of elements being searched."
+                            }
+                        ],
+                        "descr": "The function that returns the value to compare for each element."
+                    },
+                    {
+                        "name": "thisArg",
+                        "descr": "The value for `this` within the iterating function.",
+                        "optional": true
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "nodes.isNode",
+        "descr": "Get whether the element is a node."
+    },
+    {
+        "name": "nodes.isEdge",
+        "descr": "Get whether the element is an edge."
+    },
+    {
+        "name": "nodes.isLoop",
+        "descr": "Get whether the edge is a loop (i.e. same source and target)."
+    },
+    {
+        "name": "nodes.isSimple",
+        "descr": "Get whether the edge is simple (i.e. different source and target)."
+    },
+    {
+        "name": "nodes.group",
+        "descr": "Get the group string that defines the type of the element."
+    },
+    {
+        "name": "eles.forEach",
+        "pureAliases": [
+            "eles.each"
+        ],
+        "descr": "Iterate over the elements in the collection.",
+        "formats": [
+            {
+                "descr": "Determine forEach function",
+                "args": [
+                    {
+                        "name": "function(ele,i,eles)",
+                        "fields": [
+                            {
+                                "name": "ele",
+                                "descr": "The current element."
+                            },
+                            {
+                                "name": "i",
+                                "descr": "The index of the current element."
+                            },
+                            {
+                                "name": "eles",
+                                "descr": "The collection of elements being searched."
+                            }
+                        ],
+                        "descr": "The function executed each iteration."
+                    },
+                    {
+                        "name": "thisArg",
+                        "descr": "The value for `this` within the iterating function.",
+                        "optional": true
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "nodes.toArray",
+        "descr": "Get the collection as an array, maintaining the order of the elements."
+    },
+    {
+        "name": "eles.slice",
+        "descr": "Get a subset of the elements in the collection based on specified indices.",
+        "formats": [
+            {
+                "descr": "Slice",
+                "args": [
+                    {
+                        "name": "start",
+                        "descr": "An integer that specifies where to start the selection. The first element has an index of 0. Use negative numbers to select from the end of an array.",
+                        "optional": true
+                    },
+                    {
+                        "name": "end",
+                        "descr": "An integer that specifies where to end the selection. If omitted, all elements from the start position and to the end of the array will be selected. Use negative numbers to select from the end of an array.",
+                        "optional": true
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "eles.size",
+        "descr": "Get the number of elements in the collection."
+    },
+    {
+        "name": "eles.eq",
+        "descr": "Get an element at a particular index in the collection.",
+        "formats": [
+            {
+                "name": "eles.eq",
+                "descr": "Get the index of the element.",
+                "args": [
+                    {
+                        "name": "index",
+                        "descr": "The index of the element to get."
+                    }
+                ]
+            },
+            {
+                "name": "eles.first",
+                "descr": "Get the first element in the collection."
+            },
+            {
+                "name": "eles.last",
+                "descr": "Get the last element in the collection."
+            }
+        ]
+    },
+    {
+        "name": "eles.empty",
+        "descr": "Get whether the collection is empty, meaning it has no elements.",
+        "formats": [
+            {
+                "name": "eles.empty",
+                "descr": "Get whether the collection is empty."
+            },
+            {
+                "name": "eles.nonempty",
+                "descr": "Get whether the collection is nonempty."
+            }
+        ]
+    },
+    {
+        "name": "eles.sort",
+        "descr": "Get a new collection containing the elements sorted by the specified comparison function.",
+        "formats": [
+            {
+                "descr": "The sorting comparison function.",
+                "args": [
+                    {
+                        "name": "function(ele1,ele2)",
+                        "descr": "Get a new collection containing the elements sorted by the specified comparison function."
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "node.layoutDimensions",
+        "extFn": "true",
+        "descr": "Get the node width and height. This function is intended for use in layout positioning to do overlap detection.",
+        "formats": [
+            {
+                "descr": "The node layoutDimensionsing function.",
+                "args": [
+                    {
+                        "name": "options",
+                        "descr": "The layout options object."
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "nodes.layoutPositions",
+        "extFn": "true",
+        "descr": "Position the nodes for a discrete/synchronous layout.",
+        "formats": [
+            {
+                "descr": "Position the nodes.",
+                "args": [
+                    {
+                        "name": "layout",
+                        "descr": "The layout."
+                    },
+                    {
+                        "name": "options",
+                        "descr": "The layout options object."
+                    },
+                    {
+                        "name": "function(ele,i)",
+                        "fields": [
+                            {
+                                "name": "ele",
+                                "descr": "The node being iterated over for which the function should return a position to set."
+                            },
+                            {
+                                "name": "i",
+                                "descr": "The index of the current node while iterating over the nodes in the layout."
+                            }
+                        ],
+                        "descr": "A function that returns the new position for the specified node."
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "eles.layout",
+        "pureAliases": [
+            "eles.createLayout",
+            "eles.makeLayout"
+        ],
+        "descr": "Get a new layout, which can be used to algorithmically position the nodes in the collection.",
+        "formats": [
+            {
+                "descr": "The layouting comparison function.",
+                "args": [
+                    {
+                        "name": "options",
+                        "descr": "The layout options."
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "ele.numericStyle",
+        "descr": "Get the numeric value of a style property in preferred units that can be used for calculations.",
+        "formats": [
+            {
+                "descr": "The numericStyle function.",
+                "args": [
+                    {
+                        "name": "name",
+                        "descr": "The name of the style property to get."
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "ele.numericStyleUnits",
+        "descr": "Get the units that `ele.numericStyle()` is expressed in, for a particular property.",
+        "formats": [
+            {
+                "descr": "The numericStyleUnits function.",
+                "args": [
+                    {
+                        "name": "name",
+                        "descr": "The name of the style property to get."
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "eles.style",
+        "pureAliases": [
+            "eles.css"
+        ],
+        "formatsSameFn": "true",
+        "descr": "Get or override the style of the element.",
+        "formats": [
+            {
+                "name": "ele.style",
+                "descr": "Get a name-value pair object containing visual style properties and their values for the element."
+            },
+            {
+                "name": "ele.style",
+                "descr": "Get a particular style property value.",
+                "args": [
+                    {
+                        "name": "name",
+                        "descr": "The name of the visual style property to get."
+                    }
+                ]
+            },
+            {
+                "name": "eles.style",
+                "descr": "Set a particular style property value.",
+                "args": [
+                    {
+                        "name": "name",
+                        "descr": "The name of the visual style property to set."
+                    },
+                    {
+                        "name": "value",
+                        "descr": "The value of the visual style property to set."
+                    }
+                ]
+            },
+            {
+                "name": "eles.style",
+                "descr": "Set several particular style property values.",
+                "args": [
+                    {
+                        "name": "obj",
+                        "descr": "An object of style property name-value pairs to set."
+                    }
+                ]
+            },
+            {
+                "name": "eles.removeStyle",
+                "descr": "Remove all style overrides."
+            },
+            {
+                "name": "eles.removeStyle",
+                "descr": "Remove specific style overrides.",
+                "args": [
+                    {
+                        "name": "names",
+                        "descr": "A space-separated list of property names to remove overrides."
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "ele.effectiveOpacity",
+        "descr": "Get the effective opacity of the element (i.e. on-screen opacity), which takes into consideration parent node opacity."
+    },
+    {
+        "name": "ele.transparent",
+        "descr": "Get whether the element's effective opacity is completely transparent, which takes into consideration parent node opacity."
+    },
+    {
+        "name": "nodes.roots",
+        "descr": "From the set of calling nodes, get the nodes which are roots (i.e. no incoming edges, as in a directed acyclic graph).",
+        "formats": [
+            {
+                "descr": "Get ID",
+                "args": [
+                    {
+                        "name": "selector",
+                        "descr": "An optional selector that is used to filter the resultant collection.",
+                        "optional": true
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "nodes.leaves",
+        "descr": "From the set of calling nodes, get the nodes which are leaves (i.e. no outgoing edges, as in a directed acyclic graph).",
+        "formats": [
+            {
+                "descr": "Get ID",
+                "args": [
+                    {
+                        "name": "selector",
+                        "descr": "An optional selector that is used to filter the resultant collection.",
+                        "optional": true
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "nodes.outgoers",
+        "descr": "Get edges (and their targets) coming out of the nodes in the collection.",
+        "formats": [
+            {
+                "descr": "Get ID",
+                "args": [
+                    {
+                        "name": "selector",
+                        "descr": "An optional selector that is used to filter the resultant collection.",
+                        "optional": true
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "nodes.successors",
+        "descr": "Recursively get edges (and their targets) coming out of the nodes in the collection (i.e. the outgoers, the outgoers' outgoers, ...).",
+        "formats": [
+            {
+                "descr": "Get ID",
+                "args": [
+                    {
+                        "name": "selector",
+                        "descr": "An optional selector that is used to filter the resultant collection.",
+                        "optional": true
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "nodes.incomers",
+        "descr": "Get edges (and their sources) coming into the nodes in the collection.",
+        "formats": [
+            {
+                "descr": "Get ID",
+                "args": [
+                    {
+                        "name": "selector",
+                        "descr": "An optional selector that is used to filter the resultant collection.",
+                        "optional": true
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "nodes.predecessors",
+        "descr": "Recursively get edges (and their sources) coming into the nodes in the collection (i.e. the incomers, the incomers' incomers, ...).",
+        "formats": [
+            {
+                "descr": "Get ID",
+                "args": [
+                    {
+                        "name": "selector",
+                        "descr": "An optional selector that is used to filter the resultant collection.",
+                        "optional": true
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "edge.source",
+        "descr": "Get source node of this edge.",
+        "formats": [
+            {
+                "descr": "Get ID",
+                "args": [
+                    {
+                        "name": "selector",
+                        "descr": "An optional selector that is used to filter the resultant collection.",
+                        "optional": true
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "edge.target",
+        "descr": "Get target node of this edge.",
+        "formats": [
+            {
+                "descr": "Get ID",
+                "args": [
+                    {
+                        "name": "selector",
+                        "descr": "An optional selector that is used to filter the resultant collection.",
+                        "optional": true
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "edge.sources",
+        "descr": "Get source nodes connected to the edges in the collection.",
+        "formats": [
+            {
+                "descr": "Get ID",
+                "args": [
+                    {
+                        "name": "selector",
+                        "descr": "An optional selector that is used to filter the resultant collection.",
+                        "optional": true
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "edge.targets",
+        "descr": "Get target nodes connected to the edges in the collection.",
+        "formats": [
+            {
+                "descr": "Get ID",
+                "args": [
+                    {
+                        "name": "selector",
+                        "descr": "An optional selector that is used to filter the resultant collection.",
+                        "optional": true
+                    }
+                ]
+            }
+        ]
+    },
+    {
         "name": "cy.add",
         "descr": "Add elements to the graph and return them",
         "formats": [
@@ -30,8 +1090,7 @@
                     }
                 ]
             }
-        ],
-        "md": "core/add"
+        ]
     },
     {
         "name": "cy.remove",
@@ -55,8 +1114,7 @@
                     }
                 ]
             }
-        ],
-        "md": "core/remove"
+        ]
     },
     {
         "name": "cy.destroyed",
@@ -84,8 +1142,7 @@
     },
     {
         "name": "cy.destroy",
-        "descr": "A convenience function to explicitly destroy the instance.",
-        "md": "core/destroy"
+        "descr": "A convenience function to explicitly destroy the instance."
     },
     {
         "name": "cy.getElementById",
@@ -103,8 +1160,7 @@
                     }
                 ]
             }
-        ],
-        "md": "core/getElementById"
+        ]
     },
     {
         "name": "cy.container",
@@ -123,13 +1179,11 @@
                     }
                 ]
             }
-        ],
-        "md": "core/mount"
+        ]
     },
     {
         "name": "cy.unmount",
-        "descr": "Remove the instance from its current container.",
-        "md": "core/unmount"
+        "descr": "Remove the instance from its current container."
     },
     {
         "name": "cy.json",
@@ -153,8 +1207,7 @@
                     }
                 ]
             }
-        ],
-        "md": "core/json"
+        ]
     },
     {
         "name": "cy.layout",
@@ -173,8 +1226,7 @@
                     }
                 ]
             }
-        ],
-        "md": "core/layout"
+        ]
     },
     {
         "name": "cy.batch",
@@ -198,8 +1250,7 @@
                 "name": "cy.endBatch",
                 "descr": "Ends batching manually (useful for asynchronous cases)."
             }
-        ],
-        "md": "core/batch"
+        ]
     },
     {
         "name": "cy.collection",
@@ -208,8 +1259,7 @@
             {
                 "descr": "Get an empty collection."
             }
-        ],
-        "md": "core/collection"
+        ]
     },
     {
         "name": "cy.$",
@@ -307,8 +1357,7 @@
                     }
                 ]
             }
-        ],
-        "md": "core/style"
+        ]
     },
     {
         "name": "cy.autolock",
@@ -326,8 +1375,7 @@
                     }
                 ]
             }
-        ],
-        "md": "core/autolock"
+        ]
     },
     {
         "name": "cy.autoungrabify",
@@ -345,8 +1393,7 @@
                     }
                 ]
             }
-        ],
-        "md": "core/autoungrabify"
+        ]
     },
     {
         "name": "cy.autounselectify",
@@ -364,8 +1411,7 @@
                     }
                 ]
             }
-        ],
-        "md": "core/autounselectify"
+        ]
     },
     {
         "name": "cy.selectionType",
@@ -401,8 +1447,7 @@
                     }
                 ]
             }
-        ],
-        "md": "core/panningEnabled"
+        ]
     },
     {
         "name": "cy.userPanningEnabled",
@@ -420,8 +1465,7 @@
                     }
                 ]
             }
-        ],
-        "md": "core/userPanningEnabled"
+        ]
     },
     {
         "name": "cy.zoomingEnabled",
@@ -439,8 +1483,7 @@
                     }
                 ]
             }
-        ],
-        "md": "core/zoomingEnabled"
+        ]
     },
     {
         "name": "cy.userZoomingEnabled",
@@ -458,8 +1501,7 @@
                     }
                 ]
             }
-        ],
-        "md": "core/userZoomingEnabled"
+        ]
     },
     {
         "name": "cy.boxSelectionEnabled",
@@ -477,8 +1519,7 @@
                     }
                 ]
             }
-        ],
-        "md": "core/boxSelectionEnabled"
+        ]
     },
     {
         "name": "cy.pan",
@@ -496,8 +1537,7 @@
                     }
                 ]
             }
-        ],
-        "md": "core/pan"
+        ]
     },
     {
         "name": "cy.panBy",
@@ -512,8 +1552,7 @@
                     }
                 ]
             }
-        ],
-        "md": "core/panBy"
+        ]
     },
     {
         "name": "cy.fit",
@@ -535,8 +1574,7 @@
                     }
                 ]
             }
-        ],
-        "md": "core/fit"
+        ]
     },
     {
         "name": "cy.minZoom",
@@ -613,8 +1651,7 @@
                     }
                 ]
             }
-        ],
-        "md": "core/zoom"
+        ]
     },
     {
         "name": "cy.viewport",
@@ -633,8 +1670,7 @@
                     }
                 ]
             }
-        ],
-        "md": "core/viewport"
+        ]
     },
     {
         "name": "cy.center",
@@ -655,13 +1691,11 @@
                     }
                 ]
             }
-        ],
-        "md": "core/center"
+        ]
     },
     {
         "name": "cy.reset",
-        "descr": "Reset the graph to the default zoom level and panning position.",
-        "md": "core/reset"
+        "descr": "Reset the graph to the default zoom level and panning position."
     },
     {
         "name": "cy.width",
@@ -673,7 +1707,10 @@
     },
     {
         "name": "cy.extent",
-        "descr": "Get the extent of the viewport, a bounding box in model co-ordinates that lets you know what model positions are visible in the viewport.",
-        "md": "core/extent"
+        "descr": "Get the extent of the viewport, a bounding box in model co-ordinates that lets you know what model positions are visible in the viewport."
+    },
+    {
+        "name": "ani.stop",
+        "descr": "Stop the animation, maintaining the current progress and removing the animation from any associated queues."
     }
 ]

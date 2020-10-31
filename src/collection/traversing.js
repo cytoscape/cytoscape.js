@@ -114,23 +114,95 @@ elesfn.clearTraversalCache = function( ){
 
 util.extend( elesfn, {
   // get the root nodes in the DAG
+  /**
+ * @typedef {object} nodes_roots
+ * @property {object} selector - [optional] An optional selector that is used to filter the resultant collection.
+ */
+
+
+  /**
+ * From the set of calling nodes, get the nodes which are roots (i.e. no incoming edges, as in a directed acyclic graph).
+ * @memberof nodes
+ * @param {...nodes_roots} x - Get ID
+ * @namespace nodes.roots
+ */
   roots: defineDagExtremity({ noIncomingEdges: true }),
 
   // get the leaf nodes in the DAG
+  /**
+ * @typedef {object} nodes_leaves
+ * @property {object} selector - [optional] An optional selector that is used to filter the resultant collection.
+ */
+
+
+  /**
+ * From the set of calling nodes, get the nodes which are leaves (i.e. no outgoing edges, as in a directed acyclic graph).
+ * @memberof nodes
+ * @param {...nodes_leaves} x - Get ID
+ * @namespace nodes.leaves
+ */
   leaves: defineDagExtremity({ noOutgoingEdges: true }),
 
   // normally called children in graph theory
   // these nodes =edges=> outgoing nodes
+  /**
+ * @typedef {object} nodes_outgoers
+ * @property {object} selector - [optional] An optional selector that is used to filter the resultant collection.
+ */
+
+
+  /**
+ * Get edges (and their targets) coming out of the nodes in the collection. 
+ * @memberof nodes
+ * @param {...nodes_outgoers} x - Get ID
+ * @namespace nodes.outgoers
+ */
   outgoers: cache( defineDagOneHop({ outgoing: true }) , 'outgoers' ),
 
   // aka DAG descendants
+  /**
+ * @typedef {object} nodes_successors
+ * @property {object} selector - [optional] An optional selector that is used to filter the resultant collection.
+ */
+
+
+  /**
+ * Recursively get edges (and their targets) coming out of the nodes in the collection (i.e. the outgoers, the outgoers' outgoers, ...). 
+ * @memberof nodes
+ * @param {...nodes_successors} x - Get ID
+ * @namespace nodes.successors
+ */
   successors: defineDagAllHops({ outgoing: true }),
 
   // normally called parents in graph theory
   // these nodes <=edges= incoming nodes
+  /**
+ * @typedef {object} nodes_incomers
+ * @property {object} selector - [optional] An optional selector that is used to filter the resultant collection.
+ */
+
+
+  /**
+ * Get edges (and their sources) coming into the nodes in the collection.
+ * @memberof nodes
+ * @param {...nodes_incomers} x - Get ID
+ * @namespace nodes.incomers
+ */
   incomers: cache( defineDagOneHop({ incoming: true }), 'incomers' ),
 
   // aka DAG ancestors
+  /**
+ * @typedef {object} nodes_predecessors
+ * @property {object} selector - [optional] An optional selector that is used to filter the resultant collection.
+ */
+
+
+/**
+ * Recursively get edges (and their sources) coming into the nodes in the collection (i.e. the incomers, the incomers' incomers, ...).
+ * @memberof nodes
+ * @param {...nodes_predecessors} x - Get ID
+ * @namespace nodes.predecessors
+ */
   predecessors: defineDagAllHops({ incoming: true })
 } );
 
@@ -186,6 +258,19 @@ elesfn.openNeighbourhood = elesfn.openNeighborhood;
 /////////////////
 
 util.extend( elesfn, {
+
+  /**
+ * @typedef {object} edge_source
+ * @property {object} selector - [optional] An optional selector that is used to filter the resultant collection.
+ */
+
+
+/**
+ * Get source node of this edge.
+ * @memberof edge
+ * @param {...edge_source} x - Get ID
+ * @namespace edge.source
+ */
   source: cache(function sourceImpl( selector ){
     let ele = this[0];
     let src;
@@ -197,6 +282,18 @@ util.extend( elesfn, {
     return src && selector ? src.filter( selector ) : src;
   }, 'source'),
 
+  /**
+ * @typedef {object} edge_target
+ * @property {object} selector - [optional] An optional selector that is used to filter the resultant collection.
+ */
+
+
+/**
+ * Get target node of this edge.
+ * @memberof edge
+ * @param {...edge_target} x - Get ID
+ * @namespace edge.target
+ */
   target: cache(function targetImpl( selector ){
     let ele = this[0];
     let tgt;
@@ -208,10 +305,33 @@ util.extend( elesfn, {
     return tgt && selector ? tgt.filter( selector ) : tgt;
   }, 'target'),
 
+  /**
+ * @typedef {object} edge_sources
+ * @property {object} selector - [optional] An optional selector that is used to filter the resultant collection.
+ */
+
+/**
+ * Get source nodes connected to the edges in the collection.
+ * @memberof edge
+ * @param {...edge_sources} x - Get ID
+ * @namespace edge.sources
+ */
   sources: defineSourceFunction( {
     attr: 'source'
   } ),
 
+  /**
+ * @typedef {object} edge_targets
+ * @property {object} selector - [optional] An optional selector that is used to filter the resultant collection.
+ */
+
+
+/**
+ * Get target nodes connected to the edges in the collection.
+ * @memberof edge
+ * @param {...edge_targets} x - Get ID
+ * @namespace edge.targets
+ */
   targets: defineSourceFunction( {
     attr: 'target'
   } )

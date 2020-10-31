@@ -2,6 +2,18 @@ import Set from '../set';
 import cache from './cache-traversal-call';
 
 let elesfn = ({
+
+  /**
+ * @typedef {object} nodes_parent
+ * @property {object} selector - [optional] A selector used to filter the resultant collection.
+ */
+
+/**
+ * Get the compound parent node of each node in the collection.
+ * @memberof nodes
+ * @param {...nodes_parent} selector - Get Parent Node.
+ * @namespace nodes.parent
+ */
   parent: function( selector ){
     let parents = [];
 
@@ -40,6 +52,17 @@ let elesfn = ({
     return this.spawn( parents, { unique: true } ).filter( selector );
   },
 
+  /**
+ * @typedef {object} nodes_commonAncestors
+ * @property {object} selector - [optional] A selector used to filter the resultant collection.
+ */
+
+/**
+ * Get all compound ancestors common to all the nodes in the collection, starting with the closest and getting progressively farther.
+ * @memberof nodes
+ * @param {...nodes_commonAncestors} selector - Get commonAncestors Node.
+ * @namespace nodes.commonAncestors
+ */
   commonAncestors: function( selector ){
     let ancestors;
 
@@ -55,18 +78,51 @@ let elesfn = ({
     return ancestors.filter( selector );
   },
 
+  /**
+ * @typedef {object} nodes_orphans
+ * @property {object} selector - [optional] A selector used to filter the resultant collection.
+ */
+
+/**
+ * Get all orphan (i.e. has no compound parent) nodes in the calling collection.
+ * @memberof nodes
+ * @param {...nodes_orphans} selector - Get orphans Node.
+ * @namespace nodes.orphans
+ */
   orphans: function( selector ){
     return this.stdFilter( function( ele ){
       return ele.isOrphan();
     } ).filter( selector );
   },
 
+  /**
+ * @typedef {object} nodes_nonorphans
+ * @property {object} selector - [optional] A selector used to filter the resultant collection.
+ */
+
+/**
+ * Get all nonorphan (i.e. has no compound parent) nodes in the calling collection.
+ * @memberof nodes
+ * @param {...nodes_nonorphans} selector - Get nonorphans Node.
+ * @namespace nodes.nonorphans
+ */
   nonorphans: function( selector ){
     return this.stdFilter( function( ele ){
       return ele.isChild();
     } ).filter( selector );
   },
 
+  /**
+ * @typedef {object} nodes_children
+ * @property {object} selector - [optional] A selector used to filter the resultant collection.
+ */
+
+/**
+ * Get all compound child (i.e. direct descendant) nodes of each node in the collection.
+ * @memberof nodes
+ * @param {...nodes_children} selector - Get children Node.
+ * @namespace nodes.children
+ */
   children: cache( function( selector ){
     let children = [];
 
@@ -82,10 +138,26 @@ let elesfn = ({
     return this.spawn( children, { unique: true } ).filter( selector );
   }, 'children' ),
 
+  /**
+ * @typedef {object} nodes_siblings
+ * @property {object} selector - [optional] A selector used to filter the resultant collection.
+ */
+
+/**
+ * Get all sibling (i.e. same compound parent) nodes of each node in the collection.
+ * @memberof nodes
+ * @param {...nodes_siblings} selector - Get siblings Node.
+ * @namespace nodes.siblings
+ */
   siblings: function( selector ){
     return this.parent().children().not( this ).filter( selector );
   },
 
+  /**
+ * Get whether the node is a compound parent (i.e. a node containing one or more child nodes)
+ * @memberof nodes
+ * @namespace nodes.isParent
+ */
   isParent: function(){
     let ele = this[0];
 
@@ -94,6 +166,11 @@ let elesfn = ({
     }
   },
 
+  /**
+ * Get whether the node is childless (i.e. a node with no child nodes)
+ * @memberof nodes
+ * @namespace nodes.isChildless
+ */
   isChildless: function(){
     let ele = this[0];
 
@@ -102,6 +179,11 @@ let elesfn = ({
     }
   },
 
+  /**
+ * Get whether the node is a compound child (i.e. contained within a node)
+ * @memberof nodes
+ * @namespace nodes.isChild
+ */
   isChild: function(){
     let ele = this[0];
 
@@ -110,6 +192,11 @@ let elesfn = ({
     }
   },
 
+  /**
+ * Get whether the node is an orphan (i.e. a node with no parent)
+ * @memberof nodes
+ * @namespace nodes.isOrphan
+ */
   isOrphan: function(){
     let ele = this[0];
 
@@ -118,6 +205,17 @@ let elesfn = ({
     }
   },
 
+  /**
+ * @typedef {object} nodes_descendants
+ * @property {object} selector - [optional] A selector used to filter the resultant collection.
+ */
+
+/**
+ * Get all compound descendant (i.e. children, children's children, etc.) nodes of each node in the collection.
+ * @memberof nodes
+ * @param {...nodes_descendants} selector - Get descendants Node.
+ * @namespace nodes.descendants
+ */
   descendants: function( selector ){
     let elements = [];
 

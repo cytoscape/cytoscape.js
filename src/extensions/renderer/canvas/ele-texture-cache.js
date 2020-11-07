@@ -104,7 +104,7 @@ ETCp.getElement = function( ele, bb, pxRatio, lvl, reason ){
   let zoom = r.cy.zoom();
   let lookup = this.lookup;
 
-  if( bb.w === 0 || bb.h === 0 || isNaN(bb.w) || isNaN(bb.h) || !ele.visible() ){ return null; }
+  if( !b || bb.w === 0 || bb.h === 0 || isNaN(bb.w) || isNaN(bb.h) || !ele.visible() ){ return null; }
 
   if(
     ( !self.allowEdgeTxrCaching && ele.isEdge() )

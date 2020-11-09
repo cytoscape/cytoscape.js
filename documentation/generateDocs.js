@@ -174,33 +174,44 @@ for(var i in words)
             }
 
             // check for md files
-            // var mdFiles = {
-            //     "animation" : [],
-            //     "collection" : [],
-            //     "core" : [],
-            //     "layout" : [],
-            //     "layouts" : []
-            // }
-            // const directoryPath = path.join(__dirname, 'md');           
-            // for( var x in mdFiles )
-            // {
-            //     var sub_folders = path.join(directoryPath, x);
-            //     fs.readdirSync(sub_folders).forEach(file => {
-            //         mdFiles[x].push(file);
-            //       });
-            // }
-            // var search_md_file = words[i].longname.split(".")[1] + '.md';
-            // for( var x in mdFiles )
-            // {
-            //     for( var y in mdFiles[x] )
-            //     {
-            //         if( search_md_file == mdFiles[x][y] )
-            //         {
-            //             func.md = x + "/" + words[i].longname.split(".")[1];
-            //             break;
-            //         }
-            //     }
-            // }
+            var mdFiles = {
+                "ani" : [],
+                "collection" : [],
+                "cy" : []
+            }
+            const directoryPath = path.join(__dirname, 'md');           
+            for( var x in mdFiles )
+            {
+                var sub_folders = path.join(directoryPath, x);
+                fs.readdirSync(sub_folders).forEach(file => {
+                    mdFiles[x].push(file);
+                  });
+            }
+            var search_md_file = words[i].longname.split(".")[1] + '.md';
+            // checking md files inside core
+            if(words[i].longname.split(".")[0] == "cy")
+            {
+                if(mdFiles["cy"].indexOf(search_md_file) != -1)
+                {
+                    func.md = "cy/" + words[i].longname.split(".")[1];
+                }
+            }
+            // checking md files inside animation
+            else if(words[i].longname.split(".")[0] == "ani")
+            {
+                if(mdFiles["ani"].indexOf(search_md_file) != -1)
+                {
+                    func.md = "ani/" + words[i].longname.split(".")[1];
+                }
+            }
+            // checking md files inside collection
+            else
+            {
+                if(mdFiles["collection"].indexOf(search_md_file) != -1)
+                {
+                    func.md = "collection/" + words[i].longname.split(".")[1];
+                }
+            }
             
             fns.push(func);
         }

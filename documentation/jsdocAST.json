@@ -71747,14 +71747,31 @@
         "scope": "static"
     },
     {
+        "comment": "/**\n * Requests that the animation be played, starting on the next frame. If the animation is complete, it restarts from the beginning.\n * @memberof ani\n * @alias ani.run\n * @namespace ani.play\n */",
+        "meta": {
+            "filename": "animation.js",
+            "lineno": 85,
+            "columnno": 2,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {}
+        },
+        "description": "Requests that the animation be played, starting on the next frame. If the animation is complete, it restarts from the beginning.",
+        "memberof": "ani",
+        "alias": "ani.run",
+        "kind": "namespace",
+        "name": "play",
+        "longname": "ani.play",
+        "scope": "static"
+    },
+    {
         "comment": "",
         "meta": {
             "range": [
-                1646,
-                1976
+                1846,
+                2176
             ],
             "filename": "animation.js",
-            "lineno": 85,
+            "lineno": 91,
             "columnno": 2,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -71780,11 +71797,11 @@
         "comment": "",
         "meta": {
             "range": [
-                1672,
-                1690
+                1872,
+                1890
             ],
             "filename": "animation.js",
-            "lineno": 86,
+            "lineno": 92,
             "columnno": 8,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -71806,11 +71823,11 @@
         "comment": "",
         "meta": {
             "range": [
-                1746,
-                1761
+                1946,
+                1961
             ],
             "filename": "animation.js",
-            "lineno": 90,
+            "lineno": 96,
             "columnno": 6,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -71833,11 +71850,11 @@
         "comment": "",
         "meta": {
             "range": [
-                1774,
-                1791
+                1974,
+                1991
             ],
             "filename": "animation.js",
-            "lineno": 93,
+            "lineno": 99,
             "columnno": 4,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -71860,11 +71877,11 @@
         "comment": "",
         "meta": {
             "range": [
-                1797,
-                1815
+                1997,
+                2015
             ],
             "filename": "animation.js",
-            "lineno": 94,
+            "lineno": 100,
             "columnno": 4,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -71887,11 +71904,11 @@
         "comment": "",
         "meta": {
             "range": [
-                1862,
-                1880
+                2062,
+                2080
             ],
             "filename": "animation.js",
-            "lineno": 95,
+            "lineno": 101,
             "columnno": 4,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -71911,14 +71928,31 @@
         "scope": "static"
     },
     {
+        "comment": "/**\n * Get whether the animation is currently playing.\n * @memberof ani\n * @alias ani.running\n * @namespace ani.playing\n */",
+        "meta": {
+            "filename": "animation.js",
+            "lineno": 110,
+            "columnno": 2,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {}
+        },
+        "description": "Get whether the animation is currently playing.",
+        "memberof": "ani",
+        "alias": "ani.running",
+        "kind": "namespace",
+        "name": "playing",
+        "longname": "ani.playing",
+        "scope": "static"
+    },
+    {
         "comment": "",
         "meta": {
             "range": [
-                1981,
-                2039
+                2307,
+                2365
             ],
             "filename": "animation.js",
-            "lineno": 104,
+            "lineno": 116,
             "columnno": 2,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -71934,14 +71968,30 @@
         "scope": "global"
     },
     {
+        "comment": "/**\n * Apply the animation at its current progress.\n * @memberof ani\n * @namespace ani.apply\n */",
+        "meta": {
+            "filename": "animation.js",
+            "lineno": 120,
+            "columnno": 2,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {}
+        },
+        "description": "Apply the animation at its current progress.",
+        "memberof": "ani",
+        "kind": "namespace",
+        "name": "apply",
+        "longname": "ani.apply",
+        "scope": "static"
+    },
+    {
         "comment": "",
         "meta": {
             "range": [
-                2044,
-                2313
+                2469,
+                2738
             ],
             "filename": "animation.js",
-            "lineno": 108,
+            "lineno": 125,
             "columnno": 2,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -71966,11 +72016,11 @@
         "comment": "",
         "meta": {
             "range": [
-                2071,
-                2089
+                2496,
+                2514
             ],
             "filename": "animation.js",
-            "lineno": 109,
+            "lineno": 126,
             "columnno": 8,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -71992,11 +72042,11 @@
         "comment": "",
         "meta": {
             "range": [
-                2096,
-                2114
+                2521,
+                2539
             ],
             "filename": "animation.js",
-            "lineno": 111,
+            "lineno": 128,
             "columnno": 4,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -72019,11 +72069,11 @@
         "comment": "",
         "meta": {
             "range": [
-                2120,
-                2138
+                2545,
+                2563
             ],
             "filename": "animation.js",
-            "lineno": 112,
+            "lineno": 129,
             "columnno": 4,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -72046,11 +72096,11 @@
         "comment": "",
         "meta": {
             "range": [
-                2185,
-                2203
+                2610,
+                2628
             ],
             "filename": "animation.js",
-            "lineno": 113,
+            "lineno": 130,
             "columnno": 4,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -72070,14 +72120,30 @@
         "scope": "static"
     },
     {
+        "comment": "/**\n * Get whether the animation is currently applying.\n * @memberof ani\n * @namespace ani.applying\n */",
+        "meta": {
+            "filename": "animation.js",
+            "lineno": 139,
+            "columnno": 2,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {}
+        },
+        "description": "Get whether the animation is currently applying.",
+        "memberof": "ani",
+        "kind": "namespace",
+        "name": "applying",
+        "longname": "ani.applying",
+        "scope": "static"
+    },
+    {
         "comment": "",
         "meta": {
             "range": [
-                2318,
-                2378
+                2849,
+                2909
             ],
             "filename": "animation.js",
-            "lineno": 122,
+            "lineno": 144,
             "columnno": 2,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -72093,14 +72159,30 @@
         "scope": "global"
     },
     {
+        "comment": "/**\n * Pause the animation, maintaining the current progress.\n * @memberof ani\n * @namespace ani.pause\n */",
+        "meta": {
+            "filename": "animation.js",
+            "lineno": 148,
+            "columnno": 2,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {}
+        },
+        "description": "Pause the animation, maintaining the current progress.",
+        "memberof": "ani",
+        "kind": "namespace",
+        "name": "pause",
+        "longname": "ani.pause",
+        "scope": "static"
+    },
+    {
         "comment": "",
         "meta": {
             "range": [
-                2383,
-                2500
+                3023,
+                3140
             ],
             "filename": "animation.js",
-            "lineno": 126,
+            "lineno": 153,
             "columnno": 2,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -72124,11 +72206,11 @@
         "comment": "",
         "meta": {
             "range": [
-                2410,
-                2428
+                3050,
+                3068
             ],
             "filename": "animation.js",
-            "lineno": 127,
+            "lineno": 154,
             "columnno": 8,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -72150,11 +72232,11 @@
         "comment": "",
         "meta": {
             "range": [
-                2435,
-                2453
+                3075,
+                3093
             ],
             "filename": "animation.js",
-            "lineno": 129,
+            "lineno": 156,
             "columnno": 4,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -72177,11 +72259,11 @@
         "comment": "",
         "meta": {
             "range": [
-                2459,
-                2477
+                3099,
+                3117
             ],
             "filename": "animation.js",
-            "lineno": 130,
+            "lineno": 157,
             "columnno": 4,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -72204,7 +72286,7 @@
         "comment": "/**\n * Stop the animation, maintaining the current progress and removing the animation from any associated queues.\n * @memberof ani\n * @namespace ani.stop\n */",
         "meta": {
             "filename": "animation.js",
-            "lineno": 135,
+            "lineno": 162,
             "columnno": 4,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {}
@@ -72220,11 +72302,11 @@
         "comment": "",
         "meta": {
             "range": [
-                2668,
-                2846
+                3308,
+                3486
             ],
             "filename": "animation.js",
-            "lineno": 140,
+            "lineno": 167,
             "columnno": 2,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -72249,11 +72331,11 @@
         "comment": "",
         "meta": {
             "range": [
-                2694,
-                2712
+                3334,
+                3352
             ],
             "filename": "animation.js",
-            "lineno": 141,
+            "lineno": 168,
             "columnno": 8,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -72275,11 +72357,11 @@
         "comment": "",
         "meta": {
             "range": [
-                2719,
-                2737
+                3359,
+                3377
             ],
             "filename": "animation.js",
-            "lineno": 143,
+            "lineno": 170,
             "columnno": 4,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -72302,11 +72384,11 @@
         "comment": "",
         "meta": {
             "range": [
-                2743,
-                2761
+                3383,
+                3401
             ],
             "filename": "animation.js",
-            "lineno": 144,
+            "lineno": 171,
             "columnno": 4,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -72329,11 +72411,11 @@
         "comment": "",
         "meta": {
             "range": [
-                2767,
-                2784
+                3407,
+                3424
             ],
             "filename": "animation.js",
-            "lineno": 145,
+            "lineno": 172,
             "columnno": 4,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -72356,11 +72438,11 @@
         "comment": "",
         "meta": {
             "range": [
-                2851,
-                2905
+                3491,
+                3545
             ],
             "filename": "animation.js",
-            "lineno": 150,
+            "lineno": 177,
             "columnno": 2,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -72379,11 +72461,11 @@
         "comment": "",
         "meta": {
             "range": [
-                2910,
-                2969
+                3550,
+                3609
             ],
             "filename": "animation.js",
-            "lineno": 154,
+            "lineno": 181,
             "columnno": 2,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -72402,11 +72484,11 @@
         "comment": "",
         "meta": {
             "range": [
-                2974,
-                3160
+                3614,
+                3800
             ],
             "filename": "animation.js",
-            "lineno": 158,
+            "lineno": 185,
             "columnno": 2,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -72428,11 +72510,11 @@
         "comment": "",
         "meta": {
             "range": [
-                3003,
-                3021
+                3643,
+                3661
             ],
             "filename": "animation.js",
-            "lineno": 159,
+            "lineno": 186,
             "columnno": 8,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -72451,14 +72533,121 @@
         "params": []
     },
     {
+        "comment": "/**\n * @typedef {object} ani_progress\n * @property {object} NULL\n * @property {object} progress - The progress in percent (i.e. between 0 and 1 inclusive) to set to the animation.\n * @property {object} NULL\n * @property {object} time - The progress in milliseconds (i.e. between 0 and the duration inclusive) to set to the animation.\n * @property {object} NULL\n * @property {object} NULL\n */",
+        "meta": {
+            "filename": "animation.js",
+            "lineno": 195,
+            "columnno": 2,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {}
+        },
+        "kind": "typedef",
+        "name": "ani_progress",
+        "type": {
+            "names": [
+                "object"
+            ]
+        },
+        "properties": [
+            {
+                "type": {
+                    "names": [
+                        "object"
+                    ]
+                },
+                "name": "NULL"
+            },
+            {
+                "type": {
+                    "names": [
+                        "object"
+                    ]
+                },
+                "description": "The progress in percent (i.e. between 0 and 1 inclusive) to set to the animation.",
+                "name": "progress"
+            },
+            {
+                "type": {
+                    "names": [
+                        "object"
+                    ]
+                },
+                "name": "NULL"
+            },
+            {
+                "type": {
+                    "names": [
+                        "object"
+                    ]
+                },
+                "description": "The progress in milliseconds (i.e. between 0 and the duration inclusive) to set to the animation.",
+                "name": "time"
+            },
+            {
+                "type": {
+                    "names": [
+                        "object"
+                    ]
+                },
+                "name": "NULL"
+            },
+            {
+                "type": {
+                    "names": [
+                        "object"
+                    ]
+                },
+                "name": "NULL"
+            }
+        ],
+        "longname": "ani_progress",
+        "scope": "global"
+    },
+    {
+        "comment": "/**\n * Get or set how far along the animation has progressed.\n * @memberof ani\n * @sub_functions ani.progress|ani.progress|ani.time|ani.time|ani.rewind|ani.fastforward\n * @param {...ani_progress} x - Get the progress of the animation in percent. | Set the progress of the animation in percent. | Get the progress of the animation in milliseconds. | Set the progress of the animation in milliseconds. | Rewind the animation to the beginning. | Fastforward the animation to the end.\n * @namespace ani.progress\n */",
+        "meta": {
+            "filename": "animation.js",
+            "lineno": 205,
+            "columnno": 2,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {}
+        },
+        "description": "Get or set how far along the animation has progressed.",
+        "memberof": "ani",
+        "tags": [
+            {
+                "originalTitle": "sub_functions",
+                "title": "sub_functions",
+                "text": "ani.progress|ani.progress|ani.time|ani.time|ani.rewind|ani.fastforward",
+                "value": "ani.progress|ani.progress|ani.time|ani.time|ani.rewind|ani.fastforward"
+            }
+        ],
+        "params": [
+            {
+                "type": {
+                    "names": [
+                        "ani_progress"
+                    ]
+                },
+                "variable": true,
+                "description": "Get the progress of the animation in percent. | Set the progress of the animation in percent. | Get the progress of the animation in milliseconds. | Set the progress of the animation in milliseconds. | Rewind the animation to the beginning. | Fastforward the animation to the end.",
+                "name": "x"
+            }
+        ],
+        "kind": "namespace",
+        "name": "progress",
+        "longname": "ani.progress",
+        "scope": "static"
+    },
+    {
         "comment": "",
         "meta": {
             "range": [
-                3165,
-                3503
+                4714,
+                5052
             ],
             "filename": "animation.js",
-            "lineno": 168,
+            "lineno": 212,
             "columnno": 2,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -72483,11 +72672,11 @@
         "comment": "",
         "meta": {
             "range": [
-                3198,
-                3216
+                4747,
+                4765
             ],
             "filename": "animation.js",
-            "lineno": 169,
+            "lineno": 213,
             "columnno": 8,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -72509,11 +72698,11 @@
         "comment": "",
         "meta": {
             "range": [
-                3226,
-                3249
+                4775,
+                4798
             ],
             "filename": "animation.js",
-            "lineno": 170,
+            "lineno": 214,
             "columnno": 8,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -72535,11 +72724,11 @@
         "comment": "",
         "meta": {
             "range": [
-                3379,
-                3394
+                4928,
+                4943
             ],
             "filename": "animation.js",
-            "lineno": 179,
+            "lineno": 223,
             "columnno": 6,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -72562,11 +72751,11 @@
         "comment": "",
         "meta": {
             "range": [
-                3402,
-                3420
+                4951,
+                4969
             ],
             "filename": "animation.js",
-            "lineno": 180,
+            "lineno": 224,
             "columnno": 6,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -72586,14 +72775,31 @@
         "scope": "static"
     },
     {
+        "comment": "/**\n * Get whether the animation has progressed to the end.\n * @memberof ani\n * @alias ani.complete\n * @namespace ani.completed\n */",
+        "meta": {
+            "filename": "animation.js",
+            "lineno": 234,
+            "columnno": 2,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {}
+        },
+        "description": "Get whether the animation has progressed to the end.",
+        "memberof": "ani",
+        "alias": "ani.complete",
+        "kind": "namespace",
+        "name": "completed",
+        "longname": "ani.completed",
+        "scope": "static"
+    },
+    {
         "comment": "",
         "meta": {
             "range": [
-                3508,
-                3575
+                5191,
+                5258
             ],
             "filename": "animation.js",
-            "lineno": 190,
+            "lineno": 240,
             "columnno": 2,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -72609,14 +72815,30 @@
         "scope": "global"
     },
     {
+        "comment": "/**\n * Reverse the animation such that its starting conditions and ending conditions are reversed.\n * @memberof ani\n * @namespace ani.reverse\n */",
+        "meta": {
+            "filename": "animation.js",
+            "lineno": 244,
+            "columnno": 2,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {}
+        },
+        "description": "Reverse the animation such that its starting conditions and ending conditions are reversed.",
+        "memberof": "ani",
+        "kind": "namespace",
+        "name": "reverse",
+        "longname": "ani.reverse",
+        "scope": "static"
+    },
+    {
         "comment": "",
         "meta": {
             "range": [
-                3580,
-                4394
+                5411,
+                6225
             ],
             "filename": "animation.js",
-            "lineno": 194,
+            "lineno": 249,
             "columnno": 2,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -72649,11 +72871,11 @@
         "comment": "",
         "meta": {
             "range": [
-                3609,
-                3627
+                5440,
+                5458
             ],
             "filename": "animation.js",
-            "lineno": 195,
+            "lineno": 250,
             "columnno": 8,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -72675,11 +72897,11 @@
         "comment": "",
         "meta": {
             "range": [
-                3637,
-                3660
+                5468,
+                5491
             ],
             "filename": "animation.js",
-            "lineno": 196,
+            "lineno": 251,
             "columnno": 8,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -72701,11 +72923,11 @@
         "comment": "",
         "meta": {
             "range": [
-                3716,
-                3745
+                5547,
+                5576
             ],
             "filename": "animation.js",
-            "lineno": 202,
+            "lineno": 257,
             "columnno": 4,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -72728,11 +72950,11 @@
         "comment": "",
         "meta": {
             "range": [
-                3751,
-                3769
+                5582,
+                5600
             ],
             "filename": "animation.js",
-            "lineno": 203,
+            "lineno": 258,
             "columnno": 4,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -72755,11 +72977,11 @@
         "comment": "",
         "meta": {
             "range": [
-                3780,
-                3918
+                5611,
+                5749
             ],
             "filename": "animation.js",
-            "lineno": 205,
+            "lineno": 260,
             "columnno": 8,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -72784,11 +73006,11 @@
         "comment": "",
         "meta": {
             "range": [
-                3815,
-                3828
+                5646,
+                5659
             ],
             "filename": "animation.js",
-            "lineno": 206,
+            "lineno": 261,
             "columnno": 10,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -72810,11 +73032,11 @@
         "comment": "",
         "meta": {
             "range": [
-                3873,
-                3890
+                5704,
+                5721
             ],
             "filename": "animation.js",
-            "lineno": 210,
+            "lineno": 265,
             "columnno": 6,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -72837,11 +73059,11 @@
         "comment": "",
         "meta": {
             "range": [
-                3898,
-                3911
+                5729,
+                5742
             ],
             "filename": "animation.js",
-            "lineno": 211,
+            "lineno": 266,
             "columnno": 6,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -72864,11 +73086,11 @@
         "comment": "",
         "meta": {
             "range": [
-                4081,
-                4086
+                5912,
+                5917
             ],
             "filename": "animation.js",
-            "lineno": 220,
+            "lineno": 275,
             "columnno": 15,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -72890,11 +73112,11 @@
         "comment": "",
         "meta": {
             "range": [
-                4128,
-                4148
+                5959,
+                5979
             ],
             "filename": "animation.js",
-            "lineno": 221,
+            "lineno": 276,
             "columnno": 12,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -72916,11 +73138,11 @@
         "comment": "",
         "meta": {
             "range": [
-                4162,
-                4178
+                5993,
+                6009
             ],
             "filename": "animation.js",
-            "lineno": 222,
+            "lineno": 277,
             "columnno": 12,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -72942,11 +73164,11 @@
         "comment": "",
         "meta": {
             "range": [
-                4192,
-                4230
+                6023,
+                6061
             ],
             "filename": "animation.js",
-            "lineno": 223,
+            "lineno": 278,
             "columnno": 12,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -72968,11 +73190,11 @@
         "comment": "",
         "meta": {
             "range": [
-                4241,
-                4269
+                6072,
+                6100
             ],
             "filename": "animation.js",
-            "lineno": 225,
+            "lineno": 280,
             "columnno": 8,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -72995,11 +73217,11 @@
         "comment": "",
         "meta": {
             "range": [
-                4279,
-                4309
+                6110,
+                6140
             ],
             "filename": "animation.js",
-            "lineno": 226,
+            "lineno": 281,
             "columnno": 8,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -73019,14 +73241,80 @@
         "scope": "static"
     },
     {
+        "comment": "/**\n * @typedef {object} ani_promise\n * @property {object} NULL\n * @property {object} animationEvent -  A string for the event name; `completed` or `complete` for completing the animation or `frame` for the next frame of the animation.\n */",
+        "meta": {
+            "filename": "animation.js",
+            "lineno": 292,
+            "columnno": 2,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {}
+        },
+        "kind": "typedef",
+        "name": "ani_promise",
+        "type": {
+            "names": [
+                "object"
+            ]
+        },
+        "properties": [
+            {
+                "type": {
+                    "names": [
+                        "object"
+                    ]
+                },
+                "name": "NULL"
+            },
+            {
+                "type": {
+                    "names": [
+                        "object"
+                    ]
+                },
+                "description": "A string for the event name; `completed` or `complete` for completing the animation or `frame` for the next frame of the animation.",
+                "name": "animationEvent"
+            }
+        ],
+        "longname": "ani_promise",
+        "scope": "global"
+    },
+    {
+        "comment": "/**\n * Get a promise that is fulfilled with the specified animation event.\n * @memberof ani\n * @param {...ani_promise} x - Get a promise that is fulfilled with the next `completed` event. | Get a promise that is fulfilled with the specified animation event.\n * @namespace ani.promise\n */",
+        "meta": {
+            "filename": "animation.js",
+            "lineno": 298,
+            "columnno": 2,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {}
+        },
+        "description": "Get a promise that is fulfilled with the specified animation event.",
+        "memberof": "ani",
+        "params": [
+            {
+                "type": {
+                    "names": [
+                        "ani_promise"
+                    ]
+                },
+                "variable": true,
+                "description": "Get a promise that is fulfilled with the next `completed` event. | Get a promise that is fulfilled with the specified animation event.",
+                "name": "x"
+            }
+        ],
+        "kind": "namespace",
+        "name": "promise",
+        "longname": "ani.promise",
+        "scope": "static"
+    },
+    {
         "comment": "",
         "meta": {
             "range": [
-                4399,
-                4769
+                6763,
+                7133
             ],
             "filename": "animation.js",
-            "lineno": 237,
+            "lineno": 304,
             "columnno": 2,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -73050,11 +73338,11 @@
         "comment": "",
         "meta": {
             "range": [
-                4434,
-                4452
+                6798,
+                6816
             ],
             "filename": "animation.js",
-            "lineno": 238,
+            "lineno": 305,
             "columnno": 8,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -73076,11 +73364,11 @@
         "comment": "",
         "meta": {
             "range": [
-                4463,
-                4466
+                6827,
+                6830
             ],
             "filename": "animation.js",
-            "lineno": 240,
+            "lineno": 307,
             "columnno": 8,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -73100,11 +73388,11 @@
         "comment": "",
         "meta": {
             "range": [
-                4517,
-                4532
+                6881,
+                6896
             ],
             "filename": "animation.js",
-            "lineno": 244,
+            "lineno": 311,
             "columnno": 8,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -73127,11 +73415,11 @@
         "comment": "",
         "meta": {
             "range": [
-                4619,
-                4637
+                6983,
+                7001
             ],
             "filename": "animation.js",
-            "lineno": 249,
+            "lineno": 316,
             "columnno": 8,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -73154,11 +73442,11 @@
         "comment": "",
         "meta": {
             "range": [
-                4777,
-                4809
+                7141,
+                7173
             ],
             "filename": "animation.js",
-            "lineno": 261,
+            "lineno": 328,
             "columnno": 0,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -73180,11 +73468,11 @@
         "comment": "",
         "meta": {
             "range": [
-                4811,
-                4833
+                7175,
+                7197
             ],
             "filename": "animation.js",
-            "lineno": 262,
+            "lineno": 329,
             "columnno": 0,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -73206,11 +73494,11 @@
         "comment": "",
         "meta": {
             "range": [
-                4835,
-                4864
+                7199,
+                7228
             ],
             "filename": "animation.js",
-            "lineno": 263,
+            "lineno": 330,
             "columnno": 0,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {
@@ -73232,11 +73520,11 @@
         "comment": "",
         "meta": {
             "range": [
-                4867,
-                4892
+                7231,
+                7256
             ],
             "filename": "animation.js",
-            "lineno": 265,
+            "lineno": 332,
             "columnno": 0,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
             "code": {

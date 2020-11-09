@@ -7,6 +7,42 @@ import nullLayout from './null';
 import presetLayout from './preset';
 import randomLayout from './random';
 
+let layoutfn = ({
+
+  run: function( ){
+
+  },
+
+  stop: function( ){
+
+  },
+
+  on: function( ) {
+
+  },
+
+  promiseOn: function( ){
+
+  },
+
+  one: function( ){
+
+  },
+
+  removeListener: function( ){
+
+  },
+
+  removeAllListeners: function( ){
+    
+  },
+
+  emit: function( ){
+    
+  }
+
+})
+
 export default [
   { name: 'breadthfirst', impl: breadthfirstLayout },
   { name: 'circle', impl: circleLayout },

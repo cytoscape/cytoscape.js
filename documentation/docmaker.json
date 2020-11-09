@@ -230,11 +230,11 @@
         },
         {
             "name": "Core",
-            "md": "core/core",
+            "md": "cy/core",
             "sections": [
                 {
                     "name": "Initialisation",
-                    "md": "core/init"
+                    "md": "cy/init"
                 },
                 {
                     "name": "Graph manipulation",
@@ -270,7 +270,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "cy/add"
                         },
                         {
                             "name": "cy.remove",
@@ -294,7 +295,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "cy/remove"
                         },
                         {
                             "name": "cy.collection",
@@ -303,7 +305,8 @@
                                 {
                                     "descr": "Get an empty collection."
                                 }
-                            ]
+                            ],
+                            "md": "cy/collection"
                         },
                         {
                             "name": "cy.getElementById",
@@ -321,7 +324,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "cy/getElementById"
                         },
                         {
                             "name": "cy.$",
@@ -425,7 +429,8 @@
                                     "name": "cy.endBatch",
                                     "descr": "Ends batching manually (useful for asynchronous cases)."
                                 }
-                            ]
+                            ],
+                            "md": "cy/batch"
                         },
                         {
                             "name": "cy.mount",
@@ -440,15 +445,18 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "cy/mount"
                         },
                         {
                             "name": "cy.unmount",
-                            "descr": "Remove the instance from its current container."
+                            "descr": "Remove the instance from its current container.",
+                            "md": "cy/unmount"
                         },
                         {
                             "name": "cy.destroy",
-                            "descr": "A convenience function to explicitly destroy the instance."
+                            "descr": "A convenience function to explicitly destroy the instance.",
+                            "md": "cy/destroy"
                         },
                         {
                             "name": "cy.destroyed",
@@ -615,7 +623,7 @@
                                     ]
                                 }
                             ],
-                            "md": "core/on"
+                            "md": "cy/on"
                         },
                         {
                             "name": "cy.promiseOn",
@@ -638,7 +646,7 @@
                                     ]
                                 }
                             ],
-                            "md": "core/promiseOn"
+                            "md": "cy/promiseOn"
                         },
                         {
                             "name": "cy.one",
@@ -668,7 +676,7 @@
                                     ]
                                 }
                             ],
-                            "md": "core/one"
+                            "md": "cy/one"
                         },
                         {
                             "name": "cy.removeListener",
@@ -698,7 +706,7 @@
                                     ]
                                 }
                             ],
-                            "md": "core/removeListener"
+                            "md": "cy/removeListener"
                         },
                         {
                             "name": "cy.removeAllListeners",
@@ -725,7 +733,7 @@
                                     ]
                                 }
                             ],
-                            "md": "core/emit"
+                            "md": "cy/emit"
                         },
                         {
                             "name": "cy.ready",
@@ -775,7 +783,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "cy/center"
                         },
                         {
                             "name": "cy.fit",
@@ -797,11 +806,13 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "cy/fit"
                         },
                         {
                             "name": "cy.reset",
-                            "descr": "Reset the graph to the default zoom level and panning position."
+                            "descr": "Reset the graph to the default zoom level and panning position.",
+                            "md": "cy/reset"
                         },
                         {
                             "name": "cy.pan",
@@ -819,7 +830,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "cy/pan"
                         },
                         {
                             "name": "cy.panBy",
@@ -834,7 +846,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "cy/panBy"
                         },
                         {
                             "name": "cy.panningEnabled",
@@ -852,7 +865,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "cy/panningEnabled"
                         },
                         {
                             "name": "cy.userPanningEnabled",
@@ -870,7 +884,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "cy/userPanningEnabled"
                         },
                         {
                             "name": "cy.zoom",
@@ -911,7 +926,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "cy/zoom"
                         },
                         {
                             "name": "cy.zoomingEnabled",
@@ -929,7 +945,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "cy/zoomingEnabled"
                         },
                         {
                             "name": "cy.userZoomingEnabled",
@@ -947,7 +964,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "cy/userZoomingEnabled"
                         },
                         {
                             "name": "cy.minZoom",
@@ -1002,7 +1020,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "cy/viewport"
                         },
                         {
                             "name": "cy.boxSelectionEnabled",
@@ -1020,7 +1039,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "cy/boxSelectionEnabled"
                         },
                         {
                             "name": "cy.selectionType",
@@ -1050,7 +1070,8 @@
                         },
                         {
                             "name": "cy.extent",
-                            "descr": "Get the extent of the viewport, a bounding box in model co-ordinates that lets you know what model positions are visible in the viewport."
+                            "descr": "Get the extent of the viewport, a bounding box in model co-ordinates that lets you know what model positions are visible in the viewport.",
+                            "md": "cy/extent"
                         },
                         {
                             "name": "cy.autolock",
@@ -1068,7 +1089,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "cy/autolock"
                         },
                         {
                             "name": "cy.autoungrabify",
@@ -1086,7 +1108,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "cy/autoungrabify"
                         },
                         {
                             "name": "cy.autounselectify",
@@ -1104,7 +1127,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "cy/autounselectify"
                         },
                         {
                             "name": "cy.resize",
@@ -1112,7 +1136,7 @@
                                 "cy.invalidateDimensions"
                             ],
                             "descr": "Force the renderer to recalculate the viewport bounds.",
-                            "md": "core/resize"
+                            "md": "cy/resize"
                         }
                     ]
                 },
@@ -1208,7 +1232,7 @@
                                     ]
                                 }
                             ],
-                            "md": "core/animate"
+                            "md": "cy/animate"
                         },
                         {
                             "name": "cy.animation",
@@ -1309,7 +1333,7 @@
                                     ]
                                 }
                             ],
-                            "md": "core/delay"
+                            "md": "cy/delay"
                         },
                         {
                             "name": "cy.delayAnimation",
@@ -1342,7 +1366,7 @@
                                     ]
                                 }
                             ],
-                            "md": "core/stop"
+                            "md": "cy/stop"
                         },
                         {
                             "name": "cy.clearQueue",
@@ -1370,7 +1394,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "cy/layout"
                         }
                     ]
                 },
@@ -1393,7 +1418,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "cy/style"
                         }
                     ]
                 },
@@ -1439,7 +1465,7 @@
                                     ]
                                 }
                             ],
-                            "md": "core/png"
+                            "md": "cy/png"
                         },
                         {
                             "name": "cy.jpg",
@@ -1487,7 +1513,7 @@
                                     ]
                                 }
                             ],
-                            "md": "core/jpg"
+                            "md": "cy/jpg"
                         },
                         {
                             "name": "cy.json",
@@ -1511,7 +1537,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "cy/json"
                         }
                     ]
                 }
@@ -2562,7 +2589,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "collection/layout"
                         },
                         {
                             "name": "nodes.layoutPositions",
@@ -2596,7 +2624,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "collection/layoutPositions"
                         },
                         {
                             "name": "node.layoutDimensions",
@@ -2612,7 +2641,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "collection/layoutDimensions"
                         }
                     ]
                 },
@@ -2668,7 +2698,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "collection/addClass"
                         },
                         {
                             "name": "eles.removeClass",
@@ -2683,7 +2714,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "collection/removeClass"
                         },
                         {
                             "name": "eles.toggleClass",
@@ -2703,7 +2735,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "collection/toggleClass"
                         },
                         {
                             "name": "eles.classes",
@@ -2727,7 +2760,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "collection/classes"
                         },
                         {
                             "name": "eles.flashClass",
@@ -2747,7 +2781,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "collection/flashClass"
                         },
                         {
                             "name": "ele.hasClass",
@@ -2824,7 +2859,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "collection/style"
                         },
                         {
                             "name": "ele.numericStyle",
@@ -2839,7 +2875,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "collection/numericStyle"
                         },
                         {
                             "name": "ele.numericStyleUnits",
@@ -2854,7 +2891,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "collection/numericStyleUnits"
                         },
                         {
                             "name": "ele.visible",
@@ -3054,7 +3092,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "collection/same"
                         },
                         {
                             "name": "eles.anySame",
@@ -3069,7 +3108,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "collection/anySame"
                         },
                         {
                             "name": "eles.contains",
@@ -3087,7 +3127,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "collection/contains"
                         },
                         {
                             "name": "eles.allAreNeighbors",
@@ -3105,7 +3146,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "collection/allAreNeighbors"
                         },
                         {
                             "name": "eles.is",
@@ -3120,7 +3162,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "collection/is"
                         },
                         {
                             "name": "eles.allAre",
@@ -3135,7 +3178,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "collection/allAre"
                         },
                         {
                             "name": "eles.some",
@@ -3169,7 +3213,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "collection/some"
                         },
                         {
                             "name": "eles.every",
@@ -3203,7 +3248,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "collection/every"
                         }
                     ]
                 },
@@ -3212,7 +3258,8 @@
                     "fns": [
                         {
                             "name": "eles.size",
-                            "descr": "Get the number of elements in the collection."
+                            "descr": "Get the number of elements in the collection.",
+                            "md": "collection/size"
                         },
                         {
                             "name": "eles.empty",
@@ -3263,7 +3310,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "collection/forEach"
                         },
                         {
                             "name": "eles.eq",
@@ -3287,7 +3335,8 @@
                                     "name": "eles.last",
                                     "descr": "Get the last element in the collection."
                                 }
-                            ]
+                            ],
+                            "md": "collection/eq"
                         },
                         {
                             "name": "eles.slice",
@@ -3488,7 +3537,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "collection/diff"
                         },
                         {
                             "name": "eles.merge",
@@ -3535,7 +3585,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "collection/unmerge"
                         },
                         {
                             "name": "eles.filter",
@@ -3614,7 +3665,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "collection/sort"
                         },
                         {
                             "name": "eles.map",
@@ -3648,7 +3700,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "collection/map"
                         },
                         {
                             "name": "eles.reduce",
@@ -3681,7 +3734,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "collection/reduce"
                         },
                         {
                             "name": "eles.min",
@@ -3715,7 +3769,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "collection/min"
                         },
                         {
                             "name": "eles.max",
@@ -3749,7 +3804,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "collection/max"
                         }
                     ]
                 },
@@ -3921,7 +3977,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "collection/source"
                         },
                         {
                             "name": "edges.sources",
@@ -3953,7 +4010,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "collection/target"
                         },
                         {
                             "name": "edges.targets",
@@ -4049,7 +4107,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "collection/outgoers"
                         },
                         {
                             "name": "nodes.successors",
@@ -4065,7 +4124,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "collection/successors"
                         },
                         {
                             "name": "nodes.incomers",
@@ -4081,7 +4141,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "collection/incomers"
                         },
                         {
                             "name": "nodes.predecessors",
@@ -4097,7 +4158,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "collection/predecessors"
                         }
                     ]
                 },
@@ -5194,7 +5256,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "collection/commonAncestors"
                         },
                         {
                             "name": "nodes.orphans",
@@ -5518,8 +5581,8 @@
                             "pureAliases": [
                                 "ani.run"
                             ],
-                            "descr": "Requests that the animation be played, starting on the next frame.  If the animation is complete, it restarts from the beginning.",
-                            "md": "animation/play"
+                            "descr": "Requests that the animation be played, starting on the next frame. If the animation is complete, it restarts from the beginning.",
+                            "md": "ani/play"
                         },
                         {
                             "name": "ani.playing",
@@ -5569,16 +5632,17 @@
                                     "descr": "Fastforward the animation to the end."
                                 }
                             ],
-                            "md": "animation/progress"
+                            "md": "ani/progress"
                         },
                         {
                             "name": "ani.pause",
                             "descr": "Pause the animation, maintaining the current progress.",
-                            "md": "animation/pause"
+                            "md": "ani/pause"
                         },
                         {
                             "name": "ani.stop",
-                            "descr": "Stop the animation, maintaining the current progress and removing the animation from any associated queues."
+                            "descr": "Stop the animation, maintaining the current progress and removing the animation from any associated queues.",
+                            "md": "ani/stop"
                         },
                         {
                             "name": "ani.completed",
@@ -5590,7 +5654,7 @@
                         {
                             "name": "ani.apply",
                             "descr": "Apply the animation at its current progress.",
-                            "md": "animation/apply"
+                            "md": "ani/apply"
                         },
                         {
                             "name": "ani.applying",
@@ -5599,7 +5663,7 @@
                         {
                             "name": "ani.reverse",
                             "descr": "Reverse the animation such that its starting conditions and ending conditions are reversed.",
-                            "md": "animation/reverse"
+                            "md": "ani/reverse"
                         },
                         {
                             "name": "ani.promise",
@@ -5618,7 +5682,7 @@
                                     ]
                                 }
                             ],
-                            "md": "animation/promise"
+                            "md": "ani/promise"
                         }
                     ]
                 }

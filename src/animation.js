@@ -82,6 +82,12 @@ util.extend( anifn, {
     return this;
   },
 
+  /**
+ * Requests that the animation be played, starting on the next frame. If the animation is complete, it restarts from the beginning.
+ * @memberof ani
+ * @alias ani.run
+ * @namespace ani.play
+ */
   play: function(){
     let _p = this._private;
 
@@ -101,10 +107,21 @@ util.extend( anifn, {
     return this;
   },
 
+  /**
+ * Get whether the animation is currently playing.
+ * @memberof ani
+ * @alias ani.running
+ * @namespace ani.playing
+ */
   playing: function(){
     return this._private.playing;
   },
 
+  /**
+ * Apply the animation at its current progress.
+ * @memberof ani
+ * @namespace ani.apply
+ */
   apply: function(){
     let _p = this._private;
 
@@ -119,10 +136,20 @@ util.extend( anifn, {
     return this;
   },
 
+  /**
+ * Get whether the animation is currently applying.
+ * @memberof ani
+ * @namespace ani.applying
+ */
   applying: function(){
     return this._private.applying;
   },
 
+  /**
+ * Pause the animation, maintaining the current progress.
+ * @memberof ani
+ * @namespace ani.pause
+ */
   pause: function(){
     let _p = this._private;
 
@@ -165,6 +192,23 @@ util.extend( anifn, {
     }
   },
 
+  /**
+ * @typedef {object} ani_progress
+ * @property {object} NULL
+ * @property {object} progress - The progress in percent (i.e. between 0 and 1 inclusive) to set to the animation.
+ * @property {object} NULL
+ * @property {object} time - The progress in milliseconds (i.e. between 0 and the duration inclusive) to set to the animation.
+ * @property {object} NULL
+ * @property {object} NULL
+ */
+
+  /**
+ * Get or set how far along the animation has progressed.
+ * @memberof ani
+ * @sub_functions ani.progress|ani.progress|ani.time|ani.time|ani.rewind|ani.fastforward
+ * @param {...ani_progress} x - Get the progress of the animation in percent. | Set the progress of the animation in percent. | Get the progress of the animation in milliseconds. | Set the progress of the animation in milliseconds. | Rewind the animation to the beginning. | Fastforward the animation to the end.
+ * @namespace ani.progress
+ */
   progress: function( p ){
     let _p = this._private;
     let wasPlaying = _p.playing;
@@ -187,10 +231,21 @@ util.extend( anifn, {
     return this;
   },
 
+  /**
+ * Get whether the animation has progressed to the end.
+ * @memberof ani
+ * @alias ani.complete
+ * @namespace ani.completed
+ */
   completed: function(){
     return this._private.progress === 1;
   },
 
+  /**
+ * Reverse the animation such that its starting conditions and ending conditions are reversed.
+ * @memberof ani
+ * @namespace ani.reverse
+ */
   reverse: function(){
     let _p = this._private;
     let wasPlaying = _p.playing;
@@ -234,6 +289,18 @@ util.extend( anifn, {
     return this;
   },
 
+  /**
+ * @typedef {object} ani_promise
+ * @property {object} NULL
+ * @property {object} animationEvent -  A string for the event name; `completed` or `complete` for completing the animation or `frame` for the next frame of the animation.
+ */
+
+  /**
+ * Get a promise that is fulfilled with the specified animation event.
+ * @memberof ani
+ * @param {...ani_promise} x - Get a promise that is fulfilled with the next `completed` event. | Get a promise that is fulfilled with the specified animation event.
+ * @namespace ani.promise
+ */
   promise: function( type ){
     let _p = this._private;
 

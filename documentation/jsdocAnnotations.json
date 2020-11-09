@@ -21,7 +21,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "collection/classes"
     },
     {
         "name": "eles.addClass",
@@ -36,7 +37,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "collection/addClass"
     },
     {
         "name": "eles.hasClass",
@@ -51,7 +53,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "collection/hasClass"
     },
     {
         "name": "eles.toggleClass",
@@ -71,7 +74,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "collection/toggleClass"
     },
     {
         "name": "eles.removeClass",
@@ -86,7 +90,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "collection/removeClass"
     },
     {
         "name": "eles.flashClass",
@@ -106,7 +111,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "collection/flashClass"
     },
     {
         "name": "eles.allAre",
@@ -121,7 +127,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "collection/allAre"
     },
     {
         "name": "eles.is",
@@ -136,7 +143,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "collection/is"
     },
     {
         "name": "eles.some",
@@ -170,7 +178,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "collection/some"
     },
     {
         "name": "eles.every",
@@ -204,7 +213,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "collection/every"
     },
     {
         "name": "eles.same",
@@ -219,7 +229,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "collection/same"
     },
     {
         "name": "eles.anySame",
@@ -234,7 +245,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "collection/anySame"
     },
     {
         "name": "eles.allAreNeighbors",
@@ -252,7 +264,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "collection/allAreNeighbors"
     },
     {
         "name": "eles.contains",
@@ -270,7 +283,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "collection/contains"
     },
     {
         "name": "nodes.parent",
@@ -302,7 +316,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "collection/commonAncestors"
     },
     {
         "name": "nodes.orphans",
@@ -406,7 +421,8 @@
             "eles.abscomp",
             "eles.complement"
         ],
-        "descr": "Get all elements in the graph that are not in the calling collection."
+        "descr": "Get all elements in the graph that are not in the calling collection.",
+        "md": "collection/absoluteComplement"
     },
     {
         "name": "eles.diff",
@@ -430,7 +446,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "collection/diff"
     },
     {
         "name": "eles.unmerge",
@@ -454,7 +471,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "collection/unmerge"
     },
     {
         "name": "eles.map",
@@ -488,7 +506,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "collection/map"
     },
     {
         "name": "eles.reduce",
@@ -521,7 +540,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "collection/reduce"
     },
     {
         "name": "eles.max",
@@ -555,7 +575,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "collection/max"
     },
     {
         "name": "eles.min",
@@ -589,7 +610,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "collection/min"
     },
     {
         "name": "nodes.isNode",
@@ -609,7 +631,8 @@
     },
     {
         "name": "nodes.group",
-        "descr": "Get the group string that defines the type of the element."
+        "descr": "Get the group string that defines the type of the element.",
+        "md": "collection/group"
     },
     {
         "name": "eles.forEach",
@@ -646,7 +669,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "collection/forEach"
     },
     {
         "name": "nodes.toArray",
@@ -675,7 +699,8 @@
     },
     {
         "name": "eles.size",
-        "descr": "Get the number of elements in the collection."
+        "descr": "Get the number of elements in the collection.",
+        "md": "collection/size"
     },
     {
         "name": "eles.eq",
@@ -699,7 +724,8 @@
                 "name": "eles.last",
                 "descr": "Get the last element in the collection."
             }
-        ]
+        ],
+        "md": "collection/eq"
     },
     {
         "name": "eles.empty",
@@ -728,7 +754,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "collection/sort"
     },
     {
         "name": "node.layoutDimensions",
@@ -744,7 +771,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "collection/layoutDimensions"
     },
     {
         "name": "nodes.layoutPositions",
@@ -778,7 +806,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "collection/layoutPositions"
     },
     {
         "name": "eles.layout",
@@ -797,7 +826,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "collection/layout"
     },
     {
         "name": "ele.numericStyle",
@@ -812,7 +842,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "collection/numericStyle"
     },
     {
         "name": "ele.numericStyleUnits",
@@ -827,7 +858,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "collection/numericStyleUnits"
     },
     {
         "name": "eles.style",
@@ -889,7 +921,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "collection/style"
     },
     {
         "name": "ele.effectiveOpacity",
@@ -945,7 +978,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "collection/outgoers"
     },
     {
         "name": "nodes.successors",
@@ -961,7 +995,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "collection/successors"
     },
     {
         "name": "nodes.incomers",
@@ -977,7 +1012,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "collection/incomers"
     },
     {
         "name": "nodes.predecessors",
@@ -993,7 +1029,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "collection/predecessors"
     },
     {
         "name": "edge.source",
@@ -1009,7 +1046,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "collection/source"
     },
     {
         "name": "edge.target",
@@ -1025,7 +1063,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "collection/target"
     },
     {
         "name": "edge.sources",
@@ -1041,7 +1080,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "collection/sources"
     },
     {
         "name": "edge.targets",
@@ -1057,7 +1097,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "collection/targets"
     },
     {
         "name": "cy.add",
@@ -1090,7 +1131,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "cy/add"
     },
     {
         "name": "cy.remove",
@@ -1114,7 +1156,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "cy/remove"
     },
     {
         "name": "cy.destroyed",
@@ -1142,7 +1185,8 @@
     },
     {
         "name": "cy.destroy",
-        "descr": "A convenience function to explicitly destroy the instance."
+        "descr": "A convenience function to explicitly destroy the instance.",
+        "md": "cy/destroy"
     },
     {
         "name": "cy.getElementById",
@@ -1160,7 +1204,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "cy/getElementById"
     },
     {
         "name": "cy.container",
@@ -1179,11 +1224,13 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "cy/mount"
     },
     {
         "name": "cy.unmount",
-        "descr": "Remove the instance from its current container."
+        "descr": "Remove the instance from its current container.",
+        "md": "cy/unmount"
     },
     {
         "name": "cy.json",
@@ -1207,7 +1254,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "cy/json"
     },
     {
         "name": "cy.layout",
@@ -1226,7 +1274,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "cy/layout"
     },
     {
         "name": "cy.batch",
@@ -1250,7 +1299,8 @@
                 "name": "cy.endBatch",
                 "descr": "Ends batching manually (useful for asynchronous cases)."
             }
-        ]
+        ],
+        "md": "cy/batch"
     },
     {
         "name": "cy.collection",
@@ -1259,7 +1309,8 @@
             {
                 "descr": "Get an empty collection."
             }
-        ]
+        ],
+        "md": "cy/collection"
     },
     {
         "name": "cy.$",
@@ -1357,7 +1408,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "cy/style"
     },
     {
         "name": "cy.autolock",
@@ -1375,7 +1427,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "cy/autolock"
     },
     {
         "name": "cy.autoungrabify",
@@ -1393,7 +1446,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "cy/autoungrabify"
     },
     {
         "name": "cy.autounselectify",
@@ -1411,7 +1465,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "cy/autounselectify"
     },
     {
         "name": "cy.selectionType",
@@ -1447,7 +1502,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "cy/panningEnabled"
     },
     {
         "name": "cy.userPanningEnabled",
@@ -1465,7 +1521,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "cy/userPanningEnabled"
     },
     {
         "name": "cy.zoomingEnabled",
@@ -1483,7 +1540,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "cy/zoomingEnabled"
     },
     {
         "name": "cy.userZoomingEnabled",
@@ -1501,7 +1559,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "cy/userZoomingEnabled"
     },
     {
         "name": "cy.boxSelectionEnabled",
@@ -1519,7 +1578,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "cy/boxSelectionEnabled"
     },
     {
         "name": "cy.pan",
@@ -1537,7 +1597,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "cy/pan"
     },
     {
         "name": "cy.panBy",
@@ -1552,7 +1613,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "cy/panBy"
     },
     {
         "name": "cy.fit",
@@ -1574,7 +1636,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "cy/fit"
     },
     {
         "name": "cy.minZoom",
@@ -1651,7 +1714,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "cy/zoom"
     },
     {
         "name": "cy.viewport",
@@ -1670,7 +1734,8 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "cy/viewport"
     },
     {
         "name": "cy.center",
@@ -1691,11 +1756,13 @@
                     }
                 ]
             }
-        ]
+        ],
+        "md": "cy/center"
     },
     {
         "name": "cy.reset",
-        "descr": "Reset the graph to the default zoom level and panning position."
+        "descr": "Reset the graph to the default zoom level and panning position.",
+        "md": "cy/reset"
     },
     {
         "name": "cy.width",
@@ -1707,10 +1774,115 @@
     },
     {
         "name": "cy.extent",
-        "descr": "Get the extent of the viewport, a bounding box in model co-ordinates that lets you know what model positions are visible in the viewport."
+        "descr": "Get the extent of the viewport, a bounding box in model co-ordinates that lets you know what model positions are visible in the viewport.",
+        "md": "cy/extent"
+    },
+    {
+        "name": "ani.play",
+        "pureAliases": [
+            "ani.run"
+        ],
+        "descr": "Requests that the animation be played, starting on the next frame. If the animation is complete, it restarts from the beginning.",
+        "md": "ani/play"
+    },
+    {
+        "name": "ani.playing",
+        "pureAliases": [
+            "ani.running"
+        ],
+        "descr": "Get whether the animation is currently playing."
+    },
+    {
+        "name": "ani.apply",
+        "descr": "Apply the animation at its current progress.",
+        "md": "ani/apply"
+    },
+    {
+        "name": "ani.applying",
+        "descr": "Get whether the animation is currently applying."
+    },
+    {
+        "name": "ani.pause",
+        "descr": "Pause the animation, maintaining the current progress.",
+        "md": "ani/pause"
     },
     {
         "name": "ani.stop",
-        "descr": "Stop the animation, maintaining the current progress and removing the animation from any associated queues."
+        "descr": "Stop the animation, maintaining the current progress and removing the animation from any associated queues.",
+        "md": "ani/stop"
+    },
+    {
+        "name": "ani.progress",
+        "descr": "Get or set how far along the animation has progressed.",
+        "formats": [
+            {
+                "name": "ani.progress",
+                "descr": "Get the progress of the animation in percent."
+            },
+            {
+                "name": "ani.progress",
+                "descr": "Set the progress of the animation in percent.",
+                "args": [
+                    {
+                        "name": "progress",
+                        "descr": "The progress in percent (i.e. between 0 and 1 inclusive) to set to the animation."
+                    }
+                ]
+            },
+            {
+                "name": "ani.time",
+                "descr": "Get the progress of the animation in milliseconds."
+            },
+            {
+                "name": "ani.time",
+                "descr": "Set the progress of the animation in milliseconds.",
+                "args": [
+                    {
+                        "name": "time",
+                        "descr": "The progress in milliseconds (i.e. between 0 and the duration inclusive) to set to the animation."
+                    }
+                ]
+            },
+            {
+                "name": "ani.rewind",
+                "descr": "Rewind the animation to the beginning."
+            },
+            {
+                "name": "ani.fastforward",
+                "descr": "Fastforward the animation to the end."
+            }
+        ],
+        "md": "ani/progress"
+    },
+    {
+        "name": "ani.completed",
+        "pureAliases": [
+            "ani.complete"
+        ],
+        "descr": "Get whether the animation has progressed to the end."
+    },
+    {
+        "name": "ani.reverse",
+        "descr": "Reverse the animation such that its starting conditions and ending conditions are reversed.",
+        "md": "ani/reverse"
+    },
+    {
+        "name": "ani.promise",
+        "descr": "Get a promise that is fulfilled with the specified animation event.",
+        "formats": [
+            {
+                "descr": "Get a promise that is fulfilled with the next `completed` event."
+            },
+            {
+                "descr": "Get a promise that is fulfilled with the specified animation event.",
+                "args": [
+                    {
+                        "name": "animationEvent",
+                        "descr": "A string for the event name; `completed` or `complete` for completing the animation or `frame` for the next frame of the animation."
+                    }
+                ]
+            }
+        ],
+        "md": "ani/promise"
     }
 ]

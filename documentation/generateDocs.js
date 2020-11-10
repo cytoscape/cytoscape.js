@@ -4,7 +4,7 @@ var data=fs.readFileSync( path.join(__dirname, './docmaker.json'), 'utf8');
 var dockmaker_elements=JSON.parse(data);
 
 const { exec } = require('child_process');
-exec('jsdoc -X ./src/[c,d,e,u]*/*.js > ./documentation/AST/core_AST.json && jsdoc -X ./src/animation.js > ./documentation/AST/animation_AST.json', { "shell": "/bin/bash" },(err, stdout, stderr) => {
+exec('jsdoc -X ./src/[c,d,e,u]*/*.js > ./documentation/AST/core_AST.json && jsdoc -X ./src/animation.js > ./documentation/AST/animation_AST.json && jsdoc -X ./src/extensions/layout/index.js > ./documentation/AST/layout_AST.json', { "shell": "/bin/bash" },(err, stdout, stderr) => {
   if (err) {
     //some err occurred
     console.error(err)
@@ -19,16 +19,23 @@ function sleepFor( sleepDuration ){
     var now = new Date().getTime();
     while(new Date().getTime() < now + sleepDuration){ /* do nothing */ } 
 }
-sleepFor(4000)
+sleepFor(5000)
 
 var core_AST=fs.readFileSync( path.join(__dirname, './AST/core_AST.json'), 'utf8');
-var animation_AST=fs.readFileSync( path.join(__dirname, './AST/animation_AST.json'), 'utf8');
 var words=JSON.parse(core_AST);
+var animation_AST=fs.readFileSync( path.join(__dirname, './AST/animation_AST.json'), 'utf8');
 var animation_words=JSON.parse(animation_AST);
+var layout_AST=fs.readFileSync( path.join(__dirname, './AST/layout_AST.json'), 'utf8');
+var layout_words=JSON.parse(layout_AST);
 
 for(var idx in animation_words)
 {
     words.push(animation_words[idx]);
+}
+
+for(var idx in layout_words)
+{
+    words.push(layout_words[idx]);
 }
 
 fs.writeFile ( path.join(__dirname, "./jsdocAST.json"), JSON.stringify(words, null, 4), function(err) {
@@ -177,7 +184,8 @@ for(var i in words)
             var mdFiles = {
                 "ani" : [],
                 "collection" : [],
-                "cy" : []
+                "cy" : [],
+                "layout": []
             }
             const directoryPath = path.join(__dirname, 'md');           
             for( var x in mdFiles )
@@ -202,6 +210,14 @@ for(var i in words)
                 if(mdFiles["ani"].indexOf(search_md_file) != -1)
                 {
                     func.md = "ani/" + words[i].longname.split(".")[1];
+                }
+            }
+            // checking md files inside layout
+            else if(words[i].longname.split(".")[0] == "layout")
+            {
+                if(mdFiles["layout"].indexOf(search_md_file) != -1)
+                {
+                    func.md = "layout/" + words[i].longname.split(".")[1];
                 }
             }
             // checking md files inside collection
@@ -229,7 +245,7 @@ var mappings=fns;
 
 for(var i in dockmaker_elements.sections)
 {
-    if(dockmaker_elements.sections[i].name != undefined && ( dockmaker_elements.sections[i].name == 'Core' || dockmaker_elements.sections[i].name == 'Collection' || dockmaker_elements.sections[i].name == 'Animations' ))
+    if(dockmaker_elements.sections[i].name != undefined && ( dockmaker_elements.sections[i].name == 'Core' || dockmaker_elements.sections[i].name == 'Collection' || dockmaker_elements.sections[i].name == 'Animations' || dockmaker_elements.sections[i].name == 'Layouts' ))
     {
         for( var j in dockmaker_elements.sections[i].sections)
         {

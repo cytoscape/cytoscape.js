@@ -1884,5 +1884,154 @@
             }
         ],
         "md": "ani/promise"
+    },
+    {
+        "name": "layout.run",
+        "pureAliases": [
+            "layout.start"
+        ],
+        "descr": "Start running the layout.",
+        "md": "layout/run"
+    },
+    {
+        "name": "layout.stop",
+        "descr": "Stop running the (asynchronous/discrete) layout.",
+        "md": "layout/stop"
+    },
+    {
+        "name": "layout.on",
+        "pureAliases": [
+            "layout.bind",
+            "layout.listen",
+            "layout.addListener"
+        ],
+        "descr": "Listen to events that are emitted by the layout.",
+        "formats": [
+            {
+                "descr": "Listen to events.",
+                "args": [
+                    {
+                        "name": "events",
+                        "descr": "A space separated list of event names."
+                    },
+                    {
+                        "name": "data",
+                        "descr": "A plain object which is passed to the handler in the event object argument.",
+                        "optional": true
+                    },
+                    {
+                        "name": "function(event)",
+                        "fields": [
+                            {
+                                "name": "event",
+                                "descr": "The event object."
+                            }
+                        ],
+                        "descr": "The handler function that is called when one of the specified events occurs."
+                    }
+                ]
+            }
+        ],
+        "md": "layout/on"
+    },
+    {
+        "name": "layout.promiseOn",
+        "pureAliases": [
+            "layout.pon"
+        ],
+        "formats": [
+            {
+                "descr": "Get a promise that is resolved when the layout emits the first of any of the specified events.",
+                "args": [
+                    {
+                        "name": "events",
+                        "descr": "A space separated list of event names."
+                    }
+                ]
+            }
+        ],
+        "md": "layout/promiseOn"
+    },
+    {
+        "name": "layout.one",
+        "formats": [
+            {
+                "descr": "Listen to events that are emitted by the layout, and run the handler only once.",
+                "args": [
+                    {
+                        "name": "events",
+                        "descr": "A space separated list of event names."
+                    },
+                    {
+                        "name": "data",
+                        "descr": "A plain object which is passed to the handler in the event object argument.",
+                        "optional": true
+                    },
+                    {
+                        "name": "function(event)",
+                        "fields": [
+                            {
+                                "name": "event",
+                                "descr": "The event object."
+                            }
+                        ],
+                        "descr": "The handler function that is called when one of the specified events occurs."
+                    }
+                ]
+            }
+        ],
+        "md": "layout/one"
+    },
+    {
+        "name": "layout.removeListener",
+        "pureAliases": [
+            "layout.off",
+            "layout.unbind",
+            "layout.unlisten"
+        ],
+        "formats": [
+            {
+                "descr": "Remove event handlers on the layout.",
+                "args": [
+                    {
+                        "name": "events",
+                        "descr": "A space separated list of event names."
+                    },
+                    {
+                        "name": "handler",
+                        "descr": "A reference to the handler function to remove.",
+                        "optional": true
+                    }
+                ]
+            }
+        ],
+        "md": "layout/removeListener"
+    },
+    {
+        "name": "layout.removeAllListeners",
+        "descr": "Remove all event handlers on the layout."
+    },
+    {
+        "name": "layout.emit",
+        "pureAliases": [
+            "layout.trigger"
+        ],
+        "formats": [
+            {
+                "descr": "Emit one or more events on the layout.",
+                "args": [
+                    {
+                        "name": "events",
+                        "descr": "A list of event names to emit (either a space-separated string or an array)."
+                    },
+                    {
+                        "name": "extraParams",
+                        "descr": "An array of additional parameters to pass to the handler.",
+                        "optional": true
+                    }
+                ]
+            }
+        ],
+        "md": "layout/emit"
     }
 ]

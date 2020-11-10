@@ -5440,6 +5440,7 @@
                             "descr": "Listen to events that are emitted by the layout.",
                             "formats": [
                                 {
+                                    "descr": "Listen to events.",
                                     "args": [
                                         {
                                             "name": "events",
@@ -5452,13 +5453,13 @@
                                         },
                                         {
                                             "name": "function(event)",
-                                            "descr": "The handler function that is called when one of the specified events occurs.",
                                             "fields": [
                                                 {
                                                     "name": "event",
                                                     "descr": "The event object."
                                                 }
-                                            ]
+                                            ],
+                                            "descr": "The handler function that is called when one of the specified events occurs."
                                         }
                                     ]
                                 }
@@ -5470,9 +5471,9 @@
                             "pureAliases": [
                                 "layout.pon"
                             ],
-                            "descr": "Get a promise that is resolved when the layout emits the first of any of the specified events.",
                             "formats": [
                                 {
+                                    "descr": "Get a promise that is resolved when the layout emits the first of any of the specified events.",
                                     "args": [
                                         {
                                             "name": "events",
@@ -5485,9 +5486,9 @@
                         },
                         {
                             "name": "layout.one",
-                            "descr": "Listen to events that are emitted by the layout, and run the handler only once.",
                             "formats": [
                                 {
+                                    "descr": "Listen to events that are emitted by the layout, and run the handler only once.",
                                     "args": [
                                         {
                                             "name": "events",
@@ -5500,13 +5501,13 @@
                                         },
                                         {
                                             "name": "function(event)",
-                                            "descr": "The handler function that is called when one of the specified events occurs.",
                                             "fields": [
                                                 {
                                                     "name": "event",
                                                     "descr": "The event object."
                                                 }
-                                            ]
+                                            ],
+                                            "descr": "The handler function that is called when one of the specified events occurs."
                                         }
                                     ]
                                 }
@@ -5520,9 +5521,9 @@
                                 "layout.unbind",
                                 "layout.unlisten"
                             ],
-                            "descr": "Remove event handlers on the layout.",
                             "formats": [
                                 {
+                                    "descr": "Remove event handlers on the layout.",
                                     "args": [
                                         {
                                             "name": "events",
@@ -5547,9 +5548,9 @@
                             "pureAliases": [
                                 "layout.trigger"
                             ],
-                            "descr": "Emit one or more events on the layout.",
                             "formats": [
                                 {
+                                    "descr": "Emit one or more events on the layout.",
                                     "args": [
                                         {
                                             "name": "events",

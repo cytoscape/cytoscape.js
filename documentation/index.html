@@ -670,7 +670,12 @@
 </ul>
 <h2 id="introduction/releases">Releases <a href="#introduction/releases"><span class="fa fa-bookmark"></span></a></h2>
 <ul>
+<li>3.17<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.17.0+is%3Aclosed">3.17.0</a></li>
+</ul>
+</li>
 <li>3.16<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.16.4+is%3Aclosed">3.16.4</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.16.3+is%3Aclosed">3.16.3</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.16.2+is%3Aclosed">3.16.2</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.16.1+is%3Aclosed">3.16.1</a></li>
@@ -678,7 +683,8 @@
 </ul>
 </li>
 <li>3.15<ul>
-<li>[3.15.4(<a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.15.4+is%3Aclosed">https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.15.4+is%3Aclosed</a>)</li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.15.5+is%3Aclosed">3.15.5</a></li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.15.4+is%3Aclosed">3.15.4</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.15.3+is%3Aclosed">3.15.3</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.15.2+is%3Aclosed">3.15.2</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.15.1+is%3Aclosed">3.15.1</a></li>
@@ -1097,7 +1103,13 @@
 
       <span class="hljs-attr">pannable</span>: <span class="hljs-literal">false</span>, <span class="hljs-comment">// whether dragging the node causes panning instead of grabbing</span>
 
-      <span class="hljs-attr">classes</span>: [<span class="hljs-string">'foo'</span>, <span class="hljs-string">'bar'</span>] <span class="hljs-comment">// an array (or a space separated string) of class names that the element has</span>
+      <span class="hljs-attr">classes</span>: [<span class="hljs-string">'foo'</span>, <span class="hljs-string">'bar'</span>], <span class="hljs-comment">// an array (or a space separated string) of class names that the element has</span>
+
+      <span class="hljs-comment">// DO NOT USE THE `style` FIELD UNLESS ABSOLUTELY NECESSARY</span>
+      <span class="hljs-comment">// USE THE STYLESHEET INSTEAD</span>
+      <span class="hljs-attr">style</span>: { <span class="hljs-comment">// style property overrides </span>
+        <span class="hljs-string">'background-color'</span>: <span class="hljs-string">'red'</span>
+      }
     },
 
     { <span class="hljs-comment">// node n2</span>

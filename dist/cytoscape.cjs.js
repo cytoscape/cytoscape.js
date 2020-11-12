@@ -1232,7 +1232,7 @@ var Element = function Element(cy, params) {
   var bypass = params.style || params.css;
 
   if (bypass) {
-    warn('Setting a `style` bypass at element creation is deprecated');
+    warn('Setting a `style` bypass at element creation should be done only when absolutely necessary.  Try to use the stylesheet instead.');
     this.style(bypass);
   }
 
@@ -27306,7 +27306,7 @@ ETCp.getElement = function (ele, bb, pxRatio, lvl, reason) {
   var zoom = r.cy.zoom();
   var lookup = this.lookup;
 
-  if (bb.w === 0 || bb.h === 0 || isNaN(bb.w) || isNaN(bb.h) || !ele.visible()) {
+  if (!bb || bb.w === 0 || bb.h === 0 || isNaN(bb.w) || isNaN(bb.h) || !ele.visible() || !ele.removed()) {
     return null;
   }
 
@@ -31579,7 +31579,7 @@ sheetfn.appendToStyle = function (style) {
   return style;
 };
 
-var version = "3.16.3";
+var version = "3.16.4";
 
 var cytoscape = function cytoscape(options) {
   // if no options specified, use default

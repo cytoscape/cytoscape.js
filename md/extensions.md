@@ -38,6 +38,7 @@ The extensions below are a curated list.  To add your extension, [please submit 
  * <i class="fa fa-fw fa-user"></i> [`grid-guide`](https://github.com/iVis-at-Bilkent/cytoscape.js-grid-guide) : Adds grid and snapping functionality to Cytoscape graphs
  * <i class="fa fa-fw fa-users"></i> [`lasso`](https://github.com/zakjan/cytoscape-lasso) : Lasso selection UI
  * <i class="fa fa-fw fa-users"></i> [`layers`](https://github.com/sgratzl/cytoscape.js-layers) : Simplifies the creation and management of additional layers in SVG, HTML, or Canvas format with additional utilities to render elements per node or edge.
+ * <i class="fa fa-fw fa-users"></i> [`mapbox-gl`](https://github.com/zakjan/cytoscape-mapbox-gl) : Display a Cytoscape graph on top of a Mapbox GL map.
  * <i class="fa fa-fw fa-user"></i> [`navigator`](https://github.com/cytoscape/cytoscape.js-navigator) : A bird's eye view widget of the graph.
  * <i class="fa fa-fw fa-users"></i> [`no-overlap`](https://mo0om.github.io/cytoscape-no-overlap) : Prevents nodes from overlapping on drag.
  * <i class="fa fa-fw fa-users"></i> [`node-html-label`](https://github.com/kaluginserg/cytoscape-node-html-label) : Allows HTML to be specified as the labels for nodes.

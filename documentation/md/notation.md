@@ -118,7 +118,13 @@ cytoscape({
 
       pannable: false, // whether dragging the node causes panning instead of grabbing
 
-      classes: ['foo', 'bar'] // an array (or a space separated string) of class names that the element has
+      classes: ['foo', 'bar'], // an array (or a space separated string) of class names that the element has
+
+      // DO NOT USE THE `style` FIELD UNLESS ABSOLUTELY NECESSARY
+      // USE THE STYLESHEET INSTEAD
+      style: { // style property overrides 
+        'background-color': 'red'
+      }
     },
 
     { // node n2

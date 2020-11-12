@@ -27320,7 +27320,7 @@ ETCp.getElement = function (ele, bb, pxRatio, lvl, reason) {
   var zoom = r.cy.zoom();
   var lookup = this.lookup;
 
-  if (bb.w === 0 || bb.h === 0 || isNaN(bb.w) || isNaN(bb.h) || !ele.visible()) {
+  if (!bb || bb.w === 0 || bb.h === 0 || isNaN(bb.w) || isNaN(bb.h) || !ele.visible() || !ele.removed()) {
     return null;
   }
 
@@ -31593,7 +31593,7 @@ sheetfn.appendToStyle = function (style) {
   return style;
 };
 
-var version = "3.15.4";
+var version = "3.15.5";
 
 var cytoscape = function cytoscape(options) {
   // if no options specified, use default

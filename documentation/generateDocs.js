@@ -26,7 +26,7 @@ for(var idx in layout_words)
     words.push(layout_words[idx]);
 }
 
-fs.writeFile ( path.join(__dirname, "./jsdocAST.json"), JSON.stringify(words, null, 4), function(err) {
+fs.writeFileSync( path.join(__dirname, "./jsdocAST.json"), JSON.stringify(words, null, 4), function(err) {
     if (err) throw err;
     console.log('complete');
 });
@@ -224,7 +224,7 @@ for(var i in words)
 }
 
 // save generated file
-fs.writeFile ( path.join(__dirname, "./jsdocAnnotations.json"), JSON.stringify(fns, null, 4), function(err) {
+fs.writeFileSync( path.join(__dirname, "./jsdocAnnotations.json"), JSON.stringify(fns, null, 4), function(err) {
     if (err) throw err;
     console.log('complete');
 });
@@ -256,7 +256,7 @@ for(var i in dockmaker_elements.sections)
 }
 
 // save generated file
-fs.writeFile ( path.join(__dirname, "./docmaker.json"), JSON.stringify(dockmaker_elements, null,4), function(err) {
+fs.writeFileSync( path.join(__dirname, "./docmaker.json"), JSON.stringify(dockmaker_elements, null,4), function(err) {
     if (err) throw err;
     console.log('complete');
 });

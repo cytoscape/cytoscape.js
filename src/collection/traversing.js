@@ -2,6 +2,9 @@ import * as util from '../util';
 import * as is from '../is';
 import cache from './cache-traversal-call';
 
+/**
+ * @class edge
+ */
 let elesfn = {};
 
 // DAG functions

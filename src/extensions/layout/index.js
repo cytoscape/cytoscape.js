@@ -7,6 +7,9 @@ import nullLayout from './null';
 import presetLayout from './preset';
 import randomLayout from './random';
 
+/**
+ * @class layout
+ */
 let layoutfn = ({
   /**
    * Start running the layout.

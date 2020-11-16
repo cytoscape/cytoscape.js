@@ -1,6 +1,9 @@
 import Set from '../set';
 import * as is from '../is';
 
+/**
+ * @class eles
+ */
 let elesfn = ({
 
   /**

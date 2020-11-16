@@ -37,6 +37,9 @@ function cachePrototypeStyleFunction( key, fn ){
   };
 }
 
+/**
+ * @class ele
+ */
 let elesfn = ({
 
   recalculateRenderedStyle: function( useCache ){

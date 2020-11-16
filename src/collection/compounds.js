@@ -1,6 +1,9 @@
 import Set from '../set';
 import cache from './cache-traversal-call';
 
+/**
+ * @class nodes
+ */
 let elesfn = ({
 
   /**

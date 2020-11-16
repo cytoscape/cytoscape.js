@@ -4,7 +4,7 @@ var data=fs.readFileSync( path.join(__dirname, './docmaker.json'), 'utf8');
 var dockmaker_elements=JSON.parse(data);
 
 const { exec } = require('child_process');
-exec('jsdoc -X ./src/[c,d,e,u]*/*.js > ./documentation/AST/core_AST.json && jsdoc -X ./src/animation.js > ./documentation/AST/animation_AST.json && jsdoc -X ./src/extensions/layout/index.js > ./documentation/AST/layout_AST.json', { "shell": "/bin/bash" },(err, stdout, stderr) => {
+exec('jsdoc -X ./src/[c,e,u]*/*.js > ./documentation/AST/core_AST.json && jsdoc -X ./src/animation.js > ./documentation/AST/animation_AST.json && jsdoc -X ./src/extensions/layout/index.js > ./documentation/AST/layout_AST.json', { "shell": "/bin/bash" },(err, stdout, stderr) => {
   if (err) {
     //some err occurred
     console.error(err)

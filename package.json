@@ -166,6 +166,7 @@
   },
   "dependencies": {
     "heap": "^0.2.6",
-    "lodash.debounce": "^4.0.8"
+    "lodash.debounce": "^4.0.8",
+    "tsd-jsdoc": "^2.5.0"
   }
 }

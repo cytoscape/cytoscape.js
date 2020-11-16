@@ -1,5 +1,8 @@
 import Selector from '../selector';
 
+/**
+ * @class eles
+ */
 let elesfn = ({
 
   /**

@@ -3,6 +3,9 @@ import * as util from '../util';
 import Collection from '../collection';
 import Element from '../collection/element';
 
+/**
+ * @class cy
+ */
 let corefn = {
     /**
    * @typedef {object} cy_add

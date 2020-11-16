@@ -1,13 +1,27 @@
 [
     {
+        "comment": "/**\n * @class layout\n */",
+        "meta": {
+            "filename": "index.js",
+            "lineno": 10,
+            "columnno": 0,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src/extensions/layout",
+            "code": {}
+        },
+        "kind": "class",
+        "name": "layout",
+        "longname": "layout",
+        "scope": "global"
+    },
+    {
         "comment": "",
         "meta": {
             "range": [
-                309,
-                4237
+                334,
+                4262
             ],
             "filename": "index.js",
-            "lineno": 10,
+            "lineno": 13,
             "columnno": 4,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src/extensions/layout",
             "code": {
@@ -28,7 +42,7 @@
         "comment": "/**\n   * Start running the layout.\n   * @memberof layout\n   * @alias layout.start\n   * @namespace layout.run\n   */",
         "meta": {
             "filename": "index.js",
-            "lineno": 11,
+            "lineno": 14,
             "columnno": 2,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src/extensions/layout",
             "code": {}
@@ -45,11 +59,11 @@
         "comment": "",
         "meta": {
             "range": [
-                442,
-                464
+                467,
+                489
             ],
             "filename": "index.js",
-            "lineno": 17,
+            "lineno": 20,
             "columnno": 2,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src/extensions/layout",
             "code": {
@@ -69,7 +83,7 @@
         "comment": "/**\n   * Stop running the (asynchronous/discrete) layout.\n   * @memberof layout\n   * @namespace layout.stop\n   */",
         "meta": {
             "filename": "index.js",
-            "lineno": 20,
+            "lineno": 23,
             "columnno": 2,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src/extensions/layout",
             "code": {}
@@ -85,11 +99,11 @@
         "comment": "",
         "meta": {
             "range": [
-                584,
-                607
+                609,
+                632
             ],
             "filename": "index.js",
-            "lineno": 25,
+            "lineno": 28,
             "columnno": 2,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src/extensions/layout",
             "code": {
@@ -109,7 +123,7 @@
         "comment": "/**\n * events [, data], function(event)\n * @typedef {object} layout_on_callback_type\n * @property {object} event - The event object.\n */",
         "meta": {
             "filename": "index.js",
-            "lineno": 28,
+            "lineno": 31,
             "columnno": 2,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src/extensions/layout",
             "code": {}
@@ -140,7 +154,7 @@
         "comment": "/**\n * @callback layout_on_callback\n * @property {layout_on_callback_type} function(event) - layout_on_callback_type\n */",
         "meta": {
             "filename": "index.js",
-            "lineno": 34,
+            "lineno": 37,
             "columnno": 0,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src/extensions/layout",
             "code": {}
@@ -170,7 +184,7 @@
         "comment": "/**\n * @typedef {object} layout_events_on\n * @property {object} events - A space separated list of event names.\n * @property {object} data - [optional] A plain object which is passed to the handler in the event object argument.\n * @property {function(layout_on_callback):any} layout_on_callback - The handler function that is called when one of the specified events occurs.\n */",
         "meta": {
             "filename": "index.js",
-            "lineno": 39,
+            "lineno": 42,
             "columnno": 0,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src/extensions/layout",
             "code": {}
@@ -218,7 +232,7 @@
         "comment": "/**\n * @typedef {object} layout_on\n * @property {layout_events_on} layout_events_on\n */",
         "meta": {
             "filename": "index.js",
-            "lineno": 46,
+            "lineno": 49,
             "columnno": 0,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src/extensions/layout",
             "code": {}
@@ -247,7 +261,7 @@
         "comment": "/**\n * Listen to events that are emitted by the layout.\n * @memberof layout\n * @alias layout.bind|layout.listen|layout.addListener\n * @param {...layout_on} x - Listen to events.\n * @namespace layout.on\n */",
         "meta": {
             "filename": "index.js",
-            "lineno": 51,
+            "lineno": 54,
             "columnno": 2,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src/extensions/layout",
             "code": {}
@@ -276,11 +290,11 @@
         "comment": "",
         "meta": {
             "range": [
-                1549,
-                1571
+                1574,
+                1596
             ],
             "filename": "index.js",
-            "lineno": 58,
+            "lineno": 61,
             "columnno": 2,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src/extensions/layout",
             "code": {
@@ -300,7 +314,7 @@
         "comment": "/**\n * @typedef {object} layout_promiseOn\n * @property {object} events - A space separated list of event names.\n */",
         "meta": {
             "filename": "index.js",
-            "lineno": 61,
+            "lineno": 64,
             "columnno": 0,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src/extensions/layout",
             "code": {}
@@ -330,7 +344,7 @@
         "comment": "/**\n * @memberof layout\n * @alias layout.pon\n * @param {...layout_promiseOn} x - Get a promise that is resolved when the layout emits the first of any of the specified events.\n * @namespace layout.promiseOn\n */",
         "meta": {
             "filename": "index.js",
-            "lineno": 66,
+            "lineno": 69,
             "columnno": 2,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src/extensions/layout",
             "code": {}
@@ -358,11 +372,11 @@
         "comment": "",
         "meta": {
             "range": [
-                1905,
-                1933
+                1930,
+                1958
             ],
             "filename": "index.js",
-            "lineno": 72,
+            "lineno": 75,
             "columnno": 2,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src/extensions/layout",
             "code": {
@@ -382,7 +396,7 @@
         "comment": "/**\n * events [, data], function(event)\n * @typedef {object} layout_one_callback_type\n * @property {object} event - The event object.\n */",
         "meta": {
             "filename": "index.js",
-            "lineno": 75,
+            "lineno": 78,
             "columnno": 2,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src/extensions/layout",
             "code": {}
@@ -413,7 +427,7 @@
         "comment": "/**\n * @callback layout_one_callback\n * @property {layout_one_callback_type} function(event) - layout_one_callback_type\n */",
         "meta": {
             "filename": "index.js",
-            "lineno": 81,
+            "lineno": 84,
             "columnno": 0,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src/extensions/layout",
             "code": {}
@@ -443,7 +457,7 @@
         "comment": "/**\n * @typedef {object} layout_events_one\n * @property {object} events - A space separated list of event names.\n * @property {object} data - [optional] A plain object which is passed to the handler in the event object argument.\n * @property {function(layout_one_callback):any} layout_one_callback - The handler function that is called when one of the specified events occurs.\n */",
         "meta": {
             "filename": "index.js",
-            "lineno": 86,
+            "lineno": 89,
             "columnno": 0,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src/extensions/layout",
             "code": {}
@@ -491,7 +505,7 @@
         "comment": "/**\n * @typedef {object} layout_one\n * @property {layout_events_one} layout_events_one\n */",
         "meta": {
             "filename": "index.js",
-            "lineno": 93,
+            "lineno": 96,
             "columnno": 0,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src/extensions/layout",
             "code": {}
@@ -520,7 +534,7 @@
         "comment": "/**\n * @memberof layout\n * @param {...layout_one} x - Listen to events that are emitted by the layout, and run the handler only once.\n * @namespace layout.one\n */",
         "meta": {
             "filename": "index.js",
-            "lineno": 98,
+            "lineno": 101,
             "columnno": 2,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src/extensions/layout",
             "code": {}
@@ -547,11 +561,11 @@
         "comment": "",
         "meta": {
             "range": [
-                2842,
-                2864
+                2867,
+                2889
             ],
             "filename": "index.js",
-            "lineno": 103,
+            "lineno": 106,
             "columnno": 2,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src/extensions/layout",
             "code": {
@@ -571,7 +585,7 @@
         "comment": "/**\n * @typedef {object} layout_removeListener_events_selector_handler\n * @property {object} events - A space separated list of event names.\n * @property {object} handler - [optional] A reference to the handler function to remove.\n */",
         "meta": {
             "filename": "index.js",
-            "lineno": 106,
+            "lineno": 109,
             "columnno": 2,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src/extensions/layout",
             "code": {}
@@ -610,7 +624,7 @@
         "comment": "/**\n * @typedef {object} layout_removeListener\n * @property {layout_removeListener_events_selector_handler} layout_removeListener_events_selector_handler\n */",
         "meta": {
             "filename": "index.js",
-            "lineno": 112,
+            "lineno": 115,
             "columnno": 0,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src/extensions/layout",
             "code": {}
@@ -639,7 +653,7 @@
         "comment": "/**\n * @memberof layout\n * @alias layout.off|layout.unbind|layout.unlisten\n * @param {...layout_removeListener} x - Remove event handlers on the layout.\n * @namespace layout.removeListener\n */",
         "meta": {
             "filename": "index.js",
-            "lineno": 117,
+            "lineno": 120,
             "columnno": 2,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src/extensions/layout",
             "code": {}
@@ -667,11 +681,11 @@
         "comment": "",
         "meta": {
             "range": [
-                3460,
-                3493
+                3485,
+                3518
             ],
             "filename": "index.js",
-            "lineno": 123,
+            "lineno": 126,
             "columnno": 2,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src/extensions/layout",
             "code": {
@@ -691,7 +705,7 @@
         "comment": "/**\n   * Remove all event handlers on the layout.\n   * @memberof layout\n   * @namespace layout.removeAllListeners\n   */",
         "meta": {
             "filename": "index.js",
-            "lineno": 126,
+            "lineno": 129,
             "columnno": 2,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src/extensions/layout",
             "code": {}
@@ -707,11 +721,11 @@
         "comment": "",
         "meta": {
             "range": [
-                3619,
-                3660
+                3644,
+                3685
             ],
             "filename": "index.js",
-            "lineno": 131,
+            "lineno": 134,
             "columnno": 2,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src/extensions/layout",
             "code": {
@@ -731,7 +745,7 @@
         "comment": "/**\n * @typedef {object} layout_emit_events_extraParams\n * @property {object} events - A list of event names to emit (either a space-separated string or an array).\n * @property {object} extraParams - [optional] An array of additional parameters to pass to the handler.\n */",
         "meta": {
             "filename": "index.js",
-            "lineno": 134,
+            "lineno": 137,
             "columnno": 2,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src/extensions/layout",
             "code": {}
@@ -770,7 +784,7 @@
         "comment": "/**\n * @typedef {object} layout_emit\n * @property {layout_emit_events_extraParams} layout_emit_events_extraParams\n */",
         "meta": {
             "filename": "index.js",
-            "lineno": 140,
+            "lineno": 143,
             "columnno": 0,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src/extensions/layout",
             "code": {}
@@ -799,7 +813,7 @@
         "comment": "/**\n * @memberof layout\n * @alias layout.trigger\n * @param {...layout_emit} x - Emit one or more events on the layout.\n * @namespace layout.emit\n */",
         "meta": {
             "filename": "index.js",
-            "lineno": 145,
+            "lineno": 148,
             "columnno": 2,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src/extensions/layout",
             "code": {}
@@ -827,11 +841,11 @@
         "comment": "",
         "meta": {
             "range": [
-                4210,
-                4233
+                4235,
+                4258
             ],
             "filename": "index.js",
-            "lineno": 151,
+            "lineno": 154,
             "columnno": 2,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src/extensions/layout",
             "code": {
@@ -851,11 +865,11 @@
         "comment": "",
         "meta": {
             "range": [
-                4239,
-                4600
+                4264,
+                4625
             ],
             "filename": "index.js",
-            "lineno": 157,
+            "lineno": 160,
             "columnno": 0,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src/extensions/layout",
             "code": {
@@ -875,11 +889,11 @@
         "comment": "",
         "meta": {
             "range": [
-                4260,
-                4280
+                4285,
+                4305
             ],
             "filename": "index.js",
-            "lineno": 158,
+            "lineno": 161,
             "columnno": 4,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src/extensions/layout",
             "code": {
@@ -899,11 +913,11 @@
         "comment": "",
         "meta": {
             "range": [
-                4282,
-                4306
+                4307,
+                4331
             ],
             "filename": "index.js",
-            "lineno": 158,
+            "lineno": 161,
             "columnno": 26,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src/extensions/layout",
             "code": {
@@ -923,11 +937,11 @@
         "comment": "",
         "meta": {
             "range": [
-                4314,
-                4328
+                4339,
+                4353
             ],
             "filename": "index.js",
-            "lineno": 159,
+            "lineno": 162,
             "columnno": 4,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src/extensions/layout",
             "code": {
@@ -947,11 +961,11 @@
         "comment": "",
         "meta": {
             "range": [
-                4330,
-                4348
+                4355,
+                4373
             ],
             "filename": "index.js",
-            "lineno": 159,
+            "lineno": 162,
             "columnno": 20,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src/extensions/layout",
             "code": {
@@ -971,11 +985,11 @@
         "comment": "",
         "meta": {
             "range": [
-                4356,
-                4374
+                4381,
+                4399
             ],
             "filename": "index.js",
-            "lineno": 160,
+            "lineno": 163,
             "columnno": 4,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src/extensions/layout",
             "code": {
@@ -995,11 +1009,11 @@
         "comment": "",
         "meta": {
             "range": [
-                4375,
-                4397
+                4400,
+                4422
             ],
             "filename": "index.js",
-            "lineno": 160,
+            "lineno": 163,
             "columnno": 23,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src/extensions/layout",
             "code": {
@@ -1019,11 +1033,11 @@
         "comment": "",
         "meta": {
             "range": [
-                4405,
-                4417
+                4430,
+                4442
             ],
             "filename": "index.js",
-            "lineno": 161,
+            "lineno": 164,
             "columnno": 4,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src/extensions/layout",
             "code": {
@@ -1043,11 +1057,11 @@
         "comment": "",
         "meta": {
             "range": [
-                4419,
-                4435
+                4444,
+                4460
             ],
             "filename": "index.js",
-            "lineno": 161,
+            "lineno": 164,
             "columnno": 18,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src/extensions/layout",
             "code": {
@@ -1067,11 +1081,11 @@
         "comment": "",
         "meta": {
             "range": [
-                4443,
-                4455
+                4468,
+                4480
             ],
             "filename": "index.js",
-            "lineno": 162,
+            "lineno": 165,
             "columnno": 4,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src/extensions/layout",
             "code": {
@@ -1091,11 +1105,11 @@
         "comment": "",
         "meta": {
             "range": [
-                4457,
-                4473
+                4482,
+                4498
             ],
             "filename": "index.js",
-            "lineno": 162,
+            "lineno": 165,
             "columnno": 18,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src/extensions/layout",
             "code": {
@@ -1115,11 +1129,11 @@
         "comment": "",
         "meta": {
             "range": [
-                4481,
-                4493
+                4506,
+                4518
             ],
             "filename": "index.js",
-            "lineno": 163,
+            "lineno": 166,
             "columnno": 4,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src/extensions/layout",
             "code": {
@@ -1139,11 +1153,11 @@
         "comment": "",
         "meta": {
             "range": [
-                4495,
-                4511
+                4520,
+                4536
             ],
             "filename": "index.js",
-            "lineno": 163,
+            "lineno": 166,
             "columnno": 18,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src/extensions/layout",
             "code": {
@@ -1163,11 +1177,11 @@
         "comment": "",
         "meta": {
             "range": [
-                4519,
-                4533
+                4544,
+                4558
             ],
             "filename": "index.js",
-            "lineno": 164,
+            "lineno": 167,
             "columnno": 4,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src/extensions/layout",
             "code": {
@@ -1187,11 +1201,11 @@
         "comment": "",
         "meta": {
             "range": [
-                4535,
-                4553
+                4560,
+                4578
             ],
             "filename": "index.js",
-            "lineno": 164,
+            "lineno": 167,
             "columnno": 20,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src/extensions/layout",
             "code": {
@@ -1211,11 +1225,11 @@
         "comment": "",
         "meta": {
             "range": [
-                4561,
-                4575
+                4586,
+                4600
             ],
             "filename": "index.js",
-            "lineno": 165,
+            "lineno": 168,
             "columnno": 4,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src/extensions/layout",
             "code": {
@@ -1235,11 +1249,11 @@
         "comment": "",
         "meta": {
             "range": [
-                4577,
-                4595
+                4602,
+                4620
             ],
             "filename": "index.js",
-            "lineno": 165,
+            "lineno": 168,
             "columnno": 20,
             "path": "/home/rahul/Documents/GSOD/cytoscape.js/src/extensions/layout",
             "code": {

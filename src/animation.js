@@ -51,6 +51,9 @@ let Animation = function( target, opts, opts2 ){
   this[0] = this;
 };
 
+/**
+ * @class ani
+ */
 let anifn = Animation.prototype;
 
 util.extend( anifn, {

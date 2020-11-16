@@ -6,6 +6,9 @@ const getLayoutDimensionOptions = util.defaults({
   nodeDimensionsIncludeLabels: false
 });
 
+/**
+ * @class node
+ */
 let elesfn = ({
   // Calculates and returns node dimensions { x, y } based on options given
   /**

@@ -163,8 +163,8 @@ In addition to specifying the value of a property outright, the developer may al
 
 Shape:
 
- * **`width`** : The width of the node's body.  This property can take on the special value `label` so the width is automatically based on the node's label.
- * **`height`** : The height of the node's body.  This property can take on the special value `label` so the height is automatically based on the node's label.
+ * **`width`** : The width of the node's body.
+ * **`height`** : The height of the node's body.
  * **`shape`** : The shape of the node's body.  Note that each shape fits within the specified `width` and `height`, and so you may have to adjust `width` and `height` if you desire an equilateral shape (i.e. `width !== height` for several equilateral shapes).  Only `*rectangle` shapes are supported by compounds, because the dimensions of a compound are defined by the bounding box of the children.  The following values are accepted:
     * `ellipse`
     * `triangle`
@@ -224,7 +224,7 @@ Border:
 
 Padding:
 
-A padding defines an addition to a node's dimension.  For example, `padding` adds to a node's outer (i.e. total) width and height.  This can be used to add spacing around the label of `width: label; height: label;` nodes, or it can be used to add spacing between a compound node parent and its children.
+A padding defines an addition to a node's dimension.  For example, `padding` adds to a node's outer (i.e. total) width and height.  This can be used to add spacing between a compound node parent and its children.
 
 * **`padding`** : The amount of padding around all sides of the node. Either percentage or pixel value can be specified. For example, both `50%` and `50px` are acceptable values. By default, percentage padding is calculated as a percentage of node width.
 * **`padding-relative-to`** : Determines how padding is calculated if and only if the percentage unit is used. Accepts one of the keywords specified below.
@@ -349,6 +349,7 @@ These properties affect the styling of an edge's line:
  * **`line-color`** : The colour of the edge's line.
  * **`line-style`** : The style of the edge's line; may be `solid`, `dotted`, or `dashed`.
  * **`line-cap`** : The cap style of the edge's line; may be `butt` (default), `round`, or `square`.  The cap may or may not be visible, depending on the shape of the node and the relative size of the node and edge.  Caps other than `butt` extend beyond the specified endpoint of the edge.
+ * **`line-opacity`** : The opacity of the edge's line and arrow.  Useful if you wish to have a separate opacity for the edge label versus the edge line.  Note that the opacity value of the edge element affects the effective opacity of its line and label subcomponents.
  * **`line-fill`** : The filling style of the edge's line; may be `solid` (default), `linear-gradient` (source to target), or `radial-gradient` (midpoint outwards).
  * **`line-dash-pattern`** : The `dashed` line pattern which specifies alternating lengths of lines and gaps. (e.g. `[6, 3]`).
  * **`line-dash-offset`** : The `dashed` line offset (e.g. `24`). It is useful for creating edge animations.
@@ -464,6 +465,7 @@ When a taxi edge would be impossible to draw along the regular turning plan --- 
 * **`<pos>-arrow-shape`** : The shape of the edge's source arrow ([demo](demos/edge-arrows)); may be one of:
   * `triangle`
   * `triangle-tee`
+  * `circle-triangle`
   * `triangle-cross`
   * `triangle-backcurve`
   * `vee`

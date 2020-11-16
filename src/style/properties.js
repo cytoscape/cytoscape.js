@@ -70,7 +70,7 @@ const styfn = {};
       'tag', 'round-tag', 'star', 'diamond', 'round-diamond', 'vee', 'rhomboid', 'polygon',
     ] },
     compoundIncludeLabels: { enums: [ 'include', 'exclude' ] },
-    arrowShape: { enums: [ 'tee', 'triangle', 'triangle-tee', 'triangle-cross', 'triangle-backcurve', 'vee', 'square', 'circle', 'diamond', 'chevron', 'none' ] },
+    arrowShape: { enums: [ 'tee', 'triangle', 'triangle-tee', 'circle-triangle', 'triangle-cross', 'triangle-backcurve', 'vee', 'square', 'circle', 'diamond', 'chevron', 'none' ] },
     arrowFill: { enums: [ 'filled', 'hollow' ] },
     display: { enums: [ 'element', 'none' ] },
     visibility: { enums: [ 'hidden', 'visible' ] },
@@ -156,6 +156,12 @@ const styfn = {};
     },
     any: function( val1, val2 ){
       return val1 != val2;
+    },
+    emptyNonEmpty: function( str1, str2 ){
+      const empty1 = is.emptyString(str1);
+      const empty2 = is.emptyString(str2);
+
+      return (empty1 && !empty2) || (!empty1 && empty2);
     }
   };
 
@@ -167,7 +173,7 @@ const styfn = {};
   let t = styfn.types;
 
   let mainLabel = [
-    { name: 'label', type: t.text, triggersBounds: diff.any },
+    { name: 'label', type: t.text, triggersBounds: diff.any, triggersZOrder: diff.emptyNonEmpty },
     { name: 'text-rotation', type: t.textRotation, triggersBounds: diff.any },
     { name: 'text-margin-x', type: t.bidirectionalSize, triggersBounds: diff.any },
     { name: 'text-margin-y', type: t.bidirectionalSize, triggersBounds: diff.any }
@@ -313,6 +319,7 @@ const styfn = {};
     { name: 'line-color', type: t.color },
     { name: 'line-fill', type: t.fill },
     { name: 'line-cap', type: t.lineCap },
+    { name: 'line-opacity', type: t.zeroOneNumber},
     { name: 'line-dash-pattern', type: t.numbers },
     { name: 'line-dash-offset', type: t.number },
     { name: 'line-gradient-stop-colors', type: t.colors },
@@ -643,6 +650,7 @@ styfn.getDefaultProperties = function(){
     'line-color': '#999',
     'line-fill': 'solid',
     'line-cap': 'butt',
+    'line-opacity' : 1,
     'line-gradient-stop-colors': '#999',
     'line-gradient-stop-positions': '0%',
     'control-point-step-size': 40,

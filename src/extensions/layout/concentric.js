@@ -18,7 +18,7 @@ let defaults = {
   concentric: function( node ){ // returns numeric value for each node, placing higher nodes in levels towards the centre
     return node.degree();
   },
-  levelWidth: function( nodes ){ // the letiation of concentric values in each level
+  levelWidth: function( nodes ){ // the variation of concentric values in each level
     return nodes.maxDegree() / 4;
   },
   animate: false, // whether to transition the node positions

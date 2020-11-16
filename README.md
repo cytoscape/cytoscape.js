@@ -10,7 +10,7 @@
 [![Cite](https://img.shields.io/badge/Cite-Oxford%20Bioinformatics%20Article-blue.svg)](https://js.cytoscape.org/#introduction/citation)
 [![npm](https://img.shields.io/npm/v/cytoscape.svg)](https://www.npmjs.com/package/cytoscape)
 [![Download](https://img.shields.io/npm/v/cytoscape.svg?label=Download)](https://github.com/cytoscape/cytoscape.js/tree/master/dist)
-[![Extensions](https://img.shields.io/badge/Extensions-52-blue.svg)](https://js.cytoscape.org/#extensions)
+[![Extensions](https://img.shields.io/badge/Extensions-59-blue.svg)](https://js.cytoscape.org/#extensions)
 [![npm installs](https://img.shields.io/npm/dm/cytoscape.svg?label=npm%20installs)](https://www.npmjs.com/package/cytoscape)
 [![master branch tests](https://img.shields.io/travis/cytoscape/cytoscape.js/master.svg?label=master%20branch)](https://travis-ci.org/cytoscape/cytoscape.js)
 [![unstable branch tests](https://img.shields.io/travis/cytoscape/cytoscape.js/unstable.svg?label=unstable%20branch)](https://travis-ci.org/cytoscape/cytoscape.js)
@@ -87,10 +87,10 @@ Run `npm run <target>` in the console.  The main targets are:
 
 **Building:**
 
- * `build`: do all builds of the library (unmin, min, umd)
- * `build:unmin` : do the unminified build with bundled dependencies (for simple html pages, good for novices)
+ * `build`: do all builds of the library (umd, min, umd, esm)
  * `build:min` : do the unminified build with bundled dependencies (for simple html pages, good for novices)
  * `build:umd` : do the umd (cjs/amd/globals) build
+ * `build:esm` : do the esm (ES 2015 modules) build
  * `clean` : clean the `build` directory
  * `docs` : build the docs into `documentation`
  * `release` : build all release artifacts

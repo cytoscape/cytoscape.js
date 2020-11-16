@@ -128,7 +128,7 @@ let elesfn = ({
       }
     }
     result.found = true;
-    result.trail = this.spawn( trail );
+    result.trail = this.spawn( trail, true );
     return result;
   },
 });

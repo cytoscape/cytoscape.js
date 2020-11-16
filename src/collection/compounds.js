@@ -36,7 +36,7 @@ let elesfn = ({
       }
     }
 
-    return this.spawn( parents, { unique: true } ).filter( selector );
+    return this.spawn( parents, true ).filter( selector );
   },
 
   parents: function( selector ){
@@ -52,7 +52,7 @@ let elesfn = ({
       eles = eles.parent();
     }
 
-    return this.spawn( parents, { unique: true } ).filter( selector );
+    return this.spawn( parents, true ).filter( selector );
   },
 
   /**
@@ -138,7 +138,7 @@ let elesfn = ({
       }
     }
 
-    return this.spawn( children, { unique: true } ).filter( selector );
+    return this.spawn( children, true ).filter( selector );
   }, 'children' ),
 
   /**
@@ -236,7 +236,7 @@ let elesfn = ({
 
     add( this.children() );
 
-    return this.spawn( elements, { unique: true } ).filter( selector );
+    return this.spawn( elements, true ).filter( selector );
   }
 });
 

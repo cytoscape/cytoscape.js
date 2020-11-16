@@ -76,7 +76,7 @@ styfn.applyBypass = function( eles, name, value, updateTransitions ){
         diffProp = diffProps[ prop.name ] = { prev: prevProp };
       }
 
-      ret = this.applyParsedProperty( ele, prop ) || ret;
+      ret = this.applyParsedProperty( ele, util.copy(prop) ) || ret;
 
       if( updateTransitions ){
         diffProp.next = ele.pstyle( prop.name );

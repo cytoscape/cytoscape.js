@@ -7,35 +7,39 @@
   { "data": { "id": "n3" } },
   { "data": { "id": "e1", "source": "n2", "target": "n3", "arrow": "triangle-tee" } },
 
-  { "data": { "id": "n4", "type": "triangle-cross" } },
+  { "data": { "id": "n4", "type": "circle-triangle" } },
   { "data": { "id": "n5" } },
-  { "data": { "id": "e3", "source": "n4", "target": "n5", "arrow": "triangle-cross" } },
+  { "data": { "id": "e2", "source": "n4", "target": "n5", "arrow": "circle-triangle" } },
 
-  { "data": { "id": "n6", "type": "triangle-backcurve" } },
+  { "data": { "id": "n6", "type": "triangle-cross" } },
   { "data": { "id": "n7" } },
-  { "data": { "id": "e4", "source": "n6", "target": "n7", "arrow": "triangle-backcurve" } },
+  { "data": { "id": "e3", "source": "n6", "target": "n7", "arrow": "triangle-cross" } },
 
-  { "data": { "id": "n8", "type": "vee" } },
+  { "data": { "id": "n8", "type": "triangle-backcurve" } },
   { "data": { "id": "n9" } },
-  { "data": { "id": "e5", "source": "n8", "target": "n9", "arrow": "vee" } },
+  { "data": { "id": "e4", "source": "n8", "target": "n9", "arrow": "triangle-backcurve" } },
 
-  { "data": { "id": "n10", "type": "tee" } },
+  { "data": { "id": "n10", "type": "vee" } },
   { "data": { "id": "n11" } },
-  { "data": { "id": "e6", "source": "n10", "target": "n11", "arrow": "tee" } },
+  { "data": { "id": "e5", "source": "n10", "target": "n11", "arrow": "vee" } },
 
-  { "data": { "id": "n12", "type": "square" } },
+  { "data": { "id": "n12", "type": "tee" } },
   { "data": { "id": "n13" } },
-  { "data": { "id": "e7", "source": "n12", "target": "n13", "arrow": "square" } },
+  { "data": { "id": "e6", "source": "n12", "target": "n13", "arrow": "tee" } },
 
-  { "data": { "id": "n14", "type": "circle" } },
+  { "data": { "id": "n14", "type": "square" } },
   { "data": { "id": "n15" } },
-  { "data": { "id": "e8", "source": "n14", "target": "n15", "arrow": "circle" } },
+  { "data": { "id": "e7", "source": "n14", "target": "n15", "arrow": "square" } },
 
-  { "data": { "id": "n16", "type": "diamond" } },
+  { "data": { "id": "n16", "type": "circle" } },
   { "data": { "id": "n17" } },
-  { "data": { "id": "e9", "source": "n16", "target": "n17", "arrow": "diamond" } },
+  { "data": { "id": "e8", "source": "n16", "target": "n17", "arrow": "circle" } },
 
-  { "data": { "id": "n18", "type": "none" } },
+  { "data": { "id": "n18", "type": "diamond" } },
   { "data": { "id": "n19" } },
-  { "data": { "id": "e10", "source": "n18", "target": "n19", "arrow": "none" } }
+  { "data": { "id": "e9", "source": "n18", "target": "n19", "arrow": "diamond" } },
+
+  { "data": { "id": "n20", "type": "none" } },
+  { "data": { "id": "n21" } },
+  { "data": { "id": "e10", "source": "n20", "target": "n21", "arrow": "none" } }
 ]

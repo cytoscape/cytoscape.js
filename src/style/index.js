@@ -40,14 +40,26 @@ styfn.instanceString = function(){
 
 // remove all contexts
 styfn.clear = function(){
+  let _p = this._private;
+  let cy = _p.cy;
+  let eles = cy.elements();
+
   for( let i = 0; i < this.length; i++ ){
     this[ i ] = undefined;
   }
   this.length = 0;
 
-  let _p = this._private;
+  _p.contextStyles = {};
+  _p.propDiffs = {};
 
-  _p.newStyle = true;
+  this.cleanElements( eles, true );
+
+  eles.forEach(ele => {
+    let ele_p = ele[0]._private;
+
+    ele_p.styleDirty = true;
+    ele_p.appliedInitStyle = false;
+  });
 
   return this; // chaining
 };

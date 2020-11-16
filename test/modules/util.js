@@ -100,6 +100,37 @@ describe('util', function(){
 
       expect(h1).to.not.equal(h2);
     });
+
+    // problematic for djb2
+    it('"000Q" versus "0010"', function(){
+      var h1 = hashString('000Q');
+      var h2 = hashString('0010');
+
+      expect(h1).to.not.equal(h2);
+    });
+
+    // problematic for djb2
+    it('hash is unique for random id strings', function(){
+      var ids = ["0000","0007","0005","000P","000B","0008","000G","000L","0006","000T","000V","000W","000M","000Q","000O","000F","000K","0012","000N","000X","000Y","000Z","0010","0014","0011","0013","000S"];
+      var hashes = ids.map(hashString);
+      var numUniqueHashes = (new Set(hashes)).size;
+
+      expect(numUniqueHashes).to.equal(hashes.length);
+    });
+
+    it('Long string with shared suffix', function(){
+      var h1 = hashString('Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.');
+      var h2 = hashString('Some beginning.  Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.');
+
+      expect(h1).to.not.equal(h2);
+    });
+
+    it('Long string with shared prefix', function(){
+      var h1 = hashString('Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.');
+      var h2 = hashString('Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.  Some ending.');
+
+      expect(h1).to.not.equal(h2);
+    });
   });
 
 });

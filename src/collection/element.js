@@ -3,9 +3,7 @@ import * as is from '../is';
 import Set from '../set';
 
 // represents a node or an edge
-let Element = function( cy, params, restore ){
-  restore = (restore === undefined || restore ? true : false);
-
+let Element = function( cy, params, restore = true ){
   if( cy === undefined || params === undefined || !is.core( cy ) ){
     util.error( 'An element must have a core reference and parameters set' );
     return;

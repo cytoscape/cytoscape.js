@@ -289,6 +289,7 @@ let updateBoundsFromLabel = function( bounds, ele, prefix ){
     let borderWidth = ele.pstyle( 'text-border-width' ).pfValue;
     let halfBorderWidth = borderWidth / 2;
     let padding = ele.pstyle( 'text-background-padding' ).pfValue;
+    let marginOfError = 2; // expand to work around browser dimension inaccuracies
 
     let lh = labelHeight;
     let lw = labelWidth;
@@ -338,10 +339,10 @@ let updateBoundsFromLabel = function( bounds, ele, prefix ){
     }
 
     // shift by margin and expand by outline and border
-    lx1 += marginX - Math.max( outlineWidth, halfBorderWidth ) - padding;
-    lx2 += marginX + Math.max( outlineWidth, halfBorderWidth ) + padding;
-    ly1 += marginY - Math.max( outlineWidth, halfBorderWidth ) - padding;
-    ly2 += marginY + Math.max( outlineWidth, halfBorderWidth ) + padding;
+    lx1 += marginX - Math.max( outlineWidth, halfBorderWidth ) - padding - marginOfError;
+    lx2 += marginX + Math.max( outlineWidth, halfBorderWidth ) + padding + marginOfError;
+    ly1 += marginY - Math.max( outlineWidth, halfBorderWidth ) - padding - marginOfError;
+    ly2 += marginY + Math.max( outlineWidth, halfBorderWidth ) + padding + marginOfError;
 
     // always store the unrotated label bounds separately
     let bbPrefix = prefix || 'main';
@@ -353,7 +354,6 @@ let updateBoundsFromLabel = function( bounds, ele, prefix ){
     bb.y2 = ly2;
     bb.w = lx2 - lx1;
     bb.h = ly2 - ly1;
-    expandBoundingBox(bb, 1); // expand to work around browser dimension inaccuracies
 
     let isAutorotate = ( isEdge && rotation.strValue === 'autorotate' );
     let isPfValue = ( rotation.pfValue != null && rotation.pfValue !== 0 );
@@ -745,12 +745,12 @@ let cachedBoundingBoxImpl = function( ele, opts ){
   let currPosKey = getBoundingBoxPosKey( ele );
   let isPosKeySame = _p.bbCachePosKey === currPosKey;
   let useCache = opts.useCache && isPosKeySame;
-  let isDirty = ele => ele._private.bbCache == null;
+  let isDirty = ele => ele._private.bbCache == null || ele._private.styleDirty;
   let needRecalc = !useCache || isDirty(ele) || (isEdge && isDirty(ele.source()) || isDirty(ele.target()));
 
   if( needRecalc ){
     if( !isPosKeySame ){
-      ele.recalculateRenderedStyle();
+      ele.recalculateRenderedStyle(useCache);
     }
 
     bb = boundingBoxImpl( ele, defBbOpts );
@@ -852,7 +852,7 @@ elesfn.boundingBox = function( options ){
   // the main usecase is ele.boundingBox() for a single element with no/def options
   // specified s.t. the cache is used, so check for this case to make it faster by
   // avoiding the overhead of the rest of the function
-  if( this.length === 1 && this[0]._private.bbCache != null && (options === undefined || options.useCache === undefined || options.useCache === true) ){
+  if( this.length === 1 && this[0]._private.bbCache != null && !this[0]._private.styleDirty && (options === undefined || options.useCache === undefined || options.useCache === true) ){
     if( options === undefined ){
       options = defBbOpts;
     } else {
@@ -877,7 +877,7 @@ elesfn.boundingBox = function( options ){
         let _p = ele._private;
         let currPosKey = getBoundingBoxPosKey( ele );
         let isPosKeySame = _p.bbCachePosKey === currPosKey;
-        let useCache = opts.useCache && isPosKeySame;
+        let useCache = opts.useCache && isPosKeySame && !_p.styleDirty;
 
         ele.recalculateRenderedStyle( useCache );
       }

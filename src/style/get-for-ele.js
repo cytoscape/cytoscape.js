@@ -137,7 +137,7 @@ styfn.getPropsList = function( propsObj ){
 };
 
 styfn.getNonDefaultPropertiesHash = function( ele, propNames, seed ){
-  let hash = seed;
+  let hash = seed.slice();
   let name, val, strVal, chVal;
   let i, j;
 
@@ -148,13 +148,15 @@ styfn.getNonDefaultPropertiesHash = function( ele, propNames, seed ){
     if( val == null ){
       continue;
     } else if( val.pfValue != null ){
-      hash = util.hashInt( chVal, hash );
+      hash[0] = util.hashInt( chVal, hash[0] );
+      hash[1] = util.hashIntAlt( chVal, hash[1] );
     } else {
       strVal = val.strValue;
 
       for( j = 0; j < strVal.length; j++ ){
         chVal = strVal.charCodeAt(j);
-        hash = util.hashInt( chVal, hash );
+        hash[0] = util.hashInt( chVal, hash[0] );
+        hash[1] = util.hashIntAlt( chVal, hash[1] );
       }
     }
   }

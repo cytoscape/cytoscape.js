@@ -73,6 +73,28 @@
   }
 
   test({
+    name: 'gal',
+    displayName: 'Load GAL-filtered',
+    description: 'Load an example network',
+    setup: function(){
+      cy.elements().remove();
+
+      (
+        fetch('./gal.json')
+        .then(function(res){
+          return res.json();
+        }).then(function(eleJsons){
+          cy.add(eleJsons);
+
+          cy.layout({ name: 'grid' }).run();
+
+          cy.fit();
+        })
+      );
+    }
+  });
+
+  test({
     name: "randomEdgeColors",
     displayName: "Random edge colours",
     description: "Set each edge to a random colour",

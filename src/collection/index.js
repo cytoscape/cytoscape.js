@@ -21,22 +21,9 @@ import style from './style';
 import switchFunctions from './switch-functions';
 import traversing from './traversing';
 
-// factory for generating edge ids when no id is specified for a new element
-let idFactory = {
-  generate: function( cy, element, tryThisId ){
-    let id = tryThisId != null ? tryThisId : util.uuid();
-
-    while( cy.hasElementWithId( id ) ){
-      id = util.uuid();
-    }
-
-    return id;
-  }
-};
-
 // represents a set of nodes, edges, or both together
-let Collection = function( cy, elements, options ){
-  if( cy === undefined || !is.core( cy ) ){
+let Collection = function( cy, elements, unique = false ){
+  if( cy === undefined ){
     util.error( 'A collection must have a reference to the core' );
     return;
   }
@@ -64,7 +51,7 @@ let Collection = function( cy, elements, options ){
 
       // make sure newly created elements have valid ids
       if( data.id == null ){
-        data.id = idFactory.generate( cy, json );
+        data.id = util.uuid();
       } else if( cy.hasElementWithId( data.id ) || elesIds.has( data.id ) ){
         continue; // can't create element if prior id already exists
       }
@@ -85,11 +72,13 @@ let Collection = function( cy, elements, options ){
 
     let id = element._private.data.id;
 
-    if( options == null || ( options.unique && !map.has(id) ) ){
-      map.set( id, {
-        index: this.length,
-        ele: element
-      } );
+    if( !unique || !map.has(id) ){
+      if( unique ){
+        map.set( id, {
+          index: this.length,
+          ele: element
+        } );
+      }
 
       this[ this.length ] = element;
       this.length++;
@@ -97,9 +86,33 @@ let Collection = function( cy, elements, options ){
   }
 
   this._private = {
+    eles: this,
     cy: cy,
-    map: map
+    get map(){
+      if( this.lazyMap == null ){
+        this.rebuildMap();
+      }
+
+      return this.lazyMap;
+    },
+    set map(m){
+      this.lazyMap = m;
+    },
+    rebuildMap(){
+      const m = this.lazyMap = new Map();
+      const eles = this.eles;
+
+      for( let i = 0; i < eles.length; i++ ){
+        const ele = eles[i];
+
+        m.set(ele.id(), { index: i, ele });
+      }
+    }
   };
+
+  if( unique ){
+    this._private.map = map;
+  }
 
   // restore the elements if we created them from json
   if( createdElements ){
@@ -112,20 +125,14 @@ let Collection = function( cy, elements, options ){
 
 // keep the prototypes in sync (an element has the same functions as a collection)
 // and use elefn and elesfn as shorthands to the prototypes
-let elesfn = Element.prototype = Collection.prototype;
+let elesfn = Element.prototype = Collection.prototype = Object.create(Array.prototype);
 
 elesfn.instanceString = function(){
   return 'collection';
 };
 
-elesfn.spawn = function( cy, eles, opts ){
-  if( !is.core( cy ) ){ // cy is optional
-    opts = eles;
-    eles = cy;
-    cy = this.cy();
-  }
-
-  return new Collection( cy, eles, opts );
+elesfn.spawn = function( eles, unique ){
+  return new Collection( this.cy(), eles, unique );
 };
 
 elesfn.spawnSelf = function(){
@@ -153,7 +160,7 @@ elesfn.collection = function(){
 };
 
 elesfn.unique = function(){
-  return new Collection( this._private.cy, this, { unique: true } );
+  return new Collection( this._private.cy, this, true );
 };
 
 elesfn.hasElementWithId = function( id ){
@@ -232,9 +239,10 @@ elesfn.json = function( obj ){
           ele = ele.move(spec);
         }
       } else { // parent is immutable via data()
+        let newParentValSpecd = 'parent' in obj.data;
         let parent = obj.data.parent;
 
-        if( (parent != null || data.parent != null) && parent != data.parent ){
+        if( newParentValSpecd && (parent != null || data.parent != null) && parent != data.parent ){
           if( parent === undefined ){ // can't set undefined imperatively, so use null
             parent = null;
           }
@@ -388,7 +396,7 @@ elesfn.restore = function( notifyRenderer = true, addToPool = true ){
       // already in graph, so nothing required
 
     } else if( data.id === undefined ){
-      data.id = idFactory.generate( cy, ele );
+      data.id = util.uuid();
 
     } else if( is.number( data.id ) ){
       data.id = '' + data.id; // now it's a string
@@ -525,7 +533,7 @@ elesfn.restore = function( notifyRenderer = true, addToPool = true ){
   } // for each node
 
   if( elements.length > 0 ){
-    let restored = new Collection( cy, elements );
+    let restored = elements.length === self.length ? self : new Collection( cy, elements );
 
     for( let i = 0; i < restored.length; i++ ){
       let ele = restored[i];

@@ -18,16 +18,8 @@ styfn.apply = function( eles ){
   let cy = _p.cy;
   let updatedEles = cy.collection();
 
-  if( _p.newStyle ){ // clear style caches
-    _p.contextStyles = {};
-    _p.propDiffs = {};
-
-    self.cleanElements( eles, true );
-  }
-
   for( let ie = 0; ie < eles.length; ie++ ){
     let ele = eles[ ie ];
-
     let cxtMeta = self.getContextMeta( ele );
 
     if( cxtMeta.empty ){
@@ -37,19 +29,19 @@ styfn.apply = function( eles ){
     let cxtStyle = self.getContextStyle( cxtMeta );
     let app = self.applyContextStyle( cxtMeta, cxtStyle, ele );
 
-    if( !_p.newStyle ){
+    if( ele._private.appliedInitStyle ){
       self.updateTransitions( ele, app.diffProps );
+    } else {
+      ele._private.appliedInitStyle = true;
     }
 
     let hintsDiff = self.updateStyleHints( ele );
 
     if( hintsDiff ){
-      updatedEles.merge( ele );
+      updatedEles.push( ele );
     }
 
   } // for elements
-
-  _p.newStyle = false;
 
   return updatedEles;
 };
@@ -122,10 +114,6 @@ styfn.getContextMeta = function( ele ){
   let cxtKey = '';
   let diffProps;
   let prevKey = ele._private.styleCxtKey || '';
-
-  if( self._private.newStyle ){
-    prevKey = ''; // since we need to apply all style if a fresh stylesheet
-  }
 
   // get the cxt key
   for( let i = 0; i < self.length; i++ ){
@@ -261,14 +249,23 @@ styfn.updateStyleHints = function(ele){
   for( let i = 0; i < propGrKeys.length; i++ ){
     let grKey = propGrKeys[i];
 
-    _p.styleKeys[ grKey ] = 0;
+    _p.styleKeys[ grKey ] = [ util.DEFAULT_HASH_SEED, util.DEFAULT_HASH_SEED_ALT ];
   }
 
-  let updateGrKey = (val, grKey) => _p.styleKeys[ grKey ] = util.hashInt( val, _p.styleKeys[ grKey ] );
+  let updateGrKey1 = (val, grKey) => _p.styleKeys[ grKey ][0] = util.hashInt( val, _p.styleKeys[ grKey ][0] );
+  let updateGrKey2 = (val, grKey) => _p.styleKeys[ grKey ][1] = util.hashIntAlt( val, _p.styleKeys[ grKey ][1] );
+
+  let updateGrKey = (val, grKey) => {
+    updateGrKey1(val, grKey);
+    updateGrKey2(val, grKey);
+  };
 
   let updateGrKeyWStr = (strVal, grKey) => {
     for( let j = 0; j < strVal.length; j++ ){
-      updateGrKey(strVal.charCodeAt(j), grKey);
+      let ch = strVal.charCodeAt(j);
+
+      updateGrKey1(ch, grKey);
+      updateGrKey2(ch, grKey);
     }
   };
 
@@ -306,16 +303,10 @@ styfn.updateStyleHints = function(ele){
 
     // numbers are cheaper to hash than strings
     // 1 hash op vs n hash ops (for length n string)
-    if( type.number && haveNum ){
+    if( type.number && haveNum && !type.multiple ){
       let v = haveNormNum ? normalizedNumberVal : numberVal;
 
-      if( type.multiple ){
-        for(let i = 0; i < v.length; i++){
-          updateGrKey(cleanNum(v[i]), grKey);
-        }
-      } else {
-        updateGrKey(cleanNum(v), grKey);
-      }
+      updateGrKey(cleanNum(v), grKey);
 
       if( !haveNormNum && units != null ){
         updateGrKeyWStr(units, grKey);
@@ -328,31 +319,38 @@ styfn.updateStyleHints = function(ele){
   // overall style key
   //
 
-  let hash = 0;
+  let hash = [ util.DEFAULT_HASH_SEED, util.DEFAULT_HASH_SEED_ALT ];
 
   for( let i = 0; i < propGrKeys.length; i++ ){
     let grKey = propGrKeys[i];
     let grHash = _p.styleKeys[ grKey ];
 
-    hash = util.hashInt( grHash, hash );
+    hash[0] = util.hashInt( grHash[0], hash[0] );
+    hash[1] = util.hashIntAlt( grHash[1], hash[1] );
   }
 
-  _p.styleKey = hash;
+  _p.styleKey = util.combineHashes(hash[0], hash[1]);
 
   // label dims
   //
 
-  let labelDimsKey = _p.labelDimsKey = _p.styleKeys.labelDimensions;
+  let sk = _p.styleKeys;
+  
+  _p.labelDimsKey = util.combineHashesArray(sk.labelDimensions);
 
-  _p.labelKey = propHash( ele, ['label'], labelDimsKey );
-  _p.labelStyleKey = util.hashInt( _p.styleKeys.commonLabel, _p.labelKey );
+  let labelKeys = propHash( ele, ['label'], sk.labelDimensions );
+  
+  _p.labelKey = util.combineHashesArray(labelKeys);
+  _p.labelStyleKey = util.combineHashesArray(util.hashArrays(sk.commonLabel, labelKeys));
 
   if( !isNode ){
-    _p.sourceLabelKey = propHash( ele, ['source-label'], labelDimsKey );
-    _p.sourceLabelStyleKey = util.hashInt( _p.styleKeys.commonLabel, _p.sourceLabelKey );
+    let sourceLabelKeys = propHash( ele, ['source-label'], sk.labelDimensions );
+    _p.sourceLabelKey = util.combineHashesArray(sourceLabelKeys);
+    _p.sourceLabelStyleKey = util.combineHashesArray(util.hashArrays(sk.commonLabel, sourceLabelKeys));
 
-    _p.targetLabelKey = propHash( ele, ['target-label'], labelDimsKey );
-    _p.targetLabelStyleKey = util.hashInt( _p.styleKeys.commonLabel, _p.targetLabelKey );
+    let targetLabelKeys = propHash( ele, ['target-label'], sk.labelDimensions );
+    _p.targetLabelKey = util.combineHashesArray(targetLabelKeys);
+    _p.targetLabelStyleKey = util.combineHashesArray(util.hashArrays(sk.commonLabel, targetLabelKeys));
   }
 
   // node
@@ -361,8 +359,13 @@ styfn.updateStyleHints = function(ele){
   if( isNode ){
     let { nodeBody, nodeBorder, backgroundImage, compound, pie } = _p.styleKeys;
 
-    _p.nodeKey = util.hashIntsArray([ nodeBorder, backgroundImage, compound, pie ], nodeBody);
-    _p.hasPie = pie != 0;
+    let nodeKeys = [ nodeBody, nodeBorder, backgroundImage, compound, pie ].filter(k => k != null).reduce(util.hashArrays, [
+      util.DEFAULT_HASH_SEED,
+      util.DEFAULT_HASH_SEED_ALT
+    ]);
+    _p.nodeKey = util.combineHashesArray(nodeKeys);
+    
+    _p.hasPie = pie != null && pie[0] !== util.DEFAULT_HASH_SEED && pie[1] !== util.DEFAULT_HASH_SEED_ALT;
   }
 
   return oldStyleKey !== _p.styleKey;
@@ -371,6 +374,7 @@ styfn.updateStyleHints = function(ele){
 styfn.clearStyleHints = function(ele){
   let _p = ele._private;
 
+  _p.styleCxtKey = '';
   _p.styleKeys = {};
   _p.styleKey = null;
   _p.labelKey = null;
@@ -813,10 +817,7 @@ styfn.checkBoundsTrigger = function( ele, name, fromValue, toValue ){
     // if the prop change makes the bb of pll bezier edges invalid,
     // then dirty the pll edge bb cache as well
     if( // only for beziers -- so performance of other edges isn't affected
-      ( ele.pstyle('curve-style').value === 'bezier' // already a bezier
-        // was just now changed to or from a bezier:
-        || (name === 'curve-style' && (fromValue === 'bezier' || toValue === 'bezier'))
-      )
+      ( name === 'curve-style' && (fromValue === 'bezier' || toValue === 'bezier') )
       && prop.triggersBoundsOfParallelBeziers
     ){
       ele.parallelEdges().forEach(pllEdge => {

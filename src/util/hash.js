@@ -1,6 +1,8 @@
-const DEFAULT_SEED = 5381;
+export const DEFAULT_HASH_SEED = 9261;
+const K = 65599; // 37 also works pretty well
+export const DEFAULT_HASH_SEED_ALT = 5381;
 
-export const hashIterableInts = function( iterator, seed = DEFAULT_SEED ){ // djb2/string-hash
+export const hashIterableInts = function( iterator, seed = DEFAULT_HASH_SEED ){ // sdbm/string-hash
   let hash = seed;
   let entry;
 
@@ -9,14 +11,33 @@ export const hashIterableInts = function( iterator, seed = DEFAULT_SEED ){ // dj
 
     if( entry.done ){ break; }
 
-    hash = ((hash << 5) + hash + entry.value) | 0;
+    hash = ((hash * K) + entry.value) | 0;
   }
 
   return hash;
 };
 
-export const hashInt = function( num, seed = DEFAULT_SEED ){ // djb2/string-hash
+export const hashInt = function( num, seed = DEFAULT_HASH_SEED ){ // sdbm/string-hash
+  return ((seed * K) + num) | 0;
+};
+
+export const hashIntAlt = function( num, seed = DEFAULT_HASH_SEED_ALT ){ // djb2/string-hash
   return ((seed << 5) + seed + num) | 0;
+};
+
+export const combineHashes = function(hash1, hash2){
+  return hash1 * 0x200000 + hash2;
+};
+
+export const combineHashesArray = function(hashes){
+  return hashes[0] * 0x200000 + hashes[1];
+};
+
+export const hashArrays = function(hashes1, hashes2){
+  return [
+    hashInt(hashes1[0], hashes2[0]),
+    hashIntAlt(hashes1[1], hashes2[1])
+  ];
 };
 
 export const hashIntsArray = function( ints, seed ){

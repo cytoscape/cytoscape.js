@@ -14,7 +14,7 @@ This function returns an object of the following form:
 ## Examples
 
 ```js
-var ht = cy.elements().hopcroftTarjan();
+var ht = cy.elements().htbc();
 
 ht.components[0].select();
 ```

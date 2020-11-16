@@ -23,7 +23,9 @@ BRp.getNodeShape = function( node ){
   if( node.isParent() ){
     if( shape === 'rectangle'
     || shape === 'roundrectangle'
+    || shape === 'round-rectangle'
     || shape === 'cutrectangle'
+    || shape === 'cut-rectangle'
     || shape === 'barrel' ){
       return shape;
     } else {

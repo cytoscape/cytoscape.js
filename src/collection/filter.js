@@ -19,9 +19,9 @@ let elesfn = ({
       let ele = this[i];
 
       if( ele.isNode() ){
-        nodes.merge(ele);
+        nodes.push(ele);
       } else {
-        edges.merge(ele);
+        edges.push(ele);
       }
     }
 
@@ -42,7 +42,7 @@ let elesfn = ({
         let include = thisArg ? filter.apply( thisArg, [ ele, i, eles ] ) : filter( ele, i, eles );
 
         if( include ){
-          filterEles.merge( ele );
+          filterEles.push( ele );
         }
       }
 
@@ -61,19 +61,18 @@ let elesfn = ({
         toRemove = this.filter( toRemove );
       }
 
-      let elements = [];
-      let rMap = toRemove._private.map;
+      let elements = this.spawn();
 
       for( let i = 0; i < this.length; i++ ){
         let element = this[ i ];
 
-        let remove = rMap.has( element.id() );
+        let remove = toRemove.has(element);
         if( !remove ){
           elements.push( element );
         }
       }
 
-      return this.spawn( elements );
+      return elements;
     }
 
   },
@@ -97,23 +96,22 @@ let elesfn = ({
       return this.filter( selector );
     }
 
-    let elements = [];
+    let elements = this.spawn();
     let col1 = this;
     let col2 = other;
     let col1Smaller = this.length < other.length;
-    let map2 = col1Smaller ? col2._private.map : col1._private.map;
-    let col = col1Smaller ? col1 : col2;
+    let colS = col1Smaller ? col1 : col2;
+    let colL = col1Smaller ? col2 : col1;
 
-    for( let i = 0; i < col.length; i++ ){
-      let id = col[ i ]._private.data.id;
-      let entry = map2.get( id );
+    for( let i = 0; i < colS.length; i++ ){
+      let ele = colS[i];
 
-      if( entry ){
-        elements.push( entry.ele );
+      if( colL.has(ele) ){
+        elements.push(ele);
       }
     }
 
-    return this.spawn( elements );
+    return elements;
   },
 
   xor: function( other ){
@@ -123,7 +121,7 @@ let elesfn = ({
       other = cy.$( other );
     }
 
-    let elements = [];
+    let elements = this.spawn();
     let col1 = this;
     let col2 = other;
 
@@ -143,7 +141,7 @@ let elesfn = ({
     add( col1, col2 );
     add( col2, col1 );
 
-    return this.spawn( elements );
+    return elements;
   },
 
   /**
@@ -165,9 +163,9 @@ let elesfn = ({
       other = cy.$( other );
     }
 
-    let left = [];
-    let right = [];
-    let both = [];
+    let left = this.spawn();
+    let right = this.spawn();
+    let both = this.spawn();
     let col1 = this;
     let col2 = other;
 
@@ -179,7 +177,7 @@ let elesfn = ({
         let inOther = other.hasElementWithId( id );
 
         if( inOther ){
-          both.push( ele );
+          both.merge( ele );
         } else {
           retEles.push( ele );
         }
@@ -190,11 +188,7 @@ let elesfn = ({
     add( col1, col2, left );
     add( col2, col1, right );
 
-    return {
-      left: this.spawn( left, { unique: true } ),
-      right: this.spawn( right, { unique: true } ),
-      both: this.spawn( both, { unique: true } )
-    };
+    return { left, right, both };
   },
 
   add: function( toAdd ){
@@ -209,23 +203,18 @@ let elesfn = ({
       toAdd = cy.mutableElements().filter( selector );
     }
 
-    let elements = [];
-
-    for( let i = 0; i < this.length; i++ ){
-      elements.push( this[ i ] );
-    }
-
-    let map = this._private.map;
+    let elements = this.spawnSelf();
 
     for( let i = 0; i < toAdd.length; i++ ){
+      let ele = toAdd[i];
 
-      let add = !map.has( toAdd[ i ].id() );
+      let add = !this.has(ele);
       if( add ){
-        elements.push( toAdd[ i ] );
+        elements.push(ele);
       }
     }
 
-    return this.spawn( elements );
+    return elements;
   },
 
   // in place merge on calling collection
@@ -254,11 +243,6 @@ let elesfn = ({
 
         this[ index ] = toAddEle;
 
-        map.set( id, { ele: toAddEle, index: index } );
-      } else { // replace
-        let index = map.get( id ).index;
-
-        this[ index ] = toAddEle;
         map.set( id, { ele: toAddEle, index: index } );
       }
     }

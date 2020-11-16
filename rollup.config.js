@@ -1,7 +1,7 @@
-import nodeResolve from 'rollup-plugin-node-resolve';
-import commonjs from 'rollup-plugin-commonjs';
-import babel from 'rollup-plugin-babel';
-import replace from 'rollup-plugin-replace';
+import nodeResolve from '@rollup/plugin-node-resolve';
+import commonjs from '@rollup/plugin-commonjs';
+import babel from '@rollup/plugin-babel';
+import replace from '@rollup/plugin-replace';
 import { terser } from "rollup-plugin-terser";
 import { sizeSnapshot } from 'rollup-plugin-size-snapshot';
 import license from 'rollup-plugin-license';
@@ -24,8 +24,7 @@ const envVariables = {
 };
 
 const getBabelOptions = () => ({
-  exclude: '**/node_modules/**',
-  externalHelpers: true
+  exclude: '**/node_modules/**'
 });
 
 // Ignore all node_modules dependencies

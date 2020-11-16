@@ -196,10 +196,41 @@ util.extend( corefn, {
     return this._private.ready;
   },
 
+    /**
+   * Get whether the instance of Cytoscape.js has been destroyed or not.
+   * @memberof cy
+   * @namespace cy.destroyed
+   */
   destroyed: function(){
     return this._private.destroyed;
   },
 
+    /**
+   * events [, selector], function(event)
+   * @typedef {object} cy_ready_callback_type
+   * @property {object} event - The `ready` event.
+   */
+
+  /**
+   * @callback cy_ready_callback
+   * @property {cy_ready_callback_type} function(event) - cy_ready_callback_type
+   */
+
+  /**
+   * @typedef {object} cy_events_ready
+   * @property {function(cy_ready_callback):any} cy_ready_callback - The callback run as soon as the graph is ready.
+   */
+
+  /**
+   * @typedef {object} cy_ready
+   * @property {cy_events_ready} cy_events_ready
+   */
+
+    /**
+   * @memberof cy
+   * @param {...cy_ready} fn - Run a callback as soon as the graph becomes ready (i.e. intitial data loaded and initial layout completed).  If the graph is already ready, then the callback is called immediately.  If data is loaded synchronously and the layout used is discrete/synchronous/unanimated/unspecified, then you don't need `cy.ready()`.
+   * @namespace cy.ready
+   */
   ready: function( fn ){
     if( this.isReady() ){
       this.emitter().emit( 'ready', [], fn ); // just calls fn as though triggered via ready event
@@ -210,6 +241,11 @@ util.extend( corefn, {
     return this;
   },
 
+    /**
+   * A convenience function to explicitly destroy the instance.
+   * @memberof cy
+   * @namespace cy.destroy
+   */
   destroy: function(){
     let cy = this;
     if( cy.destroyed() ) return;
@@ -229,6 +265,18 @@ util.extend( corefn, {
     return this._private.elements.hasElementWithId( id );
   },
 
+  /**
+   * @typedef {object} cy_getElementById
+   * @property {object} id - The ID of the element to get.
+   */
+
+    /**
+   * Get an element from its ID in a very performant way
+   * @memberof cy
+   * @alias cy.$id
+   * @param {...cy_getElementById} id - Get ID
+   * @namespace cy.getElementById
+   */
   getElementById: function( id ){
     return this._private.elements.getElementById( id );
   },
@@ -257,10 +305,25 @@ util.extend( corefn, {
     return this;
   },
 
+    /**
+   * Get the HTML DOM element in which the graph is visualised. A null value is returned if the instance is headless.
+   * @memberof cy
+   * @namespace cy.container
+   */
   container: function(){
     return this._private.container || null;
   },
 
+    /**
+   * @typedef {object} cy_mount
+   * @property {object} container - A HTML DOM element in which the graph should be rendered.
+   */
+
+  /**
+   * Attaches the instance to the specified container for visualisation.
+   * @param {...cy_mount} container - To mount
+   * @namespace cy.mount
+   */
   mount: function( container ){
     if( container == null ){ return; }
 
@@ -295,6 +358,10 @@ util.extend( corefn, {
     return cy;
   },
 
+    /**
+   * Remove the instance from its current container.
+   * @namespace cy.unmount
+   */
   unmount: function(){
     let cy = this;
 
@@ -313,6 +380,18 @@ util.extend( corefn, {
     return util.copy( this._private.options );
   },
 
+  /**
+ * @typedef {object} cy_json
+ * @property {object} flatEles - Whether the resulant JSON should include the elements as a flat array (`true`) or as two keyed arrays by group (`false`, default).
+ * @property {object} cyJson - The object with the fields corresponding to the states that should be changed.
+*/
+
+  /**
+ * Import or export the graph in the same JSON format used at initialisation.
+ * @memberof cy
+ * @param {...cy_json} obj - Export the graph as JSON. | Import the graph as JSON, updating only the fields specified.
+ * @namespace cy.json
+ */
   json: function( obj ){
     let cy = this;
     let _p = cy._private;

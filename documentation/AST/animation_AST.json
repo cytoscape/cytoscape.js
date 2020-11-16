@@ -1,0 +1,2776 @@
+[
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                98,
+                1032
+            ],
+            "filename": "animation.js",
+            "lineno": 5,
+            "columnno": 4,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000015",
+                "name": "Animation",
+                "type": "FunctionExpression"
+            },
+            "vars": {
+                "isCore": "Animation~isCore",
+                "isEle": "Animation~isEle",
+                "_p": "Animation~_p",
+                "this._private": null,
+                "_p.target": "Animation~_p.target",
+                "_p.style": "Animation~_p.style",
+                "_p.started": "Animation~_p.started",
+                "_p.playing": "Animation~_p.playing",
+                "_p.hooked": "Animation~_p.hooked",
+                "_p.applying": "Animation~_p.applying",
+                "_p.progress": "Animation~_p.progress",
+                "_p.completes": "Animation~_p.completes",
+                "_p.frames": "Animation~_p.frames",
+                "pos": "Animation~pos",
+                "_p.startPosition": "Animation~_p.startPosition",
+                "_p.startStyle": "Animation~_p.startStyle",
+                "pan": "Animation~pan",
+                "_p.startPan": "Animation~_p.startPan",
+                "_p.startZoom": "Animation~_p.startZoom",
+                "this.length": null,
+                "this[0]": null
+            }
+        },
+        "undocumented": true,
+        "name": "Animation",
+        "longname": "Animation",
+        "kind": "function",
+        "scope": "global",
+        "params": []
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                149,
+                173
+            ],
+            "filename": "animation.js",
+            "lineno": 6,
+            "columnno": 6,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000023",
+                "name": "isCore",
+                "type": "CallExpression",
+                "value": ""
+            }
+        },
+        "undocumented": true,
+        "name": "isCore",
+        "longname": "Animation~isCore",
+        "kind": "member",
+        "memberof": "Animation",
+        "scope": "inner",
+        "params": []
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                181,
+                196
+            ],
+            "filename": "animation.js",
+            "lineno": 7,
+            "columnno": 6,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000031",
+                "name": "isEle",
+                "type": "UnaryExpression",
+                "value": "!isCore"
+            }
+        },
+        "undocumented": true,
+        "name": "isEle",
+        "longname": "Animation~isEle",
+        "kind": "member",
+        "memberof": "Animation",
+        "scope": "inner",
+        "params": []
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                205,
+                278
+            ],
+            "filename": "animation.js",
+            "lineno": 9,
+            "columnno": 6,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000036",
+                "name": "_p",
+                "type": "AssignmentExpression",
+                "value": "this._private"
+            }
+        },
+        "undocumented": true,
+        "name": "_p",
+        "longname": "Animation~_p",
+        "kind": "member",
+        "memberof": "Animation",
+        "scope": "inner",
+        "params": []
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                210,
+                278
+            ],
+            "filename": "animation.js",
+            "lineno": 9,
+            "columnno": 11,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000038",
+                "name": "this._private",
+                "type": "CallExpression",
+                "value": "",
+                "paramnames": []
+            }
+        },
+        "undocumented": true,
+        "name": "_private",
+        "longname": "_private",
+        "kind": "member",
+        "scope": "global"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                245,
+                259
+            ],
+            "filename": "animation.js",
+            "lineno": 10,
+            "columnno": 4,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000047",
+                "name": "duration",
+                "type": "Literal",
+                "value": 1000
+            }
+        },
+        "undocumented": true,
+        "name": "duration",
+        "longname": "duration",
+        "kind": "member",
+        "scope": "global"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                283,
+                301
+            ],
+            "filename": "animation.js",
+            "lineno": 13,
+            "columnno": 2,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000052",
+                "name": "_p.target",
+                "type": "Identifier",
+                "funcscope": "Animation",
+                "value": "target",
+                "paramnames": []
+            }
+        },
+        "undocumented": true,
+        "name": "target",
+        "longname": "Animation~_p.target",
+        "kind": "member",
+        "memberof": "Animation~_p",
+        "scope": "static"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                305,
+                334
+            ],
+            "filename": "animation.js",
+            "lineno": 14,
+            "columnno": 2,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000058",
+                "name": "_p.style",
+                "type": "LogicalExpression",
+                "funcscope": "Animation",
+                "value": "",
+                "paramnames": []
+            }
+        },
+        "undocumented": true,
+        "name": "style",
+        "longname": "Animation~_p.style",
+        "kind": "member",
+        "memberof": "Animation~_p",
+        "scope": "static"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                338,
+                356
+            ],
+            "filename": "animation.js",
+            "lineno": 15,
+            "columnno": 2,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000070",
+                "name": "_p.started",
+                "type": "Literal",
+                "funcscope": "Animation",
+                "value": false,
+                "paramnames": []
+            }
+        },
+        "undocumented": true,
+        "name": "started",
+        "longname": "Animation~_p.started",
+        "kind": "member",
+        "memberof": "Animation~_p",
+        "scope": "static"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                360,
+                378
+            ],
+            "filename": "animation.js",
+            "lineno": 16,
+            "columnno": 2,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000076",
+                "name": "_p.playing",
+                "type": "Literal",
+                "funcscope": "Animation",
+                "value": false,
+                "paramnames": []
+            }
+        },
+        "undocumented": true,
+        "name": "playing",
+        "longname": "Animation~_p.playing",
+        "kind": "member",
+        "memberof": "Animation~_p",
+        "scope": "static"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                382,
+                399
+            ],
+            "filename": "animation.js",
+            "lineno": 17,
+            "columnno": 2,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000082",
+                "name": "_p.hooked",
+                "type": "Literal",
+                "funcscope": "Animation",
+                "value": false,
+                "paramnames": []
+            }
+        },
+        "undocumented": true,
+        "name": "hooked",
+        "longname": "Animation~_p.hooked",
+        "kind": "member",
+        "memberof": "Animation~_p",
+        "scope": "static"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                403,
+                422
+            ],
+            "filename": "animation.js",
+            "lineno": 18,
+            "columnno": 2,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000088",
+                "name": "_p.applying",
+                "type": "Literal",
+                "funcscope": "Animation",
+                "value": false,
+                "paramnames": []
+            }
+        },
+        "undocumented": true,
+        "name": "applying",
+        "longname": "Animation~_p.applying",
+        "kind": "member",
+        "memberof": "Animation~_p",
+        "scope": "static"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                426,
+                441
+            ],
+            "filename": "animation.js",
+            "lineno": 19,
+            "columnno": 2,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000094",
+                "name": "_p.progress",
+                "type": "Literal",
+                "funcscope": "Animation",
+                "value": 0,
+                "paramnames": []
+            }
+        },
+        "undocumented": true,
+        "name": "progress",
+        "longname": "Animation~_p.progress",
+        "kind": "member",
+        "memberof": "Animation~_p",
+        "scope": "static"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                445,
+                462
+            ],
+            "filename": "animation.js",
+            "lineno": 20,
+            "columnno": 2,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000100",
+                "name": "_p.completes",
+                "type": "ArrayExpression",
+                "funcscope": "Animation",
+                "value": "[]",
+                "paramnames": []
+            }
+        },
+        "undocumented": true,
+        "name": "completes",
+        "longname": "Animation~_p.completes",
+        "kind": "member",
+        "memberof": "Animation~_p",
+        "scope": "static"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                466,
+                480
+            ],
+            "filename": "animation.js",
+            "lineno": 21,
+            "columnno": 2,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000106",
+                "name": "_p.frames",
+                "type": "ArrayExpression",
+                "funcscope": "Animation",
+                "value": "[]",
+                "paramnames": []
+            }
+        },
+        "undocumented": true,
+        "name": "frames",
+        "longname": "Animation~_p.frames",
+        "kind": "member",
+        "memberof": "Animation~_p",
+        "scope": "static"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                594,
+                617
+            ],
+            "filename": "animation.js",
+            "lineno": 28,
+            "columnno": 8,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000138",
+                "name": "pos",
+                "type": "CallExpression",
+                "value": ""
+            }
+        },
+        "undocumented": true,
+        "name": "pos",
+        "longname": "Animation~pos",
+        "kind": "member",
+        "memberof": "Animation",
+        "scope": "inner",
+        "params": []
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                624,
+                701
+            ],
+            "filename": "animation.js",
+            "lineno": 30,
+            "columnno": 4,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000145",
+                "name": "_p.startPosition",
+                "type": "LogicalExpression",
+                "funcscope": "Animation",
+                "value": "",
+                "paramnames": []
+            }
+        },
+        "undocumented": true,
+        "name": "startPosition",
+        "longname": "Animation~_p.startPosition",
+        "kind": "member",
+        "memberof": "Animation~_p",
+        "scope": "static"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                671,
+                679
+            ],
+            "filename": "animation.js",
+            "lineno": 31,
+            "columnno": 6,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000154",
+                "name": "x",
+                "type": "MemberExpression",
+                "value": "pos.x"
+            }
+        },
+        "undocumented": true,
+        "name": "x",
+        "longname": "x",
+        "kind": "member",
+        "scope": "global"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                687,
+                695
+            ],
+            "filename": "animation.js",
+            "lineno": 32,
+            "columnno": 6,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000158",
+                "name": "y",
+                "type": "MemberExpression",
+                "value": "pos.y"
+            }
+        },
+        "undocumented": true,
+        "name": "y",
+        "longname": "y",
+        "kind": "member",
+        "scope": "global"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                708,
+                803
+            ],
+            "filename": "animation.js",
+            "lineno": 35,
+            "columnno": 4,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000163",
+                "name": "_p.startStyle",
+                "type": "LogicalExpression",
+                "funcscope": "Animation",
+                "value": "",
+                "paramnames": []
+            }
+        },
+        "undocumented": true,
+        "name": "startStyle",
+        "longname": "Animation~_p.startStyle",
+        "kind": "member",
+        "memberof": "Animation~_p",
+        "scope": "static"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                834,
+                852
+            ],
+            "filename": "animation.js",
+            "lineno": 39,
+            "columnno": 8,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000189",
+                "name": "pan",
+                "type": "CallExpression",
+                "value": ""
+            }
+        },
+        "undocumented": true,
+        "name": "pan",
+        "longname": "Animation~pan",
+        "kind": "member",
+        "memberof": "Animation",
+        "scope": "inner",
+        "params": []
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                859,
+                911
+            ],
+            "filename": "animation.js",
+            "lineno": 41,
+            "columnno": 4,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000196",
+                "name": "_p.startPan",
+                "type": "ObjectExpression",
+                "funcscope": "Animation",
+                "value": "{\"x\":\"\",\"y\":\"\"}",
+                "paramnames": []
+            }
+        },
+        "undocumented": true,
+        "name": "startPan",
+        "longname": "Animation~_p.startPan",
+        "kind": "member",
+        "memberof": "Animation~_p",
+        "scope": "static"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                881,
+                889
+            ],
+            "filename": "animation.js",
+            "lineno": 42,
+            "columnno": 6,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000201",
+                "name": "x",
+                "type": "MemberExpression",
+                "value": "pan.x"
+            }
+        },
+        "undocumented": true,
+        "name": "x",
+        "longname": "Animation~_p.startPan.x",
+        "kind": "member",
+        "memberof": "Animation~_p.startPan",
+        "scope": "static"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                897,
+                905
+            ],
+            "filename": "animation.js",
+            "lineno": 43,
+            "columnno": 6,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000205",
+                "name": "y",
+                "type": "MemberExpression",
+                "value": "pan.y"
+            }
+        },
+        "undocumented": true,
+        "name": "y",
+        "longname": "Animation~_p.startPan.y",
+        "kind": "member",
+        "memberof": "Animation~_p.startPan",
+        "scope": "static"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                918,
+                946
+            ],
+            "filename": "animation.js",
+            "lineno": 46,
+            "columnno": 4,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000210",
+                "name": "_p.startZoom",
+                "type": "CallExpression",
+                "funcscope": "Animation",
+                "value": "",
+                "paramnames": []
+            }
+        },
+        "undocumented": true,
+        "name": "startZoom",
+        "longname": "Animation~_p.startZoom",
+        "kind": "member",
+        "memberof": "Animation~_p",
+        "scope": "static"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                996,
+                1011
+            ],
+            "filename": "animation.js",
+            "lineno": 50,
+            "columnno": 2,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000219",
+                "name": "this.length",
+                "type": "Literal",
+                "value": 1,
+                "paramnames": []
+            }
+        },
+        "undocumented": true,
+        "name": "length",
+        "longname": "length",
+        "kind": "member",
+        "scope": "global"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                1015,
+                1029
+            ],
+            "filename": "animation.js",
+            "lineno": 51,
+            "columnno": 2,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000225",
+                "name": "this[0]",
+                "type": "ThisExpression",
+                "value": "this",
+                "paramnames": []
+            }
+        },
+        "undocumented": true,
+        "name": "[0]",
+        "longname": "[0]",
+        "kind": "member",
+        "scope": "global"
+    },
+    {
+        "comment": "/**\n * @class ani\n */",
+        "meta": {
+            "filename": "animation.js",
+            "lineno": 54,
+            "columnno": 0,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {}
+        },
+        "kind": "class",
+        "name": "ani",
+        "longname": "ani",
+        "scope": "global"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                1061,
+                1088
+            ],
+            "filename": "animation.js",
+            "lineno": 57,
+            "columnno": 4,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000231",
+                "name": "anifn",
+                "type": "MemberExpression",
+                "value": "Animation.prototype"
+            }
+        },
+        "undocumented": true,
+        "name": "anifn",
+        "longname": "anifn",
+        "kind": "member",
+        "scope": "global",
+        "params": []
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                1116,
+                1165
+            ],
+            "filename": "animation.js",
+            "lineno": 61,
+            "columnno": 2,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000243",
+                "name": "instanceString",
+                "type": "FunctionExpression"
+            }
+        },
+        "undocumented": true,
+        "name": "instanceString",
+        "longname": "instanceString",
+        "kind": "function",
+        "scope": "global"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                1170,
+                1663
+            ],
+            "filename": "animation.js",
+            "lineno": 63,
+            "columnno": 2,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000248",
+                "name": "hook",
+                "type": "FunctionExpression"
+            },
+            "vars": {
+                "_p": "hook~_p",
+                "q": "hook~q",
+                "tAni": "hook~tAni",
+                "_p.hooked": "hook~_p.hooked"
+            }
+        },
+        "undocumented": true,
+        "name": "hook",
+        "longname": "hook",
+        "kind": "function",
+        "scope": "global"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                1196,
+                1214
+            ],
+            "filename": "animation.js",
+            "lineno": 64,
+            "columnno": 8,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000252",
+                "name": "_p",
+                "type": "MemberExpression",
+                "value": "this._private"
+            }
+        },
+        "undocumented": true,
+        "name": "_p",
+        "longname": "hook~_p",
+        "kind": "member",
+        "memberof": "hook",
+        "scope": "inner",
+        "params": []
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                1290,
+                1291
+            ],
+            "filename": "animation.js",
+            "lineno": 68,
+            "columnno": 10,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000264",
+                "name": "q"
+            }
+        },
+        "undocumented": true,
+        "name": "q",
+        "longname": "hook~q",
+        "kind": "member",
+        "memberof": "hook",
+        "scope": "inner",
+        "params": []
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                1303,
+                1338
+            ],
+            "filename": "animation.js",
+            "lineno": 69,
+            "columnno": 10,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000267",
+                "name": "tAni",
+                "type": "MemberExpression",
+                "value": "_p.target._private.animation"
+            }
+        },
+        "undocumented": true,
+        "name": "tAni",
+        "longname": "hook~tAni",
+        "kind": "member",
+        "memberof": "hook",
+        "scope": "inner",
+        "params": []
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                1370,
+                1384
+            ],
+            "filename": "animation.js",
+            "lineno": 71,
+            "columnno": 8,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000282",
+                "name": "q",
+                "type": "MemberExpression",
+                "funcscope": "hook",
+                "value": "tAni.queue",
+                "paramnames": []
+            }
+        },
+        "undocumented": true,
+        "name": "q",
+        "longname": "hook~q",
+        "kind": "member",
+        "memberof": "hook",
+        "scope": "inner"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                1409,
+                1425
+            ],
+            "filename": "animation.js",
+            "lineno": 73,
+            "columnno": 8,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000289",
+                "name": "q",
+                "type": "MemberExpression",
+                "funcscope": "hook",
+                "value": "tAni.current",
+                "paramnames": []
+            }
+        },
+        "undocumented": true,
+        "name": "q",
+        "longname": "hook~q",
+        "kind": "member",
+        "memberof": "hook",
+        "scope": "inner"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                1618,
+                1634
+            ],
+            "filename": "animation.js",
+            "lineno": 82,
+            "columnno": 6,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000323",
+                "name": "_p.hooked",
+                "type": "Literal",
+                "funcscope": "hook",
+                "value": true,
+                "paramnames": []
+            }
+        },
+        "undocumented": true,
+        "name": "hooked",
+        "longname": "hook~_p.hooked",
+        "kind": "member",
+        "memberof": "hook~_p",
+        "scope": "static"
+    },
+    {
+        "comment": "/**\n * Requests that the animation be played, starting on the next frame. If the animation is complete, it restarts from the beginning.\n * @memberof ani\n * @alias ani.run\n * @namespace ani.play\n */",
+        "meta": {
+            "filename": "animation.js",
+            "lineno": 88,
+            "columnno": 2,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {}
+        },
+        "description": "Requests that the animation be played, starting on the next frame. If the animation is complete, it restarts from the beginning.",
+        "memberof": "ani",
+        "alias": "ani.run",
+        "kind": "namespace",
+        "name": "play",
+        "longname": "ani.play",
+        "scope": "static"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                1868,
+                2198
+            ],
+            "filename": "animation.js",
+            "lineno": 94,
+            "columnno": 2,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000330",
+                "name": "play",
+                "type": "FunctionExpression"
+            },
+            "vars": {
+                "_p": "play~_p",
+                "_p.progress": "play~_p.progress",
+                "_p.playing": "play~_p.playing",
+                "_p.started": "play~_p.started",
+                "_p.stopped": "play~_p.stopped"
+            }
+        },
+        "undocumented": true,
+        "name": "play",
+        "longname": "play",
+        "kind": "function",
+        "scope": "global"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                1894,
+                1912
+            ],
+            "filename": "animation.js",
+            "lineno": 95,
+            "columnno": 8,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000334",
+                "name": "_p",
+                "type": "MemberExpression",
+                "value": "this._private"
+            }
+        },
+        "undocumented": true,
+        "name": "_p",
+        "longname": "play~_p",
+        "kind": "member",
+        "memberof": "play",
+        "scope": "inner",
+        "params": []
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                1968,
+                1983
+            ],
+            "filename": "animation.js",
+            "lineno": 99,
+            "columnno": 6,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000347",
+                "name": "_p.progress",
+                "type": "Literal",
+                "funcscope": "play",
+                "value": 0,
+                "paramnames": []
+            }
+        },
+        "undocumented": true,
+        "name": "progress",
+        "longname": "play~_p.progress",
+        "kind": "member",
+        "memberof": "play~_p",
+        "scope": "static"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                1996,
+                2013
+            ],
+            "filename": "animation.js",
+            "lineno": 102,
+            "columnno": 4,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000353",
+                "name": "_p.playing",
+                "type": "Literal",
+                "funcscope": "play",
+                "value": true,
+                "paramnames": []
+            }
+        },
+        "undocumented": true,
+        "name": "playing",
+        "longname": "play~_p.playing",
+        "kind": "member",
+        "memberof": "play~_p",
+        "scope": "static"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                2019,
+                2037
+            ],
+            "filename": "animation.js",
+            "lineno": 103,
+            "columnno": 4,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000359",
+                "name": "_p.started",
+                "type": "Literal",
+                "funcscope": "play",
+                "value": false,
+                "paramnames": []
+            }
+        },
+        "undocumented": true,
+        "name": "started",
+        "longname": "play~_p.started",
+        "kind": "member",
+        "memberof": "play~_p",
+        "scope": "static"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                2084,
+                2102
+            ],
+            "filename": "animation.js",
+            "lineno": 104,
+            "columnno": 4,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000365",
+                "name": "_p.stopped",
+                "type": "Literal",
+                "funcscope": "play",
+                "value": false,
+                "paramnames": []
+            }
+        },
+        "undocumented": true,
+        "name": "stopped",
+        "longname": "play~_p.stopped",
+        "kind": "member",
+        "memberof": "play~_p",
+        "scope": "static"
+    },
+    {
+        "comment": "/**\n * Get whether the animation is currently playing.\n * @memberof ani\n * @alias ani.running\n * @namespace ani.playing\n */",
+        "meta": {
+            "filename": "animation.js",
+            "lineno": 113,
+            "columnno": 2,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {}
+        },
+        "description": "Get whether the animation is currently playing.",
+        "memberof": "ani",
+        "alias": "ani.running",
+        "kind": "namespace",
+        "name": "playing",
+        "longname": "ani.playing",
+        "scope": "static"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                2329,
+                2387
+            ],
+            "filename": "animation.js",
+            "lineno": 119,
+            "columnno": 2,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000377",
+                "name": "playing",
+                "type": "FunctionExpression"
+            }
+        },
+        "undocumented": true,
+        "name": "playing",
+        "longname": "playing",
+        "kind": "function",
+        "scope": "global"
+    },
+    {
+        "comment": "/**\n * Apply the animation at its current progress.\n * @memberof ani\n * @namespace ani.apply\n */",
+        "meta": {
+            "filename": "animation.js",
+            "lineno": 123,
+            "columnno": 2,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {}
+        },
+        "description": "Apply the animation at its current progress.",
+        "memberof": "ani",
+        "kind": "namespace",
+        "name": "apply",
+        "longname": "ani.apply",
+        "scope": "static"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                2491,
+                2760
+            ],
+            "filename": "animation.js",
+            "lineno": 128,
+            "columnno": 2,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000386",
+                "name": "apply",
+                "type": "FunctionExpression"
+            },
+            "vars": {
+                "_p": "apply~_p",
+                "_p.applying": "apply~_p.applying",
+                "_p.started": "apply~_p.started",
+                "_p.stopped": "apply~_p.stopped"
+            }
+        },
+        "undocumented": true,
+        "name": "apply",
+        "longname": "apply",
+        "kind": "function",
+        "scope": "global"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                2518,
+                2536
+            ],
+            "filename": "animation.js",
+            "lineno": 129,
+            "columnno": 8,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000390",
+                "name": "_p",
+                "type": "MemberExpression",
+                "value": "this._private"
+            }
+        },
+        "undocumented": true,
+        "name": "_p",
+        "longname": "apply~_p",
+        "kind": "member",
+        "memberof": "apply",
+        "scope": "inner",
+        "params": []
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                2543,
+                2561
+            ],
+            "filename": "animation.js",
+            "lineno": 131,
+            "columnno": 4,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000396",
+                "name": "_p.applying",
+                "type": "Literal",
+                "funcscope": "apply",
+                "value": true,
+                "paramnames": []
+            }
+        },
+        "undocumented": true,
+        "name": "applying",
+        "longname": "apply~_p.applying",
+        "kind": "member",
+        "memberof": "apply~_p",
+        "scope": "static"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                2567,
+                2585
+            ],
+            "filename": "animation.js",
+            "lineno": 132,
+            "columnno": 4,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000402",
+                "name": "_p.started",
+                "type": "Literal",
+                "funcscope": "apply",
+                "value": false,
+                "paramnames": []
+            }
+        },
+        "undocumented": true,
+        "name": "started",
+        "longname": "apply~_p.started",
+        "kind": "member",
+        "memberof": "apply~_p",
+        "scope": "static"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                2632,
+                2650
+            ],
+            "filename": "animation.js",
+            "lineno": 133,
+            "columnno": 4,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000408",
+                "name": "_p.stopped",
+                "type": "Literal",
+                "funcscope": "apply",
+                "value": false,
+                "paramnames": []
+            }
+        },
+        "undocumented": true,
+        "name": "stopped",
+        "longname": "apply~_p.stopped",
+        "kind": "member",
+        "memberof": "apply~_p",
+        "scope": "static"
+    },
+    {
+        "comment": "/**\n * Get whether the animation is currently applying.\n * @memberof ani\n * @namespace ani.applying\n */",
+        "meta": {
+            "filename": "animation.js",
+            "lineno": 142,
+            "columnno": 2,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {}
+        },
+        "description": "Get whether the animation is currently applying.",
+        "memberof": "ani",
+        "kind": "namespace",
+        "name": "applying",
+        "longname": "ani.applying",
+        "scope": "static"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                2871,
+                2931
+            ],
+            "filename": "animation.js",
+            "lineno": 147,
+            "columnno": 2,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000420",
+                "name": "applying",
+                "type": "FunctionExpression"
+            }
+        },
+        "undocumented": true,
+        "name": "applying",
+        "longname": "applying",
+        "kind": "function",
+        "scope": "global"
+    },
+    {
+        "comment": "/**\n * Pause the animation, maintaining the current progress.\n * @memberof ani\n * @namespace ani.pause\n */",
+        "meta": {
+            "filename": "animation.js",
+            "lineno": 151,
+            "columnno": 2,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {}
+        },
+        "description": "Pause the animation, maintaining the current progress.",
+        "memberof": "ani",
+        "kind": "namespace",
+        "name": "pause",
+        "longname": "ani.pause",
+        "scope": "static"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                3045,
+                3162
+            ],
+            "filename": "animation.js",
+            "lineno": 156,
+            "columnno": 2,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000429",
+                "name": "pause",
+                "type": "FunctionExpression"
+            },
+            "vars": {
+                "_p": "pause~_p",
+                "_p.playing": "pause~_p.playing",
+                "_p.started": "pause~_p.started"
+            }
+        },
+        "undocumented": true,
+        "name": "pause",
+        "longname": "pause",
+        "kind": "function",
+        "scope": "global"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                3072,
+                3090
+            ],
+            "filename": "animation.js",
+            "lineno": 157,
+            "columnno": 8,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000433",
+                "name": "_p",
+                "type": "MemberExpression",
+                "value": "this._private"
+            }
+        },
+        "undocumented": true,
+        "name": "_p",
+        "longname": "pause~_p",
+        "kind": "member",
+        "memberof": "pause",
+        "scope": "inner",
+        "params": []
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                3097,
+                3115
+            ],
+            "filename": "animation.js",
+            "lineno": 159,
+            "columnno": 4,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000439",
+                "name": "_p.playing",
+                "type": "Literal",
+                "funcscope": "pause",
+                "value": false,
+                "paramnames": []
+            }
+        },
+        "undocumented": true,
+        "name": "playing",
+        "longname": "pause~_p.playing",
+        "kind": "member",
+        "memberof": "pause~_p",
+        "scope": "static"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                3121,
+                3139
+            ],
+            "filename": "animation.js",
+            "lineno": 160,
+            "columnno": 4,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000445",
+                "name": "_p.started",
+                "type": "Literal",
+                "funcscope": "pause",
+                "value": false,
+                "paramnames": []
+            }
+        },
+        "undocumented": true,
+        "name": "started",
+        "longname": "pause~_p.started",
+        "kind": "member",
+        "memberof": "pause~_p",
+        "scope": "static"
+    },
+    {
+        "comment": "/**\n * Stop the animation, maintaining the current progress and removing the animation from any associated queues.\n * @memberof ani\n * @namespace ani.stop\n */",
+        "meta": {
+            "filename": "animation.js",
+            "lineno": 165,
+            "columnno": 4,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {}
+        },
+        "description": "Stop the animation, maintaining the current progress and removing the animation from any associated queues.",
+        "memberof": "ani",
+        "kind": "namespace",
+        "name": "stop",
+        "longname": "ani.stop",
+        "scope": "static"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                3330,
+                3508
+            ],
+            "filename": "animation.js",
+            "lineno": 170,
+            "columnno": 2,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000452",
+                "name": "stop",
+                "type": "FunctionExpression"
+            },
+            "vars": {
+                "_p": "stop~_p",
+                "_p.playing": "stop~_p.playing",
+                "_p.started": "stop~_p.started",
+                "_p.stopped": "stop~_p.stopped"
+            }
+        },
+        "undocumented": true,
+        "name": "stop",
+        "longname": "stop",
+        "kind": "function",
+        "scope": "global"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                3356,
+                3374
+            ],
+            "filename": "animation.js",
+            "lineno": 171,
+            "columnno": 8,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000456",
+                "name": "_p",
+                "type": "MemberExpression",
+                "value": "this._private"
+            }
+        },
+        "undocumented": true,
+        "name": "_p",
+        "longname": "stop~_p",
+        "kind": "member",
+        "memberof": "stop",
+        "scope": "inner",
+        "params": []
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                3381,
+                3399
+            ],
+            "filename": "animation.js",
+            "lineno": 173,
+            "columnno": 4,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000462",
+                "name": "_p.playing",
+                "type": "Literal",
+                "funcscope": "stop",
+                "value": false,
+                "paramnames": []
+            }
+        },
+        "undocumented": true,
+        "name": "playing",
+        "longname": "stop~_p.playing",
+        "kind": "member",
+        "memberof": "stop~_p",
+        "scope": "static"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                3405,
+                3423
+            ],
+            "filename": "animation.js",
+            "lineno": 174,
+            "columnno": 4,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000468",
+                "name": "_p.started",
+                "type": "Literal",
+                "funcscope": "stop",
+                "value": false,
+                "paramnames": []
+            }
+        },
+        "undocumented": true,
+        "name": "started",
+        "longname": "stop~_p.started",
+        "kind": "member",
+        "memberof": "stop~_p",
+        "scope": "static"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                3429,
+                3446
+            ],
+            "filename": "animation.js",
+            "lineno": 175,
+            "columnno": 4,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000474",
+                "name": "_p.stopped",
+                "type": "Literal",
+                "funcscope": "stop",
+                "value": true,
+                "paramnames": []
+            }
+        },
+        "undocumented": true,
+        "name": "stopped",
+        "longname": "stop~_p.stopped",
+        "kind": "member",
+        "memberof": "stop~_p",
+        "scope": "static"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                3513,
+                3567
+            ],
+            "filename": "animation.js",
+            "lineno": 180,
+            "columnno": 2,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000481",
+                "name": "rewind",
+                "type": "FunctionExpression"
+            }
+        },
+        "undocumented": true,
+        "name": "rewind",
+        "longname": "rewind",
+        "kind": "function",
+        "scope": "global"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                3572,
+                3631
+            ],
+            "filename": "animation.js",
+            "lineno": 184,
+            "columnno": 2,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000490",
+                "name": "fastforward",
+                "type": "FunctionExpression"
+            }
+        },
+        "undocumented": true,
+        "name": "fastforward",
+        "longname": "fastforward",
+        "kind": "function",
+        "scope": "global"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                3636,
+                3822
+            ],
+            "filename": "animation.js",
+            "lineno": 188,
+            "columnno": 2,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000499",
+                "name": "time",
+                "type": "FunctionExpression"
+            },
+            "vars": {
+                "_p": "time~_p"
+            }
+        },
+        "undocumented": true,
+        "name": "time",
+        "longname": "time",
+        "kind": "function",
+        "scope": "global"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                3665,
+                3683
+            ],
+            "filename": "animation.js",
+            "lineno": 189,
+            "columnno": 8,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000504",
+                "name": "_p",
+                "type": "MemberExpression",
+                "value": "this._private"
+            }
+        },
+        "undocumented": true,
+        "name": "_p",
+        "longname": "time~_p",
+        "kind": "member",
+        "memberof": "time",
+        "scope": "inner",
+        "params": []
+    },
+    {
+        "comment": "/**\n * @typedef {object} ani_progress\n * @property {object} NULL\n * @property {object} progress - The progress in percent (i.e. between 0 and 1 inclusive) to set to the animation.\n * @property {object} NULL\n * @property {object} time - The progress in milliseconds (i.e. between 0 and the duration inclusive) to set to the animation.\n * @property {object} NULL\n * @property {object} NULL\n */",
+        "meta": {
+            "filename": "animation.js",
+            "lineno": 198,
+            "columnno": 2,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {}
+        },
+        "kind": "typedef",
+        "name": "ani_progress",
+        "type": {
+            "names": [
+                "object"
+            ]
+        },
+        "properties": [
+            {
+                "type": {
+                    "names": [
+                        "object"
+                    ]
+                },
+                "name": "NULL"
+            },
+            {
+                "type": {
+                    "names": [
+                        "object"
+                    ]
+                },
+                "description": "The progress in percent (i.e. between 0 and 1 inclusive) to set to the animation.",
+                "name": "progress"
+            },
+            {
+                "type": {
+                    "names": [
+                        "object"
+                    ]
+                },
+                "name": "NULL"
+            },
+            {
+                "type": {
+                    "names": [
+                        "object"
+                    ]
+                },
+                "description": "The progress in milliseconds (i.e. between 0 and the duration inclusive) to set to the animation.",
+                "name": "time"
+            },
+            {
+                "type": {
+                    "names": [
+                        "object"
+                    ]
+                },
+                "name": "NULL"
+            },
+            {
+                "type": {
+                    "names": [
+                        "object"
+                    ]
+                },
+                "name": "NULL"
+            }
+        ],
+        "longname": "ani_progress",
+        "scope": "global"
+    },
+    {
+        "comment": "/**\n * Get or set how far along the animation has progressed.\n * @memberof ani\n * @sub_functions ani.progress|ani.progress|ani.time|ani.time|ani.rewind|ani.fastforward\n * @param {...ani_progress} x - Get the progress of the animation in percent. | Set the progress of the animation in percent. | Get the progress of the animation in milliseconds. | Set the progress of the animation in milliseconds. | Rewind the animation to the beginning. | Fastforward the animation to the end.\n * @namespace ani.progress\n */",
+        "meta": {
+            "filename": "animation.js",
+            "lineno": 208,
+            "columnno": 2,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {}
+        },
+        "description": "Get or set how far along the animation has progressed.",
+        "memberof": "ani",
+        "tags": [
+            {
+                "originalTitle": "sub_functions",
+                "title": "sub_functions",
+                "text": "ani.progress|ani.progress|ani.time|ani.time|ani.rewind|ani.fastforward",
+                "value": "ani.progress|ani.progress|ani.time|ani.time|ani.rewind|ani.fastforward"
+            }
+        ],
+        "params": [
+            {
+                "type": {
+                    "names": [
+                        "ani_progress"
+                    ]
+                },
+                "variable": true,
+                "description": "Get the progress of the animation in percent. | Set the progress of the animation in percent. | Get the progress of the animation in milliseconds. | Set the progress of the animation in milliseconds. | Rewind the animation to the beginning. | Fastforward the animation to the end.",
+                "name": "x"
+            }
+        ],
+        "kind": "namespace",
+        "name": "progress",
+        "longname": "ani.progress",
+        "scope": "static"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                4736,
+                5074
+            ],
+            "filename": "animation.js",
+            "lineno": 215,
+            "columnno": 2,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000533",
+                "name": "progress",
+                "type": "FunctionExpression"
+            },
+            "vars": {
+                "_p": "progress~_p",
+                "wasPlaying": "progress~wasPlaying",
+                "_p.progress": "progress~_p.progress",
+                "_p.started": "progress~_p.started"
+            }
+        },
+        "undocumented": true,
+        "name": "progress",
+        "longname": "progress",
+        "kind": "function",
+        "scope": "global"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                4769,
+                4787
+            ],
+            "filename": "animation.js",
+            "lineno": 216,
+            "columnno": 8,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000538",
+                "name": "_p",
+                "type": "MemberExpression",
+                "value": "this._private"
+            }
+        },
+        "undocumented": true,
+        "name": "_p",
+        "longname": "progress~_p",
+        "kind": "member",
+        "memberof": "progress",
+        "scope": "inner",
+        "params": []
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                4797,
+                4820
+            ],
+            "filename": "animation.js",
+            "lineno": 217,
+            "columnno": 8,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000544",
+                "name": "wasPlaying",
+                "type": "MemberExpression",
+                "value": "_p.playing"
+            }
+        },
+        "undocumented": true,
+        "name": "wasPlaying",
+        "longname": "progress~wasPlaying",
+        "kind": "member",
+        "memberof": "progress",
+        "scope": "inner",
+        "params": []
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                4950,
+                4965
+            ],
+            "filename": "animation.js",
+            "lineno": 226,
+            "columnno": 6,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000568",
+                "name": "_p.progress",
+                "type": "Identifier",
+                "funcscope": "progress",
+                "value": "p",
+                "paramnames": []
+            }
+        },
+        "undocumented": true,
+        "name": "progress",
+        "longname": "progress~_p.progress",
+        "kind": "member",
+        "memberof": "progress~_p",
+        "scope": "static"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                4973,
+                4991
+            ],
+            "filename": "animation.js",
+            "lineno": 227,
+            "columnno": 6,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000574",
+                "name": "_p.started",
+                "type": "Literal",
+                "funcscope": "progress",
+                "value": false,
+                "paramnames": []
+            }
+        },
+        "undocumented": true,
+        "name": "started",
+        "longname": "progress~_p.started",
+        "kind": "member",
+        "memberof": "progress~_p",
+        "scope": "static"
+    },
+    {
+        "comment": "/**\n * Get whether the animation has progressed to the end.\n * @memberof ani\n * @alias ani.complete\n * @namespace ani.completed\n */",
+        "meta": {
+            "filename": "animation.js",
+            "lineno": 237,
+            "columnno": 2,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {}
+        },
+        "description": "Get whether the animation has progressed to the end.",
+        "memberof": "ani",
+        "alias": "ani.complete",
+        "kind": "namespace",
+        "name": "completed",
+        "longname": "ani.completed",
+        "scope": "static"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                5213,
+                5280
+            ],
+            "filename": "animation.js",
+            "lineno": 243,
+            "columnno": 2,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000589",
+                "name": "completed",
+                "type": "FunctionExpression"
+            }
+        },
+        "undocumented": true,
+        "name": "completed",
+        "longname": "completed",
+        "kind": "function",
+        "scope": "global"
+    },
+    {
+        "comment": "/**\n * Reverse the animation such that its starting conditions and ending conditions are reversed.\n * @memberof ani\n * @namespace ani.reverse\n */",
+        "meta": {
+            "filename": "animation.js",
+            "lineno": 247,
+            "columnno": 2,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {}
+        },
+        "description": "Reverse the animation such that its starting conditions and ending conditions are reversed.",
+        "memberof": "ani",
+        "kind": "namespace",
+        "name": "reverse",
+        "longname": "ani.reverse",
+        "scope": "static"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                5433,
+                6247
+            ],
+            "filename": "animation.js",
+            "lineno": 252,
+            "columnno": 2,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000600",
+                "name": "reverse",
+                "type": "FunctionExpression"
+            },
+            "vars": {
+                "_p": "reverse~_p",
+                "wasPlaying": "reverse~wasPlaying",
+                "_p.progress": "reverse~_p.progress",
+                "_p.started": "reverse~_p.started",
+                "swap": "reverse~swap",
+                "": null,
+                "i": "reverse~i",
+                "prop": "reverse~prop",
+                "name": "reverse~name",
+                "startStyleProp": "reverse~startStyleProp",
+                "_p.startStyle[undefined]": "reverse~_p.startStyle[undefined]",
+                "_p.style[undefined]": "reverse~_p.style[undefined]"
+            }
+        },
+        "undocumented": true,
+        "name": "reverse",
+        "longname": "reverse",
+        "kind": "function",
+        "scope": "global"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                5462,
+                5480
+            ],
+            "filename": "animation.js",
+            "lineno": 253,
+            "columnno": 8,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000604",
+                "name": "_p",
+                "type": "MemberExpression",
+                "value": "this._private"
+            }
+        },
+        "undocumented": true,
+        "name": "_p",
+        "longname": "reverse~_p",
+        "kind": "member",
+        "memberof": "reverse",
+        "scope": "inner",
+        "params": []
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                5490,
+                5513
+            ],
+            "filename": "animation.js",
+            "lineno": 254,
+            "columnno": 8,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000610",
+                "name": "wasPlaying",
+                "type": "MemberExpression",
+                "value": "_p.playing"
+            }
+        },
+        "undocumented": true,
+        "name": "wasPlaying",
+        "longname": "reverse~wasPlaying",
+        "kind": "member",
+        "memberof": "reverse",
+        "scope": "inner",
+        "params": []
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                5569,
+                5598
+            ],
+            "filename": "animation.js",
+            "lineno": 260,
+            "columnno": 4,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000624",
+                "name": "_p.progress",
+                "type": "BinaryExpression",
+                "funcscope": "reverse",
+                "value": "",
+                "paramnames": []
+            }
+        },
+        "undocumented": true,
+        "name": "progress",
+        "longname": "reverse~_p.progress",
+        "kind": "member",
+        "memberof": "reverse~_p",
+        "scope": "static"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                5604,
+                5622
+            ],
+            "filename": "animation.js",
+            "lineno": 261,
+            "columnno": 4,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000634",
+                "name": "_p.started",
+                "type": "Literal",
+                "funcscope": "reverse",
+                "value": false,
+                "paramnames": []
+            }
+        },
+        "undocumented": true,
+        "name": "started",
+        "longname": "reverse~_p.started",
+        "kind": "member",
+        "memberof": "reverse~_p",
+        "scope": "static"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                5633,
+                5771
+            ],
+            "filename": "animation.js",
+            "lineno": 263,
+            "columnno": 8,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000640",
+                "name": "swap",
+                "type": "FunctionExpression"
+            },
+            "vars": {
+                "_pa": "reverse~swap~_pa",
+                "_p[undefined]": "reverse~_p.undefined]"
+            }
+        },
+        "undocumented": true,
+        "name": "swap",
+        "longname": "reverse~swap",
+        "kind": "function",
+        "memberof": "reverse",
+        "scope": "inner",
+        "params": []
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                5668,
+                5681
+            ],
+            "filename": "animation.js",
+            "lineno": 264,
+            "columnno": 10,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000647",
+                "name": "_pa",
+                "type": "MemberExpression",
+                "value": "_p[undefined]"
+            }
+        },
+        "undocumented": true,
+        "name": "_pa",
+        "longname": "reverse~swap~_pa",
+        "kind": "member",
+        "memberof": "reverse~swap",
+        "scope": "inner",
+        "params": []
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                5726,
+                5743
+            ],
+            "filename": "animation.js",
+            "lineno": 268,
+            "columnno": 6,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000659",
+                "name": "_p[undefined]",
+                "type": "MemberExpression",
+                "funcscope": "reverse",
+                "value": "_p[undefined]",
+                "paramnames": []
+            }
+        },
+        "undocumented": true,
+        "name": "undefined]",
+        "longname": "reverse~_p.undefined]",
+        "kind": "member",
+        "memberof": "reverse~_p",
+        "scope": "static"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                5751,
+                5764
+            ],
+            "filename": "animation.js",
+            "lineno": 269,
+            "columnno": 6,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000667",
+                "name": "_p[undefined]",
+                "type": "Identifier",
+                "funcscope": "reverse",
+                "value": "_pa",
+                "paramnames": []
+            }
+        },
+        "undocumented": true,
+        "name": "undefined]",
+        "longname": "reverse~_p.undefined]",
+        "kind": "member",
+        "memberof": "reverse~_p",
+        "scope": "static"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                5934,
+                5939
+            ],
+            "filename": "animation.js",
+            "lineno": 278,
+            "columnno": 15,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000694",
+                "name": "i",
+                "type": "Literal",
+                "value": 0
+            }
+        },
+        "undocumented": true,
+        "name": "i",
+        "longname": "reverse~i",
+        "kind": "member",
+        "memberof": "reverse",
+        "scope": "inner",
+        "params": []
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                5981,
+                6001
+            ],
+            "filename": "animation.js",
+            "lineno": 279,
+            "columnno": 12,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000708",
+                "name": "prop",
+                "type": "MemberExpression",
+                "value": "_p.style[undefined]"
+            }
+        },
+        "undocumented": true,
+        "name": "prop",
+        "longname": "reverse~prop",
+        "kind": "member",
+        "memberof": "reverse",
+        "scope": "inner",
+        "params": []
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                6015,
+                6031
+            ],
+            "filename": "animation.js",
+            "lineno": 280,
+            "columnno": 12,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000716",
+                "name": "name",
+                "type": "MemberExpression",
+                "value": "prop.name"
+            }
+        },
+        "undocumented": true,
+        "name": "name",
+        "longname": "reverse~name",
+        "kind": "member",
+        "memberof": "reverse",
+        "scope": "inner",
+        "params": []
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                6045,
+                6083
+            ],
+            "filename": "animation.js",
+            "lineno": 281,
+            "columnno": 12,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000722",
+                "name": "startStyleProp",
+                "type": "MemberExpression",
+                "value": "_p.startStyle[undefined]"
+            }
+        },
+        "undocumented": true,
+        "name": "startStyleProp",
+        "longname": "reverse~startStyleProp",
+        "kind": "member",
+        "memberof": "reverse",
+        "scope": "inner",
+        "params": []
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                6094,
+                6122
+            ],
+            "filename": "animation.js",
+            "lineno": 283,
+            "columnno": 8,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000730",
+                "name": "_p.startStyle[undefined]",
+                "type": "Identifier",
+                "funcscope": "reverse",
+                "value": "prop",
+                "paramnames": []
+            }
+        },
+        "undocumented": true,
+        "name": "startStyle[undefined]",
+        "longname": "reverse~_p.startStyle[undefined]",
+        "kind": "member",
+        "memberof": "reverse~_p",
+        "scope": "static"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                6132,
+                6162
+            ],
+            "filename": "animation.js",
+            "lineno": 284,
+            "columnno": 8,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000738",
+                "name": "_p.style[undefined]",
+                "type": "Identifier",
+                "funcscope": "reverse",
+                "value": "startStyleProp",
+                "paramnames": []
+            }
+        },
+        "undocumented": true,
+        "name": "style[undefined]",
+        "longname": "reverse~_p.style[undefined]",
+        "kind": "member",
+        "memberof": "reverse~_p",
+        "scope": "static"
+    },
+    {
+        "comment": "/**\n * @typedef {object} ani_promise\n * @property {object} NULL\n * @property {object} animationEvent -  A string for the event name; `completed` or `complete` for completing the animation or `frame` for the next frame of the animation.\n */",
+        "meta": {
+            "filename": "animation.js",
+            "lineno": 295,
+            "columnno": 2,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {}
+        },
+        "kind": "typedef",
+        "name": "ani_promise",
+        "type": {
+            "names": [
+                "object"
+            ]
+        },
+        "properties": [
+            {
+                "type": {
+                    "names": [
+                        "object"
+                    ]
+                },
+                "name": "NULL"
+            },
+            {
+                "type": {
+                    "names": [
+                        "object"
+                    ]
+                },
+                "description": "A string for the event name; `completed` or `complete` for completing the animation or `frame` for the next frame of the animation.",
+                "name": "animationEvent"
+            }
+        ],
+        "longname": "ani_promise",
+        "scope": "global"
+    },
+    {
+        "comment": "/**\n * Get a promise that is fulfilled with the specified animation event.\n * @memberof ani\n * @param {...ani_promise} x - Get a promise that is fulfilled with the next `completed` event. | Get a promise that is fulfilled with the specified animation event.\n * @namespace ani.promise\n */",
+        "meta": {
+            "filename": "animation.js",
+            "lineno": 301,
+            "columnno": 2,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {}
+        },
+        "description": "Get a promise that is fulfilled with the specified animation event.",
+        "memberof": "ani",
+        "params": [
+            {
+                "type": {
+                    "names": [
+                        "ani_promise"
+                    ]
+                },
+                "variable": true,
+                "description": "Get a promise that is fulfilled with the next `completed` event. | Get a promise that is fulfilled with the specified animation event.",
+                "name": "x"
+            }
+        ],
+        "kind": "namespace",
+        "name": "promise",
+        "longname": "ani.promise",
+        "scope": "static"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                6785,
+                7155
+            ],
+            "filename": "animation.js",
+            "lineno": 307,
+            "columnno": 2,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000755",
+                "name": "promise",
+                "type": "FunctionExpression"
+            },
+            "vars": {
+                "_p": "promise~_p",
+                "arr": "promise~arr",
+                "": null
+            }
+        },
+        "undocumented": true,
+        "name": "promise",
+        "longname": "promise",
+        "kind": "function",
+        "scope": "global"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                6820,
+                6838
+            ],
+            "filename": "animation.js",
+            "lineno": 308,
+            "columnno": 8,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000760",
+                "name": "_p",
+                "type": "MemberExpression",
+                "value": "this._private"
+            }
+        },
+        "undocumented": true,
+        "name": "_p",
+        "longname": "promise~_p",
+        "kind": "member",
+        "memberof": "promise",
+        "scope": "inner",
+        "params": []
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                6849,
+                6852
+            ],
+            "filename": "animation.js",
+            "lineno": 310,
+            "columnno": 8,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000766",
+                "name": "arr"
+            }
+        },
+        "undocumented": true,
+        "name": "arr",
+        "longname": "promise~arr",
+        "kind": "member",
+        "memberof": "promise",
+        "scope": "inner",
+        "params": []
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                6903,
+                6918
+            ],
+            "filename": "animation.js",
+            "lineno": 314,
+            "columnno": 8,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000773",
+                "name": "arr",
+                "type": "MemberExpression",
+                "funcscope": "promise",
+                "value": "_p.frames",
+                "paramnames": []
+            }
+        },
+        "undocumented": true,
+        "name": "arr",
+        "longname": "promise~arr",
+        "kind": "member",
+        "memberof": "promise",
+        "scope": "inner"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                7005,
+                7023
+            ],
+            "filename": "animation.js",
+            "lineno": 319,
+            "columnno": 8,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000785",
+                "name": "arr",
+                "type": "MemberExpression",
+                "funcscope": "promise",
+                "value": "_p.completes",
+                "paramnames": []
+            }
+        },
+        "undocumented": true,
+        "name": "arr",
+        "longname": "promise~arr",
+        "kind": "member",
+        "memberof": "promise",
+        "scope": "inner"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                7163,
+                7195
+            ],
+            "filename": "animation.js",
+            "lineno": 331,
+            "columnno": 0,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000808",
+                "name": "anifn.complete",
+                "type": "MemberExpression",
+                "value": "anifn.completed",
+                "paramnames": []
+            }
+        },
+        "undocumented": true,
+        "name": "complete",
+        "longname": "anifn.complete",
+        "kind": "member",
+        "memberof": "anifn",
+        "scope": "static"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                7197,
+                7219
+            ],
+            "filename": "animation.js",
+            "lineno": 332,
+            "columnno": 0,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000816",
+                "name": "anifn.run",
+                "type": "MemberExpression",
+                "value": "anifn.play",
+                "paramnames": []
+            }
+        },
+        "undocumented": true,
+        "name": "run",
+        "longname": "anifn.run",
+        "kind": "member",
+        "memberof": "anifn",
+        "scope": "static"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                7221,
+                7250
+            ],
+            "filename": "animation.js",
+            "lineno": 333,
+            "columnno": 0,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000824",
+                "name": "anifn.running",
+                "type": "MemberExpression",
+                "value": "anifn.playing",
+                "paramnames": []
+            }
+        },
+        "undocumented": true,
+        "name": "running",
+        "longname": "anifn.running",
+        "kind": "member",
+        "memberof": "anifn",
+        "scope": "static"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                7253,
+                7278
+            ],
+            "filename": "animation.js",
+            "lineno": 335,
+            "columnno": 0,
+            "path": "/home/rahul/Documents/GSOD/cytoscape.js/src",
+            "code": {
+                "id": "astnode100000831",
+                "name": "module.exports",
+                "type": "Identifier"
+            }
+        },
+        "undocumented": true,
+        "name": "exports",
+        "longname": "module.exports",
+        "kind": "member",
+        "memberof": "module",
+        "scope": "static"
+    },
+    {
+        "kind": "package",
+        "longname": "package:undefined",
+        "files": [
+            "/home/rahul/Documents/GSOD/cytoscape.js/src/animation.js"
+        ]
+    }
+]

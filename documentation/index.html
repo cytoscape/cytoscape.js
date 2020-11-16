@@ -1405,7 +1405,7 @@
 
 
 
-							<div class="descr"><p>Add elements to the graph and return them.</p>
+							<div class="descr"><p>Add elements to the graph and return them</p>
 </div>
 
 							<div class="formats">
@@ -1594,7 +1594,7 @@ cy.nodes().on(<span class="hljs-string">'click'</span>, <span class="hljs-functi
 									</span>
 							</div>
 
-							<div class="descr"><p>Get an element from its ID in a very performant way.</p>
+							<div class="descr"><p>Get an element from its ID in a very performant way</p>
 </div>
 
 							<div class="formats">
@@ -1602,7 +1602,8 @@ cy.nodes().on(<span class="hljs-string">'click'</span>, <span class="hljs-functi
 											<div class="name">cy.getElementById( <span class="args-summary"><span class="comma">,&nbsp;</span>id</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Get ID</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name">id</span>
@@ -1716,14 +1717,14 @@ cy.nodes().on(<span class="hljs-string">'click'</span>, <span class="hljs-functi
 										</ul>
 									</div>
 									<div class="format">
-											<div class="name">cy.filter( <span class="args-summary"><span class="comma">,&nbsp;</span>function(ele, i, eles)</span> )</div>
+											<div class="name">cy.filter( <span class="args-summary"><span class="comma">,&nbsp;</span>function(ele,i,eles)</span> )</div>
 
 
 										<div class="descr"><p>Get elements in the graph matching the specified filter function.</p>
 </div>
 										<ul class="args">
 												<li>
-													<span class="name">function(ele, i, eles)</span>
+													<span class="name">function(ele,i,eles)</span>
 													
 													<span class="descr"><p>The filter function that returns true for elements that should be returned.</p>
 </span>
@@ -1757,22 +1758,6 @@ cy.nodes().on(<span class="hljs-string">'click'</span>, <span class="hljs-functi
 							</div>
 
 							<div class="details">
-									<h3 id="details">Details</h3>
-<p>If no elements in the graph match the selector, an empty <a href="#collection">collection</a> is returned.</p>
-<p>The function <code>cy.$()</code> acts as an alias to <code>cy.filter()</code>:  It lets you type less characters.  It is analogous to the jQuery <code>$</code> alias used to search the document</p>
-<h3 id="examples">Examples</h3>
-<p>Get nodes with weight greater than 50:</p>
-<pre><code class="language-js">cy.nodes(<span class="hljs-string">'[weight &gt; 50]'</span>);</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>Get edges with source node <code>n0</code>:</p>
-<pre><code class="language-js">cy.edges(<span class="hljs-string">'[source = "j"]'</span>);</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>Get all nodes and edges with weight greater than 50:</p>
-<pre><code class="language-js">cy.elements(<span class="hljs-string">'[weight &gt; 50]'</span>);
-cy.filter(<span class="hljs-string">'[weight &gt; 50]'</span>); <span class="hljs-comment">// works the same as the above line</span></code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>Get nodes with weight greater than 50 with a filter function:</p>
-<pre><code class="language-js">cy.filter(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">element, i</span>)</span>{
-  <span class="hljs-keyword">return</span> element.isNode() &amp;&amp; element.data(<span class="hljs-string">'weight'</span>) &gt; <span class="hljs-number">50</span>;
-});</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button>
 							</div>
 						</div>
 						<div class="function">
@@ -1791,7 +1776,8 @@ cy.filter(<span class="hljs-string">'[weight &gt; 50]'</span>); <span class="hlj
 											<div class="name">cy.batch( <span class="args-summary"><span class="comma">,&nbsp;</span>function()</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>callback</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name">function()</span>
@@ -1897,7 +1883,8 @@ cy.endBatch();</code></pre>
 											<div class="name">cy.mount( <span class="args-summary"><span class="comma">,&nbsp;</span>container</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>To mount</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name">container</span>
@@ -2581,15 +2568,15 @@ cy.emit(<span class="hljs-string">'tap'</span>, [<span class="hljs-string">'foo'
 
 
 
-							<div class="descr"><p>Run a callback as soon as the graph becomes ready (i.e. intitial data loaded and initial layout completed).  If the graph is already ready, then the callback is called immediately.  If data is loaded synchronously and the layout used is discrete/synchronous/unanimated/unspecified, then you don&#39;t need <code>cy.ready()</code>.</p>
-</div>
+							<div class="descr"></div>
 
 							<div class="formats">
 									<div class="format">
 											<div class="name">cy.ready( <span class="args-summary"><span class="comma">,&nbsp;</span>function(event)</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Run a callback as soon as the graph becomes ready (i.e. intitial data loaded and initial layout completed).  If the graph is already ready, then the callback is called immediately.  If data is loaded synchronously and the layout used is discrete/synchronous/unanimated/unspecified, then you don&#39;t need <code>cy.ready()</code>.</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name">function(event)</span>
@@ -2628,7 +2615,7 @@ cy.emit(<span class="hljs-string">'tap'</span>, [<span class="hljs-string">'foo'
 
 
 
-							<div class="descr"><p>Get the HTML DOM element in which the graph is visualised.  A null value is returned if the instance is headless.</p>
+							<div class="descr"><p>Get the HTML DOM element in which the graph is visualised. A null value is returned if the instance is headless.</p>
 </div>
 
 
@@ -2713,7 +2700,7 @@ cy.center( j );</code></pre>
 										</ul>
 									</div>
 									<div class="format">
-											<div class="name">cy.fit( <span class="args-summary"> [<span class="comma">,&nbsp;</span>eles] [<span class="comma">,&nbsp;</span>padding]</span> )</div>
+											<div class="name">cy.fit( <span class="args-summary"><span class="comma">,&nbsp;</span>eles<span class="comma">,&nbsp;</span>padding</span> )</div>
 
 
 										<div class="descr"><p>Fit to the specified elements.</p>
@@ -2721,15 +2708,15 @@ cy.center( j );</code></pre>
 										<ul class="args">
 												<li>
 													<span class="name"><a href="#collection">eles</a></span>
-													<span class="optional">[optional]</span>
+													
 													<span class="descr"><p>The collection to fit to.</p>
 </span>
 
 												</li>
 												<li>
 													<span class="name">padding</span>
-													<span class="optional">[optional]</span>
-													<span class="descr"><p>An amount of padding (in rendered pixels) to have around the graph  (default <code>0</code>).</p>
+													
+													<span class="descr"><p>An amount of padding (in rendered pixels) to have around the graph (default 0).</p>
 </span>
 
 												</li>
@@ -2749,7 +2736,7 @@ cy.center( j );</code></pre>
 						<div class="function">
 							<div class="name" id="cy.reset">
 								<span class="fn-name">cy.reset()</span>  <a href="#cy.reset"><span class="fa fa-bookmark"></span></a>
-								<span id="core/viewport-manipulation/cy.reset">&nbsp;</span><span id="core/viewport-manipulation/cy.reset">&nbsp;</span><span id="cy.reset">&nbsp;</span>
+								<span id="core/viewport-manipulation/cy.reset">&nbsp;</span>
 							</div>
 
 
@@ -2757,17 +2744,6 @@ cy.center( j );</code></pre>
 							<div class="descr"><p>Reset the graph to the default zoom level and panning position.</p>
 </div>
 
-							<div class="formats">
-									<div class="format">
-											<div class="name">cy.reset()</div>
-
-
-										<div class="descr"><p>Resets the zoom and pan.</p>
-</div>
-										<ul class="args">
-										</ul>
-									</div>
-							</div>
 
 							<div class="details">
 									<h3 id="details">Details</h3>
@@ -2857,7 +2833,8 @@ setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</spa
 											<div class="name">cy.panBy( <span class="args-summary"><span class="comma">,&nbsp;</span>renderedPosition</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>The rendered position</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name"><a href="#notation/position">renderedPosition</a></span>
@@ -2907,7 +2884,7 @@ setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</spa
 											<div class="name">cy.panningEnabled( <span class="args-summary"><span class="comma">,&nbsp;</span>bool</span> )</div>
 
 
-										<div class="descr"><p>Set whether panning is enabled.</p>
+										<div class="descr"><p>Set whether panning is enabled</p>
 </div>
 										<ul class="args">
 												<li>
@@ -2955,13 +2932,13 @@ setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</spa
 											<div class="name">cy.userPanningEnabled( <span class="args-summary"><span class="comma">,&nbsp;</span>bool</span> )</div>
 
 
-										<div class="descr"><p>Set whether user panning is enabled.</p>
+										<div class="descr"><p>Set whether user panning is enabled</p>
 </div>
 										<ul class="args">
 												<li>
 													<span class="name">bool</span>
 													
-													<span class="descr"><p>A truthy value enables user panning; a falsey value disables it.</p>
+													<span class="descr"><p>A truthy value enables panning; a falsey value disables it.</p>
 </span>
 
 												</li>
@@ -3113,7 +3090,7 @@ setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</spa
 											<div class="name">cy.zoomingEnabled( <span class="args-summary"><span class="comma">,&nbsp;</span>bool</span> )</div>
 
 
-										<div class="descr"><p>Set whether zooming is enabled.</p>
+										<div class="descr"><p>Set whether zooming is enabled</p>
 </div>
 										<ul class="args">
 												<li>
@@ -3144,7 +3121,7 @@ setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</spa
 
 
 
-							<div class="descr"><p>Get or set whether zooming by user events (e.g. mouse wheel, pinch-to-zoom) is enabled.</p>
+							<div class="descr"><p>Get or set whether user zooming by user events (e.g. mouse wheel, pinch-to-zoom) is enabled.</p>
 </div>
 
 							<div class="formats">
@@ -3161,7 +3138,7 @@ setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</spa
 											<div class="name">cy.userZoomingEnabled( <span class="args-summary"><span class="comma">,&nbsp;</span>bool</span> )</div>
 
 
-										<div class="descr"><p>Set whether user zooming is enabled.</p>
+										<div class="descr"><p>Set whether zooming is enabled</p>
 </div>
 										<ul class="args">
 												<li>
@@ -3284,7 +3261,8 @@ setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</spa
 											<div class="name">cy.viewport( <span class="args-summary"><span class="comma">,&nbsp;</span>zoom<span class="comma">,&nbsp;</span>pan</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Set viewport</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name">zoom</span>
@@ -3321,7 +3299,7 @@ setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</spa
 
 
 
-							<div class="descr"><p>Get or set whether box selection is enabled.   If enabled along with panning, the user must hold down one of shift, control, alt, or command to initiate box selection.</p>
+							<div class="descr"><p>Get or set whether box selection is enabled. If enabled along with panning, the user must hold down one of shift, control, alt, or command to initiate box selection.</p>
 </div>
 
 							<div class="formats">
@@ -3530,7 +3508,7 @@ setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</spa
 												<li>
 													<span class="name">bool</span>
 													
-													<span class="descr"><p>A truthy value enables autoungrabbifying; a falsey value disables it.</p>
+													<span class="descr"><p>A truthy value enables autoungrabifying; a falsey value disables it.</p>
 </span>
 
 												</li>
@@ -3555,7 +3533,7 @@ setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</spa
 
 
 
-							<div class="descr"><p>Get or set whether nodes are automatically unselectified (i.e. if <code>true</code>, nodes are unselectable despite their individual state).</p>
+							<div class="descr"><p>Get or set whether nodes are automatically unselectified (i.e. if <code>true</code>, nodes are ungrabbale despite their individual state).</p>
 </div>
 
 							<div class="formats">
@@ -4144,7 +4122,7 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 									</span>
 							</div>
 
-							<div class="descr"><p>Get a new layout, which can be used to algorithmically position the nodes in the graph.</p>
+							<div class="descr"><p>Get a new layout, which can be used to algorithmically position the nodes in the graph</p>
 </div>
 
 							<div class="formats">
@@ -4152,7 +4130,8 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 											<div class="name">cy.layout( <span class="args-summary"><span class="comma">,&nbsp;</span>options</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Get layouts</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name">options</span>
@@ -7001,7 +6980,8 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 											<div class="name">eles.layout( <span class="args-summary"><span class="comma">,&nbsp;</span>options</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>The layouting comparison function.</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name">options</span>
@@ -7051,10 +7031,11 @@ layout.run();</code></pre>
 
 							<div class="formats">
 									<div class="format">
-											<div class="name">nodes.layoutPositions( <span class="args-summary"><span class="comma">,&nbsp;</span>layout<span class="comma">,&nbsp;</span>options<span class="comma">,&nbsp;</span>function(ele, i)</span> )</div>
+											<div class="name">nodes.layoutPositions( <span class="args-summary"><span class="comma">,&nbsp;</span>layout<span class="comma">,&nbsp;</span>options<span class="comma">,&nbsp;</span>function(ele,i)</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Position the nodes.</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name">layout</span>
@@ -7071,7 +7052,7 @@ layout.run();</code></pre>
 
 												</li>
 												<li>
-													<span class="name">function(ele, i)</span>
+													<span class="name">function(ele,i)</span>
 													
 													<span class="descr"><p>A function that returns the new position for the specified node.</p>
 </span>
@@ -7133,7 +7114,7 @@ layout.run();</code></pre>
 								</div>
 
 
-							<div class="descr"><p>Get the node width and height.  This function is intended for use in layout positioning to do overlap detection.</p>
+							<div class="descr"><p>Get the node width and height. This function is intended for use in layout positioning to do overlap detection.</p>
 </div>
 
 							<div class="formats">
@@ -7141,7 +7122,8 @@ layout.run();</code></pre>
 											<div class="name">node.layoutDimensions( <span class="args-summary"><span class="comma">,&nbsp;</span>options</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>The node layoutDimensionsing function.</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name">options</span>
@@ -7302,7 +7284,8 @@ layout.run();</code></pre>
 											<div class="name">eles.addClass( <span class="args-summary"><span class="comma">,&nbsp;</span>classes</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Adding Class</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name">classes</span>
@@ -7337,12 +7320,13 @@ layout.run();</code></pre>
 											<div class="name">eles.removeClass( <span class="args-summary"><span class="comma">,&nbsp;</span>classes</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Adding Class</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name">classes</span>
 													
-													<span class="descr"><p>An array (or a space-separated string) of class names to remove from the elements.</p>
+													<span class="descr"><p>An array (or a space-separated string) of class names to add to the elements.</p>
 </span>
 
 												</li>
@@ -7372,7 +7356,8 @@ layout.run();</code></pre>
 											<div class="name">eles.toggleClass( <span class="args-summary"><span class="comma">,&nbsp;</span>classes [<span class="comma">,&nbsp;</span>toggle]</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Toggle Event</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name">classes</span>
@@ -7479,7 +7464,8 @@ cy.nodes().classes(<span class="hljs-string">'foo'</span>); <span class="hljs-co
 											<div class="name">eles.flashClass( <span class="args-summary"><span class="comma">,&nbsp;</span>classes [<span class="comma">,&nbsp;</span>duration]</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>flash Event</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name">classes</span>
@@ -7491,7 +7477,7 @@ cy.nodes().classes(<span class="hljs-string">'foo'</span>); <span class="hljs-co
 												<li>
 													<span class="name">duration</span>
 													<span class="optional">[optional]</span>
-													<span class="descr"><p>The duration in milliseconds that the classes should be added on the elements.  After the duration, the classes are removed.</p>
+													<span class="descr"><p>The duration in milliseconds that the classes should be added on the elements. After the duration, the classes are removed.</p>
 </span>
 
 												</li>
@@ -7680,7 +7666,8 @@ cy.nodes().classes(<span class="hljs-string">'foo'</span>); <span class="hljs-co
 											<div class="name">ele.numericStyle( <span class="args-summary"><span class="comma">,&nbsp;</span>name</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>The numericStyle function.</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name">name</span>
@@ -7727,7 +7714,8 @@ cy.nodes().classes(<span class="hljs-string">'foo'</span>); <span class="hljs-co
 											<div class="name">ele.numericStyleUnits( <span class="args-summary"><span class="comma">,&nbsp;</span>name</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>The numericStyleUnits function.</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name">name</span>
@@ -7741,6 +7729,16 @@ cy.nodes().classes(<span class="hljs-string">'foo'</span>); <span class="hljs-co
 							</div>
 
 							<div class="details">
+									<h3 id="details">Details</h3>
+<ul>
+<li><code>px</code> for pixels</li>
+<li><code>em</code> for ems</li>
+<li><code>%</code> for percent</li>
+<li><code>rad</code> for radians</li>
+<li><code>s</code> for seconds</li>
+<li><code>ms</code> for milliseconds</li>
+</ul>
+
 							</div>
 						</div>
 						<div class="function">
@@ -8195,7 +8193,8 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 											<div class="name">eles.same( <span class="args-summary"><span class="comma">,&nbsp;</span>eles</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Determine same collection</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name"><a href="#collection">eles</a></span>
@@ -8233,7 +8232,8 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 											<div class="name">eles.anySame( <span class="args-summary"><span class="comma">,&nbsp;</span>eles</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Determine any same collection</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name"><a href="#collection">eles</a></span>
@@ -8278,7 +8278,8 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 											<div class="name">eles.contains( <span class="args-summary"><span class="comma">,&nbsp;</span>eles</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Determine another collection</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name"><a href="#collection">eles</a></span>
@@ -8320,7 +8321,8 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 											<div class="name">eles.allAreNeighbors( <span class="args-summary"><span class="comma">,&nbsp;</span>eles</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Determine neighbourhood collection</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name"><a href="#collection">eles</a></span>
@@ -8358,7 +8360,8 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 											<div class="name">eles.is( <span class="args-summary"><span class="comma">,&nbsp;</span>selector</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Matching Selector</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name"><a href="#selectors">selector</a></span>
@@ -8395,7 +8398,8 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 											<div class="name">eles.allAre( <span class="args-summary"><span class="comma">,&nbsp;</span>selector</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Matching Selector</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name"><a href="#selectors">selector</a></span>
@@ -8429,13 +8433,14 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 
 							<div class="formats">
 									<div class="format">
-											<div class="name">eles.some( <span class="args-summary"><span class="comma">,&nbsp;</span>function(ele, i, eles) [<span class="comma">,&nbsp;</span>thisArg]</span> )</div>
+											<div class="name">eles.some( <span class="args-summary"><span class="comma">,&nbsp;</span>function(ele,i,eles) [<span class="comma">,&nbsp;</span>thisArg]</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Listen to events that bubble up from elements matching the specified node selector:</p>
+</div>
 										<ul class="args">
 												<li>
-													<span class="name">function(ele, i, eles)</span>
+													<span class="name">function(ele,i,eles)</span>
 													
 													<span class="descr"><p>The test function that returns truthy values for elements that satisfy the test and falsey values for elements that do not satisfy the test.</p>
 </span>
@@ -8444,7 +8449,7 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 															<li>
 																<span class="name"><a href="#collection">ele</a></span>
 																
-																<span class="descr"><p>The current element.</p>
+																<span class="descr"><p>The event object.</p>
 </span>
 															</li>
 
@@ -8499,13 +8504,14 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 
 							<div class="formats">
 									<div class="format">
-											<div class="name">eles.every( <span class="args-summary"><span class="comma">,&nbsp;</span>function(ele, i, eles) [<span class="comma">,&nbsp;</span>thisArg]</span> )</div>
+											<div class="name">eles.every( <span class="args-summary"><span class="comma">,&nbsp;</span>function(ele,i,eles) [<span class="comma">,&nbsp;</span>thisArg]</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Determine test function</p>
+</div>
 										<ul class="args">
 												<li>
-													<span class="name">function(ele, i, eles)</span>
+													<span class="name">function(ele,i,eles)</span>
 													
 													<span class="descr"><p>The test function that returns truthy values for elements that satisfy the test and falsey values for elements that do not satisfy the test.</p>
 </span>
@@ -8514,7 +8520,7 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 															<li>
 																<span class="name"><a href="#collection">ele</a></span>
 																
-																<span class="descr"><p>The current element.</p>
+																<span class="descr"><p>The event object.</p>
 </span>
 															</li>
 
@@ -8635,13 +8641,14 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 
 							<div class="formats">
 									<div class="format">
-											<div class="name">eles.forEach( <span class="args-summary"><span class="comma">,&nbsp;</span>function(ele, i, eles) [<span class="comma">,&nbsp;</span>thisArg]</span> )</div>
+											<div class="name">eles.forEach( <span class="args-summary"><span class="comma">,&nbsp;</span>function(ele,i,eles) [<span class="comma">,&nbsp;</span>thisArg]</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Determine forEach function</p>
+</div>
 										<ul class="args">
 												<li>
-													<span class="name">function(ele, i, eles)</span>
+													<span class="name">function(ele,i,eles)</span>
 													
 													<span class="descr"><p>The function executed each iteration.</p>
 </span>
@@ -8664,7 +8671,7 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 															<li>
 																<span class="name"><a href="#collection">eles</a></span>
 																
-																<span class="descr"><p>The collection of elements being iterated.</p>
+																<span class="descr"><p>The collection of elements being searched.</p>
 </span>
 															</li>
 
@@ -8711,7 +8718,8 @@ cy.nodes().forEach(<span class="hljs-function"><span class="hljs-keyword">functi
 											<div class="name">eles.eq( <span class="args-summary"><span class="comma">,&nbsp;</span>index</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Get the index of the element.</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name">index</span>
@@ -8764,12 +8772,13 @@ cy.nodes().forEach(<span class="hljs-function"><span class="hljs-keyword">functi
 											<div class="name">eles.slice( <span class="args-summary"> [<span class="comma">,&nbsp;</span>start] [<span class="comma">,&nbsp;</span>end]</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Slice</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name">start</span>
 													<span class="optional">[optional]</span>
-													<span class="descr"><p>An integer that specifies where to start the selection.  The first element has an index of 0.  Use negative numbers to select from the end of an array.</p>
+													<span class="descr"><p>An integer that specifies where to start the selection. The first element has an index of 0. Use negative numbers to select from the end of an array.</p>
 </span>
 
 												</li>
@@ -9185,7 +9194,8 @@ jNhd.intersection( eNhd );</code></pre>
 											<div class="name">eles.diff( <span class="args-summary"><span class="comma">,&nbsp;</span>eles</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>diff Event</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name"><a href="#collection">eles</a></span>
@@ -9200,12 +9210,13 @@ jNhd.intersection( eNhd );</code></pre>
 											<div class="name">eles.diff( <span class="args-summary"><span class="comma">,&nbsp;</span>selector</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>diff Event</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name"><a href="#selectors">selector</a></span>
 													
-													<span class="descr"><p>A selector representing the elements on the right side of the diff.  All elements in the graph matching the selector are used as the passed collection.</p>
+													<span class="descr"><p>A selector representing the elements on the right side of the diff. All elements in the graph matching the selector are used as the passed collection.</p>
 </span>
 
 												</li>
@@ -9309,7 +9320,8 @@ col.merge(<span class="hljs-string">'#j'</span>).merge(<span class="hljs-string"
 											<div class="name">eles.unmerge( <span class="args-summary"><span class="comma">,&nbsp;</span>eles</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>unmerge Event</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name"><a href="#collection">eles</a></span>
@@ -9324,12 +9336,13 @@ col.merge(<span class="hljs-string">'#j'</span>).merge(<span class="hljs-string"
 											<div class="name">eles.unmerge( <span class="args-summary"><span class="comma">,&nbsp;</span>selector</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>unmerge Event</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name"><a href="#selectors">selector</a></span>
 													
-													<span class="descr"><p>A selector representing the elements to remove.  All elements in the graph matching the selector are used as the passed collection.</p>
+													<span class="descr"><p>A selector representing the elements to remove. All elements in the graph matching the selector are used as the passed collection.</p>
 </span>
 
 												</li>
@@ -9489,15 +9502,16 @@ col.unmerge(<span class="hljs-string">'#e'</span>);</code></pre>
 
 							<div class="formats">
 									<div class="format">
-											<div class="name">eles.sort( <span class="args-summary"><span class="comma">,&nbsp;</span>function(ele1, ele2)</span> )</div>
+											<div class="name">eles.sort( <span class="args-summary"><span class="comma">,&nbsp;</span>function(ele1,ele2)</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>The sorting comparison function.</p>
+</div>
 										<ul class="args">
 												<li>
-													<span class="name">function(ele1, ele2)</span>
+													<span class="name">function(ele1,ele2)</span>
 													
-													<span class="descr"><p>The sorting comparison function that returns a negative number for <code>ele1</code> before <code>ele2</code>, 0 for <code>ele1</code> same as <code>ele2</code>, or a positive number for <code>ele1</code> after <code>ele2</code>.</p>
+													<span class="descr"><p>Get a new collection containing the elements sorted by the specified comparison function.</p>
 </span>
 
 												</li>
@@ -9540,13 +9554,14 @@ nodes.removeStyle().forEach(<span class="hljs-function"><span class="hljs-keywor
 
 							<div class="formats">
 									<div class="format">
-											<div class="name">eles.map( <span class="args-summary"><span class="comma">,&nbsp;</span>function(ele, i, eles) [<span class="comma">,&nbsp;</span>thisArg]</span> )</div>
+											<div class="name">eles.map( <span class="args-summary"><span class="comma">,&nbsp;</span>function(ele,i,eles) [<span class="comma">,&nbsp;</span>thisArg]</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Determine test function</p>
+</div>
 										<ul class="args">
 												<li>
-													<span class="name">function(ele, i, eles)</span>
+													<span class="name">function(ele,i,eles)</span>
 													
 													<span class="descr"><p>The function that returns the mapped value for each element.</p>
 </span>
@@ -9610,13 +9625,14 @@ nodes.removeStyle().forEach(<span class="hljs-function"><span class="hljs-keywor
 
 							<div class="formats">
 									<div class="format">
-											<div class="name">eles.reduce( <span class="args-summary"><span class="comma">,&nbsp;</span>function(prevVal, ele, i, eles)</span> )</div>
+											<div class="name">eles.reduce( <span class="args-summary"><span class="comma">,&nbsp;</span>function(prevVal,ele,i,eles)</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Determine reduce function</p>
+</div>
 										<ul class="args">
 												<li>
-													<span class="name">function(prevVal, ele, i, eles)</span>
+													<span class="name">function(prevVal,ele,i,eles)</span>
 													
 													<span class="descr"><p>The function that returns the accumulated value given the previous value and the current element.</p>
 </span>
@@ -9681,18 +9697,19 @@ nodes.removeStyle().forEach(<span class="hljs-function"><span class="hljs-keywor
 
 
 
-							<div class="descr"><p>Find a minimum value in a collection.</p>
+							<div class="descr"><p>Find a minimum value and the corresponding element.</p>
 </div>
 
 							<div class="formats">
 									<div class="format">
-											<div class="name">eles.min( <span class="args-summary"><span class="comma">,&nbsp;</span>function(ele, i, eles) [<span class="comma">,&nbsp;</span>thisArg]</span> )</div>
+											<div class="name">eles.min( <span class="args-summary"><span class="comma">,&nbsp;</span>function(ele,i,eles) [<span class="comma">,&nbsp;</span>thisArg]</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Determine min function</p>
+</div>
 										<ul class="args">
 												<li>
-													<span class="name">function(ele, i, eles)</span>
+													<span class="name">function(ele,i,eles)</span>
 													
 													<span class="descr"><p>The function that returns the value to compare for each element.</p>
 </span>
@@ -9762,13 +9779,14 @@ nodes.removeStyle().forEach(<span class="hljs-function"><span class="hljs-keywor
 
 							<div class="formats">
 									<div class="format">
-											<div class="name">eles.max( <span class="args-summary"><span class="comma">,&nbsp;</span>function(ele, i, eles) [<span class="comma">,&nbsp;</span>thisArg]</span> )</div>
+											<div class="name">eles.max( <span class="args-summary"><span class="comma">,&nbsp;</span>function(ele,i,eles) [<span class="comma">,&nbsp;</span>thisArg]</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Determine max function</p>
+</div>
 										<ul class="args">
 												<li>
-													<span class="name">function(ele, i, eles)</span>
+													<span class="name">function(ele,i,eles)</span>
 													
 													<span class="descr"><p>The function that returns the value to compare for each element.</p>
 </span>
@@ -10171,7 +10189,8 @@ j.connectedEdges();</code></pre>
 											<div class="name">edge.source( <span class="args-summary"> [<span class="comma">,&nbsp;</span>selector]</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Get ID</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name"><a href="#selectors">selector</a></span>
@@ -10245,7 +10264,8 @@ edges.sources();</code></pre>
 											<div class="name">edge.target( <span class="args-summary"> [<span class="comma">,&nbsp;</span>selector]</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Get ID</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name"><a href="#selectors">selector</a></span>
@@ -10393,7 +10413,8 @@ edges.targets();</code></pre>
 											<div class="name">nodes.roots( <span class="args-summary"> [<span class="comma">,&nbsp;</span>selector]</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Get ID</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name"><a href="#selectors">selector</a></span>
@@ -10425,7 +10446,8 @@ edges.targets();</code></pre>
 											<div class="name">nodes.leaves( <span class="args-summary"> [<span class="comma">,&nbsp;</span>selector]</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Get ID</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name"><a href="#selectors">selector</a></span>
@@ -10457,7 +10479,8 @@ edges.targets();</code></pre>
 											<div class="name">nodes.outgoers( <span class="args-summary"> [<span class="comma">,&nbsp;</span>selector]</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Get ID</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name"><a href="#selectors">selector</a></span>
@@ -10493,7 +10516,8 @@ edges.targets();</code></pre>
 											<div class="name">nodes.successors( <span class="args-summary"> [<span class="comma">,&nbsp;</span>selector]</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Get ID</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name"><a href="#selectors">selector</a></span>
@@ -10529,7 +10553,8 @@ edges.targets();</code></pre>
 											<div class="name">nodes.incomers( <span class="args-summary"> [<span class="comma">,&nbsp;</span>selector]</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Get ID</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name"><a href="#selectors">selector</a></span>
@@ -10565,7 +10590,8 @@ edges.targets();</code></pre>
 											<div class="name">nodes.predecessors( <span class="args-summary"> [<span class="comma">,&nbsp;</span>selector]</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Get ID</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name"><a href="#selectors">selector</a></span>
@@ -11342,6 +11368,46 @@ ks.cut.select();</code></pre>
 <pre><code class="language-js"><span class="hljs-keyword">var</span> ht = cy.elements().hopcroftTarjan();
 
 ht.components[<span class="hljs-number">0</span>].select();</code></pre>
+<button class="run run-inline-code"><span class="fa fa-play"></span></button>
+							</div>
+						</div>
+						<div class="function">
+							<div class="name" id="eles.tarjanStronglyConnected">
+								<span class="fn-name">eles.tarjanStronglyConnected()</span>  <a href="#eles.tarjanStronglyConnected"><span class="fa fa-bookmark"></span></a>
+								<span id="collection/cut/eles.tarjanStronglyConnected">&nbsp;</span><span id="collection/cut/eles.tarjanStronglyConnectedComponents">&nbsp;</span><span id="eles.tarjanStronglyConnectedComponents">&nbsp;</span><span id="collection/cut/eles.tsc">&nbsp;</span><span id="eles.tsc">&nbsp;</span><span id="collection/cut/eles.tscc">&nbsp;</span><span id="eles.tscc">&nbsp;</span>
+							</div>
+
+
+							<div class="pure-aliases">
+								<span class="important-indicator"></span> Aliases:
+
+									<span class="pure-alias">
+										<code id="collection/cut/eles.tarjanStronglyConnectedComponents" class="pure-alias-name">eles.tarjanStronglyConnectedComponents()</code><span class="pure-alias-comma">,</span>
+									</span>
+									<span class="pure-alias">
+										<code id="collection/cut/eles.tsc" class="pure-alias-name">eles.tsc()</code><span class="pure-alias-comma">,</span>
+									</span>
+									<span class="pure-alias">
+										<code id="collection/cut/eles.tscc" class="pure-alias-name">eles.tscc()</code><span class="pure-alias-comma">,</span>
+									</span>
+							</div>
+
+							<div class="descr"><p>Finds the <a href="https://en.wikipedia.org/wiki/Strongly_connected_component">strongly connected components</a> of a directed graph using Tarjan&#39;s algorithm.</p>
+</div>
+
+
+							<div class="details">
+									<h3 id="details">Details</h3>
+<p>Note that this function identifies strongly connected components only within the subset of the graph in the calling collection.</p>
+<p>This function returns an object of the following form:</p>
+<pre><code class="language-js">{
+  cut, <span class="hljs-comment">/* Collection of edges which adjoin pairs of strongly connected components */</span>
+  components <span class="hljs-comment">/* Array of collections corresponding to each strongly connected component */</span>
+}</code></pre>
+<button class="run run-inline-code"><span class="fa fa-play"></span></button><h3 id="examples">Examples</h3>
+<pre><code class="language-js"><span class="hljs-keyword">var</span> tsc = cy.elements().tarjanStronglyConnected();
+
+tsc.components[<span class="hljs-number">0</span>].select();</code></pre>
 <button class="run run-inline-code"><span class="fa fa-play"></span></button>
 							</div>
 						</div>
@@ -12815,7 +12881,8 @@ ht.components[<span class="hljs-number">0</span>].select();</code></pre>
 											<div class="name">nodes.parent( <span class="args-summary"> [<span class="comma">,&nbsp;</span>selector]</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Get Parent Node.</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name"><a href="#selectors">selector</a></span>
@@ -12886,7 +12953,8 @@ ht.components[<span class="hljs-number">0</span>].select();</code></pre>
 											<div class="name">nodes.commonAncestors( <span class="args-summary"> [<span class="comma">,&nbsp;</span>selector]</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Get commonAncestors Node.</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name"><a href="#selectors">selector</a></span>
@@ -12921,7 +12989,8 @@ ht.components[<span class="hljs-number">0</span>].select();</code></pre>
 											<div class="name">nodes.orphans( <span class="args-summary"> [<span class="comma">,&nbsp;</span>selector]</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Get orphans Node.</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name"><a href="#selectors">selector</a></span>
@@ -12945,7 +13014,7 @@ ht.components[<span class="hljs-number">0</span>].select();</code></pre>
 
 
 
-							<div class="descr"><p>Get all nonorphan (i.e. has a compound parent) nodes in the calling collection.</p>
+							<div class="descr"><p>Get all nonorphan (i.e. has no compound parent) nodes in the calling collection.</p>
 </div>
 
 							<div class="formats">
@@ -12953,7 +13022,8 @@ ht.components[<span class="hljs-number">0</span>].select();</code></pre>
 											<div class="name">nodes.nonorphans( <span class="args-summary"> [<span class="comma">,&nbsp;</span>selector]</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Get nonorphans Node.</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name"><a href="#selectors">selector</a></span>
@@ -12985,7 +13055,8 @@ ht.components[<span class="hljs-number">0</span>].select();</code></pre>
 											<div class="name">nodes.children( <span class="args-summary"> [<span class="comma">,&nbsp;</span>selector]</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Get children Node.</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name"><a href="#selectors">selector</a></span>
@@ -13017,7 +13088,8 @@ ht.components[<span class="hljs-number">0</span>].select();</code></pre>
 											<div class="name">nodes.descendants( <span class="args-summary"> [<span class="comma">,&nbsp;</span>selector]</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Get descendants Node.</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name"><a href="#selectors">selector</a></span>
@@ -13049,7 +13121,8 @@ ht.components[<span class="hljs-number">0</span>].select();</code></pre>
 											<div class="name">nodes.siblings( <span class="args-summary"> [<span class="comma">,&nbsp;</span>selector]</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Get siblings Node.</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name"><a href="#selectors">selector</a></span>
@@ -13590,6 +13663,7 @@ Sets the subject of the selector (e.g. <code>$node &gt; node</code> to select th
 </li>
 <li><strong><code>taxi-turn</code></strong> : The distance along the primary axis where the first turn is applied.<ul>
 <li>This value may be an absolute distance (e.g. <code>20px</code>) or it may be a relative distance between the source and target (e.g. <code>50%</code>).</li>
+<li>A negative value may be specified to indicate a distance in the oppostite, target to source direction (e.g. <code>-20px</code>).</li>
 <li>Note that bundling may not work with an explicit direction (<code>upward</code>, <code>downward</code>, <code>leftward</code>, or <code>rightward</code>) in tandem with a turn distance specified in percent units.</li>
 </ul>
 </li>
@@ -14384,7 +14458,8 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 											<div class="name">layout.on( <span class="args-summary"><span class="comma">,&nbsp;</span>events [<span class="comma">,&nbsp;</span>data]<span class="comma">,&nbsp;</span>function(event)</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Listen to events.</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name"><a href="#events">events</a></span>
@@ -14438,15 +14513,15 @@ setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span
 									</span>
 							</div>
 
-							<div class="descr"><p>Get a promise that is resolved when the layout emits the first of any of the specified events.</p>
-</div>
+							<div class="descr"></div>
 
 							<div class="formats">
 									<div class="format">
 											<div class="name">layout.promiseOn( <span class="args-summary"><span class="comma">,&nbsp;</span>events</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Get a promise that is resolved when the layout emits the first of any of the specified events.</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name"><a href="#events">events</a></span>
@@ -14479,15 +14554,15 @@ layout.run();</code></pre>
 
 
 
-							<div class="descr"><p>Listen to events that are emitted by the layout, and run the handler only once.</p>
-</div>
+							<div class="descr"></div>
 
 							<div class="formats">
 									<div class="format">
 											<div class="name">layout.one( <span class="args-summary"><span class="comma">,&nbsp;</span>events [<span class="comma">,&nbsp;</span>data]<span class="comma">,&nbsp;</span>function(event)</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Listen to events that are emitted by the layout, and run the handler only once.</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name"><a href="#events">events</a></span>
@@ -14547,15 +14622,15 @@ layout.run();</code></pre>
 									</span>
 							</div>
 
-							<div class="descr"><p>Remove event handlers on the layout.</p>
-</div>
+							<div class="descr"></div>
 
 							<div class="formats">
 									<div class="format">
 											<div class="name">layout.removeListener( <span class="args-summary"><span class="comma">,&nbsp;</span>events [<span class="comma">,&nbsp;</span>handler]</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Remove event handlers on the layout.</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name"><a href="#events">events</a></span>
@@ -14608,15 +14683,15 @@ layout.run();</code></pre>
 									</span>
 							</div>
 
-							<div class="descr"><p>Emit one or more events on the layout.</p>
-</div>
+							<div class="descr"></div>
 
 							<div class="formats">
 									<div class="format">
 											<div class="name">layout.emit( <span class="args-summary"><span class="comma">,&nbsp;</span>events [<span class="comma">,&nbsp;</span>extraParams]</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Emit one or more events on the layout.</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name"><a href="#events">events</a></span>
@@ -14666,7 +14741,7 @@ layout.run();</code></pre>
 									</span>
 							</div>
 
-							<div class="descr"><p>Requests that the animation be played, starting on the next frame.  If the animation is complete, it restarts from the beginning.</p>
+							<div class="descr"><p>Requests that the animation be played, starting on the next frame. If the animation is complete, it restarts from the beginning.</p>
 </div>
 
 
@@ -15734,6 +15809,7 @@ cytoscape.use( ext );</code></pre>
 
 							<div class="section lvl3"><a class="toclink" href="#eles.kargerStein">eles.kargerStein() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#eles.hopcroftTarjanBiconnected">eles.hopcroftTarjanBiconnected() </a></div>
+							<div class="section lvl3"><a class="toclink" href="#eles.tarjanStronglyConnected">eles.tarjanStronglyConnected() </a></div>
 						<div class="section lvl2">
 							<span class="expander">
 								<span class="fa fa-caret-down expanded-icon"></span>

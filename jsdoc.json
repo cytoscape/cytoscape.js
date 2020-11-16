@@ -1,0 +1,20 @@
+{
+    "source": {
+      "include": ["src"],
+      "includePattern": ".js$",
+      "excludePattern": "(node_modules/|docs)"
+    },
+    "tags": {
+      "allowUnknownTags": ["param_desc", "formatsSameFn","sub_functions", "extFn"]
+  },
+    "plugins": [ "./node_modules/tsd-jsdoc/dist/plugin"],
+    "templates": {
+      "cleverLinks": true,
+      "monospaceLinks": true
+    },
+    "opts": {
+      "recurse": true,
+      "destination": "./jsdocs/"
+    }
+  }
+  

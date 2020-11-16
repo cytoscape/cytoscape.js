@@ -78,6 +78,12 @@ let elesfn = ({
 
   },
 
+  /**
+ * Get all elements in the graph that are not in the calling collection.
+ * @memberof nodes
+ * @alias eles.abscomp|eles.complement
+ * @namespace nodes.absoluteComplement
+ */
   absoluteComplement: function(){
     let cy = this.cy();
 
@@ -140,6 +146,18 @@ let elesfn = ({
     return this.spawn( elements );
   },
 
+  /**
+ * @typedef {object} eles_diff
+ * @property {object} eles - The elements on the right side of the diff.
+ * @property {object} selector - A selector representing the elements on the right side of the diff. All elements in the graph matching the selector are used as the passed collection.
+ */
+
+/**
+ * Perform a traditional left/right diff on the two collections.
+ * @memberof eles
+ * @param {...eles_diff} other - diff Event | diff Event
+ * @namespace eles.diff
+ */
   diff: function( other ){
     let cy = this._private.cy;
 
@@ -298,6 +316,18 @@ let elesfn = ({
   },
 
   // remove eles in place on calling collection
+  /**
+ * @typedef {object} eles_unmerge
+ * @property {object} eles - The elements to remove in-place.
+ * @property {object} selector - A selector representing the elements to remove. All elements in the graph matching the selector are used as the passed collection.
+ */
+
+/**
+ * Perform an in-place operation on the calling collection to remove the given elements.
+ * @memberof eles
+ * @param {...eles_unmerge} toRemove - unmerge Event | unmerge Event
+ * @namespace eles.unmerge
+ */
   unmerge: function( toRemove ){
     let cy = this._private.cy;
 
@@ -329,6 +359,36 @@ let elesfn = ({
     return this;
   },
 
+  /**
+ * function(ele, i, eles) [, thisArg]
+ * @typedef {object} eles_map_callback_type
+ * @property {object} ele - The current element.
+ * @property {object} i - The index of the current element.
+ * @property {object} eles - The collection of elements being mapped.
+ */
+
+/**
+ * @callback eles_map_callback
+ * @property {eles_map_callback_type} function(ele,i,eles) - eles_map_callback_type
+ */
+
+/**
+ * @typedef {object} eles_collection_map
+ * @property {function(eles_map_callback):any} eles_map_callback - The function that returns the mapped value for each element.
+ * @property {object} thisArg - [optional] The value for `this` within the iterating function.
+ */
+
+/**
+ * @typedef {object} eles_map
+ * @property {eles_collection_map} eles_collection_map
+ */
+
+  /**
+ * Get an array containing values mapped from the collection.
+ * @memberof eles
+ * @param {...eles_map} mapFn - Determine test function
+ * @namespace eles.map
+ */
   map: function( mapFn, thisArg ){
     let arr = [];
     let eles = this;
@@ -343,6 +403,36 @@ let elesfn = ({
     return arr;
   },
 
+  /**
+ * function(prevVal, ele, i, eles)
+ * @typedef {object} eles_reduce_callback_type
+ * @property {object} prevVal - The value accumulated from previous elements.
+ * @property {object} ele - The current element.
+ * @property {object} i - The index of the current element.
+ * @property {object} eles - The collection of elements being reduced.
+ */
+
+/**
+ * @callback eles_reduce_callback
+ * @property {eles_reduce_callback_type} function(prevVal,ele,i,eles) - eles_reduce_callback_type
+ */
+
+/**
+ * @typedef {object} eles_collection_reduce
+ * @property {function(eles_reduce_callback):any} eles_reduce_callback - The function that returns the accumulated value given the previous value and the current element.
+ */
+
+/**
+ * @typedef {object} eles_reduce
+ * @property {eles_collection_reduce} eles_collection_reduce
+ */
+
+  /**
+ * Reduce a single value by applying a function against an accumulator and each value of the collection.
+ * @memberof eles
+ * @param {...eles_reduce} fn - Determine reduce function
+ * @namespace eles.reduce
+ */
   reduce: function( fn, initialValue ){
     let val = initialValue;
     let eles = this;
@@ -354,6 +444,36 @@ let elesfn = ({
     return val;
   },
 
+  /**
+ * function(ele, i, eles) [, thisArg]
+ * @typedef {object} eles_max_callback_type
+ * @property {object} ele - The current element.
+ * @property {object} i - The index of the current element.
+ * @property {object} eles - The collection of elements being searched.
+ */
+
+/**
+ * @callback eles_max_callback
+ * @property {eles_max_callback_type} function(ele,i,eles) - eles_max_callback_type
+ */
+
+/**
+ * @typedef {object} eles_collection_max
+ * @property {function(eles_max_callback):any} eles_max_callback - The function that returns the value to compare for each element.
+ * @property {object} thisArg - [optional] The value for `this` within the iterating function.
+ */
+
+/**
+ * @typedef {object} eles_max
+ * @property {eles_collection_max} eles_collection_max
+ */
+
+  /**
+ * Find a maximum value and the corresponding element.
+ * @memberof eles
+ * @param {...eles_max} valFn - Determine max function
+ * @namespace eles.max
+ */
   max: function( valFn, thisArg ){
     let max = -Infinity;
     let maxEle;
@@ -375,6 +495,36 @@ let elesfn = ({
     };
   },
 
+  /**
+ * function(ele, i, eles) [, thisArg]
+ * @typedef {object} eles_min_callback_type
+ * @property {object} ele - The current element.
+ * @property {object} i - The index of the current element.
+ * @property {object} eles - The collection of elements being searched.
+ */
+
+/**
+ * @callback eles_min_callback
+ * @property {eles_min_callback_type} function(ele,i,eles) - eles_min_callback_type
+ */
+
+/**
+ * @typedef {object} eles_collection_min
+ * @property {function(eles_min_callback):any} eles_min_callback - The function that returns the value to compare for each element.
+ * @property {object} thisArg - [optional] The value for `this` within the iterating function.
+ */
+
+/**
+ * @typedef {object} eles_min
+ * @property {eles_collection_min} eles_collection_min
+ */
+
+  /**
+ * Find a minimum value and the corresponding element.
+ * @memberof eles
+ * @param {...eles_min} valFn - Determine min function
+ * @namespace eles.min
+ */
   min: function( valFn, thisArg ){
     let min = Infinity;
     let minEle;

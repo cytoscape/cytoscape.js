@@ -7,6 +7,8 @@ import nullLayout from './null';
 import presetLayout from './preset';
 import randomLayout from './random';
 
+/* eslint-disable no-unused-vars */
+
 /**
  * @class layout
  */
@@ -155,7 +157,8 @@ let layoutfn = ({
 
   }
 
-})
+});
+/* eslint-enable no-unused-vars */
 
 export default [
   { name: 'breadthfirst', impl: breadthfirstLayout },

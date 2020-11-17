@@ -158,6 +158,7 @@ BRp.registerArrowShapes = function(){
     }
   } );
 
+
   defineArrowShape( 'triangle-tee', {
     points: [
       0, 0,
@@ -336,6 +337,23 @@ BRp.registerArrowShapes = function(){
 
     gap: function( edge ){
       return 0.95 * edge.pstyle( 'width' ).pfValue * edge.pstyle( 'arrow-scale' ).value;
+    }
+  } );
+
+  defineArrowShape( 'one',  {
+    points: [
+      -0.25, 0,
+      -.25, -0.1,
+      .25, -0.1,
+      0.25, 0
+    ],
+
+    spacing: function( edge ){
+      return 15;
+    },
+
+    gap: function( edge ){
+      return 0;
     }
   } );
 

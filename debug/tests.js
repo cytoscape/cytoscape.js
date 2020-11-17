@@ -25,7 +25,6 @@
   var tests = {}; // name => setup
   function test(options){
     var option = document.createElement('option');
-
     option.value = options.name;
     option.innerHTML = options.displayName;
 
@@ -91,6 +90,42 @@
           cy.fit();
         })
       );
+    }
+  });
+
+  test({
+    name: "one",
+    displayName: "One Relation | Line",
+    description: "Click edge to toggle",
+    setup: function(){
+      cy.elements().bind("click", function(){
+        this.css({
+          shape: "rectangle",
+          targetArrowShape: "one",
+          sourceArrowShape: "one"
+        });
+      });
+    },
+    teardown: function(){
+      cy.elements().unbind("click").css("*", "");
+    }
+  });
+
+  test({
+    name: "crowsFeet",
+    displayName: "Many Relation | Crows Feet",
+    description: "Click edge to toggle",
+    setup: function(){
+      cy.elements().bind("click", function(){
+        this.css({
+          shape: "rectangle",
+          targetArrowShape: "circle",
+          sourceArrowShape: "one"
+        });
+      });
+    },
+    teardown: function(){
+      cy.elements().unbind("click").css("*", "");
     }
   });
 
@@ -460,6 +495,7 @@
       cy.edges().removeCss();
     }
   });
+
 
   test({
     name: "fancyStyle",

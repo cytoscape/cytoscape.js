@@ -11,10 +11,17 @@ var dockmaker_elements=JSON.parse(data);
 
 var core_AST=fs.readFileSync( path.join(__dirname, './ast/core_AST.json'), 'utf8');
 var words=JSON.parse(core_AST);
+var collection_AST=fs.readFileSync( path.join(__dirname, './ast/collection_AST.json'), 'utf8');
+var collection_words=JSON.parse(collection_AST);
 var animation_AST=fs.readFileSync( path.join(__dirname, './ast/animation_AST.json'), 'utf8');
 var animation_words=JSON.parse(animation_AST);
 var layout_AST=fs.readFileSync( path.join(__dirname, './ast/layout_AST.json'), 'utf8');
 var layout_words=JSON.parse(layout_AST);
+
+for(var idx in collection_words)
+{
+    words.push(collection_words[idx]);
+}
 
 for(var idx in animation_words)
 {

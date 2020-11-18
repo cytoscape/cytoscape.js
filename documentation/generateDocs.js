@@ -9,11 +9,11 @@ var dockmaker_elements=JSON.parse(data);
 // }
 // sleepFor(5000)
 
-var core_AST=fs.readFileSync( path.join(__dirname, './AST/core_AST.json'), 'utf8');
+var core_AST=fs.readFileSync( path.join(__dirname, './ast/core_AST.json'), 'utf8');
 var words=JSON.parse(core_AST);
-var animation_AST=fs.readFileSync( path.join(__dirname, './AST/animation_AST.json'), 'utf8');
+var animation_AST=fs.readFileSync( path.join(__dirname, './ast/animation_AST.json'), 'utf8');
 var animation_words=JSON.parse(animation_AST);
-var layout_AST=fs.readFileSync( path.join(__dirname, './AST/layout_AST.json'), 'utf8');
+var layout_AST=fs.readFileSync( path.join(__dirname, './ast/layout_AST.json'), 'utf8');
 var layout_words=JSON.parse(layout_AST);
 
 for(var idx in animation_words)

@@ -270,9 +270,9 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
       drawShape();
       drawImages( effGhostOpacity );
       drawPie( darkness !== 0 || borderWidth !== 0 );
-      darken( effGhostOpacity );
       setupBorderColor( ghostOpacity * borderOpacity );
       drawBorder();
+      darken( effGhostOpacity );
     }
 
     if ( bgContainment === 'over' ) {
@@ -281,8 +281,8 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
       setupBorderColor( ghostOpacity * borderOpacity );
       drawBorder();
       drawPie( darkness !== 0 || borderWidth !== 0 );
-      darken( effGhostOpacity );
       drawImages( effGhostOpacity );
+      darken( effGhostOpacity );
     }
 
     context.translate( -gx, -gy );
@@ -294,9 +294,9 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
     drawShape();
     drawImages();
     drawPie( darkness !== 0 || borderWidth !== 0 );
-    darken();
     setupBorderColor();
     drawBorder();
+    darken();
   }
 
   if ( bgContainment === 'over' ) {

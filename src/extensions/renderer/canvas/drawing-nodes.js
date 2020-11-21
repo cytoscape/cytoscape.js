@@ -277,7 +277,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
 
   let bgContainment = node.pstyle('background-image-containment').value;
 
-  if ( bgContainment ==='inside' ) {
+  if ( bgContainment === 'inside' ) {
     setupShapeColor();
     drawShape();
     drawImages();
@@ -287,7 +287,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
     drawBorder();
   }
 
-  if ( bgContainment ==='over' ) {
+  if ( bgContainment === 'over' ) {
     setupShapeColor();
     drawShape();
     setupBorderColor();

@@ -265,7 +265,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
 
     context.translate( gx, gy );
 
-    if ( bgContainment === 'inside' ) {
+    if ( bgContainment === 'inside' ){
       setupShapeColor( ghostOpacity * bgOpacity );
       drawShape();
       drawImages( effGhostOpacity );
@@ -275,7 +275,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
       darken( effGhostOpacity );
     }
 
-    if ( bgContainment === 'over' ) {
+    if ( bgContainment === 'over' ){
       setupShapeColor( ghostOpacity * bgOpacity );
       drawShape();
       setupBorderColor( ghostOpacity * borderOpacity );
@@ -287,9 +287,8 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
 
     context.translate( -gx, -gy );
   }
-
   
-  if ( bgContainment === 'inside' ) {
+  if( bgContainment === 'inside' ){
     setupShapeColor();
     drawShape();
     drawImages();
@@ -299,7 +298,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
     darken();
   }
 
-  if ( bgContainment === 'over' ) {
+  if( bgContainment === 'over' ){
     setupShapeColor();
     drawShape();
     setupBorderColor();

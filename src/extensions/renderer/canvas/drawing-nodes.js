@@ -275,13 +275,27 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
     context.translate( -gx, -gy );
   }
 
-  setupShapeColor();
-  drawShape();
-  drawImages();
-  drawPie( darkness !== 0 || borderWidth !== 0 );
-  darken();
-  setupBorderColor();
-  drawBorder();
+  let bgContainment = node.pstyle('background-image-containment').value;
+
+  if ( bgContainment ==='inside' ) {
+    setupShapeColor();
+    drawShape();
+    drawImages();
+    drawPie( darkness !== 0 || borderWidth !== 0 );
+    darken();
+    setupBorderColor();
+    drawBorder();
+  }
+
+  if ( bgContainment ==='over' ) {
+    setupShapeColor();
+    drawShape();
+    setupBorderColor();
+    drawBorder();
+    drawImages();
+    drawPie( darkness !== 0 || borderWidth !== 0 );
+    darken();
+  } 
 
   if( usePaths ){
     context.translate( -pos.x, -pos.y );

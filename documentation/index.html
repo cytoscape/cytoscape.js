@@ -13488,6 +13488,8 @@ Sets the subject of the selector (e.g. <code>$node &gt; node</code> to select th
 </li>
 <li><p>To put an image outside of the bounds of a node’s body, it is necessary to specify <code>background-clip: none</code> and <code>bounds-expansion: n</code> for images that go <code>n</code> pixels beyond the bounding box of the node.  Note that values of <code>n</code> should be relatively small for performance.</p>
 </li>
+<li><p>To control the drawing order of background images (e.g overlay background images over borders), it is necessary to specify <code>background-image-containment: over</code> (default <code>inside</code>).</p>
+</li>
 <li><p>SVG image considerations:</p>
 <ul>
 <li><p>Always include this XML header in each SVG image:</p>

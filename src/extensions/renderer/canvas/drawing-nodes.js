@@ -303,8 +303,8 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
     drawShape();
     setupBorderColor();
     drawBorder();
-    drawImages();
     drawPie( darkness !== 0 || borderWidth !== 0 );
+    drawImages();
     darken();
   } 
 

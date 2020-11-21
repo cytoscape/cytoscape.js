@@ -10,16 +10,16 @@
     "gzipped": 110645
   },
   "build/cytoscape.esm.js": {
-    "bundled": 861630,
-    "minified": 366800,
-    "gzipped": 110594,
+    "bundled": 861992,
+    "minified": 366874,
+    "gzipped": 110606,
     "treeshaked": {
       "rollup": {
-        "code": 342258,
+        "code": 342334,
         "import_statements": 51
       },
       "webpack": {
-        "code": 343645
+        "code": 343719
       }
     }
   },

@@ -254,6 +254,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
     r.drawElementText( context, node, null, drawLabel );
   };
 
+  let bgContainment = node.pstyle('background-image-containment').value;
   let ghost = node.pstyle('ghost').value === 'yes';
 
   if( ghost ){
@@ -264,19 +265,30 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
 
     context.translate( gx, gy );
 
-    setupShapeColor( ghostOpacity * bgOpacity );
-    drawShape();
-    drawImages( effGhostOpacity );
-    drawPie( darkness !== 0 || borderWidth !== 0 );
-    darken( effGhostOpacity );
-    setupBorderColor( ghostOpacity * borderOpacity );
-    drawBorder();
+    if ( bgContainment === 'inside' ) {
+      setupShapeColor( ghostOpacity * bgOpacity );
+      drawShape();
+      drawImages( effGhostOpacity );
+      drawPie( darkness !== 0 || borderWidth !== 0 );
+      darken( effGhostOpacity );
+      setupBorderColor( ghostOpacity * borderOpacity );
+      drawBorder();
+    }
+
+    if ( bgContainment === 'over' ) {
+      setupShapeColor( ghostOpacity * bgOpacity );
+      drawShape();
+      setupBorderColor( ghostOpacity * borderOpacity );
+      drawBorder();
+      drawPie( darkness !== 0 || borderWidth !== 0 );
+      darken( effGhostOpacity );
+      drawImages( effGhostOpacity );
+    }
 
     context.translate( -gx, -gy );
   }
 
-  let bgContainment = node.pstyle('background-image-containment').value;
-
+  
   if ( bgContainment === 'inside' ) {
     setupShapeColor();
     drawShape();

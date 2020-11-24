@@ -1228,7 +1228,7 @@ var Element = function Element(cy, params) {
   var bypass = params.style || params.css;
 
   if (bypass) {
-    warn('Setting a `style` bypass at element creation should be done only when absolutely necessary.  Try to use the stylesheet instead.');
+    warn('Setting a `style` bypass at element creation is deprecated');
     this.style(bypass);
   }
 
@@ -9325,8 +9325,6 @@ var updateBoundsFromLabel = function updateBoundsFromLabel(bounds, ele, prefix) 
     var borderWidth = ele.pstyle('text-border-width').pfValue;
     var halfBorderWidth = borderWidth / 2;
     var padding = ele.pstyle('text-background-padding').pfValue;
-    var marginOfError = 2; // expand to work around browser dimension inaccuracies
-
     var lh = labelHeight;
     var lw = labelWidth;
     var lw_2 = lw / 2;
@@ -9375,10 +9373,10 @@ var updateBoundsFromLabel = function updateBoundsFromLabel(bounds, ele, prefix) 
     } // shift by margin and expand by outline and border
 
 
-    lx1 += marginX - Math.max(outlineWidth, halfBorderWidth) - padding - marginOfError;
-    lx2 += marginX + Math.max(outlineWidth, halfBorderWidth) + padding + marginOfError;
-    ly1 += marginY - Math.max(outlineWidth, halfBorderWidth) - padding - marginOfError;
-    ly2 += marginY + Math.max(outlineWidth, halfBorderWidth) + padding + marginOfError; // always store the unrotated label bounds separately
+    lx1 += marginX - Math.max(outlineWidth, halfBorderWidth) - padding;
+    lx2 += marginX + Math.max(outlineWidth, halfBorderWidth) + padding;
+    ly1 += marginY - Math.max(outlineWidth, halfBorderWidth) - padding;
+    ly2 += marginY + Math.max(outlineWidth, halfBorderWidth) + padding; // always store the unrotated label bounds separately
 
     var bbPrefix = prefix || 'main';
     var bbs = _p.labelBounds;
@@ -9389,6 +9387,8 @@ var updateBoundsFromLabel = function updateBoundsFromLabel(bounds, ele, prefix) 
     bb.y2 = ly2;
     bb.w = lx2 - lx1;
     bb.h = ly2 - ly1;
+    expandBoundingBox(bb, 1); // expand to work around browser dimension inaccuracies
+
     var isAutorotate = isEdge && rotation.strValue === 'autorotate';
     var isPfValue = rotation.pfValue != null && rotation.pfValue !== 0;
 
@@ -9753,14 +9753,14 @@ var cachedBoundingBoxImpl = function cachedBoundingBoxImpl(ele, opts) {
   var useCache = opts.useCache && isPosKeySame;
 
   var isDirty = function isDirty(ele) {
-    return ele._private.bbCache == null || ele._private.styleDirty;
+    return ele._private.bbCache == null;
   };
 
   var needRecalc = !useCache || isDirty(ele) || isEdge && isDirty(ele.source()) || isDirty(ele.target());
 
   if (needRecalc) {
     if (!isPosKeySame) {
-      ele.recalculateRenderedStyle(useCache);
+      ele.recalculateRenderedStyle();
     }
 
     bb = boundingBoxImpl(ele, defBbOpts);
@@ -9862,7 +9862,7 @@ elesfn$k.boundingBox = function (options) {
   // specified s.t. the cache is used, so check for this case to make it faster by
   // avoiding the overhead of the rest of the function
 
-  if (this.length === 1 && this[0]._private.bbCache != null && !this[0]._private.styleDirty && (options === undefined || options.useCache === undefined || options.useCache === true)) {
+  if (this.length === 1 && this[0]._private.bbCache != null && (options === undefined || options.useCache === undefined || options.useCache === true)) {
     if (options === undefined) {
       options = defBbOpts;
     } else {
@@ -9884,7 +9884,7 @@ elesfn$k.boundingBox = function (options) {
         var _p = ele._private;
         var currPosKey = getBoundingBoxPosKey(ele);
         var isPosKeySame = _p.bbCachePosKey === currPosKey;
-        var useCache = opts.useCache && isPosKeySame && !_p.styleDirty;
+        var useCache = opts.useCache && isPosKeySame;
         ele.recalculateRenderedStyle(useCache);
       }
     }
@@ -11615,7 +11615,6 @@ var elesfn$r = {
 
     if (ele) {
       if (ele._private.styleDirty) {
-        // n.b. this flag should be set before apply() to avoid potential infinite recursion
         ele._private.styleDirty = false;
         cy.style().apply(ele);
         ele.emitAndNotify('style');
@@ -14503,6 +14502,13 @@ styfn.apply = function (eles) {
   var cy = _p.cy;
   var updatedEles = cy.collection();
 
+  if (_p.newStyle) {
+    // clear style caches
+    _p.contextStyles = {};
+    _p.propDiffs = {};
+    self.cleanElements(eles, true);
+  }
+
   for (var ie = 0; ie < eles.length; ie++) {
     var ele = eles[ie];
     var cxtMeta = self.getContextMeta(ele);
@@ -14514,10 +14520,8 @@ styfn.apply = function (eles) {
     var cxtStyle = self.getContextStyle(cxtMeta);
     var app = self.applyContextStyle(cxtMeta, cxtStyle, ele);
 
-    if (ele._private.appliedInitStyle) {
+    if (!_p.newStyle) {
       self.updateTransitions(ele, app.diffProps);
-    } else {
-      ele._private.appliedInitStyle = true;
     }
 
     var hintsDiff = self.updateStyleHints(ele);
@@ -14528,6 +14532,7 @@ styfn.apply = function (eles) {
   } // for elements
 
 
+  _p.newStyle = false;
   return updatedEles;
 };
 
@@ -14606,7 +14611,12 @@ styfn.getContextMeta = function (ele) {
   var self = this;
   var cxtKey = '';
   var diffProps;
-  var prevKey = ele._private.styleCxtKey || ''; // get the cxt key
+  var prevKey = ele._private.styleCxtKey || '';
+
+  if (self._private.newStyle) {
+    prevKey = ''; // since we need to apply all style if a fresh stylesheet
+  } // get the cxt key
+
 
   for (var i = 0; i < self.length; i++) {
     var context = self[i];
@@ -14878,7 +14888,6 @@ styfn.updateStyleHints = function (ele) {
 
 styfn.clearStyleHints = function (ele) {
   var _p = ele._private;
-  _p.styleCxtKey = '';
   _p.styleKeys = {};
   _p.styleKey = null;
   _p.labelKey = null;
@@ -16047,10 +16056,6 @@ var styfn$6 = {};
       enums: ['none', 'node'],
       multiple: true
     },
-    bgContainment: {
-      enums: ['inside', 'over'],
-      multiple: false
-    },
     color: {
       color: true
     },
@@ -16565,9 +16570,6 @@ var styfn$6 = {};
     name: 'background-image-opacity',
     type: t.zeroOneNumbers
   }, {
-    name: 'background-image-containment',
-    type: t.bgContainment
-  }, {
     name: 'background-position-x',
     type: t.bgPos
   }, {
@@ -16646,9 +16648,6 @@ var styfn$6 = {};
   }, {
     name: 'line-cap',
     type: t.lineCap
-  }, {
-    name: 'line-opacity',
-    type: t.zeroOneNumber
   }, {
     name: 'line-dash-pattern',
     type: t.numbers
@@ -17001,7 +17000,6 @@ styfn$6.getDefaultProperties = function () {
     'background-image': 'none',
     'background-image-crossorigin': 'anonymous',
     'background-image-opacity': 1,
-    'background-image-containment': 'inside',
     'background-position-x': '50%',
     'background-position-y': '50%',
     'background-offset-x': 0,
@@ -17068,7 +17066,6 @@ styfn$6.getDefaultProperties = function () {
     'line-color': '#999',
     'line-fill': 'solid',
     'line-cap': 'butt',
-    'line-opacity': 1,
     'line-gradient-stop-colors': '#999',
     'line-gradient-stop-positions': '0%',
     'control-point-step-size': 40,
@@ -17635,23 +17632,13 @@ styfn$8.instanceString = function () {
 
 
 styfn$8.clear = function () {
-  var _p = this._private;
-  var cy = _p.cy;
-  var eles = cy.elements();
-
   for (var i = 0; i < this.length; i++) {
     this[i] = undefined;
   }
 
   this.length = 0;
-  _p.contextStyles = {};
-  _p.propDiffs = {};
-  this.cleanElements(eles, true);
-  eles.forEach(function (ele) {
-    var ele_p = ele[0]._private;
-    ele_p.styleDirty = true;
-    ele_p.appliedInitStyle = false;
-  });
+  var _p = this._private;
+  _p.newStyle = true;
   return this; // chaining
 };
 
@@ -23643,11 +23630,6 @@ BRp$6.getLabelText = function (ele, prefix) {
     var ellipsis = "\u2026";
     var incLastCh = false;
 
-    if (this.calculateLabelDimensions(ele, text).width < _maxW) {
-      // the label already fits
-      return text;
-    }
-
     for (var i = 0; i < text.length; i++) {
       var widthWithNextCh = this.calculateLabelDimensions(ele, ellipsized + text[i] + ellipsis).width;
 
@@ -23707,7 +23689,7 @@ BRp$6.calculateLabelDimensions = function (ele, text) {
     return existingVal;
   }
 
-  var padding = 0; // add padding around text dims, as the measurement isn't that accurate
+  var padding = 6; // add padding around text dims, as the measurement isn't that accurate
 
   var fStyle = ele.pstyle('font-style').strValue;
   var size = ele.pstyle('font-size').pfValue;
@@ -24160,9 +24142,9 @@ BRp$c.load = function () {
     if (r.cy.hasCompoundNodes() && down && down.pannable()) {
       // a grabbable compound node below the ele => no passthrough panning
       for (var i = 0; downs && i < downs.length; i++) {
-        var down = downs[i]; //if any parent node in event hierarchy isn't pannable, reject passthrough
+        var down = downs[i];
 
-        if (down.isNode() && down.isParent() && !down.pannable()) {
+        if (down.isNode() && down.isParent()) {
           allowPassthrough = false;
           break;
         }
@@ -27314,7 +27296,7 @@ ETCp.getElement = function (ele, bb, pxRatio, lvl, reason) {
   var zoom = r.cy.zoom();
   var lookup = this.lookup;
 
-  if (!bb || bb.w === 0 || bb.h === 0 || isNaN(bb.w) || isNaN(bb.h) || !ele.visible() || !ele.removed()) {
+  if (bb.w === 0 || bb.h === 0 || isNaN(bb.w) || isNaN(bb.h) || !ele.visible()) {
     return null;
   }
 
@@ -28669,16 +28651,12 @@ CRp$2.drawEdge = function (context, edge, shiftToOriginWithBb) {
   }
 
   var opacity = shouldDrawOpacity ? edge.pstyle('opacity').value : 1;
-  var lineOpacity = shouldDrawOpacity ? edge.pstyle('line-opacity').value : 1;
   var lineStyle = edge.pstyle('line-style').value;
   var edgeWidth = edge.pstyle('width').pfValue;
   var lineCap = edge.pstyle('line-cap').value;
-  var effectiveLineOpacity = opacity * lineOpacity; // separate arrow opacity would require arrow-opacity property
-
-  var effectiveArrowOpacity = opacity * lineOpacity;
 
   var drawLine = function drawLine() {
-    var strokeOpacity = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : effectiveLineOpacity;
+    var strokeOpacity = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : opacity;
     context.lineWidth = edgeWidth;
     context.lineCap = lineCap;
     r.eleStrokeStyle(context, edge, strokeOpacity);
@@ -28695,7 +28673,7 @@ CRp$2.drawEdge = function (context, edge, shiftToOriginWithBb) {
   };
 
   var drawArrows = function drawArrows() {
-    var arrowOpacity = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : effectiveArrowOpacity;
+    var arrowOpacity = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : opacity;
     r.drawArrowheads(context, edge, arrowOpacity);
   };
 
@@ -28710,7 +28688,7 @@ CRp$2.drawEdge = function (context, edge, shiftToOriginWithBb) {
     var gx = edge.pstyle('ghost-offset-x').pfValue;
     var gy = edge.pstyle('ghost-offset-y').pfValue;
     var ghostOpacity = edge.pstyle('ghost-opacity').value;
-    var effectiveGhostOpacity = effectiveLineOpacity * ghostOpacity;
+    var effectiveGhostOpacity = opacity * ghostOpacity;
     context.translate(gx, gy);
     drawLine(effectiveGhostOpacity);
     drawArrows(effectiveGhostOpacity);
@@ -29751,7 +29729,6 @@ CRp$5.drawNode = function (context, node, shiftToOriginWithBb) {
     r.drawElementText(context, node, null, drawLabel);
   };
 
-  var bgContainment = node.pstyle('background-image-containment').value;
   var ghost = node.pstyle('ghost').value === 'yes';
 
   if (ghost) {
@@ -29760,49 +29737,23 @@ CRp$5.drawNode = function (context, node, shiftToOriginWithBb) {
     var ghostOpacity = node.pstyle('ghost-opacity').value;
     var effGhostOpacity = ghostOpacity * eleOpacity;
     context.translate(gx, gy);
-
-    if (bgContainment === 'inside') {
-      setupShapeColor(ghostOpacity * bgOpacity);
-      drawShape();
-      drawImages(effGhostOpacity);
-      drawPie(darkness !== 0 || borderWidth !== 0);
-      setupBorderColor(ghostOpacity * borderOpacity);
-      drawBorder();
-      darken(effGhostOpacity);
-    }
-
-    if (bgContainment === 'over') {
-      setupShapeColor(ghostOpacity * bgOpacity);
-      drawShape();
-      setupBorderColor(ghostOpacity * borderOpacity);
-      drawBorder();
-      drawPie(darkness !== 0 || borderWidth !== 0);
-      drawImages(effGhostOpacity);
-      darken(effGhostOpacity);
-    }
-
+    setupShapeColor(ghostOpacity * bgOpacity);
+    drawShape();
+    drawImages(effGhostOpacity);
+    drawPie(darkness !== 0 || borderWidth !== 0);
+    darken(effGhostOpacity);
+    setupBorderColor(ghostOpacity * borderOpacity);
+    drawBorder();
     context.translate(-gx, -gy);
   }
 
-  if (bgContainment === 'inside') {
-    setupShapeColor();
-    drawShape();
-    drawImages();
-    drawPie(darkness !== 0 || borderWidth !== 0);
-    setupBorderColor();
-    drawBorder();
-    darken();
-  }
-
-  if (bgContainment === 'over') {
-    setupShapeColor();
-    drawShape();
-    setupBorderColor();
-    drawBorder();
-    drawPie(darkness !== 0 || borderWidth !== 0);
-    drawImages();
-    darken();
-  }
+  setupShapeColor();
+  drawShape();
+  drawImages();
+  drawPie(darkness !== 0 || borderWidth !== 0);
+  darken();
+  setupBorderColor();
+  drawBorder();
 
   if (usePaths) {
     context.translate(-pos.x, -pos.y);
@@ -31618,7 +31569,7 @@ sheetfn.appendToStyle = function (style) {
   return style;
 };
 
-var version = "snapshot";
+var version = "3.16.0";
 
 var cytoscape = function cytoscape(options) {
   // if no options specified, use default

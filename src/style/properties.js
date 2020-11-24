@@ -48,7 +48,7 @@ const styfn = {};
     bgFit: { enums: [ 'none', 'contain', 'cover' ], multiple: true },
     bgCrossOrigin: { enums: [ 'anonymous', 'use-credentials' ], multiple: true },
     bgClip: { enums: [ 'none', 'node' ], multiple: true },
-    bgContainment: { enums: [ 'inside', 'over' ], multiple: false },
+    bgContainment: { enums: [ 'inside', 'over' ] },
     color: { color: true },
     colors: { color: true, multiple: true },
     fill: { enums: ['solid', 'linear-gradient', 'radial-gradient'] },

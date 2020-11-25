@@ -114,6 +114,24 @@ let elesfn = ({
     return this; // chaining
   },
 
+  // private: clears dirty flag and recalculates style
+  cleanStyle: function(){
+    let cy = this.cy();
+
+    if( !cy.styleEnabled() ){ return; }
+
+    for( let i = 0; i < this.length; i++ ){
+      let ele = this[i];
+
+      if( ele._private.styleDirty ){
+        // n.b. this flag should be set before apply() to avoid potential infinite recursion
+        ele._private.styleDirty = false;
+
+        cy.style().apply(ele);
+      }
+    }
+  },
+
   // get the internal parsed style object for the specified property
   parsedStyle: function( property, includeNonDefault = true ){
     let ele = this[0];
@@ -122,14 +140,7 @@ let elesfn = ({
     if( !cy.styleEnabled() ){ return; }
 
     if( ele ){
-      if( ele._private.styleDirty ){
-        // n.b. this flag should be set before apply() to avoid potential infinite recursion
-        ele._private.styleDirty = false;
-
-        cy.style().apply(ele);
-
-        ele.emitAndNotify('style');
-      }
+      this.cleanStyle();
 
       let overriddenStyle = ele._private.style[ property ];
 

@@ -92,7 +92,7 @@ In the JSON or function stylesheet formats, it is possible to specify a function
 
 <span class="important-indicator"></span> Note that if using functions as style values, it will not be possible to serialise and deserialise your stylesheet to JSON proper.
 
-<span class="important-indicator"></span> The function should not read any other style values, nor should it mutate state for elements or for the graph.  Generally, it should depend only on reading `ele.data()` or `ele.scratch()`.
+<span class="important-indicator"></span> The function should not read any other style values, nor should it mutate state for elements or for the graph.  Generally, it should depend only on reading `ele.data()`, `ele.scratch()`, `cy.data()`, or `cy.scratch()`.
 
 Example:
 

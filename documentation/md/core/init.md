@@ -33,6 +33,7 @@ An instance of Cytoscape.js has a number of options that can be set on initialis
   <a href="#init-opts/elements">elements</a>: [ /* ... */ ],
   <a href="#init-opts/style">style</a>: [ /* ... */ ],
   <a href="#init-opts/layout">layout</a>: { name: 'grid' /* , ... */ },
+  <a href="#init-opts/data">data</a>: { /* ... */ },
 
   // initial viewport state:
   <a href="#init-opts/zoom">zoom</a>: 1,
@@ -79,7 +80,8 @@ An instance of Cytoscape.js has a number of options that can be set on initialis
 <span id="init-opts/layout"></span>
 **`layout`** : A plain object that specifies layout options.  Which layout is initially run is specified by the `name` field.  Refer to a [layout's documentation](#layouts) for the options it supports.  If you want to specify your node positions yourself in your elements JSON, you can use the `preset` layout --- by default it does not set any positions, leaving your nodes in their current positions (i.e. specified in `options.elements` at initialisation time).
 
-
+<span id="init-opts/data"></span>
+**`data`** : A plain object that contains [graph-level data](#cy.data) (i.e. data that does not belong to any particular node or edge).
 ### Initial viewport state
 
 <span id="init-opts/zoom"></span>

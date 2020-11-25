@@ -65,7 +65,7 @@ let Core = function( opts ){
     elements: new Collection( this ), // elements in the graph
     listeners: [], // list of listeners
     aniEles: new Collection( this ), // elements being animated
-    data: {}, // data for the core
+    data: options.data || {}, // data for the core
     scratch: {}, // scratch object for core
     layout: null,
     renderer: null,

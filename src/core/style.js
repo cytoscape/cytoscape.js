@@ -12,6 +12,7 @@ let corefn = ({
     /**
    * Get the entry point to modify the visual style of the graph after initialisation.
    * @memberof cy
+   * @path Core/Style
    * @param {...cy_style} newStyle - Get the current style object. | Assign a new stylesheet to replace the existing one.
    * @namespace cy.style
    */

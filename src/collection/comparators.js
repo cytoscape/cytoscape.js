@@ -13,6 +13,7 @@ let elesfn = ({
   /**
  * Determine whether all elements in the collection match a selector.
  * @memberof eles
+ * @path Collection/Comparison
  * @param {...eles_allAre} selector - Matching Selector
  * @namespace eles.allAre
  */
@@ -32,6 +33,7 @@ let elesfn = ({
   /**
  * Determine whether any element in this collection matches a selector.
  * @memberof eles
+ * @path Collection/Comparison
  * @param {...eles_is} selector - Matching Selector
  * @namespace eles.is
  */
@@ -70,6 +72,7 @@ let elesfn = ({
   /**
  * Determine whether any element in this collection satisfies the specified test function.
  * @memberof eles
+ * @path Collection/Comparison
  * @param {...eles_some} fn - Listen to events that bubble up from elements matching the specified node selector:
  * @namespace eles.some
  */
@@ -112,6 +115,7 @@ let elesfn = ({
   /**
  * Determine whether all elements in this collection satisfy the specified test function.
  * @memberof eles
+ * @path Collection/Comparison
  * @param {...eles_every} fn - Determine test function
  * @namespace eles.every
  */
@@ -135,6 +139,7 @@ let elesfn = ({
   /**
  * Determine whether this collection contains exactly the same elements as another collection.
  * @memberof eles
+ * @path Collection/Comparison
  * @param {...eles_same} collection - Determine same collection
  * @namespace eles.same
  */
@@ -166,6 +171,7 @@ let elesfn = ({
   /**
  * Determine whether this collection contains any of the same elements as another collection.
  * @memberof eles
+ * @path Collection/Comparison
  * @param {...eles_anySame} collection - Determine any same collection
  * @namespace eles.anySame
  */
@@ -185,6 +191,7 @@ let elesfn = ({
 /**
  * Determine whether all elements in the specified collection are in the neighbourhood of the calling collection.
  * @memberof eles
+ * @path Collection/Comparison
  * @alias eles.allAreNeighbours
  * @param {...eles_allAreNeighbors} collection - Determine neighbourhood collection
  * @namespace eles.allAreNeighbors
@@ -207,6 +214,7 @@ let elesfn = ({
 /**
  * Determine whether this collection contains all of the elements of another collection.
  * @memberof eles
+ * @path Collection/Comparison
  * @alias eles.has
  * @param {...eles_contains} collection - Determine another collection
  * @namespace eles.contains

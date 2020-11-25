@@ -19,6 +19,7 @@ let elesfn = ({
   /**
  * Get the node width and height. This function is intended for use in layout positioning to do overlap detection.
  * @memberof node
+ * @path Collection/Layout
  * @extFn true
  * @param {...node_layoutDimensions} options - The node layoutDimensionsing function.
  * @namespace node.layoutDimensions
@@ -80,6 +81,7 @@ let elesfn = ({
   /**
  * Position the nodes for a discrete/synchronous layout.
  * @memberof nodes
+ * @path Collection/Layout
  * @extFn true
  * @param {...nodes_layoutPositions} options - Position the nodes.
  * @namespace nodes.layoutPositions
@@ -234,6 +236,7 @@ let elesfn = ({
   /**
  * Get a new layout, which can be used to algorithmically position the nodes in the collection.
  * @memberof eles
+ * @path Collection/Layout
  * @alias eles.createLayout|eles.makeLayout
  * @param {...eles_layout} options - The layouting comparison function.
  * @namespace eles.layout

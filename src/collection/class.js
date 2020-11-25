@@ -15,6 +15,7 @@ let elesfn = ({
   /**
  * Get or replace the current list of classes on the elements with the specified list.
  * @memberof eles
+ * @path Collection/Style
  * @alias eles.className|eles.classNames
  * @sub_functions ele.classes|eles.classes
  * @param {...eles_classes} classes - Get the list of classes as an array for the element. | Replace the list of classes for all elements in the collection.
@@ -86,6 +87,7 @@ let elesfn = ({
   /**
  * Add classes to elements.  The classes should be specified in the [stylesheet](#style) in order to have an effect on the rendered style of the elements.
  * @memberof eles
+ * @path Collection/Style
  * @param {...eles_addClass} classes - Adding Class
  * @namespace eles.addClass
  */
@@ -101,6 +103,7 @@ let elesfn = ({
   /**
  * Get whether an element has a particular class.
  * @memberof eles
+ * @path Collection/Style
  * @param {...eles_hasClass} className - Adding Class
  * @namespace eles.hasClass
  */
@@ -123,6 +126,7 @@ let elesfn = ({
 /**
  * Toggle whether the elements have the specified classes.  The classes should be specified in the [stylesheet](#style) in order to have an effect on the rendered style of the elements.
  * @memberof eles
+ * @path Collection/Style
  * @param {...eles_toggleClass} toggle - Toggle Event
  * @namespace eles.toggleClass
  */ 
@@ -180,6 +184,7 @@ let elesfn = ({
   /**
  * Remove classes from elements.  The classes should be specified in the [stylesheet](#style) in order to have an effect on the rendered style of the elements.
  * @memberof eles
+ * @path Collection/Style
  * @param {...eles_removeClass} classes - Adding Class
  * @namespace eles.removeClass
  */
@@ -201,6 +206,7 @@ let elesfn = ({
 /**
  * Add classes to the elements, and then remove the classes after a specified duration.
  * @memberof eles
+ * @path Collection/Style
  * @param {...eles_flashClass} duration - flash Event
  * @namespace eles.flashClass
  */

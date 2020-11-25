@@ -14,6 +14,7 @@ let elesfn = ({
 /**
  * Get the compound parent node of each node in the collection.
  * @memberof nodes
+ * @path Collection/Compound nodes
  * @param {...nodes_parent} selector - Get Parent Node.
  * @namespace nodes.parent
  */
@@ -63,6 +64,7 @@ let elesfn = ({
 /**
  * Get all compound ancestors common to all the nodes in the collection, starting with the closest and getting progressively farther.
  * @memberof nodes
+ * @path Collection/Compound nodes
  * @param {...nodes_commonAncestors} selector - Get commonAncestors Node.
  * @namespace nodes.commonAncestors
  */
@@ -89,6 +91,7 @@ let elesfn = ({
 /**
  * Get all orphan (i.e. has no compound parent) nodes in the calling collection.
  * @memberof nodes
+ * @path Collection/Compound nodes
  * @param {...nodes_orphans} selector - Get orphans Node.
  * @namespace nodes.orphans
  */
@@ -106,6 +109,7 @@ let elesfn = ({
 /**
  * Get all nonorphan (i.e. has no compound parent) nodes in the calling collection.
  * @memberof nodes
+ * @path Collection/Compound nodes
  * @param {...nodes_nonorphans} selector - Get nonorphans Node.
  * @namespace nodes.nonorphans
  */
@@ -123,6 +127,7 @@ let elesfn = ({
 /**
  * Get all compound child (i.e. direct descendant) nodes of each node in the collection.
  * @memberof nodes
+ * @path Collection/Compound nodes
  * @param {...nodes_children} selector - Get children Node.
  * @namespace nodes.children
  */
@@ -149,6 +154,7 @@ let elesfn = ({
 /**
  * Get all sibling (i.e. same compound parent) nodes of each node in the collection.
  * @memberof nodes
+ * @path Collection/Compound nodes
  * @param {...nodes_siblings} selector - Get siblings Node.
  * @namespace nodes.siblings
  */
@@ -159,6 +165,7 @@ let elesfn = ({
   /**
  * Get whether the node is a compound parent (i.e. a node containing one or more child nodes)
  * @memberof nodes
+ * @path Collection/Compound nodes
  * @namespace nodes.isParent
  */
   isParent: function(){
@@ -172,6 +179,7 @@ let elesfn = ({
   /**
  * Get whether the node is childless (i.e. a node with no child nodes)
  * @memberof nodes
+ * @path Collection/Compound nodes
  * @namespace nodes.isChildless
  */
   isChildless: function(){
@@ -185,6 +193,7 @@ let elesfn = ({
   /**
  * Get whether the node is a compound child (i.e. contained within a node)
  * @memberof nodes
+ * @path Collection/Compound nodes
  * @namespace nodes.isChild
  */
   isChild: function(){
@@ -198,6 +207,7 @@ let elesfn = ({
   /**
  * Get whether the node is an orphan (i.e. a node with no parent)
  * @memberof nodes
+ * @path Collection/Compound nodes
  * @namespace nodes.isOrphan
  */
   isOrphan: function(){
@@ -216,6 +226,7 @@ let elesfn = ({
 /**
  * Get all compound descendant (i.e. children, children's children, etc.) nodes of each node in the collection.
  * @memberof nodes
+ * @path Collection/Compound nodes
  * @param {...nodes_descendants} selector - Get descendants Node.
  * @namespace nodes.descendants
  */

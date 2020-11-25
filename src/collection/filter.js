@@ -80,6 +80,7 @@ let elesfn = ({
   /**
  * Get all elements in the graph that are not in the calling collection.
  * @memberof nodes
+ * @path Collection/Building & filtering
  * @alias eles.abscomp|eles.complement
  * @namespace nodes.absoluteComplement
  */
@@ -153,6 +154,7 @@ let elesfn = ({
 /**
  * Perform a traditional left/right diff on the two collections.
  * @memberof eles
+ * @path Collection/Building & filtering
  * @param {...eles_diff} other - diff Event | diff Event
  * @namespace eles.diff
  */
@@ -309,6 +311,7 @@ let elesfn = ({
 /**
  * Perform an in-place operation on the calling collection to remove the given elements.
  * @memberof eles
+ * @path Collection/Building & filtering
  * @param {...eles_unmerge} toRemove - unmerge Event | unmerge Event
  * @namespace eles.unmerge
  */
@@ -370,6 +373,7 @@ let elesfn = ({
   /**
  * Get an array containing values mapped from the collection.
  * @memberof eles
+ * @path Collection/Building & filtering
  * @param {...eles_map} mapFn - Determine test function
  * @namespace eles.map
  */
@@ -414,6 +418,7 @@ let elesfn = ({
   /**
  * Reduce a single value by applying a function against an accumulator and each value of the collection.
  * @memberof eles
+ * @path Collection/Building & filtering
  * @param {...eles_reduce} fn - Determine reduce function
  * @namespace eles.reduce
  */
@@ -455,6 +460,7 @@ let elesfn = ({
   /**
  * Find a maximum value and the corresponding element.
  * @memberof eles
+ * @path Collection/Building & filtering
  * @param {...eles_max} valFn - Determine max function
  * @namespace eles.max
  */
@@ -500,12 +506,14 @@ let elesfn = ({
 
 /**
  * @typedef {object} eles_min
+ * @path Collection/Building & filtering
  * @property {eles_collection_min} eles_collection_min
  */
 
   /**
  * Find a minimum value and the corresponding element.
  * @memberof eles
+ * @path Collection/Building & filtering
  * @param {...eles_min} valFn - Determine min function
  * @namespace eles.min
  */

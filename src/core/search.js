@@ -11,6 +11,7 @@ let corefn = ({
     /**
  * Return a new, empty collection.
  * @memberof cy
+ * @path Core/Graph manipulation
  * @param_desc Get an empty collection.
  * @namespace cy.collection
  */
@@ -81,6 +82,7 @@ let corefn = ({
   /**
  * Get elements in the graph matching a selector or a filter function.
  * @memberof cy
+ * @path Core/Graph manipulation
  * @sub_functions cy.$|cy.elements|cy.nodes|cy.edges|cy.filter|cy.filter
  * @param {...cy_$} selector - Get elements in the graph matching the specified selector. | Get elements in the graph matching the specified selector. | Get nodes in the graph matching the specified selector. | Get edges in the graph matching the specified selector. | Get elements in the graph matching the specified selector. | Get elements in the graph matching the specified filter function.
  * @namespace cy.$

@@ -31,6 +31,7 @@ let elesfn = ({
   /**
  * Iterate over the elements in the collection.
  * @memberof eles
+ * @path Collection/Iteration
  * @alias eles.each
  * @param {...eles_forEach} fn - Determine forEach function
  * @namespace eles.forEach
@@ -53,6 +54,7 @@ let elesfn = ({
   /**
  * Get the collection as an array, maintaining the order of the elements.
  * @memberof nodes
+ * @path Collection/Iteration
  * @namespace nodes.toArray
  */
   toArray: function(){
@@ -79,6 +81,7 @@ let elesfn = ({
   /**
  * Get a subset of the elements in the collection based on specified indices.
  * @memberof eles
+ * @path Collection/Iteration
  * @param {...eles_slice} start - Slice
  * @namespace eles.slice
  */
@@ -112,6 +115,7 @@ let elesfn = ({
   /**
  * Get the number of elements in the collection.
  * @memberof eles
+ * @path Collection/Iteration
  * @namespace eles.size
  */
   size: function(){
@@ -134,6 +138,7 @@ let elesfn = ({
   /**
  * Get an element at a particular index in the collection.
  * @memberof eles
+ * @path Collection/Iteration
  * @sub_functions eles.eq|eles.first|eles.last
  * @param {...eles_eq} i - Get the index of the element. | Get the first element in the collection. | Get the last element in the collection.
  * @namespace eles.eq
@@ -159,6 +164,7 @@ let elesfn = ({
   /**
  * Get whether the collection is empty, meaning it has no elements.
  * @memberof eles
+ * @path Collection/Iteration
  * @sub_functions eles.empty|eles.nonempty
  * @param {...eles_empty} x - Get whether the collection is empty. | Get whether the collection is nonempty.
  * @namespace eles.empty
@@ -179,6 +185,7 @@ let elesfn = ({
   /**
  * Get a new collection containing the elements sorted by the specified comparison function.
  * @memberof eles
+ * @path Collection/Building & filtering
  * @param {...eles_sort} sortFn - The sorting comparison function.
  * @namespace eles.sort
  */

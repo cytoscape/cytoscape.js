@@ -126,6 +126,7 @@ util.extend( elesfn, {
   /**
  * From the set of calling nodes, get the nodes which are roots (i.e. no incoming edges, as in a directed acyclic graph).
  * @memberof nodes
+ * @path Collection/Traversing
  * @param {...nodes_roots} x - Get ID
  * @namespace nodes.roots
  */
@@ -141,6 +142,7 @@ util.extend( elesfn, {
   /**
  * From the set of calling nodes, get the nodes which are leaves (i.e. no outgoing edges, as in a directed acyclic graph).
  * @memberof nodes
+ * @path Collection/Traversing
  * @param {...nodes_leaves} x - Get ID
  * @namespace nodes.leaves
  */
@@ -157,6 +159,7 @@ util.extend( elesfn, {
   /**
  * Get edges (and their targets) coming out of the nodes in the collection. 
  * @memberof nodes
+ * @path Collection/Traversing
  * @param {...nodes_outgoers} x - Get ID
  * @namespace nodes.outgoers
  */
@@ -172,6 +175,7 @@ util.extend( elesfn, {
   /**
  * Recursively get edges (and their targets) coming out of the nodes in the collection (i.e. the outgoers, the outgoers' outgoers, ...). 
  * @memberof nodes
+ * @path Collection/Traversing
  * @param {...nodes_successors} x - Get ID
  * @namespace nodes.successors
  */
@@ -188,6 +192,7 @@ util.extend( elesfn, {
   /**
  * Get edges (and their sources) coming into the nodes in the collection.
  * @memberof nodes
+ * @path Collection/Traversing
  * @param {...nodes_incomers} x - Get ID
  * @namespace nodes.incomers
  */
@@ -203,6 +208,7 @@ util.extend( elesfn, {
 /**
  * Recursively get edges (and their sources) coming into the nodes in the collection (i.e. the incomers, the incomers' incomers, ...).
  * @memberof nodes
+ * @path Collection/Traversing
  * @param {...nodes_predecessors} x - Get ID
  * @namespace nodes.predecessors
  */
@@ -271,6 +277,7 @@ util.extend( elesfn, {
 /**
  * Get source node of this edge.
  * @memberof edge
+ * @path Collection/Traversing
  * @param {...edge_source} x - Get ID
  * @namespace edge.source
  */
@@ -294,6 +301,7 @@ util.extend( elesfn, {
 /**
  * Get target node of this edge.
  * @memberof edge
+ * @path Collection/Traversing
  * @param {...edge_target} x - Get ID
  * @namespace edge.target
  */
@@ -316,6 +324,7 @@ util.extend( elesfn, {
 /**
  * Get source nodes connected to the edges in the collection.
  * @memberof edge
+ * @path Collection/Traversing
  * @param {...edge_sources} x - Get ID
  * @namespace edge.sources
  */
@@ -332,6 +341,7 @@ util.extend( elesfn, {
 /**
  * Get target nodes connected to the edges in the collection.
  * @memberof edge
+ * @path Collection/Traversing
  * @param {...edge_targets} x - Get ID
  * @namespace edge.targets
  */

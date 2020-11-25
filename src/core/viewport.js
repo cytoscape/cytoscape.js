@@ -15,6 +15,7 @@ let corefn = ({
   /**
  * Get or set whether nodes are automatically locked (i.e. if `true`, nodes are locked despite their individual state).
  * @memberof cy
+ * @path Core/Viewport manipulation
  * @param {...cy_autolock} bool - Get whether autolocking is enabled. | Set whether autolocking is enabled.
  * @namespace cy.autolock
  */
@@ -37,6 +38,7 @@ let corefn = ({
   /**
  * Get or set whether nodes are automatically ungrabified (i.e. if `true`, nodes are ungrabbale despite their individual state).
  * @memberof cy
+ * @path Core/Viewport manipulation
  * @param {...cy_autoungrabify} bool - Get whether autoungrabifying is enabled. | Set whether autoungrabifying is enabled.
  * @namespace cy.autoungrabify
  */
@@ -59,6 +61,7 @@ let corefn = ({
   /**
  * Get or set whether nodes are automatically unselectified (i.e. if `true`, nodes are ungrabbale despite their individual state).
  * @memberof cy
+ * @path Core/Viewport manipulation
  * @param {...cy_autounselectify} bool - Get whether autounselectifying is enabled. | Set whether autounselectifying is enabled.
  * @namespace cy.autounselectify
  */
@@ -81,6 +84,7 @@ let corefn = ({
   /**
  * Get or set the selection type.  The `'single'` selection type is the default, tapping an element selects that element and deselects the previous elements.  The `'additive' selection type toggles the selection state of an element when tapped.`
  * @memberof cy
+ * @path Core/Viewport manipulation
  * @param {...cy_selectionType} selType - Get the selection type string. | Set the selection type.
  * @namespace cy.selectionType
  */
@@ -111,6 +115,7 @@ let corefn = ({
   /**
  * Get or set whether panning is enabled.
  * @memberof cy
+ * @path Core/Viewport manipulation
  * @param {...cy_panningEnabled} bool - Get whether panning is enabled. | Set whether panning is enabled
  * @namespace cy.panningEnabled
  */
@@ -133,6 +138,7 @@ let corefn = ({
   /**
  * Get or set whether panning by user events (e.g. dragging the graph background) is enabled.
  * @memberof cy
+ * @path Core/Viewport manipulation
  * @param {...cy_userPanningEnabled} bool - Get whether user panning is enabled. | Set whether user panning is enabled
  * @namespace cy.userPanningEnabled
  */
@@ -155,6 +161,7 @@ let corefn = ({
   /**
  * Get or set whether zooming is enabled.
  * @memberof cy
+ * @path Core/Viewport manipulation
  * @param {...cy_zoomingEnabled} bool - Get whether zooming is enabled. | Set whether zooming is enabled
  * @namespace cy.zoomingEnabled
  */
@@ -177,6 +184,7 @@ let corefn = ({
   /**
  * Get or set whether user zooming by user events (e.g. mouse wheel, pinch-to-zoom) is enabled.
  * @memberof cy
+ * @path Core/Viewport manipulation
  * @param {...cy_userZoomingEnabled} bool - Get whether user zooming is enabled. | Set whether zooming is enabled
  * @namespace cy.userZoomingEnabled
  */
@@ -199,6 +207,7 @@ let corefn = ({
   /**
  * Get or set whether box selection is enabled. If enabled along with panning, the user must hold down one of shift, control, alt, or command to initiate box selection.
  * @memberof cy
+ * @path Core/Viewport manipulation
  * @param {...cy_boxSelectionEnabled} bool - Get whether box selection is enabled. | Set whether box selection is enabled.
  * @namespace cy.boxSelectionEnabled
  */
@@ -221,6 +230,7 @@ let corefn = ({
   /**
  * Get or set the panning position of the graph.
  * @memberof cy
+ * @path Core/Viewport manipulation
  * @param {...cy_pan} renderedPosition - Get the current panning position. | Set the current panning position.
  * @namespace cy.pan
  */
@@ -292,6 +302,7 @@ let corefn = ({
   /**
  * Relatively pan the graph by a specified rendered position vector.
  * @memberof cy
+ * @path Core/Viewport manipulation
  * @param {...cy_panBy} arg0 - The rendered position
  * @namespace cy.panBy
  */
@@ -360,6 +371,7 @@ let corefn = ({
   /**
  * Pan and zooms the graph to fit to a collection.
  * @memberof cy
+ * @path Core/Viewport manipulation
  * @param {...cy_fit} elements - Fit to all elements in the graph. | Fit to the specified elements.
  * @namespace cy.fit
  */
@@ -472,6 +484,7 @@ let corefn = ({
   /**
  * Get or set the minimum zoom level.
  * @memberof cy
+ * @path Core/Viewport manipulation
  * @param {...cy_minZoom} zoom - Get the minimum zoom level. | Set the minimum zoom level.
  * @namespace cy.minZoom
  */
@@ -492,6 +505,7 @@ let corefn = ({
   /**
  * Get or set the maximum zoom level.
  * @memberof cy
+ * @path Core/Viewport manipulation
  * @param {...cy_maxZoom} zoom - Get the maximum zoom level. | Set the maximum zoom level.
  * @namespace cy.maxZoom
  */
@@ -591,6 +605,7 @@ let corefn = ({
   /**
  * Get or set the zoom level of the graph.
  * @memberof cy
+ * @path Core/Viewport manipulation
  * @param {...cy_zoom} params - Get the zoom level. | Set the zoom level. | Set the zoom level.
  * @namespace cy.zoom
  */
@@ -633,6 +648,7 @@ let corefn = ({
   /**
  * Set the viewport state (pan & zoom) in one call.
  * @memberof cy
+ * @path Core/Viewport manipulation
  * @param {...cy_viewport} opts - Set viewport
  * @namespace cy.viewport
  */
@@ -698,7 +714,8 @@ let corefn = ({
 
   /**
  * Pan the graph to the centre of a collection.
- * @memberof cy_center
+ * @memberof cy
+ * @path Core/Viewport manipulation
  * @alias cy.centre
  * @param {...cy_center} elements - Centre on all elements in the graph. | Centre on the specified elements.
  * @namespace cy.center
@@ -747,6 +764,7 @@ let corefn = ({
   /**
  * Reset the graph to the default zoom level and panning position.
  * @memberof cy
+ * @path Core/Viewport manipulation
  * @namespace cy.reset
  */
   reset: function(){
@@ -787,6 +805,7 @@ let corefn = ({
   /**
  * Get the on-screen width of the viewport in pixels.
  * @memberof cy
+ * @path Core/Viewport manipulation
  * @namespace cy.width
  */
   width: function(){
@@ -796,6 +815,7 @@ let corefn = ({
   /**
  * Get the on-screen height of the viewport in pixels.
  * @memberof cy
+ * @path Core/Viewport manipulation
  * @namespace cy.height
  */
   height: function(){
@@ -805,6 +825,7 @@ let corefn = ({
   /**
  * Get the extent of the viewport, a bounding box in model co-ordinates that lets you know what model positions are visible in the viewport.
  * @memberof cy
+ * @path Core/Viewport manipulation
  * @namespace cy.extent
  */
   extent: function(){

@@ -3,6 +3,7 @@ let elesfn = ({
   /**
  * Get whether the element is a node.
  * @memberof nodes
+ * @path Collection/Data
  * @namespace nodes.isNode
  */
   isNode: function(){
@@ -12,6 +13,7 @@ let elesfn = ({
   /**
  * Get whether the element is an edge.
  * @memberof nodes
+ * @path Collection/Data
  * @namespace nodes.isEdge
  */
   isEdge: function(){
@@ -21,6 +23,7 @@ let elesfn = ({
   /**
  * Get whether the edge is a loop (i.e. same source and target).
  * @memberof nodes
+ * @path Collection/Data
  * @namespace nodes.isLoop
  */
   isLoop: function(){
@@ -30,6 +33,7 @@ let elesfn = ({
   /**
  * Get whether the edge is simple (i.e. different source and target).
  * @memberof nodes
+ * @path Collection/Data
  * @namespace nodes.isSimple
  */
   isSimple: function(){
@@ -39,6 +43,7 @@ let elesfn = ({
   /**
  * Get the group string that defines the type of the element.
  * @memberof nodes
+ * @path Collection/Data
  * @namespace nodes.group
  */
   group: function(){

@@ -154,6 +154,7 @@ let elesfn = ({
   /**
  * Get the numeric value of a style property in preferred units that can be used for calculations.
  * @memberof ele
+ * @path Collection/Style
  * @param {...ele_numericStyle} property - The numericStyle function.
  * @namespace ele.numericStyle
  */
@@ -177,6 +178,7 @@ let elesfn = ({
   /**
  * Get the units that `ele.numericStyle()` is expressed in, for a particular property.
  * @memberof ele
+ * @path Collection/Layout
  * @param {...ele_numericStyleUnits} property - The numericStyleUnits function.
  * @namespace ele.numericStyleUnits
  */
@@ -224,6 +226,7 @@ let elesfn = ({
   /**
  * Get or override the style of the element.
  * @memberof eles
+ * @path Collection/Layout
  * @alias eles.css
  * @formatsSameFn true
  * @sub_functions ele.style|ele.style|eles.style|eles.style|eles.removeStyle|eles.removeStyle
@@ -317,6 +320,7 @@ let elesfn = ({
   /**
  * Get the effective opacity of the element (i.e. on-screen opacity), which takes into consideration parent node opacity.
  * @memberof ele
+ * @path Collection/Layout
  * @namespace ele.effectiveOpacity
  */
   effectiveOpacity: function(){
@@ -350,6 +354,7 @@ let elesfn = ({
   /**
  * Get whether the element's effective opacity is completely transparent, which takes into consideration parent node opacity.
  * @memberof ele
+ * @path Collection/Layout
  * @namespace ele.transparent
  */
   transparent: function(){

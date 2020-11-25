@@ -17,6 +17,7 @@ let corefn = {
     /**
    * Add elements to the graph and return them
    * @memberof cy
+   * @path Core/Graph manipulation
    * @param {...cy_add} opts - Add a specified element to the graph. | Add the specified elements to the graph. | Add the specified elements to the graph.
    * @namespace cy.add
    */
@@ -92,6 +93,7 @@ let corefn = {
     /**
    * Remove elements from the graph and return them.
    * @memberof cy
+   * @path Core/Graph manipulation
    * @param {...cy_remove} x - Remove the specified elements. | Remove elements in the graph matching the specified selector.
    * @namespace cy.remove
    */

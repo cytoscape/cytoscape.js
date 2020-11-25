@@ -88,6 +88,7 @@ util.extend( anifn, {
   /**
  * Requests that the animation be played, starting on the next frame. If the animation is complete, it restarts from the beginning.
  * @memberof ani
+ * @path Animations/Animation manipulation
  * @alias ani.run
  * @namespace ani.play
  */
@@ -113,6 +114,7 @@ util.extend( anifn, {
   /**
  * Get whether the animation is currently playing.
  * @memberof ani
+ * @path Animations/Animation manipulation
  * @alias ani.running
  * @namespace ani.playing
  */
@@ -123,6 +125,7 @@ util.extend( anifn, {
   /**
  * Apply the animation at its current progress.
  * @memberof ani
+ * @path Animations/Animation manipulation
  * @namespace ani.apply
  */
   apply: function(){
@@ -142,6 +145,7 @@ util.extend( anifn, {
   /**
  * Get whether the animation is currently applying.
  * @memberof ani
+ * @path Animations/Animation manipulation
  * @namespace ani.applying
  */
   applying: function(){
@@ -151,6 +155,7 @@ util.extend( anifn, {
   /**
  * Pause the animation, maintaining the current progress.
  * @memberof ani
+ * @path Animations/Animation manipulation
  * @namespace ani.pause
  */
   pause: function(){
@@ -165,6 +170,7 @@ util.extend( anifn, {
     /**
  * Stop the animation, maintaining the current progress and removing the animation from any associated queues.
  * @memberof ani
+ * @path Animations/Animation manipulation
  * @namespace ani.stop
  */
   stop: function(){
@@ -208,6 +214,7 @@ util.extend( anifn, {
   /**
  * Get or set how far along the animation has progressed.
  * @memberof ani
+ * @path Animations/Animation manipulation
  * @sub_functions ani.progress|ani.progress|ani.time|ani.time|ani.rewind|ani.fastforward
  * @param {...ani_progress} x - Get the progress of the animation in percent. | Set the progress of the animation in percent. | Get the progress of the animation in milliseconds. | Set the progress of the animation in milliseconds. | Rewind the animation to the beginning. | Fastforward the animation to the end.
  * @namespace ani.progress
@@ -237,6 +244,7 @@ util.extend( anifn, {
   /**
  * Get whether the animation has progressed to the end.
  * @memberof ani
+ * @path Animations/Animation manipulation
  * @alias ani.complete
  * @namespace ani.completed
  */
@@ -247,6 +255,7 @@ util.extend( anifn, {
   /**
  * Reverse the animation such that its starting conditions and ending conditions are reversed.
  * @memberof ani
+ * @path Animations/Animation manipulation
  * @namespace ani.reverse
  */
   reverse: function(){
@@ -301,6 +310,7 @@ util.extend( anifn, {
   /**
  * Get a promise that is fulfilled with the specified animation event.
  * @memberof ani
+ * @path Animations/Animation manipulation
  * @param {...ani_promise} x - Get a promise that is fulfilled with the next `completed` event. | Get a promise that is fulfilled with the specified animation event.
  * @namespace ani.promise
  */

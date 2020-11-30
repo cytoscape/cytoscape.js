@@ -30,6 +30,8 @@ To propose a change, [fork](https://help.github.com/articles/fork-a-repo/) the c
 
 The source is organised in relatively the same as the documentation, under `./src`.  Try to maintain that organisation as best you can.  You are free to create new files and `require()` them using ESM [`import`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import) and [`export`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/export).
 
+Add your new feature to the documentation.  Updates to the documentation should go in [`docmaker.json`](https://github.com/cytoscape/cytoscape.js/blob/unstable/documentation/docmaker.json) file or the accompanying md files.  The documentation's HTML is generated from a template, and so it should not be edited directly.
+
 
 
 ## Code style

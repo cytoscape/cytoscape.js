@@ -16112,7 +16112,7 @@ var styfn$6 = {};
       enums: ['include', 'exclude']
     },
     arrowShape: {
-      enums: ['tee', 'triangle', 'triangle-tee', 'circle-triangle', 'triangle-cross', 'triangle-backcurve', 'vee', 'square', 'circle', 'diamond', 'chevron', 'none']
+      enums: ['tee', 'triangle', 'triangle-tee', 'circle-triangle', 'triangle-cross', 'triangle-backcurve', 'vee', 'square', 'circle', 'diamond', 'chevron', 'none' ]
     },
     arrowFill: {
       enums: ['filled', 'hollow']

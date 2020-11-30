@@ -340,7 +340,7 @@ BRp.registerArrowShapes = function(){
     }
   } );
 
-  defineArrowShape( 'one',  {
+  defineArrowShape( 'thick-tee',  {
     points: [
       -0.25, 0,
       -.25, -0.1,
@@ -357,7 +357,7 @@ BRp.registerArrowShapes = function(){
     }
   } );
 
-  defineArrowShape( 'many',  {
+  defineArrowShape( 'crows-feet',  {
     points: [
       0, 0,
       0.35, .35,

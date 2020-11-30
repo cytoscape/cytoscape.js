@@ -96,13 +96,13 @@
   test({
     name: "one",
     displayName: "One Relation | Line",
-    description: "Click edge to toggle",
+    description: "Click edge to display",
     setup: function(){
       cy.elements().bind("click", function(){
         this.css({
           shape: "rectangle",
-          targetArrowShape: "one",
-          sourceArrowShape: "one"
+          targetArrowShape: "thick-tee",
+          sourceArrowShape: "thick-tee"
         });
       });
     },
@@ -114,13 +114,13 @@
   test({
     name: "crowsFeet",
     displayName: "Many Relation | Crows Feet",
-    description: "Click edge to toggle",
+    description: "Click edge to display",
     setup: function(){
       cy.elements().bind("click", function(){
         this.css({
           shape: "rectangle",
-          targetArrowShape: "circle",
-          sourceArrowShape: "one"
+          targetArrowShape: "crows-feet",
+          sourceArrowShape: "crows-feet"
         });
       });
     },

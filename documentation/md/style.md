@@ -474,6 +474,8 @@ When a taxi edge would be impossible to draw along the regular turning plan --- 
   * `circle`
   * `diamond`
   * `chevron`
+  * `thick-tee`
+  * `crows-feet`
   * `none`
 * **`<pos>-arrow-fill`** : The fill state of the edge's source arrow; may be `filled` or `hollow`.
 * **`arrow-scale`** : Scaling for the arrow size; may be any number >= 0.

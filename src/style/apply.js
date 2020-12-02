@@ -433,6 +433,10 @@ styfn.applyParsedProperty = function( ele, parsedProp ){
     self.checkTriggers( ele, prop.name, fromVal, toVal );
   };
 
+  if( prop && prop.name.substr(0, 3) === 'pie' ){
+    util.warn('The pie style properties are deprecated.  Create charts using background images instead.');
+  }
+
   // edge sanity checks to prevent the client from making serious mistakes
   if(
     parsedProp.name === 'curve-style'

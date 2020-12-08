@@ -124,14 +124,14 @@ CRp.drawInscribedImage = function( context, img, node, index, nodeOpacity ){
 
   context.globalAlpha = imgOpacity;
 
-  var smoothingEnabled = r.getImgSmoothing(context);
+  var smoothingEnabled = r.getImgSmoothing( context );
   var isSmoothingSwitched = false;
 
   if( smooth === 'no' && smoothingEnabled ){ 
-    r.setImgSmoothing(context, false);
+    r.setImgSmoothing( context, false );
     isSmoothingSwitched = true;
-  } else if ( smooth === 'yes' && !smoothingEnabled ){
-    r.setImgSmoothing(context, true);
+  } else if( smooth === 'yes' && !smoothingEnabled ){
+    r.setImgSmoothing( context, true );
     isSmoothingSwitched = true;
   }
 
@@ -173,7 +173,7 @@ CRp.drawInscribedImage = function( context, img, node, index, nodeOpacity ){
 
   context.globalAlpha = gAlpha;
 
-  if ( isSmoothingSwitched ) { r.setImgSmoothing( context, smoothingEnabled ); }
+  if( isSmoothingSwitched ){ r.setImgSmoothing( context, smoothingEnabled ); }
 };
 
 export default CRp;

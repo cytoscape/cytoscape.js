@@ -27,6 +27,7 @@ CRp.drawInscribedImage = function( context, img, node, index, nodeOpacity ){
   var clip = getIndexedStyle( node, 'background-clip', 'value', index );
   var shouldClip = clip === 'node';
   var imgOpacity = getIndexedStyle( node, 'background-image-opacity', 'value', index ) * nodeOpacity;
+  var smooth = getIndexedStyle( node, 'background-image-smoothing', 'value', index );
 
   var imgW = img.width || img.cachedW;
   var imgH = img.height || img.cachedH;
@@ -123,6 +124,17 @@ CRp.drawInscribedImage = function( context, img, node, index, nodeOpacity ){
 
   context.globalAlpha = imgOpacity;
 
+  var smoothingEnabled = r.getImgSmoothing( context );
+  var isSmoothingSwitched = false;
+
+  if( smooth === 'no' && smoothingEnabled ){ 
+    r.setImgSmoothing( context, false );
+    isSmoothingSwitched = true;
+  } else if( smooth === 'yes' && !smoothingEnabled ){
+    r.setImgSmoothing( context, true );
+    isSmoothingSwitched = true;
+  }
+
   if( repeat === 'no-repeat' ){
 
     if( shouldClip ){
@@ -161,6 +173,7 @@ CRp.drawInscribedImage = function( context, img, node, index, nodeOpacity ){
 
   context.globalAlpha = gAlpha;
 
+  if( isSmoothingSwitched ){ r.setImgSmoothing( context, smoothingEnabled ); }
 };
 
 export default CRp;

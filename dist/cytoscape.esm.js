@@ -11603,6 +11603,24 @@ var elesfn$r = {
     });
     return this; // chaining
   },
+  // private: clears dirty flag and recalculates style
+  cleanStyle: function cleanStyle() {
+    var cy = this.cy();
+
+    if (!cy.styleEnabled()) {
+      return;
+    }
+
+    for (var i = 0; i < this.length; i++) {
+      var ele = this[i];
+
+      if (ele._private.styleDirty) {
+        // n.b. this flag should be set before apply() to avoid potential infinite recursion
+        ele._private.styleDirty = false;
+        cy.style().apply(ele);
+      }
+    }
+  },
   // get the internal parsed style object for the specified property
   parsedStyle: function parsedStyle(property) {
     var includeNonDefault = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
@@ -11614,13 +11632,7 @@ var elesfn$r = {
     }
 
     if (ele) {
-      if (ele._private.styleDirty) {
-        // n.b. this flag should be set before apply() to avoid potential infinite recursion
-        ele._private.styleDirty = false;
-        cy.style().apply(ele);
-        ele.emitAndNotify('style');
-      }
-
+      this.cleanStyle();
       var overriddenStyle = ele._private.style[property];
 
       if (overriddenStyle != null) {
@@ -23835,7 +23847,10 @@ BRp$8.registerCalculationListeners = function () {
 
   var updateEleCalcs = function updateEleCalcs(willDraw) {
     if (willDraw) {
-      var fns = r.onUpdateEleCalcsFns;
+      var fns = r.onUpdateEleCalcsFns; // because we need to have up-to-date style (e.g. stylesheet mappers)
+      // before calculating rendered style (and pstyle might not be called yet)
+
+      elesToUpdate.cleanStyle();
 
       for (var i = 0; i < elesToUpdate.length; i++) {
         var ele = elesToUpdate[i];
@@ -27302,7 +27317,7 @@ ETCp.getElement = function (ele, bb, pxRatio, lvl, reason) {
   var zoom = r.cy.zoom();
   var lookup = this.lookup;
 
-  if (!bb || bb.w === 0 || bb.h === 0 || isNaN(bb.w) || isNaN(bb.h) || !ele.visible() || !ele.removed()) {
+  if (!bb || bb.w === 0 || bb.h === 0 || isNaN(bb.w) || isNaN(bb.h) || !ele.visible() || ele.removed()) {
     return null;
   }
 
@@ -31575,7 +31590,7 @@ sheetfn.appendToStyle = function (style) {
   return style;
 };
 
-var version = "3.16.4";
+var version = "3.16.5";
 
 var cytoscape = function cytoscape(options) {
   // if no options specified, use default

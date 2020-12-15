@@ -1977,6 +1977,27 @@
                         {
                             "name": "edge.isSimple",
                             "descr": "Get whether the edge is simple (i.e. different source and target)."
+                        },
+                        {
+                            "name": "nodes.isNode",
+                            "descr": "Get whether the element is a node."
+                        },
+                        {
+                            "name": "nodes.isEdge",
+                            "descr": "Get whether the element is an edge."
+                        },
+                        {
+                            "name": "nodes.isLoop",
+                            "descr": "Get whether the edge is a loop (i.e. same source and target)."
+                        },
+                        {
+                            "name": "nodes.isSimple",
+                            "descr": "Get whether the edge is simple (i.e. different source and target)."
+                        },
+                        {
+                            "name": "nodes.group",
+                            "descr": "Get the group string that defines the type of the element.",
+                            "md": "collection/group"
                         }
                     ]
                 },
@@ -2643,6 +2664,93 @@
                                 }
                             ],
                             "md": "collection/layoutDimensions"
+                        },
+                        {
+                            "name": "ele.numericStyleUnits",
+                            "descr": "Get the units that `ele.numericStyle()` is expressed in, for a particular property.",
+                            "formats": [
+                                {
+                                    "descr": "The numericStyleUnits function.",
+                                    "args": [
+                                        {
+                                            "name": "name",
+                                            "descr": "The name of the style property to get."
+                                        }
+                                    ]
+                                }
+                            ],
+                            "md": "collection/numericStyleUnits"
+                        },
+                        {
+                            "name": "eles.style",
+                            "pureAliases": [
+                                "eles.css"
+                            ],
+                            "formatsSameFn": "true",
+                            "descr": "Get or override the style of the element.",
+                            "formats": [
+                                {
+                                    "name": "ele.style",
+                                    "descr": "Get a name-value pair object containing visual style properties and their values for the element."
+                                },
+                                {
+                                    "name": "ele.style",
+                                    "descr": "Get a particular style property value.",
+                                    "args": [
+                                        {
+                                            "name": "name",
+                                            "descr": "The name of the visual style property to get."
+                                        }
+                                    ]
+                                },
+                                {
+                                    "name": "eles.style",
+                                    "descr": "Set a particular style property value.",
+                                    "args": [
+                                        {
+                                            "name": "name",
+                                            "descr": "The name of the visual style property to set."
+                                        },
+                                        {
+                                            "name": "value",
+                                            "descr": "The value of the visual style property to set."
+                                        }
+                                    ]
+                                },
+                                {
+                                    "name": "eles.style",
+                                    "descr": "Set several particular style property values.",
+                                    "args": [
+                                        {
+                                            "name": "obj",
+                                            "descr": "An object of style property name-value pairs to set."
+                                        }
+                                    ]
+                                },
+                                {
+                                    "name": "eles.removeStyle",
+                                    "descr": "Remove all style overrides."
+                                },
+                                {
+                                    "name": "eles.removeStyle",
+                                    "descr": "Remove specific style overrides.",
+                                    "args": [
+                                        {
+                                            "name": "names",
+                                            "descr": "A space-separated list of property names to remove overrides."
+                                        }
+                                    ]
+                                }
+                            ],
+                            "md": "collection/style"
+                        },
+                        {
+                            "name": "ele.effectiveOpacity",
+                            "descr": "Get the effective opacity of the element (i.e. on-screen opacity), which takes into consideration parent node opacity."
+                        },
+                        {
+                            "name": "ele.transparent",
+                            "descr": "Get whether the element's effective opacity is completely transparent, which takes into consideration parent node opacity."
                         }
                     ]
                 },
@@ -2915,6 +3023,22 @@
                         {
                             "name": "ele.transparent",
                             "descr": "Get whether the element's effective opacity is completely transparent, which takes into consideration parent node opacity."
+                        },
+                        {
+                            "name": "eles.hasClass",
+                            "descr": "Get whether an element has a particular class.",
+                            "formats": [
+                                {
+                                    "descr": "Adding Class",
+                                    "args": [
+                                        {
+                                            "name": "className",
+                                            "descr": "The name of the class to test for."
+                                        }
+                                    ]
+                                }
+                            ],
+                            "md": "collection/hasClass"
                         }
                     ]
                 },
@@ -3362,6 +3486,10 @@
                         {
                             "name": "eles.toArray",
                             "descr": "Get the collection as an array, maintaining the order of the elements."
+                        },
+                        {
+                            "name": "nodes.toArray",
+                            "descr": "Get the collection as an array, maintaining the order of the elements."
                         }
                     ]
                 },
@@ -3806,6 +3934,15 @@
                                 }
                             ],
                             "md": "collection/max"
+                        },
+                        {
+                            "name": "nodes.absoluteComplement",
+                            "pureAliases": [
+                                "eles.abscomp",
+                                "eles.complement"
+                            ],
+                            "descr": "Get all elements in the graph that are not in the calling collection.",
+                            "md": "collection/absoluteComplement"
                         }
                     ]
                 },
@@ -4160,6 +4297,40 @@
                                 }
                             ],
                             "md": "collection/predecessors"
+                        },
+                        {
+                            "name": "edge.sources",
+                            "descr": "Get source nodes connected to the edges in the collection.",
+                            "formats": [
+                                {
+                                    "descr": "Get ID",
+                                    "args": [
+                                        {
+                                            "name": "selector",
+                                            "descr": "An optional selector that is used to filter the resultant collection.",
+                                            "optional": true
+                                        }
+                                    ]
+                                }
+                            ],
+                            "md": "collection/sources"
+                        },
+                        {
+                            "name": "edge.targets",
+                            "descr": "Get target nodes connected to the edges in the collection.",
+                            "formats": [
+                                {
+                                    "descr": "Get ID",
+                                    "args": [
+                                        {
+                                            "name": "selector",
+                                            "descr": "An optional selector that is used to filter the resultant collection.",
+                                            "optional": true
+                                        }
+                                    ]
+                                }
+                            ],
+                            "md": "collection/targets"
                         }
                     ]
                 },
@@ -5338,6 +5509,22 @@
                                     ]
                                 }
                             ]
+                        },
+                        {
+                            "name": "nodes.isParent",
+                            "descr": "Get whether the node is a compound parent (i.e. a node containing one or more child nodes)"
+                        },
+                        {
+                            "name": "nodes.isChildless",
+                            "descr": "Get whether the node is childless (i.e. a node with no child nodes)"
+                        },
+                        {
+                            "name": "nodes.isChild",
+                            "descr": "Get whether the node is a compound child (i.e. contained within a node)"
+                        },
+                        {
+                            "name": "nodes.isOrphan",
+                            "descr": "Get whether the node is an orphan (i.e. a node with no parent)"
                         }
                     ]
                 }

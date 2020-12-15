@@ -49,7 +49,7 @@
 <a href="#introduction/citation"><img src="https://img.shields.io/badge/Cite-Oxford%20Bioinformatics%20Article-blue.svg" alt="Cite"></a>
 <a href="https://www.npmjs.com/package/cytoscape"><img src="https://img.shields.io/npm/v/cytoscape.svg" alt="npm"></a>
 <a href="https://github.com/cytoscape/cytoscape.js/tree/master/dist"><img src="https://img.shields.io/npm/v/cytoscape.svg?label=Download" alt="Download"></a>
-<a href="#extensions"><img src="https://img.shields.io/badge/Extensions-58-blue.svg" alt="Extensions"></a>
+<a href="#extensions"><img src="https://img.shields.io/badge/Extensions-59-blue.svg" alt="Extensions"></a>
 <a href="https://www.npmjs.com/package/cytoscape"><img src="https://img.shields.io/npm/dm/cytoscape.svg?label=npm%20installs" alt="npm installs"></a>
 <a href="https://travis-ci.org/cytoscape/cytoscape.js"><img src="https://img.shields.io/travis/cytoscape/cytoscape.js/master.svg?label=master%20branch" alt="master branch tests"></a>
 <a href="https://travis-ci.org/cytoscape/cytoscape.js"><img src="https://img.shields.io/travis/cytoscape/cytoscape.js/unstable.svg?label=unstable%20branch" alt="unstable branch tests"></a>
@@ -671,10 +671,14 @@
 <h2 id="introduction/releases">Releases <a href="#introduction/releases"><span class="fa fa-bookmark"></span></a></h2>
 <ul>
 <li>3.16<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.16.3+is%3Aclosed">3.16.3</a></li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.16.2+is%3Aclosed">3.16.2</a></li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.16.1+is%3Aclosed">3.16.1</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.16.0+is%3Aclosed">3.16.0</a></li>
 </ul>
 </li>
 <li>3.15<ul>
+<li>[3.15.4(<a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.15.4+is%3Aclosed">https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.15.4+is%3Aclosed</a>)</li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.15.3+is%3Aclosed">3.15.3</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.15.2+is%3Aclosed">3.15.2</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.15.1+is%3Aclosed">3.15.1</a></li>
@@ -5664,6 +5668,84 @@ j.data({
 							<div class="details">
 							</div>
 						</div>
+						<div class="function">
+							<div class="name" id="nodes.isNode">
+								<span class="fn-name">nodes.isNode()</span>  <a href="#nodes.isNode"><span class="fa fa-bookmark"></span></a>
+								<span id="collection/data/nodes.isNode">&nbsp;</span>
+							</div>
+
+
+
+							<div class="descr"><p>Get whether the element is a node.</p>
+</div>
+
+
+							<div class="details">
+							</div>
+						</div>
+						<div class="function">
+							<div class="name" id="nodes.isEdge">
+								<span class="fn-name">nodes.isEdge()</span>  <a href="#nodes.isEdge"><span class="fa fa-bookmark"></span></a>
+								<span id="collection/data/nodes.isEdge">&nbsp;</span>
+							</div>
+
+
+
+							<div class="descr"><p>Get whether the element is an edge.</p>
+</div>
+
+
+							<div class="details">
+							</div>
+						</div>
+						<div class="function">
+							<div class="name" id="nodes.isLoop">
+								<span class="fn-name">nodes.isLoop()</span>  <a href="#nodes.isLoop"><span class="fa fa-bookmark"></span></a>
+								<span id="collection/data/nodes.isLoop">&nbsp;</span>
+							</div>
+
+
+
+							<div class="descr"><p>Get whether the edge is a loop (i.e. same source and target).</p>
+</div>
+
+
+							<div class="details">
+							</div>
+						</div>
+						<div class="function">
+							<div class="name" id="nodes.isSimple">
+								<span class="fn-name">nodes.isSimple()</span>  <a href="#nodes.isSimple"><span class="fa fa-bookmark"></span></a>
+								<span id="collection/data/nodes.isSimple">&nbsp;</span>
+							</div>
+
+
+
+							<div class="descr"><p>Get whether the edge is simple (i.e. different source and target).</p>
+</div>
+
+
+							<div class="details">
+							</div>
+						</div>
+						<div class="function">
+							<div class="name" id="nodes.group">
+								<span class="fn-name">nodes.group()</span>  <a href="#nodes.group"><span class="fa fa-bookmark"></span></a>
+								<span id="collection/data/nodes.group">&nbsp;</span>
+							</div>
+
+
+
+							<div class="descr"><p>Get the group string that defines the type of the element.</p>
+</div>
+
+
+							<div class="details">
+									<h3 id="details">Details</h3>
+<p>The group strings are <code>&#39;nodes&#39;</code> for nodes and <code>&#39;edges&#39;</code> for edges.  In general, you should be using <code>ele.isEdge()</code> and <code>ele.isNode()</code> instead of <code>ele.group()</code>.</p>
+
+							</div>
+						</div>
 
 					<h2 id="collection/metadata">Metadata <a href="#collection/metadata"><span class="fa fa-bookmark"></span></a></h2>
 
@@ -7177,6 +7259,203 @@ layout.run();</code></pre>
 <button class="run run-inline-code"><span class="fa fa-play"></span></button>
 							</div>
 						</div>
+						<div class="function">
+							<div class="name" id="ele.numericStyleUnits">
+								<span class="fn-name">ele.numericStyleUnits()</span>  <a href="#ele.numericStyleUnits"><span class="fa fa-bookmark"></span></a>
+								<span id="collection/layout/ele.numericStyleUnits">&nbsp;</span><span id="collection/layout/ele.numericStyleUnits">&nbsp;</span><span id="ele.numericStyleUnits">&nbsp;</span>
+							</div>
+
+
+
+							<div class="descr"><p>Get the units that <code>ele.numericStyle()</code> is expressed in, for a particular property.</p>
+</div>
+
+							<div class="formats">
+									<div class="format">
+											<div class="name">ele.numericStyleUnits( <span class="args-summary"><span class="comma">,&nbsp;</span>name</span> )</div>
+
+
+										<div class="descr"><p>The numericStyleUnits function.</p>
+</div>
+										<ul class="args">
+												<li>
+													<span class="name">name</span>
+													
+													<span class="descr"><p>The name of the style property to get.</p>
+</span>
+
+												</li>
+										</ul>
+									</div>
+							</div>
+
+							<div class="details">
+									<h3 id="details">Details</h3>
+<ul>
+<li><code>px</code> for pixels</li>
+<li><code>em</code> for ems</li>
+<li><code>%</code> for percent</li>
+<li><code>rad</code> for radians</li>
+<li><code>s</code> for seconds</li>
+<li><code>ms</code> for milliseconds</li>
+</ul>
+
+							</div>
+						</div>
+						<div class="function">
+							<div class="name" id="eles.style">
+								<span class="fn-name">eles.style()</span> et al <a href="#eles.style"><span class="fa fa-bookmark"></span></a>
+								<span id="collection/layout/eles.style">&nbsp;</span><span id="collection/layout/eles.css">&nbsp;</span><span id="eles.css">&nbsp;</span><span id="collection/layout/ele.style">&nbsp;</span><span id="ele.style">&nbsp;</span><span id="collection/layout/ele.style">&nbsp;</span><span id="ele.style">&nbsp;</span><span id="collection/layout/eles.style">&nbsp;</span><span id="eles.style">&nbsp;</span><span id="collection/layout/eles.style">&nbsp;</span><span id="eles.style">&nbsp;</span><span id="collection/layout/eles.removeStyle">&nbsp;</span><span id="eles.removeStyle">&nbsp;</span><span id="collection/layout/eles.removeStyle">&nbsp;</span><span id="eles.removeStyle">&nbsp;</span>
+							</div>
+
+
+							<div class="pure-aliases">
+								<span class="important-indicator"></span> Aliases:
+
+									<span class="pure-alias">
+										<code id="collection/layout/eles.css" class="pure-alias-name">eles.css()</code><span class="pure-alias-comma">,</span>
+									</span>
+							</div>
+
+							<div class="descr"><p>Get or override the style of the element.</p>
+</div>
+
+							<div class="formats">
+									<div class="format">
+											<div class="name">ele.style()</div>
+
+
+										<div class="descr"><p>Get a name-value pair object containing visual style properties and their values for the element.</p>
+</div>
+										<ul class="args">
+										</ul>
+									</div>
+									<div class="format">
+											<div class="name">ele.style( <span class="args-summary"><span class="comma">,&nbsp;</span>name</span> )</div>
+
+
+										<div class="descr"><p>Get a particular style property value.</p>
+</div>
+										<ul class="args">
+												<li>
+													<span class="name">name</span>
+													
+													<span class="descr"><p>The name of the visual style property to get.</p>
+</span>
+
+												</li>
+										</ul>
+									</div>
+									<div class="format">
+											<div class="name">eles.style( <span class="args-summary"><span class="comma">,&nbsp;</span>name<span class="comma">,&nbsp;</span>value</span> )</div>
+
+
+										<div class="descr"><p>Set a particular style property value.</p>
+</div>
+										<ul class="args">
+												<li>
+													<span class="name">name</span>
+													
+													<span class="descr"><p>The name of the visual style property to set.</p>
+</span>
+
+												</li>
+												<li>
+													<span class="name">value</span>
+													
+													<span class="descr"><p>The value of the visual style property to set.</p>
+</span>
+
+												</li>
+										</ul>
+									</div>
+									<div class="format">
+											<div class="name">eles.style( <span class="args-summary"><span class="comma">,&nbsp;</span>obj</span> )</div>
+
+
+										<div class="descr"><p>Set several particular style property values.</p>
+</div>
+										<ul class="args">
+												<li>
+													<span class="name">obj</span>
+													
+													<span class="descr"><p>An object of style property name-value pairs to set.</p>
+</span>
+
+												</li>
+										</ul>
+									</div>
+									<div class="format">
+											<div class="name">eles.removeStyle()</div>
+
+
+										<div class="descr"><p>Remove all style overrides.</p>
+</div>
+										<ul class="args">
+										</ul>
+									</div>
+									<div class="format">
+											<div class="name">eles.removeStyle( <span class="args-summary"><span class="comma">,&nbsp;</span>names</span> )</div>
+
+
+										<div class="descr"><p>Remove specific style overrides.</p>
+</div>
+										<ul class="args">
+												<li>
+													<span class="name">names</span>
+													
+													<span class="descr"><p>A space-separated list of property names to remove overrides.</p>
+</span>
+
+												</li>
+										</ul>
+									</div>
+							</div>
+
+							<div class="details">
+									<h3 id="details">Details</h3>
+<p><span class="important-indicator"></span> You should use this function very sparingly for setting:</p>
+<ul>
+<li>There are very few valid usecases for setting with <code>ele.style()</code>.</li>
+<li>It <em>overrides</em> the style of an element, despite the state and classes that it has.</li>
+<li>In general, it’s much better to specify a better stylesheet at initialisation that reflects your application state rather than programmatically modifying style.</li>
+<li>You can not serialise or deserialise overridden style via <code>ele.json()</code>.</li>
+</ul>
+<p>Only <a href="#style">defined visual style properties</a> are supported.</p>
+<p>If you would like to remove a particular overridden style property, you can set <code>null</code> or <code>&#39;&#39;</code> (the empty string) to it.</p>
+
+							</div>
+						</div>
+						<div class="function">
+							<div class="name" id="ele.effectiveOpacity">
+								<span class="fn-name">ele.effectiveOpacity()</span>  <a href="#ele.effectiveOpacity"><span class="fa fa-bookmark"></span></a>
+								<span id="collection/layout/ele.effectiveOpacity">&nbsp;</span>
+							</div>
+
+
+
+							<div class="descr"><p>Get the effective opacity of the element (i.e. on-screen opacity), which takes into consideration parent node opacity.</p>
+</div>
+
+
+							<div class="details">
+							</div>
+						</div>
+						<div class="function">
+							<div class="name" id="ele.transparent">
+								<span class="fn-name">ele.transparent()</span>  <a href="#ele.transparent"><span class="fa fa-bookmark"></span></a>
+								<span id="collection/layout/ele.transparent">&nbsp;</span>
+							</div>
+
+
+
+							<div class="descr"><p>Get whether the element&#39;s effective opacity is completely transparent, which takes into consideration parent node opacity.</p>
+</div>
+
+
+							<div class="details">
+							</div>
+						</div>
 
 					<h2 id="collection/selection">Selection <a href="#collection/selection"><span class="fa fa-bookmark"></span></a></h2>
 
@@ -7834,6 +8113,42 @@ cy.nodes().classes(<span class="hljs-string">'foo'</span>); <span class="hljs-co
 
 
 							<div class="details">
+							</div>
+						</div>
+						<div class="function">
+							<div class="name" id="eles.hasClass">
+								<span class="fn-name">eles.hasClass()</span>  <a href="#eles.hasClass"><span class="fa fa-bookmark"></span></a>
+								<span id="collection/style/eles.hasClass">&nbsp;</span><span id="collection/style/eles.hasClass">&nbsp;</span><span id="eles.hasClass">&nbsp;</span>
+							</div>
+
+
+
+							<div class="descr"><p>Get whether an element has a particular class.</p>
+</div>
+
+							<div class="formats">
+									<div class="format">
+											<div class="name">eles.hasClass( <span class="args-summary"><span class="comma">,&nbsp;</span>className</span> )</div>
+
+
+										<div class="descr"><p>Adding Class</p>
+</div>
+										<ul class="args">
+												<li>
+													<span class="name">className</span>
+													
+													<span class="descr"><p>The name of the class to test for.</p>
+</span>
+
+												</li>
+										</ul>
+									</div>
+							</div>
+
+							<div class="details">
+									<h3 id="examples">Examples</h3>
+<pre><code class="language-js"><span class="hljs-built_in">console</span>.log( <span class="hljs-string">'j has class `foo` : '</span>  + cy.$(<span class="hljs-string">'#j'</span>).hasClass(<span class="hljs-string">'foo'</span>) );</code></pre>
+<button class="run run-inline-code"><span class="fa fa-play"></span></button>
 							</div>
 						</div>
 
@@ -8830,6 +9145,21 @@ cy.nodes().forEach(<span class="hljs-function"><span class="hljs-keyword">functi
 							<div class="name" id="eles.toArray">
 								<span class="fn-name">eles.toArray()</span>  <a href="#eles.toArray"><span class="fa fa-bookmark"></span></a>
 								<span id="collection/iteration/eles.toArray">&nbsp;</span>
+							</div>
+
+
+
+							<div class="descr"><p>Get the collection as an array, maintaining the order of the elements.</p>
+</div>
+
+
+							<div class="details">
+							</div>
+						</div>
+						<div class="function">
+							<div class="name" id="nodes.toArray">
+								<span class="fn-name">nodes.toArray()</span>  <a href="#nodes.toArray"><span class="fa fa-bookmark"></span></a>
+								<span id="collection/iteration/nodes.toArray">&nbsp;</span>
 							</div>
 
 
@@ -9873,6 +10203,34 @@ nodes.removeStyle().forEach(<span class="hljs-function"><span class="hljs-keywor
 <button class="run run-inline-code"><span class="fa fa-play"></span></button>
 							</div>
 						</div>
+						<div class="function">
+							<div class="name" id="nodes.absoluteComplement">
+								<span class="fn-name">nodes.absoluteComplement()</span>  <a href="#nodes.absoluteComplement"><span class="fa fa-bookmark"></span></a>
+								<span id="collection/building--filtering/nodes.absoluteComplement">&nbsp;</span><span id="collection/building--filtering/eles.abscomp">&nbsp;</span><span id="eles.abscomp">&nbsp;</span><span id="collection/building--filtering/eles.complement">&nbsp;</span><span id="eles.complement">&nbsp;</span>
+							</div>
+
+
+							<div class="pure-aliases">
+								<span class="important-indicator"></span> Aliases:
+
+									<span class="pure-alias">
+										<code id="collection/building--filtering/eles.abscomp" class="pure-alias-name">eles.abscomp()</code><span class="pure-alias-comma">,</span>
+									</span>
+									<span class="pure-alias">
+										<code id="collection/building--filtering/eles.complement" class="pure-alias-name">eles.complement()</code><span class="pure-alias-comma">,</span>
+									</span>
+							</div>
+
+							<div class="descr"><p>Get all elements in the graph that are not in the calling collection.</p>
+</div>
+
+
+							<div class="details">
+									<h3 id="examples">Examples</h3>
+<pre><code class="language-js">cy.$(<span class="hljs-string">'#j'</span>).absoluteComplement();</code></pre>
+<button class="run run-inline-code"><span class="fa fa-play"></span></button>
+							</div>
+						</div>
 
 					<h2 id="collection/traversing">Traversing <a href="#collection/traversing"><span class="fa fa-bookmark"></span></a></h2>
 
@@ -10638,6 +10996,82 @@ edges.targets();</code></pre>
 									<h3 id="examples">Examples</h3>
 <p>Get predecessors of <code>j</code>:</p>
 <pre><code class="language-js">cy.$(<span class="hljs-string">'#j'</span>).predecessors();</code></pre>
+<button class="run run-inline-code"><span class="fa fa-play"></span></button>
+							</div>
+						</div>
+						<div class="function">
+							<div class="name" id="edge.sources">
+								<span class="fn-name">edge.sources()</span>  <a href="#edge.sources"><span class="fa fa-bookmark"></span></a>
+								<span id="collection/traversing/edge.sources">&nbsp;</span><span id="collection/traversing/edge.sources">&nbsp;</span><span id="edge.sources">&nbsp;</span>
+							</div>
+
+
+
+							<div class="descr"><p>Get source nodes connected to the edges in the collection.</p>
+</div>
+
+							<div class="formats">
+									<div class="format">
+											<div class="name">edge.sources( <span class="args-summary"> [<span class="comma">,&nbsp;</span>selector]</span> )</div>
+
+
+										<div class="descr"><p>Get ID</p>
+</div>
+										<ul class="args">
+												<li>
+													<span class="name"><a href="#selectors">selector</a></span>
+													<span class="optional">[optional]</span>
+													<span class="descr"><p>An optional selector that is used to filter the resultant collection.</p>
+</span>
+
+												</li>
+										</ul>
+									</div>
+							</div>
+
+							<div class="details">
+									<h3 id="examples">Examples</h3>
+<pre><code class="language-js"><span class="hljs-keyword">var</span> edges = cy.$(<span class="hljs-string">'#je, #kg'</span>);
+
+edges.sources();</code></pre>
+<button class="run run-inline-code"><span class="fa fa-play"></span></button>
+							</div>
+						</div>
+						<div class="function">
+							<div class="name" id="edge.targets">
+								<span class="fn-name">edge.targets()</span>  <a href="#edge.targets"><span class="fa fa-bookmark"></span></a>
+								<span id="collection/traversing/edge.targets">&nbsp;</span><span id="collection/traversing/edge.targets">&nbsp;</span><span id="edge.targets">&nbsp;</span>
+							</div>
+
+
+
+							<div class="descr"><p>Get target nodes connected to the edges in the collection.</p>
+</div>
+
+							<div class="formats">
+									<div class="format">
+											<div class="name">edge.targets( <span class="args-summary"> [<span class="comma">,&nbsp;</span>selector]</span> )</div>
+
+
+										<div class="descr"><p>Get ID</p>
+</div>
+										<ul class="args">
+												<li>
+													<span class="name"><a href="#selectors">selector</a></span>
+													<span class="optional">[optional]</span>
+													<span class="descr"><p>An optional selector that is used to filter the resultant collection.</p>
+</span>
+
+												</li>
+										</ul>
+									</div>
+							</div>
+
+							<div class="details">
+									<h3 id="examples">Examples</h3>
+<pre><code class="language-js"><span class="hljs-keyword">var</span> edges = cy.$(<span class="hljs-string">'#je, #kg'</span>);
+
+edges.targets();</code></pre>
 <button class="run run-inline-code"><span class="fa fa-play"></span></button>
 							</div>
 						</div>
@@ -13168,6 +13602,66 @@ tsc.components[<span class="hljs-number">0</span>].select();</code></pre>
 							<div class="details">
 							</div>
 						</div>
+						<div class="function">
+							<div class="name" id="nodes.isParent">
+								<span class="fn-name">nodes.isParent()</span>  <a href="#nodes.isParent"><span class="fa fa-bookmark"></span></a>
+								<span id="collection/compound-nodes/nodes.isParent">&nbsp;</span>
+							</div>
+
+
+
+							<div class="descr"><p>Get whether the node is a compound parent (i.e. a node containing one or more child nodes)</p>
+</div>
+
+
+							<div class="details">
+							</div>
+						</div>
+						<div class="function">
+							<div class="name" id="nodes.isChildless">
+								<span class="fn-name">nodes.isChildless()</span>  <a href="#nodes.isChildless"><span class="fa fa-bookmark"></span></a>
+								<span id="collection/compound-nodes/nodes.isChildless">&nbsp;</span>
+							</div>
+
+
+
+							<div class="descr"><p>Get whether the node is childless (i.e. a node with no child nodes)</p>
+</div>
+
+
+							<div class="details">
+							</div>
+						</div>
+						<div class="function">
+							<div class="name" id="nodes.isChild">
+								<span class="fn-name">nodes.isChild()</span>  <a href="#nodes.isChild"><span class="fa fa-bookmark"></span></a>
+								<span id="collection/compound-nodes/nodes.isChild">&nbsp;</span>
+							</div>
+
+
+
+							<div class="descr"><p>Get whether the node is a compound child (i.e. contained within a node)</p>
+</div>
+
+
+							<div class="details">
+							</div>
+						</div>
+						<div class="function">
+							<div class="name" id="nodes.isOrphan">
+								<span class="fn-name">nodes.isOrphan()</span>  <a href="#nodes.isOrphan"><span class="fa fa-bookmark"></span></a>
+								<span id="collection/compound-nodes/nodes.isOrphan">&nbsp;</span>
+							</div>
+
+
+
+							<div class="descr"><p>Get whether the node is an orphan (i.e. a node with no parent)</p>
+</div>
+
+
+							<div class="details">
+							</div>
+						</div>
 
 				<h1 id="selectors">Selectors <a href="#selectors"><span class="fa fa-bookmark"></span></a></h1>
 
@@ -13619,6 +14113,7 @@ Sets the subject of the selector (e.g. <code>$node &gt; node</code> to select th
 <li><strong><code>line-color</code></strong> : The colour of the edge’s line.</li>
 <li><strong><code>line-style</code></strong> : The style of the edge’s line; may be <code>solid</code>, <code>dotted</code>, or <code>dashed</code>.</li>
 <li><strong><code>line-cap</code></strong> : The cap style of the edge’s line; may be <code>butt</code> (default), <code>round</code>, or <code>square</code>.  The cap may or may not be visible, depending on the shape of the node and the relative size of the node and edge.  Caps other than <code>butt</code> extend beyond the specified endpoint of the edge.</li>
+<li><strong><code>line-opacity</code></strong> : The opacity of the edge’s line and arrow.  Useful if you wish to have a separate opacity for the edge label versus the edge line.  Note that the opacity value of the edge element affects the effective opacity of its line and label subcomponents.</li>
 <li><strong><code>line-fill</code></strong> : The filling style of the edge’s line; may be <code>solid</code> (default), <code>linear-gradient</code> (source to target), or <code>radial-gradient</code> (midpoint outwards).</li>
 <li><strong><code>line-dash-pattern</code></strong> : The <code>dashed</code> line pattern which specifies alternating lengths of lines and gaps. (e.g. <code>[6, 3]</code>).</li>
 <li><strong><code>line-dash-offset</code></strong> : The <code>dashed</code> line offset (e.g. <code>24</code>). It is useful for creating edge animations.</li>
@@ -15195,6 +15690,8 @@ cytoscape.use( ext );</code></pre>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/iVis-at-Bilkent/cytoscape.js-avsdf"><code>avsdf</code></a> : The AVSDF layout.  It organises nodes in a circle and tries to minimise edge crossings as much as possible.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/iVis-at-Bilkent/cytoscape.js-cise"><code>cise</code></a> : The CiSE layout creates circular clusters and uses a physics simulation (force-directed algorithm) to create distance between the clusters.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/cytoscape/cytoscape.js-cose-bilkent"><code>cose-bilkent</code></a> : The CoSE layout by Bilkent with enhanced compound node placement.  CoSE Bilkent is a physics simulation (force-directed) layout that gives near-perfect end results.  However, it’s more expensive than both <code>cose</code> and <code>fcose</code>.</li>
+<li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/iVis-at-Bilkent/cytoscape.js-cosep"><code>cosep</code></a> : 
+Compound Spring Embedder with Ports (CoSEP) is a force-directed layout algorithm based on the CoSE (Compound Spring Embedder) to support port constraints on compound graphs.</li>
 <li><i class="fa fa-fw fa-users"></i> <a href="https://github.com/shichuanpo/cytoscape.js-d3-force"><code>d3-force</code></a> : The D3 force layout.  It uses a basic physics simulation (force-directed) algorithm that generates good results for small, simple graphs.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/cytoscape/cytoscape.js-dagre"><code>dagre</code></a> : The Dagre layout for DAGs and trees.  It organises the graph in a hierarchy.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/cytoscape/cytoscape.js-elk"><code>elk</code></a> : <a href="https://github.com/OpenKieler/elkjs">ELK</a> layout algorithm adapter for Cytoscape.js.  It contains several layout algorithms.</li>
@@ -15659,6 +16156,11 @@ cytoscape.use( ext );</code></pre>
 							<div class="section lvl3"><a class="toclink" href="#ele.isEdge">ele.isEdge() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#edge.isLoop">edge.isLoop() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#edge.isSimple">edge.isSimple() </a></div>
+							<div class="section lvl3"><a class="toclink" href="#nodes.isNode">nodes.isNode() </a></div>
+							<div class="section lvl3"><a class="toclink" href="#nodes.isEdge">nodes.isEdge() </a></div>
+							<div class="section lvl3"><a class="toclink" href="#nodes.isLoop">nodes.isLoop() </a></div>
+							<div class="section lvl3"><a class="toclink" href="#nodes.isSimple">nodes.isSimple() </a></div>
+							<div class="section lvl3"><a class="toclink" href="#nodes.group">nodes.group() </a></div>
 						<div class="section lvl2">
 							<span class="expander">
 								<span class="fa fa-caret-down expanded-icon"></span>
@@ -15720,6 +16222,10 @@ cytoscape.use( ext );</code></pre>
 							<div class="section lvl3"><a class="toclink" href="#eles.layout">eles.layout() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#nodes.layoutPositions">nodes.layoutPositions() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#node.layoutDimensions">node.layoutDimensions() </a></div>
+							<div class="section lvl3"><a class="toclink" href="#ele.numericStyleUnits">ele.numericStyleUnits() </a></div>
+							<div class="section lvl3"><a class="toclink" href="#eles.style">eles.style() et al</a></div>
+							<div class="section lvl3"><a class="toclink" href="#ele.effectiveOpacity">ele.effectiveOpacity() </a></div>
+							<div class="section lvl3"><a class="toclink" href="#ele.transparent">ele.transparent() </a></div>
 						<div class="section lvl2">
 							<span class="expander">
 								<span class="fa fa-caret-down expanded-icon"></span>
@@ -15754,6 +16260,7 @@ cytoscape.use( ext );</code></pre>
 							<div class="section lvl3"><a class="toclink" href="#ele.visible">ele.visible() et al</a></div>
 							<div class="section lvl3"><a class="toclink" href="#ele.effectiveOpacity">ele.effectiveOpacity() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#ele.transparent">ele.transparent() </a></div>
+							<div class="section lvl3"><a class="toclink" href="#eles.hasClass">eles.hasClass() </a></div>
 						<div class="section lvl2">
 							<span class="expander">
 								<span class="fa fa-caret-down expanded-icon"></span>
@@ -15799,6 +16306,7 @@ cytoscape.use( ext );</code></pre>
 							<div class="section lvl3"><a class="toclink" href="#eles.eq">eles.eq() et al</a></div>
 							<div class="section lvl3"><a class="toclink" href="#eles.slice">eles.slice() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#eles.toArray">eles.toArray() </a></div>
+							<div class="section lvl3"><a class="toclink" href="#nodes.toArray">nodes.toArray() </a></div>
 						<div class="section lvl2">
 							<span class="expander">
 								<span class="fa fa-caret-down expanded-icon"></span>
@@ -15822,6 +16330,7 @@ cytoscape.use( ext );</code></pre>
 							<div class="section lvl3"><a class="toclink" href="#eles.reduce">eles.reduce() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#eles.min">eles.min() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#eles.max">eles.max() </a></div>
+							<div class="section lvl3"><a class="toclink" href="#nodes.absoluteComplement">nodes.absoluteComplement() </a></div>
 						<div class="section lvl2">
 							<span class="expander">
 								<span class="fa fa-caret-down expanded-icon"></span>
@@ -15848,6 +16357,8 @@ cytoscape.use( ext );</code></pre>
 							<div class="section lvl3"><a class="toclink" href="#nodes.successors">nodes.successors() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#nodes.incomers">nodes.incomers() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#nodes.predecessors">nodes.predecessors() </a></div>
+							<div class="section lvl3"><a class="toclink" href="#edge.sources">edge.sources() </a></div>
+							<div class="section lvl3"><a class="toclink" href="#edge.targets">edge.targets() </a></div>
 						<div class="section lvl2">
 							<span class="expander">
 								<span class="fa fa-caret-down expanded-icon"></span>
@@ -15931,6 +16442,10 @@ cytoscape.use( ext );</code></pre>
 							<div class="section lvl3"><a class="toclink" href="#nodes.children">nodes.children() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#nodes.descendants">nodes.descendants() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#nodes.siblings">nodes.siblings() </a></div>
+							<div class="section lvl3"><a class="toclink" href="#nodes.isParent">nodes.isParent() </a></div>
+							<div class="section lvl3"><a class="toclink" href="#nodes.isChildless">nodes.isChildless() </a></div>
+							<div class="section lvl3"><a class="toclink" href="#nodes.isChild">nodes.isChild() </a></div>
+							<div class="section lvl3"><a class="toclink" href="#nodes.isOrphan">nodes.isOrphan() </a></div>
 					<div class="section lvl1">
 						<span class="expander">
 							<span class="fa fa-caret-down expanded-icon"></span>

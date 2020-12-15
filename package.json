@@ -132,6 +132,7 @@
     "docs:ts:collection": "jsdoc -d ./dist/ts-definations/collection -t ./node_modules/tsd-jsdoc/dist -r ./src/collection/*.js",
     "docs:ts:animation": "jsdoc -d ./dist/ts-definations/animation -t ./node_modules/tsd-jsdoc/dist -r ./src/animation.js",
     "docs:ts:layout": "jsdoc -d ./dist/ts-definations/layout -t ./node_modules/tsd-jsdoc/dist -r ./src/extensions/layout/index.js",
+    "docs:ts": "jsdoc -d ./dist/ts-definations/ -t ./node_modules/tsd-jsdoc/dist -r ./src/core/*.js ./src/collection/*.js ./src/animation.js ./src/extensions/layout/index.js",
     "docs:js": "cpy build/cytoscape.min.js documentation/js",
     "docs:build": "node documentation/docmaker.js",
     "docs": "run-s docs:ast:* jsdoc docs:build docs:js",

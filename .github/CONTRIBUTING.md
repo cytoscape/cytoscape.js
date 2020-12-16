@@ -21,7 +21,7 @@ Describe the bug or feature that you are addressing in your issue.  Then, create
 
 New features go in the `unstable` branch, which is used for the next (breaking/major or feature/minor) version.  Bugfixes go in the `master` branch for the next bugfix/patch version.  This allows us to follow [semver](http://semver.org/) nicely.
 
-To propose a change, [fork](https://help.github.com/articles/fork-a-repo/) the cytoscape.js repository on Github, make a change, and then submit a [pull request](https://help.github.com/articles/creating-a-pull-request/) so that the proposed changes can be reviewed.
+To propose a change, [fork](https://help.github.com/articles/fork-a-repo/) the cytoscape.js repository on Github, make a change, and then submit a [pull request](https://help.github.com/articles/creating-a-pull-request/) so that the proposed changes can be reviewed.  If this is your first time making a pull request on GitHub, you can refer to [our comprehensive, step-by-step blog post](https://blog.js.cytoscape.org/2017/06/13/contributing/).
 
 The source is organised in relatively the same as the documentation, under `./src`.  Try to maintain that organisation as best you can.  You are free to create new files and `require()` them using ESM [`import`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import) and [`export`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/export).
 

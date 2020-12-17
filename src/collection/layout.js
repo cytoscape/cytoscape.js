@@ -6,8 +6,24 @@ const getLayoutDimensionOptions = util.defaults({
   nodeDimensionsIncludeLabels: false
 });
 
+/**
+ * @class node
+ */
 let elesfn = ({
   // Calculates and returns node dimensions { x, y } based on options given
+  /**
+ * @typedef {object} node_layoutDimensions
+ * @property {object} options - The layout options object.
+ */
+
+  /**
+ * Get the node width and height. This function is intended for use in layout positioning to do overlap detection.
+ * @memberof node
+ * @path Collection/Layout
+ * @extFn true
+ * @param {...node_layoutDimensions} options - The node layoutDimensionsing function.
+ * @namespace node.layoutDimensions
+ */
   layoutDimensions: function( options ){
     options = getLayoutDimensionOptions( options );
 
@@ -38,6 +54,38 @@ let elesfn = ({
   },
 
   // using standard layout options, apply position function (w/ or w/o animation)
+  /**
+ * layout, options, function(ele, i)
+ * @typedef {object} nodes_layoutPositions_callback_type
+ * @property {object} ele - The node being iterated over for which the function should return a position to set.
+ * @property {object} i - The index of the current node while iterating over the nodes in the layout.
+ */
+
+/**
+ * @callback nodes_layoutPositions_callback
+ * @property {nodes_layoutPositions_callback_type} function(ele,i) - nodes_layoutPositions_callback_type
+ */
+
+/**
+ * @typedef {object} nodes_layouts_layoutPositions
+ * @property {object} layout - The layout.
+ * @property {object} options - The layout options object.
+ * @property {function(nodes_layoutPositions_callback):any} nodes_layoutPositions_callback - A function that returns the new position for the specified node.
+ */
+
+/**
+ * @typedef {object} nodes_layoutPositions
+ * @property {nodes_layouts_layoutPositions} nodes_layouts_layoutPositions
+ */
+
+  /**
+ * Position the nodes for a discrete/synchronous layout.
+ * @memberof nodes
+ * @path Collection/Layout
+ * @extFn true
+ * @param {...nodes_layoutPositions} options - Position the nodes.
+ * @namespace nodes.layoutPositions
+ */
   layoutPositions: function( layout, options, fn ){
     let nodes = this.nodes();
     let cy = this.cy();
@@ -180,6 +228,19 @@ let elesfn = ({
     return this; // chaining
   },
 
+  /**
+ * @typedef {object} eles_layout
+ * @property {object} options - The layout options.
+ */
+
+  /**
+ * Get a new layout, which can be used to algorithmically position the nodes in the collection.
+ * @memberof eles
+ * @path Collection/Layout
+ * @alias eles.createLayout|eles.makeLayout
+ * @param {...eles_layout} options - The layouting comparison function.
+ * @namespace eles.layout
+ */
   layout: function( options ){
     let cy = this.cy();
 

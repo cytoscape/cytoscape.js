@@ -37,6 +37,9 @@ function cachePrototypeStyleFunction( key, fn ){
   };
 }
 
+/**
+ * @class ele
+ */
 let elesfn = ({
 
   recalculateRenderedStyle: function( useCache ){
@@ -143,6 +146,18 @@ let elesfn = ({
     }
   },
 
+  /**
+ * @typedef {object} ele_numericStyle
+ * @property {object} name - The name of the style property to get.
+ */
+
+  /**
+ * Get the numeric value of a style property in preferred units that can be used for calculations.
+ * @memberof ele
+ * @path Collection/Style
+ * @param {...ele_numericStyle} property - The numericStyle function.
+ * @namespace ele.numericStyle
+ */
   numericStyle: function( property ){
     let ele = this[0];
 
@@ -155,6 +170,18 @@ let elesfn = ({
     }
   },
 
+  /**
+ * @typedef {object} ele_numericStyleUnits
+ * @property {object} name - The name of the style property to get.
+ */
+
+  /**
+ * Get the units that `ele.numericStyle()` is expressed in, for a particular property.
+ * @memberof ele
+ * @path Collection/Layout
+ * @param {...ele_numericStyleUnits} property - The numericStyleUnits function.
+ * @namespace ele.numericStyleUnits
+ */
   numericStyleUnits: function( property ){
     let ele = this[0];
 
@@ -179,6 +206,33 @@ let elesfn = ({
   },
 
   // read the calculated css style of the element or override the style (via a bypass)
+  /**
+ *  name, value
+ * @typedef {object} eles_style_name_val
+ * @property {object} name - The name of the visual style property to set.
+ * @property {object} value -  The value of the visual style property to set.
+ */
+
+/**
+ * @typedef {object} eles_style
+ * @property {object} NULL
+ * @property {object} name - The name of the visual style property to get.
+ * @property {eles_style_name_val} eles_style_name_val - Set a particular style property value.
+ * @property {object} obj - An object of style property name-value pairs to set.
+ * @property {object} NULL
+ * @property {object} names - A space-separated list of property names to remove overrides.
+ */
+
+  /**
+ * Get or override the style of the element.
+ * @memberof eles
+ * @path Collection/Layout
+ * @alias eles.css
+ * @formatsSameFn true
+ * @sub_functions ele.style|ele.style|eles.style|eles.style|eles.removeStyle|eles.removeStyle
+ * @param {...eles_style} value - Get a name-value pair object containing visual style properties and their values for the element. | Get a particular style property value. | Set a particular style property value. | Set several particular style property values. | Remove all style overrides. | Remove specific style overrides.
+ * @namespace eles.style
+ */
   style: function( name, value ){
     let cy = this.cy();
 
@@ -263,6 +317,12 @@ let elesfn = ({
     return this; // chaining
   },
 
+  /**
+ * Get the effective opacity of the element (i.e. on-screen opacity), which takes into consideration parent node opacity.
+ * @memberof ele
+ * @path Collection/Layout
+ * @namespace ele.effectiveOpacity
+ */
   effectiveOpacity: function(){
     let cy = this.cy();
     if( !cy.styleEnabled() ){ return 1; }
@@ -291,6 +351,12 @@ let elesfn = ({
     }
   },
 
+  /**
+ * Get whether the element's effective opacity is completely transparent, which takes into consideration parent node opacity.
+ * @memberof ele
+ * @path Collection/Layout
+ * @namespace ele.transparent
+ */
   transparent: function(){
     let cy = this.cy();
     if( !cy.styleEnabled() ){ return false; }

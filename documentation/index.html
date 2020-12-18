@@ -49,7 +49,7 @@
 <a href="#introduction/citation"><img src="https://img.shields.io/badge/Cite-Oxford%20Bioinformatics%20Article-blue.svg" alt="Cite"></a>
 <a href="https://www.npmjs.com/package/cytoscape"><img src="https://img.shields.io/npm/v/cytoscape.svg" alt="npm"></a>
 <a href="https://github.com/cytoscape/cytoscape.js/tree/master/dist"><img src="https://img.shields.io/npm/v/cytoscape.svg?label=Download" alt="Download"></a>
-<a href="#extensions"><img src="https://img.shields.io/badge/Extensions-58-blue.svg" alt="Extensions"></a>
+<a href="#extensions"><img src="https://img.shields.io/badge/Extensions-60-blue.svg" alt="Extensions"></a>
 <a href="https://www.npmjs.com/package/cytoscape"><img src="https://img.shields.io/npm/dm/cytoscape.svg?label=npm%20installs" alt="npm installs"></a>
 <a href="https://travis-ci.org/cytoscape/cytoscape.js"><img src="https://img.shields.io/travis/cytoscape/cytoscape.js/master.svg?label=master%20branch" alt="master branch tests"></a>
 <a href="https://travis-ci.org/cytoscape/cytoscape.js"><img src="https://img.shields.io/travis/cytoscape/cytoscape.js/unstable.svg?label=unstable%20branch" alt="unstable branch tests"></a>
@@ -670,11 +670,21 @@
 </ul>
 <h2 id="introduction/releases">Releases <a href="#introduction/releases"><span class="fa fa-bookmark"></span></a></h2>
 <ul>
+<li>3.17<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.17.0+is%3Aclosed">3.17.0</a></li>
+</ul>
+</li>
 <li>3.16<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.16.4+is%3Aclosed">3.16.4</a></li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.16.3+is%3Aclosed">3.16.3</a></li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.16.2+is%3Aclosed">3.16.2</a></li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.16.1+is%3Aclosed">3.16.1</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.16.0+is%3Aclosed">3.16.0</a></li>
 </ul>
 </li>
 <li>3.15<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.15.5+is%3Aclosed">3.15.5</a></li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.15.4+is%3Aclosed">3.15.4</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.15.3+is%3Aclosed">3.15.3</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.15.2+is%3Aclosed">3.15.2</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.15.1+is%3Aclosed">3.15.1</a></li>
@@ -1093,7 +1103,13 @@
 
       <span class="hljs-attr">pannable</span>: <span class="hljs-literal">false</span>, <span class="hljs-comment">// whether dragging the node causes panning instead of grabbing</span>
 
-      <span class="hljs-attr">classes</span>: [<span class="hljs-string">'foo'</span>, <span class="hljs-string">'bar'</span>] <span class="hljs-comment">// an array (or a space separated string) of class names that the element has</span>
+      <span class="hljs-attr">classes</span>: [<span class="hljs-string">'foo'</span>, <span class="hljs-string">'bar'</span>], <span class="hljs-comment">// an array (or a space separated string) of class names that the element has</span>
+
+      <span class="hljs-comment">// DO NOT USE THE `style` FIELD UNLESS ABSOLUTELY NECESSARY</span>
+      <span class="hljs-comment">// USE THE STYLESHEET INSTEAD</span>
+      <span class="hljs-attr">style</span>: { <span class="hljs-comment">// style property overrides </span>
+        <span class="hljs-string">'background-color'</span>: <span class="hljs-string">'red'</span>
+      }
     },
 
     { <span class="hljs-comment">// node n2</span>
@@ -13586,6 +13602,7 @@ Sets the subject of the selector (e.g. <code>$node &gt; node</code> to select th
 <li><strong><code>line-color</code></strong> : The colour of the edge’s line.</li>
 <li><strong><code>line-style</code></strong> : The style of the edge’s line; may be <code>solid</code>, <code>dotted</code>, or <code>dashed</code>.</li>
 <li><strong><code>line-cap</code></strong> : The cap style of the edge’s line; may be <code>butt</code> (default), <code>round</code>, or <code>square</code>.  The cap may or may not be visible, depending on the shape of the node and the relative size of the node and edge.  Caps other than <code>butt</code> extend beyond the specified endpoint of the edge.</li>
+<li><strong><code>line-opacity</code></strong> : The opacity of the edge’s line and arrow.  Useful if you wish to have a separate opacity for the edge label versus the edge line.  Note that the opacity value of the edge element affects the effective opacity of its line and label subcomponents.</li>
 <li><strong><code>line-fill</code></strong> : The filling style of the edge’s line; may be <code>solid</code> (default), <code>linear-gradient</code> (source to target), or <code>radial-gradient</code> (midpoint outwards).</li>
 <li><strong><code>line-dash-pattern</code></strong> : The <code>dashed</code> line pattern which specifies alternating lengths of lines and gaps. (e.g. <code>[6, 3]</code>).</li>
 <li><strong><code>line-dash-offset</code></strong> : The <code>dashed</code> line offset (e.g. <code>24</code>). It is useful for creating edge animations.</li>
@@ -13686,6 +13703,8 @@ Sets the subject of the selector (e.g. <code>$node &gt; node</code> to select th
 <li><code>circle</code></li>
 <li><code>diamond</code></li>
 <li><code>chevron</code></li>
+<li><code>thick-tee</code></li>
+<li><code>crows-feet</code></li>
 <li><code>none</code></li>
 </ul>
 </li>
@@ -15142,6 +15161,7 @@ cytoscape.use( ext );</code></pre>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/iVis-at-Bilkent/cytoscape.js-grid-guide"><code>grid-guide</code></a> : Adds grid and snapping functionality to Cytoscape graphs</li>
 <li><i class="fa fa-fw fa-users"></i> <a href="https://github.com/zakjan/cytoscape-lasso"><code>lasso</code></a> : Lasso selection UI</li>
 <li><i class="fa fa-fw fa-users"></i> <a href="https://github.com/sgratzl/cytoscape.js-layers"><code>layers</code></a> : Simplifies the creation and management of additional layers in SVG, HTML, or Canvas format with additional utilities to render elements per node or edge.</li>
+<li><i class="fa fa-fw fa-users"></i> <a href="https://github.com/zakjan/cytoscape-mapbox-gl"><code>mapbox-gl</code></a> : Display a Cytoscape graph on top of a Mapbox GL map.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/cytoscape/cytoscape.js-navigator"><code>navigator</code></a> : A bird’s eye view widget of the graph.</li>
 <li><i class="fa fa-fw fa-users"></i> <a href="https://mo0om.github.io/cytoscape-no-overlap"><code>no-overlap</code></a> : Prevents nodes from overlapping on drag.</li>
 <li><i class="fa fa-fw fa-users"></i> <a href="https://github.com/kaluginserg/cytoscape-node-html-label"><code>node-html-label</code></a> : Allows HTML to be specified as the labels for nodes.</li>
@@ -15161,6 +15181,8 @@ cytoscape.use( ext );</code></pre>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/iVis-at-Bilkent/cytoscape.js-avsdf"><code>avsdf</code></a> : The AVSDF layout.  It organises nodes in a circle and tries to minimise edge crossings as much as possible.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/iVis-at-Bilkent/cytoscape.js-cise"><code>cise</code></a> : The CiSE layout creates circular clusters and uses a physics simulation (force-directed algorithm) to create distance between the clusters.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/cytoscape/cytoscape.js-cose-bilkent"><code>cose-bilkent</code></a> : The CoSE layout by Bilkent with enhanced compound node placement.  CoSE Bilkent is a physics simulation (force-directed) layout that gives near-perfect end results.  However, it’s more expensive than both <code>cose</code> and <code>fcose</code>.</li>
+<li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/iVis-at-Bilkent/cytoscape.js-cosep"><code>cosep</code></a> : 
+Compound Spring Embedder with Ports (CoSEP) is a force-directed layout algorithm based on the CoSE (Compound Spring Embedder) to support port constraints on compound graphs.</li>
 <li><i class="fa fa-fw fa-users"></i> <a href="https://github.com/shichuanpo/cytoscape.js-d3-force"><code>d3-force</code></a> : The D3 force layout.  It uses a basic physics simulation (force-directed) algorithm that generates good results for small, simple graphs.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/cytoscape/cytoscape.js-dagre"><code>dagre</code></a> : The Dagre layout for DAGs and trees.  It organises the graph in a hierarchy.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/cytoscape/cytoscape.js-elk"><code>elk</code></a> : <a href="https://github.com/OpenKieler/elkjs">ELK</a> layout algorithm adapter for Cytoscape.js.  It contains several layout algorithms.</li>

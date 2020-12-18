@@ -342,10 +342,10 @@ BRp.registerArrowShapes = function(){
 
   defineArrowShape( 'thick-tee',  {
     points: [
-      -0.25, 0,
-      -.25, -0.1,
-      .25, -0.1,
-      0.25, 0
+      -0.15, 0,
+      -.15, -0.1,
+      .15, -0.1,
+      0.15, 0
     ],
 
     spacing: function( edge ){
@@ -359,21 +359,23 @@ BRp.registerArrowShapes = function(){
 
   defineArrowShape( 'crows-feet',  {
     points: [
-      0, 0,
-      0.35, .35,
-      0, -.15,
-      0, 0,
-      0, -.15,
-      -0.35, .35,
+    -.01, 0,
+    .01, 0,
+    .01,-.15,
+    -.01, -.15,
+
+    0,-.20,
+    -.15,0,
+    -.10,0,
+    0,-.15,
+
+    0, -.15,
+    .10,0,
+    .15,0,
+    0,-.20,
+
     ],
 
-    spacing: function( edge ){
-      return 9;
-    },
-
-    gap: function( edge ){
-      return 0;
-    }
   } );
 
 };

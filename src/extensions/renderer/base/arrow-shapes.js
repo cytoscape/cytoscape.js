@@ -349,7 +349,7 @@ BRp.registerArrowShapes = function(){
     ],
 
     spacing: function( edge ){
-      return 10;
+      return 5;
     },
 
     gap: function( edge ){

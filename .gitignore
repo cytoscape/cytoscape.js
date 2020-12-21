@@ -11,4 +11,6 @@ documentation/slimerjs-*/**
 documentation/api/**
 documentation/download/*.zip
 documentation/ast/*
+documentation/jsdocAST.json
+documentation/jsdocAnnotations.json
 benchmark/suite/cytoscape.js

@@ -71,6 +71,7 @@
   * [Google](https://google.com) : [TensorFlow](https://www.tensorflow.org) : SyntaxNet : DRAGNN visualiser
   * [GCHQ](https://www.gchq.gov.uk/) : [Gaffer](https://gchq.github.io/gaffer-doc/)
   * [GeneMANIA](http://genemania.org)
+  * [Global CTO Forum](https://globalctoforum.org)
   * [Graphlytic](http://graphlytic.sk/)
   * [Hacker Target](https://hackertarget.com/) : [Domain Profiler](https://hackertarget.com/domain-profiler/)
   * [Harvard University](https://www.harvard.edu) : [BioPlex](http://bioplex.hms.harvard.edu/bioplexDisplay)

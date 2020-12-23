@@ -128,7 +128,7 @@ util.extend( elesfn, {
  * @memberof nodes
  * @path Collection/Traversing
  * @param {...nodes_roots} x - Get ID
- * @namespace nodes.roots
+ * @methodName nodes.roots
  */
   roots: defineDagExtremity({ noIncomingEdges: true }),
 
@@ -144,7 +144,7 @@ util.extend( elesfn, {
  * @memberof nodes
  * @path Collection/Traversing
  * @param {...nodes_leaves} x - Get ID
- * @namespace nodes.leaves
+ * @methodName nodes.leaves
  */
   leaves: defineDagExtremity({ noOutgoingEdges: true }),
 
@@ -161,7 +161,7 @@ util.extend( elesfn, {
  * @memberof nodes
  * @path Collection/Traversing
  * @param {...nodes_outgoers} x - Get ID
- * @namespace nodes.outgoers
+ * @methodName nodes.outgoers
  */
   outgoers: cache( defineDagOneHop({ outgoing: true }) , 'outgoers' ),
 
@@ -177,7 +177,7 @@ util.extend( elesfn, {
  * @memberof nodes
  * @path Collection/Traversing
  * @param {...nodes_successors} x - Get ID
- * @namespace nodes.successors
+ * @methodName nodes.successors
  */
   successors: defineDagAllHops({ outgoing: true }),
 
@@ -194,7 +194,7 @@ util.extend( elesfn, {
  * @memberof nodes
  * @path Collection/Traversing
  * @param {...nodes_incomers} x - Get ID
- * @namespace nodes.incomers
+ * @methodName nodes.incomers
  */
   incomers: cache( defineDagOneHop({ incoming: true }), 'incomers' ),
 
@@ -210,7 +210,7 @@ util.extend( elesfn, {
  * @memberof nodes
  * @path Collection/Traversing
  * @param {...nodes_predecessors} x - Get ID
- * @namespace nodes.predecessors
+ * @methodName nodes.predecessors
  */
   predecessors: defineDagAllHops({ incoming: true })
 } );
@@ -279,7 +279,7 @@ util.extend( elesfn, {
  * @memberof edge
  * @path Collection/Traversing
  * @param {...edge_source} x - Get ID
- * @namespace edge.source
+ * @methodName edge.source
  */
   source: cache(function sourceImpl( selector ){
     let ele = this[0];
@@ -303,7 +303,7 @@ util.extend( elesfn, {
  * @memberof edge
  * @path Collection/Traversing
  * @param {...edge_target} x - Get ID
- * @namespace edge.target
+ * @methodName edge.target
  */
   target: cache(function targetImpl( selector ){
     let ele = this[0];
@@ -326,7 +326,7 @@ util.extend( elesfn, {
  * @memberof edge
  * @path Collection/Traversing
  * @param {...edge_sources} x - Get ID
- * @namespace edge.sources
+ * @methodName edge.sources
  */
   sources: defineSourceFunction( {
     attr: 'source'
@@ -343,7 +343,7 @@ util.extend( elesfn, {
  * @memberof edge
  * @path Collection/Traversing
  * @param {...edge_targets} x - Get ID
- * @namespace edge.targets
+ * @methodName edge.targets
  */
   targets: defineSourceFunction( {
     attr: 'target'

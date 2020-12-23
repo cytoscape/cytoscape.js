@@ -81,8 +81,8 @@ let elesfn = ({
  * Get all elements in the graph that are not in the calling collection.
  * @memberof nodes
  * @path Collection/Building & filtering
- * @alias eles.abscomp|eles.complement
- * @namespace nodes.absoluteComplement
+ * @pureAliases eles.abscomp|eles.complement
+ * @methodName nodes.absoluteComplement
  */
   absoluteComplement: function(){
     let cy = this.cy();
@@ -156,7 +156,7 @@ let elesfn = ({
  * @memberof eles
  * @path Collection/Building & filtering
  * @param {...eles_diff} other - diff Event | diff Event
- * @namespace eles.diff
+ * @methodName eles.diff
  */
   diff: function( other ){
     let cy = this._private.cy;
@@ -313,7 +313,7 @@ let elesfn = ({
  * @memberof eles
  * @path Collection/Building & filtering
  * @param {...eles_unmerge} toRemove - unmerge Event | unmerge Event
- * @namespace eles.unmerge
+ * @methodName eles.unmerge
  */
   unmerge: function( toRemove ){
     let cy = this._private.cy;
@@ -375,7 +375,7 @@ let elesfn = ({
  * @memberof eles
  * @path Collection/Building & filtering
  * @param {...eles_map} mapFn - Determine test function
- * @namespace eles.map
+ * @methodName eles.map
  */
   map: function( mapFn, thisArg ){
     let arr = [];
@@ -420,7 +420,7 @@ let elesfn = ({
  * @memberof eles
  * @path Collection/Building & filtering
  * @param {...eles_reduce} fn - Determine reduce function
- * @namespace eles.reduce
+ * @methodName eles.reduce
  */
   reduce: function( fn, initialValue ){
     let val = initialValue;
@@ -462,7 +462,7 @@ let elesfn = ({
  * @memberof eles
  * @path Collection/Building & filtering
  * @param {...eles_max} valFn - Determine max function
- * @namespace eles.max
+ * @methodName eles.max
  */
   max: function( valFn, thisArg ){
     let max = -Infinity;
@@ -515,7 +515,7 @@ let elesfn = ({
  * @memberof eles
  * @path Collection/Building & filtering
  * @param {...eles_min} valFn - Determine min function
- * @namespace eles.min
+ * @methodName eles.min
  */
   min: function( valFn, thisArg ){
     let min = Infinity;

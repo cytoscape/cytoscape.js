@@ -16,10 +16,10 @@ let elesfn = ({
  * Get or replace the current list of classes on the elements with the specified list.
  * @memberof eles
  * @path Collection/Style
- * @alias eles.className|eles.classNames
+ * @pureAliases eles.className|eles.classNames
  * @sub_functions ele.classes|eles.classes
  * @param {...eles_classes} classes - Get the list of classes as an array for the element. | Replace the list of classes for all elements in the collection.
- * @namespace eles.classes
+ * @methodName eles.classes
  */
   classes: function( classes ){
     let self = this;
@@ -89,7 +89,7 @@ let elesfn = ({
  * @memberof eles
  * @path Collection/Style
  * @param {...eles_addClass} classes - Adding Class
- * @namespace eles.addClass
+ * @methodName eles.addClass
  */
   addClass: function( classes ){
     return this.toggleClass( classes, true );
@@ -105,7 +105,7 @@ let elesfn = ({
  * @memberof eles
  * @path Collection/Style
  * @param {...eles_hasClass} className - Adding Class
- * @namespace eles.hasClass
+ * @methodName eles.hasClass
  */
   hasClass: function( className ){
     let ele = this[0];
@@ -128,7 +128,7 @@ let elesfn = ({
  * @memberof eles
  * @path Collection/Style
  * @param {...eles_toggleClass} toggle - Toggle Event
- * @namespace eles.toggleClass
+ * @methodName eles.toggleClass
  */ 
   toggleClass: function( classes, toggle ){
     if( !is.array( classes ) ){
@@ -186,7 +186,7 @@ let elesfn = ({
  * @memberof eles
  * @path Collection/Style
  * @param {...eles_removeClass} classes - Adding Class
- * @namespace eles.removeClass
+ * @methodName eles.removeClass
  */
   removeClass: function( classes ){
     return this.toggleClass( classes, false );
@@ -208,7 +208,7 @@ let elesfn = ({
  * @memberof eles
  * @path Collection/Style
  * @param {...eles_flashClass} duration - flash Event
- * @namespace eles.flashClass
+ * @methodName eles.flashClass
  */
   flashClass: function( classes, duration ){
     let self = this;

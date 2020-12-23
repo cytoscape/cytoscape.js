@@ -1,4 +1,174 @@
 declare class cy {
+    /**
+     * Add elements to the graph and return them
+     * @param opts - Add a specified element to the graph. | Add the specified elements to the graph. | Add the specified elements to the graph.
+     */
+    static add(...opts: cy_add[]): void;
+    /**
+     * Remove elements from the graph and return them.
+     * @param x - Remove the specified elements. | Remove elements in the graph matching the specified selector.
+     */
+    static remove(...x: cy_remove[]): void;
+    /**
+     * Get whether the instance of Cytoscape.js has been destroyed or not.
+     */
+    static destroyed(): void;
+    /**
+     * @param fn - Run a callback as soon as the graph becomes ready (i.e. intitial data loaded and initial layout completed).  If the graph is already ready, then the callback is called immediately.  If data is loaded synchronously and the layout used is discrete/synchronous/unanimated/unspecified, then you don't need `cy.ready()`.
+     */
+    static ready(...fn: cy_ready[]): void;
+    /**
+     * A convenience function to explicitly destroy the instance.
+     */
+    static destroy(): void;
+    /**
+     * Get an element from its ID in a very performant way
+     * @param id - Get ID
+     */
+    static getElementById(...id: cy_getElementById[]): void;
+    /**
+     * Get the HTML DOM element in which the graph is visualised. A null value is returned if the instance is headless.
+     */
+    static container(): void;
+    /**
+     * Attaches the instance to the specified container for visualisation.
+     * @param container - To mount
+     */
+    static mount(...container: cy_mount[]): void;
+    /**
+     * Remove the instance from its current container.
+     */
+    static unmount(): void;
+    /**
+     * Import or export the graph in the same JSON format used at initialisation.
+     * @param obj - Export the graph as JSON. | Import the graph as JSON, updating only the fields specified.
+     */
+    static json(...obj: cy_json[]): void;
+    /**
+     * Get a new layout, which can be used to algorithmically position the nodes in the graph
+     * @param options - Get layouts
+     */
+    static layout(...options: cy_layout[]): void;
+    /**
+     * Allow for manipulation of elements without triggering multiple style calculations or multiple redraws.
+     * @param callback - callback | Starts batching manually (useful for asynchronous cases). | Ends batching manually (useful for asynchronous cases).
+     */
+    static batch(...callback: cy_batch[]): void;
+    /**
+     * Return a new, empty collection.
+     */
+    static collection(): void;
+    /**
+     * Get elements in the graph matching a selector or a filter function.
+     * @param selector - Get elements in the graph matching the specified selector. | Get elements in the graph matching the specified selector. | Get nodes in the graph matching the specified selector. | Get edges in the graph matching the specified selector. | Get elements in the graph matching the specified selector. | Get elements in the graph matching the specified filter function.
+     */
+    static $(...selector: cy_$[]): void;
+    /**
+     * Get the entry point to modify the visual style of the graph after initialisation.
+     * @param newStyle - Get the current style object. | Assign a new stylesheet to replace the existing one.
+     */
+    static style(...newStyle: cy_style[]): void;
+    /**
+     * Get or set whether nodes are automatically locked (i.e. if `true`, nodes are locked despite their individual state).
+     * @param bool - Get whether autolocking is enabled. | Set whether autolocking is enabled.
+     */
+    static autolock(...bool: cy_autolock[]): void;
+    /**
+     * Get or set whether nodes are automatically ungrabified (i.e. if `true`, nodes are ungrabbale despite their individual state).
+     * @param bool - Get whether autoungrabifying is enabled. | Set whether autoungrabifying is enabled.
+     */
+    static autoungrabify(...bool: cy_autoungrabify[]): void;
+    /**
+     * Get or set whether nodes are automatically unselectified (i.e. if `true`, nodes are ungrabbale despite their individual state).
+     * @param bool - Get whether autounselectifying is enabled. | Set whether autounselectifying is enabled.
+     */
+    static autounselectify(...bool: cy_autounselectify[]): void;
+    /**
+     * Get or set the selection type.  The `'single'` selection type is the default, tapping an element selects that element and deselects the previous elements.  The `'additive' selection type toggles the selection state of an element when tapped.`
+     * @param selType - Get the selection type string. | Set the selection type.
+     */
+    static selectionType(...selType: cy_selectionType[]): void;
+    /**
+     * Get or set whether panning is enabled.
+     * @param bool - Get whether panning is enabled. | Set whether panning is enabled
+     */
+    static panningEnabled(...bool: cy_panningEnabled[]): void;
+    /**
+     * Get or set whether panning by user events (e.g. dragging the graph background) is enabled.
+     * @param bool - Get whether user panning is enabled. | Set whether user panning is enabled
+     */
+    static userPanningEnabled(...bool: cy_userPanningEnabled[]): void;
+    /**
+     * Get or set whether zooming is enabled.
+     * @param bool - Get whether zooming is enabled. | Set whether zooming is enabled
+     */
+    static zoomingEnabled(...bool: cy_zoomingEnabled[]): void;
+    /**
+     * Get or set whether user zooming by user events (e.g. mouse wheel, pinch-to-zoom) is enabled.
+     * @param bool - Get whether user zooming is enabled. | Set whether zooming is enabled
+     */
+    static userZoomingEnabled(...bool: cy_userZoomingEnabled[]): void;
+    /**
+     * Get or set whether box selection is enabled. If enabled along with panning, the user must hold down one of shift, control, alt, or command to initiate box selection.
+     * @param bool - Get whether box selection is enabled. | Set whether box selection is enabled.
+     */
+    static boxSelectionEnabled(...bool: cy_boxSelectionEnabled[]): void;
+    /**
+     * Get or set the panning position of the graph.
+     * @param renderedPosition - Get the current panning position. | Set the current panning position.
+     */
+    static pan(...renderedPosition: cy_pan[]): void;
+    /**
+     * Relatively pan the graph by a specified rendered position vector.
+     * @param arg0 - The rendered position
+     */
+    static panBy(...arg0: cy_panBy[]): void;
+    /**
+     * Pan and zooms the graph to fit to a collection.
+     * @param elements - Fit to all elements in the graph. | Fit to the specified elements.
+     */
+    static fit(...elements: cy_fit[]): void;
+    /**
+     * Get or set the minimum zoom level.
+     * @param zoom - Get the minimum zoom level. | Set the minimum zoom level.
+     */
+    static minZoom(...zoom: cy_minZoom[]): void;
+    /**
+     * Get or set the maximum zoom level.
+     * @param zoom - Get the maximum zoom level. | Set the maximum zoom level.
+     */
+    static maxZoom(...zoom: cy_maxZoom[]): void;
+    /**
+     * Get or set the zoom level of the graph.
+     * @param params - Get the zoom level. | Set the zoom level. | Set the zoom level.
+     */
+    static zoom(...params: cy_zoom[]): void;
+    /**
+     * Set the viewport state (pan & zoom) in one call.
+     * @param opts - Set viewport
+     */
+    static viewport(...opts: cy_viewport[]): void;
+    /**
+     * Pan the graph to the centre of a collection.
+     * @param elements - Centre on all elements in the graph. | Centre on the specified elements.
+     */
+    static center(...elements: cy_center[]): void;
+    /**
+     * Reset the graph to the default zoom level and panning position.
+     */
+    static reset(): void;
+    /**
+     * Get the on-screen width of the viewport in pixels.
+     */
+    static width(): void;
+    /**
+     * Get the on-screen height of the viewport in pixels.
+     */
+    static height(): void;
+    /**
+     * Get the extent of the viewport, a bounding box in model co-ordinates that lets you know what model positions are visible in the viewport.
+     */
+    static extent(): void;
 }
 
 /**
@@ -11,150 +181,6 @@ declare type cy_add = {
     eleObjs: any;
     eles: any;
 };
-
-declare namespace cy {
-    /**
-     * Add elements to the graph and return them
-     */
-    namespace add { }
-    /**
-     * Remove elements from the graph and return them.
-     */
-    namespace remove { }
-    /**
-     * Get whether the instance of Cytoscape.js has been destroyed or not.
-     */
-    namespace destroyed { }
-    namespace ready { }
-    /**
-     * A convenience function to explicitly destroy the instance.
-     */
-    namespace destroy { }
-    /**
-     * Get an element from its ID in a very performant way
-     */
-    namespace getElementById { }
-    /**
-     * Get the HTML DOM element in which the graph is visualised. A null value is returned if the instance is headless.
-     */
-    namespace container { }
-    /**
-     * Attaches the instance to the specified container for visualisation.
-     */
-    namespace mount { }
-    /**
-     * Remove the instance from its current container.
-     */
-    namespace unmount { }
-    /**
-     * Import or export the graph in the same JSON format used at initialisation.
-     */
-    namespace json { }
-    /**
-     * Get a new layout, which can be used to algorithmically position the nodes in the graph
-     */
-    namespace layout { }
-    /**
-     * Allow for manipulation of elements without triggering multiple style calculations or multiple redraws.
-     */
-    namespace batch { }
-    /**
-     * Return a new, empty collection.
-     */
-    namespace collection { }
-    /**
-     * Get elements in the graph matching a selector or a filter function.
-     */
-    namespace $ { }
-    /**
-     * Get the entry point to modify the visual style of the graph after initialisation.
-     */
-    namespace style { }
-    /**
-     * Get or set whether nodes are automatically locked (i.e. if `true`, nodes are locked despite their individual state).
-     */
-    namespace autolock { }
-    /**
-     * Get or set whether nodes are automatically ungrabified (i.e. if `true`, nodes are ungrabbale despite their individual state).
-     */
-    namespace autoungrabify { }
-    /**
-     * Get or set whether nodes are automatically unselectified (i.e. if `true`, nodes are ungrabbale despite their individual state).
-     */
-    namespace autounselectify { }
-    /**
-     * Get or set the selection type.  The `'single'` selection type is the default, tapping an element selects that element and deselects the previous elements.  The `'additive' selection type toggles the selection state of an element when tapped.`
-     */
-    namespace selectionType { }
-    /**
-     * Get or set whether panning is enabled.
-     */
-    namespace panningEnabled { }
-    /**
-     * Get or set whether panning by user events (e.g. dragging the graph background) is enabled.
-     */
-    namespace userPanningEnabled { }
-    /**
-     * Get or set whether zooming is enabled.
-     */
-    namespace zoomingEnabled { }
-    /**
-     * Get or set whether user zooming by user events (e.g. mouse wheel, pinch-to-zoom) is enabled.
-     */
-    namespace userZoomingEnabled { }
-    /**
-     * Get or set whether box selection is enabled. If enabled along with panning, the user must hold down one of shift, control, alt, or command to initiate box selection.
-     */
-    namespace boxSelectionEnabled { }
-    /**
-     * Get or set the panning position of the graph.
-     */
-    namespace pan { }
-    /**
-     * Relatively pan the graph by a specified rendered position vector.
-     */
-    namespace panBy { }
-    /**
-     * Pan and zooms the graph to fit to a collection.
-     */
-    namespace fit { }
-    /**
-     * Get or set the minimum zoom level.
-     */
-    namespace minZoom { }
-    /**
-     * Get or set the maximum zoom level.
-     */
-    namespace maxZoom { }
-    /**
-     * Get or set the zoom level of the graph.
-     */
-    namespace zoom { }
-    /**
-     * Set the viewport state (pan & zoom) in one call.
-     */
-    namespace viewport { }
-    /**
-     * Pan the graph to the centre of a collection.
-     */
-    namespace center { }
-    /**
-     * Reset the graph to the default zoom level and panning position.
-     */
-    namespace reset { }
-    /**
-     * Get the on-screen width of the viewport in pixels.
-     */
-    namespace width { }
-    /**
-     * Get the on-screen height of the viewport in pixels.
-     */
-    namespace height { }
-    /**
-     * Get the extent of the viewport, a bounding box in model co-ordinates that lets you know what model positions are visible in the viewport.
-     */
-    namespace extent { }
-}
 
 /**
  * @property eles - A collection of elements to remove.
@@ -436,6 +462,145 @@ declare type cy_center = {
 };
 
 declare class eles {
+    /**
+     * Get or replace the current list of classes on the elements with the specified list.
+     * @param classes - Get the list of classes as an array for the element. | Replace the list of classes for all elements in the collection.
+     */
+    static classes(...classes: eles_classes[]): void;
+    /**
+     * Add classes to elements.  The classes should be specified in the [stylesheet](#style) in order to have an effect on the rendered style of the elements.
+     * @param classes - Adding Class
+     */
+    static addClass(...classes: eles_addClass[]): void;
+    /**
+     * Get whether an element has a particular class.
+     * @param className - Adding Class
+     */
+    static hasClass(...className: eles_hasClass[]): void;
+    /**
+     * Toggle whether the elements have the specified classes.  The classes should be specified in the [stylesheet](#style) in order to have an effect on the rendered style of the elements.
+     * @param toggle - Toggle Event
+     */
+    static toggleClass(...toggle: eles_toggleClass[]): void;
+    /**
+     * Remove classes from elements.  The classes should be specified in the [stylesheet](#style) in order to have an effect on the rendered style of the elements.
+     * @param classes - Adding Class
+     */
+    static removeClass(...classes: eles_removeClass[]): void;
+    /**
+     * Add classes to the elements, and then remove the classes after a specified duration.
+     * @param duration - flash Event
+     */
+    static flashClass(...duration: eles_flashClass[]): void;
+    /**
+     * Determine whether all elements in the collection match a selector.
+     * @param selector - Matching Selector
+     */
+    static allAre(...selector: eles_allAre[]): void;
+    /**
+     * Determine whether any element in this collection matches a selector.
+     * @param selector - Matching Selector
+     */
+    static is(...selector: eles_is[]): void;
+    /**
+     * Determine whether any element in this collection satisfies the specified test function.
+     * @param fn - Listen to events that bubble up from elements matching the specified node selector:
+     */
+    static some(...fn: eles_some[]): void;
+    /**
+     * Determine whether all elements in this collection satisfy the specified test function.
+     * @param fn - Determine test function
+     */
+    static every(...fn: eles_every[]): void;
+    /**
+     * Determine whether this collection contains exactly the same elements as another collection.
+     * @param collection - Determine same collection
+     */
+    static same(...collection: eles_same[]): void;
+    /**
+     * Determine whether this collection contains any of the same elements as another collection.
+     * @param collection - Determine any same collection
+     */
+    static anySame(...collection: eles_anySame[]): void;
+    /**
+     * Determine whether all elements in the specified collection are in the neighbourhood of the calling collection.
+     * @param collection - Determine neighbourhood collection
+     */
+    static allAreNeighbors(...collection: eles_allAreNeighbors[]): void;
+    /**
+     * Determine whether this collection contains all of the elements of another collection.
+     * @param collection - Determine another collection
+     */
+    static contains(...collection: eles_contains[]): void;
+    /**
+     * Perform a traditional left/right diff on the two collections.
+     * @param other - diff Event | diff Event
+     */
+    static diff(...other: eles_diff[]): void;
+    /**
+     * Perform an in-place operation on the calling collection to remove the given elements.
+     * @param toRemove - unmerge Event | unmerge Event
+     */
+    static unmerge(...toRemove: eles_unmerge[]): void;
+    /**
+     * Get an array containing values mapped from the collection.
+     * @param mapFn - Determine test function
+     */
+    static map(...mapFn: eles_map[]): void;
+    /**
+     * Reduce a single value by applying a function against an accumulator and each value of the collection.
+     * @param fn - Determine reduce function
+     */
+    static reduce(...fn: eles_reduce[]): void;
+    /**
+     * Find a maximum value and the corresponding element.
+     * @param valFn - Determine max function
+     */
+    static max(...valFn: eles_max[]): void;
+    /**
+     * Find a minimum value and the corresponding element.
+     * @param valFn - Determine min function
+     */
+    static min(...valFn: eles_min[]): void;
+    /**
+     * Iterate over the elements in the collection.
+     * @param fn - Determine forEach function
+     */
+    static forEach(...fn: eles_forEach[]): void;
+    /**
+     * Get a subset of the elements in the collection based on specified indices.
+     * @param start - Slice
+     */
+    static slice(...start: eles_slice[]): void;
+    /**
+     * Get the number of elements in the collection.
+     */
+    static size(): void;
+    /**
+     * Get an element at a particular index in the collection.
+     * @param i - Get the index of the element. | Get the first element in the collection. | Get the last element in the collection.
+     */
+    static eq(...i: eles_eq[]): void;
+    /**
+     * Get whether the collection is empty, meaning it has no elements.
+     * @param x - Get whether the collection is empty. | Get whether the collection is nonempty.
+     */
+    static empty(...x: eles_empty[]): void;
+    /**
+     * Get a new collection containing the elements sorted by the specified comparison function.
+     * @param sortFn - The sorting comparison function.
+     */
+    static sort(...sortFn: eles_sort[]): void;
+    /**
+     * Get a new layout, which can be used to algorithmically position the nodes in the collection.
+     * @param options - The layouting comparison function.
+     */
+    static layout(...options: eles_layout[]): void;
+    /**
+     * Get or override the style of the element.
+     * @param value - Get a name-value pair object containing visual style properties and their values for the element. | Get a particular style property value. | Set a particular style property value. | Set several particular style property values. | Remove all style overrides. | Remove specific style overrides.
+     */
+    static style(...value: eles_style[]): void;
 }
 
 /**
@@ -445,121 +610,6 @@ declare type eles_classes = {
     NULL: any;
     classes: any;
 };
-
-declare namespace eles {
-    /**
-     * Get or replace the current list of classes on the elements with the specified list.
-     */
-    namespace classes { }
-    /**
-     * Add classes to elements.  The classes should be specified in the [stylesheet](#style) in order to have an effect on the rendered style of the elements.
-     */
-    namespace addClass { }
-    /**
-     * Get whether an element has a particular class.
-     */
-    namespace hasClass { }
-    /**
-     * Toggle whether the elements have the specified classes.  The classes should be specified in the [stylesheet](#style) in order to have an effect on the rendered style of the elements.
-     */
-    namespace toggleClass { }
-    /**
-     * Remove classes from elements.  The classes should be specified in the [stylesheet](#style) in order to have an effect on the rendered style of the elements.
-     */
-    namespace removeClass { }
-    /**
-     * Add classes to the elements, and then remove the classes after a specified duration.
-     */
-    namespace flashClass { }
-    /**
-     * Determine whether all elements in the collection match a selector.
-     */
-    namespace allAre { }
-    /**
-     * Determine whether any element in this collection matches a selector.
-     */
-    namespace is { }
-    /**
-     * Determine whether any element in this collection satisfies the specified test function.
-     */
-    namespace some { }
-    /**
-     * Determine whether all elements in this collection satisfy the specified test function.
-     */
-    namespace every { }
-    /**
-     * Determine whether this collection contains exactly the same elements as another collection.
-     */
-    namespace same { }
-    /**
-     * Determine whether this collection contains any of the same elements as another collection.
-     */
-    namespace anySame { }
-    /**
-     * Determine whether all elements in the specified collection are in the neighbourhood of the calling collection.
-     */
-    namespace allAreNeighbors { }
-    /**
-     * Determine whether this collection contains all of the elements of another collection.
-     */
-    namespace contains { }
-    /**
-     * Perform a traditional left/right diff on the two collections.
-     */
-    namespace diff { }
-    /**
-     * Perform an in-place operation on the calling collection to remove the given elements.
-     */
-    namespace unmerge { }
-    /**
-     * Get an array containing values mapped from the collection.
-     */
-    namespace map { }
-    /**
-     * Reduce a single value by applying a function against an accumulator and each value of the collection.
-     */
-    namespace reduce { }
-    /**
-     * Find a maximum value and the corresponding element.
-     */
-    namespace max { }
-    /**
-     * Find a minimum value and the corresponding element.
-     */
-    namespace min { }
-    /**
-     * Iterate over the elements in the collection.
-     */
-    namespace forEach { }
-    /**
-     * Get a subset of the elements in the collection based on specified indices.
-     */
-    namespace slice { }
-    /**
-     * Get the number of elements in the collection.
-     */
-    namespace size { }
-    /**
-     * Get an element at a particular index in the collection.
-     */
-    namespace eq { }
-    /**
-     * Get whether the collection is empty, meaning it has no elements.
-     */
-    namespace empty { }
-    /**
-     * Get a new collection containing the elements sorted by the specified comparison function.
-     */
-    namespace sort { }
-    /**
-     * Get a new layout, which can be used to algorithmically position the nodes in the collection.
-     */
-    namespace layout { }
-    /**
-     * Get or override the style of the element.
-     */
-    namespace style { }
-}
 
 /**
  * @property classes - An array (or a space-separated string) of class names to add to the elements.
@@ -609,6 +659,145 @@ declare type eles_flashClass = {
 };
 
 declare class eles {
+    /**
+     * Get or replace the current list of classes on the elements with the specified list.
+     * @param classes - Get the list of classes as an array for the element. | Replace the list of classes for all elements in the collection.
+     */
+    static classes(...classes: eles_classes[]): void;
+    /**
+     * Add classes to elements.  The classes should be specified in the [stylesheet](#style) in order to have an effect on the rendered style of the elements.
+     * @param classes - Adding Class
+     */
+    static addClass(...classes: eles_addClass[]): void;
+    /**
+     * Get whether an element has a particular class.
+     * @param className - Adding Class
+     */
+    static hasClass(...className: eles_hasClass[]): void;
+    /**
+     * Toggle whether the elements have the specified classes.  The classes should be specified in the [stylesheet](#style) in order to have an effect on the rendered style of the elements.
+     * @param toggle - Toggle Event
+     */
+    static toggleClass(...toggle: eles_toggleClass[]): void;
+    /**
+     * Remove classes from elements.  The classes should be specified in the [stylesheet](#style) in order to have an effect on the rendered style of the elements.
+     * @param classes - Adding Class
+     */
+    static removeClass(...classes: eles_removeClass[]): void;
+    /**
+     * Add classes to the elements, and then remove the classes after a specified duration.
+     * @param duration - flash Event
+     */
+    static flashClass(...duration: eles_flashClass[]): void;
+    /**
+     * Determine whether all elements in the collection match a selector.
+     * @param selector - Matching Selector
+     */
+    static allAre(...selector: eles_allAre[]): void;
+    /**
+     * Determine whether any element in this collection matches a selector.
+     * @param selector - Matching Selector
+     */
+    static is(...selector: eles_is[]): void;
+    /**
+     * Determine whether any element in this collection satisfies the specified test function.
+     * @param fn - Listen to events that bubble up from elements matching the specified node selector:
+     */
+    static some(...fn: eles_some[]): void;
+    /**
+     * Determine whether all elements in this collection satisfy the specified test function.
+     * @param fn - Determine test function
+     */
+    static every(...fn: eles_every[]): void;
+    /**
+     * Determine whether this collection contains exactly the same elements as another collection.
+     * @param collection - Determine same collection
+     */
+    static same(...collection: eles_same[]): void;
+    /**
+     * Determine whether this collection contains any of the same elements as another collection.
+     * @param collection - Determine any same collection
+     */
+    static anySame(...collection: eles_anySame[]): void;
+    /**
+     * Determine whether all elements in the specified collection are in the neighbourhood of the calling collection.
+     * @param collection - Determine neighbourhood collection
+     */
+    static allAreNeighbors(...collection: eles_allAreNeighbors[]): void;
+    /**
+     * Determine whether this collection contains all of the elements of another collection.
+     * @param collection - Determine another collection
+     */
+    static contains(...collection: eles_contains[]): void;
+    /**
+     * Perform a traditional left/right diff on the two collections.
+     * @param other - diff Event | diff Event
+     */
+    static diff(...other: eles_diff[]): void;
+    /**
+     * Perform an in-place operation on the calling collection to remove the given elements.
+     * @param toRemove - unmerge Event | unmerge Event
+     */
+    static unmerge(...toRemove: eles_unmerge[]): void;
+    /**
+     * Get an array containing values mapped from the collection.
+     * @param mapFn - Determine test function
+     */
+    static map(...mapFn: eles_map[]): void;
+    /**
+     * Reduce a single value by applying a function against an accumulator and each value of the collection.
+     * @param fn - Determine reduce function
+     */
+    static reduce(...fn: eles_reduce[]): void;
+    /**
+     * Find a maximum value and the corresponding element.
+     * @param valFn - Determine max function
+     */
+    static max(...valFn: eles_max[]): void;
+    /**
+     * Find a minimum value and the corresponding element.
+     * @param valFn - Determine min function
+     */
+    static min(...valFn: eles_min[]): void;
+    /**
+     * Iterate over the elements in the collection.
+     * @param fn - Determine forEach function
+     */
+    static forEach(...fn: eles_forEach[]): void;
+    /**
+     * Get a subset of the elements in the collection based on specified indices.
+     * @param start - Slice
+     */
+    static slice(...start: eles_slice[]): void;
+    /**
+     * Get the number of elements in the collection.
+     */
+    static size(): void;
+    /**
+     * Get an element at a particular index in the collection.
+     * @param i - Get the index of the element. | Get the first element in the collection. | Get the last element in the collection.
+     */
+    static eq(...i: eles_eq[]): void;
+    /**
+     * Get whether the collection is empty, meaning it has no elements.
+     * @param x - Get whether the collection is empty. | Get whether the collection is nonempty.
+     */
+    static empty(...x: eles_empty[]): void;
+    /**
+     * Get a new collection containing the elements sorted by the specified comparison function.
+     * @param sortFn - The sorting comparison function.
+     */
+    static sort(...sortFn: eles_sort[]): void;
+    /**
+     * Get a new layout, which can be used to algorithmically position the nodes in the collection.
+     * @param options - The layouting comparison function.
+     */
+    static layout(...options: eles_layout[]): void;
+    /**
+     * Get or override the style of the element.
+     * @param value - Get a name-value pair object containing visual style properties and their values for the element. | Get a particular style property value. | Set a particular style property value. | Set several particular style property values. | Remove all style overrides. | Remove specific style overrides.
+     */
+    static style(...value: eles_style[]): void;
 }
 
 /**
@@ -714,6 +903,113 @@ declare type eles_contains = {
 };
 
 declare class nodes {
+    /**
+     * Get the compound parent node of each node in the collection.
+     * @param selector - Get Parent Node.
+     */
+    static parent(...selector: nodes_parent[]): void;
+    /**
+     * Get all compound ancestors common to all the nodes in the collection, starting with the closest and getting progressively farther.
+     * @param selector - Get commonAncestors Node.
+     */
+    static commonAncestors(...selector: nodes_commonAncestors[]): void;
+    /**
+     * Get all orphan (i.e. has no compound parent) nodes in the calling collection.
+     * @param selector - Get orphans Node.
+     */
+    static orphans(...selector: nodes_orphans[]): void;
+    /**
+     * Get all nonorphan (i.e. has no compound parent) nodes in the calling collection.
+     * @param selector - Get nonorphans Node.
+     */
+    static nonorphans(...selector: nodes_nonorphans[]): void;
+    /**
+     * Get all compound child (i.e. direct descendant) nodes of each node in the collection.
+     */
+    static children: any;
+    /**
+     * Get all sibling (i.e. same compound parent) nodes of each node in the collection.
+     * @param selector - Get siblings Node.
+     */
+    static siblings(...selector: nodes_siblings[]): void;
+    /**
+     * Get whether the node is a compound parent (i.e. a node containing one or more child nodes)
+     */
+    static isParent(): void;
+    /**
+     * Get whether the node is childless (i.e. a node with no child nodes)
+     */
+    static isChildless(): void;
+    /**
+     * Get whether the node is a compound child (i.e. contained within a node)
+     */
+    static isChild(): void;
+    /**
+     * Get whether the node is an orphan (i.e. a node with no parent)
+     */
+    static isOrphan(): void;
+    /**
+     * Get all compound descendant (i.e. children, children's children, etc.) nodes of each node in the collection.
+     * @param selector - Get descendants Node.
+     */
+    static descendants(...selector: nodes_descendants[]): void;
+    /**
+     * Get all elements in the graph that are not in the calling collection.
+     */
+    static absoluteComplement(): void;
+    /**
+     * Get whether the element is a node.
+     */
+    static isNode(): void;
+    /**
+     * Get whether the element is an edge.
+     */
+    static isEdge(): void;
+    /**
+     * Get whether the edge is a loop (i.e. same source and target).
+     */
+    static isLoop(): void;
+    /**
+     * Get whether the edge is simple (i.e. different source and target).
+     */
+    static isSimple(): void;
+    /**
+     * Get the group string that defines the type of the element.
+     */
+    static group(): void;
+    /**
+     * Get the collection as an array, maintaining the order of the elements.
+     */
+    static toArray(): void;
+    /**
+     * Position the nodes for a discrete/synchronous layout.
+     * @param options - Position the nodes.
+     */
+    static layoutPositions(...options: nodes_layoutPositions[]): void;
+    /**
+     * From the set of calling nodes, get the nodes which are roots (i.e. no incoming edges, as in a directed acyclic graph).
+     */
+    static roots: any;
+    /**
+     * From the set of calling nodes, get the nodes which are leaves (i.e. no outgoing edges, as in a directed acyclic graph).
+     */
+    static leaves: any;
+    /**
+     * Get edges (and their targets) coming out of the nodes in the collection.
+     */
+    static outgoers: any;
+    /**
+     * Recursively get edges (and their targets) coming out of the nodes in the collection (i.e. the outgoers, the outgoers' outgoers, ...).
+     */
+    static successors: any;
+    /**
+     * Get edges (and their sources) coming into the nodes in the collection.
+     */
+    static incomers: any;
+    /**
+     * Recursively get edges (and their sources) coming into the nodes in the collection (i.e. the incomers, the incomers' incomers, ...).
+     */
+    static predecessors: any;
 }
 
 /**
@@ -722,109 +1018,6 @@ declare class nodes {
 declare type nodes_parent = {
     selector: any;
 };
-
-declare namespace nodes {
-    /**
-     * Get the compound parent node of each node in the collection.
-     */
-    namespace parent { }
-    /**
-     * Get all compound ancestors common to all the nodes in the collection, starting with the closest and getting progressively farther.
-     */
-    namespace commonAncestors { }
-    /**
-     * Get all orphan (i.e. has no compound parent) nodes in the calling collection.
-     */
-    namespace orphans { }
-    /**
-     * Get all nonorphan (i.e. has no compound parent) nodes in the calling collection.
-     */
-    namespace nonorphans { }
-    /**
-     * Get all compound child (i.e. direct descendant) nodes of each node in the collection.
-     */
-    namespace children { }
-    /**
-     * Get all sibling (i.e. same compound parent) nodes of each node in the collection.
-     */
-    namespace siblings { }
-    /**
-     * Get whether the node is a compound parent (i.e. a node containing one or more child nodes)
-     */
-    namespace isParent { }
-    /**
-     * Get whether the node is childless (i.e. a node with no child nodes)
-     */
-    namespace isChildless { }
-    /**
-     * Get whether the node is a compound child (i.e. contained within a node)
-     */
-    namespace isChild { }
-    /**
-     * Get whether the node is an orphan (i.e. a node with no parent)
-     */
-    namespace isOrphan { }
-    /**
-     * Get all compound descendant (i.e. children, children's children, etc.) nodes of each node in the collection.
-     */
-    namespace descendants { }
-    /**
-     * Get all elements in the graph that are not in the calling collection.
-     */
-    namespace absoluteComplement { }
-    /**
-     * Get whether the element is a node.
-     */
-    namespace isNode { }
-    /**
-     * Get whether the element is an edge.
-     */
-    namespace isEdge { }
-    /**
-     * Get whether the edge is a loop (i.e. same source and target).
-     */
-    namespace isLoop { }
-    /**
-     * Get whether the edge is simple (i.e. different source and target).
-     */
-    namespace isSimple { }
-    /**
-     * Get the group string that defines the type of the element.
-     */
-    namespace group { }
-    /**
-     * Get the collection as an array, maintaining the order of the elements.
-     */
-    namespace toArray { }
-    /**
-     * Position the nodes for a discrete/synchronous layout.
-     */
-    namespace layoutPositions { }
-    /**
-     * From the set of calling nodes, get the nodes which are roots (i.e. no incoming edges, as in a directed acyclic graph).
-     */
-    namespace roots { }
-    /**
-     * From the set of calling nodes, get the nodes which are leaves (i.e. no outgoing edges, as in a directed acyclic graph).
-     */
-    namespace leaves { }
-    /**
-     * Get edges (and their targets) coming out of the nodes in the collection.
-     */
-    namespace outgoers { }
-    /**
-     * Recursively get edges (and their targets) coming out of the nodes in the collection (i.e. the outgoers, the outgoers' outgoers, ...).
-     */
-    namespace successors { }
-    /**
-     * Get edges (and their sources) coming into the nodes in the collection.
-     */
-    namespace incomers { }
-    /**
-     * Recursively get edges (and their sources) coming into the nodes in the collection (i.e. the incomers, the incomers' incomers, ...).
-     */
-    namespace predecessors { }
-}
 
 /**
  * @property selector - [optional] A selector used to filter the resultant collection.
@@ -1079,6 +1272,11 @@ declare type eles_sort = {
 };
 
 declare class node {
+    /**
+     * Get the node width and height. This function is intended for use in layout positioning to do overlap detection.
+     * @param options - The node layoutDimensionsing function.
+     */
+    static layoutDimensions(...options: node_layoutDimensions[]): void;
 }
 
 /**
@@ -1087,13 +1285,6 @@ declare class node {
 declare type node_layoutDimensions = {
     options: any;
 };
-
-declare namespace node {
-    /**
-     * Get the node width and height. This function is intended for use in layout positioning to do overlap detection.
-     */
-    namespace layoutDimensions { }
-}
 
 /**
  * layout, options, function(ele, i)
@@ -1133,6 +1324,24 @@ declare type eles_layout = {
 };
 
 declare class ele {
+    /**
+     * Get the numeric value of a style property in preferred units that can be used for calculations.
+     * @param property - The numericStyle function.
+     */
+    static numericStyle(...property: ele_numericStyle[]): void;
+    /**
+     * Get the units that `ele.numericStyle()` is expressed in, for a particular property.
+     * @param property - The numericStyleUnits function.
+     */
+    static numericStyleUnits(...property: ele_numericStyleUnits[]): void;
+    /**
+     * Get the effective opacity of the element (i.e. on-screen opacity), which takes into consideration parent node opacity.
+     */
+    static effectiveOpacity(): void;
+    /**
+     * Get whether the element's effective opacity is completely transparent, which takes into consideration parent node opacity.
+     */
+    static transparent(): void;
 }
 
 /**
@@ -1141,25 +1350,6 @@ declare class ele {
 declare type ele_numericStyle = {
     name: any;
 };
-
-declare namespace ele {
-    /**
-     * Get the numeric value of a style property in preferred units that can be used for calculations.
-     */
-    namespace numericStyle { }
-    /**
-     * Get the units that `ele.numericStyle()` is expressed in, for a particular property.
-     */
-    namespace numericStyleUnits { }
-    /**
-     * Get the effective opacity of the element (i.e. on-screen opacity), which takes into consideration parent node opacity.
-     */
-    namespace effectiveOpacity { }
-    /**
-     * Get whether the element's effective opacity is completely transparent, which takes into consideration parent node opacity.
-     */
-    namespace transparent { }
-}
 
 /**
  * @property name - The name of the style property to get.
@@ -1194,6 +1384,22 @@ declare type eles_style = {
 };
 
 declare class edge {
+    /**
+     * Get source node of this edge.
+     */
+    static source: any;
+    /**
+     * Get target node of this edge.
+     */
+    static target: any;
+    /**
+     * Get source nodes connected to the edges in the collection.
+     */
+    static sources: any;
+    /**
+     * Get target nodes connected to the edges in the collection.
+     */
+    static targets: any;
 }
 
 /**
@@ -1245,25 +1451,6 @@ declare type edge_source = {
     selector: any;
 };
 
-declare namespace edge {
-    /**
-     * Get source node of this edge.
-     */
-    namespace source { }
-    /**
-     * Get target node of this edge.
-     */
-    namespace target { }
-    /**
-     * Get source nodes connected to the edges in the collection.
-     */
-    namespace sources { }
-    /**
-     * Get target nodes connected to the edges in the collection.
-     */
-    namespace targets { }
-}
-
 /**
  * @property selector - [optional] An optional selector that is used to filter the resultant collection.
  */
@@ -1286,49 +1473,48 @@ declare type edge_targets = {
 };
 
 declare class ani {
-}
-
-declare namespace ani {
     /**
      * Requests that the animation be played, starting on the next frame. If the animation is complete, it restarts from the beginning.
      */
-    namespace play { }
+    static play(): void;
     /**
      * Get whether the animation is currently playing.
      */
-    namespace playing { }
+    static playing(): void;
     /**
      * Apply the animation at its current progress.
      */
-    namespace apply { }
+    static apply(): void;
     /**
      * Get whether the animation is currently applying.
      */
-    namespace applying { }
+    static applying(): void;
     /**
      * Pause the animation, maintaining the current progress.
      */
-    namespace pause { }
+    static pause(): void;
     /**
      * Stop the animation, maintaining the current progress and removing the animation from any associated queues.
      */
-    namespace stop { }
+    static stop(): void;
     /**
      * Get or set how far along the animation has progressed.
+     * @param x - Get the progress of the animation in percent. | Set the progress of the animation in percent. | Get the progress of the animation in milliseconds. | Set the progress of the animation in milliseconds. | Rewind the animation to the beginning. | Fastforward the animation to the end.
      */
-    namespace progress { }
+    static progress(...x: ani_progress[]): void;
     /**
      * Get whether the animation has progressed to the end.
      */
-    namespace completed { }
+    static completed(): void;
     /**
      * Reverse the animation such that its starting conditions and ending conditions are reversed.
      */
-    namespace reverse { }
+    static reverse(): void;
     /**
      * Get a promise that is fulfilled with the specified animation event.
+     * @param x - Get a promise that is fulfilled with the next `completed` event. | Get a promise that is fulfilled with the specified animation event.
      */
-    namespace promise { }
+    static promise(...x: ani_promise[]): void;
 }
 
 /**
@@ -1353,29 +1539,39 @@ declare type ani_promise = {
 };
 
 declare class layout {
-}
-
-declare namespace layout {
     /**
      * Start running the layout.
      */
-    namespace run { }
+    static run(): void;
     /**
      * Stop running the (asynchronous/discrete) layout.
      */
-    namespace stop { }
+    static stop(): void;
     /**
      * Listen to events that are emitted by the layout.
+     * @param x - Listen to events.
      */
-    namespace on { }
-    namespace promiseOn { }
-    namespace one { }
-    namespace removeListener { }
+    static on(...x: layout_on[]): void;
+    /**
+     * @param x - Get a promise that is resolved when the layout emits the first of any of the specified events.
+     */
+    static promiseOn(...x: layout_promiseOn[]): void;
+    /**
+     * @param x - Listen to events that are emitted by the layout, and run the handler only once.
+     */
+    static one(...x: layout_one[]): void;
+    /**
+     * @param x - Remove event handlers on the layout.
+     */
+    static removeListener(...x: layout_removeListener[]): void;
     /**
      * Remove all event handlers on the layout.
      */
-    namespace removeAllListeners { }
-    namespace emit { }
+    static removeAllListeners(): void;
+    /**
+     * @param x - Emit one or more events on the layout.
+     */
+    static emit(...x: layout_emit[]): void;
 }
 
 /**

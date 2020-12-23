@@ -32,9 +32,9 @@ let elesfn = ({
  * Iterate over the elements in the collection.
  * @memberof eles
  * @path Collection/Iteration
- * @alias eles.each
+ * @pureAliases eles.each
  * @param {...eles_forEach} fn - Determine forEach function
- * @namespace eles.forEach
+ * @methodName eles.forEach
  */
   forEach: function( fn, thisArg ){
     if( is.fn( fn ) ){
@@ -55,7 +55,7 @@ let elesfn = ({
  * Get the collection as an array, maintaining the order of the elements.
  * @memberof nodes
  * @path Collection/Iteration
- * @namespace nodes.toArray
+ * @methodName nodes.toArray
  */
   toArray: function(){
     let array = [];
@@ -83,7 +83,7 @@ let elesfn = ({
  * @memberof eles
  * @path Collection/Iteration
  * @param {...eles_slice} start - Slice
- * @namespace eles.slice
+ * @methodName eles.slice
  */
   slice: function( start, end ){
     let array = [];
@@ -116,7 +116,7 @@ let elesfn = ({
  * Get the number of elements in the collection.
  * @memberof eles
  * @path Collection/Iteration
- * @namespace eles.size
+ * @methodName eles.size
  */
   size: function(){
     return this.length;
@@ -141,7 +141,7 @@ let elesfn = ({
  * @path Collection/Iteration
  * @sub_functions eles.eq|eles.first|eles.last
  * @param {...eles_eq} i - Get the index of the element. | Get the first element in the collection. | Get the last element in the collection.
- * @namespace eles.eq
+ * @methodName eles.eq
  */
   eq: function( i ){
     return this[ i ] || this.spawn();
@@ -167,7 +167,7 @@ let elesfn = ({
  * @path Collection/Iteration
  * @sub_functions eles.empty|eles.nonempty
  * @param {...eles_empty} x - Get whether the collection is empty. | Get whether the collection is nonempty.
- * @namespace eles.empty
+ * @methodName eles.empty
  */
   empty: function(){
     return this.length === 0;
@@ -187,7 +187,7 @@ let elesfn = ({
  * @memberof eles
  * @path Collection/Building & filtering
  * @param {...eles_sort} sortFn - The sorting comparison function.
- * @namespace eles.sort
+ * @methodName eles.sort
  */
   sort: function( sortFn ){
     if( !is.fn( sortFn ) ){

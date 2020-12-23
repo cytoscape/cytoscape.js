@@ -15,7 +15,7 @@ let elesfn = ({
  * @memberof eles
  * @path Collection/Comparison
  * @param {...eles_allAre} selector - Matching Selector
- * @namespace eles.allAre
+ * @methodName eles.allAre
  */
   allAre: function( selector ){
     let selObj = new Selector( selector );
@@ -35,7 +35,7 @@ let elesfn = ({
  * @memberof eles
  * @path Collection/Comparison
  * @param {...eles_is} selector - Matching Selector
- * @namespace eles.is
+ * @methodName eles.is
  */
   is: function( selector ){
     let selObj = new Selector( selector );
@@ -74,7 +74,7 @@ let elesfn = ({
  * @memberof eles
  * @path Collection/Comparison
  * @param {...eles_some} fn - Listen to events that bubble up from elements matching the specified node selector:
- * @namespace eles.some
+ * @methodName eles.some
  */
   some: function( fn, thisArg ){
     for( let i = 0; i < this.length; i++ ){
@@ -117,7 +117,7 @@ let elesfn = ({
  * @memberof eles
  * @path Collection/Comparison
  * @param {...eles_every} fn - Determine test function
- * @namespace eles.every
+ * @methodName eles.every
  */
   every: function( fn, thisArg ){
     for( let i = 0; i < this.length; i++ ){
@@ -141,7 +141,7 @@ let elesfn = ({
  * @memberof eles
  * @path Collection/Comparison
  * @param {...eles_same} collection - Determine same collection
- * @namespace eles.same
+ * @methodName eles.same
  */
   same: function( collection ){
     // cheap collection ref check
@@ -173,7 +173,7 @@ let elesfn = ({
  * @memberof eles
  * @path Collection/Comparison
  * @param {...eles_anySame} collection - Determine any same collection
- * @namespace eles.anySame
+ * @methodName eles.anySame
  */
   anySame: function( collection ){
     collection = this.cy().collection( collection );
@@ -192,9 +192,9 @@ let elesfn = ({
  * Determine whether all elements in the specified collection are in the neighbourhood of the calling collection.
  * @memberof eles
  * @path Collection/Comparison
- * @alias eles.allAreNeighbours
+ * @pureAliases eles.allAreNeighbours
  * @param {...eles_allAreNeighbors} collection - Determine neighbourhood collection
- * @namespace eles.allAreNeighbors
+ * @methodName eles.allAreNeighbors
  */
   allAreNeighbors: function( collection ){
     collection = this.cy().collection( collection );
@@ -215,9 +215,9 @@ let elesfn = ({
  * Determine whether this collection contains all of the elements of another collection.
  * @memberof eles
  * @path Collection/Comparison
- * @alias eles.has
+ * @pureAliases eles.has
  * @param {...eles_contains} collection - Determine another collection
- * @namespace eles.contains
+ * @methodName eles.contains
  */
   contains: function( collection ){
     collection = this.cy().collection( collection );

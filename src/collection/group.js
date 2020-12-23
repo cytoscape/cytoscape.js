@@ -4,7 +4,7 @@ let elesfn = ({
  * Get whether the element is a node.
  * @memberof nodes
  * @path Collection/Data
- * @namespace nodes.isNode
+ * @methodName nodes.isNode
  */
   isNode: function(){
     return this.group() === 'nodes';
@@ -14,7 +14,7 @@ let elesfn = ({
  * Get whether the element is an edge.
  * @memberof nodes
  * @path Collection/Data
- * @namespace nodes.isEdge
+ * @methodName nodes.isEdge
  */
   isEdge: function(){
     return this.group() === 'edges';
@@ -24,7 +24,7 @@ let elesfn = ({
  * Get whether the edge is a loop (i.e. same source and target).
  * @memberof nodes
  * @path Collection/Data
- * @namespace nodes.isLoop
+ * @methodName nodes.isLoop
  */
   isLoop: function(){
     return this.isEdge() && this.source()[0] === this.target()[0];
@@ -34,7 +34,7 @@ let elesfn = ({
  * Get whether the edge is simple (i.e. different source and target).
  * @memberof nodes
  * @path Collection/Data
- * @namespace nodes.isSimple
+ * @methodName nodes.isSimple
  */
   isSimple: function(){
     return this.isEdge() && this.source()[0] !== this.target()[0];
@@ -44,7 +44,7 @@ let elesfn = ({
  * Get the group string that defines the type of the element.
  * @memberof nodes
  * @path Collection/Data
- * @namespace nodes.group
+ * @methodName nodes.group
  */
   group: function(){
     let ele = this[0];

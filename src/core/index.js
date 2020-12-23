@@ -200,7 +200,7 @@ util.extend( corefn, {
    * Get whether the instance of Cytoscape.js has been destroyed or not.
    * @memberof cy
    * @path Core/Graph manipulation
-   * @namespace cy.destroyed
+   * @methodName cy.destroyed
    */
   destroyed: function(){
     return this._private.destroyed;
@@ -231,7 +231,7 @@ util.extend( corefn, {
    * @memberof cy
    * @path Core/Events
    * @param {...cy_ready} fn - Run a callback as soon as the graph becomes ready (i.e. intitial data loaded and initial layout completed).  If the graph is already ready, then the callback is called immediately.  If data is loaded synchronously and the layout used is discrete/synchronous/unanimated/unspecified, then you don't need `cy.ready()`.
-   * @namespace cy.ready
+   * @methodName cy.ready
    */
   ready: function( fn ){
     if( this.isReady() ){
@@ -247,7 +247,7 @@ util.extend( corefn, {
    * A convenience function to explicitly destroy the instance.
    * @memberof cy
    * @path Core/Graph manipulation
-   * @namespace cy.destroy
+   * @methodName cy.destroy
    */
   destroy: function(){
     let cy = this;
@@ -277,9 +277,9 @@ util.extend( corefn, {
    * Get an element from its ID in a very performant way
    * @memberof cy
    * @path Core/Graph manipulation
-   * @alias cy.$id
+   * @pureAliases cy.$id
    * @param {...cy_getElementById} id - Get ID
-   * @namespace cy.getElementById
+   * @methodName cy.getElementById
    */
   getElementById: function( id ){
     return this._private.elements.getElementById( id );
@@ -313,7 +313,7 @@ util.extend( corefn, {
    * Get the HTML DOM element in which the graph is visualised. A null value is returned if the instance is headless.
    * @memberof cy
    * @path Core/Viewport manipulation
-   * @namespace cy.container
+   * @methodName cy.container
    */
   container: function(){
     return this._private.container || null;
@@ -329,7 +329,7 @@ util.extend( corefn, {
    * @memberof cy
    * @path Core/Graph manipulation
    * @param {...cy_mount} container - To mount
-   * @namespace cy.mount
+   * @methodName cy.mount
    */
   mount: function( container ){
     if( container == null ){ return; }
@@ -369,7 +369,7 @@ util.extend( corefn, {
    * Remove the instance from its current container.
    * @memberof cy
    * @path Core/Graph manipulation
-   * @namespace cy.unmount
+   * @methodName cy.unmount
    */
   unmount: function(){
     let cy = this;
@@ -400,7 +400,7 @@ util.extend( corefn, {
  * @memberof cy
  * @path Core/Export
  * @param {...cy_json} obj - Export the graph as JSON. | Import the graph as JSON, updating only the fields specified.
- * @namespace cy.json
+ * @methodName cy.json
  */
   json: function( obj ){
     let cy = this;

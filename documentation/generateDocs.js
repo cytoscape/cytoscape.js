@@ -92,11 +92,17 @@ for(var i in words)
     {
         if(words[i].memberof != undefined)
         {
-            func.name = words[i].longname;
-
-            if(words[i].alias != undefined)
+            
+            // checking for pureAliases
+            if(words[i].tags != undefined && words[i].tags.find(fn => fn.originalTitle == "pureAliases") != undefined)
             {
-                func.pureAliases = words[i].alias.split("|");
+                func.pureAliases = words[i].tags.find(fn => fn.originalTitle == "pureAliases").value.split("|");
+            }
+
+            // checking for methodName
+            if(words[i].tags != undefined && words[i].tags.find(fn => fn.originalTitle == "methodName") != undefined)
+            {
+                func.name = words[i].tags.find(fn => fn.originalTitle == "methodName").value;
             }
 
             // checking for formatSameFn
@@ -114,7 +120,7 @@ for(var i in words)
             // mapping fuution with path
             if(words[i].tags != undefined && words[i].tags.find(fn => fn.originalTitle == "path") != undefined)
             {
-                functionPath[words[i].longname] = words[i].tags.find(fn => fn.originalTitle == "path").value;
+                functionPath[func.name] = words[i].tags.find(fn => fn.originalTitle == "path").value;
             }
 
             func.descr = words[i].description;
@@ -192,29 +198,29 @@ for(var i in words)
                     mdFiles[x].push(file);
                   });
             }
-            var search_md_file = words[i].longname.split(".")[1] + '.md';
+            var search_md_file = func.name.split(".")[1] + '.md';
             // checking md files inside core
-            if(words[i].longname.split(".")[0] == "cy")
+            if(func.name.split(".")[0] == "cy")
             {
                 if(mdFiles["cy"].indexOf(search_md_file) != -1)
                 {
-                    func.md = "cy/" + words[i].longname.split(".")[1];
+                    func.md = "cy/" + func.name.split(".")[1];
                 }
             }
             // checking md files inside animation
-            else if(words[i].longname.split(".")[0] == "ani")
+            else if(func.name.split(".")[0] == "ani")
             {
                 if(mdFiles["ani"].indexOf(search_md_file) != -1)
                 {
-                    func.md = "ani/" + words[i].longname.split(".")[1];
+                    func.md = "ani/" + func.name.split(".")[1];
                 }
             }
             // checking md files inside layout
-            else if(words[i].longname.split(".")[0] == "layout")
+            else if(func.name.split(".")[0] == "layout")
             {
                 if(mdFiles["layout"].indexOf(search_md_file) != -1)
                 {
-                    func.md = "layout/" + words[i].longname.split(".")[1];
+                    func.md = "layout/" + func.name.split(".")[1];
                 }
             }
             // checking md files inside collection
@@ -222,7 +228,7 @@ for(var i in words)
             {
                 if(mdFiles["collection"].indexOf(search_md_file) != -1)
                 {
-                    func.md = "collection/" + words[i].longname.split(".")[1];
+                    func.md = "collection/" + func.name.split(".")[1];
                 }
             }
             

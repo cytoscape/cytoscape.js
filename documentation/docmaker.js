@@ -238,6 +238,10 @@ function compileConfig( config ){
       }
     }
 
+    // TODO check fnsOrder
+    // build section.fns from separate json files
+    // each fnsOrder => fns (read json file sync)
+
     if( section.fns ){
       let fns = section.fns;
       for( let j = 0; j < fns.length; j++ ){

@@ -238,6 +238,7 @@
                 },
                 {
                     "name": "Graph manipulation",
+                    "fnsOrder": ["cy.add", "cy.remove"],
                     "fns": [
                         {
                             "name": "cy.add",

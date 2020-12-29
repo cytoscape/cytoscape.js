@@ -310,10 +310,10 @@
                             "md": "cy/collection"
                         },
                         {
-                            "name": "cy.getElementById",
                             "pureAliases": [
                                 "cy.$id"
                             ],
+                            "name": "cy.getElementById",
                             "descr": "Get an element from its ID in a very performant way",
                             "formats": [
                                 {
@@ -766,10 +766,10 @@
                             "descr": "Get the HTML DOM element in which the graph is visualised. A null value is returned if the instance is headless."
                         },
                         {
-                            "name": "cy.center",
                             "pureAliases": [
                                 "cy.centre"
                             ],
+                            "name": "cy.center",
                             "descr": "Pan the graph to the centre of a collection.",
                             "formats": [
                                 {
@@ -1379,11 +1379,11 @@
                     "name": "Layout",
                     "fns": [
                         {
-                            "name": "cy.layout",
                             "pureAliases": [
                                 "cy.createLayout",
                                 "cy.makeLayout"
                             ],
+                            "name": "cy.layout",
                             "descr": "Get a new layout, which can be used to algorithmically position the nodes in the graph",
                             "formats": [
                                 {
@@ -2595,11 +2595,11 @@
                     "name": "Layout",
                     "fns": [
                         {
-                            "name": "eles.layout",
                             "pureAliases": [
                                 "eles.createLayout",
                                 "eles.makeLayout"
                             ],
+                            "name": "eles.layout",
                             "descr": "Get a new layout, which can be used to algorithmically position the nodes in the collection.",
                             "formats": [
                                 {
@@ -2683,10 +2683,10 @@
                             "md": "collection/numericStyleUnits"
                         },
                         {
-                            "name": "eles.style",
                             "pureAliases": [
                                 "eles.css"
                             ],
+                            "name": "eles.style",
                             "formatsSameFn": "true",
                             "descr": "Get or override the style of the element.",
                             "formats": [
@@ -2848,11 +2848,11 @@
                             "md": "collection/toggleClass"
                         },
                         {
-                            "name": "eles.classes",
                             "pureAliases": [
                                 "eles.className",
                                 "eles.classNames"
                             ],
+                            "name": "eles.classes",
                             "descr": "Get or replace the current list of classes on the elements with the specified list.",
                             "formats": [
                                 {
@@ -3237,10 +3237,10 @@
                             "md": "collection/anySame"
                         },
                         {
-                            "name": "eles.contains",
                             "pureAliases": [
                                 "eles.has"
                             ],
+                            "name": "eles.contains",
                             "descr": "Determine whether this collection contains all of the elements of another collection.",
                             "formats": [
                                 {
@@ -3256,10 +3256,10 @@
                             "md": "collection/contains"
                         },
                         {
-                            "name": "eles.allAreNeighbors",
                             "pureAliases": [
                                 "eles.allAreNeighbours"
                             ],
+                            "name": "eles.allAreNeighbors",
                             "descr": "Determine whether all elements in the specified collection are in the neighbourhood of the calling collection.",
                             "formats": [
                                 {
@@ -3401,10 +3401,10 @@
                             ]
                         },
                         {
-                            "name": "eles.forEach",
                             "pureAliases": [
                                 "eles.each"
                             ],
+                            "name": "eles.forEach",
                             "descr": "Iterate over the elements in the collection.",
                             "formats": [
                                 {
@@ -3937,11 +3937,11 @@
                             "md": "collection/max"
                         },
                         {
-                            "name": "nodes.absoluteComplement",
                             "pureAliases": [
                                 "eles.abscomp",
                                 "eles.complement"
                             ],
+                            "name": "nodes.absoluteComplement",
                             "descr": "Get all elements in the graph that are not in the calling collection.",
                             "md": "collection/absoluteComplement"
                         }
@@ -5600,10 +5600,10 @@
                     "md": "layout/manipulation",
                     "fns": [
                         {
-                            "name": "layout.run",
                             "pureAliases": [
                                 "layout.start"
                             ],
+                            "name": "layout.run",
                             "descr": "Start running the layout.",
                             "md": "layout/run"
                         },
@@ -5619,12 +5619,12 @@
                     "md": "layout/events",
                     "fns": [
                         {
-                            "name": "layout.on",
                             "pureAliases": [
                                 "layout.bind",
                                 "layout.listen",
                                 "layout.addListener"
                             ],
+                            "name": "layout.on",
                             "descr": "Listen to events that are emitted by the layout.",
                             "formats": [
                                 {
@@ -5655,10 +5655,10 @@
                             "md": "layout/on"
                         },
                         {
-                            "name": "layout.promiseOn",
                             "pureAliases": [
                                 "layout.pon"
                             ],
+                            "name": "layout.promiseOn",
                             "formats": [
                                 {
                                     "descr": "Get a promise that is resolved when the layout emits the first of any of the specified events.",
@@ -5703,12 +5703,12 @@
                             "md": "layout/one"
                         },
                         {
-                            "name": "layout.removeListener",
                             "pureAliases": [
                                 "layout.off",
                                 "layout.unbind",
                                 "layout.unlisten"
                             ],
+                            "name": "layout.removeListener",
                             "formats": [
                                 {
                                     "descr": "Remove event handlers on the layout.",
@@ -5732,10 +5732,10 @@
                             "descr": "Remove all event handlers on the layout."
                         },
                         {
-                            "name": "layout.emit",
                             "pureAliases": [
                                 "layout.trigger"
                             ],
+                            "name": "layout.emit",
                             "formats": [
                                 {
                                     "descr": "Emit one or more events on the layout.",
@@ -5766,18 +5766,18 @@
                     "name": "Animation manipulation",
                     "fns": [
                         {
-                            "name": "ani.play",
                             "pureAliases": [
                                 "ani.run"
                             ],
+                            "name": "ani.play",
                             "descr": "Requests that the animation be played, starting on the next frame. If the animation is complete, it restarts from the beginning.",
                             "md": "ani/play"
                         },
                         {
-                            "name": "ani.playing",
                             "pureAliases": [
                                 "ani.running"
                             ],
+                            "name": "ani.playing",
                             "descr": "Get whether the animation is currently playing."
                         },
                         {
@@ -5834,10 +5834,10 @@
                             "md": "ani/stop"
                         },
                         {
-                            "name": "ani.completed",
                             "pureAliases": [
                                 "ani.complete"
                             ],
+                            "name": "ani.completed",
                             "descr": "Get whether the animation has progressed to the end."
                         },
                         {

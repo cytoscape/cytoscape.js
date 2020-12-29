@@ -22,7 +22,7 @@ let elesfn = ({
  * @path Collection/Layout
  * @extFn true
  * @param {...node_layoutDimensions} options - The node layoutDimensionsing function.
- * @namespace node.layoutDimensions
+ * @methodName node.layoutDimensions
  */
   layoutDimensions: function( options ){
     options = getLayoutDimensionOptions( options );
@@ -84,7 +84,7 @@ let elesfn = ({
  * @path Collection/Layout
  * @extFn true
  * @param {...nodes_layoutPositions} options - Position the nodes.
- * @namespace nodes.layoutPositions
+ * @methodName nodes.layoutPositions
  */
   layoutPositions: function( layout, options, fn ){
     let nodes = this.nodes();
@@ -237,9 +237,9 @@ let elesfn = ({
  * Get a new layout, which can be used to algorithmically position the nodes in the collection.
  * @memberof eles
  * @path Collection/Layout
- * @alias eles.createLayout|eles.makeLayout
+ * @pureAliases eles.createLayout|eles.makeLayout
  * @param {...eles_layout} options - The layouting comparison function.
- * @namespace eles.layout
+ * @methodName eles.layout
  */
   layout: function( options ){
     let cy = this.cy();

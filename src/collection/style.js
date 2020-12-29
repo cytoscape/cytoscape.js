@@ -156,7 +156,7 @@ let elesfn = ({
  * @memberof ele
  * @path Collection/Style
  * @param {...ele_numericStyle} property - The numericStyle function.
- * @namespace ele.numericStyle
+ * @methodName ele.numericStyle
  */
   numericStyle: function( property ){
     let ele = this[0];
@@ -180,7 +180,7 @@ let elesfn = ({
  * @memberof ele
  * @path Collection/Layout
  * @param {...ele_numericStyleUnits} property - The numericStyleUnits function.
- * @namespace ele.numericStyleUnits
+ * @methodName ele.numericStyleUnits
  */
   numericStyleUnits: function( property ){
     let ele = this[0];
@@ -227,11 +227,11 @@ let elesfn = ({
  * Get or override the style of the element.
  * @memberof eles
  * @path Collection/Layout
- * @alias eles.css
+ * @pureAliases eles.css
  * @formatsSameFn true
  * @sub_functions ele.style|ele.style|eles.style|eles.style|eles.removeStyle|eles.removeStyle
  * @param {...eles_style} value - Get a name-value pair object containing visual style properties and their values for the element. | Get a particular style property value. | Set a particular style property value. | Set several particular style property values. | Remove all style overrides. | Remove specific style overrides.
- * @namespace eles.style
+ * @methodName eles.style
  */
   style: function( name, value ){
     let cy = this.cy();
@@ -321,7 +321,7 @@ let elesfn = ({
  * Get the effective opacity of the element (i.e. on-screen opacity), which takes into consideration parent node opacity.
  * @memberof ele
  * @path Collection/Layout
- * @namespace ele.effectiveOpacity
+ * @methodName ele.effectiveOpacity
  */
   effectiveOpacity: function(){
     let cy = this.cy();
@@ -355,7 +355,7 @@ let elesfn = ({
  * Get whether the element's effective opacity is completely transparent, which takes into consideration parent node opacity.
  * @memberof ele
  * @path Collection/Layout
- * @namespace ele.transparent
+ * @methodName ele.transparent
  */
   transparent: function(){
     let cy = this.cy();

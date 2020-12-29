@@ -16,7 +16,7 @@ let elesfn = ({
  * @memberof nodes
  * @path Collection/Compound nodes
  * @param {...nodes_parent} selector - Get Parent Node.
- * @namespace nodes.parent
+ * @methodName nodes.parent
  */
   parent: function( selector ){
     let parents = [];
@@ -66,7 +66,7 @@ let elesfn = ({
  * @memberof nodes
  * @path Collection/Compound nodes
  * @param {...nodes_commonAncestors} selector - Get commonAncestors Node.
- * @namespace nodes.commonAncestors
+ * @methodName nodes.commonAncestors
  */
   commonAncestors: function( selector ){
     let ancestors;
@@ -93,7 +93,7 @@ let elesfn = ({
  * @memberof nodes
  * @path Collection/Compound nodes
  * @param {...nodes_orphans} selector - Get orphans Node.
- * @namespace nodes.orphans
+ * @methodName nodes.orphans
  */
   orphans: function( selector ){
     return this.stdFilter( function( ele ){
@@ -111,7 +111,7 @@ let elesfn = ({
  * @memberof nodes
  * @path Collection/Compound nodes
  * @param {...nodes_nonorphans} selector - Get nonorphans Node.
- * @namespace nodes.nonorphans
+ * @methodName nodes.nonorphans
  */
   nonorphans: function( selector ){
     return this.stdFilter( function( ele ){
@@ -129,7 +129,7 @@ let elesfn = ({
  * @memberof nodes
  * @path Collection/Compound nodes
  * @param {...nodes_children} selector - Get children Node.
- * @namespace nodes.children
+ * @methodName nodes.children
  */
   children: cache( function( selector ){
     let children = [];
@@ -156,7 +156,7 @@ let elesfn = ({
  * @memberof nodes
  * @path Collection/Compound nodes
  * @param {...nodes_siblings} selector - Get siblings Node.
- * @namespace nodes.siblings
+ * @methodName nodes.siblings
  */
   siblings: function( selector ){
     return this.parent().children().not( this ).filter( selector );
@@ -166,7 +166,7 @@ let elesfn = ({
  * Get whether the node is a compound parent (i.e. a node containing one or more child nodes)
  * @memberof nodes
  * @path Collection/Compound nodes
- * @namespace nodes.isParent
+ * @methodName nodes.isParent
  */
   isParent: function(){
     let ele = this[0];
@@ -180,7 +180,7 @@ let elesfn = ({
  * Get whether the node is childless (i.e. a node with no child nodes)
  * @memberof nodes
  * @path Collection/Compound nodes
- * @namespace nodes.isChildless
+ * @methodName nodes.isChildless
  */
   isChildless: function(){
     let ele = this[0];
@@ -194,7 +194,7 @@ let elesfn = ({
  * Get whether the node is a compound child (i.e. contained within a node)
  * @memberof nodes
  * @path Collection/Compound nodes
- * @namespace nodes.isChild
+ * @methodName nodes.isChild
  */
   isChild: function(){
     let ele = this[0];
@@ -208,7 +208,7 @@ let elesfn = ({
  * Get whether the node is an orphan (i.e. a node with no parent)
  * @memberof nodes
  * @path Collection/Compound nodes
- * @namespace nodes.isOrphan
+ * @methodName nodes.isOrphan
  */
   isOrphan: function(){
     let ele = this[0];
@@ -228,7 +228,7 @@ let elesfn = ({
  * @memberof nodes
  * @path Collection/Compound nodes
  * @param {...nodes_descendants} selector - Get descendants Node.
- * @namespace nodes.descendants
+ * @methodName nodes.descendants
  */
   descendants: function( selector ){
     let elements = [];

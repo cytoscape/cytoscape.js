@@ -102,7 +102,7 @@ let corefn = ({
    * @path Core/Graph manipulation
    * @sub_functions cy.batch|cy.startBatch|cy.endBatch
    * @param {...cy_batch} callback - callback | Starts batching manually (useful for asynchronous cases). | Ends batching manually (useful for asynchronous cases).
-   * @namespace cy.batch
+   * @methodName cy.batch
    */
   batch: function( callback ){
     this.startBatch();

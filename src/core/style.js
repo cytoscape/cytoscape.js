@@ -14,7 +14,7 @@ let corefn = ({
    * @memberof cy
    * @path Core/Style
    * @param {...cy_style} newStyle - Get the current style object. | Assign a new stylesheet to replace the existing one.
-   * @namespace cy.style
+   * @methodName cy.style
    */
   style: function( newStyle ){
     if( newStyle ){

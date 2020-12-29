@@ -17,8 +17,8 @@ let layoutfn = ({
    * Start running the layout.
    * @memberof layout
    * @path Layouts/Layout manipulation
-   * @alias layout.start
-   * @namespace layout.run
+   * @pureAliases layout.start
+   * @methodName layout.run
    */
   run: function( ){
 
@@ -27,7 +27,7 @@ let layoutfn = ({
    * Stop running the (asynchronous/discrete) layout.
    * @memberof layout
    * @path Layouts/Layout manipulation
-   * @namespace layout.stop
+   * @methodName layout.stop
    */
   stop: function( ){
 
@@ -59,9 +59,9 @@ let layoutfn = ({
  * Listen to events that are emitted by the layout.
  * @memberof layout
  * @path Layouts/Layout events
- * @alias layout.bind|layout.listen|layout.addListener
+ * @pureAliases layout.bind|layout.listen|layout.addListener
  * @param {...layout_on} x - Listen to events.
- * @namespace layout.on
+ * @methodName layout.on
  */
   on: function(x) {
 
@@ -74,9 +74,9 @@ let layoutfn = ({
   /**
  * @memberof layout
  * @path Layouts/Layout events
- * @alias layout.pon
+ * @pureAliases layout.pon
  * @param {...layout_promiseOn} x - Get a promise that is resolved when the layout emits the first of any of the specified events.
- * @namespace layout.promiseOn
+ * @methodName layout.promiseOn
  */
   promiseOn: function(x){
 
@@ -108,7 +108,7 @@ let layoutfn = ({
  * @memberof layout
  * @path Layouts/Layout events
  * @param {...layout_one} x - Listen to events that are emitted by the layout, and run the handler only once.
- * @namespace layout.one
+ * @methodName layout.one
  */
   one: function( ){
 
@@ -127,9 +127,9 @@ let layoutfn = ({
   /**
  * @memberof layout
  * @path Layouts/Layout events
- * @alias layout.off|layout.unbind|layout.unlisten
+ * @pureAliases layout.off|layout.unbind|layout.unlisten
  * @param {...layout_removeListener} x - Remove event handlers on the layout.
- * @namespace layout.removeListener
+ * @methodName layout.removeListener
  */
   removeListener: function(x){
 
@@ -138,7 +138,7 @@ let layoutfn = ({
    * Remove all event handlers on the layout.
    * @memberof layout
    * @path Layouts/Layout events
-   * @namespace layout.removeAllListeners
+   * @methodName layout.removeAllListeners
    */
   removeAllListeners: function( ){
     
@@ -157,9 +157,9 @@ let layoutfn = ({
   /**
  * @memberof layout
  * @path Layouts/Layout events
- * @alias layout.trigger
+ * @pureAliases layout.trigger
  * @param {...layout_emit} x - Emit one or more events on the layout.
- * @namespace layout.emit
+ * @methodName layout.emit
  */
   emit: function(x){
 

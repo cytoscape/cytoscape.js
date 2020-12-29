@@ -13,9 +13,9 @@ let corefn = ({
    * Get a new layout, which can be used to algorithmically position the nodes in the graph
    * @memberof cy
    * @path Core/Layout
-   * @alias cy.createLayout|cy.makeLayout
+   * @pureAliases cy.createLayout|cy.makeLayout
    * @param {...cy_layout} options - Get layouts
-   * @namespace cy.layout
+   * @methodName cy.layout
    */
   layout: function( options ){
     let cy = this;

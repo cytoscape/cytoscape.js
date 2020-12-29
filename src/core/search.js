@@ -13,7 +13,7 @@ let corefn = ({
  * @memberof cy
  * @path Core/Graph manipulation
  * @param_desc Get an empty collection.
- * @namespace cy.collection
+ * @methodName cy.collection
  */
   collection: function( eles, opts ){
 
@@ -85,7 +85,7 @@ let corefn = ({
  * @path Core/Graph manipulation
  * @sub_functions cy.$|cy.elements|cy.nodes|cy.edges|cy.filter|cy.filter
  * @param {...cy_$} selector - Get elements in the graph matching the specified selector. | Get elements in the graph matching the specified selector. | Get nodes in the graph matching the specified selector. | Get edges in the graph matching the specified selector. | Get elements in the graph matching the specified selector. | Get elements in the graph matching the specified filter function.
- * @namespace cy.$
+ * @methodName cy.$
  */
   $: function( selector ){
     let eles = this._private.elements;

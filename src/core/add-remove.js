@@ -19,7 +19,7 @@ let corefn = {
    * @memberof cy
    * @path Core/Graph manipulation
    * @param {...cy_add} opts - Add a specified element to the graph. | Add the specified elements to the graph. | Add the specified elements to the graph.
-   * @namespace cy.add
+   * @methodName cy.add
    */
   add: function( opts ){
 
@@ -95,7 +95,7 @@ let corefn = {
    * @memberof cy
    * @path Core/Graph manipulation
    * @param {...cy_remove} x - Remove the specified elements. | Remove elements in the graph matching the specified selector.
-   * @namespace cy.remove
+   * @methodName cy.remove
    */
   remove: function( collection ){
     if( is.elementOrCollection( collection ) ){

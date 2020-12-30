@@ -289,31 +289,16 @@ for(var i in fns)
     }
 }
 
-// var mappings=fns;
 
-// for(var i in dockmaker_elements.sections)
-// {
-//     if(dockmaker_elements.sections[i].name != undefined && ( dockmaker_elements.sections[i].name == 'Core' || dockmaker_elements.sections[i].name == 'Collection' || dockmaker_elements.sections[i].name == 'Animations' || dockmaker_elements.sections[i].name == 'Layouts' ))
-//     {
-//         for( var j in dockmaker_elements.sections[i].sections)
-//         {
-//             if(dockmaker_elements.sections[i].sections[j].fns != undefined)
-//             {
-//                 for( var k in dockmaker_elements.sections[i].sections[j].fns)
-//                 {
-//                     for( var x in mappings )
-//                     {
-//                         if(dockmaker_elements.sections[i].sections[j].fns[k].name == mappings[x].name)
-//                         {
-//                             dockmaker_elements.sections[i].sections[j].fns[k] = mappings[x];
-//                             break;
-//                         }
-//                     }
-//                 }
-//             }
-//         }
-//     }
-// }
+for(var i in fns)
+{
+    console.log(fns[i].name.split(".")[0]);
+    fs.writeFileSync( path.join(__dirname + "/fn-json/" + fns[i].name.split(".")[0] , "./" + fns[i].name.split(".")[1] + ".json"), JSON.stringify(dockmaker_elements, null,4), function(err) {
+    if (err) throw err;
+    console.log('complete');
+    });
+}
+
 
 // save generated file
 fs.writeFileSync( path.join(__dirname, "./docmaker.json"), JSON.stringify(dockmaker_elements, null,4), function(err) {

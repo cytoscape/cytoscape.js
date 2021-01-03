@@ -293,12 +293,11 @@ for(var i in fns)
 for(var i in fns)
 {
     console.log(fns[i].name.split(".")[0]);
-    fs.writeFileSync( path.join(__dirname + "/fn-json/" + fns[i].name.split(".")[0] , "./" + fns[i].name.split(".")[1] + ".json"), JSON.stringify(dockmaker_elements, null,4), function(err) {
+    fs.writeFileSync( path.join(__dirname + "/fn-json/" + fns[i].name.split(".")[0] , "./" + fns[i].name.split(".")[1] + ".json"), JSON.stringify(fns[i], null,4), function(err) {
     if (err) throw err;
     console.log('complete');
     });
 }
-
 
 // save generated file
 fs.writeFileSync( path.join(__dirname, "./docmaker.json"), JSON.stringify(dockmaker_elements, null,4), function(err) {

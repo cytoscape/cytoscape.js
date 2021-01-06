@@ -28,6 +28,41 @@ let elesfn = ({
     return { nodes, edges };
   },
 
+   /**
+ * function(ele, i, eles) [, thisArg]
+ * @typedef {object} eles_filter_callback_type
+ * @property {object} ele - The current element.
+ * @property {object} i - The index of the current element.
+ * @property {object} eles - The collection of elements being mapped.
+ */
+
+/**
+ * @callback eles_filter_callback
+ * @property {eles_filter_callback_type} function(ele,i,eles) - eles_filter_callback_type
+ */
+
+/**
+ * @typedef {object} eles_collection_filter
+ * @property {function(eles_filter_callback):any} eles_filter_callback - The function that returns the filterped value for each element.
+ * @property {object} thisArg - [optional] The value for `this` within the iterating function.
+ */
+
+/**
+ * @typedef {object} eles_filter
+ * @property {eles_collection_filter} eles_collection_filter
+ * @property {object} selector - The selector to match against.
+ * @property {object} selector - The selector to match against.
+ * @property {object} selector - The selector to match against.
+ */
+
+  /**
+ * Get a new collection containing elements that are accepted by the specified filter function or selector.
+ * @memberof eles
+ * @path Collection/Building & filtering
+ * @sub_functions eles.filter|eles.filter|eles.nodes|eles.edges
+ * @param {...eles_filter} filter - Determine test function | Get the elements that match the specified selector. | Get the nodes that match the specified selector. | Get the edges that match the specified selector.
+ * @methodName eles.filter
+ */
   filter: function( filter, thisArg ){
     if( filter === undefined ){ // check this first b/c it's the most common/performant case
       return this;

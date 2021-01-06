@@ -145,7 +145,7 @@ for(var i in words)
                         }
                     }
 
-                    if( descr[j] != undefined )
+                    if( descr[j] != undefined && descr[j] != "NULL" )
                     {
                         temp.descr = descr[j];
                     } 

@@ -1,0 +1,23 @@
+{
+    "pureAliases": [
+        "eles.trigger"
+    ],
+    "name": "eles.emit",
+    "descr": "Emit events on the elements.",
+    "formats": [
+        {
+            "args": [
+                {
+                    "name": "events",
+                    "descr": "A list of event names to emit (either a space-separated string or an array)"
+                },
+                {
+                    "name": "extraParams",
+                    "descr": "An array of additional parameters to pass to the handler.",
+                    "optional": true
+                }
+            ]
+        }
+    ],
+    "md": "collection/emit"
+}

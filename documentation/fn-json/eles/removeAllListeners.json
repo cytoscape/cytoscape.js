@@ -1,0 +1,4 @@
+{
+    "name": "eles.removeAllListeners",
+    "descr": "Remove all event handlers on the elements."
+}

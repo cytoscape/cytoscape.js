@@ -220,6 +220,23 @@ util.extend( elesfn, {
 //////////////////////////
 
 util.extend( elesfn, {
+
+    /**
+ * @typedef {object} eles_neighborhood
+ * @property {object} selector - [optional] An optional selector that is used to filter the resultant collection.
+ * @property {object} selector - [optional] An optional selector that is used to filter the resultant collection.
+ * @property {object} selector - [optional] An optional selector that is used to filter the resultant collection.
+ */
+
+
+/**
+ * Get the neighbourhood of the elements.
+ * @memberof eles
+ * @path Collection/Traversing
+ * @sub_functions eles.neighborhood|eles.openNeighborhood|eles.closedNeighborhood
+ * @param {...eles_neighborhood} x - Get the open neighbourhood of the elements. | Get the open neighbourhood of the elements. | Get the closed neighbourhood of the elements.
+ * @methodName eles.neighborhood
+ */
   neighborhood: cache(function( selector ){
     let elements = [];
     let nodes = this.nodes();

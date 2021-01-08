@@ -1,0 +1,40 @@
+{
+    "name": "eles.neighborhood",
+    "descr": "Get the neighbourhood of the elements.",
+    "formats": [
+        {
+            "name": "eles.neighborhood",
+            "descr": "Get the open neighbourhood of the elements.",
+            "args": [
+                {
+                    "name": "selector",
+                    "descr": "An optional selector that is used to filter the resultant collection.",
+                    "optional": true
+                }
+            ]
+        },
+        {
+            "name": "eles.openNeighborhood",
+            "descr": "Get the open neighbourhood of the elements.",
+            "args": [
+                {
+                    "name": "selector",
+                    "descr": "An optional selector that is used to filter the resultant collection.",
+                    "optional": true
+                }
+            ]
+        },
+        {
+            "name": "eles.closedNeighborhood",
+            "descr": "Get the closed neighbourhood of the elements.",
+            "args": [
+                {
+                    "name": "selector",
+                    "descr": "An optional selector that is used to filter the resultant collection.",
+                    "optional": true
+                }
+            ]
+        }
+    ],
+    "md": "collection/neighborhood"
+}

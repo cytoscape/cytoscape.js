@@ -1,0 +1,35 @@
+{
+    "pureAliases": [
+        "eles.bind",
+        "eles.listen",
+        "eles.addListener"
+    ],
+    "name": "eles.on",
+    "descr": "Listen to events that occur on the elements.",
+    "formats": [
+        {
+            "args": [
+                {
+                    "name": "events",
+                    "descr": "A space separated list of event names."
+                },
+                {
+                    "name": "selector",
+                    "descr": "A delegate selector to specify child elements for which the handler runs.",
+                    "optional": true
+                },
+                {
+                    "name": "function(event)",
+                    "fields": [
+                        {
+                            "name": "event",
+                            "descr": "The event object."
+                        }
+                    ],
+                    "descr": "The handler function that is called when on of the specified events occurs."
+                }
+            ]
+        }
+    ],
+    "md": "collection/on"
+}

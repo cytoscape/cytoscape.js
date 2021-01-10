@@ -125,6 +125,24 @@ describe('Core initialisation', function(){
     });
   });
 
+  it('loads graph-level data', function(done){
+    cytoscape({
+      headless: true,
+
+      data: {
+        foo: 'bar'
+      },
+
+      ready: function(){
+        var cy = this;
+
+        expect( cy.data('foo') ).to.equal('bar');
+
+        done();
+      }
+    });
+  });
+
   it('loads style via promise', function(done){
     var cy = cytoscape({
       headless: true,

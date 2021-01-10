@@ -30,6 +30,11 @@ let corefn = ({
     }
 
     return _p.style;
+  },
+
+  // e.g. cy.data() changed => recalc ele mappers
+  updateStyle: function(){
+    this.mutableElements().updateStyle(); // just send to all eles
   }
 });
 

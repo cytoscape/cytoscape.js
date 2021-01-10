@@ -38,6 +38,10 @@ BRp.registerCalculationListeners = function(){
     if( willDraw ){
       let fns = r.onUpdateEleCalcsFns;
 
+      // because we need to have up-to-date style (e.g. stylesheet mappers)
+      // before calculating rendered style (and pstyle might not be called yet)
+      elesToUpdate.cleanStyle();
+
       for( let i = 0; i < elesToUpdate.length; i++ ){
         let ele = elesToUpdate[i];
         let rstyle = ele._private.rstyle;

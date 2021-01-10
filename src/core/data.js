@@ -9,14 +9,16 @@ const fn = {
     settingEvent: 'data',
     settingTriggersEvent: true,
     triggerFnName: 'trigger',
-    allowGetting: true
+    allowGetting: true,
+    updateStyle: true
   } ),
 
   removeData: define.removeData( {
     field: 'data',
     event: 'data',
     triggerFnName: 'trigger',
-    triggerEvent: true
+    triggerEvent: true,
+    updateStyle: true
   } ),
 
   scratch: define.data( {
@@ -27,14 +29,16 @@ const fn = {
     settingEvent: 'scratch',
     settingTriggersEvent: true,
     triggerFnName: 'trigger',
-    allowGetting: true
+    allowGetting: true,
+    updateStyle: true
   } ),
 
   removeScratch: define.removeData( {
     field: 'scratch',
     event: 'scratch',
     triggerFnName: 'trigger',
-    triggerEvent: true
+    triggerEvent: true,
+    updateStyle: true
   } )
 };
 

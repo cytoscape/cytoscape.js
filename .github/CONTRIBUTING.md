@@ -2,33 +2,30 @@
 
 Cytoscape.js is an open source project, and we greatly appreciate any and all contributions.
 
-A blog post is available [on blog.js.cytoscape.org](http://blog.js.cytoscape.org/2017/06/13/contributing/) geared towards first-time contributors with more in-depth instructions on the project's structure, the process of creating and merging changes to the code, and more.
+A blog post is available [on blog.js.cytoscape.org](http://blog.js.cytoscape.org/2017/06/13/contributing/) geared towards first-time code contributors with more in-depth instructions on the project's structure, the process of creating and merging changes to the code, and more.
 
-If you'd like to contribute code to Cytoscape.js but you're not sure exactly what you'd like to implement, take a look at our [current milestones](https://github.com/cytoscape/cytoscape.js/milestones) to see what features we have planned in future --- or anything labelled [`help-wanted`](https://github.com/cytoscape/cytoscape.js/issues?q=is%3Aopen+is%3Aissue+label%3Ahelp-wanted).  Of course, we also welcome your own ideas.
+If you'd like to contribute code to Cytoscape.js but you're not sure exactly what you'd like to implement, take a look at our [current milestones](https://github.com/cytoscape/cytoscape.js/milestones) to see what features we have planned in future --- or anything labelled [`help-wanted`](https://github.com/cytoscape/cytoscape.js/issues?q=is%3Aopen+is%3Aissue+label%3Ahelp-wanted).  Of course, we also welcome your own ideas.  You can discuss new ideas with the community on [GitHub discussions](https://github.com/cytoscape/cytoscape.js/discussions).
 
-Our goal is to make Cytoscape.js as comprehensive as possible.  Thank you for taking the time and effort to contribute to help make that happen!
+Our goal is to make Cytoscape.js easy to use and comprehensive.  Thank you for taking the time and effort to contribute to help make that happen!
 
 
 
 ## Submitting issues
 
-Submit issues or feature requests to the [issue tracker](https://github.com/cytoscape/cytoscape.js/issues).  If your issue pertains to an extension, you should file the issue on that extension's issue tracker instead.
+The first step in providing a code contribution is to write [a short, descriptive issue](https://github.com/cytoscape/cytoscape.js/issues).  If your issue pertains to an extension, you should file the issue on that extension's issue tracker instead.
 
-Before submitting an issue, please ensure that the issue still exists in the latest version of the library.  Because we follow semver, you can safely upgrade patch releases (x.y.**z**) and feature releases (x.**y**) without worry of breaking API changes.
-
-Clearly describe your issue.  List the steps necessary to reproduce your issue along with the corresponding code (preferably a JSBin, as that makes the issue less ambiguous and much faster to fix).
-
-Make certain to mention the version of the library you are using and version of the browser/environment you are using.
+Describe the bug or feature that you are addressing in your issue.  Then, create your issue's corresponding pull request that contains your code changes.
 
 
-
-## Where to put changes
+## How to make your changes in a pull request
 
 New features go in the `unstable` branch, which is used for the next (breaking/major or feature/minor) version.  Bugfixes go in the `master` branch for the next bugfix/patch version.  This allows us to follow [semver](http://semver.org/) nicely.
 
-To propose a change, [fork](https://help.github.com/articles/fork-a-repo/) the cytoscape.js repository on Github, make a change, and then submit a [pull request](https://help.github.com/articles/creating-a-pull-request/) so that the proposed changes can be reviewed.
+To propose a change, [fork](https://help.github.com/articles/fork-a-repo/) the cytoscape.js repository on Github, make a change, and then submit a [pull request](https://help.github.com/articles/creating-a-pull-request/) so that the proposed changes can be reviewed.  If this is your first time making a pull request on GitHub, you can refer to [our comprehensive, step-by-step blog post](https://blog.js.cytoscape.org/2017/06/13/contributing/).
 
 The source is organised in relatively the same as the documentation, under `./src`.  Try to maintain that organisation as best you can.  You are free to create new files and `require()` them using ESM [`import`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import) and [`export`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/export).
+
+Add your new feature to the documentation.  Updates to the documentation should go in [`docmaker.json`](https://github.com/cytoscape/cytoscape.js/blob/unstable/documentation/docmaker.json) file or the accompanying md files.  The documentation's HTML is generated from a template, and so it should not be edited directly.
 
 
 

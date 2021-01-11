@@ -147,7 +147,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
 
     for( let i = 0; i < image.length; i++ ){
       const bgContainment = node.cy().style().getIndexedStyle(node, 'background-image-containment', 'value', i);
-      if ( inside && bgContainment === 'over' || !inside && bgContainment === 'inside' ) {
+      if( inside && bgContainment === 'over' || !inside && bgContainment === 'inside' ){
         totalCompleted++;
         continue;
       }

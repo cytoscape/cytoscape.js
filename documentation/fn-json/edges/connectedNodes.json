@@ -1,0 +1,16 @@
+{
+    "name": "edges.connectedNodes",
+    "descr": "Get the nodes connected to the edges in the collection.",
+    "formats": [
+        {
+            "args": [
+                {
+                    "name": "selector",
+                    "descr": "An optional selector that is used to filter the resultant collection.",
+                    "optional": true
+                }
+            ]
+        }
+    ],
+    "md": "collection/connectedNodes"
+}

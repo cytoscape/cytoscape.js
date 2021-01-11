@@ -385,8 +385,34 @@ function defineSourceFunction( params ){
 }
 
 util.extend( elesfn, {
+/**
+ * @typedef {object} nodes_edgesWith
+ * @property {object} eles - The other collection.
+ * @property {object} selector - The other collection, specified as a selector which is matched against all elements in the graph.
+ */
+
+  /**
+ * Get the edges connecting the collection to another collection. Direction of the edges does not matter.
+ * @memberof nodes
+ * @path Collection/Traversing
+ * @param {...nodes_edgesWith} events - NULL | NULL
+ * @methodName nodes.edgesWith
+ */
   edgesWith: cache( defineEdgesWithFunction(), 'edgesWith' ),
 
+  /**
+ * @typedef {object} nodes_edgesTo
+ * @property {object} eles - The other collection.
+ * @property {object} selector - The other collection, specified as a selector which is matched against all elements in the graph.
+ */
+
+  /**
+ * Get the edges coming from the collection (i.e. the source) going to another collection (i.e. the target).
+ * @memberof nodes
+ * @path Collection/Traversing
+ * @param {...nodes_edgesTo} events - NULL | NULL
+ * @methodName nodes.edgesTo
+ */
   edgesTo: cache( defineEdgesWithFunction( {
     thisIsSrc: true
   } ), 'edgesTo' )
@@ -431,6 +457,18 @@ function defineEdgesWithFunction( params ){
 }
 
 util.extend( elesfn, {
+   /**
+ * @typedef {object} nodes_connectedEdges
+ * @property {object} selector - [optional] An optional selector that is used to filter the resultant collection.
+ */
+
+  /**
+ * Get the edges connected to the nodes in the collection.
+ * @memberof nodes
+ * @path Collection/Traversing
+ * @param {...nodes_connectedEdges} events - NULL
+ * @methodName nodes.connectedEdges
+ */
   connectedEdges: cache(function( selector ){
     let retEles = [];
 
@@ -450,6 +488,18 @@ util.extend( elesfn, {
     return this.spawn( retEles, true ).filter( selector );
   }, 'connectedEdges'),
 
+  /**
+ * @typedef {object} edges_connectedNodes
+ * @property {object} selector - [optional] An optional selector that is used to filter the resultant collection.
+ */
+
+  /**
+ * Get the nodes connected to the edges in the collection.
+ * @memberof edges
+ * @path Collection/Traversing
+ * @param {...edges_connectedNodes} events - NULL
+ * @methodName edges.connectedNodes
+ */
   connectedNodes: cache(function( selector ){
     let retEles = [];
 
@@ -465,8 +515,32 @@ util.extend( elesfn, {
     return this.spawn( retEles, true ).filter( selector );
   }, 'connectedNodes'),
 
+   /**
+ * @typedef {object} edges_parallelEdges
+ * @property {object} selector - [optional] An optional selector that is used to filter the resultant collection.
+ */
+
+  /**
+ * Get edges parallel to those in the collection.
+ * @memberof edges
+ * @path Collection/Traversing
+ * @param {...edges_parallelEdges} events - NULL
+ * @methodName edges.parallelEdges
+ */
   parallelEdges: cache( defineParallelEdgesFunction(), 'parallelEdges' ),
 
+     /**
+ * @typedef {object} edges_codirectedEdges
+ * @property {object} selector - [optional] An optional selector that is used to filter the resultant collection.
+ */
+
+  /**
+ * Get edges codirected to those in the collection.
+ * @memberof edges
+ * @path Collection/Traversing
+ * @param {...edges_codirectedEdges} events - NULL
+ * @methodName edges.codirectedEdges
+ */
   codirectedEdges: cache( defineParallelEdgesFunction( {
     codirected: true
   } ), 'codirectedEdges' )

@@ -1,0 +1,23 @@
+{
+    "name": "nodes.edgesTo",
+    "descr": "Get the edges coming from the collection (i.e. the source) going to another collection (i.e. the target).",
+    "formats": [
+        {
+            "args": [
+                {
+                    "name": "eles",
+                    "descr": "The other collection."
+                }
+            ]
+        },
+        {
+            "args": [
+                {
+                    "name": "selector",
+                    "descr": "The other collection, specified as a selector which is matched against all elements in the graph."
+                }
+            ]
+        }
+    ],
+    "md": "collection/edgesTo"
+}

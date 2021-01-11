@@ -1,0 +1,23 @@
+{
+    "name": "nodes.edgesWith",
+    "descr": "Get the edges connecting the collection to another collection. Direction of the edges does not matter.",
+    "formats": [
+        {
+            "args": [
+                {
+                    "name": "eles",
+                    "descr": "The other collection."
+                }
+            ]
+        },
+        {
+            "args": [
+                {
+                    "name": "selector",
+                    "descr": "The other collection, specified as a selector which is matched against all elements in the graph."
+                }
+            ]
+        }
+    ],
+    "md": "collection/edgesWith"
+}

@@ -141,11 +141,17 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
     }
   };
 
-  let drawImages = ( nodeOpacity = eleOpacity ) => {
+  let drawImages = ( nodeOpacity = eleOpacity, inside = true ) => {  
     let prevBging = _p.backgrounding;
     let totalCompleted = 0;
 
     for( let i = 0; i < image.length; i++ ){
+      const bgContainment = node.cy().style().getIndexedStyle(node, 'background-image-containment', 'value', i);
+      if (inside && bgContainment === "over" || !inside && bgContainment === "inside") {
+        totalCompleted++;
+        continue;
+      }
+
       if( urlDefined[i] && image[i].complete && !image[i].error ){
         totalCompleted++;
         r.drawInscribedImage( context, image[i], node, i, nodeOpacity );
@@ -254,7 +260,6 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
     r.drawElementText( context, node, null, drawLabel );
   };
 
-  let bgContainment = node.pstyle('background-image-containment').value;
   let ghost = node.pstyle('ghost').value === 'yes';
 
   if( ghost ){
@@ -265,48 +270,26 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
 
     context.translate( gx, gy );
 
-    if ( bgContainment === 'inside' ){
-      setupShapeColor( ghostOpacity * bgOpacity );
-      drawShape();
-      drawImages( effGhostOpacity );
-      drawPie( darkness !== 0 || borderWidth !== 0 );
-      setupBorderColor( ghostOpacity * borderOpacity );
-      drawBorder();
-      darken( effGhostOpacity );
-    }
-
-    if ( bgContainment === 'over' ){
-      setupShapeColor( ghostOpacity * bgOpacity );
-      drawShape();
-      setupBorderColor( ghostOpacity * borderOpacity );
-      drawBorder();
-      drawPie( darkness !== 0 || borderWidth !== 0 );
-      drawImages( effGhostOpacity );
-      darken( effGhostOpacity );
-    }
+    setupShapeColor( ghostOpacity * bgOpacity );
+    drawShape();
+    drawImages( effGhostOpacity, true );
+    setupBorderColor( ghostOpacity * borderOpacity );
+    drawBorder();
+    drawPie( darkness !== 0 || borderWidth !== 0 );
+    drawImages( effGhostOpacity, false );
+    darken( effGhostOpacity );
 
     context.translate( -gx, -gy );
   }
   
-  if( bgContainment === 'inside' ){
-    setupShapeColor();
-    drawShape();
-    drawImages();
-    drawPie( darkness !== 0 || borderWidth !== 0 );
-    setupBorderColor();
-    drawBorder();
-    darken();
-  }
-
-  if( bgContainment === 'over' ){
-    setupShapeColor();
-    drawShape();
-    setupBorderColor();
-    drawBorder();
-    drawPie( darkness !== 0 || borderWidth !== 0 );
-    drawImages();
-    darken();
-  } 
+  setupShapeColor();
+  drawShape();
+  drawImages(eleOpacity, true);
+  setupBorderColor();
+  drawBorder();
+  drawPie( darkness !== 0 || borderWidth !== 0 );
+  drawImages(eleOpacity, false);
+  darken();
 
   if( usePaths ){
     context.translate( -pos.x, -pos.y );

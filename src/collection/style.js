@@ -320,7 +320,7 @@ let elesfn = ({
   /**
  * Get the effective opacity of the element (i.e. on-screen opacity), which takes into consideration parent node opacity.
  * @memberof ele
- * @path Collection/Layout
+ * @path Collection/Style
  * @methodName ele.effectiveOpacity
  */
   effectiveOpacity: function(){
@@ -354,7 +354,7 @@ let elesfn = ({
   /**
  * Get whether the element's effective opacity is completely transparent, which takes into consideration parent node opacity.
  * @memberof ele
- * @path Collection/Layout
+ * @path Collection/Style
  * @methodName ele.transparent
  */
   transparent: function(){
@@ -478,6 +478,18 @@ let eleVisible = cacheStyleFunction( 'eleVisible', function( ele ){
 
 let edgeVisibleViaNode = eleTakesUpSpace;
 
+  /**
+ * @typedef {object} ele_visible
+ */
+
+  /**
+ * Get whether the element is [visible](#style/visibility) (i.e. `display: element` and `visibility: visible`).
+ * @memberof ele
+ * @sub_functions ele.visible|ele.hidden
+ * @path Collection/Style
+ * @param {...ele_visible} events - Get whether the element is visible. | Get whether the element is hidden.
+ * @methodName ele.visible
+ */
 elesfn.visible = cachePrototypeStyleFunction( 'visible', defineDerivedStateFunction({
   ok: eleVisible,
   edgeOkViaNode: edgeVisibleViaNode

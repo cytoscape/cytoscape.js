@@ -139,6 +139,12 @@ elesfn.spawnSelf = function(){
   return this.spawn( this );
 };
 
+  /**
+ * Get the core instance that owns the element.
+ * @memberof ele
+ * @path Collection/Graph manipulation
+ * @methodName ele.cy
+ */
 elesfn.cy = function(){
   return this._private.cy;
 };
@@ -331,6 +337,13 @@ elesfn.jsons = function(){
   return jsons;
 };
 
+  /**
+ * Get a new collection containing clones (i.e. copies) of the elements in the calling collection.
+ * @memberof eles
+ * @pureAliases eles.copy
+ * @path Collection/Graph manipulation
+ * @methodName ele.clone
+ */
 elesfn.clone = function(){
   let cy = this.cy();
   let elesArr = [];
@@ -568,16 +581,34 @@ elesfn.restore = function( notifyRenderer = true, addToPool = true ){
   return self; // chainability
 };
 
+  /**
+ * Get whether the element has been removed from the graph.
+ * @memberof eles
+ * @path Collection/Graph manipulation
+ * @methodName ele.removed
+ */
 elesfn.removed = function(){
   let ele = this[0];
   return ele && ele._private.removed;
 };
 
+  /**
+ * Get whether the element has been removed from the graph.
+ * @memberof eles
+ * @path Collection/Graph manipulation
+ * @methodName ele.inside
+ */
 elesfn.inside = function(){
   let ele = this[0];
   return ele && !ele._private.removed;
 };
 
+  /**
+ * Remove the elements from the graph, and return all elements removed by this call.
+ * @memberof eles
+ * @path Collection/Graph manipulation
+ * @methodName eles.remove
+ */
 elesfn.remove = function( notifyRenderer = true, removeFromPool = true ){
   let self = this;
   let elesToRemove = [];
@@ -740,6 +771,43 @@ elesfn.remove = function( notifyRenderer = true, removeFromPool = true ){
   return removedElements;
 };
 
+  /**
+ * @callback move_edges_options
+ * @property {move_edges_options_type} location - move_edges_options_type
+ */
+
+   /**
+ * @callback move_nodes_options
+ * @property {move_nodes_options_type} location - move_nodes_options_type
+ */
+
+/**
+ * location
+ * @typedef {object} move_edges_options_type
+ * @property {object} source - The ID of the new source node.
+ * @property {object} target - The ID of the new target node.
+ */
+
+ /**
+ * location
+ * @typedef {object} move_nodes_options_type
+ * @property {object} parent - The ID of the new parent node (use null for no parent).
+ */
+
+/**
+ * @typedef {object} eles_move
+ * @property {function(move_edges_options):any} move_edges_options - Where the edges are moved. You can specify a new source, a new target, or both.
+ * @property {function(move_nodes_options):any} move_nodes_options - Where the nodes are moved.
+ */
+
+  /**
+ * Move the elements with respect to graph topology (i.e. new `source`, `target`, or `parent`).
+ * @memberof eles
+ * @path Collection/Graph manipulation
+ * @sub_functions edges.move|nodes.move
+ * @param {...eles_move} params - Change the source, target, or both source and target. | Change the parent.
+ * @methodName eles.move
+ */
 elesfn.move = function( struct ){
   let cy = this._private.cy;
   let eles = this;

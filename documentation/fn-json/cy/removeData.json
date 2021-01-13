@@ -1,0 +1,21 @@
+{
+    "pureAliases": [
+        "cy.removeAttr"
+    ],
+    "name": "cy.removeData",
+    "descr": "Remove developer-defined data associated with the elements.",
+    "formats": [
+        {
+            "descr": "Removes all mutable data fields for the elements."
+        },
+        {
+            "descr": "Removes the specified mutable data fields for the elements.",
+            "args": [
+                {
+                    "name": "names",
+                    "descr": "A space-separated list of fields to delete."
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,4 @@
+{
+    "name": "cy.removeAllListeners",
+    "descr": "Remove all event handlers on the elements."
+}

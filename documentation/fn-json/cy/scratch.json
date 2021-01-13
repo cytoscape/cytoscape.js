@@ -1,0 +1,32 @@
+{
+    "name": "cy.scratch",
+    "extFn": true,
+    "descr": "Set or get scratchpad scratch, where temporary or non-JSON scratch can be stored.  App-level scratchpad scratch should use namespaces prefixed with underscore, like `'_foo'`.  This is analogous to the more common [`ele.scratch()`](#ele.scratch) but for graph global scratch.",
+    "formats": [
+        {
+            "descr": "Get the entire scratchpad object for the core."
+        },
+        {
+            "descr": "Get the scratchpad at a particular namespace.",
+            "args": [
+                {
+                    "name": "namespace",
+                    "descr": "A namespace string."
+                }
+            ]
+        },
+        {
+            "descr": "Set the scratchpad at a particular namespace.",
+            "args": [
+                {
+                    "name": "namespace",
+                    "descr": "A namespace string."
+                },
+                {
+                    "name": "value",
+                    "descr": "The value to set at the specified namespace."
+                }
+            ]
+        }
+    ]
+}

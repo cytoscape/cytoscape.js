@@ -1,0 +1,35 @@
+{
+    "pureAliases": [
+        "cy.bind",
+        "cy.listen",
+        "cy.addListener"
+    ],
+    "name": "cy.on",
+    "descr": "Listen to events that occur on the elements.",
+    "formats": [
+        {
+            "args": [
+                {
+                    "name": "events",
+                    "descr": "A space separated list of event names."
+                },
+                {
+                    "name": "selector",
+                    "descr": " A selector to specify elements for which the handler runs.",
+                    "optional": true
+                },
+                {
+                    "name": "function(event)",
+                    "fields": [
+                        {
+                            "name": "event",
+                            "descr": "The event object."
+                        }
+                    ],
+                    "descr": "The handler function that is called when on of the specified events occurs."
+                }
+            ]
+        }
+    ],
+    "md": "cy/on"
+}

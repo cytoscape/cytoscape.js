@@ -1,0 +1,43 @@
+{
+    "pureAliases": [
+        "cy.attr"
+    ],
+    "name": "cy.data",
+    "descr": "Read and write developer-defined data associated with the graph.",
+    "formats": [
+        {
+            "descr": "Get the entire data object."
+        },
+        {
+            "descr": "Get a particular data field.",
+            "args": [
+                {
+                    "name": "name",
+                    "descr": "The name of the field to get."
+                }
+            ]
+        },
+        {
+            "descr": "Set a particular data field.",
+            "args": [
+                {
+                    "name": "name",
+                    "descr": "The name of the field to set."
+                },
+                {
+                    "name": "value",
+                    "descr": "The value to set for the field."
+                }
+            ]
+        },
+        {
+            "descr": "Update multiple data fields at once via an object.",
+            "args": [
+                {
+                    "name": "obj",
+                    "descr": "The object containing name-value pairs to update data fields."
+                }
+            ]
+        }
+    ]
+}

@@ -257,6 +257,7 @@ A background image may be applied to a node's body.  The following properties su
     * The images will be applied to the node's body in the order given, layering one on top of each other.
     * When specifying properties for multiple images, if the property for a given image is not provided, then the default value is used as fallback.
   * To put an image outside of the bounds of a node's body, it is necessary to specify `background-clip: none` and `bounds-expansion: n` for images that go `n` pixels beyond the bounding box of the node.  Note that values of `n` should be relatively small for performance.
+  * To control the drawing order of background images (e.g overlay background images over borders), it is necessary to specify `background-image-containment: over` (default `inside`).
   * SVG image considerations:
     * Always include this XML header in each SVG image:
     ```

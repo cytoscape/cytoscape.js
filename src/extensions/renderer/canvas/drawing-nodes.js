@@ -141,11 +141,17 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
     }
   };
 
-  let drawImages = ( nodeOpacity = eleOpacity ) => {
+  let drawImages = ( nodeOpacity = eleOpacity, inside = true ) => {  
     let prevBging = _p.backgrounding;
     let totalCompleted = 0;
 
     for( let i = 0; i < image.length; i++ ){
+      const bgContainment = node.cy().style().getIndexedStyle(node, 'background-image-containment', 'value', i);
+      if( inside && bgContainment === 'over' || !inside && bgContainment === 'inside' ){
+        totalCompleted++;
+        continue;
+      }
+
       if( urlDefined[i] && image[i].complete && !image[i].error ){
         totalCompleted++;
         r.drawInscribedImage( context, image[i], node, i, nodeOpacity );
@@ -266,22 +272,24 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
 
     setupShapeColor( ghostOpacity * bgOpacity );
     drawShape();
-    drawImages( effGhostOpacity );
-    drawPie( darkness !== 0 || borderWidth !== 0 );
-    darken( effGhostOpacity );
+    drawImages( effGhostOpacity, true );
     setupBorderColor( ghostOpacity * borderOpacity );
     drawBorder();
+    drawPie( darkness !== 0 || borderWidth !== 0 );
+    drawImages( effGhostOpacity, false );
+    darken( effGhostOpacity );
 
     context.translate( -gx, -gy );
   }
-
+  
   setupShapeColor();
   drawShape();
-  drawImages();
-  drawPie( darkness !== 0 || borderWidth !== 0 );
-  darken();
+  drawImages(eleOpacity, true);
   setupBorderColor();
   drawBorder();
+  drawPie( darkness !== 0 || borderWidth !== 0 );
+  drawImages(eleOpacity, false);
+  darken();
 
   if( usePaths ){
     context.translate( -pos.x, -pos.y );

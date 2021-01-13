@@ -1,6 +1,6 @@
 {
     "name": "node.layoutDimensions",
-    "extFn": "true",
+    "extFn": true,
     "descr": "Get the node width and height. This function is intended for use in layout positioning to do overlap detection.",
     "formats": [
         {

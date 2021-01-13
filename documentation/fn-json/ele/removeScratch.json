@@ -1,0 +1,17 @@
+{
+    "name": "ele.removeScratch",
+    "extFn": true,
+    "descr": "Remove scratchpad data. You should remove scratchpad data only at your own namespaces.",
+    "formats": [
+        {
+            "descr": "Remove the scratchpad data at a particular namespace.",
+            "args": [
+                {
+                    "name": "namespace",
+                    "descr": "A namespace string."
+                }
+            ]
+        }
+    ],
+    "md": "collection/removeScratch"
+}

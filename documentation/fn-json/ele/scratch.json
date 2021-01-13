@@ -1,0 +1,33 @@
+{
+    "name": "ele.scratch",
+    "extFn": true,
+    "descr": "Set or get scratchpad data, where temporary or non-JSON data can be stored.  App-level scratchpad data should use namespaces prefixed with underscore, like `'_foo'`.",
+    "formats": [
+        {
+            "descr": "Get the entire scratchpad object for the element."
+        },
+        {
+            "descr": "Get the scratchpad at a particular namespace.",
+            "args": [
+                {
+                    "name": "namespace",
+                    "descr": "A namespace string."
+                }
+            ]
+        },
+        {
+            "descr": "Set the scratchpad at a particular namespace.",
+            "args": [
+                {
+                    "name": "namespace",
+                    "descr": "A namespace string."
+                },
+                {
+                    "name": "value",
+                    "descr": "The value to set at the specified namespace."
+                }
+            ]
+        }
+    ],
+    "md": "collection/scratch"
+}

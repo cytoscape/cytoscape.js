@@ -1,6 +1,6 @@
 {
     "name": "nodes.layoutPositions",
-    "extFn": "true",
+    "extFn": true,
     "descr": "Position the nodes for a discrete/synchronous layout.",
     "formats": [
         {

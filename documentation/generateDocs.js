@@ -114,7 +114,7 @@ for(var i in words)
             // checking for extFn
             if(words[i].tags != undefined && words[i].tags.find(fn => fn.originalTitle == "extFn") != undefined)
             {
-                func.extFn = words[i].tags.find(fn => fn.originalTitle == "extFn").value;
+                func.extFn = true;
             }
 
             // mapping fuution with path

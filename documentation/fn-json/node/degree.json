@@ -1,0 +1,107 @@
+{
+    "name": "node.degree",
+    "descr": "Get the degree of a node.",
+    "formats": [
+        {
+            "name": "node.degree",
+            "descr": "Get the degree of a node.",
+            "args": [
+                {
+                    "name": "includeLoops",
+                    "descr": "A boolean, indicating whether loops are to be included in degree calculations."
+                }
+            ]
+        },
+        {
+            "name": "node.indegree",
+            "descr": "Get the indegree of a node.",
+            "args": [
+                {
+                    "name": "includeLoops",
+                    "descr": "A boolean, indicating whether loops are to be included in degree calculations."
+                }
+            ]
+        },
+        {
+            "name": "node.outdegree",
+            "descr": "Get the outdegree of a node.",
+            "args": [
+                {
+                    "name": "includeLoops",
+                    "descr": "A boolean, indicating whether loops are to be included in degree calculations."
+                }
+            ]
+        },
+        {
+            "name": "nodes.totalDegree",
+            "descr": "Get the total degree of a collection of nodes.",
+            "args": [
+                {
+                    "name": "includeLoops",
+                    "descr": "A boolean, indicating whether loops are to be included in degree calculations."
+                }
+            ]
+        },
+        {
+            "name": "nodes.minDegree",
+            "descr": "Get the minimum degree of the nodes in the collection.",
+            "args": [
+                {
+                    "name": "includeLoops",
+                    "descr": "A boolean, indicating whether loops are to be included in degree calculations."
+                }
+            ]
+        },
+        {
+            "name": "nodes.maxDegree",
+            "descr": "Get the maximum degree of the nodes in the collection.",
+            "args": [
+                {
+                    "name": "includeLoops",
+                    "descr": "A boolean, indicating whether loops are to be included in degree calculations."
+                }
+            ]
+        },
+        {
+            "name": "nodes.minIndegree",
+            "descr": "Get the minimum indegree of the nodes in the collection.",
+            "args": [
+                {
+                    "name": "includeLoops",
+                    "descr": "A boolean, indicating whether loops are to be included in degree calculations."
+                }
+            ]
+        },
+        {
+            "name": "nodes.maxIndegree",
+            "descr": "Get the maximum indegree of the nodes in the collection.",
+            "args": [
+                {
+                    "name": "includeLoops",
+                    "descr": "A boolean, indicating whether loops are to be included in degree calculations."
+                }
+            ]
+        },
+        {
+            "name": "nodes.minOutdegree",
+            "descr": "Get the minimum outdegree of the nodes in the collection.",
+            "args": [
+                {
+                    "name": "includeLoops",
+                    "descr": "A boolean, indicating whether loops are to be included in degree calculations."
+                }
+            ]
+        },
+        {
+            "name": "nodes.maxOutdegree",
+            "descr": "Get the maximum outdegree of the nodes in the collection.",
+            "args": [
+                {
+                    "name": "includeLoops",
+                    "descr": "A boolean, indicating whether loops are to be included in degree calculations."
+                }
+            ]
+        }
+    ],
+    "md": "collection/degree"
+}

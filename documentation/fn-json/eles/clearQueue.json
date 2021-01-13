@@ -1,0 +1,4 @@
+{
+    "name": "eles.clearQueue",
+    "descr": "Remove all queued animations for the elements."
+}

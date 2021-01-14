@@ -12,6 +12,8 @@ When setting `cy.json({ elements: ... })`
 * the included elements not in the graph are added, and
 * the not included elements are removed from the graph.
 
+Note that updating the Graph elements using `cy.json()` requires all elements to have an ID attribute. Elements that do not have an ID will be ignored.
+
 When setting `cy.json({ style: ... })`
 
 * the entire stylesheet is replaced, and

@@ -238,6 +238,18 @@
                 },
                 {
                     "name": "Graph manipulation",
+                    "fnsOrder": [
+                        "cy.add",
+                        "cy.remove",
+                        "cy.collection",
+                        "cy.getElementById",
+                        "cy.$",
+                        "cy.batch",
+                        "cy.mount",
+                        "cy.unmount",
+                        "cy.destroy",
+                        "cy.destroyed"
+                    ],
                     "fns": [
                         {
                             "name": "cy.add",
@@ -466,21 +478,24 @@
                 },
                 {
                     "name": "Data",
+                    "fnsOrder": [
+                        "cy.data",
+                        "cy.removeData",
+                        "cy.scratch",
+                        "cy.removeScratch"
+                    ],
                     "fns": [
                         {
-                            "name": "cy.data",
                             "pureAliases": [
                                 "cy.attr"
                             ],
+                            "name": "cy.data",
                             "descr": "Read and write developer-defined data associated with the graph.",
-                            "formatsSameFn": true,
                             "formats": [
                                 {
-                                    "name": "cy.data",
                                     "descr": "Get the entire data object."
                                 },
                                 {
-                                    "name": "cy.data",
                                     "descr": "Get a particular data field.",
                                     "args": [
                                         {
@@ -490,7 +505,6 @@
                                     ]
                                 },
                                 {
-                                    "name": "cy.data",
                                     "descr": "Set a particular data field.",
                                     "args": [
                                         {
@@ -504,7 +518,6 @@
                                     ]
                                 },
                                 {
-                                    "name": "cy.data",
                                     "descr": "Update multiple data fields at once via an object.",
                                     "args": [
                                         {
@@ -539,7 +552,7 @@
                         {
                             "name": "cy.scratch",
                             "extFn": true,
-                            "descr": "Set or get scratchpad data, where temporary or non-JSON data can be stored.  App-level scratchpad data should use namespaces prefixed with underscore, like `'_foo'`.  This is analogous to the more common [`ele.scratch()`](#ele.scratch) but for graph global data.",
+                            "descr": "Set or get scratchpad scratch, where temporary or non-JSON scratch can be stored.  App-level scratchpad scratch should use namespaces prefixed with underscore, like `'_foo'`.  This is analogous to the more common [`ele.scratch()`](#ele.scratch) but for graph global scratch.",
                             "formats": [
                                 {
                                     "descr": "Get the entire scratchpad object for the core."
@@ -571,7 +584,7 @@
                         {
                             "name": "cy.removeScratch",
                             "extFn": true,
-                            "descr": "Remove scratchpad data.  You should remove scratchpad data only at your own namespaces.  This is analogous to the more common [`ele.removeScratch()`](#ele.removeScratch) but for graph global data.",
+                            "descr": "Remove scratchpad data. You should remove scratchpad data only at your own namespaces.  This is analogous to the more common [`ele.removeScratch()`](#ele.removeScratch) but for graph global data.",
                             "formats": [
                                 {
                                     "descr": "Remove the scratchpad data at a particular namespace.",
@@ -582,13 +595,21 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "collection/removeScratch"
+                            ]
                         }
                     ]
                 },
                 {
                     "name": "Events",
+                    "fnsOrder": [
+                        "cy.on",
+                        "cy.promiseOn",
+                        "cy.one",
+                        "cy.removeListener",
+                        "cy.removeAllListeners",
+                        "cy.emit",
+                        "cy.ready"
+                    ],
                     "fns": [
                         {
                             "name": "cy.on",
@@ -650,9 +671,10 @@
                         },
                         {
                             "name": "cy.one",
-                            "descr": "Listen to events that occur on the core, and run the handler only once.",
+                            "descr": "Add a listener that is called once per event per element.",
                             "formats": [
                                 {
+                                    "descr": "Determine test function",
                                     "args": [
                                         {
                                             "name": "events",
@@ -660,18 +682,18 @@
                                         },
                                         {
                                             "name": "selector",
-                                            "descr": "A selector to specify elements for which the handler runs.",
+                                            "descr": "A selector to specify child elements for which the handler runs.",
                                             "optional": true
                                         },
                                         {
                                             "name": "function(event)",
-                                            "descr": "The handler function that is called when one of the specified events occurs.",
                                             "fields": [
                                                 {
                                                     "name": "event",
                                                     "descr": "The event object."
                                                 }
-                                            ]
+                                            ],
+                                            "descr": "The handler function that is called when one of the specified events occurs."
                                         }
                                     ]
                                 }
@@ -759,6 +781,31 @@
                 },
                 {
                     "name": "Viewport manipulation",
+                    "fnsOrder": [
+                        "cy.container",
+                        "cy.center",
+                        "cy.fit",
+                        "cy.reset",
+                        "cy.pan",
+                        "cy.panBy",
+                        "cy.panningEnabled",
+                        "cy.userPanningEnabled",
+                        "cy.zoom",
+                        "cy.zoomingEnabled",
+                        "cy.userZoomingEnabled",
+                        "cy.minZoom",
+                        "cy.maxZoom",
+                        "cy.viewport",
+                        "cy.boxSelectionEnabled",
+                        "cy.selectionType",
+                        "cy.width",
+                        "cy.height",
+                        "cy.extent",
+                        "cy.autolock",
+                        "cy.autoungrabify",
+                        "cy.autounselectify",
+                        "cy.resize"
+                    ],
                     "fns": [
                         {
                             "name": "cy.container",
@@ -1142,6 +1189,15 @@
                 },
                 {
                     "name": "Animation",
+                    "fnsOrder":[
+                        "cy.animated",
+                        "cy.animate",
+                        "cy.animation",
+                        "cy.delay",
+                        "cy.delayAnimation",
+                        "cy.stop",
+                        "cy.clearQueue"
+                    ],
                     "fns": [
                         {
                             "name": "cy.animated",
@@ -1376,6 +1432,9 @@
                 },
                 {
                     "name": "Layout",
+                    "fnsOrder":[
+                        "cy.layout"
+                    ],
                     "fns": [
                         {
                             "pureAliases": [
@@ -1401,6 +1460,9 @@
                 },
                 {
                     "name": "Style",
+                    "fnsOrder":[
+                        "cy.style"
+                    ],
                     "fns": [
                         {
                             "name": "cy.style",
@@ -1425,6 +1487,11 @@
                 },
                 {
                     "name": "Export",
+                    "fnsOrder":[
+                        "cy.png",
+                        "cy.jpg",
+                        "cy.json"
+                    ],
                     "fns": [
                         {
                             "name": "cy.png",
@@ -1550,6 +1617,15 @@
             "sections": [
                 {
                     "name": "Graph manipulation",
+                    "fnsOrder":[
+                        "ele.cy",
+                        "eles.remove",
+                        "ele.removed",
+                        "ele.inside",
+                        "eles.restore",
+                        "eles.clone",
+                        "eles.move"
+                    ],
                     "fns": [
                         {
                             "name": "ele.cy",
@@ -1566,7 +1642,7 @@
                         },
                         {
                             "name": "ele.inside",
-                            "descr": "Get whether the element is inside the graph (i.e. not removed)."
+                            "descr": "Get whether the element has been removed from the graph."
                         },
                         {
                             "name": "eles.restore",
@@ -1590,7 +1666,6 @@
                                     "args": [
                                         {
                                             "name": "location",
-                                            "descr": "Where the edges are moved.  You can specify a new source, a new target, or both.",
                                             "fields": [
                                                 {
                                                     "name": "source",
@@ -1600,7 +1675,8 @@
                                                     "name": "target",
                                                     "descr": "The ID of the new target node."
                                                 }
-                                            ]
+                                            ],
+                                            "descr": "Where the edges are moved. You can specify a new source, a new target, or both."
                                         }
                                     ]
                                 },
@@ -1610,31 +1686,47 @@
                                     "args": [
                                         {
                                             "name": "location",
-                                            "descr": "Where the nodes are moved.",
                                             "fields": [
                                                 {
                                                     "name": "parent",
-                                                    "descr": "The ID of the new parent node (use `null` for no parent)."
+                                                    "descr": "The ID of the new parent node (use null for no parent)."
                                                 }
-                                            ]
+                                            ],
+                                            "descr": "Where the nodes are moved."
                                         }
                                     ]
                                 }
                             ],
                             "md": "collection/move"
+                        },
+                        {
+                            "pureAliases": [
+                                "eles.copy"
+                            ],
+                            "name": "ele.clone",
+                            "descr": "Get a new collection containing clones (i.e. copies) of the elements in the calling collection."
                         }
                     ]
                 },
                 {
                     "name": "Events",
+                    "fnsOrder":[
+                        "eles.on",
+                        "eles.promiseOn",
+                        "eles.one",
+                        "eles.once",
+                        "eles.removeListener",
+                        "eles.removeAllListeners",
+                        "eles.emit"
+                    ],
                     "fns": [
                         {
-                            "name": "eles.on",
                             "pureAliases": [
                                 "eles.bind",
                                 "eles.listen",
                                 "eles.addListener"
                             ],
+                            "name": "eles.on",
                             "descr": "Listen to events that occur on the elements.",
                             "formats": [
                                 {
@@ -1650,13 +1742,13 @@
                                         },
                                         {
                                             "name": "function(event)",
-                                            "descr": "The handler function that is called when one of the specified events occurs.",
                                             "fields": [
                                                 {
                                                     "name": "event",
                                                     "descr": "The event object."
                                                 }
-                                            ]
+                                            ],
+                                            "descr": "The handler function that is called when on of the specified events occurs."
                                         }
                                     ]
                                 }
@@ -1691,6 +1783,7 @@
                             "descr": "Add a listener that is called once per event per element.",
                             "formats": [
                                 {
+                                    "descr": "Determine test function",
                                     "args": [
                                         {
                                             "name": "events",
@@ -1703,13 +1796,13 @@
                                         },
                                         {
                                             "name": "function(event)",
-                                            "descr": "The handler function that is called when one of the specified events occurs.",
                                             "fields": [
                                                 {
                                                     "name": "event",
                                                     "descr": "The event object."
                                                 }
-                                            ]
+                                            ],
+                                            "descr": "The handler function that is called when one of the specified events occurs."
                                         }
                                     ]
                                 }
@@ -1718,7 +1811,7 @@
                         },
                         {
                             "name": "eles.once",
-                            "descr": "Add a listener that is called once per event per collection.",
+                            "descr": "Add a listener that is called once per event per element.",
                             "formats": [
                                 {
                                     "args": [
@@ -1733,13 +1826,13 @@
                                         },
                                         {
                                             "name": "function(event)",
-                                            "descr": "The handler function that is called when one of the specified events occurs.",
                                             "fields": [
                                                 {
                                                     "name": "event",
                                                     "descr": "The event object."
                                                 }
-                                            ]
+                                            ],
+                                            "descr": "The handler function that is called when once of the specified events occurs."
                                         }
                                     ]
                                 }
@@ -1747,12 +1840,12 @@
                             "md": "collection/once"
                         },
                         {
-                            "name": "eles.removeListener",
                             "pureAliases": [
                                 "eles.off",
                                 "eles.unbind",
                                 "eles.unlisten"
                             ],
+                            "name": "eles.removeListener",
                             "descr": "Remove one or more listeners on the elements.",
                             "formats": [
                                 {
@@ -1781,10 +1874,10 @@
                             "descr": "Remove all event handlers on the elements."
                         },
                         {
-                            "name": "eles.emit",
                             "pureAliases": [
                                 "eles.trigger"
                             ],
+                            "name": "eles.emit",
                             "descr": "Emit events on the elements.",
                             "formats": [
                                 {
@@ -1802,11 +1895,117 @@
                                 }
                             ],
                             "md": "collection/emit"
+                        },
+                        {
+                            "pureAliases": [
+                                "cy.bind",
+                                "cy.listen",
+                                "cy.addListener"
+                            ],
+                            "name": "cy.on",
+                            "descr": "Listen to events that occur on the elements.",
+                            "formats": [
+                                {
+                                    "args": [
+                                        {
+                                            "name": "events",
+                                            "descr": "A space separated list of event names."
+                                        },
+                                        {
+                                            "name": "selector",
+                                            "descr": " A selector to specify elements for which the handler runs.",
+                                            "optional": true
+                                        },
+                                        {
+                                            "name": "function(event)",
+                                            "fields": [
+                                                {
+                                                    "name": "event",
+                                                    "descr": "The event object."
+                                                }
+                                            ],
+                                            "descr": "The handler function that is called when on of the specified events occurs."
+                                        }
+                                    ]
+                                }
+                            ],
+                            "md": "cy/on"
+                        },
+                        {
+                            "pureAliases": [
+                                "cy.off",
+                                "cy.unbind",
+                                "cy.unlisten"
+                            ],
+                            "name": "cy.removeListener",
+                            "descr": "Remove one or more listeners on the elements.",
+                            "formats": [
+                                {
+                                    "args": [
+                                        {
+                                            "name": "events",
+                                            "descr": "A space separated list of event names."
+                                        },
+                                        {
+                                            "name": "selector",
+                                            "descr": "The same selector used to listen to the events.",
+                                            "optional": true
+                                        },
+                                        {
+                                            "name": "handler",
+                                            "descr": "A reference to the handler function to remove.",
+                                            "optional": true
+                                        }
+                                    ]
+                                }
+                            ],
+                            "md": "cy/removeListener"
+                        },
+                        {
+                            "name": "cy.removeAllListeners",
+                            "descr": "Remove all event handlers on the elements."
+                        },
+                        {
+                            "pureAliases": [
+                                "cy.trigger"
+                            ],
+                            "name": "cy.emit",
+                            "descr": "Emit one or more events.",
+                            "formats": [
+                                {
+                                    "args": [
+                                        {
+                                            "name": "events",
+                                            "descr": "A list of event names to emit (either a space-separated string or an array)"
+                                        },
+                                        {
+                                            "name": "extraParams",
+                                            "descr": "An array of additional parameters to pass to the handler.",
+                                            "optional": true
+                                        }
+                                    ]
+                                }
+                            ],
+                            "md": "cy/emit"
                         }
                     ]
                 },
                 {
                     "name": "Data",
+                    "fnsOrder":[
+                        "eles.data",
+                        "eles.removeData",
+                        "ele.scratch",
+                        "ele.removeScratch",
+                        "ele.id",
+                        "ele.json",
+                        "eles.jsons",
+                        "ele.group",
+                        "ele.isNode",
+                        "ele.isEdge",
+                        "edge.isLoop",
+                        "edge.isSimple"
+                    ],
                     "fns": [
                         {
                             "name": "eles.data",
@@ -1858,10 +2057,10 @@
                             "md": "collection/data"
                         },
                         {
-                            "name": "eles.removeData",
                             "pureAliases": [
                                 "eles.removeAttr"
                             ],
+                            "name": "eles.removeData",
                             "descr": "Remove developer-defined data associated with the elements.",
                             "formats": [
                                 {
@@ -1915,7 +2114,7 @@
                         {
                             "name": "ele.removeScratch",
                             "extFn": true,
-                            "descr": "Remove scratchpad data.  You should remove scratchpad data only at your own namespaces.",
+                            "descr": "Remove scratchpad data. You should remove scratchpad data only at your own namespaces.",
                             "formats": [
                                 {
                                     "descr": "Remove the scratchpad data at a particular namespace.",
@@ -1926,7 +2125,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "collection/removeScratch"
                         },
                         {
                             "name": "ele.id",
@@ -2003,9 +2203,13 @@
                 },
                 {
                     "name": "Metadata",
+                    "fnsOrder":[
+                        "node.degree"
+                    ],
                     "fns": [
                         {
                             "name": "node.degree",
+                            "descr": "Get the degree of a node.",
                             "formats": [
                                 {
                                     "name": "node.degree",
@@ -2114,6 +2318,28 @@
                 },
                 {
                     "name": "Position & dimensions",
+                    "fnsOrder":[
+                        "node.position",
+                        "nodes.shift",
+                        "nodes.position",
+                        "node.renderedPosition",
+                        "node.relativePosition",
+                        "ele.width",
+                        "ele.height",
+                        "eles.boundingBox",
+                        "eles.renderedBoundingBox",
+                        "node.grabbed",
+                        "node.grabbable",
+                        "nodes.grabify",
+                        "nodes.ungrabify",
+                        "node.locked",
+                        "nodes.lock",
+                        "nodes.unlock",
+                        "ele.active",
+                        "ele.pannable",
+                        "eles.panify",
+                        "eles.unpanify"
+                    ],
                     "fns": [
                         {
                             "name": "node.position",
@@ -2514,6 +2740,13 @@
                 },
                 {
                     "name": "Edge points",
+                    "fnsOrder":[
+                        "edge.controlPoints",
+                        "edge.segmentPoints",
+                        "edge.sourceEndpoint",
+                        "edge.targetEndpoint",
+                        "edge.midpoint"
+                    ],
                     "fns": [
                         {
                             "name": "edge.controlPoints",
@@ -2592,6 +2825,11 @@
                 },
                 {
                     "name": "Layout",
+                    "fnsOrder":[
+                        "eles.layout",
+                        "nodes.layoutPositions",
+                        "node.layoutDimensions"
+                    ],
                     "fns": [
                         {
                             "pureAliases": [
@@ -2615,7 +2853,7 @@
                         },
                         {
                             "name": "nodes.layoutPositions",
-                            "extFn": "true",
+                            "extFn": true,
                             "descr": "Position the nodes for a discrete/synchronous layout.",
                             "formats": [
                                 {
@@ -2650,7 +2888,7 @@
                         },
                         {
                             "name": "node.layoutDimensions",
-                            "extFn": "true",
+                            "extFn": true,
                             "descr": "Get the node width and height. This function is intended for use in layout positioning to do overlap detection.",
                             "formats": [
                                 {
@@ -2756,6 +2994,14 @@
                 },
                 {
                     "name": "Selection",
+                    "fnsOrder":[
+                        "ele.selected",
+                        "eles.select",
+                        "eles.unselect",
+                        "ele.selectable",
+                        "eles.selectify",
+                        "eles.unselectify"
+                    ],
                     "fns": [
                         {
                             "name": "ele.selected",
@@ -2792,6 +3038,20 @@
                 },
                 {
                     "name": "Style",
+                    "fnsOrder":[
+                        "eles.addClass",
+                        "eles.removeClass",
+                        "eles.toggleClass",
+                        "eles.classes",
+                        "eles.flashClass",
+                        "ele.hasClass",
+                        "eles.style",
+                        "ele.numericStyle",
+                        "ele.numericStyleUnits",
+                        "ele.visible",
+                        "ele.effectiveOpacity",
+                        "ele.transparent"
+                    ],
                     "fns": [
                         {
                             "name": "eles.addClass",
@@ -3057,10 +3317,9 @@
                                     "args": [
                                         {
                                             "name": "options",
-                                            "descr": "An object containing the details of the animation.",
                                             "fields": [
                                                 {
-                                                    "name": "position",
+                                                    "name": "options",
                                                     "descr": "A position to which the elements will be animated."
                                                 },
                                                 {
@@ -3081,7 +3340,7 @@
                                                 },
                                                 {
                                                     "name": "easing",
-                                                    "descr": "A [`transition-timing-function`](#style/transition-animation) easing style string that shapes the animation progress curve."
+                                                    "descr": "A `transition-timing-function` easing style string that shapes the animation progress curve."
                                                 },
                                                 {
                                                     "name": "complete",
@@ -3091,7 +3350,8 @@
                                                     "name": "step",
                                                     "descr": "A function to call each time the animation steps."
                                                 }
-                                            ]
+                                            ],
+                                            "descr": "An object containing the details of the animation."
                                         }
                                     ]
                                 }
@@ -3106,10 +3366,9 @@
                                     "args": [
                                         {
                                             "name": "options",
-                                            "descr": "An object containing the details of the animation.",
                                             "fields": [
                                                 {
-                                                    "name": "position",
+                                                    "name": "options",
                                                     "descr": "A position to which the elements will be animated."
                                                 },
                                                 {
@@ -3126,7 +3385,7 @@
                                                 },
                                                 {
                                                     "name": "easing",
-                                                    "descr": "A [`transition-timing-function`](#style/transition-animation) easing style string that shapes the animation progress curve."
+                                                    "descr": "A `transition-timing-function` easing style string that shapes the animation progress curve."
                                                 },
                                                 {
                                                     "name": "complete",
@@ -3136,7 +3395,8 @@
                                                     "name": "step",
                                                     "descr": "A function to call each time the animation steps."
                                                 }
-                                            ]
+                                            ],
+                                            "descr": "An object containing the details of the animation."
                                         }
                                     ]
                                 }
@@ -3196,6 +3456,10 @@
                         },
                         {
                             "name": "eles.clearQueue",
+                            "descr": "Remove all queued animations for the elements."
+                        },
+                        {
+                            "name": "eles.animated",
                             "descr": "Remove all queued animations for the elements."
                         }
                     ]
@@ -3721,10 +3985,11 @@
                             "descr": "Get a new collection containing elements that are accepted by the specified filter function or selector.",
                             "formats": [
                                 {
+                                    "name": "eles.filter",
+                                    "descr": "Determine test function",
                                     "args": [
                                         {
-                                            "name": "function(ele, i, eles)",
-                                            "descr": "The filter function that returns truthy values for elements to include and falsey values for elements to exclude.",
+                                            "name": "function(ele,i,eles)",
                                             "fields": [
                                                 {
                                                     "name": "ele",
@@ -3736,14 +4001,15 @@
                                                 },
                                                 {
                                                     "name": "eles",
-                                                    "descr": "The collection of elements being filtered."
+                                                    "descr": "The collection of elements being mapped."
                                                 }
-                                            ]
+                                            ],
+                                            "descr": "The function that returns the filterped value for each element."
                                         },
                                         {
                                             "name": "thisArg",
                                             "descr": "The value for `this` within the iterating function.",
-                                            "optional": "true"
+                                            "optional": true
                                         }
                                     ]
                                 },
@@ -3955,9 +4221,6 @@
                             "formats": [
                                 {
                                     "name": "eles.neighborhood",
-                                    "pureAliases": [
-                                        "eles.neighbourhood"
-                                    ],
                                     "descr": "Get the open neighbourhood of the elements.",
                                     "args": [
                                         {
@@ -3969,9 +4232,6 @@
                                 },
                                 {
                                     "name": "eles.openNeighborhood",
-                                    "pureAliases": [
-                                        "eles.openNeighbourhood"
-                                    ],
                                     "descr": "Get the open neighbourhood of the elements.",
                                     "args": [
                                         {
@@ -3983,9 +4243,6 @@
                                 },
                                 {
                                     "name": "eles.closedNeighborhood",
-                                    "pureAliases": [
-                                        "eles.closedNeighbourhood"
-                                    ],
                                     "descr": "Get the closed neighbourhood of the elements.",
                                     "args": [
                                         {
@@ -4024,7 +4281,7 @@
                         },
                         {
                             "name": "nodes.edgesWith",
-                            "descr": "Get the edges connecting the collection to another collection.  Direction of the edges does not matter.",
+                            "descr": "Get the edges connecting the collection to another collection. Direction of the edges does not matter.",
                             "formats": [
                                 {
                                     "args": [
@@ -4331,6 +4588,20 @@
                                 }
                             ],
                             "md": "collection/targets"
+                        },
+                        {
+                            "name": "ele.visible",
+                            "descr": "Get the nodes connected to the ele in the collection.",
+                            "formats": [
+                                {
+                                    "name": "ele.visible",
+                                    "descr": "Get whether the element is visible."
+                                },
+                                {
+                                    "name": "ele.hidden",
+                                    "descr": "Get whether the element is hidden."
+                                }
+                            ]
                         }
                     ]
                 },

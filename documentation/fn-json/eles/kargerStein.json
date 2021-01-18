@@ -1,0 +1,5 @@
+{
+    "name": "eles.kargerStein",
+    "descr": "Finds the minimum cut in a graph using the [Karger-Stein](https://en.wikipedia.org/wiki/Karger%27s_algorithm#Karger.E2.80.93Stein_algorithm) algorithm. The optimal result is found with a high probability, but without guarantee.",
+    "md": "collection/kargerStein"
+}

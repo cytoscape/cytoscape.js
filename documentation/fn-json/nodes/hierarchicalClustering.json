@@ -1,0 +1,34 @@
+{
+    "name": "nodes.hierarchicalClustering",
+    "pureAliases": ["nodes.hca"],
+    "descr": "Considering only the elements in the calling collection, calculate the agglomerative [hierarchical clustering](https://en.wikipedia.org/wiki/Hierarchical_clustering) of the nodes.",
+    "formats": [
+      {
+        "args": [
+          { "name": "options", "fields": [
+            { "name": "attributes: [ function( node ) ... ]", "descr": "An array of attribute functions, each of which returns a numeric attribute value for the specified node.  Attributes are used to cluster the nodes; i.e. two nodes with similar attributes tend to be in the same cluster.  Each attribute may have to be normalised in order for the chosen distance metric to make sense.  Attributes must be specified unless a custom `distance: function( nodeP, nodeQ )` is specified." },
+            { "name": "distance", "descr": "The distance classifier used to compare attribute vectors.  It is optional if attributes are specified.  It may take on one of several values:", "fields": [
+              { "name": "'euclidean'", "descr": "[Euclidean distance](https://en.wikipedia.org/wiki/Euclidean_distance) (default)" },
+              { "name": "'squaredEuclidean'", "descr": "[Squared Euclidean distance](https://en.wikipedia.org/wiki/Euclidean_distance#Squared_Euclidean_distance)" },
+              { "name": "'manhattan'", "descr": "[Manhattan distance](https://en.wikipedia.org/wiki/Taxicab_geometry)" },
+              { "name": "'max'", "descr": "[Max distance](https://en.wikipedia.org/wiki/Uniform_norm)" },
+              { "name": "function( length, getPAt, getQAt[, nodeP, nodeQ] )", "descr": "A custom function that returns the distance between attribute vectors `p` and `q`.", "fields": [
+                { "name": "length", "descr": "The length of the vectors." },
+                { "name": "getPAt(i)", "descr": "A function that returns the ith value of the `p` vector." },
+                { "name": "getQAt(i)", "descr": "A function that returns the ith value of the `q` vector." },
+                { "name": "nodeP", "optional": true, "descr": "An optionally-used reference to the node associated with the `p` attribute vector.  It is useful for affecting the weights with information outside of the attributes, such as connectivity." },
+                { "name": "nodeQ", "optional": true, "descr": "An optionally-used reference to the node associated with the `q` attribute vector.  It is useful for affecting the weights with information outside of the attributes, such as connectivity." }
+              ] },
+              { "name": "function( nodeP, nodeQ )", "descr": "A custom function that returns the distance between `nodeP` and `nodeQ`.  This allows for specifying the distance matrix directly, forgoing attributes." }
+            ] },
+            { "name": "linkage", "optional": true, "descr": "The [linkage criterion](https://en.wikipedia.org/wiki/Hierarchical_clustering#Linkage_criteria) for measuring the distance between two clusters; may be one of `'mean'`, `'min'` (a.k.a. `'single'`, default), `'max'` (a.k.a. `'complete'`)." },
+            { "name": "mode", "descr": "The mode of the algorithm.  For `'threshold'` (default), clusters are merged until they are at least the specified distance apart.  For `'dendrogram'`, the clusters are recursively merged using the branches in a [dendrogram](https://en.wikipedia.org/wiki/Dendrogram) (tree) structure beyond a specified depth." },
+            { "name": "threshold", "descr": "In `mode: 'threshold'`, distance threshold for stopping the algorithm.  All pairs of the returned clusters are at least `threshold` distance apart.  Without specifying this value for `mode: 'threshold'`, all clusters will eventually be merged into a single cluster." },
+            { "name": "dendrogramDepth", "descr": "In `mode: 'dendrogram'`, the depth beyond which branches are merged in the tree.  For example, a value of 0 (default) results in all branches being merged into a single cluster." },
+            { "name": "addDendrogram", "optional": true, "descr": "In `mode: 'dendrogram'`, whether to add nodes and edges to the graph for the dendrogram (default `false`).  This is not necessary to run the algorithm, but it is useful for visualising the results." }
+          ] }
+        ]
+      }
+    ],
+    "md": "collection/hierarchicalClustering"
+  }

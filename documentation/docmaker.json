@@ -1189,7 +1189,7 @@
                 },
                 {
                     "name": "Animation",
-                    "fnsOrder":[
+                    "fnsOrder": [
                         "cy.animated",
                         "cy.animate",
                         "cy.animation",
@@ -1432,7 +1432,7 @@
                 },
                 {
                     "name": "Layout",
-                    "fnsOrder":[
+                    "fnsOrder": [
                         "cy.layout"
                     ],
                     "fns": [
@@ -1460,7 +1460,7 @@
                 },
                 {
                     "name": "Style",
-                    "fnsOrder":[
+                    "fnsOrder": [
                         "cy.style"
                     ],
                     "fns": [
@@ -1487,7 +1487,7 @@
                 },
                 {
                     "name": "Export",
-                    "fnsOrder":[
+                    "fnsOrder": [
                         "cy.png",
                         "cy.jpg",
                         "cy.json"
@@ -1617,7 +1617,7 @@
             "sections": [
                 {
                     "name": "Graph manipulation",
-                    "fnsOrder":[
+                    "fnsOrder": [
                         "ele.cy",
                         "eles.remove",
                         "ele.removed",
@@ -1710,7 +1710,7 @@
                 },
                 {
                     "name": "Events",
-                    "fnsOrder":[
+                    "fnsOrder": [
                         "eles.on",
                         "eles.promiseOn",
                         "eles.one",
@@ -1992,7 +1992,7 @@
                 },
                 {
                     "name": "Data",
-                    "fnsOrder":[
+                    "fnsOrder": [
                         "eles.data",
                         "eles.removeData",
                         "ele.scratch",
@@ -2203,7 +2203,7 @@
                 },
                 {
                     "name": "Metadata",
-                    "fnsOrder":[
+                    "fnsOrder": [
                         "node.degree"
                     ],
                     "fns": [
@@ -2318,7 +2318,7 @@
                 },
                 {
                     "name": "Position & dimensions",
-                    "fnsOrder":[
+                    "fnsOrder": [
                         "node.position",
                         "nodes.shift",
                         "nodes.position",
@@ -2740,7 +2740,7 @@
                 },
                 {
                     "name": "Edge points",
-                    "fnsOrder":[
+                    "fnsOrder": [
                         "edge.controlPoints",
                         "edge.segmentPoints",
                         "edge.sourceEndpoint",
@@ -2825,7 +2825,7 @@
                 },
                 {
                     "name": "Layout",
-                    "fnsOrder":[
+                    "fnsOrder": [
                         "eles.layout",
                         "nodes.layoutPositions",
                         "node.layoutDimensions"
@@ -2994,7 +2994,7 @@
                 },
                 {
                     "name": "Selection",
-                    "fnsOrder":[
+                    "fnsOrder": [
                         "ele.selected",
                         "eles.select",
                         "eles.unselect",
@@ -3038,7 +3038,7 @@
                 },
                 {
                     "name": "Style",
-                    "fnsOrder":[
+                    "fnsOrder": [
                         "eles.addClass",
                         "eles.removeClass",
                         "eles.toggleClass",
@@ -3304,7 +3304,7 @@
                 },
                 {
                     "name": "Animation",
-                    "fnsOrder":[
+                    "fnsOrder": [
                         "ele.animated",
                         "eles.animate",
                         "ele.animation",
@@ -3475,7 +3475,7 @@
                 },
                 {
                     "name": "Comparison",
-                    "fnsOrder":[
+                    "fnsOrder": [
                         "eles.same",
                         "eles.anySame",
                         "eles.contains",
@@ -3662,7 +3662,7 @@
                 },
                 {
                     "name": "Iteration",
-                    "fnsOrder":[
+                    "fnsOrder": [
                         "eles.size",
                         "eles.empty",
                         "eles.forEach",
@@ -3786,7 +3786,7 @@
                 },
                 {
                     "name": "Building & filtering",
-                    "fnsOrder":[
+                    "fnsOrder": [
                         "eles.getElementById",
                         "eles.union",
                         "eles.absoluteComplement",
@@ -4257,7 +4257,7 @@
                 },
                 {
                     "name": "Traversing",
-                    "fnsOrder":[
+                    "fnsOrder": [
                         "eles.neighborhood",
                         "eles.components",
                         "nodes.edgesWith",
@@ -4670,7 +4670,7 @@
                 },
                 {
                     "name": "Search",
-                    "fnsOrder":[
+                    "fnsOrder": [
                         "eles.breadthFirstSearch",
                         "eles.depthFirstSearch",
                         "eles.dijkstra",
@@ -4946,7 +4946,7 @@
                 },
                 {
                     "name": "Spanning",
-                    "fnsOrder":[
+                    "fnsOrder": [
                         "eles.kruskal"
                     ],
                     "fns": [
@@ -4970,7 +4970,7 @@
                 },
                 {
                     "name": "Cut",
-                    "fnsOrder":[
+                    "fnsOrder": [
                         "eles.kargerStein",
                         "eles.hopcroftTarjanBiconnected",
                         "eles.tarjanStronglyConnected"
@@ -4982,22 +4982,22 @@
                             "md": "collection/kargerStein"
                         },
                         {
-                            "name": "eles.hopcroftTarjanBiconnected",
                             "pureAliases": [
                                 "eles.hopcroftTarjanBiconnectedComponents",
                                 "eles.htb",
                                 "eles.htbc"
                             ],
+                            "name": "eles.hopcroftTarjanBiconnected",
                             "descr": "Finds the [biconnected components](https://en.wikipedia.org/wiki/Biconnected_component) in an undirected graph, as well as their respective cut vertices, using an algorithm due to Hopcroft and Tarjan.",
                             "md": "collection/hopcroftTarjanBiconnected"
                         },
                         {
-                            "name": "eles.tarjanStronglyConnected",
                             "pureAliases": [
                                 "eles.tarjanStronglyConnectedComponents",
                                 "eles.tsc",
                                 "eles.tscc"
                             ],
+                            "name": "eles.tarjanStronglyConnected",
                             "descr": "Finds the [strongly connected components](https://en.wikipedia.org/wiki/Strongly_connected_component) of a directed graph using Tarjan's algorithm.",
                             "md": "collection/tarjanStronglyConnected"
                         }
@@ -5005,7 +5005,7 @@
                 },
                 {
                     "name": "Centrality",
-                    "fnsOrder":[
+                    "fnsOrder": [
                         "eles.degreeCentrality",
                         "eles.degreeCentralityNormalized",
                         "eles.closenessCentrality",
@@ -5224,7 +5224,7 @@
                 },
                 {
                     "name": "Clustering",
-                    "fnsOrder":[
+                    "fnsOrder": [
                         "eles.markovClustering",
                         "nodes.kMeans",
                         "nodes.kMedoids",
@@ -5729,7 +5729,7 @@
                 {
                     "name": "Compound nodes",
                     "md": "collection/compoundNodes",
-                    "fnsOrder":[
+                    "fnsOrder": [
                         "node.isParent",
                         "node.isChildless",
                         "node.isChild",
@@ -5978,7 +5978,7 @@
                 {
                     "name": "Layout manipulation",
                     "md": "layout/manipulation",
-                    "fnsOrder":[
+                    "fnsOrder": [
                         "lyout.run",
                         "layout.stop"
                     ],
@@ -6001,7 +6001,7 @@
                 {
                     "name": "Layout events",
                     "md": "layout/events",
-                    "fnsOrder":[
+                    "fnsOrder": [
                         "layout.on",
                         "layout.promiseOn",
                         "layout.one",
@@ -6156,7 +6156,7 @@
             "sections": [
                 {
                     "name": "Animation manipulation",
-                    "fnsOrder":[
+                    "fnsOrder": [
                         "ani.play",
                         "ani.playing",
                         "ani.progress",

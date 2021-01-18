@@ -126,7 +126,7 @@ for(var i in words)
             func.descr = words[i].description;
             func.formats = [];
             
-            if(words[i].params != undefined)
+            if(words[i].params != undefined && words[i].params[0] != undefined)
             {
                 var descr = words[i].params[0].description.split(" | ");
                 for( var j in descr)

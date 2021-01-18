@@ -1,3 +1,10 @@
+  /**
+ * Finds the [strongly connected components](https://en.wikipedia.org/wiki/Strongly_connected_component) of a directed graph using Tarjan's algorithm.
+ * @memberof eles
+ * @path Collection/Cut
+ * @pureAliases eles.tarjanStronglyConnectedComponents|eles.tsc|eles.tscc
+ * @methodName eles.tarjanStronglyConnected
+ */
 let tarjanStronglyConnected = function() {
 
   let eles = this;

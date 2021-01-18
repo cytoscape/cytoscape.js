@@ -1,0 +1,10 @@
+{
+    "pureAliases": [
+        "eles.hopcroftTarjanBiconnectedComponents",
+        "eles.htb",
+        "eles.htbc"
+    ],
+    "name": "eles.hopcroftTarjanBiconnected",
+    "descr": "Finds the [biconnected components](https://en.wikipedia.org/wiki/Biconnected_component) in an undirected graph, as well as their respective cut vertices, using an algorithm due to Hopcroft and Tarjan.",
+    "md": "collection/hopcroftTarjanBiconnected"
+}

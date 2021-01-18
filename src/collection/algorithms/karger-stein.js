@@ -73,6 +73,13 @@ const elesfn = ({
 
   // Computes the minimum cut of an undirected graph
   // Returns the correct answer with high probability
+
+    /**
+ * Finds the minimum cut in a graph using the [Karger-Stein](https://en.wikipedia.org/wiki/Karger%27s_algorithm#Karger.E2.80.93Stein_algorithm) algorithm. The optimal result is found with a high probability, but without guarantee.
+ * @memberof eles
+ * @path Collection/Cut
+ * @methodName eles.kargerStein
+ */
   kargerStein: function(){
     let { nodes, edges } = this.byGroup();
     edges.unmergeBy(edge => edge.isLoop());

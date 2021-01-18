@@ -1,0 +1,10 @@
+{
+    "pureAliases": [
+        "eles.tarjanStronglyConnectedComponents",
+        "eles.tsc",
+        "eles.tscc"
+    ],
+    "name": "eles.tarjanStronglyConnected",
+    "descr": "Finds the [strongly connected components](https://en.wikipedia.org/wiki/Strongly_connected_component) of a directed graph using Tarjan's algorithm.",
+    "md": "collection/tarjanStronglyConnected"
+}

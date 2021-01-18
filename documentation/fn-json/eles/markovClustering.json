@@ -1,0 +1,19 @@
+{
+    "name": "eles.markovClustering",
+    "pureAliases": ["eles.mcl"],
+    "descr": "Considering only the elements in the calling collection, run the [Markov cluster algorithm](https://micans.org/mcl/) of the nodes.",
+    "formats": [
+      {
+        "args": [
+          { "name": "options", "fields": [
+            { "name": "attributes: [ function(edge) ... ]", "descr": "An array of attribute functions, each of which returns a numeric attribute value for the specified edge.  Attributes are used to cluster the nodes; i.e. the attributes of an edge indicate similarity between its nodes." },
+            { "name": "expandFactor", "descr": "A number that affects time of computation and cluster granularity to some extent: `M * M` (default `2`)", "optional": true },
+            { "name": "inflateFactor", "descr": "A number that affects cluster granularity (the greater the value, the more clusters): `M(i,j) / E(j)` (default `2`)", "optional": true },
+            { "name": "multFactor", "descr": "Optional number of self loops for each node. Use a neutral value to improve cluster computations (default `1`).", "optional": true },
+            { "name": "maxIterations", "descr": "Maximum number of iterations of the MCL algorithm in a single run (default `20`).", "optional": true }
+          ] }
+        ]
+      }
+    ],
+    "md": "collection/markovClustering"
+  }

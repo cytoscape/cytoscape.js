@@ -3304,6 +3304,15 @@
                 },
                 {
                     "name": "Animation",
+                    "fnsOrder":[
+                        "ele.animated",
+                        "eles.animate",
+                        "ele.animation",
+                        "eles.delay",
+                        "ele.delayAnimation",
+                        "eles.stop",
+                        "eles.clearQueue"
+                    ],
                     "fns": [
                         {
                             "name": "ele.animated",
@@ -3466,6 +3475,16 @@
                 },
                 {
                     "name": "Comparison",
+                    "fnsOrder":[
+                        "eles.same",
+                        "eles.anySame",
+                        "eles.contains",
+                        "eles.allAreNeighbors",
+                        "eles.is",
+                        "eles.allAre",
+                        "eles.some",
+                        "eles.every"
+                    ],
                     "fns": [
                         {
                             "name": "eles.same",
@@ -3643,6 +3662,14 @@
                 },
                 {
                     "name": "Iteration",
+                    "fnsOrder":[
+                        "eles.size",
+                        "eles.empty",
+                        "eles.forEach",
+                        "eles.eq",
+                        "eles.slice",
+                        "eles.toArray"
+                    ],
                     "fns": [
                         {
                             "name": "eles.size",
@@ -3759,6 +3786,22 @@
                 },
                 {
                     "name": "Building & filtering",
+                    "fnsOrder":[
+                        "eles.getElementById",
+                        "eles.union",
+                        "eles.absoluteComplement",
+                        "eles.intersection",
+                        "eles.symmetricDifference",
+                        "eles.diff",
+                        "eles.merge",
+                        "eles.unmerge",
+                        "eles.filter",
+                        "eles.sort",
+                        "eles.map",
+                        "eles.reduce",
+                        "eles.min",
+                        "eles.max"
+                    ],
                     "fns": [
                         {
                             "name": "eles.getElementById",
@@ -4214,6 +4257,26 @@
                 },
                 {
                     "name": "Traversing",
+                    "fnsOrder":[
+                        "eles.neighborhood",
+                        "eles.components",
+                        "nodes.edgesWith",
+                        "nodes.edgesTo",
+                        "edges.connectedNodes",
+                        "nodes.connectedEdges",
+                        "edge.source",
+                        "edges.sources",
+                        "edge.target",
+                        "edges.targets",
+                        "edges.parallelEdges",
+                        "edges.codirectedEdges",
+                        "nodes.roots",
+                        "nodes.leaves",
+                        "nodes.outgoers",
+                        "nodes.successors",
+                        "nodes.incomers",
+                        "nodes.predecessors"
+                    ],
                     "fns": [
                         {
                             "name": "eles.neighborhood",
@@ -4607,6 +4670,15 @@
                 },
                 {
                     "name": "Search",
+                    "fnsOrder":[
+                        "eles.breadthFirstSearch",
+                        "eles.depthFirstSearch",
+                        "eles.dijkstra",
+                        "eles.aStar",
+                        "eles.floydWarshall",
+                        "eles.bellmanFord",
+                        "eles.hierholzer"
+                    ],
                     "md": "collection/algorithms",
                     "fns": [
                         {
@@ -4874,6 +4946,9 @@
                 },
                 {
                     "name": "Spanning",
+                    "fnsOrder":[
+                        "eles.kruskal"
+                    ],
                     "fns": [
                         {
                             "name": "eles.kruskal",
@@ -4895,6 +4970,11 @@
                 },
                 {
                     "name": "Cut",
+                    "fnsOrder":[
+                        "eles.kargerStein",
+                        "eles.hopcroftTarjanBiconnected",
+                        "eles.tarjanStronglyConnected"
+                    ],
                     "fns": [
                         {
                             "name": "eles.kargerStein",
@@ -4925,6 +5005,14 @@
                 },
                 {
                     "name": "Centrality",
+                    "fnsOrder":[
+                        "eles.degreeCentrality",
+                        "eles.degreeCentralityNormalized",
+                        "eles.closenessCentrality",
+                        "eles.closenessCentralityNormalized",
+                        "eles.betweennessCentrality",
+                        "eles.pageRank"
+                    ],
                     "fns": [
                         {
                             "name": "eles.degreeCentrality",
@@ -5136,6 +5224,14 @@
                 },
                 {
                     "name": "Clustering",
+                    "fnsOrder":[
+                        "eles.markovClustering",
+                        "nodes.kMeans",
+                        "nodes.kMedoids",
+                        "nodes.fuzzyCMeans",
+                        "nodes.hierarchicalClustering",
+                        "nodes.affinityPropagation"
+                    ],
                     "fns": [
                         {
                             "name": "eles.markovClustering",
@@ -5633,6 +5729,20 @@
                 {
                     "name": "Compound nodes",
                     "md": "collection/compoundNodes",
+                    "fnsOrder":[
+                        "node.isParent",
+                        "node.isChildless",
+                        "node.isChild",
+                        "node.isOrphan",
+                        "nodes.parent",
+                        "nodes.ancestors",
+                        "nodes.commonAncestors",
+                        "nodes.orphans",
+                        "nodes.nonorphans",
+                        "nodes.children",
+                        "nodes.descendants",
+                        "nodes.siblings"
+                    ],
                     "fns": [
                         {
                             "name": "node.isParent",
@@ -5868,6 +5978,10 @@
                 {
                     "name": "Layout manipulation",
                     "md": "layout/manipulation",
+                    "fnsOrder":[
+                        "lyout.run",
+                        "layout.stop"
+                    ],
                     "fns": [
                         {
                             "pureAliases": [
@@ -5887,6 +6001,14 @@
                 {
                     "name": "Layout events",
                     "md": "layout/events",
+                    "fnsOrder":[
+                        "layout.on",
+                        "layout.promiseOn",
+                        "layout.one",
+                        "layout.removeListener",
+                        "layout.removeAllListeners",
+                        "layout.emit"
+                    ],
                     "fns": [
                         {
                             "pureAliases": [
@@ -6034,6 +6156,18 @@
             "sections": [
                 {
                     "name": "Animation manipulation",
+                    "fnsOrder":[
+                        "ani.play",
+                        "ani.playing",
+                        "ani.progress",
+                        "ani.pause",
+                        "ani.stop",
+                        "ani.completed",
+                        "ani.apply",
+                        "ani.applying",
+                        "ani.reverse",
+                        "ani.promise"
+                    ],
                     "fns": [
                         {
                             "pureAliases": [

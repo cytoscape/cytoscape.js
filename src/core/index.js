@@ -332,6 +332,12 @@ util.extend( corefn, {
 
           for( let i = 0; i < jsons.length; i++ ){
             let json = jsons[ i ];
+
+            if( !json.data.id ){
+              util.warn( 'cy.json() cannot handle elements without an ID attribute' );
+              continue;
+            }
+
             let id = '' + json.data.id; // id must be string
             let ele = cy.getElementById( id );
 

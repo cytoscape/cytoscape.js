@@ -22,7 +22,7 @@ RandomLayout.prototype.run = function(){
   let options = this.options;
   let cy = options.cy;
   let eles = options.eles;
-  let nodes = eles.nodes().not( ':parent' );
+
 
   let bb = math.makeBoundingBox( options.boundingBox ? options.boundingBox : {
     x1: 0, y1: 0, w: cy.width(), h: cy.height()
@@ -35,7 +35,7 @@ RandomLayout.prototype.run = function(){
     };
   };
 
-  nodes.layoutPositions( this, options, getPos );
+  eles.nodes().layoutPositions( this, options, getPos );
 
   return this; // chaining
 };

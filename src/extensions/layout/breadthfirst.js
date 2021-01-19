@@ -349,7 +349,7 @@ BreadthFirstLayout.prototype.run = function(){
 
   };
 
-  nodes.layoutPositions( this, options, getPosition );
+  eles.nodes().layoutPositions( this, options, getPosition );
 
   return this; // chaining
 };

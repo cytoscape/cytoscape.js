@@ -1,0 +1,4 @@
+{
+    "name": "cy.animated",
+    "descr": "Get whether the viewport is currently being animated."
+}

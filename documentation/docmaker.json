@@ -1178,10 +1178,10 @@
                             "md": "cy/autounselectify"
                         },
                         {
-                            "name": "cy.resize",
                             "pureAliases": [
                                 "cy.invalidateDimensions"
                             ],
+                            "name": "cy.resize",
                             "descr": "Force the renderer to recalculate the viewport bounds.",
                             "md": "cy/resize"
                         }
@@ -1393,7 +1393,7 @@
                         },
                         {
                             "name": "cy.delayAnimation",
-                            "descr": "Get a delay [animation](#animations) of the viewport.",
+                            "descr": "Get a delay [animation](#animations) for the element.",
                             "formats": [
                                 {
                                     "args": [

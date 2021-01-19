@@ -7,11 +7,74 @@ let corefn = ({
   // pull in animation functions
   animate: define.animate(),
   animation: define.animation(),
+     /**
+ * Get whether the viewport is currently being animated.
+ * @memberof cy
+ * @path Core/Animation
+ * @methodName cy.animated
+ */
   animated: define.animated(),
   clearQueue: define.clearQueue(),
+
+/**
+ * @typedef {object} cy_delay_type
+ * @property {object} duration - How long the delay should be in milliseconds.
+ * @property {object} complete - A function to call when the delay is complete.
+ */
+
+/**
+ * @typedef {object} cy_delay
+ * @property {object} cy_delay_type
+ */
+
+  /**
+ * Add a delay between queued animations for the viewport.
+ * @memberof cy
+ * @path Core/Animation
+ * @param {...cy_delay} events - NULL
+ * @methodName cy.delay
+ */
   delay: define.delay(),
+
+/**
+ * @typedef {object} cy_delayAnimation
+ * @property {object} duration How long the delay should be in milliseconds.
+ */
+
+  /**
+ * Get a delay [animation](#animations) for the element.
+ * @memberof cy
+ * @path Core/Animation
+ * @param {...cy_delayAnimation} duration - NULL
+ * @methodName cy.delayAnimation
+ */
   delayAnimation: define.delayAnimation(),
+  /**
+ * @typedef {object} cy_stop_type
+ * @property {object} clearQueue - A boolean (default `false`), indicating whether the queue of animations should be emptied.
+ * @property {object} jumpToEnd - A boolean (default `false`), indicating whether the currently-running animations should jump to their ends rather than just stopping midway.
+ */
+
+/**
+ * @typedef {object} cy_stop
+ * @property {object} cy_stop_type
+ */
+
+  /**
+ * Stop all viewport animations that are currently running.
+ * @memberof cy
+ * @path Core/Animation
+ * @param {...cy_stop} events - NULL
+ * @methodName cy.stop
+ */
   stop: define.stop(),
+
+   /**
+ * Remove all queued animations for the viewport.
+ * @memberof cy
+ * @path Core/Animation
+ * @methodName cy.clearQueue
+ */
 
   addToAnimationPool: function( eles ){
     let cy = this;

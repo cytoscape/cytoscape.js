@@ -44,7 +44,7 @@ GridLayout.prototype.run = function(){
   } );
 
   if( bb.h === 0 || bb.w === 0 ){
-    nodes.layoutPositions( this, options, function( ele ){
+    eles.nodes().layoutPositions( this, options, function( ele ){
       return { x: bb.x1, y: bb.y1 };
     } );
 

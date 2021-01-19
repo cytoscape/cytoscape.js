@@ -62,6 +62,9 @@ fn = elesfn = ({
     allowGetting: false,
     beforeSet: function( eles, newPos ){
       beforePositionSet( eles, newPos, true );
+    },
+    onSet: function( eles ){
+      eles.dirtyCompoundBoundsCache();
     }
   } ) ),
 

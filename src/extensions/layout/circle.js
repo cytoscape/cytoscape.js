@@ -97,7 +97,7 @@ CircleLayout.prototype.run = function(){
     return pos;
   };
 
-  nodes.layoutPositions( this, options, getPos );
+  eles.nodes().layoutPositions( this, options, getPos );
 
   return this; // chaining
 };

@@ -39,7 +39,7 @@ let elesfn = ({
 
   // using standard layout options, apply position function (w/ or w/o animation)
   layoutPositions: function( layout, options, fn ){
-    let nodes = this.nodes();
+    let nodes = this.nodes().filter(n => !n.isParent());
     let cy = this.cy();
     let layoutEles = options.eles; // nodes & edges
     let getMemoizeKey = node => node.id();

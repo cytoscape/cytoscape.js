@@ -27,7 +27,7 @@ elesfn.renderedBoundingBox = function( options ){
   };
 };
 
-elesfn.dirtyCompoundBoundsCache = function(){
+elesfn.dirtyCompoundBoundsCache = function(silent = false){
   let cy = this.cy();
 
   if( !cy.styleEnabled() || !cy.hasCompoundNodes() ){ return this; }
@@ -39,7 +39,9 @@ elesfn.dirtyCompoundBoundsCache = function(){
       _p.compoundBoundsClean = false;
       _p.bbCache = null;
 
-      ele.emitAndNotify('bounds');
+      if(!silent){
+        ele.emitAndNotify('bounds');
+      }
     }
   } );
 
@@ -177,7 +179,7 @@ elesfn.updateCompoundBounds = function(force = false){
     let ele = this[i];
     let _p = ele._private;
 
-    if( !_p.compoundBoundsClean ){
+    if( !_p.compoundBoundsClean || force ){
       update( ele );
 
       if( !cy.batching() ){
@@ -852,7 +854,7 @@ elesfn.boundingBox = function( options ){
       }
     }
 
-    this.updateCompoundBounds();
+    this.updateCompoundBounds(!options.useCache);
 
     for( let i = 0; i < eles.length; i++ ){
       let ele = eles[i];
@@ -905,9 +907,11 @@ elesfn.boundingBoxAt = function( fn ){
   let nodes = this.nodes();
   let cy = this.cy();
   let hasCompoundNodes = cy.hasCompoundNodes();
+  let parents = cy.collection();
 
   if( hasCompoundNodes ){
-    nodes = nodes.filter(node => !node.isParent());
+    parents = nodes.filter(node => node.isParent());
+    nodes = nodes.not(parents);
   }
 
   if( is.plainObject( fn ) ){
@@ -928,12 +932,20 @@ elesfn.boundingBoxAt = function( fn ){
   );
 
   if( hasCompoundNodes ){
-    this.updateCompoundBounds(true); // force update b/c we're inside a batch cycle
+    parents.dirtyCompoundBoundsCache();
+    parents.dirtyBoundingBoxCache();
+    parents.updateCompoundBounds(true); // force update b/c we're inside a batch cycle
   }
 
   let bb = copyBoundingBox( this.boundingBox({ useCache: false }) );
 
   nodes.silentPositions(getOldPos);
+
+  if( hasCompoundNodes ){
+    parents.dirtyCompoundBoundsCache();
+    parents.dirtyBoundingBoxCache();
+    parents.updateCompoundBounds(true); // force update b/c we're inside a batch cycle
+  }
 
   cy.endBatch();
 

@@ -21,7 +21,7 @@ let beforePositionSet = function( eles, newPos, silent ){
         ele.children().shift( delta, silent );
       }
 
-      ele.shiftCachedBoundingBox( delta );
+      ele.dirtyBoundingBoxCache();
     }
   }
 };

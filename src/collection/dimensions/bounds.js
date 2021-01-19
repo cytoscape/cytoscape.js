@@ -756,41 +756,10 @@ let cachedBoundingBoxImpl = function( ele, opts ){
     bb = boundingBoxImpl( ele, defBbOpts );
 
     _p.bbCache = bb;
-    _p.bbCacheShift.x = _p.bbCacheShift.y = 0;
     _p.bbCachePosKey = currPosKey;
   } else {
     bb = _p.bbCache;
   }
-
-  if( !needRecalc && (_p.bbCacheShift.x !== 0 || _p.bbCacheShift.y !== 0) ){
-    let shift = assignShiftToBoundingBox;
-    let delta = _p.bbCacheShift;
-    let safeShift = (bb, delta) => { if( bb != null ){ shift(bb, delta); } };
-
-    shift( bb, delta );
-
-    let { bodyBounds, overlayBounds, labelBounds, arrowBounds } = _p;
-
-    safeShift( bodyBounds, delta );
-    safeShift( overlayBounds, delta );
-
-    if( arrowBounds != null ){
-      safeShift( arrowBounds.source, delta );
-      safeShift( arrowBounds.target, delta );
-      safeShift( arrowBounds['mid-source'], delta );
-      safeShift( arrowBounds['mid-target'], delta );
-    }
-
-    if( labelBounds != null ){
-      safeShift( labelBounds.main, delta );
-      safeShift( labelBounds.all, delta );
-      safeShift( labelBounds.source, delta );
-      safeShift( labelBounds.target, delta );
-    }
-  }
-
-  // always reset the shift, because we either applied the shift or cleared it by doing a fresh recalc
-  _p.bbCacheShift.x = _p.bbCacheShift.y = 0;
 
   // not using def opts => need to build up bb from combination of sub bbs
   if( !usingDefOpts ){
@@ -907,7 +876,6 @@ elesfn.dirtyBoundingBoxCache = function(){
     let _p = this[i]._private;
 
     _p.bbCache = null;
-    _p.bbCacheShift.x = _p.bbCacheShift.y = 0;
     _p.bbCachePosKey = null;
     _p.bodyBounds = null;
     _p.overlayBounds = null;
@@ -922,23 +890,6 @@ elesfn.dirtyBoundingBoxCache = function(){
     _p.arrowBounds.target = null;
     _p.arrowBounds['mid-source'] = null;
     _p.arrowBounds['mid-target'] = null;
-  }
-
-  this.emitAndNotify('bounds');
-
-  return this;
-};
-
-elesfn.shiftCachedBoundingBox = function( delta ){
-  for( let i = 0; i < this.length; i++ ){
-    let ele = this[i];
-    let _p = ele._private;
-    let bb = _p.bbCache;
-
-    if( bb != null ){
-      _p.bbCacheShift.x += delta.x;
-      _p.bbCacheShift.y += delta.y;
-    }
   }
 
   this.emitAndNotify('bounds');

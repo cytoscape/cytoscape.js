@@ -71,6 +71,7 @@
   * [Google](https://google.com) : [TensorFlow](https://www.tensorflow.org) : SyntaxNet : DRAGNN visualiser
   * [GCHQ](https://www.gchq.gov.uk/) : [Gaffer](https://gchq.github.io/gaffer-doc/)
   * [GeneMANIA](http://genemania.org)
+  * [Global CTO Forum](https://globalctoforum.org)
   * [Graphlytic](http://graphlytic.sk/)
   * [Hacker Target](https://hackertarget.com/) : [Domain Profiler](https://hackertarget.com/domain-profiler/)
   * [Harvard University](https://www.harvard.edu) : [BioPlex](http://bioplex.hms.harvard.edu/bioplexDisplay)
@@ -143,7 +144,10 @@ The library was created at the [Donnelly Centre](http://thedonnellycentre.utoron
 
 ## Releases
 
+- 3.18
+ - [3.18.0](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.18.0+is%3Aclosed)
 - 3.17
+ - [3.17.2](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.17.2+is%3Aclosed)
  - [3.17.1](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.17.1+is%3Aclosed)
  - [3.17.0](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.17.0+is%3Aclosed)
 - 3.16

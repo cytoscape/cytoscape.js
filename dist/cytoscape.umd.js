@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2016-2020, The Cytoscape Consortium.
+ * Copyright (c) 2016-2021, The Cytoscape Consortium.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the “Software”), to deal in
@@ -1615,7 +1615,7 @@
     var bypass = params.style || params.css;
 
     if (bypass) {
-      warn('Setting a `style` bypass at element creation is deprecated');
+      warn('Setting a `style` bypass at element creation should be done only when absolutely necessary.  Try to use the stylesheet instead.');
       this.style(bypass);
     }
 
@@ -3327,12 +3327,6 @@
     bb1.y2 = bb2.y2;
     bb1.w = bb1.x2 - bb1.x1;
     bb1.h = bb1.y2 - bb1.y1;
-  };
-  var assignShiftToBoundingBox = function assignShiftToBoundingBox(bb, delta) {
-    bb.x1 += delta.x;
-    bb.x2 += delta.x;
-    bb.y1 += delta.y;
-    bb.y2 += delta.y;
   };
   var boundingBoxesIntersect = function boundingBoxesIntersect(bb1, bb2) {
     // case: one bb to right of other
@@ -9539,7 +9533,7 @@
           ele.children().shift(delta, silent);
         }
 
-        ele.shiftCachedBoundingBox(delta);
+        ele.dirtyBoundingBoxCache();
       }
     }
   };
@@ -9577,6 +9571,9 @@
       allowGetting: false,
       beforeSet: function beforeSet(eles, newPos) {
         beforePositionSet(eles, newPos, true);
+      },
+      onSet: function onSet(eles) {
+        eles.dirtyCompoundBoundsCache();
       }
     })),
     positions: function positions(pos, silent) {
@@ -9811,6 +9808,7 @@
   };
 
   elesfn$k.dirtyCompoundBoundsCache = function () {
+    var silent = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
     var cy = this.cy();
 
     if (!cy.styleEnabled() || !cy.hasCompoundNodes()) {
@@ -9822,7 +9820,10 @@
         var _p = ele._private;
         _p.compoundBoundsClean = false;
         _p.bbCache = null;
-        ele.emitAndNotify('bounds');
+
+        if (!silent) {
+          ele.emitAndNotify('bounds');
+        }
       }
     });
     return this;
@@ -9967,7 +9968,7 @@
       var ele = this[i];
       var _p = ele._private;
 
-      if (!_p.compoundBoundsClean) {
+      if (!_p.compoundBoundsClean || force) {
         update(ele);
 
         if (!cy.batching()) {
@@ -10088,6 +10089,8 @@
       var borderWidth = ele.pstyle('text-border-width').pfValue;
       var halfBorderWidth = borderWidth / 2;
       var padding = ele.pstyle('text-background-padding').pfValue;
+      var marginOfError = 2; // expand to work around browser dimension inaccuracies
+
       var lh = labelHeight;
       var lw = labelWidth;
       var lw_2 = lw / 2;
@@ -10136,10 +10139,10 @@
       } // shift by margin and expand by outline and border
 
 
-      lx1 += marginX - Math.max(outlineWidth, halfBorderWidth) - padding;
-      lx2 += marginX + Math.max(outlineWidth, halfBorderWidth) + padding;
-      ly1 += marginY - Math.max(outlineWidth, halfBorderWidth) - padding;
-      ly2 += marginY + Math.max(outlineWidth, halfBorderWidth) + padding; // always store the unrotated label bounds separately
+      lx1 += marginX - Math.max(outlineWidth, halfBorderWidth) - padding - marginOfError;
+      lx2 += marginX + Math.max(outlineWidth, halfBorderWidth) + padding + marginOfError;
+      ly1 += marginY - Math.max(outlineWidth, halfBorderWidth) - padding - marginOfError;
+      ly2 += marginY + Math.max(outlineWidth, halfBorderWidth) + padding + marginOfError; // always store the unrotated label bounds separately
 
       var bbPrefix = prefix || 'main';
       var bbs = _p.labelBounds;
@@ -10150,8 +10153,6 @@
       bb.y2 = ly2;
       bb.w = lx2 - lx1;
       bb.h = ly2 - ly1;
-      expandBoundingBox(bb, 1); // expand to work around browser dimension inaccuracies
-
       var isAutorotate = isEdge && rotation.strValue === 'autorotate';
       var isPfValue = rotation.pfValue != null && rotation.pfValue !== 0;
 
@@ -10516,59 +10517,23 @@
     var useCache = opts.useCache && isPosKeySame;
 
     var isDirty = function isDirty(ele) {
-      return ele._private.bbCache == null;
+      return ele._private.bbCache == null || ele._private.styleDirty;
     };
 
     var needRecalc = !useCache || isDirty(ele) || isEdge && isDirty(ele.source()) || isDirty(ele.target());
 
     if (needRecalc) {
       if (!isPosKeySame) {
-        ele.recalculateRenderedStyle();
+        ele.recalculateRenderedStyle(useCache);
       }
 
       bb = boundingBoxImpl(ele, defBbOpts);
       _p.bbCache = bb;
-      _p.bbCacheShift.x = _p.bbCacheShift.y = 0;
       _p.bbCachePosKey = currPosKey;
     } else {
       bb = _p.bbCache;
-    }
+    } // not using def opts => need to build up bb from combination of sub bbs
 
-    if (!needRecalc && (_p.bbCacheShift.x !== 0 || _p.bbCacheShift.y !== 0)) {
-      var shift = assignShiftToBoundingBox;
-      var delta = _p.bbCacheShift;
-
-      var safeShift = function safeShift(bb, delta) {
-        if (bb != null) {
-          shift(bb, delta);
-        }
-      };
-
-      shift(bb, delta);
-      var bodyBounds = _p.bodyBounds,
-          overlayBounds = _p.overlayBounds,
-          labelBounds = _p.labelBounds,
-          arrowBounds = _p.arrowBounds;
-      safeShift(bodyBounds, delta);
-      safeShift(overlayBounds, delta);
-
-      if (arrowBounds != null) {
-        safeShift(arrowBounds.source, delta);
-        safeShift(arrowBounds.target, delta);
-        safeShift(arrowBounds['mid-source'], delta);
-        safeShift(arrowBounds['mid-target'], delta);
-      }
-
-      if (labelBounds != null) {
-        safeShift(labelBounds.main, delta);
-        safeShift(labelBounds.all, delta);
-        safeShift(labelBounds.source, delta);
-        safeShift(labelBounds.target, delta);
-      }
-    } // always reset the shift, because we either applied the shift or cleared it by doing a fresh recalc
-
-
-    _p.bbCacheShift.x = _p.bbCacheShift.y = 0; // not using def opts => need to build up bb from combination of sub bbs
 
     if (!usingDefOpts) {
       var isNode = ele.isNode();
@@ -10625,7 +10590,7 @@
     // specified s.t. the cache is used, so check for this case to make it faster by
     // avoiding the overhead of the rest of the function
 
-    if (this.length === 1 && this[0]._private.bbCache != null && (options === undefined || options.useCache === undefined || options.useCache === true)) {
+    if (this.length === 1 && this[0]._private.bbCache != null && !this[0]._private.styleDirty && (options === undefined || options.useCache === undefined || options.useCache === true)) {
       if (options === undefined) {
         options = defBbOpts;
       } else {
@@ -10647,12 +10612,12 @@
           var _p = ele._private;
           var currPosKey = getBoundingBoxPosKey(ele);
           var isPosKeySame = _p.bbCachePosKey === currPosKey;
-          var useCache = opts.useCache && isPosKeySame;
+          var useCache = opts.useCache && isPosKeySame && !_p.styleDirty;
           ele.recalculateRenderedStyle(useCache);
         }
       }
 
-      this.updateCompoundBounds();
+      this.updateCompoundBounds(!options.useCache);
 
       for (var _i = 0; _i < eles.length; _i++) {
         var _ele = eles[_i];
@@ -10673,7 +10638,6 @@
     for (var i = 0; i < this.length; i++) {
       var _p = this[i]._private;
       _p.bbCache = null;
-      _p.bbCacheShift.x = _p.bbCacheShift.y = 0;
       _p.bbCachePosKey = null;
       _p.bodyBounds = null;
       _p.overlayBounds = null;
@@ -10692,22 +10656,6 @@
 
     this.emitAndNotify('bounds');
     return this;
-  };
-
-  elesfn$k.shiftCachedBoundingBox = function (delta) {
-    for (var i = 0; i < this.length; i++) {
-      var ele = this[i];
-      var _p = ele._private;
-      var bb = _p.bbCache;
-
-      if (bb != null) {
-        _p.bbCacheShift.x += delta.x;
-        _p.bbCacheShift.y += delta.y;
-      }
-    }
-
-    this.emitAndNotify('bounds');
-    return this;
   }; // private helper to get bounding box for custom node positions
   // - good for perf in certain cases but currently requires dirtying the rendered style
   // - would be better to not modify the nodes but the nodes are read directly everywhere in the renderer...
@@ -10718,11 +10666,13 @@
     var nodes = this.nodes();
     var cy = this.cy();
     var hasCompoundNodes = cy.hasCompoundNodes();
+    var parents = cy.collection();
 
     if (hasCompoundNodes) {
-      nodes = nodes.filter(function (node) {
-        return !node.isParent();
+      parents = nodes.filter(function (node) {
+        return node.isParent();
       });
+      nodes = nodes.not(parents);
     }
 
     if (plainObject(fn)) {
@@ -10745,13 +10695,22 @@
     nodes.forEach(storeOldPos).silentPositions(fn);
 
     if (hasCompoundNodes) {
-      this.updateCompoundBounds(true); // force update b/c we're inside a batch cycle
+      parents.dirtyCompoundBoundsCache();
+      parents.dirtyBoundingBoxCache();
+      parents.updateCompoundBounds(true); // force update b/c we're inside a batch cycle
     }
 
     var bb = copyBoundingBox(this.boundingBox({
       useCache: false
     }));
     nodes.silentPositions(getOldPos);
+
+    if (hasCompoundNodes) {
+      parents.dirtyCompoundBoundsCache();
+      parents.dirtyBoundingBoxCache();
+      parents.updateCompoundBounds(true); // force update b/c we're inside a batch cycle
+    }
+
     cy.endBatch();
     return bb;
   };
@@ -12100,7 +12059,9 @@
     },
     // using standard layout options, apply position function (w/ or w/o animation)
     layoutPositions: function layoutPositions(layout, options, fn) {
-      var nodes = this.nodes();
+      var nodes = this.nodes().filter(function (n) {
+        return !n.isParent();
+      });
       var cy = this.cy();
       var layoutEles = options.eles; // nodes & edges
 
@@ -12366,6 +12327,24 @@
       });
       return this; // chaining
     },
+    // private: clears dirty flag and recalculates style
+    cleanStyle: function cleanStyle() {
+      var cy = this.cy();
+
+      if (!cy.styleEnabled()) {
+        return;
+      }
+
+      for (var i = 0; i < this.length; i++) {
+        var ele = this[i];
+
+        if (ele._private.styleDirty) {
+          // n.b. this flag should be set before apply() to avoid potential infinite recursion
+          ele._private.styleDirty = false;
+          cy.style().apply(ele);
+        }
+      }
+    },
     // get the internal parsed style object for the specified property
     parsedStyle: function parsedStyle(property) {
       var includeNonDefault = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
@@ -12377,12 +12356,7 @@
       }
 
       if (ele) {
-        if (ele._private.styleDirty) {
-          ele._private.styleDirty = false;
-          cy.style().apply(ele);
-          ele.emitAndNotify('style');
-        }
-
+        this.cleanStyle();
         var overriddenStyle = ele._private.style[property];
 
         if (overriddenStyle != null) {
@@ -15265,13 +15239,6 @@
     var cy = _p.cy;
     var updatedEles = cy.collection();
 
-    if (_p.newStyle) {
-      // clear style caches
-      _p.contextStyles = {};
-      _p.propDiffs = {};
-      self.cleanElements(eles, true);
-    }
-
     for (var ie = 0; ie < eles.length; ie++) {
       var ele = eles[ie];
       var cxtMeta = self.getContextMeta(ele);
@@ -15283,8 +15250,10 @@
       var cxtStyle = self.getContextStyle(cxtMeta);
       var app = self.applyContextStyle(cxtMeta, cxtStyle, ele);
 
-      if (!_p.newStyle) {
+      if (ele._private.appliedInitStyle) {
         self.updateTransitions(ele, app.diffProps);
+      } else {
+        ele._private.appliedInitStyle = true;
       }
 
       var hintsDiff = self.updateStyleHints(ele);
@@ -15295,7 +15264,6 @@
     } // for elements
 
 
-    _p.newStyle = false;
     return updatedEles;
   };
 
@@ -15374,12 +15342,7 @@
     var self = this;
     var cxtKey = '';
     var diffProps;
-    var prevKey = ele._private.styleCxtKey || '';
-
-    if (self._private.newStyle) {
-      prevKey = ''; // since we need to apply all style if a fresh stylesheet
-    } // get the cxt key
-
+    var prevKey = ele._private.styleCxtKey || ''; // get the cxt key
 
     for (var i = 0; i < self.length; i++) {
       var context = self[i];
@@ -15651,6 +15614,7 @@
 
   styfn.clearStyleHints = function (ele) {
     var _p = ele._private;
+    _p.styleCxtKey = '';
     _p.styleKeys = {};
     _p.styleKey = null;
     _p.labelKey = null;
@@ -15706,7 +15670,11 @@
       var fromVal = getVal(origProp);
       var toVal = getVal(prop);
       self.checkTriggers(ele, prop.name, fromVal, toVal);
-    }; // edge sanity checks to prevent the client from making serious mistakes
+    };
+
+    if (prop && prop.name.substr(0, 3) === 'pie') {
+      warn('The pie style properties are deprecated.  Create charts using background images instead.');
+    } // edge sanity checks to prevent the client from making serious mistakes
 
 
     if (parsedProp.name === 'curve-style' && ele.isEdge() && ( // loops must be bundled beziers
@@ -16819,6 +16787,10 @@
         enums: ['none', 'node'],
         multiple: true
       },
+      bgContainment: {
+        enums: ['inside', 'over'],
+        multiple: true
+      },
       color: {
         color: true
       },
@@ -16831,6 +16803,10 @@
       },
       bool: {
         enums: ['yes', 'no']
+      },
+      bools: {
+        enums: ['yes', 'no'],
+        multiple: true
       },
       lineStyle: {
         enums: ['solid', 'dotted', 'dashed']
@@ -17333,6 +17309,12 @@
       name: 'background-image-opacity',
       type: t.zeroOneNumbers
     }, {
+      name: 'background-image-containment',
+      type: t.bgContainment
+    }, {
+      name: 'background-image-smoothing',
+      type: t.bools
+    }, {
       name: 'background-position-x',
       type: t.bgPos
     }, {
@@ -17411,6 +17393,9 @@
     }, {
       name: 'line-cap',
       type: t.lineCap
+    }, {
+      name: 'line-opacity',
+      type: t.zeroOneNumber
     }, {
       name: 'line-dash-pattern',
       type: t.numbers
@@ -17763,6 +17748,8 @@
       'background-image': 'none',
       'background-image-crossorigin': 'anonymous',
       'background-image-opacity': 1,
+      'background-image-containment': 'inside',
+      'background-image-smoothing': 'yes',
       'background-position-x': '50%',
       'background-position-y': '50%',
       'background-offset-x': 0,
@@ -17829,6 +17816,7 @@
       'line-color': '#999',
       'line-fill': 'solid',
       'line-cap': 'butt',
+      'line-opacity': 1,
       'line-gradient-stop-colors': '#999',
       'line-gradient-stop-positions': '0%',
       'control-point-step-size': 40,
@@ -18395,13 +18383,23 @@
 
 
   styfn$8.clear = function () {
+    var _p = this._private;
+    var cy = _p.cy;
+    var eles = cy.elements();
+
     for (var i = 0; i < this.length; i++) {
       this[i] = undefined;
     }
 
     this.length = 0;
-    var _p = this._private;
-    _p.newStyle = true;
+    _p.contextStyles = {};
+    _p.propDiffs = {};
+    this.cleanElements(eles, true);
+    eles.forEach(function (ele) {
+      var ele_p = ele[0]._private;
+      ele_p.styleDirty = true;
+      ele_p.appliedInitStyle = false;
+    });
     return this; // chaining
   };
 
@@ -18545,6 +18543,10 @@
       }
 
       return _p.style;
+    },
+    // e.g. cy.data() changed => recalc ele mappers
+    updateStyle: function updateStyle() {
+      this.mutableElements().updateStyle(); // just send to all eles
     }
   };
 
@@ -19133,13 +19135,15 @@
       settingEvent: 'data',
       settingTriggersEvent: true,
       triggerFnName: 'trigger',
-      allowGetting: true
+      allowGetting: true,
+      updateStyle: true
     }),
     removeData: define$3.removeData({
       field: 'data',
       event: 'data',
       triggerFnName: 'trigger',
-      triggerEvent: true
+      triggerEvent: true,
+      updateStyle: true
     }),
     scratch: define$3.data({
       field: 'scratch',
@@ -19149,13 +19153,15 @@
       settingEvent: 'scratch',
       settingTriggersEvent: true,
       triggerFnName: 'trigger',
-      allowGetting: true
+      allowGetting: true,
+      updateStyle: true
     }),
     removeScratch: define$3.removeData({
       field: 'scratch',
       event: 'scratch',
       triggerFnName: 'trigger',
-      triggerEvent: true
+      triggerEvent: true,
+      updateStyle: true
     })
   }; // aliases
 
@@ -19221,7 +19227,7 @@
       // list of listeners
       aniEles: new Collection(this),
       // elements being animated
-      data: {},
+      data: options.data || {},
       // data for the core
       scratch: {},
       // scratch object for core
@@ -19468,6 +19474,12 @@
 
             for (var i = 0; i < jsons.length; i++) {
               var json = jsons[i];
+
+              if (!json.data.id) {
+                warn('cy.json() cannot handle elements without an ID attribute');
+                continue;
+              }
+
               var id = '' + json.data.id; // id must be string
 
               var ele = cy.getElementById(id);
@@ -20009,7 +20021,7 @@
       }
     };
 
-    nodes.layoutPositions(this, options, getPosition);
+    eles.nodes().layoutPositions(this, options, getPosition);
     return this; // chaining
   };
 
@@ -20126,7 +20138,7 @@
       return pos;
     };
 
-    nodes.layoutPositions(this, options, getPos);
+    eles.nodes().layoutPositions(this, options, getPos);
     return this; // chaining
   };
 
@@ -20334,7 +20346,7 @@
     } // position the nodes
 
 
-    nodes.layoutPositions(this, options, function (ele) {
+    eles.nodes().layoutPositions(this, options, function (ele) {
       var id = ele.id();
       return pos[id];
     });
@@ -21616,7 +21628,7 @@
     });
 
     if (bb.h === 0 || bb.w === 0) {
-      nodes.layoutPositions(this, options, function (ele) {
+      eles.nodes().layoutPositions(this, options, function (ele) {
         return {
           x: bb.x1,
           y: bb.y1
@@ -21970,7 +21982,6 @@
     var options = this.options;
     var cy = options.cy;
     var eles = options.eles;
-    var nodes = eles.nodes().not(':parent');
     var bb = makeBoundingBox(options.boundingBox ? options.boundingBox : {
       x1: 0,
       y1: 0,
@@ -21985,7 +21996,7 @@
       };
     };
 
-    nodes.layoutPositions(this, options, getPos);
+    eles.nodes().layoutPositions(this, options, getPos);
     return this; // chaining
   };
 
@@ -24393,6 +24404,11 @@
       var ellipsis = "\u2026";
       var incLastCh = false;
 
+      if (this.calculateLabelDimensions(ele, text).width < _maxW) {
+        // the label already fits
+        return text;
+      }
+
       for (var i = 0; i < text.length; i++) {
         var widthWithNextCh = this.calculateLabelDimensions(ele, ellipsized + text[i] + ellipsis).width;
 
@@ -24452,7 +24468,7 @@
       return existingVal;
     }
 
-    var padding = 6; // add padding around text dims, as the measurement isn't that accurate
+    var padding = 0; // add padding around text dims, as the measurement isn't that accurate
 
     var fStyle = ele.pstyle('font-style').strValue;
     var size = ele.pstyle('font-size').pfValue;
@@ -24592,7 +24608,10 @@
 
     var updateEleCalcs = function updateEleCalcs(willDraw) {
       if (willDraw) {
-        var fns = r.onUpdateEleCalcsFns;
+        var fns = r.onUpdateEleCalcsFns; // because we need to have up-to-date style (e.g. stylesheet mappers)
+        // before calculating rendered style (and pstyle might not be called yet)
+
+        elesToUpdate.cleanStyle();
 
         for (var i = 0; i < elesToUpdate.length; i++) {
           var ele = elesToUpdate[i];
@@ -24905,9 +24924,9 @@
       if (r.cy.hasCompoundNodes() && down && down.pannable()) {
         // a grabbable compound node below the ele => no passthrough panning
         for (var i = 0; downs && i < downs.length; i++) {
-          var down = downs[i];
+          var down = downs[i]; //if any parent node in event hierarchy isn't pannable, reject passthrough
 
-          if (down.isNode() && down.isParent()) {
+          if (down.isNode() && down.isParent() && !down.pannable()) {
             allowPassthrough = false;
             break;
           }
@@ -28059,7 +28078,7 @@
     var zoom = r.cy.zoom();
     var lookup = this.lookup;
 
-    if (bb.w === 0 || bb.h === 0 || isNaN(bb.w) || isNaN(bb.h) || !ele.visible()) {
+    if (!bb || bb.w === 0 || bb.h === 0 || isNaN(bb.w) || isNaN(bb.h) || !ele.visible() || ele.removed()) {
       return null;
     }
 
@@ -29414,12 +29433,16 @@
     }
 
     var opacity = shouldDrawOpacity ? edge.pstyle('opacity').value : 1;
+    var lineOpacity = shouldDrawOpacity ? edge.pstyle('line-opacity').value : 1;
     var lineStyle = edge.pstyle('line-style').value;
     var edgeWidth = edge.pstyle('width').pfValue;
     var lineCap = edge.pstyle('line-cap').value;
+    var effectiveLineOpacity = opacity * lineOpacity; // separate arrow opacity would require arrow-opacity property
+
+    var effectiveArrowOpacity = opacity * lineOpacity;
 
     var drawLine = function drawLine() {
-      var strokeOpacity = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : opacity;
+      var strokeOpacity = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : effectiveLineOpacity;
       context.lineWidth = edgeWidth;
       context.lineCap = lineCap;
       r.eleStrokeStyle(context, edge, strokeOpacity);
@@ -29436,7 +29459,7 @@
     };
 
     var drawArrows = function drawArrows() {
-      var arrowOpacity = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : opacity;
+      var arrowOpacity = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : effectiveArrowOpacity;
       r.drawArrowheads(context, edge, arrowOpacity);
     };
 
@@ -29451,7 +29474,7 @@
       var gx = edge.pstyle('ghost-offset-x').pfValue;
       var gy = edge.pstyle('ghost-offset-y').pfValue;
       var ghostOpacity = edge.pstyle('ghost-opacity').value;
-      var effectiveGhostOpacity = opacity * ghostOpacity;
+      var effectiveGhostOpacity = effectiveLineOpacity * ghostOpacity;
       context.translate(gx, gy);
       drawLine(effectiveGhostOpacity);
       drawArrows(effectiveGhostOpacity);
@@ -29750,6 +29773,7 @@
     var clip = getIndexedStyle(node, 'background-clip', 'value', index);
     var shouldClip = clip === 'node';
     var imgOpacity = getIndexedStyle(node, 'background-image-opacity', 'value', index) * nodeOpacity;
+    var smooth = getIndexedStyle(node, 'background-image-smoothing', 'value', index);
     var imgW = img.width || img.cachedW;
     var imgH = img.height || img.cachedH; // workaround for broken browsers like ie
 
@@ -29843,6 +29867,16 @@
 
     var gAlpha = context.globalAlpha;
     context.globalAlpha = imgOpacity;
+    var smoothingEnabled = r.getImgSmoothing(context);
+    var isSmoothingSwitched = false;
+
+    if (smooth === 'no' && smoothingEnabled) {
+      r.setImgSmoothing(context, false);
+      isSmoothingSwitched = true;
+    } else if (smooth === 'yes' && !smoothingEnabled) {
+      r.setImgSmoothing(context, true);
+      isSmoothingSwitched = true;
+    }
 
     if (repeat === 'no-repeat') {
       if (shouldClip) {
@@ -29871,6 +29905,10 @@
     }
 
     context.globalAlpha = gAlpha;
+
+    if (isSmoothingSwitched) {
+      r.setImgSmoothing(context, smoothingEnabled);
+    }
   };
 
   var CRp$4 = {};
@@ -30382,10 +30420,18 @@
 
     var drawImages = function drawImages() {
       var nodeOpacity = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : eleOpacity;
+      var inside = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
       var prevBging = _p.backgrounding;
       var totalCompleted = 0;
 
       for (var _i = 0; _i < image.length; _i++) {
+        var bgContainment = node.cy().style().getIndexedStyle(node, 'background-image-containment', 'value', _i);
+
+        if (inside && bgContainment === 'over' || !inside && bgContainment === 'inside') {
+          totalCompleted++;
+          continue;
+        }
+
         if (urlDefined[_i] && image[_i].complete && !image[_i].error) {
           totalCompleted++;
           r.drawInscribedImage(context, image[_i], node, _i, nodeOpacity);
@@ -30502,21 +30548,23 @@
       context.translate(gx, gy);
       setupShapeColor(ghostOpacity * bgOpacity);
       drawShape();
-      drawImages(effGhostOpacity);
-      drawPie(darkness !== 0 || borderWidth !== 0);
-      darken(effGhostOpacity);
+      drawImages(effGhostOpacity, true);
       setupBorderColor(ghostOpacity * borderOpacity);
       drawBorder();
+      drawPie(darkness !== 0 || borderWidth !== 0);
+      drawImages(effGhostOpacity, false);
+      darken(effGhostOpacity);
       context.translate(-gx, -gy);
     }
 
     setupShapeColor();
     drawShape();
-    drawImages();
-    drawPie(darkness !== 0 || borderWidth !== 0);
-    darken();
+    drawImages(eleOpacity, true);
     setupBorderColor();
     drawBorder();
+    drawPie(darkness !== 0 || borderWidth !== 0);
+    drawImages(eleOpacity, false);
+    darken();
 
     if (usePaths) {
       context.translate(-pos.x, -pos.y);
@@ -32332,7 +32380,7 @@
     return style;
   };
 
-  var version = "3.16.0";
+  var version = "3.18.0";
 
   var cytoscape = function cytoscape(options) {
     // if no options specified, use default

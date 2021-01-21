@@ -1,5 +1,5 @@
 import * as is from '../../is';
-import { assignBoundingBox, expandBoundingBoxSides, assignShiftToBoundingBox, clearBoundingBox, expandBoundingBox, makeBoundingBox, copyBoundingBox } from '../../math';
+import { assignBoundingBox, expandBoundingBoxSides,  clearBoundingBox, expandBoundingBox, makeBoundingBox, copyBoundingBox } from '../../math';
 import { defaults, getPrefixedProperty, hashIntsArray } from '../../util';
 
 let fn, elesfn;

@@ -41,10 +41,11 @@
 
 <p><a href="https://github.com/cytoscape/cytoscape.js"><img src="https://img.shields.io/badge/Repo-GitHub-yellow.svg" alt="GitHub repo"></a>
 <a href="https://twitter.com/cytoscapejs"><img src="https://img.shields.io/badge/Updates-Twitter-yellow.svg" alt="Twitter updates"></a>
-<a href="https://blog.js.cytoscape.org"><img src="https://img.shields.io/badge/News%20and%20tutorials-Blog-yellow.svg" alt="News and tutorials"></a>
+<a href="https://blog.js.cytoscape.org"><img src="https://img.shields.io/badge/News%20%26%20tutorials-Blog-yellow.svg" alt="News and tutorials"></a>
 <a href="https://stackoverflow.com/questions/tagged/cytoscape.js"><img src="https://img.shields.io/badge/Questions-StackOverflow-yellow.svg" alt="Questions at StackOverflow"></a>
 <a href="https://stackoverflow.com/questions/ask?tags=cytoscape.js,javascript"><img src="https://img.shields.io/badge/Ask%20a%20question-StackOverflow-yellow.svg" alt="Ask a question at StackOverflow"></a>
-<a href="https://raw.githubusercontent.com/cytoscape/cytoscape.js/master/LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="GitHub license"></a>
+<a href="https://github.com/cytoscape/cytoscape.js/discussions"><img src="https://img.shields.io/badge/Community%20discussions-GitHub-yellow.svg" alt="Community discussions"></a>
+<a href="https://raw.githubusercontent.com/cytoscape/cytoscape.js/master/LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License"></a>
 <a href="https://zenodo.org/badge/latestdoi/2255947"><img src="https://zenodo.org/badge/2255947.svg" alt="DOI"></a>
 <a href="#introduction/citation"><img src="https://img.shields.io/badge/Cite-Oxford%20Bioinformatics%20Article-blue.svg" alt="Cite"></a>
 <a href="https://www.npmjs.com/package/cytoscape"><img src="https://img.shields.io/npm/v/cytoscape.svg" alt="npm"></a>
@@ -52,8 +53,7 @@
 <a href="#extensions"><img src="https://img.shields.io/badge/Extensions-60-blue.svg" alt="Extensions"></a>
 <a href="https://www.npmjs.com/package/cytoscape"><img src="https://img.shields.io/npm/dm/cytoscape.svg?label=npm%20installs" alt="npm installs"></a>
 <a href="https://travis-ci.org/cytoscape/cytoscape.js"><img src="https://img.shields.io/travis/cytoscape/cytoscape.js/master.svg?label=master%20branch" alt="master branch tests"></a>
-<a href="https://travis-ci.org/cytoscape/cytoscape.js"><img src="https://img.shields.io/travis/cytoscape/cytoscape.js/unstable.svg?label=unstable%20branch" alt="unstable branch tests"></a>
-<a href="https://greenkeeper.io/"><img src="https://badges.greenkeeper.io/cytoscape/cytoscape.js.svg" alt="Greenkeeper badge"></a></p>
+<a href="https://travis-ci.org/cytoscape/cytoscape.js"><img src="https://img.shields.io/travis/cytoscape/cytoscape.js/unstable.svg?label=unstable%20branch" alt="unstable branch tests"></a></p>
 </div>
 
 
@@ -501,19 +501,6 @@
 							<div class="gallery-title">
 								<a href="https://github.com/cytoscape/cytoscape.js/tree/master/documentation/demos/linkout-example">
 									<span class="gallery-name"><span class="fa fa-github"></span> Linkout example</span>
-								</a>
-							</div>
-
-						</div>
-						<div class="gallery-demo">
-
-							<a class="gallery-link" href="demos/pie-style">
-								<span class="gallery-preview" style="background-image: url('img/demos/pie-style.png');"></span>
-							</a>
-
-							<div class="gallery-title">
-								<a href="https://github.com/cytoscape/cytoscape.js/tree/master/documentation/demos/pie-style">
-									<span class="gallery-name"><span class="fa fa-github"></span> Pie style</span>
 								</a>
 							</div>
 
@@ -1351,6 +1338,7 @@
   <a href="#init-opts/elements">elements</a>: [ /* ... */ ],
   <a href="#init-opts/style">style</a>: [ /* ... */ ],
   <a href="#init-opts/layout">layout</a>: { name: 'grid' /* , ... */ },
+  <a href="#init-opts/data">data</a>: { /* ... */ },
 
   // initial viewport state:
   <a href="#init-opts/zoom">zoom</a>: 1,
@@ -1392,6 +1380,8 @@
 <strong><code>style</code></strong> : The <a href="#style">stylesheet</a> used to style the graph.  For convenience, this option can alternatively be specified as a promise that resolves to the stylesheet.</p>
 <p><span id="init-opts/layout"></span>
 <strong><code>layout</code></strong> : A plain object that specifies layout options.  Which layout is initially run is specified by the <code>name</code> field.  Refer to a <a href="#layouts">layout’s documentation</a> for the options it supports.  If you want to specify your node positions yourself in your elements JSON, you can use the <code>preset</code> layout — by default it does not set any positions, leaving your nodes in their current positions (i.e. specified in <code>options.elements</code> at initialisation time).</p>
+<p><span id="init-opts/data"></span>
+<strong><code>data</code></strong> : A plain object that contains <a href="#cy.data">graph-level data</a> (i.e. data that does not belong to any particular node or edge).</p>
 <h3 id="initial-viewport-state">Initial viewport state</h3>
 <p><span id="init-opts/zoom"></span>
 <strong><code>zoom</code></strong> : The initial zoom level of the graph.  Make sure to disable viewport manipulation options, such as <code>fit</code>, in your layout so that it is not overridden when the layout is applied.  You can set <strong><code>options.minZoom</code></strong> and <strong><code>options.maxZoom</code></strong> to set restrictions on the zoom level.</p>
@@ -4602,6 +4592,7 @@ cy.style( stringStylesheet );</code></pre>
 <li>the included elements not in the graph are added, and</li>
 <li>the not included elements are removed from the graph.</li>
 </ul>
+<p>Note that updating the Graph elements using <code>cy.json()</code> requires all elements to have an ID attribute. Elements that do not have an ID will be ignored.</p>
 <p>When setting <code>cy.json({ style: ... })</code></p>
 <ul>
 <li>the entire stylesheet is replaced, and</li>
@@ -13347,7 +13338,7 @@ Sets the subject of the selector (e.g. <code>$node &gt; node</code> to select th
 <p>In the JSON or function stylesheet formats, it is possible to specify a function as the value for a style property.  In this manner, the style value can be specified via a function on a per-element basis.</p>
 <p><span class="important-indicator"></span> Using a function as a style property value may be convenient in certain cases.  However, it may not be a performant option.  Thus, it may be worthwhile to use caching if possible, such as by using the lodash <a href="https://lodash.com/docs#memoize"><code>_.memoize()</code></a> function.</p>
 <p><span class="important-indicator"></span> Note that if using functions as style values, it will not be possible to serialise and deserialise your stylesheet to JSON proper.</p>
-<p><span class="important-indicator"></span> The function should not read any other style values, nor should it mutate state for elements or for the graph.  Generally, it should depend only on reading <code>ele.data()</code> or <code>ele.scratch()</code>.</p>
+<p><span class="important-indicator"></span> The function should not read any other style values, nor should it mutate state for elements or for the graph.  Generally, it should depend only on reading <code>ele.data()</code>, <code>ele.scratch()</code>, <code>cy.data()</code>, or <code>cy.scratch()</code>.</p>
 <p>Example:</p>
 <pre><code class="language-js">cytoscape({
   <span class="hljs-attr">container</span>: <span class="hljs-built_in">document</span>.getElementById(<span class="hljs-string">'cy'</span>),
@@ -13512,6 +13503,8 @@ Sets the subject of the selector (e.g. <code>$node &gt; node</code> to select th
 </li>
 <li><p>To put an image outside of the bounds of a node’s body, it is necessary to specify <code>background-clip: none</code> and <code>bounds-expansion: n</code> for images that go <code>n</code> pixels beyond the bounding box of the node.  Note that values of <code>n</code> should be relatively small for performance.</p>
 </li>
+<li><p>To control the drawing order of background images (e.g overlay background images over borders), it is necessary to specify <code>background-image-containment: over</code> (default <code>inside</code>).</p>
+</li>
 <li><p>SVG image considerations:</p>
 <ul>
 <li><p>Always include this XML header in each SVG image:</p>
@@ -13558,6 +13551,8 @@ Sets the subject of the selector (e.g. <code>$node &gt; node</code> to select th
 </li>
 <li><p><strong><code>background-image-opacity</code></strong> : The opacity of the background image.</p>
 </li>
+<li><p><strong><code>background-image-smoothing</code></strong> : Determines whether background image is smoothed (<code>yes</code>, default) or not (<code>no</code>). This is only a hint, and the browser may or may not respect the value set for this property.</p>
+</li>
 <li><p><strong><code>background-width</code></strong> : Specifies the width of the image.  A percent value (e.g. <code>50%</code>) may be used to set the image width relative to the node width.  If used in combination with <code>background-fit</code>, then this value overrides the width of the image in calculating the fitting — thereby overriding the aspect ratio.  The <code>auto</code> value is used by default, which uses the width of the image.</p>
 </li>
 <li><p><strong><code>background-height</code></strong> : Specifies the height of the image.  A percent value (e.g. <code>50%</code>) may be used to set the image height relative to the node height.  If used in combination with <code>background-fit</code>, then this value overrides the height of the image in calculating the fitting — thereby overriding the aspect ratio.  The <code>auto</code> value is used by default, which uses the height of the image.</p>
@@ -13593,16 +13588,7 @@ Sets the subject of the selector (e.g. <code>$node &gt; node</code> to select th
   ],
   'background-fit': 'cover cover',
   'background-image-opacity': <span class="hljs-number">0.5</span>
-}</code></pre><h2 id="style/pie-chart-background">Pie chart background <a href="#style/pie-chart-background"><span class="fa fa-bookmark"></span></a></h2>
-<p>These properties allow you to create pie chart backgrounds on nodes (<a href="demos/pie-style">demo</a>).  Note that 16 slices maximum are supported per node, so in the properties <code>1 &lt;= i &lt;= 16</code>.  Of course, you must specify a numerical value for each property in place of <code>i</code>.  Each nonzero sized slice is placed in order of <code>i</code>, starting from the 12 o’clock position and working clockwise.</p>
-<p>You may find it useful to reserve a number to a particular colour for all nodes in your stylesheet.  Then you can specify values for <code>pie-i-background-size</code> accordingly for each node via a <a href="#style/mappers">mapper</a>.  This would allow you to create consistently coloured pie charts in each node of the graph based on element data.</p>
-<ul>
-<li><strong><code>pie-size</code></strong> : The diameter of the pie, measured as a percent of node size (e.g. <code>100%</code>) or an absolute length (e.g. <code>25px</code>).</li>
-<li><strong><code>pie-i-background-color</code></strong> : The colour of the node’s ith pie chart slice.</li>
-<li><strong><code>pie-i-background-size</code></strong> : The size of the node’s ith pie chart slice, measured in percent (e.g. <code>25%</code> or <code>25</code>).</li>
-<li><strong><code>pie-i-background-opacity</code></strong> : The opacity of the node’s ith pie chart slice.</li>
-</ul>
-<h2 id="style/edge-line">Edge line <a href="#style/edge-line"><span class="fa fa-bookmark"></span></a></h2>
+}</code></pre><h2 id="style/edge-line">Edge line <a href="#style/edge-line"><span class="fa fa-bookmark"></span></a></h2>
 <p>These properties affect the styling of an edge’s line:</p>
 <ul>
 <li><strong><code>width</code></strong> : The width of an edge’s line.</li>
@@ -15989,11 +15975,6 @@ Compound Spring Embedder with Ports (CoSEP) is a force-directed layout algorithm
 						<div class="section lvl2">
 							
 							<a class="toclink" href="#style/background-image">Background image</a>
-						</div>
-
-						<div class="section lvl2">
-							
-							<a class="toclink" href="#style/pie-chart-background">Pie chart background</a>
 						</div>
 
 						<div class="section lvl2">

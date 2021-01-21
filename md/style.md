@@ -92,7 +92,7 @@ In the JSON or function stylesheet formats, it is possible to specify a function
 
 <span class="important-indicator"></span> Note that if using functions as style values, it will not be possible to serialise and deserialise your stylesheet to JSON proper.
 
-<span class="important-indicator"></span> The function should not read any other style values, nor should it mutate state for elements or for the graph.  Generally, it should depend only on reading `ele.data()` or `ele.scratch()`.
+<span class="important-indicator"></span> The function should not read any other style values, nor should it mutate state for elements or for the graph.  Generally, it should depend only on reading `ele.data()`, `ele.scratch()`, `cy.data()`, or `cy.scratch()`.
 
 Example:
 
@@ -257,6 +257,7 @@ A background image may be applied to a node's body.  The following properties su
     * The images will be applied to the node's body in the order given, layering one on top of each other.
     * When specifying properties for multiple images, if the property for a given image is not provided, then the default value is used as fallback.
   * To put an image outside of the bounds of a node's body, it is necessary to specify `background-clip: none` and `bounds-expansion: n` for images that go `n` pixels beyond the bounding box of the node.  Note that values of `n` should be relatively small for performance.
+  * To control the drawing order of background images (e.g overlay background images over borders), it is necessary to specify `background-image-containment: over` (default `inside`).
   * SVG image considerations:
     * Always include this XML header in each SVG image:
     ```
@@ -297,6 +298,7 @@ A background image may be applied to a node's body.  The following properties su
     * The [`cytoscape-sbgn-stylesheet`](https://github.com/PathwayCommons/cytoscape-sbgn-stylesheet) package serves as a good example for the use of SVG images in a stylesheet.  That stylesheet [creates decorations](https://pathwaycommons.github.io/cytoscape-sbgn-stylesheet/) on nodes in line with the [SBGN standard](https://sbgn.github.io).
 * **`background-image-crossorigin`**: All images are loaded with a [`crossorigin`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/img#attr-crossorigin) attribute which may be `anonymous` or `use-credentials`. The default is set to `anonymous`.
 * **`background-image-opacity`** : The opacity of the background image.
+* **`background-image-smoothing`** : Determines whether background image is smoothed (`yes`, default) or not (`no`). This is only a hint, and the browser may or may not respect the value set for this property.
 * **`background-width`** : Specifies the width of the image.  A percent value (e.g. `50%`) may be used to set the image width relative to the node width.  If used in combination with `background-fit`, then this value overrides the width of the image in calculating the fitting --- thereby overriding the aspect ratio.  The `auto` value is used by default, which uses the width of the image.
 * **`background-height`** : Specifies the height of the image.  A percent value (e.g. `50%`) may be used to set the image height relative to the node height.  If used in combination with `background-fit`, then this value overrides the height of the image in calculating the fitting --- thereby overriding the aspect ratio.  The `auto` value is used by default, which uses the height of the image.
 * **`background-fit`** : How the background image is fit to the node; may be `none` for original size, `contain` to fit inside node, or `cover` to cover the node.
@@ -325,18 +327,6 @@ The following is an example of valid background image styling using JSON. The ex
 }
 ```
 
-
-
-## Pie chart background
-
-These properties allow you to create pie chart backgrounds on nodes ([demo](demos/pie-style)).  Note that 16 slices maximum are supported per node, so in the properties `1 <= i <= 16`.  Of course, you must specify a numerical value for each property in place of `i`.  Each nonzero sized slice is placed in order of `i`, starting from the 12 o'clock position and working clockwise.
-
-You may find it useful to reserve a number to a particular colour for all nodes in your stylesheet.  Then you can specify values for `pie-i-background-size` accordingly for each node via a [mapper](#style/mappers).  This would allow you to create consistently coloured pie charts in each node of the graph based on element data.
-
- * **`pie-size`** : The diameter of the pie, measured as a percent of node size (e.g. `100%`) or an absolute length (e.g. `25px`).
- * **`pie-i-background-color`** : The colour of the node's ith pie chart slice.
- * **`pie-i-background-size`** : The size of the node's ith pie chart slice, measured in percent (e.g. `25%` or `25`).
- * **`pie-i-background-opacity`** : The opacity of the node's ith pie chart slice.
 
 
 

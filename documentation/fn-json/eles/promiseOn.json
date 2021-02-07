@@ -1,0 +1,23 @@
+{
+    "name": "eles.promiseOn",
+    "pureAliases": [
+        "eles.pon"
+    ],
+    "descr": "Get a promise that is resolved the first time any of the elements emit any of the specified events.",
+    "formats": [
+        {
+            "args": [
+                {
+                    "name": "events",
+                    "descr": "A space separated list of event names."
+                },
+                {
+                    "name": "selector",
+                    "descr": "A selector to specify elements for which the handler is emitted.",
+                    "optional": true
+                }
+            ]
+        }
+    ],
+    "md": "collection/promiseOn"
+}

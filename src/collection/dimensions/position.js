@@ -52,6 +52,29 @@ let positionDef = {
 
 fn = elesfn = ({
 
+  /**
+ *  dimension, value
+ * @typedef {object} node_position_dimension_val
+ * @property {object} dimension - The position dimension to set.
+ * @property {object} value - The value to set to the dimension.
+ */
+
+/**
+ * @typedef {object} node_position
+ * @property {object} NULL
+ * @property {object} dimension - The position dimension to get.
+ * @property {node_position_dimension_val} node_position_dimension_val
+ * @property {object} pos - An object specifying name-value pairs representing dimensions to set.
+ */
+
+  /**
+ * Get or set the [model position](#notation/position) of a node.
+ * @memberof node
+ * @path Collection/Position & dimensions
+ * @pureAliases node.modelPosition|node.point
+ * @param {...node_position} value - Get the entire position object. | Get the value of a specified position dimension. | Set the value of a specified position dimension. | Set the position using name-value pairs in the specified object.
+ * @methodName node.position
+ */
   position: define.data( positionDef ),
 
   // position but no notification to renderer

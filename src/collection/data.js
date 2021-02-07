@@ -4,6 +4,31 @@ let fn, elesfn;
 
 fn = elesfn = ({
 
+      /**
+ *  name, value
+ * @typedef {object} eles_data_name_val
+ * @property {object} name - The name of the field to set.
+ * @property {object} value - The value to set for the field.
+ */
+
+/**
+ * @typedef {object} eles_data
+ * @property {object} NULL
+ * @property {object} name - The name of the field to get.
+ * @property {eles_data_name_val} eles_data_name_val
+ * @property {object} obj - The object containing name-value pairs to update data fields.
+ */
+
+  /**
+ * Read and write developer-defined data associated with the elements.
+ * @memberof eles
+ * @path Collection/Data
+ * @formatsSameFn true
+ * @sub_functions ele.data|ele.data|ele.data|ele.data
+ * @pureAliases eles.attr
+ * @param {...eles_data} value - Get the entire data object. | Get a particular data field for the element. | Set a particular data field for the element. | Update multiple data fields at once via an object.
+ * @methodName eles.data
+ */
   data: define.data( {
     field: 'data',
     bindingEvent: 'data',

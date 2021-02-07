@@ -1,0 +1,5 @@
+{
+    "name": "eles.restore",
+    "descr": "Put removed elements back into the graph.",
+    "md": "collection/restore"
+}

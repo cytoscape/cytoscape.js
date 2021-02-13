@@ -1,0 +1,15 @@
+{
+    "name": "edge.midpoint",
+    "descr": "Get the position of the midpoint of the edge.",
+    "formats": [
+        {
+            "name": "edge.midpoint",
+            "descr": "Get the midpoint in [model co-ordinates](#notation/position)."
+        },
+        {
+            "name": "edge.renderedMidpoint",
+            "descr": "Get the midpoint in [rendered co-ordinates](#notation/position)."
+        }
+    ],
+    "md": "collection/midpoint"
+}

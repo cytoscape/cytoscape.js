@@ -1,0 +1,43 @@
+{
+    "pureAliases": [
+        "node.relativePoint"
+    ],
+    "name": "node.relativePosition",
+    "descr": "Get or set the [model position](#notation/position) of a node, relative to its compound parent.",
+    "formats": [
+        {
+            "descr": "Get the entire relative position object."
+        },
+        {
+            "descr": "Get the value of a specified relative position dimension.",
+            "args": [
+                {
+                    "name": "dimension",
+                    "descr": "The position dimension to get."
+                }
+            ]
+        },
+        {
+            "descr": "Set the value of a specified relative position dimension.",
+            "args": [
+                {
+                    "name": "dimension",
+                    "descr": "The position dimension to set."
+                },
+                {
+                    "name": "value",
+                    "descr": "The value to set to the dimension."
+                }
+            ]
+        },
+        {
+            "descr": "Set the relative position using name-value pairs in the specified object.",
+            "args": [
+                {
+                    "name": "pos",
+                    "descr": "An object specifying name-value pairs representing dimensions to set."
+                }
+            ]
+        }
+    ]
+}

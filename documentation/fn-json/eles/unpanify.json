@@ -1,0 +1,5 @@
+{
+    "name": "eles.unpanify",
+    "descr": "Disables passthrough panning on the elements.",
+    "md": "collection/unpanify"
+  }

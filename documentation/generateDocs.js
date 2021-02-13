@@ -108,7 +108,7 @@ for(var i in words)
             // checking for formatSameFn
             if(words[i].tags != undefined && words[i].tags.find(fn => fn.originalTitle == "formatsSameFn") != undefined)
             {
-                func.formatsSameFn = words[i].tags.find(fn => fn.originalTitle == "formatsSameFn").value;
+                func.formatsSameFn = true;
             }
 
             // checking for extFn

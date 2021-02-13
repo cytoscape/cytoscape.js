@@ -1,0 +1,15 @@
+{
+    "name": "edge.controlPoints",
+    "descr": "Get an array of control point positions for a [`curve-style: bezier`](#style/bezier-edges) or [`curve-style: unbundled-bezier`](#style/unbundled-bezier-edges) edge.",
+    "formats": [
+        {
+            "name": "edge.controlPoints",
+            "descr": "Get the control points in [model co-ordinates](#notation/position)."
+        },
+        {
+            "name": "edge.renderedControlPoints",
+            "descr": "Get the control points in [rendered co-ordinates](#notation/position)."
+        }
+    ],
+    "md": "collection/controlPoints"
+}

@@ -1,0 +1,4 @@
+{
+    "name": "node.locked",
+    "descr": "Get whether a node is locked, meaning that its position can not be changed."
+  }

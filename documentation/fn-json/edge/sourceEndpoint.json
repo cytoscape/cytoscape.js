@@ -1,0 +1,14 @@
+{
+    "name": "edge.sourceEndpoint",
+    "descr": "Get the position of where the edge ends, towards the source node.",
+    "formats": [
+        {
+            "name": "edge.sourceEndpoint",
+            "descr": "Get the source endpoint in [model co-ordinates](#notation/position)."
+        },
+        {
+            "name": "edge.renderedSourceEndpoint",
+            "descr": "Get the target endpoint in [rendered co-ordinates](#notation/position)."
+        }
+    ]
+}

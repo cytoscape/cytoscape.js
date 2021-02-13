@@ -1,0 +1,5 @@
+{
+    "name": "nodes.ungrabify",
+    "descr": "Disallow the user to grab the nodes.",
+    "md": "collection/ungrabify"
+  }

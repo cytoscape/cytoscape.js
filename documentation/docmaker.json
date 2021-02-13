@@ -2008,12 +2008,12 @@
                     ],
                     "fns": [
                         {
-                            "name": "eles.data",
                             "pureAliases": [
                                 "eles.attr"
                             ],
-                            "descr": "Read and write developer-defined data associated with the elements.",
+                            "name": "eles.data",
                             "formatsSameFn": true,
+                            "descr": "Read and write developer-defined data associated with the elements.",
                             "formats": [
                                 {
                                     "name": "ele.data",
@@ -2342,11 +2342,11 @@
                     ],
                     "fns": [
                         {
-                            "name": "node.position",
                             "pureAliases": [
                                 "node.modelPosition",
                                 "node.point"
                             ],
+                            "name": "node.position",
                             "descr": "Get or set the [model position](#notation/position) of a node.",
                             "formats": [
                                 {
@@ -2416,19 +2416,18 @@
                             "md": "collection/shift"
                         },
                         {
-                            "name": "nodes.positions",
                             "pureAliases": [
                                 "nodes.modelPositions",
                                 "nodes.points"
                             ],
+                            "name": "nodes.positions",
                             "descr": "Set the [model positions](#notation/position) of several nodes with a function.",
                             "formats": [
                                 {
                                     "descr": "Set the positions via a function.",
                                     "args": [
                                         {
-                                            "name": "function(ele, i)",
-                                            "descr": "A callback function that returns the position to set for each element.",
+                                            "name": "function(ele,i)",
                                             "fields": [
                                                 {
                                                     "name": "ele",
@@ -2438,7 +2437,8 @@
                                                     "name": "i",
                                                     "descr": "The index of the element when iterating over the elements in the collection."
                                                 }
-                                            ]
+                                            ],
+                                            "descr": "A callback function that returns the position to set for each element."
                                         }
                                     ]
                                 },
@@ -2455,10 +2455,10 @@
                             "md": "collection/positions"
                         },
                         {
-                            "name": "node.renderedPosition",
                             "pureAliases": [
                                 "node.renderedPoint"
                             ],
+                            "name": "node.renderedPosition",
                             "descr": "Get or set the [rendered (on-screen) position](#notation/position) of a node.",
                             "formats": [
                                 {
@@ -2498,10 +2498,10 @@
                             ]
                         },
                         {
-                            "name": "node.relativePosition",
                             "pureAliases": [
                                 "node.relativePoint"
                             ],
+                            "name": "node.relativePosition",
                             "descr": "Get or set the [model position](#notation/position) of a node, relative to its compound parent.",
                             "formats": [
                                 {
@@ -2819,7 +2819,7 @@
                                     "descr": "Get the midpoint in [rendered co-ordinates](#notation/position)."
                                 }
                             ],
-                            "md": "collection/midpoint.md"
+                            "md": "collection/midpoint"
                         }
                     ]
                 },
@@ -2924,7 +2924,7 @@
                                 "eles.css"
                             ],
                             "name": "eles.style",
-                            "formatsSameFn": "true",
+                            "formatsSameFn": true,
                             "descr": "Get or override the style of the element.",
                             "formats": [
                                 {

@@ -1,0 +1,5 @@
+{
+    "name": "nodes.lock",
+    "descr": "Lock the nodes such that their positions can not be changed.",
+    "md": "collection/lock"
+  }

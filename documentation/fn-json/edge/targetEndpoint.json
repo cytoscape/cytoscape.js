@@ -1,0 +1,14 @@
+{
+    "name": "edge.targetEndpoint",
+    "descr": "Get the position of where the edge ends, towards the target node.",
+    "formats": [
+        {
+            "name": "edge.targetEndpoint",
+            "descr": "Get the target endpoint in [model co-ordinates](#notation/position)."
+        },
+        {
+            "name": "edge.renderedTargetEndpoint",
+            "descr": "Get the target endpoint in [rendered co-ordinates](#notation/position)."
+        }
+    ]
+}

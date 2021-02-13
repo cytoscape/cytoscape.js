@@ -3,7 +3,7 @@
         "eles.css"
     ],
     "name": "eles.style",
-    "formatsSameFn": "true",
+    "formatsSameFn": true,
     "descr": "Get or override the style of the element.",
     "formats": [
         {

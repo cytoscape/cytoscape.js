@@ -53,6 +53,7 @@ BRp.recalculateNodeLabelProjection = function( node ){
   rstyle.labelX = textX;
   rstyle.labelY = textY;
 
+  this.calculateLabelAngles( node );
   this.applyLabelDimensions( node );
 };
 

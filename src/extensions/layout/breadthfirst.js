@@ -247,6 +247,9 @@ BreadthFirstLayout.prototype.run = function(){
       }
 
       let bf = getInfo( neighbor );
+
+      if (bf == null){ continue; }
+
       let index = bf.index;
       let depth = bf.depth;
 

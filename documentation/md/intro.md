@@ -95,6 +95,7 @@
   * [OHDSI](http://www.ohdsi.org/)
   * [Panaya](https://www.panaya.com) : [Panaya ForeSight](https://www.panaya.com/product/salesforce-foresight/)
   * [Pathway Commons](http://www.pathwaycommons.org)
+  * [Puppet](https://puppet.com): [Puppet VSCode Extension](https://puppet-vscode.github.io)
   * [py2cytoscape](https://github.com/idekerlab/py2cytoscape)
   * [Radity](https://radity.com/)
   * [Rezza](http://rezza.io)
@@ -150,8 +151,10 @@ The library was created at the [Donnelly Centre](http://thedonnellycentre.utoron
 ## Releases
 
 - 3.18
+ - [3.18.1](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.18.1+is%3Aclosed)
  - [3.18.0](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.18.0+is%3Aclosed)
 - 3.17
+ - [3.17.3](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.17.3+is%3Aclosed)
  - [3.17.2](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.17.2+is%3Aclosed)
  - [3.17.1](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.17.1+is%3Aclosed)
  - [3.17.0](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.17.0+is%3Aclosed)

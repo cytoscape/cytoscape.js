@@ -53,6 +53,7 @@
    * [TissueNet](http://netbio.bgu.ac.il/tissuenet)
   * [BioGRID](http://thebiogrid.org/)
   * [BlueSail CRM](https://bluesailcrm.com/)
+  * [BugBug](https://bugbug.io)
   * [Classcraft](https://www.classcraft.com/)
   * CJFP & Associates: [Sherlock](https://sherlock.scalingo.io/)
   * [Cray Inc.](http://www.cray.com)
@@ -67,18 +68,21 @@
   * [Facebook](https://www.facebook.com) : [Metro](https://facebook.github.io/metro/) visualiser
   * [Fediverse](https://www.fediverse.space/)
   * [Ganister](http://www.ganister.eu/)
-  * [GLB301 Simulation](https://cytoscape-demo.netlify.com/)
-  * [Google](https://google.com) : [TensorFlow](https://www.tensorflow.org) : SyntaxNet : DRAGNN visualiser
   * [GCHQ](https://www.gchq.gov.uk/) : [Gaffer](https://gchq.github.io/gaffer-doc/)
   * [GeneMANIA](http://genemania.org)
+  * [GLB301 Simulation](https://cytoscape-demo.netlify.com/)
   * [Global CTO Forum](https://globalctoforum.org)
+  * [Google](https://google.com) : [TensorFlow](https://www.tensorflow.org) : SyntaxNet : DRAGNN visualiser
   * [Graphlytic](http://graphlytic.sk/)
+  * [GREZI](https://grezi.fr/)
   * [Hacker Target](https://hackertarget.com/) : [Domain Profiler](https://hackertarget.com/domain-profiler/)
   * [Harvard University](https://www.harvard.edu) : [BioPlex](http://bioplex.hms.harvard.edu/bioplexDisplay)
   * [ICSI Haystack Project](https://haystack.mobi/panopticon/)
   * [InfoTrack](http://www.infotrack.com.au/)
   * [Intercax](http://intercax.com/)
+  * [Jiva.ai](http://www.jiva.ai/)
   * [Kiali](https://www.kiali.io/)
+  * [LearnAwesome](https://learnawesome.org/)
   * [Lore](http://lore.chuci.info)
   * [The Kanji Map](http://thekanjimap.com/)
   * [Machine2Learn](https://www.machine2learn.com) : [Deep Learning Model Generator](https://www.machine2learn.com/deep-learning-model-generator/)
@@ -91,6 +95,7 @@
   * [OHDSI](http://www.ohdsi.org/)
   * [Panaya](https://www.panaya.com) : [Panaya ForeSight](https://www.panaya.com/product/salesforce-foresight/)
   * [Pathway Commons](http://www.pathwaycommons.org)
+  * [Puppet](https://puppet.com): [Puppet VSCode Extension](https://puppet-vscode.github.io)
   * [py2cytoscape](https://github.com/idekerlab/py2cytoscape)
   * [Radity](https://radity.com/)
   * [Rezza](http://rezza.io)
@@ -115,6 +120,7 @@
   * [Vanderbilt University](https://www.vanderbilt.edu) : [PyViPR](https://github.com/LoLab-VU/pyvipr)
   * [Virginia Tech](http://www.vt.edu/index.html) [T. M. Murali's Research Group](http://bioinformatics.cs.vt.edu/~murali/) : [GraphSpace](http://graphspace.org)
   * [Visual Interaction GmbH](http://www.mygaze.com/)
+  * [Wanderer.ai](https://wanderer.ai)
   * xD Bio Inc. : [Truwl](https://truwl.com)
   * Do you use Cytoscape.js? [Let us know](https://github.com/cytoscape/cytoscape.js/issues/914)
 
@@ -145,8 +151,10 @@ The library was created at the [Donnelly Centre](http://thedonnellycentre.utoron
 ## Releases
 
 - 3.18
+ - [3.18.1](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.18.1+is%3Aclosed)
  - [3.18.0](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.18.0+is%3Aclosed)
 - 3.17
+ - [3.17.3](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.17.3+is%3Aclosed)
  - [3.17.2](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.17.2+is%3Aclosed)
  - [3.17.1](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.17.1+is%3Aclosed)
  - [3.17.0](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.17.0+is%3Aclosed)

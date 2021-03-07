@@ -18,11 +18,11 @@
 
 # Cytoscape.js
 
-Graph theory (network) library for visualisation and analysis : [https://js.cytoscape.org](https://js.cytoscape.org)
+Graph theory (network) library for visualization and analysis : [https://js.cytoscape.org](https://js.cytoscape.org)
 
 ## Description
 
-Cytoscape.js is a fully featured [graph theory](https://en.wikipedia.org/wiki/Graph_theory) library.  Do you need to model and/or visualise relational data, like biological data or social networks?  If so, Cytoscape.js is just what you need.
+Cytoscape.js is a fully featured [graph theory](https://en.wikipedia.org/wiki/Graph_theory) library.  Do you need to model and/or visualize relational data, like biological data or social networks?  If so, Cytoscape.js is just what you need.
 
 Cytoscape.js contains a graph theory model and an optional renderer to display interactive graphs.  This library was designed to make it as easy as possible for programmers and scientists to use graph theory in their apps, whether it's for server-side analysis in a Node.js app or for a rich user interface.
 
@@ -95,11 +95,11 @@ Run `npm run <target>` in the console.  The main targets are:
  * `build:esm` : do the esm (ES 2015 modules) build
  * `clean` : clean the `build` directory
  * `docs` : build the docs into `documentation`
- * `release` : build all release artifacts
- * `watch` : automatically build lib for debugging (with sourcemap, no babel, very quick)
+ * `release` : build all released artifacts
+ * `watch` : automatically build library for debugging (with sourcemap, no babel, very quick)
    * good for general testing on `debug/index.html`
    * served on `http://localhost:8080` or the first available port thereafter, with livereload on `debug/index.html`
- * `watch:babel` : automatically build lib for debugging (with sourcemap, with babel, a bit slower)
+ * `watch:babel` : automatically build library for debugging (with sourcemap, with babel, a bit slower)
    * good for testing performance or for testing out of date browsers
    * served on `http://localhost:8080` or the first available port thereafter, with livereload on `debug/index.html`
  * `watch:umd` : automatically build prod umd bundle (no sourcemap, with babel)
@@ -109,10 +109,10 @@ Run `npm run <target>` in the console.  The main targets are:
 
 **Testing:**
 
-The default test scripts run directly agasinst the source code.  Tests can alternatively be run on a built bundle.  The library can be built on `node>=6`, but the library's bundle can be tested on `node>=0.10`.
+The default test scripts run directly against the source code.  Tests can alternatively be run on a built bundle.  The library can be built on `node>=6`, but the library's bundle can be tested on `node>=0.10`.
 
  * `test` : run all testing & linting
- * `test:js` : run the mocha tests on the public API of the lib (directly on source files)
+ * `test:js` : run the mocha tests on the public API of the library (directly on source files)
    * `npm run test:js -- -g "my test name"` runs tests on only the matching test cases
  * `test:build` : run the mocha tests on the public API of the lib (on a built bundle) 
    * `npm run build` should be run beforehand on a recent version of node

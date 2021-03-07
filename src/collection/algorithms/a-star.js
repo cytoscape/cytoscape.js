@@ -143,6 +143,7 @@ let elesfn = ({
           gScore[ wid ] = tempScore;
           fScore[ wid ] = tempScore + heuristic( w );
           cameFrom[ wid ] = cMin;
+          cameFromEdge[ wid ] = e;
         }
 
       } // End of neighbors update

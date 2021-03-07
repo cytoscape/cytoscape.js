@@ -97,6 +97,26 @@ describe('Algorithms', function(){
       var res = cy.elements().aStar(options);
       expect(isContinuous(res.path.edges())).to.equal(true);
     });
+
+    function source(edge) {
+      return edge.source();
+    }
+
+    function target(edge) {
+      return edge.target();
+    }
+
+    it('eles.aStar(): the set of nodes touched by path.edges must equal the set of path.nodes', function(){
+      let options = {root: cy.nodes("[id = '(1,1)-asm']"),
+               goal: cy.nodes("[id = '(12,1)-asm']"),
+               directed: false,
+               heuristic: function(a) { return a.data('estimate'); }
+              };
+      let res = cy.elements().aStar(options);
+      let sourcesAndTargetsOfEdges = new Set(res.path.edges().toArray().map(source).concat(res.path.edges().toArray().map(target)).map(ele2id));
+      let setOfNodes = new Set(res.path.nodes().toArray().map(ele2id));
+      expect(sourcesAndTargetsOfEdges).to.have.keys([...setOfNodes]);
+    });
   });
 });});
 

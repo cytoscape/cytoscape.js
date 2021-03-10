@@ -185,5 +185,52 @@ describe('Algorithms', function(){
       expect(res1.steps).to.be.below(res2.steps);
     });
 
+    function isContinuous(edges) {
+      for (var i = 0; i < edges.length -1; ++i) {
+        var edge = edges[i];
+        var nextEdge = edges[i+1];
+        if (! areConnected(edge, nextEdge)) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    function areConnected(edgeA, edgeB) {
+      return edgeA.target() === edgeB.source() ||
+             edgeA.source() === edgeB.target() ||
+             edgeA.target() === edgeB.target() ||
+             edgeA.source() === edgeB.source();
+    }
+
+    it('eles.aStar(): edges must form a continuous path', function(){
+      var options = {root: nodes[6][1],
+                      goal: nodes[2][6],
+                      directed: true,
+                      heuristic: function(node) {return euclid(node, nodes[2][6]);}
+                    };
+      var res = cy.elements().aStar(options);
+      expect(isContinuous(res.path.edges())).to.equal(true);
+    });
+
+    function source(edge) {
+      return edge.source();
+    }
+
+    function target(edge) {
+      return edge.target();
+    }
+
+    it('eles.aStar(): the set of nodes touched by path.edges must equal the set of path.nodes', function(){
+      let options = {root: nodes[6][1],
+                      goal: nodes[2][6],
+                      directed: true,
+                      heuristic: function(node) {return euclid(node, nodes[2][6]);}
+                    };
+      let res = cy.elements().aStar(options);
+      let sourcesAndTargetsOfEdges = new Set(res.path.edges().toArray().map(source).concat(res.path.edges().toArray().map(target)).map(ele2id));
+      let setOfNodes = new Set(res.path.nodes().toArray().map(ele2id));
+      expect(sourcesAndTargetsOfEdges).to.have.keys([...setOfNodes]);
+    });
   });
 });

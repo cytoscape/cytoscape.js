@@ -1,0 +1,5 @@
+{
+    "name": "eles.select",
+    "descr": "Make the elements selected.  Elements outside the collection are not affected.",
+    "md": "collection/select"
+}

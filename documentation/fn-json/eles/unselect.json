@@ -1,0 +1,8 @@
+{
+    "name": "eles.unselect",
+    "pureAliases": [
+        "eles.deselect"
+    ],
+    "descr": "Make the elements not selected. Elements outside the collection are not affected.",
+    "md": "collection/unselect"
+}

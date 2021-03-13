@@ -1,0 +1,30 @@
+{
+    "name": "eles.union",
+    "pureAliases": [
+        "eles.add",
+        "eles.or",
+        "eles['u']",
+        "eles['+']",
+        "eles['|']"
+    ],
+    "descr": "Get a new collection, resulting from adding the collection with another one",
+    "formats": [
+        {
+            "args": [
+                {
+                    "name": "eles",
+                    "descr": "The elements to add."
+                }
+            ]
+        },
+        {
+            "args": [
+                {
+                    "name": "selector",
+                    "descr": "Elements in the graph matching this selector are added."
+                }
+            ]
+        }
+    ],
+    "md": "collection/union"
+}

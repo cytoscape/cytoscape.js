@@ -1,0 +1,17 @@
+{
+    "name": "eles.getElementById",
+    "pureAliases": [
+        "eles.$id"
+    ],
+    "descr": "Get an element in the collection from its ID in a very performant way.",
+    "formats": [
+        {
+            "args": [
+                {
+                    "name": "id",
+                    "descr": "The ID of the element to get."
+                }
+            ]
+        }
+    ]
+}

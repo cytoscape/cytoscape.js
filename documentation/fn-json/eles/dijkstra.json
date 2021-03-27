@@ -1,0 +1,30 @@
+{
+    "name": "eles.dijkstra",
+    "descr": "Perform [Dijkstra's](https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm) algorithm on the elements in the collection.  This finds the shortest paths to all other nodes in the collection from the root node.",
+    "formats": [
+        {
+            "args": [
+                {
+                    "name": "options",
+                    "fields": [
+                        {
+                            "name": "root",
+                            "descr": "The root node (selector or collection) where the algorithm starts."
+                        },
+                        {
+                            "name": "weight: function(edge)",
+                            "descr": "A function that returns the positive numeric weight for the edge.  The weight indicates the cost of going from one node to another node.",
+                            "optional": true
+                        },
+                        {
+                            "name": "directed",
+                            "descr": "A boolean indicating whether the algorithm should only go along edges from source to target (default `false`).",
+                            "optional": true
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "md": "collection/dijkstra"
+}

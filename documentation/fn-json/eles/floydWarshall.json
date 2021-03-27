@@ -1,0 +1,26 @@
+{
+    "name": "eles.floydWarshall",
+    "descr": "Perform the [Floyd-Warshall](https://en.wikipedia.org/wiki/Floyd%E2%80%93Warshall_algorithm) search algorithm on the elements in the collection. This finds the shortest path between all pairs of nodes.",
+    "formats": [
+        {
+            "args": [
+                {
+                    "name": "options",
+                    "fields": [
+                        {
+                            "name": "weight: function(edge)",
+                            "descr": "A function that returns the numeric weight for the edge.  The weight indicates the cost of going from one node to another node.  The weight may be positive or negative, but no negative cycles are allowed.",
+                            "optional": true
+                        },
+                        {
+                            "name": "directed",
+                            "descr": "A boolean indicating whether the algorithm should only go along edges from source to target (default `false`).",
+                            "optional": true
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "md": "collection/floydWarshall"
+}

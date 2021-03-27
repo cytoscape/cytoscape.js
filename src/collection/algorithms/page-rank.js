@@ -10,6 +10,31 @@ const pageRankDefaults = defaults({
 
 let elesfn = ({
 
+    /**
+ * @callback pageRank_options
+ * @property {pageRank_options_type} options - pageRank_options_type
+ */
+
+/**
+ * options
+ * @typedef {object} pageRank_options_type
+ * @property {object} dampingFactor - [optional] The [damping factor](https://en.wikipedia.org/wiki/PageRank#Damping_factor), affecting how long the algorithm goes along the topology of the graph (default `0.8`).
+ * @property {object} precision - [optional] Numeric parameter that represents the required precision (default `0.000001`).  The algorithm stops when the difference between iterations is this value or less.
+ * @property {object} iterations - [optional] Maximum number of iterations to perform (default `200`).
+ */
+
+/**
+ * @typedef {object} eles_pageRank
+ * @property {function(pageRank_options):any} pageRank_options - The options for pageRanking.
+ */
+
+  /**
+ * Rank the nodes in the collection using the [Page Rank](https://en.wikipedia.org/wiki/PageRank) algorithm.
+ * @memberof eles
+ * @path Collection/Centrality
+ * @param {...eles_pageRank} options - NULL
+ * @methodName eles.pageRank
+ */
   pageRank: function( options ){
     let { dampingFactor, precision, iterations, weight } = pageRankDefaults(options);
     let cy = this._private.cy;

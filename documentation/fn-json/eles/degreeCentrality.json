@@ -1,0 +1,39 @@
+{
+    "pureAliases": [
+        "eles.dc"
+    ],
+    "name": "eles.degreeCentrality",
+    "descr": "Considering only the elements in the calling collection, calculate the [degree centrality](https://en.wikipedia.org/wiki/Centrality#Degree_centrality) of the specified root node.",
+    "formats": [
+        {
+            "args": [
+                {
+                    "name": "options",
+                    "fields": [
+                        {
+                            "name": "root",
+                            "descr": "The root node (selector or collection) for which the centrality calculation is made."
+                        },
+                        {
+                            "name": "weight:function(edge)",
+                            "descr": "A function that returns the positive weight for the edge. The weight indicates the importance of the edge, with a high value representing high importance.",
+                            "optional": true
+                        },
+                        {
+                            "name": "alpha",
+                            "descr": "The alpha value for the centrality calculation, ranging on [0, 1]. With value 0 (default), disregards edge weights and solely uses number of edges in the centrality calculation. With value 1, disregards number of edges and solely uses the edge weights in the centrality calculation.",
+                            "optional": true
+                        },
+                        {
+                            "name": "directed",
+                            "descr": "A boolean indicating whether the directed indegree and outdegree centrality is calculated (`true`) or whether the undirected centrality is calculated (`false`, default).",
+                            "optional": true
+                        }
+                    ],
+                    "descr": "The options for degreeCentralitying."
+                }
+            ]
+        }
+    ],
+    "md": "collection/degreeCentrality"
+}

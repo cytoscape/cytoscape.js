@@ -4958,10 +4958,10 @@
                     ],
                     "fns": [
                         {
-                            "name": "eles.degreeCentrality",
                             "pureAliases": [
                                 "eles.dc"
                             ],
+                            "name": "eles.degreeCentrality",
                             "descr": "Considering only the elements in the calling collection, calculate the [degree centrality](https://en.wikipedia.org/wiki/Centrality#Degree_centrality) of the specified root node.",
                             "formats": [
                                 {
@@ -4974,13 +4974,13 @@
                                                     "descr": "The root node (selector or collection) for which the centrality calculation is made."
                                                 },
                                                 {
-                                                    "name": "weight: function(edge)",
-                                                    "descr": "A function that returns the positive weight for the edge.  The weight indicates the importance of the edge, with a high value representing high importance.",
+                                                    "name": "weight:function(edge)",
+                                                    "descr": "A function that returns the positive weight for the edge. The weight indicates the importance of the edge, with a high value representing high importance.",
                                                     "optional": true
                                                 },
                                                 {
                                                     "name": "alpha",
-                                                    "descr": "The alpha value for the centrality calculation, ranging on [0, 1].  With value 0 (default), disregards edge weights and solely uses number of edges in the centrality calculation.  With value 1, disregards number of edges and solely uses the edge weights in the centrality calculation.",
+                                                    "descr": "The alpha value for the centrality calculation, ranging on [0, 1]. With value 0 (default), disregards edge weights and solely uses number of edges in the centrality calculation. With value 1, disregards number of edges and solely uses the edge weights in the centrality calculation.",
                                                     "optional": true
                                                 },
                                                 {
@@ -4988,7 +4988,8 @@
                                                     "descr": "A boolean indicating whether the directed indegree and outdegree centrality is calculated (`true`) or whether the undirected centrality is calculated (`false`, default).",
                                                     "optional": true
                                                 }
-                                            ]
+                                            ],
+                                            "descr": "The options for degreeCentralitying."
                                         }
                                     ]
                                 }
@@ -4996,12 +4997,12 @@
                             "md": "collection/degreeCentrality"
                         },
                         {
-                            "name": "eles.degreeCentralityNormalized",
                             "pureAliases": [
                                 "eles.dcn",
                                 "eles.degreeCentralityNormalised"
                             ],
-                            "descr": "Considering only the elements in the calling collection, calculate the normalised [degree centrality](https://en.wikipedia.org/wiki/Centrality#Degree_centrality) of the nodes.",
+                            "name": "eles.degreeCentralityNormalized",
+                            "descr": "Considering only the elements in the calling collection, calculate the [degree centrality](https://en.wikipedia.org/wiki/Centrality#Degree_centrality) of the nodes.",
                             "formats": [
                                 {
                                     "args": [
@@ -5009,13 +5010,13 @@
                                             "name": "options",
                                             "fields": [
                                                 {
-                                                    "name": "weight: function(edge)",
-                                                    "descr": "A function that returns the positive weight for the edge.  The weight indicates the importance of the edge, with a high value representing high importance.",
+                                                    "name": "weight:function(edge)",
+                                                    "descr": "A function that returns the positive weight for the edge. The weight indicates the importance of the edge, with a high value representing high importance.",
                                                     "optional": true
                                                 },
                                                 {
                                                     "name": "alpha",
-                                                    "descr": "The alpha value for the centrality calculation, ranging on [0, 1].  With value 0 (default), disregards edge weights and solely uses number of edges in the centrality calculation.  With value 1, disregards number of edges and solely uses the edge weights in the centrality calculation.",
+                                                    "descr": "The alpha value for the centrality calculation, ranging on [0, 1]. With value 0 (default), disregards edge weights and solely uses number of edges in the centrality calculation. With value 1, disregards number of edges and solely uses the edge weights in the centrality calculation.",
                                                     "optional": true
                                                 },
                                                 {
@@ -5023,7 +5024,8 @@
                                                     "descr": "A boolean indicating whether the directed indegree and outdegree centrality is calculated (`true`) or whether the undirected centrality is calculated (`false`, default).",
                                                     "optional": true
                                                 }
-                                            ]
+                                            ],
+                                            "descr": "The options for degreeCentralityNormalizeding."
                                         }
                                     ]
                                 }
@@ -5031,11 +5033,11 @@
                             "md": "collection/degreeCentralityNormalized"
                         },
                         {
-                            "name": "eles.closenessCentrality",
                             "pureAliases": [
                                 "eles.cc"
                             ],
-                            "descr": "Considering only the elements in the calling collection, calculate the [closeness centrality](https://en.wikipedia.org/wiki/Closeness_centrality) of the specified root node.",
+                            "name": "eles.closenessCentrality",
+                            "descr": "Considering only the elements in the calling collection, calculate the [degree centrality](https://en.wikipedia.org/wiki/Centrality#Degree_centrality) of the specified root nodes.",
                             "formats": [
                                 {
                                     "args": [
@@ -5047,13 +5049,13 @@
                                                     "descr": "The root node (selector or collection) for which the centrality calculation is made."
                                                 },
                                                 {
-                                                    "name": "weight: function(edge)",
-                                                    "descr": "A function that returns the positive weight for the edge.  The weight indicates the importance of the edge, with a high value representing high importance.",
+                                                    "name": "weight:function(edge)",
+                                                    "descr": "A function that returns the positive weight for the edge. The weight indicates the importance of the edge, with a high value representing high importance.",
                                                     "optional": true
                                                 },
                                                 {
                                                     "name": "directed",
-                                                    "descr": "A boolean indicating whether the algorithm operates on edges in a directed manner from source to target (`true`) or whether the algorithm operates in an undirected manner (`false`, default).",
+                                                    "descr": "A boolean indicating whether the directed indegree and outdegree centrality is calculated (`true`) or whether the undirected centrality is calculated (`false`, default).",
                                                     "optional": true
                                                 },
                                                 {
@@ -5061,7 +5063,8 @@
                                                     "descr": "A boolean indicating whether the algorithm calculates the harmonic mean (`true`, default) or the arithmetic mean (`false`) of distances.  The harmonic mean is very useful for graphs that are not strongly connected.",
                                                     "optional": true
                                                 }
-                                            ]
+                                            ],
+                                            "descr": "The options for closenessCentralitying."
                                         }
                                     ]
                                 }
@@ -5069,12 +5072,12 @@
                             "md": "collection/closenessCentrality"
                         },
                         {
-                            "name": "eles.closenessCentralityNormalized",
                             "pureAliases": [
                                 "eles.ccn",
                                 "eles.closenessCentralityNormalised"
                             ],
-                            "descr": "Considering only the elements in the calling collection, calculate the [closeness centrality](https://en.wikipedia.org/wiki/Closeness_centrality) of the nodes.",
+                            "name": "eles.closenessCentralityNormalized",
+                            "descr": "Considering only the elements in the calling collection, calculate the [degree centrality](https://en.wikipedia.org/wiki/Centrality#Degree_centrality) of the specified root nodes.",
                             "formats": [
                                 {
                                     "args": [
@@ -5082,13 +5085,13 @@
                                             "name": "options",
                                             "fields": [
                                                 {
-                                                    "name": "weight: function(edge)",
-                                                    "descr": "A function that returns the positive weight for the edge.  The weight indicates the importance of the edge, with a high value representing high importance.",
+                                                    "name": "weight:function(edge)",
+                                                    "descr": "A function that returns the positive weight for the edge. The weight indicates the importance of the edge, with a high value representing high importance.",
                                                     "optional": true
                                                 },
                                                 {
                                                     "name": "directed",
-                                                    "descr": "A boolean indicating whether the algorithm operates on edges in a directed manner from source to target (`true`) or whether the algorithm operates in an undirected manner (`false`, default).",
+                                                    "descr": "A boolean indicating whether the directed indegree and outdegree centrality is calculated (`true`) or whether the undirected centrality is calculated (`false`, default).",
                                                     "optional": true
                                                 },
                                                 {
@@ -5096,7 +5099,8 @@
                                                     "descr": "A boolean indicating whether the algorithm calculates the harmonic mean (`true`, default) or the arithmetic mean (`false`) of distances.  The harmonic mean is very useful for graphs that are not strongly connected.",
                                                     "optional": true
                                                 }
-                                            ]
+                                            ],
+                                            "descr": "The options for closenessCentralityNormalizeding."
                                         }
                                     ]
                                 }
@@ -5104,10 +5108,10 @@
                             "md": "collection/closenessCentralityNormalized"
                         },
                         {
-                            "name": "eles.betweennessCentrality",
                             "pureAliases": [
                                 "eles.bc"
                             ],
+                            "name": "eles.betweennessCentrality",
                             "descr": "Considering only the elements in the calling collection, calculate the [betweenness centrality](https://en.wikipedia.org/wiki/Betweenness_centrality) of the nodes.",
                             "formats": [
                                 {
@@ -5116,16 +5120,17 @@
                                             "name": "options",
                                             "fields": [
                                                 {
-                                                    "name": "weight: function(edge)",
-                                                    "descr": "A function that returns the positive weight for the edge.  The weight indicates the importance of the edge, with a high value representing high importance.",
+                                                    "name": "weight:function(edge)",
+                                                    "descr": "A function that returns the positive weight for the edge. The weight indicates the importance of the edge, with a high value representing high importance.",
                                                     "optional": true
                                                 },
                                                 {
                                                     "name": "directed",
-                                                    "descr": "A boolean indicating whether the algorithm operates on edges in a directed manner from source to target (`true`) or whether the algorithm operates in an undirected manner (`false`, default).",
+                                                    "descr": "A boolean indicating whether the directed indegree and outdegree centrality is calculated (`true`) or whether the undirected centrality is calculated (`false`, default).",
                                                     "optional": true
                                                 }
-                                            ]
+                                            ],
+                                            "descr": "The options for betweennessCentralitying."
                                         }
                                     ]
                                 }
@@ -5156,7 +5161,8 @@
                                                     "descr": "Maximum number of iterations to perform (default `200`).",
                                                     "optional": true
                                                 }
-                                            ]
+                                            ],
+                                            "descr": "The options for pageRanking."
                                         }
                                     ]
                                 }

@@ -334,33 +334,33 @@ util.extend( elesfn, {
   }, 'target'),
 
   /**
- * @typedef {object} edge_sources
+ * @typedef {object} edges_sources
  * @property {object} selector - [optional] An optional selector that is used to filter the resultant collection.
  */
 
 /**
  * Get source nodes connected to the edges in the collection.
- * @memberof edge
+ * @memberof edges
  * @path Collection/Traversing
- * @param {...edge_sources} x - Get ID
- * @methodName edge.sources
+ * @param {...edges_sources} x - Get ID
+ * @methodName edges.sources
  */
   sources: defineSourceFunction( {
     attr: 'source'
   } ),
 
   /**
- * @typedef {object} edge_targets
+ * @typedef {object} edges_targets
  * @property {object} selector - [optional] An optional selector that is used to filter the resultant collection.
  */
 
 
 /**
  * Get target nodes connected to the edges in the collection.
- * @memberof edge
+ * @memberof edges
  * @path Collection/Traversing
- * @param {...edge_targets} x - Get ID
- * @methodName edge.targets
+ * @param {...edges_targets} x - Get ID
+ * @methodName edges.targets
  */
   targets: defineSourceFunction( {
     attr: 'target'

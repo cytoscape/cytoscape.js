@@ -3157,6 +3157,7 @@
                             "descr": "Get whether an element has a particular class.",
                             "formats": [
                                 {
+                                    "descr": "Adding Class",
                                     "args": [
                                         {
                                             "name": "className",
@@ -3465,10 +3466,6 @@
                         },
                         {
                             "name": "eles.clearQueue",
-                            "descr": "Remove all queued animations for the elements."
-                        },
-                        {
-                            "name": "eles.animated",
                             "descr": "Remove all queued animations for the elements."
                         }
                     ]
@@ -3789,6 +3786,7 @@
                     "fnsOrder": [
                         "eles.getElementById",
                         "eles.union",
+                        "eles.difference",
                         "eles.absoluteComplement",
                         "eles.intersection",
                         "eles.symmetricDifference",
@@ -3882,11 +3880,11 @@
                             "md": "collection/difference"
                         },
                         {
-                            "name": "eles.absoluteComplement",
                             "pureAliases": [
                                 "eles.abscomp",
                                 "eles.complement"
                             ],
+                            "name": "eles.absoluteComplement",
                             "descr": "Get all elements in the graph that are not in the calling collection.",
                             "md": "collection/absoluteComplement"
                         },
@@ -3991,7 +3989,7 @@
                                     "args": [
                                         {
                                             "name": "selector",
-                                            "descr": "A selector representing the elements to merge.  All elements in the graph matching the selector are used as the passed collection."
+                                            "descr": "A selector representing the elements to merge. All elements in the graph matching the selector are used as the passed collection."
                                         }
                                     ]
                                 }
@@ -4243,15 +4241,6 @@
                                 }
                             ],
                             "md": "collection/max"
-                        },
-                        {
-                            "pureAliases": [
-                                "eles.abscomp",
-                                "eles.complement"
-                            ],
-                            "name": "nodes.absoluteComplement",
-                            "descr": "Get all elements in the graph that are not in the calling collection.",
-                            "md": "collection/absoluteComplement"
                         }
                     ]
                 },
@@ -4442,6 +4431,7 @@
                             "descr": "Get source nodes connected to the edges in the collection.",
                             "formats": [
                                 {
+                                    "descr": "Get ID",
                                     "args": [
                                         {
                                             "name": "selector",
@@ -4475,6 +4465,7 @@
                             "descr": "Get target nodes connected to the edges in the collection.",
                             "formats": [
                                 {
+                                    "descr": "Get ID",
                                     "args": [
                                         {
                                             "name": "selector",
@@ -4617,54 +4608,6 @@
                                 }
                             ],
                             "md": "collection/predecessors"
-                        },
-                        {
-                            "name": "edge.sources",
-                            "descr": "Get source nodes connected to the edges in the collection.",
-                            "formats": [
-                                {
-                                    "descr": "Get ID",
-                                    "args": [
-                                        {
-                                            "name": "selector",
-                                            "descr": "An optional selector that is used to filter the resultant collection.",
-                                            "optional": true
-                                        }
-                                    ]
-                                }
-                            ],
-                            "md": "collection/sources"
-                        },
-                        {
-                            "name": "edge.targets",
-                            "descr": "Get target nodes connected to the edges in the collection.",
-                            "formats": [
-                                {
-                                    "descr": "Get ID",
-                                    "args": [
-                                        {
-                                            "name": "selector",
-                                            "descr": "An optional selector that is used to filter the resultant collection.",
-                                            "optional": true
-                                        }
-                                    ]
-                                }
-                            ],
-                            "md": "collection/targets"
-                        },
-                        {
-                            "name": "ele.visible",
-                            "descr": "Get the nodes connected to the ele in the collection.",
-                            "formats": [
-                                {
-                                    "name": "ele.visible",
-                                    "descr": "Get whether the element is visible."
-                                },
-                                {
-                                    "name": "ele.hidden",
-                                    "descr": "Get whether the element is hidden."
-                                }
-                            ]
                         }
                     ]
                 },

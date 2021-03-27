@@ -112,13 +112,13 @@ let elesfn = ({
 
   },
 
-  /**
- * Get all elements in the graph that are not in the calling collection.
- * @memberof nodes
- * @path Collection/Building & filtering
- * @pureAliases eles.abscomp|eles.complement
- * @methodName nodes.absoluteComplement
- */
+ /**
+   * Get all elements in the graph that are not in the calling collection.
+   * @memberof eles
+   * @path Collection/Building & filtering
+   * @pureAliases eles.abscomp|eles.complement
+   * @methodName eles.absoluteComplement
+   */
   absoluteComplement: function(){
     let cy = this.cy();
 
@@ -255,6 +255,20 @@ let elesfn = ({
   },
 
   // in place merge on calling collection
+
+      /**
+   * @typedef {object} eles_merge
+   * @property {object} eles - The elements to merge in-place.
+   * @property {object} selector - A selector representing the elements to merge. All elements in the graph matching the selector are used as the passed collection.
+   */
+
+  /**
+   * Perform a in-place merge of the given elements into the calling collection.
+   * @memberof eles
+   * @path Collection/Building & filtering
+   * @param {...eles_merge} toAdd - NULL | NULL
+   * @methodName eles.merge
+   */
   merge: function( toAdd ){
     let _p = this._private;
     let cy = _p.cy;

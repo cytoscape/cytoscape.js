@@ -1,0 +1,30 @@
+{
+    "name": "eles.symmetricDifference",
+    "pureAliases": [
+        "eles.symdiff",
+        "eles.xor",
+        "eles['^']",
+        "eles['(+)']",
+        "eles['(-)']"
+    ],
+    "descr": "Get the elements that are in the calling collection or the passed collection but not in both.",
+    "formats": [
+        {
+            "args": [
+                {
+                    "name": "eles",
+                    "descr": "The elements to apply the symmetric difference with."
+                }
+            ]
+        },
+        {
+            "args": [
+                {
+                    "name": "selector",
+                    "descr": "A selector representing the elements to apply the symmetric difference with.  All elements in the graph matching the selector are used as the passed collection."
+                }
+            ]
+        }
+    ],
+    "md": "collection/symmetricDifference"
+}

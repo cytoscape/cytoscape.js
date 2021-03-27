@@ -1,5 +1,5 @@
 {
-    "name": "edge.targets",
+    "name": "edges.targets",
     "descr": "Get target nodes connected to the edges in the collection.",
     "formats": [
         {

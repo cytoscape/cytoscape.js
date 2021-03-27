@@ -2143,7 +2143,7 @@ cy.endBatch();</code></pre>
 								</div>
 
 
-							<div class="descr"><p>Set or get scratchpad data, where temporary or non-JSON data can be stored.  App-level scratchpad data should use namespaces prefixed with underscore, like <code>&#39;_foo&#39;</code>.  This is analogous to the more common <a href="#ele.scratch"><code>ele.scratch()</code></a> but for graph global data.</p>
+							<div class="descr"><p>Set or get scratchpad scratch, where temporary or non-JSON scratch can be stored.  App-level scratchpad scratch should use namespaces prefixed with underscore, like <code>&#39;_foo&#39;</code>.  This is analogous to the more common <a href="#ele.scratch"><code>ele.scratch()</code></a> but for graph global scratch.</p>
 </div>
 
 							<div class="formats">
@@ -2211,7 +2211,7 @@ cy.endBatch();</code></pre>
 								</div>
 
 
-							<div class="descr"><p>Remove scratchpad data.  You should remove scratchpad data only at your own namespaces.  This is analogous to the more common <a href="#ele.removeScratch"><code>ele.removeScratch()</code></a> but for graph global data.</p>
+							<div class="descr"><p>Remove scratchpad data. You should remove scratchpad data only at your own namespaces.  This is analogous to the more common <a href="#ele.removeScratch"><code>ele.removeScratch()</code></a> but for graph global data.</p>
 </div>
 
 							<div class="formats">
@@ -2234,8 +2234,6 @@ cy.endBatch();</code></pre>
 							</div>
 
 							<div class="details">
-									<p>Note that <code>ele.removeScratch()</code> sets the scratchpad object for the specified namespace to <code>undefined</code>.  This allows you to use meaningful <code>null</code> values.</p>
-
 							</div>
 						</div>
 
@@ -2390,7 +2388,7 @@ cy.endBatch();</code></pre>
 
 
 
-							<div class="descr"><p>Listen to events that occur on the core, and run the handler only once.</p>
+							<div class="descr"><p>Add a listener that is called once per event per element.</p>
 </div>
 
 							<div class="formats">
@@ -2398,7 +2396,8 @@ cy.endBatch();</code></pre>
 											<div class="name">cy.one( <span class="args-summary"><span class="comma">,&nbsp;</span>events [<span class="comma">,&nbsp;</span>selector]<span class="comma">,&nbsp;</span>function(event)</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Determine test function</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name"><a href="#events">events</a></span>
@@ -2410,7 +2409,7 @@ cy.endBatch();</code></pre>
 												<li>
 													<span class="name"><a href="#selectors">selector</a></span>
 													<span class="optional">[optional]</span>
-													<span class="descr"><p>A selector to specify elements for which the handler runs.</p>
+													<span class="descr"><p>A selector to specify child elements for which the handler runs.</p>
 </span>
 
 												</li>
@@ -4042,7 +4041,7 @@ cy.animate({
 
 
 
-							<div class="descr"><p>Get a delay <a href="#animations">animation</a> of the viewport.</p>
+							<div class="descr"><p>Get a delay <a href="#animations">animation</a> for the element.</p>
 </div>
 
 							<div class="formats">
@@ -4652,7 +4651,7 @@ cy.style( stringStylesheet );</code></pre>
 
 
 
-							<div class="descr"><p>Get whether the element is inside the graph (i.e. not removed).</p>
+							<div class="descr"><p>Get whether the element has been removed from the graph.</p>
 </div>
 
 
@@ -4729,7 +4728,7 @@ eles.restore();
 												<li>
 													<span class="name">location</span>
 													
-													<span class="descr"><p>Where the edges are moved.  You can specify a new source, a new target, or both.</p>
+													<span class="descr"><p>Where the edges are moved. You can specify a new source, a new target, or both.</p>
 </span>
 
 													<ul class="fields">
@@ -4768,7 +4767,7 @@ eles.restore();
 															<li>
 																<span class="name">parent</span>
 																
-																<span class="descr"><p>The ID of the new parent node (use <code>null</code> for no parent).</p>
+																<span class="descr"><p>The ID of the new parent node (use null for no parent).</p>
 </span>
 															</li>
 
@@ -4789,6 +4788,28 @@ ej = ej.move({
   <span class="hljs-attr">target</span>: <span class="hljs-string">'g'</span>
 });</code></pre>
 <button class="run run-inline-code"><span class="fa fa-play"></span></button>
+							</div>
+						</div>
+						<div class="function">
+							<div class="name" id="ele.clone">
+								<span class="fn-name">ele.clone()</span>  <a href="#ele.clone"><span class="fa fa-bookmark"></span></a>
+								<span id="collection/graph-manipulation/ele.clone">&nbsp;</span><span id="collection/graph-manipulation/eles.copy">&nbsp;</span><span id="eles.copy">&nbsp;</span>
+							</div>
+
+
+							<div class="pure-aliases">
+								<span class="important-indicator"></span> Aliases:
+
+									<span class="pure-alias">
+										<code id="collection/graph-manipulation/eles.copy" class="pure-alias-name">eles.copy()</code><span class="pure-alias-comma">,</span>
+									</span>
+							</div>
+
+							<div class="descr"><p>Get a new collection containing clones (i.e. copies) of the elements in the calling collection.</p>
+</div>
+
+
+							<div class="details">
 							</div>
 						</div>
 
@@ -4845,7 +4866,7 @@ ej = ej.move({
 												<li>
 													<span class="name">function(event)</span>
 													
-													<span class="descr"><p>The handler function that is called when one of the specified events occurs.</p>
+													<span class="descr"><p>The handler function that is called when on of the specified events occurs.</p>
 </span>
 
 													<ul class="fields">
@@ -4939,7 +4960,8 @@ ej = ej.move({
 											<div class="name">eles.one( <span class="args-summary"><span class="comma">,&nbsp;</span>events [<span class="comma">,&nbsp;</span>selector]<span class="comma">,&nbsp;</span>function(event)</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Determine test function</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name"><a href="#events">events</a></span>
@@ -4995,7 +5017,7 @@ ej = ej.move({
 
 
 
-							<div class="descr"><p>Add a listener that is called once per event per collection.</p>
+							<div class="descr"><p>Add a listener that is called once per event per element.</p>
 </div>
 
 							<div class="formats">
@@ -5022,7 +5044,7 @@ ej = ej.move({
 												<li>
 													<span class="name">function(event)</span>
 													
-													<span class="descr"><p>The handler function that is called when one of the specified events occurs.</p>
+													<span class="descr"><p>The handler function that is called when once of the specified events occurs.</p>
 </span>
 
 													<ul class="fields">
@@ -5198,6 +5220,240 @@ j.on(<span class="hljs-string">'tap'</span>, <span class="hljs-function"><span c
 });
 
 j.emit(<span class="hljs-string">'tap'</span>); <span class="hljs-comment">// tap!!</span></code></pre>
+<button class="run run-inline-code"><span class="fa fa-play"></span></button>
+							</div>
+						</div>
+						<div class="function">
+							<div class="name" id="cy.on">
+								<span class="fn-name">cy.on()</span>  <a href="#cy.on"><span class="fa fa-bookmark"></span></a>
+								<span id="collection/events/cy.on">&nbsp;</span><span id="collection/events/cy.bind">&nbsp;</span><span id="cy.bind">&nbsp;</span><span id="collection/events/cy.listen">&nbsp;</span><span id="cy.listen">&nbsp;</span><span id="collection/events/cy.addListener">&nbsp;</span><span id="cy.addListener">&nbsp;</span><span id="collection/events/cy.on">&nbsp;</span><span id="cy.on">&nbsp;</span>
+							</div>
+
+
+							<div class="pure-aliases">
+								<span class="important-indicator"></span> Aliases:
+
+									<span class="pure-alias">
+										<code id="collection/events/cy.bind" class="pure-alias-name">cy.bind()</code><span class="pure-alias-comma">,</span>
+									</span>
+									<span class="pure-alias">
+										<code id="collection/events/cy.listen" class="pure-alias-name">cy.listen()</code><span class="pure-alias-comma">,</span>
+									</span>
+									<span class="pure-alias">
+										<code id="collection/events/cy.addListener" class="pure-alias-name">cy.addListener()</code><span class="pure-alias-comma">,</span>
+									</span>
+							</div>
+
+							<div class="descr"><p>Listen to events that occur on the elements.</p>
+</div>
+
+							<div class="formats">
+									<div class="format">
+											<div class="name">cy.on( <span class="args-summary"><span class="comma">,&nbsp;</span>events [<span class="comma">,&nbsp;</span>selector]<span class="comma">,&nbsp;</span>function(event)</span> )</div>
+
+
+										<div class="descr"></div>
+										<ul class="args">
+												<li>
+													<span class="name"><a href="#events">events</a></span>
+													
+													<span class="descr"><p>A space separated list of event names.</p>
+</span>
+
+												</li>
+												<li>
+													<span class="name"><a href="#selectors">selector</a></span>
+													<span class="optional">[optional]</span>
+													<span class="descr"><p> A selector to specify elements for which the handler runs.</p>
+</span>
+
+												</li>
+												<li>
+													<span class="name">function(event)</span>
+													
+													<span class="descr"><p>The handler function that is called when on of the specified events occurs.</p>
+</span>
+
+													<ul class="fields">
+															<li>
+																<span class="name"><a href="#events">event</a></span>
+																
+																<span class="descr"><p>The event object.</p>
+</span>
+															</li>
+
+													</ul>
+												</li>
+										</ul>
+									</div>
+							</div>
+
+							<div class="details">
+									<h3 id="examples">Examples</h3>
+<p>Listen to events that bubble up from elements matching the specified <code>node</code> selector:</p>
+<pre><code class="language-js">cy.on(<span class="hljs-string">'tap'</span>, <span class="hljs-string">'node'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">evt</span>)</span>{
+  <span class="hljs-keyword">var</span> node = evt.target;
+  <span class="hljs-built_in">console</span>.log( <span class="hljs-string">'tapped '</span> + node.id() );
+});</code></pre>
+<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>Listen to all tap events that the core receives:</p>
+<pre><code class="language-js">cy.on(<span class="hljs-string">'tap'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">event</span>)</span>{
+  <span class="hljs-comment">// target holds a reference to the originator</span>
+  <span class="hljs-comment">// of the event (core or element)</span>
+  <span class="hljs-keyword">var</span> evtTarget = event.target;
+
+  <span class="hljs-keyword">if</span>( evtTarget === cy ){
+    <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'tap on background'</span>);
+  } <span class="hljs-keyword">else</span> {
+    <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'tap on some element'</span>);
+  }
+});</code></pre>
+<button class="run run-inline-code"><span class="fa fa-play"></span></button>
+							</div>
+						</div>
+						<div class="function">
+							<div class="name" id="cy.removeListener">
+								<span class="fn-name">cy.removeListener()</span>  <a href="#cy.removeListener"><span class="fa fa-bookmark"></span></a>
+								<span id="collection/events/cy.removeListener">&nbsp;</span><span id="collection/events/cy.off">&nbsp;</span><span id="cy.off">&nbsp;</span><span id="collection/events/cy.unbind">&nbsp;</span><span id="cy.unbind">&nbsp;</span><span id="collection/events/cy.unlisten">&nbsp;</span><span id="cy.unlisten">&nbsp;</span><span id="collection/events/cy.removeListener">&nbsp;</span><span id="cy.removeListener">&nbsp;</span>
+							</div>
+
+
+							<div class="pure-aliases">
+								<span class="important-indicator"></span> Aliases:
+
+									<span class="pure-alias">
+										<code id="collection/events/cy.off" class="pure-alias-name">cy.off()</code><span class="pure-alias-comma">,</span>
+									</span>
+									<span class="pure-alias">
+										<code id="collection/events/cy.unbind" class="pure-alias-name">cy.unbind()</code><span class="pure-alias-comma">,</span>
+									</span>
+									<span class="pure-alias">
+										<code id="collection/events/cy.unlisten" class="pure-alias-name">cy.unlisten()</code><span class="pure-alias-comma">,</span>
+									</span>
+							</div>
+
+							<div class="descr"><p>Remove one or more listeners on the elements.</p>
+</div>
+
+							<div class="formats">
+									<div class="format">
+											<div class="name">cy.removeListener( <span class="args-summary"><span class="comma">,&nbsp;</span>events [<span class="comma">,&nbsp;</span>selector] [<span class="comma">,&nbsp;</span>handler]</span> )</div>
+
+
+										<div class="descr"></div>
+										<ul class="args">
+												<li>
+													<span class="name"><a href="#events">events</a></span>
+													
+													<span class="descr"><p>A space separated list of event names.</p>
+</span>
+
+												</li>
+												<li>
+													<span class="name"><a href="#selectors">selector</a></span>
+													<span class="optional">[optional]</span>
+													<span class="descr"><p>The same selector used to listen to the events.</p>
+</span>
+
+												</li>
+												<li>
+													<span class="name">handler</span>
+													<span class="optional">[optional]</span>
+													<span class="descr"><p>A reference to the handler function to remove.</p>
+</span>
+
+												</li>
+										</ul>
+									</div>
+							</div>
+
+							<div class="details">
+									<h3 id="examples">Examples</h3>
+<p>For all handlers:</p>
+<pre><code class="language-js">cy.on(<span class="hljs-string">'tap'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>)</span>{ <span class="hljs-comment">/* ... */</span> });
+
+<span class="hljs-comment">// remove all tap listener handlers, including the one above</span>
+cy.removeListener(<span class="hljs-string">'tap'</span>);</code></pre>
+<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>For a particular handler:</p>
+<pre><code class="language-js"><span class="hljs-keyword">var</span> handler = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>)</span>{
+  <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'called handler'</span>);
+};
+cy.on(<span class="hljs-string">'tap'</span>, handler);
+
+<span class="hljs-keyword">var</span> otherHandler = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>)</span>{
+  <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'called other handler'</span>);
+};
+cy.on(<span class="hljs-string">'tap'</span>, otherHandler);
+
+<span class="hljs-comment">// just remove handler</span>
+cy.removeListener(<span class="hljs-string">'tap'</span>, handler);</code></pre>
+<button class="run run-inline-code"><span class="fa fa-play"></span></button>
+							</div>
+						</div>
+						<div class="function">
+							<div class="name" id="cy.removeAllListeners">
+								<span class="fn-name">cy.removeAllListeners()</span>  <a href="#cy.removeAllListeners"><span class="fa fa-bookmark"></span></a>
+								<span id="collection/events/cy.removeAllListeners">&nbsp;</span>
+							</div>
+
+
+
+							<div class="descr"><p>Remove all event handlers on the elements.</p>
+</div>
+
+
+							<div class="details">
+							</div>
+						</div>
+						<div class="function">
+							<div class="name" id="cy.emit">
+								<span class="fn-name">cy.emit()</span>  <a href="#cy.emit"><span class="fa fa-bookmark"></span></a>
+								<span id="collection/events/cy.emit">&nbsp;</span><span id="collection/events/cy.trigger">&nbsp;</span><span id="cy.trigger">&nbsp;</span><span id="collection/events/cy.emit">&nbsp;</span><span id="cy.emit">&nbsp;</span>
+							</div>
+
+
+							<div class="pure-aliases">
+								<span class="important-indicator"></span> Aliases:
+
+									<span class="pure-alias">
+										<code id="collection/events/cy.trigger" class="pure-alias-name">cy.trigger()</code><span class="pure-alias-comma">,</span>
+									</span>
+							</div>
+
+							<div class="descr"><p>Emit one or more events.</p>
+</div>
+
+							<div class="formats">
+									<div class="format">
+											<div class="name">cy.emit( <span class="args-summary"><span class="comma">,&nbsp;</span>events [<span class="comma">,&nbsp;</span>extraParams]</span> )</div>
+
+
+										<div class="descr"></div>
+										<ul class="args">
+												<li>
+													<span class="name"><a href="#events">events</a></span>
+													
+													<span class="descr"><p>A list of event names to emit (either a space-separated string or an array)</p>
+</span>
+
+												</li>
+												<li>
+													<span class="name">extraParams</span>
+													<span class="optional">[optional]</span>
+													<span class="descr"><p>An array of additional parameters to pass to the handler.</p>
+</span>
+
+												</li>
+										</ul>
+									</div>
+							</div>
+
+							<div class="details">
+									<h3 id="examples">Examples</h3>
+<pre><code class="language-js">cy.on(<span class="hljs-string">'tap'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">evt, f, b</span>)</span>{
+  <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'tap'</span>, f, b);
+});
+
+cy.emit(<span class="hljs-string">'tap'</span>, [<span class="hljs-string">'foo'</span>, <span class="hljs-string">'bar'</span>]);</code></pre>
 <button class="run run-inline-code"><span class="fa fa-play"></span></button>
 							</div>
 						</div>
@@ -5478,7 +5734,7 @@ j.data({
 								</div>
 
 
-							<div class="descr"><p>Remove scratchpad data.  You should remove scratchpad data only at your own namespaces.</p>
+							<div class="descr"><p>Remove scratchpad data. You should remove scratchpad data only at your own namespaces.</p>
 </div>
 
 							<div class="formats">
@@ -5501,6 +5757,8 @@ j.data({
 							</div>
 
 							<div class="details">
+									<p>Note that <code>ele.removeScratch()</code> sets the scratchpad object for the specified namespace to <code>undefined</code>.  This allows you to use meaningful <code>null</code> values.</p>
+
 							</div>
 						</div>
 						<div class="function">
@@ -5760,7 +6018,8 @@ j.data({
 
 
 
-							<div class="descr"></div>
+							<div class="descr"><p>Get the degree of a node.</p>
+</div>
 
 							<div class="formats">
 									<div class="format">
@@ -6131,14 +6390,14 @@ cy.$(<span class="hljs-string">'#e'</span>).position({
 
 							<div class="formats">
 									<div class="format">
-											<div class="name">nodes.positions( <span class="args-summary"><span class="comma">,&nbsp;</span>function(ele, i)</span> )</div>
+											<div class="name">nodes.positions( <span class="args-summary"><span class="comma">,&nbsp;</span>function(ele,i)</span> )</div>
 
 
 										<div class="descr"><p>Set the positions via a function.</p>
 </div>
 										<ul class="args">
 												<li>
-													<span class="name">function(ele, i)</span>
+													<span class="name">function(ele,i)</span>
 													
 													<span class="descr"><p>A callback function that returns the position to set for each element.</p>
 </span>
@@ -7816,7 +8075,8 @@ cy.nodes().classes(<span class="hljs-string">'foo'</span>); <span class="hljs-co
 											<div class="name">ele.hasClass( <span class="args-summary"><span class="comma">,&nbsp;</span>className</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Adding Class</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name">className</span>
@@ -8198,7 +8458,7 @@ cy.nodes().classes(<span class="hljs-string">'foo'</span>); <span class="hljs-co
 
 													<ul class="fields">
 															<li>
-																<span class="name"><a href="#notation/position">position</a></span>
+																<span class="name">options</span>
 																
 																<span class="descr"><p>A position to which the elements will be animated.</p>
 </span>
@@ -8235,7 +8495,7 @@ cy.nodes().classes(<span class="hljs-string">'foo'</span>); <span class="hljs-co
 															<li>
 																<span class="name"><a href="#style/transition-animation">easing</a></span>
 																
-																<span class="descr"><p>A <a href="#style/transition-animation"><code>transition-timing-function</code></a> easing style string that shapes the animation progress curve.</p>
+																<span class="descr"><p>A <code>transition-timing-function</code> easing style string that shapes the animation progress curve.</p>
 </span>
 															</li>
 
@@ -8300,7 +8560,7 @@ cy.nodes().classes(<span class="hljs-string">'foo'</span>); <span class="hljs-co
 
 													<ul class="fields">
 															<li>
-																<span class="name"><a href="#notation/position">position</a></span>
+																<span class="name">options</span>
 																
 																<span class="descr"><p>A position to which the elements will be animated.</p>
 </span>
@@ -8330,7 +8590,7 @@ cy.nodes().classes(<span class="hljs-string">'foo'</span>); <span class="hljs-co
 															<li>
 																<span class="name"><a href="#style/transition-animation">easing</a></span>
 																
-																<span class="descr"><p>A <a href="#style/transition-animation"><code>transition-timing-function</code></a> easing style string that shapes the animation progress curve.</p>
+																<span class="descr"><p>A <code>transition-timing-function</code> easing style string that shapes the animation progress curve.</p>
 </span>
 															</li>
 
@@ -9638,7 +9898,7 @@ jNhd.intersection( eNhd );</code></pre>
 												<li>
 													<span class="name"><a href="#selectors">selector</a></span>
 													
-													<span class="descr"><p>A selector representing the elements to merge.  All elements in the graph matching the selector are used as the passed collection.</p>
+													<span class="descr"><p>A selector representing the elements to merge. All elements in the graph matching the selector are used as the passed collection.</p>
 </span>
 
 												</li>
@@ -9744,15 +10004,16 @@ col.unmerge(<span class="hljs-string">'#e'</span>);</code></pre>
 
 							<div class="formats">
 									<div class="format">
-											<div class="name">eles.filter( <span class="args-summary"><span class="comma">,&nbsp;</span>function(ele, i, eles) [<span class="comma">,&nbsp;</span>thisArg]</span> )</div>
+											<div class="name">eles.filter( <span class="args-summary"><span class="comma">,&nbsp;</span>function(ele,i,eles) [<span class="comma">,&nbsp;</span>thisArg]</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Determine test function</p>
+</div>
 										<ul class="args">
 												<li>
-													<span class="name">function(ele, i, eles)</span>
+													<span class="name">function(ele,i,eles)</span>
 													
-													<span class="descr"><p>The filter function that returns truthy values for elements to include and falsey values for elements to exclude.</p>
+													<span class="descr"><p>The function that returns the filterped value for each element.</p>
 </span>
 
 													<ul class="fields">
@@ -9773,7 +10034,7 @@ col.unmerge(<span class="hljs-string">'#e'</span>);</code></pre>
 															<li>
 																<span class="name"><a href="#collection">eles</a></span>
 																
-																<span class="descr"><p>The collection of elements being filtered.</p>
+																<span class="descr"><p>The collection of elements being mapped.</p>
 </span>
 															</li>
 
@@ -10203,34 +10464,6 @@ nodes.removeStyle().forEach(<span class="hljs-function"><span class="hljs-keywor
 <button class="run run-inline-code"><span class="fa fa-play"></span></button>
 							</div>
 						</div>
-						<div class="function">
-							<div class="name" id="nodes.absoluteComplement">
-								<span class="fn-name">nodes.absoluteComplement()</span>  <a href="#nodes.absoluteComplement"><span class="fa fa-bookmark"></span></a>
-								<span id="collection/building--filtering/nodes.absoluteComplement">&nbsp;</span><span id="collection/building--filtering/eles.abscomp">&nbsp;</span><span id="eles.abscomp">&nbsp;</span><span id="collection/building--filtering/eles.complement">&nbsp;</span><span id="eles.complement">&nbsp;</span>
-							</div>
-
-
-							<div class="pure-aliases">
-								<span class="important-indicator"></span> Aliases:
-
-									<span class="pure-alias">
-										<code id="collection/building--filtering/eles.abscomp" class="pure-alias-name">eles.abscomp()</code><span class="pure-alias-comma">,</span>
-									</span>
-									<span class="pure-alias">
-										<code id="collection/building--filtering/eles.complement" class="pure-alias-name">eles.complement()</code><span class="pure-alias-comma">,</span>
-									</span>
-							</div>
-
-							<div class="descr"><p>Get all elements in the graph that are not in the calling collection.</p>
-</div>
-
-
-							<div class="details">
-									<h3 id="examples">Examples</h3>
-<pre><code class="language-js">cy.$(<span class="hljs-string">'#j'</span>).absoluteComplement();</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button>
-							</div>
-						</div>
 
 					<h2 id="collection/traversing">Traversing <a href="#collection/traversing"><span class="fa fa-bookmark"></span></a></h2>
 
@@ -10252,13 +10485,6 @@ nodes.removeStyle().forEach(<span class="hljs-function"><span class="hljs-keywor
 									<div class="format">
 											<div class="name">eles.neighborhood( <span class="args-summary"> [<span class="comma">,&nbsp;</span>selector]</span> )</div>
 
-										<div class="pure-aliases">
-											<span class="important-indicator"></span> Aliases:
-
-												<span class="pure-alias">
-													<span id="collection/traversing/eles.neighbourhood" class="pure-alias-name">eles.neighbourhood()</span><span class="pure-alias-comma">,</span>
-												</span>
-										</div>
 
 										<div class="descr"><p>Get the open neighbourhood of the elements.</p>
 </div>
@@ -10275,13 +10501,6 @@ nodes.removeStyle().forEach(<span class="hljs-function"><span class="hljs-keywor
 									<div class="format">
 											<div class="name">eles.openNeighborhood( <span class="args-summary"> [<span class="comma">,&nbsp;</span>selector]</span> )</div>
 
-										<div class="pure-aliases">
-											<span class="important-indicator"></span> Aliases:
-
-												<span class="pure-alias">
-													<span id="collection/traversing/eles.openNeighbourhood" class="pure-alias-name">eles.openNeighbourhood()</span><span class="pure-alias-comma">,</span>
-												</span>
-										</div>
 
 										<div class="descr"><p>Get the open neighbourhood of the elements.</p>
 </div>
@@ -10298,13 +10517,6 @@ nodes.removeStyle().forEach(<span class="hljs-function"><span class="hljs-keywor
 									<div class="format">
 											<div class="name">eles.closedNeighborhood( <span class="args-summary"> [<span class="comma">,&nbsp;</span>selector]</span> )</div>
 
-										<div class="pure-aliases">
-											<span class="important-indicator"></span> Aliases:
-
-												<span class="pure-alias">
-													<span id="collection/traversing/eles.closedNeighbourhood" class="pure-alias-name">eles.closedNeighbourhood()</span><span class="pure-alias-comma">,</span>
-												</span>
-										</div>
 
 										<div class="descr"><p>Get the closed neighbourhood of the elements.</p>
 </div>
@@ -10389,7 +10601,7 @@ nodes.removeStyle().forEach(<span class="hljs-function"><span class="hljs-keywor
 
 
 
-							<div class="descr"><p>Get the edges connecting the collection to another collection.  Direction of the edges does not matter.</p>
+							<div class="descr"><p>Get the edges connecting the collection to another collection. Direction of the edges does not matter.</p>
 </div>
 
 							<div class="formats">
@@ -10615,7 +10827,8 @@ je.source();</code></pre>
 											<div class="name">edges.sources( <span class="args-summary"> [<span class="comma">,&nbsp;</span>selector]</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Get ID</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name"><a href="#selectors">selector</a></span>
@@ -10690,7 +10903,8 @@ je.target();</code></pre>
 											<div class="name">edges.targets( <span class="args-summary"> [<span class="comma">,&nbsp;</span>selector]</span> )</div>
 
 
-										<div class="descr"></div>
+										<div class="descr"><p>Get ID</p>
+</div>
 										<ul class="args">
 												<li>
 													<span class="name"><a href="#selectors">selector</a></span>
@@ -10996,82 +11210,6 @@ edges.targets();</code></pre>
 									<h3 id="examples">Examples</h3>
 <p>Get predecessors of <code>j</code>:</p>
 <pre><code class="language-js">cy.$(<span class="hljs-string">'#j'</span>).predecessors();</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button>
-							</div>
-						</div>
-						<div class="function">
-							<div class="name" id="edge.sources">
-								<span class="fn-name">edge.sources()</span>  <a href="#edge.sources"><span class="fa fa-bookmark"></span></a>
-								<span id="collection/traversing/edge.sources">&nbsp;</span><span id="collection/traversing/edge.sources">&nbsp;</span><span id="edge.sources">&nbsp;</span>
-							</div>
-
-
-
-							<div class="descr"><p>Get source nodes connected to the edges in the collection.</p>
-</div>
-
-							<div class="formats">
-									<div class="format">
-											<div class="name">edge.sources( <span class="args-summary"> [<span class="comma">,&nbsp;</span>selector]</span> )</div>
-
-
-										<div class="descr"><p>Get ID</p>
-</div>
-										<ul class="args">
-												<li>
-													<span class="name"><a href="#selectors">selector</a></span>
-													<span class="optional">[optional]</span>
-													<span class="descr"><p>An optional selector that is used to filter the resultant collection.</p>
-</span>
-
-												</li>
-										</ul>
-									</div>
-							</div>
-
-							<div class="details">
-									<h3 id="examples">Examples</h3>
-<pre><code class="language-js"><span class="hljs-keyword">var</span> edges = cy.$(<span class="hljs-string">'#je, #kg'</span>);
-
-edges.sources();</code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button>
-							</div>
-						</div>
-						<div class="function">
-							<div class="name" id="edge.targets">
-								<span class="fn-name">edge.targets()</span>  <a href="#edge.targets"><span class="fa fa-bookmark"></span></a>
-								<span id="collection/traversing/edge.targets">&nbsp;</span><span id="collection/traversing/edge.targets">&nbsp;</span><span id="edge.targets">&nbsp;</span>
-							</div>
-
-
-
-							<div class="descr"><p>Get target nodes connected to the edges in the collection.</p>
-</div>
-
-							<div class="formats">
-									<div class="format">
-											<div class="name">edge.targets( <span class="args-summary"> [<span class="comma">,&nbsp;</span>selector]</span> )</div>
-
-
-										<div class="descr"><p>Get ID</p>
-</div>
-										<ul class="args">
-												<li>
-													<span class="name"><a href="#selectors">selector</a></span>
-													<span class="optional">[optional]</span>
-													<span class="descr"><p>An optional selector that is used to filter the resultant collection.</p>
-</span>
-
-												</li>
-										</ul>
-									</div>
-							</div>
-
-							<div class="details">
-									<h3 id="examples">Examples</h3>
-<pre><code class="language-js"><span class="hljs-keyword">var</span> edges = cy.$(<span class="hljs-string">'#je, #kg'</span>);
-
-edges.targets();</code></pre>
 <button class="run run-inline-code"><span class="fa fa-play"></span></button>
 							</div>
 						</div>
@@ -16121,6 +16259,7 @@ Compound Spring Embedder with Ports (CoSEP) is a force-directed layout algorithm
 							<div class="section lvl3"><a class="toclink" href="#eles.restore">eles.restore() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#eles.clone">eles.clone() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#eles.move">eles.move() et al</a></div>
+							<div class="section lvl3"><a class="toclink" href="#ele.clone">ele.clone() </a></div>
 						<div class="section lvl2">
 							<span class="expander">
 								<span class="fa fa-caret-down expanded-icon"></span>
@@ -16136,6 +16275,10 @@ Compound Spring Embedder with Ports (CoSEP) is a force-directed layout algorithm
 							<div class="section lvl3"><a class="toclink" href="#eles.removeListener">eles.removeListener() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#eles.removeAllListeners">eles.removeAllListeners() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#eles.emit">eles.emit() </a></div>
+							<div class="section lvl3"><a class="toclink" href="#cy.on">cy.on() </a></div>
+							<div class="section lvl3"><a class="toclink" href="#cy.removeListener">cy.removeListener() </a></div>
+							<div class="section lvl3"><a class="toclink" href="#cy.removeAllListeners">cy.removeAllListeners() </a></div>
+							<div class="section lvl3"><a class="toclink" href="#cy.emit">cy.emit() </a></div>
 						<div class="section lvl2">
 							<span class="expander">
 								<span class="fa fa-caret-down expanded-icon"></span>
@@ -16330,7 +16473,6 @@ Compound Spring Embedder with Ports (CoSEP) is a force-directed layout algorithm
 							<div class="section lvl3"><a class="toclink" href="#eles.reduce">eles.reduce() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#eles.min">eles.min() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#eles.max">eles.max() </a></div>
-							<div class="section lvl3"><a class="toclink" href="#nodes.absoluteComplement">nodes.absoluteComplement() </a></div>
 						<div class="section lvl2">
 							<span class="expander">
 								<span class="fa fa-caret-down expanded-icon"></span>
@@ -16357,8 +16499,6 @@ Compound Spring Embedder with Ports (CoSEP) is a force-directed layout algorithm
 							<div class="section lvl3"><a class="toclink" href="#nodes.successors">nodes.successors() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#nodes.incomers">nodes.incomers() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#nodes.predecessors">nodes.predecessors() </a></div>
-							<div class="section lvl3"><a class="toclink" href="#edge.sources">edge.sources() </a></div>
-							<div class="section lvl3"><a class="toclink" href="#edge.targets">edge.targets() </a></div>
 						<div class="section lvl2">
 							<span class="expander">
 								<span class="fa fa-caret-down expanded-icon"></span>

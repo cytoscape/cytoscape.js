@@ -1,5 +1,5 @@
 {
-    "name": "edge.sources",
+    "name": "edges.sources",
     "descr": "Get source nodes connected to the edges in the collection.",
     "formats": [
         {

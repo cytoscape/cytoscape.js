@@ -121,12 +121,12 @@ export const defaults = defaults => {
   };
 };
 
-export const removeFromArray = ( arr, ele, manyCopies ) => {
-  for( let i = arr.length; i >= 0; i-- ){
+export const removeFromArray = ( arr, ele, oneCopy ) => {
+  for( let i = arr.length - 1; i >= 0; i-- ){
     if( arr[i] === ele ){
       arr.splice( i, 1 );
 
-      if( !manyCopies ){ break; }
+      if( oneCopy ){ break; }
     }
   }
 };

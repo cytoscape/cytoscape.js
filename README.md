@@ -109,7 +109,7 @@ Run `npm run <target>` in the console.  The main targets are:
 
 **Testing:**
 
-The default test scripts run directly agasinst the source code.  Tests can alternatively be run on a built bundle.  The library can be built on `node>=6`, but the library's bundle can be tested on `node>=0.10`.
+The default test scripts run directly against the source code.  Tests can alternatively be run on a built bundle.  The library can be built on `node>=6`, but the library's bundle can be tested on `node>=0.10`.
 
  * `test` : run all testing & linting
  * `test:js` : run the mocha tests on the public API of the lib (directly on source files)

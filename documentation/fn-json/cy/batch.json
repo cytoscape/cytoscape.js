@@ -1,0 +1,25 @@
+{
+    "name": "cy.batch",
+    "descr": "Allow for manipulation of elements without triggering multiple style calculations or multiple redraws.",
+    "formats": [
+        {
+            "name": "cy.batch",
+            "descr": "callback",
+            "args": [
+                {
+                    "name": "function()",
+                    "descr": "A callback within which you can make batch updates to elements."
+                }
+            ]
+        },
+        {
+            "name": "cy.startBatch",
+            "descr": "Starts batching manually (useful for asynchronous cases)."
+        },
+        {
+            "name": "cy.endBatch",
+            "descr": "Ends batching manually (useful for asynchronous cases)."
+        }
+    ],
+    "md": "cy/batch"
+}

@@ -1,0 +1,5 @@
+{
+    "name": "ani.apply",
+    "descr": "Apply the animation at its current progress.",
+    "md": "ani/apply"
+}

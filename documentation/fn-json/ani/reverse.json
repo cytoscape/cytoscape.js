@@ -1,0 +1,5 @@
+{
+    "name": "ani.reverse",
+    "descr": "Reverse the animation such that its starting conditions and ending conditions are reversed.",
+    "md": "ani/reverse"
+}

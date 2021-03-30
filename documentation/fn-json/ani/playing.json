@@ -1,0 +1,7 @@
+{
+    "pureAliases": [
+        "ani.running"
+    ],
+    "name": "ani.playing",
+    "descr": "Get whether the animation is currently playing."
+}

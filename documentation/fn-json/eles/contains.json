@@ -1,0 +1,19 @@
+{
+    "pureAliases": [
+        "eles.has"
+    ],
+    "name": "eles.contains",
+    "descr": "Determine whether this collection contains all of the elements of another collection.",
+    "formats": [
+        {
+            "descr": "Determine another collection",
+            "args": [
+                {
+                    "name": "eles",
+                    "descr": "The other elements to compare to."
+                }
+            ]
+        }
+    ],
+    "md": "collection/contains"
+}

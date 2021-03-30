@@ -1,0 +1,30 @@
+{
+    "pureAliases": [
+        "cy.off",
+        "cy.unbind",
+        "cy.unlisten"
+    ],
+    "name": "cy.removeListener",
+    "descr": "Remove one or more listeners on the elements.",
+    "formats": [
+        {
+            "args": [
+                {
+                    "name": "events",
+                    "descr": "A space separated list of event names."
+                },
+                {
+                    "name": "selector",
+                    "descr": "The same selector used to listen to the events.",
+                    "optional": true
+                },
+                {
+                    "name": "handler",
+                    "descr": "A reference to the handler function to remove.",
+                    "optional": true
+                }
+            ]
+        }
+    ],
+    "md": "cy/removeListener"
+}

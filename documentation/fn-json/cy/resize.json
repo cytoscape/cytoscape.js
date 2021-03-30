@@ -1,0 +1,8 @@
+{
+    "pureAliases": [
+        "cy.invalidateDimensions"
+    ],
+    "name": "cy.resize",
+    "descr": "Force the renderer to recalculate the viewport bounds.",
+    "md": "cy/resize"
+}

@@ -1,0 +1,5 @@
+{
+    "name": "cy.unmount",
+    "descr": "Remove the instance from its current container.",
+    "md": "cy/unmount"
+}

@@ -1,0 +1,55 @@
+{
+    "name": "eles.depthFirstSearch",
+    "pureAliases": [
+        "eles.dfs"
+    ],
+    "descr": "Perform a [depth-first search](https://en.wikipedia.org/wiki/Depth-first_search) within the elements in the collection.",
+    "formats": [
+        {
+            "args": [
+                {
+                    "name": "options",
+                    "fields": [
+                        {
+                            "name": "root",
+                            "descr": "The root nodes (selector or collection) to start the search from."
+                        },
+                        {
+                            "name": "visit: function(v, e, u, i, depth)",
+                            "descr": "A handler function that is called when a node is visited in the search.  The handler returns `true` when it finds the desired node, and it returns `false` to cancel the search.",
+                            "optional": true,
+                            "fields": [
+                                {
+                                    "name": "v",
+                                    "descr": "The current node."
+                                },
+                                {
+                                    "name": "e",
+                                    "descr": "The edge connecting the previous node to the current node."
+                                },
+                                {
+                                    "name": "u",
+                                    "descr": "The previous node."
+                                },
+                                {
+                                    "name": "i",
+                                    "descr": "The index indicating this node is the ith visited node."
+                                },
+                                {
+                                    "name": "depth",
+                                    "descr": "How many edge hops away this node is from the root nodes."
+                                }
+                            ]
+                        },
+                        {
+                            "name": "directed",
+                            "descr": "A boolean indicating whether the algorithm should only go along edges from source to target (default `false`).",
+                            "optional": true
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "md": "collection/depthFirstSearch"
+}

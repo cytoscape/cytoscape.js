@@ -1,0 +1,16 @@
+{
+    "name": "eles.addClass",
+    "descr": "Add classes to elements.  The classes should be specified in the [stylesheet](#style) in order to have an effect on the rendered style of the elements.",
+    "formats": [
+        {
+            "descr": "Adding Class",
+            "args": [
+                {
+                    "name": "classes",
+                    "descr": "An array (or a space-separated string) of class names to add to the elements."
+                }
+            ]
+        }
+    ],
+    "md": "collection/addClass"
+}

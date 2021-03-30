@@ -1,0 +1,46 @@
+{
+    "name": "cy.animation",
+    "descr": "Get an [animation](#animations) of the viewport.",
+    "formats": [
+      {
+        "args": [
+          {
+            "name": "options",
+            "descr": "An object containing the details of the animation.",
+            "fields": [
+              {
+                "name": "zoom",
+                "descr": "A zoom level (number) or a zoom configuration object to which the graph will be animated.",
+                "fields": [
+                  { "name": "level", "descr": "The zoom level to use." },
+                  { "name": "position", "descr": "The position about which zooming occurs.  This automatically modifies the pan such that the specified model position remains at the same position in the viewport extent during zooming." },
+                  { "name": "renderedPosition", "descr": "The rendered position about which zooming occurs, as an alternative to using the model position.  This automatically modifies the pan such that the model position, corresponding to the rendered position at the start of the animation, remains at the same position in the viewport extent during zooming." }
+                ]
+              },
+              { "name": "pan", "descr": "A panning position to which the graph will be animated." },
+              { "name": "panBy", "descr": "A relative panning position to which the graph will be animated." },
+              {
+                "name": "fit",
+                "descr": "An object containing fitting options from which the graph will be animated.",
+                "fields": [
+                  { "name": "eles", "descr": "Elements or a selector to which the viewport will be fitted." },
+                  { "name": "padding", "descr": "Padding to use with the fitting (default `0`)." }
+                ]
+              },
+              {
+                "name": "center",
+                "descr": "An object containing centring options from which the graph will be animated.",
+                "fields": [
+                  { "name": "eles", "descr": "Elements or a selector to which the viewport will be centred." }
+                ]
+              },
+              { "name": "duration", "descr": "The duration of the animation in milliseconds." },
+              { "name": "easing", "descr": "A [`transition-timing-function`](#style/transition-animation) easing style string that shapes the animation progress curve." },
+              { "name": "complete", "descr": "A function to call when the animation is done." },
+              { "name": "step", "descr": "A function to call each time the animation steps." }
+            ]
+          }
+        ]
+      }
+    ]
+  }

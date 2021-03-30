@@ -1,0 +1,10 @@
+{
+    "name": "ele.width",
+    "descr": "Get the width of the element.  The raw width of the element is returned, independent of whether the element is visibile.",
+    "formats": [
+      { "name": "ele.width", "descr": "Get the width of the element in [model dimensions](#notation/position)." },
+      { "name": "ele.outerWidth", "descr": "Get the outer width of the element in [model dimensions](#notation/position) (includes width, padding, & border)." },
+      { "name": "ele.renderedWidth", "descr": "Get the width of the element in [rendered dimensions](#notation/position)." },
+      { "name": "ele.renderedOuterWidth", "descr": "Get the outer width of the element in [rendered dimensions](#notation/position) (includes width, padding, & border) in rendered dimensions." }
+    ]
+  }

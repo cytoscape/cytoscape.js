@@ -1,0 +1,32 @@
+{
+    "name": "eles.pageRank",
+    "descr": "Rank the nodes in the collection using the [Page Rank](https://en.wikipedia.org/wiki/PageRank) algorithm.",
+    "formats": [
+        {
+            "args": [
+                {
+                    "name": "options",
+                    "fields": [
+                        {
+                            "name": "dampingFactor",
+                            "descr": "The [damping factor](https://en.wikipedia.org/wiki/PageRank#Damping_factor), affecting how long the algorithm goes along the topology of the graph (default `0.8`).",
+                            "optional": true
+                        },
+                        {
+                            "name": "precision",
+                            "descr": "Numeric parameter that represents the required precision (default `0.000001`).  The algorithm stops when the difference between iterations is this value or less.",
+                            "optional": true
+                        },
+                        {
+                            "name": "iterations",
+                            "descr": "Maximum number of iterations to perform (default `200`).",
+                            "optional": true
+                        }
+                    ],
+                    "descr": "The options for pageRanking."
+                }
+            ]
+        }
+    ],
+    "md": "collection/pageRank"
+}

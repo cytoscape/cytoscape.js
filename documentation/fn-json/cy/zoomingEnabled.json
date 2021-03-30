@@ -1,0 +1,19 @@
+{
+    "name": "cy.zoomingEnabled",
+    "descr": "Get or set whether zooming is enabled.",
+    "formats": [
+        {
+            "descr": "Get whether zooming is enabled."
+        },
+        {
+            "descr": "Set whether zooming is enabled",
+            "args": [
+                {
+                    "name": "bool",
+                    "descr": "A truthy value enables zooming; a falsey value disables it."
+                }
+            ]
+        }
+    ],
+    "md": "cy/zoomingEnabled"
+}

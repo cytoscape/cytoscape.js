@@ -238,7 +238,18 @@
                 },
                 {
                     "name": "Graph manipulation",
-                    "fnsOrder": ["cy.add", "cy.remove"],
+                    "fnsOrder": [
+                        "cy.add",
+                        "cy.remove",
+                        "cy.collection",
+                        "cy.getElementById",
+                        "cy.$",
+                        "cy.batch",
+                        "cy.mount",
+                        "cy.unmount",
+                        "cy.destroy",
+                        "cy.destroyed"
+                    ],
                     "fns": [
                         {
                             "name": "cy.add",
@@ -467,21 +478,24 @@
                 },
                 {
                     "name": "Data",
+                    "fnsOrder": [
+                        "cy.data",
+                        "cy.removeData",
+                        "cy.scratch",
+                        "cy.removeScratch"
+                    ],
                     "fns": [
                         {
-                            "name": "cy.data",
                             "pureAliases": [
                                 "cy.attr"
                             ],
+                            "name": "cy.data",
                             "descr": "Read and write developer-defined data associated with the graph.",
-                            "formatsSameFn": true,
                             "formats": [
                                 {
-                                    "name": "cy.data",
                                     "descr": "Get the entire data object."
                                 },
                                 {
-                                    "name": "cy.data",
                                     "descr": "Get a particular data field.",
                                     "args": [
                                         {
@@ -491,7 +505,6 @@
                                     ]
                                 },
                                 {
-                                    "name": "cy.data",
                                     "descr": "Set a particular data field.",
                                     "args": [
                                         {
@@ -505,7 +518,6 @@
                                     ]
                                 },
                                 {
-                                    "name": "cy.data",
                                     "descr": "Update multiple data fields at once via an object.",
                                     "args": [
                                         {
@@ -540,7 +552,7 @@
                         {
                             "name": "cy.scratch",
                             "extFn": true,
-                            "descr": "Set or get scratchpad data, where temporary or non-JSON data can be stored.  App-level scratchpad data should use namespaces prefixed with underscore, like `'_foo'`.  This is analogous to the more common [`ele.scratch()`](#ele.scratch) but for graph global data.",
+                            "descr": "Set or get scratchpad scratch, where temporary or non-JSON scratch can be stored.  App-level scratchpad scratch should use namespaces prefixed with underscore, like `'_foo'`.  This is analogous to the more common [`ele.scratch()`](#ele.scratch) but for graph global scratch.",
                             "formats": [
                                 {
                                     "descr": "Get the entire scratchpad object for the core."
@@ -572,7 +584,7 @@
                         {
                             "name": "cy.removeScratch",
                             "extFn": true,
-                            "descr": "Remove scratchpad data.  You should remove scratchpad data only at your own namespaces.  This is analogous to the more common [`ele.removeScratch()`](#ele.removeScratch) but for graph global data.",
+                            "descr": "Remove scratchpad data. You should remove scratchpad data only at your own namespaces.  This is analogous to the more common [`ele.removeScratch()`](#ele.removeScratch) but for graph global data.",
                             "formats": [
                                 {
                                     "descr": "Remove the scratchpad data at a particular namespace.",
@@ -583,13 +595,21 @@
                                         }
                                     ]
                                 }
-                            ],
-                            "md": "collection/removeScratch"
+                            ]
                         }
                     ]
                 },
                 {
                     "name": "Events",
+                    "fnsOrder": [
+                        "cy.on",
+                        "cy.promiseOn",
+                        "cy.one",
+                        "cy.removeListener",
+                        "cy.removeAllListeners",
+                        "cy.emit",
+                        "cy.ready"
+                    ],
                     "fns": [
                         {
                             "name": "cy.on",
@@ -651,9 +671,10 @@
                         },
                         {
                             "name": "cy.one",
-                            "descr": "Listen to events that occur on the core, and run the handler only once.",
+                            "descr": "Add a listener that is called once per event per element.",
                             "formats": [
                                 {
+                                    "descr": "Determine test function",
                                     "args": [
                                         {
                                             "name": "events",
@@ -661,18 +682,18 @@
                                         },
                                         {
                                             "name": "selector",
-                                            "descr": "A selector to specify elements for which the handler runs.",
+                                            "descr": "A selector to specify child elements for which the handler runs.",
                                             "optional": true
                                         },
                                         {
                                             "name": "function(event)",
-                                            "descr": "The handler function that is called when one of the specified events occurs.",
                                             "fields": [
                                                 {
                                                     "name": "event",
                                                     "descr": "The event object."
                                                 }
-                                            ]
+                                            ],
+                                            "descr": "The handler function that is called when one of the specified events occurs."
                                         }
                                     ]
                                 }
@@ -760,6 +781,31 @@
                 },
                 {
                     "name": "Viewport manipulation",
+                    "fnsOrder": [
+                        "cy.container",
+                        "cy.center",
+                        "cy.fit",
+                        "cy.reset",
+                        "cy.pan",
+                        "cy.panBy",
+                        "cy.panningEnabled",
+                        "cy.userPanningEnabled",
+                        "cy.zoom",
+                        "cy.zoomingEnabled",
+                        "cy.userZoomingEnabled",
+                        "cy.minZoom",
+                        "cy.maxZoom",
+                        "cy.viewport",
+                        "cy.boxSelectionEnabled",
+                        "cy.selectionType",
+                        "cy.width",
+                        "cy.height",
+                        "cy.extent",
+                        "cy.autolock",
+                        "cy.autoungrabify",
+                        "cy.autounselectify",
+                        "cy.resize"
+                    ],
                     "fns": [
                         {
                             "name": "cy.container",
@@ -1132,10 +1178,10 @@
                             "md": "cy/autounselectify"
                         },
                         {
-                            "name": "cy.resize",
                             "pureAliases": [
                                 "cy.invalidateDimensions"
                             ],
+                            "name": "cy.resize",
                             "descr": "Force the renderer to recalculate the viewport bounds.",
                             "md": "cy/resize"
                         }
@@ -1143,6 +1189,15 @@
                 },
                 {
                     "name": "Animation",
+                    "fnsOrder": [
+                        "cy.animated",
+                        "cy.animate",
+                        "cy.animation",
+                        "cy.delay",
+                        "cy.delayAnimation",
+                        "cy.stop",
+                        "cy.clearQueue"
+                    ],
                     "fns": [
                         {
                             "name": "cy.animated",
@@ -1338,7 +1393,7 @@
                         },
                         {
                             "name": "cy.delayAnimation",
-                            "descr": "Get a delay [animation](#animations) of the viewport.",
+                            "descr": "Get a delay [animation](#animations) for the element.",
                             "formats": [
                                 {
                                     "args": [
@@ -1377,6 +1432,9 @@
                 },
                 {
                     "name": "Layout",
+                    "fnsOrder": [
+                        "cy.layout"
+                    ],
                     "fns": [
                         {
                             "pureAliases": [
@@ -1402,6 +1460,9 @@
                 },
                 {
                     "name": "Style",
+                    "fnsOrder": [
+                        "cy.style"
+                    ],
                     "fns": [
                         {
                             "name": "cy.style",
@@ -1426,6 +1487,11 @@
                 },
                 {
                     "name": "Export",
+                    "fnsOrder": [
+                        "cy.png",
+                        "cy.jpg",
+                        "cy.json"
+                    ],
                     "fns": [
                         {
                             "name": "cy.png",
@@ -1551,6 +1617,15 @@
             "sections": [
                 {
                     "name": "Graph manipulation",
+                    "fnsOrder": [
+                        "ele.cy",
+                        "eles.remove",
+                        "ele.removed",
+                        "ele.inside",
+                        "eles.restore",
+                        "eles.clone",
+                        "eles.move"
+                    ],
                     "fns": [
                         {
                             "name": "ele.cy",
@@ -1567,7 +1642,7 @@
                         },
                         {
                             "name": "ele.inside",
-                            "descr": "Get whether the element is inside the graph (i.e. not removed)."
+                            "descr": "Get whether the element has been removed from the graph."
                         },
                         {
                             "name": "eles.restore",
@@ -1591,7 +1666,6 @@
                                     "args": [
                                         {
                                             "name": "location",
-                                            "descr": "Where the edges are moved.  You can specify a new source, a new target, or both.",
                                             "fields": [
                                                 {
                                                     "name": "source",
@@ -1601,7 +1675,8 @@
                                                     "name": "target",
                                                     "descr": "The ID of the new target node."
                                                 }
-                                            ]
+                                            ],
+                                            "descr": "Where the edges are moved. You can specify a new source, a new target, or both."
                                         }
                                     ]
                                 },
@@ -1611,31 +1686,47 @@
                                     "args": [
                                         {
                                             "name": "location",
-                                            "descr": "Where the nodes are moved.",
                                             "fields": [
                                                 {
                                                     "name": "parent",
-                                                    "descr": "The ID of the new parent node (use `null` for no parent)."
+                                                    "descr": "The ID of the new parent node (use null for no parent)."
                                                 }
-                                            ]
+                                            ],
+                                            "descr": "Where the nodes are moved."
                                         }
                                     ]
                                 }
                             ],
                             "md": "collection/move"
+                        },
+                        {
+                            "pureAliases": [
+                                "eles.copy"
+                            ],
+                            "name": "ele.clone",
+                            "descr": "Get a new collection containing clones (i.e. copies) of the elements in the calling collection."
                         }
                     ]
                 },
                 {
                     "name": "Events",
+                    "fnsOrder": [
+                        "eles.on",
+                        "eles.promiseOn",
+                        "eles.one",
+                        "eles.once",
+                        "eles.removeListener",
+                        "eles.removeAllListeners",
+                        "eles.emit"
+                    ],
                     "fns": [
                         {
-                            "name": "eles.on",
                             "pureAliases": [
                                 "eles.bind",
                                 "eles.listen",
                                 "eles.addListener"
                             ],
+                            "name": "eles.on",
                             "descr": "Listen to events that occur on the elements.",
                             "formats": [
                                 {
@@ -1651,13 +1742,13 @@
                                         },
                                         {
                                             "name": "function(event)",
-                                            "descr": "The handler function that is called when one of the specified events occurs.",
                                             "fields": [
                                                 {
                                                     "name": "event",
                                                     "descr": "The event object."
                                                 }
-                                            ]
+                                            ],
+                                            "descr": "The handler function that is called when on of the specified events occurs."
                                         }
                                     ]
                                 }
@@ -1692,6 +1783,7 @@
                             "descr": "Add a listener that is called once per event per element.",
                             "formats": [
                                 {
+                                    "descr": "Determine test function",
                                     "args": [
                                         {
                                             "name": "events",
@@ -1704,13 +1796,13 @@
                                         },
                                         {
                                             "name": "function(event)",
-                                            "descr": "The handler function that is called when one of the specified events occurs.",
                                             "fields": [
                                                 {
                                                     "name": "event",
                                                     "descr": "The event object."
                                                 }
-                                            ]
+                                            ],
+                                            "descr": "The handler function that is called when one of the specified events occurs."
                                         }
                                     ]
                                 }
@@ -1719,7 +1811,7 @@
                         },
                         {
                             "name": "eles.once",
-                            "descr": "Add a listener that is called once per event per collection.",
+                            "descr": "Add a listener that is called once per event per element.",
                             "formats": [
                                 {
                                     "args": [
@@ -1734,13 +1826,13 @@
                                         },
                                         {
                                             "name": "function(event)",
-                                            "descr": "The handler function that is called when one of the specified events occurs.",
                                             "fields": [
                                                 {
                                                     "name": "event",
                                                     "descr": "The event object."
                                                 }
-                                            ]
+                                            ],
+                                            "descr": "The handler function that is called when once of the specified events occurs."
                                         }
                                     ]
                                 }
@@ -1748,12 +1840,12 @@
                             "md": "collection/once"
                         },
                         {
-                            "name": "eles.removeListener",
                             "pureAliases": [
                                 "eles.off",
                                 "eles.unbind",
                                 "eles.unlisten"
                             ],
+                            "name": "eles.removeListener",
                             "descr": "Remove one or more listeners on the elements.",
                             "formats": [
                                 {
@@ -1782,10 +1874,10 @@
                             "descr": "Remove all event handlers on the elements."
                         },
                         {
-                            "name": "eles.emit",
                             "pureAliases": [
                                 "eles.trigger"
                             ],
+                            "name": "eles.emit",
                             "descr": "Emit events on the elements.",
                             "formats": [
                                 {
@@ -1803,19 +1895,125 @@
                                 }
                             ],
                             "md": "collection/emit"
+                        },
+                        {
+                            "pureAliases": [
+                                "cy.bind",
+                                "cy.listen",
+                                "cy.addListener"
+                            ],
+                            "name": "cy.on",
+                            "descr": "Listen to events that occur on the elements.",
+                            "formats": [
+                                {
+                                    "args": [
+                                        {
+                                            "name": "events",
+                                            "descr": "A space separated list of event names."
+                                        },
+                                        {
+                                            "name": "selector",
+                                            "descr": " A selector to specify elements for which the handler runs.",
+                                            "optional": true
+                                        },
+                                        {
+                                            "name": "function(event)",
+                                            "fields": [
+                                                {
+                                                    "name": "event",
+                                                    "descr": "The event object."
+                                                }
+                                            ],
+                                            "descr": "The handler function that is called when on of the specified events occurs."
+                                        }
+                                    ]
+                                }
+                            ],
+                            "md": "cy/on"
+                        },
+                        {
+                            "pureAliases": [
+                                "cy.off",
+                                "cy.unbind",
+                                "cy.unlisten"
+                            ],
+                            "name": "cy.removeListener",
+                            "descr": "Remove one or more listeners on the elements.",
+                            "formats": [
+                                {
+                                    "args": [
+                                        {
+                                            "name": "events",
+                                            "descr": "A space separated list of event names."
+                                        },
+                                        {
+                                            "name": "selector",
+                                            "descr": "The same selector used to listen to the events.",
+                                            "optional": true
+                                        },
+                                        {
+                                            "name": "handler",
+                                            "descr": "A reference to the handler function to remove.",
+                                            "optional": true
+                                        }
+                                    ]
+                                }
+                            ],
+                            "md": "cy/removeListener"
+                        },
+                        {
+                            "name": "cy.removeAllListeners",
+                            "descr": "Remove all event handlers on the elements."
+                        },
+                        {
+                            "pureAliases": [
+                                "cy.trigger"
+                            ],
+                            "name": "cy.emit",
+                            "descr": "Emit one or more events.",
+                            "formats": [
+                                {
+                                    "args": [
+                                        {
+                                            "name": "events",
+                                            "descr": "A list of event names to emit (either a space-separated string or an array)"
+                                        },
+                                        {
+                                            "name": "extraParams",
+                                            "descr": "An array of additional parameters to pass to the handler.",
+                                            "optional": true
+                                        }
+                                    ]
+                                }
+                            ],
+                            "md": "cy/emit"
                         }
                     ]
                 },
                 {
                     "name": "Data",
+                    "fnsOrder": [
+                        "eles.data",
+                        "eles.removeData",
+                        "ele.scratch",
+                        "ele.removeScratch",
+                        "ele.id",
+                        "ele.json",
+                        "eles.jsons",
+                        "ele.group",
+                        "ele.isNode",
+                        "ele.isEdge",
+                        "edge.isLoop",
+                        "edge.isSimple"
+                    ],
                     "fns": [
                         {
-                            "name": "eles.data",
                             "pureAliases": [
                                 "eles.attr"
                             ],
-                            "descr": "Read and write developer-defined data associated with the elements.",
+                            "name": "eles.data",
                             "formatsSameFn": true,
+                            "descr": "Read and write developer-defined data associated with the elements.",
                             "formats": [
                                 {
                                     "name": "ele.data",
@@ -1859,10 +2057,10 @@
                             "md": "collection/data"
                         },
                         {
-                            "name": "eles.removeData",
                             "pureAliases": [
                                 "eles.removeAttr"
                             ],
+                            "name": "eles.removeData",
                             "descr": "Remove developer-defined data associated with the elements.",
                             "formats": [
                                 {
@@ -1916,7 +2114,7 @@
                         {
                             "name": "ele.removeScratch",
                             "extFn": true,
-                            "descr": "Remove scratchpad data.  You should remove scratchpad data only at your own namespaces.",
+                            "descr": "Remove scratchpad data. You should remove scratchpad data only at your own namespaces.",
                             "formats": [
                                 {
                                     "descr": "Remove the scratchpad data at a particular namespace.",
@@ -1927,7 +2125,8 @@
                                         }
                                     ]
                                 }
-                            ]
+                            ],
+                            "md": "collection/removeScratch"
                         },
                         {
                             "name": "ele.id",
@@ -2004,9 +2203,13 @@
                 },
                 {
                     "name": "Metadata",
+                    "fnsOrder": [
+                        "node.degree"
+                    ],
                     "fns": [
                         {
                             "name": "node.degree",
+                            "descr": "Get the degree of a node.",
                             "formats": [
                                 {
                                     "name": "node.degree",
@@ -2115,13 +2318,35 @@
                 },
                 {
                     "name": "Position & dimensions",
+                    "fnsOrder": [
+                        "node.position",
+                        "nodes.shift",
+                        "nodes.position",
+                        "node.renderedPosition",
+                        "node.relativePosition",
+                        "ele.width",
+                        "ele.height",
+                        "eles.boundingBox",
+                        "eles.renderedBoundingBox",
+                        "node.grabbed",
+                        "node.grabbable",
+                        "nodes.grabify",
+                        "nodes.ungrabify",
+                        "node.locked",
+                        "nodes.lock",
+                        "nodes.unlock",
+                        "ele.active",
+                        "ele.pannable",
+                        "eles.panify",
+                        "eles.unpanify"
+                    ],
                     "fns": [
                         {
-                            "name": "node.position",
                             "pureAliases": [
                                 "node.modelPosition",
                                 "node.point"
                             ],
+                            "name": "node.position",
                             "descr": "Get or set the [model position](#notation/position) of a node.",
                             "formats": [
                                 {
@@ -2191,19 +2416,18 @@
                             "md": "collection/shift"
                         },
                         {
-                            "name": "nodes.positions",
                             "pureAliases": [
                                 "nodes.modelPositions",
                                 "nodes.points"
                             ],
+                            "name": "nodes.positions",
                             "descr": "Set the [model positions](#notation/position) of several nodes with a function.",
                             "formats": [
                                 {
                                     "descr": "Set the positions via a function.",
                                     "args": [
                                         {
-                                            "name": "function(ele, i)",
-                                            "descr": "A callback function that returns the position to set for each element.",
+                                            "name": "function(ele,i)",
                                             "fields": [
                                                 {
                                                     "name": "ele",
@@ -2213,7 +2437,8 @@
                                                     "name": "i",
                                                     "descr": "The index of the element when iterating over the elements in the collection."
                                                 }
-                                            ]
+                                            ],
+                                            "descr": "A callback function that returns the position to set for each element."
                                         }
                                     ]
                                 },
@@ -2230,10 +2455,10 @@
                             "md": "collection/positions"
                         },
                         {
-                            "name": "node.renderedPosition",
                             "pureAliases": [
                                 "node.renderedPoint"
                             ],
+                            "name": "node.renderedPosition",
                             "descr": "Get or set the [rendered (on-screen) position](#notation/position) of a node.",
                             "formats": [
                                 {
@@ -2273,10 +2498,10 @@
                             ]
                         },
                         {
-                            "name": "node.relativePosition",
                             "pureAliases": [
                                 "node.relativePoint"
                             ],
+                            "name": "node.relativePosition",
                             "descr": "Get or set the [model position](#notation/position) of a node, relative to its compound parent.",
                             "formats": [
                                 {
@@ -2515,6 +2740,13 @@
                 },
                 {
                     "name": "Edge points",
+                    "fnsOrder": [
+                        "edge.controlPoints",
+                        "edge.segmentPoints",
+                        "edge.sourceEndpoint",
+                        "edge.targetEndpoint",
+                        "edge.midpoint"
+                    ],
                     "fns": [
                         {
                             "name": "edge.controlPoints",
@@ -2587,12 +2819,17 @@
                                     "descr": "Get the midpoint in [rendered co-ordinates](#notation/position)."
                                 }
                             ],
-                            "md": "collection/midpoint.md"
+                            "md": "collection/midpoint"
                         }
                     ]
                 },
                 {
                     "name": "Layout",
+                    "fnsOrder": [
+                        "eles.layout",
+                        "nodes.layoutPositions",
+                        "node.layoutDimensions"
+                    ],
                     "fns": [
                         {
                             "pureAliases": [
@@ -2616,7 +2853,7 @@
                         },
                         {
                             "name": "nodes.layoutPositions",
-                            "extFn": "true",
+                            "extFn": true,
                             "descr": "Position the nodes for a discrete/synchronous layout.",
                             "formats": [
                                 {
@@ -2651,7 +2888,7 @@
                         },
                         {
                             "name": "node.layoutDimensions",
-                            "extFn": "true",
+                            "extFn": true,
                             "descr": "Get the node width and height. This function is intended for use in layout positioning to do overlap detection.",
                             "formats": [
                                 {
@@ -2687,7 +2924,7 @@
                                 "eles.css"
                             ],
                             "name": "eles.style",
-                            "formatsSameFn": "true",
+                            "formatsSameFn": true,
                             "descr": "Get or override the style of the element.",
                             "formats": [
                                 {
@@ -2757,6 +2994,14 @@
                 },
                 {
                     "name": "Selection",
+                    "fnsOrder": [
+                        "ele.selected",
+                        "eles.select",
+                        "eles.unselect",
+                        "ele.selectable",
+                        "eles.selectify",
+                        "eles.unselectify"
+                    ],
                     "fns": [
                         {
                             "name": "ele.selected",
@@ -2793,6 +3038,20 @@
                 },
                 {
                     "name": "Style",
+                    "fnsOrder": [
+                        "eles.addClass",
+                        "eles.removeClass",
+                        "eles.toggleClass",
+                        "eles.classes",
+                        "eles.flashClass",
+                        "ele.hasClass",
+                        "eles.style",
+                        "ele.numericStyle",
+                        "ele.numericStyleUnits",
+                        "ele.visible",
+                        "ele.effectiveOpacity",
+                        "ele.transparent"
+                    ],
                     "fns": [
                         {
                             "name": "eles.addClass",
@@ -2898,6 +3157,7 @@
                             "descr": "Get whether an element has a particular class.",
                             "formats": [
                                 {
+                                    "descr": "Adding Class",
                                     "args": [
                                         {
                                             "name": "className",
@@ -3045,6 +3305,15 @@
                 },
                 {
                     "name": "Animation",
+                    "fnsOrder": [
+                        "ele.animated",
+                        "eles.animate",
+                        "ele.animation",
+                        "eles.delay",
+                        "ele.delayAnimation",
+                        "eles.stop",
+                        "eles.clearQueue"
+                    ],
                     "fns": [
                         {
                             "name": "ele.animated",
@@ -3058,10 +3327,9 @@
                                     "args": [
                                         {
                                             "name": "options",
-                                            "descr": "An object containing the details of the animation.",
                                             "fields": [
                                                 {
-                                                    "name": "position",
+                                                    "name": "options",
                                                     "descr": "A position to which the elements will be animated."
                                                 },
                                                 {
@@ -3082,7 +3350,7 @@
                                                 },
                                                 {
                                                     "name": "easing",
-                                                    "descr": "A [`transition-timing-function`](#style/transition-animation) easing style string that shapes the animation progress curve."
+                                                    "descr": "A `transition-timing-function` easing style string that shapes the animation progress curve."
                                                 },
                                                 {
                                                     "name": "complete",
@@ -3092,7 +3360,8 @@
                                                     "name": "step",
                                                     "descr": "A function to call each time the animation steps."
                                                 }
-                                            ]
+                                            ],
+                                            "descr": "An object containing the details of the animation."
                                         }
                                     ]
                                 }
@@ -3107,10 +3376,9 @@
                                     "args": [
                                         {
                                             "name": "options",
-                                            "descr": "An object containing the details of the animation.",
                                             "fields": [
                                                 {
-                                                    "name": "position",
+                                                    "name": "options",
                                                     "descr": "A position to which the elements will be animated."
                                                 },
                                                 {
@@ -3127,7 +3395,7 @@
                                                 },
                                                 {
                                                     "name": "easing",
-                                                    "descr": "A [`transition-timing-function`](#style/transition-animation) easing style string that shapes the animation progress curve."
+                                                    "descr": "A `transition-timing-function` easing style string that shapes the animation progress curve."
                                                 },
                                                 {
                                                     "name": "complete",
@@ -3137,7 +3405,8 @@
                                                     "name": "step",
                                                     "descr": "A function to call each time the animation steps."
                                                 }
-                                            ]
+                                            ],
+                                            "descr": "An object containing the details of the animation."
                                         }
                                     ]
                                 }
@@ -3203,6 +3472,16 @@
                 },
                 {
                     "name": "Comparison",
+                    "fnsOrder": [
+                        "eles.same",
+                        "eles.anySame",
+                        "eles.contains",
+                        "eles.allAreNeighbors",
+                        "eles.is",
+                        "eles.allAre",
+                        "eles.some",
+                        "eles.every"
+                    ],
                     "fns": [
                         {
                             "name": "eles.same",
@@ -3380,6 +3659,14 @@
                 },
                 {
                     "name": "Iteration",
+                    "fnsOrder": [
+                        "eles.size",
+                        "eles.empty",
+                        "eles.forEach",
+                        "eles.eq",
+                        "eles.slice",
+                        "eles.toArray"
+                    ],
                     "fns": [
                         {
                             "name": "eles.size",
@@ -3496,6 +3783,23 @@
                 },
                 {
                     "name": "Building & filtering",
+                    "fnsOrder": [
+                        "eles.getElementById",
+                        "eles.union",
+                        "eles.difference",
+                        "eles.absoluteComplement",
+                        "eles.intersection",
+                        "eles.symmetricDifference",
+                        "eles.diff",
+                        "eles.merge",
+                        "eles.unmerge",
+                        "eles.filter",
+                        "eles.sort",
+                        "eles.map",
+                        "eles.reduce",
+                        "eles.min",
+                        "eles.max"
+                    ],
                     "fns": [
                         {
                             "name": "eles.getElementById",
@@ -3576,11 +3880,11 @@
                             "md": "collection/difference"
                         },
                         {
-                            "name": "eles.absoluteComplement",
                             "pureAliases": [
                                 "eles.abscomp",
                                 "eles.complement"
                             ],
+                            "name": "eles.absoluteComplement",
                             "descr": "Get all elements in the graph that are not in the calling collection.",
                             "md": "collection/absoluteComplement"
                         },
@@ -3685,7 +3989,7 @@
                                     "args": [
                                         {
                                             "name": "selector",
-                                            "descr": "A selector representing the elements to merge.  All elements in the graph matching the selector are used as the passed collection."
+                                            "descr": "A selector representing the elements to merge. All elements in the graph matching the selector are used as the passed collection."
                                         }
                                     ]
                                 }
@@ -3722,10 +4026,11 @@
                             "descr": "Get a new collection containing elements that are accepted by the specified filter function or selector.",
                             "formats": [
                                 {
+                                    "name": "eles.filter",
+                                    "descr": "Determine test function",
                                     "args": [
                                         {
-                                            "name": "function(ele, i, eles)",
-                                            "descr": "The filter function that returns truthy values for elements to include and falsey values for elements to exclude.",
+                                            "name": "function(ele,i,eles)",
                                             "fields": [
                                                 {
                                                     "name": "ele",
@@ -3737,14 +4042,15 @@
                                                 },
                                                 {
                                                     "name": "eles",
-                                                    "descr": "The collection of elements being filtered."
+                                                    "descr": "The collection of elements being mapped."
                                                 }
-                                            ]
+                                            ],
+                                            "descr": "The function that returns the filterped value for each element."
                                         },
                                         {
                                             "name": "thisArg",
                                             "descr": "The value for `this` within the iterating function.",
-                                            "optional": "true"
+                                            "optional": true
                                         }
                                     ]
                                 },
@@ -3935,20 +4241,31 @@
                                 }
                             ],
                             "md": "collection/max"
-                        },
-                        {
-                            "pureAliases": [
-                                "eles.abscomp",
-                                "eles.complement"
-                            ],
-                            "name": "nodes.absoluteComplement",
-                            "descr": "Get all elements in the graph that are not in the calling collection.",
-                            "md": "collection/absoluteComplement"
                         }
                     ]
                 },
                 {
                     "name": "Traversing",
+                    "fnsOrder": [
+                        "eles.neighborhood",
+                        "eles.components",
+                        "nodes.edgesWith",
+                        "nodes.edgesTo",
+                        "edges.connectedNodes",
+                        "nodes.connectedEdges",
+                        "edge.source",
+                        "edges.sources",
+                        "edge.target",
+                        "edges.targets",
+                        "edges.parallelEdges",
+                        "edges.codirectedEdges",
+                        "nodes.roots",
+                        "nodes.leaves",
+                        "nodes.outgoers",
+                        "nodes.successors",
+                        "nodes.incomers",
+                        "nodes.predecessors"
+                    ],
                     "fns": [
                         {
                             "name": "eles.neighborhood",
@@ -3956,9 +4273,6 @@
                             "formats": [
                                 {
                                     "name": "eles.neighborhood",
-                                    "pureAliases": [
-                                        "eles.neighbourhood"
-                                    ],
                                     "descr": "Get the open neighbourhood of the elements.",
                                     "args": [
                                         {
@@ -3970,9 +4284,6 @@
                                 },
                                 {
                                     "name": "eles.openNeighborhood",
-                                    "pureAliases": [
-                                        "eles.openNeighbourhood"
-                                    ],
                                     "descr": "Get the open neighbourhood of the elements.",
                                     "args": [
                                         {
@@ -3984,9 +4295,6 @@
                                 },
                                 {
                                     "name": "eles.closedNeighborhood",
-                                    "pureAliases": [
-                                        "eles.closedNeighbourhood"
-                                    ],
                                     "descr": "Get the closed neighbourhood of the elements.",
                                     "args": [
                                         {
@@ -4025,7 +4333,7 @@
                         },
                         {
                             "name": "nodes.edgesWith",
-                            "descr": "Get the edges connecting the collection to another collection.  Direction of the edges does not matter.",
+                            "descr": "Get the edges connecting the collection to another collection. Direction of the edges does not matter.",
                             "formats": [
                                 {
                                     "args": [
@@ -4123,6 +4431,7 @@
                             "descr": "Get source nodes connected to the edges in the collection.",
                             "formats": [
                                 {
+                                    "descr": "Get ID",
                                     "args": [
                                         {
                                             "name": "selector",
@@ -4156,6 +4465,7 @@
                             "descr": "Get target nodes connected to the edges in the collection.",
                             "formats": [
                                 {
+                                    "descr": "Get ID",
                                     "args": [
                                         {
                                             "name": "selector",
@@ -4298,45 +4608,20 @@
                                 }
                             ],
                             "md": "collection/predecessors"
-                        },
-                        {
-                            "name": "edge.sources",
-                            "descr": "Get source nodes connected to the edges in the collection.",
-                            "formats": [
-                                {
-                                    "descr": "Get ID",
-                                    "args": [
-                                        {
-                                            "name": "selector",
-                                            "descr": "An optional selector that is used to filter the resultant collection.",
-                                            "optional": true
-                                        }
-                                    ]
-                                }
-                            ],
-                            "md": "collection/sources"
-                        },
-                        {
-                            "name": "edge.targets",
-                            "descr": "Get target nodes connected to the edges in the collection.",
-                            "formats": [
-                                {
-                                    "descr": "Get ID",
-                                    "args": [
-                                        {
-                                            "name": "selector",
-                                            "descr": "An optional selector that is used to filter the resultant collection.",
-                                            "optional": true
-                                        }
-                                    ]
-                                }
-                            ],
-                            "md": "collection/targets"
                         }
                     ]
                 },
                 {
                     "name": "Search",
+                    "fnsOrder": [
+                        "eles.breadthFirstSearch",
+                        "eles.depthFirstSearch",
+                        "eles.dijkstra",
+                        "eles.aStar",
+                        "eles.floydWarshall",
+                        "eles.bellmanFord",
+                        "eles.hierholzer"
+                    ],
                     "md": "collection/algorithms",
                     "fns": [
                         {
@@ -4604,6 +4889,9 @@
                 },
                 {
                     "name": "Spanning",
+                    "fnsOrder": [
+                        "eles.kruskal"
+                    ],
                     "fns": [
                         {
                             "name": "eles.kruskal",
@@ -4625,6 +4913,11 @@
                 },
                 {
                     "name": "Cut",
+                    "fnsOrder": [
+                        "eles.kargerStein",
+                        "eles.hopcroftTarjanBiconnected",
+                        "eles.tarjanStronglyConnected"
+                    ],
                     "fns": [
                         {
                             "name": "eles.kargerStein",
@@ -4632,22 +4925,22 @@
                             "md": "collection/kargerStein"
                         },
                         {
-                            "name": "eles.hopcroftTarjanBiconnected",
                             "pureAliases": [
                                 "eles.hopcroftTarjanBiconnectedComponents",
                                 "eles.htb",
                                 "eles.htbc"
                             ],
+                            "name": "eles.hopcroftTarjanBiconnected",
                             "descr": "Finds the [biconnected components](https://en.wikipedia.org/wiki/Biconnected_component) in an undirected graph, as well as their respective cut vertices, using an algorithm due to Hopcroft and Tarjan.",
                             "md": "collection/hopcroftTarjanBiconnected"
                         },
                         {
-                            "name": "eles.tarjanStronglyConnected",
                             "pureAliases": [
                                 "eles.tarjanStronglyConnectedComponents",
                                 "eles.tsc",
                                 "eles.tscc"
                             ],
+                            "name": "eles.tarjanStronglyConnected",
                             "descr": "Finds the [strongly connected components](https://en.wikipedia.org/wiki/Strongly_connected_component) of a directed graph using Tarjan's algorithm.",
                             "md": "collection/tarjanStronglyConnected"
                         }
@@ -4655,12 +4948,20 @@
                 },
                 {
                     "name": "Centrality",
+                    "fnsOrder": [
+                        "eles.degreeCentrality",
+                        "eles.degreeCentralityNormalized",
+                        "eles.closenessCentrality",
+                        "eles.closenessCentralityNormalized",
+                        "eles.betweennessCentrality",
+                        "eles.pageRank"
+                    ],
                     "fns": [
                         {
-                            "name": "eles.degreeCentrality",
                             "pureAliases": [
                                 "eles.dc"
                             ],
+                            "name": "eles.degreeCentrality",
                             "descr": "Considering only the elements in the calling collection, calculate the [degree centrality](https://en.wikipedia.org/wiki/Centrality#Degree_centrality) of the specified root node.",
                             "formats": [
                                 {
@@ -4673,13 +4974,13 @@
                                                     "descr": "The root node (selector or collection) for which the centrality calculation is made."
                                                 },
                                                 {
-                                                    "name": "weight: function(edge)",
-                                                    "descr": "A function that returns the positive weight for the edge.  The weight indicates the importance of the edge, with a high value representing high importance.",
+                                                    "name": "weight:function(edge)",
+                                                    "descr": "A function that returns the positive weight for the edge. The weight indicates the importance of the edge, with a high value representing high importance.",
                                                     "optional": true
                                                 },
                                                 {
                                                     "name": "alpha",
-                                                    "descr": "The alpha value for the centrality calculation, ranging on [0, 1].  With value 0 (default), disregards edge weights and solely uses number of edges in the centrality calculation.  With value 1, disregards number of edges and solely uses the edge weights in the centrality calculation.",
+                                                    "descr": "The alpha value for the centrality calculation, ranging on [0, 1]. With value 0 (default), disregards edge weights and solely uses number of edges in the centrality calculation. With value 1, disregards number of edges and solely uses the edge weights in the centrality calculation.",
                                                     "optional": true
                                                 },
                                                 {
@@ -4687,7 +4988,8 @@
                                                     "descr": "A boolean indicating whether the directed indegree and outdegree centrality is calculated (`true`) or whether the undirected centrality is calculated (`false`, default).",
                                                     "optional": true
                                                 }
-                                            ]
+                                            ],
+                                            "descr": "The options for degreeCentralitying."
                                         }
                                     ]
                                 }
@@ -4695,12 +4997,12 @@
                             "md": "collection/degreeCentrality"
                         },
                         {
-                            "name": "eles.degreeCentralityNormalized",
                             "pureAliases": [
                                 "eles.dcn",
                                 "eles.degreeCentralityNormalised"
                             ],
-                            "descr": "Considering only the elements in the calling collection, calculate the normalised [degree centrality](https://en.wikipedia.org/wiki/Centrality#Degree_centrality) of the nodes.",
+                            "name": "eles.degreeCentralityNormalized",
+                            "descr": "Considering only the elements in the calling collection, calculate the [degree centrality](https://en.wikipedia.org/wiki/Centrality#Degree_centrality) of the nodes.",
                             "formats": [
                                 {
                                     "args": [
@@ -4708,13 +5010,13 @@
                                             "name": "options",
                                             "fields": [
                                                 {
-                                                    "name": "weight: function(edge)",
-                                                    "descr": "A function that returns the positive weight for the edge.  The weight indicates the importance of the edge, with a high value representing high importance.",
+                                                    "name": "weight:function(edge)",
+                                                    "descr": "A function that returns the positive weight for the edge. The weight indicates the importance of the edge, with a high value representing high importance.",
                                                     "optional": true
                                                 },
                                                 {
                                                     "name": "alpha",
-                                                    "descr": "The alpha value for the centrality calculation, ranging on [0, 1].  With value 0 (default), disregards edge weights and solely uses number of edges in the centrality calculation.  With value 1, disregards number of edges and solely uses the edge weights in the centrality calculation.",
+                                                    "descr": "The alpha value for the centrality calculation, ranging on [0, 1]. With value 0 (default), disregards edge weights and solely uses number of edges in the centrality calculation. With value 1, disregards number of edges and solely uses the edge weights in the centrality calculation.",
                                                     "optional": true
                                                 },
                                                 {
@@ -4722,7 +5024,8 @@
                                                     "descr": "A boolean indicating whether the directed indegree and outdegree centrality is calculated (`true`) or whether the undirected centrality is calculated (`false`, default).",
                                                     "optional": true
                                                 }
-                                            ]
+                                            ],
+                                            "descr": "The options for degreeCentralityNormalizeding."
                                         }
                                     ]
                                 }
@@ -4730,11 +5033,11 @@
                             "md": "collection/degreeCentralityNormalized"
                         },
                         {
-                            "name": "eles.closenessCentrality",
                             "pureAliases": [
                                 "eles.cc"
                             ],
-                            "descr": "Considering only the elements in the calling collection, calculate the [closeness centrality](https://en.wikipedia.org/wiki/Closeness_centrality) of the specified root node.",
+                            "name": "eles.closenessCentrality",
+                            "descr": "Considering only the elements in the calling collection, calculate the [degree centrality](https://en.wikipedia.org/wiki/Centrality#Degree_centrality) of the specified root nodes.",
                             "formats": [
                                 {
                                     "args": [
@@ -4746,13 +5049,13 @@
                                                     "descr": "The root node (selector or collection) for which the centrality calculation is made."
                                                 },
                                                 {
-                                                    "name": "weight: function(edge)",
-                                                    "descr": "A function that returns the positive weight for the edge.  The weight indicates the importance of the edge, with a high value representing high importance.",
+                                                    "name": "weight:function(edge)",
+                                                    "descr": "A function that returns the positive weight for the edge. The weight indicates the importance of the edge, with a high value representing high importance.",
                                                     "optional": true
                                                 },
                                                 {
                                                     "name": "directed",
-                                                    "descr": "A boolean indicating whether the algorithm operates on edges in a directed manner from source to target (`true`) or whether the algorithm operates in an undirected manner (`false`, default).",
+                                                    "descr": "A boolean indicating whether the directed indegree and outdegree centrality is calculated (`true`) or whether the undirected centrality is calculated (`false`, default).",
                                                     "optional": true
                                                 },
                                                 {
@@ -4760,7 +5063,8 @@
                                                     "descr": "A boolean indicating whether the algorithm calculates the harmonic mean (`true`, default) or the arithmetic mean (`false`) of distances.  The harmonic mean is very useful for graphs that are not strongly connected.",
                                                     "optional": true
                                                 }
-                                            ]
+                                            ],
+                                            "descr": "The options for closenessCentralitying."
                                         }
                                     ]
                                 }
@@ -4768,12 +5072,12 @@
                             "md": "collection/closenessCentrality"
                         },
                         {
-                            "name": "eles.closenessCentralityNormalized",
                             "pureAliases": [
                                 "eles.ccn",
                                 "eles.closenessCentralityNormalised"
                             ],
-                            "descr": "Considering only the elements in the calling collection, calculate the [closeness centrality](https://en.wikipedia.org/wiki/Closeness_centrality) of the nodes.",
+                            "name": "eles.closenessCentralityNormalized",
+                            "descr": "Considering only the elements in the calling collection, calculate the [degree centrality](https://en.wikipedia.org/wiki/Centrality#Degree_centrality) of the specified root nodes.",
                             "formats": [
                                 {
                                     "args": [
@@ -4781,13 +5085,13 @@
                                             "name": "options",
                                             "fields": [
                                                 {
-                                                    "name": "weight: function(edge)",
-                                                    "descr": "A function that returns the positive weight for the edge.  The weight indicates the importance of the edge, with a high value representing high importance.",
+                                                    "name": "weight:function(edge)",
+                                                    "descr": "A function that returns the positive weight for the edge. The weight indicates the importance of the edge, with a high value representing high importance.",
                                                     "optional": true
                                                 },
                                                 {
                                                     "name": "directed",
-                                                    "descr": "A boolean indicating whether the algorithm operates on edges in a directed manner from source to target (`true`) or whether the algorithm operates in an undirected manner (`false`, default).",
+                                                    "descr": "A boolean indicating whether the directed indegree and outdegree centrality is calculated (`true`) or whether the undirected centrality is calculated (`false`, default).",
                                                     "optional": true
                                                 },
                                                 {
@@ -4795,7 +5099,8 @@
                                                     "descr": "A boolean indicating whether the algorithm calculates the harmonic mean (`true`, default) or the arithmetic mean (`false`) of distances.  The harmonic mean is very useful for graphs that are not strongly connected.",
                                                     "optional": true
                                                 }
-                                            ]
+                                            ],
+                                            "descr": "The options for closenessCentralityNormalizeding."
                                         }
                                     ]
                                 }
@@ -4803,10 +5108,10 @@
                             "md": "collection/closenessCentralityNormalized"
                         },
                         {
-                            "name": "eles.betweennessCentrality",
                             "pureAliases": [
                                 "eles.bc"
                             ],
+                            "name": "eles.betweennessCentrality",
                             "descr": "Considering only the elements in the calling collection, calculate the [betweenness centrality](https://en.wikipedia.org/wiki/Betweenness_centrality) of the nodes.",
                             "formats": [
                                 {
@@ -4815,16 +5120,17 @@
                                             "name": "options",
                                             "fields": [
                                                 {
-                                                    "name": "weight: function(edge)",
-                                                    "descr": "A function that returns the positive weight for the edge.  The weight indicates the importance of the edge, with a high value representing high importance.",
+                                                    "name": "weight:function(edge)",
+                                                    "descr": "A function that returns the positive weight for the edge. The weight indicates the importance of the edge, with a high value representing high importance.",
                                                     "optional": true
                                                 },
                                                 {
                                                     "name": "directed",
-                                                    "descr": "A boolean indicating whether the algorithm operates on edges in a directed manner from source to target (`true`) or whether the algorithm operates in an undirected manner (`false`, default).",
+                                                    "descr": "A boolean indicating whether the directed indegree and outdegree centrality is calculated (`true`) or whether the undirected centrality is calculated (`false`, default).",
                                                     "optional": true
                                                 }
-                                            ]
+                                            ],
+                                            "descr": "The options for betweennessCentralitying."
                                         }
                                     ]
                                 }
@@ -4855,7 +5161,8 @@
                                                     "descr": "Maximum number of iterations to perform (default `200`).",
                                                     "optional": true
                                                 }
-                                            ]
+                                            ],
+                                            "descr": "The options for pageRanking."
                                         }
                                     ]
                                 }
@@ -4866,6 +5173,14 @@
                 },
                 {
                     "name": "Clustering",
+                    "fnsOrder": [
+                        "eles.markovClustering",
+                        "nodes.kMeans",
+                        "nodes.kMedoids",
+                        "nodes.fuzzyCMeans",
+                        "nodes.hierarchicalClustering",
+                        "nodes.affinityPropagation"
+                    ],
                     "fns": [
                         {
                             "name": "eles.markovClustering",
@@ -5363,6 +5678,20 @@
                 {
                     "name": "Compound nodes",
                     "md": "collection/compoundNodes",
+                    "fnsOrder": [
+                        "node.isParent",
+                        "node.isChildless",
+                        "node.isChild",
+                        "node.isOrphan",
+                        "nodes.parent",
+                        "nodes.ancestors",
+                        "nodes.commonAncestors",
+                        "nodes.orphans",
+                        "nodes.nonorphans",
+                        "nodes.children",
+                        "nodes.descendants",
+                        "nodes.siblings"
+                    ],
                     "fns": [
                         {
                             "name": "node.isParent",
@@ -5598,6 +5927,10 @@
                 {
                     "name": "Layout manipulation",
                     "md": "layout/manipulation",
+                    "fnsOrder": [
+                        "lyout.run",
+                        "layout.stop"
+                    ],
                     "fns": [
                         {
                             "pureAliases": [
@@ -5617,6 +5950,14 @@
                 {
                     "name": "Layout events",
                     "md": "layout/events",
+                    "fnsOrder": [
+                        "layout.on",
+                        "layout.promiseOn",
+                        "layout.one",
+                        "layout.removeListener",
+                        "layout.removeAllListeners",
+                        "layout.emit"
+                    ],
                     "fns": [
                         {
                             "pureAliases": [
@@ -5764,6 +6105,18 @@
             "sections": [
                 {
                     "name": "Animation manipulation",
+                    "fnsOrder": [
+                        "ani.play",
+                        "ani.playing",
+                        "ani.progress",
+                        "ani.pause",
+                        "ani.stop",
+                        "ani.completed",
+                        "ani.apply",
+                        "ani.applying",
+                        "ani.reverse",
+                        "ani.promise"
+                    ],
                     "fns": [
                         {
                             "pureAliases": [

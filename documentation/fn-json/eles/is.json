@@ -1,0 +1,16 @@
+{
+    "name": "eles.is",
+    "descr": "Determine whether any element in this collection matches a selector.",
+    "formats": [
+        {
+            "descr": "Matching Selector",
+            "args": [
+                {
+                    "name": "selector",
+                    "descr": "The selector to match against."
+                }
+            ]
+        }
+    ],
+    "md": "collection/is"
+}

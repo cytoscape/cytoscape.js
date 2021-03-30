@@ -1,0 +1,21 @@
+{
+    "name": "eles.toggleClass",
+    "descr": "Toggle whether the elements have the specified classes.  The classes should be specified in the [stylesheet](#style) in order to have an effect on the rendered style of the elements.",
+    "formats": [
+        {
+            "descr": "Toggle Event",
+            "args": [
+                {
+                    "name": "classes",
+                    "descr": "An array (or a space-separated string) of class names to toggle on the elements."
+                },
+                {
+                    "name": "toggle",
+                    "descr": "Instead of automatically toggling, adds the classes on truthy values or removes them on falsey values.",
+                    "optional": true
+                }
+            ]
+        }
+    ],
+    "md": "collection/toggleClass"
+}

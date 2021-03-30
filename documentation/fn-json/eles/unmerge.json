@@ -1,0 +1,25 @@
+{
+    "name": "eles.unmerge",
+    "descr": "Perform an in-place operation on the calling collection to remove the given elements.",
+    "formats": [
+        {
+            "descr": "unmerge Event",
+            "args": [
+                {
+                    "name": "eles",
+                    "descr": "The elements to remove in-place."
+                }
+            ]
+        },
+        {
+            "descr": "unmerge Event",
+            "args": [
+                {
+                    "name": "selector",
+                    "descr": "A selector representing the elements to remove. All elements in the graph matching the selector are used as the passed collection."
+                }
+            ]
+        }
+    ],
+    "md": "collection/unmerge"
+}

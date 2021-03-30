@@ -1,0 +1,14 @@
+{
+    "name": "eles.empty",
+    "descr": "Get whether the collection is empty, meaning it has no elements.",
+    "formats": [
+        {
+            "name": "eles.empty",
+            "descr": "Get whether the collection is empty."
+        },
+        {
+            "name": "eles.nonempty",
+            "descr": "Get whether the collection is nonempty."
+        }
+    ]
+}

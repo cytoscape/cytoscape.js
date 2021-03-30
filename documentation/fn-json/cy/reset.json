@@ -1,0 +1,5 @@
+{
+    "name": "cy.reset",
+    "descr": "Reset the graph to the default zoom level and panning position.",
+    "md": "cy/reset"
+}

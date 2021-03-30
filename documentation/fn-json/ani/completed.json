@@ -1,0 +1,7 @@
+{
+    "pureAliases": [
+        "ani.complete"
+    ],
+    "name": "ani.completed",
+    "descr": "Get whether the animation has progressed to the end."
+}

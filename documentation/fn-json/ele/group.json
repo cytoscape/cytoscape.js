@@ -1,0 +1,5 @@
+{
+    "name": "ele.group",
+    "descr": "Get the group string that defines the type of the element.",
+    "md": "collection/group"
+}

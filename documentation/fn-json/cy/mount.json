@@ -1,0 +1,16 @@
+{
+    "name": "cy.mount",
+    "descr": "Attaches the instance to the specified container for visualisation.",
+    "formats": [
+        {
+            "descr": "To mount",
+            "args": [
+                {
+                    "name": "container",
+                    "descr": "A HTML DOM element in which the graph should be rendered."
+                }
+            ]
+        }
+    ],
+    "md": "cy/mount"
+}

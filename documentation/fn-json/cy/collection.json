@@ -1,0 +1,10 @@
+{
+    "name": "cy.collection",
+    "descr": "Return a new, empty collection.",
+    "formats": [
+        {
+            "descr": "Get an empty collection."
+        }
+    ],
+    "md": "cy/collection"
+}

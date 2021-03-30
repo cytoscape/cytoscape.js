@@ -1,0 +1,20 @@
+{
+    "pureAliases": [
+        "eles.createLayout",
+        "eles.makeLayout"
+    ],
+    "name": "eles.layout",
+    "descr": "Get a new layout, which can be used to algorithmically position the nodes in the collection.",
+    "formats": [
+        {
+            "descr": "The layouting comparison function.",
+            "args": [
+                {
+                    "name": "options",
+                    "descr": "The layout options."
+                }
+            ]
+        }
+    ],
+    "md": "collection/layout"
+}

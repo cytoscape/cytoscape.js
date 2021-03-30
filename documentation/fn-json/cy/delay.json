@@ -1,0 +1,19 @@
+{
+    "name": "cy.delay",
+    "descr": "Add a delay between queued animations for the viewport.",
+    "formats": [
+        {
+            "args": [
+                {
+                    "name": "duration",
+                    "descr": "How long the delay should be in milliseconds."
+                },
+                {
+                    "name": "complete",
+                    "descr": "A function to call when the delay is complete."
+                }
+            ]
+        }
+    ],
+    "md": "cy/delay"
+}

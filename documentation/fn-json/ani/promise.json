@@ -1,0 +1,19 @@
+{
+    "name": "ani.promise",
+    "descr": "Get a promise that is fulfilled with the specified animation event.",
+    "formats": [
+        {
+            "descr": "Get a promise that is fulfilled with the next `completed` event."
+        },
+        {
+            "descr": "Get a promise that is fulfilled with the specified animation event.",
+            "args": [
+                {
+                    "name": "animationEvent",
+                    "descr": "A string for the event name; `completed` or `complete` for completing the animation or `frame` for the next frame of the animation."
+                }
+            ]
+        }
+    ],
+    "md": "ani/promise"
+}

@@ -1,0 +1,43 @@
+{
+    "name": "ani.progress",
+    "descr": "Get or set how far along the animation has progressed.",
+    "formats": [
+        {
+            "name": "ani.progress",
+            "descr": "Get the progress of the animation in percent."
+        },
+        {
+            "name": "ani.progress",
+            "descr": "Set the progress of the animation in percent.",
+            "args": [
+                {
+                    "name": "progress",
+                    "descr": "The progress in percent (i.e. between 0 and 1 inclusive) to set to the animation."
+                }
+            ]
+        },
+        {
+            "name": "ani.time",
+            "descr": "Get the progress of the animation in milliseconds."
+        },
+        {
+            "name": "ani.time",
+            "descr": "Set the progress of the animation in milliseconds.",
+            "args": [
+                {
+                    "name": "time",
+                    "descr": "The progress in milliseconds (i.e. between 0 and the duration inclusive) to set to the animation."
+                }
+            ]
+        },
+        {
+            "name": "ani.rewind",
+            "descr": "Rewind the animation to the beginning."
+        },
+        {
+            "name": "ani.fastforward",
+            "descr": "Fastforward the animation to the end."
+        }
+    ],
+    "md": "ani/progress"
+}

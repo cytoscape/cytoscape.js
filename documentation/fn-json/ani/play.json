@@ -1,0 +1,8 @@
+{
+    "pureAliases": [
+        "ani.run"
+    ],
+    "name": "ani.play",
+    "descr": "Requests that the animation be played, starting on the next frame. If the animation is complete, it restarts from the beginning.",
+    "md": "ani/play"
+}

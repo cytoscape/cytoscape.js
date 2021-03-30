@@ -1,0 +1,35 @@
+{
+    "name": "eles.max",
+    "descr": "Find a maximum value and the corresponding element.",
+    "formats": [
+        {
+            "descr": "Determine max function",
+            "args": [
+                {
+                    "name": "function(ele,i,eles)",
+                    "fields": [
+                        {
+                            "name": "ele",
+                            "descr": "The current element."
+                        },
+                        {
+                            "name": "i",
+                            "descr": "The index of the current element."
+                        },
+                        {
+                            "name": "eles",
+                            "descr": "The collection of elements being searched."
+                        }
+                    ],
+                    "descr": "The function that returns the value to compare for each element."
+                },
+                {
+                    "name": "thisArg",
+                    "descr": "The value for `this` within the iterating function.",
+                    "optional": true
+                }
+            ]
+        }
+    ],
+    "md": "collection/max"
+}

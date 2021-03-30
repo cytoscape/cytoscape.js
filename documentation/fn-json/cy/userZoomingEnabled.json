@@ -1,0 +1,19 @@
+{
+    "name": "cy.userZoomingEnabled",
+    "descr": "Get or set whether user zooming by user events (e.g. mouse wheel, pinch-to-zoom) is enabled.",
+    "formats": [
+        {
+            "descr": "Get whether user zooming is enabled."
+        },
+        {
+            "descr": "Set whether zooming is enabled",
+            "args": [
+                {
+                    "name": "bool",
+                    "descr": "A truthy value enables user zooming; a falsey value disables it."
+                }
+            ]
+        }
+    ],
+    "md": "cy/userZoomingEnabled"
+}

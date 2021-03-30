@@ -1,0 +1,4 @@
+{
+    "name": "nodes.isOrphan",
+    "descr": "Get whether the node is an orphan (i.e. a node with no parent)"
+}

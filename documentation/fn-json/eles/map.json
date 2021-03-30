@@ -1,0 +1,35 @@
+{
+    "name": "eles.map",
+    "descr": "Get an array containing values mapped from the collection.",
+    "formats": [
+        {
+            "descr": "Determine test function",
+            "args": [
+                {
+                    "name": "function(ele,i,eles)",
+                    "fields": [
+                        {
+                            "name": "ele",
+                            "descr": "The current element."
+                        },
+                        {
+                            "name": "i",
+                            "descr": "The index of the current element."
+                        },
+                        {
+                            "name": "eles",
+                            "descr": "The collection of elements being mapped."
+                        }
+                    ],
+                    "descr": "The function that returns the mapped value for each element."
+                },
+                {
+                    "name": "thisArg",
+                    "descr": "The value for `this` within the iterating function.",
+                    "optional": true
+                }
+            ]
+        }
+    ],
+    "md": "collection/map"
+}

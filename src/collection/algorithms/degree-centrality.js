@@ -9,6 +9,33 @@ const defaults = util.defaults({
 });
 
 let elesfn = ({
+
+    /**
+ * @callback degreeCentralityNormalized_options
+ * @property {degreeCentralityNormalized_options_type} options - degreeCentralityNormalized_options_type
+ */
+
+/**
+ * options
+ * @typedef {object} degreeCentralityNormalized_options_type
+ * @property {object} weight:function(edge) - [optional] A function that returns the positive weight for the edge. The weight indicates the importance of the edge, with a high value representing high importance.
+ * @property {object} alpha - [optional] The alpha value for the centrality calculation, ranging on [0, 1]. With value 0 (default), disregards edge weights and solely uses number of edges in the centrality calculation. With value 1, disregards number of edges and solely uses the edge weights in the centrality calculation.
+ * @property {object} directed - [optional] A boolean indicating whether the directed indegree and outdegree centrality is calculated (`true`) or whether the undirected centrality is calculated (`false`, default).
+ */
+
+/**
+ * @typedef {object} eles_degreeCentralityNormalized
+ * @property {function(degreeCentralityNormalized_options):any} degreeCentralityNormalized_options - The options for degreeCentralityNormalizeding.
+ */
+
+  /**
+ * Considering only the elements in the calling collection, calculate the [degree centrality](https://en.wikipedia.org/wiki/Centrality#Degree_centrality) of the nodes.
+ * @memberof eles
+ * @pureAliases eles.dcn|eles.degreeCentralityNormalised
+ * @path Collection/Centrality
+ * @param {...eles_degreeCentralityNormalized} options - NULL
+ * @methodName eles.degreeCentralityNormalized
+ */
   degreeCentralityNormalized: function( options ){
     options = defaults( options );
 
@@ -102,6 +129,35 @@ let elesfn = ({
   // Implemented from the algorithm in Opsahl's paper
   // "Node centrality in weighted networks: Generalizing degree and shortest paths"
   // check the heading 2 "Degree"
+
+
+  /**
+ * @callback degreeCentrality_options
+ * @property {degreeCentrality_options_type} options - degreeCentrality_options_type
+ */
+
+/**
+ * options
+ * @typedef {object} degreeCentrality_options_type
+ * @property {object} root - The root node (selector or collection) for which the centrality calculation is made.
+ * @property {object} weight:function(edge) - [optional] A function that returns the positive weight for the edge. The weight indicates the importance of the edge, with a high value representing high importance.
+ * @property {object} alpha - [optional] The alpha value for the centrality calculation, ranging on [0, 1]. With value 0 (default), disregards edge weights and solely uses number of edges in the centrality calculation. With value 1, disregards number of edges and solely uses the edge weights in the centrality calculation.
+ * @property {object} directed - [optional] A boolean indicating whether the directed indegree and outdegree centrality is calculated (`true`) or whether the undirected centrality is calculated (`false`, default).
+ */
+
+/**
+ * @typedef {object} eles_degreeCentrality
+ * @property {function(degreeCentrality_options):any} degreeCentrality_options - The options for degreeCentralitying.
+ */
+
+  /**
+ * Considering only the elements in the calling collection, calculate the [degree centrality](https://en.wikipedia.org/wiki/Centrality#Degree_centrality) of the specified root node.
+ * @memberof eles
+ * @pureAliases eles.dc
+ * @path Collection/Centrality
+ * @param {...eles_degreeCentrality} options - NULL
+ * @methodName eles.degreeCentrality
+ */
   degreeCentrality: function( options ){
     options = defaults( options );
 

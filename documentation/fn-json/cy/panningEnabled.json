@@ -1,0 +1,19 @@
+{
+    "name": "cy.panningEnabled",
+    "descr": "Get or set whether panning is enabled.",
+    "formats": [
+        {
+            "descr": "Get whether panning is enabled."
+        },
+        {
+            "descr": "Set whether panning is enabled",
+            "args": [
+                {
+                    "name": "bool",
+                    "descr": "A truthy value enables panning; a falsey value disables it."
+                }
+            ]
+        }
+    ],
+    "md": "cy/panningEnabled"
+}

@@ -1,0 +1,39 @@
+{
+    "pureAliases": [
+        "nodes.modelPositions",
+        "nodes.points"
+    ],
+    "name": "nodes.positions",
+    "descr": "Set the [model positions](#notation/position) of several nodes with a function.",
+    "formats": [
+        {
+            "descr": "Set the positions via a function.",
+            "args": [
+                {
+                    "name": "function(ele,i)",
+                    "fields": [
+                        {
+                            "name": "ele",
+                            "descr": "The element being iterated over for which the function should return a position to set."
+                        },
+                        {
+                            "name": "i",
+                            "descr": "The index of the element when iterating over the elements in the collection."
+                        }
+                    ],
+                    "descr": "A callback function that returns the position to set for each element."
+                }
+            ]
+        },
+        {
+            "descr": "Set positions for all nodes based on a single position object.",
+            "args": [
+                {
+                    "name": "pos",
+                    "descr": "An object specifying name-value pairs representing dimensions to set."
+                }
+            ]
+        }
+    ],
+    "md": "collection/positions"
+}

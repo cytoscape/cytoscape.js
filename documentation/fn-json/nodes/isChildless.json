@@ -1,0 +1,4 @@
+{
+    "name": "nodes.isChildless",
+    "descr": "Get whether the node is childless (i.e. a node with no child nodes)"
+}

@@ -1,0 +1,17 @@
+{
+    "name": "nodes.commonAncestors",
+    "descr": "Get all compound ancestors common to all the nodes in the collection, starting with the closest and getting progressively farther.",
+    "formats": [
+        {
+            "descr": "Get commonAncestors Node.",
+            "args": [
+                {
+                    "name": "selector",
+                    "descr": "A selector used to filter the resultant collection.",
+                    "optional": true
+                }
+            ]
+        }
+    ],
+    "md": "collection/commonAncestors"
+}

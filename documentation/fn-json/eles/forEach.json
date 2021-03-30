@@ -1,0 +1,38 @@
+{
+    "pureAliases": [
+        "eles.each"
+    ],
+    "name": "eles.forEach",
+    "descr": "Iterate over the elements in the collection.",
+    "formats": [
+        {
+            "descr": "Determine forEach function",
+            "args": [
+                {
+                    "name": "function(ele,i,eles)",
+                    "fields": [
+                        {
+                            "name": "ele",
+                            "descr": "The current element."
+                        },
+                        {
+                            "name": "i",
+                            "descr": "The index of the current element."
+                        },
+                        {
+                            "name": "eles",
+                            "descr": "The collection of elements being searched."
+                        }
+                    ],
+                    "descr": "The function executed each iteration."
+                },
+                {
+                    "name": "thisArg",
+                    "descr": "The value for `this` within the iterating function.",
+                    "optional": true
+                }
+            ]
+        }
+    ],
+    "md": "collection/forEach"
+}

@@ -1,0 +1,19 @@
+{
+    "name": "cy.autounselectify",
+    "descr": "Get or set whether nodes are automatically unselectified (i.e. if `true`, nodes are ungrabbale despite their individual state).",
+    "formats": [
+        {
+            "descr": "Get whether autounselectifying is enabled."
+        },
+        {
+            "descr": "Set whether autounselectifying is enabled.",
+            "args": [
+                {
+                    "name": "bool",
+                    "descr": "A truthy value enables autounselectifying; a falsey value disables it."
+                }
+            ]
+        }
+    ],
+    "md": "cy/autounselectify"
+}

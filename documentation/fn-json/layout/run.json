@@ -1,0 +1,8 @@
+{
+    "pureAliases": [
+        "layout.start"
+    ],
+    "name": "layout.run",
+    "descr": "Start running the layout.",
+    "md": "layout/run"
+}

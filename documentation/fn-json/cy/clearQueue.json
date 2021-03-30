@@ -1,0 +1,4 @@
+{
+    "name": "cy.clearQueue",
+    "descr": "Remove all queued animations for the viewport."
+}

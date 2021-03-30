@@ -1,0 +1,63 @@
+{
+    "pureAliases": [
+        "eles.css"
+    ],
+    "name": "eles.style",
+    "formatsSameFn": true,
+    "descr": "Get or override the style of the element.",
+    "formats": [
+        {
+            "name": "ele.style",
+            "descr": "Get a name-value pair object containing visual style properties and their values for the element."
+        },
+        {
+            "name": "ele.style",
+            "descr": "Get a particular style property value.",
+            "args": [
+                {
+                    "name": "name",
+                    "descr": "The name of the visual style property to get."
+                }
+            ]
+        },
+        {
+            "name": "eles.style",
+            "descr": "Set a particular style property value.",
+            "args": [
+                {
+                    "name": "name",
+                    "descr": "The name of the visual style property to set."
+                },
+                {
+                    "name": "value",
+                    "descr": "The value of the visual style property to set."
+                }
+            ]
+        },
+        {
+            "name": "eles.style",
+            "descr": "Set several particular style property values.",
+            "args": [
+                {
+                    "name": "obj",
+                    "descr": "An object of style property name-value pairs to set."
+                }
+            ]
+        },
+        {
+            "name": "eles.removeStyle",
+            "descr": "Remove all style overrides."
+        },
+        {
+            "name": "eles.removeStyle",
+            "descr": "Remove specific style overrides.",
+            "args": [
+                {
+                    "name": "names",
+                    "descr": "A space-separated list of property names to remove overrides."
+                }
+            ]
+        }
+    ],
+    "md": "collection/style"
+}

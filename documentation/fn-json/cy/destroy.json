@@ -1,0 +1,5 @@
+{
+    "name": "cy.destroy",
+    "descr": "A convenience function to explicitly destroy the instance.",
+    "md": "cy/destroy"
+}

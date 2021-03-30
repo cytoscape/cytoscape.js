@@ -1,0 +1,23 @@
+{
+    "name": "eles.merge",
+    "descr": "Perform a in-place merge of the given elements into the calling collection.",
+    "formats": [
+        {
+            "args": [
+                {
+                    "name": "eles",
+                    "descr": "The elements to merge in-place."
+                }
+            ]
+        },
+        {
+            "args": [
+                {
+                    "name": "selector",
+                    "descr": "A selector representing the elements to merge. All elements in the graph matching the selector are used as the passed collection."
+                }
+            ]
+        }
+    ],
+    "md": "collection/merge"
+}

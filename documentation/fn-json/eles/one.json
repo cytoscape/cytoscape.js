@@ -1,0 +1,31 @@
+{
+    "name": "eles.one",
+    "descr": "Add a listener that is called once per event per element.",
+    "formats": [
+        {
+            "descr": "Determine test function",
+            "args": [
+                {
+                    "name": "events",
+                    "descr": "A space separated list of event names."
+                },
+                {
+                    "name": "selector",
+                    "descr": "A delegate selector to specify child elements for which the handler runs.",
+                    "optional": true
+                },
+                {
+                    "name": "function(event)",
+                    "fields": [
+                        {
+                            "name": "event",
+                            "descr": "The event object."
+                        }
+                    ],
+                    "descr": "The handler function that is called when one of the specified events occurs."
+                }
+            ]
+        }
+    ],
+    "md": "collection/one"
+}

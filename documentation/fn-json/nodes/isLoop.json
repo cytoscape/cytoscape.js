@@ -1,0 +1,4 @@
+{
+    "name": "nodes.isLoop",
+    "descr": "Get whether the edge is a loop (i.e. same source and target)."
+}

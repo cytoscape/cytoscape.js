@@ -1,0 +1,5 @@
+{
+    "name": "ani.stop",
+    "descr": "Stop the animation, maintaining the current progress and removing the animation from any associated queues.",
+    "md": "ani/stop"
+}

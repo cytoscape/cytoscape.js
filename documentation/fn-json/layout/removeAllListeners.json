@@ -1,0 +1,4 @@
+{
+    "name": "layout.removeAllListeners",
+    "descr": "Remove all event handlers on the layout."
+}

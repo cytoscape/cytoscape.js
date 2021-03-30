@@ -52,6 +52,29 @@ let positionDef = {
 
 fn = elesfn = ({
 
+  /**
+ *  dimension, value
+ * @typedef {object} node_position_dimension_val
+ * @property {object} dimension - The position dimension to set.
+ * @property {object} value - The value to set to the dimension.
+ */
+
+/**
+ * @typedef {object} node_position
+ * @property {object} NULL
+ * @property {object} dimension - The position dimension to get.
+ * @property {node_position_dimension_val} node_position_dimension_val
+ * @property {object} pos - An object specifying name-value pairs representing dimensions to set.
+ */
+
+  /**
+ * Get or set the [model position](#notation/position) of a node.
+ * @memberof node
+ * @path Collection/Position & dimensions
+ * @pureAliases node.modelPosition|node.point
+ * @param {...node_position} value - Get the entire position object. | Get the value of a specified position dimension. | Set the value of a specified position dimension. | Set the position using name-value pairs in the specified object.
+ * @methodName node.position
+ */
   position: define.data( positionDef ),
 
   // position but no notification to renderer
@@ -65,6 +88,33 @@ fn = elesfn = ({
     }
   } ) ),
 
+
+  /**
+ * @callback nodes_positions_callback
+ * @property {nodes_positions_callback_type} function(ele,i) - nodes_positions_callback_type
+ */
+
+/**
+ * function(ele, i, eles)
+ * @typedef {object} nodes_positions_callback_type
+ * @property {object} ele - The element being iterated over for which the function should return a position to set.
+ * @property {object} i - The index of the element when iterating over the elements in the collection.
+ */
+
+/**
+ * @typedef {object} nodes_positions
+ * @property {function(nodes_positions_callback):any} nodes_positions_callback - A callback function that returns the position to set for each element.
+ * @property {object} pos - An object specifying name-value pairs representing dimensions to set.
+ */
+
+  /**
+ * Set the [model positions](#notation/position) of several nodes with a function.
+ * @memberof nodes
+ * @path Collection/Position & dimensions
+ * @pureAliases nodes.modelPositions|nodes.points
+ * @param {...nodes_positions} val - Set the positions via a function. | Set positions for all nodes based on a single position object.
+ * @methodName nodes.positions
+ */
   positions: function( pos, silent ){
     if( is.plainObject( pos ) ){
       if( silent ){
@@ -102,6 +152,26 @@ fn = elesfn = ({
     return this.positions( pos, true );
   },
 
+    /**
+ *  dimension, value
+ * @typedef {object} nodes_shift_dimension_val
+ * @property {object} dimension - The position dimension to shift.
+ * @property {object} value - The value to shift the dimension.
+ */
+
+/**
+ * @typedef {object} nodes_shift
+ * @property {nodes_shift_dimension_val} nodes_shift_dimension_val
+ * @property {object} pos - An object specifying name-value pairs representing dimensions to shift.
+ */
+
+  /**
+ * Shift the positions of the nodes by a given [model position](#notation/position) vector.
+ * @memberof nodes
+ * @path Collection/Position & dimensions
+ * @param {...nodes_shift} value - Shift the nodes by one of `'x'` or `'y'`. | Shift the nodes by a position vector.
+ * @methodName nodes.shift
+ */
   shift: function( dim, val, silent ){
     let delta;
 
@@ -155,6 +225,30 @@ fn = elesfn = ({
   },
 
   // get/set the rendered (i.e. on screen) positon of the element
+
+   /**
+ *  dimension, value
+ * @typedef {object} node_renderedPosition_dimension_val
+ * @property {object} dimension - The position dimension to set.
+ * @property {object} value - The value to set to the dimension.
+ */
+
+/**
+ * @typedef {object} node_renderedPosition
+ * @property {object} NULL
+ * @property {object} dimension - The position dimension to get.
+ * @property {node_renderedPosition_dimension_val} node_renderedPosition_dimension_val
+ * @property {object} pos - An object specifying name-value pairs representing dimensions to set.
+ */
+
+  /**
+ * Get or set the [rendered (on-screen) position](#notation/position) of a node.
+ * @memberof node
+ * @path Collection/Position & dimensions
+ * @pureAliases node.renderedPoint
+ * @param {...node_renderedPosition} value - Get the entire rendered position object. | Get the value of a specified rendered position dimension. | Set the value of a specified rendered position dimension. | Set the rendered position using name-value pairs in the specified object.
+ * @methodName node.renderedPosition
+ */
   renderedPosition: function( dim, val ){
     let ele = this[0];
     let cy = this.cy();
@@ -192,6 +286,30 @@ fn = elesfn = ({
   },
 
   // get/set the position relative to the parent
+
+     /**
+ *  dimension, value
+ * @typedef {object} node_relativePosition_dimension_val
+ * @property {object} dimension - The position dimension to set.
+ * @property {object} value - The value to set to the dimension.
+ */
+
+/**
+ * @typedef {object} node_relativePosition
+ * @property {object} NULL
+ * @property {object} dimension - The position dimension to get.
+ * @property {node_relativePosition_dimension_val} node_relativePosition_dimension_val
+ * @property {object} pos - An object specifying name-value pairs representing dimensions to set.
+ */
+
+  /**
+ * Get or set the [model position](#notation/position) of a node, relative to its compound parent.
+ * @memberof node
+ * @path Collection/Position & dimensions
+ * @pureAliases node.relativePoint
+ * @param {...node_relativePosition} value - Get the entire relative position object. | Get the value of a specified relative position dimension. | Set the value of a specified relative position dimension. | Set the relative position using name-value pairs in the specified object.
+ * @methodName node.relativePosition
+ */
   relativePosition: function( dim, val ){
     let ele = this[0];
     let cy = this.cy();

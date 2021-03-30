@@ -1,0 +1,19 @@
+{
+    "name": "cy.stop",
+    "descr": "Stop all viewport animations that are currently running.",
+    "formats": [
+        {
+            "args": [
+                {
+                    "name": "clearQueue",
+                    "descr": "A boolean (default `false`), indicating whether the queue of animations should be emptied."
+                },
+                {
+                    "name": "jumpToEnd",
+                    "descr": "A boolean (default `false`), indicating whether the currently-running animations should jump to their ends rather than just stopping midway."
+                }
+            ]
+        }
+    ],
+    "md": "cy/stop"
+}

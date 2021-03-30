@@ -1,0 +1,31 @@
+{
+    "name": "eles.difference",
+    "pureAliases": [
+        "eles.not",
+        "eles.subtract",
+        "eles.relativeComplement",
+        "eles['\\\\']",
+        "eles['!']",
+        "eles['-']"
+    ],
+    "descr": "Get a new collection, resulting from the collection without some specified elements.",
+    "formats": [
+        {
+            "args": [
+                {
+                    "name": "eles",
+                    "descr": "The elements that will not be in the resultant collection."
+                }
+            ]
+        },
+        {
+            "args": [
+                {
+                    "name": "selector",
+                    "descr": "Elements from the calling collection matching this selector will not be in the resultant collection."
+                }
+            ]
+        }
+    ],
+    "md": "collection/difference"
+}

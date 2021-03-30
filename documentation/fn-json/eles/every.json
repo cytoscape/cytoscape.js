@@ -1,0 +1,35 @@
+{
+    "name": "eles.every",
+    "descr": "Determine whether all elements in this collection satisfy the specified test function.",
+    "formats": [
+        {
+            "descr": "Determine test function",
+            "args": [
+                {
+                    "name": "function(ele,i,eles)",
+                    "fields": [
+                        {
+                            "name": "ele",
+                            "descr": "The event object."
+                        },
+                        {
+                            "name": "i",
+                            "descr": "The index of the current element."
+                        },
+                        {
+                            "name": "eles",
+                            "descr": "The collection of elements being tested."
+                        }
+                    ],
+                    "descr": "The test function that returns truthy values for elements that satisfy the test and falsey values for elements that do not satisfy the test."
+                },
+                {
+                    "name": "thisArg",
+                    "descr": "The value for `this` within the test function.",
+                    "optional": true
+                }
+            ]
+        }
+    ],
+    "md": "collection/every"
+}

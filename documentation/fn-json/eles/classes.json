@@ -1,0 +1,25 @@
+{
+    "pureAliases": [
+        "eles.className",
+        "eles.classNames"
+    ],
+    "name": "eles.classes",
+    "descr": "Get or replace the current list of classes on the elements with the specified list.",
+    "formats": [
+        {
+            "name": "ele.classes",
+            "descr": "Get the list of classes as an array for the element."
+        },
+        {
+            "name": "eles.classes",
+            "descr": "Replace the list of classes for all elements in the collection.",
+            "args": [
+                {
+                    "name": "classes",
+                    "descr": "An array (or a space-separated string) of class names that replaces the current class list."
+                }
+            ]
+        }
+    ],
+    "md": "collection/classes"
+}

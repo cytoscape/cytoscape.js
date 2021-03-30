@@ -1,0 +1,18 @@
+{
+    "name": "cy.maxZoom",
+    "descr": "Get or set the maximum zoom level.",
+    "formats": [
+        {
+            "descr": "Get the maximum zoom level."
+        },
+        {
+            "descr": "Set the maximum zoom level.",
+            "args": [
+                {
+                    "name": "zoom",
+                    "descr": "The new maximum zoom level to use."
+                }
+            ]
+        }
+    ]
+}

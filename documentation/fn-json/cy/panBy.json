@@ -1,0 +1,16 @@
+{
+    "name": "cy.panBy",
+    "descr": "Relatively pan the graph by a specified rendered position vector.",
+    "formats": [
+        {
+            "descr": "The rendered position",
+            "args": [
+                {
+                    "name": "renderedPosition",
+                    "descr": "The rendered position vector to pan the graph by."
+                }
+            ]
+        }
+    ],
+    "md": "cy/panBy"
+}

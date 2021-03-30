@@ -1,0 +1,19 @@
+{
+    "pureAliases": [
+        "eles.allAreNeighbours"
+    ],
+    "name": "eles.allAreNeighbors",
+    "descr": "Determine whether all elements in the specified collection are in the neighbourhood of the calling collection.",
+    "formats": [
+        {
+            "descr": "Determine neighbourhood collection",
+            "args": [
+                {
+                    "name": "eles",
+                    "descr": "The other elements to compare to."
+                }
+            ]
+        }
+    ],
+    "md": "collection/allAreNeighbors"
+}

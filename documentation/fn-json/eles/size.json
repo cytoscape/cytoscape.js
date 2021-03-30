@@ -1,0 +1,5 @@
+{
+    "name": "eles.size",
+    "descr": "Get the number of elements in the collection.",
+    "md": "collection/size"
+}

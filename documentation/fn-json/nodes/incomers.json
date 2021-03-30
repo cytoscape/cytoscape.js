@@ -1,0 +1,17 @@
+{
+    "name": "nodes.incomers",
+    "descr": "Get edges (and their sources) coming into the nodes in the collection.",
+    "formats": [
+        {
+            "descr": "Get ID",
+            "args": [
+                {
+                    "name": "selector",
+                    "descr": "An optional selector that is used to filter the resultant collection.",
+                    "optional": true
+                }
+            ]
+        }
+    ],
+    "md": "collection/incomers"
+}

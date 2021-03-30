@@ -1,0 +1,25 @@
+{
+    "pureAliases": [
+        "layout.off",
+        "layout.unbind",
+        "layout.unlisten"
+    ],
+    "name": "layout.removeListener",
+    "formats": [
+        {
+            "descr": "Remove event handlers on the layout.",
+            "args": [
+                {
+                    "name": "events",
+                    "descr": "A space separated list of event names."
+                },
+                {
+                    "name": "handler",
+                    "descr": "A reference to the handler function to remove.",
+                    "optional": true
+                }
+            ]
+        }
+    ],
+    "md": "layout/removeListener"
+}

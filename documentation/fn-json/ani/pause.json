@@ -1,0 +1,5 @@
+{
+    "name": "ani.pause",
+    "descr": "Pause the animation, maintaining the current progress.",
+    "md": "ani/pause"
+}

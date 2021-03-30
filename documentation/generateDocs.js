@@ -108,13 +108,13 @@ for(var i in words)
             // checking for formatSameFn
             if(words[i].tags != undefined && words[i].tags.find(fn => fn.originalTitle == "formatsSameFn") != undefined)
             {
-                func.formatsSameFn = words[i].tags.find(fn => fn.originalTitle == "formatsSameFn").value;
+                func.formatsSameFn = true;
             }
 
             // checking for extFn
             if(words[i].tags != undefined && words[i].tags.find(fn => fn.originalTitle == "extFn") != undefined)
             {
-                func.extFn = words[i].tags.find(fn => fn.originalTitle == "extFn").value;
+                func.extFn = true;
             }
 
             // mapping fuution with path
@@ -126,7 +126,7 @@ for(var i in words)
             func.descr = words[i].description;
             func.formats = [];
             
-            if(words[i].params != undefined)
+            if(words[i].params != undefined && words[i].params[0] != undefined)
             {
                 var descr = words[i].params[0].description.split(" | ");
                 for( var j in descr)
@@ -145,7 +145,7 @@ for(var i in words)
                         }
                     }
 
-                    if( descr[j] != undefined )
+                    if( descr[j] != undefined && descr[j] != "NULL" )
                     {
                         temp.descr = descr[j];
                     } 
@@ -289,31 +289,15 @@ for(var i in fns)
     }
 }
 
-// var mappings=fns;
 
-// for(var i in dockmaker_elements.sections)
-// {
-//     if(dockmaker_elements.sections[i].name != undefined && ( dockmaker_elements.sections[i].name == 'Core' || dockmaker_elements.sections[i].name == 'Collection' || dockmaker_elements.sections[i].name == 'Animations' || dockmaker_elements.sections[i].name == 'Layouts' ))
-//     {
-//         for( var j in dockmaker_elements.sections[i].sections)
-//         {
-//             if(dockmaker_elements.sections[i].sections[j].fns != undefined)
-//             {
-//                 for( var k in dockmaker_elements.sections[i].sections[j].fns)
-//                 {
-//                     for( var x in mappings )
-//                     {
-//                         if(dockmaker_elements.sections[i].sections[j].fns[k].name == mappings[x].name)
-//                         {
-//                             dockmaker_elements.sections[i].sections[j].fns[k] = mappings[x];
-//                             break;
-//                         }
-//                     }
-//                 }
-//             }
-//         }
-//     }
-// }
+for(var i in fns)
+{
+    console.log(fns[i].name.split(".")[0]);
+    fs.writeFileSync( path.join(__dirname + "/fn-json/" + fns[i].name.split(".")[0] , "./" + fns[i].name.split(".")[1] + ".json"), JSON.stringify(fns[i], null,4), function(err) {
+    if (err) throw err;
+    console.log('complete');
+    });
+}
 
 // save generated file
 fs.writeFileSync( path.join(__dirname, "./docmaker.json"), JSON.stringify(dockmaker_elements, null,4), function(err) {

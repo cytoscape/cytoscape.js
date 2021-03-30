@@ -1,0 +1,34 @@
+{
+    "name": "eles.reduce",
+    "descr": "Reduce a single value by applying a function against an accumulator and each value of the collection.",
+    "formats": [
+        {
+            "descr": "Determine reduce function",
+            "args": [
+                {
+                    "name": "function(prevVal,ele,i,eles)",
+                    "fields": [
+                        {
+                            "name": "prevVal",
+                            "descr": "The value accumulated from previous elements."
+                        },
+                        {
+                            "name": "ele",
+                            "descr": "The current element."
+                        },
+                        {
+                            "name": "i",
+                            "descr": "The index of the current element."
+                        },
+                        {
+                            "name": "eles",
+                            "descr": "The collection of elements being reduced."
+                        }
+                    ],
+                    "descr": "The function that returns the accumulated value given the previous value and the current element."
+                }
+            ]
+        }
+    ],
+    "md": "collection/reduce"
+}

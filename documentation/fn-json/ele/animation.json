@@ -1,0 +1,44 @@
+{
+    "name": "ele.animation",
+    "descr": "Get an [animation](#animations) for the element.",
+    "formats": [
+        {
+            "args": [
+                {
+                    "name": "options",
+                    "fields": [
+                        {
+                            "name": "options",
+                            "descr": "A position to which the elements will be animated."
+                        },
+                        {
+                            "name": "renderedPosition",
+                            "descr": "A rendered position to which the elements will be animated."
+                        },
+                        {
+                            "name": "style",
+                            "descr": "An object containing name-value pairs of style properties to animate."
+                        },
+                        {
+                            "name": "duration",
+                            "descr": "The duration of the animation in milliseconds."
+                        },
+                        {
+                            "name": "easing",
+                            "descr": "A `transition-timing-function` easing style string that shapes the animation progress curve."
+                        },
+                        {
+                            "name": "complete",
+                            "descr": "A function to call when the animation is done."
+                        },
+                        {
+                            "name": "step",
+                            "descr": "A function to call each time the animation steps."
+                        }
+                    ],
+                    "descr": "An object containing the details of the animation."
+                }
+            ]
+        }
+    ]
+}

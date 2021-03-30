@@ -1,0 +1,66 @@
+{
+    "name": "eles.filter",
+    "descr": "Get a new collection containing elements that are accepted by the specified filter function or selector.",
+    "formats": [
+        {
+            "name": "eles.filter",
+            "descr": "Determine test function",
+            "args": [
+                {
+                    "name": "function(ele,i,eles)",
+                    "fields": [
+                        {
+                            "name": "ele",
+                            "descr": "The current element."
+                        },
+                        {
+                            "name": "i",
+                            "descr": "The index of the current element."
+                        },
+                        {
+                            "name": "eles",
+                            "descr": "The collection of elements being mapped."
+                        }
+                    ],
+                    "descr": "The function that returns the filterped value for each element."
+                },
+                {
+                    "name": "thisArg",
+                    "descr": "The value for `this` within the iterating function.",
+                    "optional": true
+                }
+            ]
+        },
+        {
+            "name": "eles.filter",
+            "descr": "Get the elements that match the specified selector.",
+            "args": [
+                {
+                    "name": "selector",
+                    "descr": "The selector to match against."
+                }
+            ]
+        },
+        {
+            "name": "eles.nodes",
+            "descr": "Get the nodes that match the specified selector.",
+            "args": [
+                {
+                    "name": "selector",
+                    "descr": "The selector to match against."
+                }
+            ]
+        },
+        {
+            "name": "eles.edges",
+            "descr": "Get the edges that match the specified selector.",
+            "args": [
+                {
+                    "name": "selector",
+                    "descr": "The selector to match against."
+                }
+            ]
+        }
+    ],
+    "md": "collection/filter"
+}

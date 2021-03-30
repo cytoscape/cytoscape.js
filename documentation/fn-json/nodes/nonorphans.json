@@ -1,0 +1,16 @@
+{
+    "name": "nodes.nonorphans",
+    "descr": "Get all nonorphan (i.e. has no compound parent) nodes in the calling collection.",
+    "formats": [
+        {
+            "descr": "Get nonorphans Node.",
+            "args": [
+                {
+                    "name": "selector",
+                    "descr": "A selector used to filter the resultant collection.",
+                    "optional": true
+                }
+            ]
+        }
+    ]
+}

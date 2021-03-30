@@ -1,0 +1,16 @@
+{
+    "name": "eles.allAre",
+    "descr": "Determine whether all elements in the collection match a selector.",
+    "formats": [
+        {
+            "descr": "Matching Selector",
+            "args": [
+                {
+                    "name": "selector",
+                    "descr": "The selector to match against."
+                }
+            ]
+        }
+    ],
+    "md": "collection/allAre"
+}

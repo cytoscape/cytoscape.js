@@ -1,0 +1,16 @@
+{
+    "name": "nodes.parent",
+    "descr": "Get the compound parent node of each node in the collection.",
+    "formats": [
+        {
+            "descr": "Get Parent Node.",
+            "args": [
+                {
+                    "name": "selector",
+                    "descr": "A selector used to filter the resultant collection.",
+                    "optional": true
+                }
+            ]
+        }
+    ]
+}

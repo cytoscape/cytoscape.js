@@ -1,0 +1,43 @@
+{
+    "pureAliases": [
+        "node.renderedPoint"
+    ],
+    "name": "node.renderedPosition",
+    "descr": "Get or set the [rendered (on-screen) position](#notation/position) of a node.",
+    "formats": [
+        {
+            "descr": "Get the entire rendered position object."
+        },
+        {
+            "descr": "Get the value of a specified rendered position dimension.",
+            "args": [
+                {
+                    "name": "dimension",
+                    "descr": "The position dimension to get."
+                }
+            ]
+        },
+        {
+            "descr": "Set the value of a specified rendered position dimension.",
+            "args": [
+                {
+                    "name": "dimension",
+                    "descr": "The position dimension to set."
+                },
+                {
+                    "name": "value",
+                    "descr": "The value to set to the dimension."
+                }
+            ]
+        },
+        {
+            "descr": "Set the rendered position using name-value pairs in the specified object.",
+            "args": [
+                {
+                    "name": "pos",
+                    "descr": "An object specifying name-value pairs representing dimensions to set."
+                }
+            ]
+        }
+    ]
+}

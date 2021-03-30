@@ -1,0 +1,16 @@
+{
+    "name": "eles.hasClass",
+    "descr": "Get whether an element has a particular class.",
+    "formats": [
+        {
+            "descr": "Adding Class",
+            "args": [
+                {
+                    "name": "className",
+                    "descr": "The name of the class to test for."
+                }
+            ]
+        }
+    ],
+    "md": "collection/hasClass"
+}

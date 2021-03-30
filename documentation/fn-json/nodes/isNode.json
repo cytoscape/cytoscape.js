@@ -1,0 +1,4 @@
+{
+    "name": "nodes.isNode",
+    "descr": "Get whether the element is a node."
+}

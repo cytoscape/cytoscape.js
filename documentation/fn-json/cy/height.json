@@ -1,0 +1,4 @@
+{
+    "name": "cy.height",
+    "descr": "Get the on-screen height of the viewport in pixels."
+}

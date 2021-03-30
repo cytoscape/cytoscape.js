@@ -1,0 +1,15 @@
+{
+    "name": "edge.segmentPoints",
+    "descr": "Get an array of segment point positions (i.e. bend points) for a [`curve-style: segments`](#style/segments-edges) edge.",
+    "formats": [
+        {
+            "name": "edge.segmentPoints",
+            "descr": "Get the segment points in [model co-ordinates](#notation/position)."
+        },
+        {
+            "name": "edge.renderedSegmentPoints",
+            "descr": "Get the segment points in [rendered co-ordinates](#notation/position)."
+        }
+    ],
+    "md": "collection/segmentPoints"
+}

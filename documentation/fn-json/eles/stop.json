@@ -1,0 +1,19 @@
+{
+    "name": "eles.stop",
+    "descr": "Stop all animations that are currently running.",
+    "formats": [
+        {
+            "args": [
+                {
+                    "name": "clearQueue",
+                    "descr": "A boolean, indicating whether the queue of animations should be emptied."
+                },
+                {
+                    "name": "jumpToEnd",
+                    "descr": "A boolean, indicating whether the currently-running animations should jump to their ends rather than just stopping midway."
+                }
+            ]
+        }
+    ],
+    "md": "collection/stop"
+}

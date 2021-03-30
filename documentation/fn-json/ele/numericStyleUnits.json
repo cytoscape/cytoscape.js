@@ -1,0 +1,16 @@
+{
+    "name": "ele.numericStyleUnits",
+    "descr": "Get the units that `ele.numericStyle()` is expressed in, for a particular property.",
+    "formats": [
+        {
+            "descr": "The numericStyleUnits function.",
+            "args": [
+                {
+                    "name": "name",
+                    "descr": "The name of the style property to get."
+                }
+            ]
+        }
+    ],
+    "md": "collection/numericStyleUnits"
+}

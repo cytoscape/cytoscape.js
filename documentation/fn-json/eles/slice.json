@@ -1,0 +1,21 @@
+{
+    "name": "eles.slice",
+    "descr": "Get a subset of the elements in the collection based on specified indices.",
+    "formats": [
+        {
+            "descr": "Slice",
+            "args": [
+                {
+                    "name": "start",
+                    "descr": "An integer that specifies where to start the selection. The first element has an index of 0. Use negative numbers to select from the end of an array.",
+                    "optional": true
+                },
+                {
+                    "name": "end",
+                    "descr": "An integer that specifies where to end the selection. If omitted, all elements from the start position and to the end of the array will be selected. Use negative numbers to select from the end of an array.",
+                    "optional": true
+                }
+            ]
+        }
+    ]
+}

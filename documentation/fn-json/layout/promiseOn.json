@@ -1,0 +1,18 @@
+{
+    "pureAliases": [
+        "layout.pon"
+    ],
+    "name": "layout.promiseOn",
+    "formats": [
+        {
+            "descr": "Get a promise that is resolved when the layout emits the first of any of the specified events.",
+            "args": [
+                {
+                    "name": "events",
+                    "descr": "A space separated list of event names."
+                }
+            ]
+        }
+    ],
+    "md": "layout/promiseOn"
+}

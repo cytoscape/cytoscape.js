@@ -1,0 +1,5 @@
+{
+    "name": "eles.unselectify",
+    "descr": "Make the selection states of the elements immutable.",
+    "md": "collection/unselectify"
+}

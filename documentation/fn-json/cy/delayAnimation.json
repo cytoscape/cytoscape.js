@@ -1,0 +1,14 @@
+{
+    "name": "cy.delayAnimation",
+    "descr": "Get a delay [animation](#animations) for the element.",
+    "formats": [
+        {
+            "args": [
+                {
+                    "name": "duration",
+                    "descr": "How long the delay should be in milliseconds."
+                }
+            ]
+        }
+    ]
+}

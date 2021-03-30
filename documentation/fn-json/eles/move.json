@@ -1,0 +1,43 @@
+{
+    "name": "eles.move",
+    "descr": "Move the elements with respect to graph topology (i.e. new `source`, `target`, or `parent`).",
+    "formats": [
+        {
+            "name": "edges.move",
+            "descr": "Change the source, target, or both source and target.",
+            "args": [
+                {
+                    "name": "location",
+                    "fields": [
+                        {
+                            "name": "source",
+                            "descr": "The ID of the new source node."
+                        },
+                        {
+                            "name": "target",
+                            "descr": "The ID of the new target node."
+                        }
+                    ],
+                    "descr": "Where the edges are moved. You can specify a new source, a new target, or both."
+                }
+            ]
+        },
+        {
+            "name": "nodes.move",
+            "descr": "Change the parent.",
+            "args": [
+                {
+                    "name": "location",
+                    "fields": [
+                        {
+                            "name": "parent",
+                            "descr": "The ID of the new parent node (use null for no parent)."
+                        }
+                    ],
+                    "descr": "Where the nodes are moved."
+                }
+            ]
+        }
+    ],
+    "md": "collection/move"
+}

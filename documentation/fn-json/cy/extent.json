@@ -1,0 +1,5 @@
+{
+    "name": "cy.extent",
+    "descr": "Get the extent of the viewport, a bounding box in model co-ordinates that lets you know what model positions are visible in the viewport.",
+    "md": "cy/extent"
+}

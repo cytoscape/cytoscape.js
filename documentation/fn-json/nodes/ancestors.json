@@ -1,0 +1,12 @@
+{
+    "name": "nodes.ancestors",
+    "pureAliases": ["nodes.parents"],
+    "descr": "Get all compound ancestor nodes (i.e. parents, parents' parents, etc.) of each node in the collection.",
+    "formats": [
+      {
+        "args": [
+          { "name": "selector", "descr": "A selector used to filter the resultant collection.", "optional": true }
+        ]
+      }
+    ]
+  }

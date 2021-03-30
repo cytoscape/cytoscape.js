@@ -1,0 +1,4 @@
+{
+    "name": "nodes.isChild",
+    "descr": "Get whether the node is a compound child (i.e. contained within a node)"
+}

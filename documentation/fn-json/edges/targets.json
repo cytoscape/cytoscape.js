@@ -1,0 +1,17 @@
+{
+    "name": "edges.targets",
+    "descr": "Get target nodes connected to the edges in the collection.",
+    "formats": [
+        {
+            "descr": "Get ID",
+            "args": [
+                {
+                    "name": "selector",
+                    "descr": "An optional selector that is used to filter the resultant collection.",
+                    "optional": true
+                }
+            ]
+        }
+    ],
+    "md": "collection/targets"
+}

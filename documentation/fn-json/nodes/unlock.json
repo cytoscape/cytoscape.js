@@ -1,0 +1,5 @@
+{
+    "name": "nodes.unlock",
+    "descr": "Unlock the nodes such that their positions can be changed.",
+    "md": "collection/unlock"
+  }

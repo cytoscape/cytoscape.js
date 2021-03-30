@@ -66,6 +66,37 @@ let elesfn = ({
     return this._private.emitter;
   },
 
+    /**
+ * function(event)
+ * @typedef {object} eles_on_callback_type
+ * @property {object} event - The event object.
+ */
+
+/**
+ * @callback eles_on_callback
+ * @property {eles_on_callback_type} function(event) - eles_on_callback_type
+ */
+
+/**
+ * @typedef {object} eles_collection_on
+ * @property {object} events - A space separated list of event names.
+ * @property {object} selector - [optional] A delegate selector to specify child elements for which the handler runs.
+ * @property {function(eles_on_callback):any} eles_on_callback -  The handler function that is called when on of the specified events occurs.
+ */
+
+/**
+ * @typedef {object} eles_on
+ * @property {eles_collection_on} eles_collection_on
+ */
+
+  /**
+ * Listen to events that occur on the elements.
+ * @memberof eles
+ * @path Collection/Events
+ * @pureAliases eles.bind|eles.listen|eles.addListener
+ * @param {...eles_on} events - NULL
+ * @methodName eles.on
+ */
   on: function( events, selector, callback ){
     let argSel = argSelector(selector);
 
@@ -78,6 +109,26 @@ let elesfn = ({
     return this;
   },
 
+/**
+ * @typedef {object} eles_collection_removeListener
+ * @property {object} events - A space separated list of event names.
+ * @property {object} selector - [optional] The same delegate selector used to listen to the events.
+ * @property {object} handler - [optional] A reference to the handler function to remove.
+ */
+
+/**
+ * @typedef {object} eles_removeListener
+ * @property {eles_collection_removeListener} eles_collection_removeListener
+ */
+
+  /**
+ * Remove one or more listeners on the elements.
+ * @memberof eles
+ * @path Collection/Events
+ * @pureAliases eles.off|eles.unbind|eles.unlisten
+ * @param {...eles_removeListener} events - NULL
+ * @methodName eles.removeListener
+ */
   removeListener: function( events, selector, callback ){
     let argSel = argSelector(selector);
 
@@ -90,6 +141,12 @@ let elesfn = ({
     return this;
   },
 
+  /**
+ * Remove all event handlers on the elements.
+ * @memberof eles
+ * @path Collection/Events
+ * @methodName eles.removeAllListeners
+ */
   removeAllListeners: function(){
     for( let i = 0; i < this.length; i++ ){
       let ele = this[i];
@@ -100,6 +157,36 @@ let elesfn = ({
     return this;
   },
 
+    /**
+ * function(event)
+ * @typedef {object} eles_one_callback_type
+ * @property {object} event - The event object.
+ */
+
+/**
+ * @callback eles_one_callback
+ * @property {eles_one_callback_type} function(event) - eles_one_callback_type
+ */
+
+/**
+ * @typedef {object} eles_collection_one
+ * @property {object} events - A space separated list of event names.
+ * @property {object} selector - [optional] A delegate selector to specify child elements for which the handler runs.
+ * @property {function(eles_one_callback):any} eles_one_callback -  The handler function that is called when one of the specified events occurs.
+ */
+
+/**
+ * @typedef {object} eles_one
+ * @property {eles_collection_one} eles_collection_one
+ */
+
+  /**
+ * Add a listener that is called once per event per element.
+ * @memberof eles
+ * @path Collection/Events
+ * @param {...eles_one} events - Determine test function
+ * @methodName eles.one
+ */
   one: function( events, selector, callback ){
     let argSel = argSelector(selector);
 
@@ -112,6 +199,36 @@ let elesfn = ({
     return this;
   },
 
+    /**
+ * function(event)
+ * @typedef {object} eles_once_callback_type
+ * @property {object} event - The event object.
+ */
+
+/**
+ * @callback eles_once_callback
+ * @property {eles_once_callback_type} function(event) - eles_once_callback_type
+ */
+
+/**
+ * @typedef {object} eles_collection_once
+ * @property {object} events - A space separated list of event names.
+ * @property {object} selector - [optional] A delegate selector to specify child elements for which the handler runs.
+ * @property {function(eles_once_callback):any} eles_once_callback -  The handler function that is called when once of the specified events occurs.
+ */
+
+/**
+ * @typedef {object} eles_once
+ * @property {eles_collection_once} eles_collection_once
+ */
+
+  /**
+ * Add a listener that is called once per event per element.
+ * @memberof eles
+ * @path Collection/Events
+ * @param {...eles_once} events - NULL
+ * @methodName eles.once
+ */
   once: function( events, selector, callback ){
     let argSel = argSelector(selector);
 
@@ -125,6 +242,25 @@ let elesfn = ({
     }
   },
 
+/**
+ * @typedef {object} eles_emit_type
+ * @property {object} events - A list of event names to emit (either a space-separated string or an array)
+ * @property {object} extraParams - [optional] An array of additional parameters to pass to the handler.
+ */
+
+/**
+ * @typedef {object} eles_emit
+ * @property {object} eles_emit_type
+ */
+
+  /**
+ * Emit events on the elements.
+ * @memberof eles
+ * @pureAliases eles.trigger
+ * @path Collection/Events
+ * @param {...eles_emit} events - NULL
+ * @methodName eles.emit
+ */
   emit: function( events, extraParams ){
     for( let i = 0; i < this.length; i++ ){
       let ele = this[i];

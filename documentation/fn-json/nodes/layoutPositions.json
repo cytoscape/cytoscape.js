@@ -1,0 +1,35 @@
+{
+    "name": "nodes.layoutPositions",
+    "extFn": true,
+    "descr": "Position the nodes for a discrete/synchronous layout.",
+    "formats": [
+        {
+            "descr": "Position the nodes.",
+            "args": [
+                {
+                    "name": "layout",
+                    "descr": "The layout."
+                },
+                {
+                    "name": "options",
+                    "descr": "The layout options object."
+                },
+                {
+                    "name": "function(ele,i)",
+                    "fields": [
+                        {
+                            "name": "ele",
+                            "descr": "The node being iterated over for which the function should return a position to set."
+                        },
+                        {
+                            "name": "i",
+                            "descr": "The index of the current node while iterating over the nodes in the layout."
+                        }
+                    ],
+                    "descr": "A function that returns the new position for the specified node."
+                }
+            ]
+        }
+    ],
+    "md": "collection/layoutPositions"
+}

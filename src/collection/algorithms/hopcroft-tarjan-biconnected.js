@@ -1,3 +1,10 @@
+  /**
+ * Finds the [biconnected components](https://en.wikipedia.org/wiki/Biconnected_component) in an undirected graph, as well as their respective cut vertices, using an algorithm due to Hopcroft and Tarjan.
+ * @memberof eles
+ * @path Collection/Cut
+ * @pureAliases eles.hopcroftTarjanBiconnectedComponents|eles.htb|eles.htbc
+ * @methodName eles.hopcroftTarjanBiconnected
+ */
 let hopcroftTarjanBiconnected = function() {
   let eles = this;
   let nodes = {};

@@ -32,6 +32,13 @@ let corefn = ({
     return this;
   },
 
+    /**
+ * Force the renderer to recalculate the viewport bounds.
+ * @memberof cy
+ * @pureAliases cy.invalidateDimensions
+ * @path Core/Viewport manipulation
+ * @methodName cy.resize
+ */
   resize: function(){
     this.invalidateSize();
 

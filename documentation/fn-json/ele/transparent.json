@@ -1,0 +1,4 @@
+{
+    "name": "ele.transparent",
+    "descr": "Get whether the element's effective opacity is completely transparent, which takes into consideration parent node opacity."
+}

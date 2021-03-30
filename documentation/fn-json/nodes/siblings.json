@@ -1,0 +1,16 @@
+{
+    "name": "nodes.siblings",
+    "descr": "Get all sibling (i.e. same compound parent) nodes of each node in the collection.",
+    "formats": [
+        {
+            "descr": "Get siblings Node.",
+            "args": [
+                {
+                    "name": "selector",
+                    "descr": "A selector used to filter the resultant collection.",
+                    "optional": true
+                }
+            ]
+        }
+    ]
+}

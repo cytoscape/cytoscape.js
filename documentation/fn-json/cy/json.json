@@ -1,0 +1,25 @@
+{
+    "name": "cy.json",
+    "descr": "Import or export the graph in the same JSON format used at initialisation.",
+    "formats": [
+        {
+            "descr": "Export the graph as JSON.",
+            "args": [
+                {
+                    "name": "flatEles",
+                    "descr": "Whether the resulant JSON should include the elements as a flat array (`true`) or as two keyed arrays by group (`false`, default)."
+                }
+            ]
+        },
+        {
+            "descr": "Import the graph as JSON, updating only the fields specified.",
+            "args": [
+                {
+                    "name": "cyJson",
+                    "descr": "The object with the fields corresponding to the states that should be changed."
+                }
+            ]
+        }
+    ],
+    "md": "cy/json"
+}

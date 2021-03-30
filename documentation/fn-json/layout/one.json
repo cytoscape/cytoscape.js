@@ -1,0 +1,30 @@
+{
+    "name": "layout.one",
+    "formats": [
+        {
+            "descr": "Listen to events that are emitted by the layout, and run the handler only once.",
+            "args": [
+                {
+                    "name": "events",
+                    "descr": "A space separated list of event names."
+                },
+                {
+                    "name": "data",
+                    "descr": "A plain object which is passed to the handler in the event object argument.",
+                    "optional": true
+                },
+                {
+                    "name": "function(event)",
+                    "fields": [
+                        {
+                            "name": "event",
+                            "descr": "The event object."
+                        }
+                    ],
+                    "descr": "The handler function that is called when one of the specified events occurs."
+                }
+            ]
+        }
+    ],
+    "md": "layout/one"
+}

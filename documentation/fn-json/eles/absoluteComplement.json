@@ -1,0 +1,9 @@
+{
+    "pureAliases": [
+        "eles.abscomp",
+        "eles.complement"
+    ],
+    "name": "eles.absoluteComplement",
+    "descr": "Get all elements in the graph that are not in the calling collection.",
+    "md": "collection/absoluteComplement"
+}

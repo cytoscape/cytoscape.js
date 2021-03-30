@@ -1,0 +1,23 @@
+{
+    "name": "cy.fit",
+    "descr": "Pan and zooms the graph to fit to a collection.",
+    "formats": [
+        {
+            "descr": "Fit to all elements in the graph."
+        },
+        {
+            "descr": "Fit to the specified elements.",
+            "args": [
+                {
+                    "name": "eles",
+                    "descr": "The collection to fit to."
+                },
+                {
+                    "name": "padding",
+                    "descr": "An amount of padding (in rendered pixels) to have around the graph (default 0)."
+                }
+            ]
+        }
+    ],
+    "md": "cy/fit"
+}

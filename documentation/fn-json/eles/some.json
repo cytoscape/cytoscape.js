@@ -1,0 +1,35 @@
+{
+    "name": "eles.some",
+    "descr": "Determine whether any element in this collection satisfies the specified test function.",
+    "formats": [
+        {
+            "descr": "Listen to events that bubble up from elements matching the specified node selector:",
+            "args": [
+                {
+                    "name": "function(ele,i,eles)",
+                    "fields": [
+                        {
+                            "name": "ele",
+                            "descr": "The event object."
+                        },
+                        {
+                            "name": "i",
+                            "descr": "The index of the current element."
+                        },
+                        {
+                            "name": "eles",
+                            "descr": "The collection of elements being tested."
+                        }
+                    ],
+                    "descr": "The test function that returns truthy values for elements that satisfy the test and falsey values for elements that do not satisfy the test."
+                },
+                {
+                    "name": "thisArg",
+                    "descr": "The value for `this` within the test function.",
+                    "optional": true
+                }
+            ]
+        }
+    ],
+    "md": "collection/some"
+}

@@ -1,0 +1,19 @@
+{
+    "pureAliases": [
+        "cy.$id"
+    ],
+    "name": "cy.getElementById",
+    "descr": "Get an element from its ID in a very performant way",
+    "formats": [
+        {
+            "descr": "Get ID",
+            "args": [
+                {
+                    "name": "id",
+                    "descr": "The ID of the element to get."
+                }
+            ]
+        }
+    ],
+    "md": "cy/getElementById"
+}

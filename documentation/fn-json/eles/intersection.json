@@ -1,0 +1,30 @@
+{
+    "name": "eles.intersection",
+    "pureAliases": [
+        "eles.intersect",
+        "eles.and",
+        "eles['n']",
+        "eles['&']",
+        "eles['.']"
+    ],
+    "descr": "Get the elements in both this collection and another specified collection.",
+    "formats": [
+        {
+            "args": [
+                {
+                    "name": "eles",
+                    "descr": "The elements to intersect with."
+                }
+            ]
+        },
+        {
+            "args": [
+                {
+                    "name": "selector",
+                    "descr": "A selector representing the elements to intersect with.  All elements in the graph matching the selector are used as the passed collection."
+                }
+            ]
+        }
+    ],
+    "md": "collection/intersection"
+}

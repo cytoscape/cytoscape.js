@@ -1,0 +1,34 @@
+{
+    "name": "cy.add",
+    "descr": "Add elements to the graph and return them",
+    "formats": [
+        {
+            "descr": "Add a specified element to the graph.",
+            "args": [
+                {
+                    "name": "eleObj",
+                    "descr": "A plain object that specifies the element."
+                }
+            ]
+        },
+        {
+            "descr": "Add the specified elements to the graph.",
+            "args": [
+                {
+                    "name": "eleObjs",
+                    "descr": "An array of elements specified by plain objects."
+                }
+            ]
+        },
+        {
+            "descr": "Add the specified elements to the graph.",
+            "args": [
+                {
+                    "name": "eles",
+                    "descr": "A collection of elements."
+                }
+            ]
+        }
+    ],
+    "md": "cy/add"
+}

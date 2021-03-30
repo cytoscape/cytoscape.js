@@ -1,0 +1,16 @@
+{
+    "name": "nodes.descendants",
+    "descr": "Get all compound descendant (i.e. children, children's children, etc.) nodes of each node in the collection.",
+    "formats": [
+        {
+            "descr": "Get descendants Node.",
+            "args": [
+                {
+                    "name": "selector",
+                    "descr": "A selector used to filter the resultant collection.",
+                    "optional": true
+                }
+            ]
+        }
+    ]
+}

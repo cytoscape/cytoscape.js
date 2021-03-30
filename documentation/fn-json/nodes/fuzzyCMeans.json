@@ -1,0 +1,29 @@
+{
+    "name": "nodes.fuzzyCMeans",
+    "pureAliases": ["nodes.fcm"],
+    "descr": "Considering only the elements in the calling collection, calculate the [fuzzy c-means clustering](https://en.wikipedia.org/wiki/Fuzzy_clustering#Fuzzy_C-means_clustering) of the nodes.",
+    "formats": [
+      {
+        "args": [
+          { "name": "options", "fields": [
+            { "name": "attributes: [ function( node ) ... ]", "descr": "An array of attribute functions, each of which returns a numeric attribute value for the specified node.  Attributes are used to cluster the nodes; i.e. two nodes with similar attributes tend to be in the same cluster.  Each attribute may have to be normalised in order for the chosen distance metric to make sense.  Attributes must be specified unless a custom `distance: function( nodeP, nodeQ )` is specified." },
+            { "name": "k", "descr": "The number of clusters to return." },
+            { "name": "distance", "descr": "The distance classifier used to compare attribute vectors.  It is optional if attributes are specified.  It may take on one of several values:", "fields": [
+              { "name": "'euclidean'", "descr": "[Euclidean distance](https://en.wikipedia.org/wiki/Euclidean_distance) (default)" },
+              { "name": "'squaredEuclidean'", "descr": "[Squared Euclidean distance](https://en.wikipedia.org/wiki/Euclidean_distance#Squared_Euclidean_distance)" },
+              { "name": "'manhattan'", "descr": "[Manhattan distance](https://en.wikipedia.org/wiki/Taxicab_geometry)" },
+              { "name": "'max'", "descr": "[Max distance](https://en.wikipedia.org/wiki/Uniform_norm)" },
+              { "name": "function( length, getPAt, getQAt[, nodeP, nodeQ] )", "descr": "A custom function that returns the distance between attribute vectors `p` and `q`.", "fields": [
+                { "name": "length", "descr": "The length of the vectors." },
+                { "name": "getPAt(i)", "descr": "A function that returns the ith value of the `p` vector." },
+                { "name": "getQAt(i)", "descr": "A function that returns the ith value of the `q` vector." }
+              ] }
+            ] },
+            { "name": "maxIterations", "descr": "The maximum number of iterations of the algorithm to run (default `10`).", "optional": true },
+            { "name": "sensitivityThreshold", "descr": "The coefficient difference threshold used to determine whether the algorithm has converged (default `0.001`).", "optional": true }
+          ] }
+        ]
+      }
+    ],
+    "md": "collection/fuzzyCMeans"
+  }

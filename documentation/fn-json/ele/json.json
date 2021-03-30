@@ -1,0 +1,20 @@
+{
+    "name": "ele.json",
+    "descr": "Get or mutate the element's plain JavaScript object representation.",
+    "formats": [
+        {
+            "descr": "Get the element's JSON.",
+            "args": []
+        },
+        {
+            "descr": "Mutate the element's state as specified.",
+            "args": [
+                {
+                    "name": "eleJson",
+                    "descr": "For each field in the object, the element's state is mutated as specified."
+                }
+            ]
+        }
+    ],
+    "md": "collection/json"
+}

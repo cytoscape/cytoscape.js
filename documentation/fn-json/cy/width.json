@@ -1,0 +1,4 @@
+{
+    "name": "cy.width",
+    "descr": "Get the on-screen width of the viewport in pixels."
+}

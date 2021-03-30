@@ -1,0 +1,16 @@
+{
+    "name": "cy.removeScratch",
+    "extFn": true,
+    "descr": "Remove scratchpad data. You should remove scratchpad data only at your own namespaces.  This is analogous to the more common [`ele.removeScratch()`](#ele.removeScratch) but for graph global data.",
+    "formats": [
+        {
+            "descr": "Remove the scratchpad data at a particular namespace.",
+            "args": [
+                {
+                    "name": "namespace",
+                    "descr": "A namespace string."
+                }
+            ]
+        }
+    ]
+}

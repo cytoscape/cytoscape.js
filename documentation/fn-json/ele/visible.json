@@ -1,0 +1,14 @@
+{
+    "name": "ele.visible",
+    "descr": "Get whether the element is [visible](#style/visibility) (i.e. `display: element` and `visibility: visible`).",
+    "formats": [
+        {
+            "name": "ele.visible",
+            "descr": "Get whether the element is visible."
+        },
+        {
+            "name": "ele.hidden",
+            "descr": "Get whether the element is hidden."
+        }
+    ]
+}

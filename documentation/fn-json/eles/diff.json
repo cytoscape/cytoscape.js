@@ -1,0 +1,25 @@
+{
+    "name": "eles.diff",
+    "descr": "Perform a traditional left/right diff on the two collections.",
+    "formats": [
+        {
+            "descr": "diff Event",
+            "args": [
+                {
+                    "name": "eles",
+                    "descr": "The elements on the right side of the diff."
+                }
+            ]
+        },
+        {
+            "descr": "diff Event",
+            "args": [
+                {
+                    "name": "selector",
+                    "descr": "A selector representing the elements on the right side of the diff. All elements in the graph matching the selector are used as the passed collection."
+                }
+            ]
+        }
+    ],
+    "md": "collection/diff"
+}

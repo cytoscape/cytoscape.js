@@ -1,0 +1,4 @@
+{
+    "name": "ele.active",
+    "descr": "Gets whether the element is active (e.g. on user tap, grab, etc)."
+  }

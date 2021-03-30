@@ -1,0 +1,4 @@
+{
+    "name": "ele.effectiveOpacity",
+    "descr": "Get the effective opacity of the element (i.e. on-screen opacity), which takes into consideration parent node opacity."
+}

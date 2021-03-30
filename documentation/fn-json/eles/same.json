@@ -1,0 +1,16 @@
+{
+    "name": "eles.same",
+    "descr": "Determine whether this collection contains exactly the same elements as another collection.",
+    "formats": [
+        {
+            "descr": "Determine same collection",
+            "args": [
+                {
+                    "name": "eles",
+                    "descr": "The other elements to compare to."
+                }
+            ]
+        }
+    ],
+    "md": "collection/same"
+}

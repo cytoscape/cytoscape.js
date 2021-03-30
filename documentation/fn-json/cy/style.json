@@ -1,0 +1,19 @@
+{
+    "name": "cy.style",
+    "descr": "Get the entry point to modify the visual style of the graph after initialisation.",
+    "formats": [
+        {
+            "descr": "Get the current style object."
+        },
+        {
+            "descr": "Assign a new stylesheet to replace the existing one.",
+            "args": [
+                {
+                    "name": "stylesheet",
+                    "descr": "Either a `cytoscape.stylesheet()` object, a string stylesheet, or a JSON stylesheet (the same formats accepted for [`options.style`](#style) at initialisation)."
+                }
+            ]
+        }
+    ],
+    "md": "cy/style"
+}

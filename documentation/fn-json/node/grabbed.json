@@ -1,0 +1,4 @@
+{
+    "name": "node.grabbed",
+    "descr": "Get whether a node is currently grabbed, meaning the user has hold of the node."
+  }

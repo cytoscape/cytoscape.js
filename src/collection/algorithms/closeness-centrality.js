@@ -10,6 +10,32 @@ const defaults = util.defaults({
 
 const elesfn = ({
 
+  /**
+ * @callback closenessCentralityNormalized_options
+ * @property {closenessCentralityNormalized_options_type} options - closenessCentralityNormalized_options_type
+ */
+
+/**
+ * options
+ * @typedef {object} closenessCentralityNormalized_options_type
+ * @property {object} weight:function(edge) - [optional] A function that returns the positive weight for the edge. The weight indicates the importance of the edge, with a high value representing high importance.
+ * @property {object} directed - [optional] A boolean indicating whether the directed indegree and outdegree centrality is calculated (`true`) or whether the undirected centrality is calculated (`false`, default).
+ * @property {object} harmonic - [optional] A boolean indicating whether the algorithm calculates the harmonic mean (`true`, default) or the arithmetic mean (`false`) of distances.  The harmonic mean is very useful for graphs that are not strongly connected.
+ */
+
+/**
+ * @typedef {object} eles_closenessCentralityNormalized
+ * @property {function(closenessCentralityNormalized_options):any} closenessCentralityNormalized_options - The options for closenessCentralityNormalizeding.
+ */
+
+  /**
+ * Considering only the elements in the calling collection, calculate the [degree centrality](https://en.wikipedia.org/wiki/Centrality#Degree_centrality) of the specified root nodes.
+ * @memberof eles
+ * @pureAliases eles.ccn|eles.closenessCentralityNormalised
+ * @path Collection/Centrality
+ * @param {...eles_closenessCentralityNormalized} options - NULL
+ * @methodName eles.closenessCentralityNormalized
+ */
   closenessCentralityNormalized: function( options ){
     let { harmonic, weight, directed } = defaults(options);
 
@@ -65,6 +91,34 @@ const elesfn = ({
   },
 
   // Implemented from pseudocode from wikipedia
+
+      /**
+ * @callback closenessCentrality_options
+ * @property {closenessCentrality_options_type} options - closenessCentrality_options_type
+ */
+
+/**
+ * options
+ * @typedef {object} closenessCentrality_options_type
+ * @property {object} root - The root node (selector or collection) for which the centrality calculation is made.
+ * @property {object} weight:function(edge) - [optional] A function that returns the positive weight for the edge. The weight indicates the importance of the edge, with a high value representing high importance.
+ * @property {object} directed - [optional] A boolean indicating whether the directed indegree and outdegree centrality is calculated (`true`) or whether the undirected centrality is calculated (`false`, default).
+ * @property {object} harmonic - [optional] A boolean indicating whether the algorithm calculates the harmonic mean (`true`, default) or the arithmetic mean (`false`) of distances.  The harmonic mean is very useful for graphs that are not strongly connected.
+ */
+
+/**
+ * @typedef {object} eles_closenessCentrality
+ * @property {function(closenessCentrality_options):any} closenessCentrality_options - The options for closenessCentralitying.
+ */
+
+  /**
+ * Considering only the elements in the calling collection, calculate the [degree centrality](https://en.wikipedia.org/wiki/Centrality#Degree_centrality) of the specified root nodes.
+ * @memberof eles
+ * @pureAliases eles.cc
+ * @path Collection/Centrality
+ * @param {...eles_closenessCentrality} options - NULL
+ * @methodName eles.closenessCentrality
+ */
   closenessCentrality: function( options ){
     let { root, weight, directed, harmonic } = defaults(options);
 

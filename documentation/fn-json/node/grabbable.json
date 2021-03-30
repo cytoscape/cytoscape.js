@@ -1,0 +1,4 @@
+{
+    "name": "node.grabbable",
+    "descr": "Get whether the user can grab a node."
+  }

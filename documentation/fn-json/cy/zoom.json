@@ -1,0 +1,42 @@
+{
+    "name": "cy.zoom",
+    "descr": "Get or set the zoom level of the graph.",
+    "formats": [
+        {
+            "descr": "Get the zoom level."
+        },
+        {
+            "descr": "Set the zoom level.",
+            "args": [
+                {
+                    "name": "level",
+                    "descr": "The zoom level to set."
+                }
+            ]
+        },
+        {
+            "descr": "Set the zoom level.",
+            "args": [
+                {
+                    "name": "options",
+                    "fields": [
+                        {
+                            "name": "level",
+                            "descr": "The zoom level to set."
+                        },
+                        {
+                            "name": "position",
+                            "descr": "The position about which to zoom."
+                        },
+                        {
+                            "name": "renderedPosition",
+                            "descr": "The rendered position about which to zoom."
+                        }
+                    ],
+                    "descr": "The options for zooming."
+                }
+            ]
+        }
+    ],
+    "md": "cy/zoom"
+}

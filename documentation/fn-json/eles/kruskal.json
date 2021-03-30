@@ -1,0 +1,16 @@
+{
+    "name": "eles.kruskal",
+    "descr": "Perform [Kruskal's](https://en.wikipedia.org/wiki/Kruskal%27s_algorithm) algorithm on the elements in the collection, returning the minimum spanning tree, assuming undirected edges.",
+    "formats": [
+        {
+            "args": [
+                {
+                    "name": "function(edge)",
+                    "descr": "A function that returns the positive numeric weight for the edge.",
+                    "optional": true
+                }
+            ]
+        }
+    ],
+    "md": "collection/kruskal"
+}

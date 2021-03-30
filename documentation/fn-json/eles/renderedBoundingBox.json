@@ -1,0 +1,27 @@
+{
+    "name": "eles.renderedBoundingBox",
+    "pureAliases": [ "eles.renderedBoundingbox" ],
+    "descr": "Get the [rendered](#notation/position) bounding box of the elements.",
+    "formats": [
+      {
+        "name": "eles.renderedBoundingBox",
+        "descr": "Get the bounding box of the elements in rendered co-ordinates.",
+        "args": [
+          {
+            "name": "options",
+            "descr": "An object containing options for the function.",
+            "fields": [
+              { "name": "includeNodes", "descr": "A boolean indicating whether to include nodes in the bounding box (default `true`)." },
+              { "name": "includeEdges", "descr": "A boolean indicating whether to include edges in the bounding box (default `true`)." },
+              { "name": "includeLabels", "descr": "A boolean indicating whether to include labels overall in the bounding box (default `true`).  This option overrides all other label options if `false`." },
+              { "name": "includeMainLabels", "descr": "A boolean indicating whether to include main (node or edge) `label`s in the bounding box (default `true`)." },
+              { "name": "includeSourceLabels", "descr": "A boolean indicating whether to include (edge) `source-label`s in the bounding box (default `true`)." },
+              { "name": "includeTargetLabels", "descr": "A boolean indicating whether to include (edge) `target-label`s in the bounding box (default `true`)." },
+              { "name": "includeOverlays", "descr": "A boolean indicating whether to include overlays (such as the one which appears when a node is clicked) in the bounding box (default `true`)." }
+            ]
+          }
+        ]
+      }
+    ],
+    "md": "collection/boundingBox"
+  }

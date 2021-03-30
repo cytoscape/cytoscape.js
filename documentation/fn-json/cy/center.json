@@ -1,0 +1,22 @@
+{
+    "pureAliases": [
+        "cy.centre"
+    ],
+    "name": "cy.center",
+    "descr": "Pan the graph to the centre of a collection.",
+    "formats": [
+        {
+            "descr": "Centre on all elements in the graph."
+        },
+        {
+            "descr": "Centre on the specified elements.",
+            "args": [
+                {
+                    "name": "eles",
+                    "descr": "The collection to centre upon."
+                }
+            ]
+        }
+    ],
+    "md": "cy/center"
+}

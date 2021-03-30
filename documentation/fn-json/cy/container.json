@@ -1,0 +1,4 @@
+{
+    "name": "cy.container",
+    "descr": "Get the HTML DOM element in which the graph is visualised. A null value is returned if the instance is headless."
+}

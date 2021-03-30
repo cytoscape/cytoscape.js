@@ -1,0 +1,5 @@
+{
+    "name": "eles.selectify",
+    "descr": "Make the selection states of the elements mutable.",
+    "md": "collection/selectify"
+}

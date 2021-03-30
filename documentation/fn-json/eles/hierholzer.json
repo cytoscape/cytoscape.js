@@ -1,0 +1,26 @@
+{
+    "name": "eles.hierholzer",
+    "descr": "Perform the [Hierholzer](https://en.wikipedia.org/wiki/Eulerian_path#Hierholzer's_algorithm) search algorithm on the elements in the collection. This finds Eulerian trails and circuits.",
+    "formats": [
+        {
+            "args": [
+                {
+                    "name": "options",
+                    "fields": [
+                        {
+                            "name": "root",
+                            "descr": "The root node (selector or collection) where the search starts.",
+                            "optional": true
+                        },
+                        {
+                            "name": "directed",
+                            "descr": "A boolean indicating whether the algorithm should only go along edges from source to target (default `false`).",
+                            "optional": true
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "md": "collection/hierholzer"
+}

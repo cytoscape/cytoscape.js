@@ -1,0 +1,4 @@
+{
+    "name": "nodes.isSimple",
+    "descr": "Get whether the edge is simple (i.e. different source and target)."
+}

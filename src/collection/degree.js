@@ -35,6 +35,28 @@ function defineDegreeFunction( callback ){
 }
 
 util.extend( elesfn, {
+  /**
+ * @typedef {object} node_degree
+ * @property {object} includeLoops - A boolean, indicating whether loops are to be included in degree calculations.
+ * @property {object} includeLoops - A boolean, indicating whether loops are to be included in degree calculations.
+ * @property {object} includeLoops - A boolean, indicating whether loops are to be included in degree calculations.
+ * @property {object} includeLoops - A boolean, indicating whether loops are to be included in degree calculations.
+ * @property {object} includeLoops - A boolean, indicating whether loops are to be included in degree calculations.
+ * @property {object} includeLoops - A boolean, indicating whether loops are to be included in degree calculations.
+ * @property {object} includeLoops - A boolean, indicating whether loops are to be included in degree calculations.
+ * @property {object} includeLoops - A boolean, indicating whether loops are to be included in degree calculations.
+ * @property {object} includeLoops - A boolean, indicating whether loops are to be included in degree calculations.
+ * @property {object} includeLoops - A boolean, indicating whether loops are to be included in degree calculations.
+ */
+
+  /**
+ * Get the degree of a node.
+ * @memberof node
+ * @path Collection/Metadata
+ * @sub_functions node.degree|node.indegree|node.outdegree|nodes.totalDegree|nodes.minDegree|nodes.maxDegree|nodes.minIndegree|nodes.maxIndegree|nodes.minOutdegree|nodes.maxOutdegree
+ * @param {...node_degree} node - Get the degree of a node. | Get the indegree of a node. | Get the outdegree of a node. | Get the total degree of a collection of nodes. | Get the minimum degree of the nodes in the collection. | Get the maximum degree of the nodes in the collection. | Get the minimum indegree of the nodes in the collection. | Get the maximum indegree of the nodes in the collection. | Get the minimum outdegree of the nodes in the collection. | Get the maximum outdegree of the nodes in the collection.
+ * @methodName node.degree
+ */
   degree: defineDegreeFunction( function( node, edge ){
     if( edge.source().same( edge.target() ) ){
       return 2;

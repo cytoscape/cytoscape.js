@@ -1,0 +1,17 @@
+{
+    "name": "nodes.successors",
+    "descr": "Recursively get edges (and their targets) coming out of the nodes in the collection (i.e. the outgoers, the outgoers' outgoers, ...).",
+    "formats": [
+        {
+            "descr": "Get ID",
+            "args": [
+                {
+                    "name": "selector",
+                    "descr": "An optional selector that is used to filter the resultant collection.",
+                    "optional": true
+                }
+            ]
+        }
+    ],
+    "md": "collection/successors"
+}

@@ -1,0 +1,23 @@
+{
+    "pureAliases": [
+        "cy.trigger"
+    ],
+    "name": "cy.emit",
+    "descr": "Emit one or more events.",
+    "formats": [
+        {
+            "args": [
+                {
+                    "name": "events",
+                    "descr": "A list of event names to emit (either a space-separated string or an array)"
+                },
+                {
+                    "name": "extraParams",
+                    "descr": "An array of additional parameters to pass to the handler.",
+                    "optional": true
+                }
+            ]
+        }
+    ],
+    "md": "cy/emit"
+}

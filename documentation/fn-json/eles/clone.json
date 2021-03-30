@@ -1,0 +1,7 @@
+{
+    "name": "eles.clone",
+    "pureAliases": [
+        "eles.copy"
+    ],
+    "descr": "Get a new collection containing clones (i.e. copies) of the elements in the calling collection."
+}

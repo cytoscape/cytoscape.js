@@ -1,0 +1,5 @@
+{
+    "name": "ele.pannable",
+    "descr": "Gets whether the element allows passthrough panning.",
+    "md": "collection/pannable"
+  }

@@ -1,25 +1,25 @@
 {
-  "name": "cy.remove",
-  "descr": "Remove elements from the graph and return them.",
-  "formats": [
-      {
-          "descr": "Remove the specified elements.",
-          "args": [
-              {
-                  "name": "eles",
-                  "descr": "A collection of elements to remove."
-              }
-          ]
-      },
-      {
-          "descr": "Remove elements in the graph matching the specified selector.",
-          "args": [
-              {
-                  "name": "selector",
-                  "descr": "Elements matching this selector are removed."
-              }
-          ]
-      }
-  ],
-  "md": "cy/remove"
+    "name": "cy.remove",
+    "descr": "Remove elements from the graph and return them.",
+    "formats": [
+        {
+            "descr": "Remove the specified elements.",
+            "args": [
+                {
+                    "name": "eles",
+                    "descr": "A collection of elements to remove."
+                }
+            ]
+        },
+        {
+            "descr": "Remove elements in the graph matching the specified selector.",
+            "args": [
+                {
+                    "name": "selector",
+                    "descr": "Elements matching this selector are removed."
+                }
+            ]
+        }
+    ],
+    "md": "cy/remove"
 }

@@ -1,0 +1,5 @@
+{
+    "name": "layout.stop",
+    "descr": "Stop running the (asynchronous/discrete) layout.",
+    "md": "layout/stop"
+}

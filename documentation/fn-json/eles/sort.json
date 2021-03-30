@@ -1,0 +1,16 @@
+{
+    "name": "eles.sort",
+    "descr": "Get a new collection containing the elements sorted by the specified comparison function.",
+    "formats": [
+        {
+            "descr": "The sorting comparison function.",
+            "args": [
+                {
+                    "name": "function(ele1,ele2)",
+                    "descr": "Get a new collection containing the elements sorted by the specified comparison function."
+                }
+            ]
+        }
+    ],
+    "md": "collection/sort"
+}

@@ -1,0 +1,25 @@
+{
+    "name": "eles.eq",
+    "descr": "Get an element at a particular index in the collection.",
+    "formats": [
+        {
+            "name": "eles.eq",
+            "descr": "Get the index of the element.",
+            "args": [
+                {
+                    "name": "index",
+                    "descr": "The index of the element to get."
+                }
+            ]
+        },
+        {
+            "name": "eles.first",
+            "descr": "Get the first element in the collection."
+        },
+        {
+            "name": "eles.last",
+            "descr": "Get the last element in the collection."
+        }
+    ],
+    "md": "collection/eq"
+}

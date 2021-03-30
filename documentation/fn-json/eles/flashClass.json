@@ -1,0 +1,21 @@
+{
+    "name": "eles.flashClass",
+    "descr": "Add classes to the elements, and then remove the classes after a specified duration.",
+    "formats": [
+        {
+            "descr": "flash Event",
+            "args": [
+                {
+                    "name": "classes",
+                    "descr": "An array (or a space-separated string) of class names to flash on the elements."
+                },
+                {
+                    "name": "duration",
+                    "descr": "The duration in milliseconds that the classes should be added on the elements. After the duration, the classes are removed.",
+                    "optional": true
+                }
+            ]
+        }
+    ],
+    "md": "collection/flashClass"
+}

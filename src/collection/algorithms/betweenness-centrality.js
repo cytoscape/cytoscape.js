@@ -9,6 +9,31 @@ const defaults = util.defaults({
 let elesfn = ({
 
   // Implemented from the algorithm in the paper "On Variants of Shortest-Path Betweenness Centrality and their Generic Computation" by Ulrik Brandes
+    /**
+ * @callback betweennessCentrality_options
+ * @property {betweennessCentrality_options_type} options - betweennessCentrality_options_type
+ */
+
+/**
+ * options
+ * @typedef {object} betweennessCentrality_options_type
+ * @property {object} weight:function(edge) - [optional] A function that returns the positive weight for the edge. The weight indicates the importance of the edge, with a high value representing high importance.
+ * @property {object} directed - [optional] A boolean indicating whether the directed indegree and outdegree centrality is calculated (`true`) or whether the undirected centrality is calculated (`false`, default).
+ */
+
+/**
+ * @typedef {object} eles_betweennessCentrality
+ * @property {function(betweennessCentrality_options):any} betweennessCentrality_options - The options for betweennessCentralitying.
+ */
+
+  /**
+ * Considering only the elements in the calling collection, calculate the [betweenness centrality](https://en.wikipedia.org/wiki/Betweenness_centrality) of the nodes.
+ * @memberof eles
+ * @pureAliases eles.bc
+ * @path Collection/Centrality
+ * @param {...eles_betweennessCentrality} options - NULL
+ * @methodName eles.betweennessCentrality
+ */
   betweennessCentrality: function( options ){
     let { directed, weight } = defaults(options);
     let weighted = weight != null;

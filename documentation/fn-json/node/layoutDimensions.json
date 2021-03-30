@@ -1,0 +1,17 @@
+{
+    "name": "node.layoutDimensions",
+    "extFn": true,
+    "descr": "Get the node width and height. This function is intended for use in layout positioning to do overlap detection.",
+    "formats": [
+        {
+            "descr": "The node layoutDimensionsing function.",
+            "args": [
+                {
+                    "name": "options",
+                    "descr": "The layout options object."
+                }
+            ]
+        }
+    ],
+    "md": "collection/layoutDimensions"
+}

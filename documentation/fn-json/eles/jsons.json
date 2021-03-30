@@ -1,0 +1,5 @@
+{
+    "name": "eles.jsons",
+    "descr": "Get an array of the plain JavaScript object representation of all elements in the collection.",
+    "md": "collection/jsons"
+}

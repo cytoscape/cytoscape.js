@@ -1,0 +1,19 @@
+{
+    "name": "cy.userPanningEnabled",
+    "descr": "Get or set whether panning by user events (e.g. dragging the graph background) is enabled.",
+    "formats": [
+        {
+            "descr": "Get whether user panning is enabled."
+        },
+        {
+            "descr": "Set whether user panning is enabled",
+            "args": [
+                {
+                    "name": "bool",
+                    "descr": "A truthy value enables panning; a falsey value disables it."
+                }
+            ]
+        }
+    ],
+    "md": "cy/userPanningEnabled"
+}

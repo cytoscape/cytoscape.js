@@ -1,0 +1,49 @@
+{
+    "pureAliases": [
+        "eles.attr"
+    ],
+    "name": "eles.data",
+    "formatsSameFn": true,
+    "descr": "Read and write developer-defined data associated with the elements.",
+    "formats": [
+        {
+            "name": "ele.data",
+            "descr": "Get the entire data object."
+        },
+        {
+            "name": "ele.data",
+            "descr": "Get a particular data field for the element.",
+            "args": [
+                {
+                    "name": "name",
+                    "descr": "The name of the field to get."
+                }
+            ]
+        },
+        {
+            "name": "ele.data",
+            "descr": "Set a particular data field for the element.",
+            "args": [
+                {
+                    "name": "name",
+                    "descr": "The name of the field to set."
+                },
+                {
+                    "name": "value",
+                    "descr": "The value to set for the field."
+                }
+            ]
+        },
+        {
+            "name": "ele.data",
+            "descr": "Update multiple data fields at once via an object.",
+            "args": [
+                {
+                    "name": "obj",
+                    "descr": "The object containing name-value pairs to update data fields."
+                }
+            ]
+        }
+    ],
+    "md": "collection/data"
+}

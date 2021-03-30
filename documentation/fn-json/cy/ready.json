@@ -1,0 +1,20 @@
+{
+    "name": "cy.ready",
+    "formats": [
+        {
+            "descr": "Run a callback as soon as the graph becomes ready (i.e. intitial data loaded and initial layout completed).  If the graph is already ready, then the callback is called immediately.  If data is loaded synchronously and the layout used is discrete/synchronous/unanimated/unspecified, then you don't need `cy.ready()`.",
+            "args": [
+                {
+                    "name": "function(event)",
+                    "fields": [
+                        {
+                            "name": "event",
+                            "descr": "The `ready` event."
+                        }
+                    ],
+                    "descr": "The callback run as soon as the graph is ready."
+                }
+            ]
+        }
+    ]
+}

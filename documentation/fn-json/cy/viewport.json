@@ -1,0 +1,20 @@
+{
+    "name": "cy.viewport",
+    "descr": "Set the viewport state (pan & zoom) in one call.",
+    "formats": [
+        {
+            "descr": "Set viewport",
+            "args": [
+                {
+                    "name": "zoom",
+                    "descr": "The zoom level to set."
+                },
+                {
+                    "name": "pan",
+                    "descr": "The pan to set (a rendered position)."
+                }
+            ]
+        }
+    ],
+    "md": "cy/viewport"
+}

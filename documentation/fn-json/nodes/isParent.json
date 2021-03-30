@@ -1,0 +1,4 @@
+{
+    "name": "nodes.isParent",
+    "descr": "Get whether the node is a compound parent (i.e. a node containing one or more child nodes)"
+}

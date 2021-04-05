@@ -1291,12 +1291,12 @@
       return filledOpts;
     };
   };
-  var removeFromArray = function removeFromArray(arr, ele, manyCopies) {
-    for (var i = arr.length; i >= 0; i--) {
+  var removeFromArray = function removeFromArray(arr, ele, oneCopy) {
+    for (var i = arr.length - 1; i >= 0; i--) {
       if (arr[i] === ele) {
         arr.splice(i, 1);
 
-        if (!manyCopies) {
+        if (oneCopy) {
           break;
         }
       }
@@ -2492,6 +2492,7 @@
             gScore[wid] = tempScore;
             fScore[wid] = tempScore + heuristic(w);
             cameFrom[wid] = cMin;
+            cameFromEdge[wid] = e;
           }
         } // End of neighbors update
 
@@ -32390,7 +32391,7 @@
     return style;
   };
 
-  var version = "3.18.1";
+  var version = "3.18.2";
 
   var cytoscape = function cytoscape(options) {
     // if no options specified, use default

@@ -7,7 +7,7 @@ This function returns an array, containing collections.  Each collection in the 
 ## Examples
 
 ```js
-var clusters = cy.elements().markovCluster({
+var clusters = cy.elements().markovClustering({
   attributes: [
     function( edge ){ return edge.data('closeness'); }
   ]

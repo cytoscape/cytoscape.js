@@ -73,6 +73,7 @@
 ### Research resources
 
 * [APID](http://cicblade.dep.usal.es:8080/APID/init.action)
+* [AraQTL](https://www.bioinformatics.nl/AraQTL/)
 * [BioCyc](http://biocyc.org/)
 * [BioGRID](http://thebiogrid.org/)
 * [BioPlex](https://bioplex.hms.harvard.edu/)
@@ -107,6 +108,7 @@
 * [FAIRplus](https://fairplus-project.eu)
 * [Harvard University](https://www.harvard.edu)
 * [Howard Hughes Medical Institute](https://www.hhmi.org/)
+* [INRAe](https://www.inrae.fr)
 * [Institute for Systems Biology](https://isbscience.org)
 * [International Rice Research Institute](https://www.irri.org)
 * [Max Plank Institute](https://mpg.de)
@@ -132,6 +134,7 @@
 * [University of Utah](https://www.utah.edu)
 * [Vanderbilt University](https://www.vanderbilt.edu)
 * [Virginia Tech](http://www.vt.edu)
+* [Wageningen University and Research](https://www.wur.nl)
 
 ### Apps & services
 

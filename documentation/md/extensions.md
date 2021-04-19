@@ -85,6 +85,7 @@ Compound Spring Embedder with Ports (CoSEP) is a force-directed layout algorithm
 
 ## Utility packages
 
+ * <i class="fa fa-fw fa-users"></i> [`Cytoscape.js Schema`](https://github.com/AZaitzeff/cytoscape_js_schema) : A JSON Schema for the Cytoscape.js JSON graph format.
  * <i class="fa fa-fw fa-user"></i> [`cytosnap`](https://github.com/cytoscape/cytosnap) : A Node.js package that renders images of Cytoscape.js graphs on the server using Puppeteer.
  * <i class="fa fa-fw fa-users"></i> [`ngx-cytoscape`](https://github.com/calvinvette/ngx-cytoscape) : An Angular 5+ component for Cytoscape.js.
  * <i class="fa fa-fw fa-user"></i> [`react-cytoscapejs`](https://github.com/plotly/react-cytoscapejs) : A [React](https://reactjs.org) component for Cytoscape.js network visualisations.

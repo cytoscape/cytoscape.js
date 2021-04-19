@@ -11,7 +11,7 @@
 [![Cite](https://img.shields.io/badge/Cite-Oxford%20Bioinformatics%20Article-blue.svg)](https://js.cytoscape.org/#introduction/citation)
 [![npm](https://img.shields.io/npm/v/cytoscape.svg)](https://www.npmjs.com/package/cytoscape)
 [![Download](https://img.shields.io/npm/v/cytoscape.svg?label=Download)](https://github.com/cytoscape/cytoscape.js/tree/master/dist)
-[![Extensions](https://img.shields.io/badge/Extensions-60-blue.svg)](https://js.cytoscape.org/#extensions)
+[![Extensions](https://img.shields.io/badge/Extensions-61-blue.svg)](https://js.cytoscape.org/#extensions)
 [![npm installs](https://img.shields.io/npm/dm/cytoscape.svg?label=npm%20installs)](https://www.npmjs.com/package/cytoscape)
 [![master branch tests](https://img.shields.io/travis/cytoscape/cytoscape.js/master.svg?label=master%20branch)](https://travis-ci.org/cytoscape/cytoscape.js)
 [![unstable branch tests](https://img.shields.io/travis/cytoscape/cytoscape.js/unstable.svg?label=unstable%20branch)](https://travis-ci.org/cytoscape/cytoscape.js)

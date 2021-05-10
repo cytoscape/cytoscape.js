@@ -731,6 +731,10 @@
 </ul>
 <h2 id="introduction/releases">Releases <a href="#introduction/releases"><span class="fa fa-bookmark"></span></a></h2>
 <ul>
+<li>3.19<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.19.0+is%3Aclosed">3.19.0</a></li>
+</ul>
+</li>
 <li>3.18<ul>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.18.2+is%3Aclosed">3.18.2</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.18.1+is%3Aclosed">3.18.1</a></li>
@@ -14114,7 +14118,10 @@ Sets the subject of the selector (e.g. <code>$node &gt; node</code> to select th
 <li><code>destroy</code> : when the instance of Cytoscape.js was explicitly destroyed by calling <code>.destroy()</code>.</li>
 <li><code>render</code> : when the viewport is (re)rendered</li>
 <li><code>pan</code> : when the viewport is panned</li>
+<li><code>dragpan</code> : when the viewport is panned via dragging</li>
 <li><code>zoom</code> : when the viewport is zoomed</li>
+<li><code>pinchzoom</code> : when the viewport is zoomed via pinch gesture. This event is only supported for browsers which support the <a href="https://developer.mozilla.org/en-US/docs/Web/API/Element/gesturechange_event">gesturechange event</a> or <a href="https://developer.mozilla.org/en-US/docs/Web/API/TouchEvent">touch events</a>. Other browsers will fire the <code>scrollzoom</code> event.</li>
+<li><code>scrollzoom</code> : when the viewport is zoomed via the scroll wheel</li>
 <li><code>viewport</code> : when the viewport is changed (i.e. from a <code>pan</code>, a <code>zoom</code>, or from both when zooming about a point – e.g. pinch-to-zoom)</li>
 <li><code>resize</code> : when the viewport is resized (usually by calling <code>cy.resize()</code>, a <code>window</code> resize, or toggling a class on the Cytoscape.js div)</li>
 </ul>
@@ -15258,7 +15265,7 @@ Compound Spring Embedder with Ports (CoSEP) is a force-directed layout algorithm
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/cytoscape/cytoscape.js-dagre"><code>dagre</code></a> : The Dagre layout for DAGs and trees.  It organises the graph in a hierarchy.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/cytoscape/cytoscape.js-elk"><code>elk</code></a> : <a href="https://github.com/OpenKieler/elkjs">ELK</a> layout algorithm adapter for Cytoscape.js.  It contains several layout algorithms.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/cytoscape/cytoscape.js-euler"><code>euler</code></a> : Euler is a fast, small file-size, high-quality force-directed (physics simulation) layout.  It is good for non-compound graphs, and it has basic support for compound graphs.</li>
-<li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/iVis-at-Bilkent/cytoscape.js-fcose"><code>fcose</code></a> : The fCoSE layout is a faster version of the CoSE-Bilkent layout.  It supports compound and non-compound graphs, giving top-tier end results and high performance for a force-directed layout.  If you want to use a force-directed layout, fCoSE should be the first layout you try.</li>
+<li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/iVis-at-Bilkent/cytoscape.js-fcose"><code>fcose</code></a> : The fCoSE layout is a faster version of the CoSE-Bilkent layout.  It supports compound and non-compound graphs, giving top-tier end results and high performance for a force-directed layout.  In addition, fCoSE supports user-specified constraints of the following types on nodes: fixed position, alignment and relative placement.  If you want to use a force-directed layout, fCoSE should be the first layout you try.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/cytoscape/cytoscape.js-klay"><code>klay</code></a> : Klay is a layout that works well for most types of graphs.  It gives good results for ordinary graphs, and it handles DAGs and compound graphs very nicely.</li>
 <li><i class="fa fa-fw fa-users"></i> <a href="https://github.com/Nickolasmv/cytoscape-ngraph.forcelayout"><code>ngraph.forcelayout</code></a> : A physics simulation layout that works particularly well on planar graphs.  It is relatively fast.</li>
 <li><i class="fa fa-fw fa-users"></i> <a href="https://github.com/monprin/polywas"><code>polywas</code></a> : A layout for GWAS (genome-wide association study) data illustrating inter-locus relationships.</li>

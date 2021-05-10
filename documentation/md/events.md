@@ -102,6 +102,9 @@ These events are custom to Cytoscape.js, and they occur on the core.
  * `destroy` : when the instance of Cytoscape.js was explicitly destroyed by calling `.destroy()`.
  * `render` : when the viewport is (re)rendered
  * `pan` : when the viewport is panned
+ * `dragpan` : when the viewport is panned via dragging
  * `zoom` : when the viewport is zoomed
+ * `pinchzoom` : when the viewport is zoomed via pinch gesture. This event is only supported for browsers which support the [gesturechange event](https://developer.mozilla.org/en-US/docs/Web/API/Element/gesturechange_event) or [touch events](https://developer.mozilla.org/en-US/docs/Web/API/TouchEvent). Other browsers will fire the `scrollzoom` event.
+ * `scrollzoom` : when the viewport is zoomed via the scroll wheel
  * `viewport` : when the viewport is changed (i.e. from a `pan`, a `zoom`, or from both when zooming about a point -- e.g. pinch-to-zoom)
  * `resize` : when the viewport is resized (usually by calling `cy.resize()`, a `window` resize, or toggling a class on the Cytoscape.js div)

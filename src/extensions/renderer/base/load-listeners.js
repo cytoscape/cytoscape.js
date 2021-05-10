@@ -699,6 +699,7 @@ BRp.load = function(){
         }
 
         cy.panBy( deltaP );
+        cy.emit('dragpan');
 
         r.hoverData.dragged = true;
       }
@@ -1033,8 +1034,6 @@ BRp.load = function(){
   }, false );
 
   var wheelHandler = function( e ){
-
-
     if( r.scrollingPage ){ return; } // while scrolling, ignore wheel-to-zoom
 
     var cy = r.cy;
@@ -1088,6 +1087,7 @@ BRp.load = function(){
         level: newZoom,
         renderedPosition: { x: rpos[0], y: rpos[1] }
       } );
+      cy.emit(e.type === 'gesturechange' ? 'pinchzoom' : 'scrollzoom');
     }
 
   };
@@ -1607,6 +1607,7 @@ BRp.load = function(){
           pan: pan2,
           cancelOnFailedZoom: true
         } );
+        cy.emit('pinchzoom');
 
         distance1 = distance2;
         f1x1 = f1x2;
@@ -1745,6 +1746,7 @@ BRp.load = function(){
               x: disp[0] * zoom,
               y: disp[1] * zoom
             } );
+            cy.emit('dragpan');
 
           } else if( isOverThresholdDrag ){
             r.swipePanning = true;
@@ -1753,6 +1755,7 @@ BRp.load = function(){
               x: dx * zoom,
               y: dy * zoom
             } );
+            cy.emit('dragpan');
 
             if( start ){
               start.unactivate();

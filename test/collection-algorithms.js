@@ -981,6 +981,80 @@ describe('Algorithms', function(){
     expect( res.betweenness(e) ).to.equal(4);
   });
 
+  it("eles.betweennessCentrality() weighted undirected edges", function () {
+    /*
+    4                 4
+    ┌─────────d────────┐
+    │         │        │
+    │         │1       │
+    │    1    │        │
+    a ─────── c────────b
+    │         │   1    │
+    │        1│        │
+    │         │        │
+    └──────── d ───────┘
+    4                 4
+    */
+    const cy2 = cytoscape({
+      elements: {
+        nodes: [
+          { data: { id: "a" } },
+          { data: { id: "b" } },
+          { data: { id: "c" } },
+          { data: { id: "d" } },
+          { data: { id: "e" } },
+        ],
+
+        edges: [
+          { data: { id: "ae", weight: 4, source: "a", target: "e" } },
+          { data: { id: "ad", weight: 4, source: "a", target: "d" } },
+          { data: { id: "ac", weight: 1, source: "a", target: "c" } },
+          { data: { id: "cd", weight: 1, source: "c", target: "d" } },
+          { data: { id: "ce", weight: 1, source: "c", target: "e" } },
+          { data: { id: "cb", weight: 1, source: "c", target: "b" } },
+          { data: { id: "db", weight: 4, source: "d", target: "b" } },
+          { data: { id: "eb", weight: 4, source: "e", target: "b" } },
+        ],
+      },
+      ready: function () {
+        a = this.$("#a");
+        b = this.$("#b");
+        c = this.$("#c");
+        d = this.$("#d");
+        e = this.$("#e");
+
+        ae = this.$("#ae");
+        ad = this.$("#ad");
+        ac = this.$("#ac");
+        cd = this.$("#cd");
+        ce = this.$("#ce");
+        cb = this.$("#cb");
+        db = this.$("#db");
+        eb = this.$("#eb");
+      },
+    });
+    var res = cy2.elements().betweennessCentrality({
+      weight: function (ele) {
+        return ele.data("weight");
+      },
+    });
+
+    expect(res.betweenness(a)).to.equal(0);
+    expect(res.betweenness(b)).to.equal(0);
+    expect(res.betweenness(c)).to.equal(12);
+    expect(res.betweenness(d)).to.equal(0);
+    expect(res.betweenness(e)).to.equal(0);
+
+    expect(res.betweennessEdge(ae)).to.equal(0);
+    expect(res.betweennessEdge(ad)).to.equal(0);
+    expect(res.betweennessEdge(ac)).to.equal(4);
+    expect(res.betweennessEdge(cd)).to.equal(4);
+    expect(res.betweennessEdge(ce)).to.equal(4);
+    expect(res.betweennessEdge(cb)).to.equal(4);
+    expect(res.betweennessEdge(db)).to.equal(0);
+    expect(res.betweennessEdge(eb)).to.equal(0);
+  });
+
   it('eles.betweennessCentrality() weighted directed', function(){
     var res = cy.elements().betweennessCentrality({
       weight: function( ele ){

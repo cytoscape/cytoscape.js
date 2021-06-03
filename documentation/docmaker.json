@@ -3332,12 +3332,12 @@
             {
               "name": "eles.betweennessCentrality",
               "pureAliases": ["eles.bc"],
-              "descr": "Considering only the elements in the calling collection, calculate the [betweenness centrality](https://en.wikipedia.org/wiki/Betweenness_centrality) of the nodes.",
+              "descr": "Considering only the elements in the calling collection, calculate the [betweenness centrality](https://en.wikipedia.org/wiki/Betweenness_centrality) of the nodes and edges.",
               "formats": [
                 {
                   "args": [
                     { "name": "options", "fields": [
-                      { "name": "weight: function(edge)", "descr": "A function that returns the positive weight for the edge.  The weight indicates the importance of the edge, with a high value representing high importance.", "optional": true },
+                      { "name": "weight: function(edge)", "descr": "A function that returns the positive weight for the edge.  The weight indicates the importance of the edge, with a low value representing high importance.", "optional": true },
                       { "name": "directed", "descr": "A boolean indicating whether the algorithm operates on edges in a directed manner from source to target (`true`) or whether the algorithm operates in an undirected manner (`false`, default).", "optional": true }
                     ] }
                   ]

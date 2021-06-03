@@ -6,6 +6,10 @@ const defaults = util.defaults({
   directed: false
 });
 
+function getEdgeKey(sourceId, targetId) {
+  return sourceId + ' - ' + targetId;
+}
+
 let elesfn = ({
 
   // Implemented from the algorithm in the paper "On Variants of Shortest-Path Betweenness Centrality and their Generic Computation" by Ulrik Brandes
@@ -26,8 +30,16 @@ let elesfn = ({
         if( val > max ){ max = val; }
       },
 
-      get: function( key ){ return _C[ key ]; }
+      get: function( key, defaultValue=undefined){ 
+        const value = _C[ key ];
+        if (value === undefined) {
+          return defaultValue;
+        } else {
+          return value;
+        }
+      }
     };
+
 
     // A contains the neighborhoods of every node
     for( let i = 0; i < V.length; i++ ){
@@ -124,6 +136,9 @@ let elesfn = ({
         }
       }
 
+
+
+      // Accumulation
       let e = {};
       for( let i = 0; i < V.length; i++ ){
         e[ V[ i ].id() ] = 0;
@@ -134,34 +149,49 @@ let elesfn = ({
 
         for( let j = 0; j < P[w].length; j++ ){
           let v = P[w][j];
-
-          e[v] = e[v] + (g[v] / g[w]) * (1 + e[w]);
+          const edgeKey = getEdgeKey(v,w);
+          const c = (g[v] / g[w]) * (1 + e[w]);
+          C.set(edgeKey, C.get(edgeKey, 0) + c);
+          e[v] = e[v] + c;
         }
 
-        if( w != V[s].id() ){
+        if( w != V[s].id() ){ 
           C.set( w, C.get( w ) + e[w] );
         }
       }
-    }
 
+    }
     let ret = {
       betweenness: function( node ){
         let id = cy.collection(node).id();
-
         return C.get( id );
       },
-
       betweennessNormalized: function( node ){
         if ( max == 0 ){ return 0; }
-
         let id = cy.collection(node).id();
-
         return C.get( id ) / max;
-      }
+      },
+      betweennessEdge: function(edge) {
+        const e = cy.collection(edge);
+        const sourceId = e.source().id();
+        const targetId = e.target().id();
+        const edgeKey = getEdgeKey(sourceId, targetId);
+        return C.get(edgeKey);
+      },
+      betweennessEdgeNormalized: function(edge) {
+        if ( max == 0 ){ return 0; }
+        const e = cy.collection(edge);
+        const sourceId = e.source().id();
+        const targetId = e.target().id();
+        const edgeKey = getEdgeKey(sourceId, targetId);
+        return C.get(edgeKey) / max;
+      },
+
     };
 
     // alias
     ret.betweennessNormalised = ret.betweennessNormalized;
+    ret.betweennessEdgeNormalised = ret.betweennessEdgeNormalized;
 
     return ret;
   } // betweennessCentrality

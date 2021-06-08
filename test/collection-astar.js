@@ -232,5 +232,37 @@ describe('Algorithms', function(){
       let setOfNodes = new Set(res.path.nodes().toArray().map(ele2id));
       expect(sourcesAndTargetsOfEdges).to.have.keys([...setOfNodes]);
     });
+
+    it('eles.aStar(): directed, null heuristic, unweighted: same as dijkstra', function(){
+      var options = {root: nodes[6][1],
+               goal: nodes[1][5],
+               directed: true,
+               heuristic: function(a){return 0;}
+              };
+      var res = cy.elements().aStar(options);
+      expect(res.found).to.equal(true);
+      var dist = res.distance;
+      expect(res.path.stdFilter(isNode).map(ele2id)).to.deep.equal(["6-1", "5-1", "4-1", "3-1", "2-1", "1-1", "1-2", "1-3", "1-4", "1-5"]);
+
+      var resD = cy.elements().dijkstra({ root: nodes[6][1], directed: true });
+      expect(resD.distanceTo(nodes[1][5])).to.equal(dist);
+      expect(resD.pathTo(nodes[1][5]).stdFilter(isNode).map(ele2id)).to.deep.equal(["6-1", "5-1", "4-1", "3-1", "2-1", "1-1", "1-2", "1-3", "1-4", "1-5"]);
+    });
+
+    it('eles.aStar(): undirected, null heuristic, unweighted: same as dijkstra', function(){
+      var options = {root: nodes[6][1],
+               goal: nodes[1][5],
+               directed: false,
+               heuristic: function(a){return 0;}
+              };
+      var res = cy.elements().aStar(options);
+      expect(res.found).to.equal(true);
+      var dist = res.distance;
+      var path = res.path.stdFilter(isNode).map(ele2id);
+
+      var resD = cy.elements().dijkstra({ root: nodes[6][1], directed: true });
+      expect(resD.distanceTo(nodes[1][5])).to.equal(dist);
+      expect(resD.pathTo(nodes[1][5]).stdFilter(isNode).map(ele2id)).to.deep.equal(path);
+    });
   });
 });

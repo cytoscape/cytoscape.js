@@ -17,7 +17,7 @@ function setExtension( type, name, registrant ){
   let ext = registrant;
 
   let overrideErr = function( field ){
-    util.error( 'Can not register `' + name + '` for `' + type + '` since `' + field + '` already exists in the prototype and can not be overridden' );
+    util.warn( 'Can not register `' + name + '` for `' + type + '` since `' + field + '` already exists in the prototype and can not be overridden' );
   };
 
   if( type === 'core' ){

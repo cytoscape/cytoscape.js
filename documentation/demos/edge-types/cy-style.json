@@ -60,4 +60,10 @@
     "taxi-turn": 20,
     "taxi-turn-min-distance": 5
   }
+}, {
+  "selector": "edge.straight-triangle",
+  "style": {
+    "curve-style": "straight-triangle",
+    "width": 10
+  }
 }]

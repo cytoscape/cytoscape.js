@@ -159,4 +159,19 @@
     "target": "n16"
   },
   "classes": "loop"
+}, {
+  "data": {
+    "id": "n17",
+    "type": "straight-triangle"
+  }
+}, {
+  "data": {
+    "id": "n18"
+  }
+}, {
+  "data": {
+    "source": "n17",
+    "target": "n18"
+  },
+  "classes": "straight-triangle"
 }]

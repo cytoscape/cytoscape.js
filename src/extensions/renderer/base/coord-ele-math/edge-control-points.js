@@ -650,7 +650,7 @@ BRp.findEdgeControlPoints = function( edges ){
       continue;
     }
 
-    let edgeIsUnbundled = curveStyle === 'unbundled-bezier' || curveStyle === 'segments' || curveStyle === 'straight' || curveStyle === 'taxi';
+    let edgeIsUnbundled = curveStyle === 'unbundled-bezier' || curveStyle === 'segments' || curveStyle === 'straight' || curveStyle === 'straight-triangle' || curveStyle === 'taxi';
     let edgeIsBezier = curveStyle === 'unbundled-bezier' || curveStyle === 'bezier';
     let src = _p.source;
     let tgt = _p.target;

@@ -336,6 +336,7 @@ The following is an example of valid background image styling using JSON. The ex
 These properties affect the styling of an edge's line:
 
  * **`width`** : The width of an edge's line.
+ * **`edge-style`** : The style of the edge; may be `line` (default), or `triangle`.
  * **`curve-style`** : The curving method used to separate two or more edges between two nodes ([demo](demos/edge-types)); may be [`haystack`](#style/haystack-edges) (default, very fast, bundled straight edges for which loops and compounds are unsupported), [`straight`](#style/straight-edges) (straight edges with all arrows supported), [`bezier`](#style/bezier-edges) (bundled curved edges), [`unbundled-bezier`](#style/unbundled-bezier-edges) (curved edges for use with manual control points),  [`segments`](#style/segments-edges) (a series of straight lines), [`taxi`](#style/taxi-edges) (right-angled lines, hierarchically bundled).  Note that `haystack` edges work best with `ellipse`, `rectangle`, or similar nodes.  Smaller node shapes, like `triangle`, will not be as aesthetically pleasing.  Also note that edge endpoint arrows are unsupported for `haystack` edges.
  * **`line-color`** : The colour of the edge's line.
  * **`line-style`** : The style of the edge's line; may be `solid`, `dotted`, or `dashed`.

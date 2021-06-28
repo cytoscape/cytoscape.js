@@ -54,6 +54,7 @@ const styfn = {};
     fill: { enums: ['solid', 'linear-gradient', 'radial-gradient'] },
     bool: { enums: [ 'yes', 'no' ] },
     bools: { enums: [ 'yes', 'no' ], multiple: true },
+    edgeStyle: { enums: [ 'line', 'triangle' ] },
     lineStyle: { enums: [ 'solid', 'dotted', 'dashed' ] },
     lineCap: { enums: [ 'butt', 'round', 'square' ] },
     borderStyle: { enums: [ 'solid', 'dotted', 'dashed', 'double' ] },
@@ -319,6 +320,7 @@ const styfn = {};
   ];
 
   let edgeLine = [
+    { name: 'edge-style', type: t.edgeStyle },
     { name: 'line-style', type: t.lineStyle },
     { name: 'line-color', type: t.color },
     { name: 'line-fill', type: t.fill },
@@ -652,6 +654,7 @@ styfn.getDefaultProperties = function(){
     return css;
   }, {} ), {
     // edge props
+    'edge-style': 'line',
     'line-style': 'solid',
     'line-color': '#999',
     'line-fill': 'solid',

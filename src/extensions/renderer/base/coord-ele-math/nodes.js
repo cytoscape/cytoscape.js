@@ -42,4 +42,21 @@ BRp.getNodeShape = function( node ){
   return shape;
 };
 
+BRp.getOverlayShape = function( node ){
+  var r = this;
+  var overlayShape = node.pstyle( 'overlay-shape' ).value;
+
+  if( overlayShape === 'auto' ) {
+    return r.getNodeShape( node );
+  }
+
+  if( overlayShape === 'polygon' ){
+    var points = node.pstyle( 'shape-polygon-points' ).value;
+
+    return r.nodeShapes.makePolygon( points ).name;
+  }
+
+  return overlayShape;
+};
+
 export default BRp;

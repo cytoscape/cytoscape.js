@@ -71,6 +71,11 @@ const styfn = {};
       'ellipse', 'triangle', 'round-triangle', 'square', 'pentagon', 'round-pentagon', 'hexagon', 'round-hexagon', 'concavehexagon', 'concave-hexagon', 'heptagon', 'round-heptagon', 'octagon', 'round-octagon',
       'tag', 'round-tag', 'star', 'diamond', 'round-diamond', 'vee', 'rhomboid', 'polygon',
     ] },
+    overlayShape: { enums: [
+      'rectangle', 'roundrectangle', 'round-rectangle', 'cutrectangle', 'cut-rectangle', 'bottomroundrectangle', 'bottom-round-rectangle', 'barrel',
+      'ellipse', 'triangle', 'round-triangle', 'square', 'pentagon', 'round-pentagon', 'hexagon', 'round-hexagon', 'concavehexagon', 'concave-hexagon', 'heptagon', 'round-heptagon', 'octagon', 'round-octagon',
+      'tag', 'round-tag', 'star', 'diamond', 'round-diamond', 'vee', 'rhomboid', 'polygon', 'auto',
+    ] },
     compoundIncludeLabels: { enums: [ 'include', 'exclude' ] },
     arrowShape: { enums: [ 'tee', 'triangle', 'triangle-tee', 'circle-triangle', 'triangle-cross', 'triangle-backcurve', 'vee', 'square', 'circle', 'diamond', 'chevron', 'none' ] },
     arrowFill: { enums: [ 'filled', 'hollow' ] },
@@ -247,7 +252,7 @@ const styfn = {};
     { name: 'overlay-padding', type: t.size, triggersBounds: diff.any },
     { name: 'overlay-color', type: t.color },
     { name: 'overlay-opacity', type: t.zeroOneNumber, triggersBounds: diff.zeroNonZero },
-    { name: 'overlay-shape', type: t.nodeShape, triggersBounds: diff.any }
+    { name: 'overlay-shape', type: t.overlayShape, triggersBounds: diff.any }
   ];
 
   let transition = [

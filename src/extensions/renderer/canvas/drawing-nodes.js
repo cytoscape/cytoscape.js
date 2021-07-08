@@ -316,12 +316,7 @@ CRp.drawNodeOverlay = function( context, node, pos, nodeWidth, nodeHeight ){
   let overlayPadding = node.pstyle( 'overlay-padding' ).pfValue;
   let overlayOpacity = node.pstyle( 'overlay-opacity' ).value;
   let overlayColor = node.pstyle( 'overlay-color' ).value;
-  let overlayShape = node.pstyle( 'overlay-shape' ).value;
-
-  if (overlayShape === 'polygon') {
-    // custom polygons are not supported for overlay
-    overlayShape = 'round-rectangle';
-  }
+  let overlayShape = r.getOverlayShape( node );
 
   if( overlayOpacity > 0 ){
     pos = pos || node.position();
@@ -335,10 +330,17 @@ CRp.drawNodeOverlay = function( context, node, pos, nodeWidth, nodeHeight ){
 
     r.colorFillStyle( context, overlayColor[0], overlayColor[1], overlayColor[2], overlayOpacity );
 
+    // offset overlay by overlayShape center
+    let overlayShapePoints = r.nodeShapes[overlayShape].points || [0, 0];
+    let overlayShapeCenter = {
+      x: overlayShapePoints.reduce((prev, curr, i) => i % 2 === 0 ? prev + curr : prev, 0) / (overlayShapePoints.length / 2),
+      y: overlayShapePoints.reduce((prev, curr, i) => i % 2 === 1 ? prev + curr : prev, 0) / (overlayShapePoints.length / 2),
+    };
+
     r.nodeShapes[overlayShape].draw(
       context,
-      pos.x,
-      pos.y,
+      pos.x - nodeWidth * overlayShapeCenter.x / 4,
+      pos.y - nodeHeight * overlayShapeCenter.y / 4,
       nodeWidth + overlayPadding * 2,
       nodeHeight + overlayPadding * 2
     );

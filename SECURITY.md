@@ -2,4 +2,4 @@
 
 ## Reporting a Vulnerability
 
-Please report security issues to <email>. Thank you.
+Please report security issues to maxkfranz@gmail.com. Thank you.

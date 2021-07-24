@@ -904,20 +904,19 @@ BRp.load = function(){
         !r.hoverData.selecting && // not box selection
         !r.hoverData.isOverThresholdDrag // didn't move too much
       ) {
-        if (!cy.doubleClickEnabled()) {
-          triggerEvents(down, ["click", "tap", "vclick"], e, { x: pos[0], y: pos[1] });
-        } else {
+        triggerEvents(down, ["click", "tap", "vclick"], e, { x: pos[0], y: pos[1] });
+        if (cy.doubleClickEnabled()) {
           didDoubleClick = false;
-          if (e.timeStamp - prevClickTimeStamp <= cy.clickDebounceTime()) {
+          if (e.timeStamp - prevClickTimeStamp <= cy.oneClickDebounceTime()) {
             clickTimeout && clearTimeout(clickTimeout);
             didDoubleClick = true;
             prevClickTimeStamp = null;
-            triggerEvents(down, ["dblclick", "double-tap", "vdblclick"], e, { x: pos[0], y: pos[1] });
+            triggerEvents(down, ["dblclick", "dbltap", "vdblclick"], e, { x: pos[0], y: pos[1] });
           } else {
             clickTimeout = setTimeout(() => {
               if (didDoubleClick) return;
-              triggerEvents(down, ["click", "tap", "vclick"], e, { x: pos[0], y: pos[1] });
-            }, cy.clickDebounceTime());
+              triggerEvents(down, ["oneclick", "onetap", "voneclick"], e, { x: pos[0], y: pos[1] });
+            }, cy.oneClickDebounceTime());
             prevClickTimeStamp = e.timeStamp;
           }
         }
@@ -1983,20 +1982,19 @@ BRp.load = function(){
           cy.$(':selected').unselect(['tapunselect']);
         }
 
-        if (!cy.doubleClickEnabled()) {
-          triggerEvents( start, [ 'tap', 'vclick' ], e, { x: now[0], y: now[1] } );
-        } else {
+        triggerEvents( start, [ 'tap', 'vclick' ], e, { x: now[0], y: now[1] } );
+        if (cy.doubleClickEnabled()) {
           didDoubleTouch = false;
-          if (e.timeStamp - prevTouchTimeStamp <= cy.clickDebounceTime()) {
+          if (e.timeStamp - prevTouchTimeStamp <= cy.oneClickDebounceTime()) {
             touchTimeout && clearTimeout(touchTimeout);
             didDoubleTouch = true;
             prevTouchTimeStamp = null;
-            triggerEvents( start, [ 'double-tap', 'vdblclick' ], e, { x: now[0], y: now[1] } );
+            triggerEvents( start, [ 'dbltap', 'vdblclick' ], e, { x: now[0], y: now[1] } );
           } else {
             touchTimeout = setTimeout(() => {
               if (didDoubleTouch) return;
-              triggerEvents( start, [ 'tap', 'vclick' ], e, { x: now[0], y: now[1] } );
-            }, cy.clickDebounceTime());
+              triggerEvents( start, [ 'onetap', 'voneclick' ], e, { x: now[0], y: now[1] } );
+            }, cy.oneClickDebounceTime());
             prevTouchTimeStamp = e.timeStamp;
           }
         }

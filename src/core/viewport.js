@@ -590,14 +590,14 @@ let corefn = ({
   
   doubleClickEnabled: function( bool ){
     if( bool !== undefined ){
-      this._private.doubleClickEnabled = bool ? true : false;
+      this._private.doubleClickEnabled = !!bool;
     } else return this._private.doubleClickEnabled;
     return this; // chaining
   },
 
-  clickDebounceTime: function ( int ){
-    if( int ) (this._private.clickDebounceTime = int);
-    else return this._private.clickDebounceTime;
+  oneClickDebounceTime: function ( int ){
+    if( int ) (this._private.oneClickDebounceTime = int);
+    else return this._private.oneClickDebounceTime;
     return this; // chaining
   }
 });

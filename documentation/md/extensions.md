@@ -29,6 +29,7 @@ The extensions below are a curated list.  To add your extension, [please submit 
  * <i class="fa fa-fw fa-user"></i> [`compound-drag-and-drop`](https://github.com/cytoscape/cytoscape.js-compound-drag-and-drop) : Compound node drag-and-drop UI for adding and removing children
  * <i class="fa fa-fw fa-user"></i> [`context-menus`](https://github.com/iVis-at-Bilkent/cytoscape.js-context-menus) : A traditional right click menu
  * <i class="fa fa-fw fa-user"></i> [`cxtmenu`](https://github.com/cytoscape/cytoscape.js-cxtmenu) : A circular context menu that allows for one-swipe commands on the graph.
+ * <i class="fa fa-fw fa-users"></i> [`dom-node`](https://github.com/mwri/cytoscape-dom-node) : Use an HTML element as a node's body.
  * <i class="fa fa-fw fa-user"></i> [`edge-editing`](https://github.com/iVis-at-Bilkent/cytoscape.js-edge-editing) : UI for editing edge bends (segment edges and bezier edges)
  * <i class="fa fa-fw fa-users"></i> [`edge-editation`](https://github.com/frankiex/cytoscape.js-edge-editation) : Adds handles to nodes and allows creation of different types of edges
  * <i class="fa fa-fw fa-users"></i> [`edge-connections`](https://github.com/jri/cytoscape-edge-connections) : Allows edges to visually connect other edges, according to the Associative Model of Data.
@@ -89,6 +90,7 @@ Compound Spring Embedder with Ports (CoSEP) is a force-directed layout algorithm
  * <i class="fa fa-fw fa-user"></i> [`cytosnap`](https://github.com/cytoscape/cytosnap) : A Node.js package that renders images of Cytoscape.js graphs on the server using Puppeteer.
  * <i class="fa fa-fw fa-users"></i> [`ngx-cytoscape`](https://github.com/calvinvette/ngx-cytoscape) : An Angular 5+ component for Cytoscape.js.
  * <i class="fa fa-fw fa-user"></i> [`react-cytoscapejs`](https://github.com/plotly/react-cytoscapejs) : A [React](https://reactjs.org) component for Cytoscape.js network visualisations.
+ * <i class="fa fa-fw fa-users"></i> [`cytoscape-react`](https://github.com/mwri/cytoscape-react) : Create `<Node>`s and `<Edge>s` specified with JSX.
  * <i class="fa fa-fw fa-users"></i> [`sif.js`](https://github.com/jmvillaveces/sif.js) : A javascript library to parse simple interaction file (SIF) files.
  * <i class="fa fa-fw fa-user"></i> [`sbgn-stylesheet`](https://github.com/PathwayCommons/cytoscape-sbgn-stylesheet) : A stylesheet preset for [SBGN](https://sbgn.github.io/sbgn/).
  * <i class="fa fa-fw fa-user"></i> [`sbgnml-to-cytoscape`](https://github.com/PathwayCommons/sbgnml-to-cytoscape) : Converts XML-based [SBGN](https://sbgn.github.io/sbgn/) files to Cytoscape.js JSON.

@@ -647,8 +647,14 @@
               "formats": [
                 {
                   "args": [
-                    { "name": "zoom", "descr": "The zoom level to set." },
-                    { "name": "pan", "descr": "The pan to set (a rendered position)." }
+                    {
+                      "name": "options",
+                      "descr": "The viewport options.",
+                      "fields": [
+                        { "name": "zoom", "descr": "The zoom level to set." },
+                        { "name": "pan", "descr": "The pan to set (a rendered position)." }
+                      ]
+                    }
                   ]
                 }
               ],

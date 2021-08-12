@@ -424,9 +424,9 @@ A straight edge (`curve-style: straight`) is drawn as a single straight line fro
 
 For straight triangle edges (`curve-style: straight-triangle`, [demo](demos/edge-types)):
 
-A straight triangle edge (`curve-style: straight-triangle`) is drawn as a single straight isosceles triangle in the direction from the source to the target.
+A straight triangle edge (`curve-style: straight-triangle`) is drawn as a single straight isosceles triangle in the direction from the source to the target, with a triangle base at the source and a triangle apex (a point) at the target.
 
-Property `width` defines line width at the triangle base, line width is `0` at the triangle apex.  Properties `line-style`, `line-cap`, `line-dash-pattern`, `line-dash-offset` are not supported.
+Property `width` defines width of the triangle base.  Properties `line-style`, `line-cap`, `line-dash-pattern`, `line-dash-offset` are not supported.
 
 
 ## Taxi edges

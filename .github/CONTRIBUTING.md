@@ -6,7 +6,7 @@ A blog post is available [on blog.js.cytoscape.org](http://blog.js.cytoscape.org
 
 If you'd like to contribute code to Cytoscape.js but you're not sure exactly what you'd like to implement, take a look at our [current milestones](https://github.com/cytoscape/cytoscape.js/milestones) to see what features we have planned in future --- or anything labelled [`help-wanted`](https://github.com/cytoscape/cytoscape.js/issues?q=is%3Aopen+is%3Aissue+label%3Ahelp-wanted).  Of course, we also welcome your own ideas.  You can discuss new ideas with the community on [GitHub discussions](https://github.com/cytoscape/cytoscape.js/discussions).
 
-Our goal is to make Cytoscape.js easy to use and comprehensive.  Thank you for taking the time and effort to contribute to Cytoscape.js.  It is your contribution that helps us acheive our goal.
+Our goal is to make Cytoscape.js easy to use and comprehensive.  Thank you for taking the time and effort to contribute and to help make that happen!
 
 
 

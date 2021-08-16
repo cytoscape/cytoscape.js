@@ -110,7 +110,7 @@
     "postpublish": "run-s docs:push",
     "watch": "run-s watch:fast",
     "watch:sync": "livereload \"build, debug\" -w 500",
-    "watch:http": "http-server -s -c -1 -o",
+    "watch:http": "http-server -s -c -1 -o debug",
     "watch:fast": "run-p watch:sync watch:http watch:build:fast",
     "watch:umd": "run-p watch:sync watch:http watch:build:umd",
     "watch:build:fast": "cross-env FILE=umd SOURCEMAPS=true BABEL=false NODE_ENV=development rollup -c -w",

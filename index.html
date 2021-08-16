@@ -737,10 +737,12 @@
 <h2 id="introduction/releases">Releases <a href="#introduction/releases"><span class="fa fa-bookmark"></span></a></h2>
 <ul>
 <li>3.19<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.19.1+is%3Aclosed">3.19.1</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.19.0+is%3Aclosed">3.19.0</a></li>
 </ul>
 </li>
 <li>3.18<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.18.3+is%3Aclosed">3.18.3</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.18.2+is%3Aclosed">3.18.2</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.18.1+is%3Aclosed">3.18.1</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.18.0+is%3Aclosed">3.18.0</a></li>
@@ -3409,24 +3411,33 @@ cy.center( j );</code></pre>
 
 							<div class="formats">
 									<div class="format">
-											<div class="name">cy.viewport( <span class="args-summary"><span class="comma">,&nbsp;</span>zoom<span class="comma">,&nbsp;</span>pan</span> )</div>
+											<div class="name">cy.viewport( <span class="args-summary"><span class="comma">,&nbsp;</span>options</span> )</div>
 
 
 										<div class="descr"></div>
 										<ul class="args">
 												<li>
-													<span class="name">zoom</span>
+													<span class="name">options</span>
 													
-													<span class="descr"><p>The zoom level to set.</p>
+													<span class="descr"><p>The viewport options.</p>
 </span>
 
-												</li>
-												<li>
-													<span class="name"><a href="#notation/position">pan</a></span>
-													
-													<span class="descr"><p>The pan to set (a rendered position).</p>
+													<ul class="fields">
+															<li>
+																<span class="name">zoom</span>
+																
+																<span class="descr"><p>The zoom level to set.</p>
 </span>
+															</li>
 
+															<li>
+																<span class="name"><a href="#notation/position">pan</a></span>
+																
+																<span class="descr"><p>The pan to set (a rendered position).</p>
+</span>
+															</li>
+
+													</ul>
 												</li>
 										</ul>
 									</div>
@@ -15235,6 +15246,7 @@ cytoscape.use( ext );</code></pre>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/cytoscape/cytoscape.js-compound-drag-and-drop"><code>compound-drag-and-drop</code></a> : Compound node drag-and-drop UI for adding and removing children</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/iVis-at-Bilkent/cytoscape.js-context-menus"><code>context-menus</code></a> : A traditional right click menu</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/cytoscape/cytoscape.js-cxtmenu"><code>cxtmenu</code></a> : A circular context menu that allows for one-swipe commands on the graph.</li>
+<li><i class="fa fa-fw fa-users"></i> <a href="https://github.com/mwri/cytoscape-dom-node"><code>dom-node</code></a> : Use an HTML element as a node’s body.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/iVis-at-Bilkent/cytoscape.js-edge-editing"><code>edge-editing</code></a> : UI for editing edge bends (segment edges and bezier edges)</li>
 <li><i class="fa fa-fw fa-users"></i> <a href="https://github.com/frankiex/cytoscape.js-edge-editation"><code>edge-editation</code></a> : Adds handles to nodes and allows creation of different types of edges</li>
 <li><i class="fa fa-fw fa-users"></i> <a href="https://github.com/jri/cytoscape-edge-connections"><code>edge-connections</code></a> : Allows edges to visually connect other edges, according to the Associative Model of Data.</li>
@@ -15293,6 +15305,7 @@ Compound Spring Embedder with Ports (CoSEP) is a force-directed layout algorithm
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/cytoscape/cytosnap"><code>cytosnap</code></a> : A Node.js package that renders images of Cytoscape.js graphs on the server using Puppeteer.</li>
 <li><i class="fa fa-fw fa-users"></i> <a href="https://github.com/calvinvette/ngx-cytoscape"><code>ngx-cytoscape</code></a> : An Angular 5+ component for Cytoscape.js.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/plotly/react-cytoscapejs"><code>react-cytoscapejs</code></a> : A <a href="https://reactjs.org">React</a> component for Cytoscape.js network visualisations.</li>
+<li><i class="fa fa-fw fa-users"></i> <a href="https://github.com/mwri/cytoscape-react"><code>cytoscape-react</code></a> : Create <code>&lt;Node&gt;</code>s and <code>&lt;Edge&gt;s</code> specified with JSX.</li>
 <li><i class="fa fa-fw fa-users"></i> <a href="https://github.com/jmvillaveces/sif.js"><code>sif.js</code></a> : A javascript library to parse simple interaction file (SIF) files.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/PathwayCommons/cytoscape-sbgn-stylesheet"><code>sbgn-stylesheet</code></a> : A stylesheet preset for <a href="https://sbgn.github.io/sbgn/">SBGN</a>.</li>
 <li><i class="fa fa-fw fa-user"></i> <a href="https://github.com/PathwayCommons/sbgnml-to-cytoscape"><code>sbgnml-to-cytoscape</code></a> : Converts XML-based <a href="https://sbgn.github.io/sbgn/">SBGN</a> files to Cytoscape.js JSON.</li>

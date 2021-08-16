@@ -31311,7 +31311,7 @@ function setExtension(type, name, registrant) {
   var ext = registrant;
 
   var overrideErr = function overrideErr(field) {
-    error('Can not register `' + name + '` for `' + type + '` since `' + field + '` already exists in the prototype and can not be overridden');
+    warn('Can not register `' + name + '` for `' + type + '` since `' + field + '` already exists in the prototype and can not be overridden');
   };
 
   if (type === 'core') {
@@ -31633,7 +31633,7 @@ sheetfn.appendToStyle = function (style) {
   return style;
 };
 
-var version = "3.19.0";
+var version = "3.19.1";
 
 var cytoscape = function cytoscape(options) {
   // if no options specified, use default

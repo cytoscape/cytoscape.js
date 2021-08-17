@@ -30,6 +30,15 @@ var cy, defaultSty, options;
           'segment-distances': [ 20, -80 ],
           'segment-weights': [ 0.25, 0.5 ],
         })
+      .selector('#ef')
+        .style({
+          'curve-style': 'straight-triangle',
+          'source-arrow-shape': 'none',
+          'target-arrow-shape': 'none',
+          'mid-target-arrow-shape': 'none',
+          'mid-source-arrow-shape': 'none',
+          'width': 6,
+        })
       .selector('[source = "c"][target = "e"]')
         .style({
           'curve-style': 'haystack',
@@ -86,7 +95,8 @@ var cy, defaultSty, options;
         { data: { id: 'de3', weight: 7, source: 'd', target: 'e' } },
         { data: { id: 'de4', weight: 7, source: 'd', target: 'e' } },
         { data: { id: 'de5', weight: 7, source: 'd', target: 'e' } },
-        { data: { id: 'bf', weight: 3, source: 'b', target: 'f' } }
+        { data: { id: 'bf', weight: 3, source: 'b', target: 'f' } },
+        { data: { id: 'ef', weight: 3, source: 'e', target: 'f' } }
       ]
     }
   };

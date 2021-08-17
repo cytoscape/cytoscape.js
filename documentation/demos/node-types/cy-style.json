@@ -4,8 +4,7 @@
     "shape": "data(type)",
     "label": "data(type)",
     "height": 40,
-    "width": 40,
-    "overlay-shape": "auto"
+    "width": 40
   }
 }, {
   "selector": "node[points]",

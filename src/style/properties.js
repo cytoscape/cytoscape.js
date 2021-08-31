@@ -57,7 +57,7 @@ const styfn = {};
     lineStyle: { enums: [ 'solid', 'dotted', 'dashed' ] },
     lineCap: { enums: [ 'butt', 'round', 'square' ] },
     borderStyle: { enums: [ 'solid', 'dotted', 'dashed', 'double' ] },
-    curveStyle: { enums: [ 'bezier', 'unbundled-bezier', 'haystack', 'segments', 'straight', 'taxi' ] },
+    curveStyle: { enums: [ 'bezier', 'unbundled-bezier', 'haystack', 'segments', 'straight', 'straight-triangle', 'taxi' ] },
     fontFamily: { regex: '^([\\w- \\"]+(?:\\s*,\\s*[\\w- \\"]+)*)$' },
     fontStyle: { enums: [ 'italic', 'normal', 'oblique' ] },
     fontWeight: { enums: [ 'normal', 'bold', 'bolder', 'lighter', '100', '200', '300', '400', '500', '600', '800', '900', 100, 200, 300, 400, 500, 600, 700, 800, 900 ] },

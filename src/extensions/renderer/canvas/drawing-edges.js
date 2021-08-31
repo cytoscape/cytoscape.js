@@ -25,6 +25,7 @@ CRp.drawEdge = function( context, edge, shiftToOriginWithBb, drawLabel = true, s
   let opacity = shouldDrawOpacity ? edge.pstyle('opacity').value : 1;
   let lineOpacity = shouldDrawOpacity ? edge.pstyle('line-opacity').value : 1;
   
+  let curveStyle = edge.pstyle('curve-style').value;
   let lineStyle = edge.pstyle('line-style').value;
   let edgeWidth = edge.pstyle('width').pfValue;
   let lineCap = edge.pstyle('line-cap').value;
@@ -34,18 +35,27 @@ CRp.drawEdge = function( context, edge, shiftToOriginWithBb, drawLabel = true, s
   let effectiveArrowOpacity = opacity * lineOpacity;
 
   let drawLine = ( strokeOpacity = effectiveLineOpacity) => {
-    context.lineWidth = edgeWidth;
-    context.lineCap = lineCap;
-
-    r.eleStrokeStyle( context, edge, strokeOpacity );
-    r.drawEdgePath(
-      edge,
-      context,
-      rs.allpts,
-      lineStyle
-    );
-
-    context.lineCap = 'butt'; // reset for other drawing functions
+    if (curveStyle === 'straight-triangle') {
+      r.eleStrokeStyle( context, edge, strokeOpacity );
+      r.drawEdgeTrianglePath(
+        edge,
+        context,
+        rs.allpts
+      );
+    } else {
+      context.lineWidth = edgeWidth;
+      context.lineCap = lineCap;
+  
+      r.eleStrokeStyle( context, edge, strokeOpacity );
+      r.drawEdgePath(
+        edge,
+        context,
+        rs.allpts,
+        lineStyle
+      );
+  
+      context.lineCap = 'butt'; // reset for other drawing functions
+    }
   };
 
   let drawOverlay = () => {
@@ -200,6 +210,28 @@ CRp.drawEdgePath = function( edge, context, pts, type ){
     context.setLineDash( [ ] );
   }
 
+};
+
+
+CRp.drawEdgeTrianglePath = function( edge, context, pts ){
+  // use line stroke style for triangle fill style
+  context.fillStyle = context.strokeStyle;
+
+  let edgeWidth = edge.pstyle('width').pfValue;
+
+  for( let i = 0; i + 1 < pts.length; i += 2 ){
+    const vector = [ pts[ i + 2 ] - pts[ i ], pts[ i + 3 ] - pts[ i + 1 ] ];
+    const length = Math.sqrt( vector[0] * vector[0] + vector[1] * vector[1] );
+    const normal = [ vector[1] / length, -vector[0] / length ];
+    const triangleHead = [ normal[0] * edgeWidth / 2, normal[1] * edgeWidth / 2 ];
+
+    context.beginPath();
+    context.moveTo( pts[ i ] - triangleHead[0], pts[ i + 1 ] - triangleHead[1] );
+    context.lineTo( pts[ i ] + triangleHead[0], pts[ i + 1 ] + triangleHead[1] );
+    context.lineTo( pts[ i + 2 ], pts[ i + 3 ] );
+    context.closePath();
+    context.fill();
+  }
 };
 
 CRp.drawArrowheads = function( context, edge, opacity ){

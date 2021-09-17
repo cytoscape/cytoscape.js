@@ -167,6 +167,7 @@
 * [LearnAwesome](https://learnawesome.org)
 * [Machine2Learn](https://machine2learn.com)
 * [Musicalized](https://en.wesound.academy)
+* [Network Weathermap](https://github.com/6illes/weathermap)
 * [New Relic](https://newrelic.com)
 * [Obsidian](https://obsidian.md)
 * [Onepanel](https://www.onepanel.ai)

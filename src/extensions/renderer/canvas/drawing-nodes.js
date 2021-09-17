@@ -316,6 +316,7 @@ CRp.drawNodeOverlay = function( context, node, pos, nodeWidth, nodeHeight ){
   let overlayPadding = node.pstyle( 'overlay-padding' ).pfValue;
   let overlayOpacity = node.pstyle( 'overlay-opacity' ).value;
   let overlayColor = node.pstyle( 'overlay-color' ).value;
+  var overlayShape = node.pstyle( 'overlay-shape' ).value;
 
   if( overlayOpacity > 0 ){
     pos = pos || node.position();
@@ -329,7 +330,7 @@ CRp.drawNodeOverlay = function( context, node, pos, nodeWidth, nodeHeight ){
 
     r.colorFillStyle( context, overlayColor[0], overlayColor[1], overlayColor[2], overlayOpacity );
 
-    r.nodeShapes[ 'roundrectangle' ].draw(
+    r.nodeShapes[overlayShape].draw(
       context,
       pos.x,
       pos.y,

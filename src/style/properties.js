@@ -71,6 +71,7 @@ const styfn = {};
       'ellipse', 'triangle', 'round-triangle', 'square', 'pentagon', 'round-pentagon', 'hexagon', 'round-hexagon', 'concavehexagon', 'concave-hexagon', 'heptagon', 'round-heptagon', 'octagon', 'round-octagon',
       'tag', 'round-tag', 'star', 'diamond', 'round-diamond', 'vee', 'rhomboid', 'polygon',
     ] },
+    overlayShape: { enums: [ 'roundrectangle', 'round-rectangle', 'ellipse' ] },
     compoundIncludeLabels: { enums: [ 'include', 'exclude' ] },
     arrowShape: { enums: [ 'tee', 'triangle', 'triangle-tee', 'circle-triangle', 'triangle-cross', 'triangle-backcurve', 'vee', 'square', 'circle', 'diamond', 'chevron', 'none' ] },
     arrowFill: { enums: [ 'filled', 'hollow' ] },
@@ -246,7 +247,8 @@ const styfn = {};
   let overlay = [
     { name: 'overlay-padding', type: t.size, triggersBounds: diff.any },
     { name: 'overlay-color', type: t.color },
-    { name: 'overlay-opacity', type: t.zeroOneNumber, triggersBounds: diff.zeroNonZero }
+    { name: 'overlay-opacity', type: t.zeroOneNumber, triggersBounds: diff.zeroNonZero },
+    { name: 'overlay-shape', type: t.overlayShape, triggersBounds: diff.any }
   ];
 
   let transition = [
@@ -576,6 +578,7 @@ styfn.getDefaultProperties = function(){
     'overlay-opacity': 0,
     'overlay-color': '#000',
     'overlay-padding': 10,
+    'overlay-shape': 'round-rectangle',
     'transition-property': 'none',
     'transition-duration': 0,
     'transition-delay': 0,

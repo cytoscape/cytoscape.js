@@ -112,6 +112,7 @@
 * [Institute for Systems Biology](https://isbscience.org)
 * [International Rice Research Institute](https://www.irri.org)
 * [Max Plank Institute](https://mpg.de)
+* [Nanyang Technological University](https://www.ntu.edu.sg)
 * [Network of European Bioimage Analysts](http://eubias.org/NEUBIAS)
 * [Observational Health Data Sciences and Informatics (OHDSI)](http://www.ohdsi.org/)
 * [Research Institute for Fragrance Materials](https://www.rifm.org)
@@ -184,6 +185,7 @@
 * [VAC](https://vac.dev)
 * [wanderer.ai](https://wanderer.ai)
 * [Wisecube AI](https://www.wisecube.ai/orpheus/)
+* [Zubir Said Knowledge Graph](https://zubirsaid.sg)
 
 
 ### Let us know

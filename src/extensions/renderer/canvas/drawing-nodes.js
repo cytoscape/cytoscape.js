@@ -256,6 +256,12 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
     }
   };
 
+  let drawUnderlay = () => {
+    if( shouldDrawOverlay ){
+      r.drawNodeUnderlay( context, node, pos, nodeWidth, nodeHeight );
+    }
+  };
+
   let drawText = () => {
     r.drawElementText( context, node, null, drawLabel );
   };
@@ -281,7 +287,15 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
 
     context.translate( -gx, -gy );
   }
-  
+
+  if( usePaths ){
+    context.translate( -pos.x, -pos.y );
+  }
+  drawUnderlay();
+  if( usePaths ){
+    context.translate( pos.x, pos.y );
+  }
+
   setupShapeColor();
   drawShape();
   drawImages(eleOpacity, true);
@@ -336,6 +350,40 @@ CRp.drawNodeOverlay = function( context, node, pos, nodeWidth, nodeHeight ){
       pos.y,
       nodeWidth + overlayPadding * 2,
       nodeHeight + overlayPadding * 2
+    );
+
+    context.fill();
+  }
+};
+
+CRp.drawNodeUnderlay = function( context, node, pos, nodeWidth, nodeHeight ){
+  let r = this;
+
+  if( !node.visible() ){ return; }
+
+  let underlayPadding = node.pstyle( 'underlay-padding' ).pfValue;
+  let underlayOpacity = node.pstyle( 'underlay-opacity' ).value;
+  let underlayColor = node.pstyle( 'underlay-color' ).value;
+  var underlayShape = node.pstyle( 'underlay-shape' ).value;
+
+  if( underlayOpacity > 0 ){
+    pos = pos || node.position();
+
+    if( nodeWidth == null || nodeHeight == null ){
+      let padding = node.padding();
+
+      nodeWidth = node.width() + 2 * padding;
+      nodeHeight = node.height() + 2 * padding;
+    }
+
+    r.colorFillStyle( context, underlayColor[0], underlayColor[1], underlayColor[2], underlayOpacity );
+
+    r.nodeShapes[underlayShape].draw(
+      context,
+      pos.x,
+      pos.y,
+      nodeWidth + underlayPadding * 2,
+      nodeHeight + underlayPadding * 2
     );
 
     context.fill();

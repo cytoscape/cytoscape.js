@@ -64,6 +64,12 @@ CRp.drawEdge = function( context, edge, shiftToOriginWithBb, drawLabel = true, s
     r.drawEdgeOverlay( context, edge );
   };
 
+  let drawUnderlay = () => {
+    if( !shouldDrawOverlay ){ return; }
+
+    r.drawEdgeUnderlay( context, edge );
+  };
+
   let drawArrows = ( arrowOpacity = effectiveArrowOpacity) => {
     r.drawArrowheads( context, edge, arrowOpacity );
   };
@@ -90,6 +96,7 @@ CRp.drawEdge = function( context, edge, shiftToOriginWithBb, drawLabel = true, s
     context.translate( -gx, -gy );
   }
 
+  drawUnderlay();
   drawLine();
   drawArrows();
   drawOverlay();
@@ -124,6 +131,39 @@ CRp.drawEdgeOverlay = function( context, edge ){
   }
 
   r.colorStrokeStyle( context, overlayColor[0], overlayColor[1], overlayColor[2], overlayOpacity );
+
+  r.drawEdgePath(
+    edge,
+    context,
+    rs.allpts,
+    'solid'
+  );
+};
+
+CRp.drawEdgeUnderlay = function( context, edge ){
+  if( !edge.visible() ){ return; }
+
+  let underlayOpacity = edge.pstyle('underlay-opacity').value;
+
+  if( underlayOpacity === 0 ){ return; }
+
+  let r = this;
+  let usePaths = r.usePaths();
+  let rs = edge._private.rscratch;
+
+  let underlayPadding = edge.pstyle('underlay-padding').pfValue;
+  let underlayWidth = 2 * underlayPadding;
+  let underlayColor = edge.pstyle('underlay-color').value;
+
+  context.lineWidth = underlayWidth;
+
+  if( rs.edgeType === 'self' && !usePaths ){
+    context.lineCap = 'butt';
+  } else {
+    context.lineCap = 'round';
+  }
+
+  r.colorStrokeStyle( context, underlayColor[0], underlayColor[1], underlayColor[2], underlayOpacity );
 
   r.drawEdgePath(
     edge,

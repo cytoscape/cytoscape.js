@@ -22,6 +22,16 @@ CRp.drawElementOverlay = function( context, ele ){
   }
 };
 
+CRp.drawElementUnderlay = function( context, ele ){
+  let r = this;
+
+  if( ele.isNode() ){
+    r.drawNodeUnderlay( context, ele );
+  } else {
+    r.drawEdgeUnderlay( context, ele );
+  }
+};
+
 CRp.drawCachedElementPortion = function( context, ele, eleTxrCache, pxRatio, lvl, reason, getRotation, getOpacity ){
   let r = this;
   let bb = eleTxrCache.getBoundingBox(ele);
@@ -104,6 +114,8 @@ CRp.drawCachedElement = function( context, ele, pxRatio, extent, lvl, requestHig
   if( !extent || math.boundingBoxesIntersect( bb, extent ) ){
     let isEdge = ele.isEdge();
     let badLine = ele.element()._private.rscratch.badLine;
+
+    r.drawElementUnderlay( context, ele );
 
     r.drawCachedElementPortion( context, ele, eleTxrCache, pxRatio, lvl, reason, getZeroRotation, getOpacity );
     

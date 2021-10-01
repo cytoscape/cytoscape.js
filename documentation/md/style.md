@@ -641,6 +641,16 @@ These properties allow for the creation of overlays on top of nodes or edges, an
  * **`overlay-opacity`** : The opacity of the overlay.
  * **`overlay-shape`** : The shape of the overlay; may be `round-rectangle` (default), `ellipse`.
 
+
+## Underlay
+
+These properties allow for the creation of underlays behind nodes or edges, and are often used in a highlighted state.
+
+ * **`underlay-color`** : The colour of the underlay.
+ * **`underlay-padding`** : The area outside of the element within which the underlay is shown.
+ * **`underlay-opacity`** : The opacity of the underlay.
+ * **`underlay-shape`** : The shape of the underlay; may be `round-rectangle` (default), `ellipse`.
+
 ## Ghost
 
 The ghost properties allow for creating a ghosting effect, a semitransparent duplicate of the element drawn at an offset.

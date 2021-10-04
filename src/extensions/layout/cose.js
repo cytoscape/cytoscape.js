@@ -993,6 +993,10 @@ var calculateEdgeForces = function( layoutInfo, options ){
  * @brief : Computes gravity forces for all nodes
  */
 var calculateGravityForces = function( layoutInfo, options ){
+  if (options.gravity === 0) {
+    return;
+  }
+
   var distThreshold = 1;
 
   // var s = 'calculateGravityForces';

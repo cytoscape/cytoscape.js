@@ -588,16 +588,9 @@ let corefn = ({
     };
   },
   
-  doubleClickEnabled: function( bool ){
-    if( bool !== undefined ){
-      this._private.doubleClickEnabled = !!bool;
-    } else return this._private.doubleClickEnabled;
-    return this; // chaining
-  },
-
-  oneClickDebounceTime: function ( int ){
-    if( int ) (this._private.oneClickDebounceTime = int);
-    else return this._private.oneClickDebounceTime;
+  multiClickDebounceTime: function ( int ){
+    if( int ) (this._private.multiClickDebounceTime = int);
+    else return this._private.multiClickDebounceTime;
     return this; // chaining
   }
 });

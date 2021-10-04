@@ -92,8 +92,7 @@ let Core = function( opts ){
       queue: []
     },
     hasCompoundNodes: false,
-    doubleClickEnabled: defVal(false, options.doubleClickEnabled),
-    oneClickDebounceTime: options.doubleClickEnabled ? defVal(250, options.oneClickDebounceTime) : 0 // only works if doubleClickEnabled is set to true
+    multiClickDebounceTime: defVal(250, options.multiClickDebounceTime)
   };
 
   this.createEmitter();
@@ -425,7 +424,7 @@ util.extend( corefn, {
         'panningEnabled', 'userPanningEnabled',
         'boxSelectionEnabled',
         'autolock', 'autoungrabify', 'autounselectify',
-        'doubleClickEnabled', 'oneClickDebounceTime'
+        'multiClickDebounceTime'
       ];
 
       for( let i = 0; i < fields.length; i++ ){
@@ -481,8 +480,7 @@ util.extend( corefn, {
       json.textureOnViewport = options.textureOnViewport;
       json.wheelSensitivity = options.wheelSensitivity;
       json.motionBlur = options.motionBlur;
-      json.doubleClickEnabled = options.doubleClickEnabled;
-      json.oneClickDebounceTime = options.oneClickDebounceTime;
+      json.multiClickDebounceTime = options.multiClickDebounceTime;
 
       return json;
     }

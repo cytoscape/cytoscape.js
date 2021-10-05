@@ -91,7 +91,8 @@ let Core = function( opts ){
       current: [],
       queue: []
     },
-    hasCompoundNodes: false
+    hasCompoundNodes: false,
+    multiClickDebounceTime: defVal(250, options.multiClickDebounceTime)
   };
 
   this.createEmitter();
@@ -422,7 +423,8 @@ util.extend( corefn, {
         'minZoom', 'maxZoom', 'zoomingEnabled', 'userZoomingEnabled',
         'panningEnabled', 'userPanningEnabled',
         'boxSelectionEnabled',
-        'autolock', 'autoungrabify', 'autounselectify'
+        'autolock', 'autoungrabify', 'autounselectify',
+        'multiClickDebounceTime'
       ];
 
       for( let i = 0; i < fields.length; i++ ){
@@ -478,6 +480,7 @@ util.extend( corefn, {
       json.textureOnViewport = options.textureOnViewport;
       json.wheelSensitivity = options.wheelSensitivity;
       json.motionBlur = options.motionBlur;
+      json.multiClickDebounceTime = options.multiClickDebounceTime;
 
       return json;
     }

@@ -840,6 +840,7 @@ BRp.load = function(){
     }
   }, false );
 
+  let clickTimeout, didDoubleClick, prevClickTimeStamp;
   r.registerBinding( window, 'mouseup', function mouseupHandler( e ){ // eslint-disable-line no-undef
     var capture = r.hoverData.capture;
     if( !capture ){ return; }
@@ -897,13 +898,27 @@ BRp.load = function(){
 
       triggerEvents( near, [ 'mouseup', 'tapend', 'vmouseup' ], e, { x: pos[0], y: pos[1] } );
 
-      if(
-        !r.dragData.didDrag // didn't move a node around
-        && !r.hoverData.dragged // didn't pan
-        && !r.hoverData.selecting // not box selection
-        && !r.hoverData.isOverThresholdDrag // didn't move too much
-      ){
-        triggerEvents( down, ['click', 'tap', 'vclick'], e, { x: pos[0], y: pos[1] } );
+      if (
+        !r.dragData.didDrag && // didn't move a node around
+        !r.hoverData.dragged && // didn't pan
+        !r.hoverData.selecting && // not box selection
+        !r.hoverData.isOverThresholdDrag // didn't move too much
+      ) {
+        triggerEvents(down, ["click", "tap", "vclick"], e, { x: pos[0], y: pos[1] });
+
+        didDoubleClick = false;
+        if (e.timeStamp - prevClickTimeStamp <= cy.multiClickDebounceTime()) {
+          clickTimeout && clearTimeout(clickTimeout);
+          didDoubleClick = true;
+          prevClickTimeStamp = null;
+          triggerEvents(down, ["dblclick", "dbltap", "vdblclick"], e, { x: pos[0], y: pos[1] });
+        } else {
+          clickTimeout = setTimeout(() => {
+            if (didDoubleClick) return;
+            triggerEvents(down, ["oneclick", "onetap", "voneclick"], e, { x: pos[0], y: pos[1] });
+          }, cy.multiClickDebounceTime());
+          prevClickTimeStamp = e.timeStamp;
+        }
       }
 
       // Deselect all elements if nothing is currently under the mouse cursor and we aren't dragging something
@@ -1795,7 +1810,7 @@ BRp.load = function(){
     }
   } );
 
-  var touchendHandler;
+  var touchendHandler, didDoubleTouch, touchTimeout, prevTouchTimeStamp;
   r.registerBinding( window, 'touchend', touchendHandler = function( e ){ // eslint-disable-line no-unused-vars
     var start = r.touchData.start;
 
@@ -1967,6 +1982,20 @@ BRp.load = function(){
         }
 
         triggerEvents( start, [ 'tap', 'vclick' ], e, { x: now[0], y: now[1] } );
+
+        didDoubleTouch = false;
+        if (e.timeStamp - prevTouchTimeStamp <= cy.multiClickDebounceTime()) {
+          touchTimeout && clearTimeout(touchTimeout);
+          didDoubleTouch = true;
+          prevTouchTimeStamp = null;
+          triggerEvents( start, [ 'dbltap', 'vdblclick' ], e, { x: now[0], y: now[1] } );
+        } else {
+          touchTimeout = setTimeout(() => {
+            if (didDoubleTouch) return;
+            triggerEvents( start, [ 'onetap', 'voneclick' ], e, { x: now[0], y: now[1] } );
+          }, cy.multiClickDebounceTime());
+          prevTouchTimeStamp = e.timeStamp;
+        }
       }
 
       // Prepare to select the currently touched node, only if it hasn't been dragged past a certain distance

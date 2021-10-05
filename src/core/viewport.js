@@ -586,6 +586,12 @@ let corefn = ({
       w: width,
       h: height
     };
+  },
+  
+  multiClickDebounceTime: function ( int ){
+    if( int ) (this._private.multiClickDebounceTime = int);
+    else return this._private.multiClickDebounceTime;
+    return this; // chaining
   }
 });
 

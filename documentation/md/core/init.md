@@ -53,6 +53,7 @@ An instance of Cytoscape.js has a number of options that can be set on initialis
   <a href="#init-opts/autolock">autolock</a>: false,
   <a href="#init-opts/autoungrabify">autoungrabify</a>: false,
   <a href="#init-opts/autounselectify">autounselectify</a>: false,
+  <a href="#init-opts/multiClickDebounceTime">multiClickDebounceTime</a>: 250,
 
   // rendering options:
   <a href="#init-opts/headless">headless</a>: false,
@@ -129,6 +130,9 @@ An instance of Cytoscape.js has a number of options that can be set on initialis
 
 <span id="init-opts/autounselectify"></span>
 **`autounselectify`** : Whether nodes should be unselectified (immutable selection state) by default (if `true`, overrides individual element state).
+
+<span id="init-opts/multiClickDebounceTime"></span>
+**`multiClickDebounceTime`** : Debouce time in milliseconds to check for `dblclick` event before executing the `oneclick` event
 
 
 ### Rendering options

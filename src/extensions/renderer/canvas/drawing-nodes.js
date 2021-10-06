@@ -322,73 +322,49 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
 
 };
 
-CRp.drawNodeOverlay = function( context, node, pos, nodeWidth, nodeHeight ){
-  let r = this;
-
-  if( !node.visible() ){ return; }
-
-  let overlayPadding = node.pstyle( 'overlay-padding' ).pfValue;
-  let overlayOpacity = node.pstyle( 'overlay-opacity' ).value;
-  let overlayColor = node.pstyle( 'overlay-color' ).value;
-  var overlayShape = node.pstyle( 'overlay-shape' ).value;
-
-  if( overlayOpacity > 0 ){
-    pos = pos || node.position();
-
-    if( nodeWidth == null || nodeHeight == null ){
-      let padding = node.padding();
-
-      nodeWidth = node.width() + 2 * padding;
-      nodeHeight = node.height() + 2 * padding;
-    }
-
-    r.colorFillStyle( context, overlayColor[0], overlayColor[1], overlayColor[2], overlayOpacity );
-
-    r.nodeShapes[overlayShape].draw(
-      context,
-      pos.x,
-      pos.y,
-      nodeWidth + overlayPadding * 2,
-      nodeHeight + overlayPadding * 2
-    );
-
-    context.fill();
+const drawNodeOverlayUnderlay = function( overlayOrUnderlay ) {
+  if (!['overlay', 'underlay'].includes(overlayOrUnderlay)) {
+    throw new Error('Invalid state');
   }
+
+  return function( context, node, pos, nodeWidth, nodeHeight ){
+    let r = this;
+
+    if( !node.visible() ){ return; }
+
+    let padding = node.pstyle( `${overlayOrUnderlay}-padding` ).pfValue;
+    let opacity = node.pstyle( `${overlayOrUnderlay}-opacity` ).value;
+    let color = node.pstyle( `${overlayOrUnderlay}-color` ).value;
+    var shape = node.pstyle( `${overlayOrUnderlay}-shape` ).value;
+
+    if( opacity > 0 ){
+      pos = pos || node.position();
+
+      if( nodeWidth == null || nodeHeight == null ){
+        let padding = node.padding();
+
+        nodeWidth = node.width() + 2 * padding;
+        nodeHeight = node.height() + 2 * padding;
+      }
+
+      r.colorFillStyle( context, color[0], color[1], color[2], opacity );
+
+      r.nodeShapes[shape].draw(
+        context,
+        pos.x,
+        pos.y,
+        nodeWidth + padding * 2,
+        nodeHeight + padding * 2
+      );
+
+      context.fill();
+    }
+  };
 };
 
-CRp.drawNodeUnderlay = function( context, node, pos, nodeWidth, nodeHeight ){
-  let r = this;
+CRp.drawNodeOverlay = drawNodeOverlayUnderlay('overlay');
 
-  if( !node.visible() ){ return; }
-
-  let underlayPadding = node.pstyle( 'underlay-padding' ).pfValue;
-  let underlayOpacity = node.pstyle( 'underlay-opacity' ).value;
-  let underlayColor = node.pstyle( 'underlay-color' ).value;
-  var underlayShape = node.pstyle( 'underlay-shape' ).value;
-
-  if( underlayOpacity > 0 ){
-    pos = pos || node.position();
-
-    if( nodeWidth == null || nodeHeight == null ){
-      let padding = node.padding();
-
-      nodeWidth = node.width() + 2 * padding;
-      nodeHeight = node.height() + 2 * padding;
-    }
-
-    r.colorFillStyle( context, underlayColor[0], underlayColor[1], underlayColor[2], underlayOpacity );
-
-    r.nodeShapes[underlayShape].draw(
-      context,
-      pos.x,
-      pos.y,
-      nodeWidth + underlayPadding * 2,
-      nodeHeight + underlayPadding * 2
-    );
-
-    context.fill();
-  }
-};
+CRp.drawNodeUnderlay = drawNodeOverlayUnderlay('underlay');
 
 // does the node have at least one pie piece?
 CRp.hasPie = function( node ){

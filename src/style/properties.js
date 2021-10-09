@@ -251,6 +251,13 @@ const styfn = {};
     { name: 'overlay-shape', type: t.overlayShape, triggersBounds: diff.any }
   ];
 
+  let underlay = [
+    { name: 'underlay-padding', type: t.size, triggersBounds: diff.any },
+    { name: 'underlay-color', type: t.color },
+    { name: 'underlay-opacity', type: t.zeroOneNumber, triggersBounds: diff.zeroNonZero },
+    { name: 'underlay-shape', type: t.overlayShape, triggersBounds: diff.any }
+  ];
+
   let transition = [
     { name: 'transition-property', type: t.propList },
     { name: 'transition-duration', type: t.time },
@@ -401,6 +408,7 @@ const styfn = {};
     ...transition,
     ...visibility,
     ...overlay,
+    ...underlay,
     ...ghost,
 
     // labels
@@ -430,6 +438,7 @@ const styfn = {};
     transition,
     visibility,
     overlay,
+    underlay,
     ghost,
 
     // labels
@@ -579,6 +588,10 @@ styfn.getDefaultProperties = function(){
     'overlay-color': '#000',
     'overlay-padding': 10,
     'overlay-shape': 'round-rectangle',
+    'underlay-opacity': 0,
+    'underlay-color': '#000',
+    'underlay-padding': 10,
+    'underlay-shape': 'round-rectangle',
     'transition-property': 'none',
     'transition-duration': 0,
     'transition-delay': 0,

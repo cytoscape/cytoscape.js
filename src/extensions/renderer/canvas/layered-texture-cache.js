@@ -17,7 +17,7 @@ var deqNoDrawCost = 0.9; // % of avg frame time that can be used for dequeueing 
 var deqFastCost = 0.9; // % of frame time to be used when >60fps
 var maxDeqSize = 1; // number of eles to dequeue and render at higher texture in each batch
 var invalidThreshold = 250; // time threshold for disabling b/c of invalidations
-var maxLayerArea = 4000 * 4000; // layers can't be bigger than this
+var maxLayerArea = 10000 * 10000; // layers can't be bigger than this
 var alwaysQueue = true; // never draw all the layers in a level on a frame; draw directly until all dequeued
 var useHighQualityEleTxrReqs = true; // whether to use high quality ele txr requests (generally faster and cheaper in the longterm)
 
@@ -31,6 +31,8 @@ var LayeredTextureCache = function( renderer ){
   var cy = r.cy;
 
   self.layersByLevel = {}; // e.g. 2 => [ layer1, layer2, ..., layerN ]
+
+  self.bb = null;
 
   self.firstGet = true;
 
@@ -129,7 +131,6 @@ LTCp.getLayers = function( eles, pxRatio, lvl ){
   var layersByLvl = self.layersByLevel;
   var scale = Math.pow( 2, lvl );
   var layers = layersByLvl[ lvl ] = layersByLvl[ lvl ] || [];
-  var bb;
 
   var lvlComplete = self.levelIsComplete( lvl, eles );
   var tmpLayers;
@@ -176,30 +177,29 @@ LTCp.getLayers = function( eles, pxRatio, lvl ){
     return layers;
   }
 
-  var getBb = function(){
-    if( !bb ){
-      bb = math.makeBoundingBox();
-
-      for( var i = 0; i < eles.length; i++ ){
-        math.updateBoundingBox( bb, eles[i].boundingBox() );
-      }
+  function getBb() {
+    if( !self.bb ){
+      self.bb = math.makeBoundingBox();
     }
 
-    return bb;
-  };
+    for( var i = 0; i < eles.length; i++ ){
+      var area = self.bb.w * scale * (self.bb.h * scale);
+      if (area > maxLayerArea) {
+        return null;
+      }
+      math.updateBoundingBox(self.bb, eles[i].boundingBox() );
+    }
+
+    return self.bb;
+  }
 
   var makeLayer = function( opts ){
     opts = opts || {};
 
     var after = opts.after;
 
-    getBb();
-
-    var area = ( bb.w * scale ) * ( bb.h * scale );
-
-    if( area > maxLayerArea ){
-      return null;
-    }
+    const bb = getBb();
+    if (!bb) return null;
 
     var layer = self.makeLayer( bb, lvl );
 

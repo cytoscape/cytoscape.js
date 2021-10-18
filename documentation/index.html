@@ -958,60 +958,60 @@
 
   <span class="hljs-attr">elements</span>: [ <span class="hljs-comment">// flat array of nodes and edges</span>
     { <span class="hljs-comment">// node n1</span>
-      group: <span class="hljs-string">'nodes'</span>, <span class="hljs-comment">// 'nodes' for a node, 'edges' for an edge</span>
+      <span class="hljs-attr">group</span>: <span class="hljs-string">'nodes'</span>, <span class="hljs-comment">// 'nodes' for a node, 'edges' for an edge</span>
       <span class="hljs-comment">// NB the group field can be automatically inferred for you but specifying it</span>
       <span class="hljs-comment">// gives you nice debug messages if you mis-init elements</span>
 
 
-      data: { <span class="hljs-comment">// element data (put json serialisable dev data here)</span>
-        id: <span class="hljs-string">'n1'</span>, <span class="hljs-comment">// mandatory (string) id for each element, assigned automatically on undefined</span>
-        parent: <span class="hljs-string">'nparent'</span>, <span class="hljs-comment">// indicates the compound node parent id; not defined =&gt; no parent</span>
+      <span class="hljs-attr">data</span>: { <span class="hljs-comment">// element data (put json serialisable dev data here)</span>
+        <span class="hljs-attr">id</span>: <span class="hljs-string">'n1'</span>, <span class="hljs-comment">// mandatory (string) id for each element, assigned automatically on undefined</span>
+        <span class="hljs-attr">parent</span>: <span class="hljs-string">'nparent'</span>, <span class="hljs-comment">// indicates the compound node parent id; not defined =&gt; no parent</span>
         <span class="hljs-comment">// (`parent` can be effectively changed by `eles.move()`)</span>
       },
 
       <span class="hljs-comment">// scratchpad data (usually temp or nonserialisable data)</span>
-      scratch: {
+      <span class="hljs-attr">scratch</span>: {
         <span class="hljs-attr">_foo</span>: <span class="hljs-string">'bar'</span> <span class="hljs-comment">// app fields prefixed by underscore; extension fields unprefixed</span>
       },
 
       <span class="hljs-attr">position</span>: { <span class="hljs-comment">// the model position of the node (optional on init, mandatory after)</span>
-        x: <span class="hljs-number">100</span>,
+        <span class="hljs-attr">x</span>: <span class="hljs-number">100</span>,
         <span class="hljs-attr">y</span>: <span class="hljs-number">100</span>
       },
 
       <span class="hljs-attr">selected</span>: <span class="hljs-literal">false</span>, <span class="hljs-comment">// whether the element is selected (default false)</span>
 
-      selectable: <span class="hljs-literal">true</span>, <span class="hljs-comment">// whether the selection state is mutable (default true)</span>
+      <span class="hljs-attr">selectable</span>: <span class="hljs-literal">true</span>, <span class="hljs-comment">// whether the selection state is mutable (default true)</span>
 
-      locked: <span class="hljs-literal">false</span>, <span class="hljs-comment">// when locked a node's position is immutable (default false)</span>
+      <span class="hljs-attr">locked</span>: <span class="hljs-literal">false</span>, <span class="hljs-comment">// when locked a node's position is immutable (default false)</span>
 
-      grabbable: <span class="hljs-literal">true</span>, <span class="hljs-comment">// whether the node can be grabbed and moved by the user</span>
+      <span class="hljs-attr">grabbable</span>: <span class="hljs-literal">true</span>, <span class="hljs-comment">// whether the node can be grabbed and moved by the user</span>
 
-      pannable: <span class="hljs-literal">false</span>, <span class="hljs-comment">// whether dragging the node causes panning instead of grabbing</span>
+      <span class="hljs-attr">pannable</span>: <span class="hljs-literal">false</span>, <span class="hljs-comment">// whether dragging the node causes panning instead of grabbing</span>
 
-      classes: [<span class="hljs-string">'foo'</span>, <span class="hljs-string">'bar'</span>] <span class="hljs-comment">// an array (or a space separated string) of class names that the element has</span>
+      <span class="hljs-attr">classes</span>: [<span class="hljs-string">'foo'</span>, <span class="hljs-string">'bar'</span>] <span class="hljs-comment">// an array (or a space separated string) of class names that the element has</span>
     },
 
     { <span class="hljs-comment">// node n2</span>
-      data: { <span class="hljs-attr">id</span>: <span class="hljs-string">'n2'</span> },
+      <span class="hljs-attr">data</span>: { <span class="hljs-attr">id</span>: <span class="hljs-string">'n2'</span> },
       <span class="hljs-attr">renderedPosition</span>: { <span class="hljs-attr">x</span>: <span class="hljs-number">200</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">200</span> } <span class="hljs-comment">// can alternatively specify position in rendered on-screen pixels</span>
     },
 
     { <span class="hljs-comment">// node n3</span>
-      data: { <span class="hljs-attr">id</span>: <span class="hljs-string">'n3'</span>, <span class="hljs-attr">parent</span>: <span class="hljs-string">'nparent'</span> },
+      <span class="hljs-attr">data</span>: { <span class="hljs-attr">id</span>: <span class="hljs-string">'n3'</span>, <span class="hljs-attr">parent</span>: <span class="hljs-string">'nparent'</span> },
       <span class="hljs-attr">position</span>: { <span class="hljs-attr">x</span>: <span class="hljs-number">123</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">234</span> }
     },
 
     { <span class="hljs-comment">// node nparent</span>
-      data: { <span class="hljs-attr">id</span>: <span class="hljs-string">'nparent'</span> }
+      <span class="hljs-attr">data</span>: { <span class="hljs-attr">id</span>: <span class="hljs-string">'nparent'</span> }
     },
 
     { <span class="hljs-comment">// edge e1</span>
-      data: {
+      <span class="hljs-attr">data</span>: {
         <span class="hljs-attr">id</span>: <span class="hljs-string">'e1'</span>,
         <span class="hljs-comment">// inferred as an edge because `source` and `target` are specified:</span>
-        source: <span class="hljs-string">'n1'</span>, <span class="hljs-comment">// the source node id (edge comes from this node)</span>
-        target: <span class="hljs-string">'n2'</span>  <span class="hljs-comment">// the target node id (edge goes to this node)</span>
+        <span class="hljs-attr">source</span>: <span class="hljs-string">'n1'</span>, <span class="hljs-comment">// the source node id (edge comes from this node)</span>
+        <span class="hljs-attr">target</span>: <span class="hljs-string">'n2'</span>  <span class="hljs-comment">// the target node id (edge goes to this node)</span>
         <span class="hljs-comment">// (`source` and `target` can be effectively changed by `eles.move()`)</span>
       },
 
@@ -1024,7 +1024,7 @@
   },
 
   <span class="hljs-comment">// so we can see the ids</span>
-  style: [
+  <span class="hljs-attr">style</span>: [
     {
       <span class="hljs-attr">selector</span>: <span class="hljs-string">'node'</span>,
       <span class="hljs-attr">style</span>: {
@@ -1061,7 +1061,7 @@
   },
 
   <span class="hljs-comment">// so we can see the ids</span>
-  style: [
+  <span class="hljs-attr">style</span>: [
     {
       <span class="hljs-attr">selector</span>: <span class="hljs-string">'node'</span>,
       <span class="hljs-attr">style</span>: {
@@ -1092,7 +1092,7 @@
 					<p>This section will familiarise you with the basic steps necessary to start using Cytoscape.js.</p>
 <h2 id="getting-started/including-cytoscape.js">Including Cytoscape.js <a href="#getting-started/including-cytoscape.js"><span class="fa fa-bookmark"></span></a></h2>
 <p>If you are using a simple HTML environment (without a build system), then include Cytoscape.js in a <code>&lt;script&gt;</code> tag, e.g.:</p>
-<pre><code class="language-html"><span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"cytoscape.min.js"</span>&gt;</span><span class="undefined"></span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span></code></pre>
+<pre><code class="language-html"><span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"cytoscape.min.js"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span></code></pre>
 <p>To use Cytoscape.js from a CDN, use <a href="https://cdnjs.com/libraries/cytoscape">CDNJS</a> or <a href="https://unpkg.com">Unpkg</a> (<a href="https://unpkg.com/cytoscape/dist/">in the dist directory</a>).  Please do not hotlink to copies of Cytoscape.js from the documentation — they’re just for the demos.</p>
 <p>The available files are available under <a href="https://github.com/cytoscape/cytoscape.js/tree/master/dist"><code>cytoscape/dist/</code></a> in the npm package:</p>
 <ul>
@@ -1139,15 +1139,15 @@
 
   <span class="hljs-attr">container</span>: <span class="hljs-built_in">document</span>.getElementById(<span class="hljs-string">'cy'</span>), <span class="hljs-comment">// container to render in</span>
 
-  elements: [ <span class="hljs-comment">// list of graph elements to start with</span>
+  <span class="hljs-attr">elements</span>: [ <span class="hljs-comment">// list of graph elements to start with</span>
     { <span class="hljs-comment">// node a</span>
-      data: { <span class="hljs-attr">id</span>: <span class="hljs-string">'a'</span> }
+      <span class="hljs-attr">data</span>: { <span class="hljs-attr">id</span>: <span class="hljs-string">'a'</span> }
     },
     { <span class="hljs-comment">// node b</span>
-      data: { <span class="hljs-attr">id</span>: <span class="hljs-string">'b'</span> }
+      <span class="hljs-attr">data</span>: { <span class="hljs-attr">id</span>: <span class="hljs-string">'b'</span> }
     },
     { <span class="hljs-comment">// edge ab</span>
-      data: { <span class="hljs-attr">id</span>: <span class="hljs-string">'ab'</span>, <span class="hljs-attr">source</span>: <span class="hljs-string">'a'</span>, <span class="hljs-attr">target</span>: <span class="hljs-string">'b'</span> }
+      <span class="hljs-attr">data</span>: { <span class="hljs-attr">id</span>: <span class="hljs-string">'ab'</span>, <span class="hljs-attr">source</span>: <span class="hljs-string">'a'</span>, <span class="hljs-attr">target</span>: <span class="hljs-string">'b'</span> }
     }
   ],
 
@@ -2957,12 +2957,12 @@ setTimeout( <span class="hljs-function"><span class="hljs-keyword">function</spa
 <p>For zooming about a rendered position (i.e. a position on-screen):</p>
 <pre><code class="language-js">cy.zoom({
   <span class="hljs-attr">level</span>: <span class="hljs-number">2.0</span>, <span class="hljs-comment">// the zoom level</span>
-  renderedPosition: { <span class="hljs-attr">x</span>: <span class="hljs-number">100</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">100</span> }
+  <span class="hljs-attr">renderedPosition</span>: { <span class="hljs-attr">x</span>: <span class="hljs-number">100</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">100</span> }
 });</code></pre>
 <button class="run run-inline-code"><span class="fa fa-play"></span></button><p>For zooming about a model position:</p>
 <pre><code class="language-js">cy.zoom({
   <span class="hljs-attr">level</span>: <span class="hljs-number">2.0</span>, <span class="hljs-comment">// the zoom level</span>
-  position: { <span class="hljs-attr">x</span>: <span class="hljs-number">0</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">0</span> }
+  <span class="hljs-attr">position</span>: { <span class="hljs-attr">x</span>: <span class="hljs-number">0</span>, <span class="hljs-attr">y</span>: <span class="hljs-number">0</span> }
 });</code></pre>
 <button class="run run-inline-code"><span class="fa fa-play"></span></button><p>You can zoom about a position or a rendered position but not both.  You should specify only one of <code>options.position</code> or <code>options.renderedPosition</code>.</p>
 <h3 id="examples">Examples</h3>
@@ -6986,19 +6986,19 @@ layout.run();</code></pre>
 <p>The <code>options</code> object is passed to <code>layoutPositions()</code> when called by a layout extension and consists of many of the common properties shared between layouts:</p>
 <pre><code class="language-js"><span class="hljs-keyword">var</span> options = {
   <span class="hljs-attr">animate</span>: <span class="hljs-literal">false</span>, <span class="hljs-comment">// whether to animate changes to the layout</span>
-  animationDuration: <span class="hljs-number">500</span>, <span class="hljs-comment">// duration of animation in ms, if enabled</span>
-  animationEasing: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// easing of animation, if enabled</span>
-  animateFilter: <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"> node, i </span>)</span>{ <span class="hljs-keyword">return</span> <span class="hljs-literal">true</span>; }, <span class="hljs-comment">// a function that determines whether the node should be animated.</span>
+  <span class="hljs-attr">animationDuration</span>: <span class="hljs-number">500</span>, <span class="hljs-comment">// duration of animation in ms, if enabled</span>
+  <span class="hljs-attr">animationEasing</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// easing of animation, if enabled</span>
+  <span class="hljs-attr">animateFilter</span>: <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"> node, i </span>)</span>{ <span class="hljs-keyword">return</span> <span class="hljs-literal">true</span>; }, <span class="hljs-comment">// a function that determines whether the node should be animated.</span>
     <span class="hljs-comment">// All nodes animated by default for `animate:true`.  Non-animated nodes are positioned immediately when the layout starts.</span>
-  eles: someCollection, <span class="hljs-comment">// collection of elements involved in the layout; set by cy.layout() or eles.layout()</span>
-  fit: <span class="hljs-literal">true</span>, <span class="hljs-comment">// whether to fit the viewport to the graph</span>
-  padding: <span class="hljs-number">30</span>, <span class="hljs-comment">// padding to leave between graph and viewport</span>
-  pan: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// pan the graph to the provided position, given as { x, y }</span>
-  ready: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// callback for the layoutready event</span>
-  stop: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// callback for the layoutstop event</span>
-  spacingFactor: <span class="hljs-number">1</span>, <span class="hljs-comment">// a positive value which adjusts spacing between nodes (&gt;1 means greater than usual spacing)</span>
-  transform: <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">node, position </span>)</span>{ <span class="hljs-keyword">return</span> position; } <span class="hljs-comment">// transform a given node position. Useful for changing flow direction in discrete layouts</span>
-  zoom: <span class="hljs-literal">undefined</span> <span class="hljs-comment">// zoom level as a positive number to set after animation</span>
+  <span class="hljs-attr">eles</span>: someCollection, <span class="hljs-comment">// collection of elements involved in the layout; set by cy.layout() or eles.layout()</span>
+  <span class="hljs-attr">fit</span>: <span class="hljs-literal">true</span>, <span class="hljs-comment">// whether to fit the viewport to the graph</span>
+  <span class="hljs-attr">padding</span>: <span class="hljs-number">30</span>, <span class="hljs-comment">// padding to leave between graph and viewport</span>
+  <span class="hljs-attr">pan</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// pan the graph to the provided position, given as { x, y }</span>
+  <span class="hljs-attr">ready</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// callback for the layoutready event</span>
+  <span class="hljs-attr">stop</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// callback for the layoutstop event</span>
+  <span class="hljs-attr">spacingFactor</span>: <span class="hljs-number">1</span>, <span class="hljs-comment">// a positive value which adjusts spacing between nodes (&gt;1 means greater than usual spacing)</span>
+  <span class="hljs-attr">transform</span>: <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">node, position </span>)</span>{ <span class="hljs-keyword">return</span> position; } <span class="hljs-comment">// transform a given node position. Useful for changing flow direction in discrete layouts</span>
+  <span class="hljs-attr">zoom</span>: <span class="hljs-literal">undefined</span> <span class="hljs-comment">// zoom level as a positive number to set after animation</span>
 }</code></pre>
 <button class="run run-inline-code"><span class="fa fa-play"></span></button><p>Note that if <code>fit</code> is true, it will override any values provided in <code>pan</code> or <code>zoom</code>.</p>
 
@@ -10805,7 +10805,7 @@ path.select();</code></pre>
 <p>This function returns an object of the following form:</p>
 <pre><code class="language-js">{
   <span class="hljs-attr">distanceTo</span>: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"> node </span>)</span>{ <span class="hljs-comment">/* impl */</span> }
-  pathTo: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"> node </span>)</span>{ <span class="hljs-comment">/* impl */</span> }
+  <span class="hljs-attr">pathTo</span>: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"> node </span>)</span>{ <span class="hljs-comment">/* impl */</span> }
 }</code></pre>
 <button class="run run-inline-code"><span class="fa fa-play"></span></button><p><code>distanceTo(node)</code> returns the distance from the source node to <code>node</code>, and <code>pathTo(node)</code> returns a collection containing the shortest path from the source node to <code>node</code>.  The path starts with the source node and includes the edges between the nodes in the path such that if <code>pathTo(node)[i]</code> is an edge, then <code>pathTo(node)[i-1]</code> is the previous node in the path and <code>pathTo(node)[i+1]</code> is the next node in the path.</p>
 <p>If no weight function is defined, a constant weight of 1 is used for each edge. </p>
@@ -10955,11 +10955,11 @@ aStar.path.select();</code></pre>
 <pre><code class="language-js">{
   <span class="hljs-comment">/* function that computes the shortest path between 2 nodes 
   (either objects or selector strings) */</span>
-  path: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"> fromNode, toNode </span>)</span>{ <span class="hljs-comment">/* impl */</span> }, 
+  <span class="hljs-attr">path</span>: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"> fromNode, toNode </span>)</span>{ <span class="hljs-comment">/* impl */</span> }, 
 
   <span class="hljs-comment">/* function that computes the shortest distance between 2 nodes 
   (either objects or selector strings) */</span>
-  distance: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"> fromNode, toNode </span>)</span>{ <span class="hljs-comment">/* impl */</span> }
+  <span class="hljs-attr">distance</span>: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"> fromNode, toNode </span>)</span>{ <span class="hljs-comment">/* impl */</span> }
 }</code></pre>
 <button class="run run-inline-code"><span class="fa fa-play"></span></button><p>If no weight function is defined, a constant weight of 1 is used for each edge. </p>
 <h3 id="examples">Examples</h3>
@@ -11026,11 +11026,11 @@ fw.path(<span class="hljs-string">'#k'</span>, <span class="hljs-string">'#g'</s
 <pre><code class="language-js">{
   <span class="hljs-comment">/* function that computes the shortest path from root node to the argument node
   (either objects or selector string) */</span>
-  pathTo: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">node</span>)</span>{ <span class="hljs-comment">/* impl */</span> }, 
+  <span class="hljs-attr">pathTo</span>: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">node</span>)</span>{ <span class="hljs-comment">/* impl */</span> }, 
 
   <span class="hljs-comment">/* function that computes the shortest distance from root node to argument node
   (either objects or selector string) */</span>
-  distanceTo: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">node</span>)</span>{ <span class="hljs-comment">/* impl */</span> }, 
+  <span class="hljs-attr">distanceTo</span>: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">node</span>)</span>{ <span class="hljs-comment">/* impl */</span> }, 
 
   <span class="hljs-comment">/* true/false. If true, pathTo and distanceTo will be undefined */</span>
   hasNegativeWeightCycle 
@@ -11273,15 +11273,15 @@ ks.cut.select();</code></pre>
 <p>For <code>options.directed: false</code>, this function returns an object of the following form:</p>
 <pre><code class="language-js">{
   <span class="hljs-comment">/* the normalised degree centrality of the specified node */</span>
-  degree: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"> node </span>)</span>{ <span class="hljs-comment">/* impl */</span> }
+  <span class="hljs-attr">degree</span>: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"> node </span>)</span>{ <span class="hljs-comment">/* impl */</span> }
 }</code></pre>
 <button class="run run-inline-code"><span class="fa fa-play"></span></button><p>For <code>options.directed: true</code>, this function returns an object of the following form:</p>
 <pre><code class="language-js">{
   <span class="hljs-comment">/* the normalised indegree centrality of the specified node */</span>
-  indegree: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"> node </span>)</span>{ <span class="hljs-comment">/* impl */</span> },
+  <span class="hljs-attr">indegree</span>: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"> node </span>)</span>{ <span class="hljs-comment">/* impl */</span> },
 
   <span class="hljs-comment">/* the normalised outdegree centrality of the specified node */</span> 
-  outdegree: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"> node </span>)</span>{ <span class="hljs-comment">/* impl */</span> }
+  <span class="hljs-attr">outdegree</span>: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"> node </span>)</span>{ <span class="hljs-comment">/* impl */</span> }
 }</code></pre>
 <button class="run run-inline-code"><span class="fa fa-play"></span></button><h3 id="examples">Examples</h3>
 <pre><code class="language-js"><span class="hljs-keyword">var</span> dcn = cy.$().dcn();
@@ -11428,7 +11428,7 @@ ks.cut.select();</code></pre>
 <p>This function returns an object of the form:</p>
 <pre><code class="language-js">{
   <span class="hljs-comment">/* returns the normalised closeness centrality of the specified node */</span>
-  closeness: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"> node </span>)</span>{ <span class="hljs-comment">/* impl */</span> }
+  <span class="hljs-attr">closeness</span>: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"> node </span>)</span>{ <span class="hljs-comment">/* impl */</span> }
 }</code></pre>
 <button class="run run-inline-code"><span class="fa fa-play"></span></button><h3 id="examples">Examples</h3>
 <pre><code class="language-js"><span class="hljs-keyword">var</span> ccn = cy.$().ccn();
@@ -11492,10 +11492,10 @@ ks.cut.select();</code></pre>
 <p>This function returns an object of the form:</p>
 <pre><code class="language-js">{
   <span class="hljs-comment">/* returns the betweenness centrality of the specified node */</span>
-  betweenness: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"> node </span>)</span>{ <span class="hljs-comment">/* impl */</span> },
+  <span class="hljs-attr">betweenness</span>: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"> node </span>)</span>{ <span class="hljs-comment">/* impl */</span> },
 
   <span class="hljs-comment">/* returns the normalised betweenness centrality of the specified node */</span>
-  betweennessNormalized: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"> node </span>)</span>{ <span class="hljs-comment">/* impl */</span> }
+  <span class="hljs-attr">betweennessNormalized</span>: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"> node </span>)</span>{ <span class="hljs-comment">/* impl */</span> }
   <span class="hljs-comment">/* alias : betweennessNormalised() */</span>
 }</code></pre>
 <button class="run run-inline-code"><span class="fa fa-play"></span></button><h3 id="examples">Examples</h3>
@@ -11560,7 +11560,7 @@ ks.cut.select();</code></pre>
 <p>This function returns an object of the following form:</p>
 <pre><code class="language-js">{
   <span class="hljs-comment">/* function that computes the rank of a given node (either object or selector string) */</span>
-  rank: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"> node </span>)</span>{ <span class="hljs-comment">/* impl */</span> } 
+  <span class="hljs-attr">rank</span>: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"> node </span>)</span>{ <span class="hljs-comment">/* impl */</span> } 
 }</code></pre>
 <button class="run run-inline-code"><span class="fa fa-play"></span></button><h3 id="examples">Examples</h3>
 <pre><code class="language-js"><span class="hljs-keyword">var</span> pr = cy.elements().pageRank();
@@ -12099,11 +12099,11 @@ ks.cut.select();</code></pre>
 <p>This function returns an object of the following format:</p>
 <pre><code class="language-js">{
   <span class="hljs-comment">// The resultant clusters</span>
-  clusters: [ <span class="hljs-comment">/* cluster0, cluster1, ... */</span> ],
+  <span class="hljs-attr">clusters</span>: [ <span class="hljs-comment">/* cluster0, cluster1, ... */</span> ],
 
   <span class="hljs-comment">// A two-dimensional array containing a partition matrix</span>
   <span class="hljs-comment">// degreeOfMembership[i][j] indicates the degree to which nodes[i] belongs to clusters[j]</span>
-  degreeOfMembership: [ <span class="hljs-comment">/* row0, row1, ... */</span> ]
+  <span class="hljs-attr">degreeOfMembership</span>: [ <span class="hljs-comment">/* row0, row1, ... */</span> ]
 }</code></pre>
 <button class="run run-inline-code"><span class="fa fa-play"></span></button><h3 id="examples">Examples</h3>
 <pre><code class="language-js"><span class="hljs-keyword">var</span> clusters = cy.elements().fuzzyCMeans({
@@ -12983,7 +12983,7 @@ Sets the subject of the selector (e.g. <code>$node &gt; node</code> to select th
 
   <span class="hljs-comment">// ...</span>
 
-  style: <span class="hljs-string">'node { background-color: green; }'</span> <span class="hljs-comment">// probably previously loaded via ajax rather than hardcoded</span>
+  <span class="hljs-attr">style</span>: <span class="hljs-string">'node { background-color: green; }'</span> <span class="hljs-comment">// probably previously loaded via ajax rather than hardcoded</span>
 
   <span class="hljs-comment">// , ...</span>
 });</code></pre>
@@ -12993,7 +12993,7 @@ Sets the subject of the selector (e.g. <code>$node &gt; node</code> to select th
 
   <span class="hljs-comment">// ...</span>
 
-  style: [
+  <span class="hljs-attr">style</span>: [
     {
       <span class="hljs-attr">selector</span>: <span class="hljs-string">'node'</span>,
       <span class="hljs-attr">style</span>: {
@@ -13012,7 +13012,7 @@ Sets the subject of the selector (e.g. <code>$node &gt; node</code> to select th
 
   <span class="hljs-comment">// ...</span>
 
-  style: cytoscape.stylesheet()
+  <span class="hljs-attr">style</span>: cytoscape.stylesheet()
     .selector(<span class="hljs-string">'node'</span>)
       .style({
         <span class="hljs-string">'background-color'</span>: <span class="hljs-string">'blue'</span>
@@ -13035,7 +13035,7 @@ Sets the subject of the selector (e.g. <code>$node &gt; node</code> to select th
 
   <span class="hljs-comment">// ...</span>
 
-  style: cytoscape.stylesheet()
+  <span class="hljs-attr">style</span>: cytoscape.stylesheet()
     .selector(<span class="hljs-string">'node'</span>)
       .style({
         <span class="hljs-string">'background-color'</span>: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"> ele </span>)</span>{ <span class="hljs-keyword">return</span> ele.data(<span class="hljs-string">'bg'</span>) }
@@ -13193,7 +13193,7 @@ Sets the subject of the selector (e.g. <code>$node &gt; node</code> to select th
 <li><p>SVG images do not work consistently in Internet Explorer.</p>
 </li>
 <li><p>Always include this XML header in each SVG image:</p>
-<pre><code><span class="hljs-meta">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span><span class="hljs-meta">&lt;!DOCTYPE svg&gt;</span></code></pre></li>
+<pre><code><span class="hljs-meta">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span><span class="hljs-meta">&lt;!DOCTYPE <span class="hljs-meta-keyword">svg</span>&gt;</span></code></pre></li>
 <li><p>Use <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/encodeURIComponent">encodeURIComponent</a> on SVG data URIs.</p>
 <pre><code><span class="hljs-title">var</span> <span class="hljs-class"><span class="hljs-keyword">data</span> = '<span class="hljs-keyword">data</span>:image/svg+xml;utf8,' + encodeURIComponent(<span class="hljs-title">svgFile</span>);</span></code></pre></li>
 <li><p>Do not use base 64 encoding for SVG within a data URI.</p>
@@ -13733,7 +13733,7 @@ style: [
   <span class="hljs-attr">name</span>: <span class="hljs-string">'null'</span>,
 
   <span class="hljs-attr">ready</span>: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>)</span>{}, <span class="hljs-comment">// on layoutready</span>
-  stop: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>)</span>{} <span class="hljs-comment">// on layoutstop</span>
+  <span class="hljs-attr">stop</span>: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>)</span>{} <span class="hljs-comment">// on layoutstop</span>
 };
 
 cy.layout( options );</code></pre>
@@ -13751,15 +13751,15 @@ cy.layout( options );</code></pre>
   <span class="hljs-attr">name</span>: <span class="hljs-string">'random'</span>,
 
   <span class="hljs-attr">fit</span>: <span class="hljs-literal">true</span>, <span class="hljs-comment">// whether to fit to viewport</span>
-  padding: <span class="hljs-number">30</span>, <span class="hljs-comment">// fit padding</span>
-  boundingBox: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }</span>
-  animate: <span class="hljs-literal">false</span>, <span class="hljs-comment">// whether to transition the node positions</span>
-  animationDuration: <span class="hljs-number">500</span>, <span class="hljs-comment">// duration of animation in ms if enabled</span>
-  animationEasing: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// easing of animation if enabled</span>
-  animateFilter: <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"> node, i </span>)</span>{ <span class="hljs-keyword">return</span> <span class="hljs-literal">true</span>; }, <span class="hljs-comment">// a function that determines whether the node should be animated.  All nodes animated by default on animate enabled.  Non-animated nodes are positioned immediately when the layout starts</span>
-  ready: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// callback on layoutready</span>
-  stop: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// callback on layoutstop</span>
-  transform: <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">node, position </span>)</span>{ <span class="hljs-keyword">return</span> position; } <span class="hljs-comment">// transform a given node position. Useful for changing flow direction in discrete layouts </span>
+  <span class="hljs-attr">padding</span>: <span class="hljs-number">30</span>, <span class="hljs-comment">// fit padding</span>
+  <span class="hljs-attr">boundingBox</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }</span>
+  <span class="hljs-attr">animate</span>: <span class="hljs-literal">false</span>, <span class="hljs-comment">// whether to transition the node positions</span>
+  <span class="hljs-attr">animationDuration</span>: <span class="hljs-number">500</span>, <span class="hljs-comment">// duration of animation in ms if enabled</span>
+  <span class="hljs-attr">animationEasing</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// easing of animation if enabled</span>
+  <span class="hljs-attr">animateFilter</span>: <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"> node, i </span>)</span>{ <span class="hljs-keyword">return</span> <span class="hljs-literal">true</span>; }, <span class="hljs-comment">// a function that determines whether the node should be animated.  All nodes animated by default on animate enabled.  Non-animated nodes are positioned immediately when the layout starts</span>
+  <span class="hljs-attr">ready</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// callback on layoutready</span>
+  <span class="hljs-attr">stop</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// callback on layoutstop</span>
+  <span class="hljs-attr">transform</span>: <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">node, position </span>)</span>{ <span class="hljs-keyword">return</span> position; } <span class="hljs-comment">// transform a given node position. Useful for changing flow direction in discrete layouts </span>
 };
 
 cy.layout( options );</code></pre>
@@ -13777,17 +13777,17 @@ cy.layout( options );</code></pre>
   <span class="hljs-attr">name</span>: <span class="hljs-string">'preset'</span>,
 
   <span class="hljs-attr">positions</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// map of (node id) =&gt; (position obj); or function(node){ return somPos; }</span>
-  zoom: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// the zoom level to set (prob want fit = false if set)</span>
-  pan: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// the pan level to set (prob want fit = false if set)</span>
-  fit: <span class="hljs-literal">true</span>, <span class="hljs-comment">// whether to fit to viewport</span>
-  padding: <span class="hljs-number">30</span>, <span class="hljs-comment">// padding on fit</span>
-  animate: <span class="hljs-literal">false</span>, <span class="hljs-comment">// whether to transition the node positions</span>
-  animationDuration: <span class="hljs-number">500</span>, <span class="hljs-comment">// duration of animation in ms if enabled</span>
-  animationEasing: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// easing of animation if enabled</span>
-  animateFilter: <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"> node, i </span>)</span>{ <span class="hljs-keyword">return</span> <span class="hljs-literal">true</span>; }, <span class="hljs-comment">// a function that determines whether the node should be animated.  All nodes animated by default on animate enabled.  Non-animated nodes are positioned immediately when the layout starts</span>
-  ready: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// callback on layoutready</span>
-  stop: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// callback on layoutstop</span>
-  transform: <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">node, position </span>)</span>{ <span class="hljs-keyword">return</span> position; } <span class="hljs-comment">// transform a given node position. Useful for changing flow direction in discrete layouts</span>
+  <span class="hljs-attr">zoom</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// the zoom level to set (prob want fit = false if set)</span>
+  <span class="hljs-attr">pan</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// the pan level to set (prob want fit = false if set)</span>
+  <span class="hljs-attr">fit</span>: <span class="hljs-literal">true</span>, <span class="hljs-comment">// whether to fit to viewport</span>
+  <span class="hljs-attr">padding</span>: <span class="hljs-number">30</span>, <span class="hljs-comment">// padding on fit</span>
+  <span class="hljs-attr">animate</span>: <span class="hljs-literal">false</span>, <span class="hljs-comment">// whether to transition the node positions</span>
+  <span class="hljs-attr">animationDuration</span>: <span class="hljs-number">500</span>, <span class="hljs-comment">// duration of animation in ms if enabled</span>
+  <span class="hljs-attr">animationEasing</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// easing of animation if enabled</span>
+  <span class="hljs-attr">animateFilter</span>: <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"> node, i </span>)</span>{ <span class="hljs-keyword">return</span> <span class="hljs-literal">true</span>; }, <span class="hljs-comment">// a function that determines whether the node should be animated.  All nodes animated by default on animate enabled.  Non-animated nodes are positioned immediately when the layout starts</span>
+  <span class="hljs-attr">ready</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// callback on layoutready</span>
+  <span class="hljs-attr">stop</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// callback on layoutstop</span>
+  <span class="hljs-attr">transform</span>: <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">node, position </span>)</span>{ <span class="hljs-keyword">return</span> position; } <span class="hljs-comment">// transform a given node position. Useful for changing flow direction in discrete layouts</span>
 };
 
 cy.layout( options );</code></pre>
@@ -13805,24 +13805,24 @@ cy.layout( options );</code></pre>
   <span class="hljs-attr">name</span>: <span class="hljs-string">'grid'</span>,
 
   <span class="hljs-attr">fit</span>: <span class="hljs-literal">true</span>, <span class="hljs-comment">// whether to fit the viewport to the graph</span>
-  padding: <span class="hljs-number">30</span>, <span class="hljs-comment">// padding used on fit</span>
-  boundingBox: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }</span>
-  avoidOverlap: <span class="hljs-literal">true</span>, <span class="hljs-comment">// prevents node overlap, may overflow boundingBox if not enough space</span>
-  avoidOverlapPadding: <span class="hljs-number">10</span>, <span class="hljs-comment">// extra spacing around nodes when avoidOverlap: true</span>
-  nodeDimensionsIncludeLabels: <span class="hljs-literal">false</span>, <span class="hljs-comment">// Excludes the label when calculating node bounding boxes for the layout algorithm</span>
-  spacingFactor: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// Applies a multiplicative factor (&gt;0) to expand or compress the overall area that the nodes take up</span>
-  condense: <span class="hljs-literal">false</span>, <span class="hljs-comment">// uses all available space on false, uses minimal space on true</span>
-  rows: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// force num of rows in the grid</span>
-  cols: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// force num of columns in the grid</span>
-  position: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"> node </span>)</span>{}, <span class="hljs-comment">// returns { row, col } for element</span>
-  sort: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// a sorting function to order the nodes; e.g. function(a, b){ return a.data('weight') - b.data('weight') }</span>
-  animate: <span class="hljs-literal">false</span>, <span class="hljs-comment">// whether to transition the node positions</span>
-  animationDuration: <span class="hljs-number">500</span>, <span class="hljs-comment">// duration of animation in ms if enabled</span>
-  animationEasing: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// easing of animation if enabled</span>
-  animateFilter: <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"> node, i </span>)</span>{ <span class="hljs-keyword">return</span> <span class="hljs-literal">true</span>; }, <span class="hljs-comment">// a function that determines whether the node should be animated.  All nodes animated by default on animate enabled.  Non-animated nodes are positioned immediately when the layout starts</span>
-  ready: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// callback on layoutready</span>
-  stop: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// callback on layoutstop</span>
-  transform: <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">node, position </span>)</span>{ <span class="hljs-keyword">return</span> position; } <span class="hljs-comment">// transform a given node position. Useful for changing flow direction in discrete layouts </span>
+  <span class="hljs-attr">padding</span>: <span class="hljs-number">30</span>, <span class="hljs-comment">// padding used on fit</span>
+  <span class="hljs-attr">boundingBox</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }</span>
+  <span class="hljs-attr">avoidOverlap</span>: <span class="hljs-literal">true</span>, <span class="hljs-comment">// prevents node overlap, may overflow boundingBox if not enough space</span>
+  <span class="hljs-attr">avoidOverlapPadding</span>: <span class="hljs-number">10</span>, <span class="hljs-comment">// extra spacing around nodes when avoidOverlap: true</span>
+  <span class="hljs-attr">nodeDimensionsIncludeLabels</span>: <span class="hljs-literal">false</span>, <span class="hljs-comment">// Excludes the label when calculating node bounding boxes for the layout algorithm</span>
+  <span class="hljs-attr">spacingFactor</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// Applies a multiplicative factor (&gt;0) to expand or compress the overall area that the nodes take up</span>
+  <span class="hljs-attr">condense</span>: <span class="hljs-literal">false</span>, <span class="hljs-comment">// uses all available space on false, uses minimal space on true</span>
+  <span class="hljs-attr">rows</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// force num of rows in the grid</span>
+  <span class="hljs-attr">cols</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// force num of columns in the grid</span>
+  <span class="hljs-attr">position</span>: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"> node </span>)</span>{}, <span class="hljs-comment">// returns { row, col } for element</span>
+  <span class="hljs-attr">sort</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// a sorting function to order the nodes; e.g. function(a, b){ return a.data('weight') - b.data('weight') }</span>
+  <span class="hljs-attr">animate</span>: <span class="hljs-literal">false</span>, <span class="hljs-comment">// whether to transition the node positions</span>
+  <span class="hljs-attr">animationDuration</span>: <span class="hljs-number">500</span>, <span class="hljs-comment">// duration of animation in ms if enabled</span>
+  <span class="hljs-attr">animationEasing</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// easing of animation if enabled</span>
+  <span class="hljs-attr">animateFilter</span>: <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"> node, i </span>)</span>{ <span class="hljs-keyword">return</span> <span class="hljs-literal">true</span>; }, <span class="hljs-comment">// a function that determines whether the node should be animated.  All nodes animated by default on animate enabled.  Non-animated nodes are positioned immediately when the layout starts</span>
+  <span class="hljs-attr">ready</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// callback on layoutready</span>
+  <span class="hljs-attr">stop</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// callback on layoutstop</span>
+  <span class="hljs-attr">transform</span>: <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">node, position </span>)</span>{ <span class="hljs-keyword">return</span> position; } <span class="hljs-comment">// transform a given node position. Useful for changing flow direction in discrete layouts </span>
 };
 
 cy.layout( options );</code></pre>
@@ -13840,23 +13840,23 @@ cy.layout( options );</code></pre>
   <span class="hljs-attr">name</span>: <span class="hljs-string">'circle'</span>,
 
   <span class="hljs-attr">fit</span>: <span class="hljs-literal">true</span>, <span class="hljs-comment">// whether to fit the viewport to the graph</span>
-  padding: <span class="hljs-number">30</span>, <span class="hljs-comment">// the padding on fit</span>
-  boundingBox: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }</span>
-  avoidOverlap: <span class="hljs-literal">true</span>, <span class="hljs-comment">// prevents node overlap, may overflow boundingBox and radius if not enough space</span>
-  nodeDimensionsIncludeLabels: <span class="hljs-literal">false</span>, <span class="hljs-comment">// Excludes the label when calculating node bounding boxes for the layout algorithm</span>
-  spacingFactor: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// Applies a multiplicative factor (&gt;0) to expand or compress the overall area that the nodes take up</span>
-  radius: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// the radius of the circle</span>
-  startAngle: <span class="hljs-number">3</span> / <span class="hljs-number">2</span> * <span class="hljs-built_in">Math</span>.PI, <span class="hljs-comment">// where nodes start in radians</span>
-  sweep: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// how many radians should be between the first and last node (defaults to full circle)</span>
-  clockwise: <span class="hljs-literal">true</span>, <span class="hljs-comment">// whether the layout should go clockwise (true) or counterclockwise/anticlockwise (false)</span>
-  sort: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// a sorting function to order the nodes; e.g. function(a, b){ return a.data('weight') - b.data('weight') }</span>
-  animate: <span class="hljs-literal">false</span>, <span class="hljs-comment">// whether to transition the node positions</span>
-  animationDuration: <span class="hljs-number">500</span>, <span class="hljs-comment">// duration of animation in ms if enabled</span>
-  animationEasing: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// easing of animation if enabled</span>
-  animateFilter: <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"> node, i </span>)</span>{ <span class="hljs-keyword">return</span> <span class="hljs-literal">true</span>; }, <span class="hljs-comment">// a function that determines whether the node should be animated.  All nodes animated by default on animate enabled.  Non-animated nodes are positioned immediately when the layout starts</span>
-  ready: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// callback on layoutready</span>
-  stop: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// callback on layoutstop</span>
-  transform: <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">node, position </span>)</span>{ <span class="hljs-keyword">return</span> position; } <span class="hljs-comment">// transform a given node position. Useful for changing flow direction in discrete layouts </span>
+  <span class="hljs-attr">padding</span>: <span class="hljs-number">30</span>, <span class="hljs-comment">// the padding on fit</span>
+  <span class="hljs-attr">boundingBox</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }</span>
+  <span class="hljs-attr">avoidOverlap</span>: <span class="hljs-literal">true</span>, <span class="hljs-comment">// prevents node overlap, may overflow boundingBox and radius if not enough space</span>
+  <span class="hljs-attr">nodeDimensionsIncludeLabels</span>: <span class="hljs-literal">false</span>, <span class="hljs-comment">// Excludes the label when calculating node bounding boxes for the layout algorithm</span>
+  <span class="hljs-attr">spacingFactor</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// Applies a multiplicative factor (&gt;0) to expand or compress the overall area that the nodes take up</span>
+  <span class="hljs-attr">radius</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// the radius of the circle</span>
+  <span class="hljs-attr">startAngle</span>: <span class="hljs-number">3</span> / <span class="hljs-number">2</span> * <span class="hljs-built_in">Math</span>.PI, <span class="hljs-comment">// where nodes start in radians</span>
+  <span class="hljs-attr">sweep</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// how many radians should be between the first and last node (defaults to full circle)</span>
+  <span class="hljs-attr">clockwise</span>: <span class="hljs-literal">true</span>, <span class="hljs-comment">// whether the layout should go clockwise (true) or counterclockwise/anticlockwise (false)</span>
+  <span class="hljs-attr">sort</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// a sorting function to order the nodes; e.g. function(a, b){ return a.data('weight') - b.data('weight') }</span>
+  <span class="hljs-attr">animate</span>: <span class="hljs-literal">false</span>, <span class="hljs-comment">// whether to transition the node positions</span>
+  <span class="hljs-attr">animationDuration</span>: <span class="hljs-number">500</span>, <span class="hljs-comment">// duration of animation in ms if enabled</span>
+  <span class="hljs-attr">animationEasing</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// easing of animation if enabled</span>
+  <span class="hljs-attr">animateFilter</span>: <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"> node, i </span>)</span>{ <span class="hljs-keyword">return</span> <span class="hljs-literal">true</span>; }, <span class="hljs-comment">// a function that determines whether the node should be animated.  All nodes animated by default on animate enabled.  Non-animated nodes are positioned immediately when the layout starts</span>
+  <span class="hljs-attr">ready</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// callback on layoutready</span>
+  <span class="hljs-attr">stop</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// callback on layoutstop</span>
+  <span class="hljs-attr">transform</span>: <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">node, position </span>)</span>{ <span class="hljs-keyword">return</span> position; } <span class="hljs-comment">// transform a given node position. Useful for changing flow direction in discrete layouts </span>
 
 };
 
@@ -13875,31 +13875,31 @@ cy.layout( options );</code></pre>
   <span class="hljs-attr">name</span>: <span class="hljs-string">'concentric'</span>,
 
   <span class="hljs-attr">fit</span>: <span class="hljs-literal">true</span>, <span class="hljs-comment">// whether to fit the viewport to the graph</span>
-  padding: <span class="hljs-number">30</span>, <span class="hljs-comment">// the padding on fit</span>
-  startAngle: <span class="hljs-number">3</span> / <span class="hljs-number">2</span> * <span class="hljs-built_in">Math</span>.PI, <span class="hljs-comment">// where nodes start in radians</span>
-  sweep: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// how many radians should be between the first and last node (defaults to full circle)</span>
-  clockwise: <span class="hljs-literal">true</span>, <span class="hljs-comment">// whether the layout should go clockwise (true) or counterclockwise/anticlockwise (false)</span>
-  equidistant: <span class="hljs-literal">false</span>, <span class="hljs-comment">// whether levels have an equal radial distance betwen them, may cause bounding box overflow</span>
-  minNodeSpacing: <span class="hljs-number">10</span>, <span class="hljs-comment">// min spacing between outside of nodes (used for radius adjustment)</span>
-  boundingBox: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }</span>
-  avoidOverlap: <span class="hljs-literal">true</span>, <span class="hljs-comment">// prevents node overlap, may overflow boundingBox if not enough space</span>
-  nodeDimensionsIncludeLabels: <span class="hljs-literal">false</span>, <span class="hljs-comment">// Excludes the label when calculating node bounding boxes for the layout algorithm</span>
-  height: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// height of layout area (overrides container height)</span>
-  width: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// width of layout area (overrides container width)</span>
-  spacingFactor: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// Applies a multiplicative factor (&gt;0) to expand or compress the overall area that the nodes take up</span>
-  concentric: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"> node </span>)</span>{ <span class="hljs-comment">// returns numeric value for each node, placing higher nodes in levels towards the centre</span>
+  <span class="hljs-attr">padding</span>: <span class="hljs-number">30</span>, <span class="hljs-comment">// the padding on fit</span>
+  <span class="hljs-attr">startAngle</span>: <span class="hljs-number">3</span> / <span class="hljs-number">2</span> * <span class="hljs-built_in">Math</span>.PI, <span class="hljs-comment">// where nodes start in radians</span>
+  <span class="hljs-attr">sweep</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// how many radians should be between the first and last node (defaults to full circle)</span>
+  <span class="hljs-attr">clockwise</span>: <span class="hljs-literal">true</span>, <span class="hljs-comment">// whether the layout should go clockwise (true) or counterclockwise/anticlockwise (false)</span>
+  <span class="hljs-attr">equidistant</span>: <span class="hljs-literal">false</span>, <span class="hljs-comment">// whether levels have an equal radial distance betwen them, may cause bounding box overflow</span>
+  <span class="hljs-attr">minNodeSpacing</span>: <span class="hljs-number">10</span>, <span class="hljs-comment">// min spacing between outside of nodes (used for radius adjustment)</span>
+  <span class="hljs-attr">boundingBox</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }</span>
+  <span class="hljs-attr">avoidOverlap</span>: <span class="hljs-literal">true</span>, <span class="hljs-comment">// prevents node overlap, may overflow boundingBox if not enough space</span>
+  <span class="hljs-attr">nodeDimensionsIncludeLabels</span>: <span class="hljs-literal">false</span>, <span class="hljs-comment">// Excludes the label when calculating node bounding boxes for the layout algorithm</span>
+  <span class="hljs-attr">height</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// height of layout area (overrides container height)</span>
+  <span class="hljs-attr">width</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// width of layout area (overrides container width)</span>
+  <span class="hljs-attr">spacingFactor</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// Applies a multiplicative factor (&gt;0) to expand or compress the overall area that the nodes take up</span>
+  <span class="hljs-attr">concentric</span>: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"> node </span>)</span>{ <span class="hljs-comment">// returns numeric value for each node, placing higher nodes in levels towards the centre</span>
   <span class="hljs-keyword">return</span> node.degree();
   },
   <span class="hljs-attr">levelWidth</span>: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"> nodes </span>)</span>{ <span class="hljs-comment">// the letiation of concentric values in each level</span>
   <span class="hljs-keyword">return</span> nodes.maxDegree() / <span class="hljs-number">4</span>;
   },
   <span class="hljs-attr">animate</span>: <span class="hljs-literal">false</span>, <span class="hljs-comment">// whether to transition the node positions</span>
-  animationDuration: <span class="hljs-number">500</span>, <span class="hljs-comment">// duration of animation in ms if enabled</span>
-  animationEasing: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// easing of animation if enabled</span>
-  animateFilter: <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"> node, i </span>)</span>{ <span class="hljs-keyword">return</span> <span class="hljs-literal">true</span>; }, <span class="hljs-comment">// a function that determines whether the node should be animated.  All nodes animated by default on animate enabled.  Non-animated nodes are positioned immediately when the layout starts</span>
-  ready: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// callback on layoutready</span>
-  stop: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// callback on layoutstop</span>
-  transform: <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">node, position </span>)</span>{ <span class="hljs-keyword">return</span> position; } <span class="hljs-comment">// transform a given node position. Useful for changing flow direction in discrete layouts</span>
+  <span class="hljs-attr">animationDuration</span>: <span class="hljs-number">500</span>, <span class="hljs-comment">// duration of animation in ms if enabled</span>
+  <span class="hljs-attr">animationEasing</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// easing of animation if enabled</span>
+  <span class="hljs-attr">animateFilter</span>: <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"> node, i </span>)</span>{ <span class="hljs-keyword">return</span> <span class="hljs-literal">true</span>; }, <span class="hljs-comment">// a function that determines whether the node should be animated.  All nodes animated by default on animate enabled.  Non-animated nodes are positioned immediately when the layout starts</span>
+  <span class="hljs-attr">ready</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// callback on layoutready</span>
+  <span class="hljs-attr">stop</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// callback on layoutstop</span>
+  <span class="hljs-attr">transform</span>: <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">node, position </span>)</span>{ <span class="hljs-keyword">return</span> position; } <span class="hljs-comment">// transform a given node position. Useful for changing flow direction in discrete layouts</span>
 };
 
 cy.layout( options );</code></pre>
@@ -13917,23 +13917,23 @@ cy.layout( options );</code></pre>
   <span class="hljs-attr">name</span>: <span class="hljs-string">'breadthfirst'</span>,
 
   <span class="hljs-attr">fit</span>: <span class="hljs-literal">true</span>, <span class="hljs-comment">// whether to fit the viewport to the graph</span>
-  directed: <span class="hljs-literal">false</span>, <span class="hljs-comment">// whether the tree is directed downwards (or edges can point in any direction if false)</span>
-  padding: <span class="hljs-number">30</span>, <span class="hljs-comment">// padding on fit</span>
-  circle: <span class="hljs-literal">false</span>, <span class="hljs-comment">// put depths in concentric circles if true, put depths top down if false</span>
-  grid: <span class="hljs-literal">false</span>, <span class="hljs-comment">// whether to create an even grid into which the DAG is placed (circle:false only)</span>
-  spacingFactor: <span class="hljs-number">1.75</span>, <span class="hljs-comment">// positive spacing factor, larger =&gt; more space between nodes (N.B. n/a if causes overlap)</span>
-  boundingBox: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }</span>
-  avoidOverlap: <span class="hljs-literal">true</span>, <span class="hljs-comment">// prevents node overlap, may overflow boundingBox if not enough space</span>
-  nodeDimensionsIncludeLabels: <span class="hljs-literal">false</span>, <span class="hljs-comment">// Excludes the label when calculating node bounding boxes for the layout algorithm</span>
-  roots: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// the roots of the trees</span>
-  maximal: <span class="hljs-literal">false</span>, <span class="hljs-comment">// whether to shift nodes down their natural BFS depths in order to avoid upwards edges (DAGS only)</span>
-  animate: <span class="hljs-literal">false</span>, <span class="hljs-comment">// whether to transition the node positions</span>
-  animationDuration: <span class="hljs-number">500</span>, <span class="hljs-comment">// duration of animation in ms if enabled</span>
-  animationEasing: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// easing of animation if enabled,</span>
-  animateFilter: <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"> node, i </span>)</span>{ <span class="hljs-keyword">return</span> <span class="hljs-literal">true</span>; }, <span class="hljs-comment">// a function that determines whether the node should be animated.  All nodes animated by default on animate enabled.  Non-animated nodes are positioned immediately when the layout starts</span>
-  ready: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// callback on layoutready</span>
-  stop: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// callback on layoutstop</span>
-  transform: <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">node, position </span>)</span>{ <span class="hljs-keyword">return</span> position; } <span class="hljs-comment">// transform a given node position. Useful for changing flow direction in discrete layouts</span>
+  <span class="hljs-attr">directed</span>: <span class="hljs-literal">false</span>, <span class="hljs-comment">// whether the tree is directed downwards (or edges can point in any direction if false)</span>
+  <span class="hljs-attr">padding</span>: <span class="hljs-number">30</span>, <span class="hljs-comment">// padding on fit</span>
+  <span class="hljs-attr">circle</span>: <span class="hljs-literal">false</span>, <span class="hljs-comment">// put depths in concentric circles if true, put depths top down if false</span>
+  <span class="hljs-attr">grid</span>: <span class="hljs-literal">false</span>, <span class="hljs-comment">// whether to create an even grid into which the DAG is placed (circle:false only)</span>
+  <span class="hljs-attr">spacingFactor</span>: <span class="hljs-number">1.75</span>, <span class="hljs-comment">// positive spacing factor, larger =&gt; more space between nodes (N.B. n/a if causes overlap)</span>
+  <span class="hljs-attr">boundingBox</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }</span>
+  <span class="hljs-attr">avoidOverlap</span>: <span class="hljs-literal">true</span>, <span class="hljs-comment">// prevents node overlap, may overflow boundingBox if not enough space</span>
+  <span class="hljs-attr">nodeDimensionsIncludeLabels</span>: <span class="hljs-literal">false</span>, <span class="hljs-comment">// Excludes the label when calculating node bounding boxes for the layout algorithm</span>
+  <span class="hljs-attr">roots</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// the roots of the trees</span>
+  <span class="hljs-attr">maximal</span>: <span class="hljs-literal">false</span>, <span class="hljs-comment">// whether to shift nodes down their natural BFS depths in order to avoid upwards edges (DAGS only)</span>
+  <span class="hljs-attr">animate</span>: <span class="hljs-literal">false</span>, <span class="hljs-comment">// whether to transition the node positions</span>
+  <span class="hljs-attr">animationDuration</span>: <span class="hljs-number">500</span>, <span class="hljs-comment">// duration of animation in ms if enabled</span>
+  <span class="hljs-attr">animationEasing</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// easing of animation if enabled,</span>
+  <span class="hljs-attr">animateFilter</span>: <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"> node, i </span>)</span>{ <span class="hljs-keyword">return</span> <span class="hljs-literal">true</span>; }, <span class="hljs-comment">// a function that determines whether the node should be animated.  All nodes animated by default on animate enabled.  Non-animated nodes are positioned immediately when the layout starts</span>
+  <span class="hljs-attr">ready</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// callback on layoutready</span>
+  <span class="hljs-attr">stop</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// callback on layoutstop</span>
+  <span class="hljs-attr">transform</span>: <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">node, position </span>)</span>{ <span class="hljs-keyword">return</span> position; } <span class="hljs-comment">// transform a given node position. Useful for changing flow direction in discrete layouts</span>
 };
 
 cy.layout( options );</code></pre>
@@ -13954,83 +13954,83 @@ cy.layout( options );</code></pre>
   <span class="hljs-attr">name</span>: <span class="hljs-string">'cose'</span>,
 
   <span class="hljs-comment">// Called on `layoutready`</span>
-  ready: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>)</span>{},
+  <span class="hljs-attr">ready</span>: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>)</span>{},
 
   <span class="hljs-comment">// Called on `layoutstop`</span>
-  stop: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>)</span>{},
+  <span class="hljs-attr">stop</span>: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>)</span>{},
 
   <span class="hljs-comment">// Whether to animate while running the layout</span>
   <span class="hljs-comment">// true : Animate continuously as the layout is running</span>
   <span class="hljs-comment">// false : Just show the end result</span>
   <span class="hljs-comment">// 'end' : Animate with the end result, from the initial positions to the end positions</span>
-  animate: <span class="hljs-literal">true</span>,
+  <span class="hljs-attr">animate</span>: <span class="hljs-literal">true</span>,
 
   <span class="hljs-comment">// Easing of the animation for animate:'end'</span>
-  animationEasing: <span class="hljs-literal">undefined</span>,
+  <span class="hljs-attr">animationEasing</span>: <span class="hljs-literal">undefined</span>,
 
   <span class="hljs-comment">// The duration of the animation for animate:'end'</span>
-  animationDuration: <span class="hljs-literal">undefined</span>,
+  <span class="hljs-attr">animationDuration</span>: <span class="hljs-literal">undefined</span>,
 
   <span class="hljs-comment">// A function that determines whether the node should be animated</span>
   <span class="hljs-comment">// All nodes animated by default on animate enabled</span>
   <span class="hljs-comment">// Non-animated nodes are positioned immediately when the layout starts</span>
-  animateFilter: <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"> node, i </span>)</span>{ <span class="hljs-keyword">return</span> <span class="hljs-literal">true</span>; },
+  <span class="hljs-attr">animateFilter</span>: <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"> node, i </span>)</span>{ <span class="hljs-keyword">return</span> <span class="hljs-literal">true</span>; },
 
 
   <span class="hljs-comment">// The layout animates only after this many milliseconds for animate:true</span>
   <span class="hljs-comment">// (prevents flashing on fast runs)</span>
-  animationThreshold: <span class="hljs-number">250</span>,
+  <span class="hljs-attr">animationThreshold</span>: <span class="hljs-number">250</span>,
 
   <span class="hljs-comment">// Number of iterations between consecutive screen positions update</span>
-  refresh: <span class="hljs-number">20</span>,
+  <span class="hljs-attr">refresh</span>: <span class="hljs-number">20</span>,
 
   <span class="hljs-comment">// Whether to fit the network view after when done</span>
-  fit: <span class="hljs-literal">true</span>,
+  <span class="hljs-attr">fit</span>: <span class="hljs-literal">true</span>,
 
   <span class="hljs-comment">// Padding on fit</span>
-  padding: <span class="hljs-number">30</span>,
+  <span class="hljs-attr">padding</span>: <span class="hljs-number">30</span>,
 
   <span class="hljs-comment">// Constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }</span>
-  boundingBox: <span class="hljs-literal">undefined</span>,
+  <span class="hljs-attr">boundingBox</span>: <span class="hljs-literal">undefined</span>,
 
   <span class="hljs-comment">// Excludes the label when calculating node bounding boxes for the layout algorithm</span>
-  nodeDimensionsIncludeLabels: <span class="hljs-literal">false</span>,
+  <span class="hljs-attr">nodeDimensionsIncludeLabels</span>: <span class="hljs-literal">false</span>,
 
   <span class="hljs-comment">// Randomize the initial positions of the nodes (true) or use existing positions (false)</span>
-  randomize: <span class="hljs-literal">false</span>,
+  <span class="hljs-attr">randomize</span>: <span class="hljs-literal">false</span>,
 
   <span class="hljs-comment">// Extra spacing between components in non-compound graphs</span>
-  componentSpacing: <span class="hljs-number">40</span>,
+  <span class="hljs-attr">componentSpacing</span>: <span class="hljs-number">40</span>,
 
   <span class="hljs-comment">// Node repulsion (non overlapping) multiplier</span>
-  nodeRepulsion: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"> node </span>)</span>{ <span class="hljs-keyword">return</span> <span class="hljs-number">2048</span>; },
+  <span class="hljs-attr">nodeRepulsion</span>: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"> node </span>)</span>{ <span class="hljs-keyword">return</span> <span class="hljs-number">2048</span>; },
 
   <span class="hljs-comment">// Node repulsion (overlapping) multiplier</span>
-  nodeOverlap: <span class="hljs-number">4</span>,
+  <span class="hljs-attr">nodeOverlap</span>: <span class="hljs-number">4</span>,
 
   <span class="hljs-comment">// Ideal edge (non nested) length</span>
-  idealEdgeLength: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"> edge </span>)</span>{ <span class="hljs-keyword">return</span> <span class="hljs-number">32</span>; },
+  <span class="hljs-attr">idealEdgeLength</span>: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"> edge </span>)</span>{ <span class="hljs-keyword">return</span> <span class="hljs-number">32</span>; },
 
   <span class="hljs-comment">// Divisor to compute edge forces</span>
-  edgeElasticity: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"> edge </span>)</span>{ <span class="hljs-keyword">return</span> <span class="hljs-number">32</span>; },
+  <span class="hljs-attr">edgeElasticity</span>: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"> edge </span>)</span>{ <span class="hljs-keyword">return</span> <span class="hljs-number">32</span>; },
 
   <span class="hljs-comment">// Nesting factor (multiplier) to compute ideal edge length for nested edges</span>
-  nestingFactor: <span class="hljs-number">1.2</span>,
+  <span class="hljs-attr">nestingFactor</span>: <span class="hljs-number">1.2</span>,
 
   <span class="hljs-comment">// Gravity force (constant)</span>
-  gravity: <span class="hljs-number">1</span>,
+  <span class="hljs-attr">gravity</span>: <span class="hljs-number">1</span>,
 
   <span class="hljs-comment">// Maximum number of iterations to perform</span>
-  numIter: <span class="hljs-number">1000</span>,
+  <span class="hljs-attr">numIter</span>: <span class="hljs-number">1000</span>,
 
   <span class="hljs-comment">// Initial temperature (maximum node displacement)</span>
-  initialTemp: <span class="hljs-number">1000</span>,
+  <span class="hljs-attr">initialTemp</span>: <span class="hljs-number">1000</span>,
 
   <span class="hljs-comment">// Cooling factor (how the temperature is reduced between consecutive iterations</span>
-  coolingFactor: <span class="hljs-number">0.99</span>,
+  <span class="hljs-attr">coolingFactor</span>: <span class="hljs-number">0.99</span>,
 
   <span class="hljs-comment">// Lower temperature threshold (below this point the layout will end)</span>
-  minTemp: <span class="hljs-number">1.0</span>
+  <span class="hljs-attr">minTemp</span>: <span class="hljs-number">1.0</span>
 };
 
 cy.layout( options );</code></pre>

@@ -143,6 +143,7 @@
 
 * [AppZen](https://www.appzen.com/)
 * [Aras](https://www.aras.com/en)
+* [Bell Media](https://www.bellmedia.ca/)
 * [BlueSailCRM](https://www.bluesailcrm.com)
 * [BugBug](https://bugbug.io)
 * [Classcraft](https://www.classcraft.com)

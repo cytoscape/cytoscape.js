@@ -143,7 +143,7 @@ const drawEdgeOverlayUnderlay = function( overlayOrUnderlay ) {
       rs.allpts,
       'solid'
     );
-  }
+  };
 };
 
 CRp.drawEdgeOverlay = drawEdgeOverlayUnderlay('overlay');

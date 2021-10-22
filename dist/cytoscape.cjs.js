@@ -16060,7 +16060,7 @@ var styfn$6 = {};
       enums: ['solid', 'dotted', 'dashed', 'double']
     },
     curveStyle: {
-      enums: ['bezier', 'unbundled-bezier', 'haystack', 'segments', 'straight', 'taxi']
+      enums: ['bezier', 'unbundled-bezier', 'haystack', 'segments', 'straight', 'straight-triangle', 'taxi']
     },
     fontFamily: {
       regex: '^([\\w- \\"]+(?:\\s*,\\s*[\\w- \\"]+)*)$'
@@ -16088,6 +16088,9 @@ var styfn$6 = {};
     },
     nodeShape: {
       enums: ['rectangle', 'roundrectangle', 'round-rectangle', 'cutrectangle', 'cut-rectangle', 'bottomroundrectangle', 'bottom-round-rectangle', 'barrel', 'ellipse', 'triangle', 'round-triangle', 'square', 'pentagon', 'round-pentagon', 'hexagon', 'round-hexagon', 'concavehexagon', 'concave-hexagon', 'heptagon', 'round-heptagon', 'octagon', 'round-octagon', 'tag', 'round-tag', 'star', 'diamond', 'round-diamond', 'vee', 'rhomboid', 'polygon']
+    },
+    overlayShape: {
+      enums: ['roundrectangle', 'round-rectangle', 'ellipse']
     },
     compoundIncludeLabels: {
       enums: ['include', 'exclude']
@@ -16452,6 +16455,26 @@ var styfn$6 = {};
     name: 'overlay-opacity',
     type: t.zeroOneNumber,
     triggersBounds: diff.zeroNonZero
+  }, {
+    name: 'overlay-shape',
+    type: t.overlayShape,
+    triggersBounds: diff.any
+  }];
+  var underlay = [{
+    name: 'underlay-padding',
+    type: t.size,
+    triggersBounds: diff.any
+  }, {
+    name: 'underlay-color',
+    type: t.color
+  }, {
+    name: 'underlay-opacity',
+    type: t.zeroOneNumber,
+    triggersBounds: diff.zeroNonZero
+  }, {
+    name: 'underlay-shape',
+    type: t.overlayShape,
+    triggersBounds: diff.any
   }];
   var transition = [{
     name: 'transition-property',
@@ -16817,13 +16840,14 @@ var styfn$6 = {};
       });
     });
   }, {});
-  var props = styfn$6.properties = [].concat(behavior, transition, visibility, overlay, ghost, commonLabel, labelDimensions, mainLabel, sourceLabel, targetLabel, nodeBody, nodeBorder, backgroundImage, pie, compound, edgeLine, edgeArrow, core);
+  var props = styfn$6.properties = [].concat(behavior, transition, visibility, overlay, underlay, ghost, commonLabel, labelDimensions, mainLabel, sourceLabel, targetLabel, nodeBody, nodeBorder, backgroundImage, pie, compound, edgeLine, edgeArrow, core);
   var propGroups = styfn$6.propertyGroups = {
     // common to all eles
     behavior: behavior,
     transition: transition,
     visibility: visibility,
     overlay: overlay,
+    underlay: underlay,
     ghost: ghost,
     // labels
     commonLabel: commonLabel,
@@ -16978,6 +17002,11 @@ styfn$6.getDefaultProperties = function () {
     'overlay-opacity': 0,
     'overlay-color': '#000',
     'overlay-padding': 10,
+    'overlay-shape': 'round-rectangle',
+    'underlay-opacity': 0,
+    'underlay-color': '#000',
+    'underlay-padding': 10,
+    'underlay-shape': 'round-rectangle',
     'transition-property': 'none',
     'transition-duration': 0,
     'transition-delay': 0,
@@ -18360,6 +18389,10 @@ var corefn$8 = {
       w: width,
       h: height
     };
+  },
+  multiClickDebounceTime: function multiClickDebounceTime(_int) {
+    if (_int) this._private.multiClickDebounceTime = _int;else return this._private.multiClickDebounceTime;
+    return this; // chaining
   }
 }; // aliases
 
@@ -18500,7 +18533,8 @@ var Core = function Core(opts) {
       current: [],
       queue: []
     },
-    hasCompoundNodes: false
+    hasCompoundNodes: false,
+    multiClickDebounceTime: defVal(250, options.multiClickDebounceTime)
   };
 
   this.createEmitter(); // set selection type
@@ -18812,7 +18846,7 @@ extend(corefn$9, {
         cy.data(obj.data);
       }
 
-      var fields = ['minZoom', 'maxZoom', 'zoomingEnabled', 'userZoomingEnabled', 'panningEnabled', 'userPanningEnabled', 'boxSelectionEnabled', 'autolock', 'autoungrabify', 'autounselectify'];
+      var fields = ['minZoom', 'maxZoom', 'zoomingEnabled', 'userZoomingEnabled', 'panningEnabled', 'userPanningEnabled', 'boxSelectionEnabled', 'autolock', 'autoungrabify', 'autounselectify', 'multiClickDebounceTime'];
 
       for (var _i2 = 0; _i2 < fields.length; _i2++) {
         var f = fields[_i2];
@@ -18866,6 +18900,7 @@ extend(corefn$9, {
       json.textureOnViewport = options.textureOnViewport;
       json.wheelSensitivity = options.wheelSensitivity;
       json.motionBlur = options.motionBlur;
+      json.multiClickDebounceTime = options.multiClickDebounceTime;
       return json;
     }
   }
@@ -20490,6 +20525,10 @@ var calculateEdgeForces = function calculateEdgeForces(layoutInfo, options) {
 
 
 var calculateGravityForces = function calculateGravityForces(layoutInfo, options) {
+  if (options.gravity === 0) {
+    return;
+  }
+
   var distThreshold = 1; // var s = 'calculateGravityForces';
   // logDebug(s);
 
@@ -22620,7 +22659,7 @@ BRp$3.findEdgeControlPoints = function (edges) {
       continue;
     }
 
-    var edgeIsUnbundled = curveStyle === 'unbundled-bezier' || curveStyle === 'segments' || curveStyle === 'straight' || curveStyle === 'taxi';
+    var edgeIsUnbundled = curveStyle === 'unbundled-bezier' || curveStyle === 'segments' || curveStyle === 'straight' || curveStyle === 'straight-triangle' || curveStyle === 'taxi';
     var edgeIsBezier = curveStyle === 'unbundled-bezier' || curveStyle === 'bezier';
     var src = _p.source;
     var tgt = _p.target;
@@ -24895,6 +24934,7 @@ BRp$c.load = function () {
       return false;
     }
   }, false);
+  var clickTimeout, didDoubleClick, prevClickTimeStamp;
   r.registerBinding(window, 'mouseup', function mouseupHandler(e) {
     // eslint-disable-line no-undef
     var capture = r.hoverData.capture;
@@ -24965,15 +25005,35 @@ BRp$c.load = function () {
         y: pos[1]
       });
 
-      if (!r.dragData.didDrag // didn't move a node around
-      && !r.hoverData.dragged // didn't pan
-      && !r.hoverData.selecting // not box selection
-      && !r.hoverData.isOverThresholdDrag // didn't move too much
+      if (!r.dragData.didDrag && // didn't move a node around
+      !r.hoverData.dragged && // didn't pan
+      !r.hoverData.selecting && // not box selection
+      !r.hoverData.isOverThresholdDrag // didn't move too much
       ) {
-          triggerEvents(down, ['click', 'tap', 'vclick'], e, {
+          triggerEvents(down, ["click", "tap", "vclick"], e, {
             x: pos[0],
             y: pos[1]
           });
+          didDoubleClick = false;
+
+          if (e.timeStamp - prevClickTimeStamp <= cy.multiClickDebounceTime()) {
+            clickTimeout && clearTimeout(clickTimeout);
+            didDoubleClick = true;
+            prevClickTimeStamp = null;
+            triggerEvents(down, ["dblclick", "dbltap", "vdblclick"], e, {
+              x: pos[0],
+              y: pos[1]
+            });
+          } else {
+            clickTimeout = setTimeout(function () {
+              if (didDoubleClick) return;
+              triggerEvents(down, ["oneclick", "onetap", "voneclick"], e, {
+                x: pos[0],
+                y: pos[1]
+              });
+            }, cy.multiClickDebounceTime());
+            prevClickTimeStamp = e.timeStamp;
+          }
         } // Deselect all elements if nothing is currently under the mouse cursor and we aren't dragging something
 
 
@@ -25873,7 +25933,7 @@ BRp$c.load = function () {
       start.unactivate();
     }
   });
-  var touchendHandler;
+  var touchendHandler, didDoubleTouch, touchTimeout, prevTouchTimeStamp;
   r.registerBinding(window, 'touchend', touchendHandler = function touchendHandler(e) {
     // eslint-disable-line no-unused-vars
     var start = r.touchData.start;
@@ -26054,6 +26114,26 @@ BRp$c.load = function () {
           x: now[0],
           y: now[1]
         });
+        didDoubleTouch = false;
+
+        if (e.timeStamp - prevTouchTimeStamp <= cy.multiClickDebounceTime()) {
+          touchTimeout && clearTimeout(touchTimeout);
+          didDoubleTouch = true;
+          prevTouchTimeStamp = null;
+          triggerEvents(start, ['dbltap', 'vdblclick'], e, {
+            x: now[0],
+            y: now[1]
+          });
+        } else {
+          touchTimeout = setTimeout(function () {
+            if (didDoubleTouch) return;
+            triggerEvents(start, ['onetap', 'voneclick'], e, {
+              x: now[0],
+              y: now[1]
+            });
+          }, cy.multiClickDebounceTime());
+          prevTouchTimeStamp = e.timeStamp;
+        }
       } // Prepare to select the currently touched node, only if it hasn't been dragged past a certain distance
 
 
@@ -28480,6 +28560,16 @@ CRp$1.drawElementOverlay = function (context, ele) {
   }
 };
 
+CRp$1.drawElementUnderlay = function (context, ele) {
+  var r = this;
+
+  if (ele.isNode()) {
+    r.drawNodeUnderlay(context, ele);
+  } else {
+    r.drawEdgeUnderlay(context, ele);
+  }
+};
+
 CRp$1.drawCachedElementPortion = function (context, ele, eleTxrCache, pxRatio, lvl, reason, getRotation, getOpacity) {
   var r = this;
   var bb = eleTxrCache.getBoundingBox(ele);
@@ -28594,6 +28684,7 @@ CRp$1.drawCachedElement = function (context, ele, pxRatio, extent, lvl, requestH
 
     var badLine = ele.element()._private.rscratch.badLine;
 
+    r.drawElementUnderlay(context, ele);
     r.drawCachedElementPortion(context, ele, eleTxrCache, pxRatio, lvl, reason, getZeroRotation, getOpacity);
 
     if (!isEdge || !badLine) {
@@ -28691,6 +28782,7 @@ CRp$2.drawEdge = function (context, edge, shiftToOriginWithBb) {
 
   var opacity = shouldDrawOpacity ? edge.pstyle('opacity').value : 1;
   var lineOpacity = shouldDrawOpacity ? edge.pstyle('line-opacity').value : 1;
+  var curveStyle = edge.pstyle('curve-style').value;
   var lineStyle = edge.pstyle('line-style').value;
   var edgeWidth = edge.pstyle('width').pfValue;
   var lineCap = edge.pstyle('line-cap').value;
@@ -28700,11 +28792,17 @@ CRp$2.drawEdge = function (context, edge, shiftToOriginWithBb) {
 
   var drawLine = function drawLine() {
     var strokeOpacity = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : effectiveLineOpacity;
-    context.lineWidth = edgeWidth;
-    context.lineCap = lineCap;
-    r.eleStrokeStyle(context, edge, strokeOpacity);
-    r.drawEdgePath(edge, context, rs.allpts, lineStyle);
-    context.lineCap = 'butt'; // reset for other drawing functions
+
+    if (curveStyle === 'straight-triangle') {
+      r.eleStrokeStyle(context, edge, strokeOpacity);
+      r.drawEdgeTrianglePath(edge, context, rs.allpts);
+    } else {
+      context.lineWidth = edgeWidth;
+      context.lineCap = lineCap;
+      r.eleStrokeStyle(context, edge, strokeOpacity);
+      r.drawEdgePath(edge, context, rs.allpts, lineStyle);
+      context.lineCap = 'butt'; // reset for other drawing functions
+    }
   };
 
   var drawOverlay = function drawOverlay() {
@@ -28713,6 +28811,14 @@ CRp$2.drawEdge = function (context, edge, shiftToOriginWithBb) {
     }
 
     r.drawEdgeOverlay(context, edge);
+  };
+
+  var drawUnderlay = function drawUnderlay() {
+    if (!shouldDrawOverlay) {
+      return;
+    }
+
+    r.drawEdgeUnderlay(context, edge);
   };
 
   var drawArrows = function drawArrows() {
@@ -28738,6 +28844,7 @@ CRp$2.drawEdge = function (context, edge, shiftToOriginWithBb) {
     context.translate(-gx, -gy);
   }
 
+  drawUnderlay();
   drawLine();
   drawArrows();
   drawOverlay();
@@ -28748,34 +28855,43 @@ CRp$2.drawEdge = function (context, edge, shiftToOriginWithBb) {
   }
 };
 
-CRp$2.drawEdgeOverlay = function (context, edge) {
-  if (!edge.visible()) {
-    return;
+var drawEdgeOverlayUnderlay = function drawEdgeOverlayUnderlay(overlayOrUnderlay) {
+  if (!['overlay', 'underlay'].includes(overlayOrUnderlay)) {
+    throw new Error('Invalid state');
   }
 
-  var overlayOpacity = edge.pstyle('overlay-opacity').value;
+  return function (context, edge) {
+    if (!edge.visible()) {
+      return;
+    }
 
-  if (overlayOpacity === 0) {
-    return;
-  }
+    var opacity = edge.pstyle("".concat(overlayOrUnderlay, "-opacity")).value;
 
-  var r = this;
-  var usePaths = r.usePaths();
-  var rs = edge._private.rscratch;
-  var overlayPadding = edge.pstyle('overlay-padding').pfValue;
-  var overlayWidth = 2 * overlayPadding;
-  var overlayColor = edge.pstyle('overlay-color').value;
-  context.lineWidth = overlayWidth;
+    if (opacity === 0) {
+      return;
+    }
 
-  if (rs.edgeType === 'self' && !usePaths) {
-    context.lineCap = 'butt';
-  } else {
-    context.lineCap = 'round';
-  }
+    var r = this;
+    var usePaths = r.usePaths();
+    var rs = edge._private.rscratch;
+    var padding = edge.pstyle("".concat(overlayOrUnderlay, "-padding")).pfValue;
+    var width = 2 * padding;
+    var color = edge.pstyle("".concat(overlayOrUnderlay, "-color")).value;
+    context.lineWidth = width;
 
-  r.colorStrokeStyle(context, overlayColor[0], overlayColor[1], overlayColor[2], overlayOpacity);
-  r.drawEdgePath(edge, context, rs.allpts, 'solid');
+    if (rs.edgeType === 'self' && !usePaths) {
+      context.lineCap = 'butt';
+    } else {
+      context.lineCap = 'round';
+    }
+
+    r.colorStrokeStyle(context, color[0], color[1], color[2], opacity);
+    r.drawEdgePath(edge, context, rs.allpts, 'solid');
+  };
 };
+
+CRp$2.drawEdgeOverlay = drawEdgeOverlayUnderlay('overlay');
+CRp$2.drawEdgeUnderlay = drawEdgeOverlayUnderlay('underlay');
 
 CRp$2.drawEdgePath = function (edge, context, pts, type) {
   var rs = edge._private.rscratch;
@@ -28859,6 +28975,25 @@ CRp$2.drawEdgePath = function (edge, context, pts, type) {
   if (context.setLineDash) {
     // for very outofdate browsers
     context.setLineDash([]);
+  }
+};
+
+CRp$2.drawEdgeTrianglePath = function (edge, context, pts) {
+  // use line stroke style for triangle fill style
+  context.fillStyle = context.strokeStyle;
+  var edgeWidth = edge.pstyle('width').pfValue;
+
+  for (var i = 0; i + 1 < pts.length; i += 2) {
+    var vector = [pts[i + 2] - pts[i], pts[i + 3] - pts[i + 1]];
+    var length = Math.sqrt(vector[0] * vector[0] + vector[1] * vector[1]);
+    var normal = [vector[1] / length, -vector[0] / length];
+    var triangleHead = [normal[0] * edgeWidth / 2, normal[1] * edgeWidth / 2];
+    context.beginPath();
+    context.moveTo(pts[i] - triangleHead[0], pts[i + 1] - triangleHead[1]);
+    context.lineTo(pts[i] + triangleHead[0], pts[i + 1] + triangleHead[1]);
+    context.lineTo(pts[i + 2], pts[i + 3]);
+    context.closePath();
+    context.fill();
   }
 };
 
@@ -29791,6 +29926,12 @@ CRp$5.drawNode = function (context, node, shiftToOriginWithBb) {
     }
   };
 
+  var drawUnderlay = function drawUnderlay() {
+    if (shouldDrawOverlay) {
+      r.drawNodeUnderlay(context, node, pos, nodeWidth, nodeHeight);
+    }
+  };
+
   var drawText = function drawText() {
     r.drawElementText(context, node, null, drawLabel);
   };
@@ -29812,6 +29953,16 @@ CRp$5.drawNode = function (context, node, shiftToOriginWithBb) {
     drawImages(effGhostOpacity, false);
     darken(effGhostOpacity);
     context.translate(-gx, -gy);
+  }
+
+  if (usePaths) {
+    context.translate(-pos.x, -pos.y);
+  }
+
+  drawUnderlay();
+
+  if (usePaths) {
+    context.translate(pos.x, pos.y);
   }
 
   setupShapeColor();
@@ -29836,32 +29987,42 @@ CRp$5.drawNode = function (context, node, shiftToOriginWithBb) {
   }
 };
 
-CRp$5.drawNodeOverlay = function (context, node, pos, nodeWidth, nodeHeight) {
-  var r = this;
-
-  if (!node.visible()) {
-    return;
+var drawNodeOverlayUnderlay = function drawNodeOverlayUnderlay(overlayOrUnderlay) {
+  if (!['overlay', 'underlay'].includes(overlayOrUnderlay)) {
+    throw new Error('Invalid state');
   }
 
-  var overlayPadding = node.pstyle('overlay-padding').pfValue;
-  var overlayOpacity = node.pstyle('overlay-opacity').value;
-  var overlayColor = node.pstyle('overlay-color').value;
+  return function (context, node, pos, nodeWidth, nodeHeight) {
+    var r = this;
 
-  if (overlayOpacity > 0) {
-    pos = pos || node.position();
-
-    if (nodeWidth == null || nodeHeight == null) {
-      var padding = node.padding();
-      nodeWidth = node.width() + 2 * padding;
-      nodeHeight = node.height() + 2 * padding;
+    if (!node.visible()) {
+      return;
     }
 
-    r.colorFillStyle(context, overlayColor[0], overlayColor[1], overlayColor[2], overlayOpacity);
-    r.nodeShapes['roundrectangle'].draw(context, pos.x, pos.y, nodeWidth + overlayPadding * 2, nodeHeight + overlayPadding * 2);
-    context.fill();
-  }
-}; // does the node have at least one pie piece?
+    var padding = node.pstyle("".concat(overlayOrUnderlay, "-padding")).pfValue;
+    var opacity = node.pstyle("".concat(overlayOrUnderlay, "-opacity")).value;
+    var color = node.pstyle("".concat(overlayOrUnderlay, "-color")).value;
+    var shape = node.pstyle("".concat(overlayOrUnderlay, "-shape")).value;
 
+    if (opacity > 0) {
+      pos = pos || node.position();
+
+      if (nodeWidth == null || nodeHeight == null) {
+        var _padding = node.padding();
+
+        nodeWidth = node.width() + 2 * _padding;
+        nodeHeight = node.height() + 2 * _padding;
+      }
+
+      r.colorFillStyle(context, color[0], color[1], color[2], opacity);
+      r.nodeShapes[shape].draw(context, pos.x, pos.y, nodeWidth + padding * 2, nodeHeight + padding * 2);
+      context.fill();
+    }
+  };
+};
+
+CRp$5.drawNodeOverlay = drawNodeOverlayUnderlay('overlay');
+CRp$5.drawNodeUnderlay = drawNodeOverlayUnderlay('underlay'); // does the node have at least one pie piece?
 
 CRp$5.hasPie = function (node) {
   node = node[0]; // ensure ele ref
@@ -31315,7 +31476,7 @@ function setExtension(type, name, registrant) {
   var ext = registrant;
 
   var overrideErr = function overrideErr(field) {
-    error('Can not register `' + name + '` for `' + type + '` since `' + field + '` already exists in the prototype and can not be overridden');
+    warn('Can not register `' + name + '` for `' + type + '` since `' + field + '` already exists in the prototype and can not be overridden');
   };
 
   if (type === 'core') {
@@ -31637,7 +31798,7 @@ sheetfn.appendToStyle = function (style) {
   return style;
 };
 
-var version = "3.19.0";
+var version = "3.20.0";
 
 var cytoscape = function cytoscape(options) {
   // if no options specified, use default

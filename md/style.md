@@ -336,7 +336,7 @@ The following is an example of valid background image styling using JSON. The ex
 These properties affect the styling of an edge's line:
 
  * **`width`** : The width of an edge's line.
- * **`curve-style`** : The curving method used to separate two or more edges between two nodes ([demo](demos/edge-types)); may be [`haystack`](#style/haystack-edges) (default, very fast, bundled straight edges for which loops and compounds are unsupported), [`straight`](#style/straight-edges) (straight edges with all arrows supported), [`bezier`](#style/bezier-edges) (bundled curved edges), [`unbundled-bezier`](#style/unbundled-bezier-edges) (curved edges for use with manual control points),  [`segments`](#style/segments-edges) (a series of straight lines), [`taxi`](#style/taxi-edges) (right-angled lines, hierarchically bundled).  Note that `haystack` edges work best with `ellipse`, `rectangle`, or similar nodes.  Smaller node shapes, like `triangle`, will not be as aesthetically pleasing.  Also note that edge endpoint arrows are unsupported for `haystack` edges.
+ * **`curve-style`** : The curving method used to separate two or more edges between two nodes ([demo](demos/edge-types)); may be [`haystack`](#style/haystack-edges) (default, very fast, bundled straight edges for which loops and compounds are unsupported), [`straight`](#style/straight-edges) (straight edges with all arrows supported), [`straight-triangle`](#style/straight-triangle-edges) (straight triangle edges), [`bezier`](#style/bezier-edges) (bundled curved edges), [`unbundled-bezier`](#style/unbundled-bezier-edges) (curved edges for use with manual control points),  [`segments`](#style/segments-edges) (a series of straight lines), [`taxi`](#style/taxi-edges) (right-angled lines, hierarchically bundled).  Note that `haystack` edges work best with `ellipse`, `rectangle`, or similar nodes.  Smaller node shapes, like `triangle`, will not be as aesthetically pleasing.  Also note that edge endpoint arrows are unsupported for `haystack` edges.
  * **`line-color`** : The colour of the edge's line.
  * **`line-style`** : The style of the edge's line; may be `solid`, `dotted`, or `dashed`.
  * **`line-cap`** : The cap style of the edge's line; may be `butt` (default), `round`, or `square`.  The cap may or may not be visible, depending on the shape of the node and the relative size of the node and edge.  Caps other than `butt` extend beyond the specified endpoint of the edge.
@@ -418,6 +418,15 @@ A segment edge is made of a series of one or more straight lines, using a co-ord
 For straight line edges (`curve-style: straight`, [demo](demos/edge-types)):
 
 A straight edge (`curve-style: straight`) is drawn as a single straight line from the outside of the source node shape to the outside of the target node shape.  Endpoint and midpoint arrows are supported on straight edges.  Straight edges are not generally suitable for multigraphs.
+
+
+## Straight triangle edges
+
+For straight triangle edges (`curve-style: straight-triangle`, [demo](demos/edge-types)):
+
+A straight triangle edge (`curve-style: straight-triangle`) is drawn as a single straight isosceles triangle in the direction from the source to the target, with a triangle base at the source and a triangle apex (a point) at the target.
+
+Property `width` defines width of the triangle base.  Properties `line-style`, `line-cap`, `line-dash-pattern`, `line-dash-offset` are not supported.
 
 
 ## Taxi edges
@@ -630,6 +639,17 @@ These properties allow for the creation of overlays on top of nodes or edges, an
  * **`overlay-color`** : The colour of the overlay.
  * **`overlay-padding`** : The area outside of the element within which the overlay is shown.
  * **`overlay-opacity`** : The opacity of the overlay.
+ * **`overlay-shape`** : The shape of the node overlay; may be `round-rectangle` (default), `ellipse`. Doesn't apply to edges.
+
+
+## Underlay
+
+These properties allow for the creation of underlays behind nodes or edges, and are often used in a highlighted state.
+
+ * **`underlay-color`** : The colour of the underlay.
+ * **`underlay-padding`** : The area outside of the element within which the underlay is shown.
+ * **`underlay-opacity`** : The opacity of the underlay.
+ * **`underlay-shape`** : The shape of the node underlay; may be `round-rectangle` (default), `ellipse`. Doesn't apply to edges.
 
 ## Ghost
 

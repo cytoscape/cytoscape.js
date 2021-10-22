@@ -51,7 +51,7 @@ To install Cytoscape.js via npm:
 npm install cytoscape
 ```
 
-To use Cytoscape.js in a ESM environment with npm (e.g. Webpack or Node.js with the [`esm`](https://www.npmjs.com/package/esm) package):
+To use Cytoscape.js in an ESM environment with npm (e.g. Webpack or Node.js with the [`esm`](https://www.npmjs.com/package/esm) package):
 
 ```js
 import cytoscape from 'cytoscape';

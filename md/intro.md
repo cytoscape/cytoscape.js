@@ -82,6 +82,7 @@
 * [dSysMap](https://dsysmap.irbbarcelona.org)
 * [Elsevier](https://www.elsevier.com)
 * [Ensembl](https://www.ensembl.org)
+* [FlyBase](https://flybase.org/)
 * [GeneMANIA](http://genemania.org)
 * [GraphSpace](http://graphspace.org)
 * [Intermine](http://intermine.org/)
@@ -92,6 +93,7 @@
 * [PINet](http://pinet.tsl.ac.uk)
 * [Plotly (Dash)](https://plotly.com)
 * [QuantStack (Jupyter)](https://quantstack.net)
+* [STOCKS](https://gbcs.embl.de/portal/tiki-index.php?page=STOCKS)
 * [SynBioHub](https://synbiohub.org)
 * [The Gene Ontology Consortium](http://geneontology.org)
 * [WormBase](https://wormbase.org/)
@@ -105,6 +107,7 @@
 * [Broad Institute](https://www.broadinstitute.org)
 * [Earlham Institute](https://www.earlham.ac.uk)
 * [École Polytechnique Fédérale de Lausanne (EPFL)](https://www.epfl.ch)
+* [European Molecular Biology Laboratory (EMBL)](https://www.embl.org/)
 * [FAIRplus](https://fairplus-project.eu)
 * [Harvard University](https://www.harvard.edu)
 * [Howard Hughes Medical Institute](https://www.hhmi.org/)
@@ -112,6 +115,7 @@
 * [Institute for Systems Biology](https://isbscience.org)
 * [International Rice Research Institute](https://www.irri.org)
 * [Max Plank Institute](https://mpg.de)
+* [Nanyang Technological University](https://www.ntu.edu.sg)
 * [Network of European Bioimage Analysts](http://eubias.org/NEUBIAS)
 * [Observational Health Data Sciences and Informatics (OHDSI)](http://www.ohdsi.org/)
 * [Research Institute for Fragrance Materials](https://www.rifm.org)
@@ -131,6 +135,7 @@
 * [University of Heidelberg](https://www.uni-heidelberg.de)
 * [University of Leipzig](http://uni-leipzig.de)
 * [University of Maryland](https://umd.edu/)
+* [University of Toronto](https://utoronto.ca)
 * [University of Utah](https://www.utah.edu)
 * [Vanderbilt University](https://www.vanderbilt.edu)
 * [Virginia Tech](http://www.vt.edu)
@@ -140,6 +145,7 @@
 
 * [AppZen](https://www.appzen.com/)
 * [Aras](https://www.aras.com/en)
+* [Bell Media](https://www.bellmedia.ca/)
 * [BlueSailCRM](https://www.bluesailcrm.com)
 * [BugBug](https://bugbug.io)
 * [Classcraft](https://www.classcraft.com)
@@ -167,6 +173,7 @@
 * [LearnAwesome](https://learnawesome.org)
 * [Machine2Learn](https://machine2learn.com)
 * [Musicalized](https://en.wesound.academy)
+* [Network Weathermap](https://github.com/6illes/weathermap)
 * [New Relic](https://newrelic.com)
 * [Obsidian](https://obsidian.md)
 * [Onepanel](https://www.onepanel.ai)
@@ -174,6 +181,7 @@
 * [RecallGraph](https://recallgraph.tech)
 * [Roam](https://roamresearch.com)
 * [Signifyd](https://www.signifyd.com)
+* [SQL Frames](https://sqlframes.com)
 * [Steemit](https://steemit.com)
 * [stixview](https://github.com/traut/stixview)
 * [The ICSI Haystack Panopticon](https://haystack.mobi/panopticon/)
@@ -183,6 +191,7 @@
 * [VAC](https://vac.dev)
 * [wanderer.ai](https://wanderer.ai)
 * [Wisecube AI](https://www.wisecube.ai/orpheus/)
+* [Zubir Said Knowledge Graph](https://zubirsaid.sg)
 
 
 ### Let us know
@@ -215,11 +224,12 @@ The library was created at the [Donnelly Centre](http://thedonnellycentre.utoron
 
 ## Releases
 
+- 3.20
+ - [3.20.0](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.20.0+is%3Aclosed)
 - 3.19
  - [3.19.1](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.19.1+is%3Aclosed)
  - [3.19.0](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.19.0+is%3Aclosed)
 - 3.18
- - [3.18.3](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.18.3+is%3Aclosed)
  - [3.18.2](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.18.2+is%3Aclosed)
  - [3.18.1](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.18.1+is%3Aclosed)
  - [3.18.0](https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.18.0+is%3Aclosed)

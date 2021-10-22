@@ -47,6 +47,8 @@ There are also some higher level events that you can use so you don't have to li
  * `tapdragout` : normalised off of element event (either `touchmove` or `mousemove`/`mouseout`)
  * `tapend` or `vmouseup` : normalised tap end event (either `mouseup` or `touchend`)
  * `tap` or `vclick` : normalised tap event (either `click`, or `touchstart` followed by `touchend` without `touchmove`)
+ * `onetap` or `voneclick` or `oneclick` : normalised tap event (triggers after a given debouce time to first check for `dblclick` event - `multiClickDebounceTime`: set to 250ms by default)
+ * `dbltap` or `vdblclick` or `dblclick` : normalised double tap event (either two subsequent `click`, or two subsequent `touchstart` followed by `touchend` without `touchmove`)
  * `taphold` : normalised tap hold event
  * `cxttapstart` : normalised right-click mousedown or two-finger `tapstart`
  * `cxttapend` : normalised right-click `mouseup` or two-finger `tapend`

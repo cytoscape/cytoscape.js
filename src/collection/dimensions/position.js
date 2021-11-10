@@ -128,6 +128,12 @@ fn = elesfn = ({
 
       for( let i = 0; i < this.length; i++ ){
         let ele = this[i];
+
+        // exclude any node that is a descendant of the calling collection
+        if (cy.hasCompoundNodes() && ele.isChild() && ele.ancestors().anySame(this)) {
+          continue;
+        }
+
         let pos = ele.position();
         let newPos = {
           x: pos.x + delta.x,

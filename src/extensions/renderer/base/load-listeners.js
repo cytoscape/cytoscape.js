@@ -158,7 +158,7 @@ BRp.load = function(){
     var list = opts.addToList;
     var listHasEle = list.has(ele);
 
-    if( !listHasEle ){
+    if( !listHasEle && ele.grabbable() && !ele.locked() ){
       list.merge( ele );
       setGrabbed( ele );
     }
@@ -181,7 +181,7 @@ BRp.load = function(){
     }
 
     if( opts.addToList ){
-      opts.addToList.unmerge(innerNodes);
+      addToDragList(innerNodes, opts);
     }
   };
 
@@ -780,8 +780,6 @@ BRp.load = function(){
 
             r.dragData.didDrag = true; // indicate that we actually did drag the node
 
-            var toTrigger = cy.collection();
-
             // now, add the elements to the drag layer if not done already
             if( !r.hoverData.draggingEles ){
               addNodesToDrag( draggedElements, { inDragLayer: true } );
@@ -803,17 +801,9 @@ BRp.load = function(){
               }
             }
 
-            for( var i = 0; i < draggedElements.length; i++ ){
-              var dEle = draggedElements[ i ];
-
-              if( r.nodeIsDraggable( dEle ) && dEle.grabbed() ){
-                toTrigger.push( dEle );
-              }
-            }
-
             r.hoverData.draggingEles = true;
 
-            ( toTrigger
+            ( draggedElements
               .silentShift( totalShift )
               .emit('position drag')
             );

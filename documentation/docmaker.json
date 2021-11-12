@@ -950,6 +950,58 @@
         },
 
         {
+          "name": "Edge points",
+          "fns": [
+            {
+              "name": "cy.segmentsToRelativePositions",
+              "descr": "Convert segment points in absolute positions into segment distances and weights and return them.",
+              "formats": [
+                {
+                  "args": [
+                    {
+                      "name": "segmentPoints",
+                      "descr": "The segment points to be converted"
+                    },
+                    {
+                      "name": "sourcePoint",
+                      "descr": "The source point of the edge."
+                    },
+                    {
+                      "name": "targetPoint",
+                      "descr": "The target point of the edge."
+                    }                                       
+                  ]
+                }
+              ],
+              "md": "core/segmentsToRelativePositions"
+            },
+            {
+              "name": "cy.controlsToRelativePositions",
+              "descr": "Convert control points in absolute positions into control point distances and weights and return them.",
+              "formats": [
+                {
+                  "args": [
+                    {
+                      "name": "controlPoints",
+                      "descr": "The control points to be converted"
+                    },
+                    {
+                      "name": "sourcePoint",
+                      "descr": "The source point of the edge."
+                    },
+                    {
+                      "name": "targetPoint",
+                      "descr": "The target point of the edge."
+                    }                                       
+                  ]
+                }
+              ],
+              "md": "core/controlsToRelativePositions"
+            }            
+          ]
+        },        
+
+        {
           "name": "Style",
 
           "fns": [

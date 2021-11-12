@@ -15,6 +15,7 @@ import search from './search';
 import style from './style';
 import viewport from './viewport';
 import data from './data';
+import edgePoints from './edgePoints';
 
 let Core = function( opts ){
   let cy = this;
@@ -501,7 +502,8 @@ corefn.$id = corefn.getElementById;
   search,
   style,
   viewport,
-  data
+  data,
+  edgePoints
 ].forEach( function( props ){
   util.extend( corefn, props );
 } );

@@ -16,7 +16,7 @@ let defaults = {
   width: undefined, // width of layout area (overrides container width)
   spacingFactor: undefined, // Applies a multiplicative factor (>0) to expand or compress the overall area that the nodes take up
   concentric: function( node ){ // returns numeric value for each node, placing higher nodes in levels towards the centre
-    return node.degree();
+    return node.data('concentricLevelValue') || node.degree();
   },
   levelWidth: function( nodes ){ // the variation of concentric values in each level
     return nodes.maxDegree() / 4;

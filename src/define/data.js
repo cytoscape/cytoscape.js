@@ -1,5 +1,7 @@
 import * as util from '../util';
 import * as is from '../is';
+import get from 'lodash.get';
+import set from 'lodash.set';
 
 let define = {
 
@@ -40,7 +42,7 @@ let define = {
           if( single ){
             p.beforeGet( single );
 
-            ret = single._private[ p.field ][ name ];
+            ret = get(single._private[ p.field ], name);
           }
           return ret;
 
@@ -56,7 +58,7 @@ let define = {
               let ele = all[i];
 
               if( p.canSet( ele ) ){
-                ele._private[ p.field ][ name ] = value;
+                set(ele._private[ p.field ], name, value);
               }
             }
 

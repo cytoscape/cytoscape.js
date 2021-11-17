@@ -166,6 +166,8 @@
   },
   "dependencies": {
     "heap": "^0.2.6",
-    "lodash.debounce": "^4.0.8"
+    "lodash.debounce": "^4.0.8",
+    "lodash.get": "^4.4.2",
+    "lodash.set": "^4.3.2"
   }
 }

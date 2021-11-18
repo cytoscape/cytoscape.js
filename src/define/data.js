@@ -31,11 +31,11 @@ let define = {
       let selfIsArrayLike = self.length !== undefined;
       let all = selfIsArrayLike ? self : [ self ]; // put in array if not array-like
       let single = selfIsArrayLike ? self[0] : self;
-      let isPath = name.indexOf('.') !== -1 ;
 
       // .data('foo', ...)
       if( is.string( name ) ){ // set or get property
-
+        let isPath = name.indexOf('.') !== -1;
+        
         // .data('foo')
         if( p.allowGetting && value === undefined ){ // get
 

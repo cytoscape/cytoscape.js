@@ -31,6 +31,7 @@ let define = {
       let selfIsArrayLike = self.length !== undefined;
       let all = selfIsArrayLike ? self : [ self ]; // put in array if not array-like
       let single = selfIsArrayLike ? self[0] : self;
+      let isPath = name.indexOf('.') !== -1 ;
 
       // .data('foo', ...)
       if( is.string( name ) ){ // set or get property
@@ -42,7 +43,7 @@ let define = {
           if( single ){
             p.beforeGet( single );
 
-            ret = get(single._private[ p.field ], name);
+            ret = isPath ? get(single._private[ p.field ], name) : single._private[ p.field ][ name ];
           }
           return ret;
 
@@ -58,7 +59,11 @@ let define = {
               let ele = all[i];
 
               if( p.canSet( ele ) ){
-                set(ele._private[ p.field ], name, value);
+                if (isPath) {
+                  set(ele._private[ p.field ], name, value);
+                } else {
+                  ele._private[ p.field ][ name ] = value;
+                }
               }
             }
 

@@ -90,7 +90,6 @@ describe('Selectors', function(){
   itSelects('[emptystr = ""]', 'n1');
   itSelects('[emptystr != ""]', 'n2', 'nparent', 'nparent2', 'n1n2', 'nparentLoop');
   itSelects('[arrayval.0 = "index0"]', 'n1');
-  itSelects('[arrayval[1] = "index1"]', 'n1');
   
   // metadata
   itSelects('[[degree = 1]]', 'n1', 'n2');

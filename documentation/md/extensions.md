@@ -39,6 +39,7 @@ The extensions below are a curated list.  To add your extension, [please submit 
  * <i class="fa fa-fw fa-user"></i> [`grid-guide`](https://github.com/iVis-at-Bilkent/cytoscape.js-grid-guide) : Adds grid and snapping functionality to Cytoscape graphs
  * <i class="fa fa-fw fa-users"></i> [`lasso`](https://github.com/zakjan/cytoscape-lasso) : Lasso selection UI
  * <i class="fa fa-fw fa-users"></i> [`layers`](https://github.com/sgratzl/cytoscape.js-layers) : Simplifies the creation and management of additional layers in SVG, HTML, or Canvas format with additional utilities to render elements per node or edge.
+ * <i class="fa fa-fw fa-user"></i> [`leaf`](https://github.com/cytoscape/cytoscape.js-leaflet) : Allow for Leaflet maps to be shown underneath Cytoscape visualisations.
  * <i class="fa fa-fw fa-users"></i> [`mapbox-gl`](https://github.com/zakjan/cytoscape-mapbox-gl) : Display a Cytoscape graph on top of a Mapbox GL map.
  * <i class="fa fa-fw fa-user"></i> [`navigator`](https://github.com/cytoscape/cytoscape.js-navigator) : A bird's eye view widget of the graph.
  * <i class="fa fa-fw fa-users"></i> [`no-overlap`](https://mo0om.github.io/cytoscape-no-overlap) : Prevents nodes from overlapping on drag.
@@ -88,6 +89,7 @@ Compound Spring Embedder with Ports (CoSEP) is a force-directed layout algorithm
 
  * <i class="fa fa-fw fa-users"></i> [`Cytoscape.js Schema`](https://github.com/AZaitzeff/cytoscape_js_schema) : A JSON Schema for the Cytoscape.js JSON graph format.
  * <i class="fa fa-fw fa-user"></i> [`cytosnap`](https://github.com/cytoscape/cytosnap) : A Node.js package that renders images of Cytoscape.js graphs on the server using Puppeteer.
+ * <i class="fa fa-fw fa-users"></i> [`Cyjs.NET`](https://fslab.org/Cyjs.NET/) : An interface for Cytoscape.js in F#.
  * <i class="fa fa-fw fa-users"></i> [`ngx-cytoscape`](https://github.com/calvinvette/ngx-cytoscape) : An Angular 5+ component for Cytoscape.js.
  * <i class="fa fa-fw fa-user"></i> [`react-cytoscapejs`](https://github.com/plotly/react-cytoscapejs) : A [React](https://reactjs.org) component for Cytoscape.js network visualisations.
  * <i class="fa fa-fw fa-users"></i> [`cytoscape-react`](https://github.com/mwri/cytoscape-react) : Create `<Node>`s and `<Edge>s` specified with JSX.

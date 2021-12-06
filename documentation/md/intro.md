@@ -146,6 +146,7 @@
 
 * [AppZen](https://www.appzen.com/)
 * [Aras](https://www.aras.com/en)
+* [AWS Perspective](https://github.com/awslabs/aws-perspective)
 * [Bell Media](https://www.bellmedia.ca/)
 * [BlueSailCRM](https://www.bluesailcrm.com)
 * [BugBug](https://bugbug.io)

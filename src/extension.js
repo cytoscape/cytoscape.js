@@ -172,6 +172,9 @@ function setExtension( type, name, registrant ){
 
     ext = Renderer;
 
+  } else if (type === '__proto__' || type === 'constructor' || type === 'prototype'){
+    // to avoid potential prototype pollution
+    return util.error( type + ' is an illegal type to be registered, possibly lead to prototype pollutions' );
   }
 
   return util.setMap( {

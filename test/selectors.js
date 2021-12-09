@@ -10,8 +10,8 @@ describe('Selectors', function(){
 
       elements: {
         nodes: [
-          { data: { id: 'n1', foo: 'one', weight: 1, 'weird.name': 1, 'weird.name2': 'weird.val', emptystr: '', arrayval: ['index0', 'index1'] }, classes: 'cls1 cls2' },
-          { data: { id: 'n2', foo: 'two', parent: 'nparent', weight: 2, 'weird.name3': '"blah"^blah<blah>#blah' }, classes: 'cls1' },
+          { data: { id: 'n1', foo: 'one', weight: 1, 'weird.name': 1, 'weird.name2': 'weird.val', 'weird.0': 'weird.index', emptystr: '', arrayval: ['index0', 'index1'] }, classes: 'cls1 cls2' },
+          { data: { id: 'n2', foo: 'two', parent: 'nparent', weight: 2, 'weird.name3': '"blah"^blah<blah>#blah', 'weird.1': '"blah"^blah<blah>#blah', 'arrayval.0': [0, 1] }, classes: 'cls1' },
           { data: { id: 'nparent', parent: 'nparent2', weight: 3 }, classes: 'cls2' },
           { data: { id: 'nparent2' } }
         ],
@@ -90,6 +90,7 @@ describe('Selectors', function(){
   itSelects('[emptystr = ""]', 'n1');
   itSelects('[emptystr != ""]', 'n2', 'nparent', 'nparent2', 'n1n2', 'nparentLoop');
   itSelects('[arrayval.0 = "index0"]', 'n1');
+  itSelects('[arrayval.1 = "index1"]', 'n1');  
   
   // metadata
   itSelects('[[degree = 1]]', 'n1', 'n2');
@@ -155,5 +156,13 @@ describe('Selectors', function(){
   itSelects('[weird\\.name3 *= "<blah>"]', 'n2');
   itSelects('[weird\\.name3 ^= \'"blah"^blah\']', 'n2');
   itSelects('[weird\\.name3 $= "^blah<blah>#blah"]', 'n2');
-
+  itSelects('[weird\\.0 = "weird.index"]', 'n1');
+  itSelects('[weird\\.0 *= "d.i"]', 'n1');
+  itSelects('[weird\\.0 ^= "weird."]', 'n1');
+  itSelects('[weird\\.0 $= ".index"]', 'n1');
+  itSelects('[weird\\.1 *= "<blah>"]', 'n2');
+  itSelects('[weird\\.1 ^= \'"blah"^blah\']', 'n2');
+  itSelects('[weird\\.1 $= "^blah<blah>#blah"]', 'n2');
+  itSelects('[arrayval\\.0.0 = 0]', 'n2');
+  itSelects('[arrayval\\.0.1 = 0]', 'n2');    
 });

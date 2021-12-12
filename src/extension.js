@@ -153,9 +153,9 @@ function setExtension( type, name, registrant ){
       let pVal = bProto[ pName ];
       let existsInR = rProto[ pName ] != null;
 
-      if( existsInR ){
-        return overrideErr( pName );
-      }
+      // if( existsInR ){
+      //   return overrideErr( pName );
+      // }
 
       proto[ pName ] = pVal; // take impl from base
     }

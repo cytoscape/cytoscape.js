@@ -402,13 +402,13 @@ elesfn.restore = function( notifyRenderer = true, addToPool = true ){
       data.id = '' + data.id; // now it's a string
 
     } else if( is.emptyString( data.id ) || !is.string( data.id ) ){
-      util.error( 'Can not create element with invalid string ID `' + data.id + '`' );
+      util.warn( 'Can not create element with invalid string ID `' + data.id + '`' );
 
       // can't create element if it has empty string as id or non-string id
       removeFromElements();
       continue;
     } else if( cy.hasElementWithId( data.id ) ){
-      util.error( 'Can not create second element with ID `' + data.id + '`' );
+      util.warn( 'Can not create second element with ID `' + data.id + '`' );
 
       // can't create element if one already has that id
       removeFromElements();

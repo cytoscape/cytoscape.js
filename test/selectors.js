@@ -164,5 +164,5 @@ describe('Selectors', function(){
   itSelects('[weird\\.1 ^= \'"blah"^blah\']', 'n2');
   itSelects('[weird\\.1 $= "^blah<blah>#blah"]', 'n2');
   itSelects('[arrayval\\.0.0 = 0]', 'n2');
-  itSelects('[arrayval\\.0.1 = 0]', 'n2');    
+  itSelects('[arrayval\\.0.1 = 1]', 'n2');    
 });

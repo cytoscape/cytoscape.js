@@ -58,6 +58,10 @@ describe('Algorithms', function(){
     return ele.isNode();
   }
 
+  function isEdge(ele){
+    return ele.isEdge();
+  }
+
   function eles(){
     var col = cy.collection();
 
@@ -617,8 +621,47 @@ describe('Algorithms', function(){
 
       var res = cy.elements().bellmanFord(options);
 
-      // No negative weight cycles
+      // Negative weight cycles
       expect(res.hasNegativeWeightCycle).to.equal(true);
+
+  });
+
+
+  it('eles.bellmanFord(): find negative weight cycles', function() {
+      var options = {
+        root: a,
+        directed: false,
+        weight: function( ele ){ return ele.data('weight'); },
+        findNegativeWeightCycles: true
+      };
+
+      ce.data('weight', -6);
+      cd.data('weight', -2);
+
+      var res = cy.elements().bellmanFord(options);
+
+      // At least one negative weight cycle
+      var numCycles = res.negativeWeightCycles.length;
+      expect(numCycles).to.be.above(0);
+
+      for (var i = 0; i < numCycles; i++) {
+        var cycle = res.negativeWeightCycles[i];
+        // Cycle has an odd number of elements
+        expect(cycle.length % 2).to.equal(1);
+        for (var el = 1; el < cycle.length; el += 2) {
+          // Every other element is an edge
+          expect(cycle[el].isEdge()).to.equal(true);
+          // Each edge connects the previous and following nodes
+          var edgeNodes = [cycle[el].source(), cycle[el].target()];
+          expect(edgeNodes).to.contain(cycle[el - 1]);
+          expect(edgeNodes).to.contain(cycle[el + 1]);
+        }
+        // Cycles starts and ends with the same node
+        expect(cycle[0]).to.equal(cycle[cycle.length - 1]);
+        // Sum of edge weights is negative
+        expect(cycle.stdFilter(isEdge).reduce((dist, edge) => dist + edge.data('weight'), 0))
+          .to.be.below(0);
+      }
 
   });
 

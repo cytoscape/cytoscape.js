@@ -152,27 +152,27 @@ let elesfn = ({
             for( let n = 0; n < numNegativeNodes; n++ ){
               const start = negativeNodes[n];
               let cycle = [start];
-              let smallestId = start.id();
-              let smallestOffset = 1;
               
-              cycle.unshift(getInfo(start).edge);
+              cycle.push(getInfo(start).edge);
 
               let node = getInfo(start).pred;
               while( cycle.indexOf(node) === -1 ){
-                cycle.unshift(node);
-
-                if( node.id() < smallestId ){
-                  smallestId = node.id();
-                  smallestOffset = cycle.length;
-                }
-
-                cycle.unshift(getInfo(node).edge);
-
+                cycle.push(node);
+                cycle.push(getInfo(node).edge);
                 node = getInfo(node).pred;
               }
+              cycle = cycle.slice(cycle.indexOf(node));
 
-              cycle = cycle.slice(cycle.length - smallestOffset)
-                .concat(cycle.slice(0, cycle.length - smallestOffset));
+              let smallestId = cycle[0].id();
+              let smallestIndex = 0;
+              for( let c = 2; c < cycle.length; c+=2 ){
+                if( cycle[c].id() < smallestId ){
+                  smallestId = cycle[c].id();
+                  smallestIndex = c;
+                }
+              }
+              cycle = cycle.slice(smallestIndex)
+                .concat(cycle.slice(0, smallestIndex));
               cycle.push(cycle[0]);
 
               const cycleId = cycle.map(el => el.id()).join(",");

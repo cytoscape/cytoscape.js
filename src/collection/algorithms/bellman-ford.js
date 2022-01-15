@@ -137,7 +137,7 @@ let elesfn = ({
             hasNegativeWeightCycle = true;
           }
 
-          if( options.findNegativeWeightCycles ){
+          if( options.findNegativeWeightCycles !== false ){
             const negativeNodes = [];
 
             if( srcDist + weight < tgtDist ){

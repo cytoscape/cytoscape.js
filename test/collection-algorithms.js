@@ -613,7 +613,8 @@ describe('Algorithms', function(){
       var options = {
         root: a,
         directed: false,
-        weight: function( ele ){ return ele.data('weight'); }
+        weight: function( ele ){ return ele.data('weight'); },
+        findNegativeWeightCycles: false
       };
 
       ce.data('weight', -6);
@@ -624,6 +625,9 @@ describe('Algorithms', function(){
       // Negative weight cycles
       expect(res.hasNegativeWeightCycle).to.equal(true);
 
+      // Only detect but don't find negative weight cycles
+      expect(res.negativeWeightCycles.length).to.equal(0);
+
   });
 
 
@@ -631,8 +635,7 @@ describe('Algorithms', function(){
       var options = {
         root: a,
         directed: false,
-        weight: function( ele ){ return ele.data('weight'); },
-        findNegativeWeightCycles: true
+        weight: function( ele ){ return ele.data('weight'); }
       };
 
       ce.data('weight', -6);

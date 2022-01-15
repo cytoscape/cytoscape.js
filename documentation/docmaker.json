@@ -3184,8 +3184,7 @@
                     { "name": "options", "fields": [
                       { "name": "root", "descr": "The root node (selector or collection) where the search starts." },
                       { "name": "weight: function(edge)", "descr": "A function that returns the numeric weight for the edge.  The weight indicates the cost of going from one node to another node.  The weight may be positive or negative.", "optional": true },
-                      { "name": "directed", "descr": "A boolean indicating whether the algorithm should only go along edges from source to target (default `false`).", "optional": true },
-                      { "name": "findNegativeWeightCycles", "descr": "A boolean indicating whether the algorithm should find and return negative weight cycles (default `false`).", "optional": true }
+                      { "name": "directed", "descr": "A boolean indicating whether the algorithm should only go along edges from source to target (default `false`).", "optional": true }
                     ] }
                   ]
                 }

@@ -15,6 +15,7 @@ const defaults = {
   nodeDimensionsIncludeLabels: false, // Excludes the label when calculating node bounding boxes for the layout algorithm
   roots: undefined, // the roots of the trees
   maximal: false, // whether to shift nodes down their natural BFS depths in order to avoid upwards edges (DAGS only)
+  depthSort: undefined, // a sorting function to order nodes at equal depth. e.g. function(a, b){ return a.data('weight') - b.data('weight') }
   animate: false, // whether to transition the node positions
   animationDuration: 500, // duration of animation in ms if enabled
   animationEasing: undefined, // easing of animation if enabled,
@@ -292,6 +293,10 @@ BreadthFirstLayout.prototype.run = function(){
       return diff;
     }
   };
+
+  if (options.depthSort !== undefined) {
+    sortFn = options.depthSort;
+  }
 
   // sort each level to make connected nodes closer
   for( let i = 0; i < depths.length; i++ ){

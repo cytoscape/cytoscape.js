@@ -121,6 +121,7 @@ let elesfn = ({
 
     if( replacedEdge ){
       // Check for negative weight cycles
+      const negativeWeightCycleIds = [];
       for( let e = 0; e < numEdges; e++ ){
         let edge = edges[e];
         let src = edge.source();
@@ -130,11 +131,59 @@ let elesfn = ({
         let tgtDist = getInfo(tgt).dist;
 
         if( srcDist + weight < tgtDist || (!directed && tgtDist + weight < srcDist) ){
-          warn('Graph contains a negative weight cycle for Bellman-Ford');
+          if( !hasNegativeWeightCycle ){
+            warn('Graph contains a negative weight cycle for Bellman-Ford');
 
-          hasNegativeWeightCycle = true;
+            hasNegativeWeightCycle = true;
+          }
 
-          break;
+          if( options.findNegativeWeightCycles !== false ){
+            const negativeNodes = [];
+
+            if( srcDist + weight < tgtDist ){
+              negativeNodes.push(src);
+            }
+
+            if( !directed && tgtDist + weight < srcDist ) {
+              negativeNodes.push(tgt);
+            }
+
+            const numNegativeNodes = negativeNodes.length;
+            for( let n = 0; n < numNegativeNodes; n++ ){
+              const start = negativeNodes[n];
+              let cycle = [start];
+              
+              cycle.push(getInfo(start).edge);
+
+              let node = getInfo(start).pred;
+              while( cycle.indexOf(node) === -1 ){
+                cycle.push(node);
+                cycle.push(getInfo(node).edge);
+                node = getInfo(node).pred;
+              }
+              cycle = cycle.slice(cycle.indexOf(node));
+
+              let smallestId = cycle[0].id();
+              let smallestIndex = 0;
+              for( let c = 2; c < cycle.length; c+=2 ){
+                if( cycle[c].id() < smallestId ){
+                  smallestId = cycle[c].id();
+                  smallestIndex = c;
+                }
+              }
+              cycle = cycle.slice(smallestIndex)
+                .concat(cycle.slice(0, smallestIndex));
+              cycle.push(cycle[0]);
+
+              const cycleId = cycle.map(el => el.id()).join(",");
+              if( negativeWeightCycleIds.indexOf(cycleId) === -1 ){
+                negativeWeightCycles.push(eles.spawn(cycle));
+                negativeWeightCycleIds.push(cycleId);
+              }
+            }
+          } else {
+            break;
+          }
         }
       }
     }

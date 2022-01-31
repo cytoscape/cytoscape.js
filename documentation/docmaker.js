@@ -57,7 +57,7 @@ function md2html( file ){
 
   // let html = converter.makeHtml( md );
   //let html = mdConvertor( md );
-  let html = marked( md, {
+  marked.setOptions({
     highlight: function(code, lang){
       let ret;
 
@@ -78,6 +78,7 @@ function md2html( file ){
     gfm: true
   } );
 
+  let html = marked.parse( md );
 
   return html;
 }
@@ -140,7 +141,7 @@ function processFields( fields ){
   for( let i = 0; fields && i < fields.length; i++ ){
     let field = fields[i];
 
-    field.descr = marked( field.descr  || '' );
+    field.descr = marked.parse( field.descr  || '' );
 
     linkifyArg( field );
 
@@ -248,7 +249,7 @@ function compileConfig( config ){
         fn.altIds.push( section.id + '/' + fn.name );
         fn.id = fn.name;
         fn.bookmark = makeBookmark( fn.id );
-        fn.descr = fn.descr ? marked( fn.descr ) : undefined;
+        fn.descr = fn.descr ? marked.parse( fn.descr ) : undefined;
 
         if( fn.md ){
           fn.html = md2html( fn.md );
@@ -275,7 +276,7 @@ function compileConfig( config ){
             let format = formats[k];
 
             format.name = format.name || fn.name; // copy name to format if not specified
-            format.descr = marked( format.descr || '' );
+            format.descr = marked.parse( format.descr || '' );
 
             fn.altIds.push( section.id + '/' + format.name );
             fn.altIds.push( format.name );
@@ -286,7 +287,7 @@ function compileConfig( config ){
 
                 linkifyArg( arg );
 
-                arg.descr = marked( arg.descr || '' );
+                arg.descr = marked.parse( arg.descr || '' );
 
                 processFields( arg.fields );
               }

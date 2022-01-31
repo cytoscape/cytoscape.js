@@ -4,8 +4,8 @@ var cytoscape = require('../src/test.js', cytoscape);
 describe('Algorithms', function(){
 
   var cy;
-  var a, b, c, d, e;
-  var ae, ab, be, bc, ce, cd, de;
+  var a, b, c, d, e, f;
+  var ae, ab, be, bc, ce, cd, cf, de, df;
 
   beforeEach(function(done){
     cytoscape({
@@ -15,7 +15,8 @@ describe('Algorithms', function(){
           { data: { id: 'b' } },
           { data: { id: 'c' } },
           { data: { id: 'd' } },
-          { data: { id: 'e' } }
+          { data: { id: 'e' } },
+          { data: { id: 'f' } }
         ],
 
         edges: [
@@ -25,7 +26,9 @@ describe('Algorithms', function(){
           { data: { id: 'bc', weight: 5, source: 'b', target: 'c' } },
           { data: { id: 'ce', weight: 6, source: 'c', target: 'e' } },
           { data: { id: 'cd', weight: 2, source: 'c', target: 'd' } },
-          { data: { id: 'de', weight: 7, source: 'd', target: 'e' } }
+          { data: { id: 'cf', weight: 1, source: 'c', target: 'f' } },
+          { data: { id: 'de', weight: 7, source: 'd', target: 'e' } },
+          { data: { id: 'df', weight: 8, source: 'd', target: 'f' } }
         ]
       },
       ready: function(){
@@ -36,6 +39,7 @@ describe('Algorithms', function(){
         c = cy.$('#c');
         d = cy.$('#d');
         e = cy.$('#e');
+        f = cy.$('#f');
 
         ae = cy.$('#ae');
         ab = cy.$('#ab');
@@ -43,7 +47,9 @@ describe('Algorithms', function(){
         bc = cy.$('#bc');
         ce = cy.$('#ce');
         cd = cy.$('#cd');
+        cf = cy.$('#cf');
         de = cy.$('#de');
+        df = cy.$('#df');
 
         done();
       }
@@ -56,6 +62,10 @@ describe('Algorithms', function(){
 
   function isNode(ele){
     return ele.isNode();
+  }
+
+  function isEdge(ele){
+    return ele.isEdge();
   }
 
   function eles(){
@@ -76,7 +86,8 @@ describe('Algorithms', function(){
       b: 1,
       e: 1,
       c: 2,
-      d: 2
+      d: 2,
+      f: 3
     };
 
     var depths = {};
@@ -90,7 +101,7 @@ describe('Algorithms', function(){
 
     expect( depths ).to.deep.equal( expectedDepths );
     expect( bfs.path.nodes().same( cy.nodes() ) ).to.be.true;
-    expect( bfs.path.edges().length ).to.equal( 4 );
+    expect( bfs.path.edges().length ).to.equal( 5 );
 
     for( var i = 0; i < bfs.path.length; i++ ){
       if( i % 2 === 0 ){
@@ -107,7 +118,8 @@ describe('Algorithms', function(){
       b: 1,
       e: 1,
       c: 2,
-      d: 3
+      d: 3,
+      f: 3
     };
 
     var depths = {};
@@ -122,7 +134,7 @@ describe('Algorithms', function(){
 
     expect( depths ).to.deep.equal( expectedDepths );
     expect( bfs.path.nodes().same( cy.nodes() ) ).to.be.true;
-    expect( bfs.path.edges().length ).to.equal( 4 );
+    expect( bfs.path.edges().length ).to.equal( 5 );
 
     for( var i = 0; i < bfs.path.length; i++ ){
       if( i % 2 === 0 ){
@@ -139,7 +151,7 @@ describe('Algorithms', function(){
     });
 
     expect( dfs.path.nodes().same( cy.nodes() ) ).to.be.true;
-    expect( dfs.path.edges().length ).to.equal( 4 );
+    expect( dfs.path.edges().length ).to.equal( 5 );
 
     for( var i = 0; i < dfs.path.length; i++ ){
       if( i % 2 === 0 ){
@@ -154,7 +166,7 @@ describe('Algorithms', function(){
     var dfs = cy.elements().dfs({ roots: a, directed: true });
 
     expect( dfs.path.nodes().same( cy.nodes() ) ).to.be.true;
-    expect( dfs.path.edges().length ).to.equal( 4 );
+    expect( dfs.path.edges().length ).to.equal( 5 );
 
     for( var i = 0; i < dfs.path.length; i++ ){
       if( i % 2 === 0 ){
@@ -609,7 +621,8 @@ describe('Algorithms', function(){
       var options = {
         root: a,
         directed: false,
-        weight: function( ele ){ return ele.data('weight'); }
+        weight: function( ele ){ return ele.data('weight'); },
+        findNegativeWeightCycles: false
       };
 
       ce.data('weight', -6);
@@ -617,8 +630,49 @@ describe('Algorithms', function(){
 
       var res = cy.elements().bellmanFord(options);
 
-      // No negative weight cycles
+      // Negative weight cycles
       expect(res.hasNegativeWeightCycle).to.equal(true);
+
+      // Only detect but don't find negative weight cycles
+      expect(res.negativeWeightCycles.length).to.equal(0);
+
+  });
+
+
+  it('eles.bellmanFord(): find negative weight cycles', function() {
+      var options = {
+        root: a,
+        directed: false,
+        weight: function( ele ){ return ele.data('weight'); }
+      };
+
+      be.data('weight', -5);
+      df.data('weight', -5);
+
+      var res = cy.elements().bellmanFord(options);
+
+      // At least one negative weight cycle
+      var numCycles = res.negativeWeightCycles.length;
+      expect(numCycles).to.be.above(0);
+
+      for (var i = 0; i < numCycles; i++) {
+        var cycle = res.negativeWeightCycles[i];
+        // Cycle has an odd number of elements
+        expect(cycle.length % 2).to.equal(1);
+        for (var el = 1; el < cycle.length; el += 2) {
+          // Every other element is an edge
+          expect(cycle[el].isEdge()).to.equal(true);
+          // Each edge connects the previous and following nodes
+          var edgeNodes = [cycle[el].source(), cycle[el].target()];
+          expect(edgeNodes).to.contain(cycle[el - 1]);
+          expect(edgeNodes).to.contain(cycle[el + 1]);
+        }
+        // Cycles starts and ends with the same node
+        expect(cycle[0]).to.equal(cycle[cycle.length - 1]);
+        // Sum of edge weights is negative
+        expect(cycle.stdFilter(isEdge).reduce((dist, edge) => dist + edge.data('weight'), 0))
+          .to.be.below(0);
+      }
 
   });
 
@@ -690,7 +744,7 @@ describe('Algorithms', function(){
       expect(res.cut.length).to.be.within(2,4);
 
       // Number of all nodes and edges matches size of calling collection
-      expect(res.components[0].length + res.components[1].length + res.cut.length).to.equal(12);
+      expect(res.components[0].length + res.components[1].length + res.cut.length).to.equal(15);
   });
 
 
@@ -719,8 +773,8 @@ describe('Algorithms', function(){
 
     expect( res["dc_a"].degree ).to.equal(2);
     expect( res["dc_b"].degree ).to.equal(3);
-    expect( res["dc_c"].degree ).to.equal(3);
-    expect( res["dc_d"].degree ).to.equal(2);
+    expect( res["dc_c"].degree ).to.equal(4);
+    expect( res["dc_d"].degree ).to.equal(3);
     expect( res["dc_e"].degree ).to.equal(4);
   });
 
@@ -736,8 +790,8 @@ describe('Algorithms', function(){
     // Changing alpha will not change the expectations because graph is unweighted
     expect( res["dc_a"].degree ).to.equal(2);
     expect( res["dc_b"].degree ).to.equal(3);
-    expect( res["dc_c"].degree ).to.equal(3);
-    expect( res["dc_d"].degree ).to.equal(2);
+    expect( res["dc_c"].degree ).to.equal(4);
+    expect( res["dc_d"].degree ).to.equal(3);
     expect( res["dc_e"].degree ).to.equal(4);
   });
 
@@ -756,8 +810,8 @@ describe('Algorithms', function(){
 
     expect( res["dc_a"].degree ).to.equal(2);
     expect( res["dc_b"].degree ).to.equal(3);
-    expect( res["dc_c"].degree ).to.equal(3);
-    expect( res["dc_d"].degree ).to.equal(2);
+    expect( res["dc_c"].degree ).to.equal(4);
+    expect( res["dc_d"].degree ).to.equal(3);
     expect( res["dc_e"].degree ).to.equal(4);
   });
 
@@ -776,8 +830,8 @@ describe('Algorithms', function(){
 
     expect( res["dc_a"].degree ).to.equal(4);
     expect( res["dc_b"].degree ).to.equal(12);
-    expect( res["dc_c"].degree ).to.equal(13);
-    expect( res["dc_d"].degree ).to.equal(9);
+    expect( res["dc_c"].degree ).to.equal(14);
+    expect( res["dc_d"].degree ).to.equal(17);
     expect( res["dc_e"].degree ).to.equal(18);
   });
 
@@ -799,8 +853,8 @@ describe('Algorithms', function(){
 
     expect( res["dc_a"].outdegree ).to.equal(2);
     expect( res["dc_b"].outdegree ).to.equal(2);
-    expect( res["dc_c"].outdegree ).to.equal(2);
-    expect( res["dc_d"].outdegree ).to.equal(1);
+    expect( res["dc_c"].outdegree ).to.equal(3);
+    expect( res["dc_d"].outdegree ).to.equal(2);
     expect( res["dc_e"].outdegree ).to.equal(0);
   });
 
@@ -822,8 +876,8 @@ describe('Algorithms', function(){
 
     expect( res["dc_a"].outdegree ).to.equal(2);
     expect( res["dc_b"].outdegree ).to.equal(2);
-    expect( res["dc_c"].outdegree ).to.equal(2);
-    expect( res["dc_d"].outdegree ).to.equal(1);
+    expect( res["dc_c"].outdegree ).to.equal(3);
+    expect( res["dc_d"].outdegree ).to.equal(2);
     expect( res["dc_e"].outdegree ).to.equal(0);
   });
 
@@ -848,8 +902,8 @@ describe('Algorithms', function(){
 
     expect( res["dc_a"].outdegree ).to.equal(2);
     expect( res["dc_b"].outdegree ).to.equal(2);
-    expect( res["dc_c"].outdegree ).to.equal(2);
-    expect( res["dc_d"].outdegree ).to.equal(1);
+    expect( res["dc_c"].outdegree ).to.equal(3);
+    expect( res["dc_d"].outdegree ).to.equal(2);
     expect( res["dc_e"].outdegree ).to.equal(0);
   });
 
@@ -874,8 +928,8 @@ describe('Algorithms', function(){
 
     expect( res["dc_a"].outdegree ).to.equal(4);
     expect( res["dc_b"].outdegree ).to.equal(9);
-    expect( res["dc_c"].outdegree ).to.equal(8);
-    expect( res["dc_d"].outdegree ).to.equal(7);
+    expect( res["dc_c"].outdegree ).to.equal(9);
+    expect( res["dc_d"].outdegree ).to.equal(15);
     expect( res["dc_e"].outdegree ).to.equal(0);
   });
 
@@ -885,11 +939,11 @@ describe('Algorithms', function(){
       res["dc_" + ele.id()] = cy.elements().closenessCentrality({root: ele});
     });
 
-    expect( res["dc_a"] ).to.equal(3);
-    expect( res["dc_b"] ).to.equal(3.5);
-    expect( res["dc_c"] ).to.equal(3.5);
-    expect( res["dc_d"] ).to.equal(3);
-    expect( res["dc_e"] ).to.equal(4);
+    expect( res["dc_a"].toFixed(2) ).to.equal('3.33'); //Rounded to 2 decimals in order to handle irrational number
+    expect( res["dc_b"] ).to.equal(4);
+    expect( res["dc_c"] ).to.equal(4.5);
+    expect( res["dc_d"] ).to.equal(4);
+    expect( res["dc_e"] ).to.equal(4.5);
   });
 
   it('eles.closenessCentrality() unweighted directed', function(){
@@ -901,10 +955,10 @@ describe('Algorithms', function(){
       });
     });
 
-    expect( +res["dc_a"].toFixed(2) ).to.equal(2.83); //Rounded to 2 decimals in order to handle irrational number
-    expect( res["dc_b"] ).to.equal(2.5);
-    expect( res["dc_c"] ).to.equal(2);
-    expect( res["dc_d"] ).to.equal(1);
+    expect( +res["dc_a"].toFixed(2) ).to.equal(3.17); //Rounded to 2 decimals in order to handle irrational number
+    expect( res["dc_b"] ).to.equal(3);
+    expect( res["dc_c"] ).to.equal(3);
+    expect( res["dc_d"] ).to.equal(2);
     expect( res["dc_e"] ).to.equal(0);
   });
 
@@ -919,11 +973,11 @@ describe('Algorithms', function(){
       });
     });
 
-    expect( +res["dc_a"].toFixed(2) ).to.equal(1.60); //Rounded to 2 decimals in order to handle irrational number
-    expect( +res["dc_b"].toFixed(2) ).to.equal(0.93);
-    expect( +res["dc_c"].toFixed(2) ).to.equal(1.01);
-    expect( +res["dc_d"].toFixed(2) ).to.equal(0.91);
-    expect( +res["dc_e"].toFixed(2) ).to.equal(1.56);
+    expect( +res["dc_a"].toFixed(2) ).to.equal(1.73); //Rounded to 2 decimals in order to handle irrational number
+    expect( +res["dc_b"].toFixed(2) ).to.equal(1.09);
+    expect( +res["dc_c"].toFixed(2) ).to.equal(2.01);
+    expect( +res["dc_d"].toFixed(2) ).to.equal(1.24);
+    expect( +res["dc_e"].toFixed(2) ).to.equal(1.70);
   });
 
   it('eles.closenessCentrality() weighted directed', function(){
@@ -938,10 +992,10 @@ describe('Algorithms', function(){
       });
     });
 
-    expect( +res["dc_a"].toFixed(2) ).to.equal(1.56); //Rounded to 2 decimals in order to handle irrational number
-    expect( +res["dc_b"].toFixed(2) ).to.equal(0.59);
-    expect( +res["dc_c"].toFixed(2) ).to.equal(0.67);
-    expect( +res["dc_d"].toFixed(2) ).to.equal(0.14);
+    expect( +res["dc_a"].toFixed(2) ).to.equal(1.67); //Rounded to 2 decimals in order to handle irrational number
+    expect( +res["dc_b"].toFixed(2) ).to.equal(0.76);
+    expect( +res["dc_c"].toFixed(2) ).to.equal(1.67);
+    expect( +res["dc_d"].toFixed(2) ).to.equal(0.27);
     expect( res["dc_e"] ).to.equal(0);
   });
 
@@ -949,10 +1003,10 @@ describe('Algorithms', function(){
     var res = cy.elements().betweennessCentrality();
 
     expect( res.betweenness(a) ).to.equal(0);
-    expect( res.betweenness(b) ).to.equal(1);
-    expect( res.betweenness(c) ).to.equal(1);
-    expect( res.betweenness(d) ).to.equal(0);
-    expect( res.betweenness(e) ).to.equal(4);
+    expect( res.betweenness(b).toFixed(2) ).to.equal('1.67');
+    expect( res.betweenness(c).toFixed(2) ).to.equal('5.33');
+    expect( res.betweenness(d).toFixed(2) ).to.equal('1.67');
+    expect( res.betweenness(e).toFixed(2) ).to.equal('5.33');
   });
 
   it('eles.betweennessCentrality() unweighted directed', function(){
@@ -961,8 +1015,8 @@ describe('Algorithms', function(){
     });
 
     expect( res.betweenness(a) ).to.equal(0);
-    expect( res.betweenness(b) ).to.equal(2);
-    expect( res.betweenness(c) ).to.equal(2);
+    expect( res.betweenness(b) ).to.equal(3);
+    expect( res.betweenness(c) ).to.equal(4);
     expect( res.betweenness(d) ).to.equal(0);
     expect( res.betweenness(e) ).to.equal(0);
   });
@@ -976,9 +1030,9 @@ describe('Algorithms', function(){
 
     expect( res.betweenness(a) ).to.equal(1);
     expect( res.betweenness(b) ).to.equal(0);
-    expect( res.betweenness(c) ).to.equal(2);
+    expect( res.betweenness(c) ).to.equal(10);
     expect( res.betweenness(d) ).to.equal(0);
-    expect( res.betweenness(e) ).to.equal(4);
+    expect( res.betweenness(e) ).to.equal(6);
   });
 
   it('eles.betweennessCentrality() weighted directed', function(){
@@ -990,8 +1044,8 @@ describe('Algorithms', function(){
     });
 
     expect( res.betweenness(a) ).to.equal(0);
-    expect( res.betweenness(b) ).to.equal(2);
-    expect( res.betweenness(c) ).to.equal(2);
+    expect( res.betweenness(b) ).to.equal(3);
+    expect( res.betweenness(c) ).to.equal(4);
     expect( res.betweenness(d) ).to.equal(0);
     expect( res.betweenness(e) ).to.equal(0);
   });
@@ -1012,8 +1066,8 @@ describe('Algorithms', function(){
 
     expect( res.betweenness(a) ).to.equal(0);
     expect( res.betweenness(b) ).to.equal(1);
-    expect( res.betweenness(c) ).to.equal(0);
-    expect( res.betweenness(d) ).to.equal(1);
-    expect( res.betweenness(e) ).to.equal(3);
+    expect( res.betweenness(c) ).to.equal(2);
+    expect( res.betweenness(d) ).to.equal(2);
+    expect( res.betweenness(e) ).to.equal(4);
   });
 });

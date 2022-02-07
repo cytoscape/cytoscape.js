@@ -14,7 +14,11 @@ This function returns an object of the following form:
   distanceTo: function(node){ /* impl */ }, 
 
   /* true/false. If true, pathTo and distanceTo will be undefined */
-  hasNegativeWeightCycle 
+  hasNegativeWeightCycle,
+
+  /* Array of collections corresponding to the negative weight cycles found
+  (only populated if the findNegativeWeightCycles option is set to true) */
+  negativeWeightCycles
 }
 ```
 

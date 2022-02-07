@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2016-2021, The Cytoscape Consortium.
+ * Copyright (c) 2016-2022, The Cytoscape Consortium.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the “Software”), to deal in
@@ -8874,7 +8874,12 @@ fn$2 = elesfn$j = {
       cy.startBatch();
 
       for (var i = 0; i < this.length; i++) {
-        var ele = this[i];
+        var ele = this[i]; // exclude any node that is a descendant of the calling collection
+
+        if (cy.hasCompoundNodes() && ele.isChild() && ele.ancestors().anySame(this)) {
+          continue;
+        }
+
         var pos = ele.position();
         var newPos = {
           x: pos.x + delta.x,
@@ -24257,7 +24262,7 @@ BRp$c.load = function () {
     var list = opts.addToList;
     var listHasEle = list.has(ele);
 
-    if (!listHasEle) {
+    if (!listHasEle && ele.grabbable() && !ele.locked()) {
       list.merge(ele);
       setGrabbed(ele);
     }
@@ -24283,7 +24288,7 @@ BRp$c.load = function () {
     }
 
     if (opts.addToList) {
-      opts.addToList.unmerge(innerNodes);
+      addToDragList(innerNodes, opts);
     }
   }; // adds the given nodes and its neighbourhood to the drag layer
 
@@ -24874,8 +24879,7 @@ BRp$c.load = function () {
             }
 
             r.dragData.didDrag = true; // indicate that we actually did drag the node
-
-            var toTrigger = cy.collection(); // now, add the elements to the drag layer if not done already
+            // now, add the elements to the drag layer if not done already
 
             if (!r.hoverData.draggingEles) {
               addNodesToDrag(draggedElements, {
@@ -24902,16 +24906,8 @@ BRp$c.load = function () {
               }
             }
 
-            for (var i = 0; i < draggedElements.length; i++) {
-              var dEle = draggedElements[i];
-
-              if (r.nodeIsDraggable(dEle) && dEle.grabbed()) {
-                toTrigger.push(dEle);
-              }
-            }
-
             r.hoverData.draggingEles = true;
-            toTrigger.silentShift(totalShift).emit('position drag');
+            draggedElements.silentShift(totalShift).emit('position drag');
             r.redrawHint('drag', true);
             r.redraw();
           }
@@ -31798,7 +31794,7 @@ sheetfn.appendToStyle = function (style) {
   return style;
 };
 
-var version = "3.20.0";
+var version = "3.20.1";
 
 var cytoscape = function cytoscape(options) {
   // if no options specified, use default

@@ -746,7 +746,10 @@
 </ul>
 <h2 id="introduction/releases">Releases <a href="#introduction/releases"><span class="fa fa-bookmark"></span></a></h2>
 <ul>
+<li>3.21</li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.21.0+is%3Aclosed">3.21.0</a></li>
 <li>3.20</li>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.20.1+is%3Aclosed">3.20.1</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.20.0+is%3Aclosed">3.20.0</a></li>
 <li>3.19</li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.19.1+is%3Aclosed">3.19.1</a></li>
@@ -11427,7 +11430,11 @@ fw.path(<span class="hljs-string">&#x27;#k&#x27;</span>, <span class="hljs-strin
   <span class="hljs-attr">distanceTo</span>: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">node</span>)</span>{ <span class="hljs-comment">/* impl */</span> }, 
 
   <span class="hljs-comment">/* true/false. If true, pathTo and distanceTo will be undefined */</span>
-  hasNegativeWeightCycle 
+  hasNegativeWeightCycle,
+
+  <span class="hljs-comment">/* Array of collections corresponding to the negative weight cycles found
+  (only populated if the findNegativeWeightCycles option is set to true) */</span>
+  negativeWeightCycles
 }
 </code></pre>
 <button class="run run-inline-code"><span class="fa fa-play"></span></button><p>If no weight function is defined, a constant weight of 1 is used for each edge. </p>
@@ -13439,6 +13446,12 @@ cy.filter(<span class="hljs-string">&#x27;node[name = &quot;Jerry&quot;]&#x27;</
 <button class="run run-inline-code"><span class="fa fa-play"></span></button><p>Some examples of these characters include <code>( ^ $ \ / ( ) | ? + * [ ] { } , . )</code>.  Try to avoid using non-alpha-numeric characters for field names and IDs to keep things simple.  If you must use special characters for IDs, use a data selector rather than an ID selector:</p>
 <pre><code class="language-js">cy.filter(<span class="hljs-string">&#x27;[id = &quot;some$funky@id&quot;]&#x27;</span>);
 </code></pre>
+<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>Selectors can access array elements and object properties with the dot-notation:</p>
+<pre><code class="language-js"><span class="hljs-comment">// get node with first element of array labels = &quot;Person&quot;</span>
+cy.elements(<span class="hljs-string">&#x27;node[labels.0 = &quot;Person&quot;]&#x27;</span>); <span class="hljs-comment">// labels: [&quot;Person&quot;]</span>
+<span class="hljs-comment">// get node with nested object property first = &quot;Jerry&quot;</span>
+cy.elements(<span class="hljs-string">&#x27;node[name.first = &quot;Jerry&quot;]&#x27;</span>); <span class="hljs-comment">// { name: { first: &quot;Jerry&quot;, last: &quot;Foo&quot; } }</span>
+</code></pre>
 <button class="run run-inline-code"><span class="fa fa-play"></span></button><h2 id="selectors/group-class-amp-id">Group, class, &amp; ID <a href="#selectors/group-class-amp-id"><span class="fa fa-bookmark"></span></a></h2>
 <p><strong><code>node</code>,  <code>edge</code>, or <code>*</code> (group selector)</strong>
 Matches elements based on group (<code>node</code> for nodes, <code>edge</code> for edges, <code>*</code> for all).</p>
@@ -13473,6 +13486,10 @@ Matches elements if their data attribute contains the specified value as a subst
 Matches elements if their data attribute starts with the specified value (e.g. <code>[foo ^= &#39;bar&#39;]</code>).</p>
 <p><strong><code>[name $= value]</code></strong>
 Matches elements if their data attribute ends with the specified value (e.g. <code>[foo $= &#39;bar&#39;]</code>).</p>
+<p><strong><code>[name.0 = value]</code></strong>
+Matches elements if their data attribute is an array and the element at the defined index matches a specified value (e.g. <code>[foo.0 = &#39;bar&#39;]</code>).</p>
+<p><strong><code>[name.property = value]</code></strong>
+Matches elements if their data attribute is an object and the property with the defined name matches a specified value (e.g. <code>[foo.bar = &#39;baz&#39;]</code>).</p>
 <p><strong><code>@</code> (data attribute operator modifier)</strong>
 Prepended to an operator so that is case insensitive (e.g. <code>[foo @$= &#39;ar&#39;]</code>, <code>[foo @&gt;= &#39;a&#39;]</code>, <code>[foo @= &#39;bar&#39;]</code>)</p>
 <p><strong><code>!</code> (data attribute operator modifier)</strong>

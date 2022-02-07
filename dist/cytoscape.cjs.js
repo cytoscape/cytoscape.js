@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2016-2021, The Cytoscape Consortium.
+ * Copyright (c) 2016-2022, The Cytoscape Consortium.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the “Software”), to deal in
@@ -26,6 +26,9 @@ function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'defau
 
 var util = _interopDefault(require('lodash.debounce'));
 var Heap = _interopDefault(require('heap'));
+var get = _interopDefault(require('lodash.get'));
+var set = _interopDefault(require('lodash.set'));
+var toPath = _interopDefault(require('lodash.topath'));
 
 function _typeof(obj) {
   if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") {
@@ -2042,6 +2045,8 @@ var elesfn$5 = {
 
     if (replacedEdge) {
       // Check for negative weight cycles
+      var negativeWeightCycleIds = [];
+
       for (var _e = 0; _e < numEdges; _e++) {
         var _edge = edges[_e];
 
@@ -2055,9 +2060,61 @@ var elesfn$5 = {
         var tgtDist = getInfo(_tgt).dist;
 
         if (srcDist + _weight2 < tgtDist || !directed && tgtDist + _weight2 < srcDist) {
-          warn('Graph contains a negative weight cycle for Bellman-Ford');
-          hasNegativeWeightCycle = true;
-          break;
+          if (!hasNegativeWeightCycle) {
+            warn('Graph contains a negative weight cycle for Bellman-Ford');
+            hasNegativeWeightCycle = true;
+          }
+
+          if (options.findNegativeWeightCycles !== false) {
+            var negativeNodes = [];
+
+            if (srcDist + _weight2 < tgtDist) {
+              negativeNodes.push(_src);
+            }
+
+            if (!directed && tgtDist + _weight2 < srcDist) {
+              negativeNodes.push(_tgt);
+            }
+
+            var numNegativeNodes = negativeNodes.length;
+
+            for (var n = 0; n < numNegativeNodes; n++) {
+              var start = negativeNodes[n];
+              var cycle = [start];
+              cycle.push(getInfo(start).edge);
+              var _node = getInfo(start).pred;
+
+              while (cycle.indexOf(_node) === -1) {
+                cycle.push(_node);
+                cycle.push(getInfo(_node).edge);
+                _node = getInfo(_node).pred;
+              }
+
+              cycle = cycle.slice(cycle.indexOf(_node));
+              var smallestId = cycle[0].id();
+              var smallestIndex = 0;
+
+              for (var c = 2; c < cycle.length; c += 2) {
+                if (cycle[c].id() < smallestId) {
+                  smallestId = cycle[c].id();
+                  smallestIndex = c;
+                }
+              }
+
+              cycle = cycle.slice(smallestIndex).concat(cycle.slice(0, smallestIndex));
+              cycle.push(cycle[0]);
+              var cycleId = cycle.map(function (el) {
+                return el.id();
+              }).join(",");
+
+              if (negativeWeightCycleIds.indexOf(cycleId) === -1) {
+                negativeWeightCycles.push(eles.spawn(cycle));
+                negativeWeightCycleIds.push(cycleId);
+              }
+            }
+          } else {
+            break;
+          }
         }
       }
     }
@@ -6576,14 +6633,22 @@ var define$1 = {
 
       if (string(name)) {
         // set or get property
-        // .data('foo')
+        var isPathLike = name.indexOf('.') !== -1; // there might be a normal field with a dot 
+
+        var path = isPathLike && toPath(name); // .data('foo')
+
         if (p.allowGetting && value === undefined) {
           // get
           var ret;
 
           if (single) {
-            p.beforeGet(single);
-            ret = single._private[p.field][name];
+            p.beforeGet(single); // check if it's path and a field with the same name doesn't exist
+
+            if (path && single._private[p.field][name] === undefined) {
+              ret = get(single._private[p.field], path);
+            } else {
+              ret = single._private[p.field][name];
+            }
           }
 
           return ret; // .data('foo', 'bar')
@@ -6600,7 +6665,11 @@ var define$1 = {
               var ele = all[i];
 
               if (p.canSet(ele)) {
-                ele._private[p.field][name] = value;
+                if (path && single._private[p.field][name] === undefined) {
+                  set(ele._private[p.field], path, value);
+                } else {
+                  ele._private[p.field][name] = value;
+                }
               }
             } // update mappers if asked
 
@@ -6934,7 +7003,7 @@ var tokens = {
   directedEdge: '\\s+->\\s+',
   undirectedEdge: '\\s+<->\\s+'
 };
-tokens.variable = '(?:[\\w-]|(?:\\\\' + tokens.metaChar + '))+'; // a variable name
+tokens.variable = '(?:[\\w-.]|(?:\\\\' + tokens.metaChar + '))+'; // a variable name
 
 tokens.value = tokens.string + '|' + tokens.number; // a value literal, either a string or number
 
@@ -8874,7 +8943,12 @@ fn$2 = elesfn$j = {
       cy.startBatch();
 
       for (var i = 0; i < this.length; i++) {
-        var ele = this[i];
+        var ele = this[i]; // exclude any node that is a descendant of the calling collection
+
+        if (cy.hasCompoundNodes() && ele.isChild() && ele.ancestors().anySame(this)) {
+          continue;
+        }
+
         var pos = ele.position();
         var newPos = {
           x: pos.x + delta.x,
@@ -18935,6 +19009,8 @@ var defaults$9 = {
   // the roots of the trees
   maximal: false,
   // whether to shift nodes down their natural BFS depths in order to avoid upwards edges (DAGS only)
+  depthSort: undefined,
+  // a sorting function to order nodes at equal depth. e.g. function(a, b){ return a.data('weight') - b.data('weight') }
   animate: false,
   // whether to transition the node positions
   animationDuration: 500,
@@ -19239,7 +19315,11 @@ BreadthFirstLayout.prototype.run = function () {
     } else {
       return diff;
     }
-  }; // sort each level to make connected nodes closer
+  };
+
+  if (options.depthSort !== undefined) {
+    sortFn = options.depthSort;
+  } // sort each level to make connected nodes closer
 
 
   for (var _i6 = 0; _i6 < depths.length; _i6++) {
@@ -24257,7 +24337,7 @@ BRp$c.load = function () {
     var list = opts.addToList;
     var listHasEle = list.has(ele);
 
-    if (!listHasEle) {
+    if (!listHasEle && ele.grabbable() && !ele.locked()) {
       list.merge(ele);
       setGrabbed(ele);
     }
@@ -24283,7 +24363,7 @@ BRp$c.load = function () {
     }
 
     if (opts.addToList) {
-      opts.addToList.unmerge(innerNodes);
+      addToDragList(innerNodes, opts);
     }
   }; // adds the given nodes and its neighbourhood to the drag layer
 
@@ -24874,8 +24954,7 @@ BRp$c.load = function () {
             }
 
             r.dragData.didDrag = true; // indicate that we actually did drag the node
-
-            var toTrigger = cy.collection(); // now, add the elements to the drag layer if not done already
+            // now, add the elements to the drag layer if not done already
 
             if (!r.hoverData.draggingEles) {
               addNodesToDrag(draggedElements, {
@@ -24902,16 +24981,8 @@ BRp$c.load = function () {
               }
             }
 
-            for (var i = 0; i < draggedElements.length; i++) {
-              var dEle = draggedElements[i];
-
-              if (r.nodeIsDraggable(dEle) && dEle.grabbed()) {
-                toTrigger.push(dEle);
-              }
-            }
-
             r.hoverData.draggingEles = true;
-            toTrigger.silentShift(totalShift).emit('position drag');
+            draggedElements.silentShift(totalShift).emit('position drag');
             r.redrawHint('drag', true);
             r.redraw();
           }
@@ -31651,6 +31722,9 @@ function setExtension(type, name, registrant) {
       };
     });
     ext = Renderer;
+  } else if (type === '__proto__' || type === 'constructor' || type === 'prototype') {
+    // to avoid potential prototype pollution
+    return error(type + ' is an illegal type to be registered, possibly lead to prototype pollutions');
   }
 
   return setMap({
@@ -31798,7 +31872,7 @@ sheetfn.appendToStyle = function (style) {
   return style;
 };
 
-var version = "3.20.0";
+var version = "3.21.0";
 
 var cytoscape = function cytoscape(options) {
   // if no options specified, use default

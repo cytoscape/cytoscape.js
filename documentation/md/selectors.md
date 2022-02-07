@@ -41,7 +41,14 @@ Some examples of these characters include `( ^ $ \ / ( ) | ? + * [ ] { } , . )`.
 cy.filter('[id = "some$funky@id"]');
 ```
 
+Selectors can access array elements and object properties with the dot-notation:
 
+```js
+// get node with first element of array labels = "Person"
+cy.elements('node[labels.0 = "Person"]'); // labels: ["Person"]
+// get node with nested object property first = "Jerry"
+cy.elements('node[name.first = "Jerry"]'); // { name: { first: "Jerry", last: "Foo" } }
+```
 
 ## Group, class, & ID
 
@@ -95,6 +102,12 @@ Matches elements if their data attribute starts with the specified value (e.g. `
 
 **`[name $= value]`**
 Matches elements if their data attribute ends with the specified value (e.g. `[foo $= 'bar']`).
+
+**`[name.0 = value]`**
+Matches elements if their data attribute is an array and the element at the defined index matches a specified value (e.g. `[foo.0 = 'bar']`).
+
+**`[name.property = value]`**
+Matches elements if their data attribute is an object and the property with the defined name matches a specified value (e.g. `[foo.bar = 'baz']`).
 
 **`@` (data attribute operator modifier)**
 Prepended to an operator so that is case insensitive (e.g. `[foo @$= 'ar']`, `[foo @>= 'a']`, `[foo @= 'bar']`)

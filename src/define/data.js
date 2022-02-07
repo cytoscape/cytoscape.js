@@ -1,5 +1,8 @@
 import * as util from '../util';
 import * as is from '../is';
+import get from 'lodash.get';
+import set from 'lodash.set';
+import toPath from 'lodash.topath';
 
 let define = {
 
@@ -31,7 +34,9 @@ let define = {
       let single = selfIsArrayLike ? self[0] : self;
 
       // .data('foo', ...)
-      if( is.string( name ) ){ // set or get property
+      if (is.string(name)) { // set or get property
+        let isPathLike = name.indexOf('.') !== -1; // there might be a normal field with a dot 
+        let path = isPathLike && toPath(name);
 
         // .data('foo')
         if( p.allowGetting && value === undefined ){ // get
@@ -40,7 +45,12 @@ let define = {
           if( single ){
             p.beforeGet( single );
 
-            ret = single._private[ p.field ][ name ];
+            // check if it's path and a field with the same name doesn't exist
+            if (path && single._private[ p.field ][ name ] === undefined) {
+              ret = get(single._private[ p.field ], path);
+            } else {
+              ret = single._private[ p.field ][ name ];
+            }
           }
           return ret;
 
@@ -56,7 +66,11 @@ let define = {
               let ele = all[i];
 
               if( p.canSet( ele ) ){
-                ele._private[ p.field ][ name ] = value;
+                if (path && single._private[ p.field ][ name ] === undefined) {
+                  set(ele._private[ p.field ], path, value);
+                } else {
+                  ele._private[ p.field ][ name ] = value;
+                }
               }
             }
 

@@ -35,7 +35,15 @@ var cy = cytoscape({ elements: myElements, container: myDiv });
 Learn more about the features of Cytoscape.js by reading [its documentation](https://js.cytoscape.org).
 
 
+## Example
 
+The Tokyo railway stations network can be visualised with Cytoscape:
+
+<img style="width: 300px; height: 126px;" src="https://raw.githubusercontent.com/cytoscape/cytoscape.js/unstable/documentation/img/tokyo-big.png" width="300" height="126"></img>
+
+<img style="width: 300px; height: 126px;" src="https://raw.githubusercontent.com/cytoscape/cytoscape.js/unstable/documentation/img/tokyo-big-zoomed-in.png" width="300" height="126"></img>
+
+A [live demo](https://js.cytoscape.org/demos/tokyo-railways/) and [source code](https://github.com/cytoscape/cytoscape.js/tree/master/documentation/demos/tokyo-railways) are available for the Tokyo railway stations graph.  More demos are available in the [documentation](https://js.cytoscape.org/#demos).
 
 
 ## Documentation

@@ -1,0 +1,29 @@
+name: Automated tests
+on: 
+  push:
+    paths:
+      - 'src/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.babelrc'
+      - '.eslintrc.json'
+      - '.github/workflows/tests.yaml'
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    container: node:16
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v2
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run ordinary tests
+        run: npm test
+        
+      - name: Run a build and run the tests on the build
+        run: npm run build && npm run test:build
+        

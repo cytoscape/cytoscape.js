@@ -21,9 +21,6 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Run ordinary tests
+      - name: Run tests
         run: npm test
-        
-      - name: Run a build and run the tests on the build
-        run: npm run build && npm run test:build
         

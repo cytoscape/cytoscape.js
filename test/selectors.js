@@ -62,6 +62,7 @@ describe('Selectors', function(){
   itSelects('#n1', 'n1');
   itSelects('#n1, #n2', 'n1', 'n2');
   itSelects('.cls1', 'n1', 'n2');
+  itSelects('.cls1.cls2', 'n1');
 
   // data
   itSelects('[weight]', 'n1', 'n2', 'nparent', 'n1n2');

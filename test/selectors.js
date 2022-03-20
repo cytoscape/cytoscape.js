@@ -13,7 +13,8 @@ describe('Selectors', function(){
           { data: { id: 'n1', foo: 'one', weight: 1, 'weird.name': 1, 'weird.name2': 'weird.val', 'weird.0': 'weird.index', emptystr: '', arrayval: ['index0', 'index1'] }, classes: 'cls1 cls2' },
           { data: { id: 'n2', foo: 'two', parent: 'nparent', weight: 2, 'weird.name3': '"blah"^blah<blah>#blah', 'weird.1': '"blah"^blah<blah>#blah', 'arrayval.0': [0, 1], bar: { baz: 'baz' } }, classes: 'cls1' },
           { data: { id: 'nparent', parent: 'nparent2', weight: 3 }, classes: 'cls2' },
-          { data: { id: 'nparent2' } }
+          { data: { id: 'nparent2' } },
+          { data: { id: 'n3.item' } },
         ],
 
         edges: [
@@ -57,21 +58,22 @@ describe('Selectors', function(){
   };
 
   // general
-  itSelects('node', 'n1', 'n2', 'nparent', 'nparent2');
+  itSelects('node', 'n1', 'n2', 'nparent', 'nparent2', 'n3.item');
   itSelects('edge', 'n1n2', 'nparentLoop');
   itSelects('#n1', 'n1');
   itSelects('#n1, #n2', 'n1', 'n2');
   itSelects('.cls1', 'n1', 'n2');
   itSelects('.cls1.cls2', 'n1');
+  itSelects('#n3.item', 'n3.item'); // test id with '.' in name
 
   // data
   itSelects('[weight]', 'n1', 'n2', 'nparent', 'n1n2');
   itSelects('[?foo]', 'n1', 'n2');
   itSelects('[?foo]', 'n1', 'n2');
-  itSelects('[!foo]', 'n1n2', 'nparentLoop', 'nparent', 'nparent2');
-  itSelects('[^foo]', 'nparent', 'nparentLoop', 'nparent2');
+  itSelects('[!foo]', 'n1n2', 'nparentLoop', 'nparent', 'nparent2', 'n3.item');
+  itSelects('[^foo]', 'nparent', 'nparentLoop', 'nparent2', 'n3.item');
   itSelects('[foo = "one"]', 'n1');
-  itSelects('[foo != "one"]', 'n2', 'nparent', 'n1n2', 'nparent2', 'nparentLoop');
+  itSelects('[foo != "one"]', 'n2', 'nparent', 'n1n2', 'nparent2', 'nparentLoop', 'n3.item');
   itSelects('[foo > "one"]', 'n2');
   itSelects('[foo < "two"]', 'n1');
   itSelects('[foo <= "two"]', 'n1', 'n2');
@@ -82,14 +84,14 @@ describe('Selectors', function(){
   itSelects('[foo $= "e"]', 'n1');
   itSelects('[foo @= "ONE"]', 'n1');
   itSelects('[weight = 2]', 'n2');
-  itSelects('[weight != 2]', 'n1', 'nparent', 'nparent2', 'n1n2', 'nparentLoop');
+  itSelects('[weight != 2]', 'n1', 'nparent', 'nparent2', 'n1n2', 'nparentLoop', 'n3.item');
   itSelects('[weight > 2]', 'nparent');
   itSelects('[weight >= 2]', 'nparent', 'n2');
   itSelects('[weight < 2]', 'n1', 'n1n2');
   itSelects('[weight <= 2]', 'n1', 'n2', 'n1n2');
   itSelects('[weight !< 2]', 'n2', 'nparent');
   itSelects('[emptystr = ""]', 'n1');
-  itSelects('[emptystr != ""]', 'n2', 'nparent', 'nparent2', 'n1n2', 'nparentLoop');
+  itSelects('[emptystr != ""]', 'n2', 'nparent', 'nparent2', 'n1n2', 'nparentLoop', 'n3.item');
   itSelects('[arrayval.0 = "index0"]', 'n1');
   itSelects('[arrayval.1 = "index1"]', 'n1'); 
   itSelects('[bar.baz = "baz"]', 'n2');   
@@ -101,25 +103,25 @@ describe('Selectors', function(){
 
   // selection
   itSelects(':selected', 'n1');
-  itSelects(':unselected', 'n2', 'n1n2', 'nparent', 'nparent2', 'nparentLoop');
-  itSelects(':selectable', 'n1', 'nparent', 'nparent2', 'n1n2', 'nparentLoop');
+  itSelects(':unselected', 'n2', 'n1n2', 'nparent', 'nparent2', 'nparentLoop', 'n3.item');
+  itSelects(':selectable', 'n1', 'nparent', 'nparent2', 'n1n2', 'nparentLoop', 'n3.item');
   itSelects(':unselectable', 'n2');
 
   // locking
   itSelects(':locked', 'nparent');
-  itSelects(':unlocked', 'n1', 'n2', 'nparent2', 'n1n2', 'nparentLoop');
+  itSelects(':unlocked', 'n1', 'n2', 'nparent2', 'n1n2', 'nparentLoop', 'n3.item');
 
   // visible
-  itSelects(':visible', 'n1', 'n2', 'nparent', 'nparent2', 'nparentLoop');
+  itSelects(':visible', 'n1', 'n2', 'nparent', 'nparent2', 'nparentLoop', 'n3.item');
   itSelects(':hidden', 'n1n2');
   itSelects(':transparent', 'n1n2');
 
   // compound
   itSelects(':parent', 'nparent', 'nparent2');
-  itSelects(':childless', 'n1', 'n2');
+  itSelects(':childless', 'n1', 'n2', 'n3.item');
   itSelects(':child', 'n2', 'nparent');
   itSelects(':nonorphan', 'n2', 'nparent');
-  itSelects(':orphan', 'n1', 'nparent2');
+  itSelects(':orphan', 'n1', 'nparent2', 'n3.item');
   itSelects('#nparent > node', 'n2');
   itSelects('#nparent node', 'n2');
   itSelects('$node > node', 'nparent', 'nparent2');

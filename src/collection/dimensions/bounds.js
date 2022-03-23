@@ -469,6 +469,13 @@ let boundingBoxImpl = function( ele, options ){
         overlayPadding = ele.pstyle( 'overlay-padding' ).value;
       }
     }
+    if( styleEnabled && options.includeUnderlays ){
+      overlayOpacity = ele.pstyle( 'underlay-opacity' ).value;
+
+      if( overlayOpacity !== 0 ){
+        overlayPadding = ele.pstyle( 'underlay-padding' ).value;
+      }
+    }
 
     let w = 0;
     let wHalf = 0;
@@ -810,6 +817,7 @@ let defBbOpts = {
   includeSourceLabels: true,
   includeTargetLabels: true,
   includeOverlays: true,
+  includeUnderlays: true,
   useCache: true
 };
 

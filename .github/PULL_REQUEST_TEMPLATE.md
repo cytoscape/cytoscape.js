@@ -1,71 +1,24 @@
-<!--
-If you do not have a separate GitHub issue for this PR, then fill out the following sections.  If you have created a separate issue for this PR, then please link to it instead of filling out the sections.
--->
+**Cross-references to related issues.**  If there is no existing issue that describes your bug or feature request, then [create an issue](https://github.com/cytoscape/cytoscape.js/issues/new/choose) before making your pull request.
 
-**Issue type**
+Associated issues: #X, #Y, #Z
 
-<!--
-Are you submitting a bug report or a feature request?
+**Notes re. the content of the pull request.** Give context to reviewers or serve as a general record of the changes made.  Add a screenshot or video to demonstrate your new feature, if possible.
 
-When submitting a bug report, check the following:
-- The report has a descriptive title.
-- The bug still exists in most recent version of the library.
--->
+- This PR adds this.
+- This PR does that.
+- This PR allows us to do some other thing.
 
-<!-- Delete one option -->
-Bug report
-Feature request
+**Checklist**
 
+Author:
 
+- [ ] The proper base branch has been selected.  New features go on `unstable`.  Bug-fix patches can go on either `unstable` or `master`.
+- [ ] Automated tests have been included in this pull request, if possible, for the new feature(s) or bug fix.  Check this box if tests are not pragmatically possible (e.g. rendering features could include screenshots or videos instead of automated tests).
+- [ ] The associated GitHub issues are included (above).
+- [ ] Notes have been included (above).
 
+Reviewers:
 
-<!-- BUG REPORT : Delete if requesting a feature -->
-
-**Environment info**
-
-- Cytoscape.js version :
-- Browser/Node.js & version :
-
-**Current (buggy) behaviour**
-
-<!-- What does the bug do? -->
-
-
-**Desired behaviour**
-
-<!-- What do you expect Cytoscape.js to do instead? -->
-
-
-**Minimum steps to reproduce**
-
-<!--
-Write out an overview of what you need to do to reproduce the issue.
-
-Fork/clone this JSBin demo and reproduce your issue so that your issue can be addressed quickly:
-http://jsbin.com/fiqugiq
-
-If your code to reproduce is only two or three lines, you can write it in the issue instead.  Format your code in backtick code blocks like this:
-
-```js
-my.code();
-```
--->
-
-<!-- END BUG REPORT -->
-
-
-
-
-<!-- FEATURE REQUEST : Delete if reporting a bug -->
-
-**Description of new feature**
-
-<!-- What should the new feature do?  For visual features, include an image/mockup of the expected output. -->
-
-
-**Motivation for new feature**
-
-<!-- Describe your use case for this new feature. -->
-
-
-<!-- END FEATURE REQUEST -->
+- [ ] All automated checks are passing (green check next to latest commit).
+- [ ] At least one reviewer has signed off on the pull request.
+- [ ] Just after this pull request is merged, it should be applied to both the `master` branch and the `unstable` branch.  Normally, this just requires cherry-picking the corresponding merge commit from `master` to `unstable` -- or vice versa.

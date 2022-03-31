@@ -11,67 +11,6 @@
   "bugs": {
     "url": "https://github.com/cytoscape/cytoscape.js/issues"
   },
-  "author": {
-    "name": "Max Franz",
-    "email": "maxkfranz@gmail.com",
-    "url": "http://maxfranz.com"
-  },
-  "contributors": [
-    {
-      "name": "Max Franz",
-      "email": "maxkfranz@gmail.com",
-      "url": "http://maxfranz.com"
-    },
-    {
-      "name": "Christian Lopes",
-      "email": "chrtannus@gmail.com"
-    },
-    {
-      "name": "Yue Dong",
-      "email": "oryato@gmail.com"
-    },
-    {
-      "name": "Onur Sumer",
-      "email": "s.onur.sumer@gmail.com"
-    },
-    {
-      "name": "Gerardo Huck",
-      "email": "gerardohuck@gmail.com"
-    },
-    {
-      "name": "Dylan Fong",
-      "email": "dylanfong.ut@gmail.com"
-    },
-    {
-      "name": "Joseph Stahl",
-      "email": "joseph@josephstahl.com"
-    },
-    {
-      "name": "Tony Mullen",
-      "url": "https://github.com/tonymullen"
-    },
-    {
-      "name": "Alexander Li",
-      "url": "https://github.com/alexcli"
-    },
-    {
-      "name": "Manfred Cheung",
-      "url": "https://github.com/mj3cheun"
-    },
-    {
-      "name": "Bogdan Chadkin",
-      "url": "https://github.com/TrySound"
-    },
-    {
-      "name": "Josejulio Martínez",
-      "url": "https://github.com/josejulio"
-    },
-    {
-      "name": "Rhys Balevicius",
-      "email": "rhysbalevicius@gmail.com",
-      "url": "https://github.com/r-ba"
-    }
-  ],
   "keywords": [
     "graph",
     "graph-theory",

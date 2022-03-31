@@ -39,3 +39,18 @@ _What do you need to do to reproduce the issue?_
 
 _Fork/clone this JSBin demo and reproduce your issue so that your issue can be addressed quickly and effectively:_
 http://jsbin.com/fiqugiq
+
+
+
+**For reviewers**
+
+_Reviewers should ensure that the following tasks are carried out for incorporated issues:_
+
+- [ ] Ensure that the reporter has included a reproducible demo.  They can easily fork this JSBin demo: http://jsbin.com/fiqugiq
+- [ ] The issue has been associated with a corresponding [milestone](https://github.com/cytoscape/cytoscape.js/milestones).
+- [ ] The commits have been incorporated into the corresponding branches.  Bug-fix patches go on
+    - [ ] `master`,
+    - [ ] `unstable`, and
+    - the previous feature release branch (e.g. `1.1.x` if the current release is 1.2).
+- [ ] The issue has been labelled as a [`bug`](https://github.com/cytoscape/cytoscape.js/labels/bug), if necessary.
+

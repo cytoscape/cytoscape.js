@@ -470,6 +470,19 @@ let boundingBoxImpl = function( ele, options ){
       }
     }
 
+    let underlayOpacity = 0;
+    let underlayPadding = 0;
+
+    if( styleEnabled && options.includeUnderlays ){
+      underlayOpacity = ele.pstyle( 'underlay-opacity' ).value;
+
+      if( underlayOpacity !== 0 ){
+        underlayPadding = ele.pstyle( 'underlay-padding' ).value;
+      }
+    }
+
+    let padding = Math.max(overlayPadding, underlayPadding);
+
     let w = 0;
     let wHalf = 0;
 
@@ -655,7 +668,7 @@ let boundingBoxImpl = function( ele, options ){
       ey1 = bounds.y1;
       ey2 = bounds.y2;
 
-      updateBounds( bounds, ex1 - overlayPadding, ey1 - overlayPadding, ex2 + overlayPadding, ey2 + overlayPadding );
+      updateBounds( bounds, ex1 - padding, ey1 - padding, ex2 + padding, ey2 + padding );
     }
 
     // always store the body bounds separately from the labels
@@ -810,6 +823,7 @@ let defBbOpts = {
   includeSourceLabels: true,
   includeTargetLabels: true,
   includeOverlays: true,
+  includeUnderlays: true,
   useCache: true
 };
 

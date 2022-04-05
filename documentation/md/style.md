@@ -270,29 +270,29 @@ A background image may be applied to a node's body.  The following properties su
     * Do not use base 64 encoding for SVG within a data URI.
     * Web fonts (e.g. WOFF, WOFF2) may not work within SVG `<text>` elements in some browsers.  For best cross-browser compatibility, use native SVG versions of your icons --- usually defined as `<path>` elements.
     * If you memoize function mappers to generate SVGs procedurally, you may want to have your function return an object like `{ svg, width, height }`.  This allows you to use the dimensions of the image for other style properties, like node width and height.  E.g.:
-    ```
-    var makeSvg = memoize(function(ele){
-        // impl...
+        ```
+        var makeSvg = memoize(function(ele){
+            // impl...
 
-        return { svg: s, width: w, height: h };
-    });
-    //
-    // ...
-    //
-    // init stylesheet
-    var options = {
-        style: [
-          {
-            selector: 'node',
-            style: {
-              'background-image': function(ele){ return makeSvg(ele).svg; },
-              'width': function(ele){ return makeSvg(ele).width; },
-              'height': function(ele){ return makeSvg(ele).height; }
-            }
-          }
-        ]
-    };
-    ```
+            return { svg: s, width: w, height: h };
+        });
+        //
+        // ...
+        //
+        // init stylesheet
+        var options = {
+            style: [
+              {
+                selector: 'node',
+                style: {
+                  'background-image': function(ele){ return makeSvg(ele).svg; },
+                  'width': function(ele){ return makeSvg(ele).width; },
+                  'height': function(ele){ return makeSvg(ele).height; }
+                }
+              }
+            ]
+        };
+        ```
     * Using the `viewbox` attribute in SVG images may cause rendering problems in Firefox.
     * SVG images may not work consistently in Internet Explorer.
     * The [`cytoscape-sbgn-stylesheet`](https://github.com/PathwayCommons/cytoscape-sbgn-stylesheet) package serves as a good example for the use of SVG images in a stylesheet.  That stylesheet [creates decorations](https://pathwaycommons.github.io/cytoscape-sbgn-stylesheet/) on nodes in line with the [SBGN standard](https://sbgn.github.io).

@@ -1674,7 +1674,8 @@
                         { "name": "includeMainLabels", "descr": "A boolean indicating whether to include main (node or edge) `label`s in the bounding box (default `true`)." },
                         { "name": "includeSourceLabels", "descr": "A boolean indicating whether to include (edge) `source-label`s in the bounding box (default `true`)." },
                         { "name": "includeTargetLabels", "descr": "A boolean indicating whether to include (edge) `target-label`s in the bounding box (default `true`)." },
-                        { "name": "includeOverlays", "descr": "A boolean indicating whether to include overlays (such as the one which appears when a node is clicked) in the bounding box (default `true`)." }
+                        { "name": "includeOverlays", "descr": "A boolean indicating whether to include overlays (such as the one which appears when a node is clicked) in the bounding box (default `true`)." },
+                        { "name": "includeUnderlays", "descr": "A boolean indicating whether to include underlays (configurable in node or edge style) in the bounding box (default `true`)." }
                       ]
                     }
                   ]
@@ -1702,7 +1703,8 @@
                         { "name": "includeMainLabels", "descr": "A boolean indicating whether to include main (node or edge) `label`s in the bounding box (default `true`)." },
                         { "name": "includeSourceLabels", "descr": "A boolean indicating whether to include (edge) `source-label`s in the bounding box (default `true`)." },
                         { "name": "includeTargetLabels", "descr": "A boolean indicating whether to include (edge) `target-label`s in the bounding box (default `true`)." },
-                        { "name": "includeOverlays", "descr": "A boolean indicating whether to include overlays (such as the one which appears when a node is clicked) in the bounding box (default `true`)." }
+                        { "name": "includeOverlays", "descr": "A boolean indicating whether to include overlays (such as the one which appears when a node is clicked) in the bounding box (default `true`)." },
+                        { "name": "includeUnderlays", "descr": "A boolean indicating whether to include underlays (configurable in node or edge style) in the bounding box (default `true`)." }
                       ]
                     }
                   ]

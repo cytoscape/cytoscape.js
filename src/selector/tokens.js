@@ -16,9 +16,9 @@ const tokens = {
   directedEdge: '\\s+->\\s+',
   undirectedEdge: '\\s+<->\\s+'
 };
-tokens.variable = '(?:[\\w-.]|(?:\\\\' + tokens.metaChar + '))+'; // a variable name
+tokens.variable = '(?:[\\w-.]|(?:\\\\' + tokens.metaChar + '))+'; // a variable name can have letters, numbers, dashes, and periods
+tokens.className = '(?:[\\w-]|(?:\\\\' + tokens.metaChar + '))+'; // a class name has the same rules as a variable except it can't have a '.' in the name
 tokens.value = tokens.string + '|' + tokens.number; // a value literal, either a string or number
-tokens.className = tokens.variable; // a class name (follows variable conventions)
 tokens.id = tokens.variable; // an element id (follows variable conventions)
 
 (function(){

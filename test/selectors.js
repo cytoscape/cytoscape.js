@@ -92,9 +92,9 @@ describe('Selectors', function(){
   itSelects('[weight !< 2]', 'n2', 'nparent');
   itSelects('[emptystr = ""]', 'n1');
   itSelects('[emptystr != ""]', 'n2', 'nparent', 'nparent2', 'n1n2', 'nparentLoop', 'n3.item');
-  itSelects('[arrayval.0 = "index0"]', 'n1');
-  itSelects('[arrayval.1 = "index1"]', 'n1'); 
-  itSelects('[bar.baz = "baz"]', 'n2');   
+  // itSelects('[arrayval.0 = "index0"]', 'n1'); // only 3.21+
+  // itSelects('[arrayval.1 = "index1"]', 'n1'); // only 3.21+
+  // itSelects('[bar.baz = "baz"]', 'n2'); // only 3.21+   
   
   // metadata
   itSelects('[[degree = 1]]', 'n1', 'n2');

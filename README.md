@@ -164,7 +164,7 @@ The default test scripts run directly against the source code.  Tests can altern
  1. Update the package version and tag the release: `npm version $VERSION`
  1. Push the release changes: `git push && git push --tags`
  1. Publish the release to npm: `npm publish`
- 1. [Create a release](https://github.com/cytoscape/cytoscape.js/releases/new) for Zenodo from the latest tag.
+ 1. [Create a release](https://github.com/cytoscape/cytoscape.js/releases/new) for Zenodo from the latest tag.  Make sure you wait at least 5 minutes since the last time that you made a release in order for Zenodo to work properly.
  1. For feature releases:  Create a release announcement on the [blog](https://github.com/cytoscape/cytoscape.js-blog).  Share the announcement on mailing lists and social media.
 
 

@@ -6627,6 +6627,13 @@ cy.$(<span class="hljs-string">&#x27;#e&#x27;</span>).position({
 </span>
 															</li>
 
+															<li>
+																<span class="name">includeUnderlays</span>
+																
+																<span class="descr"><p>A boolean indicating whether to include underlays (configurable in node or edge style) in the bounding box (default <code>true</code>).</p>
+</span>
+															</li>
+
 													</ul>
 												</li>
 										</ul>
@@ -6637,7 +6644,7 @@ cy.$(<span class="hljs-string">&#x27;#e&#x27;</span>).position({
 									<h3 id="details">Details</h3>
 <p>This function returns a plain object with the fields <code>x1</code>, <code>x2</code>, <code>y1</code>, <code>y2</code>, <code>w</code>, and <code>h</code> defined.</p>
 <p>An element that does not take up space (e.g. <code>display: none</code>) has a bounding box of zero <code>w</code> and <code>h</code>.  The <code>x1</code>, <code>x2</code>, <code>y1</code>, and <code>y2</code> values will have no meaning for those zero-area elements.  To get the position of a <code>display: none</code> node, use <a href="#node.position"><code>node.position()</code></a> instead.</p>
-<p>Note that the <code>includeOverlays</code> option necessarily includes the dimensions of the body of the element.  So using <code>includeOverlays: true</code> with <code>includeNodes: false</code>, for example, does not make sense.  The case where the <code>includeOverlays</code> option is only useful in getting the non-overlay dimensions of an element, e.g. <code>{ includeOverlays: false, includeNodes: true }</code>.</p>
+<p>Note that the <code>includeOverlays</code> option necessarily includes the dimensions of the body of the element.  So using <code>includeOverlays: true</code> with <code>includeNodes: false</code>, for example, does not make sense.  The case where the <code>includeOverlays</code> option is only useful in getting the non-overlay dimensions of an element, e.g. <code>{ includeOverlays: false, includeNodes: true }</code>. The same applies to the <code>includeUnderlays</code> option.</p>
 
 							</div>
 						</div>
@@ -6723,6 +6730,13 @@ cy.$(<span class="hljs-string">&#x27;#e&#x27;</span>).position({
 </span>
 															</li>
 
+															<li>
+																<span class="name">includeUnderlays</span>
+																
+																<span class="descr"><p>A boolean indicating whether to include underlays (configurable in node or edge style) in the bounding box (default <code>true</code>).</p>
+</span>
+															</li>
+
 													</ul>
 												</li>
 										</ul>
@@ -6733,7 +6747,7 @@ cy.$(<span class="hljs-string">&#x27;#e&#x27;</span>).position({
 									<h3 id="details">Details</h3>
 <p>This function returns a plain object with the fields <code>x1</code>, <code>x2</code>, <code>y1</code>, <code>y2</code>, <code>w</code>, and <code>h</code> defined.</p>
 <p>An element that does not take up space (e.g. <code>display: none</code>) has a bounding box of zero <code>w</code> and <code>h</code>.  The <code>x1</code>, <code>x2</code>, <code>y1</code>, and <code>y2</code> values will have no meaning for those zero-area elements.  To get the position of a <code>display: none</code> node, use <a href="#node.position"><code>node.position()</code></a> instead.</p>
-<p>Note that the <code>includeOverlays</code> option necessarily includes the dimensions of the body of the element.  So using <code>includeOverlays: true</code> with <code>includeNodes: false</code>, for example, does not make sense.  The case where the <code>includeOverlays</code> option is only useful in getting the non-overlay dimensions of an element, e.g. <code>{ includeOverlays: false, includeNodes: true }</code>.</p>
+<p>Note that the <code>includeOverlays</code> option necessarily includes the dimensions of the body of the element.  So using <code>includeOverlays: true</code> with <code>includeNodes: false</code>, for example, does not make sense.  The case where the <code>includeOverlays</code> option is only useful in getting the non-overlay dimensions of an element, e.g. <code>{ includeOverlays: false, includeNodes: true }</code>. The same applies to the <code>includeUnderlays</code> option.</p>
 
 							</div>
 						</div>

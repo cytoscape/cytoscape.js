@@ -7693,11 +7693,11 @@
     directedEdge: '\\s+->\\s+',
     undirectedEdge: '\\s+<->\\s+'
   };
-  tokens.variable = '(?:[\\w-]|(?:\\\\' + tokens.metaChar + '))+'; // a variable name
+  tokens.variable = '(?:[\\w-.]|(?:\\\\' + tokens.metaChar + '))+'; // a variable name can have letters, numbers, dashes, and periods
+
+  tokens.className = '(?:[\\w-]|(?:\\\\' + tokens.metaChar + '))+'; // a class name has the same rules as a variable except it can't have a '.' in the name
 
   tokens.value = tokens.string + '|' + tokens.number; // a value literal, either a string or number
-
-  tokens.className = tokens.variable; // a class name (follows variable conventions)
 
   tokens.id = tokens.variable; // an element id (follows variable conventions)
 
@@ -10263,6 +10263,18 @@
         }
       }
 
+      var underlayOpacity = 0;
+      var underlayPadding = 0;
+
+      if (styleEnabled && options.includeUnderlays) {
+        underlayOpacity = ele.pstyle('underlay-opacity').value;
+
+        if (underlayOpacity !== 0) {
+          underlayPadding = ele.pstyle('underlay-padding').value;
+        }
+      }
+
+      var padding = Math.max(overlayPadding, underlayPadding);
       var w = 0;
       var wHalf = 0;
 
@@ -10425,7 +10437,7 @@
         ex2 = bounds.x2;
         ey1 = bounds.y1;
         ey2 = bounds.y2;
-        updateBounds(bounds, ex1 - overlayPadding, ey1 - overlayPadding, ex2 + overlayPadding, ey2 + overlayPadding);
+        updateBounds(bounds, ex1 - padding, ey1 - padding, ex2 + padding, ey2 + padding);
       } // always store the body bounds separately from the labels
 
 
@@ -10586,6 +10598,7 @@
     includeSourceLabels: true,
     includeTargetLabels: true,
     includeOverlays: true,
+    includeUnderlays: true,
     useCache: true
   };
   var defBbOptsKey = getKey(defBbOpts);
@@ -32553,7 +32566,7 @@
     return style;
   };
 
-  var version = "3.20.1";
+  var version = "3.20.2";
 
   var cytoscape = function cytoscape(options) {
     // if no options specified, use default

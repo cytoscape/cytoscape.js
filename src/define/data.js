@@ -1,8 +1,18 @@
 import * as util from '../util';
 import * as is from '../is';
 import get from 'lodash.get';
-import set from 'lodash.set';
 import toPath from 'lodash.topath';
+
+const set = (obj, path, value) => {
+  // Regex explained: https://regexr.com/58j0k
+  const pathArray = Array.isArray(path) ? path : path.match(/([^[.\]])+/g);
+
+  pathArray.reduce((acc, key, i) => {
+    if (acc[key] === undefined) acc[key] = {};
+    if (i === pathArray.length - 1) acc[key] = value;
+    return acc[key];
+  }, obj);
+};
 
 let define = {
 

@@ -16,7 +16,10 @@ let corefn = ({
       return eles.collection();
 
     } else if( is.array( eles ) ){
-      return new Collection( this, eles, opts );
+      if (!opts) {
+        opts = {}
+      }
+      return new Collection( this, eles, opts.unique, opts.removed );
     }
 
     return new Collection( this );

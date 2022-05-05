@@ -22,7 +22,7 @@ import switchFunctions from './switch-functions';
 import traversing from './traversing';
 
 // represents a set of nodes, edges, or both together
-let Collection = function( cy, elements, unique = false ){
+let Collection = function( cy, elements, unique = false, removed = false ){
   if( cy === undefined ){
     util.error( 'A collection must have a reference to the core' );
     return;
@@ -115,7 +115,7 @@ let Collection = function( cy, elements, unique = false ){
   }
 
   // restore the elements if we created them from json
-  if( createdElements ){
+  if( createdElements && !removed ){
     this.restore();
   }
 };

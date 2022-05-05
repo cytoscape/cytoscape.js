@@ -285,6 +285,17 @@ describe('Core graph manipulation', function(){
       expect( col[0] ).to.be.undefined;
     });
 
+    it('creates a removed element', function(){
+      var col = cy.collection([{
+        group: 'nodes',
+        data: {},
+        position: { x: 200, y: 200 }
+      }], { removed: true });
+
+      expect( col ).to.have.length(1);
+      expect( col[0].removed() ).to.be.true;
+    });
+
   });
 
   describe('cy.$() et al', function(){

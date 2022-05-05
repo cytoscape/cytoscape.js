@@ -17,7 +17,7 @@ let corefn = ({
 
     } else if( is.array( eles ) ){
       if (!opts) {
-        opts = {}
+        opts = {};
       }
       return new Collection( this, eles, opts.unique, opts.removed );
     }

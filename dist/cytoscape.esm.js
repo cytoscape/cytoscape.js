@@ -1157,7 +1157,7 @@ var Element = function Element(cy, params) {
     // array of connected edges
     children: [],
     // array of children
-    parent: params.parent,
+    parent: params.parent || null,
     // parent ref
     traversalCache: {},
     // cache of output of traversal functions

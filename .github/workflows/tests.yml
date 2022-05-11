@@ -1,14 +1,5 @@
 name: Automated tests
-on: 
-  push:
-    paths:
-      - 'src/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - '.babelrc'
-      - '.eslintrc.json'
-      - '.github/workflows/tests.yaml'
-      - 'rollup.config.js'
+on: [push, pull_request]
 
 jobs:
   ci:

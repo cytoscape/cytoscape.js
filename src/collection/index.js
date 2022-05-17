@@ -22,7 +22,7 @@ import switchFunctions from './switch-functions';
 import traversing from './traversing';
 
 // represents a set of nodes, edges, or both together
-let Collection = function( cy, elements, unique = false, removed = true ){
+let Collection = function( cy, elements, unique = false, removed = false ){
   if( cy === undefined ){
     util.error( 'A collection must have a reference to the core' );
     return;
@@ -498,12 +498,17 @@ elesfn.restore = function( notifyRenderer = true, addToPool = true ){
 
     let specifiedParent = parentId != null;
 
-    if( specifiedParent ){
-      let parent = cy.getElementById( parentId );
+    if( specifiedParent || node._private.parent ){
+
+      let parent = node._private.parent ? cy.collection().merge(node._private.parent) : cy.getElementById( parentId );
 
       if( parent.empty() ){
         // non-existant parent; just remove it
         data.parent = undefined;
+      } else if( parent[0].removed() ) {
+        util.warn('Node added with missing parent, reference to parent removed');
+        data.parent = undefined;
+        node._private.parent = null;
       } else {
         let selfAsParent = false;
         let ancestor = parent;

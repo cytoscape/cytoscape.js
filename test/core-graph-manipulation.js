@@ -286,25 +286,37 @@ describe('Core graph manipulation', function(){
     });
 
     it('creates a removed element', function(){
-      var col = cy.collection([{ data: { id: 'a' } }]);
+      var col = cy.collection([{ data: { id: 'a' } }], { removed: true });
 
       expect( col ).to.have.length(1);
       expect( col[0].removed() ).to.be.true;
+      expect( cy.$('node#a') ).to.have.length(0);
     });
 
-    it('creates a removed element with a removed element parent', function(){
-      var col1 = cy.collection([{ data: { id: 'a' } }]);
-      var col2 = cy.collection([
-        {
-          data: { id: 'b' },
-          parent: col1[0]
-        }
-      ]);
+    it('restores created element successfully to graph', function(){
+      var col = cy.collection([{ data: { id: 'a' } }], { removed: true });
 
-      expect( col2 ).to.have.length(1);
-      expect( col2[0].parent().removed() ).to.be.true;
+      expect( col ).to.have.length(1);
+      expect( col[0].removed() ).to.be.true;
+      expect( cy.$('node#a') ).to.have.length(0);
+
+      col.restore();
+      expect( cy.$('node#a') ).to.have.length(1);
     });
 
+    it('removes non-existing parent of restored element', function(){
+      var parent = cy.collection([{ data: { id: 'parent' } }], { removed: true })[0];
+      var col = cy.collection([{ data: { id: 'a' }, parent: parent }], { removed: true });
+
+      expect( col ).to.have.length(1);
+      expect( col[0].removed() ).to.be.true;
+      expect( cy.$('node#a') ).to.have.length(0);
+      expect( cy.$('node#parent') ).to.have.length(0);
+
+      col.restore();
+      expect( cy.$('node#a') ).to.have.length(1);
+      expect( cy.$('node#a').parent() ).to.have.length(0);
+    });
   });
 
   describe('cy.$() et al', function(){

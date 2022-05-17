@@ -286,14 +286,23 @@ describe('Core graph manipulation', function(){
     });
 
     it('creates a removed element', function(){
-      var col = cy.collection([{
-        group: 'nodes',
-        data: {},
-        position: { x: 200, y: 200 }
-      }], { removed: true });
+      var col = cy.collection([{ data: { id: 'a' } }]);
 
       expect( col ).to.have.length(1);
       expect( col[0].removed() ).to.be.true;
+    });
+
+    it('creates a removed element with a removed element parent', function(){
+      var col1 = cy.collection([{ data: { id: 'a' } }]);
+      var col2 = cy.collection([
+        {
+          data: { id: 'b' },
+          parent: col1[0]
+        }
+      ]);
+
+      expect( col2 ).to.have.length(1);
+      expect( col2[0].parent().removed() ).to.be.true;
     });
 
   });

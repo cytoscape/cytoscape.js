@@ -63,7 +63,7 @@ let Element = function( cy, params, restore = true ){
     scratch: params.scratch || {}, // scratch objects
     edges: [], // array of connected edges
     children: [], // array of children
-    parent: params.parent.is.element() ? params.parent : null, // parent ref
+    parent: params.parent && params.parent.is.element() ? params.parent : null, // parent ref
     traversalCache: {}, // cache of output of traversal functions
     backgrounding: false, // whether background images are loading
     bbCache: null, // cache of the current bounding box

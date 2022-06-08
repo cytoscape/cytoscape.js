@@ -152,7 +152,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
         continue;
       }
 
-      if( urlDefined[i] && image[i].complete && !image[i].error ){
+      if( urlDefined[i] && image[i].complete && !image[i].error && image[i].naturalWidth !== 0 ){
         totalCompleted++;
         r.drawInscribedImage( context, image[i], node, i, nodeOpacity );
       }

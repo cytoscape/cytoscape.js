@@ -1,3 +1,5 @@
+import * as util from '../../../util';
+
 var CRp = {};
 
 CRp.safeDrawImage = function( context, img, ix, iy, iw, ih, x, y, w, h ){
@@ -6,7 +8,11 @@ CRp.safeDrawImage = function( context, img, ix, iy, iw, ih, x, y, w, h ){
     return;
   }
 
-  context.drawImage( img, ix, iy, iw, ih, x, y, w, h );
+  try {
+    context.drawImage( img, ix, iy, iw, ih, x, y, w, h );
+  } catch (e) {
+    util.warn(e);
+  }
 };
 
 CRp.drawInscribedImage = function( context, img, node, index, nodeOpacity ){

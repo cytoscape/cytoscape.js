@@ -16072,7 +16072,7 @@
       // then dirty the pll edge bb cache as well
 
       if ( // only for beziers -- so performance of other edges isn't affected
-      name === 'curve-style' && (fromValue === 'bezier' || toValue === 'bezier') && prop.triggersBoundsOfParallelBeziers) {
+      prop.triggersBoundsOfParallelBeziers && (name === 'curve-style' && (fromValue === 'bezier' || toValue === 'bezier') || name === 'display' && (fromValue === 'none' || toValue === 'none'))) {
         ele.parallelEdges().forEach(function (pllEdge) {
           if (pllEdge.isBundledBezier()) {
             pllEdge.dirtyBoundingBoxCache();
@@ -29912,7 +29912,11 @@
       return;
     }
 
-    context.drawImage(img, ix, iy, iw, ih, x, y, w, h);
+    try {
+      context.drawImage(img, ix, iy, iw, ih, x, y, w, h);
+    } catch (e) {
+      warn(e);
+    }
   };
 
   CRp$3.drawInscribedImage = function (context, img, node, index, nodeOpacity) {
@@ -32566,7 +32570,7 @@
     return style;
   };
 
-  var version = "3.20.2";
+  var version = "3.20.3";
 
   var cytoscape = function cytoscape(options) {
     // if no options specified, use default

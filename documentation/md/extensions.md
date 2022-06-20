@@ -97,6 +97,7 @@ Compound Spring Embedder with Ports (CoSEP) is a force-directed layout algorithm
  * <i class="fa fa-fw fa-user"></i> [`sbgn-stylesheet`](https://github.com/PathwayCommons/cytoscape-sbgn-stylesheet) : A stylesheet preset for [SBGN](https://sbgn.github.io/sbgn/).
  * <i class="fa fa-fw fa-user"></i> [`sbgnml-to-cytoscape`](https://github.com/PathwayCommons/sbgnml-to-cytoscape) : Converts XML-based [SBGN](https://sbgn.github.io/sbgn/) files to Cytoscape.js JSON.
  * <i class="fa fa-fw fa-users"></i> [`vue-cytoscape`](https://www.npmjs.com/package/vue-cytoscape) : A [Vue](https://vuejs.org) component for Cytoscape.js.
+ * <i class="fa fa-fw fa-users"></i> [`cytoscape-pptx`](https://github.com/Hoogkamer/cytoscape-pptx) : Export a Cytoscape.js graph into a Powerpoint slide.
 
 
 ## Registration

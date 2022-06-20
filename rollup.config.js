@@ -3,7 +3,6 @@ import commonjs from '@rollup/plugin-commonjs';
 import babel from '@rollup/plugin-babel';
 import replace from '@rollup/plugin-replace';
 import { terser } from "rollup-plugin-terser";
-import { sizeSnapshot } from 'rollup-plugin-size-snapshot';
 import license from 'rollup-plugin-license';
 import path from 'path';
 
@@ -12,7 +11,6 @@ const FILE = process.env.FILE;
 const SOURCEMAPS = process.env.SOURCEMAPS === 'true'; // default false
 const BABEL = process.env.BABEL !== 'false'; // default true
 const NODE_ENV = process.env.NODE_ENV === 'development' ? 'development' : 'production'; // default prod
-const matchSnapshot = process.env.SNAPSHOT === 'match';
 
 const input = './src/index.js';
 
@@ -53,8 +51,7 @@ const configs = [
       commonjs({ include: '**/node_modules/**' }),
       BABEL ? babel(getBabelOptions()) : {},
       replace(envVariables),
-      license(licenseHeaderOptions),
-      !FILE ? sizeSnapshot({ matchSnapshot }) : {}
+      license(licenseHeaderOptions)
     ]
   },
 
@@ -89,8 +86,7 @@ const configs = [
       BABEL ? babel(getBabelOptions()) : {},
       replace(envVariables),
       license(licenseHeaderOptions),
-      terser(),
-      !FILE ? sizeSnapshot({ matchSnapshot }) : {}
+      terser()
     ]
   },
 
@@ -102,8 +98,7 @@ const configs = [
       nodeResolve(),
       BABEL ? babel(getBabelOptions()) : {},
       replace(envVariables),
-      license(licenseHeaderOptions),
-      !FILE ? sizeSnapshot({ matchSnapshot }) : {}
+      license(licenseHeaderOptions)
     ]
   },
 
@@ -115,8 +110,7 @@ const configs = [
       nodeResolve(),
       BABEL ? babel(getBabelOptions()) : {},
       replace(envVariables),
-      license(licenseHeaderOptions),
-      !FILE ? sizeSnapshot({ matchSnapshot }) : {}
+      license(licenseHeaderOptions)
     ]
   }
 ];

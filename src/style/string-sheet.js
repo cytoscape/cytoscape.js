@@ -68,7 +68,7 @@ styfn.appendFromString = function( string ){
       let nothingLeftToParse = blockRem.match( /^\s*$/ );
       if( nothingLeftToParse ){ break; }
 
-      let propAndVal = blockRem.match( /^\s*(.+?)\s*:\s*(.+?)\s*;/ );
+      let propAndVal = blockRem.match( /^\s*(.+?)\s*:\s*(.+?)(?:\s*;|\s*$)/ );
 
       if( !propAndVal ){
         util.warn( 'Skipping parsing of block: Invalid formatting of style property and value definitions found in:' + blockStr );

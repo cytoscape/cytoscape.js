@@ -12,7 +12,7 @@ The style specified at [initialisation](#core/initialisation) can be in a functi
 
 ### String format
 
-Note that the trailing semicolons for each property are mandatory.  Parsing will certainly fail without them.
+Note that the trailing semicolons for each property, except for the last, are mandatory. Parsing will certainly fail without them.
 
 An example style file:
 

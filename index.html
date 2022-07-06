@@ -790,6 +790,10 @@
 </ul>
 <h2 id="introduction/releases">Releases <a href="#introduction/releases"><span class="fa fa-bookmark"></span></a></h2>
 <ul>
+<li>3.22<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.22.0+is%3Aclosed">3.22.0</a></li>
+</ul>
+</li>
 <li>3.21<ul>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.21.2+is%3Aclosed">3.21.2</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.21.1+is%3Aclosed">3.21.1</a></li>
@@ -13689,7 +13693,7 @@ Sets the subject of the selector (e.g. <code>$node &gt; node</code> to select th
 <h2 id="style/format">Format <a href="#style/format"><span class="fa fa-bookmark"></span></a></h2>
 <p>The style specified at <a href="#core/initialisation">initialisation</a> can be in a function format, in a plain JSON format, or in a string format — the plain JSON format and string formats being more useful if you want to pull down the style from the server.</p>
 <h3 id="string-format">String format</h3>
-<p>Note that the trailing semicolons for each property are mandatory.  Parsing will certainly fail without them.</p>
+<p>Note that the trailing semicolons for each property, except for the last, are mandatory. Parsing will certainly fail without them.</p>
 <p>An example style file:</p>
 <pre><code><span class="hljs-comment">/* comments may be entered like this */</span>
 <span class="hljs-selector-tag">node</span> {

@@ -6999,11 +6999,11 @@ var tokens = {
   directedEdge: '\\s+->\\s+',
   undirectedEdge: '\\s+<->\\s+'
 };
-tokens.variable = '(?:[\\w-.]|(?:\\\\' + tokens.metaChar + '))+'; // a variable name
+tokens.variable = '(?:[\\w-.]|(?:\\\\' + tokens.metaChar + '))+'; // a variable name can have letters, numbers, dashes, and periods
+
+tokens.className = '(?:[\\w-]|(?:\\\\' + tokens.metaChar + '))+'; // a class name has the same rules as a variable except it can't have a '.' in the name
 
 tokens.value = tokens.string + '|' + tokens.number; // a value literal, either a string or number
-
-tokens.className = tokens.variable; // a class name (follows variable conventions)
 
 tokens.id = tokens.variable; // an element id (follows variable conventions)
 
@@ -9569,6 +9569,18 @@ var boundingBoxImpl = function boundingBoxImpl(ele, options) {
       }
     }
 
+    var underlayOpacity = 0;
+    var underlayPadding = 0;
+
+    if (styleEnabled && options.includeUnderlays) {
+      underlayOpacity = ele.pstyle('underlay-opacity').value;
+
+      if (underlayOpacity !== 0) {
+        underlayPadding = ele.pstyle('underlay-padding').value;
+      }
+    }
+
+    var padding = Math.max(overlayPadding, underlayPadding);
     var w = 0;
     var wHalf = 0;
 
@@ -9731,7 +9743,7 @@ var boundingBoxImpl = function boundingBoxImpl(ele, options) {
       ex2 = bounds.x2;
       ey1 = bounds.y1;
       ey2 = bounds.y2;
-      updateBounds(bounds, ex1 - overlayPadding, ey1 - overlayPadding, ex2 + overlayPadding, ey2 + overlayPadding);
+      updateBounds(bounds, ex1 - padding, ey1 - padding, ex2 + padding, ey2 + padding);
     } // always store the body bounds separately from the labels
 
 
@@ -9892,6 +9904,7 @@ var defBbOpts = {
   includeSourceLabels: true,
   includeTargetLabels: true,
   includeOverlays: true,
+  includeUnderlays: true,
   useCache: true
 };
 var defBbOptsKey = getKey(defBbOpts);
@@ -15365,7 +15378,7 @@ styfn.checkBoundsTrigger = function (ele, name, fromValue, toValue) {
     // then dirty the pll edge bb cache as well
 
     if ( // only for beziers -- so performance of other edges isn't affected
-    name === 'curve-style' && (fromValue === 'bezier' || toValue === 'bezier') && prop.triggersBoundsOfParallelBeziers) {
+    prop.triggersBoundsOfParallelBeziers && (name === 'curve-style' && (fromValue === 'bezier' || toValue === 'bezier') || name === 'display' && (fromValue === 'none' || toValue === 'none'))) {
       ele.parallelEdges().forEach(function (pllEdge) {
         if (pllEdge.isBundledBezier()) {
           pllEdge.dirtyBoundingBoxCache();
@@ -15886,7 +15899,7 @@ styfn$5.appendFromString = function (string) {
         break;
       }
 
-      var propAndVal = blockRem.match(/^\s*(.+?)\s*:\s*(.+?)\s*;/);
+      var propAndVal = blockRem.match(/^\s*(.+?)\s*:\s*(.+?)(?:\s*;|\s*$)/);
 
       if (!propAndVal) {
         warn('Skipping parsing of block: Invalid formatting of style property and value definitions found in:' + blockStr);
@@ -29211,7 +29224,11 @@ CRp$3.safeDrawImage = function (context, img, ix, iy, iw, ih, x, y, w, h) {
     return;
   }
 
-  context.drawImage(img, ix, iy, iw, ih, x, y, w, h);
+  try {
+    context.drawImage(img, ix, iy, iw, ih, x, y, w, h);
+  } catch (e) {
+    warn(e);
+  }
 };
 
 CRp$3.drawInscribedImage = function (context, img, node, index, nodeOpacity) {
@@ -31868,7 +31885,7 @@ sheetfn.appendToStyle = function (style) {
   return style;
 };
 
-var version = "3.21.0";
+var version = "3.22.0";
 
 var cytoscape = function cytoscape(options) {
   // if no options specified, use default

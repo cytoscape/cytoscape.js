@@ -1,8 +1,8 @@
 import * as util from '../util';
 import * as is from '../is';
-import get from 'lodash.get';
-import set from 'lodash.set';
-import toPath from 'lodash.topath';
+import get from 'lodash/get';
+import set from 'lodash/set';
+import toPath from 'lodash/toPath';
 
 let define = {
 

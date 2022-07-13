@@ -791,10 +791,12 @@
 <h2 id="introduction/releases">Releases <a href="#introduction/releases"><span class="fa fa-bookmark"></span></a></h2>
 <ul>
 <li>3.22<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.22.1+is%3Aclosed">3.22.1</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.22.0+is%3Aclosed">3.22.0</a></li>
 </ul>
 </li>
 <li>3.21<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.21.3+is%3Aclosed">3.21.3</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.21.2+is%3Aclosed">3.21.2</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.21.1+is%3Aclosed">3.21.1</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.21.0+is%3Aclosed">3.21.0</a></li>
@@ -13696,8 +13698,8 @@ Sets the subject of the selector (e.g. <code>$node &gt; node</code> to select th
 <p>Note that the trailing semicolons for each property, except for the last, are mandatory. Parsing will certainly fail without them.</p>
 <p>An example style file:</p>
 <pre><code><span class="hljs-comment">/* comments may be entered like this */</span>
-<span class="hljs-selector-tag">node</span> {
-  <span class="hljs-attribute">background-color</span>: green;
+node {
+  <span class="hljs-built_in">background</span>-<span class="hljs-built_in">color</span>: <span class="hljs-built_in">green</span>;
 }
 </code></pre>
 <p>At initialisation:</p>
@@ -13918,12 +13920,16 @@ Sets the subject of the selector (e.g. <code>$node &gt; node</code> to select th
 <li>To put an image outside of the bounds of a node’s body, it is necessary to specify <code>background-clip: none</code> and <code>bounds-expansion: n</code> for images that go <code>n</code> pixels beyond the bounding box of the node.  Note that values of <code>n</code> should be relatively small for performance.</li>
 <li>To control the drawing order of background images (e.g overlay background images over borders), it is necessary to specify <code>background-image-containment: over</code> (default <code>inside</code>).</li>
 <li>SVG image considerations:<ul>
-<li>Always include this XML header in each SVG image:<pre><code><span class="hljs-meta">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;</span><span class="hljs-meta">&lt;!DOCTYPE <span class="hljs-meta-keyword">svg</span>&gt;</span>
+<li>Always include this XML header in each SVG image:</li>
+</ul>
+<pre><code><span class="hljs-meta">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;</span><span class="hljs-meta">&lt;!DOCTYPE <span class="hljs-meta-keyword">svg</span>&gt;</span>
 </code></pre>
-</li>
-<li>Use <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/encodeURIComponent">encodeURIComponent</a> on SVG data URIs.<pre><code><span class="hljs-title">var</span> <span class="hljs-class"><span class="hljs-keyword">data</span> = &#x27;<span class="hljs-keyword">data</span>:image/svg+xml;utf8,&#x27; + encodeURIComponent(<span class="hljs-title">svgFile</span>);</span>
+<ul>
+<li>Use <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/encodeURIComponent">encodeURIComponent</a> on SVG data URIs.</li>
+</ul>
+<pre><code><span class="hljs-title">var</span> <span class="hljs-class"><span class="hljs-keyword">data</span> = &#x27;<span class="hljs-keyword">data</span>:image/svg+xml;utf8,&#x27; + encodeURIComponent(<span class="hljs-title">svgFile</span>);</span>
 </code></pre>
-</li>
+<ul>
 <li>Do not use base 64 encoding for SVG within a data URI.</li>
 <li>Web fonts (e.g. WOFF, WOFF2) may not work within SVG <code>&lt;text&gt;</code> elements in some browsers.  For best cross-browser compatibility, use native SVG versions of your icons — usually defined as <code>&lt;path&gt;</code> elements.</li>
 <li>If you memoize function mappers to generate SVGs procedurally, you may want to have your function return an object like <code>{ svg, width, height }</code>.  This allows you to use the dimensions of the image for other style properties, like node width and height.  E.g.:<pre><code><span class="hljs-keyword">var</span> makeSvg = memoize(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(ele)</span></span>{
@@ -15658,16 +15664,20 @@ Compound Spring Embedder with Ports (CoSEP) is a force-directed layout algorithm
 <li>Create a repository on GitHub for your extension’s code</li>
 <li>Use <a href="https://github.com/rollup/rollup-starter-lib">rollup-starter-lib</a> to create the project’s scaffolding.  Alternatively, manually generate the project configuration files with your favourite bundler.</li>
 <li>Use <a href="https://babeljs.io">Babel</a> if you want to support older browsers with your extension.  The <code>rollup-starter-lib</code> repo has an example in the <a href="https://github.com/rollup/rollup-starter-lib/tree/babel"><code>babel</code> branch</a>.</li>
-<li>The default export of your extension should be a registration function, e.g.:<pre><code><span class="hljs-keyword">export</span> <span class="hljs-keyword">default</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">register</span>(<span class="hljs-params">cytoscape</span>)</span>{
- cytoscape(<span class="hljs-string">&#x27;collection&#x27;</span>, <span class="hljs-string">&#x27;fooBar&#x27;</span>, fooBarFunction);
+<li>The default export of your extension should be a registration function, e.g.:</li>
+</ol>
+<pre><code><span class="hljs-keyword">export</span> <span class="hljs-keyword">default</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">register</span>(<span class="hljs-params">cytoscape</span>)</span>{
+  cytoscape(<span class="hljs-string">&#x27;collection&#x27;</span>, <span class="hljs-string">&#x27;fooBar&#x27;</span>, fooBarFunction);
 }
 </code></pre>
-</li>
-<li>You may want to support automatic registration for consumers who use traditional <code>&lt;script&gt;</code> tags to use your extension, i.e.:<pre><code><span class="hljs-keyword">if</span>(<span class="hljs-keyword">typeof</span> <span class="hljs-built_in">window</span>.cytoscape !== <span class="hljs-string">&#x27;undefined&#x27;</span>){
- register(<span class="hljs-built_in">window</span>.cytoscape);
+<ol>
+<li>You may want to support automatic registration for consumers who use traditional <code>&lt;script&gt;</code> tags to use your extension, i.e.:</li>
+</ol>
+<pre><code><span class="hljs-keyword">if</span>(<span class="hljs-keyword">typeof</span> <span class="hljs-built_in">window</span>.cytoscape !== <span class="hljs-string">&#x27;undefined&#x27;</span>){
+  register(<span class="hljs-built_in">window</span>.cytoscape);
 }
 </code></pre>
-</li>
+<ol>
 <li>Document your extension’s API in a <code>README.md</code> file in the root directory of your respository.</li>
 <li><a href="https://docs.npmjs.com/cli/publish">Publish your extension to npm</a>.</li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues/new?labels=documentation&amp;title=List%20extension%20:%20%3Cyour%20extension%20name%3E&amp;body=Please%20enter%20your%20Github%20URL%20and%20a%20one-line%20description">Submit a request</a> to have your extension listed in the documentation.</li>

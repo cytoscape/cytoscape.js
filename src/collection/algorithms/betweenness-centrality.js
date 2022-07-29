@@ -168,7 +168,7 @@ let elesfn = ({
 
 }); // elesfn
 
-// nice, short mathemathical alias
+// nice, short mathematical alias
 elesfn.bc = elesfn.betweennessCentrality;
 
 export default elesfn;

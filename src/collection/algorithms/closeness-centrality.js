@@ -94,7 +94,7 @@ const elesfn = ({
 
 }); // elesfn
 
-// nice, short mathemathical alias
+// nice, short mathematical alias
 elesfn.cc = elesfn.closenessCentrality;
 elesfn.ccn = elesfn.closenessCentralityNormalised = elesfn.closenessCentralityNormalized;
 

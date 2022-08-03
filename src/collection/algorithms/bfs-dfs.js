@@ -129,7 +129,7 @@ let elesfn = ({
   depthFirstSearch: defineSearch( { dfs: true } )
 });
 
-// nice, short mathemathical alias
+// nice, short mathematical alias
 elesfn.bfs = elesfn.breadthFirstSearch;
 elesfn.dfs = elesfn.depthFirstSearch;
 

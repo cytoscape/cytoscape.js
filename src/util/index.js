@@ -88,7 +88,7 @@ export const uuid = ( a, b /* placeholders */) => {
                     ?  //  return a random number or 4
            (
              a^15      // if "a" is not 15
-                ?      // genetate a random number from 0 to 15
+                ?      // generate a random number from 0 to 15
              8^Math.random()*
              (a^20?16:4)  // unless "a" is 20, in which case a random number from 8 to 11
                 :

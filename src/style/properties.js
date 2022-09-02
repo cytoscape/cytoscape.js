@@ -19,6 +19,10 @@ const styfn = {};
     '^(none)$',
     '^(.+)$'
   ];
+  const shapeEnums = [
+    'rectangle', 'roundrectangle', 'round-rectangle', 'cutrectangle', 'cut-rectangle', 'bottomroundrectangle', 'bottom-round-rectangle', 'barrel',
+    'ellipse', 'triangle', 'round-triangle', 'square', 'pentagon', 'round-pentagon', 'hexagon', 'round-hexagon', 'concavehexagon', 'concave-hexagon', 'heptagon', 'round-heptagon', 'octagon', 'round-octagon', 'tag', 'round-tag', 'star', 'diamond', 'round-diamond', 'vee', 'rhomboid', 'polygon',
+  ];
 
   // each visual style property has a type and needs to be validated according to it
   styfn.types = {
@@ -66,12 +70,8 @@ const styfn = {};
     textWrap: { enums: [ 'none', 'wrap', 'ellipsis' ] },
     textOverflowWrap: { enums: [ 'whitespace', 'anywhere' ] },
     textBackgroundShape: { enums: [ 'rectangle', 'roundrectangle', 'round-rectangle' ]},
-    nodeShape: { enums: [
-      'rectangle', 'roundrectangle', 'round-rectangle', 'cutrectangle', 'cut-rectangle', 'bottomroundrectangle', 'bottom-round-rectangle', 'barrel',
-      'ellipse', 'triangle', 'round-triangle', 'square', 'pentagon', 'round-pentagon', 'hexagon', 'round-hexagon', 'concavehexagon', 'concave-hexagon', 'heptagon', 'round-heptagon', 'octagon', 'round-octagon',
-      'tag', 'round-tag', 'star', 'diamond', 'round-diamond', 'vee', 'rhomboid', 'polygon',
-    ] },
-    overlayShape: { enums: [ 'roundrectangle', 'round-rectangle', 'ellipse' ] },
+    nodeShape: { enums: shapeEnums },
+    overlayShape: { enums: shapeEnums },
     compoundIncludeLabels: { enums: [ 'include', 'exclude' ] },
     arrowShape: { enums: [ 'tee', 'triangle', 'triangle-tee', 'circle-triangle', 'triangle-cross', 'triangle-backcurve', 'vee', 'square', 'circle', 'diamond', 'chevron', 'none' ] },
     arrowFill: { enums: [ 'filled', 'hollow' ] },

@@ -285,6 +285,38 @@ describe('Core graph manipulation', function(){
       expect( col[0] ).to.be.undefined;
     });
 
+    it('creates a removed element', function(){
+      var col = cy.collection([{ data: { id: 'a' } }], { removed: true });
+
+      expect( col ).to.have.length(1);
+      expect( col[0].removed() ).to.be.true;
+      expect( cy.$('node#a') ).to.have.length(0);
+    });
+
+    it('restores created element successfully to graph', function(){
+      var col = cy.collection([{ data: { id: 'a' } }], { removed: true });
+
+      expect( col ).to.have.length(1);
+      expect( col[0].removed() ).to.be.true;
+      expect( cy.$('node#a') ).to.have.length(0);
+
+      col.restore();
+      expect( cy.$('node#a') ).to.have.length(1);
+    });
+
+    it('removes non-existing parent of restored element', function(){
+      var parent = cy.collection([{ data: { id: 'parent' } }], { removed: true })[0];
+      var col = cy.collection([{ data: { id: 'a' }, parent: parent }], { removed: true });
+
+      expect( col ).to.have.length(1);
+      expect( col[0].removed() ).to.be.true;
+      expect( cy.$('node#a') ).to.have.length(0);
+      expect( cy.$('node#parent') ).to.have.length(0);
+
+      col.restore();
+      expect( cy.$('node#a') ).to.have.length(1);
+      expect( cy.$('node#a').parent() ).to.have.length(0);
+    });
   });
 
   describe('cy.$() et al', function(){

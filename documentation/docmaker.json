@@ -115,10 +115,22 @@
 
             {
               "name": "cy.collection",
-              "descr": "Return a new, empty collection.",
+              "descr": "Return a new collection, empty or with new elements in a removed state.",
               "formats": [
                 {
                   "descr": "Get an empty collection."
+                },
+                {
+                  "name": "cy.collection",
+                  "descr": "Create a collection with new elements in a removed state.",
+                  "args": [
+                    { "name": "eleObjs", "descr": "Elements to be created" },
+                    { 
+                      "name": "options", 
+                      "descr": "The options for the collection",
+                      "fields": [ { "name": "removed", "descr": "A truthy value that sets whether the elements are in the removed state (true) or added to the graph (false, default)." } ]
+                     }
+                  ]
                 }
               ],
               "md": "core/collection"

@@ -1776,7 +1776,7 @@ cy.remove( collection );
 
 
 
-							<div class="descr"><p>Return a new, empty collection.</p>
+							<div class="descr"><p>Return a new collection, empty or with new elements in a removed state.</p>
 </div>
 
 							<div class="formats">
@@ -1785,6 +1785,15 @@ cy.remove( collection );
 
 
 										<div class="descr"><p>Get an empty collection.</p>
+</div>
+										<ul class="args">
+										</ul>
+									</div>
+								<div class="format">
+											<div class="name">cy.collection(eleObjs, { removed: true })</div>
+
+
+										<div class="descr"><p>Create a collection with new elements in a removed state</p>
 </div>
 										<ul class="args">
 										</ul>
@@ -1802,6 +1811,14 @@ cy.nodes().on(<span class="hljs-string">&#x27;click&#x27;</span>, <span class="h
 
   collection = collection.union(clickedNode);
 });
+</code></pre>
+								
+<p>Create a collection of new nodes that have not been added to the graph:</p>
+<pre><code class="language-js">
+	<span class="hljs-keyword">var</span> removedCollection = cy.collection([{ data: { id: 'a' } }, { data: { id: 'b' } }], { removed: true });
+	removedCollection.forEach(element => {
+		console.log(element.removed()); // true
+	};
 </code></pre>
 <button class="run run-inline-code"><span class="fa fa-play"></span></button>
 							</div>

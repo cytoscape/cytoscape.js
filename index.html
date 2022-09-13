@@ -790,6 +790,10 @@
 </ul>
 <h2 id="introduction/releases">Releases <a href="#introduction/releases"><span class="fa fa-bookmark"></span></a></h2>
 <ul>
+<li>3.23<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.23.0+is%3Aclosed">3.23.0</a></li>
+</ul>
+</li>
 <li>3.22<ul>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.22.1+is%3Aclosed">3.22.1</a></li>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.22.0+is%3Aclosed">3.22.0</a></li>
@@ -1773,12 +1777,12 @@ cy.remove( collection );
 						<div class="function">
 							<div class="name" id="cy.collection">
 								<span class="fn-name">cy.collection()</span>  <a href="#cy.collection"><span class="fa fa-bookmark"></span></a>
-								<span id="core/graph-manipulation/cy.collection">&nbsp;</span><span id="core/graph-manipulation/cy.collection">&nbsp;</span><span id="cy.collection">&nbsp;</span>
+								<span id="core/graph-manipulation/cy.collection">&nbsp;</span><span id="core/graph-manipulation/cy.collection">&nbsp;</span><span id="cy.collection">&nbsp;</span><span id="core/graph-manipulation/cy.collection">&nbsp;</span><span id="cy.collection">&nbsp;</span>
 							</div>
 
 
 
-							<div class="descr"><p>Return a new, empty collection.</p>
+							<div class="descr"><p>Return a new collection, empty or with new elements in a removed state.</p>
 </div>
 
 							<div class="formats">
@@ -1789,6 +1793,38 @@ cy.remove( collection );
 										<div class="descr"><p>Get an empty collection.</p>
 </div>
 										<ul class="args">
+										</ul>
+									</div>
+									<div class="format">
+											<div class="name">cy.collection( <span class="args-summary"><span class="comma">,&nbsp;</span>eleObjs<span class="comma">,&nbsp;</span>options</span> )</div>
+
+
+										<div class="descr"><p>Create a collection with new elements in a removed state.</p>
+</div>
+										<ul class="args">
+												<li>
+													<span class="name"><a href="#notation/elements-json">eleObjs</a></span>
+													
+													<span class="descr"><p>Elements to be created</p>
+</span>
+
+												</li>
+												<li>
+													<span class="name">options</span>
+													
+													<span class="descr"><p>The options for the collection</p>
+</span>
+
+													<ul class="fields">
+															<li>
+																<span class="name">removed</span>
+																
+																<span class="descr"><p>A truthy value that sets whether the elements are in the removed state (true) or added to the graph (false, default).</p>
+</span>
+															</li>
+
+													</ul>
+												</li>
 										</ul>
 									</div>
 							</div>
@@ -1804,6 +1840,13 @@ cy.nodes().on(<span class="hljs-string">&#x27;click&#x27;</span>, <span class="h
 
   collection = collection.union(clickedNode);
 });
+</code></pre>
+<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>Create a collection of new nodes that have not been added to the graph:</p>
+<pre><code class="language-js"><span class="hljs-keyword">var</span> removedCollection = cy.collection([{ <span class="hljs-attr">data</span>: { <span class="hljs-attr">id</span>: <span class="hljs-string">&#x27;a&#x27;</span> } }, { <span class="hljs-attr">data</span>: { <span class="hljs-attr">id</span>: <span class="hljs-string">&#x27;b&#x27;</span> } }], { <span class="hljs-attr">removed</span>: <span class="hljs-literal">true</span> });
+
+removedCollection.forEach(<span class="hljs-function"><span class="hljs-params">element</span> =&gt;</span> {
+  <span class="hljs-built_in">console</span>.log(element.removed()); <span class="hljs-comment">// true</span>
+};
 </code></pre>
 <button class="run run-inline-code"><span class="fa fa-play"></span></button>
 							</div>

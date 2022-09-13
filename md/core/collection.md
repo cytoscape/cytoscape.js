@@ -13,3 +13,12 @@ cy.nodes().on('click', function(e){
   collection = collection.union(clickedNode);
 });
 ```
+
+Create a collection of new nodes that have not been added to the graph:
+```js
+var removedCollection = cy.collection([{ data: { id: 'a' } }, { data: { id: 'b' } }], { removed: true });
+
+removedCollection.forEach(element => {
+  console.log(element.removed()); // true
+};
+```

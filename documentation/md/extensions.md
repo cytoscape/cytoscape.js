@@ -63,6 +63,8 @@ The extensions below are a curated list.  To add your extension, [please submit 
  * <i class="fa fa-fw fa-user"></i> [`cose-bilkent`](https://github.com/cytoscape/cytoscape.js-cose-bilkent) : The CoSE layout by Bilkent with enhanced compound node placement.  CoSE Bilkent is a physics simulation (force-directed) layout that gives near-perfect end results.  However, it's more expensive than both `cose` and `fcose`.
  * <i class="fa fa-fw fa-user"></i> [`cosep`](https://github.com/iVis-at-Bilkent/cytoscape.js-cosep) : 
 Compound Spring Embedder with Ports (CoSEP) is a force-directed layout algorithm based on the CoSE (Compound Spring Embedder) to support port constraints on compound graphs.
+ * <i class="fa fa-fw fa-users"></i> [`cosmos-over-cytoscape`](https://github.com/simCecca/cosmosOverCytoscape) : 
+A physics simulation layout that makes use of parallelism on the GPU to support large graphs.
  * <i class="fa fa-fw fa-users"></i> [`d3-force`](https://github.com/shichuanpo/cytoscape.js-d3-force) : The D3 force layout.  It uses a basic physics simulation (force-directed) algorithm that generates good results for small, simple graphs.
  * <i class="fa fa-fw fa-user"></i> [`dagre`](https://github.com/cytoscape/cytoscape.js-dagre) : The Dagre layout for DAGs and trees.  It organises the graph in a hierarchy.
  * <i class="fa fa-fw fa-user"></i> [`elk`](https://github.com/cytoscape/cytoscape.js-elk) : [ELK](https://github.com/OpenKieler/elkjs) layout algorithm adapter for Cytoscape.js.  It contains several layout algorithms.

@@ -121,10 +121,10 @@ Use double square brackets in place of square ones to match against metadata ins
 ## Compound nodes
 
 **`>` (child selector)**
-Matches direct children of the parent node (e.g. `node > node`).
+Matches direct child nodes of the parent node (e.g. `node > node`).
 
 **<code>&nbsp;</code> (descendant selector)**
-Matches descendants of the parent node (e.g. `node node`).
+Matches descendant nodes of the parent node (e.g. `node node`).
 
 **`$` (subject selector)**
 Sets the subject of the selector (e.g. `$node > node` to select the parent nodes instead of the children).

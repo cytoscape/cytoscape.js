@@ -1353,7 +1353,7 @@
 </code></pre>
 <button class="run run-inline-code"><span class="fa fa-play"></span></button><h2 id="notation/compound-nodes">Compound nodes <a href="#notation/compound-nodes"><span class="fa fa-bookmark"></span></a></h2>
 <p>Compound nodes are an addition to the traditional graph model.  A compound node contains a number of child nodes, similar to how a HTML DOM element can contain a number of child elements.</p>
-<p>Compound nodes are specified via the <code>parent</code> field in an element’s <code>data</code>.  Similar to the <code>source</code> and <code>target</code> fields of edges, the <code>parent</code> field is normally immutable:  A node’s parent can be specified when the node is added to the graph, and after that point, this parent-child relationship is immutable via <code>ele.data()</code>.  However, you can  move child nodes via <a href="#collection/graph-manipulation/eles.move"><code>eles.move()</code></a>.</p>
+<p>Compound nodes are specified via the <code>parent</code> field in a nodes’s <code>data</code>.  Similar to the <code>source</code> and <code>target</code> fields of edges, the <code>parent</code> field is normally immutable:  A node’s parent can be specified when the node is added to the graph, and after that point, this parent-child relationship is immutable via <code>ele.data()</code>.  However, you can  move child nodes via <a href="#collection/graph-manipulation/eles.move"><code>eles.move()</code></a>.</p>
 <p><span class="important-indicator"></span> A compound parent node does not have independent dimensions (position and size), as those values are automatically inferred by the positions and dimensions of the descendant nodes.</p>
 <p>As far as the API is concerned, compound nodes are treated just like regular nodes — except in <a href="#collection/compound-nodes">explicitly compound functions</a> like <code>node.parent()</code>.  This means that traditional graph theory functions like <code>eles.dijkstra()</code> and <code>eles.neighborhood()</code> do not make special allowances for compound nodes, so you may need to make different calls to the API depending on your usecase.</p>
 <p>For instance:</p>
@@ -13669,9 +13669,9 @@ Prepended to an operator so that it is negated (e.g. <code>[foo !$= &#39;ar&#39;
 Use double square brackets in place of square ones to match against metadata instead of data (e.g. <code>[[degree &gt; 2]]</code> matches elements of degree greater than 2).  The properties that are supported include <code>degree</code>, <code>indegree</code>, and <code>outdegree</code>.</p>
 <h2 id="selectors/compound-nodes">Compound nodes <a href="#selectors/compound-nodes"><span class="fa fa-bookmark"></span></a></h2>
 <p><strong><code>&gt;</code> (child selector)</strong>
-Matches direct children of the parent node (e.g. <code>node &gt; node</code>).</p>
+Matches direct child nodes of the parent node (e.g. <code>node &gt; node</code>).</p>
 <p><strong><code>&nbsp;</code> (descendant selector)</strong>
-Matches descendants of the parent node (e.g. <code>node node</code>).</p>
+Matches descendant nodes of the parent node (e.g. <code>node node</code>).</p>
 <p><strong><code>$</code> (subject selector)</strong>
 Sets the subject of the selector (e.g. <code>$node &gt; node</code> to select the parent nodes instead of the children).</p>
 <h2 id="selectors/state">State <a href="#selectors/state"><span class="fa fa-bookmark"></span></a></h2>

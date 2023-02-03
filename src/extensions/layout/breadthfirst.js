@@ -22,7 +22,8 @@ const defaults = {
   animateFilter: function ( node, i ){ return true; }, // a function that determines whether the node should be animated.  All nodes animated by default on animate enabled.  Non-animated nodes are positioned immediately when the layout starts
   ready: undefined, // callback on layoutready
   stop: undefined, // callback on layoutstop
-  transform: function (node, position ){ return position; } // transform a given node position. Useful for changing flow direction in discrete layouts
+  transform: function (node, position ){ return position; }, // transform a given node position. Useful for changing flow direction in discrete layouts
+  acyclic: false // whether the tree is acyclic; if uncertain, set to false to avoid potential infinite loops
 };
 /* eslint-enable */
 
@@ -176,12 +177,13 @@ BreadthFirstLayout.prototype.run = function(){
     }
 
     if( eInfo.depth <= maxDepth ){
-      if( shifted[id] ){
+      if( !options.acyclic && shifted[id] ){
         return null;
       }
 
-      changeDepth( ele, maxDepth + 1 );
-      shifted[id] = true;
+      let newDepth = maxDepth + 1;
+      changeDepth( ele, newDepth );
+      shifted[id] = newDepth;
 
       return true;
     }

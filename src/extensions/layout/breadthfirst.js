@@ -15,6 +15,7 @@ const defaults = {
   nodeDimensionsIncludeLabels: false, // Excludes the label when calculating node bounding boxes for the layout algorithm
   roots: undefined, // the roots of the trees
   maximal: false, // whether to shift nodes down their natural BFS depths in order to avoid upwards edges (DAGS only)
+  acyclic: false, // whether the tree is acyclic and thus a node could be shifted (due to the maximal option) multiple times without causing an infinite loop; if you are uncertain whether a tree is acyclic, set to false to avoid potential infinite loops
   depthSort: undefined, // a sorting function to order nodes at equal depth. e.g. function(a, b){ return a.data('weight') - b.data('weight') }
   animate: false, // whether to transition the node positions
   animationDuration: 500, // duration of animation in ms if enabled
@@ -22,8 +23,7 @@ const defaults = {
   animateFilter: function ( node, i ){ return true; }, // a function that determines whether the node should be animated.  All nodes animated by default on animate enabled.  Non-animated nodes are positioned immediately when the layout starts
   ready: undefined, // callback on layoutready
   stop: undefined, // callback on layoutstop
-  transform: function (node, position ){ return position; }, // transform a given node position. Useful for changing flow direction in discrete layouts
-  acyclic: false // whether the tree is acyclic; if uncertain, set to false to avoid potential infinite loops
+  transform: function (node, position ){ return position; } // transform a given node position. Useful for changing flow direction in discrete layouts
 };
 /* eslint-enable */
 

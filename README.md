@@ -62,7 +62,7 @@ Future versions of Cytoscape.js are planned in the [milestones of the Github iss
 
 Would you like to become a Cytoscape.js contributor?  You can contribute in technical roles (e.g. features, testing) or non-technical roles (e.g. documentation, outreach), depending on your interests.  [Get in touch with us by posting a GitHub discussion](https://github.com/cytoscape/cytoscape.js/discussions).
 
-For the mechanics of contributing a pull request, refer to [CONTRIBUTING.md](.github/CONTRIBUTING.md).
+For the mechanics of contributing a pull request, refer to [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Feature releases are made monthly, while patch releases are made weekly.  This allows for rapid releases of first- and third-party contributions.
 

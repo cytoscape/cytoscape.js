@@ -598,7 +598,6 @@
 <li><a href="https://www.redhat.com">RedHat</a></li>
 <li><a href="https://www.tencent.com/en-us/">Tencent</a></li>
 <li><a href="https://uber.com">Uber</a></li>
-<li><a href="https://layer5.io">Layer5</a></li>
 </ul>
 <h3 id="government">Government</h3>
 <ul>
@@ -710,6 +709,7 @@
 <ul>
 <li><a href="https://age.apache.org">Apache AGE</a></li>
 <li><a href="https://www.appzen.com/">AppZen</a></li>
+<li><a href="https://apromore.com">Apromore</a></li>
 <li><a href="https://www.aras.com/en">Aras</a></li>
 <li><a href="https://www.athenz.io">Athenz</a></li>
 <li><a href="https://github.com/awslabs/aws-perspective">AWS Perspective</a></li>
@@ -718,11 +718,13 @@
 <li><a href="https://www.bluesailcrm.com">BlueSailCRM</a></li>
 <li><a href="https://bugbug.io">BugBug</a></li>
 <li><a href="https://cadenceworkflow.io">Cadence</a></li>
+<li><a href="https://crossbar.kansil.org">CanSyL</a></li>
 <li><a href="https://chaos-mesh.org">Chaos Mesh</a></li>
 <li><a href="https://www.classcraft.com">Classcraft</a></li>
 <li><a href="https://www.cybersift.io">CyberSift</a></li>
 <li><a href="https://cylc.github.io">Cylc</a></li>
 <li><a href="https://www.dendron.so">Dendron</a></li>
+<li><a href="https://www.dgbtek.com">DGB Technologies</a></li>
 <li><a href="https://dockflow.com">Dockflow</a></li>
 <li><a href="https://www.dronedeploy.com">DroneDeploy</a></li>
 <li><a href="https://dynalearn.nl">DynaLearn</a></li>
@@ -769,6 +771,7 @@
 <li><a href="https://thekanjimap.com">The Kanji Map</a></li>
 <li><a href="https://threatconnect.com">ThreatConnect</a></li>
 <li><a href="https://www.threatcrowd.org">ThreatCrowd</a></li>
+<li><a href="https://trank.no">T-Rank</a></li>
 <li><a href="https://www.underlay.org">Underlay</a></li>
 <li><a href="https://vac.dev">VAC</a></li>
 <li><a href="https://wanderer.ai">wanderer.ai</a></li>
@@ -4595,7 +4598,7 @@ cy.style( stringStylesheet );
   .update() <span class="hljs-comment">// indicate the end of your new stylesheet so that it can be updated on elements</span>
 ;
 </code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>Add to the existing stylesheet:</p>
+<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>Add to the existing stylesheet using selectors:</p>
 <pre><code class="language-js">cy.style()
   .selector(<span class="hljs-string">&#x27;node&#x27;</span>)
     .style({
@@ -4604,6 +4607,11 @@ cy.style( stringStylesheet );
 
   .update() <span class="hljs-comment">// indicate the end of your new stylesheet so that it can be updated on elements</span>
 ;
+</code></pre>
+<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>Add to the existing stylesheet by appending a string:</p>
+<pre><code class="language-js">cy.style()
+  .append(<span class="hljs-string">&#x27;node { background-color: yellow; }&#x27;</span>)
+  .update();
 </code></pre>
 <button class="run run-inline-code"><span class="fa fa-play"></span></button><p>Set the style from plain JSON:</p>
 <pre><code class="language-js">cy.style()

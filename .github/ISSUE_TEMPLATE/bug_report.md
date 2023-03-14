@@ -12,6 +12,8 @@ assignees: ''
 A request for help or a requests for a how-to should be directed to Stack Overflow:
 http://stackoverflow.com/questions/tagged/cytoscape.js
 
+If your issue pertains to an extension, your issue should be filed in that extension's repository -- not here.
+
 
 
 **Environment info**

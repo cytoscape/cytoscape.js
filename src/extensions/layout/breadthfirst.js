@@ -14,7 +14,8 @@ const defaults = {
   avoidOverlap: true, // prevents node overlap, may overflow boundingBox if not enough space
   nodeDimensionsIncludeLabels: false, // Excludes the label when calculating node bounding boxes for the layout algorithm
   roots: undefined, // the roots of the trees
-  maximal: false, // whether to shift nodes down their natural BFS depths in order to avoid upwards edges (DAGS only)
+  maximal: false, // whether to shift nodes down their natural BFS depths in order to avoid upwards edges (DAGS only); setting acyclic to true sets maximal to true also
+  acyclic: false, // whether the tree is acyclic and thus a node could be shifted (due to the maximal option) multiple times without causing an infinite loop; setting to true sets maximal to true also; if you are uncertain whether a tree is acyclic, set to false to avoid potential infinite loops
   depthSort: undefined, // a sorting function to order nodes at equal depth. e.g. function(a, b){ return a.data('weight') - b.data('weight') }
   animate: false, // whether to transition the node positions
   animationDuration: 500, // duration of animation in ms if enabled
@@ -42,7 +43,7 @@ BreadthFirstLayout.prototype.run = function(){
   let nodes = eles.nodes().filter( n => !n.isParent() );
   let graph = eles;
   let directed = options.directed;
-  let maximal = options.maximal || options.maximalAdjustments > 0; // maximalAdjustments for compat. w/ old code
+  let maximal = options.acyclic || options.maximal || options.maximalAdjustments > 0; // maximalAdjustments for compat. w/ old code; also, setting acyclic to true sets maximal to true
 
   let bb = math.makeBoundingBox( options.boundingBox ? options.boundingBox : {
     x1: 0, y1: 0, w: cy.width(), h: cy.height()
@@ -176,12 +177,13 @@ BreadthFirstLayout.prototype.run = function(){
     }
 
     if( eInfo.depth <= maxDepth ){
-      if( shifted[id] ){
+      if( !options.acyclic && shifted[id] ){
         return null;
       }
 
-      changeDepth( ele, maxDepth + 1 );
-      shifted[id] = true;
+      let newDepth = maxDepth + 1;
+      changeDepth( ele, newDepth );
+      shifted[id] = newDepth;
 
       return true;
     }

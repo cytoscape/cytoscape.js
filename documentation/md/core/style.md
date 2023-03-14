@@ -49,7 +49,7 @@ cy.style()
 ;
 ```
 
-Add to the existing stylesheet:
+Add to the existing stylesheet using selectors:
 ```js
 cy.style()
   .selector('node')
@@ -59,6 +59,13 @@ cy.style()
 
   .update() // indicate the end of your new stylesheet so that it can be updated on elements
 ;
+```
+
+Add to the existing stylesheet by appending a string:
+```js
+cy.style()
+  .append('node { background-color: yellow; }')
+  .update();
 ```
 
 Set the style from plain JSON:

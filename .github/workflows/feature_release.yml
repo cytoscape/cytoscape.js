@@ -16,7 +16,7 @@ jobs:
           ref: 'master'
       - name: merge branches
         run: |
-          git fetch https://github.com/cytoscape/cytoscape.js unstable --depth 1
+          git fetch origin unstable --depth 1
           git checkout unstable
           git merge -s ours master
       - name: Fast-forward master

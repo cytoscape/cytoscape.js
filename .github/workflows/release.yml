@@ -1,21 +1,21 @@
-# This is a basic workflow that is manually triggered
-
 name: Release
 
-# Controls when the action will run. Workflow runs when manually triggered using the UI
-# or API.
 on:
+  milestone:
+    types: [closed]
   workflow_dispatch:
     # Inputs the workflow accepts.
     inputs:
       releaseType:
         # Friendly description to be shown in the UI instead of 'name'
         description: 'Select type of release'
-        # Default value if no value is explicitly provided
+        # Default release type is patch
         default: 'patch'
         # Input has to be provided for the workflow to run
         required: true
+        # Type of options to be provided
         type: choice
+        # List of options
         options:
         - patch
         - feature

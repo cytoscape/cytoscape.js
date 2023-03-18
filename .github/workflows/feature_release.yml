@@ -6,19 +6,7 @@ on:
     
   workflow_dispatch:
 
-env:
-  TYPE: 'feature'
-
-jobs:
-  log-the-inputs:
-    if: ${{ github.event_name == 'workflow_dispatch' }}
-    runs-on: ubuntu-latest
-    steps:
-      - run: |
-          echo "Release Type: $TYPE"
-        env:
-          TYPE: ${{ inputs.releaseType }}
-  
+jobs:  
   feature-release:
     runs-on: ubuntu-latest
     steps:
@@ -28,7 +16,7 @@ jobs:
           ref: 'master'
       - name: merge branches
         run: |
-          git pull origin unstable
+          git pull https://github.com/cytoscape/cytoscape.js unstable
           git checkout unstable
           git merge -s ours master
       - name: Fast-forward master

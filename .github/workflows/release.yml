@@ -20,6 +20,9 @@ on:
         options:
         - patch
         - feature
+        
+env:
+  TYPE: 'patch'
 
 jobs:
   log-the-inputs:

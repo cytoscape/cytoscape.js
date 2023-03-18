@@ -15,6 +15,7 @@ on:
         default: 'patch'
         # Input has to be provided for the workflow to run
         required: true
+        type: choice
         options:
         - patch
         - feature

@@ -41,16 +41,37 @@ jobs:
           TYPE: 'feature'
 
   checkout-code:
-      runs-on: ubuntu-latest
-      container: node:16
-      steps:
-        - name: checkout main branch
-          uses: actions/checkout@v3
-          with:
-            ref: 'master'
-        - name: test code
-          run: |
-            npm install
-            npm test
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout main branch
+        uses: actions/checkout@v3
+        with:
+          ref: 'master'
+  
+  feature-release:
+    if: ${{ env.TYPE == 'feature' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout unstable
+        uses: actions/checkout@v3
+        with:
+          ref: 'master'
+      - name: checkout unstable
+        uses: actions/checkout@v3
+        with:
+          ref: 'unstable'
+      - name: merge branches
+        run: |
+          git merge -s ours master
+      - name: Fast-forward master
+        run: |
+          git checkout master && git merge unstable
+      - name: See commit history
+        run: |
+          git log -n 5
+    
+    
+
+    
       
     

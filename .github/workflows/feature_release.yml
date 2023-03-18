@@ -19,7 +19,7 @@ jobs:
           git fetch origin unstable --depth 1
           git checkout unstable
           git branch
-          git merge -s ours master
+          git merge -s ours master --allow-unrelated-histories
       - name: Fast-forward master
         run: |
           git checkout master && git merge unstable

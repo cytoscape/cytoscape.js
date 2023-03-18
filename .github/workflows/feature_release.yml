@@ -5,24 +5,9 @@ on:
     types: [closed]
     
   workflow_dispatch:
-    # Inputs the workflow accepts.
-    inputs:
-      releaseType:
-        # Friendly description to be shown in the UI instead of 'name'
-        description: 'Select type of release'
-        # Default release type is patch
-        default: 'patch'
-        # Input has to be provided for the workflow to run
-        required: true
-        # Type of options to be provided
-        type: choice
-        # List of options
-        options:
-        - patch
-        - feature
-        
+
 env:
-  TYPE: 'patch'
+  TYPE: 'feature'
 
 jobs:
   log-the-inputs:
@@ -52,7 +37,6 @@ jobs:
           ref: 'master'
   
   feature-release:
-    if: ${{ env.TYPE == 'feature' }}
     runs-on: ubuntu-latest
     steps:
       - name: checkout unstable

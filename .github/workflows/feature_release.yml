@@ -19,23 +19,6 @@ jobs:
         env:
           TYPE: ${{ inputs.releaseType }}
   
-  run-on-milestone:
-    if: ${{ github.event_name == 'milestone' }}
-    runs-on: ubuntu-latest
-    steps:
-      - run: |
-          echo "Release Type: $TYPE"
-        env:
-          TYPE: 'feature'
-
-  checkout-code:
-    runs-on: ubuntu-latest
-    steps:
-      - name: checkout main branch
-        uses: actions/checkout@v3
-        with:
-          ref: 'master'
-  
   feature-release:
     runs-on: ubuntu-latest
     steps:
@@ -43,12 +26,10 @@ jobs:
         uses: actions/checkout@v3
         with:
           ref: 'master'
-      - name: checkout unstable
-        uses: actions/checkout@v3
-        with:
-          ref: 'unstable'
       - name: merge branches
         run: |
+          git fetch origin unstable --depth 1
+          git checkout origin/unstable
           git merge -s ours master
       - name: Fast-forward master
         run: |

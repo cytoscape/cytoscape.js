@@ -18,6 +18,7 @@ jobs:
         run: |
           git fetch origin unstable --depth 1
           git checkout unstable
+          git branch
           git merge -s ours master
       - name: Fast-forward master
         run: |

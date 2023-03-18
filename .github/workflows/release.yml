@@ -39,4 +39,18 @@ jobs:
           echo "Release Type: $TYPE"
         env:
           TYPE: 'feature'
+
+  checkout-code:
+      runs-on: ubuntu-latest
+      container: node:16
+      steps:
+        - name: checkout main branch
+          uses: actions/checkout@v3
+          with:
+            ref: 'master'
+        - name: test code
+          run: |
+            npm install
+            npm test
+      
     

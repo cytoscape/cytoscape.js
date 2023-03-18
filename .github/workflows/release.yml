@@ -3,6 +3,7 @@ name: Release
 on:
   milestone:
     types: [closed]
+    
   workflow_dispatch:
     # Inputs the workflow accepts.
     inputs:
@@ -20,15 +21,22 @@ on:
         - patch
         - feature
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "greet"
-  greet:
-    # The type of runner that the job will run on
+  log-the-inputs:
+    if: ${{ github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
-
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-    # Runs a single command using the runners shell
-    - name: Send greeting
-      run: echo "Hello ${{ github.event.inputs.name }}"
+      - run: |
+          echo "Release Type: $TYPE"
+        env:
+          TYPE: ${{ inputs.releaseType }}
+  
+  run-on-milestone:
+    if: ${{ github.event_name == 'milestone' }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "Release Type: $TYPE"
+        env:
+          TYPE: 'feature'
+    

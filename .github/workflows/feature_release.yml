@@ -28,8 +28,8 @@ jobs:
           ref: 'master'
       - name: merge branches
         run: |
-          git fetch origin unstable --depth 1
-          git checkout origin/unstable
+          git pull origin unstable
+          git checkout unstable
           git merge -s ours master
       - name: Fast-forward master
         run: |

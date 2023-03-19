@@ -3,12 +3,13 @@ name: Release
 on:
   milestone:
     types: [closed]
-    
+
   workflow_dispatch:
 
 jobs:  
   feature-release:
     runs-on: ubuntu-latest
+    container: node:16
     steps:
       - name: checkout unstable
         uses: actions/checkout@v3

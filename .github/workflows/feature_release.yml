@@ -30,6 +30,12 @@ jobs:
       - name: See commit history
         run: |
           git log -n 5
+      - name: Update version in package.json
+        id: version-generation-step
+        uses: AkMo3/Cytoscape-Github-Actions/update-package-version@v1
+      - name: View new version
+        run: echo new version ${{ steps.version-generation-step.outputs.VERSION }}
+        shell: bash
     
     
 

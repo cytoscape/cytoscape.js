@@ -37,7 +37,7 @@ jobs:
         id: version-generation-step
         uses: AkMo3/Cytoscape-Github-Actions/update-package-version@v1
       - name: View new version
-        run: echo new version ${{ steps.version-generation-step.outputs.VERSION }}
+        run: echo new version ${{ steps.version-generation-step.outputs.version }}
         shell: bash
     
     

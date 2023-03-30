@@ -13,7 +13,6 @@
 [![Download](https://img.shields.io/npm/v/cytoscape.svg?label=Download)](https://github.com/cytoscape/cytoscape.js/tree/master/dist)
 [![Extensions](https://img.shields.io/badge/Extensions-67-blue.svg)](#extensions)
 [![npm installs](https://img.shields.io/npm/dm/cytoscape.svg?label=npm%20installs)](https://www.npmjs.com/package/cytoscape)
-[![master branch tests](https://img.shields.io/travis/cytoscape/cytoscape.js/master.svg?label=master%20branch)](https://travis-ci.org/cytoscape/cytoscape.js)
-[![unstable branch tests](https://img.shields.io/travis/cytoscape/cytoscape.js/unstable.svg?label=unstable%20branch)](https://travis-ci.org/cytoscape/cytoscape.js)
+[![Automated tests](https://github.com/cytoscape/cytoscape.js/actions/workflows/tests.yml/badge.svg)](https://github.com/cytoscape/cytoscape.js/actions/workflows/tests.yml)
 
 </div>

@@ -46,7 +46,7 @@ const styfn = {};
     bgRelativeTo: { enums: [ 'inner', 'include-padding' ], multiple: true },
     bgRepeat: { enums: [ 'repeat', 'repeat-x', 'repeat-y', 'no-repeat' ], multiple: true },
     bgFit: { enums: [ 'none', 'contain', 'cover' ], multiple: true },
-    bgCrossOrigin: { enums: [ 'anonymous', 'use-credentials' ], multiple: true },
+    bgCrossOrigin: { enums: [ 'anonymous', 'use-credentials', 'null' ], multiple: true },
     bgClip: { enums: [ 'none', 'node' ], multiple: true },
     bgContainment: { enums: [ 'inside', 'over' ], multiple: true },
     color: { color: true },

@@ -478,7 +478,7 @@ var findLCA = function( node1, node2, layoutInfo ){
  * @arg layoutInfo : layoutInfo object
  *
  * @return         : object of the form {count: X, graph: Y}, where:
- *                   X is the number of ancesters (max: 2) found in
+ *                   X is the number of ancestors (max: 2) found in
  *                   graphIx (and it's subgraphs),
  *                   Y is the graph index of the lowest graph containing
  *                   all X nodes

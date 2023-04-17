@@ -284,7 +284,7 @@ let kMedoids = function( options ) {
     }
 
     isStillMoving = false;
-    // Step 3: For each medoid m, and for each node assciated with mediod m,
+    // Step 3: For each medoid m, and for each node associated with mediod m,
     // select the node with the lowest configuration cost as new medoid.
     for ( let m = 0; m < medoids.length; m++ ) {
 

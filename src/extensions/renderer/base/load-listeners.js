@@ -1693,7 +1693,7 @@ BRp.load = function(){
           }
 
           r.redraw();
-        } else { // otherise keep track of drag delta for later
+        } else { // otherwise keep track of drag delta for later
           var dragDelta = r.touchData.dragDelta = r.touchData.dragDelta || [];
 
           if( dragDelta.length === 0 ){

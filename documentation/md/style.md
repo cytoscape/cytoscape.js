@@ -296,7 +296,7 @@ A background image may be applied to a node's body.  The following properties su
     * Using the `viewbox` attribute in SVG images may cause rendering problems in Firefox.
     * SVG images may not work consistently in Internet Explorer.
     * The [`cytoscape-sbgn-stylesheet`](https://github.com/PathwayCommons/cytoscape-sbgn-stylesheet) package serves as a good example for the use of SVG images in a stylesheet.  That stylesheet [creates decorations](https://pathwaycommons.github.io/cytoscape-sbgn-stylesheet/) on nodes in line with the [SBGN standard](https://sbgn.github.io).
-* **`background-image-crossorigin`**: All images are loaded with a [`crossorigin`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/img#attr-crossorigin) attribute which may be `anonymous` or `use-credentials` or `null`. The default is set to `anonymous`.
+* **`background-image-crossorigin`**: All images are loaded with a [`crossorigin`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/img#attr-crossorigin) attribute which may be `anonymous` or `use-credentials` or `null`. These values should be passed as a string (enclosed withing single or double quotes). The default is set to `anonymous`.
 * **`background-image-opacity`** : The opacity of the background image.
 * **`background-image-smoothing`** : Determines whether background image is smoothed (`yes`, default) or not (`no`). This is only a hint, and the browser may or may not respect the value set for this property.
 * **`background-image-containment`** : Determines whether background image is within (`inside`, default) or over top of the node(`over`).

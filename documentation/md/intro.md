@@ -1,11 +1,11 @@
 ## Factsheet
 
- * A fully featured graph library written in pure JS
- * Permissive open source license (MIT) for the core Cytoscape.js library and all first-party extensions
- * Used in commercial projects and open-source projects in production
- * Designed for users first, for both frontfacing app usecases *and* developer usecases
- * Highly optimised
- * Compatible with
+* A fully featured graph library written in pure JS
+* Permissive open source license (MIT) for the core Cytoscape.js library and all first-party extensions
+* Used in commercial projects and open-source projects in production
+* Designed for users first, for both frontfacing app usecases *and* developer usecases
+* Highly optimised
+* Compatible with
   * All modern browsers
   * Legacy browsers with ES5 and canvas support
     * ES5 and canvas support are required, and feature detection is used for optional performance enhancements.
@@ -23,26 +23,26 @@
     * yarn
     * bower
 * Supports the [R language](https://www.r-project.org/) via [RCyjs](http://www.bioconductor.org/packages/release/bioc/html/RCyjs.html)
- * Supports rendering images of graphs on Node.js with [Cytosnap](https://github.com/cytoscape/cytosnap)
- * Has a large suite of tests that can be run in the browser or the terminal
- * Documentation includes live code examples, doubling as an interactive requirements specification; example graphs may also be freely modified in your browser's JS console
- * Fully serialisable and deserialisable via JSON
- * Uses layouts for automatically or manually positioning nodes
- * Supports selectors for terse filtering and graph querying
- * Uses stylesheets to separate presentation from data in a rendering agnostic manner
- * Abstracted and unified touch events on top of a familiar event model
- * Builtin support for standard gestures on both desktop and touch
- * Chainable for convenience
- * Supports functional programming patterns
- * Supports set theory operations
- * Includes graph theory algorithms, from BFS to PageRank
- * Animatable graph elements and viewport
- * Fully extendable (and extensions can be autoscaffolded for you)
- * Well maintained
+* Supports rendering images of graphs on Node.js with [Cytosnap](https://github.com/cytoscape/cytosnap)
+* Has a large suite of tests that can be run in the browser or the terminal
+* Documentation includes live code examples, doubling as an interactive requirements specification; example graphs may also be freely modified in your browser's JS console
+* Fully serialisable and deserialisable via JSON
+* Uses layouts for automatically or manually positioning nodes
+* Supports selectors for terse filtering and graph querying
+* Uses stylesheets to separate presentation from data in a rendering agnostic manner
+* Abstracted and unified touch events on top of a familiar event model
+* Builtin support for standard gestures on both desktop and touch
+* Chainable for convenience
+* Supports functional programming patterns
+* Supports set theory operations
+* Includes graph theory algorithms, from BFS to PageRank
+* Animatable graph elements and viewport
+* Fully extendable (and extensions can be autoscaffolded for you)
+* Well maintained
    * Weekly patch release cadence
    * Monthly feature release cadence
- * Listed by [Zenodo](https://doi.org/10.5281/zenodo.831800) for per-version DOIs
- * Listed by [OMIC Tools](https://omictools.com/cytoscape-js-tool)
+* Listed by [Zenodo](https://doi.org/10.5281/zenodo.831800) for per-version DOIs
+* Listed by [OMIC Tools](https://omictools.com/cytoscape-js-tool)
 
 ## Who uses Cytoscape.js
 
@@ -267,9 +267,9 @@ The library was created at the [Donnelly Centre](http://thedonnellycentre.utoron
 
 ## Packages
 
- * npm : `npm install cytoscape`
- * bower : `bower install cytoscape`
- * jspm : `jspm install npm:cytoscape`
+* npm : `npm install cytoscape`
+* bower : `bower install cytoscape`
+* jspm : `jspm install npm:cytoscape`
 
 
 

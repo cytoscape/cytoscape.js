@@ -52,8 +52,7 @@
 <a href="https://github.com/cytoscape/cytoscape.js/tree/master/dist"><img src="https://img.shields.io/npm/v/cytoscape.svg?label=Download" alt="Download"></a>
 <a href="#extensions"><img src="https://img.shields.io/badge/Extensions-67-blue.svg" alt="Extensions"></a>
 <a href="https://www.npmjs.com/package/cytoscape"><img src="https://img.shields.io/npm/dm/cytoscape.svg?label=npm%20installs" alt="npm installs"></a>
-<a href="https://travis-ci.org/cytoscape/cytoscape.js"><img src="https://img.shields.io/travis/cytoscape/cytoscape.js/master.svg?label=master%20branch" alt="master branch tests"></a>
-<a href="https://travis-ci.org/cytoscape/cytoscape.js"><img src="https://img.shields.io/travis/cytoscape/cytoscape.js/unstable.svg?label=unstable%20branch" alt="unstable branch tests"></a></p>
+<a href="https://github.com/cytoscape/cytoscape.js/actions/workflows/tests.yml"><img src="https://github.com/cytoscape/cytoscape.js/actions/workflows/tests.yml/badge.svg" alt="Automated tests"></a></p>
 </div>
 
 
@@ -530,7 +529,7 @@
 <li>Used in commercial projects and open-source projects in production</li>
 <li>Designed for users first, for both frontfacing app usecases <em>and</em> developer usecases</li>
 <li>Highly optimised</li>
-<li>Compatible with</li>
+<li>Compatible with<ul>
 <li>All modern browsers</li>
 <li>Legacy browsers with ES5 and canvas support<ul>
 <li>ES5 and canvas support are required, and feature detection is used for optional performance enhancements.</li>
@@ -553,6 +552,8 @@
 <li>npm</li>
 <li>yarn</li>
 <li>bower</li>
+</ul>
+</li>
 </ul>
 </li>
 <li>Supports the <a href="https://www.r-project.org/">R language</a> via <a href="http://www.bioconductor.org/packages/release/bioc/html/RCyjs.html">RCyjs</a></li>
@@ -794,6 +795,10 @@
 </ul>
 <h2 id="introduction/releases">Releases <a href="#introduction/releases"><span class="fa fa-bookmark"></span></a></h2>
 <ul>
+<li>3.24<ul>
+<li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.24.0+is%3Aclosed">3.24.0</a></li>
+</ul>
+</li>
 <li>3.23<ul>
 <li><a href="https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A3.23.0+is%3Aclosed">3.23.0</a></li>
 </ul>
@@ -4917,13 +4922,15 @@ cy.style( stringStylesheet );
 
 				<h1 id="collection">Collection <a href="#collection"><span class="fa fa-bookmark"></span></a></h1>
 
-					<p>A collection contains a set of nodes and edges.  Calling a function applies the function to all elements in the collection.  When reading values from a collection, <a href="#collection/data/eles.data"><code>eles.data()</code></a> for example, the value of the first element in the collection is returned.  For example:</p>
+					<p>A collection contains a set of nodes and edges, the set typically being immutable.  Calling a function applies the function to all elements in the collection.  When reading values from a collection, <a href="#collection/data/eles.data"><code>eles.data()</code></a> for example, the value of the first element in the collection is returned.  For example:</p>
 <pre><code class="language-js"><span class="hljs-keyword">var</span> weight = cy.nodes().data(<span class="hljs-string">&quot;weight&quot;</span>);
 
 <span class="hljs-built_in">console</span>.log( cy.nodes()[<span class="hljs-number">0</span>].data(<span class="hljs-string">&quot;weight&quot;</span>) + <span class="hljs-string">&#x27; == &#x27;</span> + weight ); <span class="hljs-comment">// weight is the first ele&#x27;s weight</span>
 </code></pre>
 <button class="run run-inline-code"><span class="fa fa-play"></span></button><p>You can ensure that you’re reading from the element you want by using a <a href="#selectors">selector</a> to narrow down the collection to one element (i.e. <code>eles.size() === 1</code>) or the <a href="#collection/iteration/eles.eq"><code>eles.eq()</code></a> function.</p>
+<p><span class="important-indicator"></span> Note that a collection is immutable by default, meaning that the set of elements within a collection can not be changed.  The API returns a new collection with different elements when necessary, instead of mutating the existing collection.  This allows the programmer to safely use set theory operations on collections, use collections functionally, and so on.  Note that because a collection is just a list of elements, it is relatively inexpensive to create new collections.</p>
 <p>Also note that collections are iterable for modern browsers which support the <a href="https://exploringjs.com/es6/ch_iteration.html">iteration protocols</a>. This enables the use of features such as the spread operator, for-of loops, and destructuring.</p>
+<p>While collections may be accessed similarly to arrays via indices, they may also be used like sets <a href="#collection/building--filtering">for formation</a> (e.g. <code>eles1.union(eles2)</code>) and <a href="#collection/comparison">for membership testing</a> (e.g. <code>eles.has(node)</code>).</p>
 
 
 
@@ -14014,7 +14021,7 @@ node {
 </li>
 </ul>
 </li>
-<li><strong><code>background-image-crossorigin</code></strong>: All images are loaded with a <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/img#attr-crossorigin"><code>crossorigin</code></a> attribute which may be <code>anonymous</code> or <code>use-credentials</code> or <code>null</code>. These values should be passed as a string (enclosed within single or double quotes). The default is set to <code>anonymous</code>.</li>
+<li><strong><code>background-image-crossorigin</code></strong>: All images are loaded with a <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/img#attr-crossorigin"><code>crossorigin</code></a> attribute which may be <code>anonymous</code> or <code>use-credentials</code> or <code>null</code>. These values should be passed as a string (enclosed withing single or double quotes). The default is set to <code>anonymous</code>.</li>
 <li><strong><code>background-image-opacity</code></strong> : The opacity of the background image.</li>
 <li><strong><code>background-image-smoothing</code></strong> : Determines whether background image is smoothed (<code>yes</code>, default) or not (<code>no</code>). This is only a hint, and the browser may or may not respect the value set for this property.</li>
 <li><strong><code>background-image-containment</code></strong> : Determines whether background image is within (<code>inside</code>, default) or over top of the node(<code>over</code>).</li>
@@ -14257,7 +14264,7 @@ node {
 <li><strong><code>text-wrap</code></strong> : A wrapping style to apply to the label text; may be <code>none</code> for no wrapping (including manual newlines: <code>\n</code>), <code>wrap</code> for manual and/or autowrapping, or <code>ellipsis</code> to truncate the string and append ‘…’ based on <code>text-max-width</code>.  Note that with <code>wrap</code>, text will always wrap on newlines (<code>\n</code>) and text may wrap on any breakable whitespace character — including <a href="https://en.wikipedia.org/wiki/Zero-width_space">zero-width spaces</a> (<code>\u200b</code>).</li>
 <li><strong><code>text-max-width</code></strong> : The maximum width for wrapped text, applied when <code>text-wrap</code> is set to <code>wrap</code> or <code>ellipsis</code>.  For only manual newlines (i.e. <code>\n</code>), set a very large value like <code>1000px</code> such that only your newline characters would apply.</li>
 <li><strong><code>text-overflow-wrap</code></strong> : The characters that may be used for possible wrapping locations when a line overflows <code>text-max-width</code>; may be <code>whitespace</code> (default) or <code>anywhere</code>.  Note that <code>anywhere</code> is suited to <a href="https://en.wikipedia.org/wiki/CJK_characters">CJK</a>, where the characters are in a grid and no whitespace exists.  Using <code>anywhere</code> with text in the Latin alphabet, for example, will split words at arbitrary locations.</li>
-<li><code>text-justification</code>** : The justification of multiline (wrapped) labels; may be <code>left</code>, <code>center</code>, <code>right</code>, or <code>auto</code> (default).  The <code>auto</code> value makes it so that a node’s label is justified along the node — e.g. a label on the right side of a node is left justified.</li>
+<li><strong><code>text-justification</code></strong> : The justification of multiline (wrapped) labels; may be <code>left</code>, <code>center</code>, <code>right</code>, or <code>auto</code> (default).  The <code>auto</code> value makes it so that a node’s label is justified along the node — e.g. a label on the right side of a node is left justified.</li>
 <li><strong><code>line-height</code></strong> : The line height of multiline text, as a relative, unitless value.  It specifies the vertical spacing between each line.  With value <code>1</code> (default), the lines are stacked directly on top of one another with no additional whitespace between them.  With value <code>2</code>, for example, there is whitespace between each line equal to the visible height of a line of text.</li>
 </ul>
 <p>Node label alignment:</p>
@@ -14730,7 +14737,6 @@ cy.layout( options );</code></pre>
   <span class="hljs-attr">avoidOverlap</span>: <span class="hljs-literal">true</span>, <span class="hljs-comment">// prevents node overlap, may overflow boundingBox if not enough space</span>
   <span class="hljs-attr">nodeDimensionsIncludeLabels</span>: <span class="hljs-literal">false</span>, <span class="hljs-comment">// Excludes the label when calculating node bounding boxes for the layout algorithm</span>
   <span class="hljs-attr">roots</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// the roots of the trees</span>
-  <span class="hljs-attr">maximal</span>: <span class="hljs-literal">false</span>, <span class="hljs-comment">// whether to shift nodes down their natural BFS depths in order to avoid upwards edges (DAGS only)</span>
   <span class="hljs-attr">depthSort</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// a sorting function to order nodes at equal depth. e.g. function(a, b){ return a.data(&#x27;weight&#x27;) - b.data(&#x27;weight&#x27;) }</span>
   <span class="hljs-attr">animate</span>: <span class="hljs-literal">false</span>, <span class="hljs-comment">// whether to transition the node positions</span>
   <span class="hljs-attr">animationDuration</span>: <span class="hljs-number">500</span>, <span class="hljs-comment">// duration of animation in ms if enabled</span>
@@ -15820,7 +15826,7 @@ A physics simulation layout that makes use of parallelism on the GPU to support 
 		</div>
 
 		<div class="toc-search">
-			<input id="toc-input" type="text" placeholder="Find sections"></input>
+			<input id="toc-input" type="text" placeholder="Find sections" autocomplete="off"></input>
 			<a id="toc-clear" class="plain-link"><span class="fa fa-times"></span></a>
 			<a id="toc-top" href="#top" class="plain-link"><span class="fa fa-arrow-up"></span></a>
 		</div>

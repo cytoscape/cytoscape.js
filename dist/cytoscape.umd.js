@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2016-2022, The Cytoscape Consortium.
+ * Copyright (c) 2016-2023, The Cytoscape Consortium.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the “Software”), to deal in
@@ -5538,7 +5538,7 @@
         assignment[node.id()] = classify(node, medoids, opts.distance, opts.attributes, 'kMedoids');
       }
 
-      isStillMoving = false; // Step 3: For each medoid m, and for each node assciated with mediod m,
+      isStillMoving = false; // Step 3: For each medoid m, and for each node associated with mediod m,
       // select the node with the lowest configuration cost as new medoid.
 
       for (var m = 0; m < medoids.length; m++) {
@@ -18218,7 +18218,7 @@
         multiple: true
       },
       bgCrossOrigin: {
-        enums: ['anonymous', 'use-credentials'],
+        enums: ['anonymous', 'use-credentials', 'null'],
         multiple: true
       },
       bgClip: {
@@ -21130,8 +21130,6 @@
     // Excludes the label when calculating node bounding boxes for the layout algorithm
     roots: undefined,
     // the roots of the trees
-    maximal: false,
-    // whether to shift nodes down their natural BFS depths in order to avoid upwards edges (DAGS only)
     depthSort: undefined,
     // a sorting function to order nodes at equal depth. e.g. function(a, b){ return a.data('weight') - b.data('weight') }
     animate: false,
@@ -21153,6 +21151,12 @@
     } // transform a given node position. Useful for changing flow direction in discrete layouts
 
   };
+  var deprecatedOptionDefaults = {
+    maximal: false,
+    // whether to shift nodes down their natural BFS depths in order to avoid upwards edges (DAGS only); setting acyclic to true sets maximal to true also
+    acyclic: false // whether the tree is acyclic and thus a node could be shifted (due to the maximal option) multiple times without causing an infinite loop; setting to true sets maximal to true also; if you are uncertain whether a tree is acyclic, set to false to avoid potential infinite loops
+
+  };
   /* eslint-enable */
 
   var getInfo = function getInfo(ele) {
@@ -21164,7 +21168,7 @@
   };
 
   function BreadthFirstLayout(options) {
-    this.options = extend({}, defaults$7, options);
+    this.options = extend({}, defaults$7, deprecatedOptionDefaults, options);
   }
 
   BreadthFirstLayout.prototype.run = function () {
@@ -21177,7 +21181,7 @@
     });
     var graph = eles;
     var directed = options.directed;
-    var maximal = options.maximal || options.maximalAdjustments > 0; // maximalAdjustments for compat. w/ old code
+    var maximal = options.acyclic || options.maximal || options.maximalAdjustments > 0; // maximalAdjustments for compat. w/ old code; also, setting acyclic to true sets maximal to true
 
     var bb = makeBoundingBox(options.boundingBox ? options.boundingBox : {
       x1: 0,
@@ -21313,12 +21317,13 @@
       }
 
       if (eInfo.depth <= maxDepth) {
-        if (shifted[id]) {
+        if (!options.acyclic && shifted[id]) {
           return null;
         }
 
-        changeDepth(ele, maxDepth + 1);
-        shifted[id] = true;
+        var newDepth = maxDepth + 1;
+        changeDepth(ele, newDepth);
+        shifted[id] = newDepth;
         return true;
       }
 
@@ -22286,7 +22291,7 @@
    * @arg layoutInfo : layoutInfo object
    *
    * @return         : object of the form {count: X, graph: Y}, where:
-   *                   X is the number of ancesters (max: 2) found in
+   *                   X is the number of ancestors (max: 2) found in
    *                   graphIx (and it's subgraphs),
    *                   Y is the graph index of the lowest graph containing
    *                   all X nodes
@@ -26306,6 +26311,8 @@ var printLayoutInfo;
       var isDataUri = url.substring(0, dataUriPrefix.length).toLowerCase() === dataUriPrefix;
 
       if (!isDataUri) {
+        // if crossorigin is 'null'(stringified), then manually set it to null 
+        crossOrigin = crossOrigin === 'null' ? null : crossOrigin;
         image.crossOrigin = crossOrigin; // prevent tainted canvas
       }
 
@@ -28008,7 +28015,7 @@ var printLayoutInfo;
 
             r.redraw();
           } else {
-            // otherise keep track of drag delta for later
+            // otherwise keep track of drag delta for later
             var dragDelta = r.touchData.dragDelta = r.touchData.dragDelta || [];
 
             if (dragDelta.length === 0) {
@@ -30361,7 +30368,7 @@ var printLayoutInfo;
       }
 
       if (offset < 0) {
-        // then the layer has nonexistant elements and is invalid
+        // then the layer has nonexistent elements and is invalid
         this.invalidateLayer(layer);
         continue;
       } // the eles in the layer must be in the same continuous order, else the layer is invalid
@@ -33994,7 +34001,7 @@ var printLayoutInfo;
     return style;
   };
 
-  var version = "3.23.0";
+  var version = "3.24.0";
 
   var cytoscape = function cytoscape(options) {
     // if no options specified, use default

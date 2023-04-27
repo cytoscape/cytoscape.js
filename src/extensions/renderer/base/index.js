@@ -40,7 +40,7 @@ BRp.init = function( options ){
       var stylesheet = document.createElement('style');
 
       stylesheet.id = stylesheetId;
-      stylesheet.innerHTML = '.'+className+' { position: relative; }';
+      stylesheet.textContent = '.'+className+' { position: relative; }';
 
       head.insertBefore( stylesheet, head.children[0] ); // first so lowest priority
     }

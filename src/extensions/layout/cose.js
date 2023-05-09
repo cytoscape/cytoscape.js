@@ -268,6 +268,9 @@ var createLayoutInfo = function( cy, layout, options ){
   // Shortcut
   var edges = options.eles.edges();
   var nodes = options.eles.nodes();
+  var bb = math.makeBoundingBox( options.boundingBox ? options.boundingBox : {
+    x1: 0, y1: 0, w: cy.width(), h: cy.height()
+  } );
 
   var layoutInfo   = {
     isCompound: cy.hasCompoundNodes(),
@@ -279,11 +282,9 @@ var createLayoutInfo = function( cy, layout, options ){
     layoutEdges: [],
     edgeSize: edges.size(),
     temperature: options.initialTemp,
-    clientWidth: cy.width(),
-    clientHeight: cy.width(),
-    boundingBox: math.makeBoundingBox( options.boundingBox ? options.boundingBox : {
-                     x1: 0, y1: 0, w: cy.width(), h: cy.height()
-                   } )
+    clientWidth: bb.w,
+    clientHeight: bb.h,
+    boundingBox: bb
   };
 
   var components = options.eles.components();

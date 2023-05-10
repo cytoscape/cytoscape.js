@@ -175,6 +175,7 @@ Shape:
     * `cut-rectangle`
     * `barrel`
     * `rhomboid`
+    * `right-rhomboid`
     * `diamond`
     * `round-diamond`
     * `pentagon`

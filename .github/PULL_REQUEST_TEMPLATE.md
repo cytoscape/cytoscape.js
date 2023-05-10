@@ -21,4 +21,4 @@ Reviewers:
 
 - [ ] All automated checks are passing (green check next to latest commit).
 - [ ] At least one reviewer has signed off on the pull request.
-- [ ] Just after this pull request is merged, it should be applied to both the `master` branch and the `unstable` branch.  Normally, this just requires cherry-picking the corresponding merge commit from `master` to `unstable` -- or vice versa.
+- [ ] For bug fixes:  Just after this pull request is merged, it should be applied to both the `master` branch and the `unstable` branch.  Normally, this just requires cherry-picking the corresponding merge commit from `master` to `unstable` -- or vice versa.

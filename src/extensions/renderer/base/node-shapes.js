@@ -590,6 +590,13 @@ BRp.registerNodeShapes = function(){
     -0.333, 1
   ] );
 
+  this.generatePolygon( 'right-rhomboid', [
+    -0.333, -1,
+    1, -1,
+    0.333, 1,
+    -1, 1
+  ] );
+
   this.nodeShapes['concavehexagon'] = this.generatePolygon( 'concave-hexagon', [
     -1, -0.95,
     -0.75, 0,

@@ -19997,6 +19997,12 @@ var createLayoutInfo = function createLayoutInfo(cy, layout, options) {
   // Shortcut
   var edges = options.eles.edges();
   var nodes = options.eles.nodes();
+  var bb = makeBoundingBox(options.boundingBox ? options.boundingBox : {
+    x1: 0,
+    y1: 0,
+    w: cy.width(),
+    h: cy.height()
+  });
   var layoutInfo = {
     isCompound: cy.hasCompoundNodes(),
     layoutNodes: [],
@@ -20007,14 +20013,9 @@ var createLayoutInfo = function createLayoutInfo(cy, layout, options) {
     layoutEdges: [],
     edgeSize: edges.size(),
     temperature: options.initialTemp,
-    clientWidth: cy.width(),
-    clientHeight: cy.width(),
-    boundingBox: makeBoundingBox(options.boundingBox ? options.boundingBox : {
-      x1: 0,
-      y1: 0,
-      w: cy.width(),
-      h: cy.height()
-    })
+    clientWidth: bb.w,
+    clientHeight: bb.h,
+    boundingBox: bb
   };
   var components = options.eles.components();
   var id2cmptId = {};
@@ -31910,7 +31911,7 @@ sheetfn.appendToStyle = function (style) {
   return style;
 };
 
-var version = "3.24.0";
+var version = "3.24.1";
 
 var cytoscape = function cytoscape(options) {
   // if no options specified, use default

@@ -110,7 +110,7 @@ Matches elements if their data attribute is an array and the element at the defi
 Matches elements if their data attribute is an object and the property with the defined name matches a specified value (e.g. `[foo.bar = 'baz']`).
 
 **`@` (data attribute operator modifier)**
-Prepended to an operator so that is case insensitive (e.g. `[foo @$= 'ar']`, `[foo @>= 'a']`, `[foo @= 'bar']`)
+Prepended to an operator so that it is case insensitive (e.g. `[foo @$= 'ar']`, `[foo @>= 'a']`, `[foo @= 'bar']`)
 
 **`!` (data attribute operator modifier)**
 Prepended to an operator so that it is negated (e.g. `[foo !$= 'ar']`, `[foo !>= 'a']`)

@@ -15,6 +15,9 @@
 [![npm installs](https://img.shields.io/npm/dm/cytoscape.svg?label=npm%20installs)](https://www.npmjs.com/package/cytoscape)
 [![Automated tests](https://github.com/cytoscape/cytoscape.js/actions/workflows/tests.yml/badge.svg)](https://github.com/cytoscape/cytoscape.js/actions/workflows/tests.yml)
 
+Created at the [University of Toronto](https://utoronto.ca) and published in [Oxford Bioinformatics](https://academic.oup.com/bioinformatics/article/39/1/btad031/6988031). <br />
+Authored by: [Franz, Max](https://github.com/maxkfranz); [Lopes, Christian](https://github.com/chrtannus); [Fong, Dylan](https://github.com/d2fong); [Kucera, Mike](https://github.com/mikekucera); ... [Bader, Gary](https://baderlab.org)
+
 # Cytoscape.js
 
 Graph theory (network) library for visualisation and analysis : [https://js.cytoscape.org](https://js.cytoscape.org)

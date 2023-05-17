@@ -16,3 +16,10 @@
 [![Automated tests](https://github.com/cytoscape/cytoscape.js/actions/workflows/tests.yml/badge.svg)](https://github.com/cytoscape/cytoscape.js/actions/workflows/tests.yml)
 
 </div>
+
+<div class="pub">
+
+Created at the [University of Toronto](https://utoronto.ca) and published in [Oxford Bioinformatics](https://academic.oup.com/bioinformatics/article/39/1/btad031/6988031). <br />
+Authored by: [Franz, Max](https://github.com/maxkfranz); [Lopes, Christian](https://github.com/chrtannus); [Fong, Dylan](https://github.com/d2fong); [Kucera, Mike](https://github.com/mikekucera); ... [Bader, Gary](https://baderlab.org)
+
+</div>

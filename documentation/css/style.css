@@ -36,6 +36,10 @@ form {
 	border: 0;
 }
 
+.pub {
+	font-size: 0.8em;
+}
+
 #orphaned-cy-container {
 	position: absolute;
 	left: -99999px;

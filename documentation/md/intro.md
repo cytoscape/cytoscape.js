@@ -554,7 +554,8 @@ Franz M, Lopes CT, Huck G, Dong Y, Sumer O, Bader GD
 
 [Bioinformatics (2016) 32 (2): 309-311 first published online September 28, 2015 doi:10.1093/bioinformatics/btv557](http://bioinformatics.oxfordjournals.org/content/32/2/309) ([PDF](http://bioinformatics.oxfordjournals.org/content/32/2/309.full.pdf))
 
-[PubMed abstract](http://www.ncbi.nlm.nih.gov/pubmed/26415722)
+- [PubMed abstract for the original 2016 article](http://www.ncbi.nlm.nih.gov/pubmed/26415722)
+- [PubMed abstract for the 2023 update article](https://pubmed.ncbi.nlm.nih.gov/36645249)
 
 
 

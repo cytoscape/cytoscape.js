@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2016-2022, The Cytoscape Consortium.
+ * Copyright (c) 2016-2023, The Cytoscape Consortium.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the “Software”), to deal in
@@ -5538,7 +5538,7 @@
         assignment[node.id()] = classify(node, medoids, opts.distance, opts.attributes, 'kMedoids');
       }
 
-      isStillMoving = false; // Step 3: For each medoid m, and for each node assciated with mediod m,
+      isStillMoving = false; // Step 3: For each medoid m, and for each node associated with mediod m,
       // select the node with the lowest configuration cost as new medoid.
 
       for (var m = 0; m < medoids.length; m++) {
@@ -18218,7 +18218,7 @@
         multiple: true
       },
       bgCrossOrigin: {
-        enums: ['anonymous', 'use-credentials'],
+        enums: ['anonymous', 'use-credentials', 'null'],
         multiple: true
       },
       bgClip: {
@@ -18283,7 +18283,7 @@
         enums: ['rectangle', 'roundrectangle', 'round-rectangle']
       },
       nodeShape: {
-        enums: ['rectangle', 'roundrectangle', 'round-rectangle', 'cutrectangle', 'cut-rectangle', 'bottomroundrectangle', 'bottom-round-rectangle', 'barrel', 'ellipse', 'triangle', 'round-triangle', 'square', 'pentagon', 'round-pentagon', 'hexagon', 'round-hexagon', 'concavehexagon', 'concave-hexagon', 'heptagon', 'round-heptagon', 'octagon', 'round-octagon', 'tag', 'round-tag', 'star', 'diamond', 'round-diamond', 'vee', 'rhomboid', 'polygon']
+        enums: ['rectangle', 'roundrectangle', 'round-rectangle', 'cutrectangle', 'cut-rectangle', 'bottomroundrectangle', 'bottom-round-rectangle', 'barrel', 'ellipse', 'triangle', 'round-triangle', 'square', 'pentagon', 'round-pentagon', 'hexagon', 'round-hexagon', 'concavehexagon', 'concave-hexagon', 'heptagon', 'round-heptagon', 'octagon', 'round-octagon', 'tag', 'round-tag', 'star', 'diamond', 'round-diamond', 'vee', 'rhomboid', 'right-rhomboid', 'polygon']
       },
       overlayShape: {
         enums: ['roundrectangle', 'round-rectangle', 'ellipse']
@@ -21130,8 +21130,6 @@
     // Excludes the label when calculating node bounding boxes for the layout algorithm
     roots: undefined,
     // the roots of the trees
-    maximal: false,
-    // whether to shift nodes down their natural BFS depths in order to avoid upwards edges (DAGS only)
     depthSort: undefined,
     // a sorting function to order nodes at equal depth. e.g. function(a, b){ return a.data('weight') - b.data('weight') }
     animate: false,
@@ -21153,6 +21151,12 @@
     } // transform a given node position. Useful for changing flow direction in discrete layouts
 
   };
+  var deprecatedOptionDefaults = {
+    maximal: false,
+    // whether to shift nodes down their natural BFS depths in order to avoid upwards edges (DAGS only); setting acyclic to true sets maximal to true also
+    acyclic: false // whether the tree is acyclic and thus a node could be shifted (due to the maximal option) multiple times without causing an infinite loop; setting to true sets maximal to true also; if you are uncertain whether a tree is acyclic, set to false to avoid potential infinite loops
+
+  };
   /* eslint-enable */
 
   var getInfo = function getInfo(ele) {
@@ -21164,7 +21168,7 @@
   };
 
   function BreadthFirstLayout(options) {
-    this.options = extend({}, defaults$7, options);
+    this.options = extend({}, defaults$7, deprecatedOptionDefaults, options);
   }
 
   BreadthFirstLayout.prototype.run = function () {
@@ -21177,7 +21181,7 @@
     });
     var graph = eles;
     var directed = options.directed;
-    var maximal = options.maximal || options.maximalAdjustments > 0; // maximalAdjustments for compat. w/ old code
+    var maximal = options.acyclic || options.maximal || options.maximalAdjustments > 0; // maximalAdjustments for compat. w/ old code; also, setting acyclic to true sets maximal to true
 
     var bb = makeBoundingBox(options.boundingBox ? options.boundingBox : {
       x1: 0,
@@ -21313,12 +21317,13 @@
       }
 
       if (eInfo.depth <= maxDepth) {
-        if (shifted[id]) {
+        if (!options.acyclic && shifted[id]) {
           return null;
         }
 
-        changeDepth(ele, maxDepth + 1);
-        shifted[id] = true;
+        var newDepth = maxDepth + 1;
+        changeDepth(ele, newDepth);
+        shifted[id] = newDepth;
         return true;
       }
 
@@ -22083,6 +22088,12 @@
     // Shortcut
     var edges = options.eles.edges();
     var nodes = options.eles.nodes();
+    var bb = makeBoundingBox(options.boundingBox ? options.boundingBox : {
+      x1: 0,
+      y1: 0,
+      w: cy.width(),
+      h: cy.height()
+    });
     var layoutInfo = {
       isCompound: cy.hasCompoundNodes(),
       layoutNodes: [],
@@ -22093,14 +22104,9 @@
       layoutEdges: [],
       edgeSize: edges.size(),
       temperature: options.initialTemp,
-      clientWidth: cy.width(),
-      clientHeight: cy.width(),
-      boundingBox: makeBoundingBox(options.boundingBox ? options.boundingBox : {
-        x1: 0,
-        y1: 0,
-        w: cy.width(),
-        h: cy.height()
-      })
+      clientWidth: bb.w,
+      clientHeight: bb.h,
+      boundingBox: bb
     };
     var components = options.eles.components();
     var id2cmptId = {};
@@ -22286,7 +22292,7 @@
    * @arg layoutInfo : layoutInfo object
    *
    * @return         : object of the form {count: X, graph: Y}, where:
-   *                   X is the number of ancesters (max: 2) found in
+   *                   X is the number of ancestors (max: 2) found in
    *                   graphIx (and it's subgraphs),
    *                   Y is the graph index of the lowest graph containing
    *                   all X nodes
@@ -26306,6 +26312,8 @@ var printLayoutInfo;
       var isDataUri = url.substring(0, dataUriPrefix.length).toLowerCase() === dataUriPrefix;
 
       if (!isDataUri) {
+        // if crossorigin is 'null'(stringified), then manually set it to null 
+        crossOrigin = crossOrigin === 'null' ? null : crossOrigin;
         image.crossOrigin = crossOrigin; // prevent tainted canvas
       }
 
@@ -28008,7 +28016,7 @@ var printLayoutInfo;
 
             r.redraw();
           } else {
-            // otherise keep track of drag delta for later
+            // otherwise keep track of drag delta for later
             var dragDelta = r.touchData.dragDelta = r.touchData.dragDelta || [];
 
             if (dragDelta.length === 0) {
@@ -28909,6 +28917,7 @@ var printLayoutInfo;
     this.generatePolygon('star', star5Points);
     this.generatePolygon('vee', [-1, -1, 0, -0.333, 1, -1, 0, 1]);
     this.generatePolygon('rhomboid', [-1, -1, 0.333, -1, 1, 1, -0.333, 1]);
+    this.generatePolygon('right-rhomboid', [-0.333, -1, 1, -1, 0.333, 1, -1, 1]);
     this.nodeShapes['concavehexagon'] = this.generatePolygon('concave-hexagon', [-1, -0.95, -0.75, 0, -1, 0.95, 1, 0.95, 0.75, 0, 1, -0.95]);
     {
       var tagPoints = [-1, -1, 0.25, -1, 1, 0, 0.25, 1, -1, 1];
@@ -29067,7 +29076,7 @@ var printLayoutInfo;
       if (!stylesheetAlreadyExists) {
         var stylesheet = document.createElement('style');
         stylesheet.id = stylesheetId;
-        stylesheet.innerHTML = '.' + className + ' { position: relative; }';
+        stylesheet.textContent = '.' + className + ' { position: relative; }';
         head.insertBefore(stylesheet, head.children[0]); // first so lowest priority
       }
 
@@ -30361,7 +30370,7 @@ var printLayoutInfo;
       }
 
       if (offset < 0) {
-        // then the layer has nonexistant elements and is invalid
+        // then the layer has nonexistent elements and is invalid
         this.invalidateLayer(layer);
         continue;
       } // the eles in the layer must be in the same continuous order, else the layer is invalid
@@ -33994,7 +34003,7 @@ var printLayoutInfo;
     return style;
   };
 
-  var version = "3.23.0";
+  var version = "3.25.0";
 
   var cytoscape = function cytoscape(options) {
     // if no options specified, use default

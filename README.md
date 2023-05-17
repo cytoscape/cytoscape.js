@@ -16,7 +16,7 @@
 [![Automated tests](https://github.com/cytoscape/cytoscape.js/actions/workflows/tests.yml/badge.svg)](https://github.com/cytoscape/cytoscape.js/actions/workflows/tests.yml)
 
 Created at the [University of Toronto](https://utoronto.ca) and published in [Oxford Bioinformatics](https://js.cytoscape.org/#introduction/citation) ([2016](https://academic.oup.com/bioinformatics/article/32/2/309/1744007), [2023](https://academic.oup.com/bioinformatics/article/39/1/btad031/6988031)). <br />
-Authored by: [Franz, Max](https://github.com/maxkfranz); [Lopes, Christian](https://github.com/chrtannus); [Fong, Dylan](https://github.com/d2fong); [Kucera, Mike](https://github.com/mikekucera); ... [Bader, Gary](https://baderlab.org)
+Authored by: [Max Franz](https://github.com/maxkfranz), [Christian Lopes](https://github.com/chrtannus), [Dylan Fong](https://github.com/d2fong), [Mike Kucera](https://github.com/mikekucera), ..., [Gary Bader](https://baderlab.org)
 
 # Cytoscape.js
 
@@ -79,7 +79,7 @@ To cite Cytoscape.js in a paper, please cite the Oxford Bioinformatics issue:
 
 Franz M, Lopes CT, Huck G, Dong Y, Sumer O, Bader GD
 
-[Bioinformatics (2016) 32 (2): 309-311 first published online September 28, 2015 doi:10.1093/bioinformatics/btv557 (PDF)](https://bioinformatics.oxfordjournals.org/content/32/2/309)
+[Bioinformatics (2016) 32 (2): 309-311 first published online September 28, 2015 doi:10.1093/bioinformatics/btv557](https://bioinformatics.oxfordjournals.org/content/32/2/309) [(PDF)](http://bioinformatics.oxfordjournals.org/content/32/2/309.full.pdf)
 
 - [PubMed abstract for the original 2016 article](http://www.ncbi.nlm.nih.gov/pubmed/26415722)
 - [PubMed abstract for the 2023 update article](https://pubmed.ncbi.nlm.nih.gov/36645249)

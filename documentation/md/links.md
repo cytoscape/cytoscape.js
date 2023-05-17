@@ -20,6 +20,6 @@
 <div class="pub">
 
 Created at the [University of Toronto](https://utoronto.ca) and published in [Oxford Bioinformatics](#introduction/citation) ([2016](https://academic.oup.com/bioinformatics/article/32/2/309/1744007), [2023](https://academic.oup.com/bioinformatics/article/39/1/btad031/6988031)). <br />
-Authored by: [Franz, Max](https://github.com/maxkfranz); [Lopes, Christian](https://github.com/chrtannus); [Fong, Dylan](https://github.com/d2fong); [Kucera, Mike](https://github.com/mikekucera); ... [Bader, Gary](https://baderlab.org)
+Authored by: [Max Franz](https://github.com/maxkfranz), [Christian Lopes](https://github.com/chrtannus), [Dylan Fong](https://github.com/d2fong), [Mike Kucera](https://github.com/mikekucera), ..., [Gary Bader](https://baderlab.org)
 
 </div>

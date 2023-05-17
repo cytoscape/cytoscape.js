@@ -182,6 +182,7 @@
 * [Azure Bicep](https://docs.microsoft.com/en-us/azure/azure-resource-manager/bicep/overview)
 * [Bell Media](https://www.bellmedia.ca/)
 * [BlueSailCRM](https://www.bluesailcrm.com)
+* [Budō Lineage Tree, The](https://budotree.judoc.org)
 * [BugBug](https://bugbug.io)
 * [Cadence](https://cadenceworkflow.io)
 * [CanSyL](https://crossbar.kansil.org)
@@ -202,7 +203,9 @@
 * [GraphWalker](http://graphwalker.github.io)
 * [GREZI](https://grezi.fr)
 * [HackerTarget](https://hackertarget.com)
+* [HanziGraph](https://hanzigraph.com/)
 * [How-4](https://www.how-4.com)
+* [ICSI Haystack Panopticon, The](https://haystack.mobi/panopticon/)
 * [InfoTrack](https://www.infotrack.com.au)
 * [Intercax](https://intercax.com)
 * [InterpretML](https://interpret.ml)
@@ -210,6 +213,7 @@
 * [Jiva.ai](https://www.jiva.ai)
 * [JsDelivr](https://www.jsdelivr.com)
 * [Juggl](https://juggl.io)
+* [Kanji Map, The](https://thekanjimap.com)
 * [Kausal Paths](https://kausal.tech)
 * [Kiali](https://kiali.io)
 * [Kibana](https://www.elastic.co/kibana)
@@ -233,11 +237,9 @@
 * [SQL Frames](https://sqlframes.com)
 * [Steemit](https://steemit.com)
 * [stixview](https://github.com/traut/stixview)
-* [The ICSI Haystack Panopticon](https://haystack.mobi/panopticon/)
-* [The Kanji Map](https://thekanjimap.com)
+* [T-Rank](https://trank.no)
 * [ThreatConnect](https://threatconnect.com)
 * [ThreatCrowd](https://www.threatcrowd.org)
-* [T-Rank](https://trank.no)
 * [Underlay](https://www.underlay.org)
 * [VAC](https://vac.dev)
 * [wanderer.ai](https://wanderer.ai)
@@ -558,7 +560,8 @@ Franz M, Lopes CT, Huck G, Dong Y, Sumer O, Bader GD
 
 [Bioinformatics (2016) 32 (2): 309-311 first published online September 28, 2015 doi:10.1093/bioinformatics/btv557](http://bioinformatics.oxfordjournals.org/content/32/2/309) ([PDF](http://bioinformatics.oxfordjournals.org/content/32/2/309.full.pdf))
 
-[PubMed abstract](http://www.ncbi.nlm.nih.gov/pubmed/26415722)
+- [PubMed abstract for the original 2016 article](http://www.ncbi.nlm.nih.gov/pubmed/26415722)
+- [PubMed abstract for the 2023 update article](https://pubmed.ncbi.nlm.nih.gov/36645249)
 
 
 

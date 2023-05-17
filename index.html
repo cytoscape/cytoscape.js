@@ -55,6 +55,12 @@
 <a href="https://github.com/cytoscape/cytoscape.js/actions/workflows/tests.yml"><img src="https://github.com/cytoscape/cytoscape.js/actions/workflows/tests.yml/badge.svg" alt="Automated tests"></a></p>
 </div>
 
+<div class="pub">
+
+<p>Created at the <a href="https://utoronto.ca">University of Toronto</a> and published in <a href="#introduction/citation">Oxford Bioinformatics</a> (<a href="https://academic.oup.com/bioinformatics/article/32/2/309/1744007">2016</a>, <a href="https://academic.oup.com/bioinformatics/article/39/1/btad031/6988031">2023</a>). <br />
+Authored by: <a href="https://github.com/maxkfranz">Max Franz</a>, <a href="https://github.com/chrtannus">Christian Lopes</a>, <a href="https://github.com/d2fong">Dylan Fong</a>, <a href="https://github.com/mikekucera">Mike Kucera</a>, …, <a href="https://baderlab.org">Gary Bader</a></p>
+</div>
+
 
 
 				<h1 id="demos">Demos <a href="#demos"><span class="fa fa-bookmark"></span></a></h1>
@@ -717,6 +723,7 @@
 <li><a href="https://docs.microsoft.com/en-us/azure/azure-resource-manager/bicep/overview">Azure Bicep</a></li>
 <li><a href="https://www.bellmedia.ca/">Bell Media</a></li>
 <li><a href="https://www.bluesailcrm.com">BlueSailCRM</a></li>
+<li><a href="https://budotree.judoc.org">Budō Lineage Tree, The</a></li>
 <li><a href="https://bugbug.io">BugBug</a></li>
 <li><a href="https://cadenceworkflow.io">Cadence</a></li>
 <li><a href="https://crossbar.kansil.org">CanSyL</a></li>
@@ -737,7 +744,9 @@
 <li><a href="http://graphwalker.github.io">GraphWalker</a></li>
 <li><a href="https://grezi.fr">GREZI</a></li>
 <li><a href="https://hackertarget.com">HackerTarget</a></li>
+<li><a href="https://hanzigraph.com/">HanziGraph</a></li>
 <li><a href="https://www.how-4.com">How-4</a></li>
+<li><a href="https://haystack.mobi/panopticon/">ICSI Haystack Panopticon, The</a></li>
 <li><a href="https://www.infotrack.com.au">InfoTrack</a></li>
 <li><a href="https://intercax.com">Intercax</a></li>
 <li><a href="https://interpret.ml">InterpretML</a></li>
@@ -745,6 +754,7 @@
 <li><a href="https://www.jiva.ai">Jiva.ai</a></li>
 <li><a href="https://www.jsdelivr.com">JsDelivr</a></li>
 <li><a href="https://juggl.io">Juggl</a></li>
+<li><a href="https://thekanjimap.com">Kanji Map, The</a></li>
 <li><a href="https://kausal.tech">Kausal Paths</a></li>
 <li><a href="https://kiali.io">Kiali</a></li>
 <li><a href="https://www.elastic.co/kibana">Kibana</a></li>
@@ -768,11 +778,9 @@
 <li><a href="https://sqlframes.com">SQL Frames</a></li>
 <li><a href="https://steemit.com">Steemit</a></li>
 <li><a href="https://github.com/traut/stixview">stixview</a></li>
-<li><a href="https://haystack.mobi/panopticon/">The ICSI Haystack Panopticon</a></li>
-<li><a href="https://thekanjimap.com">The Kanji Map</a></li>
+<li><a href="https://trank.no">T-Rank</a></li>
 <li><a href="https://threatconnect.com">ThreatConnect</a></li>
 <li><a href="https://www.threatcrowd.org">ThreatCrowd</a></li>
-<li><a href="https://trank.no">T-Rank</a></li>
 <li><a href="https://www.underlay.org">Underlay</a></li>
 <li><a href="https://vac.dev">VAC</a></li>
 <li><a href="https://wanderer.ai">wanderer.ai</a></li>
@@ -1139,7 +1147,10 @@
 <p><em>Cytoscape.js: a graph theory library for visualisation and analysis</em></p>
 <p>Franz M, Lopes CT, Huck G, Dong Y, Sumer O, Bader GD</p>
 <p><a href="http://bioinformatics.oxfordjournals.org/content/32/2/309">Bioinformatics (2016) 32 (2): 309-311 first published online September 28, 2015 doi:10.1093/bioinformatics/btv557</a> (<a href="http://bioinformatics.oxfordjournals.org/content/32/2/309.full.pdf">PDF</a>)</p>
-<p><a href="http://www.ncbi.nlm.nih.gov/pubmed/26415722">PubMed abstract</a></p>
+<ul>
+<li><a href="http://www.ncbi.nlm.nih.gov/pubmed/26415722">PubMed abstract for the original 2016 article</a></li>
+<li><a href="https://pubmed.ncbi.nlm.nih.gov/36645249">PubMed abstract for the 2023 update article</a></li>
+</ul>
 <h2 id="introduction/funding">Funding <a href="#introduction/funding"><span class="fa fa-bookmark"></span></a></h2>
 <p>Funding for Cytoscape.js and Cytoscape is provided by NRNB (U.S. National Institutes of Health, National Center for Research Resources grant numbers P41 RR031228 and GM103504) and by NIH grants 2R01GM070743 and 1U41HG006623. The following organizations help develop Cytoscape:</p>
 <p><a href="http://www.systemsbiology.org">ISB</a> |
@@ -13684,7 +13695,7 @@ Matches elements if their data attribute is an array and the element at the defi
 <p><strong><code>[name.property = value]</code></strong>
 Matches elements if their data attribute is an object and the property with the defined name matches a specified value (e.g. <code>[foo.bar = &#39;baz&#39;]</code>).</p>
 <p><strong><code>@</code> (data attribute operator modifier)</strong>
-Prepended to an operator so that is case insensitive (e.g. <code>[foo @$= &#39;ar&#39;]</code>, <code>[foo @&gt;= &#39;a&#39;]</code>, <code>[foo @= &#39;bar&#39;]</code>)</p>
+Prepended to an operator so that it is case insensitive (e.g. <code>[foo @$= &#39;ar&#39;]</code>, <code>[foo @&gt;= &#39;a&#39;]</code>, <code>[foo @= &#39;bar&#39;]</code>)</p>
 <p><strong><code>!</code> (data attribute operator modifier)</strong>
 Prepended to an operator so that it is negated (e.g. <code>[foo !$= &#39;ar&#39;]</code>, <code>[foo !&gt;= &#39;a&#39;]</code>)</p>
 <p><strong><code>[[]]</code> (metadata brackets)</strong>
@@ -13899,6 +13910,7 @@ node {
 <li><code>cut-rectangle</code></li>
 <li><code>barrel</code></li>
 <li><code>rhomboid</code></li>
+<li><code>right-rhomboid</code></li>
 <li><code>diamond</code></li>
 <li><code>round-diamond</code></li>
 <li><code>pentagon</code></li>

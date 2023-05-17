@@ -4,7 +4,7 @@ node {
   content: data(station_name);
   width: 20;
   height: 20;
-  min-zoomed-font-size: 12;
+  min-zoomed-font-size: 16;
   color: #fff;
   font-size: 16;
   z-index: 1;
@@ -31,7 +31,7 @@ node.end {
 }
 
 edge {
-  min-zoomed-font-size: 12;
+  min-zoomed-font-size: 36;
   font-size: 8;
   color: #fff;
   line-color: green;

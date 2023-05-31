@@ -20,7 +20,6 @@ To use Cytoscape.js from a CDN, use one of the following CDNs:
 
 - [CDNJS](https://cdnjs.com/libraries/cytoscape)
 - [jsDelivr](https://www.jsdelivr.com/package/npm/cytoscape?path=dist)
-- [PageCDN](https://pagecdn.com/lib/cytoscape)
 - [Unpkg](https://unpkg.com/cytoscape/dist/)
 
 Please do not hotlink to copies of Cytoscape.js from the documentation --- they're just for the demos.

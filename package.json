@@ -1,15 +1,15 @@
 {
   "name": "cyto-release-auto",
-  "version": "3.26.0-unstable",
+  "version": "3.25.0",
   "license": "MIT",
   "description": "Graph theory (a.k.a. network) library for analysis and visualisation",
-  "homepage": "http://js.foo-set-low-3141213.org",
+  "homepage": "http://js.cyto-auto-release.org",
   "repository": {
     "type": "git",
-    "url": "https://github.com/AkMo3/cytoscape.js.git"
+    "url": "git+https://github.com/AkMo3/Cytoscape.js.git"
   },
   "bugs": {
-    "url": "https://github.com/AkMo3/cytoscape.js/issues"
+    "url": "https://github.com/AkMo3/Cytoscape.js/issues"
   },
   "keywords": [
     "graph",
@@ -105,5 +105,9 @@
   "dependencies": {
     "heap": "^0.2.6",
     "lodash": "^4.17.21"
-  }
+  },
+  "directories": {
+    "test": "test"
+  },
+  "author": "Akash Mondal"
 }

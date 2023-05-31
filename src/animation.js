@@ -2,6 +2,8 @@ import * as util from './util';
 import * as is from './is';
 import Promise from './promise';
 
+// Sample code change done here.
+
 let Animation = function( target, opts, opts2 ){
   let isCore = is.core(target);
   let isEle = !isCore;

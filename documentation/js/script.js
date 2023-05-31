@@ -163,8 +163,8 @@ loadCy();
   }
 
   var $toclinks = $$('.section > .toclink');
-  var $tocinput = $('#toc-input');
-  var $tocsections = $('#toc-sections');
+  var $tocinput = $('#tabofcon-input');
+  var $tocsections = $('#tabofcon-sections');
   var lastTxt;
   var txt;
 
@@ -254,7 +254,7 @@ loadCy();
       show( n.$ele );
     });
 
-    $tocsections.classList.remove('toc-sections-searching');
+    $tocsections.classList.remove('tabofcon-searching');
   }, 250);
 
   var onChangeSearch = function(){
@@ -265,7 +265,7 @@ loadCy();
     }
     lastTxt = txt;
 
-    $tocsections.classList.add('toc-sections-searching');
+    $tocsections.classList.add('tabofcon-searching');
 
     filterSections();
   };
@@ -274,7 +274,7 @@ loadCy();
     $tocinput.addEventListener(evt, onChangeSearch);
   });
 
-  $('#toc-clear').addEventListener('click', function() {
+  $('#tabofcon-clear').addEventListener('click', function() {
     $tocinput.value = '';
 
     onChangeSearch();

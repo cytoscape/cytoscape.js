@@ -1,0 +1,18 @@
+name: Patch Release Test
+
+on:
+  milestone:
+    types: [closed]
+
+jobs:  
+  feature-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get branch from milestone
+        id: foo
+        uses: AkMo3/Cytoscape-Github-Actions/parse-branch-from-milestone@v2
+        with:
+          milestone: ${{ github.event.milestone.title }}
+      - run: echo branch ${{ steps.foo.outputs.branch }}
+        shell: bash
+        

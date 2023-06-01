@@ -5,7 +5,13 @@ on:
     types: [closed]
 
   workflow_dispatch:
-
+    inputs:
+      name:
+        type: choice
+        description: Type Of Release
+        options: 
+        - Feature
+        - Patch
 jobs:  
   feature-release:
     runs-on: ubuntu-latest

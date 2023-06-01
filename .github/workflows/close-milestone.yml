@@ -12,3 +12,5 @@ jobs:
     - uses: instantish/milestone-closer@v1.1.0
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
+        debug-only: true
+        

@@ -10,4 +10,4 @@ read -a strarr <<<"$entry" #reading str as an array as tokens separated by IFS
 # echo "build : ${strarr[2]}"  
 IFS=' '
 echo "${strarr[0]}.${strarr[1]}.x"
-PATCH_BRANCH=${strarr[0]}.${strarr[1]}.x
+echo "PATCH_BRANCH=${strarr[0]}.${strarr[1]}.x" >> $GITHUB_ENV

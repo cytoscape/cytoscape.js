@@ -8,11 +8,14 @@ jobs:
   feature-release:
     runs-on: ubuntu-latest
     steps:
-      - name: Get branch from milestone
-        id: foo
-        uses: AkMo3/Cytoscape-Github-Actions/parse-branch-from-milestone@v2.5
-        with:
-          milestone: ${{ github.event.milestone.title }}
-      - run: echo branch ${{ steps.foo.outputs.branch }}
+      - name: Get Patch Branch
+        id: get_patch_branch_from_milestone
+        run: |
+          milestone=${{ github.event.milestone.title }}
+          curl -L -o Parse-Branch.sh https://raw.githubusercontent.com/AkMo3/cytoscape.js/unstable/.github/workflows/parse-branch-from-milestone.sh
+          chmod +rx ./Parse-Branch.sh
+          . Parse-Branch.sh $milestone
+        shell: bash
+      - run: echo branch $PATCH_BRANCH
         shell: bash
         

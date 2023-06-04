@@ -224,6 +224,7 @@ const styfn = {};
     { name: 'text-border-color', type: t.color },
     { name: 'text-border-width', type: t.size, triggersBounds: diff.any },
     { name: 'text-border-style', type: t.borderStyle, triggersBounds: diff.any },
+    { name: "text-border-radius", type: t.size, triggersBounds: diff.any },
     { name: 'text-background-shape', type: t.textBackgroundShape, triggersBounds: diff.any },
     { name: 'text-justification', type: t.justification }
   ];
@@ -559,6 +560,7 @@ styfn.getDefaultProperties = function(){
     'text-border-width': 0,
     'text-border-style': 'solid',
     'text-border-color': '#000',
+    'text-border-radius': 0,
     'font-family': 'Helvetica Neue, Helvetica, sans-serif',
     'font-style': 'normal',
     'font-weight': 'normal',

@@ -619,6 +619,7 @@ Border:
  * **`text-border-width`** : The width of the border around the label.
  * **`text-border-style`** : The style of the border around the label; may be `solid`, `dotted`, `dashed`, or `double`.
  * **`text-border-color`** : The colour of the border around the label.
+ * **`text-border-radius`**: The radius of the border around the label.
 
 Interactivity:
 

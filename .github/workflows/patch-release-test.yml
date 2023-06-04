@@ -16,6 +16,6 @@ jobs:
           chmod +rx ./Parse-Branch.sh
           . Parse-Branch.sh $milestone
         shell: bash
-      - run: echo branch $PATCH_BRANCH
+      - run: echo branch ${{ env.PATCH_BRANCH }}
         shell: bash
         

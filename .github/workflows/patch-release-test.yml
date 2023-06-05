@@ -5,7 +5,7 @@ on:
     types: [closed]
 
 jobs:  
-  feature-release:
+  patch-release:
     runs-on: ubuntu-latest
     steps:
       - name: Get Patch Branch

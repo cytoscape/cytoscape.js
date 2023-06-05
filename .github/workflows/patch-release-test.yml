@@ -16,6 +16,22 @@ jobs:
           chmod +rx ./Parse-Branch.sh
           . Parse-Branch.sh $milestone
         shell: bash
-      - run: echo branch ${{ env.PATCH_BRANCH }}
+      - name: See patch branch
+        run: echo branch ${{ env.PATCH_BRANCH }}
         shell: bash
+      - name: checkout patch branch
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ env.PATCH_BRANCH }}
+      - name: Get new version string
+        id: get_new_patch_version
+        run: |
+          curl -L -o new-patch-version.sh https://raw.githubusercontent.com/AkMo3/cytoscape.js/unstable/.github/workflows/scripts/new-patch-version.sh
+          chmod +rx ./new-patch-version.sh
+          . new-patch-version.sh
+        shell: bash
+      - name: See new patch version
+        run: echo branch ${{ env.NEW_PATCH_VERSION }}
+        shell: bash
+        
         

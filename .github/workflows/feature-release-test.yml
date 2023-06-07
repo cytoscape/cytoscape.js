@@ -23,7 +23,7 @@ jobs:
           else 
             curl -L -o new-feature-version.sh https://raw.githubusercontent.com/AkMo3/cytoscape.js/unstable/.github/workflows/scripts/new-feature-version.sh
             chmod +rx ./new-feature-version.sh
-            . new-feature-version.sh.sh
+            . new-feature-version.sh
           fi
         shell: bash
       - name: See new feature version

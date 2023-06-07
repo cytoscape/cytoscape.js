@@ -1,0 +1,33 @@
+name: Feature Release Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        type: string
+        description: Version of new Release
+
+jobs:  
+  feature-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout patch branch
+        uses: actions/checkout@v3
+        with:
+          ref: 'unstable'
+      - name: Get new version string
+        id: get_new_patch_version
+        run: |
+          if [[ "${{ github.event.inputs.message }}" != "" ]]; then
+            echo "NEW_FEATURE_VERSION=${{ github.event.inputs.message }}"  >> $GITHUB_ENV
+          else 
+            curl -L -o new-feature-version.sh https://raw.githubusercontent.com/AkMo3/cytoscape.js/unstable/.github/workflows/scripts/new-feature-version.sh
+            chmod +rx ./new-feature-version.sh
+            . new-feature-version.sh.sh
+          fi
+        shell: bash
+      - name: See new feature version
+        run: echo branch ${{ env.NEW_FEATURE_VERSION }}
+        shell: bash
+        
+        

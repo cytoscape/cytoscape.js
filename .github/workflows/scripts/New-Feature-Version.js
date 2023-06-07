@@ -16,16 +16,6 @@ function getFeatureVersion(str)
     return newVersion;
 }
 
-
-var arguments = process.argv
-
-if (arguments.length < 3)
-{
-    const pjson = require('./package.json').version;
-    const newVersion = getFeatureVersion(pjson);
-    console.log(newVersion);
-}
-else {
-    const newVersion = getFeatureVersion(arguments[2]);
-    console.log(newVersion);
-}
+const pjson = require('./package.json').version;
+const newVersion = getFeatureVersion(pjson);
+console.log(newVersion);

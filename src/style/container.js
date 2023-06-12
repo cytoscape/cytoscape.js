@@ -17,9 +17,10 @@ styfn.getEmSizeInPixels = function(){
 styfn.containerCss = function( propName ){
   let cy = this._private.cy;
   let domElement = cy.container();
+  let containerWindow = domElement.ownerDocument.defaultView || window;
 
-  if( window && domElement && window.getComputedStyle ){
-    return window.getComputedStyle( domElement ).getPropertyValue( propName );
+  if( containerWindow && domElement && containerWindow.getComputedStyle ){
+    return containerWindow.getComputedStyle( domElement ).getPropertyValue( propName );
   }
 };
 

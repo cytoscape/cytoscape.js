@@ -67,7 +67,8 @@
         { "name": "Edge arrow types", "id": "edge-arrows" },
         { "name": "Labels", "id": "labels" },
         { "name": "Compound nodes", "id": "compound-nodes" },
-        { "name": "Linkout example", "id": "linkout-example" }
+        { "name": "Linkout example", "id": "linkout-example" },
+        { "name": "Multiple windows", "id": "multiple-windows" }
       ],
       "disabledDemos": [
         { "name": "Multiple instances", "id": "multiple-instances" },

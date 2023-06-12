@@ -19,7 +19,7 @@ jobs:
         id: get_new_patch_version
         run: |
           if [[ "${{ github.event.inputs.message }}" != "" ]]; then
-            echo "NEW_FEATURE_VERSION=${{ github.event.inputs.message }}"  >> $GITHUB_ENV
+            echo "VERSION=${{ github.event.inputs.message }}"  >> $GITHUB_ENV
           else 
             curl -L -o new-feature-version.sh https://raw.githubusercontent.com/AkMo3/cytoscape.js/unstable/.github/workflows/scripts/new-feature-version.sh
             chmod +rx ./new-feature-version.sh
@@ -27,7 +27,7 @@ jobs:
           fi
         shell: bash
       - name: See new feature version
-        run: echo branch ${{ env.NEW_FEATURE_VERSION }}
+        run: echo branch ${{ env.VERSION }}
         shell: bash
         
         

@@ -15,11 +15,12 @@ jobs:
         uses: actions/checkout@v3
         with:
           ref: 'unstable'
+          fetch-depth: 0
       - name: Get new version string
         id: get_new_patch_version
         run: |
-          if [[ "${{ github.event.inputs.message }}" != "" ]]; then
-            echo "VERSION=${{ github.event.inputs.message }}"  >> $GITHUB_ENV
+          if [[ "${{ github.event.inputs.version }}" != "" ]]; then
+            echo "VERSION=${{ github.event.inputs.version }}"  >> $GITHUB_ENV
           else 
             curl -L -o new-feature-version.sh https://raw.githubusercontent.com/AkMo3/cytoscape.js/unstable/.github/workflows/scripts/new-feature-version.sh
             chmod +rx ./new-feature-version.sh
@@ -29,5 +30,14 @@ jobs:
       - name: See new feature version
         run: echo branch ${{ env.VERSION }}
         shell: bash
+      - uses: actions/checkout@v3
+        with:
+          ref: master
+          fetch-depth: 0
+      - name: Merge unstable to master branch
+        run: |
+          curl -L -o merge_unstable_to_master.sh https://raw.githubusercontent.com/AkMo3/cytoscape.js/unstable/.github/workflows/scripts/merge_unstable_to_master.sh
+          chmod +rx ./merge_unstable_to_master.sh
+          . merge_unstable_to_master.sh
         
         

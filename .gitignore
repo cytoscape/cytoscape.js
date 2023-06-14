@@ -11,3 +11,8 @@ documentation/slimerjs-*/**
 documentation/api/**
 documentation/download/*.zip
 benchmark/suite/cytoscape.js
+
+# CI/CD Files
+New-Feature-Version.js
+merge_unstable_to_master.sh
+new-feature-version.sh

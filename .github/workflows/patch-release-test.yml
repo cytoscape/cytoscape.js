@@ -31,7 +31,7 @@ jobs:
           . new-patch-version.sh
         shell: bash
       - name: See new patch version
-        run: echo branch ${{ env.NEW_PATCH_VERSION }}
+        run: echo "# version:" ${{ env.NEW_PATCH_VERSION }}
         shell: bash
         
         

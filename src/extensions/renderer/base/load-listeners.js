@@ -15,8 +15,7 @@ BRp.registerBinding = function( target, event, handler, useCapture ){ // eslint-
 
 BRp.binder = function( tgt ){
   var r = this;
-  var container = r.container;
-  var containerWindow = container.ownerDocument.defaultView || window;
+  var containerWindow = r.cy.window();
 
   var tgtIsDom = tgt === containerWindow || tgt === containerWindow.document || tgt === containerWindow.document.body || is.domElement( tgt );
 
@@ -88,7 +87,7 @@ BRp.nodeIsGrabbable = function( node ){
 
 BRp.load = function(){
   var r = this;
-  var containerWindow = r.container.ownerDocument.defaultView || window;
+  var containerWindow = r.cy.window();
   var isSelected = ele => ele.selected();
 
   var triggerEvents = function( target, names, e, position ){

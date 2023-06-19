@@ -23,7 +23,7 @@ BRp.init = function( options ){
   r.cy = options.cy;
 
   var ctr = r.container = options.cy.container();
-  var containerWindow = ctr.ownerDocument.defaultView || window;
+  var containerWindow = r.cy.window();
 
 
   // prepend a stylesheet in the head such that

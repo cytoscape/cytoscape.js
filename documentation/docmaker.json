@@ -67,13 +67,13 @@
         { "name": "Edge arrow types", "id": "edge-arrows" },
         { "name": "Labels", "id": "labels" },
         { "name": "Compound nodes", "id": "compound-nodes" },
-        { "name": "Linkout example", "id": "linkout-example" },
-        { "name": "Multiple windows", "id": "multiple-windows" }
+        { "name": "Linkout example", "id": "linkout-example" }
       ],
       "disabledDemos": [
         { "name": "Multiple instances", "id": "multiple-instances" },
         { "name": "Visual style", "id": "visual-style" },
-        { "name": "Initialisation", "id": "initialisation" }
+        { "name": "Initialisation", "id": "initialisation" },
+        { "name": "Multiple windows", "id": "multiple-windows" }
       ]
     },
 

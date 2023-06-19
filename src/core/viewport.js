@@ -535,8 +535,7 @@ let corefn = ({
     let container = _p.container;
 
     return ( _p.sizeCache = _p.sizeCache || ( container ? (function(){
-      let containerWindow = container.ownerDocument.defaultView || window
-      let style = containerWindow.getComputedStyle( container );
+      let style = this.cy.window().getComputedStyle( container );
       let val = function( name ){ return parseFloat( style.getPropertyValue( name ) ); };
 
       return {

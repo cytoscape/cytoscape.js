@@ -26,9 +26,8 @@ BRp.findContainerClientCoords = function(){
   }
 
   var container = this.container;
-  var containerWindow = container.ownerDocument.defaultView || window
   var rect = container.getBoundingClientRect();
-  var style = containerWindow.getComputedStyle( container );
+  var style = this.cy.window().getComputedStyle( container );
   var styleValue = function( name ){ return parseFloat( style.getPropertyValue( name ) ); };
 
   var padding = {

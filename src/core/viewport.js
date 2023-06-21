@@ -533,9 +533,10 @@ let corefn = ({
   size: function(){
     let _p = this._private;
     let container = _p.container;
+    let cy = this;
 
     return ( _p.sizeCache = _p.sizeCache || ( container ? (function(){
-      let style = this.cy.window().getComputedStyle( container );
+      let style = cy.window().getComputedStyle( container );
       let val = function( name ){ return parseFloat( style.getPropertyValue( name ) ); };
 
       return {

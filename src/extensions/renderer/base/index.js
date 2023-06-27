@@ -1,6 +1,5 @@
 import * as util from '../../../util';
 import * as is from '../../../is';
-import window from '../../../window';
 
 import arrowShapes from './arrow-shapes';
 import coordEleMath from './coord-ele-math';

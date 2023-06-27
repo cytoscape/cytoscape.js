@@ -1,5 +1,4 @@
 import * as is from '../is';
-import window from '../window';
 import * as math from '../math';
 
 let defaultSelectionType = 'single';

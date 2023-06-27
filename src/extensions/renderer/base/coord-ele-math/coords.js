@@ -1,4 +1,3 @@
-import window from '../../../../window';
 import * as math from '../../../../math';
 import * as util from '../../../../util';
 

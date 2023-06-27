@@ -1,5 +1,3 @@
-import window from '../window';
-
 let styfn = {};
 
 // gets what an em size corresponds to in pixels relative to a dom element

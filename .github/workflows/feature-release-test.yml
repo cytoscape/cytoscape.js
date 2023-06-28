@@ -14,7 +14,6 @@ jobs:
       - name: checkout patch branch
         uses: actions/checkout@v3
         with:
-          repository: 'AkMo3/cytoscape.js'
           ref: 'unstable'
           fetch-depth: 0
       - name: Get new version string
@@ -34,13 +33,12 @@ jobs:
       - name: Checkout Master Branch
         uses: actions/checkout@v3
         with:
-          repository: 'AkMo3/cytoscape.js'
           ref: master
           fetch-depth: 0
       - name: Merge unstable to master branch
         run: |
-          pwd
-          chmod +rx ./.github/workflows/scripts/merge_unstable_to_master.sh
-          . ./.github/workflows/scripts/merge_unstable_to_master.sh
+          curl -L -o merge_unstable_to_master.sh https://raw.githubusercontent.com/AkMo3/cytoscape.js/unstable/.github/workflows/scripts/merge_unstable_to_master.sh
+          chmod +rx ./merge_unstable_to_master.sh
+          . merge_unstable_to_master.sh
         
         

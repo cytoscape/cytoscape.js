@@ -20,6 +20,7 @@ jobs:
       - name: Get new version string
         id: get_new_patch_version
         run: |
+          pwd
           if [[ "${{ github.event.inputs.version }}" != "" ]]; then
             echo "VERSION=${{ github.event.inputs.version }}"  >> $GITHUB_ENV
           else 

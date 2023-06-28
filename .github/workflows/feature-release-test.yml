@@ -29,12 +29,14 @@ jobs:
       - name: See new feature version
         run: echo branch ${{ env.VERSION }}
         shell: bash
-      - uses: actions/checkout@v3
+      - name: Checkout Master Branch
+        uses: actions/checkout@v3
         with:
           ref: master
           fetch-depth: 0
       - name: Merge unstable to master branch
         run: |
+          pwd
           chmod +rx ./.github/workflows/scripts/merge_unstable_to_master.sh
           . ./.github/workflows/scripts/merge_unstable_to_master.sh
         

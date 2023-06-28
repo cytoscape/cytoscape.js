@@ -22,9 +22,8 @@ jobs:
           if [[ "${{ github.event.inputs.version }}" != "" ]]; then
             echo "VERSION=${{ github.event.inputs.version }}"  >> $GITHUB_ENV
           else 
-            curl -L -o new-feature-version.sh https://raw.githubusercontent.com/AkMo3/cytoscape.js/unstable/.github/workflows/scripts/new-feature-version.sh
-            chmod +rx ./new-feature-version.sh
-            . new-feature-version.sh
+            chmod +rx ./.github/workflows/scripts/new-feature-version.sh
+            . ./.github/workflows/scripts/new-feature-version.sh
           fi
         shell: bash
       - name: See new feature version
@@ -36,8 +35,7 @@ jobs:
           fetch-depth: 0
       - name: Merge unstable to master branch
         run: |
-          curl -L -o merge_unstable_to_master.sh https://raw.githubusercontent.com/AkMo3/cytoscape.js/unstable/.github/workflows/scripts/merge_unstable_to_master.sh
-          chmod +rx ./merge_unstable_to_master.sh
-          . merge_unstable_to_master.sh
+          chmod +rx ./.github/workflows/scripts/merge_unstable_to_master.sh
+          . ./.github/workflows/scripts/merge_unstable_to_master.sh
         
         

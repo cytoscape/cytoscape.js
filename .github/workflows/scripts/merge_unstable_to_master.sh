@@ -11,6 +11,15 @@ else
   echo "VERSION is set to: $VERSION"
 fi
 
+# Check if NEXT_VERSION variable is set
+if [ -z "$NEXT_VERSION" ]; then
+  echo "NEXT_VERSION variable is not set."
+  return 1;
+else
+  echo "NEXT_VERSION is set to: $VERSION"
+fi
+
+
 # See current branch
 echo "# Current Branch: $(git branch --show-current)"
 
@@ -50,7 +59,7 @@ echo "# Unstable pushed to remote"
 # Step 4: Fast-forward master to the merge commit
 git checkout master
 git merge unstable
-echo "# Unstable merged in master"
+echo "# unstable merged in master"
 
 git push
 echo "# Unstable pushed to remote"
@@ -83,4 +92,38 @@ fi
 # Commit and push the updated version files
 git add package.json package-lock.json
 git commit -m "Update version to $VERSION"
+git push
+
+
+# Update new to new version in unstable
+git checkout unstable
+
+# Update package.json
+sed -i "s/\"version\": \".*\"/\"version\": \"$NEXT_VERSION\"/" package.json
+
+# Update package-lock.json
+sed -i "s/\"version\": \".*\"/\"version\": \"$NEXT_VERSION\"/" package-lock.json
+
+
+# Check if version is updated in package.json
+version_check_package_unstable=$(grep -o "\"version\": \"$NEXT_VERSION\"" package.json)
+if [ -z "$version_check_package_unstable" ]; then
+  echo "# Failed to update version in package.json for unstable"
+  return 3
+else
+  echo "# Version updated in package.json for unstable"
+fi
+
+# Check if version is updated in package-lock.json
+version_check_package_lock_unstable=$(grep -o "\"version\": \"$NEXT_VERSION\"" package-lock.json)
+if [ -z "$version_check_package_lock_unstable" ]; then
+  echo "# Failed to update version in package-lock.json for unstable"
+  return 4
+else
+  echo "# Version updated in package-lock.json for unstable"
+fi
+
+# Commit and push the updated version files
+git add package.json package-lock.json
+git commit -m "Update version to $NEXT_VERSION"
 git push

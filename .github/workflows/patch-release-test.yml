@@ -33,5 +33,8 @@ jobs:
       - name: See new patch version
         run: echo "# version:" ${{ env.NEW_PATCH_VERSION }}
         shell: bash
+      - name: Run tests
+        run : |
+          npm run test
         
         

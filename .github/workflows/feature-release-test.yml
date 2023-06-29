@@ -27,8 +27,10 @@ jobs:
             . ./.github/workflows/scripts/new-feature-version.sh
           fi
         shell: bash
-      - name: See new feature version
-        run: echo branch ${{ env.VERSION }}
+      - name: See new feature and jq version
+        run: |
+          echo VERSION ${{ env.VERSION }}
+          jq --version
         shell: bash
       - name: Checkout Master Branch
         uses: actions/checkout@v3

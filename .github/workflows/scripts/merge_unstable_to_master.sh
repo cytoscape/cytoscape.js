@@ -65,12 +65,12 @@ git push
 echo "# Unstable pushed to remote"
 
 # Update package.json
-jq --arg ver "$VERSION" '.version = $ver' package.json >> temp.json
-mv temp.json package.json
+jq --arg ver "$VERSION" '.version = $ver' package.json >> /tmp/temp.json
+mv /tmp/temp.json package.json
 
 # Update package-lock.json
-jq --arg ver "$VERSION" '.version = $ver' package-lock.json >> temp.json
-mv temp.json package-lock.json
+jq --arg ver "$VERSION" '.version = $ver' package-lock.json >> /tmp/temp.json
+mv /tmp/temp.json package-lock.json
 
 
 # Check if version is updated in package.json
@@ -101,12 +101,12 @@ git push
 git checkout unstable
 
 # Update package.json
-jq --arg ver "$NEXT_VERSION" '.version = $ver' package.json >> temp.json
-mv temp.json package.json
+jq --arg ver "$NEXT_VERSION" '.version = $ver' package.json >> /tmp/temp.json
+mv /tmp/temp.json package.json
 
 # Update package-lock.json
-jq --arg ver "$NEXT_VERSION" '.version = $ver' package-lock.json >> temp.json
-mv temp.json package-lock.json
+jq --arg ver "$NEXT_VERSION" '.version = $ver' package-lock.json >> /tmp/temp.json
+mv /tmp/temp.json package-lock.json
 
 
 # Check if version is updated in package.json

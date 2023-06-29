@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PREV_VERSION=$(cat package.json | jq -r '.version')
+PREV_VERSION=$(jq -r '.version' package.json)
 echo "Prev Feature Version $PREV_VERSION"
 
 # Extract the version number by removing the "-unstable" suffix

@@ -65,14 +65,16 @@ git push
 echo "# Unstable pushed to remote"
 
 # Update package.json
-sed -i "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" package.json
+jq '.version = "$VERSION"' package.json >> temp.json
+mv temp.json package.json
 
 # Update package-lock.json
-sed -i "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" package-lock.json
+jq '.version = "$VERSION"' package-lock.json >> temp.json
+mv temp.json package-lock.json
 
 
 # Check if version is updated in package.json
-version_check_package=$(grep -o "\"version\": \"$VERSION\"" package.json)
+version_check_package=$(jq -r '.version' package.json)
 if [ -z "$version_check_package" ]; then
   echo "# Failed to update version in package.json"
   return 3
@@ -81,7 +83,7 @@ else
 fi
 
 # Check if version is updated in package-lock.json
-version_check_package_lock=$(grep -o "\"version\": \"$VERSION\"" package-lock.json)
+version_check_package_lock=$(jq -r '.version' package-lock.json)
 if [ -z "$version_check_package_lock" ]; then
   echo "# Failed to update version in package-lock.json"
   return 4
@@ -99,14 +101,17 @@ git push
 git checkout unstable
 
 # Update package.json
-sed -i "s/\"version\": \".*\"/\"version\": \"$NEXT_VERSION\"/" package.json
+jq '.version = "$NEXT_VERSION"' package.json >> temp.json
+mv temp.json package.json
 
 # Update package-lock.json
-sed -i "s/\"version\": \".*\"/\"version\": \"$NEXT_VERSION\"/" package-lock.json
+jq '.version = "$NEXT_VERSION"' package-lock.json >> temp.json
+mv temp.json package-lock.json
+
 
 
 # Check if version is updated in package.json
-version_check_package_unstable=$(grep -o "\"version\": \"$NEXT_VERSION\"" package.json)
+version_check_package_unstable=$(jq -r '.version' package.json)
 if [ -z "$version_check_package_unstable" ]; then
   echo "# Failed to update version in package.json for unstable"
   return 3
@@ -115,7 +120,7 @@ else
 fi
 
 # Check if version is updated in package-lock.json
-version_check_package_lock_unstable=$(grep -o "\"version\": \"$NEXT_VERSION\"" package-lock.json)
+version_check_package_lock_unstable=$(jq -r '.version' package-lock.json)
 if [ -z "$version_check_package_lock_unstable" ]; then
   echo "# Failed to update version in package-lock.json for unstable"
   return 4

@@ -322,12 +322,56 @@ function compileConfig( config ){
   }
 }
 
+function generate_versions(context) {
+  const all_versions = config.versions;
+  const version_map = new Map();
+  const breakpoint = /(\d+.\d+)/;
+  all_versions.forEach(e => {
+  v = e.split(breakpoint).filter(Boolean);
+      if (version_map.has(v[0])) version_map.get(v[0]).push(v[1]);
+      else {
+          version_map.set(v[0], [v[1]]);
+      }
+  }); 
+
+  const data = {
+      major_release: []
+  };
+
+  for (const major_version of version_map.entries()) {
+      const temp = {"version" : major_version[0]};
+      temp["minor_release"] = [];
+      const sorted = major_version[1].sort((a, b) => b - a);
+      for (let i = 0, len = sorted.length; i < len; i++) {
+          const minor_ver = sorted[i];
+          const temp_minor = {};
+          temp_minor["minor_ver"] = major_version[0]  .concat(minor_ver);
+          temp_minor["link"] = "https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A".concat(temp_minor["minor_ver"]).concat("+is%3Aclosed");
+          temp["minor_release"].push(temp_minor);
+      }
+      //  console.log(temp);
+      data.major_release.push(temp);
+  };
+  
+  context["major_release"] = data.major_release;
+}
+
 function writeDocs(){
+  
+  let context = config;
+  
+  if(context.versions) {
+    generate_versions(context);
+    let introHtmlTemplate = md2html('intro');
+    let introTemplate = Handlebars.compile(introHtmlTemplate);
+    let infoHtml = introTemplate(context);
+    fs.writeFileSync( path.join(__dirname, './md/intro_html.md'), infoHtml, encoding);
+  }
+  
   compileConfig( config );
 
   let htmlTemplate = fs.readFileSync( path.join(__dirname, './template.html'), encoding);
   let template = Handlebars.compile( htmlTemplate );
-  let context = config;
   let html = template( context );
 
   fs.writeFileSync( path.join(__dirname, 'index.html'), html, encoding);

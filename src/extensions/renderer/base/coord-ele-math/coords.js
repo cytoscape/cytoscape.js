@@ -1,4 +1,3 @@
-import window from '../../../../window';
 import * as math from '../../../../math';
 import * as util from '../../../../util';
 
@@ -27,7 +26,7 @@ BRp.findContainerClientCoords = function(){
 
   var container = this.container;
   var rect = container.getBoundingClientRect();
-  var style = window.getComputedStyle( container );
+  var style = this.cy.window().getComputedStyle( container );
   var styleValue = function( name ){ return parseFloat( style.getPropertyValue( name ) ); };
 
   var padding = {

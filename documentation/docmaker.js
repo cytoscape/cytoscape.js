@@ -370,17 +370,27 @@ function sortSoftwareVersions(versions, type) {
   });
 }
 
-function generate_versions(context) {
-  const all_versions = versions.versions;
+function getMilestoneLink(minor_ver) {
+  return "https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A".concat(minor_ver).concat("+is%3Aclosed");
+}
+
+function getVersionMap(all_versions) {
   const version_map = new Map();
   const breakpoint = /(\d+.\d+)/;
-  all_versions.forEach(e => {
-  v = e.split(breakpoint).filter(Boolean);
-      if (version_map.has(v[0])) version_map.get(v[0]).push(v[1]);
-      else {
-          version_map.set(v[0], [v[1]]);
-      }
-  }); 
+  all_versions.forEach((e) => {
+    v = e.split(breakpoint).filter(Boolean);
+    if (version_map.has(v[0])) version_map.get(v[0]).push(v[1]);
+    else {
+      version_map.set(v[0], [v[1]]);
+    }
+  });
+
+  return version_map;
+}
+
+function generate_versions(context) {
+  const all_versions = versions.versions;
+  const version_map = getVersionMap(all_versions);
 
   const data = {
       major_release: []
@@ -391,10 +401,12 @@ function generate_versions(context) {
       temp["minor_release"] = [];
       const sorted = sortSoftwareVersions(major_version[1], "minor");
       for (let i = 0, len = sorted.length; i < len; i++) {
-          const minor_ver = sorted[i];
+          
+          // sorted[i] represent the minor version and its object contains the version and the link
           const temp_minor = {};
-          temp_minor["minor_ver"] = major_version[0].concat(minor_ver);
-          temp_minor["link"] = "https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A".concat(temp_minor["minor_ver"]).concat("+is%3Aclosed");
+          temp_minor["minor_ver"] = major_version[0].concat(sorted[i]);
+          temp_minor["link"] = getMilestoneLink(temp_minor["minor_ver"]);
+          
           temp["minor_release"].push(temp_minor);
       }
       //  console.log(temp);

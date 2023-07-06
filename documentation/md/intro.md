@@ -286,7 +286,7 @@ The library was created at the [Donnelly Centre](http://thedonnellycentre.utoron
         <ul>
             {{#each minor_release}}
             <li>
-                <a target="_blank" href="{{this.link}}"><code>{{this.minor_ver}}</code></a>
+                <a target="_blank" href="{{this.link}}">{{this.minor_ver}}</a>
             </li>
             {{/each}}
         </ul>

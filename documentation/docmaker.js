@@ -6,10 +6,11 @@ let Handlebars = require('handlebars');
 let jsonlint = require('jsonlint');
 let hljs = require('highlight.js');
 let encoding = 'utf8';
-let config;
+let config, versions;
 let configFile = './docmaker.json';
 let mdRend = new marked.Renderer();
 let path = require('path');
+let versionFile = './versions.json';
 
 let rendCode = mdRend.code;
 mdRend.code = function(code, lang){
@@ -25,6 +26,9 @@ mdRend.code = function(code, lang){
 try {
   jsonlint.parse( fs.readFileSync( path.join(__dirname, configFile), 'utf8') ); // validate first for convenience
   config = require( configFile );
+
+  jsonlint.parse( fs.readFileSync( path.join(__dirname, versionFile), 'utf8') ); // validate first for convenience
+  versions = require( versionFile );
 } catch(e){
   console.error('\n`' + configFile + '` could not be read; check the JSON is formatted correctly via jsonlint');
   throw e;
@@ -80,6 +84,18 @@ function md2html( file ){
 
   let html = marked.parse( md );
 
+  return html;
+}
+
+function templateToHtml(context) {
+  if (context.template === "intro") {
+    generate_versions(context);
+  }
+
+  let introHtmlTemplate = md2html(context.template);
+  let introTemplate = Handlebars.compile(introHtmlTemplate);
+  let infoHtml = introTemplate(context);
+  let html = marked.parse(infoHtml);
   return html;
 }
 
@@ -176,6 +192,14 @@ function compileConfig( config ){
 
   for( let i = 0; sections && i < sections.length; i++ ){
     let section = sections[i];
+
+    if (section.template) {
+      section.html = templateToHtml(section);
+      let psubs = parseSubsections( section );
+
+      let subs = section.sections = section.sections || [];
+      section.sections = subs.concat( psubs );
+    }
 
     if( section.layout ){ section.name = section.layout.name; }
 
@@ -322,8 +346,32 @@ function compileConfig( config ){
   }
 }
 
+function sortSoftwareVersions(versions, type) {
+  return versions.sort((a, b) => {
+    var aParts, bParts;
+    if (type === 'major') {
+      aParts = a.version.split('.');
+      bParts = b.version.split('.');
+    }
+    else {
+      aParts = a.split('.');
+      bParts = b.split('.');
+    }
+
+    for (let i = 0; i < Math.max(aParts.length, bParts.length); i++) {
+      const aNum = Number(aParts[i]) || 0;
+      const bNum = Number(bParts[i]) || 0;
+      
+      if (aNum > bNum)  return -1;
+      else if (aNum < bNum) return 1;
+    }
+      
+    return 0;
+  });
+}
+
 function generate_versions(context) {
-  const all_versions = config.versions;
+  const all_versions = versions.versions;
   const version_map = new Map();
   const breakpoint = /(\d+.\d+)/;
   all_versions.forEach(e => {
@@ -341,33 +389,27 @@ function generate_versions(context) {
   for (const major_version of version_map.entries()) {
       const temp = {"version" : major_version[0]};
       temp["minor_release"] = [];
-      const sorted = major_version[1].sort((a, b) => b - a);
+      const sorted = sortSoftwareVersions(major_version[1], "minor");
       for (let i = 0, len = sorted.length; i < len; i++) {
           const minor_ver = sorted[i];
           const temp_minor = {};
-          temp_minor["minor_ver"] = major_version[0]  .concat(minor_ver);
+          temp_minor["minor_ver"] = major_version[0].concat(minor_ver);
           temp_minor["link"] = "https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A".concat(temp_minor["minor_ver"]).concat("+is%3Aclosed");
           temp["minor_release"].push(temp_minor);
       }
       //  console.log(temp);
       data.major_release.push(temp);
   };
+
+  let sortedRelease = sortSoftwareVersions(data.major_release, "major");
   
-  context["major_release"] = data.major_release;
+  context["major_release"] = sortedRelease;
 }
 
 function writeDocs(){
   
   let context = config;
-  
-  if(context.versions) {
-    generate_versions(context);
-    let introHtmlTemplate = md2html('intro');
-    let introTemplate = Handlebars.compile(introHtmlTemplate);
-    let infoHtml = introTemplate(context);
-    fs.writeFileSync( path.join(__dirname, './md/intro_html.md'), infoHtml, encoding);
-  }
-  
+    
   compileConfig( config );
 
   let htmlTemplate = fs.readFileSync( path.join(__dirname, './template.html'), encoding);

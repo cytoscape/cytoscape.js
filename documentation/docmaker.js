@@ -193,7 +193,7 @@ function compileConfig( config ){
   for( let i = 0; sections && i < sections.length; i++ ){
     let section = sections[i];
 
-    if (section.template) {
+    if (section.mdTemplate) {
       section.html = templateToHtml(section);
       let psubs = parseSubsections( section );
 

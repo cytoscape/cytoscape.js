@@ -56,7 +56,7 @@
       ]
     },
 
-    { "name": "Introduction", "template": "intro"},
+    { "name": "Introduction", "mdTemplate": "intro"},
 
     { "name": "Notation", "md": "notation" },
 

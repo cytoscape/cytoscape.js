@@ -88,11 +88,11 @@ function md2html( file ){
 }
 
 function templateToHtml(context) {
-  if (context.template === "intro") {
+  if (context.mdTemplate === "intro") {
     generate_versions(context);
   }
 
-  let introHtmlTemplate = md2html(context.template);
+  let introHtmlTemplate = md2html(context.mdTemplate);
   let introTemplate = Handlebars.compile(introHtmlTemplate);
   let infoHtml = introTemplate(context);
   let html = marked.parse(infoHtml);

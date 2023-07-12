@@ -42,8 +42,13 @@ jobs:
           curl -L -o merge_unstable_to_master.sh https://raw.githubusercontent.com/AkMo3/cytoscape.js/unstable/.github/workflows/scripts/merge_unstable_to_master.sh
           chmod +rx ./merge_unstable_to_master.sh
           . merge_unstable_to_master.sh
+      - name: Install dependencies
+        run: npm install
       - name: Run tests
         run : |
-          npm run test
-        
+          npm test
+      - name: Start release
+        run: |
+          chmod +rx ./.github/workflows/scripts/post_release_test.sh
+          . ./.github/workflows/scripts/post_release_test.sh            
         

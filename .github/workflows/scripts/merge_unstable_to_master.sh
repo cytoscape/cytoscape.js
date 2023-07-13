@@ -52,7 +52,7 @@ fi
 # Step 3: Create a merge commit and push it
 git merge -s ours master -m "Merge master to unstable"
 echo "# Master merged to unstable"
-git push
+# git push
 echo "# Unstable pushed to remote"
 
 
@@ -61,7 +61,7 @@ git checkout master
 git merge unstable
 echo "# unstable merged in master"
 
-git push
+# git push
 echo "# Unstable pushed to remote"
 
 # Update package.json
@@ -93,8 +93,8 @@ fi
 
 # Commit and push the updated version files
 git add package.json package-lock.json
-git commit -m "Update version to $VERSION"
-git push
+# git commit -m "Update version to $VERSION"
+# git push
 
 
 # Update new to new version in unstable
@@ -130,4 +130,6 @@ fi
 # Commit and push the updated version files
 git add package.json package-lock.json
 git commit -m "Update version to $NEXT_VERSION"
-git push
+# git push
+
+git checkout master

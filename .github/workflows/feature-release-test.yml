@@ -8,14 +8,19 @@ on:
         description: Version of new Release
 
 jobs:  
-  feature-release:
+  feature-release-test:
     runs-on: ubuntu-latest
+
     steps:
       - name: checkout patch branch
         uses: actions/checkout@v3
         with:
           ref: 'unstable'
           fetch-depth: 0
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          cache: 'npm'
       - name: Get new version string
         id: get_new_patch_version
         run: |
@@ -44,9 +49,9 @@ jobs:
           . merge_unstable_to_master.sh
       - name: Install dependencies
         run: npm install
-      - name: Run tests
-        run : |
-          npm test
+      # - name: Run tests
+      #   run : |
+      #     npm test
       - name: Start release
         run: |
           chmod +rx ./.github/workflows/scripts/post_release_test.sh

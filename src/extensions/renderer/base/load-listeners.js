@@ -2019,7 +2019,7 @@ BRp.load = function(){
 
     if( e.touches.length === 0 ){
       r.touchData.dragDelta = [];
-      r.touchData.startPosition = null;
+      r.touchData.startPosition = [null, null, null, null, null, null];
       r.touchData.startGPosition = null;
       r.touchData.didSelect = false;
     }

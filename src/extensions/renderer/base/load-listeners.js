@@ -1359,7 +1359,7 @@ BRp.load = function(){
     }
 
     if( e.touches.length >= 1 ){
-      var sPos = r.touchData.startPosition = [];
+      var sPos = r.touchData.startPosition = [null, null, null, null, null, null];
 
       for( var i = 0; i < now.length; i++ ){
         sPos[i] = earlier[i] = now[i];

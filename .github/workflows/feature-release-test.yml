@@ -10,6 +10,7 @@ on:
 jobs:  
   feature-release-test:
     runs-on: ubuntu-latest
+    environment: prod
 
     steps:
       - name: checkout patch branch
@@ -19,8 +20,9 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: 18
           cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
       - name: Get new version string
         id: get_new_patch_version
         run: |
@@ -52,8 +54,11 @@ jobs:
       # - name: Run tests
       #   run : |
       #     npm test
-      - name: Start release
+      - name: Pre Release Tests
         run: |
-          chmod +rx ./.github/workflows/scripts/post_release_test.sh
-          . ./.github/workflows/scripts/post_release_test.sh            
+          chmod +rx ./.github/workflows/scripts/pre_release_test.sh
+          . ./.github/workflows/scripts/pre_release_test.sh    
+      - run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.CYTOSCAPE_PUBLISH_TOKEN }}
         

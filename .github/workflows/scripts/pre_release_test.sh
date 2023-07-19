@@ -11,6 +11,17 @@ else
   echo "VERSION is set to: $VERSION"
 fi
 
+# Check if current Git branch is named "master"
+current_branch=$(git symbolic-ref --short HEAD 2>/dev/null)
+
+if [ "$current_branch" = "master" ]; then
+  echo "Current Git branch is unstable."
+else
+  echo "Current Git branch is not unstable."
+  return 2;
+fi
+
+
 jq --arg ver "$VERSION" '.versions += [$ver]' ./documentation/versions.json >> /tmp/temp.json
 mv /tmp/temp.json ./documentation/versions.json
 npm run release
@@ -43,5 +54,13 @@ do
         echo "The file $file has changed."
     fi
 done
+
+git add . && git commit -m "Build $VERSION"
+
+git log -n 1
+
+npm version $VERSION
+
+git push && git push --tags
 
 exit 0

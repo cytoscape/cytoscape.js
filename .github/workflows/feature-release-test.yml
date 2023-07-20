@@ -55,10 +55,18 @@ jobs:
       #   run : |
       #     npm test
       - name: Pre Release Tests
+        id: release
         run: |
           chmod +rx ./.github/workflows/scripts/pre_release_test.sh
-          . ./.github/workflows/scripts/pre_release_test.sh    
+          . ./.github/workflows/scripts/pre_release_test.sh  
+      - name: Archive code coverage results
+        uses: actions/upload-artifact@v3
+        if: ${{ failure() && steps.release.conclusion == 'failure' }}
+        with:
+          name: npm-release--failure-report
+          path: /home/runner/.npm/_logs/    
       - run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.CYTOSCAPE_PUBLISH_TOKEN }}
+
         

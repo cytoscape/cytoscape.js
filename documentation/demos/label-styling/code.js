@@ -17,12 +17,12 @@ window.addEventListener('DOMContentLoaded', function () { // on dom ready
                 'border-opacity': 0.5,
                 "text-background-opacity": 1,
                 "text-background-color": "#e5e5e5",
-                'text-background-shape': 'round-rectangle',
+                // 'text-background-shape': 'rectangle',
                 'text-background-padding': '2px',
                 "text-border-opacity": 1,
                 'text-border-width': 1,
                 'text-border-color': '#fdd7d7',
-                // 'text-border-radius': '50px',
+                'text-border-radius': '50px',
             })
             .selector('.eating')
             .style({
@@ -47,7 +47,7 @@ window.addEventListener('DOMContentLoaded', function () { // on dom ready
                 "text-border-opacity": 1,
                 'text-border-width': 1,
                 'text-border-color': '#fdd7d7',
-                'text-border-radius': '50px',
+                'text-border-radius': '20px',
                 'color': '#000000',
                 'text-border-style': 'dashed',
             })

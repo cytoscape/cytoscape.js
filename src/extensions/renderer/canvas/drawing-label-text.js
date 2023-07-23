@@ -164,38 +164,38 @@ CRp.getTextAngle = function( ele, prefix ){
   return theta;
 };
 
-CRp.drawText = function (context, ele, prefix, applyRotation = true, useEleOpacity = true) {
+CRp.drawText = function( context, ele, prefix, applyRotation = true, useEleOpacity = true ){
   let _p = ele._private;
   let rscratch = _p.rscratch;
   let parentOpacity = useEleOpacity ? ele.effectiveOpacity() : 1;
 
-  if (useEleOpacity && (parentOpacity === 0 || ele.pstyle('text-opacity').value === 0)) {
+  if( useEleOpacity && (parentOpacity === 0 || ele.pstyle( 'text-opacity' ).value === 0) ){
     return;
   }
 
   // use 'main' as an alias for the main label (i.e. null prefix)
-  if (prefix === 'main') { prefix = null; }
+  if( prefix === 'main' ){ prefix = null; }
 
-  let textX = util.getPrefixedProperty(rscratch, 'labelX', prefix);
-  let textY = util.getPrefixedProperty(rscratch, 'labelY', prefix);
+  let textX = util.getPrefixedProperty( rscratch, 'labelX', prefix );
+  let textY = util.getPrefixedProperty( rscratch, 'labelY', prefix );
   let orgTextX, orgTextY; // used for rotation
-  let text = this.getLabelText(ele, prefix);
+  let text = this.getLabelText( ele, prefix );
 
-  if (text != null && text !== '' && !isNaN(textX) && !isNaN(textY)) {
-
+  if( text != null && text !== '' && !isNaN( textX ) && !isNaN( textY ) ){
+    this.setupTextStyle( context, ele, useEleOpacity );
 
     let pdash = prefix ? prefix + '-' : '';
-    let textW = util.getPrefixedProperty(rscratch, 'labelWidth', prefix);
-    let textH = util.getPrefixedProperty(rscratch, 'labelHeight', prefix);
-    let marginX = ele.pstyle(pdash + 'text-margin-x').pfValue;
-    let marginY = ele.pstyle(pdash + 'text-margin-y').pfValue;
+    let textW = util.getPrefixedProperty( rscratch, 'labelWidth', prefix );
+    let textH = util.getPrefixedProperty( rscratch, 'labelHeight', prefix );
+    let marginX = ele.pstyle( pdash + 'text-margin-x' ).pfValue;
+    let marginY = ele.pstyle( pdash + 'text-margin-y' ).pfValue;
 
     let isEdge = ele.isEdge();
 
-    let halign = ele.pstyle('text-halign').value;
-    let valign = ele.pstyle('text-valign').value;
+    let halign = ele.pstyle( 'text-halign' ).value;
+    let valign = ele.pstyle( 'text-valign' ).value;
 
-    if (isEdge) {
+    if( isEdge ){
       halign = 'center';
       valign = 'center';
     }
@@ -205,24 +205,24 @@ CRp.drawText = function (context, ele, prefix, applyRotation = true, useEleOpaci
 
     let theta;
 
-    if (!applyRotation) {
+    if( !applyRotation ){
       theta = 0;
     } else {
       theta = this.getTextAngle(ele, prefix);
     }
 
-    if (theta !== 0) {
+    if( theta !== 0 ){
       orgTextX = textX;
       orgTextY = textY;
 
-      context.translate(orgTextX, orgTextY);
-      context.rotate(theta);
+      context.translate( orgTextX, orgTextY );
+      context.rotate( theta );
 
       textX = 0;
       textY = 0;
     }
 
-    switch (valign) {
+    switch( valign ){
       case 'top':
         break;
       case 'center':
@@ -233,15 +233,15 @@ CRp.drawText = function (context, ele, prefix, applyRotation = true, useEleOpaci
         break;
     }
 
-    let backgroundOpacity = ele.pstyle('text-background-opacity').value;
-    let borderOpacity = ele.pstyle('text-border-opacity').value;
-    let textBorderWidth = ele.pstyle('text-border-width').pfValue;
-    let backgroundPadding = ele.pstyle('text-background-padding').pfValue;
+    let backgroundOpacity = ele.pstyle( 'text-background-opacity' ).value;
+    let borderOpacity = ele.pstyle( 'text-border-opacity' ).value;
+    let textBorderWidth = ele.pstyle( 'text-border-width' ).pfValue;
+    let backgroundPadding = ele.pstyle( 'text-background-padding' ).pfValue;
 
-    if (backgroundOpacity > 0 || (textBorderWidth > 0 && borderOpacity > 0)) {
+    if( backgroundOpacity > 0 || ( textBorderWidth > 0 && borderOpacity > 0 ) ){
       let bgX = textX - backgroundPadding;
 
-      switch (halign) {
+      switch( halign ){
         case 'left':
           bgX -= textW;
           break;
@@ -253,17 +253,17 @@ CRp.drawText = function (context, ele, prefix, applyRotation = true, useEleOpaci
       }
 
       let bgY = textY - textH - backgroundPadding;
-      let bgW = textW + 2 * backgroundPadding;
-      let bgH = textH + 2 * backgroundPadding;
+      let bgW = textW + 2*backgroundPadding;
+      let bgH = textH + 2*backgroundPadding;
+
       let borderRadius = ele.pstyle('text-border-radius') ? ele.pstyle('text-border-radius').pfValue : 0;
       let textBackgroundColor = ele.pstyle('text-background-color') ? ele.pstyle('text-background-color').value : '';
       let styleShape = ele.pstyle('text-background-shape')? ele.pstyle('text-background-shape').strValue : '';
 
-      if (backgroundOpacity > 0) {
+      if( backgroundOpacity > 0 ){
         let textFill = context.fillStyle;
 
-        context.fillStyle = 'rgba(' + textBackgroundColor[0] + ',' + textBackgroundColor[1] + ',' + textBackgroundColor[2] + ',' + backgroundOpacity * parentOpacity + ')';
-
+        context.fillStyle = 'rgba(' + textBackgroundColor[ 0 ] + ',' + textBackgroundColor[ 1 ] + ',' + textBackgroundColor[ 2 ] + ',' + backgroundOpacity * parentOpacity + ')';
         // if a border radius is set, override the text-background-shape value
         if (!borderRadius) {
           if (styleShape.indexOf('round') === 0) {
@@ -273,32 +273,31 @@ CRp.drawText = function (context, ele, prefix, applyRotation = true, useEleOpaci
           }
           context.fillStyle = textFill;
         }
-        
       }
 
-      if (textBorderWidth > 0 && borderOpacity > 0) {
+      if( textBorderWidth > 0 && borderOpacity > 0 ){
         let textStroke = context.strokeStyle;
         let textLineWidth = context.lineWidth;
-        let textBorderColor = ele.pstyle('text-border-color').value;
-        let textBorderStyle = ele.pstyle('text-border-style').value;
+        let textBorderColor = ele.pstyle( 'text-border-color' ).value;
+        let textBorderStyle = ele.pstyle( 'text-border-style' ).value;
 
-        context.strokeStyle = 'rgba(' + textBorderColor[0] + ',' + textBorderColor[1] + ',' + textBorderColor[2] + ',' + borderOpacity * parentOpacity + ')';
+        context.strokeStyle = 'rgba(' + textBorderColor[ 0 ] + ',' + textBorderColor[ 1 ] + ',' + textBorderColor[ 2 ] + ',' + borderOpacity * parentOpacity + ')';
         context.lineWidth = textBorderWidth;
 
-        if (context.setLineDash) { // for very outofdate browsers
-          switch (textBorderStyle) {
+        if( context.setLineDash ){ // for very outofdate browsers
+          switch( textBorderStyle ){
             case 'dotted':
-              context.setLineDash([1, 1]);
+              context.setLineDash( [ 1, 1 ] );
               break;
             case 'dashed':
-              context.setLineDash([4, 2]);
+              context.setLineDash( [ 4, 2 ] );
               break;
             case 'double':
               context.lineWidth = textBorderWidth / 4; // 50% reserved for white between the two borders
-              context.setLineDash([]);
+              context.setLineDash( [] );
               break;
             case 'solid':
-              context.setLineDash([]);
+              context.setLineDash( [] );
               break;
           }
         }
@@ -316,10 +315,8 @@ CRp.drawText = function (context, ele, prefix, applyRotation = true, useEleOpaci
         roundRect(context, bgX, bgY, bgW, bgH, borderRadius);
         context.stroke();
 
-
-        if (textBorderStyle === 'double') {
+        if( textBorderStyle === 'double' ){
           let whiteWidth = textBorderWidth / 2;
-
           if (borderRadius > 0) {
             let x = bgX + whiteWidth;
             let y = bgY + whiteWidth;
@@ -335,8 +332,8 @@ CRp.drawText = function (context, ele, prefix, applyRotation = true, useEleOpaci
           }
         }
 
-        if (context.setLineDash) { // for very outofdate browsers
-          context.setLineDash([]);
+        if( context.setLineDash ){ // for very outofdate browsers
+          context.setLineDash( [] );
         }
         context.lineWidth = textLineWidth;
         context.strokeStyle = textStroke;
@@ -344,74 +341,71 @@ CRp.drawText = function (context, ele, prefix, applyRotation = true, useEleOpaci
 
     }
 
-    let lineWidth = 2 * ele.pstyle('text-outline-width').pfValue; // *2 b/c the stroke is drawn centred on the middle
+    let lineWidth = 2 * ele.pstyle( 'text-outline-width' ).pfValue; // *2 b/c the stroke is drawn centred on the middle
 
-    if (lineWidth > 0) {
+    if( lineWidth > 0 ){
       context.lineWidth = lineWidth;
     }
 
-    this.setupTextStyle(context, ele, useEleOpacity);
-
-    if (ele.pstyle('text-wrap').value === 'wrap') {
-      let lines = util.getPrefixedProperty(rscratch, 'labelWrapCachedLines', prefix);
-      let lineHeight = util.getPrefixedProperty(rscratch, 'labelLineHeight', prefix);
-      let halfTextW = textW / 2;
+    if( ele.pstyle( 'text-wrap' ).value === 'wrap' ){
+      let lines = util.getPrefixedProperty( rscratch, 'labelWrapCachedLines', prefix );
+      let lineHeight = util.getPrefixedProperty( rscratch, 'labelLineHeight', prefix );
+      let halfTextW = textW/2;
       let justification = this.getLabelJustification(ele);
 
-      if (justification === 'auto') {
+      if( justification === 'auto' ){
         // then it's already ok, so skip all the other ifs
-      } else if (halign === 'left') { // auto justification : right
-        if (justification === 'left') {
+      } else if( halign === 'left' ){ // auto justification : right
+        if( justification === 'left' ){
           textX += -textW;
-        } else if (justification === 'center') {
+        } else if( justification === 'center' ){
           textX += -halfTextW;
         } // else same as auto
-      } else if (halign === 'center') { // auto justfication : center
-        if (justification === 'left') {
+      } else if( halign === 'center' ){ // auto justfication : center
+        if( justification === 'left' ){
           textX += -halfTextW;
-        } else if (justification === 'right') {
+        } else if( justification === 'right' ){
           textX += halfTextW;
         } // else same as auto
-      } else if (halign === 'right') { // auto justification : left
-        if (justification === 'center') {
+      } else if( halign === 'right' ){ // auto justification : left
+        if( justification === 'center' ){
           textX += halfTextW;
-        } else if (justification === 'right') {
+        } else if( justification === 'right' ){
           textX += textW;
         } // else same as auto
       }
 
-      switch (valign) {
+      switch( valign ){
         case 'top':
-          textY -= (lines.length - 1) * lineHeight;
+          textY -= ( lines.length - 1 ) * lineHeight;
           break;
         case 'center':
         case 'bottom':
-          textY -= (lines.length - 1) * lineHeight;
+          textY -= ( lines.length - 1 ) * lineHeight;
           break;
       }
 
-      for (let l = 0; l < lines.length; l++) {
-        if (lineWidth > 0) {
-          context.strokeText(lines[l], textX, textY);
+      for( let l = 0; l < lines.length; l++ ){
+        if( lineWidth > 0 ){
+          context.strokeText( lines[ l ], textX, textY );
         }
 
-        context.fillText(lines[l], textX, textY);
+        context.fillText( lines[ l ], textX, textY );
 
         textY += lineHeight;
       }
 
     } else {
-      if (lineWidth > 0) {
-        context.strokeText(text, textX, textY);
+      if( lineWidth > 0 ){
+        context.strokeText( text, textX, textY );
       }
 
-      context.fillText(text, textX, textY);
-
+      context.fillText( text, textX, textY );
     }
 
-    if (theta !== 0) {
-      context.rotate(-theta);
-      context.translate(-orgTextX, -orgTextY);
+    if( theta !== 0 ){
+      context.rotate( -theta );
+      context.translate( -orgTextX, -orgTextY );
     }
   }
 };

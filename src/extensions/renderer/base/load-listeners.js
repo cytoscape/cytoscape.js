@@ -15,8 +15,9 @@ BRp.registerBinding = function( target, event, handler, useCapture ){ // eslint-
 
 BRp.binder = function( tgt ){
   var r = this;
+  var containerWindow = r.cy.window();
 
-  var tgtIsDom = tgt === window || tgt === document || tgt === document.body || is.domElement( tgt );
+  var tgtIsDom = tgt === containerWindow || tgt === containerWindow.document || tgt === containerWindow.document.body || is.domElement( tgt );
 
   if( r.supportsPassiveEvents == null ){
 
@@ -31,7 +32,7 @@ BRp.binder = function( tgt ){
         }
       } );
 
-      window.addEventListener( 'test', null, opts );
+      containerWindow.addEventListener( 'test', null, opts );
     } catch( err ){
       // not supported
     }
@@ -86,7 +87,7 @@ BRp.nodeIsGrabbable = function( node ){
 
 BRp.load = function(){
   var r = this;
-
+  var containerWindow = r.cy.window();
   var isSelected = ele => ele.selected();
 
   var triggerEvents = function( target, names, e, position ){
@@ -315,7 +316,7 @@ BRp.load = function(){
   }
 
   // auto resize
-  r.registerBinding( window, 'resize', onResize ); // eslint-disable-line no-undef
+  r.registerBinding( containerWindow, 'resize', onResize ); // eslint-disable-line no-undef
 
   if( haveResizeObserverApi ){
     r.resizeObserver = new ResizeObserver(onResize); // eslint-disable-line no-undef
@@ -554,7 +555,7 @@ BRp.load = function(){
 
   }, false );
 
-  r.registerBinding( window, 'mousemove', function mousemoveHandler( e ){ // eslint-disable-line no-undef
+  r.registerBinding( containerWindow, 'mousemove', function mousemoveHandler( e ){ // eslint-disable-line no-undef
     var capture = r.hoverData.capture;
 
     if( !capture && !eventInContainer(e) ){ return; }
@@ -831,7 +832,7 @@ BRp.load = function(){
   }, false );
 
   let clickTimeout, didDoubleClick, prevClickTimeStamp;
-  r.registerBinding( window, 'mouseup', function mouseupHandler( e ){ // eslint-disable-line no-undef
+  r.registerBinding( containerWindow, 'mouseup', function mouseupHandler( e ){ // eslint-disable-line no-undef
     var capture = r.hoverData.capture;
     if( !capture ){ return; }
     r.hoverData.capture = false;
@@ -1106,7 +1107,7 @@ BRp.load = function(){
   // r.registerBinding(r.container, 'DOMMouseScroll', wheelHandler, true);
   // r.registerBinding(r.container, 'MozMousePixelScroll', wheelHandler, true); // older firefox
 
-  r.registerBinding( window, 'scroll', function scrollHandler( e ){ // eslint-disable-line no-unused-vars
+  r.registerBinding( containerWindow, 'scroll', function scrollHandler( e ){ // eslint-disable-line no-unused-vars
     r.scrollingPage = true;
 
     clearTimeout( r.scrollingPageTimeout );
@@ -1359,7 +1360,7 @@ BRp.load = function(){
     }
 
     if( e.touches.length >= 1 ){
-      var sPos = r.touchData.startPosition = [];
+      var sPos = r.touchData.startPosition = [null, null, null, null, null, null];
 
       for( var i = 0; i < now.length; i++ ){
         sPos[i] = earlier[i] = now[i];
@@ -1790,7 +1791,7 @@ BRp.load = function(){
 
   }, false );
   var touchcancelHandler;
-  r.registerBinding( window, 'touchcancel', touchcancelHandler = function( e ){ // eslint-disable-line no-unused-vars
+  r.registerBinding( containerWindow, 'touchcancel', touchcancelHandler = function( e ){ // eslint-disable-line no-unused-vars
     var start = r.touchData.start;
 
     r.touchData.capture = false;
@@ -1801,7 +1802,7 @@ BRp.load = function(){
   } );
 
   var touchendHandler, didDoubleTouch, touchTimeout, prevTouchTimeStamp;
-  r.registerBinding( window, 'touchend', touchendHandler = function( e ){ // eslint-disable-line no-unused-vars
+  r.registerBinding( containerWindow, 'touchend', touchendHandler = function( e ){ // eslint-disable-line no-unused-vars
     var start = r.touchData.start;
 
     var capture = r.touchData.capture;
@@ -2019,7 +2020,7 @@ BRp.load = function(){
 
     if( e.touches.length === 0 ){
       r.touchData.dragDelta = [];
-      r.touchData.startPosition = null;
+      r.touchData.startPosition = [null, null, null, null, null, null];
       r.touchData.startGPosition = null;
       r.touchData.didSelect = false;
     }

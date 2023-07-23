@@ -262,6 +262,19 @@ util.extend( corefn, {
     return this._private.container || null;
   },
 
+  window: function() {
+    let container = this._private.container;
+    if (container == null) return window;
+
+    let ownerDocument = this._private.container.ownerDocument;
+
+    if (ownerDocument === undefined || ownerDocument == null) {
+      return window;
+    }
+
+    return ownerDocument.defaultView || window;
+  },
+
   mount: function( container ){
     if( container == null ){ return; }
 

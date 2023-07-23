@@ -1,5 +1,4 @@
 import * as is from '../is';
-import window from '../window';
 import * as math from '../math';
 
 let defaultSelectionType = 'single';
@@ -533,9 +532,10 @@ let corefn = ({
   size: function(){
     let _p = this._private;
     let container = _p.container;
+    let cy = this;
 
     return ( _p.sizeCache = _p.sizeCache || ( container ? (function(){
-      let style = window.getComputedStyle( container );
+      let style = cy.window().getComputedStyle( container );
       let val = function( name ){ return parseFloat( style.getPropertyValue( name ) ); };
 
       return {

@@ -72,7 +72,8 @@
       "disabledDemos": [
         { "name": "Multiple instances", "id": "multiple-instances" },
         { "name": "Visual style", "id": "visual-style" },
-        { "name": "Initialisation", "id": "initialisation" }
+        { "name": "Initialisation", "id": "initialisation" },
+        { "name": "Multiple windows", "id": "multiple-windows" }
       ]
     },
 

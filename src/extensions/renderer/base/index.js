@@ -1,6 +1,5 @@
 import * as util from '../../../util';
 import * as is from '../../../is';
-import window from '../../../window';
 
 import arrowShapes from './arrow-shapes';
 import coordEleMath from './coord-ele-math';
@@ -23,10 +22,12 @@ BRp.init = function( options ){
   r.cy = options.cy;
 
   var ctr = r.container = options.cy.container();
+  var containerWindow = r.cy.window();
+
 
   // prepend a stylesheet in the head such that
-  if( window ){
-    var document = window.document;
+  if( containerWindow ){
+    var document = containerWindow.document;
     var head = document.head;
     var stylesheetId = '__________cytoscape_stylesheet';
     var className =    '__________cytoscape_container';
@@ -45,7 +46,7 @@ BRp.init = function( options ){
       head.insertBefore( stylesheet, head.children[0] ); // first so lowest priority
     }
 
-    var computedStyle = window.getComputedStyle( ctr );
+    var computedStyle = containerWindow.getComputedStyle( ctr );
     var position = computedStyle.getPropertyValue('position');
 
     if( position === 'static' ){

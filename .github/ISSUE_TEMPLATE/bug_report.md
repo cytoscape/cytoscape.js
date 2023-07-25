@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Create a report to help us improve
+description: Let us know about a bug
 title: ''
 labels: bug
 assignees: ''
@@ -9,8 +9,7 @@ assignees: ''
 
 **Before you post**
 
-A request for help or a requests for a how-to should be directed to Stack Overflow:
-http://stackoverflow.com/questions/tagged/cytoscape.js
+A request for help or a requests for a how-to should be directed to [Phind]([url](https://www.phind.com/search?c=I%27m%20using%20the%20Cytoscape.js%20graph%20theory%20JS%20library.&q=How%20do%20I%20create%20a%20graph%20in%20my%20HTML%20page)).
 
 If your issue pertains to an extension, your issue should be filed in that extension's repository -- not here.
 

@@ -207,17 +207,18 @@ CRp.drawEdgePath = function( edge, context, pts, type ){
 
       case 'straight':
       case 'segments':
-        const taxiHasCurve = edge.pstyle('taxi-curve')
-        const taxiHasCurveValue = taxiHasCurve.value == 'yes' ? true : false
+      case 'haystack':
+        const taxiRadius= edge.pstyle( 'taxi-radius' )
+        const taxiRadiusValue = taxiRadius ? taxiRadius.value : 0
 
-        if (taxiHasCurveValue) {
-          for (let i = 2; i + 1 < pts.length; i += 2) {
-            context.arcTo(pts[i - 2], pts[i - 1], pts[i], pts[i + 1], 2 * Math.PI)
+        if( taxiRadiusValue > 0) {
+          for( let i = 2; i + 1 < pts.length; i += 2 ) {
+            context.arcTo( pts[ i - 2 ], pts[ i - 1 ], pts[ i ], pts[ i + 1 ], 2 * taxiRadiusValue )
           }
-          context.lineTo(pts[pts.length - 2], pts[pts.length - 1]);
+          context.lineTo( pts[ pts.length - 2 ], pts[ pts.length - 1 ] );
         } else {
-          for (let i = 2; i + 1 < pts.length; i += 2) {
-            context.lineTo(pts[i], pts[i + 1]);
+          for( let i = 2; i + 1 < pts.length; i += 2 ) {
+            context.lineTo( pts[ i ], pts[ i + 1] );
           }
         }
         break;

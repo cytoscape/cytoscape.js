@@ -213,7 +213,7 @@ CRp.drawEdgePath = function( edge, context, pts, type ){
 
         if( taxiRadiusValue > 0) {
           for( let i = 2; i + 1 < pts.length; i += 2 ) {
-            context.arcTo( pts[ i - 2 ], pts[ i - 1 ], pts[ i ], pts[ i + 1 ], 2 * taxiRadiusValue )
+            context.arcTo( pts[ i - 2 ], pts[ i - 1 ], pts[ i ], pts[ i + 1 ], taxiRadiusValue )
           }
           context.lineTo( pts[ pts.length - 2 ], pts[ pts.length - 1 ] );
         } else {

@@ -209,7 +209,7 @@ CRp.drawEdgePath = function( edge, context, pts, type ){
       case 'segments':
       case 'haystack':
         const taxiRadius= edge.pstyle( 'taxi-radius' )
-        const taxiRadiusValue = taxiRadius ? taxiRadius.value : 0
+        const taxiRadiusValue = taxiRadius ? taxiRadius.pfValue : 0
 
         if( taxiRadiusValue > 0) {
           for( let i = 2; i + 1 < pts.length; i += 2 ) {

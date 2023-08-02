@@ -211,7 +211,7 @@ CRp.drawEdgePath = function( edge, context, pts, type ){
         const taxiRadius= edge.pstyle( 'taxi-radius' )
         const taxiRadiusValue = taxiRadius ? taxiRadius.pfValue : 0
 
-        if( curveStyle == 'taxi' && taxiRadiusValue > 0 ) {
+        if( edge.pstyle('curve-style').value == 'taxi' && taxiRadiusValue > 0 ) {
           for( let i = 2; i + 1 < pts.length; i += 2 ) {
             context.arcTo( pts[ i - 2 ], pts[ i - 1 ], pts[ i ], pts[ i + 1 ], taxiRadiusValue )
           }

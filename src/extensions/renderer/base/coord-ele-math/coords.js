@@ -169,13 +169,37 @@ BRp.findNearestElements = function( x, y, interactiveElementsOnly, isTouch ){
       var pts = rs.allpts;
 
       for( var i = 0; i + 3 < pts.length; i += 2 ){
-        if(
-          (math.inLineVicinity( x, y, pts[ i ], pts[ i + 1], pts[ i + 2], pts[ i + 3], width2 ))
-            &&
-          widthSq > ( sqDist = math.sqdistToFiniteLine( x, y, pts[ i ], pts[ i + 1], pts[ i + 2], pts[ i + 3] ) )
-        ){
-          addEle( edge, sqDist );
-          return true;
+        if( rs.edgeType === 'segments' && edge.pstyle( 'taxi-radius' ).value > 0 ) {
+          const radius = edge.pstyle( 'taxi-radius' ).value/6
+          const isHor = pts[ i+1 ] === pts[ i + 3]
+          let x1,x2,y1,y2
+          if (isHor){
+            x1 =  pts[ i ]
+            x2 = ( pts[ i ] === pts[ i + 2 ] ) ? pts[i+2] : ( pts[ i + 2 ] > pts[ i ] ) ? pts[ i + 2 ] - radius : pts[ i + 2 ] + radius;
+            y1 = pts[ i + 1] - radius
+            y2 = pts[ i + 3 ] + radius
+          }else{
+            x1 =  pts[ i ] - radius
+            x2 =  pts[ i + 2] + radius
+            y1 = pts[ i + 1]
+            y2 = ( pts[ i + 1 ] === pts[ i + 3 ] ) ? pts[ i + 1 ] : pts[ i + 3 ] > pts[ i+1 ] ? pts[ i + 3 ] - radius : pts[ i + 3 ] + radius;
+          }
+
+          if(
+            (math.inLineVicinity( x, y, x1, y1, x2, y2, width2 ))
+          ){
+            addEle( edge, sqDist );
+            return true;
+          }
+        } else { 
+          if(
+            (math.inLineVicinity( x, y, pts[ i ], pts[ i + 1], pts[ i + 2], pts[ i + 3], width2 ))
+              &&
+            widthSq > ( sqDist = math.sqdistToFiniteLine( x, y, pts[ i ], pts[ i + 1], pts[ i + 2], pts[ i + 3] ) )
+          ){
+            addEle( edge, sqDist );
+            return true;
+          }
         }
       }
 

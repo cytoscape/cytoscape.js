@@ -456,7 +456,10 @@ When a taxi edge would be impossible to draw along the regular turning plan --- 
   * Note that bundling may not work with an explicit direction (`upward`, `downward`, `leftward`, or `rightward`) in tandem with a turn distance specified in percent units.
 * **`taxi-turn-min-distance`** : The minimum distance along the primary axis that is maintained between the nodes and the turns.
   * This value only takes on absolute values (e.g. `5px`).
-  * This property makes the taxi edge be re-routed when the turns would be otherwise too close to the source or target.  As such, it also helps to avoid turns overlapping edge endpoint arrows.
+  * This property makes the taxi edge be re-routed when the turns would be otherwise too close to the source or target.  As such, it also helps to avoid turns overlapping edge endpoint arrows
+* **`taxi-radius`** : The taxi-radius property applies a curve to a taxi edge, providing a rounded appearance to any 90 degree bend.
+  * This value should be a floating point number (e.g. `3.14`).
+
 * **`edge-distances`** : With value `intersection` (default), the distances (`taxi-turn` and `taxi-turn-min-distance`) are considered from the outside of the source's bounds to the outside of the target's bounds.  With value `node-position`, the distances are considered from the source position to the target position.  The `node-position` option makes calculating edge points easier --- but it should be used carefully because you can create invalid points that `intersection` would have automatically corrected.
 
 

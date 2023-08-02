@@ -7,9 +7,6 @@ on:
         type: string
         description: Version of new Release
 
-permissions:
-  contents: write
-
 jobs:  
   feature-release-test:
     runs-on: ubuntu-latest
@@ -68,8 +65,7 @@ jobs:
         with:
           name: npm-release--failure-report
           path: /home/runner/.npm/_logs/    
-      - run: npm run postpublish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.CYTOSCAPE_PUBLISH_TOKEN }}
-
-        
+      - name: Deploy 🚀
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: documentation        

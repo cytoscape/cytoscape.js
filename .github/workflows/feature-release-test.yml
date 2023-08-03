@@ -51,9 +51,9 @@ jobs:
           . merge_unstable_to_master.sh
       - name: Install dependencies
         run: npm install
-      # - name: Run tests
-      #   run : |
-      #     npm test
+      - name: Run tests
+        run : |
+          npm test
       - name: Pre Release Tests
         id: release
         run: |
@@ -64,8 +64,27 @@ jobs:
         if: ${{ failure() && steps.release.conclusion == 'failure' }}
         with:
           name: npm-release--failure-report
-          path: /home/runner/.npm/_logs/    
-      - name: Deploy 🚀
+          path: /home/runner/.npm/_logs/
+      - name: Publish Package
+        run:  npm publish    
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.CYTOSCAPE_PUBLISH_TOKEN }}
+      - name: Deploy to Github Pages 🚀
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          folder: documentation        
+          folder: documentation   
+      - name: Create Issue
+        run: |
+          TITLE="Create a blog post for release v$VERSION"
+          echo "Issue title: $TITLE"
+          sed ':a;N;$!ba;s/\n/\\n/g' ./.github/workflows/blog-issue-template.md > output_file.txt
+          BODY="$(cat output_file.txt)"
+
+          echo "Body: $BODY"
+
+          curl -X POST \
+              -H "Authorization: token ${{ secrets.CYTOSCAPE_JS_BLOG_TOKEN }}" \
+              -H "Accept: application/vnd.github.v3+json" \
+              "https://api.github.com/repos/AkMo3/cytoscape.js-blog/issues" \
+              -d "{\"title\":\"$TITLE\",\"body\":\"$BODY\"}"
+       

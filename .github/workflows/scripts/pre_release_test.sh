@@ -59,9 +59,9 @@ git add . && git commit -m "Build $VERSION"
 
 git log -n 1
 
-# npm version $VERSION --allow-same-version
+npm version $VERSION --allow-same-version
 
-# git push && git push --tags   
+git push && git push --tags
 
 git remote -v
 

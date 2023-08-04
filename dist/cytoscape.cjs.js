@@ -25594,7 +25594,7 @@ BRp$3.load = function () {
     }
 
     if (e.touches.length >= 1) {
-      var sPos = r.touchData.startPosition = [];
+      var sPos = r.touchData.startPosition = [null, null, null, null, null, null];
 
       for (var i = 0; i < now.length; i++) {
         sPos[i] = earlier[i] = now[i];
@@ -26283,7 +26283,7 @@ BRp$3.load = function () {
 
     if (e.touches.length === 0) {
       r.touchData.dragDelta = [];
-      r.touchData.startPosition = null;
+      r.touchData.startPosition = [null, null, null, null, null, null];
       r.touchData.startGPosition = null;
       r.touchData.didSelect = false;
     }
@@ -31922,7 +31922,7 @@ sheetfn.appendToStyle = function (style) {
   return style;
 };
 
-var version = "3.25.0";
+var version = "3.25.1";
 
 var cytoscape = function cytoscape(options) {
   // if no options specified, use default

@@ -39,7 +39,11 @@
   { "data": { "id": "n19" } },
   { "data": { "id": "e9", "source": "n18", "target": "n19", "arrow": "diamond" } },
 
-  { "data": { "id": "n20", "type": "none" } },
+  { "data": { "id": "n20", "type": "chevron" } },
   { "data": { "id": "n21" } },
-  { "data": { "id": "e10", "source": "n20", "target": "n21", "arrow": "none" } }
+  { "data": { "id": "e10", "source": "n20", "target": "n21", "arrow": "chevron" } },
+
+  { "data": { "id": "n22", "type": "none" } },
+  { "data": { "id": "n23" } },
+  { "data": { "id": "e11", "source": "n22", "target": "n23", "arrow": "none" } }
 ]

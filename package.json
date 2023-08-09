@@ -3,7 +3,6 @@
   "version": "3.26.6-unstable",
   "license": "MIT",
   "description": "Graph theory (a.k.a. network) library for analysis and visualisation",
-<<<<<<< HEAD
   "homepage": "http://js.cyto-auto-release.org",
   "repository": {
     "type": "git",
@@ -11,15 +10,6 @@
   },
   "bugs": {
     "url": "https://github.com/AkMo3/Cytoscape.js/issues"
-=======
-  "homepage": "http://js.cytoscape.org",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/cytoscape/cytoscape.js.git"
-  },
-  "bugs": {
-    "url": "https://github.com/cytoscape/cytoscape.js/issues"
->>>>>>> dd5e51f5 (Feat: All feature integration test)
   },
   "keywords": [
     "graph",

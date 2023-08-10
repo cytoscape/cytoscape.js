@@ -19,6 +19,14 @@ else
   echo "NEXT_VERSION is set to: $VERSION"
 fi
 
+# Check if NEXT_BACK_PORT_VERSION variable is set
+if [ -z "$NEXT_BACK_PORT_VERSION" ]; then
+  echo "NEXT_BACK_PORT_VERSION variable is not set."
+  return 1;
+else
+  echo "NEXT_BACK_PORT_VERSION is set to: $NEXT_BACK_PORT_VERSION"
+fi
+
 
 # See current branch
 echo "# Current Branch: $(git branch --show-current)"
@@ -34,6 +42,9 @@ git remote -v
 # Set git configs
 git config --global user.name "${GITHUB_ACTOR}"
 git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+
+git checkout -b $NEXT_BACK_PORT_VERSION
+git push
 
 # Step 2: Make sure local unstable is up-to-date
 git checkout unstable

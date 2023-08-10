@@ -58,7 +58,7 @@ jobs:
         id: release
         run: |
           chmod +rx ./.github/workflows/scripts/pre_release_test.sh
-          . ./.github/workflows/scripts/pre_release_test.sh  
+          . ./.github/workflows/scripts/pre_release_test.sh master
       - name: Archive code coverage results
         uses: actions/upload-artifact@v3
         if: ${{ failure() && steps.release.conclusion == 'failure' }}

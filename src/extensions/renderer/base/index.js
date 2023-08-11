@@ -134,11 +134,13 @@ BRp.notify = function( eventName, eles ){
   }
 
   if(
-    eventName === 'add' || eventName === 'remove'
+    eventName === 'add' 
+    || eventName === 'remove'
     || (eventName === 'move' && cy.hasCompoundNodes())
     || eventName === 'load'
     || eventName === 'zorder'
     || eventName === 'mount'
+    || eventName === 'style'
   ){
     r.invalidateCachedZSortedEles();
   }

@@ -1,0 +1,53 @@
+name: Release
+
+on:
+  milestone:
+    types: [closed]
+
+  workflow_dispatch:
+    inputs:
+      name:
+        type: choice
+        description: Type Of Release
+        options: 
+        - Feature
+        - Patch
+jobs:  
+  feature-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout unstable
+        uses: actions/checkout@v3
+        with:
+          ref: 'master'
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+      - name: Set Git config
+        run: |
+          git config --local user.email "actions@github.com"
+          git config --local user.name "Github Actions"
+      - name: merge branches
+        run: |
+          git fetch origin unstable --depth 1
+          git checkout unstable
+          git branch
+          git merge -s ours master --allow-unrelated-histories
+      - name: Fast-forward master
+        run: |
+          git checkout master && git merge unstable
+      - name: See commit history
+        run: |
+          git log -n 5
+      - name: Update version in package.json
+        id: version-generation-step
+        uses: AkMo3/Cytoscape-Github-Actions/update-package-version@v1
+      - name: View new version
+        run: echo new version ${{ steps.version-generation-step.outputs.version }}
+        shell: bash
+    
+    
+
+    
+      
+    

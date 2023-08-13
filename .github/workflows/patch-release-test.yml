@@ -34,7 +34,7 @@ jobs:
       - name: Get new version string
         id: get_new_patch_version
         run: |
-          curl -L -o new-patch-version.sh https://raw.githubusercontent.com/AkMo3/cytoscape.js/unstable/.github/workflows/scripts/new-patch-version.sh
+          cp ./.github/workflows/scripts/new-patch-version.sh new-patch-version.sh
           chmod +rx new-patch-version.sh
           . new-patch-version.sh
         shell: bash
@@ -44,11 +44,43 @@ jobs:
       - name: See new patch version
         run: echo "# version:" ${{ env.VERSION }}
         shell: bash
+      - name: checkout patch branch
+        uses: actions/checkout@v3
+        with:
+          ref: master
+          fetch-depth: 0
+      - name: Set Git Config
+        run : |
+          # Set git configs
+          git config --global user.name "${GITHUB_ACTOR}"
+          git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com" 
+      - name: Update Version on master 
+        id: update_backport_version_master
+        run: |
+          jq --arg ver "${{ env.VERSION }}" '.versions += [$ver]' ./documentation/versions.json >> /tmp/temp.json
+          mv /tmp/temp.json ./documentation/versions.json
+          
+          git add . && git commit -m "Docs: Add ${{ env.VERSION }} to versions.json"
+          git push
+      - name: checkout patch branch
+        uses: actions/checkout@v3
+        with:
+          ref: unstable
+          fetch-depth: 0
+      - name: Update Version on unstable 
+        id: update_backport_version_unstable
+        run: |
+          jq --arg ver "${{ env.VERSION }}" '.versions += [$ver]' ./documentation/versions.json >> /tmp/temp.json
+          mv /tmp/temp.json ./documentation/versions.json
+          
+          git add . && git commit -m "Docs: Add ${{ env.VERSION }} to versions.json"
+          git push
+          git checkout ${{ env.BRANCH }}
       - name: Install dependencies
         run: npm install
       - name: Run tests
         run : |
-          npm test
+          npm test 
       - name: Set Git Config
         run : |
           # Set git configs
@@ -57,9 +89,10 @@ jobs:
       - name: Pre Release Tests
         id: release
         run: |
-          curl -L -o pre_release_test.sh https://raw.githubusercontent.com/AkMo3/cytoscape.js/unstable/.github/workflows/scripts/pre_release_test.sh
+          cp .github/workflows/scripts/pre_release_test.sh pre_release_test.sh 
           chmod +rx pre_release_test.sh
           . pre_release_test.sh ${{ env.BRANCH }}
+          rm pre_release_test.sh
       - name: Archive code coverage results
         uses: actions/upload-artifact@v3
         if: ${{ failure() && steps.release.conclusion == 'failure' }}

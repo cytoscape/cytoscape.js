@@ -36,7 +36,7 @@ fi
   
 npm run release
 
-if [ "$current_branch" = "unstable" ]; then 
+if [ "$current_branch" = "unstable" || "$current_branch" = "master"]; then 
   echo "Starting to check changed files"
 
   # List the files  to check

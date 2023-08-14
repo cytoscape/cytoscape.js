@@ -140,7 +140,6 @@ BRp.notify = function( eventName, eles ){
     || eventName === 'load'
     || eventName === 'zorder'
     || eventName === 'mount'
-    || eventName === 'style'
   ){
     r.invalidateCachedZSortedEles();
   }

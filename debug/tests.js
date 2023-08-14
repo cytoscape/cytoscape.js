@@ -766,4 +766,35 @@
       de.move({ source: 'd', target: 'e' });
     }
   });
+
+  test({
+    name: "events:no",
+    displayName: "events: no",
+    description: "Apply events:no style to all nodes. Clicking on nodes should no longer affect the node.",
+    
+    setup: function(){
+      cy.nodes().style(
+        { events: 'no' }
+      );
+    },
+    teardown: function(){
+      cy.nodes().removeStyle();
+    }
+  });
+
+  test({
+    name: "text-events:yes",
+    displayName: "text-events: yes",
+    description: "Apply text-events:yes style to all nodes. Clicking on node labels should select the node.",
+    
+    setup: function(){
+      cy.nodes().style(
+        { 'text-events': 'yes' }
+      );
+    },
+    teardown: function(){
+      cy.nodes().removeStyle();
+    }
+  });
+  
 })();

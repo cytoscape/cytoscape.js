@@ -229,8 +229,8 @@ const styfn = {};
   ];
 
   let behavior = [
-    { name: 'events', type: t.bool },
-    { name: 'text-events', type: t.bool }
+    { name: 'events', type: t.bool, triggersZOrder: diff.any },
+    { name: 'text-events', type: t.bool, triggersZOrder: diff.any }
   ];
 
   let visibility = [

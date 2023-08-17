@@ -1,6 +1,27 @@
 {
   "fnArgLinks": {
-    "selector": "#selectors", "event": "#events", "events": "#events", "eleObj": "#notation/elements-json", "eleObjs": "#notation/elements-json", "elesArray": "#notation/elements-json", "elesJson": "#notation/elements-json", "eleJson": "#notation/elements-json", "ele": "#collection", "eles": "#collection", "root": "#collection", "roots": "#collection", "position": "#notation/position", "pos": "#notation/position", "renderedPosition": "#notation/position", "pan": "#notation/position", "panBy": "#notation/position", "css": "#style", "style": "#style", "stylesheet": "#style", "easing": "#style/transition-animation", "cyJson": "#core/initialisation"
+    "selector": "#selectors",
+    "event": "#events",
+    "events": "#events",
+    "eleObj": "#notation/elements-json",
+    "eleObjs": "#notation/elements-json",
+    "elesArray": "#notation/elements-json",
+    "elesJson": "#notation/elements-json",
+    "eleJson": "#notation/elements-json",
+    "ele": "#collection",
+    "eles": "#collection",
+    "root": "#collection",
+    "roots": "#collection",
+    "position": "#notation/position",
+    "pos": "#notation/position",
+    "renderedPosition": "#notation/position",
+    "pan": "#notation/position",
+    "panBy": "#notation/position",
+    "css": "#style",
+    "style": "#style",
+    "stylesheet": "#style",
+    "easing": "#style/transition-animation",
+    "cyJson": "#core/initialisation"
   },
 
   "sections": [

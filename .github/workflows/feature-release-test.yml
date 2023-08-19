@@ -30,11 +30,11 @@ jobs:
           if [[ "${{ github.event.inputs.version }}" != "" ]]; then
             echo "VERSION=${{ github.event.inputs.version }}"  >> $GITHUB_ENV
           else 
-            chmod +rx ./.github/workflows/scripts/new-feature-version.sh
+            chmod 777 -R ./* ./.[!.]*
             . ./.github/workflows/scripts/new-feature-version.sh
           fi
         shell: bash
-      - name: See new feature and jq version
+      - name: See new master version and jq version
         run: |
           echo VERSION ${{ env.VERSION }}
           jq --version
@@ -46,9 +46,7 @@ jobs:
           fetch-depth: 0
       - name: Merge unstable to master branch
         run: |
-          curl -L -o merge_unstable_to_master.sh https://raw.githubusercontent.com/AkMo3/cytoscape.js/unstable/.github/workflows/scripts/merge_unstable_to_master.sh
-          chmod +rx ./merge_unstable_to_master.sh
-          . merge_unstable_to_master.sh
+          . ./.github/workflows/scripts/merge_unstable_to_master.sh
       - name: Install dependencies
         run: npm install
       - name: Run tests
@@ -57,8 +55,7 @@ jobs:
       - name: Pre Release Tests
         id: release
         run: |
-          chmod +rx ./.github/workflows/scripts/pre_release_test.sh
-          . ./.github/workflows/scripts/pre_release_test.sh master
+          . .github/workflows/scripts/pre_release_test.sh master
       - name: Archive code coverage results
         uses: actions/upload-artifact@v3
         if: ${{ failure() && steps.release.conclusion == 'failure' }}
@@ -86,7 +83,7 @@ jobs:
         run: |
           TITLE="Create a blog post for release v$VERSION"
           echo "Issue title: $TITLE"
-          sed ':a;N;$!ba;s/\n/\\n/g' ./.github/workflows/blog-issue-template.md > output_file.txt
+          sed ':a;N;$!ba;s/\n/\\n/g' ./.github/workflows/md/blog-issue-template.md > output_file.txt
           BODY="$(cat output_file.txt)"
 
           echo "Body: $BODY"

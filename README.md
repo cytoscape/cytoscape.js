@@ -135,9 +135,9 @@ The default test scripts run directly against the source code.  Tests can altern
 
 ## Release instructions
 
-- [Manual Release](.github/workflows/Feature_Release.md)
-- [Feature Release](.github/workflows/Feature_Release.md)
-- [Backport/Patch Release](.github/workflows/Feature_Release.md)
+- [Manual Release](.github/workflows/md/Feature_Release.md)
+- [Feature Release](.github/workflows/md/Feature_Release.md)
+- [Backport/Patch Release](.github/workflows/md/Feature_Release.md)
 
 **IMP: The releases should be made atleast 5 min apart for the zenodo to pick the new release.**
 

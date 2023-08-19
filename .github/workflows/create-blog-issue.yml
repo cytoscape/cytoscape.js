@@ -16,7 +16,7 @@ jobs:
         run: |
           TITLE="Create a blog post for release v$VERSION"
           echo "Issue title: $TITLE"
-          sed ':a;N;$!ba;s/\n/\\n/g' ./.github/workflows/blog-issue-template.md > output_file.txt
+          sed ':a;N;$!ba;s/\n/\\n/g' ./.github/workflows/md/blog-issue-template.md > output_file.txt
           BODY="$(cat output_file.txt)"
 
           echo "Body: $BODY"

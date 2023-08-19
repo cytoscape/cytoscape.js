@@ -34,9 +34,8 @@ jobs:
       - name: Get new version string
         id: get_new_patch_version
         run: |
-          cp ./.github/workflows/scripts/new-patch-version.sh new-patch-version.sh
-          chmod +rx new-patch-version.sh
-          . new-patch-version.sh
+          chmod +rx ./.github/workflows/scripts/new-patch-version.sh
+          . ./.github/workflows/scripts/new-patch-version.sh
         shell: bash
       - name: See patch branch
         run: echo branch ${{ env.BRANCH }}
@@ -89,10 +88,8 @@ jobs:
       - name: Pre Release Tests
         id: release
         run: |
-          cp .github/workflows/scripts/pre_release_test.sh pre_release_test.sh 
-          chmod +rx pre_release_test.sh
-          . pre_release_test.sh ${{ env.BRANCH }}
-          rm pre_release_test.sh
+          chmod +rx .github/workflows/scripts/pre_release_test.sh
+          . .github/workflows/scripts/pre_release_test.sh ${{ env.BRANCH }}
       - name: Archive code coverage results
         uses: actions/upload-artifact@v3
         if: ${{ failure() && steps.release.conclusion == 'failure' }}

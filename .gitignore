@@ -12,9 +12,3 @@ documentation/api/**
 documentation/download/*.zip
 benchmark/suite/cytoscape.js
 
-# CI/CD Files
-New-Feature-Version.js
-merge_unstable_to_master.sh
-new-feature-version.sh
-pre_release_test.sh
-new-pathc-version.sh

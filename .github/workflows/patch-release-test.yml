@@ -110,6 +110,7 @@ jobs:
           https://api.github.com/repos/AkMo3/cytoscape.js/releases \
           -d '{"tag_name":"v${{ env.VERSION }}","target_commitish":"master","name":"v${{ env.VERSION }}","body":"Release version v${{ env.VERSION }}","draft":false,"prerelease":false,"generate_release_notes":false}'
       - name: Deploy to Github Pages 🚀
+        if: ${{ env.BRANCH == 'master' }}
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           folder: documentation        

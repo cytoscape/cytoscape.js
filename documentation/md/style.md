@@ -223,6 +223,14 @@ Border:
  * **`border-color`** : The colour of the node's border.
  * **`border-opacity`** : The opacity of the node's border.
 
+ Outline:
+
+ * **`outline-width`** : The size of the node's outline.
+ * **`outline-style`** : The style of the node's outline; may be `solid`, `dotted`, `dashed`, or `double`.
+ * **`outline-color`** : The colour of the node's outline.
+ * **`outline-opacity`** : The opacity of the node's outline.
+ * **`outline-offset`** : The offset of the node's outline, measured in percent (e.g. `50%`) or pixels (e.g. `10px`).
+
 Padding:
 
 A padding defines an addition to a node's dimension.  For example, `padding` adds to a node's outer (i.e. total) width and height.  This can be used to add spacing between a compound node parent and its children.

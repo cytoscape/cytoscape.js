@@ -5,11 +5,46 @@ import * as util from '../../../util';
 
 let CRp = {};
 
+// Returns a path for the provided node/shape/width/height
+// combination, creating and caching the path when first 
+// requested and returning the cached version on subsequent 
+// requests.
+CRp.getPath = function(node, shape, width, height) {
+  let _p = node._private;
+  let rs =  _p.rscratch;
+  let pathCache = this.nodePathCache = this.nodePathCache || [];
+  let shapePts = node.pstyle('shape-polygon-points').pfValue;
+
+  let key = util.hashStrings(
+    shape === 'polygon' ? shape + ',' + shapePts.join(',') : shape,
+    '' + height,
+    '' + width
+  );
+
+  let path;
+  let pathCacheHit = false;
+  
+  let cachedPath = pathCache[ key ];
+
+  if( cachedPath != null ){
+    path = cachedPath;
+    pathCacheHit = true;
+    rs.pathCache = path;
+  } else {
+    path = new Path2D();
+    pathCache[ key ] = rs.pathCache = path;
+  }
+
+  return {
+    path,
+    cacheHit: pathCacheHit,
+  };
+};
+
 CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, shouldDrawOverlay = true, shouldDrawOpacity = true ){
   let r = this;
   let nodeWidth, nodeHeight;
   let _p = node._private;
-  let rs = _p.rscratch;
   let pos = node.position();
 
   if( !is.number( pos.x ) || !is.number( pos.y ) ){
@@ -89,29 +124,13 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
   // setup shape
 
   let styleShape = node.pstyle('shape').strValue;
-  let shapePts = node.pstyle('shape-polygon-points').pfValue;
 
   if( usePaths ){
     context.translate( pos.x, pos.y );
 
-    let pathCache = r.nodePathCache = r.nodePathCache || [];
-
-    let key = util.hashStrings(
-      styleShape === 'polygon' ? styleShape + ',' + shapePts.join(',') : styleShape,
-      '' + nodeHeight,
-      '' + nodeWidth
-    );
-
-    let cachedPath = pathCache[ key ];
-
-    if( cachedPath != null ){
-      path = cachedPath;
-      pathCacheHit = true;
-      rs.pathCache = path;
-    } else {
-      path = new Path2D();
-      pathCache[ key ] = rs.pathCache = path;
-    }
+    let shapePath = r.getPath(node, styleShape, nodeWidth, nodeHeight);
+    pathCacheHit = shapePath.cacheHit;
+    path = shapePath.path;
   }
 
   let drawShape = () => {

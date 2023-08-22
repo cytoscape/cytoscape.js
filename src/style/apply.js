@@ -357,9 +357,9 @@ styfn.updateStyleHints = function(ele){
   //
 
   if( isNode ){
-    let { nodeBody, nodeBorder, backgroundImage, compound, pie } = _p.styleKeys;
+    let { nodeBody, nodeBorder, nodeOutline, backgroundImage, compound, pie } = _p.styleKeys;
 
-    let nodeKeys = [ nodeBody, nodeBorder, backgroundImage, compound, pie ].filter(k => k != null).reduce(util.hashArrays, [
+    let nodeKeys = [ nodeBody, nodeBorder, nodeOutline, backgroundImage, compound, pie ].filter(k => k != null).reduce(util.hashArrays, [
       util.DEFAULT_HASH_SEED,
       util.DEFAULT_HASH_SEED_ALT
     ]);

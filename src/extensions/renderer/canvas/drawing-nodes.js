@@ -109,6 +109,11 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
   let borderColor = node.pstyle('border-color').value;
   let borderStyle = node.pstyle('border-style').value;
   let borderOpacity = node.pstyle('border-opacity').value * eleOpacity;
+  let outlineWidth = node.pstyle('outline-width').value;
+  let outlineColor = node.pstyle('outline-color').value;
+  let outlineStyle = node.pstyle('outline-style').value;
+  let outlineOpacity = node.pstyle('outline-opacity').value * eleOpacity;
+  let outlineOffset = node.pstyle('outline-offset').value;
 
   context.lineJoin = 'miter'; // so borders are square with the node shape
 
@@ -118,6 +123,10 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
 
   let setupBorderColor = ( bdrOpy = borderOpacity ) => {
     r.colorStrokeStyle( context, borderColor[0], borderColor[1], borderColor[2], bdrOpy );
+  };
+
+  let setupOutlineColor = ( otlnOpy = outlineOpacity ) => {
+    r.colorStrokeStyle( context, outlineColor[0], outlineColor[1], outlineColor[2], otlnOpy );
   };
 
   //
@@ -265,7 +274,99 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
       if( context.setLineDash ){ // for very outofdate browsers
         context.setLineDash( [ ] );
       }
+    }
+  };
 
+  let drawOutline = () => {
+    if( outlineWidth > 0 ){
+      context.lineWidth = outlineWidth;
+      context.lineCap = 'butt';
+
+      if( context.setLineDash ){ // for very outofdate browsers
+        switch( outlineStyle ){
+          case 'dotted':
+            context.setLineDash( [ 1, 1 ] );
+            break;
+
+          case 'dashed':
+            context.setLineDash( [ 4, 2 ] );
+            break;
+
+          case 'solid':
+          case 'double':
+            context.setLineDash( [ ] );
+            break;
+        }
+      }
+
+      let width = nodeWidth + outlineWidth + outlineOffset;
+      let height = nodeHeight + outlineWidth + outlineOffset;
+
+      if (borderWidth > 0) {
+        width += borderWidth;
+        height += borderWidth;
+      }
+
+      let shape = r.getNodeShape( node );
+      let npos = pos;
+
+      if ( usePaths ) {
+        npos = {
+          x: 0,
+          y: 0,
+        };
+      }
+
+      let { path, cacheHit } = r.getPath(
+        node, 
+        shape,
+        width,
+        height
+      );
+
+      if ( usePaths ){
+        if( !cacheHit ){
+          r.nodeShapes[shape].draw(
+            path,
+            npos.x,
+            npos.y,
+            width,
+            height
+          );
+        }
+
+        context.stroke( path );
+      } else {
+        r.nodeShapes[shape].draw(
+          context,
+          npos.x,
+          npos.y,
+          width,
+          height
+        );
+
+        context.stroke();
+      }
+
+      if( outlineStyle === 'double' ){
+        context.lineWidth = outlineWidth / 3;
+
+        let gco = context.globalCompositeOperation;
+        context.globalCompositeOperation = 'destination-out';
+
+        if( usePaths ){
+          context.stroke( path );
+        } else {
+          context.stroke();
+        }
+
+        context.globalCompositeOperation = gco;
+      }
+
+      // reset in case we changed the outline style
+      if( context.setLineDash ){ // for very outofdate browsers
+        context.setLineDash( [ ] );
+      }
     }
   };
 
@@ -295,6 +396,8 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
 
     context.translate( gx, gy );
 
+    setupOutlineColor();
+    drawOutline();
     setupShapeColor( ghostOpacity * bgOpacity );
     drawShape();
     drawImages( effGhostOpacity, true );
@@ -315,6 +418,8 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
     context.translate( pos.x, pos.y );
   }
 
+  setupOutlineColor();
+  drawOutline();
   setupShapeColor();
   drawShape();
   drawImages(eleOpacity, true);

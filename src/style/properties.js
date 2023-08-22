@@ -297,6 +297,14 @@ const styfn = {};
     { name: 'border-style', type: t.borderStyle }
   ];
 
+  let nodeOutline = [
+    { name: 'outline-color', type: t.color },
+    { name: 'outline-opacity', type: t.zeroOneNumber },
+    { name: 'outline-width', type: t.size, triggersBounds: diff.any },
+    { name: 'outline-style', type: t.borderStyle },
+    { name: 'outline-offset', type: t.size, triggersBounds: diff.any },
+  ];
+
   let backgroundImage = [
     { name: 'background-image', type: t.urls },
     { name: 'background-image-crossorigin', type: t.bgCrossOrigin },
@@ -421,6 +429,7 @@ const styfn = {};
     // node props
     ...nodeBody,
     ...nodeBorder,
+    ...nodeOutline,
     ...backgroundImage,
     ...pie,
     ...compound,
@@ -451,6 +460,7 @@ const styfn = {};
     // node props
     nodeBody,
     nodeBorder,
+    nodeOutline,
     backgroundImage,
     pie,
     compound,
@@ -622,6 +632,11 @@ styfn.getDefaultProperties = function(){
     'border-opacity': 1,
     'border-width': 0,
     'border-style': 'solid',
+    'outline-color': '#999',
+    'outline-opacity': 1,
+    'outline-width': 0,
+    'outline-style': 'solid',
+    'outline-offset': 0,
     'height': 30,
     'width': 30,
     'shape': 'ellipse',

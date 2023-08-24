@@ -25,7 +25,7 @@ FILE=./documentation/versions.json
 if [ -f "$FILE" ]; then
     echo "$FILE exists."
 else 
-  curl -L -o new-feature-version.sh https://raw.githubusercontent.com/AkMo3/cytoscape.js/master/documentation/versions.json
+  curl -L -o new-feature-version.sh https://raw.githubusercontent.com/cytoscape/cytoscape.js/master/documentation/versions.json
   install -Dv new-feature-version.sh ./documentation/versions.json
 fi
 
@@ -77,6 +77,6 @@ git push && git push --tags
 
 git remote -v
 
-git remote set-url origin git@github.com:AkMo3/cytoscape.js.git
+git remote set-url origin git@github.com:cytoscape/cytoscape.js.git
 
 exit 0

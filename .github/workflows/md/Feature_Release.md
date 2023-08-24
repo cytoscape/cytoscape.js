@@ -2,13 +2,13 @@
 
 ## Introduction
 
-This GitHub Action, named "Feature Release Test", automates the process of releasing new features for the [Cytoscape.js](https://github.com/AkMo3/cytoscape.js) repository. This action is triggered by a manual workflow_dispatch event, allowing you to specify the version of the new release. The action performs various tasks, including merging changes, running tests, publishing to npmjs and GitHub Releases, deploying to GitHub Pages, and creating a related issue on the repository's blog.
+This GitHub Action, named "Feature Release Test", automates the process of releasing new features for the [Cytoscape.js](https://github.com/cytoscape/cytoscape.js) repository. This action is triggered by a manual workflow_dispatch event, allowing you to specify the version of the new release. The action performs various tasks, including merging changes, running tests, publishing to npmjs and GitHub Releases, deploying to GitHub Pages, and creating a related issue on the repository's blog.
 
 ## Prerequisites
 
 Before using this GitHub Action, ensure you have the following prerequisites in place:
 
-1. Access to the [Cytoscape.js](https://github.com/AkMo3/cytoscape.js) repository.
+1. Access to the [Cytoscape.js](https://github.com/cytoscape/cytoscape.js) repository.
 2. Necessary access tokens and secrets stored as GitHub repository secrets:
    - `CYTOSCAPE_PUBLISH_TOKEN`: Token for npmjs package publishing.
    - `CYTOSCAPE_JS_TOKEN`: Token for accessing GitHub API to publish GitHub Releases on Cytoscape/Cytoscape.js repo.
@@ -16,11 +16,11 @@ Before using this GitHub Action, ensure you have the following prerequisites in 
 
 ## Usage
 
-1. Navigate to the [Cytoscape.js](https://github.com/AkMo3/cytoscape.js) repository.
-2. Go to the [Actions](https://github.com/AkMo3/cytoscape.js/actions) tab.
-3. Click on [Feature-Release](https://github.com/AkMo3/cytoscape.js/actions/workflows/feature-release-test.yml) workflow.
+1. Navigate to the [Cytoscape.js](https://github.com/cytoscape/cytoscape.js) repository.
+2. Go to the [Actions](https://github.com/cytoscape/cytoscape.js/actions) tab.
+3. Click on [Feature-Release](https://github.com/cytoscape/cytoscape.js/actions/workflows/feature-release-test.yml) workflow.
 4. Click the "Run workflow" button.
-5. Provide the desired version for the new release when prompted if you want to do a feature release for a specific version. **Note: This version will used as the version of release.** Otherwise, the github will automatically determine a new version based upon package.json version
+5. DO NOT CHANGE BRANCH FROM `unstable` FOR RELEASE. Provide the desired version for the new release when prompted if you want to do a feature release for a specific version. **Note: This version will used as the version of release.** Otherwise, the github will automatically determine a new version based upon package.json version
 
 ## Workflow Steps
 

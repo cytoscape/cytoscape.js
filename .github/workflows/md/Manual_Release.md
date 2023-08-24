@@ -2,7 +2,7 @@
 ## Release instructions
 
  
- 1. Add the upcoming release version in [version.json](https://github.com/AkMo3/cytoscape.js/blob/unstable/documentation/versions.json) file.
+ 1. Add the upcoming release version in [version.json](https://github.com/cytoscape/cytoscape.js/blob/unstable/documentation/versions.json) file.
  2. Ensure that [milestones](https://github.com/cytoscape/cytoscape.js/milestones) exist for the releases that you would like to make.  Each milestone should contain its corresponding issues and pull requests.
  1. For patch releases, do the back-port patch release before the corresponding current  release.  This ensures that npm lists the current version as the latest one.
      1. `git checkout 1.1.x`, e.g. if the previous feature release is 1.1

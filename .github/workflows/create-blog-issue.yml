@@ -24,5 +24,5 @@ jobs:
           curl -X POST \
               -H "Authorization: token ${{ secrets.CYTOSCAPE_JS_BLOG_TOKEN }}" \
               -H "Accept: application/vnd.github.v3+json" \
-              "https://api.github.com/repos/AkMo3/cytoscape.js-blog/issues" \
+              "https://api.github.com/repos/cytoscape.js/cytoscape.js-blog/issues" \
               -d "{\"title\":\"$TITLE\",\"body\":\"$BODY\"}"

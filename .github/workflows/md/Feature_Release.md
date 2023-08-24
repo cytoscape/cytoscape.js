@@ -10,8 +10,8 @@ Before using this GitHub Action, ensure you have the following prerequisites in 
 
 1. Access to the [Cytoscape.js](https://github.com/cytoscape/cytoscape.js) repository.
 2. Necessary access tokens and secrets stored as GitHub repository secrets:
-   - `CYTOSCAPE_PUBLISH_TOKEN`: Token for npmjs package publishing.
-   - `CYTOSCAPE_JS_TOKEN`: Token for accessing GitHub API to publish GitHub Releases on Cytoscape/Cytoscape.js repo.
+   - `NPM_TOKEN`: Token for npmjs package publishing. Ref: [How to create legacy token in npm](https://docs.npmjs.com/creating-and-viewing-access-tokens#creating-legacy-tokens-on-the-website)
+   - `GITHUB_TOKEN`: Token for accessing GitHub API to publish GitHub Releases on Cytoscape/Cytoscape.js repo. Ref: [Create fine-grained-personal-access-tokens](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#fine-grained-personal-access-tokens)
    - `CYTOSCAPE_JS_BLOG_TOKEN`: Token for creating issues on the repository's blog Cytoscape/Cytoscape.js-blog repo.
 
 ## Usage

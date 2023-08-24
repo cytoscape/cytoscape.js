@@ -1,4 +1,4 @@
-name: Patch Release Test
+name: Patch Release
 
 on:
   workflow_dispatch:

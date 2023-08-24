@@ -1,4 +1,4 @@
-name: Feature Release Test
+name: Feature Release
 
 on:
   workflow_dispatch:

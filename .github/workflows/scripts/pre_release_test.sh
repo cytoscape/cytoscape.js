@@ -25,8 +25,8 @@ FILE=./documentation/versions.json
 if [ -f "$FILE" ]; then
     echo "$FILE exists."
 else 
-  curl -L -o new-feature-version.sh https://raw.githubusercontent.com/cytoscape/cytoscape.js/master/documentation/versions.json
-  install -Dv new-feature-version.sh ./documentation/versions.json
+  echo "$FILE doesn't exists. Exiting..."
+  exit 1
 fi
 
 if [ "$current_branch" = "unstable" ]; then  

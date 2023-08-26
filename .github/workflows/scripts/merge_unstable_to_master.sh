@@ -45,9 +45,7 @@ git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
 
 # Check if the branch exists
 if git rev-parse --verify "$branch_name" >/dev/null 2>&1; then
-  # Delete the branch if it exists
-  git branch -d "$branch_name"
-  echo "Branch '$branch_name' deleted."
+  exit 1
 else
   echo "Branch '$branch_name' does not exist."
 fi

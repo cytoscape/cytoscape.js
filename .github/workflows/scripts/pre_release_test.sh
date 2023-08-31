@@ -28,11 +28,6 @@ else
   echo "$FILE doesn't exists. Exiting..."
   exit 1
 fi
-
-if [ "$current_branch" = "unstable"] || ["$current_branch" = "master"]; then  
-  jq --arg ver "$VERSION" '.versions += [$ver]' ./documentation/versions.json >> /tmp/temp.json
-  mv /tmp/temp.json ./documentation/versions.json
-fi
   
 npm run release
 

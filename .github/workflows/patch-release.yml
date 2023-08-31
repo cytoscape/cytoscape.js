@@ -8,11 +8,12 @@ jobs:
     runs-on: ubuntu-latest
     environment: prod
     steps:
-      - name: Get branch
-        id: get_branch
-        run: |  
-          pwd
-          echo "BRANCH=${{ github.ref }}"  >> $GITHUB_ENV
+      - name: Extract branch name
+        shell: bash
+        id: extract_branch
+        run: |
+          echo "BRANCH=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_ENV
+          echo "Branch: " $BRANCH
       - name: checkout patch branch
         uses: actions/checkout@v3
         with:
@@ -34,7 +35,7 @@ jobs:
       - name: See new patch version
         run: echo "# version:" ${{ env.VERSION }}
         shell: bash
-      - name: checkout patch branch
+      - name: checkout master branch
         uses: actions/checkout@v3
         with:
           ref: master
@@ -52,7 +53,7 @@ jobs:
           
           git add . && git commit -m "Docs: Add ${{ env.VERSION }} to versions.json"
           git push
-      - name: checkout patch branch
+      - name: checkout unstable branch
         uses: actions/checkout@v3
         with:
           ref: unstable

@@ -29,14 +29,14 @@ else
   exit 1
 fi
 
-if [ "$current_branch" = "unstable" ]; then  
+if [ "$current_branch" = "unstable"] || ["$current_branch" = "master"]; then  
   jq --arg ver "$VERSION" '.versions += [$ver]' ./documentation/versions.json >> /tmp/temp.json
   mv /tmp/temp.json ./documentation/versions.json
 fi
   
 npm run release
 
-if [ "$current_branch" = "unstable" || "$current_branch" = "master"]; then 
+if [ "$current_branch" = "unstable"] || ["$current_branch" = "master"]; then 
   echo "Starting to check changed files"
 
   # List the files  to check

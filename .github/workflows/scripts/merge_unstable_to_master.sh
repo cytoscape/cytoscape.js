@@ -70,8 +70,7 @@ fi
 jq --arg ver "$VERSION" '.versions += [$ver]' ./documentation/versions.json >> /tmp/temp.json
 mv /tmp/temp.json ./documentation/versions.json
 
-git add documentation/versions.json
-git commit -m "Documentation $VERSION: Append $VERSION to versions.json"
+git commit -am "Documentation $VERSION: Append $VERSION to versions.json"
 
 # Step 3: Create a merge commit and push it
 git merge -s ours master -m "Merge master to unstable"

@@ -13,10 +13,11 @@ IFS='.' read -ra VERSION_ARRAY <<< "$VERSION"
 MINOR_VERSION="${VERSION_ARRAY[1]}"
 PATCH_VERSION="${VERSION_ARRAY[2]}"
 
-((MINOR_VERSION++))
-
 # Increment patch for new backport branch
 NEXT_BACK_PORT_VERSION="${VERSION_ARRAY[0]}.${MINOR_VERSION}.x"
+
+((MINOR_VERSION++))
+
 
 # Increment the minor component and construct the new version
 NEXT_VERSION="${VERSION_ARRAY[0]}.${MINOR_VERSION}.0-unstable"

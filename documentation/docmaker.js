@@ -389,8 +389,10 @@ function getVersionMap(all_versions) {
 }
 
 function generate_versions(context) {
-  const all_versions = versions.versions;
-  const version_map = getVersionMap(all_versions);
+  let all_versions = versions.versions;
+  unique_versions = [...new Set(all_versions)]
+
+  const version_map = getVersionMap(unique_versions);
 
   const data = {
       major_release: []

@@ -2,10 +2,6 @@ name: Feature Release
 
 on:
   workflow_dispatch:
-    inputs:
-      version:
-        type: string
-        description: Version of new Release (Optional)
 
 jobs:  
   feature-release:
@@ -27,12 +23,8 @@ jobs:
         id: get_new_patch_version
         run: |
           pwd
-          if [[ "${{ github.event.inputs.version }}" != "" ]]; then
-            echo "VERSION=${{ github.event.inputs.version }}"  >> $GITHUB_ENV
-          else 
-            chmod 777 -R ./* ./.[!.]*
-            . ./.github/workflows/scripts/new-feature-version.sh
-          fi
+          chmod 777 -R ./* ./.[!.]*
+          . ./.github/workflows/scripts/new-feature-version.sh
         shell: bash
       - name: See new master version and jq version
         run: |

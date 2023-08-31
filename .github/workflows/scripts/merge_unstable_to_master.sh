@@ -76,7 +76,7 @@ git commit -m "Documentation $VERSION: Append $VERSION to versions.json"
 # Step 3: Create a merge commit and push it
 git merge -s ours master -m "Merge master to unstable"
 echo "# Master merged to unstable"
-git push
+git push origin unstable
 echo "# Unstable pushed to remote"
 
 

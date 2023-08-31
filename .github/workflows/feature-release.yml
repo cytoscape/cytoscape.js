@@ -23,7 +23,7 @@ jobs:
           node-version: 18
           cache: 'npm'
           registry-url: 'https://registry.npmjs.org'
-      - name: Get new version string
+      - name: Determine version for the release
         id: get_new_patch_version
         run: |
           pwd
@@ -44,7 +44,7 @@ jobs:
         with:
           ref: master
           fetch-depth: 0
-      - name: Merge unstable to master branch
+      - name: Update documentation and Merge unstable to master branch
         run: |
           . ./.github/workflows/scripts/merge_unstable_to_master.sh
       - name: Install dependencies
@@ -52,7 +52,7 @@ jobs:
       - name: Run tests
         run : |
           npm test
-      - name: Pre Release Tests
+      - name: Build release and verify changes
         id: release
         run: |
           . .github/workflows/scripts/pre_release_test.sh master

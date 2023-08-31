@@ -104,8 +104,5 @@
   "dependencies": {
     "heap": "^0.2.6",
     "lodash": "^4.17.21"
-  },
-  "directories": {
-    "test": "test"
   }
 }

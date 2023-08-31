@@ -82,7 +82,7 @@ jobs:
         run: |
           chmod +rx .github/workflows/scripts/pre_release_test.sh
           . .github/workflows/scripts/pre_release_test.sh ${{ env.BRANCH }}
-      - name: Archive code coverage results
+      - name: Archive action failure results
         uses: actions/upload-artifact@v3
         if: ${{ failure() && steps.release.conclusion == 'failure' }}
         with:
@@ -99,7 +99,7 @@ jobs:
           -H "Accept: application/vnd.github+json" \
           -H "Authorization: Bearer ${{ secrets.MAIN_GH_TOKEN }}" \
           -H "X-GitHub-Api-Version: 2022-11-28" \
-          https://api.github.com/repos/cytoscape/cytoscape.js/releases \
+          https://api.github.com/repos/${{ github.repository }}/releases \
           -d '{"tag_name":"v${{ env.VERSION }}","target_commitish":"master","name":"v${{ env.VERSION }}","body":"Release version v${{ env.VERSION }}","draft":false,"prerelease":false,"generate_release_notes":false}'
       - name: Deploy to Github Pages 🚀
         if: ${{ env.BRANCH == 'master' }}

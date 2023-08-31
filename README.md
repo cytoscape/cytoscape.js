@@ -142,6 +142,8 @@ The default test scripts run directly against the source code.  Tests can altern
 **IMP: The releases should be made atleast 5 min apart for the zenodo to pick the new release.**
 **IMP: Amend Github Action in all branches for consistent results across branches**
 
+- Repository Setup for Github Actions: [Repository Setup](.github/workflows/md/repo-setup.md)
+
 ## Tests
 
 Mocha tests are found in the [test directory](https://github.com/cytoscape/cytoscape.js/tree/master/test).  The tests can be run in the browser or they can be run via Node.js (`npm run test:js`).

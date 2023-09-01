@@ -77,7 +77,7 @@
       ]
     },
 
-    { "name": "Introduction", "md": "intro" },
+    { "name": "Introduction", "mdTemplate": "intro"},
 
     { "name": "Notation", "md": "notation" },
 

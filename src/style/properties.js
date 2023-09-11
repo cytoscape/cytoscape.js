@@ -142,7 +142,8 @@ const styfn = {};
 
         return length === 1 || length === 2 || length === 4;
       }
-    }
+    },
+    outlineStyle: { enums: [ 'solid', 'dotted', 'dashed' ] },
   };
 
   let diff = {
@@ -301,7 +302,7 @@ const styfn = {};
     { name: 'outline-color', type: t.color },
     { name: 'outline-opacity', type: t.zeroOneNumber },
     { name: 'outline-width', type: t.size, triggersBounds: diff.any },
-    { name: 'outline-style', type: t.borderStyle },
+    { name: 'outline-style', type: t.outlineStyle },
   ];
 
   let backgroundImage = [

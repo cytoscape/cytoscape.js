@@ -292,7 +292,6 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
             break;
 
           case 'solid':
-          case 'double':
             context.setLineDash( [ ] );
             break;
         }

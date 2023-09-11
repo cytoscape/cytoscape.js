@@ -6,10 +6,11 @@ let Handlebars = require('handlebars');
 let jsonlint = require('jsonlint');
 let hljs = require('highlight.js');
 let encoding = 'utf8';
-let config;
+let config, versions;
 let configFile = './docmaker.json';
 let mdRend = new marked.Renderer();
 let path = require('path');
+let versionFile = './versions.json';
 
 let rendCode = mdRend.code;
 mdRend.code = function(code, lang){
@@ -25,6 +26,9 @@ mdRend.code = function(code, lang){
 try {
   jsonlint.parse( fs.readFileSync( path.join(__dirname, configFile), 'utf8') ); // validate first for convenience
   config = require( configFile );
+
+  jsonlint.parse( fs.readFileSync( path.join(__dirname, versionFile), 'utf8') ); // validate first for convenience
+  versions = require( versionFile );
 } catch(e){
   console.error('\n`' + configFile + '` could not be read; check the JSON is formatted correctly via jsonlint');
   throw e;
@@ -80,6 +84,18 @@ function md2html( file ){
 
   let html = marked.parse( md );
 
+  return html;
+}
+
+function templateToHtml(context) {
+  if (context.mdTemplate === "intro") {
+    generate_versions(context);
+  }
+
+  let introHtmlTemplate = md2html(context.mdTemplate);
+  let introTemplate = Handlebars.compile(introHtmlTemplate);
+  let infoHtml = introTemplate(context);
+  let html = marked.parse(infoHtml);
   return html;
 }
 
@@ -176,6 +192,14 @@ function compileConfig( config ){
 
   for( let i = 0; sections && i < sections.length; i++ ){
     let section = sections[i];
+
+    if (section.mdTemplate) {
+      section.html = templateToHtml(section);
+      let psubs = parseSubsections( section );
+
+      let subs = section.sections = section.sections || [];
+      section.sections = subs.concat( psubs );
+    }
 
     if( section.layout ){ section.name = section.layout.name; }
 
@@ -322,12 +346,88 @@ function compileConfig( config ){
   }
 }
 
+function sortSoftwareVersions(versions, type) {
+  return versions.sort((a, b) => {
+    var aParts, bParts;
+    if (type === 'major') {
+      aParts = a.version.split('.');
+      bParts = b.version.split('.');
+    }
+    else {
+      aParts = a.split('.');
+      bParts = b.split('.');
+    }
+
+    for (let i = 0; i < Math.max(aParts.length, bParts.length); i++) {
+      const aNum = Number(aParts[i]) || 0;
+      const bNum = Number(bParts[i]) || 0;
+      
+      if (aNum > bNum)  return -1;
+      else if (aNum < bNum) return 1;
+    }
+      
+    return 0;
+  });
+}
+
+function getMilestoneLink(minor_ver) {
+  return "https://github.com/cytoscape/cytoscape.js/issues?q=milestone%3A".concat(minor_ver).concat("+is%3Aclosed");
+}
+
+function getVersionMap(all_versions) {
+  const version_map = new Map();
+  const breakpoint = /(\d+.\d+)/;
+  all_versions.forEach((e) => {
+    v = e.split(breakpoint).filter(Boolean);
+    if (version_map.has(v[0])) version_map.get(v[0]).push(v[1]);
+    else {
+      version_map.set(v[0], [v[1]]);
+    }
+  });
+
+  return version_map;
+}
+
+function generate_versions(context) {
+  let all_versions = versions.versions;
+  unique_versions = [...new Set(all_versions)]
+
+  const version_map = getVersionMap(unique_versions);
+
+  const data = {
+      major_release: []
+  };
+
+  for (const major_version of version_map.entries()) {
+      const temp = {"version" : major_version[0]};
+      temp["minor_release"] = [];
+      const sorted = sortSoftwareVersions(major_version[1], "minor");
+      for (let i = 0, len = sorted.length; i < len; i++) {
+          
+          // sorted[i] represent the minor version and its object contains the version and the link
+          const temp_minor = {};
+          temp_minor["minor_ver"] = major_version[0].concat(sorted[i]);
+          temp_minor["link"] = getMilestoneLink(temp_minor["minor_ver"]);
+          
+          temp["minor_release"].push(temp_minor);
+      }
+      //  console.log(temp);
+      data.major_release.push(temp);
+  };
+
+  let sortedRelease = sortSoftwareVersions(data.major_release, "major");
+  
+  context["major_release"] = sortedRelease;
+}
+
 function writeDocs(){
+  
+  let context = config;
+    
   compileConfig( config );
 
   let htmlTemplate = fs.readFileSync( path.join(__dirname, './template.html'), encoding);
   let template = Handlebars.compile( htmlTemplate );
-  let context = config;
   let html = template( context );
 
   fs.writeFileSync( path.join(__dirname, 'index.html'), html, encoding);

@@ -302,7 +302,6 @@ const styfn = {};
     { name: 'outline-opacity', type: t.zeroOneNumber },
     { name: 'outline-width', type: t.size, triggersBounds: diff.any },
     { name: 'outline-style', type: t.borderStyle },
-    { name: 'outline-offset', type: t.size, triggersBounds: diff.any },
   ];
 
   let backgroundImage = [
@@ -636,7 +635,6 @@ styfn.getDefaultProperties = function(){
     'outline-opacity': 1,
     'outline-width': 0,
     'outline-style': 'solid',
-    'outline-offset': 0,
     'height': 30,
     'width': 30,
     'shape': 'ellipse',

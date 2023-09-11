@@ -113,7 +113,6 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
   let outlineColor = node.pstyle('outline-color').value;
   let outlineStyle = node.pstyle('outline-style').value;
   let outlineOpacity = node.pstyle('outline-opacity').value * eleOpacity;
-  let outlineOffset = node.pstyle('outline-offset').value;
 
   context.lineJoin = 'miter'; // so borders are square with the node shape
 

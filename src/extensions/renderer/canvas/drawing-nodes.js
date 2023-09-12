@@ -5,46 +5,11 @@ import * as util from '../../../util';
 
 let CRp = {};
 
-// Returns a path for the provided node/shape/width/height
-// combination, creating and caching the path when first 
-// requested and returning the cached version on subsequent 
-// requests.
-CRp.getPath = function(node, shape, width, height) {
-  let _p = node._private;
-  let rs =  _p.rscratch;
-  let pathCache = this.nodePathCache = this.nodePathCache || [];
-  let shapePts = node.pstyle('shape-polygon-points').pfValue;
-
-  let key = util.hashStrings(
-    shape === 'polygon' ? shape + ',' + shapePts.join(',') : shape,
-    '' + height,
-    '' + width
-  );
-
-  let path;
-  let pathCacheHit = false;
-  
-  let cachedPath = pathCache[ key ];
-
-  if( cachedPath != null ){
-    path = cachedPath;
-    pathCacheHit = true;
-    rs.pathCache = path;
-  } else {
-    path = new Path2D();
-    pathCache[ key ] = rs.pathCache = path;
-  }
-
-  return {
-    path,
-    cacheHit: pathCacheHit,
-  };
-};
-
 CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, shouldDrawOverlay = true, shouldDrawOpacity = true ){
   let r = this;
   let nodeWidth, nodeHeight;
   let _p = node._private;
+  let rs = _p.rscratch;
   let pos = node.position();
 
   if( !is.number( pos.x ) || !is.number( pos.y ) ){
@@ -109,7 +74,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
   let borderColor = node.pstyle('border-color').value;
   let borderStyle = node.pstyle('border-style').value;
   let borderOpacity = node.pstyle('border-opacity').value * eleOpacity;
-  let outlineWidth = node.pstyle('outline-width').value;
+  let outlineWidth = node.pstyle('outline-width').pfValue;
   let outlineColor = node.pstyle('outline-color').value;
   let outlineStyle = node.pstyle('outline-style').value;
   let outlineOpacity = node.pstyle('outline-opacity').value * eleOpacity;
@@ -132,16 +97,32 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
   // setup shape
 
   let styleShape = node.pstyle('shape').strValue;
+  let shapePts = node.pstyle('shape-polygon-points').pfValue;
 
   if( usePaths ){
     context.translate( pos.x, pos.y );
 
-    let shapePath = r.getPath(node, styleShape, nodeWidth, nodeHeight);
-    pathCacheHit = shapePath.cacheHit;
-    path = shapePath.path;
+    let pathCache = r.nodePathCache = r.nodePathCache || [];
+
+    let key = util.hashStrings(
+      styleShape === 'polygon' ? styleShape + ',' + shapePts.join(',') : styleShape,
+      '' + nodeHeight,
+      '' + nodeWidth
+    );
+
+    let cachedPath = pathCache[ key ];
+
+    if( cachedPath != null ){
+      path = cachedPath;
+      pathCacheHit = true;
+      rs.pathCache = path;
+    } else {
+      path = new Path2D();
+      pathCache[ key ] = rs.pathCache = path;
+    }
   }
 
-  let drawShape = () => {
+  let drawPath = () => {
     if( !pathCacheHit ){
 
       let npos = pos;
@@ -154,12 +135,16 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
       }
 
       r.nodeShapes[ r.getNodeShape( node ) ].draw(
-            ( path || context ),
-            npos.x,
-            npos.y,
-            nodeWidth,
-            nodeHeight );
+        ( path || context ),
+        npos.x,
+        npos.y,
+        nodeWidth,
+        nodeHeight );
     }
+  }
+
+  let drawShape = () => {
+    drawPath();
 
     if( usePaths ){
       context.fill( path );
@@ -278,7 +263,9 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
 
   let drawOutline = () => {
     if( outlineWidth > 0 ){
-      context.lineWidth = outlineWidth;
+      // because outline and border are drawn along the same path,
+      // draw outline at border width plus twice the outline width
+      context.lineWidth = borderWidth + outlineWidth * 2;
       context.lineCap = 'butt';
 
       if( context.setLineDash ){ // for very outofdate browsers
@@ -297,71 +284,28 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
         }
       }
 
-      let width = nodeWidth + outlineWidth + outlineOffset;
-      let height = nodeHeight + outlineWidth + outlineOffset;
-
-      if (borderWidth > 0) {
-        width += borderWidth;
-        height += borderWidth;
-      }
-
-      let shape = r.getNodeShape( node );
-      let npos = pos;
-
-      if ( usePaths ) {
-        npos = {
-          x: 0,
-          y: 0,
-        };
-      }
-
-      let { path, cacheHit } = r.getPath(
-        node, 
-        shape,
-        width,
-        height
-      );
-
-      if ( usePaths ){
-        if( !cacheHit ){
-          r.nodeShapes[shape].draw(
-            path,
-            npos.x,
-            npos.y,
-            width,
-            height
-          );
-        }
-
+      drawPath();
+     
+      if( usePaths ){
         context.stroke( path );
       } else {
-        r.nodeShapes[shape].draw(
-          context,
-          npos.x,
-          npos.y,
-          width,
-          height
-        );
-
         context.stroke();
       }
 
-      if( outlineStyle === 'double' ){
-        context.lineWidth = outlineWidth / 3;
+      const gco = context.globalCompositeOperation;
+      context.globalCompositeOperation = 'destination-out';
 
-        let gco = context.globalCompositeOperation;
-        context.globalCompositeOperation = 'destination-out';
-
-        if( usePaths ){
-          context.stroke( path );
-        } else {
-          context.stroke();
-        }
-
-        context.globalCompositeOperation = gco;
+      r.eleFillStyle( context, node, 1 );
+      
+      if( usePaths ){
+        context.fill( path );
+      } else {
+        context.fill();
       }
 
-      // reset in case we changed the outline style
+      context.globalCompositeOperation = gco;
+
+      // reset in case we changed the border style
       if( context.setLineDash ){ // for very outofdate browsers
         context.setLineDash( [ ] );
       }

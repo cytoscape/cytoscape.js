@@ -428,6 +428,31 @@ let updateBoundsFromLabel = function( bounds, ele, prefix ){
   return bounds;
 };
 
+let updateBoundsFromOutline = function( bounds, ele ){
+  if( ele.cy().headless() ){ return; }
+
+  let outlineOpacity = ele.pstyle('outline-opacity').value;
+  
+  if (outlineOpacity > 0) {
+    let outlineWidth = ele.pstyle( 'outline-width' ).pfValue;
+    let shape = ele.pstyle('shape').strValue;
+    let size = outlineWidth * 2;
+
+    if (shape === "vee" || shape === "triangle") {
+      size *= 1.5;
+    }
+
+    let ex1 = bounds.x1 - size;
+    let ex2 = bounds.x2 + size;
+    let ey1 = bounds.y1 - size;
+    let ey2 = bounds.y2 + size;
+
+    updateBounds(bounds, ex1, ey1, ex2, ey2);
+  }
+
+  return bounds;
+};
+
 // get the bounding box of the elements (in raw model position)
 let boundingBoxImpl = function( ele, options ){
   let cy = ele._private.cy;
@@ -510,6 +535,9 @@ let boundingBoxImpl = function( ele, options ){
 
       updateBounds( bounds, ex1, ey1, ex2, ey2 );
 
+      if( styleEnabled && options.includeOutlines ){
+        updateBoundsFromOutline( bounds, ele );
+      }
     } else if( isEdge && options.includeEdges ){
 
       if( styleEnabled && !headless ){
@@ -824,6 +852,7 @@ let defBbOpts = {
   includeTargetLabels: true,
   includeOverlays: true,
   includeUnderlays: true,
+  includeOutlines: true,
   useCache: true
 };
 

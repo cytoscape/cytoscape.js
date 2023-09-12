@@ -96,7 +96,7 @@ const styfn = {};
     angle: { number: true, units: 'deg|rad', implicitUnits: 'rad' },
     textRotation: { number: true, units: 'deg|rad', implicitUnits: 'rad', enums: [ 'none', 'autorotate' ] },
     polygonPointList: { number: true, multiple: true, evenMultiple: true, min: -1, max: 1, unitless: true },
-    edgeDistances: { enums: ['intersection', 'node-position'] },
+    edgeDistances: { enums: ['intersection', 'node-position', 'endpoints'] },
     edgeEndpoint: {
       number: true, multiple: true, units: '%|px|em|deg|rad', implicitUnits: 'px',
       enums: [ 'inside-to-node', 'outside-to-node', 'outside-to-node-or-label', 'outside-to-line', 'outside-to-line-or-label' ], singleEnum: true,

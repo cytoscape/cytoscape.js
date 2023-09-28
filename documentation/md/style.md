@@ -360,7 +360,13 @@ A bezier edge is bundled with all other parallel bezier edges.  Each bezier edge
  * **`control-point-step-size`** : Along the line perpendicular from source to target, this value specifies the distance between successive bezier edges.
  * **`control-point-distance`** : A single value that overrides `control-point-step-size` with a manual value.  Because it overrides the step size, bezier edges with the same value will overlap.  Thus, it's best to use this as a one-off value for particular edges if need be.
  * **`control-point-weight`** : A single value that weights control points along the line from source to target.  The value usually ranges on [0, 1], with 0 towards the source node and 1 towards the target node --- but larger or smaller values can also be used.
- * **`edge-distances`** : With value `intersection` (default), the line from source to target for `control-point-weight` is from the outside of the source node's shape to the outside of the target node's shape.  With value `node-position`, the line is from the source position to the target position.  The `node-position` option makes calculating edge points easier --- but it should be used carefully because you can create invalid points that `intersection` would have automatically corrected.
+* **`edge-distances`** : 
+  * With value `intersection` (default), the line from source to target for `segment-weights` is from the outside of the source node's shape to the outside of the target node's shape.  
+  * With value `node-position`, the line is from the source position to the target position.  
+  * The `node-position` option makes calculating edge points easier --- but it should be used carefully because you can create invalid points that `intersection` would have automatically corrected.
+  * With value `endpoints`, the line is from the manually-specified source endpoint (via `source-endpoint`) to the manually-specified target endpoint (via `target-endpoint`).
+    * A manual endpoint may be specified with a position, e.g. `source-endpoint: 20 10`.
+    * A manual endpoint may be alternatively specified with an angle, e.g. `target-endpoint: 90deg`.
 
 
 ## Loop edges
@@ -389,7 +395,13 @@ When two or more control points are specified for an unbundled bezier edge, each
 
 * **`control-point-distances`** : A series of values that specify for each control point the distance perpendicular to a line formed from source to target, e.g. `-20 20 -20`.
 * **`control-point-weights`** : A series of values that weights control points along a line from source to target, e.g. `0.25 0.5 0.75`.  A value usually ranges on [0, 1], with 0 towards the source node and 1 towards the target node --- but larger or smaller values can also be used.
-* **`edge-distances`** : With value `intersection` (default), the line from source to target for `control-point-weights` is from the outside of the source node's shape to the outside of the target node's shape.  With value `node-position`, the line is from the source position to the target position.  The `node-position` option makes calculating edge points easier --- but it should be used carefully because you can create invalid points that `intersection` would have automatically corrected.
+* **`edge-distances`** : 
+  * With value `intersection` (default), the line from source to target for `segment-weights` is from the outside of the source node's shape to the outside of the target node's shape.  
+  * With value `node-position`, the line is from the source position to the target position.  
+  * The `node-position` option makes calculating edge points easier --- but it should be used carefully because you can create invalid points that `intersection` would have automatically corrected.
+  * With value `endpoints`, the line is from the manually-specified source endpoint (via `source-endpoint`) to the manually-specified target endpoint (via `target-endpoint`).
+    * A manual endpoint may be specified with a position, e.g. `source-endpoint: 20 10`.
+    * A manual endpoint may be alternatively specified with an angle, e.g. `target-endpoint: 90deg`.
 
 
 ## Haystack edges
@@ -411,7 +423,13 @@ A segment edge is made of a series of one or more straight lines, using a co-ord
 
 * **`segment-distances`** : A series of values that specify for each segment point the distance perpendicular to a line formed from source to target, e.g. `-20 20 -20`.
 * **`segment-weights`** : A series of values that weights segment points along a line from source to target, e.g. `0.25 0.5 0.75`.  A value usually ranges on [0, 1], with 0 towards the source node and 1 towards the target node --- but larger or smaller values can also be used.
-* **`edge-distances`** : With value `intersection` (default), the line from source to target for `segment-weights` is from the outside of the source node's shape to the outside of the target node's shape.  With value `node-position`, the line is from the source position to the target position.  The `node-position` option makes calculating edge points easier --- but it should be used carefully because you can create invalid points that `intersection` would have automatically corrected.
+* **`edge-distances`** : 
+  * With value `intersection` (default), the line from source to target for `segment-weights` is from the outside of the source node's shape to the outside of the target node's shape.  
+  * With value `node-position`, the line is from the source position to the target position.  
+  * The `node-position` option makes calculating edge points easier --- but it should be used carefully because you can create invalid points that `intersection` would have automatically corrected.
+  * With value `endpoints`, the line is from the manually-specified source endpoint (via `source-endpoint`) to the manually-specified target endpoint (via `target-endpoint`).
+    * A manual endpoint may be specified with a position, e.g. `source-endpoint: 20 10`.
+    * A manual endpoint may be alternatively specified with an angle, e.g. `target-endpoint: 90deg`.
 
 
 ## Straight edges

@@ -5,6 +5,57 @@ import Map from '../../../../map';
 
 let BRp = {};
 
+BRp.findMidptPtsEtc = function(edge, pairInfo) {
+  let { posPts, intersectionPts, vectorNormInverse } = pairInfo;
+
+  let midptPts;
+
+  // n.b. assumes all edges in bezier bundle have same endpoints specified
+  let srcManEndpt = edge.pstyle('source-endpoint');
+  let tgtManEndpt = edge.pstyle('target-endpoint');
+  const haveManualEndPts = srcManEndpt.units != null && tgtManEndpt.units != null;
+
+  const recalcVectorNormInverse = (x1, y1, x2, y2) => {
+    let dy = ( y2 - y1 );
+    let dx = ( x2 - x1 );
+    let l = Math.sqrt( dx * dx + dy * dy );
+
+    return {
+      x: -dy / l,
+      y: dx / l
+    };
+  };
+
+  const edgeDistances = edge.pstyle('edge-distances').value;
+
+  switch(edgeDistances) {
+    case 'node-position':
+      midptPts = posPts;
+      break;
+
+    case 'intersection':
+      midptPts = intersectionPts;
+      break;
+
+    case 'endpoints': {
+      if (haveManualEndPts) {
+        const [x1, y1] = this.manualEndptToPx( edge.source()[0], srcManEndpt );
+        const [x2, y2] = this.manualEndptToPx( edge.target()[0], tgtManEndpt );
+        const endPts = { x1, y1, x2, y2 };
+        
+        vectorNormInverse = recalcVectorNormInverse(x1, y1, x2, y2);
+        midptPts = endPts;
+      } else {
+        util.warn(`Edge ${edge.id()} has edge-distances:endpoints specified without manual endpoints specified via source-endpoint and target-endpoint.  Falling back on edge-distances:intersection (default).`);
+        midptPts = intersectionPts; // back to default
+      }
+      break;
+    }
+  }
+
+  return { midptPts, vectorNormInverse };
+};
+
 BRp.findHaystackPoints = function( edges ){
   for( let i = 0; i < edges.length; i++ ){
     let edge = edges[i];
@@ -64,8 +115,6 @@ BRp.findSegmentsPoints = function( edge, pairInfo ){
   // Segments (multiple straight lines)
 
   const rs = edge._private.rscratch;
-  const { posPts, intersectionPts, vectorNormInverse } = pairInfo;
-  const edgeDistances = edge.pstyle('edge-distances').value;
   const segmentWs = edge.pstyle( 'segment-weights' );
   const segmentDs = edge.pstyle( 'segment-distances' );
   const segmentsN = Math.min( segmentWs.pfValue.length, segmentDs.pfValue.length );
@@ -80,7 +129,7 @@ BRp.findSegmentsPoints = function( edge, pairInfo ){
     let w1 = 1 - w;
     let w2 = w;
 
-    let midptPts = edgeDistances === 'node-position' ? posPts : intersectionPts;
+    let { midptPts, vectorNormInverse } = this.findMidptPtsEtc(edge, pairInfo);
 
     let adjustedMidpt = {
       x: midptPts.x1 * w1 + midptPts.x2 * w2,
@@ -192,8 +241,6 @@ BRp.findStraightEdgePoints = function( edge ){
 
 BRp.findBezierPoints = function( edge, pairInfo, i, edgeIsUnbundled, edgeIsSwapped ){
   const rs = edge._private.rscratch;
-  const { vectorNormInverse, posPts, intersectionPts } = pairInfo;
-  const edgeDistances = edge.pstyle('edge-distances').value;
   const stepSize = edge.pstyle('control-point-step-size').pfValue;
   const ctrlptDists = edge.pstyle('control-point-distances');
   const ctrlptWs = edge.pstyle('control-point-weights');
@@ -230,7 +277,7 @@ BRp.findBezierPoints = function( edge, pairInfo, i, edgeIsUnbundled, edgeIsSwapp
     let w1 = 1 - ctrlptWeight;
     let w2 = ctrlptWeight;
 
-    let midptPts = edgeDistances === 'node-position' ? posPts : intersectionPts;
+    let { midptPts, vectorNormInverse } = this.findMidptPtsEtc(edge, pairInfo);
 
     let adjustedMidpt = {
       x: midptPts.x1 * w1 + midptPts.x2 * w2,

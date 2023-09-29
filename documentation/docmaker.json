@@ -745,7 +745,7 @@
 
             {
               "name": "cy.autoungrabify",
-              "descr": "Get or set whether nodes are automatically ungrabified (i.e. if `true`, nodes are ungrabbale despite their individual state).",
+              "descr": "Get or set whether nodes are automatically ungrabified (i.e. if `true`, nodes are ungrabbable despite their individual state).",
               "formats": [
                 {
                   "descr": "Get whether autoungrabifying is enabled."

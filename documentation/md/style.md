@@ -226,9 +226,10 @@ Border:
  Outline:
 
  * **`outline-width`** : The size of the node's outline.
- * **`outline-style`** : The style of the node's outline; may be `solid`, `dotted`, or `dashed`.
+ * **`outline-style`** : The style of the node's outline; may be `solid`, `dotted`, `dashed`, or `double`.
  * **`outline-color`** : The colour of the node's outline.
  * **`outline-opacity`** : The opacity of the node's outline.
+ * **`outline-offset`** : The offset of the node's outline.
 
 Padding:
 

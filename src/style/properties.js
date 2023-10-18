@@ -143,7 +143,6 @@ const styfn = {};
         return length === 1 || length === 2 || length === 4;
       }
     },
-    outlineStyle: { enums: [ 'solid', 'dotted', 'dashed' ] },
   };
 
   let diff = {
@@ -302,7 +301,8 @@ const styfn = {};
     { name: 'outline-color', type: t.color },
     { name: 'outline-opacity', type: t.zeroOneNumber },
     { name: 'outline-width', type: t.size, triggersBounds: diff.any },
-    { name: 'outline-style', type: t.outlineStyle },
+    { name: 'outline-style', type: t.borderStyle },
+    { name: 'outline-offset', type: t.size },
   ];
 
   let backgroundImage = [
@@ -635,6 +635,7 @@ styfn.getDefaultProperties = function(){
     'outline-color': '#999',
     'outline-opacity': 1,
     'outline-width': 0,
+    'outline-offset': 0,
     'outline-style': 'solid',
     'height': 30,
     'width': 30,

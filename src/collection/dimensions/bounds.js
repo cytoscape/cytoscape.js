@@ -432,25 +432,21 @@ let updateBoundsFromOutline = function( bounds, ele ){
   if( ele.cy().headless() ){ return; }
 
   let outlineOpacity = ele.pstyle('outline-opacity').value;
-  
-  if (outlineOpacity > 0) {
-    let outlineWidth = ele.pstyle( 'outline-width' ).pfValue;
-    let shape = ele.pstyle('shape').strValue;
-    let size = outlineWidth * 2;
+  let outlineWidth = ele.pstyle('outline-width').value;
 
-    if (shape === "vee" || shape === "triangle") {
-      size *= 1.5;
-    }
+  if (outlineOpacity > 0 && outlineWidth > 0) {
+    let outlineOffset = ele.pstyle('outline-offset').value;
+    // apply an multiplier to arrive at a bounding box that 
+    // exceeds the outline in the absence of a more accurate 
+    // way to calculate bounds
+    let size = (outlineWidth + outlineOffset) * 3;
+    let x1 = bounds.x1 - size;
+    let y1 = bounds.y1 - size;
+    let x2 = bounds.x2 + size;
+    let y2 = bounds.y2 + size;
 
-    let ex1 = bounds.x1 - size;
-    let ex2 = bounds.x2 + size;
-    let ey1 = bounds.y1 - size;
-    let ey2 = bounds.y2 + size;
-
-    updateBounds(bounds, ex1, ey1, ex2, ey2);
+    updateBounds( bounds, x1, y1, x2, y2 );
   }
-
-  return bounds;
 };
 
 // get the bounding box of the elements (in raw model position)
@@ -763,6 +759,7 @@ let getKey = function( opts ){
   key += tf( opts.includeSourceLabels );
   key += tf( opts.includeTargetLabels );
   key += tf( opts.includeOverlays );
+  key += tf( opts.includeOutlines );
 
   return key;
 };

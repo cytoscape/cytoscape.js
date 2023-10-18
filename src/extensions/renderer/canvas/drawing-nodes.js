@@ -1,6 +1,7 @@
 /* global Path2D */
 
 import * as is from '../../../is';
+import { expandPolygon, joinLines } from '../../../math';
 import * as util from '../../../util';
 
 let CRp = {};
@@ -78,6 +79,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
   let outlineColor = node.pstyle('outline-color').value;
   let outlineStyle = node.pstyle('outline-style').value;
   let outlineOpacity = node.pstyle('outline-opacity').value * eleOpacity;
+  let outlineOffset = node.pstyle('outline-offset').value;
 
   context.lineJoin = 'miter'; // so borders are square with the node shape
 
@@ -96,33 +98,46 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
   //
   // setup shape
 
+  let getPath = (width, height, shape, points) => {
+    let pathCache = r.nodePathCache = r.nodePathCache || [];
+
+    let key = util.hashStrings(
+      shape === 'polygon' ? shape + ',' + points.join(',') : shape,
+      '' + height,
+      '' + width
+    );
+
+    let cachedPath = pathCache[ key ];
+    let path;
+    let cacheHit = false;
+
+    if( cachedPath != null ){
+      path = cachedPath;
+      cacheHit = true;
+      rs.pathCache = path;
+    } else {
+      path = new Path2D();
+      pathCache[ key ] = rs.pathCache = path;
+    }
+
+    return {
+      path, 
+      cacheHit
+    };
+  };
+
   let styleShape = node.pstyle('shape').strValue;
   let shapePts = node.pstyle('shape-polygon-points').pfValue;
 
   if( usePaths ){
     context.translate( pos.x, pos.y );
 
-    let pathCache = r.nodePathCache = r.nodePathCache || [];
-
-    let key = util.hashStrings(
-      styleShape === 'polygon' ? styleShape + ',' + shapePts.join(',') : styleShape,
-      '' + nodeHeight,
-      '' + nodeWidth
-    );
-
-    let cachedPath = pathCache[ key ];
-
-    if( cachedPath != null ){
-      path = cachedPath;
-      pathCacheHit = true;
-      rs.pathCache = path;
-    } else {
-      path = new Path2D();
-      pathCache[ key ] = rs.pathCache = path;
-    }
+    const shapePath = getPath(nodeWidth, nodeHeight, styleShape, shapePts);
+    path = shapePath.path;
+    pathCacheHit = shapePath.cacheHit;
   }
 
-  let drawPath = () => {
+  let drawShape = () => {
     if( !pathCacheHit ){
 
       let npos = pos;
@@ -141,10 +156,6 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
         nodeWidth,
         nodeHeight );
     }
-  }
-
-  let drawShape = () => {
-    drawPath();
 
     if( usePaths ){
       context.fill( path );
@@ -263,9 +274,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
 
   let drawOutline = () => {
     if( outlineWidth > 0 ){
-      // because outline and border are drawn along the same path,
-      // draw outline at border width plus twice the outline width
-      context.lineWidth = borderWidth + outlineWidth * 2;
+      context.lineWidth = outlineWidth;
       context.lineCap = 'butt';
 
       if( context.setLineDash ){ // for very outofdate browsers
@@ -279,31 +288,82 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
             break;
 
           case 'solid':
+          case 'double':
             context.setLineDash( [ ] );
             break;
         }
       }
 
-      drawPath();
-     
+      let npos = pos;
+
+      if( usePaths ){
+        npos = {
+          x: 0,
+          y: 0
+        };
+      }
+
+      let shape = r.getNodeShape( node );
+      
+      let scale = (nodeWidth + borderWidth + (outlineWidth + outlineOffset)) / nodeWidth;
+      let sWidth = nodeWidth * scale;
+      let sHeight = nodeHeight * scale;
+      
+      let points = r.nodeShapes[ shape ].points;
+      let path;
+
+      if (usePaths) {
+        let outlinePath = getPath(sWidth, sHeight, shape, points);
+        path = outlinePath.path;
+      }
+
+      // draw the outline path, either by using expanded points or by scaling 
+      // the dimensions, depending on shape
+      if (shape === "ellipse") {
+        r.drawEllipsePath(path || context, npos.x, npos.y, sWidth, sHeight);
+      } else if ([
+        'round-diamond', 'round-heptagon', 'round-hexagon', 'round-octagon', 
+        'round-pentagon', 'round-polygon', 'round-triangle', 'round-tag'
+      ].includes(shape)) {
+        r.drawRoundPolygonPath(path || context, npos.x, npos.y, sWidth, sHeight, points);
+      } else if (['roundrectangle', 'round-rectangle'].includes(shape)) {
+        r.drawRoundRectanglePath(path || context, npos.x, npos.y, sWidth, sHeight);
+      } else if (['cutrectangle', 'cut-rectangle'].includes(shape)) {
+        r.drawCutRectanglePath(path || context, npos.x, npos.y, sWidth, sHeight);
+      } else if (['bottomroundrectangle', 'bottom-round-rectangle'].includes(shape)) {
+        r.drawBottomRoundRectanglePath(path || context, npos.x, npos.y, sWidth, sHeight);
+      } else if (shape === "barrel") {
+        r.drawBarrelPath(path || context, npos.x, npos.y, sWidth, sHeight);
+      } else if (shape.startsWith("polygon") || ['rhomboid', 'right-rhomboid', 'round-tag', 'tag', 'vee'].includes(shape)) {
+        let pad = (borderWidth + outlineWidth + outlineOffset) / nodeWidth;
+        points = joinLines(expandPolygon(points, pad));
+        r.drawPolygonPath(path || context, npos.x, npos.y, nodeWidth, nodeHeight, points);
+      } else {
+        let pad = (borderWidth + outlineWidth + outlineOffset) / nodeWidth;
+        points = joinLines(expandPolygon(points, -pad));
+        r.drawPolygonPath(path || context, npos.x, npos.y, nodeWidth, nodeHeight, points);
+      }
+      
       if( usePaths ){
         context.stroke( path );
       } else {
         context.stroke();
       }
 
-      const gco = context.globalCompositeOperation;
-      context.globalCompositeOperation = 'destination-out';
+      if( outlineStyle === 'double' ){
+        context.lineWidth = borderWidth / 3;
 
-      r.eleFillStyle( context, node, 1 );
-      
-      if( usePaths ){
-        context.fill( path );
-      } else {
-        context.fill();
+        let gco = context.globalCompositeOperation;
+        context.globalCompositeOperation = 'destination-out';
+
+        if( usePaths ){
+          context.stroke( path );
+        } else {
+          context.stroke();
+        }
+
+        context.globalCompositeOperation = gco;
       }
-
-      context.globalCompositeOperation = gco;
 
       // reset in case we changed the border style
       if( context.setLineDash ){ // for very outofdate browsers
@@ -369,6 +429,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
   drawBorder();
   drawPie( darkness !== 0 || borderWidth !== 0 );
   drawImages(eleOpacity, false);
+  
   darken();
 
   if( usePaths ){

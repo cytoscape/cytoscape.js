@@ -29,6 +29,7 @@ const styfn = {};
     zeroOneNumbers: { number: true, min: 0, max: 1, unitless: true, multiple: true },
     nOneOneNumber: { number: true, min: -1, max: 1, unitless: true },
     nonNegativeInt: { number: true, min: 0, integer: true, unitless: true },
+    nonNegativeNumber: { number: true, min: 0, unitless: true },
     position: { enums: [ 'parent', 'origin' ] },
     nodeSize: { number: true, min: 0, enums: [ 'label' ] },
     number: { number: true, unitless: true },
@@ -241,7 +242,7 @@ const styfn = {};
     { name: 'min-zoomed-font-size', type: t.size },
     { name: 'z-compound-depth', type: t.zCompoundDepth, triggersZOrder: diff.any },
     { name: 'z-index-compare', type: t.zIndexCompare, triggersZOrder: diff.any },
-    { name: 'z-index', type: t.nonNegativeInt, triggersZOrder: diff.any }
+    { name: 'z-index', type: t.number, triggersZOrder: diff.any }
   ];
 
   let overlay = [

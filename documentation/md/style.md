@@ -551,7 +551,9 @@ Endpoint modification is not supported for `curve-style: haystack` edges for per
     * An `opacity: 0` element is considered normally by layouts.
     * An `opacity: 0` element is taken into consideration for viewport fitting.
   * An `opacity: 0` element is interactive.
-* **`z-index`** : An integer value that affects the relative draw order of elements.  In general, an element with a higher `z-index` will be drawn on top of an element with a lower `z-index`.  Note that edges are under nodes despite `z-index`, except when necessary for compound nodes.
+* **`z-index`** : A numeric value that affects the relative draw order of elements.  In general, an element with a higher `z-index` will be drawn on top of an element with a lower `z-index`.  
+  * Note that edges are under nodes despite `z-index`, except when necessary for compound nodes.
+  * Note that unlike CSS proper, the `z-index` is a floating point value.
 
 Elements are drawn in a specific order based on compound depth (low to high), the element type (typically nodes above edges), and z-index (low to high).  These styles affect the ordering:
 

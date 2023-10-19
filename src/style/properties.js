@@ -242,7 +242,7 @@ const styfn = {};
     { name: 'min-zoomed-font-size', type: t.size },
     { name: 'z-compound-depth', type: t.zCompoundDepth, triggersZOrder: diff.any },
     { name: 'z-index-compare', type: t.zIndexCompare, triggersZOrder: diff.any },
-    { name: 'z-index', type: t.nonNegativeNumber, triggersZOrder: diff.any }
+    { name: 'z-index', type: t.number, triggersZOrder: diff.any }
   ];
 
   let overlay = [

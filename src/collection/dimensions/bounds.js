@@ -1,5 +1,5 @@
 import * as is from '../../is';
-import { assignBoundingBox, expandBoundingBoxSides,  clearBoundingBox, expandBoundingBox, makeBoundingBox, copyBoundingBox } from '../../math';
+import { assignBoundingBox, expandBoundingBoxSides,  clearBoundingBox, expandBoundingBox, makeBoundingBox, copyBoundingBox, shiftBoundingBox, updateBoundingBox } from '../../math';
 import { defaults, getPrefixedProperty, hashIntsArray } from '../../util';
 
 let fn, elesfn;
@@ -436,16 +436,38 @@ let updateBoundsFromOutline = function( bounds, ele ){
 
   if (outlineOpacity > 0 && outlineWidth > 0) {
     let outlineOffset = ele.pstyle('outline-offset').value;
-    // apply an multiplier to arrive at a bounding box that 
-    // exceeds the outline in the absence of a more accurate 
-    // way to calculate bounds
-    let size = (outlineWidth + outlineOffset) * 3;
-    let x1 = bounds.x1 - size;
-    let y1 = bounds.y1 - size;
-    let x2 = bounds.x2 + size;
-    let y2 = bounds.y2 + size;
+    let nodeShape = ele.pstyle( 'shape' ).value;
 
-    updateBounds( bounds, x1, y1, x2, y2 );
+    let scaleX = (bounds.w + (outlineWidth + outlineOffset)) / bounds.w;
+    let scaleY = (bounds.h + (outlineWidth + outlineOffset)) / bounds.h;
+    let xOffset = 0;
+    let yOffset = 0;
+
+    if (["diamond", "pentagon", "polygon", "round-triangle", "star", "triangle"].includes(nodeShape)) {
+      scaleX = (bounds.w + (outlineWidth + outlineOffset) * 2) / bounds.w;
+      scaleY = (bounds.h + (outlineWidth + outlineOffset) * 2) / bounds.h;
+    } else if (["concave-hexagon", "rhomboid", "right-rhomboid"].includes(nodeShape)) {
+      scaleX *= 1.2;
+    } else if (nodeShape === "tag") {
+      scaleX *= 1.15;
+    } else if (nodeShape === "triangle") {
+      yOffset = -(outlineWidth + outlineOffset);
+    } 
+
+    if (nodeShape === "vee") {
+      scaleX = (bounds.w + (outlineWidth + outlineOffset) * 2.5) / bounds.w;
+      scaleY = (bounds.h + (outlineWidth + outlineOffset) * 2.5) / bounds.h;
+      yOffset = -(outlineWidth + outlineOffset);
+    }
+
+    let hDelta = (bounds.h * scaleY) - bounds.h;
+    let wDelta = (bounds.w * scaleX) - bounds.w;
+    expandBoundingBoxSides(bounds, [hDelta, wDelta]);
+
+    if (xOffset != 0 || yOffset !== 0) {
+      let oBounds = shiftBoundingBox(bounds, xOffset, yOffset);
+      updateBoundingBox(bounds, oBounds);
+    }
   }
 };
 

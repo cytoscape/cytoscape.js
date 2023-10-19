@@ -305,9 +305,10 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
 
       let shape = r.getNodeShape( node );
       
-      let scale = (nodeWidth + borderWidth + (outlineWidth + outlineOffset)) / nodeWidth;
-      let sWidth = nodeWidth * scale;
-      let sHeight = nodeHeight * scale;
+      let scaleX = (nodeWidth + borderWidth + (outlineWidth + outlineOffset)) / nodeWidth;
+      let scaleY = (nodeHeight + borderWidth + (outlineWidth + outlineOffset)) / nodeHeight;
+      let sWidth = nodeWidth * scaleX;
+      let sHeight = nodeHeight * scaleY;
       
       let points = r.nodeShapes[ shape ].points;
       let path;
@@ -325,7 +326,33 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
         'round-diamond', 'round-heptagon', 'round-hexagon', 'round-octagon', 
         'round-pentagon', 'round-polygon', 'round-triangle', 'round-tag'
       ].includes(shape)) {
-        r.drawRoundPolygonPath(path || context, npos.x, npos.y, sWidth, sHeight, points);
+        let sMult = 0;
+        let offsetX = 0;
+        let offsetY = 0;
+        if (shape === 'round-diamond') {
+          sMult = (borderWidth + outlineOffset + outlineWidth) * 1.4;
+        } else if (shape === 'round-heptagon') {
+          sMult = (borderWidth + outlineOffset + outlineWidth) * 1.075;
+          offsetY = -(borderWidth/2 + outlineOffset + outlineWidth) / 35;
+        } else if (shape === 'round-hexagon') {
+          sMult = (borderWidth + outlineOffset + outlineWidth) * 1.12;
+        } else if (shape === 'round-pentagon') {
+          sMult = (borderWidth + outlineOffset + outlineWidth) * 1.13;
+          offsetY = -(borderWidth/2 + outlineOffset + outlineWidth) / 15;
+        } else if (shape === 'round-tag') {
+          sMult = (borderWidth + outlineOffset + outlineWidth) * 1.12;
+          offsetX = (borderWidth/2 + outlineWidth + outlineOffset) * .07;
+        } else if (shape === 'round-triangle') {
+          sMult = (borderWidth + outlineOffset + outlineWidth) * (Math.PI/2);
+          offsetY = -(borderWidth + outlineOffset/2 + outlineWidth) / Math.PI;
+        }
+
+        if (sMult !== 0) {
+          scaleX = (nodeWidth + sMult)/nodeWidth;
+          scaleY = (nodeHeight + sMult)/nodeHeight;
+        }
+
+        r.drawRoundPolygonPath(path || context, npos.x + offsetX, npos.y + offsetY, nodeWidth * scaleX, nodeHeight * scaleY, points);
       } else if (['roundrectangle', 'round-rectangle'].includes(shape)) {
         r.drawRoundRectanglePath(path || context, npos.x, npos.y, sWidth, sHeight);
       } else if (['cutrectangle', 'cut-rectangle'].includes(shape)) {

@@ -438,31 +438,34 @@ let updateBoundsFromOutline = function( bounds, ele ){
     let outlineOffset = ele.pstyle('outline-offset').value;
     let nodeShape = ele.pstyle( 'shape' ).value;
 
-    let scaleX = (bounds.w + (outlineWidth + outlineOffset)) / bounds.w;
-    let scaleY = (bounds.h + (outlineWidth + outlineOffset)) / bounds.h;
+    let outlineSize = outlineWidth + outlineOffset;
+    let scaleX = (bounds.w + outlineSize * 2) / bounds.w;
+    let scaleY = (bounds.h + outlineSize * 2) / bounds.h;
     let xOffset = 0;
     let yOffset = 0;
 
-    if (["diamond", "pentagon", "polygon", "round-triangle", "star", "triangle"].includes(nodeShape)) {
-      scaleX = (bounds.w + (outlineWidth + outlineOffset) * 2) / bounds.w;
-      scaleY = (bounds.h + (outlineWidth + outlineOffset) * 2) / bounds.h;
+    if (["diamond", "pentagon", "round-triangle"].includes(nodeShape)) {
+      scaleX = (bounds.w + outlineSize * 2.4) / bounds.w;
+      yOffset = -outlineSize/3.6;
     } else if (["concave-hexagon", "rhomboid", "right-rhomboid"].includes(nodeShape)) {
-      scaleX *= 1.2;
-    } else if (nodeShape === "tag") {
-      scaleX *= 1.15;
+      scaleX = (bounds.w + outlineSize * 2.4) / bounds.w;
+    } else if (nodeShape === "star") {
+      scaleX = (bounds.w + outlineSize * 2.8) / bounds.w;
+      scaleY = (bounds.h + outlineSize * 2.6) / bounds.h;
+      yOffset = -outlineSize / 3.8;
     } else if (nodeShape === "triangle") {
-      yOffset = -(outlineWidth + outlineOffset);
-    } 
-
-    if (nodeShape === "vee") {
-      scaleX = (bounds.w + (outlineWidth + outlineOffset) * 2.5) / bounds.w;
-      scaleY = (bounds.h + (outlineWidth + outlineOffset) * 2.5) / bounds.h;
-      yOffset = -(outlineWidth + outlineOffset);
+      scaleX = (bounds.w + outlineSize * 2.8) / bounds.w;
+      scaleY = (bounds.h + outlineSize * 2.4) / bounds.h;
+      yOffset = -outlineSize/1.4;
+    } else if (nodeShape === "vee") {
+      scaleX = (bounds.w + outlineSize * 4.4) / bounds.w;
+      scaleY = (bounds.h + outlineSize * 3.8) / bounds.h;
+      yOffset = -outlineSize * .5;
     }
 
     let hDelta = (bounds.h * scaleY) - bounds.h;
     let wDelta = (bounds.w * scaleX) - bounds.w;
-    expandBoundingBoxSides(bounds, [hDelta, wDelta]);
+    expandBoundingBoxSides(bounds, [Math.ceil(hDelta/2), Math.ceil(wDelta/2)]);
 
     if (xOffset != 0 || yOffset !== 0) {
       let oBounds = shiftBoundingBox(bounds, xOffset, yOffset);

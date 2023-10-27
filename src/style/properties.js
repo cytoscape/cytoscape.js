@@ -302,7 +302,7 @@ const styfn = {};
     { name: 'outline-opacity', type: t.zeroOneNumber },
     { name: 'outline-width', type: t.size, triggersBounds: diff.any },
     { name: 'outline-style', type: t.borderStyle },
-    { name: 'outline-offset', type: t.size },
+    { name: 'outline-offset', type: t.size, triggersBounds: diff.any }
   ];
 
   let backgroundImage = [

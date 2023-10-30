@@ -755,10 +755,12 @@
 <li><a href="https://kiali.io">Kiali</a></li>
 <li><a href="https://www.elastic.co/kibana">Kibana</a></li>
 <li><a href="https://www.kpn.com">KPN</a></li>
+<li><a href="https://layer5.io">Layer5</a></li>
 <li><a href="https://learnawesome.org">LearnAwesome</a></li>
 <li><a href="https://machine2learn.com">Machine2Learn</a></li>
 <li><a href="https://www.manifoldfinance.com">Manifold Finance</a></li>
 <li><a href="https://docs.pymars.org/en/latest/">Mars</a></li>
+<li><a href="https://meshery.io">Meshery</a></li>
 <li><a href="https://en.wesound.academy">Musicalized</a></li>
 <li><a href="https://github.com/6illes/weathermap">Network Weathermap</a></li>
 <li><a href="https://newrelic.com">New Relic</a></li>
@@ -800,6 +802,14 @@
 <h2 id="introduction/releases">Releases <a href="#introduction/releases"><span class="fa fa-bookmark"></span></a></h2>
 <p></p>
 <ul> 
+    <li>
+        3.27
+        <ul>
+            <li>
+                <a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues?q&#x3D;milestone%3A3.27.0+is%3Aclosed">3.27.0</a>
+            </li>
+        </ul>
+    </li>
     <li>
         3.26
         <ul>
@@ -4407,7 +4417,7 @@ cy.center( j );
 
 
 
-							<div class="descr"><p>Get or set whether nodes are automatically ungrabified (i.e. if <code>true</code>, nodes are ungrabbale despite their individual state).</p>
+							<div class="descr"><p>Get or set whether nodes are automatically ungrabified (i.e. if <code>true</code>, nodes are ungrabbable despite their individual state).</p>
 </div>
 
 							<div class="formats">
@@ -14648,7 +14658,17 @@ node {
 <li><strong><code>control-point-step-size</code></strong> : Along the line perpendicular from source to target, this value specifies the distance between successive bezier edges.</li>
 <li><strong><code>control-point-distance</code></strong> : A single value that overrides <code>control-point-step-size</code> with a manual value.  Because it overrides the step size, bezier edges with the same value will overlap.  Thus, it’s best to use this as a one-off value for particular edges if need be.</li>
 <li><strong><code>control-point-weight</code></strong> : A single value that weights control points along the line from source to target.  The value usually ranges on [0, 1], with 0 towards the source node and 1 towards the target node — but larger or smaller values can also be used.</li>
-<li><strong><code>edge-distances</code></strong> : With value <code>intersection</code> (default), the line from source to target for <code>control-point-weight</code> is from the outside of the source node’s shape to the outside of the target node’s shape.  With value <code>node-position</code>, the line is from the source position to the target position.  The <code>node-position</code> option makes calculating edge points easier — but it should be used carefully because you can create invalid points that <code>intersection</code> would have automatically corrected.</li>
+<li><strong><code>edge-distances</code></strong> : <ul>
+<li>With value <code>intersection</code> (default), the line from source to target for <code>segment-weights</code> is from the outside of the source node’s shape to the outside of the target node’s shape.  </li>
+<li>With value <code>node-position</code>, the line is from the source position to the target position.  </li>
+<li>The <code>node-position</code> option makes calculating edge points easier — but it should be used carefully because you can create invalid points that <code>intersection</code> would have automatically corrected.</li>
+<li>With value <code>endpoints</code>, the line is from the manually-specified source endpoint (via <code>source-endpoint</code>) to the manually-specified target endpoint (via <code>target-endpoint</code>).<ul>
+<li>A manual endpoint may be specified with a position, e.g. <code>source-endpoint: 20 10</code>.</li>
+<li>A manual endpoint may be alternatively specified with an angle, e.g. <code>target-endpoint: 90deg</code>.</li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 <h2 id="style/loop-edges">Loop edges <a href="#style/loop-edges"><span class="fa fa-bookmark"></span></a></h2>
 <p>For loops (i.e. same source and target, <a href="demos/edge-types">demo</a>):</p>
@@ -14667,7 +14687,17 @@ node {
 <ul>
 <li><strong><code>control-point-distances</code></strong> : A series of values that specify for each control point the distance perpendicular to a line formed from source to target, e.g. <code>-20 20 -20</code>.</li>
 <li><strong><code>control-point-weights</code></strong> : A series of values that weights control points along a line from source to target, e.g. <code>0.25 0.5 0.75</code>.  A value usually ranges on [0, 1], with 0 towards the source node and 1 towards the target node — but larger or smaller values can also be used.</li>
-<li><strong><code>edge-distances</code></strong> : With value <code>intersection</code> (default), the line from source to target for <code>control-point-weights</code> is from the outside of the source node’s shape to the outside of the target node’s shape.  With value <code>node-position</code>, the line is from the source position to the target position.  The <code>node-position</code> option makes calculating edge points easier — but it should be used carefully because you can create invalid points that <code>intersection</code> would have automatically corrected.</li>
+<li><strong><code>edge-distances</code></strong> : <ul>
+<li>With value <code>intersection</code> (default), the line from source to target for <code>segment-weights</code> is from the outside of the source node’s shape to the outside of the target node’s shape.  </li>
+<li>With value <code>node-position</code>, the line is from the source position to the target position.  </li>
+<li>The <code>node-position</code> option makes calculating edge points easier — but it should be used carefully because you can create invalid points that <code>intersection</code> would have automatically corrected.</li>
+<li>With value <code>endpoints</code>, the line is from the manually-specified source endpoint (via <code>source-endpoint</code>) to the manually-specified target endpoint (via <code>target-endpoint</code>).<ul>
+<li>A manual endpoint may be specified with a position, e.g. <code>source-endpoint: 20 10</code>.</li>
+<li>A manual endpoint may be alternatively specified with an angle, e.g. <code>target-endpoint: 90deg</code>.</li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 <h2 id="style/haystack-edges">Haystack edges <a href="#style/haystack-edges"><span class="fa fa-bookmark"></span></a></h2>
 <p>For fast, straight line edges (<code>curve-style: haystack</code>, <a href="demos/edge-types">demo</a>):</p>
@@ -14682,7 +14712,17 @@ node {
 <ul>
 <li><strong><code>segment-distances</code></strong> : A series of values that specify for each segment point the distance perpendicular to a line formed from source to target, e.g. <code>-20 20 -20</code>.</li>
 <li><strong><code>segment-weights</code></strong> : A series of values that weights segment points along a line from source to target, e.g. <code>0.25 0.5 0.75</code>.  A value usually ranges on [0, 1], with 0 towards the source node and 1 towards the target node — but larger or smaller values can also be used.</li>
-<li><strong><code>edge-distances</code></strong> : With value <code>intersection</code> (default), the line from source to target for <code>segment-weights</code> is from the outside of the source node’s shape to the outside of the target node’s shape.  With value <code>node-position</code>, the line is from the source position to the target position.  The <code>node-position</code> option makes calculating edge points easier — but it should be used carefully because you can create invalid points that <code>intersection</code> would have automatically corrected.</li>
+<li><strong><code>edge-distances</code></strong> : <ul>
+<li>With value <code>intersection</code> (default), the line from source to target for <code>segment-weights</code> is from the outside of the source node’s shape to the outside of the target node’s shape.  </li>
+<li>With value <code>node-position</code>, the line is from the source position to the target position.  </li>
+<li>The <code>node-position</code> option makes calculating edge points easier — but it should be used carefully because you can create invalid points that <code>intersection</code> would have automatically corrected.</li>
+<li>With value <code>endpoints</code>, the line is from the manually-specified source endpoint (via <code>source-endpoint</code>) to the manually-specified target endpoint (via <code>target-endpoint</code>).<ul>
+<li>A manual endpoint may be specified with a position, e.g. <code>source-endpoint: 20 10</code>.</li>
+<li>A manual endpoint may be alternatively specified with an angle, e.g. <code>target-endpoint: 90deg</code>.</li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 <h2 id="style/straight-edges">Straight edges <a href="#style/straight-edges"><span class="fa fa-bookmark"></span></a></h2>
 <p>For straight line edges (<code>curve-style: straight</code>, <a href="demos/edge-types">demo</a>):</p>
@@ -14690,7 +14730,7 @@ node {
 <h2 id="style/straight-triangle-edges">Straight triangle edges <a href="#style/straight-triangle-edges"><span class="fa fa-bookmark"></span></a></h2>
 <p>For straight triangle edges (<code>curve-style: straight-triangle</code>, <a href="demos/edge-types">demo</a>):</p>
 <p>A straight triangle edge (<code>curve-style: straight-triangle</code>) is drawn as a single straight isosceles triangle in the direction from the source to the target, with a triangle base at the source and a triangle apex (a point) at the target.</p>
-<p>Property <code>width</code> defines width of the triangle base.  Properties <code>line-style</code>, <code>line-cap</code>, <code>line-dash-pattern</code>, <code>line-dash-offset</code> are not supported.</p>
+<p>The <code>width</code> property defines width of the triangle base.  The <code>line-style</code>, <code>line-cap</code>, <code>line-dash-pattern</code>, and <code>line-dash-offset</code> properties are not supported.</p>
 <h2 id="style/taxi-edges">Taxi edges <a href="#style/taxi-edges"><span class="fa fa-bookmark"></span></a></h2>
 <p>For hierarchical, bundled edges (<code>curve-style: taxi</code>, <a href="demos/edge-types">demo</a>):</p>
 <p>A taxi edge (<code>curve-style: taxi</code>) is drawn as a series of right-angled lines (i.e. in <a href="https://en.wikipedia.org/wiki/Taxicab_geometry">taxicab geometry</a>).  The edge has a primary direction along either the x-axis or y-axis, which can be used to bundle edges in a hierarchy.  That is, taxi edges are appropriate for trees and DAGs that are laid out in a hierarchical manner.</p>
@@ -14805,7 +14845,11 @@ node {
 <li>An <code>opacity: 0</code> element is interactive.</li>
 </ul>
 </li>
-<li><strong><code>z-index</code></strong> : An integer value that affects the relative draw order of elements.  In general, an element with a higher <code>z-index</code> will be drawn on top of an element with a lower <code>z-index</code>.  Note that edges are under nodes despite <code>z-index</code>, except when necessary for compound nodes.</li>
+<li><strong><code>z-index</code></strong> : A numeric value that affects the relative draw order of elements.  In general, an element with a higher <code>z-index</code> will be drawn on top of an element with a lower <code>z-index</code>.  <ul>
+<li>Note that edges are under nodes despite <code>z-index</code>, except when necessary for compound nodes.</li>
+<li>Note that unlike CSS proper, the <code>z-index</code> is a floating point value.</li>
+</ul>
+</li>
 </ul>
 <p>Elements are drawn in a specific order based on compound depth (low to high), the element type (typically nodes above edges), and z-index (low to high).  These styles affect the ordering:</p>
 <ul>
@@ -15164,6 +15208,7 @@ cy.layout( options );</code></pre>
   <span class="hljs-attr">pan</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// the pan level to set (prob want fit = false if set)</span>
   <span class="hljs-attr">fit</span>: <span class="hljs-literal">true</span>, <span class="hljs-comment">// whether to fit to viewport</span>
   <span class="hljs-attr">padding</span>: <span class="hljs-number">30</span>, <span class="hljs-comment">// padding on fit</span>
+  <span class="hljs-attr">spacingFactor</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// Applies a multiplicative factor (&gt;0) to expand or compress the overall area that the nodes take up</span>
   <span class="hljs-attr">animate</span>: <span class="hljs-literal">false</span>, <span class="hljs-comment">// whether to transition the node positions</span>
   <span class="hljs-attr">animationDuration</span>: <span class="hljs-number">500</span>, <span class="hljs-comment">// duration of animation in ms if enabled</span>
   <span class="hljs-attr">animationEasing</span>: <span class="hljs-literal">undefined</span>, <span class="hljs-comment">// easing of animation if enabled</span>

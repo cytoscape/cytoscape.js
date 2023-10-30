@@ -16522,10 +16522,12 @@ var styfn$2 = {};
   }];
   var behavior = [{
     name: 'events',
-    type: t.bool
+    type: t.bool,
+    triggersZOrder: diff.any
   }, {
     name: 'text-events',
-    type: t.bool
+    type: t.bool,
+    triggersZOrder: diff.any
   }];
   var visibility = [{
     name: 'display',
@@ -19847,7 +19849,22 @@ var defaults$4 = {
 
 function CoseLayout(options) {
   this.options = extend({}, defaults$4, options);
-  this.options.layout = this;
+  this.options.layout = this; // Exclude any edge that has a source or target node that is not in the set of passed-in nodes
+
+  var nodes = this.options.eles.nodes();
+  var edges = this.options.eles.edges();
+  var notEdges = edges.filter(function (e) {
+    var sourceId = e.source().data('id');
+    var targetId = e.target().data('id');
+    var hasSource = nodes.some(function (n) {
+      return n.data('id') === sourceId;
+    });
+    var hasTarget = nodes.some(function (n) {
+      return n.data('id') === targetId;
+    });
+    return !hasSource || !hasTarget;
+  });
+  this.options.eles = this.options.eles.not(notEdges);
 }
 /**
  * @brief : runs the layout
@@ -31922,7 +31939,7 @@ sheetfn.appendToStyle = function (style) {
   return style;
 };
 
-var version = "3.25.1";
+var version = "3.25.2";
 
 var cytoscape = function cytoscape(options) {
   // if no options specified, use default

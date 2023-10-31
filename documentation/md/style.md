@@ -554,6 +554,7 @@ Endpoint modification is not supported for `curve-style: haystack` edges for per
 * **`z-index`** : A numeric value that affects the relative draw order of elements.  In general, an element with a higher `z-index` will be drawn on top of an element with a lower `z-index`.  
   * Note that edges are under nodes despite `z-index`, except when necessary for compound nodes.
   * Note that unlike CSS proper, the `z-index` is a floating point value.
+  * A negative value does not have special behaviour.  The element is layered according to `z-compound-depth` and `z-index-compare`, while `z-index` only sorts an element within a layer.
 
 Elements are drawn in a specific order based on compound depth (low to high), the element type (typically nodes above edges), and z-index (low to high).  These styles affect the ordering:
 

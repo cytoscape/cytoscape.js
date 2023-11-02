@@ -14848,6 +14848,7 @@ node {
 <li><strong><code>z-index</code></strong> : A numeric value that affects the relative draw order of elements.  In general, an element with a higher <code>z-index</code> will be drawn on top of an element with a lower <code>z-index</code>.  <ul>
 <li>Note that edges are under nodes despite <code>z-index</code>, except when necessary for compound nodes.</li>
 <li>Note that unlike CSS proper, the <code>z-index</code> is a floating point value.</li>
+<li>Also unlike CSS proper, a negative value does not have special behaviour.  The element is layered according to <code>z-compound-depth</code> and <code>z-index-compare</code>, while <code>z-index</code> only sorts an element within a layer.</li>
 </ul>
 </li>
 </ul>

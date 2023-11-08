@@ -234,7 +234,7 @@ const styfn = {};
   ];
 
   let visibility = [
-    { name: 'display', type: t.display, triggersZOrder: diff.any, triggersBounds: diff.any, triggersBoundsOfParallelBeziers: true },
+    { name: 'display', type: t.display, triggersZOrder: diff.any, triggersBounds: diff.any, triggersBoundsOfConnectedEdges: true },
     { name: 'visibility', type: t.visibility, triggersZOrder: diff.any },
     { name: 'opacity', type: t.zeroOneNumber, triggersZOrder: diff.zeroNonZero },
     { name: 'text-opacity', type: t.zeroOneNumber },

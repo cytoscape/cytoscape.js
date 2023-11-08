@@ -822,9 +822,7 @@ styfn.checkBoundsTrigger = function( ele, name, fromValue, toValue ){
     // then dirty the pll edge bb cache as well
     if( // only for beziers -- so performance of other edges isn't affected
       prop.triggersBoundsOfParallelBeziers
-      && ( ( name === 'curve-style' && (fromValue === 'bezier' || toValue === 'bezier') )
-        || ( name === 'display' && (fromValue === 'none' || toValue === 'none') )  
-      )
+      && ( name === 'curve-style' && (fromValue === 'bezier' || toValue === 'bezier') )
     ){
       ele.parallelEdges().forEach(pllEdge => {
         if( pllEdge.isBundledBezier() ){
@@ -832,7 +830,17 @@ styfn.checkBoundsTrigger = function( ele, name, fromValue, toValue ){
         }
       });
     }
-  } );
+
+    if(
+      prop.triggersBoundsOfConnectedEdges
+      && ( name === 'display' && (fromValue === 'none' || toValue === 'none') )  
+    ){
+      ele.connectedEdges().forEach(edge => {
+        edge.dirtyBoundingBoxCache();
+      });
+    }
+
+  });
 };
 
 styfn.checkTriggers = function( ele, name, fromValue, toValue ){

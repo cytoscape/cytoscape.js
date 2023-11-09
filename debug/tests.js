@@ -796,5 +796,95 @@
       cy.nodes().removeStyle();
     }
   });
+
+  test({
+    name: "display:none",
+    displayName: "display: none",
+    description: "Apply display:none or display:element to nodes. Check that edge visibility works as expected.",
+    // bug: https://github.com/cytoscape/cytoscape.js/issues/3070
+
+    setup: function(){
+      cy.scratch('prevEles', cy.elements().jsons());
+      cy.scratch('prevStyle', cy.style().json());
+      cy.elements().remove();
+
+      cy.style()
+        .resetToDefault()
+        .selector('node')
+          .style({
+            'background-fit': 'cover',
+            'background-color': '#8B5050',
+            'border-color': '#000',
+            'border-width': 3,
+            'border-opacity': 0.5
+          })
+        .selector('edge')
+          .style({
+            'width': 1,
+            'line-color': '#ffaaaa',
+            'curve-style': 'bezier',
+            'target-arrow-shape': 'vee'
+          })
+        .selector('#bird').style({ 'background-image': 'https://live.staticflickr.com/7272/7633179468_3e19e45a0c_b.jpg' })
+        .selector('#cat').style({ 'background-image': 'https://live.staticflickr.com/1261/1413379559_412a540d29_b.jpg' })
+        .selector('#ladybug').style({ 'background-image': 'https://live.staticflickr.com/3063/2751740612_af11fb090b_b.jpg' })
+        .selector('#aphid').style({ 'background-image': 'https://live.staticflickr.com/8316/8003798443_32d01257c8_b.jpg' })
+        .selector('#buggy').style({ width: 2, "line-color": "#ff0000", });
+
+      cy.add( [
+        { group: 'nodes', data: { id: 'root' } },
+        { group: 'nodes', data: { id: 'cat', parent: 'root' } },
+        { group: 'nodes', data: { id: 'bird', parent: 'root' } },
+        { group: 'nodes', data: { id: 'ladybug', parent: 'root' } },
+        { group: 'nodes', data: { id: 'aphid', parent: 'root' } },
+        { group: 'edges', data: { source: 'bird', target: 'cat' } },
+        { group: 'edges', data: { source: 'aphid', target: 'cat' } },
+        { group: 'edges', data: { source: 'bird', target: 'ladybug' } },
+        { group: 'edges', data: { source: 'ladybug', target: 'aphid', id: 'buggy' } }
+      ] );
+
+      cy.layout({ name: 'grid' }).run();
+      cy.fit(cy.elements(), 120);
+
+      const buttonIDs = [];
+
+      cy.nodes().forEach(node=> {
+        var id = node.data().id;
+        var button = document.createElement('button');
+        button.id = 'button_' + id;
+        buttonIDs.push(button.id);
+        button.innerText = 'hide ' + id;
+        button.onclick = () => {
+          var display = 'element';
+          var text = 'hide';
+          if (node.style('display') === 'element') {
+            display = 'none';
+            text = 'show';
+          }
+          node.style('display', display);
+          button.innerText = text + ' ' +id;
+        };
+        button.style.position = 'relative';
+        document.body.append(button);
+      });
+
+      cy.scratch('buttonIDs', buttonIDs);
+    },
+
+    teardown: function(){
+      const buttonIDs = cy.scratch('buttonIDs');
+      buttonIDs.forEach(id => document.getElementById(id).remove());
+      cy.removeScratch('buttonIDs');
+
+      cy.elements().remove();
+      cy.style().resetToDefault();
+      const prevEles = cy.scratch('prevEles');
+      const prevStyle = cy.scratch('prevStyle');
+      cy.removeScratch('prevEles');
+      cy.removeScratch('prevStyle');
+      cy.add(prevEles);
+      cy.style(prevStyle);
+    }
+  });
   
 })();

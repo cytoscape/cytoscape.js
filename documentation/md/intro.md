@@ -188,6 +188,7 @@
 * [CanSyL](https://crossbar.kansil.org)
 * [Chaos Mesh](https://chaos-mesh.org)
 * [Classcraft](https://www.classcraft.com)
+* [CompanyTracker](https://www.companytracker.be)
 * [CyberSift](https://www.cybersift.io)
 * [Cylc](https://cylc.github.io)
 * [Dendron](https://www.dendron.so)

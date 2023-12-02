@@ -503,6 +503,7 @@ When a taxi edge would be impossible to draw along the regular turning plan --- 
   * `chevron`
   * `none`
 * **`<pos>-arrow-fill`** : The fill state of the edge's source arrow; may be `filled` or `hollow`.
+* **`<pos>-arrow-width`** : The width of the edge's source arrow shape; may be `match-line`, a number (pixel), or a string with units (`px` | `%` | `em`). The `%` unit is based on the edge `width`.
 * **`arrow-scale`** : Scaling for the arrow size; may be any number >= 0.
 
 For each edge arrow property above, replace `<pos>` with one of

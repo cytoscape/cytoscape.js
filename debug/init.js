@@ -16,7 +16,11 @@ var cy, defaultSty, options;
           'source-arrow-shape': 'triangle-backcurve',
           'target-arrow-shape': 'triangle',
           'mid-target-arrow-shape': 'triangle',
-          'mid-source-arrow-shape': 'triangle-backcurve'
+          'mid-source-arrow-shape': 'triangle-backcurve',
+          'target-arrow-fill': 'hollow',
+          'source-arrow-fill': 'hollow',
+          'source-arrow-width': 2,
+          'target-arrow-width': '50%',
         })
       .selector('#ab')
         .style({

@@ -278,6 +278,11 @@ CRp.drawArrowhead = function( context, edge, prefix, x, y, angle, opacity ){
   let arrowClearFill = edge.pstyle( prefix + '-arrow-fill' ).value === 'hollow' ? 'both' : 'filled';
   let arrowFill = edge.pstyle( prefix + '-arrow-fill' ).value;
   let edgeWidth = edge.pstyle( 'width' ).pfValue;
+
+  let pArrowWidth = edge.pstyle( prefix + '-arrow-width' );
+  let arrowWidth = pArrowWidth.value === 'match-line' ? edgeWidth : pArrowWidth.pfValue;
+  if (pArrowWidth.units === '%') arrowWidth *= edgeWidth;
+
   let edgeOpacity = edge.pstyle( 'opacity' ).value;
 
   if( opacity === undefined ){
@@ -293,7 +298,7 @@ CRp.drawArrowhead = function( context, edge, prefix, x, y, angle, opacity ){
     self.colorStrokeStyle( context, 255, 255, 255, 1 );
 
     self.drawArrowShape( edge, context,
-      arrowClearFill, edgeWidth, arrowShape, x, y, angle
+      arrowClearFill, edgeWidth, arrowShape, arrowWidth, x, y, angle
     );
 
     context.globalCompositeOperation = gco;
@@ -304,11 +309,11 @@ CRp.drawArrowhead = function( context, edge, prefix, x, y, angle, opacity ){
   self.colorStrokeStyle( context, color[0], color[1], color[2], opacity );
 
   self.drawArrowShape( edge, context,
-    arrowFill, edgeWidth, arrowShape, x, y, angle
+    arrowFill, edgeWidth, arrowShape, arrowWidth, x, y, angle
   );
 };
 
-CRp.drawArrowShape = function( edge, context, fill, edgeWidth, shape, x, y, angle ){
+CRp.drawArrowShape = function( edge, context, fill, edgeWidth, shape, shapeWidth, x, y, angle ){
   let r = this;
   let usePaths = this.usePaths() && shape !== 'triangle-cross';
   let pathCacheHit = false;
@@ -360,7 +365,7 @@ CRp.drawArrowShape = function( edge, context, fill, edgeWidth, shape, x, y, angl
   }
 
   if( fill === 'hollow' || fill === 'both' ){
-    context.lineWidth = ( shapeImpl.matchEdgeWidth ? edgeWidth : 1 ) / ( usePaths ? size : 1 );
+    context.lineWidth = shapeWidth / (usePaths ? size : 1);
     context.lineJoin = 'miter';
 
     if( usePaths ){

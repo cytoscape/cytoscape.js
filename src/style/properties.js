@@ -716,7 +716,7 @@ styfn.getDefaultProperties = function(){
     { name: 'arrow-shape', value: 'none' },
     { name: 'arrow-color', value: '#999' },
     { name: 'arrow-fill', value: 'filled' },
-    { name: 'arrow-width', value: 'match-line' },
+    { name: 'arrow-width', value: 1 },
   ].reduce( function( css, prop ){
     styfn.arrowPrefixes.forEach( function( prefix ){
       let name = prefix + '-' + prop.name;

@@ -3664,6 +3664,31 @@
             },
 
             {
+              "name": "nodes.parentNodes",
+              "descr": "Get all parent nodes (i.e. has compound children) in the calling collection.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "selector", "descr": "A selector used to filter the resultant collection.", "optional": true }
+                  ]
+                }
+              ]
+            },
+
+            {
+              "name": "nodes.nonparentNodes",
+              "pureAliases": ["eles.childlessNodes"],
+              "descr": "Get all non-parent nodes (i.e. has no compound children) in the calling collection.",
+              "formats": [
+                {
+                  "args": [
+                    { "name": "selector", "descr": "A selector used to filter the resultant collection.", "optional": true }
+                  ]
+                }
+              ]
+            },
+
+            {
               "name": "nodes.children",
               "descr": "Get all compound child (i.e. direct descendant) nodes of each node in the collection.",
               "formats": [

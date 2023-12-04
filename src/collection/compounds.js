@@ -136,6 +136,14 @@ let elesfn = ({
     add( this.children() );
 
     return this.spawn( elements, true ).filter( selector );
+  },
+
+  parentNodes: function(selector) {
+    return this.filter(el => el.isParent()).filter(selector);
+  },
+
+  nonparentNodes: function(selector) {
+    return this.filter(el => el.isChildless()).filter(selector);
   }
 });
 
@@ -215,5 +223,6 @@ elesfn.forEachUpAndDown = function( fn, includeSelf = true ){
 
 // aliases
 elesfn.ancestors = elesfn.parents;
+elesfn.childlessNodes = elesfn.nonparentNodes;
 
 export default elesfn;

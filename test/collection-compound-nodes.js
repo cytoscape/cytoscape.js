@@ -113,6 +113,15 @@ describe('Collection compound nodes', function(){
     expect( cy.elements().nonorphans().same( n2.add(n3).add(n4) ) ).to.be.true;
   });
 
+  it('nodes.parentNodes()', function(){
+    expect( cy.elements().parentNodes().same( n1.add(n2) ) ).to.be.true;
+  });
+
+  it('nodes.nonparentNodes()', function(){
+    expect( cy.elements().nonparentNodes().same( n3.add(n4) ) ).to.be.true;
+    expect( cy.elements().childlessNodes().same( n3.add(n4) ) ).to.be.true; // alias
+  });
+
   it('child.position() moves parent', function(){
     var p1 = {
       x: n2.position().x,

@@ -76,6 +76,7 @@ const styfn = {};
     compoundIncludeLabels: { enums: [ 'include', 'exclude' ] },
     arrowShape: { enums: [ 'tee', 'triangle', 'triangle-tee', 'circle-triangle', 'triangle-cross', 'triangle-backcurve', 'vee', 'square', 'circle', 'diamond', 'chevron', 'none' ] },
     arrowFill: { enums: [ 'filled', 'hollow' ] },
+    arrowWidth: { number: true, units: '%|px|em', implicitUnits: 'px', enums: [ 'match-line' ] },
     display: { enums: [ 'element', 'none' ] },
     visibility: { enums: [ 'hidden', 'visible' ] },
     zCompoundDepth: { enums: [ 'bottom', 'orphan', 'auto', 'top' ] },
@@ -401,7 +402,8 @@ const styfn = {};
   [
     { name: 'arrow-shape', type: t.arrowShape, triggersBounds: diff.any },
     { name: 'arrow-color', type: t.color },
-    { name: 'arrow-fill', type: t.arrowFill }
+    { name: 'arrow-fill', type: t.arrowFill },
+    { name: 'arrow-width', type: t.arrowWidth }
   ].forEach( function( prop ){
     arrowPrefixes.forEach( function( prefix ){
       let name = prefix + '-' + prop.name;
@@ -713,7 +715,8 @@ styfn.getDefaultProperties = function(){
   }, [
     { name: 'arrow-shape', value: 'none' },
     { name: 'arrow-color', value: '#999' },
-    { name: 'arrow-fill', value: 'filled' }
+    { name: 'arrow-fill', value: 'filled' },
+    { name: 'arrow-width', value: 1 },
   ].reduce( function( css, prop ){
     styfn.arrowPrefixes.forEach( function( prefix ){
       let name = prefix + '-' + prop.name;

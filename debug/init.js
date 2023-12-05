@@ -16,19 +16,26 @@ var cy, defaultSty, options;
           'source-arrow-shape': 'triangle-backcurve',
           'target-arrow-shape': 'triangle',
           'mid-target-arrow-shape': 'triangle',
-          'mid-source-arrow-shape': 'triangle-backcurve'
+          'mid-source-arrow-shape': 'triangle-backcurve',
         })
       .selector('#ab')
         .style({
           'curve-style': 'unbundled-bezier',
           'control-point-distances': [ 20, -100, 20 ],
           'control-point-weights': [ 0.25, 0.5, 0.75 ],
+          'source-arrow-fill': 'hollow',
+          'source-arrow-width': 2,
+          'target-arrow-fill': 'hollow',
+          'target-arrow-width': 'match-line',
         })
       .selector('#bc')
         .style({
           'curve-style': 'segments',
           'segment-distances': [ 20, -80 ],
           'segment-weights': [ 0.25, 0.5 ],
+          'source-arrow-fill': 'hollow',
+          'source-arrow-width': '50%',
+          'target-arrow-fill': 'hollow',
         })
       .selector('#ef')
         .style({

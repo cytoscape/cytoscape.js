@@ -806,6 +806,9 @@
         3.27
         <ul>
             <li>
+                <a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues?q&#x3D;milestone%3A3.27.1+is%3Aclosed">3.27.1</a>
+            </li>
+            <li>
                 <a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues?q&#x3D;milestone%3A3.27.0+is%3Aclosed">3.27.0</a>
             </li>
         </ul>
@@ -813,6 +816,9 @@
     <li>
         3.26
         <ul>
+            <li>
+                <a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues?q&#x3D;milestone%3A3.26.2+is%3Aclosed">3.26.2</a>
+            </li>
             <li>
                 <a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues?q&#x3D;milestone%3A3.26.1+is%3Aclosed">3.26.1</a>
             </li>
@@ -14848,6 +14854,7 @@ node {
 <li><strong><code>z-index</code></strong> : A numeric value that affects the relative draw order of elements.  In general, an element with a higher <code>z-index</code> will be drawn on top of an element with a lower <code>z-index</code>.  <ul>
 <li>Note that edges are under nodes despite <code>z-index</code>, except when necessary for compound nodes.</li>
 <li>Note that unlike CSS proper, the <code>z-index</code> is a floating point value.</li>
+<li>Also unlike CSS proper, a negative value does not have special behaviour.  The element is layered according to <code>z-compound-depth</code> and <code>z-index-compare</code>, while <code>z-index</code> only sorts an element within a layer.</li>
 </ul>
 </li>
 </ul>

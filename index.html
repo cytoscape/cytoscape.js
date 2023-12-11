@@ -699,6 +699,7 @@
 <li><a href="http://en.uestc.edu.cn/">University of Electronic Science and Technology of China</a></li>
 <li><a href="https://www.uni-heidelberg.de">University of Heidelberg</a></li>
 <li><a href="https://www.helsinki.fi">University of Helsinki</a></li>
+<li><a href="https://www.jyu.fi">University of Jyväskylä</a></li>
 <li><a href="http://uni-leipzig.de">University of Leipzig</a></li>
 <li><a href="https://umd.edu/">University of Maryland</a></li>
 <li><a href="https://utoronto.ca">University of Toronto</a></li>
@@ -725,6 +726,7 @@
 <li><a href="https://crossbar.kansil.org">CanSyL</a></li>
 <li><a href="https://chaos-mesh.org">Chaos Mesh</a></li>
 <li><a href="https://www.classcraft.com">Classcraft</a></li>
+<li><a href="https://www.companytracker.be">CompanyTracker</a></li>
 <li><a href="https://www.cybersift.io">CyberSift</a></li>
 <li><a href="https://cylc.github.io">Cylc</a></li>
 <li><a href="https://www.dendron.so">Dendron</a></li>
@@ -755,6 +757,7 @@
 <li><a href="https://kiali.io">Kiali</a></li>
 <li><a href="https://www.elastic.co/kibana">Kibana</a></li>
 <li><a href="https://www.kpn.com">KPN</a></li>
+<li><a href="https://github.com/OSC-JYU/KuKaKo">KuKaKo</a></li>
 <li><a href="https://layer5.io">Layer5</a></li>
 <li><a href="https://learnawesome.org">LearnAwesome</a></li>
 <li><a href="https://machine2learn.com">Machine2Learn</a></li>
@@ -802,6 +805,14 @@
 <h2 id="introduction/releases">Releases <a href="#introduction/releases"><span class="fa fa-bookmark"></span></a></h2>
 <p></p>
 <ul> 
+    <li>
+        3.28
+        <ul>
+            <li>
+                <a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues?q&#x3D;milestone%3A3.28.0+is%3Aclosed">3.28.0</a>
+            </li>
+        </ul>
+    </li>
     <li>
         3.27
         <ul>
@@ -14531,6 +14542,14 @@ node {
 <li><strong><code>border-color</code></strong> : The colour of the node’s border.</li>
 <li><strong><code>border-opacity</code></strong> : The opacity of the node’s border.</li>
 </ul>
+<p> Outline:</p>
+<ul>
+<li><strong><code>outline-width</code></strong> : The size of the node’s outline.</li>
+<li><strong><code>outline-style</code></strong> : The style of the node’s outline; may be <code>solid</code>, <code>dotted</code>, <code>dashed</code>, or <code>double</code>.</li>
+<li><strong><code>outline-color</code></strong> : The colour of the node’s outline.</li>
+<li><strong><code>outline-opacity</code></strong> : The opacity of the node’s outline.</li>
+<li><strong><code>outline-offset</code></strong> : The offset of the node’s outline.</li>
+</ul>
 <p>Padding:</p>
 <p>A padding defines an addition to a node’s dimension.  For example, <code>padding</code> adds to a node’s outer (i.e. total) width and height.  This can be used to add spacing between a compound node parent and its children.</p>
 <ul>
@@ -14639,6 +14658,15 @@ node {
   &#x27;background-image-opacity&#x27;: <span class="hljs-number">0.5</span>
 }
 </code></pre>
+<h2 id="style/pie-chart-background">Pie chart background <a href="#style/pie-chart-background"><span class="fa fa-bookmark"></span></a></h2>
+<p>These properties allow you to create pie chart backgrounds on nodes (<a href="demos/pie-style">demo</a>).  Note that 16 slices maximum are supported per node, so in the properties <code>1 &lt;= i &lt;= 16</code>.  Of course, you must specify a numerical value for each property in place of <code>i</code>.  Each nonzero sized slice is placed in order of <code>i</code>, starting from the 12 o’clock position and working clockwise.</p>
+<p>You may find it useful to reserve a number to a particular colour for all nodes in your stylesheet.  Then you can specify values for <code>pie-i-background-size</code> accordingly for each node via a <a href="#style/mappers">mapper</a>.  This would allow you to create consistently coloured pie charts in each node of the graph based on element data.</p>
+<ul>
+<li><strong><code>pie-size</code></strong> : The diameter of the pie, measured as a percent of node size (e.g. <code>100%</code>) or an absolute length (e.g. <code>25px</code>).</li>
+<li><strong><code>pie-i-background-color</code></strong> : The colour of the node’s ith pie chart slice.</li>
+<li><strong><code>pie-i-background-size</code></strong> : The size of the node’s ith pie chart slice, measured in percent (e.g. <code>25%</code> or <code>25</code>).</li>
+<li><strong><code>pie-i-background-opacity</code></strong> : The opacity of the node’s ith pie chart slice.</li>
+</ul>
 <h2 id="style/edge-line">Edge line <a href="#style/edge-line"><span class="fa fa-bookmark"></span></a></h2>
 <p>These properties affect the styling of an edge’s line:</p>
 <ul>
@@ -14786,6 +14814,7 @@ node {
 </ul>
 </li>
 <li><strong><code>&lt;pos&gt;-arrow-fill</code></strong> : The fill state of the edge’s source arrow; may be <code>filled</code> or <code>hollow</code>.</li>
+<li><strong><code>&lt;pos&gt;-arrow-width</code></strong> : The width of the edge’s source arrow shape; may be <code>match-line</code>, a number (pixel), or a string with units (<code>px</code> | <code>%</code> | <code>em</code>). The <code>%</code> unit is based on the edge <code>width</code>.</li>
 <li><strong><code>arrow-scale</code></strong> : Scaling for the arrow size; may be any number &gt;= 0.</li>
 </ul>
 <p>For each edge arrow property above, replace <code>&lt;pos&gt;</code> with one of</p>
@@ -17115,6 +17144,11 @@ A physics simulation layout that makes use of parallelism on the GPU to support 
 						<div class="section lvl2">
 							
 							<a class="toclink" href="#style/background-image">Background image</a>
+						</div>
+
+						<div class="section lvl2">
+							
+							<a class="toclink" href="#style/pie-chart-background">Pie chart background</a>
 						</div>
 
 						<div class="section lvl2">

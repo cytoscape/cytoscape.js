@@ -223,6 +223,14 @@ Border:
  * **`border-color`** : The colour of the node's border.
  * **`border-opacity`** : The opacity of the node's border.
 
+ Outline:
+
+ * **`outline-width`** : The size of the node's outline.
+ * **`outline-style`** : The style of the node's outline; may be `solid`, `dotted`, `dashed`, or `double`.
+ * **`outline-color`** : The colour of the node's outline.
+ * **`outline-opacity`** : The opacity of the node's outline.
+ * **`outline-offset`** : The offset of the node's outline.
+
 Padding:
 
 A padding defines an addition to a node's dimension.  For example, `padding` adds to a node's outer (i.e. total) width and height.  This can be used to add spacing between a compound node parent and its children.
@@ -328,6 +336,18 @@ The following is an example of valid background image styling using JSON. The ex
   'background-image-opacity': 0.5
 }
 ```
+
+
+## Pie chart background
+
+These properties allow you to create pie chart backgrounds on nodes ([demo](demos/pie-style)).  Note that 16 slices maximum are supported per node, so in the properties `1 <= i <= 16`.  Of course, you must specify a numerical value for each property in place of `i`.  Each nonzero sized slice is placed in order of `i`, starting from the 12 o'clock position and working clockwise.
+
+You may find it useful to reserve a number to a particular colour for all nodes in your stylesheet.  Then you can specify values for `pie-i-background-size` accordingly for each node via a [mapper](#style/mappers).  This would allow you to create consistently coloured pie charts in each node of the graph based on element data.
+
+ * **`pie-size`** : The diameter of the pie, measured as a percent of node size (e.g. `100%`) or an absolute length (e.g. `25px`).
+ * **`pie-i-background-color`** : The colour of the node's ith pie chart slice.
+ * **`pie-i-background-size`** : The size of the node's ith pie chart slice, measured in percent (e.g. `25%` or `25`).
+ * **`pie-i-background-opacity`** : The opacity of the node's ith pie chart slice.
 
 
 
@@ -495,6 +515,7 @@ When a taxi edge would be impossible to draw along the regular turning plan --- 
   * `chevron`
   * `none`
 * **`<pos>-arrow-fill`** : The fill state of the edge's source arrow; may be `filled` or `hollow`.
+* **`<pos>-arrow-width`** : The width of the edge's source arrow shape; may be `match-line`, a number (pixel), or a string with units (`px` | `%` | `em`). The `%` unit is based on the edge `width`.
 * **`arrow-scale`** : Scaling for the arrow size; may be any number >= 0.
 
 For each edge arrow property above, replace `<pos>` with one of

@@ -15410,11 +15410,17 @@ styfn$8.checkBoundsTrigger = function (ele, name, fromValue, toValue) {
     // then dirty the pll edge bb cache as well
 
     if ( // only for beziers -- so performance of other edges isn't affected
-    prop.triggersBoundsOfParallelBeziers && (name === 'curve-style' && (fromValue === 'bezier' || toValue === 'bezier') || name === 'display' && (fromValue === 'none' || toValue === 'none'))) {
+    prop.triggersBoundsOfParallelBeziers && name === 'curve-style' && (fromValue === 'bezier' || toValue === 'bezier')) {
       ele.parallelEdges().forEach(function (pllEdge) {
         if (pllEdge.isBundledBezier()) {
           pllEdge.dirtyBoundingBoxCache();
         }
+      });
+    }
+
+    if (prop.triggersBoundsOfConnectedEdges && name === 'display' && (fromValue === 'none' || toValue === 'none')) {
+      ele.connectedEdges().forEach(function (edge) {
+        edge.dirtyBoundingBoxCache();
       });
     }
   });
@@ -16535,7 +16541,7 @@ var styfn$2 = {};
     type: t.display,
     triggersZOrder: diff.any,
     triggersBounds: diff.any,
-    triggersBoundsOfParallelBeziers: true
+    triggersBoundsOfConnectedEdges: true
   }, {
     name: 'visibility',
     type: t.visibility,
@@ -31955,7 +31961,7 @@ sheetfn.appendToStyle = function (style) {
   return style;
 };
 
-var version = "3.26.1";
+var version = "3.26.2";
 
 var cytoscape = function cytoscape(options) {
   // if no options specified, use default

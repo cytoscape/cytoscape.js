@@ -1,6 +1,10 @@
 **Cross-references to related issues.**  If there is no existing issue that describes your bug or feature request, then [create an issue](https://github.com/cytoscape/cytoscape.js/issues/new/choose) before making your pull request.
 
-Associated issues: #X, #Y, #Z
+Associated issues: 
+
+- #X
+- #Y
+- #Z
 
 **Notes re. the content of the pull request.** Give context to reviewers or serve as a general record of the changes made.  Add a screenshot or video to demonstrate your new feature, if possible.
 

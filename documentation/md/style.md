@@ -341,6 +341,18 @@ The following is an example of valid background image styling using JSON. The ex
 ```
 
 
+## Pie chart background
+
+These properties allow you to create pie chart backgrounds on nodes ([demo](demos/pie-style)).  Note that 16 slices maximum are supported per node, so in the properties `1 <= i <= 16`.  Of course, you must specify a numerical value for each property in place of `i`.  Each nonzero sized slice is placed in order of `i`, starting from the 12 o'clock position and working clockwise.
+
+You may find it useful to reserve a number to a particular colour for all nodes in your stylesheet.  Then you can specify values for `pie-i-background-size` accordingly for each node via a [mapper](#style/mappers).  This would allow you to create consistently coloured pie charts in each node of the graph based on element data.
+
+ * **`pie-size`** : The diameter of the pie, measured as a percent of node size (e.g. `100%`) or an absolute length (e.g. `25px`).
+ * **`pie-i-background-color`** : The colour of the node's ith pie chart slice.
+ * **`pie-i-background-size`** : The size of the node's ith pie chart slice, measured in percent (e.g. `25%` or `25`).
+ * **`pie-i-background-opacity`** : The opacity of the node's ith pie chart slice.
+
+
 
 
 ## Edge line

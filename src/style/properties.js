@@ -296,7 +296,10 @@ const styfn = {};
     { name: 'border-color', type: t.color },
     { name: 'border-opacity', type: t.zeroOneNumber },
     { name: 'border-width', type: t.size, triggersBounds: diff.any },
-    { name: 'border-style', type: t.borderStyle }
+    { name: 'border-style', type: t.borderStyle },
+    { name: 'border-cap', type: t.lineCap },
+    { name: 'border-dash-pattern', type: t.numbers },
+    { name: 'border-dash-offset', type: t.number },
   ];
 
   let nodeOutline = [
@@ -635,6 +638,9 @@ styfn.getDefaultProperties = function(){
     'border-opacity': 1,
     'border-width': 0,
     'border-style': 'solid',
+    'border-dash-pattern': [ 4, 2 ],
+    'border-dash-offset': 0,
+    'border-cap': 'butt',
     'outline-color': '#999',
     'outline-opacity': 1,
     'outline-width': 0,

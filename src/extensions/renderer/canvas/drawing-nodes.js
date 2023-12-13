@@ -74,6 +74,10 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
   let bgOpacity = node.pstyle('background-opacity').value * eleOpacity;
   let borderColor = node.pstyle('border-color').value;
   let borderStyle = node.pstyle('border-style').value;
+  let borderCap = node.pstyle('border-cap').value;
+  let borderPosition = node.pstyle('border-position').value;
+  let borderPattern = node.pstyle('border-dash-pattern').pfValue;
+  let borderOffset = node.pstyle('border-dash-offset').pfValue;
   let borderOpacity = node.pstyle('border-opacity').value * eleOpacity;
   let outlineWidth = node.pstyle('outline-width').pfValue;
   let outlineColor = node.pstyle('outline-color').value;
@@ -225,7 +229,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
     if( borderWidth > 0 ){
 
       context.lineWidth = borderWidth;
-      context.lineCap = 'butt';
+      context.lineCap = borderCap;
 
       if( context.setLineDash ){ // for very outofdate browsers
         switch( borderStyle ){
@@ -234,7 +238,8 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
             break;
 
           case 'dashed':
-            context.setLineDash( [ 4, 2 ] );
+            context.setLineDash( borderPattern );
+            context.lineDashOffset = borderOffset;
             break;
 
           case 'solid':

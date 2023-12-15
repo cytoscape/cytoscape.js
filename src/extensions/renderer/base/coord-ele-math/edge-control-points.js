@@ -463,7 +463,7 @@ BRp.tryToCorrectInvalidPoints = function( edge, pairInfo ){
 
   // can only correct beziers for now...
   if( rs.edgeType === 'bezier' ){
-    const { srcPos, tgtPos, srcW, srcH, tgtW, tgtH, srcShape, tgtShape } = pairInfo;
+    const { srcPos, tgtPos, srcW, srcH, tgtW, tgtH, srcShape, tgtShape, srcCornerRadius, tgtCornerRadius } = pairInfo;
 
     let badStart = !is.number( rs.startX ) || !is.number( rs.startY );
     let badAStart = !is.number( rs.arrowStartX ) || !is.number( rs.arrowStartY );
@@ -509,7 +509,7 @@ BRp.tryToCorrectInvalidPoints = function( edge, pairInfo ){
         srcH,
         cpProj.x,
         cpProj.y,
-        0
+        0, srcCornerRadius
       );
 
       if( closeStartACp ){
@@ -548,7 +548,7 @@ BRp.tryToCorrectInvalidPoints = function( edge, pairInfo ){
         tgtH,
         cpProj.x,
         cpProj.y,
-        0
+        0, tgtCornerRadius
       );
 
       if( closeEndACp ){
@@ -767,6 +767,9 @@ BRp.findEdgeControlPoints = function( edges ){
     let srcShape = pairInfo.srcShape = r.nodeShapes[ this.getNodeShape( src ) ];
     let tgtShape = pairInfo.tgtShape = r.nodeShapes[ this.getNodeShape( tgt ) ];
 
+    let srcCornerRadius = pairInfo.srcCornerRadius = src.pstyle('corner-radius').value === 'auto' ? 'auto' : src.pstyle('corner-radius').pfValue;
+    let tgtCornerRadius = pairInfo.tgtCornerRadius = tgt.pstyle('corner-radius').value === 'auto' ? 'auto' : tgt.pstyle('corner-radius').pfValue;
+
     pairInfo.dirCounts = {
       'north': 0,
       'west': 0,
@@ -795,7 +798,7 @@ BRp.findEdgeControlPoints = function( edges ){
           srcPos.x, srcPos.y,
           srcW, srcH,
           tgtPos.x, tgtPos.y,
-          0
+          0, srcCornerRadius
         );
 
         let srcIntn = pairInfo.srcIntn = srcOutside;
@@ -805,7 +808,7 @@ BRp.findEdgeControlPoints = function( edges ){
           tgtPos.x, tgtPos.y,
           tgtW, tgtH,
           srcPos.x, srcPos.y,
-          0
+          0, tgtCornerRadius
         );
 
         let tgtIntn = pairInfo.tgtIntn = tgtOutside;

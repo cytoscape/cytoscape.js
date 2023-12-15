@@ -43,7 +43,7 @@ BRp.manualEndptToPx = function( node, prop ){
       npos.x, npos.y,
       w, h,
       p[0], p[1],
-      0
+      0, node.pstyle('corner-radius').value === 'auto' ? 'auto' : node.pstyle('corner-radius').pfValue
     );
   }
 };

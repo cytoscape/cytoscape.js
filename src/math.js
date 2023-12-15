@@ -377,12 +377,14 @@ export const roundRectangleIntersectLine = ( x, y, nodeX, nodeY, width, height, 
 
   let halfWidth = width / 2;
   let halfHeight = height / 2;
+  cornerRadius = Math.min(cornerRadius, halfWidth, halfHeight);
+  const doWidth = cornerRadius !== halfWidth, doHeight = cornerRadius !== halfHeight;
 
   // Check intersections with straight line segments
   let straightLineIntersections;
 
   // Top segment, left to right
-  {
+  if( doWidth ){
     let topStartX = nodeX - halfWidth + cornerRadius - padding;
     let topStartY = nodeY - halfHeight - padding;
     let topEndX = nodeX + halfWidth - cornerRadius + padding;
@@ -397,7 +399,7 @@ export const roundRectangleIntersectLine = ( x, y, nodeX, nodeY, width, height, 
   }
 
   // Right segment, top to bottom
-  {
+  if( doHeight ){
     let rightStartX = nodeX + halfWidth + padding;
     let rightStartY = nodeY - halfHeight + cornerRadius - padding;
     let rightEndX = rightStartX;
@@ -412,7 +414,7 @@ export const roundRectangleIntersectLine = ( x, y, nodeX, nodeY, width, height, 
   }
 
   // Bottom segment, left to right
-  {
+  if( doWidth ){
     let bottomStartX = nodeX - halfWidth + cornerRadius - padding;
     let bottomStartY = nodeY + halfHeight + padding;
     let bottomEndX = nodeX + halfWidth - cornerRadius + padding;
@@ -427,7 +429,7 @@ export const roundRectangleIntersectLine = ( x, y, nodeX, nodeY, width, height, 
   }
 
   // Left segment, top to bottom
-  {
+  if( doHeight ){
     let leftStartX = nodeX - halfWidth - padding;
     let leftStartY = nodeY - halfHeight + cornerRadius - padding;
     let leftEndX = leftStartX;

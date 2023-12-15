@@ -142,8 +142,10 @@ BRp.generateRoundRectangle = function(){
 
     checkPoint: function(
       x, y, padding, width, height, centerX, centerY, cornerRadius ){
-
+      let halfWidth = width / 2;
+      let halfHeight = height / 2;
       cornerRadius = cornerRadius === 'auto' ? math.getRoundRectangleRadius( width, height ) : cornerRadius;
+      cornerRadius = Math.min(halfWidth, halfHeight, cornerRadius)
       var diam = cornerRadius * 2;
 
       // Check hBox
@@ -161,8 +163,8 @@ BRp.generateRoundRectangle = function(){
       // Check top left quarter circle
       if( math.checkInEllipse( x, y,
         diam, diam,
-        centerX - width / 2 + cornerRadius,
-        centerY - height / 2 + cornerRadius,
+        centerX - halfWidth + cornerRadius,
+        centerY - halfHeight + cornerRadius,
         padding ) ){
 
         return true;
@@ -171,8 +173,8 @@ BRp.generateRoundRectangle = function(){
       // Check top right quarter circle
       if( math.checkInEllipse( x, y,
         diam, diam,
-        centerX + width / 2 - cornerRadius,
-        centerY - height / 2 + cornerRadius,
+        centerX + halfWidth - cornerRadius,
+        centerY - halfHeight + cornerRadius,
         padding ) ){
 
         return true;
@@ -181,8 +183,8 @@ BRp.generateRoundRectangle = function(){
       // Check bottom right quarter circle
       if( math.checkInEllipse( x, y,
         diam, diam,
-        centerX + width / 2 - cornerRadius,
-        centerY + height / 2 - cornerRadius,
+        centerX + halfWidth - cornerRadius,
+        centerY + halfHeight - cornerRadius,
         padding ) ){
 
         return true;
@@ -191,8 +193,8 @@ BRp.generateRoundRectangle = function(){
       // Check bottom left quarter circle
       if( math.checkInEllipse( x, y,
         diam, diam,
-        centerX - width / 2 + cornerRadius,
-        centerY + height / 2 - cornerRadius,
+        centerX - halfWidth + cornerRadius,
+        centerY + halfHeight - cornerRadius,
         padding ) ){
 
         return true;

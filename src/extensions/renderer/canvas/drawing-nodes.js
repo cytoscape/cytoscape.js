@@ -249,10 +249,26 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
         }
       }
 
-      if( usePaths ){
-        context.stroke( path );
+      if ( borderPosition !== 'center') {
+        context.save()
+        context.lineWidth *= 2;
+        if (borderPosition === 'inside') {
+          usePaths ? context.clip(path) : context.clip();
+        } else {
+          const region = new Path2D();
+          region.rect(
+          -nodeWidth / 2 - borderWidth,
+          -nodeHeight / 2 - borderWidth,
+          nodeWidth + 2 * borderWidth,
+          nodeHeight + 2 * borderWidth
+          )
+          region.addPath(path)
+          context.clip(region, 'evenodd')
+        }
+        usePaths ? context.stroke(path) : context.stroke();
+        context.restore()
       } else {
-        context.stroke();
+        usePaths ? context.stroke(path) : context.stroke();
       }
 
       if( borderStyle === 'double' ){

@@ -488,15 +488,21 @@
           })
         .selector("node#a")
           .css({
-            borderWidth: 4,
+            borderWidth: 2,
             borderCap: 'butt',
             borderDashPattern: [3, 12, 8, 16],
+            borderPosition: 'inside',
+            shape: "round-hexagon",
+            height: 40
           })
         .selector("node#b")
           .css({
-            borderWidth: 4,
+            borderWidth: 2,
             borderCap: 'square',
             borderDashPattern: [4, 12],
+            borderPosition: 'outside',
+            shape: "round-triangle",
+            height: 40
           })
         .selector("edge")
           .css({

@@ -223,6 +223,7 @@ Border:
  * **`border-cap`** : The cap style of the node's border; may be `butt`, `round` or `square`.
  * **`border-dash-pattern`** : The `dashed` line pattern which specifies alternating lengths of lines and gaps. (e.g. `[6, 3]`).
  * **`border-dash-offset`** : The `dashed` line offset (e.g. `24`). It is useful for creating edge animations.
+ * **`border-position`** : The position of the node's border; may be `center`, `inside`, `outside`.
  * **`border-color`** : The colour of the node's border.
  * **`border-opacity`** : The opacity of the node's border.
 

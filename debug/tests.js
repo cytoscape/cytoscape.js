@@ -508,6 +508,7 @@
           .css({
             borderWidth: 3,
             borderCap: 'round',
+            borderJoin: 'round',
             borderDashPattern: [3, 12],
             borderPosition: 'outside',
             shape: "polygon",

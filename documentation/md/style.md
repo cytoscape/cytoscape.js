@@ -221,6 +221,7 @@ Border:
  * **`border-width`** : The size of the node's border.
  * **`border-style`** : The style of the node's border; may be `solid`, `dotted`, `dashed`, or `double`.
  * **`border-cap`** : The cap style of the node's border; may be `butt`, `round` or `square`.
+ * **`border-join`** : The join style of the node's border; may be `miter`, `bevel` or `round`.
  * **`border-dash-pattern`** : The `dashed` line pattern which specifies alternating lengths of lines and gaps. (e.g. `[6, 3]`).
  * **`border-dash-offset`** : The `dashed` line offset (e.g. `24`). It is useful for creating edge animations.
  * **`border-position`** : The position of the node's border; may be `center`, `inside`, `outside`.

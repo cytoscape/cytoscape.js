@@ -74,6 +74,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
   let bgOpacity = node.pstyle('background-opacity').value * eleOpacity;
   let borderColor = node.pstyle('border-color').value;
   let borderStyle = node.pstyle('border-style').value;
+  let borderJoin = node.pstyle('border-join').value;
   let borderCap = node.pstyle('border-cap').value;
   let borderPosition = node.pstyle('border-position').value;
   let borderPattern = node.pstyle('border-dash-pattern').pfValue;
@@ -84,8 +85,6 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
   let outlineStyle = node.pstyle('outline-style').value;
   let outlineOpacity = node.pstyle('outline-opacity').value * eleOpacity;
   let outlineOffset = node.pstyle('outline-offset').value;
-
-  context.lineJoin = 'miter'; // so borders are square with the node shape
 
   let setupShapeColor = ( bgOpy = bgOpacity ) => {
     r.eleFillStyle( context, node, bgOpy );
@@ -230,6 +229,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
 
       context.lineWidth = borderWidth;
       context.lineCap = borderCap;
+      context.lineJoin = borderJoin;
 
       if( context.setLineDash ){ // for very outofdate browsers
         switch( borderStyle ){

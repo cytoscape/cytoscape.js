@@ -29,10 +29,11 @@ var cy, defaultSty, options;
           'target-arrow-shape': 'triangle',
           'mid-target-arrow-shape': 'triangle',
           'mid-source-arrow-shape': 'triangle-backcurve',
+          'curve-style': 'taxi',
         })
       .selector('#ab')
         .style({
-          'curve-style': 'unbundled-bezier',
+          // 'curve-style': 'unbundled-bezier',
           'control-point-distances': [ 20, -100, 20 ],
           'control-point-weights': [ 0.25, 0.5, 0.75 ],
           'source-arrow-fill': 'hollow',
@@ -42,7 +43,7 @@ var cy, defaultSty, options;
         })
       .selector('#bc')
         .style({
-          'curve-style': 'segments',
+          // 'curve-style': 'segments',
           'segment-distances': [ 20, -80 ],
           'segment-weights': [ 0.25, 0.5 ],
           'source-arrow-fill': 'hollow',
@@ -51,7 +52,7 @@ var cy, defaultSty, options;
         })
       .selector('#ef')
         .style({
-          'curve-style': 'straight-triangle',
+          // 'curve-style': 'straight-triangle',
           'source-arrow-shape': 'none',
           'target-arrow-shape': 'none',
           'mid-target-arrow-shape': 'none',
@@ -60,16 +61,16 @@ var cy, defaultSty, options;
         })
       .selector('[source = "c"][target = "e"]')
         .style({
-          'curve-style': 'haystack',
+          // 'curve-style': 'haystack',
           'haystack-radius': 0.5
         })
       .selector('[source = "d"][target = "e"]')
         .style({
-          'curve-style': 'bezier'
+          // 'curve-style': 'bezier'
         })
       .selector('[source = "b"][target = "f"]')
         .style({
-          'curve-style': 'taxi'
+          // 'curve-style': 'taxi'
         })
   ;
 

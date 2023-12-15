@@ -1,6 +1,7 @@
 /* global Path2D */
 
 import * as util from '../../../util';
+import {drawRoundCorner} from "./drawing-shapes";
 
 let CRp = {};
 
@@ -206,11 +207,19 @@ CRp.drawEdgePath = function( edge, context, pts, type ){
         break;
 
       case 'straight':
-      case 'segments':
       case 'haystack':
-        for( let i = 2; i + 1 < pts.length; i += 2 ){
+        for( let i = 2; i + 1 < pts.length; i += 2 ) {
           context.lineTo( pts[ i ], pts[ i + 1] );
         }
+        break;
+      case 'segments':
+        for( let i = 2; i + 3 < pts.length; i += 2 ){
+          drawRoundCorner(context,
+            {x: pts[i - 2], y: pts[i - 1]},
+            {x: pts[i], y: pts[i + 1]},
+            {x: pts[i + 2], y: pts[i + 3]}, 20000)
+        }
+        context.lineTo( pts[ pts.length - 2 ], pts[ pts.length - 1] );
         break;
     }
   }

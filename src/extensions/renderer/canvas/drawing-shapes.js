@@ -1,4 +1,5 @@
 import * as math from '../../../math';
+import * as round from '../../../round';
 
 var CRp = {};
 
@@ -20,178 +21,36 @@ CRp.drawPolygonPath = function(
   context.closePath();
 };
 
-
-// convert 2 points into vector form, polar form, and normalised
-const asVec = function(p, pp, v) {
-  v.x = pp.x - p.x;
-  v.y = pp.y - p.y;
-  v.len = Math.sqrt(v.x * v.x + v.y * v.y);
-  v.nx = v.x / v.len;
-  v.ny = v.y / v.len;
-  v.ang = Math.atan2(v.ny, v.nx);
-}
-export function drawRoundCorner(ctx, previousPoint, currentPoint, nextPoint, radiusAll) {
-  let x, y, v1 = {}, v2 = {}, sinA, sinA90, radDirection, drawDirection, angle, halfAngle, cRadius, lenOut, radius;
-
-  v1 = {};
-  v2 = {};
-  //-----------------------------------------
-  // Part 1
-  asVec(currentPoint, previousPoint, v1);
-  asVec(currentPoint, nextPoint, v2);
-  sinA = v1.nx * v2.ny - v1.ny * v2.nx;
-  sinA90 = v1.nx * v2.nx - v1.ny * -v2.ny;
-  angle = angle = Math.asin(Math.max(-1, Math.min(1, sinA)));
-  //-----------------------------------------
-  radDirection = 1;
-  drawDirection = false;
-  if (sinA90 < 0) {
-    if (angle < 0) {
-      angle = Math.PI + angle;
-    } else {
-      angle = Math.PI - angle;
-      radDirection = -1;
-      drawDirection = true;
-    }
-  } else {
-    if (angle > 0) {
-      radDirection = -1;
-      drawDirection = true;
-    }
-  }
-  if (currentPoint.radius !== undefined) {
-    radius = currentPoint.radius;
-  } else {
-    radius = radiusAll;
-  }
-  //-----------------------------------------
-  // Part 2
-  halfAngle = angle / 2;
-  //-----------------------------------------
-
-  //-----------------------------------------
-  // Part 3
-  lenOut = Math.abs(Math.cos(halfAngle) * radius / Math.sin(halfAngle));
-  //-----------------------------------------
-
-  //-----------------------------------------
-  // Special part A
-  if (lenOut > Math.min(v1.len / 2, v2.len / 2)) {
-    lenOut = Math.min(v1.len / 2, v2.len / 2);
-    cRadius = Math.abs(lenOut * Math.sin(halfAngle) / Math.cos(halfAngle));
-  } else {
-    cRadius = radius;
-  }
-  //-----------------------------------------
-  // Part 4
-  x = currentPoint.x + v2.nx * lenOut;
-  y = currentPoint.y + v2.ny * lenOut;
-  //-----------------------------------------
-  // Part 5
-  x += -v2.ny * cRadius * radDirection;
-  y += v2.nx * cRadius * radDirection;
-  //-----------------------------------------
-  // Part 6
-  ctx.arc(x, y, cRadius, v1.ang + Math.PI / 2 * radDirection, v2.ang - Math.PI / 2 * radDirection, drawDirection);
-  //-----------------------------------------
-}
-
-// ctx is the context to add the path to
-// points is a array of points [{x :?, y: ?},...
-// radius is the max rounding radius
-// this creates a closed polygon.
-// To draw you must call between
-//    ctx.beginPath();
-//    roundedPoly(ctx, points, radius);
-//    ctx.stroke();
-//    ctx.fill();
-// as it only adds a path and does not render.
-// Source https://stackoverflow.com/a/44856925/11028828
-function roundedPoly(ctx, points, radiusAll) {
-  let i, len = points.length, p1, p2, p3;
-
-  p1 = points[len - 1];
-  // for each point
-  for (i = 0; i < len; i++) {
-    p2 = points[(i) % len];
-    p3 = points[(i + 1) % len];
-    drawRoundCorner(ctx, p1, p2, p3, radiusAll);
-    p1 = p2;
-    p2 = p3;
-  }
-  ctx.closePath();
-}
-
-/**
- * Points in format [        <br>
- *   x_0, y_0, dx_0, dy_0,   <br>
- *   x_1, y_1, dx_1, dy_1,   <br>
- *   ...                     <br>
- * ]
- */
 CRp.drawRoundPolygonPath = function(
     context, x, y, width, height, points, radius ){
 
     const halfW = width / 2;
     const halfH = height / 2;
     const cornerRadius = radius === 'auto' ? math.getRoundPolygonRadius( width, height ) : radius;
-  const p = new Array(points.length / 4)
-  for ( let i = 0; i < points.length / 4; i++ ){
-    p[i] = {x: x + halfW * points[i*4], y: y + halfH * points[i*4+1]}
-  }
-  //
-  roundedPoly(context, p, cornerRadius)
-  //   if( context.beginPath ){ context.beginPath(); }
-  //
-  //   for ( let i = 0; i < points.length / 4; i++ ){
-  //       let sourceUv, destUv;
-  //       if ( i === 0 ) {
-  //           sourceUv = points.length - 2;
-  //       } else {
-  //           sourceUv = i * 4 - 2;
-  //       }
-  //       destUv = i * 4 + 2;
-  //
-  //       const p = {
-  //         x: x + halfW * points[ i * 4 ],
-  //         y: y + halfH * points[ i * 4 + 1 ]
-  //       };
-  //       const source = {
-  //         x: x + halfW * points[ sourceUv - 2 ],
-  //         y: y + halfH * points[ sourceUv - 1 ]
-  //       };
-  //       const dest = {
-  //         x: x + halfW * points[ (destUv + 2) % points.length],
-  //         y: y + halfH * points[ (destUv + 3) % points.length]
-  //       };
-  //
-  //       const r = Math.min(
-  //         Math.min(math.dist(p, source), math.dist(p, dest)) / 2,
-  //           cornerRadius
-  //       );
-  //     // console.log({p, source, dest,
-  //     //   dS: math.dist(source, p) / 2,
-  //     //   dD: math.dist(p, dest) / 2,
-  //     //   cornerRadius, r})
-  //
-  //
-  //       const cosTheta = (-points[ sourceUv ] * points[ destUv ] - points[ sourceUv + 1 ] * points[ destUv + 1]);
-  //       const offset = r / Math.tan(Math.acos(cosTheta) / 2) ;
-  //
-  //       const cp0x = p.x - offset * points[ sourceUv ];
-  //       const cp0y = p.y - offset * points[ sourceUv + 1 ];
-  //       const cp1x = p.x + offset * points[ destUv ];
-  //       const cp1y = p.y + offset * points[ destUv + 1 ];
-  //
-  //       if (i === 0) {
-  //           context.moveTo( cp0x, cp0y );
-  //       } else {
-  //           context.lineTo( cp0x, cp0y );
-  //       }
-  //
-  //       context.arcTo( p.x, p.y, cp1x, cp1y, r );
-  //   }
-  //   context.closePath();
+    const p = new Array( points.length / 2 );
+
+    for ( let i = 0; i < points.length / 2; i++ ){
+      p[i] = {
+        x: x + halfW * points[ i * 2 ],
+        y: y + halfH * points[ i * 2 + 1 ]
+      }
+    }
+
+    let i, p1, p2, p3, len = p.length;
+
+    p1 = p[ len - 1 ];
+    // for each point
+    for( i = 0; i < len; i++ ){
+      p2 = p[ (i) % len ];
+      p3 = p[ (i + 1) % len ];
+
+      let corner = round.getRoundCorner( p1, p2, p3, cornerRadius );
+      round.drawPreparedRoundCorner( context, corner );
+
+      p1 = p2;
+      p2 = p3;
+    }
+    context.closePath();
 };
 
 // Round rectangle drawing

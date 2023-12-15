@@ -73,6 +73,7 @@ const styfn = {};
       'tag', 'round-tag', 'star', 'diamond', 'round-diamond', 'vee', 'rhomboid', 'right-rhomboid', 'polygon',
     ] },
     overlayShape: { enums: [ 'roundrectangle', 'round-rectangle', 'ellipse' ] },
+    cornerRadius: { number: true, min: 0, units: '%|px|em', implicitUnits: 'px', enums: ['auto'] },
     compoundIncludeLabels: { enums: [ 'include', 'exclude' ] },
     arrowShape: { enums: [ 'tee', 'triangle', 'triangle-tee', 'circle-triangle', 'triangle-cross', 'triangle-backcurve', 'vee', 'square', 'circle', 'diamond', 'chevron', 'none' ] },
     arrowFill: { enums: [ 'filled', 'hollow' ] },
@@ -280,6 +281,7 @@ const styfn = {};
     { name: 'width', type: t.nodeSize, triggersBounds: diff.any, hashOverride: nodeSizeHashOverride },
     { name: 'shape', type: t.nodeShape, triggersBounds: diff.any },
     { name: 'shape-polygon-points', type: t.polygonPointList, triggersBounds: diff.any },
+    { name: 'corner-radius', type: t.cornerRadius},
     { name: 'background-color', type: t.color },
     { name: 'background-fill', type: t.fill },
     { name: 'background-opacity', type: t.zeroOneNumber },
@@ -644,6 +646,7 @@ styfn.getDefaultProperties = function(){
     'width': 30,
     'shape': 'ellipse',
     'shape-polygon-points': '-1, -1,   1, -1,   1, 1,   -1, 1',
+    'corner-radius': 'auto',
     'bounds-expansion': 0,
 
     // node gradient

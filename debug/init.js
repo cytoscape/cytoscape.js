@@ -10,6 +10,18 @@ var cy, defaultSty, options;
         .style({
           'label': 'data(id)'
         })
+      .selector('node#a')
+        .style({
+          'shape': 'round-rectangle',
+          'width': 35,
+          'corner-radius': 200
+        })
+      .selector('node#b')
+      .style({
+        'shape': 'round-triangle',
+        'width': 40,
+        'corner-radius': 4
+      })
 
       .selector('edge')
         .style({

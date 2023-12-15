@@ -371,9 +371,9 @@ export const boundingBoxInBoundingBox = ( bb1, bb2 ) => (
   && inBoundingBox( bb1, bb2.x2, bb2.y2 )
 );
 
-export const roundRectangleIntersectLine = ( x, y, nodeX, nodeY, width, height, padding ) => {
+export const roundRectangleIntersectLine = ( x, y, nodeX, nodeY, width, height, padding, radius = 'auto' ) => {
 
-  let cornerRadius = getRoundRectangleRadius( width, height );
+  let cornerRadius = radius === 'auto' ? getRoundRectangleRadius( width, height ) : radius;
 
   let halfWidth = width / 2;
   let halfHeight = height / 2;
@@ -808,11 +808,11 @@ export const pointInsidePolygon = ( x, y, basePoints, centerX, centerY, width, h
   return pointInsidePolygonPoints( x, y, points );
 };
 
-export const pointInsideRoundPolygon = ( x, y, basePoints, centerX, centerY, width, height ) => {
+export const pointInsideRoundPolygon = ( x, y, basePoints, centerX, centerY, width, height, radius = 'auto' ) => {
   const cutPolygonPoints = new Array( basePoints.length);
   const halfW = width / 2;
   const halfH = height / 2;
-  const cornerRadius = getRoundPolygonRadius(width, height);
+  const cornerRadius = radius === 'auto' ? getRoundPolygonRadius(width, height) : radius;
   const squaredCornerRadius = cornerRadius * cornerRadius;
 
   for ( let i = 0; i < basePoints.length / 4; i++ ){
@@ -1197,13 +1197,13 @@ export const polygonIntersectLine = ( x, y, basePoints, centerX, centerY, width,
   return intersections;
 };
 
-export const roundPolygonIntersectLine = ( x, y, basePoints, centerX, centerY, width, height, padding ) => {
+export const roundPolygonIntersectLine = ( x, y, basePoints, centerX, centerY, width, height, padding, radius = 'auto' ) => {
   let intersections = [];
   let intersection;
   let lines = new Array(basePoints.length);
   const halfW = width / 2;
   const halfH = height / 2;
-  const cornerRadius = getRoundPolygonRadius(width, height);
+  const cornerRadius = radius === 'auto' ? getRoundPolygonRadius(width, height) : radius;
 
   for ( let i = 0; i < basePoints.length / 4; i++ ){
     let sourceUv, destUv;

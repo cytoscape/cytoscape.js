@@ -80,6 +80,8 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
   let outlineStyle = node.pstyle('outline-style').value;
   let outlineOpacity = node.pstyle('outline-opacity').value * eleOpacity;
   let outlineOffset = node.pstyle('outline-offset').value;
+  let cornerRadius = node.pstyle('corner-radius').value;
+  if (cornerRadius !== 'auto') cornerRadius = node.pstyle('corner-radius').pfValue;
 
   context.lineJoin = 'miter'; // so borders are square with the node shape
 
@@ -154,7 +156,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
         npos.x,
         npos.y,
         nodeWidth,
-        nodeHeight );
+        nodeHeight, cornerRadius );
     }
 
     if( usePaths ){
@@ -352,13 +354,13 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
           scaleY = (nodeHeight + sMult)/nodeHeight;
         }
 
-        r.drawRoundPolygonPath(path || context, npos.x + offsetX, npos.y + offsetY, nodeWidth * scaleX, nodeHeight * scaleY, points);
+        r.drawRoundPolygonPath(path || context, npos.x + offsetX, npos.y + offsetY, nodeWidth * scaleX, nodeHeight * scaleY, points, cornerRadius);
       } else if (['roundrectangle', 'round-rectangle'].includes(shape)) {
-        r.drawRoundRectanglePath(path || context, npos.x, npos.y, sWidth, sHeight);
+        r.drawRoundRectanglePath(path || context, npos.x, npos.y, sWidth, sHeight, cornerRadius);
       } else if (['cutrectangle', 'cut-rectangle'].includes(shape)) {
         r.drawCutRectanglePath(path || context, npos.x, npos.y, sWidth, sHeight);
       } else if (['bottomroundrectangle', 'bottom-round-rectangle'].includes(shape)) {
-        r.drawBottomRoundRectanglePath(path || context, npos.x, npos.y, sWidth, sHeight);
+        r.drawBottomRoundRectanglePath(path || context, npos.x, npos.y, sWidth, sHeight, cornerRadius);
       } else if (shape === "barrel") {
         r.drawBarrelPath(path || context, npos.x, npos.y, sWidth, sHeight);
       } else if (shape.startsWith("polygon") || ['rhomboid', 'right-rhomboid', 'round-tag', 'tag', 'vee'].includes(shape)) {

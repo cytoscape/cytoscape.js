@@ -1,22 +1,22 @@
 var CRp = {};
 
-CRp.nodeShapeImpl = function( name, context, centerX, centerY, width, height, points ){
+CRp.nodeShapeImpl = function( name, context, centerX, centerY, width, height, points, cornerRadius ){
   switch( name ){
     case 'ellipse':
       return this.drawEllipsePath( context, centerX, centerY, width, height );
     case 'polygon':
       return this.drawPolygonPath( context, centerX, centerY, width, height, points );
     case 'round-polygon':
-      return this.drawRoundPolygonPath(context, centerX, centerY, width, height, points );
+      return this.drawRoundPolygonPath(context, centerX, centerY, width, height, points, cornerRadius );
     case 'roundrectangle':
     case 'round-rectangle':
-      return this.drawRoundRectanglePath( context, centerX, centerY, width, height );
+      return this.drawRoundRectanglePath( context, centerX, centerY, width, height, points, cornerRadius );
     case 'cutrectangle':
     case 'cut-rectangle':
       return this.drawCutRectanglePath( context, centerX, centerY, width, height );
     case 'bottomroundrectangle':
     case 'bottom-round-rectangle':
-      return this.drawBottomRoundRectanglePath( context, centerX, centerY, width, height );
+      return this.drawBottomRoundRectanglePath( context, centerX, centerY, width, height, cornerRadius );
     case 'barrel':
       return this.drawBarrelPath( context, centerX, centerY, width, height );
   }

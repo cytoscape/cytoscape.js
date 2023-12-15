@@ -250,7 +250,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
       }
 
       if ( borderPosition !== 'center') {
-        context.save()
+        context.save();
         context.lineWidth *= 2;
         if (borderPosition === 'inside') {
           usePaths ? context.clip(path) : context.clip();
@@ -261,12 +261,12 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
           -nodeHeight / 2 - borderWidth,
           nodeWidth + 2 * borderWidth,
           nodeHeight + 2 * borderWidth
-          )
-          region.addPath(path)
-          context.clip(region, 'evenodd')
+          );
+          region.addPath(path);
+          context.clip(region, 'evenodd');
         }
         usePaths ? context.stroke(path) : context.stroke();
-        context.restore()
+        context.restore();
       } else {
         usePaths ? context.stroke(path) : context.stroke();
       }

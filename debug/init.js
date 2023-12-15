@@ -8,6 +8,7 @@ var cy, defaultSty, options;
 
       .selector('node')
         .style({
+          'background-opacity': 0.4,
           'label': 'data(id)'
         })
       .selector('node#a')
@@ -19,9 +20,9 @@ var cy, defaultSty, options;
         })
       .selector('node#b')
       .style({
-        'shape': 'round-triangle',
+        'shape': 'round-hexagon',
         'width': 40,
-        'corner-radius': 4
+        'corner-radius': 10
       })
 
       .selector('edge')
@@ -73,6 +74,26 @@ var cy, defaultSty, options;
         .style({
           'curve-style': 'taxi'
         })
+      .selector('#eg')
+        .style({
+          'curve-style': 'round-taxi',
+          'taxi-radius': 2000
+        })
+      .selector('#eh')
+        .style({
+          'curve-style': 'round-segments',
+          'segment-distances': [ 0  , 50 , 0  , -50, 0  , 0  , 100 ],
+          'segment-weights': [   0.5, 0.6, 0.7, 0.6, 0.5, 0.8, 0.85],
+          'segment-radii': [ 50, 100 ],
+        })
+      .selector('#ei')
+        .style({
+          'curve-style': 'round-taxi'
+        })
+      .selector('#gh')
+        .style({
+          'curve-style': 'round-taxi'
+        })
   ;
 
   options = {
@@ -97,7 +118,10 @@ var cy, defaultSty, options;
         { data: { id: 'c', weight: 20 } },
         { data: { id: 'd', weight: 10 } },
         { data: { id: 'e', weight: 75 } },
-        { data: { id: 'f', weight: 100 } }
+        { data: { id: 'f', weight: 100 } },
+        { data: { id: 'g', weight: 40 } },
+        { data: { id: 'h', weight: 16 } },
+        { data: { id: 'i', weight: 16 } },
       ],
 
       edges: [
@@ -117,7 +141,11 @@ var cy, defaultSty, options;
         { data: { id: 'de4', weight: 7, source: 'd', target: 'e' } },
         { data: { id: 'de5', weight: 7, source: 'd', target: 'e' } },
         { data: { id: 'bf', weight: 3, source: 'b', target: 'f' } },
-        { data: { id: 'ef', weight: 3, source: 'e', target: 'f' } }
+        { data: { id: 'ef', weight: 3, source: 'e', target: 'f' } },
+        { data: { id: 'eg', weight: 3, source: 'e', target: 'g' } },
+        { data: { id: 'eh', weight: 3, source: 'e', target: 'h' } },
+        { data: { id: 'ei', weight: 3, source: 'e', target: 'i' } },
+        { data: { id: 'gh', weight: 3, source: 'g', target: 'h' } },
       ]
     }
   };

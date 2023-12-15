@@ -74,12 +74,8 @@ BRp.calculateArrowAngles = function( edge ){
       dispX = ( pts[ i2 ] - pts[ i1 ] );
       dispY = ( pts[ i2 + 1] - pts[ i1 + 1] );
     } else {
-      var i2 = pts.length / 2 - 1;
-      var i1 = i2 - 2;
-      var i3 = i2 + 2;
-
-      dispX = ( pts[ i2 ] - pts[ i1 ] );
-      dispY = ( pts[ i2 + 1] - pts[ i1 + 1] );
+      dispX = rs.midVector[1];
+      dispY = -rs.midVector[0];
     }
   } else if( isMultibezier || isCompound || isSelf ){
     var pts = rs.allpts;
@@ -129,7 +125,7 @@ BRp.calculateArrowAngles = function( edge ){
 
     if( pts.length / 2 % 2 === 0 ){
       // already ok
-    } else {
+    } else if( !rs.isRound ){
       var i2 = pts.length / 2 - 1;
       var i3 = i2 + 2;
 

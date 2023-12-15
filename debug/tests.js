@@ -504,6 +504,21 @@
             shape: "round-triangle",
             height: 40
           })
+        .selector("node#c")
+          .css({
+            borderWidth: 3,
+            borderCap: 'round',
+            borderDashPattern: [3, 12],
+            borderPosition: 'outside',
+            shape: "polygon",
+            shapePolygonPoints: [
+              -1, -1,
+               1, -1,
+              -1,  1,
+               1,  1
+            ],
+            height: 40
+          })
         .selector("edge")
           .css({
             lineColor: "mapData(weight, 0, 100, blue, red)",

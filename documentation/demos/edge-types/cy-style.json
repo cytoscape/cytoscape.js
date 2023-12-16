@@ -53,12 +53,28 @@
     "segment-weights": [0.250 , 0.75]
   }
 }, {
+  "selector": "edge.round-segments",
+  "style": {
+    "curve-style": "round-segments",
+    "segment-distances": [ 40, -40 ],
+    "segment-weights": [0.250 , 0.75]
+  }
+},  {
   "selector": "edge.taxi",
   "style": {
     "curve-style": "taxi",
     "taxi-direction": "downward",
     "taxi-turn": 20,
     "taxi-turn-min-distance": 5
+  }
+},  {
+  "selector": "edge.round-taxi",
+  "style": {
+    "curve-style": "round-taxi",
+    "taxi-direction": "downward",
+    "taxi-turn": 20,
+    "taxi-turn-min-distance": 5,
+    "taxi-radius": 10
   }
 }, {
   "selector": "edge.straight-triangle",

@@ -77,7 +77,10 @@ var cy, defaultSty, options;
       .selector('#eg')
         .style({
           'curve-style': 'round-taxi',
-          'taxi-radius': 2000
+          "taxi-direction": "downward",
+          // "taxi-turn": 100,
+          "taxi-turn-min-distance": 50,
+          "taxi-radius": 50
         })
       .selector('#eh')
         .style({

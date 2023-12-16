@@ -122,56 +122,100 @@
     "target": "n10"
   },
   "classes": "segments"
-}, {
+},
+  {
+    "data": {
+      "id": "n11"
+    }
+  }, {
   "data": {
-    "id": "n11"
+    "id": "n12",
+    "type": "round-segments"
   }
 }, {
   "data": {
-    "id": "n12"
+    "source": "n11",
+    "target": "n12"
+  },
+  "classes": "round-segments"
+}
+, {
+  "data": {
+    "id": "n13"
   }
 }, {
   "data": {
-    "id": "n13",
+    "id": "n14"
+  }
+}, {
+  "data": {
+    "id": "n15",
     "type": "taxi"
   }
 }, {
   "data": {
-    "source": "n13",
-    "target": "n11"
+    "source": "n15",
+    "target": "n13"
   },
   "classes": "taxi"
 }, {
   "data": {
-    "source": "n13",
-    "target": "n12"
+    "source": "n15",
+    "target": "n14"
   },
   "classes": "taxi"
+},
+   {
+  "data": {
+    "id": "n16"
+  }
 }, {
   "data": {
-    "id": "n16",
+    "id": "n17"
+  }
+}, {
+  "data": {
+    "id": "n18",
+    "type": "round-taxi"
+  }
+}, {
+  "data": {
+    "source": "n18",
+    "target": "n16"
+  },
+  "classes": "round-taxi"
+}, {
+  "data": {
+    "source": "n18",
+    "target": "n17"
+  },
+  "classes": "round-taxi"
+},
+  {
+  "data": {
+    "id": "n19",
     "type": "loop",
     "flipLabel": true
   }
 }, {
   "data": {
-    "source": "n16",
-    "target": "n16"
+    "source": "n19",
+    "target": "n19"
   },
   "classes": "loop"
 }, {
   "data": {
-    "id": "n17",
+    "id": "n20",
     "type": "straight-triangle"
   }
 }, {
   "data": {
-    "id": "n18"
+    "id": "n21"
   }
 }, {
   "data": {
-    "source": "n17",
-    "target": "n18"
+    "source": "n20",
+    "target": "n21"
   },
   "classes": "straight-triangle"
 }]

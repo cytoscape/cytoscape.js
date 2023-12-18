@@ -130,7 +130,7 @@ CRp.setupTextStyle = function( context, ele, useEleOpacity = true ){
 };
 
 // TODO ensure re-used
-function roundRect( ctx, x, y, width, height, radius = 5 ){
+function roundRect( ctx, x, y, width, height, radius = 5, stroke){
   ctx.beginPath();
   ctx.moveTo( x + radius, y );
   ctx.lineTo( x + width - radius, y );
@@ -142,7 +142,10 @@ function roundRect( ctx, x, y, width, height, radius = 5 ){
   ctx.lineTo( x, y + radius );
   ctx.quadraticCurveTo( x, y, x + radius, y );
   ctx.closePath();
-  ctx.fill();
+  if(stroke)
+    ctx.stroke();
+  else
+    ctx.fill();
 }
 
 CRp.getTextAngle = function( ele, prefix ){
@@ -237,6 +240,9 @@ CRp.drawText = function( context, ele, prefix, applyRotation = true, useEleOpaci
     let borderOpacity = ele.pstyle( 'text-border-opacity' ).value;
     let textBorderWidth = ele.pstyle( 'text-border-width' ).pfValue;
     let backgroundPadding = ele.pstyle( 'text-background-padding' ).pfValue;
+    let styleShape = ele.pstyle( 'text-background-shape' ).strValue;
+    let rounded = styleShape.indexOf('round') === 0;
+    let roundRadius = 2;
 
     if( backgroundOpacity > 0 || ( textBorderWidth > 0 && borderOpacity > 0 ) ){
       let bgX = textX - backgroundPadding;
@@ -261,9 +267,8 @@ CRp.drawText = function( context, ele, prefix, applyRotation = true, useEleOpaci
         let textBackgroundColor = ele.pstyle( 'text-background-color' ).value;
 
         context.fillStyle = 'rgba(' + textBackgroundColor[ 0 ] + ',' + textBackgroundColor[ 1 ] + ',' + textBackgroundColor[ 2 ] + ',' + backgroundOpacity * parentOpacity + ')';
-        let styleShape = ele.pstyle( 'text-background-shape' ).strValue;
-        if( styleShape.indexOf('round') === 0 ){
-          roundRect( context, bgX, bgY, bgW, bgH, 2 );
+        if( rounded ){
+          roundRect( context, bgX, bgY, bgW, bgH, roundRadius );
         } else {
           context.fillRect( bgX, bgY, bgW, bgH );
         }
@@ -297,12 +302,19 @@ CRp.drawText = function( context, ele, prefix, applyRotation = true, useEleOpaci
           }
         }
 
-        context.strokeRect( bgX, bgY, bgW, bgH );
+        if( rounded ){
+          roundRect( context, bgX, bgY, bgW, bgH, roundRadius, 'stroke' );
+        } else {
+          context.strokeRect( bgX, bgY, bgW, bgH );
+        }
 
         if( textBorderStyle === 'double' ){
           let whiteWidth = textBorderWidth / 2;
-
-          context.strokeRect( bgX + whiteWidth, bgY + whiteWidth, bgW - whiteWidth * 2, bgH - whiteWidth * 2 );
+          if( rounded ){
+            roundRect( context, bgX + whiteWidth, bgY + whiteWidth, bgW - whiteWidth * 2, bgH - whiteWidth * 2, roundRadius, 'stroke' );
+          } else {
+            context.strokeRect( bgX + whiteWidth, bgY + whiteWidth, bgW - whiteWidth * 2, bgH - whiteWidth * 2 );
+          }
         }
 
         if( context.setLineDash ){ // for very outofdate browsers

@@ -109,6 +109,65 @@
   });
 
   test({
+    name: "text-background",
+    displayName: "Text Background Styles",
+    description: "Look at labels with different text background styles.",
+    setup: function(){
+      cy.$('#a').css({
+        'text-background-color': '#e5e5e5',
+        'text-background-opacity': 1
+      });
+      cy.$('#b').css({
+        'text-background-color': '#e5e5e5',
+        'text-background-opacity': 1,
+        'text-background-shape': 'round-rectangle',
+        'text-background-padding': '2px',
+      });
+      cy.$('#c').css({
+        'text-background-color': '#e5e5e5',
+        'text-background-opacity': 1,
+        'text-background-shape': 'round-rectangle',
+        'text-background-padding': '2px',
+        'text-border-width': 1,
+        'text-border-opacity': 1,
+        'text-border-color': 'red',
+      });
+      cy.$('#d').css({
+        'text-background-color': '#e5e5e5',
+        'text-background-opacity': 1,
+        'text-background-shape': 'rectangle',
+        'text-background-padding': '2px',
+        'text-border-width': 1,
+        'text-border-opacity': 1,
+        'text-border-color': 'red',
+      });
+      cy.$('#e').css({
+        'text-background-color': '#e5e5e5',
+        'text-background-opacity': 1,
+        'text-background-shape': 'rectangle',
+        'text-background-padding': '2px',
+        'text-border-width': 1,
+        'text-border-opacity': 1,
+        'text-border-color': 'red',
+        'text-border-style': 'dashed',
+      });
+      cy.$('#f').css({
+        'text-background-color': '#e5e5e5',
+        'text-background-opacity': 1,
+        'text-background-shape': 'round-rectangle',
+        'text-background-padding': '10px',
+        'text-border-width': 5,
+        'text-border-opacity': 1,
+        'text-border-color': 'red',
+        'text-border-style': 'double',
+      });
+    },
+    teardown: function(){
+      cy.nodes().removeCss();
+    }
+  });
+
+  test({
     name: "bypassOnClick",
     displayName: "Bypass on click",
     description: "Set nodes to red and edges to orange on click",

@@ -76,7 +76,7 @@ A physics simulation layout that makes use of parallelism on the GPU to support 
  * <i class="fa fa-fw fa-users"></i> [`polywas`](https://github.com/monprin/polywas) : A layout for GWAS (genome-wide association study) data illustrating inter-locus relationships.
  * <i class="fa fa-fw fa-user"></i> [`spread`](https://github.com/cytoscape/cytoscape.js-spread) : The Spread physics simulation (force-directed) layout tries to use all the viewport space, but it can be configured to produce a tighter result.  It uses the CoSE algorithm initially, and it uses Gansner and North for the spread phase.
  * <i class="fa fa-fw fa-user"></i> [`springy`](https://github.com/cytoscape/cytoscape.js-springy) : The Springy physics simulation layout.  It's a basic physics (force-directed) layout.
- * <i class="fa fa-fw fa-user"></i> [`tidytree`](https://github.com/chuckzel/cytoscape-tidytree) : A layout specifically for trees that allows for a non-layered layout.
+ * <i class="fa fa-fw fa-users"></i> [`tidytree`](https://github.com/chuckzel/cytoscape-tidytree) : A layout specifically for trees that allows for a non-layered layout.
 
 
 ## API extensions

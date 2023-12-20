@@ -28586,6 +28586,7 @@ var printLayoutInfo;
   // TODO ensure re-used
   function roundRect(ctx, x, y, width, height) {
     var radius = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : 5;
+    var stroke = arguments.length > 6 ? arguments[6] : undefined;
     ctx.beginPath();
     ctx.moveTo(x + radius, y);
     ctx.lineTo(x + width - radius, y);
@@ -28597,7 +28598,7 @@ var printLayoutInfo;
     ctx.lineTo(x, y + radius);
     ctx.quadraticCurveTo(x, y, x + radius, y);
     ctx.closePath();
-    ctx.fill();
+    if (stroke) ctx.stroke();else ctx.fill();
   }
   CRp$6.getTextAngle = function (ele, prefix) {
     var theta;
@@ -28677,6 +28678,9 @@ var printLayoutInfo;
       var borderOpacity = ele.pstyle('text-border-opacity').value;
       var textBorderWidth = ele.pstyle('text-border-width').pfValue;
       var backgroundPadding = ele.pstyle('text-background-padding').pfValue;
+      var styleShape = ele.pstyle('text-background-shape').strValue;
+      var rounded = styleShape.indexOf('round') === 0;
+      var roundRadius = 2;
       if (backgroundOpacity > 0 || textBorderWidth > 0 && borderOpacity > 0) {
         var bgX = textX - backgroundPadding;
         switch (halign) {
@@ -28694,9 +28698,8 @@ var printLayoutInfo;
           var textFill = context.fillStyle;
           var textBackgroundColor = ele.pstyle('text-background-color').value;
           context.fillStyle = 'rgba(' + textBackgroundColor[0] + ',' + textBackgroundColor[1] + ',' + textBackgroundColor[2] + ',' + backgroundOpacity * parentOpacity + ')';
-          var styleShape = ele.pstyle('text-background-shape').strValue;
-          if (styleShape.indexOf('round') === 0) {
-            roundRect(context, bgX, bgY, bgW, bgH, 2);
+          if (rounded) {
+            roundRect(context, bgX, bgY, bgW, bgH, roundRadius);
           } else {
             context.fillRect(bgX, bgY, bgW, bgH);
           }
@@ -28727,10 +28730,18 @@ var printLayoutInfo;
                 break;
             }
           }
-          context.strokeRect(bgX, bgY, bgW, bgH);
+          if (rounded) {
+            roundRect(context, bgX, bgY, bgW, bgH, roundRadius, 'stroke');
+          } else {
+            context.strokeRect(bgX, bgY, bgW, bgH);
+          }
           if (textBorderStyle === 'double') {
             var whiteWidth = textBorderWidth / 2;
-            context.strokeRect(bgX + whiteWidth, bgY + whiteWidth, bgW - whiteWidth * 2, bgH - whiteWidth * 2);
+            if (rounded) {
+              roundRect(context, bgX + whiteWidth, bgY + whiteWidth, bgW - whiteWidth * 2, bgH - whiteWidth * 2, roundRadius, 'stroke');
+            } else {
+              context.strokeRect(bgX + whiteWidth, bgY + whiteWidth, bgW - whiteWidth * 2, bgH - whiteWidth * 2);
+            }
           }
           if (context.setLineDash) {
             // for very outofdate browsers
@@ -30659,7 +30670,7 @@ var printLayoutInfo;
     return style;
   };
 
-  var version = "3.27.1";
+  var version = "3.27.2";
 
   var cytoscape = function cytoscape(options) {
     // if no options specified, use default

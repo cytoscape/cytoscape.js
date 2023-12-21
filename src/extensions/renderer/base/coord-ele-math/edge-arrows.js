@@ -73,10 +73,14 @@ BRp.calculateArrowAngles = function( edge ){
 
       dispX = ( pts[ i2 ] - pts[ i1 ] );
       dispY = ( pts[ i2 + 1] - pts[ i1 + 1] );
-    } else {
-      dispX = rs.midVector[1];
-      dispY = -rs.midVector[0];
     }
+
+    //todo: the code below cause undefined property "1" error
+    //
+    // else {
+    //  // dispX = rs.midVector[1];
+    //  // dispY = -rs.midVector[0];
+    // }
   } else if( isMultibezier || isCompound || isSelf ){
     var pts = rs.allpts;
     var cpts = rs.ctrlpts;

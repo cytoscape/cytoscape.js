@@ -1,11 +1,12 @@
 [{
   "data": {
-    "id": "n01",
-    "type": "bezier"
+    "id": "n01"
   }
 }, {
   "data": {
-    "id": "n02"
+    "id": "n02",
+    "type": "bezier",
+    "flipLabel": true
   }
 }, {
   "data": {
@@ -43,12 +44,13 @@
   "classes": "unbundled-bezier"
 }, {
   "data": {
-    "id": "n05",
-    "type": "unbundled-bezier(multiple)"
+    "id": "n05"
   }
 }, {
   "data": {
-    "id": "n06"
+    "id": "n06",
+    "type": "unbundled-bezier(multiple)",
+    "flipLabel": true
   }
 }, {
   "data": {
@@ -74,12 +76,13 @@
   "classes": "straight"
 }, {
   "data": {
-    "id": "n09",
-    "type": "haystack"
+    "id": "n09"
   }
 }, {
   "data": {
-    "id": "n10"
+    "id": "n10",
+    "type": "haystack",
+    "flipLabel": true
   }
 }, {
   "data": {
@@ -180,41 +183,41 @@
     "target": "n18"
   },
   "classes": "taxi"
-},{
-  "data": {
-    "id": "n20",
-    "type": "loop",
-    "flipLabel": true
-  }
 }, {
   "data": {
-    "source": "n20",
-    "target": "n20"
-  },
-  "classes": "loop"
+    "id": "n20"
+  }
 }, {
   "data": {
     "id": "n21"
   }
 }, {
   "data": {
-    "id": "n22"
-  }
-}, {
-  "data": {
-    "id": "n23",
+    "id": "n22",
     "type": "round-taxi"
   }
 }, {
   "data": {
-    "source": "n23",
-    "target": "n21"
+    "source": "n22",
+    "target": "n20"
   },
   "classes": "round-taxi"
 }, {
   "data": {
-    "source": "n23",
-    "target": "n22"
+    "source": "n22",
+    "target": "n21"
   },
   "classes": "round-taxi"
-}]
+},{
+  "data": {
+    "id": "n23",
+    "type": "loop",
+    "flipLabel": true
+  }
+}, {
+  "data": {
+    "source": "n23",
+    "target": "n23"
+  },
+  "classes": "loop"}
+]

@@ -8,7 +8,7 @@
 
     layout: {
       name: 'grid',
-      columns: 4
+      columns: 6
     },
 
     style: fetch('cy-style.json').then(toJson),
@@ -31,20 +31,20 @@
 
     n17.add(n18).position({ y: p17.y + d });
 
-    //// make round-taxi nodes better organised
-    var n23 = cy.$('#n23');
-    var n21 = cy.$('#n21');
+    // make round-taxi nodes better organised
     var n22 = cy.$('#n22');
+    var n20 = cy.$('#n20');
+    var n21 = cy.$('#n21');
+    var p20 = n20.position();
     var p21 = n21.position();
-    var p22 = n22.position();
-    var dr = (p22.x - p21.x)/4;
+    var dr = (p21.x - p20.x)/4;
 
-    n23.position({
-      x: (p21.x + p22.x)/2,
-      y: p21.y
+    n22.position({
+      x: (p20.x + p21.x)/2,
+      y: p20.y -d
     });
 
-    n21.add(n22).position({ y: p21.y + 2 * dr });
+    n20.add(n21).position({ y: p20.y + dr });
 
   });
 })();

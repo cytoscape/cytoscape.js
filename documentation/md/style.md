@@ -451,6 +451,11 @@ A segment edge is made of a series of one or more straight lines, using a co-ord
     * A manual endpoint may be specified with a position, e.g. `source-endpoint: 20 10`.
     * A manual endpoint may be alternatively specified with an angle, e.g. `target-endpoint: 90deg`.
 
+## Round segments edges
+
+For rounded edges made of several straight lines (`curve-style: round-segments`, [demo](demos/edge-types)):
+
+A new segment edge type is introduced to facilitate the seamless creation of rounded segment edges, utilizing the same property as * **`segment-edges`**.
 
 ## Straight edges
 
@@ -497,6 +502,11 @@ When a taxi edge would be impossible to draw along the regular turning plan --- 
   * This property makes the taxi edge be re-routed when the turns would be otherwise too close to the source or target.  As such, it also helps to avoid turns overlapping edge endpoint arrows.
 * **`edge-distances`** : With value `intersection` (default), the distances (`taxi-turn` and `taxi-turn-min-distance`) are considered from the outside of the source's bounds to the outside of the target's bounds.  With value `node-position`, the distances are considered from the source position to the target position.  The `node-position` option makes calculating edge points easier --- but it should be used carefully because you can create invalid points that `intersection` would have automatically corrected.
 
+## Round taxi edges
+
+Apply the round style to Taxi edges (`curve-style: round-taxi`, [demo](demos/edge-types)):
+
+Similar to rounded segment edges, this round text edge type allows for smooth curvature to achieve a polished appearance.
 
 ## Edge arrow
 

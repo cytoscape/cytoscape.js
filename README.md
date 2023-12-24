@@ -8,7 +8,7 @@
 [![DOI](https://zenodo.org/badge/2255947.svg)](https://zenodo.org/badge/latestdoi/2255947)
 [![npm installs](https://img.shields.io/npm/dm/cytoscape.svg?label=npm%20installs)](https://www.npmjs.com/package/cytoscape)
 [![Automated tests](https://github.com/cytoscape/cytoscape.js/actions/workflows/tests.yml/badge.svg)](https://github.com/cytoscape/cytoscape.js/actions/workflows/tests.yml)
-[![Extensions](https://img.shields.io/badge/Extensions-68-brightgreen.svg)](https://js.cytoscape.org/#extensions)
+[![Extensions](https://img.shields.io/badge/Extensions-70-brightgreen.svg)](https://js.cytoscape.org/#extensions)
 [![Cloudflare](https://img.shields.io/badge/Powered%20by-Cloudflare-orange.svg)](https://cloudflare.com)
 
 

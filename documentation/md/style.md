@@ -193,6 +193,9 @@ Shape:
     * `vee`
     * `polygon` (custom polygon specified via `shape-polygon-points`).
  * **`shape-polygon-points`** : An array (or a space-separated string) of numbers ranging on [-1, 1], representing alternating x and y values (i.e. `x1 y1   x2 y2,   x3 y3 ...`).  This represents the points in the polygon for the node's shape.  The bounding box of the node is given by (-1, -1), (1, -1), (1, 1), (-1, 1).  The node's position is the origin (0, 0).
+ * **`corner-radius`** : The corner radius for `round-` shapes, in px or em. 
+   * **WARNING** If you are using corner radius for a parent node (see [compound nodes](#notation/compound-nodes)), you can have children nodes going outside their parent, e.g. node **E** in [compound demo](demos/compound-nodes). 
+     * In order to fix this issue, you can play with the `padding` of the parent node. Having the same value for `padding` and `corner-radius` is always safe, e.g. node **B** in [compound demo](demos/compound-nodes).
 
 Background:
 

@@ -73,7 +73,7 @@ const styfn = {};
       'tag', 'round-tag', 'star', 'diamond', 'round-diamond', 'vee', 'rhomboid', 'right-rhomboid', 'polygon',
     ] },
     overlayShape: { enums: [ 'roundrectangle', 'round-rectangle', 'ellipse' ] },
-    cornerRadius: { number: true, min: 0, units: '%|px|em', implicitUnits: 'px', enums: ['auto'] },
+    cornerRadius: { number: true, min: 0, units: 'px|em', implicitUnits: 'px', enums: ['auto'] },
     compoundIncludeLabels: { enums: [ 'include', 'exclude' ] },
     arrowShape: { enums: [ 'tee', 'triangle', 'triangle-tee', 'circle-triangle', 'triangle-cross', 'triangle-backcurve', 'vee', 'square', 'circle', 'diamond', 'chevron', 'none' ] },
     arrowFill: { enums: [ 'filled', 'hollow' ] },

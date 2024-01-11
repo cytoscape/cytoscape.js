@@ -74,14 +74,17 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
   let bgOpacity = node.pstyle('background-opacity').value * eleOpacity;
   let borderColor = node.pstyle('border-color').value;
   let borderStyle = node.pstyle('border-style').value;
+  let borderJoin = node.pstyle('border-join').value;
+  let borderCap = node.pstyle('border-cap').value;
+  let borderPosition = node.pstyle('border-position').value;
+  let borderPattern = node.pstyle('border-dash-pattern').pfValue;
+  let borderOffset = node.pstyle('border-dash-offset').pfValue;
   let borderOpacity = node.pstyle('border-opacity').value * eleOpacity;
   let outlineWidth = node.pstyle('outline-width').pfValue;
   let outlineColor = node.pstyle('outline-color').value;
   let outlineStyle = node.pstyle('outline-style').value;
   let outlineOpacity = node.pstyle('outline-opacity').value * eleOpacity;
   let outlineOffset = node.pstyle('outline-offset').value;
-
-  context.lineJoin = 'miter'; // so borders are square with the node shape
 
   let setupShapeColor = ( bgOpy = bgOpacity ) => {
     r.eleFillStyle( context, node, bgOpy );
@@ -225,7 +228,8 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
     if( borderWidth > 0 ){
 
       context.lineWidth = borderWidth;
-      context.lineCap = 'butt';
+      context.lineCap = borderCap;
+      context.lineJoin = borderJoin;
 
       if( context.setLineDash ){ // for very outofdate browsers
         switch( borderStyle ){
@@ -234,7 +238,8 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
             break;
 
           case 'dashed':
-            context.setLineDash( [ 4, 2 ] );
+            context.setLineDash( borderPattern );
+            context.lineDashOffset = borderOffset;
             break;
 
           case 'solid':
@@ -244,10 +249,26 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
         }
       }
 
-      if( usePaths ){
-        context.stroke( path );
+      if ( borderPosition !== 'center') {
+        context.save();
+        context.lineWidth *= 2;
+        if (borderPosition === 'inside') {
+          usePaths ? context.clip(path) : context.clip();
+        } else {
+          const region = new Path2D();
+          region.rect(
+          -nodeWidth / 2 - borderWidth,
+          -nodeHeight / 2 - borderWidth,
+          nodeWidth + 2 * borderWidth,
+          nodeHeight + 2 * borderWidth
+          );
+          region.addPath(path);
+          context.clip(region, 'evenodd');
+        }
+        usePaths ? context.stroke(path) : context.stroke();
+        context.restore();
       } else {
-        context.stroke();
+        usePaths ? context.stroke(path) : context.stroke();
       }
 
       if( borderStyle === 'double' ){

@@ -123,7 +123,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
     }
 
     return {
-      path, 
+      path,
       cacheHit
     };
   };
@@ -166,7 +166,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
     }
   };
 
-  let drawImages = ( nodeOpacity = eleOpacity, inside = true ) => {  
+  let drawImages = ( nodeOpacity = eleOpacity, inside = true ) => {
     let prevBging = _p.backgrounding;
     let totalCompleted = 0;
 
@@ -306,12 +306,12 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
       }
 
       let shape = r.getNodeShape( node );
-      
+
       let scaleX = (nodeWidth + borderWidth + (outlineWidth + outlineOffset)) / nodeWidth;
       let scaleY = (nodeHeight + borderWidth + (outlineWidth + outlineOffset)) / nodeHeight;
       let sWidth = nodeWidth * scaleX;
       let sHeight = nodeHeight * scaleY;
-      
+
       let points = r.nodeShapes[ shape ].points;
       let path;
 
@@ -325,7 +325,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
       if (shape === "ellipse") {
         r.drawEllipsePath(path || context, npos.x, npos.y, sWidth, sHeight);
       } else if ([
-        'round-diamond', 'round-heptagon', 'round-hexagon', 'round-octagon', 
+        'round-diamond', 'round-heptagon', 'round-hexagon', 'round-octagon',
         'round-pentagon', 'round-polygon', 'round-triangle', 'round-tag'
       ].includes(shape)) {
         let sMult = 0;
@@ -354,13 +354,13 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
           scaleY = (nodeHeight + sMult)/nodeHeight;
         }
 
-        r.drawRoundPolygonPath(path || context, npos.x + offsetX, npos.y + offsetY, nodeWidth * scaleX, nodeHeight * scaleY, points, cornerRadius);
+        r.drawRoundPolygonPath(path || context, npos.x + offsetX, npos.y + offsetY, nodeWidth * scaleX, nodeHeight * scaleY, points, cornerRadius + outlineOffset);
       } else if (['roundrectangle', 'round-rectangle'].includes(shape)) {
-        r.drawRoundRectanglePath(path || context, npos.x, npos.y, sWidth, sHeight, cornerRadius);
+        r.drawRoundRectanglePath(path || context, npos.x, npos.y, sWidth, sHeight, cornerRadius + outlineOffset);
       } else if (['cutrectangle', 'cut-rectangle'].includes(shape)) {
         r.drawCutRectanglePath(path || context, npos.x, npos.y, sWidth, sHeight);
       } else if (['bottomroundrectangle', 'bottom-round-rectangle'].includes(shape)) {
-        r.drawBottomRoundRectanglePath(path || context, npos.x, npos.y, sWidth, sHeight, cornerRadius);
+        r.drawBottomRoundRectanglePath(path || context, npos.x, npos.y, sWidth, sHeight, cornerRadius + outlineOffset);
       } else if (shape === "barrel") {
         r.drawBarrelPath(path || context, npos.x, npos.y, sWidth, sHeight);
       } else if (shape.startsWith("polygon") || ['rhomboid', 'right-rhomboid', 'round-tag', 'tag', 'vee'].includes(shape)) {
@@ -372,7 +372,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
         points = joinLines(expandPolygon(points, -pad));
         r.drawPolygonPath(path || context, npos.x, npos.y, nodeWidth, nodeHeight, points);
       }
-      
+
       if( usePaths ){
         context.stroke( path );
       } else {
@@ -458,7 +458,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
   drawBorder();
   drawPie( darkness !== 0 || borderWidth !== 0 );
   drawImages(eleOpacity, false);
-  
+
   darken();
 
   if( usePaths ){

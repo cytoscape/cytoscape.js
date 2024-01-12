@@ -23,7 +23,7 @@ const invertVec = function (originalV, invertedV) {
   invertedV.y = originalV.y * -1;
   invertedV.nx = originalV.nx * -1;
   invertedV.ny = originalV.ny * -1;
-  invertedV.ang = Math.atan2(invertedV.ny, invertedV.nx);
+  invertedV.ang = originalV.ang > 0 ? -(Math.PI - originalV.ang): Math.PI + originalV.ang;
 };
 
 const calcCornerArc = (previousPoint, currentPoint, nextPoint, radiusMax) => {

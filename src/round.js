@@ -6,6 +6,7 @@
 // Declare reused variable to avoid reallocating variables every time the function is called
 let x, y, v1 = {}, v2 = {}, sinA, sinA90, radDirection, drawDirection, angle, halfAngle, cRadius, lenOut, radius;
 let startX, startY, stopX, stopY;
+let lastPoint;
 
 // convert 2 points into vector form, polar form, and normalised
 const asVec = function (p, pp, v) {
@@ -17,18 +18,18 @@ const asVec = function (p, pp, v) {
   v.ang = Math.atan2(v.ny, v.nx);
 }
 
-const invertVec = function (v) {
-  v.x *= -1;
-  v.y *= -1;
-  v.nx *= -1;
-  v.ny *= -1;
-  v.ang = Math.atan2(v.ny, v.nx);
-}
+const invertVec = function (originalV, invertedV) {
+  invertedV.x = originalV.x * -1;
+  invertedV.y = originalV.y * -1;
+  invertedV.nx = originalV.nx * -1;
+  invertedV.ny = originalV.ny * -1;
+  invertedV.ang = Math.atan2(invertedV.ny, invertedV.nx);
+};
 
 const calcCornerArc = (previousPoint, currentPoint, nextPoint, radiusMax) => {
   //-----------------------------------------
   // Part 1
-  asVec(currentPoint, previousPoint, v1);
+  previousPoint !== lastPoint ? asVec(currentPoint, previousPoint, v1) : invertVec(v2, v1);
   asVec(currentPoint, nextPoint, v2);
   sinA = v1.nx * v2.ny - v1.ny * v2.nx;
   sinA90 = v1.nx * v2.nx - v1.ny * -v2.ny;
@@ -85,7 +86,10 @@ const calcCornerArc = (previousPoint, currentPoint, nextPoint, radiusMax) => {
   // Additional Part : calculate start point E
   startX = currentPoint.x + v1.nx * lenOut;
   startY = currentPoint.y + v1.ny * lenOut;
-}
+
+  // Save last point to avoid recalculating vector when not needed
+  lastPoint = currentPoint;
+};
 
 
 /**

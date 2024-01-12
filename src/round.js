@@ -16,7 +16,7 @@ const asVec = function (p, pp, v) {
   v.nx = v.x / v.len;
   v.ny = v.y / v.len;
   v.ang = Math.atan2(v.ny, v.nx);
-}
+};
 
 const invertVec = function (originalV, invertedV) {
   invertedV.x = originalV.x * -1;
@@ -143,7 +143,7 @@ export function getRoundCorner(previousPoint, currentPoint, nextPoint, radiusMax
     startAngle: undefined,
     endAngle: undefined,
     counterClockwise: undefined
-  }
+  };
 
   calcCornerArc(previousPoint, currentPoint, nextPoint, radiusMax);
   return {

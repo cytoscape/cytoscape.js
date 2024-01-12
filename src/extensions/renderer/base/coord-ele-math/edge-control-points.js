@@ -463,7 +463,7 @@ BRp.findTaxiPoints = function( edge, pairInfo ){
       ];
     }
     const radius = edge.pstyle( 'taxi-radius' ).value;
-    rs.radii = new Array( rs.segpts.length / 2 ).fill( radius )
+    rs.radii = new Array( rs.segpts.length / 2 ).fill( radius );
   }
 };
 
@@ -646,16 +646,16 @@ BRp.storeAllpts = function( edge ){
           point,
           {  x: rs.segpts[ i1 + 2 ] || rs.endX, y: rs.segpts[ i1 + 3 ] || rs.endY },
           radius
-        )
+        );
 
         let v  = [
            point.x - corner.cx,
            point.y - corner.cy
         ];
 
-        const factor = corner.radius / Math.sqrt(Math.pow(v[0], 2) +  Math.pow(v[1], 2))
+        const factor = corner.radius / Math.sqrt(Math.pow(v[0], 2) +  Math.pow(v[1], 2));
 
-        v = v.map(c => c * factor)
+        v = v.map(c => c * factor);
 
         rs.midX = corner.cx + v[0];
         rs.midY = corner.cy + v[1];

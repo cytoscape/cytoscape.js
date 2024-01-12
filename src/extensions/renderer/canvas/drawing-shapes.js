@@ -33,7 +33,7 @@ CRp.drawRoundPolygonPath = function(
       p[i] = {
         x: x + halfW * points[ i * 2 ],
         y: y + halfH * points[ i * 2 + 1 ]
-      }
+      };
     }
 
     let i, p1, p2, p3, len = p.length;

@@ -218,7 +218,7 @@ CRp.drawEdgePath = function( edge, context, pts, type ){
             drawRoundCorner(context,
               {x: pts[i - 2], y: pts[i - 1]},
               {x: pts[i], y: pts[i + 1], radius: rs.radii[ (i / 2)  - 1]},
-              {x: pts[i + 2], y: pts[i + 3]}, Infinity)
+              {x: pts[i + 2], y: pts[i + 3]}, Infinity);
           }
           context.lineTo( pts[ pts.length - 2 ], pts[ pts.length - 1] );
         } else {

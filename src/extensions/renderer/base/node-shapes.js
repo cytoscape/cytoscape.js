@@ -118,7 +118,7 @@ BRp.generateRoundRectangle = function(){
       let halfWidth = width / 2;
       let halfHeight = height / 2;
       cornerRadius = cornerRadius === 'auto' ? math.getRoundRectangleRadius( width, height ) : cornerRadius;
-      cornerRadius = Math.min(halfWidth, halfHeight, cornerRadius)
+      cornerRadius = Math.min(halfWidth, halfHeight, cornerRadius);
       var diam = cornerRadius * 2;
 
       // Check hBox

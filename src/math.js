@@ -1,5 +1,3 @@
-import * as round from "./round";
-
 export const arePositionsSame = ( p1, p2 ) =>
   p1.x === p2.x && p1.y === p2.y;
 
@@ -812,41 +810,20 @@ export const pointInsidePolygon = ( x, y, basePoints, centerX, centerY, width, h
   return pointInsidePolygonPoints( x, y, points );
 };
 
-export const pointInsideRoundPolygon = (x, y, basePoints, centerX, centerY, width, height, radius = 'auto') => {
+export const pointInsideRoundPolygon = (x, y, basePoints, centerX, centerY, width, height, corners) => {
   const cutPolygonPoints = new Array( basePoints.length * 2 );
-  const halfW = width / 2;
-  const halfH = height / 2;
-  const cornerRadius = radius === 'auto' ? getRoundPolygonRadius( width, height ) : radius;
-  const p = new Array( basePoints.length / 2 );
 
-  for( let i = 0; 2 * i + 1 < basePoints.length; i++ ){
-    p[ i ] = {
-      x: x + halfW * basePoints[ 2 * i ],
-      y: y + halfH * basePoints[ 2 * i + 1 ]
-    };
-  }
-
-  let i, p1, p2, p3, len = p.length;
-
-  p1 = p[len - 1];
-  // for each point
-  for (i = 0; i < len; i++) {
-    p2 = p[(i) % len];
-    p3 = p[(i + 1) % len];
-    let corner = round.getRoundCorner(p1, p2, p3, cornerRadius);
-
+  for( let i = 0; i < corners.length; i++ ){
+    let corner = corners[i];
     cutPolygonPoints[i * 4 + 0] = corner.startX;
     cutPolygonPoints[i * 4 + 1] = corner.startY;
     cutPolygonPoints[i * 4 + 2] = corner.stopX;
     cutPolygonPoints[i * 4 + 3] = corner.stopY;
 
-    const squaredDistance = Math.pow(corner.cx - x, 2) + Math.pow(corner.cy - y, 2);
-    if (squaredDistance <= Math.pow(corner.radius, 2)) {
+    const squaredDistance = Math.pow(corner.cx - x, 2 ) + Math.pow(corner.cy - y, 2 );
+    if( squaredDistance <= Math.pow( corner.radius, 2 ) ){
       return true;
     }
-
-    p1 = p2;
-    p2 = p3;
   }
 
   return pointInsidePolygonPoints(x, y, cutPolygonPoints);
@@ -1191,27 +1168,12 @@ export const polygonIntersectLine = ( x, y, basePoints, centerX, centerY, width,
   return intersections;
 };
 
-export const roundPolygonIntersectLine = ( x, y, basePoints, centerX, centerY, width, height, padding, radius ) => {
+export const roundPolygonIntersectLine = ( x, y, basePoints, centerX, centerY, width, height, padding, corners ) => {
   let intersections = [];
   let intersection;
   let lines = new Array(basePoints.length * 2);
-  const halfW = width / 2;
-  const halfH = height / 2;
-  const cornerRadius = radius === 'auto' ? getRoundPolygonRadius(width, height) : radius;
-  const p = new Array(basePoints.length / 2);
 
-  for (let i = 0; 2 * i + 1 < basePoints.length; i++) {
-    p[i] = {x: centerX + halfW * basePoints[2 * i], y: centerY + halfH * basePoints[2 * i + 1]};
-  }
-
-  let i, p1, p2, p3, len = p.length;
-
-  p1 = p[len - 1];
-  // for each point
-  for (i = 0; i < len; i++) {
-    p2 = p[(i) % len];
-    p3 = p[(i + 1) % len];
-    let corner = round.getRoundCorner(p1, p2, p3, cornerRadius);
+  corners.forEach( (corner, i) => {
     if (i === 0) {
       lines[lines.length - 2] = corner.startX;
       lines[lines.length - 1] = corner.startY;
@@ -1228,10 +1190,7 @@ export const roundPolygonIntersectLine = ( x, y, basePoints, centerX, centerY, w
     if (intersection.length !== 0) {
       intersections.push(intersection[0], intersection[1]);
     }
-
-    p1 = p2;
-    p2 = p3;
-  }
+  });
 
   for( let i = 0; i < lines.length / 4; i++ ) {
     intersection = finiteLinesIntersect(

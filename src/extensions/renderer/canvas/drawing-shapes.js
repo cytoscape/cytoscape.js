@@ -22,34 +22,8 @@ CRp.drawPolygonPath = function(
 };
 
 CRp.drawRoundPolygonPath = function(
-    context, x, y, width, height, points, radius ){
-
-    const halfW = width / 2;
-    const halfH = height / 2;
-    const cornerRadius = radius === 'auto' ? math.getRoundPolygonRadius( width, height ) : radius;
-    const p = new Array( points.length / 2 );
-
-    for ( let i = 0; i < points.length / 2; i++ ){
-      p[i] = {
-        x: x + halfW * points[ i * 2 ],
-        y: y + halfH * points[ i * 2 + 1 ]
-      };
-    }
-
-    let i, p1, p2, p3, len = p.length;
-
-    p1 = p[ len - 1 ];
-    // for each point
-    for( i = 0; i < len; i++ ){
-      p2 = p[ (i) % len ];
-      p3 = p[ (i + 1) % len ];
-
-      let corner = round.getRoundCorner( p1, p2, p3, cornerRadius );
-      round.drawPreparedRoundCorner( context, corner );
-
-      p1 = p2;
-      p2 = p3;
-    }
+    context, x, y, width, height, points, corners ){
+    corners.forEach( corner => round.drawPreparedRoundCorner( context, corner ) );
     context.closePath();
 };
 
@@ -104,11 +78,11 @@ CRp.drawBottomRoundRectanglePath = function(
 };
 
 CRp.drawCutRectanglePath = function(
-  context, x, y, width, height ){
+  context, x, y, width, height, points, corners ){
 
     var halfWidth = width / 2;
     var halfHeight = height / 2;
-    var cornerLength = math.getCutRectangleCornerLength();
+    var cornerLength = corners === 'auto' ? math.getCutRectangleCornerLength() : corners;
 
     if( context.beginPath ){ context.beginPath(); }
 

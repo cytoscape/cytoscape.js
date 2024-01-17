@@ -1,8 +1,10 @@
 /* global Path2D */
 
 import * as is from '../../../is';
-import { expandPolygon, joinLines } from '../../../math';
+import {expandPolygon, joinLines} from '../../../math';
 import * as util from '../../../util';
+import * as round from "../../../round";
+import * as math from "../../../math";
 
 let CRp = {};
 
@@ -159,7 +161,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
         npos.x,
         npos.y,
         nodeWidth,
-        nodeHeight, cornerRadius );
+        nodeHeight, cornerRadius, rs );
     }
 
     if( usePaths ){
@@ -205,7 +207,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
               pos.x,
               pos.y,
               nodeWidth,
-              nodeHeight );
+              nodeHeight, cornerRadius, rs );
         }
       }
     }
@@ -328,8 +330,12 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
 
       let shape = r.getNodeShape( node );
 
-      let scaleX = (nodeWidth + borderWidth + (outlineWidth + outlineOffset)) / nodeWidth;
-      let scaleY = (nodeHeight + borderWidth + (outlineWidth + outlineOffset)) / nodeHeight;
+      let bWidth = borderWidth;
+      if( borderPosition === 'inside' ) bWidth = 0;
+      if( borderPosition === 'outside' ) bWidth *= 2;
+
+      let scaleX = (nodeWidth + bWidth + (outlineWidth + outlineOffset)) / nodeWidth;
+      let scaleY = (nodeHeight + bWidth + (outlineWidth + outlineOffset)) / nodeHeight;
       let sWidth = nodeWidth * scaleX;
       let sHeight = nodeHeight * scaleY;
 
@@ -352,44 +358,80 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
         let sMult = 0;
         let offsetX = 0;
         let offsetY = 0;
+
         if (shape === 'round-diamond') {
-          sMult = (borderWidth + outlineOffset + outlineWidth) * 1.4;
+          sMult = (bWidth + outlineOffset + outlineWidth) * 1.4;
         } else if (shape === 'round-heptagon') {
-          sMult = (borderWidth + outlineOffset + outlineWidth) * 1.075;
-          offsetY = -(borderWidth/2 + outlineOffset + outlineWidth) / 35;
+          sMult = (bWidth + outlineOffset + outlineWidth) * 1.075;
+          offsetY = -(bWidth/2 + outlineOffset + outlineWidth) / 35;
         } else if (shape === 'round-hexagon') {
-          sMult = (borderWidth + outlineOffset + outlineWidth) * 1.12;
+          sMult = (bWidth + outlineOffset + outlineWidth) * 1.12;
         } else if (shape === 'round-pentagon') {
-          sMult = (borderWidth + outlineOffset + outlineWidth) * 1.13;
-          offsetY = -(borderWidth/2 + outlineOffset + outlineWidth) / 15;
+          sMult = (bWidth + outlineOffset + outlineWidth) * 1.13;
+          offsetY = -(bWidth/2 + outlineOffset + outlineWidth) / 15;
         } else if (shape === 'round-tag') {
-          sMult = (borderWidth + outlineOffset + outlineWidth) * 1.12;
-          offsetX = (borderWidth/2 + outlineWidth + outlineOffset) * .07;
+          sMult = (bWidth + outlineOffset + outlineWidth) * 1.12;
+          offsetX = (bWidth/2 + outlineWidth + outlineOffset) * .07;
         } else if (shape === 'round-triangle') {
-          sMult = (borderWidth + outlineOffset + outlineWidth) * (Math.PI/2);
-          offsetY = -(borderWidth + outlineOffset/2 + outlineWidth) / Math.PI;
+          sMult = (bWidth + outlineOffset + outlineWidth) * (Math.PI/2);
+          offsetY = -(bWidth + outlineOffset/2 + outlineWidth) / Math.PI;
         }
 
         if (sMult !== 0) {
           scaleX = (nodeWidth + sMult)/nodeWidth;
-          scaleY = (nodeHeight + sMult)/nodeHeight;
+          sWidth = nodeWidth * scaleX;
+          if ( ! ['round-hexagon', 'round-tag'].includes(shape) ) {
+            scaleY = (nodeHeight + sMult)/nodeHeight;
+            sHeight = nodeHeight * scaleY;
+          }
         }
 
-        r.drawRoundPolygonPath(path || context, npos.x + offsetX, npos.y + offsetY, nodeWidth * scaleX, nodeHeight * scaleY, points, cornerRadius + outlineOffset);
+
+        cornerRadius = cornerRadius === 'auto' ? math.getRoundPolygonRadius( sWidth, sHeight ) : cornerRadius;
+
+        const halfW = sWidth / 2;
+        const halfH = sHeight / 2;
+        const radius = cornerRadius + ( bWidth +  outlineWidth + outlineOffset ) / 2;
+        const p = new Array( points.length / 2 );
+        const corners = new Array( points.length / 2 );
+
+        for ( let i = 0; i < points.length / 2; i++ ){
+          p[i] = {
+            x: npos.x + offsetX + halfW * points[ i * 2 ],
+            y: npos.y + offsetY + halfH * points[ i * 2 + 1 ]
+          };
+        }
+
+        let i, p1, p2, p3, len = p.length;
+
+        p1 = p[ len - 1 ];
+        // for each point
+        for( i = 0; i < len; i++ ){
+          p2 = p[ (i) % len ];
+          p3 = p[ (i + 1) % len ];
+          corners[ i ] = round.getRoundCorner( p1, p2, p3, radius );
+          p1 = p2;
+          p2 = p3;
+        }
+
+        r.drawRoundPolygonPath(path || context, npos.x + offsetX, npos.y + offsetY, nodeWidth * scaleX, nodeHeight * scaleY, points, corners );
       } else if (['roundrectangle', 'round-rectangle'].includes(shape)) {
-        r.drawRoundRectanglePath(path || context, npos.x, npos.y, sWidth, sHeight, cornerRadius + outlineOffset);
+        cornerRadius = cornerRadius === 'auto' ? math.getRoundRectangleRadius( sWidth, sHeight ) : cornerRadius;
+        r.drawRoundRectanglePath(path || context, npos.x, npos.y, sWidth, sHeight, cornerRadius + ( bWidth +  outlineWidth + outlineOffset ) / 2 );
       } else if (['cutrectangle', 'cut-rectangle'].includes(shape)) {
-        r.drawCutRectanglePath(path || context, npos.x, npos.y, sWidth, sHeight);
+        cornerRadius = cornerRadius === 'auto' ? math.getCutRectangleCornerLength( sWidth, sHeight ) : cornerRadius;
+        r.drawCutRectanglePath(path || context, npos.x, npos.y, sWidth, sHeight, null ,cornerRadius + ( bWidth +  outlineWidth  + outlineOffset ) / 4   );
       } else if (['bottomroundrectangle', 'bottom-round-rectangle'].includes(shape)) {
-        r.drawBottomRoundRectanglePath(path || context, npos.x, npos.y, sWidth, sHeight, cornerRadius + outlineOffset);
+        cornerRadius = cornerRadius === 'auto' ? math.getRoundRectangleRadius( sWidth, sHeight ) : cornerRadius;
+        r.drawBottomRoundRectanglePath(path || context, npos.x, npos.y, sWidth, sHeight, cornerRadius + ( bWidth +  outlineWidth + outlineOffset ) / 2 );
       } else if (shape === "barrel") {
         r.drawBarrelPath(path || context, npos.x, npos.y, sWidth, sHeight);
       } else if (shape.startsWith("polygon") || ['rhomboid', 'right-rhomboid', 'round-tag', 'tag', 'vee'].includes(shape)) {
-        let pad = (borderWidth + outlineWidth + outlineOffset) / nodeWidth;
+        let pad = (bWidth + outlineWidth + outlineOffset) / nodeWidth;
         points = joinLines(expandPolygon(points, pad));
         r.drawPolygonPath(path || context, npos.x, npos.y, nodeWidth, nodeHeight, points);
       } else {
-        let pad = (borderWidth + outlineWidth + outlineOffset) / nodeWidth;
+        let pad = (bWidth + outlineWidth + outlineOffset) / nodeWidth;
         points = joinLines(expandPolygon(points, -pad));
         r.drawPolygonPath(path || context, npos.x, npos.y, nodeWidth, nodeHeight, points);
       }
@@ -401,7 +443,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
       }
 
       if( outlineStyle === 'double' ){
-        context.lineWidth = borderWidth / 3;
+        context.lineWidth = bWidth / 3;
 
         let gco = context.globalCompositeOperation;
         context.globalCompositeOperation = 'destination-out';
@@ -512,7 +554,8 @@ const drawNodeOverlayUnderlay = function( overlayOrUnderlay ) {
     let padding = node.pstyle( `${overlayOrUnderlay}-padding` ).pfValue;
     let opacity = node.pstyle( `${overlayOrUnderlay}-opacity` ).value;
     let color = node.pstyle( `${overlayOrUnderlay}-color` ).value;
-    var shape = node.pstyle( `${overlayOrUnderlay}-shape` ).value;
+    let shape = node.pstyle( `${overlayOrUnderlay}-shape` ).value;
+    let radius = node.pstyle( `${overlayOrUnderlay}-corner-radius` ).value;
 
     if( opacity > 0 ){
       pos = pos || node.position();
@@ -531,7 +574,8 @@ const drawNodeOverlayUnderlay = function( overlayOrUnderlay ) {
         pos.x,
         pos.y,
         nodeWidth + padding * 2,
-        nodeHeight + padding * 2
+        nodeHeight + padding * 2,
+        radius
       );
 
       context.fill();

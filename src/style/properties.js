@@ -253,14 +253,16 @@ const styfn = {};
     { name: 'overlay-padding', type: t.size, triggersBounds: diff.any },
     { name: 'overlay-color', type: t.color },
     { name: 'overlay-opacity', type: t.zeroOneNumber, triggersBounds: diff.zeroNonZero },
-    { name: 'overlay-shape', type: t.overlayShape, triggersBounds: diff.any }
+    { name: 'overlay-shape', type: t.overlayShape, triggersBounds: diff.any },
+    { name: 'overlay-corner-radius', type: t.cornerRadius }
   ];
 
   let underlay = [
     { name: 'underlay-padding', type: t.size, triggersBounds: diff.any },
     { name: 'underlay-color', type: t.color },
     { name: 'underlay-opacity', type: t.zeroOneNumber, triggersBounds: diff.zeroNonZero },
-    { name: 'underlay-shape', type: t.overlayShape, triggersBounds: diff.any }
+    { name: 'underlay-shape', type: t.overlayShape, triggersBounds: diff.any },
+    { name: 'underlay-corner-radius', type: t.cornerRadius }
   ];
 
   let transition = [
@@ -615,10 +617,12 @@ styfn.getDefaultProperties = function(){
     'overlay-color': '#000',
     'overlay-padding': 10,
     'overlay-shape': 'round-rectangle',
+    'overlay-corner-radius': 'auto',
     'underlay-opacity': 0,
     'underlay-color': '#000',
     'underlay-padding': 10,
     'underlay-shape': 'round-rectangle',
+    'underlay-corner-radius': 'auto',
     'transition-property': 'none',
     'transition-duration': 0,
     'transition-delay': 0,

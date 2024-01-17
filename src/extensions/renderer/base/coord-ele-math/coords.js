@@ -135,6 +135,7 @@ BRp.findNearestElements = function( x, y, interactiveElementsOnly, isTouch ){
     var hh = height / 2;
     var pos = node.position();
     var cornerRadius = node.pstyle('corner-radius').value === 'auto' ? 'auto' : node.pstyle('corner-radius').pfValue;
+    var rs = node._private.rscratch;
 
     if(
       pos.x - hw <= x && x <= pos.x + hw // bb check x
@@ -144,7 +145,7 @@ BRp.findNearestElements = function( x, y, interactiveElementsOnly, isTouch ){
       var shape = r.nodeShapes[ self.getNodeShape( node ) ];
 
       if(
-        shape.checkPoint( x, y, 0, width, height, pos.x, pos.y, cornerRadius )
+        shape.checkPoint( x, y, 0, width, height, pos.x, pos.y, cornerRadius, rs )
       ){
         addEle( node, 0 );
         return true;

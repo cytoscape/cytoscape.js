@@ -9,7 +9,16 @@ var cy, defaultSty, options;
       .selector('node')
         .style({
           'background-opacity': 0.4,
-          'label': 'data(id)'
+          'label': 'data(id)',
+          'outline-offset': 5,
+          'outline-color': 'red',
+          'outline-opacity': 0.5,
+          'outline-width': 10,
+          'outline-style': 'solid',
+          'border-width': 5,
+          'border-opacity': 0.5,
+          'border-color': 'blue',
+          'border-position': 'outside'
         })
       .selector('node#a')
         .style({
@@ -21,8 +30,15 @@ var cy, defaultSty, options;
       .selector('node#b')
       .style({
         'shape': 'round-hexagon',
-        'width': 40,
+        'width': 60,
+        'height': 60,
         'corner-radius': 10
+      })
+      .selector('node#e')
+      .style({
+        'shape': 'cut-rectangle',
+        'width': 50,
+        'corner-radius': 10,
       })
 
       .selector('edge')

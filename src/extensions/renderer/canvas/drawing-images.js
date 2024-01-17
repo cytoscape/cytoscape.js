@@ -155,7 +155,7 @@ CRp.drawInscribedImage = function( context, img, node, index, nodeOpacity ){
           context,
           nodeX, nodeY,
           nodeTW, nodeTH,
-          cornerRadius );
+          cornerRadius, rs );
 
         context.clip();
       }
@@ -173,7 +173,7 @@ CRp.drawInscribedImage = function( context, img, node, index, nodeOpacity ){
     r.nodeShapes[ r.getNodeShape( node ) ].draw(
         context,
         nodeX, nodeY,
-        nodeTW, nodeTH );
+        nodeTW, nodeTH, cornerRadius, rs);
 
     context.translate( x, y );
     context.fill();

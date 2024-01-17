@@ -1,4 +1,5 @@
 import * as math from '../../../math';
+import * as round from "../../../round";
 
 var BRp = {};
 
@@ -68,24 +69,60 @@ BRp.generateRoundPolygon = function( name, points ){
 
     points: points,
 
-    draw: function( context, centerX, centerY, width, height, cornerRadius ){
-      this.renderer.nodeShapeImpl( 'round-polygon', context, centerX, centerY, width, height, this.points, cornerRadius );
+    getOrCreateCorners: function (centerX, centerY, width, height, cornerRadius, rs, field) {
+      if( rs[field] !== undefined && rs[field + '-cx'] === centerX && rs [field + '-cy'] === centerY ){
+        return rs[field];
+      }
+
+      rs[field] = new Array( points.length / 2 );
+      rs[field + '-cx'] = centerX;
+      rs[field + '-cy'] = centerY;
+      const halfW = width / 2;
+      const halfH = height / 2;
+      cornerRadius = cornerRadius === 'auto' ? math.getRoundPolygonRadius( width, height ) : cornerRadius;
+      const p = new Array( points.length / 2 );
+
+      for ( let i = 0; i < points.length / 2; i++ ){
+        p[i] = {
+          x: centerX + halfW * points[ i * 2 ],
+          y: centerY + halfH * points[ i * 2 + 1 ]
+        };
+      }
+
+      let i, p1, p2, p3, len = p.length;
+
+      p1 = p[ len - 1 ];
+      // for each point
+      for( i = 0; i < len; i++ ){
+        p2 = p[ (i) % len ];
+        p3 = p[ (i + 1) % len ];
+        rs[ field ][ i ] = round.getRoundCorner( p1, p2, p3, cornerRadius );
+
+        p1 = p2;
+        p2 = p3;
+      }
+
+      return rs[ field ];
     },
 
-    intersectLine: function( nodeX, nodeY, width, height, x, y, padding, cornerRadius ){
+    draw: function( context, centerX, centerY, width, height, cornerRadius , rs){
+      this.renderer.nodeShapeImpl( 'round-polygon', context, centerX, centerY, width, height, this.points, this.getOrCreateCorners( centerX, centerY, width, height, cornerRadius, rs, 'drawCorners' ));
+    },
+
+    intersectLine: function( nodeX, nodeY, width, height, x, y, padding, cornerRadius, rs ){
         return math.roundPolygonIntersectLine(
           x, y,
           this.points,
           nodeX,
           nodeY,
           width, height,
-          padding, cornerRadius )
+          padding, this.getOrCreateCorners( nodeX, nodeY, width, height, cornerRadius, rs, 'corners' ) )
           ;
     },
 
-    checkPoint: function( x, y, padding, width, height, centerX, centerY, cornerRadius ){
+    checkPoint: function( x, y, padding, width, height, centerX, centerY, cornerRadius, rs ){
       return math.pointInsideRoundPolygon( x, y, this.points,
-          centerX, centerY, width, height, cornerRadius)
+          centerX, centerY, width, height, this.getOrCreateCorners( centerX, centerY, width, height, cornerRadius, rs, 'corners' ) )
           ;
     }
   } );
@@ -100,7 +137,7 @@ BRp.generateRoundRectangle = function(){
     points: math.generateUnitNgonPointsFitToSquare( 4, 0 ),
 
     draw: function( context, centerX, centerY, width, height, cornerRadius ){
-      this.renderer.nodeShapeImpl( this.name, context, centerX, centerY, width, height, cornerRadius );
+      this.renderer.nodeShapeImpl( this.name, context, centerX, centerY, width, height, this.points, cornerRadius );
     },
 
     intersectLine: function( nodeX, nodeY, width, height, x, y, padding, cornerRadius ){
@@ -189,11 +226,11 @@ BRp.generateCutRectangle = function(){
     points: math.generateUnitNgonPointsFitToSquare( 4, 0 ),
 
     draw: function( context, centerX, centerY, width, height, cornerRadius ){
-      this.renderer.nodeShapeImpl( this.name, context, centerX, centerY, width, height);
+      this.renderer.nodeShapeImpl( this.name, context, centerX, centerY, width, height, null, cornerRadius);
     },
 
-    generateCutTrianglePts: function( width, height, centerX, centerY ){
-      var cl = this.cornerLength;
+    generateCutTrianglePts: function( width, height, centerX, centerY, cornerRadius ){
+      var cl = cornerRadius === 'auto' ? this.cornerLength : cornerRadius;
       var hh = height / 2;
       var hw = width / 2;
       var xBegin = centerX - hw;
@@ -211,7 +248,7 @@ BRp.generateCutRectangle = function(){
     },
 
     intersectLine: function( nodeX, nodeY, width, height, x, y, padding, cornerRadius ){
-      var cPts = this.generateCutTrianglePts( width + 2*padding, height+2*padding, nodeX, nodeY );
+      var cPts = this.generateCutTrianglePts( width + 2*padding, height+2*padding, nodeX, nodeY, cornerRadius );
       var pts = [].concat.apply([],
        [cPts.topLeft.splice(0, 4), cPts.topRight.splice(0, 4),
          cPts.bottomRight.splice(0, 4), cPts.bottomLeft.splice(0, 4)
@@ -221,15 +258,16 @@ BRp.generateCutRectangle = function(){
     },
 
     checkPoint: function( x, y, padding, width, height, centerX, centerY, cornerRadius ){
+      const cl = cornerRadius === 'auto' ? this.cornerLength : cornerRadius;
       // Check hBox
       if( math.pointInsidePolygon( x, y, this.points,
-        centerX, centerY, width, height - 2 * this.cornerLength, [0, -1], padding ) ){
+        centerX, centerY, width, height - 2 * cl, [0, -1], padding ) ){
         return true;
       }
 
       // Check vBox
       if( math.pointInsidePolygon( x, y, this.points,
-        centerX, centerY, width - 2 * this.cornerLength, height, [0, -1], padding ) ){
+        centerX, centerY, width - 2 * cl, height, [0, -1], padding ) ){
         return true;
       }
       var cutTrianglePts = this.generateCutTrianglePts(width, height, centerX, centerY);
@@ -400,7 +438,7 @@ BRp.generateBottomRoundrectangle = function(){
     points: math.generateUnitNgonPointsFitToSquare( 4, 0 ),
 
     draw: function( context, centerX, centerY, width, height, cornerRadius ){
-      this.renderer.nodeShapeImpl( this.name, context, centerX, centerY, width, height, cornerRadius );
+      this.renderer.nodeShapeImpl( this.name, context, centerX, centerY, width, height, this.points, cornerRadius );
     },
 
     intersectLine: function( nodeX, nodeY, width, height, x, y, padding, cornerRadius ){

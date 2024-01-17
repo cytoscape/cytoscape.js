@@ -472,7 +472,7 @@ BRp.tryToCorrectInvalidPoints = function( edge, pairInfo ){
 
   // can only correct beziers for now...
   if( rs.edgeType === 'bezier' ){
-    const { srcPos, tgtPos, srcW, srcH, tgtW, tgtH, srcShape, tgtShape, srcCornerRadius, tgtCornerRadius } = pairInfo;
+    const { srcPos, tgtPos, srcW, srcH, tgtW, tgtH, srcShape, tgtShape, srcCornerRadius, tgtCornerRadius, srcRs, tgtRs } = pairInfo;
 
     let badStart = !is.number( rs.startX ) || !is.number( rs.startY );
     let badAStart = !is.number( rs.arrowStartX ) || !is.number( rs.arrowStartY );
@@ -518,7 +518,7 @@ BRp.tryToCorrectInvalidPoints = function( edge, pairInfo ){
         srcH,
         cpProj.x,
         cpProj.y,
-        0, srcCornerRadius
+        0, srcCornerRadius, srcRs
       );
 
       if( closeStartACp ){
@@ -557,7 +557,7 @@ BRp.tryToCorrectInvalidPoints = function( edge, pairInfo ){
         tgtH,
         cpProj.x,
         cpProj.y,
-        0, tgtCornerRadius
+        0, tgtCornerRadius, tgtRs
       );
 
       if( closeEndACp ){
@@ -803,6 +803,9 @@ BRp.findEdgeControlPoints = function( edges ){
     let srcCornerRadius = pairInfo.srcCornerRadius = src.pstyle('corner-radius').value === 'auto' ? 'auto' : src.pstyle('corner-radius').pfValue;
     let tgtCornerRadius = pairInfo.tgtCornerRadius = tgt.pstyle('corner-radius').value === 'auto' ? 'auto' : tgt.pstyle('corner-radius').pfValue;
 
+    let tgtRs = pairInfo.tgtRs = tgt._private.rscratch;
+    let srcRs = pairInfo.srcRs = src._private.rscratch;
+
     pairInfo.dirCounts = {
       'north': 0,
       'west': 0,
@@ -831,7 +834,7 @@ BRp.findEdgeControlPoints = function( edges ){
           srcPos.x, srcPos.y,
           srcW, srcH,
           tgtPos.x, tgtPos.y,
-          0, srcCornerRadius
+          0, srcCornerRadius, srcRs
         );
 
         let srcIntn = pairInfo.srcIntn = srcOutside;
@@ -841,7 +844,7 @@ BRp.findEdgeControlPoints = function( edges ){
           tgtPos.x, tgtPos.y,
           tgtW, tgtH,
           srcPos.x, srcPos.y,
-          0, tgtCornerRadius
+          0, tgtCornerRadius, tgtRs
         );
 
         let tgtIntn = pairInfo.tgtIntn = tgtOutside;
@@ -882,8 +885,8 @@ BRp.findEdgeControlPoints = function( edges ){
         // if node shapes overlap, then no ctrl pts to draw
         pairInfo.nodesOverlap = (
           !is.number(l)
-          || tgtShape.checkPoint( srcOutside[0], srcOutside[1], 0, tgtW, tgtH, tgtPos.x, tgtPos.y )
-          || srcShape.checkPoint( tgtOutside[0], tgtOutside[1], 0, srcW, srcH, srcPos.x, srcPos.y )
+          || tgtShape.checkPoint( srcOutside[0], srcOutside[1], 0, tgtW, tgtH, tgtPos.x, tgtPos.y, tgtCornerRadius, tgtRs )
+          || srcShape.checkPoint( tgtOutside[0], tgtOutside[1], 0, srcW, srcH, srcPos.x, srcPos.y, srcCornerRadius, srcRs )
         );
 
         pairInfo.vectorNormInverse = vectorNormInverse;

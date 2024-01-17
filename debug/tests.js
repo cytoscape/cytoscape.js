@@ -109,6 +109,65 @@
   });
 
   test({
+    name: "text-background",
+    displayName: "Text Background Styles",
+    description: "Look at labels with different text background styles.",
+    setup: function(){
+      cy.$('#a').css({
+        'text-background-color': '#e5e5e5',
+        'text-background-opacity': 1
+      });
+      cy.$('#b').css({
+        'text-background-color': '#e5e5e5',
+        'text-background-opacity': 1,
+        'text-background-shape': 'round-rectangle',
+        'text-background-padding': '2px',
+      });
+      cy.$('#c').css({
+        'text-background-color': '#e5e5e5',
+        'text-background-opacity': 1,
+        'text-background-shape': 'round-rectangle',
+        'text-background-padding': '2px',
+        'text-border-width': 1,
+        'text-border-opacity': 1,
+        'text-border-color': 'red',
+      });
+      cy.$('#d').css({
+        'text-background-color': '#e5e5e5',
+        'text-background-opacity': 1,
+        'text-background-shape': 'rectangle',
+        'text-background-padding': '2px',
+        'text-border-width': 1,
+        'text-border-opacity': 1,
+        'text-border-color': 'red',
+      });
+      cy.$('#e').css({
+        'text-background-color': '#e5e5e5',
+        'text-background-opacity': 1,
+        'text-background-shape': 'rectangle',
+        'text-background-padding': '2px',
+        'text-border-width': 1,
+        'text-border-opacity': 1,
+        'text-border-color': 'red',
+        'text-border-style': 'dashed',
+      });
+      cy.$('#f').css({
+        'text-background-color': '#e5e5e5',
+        'text-background-opacity': 1,
+        'text-background-shape': 'round-rectangle',
+        'text-background-padding': '10px',
+        'text-border-width': 5,
+        'text-border-opacity': 1,
+        'text-border-color': 'red',
+        'text-border-style': 'double',
+      });
+    },
+    teardown: function(){
+      cy.nodes().removeCss();
+    }
+  });
+
+  test({
     name: "bypassOnClick",
     displayName: "Bypass on click",
     description: "Set nodes to red and edges to orange on click",
@@ -475,6 +534,9 @@
             backgroundColor: "lightblue",
             borderColor: "black",
             borderWidth: 1,
+            borderStyle: 'dashed',
+            borderCap: 'round',
+            borderDashPattern: [8, 16],
             width: "mapData(weight, 20, 100, 20, 100)",
             height: 20,
             labelFontWeight: "normal",
@@ -482,6 +544,40 @@
             content: "data(weight)",
             textValign: "center",
             textHalign: "center"
+          })
+        .selector("node#a")
+          .css({
+            borderWidth: 2,
+            borderCap: 'butt',
+            borderDashPattern: [3, 12, 8, 16],
+            borderPosition: 'inside',
+            shape: "round-hexagon",
+            height: 40
+          })
+        .selector("node#b")
+          .css({
+            borderWidth: 2,
+            borderCap: 'square',
+            borderDashPattern: [4, 12],
+            borderPosition: 'outside',
+            shape: "round-triangle",
+            height: 40
+          })
+        .selector("node#c")
+          .css({
+            borderWidth: 3,
+            borderCap: 'round',
+            borderJoin: 'round',
+            borderDashPattern: [3, 12],
+            borderPosition: 'outside',
+            shape: "polygon",
+            shapePolygonPoints: [
+              -1, -1,
+               1, -1,
+              -1,  1,
+               1,  1
+            ],
+            height: 40
           })
         .selector("edge")
           .css({
@@ -498,12 +594,27 @@
           })
         .update()
       ;
+
+      cy.on('tap', 'node', function(e){
+        var n = e.target;
+        var p = n.position();
+
+        var a1 = n.animation({
+          style: {
+            'border-dash-offset': 10000
+          },
+          duration: 1000000
+        });
+
+        a1.play()
+      });
     },
 
     teardown: function(){
       var stylesheet = window.defaultSty;
 
       cy.style( stylesheet );
+      cy.off('tap', 'node');
     }
   });
 
@@ -771,7 +882,7 @@
     name: "events:no",
     displayName: "events: no",
     description: "Apply events:no style to all nodes. Clicking on nodes should no longer affect the node.",
-    
+
     setup: function(){
       cy.nodes().style(
         { events: 'no' }
@@ -786,7 +897,7 @@
     name: "text-events:yes",
     displayName: "text-events: yes",
     description: "Apply text-events:yes style to all nodes. Clicking on node labels should select the node.",
-    
+
     setup: function(){
       cy.nodes().style(
         { 'text-events': 'yes' }
@@ -886,5 +997,5 @@
       cy.style(prevStyle);
     }
   });
-  
+
 })();

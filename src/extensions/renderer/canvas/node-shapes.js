@@ -16,7 +16,7 @@ CRp.nodeShapeImpl = function( name, context, centerX, centerY, width, height, po
       return this.drawCutRectanglePath( context, centerX, centerY, width, height, points, corners );
     case 'bottomroundrectangle':
     case 'bottom-round-rectangle':
-      return this.drawBottomRoundRectanglePath( context, centerX, centerY, width, height, corners ); // TODO change
+      return this.drawBottomRoundRectanglePath( context, centerX, centerY, width, height, corners );
     case 'barrel':
       return this.drawBarrelPath( context, centerX, centerY, width, height );
   }

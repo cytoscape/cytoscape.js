@@ -111,7 +111,8 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
     let key = util.hashStrings(
       shape === 'polygon' ? shape + ',' + points.join(',') : shape,
       '' + height,
-      '' + width
+      '' + width,
+      '' + cornerRadius
     );
 
     let cachedPath = pathCache[ key ];
@@ -416,6 +417,7 @@ CRp.drawNode = function( context, node, shiftToOriginWithBb, drawLabel = true, s
 
         r.drawRoundPolygonPath(path || context, npos.x + offsetX, npos.y + offsetY, nodeWidth * scaleX, nodeHeight * scaleY, points, corners );
       } else if (['roundrectangle', 'round-rectangle'].includes(shape)) {
+        console.log(cornerRadius, node)
         cornerRadius = cornerRadius === 'auto' ? math.getRoundRectangleRadius( sWidth, sHeight ) : cornerRadius;
         r.drawRoundRectanglePath(path || context, npos.x, npos.y, sWidth, sHeight, cornerRadius + ( bWidth +  outlineWidth + outlineOffset ) / 2 );
       } else if (['cutrectangle', 'cut-rectangle'].includes(shape)) {

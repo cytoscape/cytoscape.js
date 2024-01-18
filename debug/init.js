@@ -18,14 +18,16 @@ var cy, defaultSty, options;
           'border-width': 5,
           'border-opacity': 0.5,
           'border-color': 'blue',
-          'border-position': 'outside'
+          'border-position': 'inside',
+          'width': 220,
+          'height': 60
         })
       .selector('node#a')
         .style({
           'shape': 'round-rectangle',
-          'width': 100,
-          'height': 50,
-          'corner-radius': 25
+          'width': 220,
+          'height': 60,
+          'corner-radius': 30
         })
       .selector('node#b')
       .style({
@@ -33,6 +35,13 @@ var cy, defaultSty, options;
         'width': 60,
         'height': 60,
         'corner-radius': 10
+      })
+      .selector('node#c')
+      .style({
+        'shape': 'round-rectangle',
+        'width': 220,
+        'height': 60,
+        'corner-radius': 5
       })
       .selector('node#e')
       .style({

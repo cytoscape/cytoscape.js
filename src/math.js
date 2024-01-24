@@ -371,18 +371,20 @@ export const boundingBoxInBoundingBox = ( bb1, bb2 ) => (
   && inBoundingBox( bb1, bb2.x2, bb2.y2 )
 );
 
-export const roundRectangleIntersectLine = ( x, y, nodeX, nodeY, width, height, padding ) => {
+export const roundRectangleIntersectLine = ( x, y, nodeX, nodeY, width, height, padding, radius = 'auto' ) => {
 
-  let cornerRadius = getRoundRectangleRadius( width, height );
+  let cornerRadius = radius === 'auto' ? getRoundRectangleRadius( width, height ) : radius;
 
   let halfWidth = width / 2;
   let halfHeight = height / 2;
+  cornerRadius = Math.min(cornerRadius, halfWidth, halfHeight);
+  const doWidth = cornerRadius !== halfWidth, doHeight = cornerRadius !== halfHeight;
 
   // Check intersections with straight line segments
   let straightLineIntersections;
 
   // Top segment, left to right
-  {
+  if( doWidth ){
     let topStartX = nodeX - halfWidth + cornerRadius - padding;
     let topStartY = nodeY - halfHeight - padding;
     let topEndX = nodeX + halfWidth - cornerRadius + padding;
@@ -397,7 +399,7 @@ export const roundRectangleIntersectLine = ( x, y, nodeX, nodeY, width, height, 
   }
 
   // Right segment, top to bottom
-  {
+  if( doHeight ){
     let rightStartX = nodeX + halfWidth + padding;
     let rightStartY = nodeY - halfHeight + cornerRadius - padding;
     let rightEndX = rightStartX;
@@ -412,7 +414,7 @@ export const roundRectangleIntersectLine = ( x, y, nodeX, nodeY, width, height, 
   }
 
   // Bottom segment, left to right
-  {
+  if( doWidth ){
     let bottomStartX = nodeX - halfWidth + cornerRadius - padding;
     let bottomStartY = nodeY + halfHeight + padding;
     let bottomEndX = nodeX + halfWidth - cornerRadius + padding;
@@ -427,7 +429,7 @@ export const roundRectangleIntersectLine = ( x, y, nodeX, nodeY, width, height, 
   }
 
   // Left segment, top to bottom
-  {
+  if( doHeight ){
     let leftStartX = nodeX - halfWidth - padding;
     let leftStartY = nodeY - halfHeight + cornerRadius - padding;
     let leftEndX = leftStartX;
@@ -808,49 +810,18 @@ export const pointInsidePolygon = ( x, y, basePoints, centerX, centerY, width, h
   return pointInsidePolygonPoints( x, y, points );
 };
 
-export const pointInsideRoundPolygon = ( x, y, basePoints, centerX, centerY, width, height ) => {
-  const cutPolygonPoints = new Array( basePoints.length);
-  const halfW = width / 2;
-  const halfH = height / 2;
-  const cornerRadius = getRoundPolygonRadius(width, height);
-  const squaredCornerRadius = cornerRadius * cornerRadius;
+export const pointInsideRoundPolygon = (x, y, basePoints, centerX, centerY, width, height, corners) => {
+  const cutPolygonPoints = new Array( basePoints.length * 2 );
 
-  for ( let i = 0; i < basePoints.length / 4; i++ ){
-    let sourceUv, destUv;
-    if ( i === 0 ) {
-      sourceUv = basePoints.length - 2;
-    } else {
-      sourceUv = i * 4 - 2;
-    }
-    destUv = i * 4 + 2;
+  for( let i = 0; i < corners.length; i++ ){
+    let corner = corners[i];
+    cutPolygonPoints[i * 4 + 0] = corner.startX;
+    cutPolygonPoints[i * 4 + 1] = corner.startY;
+    cutPolygonPoints[i * 4 + 2] = corner.stopX;
+    cutPolygonPoints[i * 4 + 3] = corner.stopY;
 
-    const px = centerX + halfW * basePoints[ i * 4 ];
-    const py = centerY + halfH * basePoints[ i * 4 + 1 ];
-    const cosTheta = (-basePoints[ sourceUv ] * basePoints[ destUv ] - basePoints[ sourceUv + 1 ] * basePoints[ destUv + 1]);
-    const offset = cornerRadius / Math.tan(Math.acos(cosTheta) / 2);
-
-    const cp0x = px - offset * basePoints[ sourceUv ];
-    const cp0y = py - offset * basePoints[ sourceUv + 1 ];
-    const cp1x = px + offset * basePoints[ destUv ];
-    const cp1y = py + offset * basePoints[ destUv + 1 ];
-    cutPolygonPoints[ i * 4] = cp0x;
-    cutPolygonPoints[ i * 4 + 1] = cp0y;
-    cutPolygonPoints[ i * 4 + 2] = cp1x;
-    cutPolygonPoints[ i * 4 + 3] = cp1y;
-
-    let orthx = basePoints[ sourceUv + 1 ];
-    let orthy = -basePoints[ sourceUv ];
-    const cosAlpha = orthx * basePoints[ destUv ] + orthy * basePoints [ destUv + 1 ];
-    if (cosAlpha < 0) {
-      orthx *= -1;
-      orthy *= -1;
-    }
-
-    const cx = cp0x + orthx * cornerRadius;
-    const cy = cp0y + orthy * cornerRadius;
-
-    const squaredDistance = Math.pow(cx  - x, 2) + Math.pow(cy - y, 2);
-    if (squaredDistance <= squaredCornerRadius) {
+    const squaredDistance = Math.pow(corner.cx - x, 2 ) + Math.pow(corner.cy - y, 2 );
+    if( squaredDistance <= Math.pow( corner.radius, 2 ) ){
       return true;
     }
   }
@@ -1197,63 +1168,29 @@ export const polygonIntersectLine = ( x, y, basePoints, centerX, centerY, width,
   return intersections;
 };
 
-export const roundPolygonIntersectLine = ( x, y, basePoints, centerX, centerY, width, height, padding ) => {
+export const roundPolygonIntersectLine = ( x, y, basePoints, centerX, centerY, width, height, padding, corners ) => {
   let intersections = [];
   let intersection;
-  let lines = new Array(basePoints.length);
-  const halfW = width / 2;
-  const halfH = height / 2;
-  const cornerRadius = getRoundPolygonRadius(width, height);
+  let lines = new Array(basePoints.length * 2);
 
-  for ( let i = 0; i < basePoints.length / 4; i++ ){
-    let sourceUv, destUv;
-    if ( i === 0 ) {
-      sourceUv = basePoints.length - 2;
-    } else {
-      sourceUv = i * 4 - 2;
-    }
-    destUv = i * 4 + 2;
-
-    const px = centerX + halfW * basePoints[ i * 4 ];
-    const py = centerY + halfH * basePoints[ i * 4 + 1 ];
-
-
-    const cosTheta = (-basePoints[ sourceUv ] * basePoints[ destUv ] - basePoints[ sourceUv + 1 ] * basePoints[ destUv + 1]);
-    const offset = cornerRadius / Math.tan(Math.acos(cosTheta) / 2);
-
-    const cp0x = px - offset * basePoints[ sourceUv ];
-    const cp0y = py - offset * basePoints[ sourceUv + 1 ];
-    const cp1x = px + offset * basePoints[ destUv ];
-    const cp1y = py + offset * basePoints[ destUv + 1 ];
-
+  corners.forEach( (corner, i) => {
     if (i === 0) {
-      lines[basePoints.length - 2] = cp0x;
-      lines[basePoints.length - 1] = cp0y;
+      lines[lines.length - 2] = corner.startX;
+      lines[lines.length - 1] = corner.startY;
     } else {
-      lines[i * 4 - 2] = cp0x;
-      lines[i * 4 - 1] = cp0y;
+      lines[i * 4 - 2] = corner.startX;
+      lines[i * 4 - 1] = corner.startY;
     }
 
-    lines[i * 4] = cp1x;
-    lines[i * 4 + 1] = cp1y;
+    lines[i * 4] = corner.stopX;
+    lines[i * 4 + 1] = corner.stopY;
 
-    let orthx = basePoints[ sourceUv + 1 ];
-    let orthy = -basePoints[ sourceUv ];
-    const cosAlpha = orthx * basePoints[ destUv ] + orthy * basePoints [ destUv + 1 ];
-    if (cosAlpha < 0) {
-      orthx *= -1;
-      orthy *= -1;
+    intersection = intersectLineCircle(x, y, centerX, centerY, corner.cx, corner.cy, corner.radius);
+
+    if (intersection.length !== 0) {
+      intersections.push(intersection[0], intersection[1]);
     }
-
-    const cx = cp0x + orthx * cornerRadius;
-    const cy = cp0y + orthy * cornerRadius;
-
-    intersection = intersectLineCircle(x, y, centerX, centerY, cx, cy, cornerRadius);
-
-    if( intersection.length !== 0 ){
-      intersections.push( intersection[0], intersection[1] );
-    }
-  }
+  });
 
   for( let i = 0; i < lines.length / 4; i++ ) {
     intersection = finiteLinesIntersect(

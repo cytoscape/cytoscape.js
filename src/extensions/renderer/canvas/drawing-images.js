@@ -34,6 +34,8 @@ CRp.drawInscribedImage = function( context, img, node, index, nodeOpacity ){
   var shouldClip = clip === 'node';
   var imgOpacity = getIndexedStyle( node, 'background-image-opacity', 'value', index ) * nodeOpacity;
   var smooth = getIndexedStyle( node, 'background-image-smoothing', 'value', index );
+  var cornerRadius = node.pstyle('corner-radius').value;
+  if (cornerRadius !== 'auto') cornerRadius = node.pstyle('corner-radius').pfValue;
 
   var imgW = img.width || img.cachedW;
   var imgH = img.height || img.cachedH;
@@ -152,7 +154,8 @@ CRp.drawInscribedImage = function( context, img, node, index, nodeOpacity ){
         r.nodeShapes[ r.getNodeShape( node ) ].draw(
           context,
           nodeX, nodeY,
-          nodeTW, nodeTH );
+          nodeTW, nodeTH,
+          cornerRadius, rs );
 
         context.clip();
       }
@@ -170,7 +173,7 @@ CRp.drawInscribedImage = function( context, img, node, index, nodeOpacity ){
     r.nodeShapes[ r.getNodeShape( node ) ].draw(
         context,
         nodeX, nodeY,
-        nodeTW, nodeTH );
+        nodeTW, nodeTH, cornerRadius, rs);
 
     context.translate( x, y );
     context.fill();

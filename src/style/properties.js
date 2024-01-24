@@ -60,7 +60,7 @@ const styfn = {};
     linePosition: { enums: [ 'center', 'inside', 'outside' ] },
     lineJoin: { enums: [ 'round', 'bevel', 'miter' ] },
     borderStyle: { enums: [ 'solid', 'dotted', 'dashed', 'double' ] },
-    curveStyle: { enums: [ 'bezier', 'unbundled-bezier', 'haystack', 'segments', 'straight', 'straight-triangle', 'taxi' ] },
+    curveStyle: { enums: [ 'bezier', 'unbundled-bezier', 'haystack', 'segments', 'straight', 'straight-triangle', 'taxi', 'round-segments', 'round-taxi' ] },
     fontFamily: { regex: '^([\\w- \\"]+(?:\\s*,\\s*[\\w- \\"]+)*)$' },
     fontStyle: { enums: [ 'italic', 'normal', 'oblique' ] },
     fontWeight: { enums: [ 'normal', 'bold', 'bolder', 'lighter', '100', '200', '300', '400', '500', '600', '800', '900', 100, 200, 300, 400, 500, 600, 700, 800, 900 ] },
@@ -75,6 +75,7 @@ const styfn = {};
       'tag', 'round-tag', 'star', 'diamond', 'round-diamond', 'vee', 'rhomboid', 'right-rhomboid', 'polygon',
     ] },
     overlayShape: { enums: [ 'roundrectangle', 'round-rectangle', 'ellipse' ] },
+    cornerRadius: { number: true, min: 0, units: 'px|em', implicitUnits: 'px', enums: ['auto'] },
     compoundIncludeLabels: { enums: [ 'include', 'exclude' ] },
     arrowShape: { enums: [ 'tee', 'triangle', 'triangle-tee', 'circle-triangle', 'triangle-cross', 'triangle-backcurve', 'vee', 'square', 'circle', 'diamond', 'chevron', 'none' ] },
     arrowFill: { enums: [ 'filled', 'hollow' ] },
@@ -252,14 +253,16 @@ const styfn = {};
     { name: 'overlay-padding', type: t.size, triggersBounds: diff.any },
     { name: 'overlay-color', type: t.color },
     { name: 'overlay-opacity', type: t.zeroOneNumber, triggersBounds: diff.zeroNonZero },
-    { name: 'overlay-shape', type: t.overlayShape, triggersBounds: diff.any }
+    { name: 'overlay-shape', type: t.overlayShape, triggersBounds: diff.any },
+    { name: 'overlay-corner-radius', type: t.cornerRadius }
   ];
 
   let underlay = [
     { name: 'underlay-padding', type: t.size, triggersBounds: diff.any },
     { name: 'underlay-color', type: t.color },
     { name: 'underlay-opacity', type: t.zeroOneNumber, triggersBounds: diff.zeroNonZero },
-    { name: 'underlay-shape', type: t.overlayShape, triggersBounds: diff.any }
+    { name: 'underlay-shape', type: t.overlayShape, triggersBounds: diff.any },
+    { name: 'underlay-corner-radius', type: t.cornerRadius }
   ];
 
   let transition = [
@@ -282,6 +285,7 @@ const styfn = {};
     { name: 'width', type: t.nodeSize, triggersBounds: diff.any, hashOverride: nodeSizeHashOverride },
     { name: 'shape', type: t.nodeShape, triggersBounds: diff.any },
     { name: 'shape-polygon-points', type: t.polygonPointList, triggersBounds: diff.any },
+    { name: 'corner-radius', type: t.cornerRadius},
     { name: 'background-color', type: t.color },
     { name: 'background-fill', type: t.fill },
     { name: 'background-opacity', type: t.zeroOneNumber },
@@ -363,9 +367,11 @@ const styfn = {};
     { name: 'control-point-weights', type: t.numbers, triggersBounds: diff.any },
     { name: 'segment-distances', type: t.bidirectionalSizes, triggersBounds: diff.any },
     { name: 'segment-weights', type: t.numbers, triggersBounds: diff.any },
+    { name: 'segment-radii', type: t.numbers, triggersBounds: diff.any },
     { name: 'taxi-turn', type: t.bidirectionalSizeMaybePercent, triggersBounds: diff.any },
     { name: 'taxi-turn-min-distance', type: t.size, triggersBounds: diff.any },
     { name: 'taxi-direction', type: t.axisDirection, triggersBounds: diff.any },
+    { name: 'taxi-radius', type: t.number, triggersBounds: diff.any },
     { name: 'edge-distances', type: t.edgeDistances, triggersBounds: diff.any },
     { name: 'arrow-scale', type: t.positiveNumber, triggersBounds: diff.any },
     { name: 'loop-direction', type: t.angle, triggersBounds: diff.any },
@@ -497,6 +503,9 @@ const styfn = {};
     { name: 'content', pointsTo: 'label' },
     { name: 'control-point-distance', pointsTo: 'control-point-distances' },
     { name: 'control-point-weight', pointsTo: 'control-point-weights' },
+    { name: 'segment-distance', pointsTo: 'segment-distances' },
+    { name: 'segment-weight', pointsTo: 'segment-weights' },
+    { name: 'segment-radius', pointsTo: 'segment-radii' },
     { name: 'edge-text-rotation', pointsTo: 'text-rotation' },
     { name: 'padding-left', pointsTo: 'padding' },
     { name: 'padding-right', pointsTo: 'padding' },
@@ -608,10 +617,12 @@ styfn.getDefaultProperties = function(){
     'overlay-color': '#000',
     'overlay-padding': 10,
     'overlay-shape': 'round-rectangle',
+    'overlay-corner-radius': 'auto',
     'underlay-opacity': 0,
     'underlay-color': '#000',
     'underlay-padding': 10,
     'underlay-shape': 'round-rectangle',
+    'underlay-corner-radius': 'auto',
     'transition-property': 'none',
     'transition-duration': 0,
     'transition-delay': 0,
@@ -656,6 +667,7 @@ styfn.getDefaultProperties = function(){
     'width': 30,
     'shape': 'ellipse',
     'shape-polygon-points': '-1, -1,   1, -1,   1, 1,   -1, 1',
+    'corner-radius': 'auto',
     'bounds-expansion': 0,
 
     // node gradient
@@ -709,7 +721,9 @@ styfn.getDefaultProperties = function(){
     'control-point-weights': 0.5,
     'segment-weights': 0.5,
     'segment-distances': 20,
+    'segment-radii': 15,
     'taxi-turn': '50%',
+    'taxi-radius': 15,
     'taxi-turn-min-distance': 10,
     'taxi-direction': 'auto',
     'edge-distances': 'intersection',

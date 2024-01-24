@@ -95,6 +95,24 @@
   });
 
   test({
+    name: 'outlines',
+    displayName: 'Outlines on all shapes',
+    description: 'Load an example network',
+    setup: function(){
+      cy.elements().remove();
+      const rounds = ['triangle', 'rectangle',  'diamond', 'pentagon', 'hexagon', 'heptagon', 'octagon', 'tag']
+      const shapes = ['ellipse', 'bottom-round-rectangle', 'cut-rectangle', 'barrel', 'rhomboid', 'right-rhomboid', 'concave-hexagon', 'star', 'vee', ...rounds, ...rounds.map(l => 'round-' + l)]
+      shapes.forEach((shape, i) => {
+        cy.add({data: { id: i, weight: 50 }}).style({shape})
+      })
+
+      cy.layout({ name: 'grid' }).run();
+
+      cy.fit();
+    }
+  });
+
+  test({
     name: "randomEdgeColors",
     displayName: "Random edge colours",
     description: "Set each edge to a random colour",

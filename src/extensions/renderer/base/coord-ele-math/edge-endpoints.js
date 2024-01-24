@@ -8,6 +8,7 @@ BRp.manualEndptToPx = function( node, prop ){
   let npos = node.position();
   let w = node.outerWidth();
   let h = node.outerHeight();
+  let rs = node._private.rscratch;
 
   if( prop.value.length === 2 ){
     let p = [
@@ -43,7 +44,7 @@ BRp.manualEndptToPx = function( node, prop ){
       npos.x, npos.y,
       w, h,
       p[0], p[1],
-      0
+      0, node.pstyle('corner-radius').value === 'auto' ? 'auto' : node.pstyle('corner-radius').pfValue, rs
     );
   }
 };
@@ -64,6 +65,9 @@ BRp.findEndpoints = function( edge ){
   let tgtDist = edge.pstyle( 'target-distance-from-node' ).pfValue;
   let srcDist = edge.pstyle( 'source-distance-from-node' ).pfValue;
 
+  let srcRs = source._private.rscratch;
+  let tgtRs = target._private.rscratch;
+
   let curveStyle = edge.pstyle('curve-style').value;
 
   let rs = edge._private.rscratch;
@@ -79,8 +83,11 @@ BRp.findEndpoints = function( edge ){
   let overrideEndpts = self || taxi;
   let srcManEndpt = edge.pstyle('source-endpoint');
   let srcManEndptVal = overrideEndpts ? 'outside-to-node' : srcManEndpt.value;
+  let srcCornerRadius = source.pstyle('corner-radius').value === 'auto' ? 'auto' : source.pstyle('corner-radius').pfValue;
   let tgtManEndpt = edge.pstyle('target-endpoint');
   let tgtManEndptVal = overrideEndpts ? 'outside-to-node' : tgtManEndpt.value;
+  let tgtCornerRadius = target.pstyle('corner-radius').value === 'auto' ? 'auto' : target.pstyle('corner-radius').pfValue;
+
 
   rs.srcManEndpt = srcManEndpt;
   rs.tgtManEndpt = tgtManEndpt;
@@ -125,7 +132,7 @@ BRp.findEndpoints = function( edge ){
       target.outerHeight(),
       p1_i[0],
       p1_i[1],
-      0
+      0, tgtCornerRadius, tgtRs
     );
 
     if( tgtManEndptVal === 'outside-to-node-or-label' || tgtManEndptVal === 'outside-to-line-or-label' ){
@@ -217,7 +224,7 @@ BRp.findEndpoints = function( edge ){
       source.outerHeight(),
       p2_i[0],
       p2_i[1],
-      0
+      0, srcCornerRadius, srcRs
     );
 
     if( srcManEndptVal === 'outside-to-node-or-label' || srcManEndptVal === 'outside-to-line-or-label' ){

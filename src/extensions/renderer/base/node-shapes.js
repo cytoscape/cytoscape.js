@@ -1,4 +1,5 @@
 import * as math from '../../../math';
+import * as round from "../../../round";
 
 var BRp = {};
 
@@ -10,11 +11,11 @@ BRp.generatePolygon = function( name, points ){
 
     points: points,
 
-    draw: function( context, centerX, centerY, width, height ){
+    draw: function( context, centerX, centerY, width, height, cornerRadius ){
       this.renderer.nodeShapeImpl( 'polygon', context, centerX, centerY, width, height, this.points );
     },
 
-    intersectLine: function( nodeX, nodeY, width, height, x, y, padding ){
+    intersectLine: function( nodeX, nodeY, width, height, x, y, padding, cornerRadius ){
       return math.polygonIntersectLine(
           x, y,
           this.points,
@@ -25,7 +26,7 @@ BRp.generatePolygon = function( name, points ){
         ;
     },
 
-    checkPoint: function( x, y, padding, width, height, centerX, centerY ){
+    checkPoint: function( x, y, padding, width, height, centerX, centerY, cornerRadius ){
       return math.pointInsidePolygon( x, y, this.points,
         centerX, centerY, width, height, [0, -1], padding )
       ;
@@ -39,11 +40,11 @@ BRp.generateEllipse = function(){
 
     name: 'ellipse',
 
-    draw: function( context, centerX, centerY, width, height ){
+    draw: function( context, centerX, centerY, width, height, cornerRadius ){
       this.renderer.nodeShapeImpl( this.name, context, centerX, centerY, width, height );
     },
 
-    intersectLine: function( nodeX, nodeY, width, height, x, y, padding ){
+    intersectLine: function( nodeX, nodeY, width, height, x, y, padding, cornerRadius ){
       return math.intersectLineEllipse(
         x, y,
         nodeX,
@@ -53,7 +54,7 @@ BRp.generateEllipse = function(){
       ;
     },
 
-    checkPoint: function( x, y, padding, width, height, centerX, centerY ){
+    checkPoint: function( x, y, padding, width, height, centerX, centerY, cornerRadius ){
       return math.checkInEllipse( x, y, width, height, centerX, centerY, padding );
     }
   } );
@@ -61,58 +62,67 @@ BRp.generateEllipse = function(){
 
 BRp.generateRoundPolygon = function( name, points ){
 
-  // Pre-compute control points
-  // Since these points depend on the radius length (which in turns depend on the width/height of the node) we will only pre-compute
-  // the unit vectors.
-  // For simplicity the layout will be:
-  // [ p0, UnitVectorP0P1, p1, UniVectorP1P2, ..., pn, UnitVectorPnP0 ]
-  const allPoints = new Array( points.length * 2 );
-
-  for ( let i = 0; i < points.length / 2; i++ ){
-    const sourceIndex = i * 2;
-    let destIndex;
-    if (i < points.length / 2 - 1) {
-      destIndex = (i + 1) * 2;
-    } else {
-      destIndex = 0;
-    }
-
-    allPoints[ i * 4 ] = points[ sourceIndex ];
-    allPoints[ i * 4 + 1 ] = points[ sourceIndex + 1 ];
-
-    const xDest = points[ destIndex ] - points[ sourceIndex ];
-    const yDest = points[ destIndex + 1] - points[ sourceIndex + 1 ];
-    const norm = Math.sqrt(xDest * xDest + yDest * yDest);
-
-    allPoints[ i * 4 + 2 ] = xDest / norm;
-    allPoints[ i * 4 + 3 ] = yDest / norm;
-  }
-
   return ( this.nodeShapes[ name ] = {
     renderer: this,
 
     name: name,
 
-    points: allPoints,
+    points: points,
 
-    draw: function( context, centerX, centerY, width, height ){
-      this.renderer.nodeShapeImpl( 'round-polygon', context, centerX, centerY, width, height, this.points );
+    getOrCreateCorners: function (centerX, centerY, width, height, cornerRadius, rs, field) {
+      if( rs[field] !== undefined && rs[field + '-cx'] === centerX && rs [field + '-cy'] === centerY ){
+        return rs[field];
+      }
+
+      rs[field] = new Array( points.length / 2 );
+      rs[field + '-cx'] = centerX;
+      rs[field + '-cy'] = centerY;
+      const halfW = width / 2;
+      const halfH = height / 2;
+      cornerRadius = cornerRadius === 'auto' ? math.getRoundPolygonRadius( width, height ) : cornerRadius;
+      const p = new Array( points.length / 2 );
+
+      for ( let i = 0; i < points.length / 2; i++ ){
+        p[i] = {
+          x: centerX + halfW * points[ i * 2 ],
+          y: centerY + halfH * points[ i * 2 + 1 ]
+        };
+      }
+
+      let i, p1, p2, p3, len = p.length;
+
+      p1 = p[ len - 1 ];
+      // for each point
+      for( i = 0; i < len; i++ ){
+        p2 = p[ (i) % len ];
+        p3 = p[ (i + 1) % len ];
+        rs[ field ][ i ] = round.getRoundCorner( p1, p2, p3, cornerRadius );
+
+        p1 = p2;
+        p2 = p3;
+      }
+
+      return rs[ field ];
     },
 
-    intersectLine: function( nodeX, nodeY, width, height, x, y, padding ){
+    draw: function( context, centerX, centerY, width, height, cornerRadius , rs){
+      this.renderer.nodeShapeImpl( 'round-polygon', context, centerX, centerY, width, height, this.points, this.getOrCreateCorners( centerX, centerY, width, height, cornerRadius, rs, 'drawCorners' ));
+    },
+
+    intersectLine: function( nodeX, nodeY, width, height, x, y, padding, cornerRadius, rs ){
         return math.roundPolygonIntersectLine(
           x, y,
           this.points,
           nodeX,
           nodeY,
           width, height,
-          padding )
+          padding, this.getOrCreateCorners( nodeX, nodeY, width, height, cornerRadius, rs, 'corners' ) )
           ;
     },
 
-    checkPoint: function( x, y, padding, width, height, centerX, centerY ){
+    checkPoint: function( x, y, padding, width, height, centerX, centerY, cornerRadius, rs ){
       return math.pointInsideRoundPolygon( x, y, this.points,
-          centerX, centerY, width, height)
+          centerX, centerY, width, height, this.getOrCreateCorners( centerX, centerY, width, height, cornerRadius, rs, 'corners' ) )
           ;
     }
   } );
@@ -126,24 +136,26 @@ BRp.generateRoundRectangle = function(){
 
     points: math.generateUnitNgonPointsFitToSquare( 4, 0 ),
 
-    draw: function( context, centerX, centerY, width, height ){
-      this.renderer.nodeShapeImpl( this.name, context, centerX, centerY, width, height );
+    draw: function( context, centerX, centerY, width, height, cornerRadius ){
+      this.renderer.nodeShapeImpl( this.name, context, centerX, centerY, width, height, this.points, cornerRadius );
     },
 
-    intersectLine: function( nodeX, nodeY, width, height, x, y, padding ){
+    intersectLine: function( nodeX, nodeY, width, height, x, y, padding, cornerRadius ){
       return math.roundRectangleIntersectLine(
         x, y,
         nodeX,
         nodeY,
         width, height,
-        padding )
+        padding, cornerRadius )
       ;
     },
 
     checkPoint: function(
-      x, y, padding, width, height, centerX, centerY ){
-
-      var cornerRadius = math.getRoundRectangleRadius( width, height );
+      x, y, padding, width, height, centerX, centerY, cornerRadius ){
+      let halfWidth = width / 2;
+      let halfHeight = height / 2;
+      cornerRadius = cornerRadius === 'auto' ? math.getRoundRectangleRadius( width, height ) : cornerRadius;
+      cornerRadius = Math.min(halfWidth, halfHeight, cornerRadius);
       var diam = cornerRadius * 2;
 
       // Check hBox
@@ -161,8 +173,8 @@ BRp.generateRoundRectangle = function(){
       // Check top left quarter circle
       if( math.checkInEllipse( x, y,
         diam, diam,
-        centerX - width / 2 + cornerRadius,
-        centerY - height / 2 + cornerRadius,
+        centerX - halfWidth + cornerRadius,
+        centerY - halfHeight + cornerRadius,
         padding ) ){
 
         return true;
@@ -171,8 +183,8 @@ BRp.generateRoundRectangle = function(){
       // Check top right quarter circle
       if( math.checkInEllipse( x, y,
         diam, diam,
-        centerX + width / 2 - cornerRadius,
-        centerY - height / 2 + cornerRadius,
+        centerX + halfWidth - cornerRadius,
+        centerY - halfHeight + cornerRadius,
         padding ) ){
 
         return true;
@@ -181,8 +193,8 @@ BRp.generateRoundRectangle = function(){
       // Check bottom right quarter circle
       if( math.checkInEllipse( x, y,
         diam, diam,
-        centerX + width / 2 - cornerRadius,
-        centerY + height / 2 - cornerRadius,
+        centerX + halfWidth - cornerRadius,
+        centerY + halfHeight - cornerRadius,
         padding ) ){
 
         return true;
@@ -191,8 +203,8 @@ BRp.generateRoundRectangle = function(){
       // Check bottom left quarter circle
       if( math.checkInEllipse( x, y,
         diam, diam,
-        centerX - width / 2 + cornerRadius,
-        centerY + height / 2 - cornerRadius,
+        centerX - halfWidth + cornerRadius,
+        centerY + halfHeight - cornerRadius,
         padding ) ){
 
         return true;
@@ -213,12 +225,12 @@ BRp.generateCutRectangle = function(){
 
     points: math.generateUnitNgonPointsFitToSquare( 4, 0 ),
 
-    draw: function( context, centerX, centerY, width, height ){
-      this.renderer.nodeShapeImpl( this.name, context, centerX, centerY, width, height );
+    draw: function( context, centerX, centerY, width, height, cornerRadius ){
+      this.renderer.nodeShapeImpl( this.name, context, centerX, centerY, width, height, null, cornerRadius);
     },
 
-    generateCutTrianglePts: function( width, height, centerX, centerY ){
-      var cl = this.cornerLength;
+    generateCutTrianglePts: function( width, height, centerX, centerY, cornerRadius ){
+      var cl = cornerRadius === 'auto' ? this.cornerLength : cornerRadius;
       var hh = height / 2;
       var hw = width / 2;
       var xBegin = centerX - hw;
@@ -235,8 +247,8 @@ BRp.generateCutRectangle = function(){
       };
     },
 
-    intersectLine: function( nodeX, nodeY, width, height, x, y, padding ){
-      var cPts = this.generateCutTrianglePts( width + 2*padding, height+2*padding, nodeX, nodeY );
+    intersectLine: function( nodeX, nodeY, width, height, x, y, padding, cornerRadius ){
+      var cPts = this.generateCutTrianglePts( width + 2*padding, height+2*padding, nodeX, nodeY, cornerRadius );
       var pts = [].concat.apply([],
        [cPts.topLeft.splice(0, 4), cPts.topRight.splice(0, 4),
          cPts.bottomRight.splice(0, 4), cPts.bottomLeft.splice(0, 4)
@@ -245,16 +257,17 @@ BRp.generateCutRectangle = function(){
       return math.polygonIntersectLine( x, y, pts, nodeX, nodeY );
     },
 
-    checkPoint: function( x, y, padding, width, height, centerX, centerY ){
+    checkPoint: function( x, y, padding, width, height, centerX, centerY, cornerRadius ){
+      const cl = cornerRadius === 'auto' ? this.cornerLength : cornerRadius;
       // Check hBox
       if( math.pointInsidePolygon( x, y, this.points,
-        centerX, centerY, width, height - 2 * this.cornerLength, [0, -1], padding ) ){
+        centerX, centerY, width, height - 2 * cl, [0, -1], padding ) ){
         return true;
       }
 
       // Check vBox
       if( math.pointInsidePolygon( x, y, this.points,
-        centerX, centerY, width - 2 * this.cornerLength, height, [0, -1], padding ) ){
+        centerX, centerY, width - 2 * cl, height, [0, -1], padding ) ){
         return true;
       }
       var cutTrianglePts = this.generateCutTrianglePts(width, height, centerX, centerY);
@@ -275,11 +288,11 @@ BRp.generateBarrel = function(){
 
     points: math.generateUnitNgonPointsFitToSquare( 4, 0 ),
 
-    draw: function( context, centerX, centerY, width, height ){
+    draw: function( context, centerX, centerY, width, height, cornerRadius ){
       this.renderer.nodeShapeImpl( this.name, context, centerX, centerY, width, height );
     },
 
-    intersectLine: function( nodeX, nodeY, width, height, x, y, padding ){
+    intersectLine: function( nodeX, nodeY, width, height, x, y, padding, cornerRadius ){
       // use two fixed t values for the bezier curve approximation
 
       var t0 = 0.15;
@@ -343,7 +356,7 @@ BRp.generateBarrel = function(){
     },
 
     checkPoint: function(
-      x, y, padding, width, height, centerX, centerY ){
+      x, y, padding, width, height, centerX, centerY, cornerRadius){
 
       var curveConstants = math.getBarrelCurveConstants( width, height );
       var hOffset = curveConstants.heightOffset;
@@ -424,11 +437,11 @@ BRp.generateBottomRoundrectangle = function(){
 
     points: math.generateUnitNgonPointsFitToSquare( 4, 0 ),
 
-    draw: function( context, centerX, centerY, width, height ){
-      this.renderer.nodeShapeImpl( this.name, context, centerX, centerY, width, height );
+    draw: function( context, centerX, centerY, width, height, cornerRadius ){
+      this.renderer.nodeShapeImpl( this.name, context, centerX, centerY, width, height, this.points, cornerRadius );
     },
 
-    intersectLine: function( nodeX, nodeY, width, height, x, y, padding ){
+    intersectLine: function( nodeX, nodeY, width, height, x, y, padding, cornerRadius ){
       var topStartX = nodeX - ( width / 2 + padding );
       var topStartY = nodeY - ( height / 2 + padding );
       var topEndY = topStartY;
@@ -445,14 +458,14 @@ BRp.generateBottomRoundrectangle = function(){
         nodeX,
         nodeY,
         width, height,
-        padding )
+        padding, cornerRadius )
       ;
     },
 
     checkPoint: function(
-      x, y, padding, width, height, centerX, centerY ){
+      x, y, padding, width, height, centerX, centerY, cornerRadius ){
 
-      var cornerRadius = math.getRoundRectangleRadius( width, height );
+      cornerRadius = cornerRadius === 'auto' ? math.getRoundRectangleRadius( width, height ) : cornerRadius;
       var diam = 2 * cornerRadius;
 
       // Check hBox

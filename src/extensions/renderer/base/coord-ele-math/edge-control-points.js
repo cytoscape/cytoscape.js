@@ -2,6 +2,7 @@ import * as math from '../../../../math';
 import * as is from '../../../../is';
 import * as util from '../../../../util';
 import Map from '../../../../map';
+import {getRoundCorner} from "../../../../round";
 
 let BRp = {};
 
@@ -117,10 +118,14 @@ BRp.findSegmentsPoints = function( edge, pairInfo ){
   const rs = edge._private.rscratch;
   const segmentWs = edge.pstyle( 'segment-weights' );
   const segmentDs = edge.pstyle( 'segment-distances' );
+  const segmentRs = edge.pstyle( 'segment-radii' );
   const segmentsN = Math.min( segmentWs.pfValue.length, segmentDs.pfValue.length );
+
+  const lastRadius = segmentRs.pfValue[ segmentRs.pfValue.length - 1 ];
 
   rs.edgeType = 'segments';
   rs.segpts = [];
+  rs.radii = [];
 
   for( let s = 0; s < segmentsN; s++ ){
     let w = segmentWs.pfValue[ s ];
@@ -140,6 +145,8 @@ BRp.findSegmentsPoints = function( edge, pairInfo ){
       adjustedMidpt.x + vectorNormInverse.x * d,
       adjustedMidpt.y + vectorNormInverse.y * d
     );
+
+    rs.radii.push( segmentRs.pfValue[ s ] || lastRadius );
   }
 
 };
@@ -455,6 +462,8 @@ BRp.findTaxiPoints = function( edge, pairInfo ){
         x, y2
       ];
     }
+    const radius = edge.pstyle( 'taxi-radius' ).value;
+    rs.radii = new Array( rs.segpts.length / 2 ).fill( radius );
   }
 };
 
@@ -463,7 +472,7 @@ BRp.tryToCorrectInvalidPoints = function( edge, pairInfo ){
 
   // can only correct beziers for now...
   if( rs.edgeType === 'bezier' ){
-    const { srcPos, tgtPos, srcW, srcH, tgtW, tgtH, srcShape, tgtShape } = pairInfo;
+    const { srcPos, tgtPos, srcW, srcH, tgtW, tgtH, srcShape, tgtShape, srcCornerRadius, tgtCornerRadius, srcRs, tgtRs } = pairInfo;
 
     let badStart = !is.number( rs.startX ) || !is.number( rs.startY );
     let badAStart = !is.number( rs.arrowStartX ) || !is.number( rs.arrowStartY );
@@ -509,7 +518,7 @@ BRp.tryToCorrectInvalidPoints = function( edge, pairInfo ){
         srcH,
         cpProj.x,
         cpProj.y,
-        0
+        0, srcCornerRadius, srcRs
       );
 
       if( closeStartACp ){
@@ -548,7 +557,7 @@ BRp.tryToCorrectInvalidPoints = function( edge, pairInfo ){
         tgtH,
         cpProj.x,
         cpProj.y,
-        0
+        0, tgtCornerRadius, tgtRs
       );
 
       if( closeEndACp ){
@@ -625,9 +634,33 @@ BRp.storeAllpts = function( edge ){
       rs.midY = ( rs.segpts[ i1 + 1] + rs.segpts[ i2 + 1] ) / 2;
     } else {
       let i1 = rs.segpts.length / 2 - 1;
+      if( !rs.isRound ){
+        rs.midX = rs.segpts[ i1 ];
+        rs.midY = rs.segpts[ i1 + 1 ];
+      } else {
 
-      rs.midX = rs.segpts[ i1 ];
-      rs.midY = rs.segpts[ i1 + 1];
+        let radius = rs.radii[ i1 / 2 ];
+        let point = { x: rs.segpts[ i1 ], y: rs.segpts[ i1 + 1 ], radius };
+        const corner = getRoundCorner(
+          { x: rs.segpts[ i1 - 2 ] || rs.startX, y: rs.segpts[ i1 - 1 ] || rs.startY },
+          point,
+          {  x: rs.segpts[ i1 + 2 ] || rs.endX, y: rs.segpts[ i1 + 3 ] || rs.endY },
+          radius
+        );
+
+        let v  = [
+           point.x - corner.cx,
+           point.y - corner.cy
+        ];
+
+        const factor = corner.radius / Math.sqrt(Math.pow(v[0], 2) +  Math.pow(v[1], 2));
+
+        v = v.map(c => c * factor);
+
+        rs.midX = corner.cx + v[0];
+        rs.midY = corner.cy + v[1];
+        rs.midVector = v;
+      }
     }
 
 
@@ -697,7 +730,7 @@ BRp.findEdgeControlPoints = function( edges ){
       continue;
     }
 
-    let edgeIsUnbundled = curveStyle === 'unbundled-bezier' || curveStyle === 'segments' || curveStyle === 'straight' || curveStyle === 'straight-triangle' || curveStyle === 'taxi';
+    let edgeIsUnbundled = curveStyle === 'unbundled-bezier' || curveStyle.endsWith('segments') || curveStyle === 'straight' || curveStyle === 'straight-triangle' || curveStyle.endsWith('taxi');
     let edgeIsBezier = curveStyle === 'unbundled-bezier' || curveStyle === 'bezier';
     let src = _p.source;
     let tgt = _p.target;
@@ -767,6 +800,12 @@ BRp.findEdgeControlPoints = function( edges ){
     let srcShape = pairInfo.srcShape = r.nodeShapes[ this.getNodeShape( src ) ];
     let tgtShape = pairInfo.tgtShape = r.nodeShapes[ this.getNodeShape( tgt ) ];
 
+    let srcCornerRadius = pairInfo.srcCornerRadius = src.pstyle('corner-radius').value === 'auto' ? 'auto' : src.pstyle('corner-radius').pfValue;
+    let tgtCornerRadius = pairInfo.tgtCornerRadius = tgt.pstyle('corner-radius').value === 'auto' ? 'auto' : tgt.pstyle('corner-radius').pfValue;
+
+    let tgtRs = pairInfo.tgtRs = tgt._private.rscratch;
+    let srcRs = pairInfo.srcRs = src._private.rscratch;
+
     pairInfo.dirCounts = {
       'north': 0,
       'west': 0,
@@ -782,7 +821,7 @@ BRp.findEdgeControlPoints = function( edges ){
       const edge = pairInfo.eles[i];
       const rs = edge[0]._private.rscratch;
       const curveStyle = edge.pstyle( 'curve-style' ).value;
-      const edgeIsUnbundled = curveStyle === 'unbundled-bezier' || curveStyle === 'segments' || curveStyle === 'taxi';
+      const edgeIsUnbundled = curveStyle === 'unbundled-bezier' || curveStyle.endsWith('segments') || curveStyle.endsWith('taxi');
 
       // whether the normalised pair order is the reverse of the edge's src-tgt order
       const edgeIsSwapped = !src.same(edge.source());
@@ -795,7 +834,7 @@ BRp.findEdgeControlPoints = function( edges ){
           srcPos.x, srcPos.y,
           srcW, srcH,
           tgtPos.x, tgtPos.y,
-          0
+          0, srcCornerRadius, srcRs
         );
 
         let srcIntn = pairInfo.srcIntn = srcOutside;
@@ -805,7 +844,7 @@ BRp.findEdgeControlPoints = function( edges ){
           tgtPos.x, tgtPos.y,
           tgtW, tgtH,
           srcPos.x, srcPos.y,
-          0
+          0, tgtCornerRadius, tgtRs
         );
 
         let tgtIntn = pairInfo.tgtIntn = tgtOutside;
@@ -846,8 +885,8 @@ BRp.findEdgeControlPoints = function( edges ){
         // if node shapes overlap, then no ctrl pts to draw
         pairInfo.nodesOverlap = (
           !is.number(l)
-          || tgtShape.checkPoint( srcOutside[0], srcOutside[1], 0, tgtW, tgtH, tgtPos.x, tgtPos.y )
-          || srcShape.checkPoint( tgtOutside[0], tgtOutside[1], 0, srcW, srcH, srcPos.x, srcPos.y )
+          || tgtShape.checkPoint( srcOutside[0], srcOutside[1], 0, tgtW, tgtH, tgtPos.x, tgtPos.y, tgtCornerRadius, tgtRs )
+          || srcShape.checkPoint( tgtOutside[0], tgtOutside[1], 0, srcW, srcH, srcPos.x, srcPos.y, srcCornerRadius, srcRs )
         );
 
         pairInfo.vectorNormInverse = vectorNormInverse;
@@ -889,6 +928,8 @@ BRp.findEdgeControlPoints = function( edges ){
       rs.srcIntn = passedPairInfo.srcIntn;
       rs.tgtIntn = passedPairInfo.tgtIntn;
 
+      rs.isRound = curveStyle.startsWith('round');
+
       if(
         hasCompounds &&
         ( src.isParent() || src.isChild() || tgt.isParent() || tgt.isChild() ) &&
@@ -899,10 +940,10 @@ BRp.findEdgeControlPoints = function( edges ){
       } else if( src === tgt ){
         this.findLoopPoints(edge, passedPairInfo, i, edgeIsUnbundled);
 
-      } else if( curveStyle === 'segments' ){
+      } else if( curveStyle.endsWith( 'segments' )){
         this.findSegmentsPoints(edge, passedPairInfo);
 
-      } else if( curveStyle === 'taxi' ){
+      } else if( curveStyle.endsWith( 'taxi' )){
         this.findTaxiPoints(edge, passedPairInfo);
 
       } else if(

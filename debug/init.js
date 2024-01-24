@@ -8,8 +8,47 @@ var cy, defaultSty, options;
 
       .selector('node')
         .style({
-          'label': 'data(id)'
+          'background-opacity': 0.4,
+          'label': 'data(id)',
+          'outline-offset': 5,
+          'outline-color': 'red',
+          'outline-opacity': 0.5,
+          'outline-width': 10,
+          'outline-style': 'solid',
+          'border-width': 5,
+          'border-opacity': 0.5,
+          'border-color': 'blue',
+          'border-position': 'inside',
+          'width': 220,
+          'height': 60
         })
+      .selector('node#a')
+        .style({
+          'shape': 'round-rectangle',
+          'width': 220,
+          'height': 60,
+          'corner-radius': 30
+        })
+      .selector('node#b')
+      .style({
+        'shape': 'round-hexagon',
+        'width': 60,
+        'height': 60,
+        'corner-radius': 10
+      })
+      .selector('node#c')
+      .style({
+        'shape': 'round-rectangle',
+        'width': 220,
+        'height': 60,
+        'corner-radius': 5
+      })
+      .selector('node#e')
+      .style({
+        'shape': 'cut-rectangle',
+        'width': 50,
+        'corner-radius': 10,
+      })
 
       .selector('edge')
         .style({
@@ -17,6 +56,7 @@ var cy, defaultSty, options;
           'target-arrow-shape': 'triangle',
           'mid-target-arrow-shape': 'triangle',
           'mid-source-arrow-shape': 'triangle-backcurve',
+          'curve-style': 'straight',
         })
       .selector('#ab')
         .style({
@@ -59,6 +99,29 @@ var cy, defaultSty, options;
         .style({
           'curve-style': 'taxi'
         })
+      .selector('#eg')
+        .style({
+          'curve-style': 'round-taxi',
+          "taxi-direction": "downward",
+          // "taxi-turn": 100,
+          "taxi-turn-min-distance": 50,
+          "taxi-radius": 50
+        })
+      .selector('#eh')
+        .style({
+          'curve-style': 'round-segments',
+          'segment-distances': [ 0  , 50 , 0  , -50, 0  , 0  , 100 ],
+          'segment-weights': [   0.5, 0.6, 0.7, 0.6, 0.5, 0.8, 0.85],
+          'segment-radii': [ 50, 100 ],
+        })
+      .selector('#ei')
+        .style({
+          'curve-style': 'round-taxi'
+        })
+      .selector('#gh')
+        .style({
+          'curve-style': 'round-taxi'
+        })
   ;
 
   options = {
@@ -83,7 +146,10 @@ var cy, defaultSty, options;
         { data: { id: 'c', weight: 20 } },
         { data: { id: 'd', weight: 10 } },
         { data: { id: 'e', weight: 75 } },
-        { data: { id: 'f', weight: 100 } }
+        { data: { id: 'f', weight: 100 } },
+        { data: { id: 'g', weight: 40 } },
+        { data: { id: 'h', weight: 16 } },
+        { data: { id: 'i', weight: 16 } },
       ],
 
       edges: [
@@ -103,7 +169,11 @@ var cy, defaultSty, options;
         { data: { id: 'de4', weight: 7, source: 'd', target: 'e' } },
         { data: { id: 'de5', weight: 7, source: 'd', target: 'e' } },
         { data: { id: 'bf', weight: 3, source: 'b', target: 'f' } },
-        { data: { id: 'ef', weight: 3, source: 'e', target: 'f' } }
+        { data: { id: 'ef', weight: 3, source: 'e', target: 'f' } },
+        { data: { id: 'eg', weight: 3, source: 'e', target: 'g' } },
+        { data: { id: 'eh', weight: 3, source: 'e', target: 'h' } },
+        { data: { id: 'ei', weight: 3, source: 'e', target: 'i' } },
+        { data: { id: 'gh', weight: 3, source: 'g', target: 'h' } },
       ]
     }
   };

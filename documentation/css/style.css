@@ -883,6 +883,12 @@ pre code {
 	margin: 0.25em;
 }
 
+table {
+	display: block;
+	max-width: 100%;
+	overflow-x: auto;
+}
+
 #open-navigation {
 	display: none;
 	position: fixed;

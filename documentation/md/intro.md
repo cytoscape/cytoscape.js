@@ -173,6 +173,10 @@
 * [Wageningen University and Research](https://www.wur.nl)
 * [World Monuments Fund](https://www.wmf.org)
 
+### Libraries
+
+* [Mermaid](https://mermaid.js.org)
+
 ### Apps & services
 
 * [Apache AGE](https://age.apache.org)

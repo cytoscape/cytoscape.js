@@ -4,7 +4,7 @@
 
 
 // Declare reused variable to avoid reallocating variables every time the function is called
-let x, y, v1 = {}, v2 = {}, sinA, sinA90, radDirection, drawDirection, angle, halfAngle, cRadius, lenOut, radius;
+let x, y, v1 = {}, v2 = {}, sinA, sinA90, radDirection, drawDirection, angle, halfAngle, cRadius, lenOut, radius, ignore = false;
 let startX, startY, stopX, stopY;
 let lastPoint;
 
@@ -23,17 +23,18 @@ const invertVec = function (originalV, invertedV) {
   invertedV.y = originalV.y * -1;
   invertedV.nx = originalV.nx * -1;
   invertedV.ny = originalV.ny * -1;
-  invertedV.ang = originalV.ang > 0 ? -(Math.PI - originalV.ang): Math.PI + originalV.ang;
+  invertedV.ang = originalV.ang > 0 ? -(Math.PI - originalV.ang) : Math.PI + originalV.ang;
 };
 
 const calcCornerArc = (previousPoint, currentPoint, nextPoint, radiusMax) => {
   //-----------------------------------------
   // Part 1
-  previousPoint !== lastPoint ? asVec(currentPoint, previousPoint, v1) : invertVec(v2, v1);
+  previousPoint !== lastPoint ? asVec(currentPoint, previousPoint, v1) : invertVec(v2, v1); // Avoid recalculating vec if it is the invert of the last one calculated
   asVec(currentPoint, nextPoint, v2);
   sinA = v1.nx * v2.ny - v1.ny * v2.nx;
   sinA90 = v1.nx * v2.nx - v1.ny * -v2.ny;
-  angle = angle = Math.asin(Math.max(-1, Math.min(1, sinA)));
+  angle = Math.asin(Math.max(-1, Math.min(1, sinA)));
+  if (Math.abs(angle) < 1e-6) return ignore = true;
   //-----------------------------------------
   radDirection = 1;
   drawDirection = false;
@@ -103,17 +104,19 @@ const calcCornerArc = (previousPoint, currentPoint, nextPoint, radiusMax) => {
  */
 export function drawRoundCorner(ctx, previousPoint, currentPoint, nextPoint, radiusMax) {
   calcCornerArc(previousPoint, currentPoint, nextPoint, radiusMax);
-  ctx.arc(x, y, cRadius, v1.ang + Math.PI / 2 * radDirection, v2.ang - Math.PI / 2 * radDirection, drawDirection);
+  if ( ignore ) ctx.lineTo(currentPoint.x, currentPoint.y);
+  else ctx.arc(x, y, cRadius, v1.ang + Math.PI / 2 * radDirection, v2.ang - Math.PI / 2 * radDirection, drawDirection);
+  ignore = false;
 }
 
 /**
  * Draw corner provided by {@link getRoundCorner}
  *
  * @param ctx :CanvasRenderingContext2D
- * @param roundCorner {{cx:number, cy:number, radius:number, endAngle: number, startAngle: number, counterClockwise: boolean}}
+ * @param roundCorner {{cx:number, cy:number, radius:number, endAngle: number, startAngle: number, counterClockwise: boolean, ignore:boolean}}
  */
 export function drawPreparedRoundCorner(ctx, roundCorner) {
-  if (roundCorner.radius === 0) ctx.lineTo(roundCorner.cx, roundCorner.cy);
+  if (roundCorner.radius === 0 || roundCorner.ignore) ctx.lineTo(roundCorner.cx, roundCorner.cy);
   else ctx.arc(roundCorner.cx, roundCorner.cy, roundCorner.radius, roundCorner.startAngle, roundCorner.endAngle, roundCorner.counterClockwise);
 }
 
@@ -128,6 +131,7 @@ export function drawPreparedRoundCorner(ctx, roundCorner) {
  * cx:number, cy:number, radius:number,
  * startX:number, startY:number,
  * stopX:number, stopY: number,
+ * ignore: boolean,
  * endAngle: number, startAngle: number, counterClockwise: boolean
  * }}
  */
@@ -140,6 +144,7 @@ export function getRoundCorner(previousPoint, currentPoint, nextPoint, radiusMax
     startY: currentPoint.y,
     stopX: currentPoint.x,
     stopY: currentPoint.y,
+    ignore: true,
     startAngle: undefined,
     endAngle: undefined,
     counterClockwise: undefined
@@ -150,6 +155,7 @@ export function getRoundCorner(previousPoint, currentPoint, nextPoint, radiusMax
     cx: x, cy: y, radius: cRadius,
     startX, startY,
     stopX, stopY,
+    ignore,
     startAngle: v1.ang + Math.PI / 2 * radDirection,
     endAngle: v2.ang - Math.PI / 2 * radDirection,
     counterClockwise: drawDirection

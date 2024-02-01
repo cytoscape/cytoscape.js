@@ -611,7 +611,7 @@ let boundingBoxImpl = function( ele, options ){
 
         } else if(
           curveStyle === 'bezier' || curveStyle === 'unbundled-bezier'
-          || curveStyle === 'segments' || curveStyle === 'taxi'
+          || curveStyle.endsWith('segments') || curveStyle.endsWith('taxi')
         ){
           let pts;
 
@@ -622,6 +622,8 @@ let boundingBoxImpl = function( ele, options ){
               break;
             case 'segments':
             case 'taxi':
+            case 'round-segments':
+            case 'round-taxi':
               pts = rstyle.linePts;
               break;
           }

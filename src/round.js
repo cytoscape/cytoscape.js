@@ -4,7 +4,7 @@
 
 
 // Declare reused variable to avoid reallocating variables every time the function is called
-let x, y, v1 = {}, v2 = {}, sinA, sinA90, radDirection, drawDirection, angle, halfAngle, cRadius, lenOut, radius, ignore = false;
+let x, y, v1 = {}, v2 = {}, sinA, sinA90, radDirection, drawDirection, angle, halfAngle, cRadius, lenOut, radius, limit;
 let startX, startY, stopX, stopY;
 let lastPoint;
 
@@ -26,7 +26,7 @@ const invertVec = function (originalV, invertedV) {
   invertedV.ang = originalV.ang > 0 ? -(Math.PI - originalV.ang) : Math.PI + originalV.ang;
 };
 
-const calcCornerArc = (previousPoint, currentPoint, nextPoint, radiusMax) => {
+const calcCornerArc = (previousPoint, currentPoint, nextPoint, radiusMax, adjustRadius) => {
   //-----------------------------------------
   // Part 1
   previousPoint !== lastPoint ? asVec(currentPoint, previousPoint, v1) : invertVec(v2, v1); // Avoid recalculating vec if it is the invert of the last one calculated
@@ -62,19 +62,29 @@ const calcCornerArc = (previousPoint, currentPoint, nextPoint, radiusMax) => {
   halfAngle = angle / 2;
   //-----------------------------------------
 
-  //-----------------------------------------
-  // Part 3
-  lenOut = Math.abs(Math.cos(halfAngle) * radius / Math.sin(halfAngle));
-  //-----------------------------------------
 
-  //-----------------------------------------
-  // Special part A
-  if (lenOut > Math.min(v1.len / 2, v2.len / 2)) {
-    lenOut = Math.min(v1.len / 2, v2.len / 2);
+  limit = Math.min(v1.len / 2, v2.len / 2);
+  if (adjustRadius) {
+    lenOut = Math.min(limit, radius);
     cRadius = Math.abs(lenOut * Math.sin(halfAngle) / Math.cos(halfAngle));
   } else {
-    cRadius = radius;
+    //-----------------------------------------
+    // Part 3
+    lenOut = Math.abs(Math.cos(halfAngle) * radius / Math.sin(halfAngle));
+
+    //-----------------------------------------
+    // Special part A
+    if (lenOut > limit) {
+      lenOut = limit;
+      cRadius = Math.abs(lenOut * Math.sin(halfAngle) / Math.cos(halfAngle));
+    } else {
+      cRadius = radius;
+    }
   }
+  //-----------------------------------------
+
+
+
   //-----------------------------------------
   // Part 4
   stopX = currentPoint.x + v2.nx * lenOut;
@@ -101,10 +111,13 @@ const calcCornerArc = (previousPoint, currentPoint, nextPoint, radiusMax) => {
  * @param currentPoint {{x: number, y:number, radius: number?}}
  * @param nextPoint {{x: number, y:number, radius: number?}}
  * @param radiusMax :number
+ * @param adjustRadius :boolean
  */
 export function drawRoundCorner(ctx, previousPoint, currentPoint, nextPoint, radiusMax) {
   calcCornerArc(previousPoint, currentPoint, nextPoint, radiusMax);
   if ( ignore ) ctx.lineTo(currentPoint.x, currentPoint.y);
+export function drawRoundCorner(ctx, previousPoint, currentPoint, nextPoint, radiusMax, adjustRadius) {
+  calcCornerArc(previousPoint, currentPoint, nextPoint, radiusMax, adjustRadius);
   else ctx.arc(x, y, cRadius, v1.ang + Math.PI / 2 * radDirection, v2.ang - Math.PI / 2 * radDirection, drawDirection);
   ignore = false;
 }
@@ -127,6 +140,7 @@ export function drawPreparedRoundCorner(ctx, roundCorner) {
  * @param currentPoint {{x: number, y:number, radius: number?}}
  * @param nextPoint {{x: number, y:number, radius: number?}}
  * @param radiusMax :number
+ * @param adjustRadius :boolean
  * @return {{
  * cx:number, cy:number, radius:number,
  * startX:number, startY:number,
@@ -135,7 +149,7 @@ export function drawPreparedRoundCorner(ctx, roundCorner) {
  * endAngle: number, startAngle: number, counterClockwise: boolean
  * }}
  */
-export function getRoundCorner(previousPoint, currentPoint, nextPoint, radiusMax) {
+export function getRoundCorner(previousPoint, currentPoint, nextPoint, radiusMax, adjustRadius) {
   if (radiusMax === 0 || currentPoint.radius === 0) return {
     cx: currentPoint.x,
     cy: currentPoint.y,
@@ -150,7 +164,7 @@ export function getRoundCorner(previousPoint, currentPoint, nextPoint, radiusMax
     counterClockwise: undefined
   };
 
-  calcCornerArc(previousPoint, currentPoint, nextPoint, radiusMax);
+  calcCornerArc(previousPoint, currentPoint, nextPoint, radiusMax, adjustRadius);
   return {
     cx: x, cy: y, radius: cRadius,
     startX, startY,

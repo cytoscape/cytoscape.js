@@ -1,7 +1,7 @@
 /* global Path2D */
 
 import * as util from '../../../util';
-import {drawRoundCorner} from "../../../round";
+import {drawPreparedRoundCorner} from "../../../round";
 
 let CRp = {};
 
@@ -214,11 +214,8 @@ CRp.drawEdgePath = function( edge, context, pts, type ){
         break;
       case 'segments':
         if (rs.isRound) {
-          for( let i = 2; i + 3 < pts.length; i += 2 ){
-            drawRoundCorner(context,
-              {x: pts[i - 2], y: pts[i - 1]},
-              {x: pts[i], y: pts[i + 1], radius: rs.radii[ (i / 2)  - 1]},
-              {x: pts[i + 2], y: pts[i + 3]}, Infinity);
+          for( let corner of rs.roundCorners ){
+            drawPreparedRoundCorner(context, corner);
           }
           context.lineTo( pts[ pts.length - 2 ], pts[ pts.length - 1] );
         } else {

@@ -119,13 +119,16 @@ BRp.findSegmentsPoints = function( edge, pairInfo ){
   const segmentWs = edge.pstyle( 'segment-weights' );
   const segmentDs = edge.pstyle( 'segment-distances' );
   const segmentRs = edge.pstyle( 'segment-radii' );
+  const segmentSs = edge.pstyle( 'acute-corner-strategy' );
   const segmentsN = Math.min( segmentWs.pfValue.length, segmentDs.pfValue.length );
 
   const lastRadius = segmentRs.pfValue[ segmentRs.pfValue.length - 1 ];
+  const lastStrategy = segmentSs.pfValue[ segmentSs.pfValue.length - 1 ];
 
   rs.edgeType = 'segments';
   rs.segpts = [];
   rs.radii = [];
+  rs.adjustRadii = [];
 
   for( let s = 0; s < segmentsN; s++ ){
     let w = segmentWs.pfValue[ s ];
@@ -146,7 +149,8 @@ BRp.findSegmentsPoints = function( edge, pairInfo ){
       adjustedMidpt.y + vectorNormInverse.y * d
     );
 
-    rs.radii.push( segmentRs.pfValue[ s ] || lastRadius );
+    rs.radii.push( segmentRs.pfValue[ s ] !== undefined ?  segmentRs.pfValue[ s ] : lastRadius );
+    rs.adjustRadii.push( (segmentSs.pfValue[ s ] !== undefined ? segmentSs.pfValue[ s ] : lastStrategy) === 'adjust-radius' );
   }
 
 };
@@ -462,8 +466,13 @@ BRp.findTaxiPoints = function( edge, pairInfo ){
         x, y2
       ];
     }
+  }
+
+  if (rs.isRound) {
     const radius = edge.pstyle( 'taxi-radius' ).value;
+    const adjustRadius = edge.pstyle( 'acute-corner-strategy' ).value[0] === 'adjust-radius';
     rs.radii = new Array( rs.segpts.length / 2 ).fill( radius );
+    rs.adjustRadii = new Array( rs.segpts.length / 2 ).fill( adjustRadius );
   }
 };
 
@@ -626,6 +635,23 @@ BRp.storeAllpts = function( edge ){
     rs.allpts.push.apply( rs.allpts, rs.segpts );
     rs.allpts.push( rs.endX, rs.endY );
 
+    if( rs.isRound ){
+      rs.roundCorners = []
+
+      for( let i = 2; i + 3 < rs.allpts.length; i += 2 ){
+        let radius = rs.radii[ (i / 2)  - 1];
+        let adjustRadius = rs.adjustRadii[ (i / 2)  - 1 ];
+        rs.roundCorners.push(
+          getRoundCorner(
+            {x: rs.allpts[i - 2], y: rs.allpts[i - 1]},
+            {x: rs.allpts[i], y: rs.allpts[i + 1], radius},
+            {x: rs.allpts[i + 2], y: rs.allpts[i + 3]},
+            radius, adjustRadius
+          )
+        );
+      }
+    }
+
     if( rs.segpts.length % 4 === 0 ){
       let i2 = rs.segpts.length / 2;
       let i1 = i2 - 2;
@@ -638,15 +664,8 @@ BRp.storeAllpts = function( edge ){
         rs.midX = rs.segpts[ i1 ];
         rs.midY = rs.segpts[ i1 + 1 ];
       } else {
-
-        let radius = rs.radii[ i1 / 2 ];
-        let point = { x: rs.segpts[ i1 ], y: rs.segpts[ i1 + 1 ], radius };
-        const corner = getRoundCorner(
-          { x: rs.segpts[ i1 - 2 ] || rs.startX, y: rs.segpts[ i1 - 1 ] || rs.startY },
-          point,
-          {  x: rs.segpts[ i1 + 2 ] || rs.endX, y: rs.segpts[ i1 + 3 ] || rs.endY },
-          radius
-        );
+        let point = {x: rs.segpts[i1], y: rs.segpts[i1 + 1]};
+        const corner = rs.roundCorners[i1 / 2];
 
         let v  = [
            point.x - corner.cx,

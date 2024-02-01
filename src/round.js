@@ -34,7 +34,7 @@ const calcCornerArc = (previousPoint, currentPoint, nextPoint, radiusMax, adjust
   sinA = v1.nx * v2.ny - v1.ny * v2.nx;
   sinA90 = v1.nx * v2.nx - v1.ny * -v2.ny;
   angle = Math.asin(Math.max(-1, Math.min(1, sinA)));
-  if (Math.abs(angle) < 1e-6) return ignore = true;
+  if (Math.abs(angle) < 1e-6) return cRadius = radius = 0;
   //-----------------------------------------
   radDirection = 1;
   drawDirection = false;
@@ -113,23 +113,21 @@ const calcCornerArc = (previousPoint, currentPoint, nextPoint, radiusMax, adjust
  * @param radiusMax :number
  * @param adjustRadius :boolean
  */
-export function drawRoundCorner(ctx, previousPoint, currentPoint, nextPoint, radiusMax) {
-  calcCornerArc(previousPoint, currentPoint, nextPoint, radiusMax);
-  if ( ignore ) ctx.lineTo(currentPoint.x, currentPoint.y);
 export function drawRoundCorner(ctx, previousPoint, currentPoint, nextPoint, radiusMax, adjustRadius) {
   calcCornerArc(previousPoint, currentPoint, nextPoint, radiusMax, adjustRadius);
+  if (cRadius === 0) ctx.lineTo(currentPoint.x, currentPoint.y);
   else ctx.arc(x, y, cRadius, v1.ang + Math.PI / 2 * radDirection, v2.ang - Math.PI / 2 * radDirection, drawDirection);
-  ignore = false;
+
 }
 
 /**
  * Draw corner provided by {@link getRoundCorner}
  *
  * @param ctx :CanvasRenderingContext2D
- * @param roundCorner {{cx:number, cy:number, radius:number, endAngle: number, startAngle: number, counterClockwise: boolean, ignore:boolean}}
+ * @param roundCorner {{cx:number, cy:number, radius:number, endAngle: number, startAngle: number, counterClockwise: boolean}}
  */
 export function drawPreparedRoundCorner(ctx, roundCorner) {
-  if (roundCorner.radius === 0 || roundCorner.ignore) ctx.lineTo(roundCorner.cx, roundCorner.cy);
+  if (roundCorner.radius === 0) ctx.lineTo(roundCorner.cx, roundCorner.cy);
   else ctx.arc(roundCorner.cx, roundCorner.cy, roundCorner.radius, roundCorner.startAngle, roundCorner.endAngle, roundCorner.counterClockwise);
 }
 
@@ -145,7 +143,6 @@ export function drawPreparedRoundCorner(ctx, roundCorner) {
  * cx:number, cy:number, radius:number,
  * startX:number, startY:number,
  * stopX:number, stopY: number,
- * ignore: boolean,
  * endAngle: number, startAngle: number, counterClockwise: boolean
  * }}
  */
@@ -158,7 +155,6 @@ export function getRoundCorner(previousPoint, currentPoint, nextPoint, radiusMax
     startY: currentPoint.y,
     stopX: currentPoint.x,
     stopY: currentPoint.y,
-    ignore: true,
     startAngle: undefined,
     endAngle: undefined,
     counterClockwise: undefined
@@ -169,7 +165,6 @@ export function getRoundCorner(previousPoint, currentPoint, nextPoint, radiusMax
     cx: x, cy: y, radius: cRadius,
     startX, startY,
     stopX, stopY,
-    ignore,
     startAngle: v1.ang + Math.PI / 2 * radDirection,
     endAngle: v2.ang - Math.PI / 2 * radDirection,
     counterClockwise: drawDirection

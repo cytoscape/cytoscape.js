@@ -636,7 +636,7 @@ BRp.storeAllpts = function( edge ){
     rs.allpts.push( rs.endX, rs.endY );
 
     if( rs.isRound ){
-      rs.roundCorners = []
+      rs.roundCorners = [];
 
       for( let i = 2; i + 3 < rs.allpts.length; i += 2 ){
         let radius = rs.radii[ (i / 2)  - 1];

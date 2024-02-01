@@ -119,16 +119,16 @@ BRp.findSegmentsPoints = function( edge, pairInfo ){
   const segmentWs = edge.pstyle( 'segment-weights' );
   const segmentDs = edge.pstyle( 'segment-distances' );
   const segmentRs = edge.pstyle( 'segment-radii' );
-  const segmentSs = edge.pstyle( 'acute-corner-strategy' );
+  const segmentTs = edge.pstyle( 'radius-type' );
   const segmentsN = Math.min( segmentWs.pfValue.length, segmentDs.pfValue.length );
 
   const lastRadius = segmentRs.pfValue[ segmentRs.pfValue.length - 1 ];
-  const lastStrategy = segmentSs.pfValue[ segmentSs.pfValue.length - 1 ];
+  const lastRadiusType = segmentTs.pfValue[ segmentTs.pfValue.length - 1 ];
 
   rs.edgeType = 'segments';
   rs.segpts = [];
   rs.radii = [];
-  rs.adjustRadii = [];
+  rs.isArcRadius = [];
 
   for( let s = 0; s < segmentsN; s++ ){
     let w = segmentWs.pfValue[ s ];
@@ -150,7 +150,7 @@ BRp.findSegmentsPoints = function( edge, pairInfo ){
     );
 
     rs.radii.push( segmentRs.pfValue[ s ] !== undefined ?  segmentRs.pfValue[ s ] : lastRadius );
-    rs.adjustRadii.push( (segmentSs.pfValue[ s ] !== undefined ? segmentSs.pfValue[ s ] : lastStrategy) === 'adjust-radius' );
+    rs.isArcRadius.push( (segmentTs.pfValue[ s ] !== undefined ? segmentTs.pfValue[ s ] : lastRadiusType) === 'arc-radius' );
   }
 
 };
@@ -470,9 +470,9 @@ BRp.findTaxiPoints = function( edge, pairInfo ){
 
   if (rs.isRound) {
     const radius = edge.pstyle( 'taxi-radius' ).value;
-    const adjustRadius = edge.pstyle( 'acute-corner-strategy' ).value[0] === 'adjust-radius';
+    const isArcRadius = edge.pstyle( 'radius-type' ).value[0] === 'arc-radius';
     rs.radii = new Array( rs.segpts.length / 2 ).fill( radius );
-    rs.adjustRadii = new Array( rs.segpts.length / 2 ).fill( adjustRadius );
+    rs.isArcRadius = new Array( rs.segpts.length / 2 ).fill( isArcRadius );
   }
 };
 
@@ -640,13 +640,13 @@ BRp.storeAllpts = function( edge ){
 
       for( let i = 2; i + 3 < rs.allpts.length; i += 2 ){
         let radius = rs.radii[ (i / 2)  - 1];
-        let adjustRadius = rs.adjustRadii[ (i / 2)  - 1 ];
+        let isArcRadius = rs.isArcRadius[ (i / 2)  - 1 ];
         rs.roundCorners.push(
           getRoundCorner(
             {x: rs.allpts[i - 2], y: rs.allpts[i - 1]},
             {x: rs.allpts[i], y: rs.allpts[i + 1], radius},
             {x: rs.allpts[i + 2], y: rs.allpts[i + 3]},
-            radius, adjustRadius
+            radius, isArcRadius
           )
         );
       }

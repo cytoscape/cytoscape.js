@@ -26,7 +26,7 @@ const invertVec = function (originalV, invertedV) {
   invertedV.ang = originalV.ang > 0 ? -(Math.PI - originalV.ang) : Math.PI + originalV.ang;
 };
 
-const calcCornerArc = (previousPoint, currentPoint, nextPoint, radiusMax, adjustRadius) => {
+const calcCornerArc = (previousPoint, currentPoint, nextPoint, radiusMax, isArcRadius) => {
   //-----------------------------------------
   // Part 1
   previousPoint !== lastPoint ? asVec(currentPoint, previousPoint, v1) : invertVec(v2, v1); // Avoid recalculating vec if it is the invert of the last one calculated
@@ -64,10 +64,8 @@ const calcCornerArc = (previousPoint, currentPoint, nextPoint, radiusMax, adjust
 
 
   limit = Math.min(v1.len / 2, v2.len / 2);
-  if (adjustRadius) {
-    lenOut = Math.min(limit, radius);
-    cRadius = Math.abs(lenOut * Math.sin(halfAngle) / Math.cos(halfAngle));
-  } else {
+  
+  if (isArcRadius) {
     //-----------------------------------------
     // Part 3
     lenOut = Math.abs(Math.cos(halfAngle) * radius / Math.sin(halfAngle));
@@ -80,6 +78,9 @@ const calcCornerArc = (previousPoint, currentPoint, nextPoint, radiusMax, adjust
     } else {
       cRadius = radius;
     }
+  } else {
+    lenOut = Math.min(limit, radius);
+    cRadius = Math.abs(lenOut * Math.sin(halfAngle) / Math.cos(halfAngle));
   }
   //-----------------------------------------
 
@@ -111,10 +112,10 @@ const calcCornerArc = (previousPoint, currentPoint, nextPoint, radiusMax, adjust
  * @param currentPoint {{x: number, y:number, radius: number?}}
  * @param nextPoint {{x: number, y:number, radius: number?}}
  * @param radiusMax :number
- * @param adjustRadius :boolean
+ * @param isArcRadius :boolean
  */
-export function drawRoundCorner(ctx, previousPoint, currentPoint, nextPoint, radiusMax, adjustRadius) {
-  calcCornerArc(previousPoint, currentPoint, nextPoint, radiusMax, adjustRadius);
+export function drawRoundCorner(ctx, previousPoint, currentPoint, nextPoint, radiusMax, isArcRadius) {
+  calcCornerArc(previousPoint, currentPoint, nextPoint, radiusMax, isArcRadius);
   if (cRadius === 0) ctx.lineTo(currentPoint.x, currentPoint.y);
   else ctx.arc(x, y, cRadius, v1.ang + Math.PI / 2 * radDirection, v2.ang - Math.PI / 2 * radDirection, drawDirection);
 
@@ -138,7 +139,7 @@ export function drawPreparedRoundCorner(ctx, roundCorner) {
  * @param currentPoint {{x: number, y:number, radius: number?}}
  * @param nextPoint {{x: number, y:number, radius: number?}}
  * @param radiusMax :number
- * @param adjustRadius :boolean
+ * @param isArcRadius :boolean
  * @return {{
  * cx:number, cy:number, radius:number,
  * startX:number, startY:number,
@@ -146,7 +147,7 @@ export function drawPreparedRoundCorner(ctx, roundCorner) {
  * endAngle: number, startAngle: number, counterClockwise: boolean
  * }}
  */
-export function getRoundCorner(previousPoint, currentPoint, nextPoint, radiusMax, adjustRadius) {
+export function getRoundCorner(previousPoint, currentPoint, nextPoint, radiusMax, isArcRadius = true) {
   if (radiusMax === 0 || currentPoint.radius === 0) return {
     cx: currentPoint.x,
     cy: currentPoint.y,
@@ -160,7 +161,7 @@ export function getRoundCorner(previousPoint, currentPoint, nextPoint, radiusMax
     counterClockwise: undefined
   };
 
-  calcCornerArc(previousPoint, currentPoint, nextPoint, radiusMax, adjustRadius);
+  calcCornerArc(previousPoint, currentPoint, nextPoint, radiusMax, isArcRadius);
   return {
     cx: x, cy: y, radius: cRadius,
     startX, startY,

@@ -468,7 +468,7 @@ A round segment edge type is made of a series of one or more straight lines, joi
 * **`segment-distances`** : A series of values that specify for each segment point the distance perpendicular to a line formed from source to target, e.g. `-20 20 -20`.
 * **`segment-weights`** : A series of values that weights segment points along a line from source to target, e.g. `0.25 0.5 0.75`.  A value usually ranges on [0, 1], with 0 towards the source node and 1 towards the target node --- but larger or smaller values can also be used.
 * **`segment-radii`** : A series of values that provide the radii of the different points positioned by `segment-distances` and `segment-weights`, e.g. `15 0 5`.  If less radii are provided tha points have been defined, the last provided radius will be used for all the missing radius. If a single radius is provided, it will therefore be applied to all the segment's points.
-* **`radius-type`** : Defines where `segment-radii` are applied, which is particularly relevant when the corner angle is acute. You can provide multiple values to define the radius type for each provided radius. Values can be:
+* **`radius-type`** : Defines where `segment-radii` are applied (see [demo](demos/radius-types)), which is particularly relevant when the corner angle is acute. You can provide multiple values to define the radius type for each provided radius. Values can be:
      * `arc-radius`: **Default strategy**: The `radius` property is applied to the corner arc, which will be placed further away from the control point if the arc doesn't fit in an acute angle.
      * `influence-radius`: The radius property is applied to the control point sphere of influence. The arcs for a given control point will all start and end at `radius` distance from the `control-points`.
 * **`edge-distances`** :
@@ -546,7 +546,7 @@ When a taxi edge would be impossible to draw along the regular turning plan --- 
     * `rightward` : Bundle outgoers righwards.
     * `leftward` : Bundle outgoers leftwards.
 * **`taxi-radius`** : The radius of the rounded corners of the edge.
-* **`radius-type`** : Defines where `taxi-radius` is applied, which is particularly relevant when the corner angle is acute. Values can be:
+* **`radius-type`** : Defines where `taxi-radius` is applied (see [demo](demos/radius-types)), which is particularly relevant when the corner angle is acute. Values can be:
     * `arc-radius`: **Default strategy**: The `radius` property is applied to the corner arc, which will be placed further away from the control point if the arc doesn't fit in an acute angle.
     * `influence-radius`: The radius property is applied to the control point sphere of influence. The arcs for a given control point will all start and end at `radius` distance from the `control-points`.
 * **`taxi-turn`** : The distance along the primary axis where the first turn is applied.

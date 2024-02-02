@@ -1,0 +1,38 @@
+[
+  {
+    "data": {
+      "id": "arc-a"
+    }
+  },
+  {
+    "data": {
+      "id": "arc-b"
+    }
+  },
+  {
+    "data": {
+      "id": "influence-a"
+    }
+  },
+  {
+    "data": {
+      "id": "influence-b"
+    }
+  },
+  {
+    "data": {
+      "source": "arc-a",
+      "target": "arc-b",
+      "radius": 20,
+      "type": "arc-radius"
+    }
+  },
+  {
+    "data": {
+      "source": "influence-a",
+      "target": "influence-b",
+      "radius": 20,
+      "type": "influence-radius"
+    }
+  }
+]

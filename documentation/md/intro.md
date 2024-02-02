@@ -53,6 +53,7 @@
 * [Duo](https://duo.com)
 * [Elastic](https://www.elastic.co/)
 * [Fujitsu](https://www.fujitsu.com)
+* [GitHub](https://github.com)
 * [Google](https://google.com)
 * [Hewlett Packard Enterprise](https://www.hpe.com)
 * [IBM](https://www.ibm.com)
@@ -171,6 +172,10 @@
 * [Virginia Tech](http://www.vt.edu)
 * [Wageningen University and Research](https://www.wur.nl)
 * [World Monuments Fund](https://www.wmf.org)
+
+### Libraries
+
+* [Mermaid](https://mermaid.js.org)
 
 ### Apps & services
 

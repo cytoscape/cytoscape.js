@@ -34,7 +34,12 @@ const calcCornerArc = (previousPoint, currentPoint, nextPoint, radiusMax, isArcR
   sinA = v1.nx * v2.ny - v1.ny * v2.nx;
   sinA90 = v1.nx * v2.nx - v1.ny * -v2.ny;
   angle = Math.asin(Math.max(-1, Math.min(1, sinA)));
-  if (Math.abs(angle) < 1e-6) return cRadius = radius = 0;
+  if (Math.abs(angle) < 1e-6) {
+    x = currentPoint.x;
+    y = currentPoint.y;
+    cRadius = radius = 0;
+    return;
+  }
   //-----------------------------------------
   radDirection = 1;
   drawDirection = false;

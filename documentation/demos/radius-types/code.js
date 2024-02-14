@@ -82,6 +82,8 @@
             }
 
           }
+
+          cy.nodes('.circle').ungrabify();
         })
       }
     })

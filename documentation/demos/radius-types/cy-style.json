@@ -1,0 +1,60 @@
+[
+  {
+    "selector": "node",
+    "style": {
+      "height": 40,
+      "width": 40
+    }
+  },
+  {
+    "selector": "node.circle[?diameter]",
+    "style": {
+      "shape": "ellipse",
+      "width": "data(diameter)",
+      "height": "data(diameter)",
+      "border-style": "dashed",
+      "label": "data(label)",
+      "text-halign": "center",
+      "text-valign": "center",
+      "text-margin-y": -4,
+      "font-size": 8,
+      "border-dash-pattern": "0.1, 2",
+      "border-cap": "round",
+      "border-width": 1,
+      "background-opacity": 0
+    }
+  },
+  {
+    "selector": "node.point",
+    "style": {
+      "shape": "ellipse",
+      "width": "4",
+      "height": "4",
+      "background-color": "red"
+    }
+  },
+  {
+    "selector": "edge[?radius]",
+    "style": {
+      "curve-style": "round-segments",
+      "radius-type": "data(type)",
+      "label": "data(type)",
+      "text-margin-y": -55,
+      "segment-distances": [
+        -100,
+        100,
+        -100,
+        100,
+        -100
+      ],
+      "segment-weights": [
+        0.3,
+        0.4,
+        0.5,
+        0.6,
+        0.7
+      ],
+      "segment-radii": "data(radius)"
+    }
+  }
+]

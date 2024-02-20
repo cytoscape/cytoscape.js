@@ -105,9 +105,9 @@ const configs = [
   {
     input,
     output: { file: 'build/cytoscape.esm.js', format: 'es' },
-    external: isExternal,
     plugins: [
       nodeResolve(),
+      commonjs({ include: '**/node_modules/**' }),
       BABEL ? babel(getBabelOptions()) : {},
       replace(envVariables),
       license(licenseHeaderOptions)

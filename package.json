@@ -31,6 +31,13 @@
     "node": ">=0.10"
   },
   "main": "dist/cytoscape.cjs.js",
+  "module": "dist/cytoscape.esm.js",
+  "exports": {
+    ".": {
+      "import": "./dist/cytoscape.esm.js",
+      "require": "./dist/cytoscape.cjs.js"
+    }
+  },
   "unpkg": "dist/cytoscape.min.js",
   "jsdelivr": "dist/cytoscape.min.js",
   "scripts": {

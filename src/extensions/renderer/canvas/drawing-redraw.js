@@ -14,6 +14,8 @@ CRp.getPixelRatio = function(){
     return this.forcedPixelRatio;
   }
 
+  var containerWindow = this.cy.window();
+
   var backingStore = context.backingStorePixelRatio ||
     context.webkitBackingStorePixelRatio ||
     context.mozBackingStorePixelRatio ||
@@ -21,7 +23,7 @@ CRp.getPixelRatio = function(){
     context.oBackingStorePixelRatio ||
     context.backingStorePixelRatio || 1;
 
-  return (window.devicePixelRatio || 1) / backingStore; // eslint-disable-line no-undef
+  return (containerWindow.devicePixelRatio || 1) / backingStore; // eslint-disable-line no-undef
 };
 
 CRp.paintCache = function( context ){

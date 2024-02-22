@@ -465,6 +465,10 @@ BRp.getLabelJustification = function(ele){
 BRp.calculateLabelDimensions = function( ele, text ){
   let r = this;
 
+  var containerWindow = r.cy.window();
+
+  var document = containerWindow.document;
+
   let cacheKey = util.hashString( text, ele._private.labelDimsKey );
 
   let cache = r.labelDimCache || (r.labelDimCache = []);

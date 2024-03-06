@@ -93,9 +93,9 @@ const configs = [
   {
     input,
     output: { file: 'build/cytoscape.cjs.js', format: 'cjs' },
-    external: isExternal,
     plugins: [
       nodeResolve(),
+      commonjs({ include: '**/node_modules/**' }),
       BABEL ? babel(getBabelOptions()) : {},
       replace(envVariables),
       license(licenseHeaderOptions)

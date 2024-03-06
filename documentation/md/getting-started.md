@@ -27,13 +27,13 @@ Please do not hotlink to copies of Cytoscape.js from the documentation --- they'
 
 The available files are available under [`cytoscape/dist/`](https://github.com/cytoscape/cytoscape.js/tree/master/dist) in the `npm` package:
 
-| Build File | Minified | JS Module System | Dependencies Included | Description |
-| --- | --- | --- | --- | --- |
-| `cytoscape.min.js` | yes | [UMD] (Universal Module Definition) | all | Useful for small pages, supplementary material for an academic paper for example. |
-| `cytoscape.umd.js` | no | [UMD] | all |  Useful for debugging on small pages, supplementary material for an academic paper for example. |
-| `cytoscape.esm.min.js` | yes | [ESM] (ECMAScript, uses `import` / `export`) | all | Serves the same purpose as the above, but it can be imported as an [ES6] module without the need for a bundler. |
-| `cytoscape.cjs.js` | no | [CJS] (CommonJS, used by [Node.js]) | none | Intended to be consumed automatically by [Node.js] or a bundler like [Webpack] via `require('cytoscape')`. |
-| `cytoscape.esm.js` | no | [ESM] (`import` / `export`) | all | Intended to be consumed automatically by [Node.js] or a bundler like [Webpack] via `import cytoscape from 'cytoscape'`. |
+| Build File | Minified | Module System | Description |
+| --- | --- | --- | --- |
+| `cytoscape.min.js` | yes | [UMD] <small>(Universal Module Definition)</small> | For use with globals or `require()`. |
+| `cytoscape.umd.js` | no | [UMD] |  For debugging with globals or `require()`. |
+| `cytoscape.esm.min.js` | yes | [ESM] <small>(ECMAScript, uses `import` / `export`)</small> | For use with modern `import`/`export`, i.e. `import cytoscape from 'cytoscape'`. |
+| `cytoscape.cjs.js` | no | [CJS] <small>(CommonJS, used by [Node.js])</small> | Intended to be consumed automatically by [Node.js] or a bundler like [Webpack] via `require('cytoscape')`. |
+| `cytoscape.esm.js` | no | [ESM] | Intended to be consumed automatically by [Node.js] or a bundler like [Webpack] via `import cytoscape from 'cytoscape'`.  This file may alternatively be used for manually debugging ESM builds or pages that use ESM. |
 
 <span class="important-indicator"></span> Note that Cytoscape.js uses the dimensions of your HTML DOM element container for layouts and rendering at initialisation.  Thus, it is very important to place your CSS stylesheets in the `<head>` before any Cytoscape.js-related code.  Otherwise, dimensions may be sporadically reported incorrectly, resulting in undesired behaviour.
 
@@ -57,6 +57,12 @@ To use Cytoscape.js in an [ESM] environment with npm (e.g. [Webpack] or [Node.js
 
 ```js
 import cytoscape from 'cytoscape';
+```
+
+Note that the following will not work, as you must use the default export:
+
+```js
+import * as cytoscape from 'cytoscape'; // won't work
 ```
 
 To use Cytoscape.js in a CommonJS environment like Node.js:

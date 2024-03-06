@@ -5,6 +5,7 @@
 * Used in commercial projects and open-source projects in production
 * Designed for users first, for both frontfacing app usecases *and* developer usecases
 * Highly optimised
+* No external dependencies
 * Compatible with
   * All modern browsers
   * Legacy browsers with ES5 and canvas support

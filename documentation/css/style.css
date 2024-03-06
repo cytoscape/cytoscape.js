@@ -983,3 +983,7 @@ and (min-width : 801px) {
 		opacity: 0 !important;
 	}
 }
+
+small {
+	font-size: 0.8em;
+}

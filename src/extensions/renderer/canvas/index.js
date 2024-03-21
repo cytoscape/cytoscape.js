@@ -41,6 +41,9 @@ CRp.MOTIONBLUR_BUFFER_DRAG = 2;
 function CanvasRenderer( options ){
   var r = this;
 
+  var containerWindow = r.cy.window();
+  var document = containerWindow.document;
+
   r.data = {
     canvases: new Array( CRp.CANVAS_LAYERS ),
     contexts: new Array( CRp.CANVAS_LAYERS ),
@@ -314,6 +317,8 @@ CRp.makeOffscreenCanvas = function(width, height){
   if( typeof OffscreenCanvas !== typeof undefined ){
     canvas = new OffscreenCanvas(width, height);
   } else {
+    var containerWindow = this.cy.window();
+    var document = containerWindow.document;
     canvas = document.createElement('canvas'); // eslint-disable-line no-undef
     canvas.width = width;
     canvas.height = height;

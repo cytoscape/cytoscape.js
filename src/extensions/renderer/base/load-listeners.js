@@ -4,7 +4,7 @@ import * as math from '../../../math';
 
 var BRp = {};
 
-/* global document, window, ResizeObserver, MutationObserver */
+/* global document, ResizeObserver, MutationObserver */
 
 BRp.registerBinding = function( target, event, handler, useCapture ){ // eslint-disable-line no-unused-vars
   var args = Array.prototype.slice.apply( arguments, [1] ); // copy
@@ -1374,7 +1374,7 @@ BRp.load = function(){
   }, false );
 
   var touchmoveHandler;
-  r.registerBinding(window, 'touchmove', touchmoveHandler = function(e) { // eslint-disable-line no-undef
+  r.registerBinding(containerWindow, 'touchmove', touchmoveHandler = function(e) { // eslint-disable-line no-undef
     var capture = r.touchData.capture;
 
     if( !capture && !eventInContainer(e) ){ return; }

@@ -469,6 +469,19 @@
 						</div>
 						<div class="gallery-demo">
 
+							<a class="gallery-link" href="demos/radius-types">
+								<span class="gallery-preview" style="background-image: url('img/demos/radius-types.png');"></span>
+							</a>
+
+							<div class="gallery-title">
+								<a href="https://github.com/cytoscape/cytoscape.js/tree/master/documentation/demos/radius-types">
+									<span class="gallery-name"><span class="fa fa-github"></span> Radius types</span>
+								</a>
+							</div>
+
+						</div>
+						<div class="gallery-demo">
+
 							<a class="gallery-link" href="demos/edge-arrows">
 								<span class="gallery-preview" style="background-image: url('img/demos/edge-arrows.png');"></span>
 							</a>
@@ -531,6 +544,7 @@
 <li>Used in commercial projects and open-source projects in production</li>
 <li>Designed for users first, for both frontfacing app usecases <em>and</em> developer usecases</li>
 <li>Highly optimised</li>
+<li>No external dependencies</li>
 <li>Compatible with<ul>
 <li>All modern browsers</li>
 <li>Legacy browsers with ES5 and canvas support<ul>
@@ -590,6 +604,7 @@
 <li><a href="https://duo.com">Duo</a></li>
 <li><a href="https://www.elastic.co/">Elastic</a></li>
 <li><a href="https://www.fujitsu.com">Fujitsu</a></li>
+<li><a href="https://github.com">GitHub</a></li>
 <li><a href="https://google.com">Google</a></li>
 <li><a href="https://www.hpe.com">Hewlett Packard Enterprise</a></li>
 <li><a href="https://www.ibm.com">IBM</a></li>
@@ -709,6 +724,10 @@
 <li><a href="https://www.wur.nl">Wageningen University and Research</a></li>
 <li><a href="https://www.wmf.org">World Monuments Fund</a></li>
 </ul>
+<h3 id="libraries">Libraries</h3>
+<ul>
+<li><a href="https://mermaid.js.org">Mermaid</a></li>
+</ul>
 <h3 id="apps--services">Apps &amp; services</h3>
 <ul>
 <li><a href="https://age.apache.org">Apache AGE</a></li>
@@ -805,6 +824,14 @@
 <h2 id="introduction/releases">Releases <a href="#introduction/releases"><span class="fa fa-bookmark"></span></a></h2>
 <p></p>
 <ul> 
+    <li>
+        3.29
+        <ul>
+            <li>
+                <a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues?q&#x3D;milestone%3A3.29.0+is%3Aclosed">3.29.0</a>
+            </li>
+        </ul>
+    </li>
     <li>
         3.28
         <ul>
@@ -1987,7 +2014,7 @@
 
 					<p>This section will familiarise you with the basic steps necessary to start using Cytoscape.js.</p>
 <h2 id="getting-started/including-cytoscape.js">Including Cytoscape.js <a href="#getting-started/including-cytoscape.js"><span class="fa fa-bookmark"></span></a></h2>
-<p>If you are using a simple HTML environment (without a build system), then source Cytoscape.js in a <code>&lt;script&gt;</code> tag or <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import"><code>import</code></a> it as an ES6 module, e.g.:</p>
+<p>If you are using a simple HTML environment (without a build system), then source Cytoscape.js in a <code>&lt;script&gt;</code> tag or <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import"><code>import</code></a> it as an <a href="https://www.w3schools.com/js/js_es6.asp">ES6</a> module, e.g.:</p>
 <pre><code class="language-html"><span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">&quot;cytoscape.min.js&quot;</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
 </code></pre>
 <p>or</p>
@@ -1995,21 +2022,55 @@
 <span class="hljs-keyword">import</span> cytoscape <span class="hljs-keyword">from</span> <span class="hljs-string">&quot;./cytoscape.esm.min.js&quot;</span>;
 </span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
 </code></pre>
-<p>To use Cytoscape.js from a CDN, use one of the following CDNs:</p>
+<p>To use Cytoscape.js from a Content Delivery Network (<a href="https://en.wikipedia.org/wiki/Content_delivery_network">CDN</a>),
+use one of the following <a href="https://en.wikipedia.org/wiki/Content_delivery_network">CDN</a>s:</p>
 <ul>
 <li><a href="https://cdnjs.com/libraries/cytoscape">CDNJS</a></li>
 <li><a href="https://www.jsdelivr.com/package/npm/cytoscape?path=dist">jsDelivr</a></li>
 <li><a href="https://unpkg.com/cytoscape/dist/">Unpkg</a></li>
 </ul>
 <p>Please do not hotlink to copies of Cytoscape.js from the documentation — they’re just for the demos.</p>
-<p>The available files are available under <a href="https://github.com/cytoscape/cytoscape.js/tree/master/dist"><code>cytoscape/dist/</code></a> in the npm package:</p>
-<ul>
-<li><code>cytoscape.min.js</code> : A minified UMD build with all dependencies included in the bundle.  This file is useful for small pages, supplementary material for an academic paper for example.</li>
-<li><code>cytoscape.umd.js</code> : A non-minified UMD build with all dependencies included in the bundle.  This file is useful for debugging on small pages, supplementary material for an academic paper for example.</li>
-<li><code>cytoscape.esm.min.js</code> : A minified ESM (<code>import</code> / <code>export</code>) build with all dependencies included in the bundle.  This file serves the same purpose as the above, but it can be imported as an ES6 module without the need for a bundler.</li>
-<li><code>cytoscape.cjs.js</code> : A non-minified CJS (Node.js) build without any bundled dependencies.  This is intended to be consumed automatically by Node.js or a bundler like Webpack via <code>require(&#39;cytoscape&#39;)</code>.</li>
-<li><code>cytoscape.esm.js</code> : A non-minified ESM (<code>import</code> / <code>export</code>) build without any bundled dependencies.  This is intended to be consumed automatically by Node.js or a bundler like Webpack via <code>import cytoscape from &#39;cytoscape&#39;</code>.</li>
-</ul>
+<p>The available files are available under <a href="https://github.com/cytoscape/cytoscape.js/tree/master/dist"><code>cytoscape/dist/</code></a> in the <code>npm</code> package:</p>
+<table>
+<thead>
+<tr>
+<th>Build File</th>
+<th>Minified</th>
+<th>Module System</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>cytoscape.min.js</code></td>
+<td>yes</td>
+<td><a href="https://github.com/umdjs/umd">UMD</a> <small>(Universal Module Definition)</small></td>
+<td>For use with globals or <code>require()</code>.</td>
+</tr>
+<tr>
+<td><code>cytoscape.umd.js</code></td>
+<td>no</td>
+<td><a href="https://github.com/umdjs/umd">UMD</a></td>
+<td>For debugging with globals or <code>require()</code>.</td>
+</tr>
+<tr>
+<td><code>cytoscape.esm.min.js</code></td>
+<td>yes</td>
+<td><a href="https://nodejs.org/api/esm.html#introduction">ESM</a> <small>(ECMAScript, uses <code>import</code> / <code>export</code>)</small></td>
+<td>For use with modern <code>import</code>/<code>export</code>, i.e. <code>import cytoscape from &#39;cytoscape&#39;</code>.</td>
+</tr>
+<tr>
+<td><code>cytoscape.cjs.js</code></td>
+<td>no</td>
+<td><a href="https://nodejs.org/api/modules.html#modules-commonjs-modules">CJS</a> <small>(CommonJS, used by <a href="https://en.wikipedia.org/wiki/Node.js">Node.js</a>)</small></td>
+<td>Intended to be consumed automatically by <a href="https://en.wikipedia.org/wiki/Node.js">Node.js</a> or a bundler like <a href="https://webpack.js.org/">Webpack</a> via <code>require(&#39;cytoscape&#39;)</code>.</td>
+</tr>
+<tr>
+<td><code>cytoscape.esm.js</code></td>
+<td>no</td>
+<td><a href="https://nodejs.org/api/esm.html#introduction">ESM</a></td>
+<td>Intended to be consumed automatically by <a href="https://en.wikipedia.org/wiki/Node.js">Node.js</a> or a bundler like <a href="https://webpack.js.org/">Webpack</a> via <code>import cytoscape from &#39;cytoscape&#39;</code>.  This file may alternatively be used for manually debugging ESM builds or pages that use ESM.</td>
+</tr>
+</tbody></table>
 <p><span class="important-indicator"></span> Note that Cytoscape.js uses the dimensions of your HTML DOM element container for layouts and rendering at initialisation.  Thus, it is very important to place your CSS stylesheets in the <code>&lt;head&gt;</code> before any Cytoscape.js-related code.  Otherwise, dimensions may be sporadically reported incorrectly, resulting in undesired behaviour.</p>
 <p>Your stylesheet may include something like this (assuming a DOM element with ID <code>cy</code> is used as the container):</p>
 <pre><code class="language-css"><span class="hljs-selector-id">#cy</span> {
@@ -2021,13 +2082,16 @@
 <p>To install Cytoscape.js via npm:</p>
 <pre><code class="language-bash">npm install cytoscape
 </code></pre>
-<p>To use Cytoscape.js in an ESM environment with npm (e.g. Webpack or Node.js with the <a href="https://www.npmjs.com/package/esm"><code>esm</code></a> package):</p>
+<p>To use Cytoscape.js in an <a href="https://nodejs.org/api/esm.html#introduction">ESM</a> environment with npm (e.g. <a href="https://webpack.js.org/">Webpack</a> or <a href="https://en.wikipedia.org/wiki/Node.js">Node.js</a> with the <a href="https://www.npmjs.com/package/esm"><code>esm</code></a> package):</p>
 <pre><code class="language-js"><span class="hljs-keyword">import</span> cytoscape <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;cytoscape&#x27;</span>;
+</code></pre>
+<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>Note that the following will not work, as you must use the default export:</p>
+<pre><code class="language-js"><span class="hljs-keyword">import</span> * <span class="hljs-keyword">as</span> cytoscape <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;cytoscape&#x27;</span>; <span class="hljs-comment">// won&#x27;t work</span>
 </code></pre>
 <button class="run run-inline-code"><span class="fa fa-play"></span></button><p>To use Cytoscape.js in a CommonJS environment like Node.js:</p>
 <pre><code class="language-js"><span class="hljs-keyword">var</span> cytoscape = <span class="hljs-built_in">require</span>(<span class="hljs-string">&#x27;cytoscape&#x27;</span>);
 </code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>To use Cytoscape.js with AMD/Require.js:</p>
+<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>To use Cytoscape.js with <a href="https://en.wikipedia.org/wiki/Asynchronous_module_definition">AMD</a>/<a href="https://requirejs.org/">Require.js</a>:</p>
 <pre><code class="language-js"><span class="hljs-built_in">require</span>([<span class="hljs-string">&#x27;cytoscape&#x27;</span>], <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">cytoscape</span>)</span>{
   <span class="hljs-comment">// ...</span>
 });
@@ -2038,7 +2102,7 @@
 <p>To install Cytoscape.js via Meteor/Atmosphere:</p>
 <pre><code class="language-bash">npm install cytoscape
 </code></pre>
-<p>Cytoscape.js supports environments with ES5 or newer, as it is transpiled by Babel and it uses only basic features of the standard library.  Feature detection is used for optional features that improve performance.  However, a future version of Cytoscape.js may require a more up-to-date version of the standard library.  You may want to use <a href="https://babeljs.io/docs/usage/polyfill/"><code>babel-polyfill</code></a> or <a href="https://github.com/zloirock/core-js"><code>core-js</code></a> if you want to support old browsers in future.</p>
+<p>Cytoscape.js supports environments with ES5 (a version of <a href="https://nodejs.org/api/esm.html#introduction">ESM</a>) or newer, as it is transpiled by Babel and it uses only basic features of the standard library.  Feature detection is used for optional features that improve performance.  However, a future version of Cytoscape.js may require a more up-to-date version of the standard library.  You may want to use <a href="https://babeljs.io/docs/usage/polyfill/"><code>babel-polyfill</code></a> or <a href="https://github.com/zloirock/core-js"><code>core-js</code></a> if you want to support old browsers in future.</p>
 <h2 id="getting-started/initialisation">Initialisation <a href="#getting-started/initialisation"><span class="fa fa-bookmark"></span></a></h2>
 <p>An instance of Cytoscape.js corresponds to a graph.  You can create an instance as follows:</p>
 <pre><code class="language-js"><span class="hljs-keyword">var</span> cy = cytoscape({
@@ -2050,7 +2114,7 @@
   <span class="hljs-attr">container</span>: $(<span class="hljs-string">&#x27;#cy&#x27;</span>)
 });
 </code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>If you are running Cytoscape.js in Node.js or otherwise running it headlessly, you will not specify the <code>container</code> option.  In implicitly headless environments like Node.js, an instance is automatically headless.  To explicitly run a headless instance (e.g. in the browser) you can specify <code>options.headless</code> as <code>true</code>.</p>
+<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>If you are running Cytoscape.js in <a href="https://en.wikipedia.org/wiki/Node.js">Node.js</a> or otherwise running it headlessly, you will not specify the <code>container</code> option.  In implicitly headless environments like <a href="https://en.wikipedia.org/wiki/Node.js">Node.js</a>, an instance is automatically headless.  To explicitly run a headless instance (e.g. in the browser) you can specify <code>options.headless</code> as <code>true</code>.</p>
 <h2 id="getting-started/specifying-basic-options">Specifying basic options <a href="#getting-started/specifying-basic-options"><span class="fa fa-bookmark"></span></a></h2>
 <p>For visualisation, the <code>container</code>, <a href="#notation/elements-json"><code>elements</code></a>, <a href="#style"><code>style</code></a>, and <a href="#layouts"><code>layout</code></a> options usually should be set:</p>
 <pre><code class="language-js"><span class="hljs-keyword">var</span> cy = cytoscape({
@@ -14517,6 +14581,13 @@ node {
 </ul>
 </li>
 <li><strong><code>shape-polygon-points</code></strong> : An array (or a space-separated string) of numbers ranging on [-1, 1], representing alternating x and y values (i.e. <code>x1 y1   x2 y2,   x3 y3 ...</code>).  This represents the points in the polygon for the node’s shape.  The bounding box of the node is given by (-1, -1), (1, -1), (1, 1), (-1, 1).  The node’s position is the origin (0, 0).</li>
+<li><strong><code>corner-radius</code></strong> : The corner radius for <code>round-</code> shapes and the <code>cut-rectangle</code>, in px or em. <ul>
+<li><strong>WARNING</strong> If you are using corner radius for a parent node (see <a href="#notation/compound-nodes">compound nodes</a>), you can have children nodes going outside their parent, e.g. node <strong>E</strong> in <a href="demos/compound-nodes">compound demo</a>. <ul>
+<li>In order to fix this issue, you can play with the <code>padding</code> of the parent node. Having the same value for <code>padding</code> and <code>corner-radius</code> is always safe, e.g. node <strong>B</strong> in <a href="demos/compound-nodes">compound demo</a>.</li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 <p>Background:</p>
 <ul>
@@ -14545,6 +14616,11 @@ node {
 <ul>
 <li><strong><code>border-width</code></strong> : The size of the node’s border.</li>
 <li><strong><code>border-style</code></strong> : The style of the node’s border; may be <code>solid</code>, <code>dotted</code>, <code>dashed</code>, or <code>double</code>.</li>
+<li><strong><code>border-cap</code></strong> : The cap style of the node’s border; may be <code>butt</code>, <code>round</code> or <code>square</code>.</li>
+<li><strong><code>border-join</code></strong> : The join style of the node’s border; may be <code>miter</code>, <code>bevel</code> or <code>round</code>.</li>
+<li><strong><code>border-dash-pattern</code></strong> : The <code>dashed</code> line pattern which specifies alternating lengths of lines and gaps. (e.g. <code>[6, 3]</code>).</li>
+<li><strong><code>border-dash-offset</code></strong> : The <code>dashed</code> line offset (e.g. <code>24</code>). It is useful for creating edge animations.</li>
+<li><strong><code>border-position</code></strong> : The position of the node’s border; may be <code>center</code>, <code>inside</code>, <code>outside</code>.</li>
 <li><strong><code>border-color</code></strong> : The colour of the node’s border.</li>
 <li><strong><code>border-opacity</code></strong> : The opacity of the node’s border.</li>
 </ul>
@@ -14677,7 +14753,7 @@ node {
 <p>These properties affect the styling of an edge’s line:</p>
 <ul>
 <li><strong><code>width</code></strong> : The width of an edge’s line.</li>
-<li><strong><code>curve-style</code></strong> : The curving method used to separate two or more edges between two nodes (<a href="demos/edge-types">demo</a>); may be <a href="#style/haystack-edges"><code>haystack</code></a> (default, very fast, bundled straight edges for which loops and compounds are unsupported), <a href="#style/straight-edges"><code>straight</code></a> (straight edges with all arrows supported), <a href="#style/straight-triangle-edges"><code>straight-triangle</code></a> (straight triangle edges), <a href="#style/bezier-edges"><code>bezier</code></a> (bundled curved edges), <a href="#style/unbundled-bezier-edges"><code>unbundled-bezier</code></a> (curved edges for use with manual control points),  <a href="#style/segments-edges"><code>segments</code></a> (a series of straight lines), <a href="#style/taxi-edges"><code>taxi</code></a> (right-angled lines, hierarchically bundled).  Note that <code>haystack</code> edges work best with <code>ellipse</code>, <code>rectangle</code>, or similar nodes.  Smaller node shapes, like <code>triangle</code>, will not be as aesthetically pleasing.  Also note that edge endpoint arrows are unsupported for <code>haystack</code> edges.</li>
+<li><strong><code>curve-style</code></strong> : The curving method used to separate two or more edges between two nodes (<a href="demos/edge-types">demo</a>); may be <a href="#style/haystack-edges"><code>haystack</code></a> (default, very fast, bundled straight edges for which loops and compounds are unsupported), <a href="#style/straight-edges"><code>straight</code></a> (straight edges with all arrows supported), <a href="#style/straight-triangle-edges"><code>straight-triangle</code></a> (straight triangle edges), <a href="#style/bezier-edges"><code>bezier</code></a> (bundled curved edges), <a href="#style/unbundled-bezier-edges"><code>unbundled-bezier</code></a> (curved edges for use with manual control points),  <a href="#style/segments-edges"><code>segments</code></a> (a series of straight lines), <a href="#style/round-segments-edges"><code>round-segments</code></a> (a series of straight lines with rounded corners), <a href="#style/taxi-edges"><code>taxi</code></a> (right-angled lines, hierarchically bundled), <a href="#style/round-taxi-edges"><code>round-taxi</code></a> (right-angled lines, hierarchically bundled, with rounded corners).  Note that <code>haystack</code> edges work best with <code>ellipse</code>, <code>rectangle</code>, or similar nodes.  Smaller node shapes, like <code>triangle</code>, will not be as aesthetically pleasing.  Also note that edge endpoint arrows are unsupported for <code>haystack</code> edges.</li>
 <li><strong><code>line-color</code></strong> : The colour of the edge’s line.</li>
 <li><strong><code>line-style</code></strong> : The style of the edge’s line; may be <code>solid</code>, <code>dotted</code>, or <code>dashed</code>.</li>
 <li><strong><code>line-cap</code></strong> : The cap style of the edge’s line; may be <code>butt</code> (default), <code>round</code>, or <code>square</code>.  The cap may or may not be visible, depending on the shape of the node and the relative size of the node and edge.  Caps other than <code>butt</code> extend beyond the specified endpoint of the edge.</li>
@@ -14764,6 +14840,30 @@ node {
 </ul>
 </li>
 </ul>
+<h2 id="style/round-segments-edges">Round segments edges <a href="#style/round-segments-edges"><span class="fa fa-bookmark"></span></a></h2>
+<p>For rounded edges made of several straight lines (<code>curve-style: round-segments</code>, <a href="demos/edge-types">demo</a>):</p>
+<p>A round segment edge type is made of a series of one or more straight lines, joined together by a round corner, using a co-ordinate system relative to the source and target nodes.  This maintains the overall line pattern regardless of the orientation of the positions of the source and target nodes.</p>
+<ul>
+<li><strong><code>segment-distances</code></strong> : A series of values that specify for each segment point the distance perpendicular to a line formed from source to target, e.g. <code>-20 20 -20</code>.</li>
+<li><strong><code>segment-weights</code></strong> : A series of values that weights segment points along a line from source to target, e.g. <code>0.25 0.5 0.75</code>.  A value usually ranges on [0, 1], with 0 towards the source node and 1 towards the target node — but larger or smaller values can also be used.</li>
+<li><strong><code>segment-radii</code></strong> : A series of values that provide the radii of the different points positioned by <code>segment-distances</code> and <code>segment-weights</code>, e.g. <code>15 0 5</code>.  If less radii are provided tha points have been defined, the last provided radius will be used for all the missing radius. If a single radius is provided, it will therefore be applied to all the segment’s points.</li>
+<li><strong><code>radius-type</code></strong> : Defines where <code>segment-radii</code> are applied (see <a href="demos/radius-types">demo</a>), which is particularly relevant when the corner angle is acute. You can provide multiple values to define the radius type for each provided radius. Values can be:<ul>
+<li><code>arc-radius</code>: <strong>Default strategy</strong>: The <code>radius</code> property is applied to the corner arc, which will be placed further away from the control point if the arc doesn’t fit in an acute angle.</li>
+<li><code>influence-radius</code>: The radius property is applied to the control point sphere of influence. The arcs for a given control point will all start and end at <code>radius</code> distance from the <code>control-points</code>.</li>
+</ul>
+</li>
+<li><strong><code>edge-distances</code></strong> :<ul>
+<li>With value <code>intersection</code> (default), the line from source to target for <code>segment-weights</code> is from the outside of the source node’s shape to the outside of the target node’s shape.</li>
+<li>With value <code>node-position</code>, the line is from the source position to the target position.</li>
+<li>The <code>node-position</code> option makes calculating edge points easier — but it should be used carefully because you can create invalid points that <code>intersection</code> would have automatically corrected.</li>
+<li>With value <code>endpoints</code>, the line is from the manually-specified source endpoint (via <code>source-endpoint</code>) to the manually-specified target endpoint (via <code>target-endpoint</code>).<ul>
+<li>A manual endpoint may be specified with a position, e.g. <code>source-endpoint: 20 10</code>.</li>
+<li>A manual endpoint may be alternatively specified with an angle, e.g. <code>target-endpoint: 90deg</code>.</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
 <h2 id="style/straight-edges">Straight edges <a href="#style/straight-edges"><span class="fa fa-bookmark"></span></a></h2>
 <p>For straight line edges (<code>curve-style: straight</code>, <a href="demos/edge-types">demo</a>):</p>
 <p>A straight edge (<code>curve-style: straight</code>) is drawn as a single straight line from the outside of the source node shape to the outside of the target node shape.  Endpoint and midpoint arrows are supported on straight edges.  Straight edges are not generally suitable for multigraphs.</p>
@@ -14786,6 +14886,43 @@ node {
 <li><code>horizontal</code> : Automatically use <code>righward</code> or <code>leftward</code>, based on the horizontal direction from source to target.</li>
 <li><code>rightward</code> : Bundle outgoers righwards.</li>
 <li><code>leftward</code> : Bundle outgoers leftwards.</li>
+</ul>
+</li>
+<li><strong><code>taxi-turn</code></strong> : The distance along the primary axis where the first turn is applied.<ul>
+<li>This value may be an absolute distance (e.g. <code>20px</code>) or it may be a relative distance between the source and target (e.g. <code>50%</code>).</li>
+<li>A negative value may be specified to indicate a distance in the oppostite, target to source direction (e.g. <code>-20px</code>).</li>
+<li>Note that bundling may not work with an explicit direction (<code>upward</code>, <code>downward</code>, <code>leftward</code>, or <code>rightward</code>) in tandem with a turn distance specified in percent units.</li>
+</ul>
+</li>
+<li><strong><code>taxi-turn-min-distance</code></strong> : The minimum distance along the primary axis that is maintained between the nodes and the turns.<ul>
+<li>This value only takes on absolute values (e.g. <code>5px</code>).</li>
+<li>This property makes the taxi edge be re-routed when the turns would be otherwise too close to the source or target.  As such, it also helps to avoid turns overlapping edge endpoint arrows.</li>
+</ul>
+</li>
+<li><strong><code>edge-distances</code></strong> : With value <code>intersection</code> (default), the distances (<code>taxi-turn</code> and <code>taxi-turn-min-distance</code>) are considered from the outside of the source’s bounds to the outside of the target’s bounds.  With value <code>node-position</code>, the distances are considered from the source position to the target position.  The <code>node-position</code> option makes calculating edge points easier — but it should be used carefully because you can create invalid points that <code>intersection</code> would have automatically corrected.</li>
+</ul>
+<h2 id="style/round-taxi-edges">Round taxi edges <a href="#style/round-taxi-edges"><span class="fa fa-bookmark"></span></a></h2>
+<p>Apply the round style to Taxi edges (<code>curve-style: round-taxi</code>, <a href="demos/edge-types">demo</a>):</p>
+<p>For hierarchical, bundled edges (<code>curve-style: taxi</code>, <a href="demos/edge-types">demo</a>):</p>
+<p>A round taxi edge (<code>curve-style: round-taxi</code>) is drawn as a series of right-angled lines, with rounded corners (i.e. in <a href="https://en.wikipedia.org/wiki/Taxicab_geometry">taxicab geometry</a>).  The edge has a primary direction along either the x-axis or y-axis, which can be used to bundle edges in a hierarchy.  That is, taxi edges are appropriate for trees and DAGs that are laid out in a hierarchical manner.</p>
+<p>A round taxi edge has at most two visible turns:  Starting from the source node, the edge goes in the primary direction for the specified distance.  The edge then turns, going towards the target along the secondary axis.  The first turn can be specified in order to bundle the edges of outgoing nodes.  The second turn is implicit, based on the first turn, going the remaining distance along the main axis.</p>
+<p>When a taxi edge would be impossible to draw along the regular turning plan — i.e. one or more turns is too close the source or target — it is re-routed.  The re-routing is carried out on a best-effort basis:  Re-routing prioritises the specified direction for bundling over the specified turn distance.  A <code>downward</code> edge, for example, will avoid going in the upward direction where possible.  In practice, re-routing should not take place for graphs that are well laid out.</p>
+<p><span class="important-indicator"></span> Only <code>outside-to-node</code> endpoints are supported for a taxi edge, i.e. <code>source-endpoint: outside-to-node</code> and <code>target-endpoint: outside-to-node</code>.</p>
+<ul>
+<li><strong><code>taxi-direction</code></strong> : The main direction of the edge, the direction starting out from the source node; may be one of:<ul>
+<li><code>auto</code> : Automatically use <code>vertical</code> or <code>horizontal</code>, based on whether the vertical or horizontal distance is largest.</li>
+<li><code>vertical</code> : Automatically use <code>downward</code> or <code>upward</code>, based on the vertical direction from source to target.</li>
+<li><code>downward</code> : Bundle outgoers downwards.</li>
+<li><code>upward</code> : Bundle outgoers upwards.</li>
+<li><code>horizontal</code> : Automatically use <code>righward</code> or <code>leftward</code>, based on the horizontal direction from source to target.</li>
+<li><code>rightward</code> : Bundle outgoers righwards.</li>
+<li><code>leftward</code> : Bundle outgoers leftwards.</li>
+</ul>
+</li>
+<li><strong><code>taxi-radius</code></strong> : The radius of the rounded corners of the edge.</li>
+<li><strong><code>radius-type</code></strong> : Defines where <code>taxi-radius</code> is applied (see <a href="demos/radius-types">demo</a>), which is particularly relevant when the corner angle is acute. Values can be:<ul>
+<li><code>arc-radius</code>: <strong>Default strategy</strong>: The <code>radius</code> property is applied to the corner arc, which will be placed further away from the control point if the arc doesn’t fit in an acute angle.</li>
+<li><code>influence-radius</code>: The radius property is applied to the control point sphere of influence. The arcs for a given control point will all start and end at <code>radius</code> distance from the <code>control-points</code>.</li>
 </ul>
 </li>
 <li><strong><code>taxi-turn</code></strong> : The distance along the primary axis where the first turn is applied.<ul>
@@ -17196,6 +17333,11 @@ A physics simulation layout that makes use of parallelism on the GPU to support 
 
 						<div class="section lvl2">
 							
+							<a class="toclink" href="#style/round-segments-edges">Round segments edges</a>
+						</div>
+
+						<div class="section lvl2">
+							
 							<a class="toclink" href="#style/straight-edges">Straight edges</a>
 						</div>
 
@@ -17207,6 +17349,11 @@ A physics simulation layout that makes use of parallelism on the GPU to support 
 						<div class="section lvl2">
 							
 							<a class="toclink" href="#style/taxi-edges">Taxi edges</a>
+						</div>
+
+						<div class="section lvl2">
+							
+							<a class="toclink" href="#style/round-taxi-edges">Round taxi edges</a>
 						</div>
 
 						<div class="section lvl2">

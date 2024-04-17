@@ -193,6 +193,9 @@ Shape:
     * `vee`
     * `polygon` (custom polygon specified via `shape-polygon-points`).
  * **`shape-polygon-points`** : An array (or a space-separated string) of numbers ranging on [-1, 1], representing alternating x and y values (i.e. `x1 y1   x2 y2,   x3 y3 ...`).  This represents the points in the polygon for the node's shape.  The bounding box of the node is given by (-1, -1), (1, -1), (1, 1), (-1, 1).  The node's position is the origin (0, 0).
+ * **`corner-radius`** : The corner radius for `round-` shapes and the `cut-rectangle`, in px or em. 
+   * **WARNING** If you are using corner radius for a parent node (see [compound nodes](#notation/compound-nodes)), you can have children nodes going outside their parent, e.g. node **E** in [compound demo](demos/compound-nodes). 
+     * In order to fix this issue, you can play with the `padding` of the parent node. Having the same value for `padding` and `corner-radius` is always safe, e.g. node **B** in [compound demo](demos/compound-nodes).
 
 Background:
 
@@ -220,6 +223,11 @@ Border:
 
  * **`border-width`** : The size of the node's border.
  * **`border-style`** : The style of the node's border; may be `solid`, `dotted`, `dashed`, or `double`.
+ * **`border-cap`** : The cap style of the node's border; may be `butt`, `round` or `square`.
+ * **`border-join`** : The join style of the node's border; may be `miter`, `bevel` or `round`.
+ * **`border-dash-pattern`** : The `dashed` line pattern which specifies alternating lengths of lines and gaps. (e.g. `[6, 3]`).
+ * **`border-dash-offset`** : The `dashed` line offset (e.g. `24`). It is useful for creating edge animations.
+ * **`border-position`** : The position of the node's border; may be `center`, `inside`, `outside`.
  * **`border-color`** : The colour of the node's border.
  * **`border-opacity`** : The opacity of the node's border.
 
@@ -357,7 +365,7 @@ You may find it useful to reserve a number to a particular colour for all nodes 
 These properties affect the styling of an edge's line:
 
  * **`width`** : The width of an edge's line.
- * **`curve-style`** : The curving method used to separate two or more edges between two nodes ([demo](demos/edge-types)); may be [`haystack`](#style/haystack-edges) (default, very fast, bundled straight edges for which loops and compounds are unsupported), [`straight`](#style/straight-edges) (straight edges with all arrows supported), [`straight-triangle`](#style/straight-triangle-edges) (straight triangle edges), [`bezier`](#style/bezier-edges) (bundled curved edges), [`unbundled-bezier`](#style/unbundled-bezier-edges) (curved edges for use with manual control points),  [`segments`](#style/segments-edges) (a series of straight lines), [`taxi`](#style/taxi-edges) (right-angled lines, hierarchically bundled).  Note that `haystack` edges work best with `ellipse`, `rectangle`, or similar nodes.  Smaller node shapes, like `triangle`, will not be as aesthetically pleasing.  Also note that edge endpoint arrows are unsupported for `haystack` edges.
+ * **`curve-style`** : The curving method used to separate two or more edges between two nodes ([demo](demos/edge-types)); may be [`haystack`](#style/haystack-edges) (default, very fast, bundled straight edges for which loops and compounds are unsupported), [`straight`](#style/straight-edges) (straight edges with all arrows supported), [`straight-triangle`](#style/straight-triangle-edges) (straight triangle edges), [`bezier`](#style/bezier-edges) (bundled curved edges), [`unbundled-bezier`](#style/unbundled-bezier-edges) (curved edges for use with manual control points),  [`segments`](#style/segments-edges) (a series of straight lines), [`round-segments`](#style/round-segments-edges) (a series of straight lines with rounded corners), [`taxi`](#style/taxi-edges) (right-angled lines, hierarchically bundled), [`round-taxi`](#style/round-taxi-edges) (right-angled lines, hierarchically bundled, with rounded corners).  Note that `haystack` edges work best with `ellipse`, `rectangle`, or similar nodes.  Smaller node shapes, like `triangle`, will not be as aesthetically pleasing.  Also note that edge endpoint arrows are unsupported for `haystack` edges.
  * **`line-color`** : The colour of the edge's line.
  * **`line-style`** : The style of the edge's line; may be `solid`, `dotted`, or `dashed`.
  * **`line-cap`** : The cap style of the edge's line; may be `butt` (default), `round`, or `square`.  The cap may or may not be visible, depending on the shape of the node and the relative size of the node and edge.  Caps other than `butt` extend beyond the specified endpoint of the edge.
@@ -451,7 +459,25 @@ A segment edge is made of a series of one or more straight lines, using a co-ord
     * A manual endpoint may be specified with a position, e.g. `source-endpoint: 20 10`.
     * A manual endpoint may be alternatively specified with an angle, e.g. `target-endpoint: 90deg`.
 
+## Round segments edges
 
+For rounded edges made of several straight lines (`curve-style: round-segments`, [demo](demos/edge-types)):
+
+A round segment edge type is made of a series of one or more straight lines, joined together by a round corner, using a co-ordinate system relative to the source and target nodes.  This maintains the overall line pattern regardless of the orientation of the positions of the source and target nodes.
+
+* **`segment-distances`** : A series of values that specify for each segment point the distance perpendicular to a line formed from source to target, e.g. `-20 20 -20`.
+* **`segment-weights`** : A series of values that weights segment points along a line from source to target, e.g. `0.25 0.5 0.75`.  A value usually ranges on [0, 1], with 0 towards the source node and 1 towards the target node --- but larger or smaller values can also be used.
+* **`segment-radii`** : A series of values that provide the radii of the different points positioned by `segment-distances` and `segment-weights`, e.g. `15 0 5`.  If less radii are provided tha points have been defined, the last provided radius will be used for all the missing radius. If a single radius is provided, it will therefore be applied to all the segment's points.
+* **`radius-type`** : Defines where `segment-radii` are applied (see [demo](demos/radius-types)), which is particularly relevant when the corner angle is acute. You can provide multiple values to define the radius type for each provided radius. Values can be:
+     * `arc-radius`: **Default strategy**: The `radius` property is applied to the corner arc, which will be placed further away from the control point if the arc doesn't fit in an acute angle.
+     * `influence-radius`: The radius property is applied to the control point sphere of influence. The arcs for a given control point will all start and end at `radius` distance from the `control-points`.
+* **`edge-distances`** :
+    * With value `intersection` (default), the line from source to target for `segment-weights` is from the outside of the source node's shape to the outside of the target node's shape.
+    * With value `node-position`, the line is from the source position to the target position.
+    * The `node-position` option makes calculating edge points easier --- but it should be used carefully because you can create invalid points that `intersection` would have automatically corrected.
+    * With value `endpoints`, the line is from the manually-specified source endpoint (via `source-endpoint`) to the manually-specified target endpoint (via `target-endpoint`).
+        * A manual endpoint may be specified with a position, e.g. `source-endpoint: 20 10`.
+        * A manual endpoint may be alternatively specified with an angle, e.g. `target-endpoint: 90deg`.
 ## Straight edges
 
 For straight line edges (`curve-style: straight`, [demo](demos/edge-types)):
@@ -497,6 +523,40 @@ When a taxi edge would be impossible to draw along the regular turning plan --- 
   * This property makes the taxi edge be re-routed when the turns would be otherwise too close to the source or target.  As such, it also helps to avoid turns overlapping edge endpoint arrows.
 * **`edge-distances`** : With value `intersection` (default), the distances (`taxi-turn` and `taxi-turn-min-distance`) are considered from the outside of the source's bounds to the outside of the target's bounds.  With value `node-position`, the distances are considered from the source position to the target position.  The `node-position` option makes calculating edge points easier --- but it should be used carefully because you can create invalid points that `intersection` would have automatically corrected.
 
+## Round taxi edges
+
+Apply the round style to Taxi edges (`curve-style: round-taxi`, [demo](demos/edge-types)):
+
+For hierarchical, bundled edges (`curve-style: taxi`, [demo](demos/edge-types)):
+
+A round taxi edge (`curve-style: round-taxi`) is drawn as a series of right-angled lines, with rounded corners (i.e. in [taxicab geometry](https://en.wikipedia.org/wiki/Taxicab_geometry)).  The edge has a primary direction along either the x-axis or y-axis, which can be used to bundle edges in a hierarchy.  That is, taxi edges are appropriate for trees and DAGs that are laid out in a hierarchical manner.
+
+A round taxi edge has at most two visible turns:  Starting from the source node, the edge goes in the primary direction for the specified distance.  The edge then turns, going towards the target along the secondary axis.  The first turn can be specified in order to bundle the edges of outgoing nodes.  The second turn is implicit, based on the first turn, going the remaining distance along the main axis.
+
+When a taxi edge would be impossible to draw along the regular turning plan --- i.e. one or more turns is too close the source or target --- it is re-routed.  The re-routing is carried out on a best-effort basis:  Re-routing prioritises the specified direction for bundling over the specified turn distance.  A `downward` edge, for example, will avoid going in the upward direction where possible.  In practice, re-routing should not take place for graphs that are well laid out.
+
+<span class="important-indicator"></span> Only `outside-to-node` endpoints are supported for a taxi edge, i.e. `source-endpoint: outside-to-node` and `target-endpoint: outside-to-node`.
+
+* **`taxi-direction`** : The main direction of the edge, the direction starting out from the source node; may be one of:
+    * `auto` : Automatically use `vertical` or `horizontal`, based on whether the vertical or horizontal distance is largest.
+    * `vertical` : Automatically use `downward` or `upward`, based on the vertical direction from source to target.
+    * `downward` : Bundle outgoers downwards.
+    * `upward` : Bundle outgoers upwards.
+    * `horizontal` : Automatically use `righward` or `leftward`, based on the horizontal direction from source to target.
+    * `rightward` : Bundle outgoers righwards.
+    * `leftward` : Bundle outgoers leftwards.
+* **`taxi-radius`** : The radius of the rounded corners of the edge.
+* **`radius-type`** : Defines where `taxi-radius` is applied (see [demo](demos/radius-types)), which is particularly relevant when the corner angle is acute. Values can be:
+    * `arc-radius`: **Default strategy**: The `radius` property is applied to the corner arc, which will be placed further away from the control point if the arc doesn't fit in an acute angle.
+    * `influence-radius`: The radius property is applied to the control point sphere of influence. The arcs for a given control point will all start and end at `radius` distance from the `control-points`.
+* **`taxi-turn`** : The distance along the primary axis where the first turn is applied.
+    * This value may be an absolute distance (e.g. `20px`) or it may be a relative distance between the source and target (e.g. `50%`).
+    * A negative value may be specified to indicate a distance in the oppostite, target to source direction (e.g. `-20px`).
+    * Note that bundling may not work with an explicit direction (`upward`, `downward`, `leftward`, or `rightward`) in tandem with a turn distance specified in percent units.
+* **`taxi-turn-min-distance`** : The minimum distance along the primary axis that is maintained between the nodes and the turns.
+    * This value only takes on absolute values (e.g. `5px`).
+    * This property makes the taxi edge be re-routed when the turns would be otherwise too close to the source or target.  As such, it also helps to avoid turns overlapping edge endpoint arrows.
+* **`edge-distances`** : With value `intersection` (default), the distances (`taxi-turn` and `taxi-turn-min-distance`) are considered from the outside of the source's bounds to the outside of the target's bounds.  With value `node-position`, the distances are considered from the source position to the target position.  The `node-position` option makes calculating edge points easier --- but it should be used carefully because you can create invalid points that `intersection` would have automatically corrected.
 
 ## Edge arrow
 

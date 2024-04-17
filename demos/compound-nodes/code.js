@@ -7,6 +7,7 @@ var cy = window.cy = cytoscape({
     {
       selector: 'node',
       css: {
+        'shape': 'rectangle',
         'content': 'data(id)',
         'text-valign': 'center',
         'text-halign': 'center'
@@ -17,6 +18,16 @@ var cy = window.cy = cytoscape({
       css: {
         'text-valign': 'top',
         'text-halign': 'center',
+        'shape': 'round-rectangle',
+        'corner-radius': "10",
+        'padding': 10
+      }
+    },
+    {
+      selector: 'node#e',
+      css: {
+        'corner-radius': "10",
+        'padding': 0
       }
     },
     {

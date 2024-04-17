@@ -883,6 +883,12 @@ pre code {
 	margin: 0.25em;
 }
 
+table {
+	display: block;
+	max-width: 100%;
+	overflow-x: auto;
+}
+
 #open-navigation {
 	display: none;
 	position: fixed;
@@ -976,4 +982,8 @@ and (min-width : 801px) {
 	#open-navigation-bg {
 		opacity: 0 !important;
 	}
+}
+
+small {
+	font-size: 0.8em;
 }

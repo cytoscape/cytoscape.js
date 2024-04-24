@@ -31,11 +31,21 @@
     "node": ">=0.10"
   },
   "main": "dist/cytoscape.cjs.js",
-  "module": "dist/cytoscape.esm.js",
+  "module": "dist/cytoscape.esm.mjs",
   "exports": {
     ".": {
-      "import": "./dist/cytoscape.esm.js",
+      "import": "./dist/cytoscape.esm.mjs",
       "require": "./dist/cytoscape.cjs.js"
+    },
+    "./dist/cytoscape.esm": {
+      "import": "./dist/cytoscape.esm.mjs"
+    },
+    "./dist/cytoscape.esm.min": {
+      "import": "./dist/cytoscape.esm.min.mjs"
+    },
+    "./dist/*": {
+      "import": "./dist/*.js",
+      "require": "./dist/*.js"
     }
   },
   "unpkg": "dist/cytoscape.min.js",
@@ -50,7 +60,7 @@
     "build:min": "cross-env FILE=min rollup -c",
     "clean": "rimraf build/*",
     "copyright": "node -r esm license-update",
-    "dist:copy": "cpy build/cytoscape.umd.js build/cytoscape.min.js build/cytoscape.cjs.js build/cytoscape.esm.js build/cytoscape.esm.min.js dist",
+    "dist:copy": "cpy build/cytoscape.umd.js build/cytoscape.min.js build/cytoscape.cjs.js build/cytoscape.esm.mjs build/cytoscape.esm.min.mjs dist",
     "dist": "cross-env NODE_ENV=production run-s build dist:*",
     "release": "run-s copyright dist docs",
     "watch": "run-s watch:fast",

@@ -44,7 +44,8 @@
       "import": "./dist/cytoscape.esm.min.mjs"
     },
     "./dist/cytoscape.umd.js": {
-      "import": "./dist/cytoscape.umd.js"
+      "import": "./dist/cytoscape.umd.js",
+      "require": "./dist/cytoscape.umd.js"
     },
     "./dist/*": {
       "import": "./dist/*.js",

@@ -362,8 +362,7 @@ BRp.getLabelText = function( ele, prefix ){
     let overflow = ele.pstyle('text-overflow-wrap').value;
     let overflowAny = overflow === 'anywhere';
     let wrappedLines = [];
-    let wordsRegex = /[\s\u200b]+/;
-    let wordSeparator = overflowAny ? '' : ' ';
+    let separatorRegex = /[\s\u200b]+|$/g; // Include end of string to add last word
 
     for( let l = 0; l < lines.length; l++ ){
       let line = lines[ l ];
@@ -378,12 +377,17 @@ BRp.getLabelText = function( ele, prefix ){
       }
 
       if( lineW > maxW ){ // line is too long
-        let words = line.split(wordsRegex);
+        let separatorMatches = line.matchAll(separatorRegex);
         let subline = '';
 
-        for( let w = 0; w < words.length; w++ ){
-          let word = words[ w ];
-          let testLine = subline.length === 0 ? word : subline + wordSeparator + word;
+        let previousIndex = 0;
+        // Add fake match
+        for( let separatorMatch of separatorMatches ){
+          let wordSeparator = separatorMatch[ 0 ];
+          let word = line.substring( previousIndex, separatorMatch.index );
+          previousIndex = separatorMatch.index + wordSeparator.length;
+
+          let testLine = subline.length === 0 ? word : subline + word + wordSeparator;
           let testDims = this.calculateLabelDimensions( ele, testLine );
           let testW = testDims.width;
 

@@ -27,7 +27,10 @@ var cy, defaultSty, options;
           'shape': 'round-rectangle',
           'width': 220,
           'height': 60,
-          'corner-radius': 30
+          'corner-radius': 30,
+          "label": "I am a long label over-\u200bflowing my max    width,\n but spa\u200bces are ke\u200bpt",
+          "text-max-width": 100,
+          "text-wrap": "wrap",
         })
       .selector('node#b')
       .style({
@@ -110,7 +113,7 @@ var cy, defaultSty, options;
       .selector('#eh')
         .style({
           'curve-style': 'round-segments',
-          'segment-distances': [ 0  , 50 , 0  , -50, 0  , 0  , 100 ],
+          'segment-distances': [ 0  , 0 , 0  , -50, 0  , 0  , 100 ],
           'segment-weights': [   0.5, 0.6, 0.7, 0.6, 0.5, 0.8, 0.85],
           'segment-radii': [ 50, 100 ],
         })

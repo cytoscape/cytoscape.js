@@ -2,8 +2,6 @@ import * as math from '../../../../math';
 import * as is from '../../../../is';
 import * as util from '../../../../util';
 
-/* global document */
-
 let BRp = {};
 
 BRp.recalculateNodeLabelProjection = function( node ){
@@ -468,6 +466,10 @@ BRp.getLabelJustification = function(ele){
 
 BRp.calculateLabelDimensions = function( ele, text ){
   let r = this;
+
+  var containerWindow = r.cy.window();
+
+  var document = containerWindow.document;
 
   let cacheKey = util.hashString( text, ele._private.labelDimsKey );
 

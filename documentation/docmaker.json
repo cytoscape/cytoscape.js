@@ -725,7 +725,11 @@
               "descr": "Get the extent of the viewport, a bounding box in model co-ordinates that lets you know what model positions are visible in the viewport.",
               "md": "core/extent"
             },
-
+            {
+              "name": "cy.renderedExtent",
+              "descr": "Get the width and height of the viewport canvas in [rendered (on-screen) points](#notation/position).",
+              "md": "core/extent"
+            },
             {
               "name": "cy.autolock",
               "descr": "Get or set whether nodes are automatically locked (i.e. if `true`, nodes are locked despite their individual state).",

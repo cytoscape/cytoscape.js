@@ -62,7 +62,7 @@ CRp.drawEdge = function( context, edge, shiftToOriginWithBb, drawLabel = true, s
   };
 
   let drawLineOutline = ( strokeOpacity = effectiveLineOpacity) => {
-    context.lineWidth = edgeWidth + lineOutlineWidth;
+    context.lineWidth = edgeWidth + lineOutlineWidth / 2;
     context.lineCap = lineCap;
 
     if (lineOutlineWidth > 0) {

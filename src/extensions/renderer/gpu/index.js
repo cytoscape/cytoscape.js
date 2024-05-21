@@ -1,7 +1,6 @@
 const GPUp = GPURenderer.prototype;
 
 function GPURenderer(options) {
-  console.log('GPURenderer constructor');
   const r = this;
   r.ready = false;
 
@@ -115,9 +114,11 @@ GPUp.renderTo = function(cxt, zoom, pan, pxRatio) {
 };
 
 
-function createNodeVertexBuffer(eles, device, shaderLocation = 0) {
-  const vertexArray = [];
+function createVertexBuffers(eles, device) {
+  const nodeVertexArray = [];
+  const edgeVertexArray = [];
   let nodeCount = 0;
+  let edgeCount = 0;
   let z = 0; // A f32 can exactly represent integer values in the range [−16777216, 16777216]
 
   // TODO need to add Z coord so that ordering is correct?
@@ -125,60 +126,81 @@ function createNodeVertexBuffer(eles, device, shaderLocation = 0) {
   // No,,, vertex shaders run in parallel
   for(let i = 0; i < eles.length; i++) {
     const ele = eles[i];
-    if(!ele.isNode())
-      continue;
+    if(ele.isNode()) {
+      const node = ele;
+      const pos = node.position();
+      const padding = node.padding();
+      const nodeWidth = node.width() + 2 * padding;
+      const nodeHeight = node.height() + 2 * padding;
+      const halfW = nodeWidth / 2;
+      const halfH = nodeHeight / 2;
+      
+      const topY = pos.y + halfH;
+      const botY = pos.y - halfH;
+      const leftX = pos.x - halfW;
+      const rightX = pos.x + halfW;
+  
+      // 6 vertices per node (for now)
+      nodeVertexArray.push(
+        leftX, botY, z,
+        rightX, botY, z,
+        rightX, topY, z,
+        leftX, botY, z,
+        rightX, topY, z,
+        leftX, topY, z
+      );
 
-    const node = ele;
-    const pos = node.position();
-    const padding = node.padding();
-    const nodeWidth = node.width() + 2 * padding;
-    const nodeHeight = node.height() + 2 * padding;
-    const halfW = nodeWidth / 2;
-    const halfH = nodeHeight / 2;
-    
-    const topY = pos.y + halfH;
-    const botY = pos.y - halfH;
-    const leftX = pos.x - halfW;
-    const rightX = pos.x + halfW;
-    // const [ topY, botY, leftX, rightX ] = [ 0.8, -0.8, -0.8, 0.8 ];
+      nodeCount++;
+      // z++;
 
-    // 6 vertices per node (for now)
-    vertexArray.push(
-      leftX, botY, z,
-      rightX, botY, z,
-      rightX, topY, z,
+    } else {
+      const edge = ele;
+      const sp = edge.source().position();
+      const tp = edge.target().position();
 
-      leftX, botY, z,
-      rightX, topY, z,
-      leftX, topY, z
-    );
-
-    nodeCount++;
-    // z++;
+      edgeVertexArray.push(
+        sp.x, sp.y, z, 
+        tp.x, tp.y, z
+      );
+      
+      edgeCount++;
+    }
   }
 
-  const vertexFloatArray = new Float32Array(vertexArray);
-  const vertexBuffer = device.createBuffer({
-    label: "Node vertices",
-    size: vertexFloatArray.byteLength,
-    usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
-  });
-  device.queue.writeBuffer(vertexBuffer, 0, vertexFloatArray);
+  function createFloatBuffer(array, label) {
+    const floatArray = new Float32Array(array);
 
-  const vertexBufferLayout = {
-    arrayStride: 4 * 3, // 4 bytes * 3 dimensions
-    attributes: [{
-      format: 'float32x3',
-      offset: 0,
-      shaderLocation, // Position, see vertex shader
-    }],
-  };
+    const buffer = device.createBuffer({
+      label: `${label} Vertex Buffer`,
+      size: floatArray.byteLength,
+      usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+    });
+    device.queue.writeBuffer(buffer, 0, floatArray);
 
+    const bufferLayout = {
+      arrayStride: 4 * 3, // 4 bytes * 3 dimensions
+      attributes: [{
+        format: 'float32x3',
+        offset: 0,
+        shaderLocation: 0, // see vertex shader
+      }],
+    };
+
+    return [ buffer, bufferLayout ];
+  }
+  
+  const [ nodeVertexBuffer, nodeVertexBufferLayout ] = createFloatBuffer(nodeVertexArray, 'Node');
+  const [ edgeVertexBuffer, edgeVertexBufferLayout ] = createFloatBuffer(edgeVertexArray, 'Edge');
+  
   return {
-    vertexBuffer,
-    vertexBufferLayout,
+    nodeVertexBuffer,
+    nodeVertexBufferLayout,
     nodeCount,
-    vertexCount: nodeCount * 6
+    nodeVertexCount: nodeCount * 6, // render two triangles per node
+    edgeVertexBuffer,
+    edgeVertexBufferLayout,
+    edgeCount,
+    edgeVertexCount: edgeCount * 2, // render lines
   }
 }
 
@@ -222,26 +244,21 @@ function createMatrixBuffers(r, device) {
     return mat;
   }
 
+  function createMatrixBuffer(matrix, label) {
+    const floatArray = new Float32Array(matrix);
+    const buffer = device.createBuffer({
+      label: `${label} Matrix Buffer`,
+      size: floatArray.byteLength,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+    device.queue.writeBuffer(buffer, 0, floatArray);
+    return buffer;
+  }
+
   const translationMatrix = getTranslationScaleMatrix();
-  const translationMatrixArray = new Float32Array(translationMatrix);
-  const translationMatrixBuffer = device.createBuffer({
-    label: "Translation Matrix",
-    size: translationMatrixArray.byteLength,
-    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-  });
-  device.queue.writeBuffer(translationMatrixBuffer, 0, translationMatrixArray);
-
+  const translationMatrixBuffer = createMatrixBuffer(translationMatrix, 'Translation');
   const projectionMatrix = getOrthographicProjectionMatrix();
-  const projectionMatrixArray = new Float32Array(projectionMatrix);
-  const projectionMatrixBuffer = device.createBuffer({
-    label: "Projection Matrix",
-    size: projectionMatrixArray.byteLength,
-    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-  });
-  device.queue.writeBuffer(projectionMatrixBuffer, 0, projectionMatrixArray);
-
-  console.log('translationMatrix', translationMatrix);
-  console.log('projectionMatrix', projectionMatrix);
+  const projectionMatrixBuffer = createMatrixBuffer(projectionMatrix, 'Projection');
 
   return {
     translationMatrixBuffer,
@@ -250,7 +267,7 @@ function createMatrixBuffers(r, device) {
 }
 
 
-function createShaderPipeline(vertices, uniforms, device, format) {
+function createNodeShaderPipeline(vertices, uniforms, device, format) {
   const module = device.createShaderModule({  // WGSL
     label: "Node shader",
     code: `
@@ -258,17 +275,13 @@ function createShaderPipeline(vertices, uniforms, device, format) {
       @group(0) @binding(1) var<uniform> projectionMatrix: mat4x4f;
 
       @vertex
-      fn vertexMain(
-        @location(0) pos: vec3f,
-      ) -> 
-        @builtin(position) vec4f 
-      {
+      fn vertexMain(@location(0) pos: vec3f) -> @builtin(position) vec4f {
         return projectionMatrix * transformMatrix * vec4f(pos, 1);
       }
 
       @fragment
       fn fragmentMain() -> @location(0) vec4f {
-        return vec4f(1, 0, 0, 1); // for now just return red
+        return vec4f(1, 0, 0, 1); // red
       }
     `
   });
@@ -278,7 +291,7 @@ function createShaderPipeline(vertices, uniforms, device, format) {
     layout: 'auto',
     vertex: {
       module,
-      buffers: [ vertices.vertexBufferLayout ]
+      buffers: [ vertices.nodeVertexBufferLayout ]
     },
     fragment: {
       module,
@@ -287,7 +300,56 @@ function createShaderPipeline(vertices, uniforms, device, format) {
   });
 
   const bindGroup0 = device.createBindGroup({
-    label: "Matrix bind group",
+    label: "Node Matrix bind group",
+    layout: pipeline.getBindGroupLayout(0),
+    entries: [
+      { binding: 0, resource: { buffer: uniforms.translationMatrixBuffer }},
+      { binding: 1, resource: { buffer: uniforms.projectionMatrixBuffer }},
+    ],
+  });
+
+  return {
+    pipeline,
+    bindGroups: [ bindGroup0 ]
+  };
+}
+
+// TODO This currenlty looks very similar to the Node pipeline, but I anticipate they will diverge greatly as features are added.
+function createEdgeShaderPipeline(vertices, uniforms, device, format) {
+  const module = device.createShaderModule({  // WGSL
+    label: "Edge shader",
+    code: `
+      @group(0) @binding(0) var<uniform> transformMatrix: mat4x4f;
+      @group(0) @binding(1) var<uniform> projectionMatrix: mat4x4f;
+
+      @vertex
+      fn vertexMain(@location(0) pos: vec3f) -> @builtin(position) vec4f {
+        return projectionMatrix * transformMatrix * vec4f(pos, 1);
+      }
+
+      @fragment
+      fn fragmentMain() -> @location(0) vec4f {
+        return vec4f(0, 1, 0, 1); // green
+      }
+    `
+  });
+
+  const pipeline = device.createRenderPipeline({
+    label: "Edge pipeline",
+    layout: 'auto',
+    primitive: { topology: 'line-list' },
+    vertex: {
+      module,
+      buffers: [ vertices.edgeVertexBufferLayout ]
+    },
+    fragment: {
+      module,
+      targets: [{ format }] // corresponds to @location(0) return value from fragment shader
+    }
+  });
+
+  const bindGroup0 = device.createBindGroup({
+    label: "Edge Matrix bind group",
     layout: pipeline.getBindGroupLayout(0),
     entries: [
       { binding: 0, resource: { buffer: uniforms.translationMatrixBuffer }},
@@ -302,8 +364,9 @@ function createShaderPipeline(vertices, uniforms, device, format) {
 }
 
 
-
-
+// TODO Not sure how background color should work. 
+// Typically you specify the background color in the css of the <div> that contans the canvas.
+// Perhaps just clearing the texture with black-transparent is enough?
 GPUp.render = function(options) {
   const r = this;
   if(!r.ready) {
@@ -313,35 +376,43 @@ GPUp.render = function(options) {
   console.log('gpu render');
 
   options = options || util.staticEmptyObject();
-  const eles = r.getCachedZSortedEles(); // normal array
-
   const { device, context, format } = r.data;
+  const texture = context.getCurrentTexture();
 
-  // buffer that holds verticies for node squares
-  const vertices = createNodeVertexBuffer(eles, device, 0);
+  const eles = r.getCachedZSortedEles(); 
+  const vertices = createVertexBuffers(eles, device);
   const uniforms = createMatrixBuffers(r, device);
-  const pipeline = createShaderPipeline(vertices, uniforms, device, format);
+  const edgePipeline = createEdgeShaderPipeline(vertices, uniforms, device, format);
+  const nodePipeline = createNodeShaderPipeline(vertices, uniforms, device, format);
 
   const commandEncoder = device.createCommandEncoder();
-
-  // TODO Not sure how background color should work. 
-  // Typically you specify the background color in the css of the <div> that contans the canvas.
-  // Perhaps just clearing the texture with black-transparent is enough?
-  const pass = commandEncoder.beginRenderPass({  // This argument is a GPURenderPassDescriptor
+  
+  const edgePass = commandEncoder.beginRenderPass({ 
     colorAttachments: [{
-      view: context.getCurrentTexture().createView(),
+      view: texture.createView(),
       loadOp: 'clear',
       clearValue: { r: 0, g: 0, b: 0.6, a: 1 },
       storeOp: 'store'
     }]
   });
-  pass.setPipeline(pipeline.pipeline);
-  pass.setBindGroup(0, pipeline.bindGroups[0]);
-  pass.setVertexBuffer(0, vertices.vertexBuffer);
-  pass.draw(vertices.vertexCount);
-  pass.end();
+  edgePass.setPipeline(edgePipeline.pipeline);
+  edgePass.setBindGroup(0, edgePipeline.bindGroups[0]);
+  edgePass.setVertexBuffer(0, vertices.edgeVertexBuffer);
+  edgePass.draw(vertices.edgeVertexCount); // drawing line-list
+  edgePass.end();
 
-  console.log(`Drawing ${vertices.nodeCount} nodes`);
+  const nodePass = commandEncoder.beginRenderPass({
+    colorAttachments: [{
+      view: texture.createView(),
+      loadOp: 'load',
+      storeOp: 'store'
+    }]
+  });
+  nodePass.setPipeline(nodePipeline.pipeline);
+  nodePass.setBindGroup(0, nodePipeline.bindGroups[0]);
+  nodePass.setVertexBuffer(0, vertices.nodeVertexBuffer);
+  nodePass.draw(vertices.nodeVertexCount);
+  nodePass.end();
 
   const commandBuffer = commandEncoder.finish();
   device.queue.submit([commandBuffer]);

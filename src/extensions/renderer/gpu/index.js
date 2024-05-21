@@ -118,7 +118,11 @@ GPUp.renderTo = function(cxt, zoom, pan, pxRatio) {
 function createNodeVertexBuffer(eles, device, shaderLocation = 0) {
   const vertexArray = [];
   let nodeCount = 0;
+  let z = 0; // A f32 can exactly represent integer values in the range [−16777216, 16777216]
 
+  // TODO need to add Z coord so that ordering is correct?
+  // Or maybe just drawing them in order will do the trick?
+  // No,,, vertex shaders run in parallel
   for(let i = 0; i < eles.length; i++) {
     const ele = eles[i];
     if(!ele.isNode())
@@ -136,27 +140,21 @@ function createNodeVertexBuffer(eles, device, shaderLocation = 0) {
     const botY = pos.y - halfH;
     const leftX = pos.x - halfW;
     const rightX = pos.x + halfW;
+    // const [ topY, botY, leftX, rightX ] = [ 0.8, -0.8, -0.8, 0.8 ];
 
     // 6 vertices per node (for now)
     vertexArray.push(
-    //   leftX, botY,
-    //   rightX, botY,
-    //   rightX, topY,
-    //   leftX, botY,
-    //   rightX, topY,
-    //   leftX, topY
+      leftX, botY, z,
+      rightX, botY, z,
+      rightX, topY, z,
 
-        // X,    Y,
-        -0.8, -0.8, // Triangle 1
-        0.8, -0.8,
-        0.8,  0.8,
-     
-       -0.8, -0.8, // Triangle 2
-        0.8,  0.8,
-       -0.8,  0.8,
+      leftX, botY, z,
+      rightX, topY, z,
+      leftX, topY, z
     );
 
     nodeCount++;
+    // z++;
   }
 
   const vertexFloatArray = new Float32Array(vertexArray);
@@ -168,16 +166,15 @@ function createNodeVertexBuffer(eles, device, shaderLocation = 0) {
   device.queue.writeBuffer(vertexBuffer, 0, vertexFloatArray);
 
   const vertexBufferLayout = {
-    arrayStride: 4 * 2, // 4 bytes * 2 dimensions
+    arrayStride: 4 * 3, // 4 bytes * 3 dimensions
     attributes: [{
-      format: 'float32x2',
+      format: 'float32x3',
       offset: 0,
       shaderLocation, // Position, see vertex shader
     }],
   };
 
   return {
-    vertexArray, // TEMP remove to allow to be garbage collected
     vertexBuffer,
     vertexBufferLayout,
     nodeCount,
@@ -186,17 +183,87 @@ function createNodeVertexBuffer(eles, device, shaderLocation = 0) {
 }
 
 
-function createShaderModule(vertices, device, format) {
-  const shaderModule = device.createShaderModule({  // WGSL
+
+function createMatrixBuffers(r, device) {
+
+  function getTranslationScaleMatrix() {
+    const zoom = r.cy.zoom();
+    const pan  = r.cy.pan();
+  
+    const mat = new Array(16).fill(0);
+    mat[0] = zoom;
+    mat[5] = zoom;
+    mat[10] = 1;
+    mat[12] = pan.x;
+    mat[13] = pan.y;
+    mat[15] = 1;
+    return mat;
+  }
+
+  function getOrthographicProjectionMatrix() {
+    // maps the canvas space into webGPU clip space
+    const width = r.canvasWidth;
+    const height = r.canvasHeight;
+    const near = -10;
+    const far = 10; // TODO set near/far to reasonable values that can show all z-indicies
+    
+    const lr = 1 / (0 - width);
+    const bt = 1 / (height - 0);
+    const nf = 1 / (near - far);
+  
+    const mat = new Array(16).fill(0);
+    mat[0] = -2 * lr;
+    mat[5] = -2 * bt;
+    mat[10] = 2 * nf;
+    mat[12] = (0 + width) * lr;
+    mat[13] = (0 + height) * bt;
+    mat[14] = (far + near) * nf;
+    mat[15] = 1;
+    return mat;
+  }
+
+  const translationMatrix = getTranslationScaleMatrix();
+  const translationMatrixArray = new Float32Array(translationMatrix);
+  const translationMatrixBuffer = device.createBuffer({
+    label: "Translation Matrix",
+    size: translationMatrixArray.byteLength,
+    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+  });
+  device.queue.writeBuffer(translationMatrixBuffer, 0, translationMatrixArray);
+
+  const projectionMatrix = getOrthographicProjectionMatrix();
+  const projectionMatrixArray = new Float32Array(projectionMatrix);
+  const projectionMatrixBuffer = device.createBuffer({
+    label: "Projection Matrix",
+    size: projectionMatrixArray.byteLength,
+    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+  });
+  device.queue.writeBuffer(projectionMatrixBuffer, 0, projectionMatrixArray);
+
+  console.log('translationMatrix', translationMatrix);
+  console.log('projectionMatrix', projectionMatrix);
+
+  return {
+    translationMatrixBuffer,
+    projectionMatrixBuffer
+  };
+}
+
+
+function createShaderPipeline(vertices, uniforms, device, format) {
+  const module = device.createShaderModule({  // WGSL
     label: "Node shader",
     code: `
+      @group(0) @binding(0) var<uniform> transformMatrix: mat4x4f;
+      @group(0) @binding(1) var<uniform> projectionMatrix: mat4x4f;
+
       @vertex
       fn vertexMain(
-        @location(0) pos: vec2f,
+        @location(0) pos: vec3f,
       ) -> 
         @builtin(position) vec4f 
       {
-        return vec4f(pos, 0, 1);
+        return projectionMatrix * transformMatrix * vec4f(pos, 1);
       }
 
       @fragment
@@ -206,26 +273,35 @@ function createShaderModule(vertices, device, format) {
     `
   });
 
-  // TODO pipelineLayout and vertexBufferLayout???
   const pipeline = device.createRenderPipeline({
     label: "Node pipeline",
-    layout: 'auto', // pipelineLayout, // TODO could also be 'auto'
+    layout: 'auto',
     vertex: {
-      module: shaderModule,
-      entryPoint: "vertexMain",
+      module,
       buffers: [ vertices.vertexBufferLayout ]
     },
     fragment: {
-      module: shaderModule,
-      entryPoint: "fragmentMain",
+      module,
       targets: [{ format }] // corresponds to @location(0) return value from fragment shader
     }
   });
 
+  const bindGroup0 = device.createBindGroup({
+    label: "Matrix bind group",
+    layout: pipeline.getBindGroupLayout(0),
+    entries: [
+      { binding: 0, resource: { buffer: uniforms.translationMatrixBuffer }},
+      { binding: 1, resource: { buffer: uniforms.projectionMatrixBuffer }},
+    ],
+  });
+
   return {
-    pipeline
+    pipeline,
+    bindGroups: [ bindGroup0 ]
   };
 }
+
+
 
 
 GPUp.render = function(options) {
@@ -243,7 +319,8 @@ GPUp.render = function(options) {
 
   // buffer that holds verticies for node squares
   const vertices = createNodeVertexBuffer(eles, device, 0);
-  const shaders = createShaderModule(vertices, device, format);
+  const uniforms = createMatrixBuffers(r, device);
+  const pipeline = createShaderPipeline(vertices, uniforms, device, format);
 
   const commandEncoder = device.createCommandEncoder();
 
@@ -258,13 +335,13 @@ GPUp.render = function(options) {
       storeOp: 'store'
     }]
   });
-  pass.setPipeline(shaders.pipeline);
+  pass.setPipeline(pipeline.pipeline);
+  pass.setBindGroup(0, pipeline.bindGroups[0]);
   pass.setVertexBuffer(0, vertices.vertexBuffer);
   pass.draw(vertices.vertexCount);
   pass.end();
 
   console.log(`Drawing ${vertices.nodeCount} nodes`);
-  console.log(vertices.vertexArray);
 
   const commandBuffer = commandEncoder.finish();
   device.queue.submit([commandBuffer]);

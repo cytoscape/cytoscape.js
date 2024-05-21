@@ -10,10 +10,6 @@
       name: 'grid'
     },
 
-    renderer: {
-      name: 'gpu'
-    },
-
     style: fetch('cy-style.json').then(toJson),
 
     elements: fetch('data.json').then(toJson)

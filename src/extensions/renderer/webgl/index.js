@@ -2,7 +2,6 @@ const WGLp = WebGLRenderer.prototype;
 
 function WebGLRenderer(options) {
   const r = this;
-  r.ready = false;
 
   const containerWindow = r.cy.window();
   const document = containerWindow.document;
@@ -21,7 +20,7 @@ function WebGLRenderer(options) {
   canvas.style.position = 'absolute';
 
   const gl = canvas.getContext('webgl2');
-  if(gl === null) {
+  if(!gl) {
     throw new Error("Browser does not support WebGL2");
   }
 
@@ -60,13 +59,12 @@ WGLp.matchCanvasSize = function(container) { // Resize canvas
   console.log('webgl matchCanvasSize');
   const r = this;
 
-  // var pixelRatio = r.getPixelRatio(); // TODO pixel ratio??
-  const pixelRatio = 1;
+  const pixelRatio = window.devicePixelRatio;
 
   const [,, width, height ] = r.findContainerClientCoords();
   const canvasWidth  = width  * pixelRatio;
   const canvasHeight = height * pixelRatio;
-  
+
   const { canvasContainer, canvas } = r.data;
   canvasContainer.style.width  = width  + 'px';
   canvasContainer.style.height = height + 'px';
@@ -75,6 +73,7 @@ WGLp.matchCanvasSize = function(container) { // Resize canvas
   canvas.style.width  = width  + 'px';
   canvas.style.height = height + 'px';
 
+  r.pixelRatio = pixelRatio;
   r.canvasWidth  = canvasWidth;
   r.canvasHeight = canvasHeight;
 };
@@ -163,20 +162,24 @@ function createMatrices(r) {
   function getTransformMatrix() {
     const zoom = r.cy.zoom();
     const pan  = r.cy.pan();
+
+    const eZoom = zoom  * r.pixelRatio;
+    const ePanx = pan.x * r.pixelRatio;
+    const ePany = pan.y * r.pixelRatio;
   
     const mat = new Array(16).fill(0);
-    mat[0] = zoom;
-    mat[5] = zoom;
+    mat[0] = eZoom;
+    mat[5] = eZoom;
     mat[10] = 1;
-    mat[12] = pan.x;
-    mat[13] = pan.y;
+    mat[12] = ePanx;
+    mat[13] = ePany;
     mat[15] = 1;
     return mat;
   }
 
   function getProjectionMatrix() {
     // maps the canvas space into clip space
-    const width = r.canvasWidth;
+    const width  = r.canvasWidth;
     const height = r.canvasHeight;
     const near = -10;
     const far = 10; // TODO set near/far to reasonable values that can show all z-indicies
@@ -207,9 +210,8 @@ function createMatrices(r) {
 
 
 function createShaderProgram(gl) {
-  const vertexShaderSource = 
-   `#version 300 es
-    precision mediump float;
+  const vertexShaderSource = `#version 300 es
+    precision highp float;
 
     uniform mat4 uTransformMatrix;
     uniform mat4 uProjectionMatrix;
@@ -226,12 +228,10 @@ function createShaderProgram(gl) {
     }
   `;
 
-  const fragmentShaderSource =
-   `#version 300 es
-    precision mediump float;
+  const fragmentShaderSource = `#version 300 es
+    precision highp float;
 
     in vec4 vVertexColor;
-
     out vec4 fragColor;
 
     void main(void) {
@@ -246,6 +246,8 @@ function createShaderProgram(gl) {
     if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
       throw new Error(gl.getShaderInfoLog(shader));
     }
+    console.log(gl.getShaderInfoLog(shader));
+    // gl.deleteShader(shader);
     return shader;
   }
 
@@ -307,7 +309,7 @@ WGLp.render = function(options) {
     gl.enableVertexAttribArray(program.aVertexPosition);
 
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    gl.viewport(0, 0, r.canvasWidth, r.canvasHeight);
+    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
     gl.uniformMatrix4fv(program.uTransformMatrix,  false, matrices.transformMatrix);
     gl.uniformMatrix4fv(program.uProjectionMatrix, false, matrices.projectionMatrix);
@@ -329,7 +331,7 @@ WGLp.render = function(options) {
     gl.enableVertexAttribArray(program.aVertexPosition);
 
     // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    gl.viewport(0, 0, r.canvasWidth, r.canvasHeight);
+    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
     gl.uniformMatrix4fv(program.uTransformMatrix,  false, matrices.transformMatrix);
     gl.uniformMatrix4fv(program.uProjectionMatrix, false, matrices.projectionMatrix);

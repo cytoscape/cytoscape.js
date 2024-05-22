@@ -14,7 +14,7 @@ fetch('data.json', {mode: 'no-cors'})
       },
 
       renderer: {
-        name: 'gpu'
+        name: 'webgl'
       },
 
       style: [

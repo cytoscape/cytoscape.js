@@ -33,11 +33,8 @@ function WebGLRenderer(options) {
     canvasContainer,
     gl,
     program,
-    context: gl,
-    needRedraw: {
-      node: false,
-      select: false,
-    }
+    needRedraw: true,
+    needBuffer: true
   };
 }
 
@@ -45,7 +42,10 @@ function WebGLRenderer(options) {
 WGLp.redrawHint = function(group, bool) {
   var r = this;
   switch(group) {
+    case 'buffers':
+      r.data.needBuffer = true;
     case 'eles':
+      r.data.needRedraw = true;
       break;
     case 'drag':
       break;
@@ -85,6 +85,7 @@ WGLp.arrowShapeImpl = function(name) {
 };
 
 WGLp.renderTo = function(cxt, zoom, pan, pxRatio) {
+  // TODO
   this.render({
     forcedContext: cxt,
     forcedZoom: zoom,
@@ -97,6 +98,7 @@ WGLp.renderTo = function(cxt, zoom, pan, pxRatio) {
 
 function createVertexArrays(eles) {
   const nodeVertexArray = [];
+  const nodeColorArray = [];
   const edgeVertexArray = [];
   let nodeCount = 0;
   let edgeCount = 0;
@@ -109,6 +111,11 @@ function createVertexArrays(eles) {
     const ele = eles[i];
     if(ele.isNode()) {
       const node = ele;
+
+      const bgcolor = node.pstyle('background-color').value;
+      const opacity = node.pstyle('opacity').value;
+      const [ r, g, b, a ] = [ bgcolor[0]/256, bgcolor[1]/256, bgcolor[2]/256, opacity ];
+
       const pos = node.position();
       const padding = node.padding();
       const nodeWidth = node.width() + 2 * padding;
@@ -131,6 +138,16 @@ function createVertexArrays(eles) {
         leftX, topY, z
       );
 
+      // TODO this is not optimal, but we will be using textures eventually so this will dissapear
+      nodeColorArray.push(
+        r, g, b,
+        r, g, b,
+        r, g, b,
+        r, g, b,
+        r, g, b,
+        r, g, b,
+      );
+
       nodeCount++;
       // z++;
 
@@ -150,6 +167,7 @@ function createVertexArrays(eles) {
 
   return {
     nodeVertexArray,
+    nodeColorArray,
     nodeCount,
     edgeVertexArray,
     edgeCount,
@@ -217,13 +235,13 @@ function createShaderProgram(gl) {
     uniform mat4 uProjectionMatrix;
 
     in vec3 aVertexPosition;
-    // in vec3 aVertexColor;
+    in vec3 aVertexColor;
 
     out vec4 vVertexColor;
 
     void main(void) {
-      // vVertexColor = vec4(aVertexColor, 1.0);
-      vVertexColor = vec4(0.0, 1.0, 0.0, 1.0);
+      vVertexColor = vec4(aVertexColor, 1.0);
+      // vVertexColor = vec4(0.0, 1.0, 0.0, 1.0);
       gl_Position = uProjectionMatrix * uTransformMatrix * vec4(aVertexPosition, 1.0);
     }
   `;
@@ -263,7 +281,7 @@ function createShaderProgram(gl) {
   }
 
   program.aVertexPosition   = gl.getAttribLocation(program,  'aVertexPosition');
-  // program.aVertexColor      = gl.getAttribLocation(program,  'aVertexColor');
+  program.aVertexColor      = gl.getAttribLocation(program,  'aVertexColor');
   program.uTransformMatrix  = gl.getUniformLocation(program, 'uTransformMatrix');
   program.uProjectionMatrix = gl.getUniformLocation(program, 'uProjectionMatrix');
 
@@ -272,74 +290,89 @@ function createShaderProgram(gl) {
 }
 
 
+function bufferNodeData(gl, program, vertices) {
+  const vao = gl.createVertexArray();
+  gl.bindVertexArray(vao);
+  
+  { // positions
+    const buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices.nodeVertexArray), gl.STATIC_DRAW);
+    gl.vertexAttribPointer(program.aVertexPosition, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(program.aVertexPosition);
+    gl.bindBuffer(gl.ARRAY_BUFFER, null);
+  }
 
-// TODO Not sure how background color should work. 
-// Typically you specify the background color in the css of the <div> that contans the canvas.
-// Perhaps just clearing the texture with black-transparent is enough?
+  { // colors
+    const buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices.nodeColorArray), gl.STATIC_DRAW);
+    gl.vertexAttribPointer(program.aVertexColor, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(program.aVertexColor);
+    gl.bindBuffer(gl.ARRAY_BUFFER, null);
+  }
+
+  gl.bindVertexArray(null);
+  vao.count = vertices.nodeCount * 6;
+  return vao;
+}
+
+function bufferEdgeData(gl, program, vertices) {
+  const vao = gl.createVertexArray();
+  gl.bindVertexArray(vao);
+
+  const buffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices.edgeVertexArray), gl.STATIC_DRAW);
+  gl.vertexAttribPointer(program.aVertexPosition, 3, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(program.aVertexPosition);
+  gl.bindBuffer(gl.ARRAY_BUFFER, null);
+
+  gl.bindVertexArray(null);
+  vao.count = vertices.edgeCount * 2;
+  return vao;
+}
+
+
 WGLp.render = function(options) {
   const r = this;
-  // if(!r.ready) {
-  //   console.log('gpu renderer initializing');
-  //   return;
-  // }
   console.log('webgl render');
-
   options = options || util.staticEmptyObject();
 
   /** @type {WebGLRenderingContext} gl */
   const gl = r.data.gl;
   const program = r.data.program;
 
-  const eles = r.getCachedZSortedEles(); 
+  if(r.data.needBuffer) {
+    const eles = r.getCachedZSortedEles(); 
+    const vertices = createVertexArrays(eles);
+    console.log('vertices', vertices);
 
-  const vertices = createVertexArrays(eles);
-  const matrices = createMatrices(r);
+    r.nodeVAO = bufferNodeData(gl, program, vertices);
+    r.edgeVAO = bufferEdgeData(gl, program, vertices);
+    r.data.needBuffer = false;
+  }
 
-  console.log('vertices', vertices);
-  console.log('matrices', matrices);
-
-  { // EDGES
-    const vao = gl.createVertexArray();
-    gl.bindVertexArray(vao);
-
-    const vertexBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices.edgeVertexArray), gl.STATIC_DRAW);
-    gl.vertexAttribPointer(program.aVertexPosition, 3, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(program.aVertexPosition);
+  if(r.data.needRedraw) {
+    const matrices = createMatrices(r);
 
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
-    gl.uniformMatrix4fv(program.uTransformMatrix,  false, matrices.transformMatrix);
-    gl.uniformMatrix4fv(program.uProjectionMatrix, false, matrices.projectionMatrix);
-
-    gl.drawArrays(gl.LINES, 0, vertices.edgeCount * 2);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, null);
-    gl.bindVertexArray(null);
-  }
-
-  { // Nodes
-    const vao = gl.createVertexArray();
-    gl.bindVertexArray(vao);
-
-    const vertexBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices.nodeVertexArray), gl.STATIC_DRAW);
-    gl.vertexAttribPointer(program.aVertexPosition, 3, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(program.aVertexPosition);
-
-    // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-
-    gl.uniformMatrix4fv(program.uTransformMatrix,  false, matrices.transformMatrix);
-    gl.uniformMatrix4fv(program.uProjectionMatrix, false, matrices.projectionMatrix);
-
-    gl.drawArrays(gl.TRIANGLES, 0, vertices.nodeCount * 6);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, null);
-    gl.bindVertexArray(null);
+    { // EDGES
+      gl.bindVertexArray(r.edgeVAO);
+      gl.uniformMatrix4fv(program.uTransformMatrix,  false, matrices.transformMatrix);
+      gl.uniformMatrix4fv(program.uProjectionMatrix, false, matrices.projectionMatrix);
+      gl.drawArrays(gl.LINES, 0, r.edgeVAO.count);
+      gl.bindVertexArray(null);
+    }
+    { // Nodes
+      gl.bindVertexArray(r.nodeVAO);
+      gl.uniformMatrix4fv(program.uTransformMatrix,  false, matrices.transformMatrix);
+      gl.uniformMatrix4fv(program.uProjectionMatrix, false, matrices.projectionMatrix);
+      gl.drawArrays(gl.TRIANGLES, 0, r.nodeVAO.count);
+      gl.bindVertexArray(null);
+    }
   }
 };
 

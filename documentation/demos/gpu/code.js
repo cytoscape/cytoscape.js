@@ -1,8 +1,14 @@
-fetch('data.json', {mode: 'no-cors'})
+fetch('enrichment-map.networks.json', {mode: 'no-cors'})
   .then(function(res) {
     return res.json()
   })
   .then(function(data) {
+
+    const nodeColor = (node) => {
+      const nes = node.data('NES');
+      return nes > 0 ? 'red' : 'blue';
+    };
+
     var cy = window.cy = cytoscape({
       container: document.getElementById('cy'),
 
@@ -10,7 +16,8 @@ fetch('data.json', {mode: 'no-cors'})
       autounselectify: true,
 
       layout: {
-        name: 'grid'
+        name: 'cose',
+        // animate: false
       },
 
       renderer: {
@@ -23,7 +30,7 @@ fetch('data.json', {mode: 'no-cors'})
           style: {
             'height': 20,
             'width': 20,
-            'background-color': '#18e018'
+            'background-color': nodeColor
           }
         },
 
@@ -39,6 +46,6 @@ fetch('data.json', {mode: 'no-cors'})
         }
       ],
 
-      elements: data
+      elements: data.elements
     });
   });

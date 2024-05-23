@@ -142,6 +142,11 @@ BRp.notify = function( eventName, eles ){
     || eventName === 'mount'
   ){
     r.invalidateCachedZSortedEles();
+    r.redrawHint('buffers', true);
+  }
+
+  if(eventName === 'bounds') {
+    r.redrawHint('buffers', true);
   }
 
   if( eventName === 'viewport' ){

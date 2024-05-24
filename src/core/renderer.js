@@ -10,7 +10,8 @@ let rendererDefaults = util.defaults({
   touchTapThreshold: 8,
   wheelSensitivity: 1,
   debug: false,
-  showFps: false
+  showFps: false,
+  webgl: false
 });
 
 let corefn = ({

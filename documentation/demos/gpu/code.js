@@ -12,17 +12,19 @@ fetch('enrichment-map.networks.json', {mode: 'no-cors'})
     var cy = window.cy = cytoscape({
       container: document.getElementById('cy'),
 
-      boxSelectionEnabled: false,
-      autounselectify: true,
+      // boxSelectionEnabled: false,
+      // autounselectify: true,
 
       layout: {
         name: 'cose',
-        // animate: false
+        animate: false
       },
 
       renderer: {
-        name: 'webgl'
+        name: 'canvas',
       },
+      // TODO this should be under 'renderer' no?
+      webgl: true,
 
       style: [
         {
@@ -33,7 +35,12 @@ fetch('enrichment-map.networks.json', {mode: 'no-cors'})
             'background-color': nodeColor
           }
         },
-
+        {
+          selector: 'node:selected',
+          style: {
+            'background-color': 'yellow'
+          }
+        },
         {
           selector: 'edge',
           style: {

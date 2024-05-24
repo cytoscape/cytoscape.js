@@ -1,100 +1,18 @@
-const WGLp = WebGLRenderer.prototype;
+const CRp = {};
 
-function WebGLRenderer(options) {
+CRp.initWebgl = function(options) {
   const r = this;
 
-  const containerWindow = r.cy.window();
-  const document = containerWindow.document;
-  const canvasContainer = document.createElement('div');
-
-  const containerStyle = canvasContainer.style;
-  containerStyle.position = 'relative';
-  containerStyle.zIndex = '0';
-  containerStyle.overflow = 'hidden';
-
-  const container = options.cy.container();
-  container.appendChild(canvasContainer);
-
-  const canvas = document.createElement('canvas');
-  canvasContainer.appendChild(canvas);
-  canvas.style.position = 'absolute';
-
-  const gl = canvas.getContext('webgl2');
-  if(!gl) {
-    throw new Error("Browser does not support WebGL2");
-  }
-
+  const gl = r.data.contexts[r.WEBGL];
   gl.clearColor(0, 0, 0, 0); // background color
 
   const program = createShaderProgram(gl);
 
-  r.data = { 
-    canvas,
-    canvasContainer,
-    gl,
+  r.data.webgl = { 
     program,
-    needRedraw: true,
-    needBuffer: true
+    needBuffer: true,
   };
 }
-
-
-WGLp.redrawHint = function(group, bool) {
-  var r = this;
-  switch(group) {
-    case 'buffers':
-      r.data.needBuffer = true;
-    case 'eles':
-      r.data.needRedraw = true;
-      break;
-    case 'drag':
-      break;
-    case 'select':
-      break;
-  }
-};
-
-
-WGLp.matchCanvasSize = function(container) { // Resize canvas
-  console.log('webgl matchCanvasSize');
-  const r = this;
-
-  const pixelRatio = window.devicePixelRatio;
-
-  const [,, width, height ] = r.findContainerClientCoords();
-  const canvasWidth  = width  * pixelRatio;
-  const canvasHeight = height * pixelRatio;
-
-  const { canvasContainer, canvas } = r.data;
-  canvasContainer.style.width  = width  + 'px';
-  canvasContainer.style.height = height + 'px';
-  canvas.width  = canvasWidth;
-  canvas.height = canvasHeight;
-  canvas.style.width  = width  + 'px';
-  canvas.style.height = height + 'px';
-
-  r.pixelRatio = pixelRatio;
-  r.canvasWidth  = canvasWidth;
-  r.canvasHeight = canvasHeight;
-};
-
-WGLp.nodeShapeImpl = function(name, context, centerX, centerY, width, height, points, corners) {
-};
-
-WGLp.arrowShapeImpl = function(name) {
-};
-
-WGLp.renderTo = function(cxt, zoom, pan, pxRatio) {
-  // TODO
-  this.render({
-    forcedContext: cxt,
-    forcedZoom: zoom,
-    forcedPan: pan,
-    // drawAllLayers: true,
-    forcedPxRatio: pxRatio
-  });
-};
-
 
 function createVertexArrays(eles) {
   const nodeVertexArray = [];
@@ -175,22 +93,28 @@ function createVertexArrays(eles) {
 }
 
 
+function getEffectivePanZoom(r) {
+  const zoom = r.cy.zoom();
+  const pan  = r.cy.pan();
+  return {
+    zoom: zoom * r.pixelRatio,
+    x: pan.x * r.pixelRatio,
+    y: pan.y * r.pixelRatio,
+  };
+}
+
+
 function createMatrices(r) {
 
   function getTransformMatrix() {
-    const zoom = r.cy.zoom();
-    const pan  = r.cy.pan();
+    const panzoom = getEffectivePanZoom(r);
 
-    const eZoom = zoom  * r.pixelRatio;
-    const ePanx = pan.x * r.pixelRatio;
-    const ePany = pan.y * r.pixelRatio;
-  
     const mat = new Array(16).fill(0);
-    mat[0] = eZoom;
-    mat[5] = eZoom;
+    mat[0] = panzoom.zoom;
+    mat[5] = panzoom.zoom;
     mat[10] = 1;
-    mat[12] = ePanx;
-    mat[13] = ePany;
+    mat[12] = panzoom.x;
+    mat[13] = panzoom.y;
     mat[15] = 1;
     return mat;
   }
@@ -334,26 +258,47 @@ function bufferEdgeData(gl, program, vertices) {
 }
 
 
-WGLp.render = function(options) {
+function drawSelectionRectangle(r, options) {
+  function setContextTransform(context) {
+    const w = r.canvasWidth;
+    const h = r.canvasHeight;
+    const panzoom = getEffectivePanZoom(r);
+
+    context.setTransform(1, 0, 0, 1, 0, 0);
+    context.clearRect(0, 0, w, h);
+    context.translate(panzoom.x, panzoom.y);
+    context.scale(panzoom.zoom, panzoom.zoom);
+  }
+
+  r.drawSelectionRectangle(options, setContextTransform);
+}
+
+
+CRp.renderWebgl = function(options) {
   const r = this;
   console.log('webgl render');
-  options = options || util.staticEmptyObject();
+  
+  if(r.data.canvasNeedsRedraw[r.SELECT_BOX]) {
+    drawSelectionRectangle(r, options);
+  }
 
   /** @type {WebGLRenderingContext} gl */
-  const gl = r.data.gl;
-  const program = r.data.program;
+  const gl = r.data.contexts[r.WEBGL];
+  const program = r.data.webgl.program;
 
-  if(r.data.needBuffer) {
+  if(r.data.webgl.needBuffer) {
+    console.log('needBuffer');
+
     const eles = r.getCachedZSortedEles(); 
     const vertices = createVertexArrays(eles);
     console.log('vertices', vertices);
 
     r.nodeVAO = bufferNodeData(gl, program, vertices);
     r.edgeVAO = bufferEdgeData(gl, program, vertices);
-    r.data.needBuffer = false;
+    r.data.webgl.needBuffer = false;
   }
 
-  if(r.data.needRedraw) {
+  if(r.data.canvasNeedsRedraw[r.NODE]) {
     const matrices = createMatrices(r);
 
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -376,4 +321,4 @@ WGLp.render = function(options) {
   }
 };
 
-export default WebGLRenderer;
+export default CRp;

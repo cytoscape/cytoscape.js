@@ -19,6 +19,7 @@ import drawingImages from './drawing-images';
 import drawingLabelText from './drawing-label-text';
 import drawingNodes from './drawing-nodes';
 import drawingRedraw from './drawing-redraw';
+import drawingRedrawWebGL from './webgl/drawing-redraw-webgl';
 import drawingShapes from './drawing-shapes';
 import exportImage from './export-image';
 import nodeShapes from './node-shapes';
@@ -31,6 +32,9 @@ CRp.CANVAS_LAYERS = 3;
 CRp.SELECT_BOX = 0;
 CRp.DRAG = 1;
 CRp.NODE = 2;
+CRp.WEBGL = 3;
+
+CRp.CANVAS_TYPES = [ '2d', '2d', '2d', 'webgl2' ];
 
 CRp.BUFFER_COUNT = 3;
 //
@@ -43,6 +47,11 @@ function CanvasRenderer( options ){
 
   var containerWindow = r.cy.window();
   var document = containerWindow.document;
+
+  if( options.webgl ){
+    CRp.CANVAS_LAYERS = r.CANVAS_LAYERS = 4;
+    console.log('webgl rendering enabled');
+  }
 
   r.data = {
     canvases: new Array( CRp.CANVAS_LAYERS ),
@@ -81,7 +90,11 @@ function CanvasRenderer( options ){
 
   for( var i = 0; i < CRp.CANVAS_LAYERS; i++ ){
     var canvas = r.data.canvases[ i ] = document.createElement( 'canvas' );  // eslint-disable-line no-undef
-    r.data.contexts[ i ] = canvas.getContext( '2d' );
+    var type = CRp.CANVAS_TYPES[ i ];
+    r.data.contexts[ i ] = canvas.getContext( type );
+    if( !r.data.contexts[ i ] ) {
+      util.error( 'Could not create canvas of type ' + type );
+    }
     Object.keys(styleMap).forEach((k) => {
       canvas.style[k] = styleMap[k];
     });
@@ -97,6 +110,9 @@ function CanvasRenderer( options ){
   r.data.canvases[ CRp.NODE ].setAttribute( 'data-id', 'layer' + CRp.NODE + '-node' );
   r.data.canvases[ CRp.SELECT_BOX ].setAttribute( 'data-id', 'layer' + CRp.SELECT_BOX + '-selectbox' );
   r.data.canvases[ CRp.DRAG ].setAttribute( 'data-id', 'layer' + CRp.DRAG + '-drag' );
+  if( r.data.canvases[ CRp.WEBGL ] ) {
+    r.data.canvases[ CRp.WEBGL ].setAttribute( 'data-id', 'layer' + CRp.WEBGL + '-webgl' );
+  }
 
   for( var i = 0; i < CRp.BUFFER_COUNT; i++ ){
     r.data.bufferCanvases[ i ] = document.createElement( 'canvas' );  // eslint-disable-line no-undef
@@ -260,6 +276,10 @@ function CanvasRenderer( options ){
   lblTxrCache.onDequeue(refineInLayers);
   slbTxrCache.onDequeue(refineInLayers);
   tlbTxrCache.onDequeue(refineInLayers);
+
+  if( options.webgl ) {
+    r.initWebgl( options );
+  }
 }
 
 CRp.redrawHint = function( group, bool ){
@@ -274,6 +294,11 @@ CRp.redrawHint = function( group, bool ){
       break;
     case 'select':
       r.data.canvasNeedsRedraw[ CRp.SELECT_BOX ] = bool;
+      break;
+    case 'buffers':
+      if(r.data.webgl) {
+        r.data.webgl.needBuffer = true;
+      }
       break;
   }
 };
@@ -335,6 +360,7 @@ CRp.makeOffscreenCanvas = function(width, height){
   drawingLabelText,
   drawingNodes,
   drawingRedraw,
+  drawingRedrawWebGL,
   drawingShapes,
   exportImage,
   nodeShapes

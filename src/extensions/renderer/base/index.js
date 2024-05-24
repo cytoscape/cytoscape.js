@@ -100,6 +100,7 @@ BRp.init = function( options ){
   r.touchTapThreshold = options.touchTapThreshold;
   r.touchTapThreshold2 = options.touchTapThreshold * options.touchTapThreshold;
   r.tapholdDuration = 500;
+  r.webgl = options.webgl;
 
   r.bindings = [];
   r.beforeRenderCallbacks = [];
@@ -145,7 +146,7 @@ BRp.notify = function( eventName, eles ){
     r.redrawHint('buffers', true);
   }
 
-  if(eventName === 'bounds') {
+  if(eventName === 'bounds' || eventName === 'style') {
     r.redrawHint('buffers', true);
   }
 

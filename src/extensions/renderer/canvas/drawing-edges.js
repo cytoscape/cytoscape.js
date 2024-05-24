@@ -66,11 +66,11 @@ CRp.drawEdge = function( context, edge, shiftToOriginWithBb, drawLabel = true, s
     context.lineCap = lineCap;
 
     if (lineOutlineWidth > 0) {
-      r.colorStrokeStyle( context, lineOutlineColor[0], lineOutlineColor[1], lineOutlineColor[2], strokeOpacity )
+      r.colorStrokeStyle( context, lineOutlineColor[0], lineOutlineColor[1], lineOutlineColor[2], strokeOpacity );
     } else {
       // do not draw any lineOutline
       context.lineCap = 'butt'; // reset for other drawing functions
-      return
+      return;
     }
 
     if (curveStyle === 'straight-triangle') {

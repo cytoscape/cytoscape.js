@@ -22,6 +22,7 @@ CRp.initWebgl = function(options) {
 function createVertexArrays(eles) {
   const nodeVertexArray = [];
   const nodeColorArray = [];
+  const nodeTexArray = [];
   const edgeVertexArray = [];
   let nodeCount = 0;
   let edgeCount = 0;
@@ -60,6 +61,16 @@ function createVertexArrays(eles) {
         leftX, topY,
       );
 
+      // 6 vertices per node (for now)
+      nodeTexArray.push(
+        0, 0,
+        1, 0,
+        1, 1,
+        0, 0,
+        1, 1,
+        0, 1,
+      );
+
       // TODO this is not optimal, but we will be using textures eventually so this will dissapear
       nodeColorArray.push(
         r, g, b,
@@ -90,6 +101,7 @@ function createVertexArrays(eles) {
   return {
     nodeVertexArray,
     nodeColorArray,
+    nodeTexArray,
     nodeCount,
     edgeVertexArray,
     edgeCount,
@@ -158,11 +170,14 @@ function createNodeShaderProgram(gl) {
 
     in vec2 aVertexPosition;
     in vec3 aVertexColor;
+    in vec2 aTexCoord;
 
     out vec4 vVertexColor;
+    out vec2 vTexCoord;
 
     void main(void) {
       vVertexColor = vec4(aVertexColor, 1.0);
+      vTexCoord = aTexCoord;
       gl_Position  = vec4(uMatrix * vec3(aVertexPosition, 1.0), 1.0);
     }
   `;
@@ -170,11 +185,16 @@ function createNodeShaderProgram(gl) {
   const fragmentShaderSource = `#version 300 es
     precision highp float;
 
+    uniform sampler2D uTexture;
+
     in vec4 vVertexColor;
-    out vec4 fragColor;
+    in vec2 vTexCoord;
+
+    out vec4 outColor;
 
     void main(void) {
-      fragColor = vVertexColor;
+      // outColor = vVertexColor;
+      outColor = texture(uTexture, vTexCoord);
     }
   `;
 
@@ -182,9 +202,71 @@ function createNodeShaderProgram(gl) {
 
   program.aVertexPosition = gl.getAttribLocation(program,  'aVertexPosition');
   program.aVertexColor = gl.getAttribLocation(program,  'aVertexColor');
+  program.aTexCoord = gl.getAttribLocation(program, 'aTexCoord');
   program.uMatrix = gl.getUniformLocation(program, 'uMatrix');
 
   return program;
+}
+
+
+function bufferNodeData(r, gl, program, vertices) {
+  const vao = gl.createVertexArray();
+  gl.bindVertexArray(vao);
+  
+  { // positions
+    const buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices.nodeVertexArray), gl.STATIC_DRAW);
+    gl.vertexAttribPointer(program.aVertexPosition, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(program.aVertexPosition);
+    gl.bindBuffer(gl.ARRAY_BUFFER, null);
+  }
+
+  { // colors
+    const buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices.nodeColorArray), gl.STATIC_DRAW);
+    gl.vertexAttribPointer(program.aVertexColor, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(program.aVertexColor);
+    gl.bindBuffer(gl.ARRAY_BUFFER, null);
+  }
+
+  { // texture
+    const buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices.nodeTexArray), gl.STATIC_DRAW);
+    gl.vertexAttribPointer(program.aTexCoord, 2, gl.FLOAT, true, 0, 0);
+    gl.enableVertexAttribArray(program.aTexCoord);
+    gl.bindBuffer(gl.ARRAY_BUFFER, null);
+
+    const texture = gl.createTexture();
+    gl.activeTexture(gl.TEXTURE0 + 0);
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    // Fill the texture with a 1x1 blue pixel.
+    // gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 255, 0]));
+    const canvas = createTestTextureCanvas(r);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, canvas.width, canvas.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, canvas);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
+    gl.generateMipmap(gl.TEXTURE_2D);
+  }
+
+  gl.bindVertexArray(null);
+  vao.count = vertices.nodeCount * 6;
+  return vao;
+}
+
+function createTestTextureCanvas(r) {
+  const canvas = r.makeOffscreenCanvas(200, 200);
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = 'rgb(255 0 153)';
+  ctx.strokeStyle = "blue";
+  ctx.beginPath();
+  ctx.ellipse(100, 100, 50, 75, Math.PI / 4, 0, 2 * Math.PI);
+  ctx.fill();
+  ctx.stroke();
+  return canvas;
 }
 
 
@@ -226,33 +308,6 @@ function createEdgeShaderProgram(gl) {
   return program;
 }
 
-
-function bufferNodeData(gl, program, vertices) {
-  const vao = gl.createVertexArray();
-  gl.bindVertexArray(vao);
-  
-  { // positions
-    const buffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices.nodeVertexArray), gl.STATIC_DRAW);
-    gl.vertexAttribPointer(program.aVertexPosition, 2, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(program.aVertexPosition);
-    gl.bindBuffer(gl.ARRAY_BUFFER, null);
-  }
-
-  { // colors
-    const buffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices.nodeColorArray), gl.STATIC_DRAW);
-    gl.vertexAttribPointer(program.aVertexColor, 3, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(program.aVertexColor);
-    gl.bindBuffer(gl.ARRAY_BUFFER, null);
-  }
-
-  gl.bindVertexArray(null);
-  vao.count = vertices.nodeCount * 6;
-  return vao;
-}
 
 function bufferEdgeData(gl, program, vertices) {
   const vao = gl.createVertexArray();
@@ -301,7 +356,7 @@ CRp.renderWebgl = function(options) {
   if(r.data.webgl.needBuffer) {
     const eles = r.getCachedZSortedEles(); 
     const vertices = createVertexArrays(eles);
-    r.nodeVAO = bufferNodeData(gl, nodeProgram, vertices);
+    r.nodeVAO = bufferNodeData(r, gl, nodeProgram, vertices);
     r.edgeVAO = bufferEdgeData(gl, edgeProgram, vertices);
     r.data.webgl.needBuffer = false;
   }

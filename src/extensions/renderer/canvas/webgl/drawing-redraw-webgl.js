@@ -1,3 +1,5 @@
+import * as mat from './matrix';
+
 const CRp = {};
 
 CRp.initWebgl = function(options) {
@@ -107,71 +109,18 @@ function getEffectivePanZoom(r) {
 
 
 function createMatrices(r) {
+  const width = r.canvasWidth;
+  const height = r.canvasHeight;
+  const panzoom = getEffectivePanZoom(r);
 
-  function getTransformMatrix4x4() {
-    const panzoom = getEffectivePanZoom(r);
-    const mat = new Array(16).fill(0);
-    mat[0] = panzoom.zoom;
-    mat[5] = panzoom.zoom;
-    mat[10] = 1;
-    mat[12] = panzoom.x;
-    mat[13] = panzoom.y;
-    mat[15] = 1;
-    return mat;
-  }
-
-  function getTransformMatrix3x3() {
-    const panzoom = getEffectivePanZoom(r);
-    const mat = new Array(9).fill(0);
-    mat[0] = panzoom.zoom;
-    mat[4] = panzoom.zoom;
-    mat[6] = panzoom.x;
-    mat[7] = panzoom.y;
-    mat[8] = 1;
-    return mat;
-  }
-
-  function getProjectionMatrix4x4() {
-    // maps the canvas space into clip space
-    const width  = r.canvasWidth;
-    const height = r.canvasHeight;
-    const near = -10;
-    const far = 10; // TODO set near/far to reasonable values that can show all z-indicies
-    
-    const lr = 1 / (0 - width);
-    const bt = 1 / (height - 0);
-    const nf = 1 / (near - far);
-  
-    const mat = new Array(16).fill(0);
-    mat[0] = -2 * lr;
-    mat[5] = -2 * bt;
-    mat[10] = 2 * nf;
-    mat[12] = (0 + width) * lr;
-    mat[13] = (0 + height) * bt;
-    mat[14] = (far + near) * nf;
-    mat[15] = 1;
-    return mat;
-  }
-
-  function getProjectionMatrix3x3() {
-    // maps the canvas space into clip space
-    const width  = r.canvasWidth;
-    const height = r.canvasHeight;
-    const mat = new Array(9).fill(0);
-    mat[0] = 2 / width;
-    mat[4] = -2 / height;
-    mat[6] = -1;
-    mat[7] = 1;
-    mat[8] = 1;
-    return mat;
-  }
-
-  const transformMatrix  = getTransformMatrix3x3();
-  const projectionMatrix = getProjectionMatrix3x3();
+  const transformMatrix  = mat.transformMatrix3x3(panzoom.x, panzoom.y, panzoom.zoom);
+  const projectionMatrix = mat.projectionMatrix3x3(width, height);
+  const matrix = mat.multiply3x3(projectionMatrix, transformMatrix);
 
   return {
     transformMatrix,
-    projectionMatrix
+    projectionMatrix,
+    matrix,
   };
 }
 
@@ -200,12 +149,12 @@ function createProgram(gl, vertexSource, fragementSource) {
   return program;
 }
 
+
 function createNodeShaderProgram(gl) {
   const vertexShaderSource = `#version 300 es
     precision highp float;
 
-    uniform mat3 uTransformMatrix;
-    uniform mat3 uProjectionMatrix;
+    uniform mat3 uMatrix;
 
     in vec2 aVertexPosition;
     in vec3 aVertexColor;
@@ -214,7 +163,7 @@ function createNodeShaderProgram(gl) {
 
     void main(void) {
       vVertexColor = vec4(aVertexColor, 1.0);
-      gl_Position  = vec4(uProjectionMatrix * uTransformMatrix * vec3(aVertexPosition, 1.0), 1.0);
+      gl_Position  = vec4(uMatrix * vec3(aVertexPosition, 1.0), 1.0);
     }
   `;
 
@@ -231,10 +180,9 @@ function createNodeShaderProgram(gl) {
 
   const program = createProgram(gl, vertexShaderSource, fragmentShaderSource);
 
-  program.aVertexPosition   = gl.getAttribLocation(program,  'aVertexPosition');
-  program.aVertexColor      = gl.getAttribLocation(program,  'aVertexColor');
-  program.uTransformMatrix  = gl.getUniformLocation(program, 'uTransformMatrix');
-  program.uProjectionMatrix = gl.getUniformLocation(program, 'uProjectionMatrix');
+  program.aVertexPosition = gl.getAttribLocation(program,  'aVertexPosition');
+  program.aVertexColor = gl.getAttribLocation(program,  'aVertexColor');
+  program.uMatrix = gl.getUniformLocation(program, 'uMatrix');
 
   return program;
 }
@@ -244,8 +192,7 @@ function createEdgeShaderProgram(gl) {
   const vertexShaderSource = `#version 300 es
     precision highp float;
 
-    uniform mat3 uTransformMatrix;
-    uniform mat3 uProjectionMatrix;
+    uniform mat3 uMatrix;
 
     in vec2 aVertexPosition;
     // in vec3 aVertexColor;
@@ -255,7 +202,7 @@ function createEdgeShaderProgram(gl) {
     void main(void) {
       // vVertexColor = vec4(aVertexColor, 1.0);
       vVertexColor = vec4(0.0, 1.0, 0.0, 1.0);
-      gl_Position  = vec4(uProjectionMatrix * uTransformMatrix * vec3(aVertexPosition, 1.0), 1.0);
+      gl_Position  = vec4(uMatrix * vec3(aVertexPosition, 1.0), 1.0);
     }
   `;
 
@@ -272,10 +219,9 @@ function createEdgeShaderProgram(gl) {
 
   const program = createProgram(gl, vertexShaderSource, fragmentShaderSource);
 
-  program.aVertexPosition   = gl.getAttribLocation(program,  'aVertexPosition');
-  // program.aVertexColor      = gl.getAttribLocation(program,  'aVertexColor');
-  program.uTransformMatrix  = gl.getUniformLocation(program, 'uTransformMatrix');
-  program.uProjectionMatrix = gl.getUniformLocation(program, 'uProjectionMatrix');
+  program.aVertexPosition = gl.getAttribLocation(program,  'aVertexPosition');
+  // program.aVertexColor = gl.getAttribLocation(program,  'aVertexColor');
+  program.uMatrix = gl.getUniformLocation(program, 'uMatrix');
 
   return program;
 }
@@ -369,16 +315,14 @@ CRp.renderWebgl = function(options) {
     { // EDGES
       gl.bindVertexArray(r.edgeVAO);
       gl.useProgram(edgeProgram);
-      gl.uniformMatrix3fv(edgeProgram.uTransformMatrix,  false, matrices.transformMatrix);
-      gl.uniformMatrix3fv(edgeProgram.uProjectionMatrix, false, matrices.projectionMatrix);
+      gl.uniformMatrix3fv(edgeProgram.uMatrix, false, matrices.matrix);
       gl.drawArrays(gl.LINES, 0, r.edgeVAO.count);
       gl.bindVertexArray(null);
     }
     { // Nodes
       gl.bindVertexArray(r.nodeVAO);
       gl.useProgram(nodeProgram);
-      gl.uniformMatrix3fv(nodeProgram.uTransformMatrix,  false, matrices.transformMatrix);
-      gl.uniformMatrix3fv(nodeProgram.uProjectionMatrix, false, matrices.projectionMatrix);
+      gl.uniformMatrix3fv(nodeProgram.uMatrix, false, matrices.matrix);
       gl.drawArrays(gl.TRIANGLES, 0, r.nodeVAO.count);
       gl.bindVertexArray(null);
     }

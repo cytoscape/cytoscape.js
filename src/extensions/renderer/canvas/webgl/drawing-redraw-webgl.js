@@ -6,13 +6,16 @@ CRp.initWebgl = function(options) {
   const gl = r.data.contexts[r.WEBGL];
   gl.clearColor(0, 0, 0, 0); // background color
 
-  const program = createShaderProgram(gl);
+  const nodeProgram = createNodeShaderProgram(gl);
+  const edgeProgram = createEdgeShaderProgram(gl);
 
   r.data.webgl = { 
-    program,
+    nodeProgram,
+    edgeProgram,
     needBuffer: true,
   };
 }
+
 
 function createVertexArrays(eles) {
   const nodeVertexArray = [];
@@ -20,7 +23,6 @@ function createVertexArrays(eles) {
   const edgeVertexArray = [];
   let nodeCount = 0;
   let edgeCount = 0;
-  let z = 0; // A f32 can exactly represent integer values in the range [−16777216, 16777216]
 
   // TODO need to add Z coord so that ordering is correct?
   // Or maybe just drawing them in order will do the trick?
@@ -48,12 +50,12 @@ function createVertexArrays(eles) {
   
       // 6 vertices per node (for now)
       nodeVertexArray.push(
-        leftX, botY, z,
-        rightX, botY, z,
-        rightX, topY, z,
-        leftX, botY, z,
-        rightX, topY, z,
-        leftX, topY, z
+        leftX, botY,
+        rightX, botY,
+        rightX, topY,
+        leftX, botY,
+        rightX, topY,
+        leftX, topY,
       );
 
       // TODO this is not optimal, but we will be using textures eventually so this will dissapear
@@ -75,8 +77,8 @@ function createVertexArrays(eles) {
       const tp = edge.target().position();
 
       edgeVertexArray.push(
-        sp.x, sp.y, z, 
-        tp.x, tp.y, z
+        sp.x, sp.y,
+        tp.x, tp.y,
       );
       
       edgeCount++;
@@ -106,9 +108,8 @@ function getEffectivePanZoom(r) {
 
 function createMatrices(r) {
 
-  function getTransformMatrix() {
+  function getTransformMatrix4x4() {
     const panzoom = getEffectivePanZoom(r);
-
     const mat = new Array(16).fill(0);
     mat[0] = panzoom.zoom;
     mat[5] = panzoom.zoom;
@@ -119,7 +120,18 @@ function createMatrices(r) {
     return mat;
   }
 
-  function getProjectionMatrix() {
+  function getTransformMatrix3x3() {
+    const panzoom = getEffectivePanZoom(r);
+    const mat = new Array(9).fill(0);
+    mat[0] = panzoom.zoom;
+    mat[4] = panzoom.zoom;
+    mat[6] = panzoom.x;
+    mat[7] = panzoom.y;
+    mat[8] = 1;
+    return mat;
+  }
+
+  function getProjectionMatrix4x4() {
     // maps the canvas space into clip space
     const width  = r.canvasWidth;
     const height = r.canvasHeight;
@@ -141,8 +153,21 @@ function createMatrices(r) {
     return mat;
   }
 
-  const transformMatrix  = getTransformMatrix();
-  const projectionMatrix = getProjectionMatrix();
+  function getProjectionMatrix3x3() {
+    // maps the canvas space into clip space
+    const width  = r.canvasWidth;
+    const height = r.canvasHeight;
+    const mat = new Array(9).fill(0);
+    mat[0] = 2 / width;
+    mat[4] = -2 / height;
+    mat[6] = -1;
+    mat[7] = 1;
+    mat[8] = 1;
+    return mat;
+  }
+
+  const transformMatrix  = getTransformMatrix3x3();
+  const projectionMatrix = getProjectionMatrix3x3();
 
   return {
     transformMatrix,
@@ -151,22 +176,45 @@ function createMatrices(r) {
 }
 
 
-function createShaderProgram(gl) {
+function compileShader(gl, type, source) {
+  const shader = gl.createShader(type);
+  gl.shaderSource(shader, source);
+  gl.compileShader(shader);
+  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+    throw new Error(gl.getShaderInfoLog(shader));
+  }
+  console.log(gl.getShaderInfoLog(shader));
+  return shader;
+}
+
+function createProgram(gl, vertexSource, fragementSource) {
+  const vertexShader = compileShader(gl, gl.VERTEX_SHADER, vertexSource);
+  const fragmentShader = compileShader(gl, gl.FRAGMENT_SHADER, fragementSource);
+  const program = gl.createProgram();
+  gl.attachShader(program, vertexShader);
+  gl.attachShader(program, fragmentShader);
+  gl.linkProgram(program);
+  if(!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    throw new Error('Could not initialize shaders');
+  }
+  return program;
+}
+
+function createNodeShaderProgram(gl) {
   const vertexShaderSource = `#version 300 es
     precision highp float;
 
-    uniform mat4 uTransformMatrix;
-    uniform mat4 uProjectionMatrix;
+    uniform mat3 uTransformMatrix;
+    uniform mat3 uProjectionMatrix;
 
-    in vec3 aVertexPosition;
+    in vec2 aVertexPosition;
     in vec3 aVertexColor;
 
     out vec4 vVertexColor;
 
     void main(void) {
       vVertexColor = vec4(aVertexColor, 1.0);
-      // vVertexColor = vec4(0.0, 1.0, 0.0, 1.0);
-      gl_Position = uProjectionMatrix * uTransformMatrix * vec4(aVertexPosition, 1.0);
+      gl_Position  = vec4(uProjectionMatrix * uTransformMatrix * vec3(aVertexPosition, 1.0), 1.0);
     }
   `;
 
@@ -181,35 +229,54 @@ function createShaderProgram(gl) {
     }
   `;
 
-  function compileShader(source, type) {
-    const shader = gl.createShader(type);
-    gl.shaderSource(shader, source);
-    gl.compileShader(shader);
-    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-      throw new Error(gl.getShaderInfoLog(shader));
-    }
-    console.log(gl.getShaderInfoLog(shader));
-    // gl.deleteShader(shader);
-    return shader;
-  }
-
-  const vertexShader = compileShader(vertexShaderSource, gl.VERTEX_SHADER);
-  const fragmentShader = compileShader(fragmentShaderSource, gl.FRAGMENT_SHADER);
-
-  const program = gl.createProgram();
-  gl.attachShader(program, vertexShader);
-  gl.attachShader(program, fragmentShader);
-  gl.linkProgram(program);
-  if(!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-    throw new Error('Could not initialize shaders');
-  }
+  const program = createProgram(gl, vertexShaderSource, fragmentShaderSource);
 
   program.aVertexPosition   = gl.getAttribLocation(program,  'aVertexPosition');
   program.aVertexColor      = gl.getAttribLocation(program,  'aVertexColor');
   program.uTransformMatrix  = gl.getUniformLocation(program, 'uTransformMatrix');
   program.uProjectionMatrix = gl.getUniformLocation(program, 'uProjectionMatrix');
 
-  gl.useProgram(program);
+  return program;
+}
+
+
+function createEdgeShaderProgram(gl) {
+  const vertexShaderSource = `#version 300 es
+    precision highp float;
+
+    uniform mat3 uTransformMatrix;
+    uniform mat3 uProjectionMatrix;
+
+    in vec2 aVertexPosition;
+    // in vec3 aVertexColor;
+
+    out vec4 vVertexColor;
+
+    void main(void) {
+      // vVertexColor = vec4(aVertexColor, 1.0);
+      vVertexColor = vec4(0.0, 1.0, 0.0, 1.0);
+      gl_Position  = vec4(uProjectionMatrix * uTransformMatrix * vec3(aVertexPosition, 1.0), 1.0);
+    }
+  `;
+
+  const fragmentShaderSource = `#version 300 es
+    precision highp float;
+
+    in vec4 vVertexColor;
+    out vec4 fragColor;
+
+    void main(void) {
+      fragColor = vVertexColor;
+    }
+  `;
+
+  const program = createProgram(gl, vertexShaderSource, fragmentShaderSource);
+
+  program.aVertexPosition   = gl.getAttribLocation(program,  'aVertexPosition');
+  // program.aVertexColor      = gl.getAttribLocation(program,  'aVertexColor');
+  program.uTransformMatrix  = gl.getUniformLocation(program, 'uTransformMatrix');
+  program.uProjectionMatrix = gl.getUniformLocation(program, 'uProjectionMatrix');
+
   return program;
 }
 
@@ -222,7 +289,7 @@ function bufferNodeData(gl, program, vertices) {
     const buffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices.nodeVertexArray), gl.STATIC_DRAW);
-    gl.vertexAttribPointer(program.aVertexPosition, 3, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribPointer(program.aVertexPosition, 2, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(program.aVertexPosition);
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
   }
@@ -244,11 +311,10 @@ function bufferNodeData(gl, program, vertices) {
 function bufferEdgeData(gl, program, vertices) {
   const vao = gl.createVertexArray();
   gl.bindVertexArray(vao);
-
   const buffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices.edgeVertexArray), gl.STATIC_DRAW);
-  gl.vertexAttribPointer(program.aVertexPosition, 3, gl.FLOAT, false, 0, 0);
+  gl.vertexAttribPointer(program.aVertexPosition, 2, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(program.aVertexPosition);
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
@@ -269,7 +335,6 @@ function drawSelectionRectangle(r, options) {
     context.translate(panzoom.x, panzoom.y);
     context.scale(panzoom.zoom, panzoom.zoom);
   }
-
   r.drawSelectionRectangle(options, setContextTransform);
 }
 
@@ -284,17 +349,14 @@ CRp.renderWebgl = function(options) {
 
   /** @type {WebGLRenderingContext} gl */
   const gl = r.data.contexts[r.WEBGL];
-  const program = r.data.webgl.program;
+  const nodeProgram = r.data.webgl.nodeProgram;
+  const edgeProgram = r.data.webgl.edgeProgram;
 
   if(r.data.webgl.needBuffer) {
-    console.log('needBuffer');
-
     const eles = r.getCachedZSortedEles(); 
     const vertices = createVertexArrays(eles);
-    console.log('vertices', vertices);
-
-    r.nodeVAO = bufferNodeData(gl, program, vertices);
-    r.edgeVAO = bufferEdgeData(gl, program, vertices);
+    r.nodeVAO = bufferNodeData(gl, nodeProgram, vertices);
+    r.edgeVAO = bufferEdgeData(gl, edgeProgram, vertices);
     r.data.webgl.needBuffer = false;
   }
 
@@ -306,15 +368,17 @@ CRp.renderWebgl = function(options) {
 
     { // EDGES
       gl.bindVertexArray(r.edgeVAO);
-      gl.uniformMatrix4fv(program.uTransformMatrix,  false, matrices.transformMatrix);
-      gl.uniformMatrix4fv(program.uProjectionMatrix, false, matrices.projectionMatrix);
+      gl.useProgram(edgeProgram);
+      gl.uniformMatrix3fv(edgeProgram.uTransformMatrix,  false, matrices.transformMatrix);
+      gl.uniformMatrix3fv(edgeProgram.uProjectionMatrix, false, matrices.projectionMatrix);
       gl.drawArrays(gl.LINES, 0, r.edgeVAO.count);
       gl.bindVertexArray(null);
     }
     { // Nodes
       gl.bindVertexArray(r.nodeVAO);
-      gl.uniformMatrix4fv(program.uTransformMatrix,  false, matrices.transformMatrix);
-      gl.uniformMatrix4fv(program.uProjectionMatrix, false, matrices.projectionMatrix);
+      gl.useProgram(nodeProgram);
+      gl.uniformMatrix3fv(nodeProgram.uTransformMatrix,  false, matrices.transformMatrix);
+      gl.uniformMatrix3fv(nodeProgram.uProjectionMatrix, false, matrices.projectionMatrix);
       gl.drawArrays(gl.TRIANGLES, 0, r.nodeVAO.count);
       gl.bindVertexArray(null);
     }

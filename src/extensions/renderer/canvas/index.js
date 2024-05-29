@@ -295,11 +295,6 @@ CRp.redrawHint = function( group, bool ){
     case 'select':
       r.data.canvasNeedsRedraw[ CRp.SELECT_BOX ] = bool;
       break;
-    case 'buffers':
-      if(r.data.webgl) {
-        r.data.webgl.needBuffer = true;
-      }
-      break;
   }
 };
 

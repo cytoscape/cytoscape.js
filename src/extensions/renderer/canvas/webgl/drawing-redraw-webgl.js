@@ -16,6 +16,13 @@ CRp.initWebgl = function(options) {
     edgeProgram,
     needBuffer: true,
   };
+
+  r.onUpdateEleCalcs(function invalidateBuffer(willDraw, eles) {
+    if(eles.length > 0) {
+      r.data.webgl.needBuffer = true;
+      console.log("elements changed: " + eles.length);
+    }
+  });
 }
 
 
@@ -51,6 +58,7 @@ function createVertexArrays(eles) {
       const leftX = pos.x - halfW;
       const rightX = pos.x + halfW;
   
+      // TODO use indexing to reduce the size of these arrays
       // 6 vertices per node (for now)
       nodeVertexArray.push(
         leftX, botY,
@@ -257,7 +265,7 @@ function bufferNodeData(r, gl, program, vertices) {
 }
 
 function createTestTextureCanvas(r) {
-  const canvas = r.makeOffscreenCanvas(200, 200);
+  const canvas = r.makeOffscreenCanvas(512, 512);
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = 'rgb(255 0 153)';

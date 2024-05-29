@@ -117,7 +117,7 @@ BRp.init = function( options ){
   r.registerCalculationListeners();
 };
 
-BRp.notify = function( eventName, eles ){
+BRp.notify = function( eventName, eles ) {
   var r = this;
   var cy = r.cy;
 
@@ -143,11 +143,6 @@ BRp.notify = function( eventName, eles ){
     || eventName === 'mount'
   ){
     r.invalidateCachedZSortedEles();
-    r.redrawHint('buffers', true);
-  }
-
-  if(eventName === 'bounds' || eventName === 'style') {
-    r.redrawHint('buffers', true);
   }
 
   if( eventName === 'viewport' ){

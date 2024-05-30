@@ -1,5 +1,6 @@
 import * as util from '../../../util';
 import * as math from '../../../math';
+import * as eleTextureCache from './ele-texture-cache';
 
 var CRp = {};
 
@@ -260,13 +261,31 @@ CRp.renderTo = function( cxt, zoom, pan, pxRatio ){
   } );
 };
 
+CRp.clearCanvas = function(){
+  var r = this;
+  var data = r.data;
+  function clear(context) {
+    context.clearRect(0, 0, r.canvasWidth, r.canvasHeight);
+  };
+  clear(data.contexts[ r.NODE ]);
+  clear(data.contexts[ r.DRAG ]);
+};
+
+
 CRp.render = function( options ){
   var r = this;
   options = options || util.staticEmptyObject();
 
+  var cy = r.cy; 
+
   if( r.webgl ){
-    r.renderWebgl( options );
-    return;
+    if( cy.zoom() > eleTextureCache.maxZoom ) {
+      r.clearWebgl();
+    } else {
+      r.clearCanvas();
+      r.renderWebgl( options );
+      return;
+    }
   }
 
   var forcedContext = options.forcedContext;
@@ -275,7 +294,6 @@ CRp.render = function( options ){
   var forcedZoom = options.forcedZoom;
   var forcedPan = options.forcedPan;
   var pixelRatio = options.forcedPxRatio === undefined ? this.getPixelRatio() : options.forcedPxRatio;
-  var cy = r.cy; 
   var data = r.data;
   var needDraw = data.canvasNeedsRedraw;
   var textureDraw = r.textureOnViewport && !forcedContext && (r.pinching || r.hoverData.dragging || r.swipePanning || r.data.wheelZooming);

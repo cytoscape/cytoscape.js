@@ -1,4 +1,5 @@
 import * as mat from './matrix';
+import * as eleTextureCache from '../ele-texture-cache';
 
 const CRp = {};
 
@@ -27,6 +28,12 @@ CRp.initWebgl = function(options) {
     }
   });
 }
+
+CRp.clearWebgl = function() {
+  const r = this;
+  const gl = r.data.contexts[r.WEBGL];
+  gl.clear(gl.COLOR_BUFFER_BIT);
+};
 
 
 function createVertexArrays(eles) {
@@ -264,29 +271,33 @@ function bufferNodeData(r, gl, program, vertices) {
 
   // texture(s)
   const layers = 2;
-  const textures = [];
-  const node = vertices.nodes[0];
+  const textures = new Array(layers);
+  const node = vertices.nodes[0]; // TODO temp
   
   for(let layer = 0; layer < layers; layer++) {
     const eleCache = getTextureForNode(r, node, layer);
     const texture = gl.createTexture();
-
+    textures[layer] = texture;
     gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, eleCache.width, eleCache.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, eleCache.texture.canvas);
-    textures.push(texture);
-
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
-    gl.generateMipmap(gl.TEXTURE_2D);
+    if(eleCache) {
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, eleCache.width, eleCache.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, eleCache.texture.canvas);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
+      gl.generateMipmap(gl.TEXTURE_2D);
+    } else {
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 0]));
+    }
     gl.bindTexture(gl.TEXTURE_2D, null);
   }
 
   const bind = () => {
     gl.bindVertexArray(vao);
     for(let layer = 0; layer < layers; layer++) {
-      gl.activeTexture(gl.TEXTURE0 + layer);
-      gl.bindTexture(gl.TEXTURE_2D, textures[layer]);
-      gl.uniform1i(program.layerUniforms[layer], layer);  // texture unit
+      if(textures[layer]) {
+        gl.activeTexture(gl.TEXTURE0 + layer);
+        gl.bindTexture(gl.TEXTURE_2D, textures[layer]);
+        gl.uniform1i(program.layerUniforms[layer], layer);  // texture unit
+      } 
     }
   };
   const unbind = () => {
@@ -305,10 +316,10 @@ function getTextureForNode(r, node, layer) {
   const { pixelRatio } = r;
   const cache = layer === 0 ? r.data.eleTxrCache : r.data.lblTxrCache;
   const reason = 'highQuality'; // what does this mean?
-  const lvl = Math.ceil(Math.log2(r.cy.zoom() * pixelRatio)); // not sure how to pick the lvl
+  const lvl = eleTextureCache.maxLvl;
   const bb = cache.getBoundingBox(node);
   const eleCache = cache.getElement(node, bb, pixelRatio, lvl, reason);
-  return eleCache;
+  return eleCache;  // may be null
 }
 
 function createTestTextureCanvas(r) {

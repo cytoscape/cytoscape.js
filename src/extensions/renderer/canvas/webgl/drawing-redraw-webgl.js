@@ -11,6 +11,8 @@ CRp.initWebgl = function(options) {
   gl.enable(gl.BLEND);
   gl.blendEquation(gl.FUNC_ADD);
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  
+  console.log('max texture', gl.getParameter(gl.MAX_TEXTURE_SIZE));
 
   const nodeProgram = createNodeShaderProgram(gl);
   const edgeProgram = createEdgeShaderProgram(gl);
@@ -44,6 +46,7 @@ function createVertexArrays(eles) {
   const edgeVertexArray = [];
   let nodeCount = 0;
   let edgeCount = 0;
+  let z = -90;
 
   // TODO How to handle z-order?
   for(let i = 0; i < eles.length; i++) {
@@ -71,12 +74,12 @@ function createVertexArrays(eles) {
       // TODO use indexing to reduce the size of these arrays
       // 6 vertices per node (for now)
       nodeVertexArray.push(
-        leftX, botY,
-        rightX, botY,
-        rightX, topY,
-        leftX, botY,
-        rightX, topY,
-        leftX, topY,
+        leftX, botY, z,
+        rightX, botY, z,
+        rightX, topY, z,
+        leftX, botY, z,
+        rightX, topY, z,
+        leftX, topY, z,
       );
 
       // 6 vertices per node (for now)
@@ -100,7 +103,7 @@ function createVertexArrays(eles) {
       // );
 
       nodeCount++;
-      // z++;
+      z++;
 
     } else {
       const edge = ele;
@@ -145,11 +148,18 @@ function createMatrices(r) {
   const height = r.canvasHeight;
   const panzoom = getEffectivePanZoom(r);
 
-  const transformMatrix  = mat.transformMatrix3x3(panzoom.x, panzoom.y, panzoom.zoom);
-  const projectionMatrix = mat.projectionMatrix3x3(width, height);
-  const matrix = mat.multiply3x3(projectionMatrix, transformMatrix);
+  const transformMatrix3  = mat.transformMatrix3x3(panzoom.x, panzoom.y, panzoom.zoom);
+  const projectionMatrix3 = mat.projectionMatrix3x3(width, height);
+  const matrix3 = mat.multiply3x3(projectionMatrix3, transformMatrix3);
+
+  const transformMatrix  = mat.transformMatrix4x4(panzoom.x, panzoom.y, panzoom.zoom);
+  const projectionMatrix = mat.projectionMatrix4x4(width, height);
+  const matrix = mat.multiply4x4(projectionMatrix, transformMatrix);
 
   return {
+    transformMatrix3,
+    projectionMatrix3,
+    matrix3,
     transformMatrix,
     projectionMatrix,
     matrix,
@@ -186,9 +196,9 @@ function createNodeShaderProgram(gl) {
   const vertexShaderSource = `#version 300 es
     precision highp float;
 
-    uniform mat3 uMatrix;
+    uniform mat4 uMatrix;
 
-    in vec2 aVertexPosition;
+    in vec3 aVertexPosition;
     // in vec3 aVertexColor;
     in vec2 aTexCoord;
 
@@ -198,7 +208,7 @@ function createNodeShaderProgram(gl) {
     void main(void) {
       // vVertexColor = vec4(aVertexColor, 1.0);
       vTexCoord = aTexCoord;
-      gl_Position = vec4(uMatrix * vec3(aVertexPosition, 1.0), 1.0);
+      gl_Position = uMatrix * vec4(aVertexPosition, 1.0);
     }
   `;
 
@@ -245,7 +255,7 @@ function bufferNodeData(r, gl, program, vertices) {
     const buffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices.nodeVertexArray), gl.STATIC_DRAW);
-    gl.vertexAttribPointer(program.aVertexPosition, 2, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribPointer(program.aVertexPosition, 3, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(program.aVertexPosition);
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
   }
@@ -447,14 +457,14 @@ CRp.renderWebgl = function(options) {
     { // EDGES
       gl.useProgram(edgeProgram);
       r.edgeBuffer.bind();
-      gl.uniformMatrix3fv(edgeProgram.uMatrix, false, matrices.matrix);
+      gl.uniformMatrix3fv(edgeProgram.uMatrix, false, matrices.matrix3);
       gl.drawArrays(gl.LINES, 0, r.edgeBuffer.count);
       r.edgeBuffer.unbind();
     }
     { // Nodes
       gl.useProgram(nodeProgram);
       r.nodeBuffer.bind();
-      gl.uniformMatrix3fv(nodeProgram.uMatrix, false, matrices.matrix);
+      gl.uniformMatrix4fv(nodeProgram.uMatrix, false, matrices.matrix);
       gl.drawArrays(gl.TRIANGLES, 0, r.nodeBuffer.count);
       r.nodeBuffer.unbind();
     }

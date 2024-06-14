@@ -1,8 +1,11 @@
 
-export function transformMatrix3x3(x, y, zoom) {
+export function transformMatrix3x3(x, y, scalex, scaley) {
+  if(scaley === undefined) {
+    scaley = scalex;
+  }
   const mat = new Array(9).fill(0);
-  mat[0] = zoom;
-  mat[4] = zoom;
+  mat[0] = scalex;
+  mat[4] = scaley;
   mat[6] = x;
   mat[7] = y;
   mat[8] = 1;

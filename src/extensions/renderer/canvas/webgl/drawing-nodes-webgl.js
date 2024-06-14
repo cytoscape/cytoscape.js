@@ -1,8 +1,8 @@
 // For rendering nodes
 import * as util from './webgl-util';
 import { assign, defaults } from '../../../../util';
+import * as mat from './matrix';
 
-   // texInfo: { atlasSize, texSize, texPerRow, texPerAtlas }
 const initDefaults = defaults({
   getKey: null,
   drawElement: null,
@@ -10,8 +10,6 @@ const initDefaults = defaults({
   getTransformMatrix: null,
   getRotationPoint: null,
   getRotationOffset: null,
-  zBoost: 0,
-  atlasSize: 8192,
   texSize: 1024,
 });
 
@@ -21,97 +19,12 @@ export class NodeDrawing {
     this.r = r;
     this.gl = gl;
 
-    const opts = initDefaults(options);
-    opts.texPerRow = Math.floor(opts.atlasSize / opts.texSize);
-    opts.texPerAtlas = opts.texPerRow * opts.texPerRow; // assume texture atlas is a square
-    assign(this, opts);
+    assign(this, initDefaults(options));
 
     this.program = this.createShaderProgram();
+    this.vao = this.createUnitQuadVAO();
 
-    this.nodeIdToStyleKey = new Map(); // style keys for nodes can change, this is how we remove old styles
-    this.styleKeyToAtlas  = new Map();
-
-    this.initialized = false;
-  }
-
-  isInitialized() {
-    return this.initialized;
-  }
-
-  initialize() { 
-    console.log("initialize");
-    // need to call on first frame
-    // TODO is there a better place to call initialize() ?
-    const eles = this.r.getCachedZSortedEles(); 
-    for(let i = 0; i < eles.length; i++) {
-      const ele = eles[i];
-      if(ele.isNode()) {
-        this.addNode(ele);
-      }
-    }
-    this.registerListeners();
-    this.initialized = true;
-  }
-
-  /**
-   * What can change?
-   * - Nodes can be added or removed
-   * - Node style changes
-   * - Node label changes
-   * - Node z-order changes (often happens on drag)
-   * - Node x/y changes (can happen on drag or layout or just programatically)
-   */
-  registerListeners() {
-    const { cy } = this.r;
-    cy.on('node position', evt => {
-      this.updatePosition(evt.target);
-    });
-    // cy.on('node style', evt => {
-    //   this.updateStyle(evt.target);
-    // });
-    // cy.on('node add', evt => {
-    //   this.addNode(evt.target);
-    // });
-    // cy.on('node remove', evt => {
-    //   this.removeNode(evt.target);
-    // });
-  }
-  
-  updatePosition(node) {
-    const styleKey = this.getKey(node);
-    const atlas = this.styleKeyToAtlas.get(styleKey);
-    if(atlas) {
-      atlas.updatePosition(node);
-    }
-  }
-
-  /**
-   * Assumes the node hasn't been added yet.
-   */
-  addNode(node) {
-    console.log("addNode", node.id());
-    const styleKey = this.getKey(node);
-    
-    if(this.styleKeyToAtlas.has(styleKey)) {
-      // styleKey is already in an atlas
-      const atlas = this.styleKeyToAtlas.get(styleKey);
-      atlas.addNode(node);
-    } else {
-      let atlas;
-      // styleKey needs to be added to an atlas
-      for(let a of this.styleKeyToAtlas.values()) {
-        if(!a.isFull()) {
-          atlas = a;
-          break;
-        }
-      } 
-      if(!atlas) {
-        console.log('create Atlas');
-        atlas = new Atlas(this);
-      }
-      this.styleKeyToAtlas.set(styleKey, atlas);
-      atlas.addNode(node);
-    }
+    this.styleKeyToTexture = new Map();
   }
 
   createShaderProgram() {
@@ -120,17 +33,17 @@ export class NodeDrawing {
     const vertexShaderSource = `#version 300 es
       precision highp float;
 
-      uniform mat4 uMatrix;
+      uniform mat3 uPanZoomMatrix;
+      uniform mat3 uNodeMatrix;
 
       in vec2 aVertexPosition;
-      in float aVertexZ;
       in vec2 aTexCoord;
 
       out vec2 vTexCoord;
 
       void main(void) {
         vTexCoord = aTexCoord;
-        gl_Position = uMatrix * vec4(aVertexPosition, aVertexZ, 1.0);
+        gl_Position = vec4(uPanZoomMatrix * uNodeMatrix * vec3(aVertexPosition, 1.0), 1.0);
       }
     `;
 
@@ -144,237 +57,123 @@ export class NodeDrawing {
       out vec4 outColor;
 
       void main(void) {
-        vec4 bodyColor = texture(uEleTexture, vTexCoord);
-        // vec4 bottomColor = texture(uEleTexture, vTexCoord);
-        // vec4 topColor = texture(uLabelTexture, vTexCoord);
-        // outColor = mix(bottomColor, topColor, topColor.a);
-        outColor = bodyColor;
+        outColor = texture(uEleTexture, vTexCoord);
+        // outColor = vec4(1.0, 0.0, 0.0, 1.0);
       }
     `;
 
     const program = util.createProgram(gl, vertexShaderSource, fragmentShaderSource);
 
-    program.uMatrix = gl.getUniformLocation(program, 'uMatrix');
-    program.uEleTexture = gl.getUniformLocation(program, 'uEleTexture');
-
-    program.aVertexPosition = gl.getAttribLocation(program,  'aVertexPosition');
-    program.aVertexZ = gl.getAttribLocation(program,  'aVertexZ');
+    program.uPanZoomMatrix = gl.getUniformLocation(program, 'uPanZoomMatrix');
+    program.uNodeMatrix = gl.getUniformLocation(program, 'uNodeMatrix');
+    program.aVertexPosition = gl.getAttribLocation(program, 'aVertexPosition');
     program.aTexCoord = gl.getAttribLocation(program, 'aTexCoord');
+    program.uEleTexture = gl.getUniformLocation(program, 'uEleTexture');
 
     return program;
   }
 
-  draw(transformMatrix) {
-    console.log('NodeDrawing draw()');
-    for(let atlas of new Set(this.styleKeyToAtlas.values())) {
-      atlas.draw(transformMatrix);
+  createUnitQuadVAO(node) {
+    const unitQuad = [
+      0, 0,  0, 1,  1, 0,
+      1, 0,  0, 1,  1, 1,
+    ];
+    const texQuad = [
+      0, 0,  0, 1,  1, 0,
+      1, 0,  0, 1,  1, 1,
+    ];
+  
+    const { gl, program } = this;
+
+    const vao = gl.createVertexArray();
+    gl.bindVertexArray(vao);
+    {
+      const buffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(unitQuad), gl.STATIC_DRAW);
+      gl.vertexAttribPointer(program.aVertexPosition, 2, gl.FLOAT, false, 0, 0);
+      gl.enableVertexAttribArray(program.aVertexPosition);
+      gl.bindBuffer(gl.ARRAY_BUFFER, null);
     }
-  }
-
-}
-
-
-class Atlas {
-  constructor(nodeDrawing) {
-    this.parent = nodeDrawing;
-
-    this.styleKeyToTexIndex = new Map();
-    this.styleKeyToNode = new Map(); // only need one node as representative for the style
-    this.nodes = new Set(); // is it ok to store the actual nodes? should we store IDs, or BBs instead?
-
-    // gl objects
-    this.vao = null;
-    this.texture = null;
-
-    // texture canvas
-    const { r, atlasSize, texPerAtlas } = this.parent;
-    this.textureCanvas = util.createTextureCanvas(r, atlasSize);
-    this.texNeedDraw = new Array(texPerAtlas).fill(true);
-    this.zNeedBuffer = true;
-    this.xyNeedBuffer = true;
-    this.texNeedBuffer = true;
-  }
-
-  isFull() {
-    const { texPerAtlas } = this.parent;
-    return this.styleKeyToTexIndex.size >= texPerAtlas;
-  }
-
-  addNode(node) {
-    const styleKey = this.parent.getKey(node);
-    this.styleKeyToNode.set(styleKey, node);
-    this.nodes.add(node);
-    
-    this.xyNeedBuffer = true;
-    this.zNeedBuffer = true;
-
-    if(!this.styleKeyToTexIndex.has(styleKey)) {
-      const texIndex = this.getAvailableTexIndex();
-      this.styleKeyToTexIndex.set(styleKey, texIndex);
+    {
+      const buffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(texQuad), gl.STATIC_DRAW);
+      gl.vertexAttribPointer(program.aTexCoord, 2, gl.FLOAT, false, 0, 0);
+      gl.enableVertexAttribArray(program.aTexCoord);
+      gl.bindBuffer(gl.ARRAY_BUFFER, null);
     }
+    gl.bindVertexArray(null);
+    return vao;
   }
 
-  updatePosition() {
-    console.log('updatePosition');
-    this.xyNeedBuffer = true;
-  }
-
-  getAvailableTexIndex() {
-    const { texPerAtlas } = this.parent;
-    const indices = [...this.styleKeyToTexIndex.values()];
-    for(let i = 0; i < texPerAtlas; i++) {
-      if(!indices.includes(i)) {
-        return i;
-      }
+  getTexture(node) {
+    const styleKey = this.getKey(node);
+    let texture = this.styleKeyToTexture.get(styleKey);
+    if(!texture) {
+      const canvas = this.drawTextureCanvas(node);
+      texture = this.bufferTexture(canvas);
+      this.styleKeyToTexture.set(styleKey, texture);
     }
-    throw new Error("No available texture index");
+    return texture;
   }
 
-  getTextureInfo(node, texIndex) {
-    const { texSize, texPerRow, getBoundingBox } = this.parent;
+
+  drawTextureCanvas(node) {
+    const { r, drawElement, texSize, getBoundingBox } = this;
+
+    // This stretches the drawing to fill a square texture, not sure if best approach.
+    // Not sure if using a square texture of a power of two is better performant.
     const bb = getBoundingBox(node);
-    const { w, h } = bb;
-    const row = Math.floor(texIndex / texPerRow);
-    const col = texIndex % texPerRow;
-    const scale = Math.min(texSize / w, texSize / h);
-    const xOffset = col * texSize;
-    const yOffset = row * texSize;
-    return {
-      row, col, scale, xOffset, yOffset, bb
-    };
-  }
+    const scalew = texSize / bb.w
+    const scaleh = texSize / bb.h;
 
-  drawTexture(node, texIndex) {
-    const { drawElement } = this.parent;
-    const { scale, xOffset, yOffset, bb } = this.getTextureInfo(node, texIndex);
-    const { context } = this.textureCanvas;
+    const textureCanvas = util.createTextureCanvas(r, texSize);
+    const { context } = textureCanvas;
+
     context.save();
-    context.translate(xOffset, yOffset);
-    context.scale(scale, scale);
+    context.scale(scalew, scaleh);
     drawElement(context, node, bb);
     context.restore();
+
+    return textureCanvas;
   }
 
-  createTextures() {
-    for(let [ styleKey, node ] of this.styleKeyToNode) {
-      const texIndex = this.styleKeyToTexIndex.get(styleKey);
-      if(this.texNeedDraw[texIndex]) {
-        this.drawTexture(node, texIndex);
-        this.texNeedDraw[texIndex] = false;
-      }
-    }
+  bufferTexture(textureCanvas) {
+    const { gl, texSize } = this;
+    const texture = gl.createTexture();
+
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize, texSize, 0, gl.RGBA, gl.UNSIGNED_BYTE, textureCanvas);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
+    gl.generateMipmap(gl.TEXTURE_2D);
+    gl.bindTexture(gl.TEXTURE_2D, null);
+
+    return texture;
   }
 
-  bufferArrays() {
-    const { gl, getKey, getBoundingBox, zBoost } = this.parent;
-    const { atlasSize, program } = this.parent;
+  draw(node, panZoomMatrix) {
+    console.log('NodeDrawing draw()', panZoomMatrix);
 
-    if(this.xyNeedBuffer || this.zNeedBuffer) { // TODO separate x/y/tex and z
-      console.log('buffering arrays');
-      const xyArray = [];
-      const zArray = [];
-      const texArray = [];
-      let zi = 0; // TODO TEMPORARY!!!
-
-      for(let node of this.nodes) {
-        const styleKey = getKey(node);
-        const texIndex = this.styleKeyToTexIndex.get(styleKey);
-
-        const { x1, x2, y1, y2, w, h } = getBoundingBox(node);
-        const { scale, xOffset, yOffset } = this.getTextureInfo(node, texIndex);
-
-        const d = atlasSize - 1;
-        const tx1 = xOffset / d;
-        const tx2 = (xOffset + (w * scale)) / d;
-        const ty1 = yOffset / d;
-        const ty2 = (yOffset + (h * scale)) / d;
-        const z = zi + zBoost;
-
-        xyArray.push(
-          x1, y2,   x2, y2,   x2, y1,  // triangle 1
-          x1, y2,   x2, y1,   x1, y1,  // triangle 2
-        );
-        zArray.push(
-          z,   z,   z,  // triangle 1
-          z,   z,   z,  // triangle 2
-        );
-        texArray.push(
-          tx1, ty2,   tx2, ty2,   tx2, ty1,  // triangle 1
-          tx1, ty2,   tx2, ty1,   tx1, ty1,  // triangle 2
-        );
-        zi++;
-      }
-
-      if(!this.vao) {
-        this.vao = gl.createVertexArray();
-      }
-
-      gl.bindVertexArray(this.vao);
-      { // x/y positions
-        const buffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(xyArray), gl.STATIC_DRAW);
-        gl.vertexAttribPointer(program.aVertexPosition, 2, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(program.aVertexPosition);
-        gl.bindBuffer(gl.ARRAY_BUFFER, null);
-      }
-      { // z positions
-        const buffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(zArray), gl.STATIC_DRAW);
-        gl.vertexAttribPointer(program.aVertexZ, 1, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(program.aVertexZ);
-        gl.bindBuffer(gl.ARRAY_BUFFER, null);
-      }
-      { // texture coords
-        const buffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(texArray), gl.STATIC_DRAW);
-        gl.vertexAttribPointer(program.aTexCoord, 2, gl.FLOAT, true, 0, 0);
-        gl.enableVertexAttribArray(program.aTexCoord);
-        gl.bindBuffer(gl.ARRAY_BUFFER, null);
-      }
-      gl.bindVertexArray(null);
-    }
-    this.xyNeedBuffer = false;
-    this.zNeedBuffer = false;
-  }
-
-  bufferTexture() {
-    if(this.texNeedBuffer) {
-      console.log('buffering texture');
-      const { gl, atlasSize } = this.parent;
-      if(!this.texture) {
-        this.texture = gl.createTexture();
-      }
-      gl.bindTexture(gl.TEXTURE_2D, this.texture);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, atlasSize, atlasSize, 0, gl.RGBA, gl.UNSIGNED_BYTE, this.textureCanvas);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
-      gl.generateMipmap(gl.TEXTURE_2D);
-      gl.bindTexture(gl.TEXTURE_2D, null);
-    }
-    this.texNeedBuffer = false;
-  }
-
-  draw(transformMatrix) {
-    console.log('atlas draw nodes', this.nodes.size);
-
-    this.createTextures();
-    this.bufferArrays();
-    this.bufferTexture();
-    return;
-
-    const { gl, program } = this.parent;
+    const { gl, program, vao } = this;
     gl.useProgram(program);
 
-    gl.bindVertexArray(this.vao);
+    const bb = this.getBoundingBox(node);
+    const { x1, y1, w, h } = bb;
+    const nodeMatrix = mat.transformMatrix3x3(x1, y1, w, h);
+
+    const texture = this.getTexture(node);
+
+    gl.bindVertexArray(vao);
     gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, this.texture);
+    gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.uniform1i(program.uEleTexture, 0);
 
-    gl.uniformMatrix4fv(program.uMatrix, false, transformMatrix);
-    gl.drawArrays(gl.TRIANGLES, 0, this.nodes.size * 6); // 6 verticies per node
+    gl.uniformMatrix3fv(program.uPanZoomMatrix, false, panZoomMatrix);
+    gl.uniformMatrix3fv(program.uNodeMatrix, false, nodeMatrix);
+
+    gl.drawArrays(gl.TRIANGLES, 0, 6); // 6 verticies per node
 
     gl.bindVertexArray(null);
     gl.bindTexture(gl.TEXTURE_2D, null);

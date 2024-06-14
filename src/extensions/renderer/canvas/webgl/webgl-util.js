@@ -23,8 +23,11 @@ export function createProgram(gl, vertexSource, fragementSource) {
   return program;
 }
 
-export function createTextureCanvas(r, size) {
-  const canvas = r.makeOffscreenCanvas(size, size);
+export function createTextureCanvas(r, width, height) {
+  if(height === undefined) {
+    height = width;
+  }
+  const canvas = r.makeOffscreenCanvas(width, height);
   const ctx = canvas.context = canvas.getContext('2d');
   // ctx.save();
   ctx.clearRect(0, 0, canvas.width, canvas.height);

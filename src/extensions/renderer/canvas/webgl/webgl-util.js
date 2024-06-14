@@ -26,10 +26,10 @@ export function createProgram(gl, vertexSource, fragementSource) {
 export function createTextureCanvas(r, size) {
   const canvas = r.makeOffscreenCanvas(size, size);
   const ctx = canvas.context = canvas.getContext('2d');
-  ctx.save();
+  // ctx.save();
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.strokeStyle = 'blue';
-  ctx.strokeRect(0, 0, canvas.width, canvas.height);
-  ctx.restore();
+  // ctx.strokeStyle = 'blue';
+  // ctx.strokeRect(0, 0, canvas.width, canvas.height);
+  // ctx.restore();
   return canvas;
 }

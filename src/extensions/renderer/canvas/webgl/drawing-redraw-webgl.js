@@ -12,15 +12,15 @@ CRp.initWebgl = function(options) {
   gl.clearColor(0, 0, 0, 0); // background color
   // enable alpha blending of textures
   gl.enable(gl.BLEND);
-  gl.blendEquation(gl.FUNC_ADD);
+  // gl.blendEquation(gl.FUNC_ADD);
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
   // enable z-coord across multiple draw calls.
   gl.enable(gl.DEPTH_TEST);
   
   // In WebGL2 these don't have to be powers of two, but why not use powers of two anyway, they might have better performance.
   // const atlasSize = Math.min(8192, gl.getParameter(gl.MAX_TEXTURE_SIZE));
-  const atlasSize = 8192;
-  const texSize = 1024;
+  const atlasSize = 1024; //8192;
+  const texSize = 256;
 
   // taken from canvas renderer constructor
   const getStyleKey = ele => ele[0]._private.nodeKey;
@@ -29,13 +29,25 @@ CRp.initWebgl = function(options) {
   const getLabelBox   = ele => { ele.boundingBox(); return ele[0]._private.labelBounds.main || emptyBb; };
 
   const drawNode = (context, node, bb) => {
-    r.drawNode(context, node, bb, false, false, true);
+    r.drawNode(context, node, bb, false, false, false);
+  };
+  const drawLabel = (context, node, bb) => {
+    r.drawElementText(context, node, bb, true, 'main', false);
   };
 
   r.nodeDrawing = new NodeDrawing(r, gl, {
     getKey: getStyleKey,
     getBoundingBox: getElementBox,
     drawElement: drawNode,
+    atlasSize,
+    texSize,
+  });
+
+  r.labelDrawing = new NodeDrawing(r, gl, {
+    getKey: getLabelKey,
+    getBoundingBox: getLabelBox,
+    drawElement: drawLabel,
+    zBoost: 0.5,
     atlasSize,
     texSize,
   });
@@ -87,11 +99,14 @@ function drawSelectionRectangle(r, options) {
 
 CRp.renderWebgl = function(options) {
   const r = this;
-  const { nodeDrawing } = r;
+  const { nodeDrawing, labelDrawing } = r;
 
   console.log('webgl render');
   if(!nodeDrawing.isInitialized()) {
     nodeDrawing.initialize();
+  }
+  if(!labelDrawing.isInitialized()) {
+    labelDrawing.initialize();
   }
   
   if(r.data.canvasNeedsRedraw[r.SELECT_BOX]) {
@@ -104,8 +119,16 @@ CRp.renderWebgl = function(options) {
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
     const matrix = createMatrix(r);
+    
+    labelDrawing.draw(matrix);
     nodeDrawing.draw(matrix);
   }
+
+  const nodeContext = r.data.contexts[r.NODE];
+  const firstAtlas = labelDrawing.styleKeyToAtlas.values().next().value;
+  nodeContext.drawImage(firstAtlas.textureCanvas, 0, 0);
+
+  console.log("")
 };
 
 export default CRp;

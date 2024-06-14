@@ -10,6 +10,7 @@ const initDefaults = defaults({
   getTransformMatrix: null,
   getRotationPoint: null,
   getRotationOffset: null,
+  zBoost: 0,
   atlasSize: 8192,
   texSize: 1024,
 });
@@ -38,6 +39,7 @@ export class NodeDrawing {
   }
 
   initialize() { 
+    console.log("initialize");
     // need to call on first frame
     // TODO is there a better place to call initialize() ?
     const eles = this.r.getCachedZSortedEles(); 
@@ -61,9 +63,9 @@ export class NodeDrawing {
    */
   registerListeners() {
     const { cy } = this.r;
-    // cy.on('node position', evt => {
-    //   this.updatePosition(evt.target);
-    // });
+    cy.on('node position', evt => {
+      this.updatePosition(evt.target);
+    });
     // cy.on('node style', evt => {
     //   this.updateStyle(evt.target);
     // });
@@ -75,18 +77,28 @@ export class NodeDrawing {
     // });
   }
   
+  updatePosition(node) {
+    const styleKey = this.getKey(node);
+    const atlas = this.styleKeyToAtlas.get(styleKey);
+    if(atlas) {
+      atlas.updatePosition(node);
+    }
+  }
 
   /**
    * Assumes the node hasn't been added yet.
    */
   addNode(node) {
+    console.log("addNode", node.id());
     const styleKey = this.getKey(node);
     
     if(this.styleKeyToAtlas.has(styleKey)) {
+      // styleKey is already in an atlas
       const atlas = this.styleKeyToAtlas.get(styleKey);
       atlas.addNode(node);
     } else {
       let atlas;
+      // styleKey needs to be added to an atlas
       for(let a of this.styleKeyToAtlas.values()) {
         if(!a.isFull()) {
           atlas = a;
@@ -94,9 +106,10 @@ export class NodeDrawing {
         }
       } 
       if(!atlas) {
+        console.log('create Atlas');
         atlas = new Atlas(this);
-        this.styleKeyToAtlas.set(styleKey, atlas);
       }
+      this.styleKeyToAtlas.set(styleKey, atlas);
       atlas.addNode(node);
     }
   }
@@ -152,7 +165,8 @@ export class NodeDrawing {
   }
 
   draw(transformMatrix) {
-    for(let atlas of this.styleKeyToAtlas.values()) {
+    console.log('NodeDrawing draw()');
+    for(let atlas of new Set(this.styleKeyToAtlas.values())) {
       atlas.draw(transformMatrix);
     }
   }
@@ -200,6 +214,11 @@ class Atlas {
     }
   }
 
+  updatePosition() {
+    console.log('updatePosition');
+    this.xyNeedBuffer = true;
+  }
+
   getAvailableTexIndex() {
     const { texPerAtlas } = this.parent;
     const indices = [...this.styleKeyToTexIndex.values()];
@@ -226,13 +245,11 @@ class Atlas {
   }
 
   drawTexture(node, texIndex) {
-    const { texSize, drawElement } = this.parent;
+    const { drawElement } = this.parent;
     const { scale, xOffset, yOffset, bb } = this.getTextureInfo(node, texIndex);
     const { context } = this.textureCanvas;
     context.save();
     context.translate(xOffset, yOffset);
-    context.strokeStyle = 'red';
-    context.strokeRect(0, 0, texSize, texSize);
     context.scale(scale, scale);
     drawElement(context, node, bb);
     context.restore();
@@ -240,11 +257,8 @@ class Atlas {
 
   createTextures() {
     for(let [ styleKey, node ] of this.styleKeyToNode) {
-      console.log('here', node.id());
       const texIndex = this.styleKeyToTexIndex.get(styleKey);
-      console.log('tex index', texIndex);
       if(this.texNeedDraw[texIndex]) {
-        console.log('drawing texture for ', node.id());
         this.drawTexture(node, texIndex);
         this.texNeedDraw[texIndex] = false;
       }
@@ -252,17 +266,17 @@ class Atlas {
   }
 
   bufferArrays() {
-    const { gl, getKey, getBoundingBox } = this.parent;
+    const { gl, getKey, getBoundingBox, zBoost } = this.parent;
     const { atlasSize, program } = this.parent;
 
     if(this.xyNeedBuffer || this.zNeedBuffer) { // TODO separate x/y/tex and z
+      console.log('buffering arrays');
       const xyArray = [];
       const zArray = [];
       const texArray = [];
-      let z = 0; // TODO TEMPORARY!!!
+      let zi = 0; // TODO TEMPORARY!!!
 
       for(let node of this.nodes) {
-        console.log('getting vertex data for ' + node.id());
         const styleKey = getKey(node);
         const texIndex = this.styleKeyToTexIndex.get(styleKey);
 
@@ -274,6 +288,7 @@ class Atlas {
         const tx2 = (xOffset + (w * scale)) / d;
         const ty1 = yOffset / d;
         const ty2 = (yOffset + (h * scale)) / d;
+        const z = zi + zBoost;
 
         xyArray.push(
           x1, y2,   x2, y2,   x2, y1,  // triangle 1
@@ -287,7 +302,7 @@ class Atlas {
           tx1, ty2,   tx2, ty2,   tx2, ty1,  // triangle 1
           tx1, ty2,   tx2, ty1,   tx1, ty1,  // triangle 2
         );
-        z++;
+        zi++;
       }
 
       if(!this.vao) {
@@ -301,6 +316,7 @@ class Atlas {
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(xyArray), gl.STATIC_DRAW);
         gl.vertexAttribPointer(program.aVertexPosition, 2, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(program.aVertexPosition);
+        gl.bindBuffer(gl.ARRAY_BUFFER, null);
       }
       { // z positions
         const buffer = gl.createBuffer();
@@ -308,6 +324,7 @@ class Atlas {
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(zArray), gl.STATIC_DRAW);
         gl.vertexAttribPointer(program.aVertexZ, 1, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(program.aVertexZ);
+        gl.bindBuffer(gl.ARRAY_BUFFER, null);
       }
       { // texture coords
         const buffer = gl.createBuffer();
@@ -325,7 +342,7 @@ class Atlas {
 
   bufferTexture() {
     if(this.texNeedBuffer) {
-      console.log('buffer texture');
+      console.log('buffering texture');
       const { gl, atlasSize } = this.parent;
       if(!this.texture) {
         this.texture = gl.createTexture();
@@ -341,12 +358,12 @@ class Atlas {
   }
 
   draw(transformMatrix) {
-    console.log('atlas draw');
-    console.log('nodes', this.nodes.size);
+    console.log('atlas draw nodes', this.nodes.size);
 
     this.createTextures();
     this.bufferArrays();
     this.bufferTexture();
+    return;
 
     const { gl, program } = this.parent;
     gl.useProgram(program);
@@ -360,6 +377,7 @@ class Atlas {
     gl.drawArrays(gl.TRIANGLES, 0, this.nodes.size * 6); // 6 verticies per node
 
     gl.bindVertexArray(null);
+    gl.bindTexture(gl.TEXTURE_2D, null);
   }
 
 }

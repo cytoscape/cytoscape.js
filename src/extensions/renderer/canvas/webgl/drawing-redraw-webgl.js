@@ -16,7 +16,7 @@ CRp.initWebgl = function(options, fns) {
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
   const getZeroRotation = () => 0;
-  const getLabelRotation = (r, ele) => r.getTextAngle(ele, null);
+  const getLabelRotation = (ele) => r.getTextAngle(ele, null);
   
   r.nodeDrawing = new NodeDrawing(r, gl, {
     getKey: fns.getStyleKey,
@@ -72,18 +72,37 @@ function getEffectivePanZoom(r) {
   };
 }
 
-function drawSelectionRectangle(r, options) {
-  function setContextTransform(context) {
-    const w = r.canvasWidth;
-    const h = r.canvasHeight;
-    const panzoom = getEffectivePanZoom(r);
+function setContextTransform(r, context) {
+  const w = r.canvasWidth;
+  const h = r.canvasHeight;
+  const panzoom = getEffectivePanZoom(r);
 
-    context.setTransform(1, 0, 0, 1, 0, 0);
-    context.clearRect(0, 0, w, h);
-    context.translate(panzoom.x, panzoom.y);
-    context.scale(panzoom.zoom, panzoom.zoom);
-  }
-  r.drawSelectionRectangle(options, setContextTransform);
+  context.setTransform(1, 0, 0, 1, 0, 0);
+  context.clearRect(0, 0, w, h);
+  context.translate(panzoom.x, panzoom.y);
+  context.scale(panzoom.zoom, panzoom.zoom);
+}
+
+function drawSelectionRectangle(r, options) {
+  r.drawSelectionRectangle(options, context => setContextTransform(r, context));
+}
+
+function drawAxes(r) { // for debgging
+  const context = r.data.contexts[ r.NODE ];
+  context.save();
+  setContextTransform(r, context);
+  context.fillStyle='red';
+  context.fillRect(-3, -3, 6, 6);
+  context.strokeStyle='red';
+  context.beginPath();
+  context.moveTo(-1000, 0);
+  context.lineTo(1000, 0);
+  context.stroke();
+  context.beginPath();
+  context.moveTo(0, -1000);
+  context.lineTo(0, 1000);
+  context.stroke();
+  context.restore();
 }
 
 CRp.renderWebgl = function(options) {
@@ -94,6 +113,8 @@ CRp.renderWebgl = function(options) {
   if(r.data.canvasNeedsRedraw[r.SELECT_BOX]) {
     drawSelectionRectangle(r, options);
   }
+
+  drawAxes(r);
 
   // from drawing-elements.js drawCachedElement()
   // r.drawElementUnderlay( context, ele );

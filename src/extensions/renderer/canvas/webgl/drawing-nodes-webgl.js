@@ -8,6 +8,7 @@ const initDefaults = defaults({
   drawElement: null,
   getBoundingBox: null,
   getTransformMatrix: null,
+  getRotation: null,
   getRotationPoint: null,
   getRotationOffset: null,
   texSize: 1024,
@@ -154,13 +155,29 @@ export class NodeDrawing {
     return texture;
   }
 
-  createTransformMatrix3x3(node) {
+  createTransformMatrix(node) {
+    // follows same pattern as CRp.drawCachedElementPortion(...)
     const bb = this.getBoundingBox(node);
-    const { x1, y1, w, h } = bb;
+    let x, y;
 
     const matrix = mat3.create();
-    mat3.translate(matrix, matrix, vec2.fromValues(x1, y1));
-    mat3.scale(matrix, matrix, vec2.fromValues(w, h));
+
+    const theta = this.getRotation(node);
+    if(theta !== 0) {
+      const { x:sx, y:sy } = this.getRotationPoint(node);
+      mat3.translate(matrix, matrix, vec2.fromValues(sx, sy));
+      mat3.rotate(matrix, matrix, theta);
+
+      const offset = this.getRotationOffset(node);
+      x = offset.x;
+      y = offset.y;
+    } else {
+      x = bb.x1;
+      y = bb.y1;
+    }
+    
+    mat3.translate(matrix, matrix, vec2.fromValues(x, y));
+    mat3.scale(matrix, matrix, vec2.fromValues(bb.w, bb.h));
 
     return matrix;
   }
@@ -170,11 +187,10 @@ export class NodeDrawing {
    * Draws one node.
    */
   draw(node, panZoomMatrix) {
-    console.log('NodeDrawing draw()', panZoomMatrix);
     const { gl, program, vao } = this;
     gl.useProgram(program);
 
-    const nodeMatrix = this.createTransformMatrix3x3(node);
+    const nodeMatrix = this.createTransformMatrix(node);
     const texture = this.getTexture(node);
 
     gl.bindVertexArray(vao);

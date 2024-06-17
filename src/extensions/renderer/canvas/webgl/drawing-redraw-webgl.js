@@ -132,22 +132,26 @@ CRp.renderWebgl = function(options) {
 
   // r.drawElementOverlay( context, ele );
 
-
   if(r.data.canvasNeedsRedraw[r.NODE]) {
     const gl = r.data.contexts[r.WEBGL];
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
     const panZoomMatrix = createPanZoomMatrix(r);
-
-    const eles = r.getCachedZSortedEles();
-    for(let i = 0; i < eles.length; i++) {
-      const ele = eles[i];
+    function draw(ele) {
       if(ele.isNode()) {
         const node = ele;
         nodeDrawing.draw(node, panZoomMatrix);
         nodeLabelDrawing.draw(node, panZoomMatrix);
       }
+    }
+
+    const eles = r.getCachedZSortedEles();
+    for(let i = 0; i < eles.nondrag.length; i++) {
+      draw(eles.nondrag[i]);
+    }
+    for(let i = 0; i < eles.drag.length; i++) {
+      draw(eles.drag[i]);
     }
   }
 

@@ -1,7 +1,7 @@
 // For rendering nodes
 import * as util from './webgl-util';
 import { assign, defaults } from '../../../../util';
-import * as mat from './matrix';
+import { mat3, vec2 } from 'gl-matrix';
 
 const initDefaults = defaults({
   getKey: null,
@@ -120,20 +120,21 @@ export class NodeDrawing {
 
 
   drawTextureCanvas(node) {
-    const { r, drawElement, texSize, getBoundingBox } = this;
-
+    // Don't apply rotation when creating a texture.
+    // The same texture can be used with different rotations.
+    const { r, texSize } = this;
     // This stretches the drawing to fill a square texture, not sure if best approach.
     // Not sure if using a square texture of a power of two is better performant.
-    const bb = getBoundingBox(node);
+    const bb = this.getBoundingBox(node);
     const scalew = texSize / bb.w
     const scaleh = texSize / bb.h;
 
     const textureCanvas = util.createTextureCanvas(r, texSize);
-    const { context } = textureCanvas;
 
+    const { context } = textureCanvas;
     context.save();
     context.scale(scalew, scaleh);
-    drawElement(context, node, bb);
+    this.drawElement(context, node, bb, true, false);
     context.restore();
 
     return textureCanvas;
@@ -153,16 +154,27 @@ export class NodeDrawing {
     return texture;
   }
 
+  createTransformMatrix3x3(node) {
+    const bb = this.getBoundingBox(node);
+    const { x1, y1, w, h } = bb;
+
+    const matrix = mat3.create();
+    mat3.translate(matrix, matrix, vec2.fromValues(x1, y1));
+    mat3.scale(matrix, matrix, vec2.fromValues(w, h));
+
+    return matrix;
+  }
+
+
+  /**
+   * Draws one node.
+   */
   draw(node, panZoomMatrix) {
     console.log('NodeDrawing draw()', panZoomMatrix);
-
     const { gl, program, vao } = this;
     gl.useProgram(program);
 
-    const bb = this.getBoundingBox(node);
-    const { x1, y1, w, h } = bb;
-    const nodeMatrix = mat.transformMatrix3x3(x1, y1, w, h);
-
+    const nodeMatrix = this.createTransformMatrix3x3(node);
     const texture = this.getTexture(node);
 
     gl.bindVertexArray(vao);

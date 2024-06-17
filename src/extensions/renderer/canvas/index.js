@@ -278,7 +278,18 @@ function CanvasRenderer( options ){
   tlbTxrCache.onDequeue(refineInLayers);
 
   if( options.webgl ) {
-    r.initWebgl( options );
+    r.initWebgl( options, {
+      getStyleKey,
+      getLabelKey,
+      drawElement,
+      drawLabel,
+      getElementBox,
+      getLabelBox,
+      getElementRotationPoint,
+      getElementRotationOffset,
+      getLabelRotationPoint,
+      getLabelRotationOffset
+    } );
   }
 }
 

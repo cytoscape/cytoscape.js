@@ -1,9 +1,11 @@
-import * as mat from './matrix';
+// import * as mat from './matrix';
 import { NodeDrawing } from './drawing-nodes-webgl';
+import { mat3, vec2 } from 'gl-matrix';
+
 
 const CRp = {};
 
-CRp.initWebgl = function(options) {
+CRp.initWebgl = function(options, fns) {
   const r = this;
   const gl = r.data.contexts[r.WEBGL];
 
@@ -12,30 +14,26 @@ CRp.initWebgl = function(options) {
   gl.enable(gl.BLEND);
   gl.blendEquation(gl.FUNC_ADD);
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+  const getZeroRotation = () => 0;
+  const getLabelRotation = (r, ele) => r.getTextAngle(ele, null);
   
-  // taken from canvas renderer constructor
-  const getStyleKey = ele => ele[0]._private.nodeKey;
-  const getLabelKey = ele => ele[0]._private.labelStyleKey;
-  const getElementBox = ele => { ele.boundingBox(); return ele[0]._private.bodyBounds; };
-  const getLabelBox   = ele => { ele.boundingBox(); return ele[0]._private.labelBounds.main || emptyBb; };
-
-  const drawNode = (context, node, bb) => {
-    r.drawNode(context, node, bb, false, false, false);
-  };
-  const drawLabel = (context, node, bb) => {
-    r.drawElementText(context, node, bb, true, 'main', false);
-  };
-
   r.nodeDrawing = new NodeDrawing(r, gl, {
-    getKey: getStyleKey,
-    getBoundingBox: getElementBox,
-    drawElement: drawNode,
+    getKey: fns.getStyleKey,
+    getBoundingBox: fns.getElementBox,
+    drawElement: fns.drawElement,
+    getRotation: getZeroRotation,
+    getRotationPoint: fns.getElementRotationPoint,
+    getRotationOffset: fns.getElementRotationOffset
   });
 
-  r.labelDrawing = new NodeDrawing(r, gl, {
-    getKey: getLabelKey,
-    getBoundingBox: getLabelBox,
-    drawElement: drawLabel,
+  r.nodeLabelDrawing = new NodeDrawing(r, gl, {
+    getKey: fns.getLabelKey,
+    getBoundingBox: fns.getLabelBox,
+    drawElement: fns.drawLabel,
+    getRotation: getLabelRotation,
+    getRotationPoint: fns.getLabelRotationPoint,
+    getRotationOffset: fns.getLabelRotationOffset
   });
 }
 
@@ -48,11 +46,17 @@ CRp.clearWebgl = function() {
 function createPanZoomMatrix(r) {
   const width = r.canvasWidth;
   const height = r.canvasHeight;
-  const panzoom = getEffectivePanZoom(r);
+  const { x, y, zoom } = getEffectivePanZoom(r);
 
-  const transformMatrix  = mat.transformMatrix3x3(panzoom.x, panzoom.y, panzoom.zoom);
-  const projectionMatrix = mat.projectionMatrix3x3(width, height);
-  const matrix = mat.multiply3x3(projectionMatrix, transformMatrix);
+  const transform = mat3.create();
+  mat3.translate(transform, transform, vec2.fromValues(x, y));
+  mat3.scale(transform, transform, vec2.fromValues(zoom, zoom));
+
+  const projection = mat3.create();
+  mat3.projection(projection, width, height);
+
+  const matrix = mat3.create();
+  mat3.multiply(matrix, projection, transform);
 
   return matrix;
 }
@@ -85,11 +89,28 @@ function drawSelectionRectangle(r, options) {
 CRp.renderWebgl = function(options) {
   const r = this;
   console.log('webgl render');
-  const { nodeDrawing, labelDrawing } = r;
+  const { nodeDrawing, nodeLabelDrawing } = r;
 
   if(r.data.canvasNeedsRedraw[r.SELECT_BOX]) {
     drawSelectionRectangle(r, options);
   }
+
+  // from drawing-elements.js drawCachedElement()
+  // r.drawElementUnderlay( context, ele );
+
+  // r.drawCachedElementPortion( context, ele, eleTxrCache, pxRatio, lvl, reason, getZeroRotation, getOpacity );
+  
+  // if( !isEdge || !badLine ){
+  //   r.drawCachedElementPortion( context, ele, lblTxrCache, pxRatio, lvl, reason, getLabelRotation, getTextOpacity );
+  // }
+
+  // if( isEdge && !badLine ){
+  //   r.drawCachedElementPortion( context, ele, slbTxrCache, pxRatio, lvl, reason, getSourceLabelRotation, getTextOpacity );
+  //   r.drawCachedElementPortion( context, ele, tlbTxrCache, pxRatio, lvl, reason, getTargetLabelRotation, getTextOpacity );
+  // }
+
+  // r.drawElementOverlay( context, ele );
+
 
   if(r.data.canvasNeedsRedraw[r.NODE]) {
     const gl = r.data.contexts[r.WEBGL];
@@ -104,7 +125,7 @@ CRp.renderWebgl = function(options) {
       if(ele.isNode()) {
         const node = ele;
         nodeDrawing.draw(node, panZoomMatrix);
-        labelDrawing.draw(node, panZoomMatrix);
+        nodeLabelDrawing.draw(node, panZoomMatrix);
       }
     }
   }

@@ -398,6 +398,11 @@ BRp.load = function(){
   r.registerBinding( r.container, 'mousedown', function mousedownHandler( e ){
     if( !eventInContainer(e) ){ return; }
 
+    // during left mouse button gestures, ignore other buttons
+    if (r.hoverData.which === 1 && e.which !== 1) {
+      return;
+    }
+
     e.preventDefault();
 
     blurActiveDomElement();
@@ -833,6 +838,11 @@ BRp.load = function(){
 
   let clickTimeout, didDoubleClick, prevClickTimeStamp;
   r.registerBinding( containerWindow, 'mouseup', function mouseupHandler( e ){ // eslint-disable-line no-undef
+    // during left mouse button gestures, ignore other buttons
+    if (r.hoverData.which === 1 && e.which !== 1 && r.hoverData.capture) {
+      return;
+    }
+
     var capture = r.hoverData.capture;
     if( !capture ){ return; }
     r.hoverData.capture = false;

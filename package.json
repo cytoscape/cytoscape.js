@@ -108,7 +108,7 @@
     "download-cli": "^1.0.5",
     "eslint": "^6.0.0",
     "esm": "^3.2.25",
-    "gh-pages": "^2.1.1",
+    "gh-pages": "^5.0.0",
     "handlebars": "^4.7.6",
     "heap": "^0.2.7",
     "highlight.js": "^10.0.0",

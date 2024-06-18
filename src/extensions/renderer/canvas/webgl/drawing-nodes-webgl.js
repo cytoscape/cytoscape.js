@@ -7,7 +7,6 @@ const initDefaults = defaults({
   getKey: null,
   drawElement: null,
   getBoundingBox: null,
-  getTransformMatrix: null,
   getRotation: null,
   getRotationPoint: null,
   getRotationOffset: null,
@@ -20,12 +19,18 @@ export class NodeDrawing {
     this.r = r;
     this.gl = gl;
 
-    assign(this, initDefaults(options));
+    // equal to the numer of texture units used by the fragment shader
+    this.maxInstances = 10; 
 
     this.program = this.createShaderProgram();
-    this.vao = this.createUnitQuadVAO();
+    this.vao = this.createVAO();
 
     this.styleKeyToTexture = new Map();
+    this.renderTypes = new Map(); // string -> object
+  }
+
+  addRenderType(type, options) {
+    this.renderTypes.set(type, initDefaults(options));
   }
 
   createShaderProgram() {
@@ -35,46 +40,72 @@ export class NodeDrawing {
       precision highp float;
 
       uniform mat3 uPanZoomMatrix;
-      uniform mat3 uNodeMatrix;
+
+      in mat3 aNodeMatrix;
 
       in vec2 aVertexPosition;
       in vec2 aTexCoord;
 
       out vec2 vTexCoord;
+      flat out int vTexId;
 
       void main(void) {
         vTexCoord = aTexCoord;
-        gl_Position = vec4(uPanZoomMatrix * uNodeMatrix * vec3(aVertexPosition, 1.0), 1.0);
+        vTexId = gl_InstanceID;
+        gl_Position = vec4(uPanZoomMatrix * aNodeMatrix * vec3(aVertexPosition, 1.0), 1.0);
       }
     `;
+
 
     const fragmentShaderSource = `#version 300 es
       precision highp float;
 
-      uniform sampler2D uEleTexture;
+      uniform sampler2D uTexture0;
+      uniform sampler2D uTexture1;
+      uniform sampler2D uTexture2;
+      uniform sampler2D uTexture3;
+      uniform sampler2D uTexture4;
+      uniform sampler2D uTexture5;
+      uniform sampler2D uTexture6;
+      uniform sampler2D uTexture7;
+      uniform sampler2D uTexture8;
+      uniform sampler2D uTexture9;
 
       in vec2 vTexCoord;
+      flat in int vTexId;
 
       out vec4 outColor;
 
       void main(void) {
-        outColor = texture(uEleTexture, vTexCoord);
-        // outColor = vec4(1.0, 0.0, 0.0, 1.0);
+        if     (vTexId == 0) outColor = texture(uTexture0, vTexCoord);
+        else if(vTexId == 1) outColor = texture(uTexture1, vTexCoord);
+        else if(vTexId == 2) outColor = texture(uTexture2, vTexCoord);
+        else if(vTexId == 3) outColor = texture(uTexture3, vTexCoord);
+        else if(vTexId == 4) outColor = texture(uTexture4, vTexCoord);
+        else if(vTexId == 5) outColor = texture(uTexture5, vTexCoord);
+        else if(vTexId == 6) outColor = texture(uTexture6, vTexCoord);
+        else if(vTexId == 7) outColor = texture(uTexture7, vTexCoord);
+        else if(vTexId == 8) outColor = texture(uTexture8, vTexCoord);
+        else if(vTexId == 9) outColor = texture(uTexture9, vTexCoord);
       }
     `;
 
     const program = util.createProgram(gl, vertexShaderSource, fragmentShaderSource);
 
     program.uPanZoomMatrix = gl.getUniformLocation(program, 'uPanZoomMatrix');
-    program.uNodeMatrix = gl.getUniformLocation(program, 'uNodeMatrix');
+    program.aNodeMatrix = gl.getUniformLocation(program, 'aNodeMatrix');
     program.aVertexPosition = gl.getAttribLocation(program, 'aVertexPosition');
     program.aTexCoord = gl.getAttribLocation(program, 'aTexCoord');
-    program.uEleTexture = gl.getUniformLocation(program, 'uEleTexture');
+
+    program.uTextures = [];
+    for(let i = 0; i < this.maxInstances; i++) {
+      program.uTextures.push(gl.getUniformLocation(program, 'uTexture' + i));
+    }
 
     return program;
   }
 
-  createUnitQuadVAO(node) {
+  createVAO() {
     const unitQuad = [
       0, 0,  0, 1,  1, 0,
       1, 0,  0, 1,  1, 1,
@@ -83,12 +114,14 @@ export class NodeDrawing {
       0, 0,  0, 1,  1, 0,
       1, 0,  0, 1,  1, 1,
     ];
+    // const texIds = Array.from({ length: this.maxInstances }, (v,i) => i);
   
     const { gl, program } = this;
 
     const vao = gl.createVertexArray();
     gl.bindVertexArray(vao);
-    {
+
+    { // node quad
       const buffer = gl.createBuffer();
       gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
       gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(unitQuad), gl.STATIC_DRAW);
@@ -96,7 +129,7 @@ export class NodeDrawing {
       gl.enableVertexAttribArray(program.aVertexPosition);
       gl.bindBuffer(gl.ARRAY_BUFFER, null);
     }
-    {
+    { // texture coords
       const buffer = gl.createBuffer();
       gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
       gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(texQuad), gl.STATIC_DRAW);
@@ -104,71 +137,84 @@ export class NodeDrawing {
       gl.enableVertexAttribArray(program.aTexCoord);
       gl.bindBuffer(gl.ARRAY_BUFFER, null);
     }
+    { // matrix data
+      this.matrixData = new Float32Array(this.maxInstances * 9);
+      this.matrixBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.matrixBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, this.matrixData.byteLength, gl.DYNAMIC_DRAW);
+
+      // each row of the matrix needs to be a separate attribute
+      for(let i = 0; i < 3; i++) {
+        const loc = program.aNodeMatrix + i;
+        gl.enableVertexAttribArray(loc);
+        gl.vertexAttribPointer(loc, 3, gl.FLOAT, false, 3 * 12, i * 12);
+        gl.vertexAttribDivisor(loc, 1);
+      }
+      gl.bindBuffer(gl.ARRAY_BUFFER, null);
+    }
+
     gl.bindVertexArray(null);
     return vao;
   }
 
-  getTexture(node) {
-    const styleKey = this.getKey(node);
+  createTexture(node, opts) {
+    const { r, gl  } = this;
+    const { texSize } = opts;
+
+    function drawTextureCanvas() {
+      // This stretches the drawing to fill a square texture, not sure if best approach.
+      const bb = opts.getBoundingBox(node);
+      const scalew = texSize / bb.w
+      const scaleh = texSize / bb.h;
+  
+      const textureCanvas = util.createTextureCanvas(r, texSize);
+  
+      const { context } = textureCanvas;
+      context.save();
+      context.scale(scalew, scaleh);
+      opts.drawElement(context, node, bb, true, false);
+      context.restore();
+  
+      return textureCanvas;
+    }
+
+    function bufferTexture(textureCanvas) {
+      const texture = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize, texSize, 0, gl.RGBA, gl.UNSIGNED_BYTE, textureCanvas);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
+      gl.generateMipmap(gl.TEXTURE_2D);
+      gl.bindTexture(gl.TEXTURE_2D, null);
+      return texture;
+    }
+
+    const styleKey = opts.getKey(node);
     let texture = this.styleKeyToTexture.get(styleKey);
     if(!texture) {
-      const canvas = this.drawTextureCanvas(node);
-      texture = this.bufferTexture(canvas);
+      const canvas = drawTextureCanvas();
+      texture = bufferTexture(canvas);
       this.styleKeyToTexture.set(styleKey, texture);
     }
+    texture.styleKey = styleKey; // for debug
     return texture;
   }
 
 
-  drawTextureCanvas(node) {
-    // Don't apply rotation when creating a texture.
-    // The same texture can be used with different rotations.
-    const { r, texSize } = this;
-    // This stretches the drawing to fill a square texture, not sure if best approach.
-    // Not sure if using a square texture of a power of two is better performant.
-    const bb = this.getBoundingBox(node);
-    const scalew = texSize / bb.w
-    const scaleh = texSize / bb.h;
-
-    const textureCanvas = util.createTextureCanvas(r, texSize);
-
-    const { context } = textureCanvas;
-    context.save();
-    context.scale(scalew, scaleh);
-    this.drawElement(context, node, bb, true, false);
-    context.restore();
-
-    return textureCanvas;
-  }
-
-  bufferTexture(textureCanvas) {
-    const { gl, texSize } = this;
-    const texture = gl.createTexture();
-
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize, texSize, 0, gl.RGBA, gl.UNSIGNED_BYTE, textureCanvas);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
-    gl.generateMipmap(gl.TEXTURE_2D);
-    gl.bindTexture(gl.TEXTURE_2D, null);
-
-    return texture;
-  }
-
-  createTransformMatrix(node) {
+  createTransformMatrix(node, opts) {
     // follows same pattern as CRp.drawCachedElementPortion(...)
-    const bb = this.getBoundingBox(node);
+    const bb = opts.getBoundingBox(node);
     let x, y;
 
     const matrix = mat3.create();
 
-    const theta = this.getRotation(node);
+    const theta = opts.getRotation(node);
     if(theta !== 0) {
-      const { x:sx, y:sy } = this.getRotationPoint(node);
+      const { x:sx, y:sy } = opts.getRotationPoint(node);
       mat3.translate(matrix, matrix, vec2.fromValues(sx, sy));
       mat3.rotate(matrix, matrix, theta);
 
-      const offset = this.getRotationOffset(node);
+      const offset = opts.getRotationOffset(node);
       x = offset.x;
       y = offset.y;
     } else {
@@ -182,26 +228,64 @@ export class NodeDrawing {
     return matrix;
   }
 
+  startBatch(panZoomMatrix) {
+    if(panZoomMatrix) {
+      this.panZoomMatrix = panZoomMatrix;
+    }
+    this.instances = 0;
+    this.textures = [];
+  }
 
-  /**
-   * Draws one node.
-   */
-  draw(node, panZoomMatrix) {
+
+  draw(type, node) {
+    console.log('draw');
+    const opts = this.renderTypes.get(type);
+
+    // TODO pass the array view to createTransformMatrix, no need to create a new instance every draw call
+    const nodeMatrix = this.createTransformMatrix(node, opts);
+    const matrixSize = 9; // 3x3
+    const byteOffset = this.instances * matrixSize * 4; // 4 bytes per float
+    const arrayView = new Float32Array(this.matrixData.buffer, byteOffset, matrixSize); // array view
+    arrayView.set(nodeMatrix);
+
+    const texture = this.createTexture(node, opts);
+    this.textures.push(texture);
+    this.instances++;
+
+    if(this.instances >= this.maxInstances) {
+      // end the current batch and start a new one
+      this.endBatch();
+      this.startBatch();
+    }
+  }
+
+  endBatch() {
+    if(this.instances === 0) 
+      return;
+
+    console.log('drawing node batch');
     const { gl, program, vao } = this;
+
     gl.useProgram(program);
-
-    const nodeMatrix = this.createTransformMatrix(node);
-    const texture = this.getTexture(node);
-
     gl.bindVertexArray(vao);
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.uniform1i(program.uEleTexture, 0);
 
-    gl.uniformMatrix3fv(program.uPanZoomMatrix, false, panZoomMatrix);
-    gl.uniformMatrix3fv(program.uNodeMatrix, false, nodeMatrix);
+    // upload the new matrix data
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.matrixBuffer);
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.matrixData);
+    gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
-    gl.drawArrays(gl.TRIANGLES, 0, 6); // 6 verticies per node
+    // Activate all the texture units that we need
+    for(let i = 0; i < this.instances; i++) {
+      gl.activeTexture(gl.TEXTURE0 + i);
+      gl.bindTexture(gl.TEXTURE_2D, this.textures[i]);
+      gl.uniform1i(program.uTextures[i], i);
+    }
+
+    // Set the matrix uniform
+    gl.uniformMatrix3fv(program.uPanZoomMatrix, false, this.panZoomMatrix);
+
+    // draw!
+    gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, this.instances); // 6 verticies per node
 
     gl.bindVertexArray(null);
     gl.bindTexture(gl.TEXTURE_2D, null);

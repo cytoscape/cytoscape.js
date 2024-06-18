@@ -18,16 +18,18 @@ CRp.initWebgl = function(options, fns) {
   const getZeroRotation = () => 0;
   const getLabelRotation = (ele) => r.getTextAngle(ele, null);
   
-  r.nodeDrawing = new NodeDrawing(r, gl, {
+  r.nodeDrawing = new NodeDrawing(r, gl);
+  
+  r.nodeDrawing.addRenderType('node', {
     getKey: fns.getStyleKey,
     getBoundingBox: fns.getElementBox,
     drawElement: fns.drawElement,
     getRotation: getZeroRotation,
     getRotationPoint: fns.getElementRotationPoint,
     getRotationOffset: fns.getElementRotationOffset
-  });
+  })
 
-  r.nodeLabelDrawing = new NodeDrawing(r, gl, {
+  r.nodeDrawing.addRenderType('node-label', {
     getKey: fns.getLabelKey,
     getBoundingBox: fns.getLabelBox,
     drawElement: fns.drawLabel,
@@ -108,7 +110,7 @@ function drawAxes(r) { // for debgging
 CRp.renderWebgl = function(options) {
   const r = this;
   console.log('webgl render');
-  const { nodeDrawing, nodeLabelDrawing } = r;
+  const { nodeDrawing } = r;
 
   if(r.data.canvasNeedsRedraw[r.SELECT_BOX]) {
     drawSelectionRectangle(r, options);
@@ -137,24 +139,27 @@ CRp.renderWebgl = function(options) {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
-    const panZoomMatrix = createPanZoomMatrix(r);
     function draw(ele) {
       if(ele.isNode()) {
-        const node = ele;
-        nodeDrawing.draw(node, panZoomMatrix);
-        nodeLabelDrawing.draw(node, panZoomMatrix);
+        nodeDrawing.draw('node', ele);
+        nodeDrawing.draw('node-label', ele);
       }
     }
 
+    const panZoomMatrix = createPanZoomMatrix(r);
+    nodeDrawing.startBatch(panZoomMatrix);
+
     const eles = r.getCachedZSortedEles();
+
     for(let i = 0; i < eles.nondrag.length; i++) {
       draw(eles.nondrag[i]);
     }
     for(let i = 0; i < eles.drag.length; i++) {
       draw(eles.drag[i]);
     }
-  }
 
+    nodeDrawing.endBatch();
+  }
 };
 
 export default CRp;

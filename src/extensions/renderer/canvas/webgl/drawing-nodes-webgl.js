@@ -1,7 +1,7 @@
 // For rendering nodes
 import * as util from './webgl-util';
-import { assign, defaults } from '../../../../util';
-import { mat3, vec2 } from 'gl-matrix';
+import { defaults } from '../../../../util';
+import { mat3 } from 'gl-matrix';
 
 const initDefaults = defaults({
   getKey: null,
@@ -114,7 +114,6 @@ export class NodeDrawing {
       0, 0,  0, 1,  1, 0,
       1, 0,  0, 1,  1, 1,
     ];
-    // const texIds = Array.from({ length: this.maxInstances }, (v,i) => i);
   
     const { gl, program } = this;
 
@@ -138,7 +137,16 @@ export class NodeDrawing {
       gl.bindBuffer(gl.ARRAY_BUFFER, null);
     }
     { // matrix data
-      this.matrixData = new Float32Array(this.maxInstances * 9);
+      const matrixSize = 9; // 3x3 matrix
+      this.matrixData = new Float32Array(this.maxInstances * matrixSize);
+
+      // use matrix views to set values directly into the matrixData array
+      this.matrixViews = new Array(this.maxInstances);
+      for(let i = 0; i < this.maxInstances; i++) {
+        const byteOffset = i * matrixSize * 4; // 4 bytes per float
+        this.matrixViews[i] = new Float32Array(this.matrixData.buffer, byteOffset, matrixSize); // array view
+      }
+
       this.matrixBuffer = gl.createBuffer();
       gl.bindBuffer(gl.ARRAY_BUFFER, this.matrixBuffer);
       gl.bufferData(gl.ARRAY_BUFFER, this.matrixData.byteLength, gl.DYNAMIC_DRAW);
@@ -201,17 +209,18 @@ export class NodeDrawing {
   }
 
 
-  createTransformMatrix(node, opts) {
+  setTransformMatrix(node, opts, matrix) {
+    // matrix is expected to be a 9 element array
     // follows same pattern as CRp.drawCachedElementPortion(...)
     const bb = opts.getBoundingBox(node);
     let x, y;
 
-    const matrix = mat3.create();
+    mat3.identity(matrix);
 
     const theta = opts.getRotation(node);
     if(theta !== 0) {
       const { x:sx, y:sy } = opts.getRotationPoint(node);
-      mat3.translate(matrix, matrix, vec2.fromValues(sx, sy));
+      mat3.translate(matrix, matrix, [sx, sy]);
       mat3.rotate(matrix, matrix, theta);
 
       const offset = opts.getRotationOffset(node);
@@ -222,11 +231,10 @@ export class NodeDrawing {
       y = bb.y1;
     }
     
-    mat3.translate(matrix, matrix, vec2.fromValues(x, y));
-    mat3.scale(matrix, matrix, vec2.fromValues(bb.w, bb.h));
-
-    return matrix;
+    mat3.translate(matrix, matrix, [x, y]);
+    mat3.scale(matrix, matrix, [bb.w, bb.h]);
   }
+
 
   startBatch(panZoomMatrix) {
     if(panZoomMatrix) {
@@ -236,17 +244,12 @@ export class NodeDrawing {
     this.textures = [];
   }
 
-
   draw(type, node) {
-    console.log('draw');
     const opts = this.renderTypes.get(type);
 
     // TODO pass the array view to createTransformMatrix, no need to create a new instance every draw call
-    const nodeMatrix = this.createTransformMatrix(node, opts);
-    const matrixSize = 9; // 3x3
-    const byteOffset = this.instances * matrixSize * 4; // 4 bytes per float
-    const arrayView = new Float32Array(this.matrixData.buffer, byteOffset, matrixSize); // array view
-    arrayView.set(nodeMatrix);
+    const matrixView = this.matrixViews[this.instances];
+    this.setTransformMatrix(node, opts, matrixView);
 
     const texture = this.createTexture(node, opts);
     this.textures.push(texture);
@@ -263,7 +266,7 @@ export class NodeDrawing {
     if(this.instances === 0) 
       return;
 
-    console.log('drawing node batch');
+    console.log('drawing nodes ' + this.instances);
     const { gl, program, vao } = this;
 
     gl.useProgram(program);

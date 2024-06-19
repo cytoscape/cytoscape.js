@@ -20,7 +20,8 @@ export class NodeDrawing {
     this.gl = gl;
 
     // equal to the numer of texture units used by the fragment shader
-    this.maxInstances = 10; 
+    this.maxInstances = gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS);
+    console.log('max texture units', this.maxInstances);
 
     this.program = this.createShaderProgram();
     this.vao = this.createVAO();
@@ -56,20 +57,13 @@ export class NodeDrawing {
       }
     `;
 
+    const idxs = Array.from({ length: this.maxInstances }, (v,i) => i);
 
     const fragmentShaderSource = `#version 300 es
       precision highp float;
 
-      uniform sampler2D uTexture0;
-      uniform sampler2D uTexture1;
-      uniform sampler2D uTexture2;
-      uniform sampler2D uTexture3;
-      uniform sampler2D uTexture4;
-      uniform sampler2D uTexture5;
-      uniform sampler2D uTexture6;
-      uniform sampler2D uTexture7;
-      uniform sampler2D uTexture8;
-      uniform sampler2D uTexture9;
+      // define texture unit for each node in the batch
+      ${idxs.map(i => `uniform sampler2D uTexture${i};`).join('\t\n')}
 
       in vec2 vTexCoord;
       flat in int vTexId;
@@ -77,16 +71,7 @@ export class NodeDrawing {
       out vec4 outColor;
 
       void main(void) {
-        if     (vTexId == 0) outColor = texture(uTexture0, vTexCoord);
-        else if(vTexId == 1) outColor = texture(uTexture1, vTexCoord);
-        else if(vTexId == 2) outColor = texture(uTexture2, vTexCoord);
-        else if(vTexId == 3) outColor = texture(uTexture3, vTexCoord);
-        else if(vTexId == 4) outColor = texture(uTexture4, vTexCoord);
-        else if(vTexId == 5) outColor = texture(uTexture5, vTexCoord);
-        else if(vTexId == 6) outColor = texture(uTexture6, vTexCoord);
-        else if(vTexId == 7) outColor = texture(uTexture7, vTexCoord);
-        else if(vTexId == 8) outColor = texture(uTexture8, vTexCoord);
-        else if(vTexId == 9) outColor = texture(uTexture9, vTexCoord);
+        ${idxs.map(i => `if(vTexId == ${i}) outColor = texture(uTexture${i}, vTexCoord);`).join('\n\telse ')}
       }
     `;
 

@@ -99,7 +99,7 @@ export class NodeDrawing {
 
     program.uTextures = [];
     for(let i = 0; i < this.maxInstances; i++) {
-      program.uTextures.push(gl.getUniformLocation(program, 'uTexture' + i));
+      program.uTextures.push(gl.getUniformLocation(program, `uTexture${i}`));
     }
 
     return program;
@@ -170,8 +170,9 @@ export class NodeDrawing {
     const { texSize } = opts;
 
     function drawTextureCanvas() {
-      // This stretches the drawing to fill a square texture, not sure if best approach.
       const bb = opts.getBoundingBox(node);
+
+      // This stretches the drawing to fill a square texture, not sure if best approach.
       const scalew = texSize / bb.w
       const scaleh = texSize / bb.h;
   
@@ -192,7 +193,7 @@ export class NodeDrawing {
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize, texSize, 0, gl.RGBA, gl.UNSIGNED_BYTE, textureCanvas);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
-      gl.generateMipmap(gl.TEXTURE_2D);
+      gl.generateMipmap(gl.TEXTURE_2D); // important!
       gl.bindTexture(gl.TEXTURE_2D, null);
       return texture;
     }
@@ -203,8 +204,8 @@ export class NodeDrawing {
       const canvas = drawTextureCanvas();
       texture = bufferTexture(canvas);
       this.styleKeyToTexture.set(styleKey, texture);
+      texture.styleKey = styleKey; // for debug
     }
-    texture.styleKey = styleKey; // for debug
     return texture;
   }
 
@@ -240,22 +241,22 @@ export class NodeDrawing {
     if(panZoomMatrix) {
       this.panZoomMatrix = panZoomMatrix;
     }
-    this.instances = 0;
+    this.instanceCount = 0;
     this.textures = [];
   }
 
-  draw(type, node) {
+  draw(node, type) {
     const opts = this.renderTypes.get(type);
 
-    // TODO pass the array view to createTransformMatrix, no need to create a new instance every draw call
-    const matrixView = this.matrixViews[this.instances];
+    // pass the array view to setTransformMatrix, no need to create a new instance every draw call
+    const matrixView = this.matrixViews[this.instanceCount];
     this.setTransformMatrix(node, opts, matrixView);
 
     const texture = this.createTexture(node, opts);
     this.textures.push(texture);
-    this.instances++;
+    this.instanceCount++;
 
-    if(this.instances >= this.maxInstances) {
+    if(this.instanceCount >= this.maxInstances) {
       // end the current batch and start a new one
       this.endBatch();
       this.startBatch();
@@ -263,10 +264,10 @@ export class NodeDrawing {
   }
 
   endBatch() {
-    if(this.instances === 0) 
+    if(this.instanceCount === 0) 
       return;
 
-    console.log('drawing nodes ' + this.instances);
+    console.log('drawing nodes ' + this.instanceCount);
     const { gl, program, vao } = this;
 
     gl.useProgram(program);
@@ -278,7 +279,7 @@ export class NodeDrawing {
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
     // Activate all the texture units that we need
-    for(let i = 0; i < this.instances; i++) {
+    for(let i = 0; i < this.instanceCount; i++) {
       gl.activeTexture(gl.TEXTURE0 + i);
       gl.bindTexture(gl.TEXTURE_2D, this.textures[i]);
       gl.uniform1i(program.uTextures[i], i);
@@ -288,10 +289,10 @@ export class NodeDrawing {
     gl.uniformMatrix3fv(program.uPanZoomMatrix, false, this.panZoomMatrix);
 
     // draw!
-    gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, this.instances); // 6 verticies per node
+    gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, this.instanceCount); // 6 verticies per node
 
     gl.bindVertexArray(null);
-    gl.bindTexture(gl.TEXTURE_2D, null);
+    gl.bindTexture(gl.TEXTURE_2D, null); // TODO is this right when having multiple texture units?
   }
 
 }

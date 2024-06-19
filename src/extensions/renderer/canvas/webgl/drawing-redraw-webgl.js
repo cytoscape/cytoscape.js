@@ -141,15 +141,15 @@ CRp.renderWebgl = function(options) {
 
     function draw(ele) {
       if(ele.isNode()) {
-        nodeDrawing.draw('node', ele);
-        nodeDrawing.draw('node-label', ele);
+        nodeDrawing.draw(ele, 'node');
+        nodeDrawing.draw(ele, 'node-label');
       }
     }
 
     const panZoomMatrix = createPanZoomMatrix(r);
-    nodeDrawing.startBatch(panZoomMatrix);
-
     const eles = r.getCachedZSortedEles();
+
+    nodeDrawing.startBatch(panZoomMatrix);
 
     for(let i = 0; i < eles.nondrag.length; i++) {
       draw(eles.nondrag[i]);

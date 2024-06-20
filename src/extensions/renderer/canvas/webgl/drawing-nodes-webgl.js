@@ -15,11 +15,10 @@ const initDefaults = defaults({
 
 
 export class NodeDrawing {
-  constructor(r, gl, options) {
+  constructor(r, gl) {
     this.r = r;
     this.gl = gl;
 
-    // equal to the numer of texture units used by the fragment shader
     this.maxInstances = gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS);
     console.log('max texture units', this.maxInstances);
 
@@ -44,7 +43,7 @@ export class NodeDrawing {
 
       in mat3 aNodeMatrix;
 
-      in vec2 aVertexPosition;
+      in vec2 aPosition;
       in vec2 aTexCoord;
 
       out vec2 vTexCoord;
@@ -53,7 +52,7 @@ export class NodeDrawing {
       void main(void) {
         vTexCoord = aTexCoord;
         vTexId = gl_InstanceID;
-        gl_Position = vec4(uPanZoomMatrix * aNodeMatrix * vec3(aVertexPosition, 1.0), 1.0);
+        gl_Position = vec4(uPanZoomMatrix * aNodeMatrix * vec3(aPosition, 1.0), 1.0);
       }
     `;
 
@@ -77,10 +76,13 @@ export class NodeDrawing {
 
     const program = util.createProgram(gl, vertexShaderSource, fragmentShaderSource);
 
-    program.uPanZoomMatrix = gl.getUniformLocation(program, 'uPanZoomMatrix');
-    program.aNodeMatrix = gl.getUniformLocation(program, 'aNodeMatrix');
-    program.aVertexPosition = gl.getAttribLocation(program, 'aVertexPosition');
+    // attributes
+    program.aNodeMatrix = gl.getAttribLocation(program, 'aNodeMatrix');
+    program.aPosition = gl.getAttribLocation(program, 'aPosition');
     program.aTexCoord = gl.getAttribLocation(program, 'aTexCoord');
+
+    // uniforms
+    program.uPanZoomMatrix = gl.getUniformLocation(program, 'uPanZoomMatrix');
 
     program.uTextures = [];
     for(let i = 0; i < this.maxInstances; i++) {
@@ -109,8 +111,8 @@ export class NodeDrawing {
       const buffer = gl.createBuffer();
       gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
       gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(unitQuad), gl.STATIC_DRAW);
-      gl.vertexAttribPointer(program.aVertexPosition, 2, gl.FLOAT, false, 0, 0);
-      gl.enableVertexAttribArray(program.aVertexPosition);
+      gl.vertexAttribPointer(program.aPosition, 2, gl.FLOAT, false, 0, 0);
+      gl.enableVertexAttribArray(program.aPosition);
       gl.bindBuffer(gl.ARRAY_BUFFER, null);
     }
     { // texture coords
@@ -270,7 +272,7 @@ export class NodeDrawing {
       gl.uniform1i(program.uTextures[i], i);
     }
 
-    // Set the matrix uniform
+    // Set the projection matrix uniform
     gl.uniformMatrix3fv(program.uPanZoomMatrix, false, this.panZoomMatrix);
 
     // draw!

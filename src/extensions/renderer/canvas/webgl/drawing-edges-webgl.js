@@ -83,55 +83,35 @@ export class EdgeDrawing {
     const vao = gl.createVertexArray();
     gl.bindVertexArray(vao);
 
-    { // vertices
-      const buffer = gl.createBuffer();
-      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(instanceGeometry), gl.STATIC_DRAW);
-      gl.vertexAttribPointer(program.aPosition, 2, gl.FLOAT, false, 0, 0);
-      gl.enableVertexAttribArray(program.aPosition);
-      gl.bindBuffer(gl.ARRAY_BUFFER, null);
-    }
+    util.createFloatBufferStaticDraw(gl, {
+      attributeLoc: program.aPosition,
+      dataArray: instanceGeometry,
+      size: 2
+    });
 
-    const stride = 2 * 4; // 2 vertices * 4 bytes
-    { // source points
-      this.sourceData = new Float32Array(this.maxInstances * 2);
-      this.sourceBuffer = gl.createBuffer();
-      gl.bindBuffer(gl.ARRAY_BUFFER, this.sourceBuffer);
-      gl.bufferData(gl.ARRAY_BUFFER, this.maxInstances * stride, gl.DYNAMIC_DRAW); 
-      gl.enableVertexAttribArray(program.aSource);
-      gl.vertexAttribPointer(program.aSource, 2, gl.FLOAT, false, this.sourceBuffer.stride, 0);
-      gl.vertexAttribDivisor(program.aSource, 1);
-    }
-    { // target points
-      this.targetData = new Float32Array(this.maxInstances * 2);
-      this.targetBuffer = gl.createBuffer();
-      gl.bindBuffer(gl.ARRAY_BUFFER, this.targetBuffer);
-      gl.bufferData(gl.ARRAY_BUFFER, this.maxInstances * stride, gl.DYNAMIC_DRAW); 
-      gl.enableVertexAttribArray(program.aTarget);
-      gl.vertexAttribPointer(program.aTarget, 2, gl.FLOAT, false, stride, 0);
-      gl.vertexAttribDivisor(program.aTarget, 1);
-    }
+    this.sourceBuffer = util.createFloatBufferDynamicDraw(gl, {
+      attributeLoc: program.aSource,
+      maxInstances: this.maxInstances,
+      size: 2
+    });
 
-    { // widths
-      this.widthData = new Float32Array(this.maxInstances);
-      this.widthBuffer = gl.createBuffer();
-      gl.bindBuffer(gl.ARRAY_BUFFER, this.widthBuffer);
-      gl.bufferData(gl.ARRAY_BUFFER, this.maxInstances * 4, gl.DYNAMIC_DRAW); 
-      gl.enableVertexAttribArray(program.aWidth);
-      gl.vertexAttribPointer(program.aWidth, 1, gl.FLOAT, false, 4, 0);
-      gl.vertexAttribDivisor(program.aWidth, 1);
-    }
+    this.targetBuffer = util.createFloatBufferDynamicDraw(gl, {
+      attributeLoc: program.aTarget,
+      maxInstances: this.maxInstances,
+      size: 2
+    });
 
-    // TODO allow different color for source and target
-    { // colors 
-      this.colorData = new Float32Array(this.maxInstances * 4);
-      this.colorBuffer = gl.createBuffer();
-      gl.bindBuffer(gl.ARRAY_BUFFER, this.colorBuffer);
-      gl.bufferData(gl.ARRAY_BUFFER, this.maxInstances * 4 * 4, gl.DYNAMIC_DRAW); 
-      gl.enableVertexAttribArray(program.aColor);
-      gl.vertexAttribPointer(program.aColor, 4, gl.FLOAT, false, 4 * 4, 0);
-      gl.vertexAttribDivisor(program.aColor, 1);
-    }
+    this.widthBuffer = util.createFloatBufferDynamicDraw(gl, {
+      attributeLoc: program.aWidth,
+      maxInstances: this.maxInstances,
+      size: 1
+    });
+
+    this.colorBuffer = util.createFloatBufferDynamicDraw(gl, {
+      attributeLoc: program.aColor,
+      maxInstances: this.maxInstances,
+      size: 4
+    });
 
     gl.bindVertexArray(null);
     return vao;
@@ -142,8 +122,6 @@ export class EdgeDrawing {
       this.panZoomMatrix = panZoomMatrix;
     }
     this.instanceCount = 0;
-    this.sourcePoints = [];
-    this.targetPoints = [];
   }
 
 
@@ -159,10 +137,11 @@ export class EdgeDrawing {
 
     const width = edge.pstyle('width').pfValue;
 
-    this.sourceData.set([sp.x, sp.y], this.instanceCount * 2);
-    this.targetData.set([tp.x, tp.y], this.instanceCount * 2);
-    this.widthData.set([width], this.instanceCount);
-    this.colorData.set([r, g, b, a], this.instanceCount * 4);
+    const i = this.instanceCount;
+    this.sourceBuffer.setDataAt([sp.x, sp.y], i);
+    this.targetBuffer.setDataAt([tp.x, tp.y], i);
+    this.widthBuffer.setDataAt([width], i);
+    this.colorBuffer.setDataAt([r, g, b, a], i);
 
     this.instanceCount++;
 
@@ -173,37 +152,27 @@ export class EdgeDrawing {
 
 
   endBatch() {
-    if(this.instanceCount === 0) 
+    const count = this.instanceCount;
+    if(count === 0) 
       return;
 
-    console.log('drawing edges', this.instanceCount);
+    console.log('drawing edges', count);
     const { gl, program, vao } = this;
 
     gl.useProgram(program);
     gl.bindVertexArray(vao);
 
-    // TODO bufferSubData calls should only buffer this.instanceCount amount of data
-    // source points
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.sourceBuffer);
-    gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.sourceData); //, 0, this.instanceCount * 2);
-
-    // target points
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.targetBuffer);
-    gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.targetData);
-
-    // widths
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.widthBuffer);
-    gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.widthData);
-
-    // colors
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.colorBuffer);
-    gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.colorData);
+    // buffer the attribute data
+    this.sourceBuffer.bufferSubData(count);
+    this.targetBuffer.bufferSubData(count);
+    this.widthBuffer.bufferSubData(count);
+    this.colorBuffer.bufferSubData(count);
 
     // Set the projection matrix uniform
     gl.uniformMatrix3fv(program.uPanZoomMatrix, false, this.panZoomMatrix);
 
     // draw!
-    gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, this.instanceCount); // 6 verticies per edge
+    gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, count); // 6 verticies per edge
 
     gl.bindVertexArray(null);
 

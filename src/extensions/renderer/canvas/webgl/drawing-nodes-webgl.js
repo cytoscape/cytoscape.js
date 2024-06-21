@@ -111,46 +111,22 @@ export class NodeDrawing {
     const vao = gl.createVertexArray();
     gl.bindVertexArray(vao);
 
-    { // node quad
-      const buffer = gl.createBuffer();
-      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(unitQuad), gl.STATIC_DRAW);
-      gl.vertexAttribPointer(program.aPosition, 2, gl.FLOAT, false, 0, 0);
-      gl.enableVertexAttribArray(program.aPosition);
-      gl.bindBuffer(gl.ARRAY_BUFFER, null);
-    }
-    { // texture coords
-      const buffer = gl.createBuffer();
-      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(texQuad), gl.STATIC_DRAW);
-      gl.vertexAttribPointer(program.aTexCoord, 2, gl.FLOAT, false, 0, 0);
-      gl.enableVertexAttribArray(program.aTexCoord);
-      gl.bindBuffer(gl.ARRAY_BUFFER, null);
-    }
-    { // matrix data
-      const matrixSize = 9; // 3x3 matrix
-      this.matrixData = new Float32Array(this.maxInstances * matrixSize);
+    util.createFloatBufferStaticDraw(gl, {
+      attributeLoc: program.aPosition,
+      dataArray: unitQuad,
+      size: 2
+    });
 
-      // use matrix views to set values directly into the matrixData array
-      this.matrixViews = new Array(this.maxInstances);
-      for(let i = 0; i < this.maxInstances; i++) {
-        const byteOffset = i * matrixSize * 4; // 4 bytes per float
-        this.matrixViews[i] = new Float32Array(this.matrixData.buffer, byteOffset, matrixSize); // array view
-      }
+    util.createFloatBufferStaticDraw(gl, {
+      attributeLoc: program.aTexCoord,
+      dataArray: texQuad,
+      size: 2
+    });
 
-      this.matrixBuffer = gl.createBuffer();
-      gl.bindBuffer(gl.ARRAY_BUFFER, this.matrixBuffer);
-      gl.bufferData(gl.ARRAY_BUFFER, this.matrixData.byteLength, gl.DYNAMIC_DRAW);
-
-      // each row of the matrix needs to be a separate attribute
-      for(let i = 0; i < 3; i++) {
-        const loc = program.aNodeMatrix + i;
-        gl.enableVertexAttribArray(loc);
-        gl.vertexAttribPointer(loc, 3, gl.FLOAT, false, 3 * 12, i * 12);
-        gl.vertexAttribDivisor(loc, 1);
-      }
-      gl.bindBuffer(gl.ARRAY_BUFFER, null);
-    }
+    this.matrixBuffer = util.create3x3MatrixBufferDynamicDraw(gl, {
+      attributeLoc: program.aNodeMatrix,
+      maxInstances: this.maxInstances
+    });
 
     gl.bindVertexArray(null);
     return vao;
@@ -178,22 +154,11 @@ export class NodeDrawing {
       return textureCanvas;
     }
 
-    function bufferTexture(textureCanvas) {
-      const texture = gl.createTexture();
-      gl.bindTexture(gl.TEXTURE_2D, texture);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize, texSize, 0, gl.RGBA, gl.UNSIGNED_BYTE, textureCanvas);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
-      gl.generateMipmap(gl.TEXTURE_2D); // important!
-      gl.bindTexture(gl.TEXTURE_2D, null);
-      return texture;
-    }
-
     const styleKey = opts.getKey(node);
     let texture = this.styleKeyToTexture.get(styleKey);
     if(!texture) {
       const canvas = drawTextureCanvas();
-      texture = bufferTexture(canvas);
+      texture = util.bufferTexture(gl, texSize, canvas);
       this.styleKeyToTexture.set(styleKey, texture);
       texture.styleKey = styleKey; // for debug
     }
@@ -239,12 +204,14 @@ export class NodeDrawing {
   draw(node, type) {
     const opts = this.renderTypes.get(type);
 
-    // pass the array view to setTransformMatrix, no need to create a new instance every draw call
-    const matrixView = this.matrixViews[this.instanceCount];
+    // pass the array view to setTransformMatrix
+    const matrixView = this.matrixBuffer.getMatrixView(this.instanceCount);
     this.setTransformMatrix(node, opts, matrixView);
 
+    // create the texture if needed
     const texture = this.createTexture(node, opts);
     this.textures.push(texture);
+
     this.instanceCount++;
 
     if(this.instanceCount >= this.maxInstances) {
@@ -253,22 +220,21 @@ export class NodeDrawing {
   }
 
   endBatch() {
-    if(this.instanceCount === 0) 
+    const count = this.instanceCount;
+    if(count === 0) 
       return;
 
-    console.log('drawing nodes', this.instanceCount);
+    console.log('drawing nodes', count);
     const { gl, program, vao } = this;
 
     gl.useProgram(program);
     gl.bindVertexArray(vao);
 
     // upload the new matrix data
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.matrixBuffer);
-    gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.matrixData);
-    gl.bindBuffer(gl.ARRAY_BUFFER, null);
+    this.matrixBuffer.bufferSubData();
 
     // Activate all the texture units that we need
-    for(let i = 0; i < this.instanceCount; i++) {
+    for(let i = 0; i < count; i++) {
       gl.activeTexture(gl.TEXTURE0 + i);
       gl.bindTexture(gl.TEXTURE_2D, this.textures[i]);
       gl.uniform1i(program.uTextures[i], i);
@@ -278,7 +244,7 @@ export class NodeDrawing {
     gl.uniformMatrix3fv(program.uPanZoomMatrix, false, this.panZoomMatrix);
 
     // draw!
-    gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, this.instanceCount); // 6 verticies per node
+    gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, count); // 6 verticies per node
 
     gl.bindVertexArray(null);
     gl.bindTexture(gl.TEXTURE_2D, null); // TODO is this right when having multiple texture units?

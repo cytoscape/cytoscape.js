@@ -1,4 +1,5 @@
 // import * as mat from './matrix';
+import { EdgeDrawing } from './drawing-edges-webgl';
 import { NodeDrawing } from './drawing-nodes-webgl';
 import { mat3, vec2 } from 'gl-matrix';
 
@@ -18,6 +19,7 @@ CRp.initWebgl = function(options, fns) {
   const getZeroRotation = () => 0;
   const getLabelRotation = (ele) => r.getTextAngle(ele, null);
   
+  r.edgeDrawing = new EdgeDrawing(r, gl);
   r.nodeDrawing = new NodeDrawing(r, gl);
   
   r.nodeDrawing.addRenderType('node', {
@@ -110,7 +112,7 @@ function drawAxes(r) { // for debgging
 CRp.renderWebgl = function(options) {
   const r = this;
   console.log('webgl render');
-  const { nodeDrawing } = r;
+  const { nodeDrawing, edgeDrawing } = r;
 
   if(r.data.canvasNeedsRedraw[r.SELECT_BOX]) {
     drawSelectionRectangle(r, options);
@@ -118,38 +120,35 @@ CRp.renderWebgl = function(options) {
 
   drawAxes(r);
 
-  // from drawing-elements.js drawCachedElement()
-  // r.drawElementUnderlay( context, ele );
-
-  // r.drawCachedElementPortion( context, ele, eleTxrCache, pxRatio, lvl, reason, getZeroRotation, getOpacity );
-  
-  // if( !isEdge || !badLine ){
-  //   r.drawCachedElementPortion( context, ele, lblTxrCache, pxRatio, lvl, reason, getLabelRotation, getTextOpacity );
-  // }
-
-  // if( isEdge && !badLine ){
-  //   r.drawCachedElementPortion( context, ele, slbTxrCache, pxRatio, lvl, reason, getSourceLabelRotation, getTextOpacity );
-  //   r.drawCachedElementPortion( context, ele, tlbTxrCache, pxRatio, lvl, reason, getTargetLabelRotation, getTextOpacity );
-  // }
-
-  // r.drawElementOverlay( context, ele );
+  // see drawing-elements.js drawCachedElement()
 
   if(r.data.canvasNeedsRedraw[r.NODE]) {
     const gl = r.data.contexts[r.WEBGL];
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
+    let prevEle;
     function draw(ele) {
       if(ele.isNode()) {
+        if(prevEle?.isEdge()) {
+          edgeDrawing.endBatch();
+        }
         nodeDrawing.draw(ele, 'node');
         nodeDrawing.draw(ele, 'node-label');
+      } else {
+        if(prevEle?.isNode()) {
+          nodeDrawing.endBatch();
+        }
+        edgeDrawing.draw(ele);
       }
+      prevEle = ele;
     }
 
     const panZoomMatrix = createPanZoomMatrix(r);
     const eles = r.getCachedZSortedEles();
 
     nodeDrawing.startBatch(panZoomMatrix);
+    edgeDrawing.startBatch(panZoomMatrix);
 
     for(let i = 0; i < eles.nondrag.length; i++) {
       draw(eles.nondrag[i]);
@@ -159,6 +158,7 @@ CRp.renderWebgl = function(options) {
     }
 
     nodeDrawing.endBatch();
+    edgeDrawing.endBatch();
   }
 };
 

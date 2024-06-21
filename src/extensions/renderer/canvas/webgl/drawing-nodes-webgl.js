@@ -15,6 +15,10 @@ const initDefaults = defaults({
 
 
 export class NodeDrawing {
+
+  /** 
+   * @param {WebGLRenderingContext} gl 
+   */
   constructor(r, gl) {
     this.r = r;
     this.gl = gl;
@@ -244,9 +248,7 @@ export class NodeDrawing {
     this.instanceCount++;
 
     if(this.instanceCount >= this.maxInstances) {
-      // end the current batch and start a new one
       this.endBatch();
-      this.startBatch();
     }
   }
 
@@ -254,7 +256,7 @@ export class NodeDrawing {
     if(this.instanceCount === 0) 
       return;
 
-    console.log('drawing nodes ' + this.instanceCount);
+    console.log('drawing nodes', this.instanceCount);
     const { gl, program, vao } = this;
 
     gl.useProgram(program);
@@ -280,6 +282,9 @@ export class NodeDrawing {
 
     gl.bindVertexArray(null);
     gl.bindTexture(gl.TEXTURE_2D, null); // TODO is this right when having multiple texture units?
+
+    // start another batch, even if not needed
+    this.startBatch();
   }
 
 }

@@ -117,8 +117,8 @@ export function create3x3MatrixBufferDynamicDraw(gl, { maxInstances, attributeLo
     matrixViews[i] = new Float32Array(matrixData.buffer, byteOffset, matrixSize); // array view
   }
 
-  const matrixBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, matrixBuffer);
+  const buffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
   gl.bufferData(gl.ARRAY_BUFFER, matrixData.byteLength, gl.DYNAMIC_DRAW);
 
   // each row of the matrix needs to be a separate attribute
@@ -130,14 +130,14 @@ export function create3x3MatrixBufferDynamicDraw(gl, { maxInstances, attributeLo
   }
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
-  matrixBuffer.getMatrixView = (i) => {
+  buffer.getMatrixView = (i) => {
     return matrixViews[i];
   };
 
-  matrixBuffer.bufferSubData = () => {
-    gl.bindBuffer(gl.ARRAY_BUFFER, matrixBuffer);
+  buffer.bufferSubData = () => {
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
     gl.bufferSubData(gl.ARRAY_BUFFER, 0, matrixData);
   };
 
-  return matrixBuffer;
-}cs
+  return buffer;
+}

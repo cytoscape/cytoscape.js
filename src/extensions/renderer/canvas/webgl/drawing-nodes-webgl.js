@@ -10,7 +10,7 @@ const initDefaults = defaults({
   getRotation: null,
   getRotationPoint: null,
   getRotationOffset: null,
-  texSize: 1024,
+  texSize: 2048,
 });
 
 
@@ -146,10 +146,8 @@ export class NodeDrawing {
       const textureCanvas = util.createTextureCanvas(r, texSize);
   
       const { context } = textureCanvas;
-      context.save();
       context.scale(scalew, scaleh);
       opts.drawElement(context, node, bb, true, false);
-      context.restore();
   
       return textureCanvas;
     }

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta http-equiv="content-type" content="text/html;charset=UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
+
+    <!-- <script>
+      document.write('<script src="http://' + (location.host || 'localhost').split(':')[0] +
+      ':35729/livereload.js?snipver=1"></' + 'script>')
+    </script>  -->
+
+    <script src="../livereload-setup.js"></script>
+
+    <link rel="shortcut icon" href="../images/favicon.png" />
+
+    <link rel="stylesheet" href="../style.css" />
+
+    <script>
+      var $ = function( sel ){ return document.querySelector(sel); };
+      var $$ = function( sel ){ return document.querySelectorAll(sel); };
+
+      // patches for IE:
+
+      if( NodeList.prototype.forEach == null ){
+        NodeList.prototype.forEach = function(fn){
+          var l = this.length;
+          var i, el;
+
+          for(i = 0; i < l; i++){
+            el = this[i];
+
+            fn(el, i, this);
+          }
+        };
+      }
+    </script>
+
+
+    <script src="../../build/cytoscape.umd.js"></script>
+
+    <title>cytoscape.js WebGL2 debug page</title>
+  </head>
+
+  <body>
+      <div id="cytoscape"></div>
+      <div id="bb"></div>
+      <div id="console"></div>
+
+      <div id="commands-show-area">
+        <button id="show-commands">+</button>
+      </div>
+
+      <div id="commands">
+
+        <button id="hide-commands">-</button>
+
+        <h2>Testing</h2>
+        <select id="test-type-select">
+        </select>
+
+      </div>
+
+
+      <script src="init.js"></script>
+  </body>
+
+</html>

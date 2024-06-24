@@ -81,6 +81,7 @@ BRp.init = function( options ){
   r.redraws = 0;
   r.showFps = options.showFps;
   r.debug = options.debug;
+  r.webgl = options.webgl;
 
   r.hideEdgesOnViewport = options.hideEdgesOnViewport;
   r.textureOnViewport = options.textureOnViewport;
@@ -100,7 +101,6 @@ BRp.init = function( options ){
   r.touchTapThreshold = options.touchTapThreshold;
   r.touchTapThreshold2 = options.touchTapThreshold * options.touchTapThreshold;
   r.tapholdDuration = 500;
-  r.webgl = options.webgl;
 
   r.bindings = [];
   r.beforeRenderCallbacks = [];

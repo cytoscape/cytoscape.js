@@ -635,7 +635,7 @@ CRp.render = function( options ){
 
 };
 
-
+let fpsHeight;
 
 CRp.drawSelectionRectangle = function(options, setContextTransform) {
   const r = this;
@@ -704,17 +704,23 @@ CRp.drawSelectionRectangle = function(options, setContextTransform) {
     if( r.showFps && timeToRender ){
       timeToRender = Math.round( timeToRender );
       var fps = Math.round( 1000 / timeToRender );
+      const text = '1 frame = ' + timeToRender + ' ms = ' + fps + ' fps';
 
       context.setTransform( 1, 0, 0, 1, 0, 0 );
 
       context.fillStyle = 'rgba(255, 0, 0, 0.75)';
       context.strokeStyle = 'rgba(255, 0, 0, 0.75)';
-      context.lineWidth = 1;
-      context.fillText( '1 frame = ' + timeToRender + ' ms = ' + fps + ' fps', 0, 20 );
+      // context.lineWidth = 1;
+      context.font = '30px Arial';
+      if(!fpsHeight) {
+        const dims = context.measureText(text);
+        fpsHeight = dims.actualBoundingBoxAscent;
+      }
+      context.fillText( text, 0, fpsHeight );
 
       var maxFps = 60;
-      context.strokeRect( 0, 30, 250, 20 );
-      context.fillRect( 0, 30, 250 * Math.min( fps / maxFps, 1 ), 20 );
+      context.strokeRect( 0, fpsHeight + 10, 250, 20 );
+      context.fillRect( 0, fpsHeight + 10, 250 * Math.min( fps / maxFps, 1 ), 20 );
     }
 
     if( !drawAllLayers ){

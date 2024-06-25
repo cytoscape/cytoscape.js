@@ -1,0 +1,212 @@
+{
+  "format_version" : "1.0",
+  "generated_by" : "cytoscape-3.10.3",
+  "target_cytoscapejs_version" : "~2.1",
+  "title" : "Enrichment Map TEP-Style",
+  "style" : [ {
+    "selector" : "node",
+    "css" : {
+      "shape" : "ellipse",
+      "width" : 20.0,
+      "background-color" : "rgb(240,240,240)",
+      "color" : "rgb(0,0,0)",
+      "border-width" : 1.0,
+      "font-family" : "SansSerif",
+      "font-weight" : "normal",
+      "background-opacity" : 0.8627450980392157,
+      "border-color" : "rgb(51,51,51)",
+      "height" : 20.0,
+      "font-size" : 12,
+      "border-opacity" : 0.8627450980392157,
+      "text-valign" : "center",
+      "text-halign" : "center",
+      "text-opacity" : 0.8627450980392157,
+      "content" : "data(EM1_GS_DESCR)"
+    }
+  }, {
+    "selector" : "node[EM1_GS_Type = 'SIG']",
+    "css" : {
+      "border-color" : "rgb(239,138,98)"
+    }
+  }, {
+    "selector" : "node",
+    "css" : {
+      "width" : "mapData(EM1_gs_size, 0, 1300, 20, 60)",
+      "height" : "mapData(EM1_gs_size, 0, 1300, 20, 60)"
+    }
+  }, {
+    "selector" : "node[EM1_GS_Type = 'ENR']",
+    "css" : {
+      "border-color" : "rgb(51,51,51)"
+    }
+  }, {
+    "selector" : "node[EM1_GS_Type = 'SIG']",
+    "css" : {
+      "shape" : "diamond"
+    }
+  }, {
+    "selector" : "node[EM1_GS_Type = 'ENR']",
+    "css" : {
+      "shape" : "ellipse"
+    }
+  }, {
+    "selector" : "node[EM1_Colouring_Data_Set_1_ > 1]",
+    "css" : {
+      "background-color" : "rgb(178,24,43)"
+    }
+  }, {
+    "selector" : "node[EM1_Colouring_Data_Set_1_ = 1]",
+    "css" : {
+      "background-color" : "rgb(178,24,43)"
+    }
+  }, {
+    "selector" : "node[EM1_Colouring_Data_Set_1_ > 0.995][EM1_Colouring_Data_Set_1_ < 1]",
+    "css" : {
+      "background-color" : "mapData(EM1_Colouring_Data_Set_1_,0.995,1,rgb(178,24,43),rgb(178,24,43))"
+    }
+  }, {
+    "selector" : "node[EM1_Colouring_Data_Set_1_ > 0.95][EM1_Colouring_Data_Set_1_ < 0.995]",
+    "css" : {
+      "background-color" : "mapData(EM1_Colouring_Data_Set_1_,0.95,0.995,rgb(214,96,77),rgb(214,96,77))"
+    }
+  }, {
+    "selector" : "node[EM1_Colouring_Data_Set_1_ > 0.9][EM1_Colouring_Data_Set_1_ < 0.95]",
+    "css" : {
+      "background-color" : "mapData(EM1_Colouring_Data_Set_1_,0.9,0.95,rgb(244,165,130),rgb(244,165,130))"
+    }
+  }, {
+    "selector" : "node[EM1_Colouring_Data_Set_1_ > 0][EM1_Colouring_Data_Set_1_ < 0.9]",
+    "css" : {
+      "background-color" : "mapData(EM1_Colouring_Data_Set_1_,0,0.9,rgb(247,247,247),rgb(247,247,247))"
+    }
+  }, {
+    "selector" : "node[EM1_Colouring_Data_Set_1_ > -0.9][EM1_Colouring_Data_Set_1_ < 0]",
+    "css" : {
+      "background-color" : "mapData(EM1_Colouring_Data_Set_1_,-0.9,0,rgb(247,247,247),rgb(247,247,247))"
+    }
+  }, {
+    "selector" : "node[EM1_Colouring_Data_Set_1_ > -0.95][EM1_Colouring_Data_Set_1_ < -0.9]",
+    "css" : {
+      "background-color" : "mapData(EM1_Colouring_Data_Set_1_,-0.95,-0.9,rgb(67,147,195),rgb(146,197,222))"
+    }
+  }, {
+    "selector" : "node[EM1_Colouring_Data_Set_1_ > -0.995][EM1_Colouring_Data_Set_1_ < -0.95]",
+    "css" : {
+      "background-color" : "mapData(EM1_Colouring_Data_Set_1_,-0.995,-0.95,rgb(33,102,172),rgb(146,197,222))"
+    }
+  }, {
+    "selector" : "node[EM1_Colouring_Data_Set_1_ > -1][EM1_Colouring_Data_Set_1_ < -0.995]",
+    "css" : {
+      "background-color" : "mapData(EM1_Colouring_Data_Set_1_,-1,-0.995,rgb(33,102,172),rgb(67,147,195))"
+    }
+  }, {
+    "selector" : "node[EM1_Colouring_Data_Set_1_ = -1]",
+    "css" : {
+      "background-color" : "rgb(33,102,172)"
+    }
+  }, {
+    "selector" : "node[EM1_Colouring_Data_Set_1_ < -1]",
+    "css" : {
+      "background-color" : "rgb(33,102,172)"
+    }
+  }, {
+    "selector" : "node:selected",
+    "css" : {
+      "background-color" : "rgb(255,255,0)"
+    }
+  }, {
+    "selector" : "edge",
+    "css" : {
+      "text-opacity" : 0.7843137254901961,
+      "opacity" : 0.7843137254901961,
+      "target-arrow-shape" : "none",
+      "font-family" : "SansSerif",
+      "font-weight" : "normal",
+      "source-arrow-color" : "rgb(0,0,0)",
+      "content" : "",
+      "target-arrow-color" : "rgb(0,0,0)",
+      "width" : 1.0,
+      "color" : "rgb(0,0,0)",
+      "line-color" : "rgb(64,64,64)",
+      "line-style" : "solid",
+      "font-size" : 10,
+      "source-arrow-shape" : "none"
+    }
+  }, {
+    "selector" : "edge[interaction = 'sig']",
+    "css" : {
+      "line-color" : "rgb(252,141,98)",
+      "target-arrow-color" : "rgb(252,141,98)",
+      "source-arrow-color" : "rgb(252,141,98)"
+    }
+  }, {
+    "selector" : "edge[interaction = 'Geneset_Overlap']",
+    "css" : {
+      "line-color" : "rgb(166,206,227)",
+      "target-arrow-color" : "rgb(166,206,227)",
+      "source-arrow-color" : "rgb(166,206,227)"
+    }
+  }, {
+    "selector" : "edge[interaction = 'Data Set 1']",
+    "css" : {
+      "line-color" : "rgb(166,206,227)",
+      "target-arrow-color" : "rgb(166,206,227)",
+      "source-arrow-color" : "rgb(166,206,227)"
+    }
+  }, {
+    "selector" : "edge[interaction = 'sig']",
+    "css" : {
+      "line-style" : "dashed"
+    }
+  }, {
+    "selector" : "edge[interaction = 'compound']",
+    "css" : {
+      "line-style" : "solid"
+    }
+  }, {
+    "selector" : "edge[EM1_similarity_coefficient > 1]",
+    "css" : {
+      "width" : 6.0
+    }
+  }, {
+    "selector" : "edge[EM1_similarity_coefficient = 1]",
+    "css" : {
+      "width" : 5.0
+    }
+  }, {
+    "selector" : "edge[EM1_similarity_coefficient > 0.375][EM1_similarity_coefficient < 1]",
+    "css" : {
+      "width" : "mapData(EM1_similarity_coefficient,0.375,1,1.0,5.0)"
+    }
+  }, {
+    "selector" : "edge[EM1_similarity_coefficient = 0.375]",
+    "css" : {
+      "width" : 1.0
+    }
+  }, {
+    "selector" : "edge[EM1_similarity_coefficient < 0.375]",
+    "css" : {
+      "width" : 0.5
+    }
+  }, {
+    "selector" : "edge[interaction = 'sig']",
+    "css" : {
+      "line-color" : "rgb(252,141,98)"
+    }
+  }, {
+    "selector" : "edge[interaction = 'Geneset_Overlap']",
+    "css" : {
+      "line-color" : "rgb(166,206,227)"
+    }
+  }, {
+    "selector" : "edge[interaction = 'Data Set 1']",
+    "css" : {
+      "line-color" : "rgb(166,206,227)"
+    }
+  }, {
+    "selector" : "edge:selected",
+    "css" : {
+      "line-color" : "rgb(255,0,0)"
+    }
+  } ]
+}

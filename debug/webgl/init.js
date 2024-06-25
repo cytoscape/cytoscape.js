@@ -1,59 +1,54 @@
 /* eslint-disable no-console, no-unused-vars */
-/* global $, cytoscape, options, cy */
+/* global $, cytoscape, options, cy, networks, styles */
 
-var cy, defaultSty, options;
+var cy;
+
+var params = {};
 
 (function(){
-  options = {
-    container: $('#cytoscape'),
-    renderer: {
-      name: 'canvas',
-      showFps: true
-    },
-    webgl: true,
-    layout: {
-      name: 'preset',
-      animate: false
-    },
 
-    style: [{
-        "selector": "node",
-        "style": {
-          "border-width": "12px",
-          "border-opacity": "0",
-          "width": "40px",
-          "height": "40px",
-          "font-size": "8px",
-          "text-valign": "center",
-          "text-wrap": "wrap",
-          "text-max-width": "80px",
-          "background-color": "lightblue",
-          "z-index": "1",
-          "label": "data(description)",
-          'text-outline-width': 2,
-          'color': '#fff',
-          'background-color': 'mapData(NES, -3.14, 3.14, blue, red)',
-          'text-outline-color': 'mapData(NES, -3.14, 3.14, blue, red)',
-        },
-      },
-      {
-        selector: 'edge',
-        style: {
-          'line-color' : '#888',
-          'line-opacity': 0.9,
-          'curve-style': 'haystack',
-          'haystack-radius': 0,
-          'width': ele => ele.data('similarity_coefficient') * 15,
-        }
-      },
-    ]
-  };
+  const urlParams = new URLSearchParams(window.location.search);
+  params.networkID = urlParams.get('networkID') || networks.def;
+  params.webgl  = urlParams.get('webgl') || false;
 
-  fetch('./em-network.json')
-    .then(res => res.json())
-    .then(json => {
-      options.elements = json.elements;
-      cy = cytoscape(options);
+  const network = networks[params.networkID];
+  const style = styles[params.networkID];
+
+
+  function load(elements, style) {
+    console.log('style', style);
+    options = {
+      container: $('#cytoscape'),
+  
+      renderer: {
+        name: 'canvas',
+        showFps: true,
+        webgl: params.webgl,
+      },
+
+      style: style,
+      elements: elements,
+      layout: network.layout
+    };
+    options.layout.animate = false;
+    cy = cytoscape(options);
+  }
+
+  if(style.file) {
+    console.log('loading style from file: ', style.file);
+    Promise.all([
+      fetch(network.file).then(res => res.json()),
+      fetch(style.file).then(res => res.json())
+    ]).then(([networkJson, styleJson]) => {
+      load(networkJson.elements, styleJson.style);
     });
+  } else {
+    fetch(network.file)
+    .then(res => res.json())
+    .then(networkJson => {
+      const style = styles[params.networkID];
+      load(networkJson.elements, style);
+    });
+  }
 
 })();

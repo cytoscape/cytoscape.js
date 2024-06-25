@@ -14,7 +14,7 @@
 
     <link rel="shortcut icon" href="../images/favicon.png" />
 
-    <link rel="stylesheet" href="../style.css" />
+    <link rel="stylesheet" href="./style.css" />
 
     <script>
       var $ = function( sel ){ return document.querySelector(sel); };
@@ -55,14 +55,40 @@
 
         <button id="hide-commands">-</button>
 
-        <h2>Testing</h2>
-        <select id="test-type-select">
-        </select>
+        <h2>Network</h2>
+        <select id="network-select">
+        </select><br />
+        <br />
+        <button id="fit-button">Fit to view</button> <br />
+        <br />
+        <h2>Settings</h2>
+        <div>
+          <input type="checkbox" id="webgl-check" checked />
+          <label for="webgl-check">Use WebGL2</label>
+        </div>
+        <!--
+        <div>
+          <input type="checkbox" id="show-labels" checked />
+          <label for="show-labels">Show Labels</label>
+        </div>
+        -->
+
+        <!--
+          What else to show...
+          - Toggle color mapping
+          - Toggle transparancy
+          - Style stuff...
+            - Images?
+          - Run a layout
+          - Delete selected elements
+          - Add elements??
+        -->
 
       </div>
 
-
+      <script src="networks.js"></script>
       <script src="init.js"></script>
+      <script src="actions.js"></script>
   </body>
 
 </html>

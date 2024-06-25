@@ -1,0 +1,205 @@
+{
+  "format_version" : "1.0",
+  "generated_by" : "cytoscape-3.10.3",
+  "target_cytoscapejs_version" : "~2.1",
+  "title" : "Coessentiality Network Avana-Style",
+  "style" : [ {
+    "selector" : "node",
+    "style" : {
+      "shape" : "ellipse",
+      "background-opacity" : 1.0,
+      "border-color" : "rgb(0,0,0)",
+      "border-opacity" : 1.0,
+      "font-size" : 14,
+      "font-family" : "Dialog",
+      "font-weight" : "normal",
+      "height" : 40.0,
+      "border-width" : 0.0,
+      "color" : "rgb(0,0,0)",
+      "width" : 40.0,
+      "text-valign" : "center",
+      "text-halign" : "center",
+      "background-color" : "rgb(102,102,102)",
+      "text-opacity" : 1.0,
+      "content" : "data(name)"
+    }
+  }, {
+    "selector" : "node[MCL = 1]",
+    "style" : {
+      "background-color" : "rgb(197,37,49)"
+    }
+  }, {
+    "selector" : "node[MCL = 2]",
+    "style" : {
+      "background-color" : "rgb(98,10,133)"
+    }
+  }, {
+    "selector" : "node[MCL = 3]",
+    "style" : {
+      "background-color" : "rgb(118,38,48)"
+    }
+  }, {
+    "selector" : "node[MCL = 4]",
+    "style" : {
+      "background-color" : "rgb(223,165,170)"
+    }
+  }, {
+    "selector" : "node[MCL = 5]",
+    "style" : {
+      "background-color" : "rgb(72,87,141)"
+    }
+  }, {
+    "selector" : "node[MCL = 6]",
+    "style" : {
+      "background-color" : "rgb(109,122,243)"
+    }
+  }, {
+    "selector" : "node[MCL = 7]",
+    "style" : {
+      "background-color" : "rgb(53,137,159)"
+    }
+  }, {
+    "selector" : "node[MCL = 8]",
+    "style" : {
+      "background-color" : "rgb(178,240,191)"
+    }
+  }, {
+    "selector" : "node[MCL = 9]",
+    "style" : {
+      "background-color" : "rgb(100,192,19)"
+    }
+  }, {
+    "selector" : "node[MCL = 10]",
+    "style" : {
+      "background-color" : "rgb(225,164,119)"
+    }
+  }, {
+    "selector" : "node[MCL = 11]",
+    "style" : {
+      "background-color" : "rgb(33,3,237)"
+    }
+  }, {
+    "selector" : "node[MCL = 12]",
+    "style" : {
+      "background-color" : "rgb(74,59,107)"
+    }
+  }, {
+    "selector" : "node[MCL = 13]",
+    "style" : {
+      "background-color" : "rgb(76,252,252)"
+    }
+  }, {
+    "selector" : "node[MCL = 14]",
+    "style" : {
+      "background-color" : "rgb(64,50,197)"
+    }
+  }, {
+    "selector" : "node[MCL = 15]",
+    "style" : {
+      "background-color" : "rgb(94,141,192)"
+    }
+  }, {
+    "selector" : "node[MCL = 16]",
+    "style" : {
+      "background-color" : "rgb(166,247,140)"
+    }
+  }, {
+    "selector" : "node[MCL = 17]",
+    "style" : {
+      "background-color" : "rgb(201,250,144)"
+    }
+  }, {
+    "selector" : "node[MCL = 18]",
+    "style" : {
+      "background-color" : "rgb(156,254,199)"
+    }
+  }, {
+    "selector" : "node[MCL = 19]",
+    "style" : {
+      "background-color" : "rgb(195,85,79)"
+    }
+  }, {
+    "selector" : "node[MCL = 20]",
+    "style" : {
+      "background-color" : "rgb(160,14,217)"
+    }
+  }, {
+    "selector" : "node[MCL = 21]",
+    "style" : {
+      "background-color" : "rgb(35,191,93)"
+    }
+  }, {
+    "selector" : "node[MCL = 22]",
+    "style" : {
+      "background-color" : "rgb(63,236,129)"
+    }
+  }, {
+    "selector" : "node[MCL = 23]",
+    "style" : {
+      "background-color" : "rgb(123,59,244)"
+    }
+  }, {
+    "selector" : "node[MCL = 24]",
+    "style" : {
+      "background-color" : "rgb(4,22,64)"
+    }
+  }, {
+    "selector" : "node[MCL = 25]",
+    "style" : {
+      "background-color" : "rgb(8,212,129)"
+    }
+  }, {
+    "selector" : "node[MCL = 26]",
+    "style" : {
+      "background-color" : "rgb(173,59,163)"
+    }
+  }, {
+    "selector" : "node[MCL = 27]",
+    "style" : {
+      "background-color" : "rgb(206,207,54)"
+    }
+  }, {
+    "selector" : "node[MCL = 28]",
+    "style" : {
+      "background-color" : "rgb(243,182,239)"
+    }
+  }, {
+    "selector" : "node[MCL = 29]",
+    "style" : {
+      "background-color" : "rgb(33,150,126)"
+    }
+  }, {
+    "selector" : "node[MCL = 30]",
+    "style" : {
+      "background-color" : "rgb(76,119,10)"
+    }
+  }, {
+    "selector" : "node:selected",
+    "style" : {
+      "background-color" : "rgb(255,255,0)"
+    }
+  }, {
+    "selector" : "edge",
+    "style" : {
+      "line-style" : "solid",
+      "opacity" : 1.0,
+      "target-arrow-shape" : "none",
+      "target-arrow-color" : "rgb(0,0,0)",
+      "width" : 12.0,
+      "font-family" : "Dialog",
+      "font-weight" : "normal",
+      "text-opacity" : 1.0,
+      "source-arrow-color" : "rgb(0,0,0)",
+      "font-size" : 10,
+      "color" : "rgb(0,0,0)",
+      "line-color" : "rgb(204,204,204)",
+      "source-arrow-shape" : "none",
+      "content" : "data(interaction)"
+    }
+  }, {
+    "selector" : "edge:selected",
+    "style" : {
+      "line-color" : "rgb(255,0,0)"
+    }
+  } ]
+}

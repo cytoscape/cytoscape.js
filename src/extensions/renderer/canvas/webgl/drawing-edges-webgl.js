@@ -14,7 +14,7 @@ export class EdgeDrawing {
     this.r = r;
     this.gl = gl;
 
-    this.maxInstances = 100; // TODO how to decide the max instances?
+    this.maxInstances = 1000; // TODO how to decide the max instances?
 
     this.program = this.createShaderProgram();
     this.vao = this.createVAO();
@@ -156,7 +156,6 @@ export class EdgeDrawing {
     if(count === 0) 
       return;
 
-    console.log('drawing edges', count);
     const { gl, program, vao } = this;
 
     gl.useProgram(program);

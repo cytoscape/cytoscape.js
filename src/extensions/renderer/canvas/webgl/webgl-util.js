@@ -31,11 +31,7 @@ export function createTextureCanvas(r, width, height) {
   }
   const canvas = r.makeOffscreenCanvas(width, height);
   const ctx = canvas.context = canvas.getContext('2d');
-  // ctx.save();
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  // ctx.strokeStyle = 'blue';
-  // ctx.strokeRect(0, 0, canvas.width, canvas.height);
-  // ctx.restore();
   return canvas;
 }
 
@@ -58,7 +54,7 @@ export function bufferTexture(gl, texSize, textureCanvas) {
 
 
 /** @param {WebGLRenderingContext} gl */
-export function createFloatBufferStaticDraw(gl, { attributeLoc, dataArray, size }) {
+export function createAttributeFloatBufferStaticDraw(gl, { attributeLoc, dataArray, size }) {
   const buffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(dataArray), gl.STATIC_DRAW);
@@ -75,7 +71,7 @@ export function createFloatBufferStaticDraw(gl, { attributeLoc, dataArray, size 
  * and buffer the data before a draw call.
  * @param {WebGLRenderingContext} gl 
  */
-export function createFloatBufferDynamicDraw(gl, { attributeLoc, maxInstances, size }) {
+export function createInstanceFloatBufferDynamicDraw(gl, { attributeLoc, maxInstances, size }) {
   const dataArray = new Float32Array(maxInstances * size);
   const buffer = gl.createBuffer();
   const stride = size * 4; // num elements * 4 bytes (float)

@@ -10,8 +10,89 @@ const initDefaults = defaults({
   getRotation: null,
   getRotationPoint: null,
   getRotationOffset: null,
-  texSize: 2048,
 });
+
+
+const texSize = 2048;
+const atlasSize = 8192;
+const texPerRow = Math.floor(atlasSize / texSize);
+const texPerAtlas = texPerRow * texPerRow;
+
+function getTexOffsets(texIndex) {
+  const row = Math.floor(texIndex / texPerRow);
+  const col = texIndex % texPerRow;
+  const xOffset = col * texSize;
+  const yOffset = row * texSize;
+  return { xOffset, yOffset };
+}
+
+
+class Atlas {
+  constructor() {
+    this.texture = null;
+    this.canvas = null;
+    this.index = 0;
+    this.buffered = false;
+  }
+
+  isFull() {
+    return this.index >= texPerAtlas;
+  }
+
+  buffer(gl) {
+    if(!this.buffered) {
+      this.texture = util.bufferTexture(gl, atlasSize, this.canvas);
+      this.buffered = true;
+      if(this.isFull()) {
+        this.canvas = null;
+      }
+      this.buffered = true;
+    }
+  }
+
+  draw(r, node, opts) {
+    if(this.isFull())
+      throw new Error("This Atlas is full!");
+
+    if(this.canvas === null)
+      this.canvas = util.createTextureCanvas(r, atlasSize);
+    
+    const { context } = this.canvas;
+    const { xOffset, yOffset } = getTexOffsets(this.index);
+
+    const bb = opts.getBoundingBox(node);
+    // This stretches the drawing to fill a square, not sure if best approach.
+    const scalew = texSize / bb.w;
+    const scaleh = texSize / bb.h;
+
+    context.save();
+    context.translate(xOffset, yOffset);
+    context.strokeStyle = 'red';
+    context.strokeRect(0, 0, texSize, texSize);
+    context.scale(scalew, scaleh);
+    opts.drawElement(context, node, bb, true, false);
+    context.restore();
+
+    this.buffered = false;
+    this.index++;
+  }
+
+  getTexCoords(index, node, opts) {
+    if(index < 0 || index >= texPerAtlas)
+      throw new Error("index out of range: " + index);
+    const bb = opts.getBoundingBox(node);
+    const { xOffset, yOffset } = getTexOffsets(index);
+    const scalew = texSize / bb.w;
+    const scaleh = texSize / bb.h;
+    const d = atlasSize - 1;
+    const tx1 = xOffset / d;
+    const tx2 = (xOffset + (bb.w * scalew)) / d;
+    const ty1 = yOffset / d;
+    const ty2 = (yOffset + (bb.h * scaleh)) / d;
+    return { tx1, tx2, ty1, ty2 };
+  }
+}
+
 
 
 export class NodeDrawing {
@@ -23,13 +104,20 @@ export class NodeDrawing {
     this.r = r;
     this.gl = gl;
 
-    this.maxInstances = gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS);
-    console.log('max texture units', this.maxInstances);
+    this.maxInstances = 1000;
+    this.maxAtlases = gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS);
+
+    console.log('max texture units', this.maxAtlases);
+    console.log('max texture size', gl.getParameter(gl.MAX_TEXTURE_SIZE));
 
     this.program = this.createShaderProgram();
     this.vao = this.createVAO();
 
-    this.styleKeyToTexture = new Map();
+    this.styleKeyToAtlas = new Map(); // need to know which texure atlas has the texture
+    this.styleKeyToTexIndex = new Map(); // which texture in the atlas for a node
+
+    this.currentAtlas = new Atlas();
+
     this.renderTypes = new Map(); // string -> object
   }
 
@@ -44,23 +132,24 @@ export class NodeDrawing {
       precision highp float;
 
       uniform mat3 uPanZoomMatrix;
+      
+      in vec2 aPosition; // instanced
 
       in mat3 aNodeMatrix;
-
-      in vec2 aPosition;
       in vec2 aTexCoord;
+      in float aTexId;
 
       out vec2 vTexCoord;
       flat out int vTexId;
 
       void main(void) {
         vTexCoord = aTexCoord;
-        vTexId = gl_InstanceID;
+        vTexId = int(aTexId);
         gl_Position = vec4(uPanZoomMatrix * aNodeMatrix * vec3(aPosition, 1.0), 1.0);
       }
     `;
 
-    const idxs = Array.from({ length: this.maxInstances }, (v,i) => i);
+    const idxs = Array.from({ length: this.maxAtlases }, (v,i) => i);
 
     const fragmentShaderSource = `#version 300 es
       precision highp float;
@@ -84,14 +173,18 @@ export class NodeDrawing {
     program.aNodeMatrix = gl.getAttribLocation(program, 'aNodeMatrix');
     program.aPosition = gl.getAttribLocation(program, 'aPosition');
     program.aTexCoord = gl.getAttribLocation(program, 'aTexCoord');
+    program.aTexId = gl.getAttribLocation(program, 'aTexId');
 
     // uniforms
     program.uPanZoomMatrix = gl.getUniformLocation(program, 'uPanZoomMatrix');
 
     program.uTextures = [];
-    for(let i = 0; i < this.maxInstances; i++) {
+    for(let i = 0; i < this.maxTextures; i++) {
       program.uTextures.push(gl.getUniformLocation(program, `uTexture${i}`));
     }
+
+    program.uTextures = [];
+    program.uTextures.push(gl.getUniformLocation(program, `uTexture0`));
 
     return program;
   }
@@ -101,26 +194,28 @@ export class NodeDrawing {
       0, 0,  0, 1,  1, 0,
       1, 0,  0, 1,  1, 1,
     ];
-    const texQuad = [
-      0, 0,  0, 1,  1, 0,
-      1, 0,  0, 1,  1, 1,
-    ];
   
     const { gl, program } = this;
 
     const vao = gl.createVertexArray();
     gl.bindVertexArray(vao);
 
-    util.createFloatBufferStaticDraw(gl, {
+    util.createAttributeFloatBufferStaticDraw(gl, {
       attributeLoc: program.aPosition,
       dataArray: unitQuad,
       size: 2
     });
 
-    util.createFloatBufferStaticDraw(gl, {
+    this.texCoordBuffer = util.createAttributeFloatBufferDynamicDraw(gl, { // no divisor
       attributeLoc: program.aTexCoord,
-      dataArray: texQuad,
-      size: 2
+      maxInstances: this.maxInstances,
+      size: 2 // per vertex
+    });
+
+    this.texIdBuffer = util.createInstanceFloatBufferDynamicDraw(gl, {
+      attributeLoc: program.aTexId,
+      maxInstances: this.maxInstances,
+      size: 1
     });
 
     this.matrixBuffer = util.create3x3MatrixBufferDynamicDraw(gl, {
@@ -132,35 +227,30 @@ export class NodeDrawing {
     return vao;
   }
 
-  createTexture(node, opts) {
-    const { r, gl  } = this;
-    const { texSize } = opts;
-
-    function drawTextureCanvas() {
-      const bb = opts.getBoundingBox(node);
-
-      // This stretches the drawing to fill a square texture, not sure if best approach.
-      const scalew = texSize / bb.w
-      const scaleh = texSize / bb.h;
-  
-      const textureCanvas = util.createTextureCanvas(r, texSize);
-  
-      const { context } = textureCanvas;
-      context.scale(scalew, scaleh);
-      opts.drawElement(context, node, bb, true, false);
-  
-      return textureCanvas;
-    }
-
+  getOrCreateTexture(node, opts) {
+    const { r } = this;
     const styleKey = opts.getKey(node);
-    let texture = this.styleKeyToTexture.get(styleKey);
-    if(!texture) {
-      const canvas = drawTextureCanvas();
-      texture = util.bufferTexture(gl, texSize, canvas);
-      this.styleKeyToTexture.set(styleKey, texture);
-      texture.styleKey = styleKey; // for debug
+
+    let atlas = this.styleKeyToAtlas.get(styleKey);
+    let texIndex = this.styleKeyToTexIndex.get(styleKey);
+
+    if(!atlas) {
+      if(this.currentAtlas.isFull()) {
+        this.currentAtlas = new Atlas();
+      }
+
+      atlas = this.currentAtlas;
+      texIndex = this.currentAtlas.index;
+
+      console.log('drawing texture for', styleKey);
+      atlas.draw(r, node, opts);
+
+      this.styleKeyToAtlas.set(styleKey, atlas);
+      this.styleKeyToTexIndex.set(styleKey, texIndex);
     }
-    return texture;
+
+    const texCoords = atlas.getTexCoords(texIndex, node, opts);
+    return { atlas, ...texCoords };
   }
 
 
@@ -196,19 +286,34 @@ export class NodeDrawing {
       this.panZoomMatrix = panZoomMatrix;
     }
     this.instanceCount = 0;
-    this.textures = [];
+    this.atlases = []; // up to 16 texture units for a draw call
   }
 
   draw(node, type) {
     const opts = this.renderTypes.get(type);
 
+    const { atlas, tx1, tx2, ty1, ty2 } = this.getOrCreateTexture(node, opts);
+
+    let texID = this.atlases.indexOf(atlas);
+    if(texID < 0) {
+      if(this.atlases.length === this.maxAtlases) {
+        this.endBatch();
+      }
+      this.atlases.push(atlas);
+      texID = this.atlases.length - 1;
+    }
+
+    const texCoords = [
+      tx1, ty2,   tx2, ty2,   tx2, ty1,  // triangle 1
+      tx1, ty2,   tx2, ty1,   tx1, ty1
+    ];
+
+    this.texCoordBuffer.setDataAt(texCoords, this.instanceCount, 6);
+    this.texIdBuffer.setDataAt([texID], this.instanceCount);
+
     // pass the array view to setTransformMatrix
     const matrixView = this.matrixBuffer.getMatrixView(this.instanceCount);
     this.setTransformMatrix(node, opts, matrixView);
-
-    // create the texture if needed
-    const texture = this.createTexture(node, opts);
-    this.textures.push(texture);
 
     this.instanceCount++;
 
@@ -222,19 +327,22 @@ export class NodeDrawing {
     if(count === 0) 
       return;
 
-    console.log('drawing nodes', count);
     const { gl, program, vao } = this;
 
     gl.useProgram(program);
     gl.bindVertexArray(vao);
 
     // upload the new matrix data
-    this.matrixBuffer.bufferSubData();
+    this.matrixBuffer.bufferSubData(count);
+    this.texIdBuffer.bufferSubData(count);
+    this.texCoordBuffer.bufferSubData(count);
 
     // Activate all the texture units that we need
-    for(let i = 0; i < count; i++) {
+    for(let i = 0; i < this.atlases.length; i++) {
+      const atlas = this.atlases[i];
+      atlas.buffer(gl); // if needed
       gl.activeTexture(gl.TEXTURE0 + i);
-      gl.bindTexture(gl.TEXTURE_2D, this.textures[i]);
+      gl.bindTexture(gl.TEXTURE_2D, atlas.texture);
       gl.uniform1i(program.uTextures[i], i);
     }
 

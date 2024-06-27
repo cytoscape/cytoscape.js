@@ -83,31 +83,31 @@ export class EdgeDrawing {
     const vao = gl.createVertexArray();
     gl.bindVertexArray(vao);
 
-    util.createFloatBufferStaticDraw(gl, {
+    util.createAttributeFloatBufferStaticDraw(gl, {
       attributeLoc: program.aPosition,
       dataArray: instanceGeometry,
       size: 2
     });
 
-    this.sourceBuffer = util.createFloatBufferDynamicDraw(gl, {
+    this.sourceBuffer = util.createInstanceFloatBufferDynamicDraw(gl, {
       attributeLoc: program.aSource,
       maxInstances: this.maxInstances,
       size: 2
     });
 
-    this.targetBuffer = util.createFloatBufferDynamicDraw(gl, {
+    this.targetBuffer = util.createInstanceFloatBufferDynamicDraw(gl, {
       attributeLoc: program.aTarget,
       maxInstances: this.maxInstances,
       size: 2
     });
 
-    this.widthBuffer = util.createFloatBufferDynamicDraw(gl, {
+    this.widthBuffer = util.createInstanceFloatBufferDynamicDraw(gl, {
       attributeLoc: program.aWidth,
       maxInstances: this.maxInstances,
       size: 1
     });
 
-    this.colorBuffer = util.createFloatBufferDynamicDraw(gl, {
+    this.colorBuffer = util.createInstanceFloatBufferDynamicDraw(gl, {
       attributeLoc: program.aColor,
       maxInstances: this.maxInstances,
       size: 4

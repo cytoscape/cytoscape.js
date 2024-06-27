@@ -19,8 +19,6 @@
 		<link rel="stylesheet" href="css/highlight/github.css">
 		<link rel="stylesheet" href="css/style.css">
 
-		<!-- This confirms that gh-pages@5 works https://github.com/cytoscape/cytoscape.js/pull/3240 -->
-
 	</head>
 
 	<body>
@@ -829,6 +827,15 @@
     <li>
         3.29
         <ul>
+            <li>
+                <a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues?q&#x3D;milestone%3A3.29.3+is%3Aclosed">3.29.3</a>
+            </li>
+            <li>
+                <a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues?q&#x3D;milestone%3A3.29.2+is%3Aclosed">3.29.2</a>
+            </li>
+            <li>
+                <a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues?q&#x3D;milestone%3A3.29.1+is%3Aclosed">3.29.1</a>
+            </li>
             <li>
                 <a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues?q&#x3D;milestone%3A3.29.0+is%3Aclosed">3.29.0</a>
             </li>
@@ -4439,6 +4446,24 @@ cy.center( j );
 
 
 							<div class="descr"><p>Get the extent of the viewport, a bounding box in model co-ordinates that lets you know what model positions are visible in the viewport.</p>
+</div>
+
+
+							<div class="details">
+									<h3 id="details">Details</h3>
+<p>This function returns a plain object bounding box with format <code>{ x1, y1, x2, y2, w, h }</code>.</p>
+
+							</div>
+						</div>
+						<div class="function">
+							<div class="name" id="cy.renderedExtent">
+								<span class="fn-name">cy.renderedExtent()</span>  <a href="#cy.renderedExtent"><span class="fa fa-bookmark"></span></a>
+								<span id="core/viewport-manipulation/cy.renderedExtent">&nbsp;</span>
+							</div>
+
+
+
+							<div class="descr"><p>Get the width and height of the viewport canvas in <a href="#notation/position">rendered (on-screen) points</a>.</p>
 </div>
 
 
@@ -16849,6 +16874,7 @@ A physics simulation layout that makes use of parallelism on the GPU to support 
 							<div class="section lvl3"><a class="toclink" href="#cy.width">cy.width() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#cy.height">cy.height() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#cy.extent">cy.extent() </a></div>
+							<div class="section lvl3"><a class="toclink" href="#cy.renderedExtent">cy.renderedExtent() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#cy.autolock">cy.autolock() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#cy.autoungrabify">cy.autoungrabify() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#cy.autounselectify">cy.autounselectify() </a></div>

@@ -12,10 +12,10 @@ const initDefaults = defaults({
   getRotationOffset: null,
 });
 
+const atlasSize = 8192; // square atlas, each side has this many pixels, should be power of 2
+const texPerRow = 5;
 
-const texSize = 2048;
-const atlasSize = 8192;
-const texPerRow = Math.floor(atlasSize / texSize);
+const texSize = Math.floor(atlasSize / texPerRow);
 const texPerAtlas = texPerRow * texPerRow;
 
 function getTexOffsets(texIndex) {
@@ -42,7 +42,6 @@ class Atlas {
   buffer(gl) {
     if(!this.buffered) {
       this.texture = util.bufferTexture(gl, atlasSize, this.canvas);
-      this.buffered = true;
       if(this.isFull()) {
         this.canvas = null;
       }
@@ -117,8 +116,6 @@ export class NodeDrawing {
 
       uniform mat3 uPanZoomMatrix;
       uniform int uAtlasSize;
-      // TODO don't need both of these, one can be computed from the other
-      uniform int uTexSize;
       uniform int uTexPerRow; 
       
       in vec2 aPosition; // instanced
@@ -134,15 +131,16 @@ export class NodeDrawing {
         int texIndex = int(aTexIndex);
         int row = texIndex / uTexPerRow;
         int col = texIndex % uTexPerRow;
+        int texSize = uAtlasSize / uTexPerRow;
 
-        int tx = col * uTexSize;
-        int ty = row * uTexSize;
+        int tx = col * texSize;
+        int ty = row * texSize;
 
         if(gl_VertexID == 2 || gl_VertexID == 3 || gl_VertexID == 5) {
-          tx += uTexSize - 1;
+          tx += texSize - 1;
         }
         if(gl_VertexID == 1 || gl_VertexID == 4 || gl_VertexID == 5) {
-          ty += uTexSize - 1;
+          ty += texSize - 1;
         }
 
         float d = float(uAtlasSize - 1);
@@ -183,7 +181,6 @@ export class NodeDrawing {
     // uniforms
     program.uPanZoomMatrix = gl.getUniformLocation(program, 'uPanZoomMatrix');
     program.uTexPerRow     = gl.getUniformLocation(program, 'uTexPerRow');
-    program.uTexSize       = gl.getUniformLocation(program, 'uTexSize');
     program.uAtlasSize     = gl.getUniformLocation(program, 'uAtlasSize');
 
     program.uTextures = [];
@@ -348,9 +345,8 @@ export class NodeDrawing {
 
     // Set the uniforms
     gl.uniformMatrix3fv(program.uPanZoomMatrix, false, this.panZoomMatrix);
-    gl.uniform1i(program.uTexPerRow, texPerRow);
-    gl.uniform1i(program.uTexSize, texSize);
     gl.uniform1i(program.uAtlasSize, atlasSize);
+    gl.uniform1i(program.uTexPerRow, texPerRow);
 
     // draw!
     gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, count); // 6 verticies per node

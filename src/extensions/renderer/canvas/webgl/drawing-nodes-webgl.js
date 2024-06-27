@@ -13,7 +13,7 @@ const initDefaults = defaults({
 });
 
 const atlasSize = 8192; // square atlas, each side has this many pixels, should be power of 2
-const texPerRow = 5;
+const texPerRow = 10;
 
 const texSize = Math.floor(atlasSize / texPerRow);
 const texPerAtlas = texPerRow * texPerRow;

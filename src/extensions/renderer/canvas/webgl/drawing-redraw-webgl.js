@@ -13,8 +13,8 @@ CRp.initWebgl = function(options, fns) {
   gl.clearColor(0, 0, 0, 0); // background color
   // enable alpha blending of textures
   gl.enable(gl.BLEND);
-  gl.blendEquation(gl.FUNC_ADD);
-  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  // we are using premultiplied alpha
+  gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
 
   const getZeroRotation = () => 0;
   const getLabelRotation = (ele) => r.getTextAngle(ele, null);

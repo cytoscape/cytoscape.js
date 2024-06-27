@@ -59,15 +59,15 @@ var styles = {
       "label": "data(description)",
       "text-outline-width": 2,
       "color": "#fff",
-      "background-color":   "mapData(NES, -3.14, 3.14, blue, red)",
-      "text-outline-color": "mapData(NES, -3.14, 3.14, blue, red)"
+      "background-color":   "mapData(NES, -3.14, 3.14, #0571b0, #ca0020)",
+      "text-outline-color": "mapData(NES, -3.14, 3.14, #0571b0, #ca0020)"
     }
   },
   {
     selector: "edge",
     style: {
       "line-color" : "#888",
-      "line-opacity": 0.9,
+      "line-opacity": 0.3,
       "curve-style": "haystack",
       "haystack-radius": 0,
       "width": ele => ele.data('similarity_coefficient') * 15,

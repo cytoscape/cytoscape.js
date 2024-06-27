@@ -56,6 +56,7 @@ export class EdgeDrawing {
 
       void main(void) {
         outColor = vColor;
+        outColor.rgb *= outColor.a; // webgl is expecting premultiplied alpha
       }
     `;
 

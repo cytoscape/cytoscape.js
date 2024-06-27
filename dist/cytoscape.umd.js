@@ -23869,8 +23869,8 @@ var printLayoutInfo;
       var overflow = ele.pstyle('text-overflow-wrap').value;
       var overflowAny = overflow === 'anywhere';
       var wrappedLines = [];
-      var wordsRegex = /[\s\u200b]+/;
-      var wordSeparator = overflowAny ? '' : ' ';
+      var separatorRegex = /[\s\u200b]+|$/g; // Include end of string to add last word
+
       for (var l = 0; l < lines.length; l++) {
         var line = lines[l];
         var lineDims = this.calculateLabelDimensions(ele, line);
@@ -23881,26 +23881,39 @@ var printLayoutInfo;
         }
         if (lineW > maxW) {
           // line is too long
-          var words = line.split(wordsRegex);
+          var separatorMatches = line.matchAll(separatorRegex);
           var subline = '';
-          for (var w = 0; w < words.length; w++) {
-            var word = words[w];
-            var testLine = subline.length === 0 ? word : subline + wordSeparator + word;
-            var testDims = this.calculateLabelDimensions(ele, testLine);
-            var testW = testDims.width;
-            if (testW <= maxW) {
-              // word fits on current line
-              subline += word + wordSeparator;
-            } else {
-              // word starts new line
-              if (subline) {
-                wrappedLines.push(subline);
+          var previousIndex = 0;
+          // Add fake match
+          var _iterator = _createForOfIteratorHelper(separatorMatches),
+            _step;
+          try {
+            for (_iterator.s(); !(_step = _iterator.n()).done;) {
+              var separatorMatch = _step.value;
+              var wordSeparator = separatorMatch[0];
+              var word = line.substring(previousIndex, separatorMatch.index);
+              previousIndex = separatorMatch.index + wordSeparator.length;
+              var testLine = subline.length === 0 ? word : subline + word + wordSeparator;
+              var testDims = this.calculateLabelDimensions(ele, testLine);
+              var testW = testDims.width;
+              if (testW <= maxW) {
+                // word fits on current line
+                subline += word + wordSeparator;
+              } else {
+                // word starts new line
+                if (subline) {
+                  wrappedLines.push(subline);
+                }
+                subline = word + wordSeparator;
               }
-              subline = word + wordSeparator;
             }
-          }
 
-          // if there's remaining text, put it in a wrapped line
+            // if there's remaining text, put it in a wrapped line
+          } catch (err) {
+            _iterator.e(err);
+          } finally {
+            _iterator.f();
+          }
           if (!subline.match(/^[\s\u200b]+$/)) {
             wrappedLines.push(subline);
           }
@@ -24620,6 +24633,11 @@ var printLayoutInfo;
       if (!eventInContainer(e)) {
         return;
       }
+
+      // during left mouse button gestures, ignore other buttons
+      if (r.hoverData.which === 1 && e.which !== 1) {
+        return;
+      }
       e.preventDefault();
       blurActiveDomElement();
       r.hoverData.capture = true;
@@ -25004,6 +25022,10 @@ var printLayoutInfo;
     var clickTimeout, didDoubleClick, prevClickTimeStamp;
     r.registerBinding(containerWindow, 'mouseup', function mouseupHandler(e) {
       // eslint-disable-line no-undef
+      // during left mouse button gestures, ignore other buttons
+      if (r.hoverData.which === 1 && e.which !== 1 && r.hoverData.capture) {
+        return;
+      }
       var capture = r.hoverData.capture;
       if (!capture) {
         return;
@@ -31270,7 +31292,7 @@ var printLayoutInfo;
     return style;
   };
 
-  var version = "3.29.2";
+  var version = "3.29.3";
 
   var cytoscape = function cytoscape(options) {
     // if no options specified, use default

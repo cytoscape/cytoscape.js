@@ -10,19 +10,21 @@ const initDefaults = defaults({
   getRotation: null,
   getRotationPoint: null,
   getRotationOffset: null,
+  isVisible: null,
 });
 
 const atlasSize = 8192; // square atlas, each side has this many pixels, should be power of 2
-const texPerRow = 10;
-
-const texSize = Math.floor(atlasSize / texPerRow);
-const texPerAtlas = texPerRow * texPerRow;
+const cols = 6;
+const rows = 10;
+const texPerAtlas = cols * rows;
+const texWidth  = Math.floor(atlasSize / cols);
+const texHeight = Math.floor(atlasSize / rows);
 
 function getTexOffsets(texIndex) {
-  const row = Math.floor(texIndex / texPerRow);
-  const col = texIndex % texPerRow;
-  const xOffset = col * texSize;
-  const yOffset = row * texSize;
+  const row = Math.floor(texIndex / cols);
+  const col = texIndex % cols;
+  const xOffset = col * texWidth;
+  const yOffset = row * texHeight;
   return { xOffset, yOffset };
 }
 
@@ -60,13 +62,13 @@ class Atlas {
     const { xOffset, yOffset } = getTexOffsets(this.index);
 
     const bb = opts.getBoundingBox(node);
-    // This stretches the drawing to fill a square, not sure if best approach.
-    const scalew = texSize / bb.w;
-    const scaleh = texSize / bb.h;
+    const scalew = texWidth  / bb.w;
+    const scaleh = texHeight / bb.h;
+    const scale = Math.min(scalew, scaleh);
 
     context.save();
     context.translate(xOffset, yOffset);
-    context.scale(scalew, scaleh);
+    context.scale(scale, scale);
     opts.drawElement(context, node, bb, true, false);
     context.restore();
 
@@ -75,7 +77,6 @@ class Atlas {
   }
 
 }
-
 
 
 export class NodeDrawing {
@@ -116,35 +117,47 @@ export class NodeDrawing {
 
       uniform mat3 uPanZoomMatrix;
       uniform int uAtlasSize;
-      uniform int uTexPerRow; 
+      uniform int uCols;
+      uniform int uRows;
       
       in vec2 aPosition; // instanced
       in mat3 aNodeMatrix;
       in float aTexId;
       in float aTexIndex;
+      in vec2 aBBSize;
 
       out vec2 vTexCoord;
       flat out int vTexId;
 
       void main(void) {
         // compute texture coordinates here in the shader
+        // we have to do this here becase we are using instanced drawing
+
         int texIndex = int(aTexIndex);
-        int row = texIndex / uTexPerRow;
-        int col = texIndex % uTexPerRow;
-        int texSize = uAtlasSize / uTexPerRow;
+        int row = texIndex / uCols;
+        int col = texIndex % uCols;
 
-        int tx = col * texSize;
-        int ty = row * texSize;
+        float texWidth  = float(uAtlasSize) / float(uCols);
+        float texHeight = float(uAtlasSize) / float(uRows);
+        
+        float xOffset = float(col) * texWidth;
+        float yOffset = float(row) * texHeight;
 
-        if(gl_VertexID == 2 || gl_VertexID == 3 || gl_VertexID == 5) {
-          tx += texSize - 1;
+        if(gl_VertexID != 0) {
+          float scalew = texWidth  / aBBSize.x;
+          float scaleh = texHeight / aBBSize.y;
+          float scale = min(scalew, scaleh);
+
+          if(gl_VertexID == 2 || gl_VertexID == 3 || gl_VertexID == 5) {
+            xOffset += aBBSize.x * scale;
+          }
+          if(gl_VertexID == 1 || gl_VertexID == 4 || gl_VertexID == 5) {
+            yOffset += aBBSize.y * scale;
+          }
         }
-        if(gl_VertexID == 1 || gl_VertexID == 4 || gl_VertexID == 5) {
-          ty += texSize - 1;
-        }
 
-        float d = float(uAtlasSize - 1);
-        vTexCoord = vec2(float(tx)/d, float(ty)/d);
+        float d = float(uAtlasSize);
+        vTexCoord = vec2(xOffset / d, yOffset / d);
 
         vTexId = int(aTexId);
 
@@ -177,11 +190,13 @@ export class NodeDrawing {
     program.aNodeMatrix = gl.getAttribLocation(program, 'aNodeMatrix');
     program.aTexId      = gl.getAttribLocation(program, 'aTexId');
     program.aTexIndex   = gl.getAttribLocation(program, 'aTexIndex');
+    program.aBBSize     = gl.getAttribLocation(program, 'aBBSize');
 
     // uniforms
     program.uPanZoomMatrix = gl.getUniformLocation(program, 'uPanZoomMatrix');
-    program.uTexPerRow     = gl.getUniformLocation(program, 'uTexPerRow');
     program.uAtlasSize     = gl.getUniformLocation(program, 'uAtlasSize');
+    program.uCols          = gl.getUniformLocation(program, 'uCols');
+    program.uRows          = gl.getUniformLocation(program, 'uRows');
 
     program.uTextures = [];
     for(let i = 0; i < this.maxAtlases; i++) {
@@ -219,6 +234,12 @@ export class NodeDrawing {
       attributeLoc: program.aTexIndex,
       maxInstances: this.maxInstances,
       size: 1
+    });
+
+    this.bbSizeBuffer = util.createInstanceFloatBufferDynamicDraw(gl, {
+      attributeLoc: program.aBBSize,
+      maxInstances: this.maxInstances,
+      size: 2
     });
 
     this.matrixBuffer = util.create3x3MatrixBufferDynamicDraw(gl, {
@@ -293,6 +314,8 @@ export class NodeDrawing {
 
   draw(node, type) {
     const opts = this.renderTypes.get(type);
+    if(!opts.isVisible(node))
+      return;
 
     const { atlas, texIndex } = this.getOrCreateTexture(node, opts);
 
@@ -305,8 +328,11 @@ export class NodeDrawing {
       texID = this.atlases.length - 1;
     }
 
+    const bb = opts.getBoundingBox(node);
+
     this.texIndexBuffer.setDataAt([texIndex], this.instanceCount);
     this.texIdBuffer.setDataAt([texID], this.instanceCount);
+    this.bbSizeBuffer.setDataAt([bb.w, bb.h], this.instanceCount);
 
     // pass the array view to setTransformMatrix
     const view = this.matrixBuffer.getMatrixView(this.instanceCount);
@@ -333,6 +359,7 @@ export class NodeDrawing {
     this.matrixBuffer.bufferSubData(count);
     this.texIdBuffer.bufferSubData(count);
     this.texIndexBuffer.bufferSubData(count);
+    this.bbSizeBuffer.bufferSubData(count);
 
     // Activate all the texture units that we need
     for(let i = 0; i < this.atlases.length; i++) {
@@ -346,7 +373,8 @@ export class NodeDrawing {
     // Set the uniforms
     gl.uniformMatrix3fv(program.uPanZoomMatrix, false, this.panZoomMatrix);
     gl.uniform1i(program.uAtlasSize, atlasSize);
-    gl.uniform1i(program.uTexPerRow, texPerRow);
+    gl.uniform1i(program.uRows, rows);
+    gl.uniform1i(program.uCols, cols);
 
     // draw!
     gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, count); // 6 verticies per node

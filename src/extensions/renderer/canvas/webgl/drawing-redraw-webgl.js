@@ -18,6 +18,11 @@ CRp.initWebgl = function(options, fns) {
 
   const getZeroRotation = () => 0;
   const getLabelRotation = (ele) => r.getTextAngle(ele, null);
+  const isNodeVisible = (ele) => ele.visible();
+  const isLabelVisible = (ele) => {
+    let label = ele.pstyle( 'label' );
+    return label && label.value;
+  }
   
   r.edgeDrawing = new EdgeDrawing(r, gl);
   r.nodeDrawing = new NodeDrawing(r, gl);
@@ -28,7 +33,8 @@ CRp.initWebgl = function(options, fns) {
     drawElement: fns.drawElement,
     getRotation: getZeroRotation,
     getRotationPoint: fns.getElementRotationPoint,
-    getRotationOffset: fns.getElementRotationOffset
+    getRotationOffset: fns.getElementRotationOffset,
+    isVisible: isNodeVisible,
   })
 
   r.nodeDrawing.addRenderType('node-label', {
@@ -37,7 +43,8 @@ CRp.initWebgl = function(options, fns) {
     drawElement: fns.drawLabel,
     getRotation: getLabelRotation,
     getRotationPoint: fns.getLabelRotationPoint,
-    getRotationOffset: fns.getLabelRotationOffset
+    getRotationOffset: fns.getLabelRotationOffset,
+    isVisible: isLabelVisible,
   });
 }
 

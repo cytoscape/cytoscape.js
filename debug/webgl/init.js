@@ -8,15 +8,14 @@ var params = {};
 (function(){
 
   const urlParams = new URLSearchParams(window.location.search);
-  params.networkID = urlParams.get('networkID') || networks.def;
-  params.webgl  = urlParams.get('webgl') || false;
+  params.networkID = urlParams.get('networkID') || 'em-web';
+  params.webgl = urlParams.get('webgl') === 'true';
 
   const network = networks[params.networkID];
   const style = styles[params.networkID];
 
 
   function load(elements, style) {
-    console.log('style', style);
     options = {
       container: $('#cytoscape'),
   

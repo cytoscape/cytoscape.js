@@ -1,7 +1,5 @@
 
 var networks = {
-  def: 'tiny',
-
   'tiny': {
     desc: 'tiny',
     nodes: 5,

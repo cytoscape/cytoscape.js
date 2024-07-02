@@ -2,6 +2,11 @@ name: Patch Release
 
 on:
   workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to run the action on'
+        required: true
+        default: 'master'
 
 jobs:  
   patch-release:

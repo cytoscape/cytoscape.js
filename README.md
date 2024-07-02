@@ -136,14 +136,28 @@ The default test scripts run directly against the source code.  Tests can altern
 
 ## Release instructions
 
-- [Manual Release](.github/workflows/md/Manual_Release.md)
-- [Feature Release](.github/workflows/md/Feature_Release.md)
-- [Backport/Patch Release](.github/workflows/md/Patch_Backport_Release.md)
+### Background
 
-**IMP: The releases should be made atleast 5 min apart for the zenodo to pick the new release.**
-**IMP: Amend Github Action in all branches for consistent results across branches**
+- Ensure that a milestone exists for the release you want to make, with all the issues for that release assigned in the milestone.
+- Bug fixes should be applied to both the `master` and `unstable` branches.  PRs can go on either branch, with the patch applied to the other branch after merging.
+- When a patch release is made concurrently with a feature release, the patch release should be made first.  Wait 5 minutes after the patch release completes before starting the feature release -- otherwise Zenodo doesn't pick up releases properly.
 
-- Repository Setup for Github Actions: [Repository Setup](.github/workflows/md/repo-setup.md)
+### Patch version
+
+1. Go to [Actions > Feature release](https://github.com/cytoscape/cytoscape.js/actions/workflows/patch-release.yml)
+1. Go to the 'Run workflow' dropdown
+1. [Optional] The 'master' branch should be preselected for you
+1. Press the green 'Run workflow' button
+1. Close the milestone for the release
+
+### Feature version
+
+1. Go to [Actions > Feature release](https://github.com/cytoscape/cytoscape.js/actions/workflows/feature-release.yml)
+1. Go to the 'Run workflow' dropdown
+1. [Optional] The 'unstable' branch should be preselected for you
+1. Press the green 'Run workflow' button
+1. Close the milestone for the release
+1. Make the release announcement [on the blog](https://github.com/cytoscape/cytoscape.js-blog)
 
 ## Tests
 

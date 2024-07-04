@@ -42,35 +42,47 @@ var styles = {
     file: 'network-ndex-large-style.json'
   },
 
-  'em-web': [{
-    selector: "node",
-    style: {
-      "border-width": "12px",
-      "border-opacity": "0",
-      "width": "40px",
-      "height": "40px",
-      "font-size": "8px",
-      "text-valign": "center",
-      "text-wrap": "wrap",
-      "text-max-width": "80px",
-      "z-index": "1",
-      "label": "data(description)",
-      "text-outline-width": 2,
-      "color": "#fff",
-      "background-color":   "mapData(NES, -3.14, 3.14, #0571b0, #ca0020)",
-      "text-outline-color": "mapData(NES, -3.14, 3.14, #0571b0, #ca0020)"
+  'em-web': [
+    {
+      selector: "node",
+      style: {
+        "border-width": "12px",
+        "border-opacity": "0",
+        "width": "40px",
+        "height": "40px",
+        "font-size": "8px",
+        "text-valign": "center",
+        "text-wrap": "wrap",
+        "text-max-width": "80px",
+        "z-index": "1",
+        "label": "data(description)",
+        "text-outline-width": 2,
+        "color": "#fff",
+        "background-color":   "mapData(NES, -3.14, 3.14, #0571b0, #ca0020)",
+        "text-outline-color": "mapData(NES, -3.14, 3.14, #0571b0, #ca0020)"
+      }
+    },
+    {
+      selector: "node:selected",
+      style: {
+        'border-width': 8,
+        'border-color': '#333333',
+        'border-opacity': 1.0,
+        'text-outline-color': '#333333',
+        'z-index': 99999999,
+      }
+    },
+    {
+      selector: "edge",
+      style: {
+        "line-color" : "#888",
+        "line-opacity": 0.3,
+        "curve-style": "haystack",
+        "haystack-radius": 0,
+        "width": ele => ele.data('similarity_coefficient') * 15,
+      }
     }
-  },
-  {
-    selector: "edge",
-    style: {
-      "line-color" : "#888",
-      "line-opacity": 0.3,
-      "curve-style": "haystack",
-      "haystack-radius": 0,
-      "width": ele => ele.data('similarity_coefficient') * 15,
-    }
-  }],
+  ],
 
   'tiny': [ 
     {

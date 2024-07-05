@@ -30,6 +30,8 @@ CRp.drawEdge = function( context, edge, shiftToOriginWithBb, drawLabel = true, s
   let lineStyle = edge.pstyle('line-style').value;
   let edgeWidth = edge.pstyle('width').pfValue;
   let lineCap = edge.pstyle('line-cap').value;
+  let lineOutlineWidth = edge.pstyle('line-outline-width').value;
+  let lineOutlineColor = edge.pstyle('line-outline-color').value;
   
   let effectiveLineOpacity = opacity * lineOpacity;
   // separate arrow opacity would require arrow-opacity property
@@ -48,6 +50,36 @@ CRp.drawEdge = function( context, edge, shiftToOriginWithBb, drawLabel = true, s
       context.lineCap = lineCap;
   
       r.eleStrokeStyle( context, edge, strokeOpacity );
+      r.drawEdgePath(
+        edge,
+        context,
+        rs.allpts,
+        lineStyle
+      );
+  
+      context.lineCap = 'butt'; // reset for other drawing functions
+    }
+  };
+
+  let drawLineOutline = ( strokeOpacity = effectiveLineOpacity) => {
+    context.lineWidth = edgeWidth + lineOutlineWidth;
+    context.lineCap = lineCap;
+
+    if (lineOutlineWidth > 0) {
+      r.colorStrokeStyle( context, lineOutlineColor[0], lineOutlineColor[1], lineOutlineColor[2], strokeOpacity );
+    } else {
+      // do not draw any lineOutline
+      context.lineCap = 'butt'; // reset for other drawing functions
+      return;
+    }
+
+    if (curveStyle === 'straight-triangle') {
+      r.drawEdgeTrianglePath(
+        edge,
+        context,
+        rs.allpts
+      );
+    } else { 
       r.drawEdgePath(
         edge,
         context,
@@ -95,6 +127,8 @@ CRp.drawEdge = function( context, edge, shiftToOriginWithBb, drawLabel = true, s
     drawArrows( effectiveGhostOpacity );
 
     context.translate( -gx, -gy );
+  } else {
+    drawLineOutline();
   }
 
   drawUnderlay();

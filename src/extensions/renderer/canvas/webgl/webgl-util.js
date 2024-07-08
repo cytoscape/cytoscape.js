@@ -35,6 +35,24 @@ export function createTextureCanvas(r, width, height) {
   return canvas;
 }
 
+/**
+ * Takes color and opacity values as returned by the style and converts
+ * them into the format expected by WebGL.
+ */
+export function normalizeColor(color, opacity, { premultiplyAlpha } = {}) {
+  const normalized = [
+    color[0] / 256, 
+    color[1] / 256, 
+    color[2] / 256, 
+    opacity 
+  ];
+  if(premultiplyAlpha) {
+    const [ r, g, b, a ] = normalized;
+    return [ r * a, g * a, b * a, a];
+  }
+  return normalized;
+}
+
 
 export function bufferTexture(gl, textureCanvas) {
   const texture = gl.createTexture();

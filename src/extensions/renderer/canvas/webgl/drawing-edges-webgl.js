@@ -1,6 +1,5 @@
 import * as util from './webgl-util';
 import { defaults } from '../../../../util';
-import { mat3 } from 'gl-matrix';
 
 const initDefaults = defaults({
 });
@@ -137,17 +136,17 @@ export class EdgeDrawing {
 
     const opacity = edge.pstyle('opacity').value;
     const lineOpacity = edge.pstyle('line-opacity').value;
+    const width = edge.pstyle('width').pfValue;
     const effectiveOpacity = opacity * lineOpacity;
     const color = edge.pstyle('line-color').value;
-    const [ r, g, b, a ] = [ color[0]/256, color[1]/256, color[2]/256, effectiveOpacity ];
 
-    const width = edge.pstyle('width').pfValue;
+    const webglColor = util.normalizeColor(color, effectiveOpacity);
 
     const i = this.instanceCount;
     this.sourceBuffer.setDataAt([sp.x, sp.y], i);
     this.targetBuffer.setDataAt([tp.x, tp.y], i);
     this.widthBuffer.setDataAt([width], i);
-    this.colorBuffer.setDataAt([r, g, b, a], i);
+    this.colorBuffer.setDataAt(webglColor, i);
 
     this.instanceCount++;
 

@@ -130,14 +130,15 @@ export class NodeDrawing {
 
     const atlas = new Atlas();
 
+    // textures are white so that the overlay color is preserved when multiplying in the fragment shader
     atlas.draw(r, (context) => {
-      context.fillStyle = 'black';
+      context.fillStyle = '#FFF';
       r.drawRoundRectanglePath(context, center, center, size, size, 150); // TODO don't hardcode the radius
       context.fill();
     });
     
     atlas.draw(r, (context) => {
-      context.fillStyle = 'black';
+      context.fillStyle = '#FFF';
       r.drawEllipsePath(context, center, center, size, size)
       context.fill();
     });
@@ -163,11 +164,13 @@ export class NodeDrawing {
       
       in vec2 aPosition; // instanced
       in mat3 aNodeMatrix;
-      in int aTexId;
-      in int aTexIndex;
-      in vec2 aBBSize;
+      in int aTexId; // which shader unit/atlas to use
+      in int aTexIndex; // which texture in the atlas to use
+      in vec4 aLayColor; // overlay/underlay color
+      in vec2 aBBSize; // TEMP, better to pass scalew/scaleh
 
       out vec2 vTexCoord;
+      flat out vec4 vLayColor;
       flat out int vTexId;
 
       void main(void) {
@@ -189,10 +192,10 @@ export class NodeDrawing {
           float scale = min(scalew, scaleh);
 
           if(gl_VertexID == 2 || gl_VertexID == 3 || gl_VertexID == 5) {
-            xOffset += aBBSize.x * scale;
+            xOffset += aBBSize.x * scale; // x is actually width
           }
           if(gl_VertexID == 1 || gl_VertexID == 4 || gl_VertexID == 5) {
-            yOffset += aBBSize.y * scale;
+            yOffset += aBBSize.y * scale; // y is actually height
           }
         }
 
@@ -200,6 +203,7 @@ export class NodeDrawing {
         vTexCoord = vec2(xOffset / d, yOffset / d);
 
         vTexId = aTexId;
+        vLayColor = aLayColor;
 
         gl_Position = vec4(uPanZoomMatrix * aNodeMatrix * vec3(aPosition, 1.0), 1.0);
       }
@@ -215,11 +219,18 @@ export class NodeDrawing {
 
       in vec2 vTexCoord;
       flat in int vTexId;
+      flat in vec4 vLayColor;
 
       out vec4 outColor;
 
       void main(void) {
-        ${idxs.map(i => `if(vTexId == ${i}) outColor = texture(uTexture${i}, vTexCoord);`).join('\n\telse ')}
+        vec4 texColor;
+        ${idxs.map(i => `if(vTexId == ${i}) texColor = texture(uTexture${i}, vTexCoord);`).join('\n\telse ')}
+
+        if(vLayColor.a == 0.0)
+          outColor = texColor;
+        else
+          outColor = texColor * vLayColor;
       }
     `;
 
@@ -230,6 +241,7 @@ export class NodeDrawing {
     program.aNodeMatrix = gl.getAttribLocation(program, 'aNodeMatrix');
     program.aTexId      = gl.getAttribLocation(program, 'aTexId');
     program.aTexIndex   = gl.getAttribLocation(program, 'aTexIndex');
+    program.aLayColor   = gl.getAttribLocation(program, 'aLayColor');
     program.aBBSize     = gl.getAttribLocation(program, 'aBBSize');
 
     // uniforms
@@ -278,6 +290,13 @@ export class NodeDrawing {
       maxInstances: this.maxInstances,
       size: 1,
       type: gl.INT
+    });
+
+    this.layColorBuffer = util.createInstanceBufferDynamicDraw(gl, {
+      attributeLoc: program.aLayColor,
+      maxInstances: this.maxInstances,
+      size: 4,
+      type: gl.FLOAT
     });
 
     this.bbSizeBuffer = util.createInstanceBufferDynamicDraw(gl, {
@@ -364,9 +383,10 @@ export class NodeDrawing {
     if(!opts.isVisible(node))
       return;
 
-    const bufferInstanceData = (texID, texIndex) => {
+    const bufferInstanceData = (texID, texIndex, layColor=[0, 0, 0, 0]) => {
       this.texIdBuffer.setDataAt([texID], this.instanceCount);
       this.texIndexBuffer.setDataAt([texIndex], this.instanceCount);
+      this.layColorBuffer.setDataAt(layColor, this.instanceCount);
       
       const bb = opts.getBoundingBox(node);
       this.bbSizeBuffer.setDataAt([bb.w, bb.h], this.instanceCount);
@@ -398,11 +418,11 @@ export class NodeDrawing {
     };
 
     const drawOverlayUnderlay = (overlayOrUnderlay) => {
-      // Ignore radius and padding for now
       const style = opts.getOverlayUnderlayStyle(node, overlayOrUnderlay);
-      if(!style)
+      if(!style || style.opacity === 0)
         return;
 
+      // Ignore radius and padding for now
       const { opacity, color, shape } = style;
 
       let texIndex;
@@ -414,9 +434,11 @@ export class NodeDrawing {
         return;
       }
 
+      const webglColor = util.normalizeColor(color, opacity, { premultiplyAlpha: true });
+
       const atlas = this.overlayUnderlay.atlas;
       const texID = getTexIdForBatch(atlas);
-      bufferInstanceData(texID, texIndex);
+      bufferInstanceData(texID, texIndex, webglColor);
     }
 
     drawOverlayUnderlay('underlay');
@@ -450,6 +472,7 @@ export class NodeDrawing {
     this.texIdBuffer.bufferSubData(count);
     this.texIndexBuffer.bufferSubData(count);
     this.bbSizeBuffer.bufferSubData(count);
+    this.layColorBuffer.bufferSubData(count);
 
     // Activate all the texture units that we need
     for(let i = 0; i < this.atlases.length; i++) {

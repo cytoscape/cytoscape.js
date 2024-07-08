@@ -36,7 +36,7 @@ export function createTextureCanvas(r, width, height) {
 }
 
 
-export function bufferTexture(gl, texSize, textureCanvas) {
+export function bufferTexture(gl, textureCanvas) {
   const texture = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, texture);
  

@@ -23,6 +23,16 @@ CRp.initWebgl = function(options, fns) {
     let label = ele.pstyle( 'label' );
     return label && label.value;
   }
+
+  const getNodeOverlayUnderlayStyle = (node, overlayOrUnderlay) => {
+    const opacity = node.pstyle(`${overlayOrUnderlay}-opacity`).value;
+    if(opacity <= 0)
+      return null;
+    const color = node.pstyle(`${overlayOrUnderlay}-color`).value;
+    const shape = node.pstyle(`${overlayOrUnderlay}-shape`).value;
+    return { opacity, color, shape };
+  };
+  const getLabelOverlayUnderlayStyle = () => null;
   
   r.edgeDrawing = new EdgeDrawing(r, gl);
   r.nodeDrawing = new NodeDrawing(r, gl);
@@ -31,20 +41,22 @@ CRp.initWebgl = function(options, fns) {
     getKey: fns.getStyleKey,
     getBoundingBox: fns.getElementBox,
     drawElement: fns.drawElement,
-    getRotation: getZeroRotation,
     getRotationPoint: fns.getElementRotationPoint,
     getRotationOffset: fns.getElementRotationOffset,
+    getRotation: getZeroRotation,
     isVisible: isNodeVisible,
+    getOverlayUnderlayStyle: getNodeOverlayUnderlayStyle,
   })
 
   r.nodeDrawing.addRenderType('node-label', {
     getKey: fns.getLabelKey,
     getBoundingBox: fns.getLabelBox,
     drawElement: fns.drawLabel,
-    getRotation: getLabelRotation,
     getRotationPoint: fns.getLabelRotationPoint,
     getRotationOffset: fns.getLabelRotationOffset,
+    getRotation: getLabelRotation,
     isVisible: isLabelVisible,
+    getOverlayUnderlayStyle: getLabelOverlayUnderlayStyle,
   });
 }
 

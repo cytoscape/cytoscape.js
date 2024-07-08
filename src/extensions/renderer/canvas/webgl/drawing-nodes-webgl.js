@@ -11,6 +11,7 @@ const initDefaults = defaults({
   getRotationPoint: null,
   getRotationOffset: null,
   isVisible: null,
+  getOverlayUnderlayStyle: null
 });
 
 const atlasSize = 8192; // square atlas, each side has this many pixels, should be power of 2
@@ -43,7 +44,7 @@ class Atlas {
 
   buffer(gl) {
     if(!this.buffered) {
-      this.texture = util.bufferTexture(gl, atlasSize, this.canvas);
+      this.texture = util.bufferTexture(gl, this.canvas);
       if(this.isFull()) {
         this.canvas = null;
       }
@@ -51,7 +52,7 @@ class Atlas {
     }
   }
 
-  draw(r, node, opts) {
+  draw(r, doDrawing) {
     if(this.isFull())
       throw new Error("This Atlas is full!");
 
@@ -61,21 +62,31 @@ class Atlas {
     const { context } = this.canvas;
     const { xOffset, yOffset } = getTexOffsets(this.index);
 
-    const bb = opts.getBoundingBox(node);
-    const scalew = texWidth  / bb.w;
-    const scaleh = texHeight / bb.h;
-    const scale = Math.min(scalew, scaleh);
+    // for debugging
+    // context.strokeStyle = 'red';
+    // context.lineWidth = 4;
+    // context.strokeRect(xOffset, yOffset, texWidth, texHeight);
 
     context.save();
     context.translate(xOffset, yOffset);
-    context.scale(scale, scale);
-    opts.drawElement(context, node, bb, true, false);
+    doDrawing(context);
     context.restore();
 
     this.buffered = false;
     this.index++;
   }
 
+  drawNode(r, node, opts) {
+    this.draw(r, (context) => {
+      const bb = opts.getBoundingBox(node);
+      const scalew = texWidth  / bb.w;
+      const scaleh = texHeight / bb.h;
+      const scale = Math.min(scalew, scaleh);
+      
+      context.scale(scale, scale);
+      opts.drawElement(context, node, bb, true, false);
+    });
+  }
 }
 
 
@@ -97,17 +108,47 @@ export class NodeDrawing {
     this.program = this.createShaderProgram();
     this.vao = this.createVAO();
 
+    this.renderTypes = new Map(); // string -> object
+
     this.styleKeyToAtlas = new Map(); // need to know which texure atlas has the texture
     this.styleKeyToTexIndex = new Map(); // which texture in the atlas for a node
 
     this.currentAtlas = new Atlas();
-
-    this.renderTypes = new Map(); // string -> object
+    this.overlayUnderlay = this.initOverlayUnderlay(); // used for overlay/underlay shapes
   }
+
 
   addRenderType(type, options) {
     this.renderTypes.set(type, initDefaults(options));
   }
+
+
+  initOverlayUnderlay() {
+    const { r } = this;
+    const size = Math.min(texWidth, texHeight);
+    const center = size / 2;
+
+    const atlas = new Atlas();
+
+    atlas.draw(r, (context) => {
+      context.fillStyle = 'black';
+      r.drawRoundRectanglePath(context, center, center, size, size, 150); // TODO don't hardcode the radius
+      context.fill();
+    });
+    
+    atlas.draw(r, (context) => {
+      context.fillStyle = 'black';
+      r.drawEllipsePath(context, center, center, size, size)
+      context.fill();
+    });
+
+    return {
+      atlas,
+      roundRectTexIndex: 0,
+      ellipseTexIndex: 1
+    };
+  }
+
 
   createShaderProgram() {
     const { gl } = this;
@@ -206,6 +247,7 @@ export class NodeDrawing {
     return program;
   }
 
+
   createVAO() {
     // TODO switch to indexed drawing?
     const unitQuad = [
@@ -251,6 +293,7 @@ export class NodeDrawing {
     return vao;
   }
 
+
   getOrCreateTexture(node, opts) {
     const { r } = this;
     const styleKey = opts.getKey(node);
@@ -267,7 +310,7 @@ export class NodeDrawing {
       texIndex = this.currentAtlas.index;
 
       console.log('drawing texture for', styleKey);
-      atlas.draw(r, node, opts);
+      atlas.drawNode(r, node, opts);
 
       this.styleKeyToAtlas.set(styleKey, atlas);
       this.styleKeyToTexIndex.set(styleKey, texIndex);
@@ -312,40 +355,84 @@ export class NodeDrawing {
     this.atlases = []; // up to 16 texture units for a draw call
   }
 
+
   draw(node, type) {
     const opts = this.renderTypes.get(type);
     if(!opts.isVisible(node))
       return;
 
-    const { atlas, texIndex } = this.getOrCreateTexture(node, opts);
+    const bufferInstanceData = (texID, texIndex) => {
+      this.texIdBuffer.setDataAt([texID], this.instanceCount);
+      this.texIndexBuffer.setDataAt([texIndex], this.instanceCount);
+      
+      const bb = opts.getBoundingBox(node);
+      this.bbSizeBuffer.setDataAt([bb.w, bb.h], this.instanceCount);
 
-    let texID = this.atlases.indexOf(atlas);
-    if(texID < 0) {
-      if(this.atlases.length === this.maxAtlases) {
-        this.endBatch();
+      // pass the array view to setTransformMatrix
+      const view = this.matrixBuffer.getMatrixView(this.instanceCount);
+      this.setTransformMatrix(node, opts, view);
+
+      this.instanceCount++;
+    };
+
+    const getTexIdForBatch = (atlas) => {
+      let texID = this.atlases.indexOf(atlas);
+      if(texID < 0) {
+        if(this.atlases.length === this.maxAtlases) {
+           // If we run out of space for textures in the current batch, then start a new batch
+          this.endBatch();
+        }
+        this.atlases.push(atlas);
+        texID = this.atlases.length - 1;
       }
-      this.atlases.push(atlas);
-      texID = this.atlases.length - 1;
+      return texID;
+    };
+
+    const drawBody = () => {
+      const { atlas, texIndex } = this.getOrCreateTexture(node, opts);
+      const texID = getTexIdForBatch(atlas);
+      bufferInstanceData(texID, texIndex);
+    };
+
+    const drawOverlayUnderlay = (overlayOrUnderlay) => {
+      // Ignore radius and padding for now
+      const style = opts.getOverlayUnderlayStyle(node, overlayOrUnderlay);
+      if(!style)
+        return;
+
+      const { opacity, color, shape } = style;
+
+      let texIndex;
+      if(shape === 'roundrectangle' || shape === 'round-rectangle') {
+        texIndex = this.overlayUnderlay.roundRectTexIndex;
+      } else if(shape === 'ellipse') {
+        texIndex = this.overlayUnderlay.ellipseTexIndex;
+      } else {
+        return;
+      }
+
+      const atlas = this.overlayUnderlay.atlas;
+      const texID = getTexIdForBatch(atlas);
+      bufferInstanceData(texID, texIndex);
     }
 
-    const bb = opts.getBoundingBox(node);
-
-    this.texIndexBuffer.setDataAt([texIndex], this.instanceCount);
-    this.texIdBuffer.setDataAt([texID], this.instanceCount);
-    this.bbSizeBuffer.setDataAt([bb.w, bb.h], this.instanceCount);
-
-    // pass the array view to setTransformMatrix
-    const view = this.matrixBuffer.getMatrixView(this.instanceCount);
-    this.setTransformMatrix(node, opts, view);
-
-    this.instanceCount++;
+    drawOverlayUnderlay('underlay');
+    drawBody();
+    drawOverlayUnderlay('overlay')
 
     if(this.instanceCount >= this.maxInstances) {
       this.endBatch();
     }
   }
 
+
   endBatch() {
+    // const nodeContext = this.r.data.contexts[this.r.NODE];
+    // nodeContext.save();
+    // nodeContext.scale(0.25, 0.25);
+    // nodeContext.drawImage(this.atlases[0].canvas, 0, 0);
+    // nodeContext.restore();
+
     const count = this.instanceCount;
     if(count === 0) 
       return;

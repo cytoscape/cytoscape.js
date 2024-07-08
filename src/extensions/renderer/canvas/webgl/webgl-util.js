@@ -57,11 +57,18 @@ export function bufferTexture(gl, textureCanvas) {
 
 
 /** @param {WebGLRenderingContext} gl */
-export function createAttributeFloatBufferStaticDraw(gl, { attributeLoc, dataArray, size }) {
+export function createAttributeBufferStaticDraw(gl, { attributeLoc, dataArray, size, type }) {
+  let data;
+  if(type === gl.FLOAT) {
+    data = new Float32Array(dataArray);
+  } else if(type === gl.SHORT) {
+    data = new Int16Array(dataArray);
+  }
+
   const buffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(dataArray), gl.STATIC_DRAW);
-  gl.vertexAttribPointer(attributeLoc, size, gl.FLOAT, false, 0, 0);
+  gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+  gl.vertexAttribPointer(attributeLoc, size, type, false, 0, 0);
   gl.enableVertexAttribArray(attributeLoc);
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
   return buffer;
@@ -70,19 +77,28 @@ export function createAttributeFloatBufferStaticDraw(gl, { attributeLoc, dataArr
 
 /** 
  * Creates a float buffer with gl.DYNAMIC_DRAW.
- * The returned buffer object contains functions to easily set instance data
- * and buffer the data before a draw call.
+ * The returned buffer object contains functions to easily set instance data and buffer the data before a draw call.
  * @param {WebGLRenderingContext} gl 
  */
-export function createInstanceFloatBufferDynamicDraw(gl, { attributeLoc, maxInstances, size }) {
-  const dataArray = new Float32Array(maxInstances * size);
-  const buffer = gl.createBuffer();
-  const stride = size * 4; // num elements * 4 bytes (float)
+export function createInstanceBufferDynamicDraw(gl, { attributeLoc, maxInstances, size, type }) {
+  let dataArray, stride;
+  if(type === gl.FLOAT) {
+    dataArray = new Float32Array(maxInstances * size);
+    stride = size * 4; // num elements * 4 bytes (float)
+  } else if(type === gl.INT) {
+    dataArray = new Int32Array(maxInstances * size);
+    stride = size * 4;
+  }
 
+  const buffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
   gl.bufferData(gl.ARRAY_BUFFER, maxInstances * stride, gl.DYNAMIC_DRAW); 
   gl.enableVertexAttribArray(attributeLoc);
-  gl.vertexAttribPointer(attributeLoc, size, gl.FLOAT, false, stride, 0);
+  if(type === gl.FLOAT) {
+    gl.vertexAttribPointer(attributeLoc, size, type, false, stride, 0);
+  } else if(type === gl.INT) {
+    gl.vertexAttribIPointer(attributeLoc, size, type, stride, 0);
+  }
   gl.vertexAttribDivisor(attributeLoc, 1);
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
 

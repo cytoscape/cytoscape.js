@@ -163,8 +163,8 @@ export class NodeDrawing {
       
       in vec2 aPosition; // instanced
       in mat3 aNodeMatrix;
-      in float aTexId;
-      in float aTexIndex;
+      in int aTexId;
+      in int aTexIndex;
       in vec2 aBBSize;
 
       out vec2 vTexCoord;
@@ -174,9 +174,8 @@ export class NodeDrawing {
         // compute texture coordinates here in the shader
         // we have to do this here becase we are using instanced drawing
 
-        int texIndex = int(aTexIndex);
-        int row = texIndex / uCols;
-        int col = texIndex % uCols;
+        int row = aTexIndex / uCols;
+        int col = aTexIndex % uCols;
 
         float texWidth  = float(uAtlasSize) / float(uCols);
         float texHeight = float(uAtlasSize) / float(uRows);
@@ -200,7 +199,7 @@ export class NodeDrawing {
         float d = float(uAtlasSize);
         vTexCoord = vec2(xOffset / d, yOffset / d);
 
-        vTexId = int(aTexId);
+        vTexId = aTexId;
 
         gl_Position = vec4(uPanZoomMatrix * aNodeMatrix * vec3(aPosition, 1.0), 1.0);
       }
@@ -260,28 +259,32 @@ export class NodeDrawing {
     const vao = gl.createVertexArray();
     gl.bindVertexArray(vao);
 
-    util.createAttributeFloatBufferStaticDraw(gl, {
+    util.createAttributeBufferStaticDraw(gl, {
       attributeLoc: program.aPosition,
       dataArray: unitQuad,
-      size: 2
+      size: 2,
+      type: gl.FLOAT
     });
 
-    this.texIdBuffer = util.createInstanceFloatBufferDynamicDraw(gl, {
+    this.texIdBuffer = util.createInstanceBufferDynamicDraw(gl, {
       attributeLoc: program.aTexId,
       maxInstances: this.maxInstances,
-      size: 1
+      size: 1,
+      type: gl.INT
     });
 
-    this.texIndexBuffer = util.createInstanceFloatBufferDynamicDraw(gl, {
+    this.texIndexBuffer = util.createInstanceBufferDynamicDraw(gl, {
       attributeLoc: program.aTexIndex,
       maxInstances: this.maxInstances,
-      size: 1
+      size: 1,
+      type: gl.INT
     });
 
-    this.bbSizeBuffer = util.createInstanceFloatBufferDynamicDraw(gl, {
+    this.bbSizeBuffer = util.createInstanceBufferDynamicDraw(gl, {
       attributeLoc: program.aBBSize,
       maxInstances: this.maxInstances,
-      size: 2
+      size: 2,
+      type: gl.FLOAT
     });
 
     this.matrixBuffer = util.create3x3MatrixBufferDynamicDraw(gl, {

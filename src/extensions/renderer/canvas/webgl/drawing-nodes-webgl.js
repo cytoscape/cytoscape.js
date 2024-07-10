@@ -11,7 +11,8 @@ const initDefaults = defaults({
   getRotationPoint: null,
   getRotationOffset: null,
   isVisible: null,
-  getOverlayUnderlayStyle: null
+  getOverlayUnderlayStyle: null,
+  isOverlayOrUnderlay: false,
 });
 
 const atlasSize = 8192; // square atlas, each side has this many pixels, should be power of 2
@@ -432,7 +433,7 @@ export class NodeDrawing {
       return texID;
     };
 
-    const drawBody = () => {
+    const drawBodyOrLabel = () => {
       const { atlas, texIndex } = this.getOrCreateTexture(node, opts);
       const texID = getTexIdForBatch(atlas);
       const { xOffset, yOffset } = getTexOffsets(texIndex);
@@ -441,11 +442,8 @@ export class NodeDrawing {
       bufferInstanceData(texID, xOffset, yOffset, w, h);
     };
 
-    const drawOverlayUnderlay = (overlayOrUnderlay) => {
-      const style = opts.getOverlayUnderlayStyle(node, overlayOrUnderlay);
-      if(!style || style.opacity <= 0)
-        return;
-
+    const drawOverlayUnderlay = () => {
+      const style = opts.getOverlayUnderlayStyle(node);
       const { opacity, color, shape, padding } = style; // Ignore radius for now
 
       const texIndex = this.overlayUnderlay.getTexIndex(shape);
@@ -460,9 +458,11 @@ export class NodeDrawing {
       bufferInstanceData(texID, xOffset, yOffset, w, h, padding, webglColor);
     }
 
-    drawOverlayUnderlay('underlay');
-    drawBody();
-    drawOverlayUnderlay('overlay')
+    if(opts.isOverlayOrUnderlay) {
+      drawOverlayUnderlay();
+    } else {
+      drawBodyOrLabel();
+    }
 
     if(this.instanceCount >= this.maxInstances) {
       this.endBatch();

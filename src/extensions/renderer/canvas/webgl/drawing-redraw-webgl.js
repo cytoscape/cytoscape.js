@@ -24,21 +24,24 @@ CRp.initWebgl = function(options, fns) {
     return label && label.value;
   }
 
-  const getNodeOverlayUnderlayStyle = (node, overlayOrUnderlay) => {
+  const getNodeOverlayUnderlayStyle = overlayOrUnderlay => node => {
     const opacity = node.pstyle(`${overlayOrUnderlay}-opacity`).value;
-    if(opacity <= 0)
-      return null;
     const color = node.pstyle(`${overlayOrUnderlay}-color`).value;
     const shape = node.pstyle(`${overlayOrUnderlay}-shape`).value;
     const padding = node.pstyle( `${overlayOrUnderlay}-padding` ).pfValue;
-    return { opacity, color, shape, padding };
+    return { opacity, color, shape, padding }; // TODO need to add radius at some point
   };
-  const getLabelOverlayUnderlayStyle = () => null;
+
+  const isNodeOverlayUnderlayVisible = overlayOrUnderlay => node => {
+    const opacity = node.pstyle(`${overlayOrUnderlay}-opacity`).value;
+    return opacity > 0;
+  };
+
   
   r.edgeDrawing = new EdgeDrawing(r, gl);
   r.nodeDrawing = new NodeDrawing(r, gl);
   
-  r.nodeDrawing.addRenderType('node', {
+  r.nodeDrawing.addRenderType('node-body', {
     getKey: fns.getStyleKey,
     getBoundingBox: fns.getElementBox,
     drawElement: fns.drawElement,
@@ -46,7 +49,6 @@ CRp.initWebgl = function(options, fns) {
     getRotationOffset: fns.getElementRotationOffset,
     getRotation: getZeroRotation,
     isVisible: isNodeVisible,
-    getOverlayUnderlayStyle: getNodeOverlayUnderlayStyle,
   })
 
   r.nodeDrawing.addRenderType('node-label', {
@@ -57,7 +59,22 @@ CRp.initWebgl = function(options, fns) {
     getRotationOffset: fns.getLabelRotationOffset,
     getRotation: getLabelRotation,
     isVisible: isLabelVisible,
-    getOverlayUnderlayStyle: getLabelOverlayUnderlayStyle,
+  });
+
+  r.nodeDrawing.addRenderType('node-overlay', {
+    isOverlayOrUnderlay: true,
+    getBoundingBox: fns.getElementBox,
+    getRotation: getZeroRotation,
+    isVisible: isNodeOverlayUnderlayVisible('overlay'),
+    getOverlayUnderlayStyle: getNodeOverlayUnderlayStyle('overlay'),
+  });
+
+  r.nodeDrawing.addRenderType('node-underlay', {
+    isOverlayOrUnderlay: true,
+    getBoundingBox: fns.getElementBox,
+    getRotation: getZeroRotation,
+    isVisible: isNodeOverlayUnderlayVisible('underlay'),
+    getOverlayUnderlayStyle: getNodeOverlayUnderlayStyle('underlay'),
   });
 }
 
@@ -153,8 +170,10 @@ CRp.renderWebgl = function(options) {
         if(prevEle?.isEdge()) {
           edgeDrawing.endBatch();
         }
-        nodeDrawing.draw(ele, 'node');
+        nodeDrawing.draw(ele, 'node-underlay');
+        nodeDrawing.draw(ele, 'node-body');
         nodeDrawing.draw(ele, 'node-label');
+        nodeDrawing.draw(ele, 'node-overlay');
       } else {
         if(prevEle?.isNode()) {
           nodeDrawing.endBatch();

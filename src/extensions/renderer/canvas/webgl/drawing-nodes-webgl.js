@@ -169,19 +169,13 @@ export class NodeDrawing {
       const hScale = texSize / bb.h;
       const w = bb.w * wScale;
       const h = bb.h * hScale;
-      return { w, h };
+      return { w, h }; // Returns the width/height of the texture
     };
-
-    const getTexInfo = (shape, bb) => {
-      return {
-        texIndex: getTexIndex(shape),
-        ...getTexWidthHeight(bb)
-      };
-    }
 
     return {
       atlas,
-      getTexInfo
+      getTexIndex,
+      getTexWidthHeight
     };
   }
 
@@ -363,7 +357,7 @@ export class NodeDrawing {
   }
 
 
-  setTransformMatrix(node, opts, matrix) {
+  setTransformMatrix(matrix, node, opts, padding) {
     // matrix is expected to be a 9 element array
     // follows same pattern as CRp.drawCachedElementPortion(...)
     const bb = opts.getBoundingBox(node);
@@ -384,9 +378,18 @@ export class NodeDrawing {
       x = bb.x1;
       y = bb.y1;
     }
+
+    let nodeWidth  = bb.w;
+    let nodeHeight = bb.h;
+    if(padding) {
+      x -= padding;
+      y -= padding;
+      nodeWidth  += 2 * padding;
+      nodeHeight += 2 * padding;
+    }
     
     mat3.translate(matrix, matrix, [x, y]);
-    mat3.scale(matrix, matrix, [bb.w, bb.h]);
+    mat3.scale(matrix, matrix, [nodeWidth, nodeHeight]);
   }
 
 
@@ -404,14 +407,14 @@ export class NodeDrawing {
     if(!opts.isVisible(node))
       return;
 
-    const bufferInstanceData = (texID, xOffset, yOffset, w, h, layColor=[0, 0, 0, 0]) => {
+    const bufferInstanceData = (texID, xOffset, yOffset, w, h, padding=0, layColor=[0, 0, 0, 0]) => {
       this.texIdBuffer.setDataAt([texID], this.instanceCount);
       this.offsetsBuffer.setDataAt([xOffset, yOffset], this.instanceCount);
       this.widthHeightBuffer.setDataAt([w, h], this.instanceCount);
       this.layColorBuffer.setDataAt(layColor, this.instanceCount);
       // pass the array view to setTransformMatrix
-      const view = this.matrixBuffer.getMatrixView(this.instanceCount);
-      this.setTransformMatrix(node, opts, view);
+      const matrix = this.matrixBuffer.getMatrixView(this.instanceCount);
+      this.setTransformMatrix(matrix, node, opts, padding);
 
       this.instanceCount++;
     };
@@ -432,28 +435,29 @@ export class NodeDrawing {
     const drawBody = () => {
       const { atlas, texIndex } = this.getOrCreateTexture(node, opts);
       const texID = getTexIdForBatch(atlas);
-      const bb = opts.getBoundingBox(node);
       const { xOffset, yOffset } = getTexOffsets(texIndex);
+      const bb = opts.getBoundingBox(node);
       const { w, h } = getTexScale(bb);
       bufferInstanceData(texID, xOffset, yOffset, w, h);
     };
 
     const drawOverlayUnderlay = (overlayOrUnderlay) => {
       const style = opts.getOverlayUnderlayStyle(node, overlayOrUnderlay);
-      if(!style || style.opacity === 0)
+      if(!style || style.opacity <= 0)
         return;
 
-      const texID = getTexIdForBatch(this.overlayUnderlay.atlas);
-      const bb = opts.getBoundingBox(node);
-      const { opacity, color, shape } = style; // Ignore radius and padding for now
-      const { texIndex, w, h } = this.overlayUnderlay.getTexInfo(shape, bb);
+      const { opacity, color, shape, padding } = style; // Ignore radius for now
+
+      const texIndex = this.overlayUnderlay.getTexIndex(shape);
       if(texIndex < 0)
         return;
 
-      const webglColor = util.normalizeColor(color, opacity, { premultiplyAlpha: true });
+      const texID = getTexIdForBatch(this.overlayUnderlay.atlas);
       const { xOffset, yOffset } = getTexOffsets(texIndex);
-
-      bufferInstanceData(texID, xOffset, yOffset, w, h, webglColor);
+      const bb = opts.getBoundingBox(node);
+      const { w, h } = this.overlayUnderlay.getTexWidthHeight(bb);
+      const webglColor = util.normalizeColor(color, opacity, { premultiplyAlpha: true });
+      bufferInstanceData(texID, xOffset, yOffset, w, h, padding, webglColor);
     }
 
     drawOverlayUnderlay('underlay');

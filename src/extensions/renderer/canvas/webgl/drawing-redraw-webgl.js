@@ -30,7 +30,8 @@ CRp.initWebgl = function(options, fns) {
       return null;
     const color = node.pstyle(`${overlayOrUnderlay}-color`).value;
     const shape = node.pstyle(`${overlayOrUnderlay}-shape`).value;
-    return { opacity, color, shape };
+    const padding = node.pstyle( `${overlayOrUnderlay}-padding` ).pfValue;
+    return { opacity, color, shape, padding };
   };
   const getLabelOverlayUnderlayStyle = () => null;
   

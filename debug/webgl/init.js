@@ -36,13 +36,13 @@ var params = {};
   if(style.file) {
     console.log('loading style from file: ', style.file);
     Promise.all([
-      fetch(network.file).then(res => res.json()),
+      fetch(network.url).then(res => res.json()),
       fetch(style.file).then(res => res.json())
     ]).then(([networkJson, styleJson]) => {
       load(networkJson.elements, styleJson.style);
     });
   } else {
-    fetch(network.file)
+    fetch(network.url)
     .then(res => res.json())
     .then(networkJson => {
       const style = styles[params.networkID];

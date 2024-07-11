@@ -4,28 +4,28 @@ var networks = {
     desc: 'tiny',
     nodes: 5,
     edges: 10,
-    file: 'network-tiny.json',
+    url: 'network-tiny.json',
     layout: { name: 'cose' }
   },
   'em-web': {
     desc: 'EM web',
     nodes: 569,
     edges: 6899,
-    file: 'network-em-web.json',
+    url: 'network-em-web.json',
     layout: { name: 'preset' }
   },
   'em-desktop': {
     desc: 'EM desktop',
     nodes: 1260,
     edges: 16030,
-    file: 'network-em-desktop.json',
+    url: 'network-em-desktop.json',
     layout: { name: 'preset' }
   },
   'ndex-large': {
     desc: 'NDEX large',
     nodes: 3238,
     edges: 68641,
-    file: 'network-ndex-large.json',
+    url: 'https://pub-835fc16db602427ba8b9a874e4754257.r2.dev/network-ndex-large.json',
     layout: { name: 'preset' }
   }
 };

@@ -24,16 +24,16 @@ CRp.initWebgl = function(options, fns) {
     return label && label.value;
   }
 
-  const getNodeOverlayUnderlayStyle = overlayOrUnderlay => node => {
-    const opacity = node.pstyle(`${overlayOrUnderlay}-opacity`).value;
-    const color = node.pstyle(`${overlayOrUnderlay}-color`).value;
-    const shape = node.pstyle(`${overlayOrUnderlay}-shape`).value;
-    const padding = node.pstyle( `${overlayOrUnderlay}-padding` ).pfValue;
+  const getNodeOverlayUnderlayStyle = s => node => {
+    const opacity = node.pstyle(`${s}-opacity`).value;
+    const color   = node.pstyle(`${s}-color`).value;
+    const shape   = node.pstyle(`${s}-shape`).value;
+    const padding = node.pstyle(`${s}-padding` ).pfValue;
     return { opacity, color, shape, padding }; // TODO need to add radius at some point
   };
 
-  const isNodeOverlayUnderlayVisible = overlayOrUnderlay => node => {
-    const opacity = node.pstyle(`${overlayOrUnderlay}-opacity`).value;
+  const isNodeOverlayUnderlayVisible = s => node => {
+    const opacity = node.pstyle(`${s}-opacity`).value;
     return opacity > 0;
   };
 
@@ -90,16 +90,16 @@ function createPanZoomMatrix(r) {
   const { x, y, zoom } = getEffectivePanZoom(r);
 
   const transform = mat3.create();
-  mat3.translate(transform, transform, vec2.fromValues(x, y));
-  mat3.scale(transform, transform, vec2.fromValues(zoom, zoom));
+  mat3.translate(transform, transform, [x, y]);
+  mat3.scale(transform, transform, [zoom, zoom]);
 
   const projection = mat3.create();
   mat3.projection(projection, width, height);
 
-  const matrix = mat3.create();
-  mat3.multiply(matrix, projection, transform);
+  const product = mat3.create();
+  mat3.multiply(product, projection, transform);
 
-  return matrix;
+  return product;
 }
 
 function getEffectivePanZoom(r) {

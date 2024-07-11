@@ -15,9 +15,13 @@ const initDefaults = defaults({
   isOverlayOrUnderlay: false,
 });
 
-const atlasSize = 8192; // square atlas, each side has this many pixels, should be power of 2
+// TODO make these values options that are passed in
+// They should adapt to the size of the network automatically, or be configurable by the user.
+// Square atlas, each side has this many pixels, maybe should be power of 2 for performance?
+const atlasSize = 4096; 
 const cols = 6;
 const rows = 10;
+
 const texPerAtlas = cols * rows;
 const texWidth  = Math.floor(atlasSize / cols);
 const texHeight = Math.floor(atlasSize / rows);
@@ -52,7 +56,7 @@ class Atlas {
     return this.index >= texPerAtlas;
   }
 
-  buffer(gl) {
+  maybeBuffer(gl) {
     if(!this.buffered) {
       this.texture = util.bufferTexture(gl, this.canvas);
       if(this.isFull()) {
@@ -132,15 +136,15 @@ export class NodeDrawing {
 
   initOverlayUnderlay() {
     const { r } = this;
+    const atlas = new Atlas();
+
     const size = Math.min(texWidth, texHeight);
     const center = size / 2;
-
-    const atlas = new Atlas();
 
     // textures are white so that the overlay color is preserved when multiplying in the fragment shader
     atlas.draw(r, (context) => {
       context.fillStyle = '#FFF';
-      r.drawRoundRectanglePath(context, center, center, size, size, 150); // TODO don't hardcode the radius
+      r.drawRoundRectanglePath(context, center, center, size, size, 80); // TODO don't hardcode the radius
       context.fill();
     });
     
@@ -424,7 +428,7 @@ export class NodeDrawing {
       let texID = this.atlases.indexOf(atlas);
       if(texID < 0) {
         if(this.atlases.length === this.maxAtlases) {
-           // If we run out of space for textures in the current batch, then start a new batch
+           // If we run out of space for textures in the current batch then start a new batch
           this.endBatch();
         }
         this.atlases.push(atlas);
@@ -496,7 +500,8 @@ export class NodeDrawing {
     // Activate all the texture units that we need
     for(let i = 0; i < this.atlases.length; i++) {
       const atlas = this.atlases[i];
-      atlas.buffer(gl); // if needed
+      atlas.maybeBuffer(gl); // buffering textures can take a long time
+
       gl.activeTexture(gl.TEXTURE0 + i);
       gl.bindTexture(gl.TEXTURE_2D, atlas.texture);
       gl.uniform1i(program.uTextures[i], i);
@@ -512,7 +517,7 @@ export class NodeDrawing {
     gl.bindVertexArray(null);
     gl.bindTexture(gl.TEXTURE_2D, null); // TODO is this right when having multiple texture units?
 
-    // start another batch, even if not needed
+    // start the next batch, even if not needed
     this.startBatch();
   }
 

@@ -86,36 +86,31 @@ export class EdgeDrawing {
     util.createAttributeBufferStaticDraw(gl, {
       attributeLoc: program.aPosition,
       dataArray: instanceGeometry,
-      size: 2,
-      type: gl.FLOAT
+      type: 'vec2'
     });
 
     this.sourceBuffer = util.createInstanceBufferDynamicDraw(gl, {
       attributeLoc: program.aSource,
       maxInstances: this.maxInstances,
-      size: 2,
-      type: gl.FLOAT
+      type: 'vec2'
     });
 
     this.targetBuffer = util.createInstanceBufferDynamicDraw(gl, {
       attributeLoc: program.aTarget,
       maxInstances: this.maxInstances,
-      size: 2,
-      type: gl.FLOAT
+      type: 'vec2'
     });
 
     this.widthBuffer = util.createInstanceBufferDynamicDraw(gl, {
       attributeLoc: program.aWidth,
       maxInstances: this.maxInstances,
-      size: 1,
-      type: gl.FLOAT
+      type: 'float'
     });
 
     this.colorBuffer = util.createInstanceBufferDynamicDraw(gl, {
       attributeLoc: program.aColor,
       maxInstances: this.maxInstances,
-      size: 4,
-      type: gl.FLOAT
+      type: 'vec4'
     });
 
     gl.bindVertexArray(null);

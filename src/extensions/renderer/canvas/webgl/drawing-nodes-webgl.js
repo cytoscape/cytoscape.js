@@ -294,36 +294,31 @@ export class NodeDrawing {
     util.createAttributeBufferStaticDraw(gl, {
       attributeLoc: program.aPosition,
       dataArray: unitQuad,
-      size: 2,
-      type: gl.FLOAT
+      type: 'vec2'
     });
 
     this.texIdBuffer = util.createInstanceBufferDynamicDraw(gl, {
       attributeLoc: program.aTexId,
       maxInstances: this.maxInstances,
-      size: 1,
-      type: gl.INT
+      type: 'int'
     });
 
     this.layColorBuffer = util.createInstanceBufferDynamicDraw(gl, {
       attributeLoc: program.aLayColor,
       maxInstances: this.maxInstances,
-      size: 4,
-      type: gl.FLOAT
+      type: 'vec4'
     });
 
     this.offsetsBuffer = util.createInstanceBufferDynamicDraw(gl, {
       attributeLoc: program.aOffsets,
       maxInstances: this.maxInstances,
-      size: 2,
-      type: gl.FLOAT
+      type: 'vec2'
     });
 
     this.widthHeightBuffer = util.createInstanceBufferDynamicDraw(gl, {
       attributeLoc: program.aWidthHeight,
       maxInstances: this.maxInstances,
-      size: 2,
-      type: gl.FLOAT
+      type: 'vec2'
     });
 
     this.matrixBuffer = util.create3x3MatrixBufferDynamicDraw(gl, {

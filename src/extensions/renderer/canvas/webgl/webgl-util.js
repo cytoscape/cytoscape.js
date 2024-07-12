@@ -96,7 +96,11 @@ export function createAttributeBufferStaticDraw(gl, { attributeLoc, dataArray, t
   const buffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
   gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
-  gl.vertexAttribPointer(attributeLoc, size, glType, false, 0, 0);
+  if(glType === gl.FLOAT) {
+    gl.vertexAttribPointer(attributeLoc, size, glType, false, 0, 0);
+  } else if(glType === gl.INT) {
+    gl.vertexAttribIPointer(attributeLoc, size, glType, 0, 0);
+  }
   gl.enableVertexAttribArray(attributeLoc);
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
   return buffer;

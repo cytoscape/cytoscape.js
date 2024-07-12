@@ -4,6 +4,12 @@ import { defaults } from '../../../../util';
 const initDefaults = defaults({
 });
 
+// Vertex types
+const LINE = 0;
+const SOURCE_ARROW = 1;
+const TARGET_ARROW = 2;
+
+
 export class EdgeDrawing {
 
   /** 
@@ -28,20 +34,28 @@ export class EdgeDrawing {
 
       uniform mat3 uPanZoomMatrix;
 
+      // instanced
       in vec2 aPosition; // vertex
+      in int aVertType;
+
       in vec2 aSource;
       in vec2 aTarget;
+
       in float aWidth;
       in vec4 aColor;
 
       out vec4 vColor;
 
       void main(void) {
-        vec2 xBasis = aTarget - aSource;
-        vec2 yBasis = normalize(vec2(-xBasis.y, xBasis.x));
-        vec2 point = aSource + xBasis * aPosition.x + yBasis * aWidth * aPosition.y;
+        if(aVertType == ${LINE}) {
+          vec2 xBasis = aTarget - aSource;
+          vec2 yBasis = normalize(vec2(-xBasis.y, xBasis.x));
+          vec2 point = aSource + xBasis * aPosition.x + yBasis * aWidth * aPosition.y;
+          gl_Position = vec4(uPanZoomMatrix * vec3(point, 1.0), 1.0);
+        } else {
+          gl_Position = vec4(2.0, 0.0, 0.0, 1.0);
+        }
 
-        gl_Position = vec4(uPanZoomMatrix * vec3(point, 1.0), 1.0);
         vColor = aColor;
       }
     `;
@@ -64,19 +78,36 @@ export class EdgeDrawing {
     program.uPanZoomMatrix = gl.getUniformLocation(program, 'uPanZoomMatrix');
     
     program.aPosition = gl.getAttribLocation(program, 'aPosition');
-    program.aSource = gl.getAttribLocation(program, 'aSource');
-    program.aTarget = gl.getAttribLocation(program, 'aTarget');
-    program.aWidth = gl.getAttribLocation(program, 'aWidth');
-    program.aColor = gl.getAttribLocation(program, 'aColor');
+    program.aVertType = gl.getAttribLocation(program, 'aVertType');
+    program.aSource   = gl.getAttribLocation(program, 'aSource');
+    program.aTarget   = gl.getAttribLocation(program, 'aTarget');
+    program.aWidth    = gl.getAttribLocation(program, 'aWidth');
+    program.aColor    = gl.getAttribLocation(program, 'aColor');
 
     return program;
   }
 
   createVAO() {
-    const instanceGeometry = [
+    const line = [
       0, -0.5,   1, -0.5,   1, 0.5,
       0, -0.5,   1,  0.5,   0, 0.5
     ];
+    const arrow = [ // same as the 'triangle' shape in the base renderer
+      -0.15, -0.3,   0, 0,    0.15, -0.3
+    ];
+
+    const instanceGeometry = [
+      ...line,  // edge line
+      ...arrow, // source arrow
+      ...arrow, // target arrow
+    ];
+    const vertexTypes = [
+      ...new Array(line .length/2).fill(LINE),
+      ...new Array(arrow.length/2).fill(SOURCE_ARROW),
+      ...new Array(arrow.length/2).fill(TARGET_ARROW),
+    ];
+
+    this.vertexCount = instanceGeometry.length/2;
   
     const { gl, program } = this;
 
@@ -87,6 +118,12 @@ export class EdgeDrawing {
       attributeLoc: program.aPosition,
       dataArray: instanceGeometry,
       type: 'vec2'
+    });
+
+    util.createAttributeBufferStaticDraw(gl, {
+      attributeLoc: program.aVertType,
+      dataArray: vertexTypes,
+      type: 'int'
     });
 
     this.sourceBuffer = util.createInstanceBufferDynamicDraw(gl, {
@@ -125,21 +162,41 @@ export class EdgeDrawing {
   }
 
 
-  draw(edge) {
-    const sp = edge.source().position();
-    const tp = edge.target().position();
-
+  // TODO Should I pass in a function that does this like with NodeDrawing?
+  getLineStyle(edge) {
     const opacity = edge.pstyle('opacity').value;
     const lineOpacity = edge.pstyle('line-opacity').value;
     const width = edge.pstyle('width').pfValue;
     const color = edge.pstyle('line-color').value;
-
     const effectiveOpacity = opacity * lineOpacity;
-    const webglColor = util.toWebGLColor(color, effectiveOpacity);
+    return { 
+      opacity: effectiveOpacity,
+      width,
+      color
+    };
+  }
+
+
+  draw(edge) {
+    // edge points and arrow angles etc are calculated by the base renderer and cached in the rscratch object
+    const rs = edge._private.rscratch;
+
+    // all edges will be interpreted as 'straight' or 'haystack' edges
+    const [ sx, sy ] = rs.allpts;
+    const [ tx, ty ] = rs.allpts.slice(-2);
+
+    // const isHaystack = rs.edgeType === 'haystack';
+    // if( !isHaystack ){
+    //   this.drawArrowhead( context, edge, 'source', rs.arrowStartX, rs.arrowStartY, rs.srcArrowAngle, opacity );
+    // }
+// if( isNaN( x ) || x == null || isNaN( y ) || y == null || isNaN( angle ) || angle == null ){ return; }
+
+    const { opacity, width, color } = this.getLineStyle(edge);
+    const webglColor = util.toWebGLColor(color, opacity); // why am I not premultiplying?
 
     const i = this.instanceCount;
-    this.sourceBuffer.setDataAt([sp.x, sp.y], i);
-    this.targetBuffer.setDataAt([tp.x, tp.y], i);
+    this.sourceBuffer.setDataAt([sx, sy], i);
+    this.targetBuffer.setDataAt([tx, ty], i);
     this.widthBuffer.setDataAt([width], i);
     this.colorBuffer.setDataAt(webglColor, i);
 
@@ -152,26 +209,24 @@ export class EdgeDrawing {
 
 
   endBatch() {
-    const count = this.instanceCount;
-    if(count === 0) 
+    const { gl, program, vao, instanceCount, vertexCount } = this;
+    if(instanceCount === 0) 
       return;
-
-    const { gl, program, vao } = this;
 
     gl.useProgram(program);
     gl.bindVertexArray(vao);
 
     // buffer the attribute data
-    this.sourceBuffer.bufferSubData(count);
-    this.targetBuffer.bufferSubData(count);
-    this.widthBuffer.bufferSubData(count);
-    this.colorBuffer.bufferSubData(count);
+    this.sourceBuffer.bufferSubData(instanceCount);
+    this.targetBuffer.bufferSubData(instanceCount);
+    this.widthBuffer.bufferSubData(instanceCount);
+    this.colorBuffer.bufferSubData(instanceCount);
 
     // Set the projection matrix uniform
     gl.uniformMatrix3fv(program.uPanZoomMatrix, false, this.panZoomMatrix);
 
     // draw!
-    gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, count); // 6 verticies per edge
+    gl.drawArraysInstanced(gl.TRIANGLES, 0, vertexCount, instanceCount);
 
     gl.bindVertexArray(null);
 

@@ -284,7 +284,8 @@ export class NodeDrawing {
       0, 0,  0, 1,  1, 0,
       1, 0,  0, 1,  1, 1,
     ];
-  
+    this.vertexCount = 6;
+
     const { gl, program } = this;
 
     const vao = gl.createVertexArray();
@@ -475,21 +476,19 @@ export class NodeDrawing {
     // nodeContext.drawImage(this.atlases[0].canvas, 0, 0);
     // nodeContext.restore();
 
-    const count = this.instanceCount;
-    if(count === 0) 
+    const { gl, program, vao, instanceCount, vertexCount } = this;
+    if(instanceCount === 0) 
       return;
-
-    const { gl, program, vao } = this;
 
     gl.useProgram(program);
     gl.bindVertexArray(vao);
 
     // upload the new matrix data
-    this.matrixBuffer.bufferSubData(count);
-    this.texIdBuffer.bufferSubData(count);
-    this.offsetsBuffer.bufferSubData(count);
-    this.widthHeightBuffer.bufferSubData(count);
-    this.layColorBuffer.bufferSubData(count);
+    this.matrixBuffer.bufferSubData(instanceCount);
+    this.texIdBuffer.bufferSubData(instanceCount);
+    this.offsetsBuffer.bufferSubData(instanceCount);
+    this.widthHeightBuffer.bufferSubData(instanceCount);
+    this.layColorBuffer.bufferSubData(instanceCount);
 
     // Activate all the texture units that we need
     for(let i = 0; i < this.atlases.length; i++) {
@@ -506,7 +505,7 @@ export class NodeDrawing {
     gl.uniform1i(program.uAtlasSize, atlasSize);
 
     // draw!
-    gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, count); // 6 verticies per node
+    gl.drawArraysInstanced(gl.TRIANGLES, 0, vertexCount, instanceCount);
 
     gl.bindVertexArray(null);
     gl.bindTexture(gl.TEXTURE_2D, null); // TODO is this right when having multiple texture units?

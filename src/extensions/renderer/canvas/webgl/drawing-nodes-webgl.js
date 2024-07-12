@@ -280,7 +280,6 @@ export class NodeDrawing {
 
 
   createVAO() {
-    // TODO switch to indexed drawing?
     const unitQuad = [
       0, 0,  0, 1,  1, 0,
       1, 0,  0, 1,  1, 1,
@@ -453,7 +452,7 @@ export class NodeDrawing {
       const { xOffset, yOffset } = getTexOffsets(texIndex);
       const bb = opts.getBoundingBox(node);
       const { w, h } = this.overlayUnderlay.getTexWidthHeight(bb);
-      const webglColor = util.normalizeColor(color, opacity, { premultiplyAlpha: true });
+      const webglColor = util.toWebGLColor(color, opacity, { premultiplyAlpha: true });
       bufferInstanceData(texID, xOffset, yOffset, w, h, padding, webglColor);
     }
 

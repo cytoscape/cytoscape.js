@@ -36,21 +36,18 @@ export function createTextureCanvas(r, width, height) {
 }
 
 /**
- * Takes color and opacity values as returned by the style and converts
- * them into the format expected by WebGL.
+ * Takes color and opacity values in the style and converts
+ * them to the format expected by WebGL.
  */
-export function normalizeColor(color, opacity, { premultiplyAlpha } = {}) {
-  const normalized = [
-    color[0] / 256, 
-    color[1] / 256, 
-    color[2] / 256, 
-    opacity 
-  ];
-  if(premultiplyAlpha) {
-    const [ r, g, b, a ] = normalized;
-    return [ r * a, g * a, b * a, a];
-  }
-  return normalized;
+export function toWebGLColor(color, opacity, { premultiplyAlpha } = {}) {
+  const r = color[0] / 256;
+  const g = color[1] / 256;
+  const b = color[2] / 256;
+  const a = opacity;
+  if(premultiplyAlpha)
+    return [ r*a, g*a, b*a, a ];
+  else
+    return [ r, g, b, a ];
 }
 
 
@@ -66,6 +63,7 @@ export function bufferTexture(gl, textureCanvas) {
   // very important, this tells webgl to premultiply colors by the alpha channel
   gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
 
+  // this part takes a long time
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, textureCanvas);
   gl.generateMipmap(gl.TEXTURE_2D);
 
@@ -81,20 +79,18 @@ function getTypeInfo(gl, glslType) {
     case 'vec4' : return [ 4, gl.FLOAT, 4 ];
     case 'int'  : return [ 1, gl.INT  , 4 ];
   }
-  throw new Error('unknown type: ' + glslType);
 }
 
-function createTypedArray(gl, glType, data) {
-  if(glType === gl.FLOAT) {
-    return new Float32Array(data);
-  } else if(glType === gl.INT) {
-    return new Int32Array(data);
+function createTypedArray(gl, glType, dataOrSize) {
+  switch(glType) {
+    case gl.FLOAT: return new Float32Array(dataOrSize);
+    case gl.INT  : return new Int32Array(dataOrSize);
   }
 }
 
 /** @param {WebGLRenderingContext} gl */
 export function createAttributeBufferStaticDraw(gl, { attributeLoc, dataArray, type }) {
-  const [ size, glType, bytes ] = getTypeInfo(gl, type);
+  const [ size, glType ] = getTypeInfo(gl, type);
   const data = createTypedArray(gl, glType, dataArray);
 
   const buffer = gl.createBuffer();

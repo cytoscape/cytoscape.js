@@ -132,10 +132,10 @@ export class EdgeDrawing {
     const opacity = edge.pstyle('opacity').value;
     const lineOpacity = edge.pstyle('line-opacity').value;
     const width = edge.pstyle('width').pfValue;
-    const effectiveOpacity = opacity * lineOpacity;
     const color = edge.pstyle('line-color').value;
 
-    const webglColor = util.normalizeColor(color, effectiveOpacity);
+    const effectiveOpacity = opacity * lineOpacity;
+    const webglColor = util.toWebGLColor(color, effectiveOpacity);
 
     const i = this.instanceCount;
     this.sourceBuffer.setDataAt([sp.x, sp.y], i);

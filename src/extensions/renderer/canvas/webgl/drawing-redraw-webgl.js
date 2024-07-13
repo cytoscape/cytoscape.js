@@ -132,9 +132,7 @@ function drawAxes(r) { // for debgging
   const context = r.data.contexts[ r.NODE ];
   context.save();
   setContextTransform(r, context);
-  context.fillStyle='red';
-  context.fillRect(-3, -3, 6, 6);
-  context.strokeStyle='red';
+  context.strokeStyle='rgba(0, 0, 0, 0.3)';
   context.beginPath();
   context.moveTo(-1000, 0);
   context.lineTo(1000, 0);

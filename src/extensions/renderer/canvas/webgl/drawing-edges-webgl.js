@@ -1,5 +1,6 @@
 import * as util from './webgl-util';
 import { defaults } from '../../../../util';
+import { mat3 } from 'gl-matrix';
 
 const initDefaults = defaults({
 });
@@ -35,14 +36,22 @@ export class EdgeDrawing {
       uniform mat3 uPanZoomMatrix;
 
       // instanced
-      in vec2 aPosition; // vertex
+      in vec2 aPosition;
       in int aVertType;
 
+      // lines
       in vec2 aSource;
       in vec2 aTarget;
+      in float aLineWidth;
+      in vec4 aLineColor;
 
-      in float aWidth;
-      in vec4 aColor;
+      // arrows
+      in int aDrawSourceArrow;
+      in int aDrawTargetArrow;
+      in vec4 aSourceArrowColor;
+      in vec4 aTargetArrowColor;
+      in mat3 aSourceArrowTransform;
+      in mat3 aTargetArrowTransform;
 
       out vec4 vColor;
 
@@ -50,13 +59,24 @@ export class EdgeDrawing {
         if(aVertType == ${LINE}) {
           vec2 xBasis = aTarget - aSource;
           vec2 yBasis = normalize(vec2(-xBasis.y, xBasis.x));
-          vec2 point = aSource + xBasis * aPosition.x + yBasis * aWidth * aPosition.y;
+          vec2 point = aSource + xBasis * aPosition.x + yBasis * aLineWidth * aPosition.y;
           gl_Position = vec4(uPanZoomMatrix * vec3(point, 1.0), 1.0);
-        } else {
-          gl_Position = vec4(2.0, 0.0, 0.0, 1.0);
+          vColor = aLineColor;
+        } 
+        else if(aVertType == ${SOURCE_ARROW} && aDrawSourceArrow == 1) {
+          gl_Position = vec4(uPanZoomMatrix * aSourceArrowTransform * vec3(aPosition, 1.0), 1.0);
+          // gl_Position = vec4(uPanZoomMatrix * vec3(aPosition, 1.0), 1.0);
+          // gl_Position = vec4(aPosition, 1.0, 1.0);
+          vColor = aSourceArrowColor;
         }
-
-        vColor = aColor;
+        else if(aVertType == ${TARGET_ARROW} && aDrawTargetArrow == 1) {
+          gl_Position = vec4(uPanZoomMatrix * aTargetArrowTransform * vec3(aPosition, 1.0), 1.0);
+          vColor = aTargetArrowColor;
+        } 
+        else {
+          gl_Position = vec4(2.0, 0.0, 0.0, 1.0);
+          vColor = vec4(0.0, 0.0, 0.0, 0.0);
+        }
       }
     `;
 
@@ -77,12 +97,20 @@ export class EdgeDrawing {
 
     program.uPanZoomMatrix = gl.getUniformLocation(program, 'uPanZoomMatrix');
     
-    program.aPosition = gl.getAttribLocation(program, 'aPosition');
-    program.aVertType = gl.getAttribLocation(program, 'aVertType');
-    program.aSource   = gl.getAttribLocation(program, 'aSource');
-    program.aTarget   = gl.getAttribLocation(program, 'aTarget');
-    program.aWidth    = gl.getAttribLocation(program, 'aWidth');
-    program.aColor    = gl.getAttribLocation(program, 'aColor');
+    program.aPosition  = gl.getAttribLocation(program, 'aPosition');
+    program.aVertType  = gl.getAttribLocation(program, 'aVertType');
+
+    program.aSource    = gl.getAttribLocation(program, 'aSource');
+    program.aTarget    = gl.getAttribLocation(program, 'aTarget');
+    program.aLineWidth = gl.getAttribLocation(program, 'aLineWidth');
+    program.aLineColor = gl.getAttribLocation(program, 'aLineColor');
+
+    program.aDrawSourceArrow      = gl.getAttribLocation(program, 'aDrawSourceArrow');
+    program.aDrawTargetArrow      = gl.getAttribLocation(program, 'aDrawTargetArrow');
+    program.aSourceArrowColor     = gl.getAttribLocation(program, 'aSourceArrowColor');
+    program.aTargetArrowColor     = gl.getAttribLocation(program, 'aTargetArrowColor');
+    program.aSourceArrowTransform = gl.getAttribLocation(program, 'aSourceArrowTransform');
+    program.aTargetArrowTransform = gl.getAttribLocation(program, 'aTargetArrowTransform');
 
     return program;
   }
@@ -94,6 +122,7 @@ export class EdgeDrawing {
     ];
     const arrow = [ // same as the 'triangle' shape in the base renderer
       -0.15, -0.3,   0, 0,    0.15, -0.3
+      // -5, -5, 0, 0, 5, -5
     ];
 
     const instanceGeometry = [
@@ -108,6 +137,9 @@ export class EdgeDrawing {
     ];
 
     this.vertexCount = instanceGeometry.length/2;
+    console.log('instance geometry', instanceGeometry);
+    console.log('vertex types', vertexTypes);
+    console.log('vertexCOunt', this.vertexCount);
   
     const { gl, program } = this;
 
@@ -138,16 +170,50 @@ export class EdgeDrawing {
       type: 'vec2'
     });
 
-    this.widthBuffer = util.createInstanceBufferDynamicDraw(gl, {
-      attributeLoc: program.aWidth,
+    this.lineWidthBuffer = util.createInstanceBufferDynamicDraw(gl, {
+      attributeLoc: program.aLineWidth,
       maxInstances: this.maxInstances,
       type: 'float'
     });
 
-    this.colorBuffer = util.createInstanceBufferDynamicDraw(gl, {
-      attributeLoc: program.aColor,
+    this.lineColorBuffer = util.createInstanceBufferDynamicDraw(gl, {
+      attributeLoc: program.aLineColor,
       maxInstances: this.maxInstances,
       type: 'vec4'
+    });
+
+    this.drawSourceArrowBuffer = util.createInstanceBufferDynamicDraw(gl, {
+      attributeLoc: program.aDrawSourceArrow,
+      maxInstances: this.maxInstances,
+      type: 'int'
+    });
+
+    this.drawTargetArrowBuffer = util.createInstanceBufferDynamicDraw(gl, {
+      attributeLoc: program.aDrawTargetArrow,
+      maxInstances: this.maxInstances,
+      type: 'int'
+    });
+
+    this.sourceArrowColorBuffer = util.createInstanceBufferDynamicDraw(gl, {
+      attributeLoc: program.aSourceArrowColor,
+      maxInstances: this.maxInstances,
+      type: 'vec4'
+    });
+
+    this.targetArrowColorBuffer = util.createInstanceBufferDynamicDraw(gl, {
+      attributeLoc: program.aTargetArrowColor,
+      maxInstances: this.maxInstances,
+      type: 'vec4'
+    });
+
+    this.sourceArrowTransformBuffer = util.create3x3MatrixBufferDynamicDraw(gl, {
+      attributeLoc: program.aSourceArrowTransform,
+      maxInstances: this.maxInstances
+    });
+
+    this.targetArrowTransformBuffer = util.create3x3MatrixBufferDynamicDraw(gl, {
+      attributeLoc: program.aTargetArrowTransform,
+      maxInstances: this.maxInstances
     });
 
     gl.bindVertexArray(null);
@@ -177,28 +243,83 @@ export class EdgeDrawing {
   }
 
 
+  getArrowInfo(edge, prefix, edgeOpacity, edgeWidth) {
+    const rs = edge._private.rscratch;
+    if(rs.edgeType !== 'straight') { // only straight edges get arrows for now
+      return;
+    }
+
+    let x, y, angle;
+    if(prefix === 'source') {
+      x = rs.arrowStartX;
+      y = rs.arrowStartY;
+      angle = rs.srcArrowAngle;
+    } else {
+      x = rs.arrowEndX;
+      y = rs.arrowEndY;
+      angle = rs.tgtArrowAngle;
+    }
+
+    // take from CRp.drawArrowhead
+    if(isNaN(x) || x == null || isNaN(y) || y == null || isNaN(angle) || angle == null) { 
+      return; 
+    }
+
+    let color = edge.pstyle(prefix + '-arrow-color').value;
+    let scale = edge.pstyle('arrow-scale').value;
+    let size = this.r.getArrowWidth(edgeWidth, scale);
+
+    let webglColor = util.toWebGLColor(color, edgeOpacity);
+    console.log('arrow color', webglColor)
+
+    const transform = mat3.create();
+    mat3.translate(transform, transform, [x, y]);
+    mat3.scale(transform, transform, [size, size]);
+    mat3.rotate(transform, transform, angle);
+
+    return {
+      transform,
+      webglColor
+    }
+  }
+
+
   draw(edge) {
     // edge points and arrow angles etc are calculated by the base renderer and cached in the rscratch object
     const rs = edge._private.rscratch;
+    const i = this.instanceCount;
 
-    // all edges will be interpreted as 'straight' or 'haystack' edges
+    // line
+    const { opacity, width, color } = this.getLineStyle(edge);
     const [ sx, sy ] = rs.allpts;
     const [ tx, ty ] = rs.allpts.slice(-2);
-
-    // const isHaystack = rs.edgeType === 'haystack';
-    // if( !isHaystack ){
-    //   this.drawArrowhead( context, edge, 'source', rs.arrowStartX, rs.arrowStartY, rs.srcArrowAngle, opacity );
-    // }
-// if( isNaN( x ) || x == null || isNaN( y ) || y == null || isNaN( angle ) || angle == null ){ return; }
-
-    const { opacity, width, color } = this.getLineStyle(edge);
-    const webglColor = util.toWebGLColor(color, opacity); // why am I not premultiplying?
-
-    const i = this.instanceCount;
+    const lineColor = util.toWebGLColor(color, opacity); // why am I not premultiplying?
+    
     this.sourceBuffer.setDataAt([sx, sy], i);
     this.targetBuffer.setDataAt([tx, ty], i);
-    this.widthBuffer.setDataAt([width], i);
-    this.colorBuffer.setDataAt(webglColor, i);
+    this.lineWidthBuffer.setDataAt([width], i);
+    this.lineColorBuffer.setDataAt(lineColor, i);
+
+    // arrows
+    const sourceInfo = this.getArrowInfo(edge, 'source', opacity, width);
+    if(sourceInfo) {
+      this.drawSourceArrowBuffer.setDataAt([1], i);
+      this.sourceArrowColorBuffer.setDataAt(sourceInfo.webglColor, i);
+      const matrix = this.sourceArrowTransformBuffer.getMatrixView(i); // TODO not using matrix views properly here
+      matrix.set(sourceInfo.transform, 0); 
+    } else {
+      this.drawSourceArrowBuffer.setDataAt([0], i);
+    }
+
+    const targetInfo = this.getArrowInfo(edge, 'target', opacity, width);
+    if(targetInfo) {
+      this.drawTargetArrowBuffer.setDataAt([1], i);
+      this.targetArrowColorBuffer.setDataAt(targetInfo.webglColor, i);
+      const matrix = this.targetArrowTransformBuffer.getMatrixView(i); // TODO not using matrix views properly here
+      matrix.set(targetInfo.transform, 0); 
+    } else {
+      this.drawTargetArrowBuffer.setDataAt([0], i);
+    }
 
     this.instanceCount++;
 
@@ -219,8 +340,15 @@ export class EdgeDrawing {
     // buffer the attribute data
     this.sourceBuffer.bufferSubData(instanceCount);
     this.targetBuffer.bufferSubData(instanceCount);
-    this.widthBuffer.bufferSubData(instanceCount);
-    this.colorBuffer.bufferSubData(instanceCount);
+    this.lineWidthBuffer.bufferSubData(instanceCount);
+    this.lineColorBuffer.bufferSubData(instanceCount);
+
+    this.drawSourceArrowBuffer.bufferSubData(instanceCount);
+    this.drawTargetArrowBuffer.bufferSubData(instanceCount);
+    this.sourceArrowColorBuffer.bufferSubData(instanceCount);
+    this.targetArrowColorBuffer.bufferSubData(instanceCount);
+    this.sourceArrowTransformBuffer.bufferSubData(instanceCount);
+    this.targetArrowTransformBuffer.bufferSubData(instanceCount);
 
     // Set the projection matrix uniform
     gl.uniformMatrix3fv(program.uPanZoomMatrix, false, this.panZoomMatrix);

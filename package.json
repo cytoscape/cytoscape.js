@@ -83,7 +83,7 @@
     "test:modules:debug": "mocha inspect -r esm test/modules",
     "travis": "run-s build test:build test:modules lint",
     "docs": "run-s docs:build docs:js",
-    "docs:js": "cpy build/cytoscape.min.js documentation/js",
+    "docs:js": "cpy --flat build/cytoscape.min.js documentation/js",
     "docs:build": "node documentation/docmaker.js",
     "docs:push": "gh-pages -d documentation",
     "benchmark": "run-s benchmark:all",

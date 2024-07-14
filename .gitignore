@@ -10,5 +10,6 @@ build/**
 documentation/slimerjs-*/**
 documentation/api/**
 documentation/download/*.zip
+documentation/js/cytoscape.min.js
 benchmark/suite/cytoscape.js
 

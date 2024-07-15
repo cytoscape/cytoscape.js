@@ -10,10 +10,11 @@ var params = {};
   const urlParams = new URLSearchParams(window.location.search);
   params.networkID = urlParams.get('networkID') || 'em-web';
   params.webgl = urlParams.get('webgl') === 'true';
+  params.bgcolor = urlParams.get('bgcolor') || 'white';
 
   const network = networks[params.networkID];
   const style = styles[params.networkID];
-
+  $('#cytoscape').style.backgroundColor = params.bgcolor;
 
   function load(elements, style) {
     options = {

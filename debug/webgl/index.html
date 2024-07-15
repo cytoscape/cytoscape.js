@@ -36,6 +36,7 @@
     <script src="./cytoscape.umd.js"></script>
 
     <title>cytoscape.js WebGL2 debug page</title>
+
   </head>
 
   <body>
@@ -53,15 +54,33 @@
 
         <h2>Network</h2>
         <select id="network-select">
-        </select><br />
-        <br />
+        </select>
+        <br /> <br />
         <button id="fit-button">Fit to view</button> <br />
         <br />
-        <h2>Settings</h2>
         <div>
           <input type="checkbox" id="webgl-check" checked />
-          <label for="webgl-check">Use WebGL2</label>
+          <label for="webgl-check">Enable <b>WebGL</b></label>
         </div>
+
+        <h2>Settings</h2>
+        
+        Background Color: 
+        <select id="bg-color-select">
+          <option value="white">⚪ White</option>
+          <option value="blue">🔵 Blue</option>
+          <option value="black">⚫ Black</option>
+          <option value="purple">🟣 Purple</option>
+          <option value="orange">🟠 Orange</option>
+          <option value="red">🔴 Red</option>
+          <option value="green">🟢 Green</option>
+          <option value="yellow">🟡 Yellow</option>
+          <option value="brown">🟤 Brown</option>👽
+          <option value="gray">👽 Gray</option>
+        </select>
+
+        <br /><br /><br /><br /><br />
+        <button id="reset-button">Reset</button> <br />
         <!--
         <div>
           <input type="checkbox" id="show-labels" checked />
@@ -71,6 +90,7 @@
 
         <!--
           What else to show...
+          - Toggle canvas background color
           - Toggle color mapping
           - Toggle transparancy
           - Style stuff...

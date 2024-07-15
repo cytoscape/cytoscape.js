@@ -185,6 +185,15 @@ var styles = {
         'edge-text-rotation': 'autorotate',
         'font-weight': 'bold'
       }
+    }, {
+      selector: '#n3-n4',
+      style: {
+        'source-arrow-shape': 'triangle',
+        'source-arrow-color': 'red',
+        'target-arrow-shape': 'triangle',
+        'target-arrow-color': 'green',
+        'curve-style': 'straight',
+      }
     }
   ],
 };

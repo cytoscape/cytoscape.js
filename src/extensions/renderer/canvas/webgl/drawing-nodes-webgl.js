@@ -291,40 +291,14 @@ export class NodeDrawing {
     const vao = gl.createVertexArray();
     gl.bindVertexArray(vao);
 
-    util.createAttributeBufferStaticDraw(gl, {
-      attributeLoc: program.aPosition,
-      dataArray: unitQuad,
-      type: 'vec2'
-    });
+    util.createBufferStaticDraw(gl, 'vec2', program.aPosition, unitQuad);
 
-    this.texIdBuffer = util.createInstanceBufferDynamicDraw(gl, {
-      attributeLoc: program.aTexId,
-      maxInstances: this.maxInstances,
-      type: 'int'
-    });
-
-    this.layColorBuffer = util.createInstanceBufferDynamicDraw(gl, {
-      attributeLoc: program.aLayColor,
-      maxInstances: this.maxInstances,
-      type: 'vec4'
-    });
-
-    this.offsetsBuffer = util.createInstanceBufferDynamicDraw(gl, {
-      attributeLoc: program.aOffsets,
-      maxInstances: this.maxInstances,
-      type: 'vec2'
-    });
-
-    this.widthHeightBuffer = util.createInstanceBufferDynamicDraw(gl, {
-      attributeLoc: program.aWidthHeight,
-      maxInstances: this.maxInstances,
-      type: 'vec2'
-    });
-
-    this.matrixBuffer = util.create3x3MatrixBufferDynamicDraw(gl, {
-      attributeLoc: program.aNodeMatrix,
-      maxInstances: this.maxInstances
-    });
+    const n = this.maxInstances;
+    this.texIdBuffer = util.createBufferDynamicDraw(gl, n, 'int',  program.aTexId);
+    this.layColorBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aLayColor);
+    this.offsetsBuffer = util.createBufferDynamicDraw(gl, n, 'vec2', program.aOffsets);
+    this.widthHeightBuffer = util.createBufferDynamicDraw(gl, n, 'vec2', program.aWidthHeight);
+    this.matrixBuffer = util.create3x3MatrixBufferDynamicDraw(gl, n, program.aNodeMatrix);
 
     gl.bindVertexArray(null);
     return vao;
@@ -408,12 +382,13 @@ export class NodeDrawing {
       return;
 
     const bufferInstanceData = (texID, xOffset, yOffset, w, h, padding=0, layColor=[0, 0, 0, 0]) => {
-      this.texIdBuffer.setDataAt([texID], this.instanceCount);
-      this.offsetsBuffer.setDataAt([xOffset, yOffset], this.instanceCount);
-      this.widthHeightBuffer.setDataAt([w, h], this.instanceCount);
-      this.layColorBuffer.setDataAt(layColor, this.instanceCount);
+      const i = this.instanceCount;
+      this.texIdBuffer.setData([texID], i);
+      this.offsetsBuffer.setData([xOffset, yOffset], i);
+      this.widthHeightBuffer.setData([w, h], i);
+      this.layColorBuffer.setData(layColor, i);
       // pass the array view to setTransformMatrix
-      const matrix = this.matrixBuffer.getMatrixView(this.instanceCount);
+      const matrix = this.matrixBuffer.getMatrixView(i);
       this.setTransformMatrix(matrix, node, opts, padding);
 
       this.instanceCount++;

@@ -89,7 +89,7 @@ function createTypedArray(gl, glType, dataOrSize) {
 }
 
 /** @param {WebGLRenderingContext} gl */
-export function createAttributeBufferStaticDraw(gl, { attributeLoc, dataArray, type }) {
+export function createBufferStaticDraw(gl, type, attributeLoc, dataArray) {
   const [ size, glType ] = getTypeInfo(gl, type);
   const data = createTypedArray(gl, glType, dataArray);
 
@@ -112,14 +112,14 @@ export function createAttributeBufferStaticDraw(gl, { attributeLoc, dataArray, t
  * The returned buffer object contains functions to easily set instance data and buffer the data before a draw call.
  * @param {WebGLRenderingContext} gl 
  */
-export function createInstanceBufferDynamicDraw(gl, { attributeLoc, maxInstances, type }) {
+export function createBufferDynamicDraw(gl, instances, type, attributeLoc) {
   const [ size, glType, bytes ] = getTypeInfo(gl, type);
-  const dataArray = createTypedArray(gl, glType, maxInstances * size);
+  const dataArray = createTypedArray(gl, glType, instances * size);
   const stride = size * bytes;
 
   const buffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-  gl.bufferData(gl.ARRAY_BUFFER, maxInstances * stride, gl.DYNAMIC_DRAW); 
+  gl.bufferData(gl.ARRAY_BUFFER, instances * stride, gl.DYNAMIC_DRAW); 
   gl.enableVertexAttribArray(attributeLoc);
   if(glType === gl.FLOAT) {
     gl.vertexAttribPointer(attributeLoc, size, glType, false, stride, 0);
@@ -133,7 +133,7 @@ export function createInstanceBufferDynamicDraw(gl, { attributeLoc, maxInstances
   buffer.stride = stride;
   buffer.size = size;
 
-  buffer.setDataAt = (data, i) => {
+  buffer.setData = (data, i) => {
     dataArray.set(data, i * size);
   };
 
@@ -153,13 +153,13 @@ export function createInstanceBufferDynamicDraw(gl, { attributeLoc, maxInstances
  * Creates a buffer of 3x3 matrix data for use as attribute data.
  * @param {WebGLRenderingContext} gl 
  */
-export function create3x3MatrixBufferDynamicDraw(gl, { maxInstances, attributeLoc } ) {
+export function create3x3MatrixBufferDynamicDraw(gl, instances, attributeLoc) {
   const matrixSize = 9; // 3x3 matrix
-  const matrixData = new Float32Array(maxInstances * matrixSize);
+  const matrixData = new Float32Array(instances * matrixSize);
 
   // use matrix views to set values directly into the matrixData array
-  const matrixViews = new Array(maxInstances);
-  for(let i = 0; i < maxInstances; i++) {
+  const matrixViews = new Array(instances);
+  for(let i = 0; i < instances; i++) {
     const byteOffset = i * matrixSize * 4; // 4 bytes per float
     matrixViews[i] = new Float32Array(matrixData.buffer, byteOffset, matrixSize); // array view
   }
@@ -179,6 +179,10 @@ export function create3x3MatrixBufferDynamicDraw(gl, { maxInstances, attributeLo
 
   buffer.getMatrixView = (i) => {
     return matrixViews[i];
+  };
+
+  buffer.setData = (matrix, i) => {
+    matrixViews[i].set(matrix, 0); 
   };
 
   buffer.bufferSubData = () => {

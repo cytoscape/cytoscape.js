@@ -122,7 +122,6 @@ export class EdgeDrawing {
     ];
     const arrow = [ // same as the 'triangle' shape in the base renderer
       -0.15, -0.3,   0, 0,    0.15, -0.3
-      // -5, -5, 0, 0, 5, -5
     ];
 
     const instanceGeometry = [
@@ -137,84 +136,27 @@ export class EdgeDrawing {
     ];
 
     this.vertexCount = instanceGeometry.length/2;
-    console.log('instance geometry', instanceGeometry);
-    console.log('vertex types', vertexTypes);
-    console.log('vertexCOunt', this.vertexCount);
   
     const { gl, program } = this;
 
     const vao = gl.createVertexArray();
     gl.bindVertexArray(vao);
 
-    util.createAttributeBufferStaticDraw(gl, {
-      attributeLoc: program.aPosition,
-      dataArray: instanceGeometry,
-      type: 'vec2'
-    });
+    util.createBufferStaticDraw(gl, 'vec2', program.aPosition, instanceGeometry);
+    util.createBufferStaticDraw(gl, 'int',  program.aVertType, vertexTypes);
 
-    util.createAttributeBufferStaticDraw(gl, {
-      attributeLoc: program.aVertType,
-      dataArray: vertexTypes,
-      type: 'int'
-    });
+    const n = this.maxInstances;
+    this.sourceBuffer = util.createBufferDynamicDraw(gl, n, 'vec2', program.aSource);
+    this.targetBuffer = util.createBufferDynamicDraw(gl, n, 'vec2', program.aTarget);
+    this.lineWidthBuffer = util.createBufferDynamicDraw(gl, n, 'float', program.aLineWidth);
+    this.lineColorBuffer = util.createBufferDynamicDraw(gl, n, 'vec4' , program.aLineColor);
 
-    this.sourceBuffer = util.createInstanceBufferDynamicDraw(gl, {
-      attributeLoc: program.aSource,
-      maxInstances: this.maxInstances,
-      type: 'vec2'
-    });
-
-    this.targetBuffer = util.createInstanceBufferDynamicDraw(gl, {
-      attributeLoc: program.aTarget,
-      maxInstances: this.maxInstances,
-      type: 'vec2'
-    });
-
-    this.lineWidthBuffer = util.createInstanceBufferDynamicDraw(gl, {
-      attributeLoc: program.aLineWidth,
-      maxInstances: this.maxInstances,
-      type: 'float'
-    });
-
-    this.lineColorBuffer = util.createInstanceBufferDynamicDraw(gl, {
-      attributeLoc: program.aLineColor,
-      maxInstances: this.maxInstances,
-      type: 'vec4'
-    });
-
-    this.drawSourceArrowBuffer = util.createInstanceBufferDynamicDraw(gl, {
-      attributeLoc: program.aDrawSourceArrow,
-      maxInstances: this.maxInstances,
-      type: 'int'
-    });
-
-    this.drawTargetArrowBuffer = util.createInstanceBufferDynamicDraw(gl, {
-      attributeLoc: program.aDrawTargetArrow,
-      maxInstances: this.maxInstances,
-      type: 'int'
-    });
-
-    this.sourceArrowColorBuffer = util.createInstanceBufferDynamicDraw(gl, {
-      attributeLoc: program.aSourceArrowColor,
-      maxInstances: this.maxInstances,
-      type: 'vec4'
-    });
-
-    this.targetArrowColorBuffer = util.createInstanceBufferDynamicDraw(gl, {
-      attributeLoc: program.aTargetArrowColor,
-      maxInstances: this.maxInstances,
-      type: 'vec4'
-    });
-
-    this.sourceArrowTransformBuffer = util.create3x3MatrixBufferDynamicDraw(gl, {
-      attributeLoc: program.aSourceArrowTransform,
-      maxInstances: this.maxInstances
-    });
-
-    this.targetArrowTransformBuffer = util.create3x3MatrixBufferDynamicDraw(gl, {
-      attributeLoc: program.aTargetArrowTransform,
-      maxInstances: this.maxInstances
-    });
+    this.drawSourceArrowBuffer = util.createBufferDynamicDraw(gl, n, 'int', program.aDrawSourceArrow);
+    this.drawTargetArrowBuffer = util.createBufferDynamicDraw(gl, n, 'int', program.aDrawTargetArrow);
+    this.sourceArrowColorBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aSourceArrowColor);
+    this.targetArrowColorBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aTargetArrowColor);
+    this.sourceArrowTransformBuffer = util.create3x3MatrixBufferDynamicDraw(gl, n, program.aSourceArrowTransform);
+    this.targetArrowTransformBuffer = util.create3x3MatrixBufferDynamicDraw(gl, n, program.aTargetArrowTransform);
 
     gl.bindVertexArray(null);
     return vao;
@@ -295,30 +237,28 @@ export class EdgeDrawing {
     const [ tx, ty ] = rs.allpts.slice(-2);
     const lineColor = util.toWebGLColor(color, opacity); // why am I not premultiplying?
     
-    this.sourceBuffer.setDataAt([sx, sy], i);
-    this.targetBuffer.setDataAt([tx, ty], i);
-    this.lineWidthBuffer.setDataAt([width], i);
-    this.lineColorBuffer.setDataAt(lineColor, i);
+    this.sourceBuffer.setData([sx, sy], i);
+    this.targetBuffer.setData([tx, ty], i);
+    this.lineWidthBuffer.setData([width], i);
+    this.lineColorBuffer.setData(lineColor, i);
 
     // arrows
     const sourceInfo = this.getArrowInfo(edge, 'source', opacity, width);
     if(sourceInfo) {
-      this.drawSourceArrowBuffer.setDataAt([1], i);
-      this.sourceArrowColorBuffer.setDataAt(sourceInfo.webglColor, i);
-      const matrix = this.sourceArrowTransformBuffer.getMatrixView(i); // TODO not using matrix views properly here
-      matrix.set(sourceInfo.transform, 0); 
+      this.drawSourceArrowBuffer.setData([1], i);
+      this.sourceArrowColorBuffer.setData(sourceInfo.webglColor, i);
+      this.sourceArrowTransformBuffer.setData(sourceInfo.transform, i);
     } else {
-      this.drawSourceArrowBuffer.setDataAt([0], i);
+      this.drawSourceArrowBuffer.setData([0], i);
     }
 
     const targetInfo = this.getArrowInfo(edge, 'target', opacity, width);
     if(targetInfo) {
-      this.drawTargetArrowBuffer.setDataAt([1], i);
-      this.targetArrowColorBuffer.setDataAt(targetInfo.webglColor, i);
-      const matrix = this.targetArrowTransformBuffer.getMatrixView(i); // TODO not using matrix views properly here
-      matrix.set(targetInfo.transform, 0); 
+      this.drawTargetArrowBuffer.setData([1], i);
+      this.targetArrowColorBuffer.setData(targetInfo.webglColor, i);
+      this.targetArrowTransformBuffer.setData(targetInfo.transform, i);
     } else {
-      this.drawTargetArrowBuffer.setDataAt([0], i);
+      this.drawTargetArrowBuffer.setData([0], i);
     }
 
     this.instanceCount++;

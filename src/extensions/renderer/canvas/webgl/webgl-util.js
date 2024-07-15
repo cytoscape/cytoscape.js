@@ -40,9 +40,9 @@ export function createTextureCanvas(r, width, height) {
  * them to the format expected by WebGL.
  */
 export function toWebGLColor(color, opacity, { premultiplyAlpha } = {}) {
-  const r = color[0] / 256;
-  const g = color[1] / 256;
-  const b = color[2] / 256;
+  const r = color[0] / 255;
+  const g = color[1] / 255;
+  const b = color[2] / 255;
   const a = opacity;
   if(premultiplyAlpha)
     return [ r*a, g*a, b*a, a ];

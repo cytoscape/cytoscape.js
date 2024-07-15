@@ -3,6 +3,14 @@ import { defaults } from '../../../../util';
 import { mat3 } from 'gl-matrix';
 
 const initDefaults = defaults({
+  // The canvas renderer uses a mask to remove the part of the edge line that's under
+  // a translucent edge arrow (see the part of CRp.drawArrowhead that uses globalCompositeOperation). 
+  // So even if an edge arrow is translucent you don't see anything under it except the canvas background.
+  // To simulate this effect with WebGL we will blend edge arrow colors with a background
+  // color value that's passed in. That means if there is a texture or image 
+  // under the canvas it won't be blended propery with edge arrows, this is an 
+  // acceptable limitation for now.
+  bgColor: [255, 255, 255]
 });
 
 // Vertex types
@@ -22,6 +30,7 @@ export class EdgeDrawing {
 
     this.maxInstances = 1000; // TODO how to decide the max instances?
 
+    this.opts = initDefaults(options);
     this.program = this.createShaderProgram();
     this.vao = this.createVAO();
   }
@@ -39,6 +48,7 @@ export class EdgeDrawing {
       in vec2 aPosition;
       in int aVertType;
 
+      // note: there is a limit on how many attributes you can have
       // lines
       in vec2 aSource;
       in vec2 aTarget;
@@ -54,6 +64,7 @@ export class EdgeDrawing {
       in mat3 aTargetArrowTransform;
 
       out vec4 vColor;
+      flat out int vVertType;
 
       void main(void) {
         if(aVertType == ${LINE}) {
@@ -77,18 +88,27 @@ export class EdgeDrawing {
           gl_Position = vec4(2.0, 0.0, 0.0, 1.0);
           vColor = vec4(0.0, 0.0, 0.0, 0.0);
         }
+        vVertType = aVertType;
       }
     `;
 
     const fragmentShaderSource = `#version 300 es
       precision highp float;
 
+      uniform vec4 uBGColor;
+
       in vec4 vColor;
+      flat in int vVertType;
 
       out vec4 outColor;
 
       void main(void) {
-        outColor = vColor;
+        if(vVertType == ${SOURCE_ARROW} || vVertType == ${TARGET_ARROW}) {
+          outColor = mix(vColor, uBGColor, 0.5);
+          outColor.a = 1.0;
+        } else {
+          outColor = vColor;
+        }
         outColor.rgb *= outColor.a; // webgl is expecting premultiplied alpha
       }
     `;
@@ -96,6 +116,7 @@ export class EdgeDrawing {
     const program = util.createProgram(gl, vertexShaderSource, fragmentShaderSource);
 
     program.uPanZoomMatrix = gl.getUniformLocation(program, 'uPanZoomMatrix');
+    program.uBGColor = gl.getUniformLocation(program, 'uBGColor');
     
     program.aPosition  = gl.getAttribLocation(program, 'aPosition');
     program.aVertType  = gl.getAttribLocation(program, 'aVertType');
@@ -212,7 +233,6 @@ export class EdgeDrawing {
     let size = this.r.getArrowWidth(edgeWidth, scale);
 
     let webglColor = util.toWebGLColor(color, edgeOpacity);
-    console.log('arrow color', webglColor)
 
     const transform = mat3.create();
     mat3.translate(transform, transform, [x, y]);
@@ -292,6 +312,10 @@ export class EdgeDrawing {
 
     // Set the projection matrix uniform
     gl.uniformMatrix3fv(program.uPanZoomMatrix, false, this.panZoomMatrix);
+
+    // set background color (this is a hack)
+    const webglBgColor = util.toWebGLColor(this.opts.bgColor, 1);
+    gl.uniform4fv(program.uBGColor, webglBgColor);
 
     // draw!
     gl.drawArraysInstanced(gl.TRIANGLES, 0, vertexCount, instanceCount);

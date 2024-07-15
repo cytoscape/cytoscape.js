@@ -1,7 +1,8 @@
 // import * as mat from './matrix';
 import { EdgeDrawing } from './drawing-edges-webgl';
 import { NodeDrawing } from './drawing-nodes-webgl';
-import { mat3, vec2 } from 'gl-matrix';
+import { mat3 } from 'gl-matrix';
+import { color2tuple } from '../../../../util/colors'
 
 
 const CRp = {};
@@ -9,12 +10,15 @@ const CRp = {};
 CRp.initWebgl = function(options, fns) {
   const r = this;
   const gl = r.data.contexts[r.WEBGL];
+  const container = options.cy.container();
 
   gl.clearColor(0, 0, 0, 0); // background color
   // enable alpha blending of textures
   gl.enable(gl.BLEND);
   // we are using premultiplied alpha
   gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+
+  const bgColor = color2tuple(container?.style?.backgroundColor || 'white');
 
   const getZeroRotation = () => 0;
   const getLabelRotation = (ele) => r.getTextAngle(ele, null);
@@ -38,7 +42,7 @@ CRp.initWebgl = function(options, fns) {
   };
 
   
-  r.edgeDrawing = new EdgeDrawing(r, gl);
+  r.edgeDrawing = new EdgeDrawing(r, gl, { bgColor });
   r.nodeDrawing = new NodeDrawing(r, gl);
   
   r.nodeDrawing.addRenderType('node-body', {

@@ -82,6 +82,7 @@ function getTypeInfo(gl, glslType) {
     case 'vec3' : return [ 3, gl.FLOAT, 4 ];
     case 'vec4' : return [ 4, gl.FLOAT, 4 ];
     case 'int'  : return [ 1, gl.INT  , 4 ];
+    case 'ivec2': return [ 2, gl.INT  , 4 ];
   }
 }
 

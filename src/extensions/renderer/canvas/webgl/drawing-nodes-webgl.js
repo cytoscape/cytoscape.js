@@ -428,7 +428,7 @@ export class NodeDrawing {
       const { xOffset, yOffset } = getTexOffsets(texIndex);
       const bb = opts.getBoundingBox(node);
       const { w, h } = this.overlayUnderlay.getTexWidthHeight(bb);
-      const webglColor = util.toWebGLColor(color, opacity, { premultiplyAlpha: true });
+      const webglColor = util.toWebGLColor(color, opacity);
       bufferInstanceData(texID, xOffset, yOffset, w, h, padding, webglColor);
     }
 

@@ -6,7 +6,7 @@ const initDefaults = defaults({
   // The canvas renderer uses a mask to remove the part of the edge line that's under
   // a translucent edge arrow (see the part of CRp.drawArrowhead that uses globalCompositeOperation). 
   // So even if an edge arrow is translucent you don't see anything under it except the canvas background.
-  // To simulate this effect with WebGL we will blend edge arrow colors with a background
+  // To simulate this effect with WebGL we will blend edge arrow colors with the background
   // color value that's passed in. That means if there is a texture or image 
   // under the canvas it won't be blended propery with edge arrows, this is an 
   // acceptable limitation for now.
@@ -76,8 +76,6 @@ export class EdgeDrawing {
         } 
         else if(aVertType == ${SOURCE_ARROW} && aDrawSourceArrow == 1) {
           gl_Position = vec4(uPanZoomMatrix * aSourceArrowTransform * vec3(aPosition, 1.0), 1.0);
-          // gl_Position = vec4(uPanZoomMatrix * vec3(aPosition, 1.0), 1.0);
-          // gl_Position = vec4(aPosition, 1.0, 1.0);
           vColor = aSourceArrowColor;
         }
         else if(aVertType == ${TARGET_ARROW} && aDrawTargetArrow == 1) {
@@ -85,7 +83,7 @@ export class EdgeDrawing {
           vColor = aTargetArrowColor;
         } 
         else {
-          gl_Position = vec4(2.0, 0.0, 0.0, 1.0);
+          gl_Position = vec4(2.0, 0.0, 0.0, 1.0); // discard vertex by putting it outside webgl clip space
           vColor = vec4(0.0, 0.0, 0.0, 0.0);
         }
         vVertType = aVertType;
@@ -104,12 +102,12 @@ export class EdgeDrawing {
 
       void main(void) {
         if(vVertType == ${SOURCE_ARROW} || vVertType == ${TARGET_ARROW}) {
-          outColor = mix(vColor, uBGColor, 0.5);
-          outColor.a = 1.0;
+          // blend arrow color with background (using premultiplied alpha)
+          outColor.rgb = vColor.rgb + (uBGColor.rgb * (1.0 - vColor.a)); 
+          outColor.a = 1.0; // make opaque, masks out line under arrow
         } else {
           outColor = vColor;
         }
-        outColor.rgb *= outColor.a; // webgl is expecting premultiplied alpha
       }
     `;
 
@@ -144,19 +142,25 @@ export class EdgeDrawing {
     const arrow = [ // same as the 'triangle' shape in the base renderer
       -0.15, -0.3,   0, 0,    0.15, -0.3
     ];
+    const label = [ // same as NodeDrawing
+      0, 0,  0, 1,  1, 0,
+      1, 0,  0, 1,  1, 1,
+    ];
 
-    const instanceGeometry = [
+    const instanceGeometry = [ // order matters, back to front
       ...line,  // edge line
       ...arrow, // source arrow
       ...arrow, // target arrow
     ];
-    const vertexTypes = [
-      ...new Array(line .length/2).fill(LINE),
-      ...new Array(arrow.length/2).fill(SOURCE_ARROW),
-      ...new Array(arrow.length/2).fill(TARGET_ARROW),
+
+    const typeOf = verts => ({ is: type => new Array(verts.length/2).fill(type) });
+    const vertTypes = [
+      ...typeOf(line).is(LINE),
+      ...typeOf(arrow).is(SOURCE_ARROW),
+      ...typeOf(arrow).is(TARGET_ARROW),
     ];
 
-    this.vertexCount = instanceGeometry.length/2;
+    this.vertexCount = instanceGeometry.length / 2;
   
     const { gl, program } = this;
 
@@ -164,7 +168,7 @@ export class EdgeDrawing {
     gl.bindVertexArray(vao);
 
     util.createBufferStaticDraw(gl, 'vec2', program.aPosition, instanceGeometry);
-    util.createBufferStaticDraw(gl, 'int',  program.aVertType, vertexTypes);
+    util.createBufferStaticDraw(gl, 'int',  program.aVertType, vertTypes);
 
     const n = this.maxInstances;
     this.sourceBuffer = util.createBufferDynamicDraw(gl, n, 'vec2', program.aSource);
@@ -182,14 +186,6 @@ export class EdgeDrawing {
     gl.bindVertexArray(null);
     return vao;
   }
-
-  startBatch(panZoomMatrix) {
-    if(panZoomMatrix) {
-      this.panZoomMatrix = panZoomMatrix;
-    }
-    this.instanceCount = 0;
-  }
-
 
   // TODO Should I pass in a function that does this like with NodeDrawing?
   getLineStyle(edge) {
@@ -223,7 +219,7 @@ export class EdgeDrawing {
       angle = rs.tgtArrowAngle;
     }
 
-    // take from CRp.drawArrowhead
+    // taken from CRp.drawArrowhead
     if(isNaN(x) || x == null || isNaN(y) || y == null || isNaN(angle) || angle == null) { 
       return; 
     }
@@ -246,6 +242,14 @@ export class EdgeDrawing {
   }
 
 
+  startBatch(panZoomMatrix) {
+    if(panZoomMatrix) {
+      this.panZoomMatrix = panZoomMatrix;
+    }
+    this.instanceCount = 0;
+  }
+
+
   draw(edge) {
     // edge points and arrow angles etc are calculated by the base renderer and cached in the rscratch object
     const rs = edge._private.rscratch;
@@ -255,7 +259,7 @@ export class EdgeDrawing {
     const { opacity, width, color } = this.getLineStyle(edge);
     const [ sx, sy ] = rs.allpts;
     const [ tx, ty ] = rs.allpts.slice(-2);
-    const lineColor = util.toWebGLColor(color, opacity); // why am I not premultiplying?
+    const lineColor = util.toWebGLColor(color, opacity); 
     
     this.sourceBuffer.setData([sx, sy], i);
     this.targetBuffer.setData([tx, ty], i);
@@ -287,7 +291,6 @@ export class EdgeDrawing {
       this.endBatch();
     }
   }
-
 
   endBatch() {
     const { gl, program, vao, instanceCount, vertexCount } = this;

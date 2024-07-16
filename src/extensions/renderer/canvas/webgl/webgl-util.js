@@ -1,3 +1,10 @@
+/**
+ * Notes:
+ * - All colors have premultiplied alpha. Very important for textues and 
+ *   blending to work correctly.
+ */
+
+
 
 export function compileShader(gl, type, source) {
   const shader = gl.createShader(type);
@@ -36,18 +43,15 @@ export function createTextureCanvas(r, width, height) {
 }
 
 /**
- * Takes color and opacity values in the style and converts
- * them to the format expected by WebGL.
+ * Takes color & opacity style values and converts them to WebGL format. 
+ * Alpha is premultiplied.
  */
-export function toWebGLColor(color, opacity, { premultiplyAlpha } = {}) {
+export function toWebGLColor(color, opacity) {
   const r = color[0] / 255;
   const g = color[1] / 255;
   const b = color[2] / 255;
   const a = opacity;
-  if(premultiplyAlpha)
-    return [ r*a, g*a, b*a, a ];
-  else
-    return [ r, g, b, a ];
+  return [ r * a, g * a, b * a, a ];
 }
 
 

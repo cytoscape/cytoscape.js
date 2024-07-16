@@ -150,6 +150,8 @@ The default test scripts run directly against the source code.  Tests can altern
 1. Press the green 'Run workflow' button
 1. Close the milestone for the release
 
+<img style="width: 300px; height: auto;" src="https://raw.githubusercontent.com/cytoscape/cytoscape.js/unstable/documentation/img/preview-patch.png" width="300">
+
 ### Feature version
 
 1. Go to [Actions > Feature release](https://github.com/cytoscape/cytoscape.js/actions/workflows/feature-release.yml)
@@ -158,6 +160,13 @@ The default test scripts run directly against the source code.  Tests can altern
 1. Press the green 'Run workflow' button
 1. Close the milestone for the release
 1. Make the release announcement [on the blog](https://github.com/cytoscape/cytoscape.js-blog)
+
+<img style="width: 300px; height: auto;" src="https://raw.githubusercontent.com/cytoscape/cytoscape.js/unstable/documentation/img/preview-feature.png" width="300">
+
+### Notes on GitHub Actions UI
+
+- 'Use workflow from' in the GitHub UI selects the branch from which the workflow YML file is selected.  Since the workflow files should usually be the same on the master and unstable branches, it shouldn't matter what's selected.
+- 'Branch to run the action on' in the GitHub UI is preselected for you.  You don't need to change it.
 
 ## Tests
 

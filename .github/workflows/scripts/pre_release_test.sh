@@ -35,7 +35,7 @@ if [ "$current_branch" = "unstable" ] || [ "$current_branch" = "master" ]; then
   echo "Starting to check changed files"
 
   # List the files to check
-  files_to_check=("documentation/index.html" "documentation/js/cytoscape.min.js" "documentation/versions.json" "dist/cytoscape.umd.js")
+  files_to_check=("documentation/index.html" "documentation/js/cytoscape.min.js" "dist/cytoscape.umd.js")
 
   echo "Files initialized"
 

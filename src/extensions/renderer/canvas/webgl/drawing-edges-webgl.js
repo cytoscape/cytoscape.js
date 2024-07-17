@@ -261,19 +261,23 @@ export class EdgeDrawing {
     this.lineColorBuffer.setData(lineColor, i);
 
     // arrows
-    let drawSource = false, drawTarget = false;
+    let drawSource = false;
+    let drawTarget = false;
+
     const sourceInfo = this.getArrowInfo(edge, 'source', opacity, width);
     if(sourceInfo) {
-      drawSource = true;
       this.sourceArrowColorBuffer.setData(sourceInfo.webglColor, i);
       this.sourceArrowTransformBuffer.setData(sourceInfo.transform, i);
+      drawSource = true;
     }
+
     const targetInfo = this.getArrowInfo(edge, 'target', opacity, width);
     if(targetInfo) {
-      drawTarget = true;
       this.targetArrowColorBuffer.setData(targetInfo.webglColor, i);
       this.targetArrowTransformBuffer.setData(targetInfo.transform, i);
+      drawTarget = true;
     } 
+
     this.drawArrowsBuffer.setData([drawSource, drawTarget], i);
 
     this.instanceCount++;

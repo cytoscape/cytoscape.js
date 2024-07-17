@@ -2,6 +2,7 @@
 import * as util from './webgl-util';
 import { defaults } from '../../../../util';
 import { mat3 } from 'gl-matrix';
+import Atlas from './atlas';
 
 const initDefaults = defaults({
   getKey: null,
@@ -15,91 +16,6 @@ const initDefaults = defaults({
   isOverlayOrUnderlay: false,
 });
 
-// TODO make these values options that are passed in
-// They should adapt to the size of the network automatically, or be configurable by the user.
-// Square atlas, each side has this many pixels, maybe should be power of 2 for performance?
-const atlasSize = 4096; 
-const cols = 6;
-const rows = 10;
-
-const texPerAtlas = cols * rows;
-const texWidth  = Math.floor(atlasSize / cols);
-const texHeight = Math.floor(atlasSize / rows);
-
-function getTexOffsets(texIndex) {
-  const row = Math.floor(texIndex / cols);
-  const col = texIndex % cols;
-  const xOffset = col * texWidth;
-  const yOffset = row * texHeight;
-  return { xOffset, yOffset };
-}
-
-function getTexScale(bb) {
-  const wScale = texWidth  / bb.w;
-  const hScale = texHeight / bb.h;
-  const scale = Math.min(wScale, hScale);
-  const w = bb.w * scale;
-  const h = bb.h * scale;
-  return { w, h, scale };
-}
-
-
-class Atlas {
-  constructor() {
-    this.texture = null;
-    this.canvas = null;
-    this.index = 0;
-    this.buffered = false;
-  }
-
-  isFull() {
-    return this.index >= texPerAtlas;
-  }
-
-  maybeBuffer(gl) {
-    if(!this.buffered) {
-      this.texture = util.bufferTexture(gl, this.canvas);
-      if(this.isFull()) {
-        this.canvas = null;
-      }
-      this.buffered = true;
-    }
-  }
-
-  draw(r, doDrawing) {
-    if(this.isFull())
-      throw new Error("This Atlas is full!");
-
-    if(this.canvas === null)
-      this.canvas = util.createTextureCanvas(r, atlasSize);
-    
-    const { context } = this.canvas;
-    const { xOffset, yOffset } = getTexOffsets(this.index);
-
-    // for debugging
-    // context.strokeStyle = 'red';
-    // context.lineWidth = 4;
-    // context.strokeRect(xOffset, yOffset, texWidth, texHeight);
-
-    context.save();
-    context.translate(xOffset, yOffset);
-    doDrawing(context);
-    context.restore();
-
-    this.buffered = false;
-    this.index++;
-  }
-
-  drawNode(r, node, opts) {
-    this.draw(r, (context) => {
-      const bb = opts.getBoundingBox(node);
-      const { scale } = getTexScale(bb);
-      context.scale(scale, scale);
-      opts.drawElement(context, node, bb, true, false);
-    });
-  }
-}
-
 
 export class NodeDrawing {
 
@@ -110,8 +26,9 @@ export class NodeDrawing {
     this.r = r;
     this.gl = gl;
 
-    this.maxInstances = 1000;
+    this.maxInstances = 1000; // TODO
     this.maxAtlases = gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS);
+    this.atlasSize = 4096; // all Atlases must be the same size, because this is a uniform
 
     console.log('max texture units', this.maxAtlases);
     console.log('max texture size', gl.getParameter(gl.MAX_TEXTURE_SIZE));
@@ -124,10 +41,14 @@ export class NodeDrawing {
     this.styleKeyToAtlas = new Map(); // need to know which texure atlas has the texture
     this.styleKeyToTexIndex = new Map(); // which texture in the atlas for a node
 
-    this.currentAtlas = new Atlas();
+    this.currentAtlas = this.createAtlas();
     this.overlayUnderlay = this.initOverlayUnderlay(); // used for overlay/underlay shapes
   }
 
+  createAtlas() {
+    const { r, gl, atlasSize } = this;
+    return new Atlas(r, gl, { atlasSize });
+  }
 
   addRenderType(type, options) {
     this.renderTypes.set(type, initDefaults(options));
@@ -135,20 +56,21 @@ export class NodeDrawing {
 
 
   initOverlayUnderlay() {
-    const { r } = this;
-    const atlas = new Atlas();
+    const { r, gl } = this;
+    const atlas = this.createAtlas();
 
+    const { texWidth, texHeight } = atlas.getOpts();
     const size = Math.min(texWidth, texHeight);
     const center = size / 2;
 
     // textures are white so that the overlay color is preserved when multiplying in the fragment shader
-    atlas.draw(r, (context) => {
+    atlas.draw((context) => {
       context.fillStyle = '#FFF';
       r.drawRoundRectanglePath(context, center, center, size, size, 80); // TODO don't hardcode the radius
       context.fill();
     });
     
-    atlas.draw(r, (context) => {
+    atlas.draw((context) => {
       context.fillStyle = '#FFF';
       r.drawEllipsePath(context, center, center, size, size)
       context.fill();
@@ -156,14 +78,16 @@ export class NodeDrawing {
 
     // TODO Textures above have same width and height. This causes rounded corners 
     // to look stretched when applied to wider nodes. We could create more textures with different
-    // aspect ratios, then choose the one that's closest to the node to minimize stretching.
+    // widths, then choose the one that's closest to the node to minimize stretching.
     const getTexIndex = (shape) => {
-      // TODO pick a tex index based on aspect ratio or size
-      if(shape === 'roundrectangle' || shape === 'round-rectangle')
-        return 0;
-      else if(shape === 'ellipse')
-        return 1;
-      return -1;
+      switch(shape) {
+        case 'round-rectangle': case 'roundrectangle':
+          return 0;
+        case 'ellipse':
+          return 1;
+        default:
+          return -1;
+      }
     };
 
     const getTexWidthHeight = (bb) => {
@@ -309,19 +233,26 @@ export class NodeDrawing {
     const { r } = this;
     const styleKey = opts.getKey(node);
 
+    const drawNode = (context, atlas) => {
+      const bb = opts.getBoundingBox(node);
+      const { scale } = atlas.getTexScale(bb);
+      context.scale(scale, scale);
+      opts.drawElement(context, node, bb, true, false);
+    };
+
     let atlas = this.styleKeyToAtlas.get(styleKey);
     let texIndex = this.styleKeyToTexIndex.get(styleKey);
 
     if(!atlas) {
       if(this.currentAtlas.isFull()) {
-        this.currentAtlas = new Atlas();
+        this.currentAtlas = this.createAtlas();
       }
 
       atlas = this.currentAtlas;
       texIndex = this.currentAtlas.index;
 
       console.log('drawing texture for', styleKey);
-      atlas.drawNode(r, node, opts);
+      atlas.draw(drawNode);
 
       this.styleKeyToAtlas.set(styleKey, atlas);
       this.styleKeyToTexIndex.set(styleKey, texIndex);
@@ -410,9 +341,9 @@ export class NodeDrawing {
     const drawBodyOrLabel = () => {
       const { atlas, texIndex } = this.getOrCreateTexture(node, opts);
       const texID = getTexIdForBatch(atlas);
-      const { xOffset, yOffset } = getTexOffsets(texIndex);
+      const { xOffset, yOffset } = atlas.getTexOffsets(texIndex);
       const bb = opts.getBoundingBox(node);
-      const { w, h } = getTexScale(bb);
+      const { w, h } = atlas.getTexScale(bb);
       bufferInstanceData(texID, xOffset, yOffset, w, h);
     };
 
@@ -424,8 +355,9 @@ export class NodeDrawing {
       if(texIndex < 0)
         return;
 
-      const texID = getTexIdForBatch(this.overlayUnderlay.atlas);
-      const { xOffset, yOffset } = getTexOffsets(texIndex);
+      const { atlas } = this.overlayUnderlay;
+      const texID = getTexIdForBatch(atlas);
+      const { xOffset, yOffset } = atlas.getTexOffsets(texIndex);
       const bb = opts.getBoundingBox(node);
       const { w, h } = this.overlayUnderlay.getTexWidthHeight(bb);
       const webglColor = util.toWebGLColor(color, opacity);
@@ -477,7 +409,7 @@ export class NodeDrawing {
 
     // Set the uniforms
     gl.uniformMatrix3fv(program.uPanZoomMatrix, false, this.panZoomMatrix);
-    gl.uniform1i(program.uAtlasSize, atlasSize);
+    gl.uniform1i(program.uAtlasSize, this.atlasSize);
 
     // draw!
     gl.drawArraysInstanced(gl.TRIANGLES, 0, vertexCount, instanceCount);

@@ -2,6 +2,11 @@ name: Patch Release
 
 on:
   workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to run the action on'
+        required: true
+        default: 'master'
 
 jobs:  
   patch-release:
@@ -12,7 +17,7 @@ jobs:
         shell: bash
         id: extract_branch
         run: |
-          echo "BRANCH=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_ENV
+          echo "BRANCH=${{ github.event.inputs.branch }}" >> $GITHUB_ENV
           echo "Branch: " $BRANCH
       - name: checkout patch branch
         uses: actions/checkout@v3

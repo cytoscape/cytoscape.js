@@ -136,14 +136,37 @@ The default test scripts run directly against the source code.  Tests can altern
 
 ## Release instructions
 
-- [Manual Release](.github/workflows/md/Manual_Release.md)
-- [Feature Release](.github/workflows/md/Feature_Release.md)
-- [Backport/Patch Release](.github/workflows/md/Patch_Backport_Release.md)
+### Background
 
-**IMP: The releases should be made atleast 5 min apart for the zenodo to pick the new release.**
-**IMP: Amend Github Action in all branches for consistent results across branches**
+- Ensure that a milestone exists for the release you want to make, with all the issues for that release assigned in the milestone.
+- Bug fixes should be applied to both the `master` and `unstable` branches.  PRs can go on either branch, with the patch applied to the other branch after merging.
+- When a patch release is made concurrently with a feature release, the patch release should be made first.  Wait 5 minutes after the patch release completes before starting the feature release -- otherwise Zenodo doesn't pick up releases properly.
 
-- Repository Setup for Github Actions: [Repository Setup](.github/workflows/md/repo-setup.md)
+### Patch version
+
+1. Go to [Actions > Feature release](https://github.com/cytoscape/cytoscape.js/actions/workflows/patch-release.yml)
+1. Go to the 'Run workflow' dropdown
+1. [Optional] The 'master' branch should be preselected for you
+1. Press the green 'Run workflow' button
+1. Close the milestone for the release
+
+<img style="width: 300px; height: auto;" src="https://raw.githubusercontent.com/cytoscape/cytoscape.js/unstable/documentation/img/preview-patch.png" width="300">
+
+### Feature version
+
+1. Go to [Actions > Feature release](https://github.com/cytoscape/cytoscape.js/actions/workflows/feature-release.yml)
+1. Go to the 'Run workflow' dropdown
+1. [Optional] The 'unstable' branch should be preselected for you
+1. Press the green 'Run workflow' button
+1. Close the milestone for the release
+1. Make the release announcement [on the blog](https://github.com/cytoscape/cytoscape.js-blog)
+
+<img style="width: 300px; height: auto;" src="https://raw.githubusercontent.com/cytoscape/cytoscape.js/unstable/documentation/img/preview-feature.png" width="300">
+
+### Notes on GitHub Actions UI
+
+- 'Use workflow from' in the GitHub UI selects the branch from which the workflow YML file is selected.  Since the workflow files should usually be the same on the master and unstable branches, it shouldn't matter what's selected.
+- 'Branch to run the action on' in the GitHub UI is preselected for you.  You don't need to change it.
 
 ## Tests
 

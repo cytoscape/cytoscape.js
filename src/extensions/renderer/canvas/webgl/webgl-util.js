@@ -38,7 +38,8 @@ export function createTextureCanvas(r, width, height) {
   }
   const canvas = r.makeOffscreenCanvas(width, height);
   const ctx = canvas.context = canvas.getContext('2d');
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  canvas.clear = () => ctx.clearRect(0, 0, canvas.width, canvas.height);
+  canvas.clear();
   return canvas;
 }
 

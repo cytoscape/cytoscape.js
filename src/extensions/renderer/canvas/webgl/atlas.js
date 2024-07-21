@@ -4,56 +4,163 @@ import { defaults } from '../../../../util';
 // A "texture atlas" is a big image/canvas, and sections of it are used as textures for nodes/labels.
 
 
-const initDefaults = (options) => {
-  const opts = defaults({
-    atlasSize: 4096, 
-    cols: 6,
-    rows: 10,
-  })(options);
-  opts.texPerAtlas = opts.cols * opts.rows;
-  opts.texWidth  = Math.floor(opts.atlasSize / opts.cols);
-  opts.texHeight = Math.floor(opts.atlasSize / opts.rows);
-  return opts;
-};
+const initDefaults = defaults({
+  atlasSize: 4096, 
+  rows: 10,
+});
 
 export class Atlas {
   constructor(r, gl, options) {
     this.r = r;
     this.gl = gl;
     
-    this.opts = initDefaults(options);
+    const opts = initDefaults(options);
+    opts.texHeight = Math.floor(opts.atlasSize / opts.rows);
+    opts.maxTexWidth = opts.atlasSize;
+    this.opts = opts;
 
-    this.texture = null;
+    this.webGLtexture = null;
     this.canvas = null;
-    this.index = 0;
     this.buffered = false;
+
+    // a "location" is an object with a row and x fields
+    this.freePointer = { x: 0, row: 0 };
+    // map from the style key to the row/x where the texture starts
+    // if the texture wraps then there's a second location
+    this.keyToLocation = new Map(); // styleKey -> [ location, location(opt) ]
+
+    console.log('atlasSize', opts.atlasSize);
+    this.canvas  = util.createTextureCanvas(this.r, opts.atlasSize);
+    this.scratch = util.createTextureCanvas(this.r, opts.atlasSize, opts.texHeight);
   }
 
-  isFull() {
-    return this.index >= this.opts.texPerAtlas;
+  getScale(bb) {
+    const { texHeight, maxTexWidth } = this.opts;
+    // Scale to fit the height of a row
+    let scale = texHeight / bb.h;  // TODO what about pixelRatio?
+    let texW = bb.w * scale;
+    // if the scaled width is still too wide
+    if(texW > maxTexWidth) {
+      scale = maxTexWidth / bb.w;
+      texW = bb.w * scale;
+    }
+    return { scale, texW };
   }
 
-  getOpts() {
-    return this.opts;
-  }
 
-  getTexOffsets(texIndex) {
-    const { cols, texWidth, texHeight } = this.opts;
-    const row = Math.floor(texIndex / cols);
-    const col = texIndex % cols;
-    const xOffset = col * texWidth;
-    const yOffset = row * texHeight;
-    return { xOffset, yOffset };
-  }
+  // _drawAt(location, scale, bb, texW, texH, context, doDrawing) {
+  //   const { texHeight } = this.opts;
+  //   const { x, row } = location;
+  //   const xOffset = x;
+  //   const yOffset = texHeight * row;
+
+  //   console.log('_drawAt', xOffset, yOffset, texWidth, texHeight);
+
+  //   context.save();
+  //   context.translate(xOffset, yOffset);
+  //   context.scale(scale, scale);
+    
+  //   context.strokeStyle = 'red';
+  //   context.lineWidth = 5;
+  //   context.strokeRect(xOffset, yOffset, texW, texH);
+
+  //   doDrawing(context, bb); // fix this!
+
+  //   context.restore();
+  // }
+
+  draw(key, bb, doDrawing) {
+    // if(this.isFull())
+    //   throw new Error("This Atlas is full!");
+
+    const { atlasSize, rows, texHeight } = this.opts;
+    const { scale, texW } = this.getScale(bb);
+    
+    const drawAt = (location, context) => {
+      const { x, row } = location;
+      const xOffset = x;
+      const yOffset = texHeight * row;
   
-  getTexScale(bb) {
-    const { texWidth, texHeight } = this.opts;
-    const wScale = texWidth  / bb.w;
-    const hScale = texHeight / bb.h;
-    const scale = Math.min(wScale, hScale);
-    const w = bb.w * scale;
-    const h = bb.h * scale;
-    return { w, h, scale };
+      context.save();
+      context.strokeStyle = 'blue';
+      context.lineWidth = 4;
+      context.strokeRect(xOffset, yOffset, texW, texHeight);
+      context.restore();
+
+      context.save();
+      context.translate(xOffset, yOffset);
+      context.scale(scale, scale);
+      doDrawing(context, bb); // fix this!
+      context.restore();
+    };
+
+
+    if(this.freePointer.x + texW > atlasSize) { // doesn't fit on current row, need to wrap
+      if(this.freePointer.row >= rows-1) {
+        return false; // No space left in this atlas for this texture. TODO maybe trigger garbage collection?
+      }
+      const firstTexW = atlasSize - this.freePointer.x;
+      const secondTexW = texW - firstTexW;
+
+      // Draw to the scratch canvas
+      const { scratch } = this;
+      scratch.clear();
+      drawAt({ x:0, row:0 }, scratch.context);
+
+      const locations = [];
+      const { context } = this.canvas;
+
+      { // copy first part of scratch to the first texture
+        const dx = this.freePointer.x;
+        const dy = this.freePointer.row * texHeight;
+        const w = firstTexW;
+        const h = texHeight;
+        context.drawImage(scratch, 0, 0, w, h, dx, dy, w, h);
+        locations.push({ x: dx, y: dy, w, h });
+      }
+      { // copy second part of scratch to the second texture
+        const sx = firstTexW;
+        const dy = (this.freePointer.row + 1) * texHeight;
+        const w = secondTexW;
+        const h = texHeight;
+        context.drawImage(scratch, sx, 0, w, h, 0, dy, w, h);
+        locations.push({ x: 0, y: dy, w, h });
+      }
+
+      this.keyToLocation.set(key, locations);
+      this.freePointer.x = secondTexW;
+      this.freePointer.row++;
+
+      return locations;
+    } else {
+      // don't need to wrap, draw directly on the canvas
+      drawAt(this.freePointer, this.canvas.context);
+      
+      const locations = [{
+        x: this.freePointer.x,
+        y: this.freePointer.row * texHeight,
+        w: texW,
+        h: texHeight
+      }]; // should I return a second location that has a width of 0?
+      this.keyToLocation.set(key, locations);
+
+      // move the pointer to the end of the texture
+      this.freePointer.x += texW;
+      if(this.freePointer.x == atlasSize) { // if it happens to be all the way at the end of the current row
+        this.freePointer.x = 0;
+        this.freePointer.row++;
+      }
+
+      this.buffered = false;
+      return locations;
+    }
+  }
+
+  fragmentationPercentage() {
+
+  }
+
+  canFit(bb) {
   }
 
   maybeBuffer() {
@@ -66,30 +173,7 @@ export class Atlas {
     }
   }
 
-  draw(doDrawing) {
-    if(this.isFull())
-      throw new Error("This Atlas is full!");
-
-    const { atlasSize } = this.opts;
-    if(this.canvas === null)
-      this.canvas = util.createTextureCanvas(this.r, atlasSize);
-    
-    const { context } = this.canvas;
-    const { xOffset, yOffset } = this.getTexOffsets(this.index);
-
-    // for debugging
-    // context.strokeStyle = 'red';
-    // context.lineWidth = 4;
-    // context.strokeRect(xOffset, yOffset, texWidth, texHeight);
-
-    context.save();
-    context.translate(xOffset, yOffset);
-    doDrawing(context, this);
-    context.restore();
-
-    this.buffered = false;
-    this.index++;
-  }
+  
 }
 
 export default Atlas;

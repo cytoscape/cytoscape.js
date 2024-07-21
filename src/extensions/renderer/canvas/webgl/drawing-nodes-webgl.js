@@ -2,6 +2,7 @@
 import * as util from './webgl-util';
 import { defaults } from '../../../../util';
 import { mat3 } from 'gl-matrix';
+import GridAtlas from './atlas-grid';
 import Atlas from './atlas';
 
 const initDefaults = defaults({
@@ -43,11 +44,13 @@ export class NodeDrawing {
 
     this.currentAtlas = this.createAtlas();
     this.overlayUnderlay = this.initOverlayUnderlay(); // used for overlay/underlay shapes
+
+    this.testAtlas = new Atlas(r, gl);
   }
 
   createAtlas() {
     const { r, gl, atlasSize } = this;
-    return new Atlas(r, gl, { atlasSize });
+    return new GridAtlas(r, gl, { atlasSize });
   }
 
   addRenderType(type, options) {
@@ -62,15 +65,16 @@ export class NodeDrawing {
     const { texWidth, texHeight } = atlas.getOpts();
     const size = Math.min(texWidth, texHeight);
     const center = size / 2;
+    const bb = { w: texWidth, h: texHeight };
 
     // textures are white so that the overlay color is preserved when multiplying in the fragment shader
-    atlas.draw((context) => {
+    atlas.draw(bb, (context) => {
       context.fillStyle = '#FFF';
       r.drawRoundRectanglePath(context, center, center, size, size, 80); // TODO don't hardcode the radius
       context.fill();
     });
     
-    atlas.draw((context) => {
+    atlas.draw(bb, (context) => {
       context.fillStyle = '#FFF';
       r.drawEllipsePath(context, center, center, size, size)
       context.fill();
@@ -233,10 +237,7 @@ export class NodeDrawing {
     const { r } = this;
     const styleKey = opts.getKey(node);
 
-    const drawNode = (context, atlas) => {
-      const bb = opts.getBoundingBox(node);
-      const { scale } = atlas.getTexScale(bb);
-      context.scale(scale, scale);
+    const drawNode = (context, bb) => {
       opts.drawElement(context, node, bb, true, false);
     };
 
@@ -252,10 +253,15 @@ export class NodeDrawing {
       texIndex = this.currentAtlas.index;
 
       console.log('drawing texture for', styleKey);
-      atlas.draw(drawNode);
+      const bb = opts.getBoundingBox(node);
+      atlas.draw(bb, drawNode);
 
       this.styleKeyToAtlas.set(styleKey, atlas);
       this.styleKeyToTexIndex.set(styleKey, texIndex);
+
+      // test atlas
+      const locations = this.testAtlas.draw(styleKey, bb, drawNode);
+      console.log('test atlas', styleKey, locations);
     }
 
     return { atlas, texIndex };
@@ -377,11 +383,6 @@ export class NodeDrawing {
 
 
   endBatch() {
-    // const nodeContext = this.r.data.contexts[this.r.NODE];
-    // nodeContext.save();
-    // nodeContext.scale(0.25, 0.25);
-    // nodeContext.drawImage(this.atlases[0].canvas, 0, 0);
-    // nodeContext.restore();
 
     const { gl, program, vao, instanceCount, vertexCount } = this;
     if(instanceCount === 0) 
@@ -419,6 +420,14 @@ export class NodeDrawing {
 
     // start the next batch, even if not needed
     this.startBatch();
+    
+
+    const nodeContext = this.r.data.contexts[this.r.NODE];
+    nodeContext.save();
+    nodeContext.setTransform(1, 0, 0, 1, 0, 0);
+    nodeContext.scale(0.25, 0.25);
+    nodeContext.drawImage(this.testAtlas.canvas, 0, 0);
+    nodeContext.restore();
   }
 
 }

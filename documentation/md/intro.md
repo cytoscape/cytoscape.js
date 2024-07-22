@@ -236,6 +236,7 @@
 * [Musicalized](https://en.wesound.academy)
 * [Network Weathermap](https://github.com/6illes/weathermap)
 * [New Relic](https://newrelic.com)
+* [nFlows](https://www.nflows.com)
 * [Nx](https://nx.dev)
 * [Obsidian](https://obsidian.md)
 * [Onepanel](https://www.onepanel.ai)

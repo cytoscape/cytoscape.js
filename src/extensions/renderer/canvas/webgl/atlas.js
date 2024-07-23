@@ -6,7 +6,7 @@ import { defaults } from '../../../../util';
 
 const initDefaults = defaults({
   atlasSize: 4096, 
-  rows: 10,
+  rows: 16,
 });
 
 export class Atlas {
@@ -38,29 +38,31 @@ export class Atlas {
     // try to fit to the height of a row
     let scale = texHeight / bb.h;  // TODO what about pixelRatio?
     let texW = bb.w * scale;
+    let texH = bb.h * scale;
     // if the scaled width is too wide then scale to fit max width instead
     if(texW > maxTexWidth) {
       scale = maxTexWidth / bb.w;
       texW = bb.w * scale;
+      texH = bb.h * scale;
     }
-    return { scale, texW };
+    return { scale, texW, texH };
   }
 
 
   draw(key, bb, doDrawing) {
     const { atlasSize, rows, texHeight } = this.opts;
-    const { scale, texW } = this.getScale(bb);
+    const { scale, texW, texH } = this.getScale(bb);
     
     const drawAt = (location, context) => {
       const { x, row } = location;
       const xOffset = x;
       const yOffset = texHeight * row;
   
-      context.save();
-      context.strokeStyle = 'blue';
-      context.lineWidth = 4;
-      context.strokeRect(xOffset, yOffset, texW, texHeight);
-      context.restore();
+      // context.save();
+      // context.strokeStyle = 'blue';
+      // context.lineWidth = 4;
+      // context.strokeRect(xOffset, yOffset, texW, texHeight);
+      // context.restore();
 
       context.save();
       context.translate(xOffset, yOffset);
@@ -91,7 +93,12 @@ export class Atlas {
         const w = firstTexW;
         const h = texHeight;
         context.drawImage(scratch, 0, 0, w, h, dx, dy, w, h);
-        locations.push({ x: dx, y: dy, w, h });
+        locations[0] = { 
+          x: dx, 
+          y: dy, 
+          w, 
+          h: texH 
+        };
       }
       { // copy second part of scratch to the second texture
         const sx = firstTexW;
@@ -99,10 +106,16 @@ export class Atlas {
         const w = secondTexW;
         const h = texHeight;
         context.drawImage(scratch, sx, 0, w, h, 0, dy, w, h);
-        locations.push({ x: 0, y: dy, w, h });
+        locations[1] = { 
+          x: 0, 
+          y: dy,
+          w, 
+          h: texH 
+        };
       }
 
       this.keyToLocation.set(key, locations);
+      
       this.freePointer.x = secondTexW;
       this.freePointer.row++;
 
@@ -117,7 +130,8 @@ export class Atlas {
         y: this.freePointer.row * texHeight,
         w: texW,
         h: texHeight
-      }, {  // indlude a second location with a width of 0, for convenience
+      }, 
+      {  // indlude a second location with a width of 0, for convenience
         x: this.freePointer.x + texW,
         y: this.freePointer.row * texHeight,
         w: 0,
@@ -139,14 +153,6 @@ export class Atlas {
 
   getTexOffsets(key) {
     return this.keyToLocation.get(key);
-  }
-
-  // Returns values in arrays so they can be put right into a buffer
-  getTexOffsetsArray(key) {
-    const [ loc1, loc2 ] = this.getTexOffsets(key);
-    const tex1 = [ loc1.x, loc1.y, loc1.w, loc1.h ];
-    const tex2 = [ loc2.x, loc2.y, loc2.w, loc2.h ];
-    return [ tex1, tex2 ];
   }
 
   canFit(bb) {

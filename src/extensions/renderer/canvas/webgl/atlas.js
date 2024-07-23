@@ -29,17 +29,16 @@ export class Atlas {
     // if the texture wraps then there's a second location
     this.keyToLocation = new Map(); // styleKey -> [ location, location(opt) ]
 
-    console.log('atlasSize', opts.atlasSize);
     this.canvas  = util.createTextureCanvas(this.r, opts.atlasSize);
     this.scratch = util.createTextureCanvas(this.r, opts.atlasSize, opts.texHeight);
   }
 
   getScale(bb) {
     const { texHeight, maxTexWidth } = this.opts;
-    // Scale to fit the height of a row
+    // try to fit to the height of a row
     let scale = texHeight / bb.h;  // TODO what about pixelRatio?
     let texW = bb.w * scale;
-    // if the scaled width is still too wide
+    // if the scaled width is too wide then scale to fit max width instead
     if(texW > maxTexWidth) {
       scale = maxTexWidth / bb.w;
       texW = bb.w * scale;
@@ -48,31 +47,7 @@ export class Atlas {
   }
 
 
-  // _drawAt(location, scale, bb, texW, texH, context, doDrawing) {
-  //   const { texHeight } = this.opts;
-  //   const { x, row } = location;
-  //   const xOffset = x;
-  //   const yOffset = texHeight * row;
-
-  //   console.log('_drawAt', xOffset, yOffset, texWidth, texHeight);
-
-  //   context.save();
-  //   context.translate(xOffset, yOffset);
-  //   context.scale(scale, scale);
-    
-  //   context.strokeStyle = 'red';
-  //   context.lineWidth = 5;
-  //   context.strokeRect(xOffset, yOffset, texW, texH);
-
-  //   doDrawing(context, bb); // fix this!
-
-  //   context.restore();
-  // }
-
   draw(key, bb, doDrawing) {
-    // if(this.isFull())
-    //   throw new Error("This Atlas is full!");
-
     const { atlasSize, rows, texHeight } = this.opts;
     const { scale, texW } = this.getScale(bb);
     
@@ -90,7 +65,7 @@ export class Atlas {
       context.save();
       context.translate(xOffset, yOffset);
       context.scale(scale, scale);
-      doDrawing(context, bb); // fix this!
+      doDrawing(context, bb);
       context.restore();
     };
 
@@ -131,6 +106,7 @@ export class Atlas {
       this.freePointer.x = secondTexW;
       this.freePointer.row++;
 
+      this.buffered = false;
       return locations;
     } else {
       // don't need to wrap, draw directly on the canvas
@@ -141,7 +117,12 @@ export class Atlas {
         y: this.freePointer.row * texHeight,
         w: texW,
         h: texHeight
-      }]; // should I return a second location that has a width of 0?
+      }, {  // indlude a second location with a width of 0, for convenience
+        x: this.freePointer.x + texW,
+        y: this.freePointer.row * texHeight,
+        w: 0,
+        h: texHeight
+      }]; 
       this.keyToLocation.set(key, locations);
 
       // move the pointer to the end of the texture
@@ -156,19 +137,30 @@ export class Atlas {
     }
   }
 
-  fragmentationPercentage() {
+  getTexOffsets(key) {
+    return this.keyToLocation.get(key);
+  }
 
+  // Returns values in arrays so they can be put right into a buffer
+  getTexOffsetsArray(key) {
+    const [ loc1, loc2 ] = this.getTexOffsets(key);
+    const tex1 = [ loc1.x, loc1.y, loc1.w, loc1.h ];
+    const tex2 = [ loc2.x, loc2.y, loc2.w, loc2.h ];
+    return [ tex1, tex2 ];
   }
 
   canFit(bb) {
+    const { atlasSize, rows } = this.opts;
+    const { texW } = this.getScale(bb);
+    if(this.freePointer.x + texW > atlasSize) { // need to wrap
+      return this.freePointer.row < rows - 1; // return true if there's a row to wrap to
+    }
+    return true;
   }
 
   maybeBuffer() {
     if(!this.buffered) {
       this.texture = util.bufferTexture(this.gl, this.canvas);
-      if(this.isFull()) {
-        this.canvas = null;
-      }
       this.buffered = true;
     }
   }

@@ -2,7 +2,6 @@
 import * as util from './webgl-util';
 import { defaults } from '../../../../util';
 import { mat3 } from 'gl-matrix';
-import GridAtlas from './atlas-grid';
 import Atlas from './atlas';
 
 const initDefaults = defaults({
@@ -39,8 +38,7 @@ export class NodeDrawing {
 
     this.renderTypes = new Map(); // string -> object
 
-    this.styleKeyToAtlas = new Map(); // need to know which texure atlas has the texture
-    this.styleKeyToTexIndex = new Map(); // which texture in the atlas for a node
+    this.styleKeyToAtlas = new Map();
 
     this.currentAtlas = this.createAtlas();
     this.overlayUnderlay = this.initOverlayUnderlay(); // used for overlay/underlay shapes
@@ -50,7 +48,7 @@ export class NodeDrawing {
 
   createAtlas() {
     const { r, gl, atlasSize } = this;
-    return new GridAtlas(r, gl, { atlasSize });
+    return new Atlas(r, gl, { atlasSize });
   }
 
   addRenderType(type, options) {
@@ -59,31 +57,32 @@ export class NodeDrawing {
 
 
   initOverlayUnderlay() {
-    const { r, gl } = this;
+    const { r } = this;
     const atlas = this.createAtlas();
 
-    const { texWidth, texHeight } = atlas.getOpts();
-    const size = Math.min(texWidth, texHeight);
+    const size = 100;
     const center = size / 2;
-    const bb = { w: texWidth, h: texHeight };
+    const bb = { w: size, h: size };
+    
+    // TODO These textures have same width and height. This causes rounded corners 
+    // to look stretched when applied to wider nodes. We could create more textures with different
+    // widths, then choose the one that's closest to the node to minimize stretching. 
+    // Also can rotate textures 90 degs for portrait orientation.
 
     // textures are white so that the overlay color is preserved when multiplying in the fragment shader
-    atlas.draw(bb, (context) => {
+    atlas.draw(0, bb, (context) => {
       context.fillStyle = '#FFF';
-      r.drawRoundRectanglePath(context, center, center, size, size, 80); // TODO don't hardcode the radius
+      r.drawRoundRectanglePath(context, center, center, size, size, 15);
       context.fill();
     });
     
-    atlas.draw(bb, (context) => {
+    atlas.draw(1, bb, (context) => {
       context.fillStyle = '#FFF';
-      r.drawEllipsePath(context, center, center, size, size)
+      r.drawEllipsePath(context, center, center, size, size);
       context.fill();
     });
-
-    // TODO Textures above have same width and height. This causes rounded corners 
-    // to look stretched when applied to wider nodes. We could create more textures with different
-    // widths, then choose the one that's closest to the node to minimize stretching.
-    const getTexIndex = (shape) => {
+    
+    const getTexKey = (shape) => {
       switch(shape) {
         case 'round-rectangle': case 'roundrectangle':
           return 0;
@@ -94,68 +93,70 @@ export class NodeDrawing {
       }
     };
 
-    const getTexWidthHeight = (bb) => {
-      // TEMPORARY Overlay texture has aspect ratio of 1, it will fill either the width or 
-      // height of a texture in the atlas
-      const texSize = Math.min(texWidth, texHeight); 
-      const wScale = texSize / bb.w;
-      const hScale = texSize / bb.h;
-      const w = bb.w * wScale;
-      const h = bb.h * hScale;
-      return { w, h }; // Returns the width/height of the texture
-    };
-
-    return {
-      atlas,
-      getTexIndex,
-      getTexWidthHeight
-    };
+    return { atlas, getTexKey };
   }
 
 
   createShaderProgram() {
     const { gl } = this;
 
+    // compute texture coordinates in the shader, becase we are using instanced drawing
     const vertexShaderSource = `#version 300 es
       precision highp float;
 
       uniform mat3 uPanZoomMatrix;
-      uniform int uAtlasSize;
-      uniform int uCols;
-      uniform int uRows;
+      uniform int  uAtlasSize;
       
       in vec2 aPosition; // instanced
-      in mat3 aNodeMatrix;
-      in int  aTexId; // which shader unit/atlas to use
       in vec4 aLayColor; // overlay/underlay color
-      in vec2 aOffsets;
-      in vec2 aWidthHeight; 
+      in int aAtlasId; // which shader unit/atlas to use
+      in vec4 aTex1; // x/y/w/h of texture in atlas
+      in vec4 aTex2; 
+
+      in mat3 aNodeMatrix1;
+      in mat3 aNodeMatrix2;
 
       out vec2 vTexCoord;
       flat out vec4 vLayColor;
-      flat out int vTexId;
+      flat out int vAtlasId;
 
       void main(void) {
-        // compute texture coordinates here in the shader
-        // we have to do this here becase we are using instanced drawing
+        int vid = gl_VertexID;
 
-        float xOffset = aOffsets.x;
-        float yOffset = aOffsets.y;
+        float texX;
+        float texY;
+        float texW;
+        float texH;
+        mat3  nodeMatrix;
 
-        if(gl_VertexID == 2 || gl_VertexID == 3 || gl_VertexID == 5) {
-          xOffset += aWidthHeight.x;
+        if(vid <= 5) {
+          texX = aTex1.x;
+          texY = aTex1.y;
+          texW = aTex1.z;
+          texH = aTex1.w;
+          nodeMatrix = aNodeMatrix1;
+        } else {
+          texX = aTex2.x;
+          texY = aTex2.y;
+          texW = aTex2.z;
+          texH = aTex2.w;
+          nodeMatrix = aNodeMatrix2;
         }
-        if(gl_VertexID == 1 || gl_VertexID == 4 || gl_VertexID == 5) {
-          yOffset += aWidthHeight.y;
+
+        if(vid == 2 || vid == 3 || vid == 5 || vid == 8 || vid == 9 || vid == 11) {
+          texX += texW;
+        }
+        if(vid == 1 || vid == 4 || vid == 5 || vid == 7 || vid == 10 || vid == 11) {
+          texY += texH;
         }
 
         float d = float(uAtlasSize);
-        vTexCoord = vec2(xOffset / d, yOffset / d); // tex coords must be between 0 and 1
+        vTexCoord = vec2(texX / d, texY / d); // tex coords must be between 0 and 1
 
-        vTexId = aTexId;
+        vAtlasId = aAtlasId;
         vLayColor = aLayColor;
 
-        gl_Position = vec4(uPanZoomMatrix * aNodeMatrix * vec3(aPosition, 1.0), 1.0);
+        gl_Position = vec4(uPanZoomMatrix * nodeMatrix * vec3(aPosition, 1.0), 1.0);
       }
     `;
 
@@ -168,19 +169,19 @@ export class NodeDrawing {
       ${idxs.map(i => `uniform sampler2D uTexture${i};`).join('\t\n')}
 
       in vec2 vTexCoord;
-      flat in int vTexId;
+      flat in int vAtlasId;
       flat in vec4 vLayColor;
 
       out vec4 outColor;
 
       void main(void) {
         vec4 texColor;
-        ${idxs.map(i => `if(vTexId == ${i}) texColor = texture(uTexture${i}, vTexCoord);`).join('\n\telse ')}
+        ${idxs.map(i => `if(vAtlasId == ${i}) texColor = texture(uTexture${i}, vTexCoord);`).join('\n\telse ')}
 
         if(vLayColor.a == 0.0)
-          outColor = texColor;
+         outColor = texColor;
         else
-          outColor = texColor * vLayColor;
+         outColor = texColor * vLayColor;
       }
     `;
 
@@ -188,11 +189,12 @@ export class NodeDrawing {
 
     // attributes
     program.aPosition    = gl.getAttribLocation(program, 'aPosition');
-    program.aNodeMatrix  = gl.getAttribLocation(program, 'aNodeMatrix');
-    program.aTexId       = gl.getAttribLocation(program, 'aTexId');
+    program.aNodeMatrix1 = gl.getAttribLocation(program, 'aNodeMatrix1');
+    program.aNodeMatrix2 = gl.getAttribLocation(program, 'aNodeMatrix2');
+    program.aAtlasId     = gl.getAttribLocation(program, 'aAtlasId');
     program.aLayColor    = gl.getAttribLocation(program, 'aLayColor');
-    program.aOffsets     = gl.getAttribLocation(program, 'aOffsets');
-    program.aWidthHeight = gl.getAttribLocation(program, 'aWidthHeight');
+    program.aTex1        = gl.getAttribLocation(program, 'aTex1');
+    program.aTex2        = gl.getAttribLocation(program, 'aTex2');
 
     // uniforms
     program.uPanZoomMatrix = gl.getUniformLocation(program, 'uPanZoomMatrix');
@@ -208,25 +210,31 @@ export class NodeDrawing {
 
 
   createVAO() {
-    const unitQuad = [
+    const quad = [
       0, 0,  0, 1,  1, 0,
       1, 0,  0, 1,  1, 1,
     ];
-    this.vertexCount = 6;
+    const instanceGeometry = [
+      ...quad, // a texture is split into two parts if it wraps in the atlas
+      ...quad
+    ];
 
+    this.vertexCount = instanceGeometry.length / 2;
+    const n = this.maxInstances;
     const { gl, program } = this;
 
     const vao = gl.createVertexArray();
     gl.bindVertexArray(vao);
 
-    util.createBufferStaticDraw(gl, 'vec2', program.aPosition, unitQuad);
-
-    const n = this.maxInstances;
-    this.texIdBuffer = util.createBufferDynamicDraw(gl, n, 'int',  program.aTexId);
+    util.createBufferStaticDraw(gl, 'vec2', program.aPosition, instanceGeometry);
+    
+    this.matrixBuffer1 = util.create3x3MatrixBufferDynamicDraw(gl, n, program.aNodeMatrix1);
+    this.matrixBuffer2 = util.create3x3MatrixBufferDynamicDraw(gl, n, program.aNodeMatrix2);
+    
+    this.atlasIdBuffer  = util.createBufferDynamicDraw(gl, n, 'int',  program.aAtlasId);
     this.layColorBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aLayColor);
-    this.offsetsBuffer = util.createBufferDynamicDraw(gl, n, 'vec2', program.aOffsets);
-    this.widthHeightBuffer = util.createBufferDynamicDraw(gl, n, 'vec2', program.aWidthHeight);
-    this.matrixBuffer = util.create3x3MatrixBufferDynamicDraw(gl, n, program.aNodeMatrix);
+    this.tex1Buffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aTex1);
+    this.tex2Buffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aTex2);
 
     gl.bindVertexArray(null);
     return vao;
@@ -234,46 +242,64 @@ export class NodeDrawing {
 
 
   getOrCreateTexture(node, opts) {
-    const { r } = this;
     const styleKey = opts.getKey(node);
-
-    const drawNode = (context, bb) => {
-      opts.drawElement(context, node, bb, true, false);
-    };
+    const bb = opts.getBoundingBox(node);
 
     let atlas = this.styleKeyToAtlas.get(styleKey);
-    let texIndex = this.styleKeyToTexIndex.get(styleKey);
 
     if(!atlas) {
-      if(this.currentAtlas.isFull()) {
+      if(!this.currentAtlas.canFit(bb)) {
         this.currentAtlas = this.createAtlas();
       }
 
       atlas = this.currentAtlas;
-      texIndex = this.currentAtlas.index;
-
       console.log('drawing texture for', styleKey);
-      const bb = opts.getBoundingBox(node);
-      atlas.draw(bb, drawNode);
+
+      atlas.draw(styleKey, bb, (context) => {
+        opts.drawElement(context, node, bb, true, false);
+      });
 
       this.styleKeyToAtlas.set(styleKey, atlas);
-      this.styleKeyToTexIndex.set(styleKey, texIndex);
-
-      // test atlas
-      const locations = this.testAtlas.draw(styleKey, bb, drawNode);
-      console.log('test atlas', styleKey, locations);
     }
 
-    return { atlas, texIndex };
+    return atlas;
   }
 
+  /**
+   * Adjusts the BB to accomodate padding and split for wrapped textures.
+   */
+  getAdjustedBB(node, opts, padding, first, ratio) {
+    let { x1, y1, w, h } = opts.getBoundingBox(node);
 
-  setTransformMatrix(matrix, node, opts, padding) {
-    // matrix is expected to be a 9 element array
-    // follows same pattern as CRp.drawCachedElementPortion(...)
-    const bb = opts.getBoundingBox(node);
+    if(padding) {
+      x1 -= padding;
+      y1 -= padding;
+      w += 2 * padding;
+      h += 2 * padding;
+    }
+
+    let xOffset = 0;
+    const adjW = w * ratio;
+
+    if(first && ratio < 1) {
+      w = adjW;
+    } else if(!first && ratio < 1) {
+      xOffset = w - adjW;
+      x1 += xOffset;
+      w = adjW;
+    }
+
+    return { x1, y1, w, h, xOffset };
+  }
+
+  /**
+   * matrix is expected to be a 9 element array
+   * this function follows same pattern as CRp.drawCachedElementPortion(...)
+   */
+  setTransformMatrix(matrix, node, opts, padding, first, ratio) {
+    const bb = this.getAdjustedBB(node, opts, padding, first, ratio);
+
     let x, y;
-
     mat3.identity(matrix);
 
     const theta = opts.getRotation(node);
@@ -283,24 +309,16 @@ export class NodeDrawing {
       mat3.rotate(matrix, matrix, theta);
 
       const offset = opts.getRotationOffset(node);
-      x = offset.x;
-      y = offset.y;
+
+      x = offset.x + bb.xOffset;
+      y = offset.y
     } else {
       x = bb.x1;
       y = bb.y1;
     }
 
-    let nodeWidth  = bb.w;
-    let nodeHeight = bb.h;
-    if(padding) {
-      x -= padding;
-      y -= padding;
-      nodeWidth  += 2 * padding;
-      nodeHeight += 2 * padding;
-    }
-    
     mat3.translate(matrix, matrix, [x, y]);
-    mat3.scale(matrix, matrix, [nodeWidth, nodeHeight]);
+    mat3.scale(matrix, matrix, [bb.w, bb.h]);
   }
 
 
@@ -318,56 +336,61 @@ export class NodeDrawing {
     if(!opts.isVisible(node))
       return;
 
-    const bufferInstanceData = (texID, xOffset, yOffset, w, h, padding=0, layColor=[0, 0, 0, 0]) => {
+    const bufferInstanceData = (atlasID, tex1, tex2, padding=0, layColor=[0, 0, 0, 0]) => {
       const i = this.instanceCount;
-      this.texIdBuffer.setData([texID], i);
-      this.offsetsBuffer.setData([xOffset, yOffset], i);
-      this.widthHeightBuffer.setData([w, h], i);
+      this.atlasIdBuffer.setData([atlasID], i);
+      this.tex1Buffer.setBB(tex1, i);
+      this.tex2Buffer.setBB(tex2, i);
       this.layColorBuffer.setData(layColor, i);
+
+      const tex1ratio = tex1.w / (tex1.w + tex2.w);
+      const tex2ratio = 1 - tex1ratio;
+
       // pass the array view to setTransformMatrix
-      const matrix = this.matrixBuffer.getMatrixView(i);
-      this.setTransformMatrix(matrix, node, opts, padding);
+      const matrix1 = this.matrixBuffer1.getMatrixView(i);
+      this.setTransformMatrix(matrix1, node, opts, padding, true, tex1ratio);
+      const matrix2 = this.matrixBuffer2.getMatrixView(i);
+      this.setTransformMatrix(matrix2, node, opts, padding, false, tex2ratio);
 
       this.instanceCount++;
     };
 
-    const getTexIdForBatch = (atlas) => {
-      let texID = this.atlases.indexOf(atlas);
-      if(texID < 0) {
+    const getAtlasIdForBatch = (atlas) => {
+      let atlasID = this.atlases.indexOf(atlas);
+      if(atlasID < 0) {
         if(this.atlases.length === this.maxAtlases) {
            // If we run out of space for textures in the current batch then start a new batch
           this.endBatch();
         }
         this.atlases.push(atlas);
-        texID = this.atlases.length - 1;
+        atlasID = this.atlases.length - 1;
       }
-      return texID;
+      return atlasID;
     };
 
     const drawBodyOrLabel = () => {
-      const { atlas, texIndex } = this.getOrCreateTexture(node, opts);
-      const texID = getTexIdForBatch(atlas);
-      const { xOffset, yOffset } = atlas.getTexOffsets(texIndex);
-      const bb = opts.getBoundingBox(node);
-      const { w, h } = atlas.getTexScale(bb);
-      bufferInstanceData(texID, xOffset, yOffset, w, h);
+      const styleKey = opts.getKey(node);
+      const atlas = this.getOrCreateTexture(node, opts);
+      const atlasID = getAtlasIdForBatch(atlas);
+      const [ tex1, tex2 ] = atlas.getTexOffsets(styleKey);
+      
+      bufferInstanceData(atlasID, tex1, tex2);
     };
 
     const drawOverlayUnderlay = () => {
       const style = opts.getOverlayUnderlayStyle(node);
       const { opacity, color, shape, padding } = style; // Ignore radius for now
 
-      const texIndex = this.overlayUnderlay.getTexIndex(shape);
-      if(texIndex < 0)
+      const styleKey = this.overlayUnderlay.getTexKey(shape);
+      if(styleKey < 0)
         return;
 
       const { atlas } = this.overlayUnderlay;
-      const texID = getTexIdForBatch(atlas);
-      const { xOffset, yOffset } = atlas.getTexOffsets(texIndex);
-      const bb = opts.getBoundingBox(node);
-      const { w, h } = this.overlayUnderlay.getTexWidthHeight(bb);
+      const atlasID = getAtlasIdForBatch(atlas);
+      const [ tex1, tex2 ] = atlas.getTexOffsets(styleKey);
       const webglColor = util.toWebGLColor(color, opacity);
-      bufferInstanceData(texID, xOffset, yOffset, w, h, padding, webglColor);
+
+      bufferInstanceData(atlasID, tex1, tex2, padding, webglColor);
     }
 
     if(opts.isOverlayOrUnderlay) {
@@ -383,7 +406,6 @@ export class NodeDrawing {
 
 
   endBatch() {
-
     const { gl, program, vao, instanceCount, vertexCount } = this;
     if(instanceCount === 0) 
       return;
@@ -392,11 +414,12 @@ export class NodeDrawing {
     gl.bindVertexArray(vao);
 
     // upload the new matrix data
-    this.matrixBuffer.bufferSubData(instanceCount);
-    this.texIdBuffer.bufferSubData(instanceCount);
-    this.offsetsBuffer.bufferSubData(instanceCount);
-    this.widthHeightBuffer.bufferSubData(instanceCount);
+    this.matrixBuffer1.bufferSubData(instanceCount);
+    this.matrixBuffer2.bufferSubData(instanceCount);
+    this.atlasIdBuffer.bufferSubData(instanceCount);
     this.layColorBuffer.bufferSubData(instanceCount);
+    this.tex1Buffer.bufferSubData(instanceCount);
+    this.tex2Buffer.bufferSubData(instanceCount);
 
     // Activate all the texture units that we need
     for(let i = 0; i < this.atlases.length; i++) {
@@ -418,16 +441,16 @@ export class NodeDrawing {
     gl.bindVertexArray(null);
     gl.bindTexture(gl.TEXTURE_2D, null); // TODO is this right when having multiple texture units?
 
-    // start the next batch, even if not needed
-    this.startBatch();
-    
-
+    // debug
     const nodeContext = this.r.data.contexts[this.r.NODE];
     nodeContext.save();
     nodeContext.setTransform(1, 0, 0, 1, 0, 0);
     nodeContext.scale(0.25, 0.25);
-    nodeContext.drawImage(this.testAtlas.canvas, 0, 0);
+    nodeContext.drawImage(this.atlases[0].canvas, 0, 0);
     nodeContext.restore();
+
+    // start the next batch, even if not needed
+    this.startBatch();
   }
 
 }

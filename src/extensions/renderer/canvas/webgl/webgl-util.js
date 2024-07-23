@@ -143,6 +143,10 @@ export function createBufferDynamicDraw(gl, instances, type, attributeLoc) {
     dataArray.set(data, i * size);
   };
 
+  buffer.setBB = ({ x, y, w, h }, i) => {
+    buffer.setData([ x, y, w, h ], i);
+  };
+
   buffer.bufferSubData = (count) => {
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
     if(count) {

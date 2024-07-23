@@ -38,12 +38,19 @@ export class NodeDrawing {
 
     this.renderTypes = new Map(); // string -> object
 
-    this.styleKeyToAtlas = new Map();
-
     this.currentAtlas = this.createAtlas();
     this.overlayUnderlay = this.initOverlayUnderlay(); // used for overlay/underlay shapes
 
     this.testAtlas = new Atlas(r, gl);
+  }
+
+  addRenderType(type, options) {
+    const renderOptions = {
+      type,
+      opts: initDefaults(options),
+      styleKeyToAtlas: new Map()
+    }
+    this.renderTypes.set(type, renderOptions);
   }
 
   createAtlas() {
@@ -51,10 +58,13 @@ export class NodeDrawing {
     return new Atlas(r, gl, { atlasSize });
   }
 
-  addRenderType(type, options) {
-    this.renderTypes.set(type, initDefaults(options));
+  getAtlas(type, styleKey) {
+    return this.renderTypes.get(type).styleKeyToAtlas.get(styleKey);
   }
 
+  setAtlas(type, styleKey, atlas) {
+    return this.renderTypes.get(type).styleKeyToAtlas.set(styleKey, atlas);
+  }
 
   initOverlayUnderlay() {
     const { r } = this;
@@ -241,11 +251,11 @@ export class NodeDrawing {
   }
 
 
-  getOrCreateTexture(node, opts) {
+  getOrCreateTexture(renderType, node, opts) {
     const styleKey = opts.getKey(node);
     const bb = opts.getBoundingBox(node);
 
-    let atlas = this.styleKeyToAtlas.get(styleKey);
+    let atlas = this.getAtlas(renderType, styleKey);
 
     if(!atlas) {
       if(!this.currentAtlas.canFit(bb)) {
@@ -253,13 +263,13 @@ export class NodeDrawing {
       }
 
       atlas = this.currentAtlas;
-      console.log('drawing texture for', styleKey);
+      // console.log('drawing texture for', styleKey);
 
       atlas.draw(styleKey, bb, (context) => {
         opts.drawElement(context, node, bb, true, false);
       });
 
-      this.styleKeyToAtlas.set(styleKey, atlas);
+      this.setAtlas(renderType, styleKey, atlas);
     }
 
     return atlas;
@@ -332,7 +342,7 @@ export class NodeDrawing {
 
 
   draw(node, type) {
-    const opts = this.renderTypes.get(type);
+    const opts = this.renderTypes.get(type).opts;
     if(!opts.isVisible(node))
       return;
 
@@ -370,7 +380,7 @@ export class NodeDrawing {
 
     const drawBodyOrLabel = () => {
       const styleKey = opts.getKey(node);
-      const atlas = this.getOrCreateTexture(node, opts);
+      const atlas = this.getOrCreateTexture(type, node, opts);
       const atlasID = getAtlasIdForBatch(atlas);
       const [ tex1, tex2 ] = atlas.getTexOffsets(styleKey);
       
@@ -442,12 +452,12 @@ export class NodeDrawing {
     gl.bindTexture(gl.TEXTURE_2D, null); // TODO is this right when having multiple texture units?
 
     // debug
-    const nodeContext = this.r.data.contexts[this.r.NODE];
-    nodeContext.save();
-    nodeContext.setTransform(1, 0, 0, 1, 0, 0);
-    nodeContext.scale(0.25, 0.25);
-    nodeContext.drawImage(this.atlases[0].canvas, 0, 0);
-    nodeContext.restore();
+    // const nodeContext = this.r.data.contexts[this.r.NODE];
+    // nodeContext.save();
+    // nodeContext.setTransform(1, 0, 0, 1, 0, 0);
+    // nodeContext.scale(0.25, 0.25);
+    // nodeContext.drawImage(this.atlases[1].canvas, 0, 0);
+    // nodeContext.restore();
 
     // start the next batch, even if not needed
     this.startBatch();

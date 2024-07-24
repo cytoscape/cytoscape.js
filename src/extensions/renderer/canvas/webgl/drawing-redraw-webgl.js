@@ -11,6 +11,7 @@ CRp.initWebgl = function(options, fns) {
   const r = this;
   const gl = r.data.contexts[r.WEBGL];
   const container = options.cy.container();
+  r.webglDebug = Boolean(options.debug);
 
   gl.clearColor(0, 0, 0, 0); // background color
   // enable alpha blending of textures
@@ -148,9 +149,26 @@ function drawAxes(r) { // for debgging
   context.restore();
 }
 
+
 CRp.renderWebgl = function(options) {
   const r = this;
-  console.log('webgl render');
+  let start;
+  if(r.webglDebug) {
+    start = performance.now();
+  }
+
+  renderWebgl(r, options);
+
+  if(r.webglDebug) {
+    const end = performance.now();
+    console.log(`webgl render - frame time ${Math.ceil(end - start)}ms`);
+
+    r.nodeDrawing.printDebug();
+  }
+  console.log();
+}
+
+function renderWebgl(r, options) {
   const { nodeDrawing, edgeDrawing } = r;
 
   if(r.data.canvasNeedsRedraw[r.SELECT_BOX]) {
@@ -201,6 +219,6 @@ CRp.renderWebgl = function(options) {
     nodeDrawing.endBatch();
     edgeDrawing.endBatch();
   }
-};
+}
 
 export default CRp;

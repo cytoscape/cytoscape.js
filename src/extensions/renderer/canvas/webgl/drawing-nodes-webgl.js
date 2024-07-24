@@ -35,35 +35,40 @@ export class NodeDrawing {
 
     this.program = this.createShaderProgram();
     this.vao = this.createVAO();
-
-    this.renderTypes = new Map(); // string -> object
-
-    this.currentAtlas = this.createAtlas();
     this.overlayUnderlay = this.initOverlayUnderlay(); // used for overlay/underlay shapes
 
-    this.testAtlas = new Atlas(r, gl);
+    this.renderTypes = new Map(); // string -> objec
+  }
+
+  printDebug() {
+    console.log('NodeDrawing:')
+    for(let [ type, opts ] of this.renderTypes) {
+      if(!opts.isOverlayOrUnderlay) {
+        const { styleKeyToAtlas } = opts;
+        const keyCount = styleKeyToAtlas.size;
+        const atlasCount = new Set(styleKeyToAtlas.values()).size;
+        console.log(`  ${type}: ${keyCount} keys, ${atlasCount} atlases`);
+      }
+    }
   }
 
   addRenderType(type, options) {
-    const renderOptions = {
+    const opts = {
       type,
-      opts: initDefaults(options),
-      styleKeyToAtlas: new Map()
+      styleKeyToAtlas: new Map(),
+      currentAtlas: null,
+      ...initDefaults(options)
     }
-    this.renderTypes.set(type, renderOptions);
+
+    opts.getAtlas = (key) => opts.styleKeyToAtlas.get(key);
+    opts.setAtlas = (key, atlas) => opts.styleKeyToAtlas.set(key, atlas);
+
+    this.renderTypes.set(type, opts);
   }
 
   createAtlas() {
     const { r, gl, atlasSize } = this;
     return new Atlas(r, gl, { atlasSize });
-  }
-
-  getAtlas(type, styleKey) {
-    return this.renderTypes.get(type).styleKeyToAtlas.get(styleKey);
-  }
-
-  setAtlas(type, styleKey, atlas) {
-    return this.renderTypes.get(type).styleKeyToAtlas.set(styleKey, atlas);
   }
 
   initOverlayUnderlay() {
@@ -251,25 +256,23 @@ export class NodeDrawing {
   }
 
 
-  getOrCreateTexture(renderType, node, opts) {
+  getOrCreateTexture(node, opts) {
     const styleKey = opts.getKey(node);
     const bb = opts.getBoundingBox(node);
 
-    let atlas = this.getAtlas(renderType, styleKey);
+    let atlas = opts.getAtlas(styleKey);
 
     if(!atlas) {
-      if(!this.currentAtlas.canFit(bb)) {
-        this.currentAtlas = this.createAtlas();
+      if(!opts.currentAtlas?.canFit(bb)) {
+        opts.currentAtlas = this.createAtlas();
       }
-
-      atlas = this.currentAtlas;
-      // console.log('drawing texture for', styleKey);
+      atlas = opts.currentAtlas;
 
       atlas.draw(styleKey, bb, (context) => {
         opts.drawElement(context, node, bb, true, false);
       });
 
-      this.setAtlas(renderType, styleKey, atlas);
+      opts.setAtlas(styleKey, atlas);
     }
 
     return atlas;
@@ -342,7 +345,7 @@ export class NodeDrawing {
 
 
   draw(node, type) {
-    const opts = this.renderTypes.get(type).opts;
+    const opts = this.renderTypes.get(type);
     if(!opts.isVisible(node))
       return;
 
@@ -380,7 +383,7 @@ export class NodeDrawing {
 
     const drawBodyOrLabel = () => {
       const styleKey = opts.getKey(node);
-      const atlas = this.getOrCreateTexture(type, node, opts);
+      const atlas = this.getOrCreateTexture(node, opts);
       const atlasID = getAtlasIdForBatch(atlas);
       const [ tex1, tex2 ] = atlas.getTexOffsets(styleKey);
       

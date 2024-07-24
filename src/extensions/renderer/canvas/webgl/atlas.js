@@ -6,20 +6,21 @@ import { defaults } from '../../../../util';
 
 const initDefaults = defaults({
   atlasSize: 4096, 
-  rows: 16,
+  rows: 24,
 });
 
 export class Atlas {
   constructor(r, gl, options) {
+    this.debugID = Math.floor(Math.random() * 10000);
     this.r = r;
     this.gl = gl;
-    
+
     const opts = initDefaults(options);
     opts.texHeight = Math.floor(opts.atlasSize / opts.rows);
     opts.maxTexWidth = opts.atlasSize;
     this.opts = opts;
 
-    this.webGLtexture = null;
+    this.texture = null;
     this.canvas = null;
     this.buffered = false;
 

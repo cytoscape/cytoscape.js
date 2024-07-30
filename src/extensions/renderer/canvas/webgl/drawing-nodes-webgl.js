@@ -4,7 +4,7 @@ import { defaults } from '../../../../util';
 import { mat3 } from 'gl-matrix';
 import Atlas from './atlas';
 
-const initDefaults = defaults({
+const initRenderTypeDefaults = defaults({
   getKey: null,
   drawElement: null,
   getBoundingBox: null,
@@ -22,22 +22,21 @@ export class NodeDrawing {
   /** 
    * @param {WebGLRenderingContext} gl 
    */
-  constructor(r, gl) {
+  constructor(r, gl, opts) {
     this.r = r;
     this.gl = gl;
 
-    this.maxInstances = 1000; // TODO
-    this.maxAtlases = gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS);
-    this.atlasSize = 4096; // all Atlases must be the same size, because this is a uniform
+    this.maxInstances = opts.webglBatchSize;
+    this.maxAtlases = opts.webglTexPerBatch;
+    this.atlasSize = opts.webglTexSize;
 
-    console.log('max texture units', this.maxAtlases);
-    console.log('max texture size', gl.getParameter(gl.MAX_TEXTURE_SIZE));
+    this.createAtlas = () => new Atlas(r, gl, opts);
 
     this.program = this.createShaderProgram();
     this.vao = this.createVAO();
     this.overlayUnderlay = this.initOverlayUnderlay(); // used for overlay/underlay shapes
+    this.renderTypes = new Map(); // string -> object
 
-    this.renderTypes = new Map(); // string -> objec
   }
 
   printDebug() {
@@ -57,18 +56,13 @@ export class NodeDrawing {
       type,
       styleKeyToAtlas: new Map(),
       currentAtlas: null,
-      ...initDefaults(options)
+      ...initRenderTypeDefaults(options)
     }
 
     opts.getAtlas = (key) => opts.styleKeyToAtlas.get(key);
     opts.setAtlas = (key, atlas) => opts.styleKeyToAtlas.set(key, atlas);
 
     this.renderTypes.set(type, opts);
-  }
-
-  createAtlas() {
-    const { r, gl, atlasSize } = this;
-    return new Atlas(r, gl, { atlasSize });
   }
 
   initOverlayUnderlay() {

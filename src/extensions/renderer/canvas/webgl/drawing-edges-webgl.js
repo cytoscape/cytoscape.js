@@ -1,17 +1,13 @@
 import * as util from './webgl-util';
-import { defaults } from '../../../../util';
 import { mat3 } from 'gl-matrix';
 
-const initDefaults = defaults({
-  // The canvas renderer uses a mask to remove the part of the edge line that's under
-  // a translucent edge arrow (see the part of CRp.drawArrowhead that uses globalCompositeOperation). 
-  // So even if an edge arrow is translucent you don't see anything under it except the canvas background.
-  // To simulate this effect with WebGL we will blend edge arrow colors with the background
-  // color value that's passed in. That means if there is a texture or image 
-  // under the canvas it won't be blended propery with edge arrows, this is an 
-  // acceptable limitation for now.
-  bgColor: [255, 255, 255]
-});
+// The canvas renderer uses a mask to remove the part of the edge line that's under
+// a translucent edge arrow (see the part of CRp.drawArrowhead that uses globalCompositeOperation). 
+// So even if an edge arrow is translucent you don't see anything under it except the canvas background.
+// To simulate this effect with WebGL we will blend edge arrow colors with the background
+// color value that's passed in. That means if there is a texture or image 
+// under the canvas it won't be blended propery with edge arrows, this is an 
+// acceptable limitation for now.
 
 // Vertex types
 const LINE = 0;
@@ -24,13 +20,13 @@ export class EdgeDrawing {
   /** 
    * @param {WebGLRenderingContext} gl 
    */
-  constructor(r, gl, options) {
+  constructor(r, gl, opts) {
     this.r = r;
     this.gl = gl;
 
-    this.maxInstances = 1000; // TODO how to decide the max instances?
+    this.maxInstances = opts.webglBatchSize;
+    this.bgColor = opts.bgColor;
 
-    this.opts = initDefaults(options);
     this.program = this.createShaderProgram();
     this.vao = this.createVAO();
   }
@@ -310,7 +306,7 @@ export class EdgeDrawing {
     gl.uniformMatrix3fv(program.uPanZoomMatrix, false, this.panZoomMatrix);
 
     // set background color (this is a hack)
-    const webglBgColor = util.toWebGLColor(this.opts.bgColor, 1);
+    const webglBgColor = util.toWebGLColor(this.bgColor, 1);
     gl.uniform4fv(program.uBGColor, webglBgColor);
 
     // draw!

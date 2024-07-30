@@ -11,7 +11,15 @@ let rendererDefaults = util.defaults({
   wheelSensitivity: 1,
   debug: false,
   showFps: false,
-  webgl: false
+  
+  // webgl options
+  webgl: false,
+  webglDebug: false,
+  webglTexSize: 4096,
+  webglTexRows: 24,
+  webglBatchSize: 1024,
+  webglTexPerBatch: 12,
+  webglBgColor: [255, 255, 255]
 });
 
 let corefn = ({

@@ -7,11 +7,20 @@ import { color2tuple } from '../../../../util/colors'
 
 const CRp = {};
 
-CRp.initWebgl = function(options, fns) {
+CRp.initWebgl = function(opts, fns) {
   const r = this;
   const gl = r.data.contexts[r.WEBGL];
-  const container = options.cy.container();
-  r.webglDebug = Boolean(options.debug);
+  const container = opts.cy.container();
+
+  opts.webglTexSize = Math.min(opts.webglTexSize, gl.getParameter(gl.MAX_TEXTURE_SIZE));
+  opts.webglTexRows = Math.min(opts.webglTexRows, 54);
+  opts.webglBatchSize = Math.min(opts.webglBatchSize, 16384);
+  opts.webglTexPerBatch = Math.min(opts.webglTexPerBatch, gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS));
+  r.webglDebug = opts.webglDebug;
+
+  console.log('max texture units', gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS));
+  console.log('max texture size' , gl.getParameter(gl.MAX_TEXTURE_SIZE));
+  console.log('webgl options', opts);
 
   gl.clearColor(0, 0, 0, 0); // background color
   // enable alpha blending of textures
@@ -43,8 +52,8 @@ CRp.initWebgl = function(options, fns) {
   };
 
   
-  r.edgeDrawing = new EdgeDrawing(r, gl, { bgColor });
-  r.nodeDrawing = new NodeDrawing(r, gl);
+  r.edgeDrawing = new EdgeDrawing(r, gl, { ...opts, bgColor });
+  r.nodeDrawing = new NodeDrawing(r, gl, opts);
   
   r.nodeDrawing.addRenderType('node-body', {
     getKey: fns.getStyleKey,
@@ -151,6 +160,8 @@ function drawAxes(r) { // for debgging
 
 
 CRp.renderWebgl = function(options) {
+  console.log('renderWebgl', options);
+
   const r = this;
   let start;
   if(r.webglDebug) {

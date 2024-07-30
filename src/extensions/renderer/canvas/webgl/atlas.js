@@ -1,24 +1,17 @@
 import * as util from './webgl-util';
-import { defaults } from '../../../../util';
 
 // A "texture atlas" is a big image/canvas, and sections of it are used as textures for nodes/labels.
 
-
-const initDefaults = defaults({
-  atlasSize: 4096, 
-  rows: 24,
-});
-
 export class Atlas {
-  constructor(r, gl, options) {
+  constructor(r, gl, opts) {
     this.debugID = Math.floor(Math.random() * 10000);
     this.r = r;
     this.gl = gl;
 
-    const opts = initDefaults(options);
-    opts.texHeight = Math.floor(opts.atlasSize / opts.rows);
-    opts.maxTexWidth = opts.atlasSize;
-    this.opts = opts;
+    this.atlasSize = opts.webglTexSize;
+    this.rows = opts.webglTexRows;
+    this.texHeight = Math.floor(this.atlasSize / this.rows);
+    this.maxTexWidth = this.atlasSize;
 
     this.texture = null;
     this.canvas = null;
@@ -28,14 +21,14 @@ export class Atlas {
     this.freePointer = { x: 0, row: 0 };
     // map from the style key to the row/x where the texture starts
     // if the texture wraps then there's a second location
-    this.keyToLocation = new Map(); // styleKey -> [ location, location(opt) ]
+    this.keyToLocation = new Map(); // styleKey -> [ location, location ]
 
-    this.canvas  = util.createTextureCanvas(this.r, opts.atlasSize);
-    this.scratch = util.createTextureCanvas(this.r, opts.atlasSize, opts.texHeight);
+    this.canvas  = util.createTextureCanvas(r, this.atlasSize);
+    this.scratch = util.createTextureCanvas(r, this.atlasSize, this.texHeight);
   }
 
   getScale(bb) {
-    const { texHeight, maxTexWidth } = this.opts;
+    const { texHeight, maxTexWidth } = this;
     // try to fit to the height of a row
     let scale = texHeight / bb.h;  // TODO what about pixelRatio?
     let texW = bb.w * scale;
@@ -51,7 +44,7 @@ export class Atlas {
 
 
   draw(key, bb, doDrawing) {
-    const { atlasSize, rows, texHeight } = this.opts;
+    const { atlasSize, rows, texHeight } = this;
     const { scale, texW, texH } = this.getScale(bb);
     
     const drawAt = (location, context) => {
@@ -94,6 +87,7 @@ export class Atlas {
         const w = firstTexW;
         const h = texHeight;
         context.drawImage(scratch, 0, 0, w, h, dx, dy, w, h);
+        
         locations[0] = { 
           x: dx, 
           y: dy, 
@@ -107,6 +101,7 @@ export class Atlas {
         const w = secondTexW;
         const h = texHeight;
         context.drawImage(scratch, sx, 0, w, h, 0, dy, w, h);
+
         locations[1] = { 
           x: 0, 
           y: dy,
@@ -157,7 +152,7 @@ export class Atlas {
   }
 
   canFit(bb) {
-    const { atlasSize, rows } = this.opts;
+    const { atlasSize, rows } = this;
     const { texW } = this.getScale(bb);
     if(this.freePointer.x + texW > atlasSize) { // need to wrap
       return this.freePointer.row < rows - 1; // return true if there's a row to wrap to
@@ -172,7 +167,6 @@ export class Atlas {
     }
   }
 
-  
 }
 
 export default Atlas;

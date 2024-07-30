@@ -92,7 +92,7 @@ var styles = {
         'text-valign': 'center',
         'color': '#000000',
         'background-color': '#3a7ecf',
-        'font-family': 'Helvetica'
+        'font-family': 'Helvetica',
       },
     }, {
       selector: '#n1',
@@ -106,9 +106,11 @@ var styles = {
     }, {
       selector: '#n2',
       style: {
-        'background-fill': 'linear-gradient',
-        'background-gradient-direction': 'to-left',
-        'background-gradient-stop-colors': 'gold red lawngreen'
+        // 'background-fill': 'linear-gradient',
+        // 'background-gradient-direction': 'to-left',
+        // 'background-gradient-stop-colors': 'gold red lawngreen',
+        'border-color': 'black',
+        "border-width": 2,
       }
     }, {
       selector: '#n3',
@@ -116,7 +118,8 @@ var styles = {
         'background-fill': 'radial-gradient',
         'background-gradient-stop-colors': 'cyan magenta yellow',
         'text-valign': 'top',
-        'text-rotation': 3.14/2
+        'text-rotation': 3.14/4,
+        'label': 'n3 - Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod'
       }
     }, {
       selector: '#n4',
@@ -132,10 +135,17 @@ var styles = {
         "border-color": "red",
         "border-style": "dotted",
         "border-width": 4,
-        'width': 50,
+        'width': 100,
         'background-opacity': 0.5,
         'text-valign': 'top'
       }
+    }, {
+      selector: 'node:selected',
+      style: {
+        'border-color': 'yellow',
+        'border-opacity': 1.0,
+        'border-width': 2,
+      },
     }, {
       selector: 'edge',
       style: {

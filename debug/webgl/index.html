@@ -18,22 +18,48 @@
 
       // patches for IE:
 
-      if( NodeList.prototype.forEach == null ){
-        NodeList.prototype.forEach = function(fn){
+      if(NodeList.prototype.forEach == null) {
+        NodeList.prototype.forEach = function(fn) {
           var l = this.length;
           var i, el;
-
           for(i = 0; i < l; i++){
             el = this[i];
-
             fn(el, i, this);
           }
         };
       }
     </script>
 
-
     <script src="./cytoscape.umd.js"></script>
+
+    <style>
+      .tooltip {
+        position: relative;
+        display: inline-block;
+        border-bottom: 1px dotted black;
+      }
+      
+      .tooltip .tooltiptext {
+        visibility: hidden;
+        width: 180px;
+        background-color: black;
+        color: #fff;
+        text-align: center;
+        border-radius: 6px;
+        padding: 5px 0;
+        
+        /* Position the tooltip */
+        position: absolute;
+        z-index: 1;
+        top: 100%;
+        left: 50%;
+        margin-left: -120px;
+      }
+      
+      .tooltip:hover .tooltiptext {
+        visibility: visible;
+      }
+    </style>
 
     <title>cytoscape.js WebGL2 debug page</title>
 
@@ -55,16 +81,7 @@
         <h2>Network</h2>
         <select id="network-select">
         </select>
-        <br /> <br />
-        <button id="fit-button">Fit to view</button> <br />
-        <br />
-        <div>
-          <input type="checkbox" id="webgl-check" checked />
-          <label for="webgl-check">Enable <b>WebGL</b></label>
-        </div>
-
-        <h2>Settings</h2>
-        
+        <br><br>
         Background Color: 
         <select id="bg-color-select">
           <option value="white">⚪ White</option>
@@ -78,33 +95,88 @@
           <option value="brown">🟤 Brown</option>👽
           <option value="gray">👽 Gray</option>
         </select>
+        <br><br>
+        <button id="fit-button">Fit to view</button> <br />
 
-        <br /><br /><br /><br /><br />
-        <button id="reset-button">Reset</button> <br />
-        <!--
+        <br><br>
+        <h2>WebGL Settings</h2>
         <div>
-          <input type="checkbox" id="show-labels" checked />
-          <label for="show-labels">Show Labels</label>
+          <input type="checkbox" id="webgl-check" />
+          <label for="webgl-check">Enable <b>WebGL</b></label>
         </div>
-        -->
+        <br>
+        <div>
+          Texture Size: 
+          <select id="texture-size-select">
+            <option value="1024">1024</option>
+            <option value="2048">2048</option>
+            <option value="4096">4096</option>
+            <option value="8192">8192</option>
+          </select>&nbsp;
+          <div class="tooltip">ℹ️<span class="tooltiptext">
+            <b>Texture Size</b><br>This size of each dimension of each texture atlas. Affects buffering time and texture quality.
+          </span></div>
+        </div>
+        <br>
+        <div>
+          Texture Rows: 
+          <select id="texture-rows-select">
+            <option value="12">12</option>
+            <option value="18">18</option>
+            <option value="24">24</option>
+            <option value="30">30</option>
+            <option value="36">36</option>
+            <option value="42">42</option>
+            <option value="48">48</option>
+            <option value="54">54</option>
+          </select>&nbsp;
+          <div class="tooltip">ℹ️<span class="tooltiptext">
+            <b>Texture Rows</b><br>Number of rows to divide the texture atlas into. Affects number of textures used and texture quality.
+          </span></div>
+        </div>
+        <br>
+        <div>
+          Textures Per Batch: 
+          <select id="texture-units-select">
+            <option value="2">2</option>
+            <option value="4">4</option>
+            <option value="6">6</option>
+            <option value="8">8</option>
+            <option value="10">10</option>
+            <option value="12">12</option>
+            <option value="14">14</option>
+            <option value="16">16</option>
+          </select>&nbsp;
+          <div class="tooltip">ℹ️<span class="tooltiptext">
+            <b>Textures Per Batch</b><br>Number of texture units to use per batch.
+          </span></div>
+        </div>
+        <br>
+        <div>
+          Elements Per Batch:
+          <select id="batch-size-select">
+            <option value="1024">1024</option>
+            <option value="2048">2048</option>
+            <option value="4096">4096</option>
+            <option value="8192">8192</option>
+            <option value="16384">16384</option>
+          </select>&nbsp;
+          <div class="tooltip">ℹ️<span class="tooltiptext">
+            <b>Elements Per Batch</b><br>Number of nodes or edges to draw in a batch. Affects the size of data buffers.
+          </span></div>
+        </div>
+        <br>
 
-        <!--
-          What else to show...
-          - Toggle canvas background color
-          - Toggle color mapping
-          - Toggle transparancy
-          - Style stuff...
-            - Images?
-          - Run a layout
-          - Delete selected elements
-          - Add elements??
-        -->
+        <p>Open the debug console for debug and performance info. <br>(Option + Command + J)</p>
+
+        <br/><br/>
+        <button id="reset-button">Reset</button> <br />
+
 
       </div>
 
       <script src="networks.js"></script>
       <script src="init.js"></script>
-      <script src="actions.js"></script>
   </body>
 
 </html>

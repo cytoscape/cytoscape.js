@@ -3,27 +3,71 @@
 
 var cy;
 
-var params = {};
+const paramDefs = {
+  networkID: {
+    default: 'em-web',
+    control: '#network-select'
+  },
+  bgcolor: {
+    default: 'white',
+    control: '#bg-color-select'
+  },
+  webgl: {
+    default: 'true',
+    control: '#webgl-check'
+  },
+  webglTexSize: {
+    default: 4096,
+    control: '#texture-size-select'
+  },
+  webglTexRows: {
+    default: 24,
+    control: '#texture-rows-select'
+  },
+  webglBatchSize: {
+    default: 1024,
+    control: '#batch-size-select'
+  },
+  webglTexPerBatch: {
+    default: 12,
+    control: '#texture-units-select'
+  },
+};
+
+
 
 (function(){
 
+  const params = {};
+
+  // Load URL params
   const urlParams = new URLSearchParams(window.location.search);
-  params.networkID = urlParams.get('networkID') || 'em-web';
-  params.webgl = urlParams.get('webgl') === 'true';
-  params.bgcolor = urlParams.get('bgcolor') || 'white';
+  for(const p of Object.keys(paramDefs)) {
+    const def = paramDefs[p];
+    params[p] = urlParams.get(p) || def.default;
+  }
+
+  console.log('params', params);
 
   const network = networks[params.networkID];
   const style = styles[params.networkID];
   $('#cytoscape').style.backgroundColor = params.bgcolor;
 
-  function load(elements, style) {
+
+  // Load network and style
+  function loadNetwork(elements, style) {
     options = {
       container: $('#cytoscape'),
   
       renderer: {
         name: 'canvas',
         showFps: true,
-        webgl: params.webgl,
+        webgl: params.webgl === 'true',
+        webglDebug: true,
+        webglTexSize: params.webglTexSize,
+        webglTexRows: params.webglTexRows,
+        webglBatchSize: params.webglBatchSize,
+        webglTexPerBatch: params.webglTexPerBatch
       },
 
       style: style,
@@ -40,15 +84,56 @@ var params = {};
       fetch(network.url).then(res => res.json()),
       fetch(style.file).then(res => res.json())
     ]).then(([networkJson, styleJson]) => {
-      load(networkJson.elements, styleJson.style);
+      loadNetwork(networkJson.elements, styleJson.style);
     });
   } else {
     fetch(network.url)
     .then(res => res.json())
     .then(networkJson => {
       const style = styles[params.networkID];
-      load(networkJson.elements, style);
+      loadNetwork(networkJson.elements, style);
     });
   }
 
+
+  // Initialize controls
+  for(const [networkID, network] of Object.entries(networks)) {
+    const option = document.createElement('option');
+    option.value = networkID;
+    option.innerHTML = `${network.desc} (${network.nodes} nodes, ${network.edges} edges)`;
+    $("#network-select").appendChild(option);
+  }
+
+  for(const p of Object.keys(paramDefs)) {
+    const control = $(paramDefs[p].control);
+    if(control.type == 'checkbox') {
+      control.checked = params[p] === 'true';
+      control.addEventListener('click', () => reloadPage());
+    } else {
+      control.value = params[p];
+      control.addEventListener('change', () => reloadPage());
+    }
+  }
+
+  
+  // Add listeners to controls
+  function reloadPage(reset = false) {
+    const { origin, pathname } = window.location;
+    if(reset) {
+      window.location.href = origin + pathname;
+      return;
+    }
+
+    const urlParams = new URLSearchParams();
+    for(const p of Object.keys(paramDefs)) {
+      const control = $(paramDefs[p].control);
+      const value = control.type == 'checkbox' ? control.checked : control.value;
+      urlParams.set(p, value);
+    }
+
+    window.location.href = origin + pathname + '?' + urlParams.toString();
+  }
+  
+  $("#fit-button").addEventListener('click', () => cy.fit());
+  $("#reset-button").addEventListener('click', () => reloadPage(true));
 })();

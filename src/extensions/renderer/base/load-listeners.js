@@ -1046,6 +1046,7 @@ BRp.load = function(){
     r.hoverData.dragDelta = [];
     r.hoverData.mdownPos = null;
     r.hoverData.mdownGPos = null;
+    r.hoverData.which = null;
 
   }, false );
 

@@ -37,18 +37,7 @@ export class NodeDrawing {
     this.overlayUnderlay = this.initOverlayUnderlay(); // used for overlay/underlay shapes
     this.renderTypes = new Map(); // string -> object
 
-  }
-
-  printDebug() {
-    console.log('NodeDrawing:')
-    for(let [ type, opts ] of this.renderTypes) {
-      if(!opts.isOverlayOrUnderlay) {
-        const { styleKeyToAtlas } = opts;
-        const keyCount = styleKeyToAtlas.size;
-        const atlasCount = new Set(styleKeyToAtlas.values()).size;
-        console.log(`  ${type}: ${keyCount} keys, ${atlasCount} atlases`);
-      }
-    }
+    this.debugInfo = [];
   }
 
   addRenderType(type, options) {
@@ -329,14 +318,15 @@ export class NodeDrawing {
   }
 
 
-  startBatch(panZoomMatrix) {
-    if(panZoomMatrix) {
-      this.panZoomMatrix = panZoomMatrix;
-    }
+  startFrame(panZoomMatrix, debugInfo) {
+    this.panZoomMatrix = panZoomMatrix
+    this.debugInfo = debugInfo;
+  }
+
+  startBatch() {
     this.instanceCount = 0;
     this.atlases = []; // up to 16 texture units for a draw call
   }
-
 
   draw(node, type) {
     const opts = this.renderTypes.get(type);
@@ -413,20 +403,20 @@ export class NodeDrawing {
 
 
   endBatch() {
-    const { gl, program, vao, instanceCount, vertexCount } = this;
-    if(instanceCount === 0) 
+    const { gl, program, vao, vertexCount, instanceCount: count } = this;
+    if(count === 0) 
       return;
 
     gl.useProgram(program);
     gl.bindVertexArray(vao);
 
     // upload the new matrix data
-    this.matrixBuffer1.bufferSubData(instanceCount);
-    this.matrixBuffer2.bufferSubData(instanceCount);
-    this.atlasIdBuffer.bufferSubData(instanceCount);
-    this.layColorBuffer.bufferSubData(instanceCount);
-    this.tex1Buffer.bufferSubData(instanceCount);
-    this.tex2Buffer.bufferSubData(instanceCount);
+    this.matrixBuffer1.bufferSubData(count);
+    this.matrixBuffer2.bufferSubData(count);
+    this.atlasIdBuffer.bufferSubData(count);
+    this.layColorBuffer.bufferSubData(count);
+    this.tex1Buffer.bufferSubData(count);
+    this.tex2Buffer.bufferSubData(count);
 
     // Activate all the texture units that we need
     for(let i = 0; i < this.atlases.length; i++) {
@@ -443,7 +433,7 @@ export class NodeDrawing {
     gl.uniform1i(program.uAtlasSize, this.atlasSize);
 
     // draw!
-    gl.drawArraysInstanced(gl.TRIANGLES, 0, vertexCount, instanceCount);
+    gl.drawArraysInstanced(gl.TRIANGLES, 0, vertexCount, count);
 
     gl.bindVertexArray(null);
     gl.bindTexture(gl.TEXTURE_2D, null); // TODO is this right when having multiple texture units?
@@ -456,8 +446,35 @@ export class NodeDrawing {
     // nodeContext.drawImage(this.atlases[1].canvas, 0, 0);
     // nodeContext.restore();
 
+    if(this.debugInfo) {
+      this.debugInfo.push({
+        type: 'node',
+        count,
+        atlasCount: this.atlases.length
+      });
+    }
+
     // start the next batch, even if not needed
     this.startBatch();
+  }
+
+
+  getAtlasDebugInfo() {
+    const debugInfo = [];
+    for(let [ type, opts ] of this.renderTypes) {
+      if(!opts.isOverlayOrUnderlay) {
+        debugInfo.push({
+          type,
+          keyCount: opts.styleKeyToAtlas.size,
+          atlasCount: new Set(opts.styleKeyToAtlas.values()).size
+        });
+      }
+    }
+    return debugInfo;
+  }
+
+  getDebugInfo() {
+    return this.debugInfo;
   }
 
 }

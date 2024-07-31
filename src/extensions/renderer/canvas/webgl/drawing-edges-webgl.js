@@ -232,14 +232,14 @@ export class EdgeDrawing {
     }
   }
 
-
-  startBatch(panZoomMatrix) {
-    if(panZoomMatrix) {
-      this.panZoomMatrix = panZoomMatrix;
-    }
-    this.instanceCount = 0;
+  startFrame(panZoomMatrix, debugInfo) {
+    this.panZoomMatrix = panZoomMatrix
+    this.debugInfo = debugInfo;
   }
 
+  startBatch() {
+    this.instanceCount = 0;
+  }
 
   draw(edge) {
     // edge points and arrow angles etc are calculated by the base renderer and cached in the rscratch object
@@ -284,23 +284,22 @@ export class EdgeDrawing {
   }
 
   endBatch() {
-    const { gl, program, vao, instanceCount, vertexCount } = this;
-    if(instanceCount === 0) 
+    const { gl, program, vao, vertexCount, instanceCount: count } = this;
+    if(count === 0) 
       return;
 
     gl.useProgram(program);
     gl.bindVertexArray(vao);
 
     // buffer the attribute data
-    this.sourceTargetBuffer.bufferSubData(instanceCount);
-    this.lineWidthBuffer.bufferSubData(instanceCount);
-    this.lineColorBuffer.bufferSubData(instanceCount);
-
-    this.drawArrowsBuffer.bufferSubData(instanceCount);
-    this.sourceArrowColorBuffer.bufferSubData(instanceCount);
-    this.targetArrowColorBuffer.bufferSubData(instanceCount);
-    this.sourceArrowTransformBuffer.bufferSubData(instanceCount);
-    this.targetArrowTransformBuffer.bufferSubData(instanceCount);
+    this.sourceTargetBuffer.bufferSubData(count);
+    this.lineWidthBuffer.bufferSubData(count);
+    this.lineColorBuffer.bufferSubData(count);
+    this.drawArrowsBuffer.bufferSubData(count);
+    this.sourceArrowColorBuffer.bufferSubData(count);
+    this.targetArrowColorBuffer.bufferSubData(count);
+    this.sourceArrowTransformBuffer.bufferSubData(count);
+    this.targetArrowTransformBuffer.bufferSubData(count);
 
     // Set the projection matrix uniform
     gl.uniformMatrix3fv(program.uPanZoomMatrix, false, this.panZoomMatrix);
@@ -310,10 +309,16 @@ export class EdgeDrawing {
     gl.uniform4fv(program.uBGColor, webglBgColor);
 
     // draw!
-    gl.drawArraysInstanced(gl.TRIANGLES, 0, vertexCount, instanceCount);
+    gl.drawArraysInstanced(gl.TRIANGLES, 0, vertexCount, count);
 
     gl.bindVertexArray(null);
 
+    if(this.debugInfo) {
+      this.debugInfo.push({
+        count
+      });
+    }
+    
     // start another batch, even if not needed
     this.startBatch();
   }

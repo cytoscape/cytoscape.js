@@ -239,10 +239,8 @@ export class NodeDrawing {
   }
 
 
-  getOrCreateTexture(node, opts) {
+  getOrCreateTexture(node, bb, opts) {
     const styleKey = opts.getKey(node);
-    const bb = opts.getBoundingBox(node);
-
     let atlas = opts.getAtlas(styleKey);
 
     if(!atlas) {
@@ -264,8 +262,8 @@ export class NodeDrawing {
   /**
    * Adjusts the BB to accomodate padding and split for wrapped textures.
    */
-  getAdjustedBB(node, opts, padding, first, ratio) {
-    let { x1, y1, w, h } = opts.getBoundingBox(node);
+  getAdjustedBB(bb, padding, first, ratio) {
+    let { x1, y1, w, h } = bb;
 
     if(padding) {
       x1 -= padding;
@@ -292,8 +290,8 @@ export class NodeDrawing {
    * matrix is expected to be a 9 element array
    * this function follows same pattern as CRp.drawCachedElementPortion(...)
    */
-  setTransformMatrix(matrix, node, opts, padding, first, ratio) {
-    const bb = this.getAdjustedBB(node, opts, padding, first, ratio);
+  setTransformMatrix(matrix, node, bb, opts, padding, first, ratio) {
+    const adjBB = this.getAdjustedBB(bb, padding, first, ratio);
 
     let x, y;
     mat3.identity(matrix);
@@ -306,15 +304,15 @@ export class NodeDrawing {
 
       const offset = opts.getRotationOffset(node);
 
-      x = offset.x + bb.xOffset;
+      x = offset.x + adjBB.xOffset;
       y = offset.y
     } else {
-      x = bb.x1;
-      y = bb.y1;
+      x = adjBB.x1;
+      y = adjBB.y1;
     }
 
     mat3.translate(matrix, matrix, [x, y]);
-    mat3.scale(matrix, matrix, [bb.w, bb.h]);
+    mat3.scale(matrix, matrix, [adjBB.w, adjBB.h]);
   }
 
 
@@ -333,6 +331,8 @@ export class NodeDrawing {
     if(!opts.isVisible(node))
       return;
 
+    const bb = opts.getBoundingBox(node); // there is overhead calling this, only call once per node
+
     const bufferInstanceData = (atlasID, tex1, tex2, padding=0, layColor=[0, 0, 0, 0]) => {
       const i = this.instanceCount;
       this.atlasIdBuffer.setData([atlasID], i);
@@ -345,9 +345,9 @@ export class NodeDrawing {
 
       // pass the array view to setTransformMatrix
       const matrix1 = this.matrixBuffer1.getMatrixView(i);
-      this.setTransformMatrix(matrix1, node, opts, padding, true, tex1ratio);
+      this.setTransformMatrix(matrix1, node, bb, opts, padding, true,  tex1ratio);
       const matrix2 = this.matrixBuffer2.getMatrixView(i);
-      this.setTransformMatrix(matrix2, node, opts, padding, false, tex2ratio);
+      this.setTransformMatrix(matrix2, node, bb, opts, padding, false, tex2ratio);
 
       this.instanceCount++;
     };
@@ -367,7 +367,7 @@ export class NodeDrawing {
 
     const drawBodyOrLabel = () => {
       const styleKey = opts.getKey(node);
-      const atlas = this.getOrCreateTexture(node, opts);
+      const atlas = this.getOrCreateTexture(node, bb, opts);
       const atlasID = getAtlasIdForBatch(atlas);
       const [ tex1, tex2 ] = atlas.getTexOffsets(styleKey);
       

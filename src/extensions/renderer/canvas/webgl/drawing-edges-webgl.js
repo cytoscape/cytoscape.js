@@ -178,20 +178,6 @@ export class EdgeDrawing {
     return vao;
   }
 
-  // TODO Should I pass in a function that does this like with NodeDrawing?
-  getLineStyle(edge) {
-    const opacity = edge.pstyle('opacity').value;
-    const lineOpacity = edge.pstyle('line-opacity').value;
-    const width = edge.pstyle('width').pfValue;
-    const color = edge.pstyle('line-color').value;
-    const effectiveOpacity = opacity * lineOpacity;
-    return { 
-      opacity: effectiveOpacity,
-      width,
-      color
-    };
-  }
-
 
   getArrowInfo(edge, prefix, edgeOpacity, edgeWidth) {
     const rs = edge._private.rscratch;
@@ -247,7 +233,12 @@ export class EdgeDrawing {
     const i = this.instanceCount;
 
     // line
-    const { opacity, width, color } = this.getLineStyle(edge);
+    const baseOpacity = edge.pstyle('opacity').value;
+    const lineOpacity = edge.pstyle('line-opacity').value;
+    const width = edge.pstyle('width').pfValue;
+    const color = edge.pstyle('line-color').value;
+    const opacity = baseOpacity * lineOpacity;
+
     const [ sx, sy ] = rs.allpts;
     const [ tx, ty ] = rs.allpts.slice(-2);
     const lineColor = util.toWebGLColor(color, opacity); 
@@ -314,9 +305,7 @@ export class EdgeDrawing {
     gl.bindVertexArray(null);
 
     if(this.debugInfo) {
-      this.debugInfo.push({
-        count
-      });
+      this.debugInfo.push({ count });
     }
     
     // start another batch, even if not needed

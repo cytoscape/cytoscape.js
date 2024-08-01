@@ -160,42 +160,30 @@ function drawAxes(r) { // for debgging
 
 
 CRp.renderWebgl = function(options) {
-  console.log('renderWebgl', options);
-
   const r = this;
+
   let start;
+  let debugInfo;
   if(r.webglDebug) {
+    debugInfo = [];
     start = performance.now();
   }
-
-  renderWebgl(r, options);
-
-  if(r.webglDebug) {
-    const end = performance.now();
-    console.log(`webgl render - frame time ${Math.ceil(end - start)}ms`);
-
-    r.nodeDrawing.printDebug();
-  }
-  console.log();
-}
-
-function renderWebgl(r, options) {
+  
   const { nodeDrawing, edgeDrawing } = r;
 
   if(r.data.canvasNeedsRedraw[r.SELECT_BOX]) {
     drawSelectionRectangle(r, options);
   }
-
   drawAxes(r);
 
   // see drawing-elements.js drawCachedElement()
-
   if(r.data.canvasNeedsRedraw[r.NODE]) {
     const gl = r.data.contexts[r.WEBGL];
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
     let prevEle;
+
     function draw(ele) {
       if(ele.isNode()) {
         if(prevEle?.isEdge()) {
@@ -217,8 +205,11 @@ function renderWebgl(r, options) {
     const panZoomMatrix = createPanZoomMatrix(r);
     const eles = r.getCachedZSortedEles();
 
-    nodeDrawing.startBatch(panZoomMatrix);
-    edgeDrawing.startBatch(panZoomMatrix);
+    nodeDrawing.startFrame(panZoomMatrix, debugInfo);
+    edgeDrawing.startFrame(panZoomMatrix, debugInfo);
+
+    nodeDrawing.startBatch();
+    edgeDrawing.startBatch();
 
     for(let i = 0; i < eles.nondrag.length; i++) {
       draw(eles.nondrag[i]);
@@ -230,6 +221,28 @@ function renderWebgl(r, options) {
     nodeDrawing.endBatch();
     edgeDrawing.endBatch();
   }
+
+  if(r.webglDebug) {
+    const end = performance.now();
+    console.log(`WebGL render - frame time ${Math.ceil(end - start)}ms`);
+    console.log(`Batches: ${debugInfo.length}`);
+
+    for(const info of debugInfo) {
+      if(info.type === 'node') {
+        console.log(`Draw Nodes: ${info.count} nodes, ${info.atlasCount} atlases`);
+      } else {
+        console.log(`Draw Edges: ${info.count} edges`);
+      }
+    }
+    
+    console.log('Texture Atlases Used:');
+    const atlasInfo = nodeDrawing.getAtlasDebugInfo();
+    for(const info of atlasInfo) {
+      console.log(`  ${info.type}: ${info.keyCount} keys, ${info.atlasCount} atlases`);
+    }
+    console.log('');
+  }
+
 }
 
 export default CRp;

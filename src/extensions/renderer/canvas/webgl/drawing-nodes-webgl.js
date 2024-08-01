@@ -164,7 +164,7 @@ export class NodeDrawing {
       precision highp float;
 
       // define texture unit for each node in the batch
-      ${idxs.map(i => `uniform sampler2D uTexture${i};`).join('\t\n')}
+      ${idxs.map(i => `uniform sampler2D uTexture${i};`).join('\n\t')}
 
       in vec2 vTexCoord;
       flat in int vAtlasId;
@@ -420,8 +420,8 @@ export class NodeDrawing {
 
     // Activate all the texture units that we need
     for(let i = 0; i < this.atlases.length; i++) {
-      const atlas = this.atlases[i];
-      atlas.maybeBuffer(gl); // buffering textures can take a long time
+      const atlas = this.atlases[i]; 
+      atlas.bufferIfNeeded(gl); // buffering textures can take a long time
 
       gl.activeTexture(gl.TEXTURE0 + i);
       gl.bindTexture(gl.TEXTURE_2D, atlas.texture);

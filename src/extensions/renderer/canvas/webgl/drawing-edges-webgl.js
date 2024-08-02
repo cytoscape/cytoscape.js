@@ -239,8 +239,12 @@ export class EdgeDrawing {
     const color = edge.pstyle('line-color').value;
     const opacity = baseOpacity * lineOpacity;
 
-    const [ sx, sy ] = rs.allpts;
-    const [ tx, ty ] = rs.allpts.slice(-2);
+    const allpts = rs.allpts;
+    const sx = allpts[0];
+    const sy = allpts[1];
+    const tx = allpts[allpts.length-2];
+    const ty = allpts[allpts.length-1];
+
     const lineColor = util.toWebGLColor(color, opacity); 
     
     this.sourceTargetBuffer.setData([sx, sy, tx, ty], i);

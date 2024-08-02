@@ -2,6 +2,11 @@ name: Feature Release
 
 on:
   workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to run the action on'
+        required: true
+        default: 'unstable'
 
 jobs:  
   feature-release:

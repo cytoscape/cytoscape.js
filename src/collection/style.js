@@ -140,7 +140,14 @@ let elesfn = ({
     if( !cy.styleEnabled() ){ return; }
 
     if( ele ){
-      this.cleanStyle();
+      // this.cleanStyle();
+
+      // Inline the important part of cleanStyle(), for raw performance
+      if( ele._private.styleDirty ){
+        // n.b. this flag should be set before apply() to avoid potential infinite recursion
+        ele._private.styleDirty = false;
+        cy.style().apply(ele);
+      }
 
       let overriddenStyle = ele._private.style[ property ];
 

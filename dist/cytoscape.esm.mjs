@@ -25214,6 +25214,7 @@ BRp$3.load = function () {
     r.hoverData.dragDelta = [];
     r.hoverData.mdownPos = null;
     r.hoverData.mdownGPos = null;
+    r.hoverData.which = null;
   }, false);
   var wheelHandler = function wheelHandler(e) {
     if (r.scrollingPage) {
@@ -31322,7 +31323,7 @@ sheetfn.appendToStyle = function (style) {
   return style;
 };
 
-var version = "3.30.1";
+var version = "3.30.2";
 
 var cytoscape = function cytoscape(options) {
   // if no options specified, use default

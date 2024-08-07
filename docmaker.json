@@ -46,7 +46,7 @@
         { "name": "Circle layout", "id": "circle-layout" },
         { "name": "Concentric layout", "id": "concentric-layout" },
         { "name": "AVSDF layout", "id": "avsdf-layout", "github": "iVis-at-Bilkent/cytoscape.js-avsdf",  "viewUrl": "https://ivis-at-bilkent.github.io/cytoscape.js-avsdf/demo.html" },
-        { "name": "CiSE layout", "id": "cise-layout", "github": "iVis-at-Bilkent/cytoscape.js-cise",  "viewUrl": "https://ivis-at-bilkent.github.io/cytoscape.js-cise/demo.html" },
+        { "name": "CiSE layout", "id": "cise-layout", "github": "iVis-at-Bilkent/cytoscape.js-cise",  "viewUrl": "https://ivis-at-bilkent.github.io/cytoscape.js-cise/demo/demo.html" },
         { "name": "Grid layout", "id": "grid-layout" },
         { "name": "CoSE layout", "id": "cose-layout" },
         { "name": "CoSE Bilkent layout", "id": "cose-bilkent-layout", "github": "cytoscape/cytoscape.js-cose-bilkent" },

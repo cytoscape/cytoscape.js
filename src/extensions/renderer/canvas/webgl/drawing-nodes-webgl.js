@@ -2,7 +2,7 @@
 import * as util from './webgl-util';
 import { defaults } from '../../../../util';
 import { mat3 } from 'gl-matrix';
-import Atlas from './atlas';
+import { Atlas, AtlasControl } from './atlas';
 
 const initRenderTypeDefaults = defaults({
   getKey: null,
@@ -25,12 +25,13 @@ export class NodeDrawing {
   constructor(r, gl, opts) {
     this.r = r;
     this.gl = gl;
+    
+    this.createAtlas = () => new Atlas(r, opts);
+    this.createAtlasControl = () => new AtlasControl(r, opts);
 
     this.maxInstances = opts.webglBatchSize;
     this.maxAtlases = opts.webglTexPerBatch;
     this.atlasSize = opts.webglTexSize;
-
-    this.createAtlas = () => new Atlas(r, gl, opts);
 
     this.program = this.createShaderProgram();
     this.vao = this.createVAO();
@@ -41,17 +42,18 @@ export class NodeDrawing {
   }
 
   addRenderType(type, options) {
-    const opts = {
+    const atlasControl = this.createAtlasControl();
+
+    const renderTypeOpts = {
       type,
-      styleKeyToAtlas: new Map(),
-      currentAtlas: null,
+      atlasControl,
       ...initRenderTypeDefaults(options)
     }
 
-    opts.getAtlas = (key) => opts.styleKeyToAtlas.get(key);
-    opts.setAtlas = (key, atlas) => opts.styleKeyToAtlas.set(key, atlas);
+    // opts.getAtlas = (key) => opts.styleKeyToAtlas.get(key);
+    // opts.setAtlas = (key, atlas) => opts.styleKeyToAtlas.set(key, atlas);
 
-    this.renderTypes.set(type, opts);
+    this.renderTypes.set(type, renderTypeOpts);
   }
 
   initOverlayUnderlay() {
@@ -239,22 +241,13 @@ export class NodeDrawing {
   }
 
 
-  getOrCreateTexture(node, bb, opts) {
+  getOrCreateAtlas(node, bb, opts) {
+    const { atlasControl } = opts;
     const styleKey = opts.getKey(node);
-    let atlas = opts.getAtlas(styleKey);
 
-    if(!atlas) {
-      if(!opts.currentAtlas?.canFit(bb)) {
-        opts.currentAtlas = this.createAtlas();
-      }
-      atlas = opts.currentAtlas;
-
-      atlas.draw(styleKey, bb, (context) => {
-        opts.drawElement(context, node, bb, true, false);
-      });
-
-      opts.setAtlas(styleKey, atlas);
-    }
+    const atlas = atlasControl.getAtlas(styleKey, bb, (context) => {
+      opts.drawElement(context, node, bb, true, false);
+    });
 
     return atlas;
   }
@@ -367,7 +360,7 @@ export class NodeDrawing {
 
     const drawBodyOrLabel = () => {
       const styleKey = opts.getKey(node);
-      const atlas = this.getOrCreateTexture(node, bb, opts);
+      const atlas = this.getOrCreateAtlas(node, bb, opts);
       const atlasID = getAtlasIdForBatch(atlas);
       const [ tex1, tex2 ] = atlas.getTexOffsets(styleKey);
       
@@ -463,15 +456,12 @@ export class NodeDrawing {
     const debugInfo = [];
     for(let [ type, opts ] of this.renderTypes) {
       if(!opts.isOverlayOrUnderlay) {
-        debugInfo.push({
-          type,
-          keyCount: opts.styleKeyToAtlas.size,
-          atlasCount: new Set(opts.styleKeyToAtlas.values()).size
-        });
+        const { keyCount, atlasCount } = opts.atlasControl.getCounts();
+        debugInfo.push({ type, keyCount, atlasCount });
       }
     }
     return debugInfo;
-  }
+  }s
 
   getDebugInfo() {
     return this.debugInfo;

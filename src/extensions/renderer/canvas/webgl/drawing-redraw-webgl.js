@@ -28,7 +28,8 @@ CRp.initWebgl = function(opts, fns) {
   // we are using premultiplied alpha
   gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
 
-  const bgColor = color2tuple(container?.style?.backgroundColor || 'white');
+  const c = (container && container.style && container.style.backgroundColor) || 'white';
+  const bgColor = color2tuple(c);
 
   const getZeroRotation = () => 0;
   const getLabelRotation = (ele) => r.getTextAngle(ele, null);
@@ -186,7 +187,7 @@ CRp.renderWebgl = function(options) {
 
     function draw(ele) {
       if(ele.isNode()) {
-        if(prevEle?.isEdge()) {
+        if(prevEle && prevEle.isEdge()) {
           edgeDrawing.endBatch();
         }
         nodeDrawing.draw(ele, 'node-underlay');
@@ -194,7 +195,7 @@ CRp.renderWebgl = function(options) {
         nodeDrawing.draw(ele, 'node-label');
         nodeDrawing.draw(ele, 'node-overlay');
       } else {
-        if(prevEle?.isNode()) {
+        if(prevEle && prevEle.isNode()) {
           nodeDrawing.endBatch();
         }
         edgeDrawing.draw(ele);

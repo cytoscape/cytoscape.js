@@ -136,4 +136,17 @@ const paramDefs = {
   
   $("#fit-button").addEventListener('click', () => cy.fit());
   $("#reset-button").addEventListener('click', () => reloadPage(true));
+
+  $("#delete-button").addEventListener('click', () => {
+    cy.remove(':selected');
+  });
+
+  $("#select-button").addEventListener('click', () => {
+    cy.nodes().select();
+  });
+
+  $("#gc-button").addEventListener('click', () => {
+    cy.gc();
+  });
+
 })();

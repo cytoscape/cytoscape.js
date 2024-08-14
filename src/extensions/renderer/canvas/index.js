@@ -295,7 +295,7 @@ function CanvasRenderer( options ){
 
 CRp.redrawHint = function( group, bool ){
   var r = this;
-
+  
   switch( group ){
     case 'eles':
       r.data.canvasNeedsRedraw[ CRp.NODE ] = bool;
@@ -305,6 +305,9 @@ CRp.redrawHint = function( group, bool ){
       break;
     case 'select':
       r.data.canvasNeedsRedraw[ CRp.SELECT_BOX ] = bool;
+      break;
+    case 'gc':
+      r.data.gc = true;
       break;
   }
 };

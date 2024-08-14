@@ -149,6 +149,10 @@ BRp.notify = function( eventName, eles ) {
     r.redrawHint( 'select', true );
   }
 
+  if( eventName === 'gc' ){
+    r.redrawHint( 'gc', true );
+  }
+
   if( eventName === 'load' || eventName === 'resize' || eventName === 'mount' ){
     r.invalidateContainerClientCoordsCache();
     r.matchCanvasSize( r.container );

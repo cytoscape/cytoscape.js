@@ -26,12 +26,13 @@ export class NodeDrawing {
     this.r = r;
     this.gl = gl;
     
-    this.createAtlas = () => new Atlas(r, opts);
-    this.createAtlasControl = () => new AtlasControl(r, opts);
-
     this.maxInstances = opts.webglBatchSize;
     this.maxAtlases = opts.webglTexPerBatch;
     this.atlasSize = opts.webglTexSize;
+    opts.createTextureCanvas = util.createTextureCanvas;
+
+    this.createAtlas = () => new Atlas(r, opts);
+    this.createAtlasControl = () => new AtlasControl(r, opts);
 
     this.program = this.createShaderProgram();
     this.vao = this.createVAO();
@@ -43,17 +44,48 @@ export class NodeDrawing {
 
   addRenderType(type, options) {
     const atlasControl = this.createAtlasControl();
+    const typeOpts = initRenderTypeDefaults(options);
 
     const renderTypeOpts = {
       type,
       atlasControl,
-      ...initRenderTypeDefaults(options)
+      ...typeOpts
     }
 
-    // opts.getAtlas = (key) => opts.styleKeyToAtlas.get(key);
-    // opts.setAtlas = (key, atlas) => opts.styleKeyToAtlas.set(key, atlas);
-
     this.renderTypes.set(type, renderTypeOpts);
+  }
+
+  getRenderTypes(includeOverlays = false) {
+    const types = [];
+    for(const opts of this.renderTypes.values()) {
+      if(includeOverlays || !opts.isOverlayOrUnderlay) {
+        types.push(opts);
+      }
+    }
+    return types;
+  }
+
+  getRenderType(type) {
+    return this.renderTypes.get(type);
+  }
+
+  invalidate(eles) {
+    for(const ele of eles) {
+      if(ele.isNode()) {
+        for(const opts of this.getRenderTypes()) {
+          const styleKey = opts.getKey(ele);
+          const id = ele.id();
+          opts.atlasControl.invalidate(styleKey, id);
+        }
+      }
+    }
+  }
+
+  gc() {
+    for(const opts of this.getRenderTypes()) {
+      console.log('garbage collect ' + opts.type);
+      opts.atlasControl.gc();
+    }
   }
 
   initOverlayUnderlay() {
@@ -244,8 +276,9 @@ export class NodeDrawing {
   getOrCreateAtlas(node, bb, opts) {
     const { atlasControl } = opts;
     const styleKey = opts.getKey(node);
+    const id = node.id();
 
-    const atlas = atlasControl.getAtlas(styleKey, bb, (context) => {
+    const atlas = atlasControl.draw(styleKey, id, bb, context => {
       opts.drawElement(context, node, bb, true, false);
     });
 
@@ -324,7 +357,7 @@ export class NodeDrawing {
     if(!opts.isVisible(node))
       return;
 
-    const bb = opts.getBoundingBox(node); // there is overhead calling this, only call once per node
+    const bb = opts.getBoundingBox(node); // there may be overhead calling this, only call once per node
 
     const bufferInstanceData = (atlasID, tex1, tex2, padding=0, layColor=[0, 0, 0, 0]) => {
       const i = this.instanceCount;
@@ -414,7 +447,7 @@ export class NodeDrawing {
     // Activate all the texture units that we need
     for(let i = 0; i < this.atlases.length; i++) {
       const atlas = this.atlases[i]; 
-      atlas.bufferIfNeeded(gl); // buffering textures can take a long time
+      atlas.bufferIfNeeded(gl, util); // buffering textures can take a long time
 
       gl.activeTexture(gl.TEXTURE0 + i);
       gl.bindTexture(gl.TEXTURE_2D, atlas.texture);

@@ -212,6 +212,10 @@ let corefn = ({
     return this; // chaining
   },
 
+  gc: function() {
+    this.notify('gc');
+  },
+
   fit: function( elements, padding ){
     let viewportState = this.getFitViewport( elements, padding );
 

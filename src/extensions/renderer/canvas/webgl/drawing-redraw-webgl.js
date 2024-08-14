@@ -91,6 +91,11 @@ CRp.initWebgl = function(opts, fns) {
     isVisible: isNodeOverlayUnderlayVisible('underlay'),
     getOverlayUnderlayStyle: getNodeOverlayUnderlayStyle('underlay'),
   });
+
+  // TODO not called when deleting elements
+  r.onUpdateEleCalcs((willDraw, eles) => {
+    r.nodeDrawing.invalidate(eles);
+  });
 }
 
 CRp.clearWebgl = function() {
@@ -144,7 +149,7 @@ function drawSelectionRectangle(r, options) {
 }
 
 function drawAxes(r) { // for debgging
-  const context = r.data.contexts[ r.NODE ];
+  const context = r.data.contexts[r.NODE];
   context.save();
   setContextTransform(r, context);
   context.strokeStyle='rgba(0, 0, 0, 0.3)';
@@ -159,6 +164,17 @@ function drawAxes(r) { // for debgging
   context.restore();
 }
 
+function drawAtlases(r) {
+  const opts = r.nodeDrawing.getRenderType('node-body');
+  const firstAtlas = opts.atlasControl.atlases[0];
+  const canvas = firstAtlas.canvas;
+
+  const context = r.data.contexts[r.NODE];
+  context.save();
+  context.scale(0.25, 0.25);
+  context.drawImage(canvas, 0, 0);
+  context.restore();
+}
 
 CRp.renderWebgl = function(options) {
   const r = this;
@@ -221,6 +237,18 @@ CRp.renderWebgl = function(options) {
 
     nodeDrawing.endBatch();
     edgeDrawing.endBatch();
+
+    if(r.data.gc) {
+      console.log("Garbage Collect!");
+      r.data.gc = false;
+
+      nodeDrawing.gc();
+    }
+
+    drawAtlases(r);
+
+    r.data.canvasNeedsRedraw[r.NODE] = false;
+    r.data.canvasNeedsRedraw[r.DRAG] = false;
   }
 
   if(r.webglDebug) {

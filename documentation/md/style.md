@@ -592,7 +592,7 @@ Only mid arrows are supported on haystack edges.
 
 ## Edge endpoints
 
-`source-endpoint` & `target-endpoint` : Specifies the endpoint of the source side of the edge and the target side of the edge, respectively.  There are several options for how those properties can be set:
+**`source-endpoint`** & **`target-endpoint`** : Specifies the endpoint of the source side of the edge and the target side of the edge, respectively.  There are several options for how those properties can be set:
 
 - A special, named value may be used.
   - `outside-to-node` (default) indicates that the edge should be placed automatically to point towards the node's position and be placed on the outside of the node's shape.

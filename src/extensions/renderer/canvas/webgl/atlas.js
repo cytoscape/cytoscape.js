@@ -154,7 +154,7 @@ export class Atlas {
     return locations;
   }
 
-  getTexOffsets(key) {
+  getOffsets(key) {
     return this.keyToLocation.get(key);
   }
 
@@ -222,7 +222,7 @@ export class AtlasControl {
     return this.scratch;
   }
 
-  draw(key, id, bb, doDrawing) {
+  draw(id, key, bb, doDrawing) {
     let atlas = this.styleKeyToAtlas.get(key);
     if(!atlas) {
       // this is an overly simplistic way of finding an atlas, needs to be rewritten
@@ -245,7 +245,8 @@ export class AtlasControl {
     return this.styleKeyToAtlas.get(key);
   }
 
-  invalidate(newKey, id) {
+  checkKey(id, newKey) {
+    console.log('checkKey', id, newKey);
     if(!this.idToKey.has(id))
       return;
 
@@ -266,7 +267,9 @@ export class AtlasControl {
     return markedKeys;
   }
 
-
+  /**
+   * TODO dispose of the old atlas and texture
+   */
   gc() {
     const markedKeys = this._getKeysToCollect();
     if(markedKeys.size === 0) {
@@ -297,7 +300,7 @@ export class AtlasControl {
 
       for(const key of keys) {
         if(!keysToCollect.has(key)) {
-          const [ s1, s2 ] = atlas.getTexOffsets(key);
+          const [ s1, s2 ] = atlas.getOffsets(key);
           if(!newAtlas.canFit({ w: s1.w + s2.w, h: s1.h })) {
             newAtlas = this._createAtlas();
             newAtlases.push(newAtlas);
@@ -317,7 +320,7 @@ export class AtlasControl {
 
 
   _copyTextureToNewAtlas(key, oldAtlas, newAtlas) {
-    const [ s1, s2 ] = oldAtlas.getTexOffsets(key);
+    const [ s1, s2 ] = oldAtlas.getOffsets(key);
 
     if(s2.w === 0) { // the texture does not wrap, draw directly to new atlas
       newAtlas.draw(key, s1, context => {

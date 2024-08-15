@@ -3,11 +3,7 @@ import { expect } from 'chai';
 import { Atlas, AtlasControl } from '../../src/extensions/renderer/canvas/webgl/atlas';
 
 
-function createTextureCanvasMock(r, width, height) {
-  // const canvas = new Array(width);
-  // for(let x = 0; x < width; x++) {
-  //   canvas[x] = new Array(height);
-  // }
+function createTextureCanvas(r, width, height) {
   const canvas = {};
   canvas.context = {
     drawImage(image, sx, sy, sw, sh, dx, dy, dw, dh) {
@@ -15,34 +11,29 @@ function createTextureCanvasMock(r, width, height) {
         throw new Error("assuming width and height should be the same when drawing");
       }
     },
-    save() {
-    },
-    translate(xOffset, yOffset) {
-    },
-    scale(xScale, yScale) {
-    },
-    restore() {
-    },
+    save() { },
+    translate(xOffset, yOffset) { },
+    scale(xScale, yScale) { },
+    restore() { },
   }
-  canvas.clear = () => {
-  };
+  canvas.clear = () => { };
 
   return canvas;
 }
 
-function createAtlas() {
+function createAtlas(webglTexSize = 100, webglTexRows = 10) {
   return new Atlas(null, { 
-    webglTexSize: 100, 
-    webglTexRows: 10, 
-    createTextureCanvas: createTextureCanvasMock 
+    webglTexSize, 
+    webglTexRows, 
+    createTextureCanvas 
   });
 }
 
-function createAtlasControl() {
+function createAtlasControl(webglTexSize = 100, webglTexRows = 10) {
   return new AtlasControl(null, { 
-    webglTexSize: 100, 
-    webglTexRows: 10, 
-    createTextureCanvas: createTextureCanvasMock 
+    webglTexSize, 
+    webglTexRows, 
+    createTextureCanvas 
   });
 }
 
@@ -72,36 +63,65 @@ describe('webgl-atlas', function() {
     const atlasControl = createAtlasControl();
     let atlas;
 
-    atlas = atlasControl.draw(1, 'a', { h:10, w:100 });
-    const offsets1 = atlas.getTexOffsets(1);
-    expect(offsets1).to.eql([ { x: 0, y: 0, w: 100, h: 10 }, { x: 100, y: 0, w: 0, h: 10 } ]);
+    atlas = atlasControl.draw('a', 1, { h:10, w:100 });
+    expect(atlas.getOffsets(1)).to.eql([ { x: 0, y: 0, w: 100, h: 10 }, { x: 100, y: 0, w: 0, h: 10 } ]);
     
-    atlas = atlasControl.draw(2, 'b', { h:10, w:50 });
-    const offsets2 = atlas.getTexOffsets(2);
-    expect(offsets2).to.eql([ { x: 0, y: 10, w: 50, h: 10 }, { x: 50, y: 10, w: 0, h: 10 } ]);
+    atlas = atlasControl.draw('b', 2, { h:10, w:50 });
+    expect(atlas.getOffsets(2)).to.eql([ { x: 0, y: 10, w: 50, h: 10 }, { x: 50, y: 10, w: 0, h: 10 } ]);
 
-    atlas = atlasControl.draw(3, 'c', { h:10, w:100 });
-    const offsets3 = atlas.getTexOffsets(3);
-    expect(offsets3).to.eql([ { x: 50, y: 10, w: 50, h: 10 }, { x: 0, y: 20, w: 50, h: 10 } ]);
+    atlas = atlasControl.draw('c', 3, { h:10, w:100 });
+    expect(atlas.getOffsets(3)).to.eql([ { x: 50, y: 10, w: 50, h: 10 }, { x: 0, y: 20, w: 50, h: 10 } ]);
   });
 
 
   it('AtlasControl garbage collects (easy)', function() {
-    const atlasControl = createAtlasControl();
-    atlasControl.draw(1, 'a', { h:10, w:100 });
-    atlasControl.draw(2, 'b', { h:10, w:50  });
-    atlasControl.draw(3, 'c', { h:10, w:100 });
+    const ac = createAtlasControl();
+    ac.draw('a', 1, { h:10, w:100 });
+    ac.draw('b', 2, { h:10, w:50  });
+    ac.draw('c', 3, { h:10, w:100 });
+    expect(ac.getCounts().keyCount).to.equal(3);
 
-    atlasControl.invalidate(4, 'b'); 
-    atlasControl.gc();
+    ac.checkKey('b', 4); 
+    ac.gc();
 
-    const offsets1 = atlasControl.getAtlas(1).getTexOffsets(1);
-    expect(offsets1).to.eql([ { x: 0, y: 0, w: 100, h: 10 }, { x: 100, y: 0, w: 0, h: 10 } ]);
+    expect(ac.getCounts().keyCount).to.equal(2);
+    expect(ac.getAtlas(1).getOffsets(1)).to.eql([ { x: 0, y: 0, w: 100, h: 10 }, { x: 100, y: 0, w: 0, h: 10 } ]);
+    expect(ac.getAtlas(2)).to.be.undefined;
+    expect(ac.getAtlas(3).getOffsets(3)).to.eql([ { x: 0, y: 10, w: 100, h: 10 }, { x: 100, y: 10, w: 0, h: 10 } ]);
+  });
 
-    expect(atlasControl.getAtlas(2)).to.be.undefined;
 
-    const offsets3 = atlasControl.getAtlas(3).getTexOffsets(3);
-    expect(offsets3).to.eql([ { x: 0, y: 10, w: 100, h: 10 }, { x: 100, y: 10, w: 0, h: 10 } ]);
+  it('AtlasControl garbage collects (hard)', function() {
+    const ac = createAtlasControl(100, 4); // height is 25
+    ac.draw('a', 1, { h:25, w:100 });
+    ac.draw('b', 2, { h:25, w:75  });
+    ac.draw('c', 3, { h:25, w:50  });
+    ac.draw('d', 4, { h:25, w:100 });
+    ac.draw('e', 5, { h:25, w:50  });
+    ac.draw('f', 6, { h:25, w:75  });
+    ac.draw('g', 7, { h:25, w:75  });
+
+    expect(ac.getCounts().keyCount).to.equal(7);
+    expect(ac.getCounts().atlasCount).to.equal(2);
+
+    ac.checkKey('b', 8);
+    ac.checkKey('e', 9);
+    ac.checkKey('g', 10);
+
+    ac.gc();
+
+    expect(ac.getCounts().keyCount).to.equal(4);
+    expect(ac.getCounts().atlasCount).to.equal(1);
+    expect(ac.getAtlas(1).getOffsets(1)).to.eql([ { x: 0,  y: 0,  w: 100, h: 25 }, { x: 100, y: 0,  w: 0,  h: 25 } ]);
+    expect(ac.getAtlas(3).getOffsets(3)).to.eql([ { x: 0,  y: 25, w: 50,  h: 25 }, { x: 50,  y: 25, w: 0,  h: 25 } ]);
+    expect(ac.getAtlas(4).getOffsets(4)).to.eql([ { x: 50, y: 25, w: 50,  h: 25 }, { x: 0,   y: 50, w: 50, h: 25 } ]);
+    expect(ac.getAtlas(6).getOffsets(6)).to.eql([ { x: 50, y: 50, w: 50,  h: 25 }, { x: 0,   y: 75, w: 25, h: 25 } ]);
+
+    ac.draw('h', 11, { h:25, w:100 });
+
+    expect(ac.getCounts().keyCount).to.equal(5);
+    expect(ac.getCounts().atlasCount).to.equal(2);
+    expect(ac.getAtlas(11).getOffsets(11)).to.eql([ { x: 0, y: 0, w: 100,  h: 25 }, { x: 100, y: 0,  w: 0,  h: 25 } ]);
   });
 
 });

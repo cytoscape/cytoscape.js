@@ -75,7 +75,7 @@ export class NodeDrawing {
         for(const opts of this.getRenderTypes()) {
           const styleKey = opts.getKey(ele);
           const id = ele.id();
-          opts.atlasControl.invalidate(styleKey, id);
+          opts.atlasControl.checkKey(id, styleKey);
         }
       }
     }
@@ -278,7 +278,7 @@ export class NodeDrawing {
     const styleKey = opts.getKey(node);
     const id = node.id();
 
-    const atlas = atlasControl.draw(styleKey, id, bb, context => {
+    const atlas = atlasControl.draw(id, styleKey, bb, context => {
       opts.drawElement(context, node, bb, true, false);
     });
 
@@ -395,7 +395,7 @@ export class NodeDrawing {
       const styleKey = opts.getKey(node);
       const atlas = this.getOrCreateAtlas(node, bb, opts);
       const atlasID = getAtlasIdForBatch(atlas);
-      const [ tex1, tex2 ] = atlas.getTexOffsets(styleKey);
+      const [ tex1, tex2 ] = atlas.getOffsets(styleKey);
       
       bufferInstanceData(atlasID, tex1, tex2);
     };
@@ -410,7 +410,7 @@ export class NodeDrawing {
 
       const { atlas } = this.overlayUnderlay;
       const atlasID = getAtlasIdForBatch(atlas);
-      const [ tex1, tex2 ] = atlas.getTexOffsets(styleKey);
+      const [ tex1, tex2 ] = atlas.getOffsets(styleKey);
       const webglColor = util.toWebGLColor(color, opacity);
 
       bufferInstanceData(atlasID, tex1, tex2, padding, webglColor);

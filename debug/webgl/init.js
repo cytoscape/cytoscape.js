@@ -48,11 +48,7 @@ const paramDefs = {
   }
 
   console.log('params', params);
-
-  const network = networks[params.networkID];
-  const style = styles[params.networkID];
   $('#cytoscape').style.backgroundColor = params.bgcolor;
-
 
   // Load network and style
   function loadNetwork(elements, style) {
@@ -78,7 +74,10 @@ const paramDefs = {
     cy = cytoscape(options);
   }
 
-  if(style.file) {
+  const network = networks[params.networkID];
+  const style = styles[params.networkID];
+
+  if(style && style.file) {
     console.log('loading style from file: ', style.file);
     Promise.all([
       fetch(network.url).then(res => res.json()),
@@ -90,11 +89,9 @@ const paramDefs = {
     fetch(network.url)
     .then(res => res.json())
     .then(networkJson => {
-      const style = styles[params.networkID];
-      loadNetwork(networkJson.elements, style);
+      loadNetwork(networkJson.elements, networkJson.style);
     });
   }
-
 
   // Initialize controls
   for(const [networkID, network] of Object.entries(networks)) {

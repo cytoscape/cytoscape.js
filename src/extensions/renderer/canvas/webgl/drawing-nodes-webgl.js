@@ -3,6 +3,7 @@ import * as util from './webgl-util';
 import { defaults } from '../../../../util';
 import { mat3 } from 'gl-matrix';
 import { Atlas, AtlasControl } from './atlas';
+import { RENDER_TARGET } from './drawing-redraw-webgl';
 
 const initRenderTypeDefaults = defaults({
   getKey: null,
@@ -34,7 +35,9 @@ export class NodeDrawing {
     this.createAtlas = () => new Atlas(r, opts);
     this.createAtlasControl = () => new AtlasControl(r, opts);
 
-    this.program = this.createShaderProgram();
+    this.program = this.createShaderProgram(RENDER_TARGET.SCREEN);
+    this.pickingProgram = this.createShaderProgram(RENDER_TARGET.PICKING);
+
     this.vao = this.createVAO();
     this.overlayUnderlay = this.initOverlayUnderlay(); // used for overlay/underlay shapes
     this.renderTypes = new Map(); // string -> object
@@ -129,7 +132,7 @@ export class NodeDrawing {
   }
 
 
-  createShaderProgram() {
+  createShaderProgram(renderTarget) {
     const { gl } = this;
 
     // compute texture coordinates in the shader, becase we are using instanced drawing
@@ -140,6 +143,8 @@ export class NodeDrawing {
       uniform int  uAtlasSize;
       
       in vec2 aPosition; // instanced
+
+      in vec4 aIndex;
       in vec4 aLayColor; // overlay/underlay color
       in int aAtlasId; // which shader unit/atlas to use
       in vec4 aTex1; // x/y/w/h of texture in atlas
@@ -151,6 +156,7 @@ export class NodeDrawing {
       out vec2 vTexCoord;
       flat out vec4 vLayColor;
       flat out int vAtlasId;
+      flat out vec4 vIndex;
 
       void main(void) {
         int vid = gl_VertexID;
@@ -187,6 +193,7 @@ export class NodeDrawing {
 
         vAtlasId = aAtlasId;
         vLayColor = aLayColor;
+        vIndex = aIndex;
 
         gl_Position = vec4(uPanZoomMatrix * nodeMatrix * vec3(aPosition, 1.0), 1.0);
       }
@@ -203,6 +210,7 @@ export class NodeDrawing {
       in vec2 vTexCoord;
       flat in int vAtlasId;
       flat in vec4 vLayColor;
+      flat in vec4 vIndex;
 
       out vec4 outColor;
 
@@ -210,10 +218,23 @@ export class NodeDrawing {
         vec4 texColor;
         ${idxs.map(i => `if(vAtlasId == ${i}) texColor = texture(uTexture${i}, vTexCoord);`).join('\n\telse ')}
 
-        if(vLayColor.a == 0.0)
-         outColor = texColor;
-        else
-         outColor = texColor * vLayColor;
+        ${(() => {
+          if(renderTarget.screen) {
+            return `
+              if(vLayColor.a == 0.0)
+                outColor = texColor;
+              else
+                outColor = texColor * vLayColor;
+            `;
+          } else if(renderTarget.picking) {
+            // return `
+            //   outColor = vIndex;
+            // `;
+            return `
+              outColor = vec4(1.0, 0.0, 0.0, 1.0);
+            `;
+          }
+        })()}
       }
     `;
 
@@ -221,6 +242,7 @@ export class NodeDrawing {
 
     // attributes
     program.aPosition    = gl.getAttribLocation(program, 'aPosition');
+    program.aIndex       = gl.getAttribLocation(program, 'aIndex');
     program.aNodeMatrix1 = gl.getAttribLocation(program, 'aNodeMatrix1');
     program.aNodeMatrix2 = gl.getAttribLocation(program, 'aNodeMatrix2');
     program.aAtlasId     = gl.getAttribLocation(program, 'aAtlasId');
@@ -263,6 +285,7 @@ export class NodeDrawing {
     this.matrixBuffer1 = util.create3x3MatrixBufferDynamicDraw(gl, n, program.aNodeMatrix1);
     this.matrixBuffer2 = util.create3x3MatrixBufferDynamicDraw(gl, n, program.aNodeMatrix2);
     
+    this.indexBuffer    = util.createBufferDynamicDraw(gl, n, 'vec4',  program.aIndex);
     this.atlasIdBuffer  = util.createBufferDynamicDraw(gl, n, 'int',  program.aAtlasId);
     this.layColorBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aLayColor);
     this.tex1Buffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aTex1);
@@ -271,8 +294,7 @@ export class NodeDrawing {
     gl.bindVertexArray(null);
     return vao;
   }
-
-
+  
   getOrCreateAtlas(node, bb, opts) {
     const { atlasControl } = opts;
     const styleKey = opts.getKey(node);
@@ -342,9 +364,10 @@ export class NodeDrawing {
   }
 
 
-  startFrame(panZoomMatrix, debugInfo) {
+  startFrame(panZoomMatrix, debugInfo, renderTarget = RENDER_TARGET.SCREEN) {
     this.panZoomMatrix = panZoomMatrix
     this.debugInfo = debugInfo;
+    this.renderTarget = renderTarget;
   }
 
   startBatch() {
@@ -352,7 +375,7 @@ export class NodeDrawing {
     this.atlases = []; // up to 16 texture units for a draw call
   }
 
-  draw(node, type) {
+  draw(node, index, type) {
     const opts = this.renderTypes.get(type);
     if(!opts.isVisible(node))
       return;
@@ -361,7 +384,9 @@ export class NodeDrawing {
 
     const bufferInstanceData = (atlasID, tex1, tex2, padding=0, layColor=[0, 0, 0, 0]) => {
       const i = this.instanceCount;
+
       this.atlasIdBuffer.setData([atlasID], i);
+      this.indexBuffer.setData(util.indexToVec4(index), i);
       this.tex1Buffer.setBB(tex1, i);
       this.tex2Buffer.setBB(tex2, i);
       this.layColorBuffer.setData(layColor, i);
@@ -429,14 +454,19 @@ export class NodeDrawing {
 
 
   endBatch() {
-    const { gl, program, vao, vertexCount, instanceCount: count } = this;
+    const { gl, vao, vertexCount, instanceCount: count } = this;
     if(count === 0) 
       return;
 
+    const program = this.renderTarget.picking 
+      ? this.pickingProgram 
+      : this.program;
+ 
     gl.useProgram(program);
     gl.bindVertexArray(vao);
 
     // upload the new matrix data
+    this.indexBuffer.bufferSubData(count);
     this.matrixBuffer1.bufferSubData(count);
     this.matrixBuffer2.bufferSubData(count);
     this.atlasIdBuffer.bufferSubData(count);

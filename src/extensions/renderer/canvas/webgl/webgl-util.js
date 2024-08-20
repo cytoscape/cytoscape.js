@@ -31,7 +31,10 @@ export function createProgram(gl, vertexSource, fragementSource) {
   return program;
 }
 
-
+/**
+ * Creates an offscren canvas with a 2D context, for the
+ * canvas renderer to use for drawing textures.
+ */
 export function createTextureCanvas(r, width, height) {
   if(height === undefined) {
     height = width;
@@ -41,6 +44,20 @@ export function createTextureCanvas(r, width, height) {
   canvas.clear = () => ctx.clearRect(0, 0, canvas.width, canvas.height);
   canvas.clear();
   return canvas;
+}
+
+/**
+ * Returns the current pan & zoom values, scaled by the pixel ratio.
+ */
+export function getEffectivePanZoom(r) {
+  const { pixelRatio } = r;
+  const zoom = r.cy.zoom();
+  const pan  = r.cy.pan();
+  return {
+    zoom: zoom * pixelRatio,
+    x: pan.x * pixelRatio,
+    y: pan.y * pixelRatio,
+  };
 }
 
 /**
@@ -55,6 +72,23 @@ export function toWebGLColor(color, opacity) {
   return [ r * a, g * a, b * a, a ];
 }
 
+export function indexToVec4(index) {
+  return [
+    ((index >>  0) & 0xFF) / 0xFF,
+    ((index >>  8) & 0xFF) / 0xFF,
+    ((index >> 16) & 0xFF) / 0xFF,
+    ((index >> 24) & 0xFF) / 0xFF,
+  ];
+}
+
+export function vec4ToIndex(vec4) {
+  return (
+     vec4[0] + 
+    (vec4[1] << 8) + 
+    (vec4[2] << 16) + 
+    (vec4[3] << 24)
+  );
+}
 
 export function bufferTexture(gl, textureCanvas) {
   const texture = gl.createTexture();
@@ -68,7 +102,6 @@ export function bufferTexture(gl, textureCanvas) {
   // very important, this tells webgl to premultiply colors by the alpha channel
   gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
 
-  // this part takes a long time
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, textureCanvas);
   gl.generateMipmap(gl.TEXTURE_2D);
 

@@ -278,16 +278,6 @@ CRp.render = function( options ){
 
   var cy = r.cy; 
 
-  if( r.webgl ){
-    if( cy.zoom() > eleTextureCache.maxZoom ) {
-      r.clearWebgl();
-    } else {
-      r.clearCanvas();
-      r.renderWebgl( options );
-      return;
-    }
-  }
-
   var forcedContext = options.forcedContext;
   var drawAllLayers = options.drawAllLayers;
   var drawOnlyNodeLayer = options.drawOnlyNodeLayer;

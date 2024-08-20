@@ -227,11 +227,8 @@ export class NodeDrawing {
                 outColor = texColor * vLayColor;
             `;
           } else if(renderTarget.picking) {
-            // return `
-            //   outColor = vIndex;
-            // `;
             return `
-              outColor = vec4(1.0, 0.0, 0.0, 1.0);
+              outColor = vIndex;
             `;
           }
         })()}
@@ -384,7 +381,6 @@ export class NodeDrawing {
 
     const bufferInstanceData = (atlasID, tex1, tex2, padding=0, layColor=[0, 0, 0, 0]) => {
       const i = this.instanceCount;
-
       this.atlasIdBuffer.setData([atlasID], i);
       this.indexBuffer.setData(util.indexToVec4(index), i);
       this.tex1Buffer.setBB(tex1, i);

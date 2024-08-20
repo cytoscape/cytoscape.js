@@ -237,16 +237,13 @@ function createPickingFrameBuffer(gl) {
   // attach the texture as the first color attachment
   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, targetTexture, 0);
   
-  function setFramebufferAttachmentSizes(width, height) {
-    console.log('setFramebufferAttachmentSizes', width, height);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+  fb.setFramebufferAttachmentSizes = (width, height) => {
     gl.bindTexture(gl.TEXTURE_2D, targetTexture);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
   }
   
-  // setFramebufferAttachmentSizes(gl.canvas.width, gl.canvas.height);
-  fb.setFramebufferAttachmentSizes = setFramebufferAttachmentSizes;
-
-  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   return fb;
 }
 
@@ -270,32 +267,28 @@ function findNearestElementsWebgl(r, x, y, interactiveElementsOnly, isTouch) {
   const gl = r.data.contexts[r.WEBGL];
 
   const [ clientX, clientY ] = modelCoordsToWebgl(r, x, y);
-  console.log('findNearestElementsWebgl (x, y)', clientX, clientY, gl.canvas.width, gl.canvas.height);
 
   gl.bindFramebuffer(gl.FRAMEBUFFER, r.pickingFrameBuffer);
   gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-  // gl.clearColor(1, 0, 0, 0); // background color
-  // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-  // gl.enable(gl.CULL_FACE);
-  // gl.enable(gl.DEPTH_TEST);
   
+  // Draw element z-indexes to the framebuffer
   renderWebgl(r, null, RENDER_TARGET.PICKING);
 
   const data = new Uint8Array(4);
-  gl.readPixels(
-    clientX,            // x
-    clientY,            // y
-    1,                 // width
-    1,                 // height
-    gl.RGBA,           // format
-    gl.UNSIGNED_BYTE,  // type
-    data);             // typed array to hold result
-  
-  const index = util.vec4ToIndex(data);
-  console.log('index', index, data);
-
+  gl.readPixels(clientX, clientY, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, data);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+  // TODO, make the target larger than one pixel, so we can get one node and one edge
+
+  // The framebuffer is cleared with 0s, so z-indexes are offset by 1
+  const index = util.vec4ToIndex(data) - 1;
+ 
+  const eles = r.getCachedZSortedEles();
+  if(index >= 0) {
+    const ele = eles.nondrag[index];
+    console.log(ele.id());
+    return [ele];
+  }
   return [];
 }
 
@@ -321,12 +314,21 @@ function renderWebgl(r, options, renderTarget) {
   if(r.data.canvasNeedsRedraw[r.NODE] || renderTarget.picking) {
     const gl = r.data.contexts[r.WEBGL];
 
+    if(renderTarget.screen) {
+      gl.clearColor(0, 0, 0, 0); // background color
+      gl.enable(gl.BLEND); // enable alpha blending of textures
+      gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); // we are using premultiplied alpha
+    } else {
+      gl.disable(gl.BLEND);
+    }
+
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
     let prevEle;
 
     function draw(ele, index) {
+      index += 1; // 0 is used to clear the background, need to offset all z-indexes by one
       if(ele.isNode()) {
         if(prevEle && prevEle.isEdge()) {
           // edgeDrawing.endBatch();
@@ -367,11 +369,12 @@ function renderWebgl(r, options, renderTarget) {
     if(r.data.gc) {
       console.log("Garbage Collect!");
       r.data.gc = false;
-
       nodeDrawing.gc();
     }
 
-    drawAtlases(r);
+    // if(renderTarget.screen) {
+    //   drawAtlases(r);
+    // }
 
     r.data.canvasNeedsRedraw[r.NODE] = false;
     r.data.canvasNeedsRedraw[r.DRAG] = false;

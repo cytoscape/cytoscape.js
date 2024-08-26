@@ -59,6 +59,7 @@ CRp.initWebgl = function(opts, fns) {
 
   // for offscreen rendering when render target is PICKING
   r.pickingFrameBuffer = util.createPickingFrameBuffer(gl);
+  r.pickingFrameBuffer.needsDraw = true;
 
   r.edgeDrawing = new EdgeDrawing(r, gl, { ...opts, bgColor });
   r.nodeDrawing = new NodeDrawing(r, gl, opts);
@@ -113,41 +114,60 @@ CRp.initWebgl = function(opts, fns) {
  * Plug into the canvas renderer to use webgl for rendering.
  */
 function overrideCanvasRendererFunctions(r) {
-  // Override the matchCanvasSize function to update the picking frame buffer size
-  const canvasMatchCanvasSize = r.matchCanvasSize;
-  r.matchCanvasSize = function(container) {
-    canvasMatchCanvasSize.call(r, container);
-    r.pickingFrameBuffer.setFramebufferAttachmentSizes(r.canvasWidth, r.canvasHeight);
-  };
-
-  // Override the render function to call the webgl render function
-  const canvasRender = r.render;
-  r.render = function(options) {
-    options = options || {};
-    const cy = r.cy; 
-    if(r.webgl) {
-      if(cy.zoom() > eleTextureCache.maxZoom) {
-        // if the zoom level is greater than the max zoom level, then disable webgl
-        clearWebgl(r);
-        canvasRender.call(r, options); 
-      } else {
-        r.clearCanvas();
-        renderWebgl(r, options, RENDER_TARGET.SCREEN);
+  { // Override the render function to call the webgl render function if the zoom level is appropriate
+    const baseFunc = r.render; 
+    r.render = function(options) {
+      options = options || {};
+      const cy = r.cy; 
+      if(r.webgl) {
+        if(cy.zoom() > eleTextureCache.maxZoom) {
+          // if the zoom level is greater than the max zoom level, then disable webgl
+          clearWebgl(r);
+          baseFunc.call(r, options); 
+        } else {
+          r.clearCanvas();
+          renderWebgl(r, options, RENDER_TARGET.SCREEN);
+        }
       }
     }
   }
 
-  // Override function to call the webgl version
-  // const canvasFindNearestElements = r.findNearestElements;
-  r.findNearestElements = function(x, y, interactiveElementsOnly, isTouch) {
-    // the canvas version of this function is very slow on large graphs
-    return findNearestElementsWebgl(r, x, y, interactiveElementsOnly, isTouch);
+  { // Override the matchCanvasSize function to update the picking frame buffer size
+    const baseFunc = r.matchCanvasSize;
+    r.matchCanvasSize = function(container) {
+      baseFunc.call(r, container);
+      r.pickingFrameBuffer.setFramebufferAttachmentSizes(r.canvasWidth, r.canvasHeight);
+    };
+  } 
+
+  { // Override function to call the webgl version
+    r.findNearestElements = function(x, y, interactiveElementsOnly, isTouch) {
+      // the canvas version of this function is very slow on large graphs
+      return findNearestElementsWebgl(r, x, y, interactiveElementsOnly, isTouch);
+    }
   }
 
-  // Override function to call the webgl version
-  // const canvasGetAllInBox = r.getAllInBox;
-  r.getAllInBox = function(x1, y1, x2, y2) {
-    return getAllInBoxWebgl(r, x1, y1, x2, y2);
+  { // Override function to call the webgl version
+    r.getAllInBox = function(x1, y1, x2, y2) {
+      return getAllInBoxWebgl(r, x1, y1, x2, y2);
+    }
+  }
+
+  { // need to know when the cached elements have changed so we can invalidate our caches
+    const baseFunc = r.invalidateCachedZSortedEles;
+    r.invalidateCachedZSortedEles = function() {
+      baseFunc.call(r);
+      r.pickingFrameBuffer.needsDraw = true;
+    };
+  }
+  { // need to know when the cached elements have changed so we can invalidate our caches
+    const baseFunc = r.notify;
+    r.notify = function(eventName, eles) {
+      baseFunc.call(r, eventName, eles);
+      if(eventName === 'viewport') {
+        r.pickingFrameBuffer.needsDraw = true;
+      }
+    }
   }
 }
 
@@ -237,9 +257,12 @@ function getPickingIndexesInBox(r, x1, y1, x2, y2) {
   const gl = r.data.contexts[r.WEBGL];
   gl.bindFramebuffer(gl.FRAMEBUFFER, r.pickingFrameBuffer);
 
-  // Draw element z-indexes to the framebuffer
-  gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-  renderWebgl(r, null, RENDER_TARGET.PICKING);
+  if(r.pickingFrameBuffer.needsDraw) {
+    // Draw element z-indexes to the framebuffer
+    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+    renderWebgl(r, null, RENDER_TARGET.PICKING);
+    r.pickingFrameBuffer.needsDraw = false;
+  }
 
   const data = new Uint8Array(w * h * 4);
   // (cX1, cY2) is the bottom left corner of the box
@@ -268,7 +291,6 @@ function getAllInBoxWebgl(r, x1, y1, x2, y2) { // model coordinates
   y2 = y2c;
 
   const indexes = getPickingIndexesInBox(r, x1, y1, x2, y2);
-
   const eles = r.getCachedZSortedEles();
 
   const box = new Set();
@@ -290,6 +312,7 @@ function findNearestElementsWebgl(r, x, y) { // model coordinates
   const h = targetSize;
 
   const indexes = getPickingIndexesInBox(r, x, y, x + w, y + h);
+  const eles = r.getCachedZSortedEles();
 
   const dim = Math.sqrt(indexes.length);
   const rows = dim;
@@ -300,8 +323,6 @@ function findNearestElementsWebgl(r, x, y) { // model coordinates
   let nearestNodeSquareDist = Infinity;
   let nearestEdge;
   let nearestEdgeSquareDist = Infinity;
-
-  const eles = r.getCachedZSortedEles();
 
   for(let row = 0; row < rows; row++) {
     for(let col = 0; col < cols; col++) {

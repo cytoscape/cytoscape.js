@@ -246,7 +246,6 @@ export class AtlasControl {
   }
 
   checkKey(id, newKey) {
-    console.log('checkKey', id, newKey);
     if(!this.idToKey.has(id))
       return;
 

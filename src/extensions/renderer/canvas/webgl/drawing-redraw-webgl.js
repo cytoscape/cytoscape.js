@@ -16,7 +16,7 @@ export const RENDER_TARGET = {
 const CRp = {};
 
 /**
- * TODO - webgl specific data should be in a sub object, or it shoudl all be prefixed with webgl or something
+ * TODO - webgl specific data should be in a sub object, or it should be prefixed with 'webgl'
  */
 CRp.initWebgl = function(opts, fns) {
   const r = this;
@@ -28,10 +28,6 @@ CRp.initWebgl = function(opts, fns) {
   opts.webglBatchSize = Math.min(opts.webglBatchSize, 16384);
   opts.webglTexPerBatch = Math.min(opts.webglTexPerBatch, gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS));
   r.webglDebug = opts.webglDebug;
-
-  gl.clearColor(0, 0, 0, 0); // background color
-  gl.enable(gl.BLEND); // enable alpha blending of textures
-  gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); // we are using premultiplied alpha
 
   console.log('max texture units', gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS));
   console.log('max texture size' , gl.getParameter(gl.MAX_TEXTURE_SIZE));
@@ -60,6 +56,9 @@ CRp.initWebgl = function(opts, fns) {
     const opacity = node.pstyle(`${s}-opacity`).value;
     return opacity > 0;
   };
+
+  // for offscreen rendering when render target is PICKING
+  r.pickingFrameBuffer = util.createPickingFrameBuffer(gl);
 
   r.edgeDrawing = new EdgeDrawing(r, gl, { ...opts, bgColor });
   r.nodeDrawing = new NodeDrawing(r, gl, opts);
@@ -105,8 +104,6 @@ CRp.initWebgl = function(opts, fns) {
     r.nodeDrawing.invalidate(eles);
   });
 
-  r.pickingFrameBuffer = createPickingFrameBuffer(gl);
-
   // "Override" certain functions in canvas and base renderer
   overrideCanvasRendererFunctions(r);
 }
@@ -117,9 +114,9 @@ CRp.initWebgl = function(opts, fns) {
  */
 function overrideCanvasRendererFunctions(r) {
   // Override the matchCanvasSize function to update the picking frame buffer size
-  const matchCanvasSize = r.matchCanvasSize;
+  const canvasMatchCanvasSize = r.matchCanvasSize;
   r.matchCanvasSize = function(container) {
-    matchCanvasSize.call(r, container);
+    canvasMatchCanvasSize.call(r, container);
     r.pickingFrameBuffer.setFramebufferAttachmentSizes(r.canvasWidth, r.canvasHeight);
   };
 
@@ -140,10 +137,17 @@ function overrideCanvasRendererFunctions(r) {
     }
   }
 
-  // // Override the findNearestElements function to call the webgl version
+  // Override the findNearestElements function to call the webgl version
+  const canvasFindNearestElements = r.findNearestElements;
   r.findNearestElements = function(x, y, interactiveElementsOnly, isTouch) {
     // don't call the canvas version of this function, its very slow
-    return findNearestElementsWebgl(r, x, y, interactiveElementsOnly, isTouch);
+    const canvasEles = canvasFindNearestElements.call(r, x, y, interactiveElementsOnly, isTouch);
+    const webglEles = findNearestElementsWebgl(r, x, y, interactiveElementsOnly, isTouch);
+
+    console.log('canvas eles', canvasEles.map(ele => ele.id()));
+    console.log('webgl eles', webglEles.map(ele => ele.id()));
+
+    return webglEles;
   }
 }
 
@@ -155,9 +159,7 @@ function clearWebgl(r) {
 
 
 function createPanZoomMatrix(r) {
-  const gl = r.data.contexts[r.WEBGL];
-
-  const width = r.canvasWidth;
+  const width  = r.canvasWidth;
   const height = r.canvasHeight;
   const { x, y, zoom } = util.getEffectivePanZoom(r);
 
@@ -176,14 +178,14 @@ function createPanZoomMatrix(r) {
 
 
 function setContextTransform(r, context) {
-  const w = r.canvasWidth;
-  const h = r.canvasHeight;
-  const panzoom = util.getEffectivePanZoom(r);
+  const width  = r.canvasWidth;
+  const height = r.canvasHeight;
+  const { x, y, zoom } = util.getEffectivePanZoom(r);
 
   context.setTransform(1, 0, 0, 1, 0, 0);
-  context.clearRect(0, 0, w, h);
-  context.translate(panzoom.x, panzoom.y);
-  context.scale(panzoom.zoom, panzoom.zoom);
+  context.clearRect(0, 0, width, height);
+  context.translate(x, y);
+  context.scale(zoom, zoom);
 }
 
 
@@ -222,34 +224,8 @@ function drawAtlases(r) {
 }
 
 
-function createPickingFrameBuffer(gl) {
-  // Create and bind the framebuffer
-  const fb = gl.createFramebuffer();
-  gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
-
-  // Create a texture to render to
-  const targetTexture = gl.createTexture();
-  gl.bindTexture(gl.TEXTURE_2D, targetTexture);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-
-  // attach the texture as the first color attachment
-  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, targetTexture, 0);
-  
-  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-
-  fb.setFramebufferAttachmentSizes = (width, height) => {
-    gl.bindTexture(gl.TEXTURE_2D, targetTexture);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-  }
-  
-  return fb;
-}
-
-
 /**
- * This reverses what BRp.projectIntoViewport does, and convers to webgl coordinates.
+ * This reverses what BRp.projectIntoViewport does, and converts to webgl coordinates.
  */
 function modelCoordsToWebgl(r, x, y) {
   const [ offsetLeft, offsetTop, , , scale ] = r.findContainerClientCoords();
@@ -285,7 +261,7 @@ function findNearestElementsWebgl(r, x, y, interactiveElementsOnly, isTouch) {
  
   const eles = r.getCachedZSortedEles();
   if(index >= 0) {
-    const ele = eles.nondrag[index];
+    const ele = eles[index];
     console.log(ele.id());
     return [ele];
   }
@@ -355,12 +331,19 @@ function renderWebgl(r, options, renderTarget) {
     nodeDrawing.startBatch();
     // edgeDrawing.startBatch();
 
-    for(let i = 0; i < eles.nondrag.length; i++) {
-      draw(eles.nondrag[i], i);
+    if(renderTarget.screen) {
+      for(let i = 0; i < eles.nondrag.length; i++) {
+        draw(eles.nondrag[i], i);
+      }
+      for(let i = 0; i < eles.drag.length; i++) {
+        draw(eles.drag[i], -1);
+      }
+    } else if (renderTarget.picking) {
+      for(let i = 0; i < eles.length; i++) {
+        draw(eles[i], i);
+      }
     }
-    for(let i = 0; i < eles.drag.length; i++) {
-      draw(eles.drag[i], -1);
-    }
+    
 
     nodeDrawing.endBatch();
     // edgeDrawing.endBatch();

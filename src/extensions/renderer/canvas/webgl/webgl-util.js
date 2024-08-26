@@ -90,6 +90,29 @@ export function vec4ToIndex(vec4) {
   );
 }
 
+
+/**
+ * This reverses what BRp.projectIntoViewport does, and converts to webgl coordinates.
+ */
+export function modelCoordsToWebgl(r, x1, y1, x2, y2) {
+  const [ offsetLeft, offsetTop, , , scale ] = r.findContainerClientCoords();
+  const { x:panx, y:pany, zoom } = getEffectivePanZoom(r);
+
+  let clientX1 = Math.round((x1 * zoom + panx) * scale + offsetLeft);
+  let clientY1 = Math.round((y1 * zoom + pany) * scale + offsetTop);
+  clientY1 = Math.round(r.canvasHeight - clientY1); // normal canvas has y=0 at top, webgl has y=0 at bottom
+
+  if(x2 != undefined && y2 != undefined) {
+    let clientX2 = Math.round((x2 * zoom + panx) * scale + offsetLeft);
+    let clientY2 = Math.round((y2 * zoom + pany) * scale + offsetTop);
+    clientY2 = Math.round(r.canvasHeight - clientY2);
+    return [ clientX1, clientY1, clientX2, clientY2 ];
+  } else {
+    return [ clientX1, clientY1 ];  
+  }
+};
+
+
 export function bufferTexture(gl, textureCanvas) {
   const texture = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, texture);

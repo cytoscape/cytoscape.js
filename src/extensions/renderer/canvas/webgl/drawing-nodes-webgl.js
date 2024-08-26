@@ -218,20 +218,19 @@ export class NodeDrawing {
         vec4 texColor;
         ${idxs.map(i => `if(vAtlasId == ${i}) texColor = texture(uTexture${i}, vTexCoord);`).join('\n\telse ')}
 
-        ${(() => {
-          if(renderTarget.screen) {
-            return `
-              if(vLayColor.a == 0.0)
-                outColor = texColor;
-              else
-                outColor = texColor * vLayColor;
-            `;
-          } else if(renderTarget.picking) {
-            return `
+        if(vLayColor.a == 0.0)
+          outColor = texColor;
+        else
+          outColor = texColor * vLayColor;
+
+        ${ renderTarget.picking ?
+          ` if(outColor.a == 0.0)
+              outColor = vec4(0.0, 0.0, 0.0, 0.0);
+            else
               outColor = vIndex;
-            `;
-          }
-        })()}
+          `
+          : ''
+        }
       }
     `;
 
@@ -282,7 +281,7 @@ export class NodeDrawing {
     this.matrixBuffer1 = util.create3x3MatrixBufferDynamicDraw(gl, n, program.aNodeMatrix1);
     this.matrixBuffer2 = util.create3x3MatrixBufferDynamicDraw(gl, n, program.aNodeMatrix2);
     
-    this.indexBuffer    = util.createBufferDynamicDraw(gl, n, 'vec4',  program.aIndex);
+    this.indexBuffer    = util.createBufferDynamicDraw(gl, n, 'vec4', program.aIndex);
     this.atlasIdBuffer  = util.createBufferDynamicDraw(gl, n, 'int',  program.aAtlasId);
     this.layColorBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aLayColor);
     this.tex1Buffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aTex1);

@@ -1,3 +1,4 @@
+import { RENDER_TARGET } from './drawing-redraw-webgl';
 import * as util from './webgl-util';
 import { mat3 } from 'gl-matrix';
 
@@ -27,11 +28,13 @@ export class EdgeDrawing {
     this.maxInstances = opts.webglBatchSize;
     this.bgColor = opts.bgColor;
 
-    this.program = this.createShaderProgram();
+    this.program = this.createShaderProgram(RENDER_TARGET.SCREEN);
+    this.pickingProgram = this.createShaderProgram(RENDER_TARGET.PICKING);
+
     this.vao = this.createVAO();
   }
 
-  createShaderProgram() {
+  createShaderProgram(renderTarget) {
     // see https://wwwtyro.net/2019/11/18/instanced-lines.html
     const { gl } = this;
 
@@ -43,6 +46,8 @@ export class EdgeDrawing {
       // instanced
       in vec2 aPosition;
       in int aVertType;
+
+      in vec4 aIndex;
 
       // lines
       in vec4 aSourceTarget;
@@ -57,6 +62,7 @@ export class EdgeDrawing {
       in mat3 aTargetArrowTransform;
 
       out vec4 vColor;
+      flat out vec4 vIndex;
       flat out int vVertType;
 
       void main(void) {
@@ -81,6 +87,8 @@ export class EdgeDrawing {
           gl_Position = vec4(2.0, 0.0, 0.0, 1.0); // discard vertex by putting it outside webgl clip space
           vColor = vec4(0.0, 0.0, 0.0, 0.0);
         }
+
+        vIndex = aIndex;
         vVertType = aVertType;
       }
     `;
@@ -91,6 +99,7 @@ export class EdgeDrawing {
       uniform vec4 uBGColor;
 
       in vec4 vColor;
+      flat in vec4 vIndex;
       flat in int vVertType;
 
       out vec4 outColor;
@@ -103,6 +112,15 @@ export class EdgeDrawing {
         } else {
           outColor = vColor;
         }
+
+        ${ renderTarget.picking ?
+          ` if(outColor.a == 0.0)
+              outColor = vec4(0.0, 0.0, 0.0, 0.0);
+            else
+              outColor = vIndex;
+          `
+          : ''
+        }
       }
     `;
 
@@ -114,6 +132,7 @@ export class EdgeDrawing {
     program.aPosition  = gl.getAttribLocation(program, 'aPosition');
     program.aVertType  = gl.getAttribLocation(program, 'aVertType');
 
+    program.aIndex        = gl.getAttribLocation(program, 'aIndex');
     program.aSourceTarget = gl.getAttribLocation(program, 'aSourceTarget');
     program.aLineWidth    = gl.getAttribLocation(program, 'aLineWidth');
     program.aLineColor    = gl.getAttribLocation(program, 'aLineColor');
@@ -164,6 +183,7 @@ export class EdgeDrawing {
     util.createBufferStaticDraw(gl, 'int',  program.aVertType, vertTypes);
 
     const n = this.maxInstances;
+    this.indexBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aIndex);
     this.sourceTargetBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aSourceTarget);
     this.lineWidthBuffer = util.createBufferDynamicDraw(gl, n, 'float', program.aLineWidth);
     this.lineColorBuffer = util.createBufferDynamicDraw(gl, n, 'vec4' , program.aLineColor);
@@ -218,16 +238,17 @@ export class EdgeDrawing {
     }
   }
 
-  startFrame(panZoomMatrix, debugInfo) {
+  startFrame(panZoomMatrix, debugInfo, renderTarget = RENDER_TARGET.SCREEN) {
     this.panZoomMatrix = panZoomMatrix
     this.debugInfo = debugInfo;
+    this.renderTarget = renderTarget;
   }
 
   startBatch() {
     this.instanceCount = 0;
   }
 
-  draw(edge) {
+  draw(edge, index) {
     // edge points and arrow angles etc are calculated by the base renderer and cached in the rscratch object
     const rs = edge._private.rscratch;
     const i = this.instanceCount;
@@ -247,6 +268,7 @@ export class EdgeDrawing {
 
     const lineColor = util.toWebGLColor(color, opacity); 
     
+    this.indexBuffer.setData(util.indexToVec4(index), i);
     this.sourceTargetBuffer.setData([sx, sy, tx, ty], i);
     this.lineWidthBuffer.setData([width], i);
     this.lineColorBuffer.setData(lineColor, i);
@@ -279,14 +301,19 @@ export class EdgeDrawing {
   }
 
   endBatch() {
-    const { gl, program, vao, vertexCount, instanceCount: count } = this;
+    const { gl, vao, vertexCount, instanceCount: count } = this;
     if(count === 0) 
       return;
+
+    const program = this.renderTarget.picking 
+      ? this.pickingProgram 
+      : this.program;
 
     gl.useProgram(program);
     gl.bindVertexArray(vao);
 
     // buffer the attribute data
+    this.indexBuffer.bufferSubData(count);
     this.sourceTargetBuffer.bufferSubData(count);
     this.lineWidthBuffer.bufferSubData(count);
     this.lineColorBuffer.bufferSubData(count);

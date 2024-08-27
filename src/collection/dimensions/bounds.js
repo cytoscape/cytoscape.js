@@ -813,7 +813,7 @@ let cachedBoundingBoxImpl = function( ele, opts ){
   let isPosKeySame = _p.bbCachePosKey === currPosKey;
   let useCache = opts.useCache && isPosKeySame;
   let isDirty = ele => ele._private.bbCache == null || ele._private.styleDirty;
-  let needRecalc = !useCache || isDirty(ele) || (isEdge && isDirty(ele.source()) || isDirty(ele.target()));
+  let needRecalc = !useCache || isDirty(ele) || (isEdge && (isDirty(ele.source()) || isDirty(ele.target())));
 
   if( needRecalc ){
     if( !isPosKeySame ){

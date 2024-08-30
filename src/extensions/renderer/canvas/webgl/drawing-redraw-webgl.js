@@ -147,11 +147,12 @@ function overrideCanvasRendererFunctions(r) {
     }
   }
 
-  { // Override function to call the webgl version
-    r.getAllInBox = function(x1, y1, x2, y2) {
-      return getAllInBoxWebgl(r, x1, y1, x2, y2);
-    }
-  }
+  // Don't override the selction box picking, its not accurate enough with webgl
+  // { // Override function to call the webgl version
+  //   r.getAllInBox = function(x1, y1, x2, y2) {
+  //     return getAllInBoxWebgl(r, x1, y1, x2, y2);
+  //   }
+  // }
 
   { // need to know when the cached elements have changed so we can invalidate our caches
     const baseFunc = r.invalidateCachedZSortedEles;

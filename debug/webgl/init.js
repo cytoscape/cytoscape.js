@@ -16,6 +16,10 @@ const paramDefs = {
     default: 'true',
     control: '#webgl-check'
   },
+  webglDebugShowAtlases: {
+    default: false,
+    control: '#atlas-checkbox'
+  },
   webglTexSize: {
     default: 4096,
     control: '#texture-size-select'
@@ -60,10 +64,11 @@ const paramDefs = {
         showFps: true,
         webgl: params.webgl === 'true',
         webglDebug: true,
+        webglDebugShowAtlases: params.webglDebugShowAtlases === 'true',
         webglTexSize: params.webglTexSize,
         webglTexRows: params.webglTexRows,
         webglBatchSize: params.webglBatchSize,
-        webglTexPerBatch: params.webglTexPerBatch
+        webglTexPerBatch: params.webglTexPerBatch,
       },
 
       style: style,

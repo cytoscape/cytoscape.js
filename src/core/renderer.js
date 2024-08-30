@@ -15,6 +15,7 @@ let rendererDefaults = util.defaults({
   // webgl options
   webgl: false,
   webglDebug: false,
+  webglDebugShowAtlases: false,
   webglTexSize: 4096,
   webglTexRows: 24,
   webglBatchSize: 1024,

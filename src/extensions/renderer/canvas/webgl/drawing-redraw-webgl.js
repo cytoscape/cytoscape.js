@@ -28,6 +28,7 @@ CRp.initWebgl = function(opts, fns) {
   opts.webglBatchSize = Math.min(opts.webglBatchSize, 16384);
   opts.webglTexPerBatch = Math.min(opts.webglTexPerBatch, gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS));
   r.webglDebug = opts.webglDebug;
+  r.webglDebugShowAtlases = opts.webglDebugShowAtlases;
 
   console.log('max texture units', gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS));
   console.log('max texture size' , gl.getParameter(gl.MAX_TEXTURE_SIZE));
@@ -233,15 +234,34 @@ function drawAxes(r) { // for debgging
 
 
 function drawAtlases(r) {
-  const opts = r.nodeDrawing.getRenderType('node-body');
-  const firstAtlas = opts.atlasControl.atlases[0];
-  const canvas = firstAtlas.canvas;
-
-  const context = r.data.contexts[r.NODE];
-  context.save();
-  context.scale(0.25, 0.25);
-  context.drawImage(canvas, 0, 0);
-  context.restore();
+  // For debugging the atlases
+  const draw = (renderType, row) => {
+    const opts = r.nodeDrawing.getRenderType(renderType);
+    const context = r.data.contexts[r.NODE];
+    const scale = 0.25;
+  
+    const atlases = opts.atlasControl.atlases;
+    for(let i = 0; i < atlases.length; i++) {
+      const atlas = atlases[i];
+      const canvas = atlas.canvas;
+  
+      const w = canvas.width;
+      const h = canvas.height;
+      const x = w * i;
+      const y = canvas.height * row;
+  
+      context.save();
+      context.scale(scale, scale);
+      context.drawImage(canvas, x, y);
+      context.strokeStyle = 'black';
+      context.rect(x, y, w, h);
+      context.stroke();
+      context.restore();
+    }
+  };
+  
+  draw('node-body',  0);
+  draw('node-label', 1);
 }
 
 
@@ -440,9 +460,9 @@ function renderWebgl(r, options, renderTarget) {
       nodeDrawing.gc();
     }
 
-    // if(renderTarget.screen) {
-    //   drawAtlases(r);
-    // }
+    if(renderTarget.screen && r.webglDebugShowAtlases) {
+      drawAtlases(r);
+    }
 
     r.data.canvasNeedsRedraw[r.NODE] = false;
     r.data.canvasNeedsRedraw[r.DRAG] = false;

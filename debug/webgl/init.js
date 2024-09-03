@@ -1,5 +1,5 @@
 /* eslint-disable no-console, no-unused-vars */
-/* global $, cytoscape, options, cy, networks, styles */
+/* global $, cytoscape, options, cy, networks */
 
 var cy;
 
@@ -80,9 +80,10 @@ const paramDefs = {
   }
 
   const network = networks[params.networkID];
-  const style = styles[params.networkID];
+  const style = network.style;
 
   if(style && style.file) {
+    // style is in a separate file
     console.log('loading style from file: ', style.file);
     Promise.all([
       fetch(network.url).then(res => res.json()),
@@ -91,6 +92,7 @@ const paramDefs = {
       loadNetwork(networkJson.elements, styleJson.style);
     });
   } else {
+    // style is in the same file as the network
     fetch(network.url)
     .then(res => res.json())
     .then(networkJson => {
@@ -135,6 +137,18 @@ const paramDefs = {
 
     window.location.href = origin + pathname + '?' + urlParams.toString();
   }
+
+  $('#hide-commands').addEventListener('click', () => {
+    document.body.classList.remove('commands-shown');
+    document.body.classList.add('commands-hidden');
+		cy.resize();
+  });
+
+  $('#show-commands').addEventListener('click', () => {
+    document.body.classList.add('commands-shown');
+    document.body.classList.remove('commands-hidden');
+		cy.resize();
+  });
   
   $("#fit-button").addEventListener('click', () => cy.fit());
   $("#reset-button").addEventListener('click', () => reloadPage(true));

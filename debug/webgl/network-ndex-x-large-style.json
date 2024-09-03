@@ -1,0 +1,145 @@
+{
+  "format_version" : "1.0",
+  "generated_by" : "cytoscape-3.10.3",
+  "target_cytoscapejs_version" : "~2.1",
+  "title" : "Regulon LIHC - Liver Hepatocellular Carcinoma-Style",
+  "style" : [ {
+    "selector" : "node",
+    "css" : {
+      "height" : 40.0,
+      "border-width" : 2.0,
+      "font-family" : "Dialog",
+      "font-weight" : "normal",
+      "background-opacity" : 1.0,
+      "background-color" : "rgb(102,204,255)",
+      "color" : "rgb(0,0,0)",
+      "font-size" : 14,
+      "border-opacity" : 1.0,
+      "text-opacity" : 1.0,
+      "border-color" : "rgb(0,102,255)",
+      "shape" : "vee",
+      "width" : 75.0,
+      "text-valign" : "bottom",
+      "text-halign" : "center",
+      "content" : "data(name)"
+    }
+  }, {
+    "selector" : "node[Node_Type = 'TF']",
+    "css" : {
+      "height" : 55.0
+    }
+  }, {
+    "selector" : "node[Node_Type = 'TF']",
+    "css" : {
+      "background-color" : "rgb(51,102,255)"
+    }
+  }, {
+    "selector" : "node[Node_Type = 'TF']",
+    "css" : {
+      "width" : 95.0
+    }
+  }, {
+    "selector" : "node[Node_Type = 'TF']",
+    "css" : {
+      "color" : "rgb(255,255,255)"
+    }
+  }, {
+    "selector" : "node[Node_Type = 'TF']",
+    "css" : {
+      "text-valign" : "center"
+    }
+  }, {
+    "selector" : "node[Node_Type = 'TF']",
+    "css" : {
+      "shape" : "diamond"
+    }
+  }, {
+    "selector" : "node[Node_Type = 'TF']",
+    "css" : {
+      "border-color" : "rgb(0,0,153)"
+    }
+  }, {
+    "selector" : "node:selected",
+    "css" : {
+      "background-color" : "rgb(255,153,51)"
+    }
+  }, {
+    "selector" : "edge",
+    "css" : {
+      "text-opacity" : 1.0,
+      "line-color" : "rgb(132,132,132)",
+      "source-arrow-color" : "rgb(0,0,0)",
+      "font-family" : "Dialog",
+      "font-weight" : "normal",
+      "target-arrow-color" : "rgb(0,0,0)",
+      "content" : "",
+      "opacity" : 1.0,
+      "width" : 1.0,
+      "line-style" : "solid",
+      "font-size" : 10,
+      "source-arrow-shape" : "none",
+      "color" : "rgb(0,0,0)",
+      "target-arrow-shape" : "none"
+    }
+  }, {
+    "selector" : "edge[Mechanism_of_Action > 1]",
+    "css" : {
+      "line-color" : "rgb(0,153,102)"
+    }
+  }, {
+    "selector" : "edge[Mechanism_of_Action = 1]",
+    "css" : {
+      "line-color" : "rgb(0,153,102)"
+    }
+  }, {
+    "selector" : "edge[Mechanism_of_Action > 0][Mechanism_of_Action < 1]",
+    "css" : {
+      "line-color" : "mapData(Mechanism_of_Action,0,1,rgb(247,247,247),rgb(0,153,102))"
+    }
+  }, {
+    "selector" : "edge[Mechanism_of_Action > -1][Mechanism_of_Action < 0]",
+    "css" : {
+      "line-color" : "mapData(Mechanism_of_Action,-1,0,rgb(204,0,51),rgb(247,247,247))"
+    }
+  }, {
+    "selector" : "edge[Mechanism_of_Action = -1]",
+    "css" : {
+      "line-color" : "rgb(204,0,51)"
+    }
+  }, {
+    "selector" : "edge[Mechanism_of_Action < -1]",
+    "css" : {
+      "line-color" : "rgb(204,0,51)"
+    }
+  }, {
+    "selector" : "edge[Likelihood > 1]",
+    "css" : {
+      "width" : 1.0
+    }
+  }, {
+    "selector" : "edge[Likelihood = 1]",
+    "css" : {
+      "width" : 10.0
+    }
+  }, {
+    "selector" : "edge[Likelihood > 0][Likelihood < 1]",
+    "css" : {
+      "width" : "mapData(Likelihood,0,1,1.0,10.0)"
+    }
+  }, {
+    "selector" : "edge[Likelihood = 0]",
+    "css" : {
+      "width" : 1.0
+    }
+  }, {
+    "selector" : "edge[Likelihood < 0]",
+    "css" : {
+      "width" : 1.0
+    }
+  }, {
+    "selector" : "edge:selected",
+    "css" : {
+      "line-color" : "rgb(255,0,0)"
+    }
+  } ]
+}

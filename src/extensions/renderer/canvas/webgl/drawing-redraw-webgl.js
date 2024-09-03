@@ -471,15 +471,27 @@ function renderWebgl(r, options, renderTarget) {
   if(r.webglDebug) {
     const end = performance.now();
     console.log(`WebGL render - frame time ${Math.ceil(end - start)}ms`);
-    console.log(`Batches: ${debugInfo.length}`);
+
+    let nodeBatchCount = 0;
+    let nodeCount = 0;
+    let edgeBatchCount = 0;
+    let edgeCount = 0;
 
     for(const info of debugInfo) {
       if(info.type === 'node') {
-        console.log(`Draw Nodes: ${info.count} nodes, ${info.atlasCount} atlases`);
+        nodeBatchCount++;
+        nodeCount += info.count;
+        // console.log(`Draw Nodes: ${info.count} nodes, ${info.atlasCount} atlases`);
       } else {
-        console.log(`Draw Edges: ${info.count} edges`);
+        edgeBatchCount++;
+        edgeCount += info.count;
+        // console.log(`Draw Edges: ${info.count} edges`);
       }
     }
+
+    console.log(`Batches: ${debugInfo.length}`);
+    console.log(`  ${edgeCount} edges in ${edgeBatchCount} batches`);
+    console.log(`  ${nodeCount} nodes in ${nodeBatchCount} batches`);
     
     console.log('Texture Atlases Used:');
     const atlasInfo = nodeDrawing.getAtlasDebugInfo();

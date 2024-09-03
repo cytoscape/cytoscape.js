@@ -171,7 +171,7 @@ export class Atlas {
     return true;
   }
 
-  bufferIfNeeded(gl, util) {
+  bufferIfNeeded(gl) {
     if(!this.buffered) {
       this.texture = util.bufferTexture(gl, this.canvas);
       this.buffered = true;

@@ -469,13 +469,15 @@ export class NodeDrawing {
     this.tex1Buffer.bufferSubData(count);
     this.tex2Buffer.bufferSubData(count);
 
+    // make sure all textures are buffered, must be done before activating the texture units
+    for(let i = 0; i < this.atlases.length; i++) {
+      this.atlases[i].bufferIfNeeded(gl);
+    }
+
     // Activate all the texture units that we need
     for(let i = 0; i < this.atlases.length; i++) {
-      const atlas = this.atlases[i]; 
-      atlas.bufferIfNeeded(gl, util); // buffering textures can take a long time
-
       gl.activeTexture(gl.TEXTURE0 + i);
-      gl.bindTexture(gl.TEXTURE_2D, atlas.texture);
+      gl.bindTexture(gl.TEXTURE_2D, this.atlases[i].texture);
       gl.uniform1i(program.uTextures[i], i);
     }
 
@@ -488,14 +490,6 @@ export class NodeDrawing {
 
     gl.bindVertexArray(null);
     gl.bindTexture(gl.TEXTURE_2D, null); // TODO is this right when having multiple texture units?
-
-    // debug
-    // const nodeContext = this.r.data.contexts[this.r.NODE];
-    // nodeContext.save();
-    // nodeContext.setTransform(1, 0, 0, 1, 0, 0);
-    // nodeContext.scale(0.25, 0.25);
-    // nodeContext.drawImage(this.atlases[1].canvas, 0, 0);
-    // nodeContext.restore();
 
     if(this.debugInfo) {
       this.debugInfo.push({

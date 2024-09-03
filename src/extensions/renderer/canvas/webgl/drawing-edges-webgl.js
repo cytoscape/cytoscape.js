@@ -248,50 +248,74 @@ export class EdgeDrawing {
     this.instanceCount = 0;
   }
 
-  draw(edge, index) {
+  draw(edge, eleIndex) {
     // edge points and arrow angles etc are calculated by the base renderer and cached in the rscratch object
     const rs = edge._private.rscratch;
     const i = this.instanceCount;
 
-    // line
+    // line style
     const baseOpacity = edge.pstyle('opacity').value;
     const lineOpacity = edge.pstyle('line-opacity').value;
     const width = edge.pstyle('width').pfValue;
     const color = edge.pstyle('line-color').value;
     const opacity = baseOpacity * lineOpacity;
 
+    // source and target points
     const allpts = rs.allpts;
     const sx = allpts[0];
     const sy = allpts[1];
     const tx = allpts[allpts.length-2];
     const ty = allpts[allpts.length-1];
 
-    const lineColor = util.toWebGLColor(color, opacity); 
-    
-    this.indexBuffer.setData(util.indexToVec4(index), i);
-    this.sourceTargetBuffer.setData([sx, sy, tx, ty], i);
-    this.lineWidthBuffer.setData([width], i);
-    this.lineColorBuffer.setData(lineColor, i);
-
     // arrows
+    // TODO imporove performance buy removing calls to setData like below
     let drawSource = false;
     let drawTarget = false;
-
     const sourceInfo = this.getArrowInfo(edge, 'source', opacity, width);
     if(sourceInfo) {
       this.sourceArrowColorBuffer.setData(sourceInfo.webglColor, i);
       this.sourceArrowTransformBuffer.setData(sourceInfo.transform, i);
       drawSource = true;
     }
-
     const targetInfo = this.getArrowInfo(edge, 'target', opacity, width);
     if(targetInfo) {
       this.targetArrowColorBuffer.setData(targetInfo.webglColor, i);
       this.targetArrowTransformBuffer.setData(targetInfo.transform, i);
       drawTarget = true;
-    } 
+    }
 
-    this.drawArrowsBuffer.setData([drawSource, drawTarget], i);
+    // Buffer data. We use direct array access through a view for performance.
+    {
+      const view = this.indexBuffer.getView(i);
+      view[0] = ((eleIndex >>  0) & 0xFF) / 0xFF;
+      view[1] = ((eleIndex >>  8) & 0xFF) / 0xFF;
+      view[2] = ((eleIndex >> 16) & 0xFF) / 0xFF;
+      view[3] = ((eleIndex >> 24) & 0xFF) / 0xFF;
+    }
+    {
+      const view = this.sourceTargetBuffer.getView(i);
+      view[0] = sx;
+      view[1] = sy;
+      view[2] = tx;
+      view[3] = ty;
+    }
+    {
+      const view = this.lineWidthBuffer.getView(i);
+      view[0] = width;
+    }
+    {
+      const view = this.lineColorBuffer.getView(i);
+      const a = opacity;
+      view[0] = (color[0] / 255) * a;
+      view[1] = (color[1] / 255) * a;
+      view[2] = (color[2] / 255) * a;
+      view[3] = a;
+    }
+    {
+      const view = this.drawArrowsBuffer.getView(i);
+      view[0] = drawSource ? 1 : 0;
+      view[1] = drawTarget ? 1 : 0;
+    }
 
     this.instanceCount++;
 

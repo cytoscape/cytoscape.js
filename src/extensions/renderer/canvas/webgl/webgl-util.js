@@ -64,12 +64,20 @@ export function getEffectivePanZoom(r) {
  * Takes color & opacity style values and converts them to WebGL format. 
  * Alpha is premultiplied.
  */
-export function toWebGLColor(color, opacity) {
+export function toWebGLColor(color, opacity, outArray) {
   const r = color[0] / 255;
   const g = color[1] / 255;
   const b = color[2] / 255;
   const a = opacity;
-  return [ r * a, g * a, b * a, a ];
+
+  if(outArray) {
+    outArray[0] = r * a;
+    outArray[1] = g * a;
+    outArray[2] = b * a;
+    outArray[3] = a;
+  } else {
+    return [ r * a, g * a, b * a, a ];
+  }
 }
 
 export function indexToVec4(index) {
@@ -150,6 +158,13 @@ function createTypedArray(gl, glType, dataOrSize) {
   }
 }
 
+function createTypedArrayView(gl, glType, array, stride, size, i) {
+  switch(glType) {
+    case gl.FLOAT: return new Float32Array(array.buffer, i * stride, size);
+    case gl.INT  : return new Int32Array(array.buffer, i * stride, size);
+  }
+}
+
 /** @param {WebGLRenderingContext} gl */
 export function createBufferStaticDraw(gl, type, attributeLoc, dataArray) {
   const [ size, glType ] = getTypeInfo(gl, type);
@@ -191,10 +206,17 @@ export function createBufferDynamicDraw(gl, instances, type, attributeLoc) {
   gl.vertexAttribDivisor(attributeLoc, 1);
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
+  // use array views to set values directly into the buffer array
+  const views = new Array(instances);
+  for(let i = 0; i < instances; i++) {
+    views[i] = createTypedArrayView(gl, glType, dataArray, stride, size, i);
+  }
+
   buffer.dataArray = dataArray;
   buffer.stride = stride;
   buffer.size = size;
 
+  // TODO this is actually kind of slow, direct array access through a view is faster.
   buffer.setData = (data, i) => {
     dataArray.set(data, i * size);
   };
@@ -210,6 +232,10 @@ export function createBufferDynamicDraw(gl, instances, type, attributeLoc) {
     } else {
       gl.bufferSubData(gl.ARRAY_BUFFER, 0, dataArray); 
     }
+  }
+
+  buffer.getView = (i) => {
+    return views[i];
   }
 
   return buffer;

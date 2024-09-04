@@ -43,7 +43,7 @@ var networks = {
     desc: 'NDEX x-large',
     nodes: 19607,
     edges: 464657,
-    url: 'network-ndex-x-large.json',
+    url: 'https://pub-835fc16db602427ba8b9a874e4754257.r2.dev/network-ndex-x-large.json',
     layout: { name: 'preset' },
     style: { file: 'network-ndex-x-large-style.json' },
   }

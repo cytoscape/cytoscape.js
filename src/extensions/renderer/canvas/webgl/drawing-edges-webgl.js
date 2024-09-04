@@ -199,7 +199,8 @@ export class EdgeDrawing {
   }
 
 
-  getArrowInfo(edge, prefix, edgeOpacity, edgeWidth) {
+  getArrowInfo(edge, prefix, edgeWidth) {
+    // Edge points and arrow angles etc are calculated by the base renderer and cached in the rscratch object.
     const rs = edge._private.rscratch;
     if(rs.edgeType !== 'straight') { // only straight edges get arrows for now
       return;
@@ -225,8 +226,7 @@ export class EdgeDrawing {
     let scale = edge.pstyle('arrow-scale').value;
     let size = this.r.getArrowWidth(edgeWidth, scale);
 
-    let webglColor = util.toWebGLColor(color, edgeOpacity);
-
+    // TODO pass in a matrix view instead of creating a new matrix every time
     const transform = mat3.create();
     mat3.translate(transform, transform, [x, y]);
     mat3.scale(transform, transform, [size, size]);
@@ -234,9 +234,10 @@ export class EdgeDrawing {
 
     return {
       transform,
-      webglColor
+      color
     }
   }
+
 
   startFrame(panZoomMatrix, debugInfo, renderTarget = RENDER_TARGET.SCREEN) {
     this.panZoomMatrix = panZoomMatrix
@@ -248,10 +249,31 @@ export class EdgeDrawing {
     this.instanceCount = 0;
   }
 
+  /**
+   * This function gets the data needed to draw an edge and sets it into the buffers.
+   * This function is called for evey edge on every frame, it is performance critical.
+   * Set values in the buffers using Typed Array Views for performance.
+   */
   draw(edge, eleIndex) {
-    // edge points and arrow angles etc are calculated by the base renderer and cached in the rscratch object
+    const instance = this.instanceCount;
+    // Edge points and arrow angles etc are calculated by the base renderer and cached in the rscratch object.
     const rs = edge._private.rscratch;
-    const i = this.instanceCount;
+
+    // source and target points
+    {
+      const { allpts } = rs;
+      const view = this.sourceTargetBuffer.getView(instance);
+      view[0] = allpts[0]; // source x
+      view[1] = allpts[1]; // source y
+      view[2] = allpts[allpts.length-2]; // target x
+      view[3] = allpts[allpts.length-1]; // target y
+    }
+    
+    // Element index in the array returned by r.getCachedZSortedEles(), used for picking.
+    {
+      const view = this.indexBuffer.getView(instance);
+      util.indexToVec4(eleIndex, view);
+    }
 
     // line style
     const baseOpacity = edge.pstyle('opacity').value;
@@ -259,60 +281,36 @@ export class EdgeDrawing {
     const width = edge.pstyle('width').pfValue;
     const color = edge.pstyle('line-color').value;
     const opacity = baseOpacity * lineOpacity;
-
-    // source and target points
-    const allpts = rs.allpts;
-    const sx = allpts[0];
-    const sy = allpts[1];
-    const tx = allpts[allpts.length-2];
-    const ty = allpts[allpts.length-1];
-
-    // arrows
-    // TODO imporove performance buy removing calls to setData like below
-    let drawSource = false;
-    let drawTarget = false;
-    const sourceInfo = this.getArrowInfo(edge, 'source', opacity, width);
-    if(sourceInfo) {
-      this.sourceArrowColorBuffer.setData(sourceInfo.webglColor, i);
-      this.sourceArrowTransformBuffer.setData(sourceInfo.transform, i);
-      drawSource = true;
-    }
-    const targetInfo = this.getArrowInfo(edge, 'target', opacity, width);
-    if(targetInfo) {
-      this.targetArrowColorBuffer.setData(targetInfo.webglColor, i);
-      this.targetArrowTransformBuffer.setData(targetInfo.transform, i);
-      drawTarget = true;
-    }
-
-    // Buffer data. We use direct array access through a view for performance.
     {
-      const view = this.indexBuffer.getView(i);
-      view[0] = ((eleIndex >>  0) & 0xFF) / 0xFF;
-      view[1] = ((eleIndex >>  8) & 0xFF) / 0xFF;
-      view[2] = ((eleIndex >> 16) & 0xFF) / 0xFF;
-      view[3] = ((eleIndex >> 24) & 0xFF) / 0xFF;
+      const view = this.lineColorBuffer.getView(instance);
+      util.toWebGLColor(color, opacity, view);
     }
     {
-      const view = this.sourceTargetBuffer.getView(i);
-      view[0] = sx;
-      view[1] = sy;
-      view[2] = tx;
-      view[3] = ty;
-    }
-    {
-      const view = this.lineWidthBuffer.getView(i);
+      const view = this.lineWidthBuffer.getView(instance);
       view[0] = width;
     }
-    {
-      const view = this.lineColorBuffer.getView(i);
-      const a = opacity;
-      view[0] = (color[0] / 255) * a;
-      view[1] = (color[1] / 255) * a;
-      view[2] = (color[2] / 255) * a;
-      view[3] = a;
+
+    // arrow colors and transforms
+    let drawSource = false;
+    let drawTarget = false;
+    const sourceInfo = this.getArrowInfo(edge, 'source', width);
+    if(sourceInfo) {
+      const { color, transform } = sourceInfo;
+      this.sourceArrowTransformBuffer.setData(transform, instance);
+      const view = this.sourceArrowColorBuffer.getView(instance);
+      util.toWebGLColor(color, opacity, view);
+      drawSource = true;
+    }
+    const targetInfo = this.getArrowInfo(edge, 'target', width);
+    if(targetInfo) {
+      const { color, transform } = targetInfo;
+      this.targetArrowTransformBuffer.setData(transform, instance);
+      const view = this.targetArrowColorBuffer.getView(instance);
+      util.toWebGLColor(color, opacity, view);
+      drawTarget = true;
     }
     {
-      const view = this.drawArrowsBuffer.getView(i);
+      const view = this.drawArrowsBuffer.getView(instance);
       view[0] = drawSource ? 1 : 0;
       view[1] = drawTarget ? 1 : 0;
     }
@@ -324,6 +322,9 @@ export class EdgeDrawing {
     }
   }
 
+  /**
+   * This function does the actual drawing of the edges using WebGL.
+   */
   endBatch() {
     const { gl, vao, vertexCount, instanceCount: count } = this;
     if(count === 0) 
@@ -350,7 +351,7 @@ export class EdgeDrawing {
     // Set the projection matrix uniform
     gl.uniformMatrix3fv(program.uPanZoomMatrix, false, this.panZoomMatrix);
 
-    // set background color (this is a hack)
+    // set background color, needed for edge arrow color blending
     const webglBgColor = util.toWebGLColor(this.bgColor, 1);
     gl.uniform4fv(program.uBGColor, webglBgColor);
 

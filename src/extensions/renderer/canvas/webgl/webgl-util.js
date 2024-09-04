@@ -70,23 +70,22 @@ export function toWebGLColor(color, opacity, outArray) {
   const b = color[2] / 255;
   const a = opacity;
 
-  if(outArray) {
-    outArray[0] = r * a;
-    outArray[1] = g * a;
-    outArray[2] = b * a;
-    outArray[3] = a;
-  } else {
-    return [ r * a, g * a, b * a, a ];
-  }
+  const arr = outArray || new Array(4);
+  arr[0] = r * a;
+  arr[1] = g * a;
+  arr[2] = b * a;
+  arr[3] = a;
+  
+  return arr;
 }
 
-export function indexToVec4(index) {
-  return [
-    ((index >>  0) & 0xFF) / 0xFF,
-    ((index >>  8) & 0xFF) / 0xFF,
-    ((index >> 16) & 0xFF) / 0xFF,
-    ((index >> 24) & 0xFF) / 0xFF,
-  ];
+export function indexToVec4(index, outArray) {
+  const arr = outArray || new Array(4);
+  arr[0] = ((index >>  0) & 0xFF) / 0xFF;
+  arr[1] = ((index >>  8) & 0xFF) / 0xFF;
+  arr[2] = ((index >> 16) & 0xFF) / 0xFF;
+  arr[3] = ((index >> 24) & 0xFF) / 0xFF;
+  return arr;
 }
 
 export function vec4ToIndex(vec4) {

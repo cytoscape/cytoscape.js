@@ -291,6 +291,7 @@ export class NodeDrawing {
     return vao;
   }
   
+  
   getOrCreateAtlas(node, bb, opts) {
     const { atlasControl } = opts;
     const styleKey = opts.getKey(node);
@@ -371,30 +372,51 @@ export class NodeDrawing {
     this.atlases = []; // up to 16 texture units for a draw call
   }
 
-  draw(node, index, type) {
+
+  draw(node, eleIndex, type) {
     const opts = this.renderTypes.get(type);
     if(!opts.isVisible(node))
       return;
 
-    const bb = opts.getBoundingBox(node); // there may be overhead calling this, only call once per node
+    const bb = opts.getBoundingBox(node);
 
+    // Set values in the buffers using Typed Array Views for performance.
     const bufferInstanceData = (atlasID, tex1, tex2, padding=0, layColor=[0, 0, 0, 0]) => {
-      const i = this.instanceCount;
-      this.atlasIdBuffer.setData([atlasID], i);
-      this.indexBuffer.setData(util.indexToVec4(index), i);
-      this.tex1Buffer.setBB(tex1, i);
-      this.tex2Buffer.setBB(tex2, i);
-      this.layColorBuffer.setData(layColor, i);
-
+      const instance = this.instanceCount;
+      {
+        const view = this.atlasIdBuffer.getView(instance);
+        view[0] = atlasID;
+      } {
+        const view = this.indexBuffer.getView(instance);
+        util.indexToVec4(eleIndex, view);
+      } {
+        const view = this.tex1Buffer.getView(instance);
+        view[0] = tex1.x;
+        view[1] = tex1.y;
+        view[2] = tex1.w;
+        view[3] = tex1.h;
+      } {
+        const view = this.tex2Buffer.getView(instance);
+        view[0] = tex2.x;
+        view[1] = tex2.y;
+        view[2] = tex2.w;
+        view[3] = tex2.h;
+      } {
+        const view = this.layColorBuffer.getView(instance);
+        view[0] = layColor[0];
+        view[1] = layColor[1];
+        view[2] = layColor[2];
+        view[3] = layColor[3];
+      }
       const tex1ratio = tex1.w / (tex1.w + tex2.w);
       const tex2ratio = 1 - tex1ratio;
-
-      // pass the array view to setTransformMatrix
-      const matrix1 = this.matrixBuffer1.getMatrixView(i);
-      this.setTransformMatrix(matrix1, node, bb, opts, padding, true,  tex1ratio);
-      const matrix2 = this.matrixBuffer2.getMatrixView(i);
-      this.setTransformMatrix(matrix2, node, bb, opts, padding, false, tex2ratio);
-
+      {
+        const view = this.matrixBuffer1.getMatrixView(instance);
+        this.setTransformMatrix(view, node, bb, opts, padding, true,  tex1ratio);
+      } {
+        const view = this.matrixBuffer2.getMatrixView(instance);
+        this.setTransformMatrix(view, node, bb, opts, padding, false, tex2ratio);
+      }
       this.instanceCount++;
     };
 
@@ -431,9 +453,9 @@ export class NodeDrawing {
       const { atlas } = this.overlayUnderlay;
       const atlasID = getAtlasIdForBatch(atlas);
       const [ tex1, tex2 ] = atlas.getOffsets(styleKey);
-      const webglColor = util.toWebGLColor(color, opacity);
+      const layColor = util.toWebGLColor(color, opacity);
 
-      bufferInstanceData(atlasID, tex1, tex2, padding, webglColor);
+      bufferInstanceData(atlasID, tex1, tex2, padding, layColor);
     }
 
     if(opts.isOverlayOrUnderlay) {

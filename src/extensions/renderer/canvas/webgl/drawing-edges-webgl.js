@@ -199,7 +199,7 @@ export class EdgeDrawing {
   }
 
 
-  getArrowInfo(edge, prefix, edgeWidth) {
+  getArrowInfo(edge, edgeWidth, prefix) {
     // Edge points and arrow angles etc are calculated by the base renderer and cached in the rscratch object.
     const rs = edge._private.rscratch;
     if(rs.edgeType !== 'straight') { // only straight edges get arrows for now
@@ -293,7 +293,7 @@ export class EdgeDrawing {
     // arrow colors and transforms
     let drawSource = false;
     let drawTarget = false;
-    const sourceInfo = this.getArrowInfo(edge, 'source', width);
+    const sourceInfo = this.getArrowInfo(edge, width, 'source');
     if(sourceInfo) {
       const { color, transform } = sourceInfo;
       this.sourceArrowTransformBuffer.setData(transform, instance);
@@ -301,7 +301,7 @@ export class EdgeDrawing {
       util.toWebGLColor(color, opacity, view);
       drawSource = true;
     }
-    const targetInfo = this.getArrowInfo(edge, 'target', width);
+    const targetInfo = this.getArrowInfo(edge, width, 'target');
     if(targetInfo) {
       const { color, transform } = targetInfo;
       this.targetArrowTransformBuffer.setData(transform, instance);

@@ -215,14 +215,9 @@ export function createBufferDynamicDraw(gl, instances, type, attributeLoc) {
   buffer.stride = stride;
   buffer.size = size;
 
-  // TODO this is actually kind of slow, direct array access through a view is faster.
-  buffer.setData = (data, i) => {
-    dataArray.set(data, i * size);
-  };
-
-  buffer.setBB = ({ x, y, w, h }, i) => {
-    buffer.setData([ x, y, w, h ], i);
-  };
+  buffer.getView = (i) => {
+    return views[i];
+  }
 
   buffer.bufferSubData = (count) => {
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
@@ -231,10 +226,6 @@ export function createBufferDynamicDraw(gl, instances, type, attributeLoc) {
     } else {
       gl.bufferSubData(gl.ARRAY_BUFFER, 0, dataArray); 
     }
-  }
-
-  buffer.getView = (i) => {
-    return views[i];
   }
 
   return buffer;
@@ -272,6 +263,7 @@ export function create3x3MatrixBufferDynamicDraw(gl, instances, attributeLoc) {
     return matrixViews[i];
   };
 
+  // TODO this is too slow, use getMatrixView and pass the view directly to the glmatrix library
   buffer.setData = (matrix, i) => {
     matrixViews[i].set(matrix, 0); 
   };

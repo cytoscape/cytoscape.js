@@ -18,6 +18,7 @@ var deqFastCost = 0.9; // % of frame time to be used when >60fps
 var maxDeqSize = 1; // number of eles to dequeue and render at higher texture in each batch
 var invalidThreshold = 250; // time threshold for disabling b/c of invalidations
 var maxLayerArea = 4000 * 4000; // layers can't be bigger than this
+var maxLayerDim = 32767; // maximum size for the width/height of layer canvases
 var alwaysQueue = true; // never draw all the layers in a level on a frame; draw directly until all dequeued
 var useHighQualityEleTxrReqs = true; // whether to use high quality ele txr requests (generally faster and cheaper in the longterm)
 
@@ -195,7 +196,14 @@ LTCp.getLayers = function( eles, pxRatio, lvl ){
 
     getBb();
 
-    var area = ( bb.w * scale ) * ( bb.h * scale );
+    var w = Math.ceil( bb.w * scale );
+    var h = Math.ceil( bb.h * scale );
+    
+    if( w > maxLayerDim || h > maxLayerDim ){
+      return null;
+    }
+
+    var area = w * h;
 
     if( area > maxLayerArea ){
       return null;

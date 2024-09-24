@@ -134,7 +134,7 @@ function CanvasRenderer( options ){
   let drawTargetLabel = (context, ele, bb, scaledLabelShown, useEleOpacity) => r.drawElementText( context, ele, bb, scaledLabelShown, 'target', useEleOpacity );
 
   let getElementBox = ele => { ele.boundingBox(); return ele[0]._private.bodyBounds; };
-  let getLabelBox = ele => { ele.boundingBox(); return ele[0]._private.labelBounds.main || emptyBb; };
+  let getLabelBox   = ele => { ele.boundingBox(); return ele[0]._private.labelBounds.main || emptyBb; };
   let getSourceLabelBox = ele => { ele.boundingBox(); return ele[0]._private.labelBounds.source || emptyBb; };
   let getTargetLabelBox = ele => { ele.boundingBox(); return ele[0]._private.labelBounds.target || emptyBb; };
 
@@ -172,19 +172,19 @@ function CanvasRenderer( options ){
     if( ele.isNode() ){
       switch( ele.pstyle('text-halign').value ){
         case 'left':
-          p.x = -bb.w;
+          p.x = -bb.w - (bb.leftPad || 0);
           break;
         case 'right':
-          p.x = 0;
+          p.x = -(bb.rightPad || 0);
           break;
       }
 
       switch( ele.pstyle('text-valign').value ){
         case 'top':
-          p.y = -bb.h;
+          p.y = -bb.h - (bb.topPad || 0);
           break;
         case 'bottom':
-          p.y = 0;
+          p.y = -(bb.botPad || 0);
           break;
       }
     }

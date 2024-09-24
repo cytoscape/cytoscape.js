@@ -341,10 +341,15 @@ let updateBoundsFromLabel = function( bounds, ele, prefix ){
     }
 
     // shift by margin and expand by outline and border
-    lx1 += marginX - Math.max( outlineWidth, halfBorderWidth ) - padding - marginOfError;
-    lx2 += marginX + Math.max( outlineWidth, halfBorderWidth ) + padding + marginOfError;
-    ly1 += marginY - Math.max( outlineWidth, halfBorderWidth ) - padding - marginOfError;
-    ly2 += marginY + Math.max( outlineWidth, halfBorderWidth ) + padding + marginOfError;
+    let leftPad  = marginX - Math.max( outlineWidth, halfBorderWidth ) - padding - marginOfError;
+    let rightPad = marginX + Math.max( outlineWidth, halfBorderWidth ) + padding + marginOfError;
+    let topPad   = marginY - Math.max( outlineWidth, halfBorderWidth ) - padding - marginOfError;
+    let botPad   = marginY + Math.max( outlineWidth, halfBorderWidth ) + padding + marginOfError;
+
+    lx1 += leftPad;
+    lx2 += rightPad;
+    ly1 += topPad;
+    ly2 += botPad;
 
     // always store the unrotated label bounds separately
     let bbPrefix = prefix || 'main';
@@ -356,6 +361,10 @@ let updateBoundsFromLabel = function( bounds, ele, prefix ){
     bb.y2 = ly2;
     bb.w = lx2 - lx1;
     bb.h = ly2 - ly1;
+    bb.leftPad = leftPad;
+    bb.rightPad = rightPad;
+    bb.topPad = topPad;
+    bb.botPad = botPad;
 
     let isAutorotate = ( isEdge && rotation.strValue === 'autorotate' );
     let isPfValue = ( rotation.pfValue != null && rotation.pfValue !== 0 );

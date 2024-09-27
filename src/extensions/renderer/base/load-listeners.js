@@ -108,7 +108,7 @@ BRp.load = function(){
     if ( rootNode && rootNode.nodeType === 11 && rootNode.host !== undefined ) {
       return rootNode;
     }
-  }
+  };
 
   var triggerEvents = function( target, names, e, position ){
     if( target == null ){

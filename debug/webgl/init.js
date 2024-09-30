@@ -157,6 +157,24 @@ const paramDefs = {
     cy.remove(':selected');
   });
 
+  $("#animate-button").addEventListener('click', () => {
+    const nodes = cy.nodes(':selected');
+    nodes.forEach(n => {
+      const w = n.width();
+      n.animate({
+        style: { 'width': w + 100 }
+      }, {
+        duration: 1000
+      })
+      .delay(1000)
+      .animate({
+        style: { 'width': w }
+      }, {
+        duration: 1000
+      });
+    });
+  });
+
   $("#select-button").addEventListener('click', () => {
     cy.nodes().select();
   });

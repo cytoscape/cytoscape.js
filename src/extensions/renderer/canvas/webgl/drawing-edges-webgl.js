@@ -44,10 +44,10 @@ export class EdgeDrawing {
       uniform mat3 uPanZoomMatrix;
 
       // instanced
-      in vec2 aPosition;
-      in int aVertType;
+      in vec3 aPositionType;
 
-      in vec4 aIndex;
+      // for picking
+      in vec4 aIndex; 
 
       // lines
       in vec4 aSourceTarget;
@@ -62,24 +62,27 @@ export class EdgeDrawing {
 
       out vec4 vColor;
       flat out vec4 vIndex;
-      flat out int vVertType;
+      flat out float vVertType;
 
       void main(void) {
-        if(aVertType == ${LINE}) {
+        vec3  position = vec3(aPositionType.xy, 1.0);
+        float vertType = aPositionType.z;
+
+        if(vertType == ${LINE}.0) {
           vec2 source = aSourceTarget.xy;
           vec2 target = aSourceTarget.zw;
           vec2 xBasis = target - source;
           vec2 yBasis = normalize(vec2(-xBasis.y, xBasis.x));
-          vec2 point = source + xBasis * aPosition.x + yBasis * aLineWidth * aPosition.y;
+          vec2 point = source + xBasis * position.x + yBasis * aLineWidth * position.y;
           gl_Position = vec4(uPanZoomMatrix * vec3(point, 1.0), 1.0);
           vColor = aLineColor;
         } 
-        else if(aVertType == ${SOURCE_ARROW} && aSourceArrowColor.a > 0.0) {
-          gl_Position = vec4(uPanZoomMatrix * aSourceArrowTransform * vec3(aPosition, 1.0), 1.0);
+        else if(vertType == ${SOURCE_ARROW}.0 && aSourceArrowColor.a > 0.0) {
+          gl_Position = vec4(uPanZoomMatrix * aSourceArrowTransform * position, 1.0);
           vColor = aSourceArrowColor;
         }
-        else if(aVertType == ${TARGET_ARROW} && aTargetArrowColor.a > 0.0) {
-          gl_Position = vec4(uPanZoomMatrix * aTargetArrowTransform * vec3(aPosition, 1.0), 1.0);
+        else if(vertType == ${TARGET_ARROW}.0 && aTargetArrowColor.a > 0.0) {
+          gl_Position = vec4(uPanZoomMatrix * aTargetArrowTransform * position, 1.0);
           vColor = aTargetArrowColor;
         } 
         else {
@@ -88,7 +91,7 @@ export class EdgeDrawing {
         }
 
         vIndex = aIndex;
-        vVertType = aVertType;
+        vVertType = vertType;
       }
     `;
 
@@ -99,12 +102,12 @@ export class EdgeDrawing {
 
       in vec4 vColor;
       flat in vec4 vIndex;
-      flat in int vVertType;
+      flat in float vVertType;
 
       out vec4 outColor;
 
       void main(void) {
-        if(vVertType == ${SOURCE_ARROW} || vVertType == ${TARGET_ARROW}) {
+        if(vVertType == ${SOURCE_ARROW}.0 || vVertType == ${TARGET_ARROW}.0) {
           // blend arrow color with background (using premultiplied alpha)
           outColor.rgb = vColor.rgb + (uBGColor.rgb * (1.0 - vColor.a)); 
           outColor.a = 1.0; // make opaque, masks out line under arrow
@@ -128,8 +131,7 @@ export class EdgeDrawing {
     program.uPanZoomMatrix = gl.getUniformLocation(program, 'uPanZoomMatrix');
     program.uBGColor = gl.getUniformLocation(program, 'uBGColor');
     
-    program.aPosition  = gl.getAttribLocation(program, 'aPosition');
-    program.aVertType  = gl.getAttribLocation(program, 'aVertType');
+    program.aPositionType  = gl.getAttribLocation(program, 'aPositionType');
 
     program.aIndex        = gl.getAttribLocation(program, 'aIndex');
     program.aSourceTarget = gl.getAttribLocation(program, 'aSourceTarget');
@@ -145,40 +147,44 @@ export class EdgeDrawing {
   }
 
   createVAO() {
+    // Pack the vertex type into the z coord of the position attribute to save shader attributes.
     const line = [
-      0, -0.5,   1, -0.5,   1, 0.5,
-      0, -0.5,   1,  0.5,   0, 0.5
+      0, -0.5, LINE,
+      1, -0.5, LINE,
+      1,  0.5, LINE,
+      0, -0.5, LINE,
+      1,  0.5, LINE,
+      0,  0.5, LINE,
     ];
-    const arrow = [ // same as the 'triangle' shape in the base renderer
-      -0.15, -0.3,   0, 0,    0.15, -0.3
+    const sourceArrow = [ // same as the 'triangle' shape in the base renderer
+      -0.15, -0.3, SOURCE_ARROW,
+       0,     0,   SOURCE_ARROW,
+       0.15, -0.3, SOURCE_ARROW,
     ];
-    const label = [ // same as NodeDrawing
-      0, 0,  0, 1,  1, 0,
-      1, 0,  0, 1,  1, 1,
+    const targetArrow = [
+      -0.15, -0.3, TARGET_ARROW,
+       0,     0,   TARGET_ARROW,
+       0.15, -0.3, TARGET_ARROW,
     ];
+    // const label = [ // same as NodeDrawing
+    //   0, 0,   0, 1,   1, 0,
+    //   1, 0,   0, 1,   1, 1,
+    // ];
 
     const instanceGeometry = [ // order matters, back to front
-      ...line,  // edge line
-      ...arrow, // source arrow
-      ...arrow, // target arrow
+      ...line,
+      ...sourceArrow,
+      ...targetArrow,
     ];
 
-    const typeOf = verts => ({ is: type => new Array(verts.length/2).fill(type) });
-    const vertTypes = [
-      ...typeOf(line).is(LINE),
-      ...typeOf(arrow).is(SOURCE_ARROW),
-      ...typeOf(arrow).is(TARGET_ARROW),
-    ];
-
-    this.vertexCount = instanceGeometry.length / 2;
+    this.vertexCount = instanceGeometry.length / 3;
   
     const { gl, program } = this;
 
     const vao = gl.createVertexArray();
     gl.bindVertexArray(vao);
 
-    util.createBufferStaticDraw(gl, 'vec2', program.aPosition, instanceGeometry);
-    util.createBufferStaticDraw(gl, 'int',  program.aVertType, vertTypes);
+    util.createBufferStaticDraw(gl, 'vec3', program.aPositionType, instanceGeometry);
 
     const n = this.maxInstances;
     this.indexBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aIndex);

@@ -57,8 +57,10 @@ export class EdgeDrawing {
       // arrows
       in vec4 aSourceArrowColor;
       in vec4 aTargetArrowColor;
-      in mat3 aSourceArrowTransform;
-      in mat3 aTargetArrowTransform;
+      in vec4 aSourceArrowScaleRotate;  // vectors use fewer attributes than matrices
+      in vec2 aSourceArrowTranslate;
+      in vec4 aTargetArrowScaleRotate;
+      in vec2 aTargetArrowTranslate;
 
       out vec4 vColor;
       flat out vec4 vIndex;
@@ -78,11 +80,21 @@ export class EdgeDrawing {
           vColor = aLineColor;
         } 
         else if(vertType == ${SOURCE_ARROW}.0 && aSourceArrowColor.a > 0.0) {
-          gl_Position = vec4(uPanZoomMatrix * aSourceArrowTransform * position, 1.0);
+          mat3 transform = mat3(
+            vec3(aSourceArrowScaleRotate.xy, 0.0),
+            vec3(aSourceArrowScaleRotate.zw, 0.0),
+            vec3(aSourceArrowTranslate,      1.0)
+          );
+          gl_Position = vec4(uPanZoomMatrix * transform * position, 1.0);
           vColor = aSourceArrowColor;
         }
         else if(vertType == ${TARGET_ARROW}.0 && aTargetArrowColor.a > 0.0) {
-          gl_Position = vec4(uPanZoomMatrix * aTargetArrowTransform * position, 1.0);
+          mat3 transform = mat3(
+            vec3(aTargetArrowScaleRotate.xy, 0.0),
+            vec3(aTargetArrowScaleRotate.zw, 0.0),
+            vec3(aTargetArrowTranslate,      1.0)
+          );
+          gl_Position = vec4(uPanZoomMatrix * transform * position, 1.0);
           vColor = aTargetArrowColor;
         } 
         else {
@@ -138,10 +150,12 @@ export class EdgeDrawing {
     program.aLineWidth    = gl.getAttribLocation(program, 'aLineWidth');
     program.aLineColor    = gl.getAttribLocation(program, 'aLineColor');
 
-    program.aSourceArrowColor     = gl.getAttribLocation(program, 'aSourceArrowColor');
-    program.aTargetArrowColor     = gl.getAttribLocation(program, 'aTargetArrowColor');
-    program.aSourceArrowTransform = gl.getAttribLocation(program, 'aSourceArrowTransform');
-    program.aTargetArrowTransform = gl.getAttribLocation(program, 'aTargetArrowTransform');
+    program.aSourceArrowColor = gl.getAttribLocation(program, 'aSourceArrowColor');
+    program.aTargetArrowColor = gl.getAttribLocation(program, 'aTargetArrowColor');
+    program.aSourceArrowScaleRotate = gl.getAttribLocation(program, 'aSourceArrowScaleRotate');
+    program.aSourceArrowTranslate   = gl.getAttribLocation(program, 'aSourceArrowTranslate');
+    program.aTargetArrowScaleRotate = gl.getAttribLocation(program, 'aTargetArrowScaleRotate');
+    program.aTargetArrowTranslate   = gl.getAttribLocation(program, 'aTargetArrowTranslate');
 
     return program;
   }
@@ -194,8 +208,10 @@ export class EdgeDrawing {
 
     this.sourceArrowColorBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aSourceArrowColor);
     this.targetArrowColorBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aTargetArrowColor);
-    this.sourceArrowTransformBuffer = util.create3x3MatrixBufferDynamicDraw(gl, n, program.aSourceArrowTransform);
-    this.targetArrowTransformBuffer = util.create3x3MatrixBufferDynamicDraw(gl, n, program.aTargetArrowTransform);
+    this.sourceArrowScaleRotateBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aSourceArrowScaleRotate);
+    this.sourceArrowTranslateBuffer   = util.createBufferDynamicDraw(gl, n, 'vec2', program.aSourceArrowTranslate);
+    this.targetArrowScaleRotateBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aTargetArrowScaleRotate);
+    this.targetArrowTranslateBuffer   = util.createBufferDynamicDraw(gl, n, 'vec2', program.aTargetArrowTranslate);
 
     gl.bindVertexArray(null);
     return vao;
@@ -294,25 +310,24 @@ export class EdgeDrawing {
     }
 
     // arrow colors and transforms
-    const sourceInfo = this.getArrowInfo(edge, width, 'source');
-    const sourceColorView = this.sourceArrowColorBuffer.getView(instance);
-    if(sourceInfo) {
-      const { color, transform } = sourceInfo;
-      this.sourceArrowTransformBuffer.setData(transform, instance);
-      util.toWebGLColor(color, opacity, sourceColorView);
-    } else {
-      util.zeroColor(sourceColorView);
-    }
-
-    const targetInfo = this.getArrowInfo(edge, width, 'target');
-    const targetColorView = this.targetArrowColorBuffer.getView(instance);
-    if(targetInfo) {
-      const { color, transform } = targetInfo;
-      this.targetArrowTransformBuffer.setData(transform, instance);
-      util.toWebGLColor(color, opacity, targetColorView);
-    } else {
-      util.zeroColor(targetColorView);
-    }
+    for(const prefix of ['source', 'target']) {
+      const arrowInfo = this.getArrowInfo(edge, width, prefix);
+      const colorView = this[prefix+'ArrowColorBuffer'].getView(instance);
+      if(arrowInfo) {
+        const { color, transform } = arrowInfo; // transform is a 3x3 matrix
+        const scaleRotate = this[prefix+'ArrowScaleRotateBuffer'].getView(instance);
+        scaleRotate[0] = transform[0];
+        scaleRotate[1] = transform[1];
+        scaleRotate[2] = transform[3];
+        scaleRotate[3] = transform[4];
+        const translate = this[prefix+'ArrowTranslateBuffer'].getView(instance);
+        translate[0] = transform[6];
+        translate[1] = transform[7];
+        util.toWebGLColor(color, opacity, colorView);
+      } else {
+        util.zeroColor(colorView);
+      }
+    };
 
     this.instanceCount++;
 
@@ -343,8 +358,10 @@ export class EdgeDrawing {
     this.lineColorBuffer.bufferSubData(count);
     this.sourceArrowColorBuffer.bufferSubData(count);
     this.targetArrowColorBuffer.bufferSubData(count);
-    this.sourceArrowTransformBuffer.bufferSubData(count);
-    this.targetArrowTransformBuffer.bufferSubData(count);
+    this.sourceArrowScaleRotateBuffer.bufferSubData(count);
+    this.sourceArrowTranslateBuffer.bufferSubData(count);
+    this.targetArrowScaleRotateBuffer.bufferSubData(count);
+    this.targetArrowTranslateBuffer.bufferSubData(count);
 
     // Set the projection matrix uniform
     gl.uniformMatrix3fv(program.uPanZoomMatrix, false, this.panZoomMatrix);

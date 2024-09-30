@@ -55,7 +55,6 @@ export class EdgeDrawing {
       in vec4 aLineColor;
 
       // arrows
-      in ivec2 aDrawArrows; // 's' for source, 't' for target
       in vec4 aSourceArrowColor;
       in vec4 aTargetArrowColor;
       in mat3 aSourceArrowTransform;
@@ -75,11 +74,11 @@ export class EdgeDrawing {
           gl_Position = vec4(uPanZoomMatrix * vec3(point, 1.0), 1.0);
           vColor = aLineColor;
         } 
-        else if(aVertType == ${SOURCE_ARROW} && aDrawArrows.s == 1) {
+        else if(aVertType == ${SOURCE_ARROW} && aSourceArrowColor.a > 0.0) {
           gl_Position = vec4(uPanZoomMatrix * aSourceArrowTransform * vec3(aPosition, 1.0), 1.0);
           vColor = aSourceArrowColor;
         }
-        else if(aVertType == ${TARGET_ARROW} && aDrawArrows.t == 1) {
+        else if(aVertType == ${TARGET_ARROW} && aTargetArrowColor.a > 0.0) {
           gl_Position = vec4(uPanZoomMatrix * aTargetArrowTransform * vec3(aPosition, 1.0), 1.0);
           vColor = aTargetArrowColor;
         } 
@@ -137,7 +136,6 @@ export class EdgeDrawing {
     program.aLineWidth    = gl.getAttribLocation(program, 'aLineWidth');
     program.aLineColor    = gl.getAttribLocation(program, 'aLineColor');
 
-    program.aDrawArrows           = gl.getAttribLocation(program, 'aDrawArrows');
     program.aSourceArrowColor     = gl.getAttribLocation(program, 'aSourceArrowColor');
     program.aTargetArrowColor     = gl.getAttribLocation(program, 'aTargetArrowColor');
     program.aSourceArrowTransform = gl.getAttribLocation(program, 'aSourceArrowTransform');
@@ -188,7 +186,6 @@ export class EdgeDrawing {
     this.lineWidthBuffer = util.createBufferDynamicDraw(gl, n, 'float', program.aLineWidth);
     this.lineColorBuffer = util.createBufferDynamicDraw(gl, n, 'vec4' , program.aLineColor);
 
-    this.drawArrowsBuffer = util.createBufferDynamicDraw(gl, n, 'ivec2', program.aDrawArrows);
     this.sourceArrowColorBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aSourceArrowColor);
     this.targetArrowColorBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aTargetArrowColor);
     this.sourceArrowTransformBuffer = util.create3x3MatrixBufferDynamicDraw(gl, n, program.aSourceArrowTransform);
@@ -291,28 +288,24 @@ export class EdgeDrawing {
     }
 
     // arrow colors and transforms
-    let drawSource = false;
-    let drawTarget = false;
     const sourceInfo = this.getArrowInfo(edge, width, 'source');
+    const sourceColorView = this.sourceArrowColorBuffer.getView(instance);
     if(sourceInfo) {
       const { color, transform } = sourceInfo;
       this.sourceArrowTransformBuffer.setData(transform, instance);
-      const view = this.sourceArrowColorBuffer.getView(instance);
-      util.toWebGLColor(color, opacity, view);
-      drawSource = true;
+      util.toWebGLColor(color, opacity, sourceColorView);
+    } else {
+      util.zeroColor(sourceColorView);
     }
+
     const targetInfo = this.getArrowInfo(edge, width, 'target');
+    const targetColorView = this.targetArrowColorBuffer.getView(instance);
     if(targetInfo) {
       const { color, transform } = targetInfo;
       this.targetArrowTransformBuffer.setData(transform, instance);
-      const view = this.targetArrowColorBuffer.getView(instance);
-      util.toWebGLColor(color, opacity, view);
-      drawTarget = true;
-    }
-    {
-      const view = this.drawArrowsBuffer.getView(instance);
-      view[0] = drawSource ? 1 : 0;
-      view[1] = drawTarget ? 1 : 0;
+      util.toWebGLColor(color, opacity, targetColorView);
+    } else {
+      util.zeroColor(targetColorView);
     }
 
     this.instanceCount++;
@@ -342,7 +335,6 @@ export class EdgeDrawing {
     this.sourceTargetBuffer.bufferSubData(count);
     this.lineWidthBuffer.bufferSubData(count);
     this.lineColorBuffer.bufferSubData(count);
-    this.drawArrowsBuffer.bufferSubData(count);
     this.sourceArrowColorBuffer.bufferSubData(count);
     this.targetArrowColorBuffer.bufferSubData(count);
     this.sourceArrowTransformBuffer.bufferSubData(count);

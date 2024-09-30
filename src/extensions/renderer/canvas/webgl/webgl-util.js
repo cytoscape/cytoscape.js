@@ -79,6 +79,13 @@ export function toWebGLColor(color, opacity, outArray) {
   return arr;
 }
 
+export function zeroColor(color) {
+  color[0] = 0;
+  color[1] = 0;
+  color[2] = 0;
+  color[3] = 0;
+}
+
 export function indexToVec4(index, outArray) {
   const arr = outArray || new Array(4);
   arr[0] = ((index >>  0) & 0xFF) / 0xFF;

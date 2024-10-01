@@ -245,8 +245,10 @@ export class EdgeDrawing {
     let scale = edge.pstyle('arrow-scale').value;
     let size = this.r.getArrowWidth(edgeWidth, scale);
 
-    // TODO pass in a matrix view instead of creating a new matrix every time
-    const transform = mat3.create();
+    // reuse the same matrix for all arrows
+    const transform = this.transformMatrix = this.transformMatrix || mat3.create();
+
+    mat3.identity(transform);
     mat3.translate(transform, transform, [x, y]);
     mat3.scale(transform, transform, [size, size]);
     mat3.rotate(transform, transform, angle);

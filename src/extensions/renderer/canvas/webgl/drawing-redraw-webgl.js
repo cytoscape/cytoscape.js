@@ -240,7 +240,7 @@ function drawAtlases(r) {
     const context = r.data.contexts[r.NODE];
     const scale = 0.25;
   
-    const atlases = opts.atlasControl.atlases;
+    const atlases = opts.atlasCollection.atlases;
     for(let i = 0; i < atlases.length; i++) {
       const atlas = atlases[i];
       const canvas = atlas.canvas;
@@ -274,6 +274,10 @@ function getPickingIndexesInBox(r, x1, y1, x2, y2) {
   const [ cX1, cY1, cX2, cY2 ] = util.modelCoordsToWebgl(r, x1, y1, x2, y2);
   const w = Math.abs(cX2 - cX1);
   const h = Math.abs(cY2 - cY1);
+
+  if(w === 0 || h === 0) {
+    return [];
+  }
 
   const gl = r.data.contexts[r.WEBGL];
   gl.bindFramebuffer(gl.FRAMEBUFFER, r.pickingFrameBuffer);

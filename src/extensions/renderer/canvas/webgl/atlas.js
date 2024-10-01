@@ -2,6 +2,9 @@ import * as util from './webgl-util';
 
 // A "texture atlas" is a big image/canvas, and sections of it are used as textures for nodes/labels.
 
+/**
+ * A single square texture atlas (also known as a "sprite sheet").
+ */
 export class Atlas {
 
   constructor(r, opts) {
@@ -180,8 +183,13 @@ export class Atlas {
 
 }
 
-
-export class AtlasControl {
+/**
+ * A collection of texture atlases, all of the same "render type". 
+ * (Node body is an example of a render type.)
+ * An AtlasCollection can also be notified when a texture is no longer needed, 
+ * and it can garbage collect the unused textures.
+ */
+export class AtlasCollection {
 
   constructor(r, opts) {
     this.r = r;

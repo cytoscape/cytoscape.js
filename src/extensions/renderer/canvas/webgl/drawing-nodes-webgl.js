@@ -2,7 +2,7 @@
 import * as util from './webgl-util';
 import { defaults } from '../../../../util';
 import { mat3 } from 'gl-matrix';
-import { Atlas, AtlasControl } from './atlas';
+import { Atlas, AtlasCollection } from './atlas';
 import { RENDER_TARGET } from './drawing-redraw-webgl';
 
 const initRenderTypeDefaults = defaults({
@@ -33,7 +33,7 @@ export class NodeDrawing {
     opts.createTextureCanvas = util.createTextureCanvas;
 
     this.createAtlas = () => new Atlas(r, opts);
-    this.createAtlasControl = () => new AtlasControl(r, opts);
+    this.createAtlasCollection = () => new AtlasCollection(r, opts);
 
     this.program = this.createShaderProgram(RENDER_TARGET.SCREEN);
     this.pickingProgram = this.createShaderProgram(RENDER_TARGET.PICKING);
@@ -46,12 +46,12 @@ export class NodeDrawing {
   }
 
   addRenderType(type, options) {
-    const atlasControl = this.createAtlasControl();
+    const atlasCollection = this.createAtlasCollection();
     const typeOpts = initRenderTypeDefaults(options);
 
     const renderTypeOpts = {
       type,
-      atlasControl,
+      atlasCollection,
       ...typeOpts
     }
 
@@ -78,7 +78,7 @@ export class NodeDrawing {
         for(const opts of this.getRenderTypes()) {
           const styleKey = opts.getKey(ele);
           const id = ele.id();
-          opts.atlasControl.checkKey(id, styleKey);
+          opts.atlasCollection.checkKey(id, styleKey);
         }
       }
     }
@@ -87,7 +87,7 @@ export class NodeDrawing {
   gc() {
     for(const opts of this.getRenderTypes()) {
       console.log('garbage collect ' + opts.type);
-      opts.atlasControl.gc();
+      opts.atlasCollection.gc();
     }
   }
 
@@ -293,11 +293,11 @@ export class NodeDrawing {
   
   
   getOrCreateAtlas(node, bb, opts) {
-    const { atlasControl } = opts;
+    const { atlasCollection } = opts;
     const styleKey = opts.getKey(node);
     const id = node.id();
 
-    const atlas = atlasControl.draw(id, styleKey, bb, context => {
+    const atlas = atlasCollection.draw(id, styleKey, bb, context => {
       opts.drawElement(context, node, bb, true, false);
     });
 
@@ -530,7 +530,7 @@ export class NodeDrawing {
     const debugInfo = [];
     for(let [ type, opts ] of this.renderTypes) {
       if(!opts.isOverlayOrUnderlay) {
-        const { keyCount, atlasCount } = opts.atlasControl.getCounts();
+        const { keyCount, atlasCount } = opts.atlasCollection.getCounts();
         debugInfo.push({ type, keyCount, atlasCount });
       }
     }

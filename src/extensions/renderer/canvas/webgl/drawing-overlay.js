@@ -3,6 +3,7 @@ import { hashString } from '../../../../util/hash'
 const OVERLAY = 'overlay';
 const UNDERLAY = 'underlay';
 
+
 function fillStyle(color, opacity) {
   return `rgba(${color[0]}, ${color[1]}, ${color[2]}, ${opacity})`;
 }
@@ -17,7 +18,10 @@ export class OverlayUnderlayRenderer {
     const { shape, opacity, color } = this.getStyle(type, node);
     if(!shape)
       return null;
-    return hashString(`${shape}-${fillStyle(color, opacity)}`); // TODO not very efficient
+    const w = node.width();
+    const h = node.height();
+    const c = fillStyle(color, opacity);
+    return hashString(`${shape}-${w}-${h}-${c}`); // TODO hack, not very efficient
   }
 
   isVisible(type, node) {
@@ -41,18 +45,20 @@ export class OverlayUnderlayRenderer {
       return;
 
     const { r } = this;
-    const size = Math.max(bb.w, bb.h);
-    const center = size / 2;
-    
+
+    const w = bb.w;
+    const h = bb.h;
+    const x = w / 2;
+    const y = h / 2;
+
     const { shape, color, opacity } = this.getStyle(type, node);
 
     context.save();
     context.fillStyle = fillStyle(color, opacity);
     if(shape === 'round-rectangle' || shape === 'roundrectangle') {
-      const radius = size * 0.15;
-      r.drawRoundRectanglePath(context, center, center, size, size, radius);
+      r.drawRoundRectanglePath(context, x, y, w, h, 'auto');
     } else if(shape === 'ellipse') {
-      r.drawEllipsePath(context, center, center, size, size);
+      r.drawEllipsePath(context, x, y, w, h);
     }
     context.fill();
     context.restore();

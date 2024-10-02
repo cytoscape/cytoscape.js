@@ -13,6 +13,7 @@ export class Atlas {
 
     this.atlasSize = opts.webglTexSize;
     this.rows = opts.webglTexRows;
+    this.enableWrapping = opts.enableWrapping;
 
     this.texHeight = Math.floor(this.atlasSize / this.rows);
     this.maxTexWidth = this.atlasSize;
@@ -28,8 +29,8 @@ export class Atlas {
     // if the texture wraps then there's a second location
     this.keyToLocation = new Map(); // styleKey -> [ location, location ]
 
-    this.canvas  = opts.createTextureCanvas(r, this.atlasSize, this.atlasSize);
-    this.scratch = opts.createTextureCanvas(r, this.atlasSize, this.texHeight);
+    this.canvas  = util.createTextureCanvas(r, this.atlasSize, this.atlasSize);
+    this.scratch = util.createTextureCanvas(r, this.atlasSize, this.texHeight);
   }
 
   getKeys() {
@@ -56,6 +57,12 @@ export class Atlas {
     const { atlasSize, rows, texHeight } = this;
     const { scale, texW, texH } = this.getScale(bb);
     
+    if (texH < texHeight) { 
+      console.log('key:', key);
+    }
+
+    const locations = [ null, null ];
+
     const drawAt = (location, canvas) => {
       if(doDrawing && canvas) {
         const { context } = canvas;
@@ -71,36 +78,34 @@ export class Atlas {
       }
     };
 
-    const locations = [ null, null ];
-
-    if(this.freePointer.x + texW <= atlasSize) {
+    const drawNormal = () => {
       // don't need to wrap, draw directly on the canvas
       drawAt(this.freePointer, this.canvas);
-      
+            
       locations[0] = {
         x: this.freePointer.x,
         y: this.freePointer.row * texHeight,
         w: texW,
-        h: texHeight
+        h: texH
       };
       locations[1] = {  // indlude a second location with a width of 0, for convenience
         x: this.freePointer.x + texW,
         y: this.freePointer.row * texHeight,
         w: 0,
-        h: texHeight
+        h: texH
       }; 
 
       // move the pointer to the end of the texture
       this.freePointer.x += texW;
       if(this.freePointer.x == atlasSize) {
+        // move to the next row
+        // TODO what if there is no next row???
         this.freePointer.x = 0;
         this.freePointer.row++;
       }
-    } else {
-      if(this.freePointer.row >= rows-1) {
-        return false; // No space left in this atlas for this texture. TODO maybe trigger garbage collection?
-      }
-      
+    };
+
+    const drawWrapped = () => {
       const { scratch, canvas } = this;
 
       // Draw to the scratch canvas
@@ -150,6 +155,25 @@ export class Atlas {
 
       this.freePointer.x = secondTexW;
       this.freePointer.row++;
+    };
+
+    const moveToStartOfNextRow = () => {
+      this.freePointer.x = 0;
+      this.freePointer.row++;
+    };
+
+    if(this.freePointer.x + texW <= atlasSize) { // There's enough space in the current row
+      drawNormal();
+    } else if(this.freePointer.row >= rows-1) { // Need to move to the next row, but there are no more rows, atlas is full.
+      return false;
+    } else if(this.freePointer.x === atlasSize) { // happen to be right at end of current row
+      moveToStartOfNextRow();
+      drawNormal();
+    } else if(this.enableWrapping) { // draw part of the texture to the end of the curent row, then wrap to the next row
+      drawWrapped();
+    } else { // move to the start of the next row, then draw normally
+      moveToStartOfNextRow();
+      drawNormal();
     }
 
     this.keyToLocation.set(key, locations);
@@ -225,7 +249,7 @@ export class AtlasCollection {
       const { r, opts } = this;
       const atlasSize = opts.webglTexSize;
       const texHeight = Math.floor(atlasSize / opts.webglTexRows);
-      this.scratch = this.opts.createTextureCanvas(r, atlasSize, texHeight);
+      this.scratch = util.createTextureCanvas(r, atlasSize, texHeight);
     }
     return this.scratch;
   }
@@ -378,4 +402,36 @@ function intersection(set1, set2) {
     return set1.intersection(set2);
   else
     return new Set([...set1].filter(x => set2.has(x)));
+}
+
+
+/**
+ * Adjusts a node or label BB to accomodate padding and split for wrapped textures.
+ * @param bb - the original bounding box
+ * @param padding - the padding to add to the bounding box
+ * @param first - whether this is the first part of a wrapped texture
+ * @param ratio - the ratio of the texture width of part of the text to the entire texture
+ */
+export function getAdjustedBB(bb, padding, first, ratio) {
+  let { x1, y1, w, h } = bb;
+
+  if(padding) {
+    x1 -= padding;
+    y1 -= padding;
+    w += 2 * padding;
+    h += 2 * padding;
+  }
+
+  let xOffset = 0;
+  const adjW = w * ratio;
+
+  if(first && ratio < 1) {
+    w = adjW;
+  } else if(!first && ratio < 1) {
+    xOffset = w - adjW;
+    x1 += xOffset;
+    w = adjW;
+  }
+
+  return { x1, y1, w, h, xOffset };
 }

@@ -32,6 +32,7 @@ export class NodeDrawing {
     this.atlasSize = opts.webglTexSize;
     opts.createTextureCanvas = util.createTextureCanvas;
 
+    opts.enableWrapping = true;
     this.createAtlas = () => new Atlas(r, opts);
     this.createAtlasCollection = () => new AtlasCollection(r, opts);
 

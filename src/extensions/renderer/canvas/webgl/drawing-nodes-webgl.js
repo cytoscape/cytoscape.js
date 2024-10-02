@@ -13,8 +13,7 @@ const initRenderTypeDefaults = defaults({
   getRotationPoint: null,
   getRotationOffset: null,
   isVisible: null,
-  getOverlayUnderlayStyle: null,
-  isOverlayOrUnderlay: false,
+  getPadding: null,
 });
 
 
@@ -30,17 +29,13 @@ export class NodeDrawing {
     this.maxInstances = opts.webglBatchSize;
     this.maxAtlases = opts.webglTexPerBatch;
     this.atlasSize = opts.webglTexSize;
-    opts.createTextureCanvas = util.createTextureCanvas;
 
-    opts.enableWrapping = true;
-    this.createAtlas = () => new Atlas(r, opts);
-    this.createAtlasCollection = () => new AtlasCollection(r, opts);
+    this.createAtlasCollection = () => new AtlasCollection(r, { ...opts, enableWrapping: true });
 
     this.program = this.createShaderProgram(RENDER_TARGET.SCREEN);
     this.pickingProgram = this.createShaderProgram(RENDER_TARGET.PICKING);
 
     this.vao = this.createVAO();
-    this.overlayUnderlay = this.initOverlayUnderlay(); // used for overlay/underlay shapes
     this.renderTypes = new Map(); // string -> object
 
     this.debugInfo = [];
@@ -59,14 +54,8 @@ export class NodeDrawing {
     this.renderTypes.set(type, renderTypeOpts);
   }
 
-  getRenderTypes(includeOverlays = false) {
-    const types = [];
-    for(const opts of this.renderTypes.values()) {
-      if(includeOverlays || !opts.isOverlayOrUnderlay) {
-        types.push(opts);
-      }
-    }
-    return types;
+  getRenderTypes() {
+    return [...this.renderTypes.values()];
   }
 
   getRenderType(type) {
@@ -76,9 +65,9 @@ export class NodeDrawing {
   invalidate(eles) {
     for(const ele of eles) {
       if(ele.isNode()) {
+        const id = ele.id();
         for(const opts of this.getRenderTypes()) {
           const styleKey = opts.getKey(ele);
-          const id = ele.id();
           opts.atlasCollection.checkKey(id, styleKey);
         }
       }
@@ -87,49 +76,8 @@ export class NodeDrawing {
 
   gc() {
     for(const opts of this.getRenderTypes()) {
-      console.log('garbage collect ' + opts.type);
       opts.atlasCollection.gc();
     }
-  }
-
-  initOverlayUnderlay() {
-    const { r } = this;
-    const atlas = this.createAtlas();
-
-    const size = 100;
-    const center = size / 2;
-    const bb = { w: size, h: size };
-    
-    // TODO These textures have same width and height. This causes rounded corners 
-    // to look stretched when applied to wider nodes. We could create more textures with different
-    // widths, then choose the one that's closest to the node to minimize stretching. 
-    // Also can rotate textures 90 degs for portrait orientation.
-
-    // textures are white so that the overlay color is preserved when multiplying in the fragment shader
-    atlas.draw(0, bb, (context) => {
-      context.fillStyle = '#FFF';
-      r.drawRoundRectanglePath(context, center, center, size, size, 15);
-      context.fill();
-    });
-    
-    atlas.draw(1, bb, (context) => {
-      context.fillStyle = '#FFF';
-      r.drawEllipsePath(context, center, center, size, size);
-      context.fill();
-    });
-    
-    const getTexKey = (shape) => {
-      switch(shape) {
-        case 'round-rectangle': case 'roundrectangle':
-          return 0;
-        case 'ellipse':
-          return 1;
-        default:
-          return -1;
-      }
-    };
-
-    return { atlas, getTexKey };
   }
 
 
@@ -146,7 +94,6 @@ export class NodeDrawing {
       in vec2 aPosition; // instanced
 
       in vec4 aIndex;
-      in vec4 aLayColor; // overlay/underlay color
       in int aAtlasId; // which shader unit/atlas to use
       in vec4 aTex1; // x/y/w/h of texture in atlas
       in vec4 aTex2; 
@@ -155,7 +102,6 @@ export class NodeDrawing {
       in mat3 aNodeMatrix2;
 
       out vec2 vTexCoord;
-      flat out vec4 vLayColor;
       flat out int vAtlasId;
       flat out vec4 vIndex;
 
@@ -193,7 +139,6 @@ export class NodeDrawing {
         vTexCoord = vec2(texX / d, texY / d); // tex coords must be between 0 and 1
 
         vAtlasId = aAtlasId;
-        vLayColor = aLayColor;
         vIndex = aIndex;
 
         gl_Position = vec4(uPanZoomMatrix * nodeMatrix * vec3(aPosition, 1.0), 1.0);
@@ -210,19 +155,12 @@ export class NodeDrawing {
 
       in vec2 vTexCoord;
       flat in int vAtlasId;
-      flat in vec4 vLayColor;
       flat in vec4 vIndex;
 
       out vec4 outColor;
 
       void main(void) {
-        vec4 texColor;
-        ${idxs.map(i => `if(vAtlasId == ${i}) texColor = texture(uTexture${i}, vTexCoord);`).join('\n\telse ')}
-
-        if(vLayColor.a == 0.0)
-          outColor = texColor;
-        else
-          outColor = texColor * vLayColor;
+        ${idxs.map(i => `if(vAtlasId == ${i}) outColor = texture(uTexture${i}, vTexCoord);`).join('\n\telse ')}
 
         ${ renderTarget.picking ?
           ` if(outColor.a == 0.0)
@@ -243,7 +181,6 @@ export class NodeDrawing {
     program.aNodeMatrix1 = gl.getAttribLocation(program, 'aNodeMatrix1');
     program.aNodeMatrix2 = gl.getAttribLocation(program, 'aNodeMatrix2');
     program.aAtlasId     = gl.getAttribLocation(program, 'aAtlasId');
-    program.aLayColor    = gl.getAttribLocation(program, 'aLayColor');
     program.aTex1        = gl.getAttribLocation(program, 'aTex1');
     program.aTex2        = gl.getAttribLocation(program, 'aTex2');
 
@@ -284,7 +221,6 @@ export class NodeDrawing {
     
     this.indexBuffer    = util.createBufferDynamicDraw(gl, n, 'vec4', program.aIndex);
     this.atlasIdBuffer  = util.createBufferDynamicDraw(gl, n, 'int',  program.aAtlasId);
-    this.layColorBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aLayColor);
     this.tex1Buffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aTex1);
     this.tex2Buffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aTex2);
 
@@ -342,7 +278,7 @@ export class NodeDrawing {
     let x, y;
     mat3.identity(matrix);
 
-    const theta = opts.getRotation(node);
+    const theta = opts.getRotation ? opts.getRotation(node) : 0;
     if(theta !== 0) {
       const { x:sx, y:sy } = opts.getRotationPoint(node);
       mat3.translate(matrix, matrix, [sx, sy]);
@@ -373,97 +309,64 @@ export class NodeDrawing {
     this.atlases = []; // up to 16 texture units for a draw call
   }
 
+  getAtlasIdForBatch(atlas) {
+    let atlasID = this.atlases.indexOf(atlas);
+    if(atlasID < 0) {
+      if(this.atlases.length === this.maxAtlases) {
+         // If we run out of space for textures in the current batch then start a new batch
+        this.endBatch();
+      }
+      this.atlases.push(atlas);
+      atlasID = this.atlases.length - 1;
+    }
+    return atlasID;
+  }
 
   draw(node, eleIndex, type) {
     const opts = this.renderTypes.get(type);
-    if(!opts.isVisible(node))
+    if(!opts || !opts.isVisible(node))
+      return;
+
+    const styleKey = opts.getKey(node);
+    if(styleKey === null)
       return;
 
     const bb = opts.getBoundingBox(node);
-
+    const atlas = this.getOrCreateAtlas(node, bb, opts);
+    const atlasID = this.getAtlasIdForBatch(atlas);
+    const [ tex1, tex2 ] = atlas.getOffsets(styleKey);
+    
     // Set values in the buffers using Typed Array Views for performance.
-    const bufferInstanceData = (atlasID, tex1, tex2, padding=0, layColor=[0, 0, 0, 0]) => {
-      const instance = this.instanceCount;
-      {
-        const view = this.atlasIdBuffer.getView(instance);
-        view[0] = atlasID;
-      } {
-        const view = this.indexBuffer.getView(instance);
-        util.indexToVec4(eleIndex, view);
-      } {
-        const view = this.tex1Buffer.getView(instance);
-        view[0] = tex1.x;
-        view[1] = tex1.y;
-        view[2] = tex1.w;
-        view[3] = tex1.h;
-      } {
-        const view = this.tex2Buffer.getView(instance);
-        view[0] = tex2.x;
-        view[1] = tex2.y;
-        view[2] = tex2.w;
-        view[3] = tex2.h;
-      } {
-        const view = this.layColorBuffer.getView(instance);
-        view[0] = layColor[0];
-        view[1] = layColor[1];
-        view[2] = layColor[2];
-        view[3] = layColor[3];
-      }
-      const tex1ratio = tex1.w / (tex1.w + tex2.w);
-      const tex2ratio = 1 - tex1ratio;
-      {
-        const view = this.matrixBuffer1.getMatrixView(instance);
-        this.setTransformMatrix(view, node, bb, opts, padding, true,  tex1ratio);
-      } {
-        const view = this.matrixBuffer2.getMatrixView(instance);
-        this.setTransformMatrix(view, node, bb, opts, padding, false, tex2ratio);
-      }
-      this.instanceCount++;
-    };
-
-    const getAtlasIdForBatch = (atlas) => {
-      let atlasID = this.atlases.indexOf(atlas);
-      if(atlasID < 0) {
-        if(this.atlases.length === this.maxAtlases) {
-           // If we run out of space for textures in the current batch then start a new batch
-          this.endBatch();
-        }
-        this.atlases.push(atlas);
-        atlasID = this.atlases.length - 1;
-      }
-      return atlasID;
-    };
-
-    const drawBodyOrLabel = () => {
-      const styleKey = opts.getKey(node);
-      const atlas = this.getOrCreateAtlas(node, bb, opts);
-      const atlasID = getAtlasIdForBatch(atlas);
-      const [ tex1, tex2 ] = atlas.getOffsets(styleKey);
+    const instance = this.instanceCount;
       
-      bufferInstanceData(atlasID, tex1, tex2);
-    };
+    const atlasIdView = this.atlasIdBuffer.getView(instance);
+    atlasIdView[0] = atlasID;
 
-    const drawOverlayUnderlay = () => {
-      const style = opts.getOverlayUnderlayStyle(node);
-      const { opacity, color, shape, padding } = style; // Ignore radius for now
+    const indexView = this.indexBuffer.getView(instance);
+    util.indexToVec4(eleIndex, indexView);
+    
+    const tex1View = this.tex1Buffer.getView(instance);
+    tex1View[0] = tex1.x;
+    tex1View[1] = tex1.y;
+    tex1View[2] = tex1.w;
+    tex1View[3] = tex1.h;
 
-      const styleKey = this.overlayUnderlay.getTexKey(shape);
-      if(styleKey < 0)
-        return;
+    const tex2View = this.tex2Buffer.getView(instance);
+    tex2View[0] = tex2.x;
+    tex2View[1] = tex2.y;
+    tex2View[2] = tex2.w;
+    tex2View[3] = tex2.h;
 
-      const { atlas } = this.overlayUnderlay;
-      const atlasID = getAtlasIdForBatch(atlas);
-      const [ tex1, tex2 ] = atlas.getOffsets(styleKey);
-      const layColor = util.toWebGLColor(color, opacity);
+    const tex1ratio = tex1.w / (tex1.w + tex2.w);
+    const tex2ratio = 1 - tex1ratio;
+    const padding = opts.getPadding ? opts.getPadding(node) : 0; // TODO
 
-      bufferInstanceData(atlasID, tex1, tex2, padding, layColor);
-    }
+    const matrix1View = this.matrixBuffer1.getMatrixView(instance);
+    this.setTransformMatrix(matrix1View, node, bb, opts, padding, true,  tex1ratio);
+    const matrix2View = this.matrixBuffer2.getMatrixView(instance);
+    this.setTransformMatrix(matrix2View, node, bb, opts, padding, false, tex2ratio);
 
-    if(opts.isOverlayOrUnderlay) {
-      drawOverlayUnderlay();
-    } else {
-      drawBodyOrLabel();
-    }
+    this.instanceCount++;
 
     if(this.instanceCount >= this.maxInstances) {
       this.endBatch();
@@ -488,7 +391,6 @@ export class NodeDrawing {
     this.matrixBuffer1.bufferSubData(count);
     this.matrixBuffer2.bufferSubData(count);
     this.atlasIdBuffer.bufferSubData(count);
-    this.layColorBuffer.bufferSubData(count);
     this.tex1Buffer.bufferSubData(count);
     this.tex2Buffer.bufferSubData(count);
 
@@ -536,7 +438,7 @@ export class NodeDrawing {
       }
     }
     return debugInfo;
-  }s
+  }
 
   getDebugInfo() {
     return this.debugInfo;

@@ -1,6 +1,7 @@
 // import * as mat from './matrix';
 import { EdgeDrawing } from './drawing-edges-webgl';
 import { NodeDrawing } from './drawing-nodes-webgl';
+import { OverlayUnderlayRenderer } from './drawing-overlay';
 import * as util from './webgl-util';
 import { mat3 } from 'gl-matrix';
 import { color2tuple } from '../../../../util/colors'
@@ -37,68 +38,51 @@ CRp.initWebgl = function(opts, fns) {
   const c = (container && container.style && container.style.backgroundColor) || 'white';
   const bgColor = color2tuple(c);
 
-  const getZeroRotation = () => 0;
-  const getLabelRotation = (ele) => r.getTextAngle(ele, null);
-  const isNodeVisible = (ele) => ele.visible();
-  const isLabelVisible = (ele) => {
-    let label = ele.pstyle( 'label' );
-    return label && label.value;
-  }
-
-  const getNodeOverlayUnderlayStyle = s => node => {
-    const opacity = node.pstyle(`${s}-opacity`).value;
-    const color   = node.pstyle(`${s}-color`).value;
-    const shape   = node.pstyle(`${s}-shape`).value;
-    const padding = node.pstyle(`${s}-padding` ).pfValue;
-    return { opacity, color, shape, padding }; // TODO need to add radius at some point
-  };
-
-  const isNodeOverlayUnderlayVisible = s => node => {
-    const opacity = node.pstyle(`${s}-opacity`).value;
-    return opacity > 0;
-  };
-
   // for offscreen rendering when render target is PICKING
   r.pickingFrameBuffer = util.createPickingFrameBuffer(gl);
   r.pickingFrameBuffer.needsDraw = true;
 
   r.edgeDrawing = new EdgeDrawing(r, gl, { ...opts, bgColor });
   r.nodeDrawing = new NodeDrawing(r, gl, opts);
+  const overUnder = new OverlayUnderlayRenderer(r);
   
+  const getLabelRotation = (ele) => r.getTextAngle(ele, null);
+  const isLabelVisible = (ele) => {
+    let label = ele.pstyle( 'label' );
+    return label && label.value;
+  }
+
   r.nodeDrawing.addRenderType('node-body', {
     getKey: fns.getStyleKey,
     getBoundingBox: fns.getElementBox,
     drawElement: fns.drawElement,
-    getRotationPoint: fns.getElementRotationPoint,
-    getRotationOffset: fns.getElementRotationOffset,
-    getRotation: getZeroRotation,
-    isVisible: isNodeVisible,
+    isVisible: ele => ele.visible(),
   })
 
   r.nodeDrawing.addRenderType('node-label', {
     getKey: fns.getLabelKey,
     getBoundingBox: fns.getLabelBox,
     drawElement: fns.drawLabel,
+    getRotation: getLabelRotation,
     getRotationPoint: fns.getLabelRotationPoint,
     getRotationOffset: fns.getLabelRotationOffset,
-    getRotation: getLabelRotation,
     isVisible: isLabelVisible,
   });
-
+  
   r.nodeDrawing.addRenderType('node-overlay', {
-    isOverlayOrUnderlay: true,
     getBoundingBox: fns.getElementBox,
-    getRotation: getZeroRotation,
-    isVisible: isNodeOverlayUnderlayVisible('overlay'),
-    getOverlayUnderlayStyle: getNodeOverlayUnderlayStyle('overlay'),
+    getKey: ele => overUnder.getStyleKey('overlay', ele),
+    drawElement: (ctx, ele, bb) => overUnder.draw('overlay', ctx, ele, bb),
+    isVisible: ele => overUnder.isVisible('overlay', ele),
+    getPadding: ele => overUnder.getPadding('overlay', ele),
   });
 
   r.nodeDrawing.addRenderType('node-underlay', {
-    isOverlayOrUnderlay: true,
     getBoundingBox: fns.getElementBox,
-    getRotation: getZeroRotation,
-    isVisible: isNodeOverlayUnderlayVisible('underlay'),
-    getOverlayUnderlayStyle: getNodeOverlayUnderlayStyle('underlay'),
+    getKey: ele => overUnder.getStyleKey('underlay', ele),
+    drawElement: (ctx, ele, bb) => overUnder.draw('underlay', ctx, ele, bb),
+    isVisible: ele => overUnder.isVisible('underlay', ele),
+    getPadding: ele => overUnder.getPadding('underlay', ele),
   });
 
   // TODO not called when deleting elements
@@ -238,7 +222,7 @@ function drawAtlases(r) {
   const draw = (renderType, row) => {
     const opts = r.nodeDrawing.getRenderType(renderType);
     const context = r.data.contexts[r.NODE];
-    const scale = 0.25;
+    const scale = 0.125;
   
     const atlases = opts.atlasCollection.atlases;
     for(let i = 0; i < atlases.length; i++) {
@@ -260,8 +244,10 @@ function drawAtlases(r) {
     }
   };
   
-  draw('node-body',  0);
-  draw('node-label', 1);
+  draw('node-underlay', 0);
+  draw('node-body', 1);
+  draw('node-label', 2);
+  draw('node-overlay', 3);
 }
 
 

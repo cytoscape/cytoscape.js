@@ -244,7 +244,7 @@ export class NodeDrawing {
   /**
    * Adjusts the BB to accomodate padding and split for wrapped textures.
    */
-  getAdjustedBB(bb, padding, first, ratio) {
+  adjustBB(bb, padding, first, ratio) {
     let { x1, y1, w, h } = bb;
 
     if(padding) {
@@ -273,7 +273,7 @@ export class NodeDrawing {
    * this function follows same pattern as CRp.drawCachedElementPortion(...)
    */
   setTransformMatrix(matrix, node, bb, opts, padding, first, ratio) {
-    const adjBB = this.getAdjustedBB(bb, padding, first, ratio);
+    const adjBB = this.adjustBB(bb, padding, first, ratio);
 
     let x, y;
     mat3.identity(matrix);
@@ -328,17 +328,13 @@ export class NodeDrawing {
       return;
 
     const styleKey = opts.getKey(node);
-    if(styleKey === null)
-      return;
-
     const bb = opts.getBoundingBox(node);
     const atlas = this.getOrCreateAtlas(node, bb, opts);
     const atlasID = this.getAtlasIdForBatch(atlas);
     const [ tex1, tex2 ] = atlas.getOffsets(styleKey);
-    
-    // Set values in the buffers using Typed Array Views for performance.
     const instance = this.instanceCount;
-      
+
+    // Set values in the buffers using Typed Array Views for performance.
     const atlasIdView = this.atlasIdBuffer.getView(instance);
     atlasIdView[0] = atlasID;
 
@@ -359,7 +355,7 @@ export class NodeDrawing {
 
     const tex1ratio = tex1.w / (tex1.w + tex2.w);
     const tex2ratio = 1 - tex1ratio;
-    const padding = opts.getPadding ? opts.getPadding(node) : 0; // TODO
+    const padding = opts.getPadding ? opts.getPadding(node) : 0;
 
     const matrix1View = this.matrixBuffer1.getMatrixView(instance);
     this.setTransformMatrix(matrix1View, node, bb, opts, padding, true,  tex1ratio);

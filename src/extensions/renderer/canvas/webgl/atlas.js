@@ -57,10 +57,6 @@ export class Atlas {
     const { atlasSize, rows, texHeight } = this;
     const { scale, texW, texH } = this.getScale(bb);
     
-    if (texH < texHeight) { 
-      console.log('key:', key);
-    }
-
     const locations = [ null, null ];
 
     const drawAt = (location, canvas) => {

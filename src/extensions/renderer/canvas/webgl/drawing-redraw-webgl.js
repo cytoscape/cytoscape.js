@@ -353,15 +353,14 @@ function findNearestElementsWebgl(r, x, y) { // model coordinates
     }
   }
 
-  if(nearestNode && nearestEdge) {
+  if(nearestNode && nearestEdge)
     return [ nearestNode, nearestEdge ]; // TODO do I have to sort by nearest?
-  } else if(nearestNode) {
+  else if(nearestNode)
     return [ nearestNode ];
-  } else if(nearestEdge) {
+  else if(nearestEdge)
     return [ nearestEdge ];
-  } else {
+  else
     return [];
-  }
 }
 
 

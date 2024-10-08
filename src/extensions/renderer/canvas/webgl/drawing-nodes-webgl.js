@@ -1,20 +1,7 @@
 // For rendering nodes
 import * as util from './webgl-util';
-import { defaults } from '../../../../util';
-import { mat3 } from 'gl-matrix';
-import { Atlas, AtlasCollection } from './atlas';
+import { AtlasManager } from './atlas';
 import { RENDER_TARGET } from './drawing-redraw-webgl';
-
-const initRenderTypeDefaults = defaults({
-  getKey: null,
-  drawElement: null,
-  getBoundingBox: null,
-  getRotation: null,
-  getRotationPoint: null,
-  getRotationOffset: null,
-  isVisible: null,
-  getPadding: null,
-});
 
 
 export class NodeDrawing {
@@ -25,59 +12,27 @@ export class NodeDrawing {
   constructor(r, gl, opts) {
     this.r = r;
     this.gl = gl;
-    
     this.maxInstances = opts.webglBatchSize;
-    this.maxAtlases = opts.webglTexPerBatch;
-    this.atlasSize = opts.webglTexSize;
 
-    this.createAtlasCollection = () => new AtlasCollection(r, { ...opts, enableWrapping: true });
+    this.atlasManager = new AtlasManager(r, { ...opts, enableWrapping: true });
 
     this.program = this.createShaderProgram(RENDER_TARGET.SCREEN);
     this.pickingProgram = this.createShaderProgram(RENDER_TARGET.PICKING);
-
     this.vao = this.createVAO();
-    this.renderTypes = new Map(); // string -> object
 
     this.debugInfo = [];
   }
 
-  addRenderType(type, options) {
-    const atlasCollection = this.createAtlasCollection();
-    const typeOpts = initRenderTypeDefaults(options);
-
-    const renderTypeOpts = {
-      type,
-      atlasCollection,
-      ...typeOpts
-    }
-
-    this.renderTypes.set(type, renderTypeOpts);
-  }
-
-  getRenderTypes() {
-    return [...this.renderTypes.values()];
-  }
-
-  getRenderType(type) {
-    return this.renderTypes.get(type);
+  addRenderType(type, opts) {
+    this.atlasManager.addRenderType(type, opts);
   }
 
   invalidate(eles) {
-    for(const ele of eles) {
-      if(ele.isNode()) {
-        const id = ele.id();
-        for(const opts of this.getRenderTypes()) {
-          const styleKey = opts.getKey(ele);
-          opts.atlasCollection.checkKey(id, styleKey);
-        }
-      }
-    }
+    this.atlasManager.invalidate(eles, ele => ele.isNode());
   }
 
   gc() {
-    for(const opts of this.getRenderTypes()) {
-      opts.atlasCollection.gc();
-    }
+    this.atlasManager.gc();
   }
 
 
@@ -145,7 +100,7 @@ export class NodeDrawing {
       }
     `;
 
-    const idxs = Array.from({ length: this.maxAtlases }, (v,i) => i);
+    const idxs = this.atlasManager.getIndexArray();
 
     const fragmentShaderSource = `#version 300 es
       precision highp float;
@@ -162,12 +117,8 @@ export class NodeDrawing {
       void main(void) {
         ${idxs.map(i => `if(vAtlasId == ${i}) outColor = texture(uTexture${i}, vTexCoord);`).join('\n\telse ')}
 
-        ${ renderTarget.picking ?
-          ` if(outColor.a == 0.0)
-              outColor = vec4(0.0, 0.0, 0.0, 0.0);
-            else
-              outColor = vIndex;
-          `
+        ${ renderTarget.picking
+          ? `outColor = outColor.a == 0.0 ? vec4(0.0) : vIndex;` 
           : ''
         }
       }
@@ -189,7 +140,7 @@ export class NodeDrawing {
     program.uAtlasSize     = gl.getUniformLocation(program, 'uAtlasSize');
 
     program.uTextures = [];
-    for(let i = 0; i < this.maxAtlases; i++) {
+    for(let i = 0; i < this.atlasManager.maxAtlases; i++) {
       program.uTextures.push(gl.getUniformLocation(program, `uTexture${i}`));
     }
 
@@ -228,75 +179,6 @@ export class NodeDrawing {
     return vao;
   }
   
-  
-  getOrCreateAtlas(node, bb, opts) {
-    const { atlasCollection } = opts;
-    const styleKey = opts.getKey(node);
-    const id = node.id();
-
-    const atlas = atlasCollection.draw(id, styleKey, bb, context => {
-      opts.drawElement(context, node, bb, true, false);
-    });
-
-    return atlas;
-  }
-
-  /**
-   * Adjusts the BB to accomodate padding and split for wrapped textures.
-   */
-  adjustBB(bb, padding, first, ratio) {
-    let { x1, y1, w, h } = bb;
-
-    if(padding) {
-      x1 -= padding;
-      y1 -= padding;
-      w += 2 * padding;
-      h += 2 * padding;
-    }
-
-    let xOffset = 0;
-    const adjW = w * ratio;
-
-    if(first && ratio < 1) {
-      w = adjW;
-    } else if(!first && ratio < 1) {
-      xOffset = w - adjW;
-      x1 += xOffset;
-      w = adjW;
-    }
-
-    return { x1, y1, w, h, xOffset };
-  }
-
-  /**
-   * matrix is expected to be a 9 element array
-   * this function follows same pattern as CRp.drawCachedElementPortion(...)
-   */
-  setTransformMatrix(matrix, node, bb, opts, padding, first, ratio) {
-    const adjBB = this.adjustBB(bb, padding, first, ratio);
-
-    let x, y;
-    mat3.identity(matrix);
-
-    const theta = opts.getRotation ? opts.getRotation(node) : 0;
-    if(theta !== 0) {
-      const { x:sx, y:sy } = opts.getRotationPoint(node);
-      mat3.translate(matrix, matrix, [sx, sy]);
-      mat3.rotate(matrix, matrix, theta);
-
-      const offset = opts.getRotationOffset(node);
-
-      x = offset.x + adjBB.xOffset;
-      y = offset.y
-    } else {
-      x = adjBB.x1;
-      y = adjBB.y1;
-    }
-
-    mat3.translate(matrix, matrix, [x, y]);
-    mat3.scale(matrix, matrix, [adjBB.w, adjBB.h]);
-  }
-
 
   startFrame(panZoomMatrix, debugInfo, renderTarget = RENDER_TARGET.SCREEN) {
     this.panZoomMatrix = panZoomMatrix
@@ -306,32 +188,20 @@ export class NodeDrawing {
 
   startBatch() {
     this.instanceCount = 0;
-    this.atlases = []; // up to 16 texture units for a draw call
-  }
-
-  getAtlasIdForBatch(atlas) {
-    let atlasID = this.atlases.indexOf(atlas);
-    if(atlasID < 0) {
-      if(this.atlases.length === this.maxAtlases) {
-         // If we run out of space for textures in the current batch then start a new batch
-        this.endBatch();
-      }
-      this.atlases.push(atlas);
-      atlasID = this.atlases.length - 1;
-    }
-    return atlasID;
+    this.atlasManager.startBatch();
   }
 
   draw(node, eleIndex, type) {
-    const opts = this.renderTypes.get(type);
-    if(!opts || !opts.isVisible(node))
+    const { atlasManager } = this;
+    if(!atlasManager.isRenderable(node, type)) {
       return;
+    }
+    if(!atlasManager.canAddToCurrentBatch(node, type)) {
+      this.endBatch(); // draws then starts a new batch
+    }
 
-    const styleKey = opts.getKey(node);
-    const bb = opts.getBoundingBox(node);
-    const atlas = this.getOrCreateAtlas(node, bb, opts);
-    const atlasID = this.getAtlasIdForBatch(atlas);
-    const [ tex1, tex2 ] = atlas.getOffsets(styleKey);
+    const atlasInfo = atlasManager.getAtlasInfo(node, type);
+    const { atlasID, tex1, tex2 } = atlasInfo;
     const instance = this.instanceCount;
 
     // Set values in the buffers using Typed Array Views for performance.
@@ -353,14 +223,10 @@ export class NodeDrawing {
     tex2View[2] = tex2.w;
     tex2View[3] = tex2.h;
 
-    const tex1ratio = tex1.w / (tex1.w + tex2.w);
-    const tex2ratio = 1 - tex1ratio;
-    const padding = opts.getPadding ? opts.getPadding(node) : 0;
-
     const matrix1View = this.matrixBuffer1.getMatrixView(instance);
-    this.setTransformMatrix(matrix1View, node, bb, opts, padding, true,  tex1ratio);
+    atlasManager.setTransformMatrix(matrix1View, atlasInfo, node, true);
     const matrix2View = this.matrixBuffer2.getMatrixView(instance);
-    this.setTransformMatrix(matrix2View, node, bb, opts, padding, false, tex2ratio);
+    atlasManager.setTransformMatrix(matrix2View, atlasInfo, node, false);
 
     this.instanceCount++;
 
@@ -390,21 +256,21 @@ export class NodeDrawing {
     this.tex1Buffer.bufferSubData(count);
     this.tex2Buffer.bufferSubData(count);
 
-    // make sure all textures are buffered, must be done before activating the texture units
-    for(let i = 0; i < this.atlases.length; i++) {
-      this.atlases[i].bufferIfNeeded(gl);
+    const atlases = this.atlasManager.getAtlases();
+    // must buffer before activating texture units
+    for(let i = 0; i < atlases.length; i++) {
+      atlases[i].bufferIfNeeded(gl);
     }
-
     // Activate all the texture units that we need
-    for(let i = 0; i < this.atlases.length; i++) {
+    for(let i = 0; i < atlases.length; i++) {
       gl.activeTexture(gl.TEXTURE0 + i);
-      gl.bindTexture(gl.TEXTURE_2D, this.atlases[i].texture);
+      gl.bindTexture(gl.TEXTURE_2D, atlases[i].texture);
       gl.uniform1i(program.uTextures[i], i);
     }
 
     // Set the uniforms
     gl.uniformMatrix3fv(program.uPanZoomMatrix, false, this.panZoomMatrix);
-    gl.uniform1i(program.uAtlasSize, this.atlasSize);
+    gl.uniform1i(program.uAtlasSize, this.atlasManager.atlasSize);
 
     // draw!
     gl.drawArraysInstanced(gl.TRIANGLES, 0, vertexCount, count);
@@ -416,7 +282,7 @@ export class NodeDrawing {
       this.debugInfo.push({
         type: 'node',
         count,
-        atlasCount: this.atlases.length
+        atlasCount: atlases.length
       });
     }
 
@@ -424,20 +290,12 @@ export class NodeDrawing {
     this.startBatch();
   }
 
-
-  getAtlasDebugInfo() {
-    const debugInfo = [];
-    for(let [ type, opts ] of this.renderTypes) {
-      if(!opts.isOverlayOrUnderlay) {
-        const { keyCount, atlasCount } = opts.atlasCollection.getCounts();
-        debugInfo.push({ type, keyCount, atlasCount });
-      }
-    }
-    return debugInfo;
-  }
-
   getDebugInfo() {
     return this.debugInfo;
+  }
+
+  getAtlasDebugInfo() {
+    return this.atlasManager.getDebugInfo();
   }
 
 }

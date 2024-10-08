@@ -1,4 +1,6 @@
 import * as util from './webgl-util';
+import { mat3 } from 'gl-matrix';
+import { initRenderTypeDefaults } from './drawing-redraw-webgl';
 
 // A "texture atlas" is a big image/canvas, and sections of it are used as textures for nodes/labels.
 
@@ -273,6 +275,10 @@ export class AtlasCollection {
     return this.styleKeyToAtlas.get(key);
   }
 
+  hasAtlas(key) {
+    return this.styleKeyToAtlas.has(key);
+  }
+
   checkKey(id, newKey) {
     if(!this.idToKey.has(id))
       return;
@@ -402,32 +408,220 @@ function intersection(set1, set2) {
 
 
 /**
- * Adjusts a node or label BB to accomodate padding and split for wrapped textures.
- * @param bb - the original bounding box
- * @param padding - the padding to add to the bounding box
- * @param first - whether this is the first part of a wrapped texture
- * @param ratio - the ratio of the texture width of part of the text to the entire texture
+ * Used to manage batches of Atlases for drawing nodes and labels.
+ * Supports different types of AtlasCollections for different render types,
+ * for example 'node body' and 'node label' would be different render types.
+ * Render types are kept separate because they will likely need to be garbage collected
+ * separately and its not entierly guaranteed that their style keys won't collide.
  */
-export function getAdjustedBB(bb, padding, first, ratio) {
-  let { x1, y1, w, h } = bb;
+export class AtlasManager {
 
-  if(padding) {
-    x1 -= padding;
-    y1 -= padding;
-    w += 2 * padding;
-    h += 2 * padding;
+  constructor(r, globalOptions) {
+    this.r = r;
+
+    this.globalOptions = globalOptions;
+    this.maxAtlases = globalOptions.webglTexPerBatch;
+    this.atlasSize = globalOptions.webglTexSize;
+    
+    this.renderTypes = new Map(); // string -> object
+    this.maxAtlasesPerBatch = globalOptions.webglTexPerBatch;
+    this.batchAtlases = [];
   }
 
-  let xOffset = 0;
-  const adjW = w * ratio;
+  addRenderType(type, renderTypeOptions) {
+    const atlasCollection = new AtlasCollection(this.r, this.globalOptions);
+    const typeOpts = initRenderTypeDefaults(renderTypeOptions);
 
-  if(first && ratio < 1) {
-    w = adjW;
-  } else if(!first && ratio < 1) {
-    xOffset = w - adjW;
-    x1 += xOffset;
-    w = adjW;
+    this.renderTypes.set(type, {
+        type,
+        atlasCollection,
+        ...typeOpts
+      }
+    );
   }
 
-  return { x1, y1, w, h, xOffset };
+  getRenderTypes() {
+    return [ ...this.renderTypes.values() ];
+  }
+
+  getRenderTypeOpts(type) {
+    return this.renderTypes.get(type);
+  }
+
+  /** Marks textues associated with the element for garbage collection. */
+  invalidate(eles, testEle) {
+    const renderTypes = this.getRenderTypes();
+    for(const ele of eles) {
+      if(testEle(ele)) {
+        const id = ele.id();
+        for(const opts of renderTypes) {
+          const styleKey = opts.getKey(ele);
+          opts.atlasCollection.checkKey(id, styleKey);
+        }
+      }
+    }
+  }
+
+  /** Garbage collect */
+  gc() {
+    for(const opts of this.getRenderTypes()) {
+      opts.atlasCollection.gc();
+    }
+  }
+
+  isRenderable(ele, type) {
+    const opts = this.getRenderTypeOpts(type);
+    return opts && opts.isVisible(ele);
+  }
+
+  startBatch() {
+    this.batchAtlases = [];
+  }
+
+  getAtlasCount() {
+    return this.batchAtlases.length;
+  }
+
+  getAtlases() {
+    return this.batchAtlases;
+  }
+
+  getOrCreateAtlas(ele, bb, type) {
+    const opts = this.renderTypes.get(type);
+    const styleKey = opts.getKey(ele);
+    const id = ele.id();
+
+    // Draws the texture if needed.
+    return opts.atlasCollection.draw(id, styleKey, bb, context => {
+      opts.drawElement(context, ele, bb, true, false);
+    });
+  }
+
+  getAtlasIndexForBatch(atlas) {
+    let atlasID = this.batchAtlases.indexOf(atlas);
+    if(atlasID < 0) {
+      if(this.batchAtlases.length === this.maxAtlasesPerBatch) {
+        return;
+      }
+      this.batchAtlases.push(atlas);
+      atlasID = this.batchAtlases.length - 1;
+    }
+    return atlasID;
+  };
+
+  getIndexArray() {
+    return Array.from({ length: this.maxAtlases }, (v,i) => i);
+  }
+
+  getAtlasInfo(ele, type) {
+    const opts = this.renderTypes.get(type);
+    const bb = opts.getBoundingBox(ele);
+    const atlas = this.getOrCreateAtlas(ele, bb, type);
+    const atlasID = this.getAtlasIndexForBatch(atlas);
+    if(atlasID === undefined) {
+      return undefined; // batch is full
+    }
+    const styleKey = opts.getKey(ele);
+    const [ tex1, tex2 ] = atlas.getOffsets(styleKey);
+    // This object may be passed back to setTransformMatrix()
+    return { atlasID, tex:tex1, tex1, tex2, bb, type, styleKey };
+  }
+
+  canAddToCurrentBatch(ele, type) {
+    if(this.batchAtlases.length === this.maxAtlasesPerBatch) { 
+      // batch is full, is the atlas already part of this batch?
+      const opts = this.renderTypes.get(type);
+      const styleKey = opts.getKey(ele);
+      const atlas = opts.atlasCollection.getAtlas(styleKey);
+      // return true if there is an atlas and it is part of this batch already
+      return atlas && this.batchAtlases.includes(atlas);
+    }
+    return true; // not full
+  }
+
+  /**
+   * matrix is expected to be a 9 element array
+   * this function follows same pattern as CRp.drawCachedElementPortion(...)
+   */
+  setTransformMatrix(matrix, atlasInfo, ele, first=true) {
+    const { bb, type, tex1, tex2 } = atlasInfo;
+    const opts = this.getRenderTypeOpts(type);
+
+    const padding = opts.getPadding ? opts.getPadding(ele) : 0;
+
+    let ratio = tex1.w / (tex1.w + tex2.w);
+    if(!first) {
+      ratio = 1 - ratio;
+    }
+
+    const adjBB = this.getAdjustedBB(bb, padding, first, ratio);
+
+    let x, y;
+    mat3.identity(matrix);
+
+    const theta = opts.getRotation ? opts.getRotation(ele) : 0;
+    if(theta !== 0) {
+      const { x:sx, y:sy } = opts.getRotationPoint(ele);
+      mat3.translate(matrix, matrix, [sx, sy]);
+      mat3.rotate(matrix, matrix, theta);
+
+      const offset = opts.getRotationOffset(ele);
+
+      x = offset.x + adjBB.xOffset;
+      y = offset.y
+    } else {
+      x = adjBB.x1;
+      y = adjBB.y1;
+    }
+
+    mat3.translate(matrix, matrix, [x, y]);
+    mat3.scale(matrix, matrix, [adjBB.w, adjBB.h]);
+  }
+
+  getTransformMatrix(atlasInfo, ele, first=true) {
+    const matrix = mat3.create();
+    this.setTransformMatrix(matrix, atlasInfo, ele, first);
+    return matrix;
+  }
+
+  /**
+   * Adjusts a node or label BB to accomodate padding and split for wrapped textures.
+   * @param bb - the original bounding box
+   * @param padding - the padding to add to the bounding box
+   * @param first - whether this is the first part of a wrapped texture
+   * @param ratio - the ratio of the texture width of part of the text to the entire texture
+   */
+  getAdjustedBB(bb, padding, first, ratio) {
+    let { x1, y1, w, h } = bb;
+
+    if(padding) {
+      x1 -= padding;
+      y1 -= padding;
+      w += 2 * padding;
+      h += 2 * padding;
+    }
+
+    let xOffset = 0;
+    const adjW = w * ratio;
+
+    if(first && ratio < 1) {
+      w = adjW;
+    } else if(!first && ratio < 1) {
+      xOffset = w - adjW;
+      x1 += xOffset;
+      w = adjW;
+    }
+
+    return { x1, y1, w, h, xOffset };
+  }
+
+  getDebugInfo() {
+    const debugInfo = [];
+    for(let [ type, opts ] of this.renderTypes) {
+      const { keyCount, atlasCount } = opts.atlasCollection.getCounts();
+      debugInfo.push({ type, keyCount, atlasCount });
+    }
+    return debugInfo;
+  }
+
 }

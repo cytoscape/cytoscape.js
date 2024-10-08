@@ -99,7 +99,7 @@ export class EdgeDrawing {
         vec3  position = vec3(aPositionType.xy, 1.0);
         float vertType = aPositionType.z;
 
-        if(vertType == ${LABEL}.0) {
+        if(vertType == ${LABEL}.0 && aTex.w > 0.0) {
           int vid = gl_VertexID;
           float texX = aTex.x;
           float texY = aTex.y;
@@ -333,7 +333,7 @@ export class EdgeDrawing {
     let size = this.r.getArrowWidth(edgeWidth, scale);
 
     // reuse the same matrix for all arrows
-    const transform = this.transformMatrix = this.transformMatrix || mat3.create();
+    const transform = this.arrowMatrix = this.arrowMatrix || mat3.create();
 
     mat3.identity(transform);
     mat3.translate(transform, transform, [x, y]);
@@ -438,8 +438,8 @@ export class EdgeDrawing {
       texView[2] = tex.w;
       texView[3] = tex.h;
 
-      // TODO temporary, reuse a matrix object
-      const transform = this.atlasManager.getTransformMatrix(atlasInfo, edge);
+      const transform = this.labelMatrix = this.labelMatrix || mat3.create();
+      this.atlasManager.setTransformMatrix(transform, atlasInfo, edge, true);
 
       const labelScaleRotateView = this.labelScaleRotateBuffer.getView(instance);
       labelScaleRotateView[0] = transform[0];
@@ -450,6 +450,9 @@ export class EdgeDrawing {
       const labelTranslateView = this.labelTranslateBuffer.getView(instance);
       labelTranslateView[0] = transform[6];
       labelTranslateView[1] = transform[7];
+    } else {
+      const texView = this.texBuffer.getView(instance);
+      texView[3] = 0; // tell vertex shader not to render this label
     }
 
     this.instanceCount++;

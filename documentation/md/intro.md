@@ -43,7 +43,7 @@
    * Weekly patch release cadence
    * Monthly feature release cadence
 * Listed by [Zenodo](https://doi.org/10.5281/zenodo.831800) for per-version DOIs
-* Listed by [OMIC Tools](https://omictools.com/cytoscape-js-tool)
+* Listed by OMIC Tools
 
 ## Who uses Cytoscape.js
 

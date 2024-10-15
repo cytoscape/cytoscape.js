@@ -118,7 +118,8 @@ export class NodeDrawing {
         ${idxs.map(i => `if(vAtlasId == ${i}) outColor = texture(uTexture${i}, vTexCoord);`).join('\n\telse ')}
 
         ${ renderTarget.picking
-          ? `outColor = outColor.a == 0.0 ? vec4(0.0) : vIndex;` 
+          ? `if(outColor.a == 0.0) discard;
+             else outColor = vIndex;`
           : ''
         }
       }

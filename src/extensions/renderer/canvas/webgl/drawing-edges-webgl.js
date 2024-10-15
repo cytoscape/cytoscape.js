@@ -195,15 +195,13 @@ export class EdgeDrawing {
         }
 
         ${ renderTarget.picking
-          ? `outColor = outColor.a == 0.0 ? vec4(0.0) : vIndex;` 
+          ? `if(outColor.a == 0.0) discard;
+             else outColor = vIndex;`
           : ''
         }
       }
     `;
 
-
-    console.log(vertexShaderSource);
-    console.log(fragmentShaderSource);
     const program = util.createProgram(gl, vertexShaderSource, fragmentShaderSource);
 
     program.aPositionType  = gl.getAttribLocation(program, 'aPositionType');

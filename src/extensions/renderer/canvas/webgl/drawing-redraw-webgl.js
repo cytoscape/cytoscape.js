@@ -11,8 +11,8 @@ import { mat3 } from 'gl-matrix';
 
 
 export const RENDER_TARGET = {
-  SCREEN:  { screen:  true },
-  PICKING: { picking: true },
+  SCREEN:  { name: 'screen',  screen:  true },
+  PICKING: { name: 'picking', picking: true },
 }
 
 export const initRenderTypeDefaults = defaults({
@@ -130,14 +130,14 @@ function overrideCanvasRendererFunctions(r) {
       options = options || {};
       const cy = r.cy; 
       if(r.webgl) {
-        // if(cy.zoom() > eleTextureCache.maxZoom) {
-        //   // if the zoom level is greater than the max zoom level, then disable webgl
-        //   clearWebgl(r);
-        //   baseFunc.call(r, options); 
-        // } else {
-          // r.clearCanvas();
+        if(cy.zoom() > eleTextureCache.maxZoom) {
+          // if the zoom level is greater than the max zoom level, then disable webgl
+          clearWebgl(r);
+          baseFunc.call(r, options); 
+        } else {
+          r.clearCanvas();
           renderWebgl(r, options, RENDER_TARGET.SCREEN);
-        // }
+        }
       }
     }
   }
@@ -175,7 +175,7 @@ function overrideCanvasRendererFunctions(r) {
     const baseFunc = r.notify;
     r.notify = function(eventName, eles) {
       baseFunc.call(r, eventName, eles);
-      if(eventName === 'viewport') {
+      if(eventName === 'viewport' || eventName === 'bounds') {
         r.pickingFrameBuffer.needsDraw = true;
       }
     }
@@ -278,14 +278,28 @@ function drawAtlases(r) {
 
 
 /**
- * TODO: what if the coordinates are off the edge of the canvas?
+ * Arguments are in model coordinates.
  * (x1, y1) is top left corner
- * (x2, y2) is bottom right corner
+ * (x2, y2) is bottom right corner (optional)
+ * Returns a Set of indexes.
  */
-function getPickingIndexesInBox(r, x1, y1, x2, y2) {
-  const [ cX1, cY1, cX2, cY2 ] = util.modelCoordsToWebgl(r, x1, y1, x2, y2);
-  const w = Math.abs(cX2 - cX1);
-  const h = Math.abs(cY2 - cY1);
+function getPickingIndexes(r, mX1, mY1, mX2, mY2) {
+  let x, y, w, h;
+
+  if(mX2 === undefined || mY2 === undefined) {
+    const [ cX1, cY1 ] = util.modelCoordsToWebgl(r, mX1, mY1);
+    const t = 6; // should be even
+    x = cX1 - (t / 2);
+    y = cY1 - (t / 2);;
+    w = t;
+    h = t;
+  } else {
+    const [ cX1, cY1, cX2, cY2 ] = util.modelCoordsToWebgl(r, mX1, mY1, mX2, mY2);
+    x = cX1; // (cX1, cY2) is the bottom left corner of the box
+    y = cY2;
+    w = Math.abs(cX2 - cX1);
+    h = Math.abs(cY2 - cY1);
+  }
 
   if(w === 0 || h === 0) {
     return [];
@@ -295,39 +309,67 @@ function getPickingIndexesInBox(r, x1, y1, x2, y2) {
   gl.bindFramebuffer(gl.FRAMEBUFFER, r.pickingFrameBuffer);
 
   if(r.pickingFrameBuffer.needsDraw) {
-    // Draw element z-indexes to the framebuffer
+    // Draw element z-indexes to the picking framebuffer
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
     renderWebgl(r, null, RENDER_TARGET.PICKING);
     r.pickingFrameBuffer.needsDraw = false;
   }
 
-  const data = new Uint8Array(w * h * 4);
-  // (cX1, cY2) is the bottom left corner of the box
-  gl.readPixels(cX1, cY2, w, h, gl.RGBA, gl.UNSIGNED_BYTE, data);
+  const n = w * h; // number of pixels to read
+  const data = new Uint8Array(n * 4); // 4 bytes per pixel
+  gl.readPixels(x, y, w, h, gl.RGBA, gl.UNSIGNED_BYTE, data);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
-  const indexes = new Array(w * h);
-  for(let i = 0; i < indexes.length; i++) {
+  const indexes = new Set();
+  for(let i = 0; i < n; i++) {
     const pixel = data.slice(i*4, i*4 + 4);
     const index = util.vec4ToIndex(pixel) - 1; // The framebuffer is cleared with 0s, so z-indexes are offset by 1
-    indexes[i] = index;
+    if(index >= 0) {
+      indexes.add(index);
+    }
   }
   return indexes;
 }
 
 
+/**
+ * Cy.js: model coordinate y axis goes down
+ */
+function findNearestElementsWebgl(r, x, y) { // model coordinates
+  const indexes = getPickingIndexes(r, x, y);
+  const eles = r.getCachedZSortedEles();
+
+  let node, edge;
+
+  for(const index of indexes) {
+    const ele = eles[index];
+    if(!node && ele.isNode()) {
+      node = ele;
+    }
+    if(!edge && ele.isEdge()) {
+      edge = ele;
+    }
+    if(node && edge) {
+      break;
+    }
+  }
+
+  return [ node, edge ].filter(Boolean);
+}
+
+
 function getAllInBoxWebgl(r, x1, y1, x2, y2) { // model coordinates
-  var x1c = Math.min( x1, x2 );
-  var x2c = Math.max( x1, x2 );
-  var y1c = Math.min( y1, y2 );
-  var y2c = Math.max( y1, y2 );
+  let x1c = Math.min(x1, x2);
+  let x2c = Math.max(x1, x2);
+  let y1c = Math.min(y1, y2);
+  let y2c = Math.max(y1, y2);
 
   x1 = x1c;
   x2 = x2c;
   y1 = y1c;
   y2 = y2c;
 
-  const indexes = getPickingIndexesInBox(r, x1, y1, x2, y2);
+  const indexes = getPickingIndexes(r, x1, y1, x2, y2);
   const eles = r.getCachedZSortedEles();
 
   const box = new Set();
@@ -337,56 +379,6 @@ function getAllInBoxWebgl(r, x1, y1, x2, y2) { // model coordinates
     }
   }
   return Array.from(box);
-}
-
-
-function findNearestElementsWebgl(r, x, y) { // model coordinates
-  const targetSize = 6; // This defines a square around the target point in model coordinates
-
-  x -= targetSize / 2;
-  y -= targetSize / 2;
-  const w = targetSize;
-  const h = targetSize;
-
-  const indexes = getPickingIndexesInBox(r, x, y, x + w, y + h);
-  const eles = r.getCachedZSortedEles();
-
-  const dim = Math.sqrt(indexes.length);
-  const rows = dim;
-  const cols = dim;
-  const center = dim / 2;
-
-  let nearestNode;
-  let nearestNodeSquareDist = Infinity;
-  let nearestEdge;
-  let nearestEdgeSquareDist = Infinity;
-
-  for(let row = 0; row < rows; row++) {
-    for(let col = 0; col < cols; col++) {
-      const i = row * cols + col;
-      const index = indexes[i];
-      if(index >= 0) {
-        const ele = eles[index];
-        const dist = Math.pow(row - center, 2) + Math.pow(col - center, 2);
-        if(ele.isNode() && dist < nearestNodeSquareDist) {
-          nearestNode = ele;
-          nearestNodeSquareDist = dist;
-        } else if(ele.isEdge() && dist < nearestEdgeSquareDist) {
-          nearestEdge = ele;
-          nearestEdgeSquareDist = dist;
-        }
-      }
-    }
-  }
-
-  if(nearestNode && nearestEdge)
-    return [ nearestNode, nearestEdge ]; // TODO do I have to sort by nearest?
-  else if(nearestNode)
-    return [ nearestNode ];
-  else if(nearestEdge)
-    return [ nearestEdge ];
-  else
-    return [];
 }
 
 
@@ -486,7 +478,7 @@ function renderWebgl(r, options, renderTarget) {
 
   if(r.webglDebug) {
     const end = performance.now();
-    console.log(`WebGL render - frame time ${Math.ceil(end - start)}ms`);
+    console.log(`WebGL render (${renderTarget.name}) - frame time ${Math.ceil(end - start)}ms`);
 
     let nodeBatchCount = 0;
     let nodeCount = 0;

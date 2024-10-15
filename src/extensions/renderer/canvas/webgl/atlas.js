@@ -493,7 +493,7 @@ export class AtlasManager {
 
     // Draws the texture if needed.
     return opts.atlasCollection.draw(id, styleKey, bb, context => {
-      opts.drawElement(context, ele, bb, true, false);
+      opts.drawElement(context, ele, bb, true, true);
     });
   }
 

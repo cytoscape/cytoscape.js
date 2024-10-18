@@ -1,6 +1,6 @@
 import { describe } from 'mocha';
 import { expect } from 'chai';
-import { Atlas, AtlasControl } from '../../src/extensions/renderer/canvas/webgl/atlas';
+import { Atlas, AtlasCollection } from '../../src/extensions/renderer/canvas/webgl/atlas';
 
 
 function createTextureCanvas(r, width, height) {
@@ -25,15 +25,17 @@ function createAtlas(webglTexSize = 100, webglTexRows = 10) {
   return new Atlas(null, { 
     webglTexSize, 
     webglTexRows, 
-    createTextureCanvas 
+    createTextureCanvas,
+    enableWrapping: true
   });
 }
 
-function createAtlasControl(webglTexSize = 100, webglTexRows = 10) {
-  return new AtlasControl(null, { 
+function createAtlasCollection(webglTexSize = 100, webglTexRows = 10) {
+  return new AtlasCollection(null, { 
     webglTexSize, 
     webglTexRows, 
-    createTextureCanvas 
+    createTextureCanvas,
+    enableWrapping: true
   });
 }
 
@@ -59,23 +61,23 @@ describe('webgl-atlas', function() {
   });
 
 
-  it('AtlasControl draws and wraps', function() {
-    const atlasControl = createAtlasControl();
+  it('AtlasCollection draws and wraps', function() {
+    const atlasCollection = createAtlasCollection();
     let atlas;
 
-    atlas = atlasControl.draw('a', 1, { h:10, w:100 });
+    atlas = atlasCollection.draw('a', 1, { h:10, w:100 });
     expect(atlas.getOffsets(1)).to.eql([ { x: 0, y: 0, w: 100, h: 10 }, { x: 100, y: 0, w: 0, h: 10 } ]);
     
-    atlas = atlasControl.draw('b', 2, { h:10, w:50 });
+    atlas = atlasCollection.draw('b', 2, { h:10, w:50 });
     expect(atlas.getOffsets(2)).to.eql([ { x: 0, y: 10, w: 50, h: 10 }, { x: 50, y: 10, w: 0, h: 10 } ]);
 
-    atlas = atlasControl.draw('c', 3, { h:10, w:100 });
+    atlas = atlasCollection.draw('c', 3, { h:10, w:100 });
     expect(atlas.getOffsets(3)).to.eql([ { x: 50, y: 10, w: 50, h: 10 }, { x: 0, y: 20, w: 50, h: 10 } ]);
   });
 
 
-  it('AtlasControl garbage collects (easy)', function() {
-    const ac = createAtlasControl();
+  it('AtlasCollection garbage collects (easy)', function() {
+    const ac = createAtlasCollection();
     ac.draw('a', 1, { h:10, w:100 });
     ac.draw('b', 2, { h:10, w:50  });
     ac.draw('c', 3, { h:10, w:100 });
@@ -91,8 +93,8 @@ describe('webgl-atlas', function() {
   });
 
 
-  it('AtlasControl garbage collects (hard)', function() {
-    const ac = createAtlasControl(100, 4); // height is 25
+  it('AtlasCollection garbage collects (hard)', function() {
+    const ac = createAtlasCollection(100, 4); // height is 25
     ac.draw('a', 1, { h:25, w:100 });
     ac.draw('b', 2, { h:25, w:75  });
     ac.draw('c', 3, { h:25, w:50  });

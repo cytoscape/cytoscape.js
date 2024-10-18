@@ -1,4 +1,5 @@
 import * as util from './webgl-util';
+import * as cyutil from '../../../../util';
 import { mat3 } from 'gl-matrix';
 import { initRenderTypeDefaults } from './drawing-redraw-webgl';
 
@@ -31,8 +32,13 @@ export class Atlas {
     // if the texture wraps then there's a second location
     this.keyToLocation = new Map(); // styleKey -> [ location, location ]
 
-    this.canvas  = util.createTextureCanvas(r, this.atlasSize, this.atlasSize);
-    this.scratch = util.createTextureCanvas(r, this.atlasSize, this.texHeight);
+    // for unit tests
+    if(!opts.createTextureCanvas) {
+      opts.createTextureCanvas = util.createTextureCanvas; 
+    }
+
+    this.canvas  = opts.createTextureCanvas(r, this.atlasSize, this.atlasSize);
+    this.scratch = opts.createTextureCanvas(r, this.atlasSize, this.texHeight);
   }
 
   getKeys() {
@@ -217,6 +223,10 @@ export class AtlasCollection {
     this.r = r;
     this.opts = opts;
 
+    if(!opts.createTextureCanvas) {
+      opts.createTextureCanvas = util.createTextureCanvas; 
+    }
+
     this.keyToIds = new Map();
     this.idToKey  = new Map();
 
@@ -247,7 +257,7 @@ export class AtlasCollection {
       const { r, opts } = this;
       const atlasSize = opts.webglTexSize;
       const texHeight = Math.floor(atlasSize / opts.webglTexRows);
-      this.scratch = util.createTextureCanvas(r, atlasSize, texHeight);
+      this.scratch = opts.createTextureCanvas(r, atlasSize, texHeight);
     }
     return this.scratch;
   }
@@ -431,13 +441,7 @@ export class AtlasManager {
   addRenderType(type, renderTypeOptions) {
     const atlasCollection = new AtlasCollection(this.r, this.globalOptions);
     const typeOpts = initRenderTypeDefaults(renderTypeOptions);
-
-    this.renderTypes.set(type, {
-        type,
-        atlasCollection,
-        ...typeOpts
-      }
-    );
+    this.renderTypes.set(type, cyutil.extend( { type, atlasCollection}, typeOpts ) );
   }
 
   getRenderTypes() {
@@ -507,7 +511,7 @@ export class AtlasManager {
       atlasID = this.batchAtlases.length - 1;
     }
     return atlasID;
-  };
+  }
 
   getIndexArray() {
     return Array.from({ length: this.maxAtlases }, (v,i) => i);
@@ -568,7 +572,7 @@ export class AtlasManager {
       const offset = opts.getRotationOffset(ele);
 
       x = offset.x + adjBB.xOffset;
-      y = offset.y
+      y = offset.y;
     } else {
       x = adjBB.x1;
       y = adjBB.y1;

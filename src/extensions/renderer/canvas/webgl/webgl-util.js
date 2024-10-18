@@ -124,7 +124,7 @@ export function modelCoordsToWebgl(r, x1, y1, x2, y2) {
   } else {
     return [ clientX1, clientY1 ];  
   }
-};
+}
 
 
 export function bufferTexture(gl, textureCanvas) {
@@ -224,7 +224,7 @@ export function createBufferDynamicDraw(gl, instances, type, attributeLoc) {
 
   buffer.getView = (i) => {
     return views[i];
-  }
+  };
 
   buffer.bufferSubData = (count) => {
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
@@ -233,7 +233,7 @@ export function createBufferDynamicDraw(gl, instances, type, attributeLoc) {
     } else {
       gl.bufferSubData(gl.ARRAY_BUFFER, 0, dataArray); 
     }
-  }
+  };
 
   return buffer;
 }
@@ -308,7 +308,7 @@ export function createPickingFrameBuffer(gl) {
   fb.setFramebufferAttachmentSizes = (width, height) => {
     gl.bindTexture(gl.TEXTURE_2D, targetTexture);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-  }
+  };
   
   return fb;
 }

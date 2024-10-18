@@ -1,7 +1,4 @@
-import { hashString } from '../../../../util/hash'
-
-const OVERLAY = 'overlay';
-const UNDERLAY = 'underlay';
+import { hashString } from '../../../../util/hash';
 
 
 function fillStyle(color, opacity) {
@@ -27,14 +24,14 @@ export class OverlayUnderlayRenderer {
   isVisible(type, node) {
     const opacity = node.pstyle(`${type}-opacity`).value;
     return opacity > 0;
-  };
+  }
 
   getStyle(type, node) {
     const opacity = node.pstyle(`${type}-opacity`).value;
     const color   = node.pstyle(`${type}-color`).value;
     const shape   = node.pstyle(`${type}-shape`).value;
     return { opacity, color, shape }; // TODO need to add radius at some point
-  };
+  }
 
   getPadding(type, node) {
     return node.pstyle(`${type}-padding`).pfValue;

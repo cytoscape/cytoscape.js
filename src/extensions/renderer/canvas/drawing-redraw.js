@@ -1,6 +1,5 @@
 import * as util from '../../../util';
 import * as math from '../../../math';
-import * as eleTextureCache from './ele-texture-cache';
 
 var CRp = {};
 
@@ -266,7 +265,7 @@ CRp.clearCanvas = function(){
   var data = r.data;
   function clear(context) {
     context.clearRect(0, 0, r.canvasWidth, r.canvasHeight);
-  };
+  }
   clear(data.contexts[ r.NODE ]);
   clear(data.contexts[ r.DRAG ]);
 };

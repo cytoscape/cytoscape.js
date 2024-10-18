@@ -106,7 +106,7 @@
     "cpy-cli": "^5.0.0",
     "cross-env": "^7.0.0",
     "download-cli": "^1.0.5",
-    "eslint": "^9.0.0",
+    "eslint": "^6.0.0",
     "esm": "^3.2.25",
     "gh-pages": "^5.0.0",
     "gl-matrix": "^3.4.3",

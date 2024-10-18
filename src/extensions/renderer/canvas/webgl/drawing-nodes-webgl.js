@@ -14,7 +14,8 @@ export class NodeDrawing {
     this.gl = gl;
     this.maxInstances = opts.webglBatchSize;
 
-    this.atlasManager = new AtlasManager(r, { ...opts, enableWrapping: true });
+    opts.enableWrapping = true;
+    this.atlasManager = new AtlasManager(r, opts);
 
     this.program = this.createShaderProgram(RENDER_TARGET.SCREEN);
     this.pickingProgram = this.createShaderProgram(RENDER_TARGET.PICKING);
@@ -182,7 +183,7 @@ export class NodeDrawing {
   
 
   startFrame(panZoomMatrix, debugInfo, renderTarget = RENDER_TARGET.SCREEN) {
-    this.panZoomMatrix = panZoomMatrix
+    this.panZoomMatrix = panZoomMatrix;
     this.debugInfo = debugInfo;
     this.renderTarget = renderTarget;
   }

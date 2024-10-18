@@ -36,7 +36,8 @@ export class EdgeDrawing {
     this.labelOpts = initRenderTypeDefaults(labelRenderOptions);
 
     // with the current strategy we don't have enough shader attributes for wrapped textures
-    this.atlasManager = new AtlasManager(r, { ...opts, enableWrapping: false }); // for labels
+    opts.enableWrapping = false;
+    this.atlasManager = new AtlasManager(r, opts); // for labels
     this.atlasManager.addRenderType('edge-label', labelRenderOptions);
 
     this.program = this.createShaderProgram(RENDER_TARGET.SCREEN);
@@ -341,12 +342,12 @@ export class EdgeDrawing {
     return {
       transform,
       color
-    }
+    };
   }
 
 
   startFrame(panZoomMatrix, debugInfo, renderTarget = RENDER_TARGET.SCREEN) {
-    this.panZoomMatrix = panZoomMatrix
+    this.panZoomMatrix = panZoomMatrix;
     this.debugInfo = debugInfo;
     this.renderTarget = renderTarget;
   }
@@ -421,7 +422,7 @@ export class EdgeDrawing {
       } else {
         util.zeroColor(colorView);
       }
-    };
+    }
 
     // labels
     if(atlasInfo) {

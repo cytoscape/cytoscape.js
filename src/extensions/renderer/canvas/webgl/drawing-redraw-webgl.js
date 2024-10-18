@@ -1,11 +1,10 @@
-// import * as mat from './matrix';
 import { EdgeDrawing } from './drawing-edges-webgl';
 import { NodeDrawing } from './drawing-nodes-webgl';
 import { OverlayUnderlayRenderer } from './drawing-overlay';
 import * as util from './webgl-util';
 import * as eleTextureCache from '../ele-texture-cache';
 import { defaults } from '../../../../util';
-import { color2tuple } from '../../../../util/colors'
+import { color2tuple } from '../../../../util/colors';
 import { mat3 } from 'gl-matrix';
 
 
@@ -13,7 +12,7 @@ import { mat3 } from 'gl-matrix';
 export const RENDER_TARGET = {
   SCREEN:  { name: 'screen',  screen:  true },
   PICKING: { name: 'picking', picking: true },
-}
+};
 
 export const initRenderTypeDefaults = defaults({
   getKey: null,
@@ -82,7 +81,7 @@ CRp.initWebgl = function(opts, fns) {
     getBoundingBox: fns.getElementBox,
     drawElement: fns.drawElement,
     isVisible: ele => ele.visible(),
-  })
+  });
 
   r.nodeDrawing.addRenderType('node-label', {
     getKey: fns.getLabelKey,
@@ -117,7 +116,7 @@ CRp.initWebgl = function(opts, fns) {
 
   // "Override" certain functions in canvas and base renderer
   overrideCanvasRendererFunctions(r);
-}
+};
 
 
 /**
@@ -139,7 +138,7 @@ function overrideCanvasRendererFunctions(r) {
           renderWebgl(r, options, RENDER_TARGET.SCREEN);
         }
       }
-    }
+    };
   }
 
   { // Override the matchCanvasSize function to update the picking frame buffer size
@@ -154,7 +153,7 @@ function overrideCanvasRendererFunctions(r) {
     r.findNearestElements = function(x, y, interactiveElementsOnly, isTouch) {
       // the canvas version of this function is very slow on large graphs
       return findNearestElementsWebgl(r, x, y, interactiveElementsOnly, isTouch);
-    }
+    };
   }
 
   // Don't override the selction box picking, its not accurate enough with webgl
@@ -178,7 +177,7 @@ function overrideCanvasRendererFunctions(r) {
       if(eventName === 'viewport' || eventName === 'bounds') {
         r.pickingFrameBuffer.needsDraw = true;
       }
-    }
+    };
   }
 }
 
@@ -186,7 +185,7 @@ function overrideCanvasRendererFunctions(r) {
 function clearWebgl(r) {
   const gl = r.data.contexts[r.WEBGL];
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-};
+}
 
 
 function createPanZoomMatrix(r) {
@@ -290,7 +289,7 @@ function getPickingIndexes(r, mX1, mY1, mX2, mY2) {
     const [ cX1, cY1 ] = util.modelCoordsToWebgl(r, mX1, mY1);
     const t = 6; // should be even
     x = cX1 - (t / 2);
-    y = cY1 - (t / 2);;
+    y = cY1 - (t / 2);
     w = t;
     h = t;
   } else {
@@ -316,6 +315,7 @@ function getPickingIndexes(r, mX1, mY1, mX2, mY2) {
   }
 
   const n = w * h; // number of pixels to read
+  // eslint-disable-next-line no-undef
   const data = new Uint8Array(n * 4); // 4 bytes per pixel
   gl.readPixels(x, y, w, h, gl.RGBA, gl.UNSIGNED_BYTE, data);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -358,6 +358,7 @@ function findNearestElementsWebgl(r, x, y) { // model coordinates
 }
 
 
+// eslint-disable-next-line no-unused-vars
 function getAllInBoxWebgl(r, x1, y1, x2, y2) { // model coordinates
   let x1c = Math.min(x1, x2);
   let x2c = Math.max(x1, x2);
@@ -387,7 +388,7 @@ function renderWebgl(r, options, renderTarget) {
   let debugInfo;
   if(r.webglDebug) {
     debugInfo = [];
-    start = performance.now();
+    start = performance.now(); // eslint-disable-line no-undef
   }
   
   const { nodeDrawing, edgeDrawing } = r;
@@ -416,6 +417,7 @@ function renderWebgl(r, options, renderTarget) {
 
     let prevEle;
 
+    // eslint-disable-next-line no-inner-declarations
     function draw(ele, index) {
       index += 1; // 0 is used to clear the background, need to offset all z-indexes by one
       if(ele.isNode()) {
@@ -477,6 +479,7 @@ function renderWebgl(r, options, renderTarget) {
   }
 
   if(r.webglDebug) {
+    // eslint-disable-next-line no-undef
     const end = performance.now();
     console.log(`WebGL render (${renderTarget.name}) - frame time ${Math.ceil(end - start)}ms`);
 

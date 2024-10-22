@@ -47,11 +47,11 @@ export class EdgeDrawing {
   }
 
   invalidate(eles) {
-    this.atlasManager.invalidate(eles, ele => ele.isNode());
+    this.atlasManager.invalidate(eles, { testEle: ele => ele.isEdge() });
   }
 
   gc() {
-    this.atlasCollection.gc();
+    this.atlasManager.gc();
   }
 
   createShaderProgram(renderTarget) {

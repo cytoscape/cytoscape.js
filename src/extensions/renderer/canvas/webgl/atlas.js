@@ -232,6 +232,9 @@ export class AtlasCollection {
 
     this.atlases = [];
     this.styleKeyToAtlas = new Map();
+    this.styleKeyNeedsRedraw = new Set();
+
+    this.forceGC = false;
   }
 
   getKeys() {
@@ -263,9 +266,21 @@ export class AtlasCollection {
   }
 
   draw(id, key, bb, doDrawing) {
+    if(this.styleKeyNeedsRedraw.delete(key)) {
+      this.deleteKey(id, key);
+      // We need to mark the atlas as needing GC because the key will be mapped to
+      // this atlas or a new atlas, so the key itself won't be marked for GC.
+      const atlas = this.styleKeyToAtlas.get(key);
+      if(atlas) {
+        atlas.forceGC = true;
+      }
+      this.styleKeyToAtlas.delete(key);
+    }
+
     let atlas = this.styleKeyToAtlas.get(key);
     if(!atlas) {
-      // this is an overly simplistic way of finding an atlas, needs to be rewritten
+      // This is a simplistic way of finding an atlas. 
+      // May waste space at the end of the atalas if the element doesn't fit.
       atlas = this.atlases[this.atlases.length - 1];
       if(!atlas || !atlas.canFit(bb)) {
         atlas = this._createAtlas();
@@ -289,14 +304,17 @@ export class AtlasCollection {
     return this.styleKeyToAtlas.has(key);
   }
 
+  deleteKey(id, key) {
+    this.idToKey.delete(id);
+    this.getIdsFor(key).delete(id);
+  }
+
   checkKey(id, newKey) {
     if(!this.idToKey.has(id))
       return;
-
     const oldKey = this.idToKey.get(id);
     if(oldKey != newKey) {
-      this.idToKey.delete(id);
-      this.getIdsFor(oldKey).delete(id);
+      this.deleteKey(id, oldKey);
     }
   }
 
@@ -314,8 +332,10 @@ export class AtlasCollection {
    * TODO dispose of the old atlas and texture
    */
   gc() {
+    const forceGC = this.atlases.some(atlas => atlas.forceGC);
     const markedKeys = this._getKeysToCollect();
-    if(markedKeys.size === 0) {
+
+    if(markedKeys.size === 0 && !forceGC) {
       console.log("nothing to garbage collect");
       return;
     }
@@ -330,7 +350,7 @@ export class AtlasCollection {
       
       const keysToCollect = intersection(markedKeys, keys);
 
-      if(keysToCollect.size === 0) {
+      if(keysToCollect.size === 0 && !atlas.forceGC) {
         newAtlases.push(atlas);
         keys.forEach(k => newStyleKeyToAtlas.set(k, atlas));
         continue;
@@ -352,13 +372,10 @@ export class AtlasCollection {
           newStyleKeyToAtlas.set(key, newAtlas);
         }
       }
-
     }
 
     this.atlases = newAtlases;
     this.styleKeyToAtlas = newStyleKeyToAtlas;
-    // TODO, I might not clean up every key
-    this.markedKeys = new Set();
   }
 
 
@@ -453,14 +470,20 @@ export class AtlasManager {
   }
 
   /** Marks textues associated with the element for garbage collection. */
-  invalidate(eles, testEle) {
-    const renderTypes = this.getRenderTypes();
+  invalidate(eles, { testEle, testType, forceRedraw } = {}) {
     for(const ele of eles) {
-      if(testEle(ele)) {
+      if(!testEle || testEle(ele)) {
         const id = ele.id();
-        for(const opts of renderTypes) {
-          const styleKey = opts.getKey(ele);
-          opts.atlasCollection.checkKey(id, styleKey);
+        for(const opts of this.getRenderTypes()) {
+          if(!testType || testType(opts.type)) {
+            const styleKey = opts.getKey(ele);
+            if(forceRedraw) {
+              opts.atlasCollection.deleteKey(id, styleKey);
+              opts.atlasCollection.styleKeyNeedsRedraw.add(styleKey);
+            } else {
+              opts.atlasCollection.checkKey(id, styleKey);
+            }
+          }
         }
       }
     }

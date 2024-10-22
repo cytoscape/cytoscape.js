@@ -6,14 +6,21 @@ var networks = {
     desc: 'Style Test',
     nodes: 5,
     edges: 10,
-    url: 'network-tiny.json',
-    layout: { name: 'cose' }
+    url: 'network-styles.json',
+    layout: { name: 'preset' }
   },
   'compound': {
     desc: 'Compound nodes',
     nodes: 6,
     edges: 2,
     url: 'network-compound-nodes.json',
+    layout: { name: 'preset' }
+  },
+  'images': {
+    desc: 'Image Load Test',
+    nodes: 5,
+    edges: 10,
+    url: 'network-images.json',
     layout: { name: 'preset' }
   },
   'em-web': {

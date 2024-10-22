@@ -111,7 +111,10 @@ CRp.initWebgl = function(opts, fns) {
 
   // TODO not called when deleting elements
   r.onUpdateEleCalcs((willDraw, eles) => {
-    r.nodeDrawing.invalidate(eles);
+    if(eles && eles.length > 0) {
+      r.nodeDrawing.invalidate(eles);
+      r.edgeDrawing.invalidate(eles);
+    }
   });
 
   // "Override" certain functions in canvas and base renderer
@@ -176,6 +179,8 @@ function overrideCanvasRendererFunctions(r) {
       baseFunc.call(r, eventName, eles);
       if(eventName === 'viewport' || eventName === 'bounds') {
         r.pickingFrameBuffer.needsDraw = true;
+      } else if(eventName === 'background') { // background image finished loading, need to redraw
+        r.nodeDrawing.invalidate(eles, { type: 'node-body' });
       }
     };
   }

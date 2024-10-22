@@ -1,11 +1,11 @@
 {
   "elements": {
     "nodes": [
-      { "data": { "id": "n1", "weight": 1 } },
-      { "data": { "id": "n2", "weight": 2 } },
-      { "data": { "id": "n3", "weight": 3 } },
-      { "data": { "id": "n4", "weight": 4 } },
-      { "data": { "id": "n5", "weight": 5 } }
+      { "data": { "id": "n1", "weight": 1 }, "position": { "x": -29, "y":  26 } },
+      { "data": { "id": "n2", "weight": 2 }, "position": { "x":  77, "y": -15 } },
+      { "data": { "id": "n3", "weight": 3 }, "position": { "x": 178, "y":  36 } },
+      { "data": { "id": "n4", "weight": 4 }, "position": { "x": -17, "y": 146 } },
+      { "data": { "id": "n5", "weight": 5 }, "position": { "x": 134, "y": 157 } }
     ],
     "edges": [
       { "data": { "id":"n1-n2", "source": "n1", "target": "n2", "directed": "false" } },
@@ -45,7 +45,12 @@
       "selector": "#n2",
       "style": {
         "border-color": "black",
-        "border-width": 2
+        "border-width": 2,
+        "background-image": "https://picsum.photos/600",
+        "background-fit": "cover",
+        "text-valign": "top",
+        "label": "n2 (random image)",
+        "font-size": "8px"
       }
     },
     {

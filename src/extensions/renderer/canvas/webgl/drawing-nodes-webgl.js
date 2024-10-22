@@ -28,8 +28,11 @@ export class NodeDrawing {
     this.atlasManager.addRenderType(type, opts);
   }
 
-  invalidate(eles) {
-    this.atlasManager.invalidate(eles, ele => ele.isNode());
+  invalidate(eles, { type } = {}) {
+    const testEle = ele => ele.isNode();
+    const testType = type ? t => t === type : null; 
+    const forceRedraw = type ? true : false;
+    this.atlasManager.invalidate(eles, { testEle, testType, forceRedraw });
   }
 
   gc() {

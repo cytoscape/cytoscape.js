@@ -1,0 +1,64 @@
+{
+  "elements": {
+    "nodes": [
+      { "data": { "id": "n1", "weight": 1 }, "position": { "x": -29, "y":  26 } },
+      { "data": { "id": "n2", "weight": 2 }, "position": { "x":  77, "y": -15 } },
+      { "data": { "id": "n3", "weight": 3 }, "position": { "x": 178, "y":  36 } },
+      { "data": { "id": "n4", "weight": 4 }, "position": { "x": -17, "y": 146 } },
+      { "data": { "id": "n5", "weight": 5 }, "position": { "x": 134, "y": 157 } }
+    ],
+    "edges": [
+      { "data": { "id":"n1-n2", "source": "n1", "target": "n2", "directed": "false" } },
+      { "data": { "id":"n1-n3", "source": "n1", "target": "n3", "directed": "false" } },
+      { "data": { "id":"n1-n4", "source": "n1", "target": "n4", "directed": "false" } },
+      { "data": { "id":"n1-n5", "source": "n1", "target": "n5", "directed": "false" } },
+      { "data": { "id":"n2-n3", "source": "n2", "target": "n3", "directed": "false" } },
+      { "data": { "id":"n2-n4", "source": "n2", "target": "n4", "directed": "false" } },
+      { "data": { "id":"n2-n5", "source": "n2", "target": "n5", "directed": "false" } },
+      { "data": { "id":"n3-n4", "source": "n3", "target": "n4", "directed": "false" } },
+      { "data": { "id":"n3-n5", "source": "n3", "target": "n5", "directed": "false" } },
+      { "data": { "id":"n4-n5", "source": "n4", "target": "n5", "directed": "false" } }
+    ]
+  },
+  "style": [
+    {
+      "selector": "node",
+      "style": {
+        "label": "data(id)",
+        "text-valign": "top",
+        "color": "#000000",
+        "background-color": "#3a7ecf",
+        "font-family": "Helvetica",
+        "background-fit": "cover",
+        "font-size": "8px",
+        "border-color": "darkblue",
+        "border-width": 2
+      }
+    }, {
+      "selector": "#n1",
+      "style": {
+        "background-image": "https://picsum.photos/601"
+      }
+    }, {
+      "selector": "#n2",
+      "style": {
+        "background-image": "https://picsum.photos/602"
+      }
+    }, {
+      "selector": "#n3",
+      "style": {
+        "background-image": "https://picsum.photos/603"
+      }
+    }, {
+      "selector": "#n4",
+      "style": {
+        "background-image": "https://picsum.photos/604"
+      }
+    }, {
+      "selector": "#n5",
+      "style": {
+        "background-image": "https://picsum.photos/605"
+      }
+    }
+  ]
+}

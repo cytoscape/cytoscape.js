@@ -402,7 +402,7 @@ function renderWebgl(r, options, renderTarget) {
     if(r.data.canvasNeedsRedraw[r.SELECT_BOX]) {
       drawSelectionRectangle(r, options);
     }
-    drawAxes(r);
+    // drawAxes(r);
   }
 
   // see drawing-elements.js drawCachedElement()

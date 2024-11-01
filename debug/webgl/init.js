@@ -16,10 +16,10 @@ const paramDefs = {
     default: 'true',
     control: '#webgl-check'
   },
-  webglDebugShowAtlases: {
-    default: false,
-    control: '#atlas-checkbox'
-  },
+  // webglDebugShowAtlases: {
+  //   default: false,
+  //   control: '#atlas-checkbox'
+  // },
   webglTexSize: {
     default: 4096,
     control: '#texture-size-select'

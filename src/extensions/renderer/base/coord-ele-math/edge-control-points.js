@@ -918,7 +918,9 @@ BRp.findEdgeControlPoints = function( edges ){
           hasUnbundled: pairInfo.hasUnbundled,
           eles: pairInfo.eles,
           srcPos: tgtPos,
+          srcRs: tgtRs,
           tgtPos: srcPos,
+          tgtRs: srcRs,
           srcW: tgtW,
           srcH: tgtH,
           tgtW: srcW,
@@ -1014,22 +1016,22 @@ function getPts( pts ){
 
 BRp.getSegmentPoints = function( edge ){
   let rs = edge[0]._private.rscratch;
+  
+  this.recalculateRenderedStyle( edge );
+
   let type = rs.edgeType;
-
   if( type === 'segments' ){
-    this.recalculateRenderedStyle( edge );
-
     return getPts( rs.segpts );
   }
 };
 
 BRp.getControlPoints = function( edge ){
   let rs = edge[0]._private.rscratch;
+
+  this.recalculateRenderedStyle( edge );
+  
   let type = rs.edgeType;
-
   if( type === 'bezier' || type === 'multibezier' || type === 'self' || type === 'compound' ){
-    this.recalculateRenderedStyle( edge );
-
     return getPts( rs.ctrlpts );
   }
 };

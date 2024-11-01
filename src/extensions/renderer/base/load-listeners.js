@@ -8,8 +8,20 @@ var BRp = {};
 
 BRp.registerBinding = function( target, event, handler, useCapture ){ // eslint-disable-line no-unused-vars
   var args = Array.prototype.slice.apply( arguments, [1] ); // copy
-  var b = this.binder( target );
 
+  if( Array.isArray(target) ){
+    let res = [];
+    for( var i = 0; i < target.length; i++ ){
+      let t = target[i];
+      if( t !== undefined ){
+        var b = this.binder( t );
+        res.push( b.on.apply( b, args ) );
+      }
+    }
+    return res;
+  }
+
+  var b = this.binder( target );
   return b.on.apply( b, args );
 };
 
@@ -89,6 +101,14 @@ BRp.load = function(){
   var r = this;
   var containerWindow = r.cy.window();
   var isSelected = ele => ele.selected();
+
+  var getShadowRoot = function( element ){
+    const rootNode = element.getRootNode();
+    // Check if the root node is a shadow root
+    if ( rootNode && rootNode.nodeType === 11 && rootNode.host !== undefined ) {
+      return rootNode;
+    }
+  };
 
   var triggerEvents = function( target, names, e, position ){
     if( target == null ){
@@ -560,7 +580,8 @@ BRp.load = function(){
 
   }, false );
 
-  r.registerBinding( containerWindow, 'mousemove', function mousemoveHandler( e ){ // eslint-disable-line no-undef
+  var shadowRoot = getShadowRoot( r.container );
+  r.registerBinding( [ containerWindow, shadowRoot ], 'mousemove', function mousemoveHandler( e ){ // eslint-disable-line no-undef
     var capture = r.hoverData.capture;
 
     if( !capture && !eventInContainer(e) ){ return; }
@@ -1046,6 +1067,7 @@ BRp.load = function(){
     r.hoverData.dragDelta = [];
     r.hoverData.mdownPos = null;
     r.hoverData.mdownGPos = null;
+    r.hoverData.which = null;
 
   }, false );
 

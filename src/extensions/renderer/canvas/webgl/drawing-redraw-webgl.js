@@ -229,6 +229,7 @@ function drawSelectionRectangle(r, options) {
 }
 
 
+// eslint-disable-next-line no-unused-vars
 function drawAxes(r) { // for debgging
   const context = r.data.contexts[r.NODE];
   context.save();

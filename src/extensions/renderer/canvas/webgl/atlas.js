@@ -309,13 +309,15 @@ export class AtlasCollection {
     this.getIdsFor(key).delete(id);
   }
 
-  checkKey(id, newKey) {
+  checkKeyIsInvalid(id, newKey) {
     if(!this.idToKey.has(id))
-      return;
+      return false;
     const oldKey = this.idToKey.get(id);
     if(oldKey != newKey) {
       this.deleteKey(id, oldKey);
+      return true;
     }
+    return false;
   }
 
   _getKeysToCollect() {
@@ -471,22 +473,26 @@ export class AtlasManager {
 
   /** Marks textues associated with the element for garbage collection. */
   invalidate(eles, { testEle, testType, forceRedraw } = {}) {
+    let gcNeeded = false;
     for(const ele of eles) {
       if(!testEle || testEle(ele)) {
         const id = ele.id();
         for(const opts of this.getRenderTypes()) {
           if(!testType || testType(opts.type)) {
             const styleKey = opts.getKey(ele);
-            if(forceRedraw) {
+            if(forceRedraw) { 
+              // when a node's background image finishes loading, the style key doesn't change but still needs to be redrawn
               opts.atlasCollection.deleteKey(id, styleKey);
               opts.atlasCollection.styleKeyNeedsRedraw.add(styleKey);
+              gcNeeded = true; // TODO is this too conservative?
             } else {
-              opts.atlasCollection.checkKey(id, styleKey);
+              gcNeeded |= opts.atlasCollection.checkKeyIsInvalid(id, styleKey);
             }
           }
         }
       }
     }
+    return gcNeeded;
   }
 
   /** Garbage collect */

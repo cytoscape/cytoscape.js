@@ -32,7 +32,7 @@ export class NodeDrawing {
     const testEle = ele => ele.isNode();
     const testType = type ? t => t === type : null; 
     const forceRedraw = type ? true : false;
-    this.atlasManager.invalidate(eles, { testEle, testType, forceRedraw });
+    return this.atlasManager.invalidate(eles, { testEle, testType, forceRedraw });
   }
 
   gc() {

@@ -47,7 +47,7 @@ export class EdgeDrawing {
   }
 
   invalidate(eles) {
-    this.atlasManager.invalidate(eles, { testEle: ele => ele.isEdge() });
+    return this.atlasManager.invalidate(eles, { testEle: ele => ele.isEdge() });
   }
 
   gc() {

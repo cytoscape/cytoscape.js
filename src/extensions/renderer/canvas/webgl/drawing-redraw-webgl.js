@@ -3,7 +3,7 @@ import { NodeDrawing } from './drawing-nodes-webgl';
 import { OverlayUnderlayRenderer } from './drawing-overlay';
 import * as util from './webgl-util';
 import * as eleTextureCache from '../ele-texture-cache';
-import { defaults } from '../../../../util';
+import { defaults, debounce } from '../../../../util';
 import { color2tuple } from '../../../../util/colors';
 import { mat3 } from 'gl-matrix';
 
@@ -109,11 +109,20 @@ CRp.initWebgl = function(opts, fns) {
     getPadding: ele => our.getPadding('underlay', ele),
   });
 
-  // TODO not called when deleting elements
+  // this is a very simplistic way of triggering garbage collection
+  const setGCFlag = debounce(() => {
+    console.log('garbage collect flag set');
+    r.data.gc = true;
+  }, 10000);
+
   r.onUpdateEleCalcs((willDraw, eles) => {
+    let gcNeeded = false;
     if(eles && eles.length > 0) {
-      r.nodeDrawing.invalidate(eles);
-      r.edgeDrawing.invalidate(eles);
+      gcNeeded |= r.nodeDrawing.invalidate(eles);
+      gcNeeded |= r.edgeDrawing.invalidate(eles);
+    }
+    if(gcNeeded) {
+      setGCFlag();
     }
   });
 
@@ -127,17 +136,17 @@ CRp.initWebgl = function(opts, fns) {
  */
 function overrideCanvasRendererFunctions(r) {
   { // Override the render function to call the webgl render function if the zoom level is appropriate
-    const baseFunc = r.render; 
+    const renderCanvas = r.render; 
     r.render = function(options) {
       options = options || {};
       const cy = r.cy; 
       if(r.webgl) {
+        // if the zoom level is greater than the max zoom level, then disable webgl
         if(cy.zoom() > eleTextureCache.maxZoom) {
-          // if the zoom level is greater than the max zoom level, then disable webgl
           clearWebgl(r);
-          baseFunc.call(r, options); 
+          renderCanvas.call(r, options); 
         } else {
-          r.clearCanvas();
+          clearCanvas(r);
           renderWebgl(r, options, RENDER_TARGET.SCREEN);
         }
       }
@@ -190,6 +199,18 @@ function overrideCanvasRendererFunctions(r) {
 function clearWebgl(r) {
   const gl = r.data.contexts[r.WEBGL];
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+}
+
+function clearCanvas(r) {
+  // the CRp.clearCanvas() function doesn't take the transform into account
+  const clear = context => {
+    context.save();
+    context.setTransform(1, 0, 0, 1, 0, 0);
+    context.clearRect(0, 0, r.canvasWidth, r.canvasHeight);
+    context.restore();
+  };
+  clear(r.data.contexts[r.NODE]);
+  clear(r.data.contexts[r.DRAG]);
 }
 
 

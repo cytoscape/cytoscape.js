@@ -16,6 +16,10 @@ const paramDefs = {
     default: 'true',
     control: '#webgl-check'
   },
+  hover: {
+    default: 'false',
+    control: '#hover-check'
+  },
   // webglDebugShowAtlases: {
   //   default: false,
   //   control: '#atlas-checkbox'
@@ -56,9 +60,8 @@ const paramDefs = {
 
   // Load network and style
   function loadNetwork(elements, style) {
-    options = {
+    const options = {
       container: $('#cytoscape'),
-  
       renderer: {
         name: 'canvas',
         showFps: true,
@@ -70,13 +73,43 @@ const paramDefs = {
         webglBatchSize: params.webglBatchSize,
         webglTexPerBatch: params.webglTexPerBatch,
       },
-
       style: style,
       elements: elements,
       layout: network.layout
     };
     options.layout.animate = false;
     cy = cytoscape(options);
+
+    if(params.hover === 'true') { // add hover effect
+      cy.ready(() => {
+        const hoverMapping = {
+          selector: `.hover`,
+          style: {
+            'underlay-color': 'lightblue',
+            'underlay-padding': 12,
+            'underlay-opacity': 0.7,
+            'underlay-shape': 'roundrectangle',
+          },
+        };
+
+        cy.style().fromJson(cy.style().json().concat(hoverMapping)).update();
+
+        let lastHoveredElementID;
+
+        cy.on('mouseover', 'node, edge', e => {
+          const ele = e.target;
+          ele.addClass('hover');
+          lastHoveredElementID = ele.data('id');
+        });
+        cy.on('mouseout', 'node, edge', e => {
+          const lastEle = cy.getElementById(lastHoveredElementID);
+          if(lastEle !== undefined) {
+            lastEle.removeClass('hover');
+          }
+          lastHoveredElementID = undefined;
+        });
+      });
+    }
   }
 
   const network = networks[params.networkID];
@@ -130,6 +163,7 @@ const paramDefs = {
 
     const urlParams = new URLSearchParams();
     for(const p of Object.keys(paramDefs)) {
+      console.log(p);
       const control = $(paramDefs[p].control);
       const value = control.type == 'checkbox' ? control.checked : control.value;
       urlParams.set(p, value);
@@ -153,27 +187,27 @@ const paramDefs = {
   $("#fit-button").addEventListener('click', () => cy.fit());
   $("#reset-button").addEventListener('click', () => reloadPage(true));
 
-  $("#delete-button").addEventListener('click', () => {
-    cy.remove(':selected');
-  });
+  // $("#delete-button").addEventListener('click', () => {
+  //   cy.remove(':selected');
+  // });
 
-  $("#animate-button").addEventListener('click', () => {
-    const nodes = cy.nodes(':selected');
-    nodes.forEach(n => {
-      const w = n.width();
-      n.animate({
-        style: { 'width': w + 100 }
-      }, {
-        duration: 1000
-      })
-      .delay(1000)
-      .animate({
-        style: { 'width': w }
-      }, {
-        duration: 1000
-      });
-    });
-  });
+  // $("#animate-button").addEventListener('click', () => {
+  //   const nodes = cy.nodes(':selected');
+  //   nodes.forEach(n => {
+  //     const w = n.width();
+  //     n.animate({
+  //       style: { 'width': w + 100 }
+  //     }, {
+  //       duration: 1000
+  //     })
+  //     .delay(1000)
+  //     .animate({
+  //       style: { 'width': w }
+  //     }, {
+  //       duration: 1000
+  //     });
+  //   });
+  // });
 
   $("#select-button").addEventListener('click', () => {
     cy.nodes().select();

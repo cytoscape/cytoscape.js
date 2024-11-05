@@ -1,0 +1,70 @@
+{
+  "format_version" : "1.0",
+  "generated_by" : "cytoscape-3.11.0-SNAPSHOT",
+  "target_cytoscapejs_version" : "~2.1",
+  "title" : "Copy of Genetic white matter disorders expanded network-Style",
+  "style" : [ {
+    "selector" : "node",
+    "css" : {
+      "text-valign" : "bottom",
+      "text-halign" : "right",
+      "color" : "rgb(0,0,0)",
+      "border-width" : 0.0,
+      "text-opacity" : 1.0,
+      "width" : 15.0,
+      "font-size" : 8,
+      "background-color" : "rgb(255,255,255)",
+      "shape" : "ellipse",
+      "height" : 15.0,
+      "border-opacity" : 1.0,
+      "font-family" : "Dialog",
+      "font-weight" : "normal",
+      "border-color" : "rgb(0,153,0)",
+      "background-opacity" : 1.0,
+      "content" : "data(alias)"
+    }
+  }, {
+    "selector" : "node[Classification = 'candidate']",
+    "css" : {
+      "background-color" : "rgb(0,153,255)"
+    }
+  }, {
+    "selector" : "node[Classification = 'WM']",
+    "css" : {
+      "background-color" : "rgb(255,255,51)"
+    }
+  }, {
+    "selector" : "node[Classification = 'WMexpanded']",
+    "css" : {
+      "background-color" : "rgb(0,204,153)"
+    }
+  }, {
+    "selector" : "node:selected",
+    "css" : {
+      "background-color" : "rgb(255,255,0)"
+    }
+  }, {
+    "selector" : "edge",
+    "css" : {
+      "content" : "",
+      "target-arrow-color" : "rgb(0,0,0)",
+      "font-size" : 10,
+      "line-color" : "rgb(0,153,0)",
+      "opacity" : 0.19607843137254902,
+      "font-family" : "Dialog",
+      "font-weight" : "normal",
+      "source-arrow-color" : "rgb(0,0,0)",
+      "line-style" : "solid",
+      "width" : 2.0,
+      "text-opacity" : 1.0,
+      "source-arrow-shape" : "none",
+      "target-arrow-shape" : "none",
+      "color" : "rgb(0,0,0)"
+    }
+  }, {
+    "selector" : "edge:selected",
+    "css" : {
+      "line-color" : "rgb(255,0,0)"
+    }
+  } ]
+}

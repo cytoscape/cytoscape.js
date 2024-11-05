@@ -38,6 +38,14 @@ var networks = {
     layout: { name: 'preset' },
     style: { file: 'network-em-desktop-style.json' },
   },
+  'white-matter': {
+    desc: 'White Matter',
+    nodes: 1499,
+    edges: 18288,
+    url: 'network-white-matter.json',
+    layout: { name: 'preset' },
+    style: { file: 'network-white-matter-style.json' },
+  },
   'ndex-large': {
     desc: 'NDEX large',
     nodes: 3238,

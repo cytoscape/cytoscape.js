@@ -83,7 +83,7 @@ describe('webgl-atlas', function() {
     ac.draw('c', 3, { h:10, w:100 });
     expect(ac.getCounts().keyCount).to.equal(3);
 
-    ac.checkKey('b', 4); 
+    ac.checkKeyIsInvalid('b', 4); 
     ac.gc();
 
     expect(ac.getCounts().keyCount).to.equal(2);
@@ -106,9 +106,9 @@ describe('webgl-atlas', function() {
     expect(ac.getCounts().keyCount).to.equal(7);
     expect(ac.getCounts().atlasCount).to.equal(2);
 
-    ac.checkKey('b', 8);
-    ac.checkKey('e', 9);
-    ac.checkKey('g', 10);
+    ac.checkKeyIsInvalid('b', 8);
+    ac.checkKeyIsInvalid('e', 9);
+    ac.checkKeyIsInvalid('g', 10);
 
     ac.gc();
 

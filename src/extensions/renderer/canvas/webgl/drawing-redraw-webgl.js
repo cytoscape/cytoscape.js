@@ -158,6 +158,7 @@ function overrideCanvasRendererFunctions(r) {
     r.matchCanvasSize = function(container) {
       baseFunc.call(r, container);
       r.pickingFrameBuffer.setFramebufferAttachmentSizes(r.canvasWidth, r.canvasHeight);
+      r.pickingFrameBuffer.needsDraw = true;
     };
   } 
 
@@ -217,10 +218,10 @@ function clearCanvas(r) {
 function createPanZoomMatrix(r) {
   const width  = r.canvasWidth;
   const height = r.canvasHeight;
-  const { x, y, zoom } = util.getEffectivePanZoom(r);
+  const { pan, zoom } = util.getEffectivePanZoom(r);
 
   const transform = mat3.create();
-  mat3.translate(transform, transform, [x, y]);
+  mat3.translate(transform, transform, [pan.x, pan.y]);
   mat3.scale(transform, transform, [zoom, zoom]);
 
   const projection = mat3.create();
@@ -236,11 +237,11 @@ function createPanZoomMatrix(r) {
 function setContextTransform(r, context) {
   const width  = r.canvasWidth;
   const height = r.canvasHeight;
-  const { x, y, zoom } = util.getEffectivePanZoom(r);
+  const { pan, zoom } = util.getEffectivePanZoom(r);
 
   context.setTransform(1, 0, 0, 1, 0, 0);
   context.clearRect(0, 0, width, height);
-  context.translate(x, y);
+  context.translate(pan.x, pan.y);
   context.scale(zoom, zoom);
 }
 
@@ -311,16 +312,18 @@ function drawAtlases(r) {
  */
 function getPickingIndexes(r, mX1, mY1, mX2, mY2) {
   let x, y, w, h;
+  const { pan, zoom } = util.getEffectivePanZoom(r);
 
   if(mX2 === undefined || mY2 === undefined) {
-    const [ cX1, cY1 ] = util.modelCoordsToWebgl(r, mX1, mY1);
+    const [ cX1, cY1 ] = util.modelToRenderedPosition(r, pan, zoom, mX1, mY1);
     const t = 6; // should be even
     x = cX1 - (t / 2);
     y = cY1 - (t / 2);
     w = t;
     h = t;
   } else {
-    const [ cX1, cY1, cX2, cY2 ] = util.modelCoordsToWebgl(r, mX1, mY1, mX2, mY2);
+    const [ cX1, cY1 ] = util.modelToRenderedPosition(r, pan, zoom, mX1, mY1);
+    const [ cX2, cY2 ] = util.modelToRenderedPosition(r, pan, zoom, mX2, mY2);
     x = cX1; // (cX1, cY2) is the bottom left corner of the box
     y = cY2;
     w = Math.abs(cX2 - cX1);

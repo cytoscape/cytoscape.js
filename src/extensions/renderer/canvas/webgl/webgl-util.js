@@ -55,9 +55,18 @@ export function getEffectivePanZoom(r) {
   const pan  = r.cy.pan();
   return {
     zoom: zoom * pixelRatio,
-    x: pan.x * pixelRatio,
-    y: pan.y * pixelRatio,
+    pan: {
+      x: pan.x * pixelRatio,
+      y: pan.y * pixelRatio,
+    }
   };
+}
+
+export function modelToRenderedPosition(r, pan, zoom, x, y) {
+  let rx = x * zoom + pan.x;
+  let ry = y * zoom + pan.y;
+  ry = Math.round(r.canvasHeight - ry); // adjust for webgl
+  return [ rx, ry ];
 }
 
 /**
@@ -102,28 +111,6 @@ export function vec4ToIndex(vec4) {
     (vec4[2] << 16) + 
     (vec4[3] << 24)
   );
-}
-
-
-/**
- * This reverses what BRp.projectIntoViewport does, and converts to webgl coordinates.
- */
-export function modelCoordsToWebgl(r, x1, y1, x2, y2) {
-  const [ offsetLeft, offsetTop, , , scale ] = r.findContainerClientCoords();
-  const { x:panx, y:pany, zoom } = getEffectivePanZoom(r);
-
-  let clientX1 = Math.round((x1 * zoom + panx) * scale + offsetLeft);
-  let clientY1 = Math.round((y1 * zoom + pany) * scale + offsetTop);
-  clientY1 = Math.round(r.canvasHeight - clientY1); // normal canvas has y=0 at top, webgl has y=0 at bottom
-
-  if(x2 != undefined && y2 != undefined) {
-    let clientX2 = Math.round((x2 * zoom + panx) * scale + offsetLeft);
-    let clientY2 = Math.round((y2 * zoom + pany) * scale + offsetTop);
-    clientY2 = Math.round(r.canvasHeight - clientY2);
-    return [ clientX1, clientY1, clientX2, clientY2 ];
-  } else {
-    return [ clientX1, clientY1 ];  
-  }
 }
 
 

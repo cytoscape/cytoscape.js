@@ -511,7 +511,7 @@ function renderWebgl(r, options, renderTarget) {
   if(r.webglDebug) {
     // eslint-disable-next-line no-undef
     const end = performance.now();
-    console.log(`WebGL render (${renderTarget.name}) - frame time ${Math.ceil(end - start)}ms`);
+    const compact = true;
 
     let nodeBatchCount = 0;
     let nodeCount = 0;
@@ -528,20 +528,24 @@ function renderWebgl(r, options, renderTarget) {
       }
     }
 
-    console.log(`Batches: ${debugInfo.length}`);
-    console.log(`  ${edgeCount} edges in ${edgeBatchCount} batches`);
-    console.log(`  ${nodeCount} nodes in ${nodeBatchCount} batches`);
-    
-    console.log('Texture Atlases Used:');
-    const nodeAtlasInfo = nodeDrawing.getAtlasDebugInfo();
-    for(const info of nodeAtlasInfo) {
-      console.log(`  ${info.type}: ${info.keyCount} keys, ${info.atlasCount} atlases`);
+    if(compact) {
+      console.log(`WebGL (${renderTarget.name}) - frame ${Math.ceil(end - start)}ms - edges ${edgeCount}/${edgeBatchCount}, nodes ${nodeCount}/${nodeBatchCount}`);
+    } else {
+      console.log(`WebGL render (${renderTarget.name}) - frame time ${Math.ceil(end - start)}ms`);
+      console.log(`Batches: ${debugInfo.length}`);
+      console.log(`  ${edgeCount} edges in ${edgeBatchCount} batches`);
+      console.log(`  ${nodeCount} nodes in ${nodeBatchCount} batches`);
+      console.log('Texture Atlases Used:');
+      const nodeAtlasInfo = nodeDrawing.getAtlasDebugInfo();
+      for(const info of nodeAtlasInfo) {
+        console.log(`  ${info.type}: ${info.keyCount} keys, ${info.atlasCount} atlases`);
+      }
+      const edgeAtlasInfo = edgeDrawing.getAtlasDebugInfo();
+      for(const info of edgeAtlasInfo) {
+        console.log(`  ${info.type}: ${info.keyCount} keys, ${info.atlasCount} atlases`);
+      }
+      console.log('');
     }
-    const edgeAtlasInfo = edgeDrawing.getAtlasDebugInfo();
-    for(const info of edgeAtlasInfo) {
-      console.log(`  ${info.type}: ${info.keyCount} keys, ${info.atlasCount} atlases`);
-    }
-    console.log('');
   }
 
 }

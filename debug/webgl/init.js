@@ -209,12 +209,12 @@ const paramDefs = {
   //   });
   // });
 
-  $("#select-button").addEventListener('click', () => {
-    cy.nodes().select();
-  });
+  // $("#select-button").addEventListener('click', () => {
+  //   cy.nodes().select();
+  // });
 
-  $("#gc-button").addEventListener('click', () => {
-    cy.gc();
-  });
+  // $("#gc-button").addEventListener('click', () => {
+  //   cy.gc();
+  // });
 
 })();

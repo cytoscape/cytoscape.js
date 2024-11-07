@@ -42,7 +42,7 @@ BreadthFirstLayout.prototype.run = function(){
   const options = this.options;
   const cy = options.cy;
   const eles = options.eles;
-  const nodes = eles.nodes().filter( n => !n.isParent() );
+  const nodes = eles.nodes().filter( n => n.isChildless() );
   const graph = eles;
   const directed = options.directed;
   const maximal = options.acyclic || options.maximal || options.maximalAdjustments > 0; // maximalAdjustments for compat. w/ old code; also, setting acyclic to true sets maximal to true
@@ -108,7 +108,7 @@ BreadthFirstLayout.prototype.run = function(){
     const { depth, index } = getInfo( ele );
     depths[ depth ][ index ] = null;
     // add only childless nodes
-    if (!ele.isParent()) addToDepth( ele, newDepth );
+    if (ele.isChildless()) addToDepth( ele, newDepth );
   };
 
   // find the depths of the nodes
@@ -120,7 +120,7 @@ BreadthFirstLayout.prototype.run = function(){
       const id = ele.id();
 
       // add only childless nodes
-      if (!ele.isParent()) addToDepth( ele, depth );
+      if (ele.isChildless()) addToDepth( ele, depth );
       foundByBfs[ id ] = true;
     }
   } );

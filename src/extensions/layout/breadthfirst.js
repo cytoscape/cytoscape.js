@@ -331,8 +331,8 @@ BreadthFirstLayout.prototype.run = function(){
     // only one depth
     depthsLen === 1 ? 0 :
       // inside a bounding box, no need for top & bottom padding
-      hasBoundingBox ? (bb.h / (depthsLen - 1)) :
-        bb.h / (depthsLen + 1),
+      hasBoundingBox ? ((bb.h - options.padding * 2) / (depthsLen - 1)) :
+        (bb.h - options.padding * 2) / (depthsLen + 1),
     minDistance );
 
   const center = {
@@ -367,8 +367,8 @@ BreadthFirstLayout.prototype.run = function(){
         // only one depth
         depthSize === 1 ? 0 :
           // inside a bounding box, no need for left & right padding
-          hasBoundingBox ? (bb.w / ( (options.grid ? maxDepthSize : depthSize) - 1 )):
-            bb.w / ( (options.grid ? maxDepthSize : depthSize) + 1 ),
+          hasBoundingBox ? ((bb.w - options.padding * 2) / ((options.grid ? maxDepthSize : depthSize) - 1)):
+            (bb.w - options.padding * 2) / ((options.grid ? maxDepthSize : depthSize) + 1),
         minDistance );
 
       const epos = {

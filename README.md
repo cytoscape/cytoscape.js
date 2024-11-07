@@ -144,7 +144,7 @@ The default test scripts run directly against the source code.  Tests can altern
 
 ### Patch version
 
-1. Go to [Actions > Feature release](https://github.com/cytoscape/cytoscape.js/actions/workflows/patch-release.yml)
+1. Go to [Actions > Patch release](https://github.com/cytoscape/cytoscape.js/actions/workflows/patch-release.yml)
 1. Go to the 'Run workflow' dropdown
 1. [Optional] The 'master' branch should be preselected for you
 1. Press the green 'Run workflow' button

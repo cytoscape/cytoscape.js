@@ -331,12 +331,13 @@ BreadthFirstLayout.prototype.run = function(){
     y: bb.y1 + bb.h / 2
   };
 
+  // average node size
   const aveNodeSize = nodes.reduce((acc, node) => ((box) => ({
-    w: acc.w === null ? box.w : (acc.w + box.w) / 2,
-    h: acc.h === null ? box.h : (acc.h + box.h) / 2,
+    w: acc.w === -1 ? box.w : (acc.w + box.w) / 2,
+    h: acc.h === -1 ? box.h : (acc.h + box.h) / 2,
   }))(node.boundingBox({
     includeLabels: options.nodeDimensionsIncludeLabels
-  })), { w: null, h: null });
+  })), { w: -1, h: -1 });
 
   const distanceY = Math.max(
     // only one depth

@@ -84,7 +84,6 @@ BreadthFirstLayout.prototype.run = function(){
 
         roots = roots.add( compRoots );
       }
-
     }
   }
 
@@ -327,18 +326,25 @@ BreadthFirstLayout.prototype.run = function(){
     biggestDepthSize = Math.max( depths[ i ].length, biggestDepthSize );
   }
 
-  const distanceY = Math.max(
-    // only one depth
-    depthsLen === 1 ? 0 :
-      // inside a bounding box, no need for top & bottom padding
-      hasBoundingBox ? ((bb.h - options.padding * 2) / (depthsLen - 1)) :
-        (bb.h - options.padding * 2) / (depthsLen + 1),
-    minDistance );
-
   const center = {
     x: bb.x1 + bb.w / 2,
     y: bb.y1 + bb.h / 2
   };
+
+  const aveNodeSize = nodes.reduce((acc, node) => ((box) => ({
+    w: acc.w === null ? box.w : (acc.w + box.w) / 2,
+    h: acc.h === null ? box.h : (acc.h + box.h) / 2,
+  }))(node.boundingBox({
+    includeLabels: options.nodeDimensionsIncludeLabels
+  })), { w: null, h: null });
+
+  const distanceY = Math.max(
+    // only one depth
+    depthsLen === 1 ? 0 :
+      // inside a bounding box, no need for top & bottom padding
+      hasBoundingBox ? ((bb.h - options.padding * 2 - aveNodeSize.h) / (depthsLen - 1)) :
+        (bb.h - options.padding * 2 - aveNodeSize.h) / (depthsLen + 1),
+    minDistance );
 
   const maxDepthSize = depths.reduce( (max, eles) => Math.max(max, eles.length), 0 );
 
@@ -367,8 +373,8 @@ BreadthFirstLayout.prototype.run = function(){
         // only one depth
         depthSize === 1 ? 0 :
           // inside a bounding box, no need for left & right padding
-          hasBoundingBox ? ((bb.w - options.padding * 2) / ((options.grid ? maxDepthSize : depthSize) - 1)):
-            (bb.w - options.padding * 2) / ((options.grid ? maxDepthSize : depthSize) + 1),
+          hasBoundingBox ? ((bb.w - options.padding * 2 - aveNodeSize.w) / ((options.grid ? maxDepthSize : depthSize) - 1)):
+            (bb.w - options.padding * 2 - aveNodeSize.w) / ((options.grid ? maxDepthSize : depthSize) + 1),
         minDistance );
 
       const epos = {
